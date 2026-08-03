@@ -45,10 +45,10 @@ Open work: `docs/MASTER_TODO.md`.
 
 ```
 malwarium/
-├── CLAUDE.md            ← routing table (read first)
-├── README.md            ← visual-system overview
+├── CONTRIBUTING.md      ← constraints, standards routing, the gates (read first)
+├── README.md            ← the player on-ramp: build one, flash it, play
 ├── assets/              ← FINAL art + PAL_CORE.json — this directory IS the atlas
-│   ├── CLAUDE.md           when to read which art doc
+│   ├── README.md           the atlas rules + when to read which art doc
 │   ├── ASSET_MANIFEST.md · VISUAL_LANGUAGE.md · CREATURE_VISUAL_RULES.md
 │   └── _attic/             drawn but consumerless art (untracked, uncompiled)
 ├── docs/                ← the cross-cutting docs
@@ -295,5 +295,5 @@ is a recall). Everything else ships.
 
 ## Read order for a cold start
 
-`CLAUDE.md` → `docs/MASTER_TODO.md` (what's open) → this file → then the scoped `CLAUDE.md` in
+`CONTRIBUTING.md` → `docs/MASTER_TODO.md` (what's open) → this file → then the `README.md` in
 whichever folder you're about to work in.

@@ -10,7 +10,7 @@ a magnitude only one entity reads lives **on that row**, never in `tunables.h`.
 | Name a creature | [CREATURE_NAMING.md](CREATURE_NAMING.md) — the phonetic-integration standard; run every candidate through its four-point checklist |
 | Name an item | [ITEM_NAMING.md](ITEM_NAMING.md) — the functional-clarity standard |
 | Give a line its combat identity, or add a move to one | [LINE_MOVE_IDENTITIES.md](LINE_MOVE_IDENTITIES.md) — what each family's kit is *for* |
-| Add or edit an EXPL area | [areas/](areas/) has its own CLAUDE.md |
+| Add or edit an EXPL area | [areas/README.md](areas/README.md) — the folder shape and the naming tiers |
 
 **Renaming an id is free** — rewrite the row and add a rename row to the save codec
 (`core/model/save.h`'s `renamedIds`). Never leave an alias behind in a content table.

@@ -2,7 +2,7 @@
 
 How one explorable AREA of the EXPL ladder (Citrus Circuit, The Pirate Bayou, …) is
 represented, so changing "everything about one area" means finding one folder — the same
-role the module rule in `CLAUDE.md` plays for the `game_*.cpp` units and
+role the module rule in `CONTRIBUTING.md` plays for the `game_*.cpp` units and
 `src/core/content/CONTENT_STANDARD.md` plays for `content_*.cpp`. Hold new/edited area content to this.
 
 ## The shape

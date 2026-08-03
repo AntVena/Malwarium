@@ -23,13 +23,14 @@ compile_commands.json
 # NOTE: include/config.h is COMMITTED — it holds the verified device pinout
 # (the bring-up result), now authoritative rather than a per-machine template.
 
-# Claude Code: personal/local settings. launch.json is here because a preview server
-# needs an ABSOLUTE cwd — the launcher resolves neither a relative path nor
-# $CLAUDE_PROJECT_DIR — so the file can only ever describe one machine.
-.claude/settings.local.json
-.claude/launch.json
-# Local slash-command defs (kept out of the repo by decision — not shared tooling)
-.claude/commands/
+# Assistant tooling is not part of the project. CLAUDE.md and .claude/ are prompts,
+# agent definitions and editor settings — they help write the code, they are not the
+# code, and a reader should never need them to understand this repo. Everything they
+# carried that describes the PROJECT lives in tracked docs instead: CONTRIBUTING.md
+# (constraints, module rule, standards routing), the per-folder README.md files, and
+# tools/gates.sh (the build/test cycle, previously a snippet to copy by hand).
+CLAUDE.md
+.claude/
 
 # Python tooling
 .venv/

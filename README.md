@@ -284,8 +284,8 @@ and why it's ordered that way); pass `./tools/flash.sh`'s own flags straight thr
 ## For developers
 
 This README is the *player* on-ramp. If you want to build, extend, or contribute to
-Malwarium, the developer entry point is **[`CLAUDE.md`](CLAUDE.md)** — it's the routing
-table into the build docs (`docs/`), the per-folder standards, and the engine layout. Start there.
+Malwarium, the developer entry point is **[`CONTRIBUTING.md`](CONTRIBUTING.md)** — the constraints the
+code is written against, where each standard lives, and how to run the gates. Start there.
 
 ---
 
