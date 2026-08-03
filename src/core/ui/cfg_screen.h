@@ -16,6 +16,7 @@
 // why that screen reports the connection instead of one of its own.
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 
 #include "core/app/net_status.h"
@@ -37,7 +38,7 @@ struct SpriteData;
 enum class CfgScreen { SysInfo, HackerTag, Titles,
                        Display, UiMode, Brightness,
                        Radio, Audit, Link, PediaAp, PediaQr,
-                       Update, ResetHatch, FactoryReset };
+                       Update, UpdateQr, ResetHatch, FactoryReset };
 
 // One CFG settings row: glyph + label + its L3 target. Shared by the top-level
 // list and both group screens, so a row reads the same wherever it lives.
@@ -184,12 +185,20 @@ void drawUpdateCheck(Framebuffer& fb, bool ready, bool provisioned,
 
 // How many rows drawUpdateCheck offers, so the input handler and the renderer
 // agree on what A cycles through: CHECK NOW, then one install row per artifact
-// reported newer. Row 0 is always the check.
+// reported newer, then FLASH OVER USB. Row 0 is always the check and the last row
+// is always the flasher, which is why the middle is the only part that varies.
 int updateCheckRows(const UpdateStatus& status);
 
-// Which target row `row` selects, or None for the check row — the single mapping
-// both the cursor and the B press read, so a row can never install the artifact
-// next to the one it names.
+// What B on `row` actually does. Three different acts share one cursor — start a
+// check, open an install confirm, open the flasher QR — so both the input handler
+// and the renderer ask this instead of deriving it from the index twice and
+// eventually disagreeing.
+enum class UpdateRowKind : unsigned char { Check, Install, FlashQr };
+UpdateRowKind updateCheckRowKind(const UpdateStatus& status, int row);
+
+// Which artifact an INSTALL row selects; None for any other row. Paired with
+// updateCheckRowKind above, so a row can never install the artifact next to the
+// one it names.
 UpdateTarget updateCheckRowTarget(const UpdateStatus& status, int row);
 
 // The second yes. Names what is about to be replaced and what it is replaced with,
@@ -204,6 +213,22 @@ void drawUpdateConfirm(Framebuffer& fb, UpdateTarget target, const char* fromVer
 // which is the phase before any byte arrives.
 void drawUpdateProgress(Framebuffer& fb, const InstallStatus& install,
                         const NetStatus& net);
+
+// Where the USB flasher lives, derived from the manifest address this device
+// already checks: the publish host serves both, so `.../manifest.json` becomes
+// `.../flash/` and nobody has to configure the same host twice. A device pointed
+// at a fork, or at a laptop, gets that host's flasher for free.
+//
+// False (and an empty `out`) when there is no source to derive from, or the
+// result wouldn't fit — a device with nowhere to look has no page to offer, and
+// the UPDATES screen already says so.
+bool updateFlasherUrl(const char* manifestUrl, char* out, size_t cap);
+
+// L3 USB-flasher QR, reached from the UPDATES screen's last row. Encodes the
+// address updateFlasherUrl derives from `manifestUrl` and says the two things a
+// scanner can't: that the page needs Chrome on a computer, and that A is held
+// down while the cable goes in. C exits.
+void drawUpdateQr(Framebuffer& fb, const char* manifestUrl);
 
 // L3 'Pedia QR: real, scannable QR pages the player cycles with A, in step order —
 // page 0 = join the local AP (WIFI: payload), then the home-network setup page
