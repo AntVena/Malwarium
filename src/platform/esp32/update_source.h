@@ -6,22 +6,23 @@
 // NVS_SAVE_PARTITION per call, exactly like NetCredentials (net_credentials.h) —
 // cheap, and no handle is left open across the long stretches between checks.
 //
-// WHY AN OVERRIDE AT ALL. The compiled default is baked into a firmware image
-// that, by definition, only changes via the very mechanism it points at — so a
-// device whose publish host moved could never be told where the new one is. The
-// override is the way out of that circle, and it is ADDITIVE: it never replaces
-// the default, it just takes precedence while it is set, and clear() falls back.
-// The setup page the SoftAP serves (ap_server.h) is where an operator will
-// eventually type one; nothing but this file needs to change for that.
+// WHY AN OVERRIDE AT ALL, when a default is compiled in. That default is baked
+// into a firmware image which, by definition, only changes via the very mechanism
+// it points at — so a device whose publish host moved could never be told where
+// the new one is. The override is the way out of that circle, and it is ADDITIVE:
+// it never replaces the default, it just takes precedence while it is set, and
+// clear() falls back. The setup page the SoftAP serves (ap_server.h) is where an
+// operator types one, and a shipped device is already using it.
 //
 // It is stored in NVS, not the save blob, for the same reasons the credentials
 // are: the save is portable and src/core is platform-agnostic, and a Factory
 // Reset must not strand a device on a dead publish host.
 //
-// NO DEFAULT IS A LEGITIMATE STATE. With UPDATE_MANIFEST_URL empty and nothing
-// stored, url() reports false and a check has nowhere to look — which is the
-// honest answer, and far better than fetching a placeholder and reporting a
-// network error the operator can do nothing about.
+// NO SOURCE AT ALL IS STILL A LEGITIMATE STATE. With UPDATE_MANIFEST_URL empty
+// (a board that names no host, or a fork that cleared it) and nothing stored,
+// url() reports false and a check has nowhere to look — which is the honest
+// answer, and far better than fetching a placeholder and reporting a network
+// error the operator can do nothing about.
 #pragma once
 
 #include <cstddef>

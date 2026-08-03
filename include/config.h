@@ -308,11 +308,23 @@
 //  CHECK NOW is what puts the device on the network, the job hands the radio back
 //  when it ends, and nothing installs without a second explicit yes.
 #define UPDATE_ENABLED              1      // 1 = compile the device-tier update path
-//  Where the published artifact list lives. EMPTY = no source compiled in, so a
-//  device only knows where to look once one is stored on it
-//  (platform/esp32/update_source.h reads an NVS override first, this second).
-//  TODO(hosting): fill this in once the publish target is decided — until then a
-//  stock device cannot check for updates at all, which is the honest behaviour.
+//  Where the published artifact list lives: this project's GitHub Pages host, which
+//  CI deploys to on a `v*` tag (.github/workflows/publish.yml, docs/ORIENTATION.md
+//  "Releasing"). Compiled in so a freshly flashed device can check for updates
+//  without anyone typing a URL into it — which is the whole point for an operator
+//  who was handed a device rather than building one.
+//
+//  A stored NVS override still WINS over this (platform/esp32/update_source.h reads
+//  the override first, this second). That ordering is what keeps the default from
+//  being a trap: a firmware image can only be replaced through the mechanism this
+//  URL points at, so a device whose publish host moved would otherwise have no way
+//  to be told where the new one is. The override is the way out of that circle, and
+//  it is reachable from the device's own setup page.
+//
+//  A FORK SHOULD CHANGE THIS. It names where *this* project publishes; a fork that
+//  leaves it pointed here hands its devices somebody else's firmware. Empty is a
+//  legitimate value — it means "no source compiled in", and the UPDATES screen says
+//  so honestly rather than failing against a placeholder.
 //
 //  Overridable from the build system, the same way version.h takes its numbers, so
 //  pointing a board at a laptop serving `make manifest` needs no edit here (the
@@ -321,7 +333,7 @@
 //    PLATFORMIO_BUILD_FLAGS='-DUPDATE_MANIFEST_URL=\"http://192.168.1.50:8000/manifest.json\"' \
 //      pio run -e waveshare_s3_154 -t upload
 #ifndef UPDATE_MANIFEST_URL
-#  define UPDATE_MANIFEST_URL       ""
+#  define UPDATE_MANIFEST_URL       "https://antvena.github.io/Malwarium/manifest.json"
 #endif
 
 // --- Persistence (NVS / Preferences) ---------------------------------------
