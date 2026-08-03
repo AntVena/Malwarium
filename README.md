@@ -46,20 +46,50 @@ Real screens, straight off the 240×240 display:
 
 ## What you'll need
 
-**To get playing**
+### The board — one specific one
 
-- A **Waveshare ESP32-S3-LCD-1.54** board (the 1.54-inch, 240×240 screen, 3-button model).
-  This is the target the firmware is built for.
-- A **USB-C cable** that carries data (not a charge-only cable).
-- **Chrome or Edge on a computer.** That's the whole software list — no toolchain, no
-  Python, no command line.
+> ### Waveshare **ESP32-S3-LCD-1.54**
+> **<https://www.waveshare.com/esp32-s3-lcd-1.54.htm>** · SKU **33866** or **33867**
+>
+> The **Touch** variant (SKU **33868** / **33869**) works too — Malwarium doesn't use the
+> touchscreen, so you gain nothing by it, but nothing breaks either.
 
-**Nice to have, later**
+**This is the only board Malwarium runs on today**, and that's worth being blunt about
+before you spend money. It is not "an ESP32 project" you can point at a spare dev board:
+the firmware has exactly one hardware definition compiled into it, and the screen, the
+three buttons, the SD slot and the battery latch are all wired to specific pins on *this*
+board. On anything else you'd get a dark screen at best. The 16MB flash isn't optional
+either — the layout is two 7.5MB update slots plus a save area, which simply doesn't fit
+on the 8MB boards.
 
-- A **microSD card** — any size, formatted **FAT32**. The device plays perfectly happily
-  without one; the card is what holds the in-device wiki (the "'Pedia") and any `.pcap`
-  captures. You can add it whenever, and the device can fill it over Wi-Fi by itself.
-- A **3.7V LiPo battery** to run it untethered. USB power is fine to start.
+**Got one already and want to check it's the right one?** It should have all of these:
+
+| | |
+|---|---|
+| **Screen** | 1.54 inch, **square**, 240×240 — about the size of a large postage stamp |
+| **Buttons** | **three**, in a row along one edge |
+| **Port** | **USB-C** |
+| **Storage** | a **microSD (TF) card slot** |
+| **Battery** | a tiny 2-pin white **MX1.25** socket for a 3.7V LiPo |
+
+If yours has a different screen size, two buttons, micro-USB, or no card slot, it's a
+different board and this firmware won't run on it.
+
+### Everything else
+
+- A **USB-C cable that carries data.** This trips more people up than anything else on this
+  page — a lot of cables sold with phones and battery packs are charge-only, and they look
+  identical. If the flasher can't see your board, this is the first thing to swap.
+- **Chrome or Edge, on a computer.** That's the whole software list: no toolchain, no
+  Python, no command line. Safari and Firefox can't talk to USB, and phones can't either —
+  not a limitation of this project, just of those browsers.
+
+**Optional, and you can add both later:**
+
+- A **microSD card**, any size, formatted **FAT32**. The device plays perfectly happily
+  without one — it's what holds the in-device wiki (the "'Pedia") and any `.pcap` captures,
+  and the device can fill it over Wi-Fi by itself once you slot one in.
+- A **3.7V LiPo battery** to run it untethered. USB power is fine to start with.
 
 > **Already have a working Malwarium and just want the newest build?** Skip all of this —
 > the device updates itself over Wi-Fi. [See *Updates*](#updates).
@@ -74,27 +104,41 @@ Real screens, straight off the 240×240 display:
 
 Open that in **Chrome or Edge on a computer** and it writes a whole working device down the
 cable — bootloader, partition table and firmware. Nothing to install, nothing to clone.
+Start to finish it's about five minutes, most of it waiting.
 
-1. **Hold down the leftmost button (A) while you plug the USB-C cable in**, and keep
-   holding for a second or two. **The screen stays dark — that's correct.** A doubles as
-   the chip's download-mode strap, so holding it makes the board listen to the cable
-   instead of running the game.
-2. Click **CONNECT** on the page and pick the board from your browser's port list.
-3. Click **FLASH** and wait a couple of minutes.
+**1. Hold down the leftmost button (A), and keep holding it while you plug the USB-C cable
+in.** Hold a second or two after the cable is seated, then let go.
 
-**Your device screen should now show a wobbling egg.** That's it — you're running your very
-own shiny new state-of-the-*start*… **Malwarium**. We pray you're more benevolent than your
-charges.
+> **Nothing appears to happen, and the screen stays dark. That is exactly right** — don't
+> keep pressing things. Button A doubles as the chip's "listen to the cable" switch, so
+> holding it tells the board to wait for the flasher instead of starting the game. A brand
+> new board has nothing to show you anyway.
+
+**2. Click CONNECT on the page**, and pick your board from the list your browser pops up.
+
+> Not sure which entry is yours? It'll usually say something like *USB JTAG/serial debug
+> unit* or *USB Serial*. If the list is empty or yours isn't in it, click **MY DEVICE
+> ISN'T LISTED** on the page — that widens the filter and shows everything.
+
+**3. Click FLASH.** A progress bar fills as it writes, and the page tells you which of the
+pieces it's on. **A couple of minutes is normal** — it's writing about 2MB down a serial
+line. Don't unplug it, and don't worry when it pauses.
+
+**4. It reboots itself, and your screen lights up with a wobbling egg.**
+
+That's it — you're running your very own shiny new state-of-the-*start*… **Malwarium**. We
+pray you're more benevolent than your charges.
 
 Flashing a device that already has a pet on it? A normal flash leaves the save partition
 alone, so your pet is still there when it reboots. (There's an **ERASE** option if you
 *do* want a clean slate.)
 
-> **The browser can't see the board?** In order of how often it's the answer: the cable
-> doesn't carry data; A wasn't held down *before* the cable went in; the port picker is
-> filtered — the page has a **MY DEVICE ISN'T LISTED** button that shows everything; or
-> something else already has the port open, like a serial monitor or the Arduino IDE.
-> Safari and Firefox can't talk to USB at all, and no phone can.
+> **The browser can't see the board?** In order of how often it's the answer: **the cable
+> doesn't carry data** (try a different one — this is the usual culprit); **A wasn't held
+> down *before* the cable went in** (unplug, hold A, plug back in); the port picker is
+> filtered (**MY DEVICE ISN'T LISTED**); or something else already has the port open, like
+> a serial monitor or the Arduino IDE. If you're in Safari or Firefox, that's the reason —
+> those can't talk to USB at all.
 
 ### Adding the wiki (optional, any time later)
 
