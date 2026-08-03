@@ -46,34 +46,92 @@ Real screens, straight off the 240×240 display:
 
 ## What you'll need
 
-**Hardware**
+**To get playing**
 
 - A **Waveshare ESP32-S3-LCD-1.54** board (the 1.54-inch, 240×240 screen, 3-button model).
   This is the target the firmware is built for.
 - A **USB-C cable** that carries data (not a charge-only cable).
-- A **microSD card** — any size. ⚠️ **It will be completely erased during setup**, so use a
-  blank one or one you don't mind wiping.
-- An **SD card reader** for your computer (many laptops have a slot; otherwise a cheap USB
-  reader works).
-- *Optional:* a 3.7V LiPo battery to run it untethered. USB power is fine to start.
+- **Chrome or Edge on a computer.** That's the whole software list — no toolchain, no
+  Python, no command line.
 
-**Software** (we install these in Step 1)
+**Nice to have, later**
 
-- **Python 3**, **PlatformIO** (the tool that builds and flashes firmware), and **git**.
+- A **microSD card** — any size, formatted **FAT32**. The device plays perfectly happily
+  without one; the card is what holds the in-device wiki (the "'Pedia") and any `.pcap`
+  captures. You can add it whenever, and the device can fill it over Wi-Fi by itself.
+- A **3.7V LiPo battery** to run it untethered. USB power is fine to start.
 
-Everything below shows the command for **macOS/Linux** first, then the **Windows**
-(PowerShell) equivalent. Pick your side and ignore the other.
-
-> **Already have a working Malwarium and just want the newest build?** Skip all of this.
-> The device updates itself — [see *Updates*](#updates) — and when a release does need a
-> cable, **<https://antvena.github.io/Malwarium/flash/>** flashes it from your browser with
-> none of the tools below installed.
+> **Already have a working Malwarium and just want the newest build?** Skip all of this —
+> the device updates itself over Wi-Fi. [See *Updates*](#updates).
 
 ---
 
 ## Getting started
 
-### Step 1 — Install the tools
+<p align="center"><img src="docs/media/flash/flasher.png" width="620" alt="The browser flasher"></p>
+
+### Flash it from your browser — **<https://antvena.github.io/Malwarium/flash/>**
+
+Open that in **Chrome or Edge on a computer** and it writes a whole working device down the
+cable — bootloader, partition table and firmware. Nothing to install, nothing to clone.
+
+1. **Hold down the leftmost button (A) while you plug the USB-C cable in**, and keep
+   holding for a second or two. **The screen stays dark — that's correct.** A doubles as
+   the chip's download-mode strap, so holding it makes the board listen to the cable
+   instead of running the game.
+2. Click **CONNECT** on the page and pick the board from your browser's port list.
+3. Click **FLASH** and wait a couple of minutes.
+
+**Your device screen should now show a wobbling egg.** That's it — you're running your very
+own shiny new state-of-the-*start*… **Malwarium**. We pray you're more benevolent than your
+charges.
+
+Flashing a device that already has a pet on it? A normal flash leaves the save partition
+alone, so your pet is still there when it reboots. (There's an **ERASE** option if you
+*do* want a clean slate.)
+
+> **The browser can't see the board?** In order of how often it's the answer: the cable
+> doesn't carry data; A wasn't held down *before* the cable went in; the port picker is
+> filtered — the page has a **MY DEVICE ISN'T LISTED** button that shows everything; or
+> something else already has the port open, like a serial monitor or the Arduino IDE.
+> Safari and Firefox can't talk to USB at all, and no phone can.
+
+### Adding the wiki (optional, any time later)
+
+The flasher writes the device's own flash — bootloader, partitions, firmware — and nothing
+else. The in-device wiki lives on the **microSD card**, so if you have one, there's one
+more step. **The device does it for you:**
+
+1. Format any card as **FAT32** and slot it in.
+2. Give the device your Wi-Fi once — turn the AP on, scan the setup QR with your phone, and
+   type your password into the page it serves. ([*Updates*](#updates) has the detail.)
+3. **CFG → UPDATES → CHECK NOW.** It'll offer you the 'Pedia site and install it.
+
+You don't have to type an address anywhere — the device already knows where its releases
+are published. No computer, no cable, no toolchain.
+
+(Prefer to load the card from your computer instead? That's the manual route below.)
+
+---
+
+<details>
+<summary><b>🔧 The manual way — build it from source yourself (click to expand)</b></summary>
+
+<br>
+
+**You don't need any of this to play.** It's here for the people who'd rather read the
+process than trust a web page with their USB port — and for anyone who wants to change the
+code. It does the same job as the flasher, plus it loads the SD card directly from your
+computer instead of leaving that to the device.
+
+Everything below shows the command for **macOS/Linux** first, then the **Windows**
+(PowerShell) equivalent. Pick your side and ignore the other.
+
+You'll need, on top of the hardware above: a **microSD card** ⚠️ (**it gets completely
+erased**, so use a blank one or one you don't mind wiping) and an **SD card reader** for
+your computer.
+
+#### Step 1 — Install the tools
 
 You need Python 3, then two things installed through it: **PlatformIO** (does the actual
 flashing) and **pyserial** (lets the setup script read status back from the device).
@@ -112,7 +170,7 @@ pio --version
 You'll also need **git** to download the project. Check with `git --version`; if it's
 missing, grab it from <https://git-scm.com/downloads>.
 
-### Step 2 — Download the project
+#### Step 2 — Download the project
 
 ```bash
 git clone https://github.com/AntVena/Malwarium.git
@@ -121,7 +179,7 @@ cd Malwarium
 
 Everything from here runs from inside that `Malwarium` folder.
 
-### Step 3 — Get your microSD card ready
+#### Step 3 — Get your microSD card ready
 
 The device serves its in-game wiki (the "'Pedia") off the SD card, so we copy those files
 onto it and format it the way the device expects. **The setup script does all of this for
@@ -148,7 +206,7 @@ number like `2`.
 > your card and not your computer's main drive. The script refuses to touch internal or
 > system disks as a safety net, but you should still confirm you've got the right one.
 
-### Step 4 — Run the setup script
+#### Step 4 — Run the setup script
 
 This is the one command that does everything: it formats and loads your SD card, then
 erases and flashes the board with the firmware — checking its own work at each step.
@@ -186,12 +244,48 @@ When it finishes you'll see lines like these, which mean success:
 >> board provisioned + verified.
 ```
 
-**And your device screen should now show a wobbling egg.** That's it — you're running your very own shiny new state-of-the-*start*... **Malwarium**. We pray you're more benevolent than your charges. 
+**And your device screen should now show a wobbling egg** — with the wiki already on the
+card, since you loaded it yourself.
 
 > **Prefer to do it in two halves?** You can run the SD and board steps separately:
 > `./tools/provision.sh sd --format --device disk4` (card in reader), then move the card
 > into the device and run `./tools/provision.sh board`. The `all` command above just
 > stitches those together with the "move the card now" prompt in between.
+
+#### If the manual flash won't connect
+
+**"No serial data received", or the device just won't connect.** If the device has been
+sitting on its idle screen, it goes into a deep power-saving sleep that drops the USB
+connection. Re-run with `--wait-wake` and **press any button on the device** when prompted:
+
+```bash
+./tools/provision.sh board --wait-wake        # macOS/Linux
+./tools/provision.ps1 board -WaitWake         # Windows
+```
+
+(A truly blank, first-ever flash won't hit this — there's nothing running yet to fall
+asleep.)
+
+**The SD script says my card is "not external" and refuses to format it.** That's the
+safety net working. It only formats removable cards — make sure you named your *card's*
+disk identifier from Step 3, not your computer's drive.
+
+**Windows: "running scripts is disabled on this system."** Windows blocks unsigned scripts
+by default. Allow them for your session with this, then re-run the command:
+
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+```
+
+**I just want to re-flash after a code change, not redo the whole card.** Use
+`./tools/build_and_flash.sh` (macOS/Linux) for everyday reflashing — the full `provision`
+script is really for first-time, blank-device setup. It regenerates the sprite/palette
+codegen and the web 'Pedia data before delegating the actual build+upload to the lighter
+`./tools/flash.sh` (read `build_and_flash.sh`'s own header comment for the full pipeline
+and why it's ordered that way); pass `./tools/flash.sh`'s own flags straight through, e.g.
+`./tools/build_and_flash.sh --wait-wake` or `--env waveshare_s3_154_bringup`.
+
+</details>
 
 ---
 
@@ -300,27 +394,16 @@ with your phone, and type your Wi-Fi password into the page the device serves.
 
 ### Over USB, from your browser
 
-<p align="center"><img src="docs/media/flash/flasher.png" width="620" alt="The browser flasher"></p>
-
-**<https://antvena.github.io/Malwarium/flash/>** writes a whole working device down the
-cable — bootloader, partition table and firmware — with no PlatformIO, no Python and no
-command line. It needs **Chrome or Edge on a computer** (Safari and Firefox can't talk to
-USB, and no phone can) and a data-carrying USB-C cable.
-
-Reach for it when:
+The same **[browser flasher](#getting-started)** that set the device up in the first place
+is also the way back when Wi-Fi can't reach it. Reach for it when:
 
 - the release notes say an update needs a cable — an over-the-air update writes into a
   spare app slot and nothing else, so it structurally **cannot** replace the bootloader or
   the partition table;
-- the device won't boot at all;
+- the device won't boot at all. Holding A works even when the firmware on it is the reason
+  the device is unreachable, which is what makes this the escape hatch and not just an
+  alternative;
 - you'd rather not install a toolchain to update a toy.
-
-**Hold the leftmost button (A) while you plug the cable in**, and keep holding for a second
-or two. The screen stays dark — that's correct. A doubles as the chip's download-mode strap,
-so holding it makes the board listen to the cable instead of running the game, and it works
-even when the firmware on it is the reason the device is unreachable.
-
-A normal flash leaves your save partition alone, so your pet is still there when it reboots.
 
 <p align="center"><img src="docs/media/screens/flash-qr.png" width="200" alt="The flasher QR on the device"></p>
 
@@ -332,49 +415,27 @@ or a laptop.
 
 ## Troubleshooting
 
-**The flash fails with "No serial data received" (or the device just won't connect).**
-If the device has been sitting on its idle screen, it goes into a deep power-saving sleep
-that drops the USB connection. Re-run the setup with the `--wait-wake` flag and **press any
-button on the device** when prompted to wake it up:
-
-```bash
-./tools/provision.sh board --wait-wake        # macOS/Linux
-./tools/provision.ps1 board -WaitWake         # Windows
-```
-
-(A truly blank, first-ever flash won't hit this — there's nothing running yet to fall
-asleep.)
-
 **The browser flasher can't see my device.** In order of how often it's the answer: the
 cable doesn't carry data; A wasn't held down *before* the cable went in; the port picker is
 filtered (the page has a **MY DEVICE ISN'T LISTED** button that shows everything); or
-something else — a serial monitor, the Arduino IDE — already has the port open.
-
-**The SD script says my card is "not external" and refuses to format it.** That's the
-safety net working. It only formats removable cards — make sure you named your *card's*
-disk identifier from Step 3, not your computer's drive.
+something else — a serial monitor, the Arduino IDE — already has the port open. Safari and
+Firefox can't talk to USB at all, and no phone can.
 
 **The device screen says the SD card won't mount.** The card must be formatted **FAT32**
-(the newer "exFAT" format that big cards ship with won't work). The `--format` option in
-Step 4 handles this for you — re-run it if you skipped it or formatted the card some other
-way. On Windows, the built-in formatter only does FAT32 up to 32GB; for a larger card,
-format it FAT32 with a free third-party tool first, then run the setup with `-Dest` instead
-of `-Format`.
+(the newer "exFAT" format that big cards ship with won't work). On Windows, the built-in
+formatter only does FAT32 up to 32GB; for a larger card, format it FAT32 with a free
+third-party tool first.
 
-**Windows: "running scripts is disabled on this system."** Windows blocks unsigned scripts
-by default. Allow them for your session with this, then re-run the command:
+**The wiki is empty, or says the card is absent.** The 'Pedia lives on the SD card, and a
+browser-flashed device starts without it. Slot a FAT32 card in and run **CFG → UPDATES →
+CHECK NOW** — the device downloads the site itself.
 
-```powershell
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-```
+**It went dark and won't come back.** Check whether it's in travel mode: that's a deliberate
+deep sleep you can only leave by **holding B and C together** for a second or two. Otherwise
+the ordinary idle sleep wakes on any button.
 
-**I just want to re-flash after a code change, not redo the whole card.** Use
-`./tools/build_and_flash.sh` (macOS/Linux) for everyday reflashing — the full `provision`
-script is really for first-time, blank-device setup. It regenerates the sprite/palette
-codegen and the web 'Pedia data before delegating the actual build+upload to the lighter
-`./tools/flash.sh` (read `build_and_flash.sh`'s own header comment for the full pipeline
-and why it's ordered that way); pass `./tools/flash.sh`'s own flags straight through, e.g.
-`./tools/build_and_flash.sh --wait-wake` or `--env waveshare_s3_154_bringup`.
+*Problems with the build-it-yourself route are in that section's own
+[troubleshooting](#getting-started), inside the collapsed block.*
 
 ---
 

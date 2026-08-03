@@ -233,9 +233,13 @@ after one would report `Corrupt` for what is really the same content.
   `v*` tag; see ORIENTATION's *Releasing*. `https://antvena.github.io/Malwarium/manifest.json` has
   served a real publish, verified by fetching it back and re-parsing the served bytes with the
   device's own parser. The same deploy now carries `pages/` and the three boot images, so the host
-  answers both halves. `UPDATE_MANIFEST_URL` is still compiled EMPTY on purpose: a stored override
-  is the only source, it is reachable from the device's own setup page, and the shipped device is
-  already using it. Nothing open here.
+  answers both halves. `UPDATE_MANIFEST_URL` is compiled IN under `BOARD_WAVESHARE_S3_154`
+  (config.h) and names that Pages address — confirmed by finding the string in a published
+  `mal-*.bin`. That is what makes "flash from the browser, then let the device fetch its own
+  'Pedia onto a blank card" a complete path for someone with no toolchain: nothing has to be
+  typed into the device but a Wi-Fi password. A stored override from the setup page still wins
+  when set, and the empty default applies only to a board block naming no address of its own.
+  Nothing open here.
 - **Credentials sit in NVS in PLAINTEXT** (stock ESP32 NVS is unencrypted). Stated plainly rather
   than implied-protected; NVS encryption is a separate feature and is not enabled. Revisit only if
   the threat model changes.
