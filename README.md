@@ -105,11 +105,11 @@ missing, grab it from <https://git-scm.com/downloads>.
 ### Step 2 — Download the project
 
 ```bash
-git clone https://gitlab.com/AntVena/malwarium.git
-cd malwarium
+git clone https://github.com/AntVena/Malwarium.git
+cd Malwarium
 ```
 
-Everything from here runs from inside that `malwarium` folder.
+Everything from here runs from inside that `Malwarium` folder.
 
 ### Step 3 — Get your microSD card ready
 

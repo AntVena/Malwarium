@@ -46,6 +46,7 @@ building it up organically.
 | NA | **Sub-area bosses that are themselves gauntlets** — `subAreaBoss` returns a length-1 `BossGauntlet`, so a sub-area boss is always exactly one fight; only the AREA boss is multi-round. Castle Rapidscare's THE EIGHT PWNS wants to be a minor gauntlet, and its JOKER VIRUS wants to *loop back* into another Pwns run after it falls. | `combat.cpp`'s `subAreaBoss`/`areaBoss`, plus the round plumbing in `game_explore.cpp` (`startBossRound`/`finishBossRound`). | L | Opus | The re-entrant loop is the novel part — the carried-Health round machinery is linear today, with no notion of a round that re-queues an earlier one. Needs a design pass on how a loop terminates and what it pays. |
 | NA | **Confirm on device that a save lands while audit capture is armed.** The write path no longer asks for the blob in one piece: `Game` owns the serialize buffer and `captureSave` reserves every collection to its exact count, so an ordinary save is judged against `kSaveHeapFloorBytes` (12KB) rather than the reservation. Built and green on the native + S3 gates; the hardware run that proves `held` stays at 0 through a whole capture session has not been done. | `game_persist.cpp`'s `persistSave` and the `kSaveHeapFloorBytes` / `kSaveGrowHeapFloorBytes` pair. | S | Sonnet | `HEAP_TRACE_ENABLED` (config.h) → 1, then CFG → RADIO → AUDIT → SCAN+CAP, 'Pedia AP on and off again. Success = `held=0` with `floor=12288` and no boot banner. Read the log, not the panel — a reset is fast enough to look like nothing happened. |
 | NA | **Capture arming costs ~70KB and the AP ~58KB**, against ~126KB free with the radio idle. The device works, and the save no longer needs a big contiguous block, but that was the only thing standing on this — anything else that grows will hit the same wall. Worth a pass at what the capture path actually needs. | `net_capture.h`'s `powerUp` (`esp_wifi_init` + promiscuous + the pcap SD buffers). | M | Opus | Measured on device, not estimated: `[ap] down free=126408` → `[cap] armed free=56188`. |
+| NA | **PSRAM is disabled and cannot be enabled remotely.** The board carries 8MB (`platformio.ini` leaves it off — "nothing needs it yet"), and it is the biggest available lever on the row above: Wi-Fi needs internal DRAM for DMA, the pcap and save buffers do not. **Blocked, deliberately** — enabling it changes the *bootloader*, which an OTA never writes, so it needs physical USB access to a device that has already shipped to someone far away. | `platformio.ini` (`-DBOARD_HAS_PSRAM`, `board_build.arduino.memory_type`). No configured pin uses GPIO 33-37, so an octal part looks unobstructed — unverified. | M | Opus | Same frozen-until-USB class as the partition table. The unblocker is a **WebSerial flasher on Pages** (ESP Web Tools + `esptool-js`), which *can* write bootloader and table: static hosting is enough, Chromium desktop only, and the untested unknown is whether the S3's native USB-CDC lets the browser auto-enter download mode. Confirm with `ESP.getPsramSize()` on the boot line if it is ever switched on. |
 
 ### 1b. Cooking — the open follow-ups
 
@@ -183,7 +184,7 @@ roster, and the wild half keeps its own roster-keyed masks).
 - **What "defender of that network" buys you.** The home network is recorded and shown but has no
   mechanical consequence beyond gating enlistment. Diff **M** / Opus.
 
-### 1j. Over-the-air updates — the flow is built, the publish host is not
+### 1j. Over-the-air updates — shipping; the failure paths are what's left
 
 The device-side path exists and is native-gated: the job-scoped STA association, a phone-driven
 setup portal, a strict manifest parser, the CFG **UPDATES** screen (connect → check → per-artifact
@@ -197,6 +198,12 @@ written down in `update_manifest.h`.
 Both halves have installed on hardware over the air, firmware and web bundle, with no USB involved.
 A firmware install now boots on trial and rolls itself back unless it reaches the main loop, paints
 a frame and stays up for `OTA_PROVE_MS`.
+
+Publishing is CI-driven off a `v*` tag (ORIENTATION's *Releasing*). The web bundle is written by
+`tools/make_web_tar.py` rather than `tar` so it is byte-reproducible: the manifest publishes a
+SHA-256 over it, and an archive whose bytes move with the build turns that digest check into a race
+against the next publish — a device that fetched the manifest before a rebuild and the artifact
+after one would report `Corrupt` for what is really the same content.
 
 **Open:**
 
@@ -212,11 +219,12 @@ a frame and stays up for `OTA_PROVE_MS`.
   last CONNECT failed should pop the captive portal onto `/setup` for a phone joining its AP. It
   compiles and the logic is one condition in `handleProbe`, but no phone has met it.
 
-- **🏛 Hosting / publishing is undecided**, but it no longer blocks testing: `make manifest
-  BASE=<laptop-url>` builds both artifacts plus the manifest into `dist/` and validates it with the
-  device's own parser, and `UPDATE_MANIFEST_URL` is overridable from the build system. What's
-  undecided is where a SHIPPED device looks: the compiled default is EMPTY, so a stock build reports
-  "no update source". Diff **M** / Opus (a publish/CI decision, not code).
+- **Hosting is settled and live** — GitHub Pages, deployed by `.github/workflows/publish.yml` on a
+  `v*` tag; see ORIENTATION's *Releasing*. `https://antvena.github.io/Malwarium/manifest.json` has
+  served a real publish, verified by fetching it back and re-parsing the served bytes with the
+  device's own parser. `UPDATE_MANIFEST_URL` is still compiled EMPTY on purpose: a stored override
+  is the only source, it is reachable from the device's own setup page, and the shipped device is
+  already using it. Nothing open here.
 - **Credentials sit in NVS in PLAINTEXT** (stock ESP32 NVS is unencrypted). Stated plainly rather
   than implied-protected; NVS encryption is a separate feature and is not enabled. Revisit only if
   the threat model changes.

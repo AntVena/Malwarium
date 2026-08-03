@@ -66,7 +66,8 @@ malwarium/
 ├── src/core/render/     ← framebuffer, sprites, upscaler + RENDER_PIPELINE.md
 ├── src/core/ui/         ← the shipped screens
 ├── src/platform/esp32/  ← drivers, radio arbiter, AP server + HARDWARE.md
-├── tools/               ← gen_assets.py, gen_pedia_data.py, pin_finder.ino, host helpers
+├── tools/               ← gen_assets.py, gen_pedia_data.py, make_web_tar.py, host helpers
+├── .github/workflows/   ← gates (every push) · publish (a v* tag → GitHub Pages)
 └── web/                 ← the SD-served 'Pedia bundle
 ```
 
@@ -251,6 +252,34 @@ Exploit as an extra row in the combat A+C picker. The **Red/Blue archetype layer
 Botmaster/Insider Threat/Ghost vs. Guardians: Orchestrator/Watchdog/Dispatcher) and the contest
 around a capture are the open piece — power there must live in the *contest*, never in the capture
 itself.
+
+---
+
+## Releasing
+
+The source is public on GitHub (`AntVena/Malwarium`) under **GPLv3** — a habitat you cannot open
+is not one you own, and the licence is where that is enforceable rather than merely meant.
+
+Two workflows in `.github/workflows/`. **gates** runs the normal cycle on every push and pull
+request: the native suite, then the S3 firmware build, because `src/platform/esp32` compiles
+nowhere else. **publish** fires on a `v*` tag and deploys to **GitHub Pages**, which is the
+publish host because a device needs exactly one thing — stable URLs that return bytes. No API, no
+rate limit, no cross-host redirect, and the manifest *is* the version pointer, so publishing is
+overwriting one file:
+
+```
+https://antvena.github.io/Malwarium/manifest.json
+```
+
+Cutting a release is `git tag vX.Y.Z && git push github vX.Y.Z`. **Bump both versions first** —
+`include/version.h` and `web/VERSION`. A device installs only what beats what it already runs, so
+an unbumped publish is one nobody receives, and bumping both means never having to work out which
+one moved. `make manifest` validates its own output with the device's parser before anything is
+served, so CI cannot publish a manifest the device would reject — which from the operator's side
+is indistinguishable from a dead network.
+
+Each deploy replaces the whole site, so only the current artifacts exist and older URLs 404. That
+costs nothing here: rollback is trial-boot to the inactive OTA slot, not a re-download.
 
 ---
 

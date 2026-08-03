@@ -80,29 +80,21 @@ pedia-sd: pedia
 
 # Build the `web` artifact an on-device update downloads, and print the manifest
 # row that describes it. The device unpacks this over /sdcard/web with no
-# decompressor, so the shape is fixed and this target is its reference producer:
+# decompressor, so the shape is fixed — tools/make_web_tar.py is its reference
+# producer, and that file's header states the format the reader requires.
 #
-#   * UNCOMPRESSED tar (src/core/net/tar_reader.h reads headers, nothing inflates).
-#   * The bundle's files at the archive's TOP LEVEL — no leading web/ or ./
-#     component, because the device supplies the destination root, not the
-#     archive. (The reader tolerates a ./ prefix; not emitting one is tidier.)
-#   * Same contents as pedia-sd, VERSION included, so an updated card and a
-#     hand-staged one are the same card.
+# The archive is written by a script rather than `tar` because it has to be
+# BYTE-REPRODUCIBLE: the manifest publishes a SHA-256 over it, so identical
+# content must give an identical hash whether it was built here or on a runner.
+# `tar` records mtimes and the building user's uid/gid, which makes every build
+# a different archive and turns the digest check into a race against the next
+# publish. The flags that would fix that differ between BSD and GNU tar, so the
+# portable answer is to write the headers directly.
 #
 # Usage: make pedia-tar [OUT=dist/web-0.1.0.tar]
 pedia-tar: pedia
 	@out="$(OUT)"; [ -n "$$out" ] || out="dist/web-$$(sed -n 's/^version=//p' web/VERSION).tar"; \
-	mkdir -p "$$(dirname "$$out")"; \
-	case "$$out" in /*) ;; *) out="$$(pwd)/$$out";; esac; \
-	stage=$$(mktemp -d); \
-	mkdir -p "$$stage/assets" "$$stage/data"; \
-	cp web/index.html web/style.css web/app.js web/VERSION "$$stage/"; \
-	cp -R web/assets/. "$$stage/assets/"; \
-	cp -R web/data/. "$$stage/data/"; \
-	find "$$stage" \( -name '._*' -o -name '.DS_Store' \) -delete 2>/dev/null || true; \
-	(cd "$$stage" && tar -cf "$$out" *); \
-	rm -rf "$$stage"; \
-	echo "built $$out"; \
+	python3 tools/make_web_tar.py web "$$out"; \
 	echo; \
 	echo "manifest row:"; \
 	printf '  {"id":"web","version":"%s","code":%s,\n' \
