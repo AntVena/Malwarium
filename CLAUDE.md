@@ -95,9 +95,17 @@ summarise something you're going to have to read in a few turns anyway — that'
 
 `/sync-docs` at the end of any session that changed what's built or blocked ·
 `/handoff` before pausing >1 hour · `/design-brief` to generate an art handoff ·
+`/release` to bump both versions, gate, tag and publish ·
 **"let's do a maintenance run"** to pick up the oldest item in `docs/MAINTENANCE.md` (self-review:
 docs cleanup, architecture review, design-consistency pass, stale-reference sweep, …).
 Commit verified work as logical units; messages capture prompt, motivation, and why.
+
+**Shipping is pull-based, so a release needs no permission.** A device checks, sees a higher
+code, and asks its operator; nothing is pushed at anyone. Green gates are the bar — tag it.
+The two exceptions, where a re-tag cannot undo the damage, are a **save-format change** (the
+trial-boot rollback can put the old firmware back under a save the new one rewrote) and a
+**partition-table or bootloader change** (an OTA writes neither, so it is a recall, not a
+release). Details: `/release`, and ORIENTATION's *Releasing*.
 
 **No doc for transient state.** A session brief, handoff or summary goes in the chat as a copy
 block — never a file. Anything durable becomes a row on `docs/MASTER_TODO.md`.

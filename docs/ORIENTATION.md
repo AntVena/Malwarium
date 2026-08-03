@@ -279,7 +279,17 @@ served, so CI cannot publish a manifest the device would reject — which from t
 is indistinguishable from a dead network.
 
 Each deploy replaces the whole site, so only the current artifacts exist and older URLs 404. That
-costs nothing here: rollback is trial-boot to the inactive OTA slot, not a re-download.
+costs nothing here: rollback is trial-boot to the inactive OTA slot, not a re-download. The web
+bundle is written by `tools/make_web_tar.py` rather than `tar` so its bytes depend on its contents
+and nothing else — a digest published over an archive that moves with the build is a race the
+device loses as `Corrupt`.
+
+**When to publish: whenever the gates are green.** Shipping is pull-based — a device checks, sees a
+higher code, and asks its operator — so a release interrupts nobody and needs no permission. Two
+changes are the exception, because no later tag undoes them: a **save-format change** (trial-boot
+rollback can put the previous firmware back underneath a save the new one already rewrote) and a
+**partition-table or bootloader change** (an OTA writes neither, so every device needs USB — that
+is a recall). Everything else ships.
 
 ---
 
