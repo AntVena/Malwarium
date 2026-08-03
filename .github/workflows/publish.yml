@@ -1,0 +1,77 @@
+# Publish the update artifacts a device downloads, and the manifest that lists
+# them, to GitHub Pages.
+#
+# Pages is the publish host because the device needs exactly one thing: stable
+# URLs that return bytes. It has no use for tags, an API or release metadata, and
+# every one of those is a way for a check to fail before it reaches a firmware
+# byte. The manifest IS the version pointer — publishing a new version means
+# overwriting one file, so the device asks nothing and simply reads.
+#
+# BASE must match the served origin exactly: the manifest embeds absolute URLs,
+# and the device fetches what it is told, not what was meant. It is also what
+# UPDATE_MANIFEST_URL (or a stored override) has to point at, with /manifest.json.
+#
+# Cutting a release is `git tag v0.1.9 && git push --tags`. Bump include/version.h
+# (firmware) and/or web/VERSION (bundle) FIRST — a device only installs an
+# artifact whose code beats what it already runs, so an unbumped publish is a
+# publish nobody receives.
+name: publish
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+# What deploy-pages needs: an OIDC token to prove the deployment came from this
+# workflow, and nothing more than read on the repo itself.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One publish at a time, and never cancel one midway — a half-deployed Pages site
+# is a manifest pointing at artifacts that may not be there yet.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Cache the PlatformIO toolchain
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.platformio
+            ~/.cache/pip
+          key: pio-${{ runner.os }}-${{ hashFiles('platformio.ini') }}
+      - name: Install PlatformIO
+        run: pip install --upgrade platformio
+      - name: Generate the sprite/palette codegen
+        run: python3 tools/gen_assets.py
+      - name: Build the artifacts and the manifest
+        # `make manifest` builds the firmware image and the web bundle, writes
+        # manifest.json over them, then validates it with the DEVICE's own parser
+        # (build/check_manifest). A manifest the device would reject looks exactly
+        # like a dead network from the operator's side, so the publish fails here
+        # instead of on her desk.
+        run: make manifest BASE=https://antvena.github.io/Malwarium
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

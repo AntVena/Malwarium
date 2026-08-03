@@ -1,0 +1,53 @@
+# The two gates the normal build cycle runs, on every push and pull request.
+# Native first because it is fast and catches most things; the S3 build follows
+# because device-tier code (src/platform/esp32) compiles nowhere else, so a
+# green native run says nothing about whether the firmware still links.
+name: gates
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  native:
+    name: native gates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate the sprite/palette codegen
+        # src/generated is not committed — it is derived from assets/, and the
+        # engine does not compile without it.
+        run: python3 tools/gen_assets.py
+      - name: Configure
+        run: cmake -S . -B build
+      - name: Build
+        run: cmake --build build
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+
+  device:
+    name: S3 firmware build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Cache the PlatformIO toolchain
+        # The espressif32 platform and its Xtensa toolchain are a few hundred MB
+        # and change only when platformio.ini does. Without this every run pays
+        # the download again.
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.platformio
+            ~/.cache/pip
+          key: pio-${{ runner.os }}-${{ hashFiles('platformio.ini') }}
+      - name: Install PlatformIO
+        run: pip install --upgrade platformio
+      - name: Generate the sprite/palette codegen
+        run: python3 tools/gen_assets.py
+      - name: Build
+        run: pio run -e waveshare_s3_154
