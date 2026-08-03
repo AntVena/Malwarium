@@ -1,0 +1,171 @@
+#include "core/render/font5x7.h"
+
+#include <cctype>
+#include <cstring>
+
+#include "core/render/framebuffer.h"
+
+namespace mal {
+
+namespace {
+
+// Each glyph is 7 rows; low 5 bits are the columns, bit4 = leftmost pixel.
+const uint8_t kLetters[26][7] = {
+    {0x0E,0x11,0x11,0x1F,0x11,0x11,0x11}, // A
+    {0x1E,0x11,0x11,0x1E,0x11,0x11,0x1E}, // B
+    {0x0E,0x11,0x10,0x10,0x10,0x11,0x0E}, // C
+    {0x1E,0x11,0x11,0x11,0x11,0x11,0x1E}, // D
+    {0x1F,0x10,0x10,0x1E,0x10,0x10,0x1F}, // E
+    {0x1F,0x10,0x10,0x1E,0x10,0x10,0x10}, // F
+    {0x0E,0x11,0x10,0x17,0x11,0x11,0x0E}, // G
+    {0x11,0x11,0x11,0x1F,0x11,0x11,0x11}, // H
+    {0x0E,0x04,0x04,0x04,0x04,0x04,0x0E}, // I
+    {0x07,0x02,0x02,0x02,0x02,0x12,0x0C}, // J
+    {0x11,0x12,0x14,0x18,0x14,0x12,0x11}, // K
+    {0x10,0x10,0x10,0x10,0x10,0x10,0x1F}, // L
+    {0x11,0x1B,0x15,0x15,0x11,0x11,0x11}, // M
+    {0x11,0x11,0x19,0x15,0x13,0x11,0x11}, // N
+    {0x0E,0x11,0x11,0x11,0x11,0x11,0x0E}, // O
+    {0x1E,0x11,0x11,0x1E,0x10,0x10,0x10}, // P
+    {0x0E,0x11,0x11,0x11,0x15,0x12,0x0D}, // Q
+    {0x1E,0x11,0x11,0x1E,0x14,0x12,0x11}, // R
+    {0x0F,0x10,0x10,0x0E,0x01,0x01,0x1E}, // S
+    {0x1F,0x04,0x04,0x04,0x04,0x04,0x04}, // T
+    {0x11,0x11,0x11,0x11,0x11,0x11,0x0E}, // U
+    {0x11,0x11,0x11,0x11,0x11,0x0A,0x04}, // V
+    {0x11,0x11,0x11,0x15,0x15,0x1B,0x11}, // W
+    {0x11,0x11,0x0A,0x04,0x0A,0x11,0x11}, // X
+    {0x11,0x11,0x0A,0x04,0x04,0x04,0x04}, // Y
+    {0x1F,0x01,0x02,0x04,0x08,0x10,0x1F}, // Z
+};
+
+const uint8_t kDigits[10][7] = {
+    {0x0E,0x11,0x13,0x15,0x19,0x11,0x0E}, // 0
+    {0x04,0x0C,0x04,0x04,0x04,0x04,0x0E}, // 1
+    {0x0E,0x11,0x01,0x06,0x08,0x10,0x1F}, // 2
+    {0x1F,0x02,0x04,0x02,0x01,0x11,0x0E}, // 3
+    {0x02,0x06,0x0A,0x12,0x1F,0x02,0x02}, // 4
+    {0x1F,0x10,0x1E,0x01,0x01,0x11,0x0E}, // 5
+    {0x06,0x08,0x10,0x1E,0x11,0x11,0x0E}, // 6
+    {0x1F,0x01,0x02,0x04,0x08,0x08,0x08}, // 7
+    {0x0E,0x11,0x11,0x0E,0x11,0x11,0x0E}, // 8
+    {0x0E,0x11,0x11,0x0F,0x01,0x02,0x0C}, // 9
+};
+
+// Returns a 7-row glyph pointer for `c`, or nullptr for blank/space.
+const uint8_t* glyph(char c, uint8_t scratch[7]) {
+    c = static_cast<char>(std::toupper(static_cast<unsigned char>(c)));
+    if (c >= 'A' && c <= 'Z') return kLetters[c - 'A'];
+    if (c >= '0' && c <= '9') return kDigits[c - '0'];
+    auto fill = [&](uint8_t a, uint8_t b, uint8_t d, uint8_t e,
+                    uint8_t f, uint8_t g, uint8_t h) {
+        scratch[0]=a;scratch[1]=b;scratch[2]=d;scratch[3]=e;
+        scratch[4]=f;scratch[5]=g;scratch[6]=h; return scratch;
+    };
+    switch (c) {
+        case ' ': return nullptr;
+        case '-': return fill(0,0,0,0x1F,0,0,0);
+        case '.': return fill(0,0,0,0,0,0x04,0x04);
+        case '/': return fill(0x01,0x02,0x02,0x04,0x08,0x08,0x10);
+        case ':': return fill(0,0x04,0x04,0,0x04,0x04,0);
+        case '!': return fill(0x04,0x04,0x04,0x04,0x04,0,0x04);
+        case '%': return fill(0x19,0x1A,0x02,0x04,0x08,0x0B,0x13);
+        case '|': return fill(0x04,0x04,0x04,0x04,0x04,0x04,0x04);
+        case '+': return fill(0,0x04,0x04,0x1F,0x04,0x04,0);
+        case '#': return fill(0x0A,0x1F,0x0A,0x0A,0x1F,0x0A,0);
+        // Sentence punctuation — content descriptions (core/content/content_*.cpp)
+        // are prose, so a missing comma/apostrophe/bracket reads as a hole in the
+        // word rather than as nothing at all.
+        case ',': return fill(0,0,0,0,0x04,0x04,0x08);
+        case '\'': return fill(0x04,0x04,0,0,0,0,0);
+        case '(': return fill(0x02,0x04,0x08,0x08,0x08,0x04,0x02);
+        case ')': return fill(0x08,0x04,0x02,0x02,0x02,0x04,0x08);
+        // middle dot for the care-pip gate / inline separators
+        case '`': return fill(0,0,0x04,0x04,0,0,0);
+        // '>' action marker (EXPL "> FIGHT BOSS" / "> AREA BOSS") — a right
+        // chevron; '?' for locked "??????" placeholders.
+        case '>': return fill(0x10,0x08,0x04,0x02,0x04,0x08,0x10);
+        case '<': return fill(0x01,0x02,0x04,0x08,0x04,0x02,0x01);
+        case '?': return fill(0x0C,0x12,0x02,0x04,0x04,0,0x04);
+        default: return nullptr;
+    }
+}
+
+} // namespace
+
+int drawText(Framebuffer& fb, int x, int y, const char* s, Rgb565 color,
+             int scale) {
+    uint8_t scratch[7];
+    for (const char* p = s; *p; ++p) {
+        const uint8_t* g = glyph(*p, scratch);
+        if (g) {
+            for (int row = 0; row < kFontH; ++row)
+                for (int col = 0; col < kFontW; ++col)
+                    if (g[row] & (1 << (4 - col)))
+                        fb.fillRect(x + col * scale, y + row * scale, scale, scale,
+                                    color);
+        }
+        x += kFontAdvance * scale;
+    }
+    return x;
+}
+
+int textWidth(const char* s, int scale) {
+    return static_cast<int>(std::strlen(s)) * kFontAdvance * scale;
+}
+
+// The one word-break rule, shared by drawing and counting so the two can never
+// disagree about where a line ends. Calls back per word with the line it landed on
+// and the x it starts at; `fb == nullptr` measures without drawing.
+namespace {
+template <typename OnWord>
+int wrapWalk(const char* s, int maxW, OnWord onWord) {
+    char word[32];
+    int lineW = 0, line = 0, cx = 0;
+    for (const char* p = s; *p;) {
+        int n = 0;
+        while (p[n] && p[n] != ' ' && n < 31) { word[n] = p[n]; ++n; }
+        word[n] = '\0';
+        const int ww = textWidth(word);
+        if (lineW > 0 && lineW + kFontAdvance + ww > maxW) {
+            ++line;
+            lineW = 0;
+            cx = 0;
+        }
+        const bool trailingSpace = p[n] == ' ';
+        if (!onWord(line, cx, word, trailingSpace)) return line + 1;
+        lineW += ww;
+        cx += ww;
+        if (trailingSpace) {
+            lineW += kFontAdvance;
+            cx += kFontAdvance;
+            ++n;
+        }
+        p += n;
+    }
+    return line + 1;
+}
+}  // namespace
+
+int drawTextWrapped(Framebuffer& fb, int x, int y, int maxW, const char* s,
+                    Rgb565 color, int lineH, int maxLines, int firstLine) {
+    int drawn = 0;
+    wrapWalk(s, maxW, [&](int line, int cx, const char* word, bool space) {
+        const int rel = line - firstLine;
+        if (rel < 0) return true;              // above the scroll window
+        if (rel >= maxLines) return false;     // past the room we were given
+        const int wy = y + rel * lineH;
+        int px = drawText(fb, x + cx, wy, word, color);
+        if (space) drawText(fb, px, wy, " ", color);
+        if (rel + 1 > drawn) drawn = rel + 1;
+        return true;
+    });
+    return y + (drawn > 0 ? drawn : 1) * lineH;
+}
+
+int textWrapLines(const char* s, int maxW) {
+    if (!s || !s[0]) return 0;
+    return wrapWalk(s, maxW, [](int, int, const char*, bool) { return true; });
+}
+
+} // namespace mal

@@ -1,0 +1,212 @@
+// expl_screen.h — EXPL submenu + the wild-encounter intro / event screens it
+// launches. The list is the NESTED area/sub-area ladder: a linear
+// ladder of AREAS (Citrus Circuit → The Pirate Bayou), each holding 5 numbered
+// SUB-AREAS. Area gating is LINEAR complete-to-advance: area N
+// unlocks once area N-1's 5-stage gauntlet is cleared (`sectorCleared[]`); area 0 is
+// always open. Within an open area every sub-area is reachable — you arm one (→
+// explore-mode on the idle habitat) and clear it via a 10-win streak → its
+// boss; clearing all 5 unlocks the AREA boss. Hacker Rank gates nothing (reward-only,
+// ). Selecting a row hands off to explore-mode or the shared combat core.
+#pragma once
+
+#include "core/content/areas/area_defs.h"
+
+namespace mal {
+
+class Framebuffer;
+struct SpriteData;
+
+// Aliases of the canonical area-ladder constants (area_defs.h) — kAreaCount there
+// is derived from the area-folder list itself, so this is the only place the
+// ladder's size is named; adding an area (see that header) grows both without a
+// second count to keep in sync. kExplSubAreas is the per-area sub-area count (5,
+// the named stretches now the unit of progress rather than flavour).
+constexpr int kExplSectors = kAreaCount;
+constexpr int kExplSubAreas = kSubAreasPerArea;
+
+// Nested EXPL list --------------------------------------------
+// The list is a fixed sequence of rows: for each area, one AREA header row followed
+// by its kExplSubAreas numbered SUB-AREA rows. Row `row` decodes to an (area, sub)
+// pair via the helpers below (sub == -1 → the area header / area-boss row). The
+// count is `explRowCount()`. State/selectability is derived from three durable flag
+// blocks the caller owns:
+//   areaCleared      — [kExplSectors]                    (area's 5-stage gauntlet beaten)
+//   subCleared       — [kExplSectors * kExplSubAreas]    (sub-area's boss beaten)
+//   subBossUnlocked  — [kExplSectors * kExplSubAreas]    (10-win streak unlocked its boss)
+// Any block may be null (treated as all-false). Row-major index = area*kExplSubAreas+sub.
+constexpr int kExplRowsPerArea = 1 + kExplSubAreas;      // header + 5 sub rows
+// a virtual "area" index for the DEEPWEB DIVE — always one past the real
+// ladder, so it stays the terminal zone even if kExplSectors grows. It is NOT one
+// of the AreaDef rows (area_defs.h); it's a single special list row (no
+// sub-areas), armed like explore.
+constexpr int kDeepWebSector = kExplSectors;
+// The list = the DeepWeb Dive row FIRST (row 0), then the real area/sub rows. DeepWeb
+// leads because it's the most-rewarding farming zone once unlocked, so entering EXPL
+// parks the cursor on it (firstSelectableExplRow) — the fewest presses to the best
+// grind. While locked it's an inert "??????" teaser at the top.
+inline int explRowCount() { return 1 + kExplSectors * kExplRowsPerArea; }
+inline bool explRowIsDeepWeb(int row) { return row == 0; }
+// Area/sub decode is offset by the leading DeepWeb row. Only meaningful for row >= 1
+// (callers gate on explRowIsDeepWeb first); row 0 returns a harmless sentinel.
+inline int explRowArea(int row) { return (row - 1) / kExplRowsPerArea; }
+// -1 for a header row, else the sub-area index (0..kExplSubAreas-1).
+inline int explRowSub(int row) { return ((row - 1) % kExplRowsPerArea) - 1; }
+
+// The rendered/navigable state of a row. The WORD carries the meaning
+// (dual-coded, grayscale-safe); colour is only emphasis. Selectable states are the
+// ones A-cycle lands on and B acts upon (explRowSelectable).
+enum class ExplRowState {
+    AreaLocked,     // area's predecessor not cleared → "??????" + LOCKED
+    AreaProgress,   // area open, boss not yet reachable → "n/5" cleared-sub count
+    AreaBossReady,  // all 5 sub-areas cleared, area not → "> AREA BOSS" (selectable)
+    AreaCleared,    // area's gauntlet beaten → CLEARED
+    SubLocked,      // its AREA is locked → "??????" + LOCKED (open areas' subs never lock)
+    SubOpen,        // armable, not yet won → OPEN (selectable → arm explore)
+    SubExploring,   // the armed/running sub, boss not yet unlocked → EXPLORING (selectable)
+    SubBossReady,   // 10-win streak unlocked its boss → "> FIGHT BOSS" (selectable;
+                    // takes priority over EXPLORING so the action stays reachable)
+    SubCleared,     // its boss beaten → CLEARED, but still RE-FARMABLE:
+                    // selectable to re-arm explore for full XP+Bits + diminishing loot,
+                    // so a done area stays a training ground (esp. for a fresh pet).
+    DeepWebLocked,  // DeepWeb Dive, not all areas cleared → "??????" + LOCKED
+    DeepWebOpen,    // every area cleared → "> DIVE" (selectable → arm the endless dive)
+    DeepWebDiving,  // the endless dive is armed → DIVING (selectable → re-arm)
+};
+ExplRowState explRowState(int row, const bool* areaCleared, const bool* subCleared,
+                          const bool* subBossUnlocked, int exploringSector,
+                          int exploringSub);
+// A-cycle lands / B acts only on selectable rows (skips headers-that-aren't-boss and
+// locked rows). Pure function of the state.
+bool explRowSelectable(ExplRowState s);
+
+// L2 nested area/sub-area list. `cursor` is the focused row (0..explRowCount
+// ()-1). See the flag-block contract above. `exploringSector`/`exploringSub` mark the
+// armed/running sub-area (or -1) → the EXPLORING tag. `navArea` is the two-level nav
+// level: -1 = TOP level (B on an area header ENTERs it), >= 0 = inside
+// that area (B acts on a sub / boss, C pops back out) — only drives the footer hint.
+// `beat` drives one thing: a focused ZONE title (area header / DeepWeb row) pulses,
+// so a heading-shaped row still reads as the armed selection.
+void drawExplList(Framebuffer& fb, int cursor, const bool* areaCleared,
+                  const bool* subCleared, const bool* subBossUnlocked,
+                  int exploringSector, int exploringSub, int navArea, int beat = 0);
+
+// Explore-mode idle badge: a thin status line under the top track, drawn
+// over the idle habitat while explore-mode is active — a pulsing cursor +
+// "EXPL <label>" (the armed sub-area) and, right-anchored, "WINS n/N" or "BOSS
+// READY". Dual-coded (glyph + text + fraction), grayscale-safe.
+// The badge's right-field state, dual-coded (a distinct WORD per mode so it reads in
+// grayscale): WINS n/N (progress to the sub-boss) · BOSS READY · FARM n/N | FARM LOW
+// (a re-armed cleared sub — Bandwidth remaining) · DEPTH n (the DeepWeb Dive
+// win count).
+enum class ExploreBadgeMode { Wins, BossReady, Farming, DeepDive };
+// `count`/`countMax` feed the numeric modes: Wins → "WINS count/countMax"; DeepDive →
+// "DEPTH count"; Farming → count is Bandwidth left / countMax the pool.
+// BossReady ignores them.
+void drawExploreBadge(Framebuffer& fb, const char* label, int count, int countMax,
+                      ExploreBadgeMode mode);
+
+// Explore-control overlay: the A+C chord's 3-action strip over the
+// habitat — A Network Ping · B Warp (dimmed when no key is held) · C Stop explore.
+void drawExploreControl(Framebuffer& fb, bool hasWarpKey);
+
+// Sector accessors ("difficulty-scaled by sector tier") — sector identity
+// is data owned by this file; Game reads it through these rather than duplicating
+// the roster. `explSectorOpen` implements the linear gate: sector 0 is always open,
+// sector N>0 opens once `sectorCleared[N-1]` is set (a null array = only sector 0).
+// `explSubAreaName` returns sector `sector`'s sub-area `idx` (0..kExplSubAreas-1).
+bool explSectorOpen(int idx, const bool* sectorCleared);
+int explSectorTier(int idx);
+const char* explSectorName(int idx);
+const char* explSubAreaName(int sector, int idx);
+
+// Zone-completion Title: clearing sector `idx`'s boss/gauntlet grants
+// this equippable, player-level Title (Citrus Circuit → "CERTIFIED DOWNLOADER",
+// The Pirate Bayou → "LEECH LORD"). One Title per sector — the unlock/equip state
+// lives in Game (persisted); the name string is sector-owned data. Out-of-range
+// returns "".
+const char* sectorTitle(int idx);
+
+// Encounter intro: a wild malbeast + the Fight/Flee/Sinkhole choice.
+// `sinkholeAvailable` shows the Sinkhole row only when a Sinkhole Trap is held.
+// `level` is the depth level — always set for a wild encounter (this
+// screen never fires for Sim dummies/bosses), so it's shown as a plain number.
+void drawEncounterIntro(Framebuffer& fb, const char* enemyName, int diffPips,
+                        int level, const SpriteData* enemySprite,
+                        bool sinkholeAvailable, int choice, int beat);
+
+// Wi-Fi network event: a self-contained typed event that resolves in
+// place — the "NEW WI-FI NETWORK" banner + the rolled sub-outcome's flavor line +
+// a B-continue hint band. `discoveryLine` (may be empty) is the independent
+// real-network-discovery beat (Game::resolveNetworkDiscovery) drawn above the
+// banner — a second, unrelated flavor line on the same screen. No new art.
+void drawWifiEvent(Framebuffer& fb, const char* sectorName,
+                   const char* outcomeLine, const char* discoveryLine);
+
+// Storefront name accessors: each sector has an item shop AND a mod shop.
+// `shopName` is the item storefront's banner ("BYTE TO EAT" / "PIER-TO-PEER" /
+// "MOOR-TO-MOOR"); `modShopName` is the mod storefront's ("CHIP SHOP" /
+// "PLUNDER PORT" / "MOOR TO MODS"). Both fall back to sector 0's storefront for an
+// out-of-range sector. A storefront's actual LISTINGS (arbitrary-length, priced in
+// Bits + item costs) are resolved through Game's shopListing* accessors, not here —
+// those need the ContentRegistry to turn an id into a display name.
+const char* shopName(int sector);
+const char* modShopName(int sector);
+
+// One rendered shop row for drawShop — resolved display strings/counts so the
+// render layer stays registry-agnostic (Game resolves ids -> names via
+// shopListingName/shopListingDescription/etc, game_render.cpp's drawShopScreen).
+struct ShopRowView {
+    const char* name = "";
+    int bitsPrice = 0;
+    int stock = 0;                                    // remaining THIS visit
+    int costCount = 0;                                 // 0..kMaxShopCostItems
+    const char* costName[kMaxShopCostItems] = {};
+    int costQty[kMaxShopCostItems] = {};
+};
+
+// The tightest description budget on any screen: a storefront squeezes the selected
+// row's own prose between the last listing and the buy reason. This is the WORST case
+// — a storefront stocking the full kShopMaxRows; a one- or two-listing shop's adaptive
+// list leaves several times as much. Public so a content row stocked by an area shop
+// (content/areas/<id>/area.cpp) can be held to the worst case — anything longer is
+// silently truncated when a shop happens to be full.
+constexpr int kShopDescLines = 3;
+
+// Shop event: a storefront explore event (item shop OR mod shop — same chrome) —
+// the storefront banner, an arbitrary-length list of `rows` (windowed + scrollable
+// past kShopVisibleRows, mirroring the Rig Shop's list, game_rig_shop.h), the
+// player's wallet, the selected row's description, and a hint band. Dual-coded
+// (counts + text) — grayscale-safe. `statusLine` states why a buy is (un)available
+// for the SELECTED (`cursor`) row — A NEXT / B BUY / C LEAVE. No new art; reuses the
+// event chrome.
+void drawShop(Framebuffer& fb, const char* storeName, int walletBits,
+              const ShopRowView* rows, int rowCount, int cursor,
+              const char* selectedDescription, const char* statusLine);
+
+// Warp-key picker: the walk's B overlay listing the held warp keys
+// (Access Token / Safe-Mode Key), one row each, cursor-highlighted, with an
+// A-next / B-use / C-back hint band. Using one jumps to its target event. Dual-coded
+// (the row list + spelled-out hint) — grayscale-safe. No new art; reuses list chrome.
+void drawWarpPicker(Framebuffer& fb, const char* const* keyNames, int keyCount,
+                    int cursor);
+
+// Post-encounter status readout: after a WILD (non-boss,
+// non-Sim) fight resolves win or loss, a brief ~2s overlay shows the persistent
+// BANDWIDTH spend + FRAGMENTATION change it just caused, before returning to the
+// habitat — so the player knows whether to keep exploring or go defrag. The
+// fragmentation half is tri-state, dual-coded by WORD (never colour alone):
+//   None     — frag wasn't in play this encounter (row omitted entirely).
+// Shielded — 's Bandwidth shield covered the tax ("FRAG SHIELDED").
+//   Rose     — the tax landed ("FRAG +n", `fragDelta` is that positive n).
+enum class PostEncounterFragState { None, Shielded, Rose };
+// `bwBefore`/`bwAfter` are this fight's Bandwidth before/after (bwMax = the cap);
+// bwBefore==0 reads as "BANDWIDTH x/max  LOW" (nothing was left to spend) instead
+// of a numeric delta, since 0 -> 0 would otherwise look like "nothing happened".
+// `levelLine` (nullptr = no level-up this fight) names the stat gained from a
+// level-up (e.g. "LVL 5  POWER +1") — the caller pre-formats it (it owns the stat
+// labels); a gain is drawn in the CALM zone, dual-coded by the WORD + signed number.
+void drawPostEncounter(Framebuffer& fb, int bwBefore, int bwAfter, int bwMax,
+                       PostEncounterFragState fragState, int fragDelta,
+                       const char* levelLine = nullptr);
+
+} // namespace mal

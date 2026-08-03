@@ -1,0 +1,44 @@
+# partitions_malwarium.csv — 16MB layout with two OTA slots and a dedicated
+# NVS partition for the game save.
+#
+# nvs/otadata/app0 sit at their STOCK default offsets on purpose: the
+# Arduino-ESP32 build script hardcodes boot_app0.bin's target to 0xe000 and
+# firmware.bin's default target to 0x10000
+# (framework-arduinoespressif32/tools/platformio-build.py) regardless of what
+# this CSV says, so moving them silently desyncs the upload from the partition
+# table it just wrote — the app then boot-loops (the bootloader looks for app0
+# at the table's new offset and finds nothing valid there). Leaving those three
+# alone keeps every upload path correct, including the OTA flow.
+#
+# THE PARTITION TABLE IS THE ONE THING AN OTA CANNOT UPDATE: the bootloader
+# reads it, and an OTA only ever writes into a slot this table already defines.
+# Changing anything below requires physical USB access to the board, so a
+# device in someone else's hands is frozen on whatever shipped with it. Hence
+# the 512KB left unallocated at the end — room to add a future data partition
+# without having to resize the app slots (which would move app1 and orphan the
+# save). Size the slots generously here rather than reclaiming space later.
+#
+# app0/app1 are 0x790000 (7.5MiB) each. The bulk of an image is the compiled-in
+# sprite atlas (src/generated/assets.cpp), so the slot size is what decides how
+# long art can keep landing in flash before it has to move to SD.
+#
+# `malsave` is a second, independent `nvs`-subtype partition — Preferences
+# opens a NAMED partition via begin(name, readOnly, partition_label)
+# (config.h's NVS_SAVE_PARTITION; src/platform/esp32/save_store_esp32.h) — so
+# the save blob lives here instead of sharing the stock 20KB `nvs` partition
+# (which stays default-sized, serving Wi-Fi/BT calibration data as usual).
+# 256KB is roughly a 40x margin over the current ~5.7KB save blob. No `spiffs`:
+# nothing in this codebase uses it (assets are SD_MMC-hosted).
+#
+# NVS content is page-based and position-independent, so the save survives a
+# move between offsets as a raw partition copy:
+#   esptool.py read_flash  <old_off> 0x40000 malsave.bin   # before reflashing
+#   esptool.py write_flash <new_off> malsave.bin           # after
+#
+# Name,   Type, SubType, Offset,   Size, Flags
+nvs,      data, nvs,     0x9000,   0x5000,
+otadata,  data, ota,     0xe000,   0x2000,
+app0,     app,  ota_0,   0x10000,  0x790000,
+app1,     app,  ota_1,   0x7a0000, 0x790000,
+malsave,  data, nvs,     0xf30000, 0x40000,
+coredump, data, coredump,0xf70000, 0x10000,

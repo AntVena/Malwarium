@@ -1,0 +1,96 @@
+{
+  "_meta": {
+    "name": "PAL_CORE",
+    "spec": "ui_design/05_visual_language.md \u00a71.2",
+    "delivered": "D2",
+    "model": "RGB565 / ST7789 \u2014 role tokens, not literals. UI chrome references a token; an Area-6 hue change reskins from here.",
+    "rules": [
+      "accent is distinct from every status hue (focus != danger).",
+      "calm<warn<hot are luminance-ordered (monotonic) so they survive the grayscale-screenshot test; always paired with a non-colour channel (dual-coded).",
+      "ink-on-paper is the highest-contrast pair; warn/hot also clear contrast on paper since they tint text.",
+      "ink-dim is engine-derived from ink (~50% over paper), not a separate authored hue \u2014 listed for reference."
+    ]
+  },
+  "structural": {
+    "paper": {
+      "hex": "#14171c",
+      "use": "base background / the off field"
+    },
+    "ink": {
+      "hex": "#e8edf2",
+      "use": "text, lines, default-lit gauge cells"
+    },
+    "ink-dim": {
+      "hex": "#717a86",
+      "use": "unfocused icons (50%), future-stage nodes, gated rows \u2014 engine-derived from ink"
+    },
+    "track": {
+      "hex": "#2a2f38",
+      "use": "carousel track strips (UI_TRACK_BG) \u2014 solid (S3)"
+    },
+    "accent": {
+      "hex": "#1fc3e6",
+      "use": "focus/selection: UI_CURSOR_BOX, UI_ROW_SEL, UI_CURSOR_ROW \u2014 one hero hue, never a status meaning"
+    }
+  },
+  "semantic": {
+    "calm": {
+      "hex": "#3ad17e",
+      "use": "gauge OK, care pips 0\u20132, healthy",
+      "lum": 0.5
+    },
+    "warn": {
+      "hex": "#eaa32c",
+      "use": "gauge Caution",
+      "lum": 0.43
+    },
+    "hot": {
+      "hex": "#e23b2f",
+      "use": "gauge Critical, care pips dying, Lockout band, Critical System Failure",
+      "lum": 0.19
+    }
+  },
+  "fragmentation": {
+    "_note": "Fragmentation gets its OWN cross-menu identity \u2014 NOT a status hue (calm/warn/hot). A garbled purple\u2192pink spectrum reads as corruption/glitch and is instantly recognisable wherever Frag appears (STAT gauge, MAINT, the CORRUPTION FX association). The FRG gauge tints each cell along this ramp by position (low=purple, high=pink \u2014 pink reads as 'more', matching the rarity ramp where pink is the higher tier); dual-coded by fill level + glitch texture.",
+    "frag-lo": {
+      "hex": "#7a3df0",
+      "use": "low fragmentation end of the ramp \u2014 purple/violet"
+    },
+    "frag-hi": {
+      "hex": "#ff5cb8",
+      "use": "high fragmentation end of the ramp \u2014 pink"
+    }
+  },
+  "rarity": {
+    "rarity-common": {
+      "hex": "#6c7682",
+      "use": "UI_RARITY_TAG tier 1 \u2014 dull slate"
+    },
+    "rarity-uncommon": {
+      "hex": "#4f93c4",
+      "use": "UI_RARITY_TAG tier 2"
+    },
+    "rarity-rare": {
+      "hex": "#6f6cf0",
+      "use": "UI_RARITY_TAG tier 3"
+    },
+    "rarity-epic": {
+      "hex": "#f06bc4",
+      "use": "UI_RARITY_TAG tier 4 \u2014 brightest, pink/magenta; clearly apart from rare indigo; ramp readable by position"
+    }
+  },
+  "team": {
+    "_note": "Area 8 / D20. Distinct from status (calm/warn/hot) and accent. Always dual-coded with a glyph (sword/shield), never colour alone.",
+    "team-red": {
+      "hex": "#ff6a4d",
+      "use": "Red \u00b7 Operators (offense) \u2014 warm coral, distinct from hot red"
+    },
+    "team-blue": {
+      "hex": "#4f7cf0",
+      "use": "Blue \u00b7 Guardians (defense) \u2014 royal blue, distinct from accent cyan"
+    }
+  },
+  "themes": {
+    "_note": "Alternate colour sets. A theme names ONLY the tokens it changes; everything else falls through to the role groups above, so a token added there can't go silently missing from a variant. Selected at runtime by palThemeIndex() (core/render/palette.h) \u2014 every colour on the device is fetched through palColor(), so a theme restyles the whole interface without any drawing call knowing. Shape of an entry, e.g. a deuteranopia-friendly set that moves the red/green semantic pair onto a blue/orange axis: \"deuteranopia\": { \"calm\": \"#...\", \"hot\": \"#...\", \"team-red\": \"#...\" }. Authoring the hues is a design pass, not a code change."
+  }
+}

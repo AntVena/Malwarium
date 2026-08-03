@@ -1,0 +1,18 @@
+# Which web 'Pedia bundle this is. `code` is the packed monotonic integer an
+# update check compares; `version` is the string it displays. Bump both when
+# publishing a bundle, the same way include/version.h stamps the firmware — the
+# two version independently, which is why the manifest lists them as separate
+# artifacts.
+#
+# `code` packs the version the same way the firmware's does: MAJOR * 100000 +
+# MINOR * 1000 + PATCH, so MINOR stays in 0..99 and PATCH in 0..999. PATCH is the
+# wide field because every publish to a test device needs a number of its own —
+# a device only installs an artifact whose code beats what it already has.
+#
+# Nobody edits these by hand day to day: `tools/serve_updates.sh --bump web`
+# rewrites both from the part you name.
+#
+# `make pedia-sd` stages this file alongside the bundle; an on-device update
+# rewrites it (src/platform/esp32/web_bundle.h). Parser: src/core/net/version_marker.h.
+code=1010
+version=0.1.10

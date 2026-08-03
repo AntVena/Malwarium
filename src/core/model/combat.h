@@ -1,0 +1,475 @@
+// combat.h — the shared autonomous combat engine.
+//
+// Battles run themselves: on its turn each combatant ROLLS one of its moves off
+// its attack/defend lean (the lean IS the slot mix) and never repeats the
+// same move twice in a row. The human's agency is the META layer — the
+// loadout, the evolution-unlocked slots, the MODS passives, and ONE Exploit
+// override per battle (A+C) that commands the next move and may break the
+// no-consecutive rule. Health is transient (resets each fight, never
+// persisted; max scales with Stage). Resolution is deterministic from a
+// seed so tests + replays are reproducible.
+//
+// The engine is shared: Sim-Battle (TRAIN, safe stakes) drives it now; EXPL
+// wild encounters (live stakes) reuse it later — the only difference is the
+// `stakes` flag (whether a loss touches Fragmentation).
+#pragma once
+
+#include <cstdint>
+#include <vector>
+
+#include "core/content/content_crews.h"     // CrewExploitKind — the crew Exploit vocabulary
+#include "core/content/content_passives.h"  // kTrojanTrapCap sizes trojanTraps below;
+                                             // kRansomHoldTurns sizes the ransom countdown
+#include "core/content/defs.h"
+#include "core/model/mod_state.h"           // ModStateSet — the equipped mods' per-fight state
+
+namespace mal {
+
+class ContentRegistry;
+class Loadout;        // MODS — combat passives
+class MoveLoadout;    // equipped moves
+
+// The per-fight state of an ARMED crew Exploit — one block on the Combatant instead of
+// a fresh field per ability, so the crew roster (content_crews.h) can grow without
+// widening Combatant. Only one Exploit can be armed at a time (you belong to one crew),
+// and most abilities meter out as either a charge count or a turn count, so those two
+// counters cover the vocabulary; re-arming the same kind stacks onto them. Kept apart
+// from the mod passives' ModStateSet (mod_state.h) because it is keyed by a different
+// content vocabulary. Transient — wiped with the Combatant each fight.
+struct CrewExploitState {
+    CrewExploitKind kind = CrewExploitKind::None;
+    int charges = 0;    // charge-metered kinds (NegateNextHits)
+    int turns = 0;      // duration-metered kinds
+    // True while `k` is the armed kind AND it still has a charge to spend.
+    bool armed(CrewExploitKind k) const { return kind == k && charges > 0; }
+};
+
+// A combat participant. moves[0] is always the innate DEFAULT (so a pet is never
+// actionless); moves[1..] are the unlocked equipped slot moves. Mod
+// passives (Firewall / Clock-Speed / RAID Mirror) ride on the player side.
+struct Combatant {
+    const char* name = "";
+    const char* spriteName = "";  // SPR_PET_* idle frame reused for the combatant
+    int diffPips = 0;            // UI_DIFFICULTY_PIPS (enemy); 0 = player row
+    int level = 0;                // depth level, carried from CombatEnemy
+                                   // (0 unless hasLevel — wild encounters only)
+    bool hasLevel = false;        // false = unranked (Sim dummy / boss) — combat
+                                   // screen shows "???" instead of a number
+    int maxHealth = 0;
+    int health = 0;
+    // Initiative (Clock-Speed Boost raises it). FLOAT (not int): a Phishing
+    // speed siphon steals a % of the target's CURRENT speed each hit, and integer
+    // truncation was crushing that to 0 the moment speed dropped near the floor —
+    // float precision keeps every siphon meaningful instead of rounding it away.
+    float speed = 0;
+    int powerMultPct = 100;     // attack-power lean (Good/Bad branch)
+    int basePowerMultPct = 100; // powerMultPct at fight start (after the gamble roll),
+                                // captured in begin() — the combat screen diffs the
+                                // live lean against it to SHOW a Phishing siphon
+                                // (steal shifts powerMultPct; nothing else does mid-fight)
+    float baseSpeed = 0;        // speed at fight start, captured in begin(); the stat
+                                // panel diffs live speed against it to show a siphon
+    int fragMultPct = 100;      // loss-Frag multiplier (Bad-branch hook)
+    int enemyDamageMultPct = 100;  // wild-encounter offense buff (challenge pass);
+                                    // 100 = neutral (player + bosses + Sim dummies)
+    std::vector<const MoveDef*> moves;
+
+    int defenseMultPct = 100;   // scales DEFEND-move brace magnitude (Defense stat +
+                                // Cipher scaling); 100 = neutral (enemies, Sim).
+
+    // Line identity — drives the per-line passive (e.g. Ransom
+    // Lock) and is read once at fight start, same timing as MODS.
+    Stage stage = Stage::BootSector;
+    const char* line = nullptr;
+
+    // Equipped MOD passives, keyed by the ModEffect that declares them (mod_state.h).
+    // Effects that simply move a base stat (PowerPct, MaxHealth, …) are already folded
+    // into the fields above by makePlayerCombatant; this holds the ones that stay live
+    // for the fight — caps, thresholds, one-shots.
+    ModStateSet mods;
+
+    // Transient defend state.
+    int dmgReducePct = 0;       // Firewall Patch / TPM Chip — % incoming damage cut
+    bool mirrorFired = false;   // set the turn a hit is fully negated (a brief flash);
+                                 // also suppresses that attack's stun/DoT riders
+    bool itemShield = false;    // Backup Drive's timed buff — negates the next incoming
+                                 // hit like the RAID Mirror mod, then heals to half max
+                                 // Health. An independent one-shot so it stacks with an
+                                 // equipped RAID Mirror instead of sharing its trigger.
+                                 // Armed by the Game off an item buff, so it lives here
+                                 // rather than in `mods` (which the mod table owns)
+    bool itemShieldFired = false;  // set for the rest of the fight once the shield
+                                    // consumes (unlike mirrorFired, not reset per-turn) —
+                                    // lets Game clear the buff's save-side timer early
+                                    // once the fight ends
+    // The armed crew Exploit, if any (see CrewExploitState). Its charges are spent
+    // BEFORE the RAID Mirror mod / itemShield so those one-shots stay held for after
+    // the charges run out. Armed only by commitOverride.
+    CrewExploitState crewExploit;
+    int guard = 0;              // pending mitigation from a defend move (one-shot)
+    int shieldHp = 0;           // Obfuscation shield pool (Phishing) — a poolable
+                                // second health bar; absorbs before real Health, stacks
+                                // on recast, pops when overrun. Transient (per-fight).
+    int dotPerTurn = 0;            // active DoT on this combatant: damage per turn-start...
+    int dotTurnsLeft = 0;          //   ...for this many more turn-starts (0 = none)
+
+    // Line-move stacking buffs (transient, wiped each fight). Lockout-track hits
+    // grow stackPowerBonus (added to the effective attack mult); Cipher-track casts
+    // grow stackDefenseBonus (added to the effective damage cut, under the 85% clamp).
+    int stackPowerBonus = 0;
+    int stackDefenseBonus = 0;
+
+    // Feeding-frenzy combo (Phishing steal-attacks only, see Combat::applyEffect):
+    // phishStreak counts this combatant's OWN run of back-to-back steal-attack casts
+    // (an interleaved non-phishing move — e.g. Spoof-Bubble — breaks it, restarting
+    // at 1); phishComboBonus is the flat damage those casts have permanently banked
+    // this fight. Unlike stackPowerBonus (a % mult, capped, per-move-defined), this is
+    // flat damage, uncapped, and grows by the run length itself — early runs add a
+    // sliver, a long one snowballs.
+    int phishStreak = 0;
+    int phishComboBonus = 0;
+
+    // STUN (a landed hit's lockTurns rider) — set ON THE VICTIM. While
+    // lockedTurnsLeft > 0 the victim burns its turn doing nothing, then it lifts.
+    int lockedTurnsLeft = 0;
+
+    // Ransom Note (Ransomware passive) — all three live on the RANSOMER (the pet that
+    // owns the passive), never the attacker. `ransomArmed` is re-rolled at the start of
+    // every one of this side's turns (Combat::ransomArmRolls) and holds for the window
+    // until its next turn; while it's up, incoming hits divert their damage into
+    // `ransomPool` and reset `ransomTurnsLeft` to kRansomHoldTurns. The countdown ticks
+    // one per turn of THIS side (not per incoming action), and the pool lands whole when
+    // it hits 0. Transient (per-fight), like every other combat field here.
+    int ransomPool = 0;
+    int ransomTurnsLeft = 0;
+    bool ransomArmed = false;
+
+    // Trojan traps (Trojan line) — a stack of armed Trojan Defend moves. Each incoming
+    // enemy attack TRIGGERS the top trap (evasion + rebound + armor-rot, applyEffect);
+    // armed traps also raise this side's Execution-Override hijack chance
+    // (execOverrideChance). Transient (per-fight); only ever set on a Trojan pet.
+    const MoveDef* trojanTraps[kTrojanTrapCap] = {};
+    int trojanTrapCount = 0;
+
+    // Per-fight turn state (no-consecutive + channel wind-up).
+    int lastMoveIdx = -1;
+    int channelMoveIdx = -1;    // mid-channel move (-1 = not channelling)
+    int channelLeft = 0;        // turns until the channel detonates
+};
+
+// Prowlware's multiplier for `moves[moveIdx]`: the rank of that move's Attack power
+// among the DISTINCT Attack powers in `moves`, ascending (weakest tier = 1, strongest =
+// N, ties sharing a rank). 0 for a Defend move or an out-of-range slot, so a kit with
+// one attack tier ranks 1 everywhere and pays nothing — the mod only rewards a genuine
+// power spread. Pure, so it's directly assertable.
+int attackPowerRank(const std::vector<const MoveDef*>& moves, int moveIdx);
+
+// Enemy archetype spec — what the engine needs to build an enemy Combatant.
+// Sim-Battle Dummy tiers use it now; sector malbeasts reuse the shape for EXPL.
+struct CombatEnemy {
+    const char* name;
+    const char* spriteName;             // SPR_PET_* reused for the enemy frame
+    int diffPips;
+    int maxHealth;
+    int speed;
+    std::vector<const char*> moveIds;   // resolved against the registry
+    bool isWild = false;                // EXPL wild malbeast → the challenge buff
+                                        // (kWildEnemy*Pct) applies; bosses/Sim don't
+    int level = 0;                      // depth level (global sub-area rung);
+                                        // set by applyWildSubAreaRamp, drives the
+                                        // level-difference XP scaling (wildWinXp). 0 =
+                                        // unranked (Sim dummies, bosses use their own).
+    bool hasLevel = false;              // true once applyWildSubAreaRamp / applyDeepWebScale
+                                        // has stamped `level`; Sim dummies + bosses never set
+                                        // this, so the combat screen renders "???" for them
+                                        // instead of a misleading "Lv 0".
+};
+
+// An item offered in the Exploit picker's USE-ITEM section.
+// The Game builds these from the live inventory (items with combatHeal>0) when the
+// picker opens; Combat applies the Health patch itself (it's combat state) and
+// reports the committed id back so the Game can consume the stack + apply the
+// item's own out-of-combat effect. Pointers are borrowed content ids (not copied).
+struct OverrideItem {
+    const char* id;      // stable content id
+    const char* label;   // display name for the picker row
+    int heal;            // transient combat Health restored on use
+};
+
+// The player's crew Exploit, offered as the picker's LAST row while they belong to a
+// crew (content_crews.h). Unlike an OverrideItem there is nothing for the Game to
+// consume afterwards — the effect is pure combat state, so Combat applies it itself.
+// A default-constructed one (label == nullptr) means "in no crew": no row is offered.
+struct CrewExploit {
+    const char* label = nullptr;
+    CrewExploitKind kind = CrewExploitKind::None;
+    int magnitude = 0;
+};
+
+class Combat {
+public:
+    enum class Stakes { Live, Safe };       // live = +Frag on loss; safe = nothing
+    enum class Outcome { Ongoing, Win, Lose, Fled };
+
+    // Build a battle. The enemy always resets to full Health; the player normally
+    // does too, EXCEPT when `carryPlayerHealth >= 0` — then the player STARTS at
+    // that value (clamped to maxHealth). That is the boss-gauntlet carry (
+    // ): consecutive rounds run with no heal between, so a round-2 boss
+    // inherits the Health the pet limped out of round 1 with. `seed` makes
+    // resolution deterministic. `forceEnemyFirst` overrides the speed-based
+    // initiative roll — the wild-encounter "failed flee" penalty:
+    // retreating isn't free.
+    void begin(const Combatant& player, const Combatant& enemy, Stakes stakes,
+               uint32_t seed, bool forceEnemyFirst = false,
+               int carryPlayerHealth = -1, int exploitUses = 1);
+
+    // Advance one action beat (one actor's turn). No-op once resolved or while the
+    // override picker is open (the fight pauses for the human). Returns true if a
+    // turn actually resolved.
+    bool step();
+
+    // The A+C Exploit override — N uses per battle --------
+    // The picker is a flat list: the player's moves first, then any combat-usable
+    // items the Game supplied, then the crew Exploit row (if any). A pick < moveCount
+    // forces that move; a pick inside the item band uses that item; the last row fires
+    // the crew Exploit. Committing any of them spends one Exploit use.
+    bool overrideReady() const { return overrideUsesLeft_ > 0; }
+    int overrideUsesLeft() const { return overrideUsesLeft_; }
+    int overrideUsesTotal() const { return overrideUsesTotal_; }
+    bool overrideOpen() const { return overrideOpen_; }
+    // open — does NOT spend. `crew` defaults to "no crew" (no extra row).
+    void openOverride(std::vector<OverrideItem> items = {}, CrewExploit crew = {});
+    void cycleOverride();       // A inside the picker → next entry (moves, items, crew)
+    int overridePick() const { return overridePick_; }
+    int overrideMoveCount() const;                // picker rows that are moves
+    const std::vector<OverrideItem>& overrideItems() const { return overrideItems_; }
+    // The crew row this picker is offering (label == nullptr when there is none) and
+    // whether it contributes a row at all — the render walks the same three bands.
+    const CrewExploit& overrideCrew() const { return crewExploit_; }
+    int overrideCrewRows() const { return crewExploit_.label ? 1 : 0; }
+    void commitOverride();      // B → force the chosen move / use the item / fire the crew
+                                 // Exploit; spends one use either way
+    void cancelOverride();      // C → close the picker, no spend
+    // A committed item's id (set by commitOverride, applied Health-side already);
+    // returns it once then clears, so the Game consumes the stack + out-of-combat
+    // effect exactly once. nullptr when the last commit was a move (or none).
+    const char* takeCommittedItem();
+
+    // Flee / quit. Safe → immediate quit (Fled). Live → escape roll; a fail
+    // gives the enemy a free turn. `seedFlee` keeps the roll deterministic.
+    void flee();
+
+    // --- Inspectors (render + tests) ---------------------------------------
+    const Combatant& player() const { return player_; }
+    const Combatant& enemy() const { return enemy_; }
+    Outcome outcome() const { return outcome_; }
+    // Execution-Override (Trojan passive): the % chance `trojan` hijacks an enemy move.
+    // 0 for a non-Trojan side (checked before any rng() draw at the call site); else
+    // kExecOverrideBasePct + the armed traps' bonuses. Public so it's directly assertable.
+    int execOverrideChance(const Combatant& trojan) const;
+    Stakes stakes() const { return stakes_; }
+    bool playerActsFirst() const { return playerFirst_; }
+    bool playerTurnNext() const { return playerTurn_; }
+    const char* lastMoveName() const { return lastMoveName_; }
+    int lastDamage() const { return lastDamage_; }
+    bool lastByPlayer() const { return lastByPlayer_; }
+    bool lastWasCharge() const { return lastWasCharge_; }
+    // True when lastDamage() was HELD by the target's ransom pool instead of taken —
+    // the hit landed in full, its riders applied, but no Health moved. The combat
+    // screen captions the popup differently for it, so a still Health bar under a
+    // damage number reads as the passive working rather than as a stuck gauge.
+    bool lastRansomed() const { return lastRansomed_; }
+    // Consecutive same-actor turns (a lopsided speed edge — a Phishing speed siphon —
+    // pays one side extra actions in a row). 0 before the first turn; 1 on a fresh
+    // actor's first hit; increments each turn that side keeps acting; resets to 1 the
+    // instant the other side gets a turn. Drives both the feeding-frenzy render pacing
+    // (Game::combatBeatsForTurn) and the Phishing steal-attack combo bonus (applyEffect)
+    // off the SAME count, so a burst that looks faster also hits harder.
+    int streakCount() const { return streakCount_; }
+    bool streakIsPlayer() const { return streakIsPlayer_; }
+    // The enemy's active channel (UI_MOVE_CHANNEL cue), or nullptr if none.
+    const MoveDef* enemyChannel() const;
+    int enemyChannelLeft() const { return enemy_.channelLeft; }
+
+private:
+    uint32_t rng();
+    int chooseMove(Combatant& self);                 // autonomous roll (lean + no-repeat)
+    void resolveTurn(Combatant& actor, Combatant& target, bool byPlayer);
+    // The single applier for every CrewExploitKind — a new crew ability is one enum
+    // entry (content_crews.h) plus one case here, never a per-crew branch elsewhere.
+    void applyCrewExploit();
+    // `moveIdx` is the actor's slot index for `mv` (into actor.moves) — needed by
+    // Prowlware to rank that move's Attack power (attackPowerRank).
+    void applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
+                     bool byPlayer, int moveIdx);
+    // Ransom Note (Ransomware): whether `c`'s ransom window is armed for the turn it is
+    // about to take. Rolled once per turn at turn-start, never per incoming hit.
+    bool ransomArmRolls(const Combatant& c);
+    // Perfect Bite (Phishing steal track): stage-scaled chance, rolled only while the
+    // caster's Obfuscation shield is up, to double whichever of stealSpeedPct/
+    // stealCurrentHpPct lands this hit (see applyEffect).
+    bool bubbleBiteRolls(Stage stage);
+    // Advance the speed gauges and return whether the player takes the next action.
+    // Reads live speed, so a mid-fight speed change (siphon, buff) shifts the tempo at
+    // once. Deterministic (no rng), so replays stay reproducible.
+    bool pickNextActor();
+    void setLast(const char* name, int dmg, bool byPlayer, bool charge,
+                 bool ransomed = false);
+    void checkOutcome();
+
+    Combatant player_, enemy_;
+    Stakes stakes_ = Stakes::Safe;
+    Outcome outcome_ = Outcome::Ongoing;
+    bool playerFirst_ = true;
+    bool playerTurn_ = true;
+    uint32_t rng_ = 1;
+    float plGauge_ = 0;         // speed-accumulator scheduler (see pickNextActor):
+    float enGauge_ = 0;         // each side's gauge, filled by its speed, spent per action
+    int streakCount_ = 0;       // see streakCount() above
+    bool streakIsPlayer_ = true;
+
+    int overrideUsesLeft_ = 1;      // Exploit uses remaining this fight
+    int overrideUsesTotal_ = 1;     // allowance at fight start (for the pip readout)
+    bool overrideOpen_ = false;
+    int overridePick_ = 0;          // index into [moves..., items...]
+    int forcedMoveIdx_ = -1;        // committed override → the player's next move
+    std::vector<OverrideItem> overrideItems_;   // combat-usable items this picker
+    CrewExploit crewExploit_;                   // the crew row this picker offers (if any)
+    const char* committedItemId_ = nullptr;     // set when an item is committed
+    char itemPopup_[16] = "";                   // backing store for the PATCH / crew popup
+
+    const char* lastMoveName_ = "";
+    int lastDamage_ = 0;
+    bool lastByPlayer_ = false;
+    bool lastWasCharge_ = false;
+    bool lastRansomed_ = false;
+};
+
+// Build the player Combatant from live game state (active pet + loadouts + mods).
+Combatant makePlayerCombatant(const ContentRegistry& reg, const CreatureDef& pet,
+                              const MoveLoadout& moves, const Loadout& mods);
+
+// Fold a pet's earned per-level stat points into an already-built Combatant, in the
+// order power / defense / speed / maxHealth. Additive on top of the branch multipliers
+// and mods, and it refills Health so the raised maximum starts full.
+//
+// A free function rather than part of makePlayerCombatant because two callers must
+// produce byte-identical results from it: the Game building its own pet
+// (game_combat.cpp) and makePvpCombatant rebuilding a REMOTE pet from its wire spec
+// (core/model/pvp_battle.h). A duel's two devices resolve the same seeded fight only
+// while both sides' stats agree exactly, so this arithmetic lives in exactly one place.
+void applyLevelStatPoints(Combatant& c, const int statPoints[4]);
+// Build an enemy Combatant from a spec.
+Combatant makeEnemyCombatant(const ContentRegistry& reg, const CombatEnemy& spec);
+
+// Sim-Battle practice dummies. A tougher tier = a better test + more
+// growth, still zero risk. Tier count + stats are content/balance.
+constexpr int kSimDummyTiers = 2;
+const char* simDummyName(int tier);
+CombatEnemy simDummy(int tier);
+
+// Scales a dummy to the pet's current level (the DeepWeb "match the pet" trick,
+// reused at a gentler rate) — the Basic/Hardened tiers stay a
+// fair practice target as the pet grows instead of trailing further behind every
+// level. Mutates `e` in place; stamps `level`/`hasLevel` so the combat screen shows
+// a real number instead of "???".
+void applySimDummyLevelScale(CombatEnemy& e, int petLevel);
+
+// Wild-encounter malbeasts, difficulty-scaled by sector tier (1..3).
+// Each tier rolls among 2 variants — the full per-sector table
+// (more variants, distinct art) is still a later content/balance pass; this
+// closes the "exactly one fixed enemy per tier" gap. `variantRoll` is
+// caller-owned (the shared Game LCG, same pattern as every other roll in this
+// file) so the pick stays deterministic under a fixed seed; default 0 keeps
+// the single-enemy behaviour for callers that don't roll (existing
+// tests). Same no-new-art convention as simDummy — reuses SPR_PET_CACHEMUTT.
+CombatEnemy wildMalbeast(int sectorTier, uint32_t variantRoll = 0);
+
+// The fixed wild-malbeast roster (save v25 'Pedia reveal state) —
+// index = bit position in Game's malbeastSeen/malbeastDefeated masks. Ids are the
+// slugged (lowercase, non-alnum -> '_') form of each CombatEnemy::name above, and
+// match the 'Pedia catalog's malbeast entry ids (tools/gen_pedia_data.py).
+constexpr int kWildMalbeastCount = 6;
+extern const char* const kWildMalbeastIds[kWildMalbeastCount];  // "glitchhog" .. "kernel_leviathan"
+
+// Resolve a CombatEnemy::name (e.g. "GlitchHog", "Segfault Pup") to its roster index
+// by slugging (lowercase, non-alnum -> '_') and matching against kWildMalbeastIds.
+// Returns -1 for anything not in the 6 (sub-area/area bosses, Sim dummies, the debug
+// "Lethal" enemy) — so only the WILD malbeast path ever sets a seen/defeated bit.
+int wildMalbeastIndex(const char* enemyName);
+
+// Within-sub-area / between-area wild difficulty ramp (balance).
+// wildMalbeast() gives the sub-0 BASELINE for a sector; this thickens that spec as
+// the player pushes DEEPER — through a sector's sub-areas AND between sectors — so
+// the early sub-areas stay winnable for a fresh pet while the later ones (and later
+// areas) gate on a stronger/evolved one ("steep/gated" curve). Moves are the first
+// lever (fully data-driven, applied here); enemy mods, raw-stat scaling, and
+// evolution-tier substitution layer on top of this as the ramp is tuned. `area`
+// (0-based sector) and `sub` (0..kSubAreasPerArea-1) fold into one depth rung.
+// A no-op at the shallowest rung (keeps the roster baseline). Mutates `e` in place.
+// it now ALSO stamps an explicit `level` (a global depth rung, +1 per
+// sub-area and across areas) and applies the stat half of a level-up (Health per
+// sub, speed at the deeper rungs) so deeper wilds are meaner AND worth ranking.
+void applyWildSubAreaRamp(CombatEnemy& e, int area, int sub);
+
+// level-difference XP scaling. A wild win's XP is the
+// flat base scaled by how the ENEMY's level compares to the PET's: each level the
+// enemy is ABOVE the pet adds kWildXpPerLevelDiffPct%, each level BELOW subtracts it,
+// clamped to [kWildXpDiffMinPct, kWildXpDiffMaxPct]. Rewards punching up (challenge),
+// taxes farming low-level sub-areas — but never zero (a floored trickle). Pure +
+// deterministic so it's unit-tested directly; result is at least 1.
+int wildWinXp(int baseXp, int enemyLevel, int petLevel);
+
+// the DEEPWEB DIVE endless-zone scaler. Takes an endgame
+// (tier-3) wild `e` and scales it to the PET's level: stamps `e.level = petLevel +
+// kDeepWebEnemyLevelOffset` (parity at depth=0 → wildWinXp pays full base XP) and
+// thickens Health/speed per pet level so the fight tracks the pet's own stat growth
+// instead of trivialising as it levels. `depth` is the dive's current win-streak; it
+// adds a `floorLog2(depth+1) * kDeepWebDepthLevelPerLog2` bonus effective level on top
+// of `petLevel` before every scale above is applied — so diving deeper gradually
+// punches the pet up (more XP via wildWinXp's level-diff bonus) and thickens the enemy
+// to match, logarithmically (fast early ramp, flattens at deep streaks — no endless-
+// zone runaway). Mutates `e` in place. `petLevel`/`depth` clamp at 0.
+void applyDeepWebScale(CombatEnemy& e, int petLevel, int depth = 0);
+
+// depth ramp, Bits half: the DEEPWEB DIVE's Bits payout (normalBitsReward,
+// keyed to diffPips/stage-rank) doesn't see the level bonus applyDeepWebScale grants
+// XP through, so without this a deep dive would pay flat Bits forever. Mirrors the
+// same logarithmic curve directly onto Bits: returns a percentage (100 = unchanged)
+// the caller multiplies the rolled Bits by — 100 + floorLog2(depth+1) *
+// kDeepWebDepthBitsPctPerLog2, clamped to kDeepWebDepthBitsMaxPct. Pure + deterministic
+// so it's unit-tested directly. `depth` clamps at 0.
+int deepWebDepthBitsPct(int depth);
+
+// A boss run. `rounds` is the ordered gauntlet: a single boss is a gauntlet
+// of length 1; a multi-boss run fights them back-to-back with Health carried across
+// `stageRank` is the opponent's stage-rank R used by the Bits
+// payout (Process 2, Script 3, Daemon 4); `name` banners the confrontation. Enemies
+// reuse the generic malbeast frame (no new art), same convention as wildMalbeast.
+struct BossGauntlet {
+    const char* name;
+    int stageRank;
+    std::vector<CombatEnemy> rounds;
+};
+
+// A SUB-AREA boss: one strong malbeast, unlocked by a 10-win streak and
+// fought manually. `area` (0..kExplSectors-1) picks the roster + tier; `sub`
+// (0..kSubAreasPerArea-1) scales the Health/speed climb (sub 4 = the signature apex).
+// Returned as a length-1 BossGauntlet so it reuses the carried-Health round plumbing.
+// Boss names are a pool disjoint from the roster + wild malbeasts (namespace guard).
+BossGauntlet subAreaBoss(int area, int sub);
+
+// The AREA boss: a 5-stage gauntlet of the area's five sub-area bosses
+// fought back-to-back (carried Health, no heal between). Unlocked once all five
+// sub-areas are cleared; beating it clears the area (→ next area) + grants the Title.
+BossGauntlet areaBoss(int area);
+
+// combat Bits payout, keyed to the opponent's stage-rank R. A NORMAL opponent
+// pays a random integer in [R, R²]; a BOSS rolls that range R times and sums (a
+// gauntlet accrues one boss roll per round and pays the lump at the end). `rng` is
+// caller-owned (the shared LCG) and advanced in place so payouts stay deterministic
+// under a fixed seed, same pattern as every other roll in the engine.
+int normalBitsReward(int stageRank, uint32_t& rng);
+int bossBitsReward(int stageRank, uint32_t& rng);
+
+} // namespace mal

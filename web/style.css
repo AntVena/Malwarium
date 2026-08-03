@@ -1,0 +1,337 @@
+/* ============================================================
+   MALWARIUM://PEDIA — style.css
+   Terminal dark wiki. Every colour binds to a PAL_CORE role
+   token (assets/PAL_CORE.json) or a documented derived tint.
+   Phone-first (375px), desktop-fine. No CDN, no framework.
+   ============================================================ */
+
+/* FONT_UI = Pixel Operator Mono. The bundle ships NO font binary, so this rule
+   only probes locally-installed copies — no network/file request is ever made.
+   When you drop fonts/PixelOperatorMono.ttf (public domain) into the bundle,
+   add this line back into src, before local():
+     url('fonts/PixelOperatorMono.ttf') format('truetype'),
+   Until then the stack falls through to a faithful system mono (W7). */
+@font-face {
+  font-family: 'Pixel Operator Mono';
+  src: local('Pixel Operator Mono'), local('PixelOperatorMono');
+  font-display: swap;
+}
+
+:root {
+  /* PAL_CORE role tokens — never literal hex below this block */
+  --paper:    #14171c;
+  --ink:      #e8edf2;
+  --ink-dim:  #717a86;
+  --track:    #2a2f38;
+  --accent:   #1fc3e6;
+  --calm:     #3ad17e;
+  --warn:     #eaa32c;
+  --hot:      #e23b2f;
+  --frag-lo:  #7a3df0;
+  --frag-hi:  #ff5cb8;
+  --rarity-common:   #6c7682;
+  --rarity-uncommon: #4f93c4;
+  --rarity-rare:     #6f6cf0;
+  --rarity-epic:     #f06bc4;
+  /* documented derived tints (from PAL_CORE, not new hues) */
+  --paper-deep:  #0e1116;                    /* paper −25% lum — page field   */
+  --paper-sunk:  #101318;                    /* locked-card fill              */
+  --calm-wash:   rgba(58, 209, 126, .12);    /* calm @ 12%                    */
+  --accent-wash: rgba(31, 195, 230, .12);    /* accent @ 12%                  */
+  --frag-wash:   rgba(122, 61, 240, .16);    /* frag-lo @ 16%                 */
+  --scan:        rgba(0, 0, 0, .11);         /* scanline stripe               */
+
+  --font-ui: 'Pixel Operator Mono', ui-monospace, 'Cascadia Mono', Menlo, Consolas, monospace;
+}
+
+* { box-sizing: border-box; }
+
+html { background: var(--paper-deep); }
+body {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--ink);
+  background: var(--paper-deep);
+  -webkit-text-size-adjust: 100%;
+}
+
+/* ---- links / focus ------------------------------------------------ */
+a { color: var(--accent); text-decoration: none; border-bottom: 1px dotted var(--accent); }
+a:hover { color: var(--paper-deep); background: var(--accent); border-bottom-color: transparent; }
+a:focus-visible, button:focus-visible, input:focus-visible, [tabindex]:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px;
+}
+
+/* ---- layout shell -------------------------------------------------- */
+.wrap { max-width: 720px; margin: 0 auto; min-height: 100vh; position: relative; }
+
+header.site {
+  background: var(--paper);
+  border-bottom: 1px solid var(--track);
+  padding: 12px 14px;
+}
+header.site .brand {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 8px;
+}
+header.site .brand a.logo {
+  font-size: 19px; letter-spacing: 1px; color: var(--calm);
+  border-bottom: none; font-weight: 700;
+}
+header.site .brand a.logo:hover { background: none; color: var(--ink); }
+header.site .sub { font-size: 11px; color: var(--ink-dim); margin-top: 2px; }
+header.site .sub .prompt { color: var(--calm); }
+
+nav.tabs { display: flex; background: var(--track); gap: 1px; border-bottom: 1px solid var(--track); }
+nav.tabs a {
+  flex: 1; text-align: center; padding: 9px 0 8px;
+  font-size: 12px; letter-spacing: 1px;
+  color: var(--ink-dim); background: var(--paper); border-bottom: none;
+}
+nav.tabs a:hover { color: var(--ink); background: var(--paper); }
+nav.tabs a.active { color: var(--paper-deep); background: var(--calm); font-weight: 700; }
+
+.identity {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 14px; background: var(--paper); border-bottom: 1px solid var(--track);
+  font-size: 12px; color: var(--ink-dim);
+}
+.identity .tag { font-size: 14px; color: var(--ink); letter-spacing: 1px; }
+.identity b { color: var(--ink); font-weight: 400; }
+
+main { padding: 14px; padding-bottom: 48px; }
+
+footer.site {
+  padding: 10px 14px 60px; border-top: 1px solid var(--track);
+  font-size: 11px; color: var(--ink-dim);
+  display: flex; justify-content: space-between; gap: 8px;
+}
+footer.site .ip { color: var(--calm); }
+
+/* ---- section headers ----------------------------------------------- */
+h2.sect {
+  font-size: 13px; letter-spacing: 2px; color: var(--calm); font-weight: 700;
+  border-bottom: 1px solid var(--track); padding-bottom: 6px; margin: 22px 0 12px;
+  display: flex; align-items: center; gap: 8px;
+}
+h2.sect:first-child { margin-top: 4px; }
+h2.sect .count { color: var(--ink-dim); font-weight: 400; letter-spacing: 0; margin-left: auto; }
+h2.sect img { width: 16px; height: 16px; image-rendering: pixelated; }
+
+/* ---- sprites -------------------------------------------------------- */
+.spr { image-rendering: pixelated; background-repeat: no-repeat; flex: none; }
+
+/* reveal-state sprite treatments (dual-coded: treatment + glyph + label) */
+.spr.glitch { filter: brightness(0) invert(.32) sepia(1) saturate(6) hue-rotate(226deg); }
+.spr.glitch-hi { filter: brightness(0) invert(.5) sepia(1) saturate(6) hue-rotate(285deg); }
+.spr.dimmed { filter: saturate(.4) brightness(.75); }
+
+.glitchbox { position: relative; }
+.glitchbox .layer { position: absolute; inset: 0; }
+.glitchbox .layer.a { animation: glitch-a 2.2s steps(1) infinite; }
+.glitchbox .layer.b {
+  clip-path: polygon(0 38%, 100% 38%, 100% 52%, 0 52%);
+  animation: glitch-b 1.7s steps(1) infinite; opacity: .8;
+}
+@keyframes glitch-a { 0%,79% {transform:translate(0,0);} 80%,89% {transform:translate(-2px,0);} 90%,100% {transform:translate(2px,0);} }
+@keyframes glitch-b { 0%,74% {transform:translate(0,0);} 75%,84% {transform:translate(3px,0);} 85%,100% {transform:translate(-1px,0);} }
+
+/* ---- cards ----------------------------------------------------------- */
+.card {
+  background: var(--paper); border: 1px solid var(--track); border-radius: 3px;
+  padding: 12px; margin-bottom: 10px;
+  display: flex; gap: 14px; align-items: center;
+}
+a.card { border-bottom: 1px solid var(--track); color: inherit; }
+a.card:hover { background: var(--paper); border-color: var(--accent); color: inherit; }
+
+.card.locked { background: var(--paper-sunk); border-style: dashed; }
+.card .body { min-width: 0; flex: 1; }
+.card .name { font-size: 16px; letter-spacing: 1px; color: var(--ink); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.card .name.masked { color: var(--ink-dim); letter-spacing: 2px; }
+.card .meta { font-size: 11px; color: var(--ink-dim); margin-top: 2px; }
+.card .meta .lit { color: var(--calm); }
+.card .hint { font-size: 13px; color: var(--ink); margin-top: 6px; }
+.card .ctx { font-size: 11px; color: var(--ink-dim); margin-top: 4px; }
+
+.icon20 { width: 40px; height: 40px; image-rendering: pixelated; flex: none; }
+.icon20.dim { opacity: .4; }
+
+/* ---- state chips (dual-coded: glyph + fill, never colour alone) ------ */
+.chip {
+  font-size: 10px; letter-spacing: 1px; padding: 1px 7px; border-radius: 2px;
+  white-space: nowrap; flex: none;
+}
+.chip.hatched  { color: var(--calm); background: var(--calm-wash); }
+.chip.seen     { color: var(--frag-hi); background: var(--frag-wash); }
+.chip.locked   { color: var(--ink-dim); background: var(--paper-sunk); border: 1px dashed var(--track); }
+.chip.owned    { color: var(--calm); background: var(--calm-wash); }
+.chip.enc      { color: var(--warn); border: 1px solid var(--warn); }
+.chip.complete { color: var(--calm); background: var(--calm-wash); }
+.chip.incomplete { color: var(--ink-dim); border: 1px solid var(--track); }
+.chip.crashed  { color: var(--hot); border: 1px solid var(--hot); }
+.chip.retired  { color: var(--calm); border: 1px solid var(--calm); }
+
+/* rarity tags — ramp readable by position, outline style */
+.rar { font-size: 10px; letter-spacing: 1px; padding: 1px 6px; border-radius: 2px; border: 1px solid; flex: none; }
+.rar.COMMON   { color: var(--rarity-common);   border-color: var(--rarity-common); }
+.rar.UNCOMMON { color: var(--rarity-uncommon); border-color: var(--rarity-uncommon); }
+.rar.RARE     { color: var(--rarity-rare);     border-color: var(--rarity-rare); }
+.rar.EPIC     { color: var(--rarity-epic);     border-color: var(--rarity-epic); }
+
+/* ---- roster grid (creature index) ------------------------------------ */
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; }
+.cell {
+  background: var(--paper); border: 1px solid var(--track); border-radius: 3px;
+  padding: 10px 6px 8px; text-align: center; color: inherit; border-bottom: 1px solid var(--track);
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+}
+.cell:hover { border-color: var(--accent); background: var(--paper); color: inherit; }
+.cell.locked { background: var(--paper-sunk); border-style: dashed; }
+.cell .nm { font-size: 11px; letter-spacing: 1px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.cell.locked .nm, .cell .nm.masked { color: var(--ink-dim); }
+.cell .st { font-size: 9px; letter-spacing: 1px; }
+
+/* ---- gauges ----------------------------------------------------------- */
+.bar { display: flex; align-items: center; gap: 10px; }
+.bar .rail { flex: 1; height: 10px; background: var(--track); overflow: hidden; }
+.bar .fill { height: 100%; background: var(--calm); }
+.bar .num { font-size: 12px; color: var(--ink); }
+.bar .lbl { font-size: 10px; color: var(--ink-dim); letter-spacing: 1px; }
+
+/* ---- entry page ------------------------------------------------------- */
+.entry-hero { display: flex; flex-direction: column; align-items: center; padding: 18px 0 8px; }
+.entry-hero .stagepos { font-size: 11px; color: var(--ink-dim); letter-spacing: 1px; margin-top: 10px; }
+.entry-title { text-align: center; margin: 8px 0 2px; }
+.entry-title .nm { font-size: 22px; letter-spacing: 2px; font-weight: 700; }
+.entry-title .nm.masked { color: var(--ink-dim); }
+.backlink { font-size: 12px; }
+
+.evo { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; margin: 14px 0; }
+.evo .node {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 8px 10px; border: 1px solid var(--track); border-radius: 3px; background: var(--paper);
+  font-size: 10px; letter-spacing: 1px; color: inherit; border-bottom: 1px solid var(--track);
+}
+.evo .node:hover { border-color: var(--accent); color: inherit; }
+.evo .node.here { border: 2px solid var(--accent); }
+.evo .node.unknown { border-style: dashed; color: var(--ink-dim); }
+.evo .arrow { color: var(--ink-dim); font-size: 14px; }
+.evo .branch { display: flex; flex-direction: column; gap: 8px; }
+
+/* ---- lists (items / moves / mods) -------------------------------------- */
+.row {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--paper); border: 1px solid var(--track); border-radius: 3px;
+  padding: 9px 10px; margin-bottom: 8px;
+}
+.row.locked { background: var(--paper-sunk); border-style: dashed; }
+.row .body { flex: 1; min-width: 0; }
+.row .nm { font-size: 14px; letter-spacing: 1px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.row.locked .nm { color: var(--ink-dim); letter-spacing: 2px; }
+.row .fx { font-size: 12px; color: var(--ink-dim); margin-top: 1px; }
+/* The derived stat line: the row's raw magnitudes, accented so it reads as data
+   rather than prose. Letter-spaced because it is all caps and mostly numbers. */
+.row .fxnum { font-size: 11px; color: var(--accent); margin-top: 2px;
+              letter-spacing: 0.06em; }
+.row .bits { font-size: 11px; color: var(--warn); flex: none; }
+.row .stat { font-size: 10px; color: var(--ink-dim); letter-spacing: 1px; flex: none; text-align: right; }
+.row .stat b { color: var(--ink); font-weight: 400; }
+
+/* ---- achievements ------------------------------------------------------ */
+.ach {
+  display: flex; gap: 12px; align-items: center;
+  background: var(--paper); border: 1px solid var(--track); border-radius: 3px;
+  padding: 10px 12px; margin-bottom: 8px;
+}
+.ach .frame {
+  width: 44px; height: 44px; flex: none; border: 1px solid var(--track); border-radius: 2px;
+  display: flex; align-items: center; justify-content: center; background: var(--paper-sunk);
+}
+.ach.complete .frame { border-color: var(--calm); background: var(--calm-wash); }
+.ach .frame img { width: 28px; height: 28px; image-rendering: pixelated; }
+.ach.incomplete .frame img { opacity: .35; }
+.ach .nm { font-size: 14px; letter-spacing: 1px; }
+.ach.incomplete .nm { color: var(--ink-dim); }
+.ach .tr { font-size: 11px; color: var(--ink-dim); }
+/* progress on an unfinished countable ladder — a slimmer .bar, since it sits
+   inside a card rather than owning a section. The body takes the slack so every
+   rail is the same length: bars that start and end in the same place can be
+   compared down the column, where rails sized by their own caption cannot. */
+.ach .body { flex: 1; min-width: 0; }
+.ach .achbar { margin-top: 7px; gap: 8px; }
+.ach .achbar .rail { height: 6px; }
+.ach .achbar .num { font-size: 11px; color: var(--ink-dim); min-width: 4.5em; text-align: right; }
+
+/* ---- archive ------------------------------------------------------------ */
+.rec { position: relative; overflow: hidden; }
+.rec.crashed { border-color: var(--track); }
+.rec.crashed .spr { filter: grayscale(1) brightness(.6) contrast(1.2); }
+.rec.crashed .name { color: var(--ink-dim); text-decoration: line-through; text-decoration-color: var(--hot); }
+.rec.crashed::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: repeating-linear-gradient(0deg, transparent 0 6px, var(--frag-wash) 6px 7px);
+  mix-blend-mode: screen; opacity: .5;
+}
+
+/* ---- terminal form (HackerTag rename) ----------------------------------- */
+.term {
+  background: var(--paper); border: 1px solid var(--track); border-radius: 3px; padding: 14px;
+}
+.term .line { font-size: 13px; margin-bottom: 10px; }
+.term .line .prompt { color: var(--calm); }
+.term .line .path { color: var(--ink-dim); }
+.tagform { display: flex; gap: 8px; }
+.tagform input {
+  flex: 1; min-width: 0; background: var(--paper-deep); border: 1px solid var(--track);
+  border-radius: 2px; color: var(--ink); font-family: var(--font-ui); font-size: 16px;
+  letter-spacing: 2px; padding: 10px 12px; text-transform: uppercase;
+}
+.tagform input::placeholder { color: var(--ink-dim); letter-spacing: 1px; }
+/* The HackerTag field is uppercase-only, so the shared rule above forces the
+   case. A URL is case-SENSITIVE past the host, and one displayed back in caps
+   reads as mangled to whoever just pasted it — so this field shows exactly what
+   was typed. Tighter tracking too: an address is long and not a callsign. */
+#urlinput { text-transform: none; letter-spacing: 0; font-size: 14px; }
+/* The network picker sits on its own row above the passphrase, because an SSID can
+   be long and sharing a row with a password field squeezes both. Its button is the
+   rescan glyph only, so it shrinks to the glyph instead of taking a WRITE-sized
+   share of the row. A passphrase is case-SENSITIVE — same reasoning as #urlinput. */
+.netform { margin-bottom: 8px; }
+.tagform select {
+  flex: 1; min-width: 0; background: var(--paper-deep); border: 1px solid var(--track);
+  border-radius: 2px; color: var(--ink); font-family: var(--font-ui); font-size: 14px;
+  letter-spacing: 1px; padding: 10px 12px; min-height: 44px;
+}
+#netrescan { flex: 0 0 auto; padding: 10px 14px; font-size: 16px; }
+#netpass { text-transform: none; letter-spacing: 2px; font-size: 14px; }
+.tagform button {
+  background: var(--calm); color: var(--paper-deep); border: none; border-radius: 2px;
+  font-family: var(--font-ui); font-size: 13px; letter-spacing: 1px; font-weight: 700;
+  padding: 10px 16px; cursor: pointer; min-height: 44px;
+}
+.tagform button:hover { background: var(--ink); }
+.formmsg { font-size: 12px; margin-top: 10px; min-height: 18px; }
+.formmsg.ok { color: var(--calm); }
+.formmsg.deny { color: var(--hot); }
+.charset { font-size: 11px; color: var(--ink-dim); margin-top: 8px; }
+
+/* ---- honeytoken reveal ---------------------------------------------------- */
+.honeypot-reveal { border-color: var(--calm) !important; background: var(--calm-wash) !important; }
+.honeypot-reveal .nm { color: var(--calm); }
+
+/* ---- CRT treatment (derived tints only; content must survive without) ----- */
+body::before {
+  content: ""; position: fixed; inset: 0; z-index: 90; pointer-events: none;
+  background: repeating-linear-gradient(0deg, var(--scan) 0 1px, transparent 1px 3px);
+}
+body::after {
+  content: ""; position: fixed; inset: 0; z-index: 91; pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,.25) 100%);
+}
+@media print { body::before, body::after { display: none; } }
+
+/* ---- misc ------------------------------------------------------------------ */
+.note { font-size: 11px; color: var(--ink-dim); margin: 8px 0 16px; }
+.nowrap { white-space: nowrap; }

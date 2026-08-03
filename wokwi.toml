@@ -1,0 +1,14 @@
+# Wokwi simulation config — points wokwi-cli at the built firmware.
+#
+# STATUS: scaffolding only — the Wokwi screenshot tier is DEFERRED for Phase 1
+# (see sim/README.md for the decision + the blockers). This file + a diagram.json
+# are what wokwi-cli needs; running it requires a WOKWI_CLI_TOKEN (a free
+# wokwi.com account) that is not present in the build environment.
+#
+# Build the binary first:  pio run -e wokwi_sim
+# (wokwi_sim extends waveshare_s3_154 — same firmware, same pinout.)
+
+[wokwi]
+version = 1
+firmware = '.pio/build/wokwi_sim/firmware.bin'
+elf = '.pio/build/wokwi_sim/firmware.elf'

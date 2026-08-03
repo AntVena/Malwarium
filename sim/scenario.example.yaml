@@ -1,0 +1,30 @@
+# Example wokwi-cli scenario — UNVERIFIED template (see sim/README.md).
+# Drives the carousel + a submenu via button GPIOs and snapshots the panel.
+# Run (once token + diagram.json exist):
+#   wokwi-cli . --scenario sim/scenario.example.yaml --screenshot-part lcd1 \
+#              --screenshot-file sim/baselines/carousel.png
+#
+# Button GPIOs (active-low) from include/config.h: A=0 (NEXT), B=5 (ACCEPT), C=4 (CANCEL).
+# A "press" = set the pin low, hold briefly, release high.
+
+name: malwarium-carousel-smoke
+version: 1
+author: malwarium
+
+steps:
+  - wait-serial: "boot"          # adjust to the firmware's boot-trace marker
+  - delay: 1s                     # let the idle habitat settle
+
+  # Summon the cursor (A) and step it once, then enter STAT (B).
+  - set-control: { part: btn-a, control: pressed, value: 1 }
+  - delay: 120ms
+  - set-control: { part: btn-a, control: pressed, value: 0 }
+  - delay: 300ms
+  - set-control: { part: btn-b, control: pressed, value: 1 }
+  - delay: 120ms
+  - set-control: { part: btn-b, control: pressed, value: 0 }
+  - delay: 500ms
+
+  # Screenshots are taken by the wokwi-cli flags, not in-scenario; this file just
+  # scripts the input. Add more press blocks to cover ITEMS / MAINT / hatch / evolve
+  # (mirror dump_frame's screen list so baselines line up with the host PPM dumps).

@@ -1,0 +1,22 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Malwarium</title>
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; padding: 24px; font: 14px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+         background: #14171c; color: #e8edf2; }
+  h1 { font-size: 16px; color: #1fc3e6; letter-spacing: .06em; margin: 0 0 4px; }
+  p  { color: #717a86; margin: 4px 0 20px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; }
+  figure { margin: 0; }
+  img { width: 100%; image-rendering: pixelated; border: 1px solid #2a2f38; border-radius: 8px; display: block; }
+  figcaption { color: #717a86; font-size: 12px; margin-top: 6px; text-align: center; }
+</style>
+<h1>MALWARIUM — build snapshots</h1>
+<p>Static frames of the current build. The interactive app is the native window (launch button in chat).</p>
+<div class="grid">
+  <figure><img src="rest.png" alt="resting habitat"><figcaption>resting</figcaption></figure>
+  <figure><img src="cursor.png" alt="cursor on STAT"><figcaption>cursor @ STAT</figcaption></figure>
+  <figure><img src="stat.png" alt="STAT readout"><figcaption>STAT (critical)</figcaption></figure>
+  <figure><img src="textonly.png" alt="text-only UI mode"><figcaption>text-only mode</figcaption></figure>
+</div>
