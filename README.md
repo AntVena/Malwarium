@@ -54,13 +54,14 @@ Real screens, straight off the 240×240 display:
 > The **Touch** variant (SKU **33868** / **33869**) works too — Malwarium doesn't use the
 > touchscreen, so you gain nothing by it, but nothing breaks either.
 
-**This is the only board Malwarium runs on today**, and that's worth being blunt about
-before you spend money. It is not "an ESP32 project" you can point at a spare dev board:
-the firmware has exactly one hardware definition compiled into it, and the screen, the
+**This is the only board Malwarium runs on today**, and that's worth knowing
+before you spend money. It is not general "an ESP32 project" you can point at a spare dev board:
+At this time, the firmware has exactly one hardware definition compiled into it, and the screen, the
 three buttons, the SD slot and the battery latch are all wired to specific pins on *this*
 board. On anything else you'd get a dark screen at best. The 16MB flash isn't optional
 either — the layout is two 7.5MB update slots plus a save area, which simply doesn't fit
-on the 8MB boards.
+on the 8MB boards. If you think you've found another board that meets the hardware requirements
+be sure to let us know! Chances are good that we'll add support. That support just doesn't exist *right now*. 
 
 **Got one already and want to check it's the right one?** It should have all of these:
 
@@ -82,7 +83,7 @@ different board and this firmware won't run on it.
   identical. If the flasher can't see your board, this is the first thing to swap.
 - **Chrome or Edge, on a computer.** That's the whole software list: no toolchain, no
   Python, no command line. Safari and Firefox can't talk to USB, and phones can't either —
-  not a limitation of this project, just of those browsers.
+  not a limitation of this project, just of those browsers. No Chrome just means some manual non-browser-based installation.
 
 **Optional, and you can add both later:**
 
