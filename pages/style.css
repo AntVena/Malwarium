@@ -1,0 +1,230 @@
+/* ============================================================
+   MALWARIUM — publish-host styles (GitHub Pages).
+   Same terminal-dark look as the device's own 'Pedia, from the
+   same authority: every colour binds to a PAL_CORE role token
+   (assets/PAL_CORE.json) or a documented derived tint.
+
+   Standalone by design. web/style.css dresses the bundle that
+   ships to an SD card and versions with it; this dresses the
+   pages served beside the artifacts. They share the palette,
+   not a file — one is downloaded by a device, the other never is.
+   ============================================================ */
+
+@font-face {
+  font-family: 'Pixel Operator Mono';
+  src: local('Pixel Operator Mono'), local('PixelOperatorMono');
+  font-display: swap;
+}
+
+:root {
+  /* PAL_CORE role tokens — never a literal hex below this block */
+  --paper:    #14171c;
+  --ink:      #e8edf2;
+  --ink-dim:  #717a86;
+  --track:    #2a2f38;
+  --accent:   #1fc3e6;
+  --calm:     #3ad17e;
+  --warn:     #eaa32c;
+  --hot:      #e23b2f;
+  --frag-lo:  #7a3df0;
+  --frag-hi:  #ff5cb8;
+  /* documented derived tints (from PAL_CORE, not new hues) */
+  --paper-deep:  #0e1116;                    /* paper −25% lum — page field */
+  --paper-sunk:  #101318;                    /* recessed panel fill         */
+  --calm-wash:   rgba(58, 209, 126, .12);
+  --accent-wash: rgba(31, 195, 230, .12);
+  --warn-wash:   rgba(234, 163, 44, .12);
+  --hot-wash:    rgba(226, 59, 47, .12);
+
+  --font-ui: 'Pixel Operator Mono', ui-monospace, 'Cascadia Mono', Menlo, Consolas, monospace;
+}
+
+* { box-sizing: border-box; }
+
+html { background: var(--paper-deep); }
+body {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--ink);
+  background: var(--paper-deep);
+  -webkit-text-size-adjust: 100%;
+}
+
+a { color: var(--accent); text-decoration: none; border-bottom: 1px dotted var(--accent); }
+a:hover { color: var(--paper-deep); background: var(--accent); border-bottom-color: transparent; }
+a:focus-visible, button:focus-visible, input:focus-visible, summary:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px;
+}
+
+/* ---- shell ---------------------------------------------------------- */
+.wrap { max-width: 720px; margin: 0 auto; min-height: 100vh; }
+
+header.site { background: var(--paper); border-bottom: 1px solid var(--track); padding: 12px 14px; }
+header.site .brand { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+header.site .brand a.logo {
+  font-size: 19px; letter-spacing: 1px; color: var(--calm);
+  border-bottom: none; font-weight: 700;
+}
+header.site .brand a.logo:hover { background: none; color: var(--ink); }
+header.site .brand .ver { font-size: 10px; color: var(--ink-dim); }
+header.site .sub { font-size: 11px; color: var(--ink-dim); margin-top: 2px; }
+header.site .sub .prompt { color: var(--calm); }
+
+nav.tabs { display: flex; background: var(--track); gap: 1px; border-bottom: 1px solid var(--track); }
+nav.tabs a {
+  flex: 1; text-align: center; padding: 9px 0 8px;
+  font-size: 12px; letter-spacing: 1px;
+  color: var(--ink-dim); background: var(--paper); border-bottom: none;
+}
+nav.tabs a:hover { color: var(--ink); background: var(--paper); }
+nav.tabs a.active { color: var(--paper-deep); background: var(--calm); font-weight: 700; }
+
+main { padding: 14px; padding-bottom: 48px; }
+
+footer.site {
+  padding: 12px 14px 60px; border-top: 1px solid var(--track);
+  font-size: 11px; color: var(--ink-dim);
+  display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap;
+}
+footer.site .lit { color: var(--calm); }
+
+/* ---- headings + prose ----------------------------------------------- */
+h1 { font-size: 20px; letter-spacing: 2px; margin: 4px 0 6px; }
+h2.sect {
+  font-size: 13px; letter-spacing: 2px; color: var(--calm); font-weight: 700;
+  border-bottom: 1px solid var(--track); padding-bottom: 6px; margin: 26px 0 12px;
+  display: flex; align-items: center; gap: 8px;
+}
+h2.sect:first-child { margin-top: 4px; }
+h2.sect .count { color: var(--ink-dim); font-weight: 400; letter-spacing: 0; margin-left: auto; }
+p { margin: 0 0 10px; }
+p.lede { color: var(--ink); }
+p.dim, .dim { color: var(--ink-dim); }
+code, kbd, .mono { font-family: var(--font-ui); }
+code {
+  background: var(--paper-sunk); border: 1px solid var(--track); border-radius: 2px;
+  padding: 1px 5px; font-size: 12px; color: var(--accent); word-break: break-all;
+}
+kbd {
+  background: var(--track); border: 1px solid var(--ink-dim); border-bottom-width: 2px;
+  border-radius: 3px; padding: 0 5px; font-size: 12px; color: var(--ink);
+}
+
+/* ---- panels ---------------------------------------------------------- */
+.card {
+  background: var(--paper); border: 1px solid var(--track); border-radius: 3px;
+  padding: 12px 14px; margin-bottom: 10px;
+}
+.card.sunk { background: var(--paper-sunk); }
+a.card { display: block; color: inherit; border-bottom: 1px solid var(--track); }
+a.card:hover { background: var(--paper); border-color: var(--accent); color: inherit; }
+a.card .nm { font-size: 15px; letter-spacing: 1px; color: var(--ink); }
+a.card:hover .nm { color: var(--accent); }
+a.card .ctx { font-size: 12px; color: var(--ink-dim); margin-top: 2px; }
+
+/* Callouts are dual-coded: a glyph and a word, never colour alone, so the page
+   reads the same in grayscale as the device's screens have to. */
+.note { border-left: 3px solid var(--track); padding: 10px 12px; margin: 0 0 12px; border-radius: 2px; }
+.note .lbl { font-size: 11px; letter-spacing: 1px; font-weight: 700; display: block; margin-bottom: 2px; }
+.note.tip  { border-left-color: var(--accent); background: var(--accent-wash); }
+.note.tip .lbl  { color: var(--accent); }
+.note.warn { border-left-color: var(--warn); background: var(--warn-wash); }
+.note.warn .lbl { color: var(--warn); }
+.note.stop { border-left-color: var(--hot); background: var(--hot-wash); }
+.note.stop .lbl { color: var(--hot); }
+
+/* ---- numbered steps --------------------------------------------------- */
+ol.steps { list-style: none; counter-reset: step; margin: 0; padding: 0; }
+ol.steps > li {
+  counter-increment: step; position: relative;
+  padding: 0 0 14px 34px; margin: 0;
+  border-left: 1px solid var(--track); margin-left: 11px;
+}
+ol.steps > li:last-child { border-left-color: transparent; padding-bottom: 0; }
+ol.steps > li::before {
+  content: counter(step);
+  position: absolute; left: -11px; top: 0;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--paper-deep); border: 1px solid var(--calm); color: var(--calm);
+  font-size: 12px; line-height: 20px; text-align: center;
+}
+ol.steps > li .hd { font-size: 14px; letter-spacing: 1px; color: var(--ink); margin-bottom: 2px; }
+ol.steps > li .bd { font-size: 13px; color: var(--ink-dim); }
+ol.steps > li .bd b { color: var(--ink); font-weight: 400; }
+
+/* ---- buttons ---------------------------------------------------------- */
+button {
+  font-family: var(--font-ui); font-size: 14px; letter-spacing: 1px;
+  background: var(--track); color: var(--ink);
+  border: 1px solid var(--track); border-radius: 3px;
+  padding: 10px 18px; cursor: pointer;
+}
+button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+button:disabled { color: var(--ink-dim); cursor: not-allowed; opacity: .6; }
+button.go {
+  background: var(--calm); border-color: var(--calm); color: var(--paper-deep); font-weight: 700;
+  padding: 12px 22px; font-size: 15px;
+}
+button.go:hover:not(:disabled) { background: var(--ink); border-color: var(--ink); color: var(--paper-deep); }
+button.go:disabled { background: var(--track); border-color: var(--track); color: var(--ink-dim); }
+.actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 14px 0 4px; }
+
+/* ---- checkbox row ------------------------------------------------------ */
+label.check {
+  display: flex; gap: 10px; align-items: flex-start;
+  font-size: 12px; color: var(--ink-dim); cursor: pointer;
+  background: var(--paper-sunk); border: 1px solid var(--track); border-radius: 3px;
+  padding: 9px 11px;
+}
+label.check input { margin: 3px 0 0; accent-color: var(--hot); flex: none; }
+label.check b { color: var(--ink); font-weight: 400; letter-spacing: 1px; }
+
+/* ---- progress ---------------------------------------------------------- */
+/* Dual-coded like the device's own install bar: a fill AND the byte counts, so
+   the page still reports with the colour taken away. */
+.bar { display: flex; align-items: center; gap: 10px; margin: 4px 0 8px; }
+.bar .rail { flex: 1; height: 10px; background: var(--track); overflow: hidden; border-radius: 2px; }
+.bar .fill { height: 100%; width: 0; background: var(--calm); transition: width .2s linear; }
+.bar .num { font-size: 12px; color: var(--ink); min-width: 4ch; text-align: right; }
+
+/* ---- status line ------------------------------------------------------- */
+.status { font-size: 13px; letter-spacing: 1px; display: flex; gap: 8px; align-items: baseline; }
+.status .glyph { flex: none; }
+.status.idle { color: var(--ink-dim); }
+.status.busy { color: var(--warn); }
+.status.ok   { color: var(--calm); }
+.status.err  { color: var(--hot); }
+
+/* ---- log --------------------------------------------------------------- */
+.log {
+  background: var(--paper-sunk); border: 1px solid var(--track); border-radius: 3px;
+  padding: 10px 12px; font-size: 11px; line-height: 1.5; color: var(--ink-dim);
+  max-height: 220px; overflow-y: auto; white-space: pre-wrap; word-break: break-word;
+  margin: 0;
+}
+.log .hot { color: var(--hot); }
+.log .lit { color: var(--calm); }
+details > summary {
+  cursor: pointer; font-size: 12px; letter-spacing: 1px; color: var(--ink-dim);
+  padding: 6px 0; list-style: none;
+}
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: '\25B8 '; color: var(--accent); }
+details[open] > summary::before { content: '\25BE '; }
+details > summary:hover { color: var(--ink); }
+
+/* ---- key/value rows ----------------------------------------------------- */
+.kv { display: flex; justify-content: space-between; gap: 12px; font-size: 12px; padding: 3px 0; }
+.kv + .kv { border-top: 1px solid var(--track); }
+.kv .k { color: var(--ink-dim); letter-spacing: 1px; }
+.kv .v { color: var(--ink); text-align: right; word-break: break-all; }
+.kv .v.lit { color: var(--calm); }
+
+[hidden] { display: none !important; }
+
+@media (max-width: 420px) {
+  .actions { flex-direction: column; align-items: stretch; }
+  .actions button { width: 100%; }
+}
