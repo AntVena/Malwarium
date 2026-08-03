@@ -1651,7 +1651,7 @@ static void enterSubmenuId(Game& g, SubmenuId id) {
 }
 
 // Walk from the carousel to a CFG L3 screen by TARGET, descending through a group
-// screen (DISPLAY / RADIO) when the target lives in one. Scanning the tables rather
+// screen (DEVICE / RADIO) when the target lives in one. Scanning the tables rather
 // than counting presses keeps every CFG gate independent of the row order.
 static void enterCfgTarget(Game& g, CfgScreen target) {
     const CfgScreen group = cfgParentGroup(target);
@@ -2126,16 +2126,85 @@ static void test_sprite_grayscale_legibility() {
 static void test_cfg_uimode_toggle() {
     Game g{StartMode::Hatched};
     CHECK(g.uiMode() == UiMode::IconsLabel);
-    enterCfgTarget(g, CfgScreen::UiMode);         // CFG -> DISPLAY -> UI MODE
+    enterCfgTarget(g, CfgScreen::UiMode);         // CFG -> DEVICE -> UI MODE
     CHECK(g.nav() == Game::Nav::Detail);
     CHECK(g.cfgScreen() == CfgScreen::UiMode);
     g.onButton(press(Button::A));                 // cycle IconsLabel -> IconsOnly
-    g.onButton(press(Button::B));                 // apply -> back to DISPLAY
+    g.onButton(press(Button::B));                 // apply -> back to DEVICE
     CHECK(g.nav() == Game::Nav::Detail);
-    CHECK(g.cfgScreen() == CfgScreen::Display);
+    CHECK(g.cfgScreen() == CfgScreen::Device);
     CHECK(g.uiMode() == UiMode::IconsOnly);       // the live mode changed
-    g.onButton(press(Button::C));                 // and DISPLAY backs out to the list
+    g.onButton(press(Button::C));                 // and DEVICE backs out to the list
     CHECK(g.nav() == Game::Nav::Submenu);
+}
+
+// CFG -> DEVICE -> TRAVEL MODE opens on NO and needs a second, deliberate yes, like
+// every other screen that commits something the row offering it cannot take back.
+static void test_cfg_travel_confirm_asks_twice() {
+    {   // B on the NO it opened on asks for nothing, and backs out to the group.
+        Game g{StartMode::Hatched};
+        enterCfgTarget(g, CfgScreen::Travel);
+        CHECK(g.cfgScreen() == CfgScreen::Travel);
+        CHECK(!g.travelSleepRequested());
+        g.onButton(press(Button::B));
+        CHECK(!g.travelSleepRequested());
+        CHECK(g.cfgScreen() == CfgScreen::Device);
+    }
+    {   // C is the other way out, and equally silent.
+        Game g{StartMode::Hatched};
+        enterCfgTarget(g, CfgScreen::Travel);
+        g.onButton(press(Button::C));
+        CHECK(!g.travelSleepRequested());
+        CHECK(g.cfgScreen() == CfgScreen::Device);
+    }
+    {   // A moves onto YES; only then does B latch the request.
+        Game g{StartMode::Hatched};
+        enterCfgTarget(g, CfgScreen::Travel);
+        g.onButton(press(Button::A));
+        g.onButton(press(Button::B));
+        CHECK(g.travelSleepRequested());
+        // Latched, not a pulse: the device tier is already landing a save and
+        // powering the panel down, so nothing here half-cancels it.
+        g.onButton(press(Button::C));
+        g.onButton(press(Button::A));
+        CHECK(g.travelSleepRequested());
+        CHECK(g.cfgScreen() == CfgScreen::Travel);
+    }
+}
+
+// The travel-sleep contract, and the reason the mode needs no clock-freeze machinery
+// of its own: the device tier lands a save and then DEEP-sleeps, which on this board
+// is a reset, so a wake re-enters through that save. Whatever the gap was, the state
+// it comes back to must be the state it left.
+//
+// Manufactured at the seam — the save the sleep writes, reloaded the way a wake
+// reloads it — rather than by trying to sleep, which the host tier cannot do.
+static void test_travel_sleep_credits_nothing_to_the_gap() {
+    MemSaveStore store;
+    Game before(StartMode::Hatched, "paypup", &store);
+    for (uint32_t t = 1000; t <= 120000; t += 1000) before.tick(t);
+    const int hunger = before.model().hunger();
+    const int happy = before.model().happiness();
+    const uint32_t evolveRemain = before.evolveRemainMs();
+    const uint32_t uptime = before.lifetimeUptimeMs();
+    CHECK(evolveRemain > 0);                    // there IS a growth clock to strand
+    CHECK(before.saveNow());                    // what the device tier does last
+
+    // The wake. A fresh Game over the same store is exactly what the reset produces.
+    Game after(StartMode::Hatched, "paypup", &store);
+    CHECK(after.model().hunger() == hunger);    // no decay credited to the gap
+    CHECK(after.model().happiness() == happy);
+    CHECK(after.evolveRemainMs() == evolveRemain);   // nor any growth
+    // Lifetime uptime counts time AWAKE, so it resumes rather than jumping: the
+    // Backup Drive shield and the CSF grace window both anchor on it.
+    CHECK(after.lifetimeUptimeMs() == uptime);
+
+    // And the one outcome the device tier must not sleep over. persistSave defers
+    // when the heap is too tight to serialize, and a deferral before a reset is a
+    // lost session, so saveNow reports it instead of returning a bare void.
+    Game tight(StartMode::Hatched, "paypup", &store);
+    tight.setHeapProbe([]() -> uint32_t { return 1024; });
+    CHECK(!tight.saveNow());
 }
 
 // A setting inside a group returns to that group, not to the top of CFG — and the
@@ -5127,13 +5196,13 @@ static void test_cfg_brightness_apply() {
     g.setBrightness(-5);  CHECK(g.brightness() == 0);
     g.setBrightness(999); CHECK(g.brightness() == kBrightnessLevels - 1);
 
-    // Drive it through the CFG UI: CFG -> DISPLAY -> BRIGHTNESS, cycle once, apply.
+    // Drive it through the CFG UI: CFG -> DEVICE -> BRIGHTNESS, cycle once, apply.
     g.setBrightness(0);                            // known start
     enterCfgTarget(g, CfgScreen::Brightness);      // the picker starts on the applied 0
     CHECK(g.nav() == Game::Nav::Detail);
     g.onButton(press(Button::A));                  // cycle 0 -> 1
-    g.onButton(press(Button::B));                  // apply -> back to DISPLAY
-    CHECK(g.cfgScreen() == CfgScreen::Display);
+    g.onButton(press(Button::B));                  // apply -> back to DEVICE
+    CHECK(g.cfgScreen() == CfgScreen::Device);
     CHECK(g.brightness() == 1);                    // the live level changed + persists
 }
 
@@ -13459,6 +13528,8 @@ static void test_firmware_version_ordering() {
     RUN(test_sprite_grayscale_legibility)   \
     /* CFG submenu */                       \
     RUN(test_cfg_uimode_toggle)             \
+    RUN(test_cfg_travel_confirm_asks_twice) \
+    RUN(test_travel_sleep_credits_nothing_to_the_gap) \
     RUN(test_cfg_group_back_resumes_row)    \
     RUN(test_cfg_radio_reports_owner)       \
     RUN(test_cfg_radio_rows_follow_arbiter_priority) \

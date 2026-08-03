@@ -415,6 +415,37 @@ public:
     bool sdRecheckRequested() const { return sdRecheckRequested_; }
     void clearSdRecheck() { sdRecheckRequested_ = false; }
 
+    // Travel-mode seam (CFG → DEVICE → TRAVEL MODE), a deliberate indefinite pause
+    // for an operator who is going away and does not want to babysit a pet. Set
+    // here, acted on by the device tier: it powers the radio down, lands a save, and
+    // deep-sleeps the SoC until the wake chord.
+    //
+    // There is deliberately NO clock to freeze on this side. A deep sleep on this
+    // board is a reset, so a wake re-enters through the save, and every engine clock
+    // is already reboot-safe by one of three routes: rebased against nowMs_ on load
+    // (stageEnteredMs_, lastModelMs_), stored as a REMAINING count rather than a
+    // deadline (bootHatchRemainMs_), or anchored on lifetimeUptimeMs(), which is
+    // awake time and does not advance while the device is off (backupShieldUntilMs_,
+    // dyingElapsedMs_). Nothing observes wall time, because the board carries no RTC
+    // (config.h HAS_HARDWARE_RTC) — so the sleep gap is uncreditable by construction
+    // rather than by bookkeeping.
+    //
+    // Latched, not a pulse: the device tier may have to hold it for a moment (an OTA
+    // image still on trial must commit before a reset is safe), so it stays set until
+    // clearTravelSleep(). The host tier clears it without sleeping.
+    void requestTravelSleep() { travelSleepRequested_ = true; dirty_ = true; }
+    bool travelSleepRequested() const { return travelSleepRequested_; }
+    void clearTravelSleep() { travelSleepRequested_ = false; dirty_ = true; }
+
+    // Write the current state now, reporting whether it landed. Unconditional — it
+    // does not ask whether anything is dirty, because passive decay moves the model
+    // without marking itself and this is called when the state is about to stop
+    // existing in RAM. Travel sleep is the caller that needs that guarantee: a deep
+    // sleep is a reset, so anything still inside the kSaveDebounceMs window is simply
+    // lost. False means the heap guard turned the write away (savesDeferred), and the
+    // caller must stay awake and ask again rather than treat the state as written.
+    bool saveNow();
+
     // Which consent actually holds the radio, pushed from the arbiter whenever it
     // hands ownership over (platform/esp32/radio_arbiter.h). Runtime-only: it is a
     // reading of what the hardware is doing right now, not a preference to persist.
@@ -1912,6 +1943,7 @@ private:
     int cfgUiPick_ = 0;
     int cfgBrightPick_ = 0;   // Brightness picker focus (0..kBrightnessLevels-1)
     int cfgAuditPick_ = 0;    // Audit level picker focus (0 OFF, 1 SCAN, 2 SCAN+CAP)
+    int cfgTravelPick_ = 0;   // Travel-mode confirm focus (0 = NO, 1 = YES)
     int cfgApPick_ = 0;       // 'Pedia AP toggle focus (0 = OFF, 1 = ON)
     int cfgLinkPick_ = 0;     // pet-to-pet LINK toggle focus (0 = OFF, 1 = ON)
     int pediaQrPage_ = 0;     // PEDIA QR step (see pediaQrPage())
@@ -2472,6 +2504,10 @@ private:
     uint32_t sdIconRevealAtMs_ = 0;
     bool sdIconRevealArmed_ = false;
     bool sdRecheckRequested_ = false;
+
+    // Latched CFG->device request to enter travel sleep. Runtime-only: what it asks
+    // for is a reset, and a device that woke from one is not still asking.
+    bool travelSleepRequested_ = false;
 
     // The arbiter's resolved radio owner (runtime-only; None on host).
     RadioOwner radioOwner_ = RadioOwner::None;

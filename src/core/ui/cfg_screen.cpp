@@ -145,7 +145,7 @@ int cfgRows(const CfgRow*& out) {
         {"SYSTEM INFO", &ASSET_ICON_CFG_SYSINFO, CfgScreen::SysInfo},
         {"HACKERTAG", &ASSET_ICON_CFG_TAG, CfgScreen::HackerTag},
         {"TITLE", &ASSET_ICON_CFG_TITLE, CfgScreen::Titles},
-        {"DISPLAY", &ASSET_ICON_CFG_UIMODE, CfgScreen::Display},
+        {"DEVICE", &ASSET_ICON_CFG_UIMODE, CfgScreen::Device},
         {"RADIO", &ASSET_ICON_SYS_WIFI, CfgScreen::Radio},
         {"UPDATES", &ASSET_ICON_CFG_SYSINFO, CfgScreen::Update},
         // SD RECHECK is not a row: it acts on the SD line it reports through, so it
@@ -160,11 +160,15 @@ int cfgRows(const CfgRow*& out) {
 }
 
 int cfgGroupRows(CfgScreen group, const CfgRow*& out) {
-    // How the screen looks. Two settings nobody sets in the same breath as a radio
-    // toggle, and neither is worth a top-level row of its own.
-    static const CfgRow kDisplay[] = {
+    // The device itself, rather than the world in it: how it presents, and whether
+    // it is running at all. None of the three is worth a top-level row, and
+    // BRIGHTNESS reads as neighbour to both — it is the panel's setting and the
+    // largest battery lever short of switching the device off, which is the row
+    // under it.
+    static const CfgRow kDevice[] = {
         {"UI MODE", &ASSET_ICON_CFG_UIMODE, CfgScreen::UiMode},
         {"BRIGHTNESS", &ASSET_ICON_CFG_UIMODE, CfgScreen::Brightness},
+        {"TRAVEL MODE", &ASSET_ICON_CFG_SYSINFO, CfgScreen::Travel},
     };
     // The three radio TOGGLES, listed in the arbiter's own priority order, highest
     // first — so "the one nearest the top wins" is a rule the reader can check
@@ -181,9 +185,9 @@ int cfgGroupRows(CfgScreen group, const CfgRow*& out) {
         {"LINK", &ASSET_ICON_CREW, CfgScreen::Link},
         {"AUDIT", &ASSET_ICON_CFG_SYSINFO, CfgScreen::Audit},
     };
-    if (group == CfgScreen::Display) {
-        out = kDisplay;
-        return static_cast<int>(sizeof(kDisplay) / sizeof(kDisplay[0]));
+    if (group == CfgScreen::Device) {
+        out = kDevice;
+        return static_cast<int>(sizeof(kDevice) / sizeof(kDevice[0]));
     }
     if (group == CfgScreen::Radio) {
         out = kRadio;
@@ -197,7 +201,8 @@ CfgScreen cfgParentGroup(CfgScreen s) {
     switch (s) {
         case CfgScreen::UiMode:
         case CfgScreen::Brightness:
-            return CfgScreen::Display;
+        case CfgScreen::Travel:
+            return CfgScreen::Device;
         case CfgScreen::Audit:
         case CfgScreen::Link:
         case CfgScreen::PediaAp:
@@ -243,20 +248,57 @@ void drawCfgList(Framebuffer& fb, int cursor, const char* hackerTag,
     }
 }
 
-void drawCfgDisplay(Framebuffer& fb, int cursor, UiMode uiMode, int brightness) {
-    header(fb, "DISPLAY");
+void drawCfgDevice(Framebuffer& fb, int cursor, UiMode uiMode, int brightness) {
+    header(fb, "DEVICE");
     const CfgRow* rows = nullptr;
-    const int n = cfgGroupRows(CfgScreen::Display, rows);
+    const int n = cfgGroupRows(CfgScreen::Device, rows);
 
     char brightBuf[8];
     std::snprintf(brightBuf, sizeof(brightBuf), "%d%%", brightnessPercent(brightness));
     for (int i = 0; i < n; ++i) {
-        const char* val = rows[i].target == CfgScreen::UiMode ? uiModeName(uiMode)
-                                                              : brightBuf;
+        const char* val = nullptr;   // TRAVEL MODE is an action: no value to preview
+        if (rows[i].target == CfgScreen::UiMode) val = uiModeName(uiMode);
+        else if (rows[i].target == CfgScreen::Brightness) val = brightBuf;
         settingsRow(fb, kRowTop + i * kRowH, rows[i], i == cursor, val,
                     palColor(Pal::INK_DIM));
     }
     drawText(fb, kMargin, 170, "A NEXT  B OPENS  C BACK", palColor(Pal::INK_DIM));
+}
+
+void drawTravelConfirm(Framebuffer& fb, int pick) {
+    header(fb, "TRAVEL MODE?");
+
+    // What it costs and what it buys, in that order. "Nothing ages" is the whole
+    // point of the mode and the reason it is not the same as switching the device
+    // off mid-lifecycle, so it leads.
+    drawText(fb, kMargin, 30, "THE DEVICE SLEEPS UNTIL", palColor(Pal::INK_DIM));
+    drawText(fb, kMargin, 42, "YOU WAKE IT.", palColor(Pal::INK_DIM));
+    drawText(fb, kMargin, 60, "NOTHING AGES WHILE IT IS", palColor(Pal::INK));
+    drawText(fb, kMargin, 72, "ASLEEP - NO HUNGER, NO", palColor(Pal::INK));
+    drawText(fb, kMargin, 84, "DECAY, NO GROWTH.", palColor(Pal::INK));
+
+    // The one instruction a dark device cannot give, so it is given here and
+    // repeated on the frame that follows (drawTravelSleeping).
+    drawText(fb, kMargin, 104, "WAKE: HOLD B+C TOGETHER", palColor(Pal::ACCENT));
+
+    static const char* kOpts[2] = {"NO", "YES, SLEEP"};
+    for (int i = 0; i < 2; ++i) {
+        const int y = 126 + i * 20;
+        if (i == pick) {
+            fb.fillRect(4, y - 2, kActiveW - 8, 18, palColor(Pal::TRACK));
+            drawRowCursor(fb, 8, y + 3, palColor(Pal::ACCENT));
+        }
+        drawText(fb, 24, y + 3, kOpts[i],
+                 palColor(i == 1 ? Pal::WARN : Pal::INK));
+    }
+    drawText(fb, kMargin, 176, "A CHOOSES  B CONFIRMS", palColor(Pal::INK_DIM));
+}
+
+void drawTravelSleeping(Framebuffer& fb) {
+    header(fb, "TRAVEL MODE");
+    drawText(fb, kMargin, 80, "GOING TO SLEEP...", palColor(Pal::INK));
+    drawText(fb, kMargin, 104, "HOLD B+C TOGETHER", palColor(Pal::ACCENT));
+    drawText(fb, kMargin, 116, "TO WAKE ME UP.", palColor(Pal::ACCENT));
 }
 
 void drawCfgRadio(Framebuffer& fb, int cursor, RadioOwner owner, int auditLevel,

@@ -28,10 +28,11 @@ namespace mal {
 void Game::enterCfgScreen(CfgScreen target) {
     cfgScreen_ = target;
     switch (target) {
-        case CfgScreen::Display:
+        case CfgScreen::Device:
         case CfgScreen::Radio:
             cfgGroupRow_ = 0;
             break;
+        case CfgScreen::Travel: cfgTravelPick_ = 0; break;   // always opens on NO
         case CfgScreen::UiMode: cfgUiPick_ = static_cast<int>(uiMode_); break;
         case CfgScreen::Brightness: cfgBrightPick_ = brightness_; break;   // the applied level
         case CfgScreen::Titles: cfgTitlePick_ = equippedTitle_; break;     // the equipped one
@@ -79,7 +80,7 @@ void Game::onCfgList(const ButtonEvent& ev) {
     }
 }
 
-// A group screen (DISPLAY / RADIO): a row list like the L2 above it, one level in.
+// A group screen (DEVICE / RADIO): a row list like the L2 above it, one level in.
 // A walks it, B opens the focused setting, C returns to the CFG list.
 void Game::onCfgGroup(const ButtonEvent& ev) {
     const CfgRow* rows = nullptr;
@@ -93,9 +94,23 @@ void Game::onCfgGroup(const ButtonEvent& ev) {
 
 void Game::onCfgDetail(const ButtonEvent& ev) {
     switch (cfgScreen_) {
-        case CfgScreen::Display:
+        case CfgScreen::Device:
         case CfgScreen::Radio:
             onCfgGroup(ev);
+            break;
+        case CfgScreen::Travel:
+            // Once the request is latched every button is inert: the device tier is
+            // already landing a save and powering the panel down, and a press that
+            // half-cancelled that would leave the operator guessing which of the two
+            // states they are in. A ordinarily cycles NO/YES, B commits the focused
+            // one, C backs out to the group with nothing asked for.
+            if (travelSleepRequested_) break;
+            if (ev.button == Button::A) cfgTravelPick_ ^= 1;
+            else if (ev.button == Button::B) {
+                if (cfgTravelPick_ == 1) requestTravelSleep();
+                else leaveCfgScreen();
+            } else if (ev.button == Button::C) leaveCfgScreen();
+            dirty_ = true;
             break;
         case CfgScreen::SysInfo:
             // A re-checks the card: ask the device tier to unmount + remount so one
@@ -312,8 +327,14 @@ void Game::drawCfg(Framebuffer& fb) const {
                        equippedTitleName(), radioOwner_, hf);
             break;
         }
-        case CfgScreen::Display:
-            drawCfgDisplay(fb, cfgGroupRow_, uiMode_, brightness_); break;
+        case CfgScreen::Device:
+            drawCfgDevice(fb, cfgGroupRow_, uiMode_, brightness_); break;
+        case CfgScreen::Travel:
+            // Two faces, like the UPDATES screen: the question, then the notice that
+            // replaces it for as long as the device is still on its way down.
+            if (travelSleepRequested_) drawTravelSleeping(fb);
+            else drawTravelConfirm(fb, cfgTravelPick_);
+            break;
         case CfgScreen::Radio:
             drawCfgRadio(fb, cfgGroupRow_, radioOwner_,
                          static_cast<int>(auditMode()), linkEnabled_, apEnabled_,

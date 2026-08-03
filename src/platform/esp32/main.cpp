@@ -6,14 +6,16 @@
 // game.onButton(). Repaint stays event-driven (~4fps heartbeat + state change),
 // matching the spec's render budget.
 //
-// Button roles (config.h): A = PLUS (NEXT) · B = BOOT/GPIO0 (ACCEPT) ·
-// C = PWR (CANCEL). A+C = the reserved meta chord (no-op pet-side).
+// Button roles (config.h is the authority): A = KEY_MINUS/GPIO0, which is also the
+// BOOT/download strap (NEXT) · B = KEY_PWR (ACCEPT) · C = KEY_PLUS (CANCEL).
+// A+C = the reserved meta chord (no-op pet-side).
 //
 // BRINGUP_PINSCAN (build flag): also scan the pin_finder candidate GPIOs and
 // print any press to serial. Lets the first flash discover PLUS/PWR while the
 // panel is already rendering, then it's compiled out for the real build.
 #include <Arduino.h>
 #include <driver/gpio.h>
+#include <driver/rtc_io.h>
 #include <esp_ota_ops.h>
 #include <esp_sleep.h>
 
@@ -181,6 +183,78 @@ void enterIdleLightSleep() {
     }
 }
 
+// --- Travel mode: the deliberate, indefinite pause -------------------------
+//
+// Deep sleep, not the idle light sleep above, and the difference IS the feature.
+// Light sleep parks the SoC with RAM and the system clock alive, so the game keeps
+// its place and keeps counting; deep sleep powers the digital core down to the RTC
+// domain (µA, well under light sleep) and comes back through a RESET. That reset is
+// what freezes the game clock: the engine re-enters through the save, and every
+// clock in it is already reboot-safe (Game::requestTravelSleep spells out how).
+// Nothing needs pausing, because nothing survives to run.
+//
+// The wake source is B+C held together. Button A is GPIO0, the download-mode strap
+// (HARDWARE.md), and a deep-sleep wake re-runs the reset that strap is sampled at —
+// waking on A risks coming up in the ROM downloader instead of the game, which on a
+// device with no cable reads as dead. B and C are ordinary GPIOs and carry the same
+// two-button deliberateness.
+//
+// ext1 on this part wakes on ANY pin in the mask, never on all of them, so the CHORD
+// and its hold are checked in firmware on the way up (travelWakeGate). A wake that
+// isn't the gesture goes straight back down without bringing the panel, the card or
+// the radio up, so a press through a bag costs milliseconds awake, not a woken pet.
+constexpr uint64_t kTravelWakeMask =
+    (1ULL << PIN_BTN_B) | (1ULL << PIN_BTN_C);
+
+// Park the core until the wake gesture. Does not return.
+void travelDeepSleep() {
+    // Clear what the idle light sleep left configured — its fallback TIMER above all,
+    // which would otherwise wake a travelling device every IDLE_SLEEP_FALLBACK_MS and
+    // turn an indefinite pause into a slow one.
+    esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_ALL);
+
+    // The wake pins hold their own pull-ups through the sleep. Every pad reverts to
+    // its reset state in deep sleep, and an active-low button on a floating pin is a
+    // wake source that fires on nothing.
+    for (const uint64_t pin : {static_cast<uint64_t>(PIN_BTN_B),
+                               static_cast<uint64_t>(PIN_BTN_C)}) {
+        const auto num = static_cast<gpio_num_t>(pin);
+        rtc_gpio_pullup_en(num);
+        rtc_gpio_pulldown_dis(num);
+    }
+    esp_sleep_enable_ext1_wakeup(kTravelWakeMask, ESP_EXT1_WAKEUP_ANY_LOW);
+
+#ifdef PIN_POWER_HOLD
+    // Hold the power latch through the sleep, for the same reason the pull-ups are
+    // held: this pad reverts too, and it is the only thing keeping the battery rail
+    // up (HARDWARE.md). Dropping it turns the sleep into a power-off that only the
+    // PWR button can undo — which is a different, worse feature.
+    gpio_hold_en(static_cast<gpio_num_t>(PIN_POWER_HOLD));
+    gpio_deep_sleep_hold_en();
+#endif
+    Serial.println("[travel] deep sleep — wake on B+C");
+    Serial.flush();
+    esp_deep_sleep_start();
+}
+
+// Run first thing in setup(), before anything slow or power-hungry is brought up.
+// A cold boot passes straight through; a travel wake has to present the whole
+// gesture here or it never becomes a boot at all.
+void travelWakeGate() {
+    if (esp_sleep_get_wakeup_cause() != ESP_SLEEP_WAKEUP_EXT1) return;
+    // Hand the wake pads back from the RTC mux so an ordinary digitalRead sees them.
+    rtc_gpio_deinit(static_cast<gpio_num_t>(PIN_BTN_B));
+    rtc_gpio_deinit(static_cast<gpio_num_t>(PIN_BTN_C));
+    pinMode(PIN_BTN_B, INPUT_PULLUP);
+    pinMode(PIN_BTN_C, INPUT_PULLUP);
+    const uint32_t until = millis() + TRAVEL_WAKE_HOLD_MS;
+    while (millis() < until) {
+        if (digitalRead(PIN_BTN_B) != LOW || digitalRead(PIN_BTN_C) != LOW)
+            travelDeepSleep();   // not the gesture: back down, no boot
+        delay(10);
+    }
+}
+
 // Is a real USB HOST attached right now?
 //
 // HWCDC::isPlugged() watches USB Start-of-Frame packets via a FreeRTOS tick hook,
@@ -264,7 +338,17 @@ void setup() {
 #ifdef PIN_POWER_HOLD
     pinMode(PIN_POWER_HOLD, OUTPUT);
     digitalWrite(PIN_POWER_HOLD, POWER_HOLD_ACTIVE_HIGH ? HIGH : LOW);
+    // A travel wake arrives with this pad still HELD at the level it was parked on
+    // (travelDeepSleep), which is why the rail survived the sleep. Release the hold
+    // only now that the pad has been driven to the same level again, so the latch
+    // never sees a gap. Both calls are no-ops on any other boot.
+    gpio_deep_sleep_hold_dis();
+    gpio_hold_dis(static_cast<gpio_num_t>(PIN_POWER_HOLD));
 #endif
+
+    // Before Serial, the display, the card or the radio: a wake that isn't the
+    // travel gesture must cost nothing but the milliseconds spent proving it.
+    travelWakeGate();
 
     Serial.begin(115200);
 #ifdef BRINGUP_PINSCAN
@@ -575,6 +659,32 @@ void loop() {
     const bool beat = game->tick(millis());  // always tick (model runs while asleep)
     if (beat) dirty = true;
     if (dirty && !screenAsleep) repaint();
+
+    // Travel mode. The request is latched rather than pulsed, so each of the three
+    // preconditions below can simply decline this pass and be asked again next loop.
+    //
+    // The panel is left showing the notice frame for a moment before it goes off: a
+    // device that darkens with no explanation is one the operator will press every
+    // button on, and the wake gesture is the last thing on screen.
+    if (game->travelSleepRequested()) {
+        static uint32_t travelDarkenAtMs = 0;
+        // An OTA image still on trial has not been committed, and a reset while it is
+        // pending is exactly what the bootloader rolls back. Waiting out the trial
+        // costs the operator seconds; not waiting costs them the version they just
+        // installed, silently.
+        const bool otaOnTrial = otaCommitAtMs != 0;
+        // The save is the whole reason this is not just a power-off: a deep sleep is
+        // a reset, so anything still inside the autosave debounce would be gone.
+        // saveNow() reports the heap guard declining, and a decline means stay up.
+        if (!otaOnTrial && game->saveNow()) {
+            if (travelDarkenAtMs == 0) travelDarkenAtMs = millis() + 1500;
+            if (millis() >= travelDarkenAtMs) {
+                radio.standDown(millis());   // seals a live capture; closes the .pcap
+                display.sleep();
+                travelDeepSleep();           // does not return
+            }
+        }
+    }
 
 #ifdef BRINGUP_PINSCAN
     // Heartbeat so a serial reader attaching at any time sees the firmware is

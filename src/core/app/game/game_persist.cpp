@@ -695,4 +695,16 @@ void Game::persistSave() {
     saveDirty_ = false;
 }
 
+bool Game::saveNow() {
+    if (!store_) return true;   // nothing to lose: no store, no state to strand
+    // Unconditional, and marked dirty FIRST for two reasons. The state is about to
+    // stop existing in RAM, so "nothing has changed since the last autosave" is not
+    // good enough — passive decay moves the model without marking itself. And it is
+    // what gives the return value meaning: persistSave clears the flag only on a
+    // write that landed, and leaves it set when the heap guard turned it away.
+    markSaveDirty();
+    persistSave();
+    return !saveDirty_;
+}
+
 }  // namespace mal

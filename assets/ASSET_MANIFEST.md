@@ -371,18 +371,19 @@ yolk-in-shell · leek · cereal box · mug · sachet · apple · taproot · nood
 
 | Asset ID | Element | Logical size | Notes | Status | File |
 |---|---|---|---|---|---|
-The list is **six rows** — SYSTEM INFO · HACKERTAG · TITLE · DISPLAY · RADIO · UPDATES — which is
-exactly the viewport, so it never scrolls. DISPLAY and RADIO are **group screens**: each draws its
+The list is **six rows** — SYSTEM INFO · HACKERTAG · TITLE · DEVICE · RADIO · UPDATES — which is
+exactly the viewport, so it never scrolls. DEVICE and RADIO are **group screens**: each draws its
 own rows from the same `CfgRow` shape and reuses the glyphs below, so grouping needs no new art.
 
 | Asset ID | Element | Logical size | Notes | Status | File |
 |---|---|---|---|---|---|
 | `ICON_CFG_SYSINFO` | System Info row glyph | 20×20 | UPDATES borrows it too, pending its own | ☑ | `/assets/ICON_CFG_SYSINFO.png` |
 | `ICON_CFG_TAG` | HackerTag row glyph | 20×20 | | ☑ | `/assets/ICON_CFG_TAG.png` |
-| `ICON_CFG_UIMODE` | UI Mode row glyph | 20×20 | also the DISPLAY group row + BRIGHTNESS | ☑ | `/assets/ICON_CFG_UIMODE.png` |
+| `ICON_CFG_UIMODE` | UI Mode row glyph | 20×20 | also the DEVICE group row + BRIGHTNESS | ☑ | `/assets/ICON_CFG_UIMODE.png` |
 | `ICON_CFG_TITLE` | TITLE row glyph (zone-Title picker) | 20×20 | v1 stopgap home for zone Titles (`09 §6`); moves to Hacker HUD later | ☑ | `/assets/ICON_CFG_TITLE.png` |
 | `ICON_CFG_RADIO` | RADIO group row glyph | 20×20 | the four radio consents under one row; **reuses `ICON_SYS_WIFI` today**, which PEDIA AP + INTERNET also use — a distinct glyph would separate "the radio, as a place" from "a Wi-Fi service". A square-wave alternate is parked at `/assets/_attic/ICON_SYS_WIFI_ALT.png`; it needs a 20×20 redraw and a design call on whether that motif is the one that carries the split | ☐ | |
-| `ICON_CFG_UPDATE` | UPDATES row glyph | 20×20 | **reuses `ICON_CFG_SYSINFO` today** — the only remaining icon collision in the list; a download/arrow motif would clear it | ☐ | |
+| `ICON_CFG_UPDATE` | UPDATES row glyph | 20×20 | **reuses `ICON_CFG_SYSINFO` today**; a download/arrow motif would clear it | ☐ | |
+| `ICON_CFG_TRAVEL` | TRAVEL MODE row glyph (DEVICE group) | 20×20 | **reuses `ICON_CFG_SYSINFO` today**. A sleep motif — crescent, or a powered-down screen — would say what the row does; it is the one row in the group that is an action rather than a setting | ☐ | |
 | `ICON_SYS_BATTERY` | Battery status glyph | 16×16 | System Info | ⌫ | `/assets/_attic/ICON_SYS_BATTERY.png` |
 | `ICON_SYS_WIFI` | Wi-Fi AP status glyph | 16×16 | System Info; also the PEDIA AP / INTERNET / RADIO rows | ☑ | `/assets/ICON_SYS_WIFI.png` |
 | `ICON_SYS_SD` | SD-card status glyph | 16×16 | System Info | ☑ | `/assets/ICON_SYS_SD.png` |

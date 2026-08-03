@@ -41,7 +41,7 @@ building it up organically.
 |---|---|---|---|---|---|
 | FB-MECH6-b | **Stacker defrag minigame** — the item-free defrag variant (skill instead of the Defrag Tool, same guaranteed clean). | New minigame; the MAINT defrag flow already has the two-variant scaffold. | M | Opus | Fresh build — needs interaction design + a new screen. |
 | FB-UI4 | **Evolution reveal animation** — flash the pet silhouette + the possible-evolution silhouettes repeatedly before landing. | Evolve overlay. Needs the branch-candidate set + silhouette rendering. | L | Opus | Depends on the eye/silhouette metadata below. Design-heavy. |
-| FB-CFG4 | **Deep-sleep travel mode** — a true pause for "I'm travelling and don't want to babysit a vpet." | New CFG action + **freeze the game clock**: record the sleep instant, stop the model tick, and on wake rebase so the elapsed gap is **not** credited to hunger/decay/growth/egg-accel/audit/CSF. Wake only via the hacker chord. | XL | Opus | Approach confirmed; still architectural, since everything keys off `nowMs_`. No timer should observe any elapsed time across the sleep. Distinct from the idle *screen* sleep, which keeps ticking. Secondary goal: save as much battery as possible while away. |
+| NA | **Bench travel mode on a board.** CFG → DEVICE → TRAVEL MODE and the deep-sleep path are built and green on both gates, but every claim it makes is about hardware nothing has run. What a run has to answer: that the power latch survives the sleep (`gpio_hold_en` on `PIN_POWER_HOLD` — if it doesn't, the "sleep" is a power-off only PWR undoes) · that B+C wakes it and a single button does not (the wake gate re-sleeps without booting) · that the pet comes back with the hunger, happiness and evolve timer it went down with · and the current draw asleep, which is the whole point. | `platform/esp32/main.cpp`'s `travelDeepSleep` / `travelWakeGate`. | M | Opus | Needs a board and a way to read µA. Fold into the same bench session as the flasher + OTA failure paths below. |
 | FB-DSGN7 | **Iconic per-line move effects** (Ransomware: gamma pulse + scaled white/green silhouette layers, +1px layer per Evo-level of the move). | Move-fx system, per-line. | L | Opus | Needs a creature-line taxonomy + the effect system first. Cosmetic only. |
 | NA | **Sub-area bosses that are themselves gauntlets** — `subAreaBoss` returns a length-1 `BossGauntlet`, so a sub-area boss is always exactly one fight; only the AREA boss is multi-round. Castle Rapidscare's THE EIGHT PWNS wants to be a minor gauntlet, and its JOKER VIRUS wants to *loop back* into another Pwns run after it falls. | `combat.cpp`'s `subAreaBoss`/`areaBoss`, plus the round plumbing in `game_explore.cpp` (`startBossRound`/`finishBossRound`). | L | Opus | The re-entrant loop is the novel part — the carried-Health round machinery is linear today, with no notion of a round that re-queues an earlier one. Needs a design pass on how a loop terminates and what it pays. |
 | NA | **Confirm on device that a save lands while audit capture is armed.** The write path no longer asks for the blob in one piece: `Game` owns the serialize buffer and `captureSave` reserves every collection to its exact count, so an ordinary save is judged against `kSaveHeapFloorBytes` (12KB) rather than the reservation. Built and green on the native + S3 gates; the hardware run that proves `held` stays at 0 through a whole capture session has not been done. | `game_persist.cpp`'s `persistSave` and the `kSaveHeapFloorBytes` / `kSaveGrowHeapFloorBytes` pair. | S | Sonnet | `HEAP_TRACE_ENABLED` (config.h) → 1, then CFG → RADIO → AUDIT → SCAN+CAP, 'Pedia AP on and off again. Success = `held=0` with `floor=12288` and no boot banner. Read the log, not the panel — a reset is fast enough to look like nothing happened. |
@@ -259,6 +259,7 @@ Sizes are logical px; bind colour to `PAL_CORE` tokens. Inventory: `assets/ASSET
 | `ICON_EXPLORE_STATE` | optional sub-area row state marker | 16×16 | S / Sonnet |
 | `ICON_CFG_RADIO` | RADIO group row — reuses `ICON_SYS_WIFI` today | 20×20 | S / Sonnet |
 | `ICON_CFG_UPDATE` | UPDATES row — reuses `ICON_CFG_SYSINFO` today | 20×20 | S / Sonnet |
+| `ICON_CFG_TRAVEL` | DEVICE group's TRAVEL MODE row — reuses `ICON_CFG_SYSINFO` today | 20×20 | S / Sonnet |
 | `ICON_PEERS` | Hacker-face PEERS slot — renders text-only today | 28×28 | S / Sonnet |
 
 ### 2b. Placeholder → final art
@@ -318,5 +319,5 @@ single-responsibility — revisit only if they keep growing. Same rule as the `g
 
 ## 4. If picking up cold
 
-1. **FB-CFG4** (deep-sleep pause) — the last big Opus-class item.
-2. **The NET-C area (§1d)** — well-trodden pattern, but settle the insert-vs-append question first.
+1. **The NET-C area (§1d)** — well-trodden pattern, but settle the insert-vs-append question first.
+2. **FONT_UI integration (§1e)** — the highest per-screen leverage left, and the art is already drawn.

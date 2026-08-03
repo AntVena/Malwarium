@@ -115,7 +115,7 @@ click-distance, so the most-used categories are the cheapest to reach.
 | 5 MAINT | 4 either | Maintenance | Defrag, AV scan |
 | 6 MODS | 3 back | Mods | slot-based hardware equips |
 | 7 ARCH | 2 back | Archive | the pet rack + records, Deploy |
-| 8 CFG | 1 back | Config | system info, HackerTag, title, display, radio, updates |
+| 8 CFG | 1 back | Config | system info, HackerTag, title, device, radio, updates |
 
 **A+C on the top-level carousel flips to the parallel Hacker face** (PROFILE / CREW / SHOP / VAULT /
 MERGE HUB / PEERS / LINK), which is where device-level identity and radio social features live.

@@ -142,6 +142,24 @@ public:
 
     Owner owner() const { return owner_; }
 
+    // Take the radio off the air regardless of what any consumer wants, sealing a
+    // live capture so its .pcap sink is flushed and closed rather than truncated.
+    // poll() would put straight back whatever the persisted opt-ins ask for, so this
+    // is for the one caller that is about to stop calling poll() at all: travel sleep
+    // (platform/esp32/main.cpp), on its way into a deep sleep the association would
+    // not survive anyway. The opt-ins are untouched — a wake resolves them afresh.
+    void standDown(uint32_t nowMs) {
+        if (!game_ || !sniff_ || !capture_ || !ap_ || !link_ || !sta_) return;
+        game_->auditCapture().sealActive(nowMs);
+        sta_->ensureDown();
+        ap_->ensureDown();
+        link_->ensureDown();
+        capture_->ensureDown();
+        sniff_->ensureDown();
+        owner_ = Owner::None;
+        game_->setRadioOwner(RadioOwner::None);
+    }
+
 private:
     // The engine-facing name for an owner (core/app/radio_status.h) — a straight
     // relabelling, since both enums name the association after the update job that

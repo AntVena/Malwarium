@@ -389,7 +389,12 @@ bool Game::tick(uint32_t nowMs) {
                            nav_ == Nav::BulkYield || nav_ == Nav::PostEncounter ||
                            bHeld_ || aHeld_ ||
                            qrScreenActive() ||  // scanning a QR takes longer than 5s
-                           tagEditorActive();   // ...so does composing a tag
+                           tagEditorActive() || // ...so does composing a tag
+                           // Travel sleep is on its way down: the notice frame has to
+                           // stay put until the device tier powers the panel off, or
+                           // the last thing the operator sees is the idle screen and
+                           // not the gesture that brings the device back.
+                           travelSleepRequested_;
 
     // A radio screen (CREW's picker, PEERS) keeps the menu tree open far longer
     // (kRadioScreenDefocusMs): both are hands-off screens you walk around with, and

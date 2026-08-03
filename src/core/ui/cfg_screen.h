@@ -31,12 +31,12 @@ namespace mal {
 class Framebuffer;
 struct SpriteData;
 
-// L3 destinations a CFG row can open. Display and Radio are the two GROUP screens
+// L3 destinations a CFG row can open. Device and Radio are the two GROUP screens
 // (their own children follow them here). ResetHatch is the DEV-only quick reset (an
 // immediate action, no L3 screen). FactoryReset is reached only via the hidden
 // hold-B gesture, never a list row.
 enum class CfgScreen { SysInfo, HackerTag, Titles,
-                       Display, UiMode, Brightness,
+                       Device, UiMode, Brightness, Travel,
                        Radio, Audit, Link, PediaAp, PediaQr,
                        Update, UpdateQr, ResetHatch, FactoryReset };
 
@@ -53,9 +53,9 @@ struct CfgRow {
 // the row count and points `out` at the static array.
 int cfgRows(const CfgRow*& out);
 
-// The rows of a group screen — Display (UI MODE, BRIGHTNESS) or Radio (PEDIA AP,
-// LINK, AUDIT). Any other screen has none, so a caller can ask "is this a group?"
-// by testing the count. Returns the count, points `out` at the static array.
+// The rows of a group screen — Device (UI MODE, BRIGHTNESS, TRAVEL MODE) or Radio
+// (PEDIA AP, LINK, AUDIT). Any other screen has none, so a caller can ask "is this a
+// group?" by testing the count. Returns the count, points `out` at the static array.
 int cfgGroupRows(CfgScreen group, const CfgRow*& out);
 
 // The group screen a child returns to on C (or after applying), or the child's
@@ -79,9 +79,24 @@ int cfgScrollTop(int cursor, int n, int visible);
 void drawCfgList(Framebuffer& fb, int cursor, const char* hackerTag,
                  const char* equippedTitle, RadioOwner radioOwner);
 
-// L3 DISPLAY group: UI MODE + BRIGHTNESS, each previewing its live value. B opens
-// the focused control, C backs to the list.
-void drawCfgDisplay(Framebuffer& fb, int cursor, UiMode uiMode, int brightness);
+// L3 DEVICE group: the two presentation settings, each previewing its live value,
+// plus TRAVEL MODE. B opens the focused row, C backs to the list. Travel draws no
+// value preview — the other two are settings that are always at some level, and it
+// is an action with no state to report, which the empty value column says without a
+// word of copy.
+void drawCfgDevice(Framebuffer& fb, int cursor, UiMode uiMode, int brightness);
+
+// L3 TRAVEL MODE confirm. The device is about to go dark indefinitely, so the copy
+// leads with what stops (nothing ages) and ends with the one thing a dark device
+// cannot tell you: how to bring it back. Starts on NO, like every other screen that
+// asks a second time. `pick` is 0 = NO, 1 = YES.
+void drawTravelConfirm(Framebuffer& fb, int pick);
+
+// The frame that replaces the confirm once travel sleep is requested, held on the
+// panel by the device tier for long enough to be read before it powers the panel
+// down. It exists to answer the question a dark device provokes — this is the last
+// thing on screen, so the wake gesture is what it says.
+void drawTravelSleeping(Framebuffer& fb);
 
 // L3 RADIO group: the three radio toggles, in the arbiter's priority order with the
 // highest first, headed by the one thing no individual toggle screen can report —

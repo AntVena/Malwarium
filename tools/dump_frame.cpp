@@ -17,8 +17,9 @@
 //             flashqr] (the UPDATES screen; without "ready" it shows which setup step
 //             is missing, and "flashqr" walks onto the last row and opens the USB
 //             flasher's code)
-//        cfg [sysinfo|tag|titles|display|uimode|brightness|radio [idle|all]|audit|
-//             link|pediaap|qr|factory] (the settings tree; display/radio are the two
+//        cfg [sysinfo|tag|titles|device|uimode|brightness|travel [sleeping]|
+//             radio [idle|all]|audit|
+//             link|pediaap|qr|factory] (the settings tree; device/radio are the two
 //             group screens, and radio is seeded with a live arbiter owner —
 //             "idle" seeds nothing on air, "all" seeds every toggle on under a
 //             running update job)
@@ -254,7 +255,13 @@ int main(int argc, char** argv) {
             game.debugUnlockTitle(0);                // Citrus Circuit -> auto-equipped
             openTarget(CfgScreen::Titles);
         }
-        else if (hasFlag(argc, argv, "display")) openTarget(CfgScreen::Display);
+        else if (hasFlag(argc, argv, "device")) openTarget(CfgScreen::Device);
+        else if (hasFlag(argc, argv, "travel")) {
+            openTarget(CfgScreen::Travel);
+            // "sleeping" dumps the notice the confirm becomes; the bare flag dumps
+            // the question, which is the frame an operator actually has to read.
+            if (hasFlag(argc, argv, "sleeping")) game.requestTravelSleep();
+        }
         else if (hasFlag(argc, argv, "radio")) {     // the radio toggles + who has it
             // Stand in for what the arbiter pushes on a device, since a host build
             // never mounts one. The default is the case the screen exists for: two

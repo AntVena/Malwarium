@@ -165,6 +165,17 @@
 //  timers are anchor-based against real elapsed ms, not per-loop counters),
 //  so nothing else needs to know sleep happened.
 #define IDLE_SLEEP_FALLBACK_MS  120000  // 2 min
+//  Travel mode (CFG -> DEVICE -> TRAVEL MODE): a deliberate indefinite pause, and
+//  a DEEP sleep rather than the idle light sleep above — the digital core goes down
+//  and comes back through a reset, which is what makes the pause a real one. The
+//  wake gesture is PIN_BTN_B + PIN_BTN_C held together for this long. Deliberately
+//  NOT the A+C Exploit chord: PIN_BTN_A is GPIO0, the download-mode strap, and a
+//  deep-sleep wake re-runs the reset that strap is sampled at.
+//
+//  ext1 wakes on EITHER pin, so the second button and this hold are both checked in
+//  firmware on the way up (main.cpp's travelWakeGate). Sized so a press through a
+//  bag falls short while a deliberate one doesn't feel like a wait.
+#define TRAVEL_WAKE_HOLD_MS     1200    // 1.2s
 
 // Heap trace ----------------------------------------
 //  A periodic free/largest-block line on serial, plus whether a save would be
