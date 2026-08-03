@@ -1,11 +1,17 @@
-# Publish the update artifacts a device downloads, and the manifest that lists
-# them, to GitHub Pages.
+# Publish everything the release host serves to GitHub Pages: the update
+# artifacts a device downloads and the manifest that lists them, the three boot
+# images the browser flasher writes in front of the app, and the pages themselves
+# (pages/ — a landing page and /flash/).
 #
 # Pages is the publish host because the device needs exactly one thing: stable
 # URLs that return bytes. It has no use for tags, an API or release metadata, and
 # every one of those is a way for a check to fail before it reaches a firmware
 # byte. The manifest IS the version pointer — publishing a new version means
 # overwriting one file, so the device asks nothing and simply reads.
+#
+# The pages ride along in the same deploy rather than in one of their own, because
+# the flasher offers whatever the manifest beside it names: split the two and a
+# site could offer a version the host is not holding.
 #
 # BASE must match the served origin exactly: the manifest embeds absolute URLs,
 # and the device fetches what it is told, not what was meant. It is also what
@@ -54,13 +60,15 @@ jobs:
         run: pip install --upgrade platformio
       - name: Generate the sprite/palette codegen
         run: python3 tools/gen_assets.py
-      - name: Build the artifacts and the manifest
-        # `make manifest` builds the firmware image and the web bundle, writes
+      - name: Build the artifacts, the manifest and the pages
+        # `make pages` builds the firmware image and the web bundle, writes
         # manifest.json over them, then validates it with the DEVICE's own parser
         # (build/check_manifest). A manifest the device would reject looks exactly
         # like a dead network from the operator's side, so the publish fails here
-        # instead of on her desk.
-        run: make manifest BASE=https://antvena.github.io/Malwarium
+        # instead of on her desk. It then stages the boot images and pages/ beside
+        # them, failing just as loudly if a boot image is missing — a flasher that
+        # 404s partway through is worse than a publish that didn't happen.
+        run: make pages BASE=https://antvena.github.io/Malwarium
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

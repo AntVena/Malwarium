@@ -105,11 +105,13 @@ pedia-tar: pedia
 
 # --- Publishing ------------------------------------------------------------
 #
-# The three targets below build everything a device downloads and the list that
-# describes it, into dist/. That is a real publish; it just happens to be one you
-# can serve off a laptop:
+# The targets below build everything the publish host serves, into dist/:
+# `manifest` is what a DEVICE downloads (the artifacts and the list describing
+# them), `pages` adds what a PERSON opens (pages/, plus the boot images the USB
+# flasher writes). `pages` is the whole publish and what CI runs; it is also one
+# you can serve off a laptop:
 #
-#   make manifest BASE=http://192.168.1.50:8000
+#   make pages BASE=http://192.168.1.50:8000
 #   (cd dist && python3 -m http.server 8000)
 #   PLATFORMIO_BUILD_FLAGS='-DUPDATE_MANIFEST_URL=\"http://192.168.1.50:8000/manifest.json\"' \
 #     pio run -e waveshare_s3_154 -t upload
@@ -117,8 +119,11 @@ pedia-tar: pedia
 # BASE is whatever the DEVICE can reach — a laptop's LAN address, not localhost.
 # `pio run` has no -D of its own; PLATFORMIO_BUILD_FLAGS is what appends to the
 # environment's build_flags, and the escaped quotes make the macro a string literal.
+#
+# BASE does not reach the pages: both resolve every path against their own origin,
+# so they work under any host without being told which one (pages/README.md).
 
-.PHONY: firmware-artifact manifest manifest-check
+.PHONY: firmware-artifact manifest manifest-check boot-images site pages
 
 DIST ?= dist
 FW_ENV ?= waveshare_s3_154
@@ -186,3 +191,49 @@ build/check_manifest: tools/check_manifest.cpp src/core/net/update_manifest.cpp 
 	@mkdir -p build
 	$(CXX) -std=c++17 -O1 -I src -I include -o $@ \
 	    tools/check_manifest.cpp src/core/net/update_manifest.cpp
+
+# The three boot images the USB flasher writes in front of the app, staged under
+# fixed names because — unlike the app and the bundle — they do not carry a
+# version: the flasher reads the app's filename out of the manifest and knows
+# these three by convention (pages/flash/flash.js names the addresses).
+#
+# They are NOT manifest rows. The manifest is a list of things a device downloads
+# for ITSELF, and an over-the-air update can install none of these three: it
+# writes into an app slot the partition table already defines, which is exactly
+# why a bootloader or table change needs the cable in the first place.
+#
+# bootloader.bin and partitions.bin are build output; boot_app0.bin ships with the
+# Arduino framework, so it is copied out of the PlatformIO package tree. Both
+# lookups fail loudly — a publish missing one of these serves a flasher that
+# 404s halfway through, which is worse than a publish that didn't happen.
+PIO_CORE  ?= $(HOME)/.platformio
+BOOT_APP0 ?= $(PIO_CORE)/packages/framework-arduinoespressif32/tools/partitions/boot_app0.bin
+
+boot-images: firmware-artifact
+	@mkdir -p "$(DIST)"
+	@for f in bootloader.bin partitions.bin; do \
+	    src=".pio/build/$(FW_ENV)/$$f"; \
+	    [ -f "$$src" ] || { echo "error: the firmware build produced no $$src"; exit 1; }; \
+	    cp "$$src" "$(DIST)/$$f"; \
+	done
+	@[ -f "$(BOOT_APP0)" ] || { \
+	    echo "error: boot_app0.bin not found at $(BOOT_APP0)"; \
+	    echo "  it ships with framework-arduinoespressif32 — set PIO_CORE if your"; \
+	    echo "  PlatformIO core directory is not $(PIO_CORE)"; exit 1; }
+	@cp "$(BOOT_APP0)" "$(DIST)/boot_app0.bin"
+	@echo "staged boot images -> $(DIST)/ (bootloader.bin, partitions.bin, boot_app0.bin)"
+
+# The served pages themselves. pages/README.md documents the directory for someone
+# reading the repo and is not part of the site, so it is the one file dropped.
+site:
+	@mkdir -p "$(DIST)"
+	@cp -R pages/. "$(DIST)/"
+	@rm -f "$(DIST)/README.md"
+	@find "$(DIST)" \( -name '._*' -o -name '.DS_Store' \) -delete 2>/dev/null || true
+	@echo "staged pages/ -> $(DIST)/ (index.html, flash/, vendor/)"
+
+# The whole publish, in the order the pieces depend on each other: the artifacts
+# and their manifest first (which is also what validates them), then the boot
+# images beside them, then the pages that read both. This is what CI runs.
+pages: manifest boot-images site
+	@echo "publish ready in $(DIST)/ — serve it, or upload it as a Pages artifact"

@@ -68,6 +68,7 @@ malwarium/
 ├── src/platform/esp32/  ← drivers, radio arbiter, AP server + HARDWARE.md
 ├── tools/               ← gen_assets.py, gen_pedia_data.py, make_web_tar.py, host helpers
 ├── .github/workflows/   ← gates (every push) · publish (a v* tag → GitHub Pages)
+├── pages/               ← the publish host's own pages: a landing page + the USB flasher
 └── web/                 ← the SD-served 'Pedia bundle
 ```
 
@@ -271,6 +272,13 @@ overwriting one file:
 https://antvena.github.io/Malwarium/manifest.json
 ```
 
+The same deploy carries **`pages/`** — a landing page and a **Web Serial flasher** at
+`/flash/` — plus the three boot images an OTA can never write (`bootloader.bin`,
+`partitions.bin`, `boot_app0.bin`). They ride along rather than deploying separately because
+the flasher offers whatever the manifest beside it names, and a site one release ahead of its
+host would offer a version nobody is holding. `pages/README.md` is that directory's own
+standard; `make pages` is the whole publish, and what CI runs.
+
 Cutting a release is `git tag vX.Y.Z && git push github vX.Y.Z`. **Bump both versions first** —
 `include/version.h` and `web/VERSION`. A device installs only what beats what it already runs, so
 an unbumped publish is one nobody receives, and bumping both means never having to work out which
@@ -288,8 +296,12 @@ device loses as `Corrupt`.
 higher code, and asks its operator — so a release interrupts nobody and needs no permission. Two
 changes are the exception, because no later tag undoes them: a **save-format change** (trial-boot
 rollback can put the previous firmware back underneath a save the new one already rewrote) and a
-**partition-table or bootloader change** (an OTA writes neither, so every device needs USB — that
-is a recall). Everything else ships.
+**partition-table or bootloader change** (an OTA writes neither, so every device needs USB).
+
+The second of those is what `/flash/` is for. It writes all four boot images, so a table or
+bootloader change costs a remote operator a cable and a browser rather than a toolchain — the
+difference between an awkward release and a recall. It is still a change to confirm before
+tagging, because it reaches nobody who doesn't plug in. Everything else ships.
 
 ---
 

@@ -4197,9 +4197,11 @@ static void test_update_install_needs_a_confirmed_finding() {
     std::strcpy(fwOnly.firmwareVersion, "0.4.2");
     g.requestUpdateCheck();
     g.setUpdateStatus(fwOnly);
-    CHECK(updateCheckRows(fwOnly) == 2);          // CHECK NOW + the one it found
+    // CHECK NOW + the one it found + FLASH OVER USB, which is always last.
+    CHECK(updateCheckRows(fwOnly) == 3);
     CHECK(updateCheckRowTarget(fwOnly, 1) == UpdateTarget::Firmware);
     CHECK(updateCheckRowTarget(fwOnly, 2) == UpdateTarget::None);
+    CHECK(updateCheckRowKind(fwOnly, 2) == UpdateRowKind::FlashQr);
 
     g.requestUpdateInstall(UpdateTarget::Web);
     CHECK(!g.updateJobLive());
@@ -4225,7 +4227,7 @@ static void test_update_install_takes_two_yeses() {
     openUpdatesScreen(g);
 
     UpdateStatus found = g.updateStatus();
-    CHECK(updateCheckRows(found) == 3);           // check + firmware + web
+    CHECK(updateCheckRows(found) == 4);           // check + firmware + web + flasher
 
     g.onButton(press(Button::A));                 // row 0 -> the firmware row
     g.onButton(press(Button::B));                 // opens the confirm, installs nothing
@@ -4259,6 +4261,73 @@ static void test_update_install_takes_two_yeses() {
     CHECK(!g.updateJobLive());
     CHECK(!g.netConnectWanted());
     CHECK(g.installStatus().state == InstallState::Done);
+}
+
+// The USB flasher's address is DERIVED from the manifest one, so a device pointed
+// at a fork or a laptop offers that host's flasher without being told twice.
+static void test_flasher_url_follows_the_publish_host() {
+    char out[192];
+
+    CHECK(updateFlasherUrl("https://antvena.github.io/Malwarium/manifest.json",
+                           out, sizeof(out)));
+    CHECK(std::strcmp(out, "https://antvena.github.io/Malwarium/flash/") == 0);
+
+    // A laptop publish: same rule, different host, no scheme assumption.
+    CHECK(updateFlasherUrl("http://192.168.1.50:8000/manifest.json", out, sizeof(out)));
+    CHECK(std::strcmp(out, "http://192.168.1.50:8000/flash/") == 0);
+
+    // Only the FILENAME is replaced — a nested publish keeps its whole path.
+    CHECK(updateFlasherUrl("https://box.local/a/b/manifest.json", out, sizeof(out)));
+    CHECK(std::strcmp(out, "https://box.local/a/b/flash/") == 0);
+
+    // A bare host has no filename to replace, and earns the slash it lacks. The
+    // "//" of the scheme is not a path separator, which is what this pins.
+    CHECK(updateFlasherUrl("https://box.local", out, sizeof(out)));
+    CHECK(std::strcmp(out, "https://box.local/flash/") == 0);
+
+    // Nowhere to look, or nowhere to put it: no address, and `out` says so rather
+    // than holding a half-built one.
+    CHECK(!updateFlasherUrl("", out, sizeof(out)));
+    CHECK(out[0] == '\0');
+    CHECK(!updateFlasherUrl(nullptr, out, sizeof(out)));
+    char tiny[8];
+    CHECK(!updateFlasherUrl("https://box.local/manifest.json", tiny, sizeof(tiny)));
+    CHECK(tiny[0] == '\0');
+}
+
+// The flasher row rides at the BOTTOM of a list whose middle changes, and it is
+// the one row that works without a network — so B opens the code even when a
+// check can't run, which is exactly when someone needs it.
+static void test_flasher_row_is_last_and_needs_no_network() {
+    Game g{StartMode::Hatched};
+    // A source but no stored network: a check is impossible, the flasher is not.
+    g.setUpdateManifestUrl("https://antvena.github.io/Malwarium/manifest.json");
+    CHECK(!g.updateCheckReady());
+    openUpdatesScreen(g);
+
+    UpdateStatus idle;
+    CHECK(updateCheckRows(idle) == 2);                        // check + flasher
+    CHECK(updateCheckRowKind(idle, 0) == UpdateRowKind::Check);
+    CHECK(updateCheckRowKind(idle, 1) == UpdateRowKind::FlashQr);
+
+    g.onButton(press(Button::A));                             // onto the flasher row
+    g.onButton(press(Button::B));
+    CHECK(g.cfgScreen() == CfgScreen::UpdateQr);
+    CHECK(g.qrScreenActive());                                // holds the panel awake
+    CHECK(!g.updateJobLive());                                // and asks for no radio
+
+    g.onButton(press(Button::C));                             // back to UPDATES, not out
+    CHECK(g.cfgScreen() == CfgScreen::Update);
+    CHECK(g.nav() == Game::Nav::Detail);
+    CHECK(!g.qrScreenActive());
+
+    // With nowhere to look there is nothing to encode, so the row is inert rather
+    // than opening a screen that would have to apologise.
+    Game blank{StartMode::Hatched};
+    openUpdatesScreen(blank);
+    blank.onButton(press(Button::A));
+    blank.onButton(press(Button::B));
+    CHECK(blank.cfgScreen() == CfgScreen::Update);
 }
 
 // A download in progress is not terminal; only Done and Failed hand the radio back.
@@ -13596,6 +13665,8 @@ static void test_firmware_version_ordering() {
     RUN(test_update_job_dies_when_the_join_fails)        \
     RUN(test_update_install_needs_a_confirmed_finding) \
     RUN(test_update_install_takes_two_yeses)      \
+    RUN(test_flasher_url_follows_the_publish_host) \
+    RUN(test_flasher_row_is_last_and_needs_no_network) \
     RUN(test_update_install_progress_is_not_terminal) \
     RUN(test_tar_rejects_escaping_names)          \
     RUN(test_tar_reads_entries)                   \

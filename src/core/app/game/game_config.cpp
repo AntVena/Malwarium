@@ -221,16 +221,34 @@ void Game::onCfgDetail(const ButtonEvent& ev) {
                 updateRow_ = (updateRow_ + 1) % updateCheckRows(updateStatus_);
                 dirty_ = true;
             } else if (ev.button == Button::B) {
-                const UpdateTarget t = updateCheckRowTarget(updateStatus_, updateRow_);
-                if (t == UpdateTarget::None) {
-                    requestUpdateCheck();       // no-ops unless ready
-                    updateRow_ = 0;             // a fresh check invalidates the rows
-                } else {
-                    updateConfirm_ = t;         // ask before anything is written
-                    updateConfirmPick_ = 0;     // ...starting on NO
-                    dirty_ = true;
+                switch (updateCheckRowKind(updateStatus_, updateRow_)) {
+                    case UpdateRowKind::Check:
+                        requestUpdateCheck();       // no-ops unless ready
+                        updateRow_ = 0;             // a fresh check invalidates the rows
+                        break;
+                    case UpdateRowKind::Install:
+                        updateConfirm_ = updateCheckRowTarget(updateStatus_, updateRow_);
+                        updateConfirmPick_ = 0;     // ask before anything is written,
+                        dirty_ = true;              // ...starting on NO
+                        break;
+                    case UpdateRowKind::FlashQr:
+                        // Needs no radio and no network — the code is drawn from an
+                        // address this device already holds, so it opens even when a
+                        // check cannot run, which is when it is most wanted.
+                        if (updateSourceKnown_) {
+                            cfgScreen_ = CfgScreen::UpdateQr;
+                            dirty_ = true;
+                        }
+                        break;
                 }
             } else if (ev.button == Button::C) leaveCfgScreen();
+            break;
+        case CfgScreen::UpdateQr:
+            // One page, so A does nothing here. C returns to UPDATES with its cursor
+            // still on the row that opened this. The 5s auto-defocus and the screen
+            // sleep are both held off while it shows (qrScreenActive) — this code is
+            // read by a phone, which takes longer than the usual idle window.
+            if (ev.button == Button::C) leaveCfgScreen();
             break;
         case CfgScreen::PediaQr:
             // Two QR pages: A cycles join-network <-> 'Pedia-URL; C exits. The 5s
@@ -337,6 +355,7 @@ void Game::drawCfg(Framebuffer& fb) const {
                                 kFirmwareVersion, updateManifestUrl_, updateRow_);
             }
             break;
+        case CfgScreen::UpdateQr: drawUpdateQr(fb, updateManifestUrl_); break;
         case CfgScreen::PediaQr: drawPediaQr(fb, pediaQrPage_, netProvisioned_); break;
         case CfgScreen::FactoryReset: {
             const float hf = bHeld_

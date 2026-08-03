@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>MALWARIUM://FLASH</title>
+<meta name="description" content="Flash a Malwarium over USB from the browser — no toolchain, no command line.">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<div class="wrap">
+
+  <header class="site">
+    <div class="brand">
+      <a class="logo" href="../">MALWARIUM://FLASH</a>
+      <span class="ver" id="fw-stamp">reading the manifest&hellip;</span>
+    </div>
+    <div class="sub"><span class="prompt">usb@malwarium</span>:~$ write firmware over the cable</div>
+  </header>
+
+  <nav class="tabs">
+    <a href="../">HOME</a>
+    <a href="./" class="active">FLASH</a>
+  </nav>
+
+  <main>
+
+    <!-- The one hard gate. Web Serial is Chromium-only, and no amount of the page
+         below is useful without it, so it replaces the page rather than warning
+         beside it. -->
+    <section id="gate-browser" hidden>
+      <div class="note stop">
+        <span class="lbl">&#9888; THIS BROWSER CAN'T TALK TO USB</span>
+        Flashing needs the <b>Web Serial</b> API, which only
+        <b>Chrome</b>, <b>Edge</b> and other Chromium browsers have, on a
+        <b>desktop or laptop</b>. Safari and Firefox don't have it, and no mobile
+        browser does &mdash; not even Chrome on Android or iOS.
+      </div>
+      <div class="card">
+        <div class="dim" style="margin-bottom:8px">Copy this address and open it in Chrome on a computer:</div>
+        <code id="gate-url"></code>
+      </div>
+      <p class="dim">Already have the pet you want and just want a newer build? A Malwarium can
+      update itself over Wi-Fi &mdash; <b>CFG &rarr; UPDATES &rarr; CHECK NOW</b> &mdash; and that
+      path needs no cable and no computer at all. This page is for the updates that
+      can't travel that way, and for a device that won't boot.</p>
+    </section>
+
+    <!-- The same API, withheld for a different reason: browsers only hand out USB
+         over https (or localhost). Worth its own message, because "get Chrome"
+         is useless advice to someone already in Chrome. -->
+    <section id="gate-insecure" hidden>
+      <div class="note stop">
+        <span class="lbl">&#9888; THIS PAGE ISN'T ON A SECURE CONNECTION</span>
+        Browsers only give a page access to USB over <b>https</b>, or from
+        <b>localhost</b>. This copy is being served over plain http, so the button
+        wouldn't work even in Chrome.
+      </div>
+      <div class="card">
+        <div class="dim" style="margin-bottom:8px">Open the published copy instead:</div>
+        <code>https://antvena.github.io/Malwarium/flash/</code>
+        <div class="dim" style="margin-top:10px">Serving this yourself? Reach it at
+        <code>http://localhost:&lt;port&gt;/flash/</code> &mdash; localhost counts as secure.</div>
+      </div>
+    </section>
+
+    <div id="app" hidden>
+
+      <h2 class="sect">WHAT THIS DOES</h2>
+      <p class="lede">Writes a complete, working Malwarium onto the board through the USB-C cable
+      &mdash; bootloader, partition table and firmware, all four pieces, straight from this page.
+      No PlatformIO, no Python, no command line.</p>
+
+      <div class="note tip">
+        <span class="lbl">&#9873; MOST UPDATES DON'T NEED THIS</span>
+        The device updates itself over Wi-Fi from <b>CFG &rarr; UPDATES</b>. Use the cable when
+        the release notes say to, when the device won't boot, or when you're setting up a
+        brand-new board.
+      </div>
+
+      <div class="note warn">
+        <span class="lbl">&#9873; YOUR PET SURVIVES</span>
+        A normal flash leaves the save partition alone, so your creature, Bits and 'Pedia
+        progress are still there when it reboots. Only the erase option at the bottom wipes them.
+      </div>
+
+      <h2 class="sect">BEFORE YOU START</h2>
+      <ol class="steps">
+        <li>
+          <div class="hd">Use a data cable</div>
+          <div class="bd">Plenty of USB-C cables only carry power. If the device never shows up in
+          the picker, a charge-only cable is the first thing to suspect.</div>
+        </li>
+        <li>
+          <div class="hd">Unplug the device</div>
+          <div class="bd">All the way out. If it's running on a battery, that's fine &mdash; leave
+          it be, the next step still works.</div>
+        </li>
+        <li>
+          <div class="hd">Hold <kbd>A</kbd>, then plug it in</div>
+          <div class="bd">Press and hold the <b>leftmost</b> button &mdash; <b>A</b>, the one you
+          normally press for <i>Next</i> &mdash; and keep holding it while you push the cable in.
+          Count to two, then let go.
+          <br><br>
+          <b>The screen will stay dark. That is exactly right.</b> A holds the chip in its
+          download mode, where it listens to the cable instead of running the game. It's the one
+          step that makes this work every time, so do it even when you think you don't need to.</div>
+        </li>
+        <li>
+          <div class="hd">Press FLASH and pick the device</div>
+          <div class="bd">Chrome asks which USB device to talk to. Pick the one named
+          <b>USB JTAG/serial debug unit</b> (or <b>ESP32-S3</b>) and choose <b>Connect</b>.</div>
+        </li>
+      </ol>
+
+      <h2 class="sect">WHAT GETS WRITTEN <span class="count" id="fw-count"></span></h2>
+      <div class="card sunk" id="parts">
+        <div class="kv"><span class="k">reading&hellip;</span><span class="v"></span></div>
+      </div>
+
+      <h2 class="sect">FLASH IT</h2>
+
+      <label class="check" for="erase">
+        <input type="checkbox" id="erase">
+        <span><b>ERASE EVERYTHING FIRST</b> &mdash; wipes the whole chip, including your saved
+        pet, Bits, 'Pedia progress, HackerTag and stored Wi-Fi. Leave this off unless you're
+        recovering a device that misbehaves after a normal flash, or the release notes ask for
+        it. It also makes the flash take a good deal longer.</span>
+      </label>
+
+      <div class="actions">
+        <button class="go" id="go" disabled>FLASH MY MALWARIUM</button>
+        <button id="unfiltered" hidden>MY DEVICE ISN'T LISTED</button>
+      </div>
+
+      <div class="card" id="progress-card" hidden>
+        <div class="status busy" id="status"><span class="glyph">&#9679;</span><span id="status-text"></span></div>
+        <div class="bar"><div class="rail"><div class="fill" id="fill"></div></div><div class="num" id="pct">0%</div></div>
+        <div class="dim" id="detail"></div>
+      </div>
+
+      <div class="note stop" id="result-err" hidden>
+        <span class="lbl">&#9888; IT DIDN'T FINISH</span>
+        <span id="err-text"></span>
+      </div>
+
+      <div class="note tip" id="result-ok" hidden>
+        <span class="lbl">&#10003; DONE &mdash; UNPLUG IT AND PLUG IT BACK IN</span>
+        The board is still sitting in download mode, so its screen is dark. Pull the cable, wait a
+        moment and plug it back in <b>without</b> holding any button. You should get the boot
+        screen, and then your pet.
+      </div>
+
+      <details id="log-wrap">
+        <summary>SERIAL LOG</summary>
+        <pre class="log" id="log"></pre>
+      </details>
+
+      <h2 class="sect">IF IT GOES WRONG</h2>
+
+      <details>
+        <summary>The picker is empty, or the device isn't in the list</summary>
+        <div class="card">
+          <p>In order of how often it's the answer:</p>
+          <p><b>1. The cable doesn't carry data.</b> Try another one &mdash; ideally the cable that
+          came with a phone or a drive, not a charger-only one.</p>
+          <p><b>2. A didn't get held early enough.</b> Unplug, press and hold A <i>first</i>, plug
+          in second, then release. Holding it after the board has already booted does nothing.</p>
+          <p><b>3. The picker is filtered.</b> Press <b>MY DEVICE ISN'T LISTED</b> above to show
+          every serial device on the machine. On Windows the board reads as a COM port; on macOS
+          and Linux it's a <code>usbmodem</code> / <code>ttyACM</code> device.</p>
+          <p><b>4. Something else has the port open.</b> A serial monitor, the Arduino IDE, a
+          PlatformIO terminal &mdash; close it and try again.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>&ldquo;Failed to connect with the device&rdquo;</summary>
+        <div class="card">
+          <p>The page found a port but the chip never answered. Almost always this is the board
+          running the game instead of listening: unplug it, hold <b>A</b>, plug it back in, and
+          press FLASH again.</p>
+          <p>If it keeps happening on a device that boots fine, try a different USB port &mdash;
+          preferably one on the computer itself rather than a hub or a monitor.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>It flashed, but the screen stays dark</summary>
+        <div class="card">
+          <p>First, unplug and replug <b>without</b> holding A. A board left in download mode
+          stays dark by design and will look identical to a failure.</p>
+          <p>If it's still dark after that, flash again with <b>ERASE EVERYTHING FIRST</b> ticked.
+          That costs you the pet, but it clears a save or a stored setting that the new firmware
+          can't read, which is the usual cause.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>What this writes, and where</summary>
+        <div class="card">
+          <p>Four images, at the four addresses the ESP32-S3 boots from &mdash; the same layout
+          the project's own build writes over USB:</p>
+          <div class="kv"><span class="k">0x0000</span><span class="v">bootloader</span></div>
+          <div class="kv"><span class="k">0x8000</span><span class="v">partition table</span></div>
+          <div class="kv"><span class="k">0xE000</span><span class="v">OTA slot selector</span></div>
+          <div class="kv"><span class="k">0x10000</span><span class="v">firmware (app slot 0)</span></div>
+          <p style="margin-top:10px">The save partition sits far above these and is never touched
+          unless you ask for a full erase. The firmware image is checked against the SHA-256 the
+          manifest publishes for it <i>before</i> a single byte reaches the chip &mdash; the same
+          digest the device checks when it updates itself over Wi-Fi.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>Where the SD card fits in</summary>
+        <div class="card">
+          <p>It doesn't &mdash; not for this. The card holds the 'Pedia website the device serves
+          over its own Wi-Fi, and nothing on this page reads or writes it. If the 'Pedia is what's
+          out of date, the device updates that itself from <b>CFG &rarr; UPDATES</b>, or you can
+          re-stage the card from the repo.</p>
+        </div>
+      </details>
+
+    </div>
+  </main>
+
+  <footer class="site">
+    <span>flashed straight from the browser &middot; <span class="lit">Web Serial</span></span>
+    <span><a href="https://github.com/AntVena/Malwarium">source</a></span>
+  </footer>
+
+</div>
+
+<script type="module" src="flash.js"></script>
+</body>
+</html>

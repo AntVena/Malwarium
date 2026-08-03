@@ -28,12 +28,17 @@ Real screens, straight off the 240×240 display:
 <tr>
 <td align="center"><img src="docs/media/screens/carousel.png" width="200" alt="Idle pet with the menu"><br><sub><b>Meet your pet.</b> Eight menus ring the canvas.</sub></td>
 <td align="center"><img src="docs/media/screens/vitals.png" width="200" alt="Vitals gauges"><br><sub><b>Keep it alive.</b> Hunger · Frag · Happy.</sub></td>
-<td align="center"><img src="docs/media/screens/combat.png" width="200" alt="Combat"><br><sub><b>Pick fights.</b> Auto-battle a wild malbeast.</sub></td>
+<td align="center"><img src="docs/media/screens/combat.png" width="200" alt="Combat"><br><sub><b>Pick fights.</b> Battles resolve a round at a time.</sub></td>
 </tr>
 <tr>
 <td align="center"><img src="docs/media/screens/lockout.png" width="200" alt="System lockout crisis"><br><sub><b>Crises hit.</b> Feed it before the timer runs out.</sub></td>
 <td align="center"><img src="docs/media/screens/evolve.png" width="200" alt="Evolution"><br><sub><b>It grows up.</b> Four life stages.</sub></td>
 <td align="center"><img src="docs/media/screens/daemon-bad.png" width="200" alt="A bad-branch daemon"><br><sub><b>...for better or worse.</b> Neglect has a look.</sub></td>
+</tr>
+<tr>
+<td align="center"><img src="docs/media/screens/hacker.png" width="200" alt="The Hacker face"><br><sub><b>You have a face too.</b> A+C flips to your operator profile.</sub></td>
+<td align="center"><img src="docs/media/screens/radio.png" width="200" alt="The radio screen"><br><sub><b>The radio is yours.</b> Nothing transmits unasked.</sub></td>
+<td align="center"><img src="docs/media/screens/updates.png" width="200" alt="The updates screen"><br><sub><b>It updates itself.</b> Over your Wi-Fi, if you say so.</sub></td>
 </tr>
 </table>
 
@@ -58,6 +63,11 @@ Real screens, straight off the 240×240 display:
 
 Everything below shows the command for **macOS/Linux** first, then the **Windows**
 (PowerShell) equivalent. Pick your side and ignore the other.
+
+> **Already have a working Malwarium and just want the newest build?** Skip all of this.
+> The device updates itself — [see *Updates*](#updates) — and when a release does need a
+> cable, **<https://antvena.github.io/Malwarium/flash/>** flashes it from your browser with
+> none of the tools below installed.
 
 ---
 
@@ -199,6 +209,10 @@ The device has **three buttons: A, B, C.**
 The egg incubates for a while on its own. Once it's halfway there, a flashing ⚡ symbol appears — press **B** (or the A+C chord) to start a hatch minigame. Your first one is Ransomware, so the game is a short button sequence you repeat to "brute-force the lock." Nail it and the Cryptoshell cracks open into your first creature. In a hurry? 
 A **Decryptogram** item in your bag can skip the wait.
 
+Not every line hatches the same way. A Phishing egg plays the **Clutch Pick** instead — a
+one-shot game of nerve the moment the egg is laid, where only the live egg twitches among
+identical decoys.
+
 ### Keeping it alive 
 Your creature has three needs: 
 - Hunger
@@ -208,6 +222,32 @@ Your creature has three needs:
 Feed it from the ITEMS menu, run a **Defrag** from MAINT when it gets glitchy, and keep it happy. Slip up too often and it evolves down the "bad" path (stronger in a
 fight, but it corrupts faster); look after it well and it grows into a stable, helpful form.
 Explore the 'net for battles, loot, and Bits to spend.
+
+### Your half of the device 
+**A+C on the main screen flips to the Hacker face** — the parallel menu where *you* live
+rather than the pet. It holds your operator profile and HackerTag, a **shop** for mods and
+food, a **vault** of sealed caches, a **merge hub** for cooking ingredients into better
+items, and the two social slots below.
+
+You also collect **achievements** (they survive your pet's death — they're yours, not its),
+**Titles** you can equip beside your tag, and a **Hacker Rank** that climbs as you see more
+of the world.
+
+### The radio 
+Everything wireless is off until you switch it on, and there are **two separate switches,
+because listening and announcing yourself are different things to agree to**:
+
+- **AUDIT** is how hard the device *listens* — off, passive scanning, or scanning plus
+  capture. Passive only: it never transmits, deauthenticates or injects anything. Scanning
+  feeds your Hacker Rank; captures land on the SD card as `.pcap` files.
+- **LINK** is whether the device *transmits* — announcing your tag, your pet and your crew
+  to other Malwaria nearby, which is what makes **PEERS** and 1v1 **duels** possible.
+
+Duels cost nothing and pay nothing: two devices agree on a seed and each replays the same
+fight locally. Nothing is saved and nobody loses a pet.
+
+**CREW** enlists you on the Red/Blue axis once you've named a home network to defend, and
+grants a signature Exploit that shows up as an extra row in the A+C combat picker.
 
 ## The in-device wiki (The 'Pedia) 
 You can toggle allowing your Malwarium to broadcast its own Wi-Fi network. Connect to view your glorious achievements on the big screen:
@@ -238,6 +278,58 @@ silhouettes; the rest stay `ENCRYPTED` until you find them.
 
 ---
 
+## Updates
+
+New builds get published to **<https://antvena.github.io/Malwarium/>**, and there are two
+ways to take one. The device prefers the first; the second exists for the times it can't.
+
+### Over Wi-Fi, from the device itself
+
+**CFG → UPDATES → CHECK NOW.** That's the whole thing. There is no internet switch to leave
+on: pressing the button *is* the permission. The device joins your network for the length of
+the job, tells you what's published, asks before it installs anything, and hands the radio
+back when it's done — nothing survives the job, and nothing survives a reboot.
+
+It checks two things independently, because they version separately: the **firmware** and
+the **'Pedia site** on the SD card. Either can be newer without the other. Every download is
+checked against a SHA-256 the release publishes for it, and a new firmware boots on trial —
+if it doesn't come up properly, the device puts the old one back by itself.
+
+The one thing it needs first is a home network to join. Turn the AP on, scan the setup QR
+with your phone, and type your Wi-Fi password into the page the device serves.
+
+### Over USB, from your browser
+
+<p align="center"><img src="docs/media/flash/flasher.png" width="620" alt="The browser flasher"></p>
+
+**<https://antvena.github.io/Malwarium/flash/>** writes a whole working device down the
+cable — bootloader, partition table and firmware — with no PlatformIO, no Python and no
+command line. It needs **Chrome or Edge on a computer** (Safari and Firefox can't talk to
+USB, and no phone can) and a data-carrying USB-C cable.
+
+Reach for it when:
+
+- the release notes say an update needs a cable — an over-the-air update writes into a
+  spare app slot and nothing else, so it structurally **cannot** replace the bootloader or
+  the partition table;
+- the device won't boot at all;
+- you'd rather not install a toolchain to update a toy.
+
+**Hold the leftmost button (A) while you plug the cable in**, and keep holding for a second
+or two. The screen stays dark — that's correct. A doubles as the chip's download-mode strap,
+so holding it makes the board listen to the cable instead of running the game, and it works
+even when the firmware on it is the reason the device is unreachable.
+
+A normal flash leaves your save partition alone, so your pet is still there when it reboots.
+
+<p align="center"><img src="docs/media/screens/flash-qr.png" width="200" alt="The flasher QR on the device"></p>
+
+The device knows the address too: **CFG → UPDATES → FLASH OVER USB** draws it as a QR code,
+derived from whatever publish host that device is pointed at — so it's right even on a fork
+or a laptop.
+
+---
+
 ## Troubleshooting
 
 **The flash fails with "No serial data received" (or the device just won't connect).**
@@ -252,6 +344,11 @@ button on the device** when prompted to wake it up:
 
 (A truly blank, first-ever flash won't hit this — there's nothing running yet to fall
 asleep.)
+
+**The browser flasher can't see my device.** In order of how often it's the answer: the
+cable doesn't carry data; A wasn't held down *before* the cable went in; the port picker is
+filtered (the page has a **MY DEVICE ISN'T LISTED** button that shows everything); or
+something else — a serial monitor, the Arduino IDE — already has the port open.
 
 **The SD script says my card is "not external" and refuses to format it.** That's the
 safety net working. It only formats removable cards — make sure you named your *card's*
@@ -300,7 +397,9 @@ includes being able to flash their own build onto it. That is the point rather t
 price: a containment habitat you can't open isn't one you own.
 
 The QR encoder in `src/core/render/qrcodegen.c` is Project Nayuki's, used under the MIT
-license; its copyright notice stays with the file.
+license; its copyright notice stays with the file. The browser flasher drives Espressif's
+[esptool-js](https://github.com/espressif/esptool-js), vendored under Apache-2.0 in
+[`pages/vendor/esptool-js/`](pages/vendor/esptool-js/) with its licence alongside it.
 
     Copyright (C) 2026 Joshua Fembock
 

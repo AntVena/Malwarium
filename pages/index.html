@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>MALWARIUM://RELEASES</title>
+<meta name="description" content="Raise malware as a pet. Published firmware for the Malwarium handheld — what a device downloads when it updates itself, and a browser flasher for when it can't.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+
+  <header class="site">
+    <div class="brand">
+      <a class="logo" href="./">MALWARIUM://RELEASES</a>
+      <span class="ver" id="stamp">reading the manifest&hellip;</span>
+    </div>
+    <div class="sub"><span class="prompt">pet@malwarium</span>:~$ raise malware as a pet</div>
+  </header>
+
+  <nav class="tabs">
+    <a href="./" class="active">HOME</a>
+    <a href="flash/">FLASH</a>
+  </nav>
+
+  <main>
+
+    <h1>A virtual pet you raise out of a computer virus.</h1>
+    <p class="lede">Malwarium is a handheld for a little ESP32 gadget &mdash; Tamagotchi, but
+    you're a hacker and the pet is a malbeast you caught out on the 'net and tamed. Hatch it,
+    feed it, defrag it, take it exploring, and find out whether it grows into a well-behaved
+    daemon or something considerably worse.</p>
+    <p class="dim">This is the publish host. It holds the firmware a device downloads when it
+    updates itself, and a flasher for the updates that have to travel down a cable.</p>
+
+    <h2 class="sect">PUBLISHED NOW</h2>
+    <div class="card sunk" id="published">
+      <div class="kv"><span class="k">reading&hellip;</span><span class="v"></span></div>
+    </div>
+
+    <h2 class="sect">GET IT ONTO A DEVICE</h2>
+
+    <a class="card" href="flash/">
+      <div class="nm">&#9889; FLASH OVER USB &rarr;</div>
+      <div class="ctx">Writes a whole working device from your browser &mdash; bootloader,
+      partition table and firmware. Needs Chrome or Edge on a computer, and a USB-C cable.
+      No toolchain, no command line. This is also how you rescue a device that won't boot.</div>
+    </a>
+
+    <div class="card">
+      <div class="nm" style="font-size:15px;letter-spacing:1px">((&middot;)) OVER WI-FI, FROM THE DEVICE</div>
+      <div class="ctx" style="font-size:12px;color:var(--ink-dim);margin-top:2px">
+        Most updates need no cable at all. On the device: <b>CFG &rarr; UPDATES &rarr; CHECK
+        NOW</b>. It joins your network for the length of the job, asks before it installs
+        anything, and hands the radio back when it's done.
+      </div>
+      <div style="margin-top:10px">
+        <div class="dim" style="font-size:11px;letter-spacing:1px;margin-bottom:4px">
+          THE ADDRESS IT CHECKS &mdash; paste this into the device's setup page if it asks
+        </div>
+        <code id="manifest-url">&hellip;</code>
+      </div>
+    </div>
+
+    <a class="card" href="https://github.com/AntVena/Malwarium">
+      <div class="nm">&#9881; BUILD ONE YOURSELF &rarr;</div>
+      <div class="ctx">The hardware list, the SD card setup and the full source. GPLv3 &mdash;
+      a containment habitat you can't open isn't one you own.</div>
+    </a>
+
+    <h2 class="sect">WHICH ONE DO I NEED?</h2>
+    <div class="card">
+      <div class="kv"><span class="k">A NEW, BLANK BOARD</span><span class="v">USB &mdash; and set the SD card up from the repo</span></div>
+      <div class="kv"><span class="k">AN ORDINARY UPDATE</span><span class="v lit">Wi-Fi, from the device</span></div>
+      <div class="kv"><span class="k">THE NOTES SAY "NEEDS USB"</span><span class="v">USB</span></div>
+      <div class="kv"><span class="k">IT WON'T BOOT</span><span class="v">USB</span></div>
+    </div>
+    <p class="dim">An over-the-air update writes into a spare app slot and nothing else, so it can
+    never replace the bootloader or the partition table. When a release changes one of those, the
+    cable is the only way in &mdash; which is the entire reason the flasher exists.</p>
+
+  </main>
+
+  <footer class="site">
+    <span>published by CI on a <span class="lit">v*</span> tag &middot; no account, no API, just files</span>
+    <span><a href="https://github.com/AntVena/Malwarium">source</a></span>
+  </footer>
+
+</div>
+
+<script type="module" src="home.js"></script>
+</body>
+</html>

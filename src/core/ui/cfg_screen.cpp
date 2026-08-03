@@ -203,6 +203,10 @@ CfgScreen cfgParentGroup(CfgScreen s) {
         case CfgScreen::PediaAp:
         case CfgScreen::PediaQr:
             return CfgScreen::Radio;
+        // Not a group child — UPDATES is a plain L3 screen — but backing out to it
+        // is what leaves the cursor on the row that opened the code.
+        case CfgScreen::UpdateQr:
+            return CfgScreen::Update;
         default:
             return s;
     }
@@ -627,19 +631,64 @@ void drawLinkToggle(Framebuffer& fb, int pick, bool current, bool ambientStarved
     drawText(fb, kMargin, 170, "B APPLIES", palColor(Pal::INK_DIM));
 }
 
+// The install rows exist only for what a check actually found. No check, no rows
+// — there is nothing to install and nothing to name. Split out because both the
+// row count and the row→kind mapping need the same number and must never differ.
+static int updateInstallRows(const UpdateStatus& status) {
+    if (status.state != UpdateState::Available) return 0;
+    return (status.firmwareNewer ? 1 : 0) + (status.webNewer ? 1 : 0);
+}
+
 int updateCheckRows(const UpdateStatus& status) {
-    // The install rows exist only for what a check actually found. No check, no
-    // rows — there is nothing to install and nothing to name.
-    if (status.state != UpdateState::Available) return 1;
-    return 1 + (status.firmwareNewer ? 1 : 0) + (status.webNewer ? 1 : 0);
+    return 1 + updateInstallRows(status) + 1;   // check · installs · flasher
+}
+
+UpdateRowKind updateCheckRowKind(const UpdateStatus& status, int row) {
+    if (row <= 0) return UpdateRowKind::Check;
+    if (row <= updateInstallRows(status)) return UpdateRowKind::Install;
+    return UpdateRowKind::FlashQr;              // the last row, always
 }
 
 UpdateTarget updateCheckRowTarget(const UpdateStatus& status, int row) {
-    if (row <= 0 || status.state != UpdateState::Available) return UpdateTarget::None;
+    if (updateCheckRowKind(status, row) != UpdateRowKind::Install)
+        return UpdateTarget::None;
     int n = 0;
     if (status.firmwareNewer && ++n == row) return UpdateTarget::Firmware;
     if (status.webNewer && ++n == row) return UpdateTarget::Web;
     return UpdateTarget::None;
+}
+
+bool updateFlasherUrl(const char* manifestUrl, char* out, size_t cap) {
+    if (!out || cap == 0) return false;
+    out[0] = '\0';
+    const char* s = manifestUrl ? manifestUrl : "";
+    const size_t len = std::strlen(s);
+    if (len == 0) return false;
+
+    // Replace the manifest's own filename with the flasher's directory. The last
+    // '/' AFTER the scheme separator is what divides the two — searching from the
+    // host start rather than from the beginning is what stops "https://host" (no
+    // path at all) from being cut at the "//".
+    const char* sep = std::strstr(s, "//");
+    const size_t hostStart = sep ? static_cast<size_t>(sep - s) + 2 : 0;
+    size_t keep = 0;                       // bytes of `s` to copy, slash included
+    for (size_t i = len; i > hostStart; --i)
+        if (s[i - 1] == '/') { keep = i; break; }
+
+    static const char kLeaf[] = "flash/";
+    // A bare host keeps all of itself and earns the separating slash it lacks.
+    const size_t need = (keep ? keep : len) + (keep ? 0 : 1) + sizeof(kLeaf);
+    if (need > cap) return false;
+
+    if (keep) {
+        std::memcpy(out, s, keep);
+        std::strcpy(out + keep, kLeaf);
+    } else {
+        std::memcpy(out, s, len);
+        out[len] = '/';
+        std::strcpy(out + len + 1, kLeaf);
+    }
+    return true;
 }
 
 void drawUpdateCheck(Framebuffer& fb, bool ready, bool provisioned,
@@ -666,31 +715,48 @@ void drawUpdateCheck(Framebuffer& fb, bool ready, bool provisioned,
     drawText(fb, kActiveW - kMargin - textWidth(host), 40, host,
              sourceKnown ? palColor(Pal::INK) : palColor(Pal::INK_DIM));
 
-    // Row 0 is always the check; the rest are what it found. An install row names
-    // the artifact AND the version it would bring, so the confirm that follows is
-    // never the first time the operator sees what they are agreeing to.
+    // Row 0 is always the check, the last is always the flasher, and between them
+    // sit what the check found. An install row names the artifact AND the version
+    // it would bring, so the confirm that follows is never the first time the
+    // operator sees what they are agreeing to.
+    //
+    // The flasher row is the one that does not depend on a network — it is the
+    // answer to "the check can't run" and to "an update needs the cable", so it is
+    // live whenever this device knows a host at all. That makes `sourceKnown`
+    // rather than `ready` what lights it.
     const bool busy = status.state == UpdateState::Checking;
     const int rows = updateCheckRows(status);
     for (int i = 0; i < rows; ++i) {
         const int y = 56 + i * 18;
-        const bool focused = (i == row);
-        if (focused) {
+        const UpdateRowKind kind = updateCheckRowKind(status, i);
+        const bool live = (kind == UpdateRowKind::FlashQr) ? sourceKnown : ready;
+        if (i == row) {
             fb.fillRect(4, y - 2, kActiveW - 8, 18, palColor(Pal::TRACK));
-            drawRowCursor(fb, 8, y + 3, palColor(ready ? Pal::ACCENT : Pal::INK_DIM));
+            drawRowCursor(fb, 8, y + 3, palColor(live ? Pal::ACCENT : Pal::INK_DIM));
         }
-        if (i == 0) {
+        if (kind == UpdateRowKind::Check) {
             drawText(fb, 24, y + 3, busy ? "CHECKING..." : "CHECK NOW",
                      palColor(ready && !busy ? Pal::INK : Pal::INK_DIM));
-            continue;
+        } else if (kind == UpdateRowKind::FlashQr) {
+            drawText(fb, 24, y + 3, "FLASH OVER USB",
+                     palColor(live ? Pal::INK : Pal::INK_DIM));
+            drawText(fb, kActiveW - kMargin - textWidth("SHOW QR"), y + 3, "SHOW QR",
+                     palColor(Pal::INK_DIM));
+        } else {
+            const UpdateTarget t = updateCheckRowTarget(status, i);
+            const char* label = (t == UpdateTarget::Firmware) ? "FIRMWARE" : "PEDIA SITE";
+            const char* ver = (t == UpdateTarget::Firmware) ? status.firmwareVersion
+                                                            : status.webVersion;
+            drawText(fb, 24, y + 3, label, palColor(Pal::INK));
+            drawText(fb, kActiveW - kMargin - textWidth(ver), y + 3, ver,
+                     palColor(Pal::ACCENT));
         }
-        const UpdateTarget t = updateCheckRowTarget(status, i);
-        const char* label = (t == UpdateTarget::Firmware) ? "FIRMWARE" : "PEDIA SITE";
-        const char* ver = (t == UpdateTarget::Firmware) ? status.firmwareVersion
-                                                        : status.webVersion;
-        drawText(fb, 24, y + 3, label, palColor(Pal::INK));
-        drawText(fb, kActiveW - kMargin - textWidth(ver), y + 3, ver,
-                 palColor(Pal::ACCENT));
     }
+
+    // The verdict sits under the rows, not at a fixed line: only the Available
+    // state grows the list past three, and it is also the only state whose verdict
+    // is a single line, so the block below never runs into the standing promise.
+    const int verdictY = std::max(118, 56 + rows * 18 + 8);
 
     // Why a check can't run, most-blocking first — each names the screen that
     // fixes it, since none of them is fixable from here. Both are SETUP: there is
@@ -698,44 +764,44 @@ void drawUpdateCheck(Framebuffer& fb, bool ready, bool provisioned,
     // grants the connection and finishing the job is what gives it back.
     if (!ready) {
         if (!provisioned) {
-            drawText(fb, kMargin, 118, "NO NETWORK SAVED:", palColor(Pal::WARN));
-            drawText(fb, kMargin, 130, "SET ONE UP FROM PEDIA AP", palColor(Pal::WARN));
+            drawText(fb, kMargin, verdictY, "NO NETWORK SAVED:", palColor(Pal::WARN));
+            drawText(fb, kMargin, verdictY + 12, "SET ONE UP FROM PEDIA AP", palColor(Pal::WARN));
         } else if (!sourceKnown) {
-            drawText(fb, kMargin, 118, "NO UPDATE SOURCE SET:", palColor(Pal::WARN));
-            drawText(fb, kMargin, 130, "THIS BUILD HAS NOWHERE", palColor(Pal::WARN));
-            drawText(fb, kMargin, 142, "TO LOOK.", palColor(Pal::WARN));
+            drawText(fb, kMargin, verdictY, "NO UPDATE SOURCE SET:", palColor(Pal::WARN));
+            drawText(fb, kMargin, verdictY + 12, "THIS BUILD HAS NOWHERE", palColor(Pal::WARN));
+            drawText(fb, kMargin, verdictY + 24, "TO LOOK.", palColor(Pal::WARN));
         }
     } else {
         // The verdict. Every state names itself in words, so the screen reads the
         // same in grayscale as in colour.
         switch (status.state) {
             case UpdateState::Idle:
-                drawText(fb, kMargin, 118, "NOT CHECKED YET.", palColor(Pal::INK_DIM));
+                drawText(fb, kMargin, verdictY, "NOT CHECKED YET.", palColor(Pal::INK_DIM));
                 break;
             // A check is two steps and they fail for different reasons, so the screen
             // separates them: joining the network is reported here because a job on
             // this screen is the only thing that ever asks for one.
             case UpdateState::Checking:
                 if (net.state == NetState::Connecting) {
-                    drawText(fb, kMargin, 118, "JOINING YOUR NETWORK...",
+                    drawText(fb, kMargin, verdictY, "JOINING YOUR NETWORK...",
                              palColor(Pal::WARN));
                 } else {
-                    drawText(fb, kMargin, 118, "FETCHING THE LIST...",
+                    drawText(fb, kMargin, verdictY, "FETCHING THE LIST...",
                              palColor(Pal::WARN));
                     if (net.state == NetState::Online && net.ip[0])
-                        drawText(fb, kMargin, 130, net.ip, palColor(Pal::INK_DIM));
+                        drawText(fb, kMargin, verdictY + 12, net.ip, palColor(Pal::INK_DIM));
                 }
                 break;
             case UpdateState::UpToDate:
-                drawText(fb, kMargin, 118, "UP TO DATE.", palColor(Pal::ACCENT));
+                drawText(fb, kMargin, verdictY, "UP TO DATE.", palColor(Pal::ACCENT));
                 break;
             case UpdateState::Available:
                 // The rows above already say what and which version; this says the
                 // one thing they can't — that pressing B does not commit anything.
-                drawText(fb, kMargin, 118, "B ON A ROW TO INSTALL.", palColor(Pal::INK_DIM));
+                drawText(fb, kMargin, verdictY, "B ON A ROW TO INSTALL.", palColor(Pal::INK_DIM));
                 break;
             case UpdateState::Failed: {
-                drawText(fb, kMargin, 118, "CHECK FAILED:", palColor(Pal::WARN));
+                drawText(fb, kMargin, verdictY, "CHECK FAILED:", palColor(Pal::WARN));
                 const char* why = "UNKNOWN.";
                 // A join that never came up is the one failure with somewhere to go
                 // fix it, so it says where — the stored credentials are only ever
@@ -751,8 +817,8 @@ void drawUpdateCheck(Framebuffer& fb, bool ready, bool provisioned,
                     case UpdateFail::Malformed:  why = "THE LIST MADE NO SENSE."; break;
                     case UpdateFail::None:       break;
                 }
-                drawText(fb, kMargin, 130, why, palColor(Pal::WARN));
-                if (fix) drawText(fb, kMargin, 142, fix, palColor(Pal::WARN));
+                drawText(fb, kMargin, verdictY + 12, why, palColor(Pal::WARN));
+                if (fix) drawText(fb, kMargin, verdictY + 24, fix, palColor(Pal::WARN));
                 break;
             }
         }
@@ -884,8 +950,12 @@ void drawUpdateProgress(Framebuffer& fb, const InstallStatus& install,
 // real scanners read, and grayscale-safe by construction (max luminance contrast).
 // Returns false only if encoding failed (not expected for these short strings).
 static bool blitQr(Framebuffer& fb, const char* text, int oy) {
-    // Small stack buffers: the WIFI/URL payloads fit well under version 5 (~2×173B).
-    constexpr int kMaxVer = 5;
+    // Stack buffers, sized for the longest payload any caller can hand over — a
+    // stored update source is capped at 160 characters and the flasher address is
+    // derived from one, which is what sets the ceiling (~2×408B). The short fixed
+    // AP payloads still encode at a low version and simply draw larger, since the
+    // scale below is chosen from the module count rather than the cap.
+    constexpr int kMaxVer = 10;
     uint8_t qr[qrcodegen_BUFFER_LEN_FOR_VERSION(kMaxVer)];
     uint8_t tmp[qrcodegen_BUFFER_LEN_FOR_VERSION(kMaxVer)];
     if (!qrcodegen_encodeText(text, tmp, qr, qrcodegen_Ecc_MEDIUM,
@@ -956,6 +1026,40 @@ void drawPediaQr(Framebuffer& fb, int page, bool provisioned) {
     char hint[24];
     std::snprintf(hint, sizeof(hint), "%d/%d  A NEXT  C EXIT", page + 1, pages);
     drawText(fb, (kActiveW - textWidth(hint)) / 2, oy + dim + 32, hint,
+             palColor(Pal::ACCENT));
+}
+
+void drawUpdateQr(Framebuffer& fb, const char* manifestUrl) {
+    header(fb, "QR: FLASH BY USB");
+
+    char url[192];
+    if (!updateFlasherUrl(manifestUrl, url, sizeof(url))) {
+        // Reachable only defensively — the row that opens this screen is dead
+        // without a source — but a blank panel would be the worst way to say so.
+        drawText(fb, kMargin, 40, "NO UPDATE SOURCE SET:", palColor(Pal::WARN));
+        drawText(fb, kMargin, 52, "THIS DEVICE KNOWS NO", palColor(Pal::WARN));
+        drawText(fb, kMargin, 64, "HOST TO POINT YOU AT.", palColor(Pal::WARN));
+        drawText(fb, kMargin, 176, "C EXITS", palColor(Pal::INK_DIM));
+        return;
+    }
+
+    const int oy = 28;
+    const int dim = 124;                               // matches blitQr's budget
+    if (blitQr(fb, url, oy)) {
+        // The two things a scanned page cannot tell someone standing here with the
+        // device in one hand: which browser it needs, and what to do to the device
+        // before the cable goes in. The phone that scans this is not the machine
+        // that flashes, which is the part that surprises people.
+        const char* l1 = "OPEN IN CHROME ON A PC";
+        const char* l2 = "HOLD A WHILE PLUGGING IN";
+        drawText(fb, (kActiveW - textWidth(l1)) / 2, oy + dim + 6, l1, palColor(Pal::INK));
+        drawText(fb, (kActiveW - textWidth(l2)) / 2, oy + dim + 18, l2, palColor(Pal::INK));
+    } else {
+        drawText(fb, (kActiveW - textWidth("QR ENCODE FAILED")) / 2, oy + 60,
+                 "QR ENCODE FAILED", palColor(Pal::WARN));
+    }
+
+    drawText(fb, (kActiveW - textWidth("C EXIT")) / 2, oy + dim + 32, "C EXIT",
              palColor(Pal::ACCENT));
 }
 

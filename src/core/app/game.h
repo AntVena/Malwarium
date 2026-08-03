@@ -898,12 +898,14 @@ public:
     // so the index of the last one depends on netProvisioned() (pediaQrPages).
     int pediaQrPage() const { return pediaQrPage_; }
 
-    // True while the PEDIA QR page is showing. The device tier reads this to keep
-    // the panel AWAKE (scanning + joining an AP takes longer than the idle sleep
-    // window); the engine likewise suspends its 5s menu auto-defocus here. Both
-    // resume normally the moment the player exits the QR page (C).
+    // True while either QR page is showing — the 'Pedia AP steps or the USB
+    // flasher's address. The device tier reads this to keep the panel AWAKE (a code
+    // is read by a phone, which takes longer than the idle sleep window); the engine
+    // likewise suspends its 5s menu auto-defocus here. Both resume normally the
+    // moment the player exits the page (C).
     bool qrScreenActive() const {
-        return nav_ == Nav::Detail && cfgScreen_ == CfgScreen::PediaQr;
+        return nav_ == Nav::Detail && (cfgScreen_ == CfgScreen::PediaQr ||
+                                       cfgScreen_ == CfgScreen::UpdateQr);
     }
     // True while the HackerTag arcade editor is open. Composing a tag one A-press
     // per letter has real pauses in it, and the 5s auto-defocus would throw the

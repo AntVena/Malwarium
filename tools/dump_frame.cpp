@@ -13,8 +13,10 @@
 //        flips to the second half and "round" commits, interleaved to walk any path —
 //        three "round"s land on the lost reveal, "win" plays it perfectly instead)
 //        hatchreveal [frame:<n>] (the on-demand crack cinematic, held on frame n)
-//        cfg updates [ready] [checking|nojoin|found|confirm [yes]|installing|failed]
-//        (the UPDATES screen; without "ready" it shows which setup step is missing)
+//        cfg updates [ready] [checking|nojoin|found|confirm [yes]|installing|failed|
+//             flashqr] (the UPDATES screen; without "ready" it shows which setup step
+//             is missing, and "flashqr" walks onto the last row and opens the USB
+//             flasher's code)
 //        cfg [sysinfo|tag|titles|display|uimode|brightness|radio [idle|all]|audit|
 //             link|pediaap|qr|factory] (the settings tree; display/radio are the two
 //             group screens, and radio is seeded with a live arbiter owner —
@@ -342,6 +344,15 @@ int main(int argc, char** argv) {
                     in.received = 703344;
                 }
                 game.setInstallStatus(in);
+            }
+            // The USB-flasher QR, which is the LAST row on the screen. Seeded on
+            // its own rather than on top of "found": the flasher row needs only a
+            // known source, and the state worth looking at is the one an operator
+            // reaches before any check has run.
+            if (hasFlag(argc, argv, "flashqr")) {
+                game.setUpdateManifestUrl("https://antvena.github.io/Malwarium/manifest.json");
+                game.onButton({Button::A, true, false});   // CHECK NOW -> FLASH OVER USB
+                game.onButton({Button::B, true, false});   // -> the code
             }
         }
         else if (hasFlag(argc, argv, "factory")) {     // hold-B reveal off Sys Info

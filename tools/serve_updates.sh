@@ -30,12 +30,18 @@
 #      between two features holds a thousand publishes without borrowing from the
 #      number above it.
 #
-#   3. `make manifest BASE=<this laptop>` — builds the firmware image
+#   3. `make pages BASE=<this laptop>` — builds the firmware image
 #      (include/version.h names it), the web bundle tar (web/VERSION names it),
 #      and the manifest listing both with their real sizes and digests, into
 #      dist/. It validates the result with the DEVICE's own parser before
 #      returning, so an unpublishable manifest fails here rather than looking
-#      like a dead network from the device's side.
+#      like a dead network from the device's side. It also stages the release
+#      pages (pages/) and the boot images the USB flasher writes, so this serves
+#      the whole publish rather than only the half a device reads.
+#
+#      The flasher at /flash/ needs a SECURE CONTEXT — Web Serial is unavailable
+#      over plain http to a LAN address, so reach it at http://localhost:<port>
+#      from this machine. The device half is unaffected; it only wants bytes.
 #
 #   4. Optional damage injection (--corrupt / --truncate) — AFTER the manifest has
 #      recorded the good size and digest, which is what makes the failure real:
@@ -244,13 +250,13 @@ if [ -z "$HOST" ]; then
 fi
 BASE="http://$HOST:$PORT"
 
-echo ">> [3/5] make manifest BASE=$BASE  (FW_ENV=$FW_ENV, V=$BUILD_V)"
+echo ">> [3/5] make pages BASE=$BASE  (FW_ENV=$FW_ENV, V=$BUILD_V)"
 if [ "$BUILD_V" -eq 1 ]; then
     echo "         building firmware — compiler output follows (--quiet-build to hide)"
 else
     echo "         building firmware quietly; this is the slow step"
 fi
-make --no-print-directory manifest BASE="$BASE" FW_ENV="$FW_ENV" V="$BUILD_V"
+make --no-print-directory pages BASE="$BASE" FW_ENV="$FW_ENV" V="$BUILD_V"
 
 # --- 4. damage injection (opt-in) -------------------------------------------
 # Deliberately AFTER the manifest recorded the honest size + digest: the device
@@ -314,6 +320,7 @@ PY
 cat <<BANNER
 
     manifest   $BASE/manifest.json
+    flasher    http://localhost:$PORT/flash/   (Web Serial needs localhost, not $HOST)
 
     On the device, once:
       'Pedia -> DEVICE SETTINGS -> UPDATE SOURCE -> $BASE/manifest.json
