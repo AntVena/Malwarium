@@ -92,12 +92,15 @@ struct Combatant {
     int dmgReducePct = 0;       // Firewall Patch / TPM Chip — % incoming damage cut
     bool mirrorFired = false;   // set the turn a hit is fully negated (a brief flash);
                                  // also suppresses that attack's stun/DoT riders
-    bool itemShield = false;    // Backup Drive's timed buff — negates the next incoming
-                                 // hit like the RAID Mirror mod, then heals to half max
-                                 // Health. An independent one-shot so it stacks with an
-                                 // equipped RAID Mirror instead of sharing its trigger.
-                                 // Armed by the Game off an item buff, so it lives here
-                                 // rather than in `mods` (which the mod table owns)
+    bool itemShield = false;    // Backup Drive's timed buff — a DEATH-SAVE, not a hit
+                                 // negator: ordinary hits land in full and only a blow
+                                 // that would reach 0 Health is eaten (absorbLethal
+                                 // below). Unlike the RAID Mirror mod (which spends
+                                 // itself on the first hit of any size), so the two are
+                                 // genuinely independent one-shots rather than a weaker
+                                 // copy of each other. Armed by the Game off an item
+                                 // buff, so it lives here rather than in `mods` (which
+                                 // the mod table owns)
     bool itemShieldFired = false;  // set for the rest of the fight once the shield
                                     // consumes (unlike mirrorFired, not reset per-turn) —
                                     // lets Game clear the buff's save-side timer early
@@ -155,6 +158,23 @@ struct Combatant {
     int lastMoveIdx = -1;
     int channelMoveIdx = -1;    // mid-channel move (-1 = not channelling)
     int channelLeft = 0;        // turns until the channel detonates
+
+    // Backup Drive's death-save (itemShield). If `dmg` would take this combatant to 0
+    // Health, the armed shield eats the WHOLE amount (dmg -> 0) and restores Health to
+    // at least half of max, then burns; a survivable hit is left completely alone.
+    // Returns whether it fired.
+    //
+    // Called at EVERY point the PET's Health can drop — the hit itself, its lifesteal
+    // rider, and the deferred/DoT/ransom ticks at turn-start — so the promise is
+    // unconditional: while it is armed, nothing in a fight kills this pet. A save that
+    // only covered direct attacks would be the worse kind of safety net, the one that
+    // blocks the sword and lets the poison through. (The thorns and Deadman Switch
+    // reflects need no call: mods are player-side, so those only ever land on an
+    // ENEMY. Deadman also keys off a KO'd pet, which an armed shield prevents.)
+    //
+    // Enemies never carry one (only Game::buildPlayerCombatant arms it), so this is a
+    // no-op on every enemy Combatant.
+    bool absorbLethal(int& dmg);
 };
 
 // Prowlware's multiplier for `moves[moveIdx]`: the rank of that move's Attack power

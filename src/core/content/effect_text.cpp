@@ -237,7 +237,7 @@ SpecRows specRows(const ItemDef& d) {
                 break;
             case ItemEffect::Kind::ForceTrojanDivert: s.flag("TROJAN DIVERT"); break;
             case ItemEffect::Kind::ArmCombatShieldBuff:
-                s.add("SHIELD", "%dMIN", e.magnitude);
+                s.add("DEATH SAVE", "%dMIN", e.magnitude);
                 break;
             case ItemEffect::Kind::ArmDeepWebDepthMultiplier:
                 s.add("DIVE STEP", "x%d", e.magnitude);

@@ -144,12 +144,17 @@ inline constexpr int kRigRecipeUnlockCost = 512;
 inline constexpr int kRigBrownsRecipeCost = 512;
 
 // --- g/h: Auto Backup / Continuous Auto-Backup --------------------------------
-// One-time unlocks that spare the player a manual Backup Drive use. Auto Backup arms
-// the combat shield (Game::autoArmBackupShield) the moment explore-mode starts
-// (Game::startExplore/startDeepWebDive) if it isn't already armed; Continuous
+// One-time unlocks that spare the player a manual Backup Drive use — they arm the same
+// death-save the item does (Game::autoArmBackupShield, free: the effect is applied
+// without spending a drive from the Vault). Auto Backup arms it the moment explore-mode
+// starts (Game::startExplore/startDeepWebDive) if it isn't already armed; Continuous
 // Auto-Backup does the same check at every resolved explore event (Game::
-// returnToExplore) — so it re-arms mid-run whenever combat fires the shield or its
-// hour lapses. Both are no-ops while the shield is already live — never doubles up.
+// returnToExplore) — so it re-arms mid-run whenever a fight spends the save or its hour
+// lapses. Both are no-ops while the save is already live — never doubles up.
+//
+// These sit high on the price ladder on purpose: what they automate is no longer a
+// negated hit but a life, so Continuous in particular is close to "the pet does not die
+// while exploring" and has to read as an endgame purchase.
 inline constexpr int kRigAutoBackupCost = 4096;
 inline constexpr int kRigContinuousBackupCost = 8192;
 
@@ -360,11 +365,11 @@ inline const RigUpgradeDef kRigUpgrades[] = {
      {{"CHIP + DIP"}}, kRigRowMergeHub},
 
     {"auto_backup", "AUTO BACKUP", 1, RigCostCurve::kFixed, kRigAutoBackupCost, 0,
-     RigEffectKind::None, 0, "BOUGHT AUTO BACKUP", {{"ARM SHIELD ON EXPLORE"}}},
+     RigEffectKind::None, 0, "BOUGHT AUTO BACKUP", {{"DEATH SAVE ON EXPLORE"}}},
 
     {"continuous_backup", "CONTINUOUS AUTO-BACKUP", 1, RigCostCurve::kFixed,
      kRigContinuousBackupCost, 0, RigEffectKind::None, 0, "BOUGHT CONT. BACKUP",
-     {{"RE-ARM SHIELD MID-RUN"}}},
+     {{"RE-ARM SAVE MID-RUN"}}},
 
     // Two readouts: buying a tier both lowers the Fragmentation it steps in at and
     // raises the per-run upkeep. Before tier 1 the trigger reads OFF and the upkeep

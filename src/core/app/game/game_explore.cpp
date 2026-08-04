@@ -255,6 +255,8 @@ void Game::returnToExplore() {
 void Game::autoArmBackupShield(int gateRow) {
     if (rigLevel_[gateRow] <= 0) return;      // upgrade not owned
     if (backupShieldArmed()) return;          // already live — never doubles up
+    // applyItemEffects, not useItem: the upgrade grants the effect outright and never
+    // reaches into the Vault, so owning it doesn't quietly eat the player's drives.
     if (const ItemDef* d = registry_.item(kBackupDriveId)) applyItemEffects(*d);
 }
 

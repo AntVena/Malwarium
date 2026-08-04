@@ -196,8 +196,8 @@ Combatant Game::buildPlayerCombatant() {
     // consumed one per battle, applied at every real entry into combat (Sim +
     // wild). debugStartCombat is the dev/test hook and stays raw/deterministic.
     Combatant p = makePlayerCombatant(registry_, *pet_, moveLoadout_, loadout_);
-    // Backup Drive's timed shield (save v30): armed while lifetimeUptimeMs() is still
-    // under the buff's deadline. Consumption is read back in applyCombatResult /
+    // Backup Drive's timed death-save (save v30): armed while lifetimeUptimeMs() is
+    // still under the buff's deadline. Consumption is read back in applyCombatResult /
     // finishBossRound (Combatant::itemShieldFired) to clear backupShieldUntilMs_ early.
     if (backupShieldUntilMs_ != 0 && lifetimeUptimeMs() < backupShieldUntilMs_)
         p.itemShield = true;
@@ -215,6 +215,10 @@ Combatant Game::buildPlayerCombatant() {
 void Game::startSimBattle() {
     if (!pet_) return;
     Combatant p = buildPlayerCombatant();
+    // A Sim Battle has no stakes — losing costs nothing — so there is no death to save
+    // the pet from and no reason to spend a Rare item's shield on training. Stripped
+    // here rather than in buildPlayerCombatant, which doesn't know the stakes.
+    p.itemShield = false;
     CombatEnemy dummy = simDummy(simTier_);
     applySimDummyLevelScale(dummy, combatLevel_);
     Combatant e = makeEnemyCombatant(registry_, dummy);
@@ -382,8 +386,8 @@ void Game::applyBattleFatigue() {
 }
 
 void Game::applyCombatResult() {
-    // A fired Backup Drive shield is spent for the rest of its 1h window regardless of
-    // time remaining — win or lose, the buff doesn't outlive the hit it negated.
+    // A fired Backup Drive save is spent for the rest of its 1h window regardless of
+    // time remaining — win or lose, the buff doesn't outlive the death it prevented.
     if (combat_.player().itemShieldFired) backupShieldUntilMs_ = 0;
     const bool safe = combat_.stakes() == Combat::Stakes::Safe;
     const bool won = combat_.outcome() == Combat::Outcome::Win;

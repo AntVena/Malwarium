@@ -2910,23 +2910,57 @@ static void test_mod_effects_data_driven() {
     CHECK(build("raid_mirror").mods.armed(ModEffect::RaidMirror));
 }
 
-// Backup Drive's combat shield (ItemEffect::ArmCombatShieldBuff, save v30): same
-// negate-and-consume benefit as the RAID Mirror mod, PLUS a heal to at least half max
-// Health, and it sets itemShieldFired (unlike mirrorFired, not reset per-turn) so Game
-// can clear the buff's timed save-side deadline once the fight ends.
-static void test_backup_drive_shield_negates_and_heals() {
+// Backup Drive's death-save (ItemEffect::ArmCombatShieldBuff, save v30) is NOT the RAID
+// Mirror's negate-the-first-hit: a survivable hit lands in full and leaves the save
+// armed, so it's still there for the blow that would actually have ended the pet.
+static void test_backup_drive_death_save_ignores_survivable_hits() {
     ContentRegistry r = ContentRegistry::embedded();
     Combatant pc = mkCombatant(r, "P", 100, 5, {"quick_jab"});
     pc.itemShield = true;
     Combatant e = mkCombatant(r, "E", 100, 12, {"packet_storm"});  // fast → hits first
+    Combat c; c.begin(pc, e, Combat::Stakes::Safe, 5);             // full Health: survivable
+    c.step();
+    CHECK(c.player().health < 100);              // the hit landed in full...
+    CHECK(c.player().health > 0);
+    CHECK(c.player().itemShield);                // ...and the save is still held
+    CHECK(!c.player().itemShieldFired);
+}
+
+// ...and the blow that WOULD have killed is eaten whole, restoring the pet to half max
+// Health. Sets itemShieldFired (unlike mirrorFired, not reset per-turn) so Game can
+// clear the buff's timed save-side deadline once the fight ends.
+static void test_backup_drive_death_save_catches_lethal_hit() {
+    ContentRegistry r = ContentRegistry::embedded();
+    Combatant pc = mkCombatant(r, "P", 100, 5, {"quick_jab"});
+    pc.itemShield = true;
+    Combatant e = mkCombatant(r, "E", 100, 12, {"packet_storm"});
     // begin() always resets Health to maxHealth unless told to carry a wounded value
-    // in (the gauntlet no-heal-between-rounds path) — use that to start well under half.
+    // in (the gauntlet no-heal-between-rounds path) — use that to start on death's door,
+    // where packet_storm is comfortably lethal.
     Combat c; c.begin(pc, e, Combat::Stakes::Safe, 5, /*forceEnemyFirst=*/false,
-                       /*carryPlayerHealth=*/10);
-    c.step();                                                      // enemy's hit is negated
-    CHECK(c.player().health == 50);                                // healed to half max (100/2)
-    CHECK(!c.player().itemShield);                                 // consumed
-    CHECK(c.player().itemShieldFired);                              // Game reads this post-fight
+                       /*carryPlayerHealth=*/2);
+    c.step();
+    CHECK(c.player().health == 50);              // survived, restored to half max (100/2)
+    CHECK(!c.player().itemShield);               // spent
+    CHECK(c.player().itemShieldFired);           // Game reads this post-fight
+    CHECK(c.outcome() != Combat::Outcome::Lose); // the fight did NOT end here
+}
+
+// The save covers every way a fight can kill, not just direct attacks — a fatal DoT tick
+// at turn-start is exactly the "died to the poison, not the sword" case it exists for.
+static void test_backup_drive_death_save_catches_fatal_dot() {
+    ContentRegistry r = ContentRegistry::embedded();
+    Combatant pc = mkCombatant(r, "P", 100, 12, {"quick_jab"});   // fast → its turn first
+    pc.itemShield = true;
+    pc.dotPerTurn = 40;                                            // > the carried Health
+    pc.dotTurnsLeft = 3;
+    Combatant e = mkCombatant(r, "E", 100, 5, {"quick_jab"});
+    Combat c; c.begin(pc, e, Combat::Stakes::Safe, 5, /*forceEnemyFirst=*/false,
+                       /*carryPlayerHealth=*/5);
+    c.step();                                    // the pet's turn opens with the rot tick
+    CHECK(c.player().health == 50);              // saved and restored, not KO'd at 0
+    CHECK(c.player().itemShieldFired);
+    CHECK(c.outcome() != Combat::Outcome::Lose);
 }
 
 // Thorns (Honeytoken) reflects onto any attacker; Deadman Switch blasts the
@@ -5781,10 +5815,8 @@ static void test_sim_battle_end_to_end() {
     CHECK(g.log().size() == 0);                              // not logged
 }
 
-// An armed Backup Drive shield rides into a REAL fight (buildPlayerCombatant, not the
-// raw makePlayerCombatant the mod-effects test above uses) — confirms the wiring in
-// Game::buildPlayerCombatant, independent of whether it actually fires this fight.
-static void test_backup_drive_shield_armed_into_combat() {
+// A Sim Battle is the one fight an armed Backup Drive save sits out.
+static void test_backup_drive_save_not_spent_in_sim_battle() {
     Game g{StartMode::Hatched, "paypup"};
     g.debugUseItem("backup_drive");
     CHECK(g.backupShieldArmed());
@@ -5793,7 +5825,10 @@ static void test_backup_drive_shield_armed_into_combat() {
     // TRAIN walk, which assumes it's starting from the carousel/idle layer.
     g.onButton(press(Button::C));
     enterSimBattle(g);
-    CHECK(g.combat().player().itemShield);
+    // A Sim Battle deliberately fights WITHOUT the save: no stakes means no death to be
+    // saved from, so a training bout must never burn a Rare item (Game::startSimBattle).
+    CHECK(!g.combat().player().itemShield);
+    CHECK(g.backupShieldArmed());   // untouched — still there for a fight that counts
 }
 
 // Creature levels: XP banks into levels on a geometric curve, each level
@@ -7117,6 +7152,52 @@ static void walkToEncounter(Game& g) {
             default: g.onButton(press(Button::B)); break;
         }
     }
+}
+
+// An armed Backup Drive save rides into a REAL fight (Game::buildPlayerCombatant, not
+// the raw makePlayerCombatant the combat-model tests use) — the wiring that matters,
+// since the Sim Battle it's stripped from is the only fight that doesn't carry it.
+static void test_backup_drive_save_armed_into_wild_combat() {
+    Game g{StartMode::Hatched, "paypup"};
+    g.debugUseItem("backup_drive");
+    CHECK(g.backupShieldArmed());
+    // Consuming the last Backup Drive drops useItem() into Nav::Submenu (the ITEMS
+    // "item left the list" case) — back out to the carousel before the EXPL walk,
+    // which assumes it's starting from the carousel/idle layer.
+    g.onButton(press(Button::C));
+    walkToEncounter(g);
+    CHECK(g.nav() == Game::Nav::Combat);
+    CHECK(g.combat().player().itemShield);
+}
+
+// Auto Backup (Rig Shop g): the purchased upgrade arms the death-save for free the
+// moment explore-mode starts — and never reaches into the Vault for an actual drive.
+static void test_rig_auto_backup_arms_save_on_explore() {
+    Game g{StartMode::Hatched, "paypup"};
+    const int drives = g.inventory().count("backup_drive");
+    enterWalk(g);
+    CHECK(!g.backupShieldArmed());            // nothing free without the upgrade
+    g.debugSetBits(kRigAutoBackupCost);
+    g.debugBuyAutoBackup();
+    CHECK(!g.backupShieldArmed());            // buying alone arms nothing...
+    enterWalk(g);                             // ...arming a sub-area does
+    CHECK(g.backupShieldArmed());
+    CHECK(g.inventory().count("backup_drive") == drives);   // and it cost no item
+}
+
+// Continuous Auto-Backup (Rig Shop h) re-arms mid-run: every resolved explore event
+// puts a fresh save up, so one purchase covers a whole walk rather than its first fight.
+static void test_rig_continuous_backup_rearms_mid_run() {
+    Game g{StartMode::Hatched, "paypup"};
+    const int drives = g.inventory().count("backup_drive");
+    enterWalk(g);
+    g.debugReturnToExplore();                 // a resolved event hands back to the habitat
+    CHECK(!g.backupShieldArmed());            // ...which arms nothing on its own
+    g.debugSetBits(kRigContinuousBackupCost);
+    g.debugBuyContinuousBackup();
+    g.debugReturnToExplore();
+    CHECK(g.backupShieldArmed());             // now the next event re-arms it, free
+    CHECK(g.inventory().count("backup_drive") == drives);
 }
 
 // Arming explore-mode drops back to the IDLE habitat with the mode running:
@@ -13776,7 +13857,10 @@ static void test_firmware_version_ordering() {
     RUN(test_habitat_moves_a_pet_and_parks_an_egg) \
     /* Sim-Battle + combat integration */   \
     RUN(test_sim_battle_end_to_end)         \
-    RUN(test_backup_drive_shield_armed_into_combat) \
+    RUN(test_backup_drive_save_not_spent_in_sim_battle) \
+    RUN(test_backup_drive_save_armed_into_wild_combat) \
+    RUN(test_rig_auto_backup_arms_save_on_explore) \
+    RUN(test_rig_continuous_backup_rearms_mid_run) \
     RUN(test_creature_level_curve_and_invariant) \
     RUN(test_creature_level_feeds_combat)   \
     RUN(test_rollback_item)                 \
@@ -13980,7 +14064,9 @@ static void test_firmware_version_ordering() {
     RUN(test_wild_win_can_drop_a_move)            \
     /* Mods into combat (data-driven effects, earn path, equip-level gate) */ \
     RUN(test_mod_effects_data_driven)             \
-    RUN(test_backup_drive_shield_negates_and_heals) \
+    RUN(test_backup_drive_death_save_ignores_survivable_hits) \
+    RUN(test_backup_drive_death_save_catches_lethal_hit) \
+    RUN(test_backup_drive_death_save_catches_fatal_dot) \
     RUN(test_mod_thorns_and_deathblast)           \
     RUN(test_mod_ecc_memory_hitcap)               \
     RUN(test_mod_load_balancer_split)             \

@@ -1277,6 +1277,14 @@ public:
     // (tests / dump_frame). A recipe row is only OFFERED once the hub is owned, so
     // these are called in that order.
     void debugBuyMergeHub() { buyRigUpgrade(kRigRowMergeHub); }
+    // Buy the g/h Auto Backup / Continuous Auto-Backup unlocks via the real buy path
+    // (tests) — the two rows that arm the Backup Drive death-save for free.
+    void debugBuyAutoBackup() { buyRigUpgrade(kRigRowAutoBackup); }
+    void debugBuyContinuousBackup() { buyRigUpgrade(kRigRowContinuousBackup); }
+    // Hand back to the idle habitat exactly as a resolved explore event does (tests) —
+    // the Continuous Auto-Backup / auto-defrag seam, without driving a whole random
+    // event to reach it.
+    void debugReturnToExplore() { returnToExplore(); }
     // `i` indexes kMergeRecipes; the row it buys is that recipe's own rigRow, so this
     // keeps working when either table grows. Out-of-line (game_merge.cpp) because the
     // recipe table is engine-private.
@@ -1410,7 +1418,7 @@ public:
     int debugPostEncFragAfter() const { return postEncFragAfter_; }
     bool debugPostEncShielded() const { return postEncShielded_; }
 
-    // Is the Backup Drive combat shield currently armed (used and not yet fired in a
+    // Is the Backup Drive death-save currently armed (used and not yet spent in a
     // fight, nor lapsed)? Lazily checked against the deadline, like
     // Game::buildPlayerCombatant() itself — nothing actively clears it on expiry.
     // Read by the STAT BUFFS page and the idle-habitat buff badge (game_render.cpp).
@@ -1544,9 +1552,9 @@ private:
     void doExploreStep();                           // one guaranteed-event step
     void returnToExplore();                         // event/fight → back to idle, mode continues
     // Auto Backup / Continuous Auto-Backup (Rig Shop g/h): re-arm the Backup
-    // Drive combat shield for free if `gateRow`'s upgrade is owned and the shield
-    // isn't already armed. Called from startExplore/startDeepWebDive (Auto Backup)
-    // and returnToExplore (Continuous Auto-Backup).
+    // Drive death-save for free if `gateRow`'s upgrade is owned and it isn't already
+    // armed. Called from startExplore/startDeepWebDive (Auto Backup) and
+    // returnToExplore (Continuous Auto-Backup).
     void autoArmBackupShield(int gateRow);
     // Disk Maintenance (Rig Shop i): between explore events, silently run a
     // guaranteed-clean defrag once Fragmentation reaches the owned tier's
@@ -1919,12 +1927,13 @@ private:
     // instead of leaving it to the kTrojanDivertPct roll; consumed there regardless
     // of whether the pet actually has a Trojan divert target.
     bool forceTrojanDivert_ = false;
-    // Backup Drive's timed combat shield (save v30) — per-pet, reset on a new egg.
-    // The lifetimeUptimeMs() deadline the shield is armed until; 0 = inactive.
+    // Backup Drive's timed death-save (save v30) — per-pet, reset on a new egg.
+    // The lifetimeUptimeMs() deadline the save is armed until; 0 = inactive.
     // Game::buildPlayerCombatant() arms Combatant::itemShield while lifetimeUptimeMs()
-    // is under this deadline; a fight that consumes it (Combatant::itemShieldFired)
+    // is under this deadline; a fight that spends it (Combatant::itemShieldFired)
     // clears this back to 0 early, regardless of time remaining. Re-using the item
-    // just overwrites the deadline (a fresh 1h window).
+    // just overwrites the deadline (a fresh 1h window). A Sim Battle deliberately
+    // fights without it (Game::startSimBattle) — no stakes, so nothing to save.
     uint32_t backupShieldUntilMs_ = 0;
     // DeepWeb Dive depth state — see area_defs' area.h for the depth ramp itself.
     // bestDeepWebDepth_ (save v35) is per-pet, reset on a new egg like the fields

@@ -420,14 +420,17 @@ const ItemDef kItems[] = {
      {{IE::Kind::Hunger, 20}, {IE::Kind::Happy, 20}, {IE::Kind::Frag, -5}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/512},
 
-    // Backup Drive: a combat buff, not a Lockout item. Use arms a 1-hour
-    // shield (ItemEffect::ArmCombatShieldBuff, save v30) that negates the pet's next
-    // incoming combat hit — same benefit as the RAID Mirror mod — and heals it to at
-    // least half max Health, then the shield is consumed (win or lose). If the hour
-    // runs out unused, the shield just lapses; using another Backup Drive re-arms it.
+    // Backup Drive: a combat buff, not a Lockout item. Use arms a 1-hour DEATH-SAVE
+    // (ItemEffect::ArmCombatShieldBuff, save v30). Ordinary hits land in full; the one
+    // blow that would take the pet to 0 Health is eaten instead, and the pet comes back
+    // at half max Health (Combatant::absorbLethal — every way a fight can kill, not just
+    // direct attacks). Then it's consumed, win or lose. This is deliberately NOT the RAID
+    // Mirror mod's job: the mod spends itself negating the first hit of any size, while
+    // the drive is the restore-from-backup you were carrying for the moment it all went
+    // wrong. If the hour runs out unused it just lapses; another Backup Drive re-arms it.
     {"backup_drive", "Backup Drive", ItemDef::Type::Buff,
      ItemDef::Rarity::Rare,
-     "Arms a {shieldMins}-minute combat shield: negates the next hit and heals to half Health, then consumed.",
+     "For {shieldMins} minutes, a killing blow is survived instead: the pet restores at half Health. One save.",
      ItemDef::Context::Anytime, {{IE::Kind::ArmCombatShieldBuff, 60}}},
     
     // Rare Cache: Open in the VAULT for a Rare Reward not locked to any area in particular
