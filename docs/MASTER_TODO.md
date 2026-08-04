@@ -289,6 +289,9 @@ Sizes are logical px; bind colour to `PAL_CORE` tokens. Inventory: `assets/ASSET
 | `ICON_CFG_UPDATE` | UPDATES row — reuses `ICON_CFG_SYSINFO` today | 20×20 | S / Sonnet |
 | `ICON_CFG_TRAVEL` | DEVICE group's TRAVEL MODE row — reuses `ICON_CFG_SYSINFO` today | 20×20 | S / Sonnet |
 | `ICON_PEERS` | Hacker-face PEERS slot — renders text-only today | 28×28 | S / Sonnet |
+| `ICON_ACH_BACK_UP_AND_DRIVEN` | Backup Drive achievement: saved, then won | 20×20 | none — the row already names it |
+| `ICON_ACH_NEEDED_MORE_BACKUP` | Backup Drive achievement: saved, then lost anyway | 20×20 | none — the row already names it |
+| `ICON_ACH_SHATTERED_PLATTER` | Backup Drive achievement: the restore wasn't enough | 20×20 | none — the row already names it |
 
 ### 2b. Placeholder → final art
 

@@ -21,18 +21,23 @@ const char* const kModPool[] = {"ghost_process",  "deadman_switch", "raid_mirror
 
 // SPAM & SCRAM — the item storefront: the free tier's endless lunch, and the two ways
 // out of a fight you didn't want (skip it, or patch through the middle of it). The
-// Sinkhole Traps are also the currency the mod counter below charges in.
+// Sinkhole Traps are also what the mod counter below charges for Ghost Process.
 const ShopListingDef kShopListings[] = {
     {"spam", 12, 4},
     {"sinkhole_trap", 6, 40},
     {"airgap_snack", 4, 96},
 };
 
-// THE GHOST IN THE MACHINE — the mod storefront: this area's own tier-4 Epics, priced
-// in Bits plus a Sinkhole Trap count drawn from its own item shop above.
+// THE GHOST IN THE MACHINE — the mod storefront: this area's own tier-4 Epics, priced in
+// Bits plus a stack of whichever consumable the mod is made out of. Ghost Process is paid
+// for in Sinkhole Traps from the item shop above. RAID Mirror is paid for in Backup
+// Drives, which is the trade the keep is really offering: a drawer full of one-shot
+// restores, melted down into a redundancy the pet carries permanently. It costs a serious
+// pile of them because that is the point — the drives are the cheap, repeatable version
+// of surviving, and this is the expensive, permanent one.
 const ShopListingDef kModShopListings[] = {
     {"ghost_process", kShopStock, 1024, {{"sinkhole_trap", 12}}},
-    {"raid_mirror", kShopStock, 1536, {{"sinkhole_trap", 24}}},
+    {"raid_mirror", kShopStock, 1536, {{"backup_drive", 24}}},
 };
 }  // namespace
 

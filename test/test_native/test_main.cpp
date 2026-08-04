@@ -2923,13 +2923,13 @@ static void test_backup_drive_death_save_ignores_survivable_hits() {
     CHECK(c.player().health < 100);              // the hit landed in full...
     CHECK(c.player().health > 0);
     CHECK(c.player().itemShield);                // ...and the drive is still held
-    CHECK(!c.player().itemShieldFired);
+    CHECK(c.player().backupUse == Combatant::BackupUse::None);
 }
 
 // A pet that goes down is restored with half its MAX Health, measured from where it
 // actually landed — so the same drive gives back the same amount whatever knocked it
-// over. Sets itemShieldFired (unlike mirrorFired, not reset per-turn) so Game can clear
-// the buff's timed save-side deadline once the fight ends.
+// over. Records BackupUse::Restored (unlike mirrorFired, not reset per-turn) so Game can
+// clear the buff's timed save-side deadline once the fight ends.
 static void test_backup_drive_death_save_restores_half_max_health() {
     ContentRegistry r = ContentRegistry::embedded();
     Combatant pc = mkCombatant(r, "P", 100, 5, {"quick_jab"});
@@ -2945,7 +2945,7 @@ static void test_backup_drive_death_save_restores_half_max_health() {
     CHECK(c.player().health == 1 - jab + 50);
     CHECK(c.player().health > 0);
     CHECK(!c.player().itemShield);               // spent
-    CHECK(c.player().itemShieldFired);           // Game reads this post-fight
+    CHECK(c.player().backupUse == Combatant::BackupUse::Restored);  // Game reads this post-fight
     CHECK(c.outcome() != Combat::Outcome::Lose); // the fight did NOT end here
 }
 
@@ -2962,7 +2962,7 @@ static void test_backup_drive_death_save_covers_a_fatal_dot() {
                        /*carryPlayerHealth=*/5);
     c.step();                                    // the pet's turn opens with the rot tick
     CHECK(c.player().health == 5 - 8 + 50);      // rotted under, then restored
-    CHECK(c.player().itemShieldFired);
+    CHECK(c.player().backupUse == Combatant::BackupUse::Restored);
     CHECK(c.outcome() != Combat::Outcome::Lose);
 }
 
@@ -2980,7 +2980,7 @@ static void test_backup_drive_death_save_loses_to_overkill() {
                        /*carryPlayerHealth=*/5);
     c.step();
     CHECK(c.player().health == 0);               // clamped at the floor, and gone
-    CHECK(c.player().itemShieldFired);           // the drive was still spent trying
+    CHECK(c.player().backupUse == Combatant::BackupUse::Overwhelmed);  // spent trying
     CHECK(c.outcome() == Combat::Outcome::Lose);
 }
 
@@ -12903,6 +12903,8 @@ static void test_achievement_table_is_well_formed() {
     for (const char* id : {ach::kFirstBruteForce, ach::kSurvivedLockout, ach::kFlawlessRun,
                            ach::kGoneRogue, ach::kWormWhisperer, ach::kAirGapped,
                            ach::kDevtoolsIntruder, ach::kTrojanUnleashed, ach::kFirstDuel,
+                           ach::kBackUpAndDriven, ach::kNeededMoreBackup,
+                           ach::kShatteredPlatter,
                            ach::kDeepWebDepth8, ach::kDeepWebDepth64}) {
         if (!achievementById(id)) std::printf("  MISSING ACHIEVEMENT ID: %s\n", id);
         CHECK(achievementById(id) != nullptr);
@@ -12918,6 +12920,26 @@ static void test_achievement_table_is_well_formed() {
         const AchievementDef* d = achievementById(kLegacyWireOrder[i]);
         CHECK(d && d->wire == i);
     }
+}
+
+// The three Backup Drive achievements are cut from one mapping (backupDriveAchievement):
+// what the drive did, crossed with how the fight ended. Asserted directly rather than by
+// staging three fights, because the mapping IS the thing that can be wrong.
+static void test_backup_drive_achievement_mapping() {
+    using BU = Combatant::BackupUse;
+    using O = Combat::Outcome;
+    // No drive spent earns nothing, however the fight went.
+    for (O o : {O::Win, O::Lose, O::Fled, O::Ongoing})
+        CHECK(backupDriveAchievement(BU::None, o) == nullptr);
+    // Saved and went on to win / to lose anyway.
+    CHECK(backupDriveAchievement(BU::Restored, O::Win) == ach::kBackUpAndDriven);
+    CHECK(backupDriveAchievement(BU::Restored, O::Lose) == ach::kNeededMoreBackup);
+    // Fleeing settles nothing: the pet is alive and the story isn't over.
+    CHECK(backupDriveAchievement(BU::Restored, O::Fled) == nullptr);
+    // The restore that wasn't enough — including on a mutual KO, which resolves as a Win
+    // even though the pet never got back up.
+    CHECK(backupDriveAchievement(BU::Overwhelmed, O::Lose) == ach::kShatteredPlatter);
+    CHECK(backupDriveAchievement(BU::Overwhelmed, O::Win) == ach::kShatteredPlatter);
 }
 
 // A ladder unlocks off its series' progress with no per-row code, pays the row's own
@@ -14196,6 +14218,7 @@ static void test_firmware_version_ordering() {
        the kGoalAll sentinel, the home-screen banner queue, and v40 save migration */ \
     RUN(test_achievement_table_is_well_formed) \
     RUN(test_achievement_ladder_unlocks_and_pays) \
+    RUN(test_backup_drive_achievement_mapping) \
     RUN(test_achievement_goal_all_tracks_the_set_size) \
     RUN(test_achievement_banner_announces_on_the_home_screen) \
     RUN(test_achievement_banner_waits_for_the_home_screen) \

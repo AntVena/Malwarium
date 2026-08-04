@@ -907,11 +907,12 @@ Combatant makePlayerCombatant(const ContentRegistry& reg, const CreatureDef& pet
 void Combatant::restoreFromBackup() {
     if (!itemShield) return;
     itemShield = false;
-    itemShieldFired = true;             // Game reads this post-fight to burn the timer
     // Half of max is what the backup holds — added to where the pet actually ended up,
     // not restored TO a fixed level. A pet buried deeper than that is past what a
-    // restore can bring back, and stays down.
+    // restore can bring back, and stays down; the drive is spent either way, which is
+    // the difference the two used states record.
     health += maxHealth / 2;
+    backupUse = health > 0 ? BackupUse::Restored : BackupUse::Overwhelmed;
 }
 
 int attackPowerRank(const std::vector<const MoveDef*>& moves, int moveIdx) {

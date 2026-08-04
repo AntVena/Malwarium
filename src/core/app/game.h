@@ -57,6 +57,12 @@ struct SpriteData;
 // seam that keeps the tests green without going through the egg).
 enum class StartMode { FreshHatch, Hatched };
 
+// Which of the three Backup Drive achievements a finished fight earned, or nullptr for
+// none — the drive unused, or a Fled fight that settled nothing. Pure over the only two
+// facts the answer depends on (what the drive did, how the fight ended), so the whole
+// mapping is assertable without staging three fights to reach it.
+const char* backupDriveAchievement(Combatant::BackupUse used, Combat::Outcome outcome);
+
 class Game {
 public:
     // `hatchedCreature` is the pet installed when mode == Hatched (the dev/test
@@ -1514,6 +1520,11 @@ private:
     void advanceCombatTurn();
     int combatBeatsForTurn() const;                 // heartbeats to wait before the next step()
     void applyCombatResult();                       // rewards (win) / +Frag (live loss)
+    // Post-fight bookkeeping for a spent Backup Drive: burn its remaining window and
+    // award whichever of the three drive achievements the ending earned
+    // (backupDriveAchievement, below). Called from applyCombatResult (wild/Sim) and
+    // finishBossRound (every gauntlet round).
+    void settleBackupDrive();
     void applyBattleFatigue();                      // per-wild-fight frag tax
     // Post-encounter status readout: a fought WILD battle (win or
     // loss) parks on Nav::PostEncounter first, showing the BANDWIDTH/FRAG delta

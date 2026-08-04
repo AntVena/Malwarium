@@ -531,10 +531,10 @@ void Game::startBossRound(int carryHealth) {
 }
 
 void Game::finishBossRound() {
-    // Same early-consume rule as applyCombatResult() — checked every round since a
-    // gauntlet rebuilds the player Combatant (buildPlayerCombatant) between rounds, and
-    // a fired shield must not re-arm on the next one.
-    if (combat_.player().itemShieldFired) backupShieldUntilMs_ = 0;
+    // Settled every round, not once at the end: a gauntlet rebuilds the player Combatant
+    // (buildPlayerCombatant) between rounds, so a drive spent in one round must neither
+    // re-arm for the next nor lose the achievement it earned.
+    settleBackupDrive();
     if (combat_.outcome() == Combat::Outcome::Win) {
         // Bank this round's boss roll (a gauntlet pays the lump at the end).
         bossBitsAccrued_ += bossBitsReward(bossGauntlet_.stageRank, rng_);

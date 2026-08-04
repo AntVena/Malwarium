@@ -150,6 +150,11 @@ inline constexpr const char* kAirGapped        = "AIR_GAPPED";
 inline constexpr const char* kDevtoolsIntruder = "DEVTOOLS_INTRUDER";
 inline constexpr const char* kTrojanUnleashed  = "TROJAN_UNLEASHED";
 inline constexpr const char* kFirstDuel        = "FIRST_DUEL";
+// The three endings a spent Backup Drive can buy, all fired from Game::settleBackupDrive
+// off Combatant::BackupUse and the fight's outcome.
+inline constexpr const char* kBackUpAndDriven  = "BACK_UP_AND_DRIVEN";
+inline constexpr const char* kNeededMoreBackup = "NEEDED_MORE_BACKUP";
+inline constexpr const char* kShatteredPlatter = "SHATTERED_PLATTER";
 // Read as CONTENT GATES, not just badges: depth 8 unlocks the Phishing egg line at
 // line-select (Game::eggLineUnlocked) and depth 64 adds Phishlet to that egg's hatch pool
 // (Game::hatchProcessUnlocked).

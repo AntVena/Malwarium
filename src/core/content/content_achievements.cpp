@@ -72,6 +72,23 @@ const AchievementDef kAchievements[] = {
     {/*wire=*/14, "FIRST_DUEL", "Packet Exchange",
      "Fight another operator's pet over the LINK.", "ICON_ACH_FIRST_DUEL",
      AchSeries::Event, /*goal=*/0, nullptr, 0, {bits(60), item("sealed_cache_common")}},
+    // The Backup Drive's three endings (Game::settleBackupDrive). One row per way the
+    // fight can go after the drive is spent, so between them they cover every outcome
+    // the player can actually watch — the save working and holding, the save working and
+    // not being enough, and the save not working at all.
+    {/*wire=*/60, "BACK_UP_AND_DRIVEN", "Back-Up & Driven",
+     "Win a fight your pet only survived because a Backup Drive restored it.",
+     "ICON_ACH_BACK_UP_AND_DRIVEN",
+     AchSeries::Event, /*goal=*/0, nullptr, 0, {bits(150), item("sealed_cache_rare")}},
+    {/*wire=*/61, "NEEDED_MORE_BACKUP", "Needed More Backup",
+     "Lose a fight after a Backup Drive had already brought your pet back.",
+     "ICON_ACH_NEEDED_MORE_BACKUP",
+     AchSeries::Event, /*goal=*/0, nullptr, 0, {bits(60), item("sealed_cache_common")}},
+    {/*wire=*/62, "SHATTERED_PLATTER", "Shattered Platter",
+     "Go down so hard that a Backup Drive's restore couldn't lift your pet back up.",
+     "ICON_ACH_SHATTERED_PLATTER",
+     AchSeries::Event, /*goal=*/0, nullptr, 0, {bits(150), item("sealed_cache_rare")}},
+
     // Hidden: the 'Pedia masks the trigger, because working it out IS the achievement.
     {/*wire=*/9, "DEVTOOLS_INTRUDER", "DevTools Intruder",
      "????????", "ICON_ACH_DEVTOOLS_INTRUDER",

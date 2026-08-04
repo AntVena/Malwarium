@@ -191,6 +191,28 @@ void Game::onSimTier(const ButtonEvent& ev) {
     else if (ev.button == Button::C) nav_ = Nav::Submenu;
 }
 
+const char* backupDriveAchievement(Combatant::BackupUse used, Combat::Outcome outcome) {
+    // Overwhelmed is read FIRST because a mutual KO resolves as a Win: the pet still
+    // didn't get up, and what the player watched was the restore failing.
+    if (used == Combatant::BackupUse::None) return nullptr;
+    if (used == Combatant::BackupUse::Overwhelmed) return ach::kShatteredPlatter;
+    if (outcome == Combat::Outcome::Lose) return ach::kNeededMoreBackup;
+    if (outcome == Combat::Outcome::Win) return ach::kBackUpAndDriven;
+    return nullptr;   // Fled: the run isn't over, so neither is the story
+}
+
+void Game::settleBackupDrive() {
+    // Every path out of a fight lands here (applyCombatResult for wild/Sim, and every
+    // boss round), so a spent drive is settled in exactly one place. It is spent for the
+    // rest of its 1h window regardless of time remaining — win or lose, the buff doesn't
+    // outlive the death it answered.
+    if (combat_.player().backupUse == Combatant::BackupUse::None) return;
+    backupShieldUntilMs_ = 0;
+    if (const char* id = backupDriveAchievement(combat_.player().backupUse,
+                                                combat_.outcome()))
+        unlockAchievement(id);
+}
+
 Combatant Game::buildPlayerCombatant() {
     // The friendly-visit ally buff — a transient combat modifier
     // consumed one per battle, applied at every real entry into combat (Sim +
@@ -386,9 +408,7 @@ void Game::applyBattleFatigue() {
 }
 
 void Game::applyCombatResult() {
-    // A fired Backup Drive save is spent for the rest of its 1h window regardless of
-    // time remaining — win or lose, the buff doesn't outlive the death it prevented.
-    if (combat_.player().itemShieldFired) backupShieldUntilMs_ = 0;
+    settleBackupDrive();
     const bool safe = combat_.stakes() == Combat::Stakes::Safe;
     const bool won = combat_.outcome() == Combat::Outcome::Win;
     const bool lost = combat_.outcome() == Combat::Outcome::Lose;

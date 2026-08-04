@@ -405,14 +405,16 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
             off = 0;
             if (c.shieldHp > 0)
                 off += std::snprintf(s + off, sizeof(s) - off, "SHLD %d", c.shieldHp);
-            // The Backup Drive buff carried INTO this fight (combat.h itemShield):
-            // still holding the next hit, or already spent on one. The idle habitat
-            // badges it before the fight (game_render.cpp); this is where it reads
-            // once the fight it was bought for is actually happening.
-            if (c.itemShield)
+            // The Backup Drive carried INTO this fight (combat.h itemShield): still
+            // holding, or already spent. The two are read from DIFFERENT fields because
+            // spending the drive clears itemShield — testing that flag for both states
+            // is why USED never used to reach the screen. The idle habitat badges the
+            // drive before the fight (game_render.cpp); this is where it reads once the
+            // fight it was bought for is actually happening.
+            if (c.itemShield || c.backupUse != Combatant::BackupUse::None)
                 off += std::snprintf(s + off, sizeof(s) - off, "%sBKUP %s",
                                      off ? "  " : "",
-                                     c.itemShieldFired ? "USED" : "RDY");
+                                     c.itemShield ? "RDY" : "USED");
             if (withGuard && c.guard > 0)
                 off += std::snprintf(s + off, sizeof(s) - off, "%sGRD %d",
                                      off ? "  " : "", c.guard);

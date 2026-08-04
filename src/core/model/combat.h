@@ -100,10 +100,18 @@ struct Combatant {
                                  // any size — the two never touch. Armed by the Game off
                                  // an item buff, so it lives here rather than in `mods`
                                  // (which the mod table owns)
-    bool itemShieldFired = false;  // set for the rest of the fight once the shield
-                                    // consumes (unlike mirrorFired, not reset per-turn) —
-                                    // lets Game clear the buff's save-side timer early
-                                    // once the fight ends
+    // What the drive DID, held for the rest of the fight (unlike mirrorFired, not reset
+    // per-turn). Game reads it once the fight ends: any value but None burns the buff's
+    // save-side timer early, and the three values are the three ways a fight can go
+    // after a drive was spent, which is what the achievements are cut from. One field
+    // rather than a fired/worked pair, because "spent but didn't work" is a state of the
+    // same fact and two bools could disagree about it.
+    enum class BackupUse : uint8_t {
+        None,          // no drive was armed, or it was never needed
+        Restored,      // spent, and the pet got back up
+        Overwhelmed,   // spent, and half of max still wasn't enough — the pet went down
+    };
+    BackupUse backupUse = BackupUse::None;
     // The armed crew Exploit, if any (see CrewExploitState). Its charges are spent
     // BEFORE the RAID Mirror mod so that one-shot stays held for after the charges run
     // out. Armed only by commitOverride.
