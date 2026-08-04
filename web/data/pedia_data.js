@@ -560,7 +560,7 @@ window.PEDIA_DATA = {
       "name": "Air-Gapped Snack",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Fills 40 Hunger. Patches 30 Health mid-fight.",
+      "effect": "Fills 40 Hunger. Patches 30 Health mid-fight. Cuts a Replication Ghost loose.",
       "stats": "HUNGER +40 / HEAL 30",
       "icon": "assets/icons/ICON_ITEM_AIRGAP_SNACK.png"
     },
