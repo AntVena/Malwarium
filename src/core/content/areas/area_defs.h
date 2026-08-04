@@ -89,6 +89,13 @@ struct AreaDef {
     const char* id;    // stable id, e.g. "citrus_circuit" (matches the folder name)
     const char* name;  // display name, e.g. "CITRUS CIRCUIT"
     const char* title; // zone-completion Title granted on clearing this area's gauntlet
+    // The asset NAME (no path, no extension) of this area's sector glyph. Keyed off the
+    // area's own id rather than its rung, because the rung is not an identity: splicing
+    // an area into the middle of kAreaList renumbers every area above it, and an
+    // index-keyed art family would silently re-point at its neighbour's picture while
+    // still resolving. Naming it here is also what keeps the art compiled —
+    // tools/check_orphan_assets.py counts a row that names an asset as its consumer.
+    const char* icon;
     const char* subAreas[kSubAreasPerArea];      // 5 named stretches
     const char* subBossNames[kSubAreasPerArea];  // 5 sub-area boss names (sub 4 = signature)
     const char* areaBossName;                    // the area gauntlet's overall banner

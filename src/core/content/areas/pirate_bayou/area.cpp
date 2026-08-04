@@ -38,6 +38,7 @@ const AreaDef kAreaPirateBayou = {
     "pirate_bayou",
     "THE PIRATE BAYOU",
     "LEECH LORD",
+    "ICON_SECTOR_PIRATE_BAYOU",
     {"LEECH LANDING", "TORRENT SWAMP", "THE CRACKED KEYS", "WAREZ MARSH",
      "BOOTY CACHE"},
     {"TORRENT TICK", "SEED SERPENT", "KEYGEN KRAKEN", "WAREZ WIGHT",

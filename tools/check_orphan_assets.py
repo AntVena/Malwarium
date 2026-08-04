@@ -47,14 +47,15 @@ KEEP = {
     "SPR_PET_GENERIC_PROCESS",
     "SPR_PET_GENERIC_SCRIPT",
     "SPR_PET_GENERIC_DAEMON",
-    # Drawn art whose real consumer is not built. Each was borrowed by an achievement
-    # row until those got bespoke glyphs, which is what surfaced them: an achievement
-    # pointing at ICON_SECTOR_0 was never the sector icon being USED, it was a
-    # placeholder standing on top of art nobody had wired. Parking them in _attic/
-    # would drop them from version control (it is gitignored), and each is finished
-    # art for a feature that is coming, so they stay compiled — about 1.2 KB total.
+    # Drawn art whose real consumer is not built. Parking it in _attic/ would drop it
+    # from version control (that folder is gitignored), and it is finished art for a
+    # feature that is coming, so it stays compiled — a few hundred bytes.
+    #
+    # The sector glyphs are NOT here: each area names its own in `AreaDef::icon`
+    # (src/core/content/areas/area_defs.h), which rule 1 above already counts as a
+    # consumer. That is the point of naming it on the row — the art is kept alive by
+    # the area that owns it, not by an entry in this list.
     "ICON_LINE_WORM",           # the Worm line has no content rows yet
-    "ICON_SECTOR_0",            # AREA_CONTENT_STANDARD.md asks for it; no screen reads it
 }
 
 # Directories holding hand-written code. src/generated/ is excluded on purpose: it's
