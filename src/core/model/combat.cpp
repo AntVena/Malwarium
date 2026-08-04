@@ -166,9 +166,8 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
         const bool mirrorArmed = target.mods.armed(ModEffect::RaidMirror);
         if (dmg > 0 && (crewNegates || mirrorArmed)) {
             // A crew Exploit charge / RAID Mirror each negate the whole hit, whatever
-            // its size. The Backup Drive's shield is NOT here: it only ever eats a
-            // lethal blow, so it waits at the bottom of the chain (absorbLethal) where
-            // the final damage is known.
+            // its size. The Backup Drive is not part of this: it never looks at hits at
+            // all, only at a pet that has already gone down (Combat::checkOutcome).
             dmg = 0;
             if (crewNegates) {
                 // Crew charges absorb FIRST: the player spent an Exploit use to arm
@@ -273,7 +272,6 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
                 if (r > 0) rebound = rebound * (100 - r) / 100;
                 if (rebound > 0) {
                     actor.health -= rebound;
-                    if (actor.health < 0) actor.health = 0;
                 }
             }
             if (trap->trapArmorRot > 0) {                  // rot armor for next time
@@ -298,24 +296,17 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
             target.ransomTurnsLeft = kRansomHoldTurns;
             target.ransomArmed = false;   // the window closes on the hit it catches
         }
-        // Backup Drive's death-save, on the damage actually LANDING now. A ransomed hit
-        // is held, not taken, so it can't be the fatal one — the pool is caught instead
-        // when it comes due (resolveTurn). A saved hit lands nothing at all: every rider
-        // below gates on dmg > 0, so the shield reads exactly like a mirrored hit.
-        int landing = dmg - ransomed;
-        if (target.absorbLethal(landing)) {
-            dmg = 0;                      // ransomed is 0 here (a held hit lands nothing)
-            target.mirrorFired = true;    // the negation flash + no stun/DoT riders
-        }
+        // Health is left UNCLAMPED here (and at every other site below that spends it):
+        // Combat::checkOutcome owns the floor, because how far past 0 a hit buried the
+        // pet is exactly what the Backup Drive's death-save has to weigh before that
+        // floor erases it.
         target.health -= dmg - ransomed;
-        if (target.health < 0) target.health = 0;
         // Honeytoken (mod): a landed hit chips the ATTACKER back. Mods are player-side,
         // so it only ever reflects onto an enemy that hit the pet — never the other way.
         // Doesn't fire on a fully-mirrored hit.
         const int thorns = target.mods.mag(ModEffect::Thorns);
         if (dmg > 0 && thorns > 0) {
             actor.health -= thorns;
-            if (actor.health < 0) actor.health = 0;
         }
         // Tripwire (mod): same reflect shape as Honeytoken, but only while the pet is
         // critically low — its own ModEffect kind, so it never mixes its conditional
@@ -325,7 +316,6 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
             const int hpPct = target.health * 100 / target.maxHealth;
             if (hpPct <= target.mods.mag2(ModEffect::ConditionalThorns)) {
                 actor.health -= condThorns;
-                if (actor.health < 0) actor.health = 0;
             }
         }
         // Steal track (defs.h has the per-field detail): every non-zero MoveDef
@@ -390,14 +380,9 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
                 if (bite && !biteHitsSpeed)
                     pct += mv->stealCurrentHpPct *
                            (100 + actor.mods.mag(ModEffect::StealAmplifyPct)) / 100;
-                int stolen = target.health * pct / 100;         // lifesteal: target's
-                // A bite-amplified steal can exceed 100% of current Health, so this
-                // drain is its own way to die — the death-save covers it, and eating it
-                // denies the caster the heal too (nothing was drained to give).
-                target.absorbLethal(stolen);
+                const int stolen = target.health * pct / 100;   // lifesteal: target's
                 if (stolen > 0) {                               // CURRENT health drains
                     target.health -= stolen;                    // straight to the caster
-                    if (target.health < 0) target.health = 0;
                     actor.health += stolen;
                     if (actor.health > actor.maxHealth) actor.health = actor.maxHealth;
                 }
@@ -426,7 +411,6 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
         if (ModState* dead = target.mods.find(ModEffect::DeathBlast);
             target.health <= 0 && dead && dead->mag > 0 && dead->pending > 0) {
             actor.health -= dead->mag;
-            if (actor.health < 0) actor.health = 0;
             --dead->pending;
         }
         setLast(mv->displayName, dmg, byPlayer, false, ransomed > 0);
@@ -533,11 +517,9 @@ void Combat::resolveTurn(Combatant& actor, Combatant& target, bool byPlayer) {
     // the player ever carries deferred damage (mods are player-side); an actor with none
     // (every enemy, most turns) skips this entirely.
     if (ModState* lb = actor.mods.find(ModEffect::LoadBalance); lb && lb->pending > 0) {
-        int due = lb->pending;
+        const int due = lb->pending;
         lb->pending = 0;
-        actor.absorbLethal(due);      // Backup Drive: a fatal debt is a death, so it saves
         actor.health -= due;
-        if (actor.health < 0) actor.health = 0;
         if (actor.health <= 0) {                          // the debt came due, fatally
             setLast("OVERLOAD", due, byPlayer, /*charge=*/false);
             return;
@@ -552,10 +534,7 @@ void Combat::resolveTurn(Combatant& actor, Combatant& target, bool byPlayer) {
     // (mod) already cut/negated the magnitude when the DoT was APPLIED (applyEffect).
     if (actor.dotTurnsLeft > 0 && actor.dotPerTurn > 0) {
         actor.dotTurnsLeft--;
-        int tick = actor.dotPerTurn;
-        actor.absorbLethal(tick);     // Backup Drive: rotting to death is still dying
-        actor.health -= tick;
-        if (actor.health < 0) actor.health = 0;
+        actor.health -= actor.dotPerTurn;
         if (actor.health <= 0) {                          // rotted to death
             setLast("CORRUPTED", actor.dotPerTurn, byPlayer, /*charge=*/false);
             return;
@@ -589,18 +568,10 @@ void Combat::resolveTurn(Combatant& actor, Combatant& target, bool byPlayer) {
     // passive's price — the pet bought turns of fighting at untouched Health and settles
     // up with one. Ahead of the stun below, so a frozen pet still pays on schedule.
     if (actor.ransomTurnsLeft > 0 && --actor.ransomTurnsLeft == 0 && actor.ransomPool > 0) {
-        const int billed = actor.ransomPool;   // what came due, for the popup
-        int due = billed;
+        const int due = actor.ransomPool;
         actor.ransomPool = 0;
-        // Backup Drive: the pool's whole point is that it can be the blow that kills, so
-        // it is exactly what the death-save exists for. The bill still COSTS the turn —
-        // being saved from it doesn't hand the turn back — and the popup still reports
-        // the figure that came due rather than the 0 that actually landed, because what
-        // the player needs to read is the size of the blow they just survived.
-        actor.absorbLethal(due);
         actor.health -= due;
-        if (actor.health < 0) actor.health = 0;
-        setLast("RANSOM DUE", billed, byPlayer, /*charge=*/false);
+        setLast("RANSOM DUE", due, byPlayer, /*charge=*/false);
         return;
     }
 
@@ -670,6 +641,15 @@ void Combat::resolveTurn(Combatant& actor, Combatant& target, bool byPlayer) {
 }
 
 void Combat::checkOutcome() {
+    // The one place a pet is judged overwhelmed, and so the one place the Backup Drive's
+    // death-save runs. Everything that spends Health leaves it unclamped and this is
+    // where it lands, which means the save reads the pet's STATE and never the thing
+    // that got it there — a hit, a rotting DoT, a ransom bill coming due and whatever
+    // gets added next all arrive here the same way, with no branch of their own.
+    if (player_.health <= 0) player_.restoreFromBackup();
+    // ...and the floor, after the save has had its look at how deep the hole is.
+    if (player_.health < 0) player_.health = 0;
+    if (enemy_.health < 0) enemy_.health = 0;
     if (enemy_.health <= 0) outcome_ = Outcome::Win;        // win takes priority
     else if (player_.health <= 0) outcome_ = Outcome::Lose;
 }
@@ -924,17 +904,14 @@ Combatant makePlayerCombatant(const ContentRegistry& reg, const CreatureDef& pet
     return c;
 }
 
-bool Combatant::absorbLethal(int& dmg) {
-    // Survivable damage is left completely alone — that's the whole difference between
-    // this and the RAID Mirror one-shot, and it's what lets the shield sit armed through
-    // a whole fight and still be there for the blow that would have ended the pet.
-    if (!itemShield || dmg <= 0 || dmg < health) return false;
-    dmg = 0;
+void Combatant::restoreFromBackup() {
+    if (!itemShield) return;
     itemShield = false;
     itemShieldFired = true;             // Game reads this post-fight to burn the timer
-    const int halfHealth = maxHealth / 2;
-    if (health < halfHealth) health = halfHealth;
-    return true;
+    // Half of max is what the backup holds — added to where the pet actually ended up,
+    // not restored TO a fixed level. A pet buried deeper than that is past what a
+    // restore can bring back, and stays down.
+    health += maxHealth / 2;
 }
 
 int attackPowerRank(const std::vector<const MoveDef*>& moves, int moveIdx) {

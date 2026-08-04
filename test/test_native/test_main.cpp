@@ -2911,8 +2911,8 @@ static void test_mod_effects_data_driven() {
 }
 
 // Backup Drive's death-save (ItemEffect::ArmCombatShieldBuff, save v30) is NOT the RAID
-// Mirror's negate-the-first-hit: a survivable hit lands in full and leaves the save
-// armed, so it's still there for the blow that would actually have ended the pet.
+// Mirror's negate-the-first-hit: a survivable hit lands in full and leaves the drive
+// untouched, so it's still there for the blow that actually puts the pet down.
 static void test_backup_drive_death_save_ignores_survivable_hits() {
     ContentRegistry r = ContentRegistry::embedded();
     Combatant pc = mkCombatant(r, "P", 100, 5, {"quick_jab"});
@@ -2922,45 +2922,66 @@ static void test_backup_drive_death_save_ignores_survivable_hits() {
     c.step();
     CHECK(c.player().health < 100);              // the hit landed in full...
     CHECK(c.player().health > 0);
-    CHECK(c.player().itemShield);                // ...and the save is still held
+    CHECK(c.player().itemShield);                // ...and the drive is still held
     CHECK(!c.player().itemShieldFired);
 }
 
-// ...and the blow that WOULD have killed is eaten whole, restoring the pet to half max
-// Health. Sets itemShieldFired (unlike mirrorFired, not reset per-turn) so Game can
-// clear the buff's timed save-side deadline once the fight ends.
-static void test_backup_drive_death_save_catches_lethal_hit() {
+// A pet that goes down is restored with half its MAX Health, measured from where it
+// actually landed — so the same drive gives back the same amount whatever knocked it
+// over. Sets itemShieldFired (unlike mirrorFired, not reset per-turn) so Game can clear
+// the buff's timed save-side deadline once the fight ends.
+static void test_backup_drive_death_save_restores_half_max_health() {
     ContentRegistry r = ContentRegistry::embedded();
     Combatant pc = mkCombatant(r, "P", 100, 5, {"quick_jab"});
     pc.itemShield = true;
-    Combatant e = mkCombatant(r, "E", 100, 12, {"packet_storm"});
-    // begin() always resets Health to maxHealth unless told to carry a wounded value
-    // in (the gauntlet no-heal-between-rounds path) — use that to start on death's door,
-    // where packet_storm is comfortably lethal.
+    Combatant e = mkCombatant(r, "E", 100, 12, {"quick_jab"});
+    // begin() always resets Health to maxHealth unless told to carry a wounded value in
+    // (the gauntlet no-heal-between-rounds path) — use that to start on death's door.
     Combat c; c.begin(pc, e, Combat::Stakes::Safe, 5, /*forceEnemyFirst=*/false,
-                       /*carryPlayerHealth=*/2);
+                       /*carryPlayerHealth=*/1);
+    const int jab = r.move("quick_jab")->power;
     c.step();
-    CHECK(c.player().health == 50);              // survived, restored to half max (100/2)
+    // 1 Health, minus the jab that took it under, plus the drive's half of max (50).
+    CHECK(c.player().health == 1 - jab + 50);
+    CHECK(c.player().health > 0);
     CHECK(!c.player().itemShield);               // spent
     CHECK(c.player().itemShieldFired);           // Game reads this post-fight
     CHECK(c.outcome() != Combat::Outcome::Lose); // the fight did NOT end here
 }
 
-// The save covers every way a fight can kill, not just direct attacks — a fatal DoT tick
-// at turn-start is exactly the "died to the poison, not the sword" case it exists for.
-static void test_backup_drive_death_save_catches_fatal_dot() {
+// The save asks one question — is this pet down? — so it needs to know nothing about
+// what put it there: a fatal DoT tick at turn-start restores exactly like a fatal hit.
+static void test_backup_drive_death_save_covers_a_fatal_dot() {
     ContentRegistry r = ContentRegistry::embedded();
     Combatant pc = mkCombatant(r, "P", 100, 12, {"quick_jab"});   // fast → its turn first
     pc.itemShield = true;
-    pc.dotPerTurn = 40;                                            // > the carried Health
+    pc.dotPerTurn = 8;
     pc.dotTurnsLeft = 3;
     Combatant e = mkCombatant(r, "E", 100, 5, {"quick_jab"});
     Combat c; c.begin(pc, e, Combat::Stakes::Safe, 5, /*forceEnemyFirst=*/false,
                        /*carryPlayerHealth=*/5);
     c.step();                                    // the pet's turn opens with the rot tick
-    CHECK(c.player().health == 50);              // saved and restored, not KO'd at 0
+    CHECK(c.player().health == 5 - 8 + 50);      // rotted under, then restored
     CHECK(c.player().itemShieldFired);
     CHECK(c.outcome() != Combat::Outcome::Lose);
+}
+
+// ...and it is a restore, not immortality: half of max added to a deep enough hole still
+// leaves the pet under, and it dies. This is the case that keeps the save honest — it
+// falls straight out of adding a fixed amount rather than setting a floor.
+static void test_backup_drive_death_save_loses_to_overkill() {
+    ContentRegistry r = ContentRegistry::embedded();
+    Combatant pc = mkCombatant(r, "P", 100, 12, {"quick_jab"});
+    pc.itemShield = true;
+    pc.dotPerTurn = 90;                          // 5 - 90 = -85, past the drive's 50
+    pc.dotTurnsLeft = 3;
+    Combatant e = mkCombatant(r, "E", 100, 5, {"quick_jab"});
+    Combat c; c.begin(pc, e, Combat::Stakes::Safe, 5, /*forceEnemyFirst=*/false,
+                       /*carryPlayerHealth=*/5);
+    c.step();
+    CHECK(c.player().health == 0);               // clamped at the floor, and gone
+    CHECK(c.player().itemShieldFired);           // the drive was still spent trying
+    CHECK(c.outcome() == Combat::Outcome::Lose);
 }
 
 // Thorns (Honeytoken) reflects onto any attacker; Deadman Switch blasts the
@@ -14065,8 +14086,9 @@ static void test_firmware_version_ordering() {
     /* Mods into combat (data-driven effects, earn path, equip-level gate) */ \
     RUN(test_mod_effects_data_driven)             \
     RUN(test_backup_drive_death_save_ignores_survivable_hits) \
-    RUN(test_backup_drive_death_save_catches_lethal_hit) \
-    RUN(test_backup_drive_death_save_catches_fatal_dot) \
+    RUN(test_backup_drive_death_save_restores_half_max_health) \
+    RUN(test_backup_drive_death_save_covers_a_fatal_dot) \
+    RUN(test_backup_drive_death_save_loses_to_overkill) \
     RUN(test_mod_thorns_and_deathblast)           \
     RUN(test_mod_ecc_memory_hitcap)               \
     RUN(test_mod_load_balancer_split)             \

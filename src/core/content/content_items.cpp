@@ -421,16 +421,18 @@ const ItemDef kItems[] = {
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/512},
 
     // Backup Drive: a combat buff, not a Lockout item. Use arms a 1-hour DEATH-SAVE
-    // (ItemEffect::ArmCombatShieldBuff, save v30). Ordinary hits land in full; the one
-    // blow that would take the pet to 0 Health is eaten instead, and the pet comes back
-    // at half max Health (Combatant::absorbLethal — every way a fight can kill, not just
-    // direct attacks). Then it's consumed, win or lose. This is deliberately NOT the RAID
-    // Mirror mod's job: the mod spends itself negating the first hit of any size, while
-    // the drive is the restore-from-backup you were carrying for the moment it all went
-    // wrong. If the hour runs out unused it just lapses; another Backup Drive re-arms it.
+    // (ItemEffect::ArmCombatShieldBuff, save v30). Every hit lands in full; the drive is
+    // read once, at the moment the pet would be overwhelmed (Combat::checkOutcome), and
+    // hands back half of MAX Health from wherever the pet ended up. So it usually saves
+    // a life and sometimes doesn't — a blow that buried the pet deeper than half its max
+    // is past restoring, which is the honest version of what a backup can do. Consumed
+    // either way, win or lose. Deliberately NOT the RAID Mirror mod's job: the mod
+    // spends itself negating the first hit of any size, whereas the drive ignores hits
+    // entirely and only ever answers the question "is this pet gone?". If the hour runs
+    // out unused it just lapses; another Backup Drive re-arms it.
     {"backup_drive", "Backup Drive", ItemDef::Type::Buff,
      ItemDef::Rarity::Rare,
-     "For {shieldMins} minutes, a killing blow is survived instead: the pet restores at half Health. One save.",
+     "For {shieldMins} minutes, a pet that goes down is restored with half its max Health. One save.",
      ItemDef::Context::Anytime, {{IE::Kind::ArmCombatShieldBuff, 60}}},
     
     // Rare Cache: Open in the VAULT for a Rare Reward not locked to any area in particular

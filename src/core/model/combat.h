@@ -93,21 +93,20 @@ struct Combatant {
     bool mirrorFired = false;   // set the turn a hit is fully negated (a brief flash);
                                  // also suppresses that attack's stun/DoT riders
     bool itemShield = false;    // Backup Drive's timed buff — a DEATH-SAVE, not a hit
-                                 // negator: ordinary hits land in full and only a blow
-                                 // that would reach 0 Health is eaten (absorbLethal
-                                 // below). Unlike the RAID Mirror mod (which spends
-                                 // itself on the first hit of any size), so the two are
-                                 // genuinely independent one-shots rather than a weaker
-                                 // copy of each other. Armed by the Game off an item
-                                 // buff, so it lives here rather than in `mods` (which
-                                 // the mod table owns)
+                                 // negator: every hit lands in full, and the drive is
+                                 // read only once the pet is already down
+                                 // (restoreFromBackup below). Nothing like the RAID
+                                 // Mirror mod, which spends itself on the first hit of
+                                 // any size — the two never touch. Armed by the Game off
+                                 // an item buff, so it lives here rather than in `mods`
+                                 // (which the mod table owns)
     bool itemShieldFired = false;  // set for the rest of the fight once the shield
                                     // consumes (unlike mirrorFired, not reset per-turn) —
                                     // lets Game clear the buff's save-side timer early
                                     // once the fight ends
     // The armed crew Exploit, if any (see CrewExploitState). Its charges are spent
-    // BEFORE the RAID Mirror mod / itemShield so those one-shots stay held for after
-    // the charges run out. Armed only by commitOverride.
+    // BEFORE the RAID Mirror mod so that one-shot stays held for after the charges run
+    // out. Armed only by commitOverride.
     CrewExploitState crewExploit;
     int guard = 0;              // pending mitigation from a defend move (one-shot)
     int shieldHp = 0;           // Obfuscation shield pool (Phishing) — a poolable
@@ -159,22 +158,17 @@ struct Combatant {
     int channelMoveIdx = -1;    // mid-channel move (-1 = not channelling)
     int channelLeft = 0;        // turns until the channel detonates
 
-    // Backup Drive's death-save (itemShield). If `dmg` would take this combatant to 0
-    // Health, the armed shield eats the WHOLE amount (dmg -> 0) and restores Health to
-    // at least half of max, then burns; a survivable hit is left completely alone.
-    // Returns whether it fired.
+    // Backup Drive's death-save (itemShield): burn the armed drive and add half of max
+    // Health back. Called from ONE place, Combat::checkOutcome, on a combatant that has
+    // just been judged overwhelmed — so it reads this pet's state and knows nothing
+    // about what put it there. A save that had to recognise each damage source would
+    // owe every future one a branch of its own.
     //
-    // Called at EVERY point the PET's Health can drop — the hit itself, its lifesteal
-    // rider, and the deferred/DoT/ransom ticks at turn-start — so the promise is
-    // unconditional: while it is armed, nothing in a fight kills this pet. A save that
-    // only covered direct attacks would be the worse kind of safety net, the one that
-    // blocks the sword and lets the poison through. (The thorns and Deadman Switch
-    // reflects need no call: mods are player-side, so those only ever land on an
-    // ENEMY. Deadman also keys off a KO'd pet, which an armed shield prevents.)
-    //
-    // Enemies never carry one (only Game::buildPlayerCombatant arms it), so this is a
+    // Half of max is what the drive holds, so it does not guarantee survival: added to
+    // a deep enough hole it still leaves the pet under 0, and the pet dies. Enemies
+    // never carry a drive (only Game::buildPlayerCombatant arms one), so this is a
     // no-op on every enemy Combatant.
-    bool absorbLethal(int& dmg);
+    void restoreFromBackup();
 };
 
 // Prowlware's multiplier for `moves[moveIdx]`: the rank of that move's Attack power
