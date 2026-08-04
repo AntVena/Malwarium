@@ -3,6 +3,7 @@
 #pragma once
 
 #include "core/model/pet_model.h"
+#include "core/model/stacker.h"
 
 namespace mal {
 
@@ -21,13 +22,19 @@ void drawMaintList(Framebuffer& fb, const PetModel& m, int cursor);
 
 // L3 action screen: effect summary + Run/Scan (or the gated line).: a
 // Defrag shows its stage-scaled Bits `cost` and gates on the `walletBits` balance
-// (AV passes cost 0 — it stays free).: the Defrag screen offers two payment
+// (AV passes cost 0 — it stays free).: the Defrag screen offers three payment
 // VARIANTS — `variant` 0 = QUICK (Bits, may fail), 1 = TOOL (a Defrag Tool item for a
-// guaranteed clean); `toolCount` is how many tools are held; `defragCount` is this
-// pet's running tally (surfaced, no mechanical effect). All ignored for AV.
+// guaranteed clean), 2 = STACKER (the minigame, guaranteed if cleared); `toolCount` is
+// how many tools are held; `defragCount` is this pet's running tally (surfaced, no
+// mechanical effect). All ignored for AV.
 void drawMaintAction(Framebuffer& fb, MaintKind kind, const PetModel& m,
                      int cost, int walletBits, int variant, int toolCount,
                      int defragCount);
+
+// The Stacker board (variant 2). Draws the locked stack, the run currently in hand, and
+// either the controls or the result. `frag` is shown only as context for what clearing
+// the board would fix.
+void drawStackerBoard(Framebuffer& fb, const Stacker& s, int frag);
 
 // Running process: a progress bar (C ignored until it resolves). `t` 0..1.
 void drawMaintProcess(Framebuffer& fb, MaintKind kind, float t);

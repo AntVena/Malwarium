@@ -233,6 +233,20 @@ bool Game::tick(uint32_t nowMs) {
         lastCombatAnimMs_ = nowMs;   // stay primed so re-entering combat doesn't burst-catch-up
     }
 
+    // The Stacker's run slides on its own faster cadence for the same reason combat's
+    // sprites do: the shared 4fps heartbeat is legible for a progress bar and far too
+    // slow for a timing test. Only runs while the board is up, and only while the run is
+    // still live — a finished board holds still.
+    if (nav_ == Nav::Stacker) {
+        if (nowMs - lastStackerStepMs_ >= static_cast<uint32_t>(kStackerStepMs)) {
+            lastStackerStepMs_ = nowMs;
+            stacker_.step();
+            changed = true;
+        }
+    } else {
+        lastStackerStepMs_ = nowMs;   // primed, so entering the game doesn't burst-catch-up
+    }
+
     // Post-encounter status readout: a real-ms auto-dismiss window
     // (the kSdIconRevealMs pattern, not a beat count) — informational only, so it
     // times out on its own rather than parking forever like a modal.
@@ -583,6 +597,7 @@ void Game::onButton(const ButtonEvent& ev) {
         // Post-encounter status readout: informational only — ANY
         // button (A/B/C) dismisses it, unlike the standard A/B/C contract.
         case Nav::PostEncounter: dismissPostEncounter(); break;
+        case Nav::Stacker: onStacker(ev); break;
         case Nav::Process:
             // Non-interruptible: ignored while running; the outcome dismisses.
             if (processResolved_ && (ev.button == Button::B || ev.button == Button::C))

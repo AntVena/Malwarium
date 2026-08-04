@@ -44,13 +44,12 @@ constexpr int kMaintFailPenalty = 15;  // +15 Fragmentation on a failed run
 // Indexed by Stage (BootSector/Process/Script/Daemon). Boot is 0 —
 // Charged per attempt regardless of pass/fail.
 constexpr int kDefragCostByStage[4] = {0, 5, 15, 30};
-// Two defrag variants share the stage-scaled Bits cost above. The QUICK
-// defrag is Bits-only with the normal success roll; the TOOL defrag additionally
-// spends one Defrag Tool item (kDefragToolId, content_items.cpp) for a GUARANTEED
-// clean (no fail roll). (An item-free, guaranteed Stacker-minigame variant is a
-// deferred follow-up.) The per-pet `defragCount_` tallies successful defrags and
-// persists through ARCH freeze/thaw (save v16); it's surfaced on the defrag screen
-// and has no other effect.
+// Three defrag variants share the stage-scaled Bits cost above, differing only in what
+// ELSE they ask for: QUICK is Bits-only with the normal success roll (luck), TOOL
+// additionally spends one Defrag Tool item (kDefragToolId, content_items.cpp) for a
+// guaranteed clean (an item), and STACKER plays the minigame in core/model/stacker.h for
+// one (skill). The per-pet `defragCount_` tallies successful defrags and persists through
+// ARCH freeze/thaw (save v16); it's surfaced on the defrag screen and has no other effect.
 
 // Lockout Timer. Durations are defaults still
 //     open for balance (frequency is the primary lifecycle-difficulty lever). --
@@ -721,6 +720,16 @@ constexpr int kHackerTagMax = 12;   // editable cells (also the buffer length)
 // --- Modal / process pacing (event-driven, in ~4fps beats) -----------------
 constexpr int kFeedBeats = 6;     // feeding beat before auto-dismiss
 constexpr int kProcessBeats = 8;  // MAINT process run length before the outcome
+// The three ways to pay for the same clean: 0 Quick (Bits, may fail) · 1 Tool (an item,
+// guaranteed) · 2 Stacker (the minigame, guaranteed if you clear it). Luck, an item, or
+// skill — so a player with no Defrag Tool and no appetite for the roll still has a way
+// through, and it is the one that costs only attention.
+constexpr int kDefragVariants = 3;
+constexpr int kDefragVariantStacker = 2;
+// The Stacker's run slides on its own faster cadence rather than the shared 4fps
+// heartbeat (the kCombatAnimMs precedent) — at 250ms a step the timing is trivial, and
+// the whole variant is a timing test. Only ticks while the board is on screen.
+constexpr int kStackerStepMs = 110;
 
 // Menu navigation ------------------------------------------------
 // One global idle timer governs the whole menu tree: 5s of silence collapses

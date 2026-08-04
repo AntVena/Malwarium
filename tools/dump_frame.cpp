@@ -8,7 +8,7 @@
 //        feed:<item_id> (eat one named food through the real Use path and hold the
 //             feeding modal — how to eyeball that its gauges follow that item's own
 //             effects, e.g. feed:tortilla_chip, feed:null_noodles)
-//        maint · lockout · hatch [crack] · evolve
+//        maint [detail] [stacker [slide|drop ...]] · lockout · hatch [crack] · evolve
 //        clutch [aim] [round ...] | clutch win (the Phishing egg's Clutch Pick; "aim"
 //        flips to the second half and "round" commits, interleaved to walk any path —
 //        three "round"s land on the lost reveal, "win" plays it perfectly instead)
@@ -232,6 +232,23 @@ int main(int argc, char** argv) {
     } else if (hasFlag(argc, argv, "maint")) {
         enterSlot(SubmenuId::Maint);
         if (hasFlag(argc, argv, "detail")) game.onButton({Button::B, true, false});
+        // "stacker" opens the DEFRAG action, cycles A onto the minigame variant and runs
+        // it; each following "drop" locks the run where it currently stands, so a board
+        // mid-climb (or a lost one) is renderable by repeating the word.
+        if (hasFlag(argc, argv, "stacker")) {
+            game.onButton({Button::B, true, false});          // open DEFRAGMENTATION
+            for (int i = 0; i < kDefragVariantStacker; ++i)
+                game.onButton({Button::A, true, false});      // cycle onto STACKER
+            game.onButton({Button::B, true, false});          // run it
+            // "drop" locks the run where it stands; "slide" advances it one beat first,
+            // so interleaving the two walks the run off the stack and renders a loss.
+            for (int i = 1; i < argc; ++i) {
+                if (std::strcmp(argv[i], "drop") == 0)
+                    game.onButton({Button::B, true, false});
+                else if (std::strcmp(argv[i], "slide") == 0)
+                    game.debugStepStacker();
+            }
+        }
     } else if (hasFlag(argc, argv, "cfg")) {
         enterSlot(SubmenuId::Cfg);
         // Sub-screens: walk the tables to the target row (descending through the

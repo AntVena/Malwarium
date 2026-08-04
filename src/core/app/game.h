@@ -32,6 +32,7 @@
 #include "core/model/move_loadout.h"
 #include "core/model/pet_model.h"
 #include "core/model/save.h"
+#include "core/model/stacker.h"
 #include "core/net/audit_capture.h"
 #include "core/net/network_ledger.h"
 #include "core/net/peer_ledger.h"
@@ -80,7 +81,7 @@ public:
     //   Detail      — L3 (item detail · MAINT action).
     //   Process     — a running MAINT process (non-interruptible).
     //   ModalFeeding / ModalLockout — event overlays.
-    enum class Nav { Idle, Cursor, Submenu, Detail, Process, ModalFeeding, ModalLockout, ModalLineSelect, ModalHatch, ModalEggPick, ModalHatchReveal, ModalEvolve, ModalCSF, Combat, ExploreControl, Encounter, Wifi, Shop, ModShop, WarpPicker, RollbackPicker, CacheYield, BulkYield, PostEncounter };
+    enum class Nav { Idle, Cursor, Submenu, Detail, Process, ModalFeeding, ModalLockout, ModalLineSelect, ModalHatch, ModalEggPick, ModalHatchReveal, ModalEvolve, ModalCSF, Combat, ExploreControl, Encounter, Wifi, Shop, ModShop, WarpPicker, RollbackPicker, CacheYield, BulkYield, PostEncounter, Stacker };
 
     // Which L2 screen the ITEMS submenu is showing. Picker (the category tile
     // screen) only ever appears when itemPickerUnlocked(); every other path — no
@@ -1337,6 +1338,10 @@ public:
     // so a failed defrag's shielded +1 care mistake is assertable. `success=false` =
     // a failure (frag penalty + the shielded mistake).
     void debugResolveDefrag(bool success);
+    // Advance the Stacker's run one beat without waiting out its real cadence — the seam
+    // tests and dump_frame use to place the run deliberately instead of by stopwatch.
+    void debugStepStacker() { stacker_.step(); }
+    const Stacker& stacker() const { return stacker_; }
     // Set the Bits wallet directly (tests / economy-gated flows like the shop's
     // "not enough Bits" gate). Clamped at 0.
     void debugSetBits(int n);
@@ -1445,6 +1450,7 @@ private:
     void drawSubmenu(Framebuffer& fb) const;
     void drawDetail(Framebuffer& fb) const;
     void drawProcess(Framebuffer& fb) const;
+    void drawStacker(Framebuffer& fb) const;
     void drawEvolve(Framebuffer& fb) const;
     void drawCSF(Framebuffer& fb) const;          // Critical System Failure
     void drawTrain(Framebuffer& fb) const;        // L3 dispatch (move picker / sim tier)
@@ -1479,6 +1485,7 @@ private:
     void itemFilterReleaseA();
     void onMaintList(const ButtonEvent& ev);
     void onMaintAction(const ButtonEvent& ev);
+    void onStacker(const ButtonEvent& ev);
     void onCfgList(const ButtonEvent& ev);
     void onCfgGroup(const ButtonEvent& ev);        // DISPLAY / RADIO row lists
     void onCfgDetail(const ButtonEvent& ev);
@@ -1795,6 +1802,8 @@ private:
     int nextEligibleStat(int cur) const;            // A-cycle target (skips 0-point stats)
     void drawRollbackPickerScreen(Framebuffer& fb) const;
     void startMaint();
+    void startStackerDefrag();
+    void finishStacker();
     void resolveMaint();
     bool rollMaintSuccess();
 
@@ -1923,7 +1932,14 @@ private:
     std::vector<BulkTallyEntry> bulkYieldTally_;
     int bulkYieldRow_ = 0;   // A-scroll cursor into bulkYieldTally_
     MaintKind maintKind_ = MaintKind::Defrag;
-    int defragVariant_ = 0;                // 0 = Quick (Bits), 1 = Tool (item)
+    // 0 = Quick (Bits, may fail) · 1 = Tool (an item, guaranteed) · 2 = Stacker (the
+    // minigame, guaranteed if you clear it). Three ways to pay for the same clean —
+    // luck, an item, or skill — which is why the third one needs no new currency.
+    int defragVariant_ = 0;
+    Stacker stacker_;                      // the variant-2 run in flight (never saved:
+                                           // an abandoned run forfeits its Bits, like a
+                                           // failed Quick defrag does)
+    uint32_t lastStackerStepMs_ = 0;
     int defragCount_ = 0;                  // this pet's successful defrags —
                                            // persists through ARCH freeze/thaw (save v16)
     // Care-mistake SHIELD (save v21) — per-pet, reset on a new egg (startHatch). A

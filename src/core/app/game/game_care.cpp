@@ -33,11 +33,11 @@ void Game::onMaintList(const ButtonEvent& ev) {
 }
 
 void Game::onMaintAction(const ButtonEvent& ev) {
-    // on the Defrag screen, A toggles the payment VARIANT (Quick Bits-only vs
-    // Tool = a Defrag Tool item for a guaranteed clean); B runs the focused variant. AV
-    // has no variants (A is inert there).
+    // on the Defrag screen, A cycles the payment VARIANT — Quick (Bits, may
+    // fail) / Tool (an item, guaranteed) / Stacker (the minigame, guaranteed if you
+    // clear it) — and B runs the focused one. AV has no variants (A is inert there).
     if (ev.button == Button::A && maintKind_ == MaintKind::Defrag)
-        defragVariant_ ^= 1;
+        defragVariant_ = (defragVariant_ + 1) % kDefragVariants;
     else if (ev.button == Button::B) startMaint();
     else if (ev.button == Button::C) nav_ = Nav::Submenu;
 }
@@ -56,6 +56,14 @@ void Game::startMaint() {
         const bool tool = defragVariant_ == 1;
         if (tool && inventory_.count(kDefragToolId) <= 0) return;   // no tool — inert
         bits_ -= cost;
+        // the STACKER variant buys nothing but the attempt: the Bits are spent
+        // here like every other run, and the outcome is then PLAYED rather than rolled
+        // or bought. It hands off to its own screen instead of the process bar, and
+        // rejoins at finishStacker().
+        if (defragVariant_ == kDefragVariantStacker) {
+            startStackerDefrag();
+            return;
+        }
         if (tool) {
             inventory_.remove(kDefragToolId, 1);
             maintSuccess_ = true;                        // a Tool defrag never fails
@@ -69,6 +77,41 @@ void Game::startMaint() {
     processBeat_ = 0;
     processResolved_ = false;
     nav_ = Nav::Process;
+}
+
+void Game::startStackerDefrag() {
+    // The Bits are already spent (startMaint charges before branching), so from here the
+    // run owes the player only an outcome. C abandons it and forfeits them, exactly as a
+    // failed Quick defrag forfeits them — the spend is what gates spamming, not the result.
+    stacker_.reset();
+    lastStackerStepMs_ = nowMs_;
+    nav_ = Nav::Stacker;
+}
+
+void Game::onStacker(const ButtonEvent& ev) {
+    if (!stacker_.running()) {                  // parked on the result: any press moves on
+        finishStacker();
+        return;
+    }
+    if (ev.button == Button::B) {
+        stacker_.drop();
+    } else if (ev.button == Button::C) {
+        // Abandon. The Bits are gone, but nothing else happened — no clean, and no care
+        // mistake either, because walking away isn't a botched defrag.
+        nav_ = Nav::Detail;
+    }
+}
+
+void Game::finishStacker() {
+    // Hand the played result back to the shared maint outcome path, so a cleared board
+    // reduces Fragmentation and bumps the tally through exactly the same seam a Tool
+    // defrag does, and a lost board takes the same care mistake a failed Quick one does.
+    maintKind_ = MaintKind::Defrag;
+    maintSuccess_ = stacker_.won();
+    processBeat_ = kProcessBeats;                // the work is done; show the outcome
+    processResolved_ = false;
+    nav_ = Nav::Process;
+    resolveMaint();
 }
 
 void Game::resolveMaint() {

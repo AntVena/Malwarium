@@ -26,6 +26,7 @@
 #include "core/model/move_loadout.h"
 #include "core/model/pet_model.h"
 #include "core/model/save.h"
+#include "core/model/stacker.h"
 #include "core/net/audit_capture.h"
 #include "core/net/eapol.h"
 #include "core/net/network_ledger.h"
@@ -12779,6 +12780,139 @@ static void test_ladder_inserts_table_invariants() {
     }
 }
 
+// The DEFRAG minigame's rules (core/model/stacker.h), driven a press at a time. The model
+// is deterministic on purpose — no RNG anywhere — which is what lets a run be replayed
+// exactly here, and what makes the variant it backs a test of skill rather than luck.
+namespace {
+// Slide the run until its left edge reaches `col`, then lock it. Returns false if the
+// column is unreachable, which would make the test a no-op rather than a failure.
+bool stackerDropAt(Stacker& s, int col) {
+    for (int guard = 0; guard < 4 * kStackerCols; ++guard) {
+        if (s.left() == col) { s.drop(); return true; }
+        s.step();
+    }
+    return false;
+}
+// How many blocks are locked in a row.
+int stackerRowCount(const Stacker& s, int r) {
+    int n = 0;
+    for (int c = 0; c < kStackerCols; ++c) if (s.locked(r, c)) ++n;
+    return n;
+}
+}  // namespace
+
+static void test_stacker_shaves_the_overhang() {
+    Stacker s;
+    CHECK(s.running());
+    CHECK(s.width() == kStackerStartWidth);
+    CHECK(s.row() == 0);
+
+    // The BASE row rests on the floor, so it keeps everything wherever it lands.
+    CHECK(stackerDropAt(s, 1));
+    CHECK(stackerRowCount(s, 0) == kStackerStartWidth);
+    CHECK(s.locked(0, 1) && s.locked(0, 2) && s.locked(0, 3));
+    CHECK(!s.locked(0, 0) && !s.locked(0, 4));
+    CHECK(s.row() == 1);
+    CHECK(s.width() == kStackerStartWidth);   // nothing shaved yet
+
+    // Row 1 offset by one: only the two columns over the row below survive, and the run
+    // in hand narrows by exactly the overhang rather than by a fixed step.
+    CHECK(stackerDropAt(s, 2));
+    CHECK(stackerRowCount(s, 1) == 2);
+    CHECK(s.locked(1, 2) && s.locked(1, 3));
+    CHECK(!s.locked(1, 4));                   // the overhanging block is gone, not moved
+    CHECK(s.width() == 2);
+    CHECK(s.row() == 2);
+    CHECK(s.running());
+}
+
+static void test_stacker_missing_entirely_loses() {
+    Stacker s;
+    CHECK(stackerDropAt(s, 0));               // base row at columns 0..2
+    CHECK(s.running());
+    // A drop with no column in common with the row below keeps nothing, and a run with
+    // no blocks left is the end of it — the only losing condition there is.
+    CHECK(stackerDropAt(s, 4));
+    CHECK(!s.running());
+    CHECK(!s.won());
+    CHECK(s.state() == Stacker::State::Lost);
+    CHECK(stackerRowCount(s, 1) == 0);
+    // A finished run ignores further input rather than resuming somewhere odd.
+    const int endRow = s.row();
+    s.step();
+    s.drop();
+    CHECK(s.row() == endRow);
+    CHECK(s.state() == Stacker::State::Lost);
+}
+
+static void test_stacker_clearing_every_row_wins() {
+    Stacker s;
+    // Drop every row at the same column: nothing ever overhangs, so the run keeps its
+    // full width to the top. That is the ceiling on how well a run can go — reaching the
+    // last row is the win, and it is reachable without ever narrowing.
+    for (int r = 0; r < kStackerRows; ++r) {
+        CHECK(s.running());
+        CHECK(s.row() == r);
+        CHECK(stackerDropAt(s, 0));
+    }
+    CHECK(!s.running());
+    CHECK(s.won());
+    CHECK(s.width() == kStackerStartWidth);
+    for (int r = 0; r < kStackerRows; ++r) CHECK(stackerRowCount(s, r) == kStackerStartWidth);
+
+    s.reset();                                 // a fresh run starts over cleanly
+    CHECK(s.running() && s.row() == 0 && s.width() == kStackerStartWidth);
+    for (int r = 0; r < kStackerRows; ++r) CHECK(stackerRowCount(s, r) == 0);
+}
+
+// The run stays ON the board and stays CONTIGUOUS, which the drawing and the shave both
+// assume — a run that walked off an edge or split in two would corrupt the board rather
+// than fail visibly. Walked over a long slide and a deliberately narrowing game.
+static void test_stacker_run_stays_on_board_and_contiguous() {
+    Stacker s;
+    for (int i = 0; i < 200; ++i) {            // several full bounces
+        s.step();
+        CHECK(s.left() >= 0);
+        CHECK(s.left() + s.width() <= kStackerCols);
+    }
+    // Narrow it by shifting one column each row, and confirm every locked row is one
+    // unbroken run — the property that lets a row be described by a left edge and a width.
+    Stacker n;
+    int col = 0;
+    while (n.running() && col + 1 < kStackerCols) {
+        if (!stackerDropAt(n, col)) break;
+        ++col;
+    }
+    for (int r = 0; r < kStackerRows; ++r) {
+        int first = -1, last = -1, count = 0;
+        for (int c = 0; c < kStackerCols; ++c)
+            if (n.locked(r, c)) { if (first < 0) first = c; last = c; ++count; }
+        if (count == 0) continue;
+        CHECK(last - first + 1 == count);      // no gaps
+    }
+}
+
+// The Game seam: a played result reaches the SAME outcome path a rolled or bought one
+// does. That is the whole point of routing the minigame through resolveMaint rather than
+// letting it apply its own effects — a win has to be worth exactly what a Tool defrag is.
+static void test_stacker_defrag_pays_out_like_any_other() {
+    Game g{StartMode::Hatched};
+    g.model().setFragmentation(60);
+    const int before = g.model().fragmentation();
+    g.debugResolveDefrag(true);
+    CHECK(g.model().fragmentation() == before - kDefragReduction);
+
+    // ...and a lost board costs what a failed Quick defrag costs: the frag penalty plus
+    // the care mistake, not merely "no clean".
+    Game g2{StartMode::Hatched};
+    g2.model().setFragmentation(60);
+    const int mistakes = g2.model().careMistakes();
+    const int frag = g2.model().fragmentation();
+    g2.debugResolveDefrag(false);
+    CHECK(g2.model().fragmentation() == frag + kMaintFailPenalty);
+    CHECK(g2.model().careMistakes() == mistakes + 1);
+}
+
 // Spoilage: a perishable held through a feeding turns into its `spoilsInto` row, and the
 // conversion is one-for-one — a stack that rots must not lose or gain count, which is the
 // failure a percentage roll would otherwise hide behind "unlucky".
@@ -14350,6 +14484,11 @@ static void test_firmware_version_ordering() {
     RUN(test_renamed_ids_table_invariants)  \
     RUN(test_save_v43_ladder_insert_shifts_expl_progress) \
     RUN(test_ladder_inserts_table_invariants) \
+    RUN(test_stacker_shaves_the_overhang)     \
+    RUN(test_stacker_missing_entirely_loses)  \
+    RUN(test_stacker_clearing_every_row_wins) \
+    RUN(test_stacker_run_stays_on_board_and_contiguous) \
+    RUN(test_stacker_defrag_pays_out_like_any_other) \
     RUN(test_perishable_food_spoils_on_a_feeding) \
     RUN(test_icon_tint_and_theme_indirection) \
     RUN(test_full_pedia_achievement_reads_the_raised_tally) \

@@ -42,6 +42,7 @@ void Game::render(Framebuffer& fb) const {
             break;
         case Nav::Detail:  drawDetail(fb); break;
         case Nav::Process: drawProcess(fb); break;
+        case Nav::Stacker: drawStacker(fb); break;
         case Nav::Combat: drawCombatScreen(fb); break;
         case Nav::ExploreControl:
             // The A+C control overlay floats over the idle habitat.
@@ -708,6 +709,10 @@ void Game::drawBulkYieldScreen(Framebuffer& fb) const {
     }
     drawBulkYield(fb, *bulkYieldCache_, bulkYieldCachesOpened_, bulkYieldBits_, rows, n,
                  bulkYieldRow_);
+}
+
+void Game::drawStacker(Framebuffer& fb) const {
+    drawStackerBoard(fb, stacker_, model_.fragmentation());
 }
 
 void Game::drawProcess(Framebuffer& fb) const {

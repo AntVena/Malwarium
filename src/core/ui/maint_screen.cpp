@@ -26,6 +26,16 @@ void header(Framebuffer& fb, const char* title) {
     fb.fillRect(0, kHeaderRule, kActiveW, 1, palColor(Pal::TRACK));
 }
 
+// A 1px outline. Local because the Stacker's in-hand run is the only thing that wants
+// one — a filled block is a placed block everywhere else, so "outlined" reading as "not
+// committed yet" is this screen's own vocabulary, not a general widget.
+void strokeRect(Framebuffer& fb, int x, int y, int w, int h, Rgb565 c) {
+    fb.fillRect(x, y, w, 1, c);
+    fb.fillRect(x, y + h - 1, w, 1, c);
+    fb.fillRect(x, y, 1, h, c);
+    fb.fillRect(x + w - 1, y, 1, h, c);
+}
+
 // AV's status preview: ghost / debuff count / clean.
 void avStatus(const PetModel& m, char* out, int n) {
     if (m.hasGhost()) std::snprintf(out, n, "GHOST");
@@ -77,44 +87,48 @@ void drawMaintAction(Framebuffer& fb, MaintKind kind, const PetModel& m,
         drawText(fb, kMargin, 78, line,
                  afford ? palColor(Pal::INK) : palColor(Pal::WARN));
 
-        // the two payment VARIANTS as a 2-row pick (A switches, B runs the
+        // the three payment VARIANTS as a 3-row pick (A switches, B runs the
         // focused one). QUICK = Bits-only, may fail; TOOL = spend a Defrag Tool for a
-        // guaranteed clean. Grayscale-safe: the cursor marks the focus, and each row
-        // spells its terms (MAY FAIL / GUARANTEED / NO TOOL) in words.
-        const int rowY[2] = {104, 124};
-        for (int i = 0; i < 2; ++i) {
+        // guaranteed clean; STACKER = the same Bits, then play for it. Grayscale-safe:
+        // the cursor marks the focus, and each row spells its terms in words (MAY FAIL /
+        // GUARANTEED / NO TOOL / YOUR AIM).
+        const int rowY[3] = {100, 118, 136};
+        for (int i = 0; i < 3; ++i) {
             const bool focus = variant == i;
             if (focus) drawRowCursor(fb, kMargin, rowY[i], palColor(Pal::ACCENT));
             const Rgb565 col = focus ? palColor(Pal::ACCENT) : palColor(Pal::INK);
+            const char* tag;
+            Rgb565 tagCol = palColor(Pal::INK_DIM);
             if (i == 0) {
                 std::snprintf(line, sizeof(line), "QUICK  -%d B", cost);
-                drawText(fb, kMargin + 12, rowY[i], line, col);
-                drawText(fb, kActiveW - kMargin - textWidth("MAY FAIL"), rowY[i],
-                         "MAY FAIL", palColor(Pal::INK_DIM));
-            } else {
+                tag = "MAY FAIL";
+            } else if (i == 1) {
                 std::snprintf(line, sizeof(line), "TOOL   -%d B -1 TOOL", cost);
-                drawText(fb, kMargin + 12, rowY[i], line, col);
-                const char* tag = toolCount > 0 ? "GUARANTEED" : "NO TOOL";
-                drawText(fb, kActiveW - kMargin - textWidth(tag), rowY[i], tag,
-                         toolCount > 0 ? palColor(Pal::CALM) : palColor(Pal::WARN));
+                tag = toolCount > 0 ? "GUARANTEED" : "NO TOOL";
+                tagCol = toolCount > 0 ? palColor(Pal::CALM) : palColor(Pal::WARN);
+            } else {
+                std::snprintf(line, sizeof(line), "STACKER  -%d B", cost);
+                tag = "YOUR AIM";
             }
+            drawText(fb, kMargin + 12, rowY[i], line, col);
+            drawText(fb, kActiveW - kMargin - textWidth(tag), rowY[i], tag, tagCol);
         }
         std::snprintf(line, sizeof(line), "HELD DEFRAG TOOLS: %d", toolCount);
-        drawText(fb, kMargin, 144, line, palColor(Pal::INK_DIM));
+        drawText(fb, kMargin, 154, line, palColor(Pal::INK_DIM));
 
         // Bottom action line: the gated reason, or the RUN/SWITCH hint.
         const bool toolReady = toolCount > 0;
-        const bool runnable = afford && (variant == 0 || toolReady);
+        const bool runnable = afford && (variant != 1 || toolReady);
         if (defragGated(m)) {
-            drawText(fb, kMargin, 170, "- NOTHING TO DEFRAGMENT -",
+            drawText(fb, kMargin, 176, "- NOTHING TO DEFRAGMENT -",
                      palColor(Pal::INK_DIM));
         } else if (!afford) {
-            drawText(fb, kMargin, 170, "- NOT ENOUGH BITS -", palColor(Pal::WARN));
+            drawText(fb, kMargin, 176, "- NOT ENOUGH BITS -", palColor(Pal::WARN));
         } else if (variant == 1 && !toolReady) {
-            drawText(fb, kMargin, 170, "- NO DEFRAG TOOL -", palColor(Pal::WARN));
+            drawText(fb, kMargin, 176, "- NO DEFRAG TOOL -", palColor(Pal::WARN));
         } else if (runnable) {
-            drawRowCursor(fb, kMargin, 170, palColor(Pal::ACCENT));
-            drawText(fb, kMargin + 12, 170, "B RUN   A SWITCH", palColor(Pal::ACCENT));
+            drawRowCursor(fb, kMargin, 176, palColor(Pal::ACCENT));
+            drawText(fb, kMargin + 12, 176, "B RUN   A SWITCH", palColor(Pal::ACCENT));
         }
     } else {
         header(fb, "ANTIVIRUS");
@@ -132,6 +146,70 @@ void drawMaintAction(Framebuffer& fb, MaintKind kind, const PetModel& m,
             drawText(fb, kMargin + 10, 170, "SCAN", palColor(Pal::ACCENT));
         }
     }
+}
+
+void drawStackerBoard(Framebuffer& fb, const Stacker& s, int frag) {
+    header(fb, "DEFRAGMENTING");
+
+    // Drawn bottom-up: row 0 is the base, so it sits at the FOOT of the well and the run
+    // climbs toward the header. Cells are WIDE and short — a disk block, not a tile — and
+    // their size is derived from the grid rather than typed twice, so changing
+    // kStackerCols/kStackerRows can't desync the drawing from the rules.
+    constexpr int kWellTop = 30;
+    constexpr int kWellBottom = 176;
+    constexpr int kCellH = (kWellBottom - kWellTop) / kStackerRows;
+    constexpr int kCellW = 28;
+    constexpr int kGap = 2;
+    constexpr int kX0 = (kActiveW - kStackerCols * kCellW) / 2;
+    // Bottom-align the grid in the well, so any rounding in kCellH is slack at the TOP
+    // (against the header) rather than a floating stack with a gap under its base row.
+    const int y0 = kWellBottom - kStackerRows * kCellH;
+
+    auto cellAt = [&](int r, int c, int& x, int& y) {
+        x = kX0 + c * kCellW;
+        y = y0 + (kStackerRows - 1 - r) * kCellH;   // row 0 at the bottom
+    };
+
+    for (int r = 0; r < kStackerRows; ++r)
+        for (int c = 0; c < kStackerCols; ++c) {
+            int x, y;
+            cellAt(r, c, x, y);
+            // The well floor: empty space still reads as somewhere blocks GO.
+            fb.fillRect(x + kGap, y + kGap, kCellW - 2 * kGap, kCellH - 2 * kGap,
+                        palColor(Pal::TRACK));
+            if (!s.locked(r, c)) continue;
+            fb.fillRect(x + kGap, y + kGap, kCellW - 2 * kGap, kCellH - 2 * kGap,
+                        palColor(Pal::ACCENT));
+        }
+
+    // The run in hand: an OUTLINE, not a fill. Filled means committed everywhere else on
+    // this board, so the distinction survives grayscale without needing a second colour,
+    // and its own motion is what says the run is live — no blink, which at this cadence
+    // would only read as flicker.
+    if (s.running())
+        for (int c = s.left(); c < s.left() + s.width(); ++c) {
+            int x, y;
+            cellAt(s.row(), c, x, y);
+            strokeRect(fb, x + kGap, y + kGap, kCellW - 2 * kGap, kCellH - 2 * kGap,
+                       palColor(Pal::INK));
+        }
+
+    char line[40];
+    if (s.running()) {
+        std::snprintf(line, sizeof(line), "ROW %d/%d  BLOCKS %d",
+                      s.row() + 1, kStackerRows, s.width());
+        drawText(fb, kMargin, 182, line, palColor(Pal::INK_DIM));
+        drawText(fb, kMargin, 196, "B DROP    C GIVE UP", palColor(Pal::ACCENT));
+    } else if (s.won()) {
+        drawText(fb, kMargin, 182, "DISK ALIGNED.", palColor(Pal::CALM));
+        drawText(fb, kMargin, 196, "ANY BUTTON", palColor(Pal::ACCENT));
+    } else {
+        std::snprintf(line, sizeof(line), "STALLED AT ROW %d.", s.row() + 1);
+        drawText(fb, kMargin, 182, line, palColor(Pal::HOT));
+        drawText(fb, kMargin, 196, "ANY BUTTON", palColor(Pal::ACCENT));
+    }
+    std::snprintf(line, sizeof(line), "FRAG %d", frag);
+    drawText(fb, kActiveW - kMargin - textWidth(line), 182, line, palColor(Pal::INK_DIM));
 }
 
 void drawMaintProcess(Framebuffer& fb, MaintKind kind, float t) {
