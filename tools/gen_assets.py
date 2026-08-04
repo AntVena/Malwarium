@@ -237,9 +237,39 @@ def gen_sprites():
             rgb_vals.append(rgb565(r, g, b))
             a_vals.append(a)
         decls.append(f"extern const SpriteData {sym};")
-        defs.append(_emit_sprite(sym, w, cell_h, fw, rows, rgb_vals, a_vals))
+        ink = mask_ink(rgb_vals, a_vals)
+        if ink is None:
+            defs.append(_emit_sprite(sym, w, cell_h, fw, rows, rgb_vals, a_vals))
+        else:
+            defs.append(_emit_mask(sym, w, h, cell_h, fw, rows, a_vals, ink))
         table.append((name, sym, w, h, fw, w // fw, rows))
     return decls, defs, table
+
+
+def mask_ink(rgb_vals, a_vals):
+    """The one colour this image is drawn in, or None if it needs full storage.
+
+    An image qualifies as a 1-bit mask when it carries no information a bitmap would
+    lose: every pixel is fully transparent or fully opaque, and every opaque pixel is
+    the same colour. Most of the ICON_*/UI_* family is exactly that — a flat fill on
+    transparent, because dim/bright is engine brightness and the colour is applied at
+    draw time — so it spends RGB565 + alpha, 24 bits per pixel, to carry one.
+
+    Detected rather than keyed off the name, so the emitted pixels are identical either
+    way and an icon that ever gains a gradient silently falls back to full storage
+    instead of being quietly flattened.
+    """
+    ink = None
+    for rgb, a in zip(rgb_vals, a_vals):
+        if a == 0:
+            continue
+        if a != 255:
+            return None                  # a soft edge is real information
+        if ink is None:
+            ink = rgb
+        elif rgb != ink:
+            return None                  # more than one colour
+    return ink                           # None for a fully transparent image: no ink
 
 
 def _emit_sprite(sym, w, cell_h, fw, rows, rgb_vals, a_vals):
@@ -250,6 +280,27 @@ def _emit_sprite(sym, w, cell_h, fw, rows, rgb_vals, a_vals):
         f"static const uint8_t {sym}_a[] = {{{a_arr}}};\n"
         f"const SpriteData {sym} = {{ {w}, {cell_h}, {fw}, {w // fw}, {rows}, "
         f"{sym}_rgb, {sym}_a }};\n"
+    )
+
+
+def _emit_mask(sym, w, h, cell_h, fw, rows, a_vals, ink):
+    """Pack the alpha plane as 1bpp: row-major, MSB first, each row padded to a byte.
+
+    Rows are byte-aligned so a row starts on a byte boundary and the reader's index
+    math needs no carry across rows — see spriteAlphaAt in core/render/sprite.h, which
+    is the only thing that unpacks this.
+    """
+    stride = (w + 7) // 8
+    packed = bytearray(stride * h)
+    for y in range(h):
+        for x in range(w):
+            if a_vals[y * w + x]:
+                packed[y * stride + (x >> 3)] |= 0x80 >> (x & 7)
+    bits_arr = ", ".join(str(b) for b in packed)
+    return (
+        f"static const uint8_t {sym}_bits[] = {{{bits_arr}}};\n"
+        f"const SpriteData {sym} = {{ {w}, {cell_h}, {fw}, {w // fw}, {rows}, "
+        f"nullptr, nullptr, {sym}_bits, 0x{ink:04x} }};\n"
     )
 
 

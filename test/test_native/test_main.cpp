@@ -125,9 +125,8 @@ static void test_sprite_roundtrip() {
     int opaqueChecked = 0;
     for (int y = 0; y < pet.h; ++y) {
         for (int x = 0; x < pet.frameW; ++x) {
-            const int idx = y * pet.sheetW + x;
-            if (pet.a[idx] == 255) {
-                CHECK(fb.get(x, y) == pet.rgb[idx]);
+            if (spriteAlphaAt(pet, x, y) == 255) {
+                CHECK(fb.get(x, y) == spriteColorAt(pet, x, y));
                 ++opaqueChecked;
             }
         }
@@ -2103,10 +2102,9 @@ static void test_sprite_grayscale_legibility() {
         bool band[5] = {false, false, false, false, false};   // 5 luminance steps
         for (int y = 0; y < s->h; ++y)
             for (int x = 0; x < s->frameW; ++x) {
-                const int idx = y * s->sheetW + x;            // frame 0
-                if (s->a[idx] < 128) continue;
+                if (spriteAlphaAt(*s, x, y) < 128) continue;   // frame 0
                 ++opaque;
-                int b = static_cast<int>(luminance(s->rgb[idx]) * 5);
+                int b = static_cast<int>(luminance(spriteColorAt(*s, x, y)) * 5);
                 if (b > 4) b = 4;
                 if (b < 0) b = 0;
                 band[b] = true;
@@ -12847,8 +12845,9 @@ static void test_icon_tint_and_theme_indirection() {
     for (int i = 0; i < 4; ++i) {
         const SpriteData* s = embeddedAssets().sprite(tiers[i]);
         CHECK(s != nullptr);
-        for (int p = 0; p < s->sheetW * s->h; ++p)
-            if (s->a[p] > 0) ++on[i];
+        for (int y = 0; y < s->h; ++y)
+            for (int x = 0; x < s->sheetW; ++x)
+                if (spriteAlphaAt(*s, x, y) > 0) ++on[i];
     }
     for (int i = 0; i < 4; ++i)
         for (int j = i + 1; j < 4; ++j) CHECK(on[i] != on[j]);

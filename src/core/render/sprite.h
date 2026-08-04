@@ -16,15 +16,52 @@ class Framebuffer;
 // `h` has always meant one cell's height, so existing callers that never
 // pass `row` are unaffected. `rows` defaults to 1 so a zero-initialized
 // SpriteData (tests, placeholders) still addresses row 0 validly.
+//
+// TWO STORAGE FORMS, distinguished by `bits`:
+//
+//   FULL COLOUR (`bits == nullptr`) — `rgb` + `a`, one entry each per pixel. What a
+//   creature sheet needs, and the only form that can hold more than one colour or a
+//   partial-alpha edge.
+//
+//   1-BIT MASK (`bits != nullptr`) — a packed bitmap plus the one colour `ink` that
+//   every set bit takes; `rgb`/`a` are null. Most of the ICON_*/UI_* family is a single
+//   flat fill on transparent with no partial-alpha pixel anywhere, because dim/bright is
+//   engine brightness and colour is applied at draw time (drawSpriteTinted). Stored as
+//   RGB565 + alpha, such a glyph spends 24 bytes per pixel-bit of real information; as a
+//   mask it is exactly its own shape. The generator DETECTS this rather than keying off
+//   the name — an asset qualifies iff every alpha is 0 or 255 and every opaque pixel
+//   shares one colour — so the output is pixel-identical either way, and an icon that is
+//   ever drawn with a gradient simply stays full colour.
+//
+// Packing: row-major over the SHEET, MSB first, each sheet row padded to a whole byte
+// (so a row starts on a byte boundary and the index math needs no carry). Read it
+// through spriteAlphaAt/spriteColorAt below rather than by hand.
 struct SpriteData {
     int sheetW;
     int h;
     int frameW;
     int frames;
     int rows = 1;
-    const uint16_t* rgb;
-    const uint8_t* a;
+    const uint16_t* rgb = nullptr;
+    const uint8_t* a = nullptr;
+    const uint8_t* bits = nullptr;   // non-null = 1-bit mask; rgb/a are then null
+    uint16_t ink = 0;                // mask only: the colour a set bit takes
 };
+
+// Bytes per sheet row in the 1-bit form.
+inline int spriteMaskStride(const SpriteData& s) { return (s.sheetW + 7) >> 3; }
+
+// One source pixel's coverage and colour, at sheet coordinates. A mask has no partial
+// coverage and no per-pixel colour by construction, so it answers the same two values
+// the full-colour form would have stored — which is why the saving costs nothing.
+inline uint8_t spriteAlphaAt(const SpriteData& s, int px, int py) {
+    if (!s.bits) return s.a[py * s.sheetW + px];
+    const uint8_t byte = s.bits[py * spriteMaskStride(s) + (px >> 3)];
+    return (byte >> (7 - (px & 7))) & 1 ? 255 : 0;
+}
+inline Rgb565 spriteColorAt(const SpriteData& s, int px, int py) {
+    return s.bits ? s.ink : s.rgb[py * s.sheetW + px];
+}
 
 // Alpha-composite frame `frame` of row `row` of `s` into `fb` with top-left
 // at (x, y), 1:1 (native resolution — used for UI chrome / icons).

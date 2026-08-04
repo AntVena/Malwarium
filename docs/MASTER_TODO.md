@@ -74,19 +74,17 @@ The pantry, per-item drop weights and the N-ingredient Merge Hub are built. What
   the two systems should meet — a `LootEntry` weight override per area pool is already the mechanism,
   so that's content, not code.
 
-### 1c. Icon storage — 1-bit masks
+### 1c. Sprite storage — indexed colour
 
-Every `ICON_*`/`UI_*` master is a single flat `ink` fill with **zero partial-alpha pixels** (74 files
-measured), because dim/bright is engine brightness. They compile to RGB565 + alpha all the same, so
-33,344 pixels cost **98 KB of flash to carry one bit each** — as 1bpp masks that is 4.1 KB, a 24×
-saving with no art risk, since there is nothing but the mask to preserve.
+The 1-bit mask half is done: `gen_assets.py` detects an asset that carries nothing a bitmap
+would lose (every alpha 0 or 255, every opaque pixel one colour) and emits a packed mask +
+its `ink` instead of RGB565 + alpha. 169 of 195 assets qualified — the whole `ICON_*`/`UI_*`
+family and more besides — for **202 KB of flash**. Every creature and malbeast sheet is
+multi-colour and correctly stayed full storage.
 
-Where the bytes actually are, though, is the **sprites**: 180,360 px = 528 KB of the 626 KB atlas,
-up to 19 distinct colours each. 8-bit indexing is safe there (~3×, ~350 KB); 4-bit needs a per-sprite
-colour reduction and real art review.
-
-Neither is urgent — flash isn't tight, and tinting no longer depends on either (it ships). Diff
-**M** for the icon masks, **L** for the sprites.
+What's left is those sheets, which are where the bytes actually are: up to 19 distinct
+colours each. 8-bit indexing is safe (~3×); 4-bit needs a per-sprite colour reduction and
+real art review. Not urgent — flash sits at 24% and tinting doesn't depend on it. Diff **L**.
 
 ### 1c-ii. Tinting — a second theme
 
