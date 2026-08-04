@@ -5,8 +5,8 @@ The shared visual system every pet-side screen draws on: the **palette** (`PAL_C
 colour/font/silhouette craft here so it's decided **once**.
 
 This doc is a **system spec + constraints brief**, not finished pixels: it fixes the *roles,
-sizes, tiers, and rules*; the final **hues, font face, and silhouettes** are Claude Design's
-craft. Architecture constants (×1.75 scale, 224×224 active + 8px bezel, the §4
+sizes, tiers, and rules* that any particular hue, font face or silhouette then has to satisfy.
+Architecture constants (×1.75 scale, 224×224 active + 8px bezel, the §4
 pass-order) live in `src/core/render/RENDER_PIPELINE.md` — **referenced, not duplicated**. Assets resolve into
 `ASSET_MANIFEST.md §E` (+ the icon tiers note).
 

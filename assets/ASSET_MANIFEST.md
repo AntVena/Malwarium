@@ -1,8 +1,8 @@
 # Malwarium — Asset Manifest
 
-Master list of every visual asset the pet-side UI needs. **Claude Design** pulls `☐ TODO`
-rows, produces the art within the constraints, saves to `/assets/...`, and updates Status +
-File. **Empty `File` cells are the work to be done.**
+Master list of every visual asset the pet-side UI needs. Whoever picks up a `☐ TODO` row draws it
+within the constraints, saves to `/assets/...`, and updates Status + File in the same pass.
+**Empty `File` cells are the work to be done.**
 
 **Status:** `☐` TODO · `✎` WIP · `▨` PLACEHOLDER (a correctly-sized/named stand-in is shipping;
 final art still wanted) · `☑` DELIVERED · `⌫` PARKED (drawn, but nothing consumes it — see below) ·
@@ -521,7 +521,7 @@ content tables through the firmware's own code (`tools/dump_content.cpp`) plus
 | `web/fixtures/pedia_state.js` | Dev-preview fixture standing in for the live `GET /pedia_state.json` | browser-preview only, not served on-device | ☑ | `/web/fixtures/pedia_state.js` |
 | `web/assets/*` | Site copies of shipped `ICON_*`/`SPR_PET_*`/`PAL_CORE.json` assets | same files as `/assets/` (§A–§R above); duplicated into `/web/assets/` for the site bundle, not new art | ☑ | `/web/assets/` |
 | **Typography** | `FONT_UI` (Pixel Operator Mono) | **font binary still TODO** — the site currently falls back to a system-mono stack; same open item as the on-device `FONT_UI` (`ASSET_MANIFEST §E`) | ☐ | — |
-| **Achievement icons** | Per-achievement glyphs, named on each row's `icon` field (`src/core/content/content_achievements.cpp`) | **63 rows, 60 bespoke `ICON_ACH_*` glyphs — the three Backup Drive rows are still unglyphed (`ICON_ACH_BACK_UP_AND_DRIVEN`, `_NEEDED_MORE_BACKUP`, `_SHATTERED_PLATTER`), which the web Pedia reports as a build warning and the device never notices.** Most are LADDERS, so they are one motif plus a centred tally — five skulls for the boss tiers, five depth arrows, four wifi arcs — countable before anything else, which is what lets a grid of them read in grayscale. The three creature lines are sets rather than ladders, so they use the line's own mark (lock / hook / horse) under a footer: a bar for "raised them all", a chevron for "took one deep". `DEVTOOLS_INTRUDER` is deliberately a question mark over a redaction bar — the 'Pedia draws a row's icon even while the row is masked, so anything representational there would spoil the one achievement whose point is working it out | ✎ | `/assets/icons/ICON_ACH_*.png` |
+| **Achievement icons** | Per-achievement glyphs, named on each row's `icon` field (`src/core/content/content_achievements.cpp`) | **63 rows, 63 bespoke `ICON_ACH_*` glyphs.** Most are LADDERS, so they are one motif plus a centred tally — five skulls for the boss tiers, five depth arrows, four wifi arcs — countable before anything else, which is what lets a grid of them read in grayscale. The three creature lines are sets rather than ladders, so they use the line's own mark (lock / hook / horse) under a footer: a bar for "raised them all", a chevron for "took one deep". `DEVTOOLS_INTRUDER` is deliberately a question mark over a redaction bar — the 'Pedia draws a row's icon even while the row is masked, so anything representational there would spoil the one achievement whose point is working it out. The three Backup Drive rows are the other exception: a SET, not a ladder, so all three carry the same platter and differ only in its fate — restored and carried up, restored and going back down, or split with the pieces scattered | ☑ | `/assets/icons/ICON_ACH_*.png` |
 
 > **Malbeast sprites are `▨` stand-ins, but they are the shipping art** — `make pedia` copies them
 > from `assets/` into `web/assets/` like any other sprite, so the site and the device show the same
