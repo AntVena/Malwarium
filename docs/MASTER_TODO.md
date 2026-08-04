@@ -142,13 +142,12 @@ roster, and the wild half keeps its own roster-keyed masks).
   `cachemutt` a crying frame), and the 'Pedia is static where the device animates. If that's the
   complaint it wants the anim-clip table exported to the web and is **M**, not a bug fix.
   **Needs the PO to say which screen and which creature looked wrong.**
-- **Two achievement rows have no firing site**: `WORM_WHISPERER` and `AIR_GAPPED`. Neither is a
-  missing unlock CALL — both preconditions are absent. The Worm line has no content rows at all, and
-  the Replication Ghost is a modelled state nothing ever enters: `PetModel::ghost_` has a getter, a
-  setter and a save field, but no code anywhere sets it true. `AIR_GAPPED` also promises a cure by
-  **Air-Gapped Snack**, while the only thing that clears the flag is `applyAntivirus` — so the row's
-  copy and the model disagree about the mechanic even once a ghost can exist. Deciding what raises
-  a ghost, and whether the snack is what settles it, is design. Diff **M**.
+- **`WORM_WHISPERER` has no firing site**, and what's missing is not the unlock CALL: the Worm
+  line has no content rows at all, so there is nothing to hatch. It needs a creature line —
+  sprites, an evolution chain, an egg line — before it needs a line of code. That also unblocks
+  `ICON_LINE_WORM`, which is drawn and has nothing to label (§2b). Diff **L**, content-led.
+  (`AIR_GAPPED` is done: a defrag that fails on an already-Critical disk raises a Replication
+  Ghost, and the Air-Gapped Snack cuts it loose.)
 - **No on-device browser.** The home-screen banner is the whole feedback channel. If achievements
   ever want a device-side list, the Hacker face's PROFILE slot is the natural home. Diff **M**.
 - **Unverified:** on-device serving of the SD-hosted bundle + the live endpoints

@@ -12913,6 +12913,67 @@ static void test_stacker_defrag_pays_out_like_any_other() {
     CHECK(g2.model().careMistakes() == mistakes + 1);
 }
 
+// The Replication Ghost's whole lifecycle, which until now had no way to begin: the
+// model carried a flag, a setter and a save field that nothing ever set true, so the AV
+// screen's GHOST state and the AIR_GAPPED row were both unreachable by play.
+static void test_replication_ghost_is_raised_by_a_failed_defrag_on_a_critical_disk() {
+    // A failed defrag on a disk that is NOT yet critical is just a failed defrag.
+    Game ok{StartMode::Hatched};
+    ok.model().setFragmentation(kFragCriticalMin - kMaintFailPenalty - 1);
+    ok.debugResolveDefrag(false);
+    CHECK(ok.model().fragmentation() < kFragCriticalMin);
+    CHECK(!ok.model().hasGhost());
+
+    // Fail one on an already-critical disk and the write forks a phantom copy.
+    Game g{StartMode::Hatched};
+    g.model().setFragmentation(kFragCriticalMin);
+    CHECK(!g.model().hasGhost());
+    g.debugResolveDefrag(false);
+    CHECK(g.model().hasGhost());
+
+    // A SUCCESSFUL defrag never raises one, however bad the disk was.
+    Game s{StartMode::Hatched};
+    s.model().setFragmentation(90);
+    s.debugResolveDefrag(true);
+    CHECK(!s.model().hasGhost());
+}
+
+// The cure, and the achievement that marks it. The snack stays an ordinary food when
+// there is nothing to cure — which is the common case, and must not unlock anything.
+static void test_air_gapped_snack_cures_the_ghost_and_unlocks() {
+    Game g{StartMode::Hatched};
+    g.inventory().add("airgap_snack", 2);
+
+    // Eaten with no ghost: it feeds, and that is all. No unlock.
+    g.model().setHunger(20);
+    g.debugUseItem("airgap_snack");
+    CHECK(g.model().hunger() > 20);                 // still an ordinary snack
+    CHECK(!g.hasAchievement(ach::kAirGapped));
+
+    // Raise a ghost the only way there is, then cure it.
+    g.model().setFragmentation(kFragCriticalMin);
+    g.debugResolveDefrag(false);
+    CHECK(g.model().hasGhost());
+    g.debugUseItem("airgap_snack");
+    CHECK(!g.model().hasGhost());
+    CHECK(g.hasAchievement(ach::kAirGapped));
+}
+
+// The AV scan is the other cure, and the two are deliberately the same shape as the
+// defrag variants: the scan is free but can fail, the snack is an item that cannot. So a
+// ghost must be reachable AND clearable through both, or one of the pair is decoration.
+static void test_ghost_also_clears_through_a_successful_av_scan() {
+    Game g{StartMode::Hatched};
+    g.model().setFragmentation(kFragCriticalMin);
+    g.debugResolveDefrag(false);
+    CHECK(g.model().hasGhost());
+    CHECK(!avGated(g.model()));                     // a ghost is work for the AV screen
+    CHECK(!g.model().applyAntivirus(true));          // succeeded
+    CHECK(!g.model().hasGhost());
+    // Curing it this way is NOT the Air-Gapped achievement — that row names the snack.
+    CHECK(!g.hasAchievement(ach::kAirGapped));
+}
+
 // Spoilage: a perishable held through a feeding turns into its `spoilsInto` row, and the
 // conversion is one-for-one — a stack that rots must not lose or gain count, which is the
 // failure a percentage roll would otherwise hide behind "unlucky".
@@ -14489,6 +14550,9 @@ static void test_firmware_version_ordering() {
     RUN(test_stacker_clearing_every_row_wins) \
     RUN(test_stacker_run_stays_on_board_and_contiguous) \
     RUN(test_stacker_defrag_pays_out_like_any_other) \
+    RUN(test_replication_ghost_is_raised_by_a_failed_defrag_on_a_critical_disk) \
+    RUN(test_air_gapped_snack_cures_the_ghost_and_unlocks) \
+    RUN(test_ghost_also_clears_through_a_successful_av_scan) \
     RUN(test_perishable_food_spoils_on_a_feeding) \
     RUN(test_icon_tint_and_theme_indirection) \
     RUN(test_full_pedia_achievement_reads_the_raised_tally) \

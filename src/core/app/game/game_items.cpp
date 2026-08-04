@@ -199,6 +199,15 @@ bool Game::itemUseIsInert(const ItemDef& d, const char*& why) const {
                 if (bestDeepWebDepth_ > pendingDeepWebStartDepth_) return false;
                 if (!reason) reason = "DEEPER START ARMED";
                 break;
+            case ItemEffect::Kind::ClearReplicationGhost:
+                // Nothing to cut loose on a pet with no ghost. Only reachable for a row
+                // that carries NOTHING else — the Air-Gapped Snack's Hunger fill already
+                // answers "not inert" above, which is the intent: it stays an ordinary
+                // food, and only its cure half is conditional.
+                ++armingEffects;
+                if (model_.hasGhost()) return false;
+                if (!reason) reason = "NO REPLICATION GHOST";
+                break;
         }
     }
     // A row with no arming effects at all does its work through a hand-off field
@@ -345,6 +354,17 @@ void Game::applyItemEffects(const ItemDef& d) {
                 // bestDeepWebDepth_, resolved at dive-start (not here) so improving
                 // the record between now and then is never stale.
                 pendingDeepWebStartDepth_ = kDeepWebStartDepthUseBest;
+                break;
+            case ItemEffect::Kind::ClearReplicationGhost:
+                // Air-Gapped Snack: cut the phantom process off from the pet it copied.
+                // Guarded on actually HAVING a ghost, so the achievement marks curing one
+                // rather than owning the snack — eating it as ordinary food is the common
+                // case and must not unlock anything.
+                if (model_.hasGhost()) {
+                    model_.setGhost(false);
+                    log_.push(LogEventType::ItemUsed, "GHOST CLEARED");
+                    unlockAchievement(ach::kAirGapped);
+                }
                 break;
         }
     }

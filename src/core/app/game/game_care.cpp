@@ -121,7 +121,21 @@ void Game::resolveMaint() {
     if (maintKind_ == MaintKind::Defrag) {
         const bool failed = model_.applyDefrag(maintSuccess_);
         if (!failed) ++defragCount_;          // this pet's defrag tally
-        else { addCareMistakeShielded(1); log_.push(LogEventType::CareMistake, "FAILED DEFRAG"); }
+        else {
+            addCareMistakeShielded(1);
+            log_.push(LogEventType::CareMistake, "FAILED DEFRAG");
+            // A botched defrag on an ALREADY-CRITICAL disk forks a Replication Ghost:
+            // the write went wrong badly enough to leave a phantom second copy of the
+            // pet's process behind. This is the only thing that raises one, and it is
+            // deliberately not a dice roll on top of a dice roll — the state the player
+            // is in is what decides it, so the way to never see a ghost is to not let
+            // Fragmentation reach Critical before defragmenting (or to stop rolling for
+            // it: the Tool and Stacker variants can't fail).
+            if (model_.fragmentation() >= kFragCriticalMin && !model_.hasGhost()) {
+                model_.setGhost(true);
+                log_.push(LogEventType::CareMistake, "REPLICATION GHOST");
+            }
+        }
     } else {
         const bool failed = model_.applyAntivirus(maintSuccess_);
         if (failed) { addCareMistakeShielded(1); log_.push(LogEventType::CareMistake, "FAILED AV SCAN"); }

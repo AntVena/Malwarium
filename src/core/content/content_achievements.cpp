@@ -56,13 +56,17 @@ const AchievementDef kAchievements[] = {
     {/*wire=*/3, "GONE_ROGUE", "Gone Rogue",
      "Raise a pet all the way to a Bad-branch Daemon.", "ICON_ACH_GONE_ROGUE",
      AchSeries::Event, /*goal=*/0, nullptr, 0, {bits(150), item("sealed_cache_rare")}},
-    // WORM_WHISPERER and AIR_GAPPED have no firing site yet: their preconditions (a clean
-    // Worm-line Isolation-Protocol hatch; curing a Replication Ghost with an Air-Gapped
-    // Snack) belong to systems that aren't built. The rows exist so the 'Pedia's map is
-    // complete — wire the unlock call when either lands.
+    // WORM_WHISPERER still has no firing site, and the reason is not a missing unlock
+    // call: the Worm line has no content rows at all, so there is nothing to hatch. It
+    // needs a creature line before it needs code. The row exists so the 'Pedia's map is
+    // complete — wire the unlock where the line's hatch lands.
     {/*wire=*/4, "WORM_WHISPERER", "Worm Whisperer",
      "Hatch the Worm line through a clean Isolation Protocol.", "ICON_ACH_WORM_WHISPERER",
      AchSeries::Event, /*goal=*/0, nullptr, 0, {bits(150), item("sealed_cache_rare")}},
+    // Fires from the Air-Gapped Snack's own ClearReplicationGhost effect
+    // (Game::applyItemEffects), and only when there was a ghost to cut loose — eating the
+    // snack as ordinary food is the common case and unlocks nothing. A ghost is raised by
+    // a defrag that FAILS on an already-Critical disk (Game::resolveMaint).
     {/*wire=*/7, "AIR_GAPPED", "Air-Gapped",
      "Cure a Replication Ghost with an Air-Gapped Snack.", "ICON_ACH_AIR_GAPPED",
      AchSeries::Event, /*goal=*/0, nullptr, 0, {bits(60), item("sealed_cache_common")}},

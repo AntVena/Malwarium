@@ -159,10 +159,16 @@ const ItemDef kItems[] = {
     //
     // UNCOMMON ITEMS --------------------------
     //
+    // The ghost cure. Air-gapping is what you do to a machine you can't trust to stay
+    // connected to itself — which is exactly a Replication Ghost's problem — so this is
+    // the one food whose flavour is also its mechanic. It stays an ordinary snack on a
+    // pet with no ghost; the clear is a no-op then.
     {"airgap_snack", "Air-Gapped Snack", ItemDef::Type::Food,
      ItemDef::Rarity::Uncommon,
-     "Fills {hunger} Hunger. Patches {heal} Health mid-fight.",
-     ItemDef::Context::Anytime, {{IE::Kind::Hunger, 40}}, /*combatHeal=*/30},
+     "Fills {hunger} Hunger. Patches {heal} Health mid-fight. Cuts a Replication "
+     "Ghost loose.",
+     ItemDef::Context::Anytime,
+     {{IE::Kind::Hunger, 40}, {IE::Kind::ClearReplicationGhost, 0}}, /*combatHeal=*/30},
     
     // Intended to be combined with Null Noodles to produce a rare food
     {"pwnzu_sauce", "Pwnzu Sauce", ItemDef::Type::Food,

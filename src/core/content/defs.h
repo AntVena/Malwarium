@@ -220,6 +220,15 @@ struct ItemEffect {
         SetDeepWebStartDepthToBest, // Zero-Day Bell: arms the next DeepWeb Dive to
                               // start at THIS PET's own best-ever depth
                               // (Game::bestDeepWebDepth_) rather than a fixed number.
+        ClearReplicationGhost, // Air-Gapped Snack: clear a Replication Ghost
+                              // (PetModel::ghost_), the phantom process a defrag that
+                              // failed on a Critical disk leaves behind. Magnitude-free
+                              // — a ghost is a flag, not a quantity. An AV scan clears
+                              // one too, so the pair is the same shape as the defrag
+                              // variants: the scan is free but can fail and costs a care
+                              // mistake when it does, this is an item that cannot. A
+                              // no-op on a pet with no ghost, which is what keeps the
+                              // snack an ordinary food the rest of the time.
     };
     Kind kind = Kind::None;
     int magnitude = 0;
