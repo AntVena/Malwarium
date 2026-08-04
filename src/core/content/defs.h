@@ -116,8 +116,12 @@ struct CreatureDef {
     // Game::completeEvolution). The first divert unlocks the family. nullptr = no
     // divert path (every non-infiltratable creature).
     const char* evolvesToTrojanId = nullptr;
-    // How this creature moves around its habitat at rest. Trailing, and defaulted,
-    // because most of the roster walks — a row only states this when it doesn't.
+    // How this creature moves around its habitat at rest. EVERY row states it, even
+    // the walkers: how a creature moves is a fact about that creature, and it belongs
+    // where the rest of it is read rather than being inferred from an absence. It
+    // also changes WITHIN a line — a Tadpoll swims, the Croaken it becomes does not —
+    // so there is no line-level answer to inherit. The default is a floor for a row
+    // that predates a new mover kind, not a licence to leave it off.
     Locomotion locomotion = Locomotion::Walk;
 };
 
