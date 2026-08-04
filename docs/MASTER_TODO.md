@@ -330,6 +330,13 @@ Design has to originate these; they come with the features above.
   meaningful new `ICON_ITEM_*` batch plus a mechanic. Diff **L** / Opus.
 - **Best foods = a once-per-lifetime permanent buff.** Needs a per-pet "lifetime buff consumed" flag
   + a permanent stat modifier. Mechanic + design, pairs with the above. Diff **M** / Opus.
+- **Locomotion poses to match the resting motion.** Every creature declares how it gets around
+  (`CreatureDef::locomotion`) and the habitat already moves it that way — a walker ambles along the
+  shelf, a swimmer drifts through the box, a flier holds an altitude (`core/model/idle_wander.h`).
+  The POSE is still the breathe/blink idle for all three, so a drifting tadpole is a standing
+  tadpole that slides. Wants an extra clip row per mover on the existing sheets (swim cycle,
+  wingbeat, step cycle), keyed off the same field — sheet rows, not new sprites. `Fly` has no
+  creature on it yet either; the first flier is a roster question, not a code one. Diff **M**.
 - **Per-line move-fx assets / silhouette + eye-anchor data** (FB-DSGN7, FB-UI4) — eye-pixel metadata
   per sprite + the layered gamma-pulse treatment. Largely procedural + data, not flat icons.
 - **Branching-roster sprites** — full `SPR_PET_*` sheets for the named alternates once the roster

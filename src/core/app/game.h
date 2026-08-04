@@ -26,6 +26,7 @@
 #include "core/model/combat.h"
 #include "core/model/event_log.h"
 #include "core/model/hacker_rank.h"
+#include "core/model/idle_wander.h"
 #include "core/model/inventory.h"
 #include "core/model/loadout.h"
 #include "core/model/move_loadout.h"
@@ -938,6 +939,19 @@ public:
         return nav_ == Nav::Detail && (cfgScreen_ == CfgScreen::PediaQr ||
                                        cfgScreen_ == CfgScreen::UpdateQr);
     }
+    // True while the UPDATES screen is showing — its row list, the install confirm,
+    // or a job's progress. The screen is a WAIT: a check associates and fetches on
+    // the network's clock, and the verdict it leaves behind is the whole reason the
+    // operator opened it. On the standard 5s budget the menu collapses out from under
+    // a running job, or throws the answer away seconds after it lands, so this takes
+    // the long hands-off budget (kRadioScreenDefocusMs) instead.
+    //
+    // Deliberately NOT part of radioScreenOpen(): that predicate also ARMS a radio,
+    // and opening a screen must never put this device on a network — only a job the
+    // operator started does that (netConnectWanted).
+    bool updateScreenOpen() const {
+        return nav_ == Nav::Detail && cfgScreen_ == CfgScreen::Update;
+    }
     // True while the HackerTag arcade editor is open. Composing a tag one A-press
     // per letter has real pauses in it, and the 5s auto-defocus would throw the
     // half-typed buffer away mid-thought — so the editor holds the menu open the
@@ -954,6 +968,10 @@ public:
         return pet_ ? kDefragCostByStage[static_cast<int>(pet_->stage)] : 0;
     }
     const CreatureDef* pet() const { return pet_; }   // null while the save is empty (Hatch)
+    // Where the habitat is currently standing its occupant, in logical px off the
+    // shelf anchor (core/model/idle_wander.h). drawHabitat draws from this; it is
+    // exposed so the resting motion can be inspected without a framebuffer.
+    const IdleWander& petWander() const { return petWander_; }
     // Hatch inspection (tests): progress 0..1 and the mapped crack frame (in the
     // decrypt minigame). `inHatch()` = the minigame modal is up.
     bool inHatch() const { return nav_ == Nav::ModalHatch; }
@@ -1834,6 +1852,10 @@ private:
     ContentRegistry registry_;
     const CreatureDef* pet_ = nullptr;
     PetModel model_;
+    // Purely presentational: where the pet is standing on its shelf right now.
+    // Stepped once per heartbeat off pet_->locomotion and parked when there is no
+    // mover, so it never needs a reset hook on hatch, evolution or a loaded save.
+    IdleWander petWander_;
     // Per-stage tally of care interactions, indexed by DominantSignal, feeding
     // the evolution routing tables. Reset when a new stage begins
     // (hatch / evolution). Runtime-only scaffold: not persisted yet — a reboot

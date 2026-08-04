@@ -137,6 +137,12 @@ bool Game::tick(uint32_t nowMs) {
         lastBeatMs_ = nowMs;
         beat_++;
         changed = true;
+        // Resting motion: the pet drifts a little way around the habitat's shelf
+        // anchor, the way its species moves (core/model/idle_wander.h). An egg is
+        // parked instead — it sits where it was laid, with its incubation readout
+        // drawn directly above it — and so is an empty save, which has no pet at all.
+        if (pet_ && !inEggPhase()) petWander_.step(pet_->locomotion);
+        else petWander_.park();
         // Modal / process timers run on the heartbeat (their own lifecycle).
         if (nav_ == Nav::ModalFeeding) {
             if (++feedBeat_ >= kFeedBeats) endFeeding();
@@ -400,8 +406,12 @@ bool Game::tick(uint32_t nowMs) {
     // (kRadioScreenDefocusMs): both are hands-off screens you walk around with, and
     // since holding one open is what arms the radio (radioScanWanted / linkWanted),
     // the standard 5s would power it down before a sweep or a peer's beacon could
-    // land — the screen would starve itself.
-    const uint32_t defocusMs = radioScreenOpen() ? kRadioScreenDefocusMs : kAutoDefocusMs;
+    // land — the screen would starve itself. UPDATES takes the same budget for the
+    // matching reason: it is a screen you wait in front of, and five seconds is
+    // shorter than an association plus a fetch, let alone reading the verdict one
+    // leaves behind and deciding whether to install it.
+    const uint32_t defocusMs =
+        (radioScreenOpen() || updateScreenOpen()) ? kRadioScreenDefocusMs : kAutoDefocusMs;
     if (!suspended && nav_ != Nav::Idle && nowMs - lastInputMs_ >= defocusMs) {
         dropCursor();
         changed = true;

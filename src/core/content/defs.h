@@ -23,6 +23,12 @@ enum class Stage { BootSector, Process, Script, Daemon };
 // existing `MoveDef::Kind::Attack`-style call site keeps compiling unchanged.
 enum class MoveKind { Attack, Defend };
 
+// How a creature gets around under its own power, which is what the idle habitat's
+// resting motion reads (core/model/idle_wander.h): a walker keeps its feet on the
+// shelf, a flier holds an altitude above it, a swimmer ignores the shelf entirely.
+// MOVEMENT only — which sprite row a mover animates on is the sheet's business.
+enum class Locomotion : uint8_t { Walk, Fly, Swim };
+
 inline const char* stageName(Stage s) {
     switch (s) {
         case Stage::BootSector: return "Boot Sector";
@@ -108,9 +114,11 @@ struct CreatureDef {
     // creature instead of its normal successor — the pet keeps its old line's colour
     // but is now a Trojan (losing its line moves for the Trojan kit; see
     // Game::completeEvolution). The first divert unlocks the family. nullptr = no
-    // divert path (every non-infiltratable creature). Last field so existing
-    // positional rows leave it defaulted.
+    // divert path (every non-infiltratable creature).
     const char* evolvesToTrojanId = nullptr;
+    // How this creature moves around its habitat at rest. Trailing, and defaulted,
+    // because most of the roster walks — a row only states this when it doesn't.
+    Locomotion locomotion = Locomotion::Walk;
 };
 
 // Which minigame an egg line's hatch runs. One entry per interaction shape; the

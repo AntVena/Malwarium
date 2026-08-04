@@ -4198,6 +4198,44 @@ static void test_update_job_holds_the_radio_past_the_screen() {
     CHECK(g.updateJobLive() && g.netConnectWanted());
 }
 
+// UPDATES is a screen you WAIT in front of, so the global 5s menu collapse must not
+// run there. Both halves of the wait are longer than that on their own: a check is an
+// association plus a fetch, and the verdict it leaves is then read and acted on. The
+// job holds the radio by itself (above) — this is about the screen still being there
+// when the answer arrives, and staying long enough to press INSTALL on it.
+static void test_updates_screen_outlives_the_menu_idle_timer() {
+    Game g{StartMode::Hatched};
+    g.setNetProvisioned(true);
+    g.setUpdateSourceKnown(true);
+    uint32_t t = 0;
+
+    openUpdatesScreen(g);
+    g.onButton(press(Button::B));                 // CHECK NOW
+    CHECK(g.updateJobLive());
+
+    // The device tier is still associating/fetching, and nobody is touching buttons.
+    for (int i = 0; i < 4; ++i) g.tick(t += kAutoDefocusMs);
+    CHECK(g.updateScreenOpen());                  // the screen is still there to report to
+
+    UpdateStatus done;
+    done.state = UpdateState::Available;
+    done.firmwareNewer = true;
+    std::strcpy(done.firmwareVersion, "0.4.2");
+    g.setUpdateStatus(done);
+    CHECK(!g.updateJobLive());
+
+    // ...and the verdict survives being read: nothing is holding the radio now, so
+    // this is the window the standard budget used to close in five seconds.
+    for (int i = 0; i < 4; ++i) g.tick(t += kAutoDefocusMs);
+    CHECK(g.updateScreenOpen());
+    CHECK(g.updateStatus().state == UpdateState::Available);
+
+    // Not forever, though — an abandoned screen still collapses on the long budget.
+    g.tick(t += kRadioScreenDefocusMs);
+    CHECK(!g.updateScreenOpen());
+    CHECK(g.nav() == Game::Nav::Idle);
+}
+
 // A latched job must always reach a terminal outcome, because nothing else will
 // ever take the radio off it. The association never coming up is the way that most
 // plausibly happens — a passphrase changed, the router out of range — so a failed
@@ -5598,6 +5636,114 @@ static void test_idle_frame_single_frame_safe() {
         sawBlink |= (f == 2);
     }
     CHECK(sawBlink);
+}
+
+// --- Resting motion (core/model/idle_wander.h) -----------------------------
+
+// Run a mover for a while and describe where it went. `beats` are heartbeats, so
+// these figures are what the habitat would actually have drawn over that stretch.
+struct WanderTrace {
+    int minX = 0, maxX = 0, minY = 0, maxY = 0;
+    int onShelfBeats = 0;      // heartbeats spent with the feet on the floor
+    int lowBeats = 0;          // ...spent in the bottom third of the box
+    int highBeats = 0;         // ...and in the top third
+    int movingBeats = 0;       // ...spent going somewhere on either axis
+    int movedYBeats = 0;       // ...spent changing height
+};
+static WanderTrace traceWander(Locomotion loco, int beats) {
+    IdleWander w;
+    WanderTrace t;
+    int lastX = 0, lastY = 0;
+    for (int i = 0; i < beats; ++i) {
+        w.step(loco);
+        const int x = w.offsetX(), y = w.offsetY();
+        t.minX = std::min(t.minX, x); t.maxX = std::max(t.maxX, x);
+        t.minY = std::min(t.minY, y); t.maxY = std::max(t.maxY, y);
+        if (y == 0) ++t.onShelfBeats;
+        if (y <= kWanderRiseMax / 3) ++t.lowBeats;
+        if (y >= kWanderRiseMax * 2 / 3) ++t.highBeats;
+        if (x != lastX || y != lastY) ++t.movingBeats;
+        if (y != lastY) ++t.movedYBeats;
+        lastX = x; lastY = y;
+    }
+    return t;
+}
+
+// The box is the whole safety contract: the sprite is drawn from this offset, so a
+// mover that walks out of it walks off the canvas. Every locomotion is bounded by
+// the same box no matter how long it runs, and none of them ever go BELOW the shelf.
+static void test_idle_wander_stays_inside_the_living_box() {
+    for (Locomotion loco : {Locomotion::Walk, Locomotion::Fly, Locomotion::Swim}) {
+        const WanderTrace t = traceWander(loco, 4000);
+        CHECK(t.minX >= -kWanderHalfSpanX && t.maxX <= kWanderHalfSpanX);
+        CHECK(t.minY >= 0 && t.maxY <= kWanderRiseMax);
+        CHECK(t.maxX > 0 && t.minX < 0);      // and it uses both sides, not one
+    }
+}
+
+// The three read as three different creatures, which is the point of the field:
+// a walker is a floor animal that ambles and then stands still, a flier is almost
+// always in the air, and a swimmer is neither pulled down nor holding a height —
+// it just keeps drifting, on both axes at once.
+static void test_idle_wander_reads_differently_per_locomotion() {
+    const int beats = 4000;
+
+    const WanderTrace walk = traceWander(Locomotion::Walk, beats);
+    CHECK(walk.onShelfBeats == beats);        // never once off the floor
+    CHECK(walk.movedYBeats == 0);
+    CHECK(walk.movingBeats > 0);              // but it does get about
+    CHECK(walk.movingBeats < beats / 2);      // ...spending most of its time parked
+
+    const WanderTrace fly = traceWander(Locomotion::Fly, beats);
+    CHECK(fly.onShelfBeats * 100 < beats);    // touches down on under 1% of beats
+    CHECK(fly.lowBeats * 10 < beats);         // and is rarely even near the floor
+    CHECK(fly.maxY == kWanderRiseMax);        // it is the top of the box it lives in
+    CHECK(fly.movingBeats > beats / 2);       // hardly ever still
+
+    const WanderTrace swim = traceWander(Locomotion::Swim, beats);
+    CHECK(swim.onShelfBeats * 100 < beats);   // nothing pulls it down...
+    CHECK(swim.highBeats * 10 > beats);       // ...and nothing holds it up either:
+    CHECK(swim.lowBeats * 10 > beats);        // it uses the whole depth of the box
+    CHECK(swim.movingBeats > beats / 2 && swim.movedYBeats > beats / 4);
+}
+
+// The habitat has ONE call site and no reset hook, so the component has to notice a
+// new occupant itself — otherwise a walker that evolved into a swimmer would keep
+// its feet glued to the shelf until a reboot.
+static void test_idle_wander_rehomes_when_the_mover_changes() {
+    IdleWander w;
+    for (int i = 0; i < 200; ++i) w.step(Locomotion::Walk);
+    CHECK(w.offsetY() == 0);
+
+    w.step(Locomotion::Swim);                 // a different creature entirely
+    CHECK(w.offsetX() == 0 && w.offsetY() == 0);   // back on the anchor to start from
+    bool leftTheFloor = false;
+    for (int i = 0; i < 200; ++i) { w.step(Locomotion::Swim); leftTheFloor |= w.offsetY() > 0; }
+    CHECK(leftTheFloor);
+
+    w.park();
+    CHECK(w.offsetX() == 0 && w.offsetY() == 0);
+}
+
+// The seam, at the engine: a raised pet drifts around its shelf as the heartbeat
+// runs, and an egg does not — an egg sits where it was laid, with its incubation
+// countdown drawn directly above it.
+static void test_habitat_moves_a_pet_and_parks_an_egg() {
+    Game g{StartMode::Hatched};
+    uint32_t t = 0;
+    CHECK(g.nav() == Game::Nav::Idle);
+    bool moved = false;
+    for (int i = 0; i < 200 && !moved; ++i) {
+        g.tick(t += kHeartbeatMs);
+        moved = g.petWander().offsetX() != 0;
+    }
+    CHECK(moved);
+
+    Game egg{StartMode::FreshHatch};
+    for (int i = 0; i < 200; ++i) {
+        egg.tick(t += kHeartbeatMs);
+        CHECK(egg.petWander().offsetX() == 0 && egg.petWander().offsetY() == 0);
+    }
 }
 
 // ===========================================================================
@@ -13624,6 +13770,10 @@ static void test_firmware_version_ordering() {
     RUN(test_arch_rack_grayscale)           \
     /* Single-frame creatures */            \
     RUN(test_idle_frame_single_frame_safe)  \
+    RUN(test_idle_wander_stays_inside_the_living_box) \
+    RUN(test_idle_wander_reads_differently_per_locomotion) \
+    RUN(test_idle_wander_rehomes_when_the_mover_changes) \
+    RUN(test_habitat_moves_a_pet_and_parks_an_egg) \
     /* Sim-Battle + combat integration */   \
     RUN(test_sim_battle_end_to_end)         \
     RUN(test_backup_drive_shield_armed_into_combat) \
@@ -13775,6 +13925,7 @@ static void test_firmware_version_ordering() {
     RUN(test_qr_setup_step_appears_only_until_provisioned) \
     RUN(test_update_check_requires_network_and_source) \
     RUN(test_update_job_holds_the_radio_past_the_screen) \
+    RUN(test_updates_screen_outlives_the_menu_idle_timer) \
     RUN(test_update_job_dies_when_the_join_fails)        \
     RUN(test_update_install_needs_a_confirmed_finding) \
     RUN(test_update_install_takes_two_yeses)      \

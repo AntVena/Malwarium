@@ -129,11 +129,19 @@ void Game::drawHabitat(Framebuffer& fb, int cursor) const {
         const AnimClip* idle = pet_ ? findAnimClip(pet_->spriteName, "idle") : nullptr;
         const int row = idle ? idle->row : 0;
         const int frame = idle ? clipFrame(*idle, beat_) : idleFrame(*pet, beat_);
-        const int bob = (beat_ & 1) ? 0 : 2;
+        // Two motions, and the creature is the only thing on this screen that takes
+        // either. The BOB is the pose's own 2px lift on alternate beats — what
+        // animates a single-frame creature; a swimmer skips it, since a bob on top of
+        // a continuous drift reads as jitter rather than breathing. The WANDER moves
+        // the whole anchor around the living box, in logical px
+        // (core/model/idle_wander.h): sideways for every mover, and off the shelf for
+        // the ones that don't need the floor.
+        const int bob = (IdleWander::bobs(pet_->locomotion) && (beat_ & 1) == 0) ? 2 : 0;
         const int petW = pet->frameW * kScaleNum / kScaleDen;
         const int petH = pet->h * kScaleNum / kScaleDen;
-        const int petX = (kActiveW - petW) / 2;
-        const int petY = kLivingBottom - petH - bob;
+        const int petX = (kActiveW - petW) / 2 + logicalToActive(petWander_.offsetX());
+        const int petY =
+            kLivingBottom - petH - bob - logicalToActive(petWander_.offsetY());
         drawSpriteUpscaled(fb, *pet, frame, petX, petY, kScaleNum, kScaleDen, row);
     }
 
