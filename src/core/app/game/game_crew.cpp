@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <cstring>
 
+#include "core/app/game_internal.h"   // drawScrollbar — shared with game_peers.cpp
 #include "core/content/content_crews.h"
 #include "core/render/canvas.h"
 #include "core/render/font5x7.h"
@@ -45,19 +46,6 @@ constexpr int kNetMaxRows = kNetVisibleCap;
 // the HOME NET row. Both lists window rather than assuming their table fits on screen.
 constexpr int kCrewBlockH = kLineH * 4 + 6;
 constexpr int kCrewVisibleRows = 3;
-
-// The shared slim right-edge scroll bar (UI_SCROLLBAR), drawn only when a list is
-// longer than its window. Both lists on this screen use it, hence a local helper
-// rather than two copies of the thumb maths.
-void drawScrollbar(Framebuffer& fb, int trackTop, int trackH, int total, int scrollTop,
-                   int visible) {
-    if (total <= visible) return;
-    const int barX = kActiveW - 3;
-    fb.fillRect(barX, trackTop, 2, trackH, palColor(Pal::TRACK));
-    const int thumbH = std::max(8, trackH * visible / total);
-    const int thumbY = trackTop + trackH * scrollTop / total;
-    fb.fillRect(barX, thumbY, 2, thumbH, palColor(Pal::INK_DIM));
-}
 }  // namespace
 
 // --- Membership + home network --------------------------------------------

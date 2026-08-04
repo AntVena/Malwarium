@@ -58,12 +58,6 @@ struct SpriteData;
 // seam that keeps the tests green without going through the egg).
 enum class StartMode { FreshHatch, Hatched };
 
-// Which of the three Backup Drive achievements a finished fight earned, or nullptr for
-// none — the drive unused, or a Fled fight that settled nothing. Pure over the only two
-// facts the answer depends on (what the drive did, how the fight ended), so the whole
-// mapping is assertable without staging three fights to reach it.
-const char* backupDriveAchievement(Combatant::BackupUse used, Combat::Outcome outcome);
-
 class Game {
 public:
     // `hatchedCreature` is the pet installed when mode == Hatched (the dev/test

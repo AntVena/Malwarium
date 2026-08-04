@@ -33,10 +33,13 @@ its keep-anyway exceptions (other-code refs, living how-to standards, `vNN` save
 tests, and the domain terms that only look like refs: EAPOL `M1`–`M4`, `S3`/`C5`, `D0`–`D3`, world
 `Area 0`–`3`). Cross-check any claim against the actual code before trusting it.
 
-### Self-architecture review — Last run: never
+### Self-architecture review — Last run: 2026-08-05
 Check the `game_*.cpp` module split for size creep past ~600 lines. Look for cross-file duplication, dead code, and orphaned helpers
 that should have moved to `game_internal.h` or been deleted. Verify actual file sizes, don't trust
-what a doc says they are.
+what a doc says they are. Sources are globbed (`CMakeLists.txt`, `build_src_filter`), so a new
+unit needs no build-file edit — the cost of a split is the reading, not the plumbing. When a
+unit is big but genuinely one concern (a dispatcher, a flat save mapping, a screen-per-function
+render file), leave it and say so: length that follows from the number of cases is not creep.
 
 ### Design consistency pass — Last run: never
 Spot-check shipped screens against the system they're authored to (`assets/VISUAL_LANGUAGE.md`,

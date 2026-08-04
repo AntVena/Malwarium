@@ -314,9 +314,26 @@ which is the name its row already asks for.
 
 ## 3. Size / reviewability watch
 
-`combat.cpp`, `expl_screen.cpp`, `cfg_screen.cpp` and `save.cpp` are large but still
-single-responsibility — revisit only if they keep growing. Same rule as the `game_*.cpp` units: split
-*at* ~600 lines, not before, and split by concern rather than by line count.
+Same rule as the `game_*.cpp` units: split *at* ~600 lines, not before, and split by concern
+rather than by line count. `expl_screen.cpp` (586) and `save.cpp` (936) are still one concern
+each — save.cpp is long because the format is flat, which is not a second responsibility.
+
+Two have grown to roughly double the rule and have a real seam, so the "if they keep growing"
+condition has fired on both. Neither is a mechanical move, which is why they are rows rather
+than done:
+
+- **`combat.cpp` (1212)** — the turn engine is lines 21–788; from `makePlayerCombatant`
+  (line 790) on, ~420 lines are combatant/encounter FACTORIES: the wild-malbeast roster and its
+  ramps, the sim dummy, the Bits/XP reward curves, `makeEnemyCombatant`. That tail is a
+  `combat_factory.cpp`. Diff **M** — the two halves share statics that would have to be sorted
+  out first.
+- **`cfg_screen.cpp` (1126)** — lines 679–1107 are the software-update and QR flows
+  (`updateInstallRows` through `drawUpdateQr`), a concern distinct from the device-settings
+  screens around them, and every one of them is already declared in `cfg_screen.h` so no new
+  header is needed for the split itself. **The blocker is the shared anonymous namespace:** the
+  update block calls `header()` and reads `kMargin`/`kRowTop`/`kRowH`/`kVisibleRows`, all
+  file-private at the top of `cfg_screen.cpp`. Promoting those into a UI-internal header is the
+  actual design decision, and it would serve every other `*_screen.cpp` too. Diff **M**.
 
 ---
 

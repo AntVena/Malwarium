@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <cstring>
 
+#include "core/app/game_internal.h"   // drawScrollbar — shared with game_crew.cpp
 #include "core/content/content_crews.h"
 #include "core/render/canvas.h"
 #include "core/render/font5x7.h"
@@ -42,18 +43,6 @@ constexpr int kPeerVisibleRows = 3;
 // The window on the merged list. Everyone in range plus everyone ever met, so the
 // screen's three rows are a window on the list rather than a silent truncation.
 constexpr int kPeerMaxRows = 64;
-
-// Shared slim right-edge scroll bar (UI_SCROLLBAR), drawn only when the list is
-// longer than its window.
-void drawScrollbar(Framebuffer& fb, int trackTop, int trackH, int total, int scrollTop,
-                   int visible) {
-    if (total <= visible) return;
-    const int barX = kActiveW - 3;
-    fb.fillRect(barX, trackTop, 2, trackH, palColor(Pal::TRACK));
-    const int thumbH = std::max(8, trackH * visible / total);
-    const int thumbY = trackTop + trackH * scrollTop / total;
-    fb.fillRect(barX, thumbY, 2, thumbH, palColor(Pal::INK_DIM));
-}
 }  // namespace
 
 // --- The LINK opt-in ---------------------------------------------------------

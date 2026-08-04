@@ -4,6 +4,7 @@
 #include <cstring>
 
 #include "tunables.h"
+#include "core/app/game_internal.h"   // backupDriveAchievement — declared, defined here
 #include "core/content/content_tables.h"
 #include "core/render/canvas.h"
 #include "core/render/font5x7.h"
