@@ -152,8 +152,7 @@ roster, and the wild half keeps its own roster-keyed masks).
   ever want a device-side list, the Hacker face's PROFILE slot is the natural home. Diff **M**.
 - **Unverified:** on-device serving of the SD-hosted bundle + the live endpoints
   (`GET /pedia_state.json`, `POST /api/tag`) on a real board.
-- **Polish:** the real `FONT_UI` face for the web bundle (a system-mono fallback today), and bespoke
-  achievement icons (every row reuses a shipped item/line/slot glyph).
+- **Polish:** the real `FONT_UI` face for the web bundle (a system-mono fallback today).
 
 ### 1i. Hacker-face CREW — enlistment shipped, Red/Blue archetype layer open
 
@@ -256,12 +255,15 @@ high→low value:
 
 - **Three move glyphs** still placeholder: `ICON_MOVE_BUFFER_OVERFLOW`, `_ROOTKIT_STRIKE`,
   `_NULL_ROUTE` (TRAIN falls back to text without them).
-- **Two finished glyphs have no screen to draw them**, and neither is wiring-blocked — both wait on
-  something else. `ICON_SECTOR_0` is the area icon `AREA_CONTENT_STANDARD.md` asks every area for,
-  but it's the only one drawn: wiring it lights sector 0 and leaves 1–3 bare, so it wants the
-  matching glyphs for the other four rungs first (§2c). `ICON_LINE_WORM` needs the Worm line to have content at
-  all. Both are held in `check_orphan_assets.py`'s KEEP list meanwhile. Diff **S** once
-  their blocker clears.
+- **The sector glyph family is one of five.** Each area names its own glyph on its row
+  (`AreaDef::icon`, keyed by area id), but only `ICON_SECTOR_CITRUS_CIRCUIT` is drawn — so no
+  screen draws any of them yet: lighting one area and leaving four bare is worse than leaving all
+  five to the text rows. The other four come with their areas' art (§2c). Nothing else blocks it:
+  the names resolve, and a 14px EXPL list row is too short for a 20×20 glyph, so the drawing site
+  is a walk/detail header rather than the list. Diff **S** once the family is complete.
+- **`ICON_LINE_WORM` is drawn and has nothing to label** — the Worm line has no content rows at
+  all, so it waits on a creature line, not on wiring. Held in `check_orphan_assets.py`'s KEEP list
+  meanwhile.
 - **Six wild malbeasts** (`SPR_MALBEAST_*`) and **`SPR_DUMMY`**.
 - **Process alternates:** `SPR_PET_PHISHLET`, `SPR_PET_CIPHADPOLE`, `SPR_PET_PINGCUB`; **Boot L2:**
   `SPR_PET_RINGWYRM`.
@@ -274,15 +276,15 @@ high→low value:
 
 ### 2c. New art implied by unbuilt features
 
-These come with the features above rather than ahead of them.
+These come with the features above rather than ahead of them. Every "sector glyph + backdrop"
+below means `ICON_SECTOR_<AREA_ID>` / `BG_SECTOR_<AREA_ID>` — the area's own id, upper-cased,
+which is the name its row already asks for.
 
 - **Net-Sea Crossing area art** (shipped mechanically, art pending): the sector glyph + backdrop
   (open water, shipping lanes, landfall at Sandbox Beach), the `FLOATING POINT` / `THE HARDENED
   SHELL` storefront motifs, and glyphs for its five new mods (`ICON_MOD_HARDENED_SHELL`,
   `_BUNDLE_STRIPPER`, `_BALLAST_CACHE`, `_SONAR_PING`, `_SALVAGE_RIG` — generic until drawn). Like
   the keep, it fights with the shared tier roster and has no malbeasts of its own.
-  **Name the sector files off the area id, not its index** — see the §J note in
-  `assets/ASSET_MANIFEST.md`; this insert is what proved the index keying is a trap.
 - **Napstorrent Moors area art** (shipped mechanically, art pending): the sector glyph + backdrop
   (marshy → castle progression), the `MOOR-TO-MOOR` storefront motif.
 - **Castle Rapidscare art** (shipped mechanically, art pending): the sector glyph + backdrop,

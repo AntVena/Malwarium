@@ -13,7 +13,9 @@ final art still wanted) · `☑` DELIVERED · `⌫` PARKED (drawn, but nothing c
 > shipped sprite set are the same thing, and a `▨` stand-in ships exactly like final art does; the
 > marker is about art quality, not about whether it's wired. An asset's id is its **basename** —
 > `sprites/` · `icons/` · `ui/` organise the tree for readers and change nothing downstream, which
-> is also why no two PNGs may share a basename.
+> is also why no two COMPILED PNGs may share a basename. An `_attic/` copy under a shipped
+> basename is the one legal shadow — it is the superseded drawing, kept for reference and
+> never compiled — so read a File cell as the live path, not as the only file of that name.
 >
 > **`⌫` rows are parked in `assets/_attic/`** — untracked, never compiled, costing nothing. Art
 > lands there when it has no consumer: content comes first (a row in `content_*.cpp` wired to a
@@ -43,14 +45,14 @@ focused bright) — supply one master, brightness handled in engine unless noted
 
 | Asset ID | Slot | Concept | Logical size | States | Status | File |
 |---|---|---|---|---|---|---|
-| `ICON_STAT`  | 1 STAT  | Heart w/ graph line       | 28×28 | dim/bright | ☑ | `/assets/ICON_STAT.png` |
-| `ICON_ITEMS` | 2 ITEMS | USB drive                 | 28×28 | dim/bright | ☑ | `/assets/ICON_ITEMS.png` |
-| `ICON_TRAIN` | 3 TRAIN | Target reticle in terminal| 28×28 | dim/bright | ☑ | `/assets/ICON_TRAIN.png` |
-| `ICON_EXPL`  | 4 EXPL  | Wi-Fi mesh globe          | 28×28 | dim/bright | ☑ | `/assets/ICON_EXPL.png` |
-| `ICON_MAINT` | 5 MAINT | Fragmented HDD            | 28×28 | dim/bright | ☑ | `/assets/ICON_MAINT.png` |
-| `ICON_MODS`  | 6 MODS  | Cracked CPU               | 28×28 | dim/bright | ☑ | `/assets/ICON_MODS.png` |
-| `ICON_ARCH`  | 7 ARCH  | Server rack               | 28×28 | dim/bright | ☑ | `/assets/ICON_ARCH.png` |
-| `ICON_CFG`   | 8 CFG   | Gear + terminal           | 28×28 | dim/bright | ☑ | `/assets/ICON_CFG.png` |
+| `ICON_STAT`  | 1 STAT  | Heart w/ graph line       | 28×28 | dim/bright | ☑ | `/assets/icons/ICON_STAT.png` |
+| `ICON_ITEMS` | 2 ITEMS | USB drive                 | 28×28 | dim/bright | ☑ | `/assets/icons/ICON_ITEMS.png` |
+| `ICON_TRAIN` | 3 TRAIN | Target reticle in terminal| 28×28 | dim/bright | ☑ | `/assets/icons/ICON_TRAIN.png` |
+| `ICON_EXPL`  | 4 EXPL  | Wi-Fi mesh globe          | 28×28 | dim/bright | ☑ | `/assets/icons/ICON_EXPL.png` |
+| `ICON_MAINT` | 5 MAINT | Fragmented HDD            | 28×28 | dim/bright | ☑ | `/assets/icons/ICON_MAINT.png` |
+| `ICON_MODS`  | 6 MODS  | Cracked CPU               | 28×28 | dim/bright | ☑ | `/assets/icons/ICON_MODS.png` |
+| `ICON_ARCH`  | 7 ARCH  | Server rack               | 28×28 | dim/bright | ☑ | `/assets/icons/ICON_ARCH.png` |
+| `ICON_CFG`   | 8 CFG   | Gear + terminal           | 28×28 | dim/bright | ☑ | `/assets/icons/ICON_CFG.png` |
 
 > **Masters** are flat `ink`-fill (white) on transparent at logical 28×28; dim/bright is engine brightness (one file each).
 
@@ -63,7 +65,7 @@ focused bright) — supply one master, brightness handled in engine unless noted
 | `UI_CURSOR_BOX`   | Focused-slot highlight box      | 56×40 (slot)  | accent frame; non-destructive over icon | ☑ | engine-drawn |
 | `UI_TRACK_BG`     | Menu track strip (top & bottom) | 224×40        | **solid** (`track` token, S3 resolved) | ☑ | engine-drawn |
 | `CAP_SLOT_LABEL`  | Focused category caption style  | ~224×10       | font/size ref from Area 6 | ☑ | engine-drawn |
-| `UI_ALERT_HUNGER` | Idle low-power / hunger icon    | 20×20         | blink ~1Hz in engine | ☑ | `/assets/UI_ALERT_HUNGER.png` |
+| `UI_ALERT_HUNGER` | Idle low-power / hunger icon    | 20×20         | blink ~1Hz in engine | ☑ | `/assets/ui/UI_ALERT_HUNGER.png` |
 | `UI_DEFOCUS_FADE` | Track fade-in/out treatment     | —             | engine alpha; mask only if needed | ⊘ | — |
 
 ---
@@ -91,17 +93,17 @@ row per creature as each is scheduled. `SPR_PET_<NAME>`.
 
 | Asset ID | Line / Stage | Creature | Status | File |
 |---|---|---|---|---|
-| `SPR_PET_CRYPTOSHELL` | L1 · Boot Sector (egg) | CryptoShell | ☑ | `/assets/SPR_PET_CRYPTOSHELL.png` (4 hatch frames) |
+| `SPR_PET_CRYPTOSHELL` | L1 · Boot Sector (egg) | CryptoShell | ☑ | `/assets/sprites/SPR_PET_CRYPTOSHELL.png` (4 hatch frames) |
 | `SPR_PET_PAYPUP`      | L1 · Process | Paypup     | ☑ | `/assets/sprites/SPR_PET_PAYPUP.png` (448×48, 8 frames; Acid palette) |
-| `SPR_PET_PHISHLET`    | L1 · Process | Phishlet   | ☑ | `/assets/SPR_PET_PHISHLET.png` — final anglerfish art; wired 2026-07-18 as the deep-dive (DEEPWEB_DEPTH_64) catch on the Phishing egg (see the anglerfish-line note below) |
-| `SPR_PET_TADPOLL`     | L1 · Process | Tadpoll    | ☑ | `/assets/SPR_PET_TADPOLL.png` (112×48, 2 frames) — final tadpole art for the **Phishing-line Tadpoll** |
+| `SPR_PET_PHISHLET`    | L1 · Process | Phishlet   | ☑ | `/assets/sprites/SPR_PET_PHISHLET.png` — final anglerfish art; wired 2026-07-18 as the deep-dive (DEEPWEB_DEPTH_64) catch on the Phishing egg (see the anglerfish-line note below) |
+| `SPR_PET_TADPOLL`     | L1 · Process | Tadpoll    | ☑ | `/assets/sprites/SPR_PET_TADPOLL.png` (112×48, 2 frames) — final tadpole art for the **Phishing-line Tadpoll** |
 | `SPR_PET_CACHEMUTT`   | enemy frame (no creature row) | — | ☑ | `/assets/sprites/SPR_PET_CACHEMUTT.png` (112×48, 2 frames) — the shared borrowed frame for the Sim dummy, the EXPL sub-area/area bosses and the Lethal test enemy (`game_combat.cpp`, `combat.cpp`). No `CreatureDef` points at it, so it is never a pet |
 | `SPR_PET_PINGCUB`     | L1 · Process | Pingcub    | ▨ | `/assets/sprites/SPR_PET_PINGCUB.png` (56×48, 1 frame) — the ursine line's own head, wired as the third CryptoShell hatch outcome and hopping into Malbear. Carries the exact five greens of `SPR_PET_MALBEAR`/`SPR_PET_BRUINFORCE`, so cub→bear→grown-bear reads as one animal; wants a 2nd idle frame to match the 2-frame norm |
 | `SPR_PET_RINGWYRM`    | L2 · Boot Sector (egg) | Ringwyrm | ⌫ | placeholder `/assets/_attic/SPR_PET_RINGWYRM.png` |
-| `SPR_PET_BRUINFORCE` | L4 · Daemon (Good branch) | Bruinforce | ☑ | 56×48; `/assets/SPR_PET_BRUINFORCE.png` — the durable Good-branch frame: squared up, guarding |
-| `SPR_PET_BERSERKERNEL` | L4 · Daemon (Bad branch) | Berserkernel | ☑ | 56×48; `/assets/SPR_PET_BERSERKERNEL.png` — the glass-cannon Bad-branch frame: same bear reared up and roaring, red eyes, claws out. Deliberately the SAME green palette as its Good sibling — the branch reads from posture and face, not hue, which is what keeps it legible in grayscale (`08 §5`) |
-| `SPR_PET_CROAKEN`     | Script (Phishing line) | Croaken | ☑ | `/assets/SPR_PET_CROAKEN.png` (224×48, 4 frames) — final toad-kraken art on the standard 56×48 pet cell, wired to the **Phishing-line Croaken** (Script) |
-| `SPR_PET_EGG_PHISH_HATCH` | Boot Sector (egg, Phishing line) | Phrogspawn | ☑ | `/assets/SPR_PET_EGG_PHISH_HATCH.png` (448×48, 8 frames) — the shared Phishing egg shell. Frames 0–1 are the idle loop, 0–7 the hatch one-shot (`Game::hatchCrackFrame` walks it). Deliberately the ONLY egg file: the separately-delivered single-frame `SPR_PET_EGG_PHISH` is byte-identical to frame 0, so shipping it too would just duplicate flash |
+| `SPR_PET_BRUINFORCE` | L4 · Daemon (Good branch) | Bruinforce | ☑ | 56×48; `/assets/sprites/SPR_PET_BRUINFORCE.png` — the durable Good-branch frame: squared up, guarding |
+| `SPR_PET_BERSERKERNEL` | L4 · Daemon (Bad branch) | Berserkernel | ☑ | 56×48; `/assets/sprites/SPR_PET_BERSERKERNEL.png` — the glass-cannon Bad-branch frame: same bear reared up and roaring, red eyes, claws out. Deliberately the SAME green palette as its Good sibling — the branch reads from posture and face, not hue, which is what keeps it legible in grayscale (`08 §5`) |
+| `SPR_PET_CROAKEN`     | Script (Phishing line) | Croaken | ☑ | `/assets/sprites/SPR_PET_CROAKEN.png` (224×48, 4 frames) — final toad-kraken art on the standard 56×48 pet cell, wired to the **Phishing-line Croaken** (Script) |
+| `SPR_PET_EGG_PHISH_HATCH` | Boot Sector (egg, Phishing line) | Phrogspawn | ☑ | `/assets/sprites/SPR_PET_EGG_PHISH_HATCH.png` (448×48, 8 frames) — the shared Phishing egg shell. Frames 0–1 are the idle loop, 0–7 the hatch one-shot (`Game::hatchCrackFrame` walks it). Deliberately the ONLY egg file: the separately-delivered single-frame `SPR_PET_EGG_PHISH` is byte-identical to frame 0, so shipping it too would just duplicate flash |
 | … | | *(remaining L1 Script/Daemon + full L2 — same template)* | ☐ | |
 
 > **New lines (2026-07-17) using generic-stage placeholders** (PO: gameplay first — final art is
@@ -134,8 +136,8 @@ every 14px cell whole-pixel, so the live tile lands dead-on the decoy it replace
 
 | Asset ID | Element | Logical size | Notes | Status | File |
 |---|---|---|---|---|---|
-| `BG_EGG_CLUTCH` | The raft of decoy eggs | 112×56 | 32 slots on a 14px cell grid, 8×4; odd rows shifted 7px, so their last cell wraps across both edges (the live egg never hides there) | ☑ | `/assets/BG_EGG_CLUTCH.png` |
-| `SPR_EGG_PHISH_MICRO` | The live egg's clutch tile | 14×14 | 2 frames, alternating on the heartbeat — the tell. Opaque, so it replaces a decoy cell exactly. Needs the `FRAME_W_OVERRIDES` row in `tools/gen_assets.py` to read as a 2-frame strip rather than one 28px image | ☑ | `/assets/SPR_EGG_PHISH_MICRO.png` |
+| `BG_EGG_CLUTCH` | The raft of decoy eggs | 112×56 | 32 slots on a 14px cell grid, 8×4; odd rows shifted 7px, so their last cell wraps across both edges (the live egg never hides there) | ☑ | `/assets/ui/BG_EGG_CLUTCH.png` |
+| `SPR_EGG_PHISH_MICRO` | The live egg's clutch tile | 14×14 | 2 frames, alternating on the heartbeat — the tell. Opaque, so it replaces a decoy cell exactly. Needs the `FRAME_W_OVERRIDES` row in `tools/gen_assets.py` to read as a 2-frame strip rather than one 28px image | ☑ | `/assets/sprites/SPR_EGG_PHISH_MICRO.png` |
 
 > Reused, no new art: the aim/eliminate scrim and the aimed-half edge bar are engine fills over
 > `PAL_CORE` tokens, and the verdict/round lines are `FONT_UI` text — no tag or overlay art.
@@ -162,12 +164,12 @@ draws nothing rather than erroring.
 
 | Asset ID | Tier | Creature | Status | File |
 |---|---|---|---|---|
-| `SPR_MALBEAST_GLITCHHOG`        | 1 | GlitchHog        | ▨ | `/assets/SPR_MALBEAST_GLITCHHOG.png` |
-| `SPR_MALBEAST_SEGFAULT_PUP`     | 1 | Segfault Pup     | ▨ | `/assets/SPR_MALBEAST_SEGFAULT_PUP.png` |
-| `SPR_MALBEAST_PACKET_WRAITH`    | 2 | Packet Wraith    | ▨ | `/assets/SPR_MALBEAST_PACKET_WRAITH.png` |
-| `SPR_MALBEAST_CACHE_GHOUL`      | 2 | Cache Ghoul      | ▨ | `/assets/SPR_MALBEAST_CACHE_GHOUL.png` |
-| `SPR_MALBEAST_BUFFER_WYRM`      | 2 | Buffer Wyrm      | ▨ | `/assets/SPR_MALBEAST_BUFFER_WYRM.png` |
-| `SPR_MALBEAST_KERNEL_LEVIATHAN` | 3 | Kernel Leviathan | ▨ | 64×56; `/assets/SPR_MALBEAST_KERNEL_LEVIATHAN.png` |
+| `SPR_MALBEAST_GLITCHHOG`        | 1 | GlitchHog        | ▨ | `/assets/sprites/SPR_MALBEAST_GLITCHHOG.png` |
+| `SPR_MALBEAST_SEGFAULT_PUP`     | 1 | Segfault Pup     | ▨ | `/assets/sprites/SPR_MALBEAST_SEGFAULT_PUP.png` |
+| `SPR_MALBEAST_PACKET_WRAITH`    | 2 | Packet Wraith    | ▨ | `/assets/sprites/SPR_MALBEAST_PACKET_WRAITH.png` |
+| `SPR_MALBEAST_CACHE_GHOUL`      | 2 | Cache Ghoul      | ▨ | `/assets/sprites/SPR_MALBEAST_CACHE_GHOUL.png` |
+| `SPR_MALBEAST_BUFFER_WYRM`      | 2 | Buffer Wyrm      | ▨ | `/assets/sprites/SPR_MALBEAST_BUFFER_WYRM.png` |
+| `SPR_MALBEAST_KERNEL_LEVIATHAN` | 3 | Kernel Leviathan | ▨ | 64×56; `/assets/sprites/SPR_MALBEAST_KERNEL_LEVIATHAN.png` |
 
 > **Sub-area and area bosses still borrow `SPR_PET_CACHEMUTT`** (`subAreaBoss` in the same file) —
 > the same defect this section just fixed, one layer up. Which malbeast frame (or bespoke art) each
@@ -234,7 +236,7 @@ on placeholder palette.
 | Asset ID | Element | Logical size | Notes | Status | File |
 |---|---|---|---|---|---|
 | `UI_CARE_PIPS` | Care-mistake pips | ~84×16 | 2 Good + 3 Bad + gate divider + 3 colour states + numeric (0–5) | ☑ | engine-drawn |
-| `ICON_LOG_EVENT` | Hacker-Log glyph set (3) | 12×12 ea | `item` · `warn` · `combat` | ☑ | `/assets/ICON_LOG_EVENT_{ITEM,WARN,COMBAT}.png` |
+| `ICON_LOG_EVENT` | Hacker-Log glyph set (3) | 12×12 ea | `item` · `warn` · `combat` | ☑ | `/assets/icons/ICON_LOG_EVENT_{ITEM,WARN,COMBAT}.png` |
 
 > STAT's Hunger/Frag/Happiness **gauge widgets** + Stage indicator are built; assets in §O below.
 
@@ -245,28 +247,28 @@ on placeholder palette.
 | Asset ID | Element | Logical size | Notes | Status | File |
 |---|---|---|---|---|---|
 | `UI_RARITY_TAG` | Rarity tag style (Common/Uncommon/Rare/Epic) | ~44×14 | ramp set (D14): `rarity-common…epic`, dull→bright, read by position; tag style in board | ☑ | `/assets/PAL_CORE.json` |
-| `ICON_ITEM_AIRGAP_SNACK` | Air-Gapped Snack icon | 20×20 | Food | ☑ | `/assets/ICON_ITEM_AIRGAP_SNACK.png` |
-| `ICON_ITEM_DECRYPT_KEY` | Decryption Key icon | 20×20 | Quest/utility | ☑ | `/assets/ICON_ITEM_DECRYPT_KEY.png` |
-| `ICON_ITEM_BACKUP_DRIVE` | Backup Drive icon | 20×20 | Buff (combat shield) | ☑ | `/assets/ICON_ITEM_BACKUP_DRIVE.png` |
-| `ICON_ITEM_TORTILLA_CHIP` | Tor-Tilla Chip icon | 20×20 | Buff | ☑ | `/assets/ICON_ITEM_TORTILLA_CHIP.png` |
-| `ICON_ITEM_YUBI_COOKIE` | Yubi-Cookie icon | 20×20 | Buff | ☑ | `/assets/ICON_ITEM_YUBI_COOKIE.png` |
-| `ICON_ITEM_SINKHOLE_TRAP` | Sinkhole Trap icon | 20×20 | Buff/utility | ☑ | `/assets/ICON_ITEM_SINKHOLE_TRAP.png` |
-| `ICON_ITEM_NULL_NOODLES` | Null Noodles icon | 20×20 | Consumable (defrag/anti-food, `09 §4.2`) | ☑ | `/assets/ICON_ITEM_NULL_NOODLES.png` |
-| `ICON_ITEM_R007_B33R` | R007_B33R icon | 20×20 | Consumable (junk food, `09 §4.2`) | ☑ | `/assets/ICON_ITEM_R007_B33R.png` |
-| `ICON_ITEM_SEALED_CACHE` | Sealed Cache icon | 20×20 | Quest (openable, `09 §3`); base + rarity-tinted variants below | ☑ | `/assets/ICON_ITEM_SEALED_CACHE.png` |
-| `ICON_ITEM_SEALED_CACHE_COMMON` | Sealed Cache — Common | 20×20 | rarity-ramp variant of Sealed Cache (`09 §3`) — **1 chevron**, stacked upward from the base, so the tier is countable and the ramp survives grayscale | ☑ | `/assets/ICON_ITEM_SEALED_CACHE_COMMON.png` |
-| `ICON_ITEM_SEALED_CACHE_UNCOMMON` | Sealed Cache — Uncommon | 20×20 | rarity-ramp variant of Sealed Cache (`09 §3`) — **2 chevrons**, stacked upward from the base, so the tier is countable and the ramp survives grayscale | ☑ | `/assets/ICON_ITEM_SEALED_CACHE_UNCOMMON.png` |
-| `ICON_ITEM_SEALED_CACHE_RARE` | Sealed Cache — Rare | 20×20 | rarity-ramp variant of Sealed Cache (`09 §3`) — **3 chevrons**, stacked upward from the base, so the tier is countable and the ramp survives grayscale | ☑ | `/assets/ICON_ITEM_SEALED_CACHE_RARE.png` |
-| `ICON_ITEM_SEALED_CACHE_EPIC` | Sealed Cache — Epic | 20×20 | rarity-ramp variant of Sealed Cache (`09 §3`) — **4 chevrons**, stacked upward from the base, so the tier is countable and the ramp survives grayscale | ☑ | `/assets/ICON_ITEM_SEALED_CACHE_EPIC.png` |
-| `ICON_ITEM_ACCESS_TOKEN` | Access Token icon | 20×20 | Quest (warp → shop, `09 §5`) | ☑ | `/assets/ICON_ITEM_ACCESS_TOKEN.png` |
-| `ICON_ITEM_SAFE_MODE_KEY` | Safe-Mode Key icon | 20×20 | Quest (warp → safe rest, `09 §5`) | ☑ | `/assets/ICON_ITEM_SAFE_MODE_KEY.png` |
-| `ICON_ITEM_DECRYPTOGRAM` | Decryptogram icon | 20×20 | Quest — **starting item**, speeds egg decryption (`04 §1.5`) | ☑ | `/assets/ICON_ITEM_DECRYPTOGRAM.png` |
-| `ICON_ITEM_ROLLBACK` | Rollback icon | 20×20 | Quest/utility — stat picker: shed a chosen stat by 1 (−1 level) to re-roll (`06 §6.2`) | ☑ | `/assets/ICON_ITEM_ROLLBACK.png` |
-| `ICON_ITEM_PWNZU_SAUCE` | Pwnzu Sauce icon | 20×20 | Food — Merge Hub ingredient (`pwnzu_patched_noodles`, `07 §14`) | ☑ | `/assets/ICON_ITEM_PWNZU_SAUCE.png` |
-| `ICON_ITEM_OSI_DIP` | OSI Dip icon | 20×20 | Food — Merge Hub ingredient (`fully_stacked_nachos`, `07 §14`) | ☑ | `/assets/ICON_ITEM_OSI_DIP.png` |
-| `ICON_ITEM_PWNZU_PATCHED_NOODLES` | Pwnzu-Patched Noodles icon | 20×20 | Food — Merge Hub output, null_noodles + pwnzu_sauce (`07 §14`) | ☐ | |
-| `ICON_ITEM_FULLY_STACKED_NACHOS` | Fully-Stacked Nachos icon | 20×20 | Food — Merge Hub output, tortilla_chip + osi_dip; fills every stat (`07 §14`) | ▨ | `/assets/ICON_ITEM_FULLY_STACKED_NACHOS.png` (reused `ICON_ITEM_TORTILLA_CHIP` — placeholder, not bespoke) |
-| `ICON_ITEM_COMMEND_CACHE` | Commendation Cache icon | 20×20 | Quest — the ACHIEVEMENT reward container, earned and never found. **Inverts the fill** (hollow shell + star) instead of adding a chevron, so it reads as a different KIND of cache rather than a fifth rarity step | ☑ | `/assets/ICON_ITEM_COMMEND_CACHE.png` |
+| `ICON_ITEM_AIRGAP_SNACK` | Air-Gapped Snack icon | 20×20 | Food | ☑ | `/assets/icons/ICON_ITEM_AIRGAP_SNACK.png` |
+| `ICON_ITEM_DECRYPT_KEY` | Decryption Key icon | 20×20 | Quest/utility | ☑ | `/assets/icons/ICON_ITEM_DECRYPT_KEY.png` |
+| `ICON_ITEM_BACKUP_DRIVE` | Backup Drive icon | 20×20 | Buff (combat shield) | ☑ | `/assets/icons/ICON_ITEM_BACKUP_DRIVE.png` |
+| `ICON_ITEM_TORTILLA_CHIP` | Tor-Tilla Chip icon | 20×20 | Buff | ☑ | `/assets/icons/ICON_ITEM_TORTILLA_CHIP.png` |
+| `ICON_ITEM_YUBI_COOKIE` | Yubi-Cookie icon | 20×20 | Buff | ☑ | `/assets/icons/ICON_ITEM_YUBI_COOKIE.png` |
+| `ICON_ITEM_SINKHOLE_TRAP` | Sinkhole Trap icon | 20×20 | Buff/utility | ☑ | `/assets/icons/ICON_ITEM_SINKHOLE_TRAP.png` |
+| `ICON_ITEM_NULL_NOODLES` | Null Noodles icon | 20×20 | Consumable (defrag/anti-food, `09 §4.2`) | ☑ | `/assets/icons/ICON_ITEM_NULL_NOODLES.png` |
+| `ICON_ITEM_R007_B33R` | R007_B33R icon | 20×20 | Consumable (junk food, `09 §4.2`) | ☑ | `/assets/icons/ICON_ITEM_R007_B33R.png` |
+| `ICON_ITEM_SEALED_CACHE` | Sealed Cache icon | 20×20 | Quest (openable, `09 §3`); base + rarity-tinted variants below | ☑ | `/assets/icons/ICON_ITEM_SEALED_CACHE.png` |
+| `ICON_ITEM_SEALED_CACHE_COMMON` | Sealed Cache — Common | 20×20 | rarity-ramp variant of Sealed Cache (`09 §3`) — **1 chevron**, stacked upward from the base, so the tier is countable and the ramp survives grayscale | ☑ | `/assets/icons/ICON_ITEM_SEALED_CACHE_COMMON.png` |
+| `ICON_ITEM_SEALED_CACHE_UNCOMMON` | Sealed Cache — Uncommon | 20×20 | rarity-ramp variant of Sealed Cache (`09 §3`) — **2 chevrons**, stacked upward from the base, so the tier is countable and the ramp survives grayscale | ☑ | `/assets/icons/ICON_ITEM_SEALED_CACHE_UNCOMMON.png` |
+| `ICON_ITEM_SEALED_CACHE_RARE` | Sealed Cache — Rare | 20×20 | rarity-ramp variant of Sealed Cache (`09 §3`) — **3 chevrons**, stacked upward from the base, so the tier is countable and the ramp survives grayscale | ☑ | `/assets/icons/ICON_ITEM_SEALED_CACHE_RARE.png` |
+| `ICON_ITEM_SEALED_CACHE_EPIC` | Sealed Cache — Epic | 20×20 | rarity-ramp variant of Sealed Cache (`09 §3`) — **4 chevrons**, stacked upward from the base, so the tier is countable and the ramp survives grayscale | ☑ | `/assets/icons/ICON_ITEM_SEALED_CACHE_EPIC.png` |
+| `ICON_ITEM_ACCESS_TOKEN` | Access Token icon | 20×20 | Quest (warp → shop, `09 §5`) | ☑ | `/assets/icons/ICON_ITEM_ACCESS_TOKEN.png` |
+| `ICON_ITEM_SAFE_MODE_KEY` | Safe-Mode Key icon | 20×20 | Quest (warp → safe rest, `09 §5`) | ☑ | `/assets/icons/ICON_ITEM_SAFE_MODE_KEY.png` |
+| `ICON_ITEM_DECRYPTOGRAM` | Decryptogram icon | 20×20 | Quest — **starting item**, speeds egg decryption (`04 §1.5`) | ☑ | `/assets/icons/ICON_ITEM_DECRYPTOGRAM.png` |
+| `ICON_ITEM_ROLLBACK` | Rollback icon | 20×20 | Quest/utility — stat picker: shed a chosen stat by 1 (−1 level) to re-roll (`06 §6.2`) | ☑ | `/assets/icons/ICON_ITEM_ROLLBACK.png` |
+| `ICON_ITEM_PWNZU_SAUCE` | Pwnzu Sauce icon | 20×20 | Food — Merge Hub ingredient (`pwnzu_patched_noodles`, `07 §14`) | ☑ | `/assets/icons/ICON_ITEM_PWNZU_SAUCE.png` |
+| `ICON_ITEM_OSI_DIP` | OSI Dip icon | 20×20 | Food — Merge Hub ingredient (`fully_stacked_nachos`, `07 §14`) | ☑ | `/assets/icons/ICON_ITEM_OSI_DIP.png` |
+| `ICON_ITEM_PWNZU_PATCHED_NOODLES` | Pwnzu-Patched Noodles icon | 20×20 | Food — Merge Hub output, null_noodles + pwnzu_sauce (`07 §14`) | ☑ | `/assets/icons/ICON_ITEM_PWNZU_PATCHED_NOODLES.png` |
+| `ICON_ITEM_FULLY_STACKED_NACHOS` | Fully-Stacked Nachos icon | 20×20 | Food — Merge Hub output, tortilla_chip + osi_dip; fills every stat (`07 §14`) | ▨ | `/assets/icons/ICON_ITEM_FULLY_STACKED_NACHOS.png` (reused `ICON_ITEM_TORTILLA_CHIP` — placeholder, not bespoke) |
+| `ICON_ITEM_COMMEND_CACHE` | Commendation Cache icon | 20×20 | Quest — the ACHIEVEMENT reward container, earned and never found. **Inverts the fill** (hollow shell + star) instead of adding a chevron, so it reads as a different KIND of cache rather than a fifth rarity step | ☑ | `/assets/icons/ICON_ITEM_COMMEND_CACHE.png` |
 | `ICON_ITEM_COMMEND_CACHE` major variant | Crowned/rayed Commendation Cache | 20×20 | ⌫ parked at `/assets/_attic/ICON_ITEM_SEALED_CACHE_COMMENDATION_MAJOR.png` — `commend_cache` is a single item row (`content_items.cpp`), so there is no second tier for it to mark. Promote it if a higher commendation container is ever authored | ⌫ | `/assets/_attic/ICON_ITEM_SEALED_CACHE_COMMENDATION_MAJOR.png` |
 
 ### H.1 The pantry — drawn as one batch
@@ -296,7 +298,7 @@ yolk-in-shell · leek · cereal box · mug · sachet · apple · taproot · nood
 
 | Asset ID | Element | Logical size | Notes | Status | File |
 |---|---|---|---|---|---|
-| `ICON_TRAIN_SIM` | Sim-Battle (Dummy) row glyph | 20×20 | reserved placeholder row | ☑ | `/assets/ICON_TRAIN_SIM.png` |
+| `ICON_TRAIN_SIM` | Sim-Battle (Dummy) row glyph | 20×20 | reserved placeholder row | ☑ | `/assets/icons/ICON_TRAIN_SIM.png` |
 
 > TRAIN ships as a reserved placeholder row (action deferred — QUESTIONS S11). `·soon·` tag
 > reuses §13 `locked`-state styling — no new tag art. Pedia-Challenge dropped. All
@@ -313,22 +315,21 @@ yolk-in-shell · leek · cereal box · mug · sachet · apple · taproot · nood
 | `ICON_EXPLORE_STATE` | Sub-area row state marker (EXPL) | 16×16 | *optional* — exploring/cleared/boss-ready/locked; else `FONT_UI` tags (`09 §7`) | ☐ | |
 | `UI_DIFFICULTY_PIPS` | Sector difficulty tier (filled/empty diamonds) | ~30×10 | e.g. `◆◇◇` | ⌫ | placeholder `/assets/_attic/UI_DIFFICULTY_PIPS.png` |
 | ~~`ICON_EXPL_PACKET`~~ | ~~Packet Capture row glyph~~ | — | **REMOVED** — Packet Capture minigame scrapped; "packet sniffing" is now the Wi-Fi explore event (`06 §4`); real pcap = doc 07 | ⊘ | — |
-| `ICON_SECTOR_<id>` | Per-sector row glyph (keyed by sector id) | 20×20 | seed `sector[0]` delivered; add per sector | ☑ | `/assets/ICON_SECTOR_0.png` |
-| `BG_SECTOR_<id>` | Per-sector walk backdrop (keyed by sector id) | 128×128 | optional; flat colour OK v1; seed `sector[0]` | ⌫ | placeholders `/assets/_attic/BG_SECTOR_0.png` (Citrus Circuit) + `BG_SECTOR_1.png` (Pirate Bayou) |
+| `ICON_SECTOR_<AREA_ID>` | Per-area row glyph | 20×20 | one per area; Citrus Circuit delivered, the other four open | ☑ | `/assets/icons/ICON_SECTOR_CITRUS_CIRCUIT.png` |
+| `BG_SECTOR_<AREA_ID>` | Per-area walk backdrop | 128×128 | optional; flat colour OK v1 | ⌫ | placeholders `/assets/_attic/BG_SECTOR_CITRUS_CIRCUIT.png` + `BG_SECTOR_PIRATE_BAYOU.png` |
 
-> Sectors are indexed by difficulty; identity (name/icon/backdrop) is swappable data keyed by
-> sector id — add `ICON_SECTOR_<id>`/`BG_SECTOR_<id>` per sector as authored. **Naming
-> direction:** real-world malware-encounter places, punned (LimeWire → "Citrus Circuit").
+> An area's identity (name/icon/backdrop) is swappable data; its difficulty is its rung.
+> **Naming direction:** real-world malware-encounter places, punned (LimeWire → "Citrus
+> Circuit").
 >
-> **The `<id>` is a LADDER POSITION, not an area identity**, so splicing an area into the
-> middle of `kAreaList` (areas/area_defs.h) renumbers every sector file above it — the art
-> would silently re-point at the wrong area. Nothing has been misrouted so far, because the
-> only sector files that exist are 0 (Citrus Circuit) and 1 (Pirate Bayou) and no insert has
-> landed below them. Before a THIRD sector file is drawn, rename this family to key off the
-> area's stable `AreaDef::id` instead; drawing more index-keyed files first just makes that
-> rename bigger. Current ladder, for whoever draws next: 0 Citrus Circuit · 1 Pirate Bayou ·
-> 2 Net-Sea Crossing · 3 Napstorrent Moors · 4 Castle Rapidscare.
-> Only `sector[0]` is open at start; rest progression-gated. Packet Capture minigame + wild-
+> **`<AREA_ID>` is the area's own `AreaDef::id`, upper-cased — never its ladder position.**
+> A rung is not an identity: splicing an area into the middle of `kAreaList`
+> (areas/area_defs.h) renumbers every area above it, and an index-keyed file would keep
+> resolving while pointing at its neighbour's picture. The id doesn't move, so the art
+> can't. Each area names its glyph on its own row (`AreaDef::icon`), which is also what
+> keeps it out of `check_orphan_assets.py`'s KEEP list. Areas wanting art:
+> Pirate Bayou · Net-Sea Crossing · Napstorrent Moors · Castle Rapidscare.
+> Only the first area is open at start; rest progression-gated. Packet Capture minigame + wild-
 > encounter combat art are deferred (QUESTIONS S11). Walk reuses pet idle frames — no walk frame.
 
 ---
@@ -337,8 +338,8 @@ yolk-in-shell · leek · cereal box · mug · sachet · apple · taproot · nood
 
 | Asset ID | Element | Logical size | Notes | Status | File |
 |---|---|---|---|---|---|
-| `ICON_MAINT_DEFRAG` | Defragmentation row glyph | 20×20 | | ☑ | `/assets/ICON_MAINT_DEFRAG.png` |
-| `ICON_MAINT_AV` | Antivirus (AV) row glyph | 20×20 | | ☑ | `/assets/ICON_MAINT_AV.png` |
+| `ICON_MAINT_DEFRAG` | Defragmentation row glyph | 20×20 | | ☑ | `/assets/icons/ICON_MAINT_DEFRAG.png` |
+| `ICON_MAINT_AV` | Antivirus (AV) row glyph | 20×20 | | ☑ | `/assets/icons/ICON_MAINT_AV.png` |
 | `ANIM_DEFRAG` | Defrag block-shuffle process anim | — | OPTIONAL/flavour; modal process visual, NOT a §4 pass; procedural OK | ☐ | |
 | `ANIM_AV_SWEEP` | AV scan-sweep process anim | — | OPTIONAL/flavour; modal process visual, NOT a §4 pass; procedural OK | ☐ | |
 
@@ -351,12 +352,12 @@ yolk-in-shell · leek · cereal box · mug · sachet · apple · taproot · nood
 
 | Asset ID | Element | Logical size | Notes | Status | File |
 |---|---|---|---|---|---|
-| `ICON_MODS_SLOT` | Equip-slot row glyph (+ empty variant) | 20×20 | filled vs empty slot | ☑ | `/assets/ICON_MODS_SLOT{,_EMPTY}.png` |
-| `ICON_MOD_FIREWALL_PATCH` | Firewall Patch icon | 20×20 | +def | ☑ | `/assets/ICON_MOD_FIREWALL_PATCH.png` |
-| `ICON_MOD_CLOCK_SPEED_BOOST` | Clock-Speed Boost icon | 20×20 | +spd (initiative) | ☑ | `/assets/ICON_MOD_CLOCK_SPEED_BOOST.png` |
+| `ICON_MODS_SLOT` | Equip-slot row glyph (+ empty variant) | 20×20 | filled vs empty slot | ☑ | `/assets/icons/ICON_MODS_SLOT{,_EMPTY}.png` |
+| `ICON_MOD_FIREWALL_PATCH` | Firewall Patch icon | 20×20 | +def | ☑ | `/assets/icons/ICON_MOD_FIREWALL_PATCH.png` |
+| `ICON_MOD_CLOCK_SPEED_BOOST` | Clock-Speed Boost icon | 20×20 | +spd (initiative) | ☑ | `/assets/icons/ICON_MOD_CLOCK_SPEED_BOOST.png` |
 | `ICON_MOD_QUANTISATION` | Quantisation icon | 20×20 | +spd −dmg (shrink-the-model speed/power tradeoff, `06 §1.8`) | ⌫ | `/assets/_attic/ICON_MOD_QUANTISATION.png` |
-| `ICON_MOD_PACKET_SNIFFER` | Packet Sniffer icon | 20×20 | +Bits from explore loot | ☑ | `/assets/ICON_MOD_PACKET_SNIFFER.png` |
-| `ICON_MOD_RAID_MIRROR` | RAID Mirror icon | 20×20 | one-shot | ☑ | `/assets/ICON_MOD_RAID_MIRROR.png` |
+| `ICON_MOD_PACKET_SNIFFER` | Packet Sniffer icon | 20×20 | +Bits from explore loot | ☑ | `/assets/icons/ICON_MOD_PACKET_SNIFFER.png` |
+| `ICON_MOD_RAID_MIRROR` | RAID Mirror icon | 20×20 | one-shot | ☑ | `/assets/icons/ICON_MOD_RAID_MIRROR.png` |
 
 > Effect tags (`+def`/`+spd`/`1-shot`) are `FONT_UI` text — no tag art. Doc 07 defensive mods
 > (Honeypot/IDS) join the same slot system later (out of pet-side scope). Add `ICON_MOD_*` per
@@ -368,7 +369,7 @@ yolk-in-shell · leek · cereal box · mug · sachet · apple · taproot · nood
 
 | Asset ID | Element | Logical size | Notes | Status | File |
 |---|---|---|---|---|---|
-| `ICON_ARCH_SLOT` | Rack record glyph (+ retired variant) | 20×20 | active/frozen vs retired | ☑ | `/assets/ICON_ARCH_SLOT{,_RETIRED}.png` |
+| `ICON_ARCH_SLOT` | Rack record glyph (+ retired variant) | 20×20 | active/frozen vs retired | ☑ | `/assets/icons/ICON_ARCH_SLOT{,_RETIRED}.png` |
 | `UI_SLOTS_USED` | Rack-slot usage indicator (`slots 2/4`) | ~44×12 | header widget; may reuse MODS slot-count style | ☐ | |
 
 > Rack rows reuse `SPR_PET_*` idle frame as a thumbnail — no new art. `[ACTIVE]`/`[RETIRED]`
@@ -387,16 +388,16 @@ own rows from the same `CfgRow` shape and reuses the glyphs below, so grouping n
 
 | Asset ID | Element | Logical size | Notes | Status | File |
 |---|---|---|---|---|---|
-| `ICON_CFG_SYSINFO` | System Info row glyph | 20×20 | UPDATES borrows it too, pending its own | ☑ | `/assets/ICON_CFG_SYSINFO.png` |
-| `ICON_CFG_TAG` | HackerTag row glyph | 20×20 | | ☑ | `/assets/ICON_CFG_TAG.png` |
-| `ICON_CFG_UIMODE` | UI Mode row glyph | 20×20 | also the DEVICE group row + BRIGHTNESS | ☑ | `/assets/ICON_CFG_UIMODE.png` |
-| `ICON_CFG_TITLE` | TITLE row glyph (zone-Title picker) | 20×20 | v1 stopgap home for zone Titles (`09 §6`); moves to Hacker HUD later | ☑ | `/assets/ICON_CFG_TITLE.png` |
+| `ICON_CFG_SYSINFO` | System Info row glyph | 20×20 | UPDATES borrows it too, pending its own | ☑ | `/assets/icons/ICON_CFG_SYSINFO.png` |
+| `ICON_CFG_TAG` | HackerTag row glyph | 20×20 | | ☑ | `/assets/icons/ICON_CFG_TAG.png` |
+| `ICON_CFG_UIMODE` | UI Mode row glyph | 20×20 | also the DEVICE group row + BRIGHTNESS | ☑ | `/assets/icons/ICON_CFG_UIMODE.png` |
+| `ICON_CFG_TITLE` | TITLE row glyph (zone-Title picker) | 20×20 | v1 stopgap home for zone Titles (`09 §6`); moves to Hacker HUD later | ☑ | `/assets/icons/ICON_CFG_TITLE.png` |
 | `ICON_CFG_RADIO` | RADIO group row glyph | 20×20 | the four radio consents under one row; **reuses `ICON_SYS_WIFI` today**, which PEDIA AP + INTERNET also use — a distinct glyph would separate "the radio, as a place" from "a Wi-Fi service". A square-wave alternate is parked at `/assets/_attic/ICON_SYS_WIFI_ALT.png`; it needs a 20×20 redraw and a design call on whether that motif is the one that carries the split | ☐ | |
 | `ICON_CFG_UPDATE` | UPDATES row glyph | 20×20 | **reuses `ICON_CFG_SYSINFO` today**; a download/arrow motif would clear it | ☐ | |
 | `ICON_CFG_TRAVEL` | TRAVEL MODE row glyph (DEVICE group) | 20×20 | **reuses `ICON_CFG_SYSINFO` today**. A sleep motif — crescent, or a powered-down screen — would say what the row does; it is the one row in the group that is an action rather than a setting | ☐ | |
 | `ICON_SYS_BATTERY` | Battery status glyph | 16×16 | System Info | ⌫ | `/assets/_attic/ICON_SYS_BATTERY.png` |
-| `ICON_SYS_WIFI` | Wi-Fi AP status glyph | 16×16 | System Info; also the PEDIA AP / INTERNET / RADIO rows | ☑ | `/assets/ICON_SYS_WIFI.png` |
-| `ICON_SYS_SD` | SD-card status glyph | 16×16 | System Info | ☑ | `/assets/ICON_SYS_SD.png` |
+| `ICON_SYS_WIFI` | Wi-Fi AP status glyph | 16×16 | System Info; also the PEDIA AP / INTERNET / RADIO rows | ☑ | `/assets/icons/ICON_SYS_WIFI.png` |
+| `ICON_SYS_SD` | SD-card status glyph | 16×16 | System Info | ☑ | `/assets/icons/ICON_SYS_SD.png` |
 | `ICON_CFG_QR` | Pedia QR row glyph | 20×20 | **drawn but unconsumed** — the QR is reached from PEDIA AP, not a row of its own, so nothing renders this. Keep for a future row; it costs atlas space until then | ⌫ | `/assets/_attic/ICON_CFG_QR.png` |
 
 > Pedia QR is engine-generated (QR lib) — no art. HackerTag editor uses `FONT_UI` + caret —
@@ -436,8 +437,8 @@ below are new art.
 | `ICON_BTN_A` | Button glyph `A` | 16×16 | reusable wherever a literal button is shown | ⌫ | `/assets/_attic/ICON_BTN_A.png` |
 | `ICON_BTN_B` | Button glyph `B` | 16×16 | | ⌫ | `/assets/_attic/ICON_BTN_B.png` |
 | `ICON_BTN_C` | Button glyph `C` | 16×16 | | ⌫ | `/assets/_attic/ICON_BTN_C.png` |
-| `ICON_LINE_RANSOMWARE` | Line-select row glyph — Ransomware | 20×20 | one per creature line | ☑ | `/assets/ICON_LINE_RANSOMWARE.png` |
-| `ICON_LINE_WORM` | Line-select row glyph — Worm | 20×20 | add `ICON_LINE_*` per line as unlocked | ☑ | `/assets/ICON_LINE_WORM.png` |
+| `ICON_LINE_RANSOMWARE` | Line-select row glyph — Ransomware | 20×20 | one per creature line | ☑ | `/assets/icons/ICON_LINE_RANSOMWARE.png` |
+| `ICON_LINE_WORM` | Line-select row glyph — Worm | 20×20 | add `ICON_LINE_*` per line as unlocked | ☑ | `/assets/icons/ICON_LINE_WORM.png` |
 | `UI_COUNTDOWN` | Lockout countdown digits/style | ~64×24 | `FONT_UI`-based; pairs w/ `FX_LOCKOUT_BAND` | ☐ | |
 
 > Reused, no new art: `FX_LOCKOUT_BAND` / `FX_EVO_FLASH` / `FX_CRITICAL_FAIL` / `FX_GHOST` /
@@ -458,12 +459,12 @@ Most chrome is reused — only the rows below are new, and most are optional pol
 | Asset ID | Element | Logical size | Notes | Status | File |
 |---|---|---|---|---|---|
 | `UI_HEALTH_BAR` | Combat-Health row | ~208×24 | `UI_GAUGE` variant — transient Health | ☑ | engine-drawn |
-| `UI_OVERRIDE_PIP` | Once-per-battle Exploit-override indicator | 16×16 | ready (bolt) / spent (×) | ☑ | `/assets/ICON_OVERRIDE_PIP{,_SPENT}.png` |
+| `UI_OVERRIDE_PIP` | Once-per-battle Exploit-override indicator | 16×16 | ready (bolt) / spent (×) | ☑ | `/assets/icons/ICON_OVERRIDE_PIP{,_SPENT}.png` |
 | `UI_MOVE_CHANNEL` | Multi-turn move wind-up | ~120×12 | `UI_GAUGE` variant; override decision cue | ☑ | engine-drawn |
-| `ICON_MOVE_SLOT` | Loadout equip-slot row glyph | 20×20 | filled / empty / locked variants | ☑ | `/assets/ICON_MOVE_SLOT{,_EMPTY,_LOCKED}.png` |
-| `ICON_MOVE_<name>` | Per-move glyph (roster) | 20×20 | all six shipping; the glyph name is built at draw time as `ICON_MOVE_` + the move id uppercased (`train_screen.cpp`), so a new move's icon needs no wiring — drop it in `assets/` and it lights up. TRAIN falls back to text for a move with none | ☑/▨ | `/assets/ICON_MOVE_{PACKET_STORM,FORK_BOMB,CHECKSUM_GUARD,BUFFER_OVERFLOW,ROOTKIT_STRIKE,NULL_ROUTE}.png` (last three are `▨` stand-ins) |
+| `ICON_MOVE_SLOT` | Loadout equip-slot row glyph | 20×20 | filled / empty / locked variants | ☑ | `/assets/icons/ICON_MOVE_SLOT{,_EMPTY,_LOCKED}.png` |
+| `ICON_MOVE_<name>` | Per-move glyph (roster) | 20×20 | all six shipping; the glyph name is built at draw time as `ICON_MOVE_` + the move id uppercased (`train_screen.cpp`), so a new move's icon needs no wiring — drop it in `assets/` and it lights up. TRAIN falls back to text for a move with none | ☑/▨ | `/assets/icons/ICON_MOVE_{PACKET_STORM,FORK_BOMB,CHECKSUM_GUARD,BUFFER_OVERFLOW,ROOTKIT_STRIKE,NULL_ROUTE}.png` (last three are `▨` stand-ins) |
 | `UI_DAMAGE_POPUP` | Floating damage number | — | `FONT_UI` tabular digits — **procedural, no art** | ⊘ | — |
-| `SPR_DUMMY` | Sim-Battle training-dummy sprite | ≤128×64 | wired for both tiers in `simDummy()` (`src/core/model/combat.cpp`) — they are the same prop, and the tier reads off the level/stat rows | ▨ | `/assets/SPR_DUMMY.png` (56×48) |
+| `SPR_DUMMY` | Sim-Battle training-dummy sprite | ≤128×64 | wired for both tiers in `simDummy()` (`src/core/model/combat.cpp`) — they are the same prop, and the tier reads off the level/stat rows | ▨ | `/assets/sprites/SPR_DUMMY.png` (56×48) |
 | `ICON_EVENT_WIFI` | Wi-Fi network event glyph | 20×20 | **optional** (D17); else reuse the EXPL Wi-Fi-globe motif | ⌫ | placeholder `/assets/_attic/ICON_EVENT_WIFI.png` |
 | `UI_RANK_BADGE` | Hacker-Rank badge (CFG / HackerTag) | ~16–20 | **optional** (D18); else plain `FONT_UI` rank text | ⌫ | placeholder `/assets/_attic/UI_RANK_BADGE.png` (20×20) |
 
@@ -489,22 +490,22 @@ chrome is reused from §F — only the rows below are new, and per-archetype ico
 
 | Asset ID | Element | Logical size | Notes | Status | File |
 |---|---|---|---|---|---|
-| `ICON_CREW` | Hacker-face **slot icon** (CREW) | 28×28 | dim/bright; crew duality (sword+shield) | ☑ | `/assets/ICON_CREW.png` |
-| `ICON_TEAM_RED` | Team marker — Red · Operators | 16×16 | dual-coded glyph (sword) | ☑ | `/assets/ICON_TEAM_RED.png` |
-| `ICON_TEAM_BLUE` | Team marker — Blue · Guardians | 16×16 | dual-coded glyph (shield) | ☑ | `/assets/ICON_TEAM_BLUE.png` |
-| `ICON_ARCHETYPE_STATE` | Archetype row marker | 16×16 | active / unlocked / locked states | ☑ | `/assets/ICON_ARCHETYPE_{ACTIVE,UNLOCKED,LOCKED}.png` |
-| `ICON_LOCK` | Generic small lock glyph | 12×12 | locked rows + unlock hint | ☑ | `/assets/ICON_LOCK.png` |
+| `ICON_CREW` | Hacker-face **slot icon** (CREW) | 28×28 | dim/bright; crew duality (sword+shield) | ☑ | `/assets/icons/ICON_CREW.png` |
+| `ICON_TEAM_RED` | Team marker — Red · Operators | 16×16 | dual-coded glyph (sword) | ☑ | `/assets/icons/ICON_TEAM_RED.png` |
+| `ICON_TEAM_BLUE` | Team marker — Blue · Guardians | 16×16 | dual-coded glyph (shield) | ☑ | `/assets/icons/ICON_TEAM_BLUE.png` |
+| `ICON_ARCHETYPE_STATE` | Archetype row marker | 16×16 | active / unlocked / locked states; parked with the per-archetype set below, for the same reason | ⌫ | all 3 parked at `/assets/_attic/ICON_ARCHETYPE_{ACTIVE,UNLOCKED,LOCKED}.png` |
+| `ICON_LOCK` | Generic small lock glyph | 12×12 | locked rows + unlock hint | ☑ | `/assets/icons/ICON_LOCK.png` |
 | `ICON_ARCHETYPE_<name>` | Per-archetype icon (6) | 20×20 | **optional** polish; seed `BOTMASTER`·`INSIDER_THREAT`·`GHOST`·`ORCHESTRATOR`·`WATCHDOG`·`DISPATCHER`; v1 may run text-only | ⌫ | all 6 parked at `/assets/_attic/ICON_ARCHETYPE_*.png` — the archetype system that would draw them is unbuilt |
-| `ICON_PROFILE` | Hacker-face PROFILE slot icon | 28×28 | dim/bright; hacker-status identity motif (`07 §9`) | ☑ | `/assets/ICON_PROFILE.png` |
-| `ICON_SHOP` | Hacker-face SHOP slot icon | 28×28 | dim/bright; storefront/marketplace motif (`07 §10`) | ☑ | `/assets/ICON_SHOP.png` |
-| `ICON_VAULT` | Hacker-face VAULT slot icon | 28×28 | dim/bright; safe/lockbox motif — sealed-cache decrypt (`07 §11`) | ☑ | `/assets/ICON_VAULT.png` |
-| `ICON_MRG` | Hacker-face MERGE HUB slot icon | 28×28 | dim/bright; two nodes branching into one. The slot starts inaccessible, so it usually draws under `ICON_SLOT_INACCESSIBLE` — the glyph is legible through the double-dim, which is what makes the SHOP purchase read as unlocking a real slot | ☑ | `/assets/ICON_MRG.png` |
+| `ICON_PROFILE` | Hacker-face PROFILE slot icon | 28×28 | dim/bright; hacker-status identity motif (`07 §9`) | ☑ | `/assets/icons/ICON_PROFILE.png` |
+| `ICON_SHOP` | Hacker-face SHOP slot icon | 28×28 | dim/bright; storefront/marketplace motif (`07 §10`) | ☑ | `/assets/icons/ICON_SHOP.png` |
+| `ICON_VAULT` | Hacker-face VAULT slot icon | 28×28 | dim/bright; safe/lockbox motif — sealed-cache decrypt (`07 §11`) | ☑ | `/assets/icons/ICON_VAULT.png` |
+| `ICON_MRG` | Hacker-face MERGE HUB slot icon | 28×28 | dim/bright; two nodes branching into one. The slot starts inaccessible, so it usually draws under `ICON_SLOT_INACCESSIBLE` — the glyph is legible through the double-dim, which is what makes the SHOP purchase read as unlocking a real slot | ☑ | `/assets/icons/ICON_MRG.png` |
 | `ICON_MRG` locked variants | Bespoke locked Merge glyphs (padlock badge · severed branch + padlock) | 28×28 | ⌫ parked at `/assets/_attic/ICON_MERGE_LOCKED{,_ALT}.png` — the carousel composites the shared `ICON_SLOT_INACCESSIBLE` marker over every inaccessible slot, so a per-slot locked master would make MRG the one exception to a device-wide convention | ⌫ | `/assets/_attic/ICON_MERGE_LOCKED{,_ALT}.png` |
 | `ICON_PEERS` | Hacker-face PEERS slot icon | 28×28 | dim/bright; met-operators motif (two figures / a handshake). The slot is **live** and renders text-only in the carousel without it — drop-in, no engine change | ☐ | |
-| `ICON_LINK` | Hacker-face LINK slot icon | 28×28 | dim/bright; two pets facing off across a bolt — the 1v1 duel slot | ☑ | `/assets/ICON_LINK.png` |
-| `ICON_SLOT_INACCESSIBLE` | Inaccessible-slot overlay (both faces) | 20×20 | composited over a 28×28 slot; no-entry/lock motif; distinct from row-level `ICON_LOCK`; used for undesigned Hacker slots + stage-locked pet slots (`07 §12`) | ☑ | `/assets/ICON_SLOT_INACCESSIBLE.png` |
+| `ICON_LINK` | Hacker-face LINK slot icon | 28×28 | dim/bright; two pets facing off across a bolt — the 1v1 duel slot | ☑ | `/assets/icons/ICON_LINK.png` |
+| `ICON_SLOT_INACCESSIBLE` | Inaccessible-slot overlay (both faces) | 20×20 | composited over a 28×28 slot; no-entry/lock motif; distinct from row-level `ICON_LOCK`; used for undesigned Hacker slots + stage-locked pet slots (`07 §12`) | ☑ | `/assets/icons/ICON_SLOT_INACCESSIBLE.png` |
 | `ICON_AUDIT_ARMED` | Audit-capture state — armed/sealed | 16×16 | pcap capture-policy state marker (STATUS §Audit; hot/seal/cooldown SM) | ⌫ | `/assets/_attic/ICON_AUDIT_ARMED.png` |
-| `ICON_AUDIT_HOT` | Audit-capture state — hot/capturing | 16×16 | pcap capture-policy state marker (STATUS §Audit) | ☑ | `/assets/ICON_AUDIT_HOT.png` |
+| `ICON_AUDIT_HOT` | Audit-capture state — hot/capturing | 16×16 | pcap capture-policy state marker (STATUS §Audit) | ☑ | `/assets/icons/ICON_AUDIT_HOT.png` |
 | `ICON_AUDIT_COOLDOWN` | Audit-capture state — cooldown | 16×16 | pcap capture-policy state marker (STATUS §Audit) | ⌫ | `/assets/_attic/ICON_AUDIT_COOLDOWN.png` |
 
 > **Reused (no new art):** `UI_SUBMENU_HEADER` / `UI_LIST_HEADER` / `UI_CURSOR_ROW` / `UI_ROW_SEL` /
@@ -530,7 +531,7 @@ content tables through the firmware's own code (`tools/dump_content.cpp`) plus
 | `web/fixtures/pedia_state.js` | Dev-preview fixture standing in for the live `GET /pedia_state.json` | browser-preview only, not served on-device | ☑ | `/web/fixtures/pedia_state.js` |
 | `web/assets/*` | Site copies of shipped `ICON_*`/`SPR_PET_*`/`PAL_CORE.json` assets | same files as `/assets/` (§A–§R above); duplicated into `/web/assets/` for the site bundle, not new art | ☑ | `/web/assets/` |
 | **Typography** | `FONT_UI` (Pixel Operator Mono) | **font binary still TODO** — the site currently falls back to a system-mono stack; same open item as the on-device `FONT_UI` (`ASSET_MANIFEST §E`) | ☐ | — |
-| **Achievement icons** | Per-achievement glyphs, named on each row's `icon` field (`src/core/content/content_achievements.cpp`) | **63 rows, 63 bespoke `ICON_ACH_*` glyphs.** Most are LADDERS, so they are one motif plus a centred tally — five skulls for the boss tiers, five depth arrows, four wifi arcs — countable before anything else, which is what lets a grid of them read in grayscale. The three creature lines are sets rather than ladders, so they use the line's own mark (lock / hook / horse) under a footer: a bar for "raised them all", a chevron for "took one deep". `DEVTOOLS_INTRUDER` is deliberately a question mark over a redaction bar — the 'Pedia draws a row's icon even while the row is masked, so anything representational there would spoil the one achievement whose point is working it out. The three Backup Drive rows are the other exception: a SET, not a ladder, so all three carry the same platter and differ only in its fate — restored and carried up, restored and going back down, or split with the pieces scattered | ☑ | `/assets/icons/ICON_ACH_*.png` |
+| **Achievement icons** | Per-achievement glyphs, named on each row's `icon` field (`src/core/content/content_achievements.cpp`) | **One bespoke `ICON_ACH_*` glyph per row, no reuse.** Most are LADDERS, so they are one motif plus a centred tally — five skulls for the boss tiers, five depth arrows, four wifi arcs, three narrowing DEFRAG stacks — countable before anything else, which is what lets a grid of them read in grayscale. The three creature lines are sets rather than ladders, so they use the line's own mark (lock / hook / horse) under a footer: a bar for "raised them all", a chevron for "took one deep". `DEVTOOLS_INTRUDER` is deliberately a question mark over a redaction bar — the 'Pedia draws a row's icon even while the row is masked, so anything representational there would spoil the one achievement whose point is working it out. The three Backup Drive rows are the other exception: a SET, not a ladder, so all three carry the same platter and differ only in its fate — restored and carried up, restored and going back down, or split with the pieces scattered | ☑ | `/assets/icons/ICON_ACH_*.png` |
 
 > **Malbeast sprites are `▨` stand-ins, but they are the shipping art** — `make pedia` copies them
 > from `assets/` into `web/assets/` like any other sprite, so the site and the device show the same
@@ -539,6 +540,7 @@ content tables through the firmware's own code (`tools/dump_content.cpp`) plus
 ---
 
 Every asset-consuming system is built. The one open feature behind §R's rows is the Red/Blue
-archetype layer (its optional `ICON_ARCHETYPE_*` art) — see `docs/MASTER_TODO.md §1h`. CREW,
+archetype layer (its optional `ICON_ARCHETYPE_*` art) — see the Hacker-face CREW section of
+`docs/MASTER_TODO.md`. CREW,
 PEERS and LINK all ship today: CREW and LINK have their icons, while PEERS renders its label
 alone until `ICON_PEERS` is drawn.

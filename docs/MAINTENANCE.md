@@ -70,10 +70,13 @@ unit (e.g. `game_persist.cpp`, `game_combat.cpp`) doesn't use. Trust the clangd
 each removal** (a header may satisfy a transitive dependency clangd can't see) — the native gate is
 authoritative. Don't remove a device-only header while building host-only, and vice-versa.
 
-### Asset manifest accuracy audit — Last run: never
+### Asset manifest accuracy audit — Last run: 2026-08-05
 Cross-check `assets/ASSET_MANIFEST.md` status markers (☑/▨/☐) against what's actually in
 `assets/` and wired into `embedded_content.cpp`. Flag mismatches in either direction
-(claimed-delivered-but-missing, or shipped-but-still-marked-TODO).
+(claimed-delivered-but-missing, or shipped-but-still-marked-TODO). Audit the **File** column
+too, not just the marker — every concrete path had gone stale against the `icons/`/`sprites/`/
+`ui/` split, which no status marker would have caught. Watch for the two basenames that exist
+in both a live folder and `_attic/`: a naive stem→path map resolves them to the parked copy.
 
 ---
 
