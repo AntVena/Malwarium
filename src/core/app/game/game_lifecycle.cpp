@@ -323,26 +323,19 @@ void Game::noteCareSignal(DominantSignal s) {
 
 const char* Game::evolutionTargetId() const {
     if (!pet_) return nullptr;
-    // Boot->Process / Process->Script: the dominant-signal route table (
-    // B) is the primary mechanism — every signal maps to the linear successor
-    // today, fanned out by the roster pass later.
-    if (const SignalRouteDef* route = registry_.signalRoute(pet_->id)) {
-        if (const char* id = route->bySignal[static_cast<int>(dominantSignal())])
-            return id;
-    }
-    // Script->Daemon: the weighted pool for this care-branch. 0-2 mistakes ->
-    // Good, 3-4 -> Bad; 5/5 (Dying) never reaches here (evolveEligible gates it
-    // out -> Critical System Failure). Single-entry pools today, so the pick is
-    // deterministic (entries[0]); the weighted draw lands with the real roster.
+    // Script->Daemon: a weighted pool for this care-branch, when the Script has one.
+    // 0-2 mistakes -> Good, 3-4 -> Bad; 5/5 (Dying) never reaches here (evolveEligible
+    // gates it out -> Critical System Failure). Single-entry pools today, so the pick
+    // is deterministic (entries[0]); the weighted draw lands with the real roster.
     const bool bad = model_.careBranch() == CareBranch::Bad;
     if (const DaemonPoolDef* pool = registry_.daemonPool(pet_->id, bad)) {
         if (pool->count > 0) return pool->entries[0].daemonId;
     }
-    // Defensive fallback for any un-tabled creature: the pre-table per-creature
-    // pointers (the tables above are the mechanism; these just keep old data live).
+    // Everything else is on the creature's own row: a care branch when it defines
+    // both successors, otherwise the linear hop (null at a terminus).
     if (pet_->evolvesToGoodId && pet_->evolvesToBadId)
         return bad ? pet_->evolvesToBadId : pet_->evolvesToGoodId;
-    return pet_->evolvesToId;   // linear hop (or nullptr at a terminus)
+    return pet_->evolvesToId;
 }
 
 namespace {

@@ -65,16 +65,6 @@ const MoveDef* ContentRegistry::move(const char* id) const {
     return nullptr;
 }
 
-const SignalRouteDef* ContentRegistry::signalRoute(const char* fromId) const {
-    for (const ContentSource* src : sources_) {
-        int n = 0;
-        const SignalRouteDef* arr = src->signalRoutes(n);
-        for (int i = 0; i < n; ++i)
-            if (std::strcmp(arr[i].fromId, fromId) == 0) return &arr[i];
-    }
-    return nullptr;
-}
-
 const DaemonPoolDef* ContentRegistry::daemonPool(const char* fromId,
                                                  bool badBranch) const {
     for (const ContentSource* src : sources_) {

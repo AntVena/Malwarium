@@ -92,11 +92,11 @@ row per creature as each is scheduled. `SPR_PET_<NAME>`.
 | Asset ID | Line / Stage | Creature | Status | File |
 |---|---|---|---|---|
 | `SPR_PET_CRYPTOSHELL` | L1 · Boot Sector (egg) | CryptoShell | ☑ | `/assets/SPR_PET_CRYPTOSHELL.png` (4 hatch frames) |
-| `SPR_PET_PAYPUP`      | L1 · Process | Paypup     | ☑ | `/assets/SPR_PET_PAYPUP.png` (8 frames; lead palette = Acid, pending owner pick) |
+| `SPR_PET_PAYPUP`      | L1 · Process | Paypup     | ☑ | `/assets/sprites/SPR_PET_PAYPUP.png` (448×48, 8 frames; Acid palette) |
 | `SPR_PET_PHISHLET`    | L1 · Process | Phishlet   | ☑ | `/assets/SPR_PET_PHISHLET.png` — final anglerfish art; wired 2026-07-18 as the deep-dive (DEEPWEB_DEPTH_64) catch on the Phishing egg (see the anglerfish-line note below) |
 | `SPR_PET_TADPOLL`     | L1 · Process | Tadpoll    | ☑ | `/assets/SPR_PET_TADPOLL.png` (112×48, 2 frames) — final tadpole art for the **Phishing-line Tadpoll** |
-| `SPR_PET_CACHEMUTT`   | L1 · Process | CacheMutt  | ☑ | `/assets/SPR_PET_CACHEMUTT.png` (112×48, 2 frames) — final already delivered; not in placeholder set |
-| `SPR_PET_PINGCUB`     | L1 · Process | Pingcub    | ⌫ | renamed from PingPong (committed 2026-07-01, `docs/CREATURE_IDEAS.md`); placeholder `/assets/_attic/SPR_PET_PINGCUB.png` |
+| `SPR_PET_CACHEMUTT`   | enemy frame (no creature row) | — | ☑ | `/assets/sprites/SPR_PET_CACHEMUTT.png` (112×48, 2 frames) — the shared borrowed frame for the Sim dummy, the EXPL sub-area/area bosses and the Lethal test enemy (`game_combat.cpp`, `combat.cpp`). No `CreatureDef` points at it, so it is never a pet |
+| `SPR_PET_PINGCUB`     | L1 · Process | Pingcub    | ▨ | `/assets/sprites/SPR_PET_PINGCUB.png` (56×48, 1 frame) — the ursine line's own head, wired as the third CryptoShell hatch outcome and hopping into Malbear. Carries the exact five greens of `SPR_PET_MALBEAR`/`SPR_PET_BRUINFORCE`, so cub→bear→grown-bear reads as one animal; wants a 2nd idle frame to match the 2-frame norm |
 | `SPR_PET_RINGWYRM`    | L2 · Boot Sector (egg) | Ringwyrm | ⌫ | placeholder `/assets/_attic/SPR_PET_RINGWYRM.png` |
 | `SPR_PET_BRUINFORCE` | L4 · Daemon (Good branch) | Bruinforce | ☑ | 56×48; `/assets/SPR_PET_BRUINFORCE.png` — the durable Good-branch frame: squared up, guarding |
 | `SPR_PET_BERSERKERNEL` | L4 · Daemon (Bad branch) | Berserkernel | ☑ | 56×48; `/assets/SPR_PET_BERSERKERNEL.png` — the glass-cannon Bad-branch frame: same bear reared up and roaring, red eyes, claws out. Deliberately the SAME green palette as its Good sibling — the branch reads from posture and face, not hue, which is what keeps it legible in grayscale (`08 §5`) |
@@ -107,7 +107,9 @@ row per creature as each is scheduled. `SPR_PET_<NAME>`.
 > **New lines (2026-07-17) using generic-stage placeholders** (PO: gameplay first — final art is
 > follow-up polish, no engine change to swap in). Wired in `embedded_content.cpp`, rendering via
 > `assets/SPR_PET_GENERIC_*`: **cat Ransomware** — `conkittenate` (→ `_GENERIC_PROCESS`),
-> `kalico` (`_GENERIC_SCRIPT`), `pwnther` + `breecheetah` (`_GENERIC_DAEMON`); **frog Phishing** —
+> `kalico` (`_GENERIC_SCRIPT`), `pwnther` + `breecheetah` (`_GENERIC_DAEMON`); **canine
+> Ransomware** — `barkmail` (`_GENERIC_SCRIPT`), `wire_heir` + `extorgi` (`_GENERIC_DAEMON`),
+> off the final `SPR_PET_PAYPUP`; **frog Phishing** —
 > `goliauth` (`_GENERIC_DAEMON`). `phrogspawn`/`tadpoll`/`croaken` use the final
 > `SPR_PET_EGG_PHISH_HATCH`/`SPR_PET_TADPOLL`/`SPR_PET_CROAKEN` above. The generics are pulled into
 > the atlas by `gen_assets.py` (which also handles non-56px single-frame Daemon sprites).

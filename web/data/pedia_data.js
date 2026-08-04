@@ -38,7 +38,7 @@ window.PEDIA_DATA = {
       "stageName": "Process",
       "line": "ransomware",
       "evolvesTo": [
-        "malbear"
+        "barkmail"
       ],
       "hint": "Loves chasing code, fetching cookies, and dropping malicious payloads.",
       "context": "Software payloads / tracking cookies",
@@ -47,6 +47,55 @@ window.PEDIA_DATA = {
       "cellH": 48,
       "sheetW": 448,
       "sheetH": 48
+    },
+    {
+      "id": "barkmail",
+      "name": "Barkmail",
+      "stage": 3,
+      "stageName": "Script",
+      "line": "ransomware",
+      "evolvesTo": [
+        "wire_heir",
+        "extorgi"
+      ],
+      "hint": "The pup grown into its armour, plated in overlapping links it calls correspondence. Every one of them is a letter, and every letter says the same thing louder.",
+      "context": "Blackmail / the ransom note that follows encryption",
+      "sprite": "assets/sprites/SPR_PET_GENERIC_SCRIPT.png",
+      "cellW": 56,
+      "cellH": 48,
+      "sheetW": 56,
+      "sheetH": 48,
+      "branchSplit": true
+    },
+    {
+      "id": "wire_heir",
+      "name": "Wire Heir",
+      "stage": 4,
+      "stageName": "Daemon",
+      "line": "ransomware",
+      "evolvesTo": [],
+      "hint": "Roaming the Napstorrent Moors and decrypting hard drives in need, it bears a suspicious resemblence the exiled heir to the throne of the Lockshund kingdom...",
+      "context": "Wire transfers - a ransom paid down, a debt taken up",
+      "sprite": "assets/sprites/SPR_PET_GENERIC_DAEMON.png",
+      "cellW": 96,
+      "cellH": 64,
+      "sheetW": 96,
+      "sheetH": 64
+    },
+    {
+      "id": "extorgi",
+      "name": "Extorgi",
+      "stage": 4,
+      "stageName": "Daemon",
+      "line": "ransomware",
+      "evolvesTo": [],
+      "hint": "Aspiring undemocratically self-elected regent of Castle Rapidscare. Other candidates have been warned to back down once if they want to keep their files, It expects to keep the racket going many terms running.",
+      "context": "Extortion / double-extortion ransomware",
+      "sprite": "assets/sprites/SPR_PET_GENERIC_DAEMON.png",
+      "cellW": 96,
+      "cellH": 64,
+      "sheetW": 96,
+      "sheetH": 64
     },
     {
       "id": "malbear",
@@ -98,18 +147,20 @@ window.PEDIA_DATA = {
       "sheetH": 48
     },
     {
-      "id": "cachemutt",
-      "name": "CacheMutt",
+      "id": "pingcub",
+      "name": "Pingcub",
       "stage": 2,
       "stageName": "Process",
-      "line": null,
-      "evolvesTo": [],
-      "hint": "A scruffy digital pup that hoards old junk data behind the couch and refuses to clear it out.",
-      "context": "System cache bloat",
-      "sprite": "assets/sprites/SPR_PET_CACHEMUTT.png",
+      "line": "ransomware",
+      "evolvesTo": [
+        "malbear"
+      ],
+      "hint": "A round little cub that pings every address on the network to see who answers, and remembers every single one that does.",
+      "context": "ICMP echo / ping sweeps for host discovery",
+      "sprite": "assets/sprites/SPR_PET_PINGCUB.png",
       "cellW": 56,
       "cellH": 48,
-      "sheetW": 112,
+      "sheetW": 56,
       "sheetH": 48
     },
     {
@@ -139,7 +190,7 @@ window.PEDIA_DATA = {
         "pwnther",
         "breecheetah"
       ],
-      "hint": "A patchy calico that quietly calibrates which of your files to lock next.",
+      "hint": "A patchy calico that longs for dank hacks. It's got all of the tools but not yet the knack.",
       "context": "Ransomware payload staging",
       "sprite": "assets/sprites/SPR_PET_GENERIC_SCRIPT.png",
       "cellW": 56,
@@ -155,7 +206,7 @@ window.PEDIA_DATA = {
       "stageName": "Daemon",
       "line": "ransomware",
       "evolvesTo": [],
-      "hint": "A sleek panther that pwns a whole subnet in a single silent pounce - the durable Good-branch build (0-2 care mistakes).",
+      "hint": "Small signature. Big cat. Massive data loss",
       "context": "System pwnage / privilege takeover",
       "sprite": "assets/sprites/SPR_PET_GENERIC_DAEMON.png",
       "cellW": 96,
@@ -170,7 +221,7 @@ window.PEDIA_DATA = {
       "stageName": "Daemon",
       "line": "ransomware",
       "evolvesTo": [],
-      "hint": "The fastest cat on the wire - breaches the perimeter before the alert even fires; the glass-cannon Bad-branch build (3-4 care mistakes).",
+      "hint": "The fastest cat on the wire - breaches the perimeter then bails before alerts even fire.",
       "context": "Data breach / exfiltration",
       "sprite": "assets/sprites/SPR_PET_GENERIC_DAEMON.png",
       "cellW": 96,
@@ -1690,9 +1741,9 @@ window.PEDIA_DATA = {
     {
       "key": "FULL_PEDIA_L1",
       "name": "Full 'Pedia: L1",
-      "trigger": "Raise every one of the 9 creatures in the ransomware line.",
+      "trigger": "Raise every one of the 13 creatures in the ransomware line.",
       "icon": "assets/icons/ICON_ACH_FULL_PEDIA_L1.png",
-      "goal": 9
+      "goal": 13
     },
     {
       "key": "FULL_LINE_PHISHING",

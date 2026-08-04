@@ -18,10 +18,9 @@ struct ContentSource {
     virtual const ItemDef* items(int& count) const = 0;
     virtual const ModDef* mods(int& count) const = 0;
     virtual const MoveDef* moves(int& count) const = 0;
-    // Evolution routing tables. A source with no branching content
+    // Script->Daemon weighted pools. A source with no multi-Daemon content
     // returns count 0 (nullptr) — the registry then falls through to the next
     // source / the per-creature evolvesTo* fields.
-    virtual const SignalRouteDef* signalRoutes(int& count) const = 0;
     virtual const DaemonPoolDef* daemonPools(int& count) const = 0;
 };
 

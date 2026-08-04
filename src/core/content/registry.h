@@ -27,10 +27,9 @@ public:
     const ModDef* mod(const char* id) const;
     const MoveDef* move(const char* id) const;
 
-    // Evolution routing. signalRoute: the Boot->Process / Process->
-    // Script hop for `fromId` (null if none). daemonPool: the Script->Daemon
-    // weighted pool for `fromId` on the given branch (null if none).
-    const SignalRouteDef* signalRoute(const char* fromId) const;
+    // Evolution routing. daemonPool: the Script->Daemon weighted pool for
+    // `fromId` on the given branch (null if none — the caller then reads the
+    // creature's own evolvesTo* fields). Every other hop is on the creature row.
     const DaemonPoolDef* daemonPool(const char* fromId, bool badBranch) const;
 
     // Every known item def, across all sources (the inventory list builds off

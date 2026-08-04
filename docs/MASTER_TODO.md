@@ -48,6 +48,30 @@ building it up organically.
 | NA | **Capture arming costs ~70KB and the AP ~58KB**, against ~126KB free with the radio idle. The device works, and the save no longer needs a big contiguous block, but that was the only thing standing on this — anything else that grows will hit the same wall. Worth a pass at what the capture path actually needs. | `net_capture.h`'s `powerUp` (`esp_wifi_init` + promiscuous + the pcap SD buffers). | M | Opus | Measured on device, not estimated: `[ap] down free=126408` → `[cap] armed free=56188`. |
 | NA | **PSRAM is disabled.** The board carries 8MB (`platformio.ini` leaves it off — "nothing needs it yet"), and it is the biggest available lever on the row above: Wi-Fi needs internal DRAM for DMA, the pcap and save buffers do not. Enabling it changes the *bootloader*, which an OTA never writes — so it can only reach a shipped device through the browser flasher (`pages/flash/`), and switching it on means asking a remote operator to plug in. | `platformio.ini` (`-DBOARD_HAS_PSRAM`, `board_build.arduino.memory_type`). No configured pin uses GPIO 33-37, so an octal part looks unobstructed — unverified. | M | Opus | No longer blocked on tooling, only on the cost of the ask. **Do the flasher bench run below first** — it is what proves the escape hatch works before a change depends on it. Confirm with `ESP.getPsramSize()` on the boot line if it is ever switched on. |
 
+### 1a-ii. Evolution routing — one weighted edge list per creature
+
+`CreatureDef` carries four optional successor pointers (`evolvesToId`, `evolvesToGoodId`,
+`evolvesToBadId`, `evolvesToTrojanId`) and `kDaemonPools` carries a fifth route in a table beside
+them — five mechanisms for one question. [`CONTENT_STANDARD.md`](../src/core/content/CONTENT_STANDARD.md)
+rule 1 asks for the opposite shape: a typed list on the row, not optional fields bolted onto the
+shared struct. The target is one array per creature —
+
+```cpp
+struct EvolutionEdge { const char* toId; EvoWhen when; uint8_t signal; uint8_t weight; };
+```
+
+— where `EvoWhen` is `Always | CareGood | CareBad | Signal | TrojanDivert`, and
+`Game::evolutionTargetId` becomes "filter the row's edges to those whose condition holds, then draw
+by weight". That subsumes the Daemon pool, the care branch, the linear hop and the Trojan divert
+(today a separate `if` in `fireEvolution`), and makes a signal-dependent route expressible for the
+first time — `Game::dominantSignal` computes the key and nothing consumes it.
+
+**Do it when a chain actually needs a weight or a signal branch**, not before: every pool is
+single-entry today, so building the general mechanism now means designing it with the least
+information about what it has to carry. Consumer surface is small — `evolutionTargetId`, one
+registry accessor, one `ContentSource` virtual, one test. No save concern; routing is not persisted.
+Diff **M** / Opus.
+
 ### 1b. Cooking — the open follow-ups
 
 The pantry, per-item drop weights and the N-ingredient Merge Hub are built. What the first cut left:

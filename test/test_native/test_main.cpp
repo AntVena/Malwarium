@@ -1598,12 +1598,12 @@ static void test_evolution_script_dwell_longer_than_process() {
 }
 
 // The full chain evolves through all four stages: CryptoShell (Boot) -> Paypup
-// (Process) -> Malbear (Script) -> Bruinforce (Daemon). With default (Good) care
+// (Process) -> Barkmail (Script) -> Wire Heir (Daemon). With default (Good) care
 // the Script->Daemon branch resolves to the Good successor. Each hop fires the
 // modal and commits on B; the Daemon terminus has no further evolution.
 static void test_evolution_full_chain() {
     Game g{StartMode::Hatched, "cryptoshell"};
-    const char* chain[] = {"paypup", "malbear", "bruinforce"};
+    const char* chain[] = {"paypup", "barkmail", "wire_heir"};
     const Stage stages[] = {Stage::Process, Stage::Script, Stage::Daemon};
     uint32_t t = 0;
     for (int hop = 0; hop < 3; ++hop) {
@@ -2086,11 +2086,11 @@ static void test_event_driven_repaint() {
 // grayscale value steps (shading, not one flat blob).
 static void test_sprite_grayscale_legibility() {
     ContentRegistry r = ContentRegistry::embedded();
-    // The full Ransomware chain (Boot->Process->Script->Daemon) + CacheMutt: each
+    // The full Ransomware chain (Boot->Process->Script->Daemon) + Pingcub: each
     // sprite — incl. the single-frame Malbear / Daemon-branch frames — must
     // pass the shading/silhouette law.
     const char* ids[] = {"cryptoshell", "paypup", "malbear", "bruinforce",
-                         "berserkernel", "cachemutt"};
+                         "berserkernel", "pingcub"};
     for (const char* id : ids) {
         const CreatureDef* c = r.creature(id);
         CHECK(c != nullptr);
@@ -6448,23 +6448,23 @@ static void test_move_slot_stamping_locks_at_unlock() {
       const Game::SlotKind slot1 = g.slotKind(1);
       CHECK(slot1 == seedKind(r, "paypup", 1));         // paypup's seed, freshly stamped
 
-      g.debugTriggerEvolution();                       // -> malbear (Script, 3 slots)
+      g.debugTriggerEvolution();                       // -> barkmail (Script, 3 slots)
       t = 0; advanceToReveal(g, t);
       g.onButton(press(Button::B));
-      CHECK(g.pet() && std::strcmp(g.pet()->id, "malbear") == 0);
+      CHECK(g.pet() && std::strcmp(g.pet()->id, "barkmail") == 0);
       CHECK(g.slotKind(0) == boot0);                   // still untouched
       const Game::SlotKind slot2 = g.slotKind(2);
-      CHECK(slot2 == seedKind(r, "malbear", 2));        // malbear's seed, freshly stamped
+      CHECK(slot2 == seedKind(r, "barkmail", 2));       // barkmail's seed, freshly stamped
 
       g.model().setCareMistakes(0);                     // 0-2 -> Good branch
       CHECK(g.model().careBranch() == CareBranch::Good);
-      g.debugTriggerEvolution();                        // -> bruinforce (Daemon, 4 slots)
+      g.debugTriggerEvolution();                        // -> wire_heir (Daemon, 4 slots)
       t = 0; advanceToReveal(g, t);
       g.onButton(press(Button::B));
-      CHECK(g.pet() && std::strcmp(g.pet()->id, "bruinforce") == 0);
+      CHECK(g.pet() && std::strcmp(g.pet()->id, "wire_heir") == 0);
       CHECK(g.slotKind(0) == boot0 && g.slotKind(1) == slot1 &&
             g.slotKind(2) == slot2);                    // slots 0-2 STILL unchanged
-      CHECK(g.slotKind(3) == seedKind(r, "bruinforce", 3));
+      CHECK(g.slotKind(3) == seedKind(r, "wire_heir", 3));
     }
     // Bad branch: same chain, but slot 3 stamps from the OTHER Daemon's seed —
     // proving the branch taken (not just the terminal stage) decides the newly-
@@ -10821,21 +10821,12 @@ static void test_wild_and_roster_names_disjoint() {
                     CHECK(std::strcmp(round.name, c->displayName) != 0);
 }
 
-// Evolution routing tables: the branching mechanism as data. The
-// placeholder rows must resolve every dominant signal to today's linear chain
-// and both care-branches to the right Daemon, and the evolve logic must consume
-// them (proven by test_evolution_full_chain / _care_branch, which now route
-// through these). Un-tabled creatures return null so the fallback still works.
+// Evolution routing: a Script->Daemon weighted pool is the one hop that is NOT on
+// the creature row, so it is the one the registry has to answer for. A Script with a
+// pool draws from it per care-branch; everything else (linear hops, care branches
+// without a pool, termini) reads its own row, which is what the chain tests walk.
 static void test_evolution_routing_tables() {
     ContentRegistry r = ContentRegistry::embedded();
-    // Boot->Process and Process->Script: every signal maps to the linear successor.
-    const SignalRouteDef* boot = r.signalRoute("cryptoshell");
-    const SignalRouteDef* proc = r.signalRoute("paypup");
-    CHECK(boot != nullptr && proc != nullptr);
-    for (int s = 0; s < kNumDominantSignals; ++s) {
-        CHECK(std::strcmp(boot->bySignal[s], "paypup") == 0);
-        CHECK(std::strcmp(proc->bySignal[s], "malbear") == 0);
-    }
     // Script->Daemon: the care-branch selects the pool; single entry today.
     const DaemonPoolDef* good = r.daemonPool("malbear", /*bad=*/false);
     const DaemonPoolDef* bad = r.daemonPool("malbear", /*bad=*/true);
@@ -10843,14 +10834,20 @@ static void test_evolution_routing_tables() {
           std::strcmp(good->entries[0].daemonId, "bruinforce") == 0);
     CHECK(bad && bad->count == 1 &&
           std::strcmp(bad->entries[0].daemonId, "berserkernel") == 0);
-    // Termini / un-tabled creatures: no route, no pool -> the fallback path.
-    CHECK(r.signalRoute("bruinforce") == nullptr);
+    // A pooled Script's row must still agree with its pool — the row is what the
+    // registry falls back to, so a disagreement would be a silent routing change.
+    const CreatureDef* malbear = r.creature("malbear");
+    CHECK(malbear && std::strcmp(malbear->evolvesToGoodId, "bruinforce") == 0);
+    CHECK(malbear && std::strcmp(malbear->evolvesToBadId, "berserkernel") == 0);
+    // No pool for anything else: the row is the whole answer.
     CHECK(r.daemonPool("paypup", false) == nullptr);
+    CHECK(r.daemonPool("barkmail", false) == nullptr);
 }
 
 // The dominant signal is computed from live care interactions: a
 // fresh pet is Balanced (no interactions); feeding it tips the balance to
-// Feeding. This is the key the Boot->Process / Process->Script tables index.
+// Feeding. The tally that answers this is the input a signal-dependent evolution
+// route would key off; nothing routes on it today, so this is what keeps it honest.
 static void test_dominant_signal_from_care() {
     Game g{StartMode::Hatched};                      // Paypup, no interactions yet
     CHECK(g.dominantSignal() == DominantSignal::Balanced);
@@ -11353,7 +11350,7 @@ static void test_peer_rows_live_first_and_deduped() {
     // Someone met before, not here now.
     PeerHello old;
     std::strncpy(old.tag, "ABSENT", sizeof(old.tag) - 1);
-    std::strncpy(old.petName, "CacheMutt", sizeof(old.petName) - 1);
+    std::strncpy(old.petName, "Pingcub", sizeof(old.petName) - 1);
     g.debugSeedPeer(0xAAAAAAAAAAAAull, old);
 
     // Someone standing here, whose pet has evolved since we last met them.
@@ -11652,7 +11649,7 @@ static void test_pvp_host_election_agrees_on_both_sides() {
 static void test_pvp_commit_hash_catches_divergence() {
     PvpFighter a, b;
     std::strncpy(a.creatureId, "paypup", sizeof(a.creatureId) - 1);
-    std::strncpy(b.creatureId, "cachemutt", sizeof(b.creatureId) - 1);
+    std::strncpy(b.creatureId, "pingcub", sizeof(b.creatureId) - 1);
 
     const uint32_t base = pvpCommitHash(42, a, b);
     CHECK(pvpCommitHash(42, a, b) == base);          // stable
@@ -11676,7 +11673,7 @@ static void test_pvp_same_seed_plays_the_same_fight() {
     std::strncpy(host.creatureId, "paypup", sizeof(host.creatureId) - 1);
     std::strncpy(host.moveIds[0], "packet_storm", kPvpIdCap - 1);
     host.statPoints[0] = 3;
-    std::strncpy(guest.creatureId, "cachemutt", sizeof(guest.creatureId) - 1);
+    std::strncpy(guest.creatureId, "pingcub", sizeof(guest.creatureId) - 1);
     std::strncpy(guest.moveIds[0], "checksum_guard", kPvpIdCap - 1);
     guest.statPoints[3] = 5;
     CHECK(canBuildPvpCombatant(reg, host) && canBuildPvpCombatant(reg, guest));
@@ -11724,7 +11721,7 @@ static void test_pvp_seating_order_is_load_bearing() {
 
     PvpFighter a, b;
     std::strncpy(a.creatureId, "paypup", sizeof(a.creatureId) - 1);
-    std::strncpy(b.creatureId, "cachemutt", sizeof(b.creatureId) - 1);
+    std::strncpy(b.creatureId, "pingcub", sizeof(b.creatureId) - 1);
 
     Combat forward, swapped;
     beginPvpBattle(forward, reg, a, b, 99);
@@ -11784,7 +11781,7 @@ static void test_pvp_two_devices_duel_end_to_end() {
     const uint8_t macB[6] = {0x02, 0, 0, 0, 0, 0x02};
 
     Game a{StartMode::Hatched, "paypup"};
-    Game b{StartMode::Hatched, "cachemutt"};
+    Game b{StartMode::Hatched, "pingcub"};
     a.setLocalRadioMac(macA);
     b.setLocalRadioMac(macB);
     uint32_t t = 0;
@@ -11882,7 +11879,7 @@ static void test_pvp_duel_marks_the_opponent_species_seen() {
     const uint8_t macB[6] = {0x02, 0, 0, 0, 0, 0x02};
 
     Game a{StartMode::Hatched, "paypup"};
-    Game b{StartMode::Hatched, "cachemutt"};
+    Game b{StartMode::Hatched, "pingcub"};
     a.setLocalRadioMac(macA);
     b.setLocalRadioMac(macB);
     uint32_t t = 0;
@@ -11893,7 +11890,7 @@ static void test_pvp_duel_marks_the_opponent_species_seen() {
     hearBeacon(a, macB, "OPERATOR_B");
     hearBeacon(b, macA, "OPERATOR_A");
 
-    CHECK(!a.creatureSeen("cachemutt") && !b.creatureSeen("paypup"));
+    CHECK(!a.creatureSeen("pingcub") && !b.creatureSeen("paypup"));
 
     uint64_t keys[8];
     CHECK(a.pvpChallengeableKeys(keys, 8) == 1);
@@ -11907,15 +11904,15 @@ static void test_pvp_duel_marks_the_opponent_species_seen() {
 
     // Recorded at the START, before either fight resolves — facing the species is
     // the glimpse, not beating it.
-    CHECK(a.creatureSeen("cachemutt"));
+    CHECK(a.creatureSeen("pingcub"));
     CHECK(b.creatureSeen("paypup"));
     CHECK(!a.creatureSeen("paypup"));              // its own pet: raised, never "seen"
-    CHECK(!b.creatureSeen("cachemutt"));
-    CHECK(a.creatureRaised("paypup") && !a.creatureRaised("cachemutt"));
+    CHECK(!b.creatureSeen("pingcub"));
+    CHECK(a.creatureRaised("paypup") && !a.creatureRaised("pingcub"));
 
     // ...and that is exactly the tier the 'Pedia reports for it.
     const std::string json = buildPediaStateJson(a);
-    CHECK(json.find("\"cachemutt\":\"seen\"") != std::string::npos);
+    CHECK(json.find("\"pingcub\":\"seen\"") != std::string::npos);
     CHECK(json.find("\"paypup\":\"hatched\"") != std::string::npos);
 }
 
@@ -11932,7 +11929,7 @@ static void test_pvp_invite_retries_do_not_decline_the_pending_challenge() {
     const uint8_t macB[6] = {0x02, 0, 0, 0, 0, 0x02};
 
     Game a{StartMode::Hatched, "paypup"};
-    Game b{StartMode::Hatched, "cachemutt"};
+    Game b{StartMode::Hatched, "pingcub"};
     a.setLocalRadioMac(macA);
     b.setLocalRadioMac(macB);
     uint32_t t = 0;
@@ -12061,7 +12058,7 @@ static void test_pvp_guest_sees_its_own_pet_on_the_bottom_gauge() {
 
     PvpFighter host, guest;
     std::strncpy(host.creatureId, "paypup", sizeof(host.creatureId) - 1);
-    std::strncpy(guest.creatureId, "cachemutt", sizeof(guest.creatureId) - 1);
+    std::strncpy(guest.creatureId, "pingcub", sizeof(guest.creatureId) - 1);
     guest.statPoints[3] = 9;                 // a different max Health, so the gauges differ
 
     Combat c;
@@ -12114,7 +12111,7 @@ static void test_combat_seats_local_pet_on_the_left() {
 
     PvpFighter host, guest;
     std::strncpy(host.creatureId, "paypup", sizeof(host.creatureId) - 1);
-    std::strncpy(guest.creatureId, "cachemutt", sizeof(guest.creatureId) - 1);
+    std::strncpy(guest.creatureId, "pingcub", sizeof(guest.creatureId) - 1);
 
     Combat c;
     beginPvpBattle(c, reg, host, guest, 0xC0FFEE);   // left Ongoing: no result banner
@@ -12190,7 +12187,7 @@ static void test_pvp_link_screen_verdict_grayscale() {
 
     auto renderVerdict = [&](bool asWinner, Framebuffer& fb) {
         Game a{StartMode::Hatched, "paypup"};
-        Game b{StartMode::Hatched, "cachemutt"};
+        Game b{StartMode::Hatched, "pingcub"};
         a.setLocalRadioMac(macA);
         b.setLocalRadioMac(macB);
         uint32_t t = 0;
@@ -12295,7 +12292,7 @@ static void test_save_v36_crew_roundtrip() {
 // triggers, so this isolates the JSON-shape half from the trigger-wiring half
 // (covered separately below).
 static void test_pedia_state_json_reveal_states() {
-    SaveData a; std::strcpy(a.activeId, "cachemutt"); a.generation = 1;
+    SaveData a; std::strcpy(a.activeId, "pingcub"); a.generation = 1;
     a.seenCreatures.push_back(SaveId{"malbear"});   // glimpsed, not hatched
     a.malbeastSeen = 1 << 1;                        // Segfault Pup — seen only
     a.malbeastDefeated = 1 << 0;                    // GlitchHog — defeated
@@ -12303,7 +12300,7 @@ static void test_pedia_state_json_reveal_states() {
     Game g(StartMode::Hatched, "paypup", &store);   // hatchedCreature ignored: store wins
 
     const std::string json = buildPediaStateJson(g);
-    CHECK(json.find("\"cachemutt\":\"hatched\"") != std::string::npos);
+    CHECK(json.find("\"pingcub\":\"hatched\"") != std::string::npos);
     CHECK(json.find("\"malbear\":\"seen\"") != std::string::npos);
     CHECK(json.find("\"glitchhog\":\"defeated\"") != std::string::npos);
     CHECK(json.find("\"segfault_pup\":\"seen\"") != std::string::npos);
@@ -12321,15 +12318,15 @@ static void test_pedia_state_json_reveal_states() {
 // behind the live pet must still read "hatched" — the possession-only test this
 // replaced re-encrypted each one the moment its successor stamped over it.
 static void test_pedia_raised_tally_survives_evolution() {
-    Game g{StartMode::Hatched, "paypup"};
-    CHECK(g.creatureRaised("paypup"));
+    Game g{StartMode::Hatched, "pingcub"};
+    CHECK(g.creatureRaised("pingcub"));
     CHECK(g.speciesRaised() == 1);
 
-    g.debugTriggerEvolution();                        // paypup -> malbear
+    g.debugTriggerEvolution();                        // pingcub -> malbear
     uint32_t t = 0; advanceToReveal(g, t);
     g.onButton(press(Button::B));
     CHECK(g.pet() && std::strcmp(g.pet()->id, "malbear") == 0);
-    CHECK(g.creatureRaised("paypup"));                // the species it USED to be
+    CHECK(g.creatureRaised("pingcub"));               // the species it USED to be
     CHECK(g.creatureRaised("malbear"));
     CHECK(g.speciesRaised() == 2);
 
@@ -12340,7 +12337,7 @@ static void test_pedia_raised_tally_survives_evolution() {
     CHECK(g.speciesRaised() == 3);
 
     const std::string json = buildPediaStateJson(g);
-    CHECK(json.find("\"paypup\":\"hatched\"") != std::string::npos);
+    CHECK(json.find("\"pingcub\":\"hatched\"") != std::string::npos);
     CHECK(json.find("\"malbear\":\"hatched\"") != std::string::npos);
     CHECK(json.find("\"bruinforce\":\"hatched\"") != std::string::npos);
     CHECK(json.find("\"species_raised\":3") != std::string::npos);
@@ -12508,7 +12505,7 @@ static void test_renamed_ids_table_invariants() {
 static void test_save_v39_raised_tally_roundtrip_and_migration() {
     { // A real evolution, written through the live autosave, read back cold.
         MemSaveStore store;
-        { Game g(StartMode::Hatched, "paypup", &store);
+        { Game g(StartMode::Hatched, "pingcub", &store);
           g.debugTriggerEvolution();
           uint32_t t = 0; advanceToReveal(g, t);
           g.onButton(press(Button::B));
@@ -12517,15 +12514,15 @@ static void test_save_v39_raised_tally_roundtrip_and_migration() {
         SaveData out;
         CHECK(deserializeSave(store.bytes(), out));
         CHECK(out.raisedCreatures.size() == 2);
-        Game g2(StartMode::Hatched, "cachemutt", &store);  // hatchedCreature ignored
+        Game g2(StartMode::Hatched, "paypup", &store);   // hatchedCreature ignored
         CHECK(g2.pet() && std::strcmp(g2.pet()->id, "malbear") == 0);
-        CHECK(g2.creatureRaised("paypup"));                // nothing HOLDS paypup
+        CHECK(g2.creatureRaised("pingcub"));               // nothing HOLDS pingcub
         CHECK(g2.speciesRaised() == 2);
     }
     { // Pre-v39 shape: drop the v39 tail and stamp the version back.
         SaveData a;
         std::strcpy(a.activeId, "malbear");
-        SaveStoredPet stored; std::strcpy(stored.id, "cachemutt");
+        SaveStoredPet stored; std::strcpy(stored.id, "pingcub");
         a.rack.push_back(stored);
         SaveRecord rec; std::strcpy(rec.id, "paypup");
         a.records.push_back(rec);
@@ -12542,7 +12539,7 @@ static void test_save_v39_raised_tally_roundtrip_and_migration() {
 
         MemSaveStore store; store.save(blob);
         Game g(StartMode::Hatched, "paypup", &store);
-        CHECK(g.creatureRaised("malbear") && g.creatureRaised("cachemutt") &&
+        CHECK(g.creatureRaised("malbear") && g.creatureRaised("pingcub") &&
               g.creatureRaised("paypup"));             // rebuilt from what's held
         CHECK(!g.creatureRaised("bruinforce"));  // unrecoverable, and not faked
         CHECK(g.speciesRaised() == 3);
@@ -12556,7 +12553,7 @@ static void test_save_v39_raised_tally_roundtrip_and_migration() {
         std::strcpy(a.hackerTag, "ALG0M3AN");
         a.generation = 2;
         a.combatLevel = 36;
-        for (const char* id : {"cachemutt", "paypup"}) {
+        for (const char* id : {"pingcub", "paypup"}) {
             SaveStoredPet stored; std::strcpy(stored.id, id);
             a.rack.push_back(stored);
         }
@@ -12569,7 +12566,7 @@ static void test_save_v39_raised_tally_roundtrip_and_migration() {
         MemSaveStore store; store.save(blob);
         Game g(StartMode::Hatched, "paypup", &store);
         CHECK(g.creatureRaised("tadpoll"));            // active
-        CHECK(g.creatureRaised("cachemutt") && g.creatureRaised("paypup"));  // racked
+        CHECK(g.creatureRaised("pingcub") && g.creatureRaised("paypup"));  // racked
         CHECK(g.creatureRaised("malbear"));            // recorded
         CHECK(g.speciesRaised() == 4);
         // Nothing else shifted: the migration adds a tally, it does not rewrite a save.
@@ -12585,7 +12582,7 @@ static void test_save_v39_raised_tally_roundtrip_and_migration() {
 // achievement's own re-check (fired by the evolution below) is what unlocks it.
 static void test_full_pedia_achievement_reads_the_raised_tally() {
     ContentRegistry r = ContentRegistry::embedded();
-    SaveData a; std::strcpy(a.activeId, "paypup"); a.generation = 1;
+    SaveData a; std::strcpy(a.activeId, "pingcub"); a.generation = 1;
     for (const CreatureDef* c : r.allCreatures())
         if (c->line && std::strcmp(c->line, "ransomware") == 0 &&
             std::strcmp(c->id, "malbear") != 0) {      // the one still to be raised
@@ -12594,11 +12591,11 @@ static void test_full_pedia_achievement_reads_the_raised_tally() {
             a.raisedCreatures.push_back(s);
         }
     MemSaveStore store; store.save(serializeSave(a));
-    Game g(StartMode::Hatched, "paypup", &store);
+    Game g(StartMode::Hatched, "pingcub", &store);
     CHECK(!g.hasAchievement("FULL_PEDIA_L1"));
     CHECK(!g.creatureRaised("malbear"));
 
-    g.debugTriggerEvolution();                         // paypup -> malbear: the last one
+    g.debugTriggerEvolution();                         // pingcub -> malbear: the last one
     uint32_t t = 0; advanceToReveal(g, t);
     g.onButton(press(Button::B));
     CHECK(g.creatureRaised("malbear"));
@@ -12839,7 +12836,7 @@ static void test_species_dive_records_feed_the_depth_rows() {
     Game g{StartMode::Hatched, "malbear"};
     CHECK(g.deepestDiveEver() == 0);
     g.debugRecordSpeciesDive("malbear", 300);
-    g.debugRecordSpeciesDive("cachemutt", 70);
+    g.debugRecordSpeciesDive("pingcub", 70);
     CHECK(g.speciesDeepestDive("malbear") == 300);
     CHECK(g.deepestDiveEver() == 300);
     g.debugRecordSpeciesDive("malbear", 120);          // a shallower run never demotes it
@@ -12877,7 +12874,7 @@ static void test_pedia_state_json_rack_and_record_hatched() {
     SaveData a;
     std::strcpy(a.activeId, "paypup");
     a.generation = 3;
-    SaveStoredPet stored; std::strcpy(stored.id, "cachemutt");
+    SaveStoredPet stored; std::strcpy(stored.id, "pingcub");
     a.rack.push_back(stored);
     SaveRecord rec; std::strcpy(rec.id, "malbear");
     rec.status = static_cast<uint8_t>(RecordStatus::Corrupted);
@@ -12889,7 +12886,7 @@ static void test_pedia_state_json_rack_and_record_hatched() {
 
     const std::string json = buildPediaStateJson(g);
     CHECK(json.find("\"paypup\":\"hatched\"") != std::string::npos);     // active
-    CHECK(json.find("\"cachemutt\":\"hatched\"") != std::string::npos);  // racked
+    CHECK(json.find("\"pingcub\":\"hatched\"") != std::string::npos);  // racked
     CHECK(json.find("\"malbear\":\"hatched\"") != std::string::npos);    // record
     CHECK(json.find("\"archive\":[{") != std::string::npos);
 }
@@ -12944,19 +12941,64 @@ static void test_pedia_evolution_achievements_leave_the_sibling_locked() {
 
 // --- New lines: cat (Ransomware) + frog (Phishing) -------------------------
 
-// The CryptoShell (Ransomware) egg's random hatch pool holds BOTH Paypup and
-// Conkittenate — every Process creature on the ransomware line is a
-// candidate, so the same egg can hatch either species.
+// The CryptoShell (Ransomware) egg's random hatch pool holds Paypup, Conkittenate
+// AND Pingcub — every Process creature on the ransomware line is a
+// candidate, so the same egg can hatch any of the three species. None of them is
+// deep-dive gated the way Phishlet is, so all three are in the pool from a fresh save.
 static void test_hatch_pool_ransomware() {
     ContentRegistry r = ContentRegistry::embedded();
-    bool paypup = false, conk = false;
+    Game g;                                     // fresh save, no achievements
+    bool paypup = false, conk = false, pingcub = false;
     for (const CreatureDef* c : r.allCreatures())
         if (c->stage == Stage::Process && c->line &&
             std::strcmp(c->line, "ransomware") == 0) {
+            CHECK(g.hatchProcessUnlocked(c));   // ungated: in the pool from the start
             if (std::strcmp(c->id, "paypup") == 0) paypup = true;
             else if (std::strcmp(c->id, "conkittenate") == 0) conk = true;
+            else if (std::strcmp(c->id, "pingcub") == 0) pingcub = true;
         }
-    CHECK(paypup && conk);
+    CHECK(paypup && conk && pingcub);
+}
+
+// Canine chain (Ransomware): Paypup (Process) -> Barkmail (Script) -> a Good/Bad
+// Daemon branch (Wire Heir | Extorgi), care-gated like Malbear's pair. Paypup routes
+// Paypup has no Daemon pool, so every hop here is read straight off the creature row.
+static void test_canine_line_evolution_branch() {
+    { // Good care (0-2): Paypup -> Barkmail -> Wire Heir.
+        Game g{StartMode::Hatched, "paypup"};
+        uint32_t t = 0;
+        g.debugTriggerEvolution(); advanceToReveal(g, t); g.onButton(press(Button::B));
+        CHECK(g.pet() && std::strcmp(g.pet()->id, "barkmail") == 0);
+        CHECK(g.pet()->stage == Stage::Script);
+        CHECK(g.model().careBranch() == CareBranch::Good);
+        g.debugTriggerEvolution(); advanceToReveal(g, t); g.onButton(press(Button::B));
+        CHECK(g.pet() && std::strcmp(g.pet()->id, "wire_heir") == 0);
+        CHECK(g.pet()->stage == Stage::Daemon);
+    }
+    { // Bad care (3-4): Barkmail -> Extorgi (the glass-cannon branch).
+        Game g{StartMode::Hatched, "barkmail"};
+        g.model().setCareMistakes(3);
+        CHECK(g.model().careBranch() == CareBranch::Bad);
+        uint32_t t = 0;
+        g.debugTriggerEvolution(); advanceToReveal(g, t); g.onButton(press(Button::B));
+        CHECK(g.pet() && std::strcmp(g.pet()->id, "extorgi") == 0);
+        CHECK(g.pet()->stage == Stage::Daemon);
+    }
+}
+
+// Pingcub is the ursine chain's own head: Malbear and its Daemon pair are reached
+// only through it, now that Paypup heads the canine chain instead.
+static void test_pingcub_rejoins_the_bear_line() {
+    ContentRegistry r = ContentRegistry::embedded();
+    const CreatureDef* pingcub = r.creature("pingcub");
+    CHECK(pingcub);
+    CHECK(pingcub->stage == Stage::Process);
+    CHECK(r.creatureSprite(*pingcub) == &ASSET_SPR_PET_PINGCUB);   // its own cub art
+    Game g{StartMode::Hatched, "pingcub"};
+    uint32_t t = 0;
+    g.debugTriggerEvolution(); advanceToReveal(g, t); g.onButton(press(Button::B));
+    CHECK(g.pet() && std::strcmp(g.pet()->id, "malbear") == 0);
+    CHECK(g.pet()->stage == Stage::Script);
 }
 
 // Cat line (Ransomware): Conkittenate (Process) -> Kalico (Script) -> a Good/Bad
@@ -13841,6 +13883,8 @@ static void test_firmware_version_ordering() {
     /* Branching creature system scaffold */ \
     RUN(test_evolution_routing_tables)            \
     RUN(test_hatch_pool_ransomware)               \
+    RUN(test_canine_line_evolution_branch)        \
+    RUN(test_pingcub_rejoins_the_bear_line)       \
     RUN(test_cat_line_evolution_branch)           \
     RUN(test_frog_line_linear)                    \
     RUN(test_anglerfish_deepdive_hatch_gate)      \

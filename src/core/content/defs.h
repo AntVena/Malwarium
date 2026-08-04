@@ -97,8 +97,8 @@ struct CreatureDef {
     // type-agnostic default move (Quick Jab) ignores this — it fills ANY empty
     // slot regardless of kind, and is never itself equippable.
     // PLACEHOLDER layout (balance TBD, not a design-reviewed roster pass) — seeded
-    // only so the mechanism is live: Process pets lean slot0/1 Attack (Attack for
-    // most; CacheMutt varies at slot1 for flavour), Script adds a Defend at slot2,
+    // only so the mechanism is live: Process pets lean slot0/1 Attack (Paypup varies
+    // at slot1 for flavour), Script adds a Defend at slot2,
     // and the Daemon branch splits at slot3 to mirror the power/Frag lean —
     // Good (durable) -> Defend, Bad (glass cannon) -> Attack.
     MoveKind slotKinds[kMaxMoveSlots] = {MoveKind::Attack, MoveKind::Attack,
@@ -131,22 +131,11 @@ struct EggLineDef {
     HatchGame hatchGame = HatchGame::Decrypt;
 };
 
-// Evolution routing tables ----------------------------------
-// The branching mechanism, expressed as DATA so a future roster pass is pure
-// data entry (no new branching logic). The engine already resolves a successor
-// by care-branch (CreatureDef::evolvesTo*); these tables generalise that to
-// the dominant-signal fan-out the full roster needs, and are the primary source
-// the evolve logic consumes (the per-creature evolvesTo* fields remain only as a
-// defensive fallback for any un-tabled creature).
-
-// A Boot->Process or Process->Script hop, routed by the stage's dominant signal.
-// `bySignal` is indexed by DominantSignal (Balanced included); each entry is the
-// successor creature id for that signal. Today every entry points at the single
-// linear successor — a later names/lines pass fans them out.
-struct SignalRouteDef {
-    const char* fromId;                        // the creature evolving
-    const char* bySignal[kNumDominantSignals]; // successor id per DominantSignal
-};
+// Evolution routing ----------------------------------
+// Where a creature evolves to is on its own row (CreatureDef::evolvesToId for a
+// linear hop, evolvesToGoodId/BadId for a care branch, evolvesToTrojanId for the
+// cross-line divert). The one shape a row cannot express is a draw between SEVERAL
+// Daemons on one branch, which is what the pool below adds.
 
 // One weighted candidate in a Daemon draw.
 struct DaemonPoolWeight {

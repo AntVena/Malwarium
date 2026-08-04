@@ -25,7 +25,6 @@ extern const char* const kBackupDriveId;  // "backup_drive" — the combat-shiel
 extern const LootEntry kLootPool[];      extern const int kLootPoolCount;
 extern const ModDef          kMods[];          extern const int kModsCount;
 extern const MoveDef         kMoves[];         extern const int kMovesCount;
-extern const SignalRouteDef  kSignalRoutes[];  extern const int kSignalRoutesCount;
 extern const DaemonPoolDef   kDaemonPools[];   extern const int kDaemonPoolsCount;
 
 }  // namespace mal

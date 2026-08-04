@@ -19,7 +19,7 @@ window.PEDIA_STATE_FIXTURE = {
     "malbear": "seen",
     "bruinforce": "locked",
     "berserkernel": "locked",
-    "cachemutt": "seen"
+    "pingcub": "seen"
   },
 
   // extension: wild roster — seen on encounter, defeated = full reveal (D-P3)
@@ -133,7 +133,7 @@ window.PEDIA_STATE_FIXTURE = {
       "record": "0 care mistakes \u00b7 14 days uptime \u00b7 graduated with honors" },
     { "name": "NULLBYTE", "species": "malbear", "stage": "SCRIPT", "cause": "crashed",
       "record": "frag 100% \u00b7 lockout expired \u00b7 last seen chewing the UI" },
-    { "name": "SNACC_DAEMON", "species": "cachemutt", "stage": "PROCESS", "cause": "crashed",
-      "record": "cache overflow \u00b7 4 care mistakes \u00b7 it hoarded too hard" }
+    { "name": "SNACC_DAEMON", "species": "pingcub", "stage": "PROCESS", "cause": "crashed",
+      "record": "ping flood \u00b7 4 care mistakes \u00b7 it answered every echo it heard" }
   ]
 };

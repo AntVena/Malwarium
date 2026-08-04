@@ -8,33 +8,52 @@
 namespace mal {
 
 const CreatureDef kCreatures[] = {
-    // The Ransomware demo line — Boot->Script is LINEAR, then Script->Daemon BRANCHES
-    // CryptoShell (Boot) -> Paypup (Process) -> Malbear (Script)
-    // -> { Bruinforce (Good) | Berserkernel (Bad) } (Daemon). Each `evolvesToId` is
-    // the linear hop; Malbear defines the two branch successors instead, picked by
-    // the care budget at evolution time. The branches carry DISTINCT art on a SHARED
-    // palette — SPR_PET_BRUINFORCE squares up, SPR_PET_BERSERKERNEL rears and roars —
-    // so which branch a player got reads at a glance while both still read as the
-    // same animal. They also differ mechanically via the power/Frag multipliers below.
+    // The Ransomware line — Boot->Script is LINEAR, then Script->Daemon BRANCHES.
+    // The CryptoShell egg hatches one of three Process pets, each heading a chain of
+    // its own: the CANINE chain (Paypup -> Barkmail -> { Wire Heir | Extorgi }) below,
+    // the URSINE chain (Pingcub -> Malbear -> { Bruinforce | Berserkernel }), and the
+    // FELINE chain (Conkittenate -> Kalico -> { Pwnther | Breecheetah }). Each
+    // `evolvesToId` is the linear hop; a BRANCH node leaves it null and defines the two
+    // successors instead, picked by the care budget at evolution time. A branch's pair
+    // carries DISTINCT art on a SHARED palette — SPR_PET_BRUINFORCE squares up,
+    // SPR_PET_BERSERKERNEL rears and roars — so which branch a player got reads at a
+    // glance while both still read as the same animal. They also differ mechanically
+    // via the power/Frag multipliers below.
     // (sprite.h idleFrame() is single-frame-safe; both frames are pre-sized 56x48)
     // The whole Ransomware family carries line = "ransomware" (last field) — it gates
     // the line-specific Lockout/Cipher moves + the Ransom Lock passive to these pets.
     // Trailing braced array = CreatureDef::slotKinds (move-slot rework #12,
-    // PLACEHOLDER layout — see the field comment in defs.h): slot0/1 Attack,Attack
-    // for the Paypup line; slot2 Defend from Malbear on; slot3 splits at the
-    // Daemon branch (Good -> Defend durable, Bad -> Attack glass cannon), mirroring
-    // the power/Frag lean. CryptoShell (egg) never reaches a real slot before
-    // hatching into Paypup, so it just carries a sane all-Attack default.
+    // PLACEHOLDER layout — see the field comment in defs.h): slot0/1 lean Attack at
+    // Process; slot2 Defend from the Script on; slot3 splits at the Daemon branch
+    // (Good -> Defend durable, Bad -> Attack glass cannon), mirroring the power/Frag
+    // lean. CryptoShell (egg) never reaches a real slot before hatching, so it just
+    // carries a sane all-Attack default.
     {"cryptoshell", "CryptoShell", Stage::BootSector, "SPR_PET_CRYPTOSHELL", "paypup",
      nullptr, nullptr, 100, 100, "ransomware",
      "A digital shell so tough, even its mother has to brute-force the password to hatch it.",
      "Cryptographic shells / brute-force",
      {MoveKind::Attack, MoveKind::Attack, MoveKind::Attack, MoveKind::Attack}},
-    {"paypup", "Paypup", Stage::Process, "SPR_PET_PAYPUP", "malbear",
+    {"paypup", "Paypup", Stage::Process, "SPR_PET_PAYPUP", "barkmail",
      nullptr, nullptr, 100, 100, "ransomware",
      "Loves chasing code, fetching cookies, and dropping malicious payloads.",
      "Software payloads / tracking cookies",
      {MoveKind::Attack, MoveKind::Defend, MoveKind::Defend, MoveKind::Defend}},
+    {"barkmail", "Barkmail", Stage::Script, "SPR_PET_GENERIC_SCRIPT", nullptr,
+     /*good=*/"wire_heir", /*bad=*/"extorgi", 100, 100, "ransomware",
+     "The pup grown into its armour, plated in overlapping links it calls correspondence. Every one of them is a letter, and every letter says the same thing louder.",
+     "Blackmail / the ransom note that follows encryption",
+     {MoveKind::Attack, MoveKind::Defend, MoveKind::Defend, MoveKind::Attack}},
+    // Barkmail's two Daemons: the noble line and the one that took it.
+    {"wire_heir", "Wire Heir", Stage::Daemon, "SPR_PET_GENERIC_DAEMON",
+     nullptr, nullptr, nullptr, kBranchGoodPowerPct, kBranchGoodFragPct, "ransomware",
+     "Roaming the Napstorrent Moors and decrypting hard drives in need, it bears a suspicious resemblence the exiled heir to the throne of the Lockshund kingdom...",
+     "Wire transfers - a ransom paid down, a debt taken up",
+     {MoveKind::Attack, MoveKind::Defend, MoveKind::Defend, MoveKind::Defend}},
+    {"extorgi", "Extorgi", Stage::Daemon, "SPR_PET_GENERIC_DAEMON",
+     nullptr, nullptr, nullptr, kBranchBadPowerPct, kBranchBadFragPct, "ransomware",
+     "Aspiring undemocratically self-elected regent of Castle Rapidscare. Other candidates have been warned to back down once if they want to keep their files, It expects to keep the racket going many terms running.",
+     "Extortion / double-extortion ransomware",
+     {MoveKind::Attack, MoveKind::Defend, MoveKind::Defend, MoveKind::Attack}},
     {"malbear", "Malbear", Stage::Script, "SPR_PET_MALBEAR", nullptr,
      /*good=*/"bruinforce", /*bad=*/"berserkernel", 100, 100, "ransomware",
      "A moody, oversized adolescent that sits directly on your user interface and refuses to move.",
@@ -53,23 +72,15 @@ const CreatureDef kCreatures[] = {
      "The same bear, reared up and screaming, having chewed its way down past every layer that was supposed to stop it. It does not intend to come back out.",
      "Memory-corruption at ransomware scale - the glass-cannon Bad-branch build (3-4 care mistakes)",
      {MoveKind::Attack, MoveKind::Attack, MoveKind::Defend, MoveKind::Attack}},
-    // CacheMutt is a bare enemy frame (no line) — it can still field generic moves.
-    // A little Process-tier layout variety vs. Paypup: slot1 Defend instead of Attack.
-    {"cachemutt", "CacheMutt", Stage::Process, "SPR_PET_CACHEMUTT", nullptr,
-     nullptr, nullptr, 100, 100, nullptr,
-     "A scruffy digital pup that hoards old junk data behind the couch and refuses to clear it out.",
-     "System cache bloat",
-     {MoveKind::Attack, MoveKind::Defend, MoveKind::Attack, MoveKind::Attack}},
 
-    // --- Cat line (Ransomware) — a SECOND hatch outcome for the CryptoShell egg ----
-    // Conkittenate is a Process pet on the ransomware line, so it joins Paypup in the
-    // egg's random hatch pool (Game::rollHatchProcess draws by line): a CryptoShell egg
-    // now hatches Paypup OR Conkittenate. Conkittenate -> Kalico (Script) -> a Good/Bad
-    // Daemon branch just like Malbear: Pwnther (durable Good) vs Breecheetah (glass-
-    // cannon Bad), carrying the same power/Frag multipliers as the Bruinforce/Berserkernel pair.
-    // No cat art yet -> generic stage placeholders (gameplay first). slotKinds are
-    // the same placeholder lean as the Paypup line (ransomware = aggressive; the Daemon
-    // slot3 splits Defend(Good)/Attack(Bad) to mirror the durable/glass-cannon read).
+    // --- Ursine cub (Ransomware) ---------------------
+    {"pingcub", "Pingcub", Stage::Process, "SPR_PET_PINGCUB", "malbear",
+     nullptr, nullptr, 100, 100, "ransomware",
+     "A round little cub that pings every address on the network to see who answers, and remembers every single one that does.",
+     "ICMP echo / ping sweeps for host discovery",
+     {MoveKind::Attack, MoveKind::Attack, MoveKind::Defend, MoveKind::Attack}},
+
+    // --- Cat line (Ransomware)----
     {"conkittenate", "Conkittenate", Stage::Process, "SPR_PET_GENERIC_PROCESS", "kalico",
      nullptr, nullptr, 100, 100, "ransomware",
      "A sly kitten that concatenates your files into one encrypted hairball and demands tuna to undo it.",
@@ -77,17 +88,17 @@ const CreatureDef kCreatures[] = {
      {MoveKind::Attack, MoveKind::Attack, MoveKind::Defend, MoveKind::Attack}},
     {"kalico", "Kalico", Stage::Script, "SPR_PET_GENERIC_SCRIPT", nullptr,
      /*good=*/"pwnther", /*bad=*/"breecheetah", 100, 100, "ransomware",
-     "A patchy calico that quietly calibrates which of your files to lock next.",
+     "A patchy calico that longs for dank hacks. It's got all of the tools but not yet the knack.",
      "Ransomware payload staging",
      {MoveKind::Attack, MoveKind::Attack, MoveKind::Defend, MoveKind::Attack}},
     {"pwnther", "Pwnther", Stage::Daemon, "SPR_PET_GENERIC_DAEMON",
      nullptr, nullptr, nullptr, kBranchGoodPowerPct, kBranchGoodFragPct, "ransomware",
-     "A sleek panther that pwns a whole subnet in a single silent pounce - the durable Good-branch build (0-2 care mistakes).",
+     "Small signature. Big cat. Massive data loss",
      "System pwnage / privilege takeover",
      {MoveKind::Attack, MoveKind::Attack, MoveKind::Defend, MoveKind::Defend}},
     {"breecheetah", "Breecheetah", Stage::Daemon, "SPR_PET_GENERIC_DAEMON",
      nullptr, nullptr, nullptr, kBranchBadPowerPct, kBranchBadFragPct, "ransomware",
-     "The fastest cat on the wire - breaches the perimeter before the alert even fires; the glass-cannon Bad-branch build (3-4 care mistakes).",
+     "The fastest cat on the wire - breaches the perimeter then bails before alerts even fire.",
      "Data breach / exfiltration",
      {MoveKind::Attack, MoveKind::Attack, MoveKind::Defend, MoveKind::Attack}},
 

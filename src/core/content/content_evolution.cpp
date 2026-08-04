@@ -1,4 +1,4 @@
-// content_evolution.cpp — egg lines + evolution routing (EggLineDef/SignalRouteDef/DaemonPoolDef).
+// content_evolution.cpp — egg lines + evolution routing (EggLineDef/DaemonPoolDef).
 //
 // One content table (see content_tables.h). Edit rows here; the registry picks
 // them up unchanged via embedded_content.cpp.
@@ -18,24 +18,13 @@ const EggLineDef kEggLines[] = {
 };
 const int kEggLinesCount = sizeof(kEggLines) / sizeof(kEggLines[0]);
 
-// Evolution routing tables ----------------------------------
-// The branching mechanism as pure data. Placeholder rows: every dominant signal
-// maps to the current single linear successor, and each Daemon pool holds one
-// entry — so hatch still yields CryptoShell->Paypup->Malbear->Bruinforce. A
-// later names/lines pass fans the signal columns out and grows the Daemon pools
-// without touching evolve logic. Consumed by Game::evolutionTargetId.
-//
-// bySignal order matches DominantSignal: {Feeding, Play, Maintenance, Training, Balanced}.
-const SignalRouteDef kSignalRoutes[] = {
-    // CryptoShell (Boot) -> Paypup (Process).
-    {"cryptoshell", {"paypup", "paypup", "paypup", "paypup", "paypup"}},
-    // Paypup (Process) -> Malbear (Script).
-    {"paypup", {"malbear", "malbear", "malbear", "malbear", "malbear"}},
-};
-const int kSignalRoutesCount = sizeof(kSignalRoutes) / sizeof(kSignalRoutes[0]);
-
+// Script->Daemon weighted pools, per care-branch. This is the one routing decision a
+// creature row cannot express on its own: a pool can hold several Daemons and draw
+// between them by weight, where CreatureDef only has room for one Good and one Bad.
+// A Script with no pool here falls through to its own evolvesToGoodId/BadId, which is
+// what every chain but Malbear's does. Consumed by Game::evolutionTargetId.
 const DaemonPoolDef kDaemonPools[] = {
-    // Malbear (Script) -> Daemon, per care-branch. Single-entry pools today.
+    // Malbear (Script) -> Daemon. Single-entry pools today.
     {"malbear", /*badBranch=*/false, {{"bruinforce", 1}}, 1},
     {"malbear", /*badBranch=*/true, {{"berserkernel", 1}}, 1},
 };

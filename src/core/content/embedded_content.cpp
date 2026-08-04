@@ -37,10 +37,6 @@ public:
         count = kMovesCount;
         return kMoves;
     }
-    const SignalRouteDef* signalRoutes(int& count) const override {
-        count = kSignalRoutesCount;
-        return kSignalRoutes;
-    }
     const DaemonPoolDef* daemonPools(int& count) const override {
         count = kDaemonPoolsCount;
         return kDaemonPools;
