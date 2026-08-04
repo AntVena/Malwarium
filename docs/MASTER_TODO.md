@@ -95,34 +95,6 @@ Neither is urgent — flash isn't tight, and tinting no longer depends on either
 red/green semantic pair onto a blue/orange axis) needs hue decisions, plus a CFG row to select it
 and a save field to remember it. Diff **M**.
 
-### 1d. New explore area — NET-C, sailing around the Pirate Bayou
-
-Adding an area is a mechanical folder-add (`src/core/content/areas/AREA_CONTENT_STANDARD.md`). Diff
-**M** for the build. No save bump — explore vectors are length-prefixed.
-
-**This one INSERTS mid-ladder**, which the castle didn't: every save-flag array is indexed by
-ladder position, so slotting NET-C in ahead of a shipped area re-points an existing save's cleared
-flags at the wrong area. Decide first whether it appends after Castle Rapidscare (free) or inserts
-(needs a save migration that shifts the explore vectors). Diff **L** if it inserts.
-
-A NET-C ladder position ahead of the castle also wants the mod `powerTier` bands re-checked — the
-tiers currently run 1/2/3 for the three early areas with 4 shared by the castle and the DeepWeb
-Dive, and an inserted area has no band of its own.
-
-Sailing around Pirate Bayou (sub-area names cap at **18 characters** — past that the EXPL row draws
-over its own state tag; `test_expl_names_fit_their_rows` fails the build on it, so TRACKER TIMEOUT
-TRENCH needs shortening before it ships):
-* Uninstall Undertow
-* Whirlpool
-* Tracker Timeout Trench
-* Codec Reef
-* Sandbox Beach
-Shops
-- Mod shop: The Hardened Shell
-- Food shop: Floating Point
-Bosses
-- Undecided, pick 5 placeholders
-
 ### 1e. FONT_UI integration (drawn, not wired)
 
 `FONT_UI` (Pixel Operator Mono) is delivered as art/spec but code still renders every screen through
@@ -291,7 +263,7 @@ high→low value:
 - **Two finished glyphs have no screen to draw them**, and neither is wiring-blocked — both wait on
   something else. `ICON_SECTOR_0` is the area icon `AREA_CONTENT_STANDARD.md` asks every area for,
   but it's the only one drawn: wiring it lights sector 0 and leaves 1–3 bare, so it wants the
-  matching `ICON_SECTOR_1..3` first (§2c). `ICON_LINE_WORM` needs the Worm line to have content at
+  matching glyphs for the other four rungs first (§2c). `ICON_LINE_WORM` needs the Worm line to have content at
   all. Both are held in `check_orphan_assets.py`'s KEEP list meanwhile. Diff **S** once
   their blocker clears.
 - **Six wild malbeasts** (`SPR_MALBEAST_*`) and **`SPR_DUMMY`**.
@@ -308,9 +280,16 @@ high→low value:
 
 These come with the features above rather than ahead of them.
 
-- **Napstorrent Moors area art** (shipped mechanically, art pending): `ICON_SECTOR_2`, `BG_SECTOR_2`
+- **Net-Sea Crossing area art** (shipped mechanically, art pending): the sector glyph + backdrop
+  (open water, shipping lanes, landfall at Sandbox Beach), the `FLOATING POINT` / `THE HARDENED
+  SHELL` storefront motifs, and glyphs for its five new mods (`ICON_MOD_HARDENED_SHELL`,
+  `_BUNDLE_STRIPPER`, `_BALLAST_CACHE`, `_SONAR_PING`, `_SALVAGE_RIG` — generic until drawn). Like
+  the keep, it fights with the shared tier roster and has no malbeasts of its own.
+  **Name the sector files off the area id, not its index** — see the §J note in
+  `assets/ASSET_MANIFEST.md`; this insert is what proved the index keying is a trap.
+- **Napstorrent Moors area art** (shipped mechanically, art pending): the sector glyph + backdrop
   (marshy → castle progression), the `MOOR-TO-MOOR` storefront motif.
-- **Castle Rapidscare art** (shipped mechanically, art pending): `ICON_SECTOR_3`, `BG_SECTOR_3`,
+- **Castle Rapidscare art** (shipped mechanically, art pending): the sector glyph + backdrop,
   castle-themed malbeasts + a `COUNT COPYLEFT` apex, and the `SPAM & SCRAM` / `THE GHOST IN THE
   MACHINE` storefront motifs. The keep also fights with the tier-3 wild roster today — it has no
   malbeasts of its own, since a new `SPR_MALBEAST_*` grows `kWildMalbeastCount` and with it the
@@ -345,5 +324,6 @@ single-responsibility — revisit only if they keep growing. Same rule as the `g
 
 ## 4. If picking up cold
 
-1. **The NET-C area (§1d)** — well-trodden pattern, but settle the insert-vs-append question first.
-2. **FONT_UI integration (§1e)** — the highest per-screen leverage left, and the art is already drawn.
+1. **FONT_UI integration (§1e)** — the highest per-screen leverage left, and the art is already drawn.
+2. **Net-Sea Crossing art (§2c)** — the area ships mechanically; it is the only rung with no
+   sector glyph, backdrop or malbeasts of its own.

@@ -473,7 +473,7 @@ void Game::grantRolledMod(const char* id) {
     int tier = m->powerTier;
     if (tier < 1) tier = 1;
     if (tier > kModPowerTiers) tier = kModPowerTiers;
-    const int floor = kModEquipLevelFloorByTier[tier - 1];
+    const int floor = modEquipLevelFloor(tier);
     rng_ = rng_ * 1664525u + 1013904223u;
     const int span = kModEquipLevelVariance * 2 + 1;                 // [-var, +var]
     const int delta = static_cast<int>((rng_ >> 16) % static_cast<unsigned>(span))

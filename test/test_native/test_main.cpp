@@ -6,6 +6,8 @@
 #include <cmath>
 #include <cstdio>
 #include <cstring>
+#include <set>
+#include <string>
 #include <vector>
 
 #include "core/app/game.h"
@@ -3182,47 +3184,65 @@ static void test_mod_faraday_cage() {
     CHECK(f.mods.mag(ModEffect::FaradayCut) == 100);
 }
 
-// content calibration: each mod carries the right rarity + power tier, and the
-// signature Cipher ASIC is the ransomware-affinity mod.
+// content calibration: each mod carries the right rarity, its power tier agrees with
+// where it actually DROPS, and the signature Cipher ASIC is the ransomware-affinity mod.
 static void test_mod_content_rarity_tier() {
     ContentRegistry r = ContentRegistry::embedded();
-    struct Exp { const char* id; ItemDef::Rarity rar; int tier; };
+    struct Exp { const char* id; ItemDef::Rarity rar; };
     const Exp exp[] = {
-        {"clock_speed_boost", ItemDef::Rarity::Common, 1},
-        {"packet_sniffer", ItemDef::Rarity::Common, 1},
-        {"crypto_coprocessor", ItemDef::Rarity::Uncommon, 1},
-        {"tpm_chip", ItemDef::Rarity::Uncommon, 2},
-        {"solid_state_cache", ItemDef::Rarity::Uncommon, 2},
-        {"firewall_patch", ItemDef::Rarity::Rare, 2},
-        {"watchdog_timer", ItemDef::Rarity::Epic, 2},  // threat-adjacent: tier 2 (Pirate Bayou)
-        {"overclock_chip", ItemDef::Rarity::Uncommon, 3},
-        {"heat_sink", ItemDef::Rarity::Rare, 3},
-        {"honeytoken", ItemDef::Rarity::Rare, 3},
-        {"cipher_asic", ItemDef::Rarity::Rare, 3},
-        {"faraday_cage", ItemDef::Rarity::Epic, 3},    // threat-adjacent: tier 3 (Napstorrent)
-        {"deadman_switch", ItemDef::Rarity::Epic, 4},
-        {"raid_mirror", ItemDef::Rarity::Epic, 4},
-        {"ecc_memory", ItemDef::Rarity::Epic, 4},
-        {"load_balancer", ItemDef::Rarity::Epic, 4},
+        {"clock_speed_boost", ItemDef::Rarity::Common},
+        {"packet_sniffer", ItemDef::Rarity::Common},
+        {"crypto_coprocessor", ItemDef::Rarity::Uncommon},
+        {"tpm_chip", ItemDef::Rarity::Uncommon},
+        {"solid_state_cache", ItemDef::Rarity::Uncommon},
+        {"firewall_patch", ItemDef::Rarity::Rare},
+        {"watchdog_timer", ItemDef::Rarity::Epic},  // threat-adjacent (Pirate Bayou)
+        {"overclock_chip", ItemDef::Rarity::Uncommon},
+        {"heat_sink", ItemDef::Rarity::Rare},
+        {"honeytoken", ItemDef::Rarity::Rare},
+        {"cipher_asic", ItemDef::Rarity::Rare},
+        {"faraday_cage", ItemDef::Rarity::Epic},    // threat-adjacent (Napstorrent)
+        {"deadman_switch", ItemDef::Rarity::Epic},
+        {"raid_mirror", ItemDef::Rarity::Epic},
+        {"ecc_memory", ItemDef::Rarity::Epic},
+        {"load_balancer", ItemDef::Rarity::Epic},
         // --- Niche-flavour mods ---
-        {"canary_trap", ItemDef::Rarity::Rare, 1},
-        {"scratch_disk_buffer", ItemDef::Rarity::Common, 1},
-        {"botnet_swarm", ItemDef::Rarity::Uncommon, 2},
-        {"airgap_ward", ItemDef::Rarity::Uncommon, 2},
-        {"tripwire", ItemDef::Rarity::Rare, 2},
-        {"cold_storage", ItemDef::Rarity::Uncommon, 2},
-        {"prowlware", ItemDef::Rarity::Rare, 3},
-        {"meltdown_core", ItemDef::Rarity::Rare, 3},
-        {"zero_day_exploit", ItemDef::Rarity::Rare, 3},
-        {"phishing_rod", ItemDef::Rarity::Epic, 4},
-        {"extortion_ledger", ItemDef::Rarity::Epic, 4},
-        {"backup_uplink", ItemDef::Rarity::Rare, 4},
+        {"canary_trap", ItemDef::Rarity::Rare},
+        {"scratch_disk_buffer", ItemDef::Rarity::Common},
+        {"botnet_swarm", ItemDef::Rarity::Uncommon},
+        {"airgap_ward", ItemDef::Rarity::Uncommon},
+        {"tripwire", ItemDef::Rarity::Rare},
+        {"cold_storage", ItemDef::Rarity::Uncommon},
+        {"prowlware", ItemDef::Rarity::Rare},
+        {"meltdown_core", ItemDef::Rarity::Rare},
+        {"zero_day_exploit", ItemDef::Rarity::Rare},
+        {"phishing_rod", ItemDef::Rarity::Epic},
+        {"extortion_ledger", ItemDef::Rarity::Epic},
+        {"backup_uplink", ItemDef::Rarity::Rare},
     };
     for (const Exp& e : exp) {
         const ModDef* m = r.mod(e.id);
         CHECK(m);
         CHECK(m->rarity == e.rar);
-        CHECK(m->powerTier == e.tier);
+    }
+    // powerTier is NOT restated above, because it is not independent data: a rank IS a
+    // ladder depth, so a mod's rank must equal the tier of the SHALLOWEST area whose pool
+    // drops it. (Shallowest, not only: a deeper area may re-stock an earlier counter — the
+    // keep does it for Watchdog and Faraday, the Net-Sea for Watchdog — and that restock
+    // must not restate the mod as harder than where it first appears.) Checked by walking
+    // the pools, so inserting or reordering an area is caught here as a contradiction
+    // rather than passing on a table nobody re-derived.
+    for (const ModDef* mp : r.allMods()) {
+        const ModDef& m = *mp;
+        int home = -1;
+        for (int a = 0; a < kExplSectors && home < 0; ++a)
+            for (int k = 0; k < area(a).modPoolCount; ++k)
+                if (std::strcmp(area(a).modPoolIds[k], m.id) == 0) { home = areaTier(a); break; }
+        if (home < 0)                                  // DeepWeb-only: one past the ladder,
+            for (int k = 0; k < kAreaModsDeepWebCount; ++k)   // sharing the last rung's depth
+                if (std::strcmp(kAreaModsDeepWeb[k], m.id) == 0) { home = areaTier(kAreaCount - 1); break; }
+        CHECK(home > 0);                               // every mod drops SOMEWHERE
+        CHECK(m.powerTier == home);
     }
     const ModDef* ca = r.mod("cipher_asic");
     CHECK(ca && ca->line && std::strcmp(ca->line, "ransomware") == 0);
@@ -3248,55 +3268,47 @@ static void test_mod_content_rarity_tier() {
 static void test_mod_earn_tables_and_reqlevel() {
     ContentRegistry r = ContentRegistry::embedded();
     Game g{StartMode::Hatched};
-    bool sawEcc = false, sawLb = false;                    // both live in the DeepWeb pool
-    bool sawWatchdog = false, sawFaraday = false;          // threat-adjacent: tier 2 / tier 3
-    // Niche-flavour pass: one reachability sample per area, confirming the new ids
-    // actually landed in the drop tables (not just correctly tier-tagged if reached).
-    bool sawCanaryTrap = false, sawTripwire = false, sawProwlware = false, sawPhishingRod = false;
-    bool sawGhost = false;                                 // the keep's own signature Epic
+    // An area's table never rolls a mod from DEEPER than that area: a rung may re-stock
+    // an earlier counter (the keep does, for both), but nothing hands out a mod from
+    // further down the ladder than the player has reached. Walked off the ladder, so an
+    // insert re-derives the bound instead of failing on a stale index.
+    auto sampled = std::set<std::string>{};
     for (int i = 0; i < 120; ++i) {
-        const char* a0 = g.debugRollAreaModId(0);
-        CHECK(a0 && r.mod(a0)->powerTier == 1);           // Citrus → tier 1 only
-        const char* a1 = g.debugRollAreaModId(1);
-        CHECK(a1 && r.mod(a1)->powerTier == 2);           // Pirate Bayou → tier 2 only
-        const char* a2 = g.debugRollAreaModId(2);
-        CHECK(a2 && r.mod(a2)->powerTier == 3);           // Napstorrent → tier 3 only
-        // The keep is the one pool that mixes tiers on purpose: its own tier-4 Epics,
-        // plus the tier-2/3 counters its composite apex rider (nag_screen) demands.
-        const char* a3 = g.debugRollAreaModId(3);
-        CHECK(a3 && r.mod(a3)->powerTier >= 2);           // Castle → never a starter mod
-        if (std::strcmp(a3, "ghost_process") == 0) sawGhost = true;
+        for (int a = 0; a < kExplSectors; ++a) {
+            const char* id = g.debugRollAreaModId(a);
+            CHECK(id);
+            CHECK(r.mod(id)->powerTier <= areaTier(a));
+            sampled.insert(id);
+        }
         const char* dw = g.debugRollAreaModId(kDeepWebSector);
-        CHECK(dw && r.mod(dw)->powerTier == 4);           // DeepWeb → tier 4 only
-        if (std::strcmp(dw, "ecc_memory") == 0) sawEcc = true;
-        if (std::strcmp(dw, "load_balancer") == 0) sawLb = true;
-        if (std::strcmp(a1, "watchdog_timer") == 0) sawWatchdog = true;
-        if (std::strcmp(a2, "faraday_cage") == 0) sawFaraday = true;
-        if (std::strcmp(a0, "canary_trap") == 0) sawCanaryTrap = true;
-        if (std::strcmp(a1, "tripwire") == 0) sawTripwire = true;
-        if (std::strcmp(a2, "prowlware") == 0) sawProwlware = true;
-        if (std::strcmp(dw, "phishing_rod") == 0) sawPhishingRod = true;
+        CHECK(dw);
+        CHECK(r.mod(dw)->powerTier == areaTier(kAreaCount - 1));  // DeepWeb: deepest only
+        sampled.insert(dw);
     }
-    CHECK(sawEcc);                                          // ECC is reachable from DeepWeb
-    CHECK(sawLb);                                           // ...and so is Load Balancer
-    CHECK(sawWatchdog);                                     // Watchdog reachable from Pirate Bayou
-    CHECK(sawFaraday);                                      // Faraday reachable from Napstorrent
-    CHECK(sawCanaryTrap);
-    CHECK(sawTripwire);
-    CHECK(sawProwlware);
-    CHECK(sawPhishingRod);
-    CHECK(sawGhost);                                       // Ghost Process drops in the keep
-    // The rolled equip gate lands inside the tier band: tier 3 (floor 20, ±5) → [15,25];
-    // tier 1 (floor 0, ±5, clamped) → [0,5].
+    // Every pooled mod is actually REACHABLE — the tier check above would pass just as
+    // happily on a pool whose ids never came up, so assert the sample covers the union of
+    // every table. That subsumes the per-id spot-checks this used to spell out (ECC, Load
+    // Balancer, Watchdog, Faraday, Ghost Process, the niche-flavour ids), and it keeps
+    // covering a new area's pool the day it lands without a line added here.
+    for (int a = 0; a < kExplSectors; ++a)
+        for (int k = 0; k < area(a).modPoolCount; ++k)
+            CHECK(sampled.count(area(a).modPoolIds[k]) == 1);
+    for (int k = 0; k < kAreaModsDeepWebCount; ++k)
+        CHECK(sampled.count(kAreaModsDeepWeb[k]) == 1);
+    // The rolled equip gate lands inside its tier's band: floor = (tier-1)*window, ±variance,
+    // clamped at 0. Sampled off two real mods at opposite ends rather than named tiers.
+    const int deepTier = r.mod("ghost_process")->powerTier;
+    const int deepFloor = modEquipLevelFloor(deepTier);
     for (int i = 0; i < 60; ++i) {
-        Game g3{StartMode::Hatched};
-        g3.debugGrantRolledMod("overclock_chip");         // tier 3
-        const int r3 = g3.loadout().reqLevelFor("overclock_chip");
-        CHECK(r3 >= 15 && r3 <= 25);
+        Game gd{StartMode::Hatched};
+        gd.debugGrantRolledMod("ghost_process");
+        const int rd = gd.loadout().reqLevelFor("ghost_process");
+        CHECK(rd >= deepFloor - kModEquipLevelVariance);
+        CHECK(rd <= deepFloor + kModEquipLevelVariance);
         Game g1{StartMode::Hatched};
-        g1.debugGrantRolledMod("crypto_coprocessor");     // tier 1
+        g1.debugGrantRolledMod("crypto_coprocessor");     // the shallowest rung: floor 0
         const int r1 = g1.loadout().reqLevelFor("crypto_coprocessor");
-        CHECK(r1 >= 0 && r1 <= 5);
+        CHECK(r1 >= 0 && r1 <= kModEquipLevelVariance);
     }
 }
 
@@ -3785,9 +3797,19 @@ static void test_min_damage_penetration() {
 // mirroring test_mod_equip_level_gate's pattern — Paypup's starting owned spares are
 // exactly {packet_sniffer, raid_mirror} (Loadout::starting()), so granting ONE more
 // mod always lands it at picker row 2 (registry order, filtered to owned).
+// The top of a mod's rolled equip-level band — level a test pet to this and no rolled
+// gate for that mod can still block it. Derived from the mod's own rank rather than
+// written as a literal, so shifting the ladder moves these tests' targets with it
+// instead of stranding them under a level that used to be enough.
+static int modGateCeiling(const char* id) {
+    ContentRegistry r = ContentRegistry::embedded();
+    return modEquipLevelFloor(r.mod(id)->powerTier) + kModEquipLevelVariance;
+}
+
 static void test_mod_hard_line_gate() {
     Game g{StartMode::Hatched};                             // Paypup, ransomware line
-    while (g.combatLevel() < 40) g.debugAddCombatXp(g.xpToNextLevel());  // clear every level gate
+    const int deepGate = modGateCeiling("extortion_ledger");  // both spares share a rank
+    while (g.combatLevel() < deepGate) g.debugAddCombatXp(g.xpToNextLevel());
     g.debugGrantRolledMod("phishing_rod");                  // requiresLine = phishing (mismatch)
     enterSubmenuId(g, SubmenuId::Mods);
     g.onButton(press(Button::A)); g.onButton(press(Button::A));  // listRow 0->2 (empty slot)
@@ -3799,7 +3821,7 @@ static void test_mod_hard_line_gate() {
     CHECK(g.loadout().owns("phishing_rod"));                // spare not consumed
 
     Game g2{StartMode::Hatched};
-    while (g2.combatLevel() < 40) g2.debugAddCombatXp(g2.xpToNextLevel());
+    while (g2.combatLevel() < deepGate) g2.debugAddCombatXp(g2.xpToNextLevel());
     g2.debugGrantRolledMod("extortion_ledger");             // requiresLine = ransomware (match)
     enterSubmenuId(g2, SubmenuId::Mods);
     g2.onButton(press(Button::A)); g2.onButton(press(Button::A));
@@ -3815,8 +3837,9 @@ static void test_mod_hard_line_gate() {
 // equipped; leveling past it unlocks the equip. Driven through the real MODS UI.
 static void test_mod_equip_level_gate() {
     Game g{StartMode::Hatched};                            // pet at level 0
-    g.debugGrantRolledMod("overclock_chip");               // tier 3 → req in [15,25] > 0
-    CHECK(g.loadout().reqLevelFor("overclock_chip") >= 15);
+    g.debugGrantRolledMod("overclock_chip");               // a mid-ladder rank: req > 0
+    const int ocGate = modGateCeiling("overclock_chip");
+    CHECK(g.loadout().reqLevelFor("overclock_chip") >= ocGate - 2 * kModEquipLevelVariance);
     // Navigate: MODS → slot 3 (empty) picker → select the overclock spare → EQUIP.
     enterSubmenuId(g, SubmenuId::Mods);
     g.onButton(press(Button::A)); g.onButton(press(Button::A));  // listRow 0→2 (empty slot)
@@ -3828,7 +3851,7 @@ static void test_mod_equip_level_gate() {
     CHECK(g.loadout().equipped(2) == nullptr);             // not installed
     CHECK(g.loadout().owns("overclock_chip"));             // spare not consumed
     // Level the pet above the gate, then the same equip succeeds.
-    while (g.combatLevel() < 30) g.debugAddCombatXp(g.xpToNextLevel());
+    while (g.combatLevel() < ocGate) g.debugAddCombatXp(g.xpToNextLevel());
     enterSubmenuId(g, SubmenuId::Mods);
     g.onButton(press(Button::A)); g.onButton(press(Button::A));
     g.onButton(press(Button::B));
@@ -8399,31 +8422,53 @@ static void test_expl_sector_linear_gating() {
     bool one[kExplSectors] = {true, false, false};
     CHECK(explSectorOpen(0, one));
     CHECK(explSectorOpen(1, one));                // sector 0 cleared -> 1 open
-    CHECK(!explSectorOpen(2, one));               // sector 1 NOT cleared -> 2 (Napstorrent) locked
+    CHECK(!explSectorOpen(2, one));               // sector 1 NOT cleared -> 2 locked
     CHECK(!explSectorOpen(-1, one));
     bool two[kExplSectors] = {true, true, false};
-    CHECK(explSectorOpen(2, two));               // sectors 0+1 cleared -> Napstorrent opens
+    CHECK(explSectorOpen(2, two));               // sectors 0+1 cleared -> 2 opens
     CHECK(!explSectorOpen(kExplSectors, two));   // no area past the last -> closed
     // Sub-area names are table-indexed and non-empty for every sector.
     for (int s = 0; s < kExplSectors; ++s)
         for (int i = 0; i < kExplSubAreas; ++i)
             CHECK(explSubAreaName(s, i)[0] != '\0');
     CHECK(explSubAreaName(0, kExplSubAreas)[0] == '\0');   // out of range -> ""
-    // Area 3 — Napstorrent Moors content (Napster/P2P, marshy journey → the castle).
-    CHECK(std::strcmp(explSectorName(2), "NAPSTORRENT MOORS") == 0);
-    CHECK(explSectorTier(2) == 3);
-    CHECK(std::strcmp(sectorTitle(2), "MOOR MARAUDER") == 0);
-    CHECK(std::strcmp(explSubAreaName(2, 0), "SEEDER SHALLOWS") == 0);
-    CHECK(std::strcmp(explSubAreaName(2, kExplSubAreas - 1), "CASTLE CAUSEWAY") == 0);
-    CHECK(std::strcmp(shopName(2), "MOOR-TO-MOOR") == 0);
-    // Area 4 — Castle Rapidscare, where the Moors' Castle Causeway arrives.
-    CHECK(std::strcmp(explSectorName(3), "CASTLE RAPIDSCARE") == 0);
-    CHECK(explSectorTier(3) == 4);
-    CHECK(std::strcmp(sectorTitle(3), "KING OF THE KEEP") == 0);
-    CHECK(std::strcmp(explSubAreaName(3, 0), "404 DRAWBRIDGE") == 0);
-    CHECK(std::strcmp(explSubAreaName(3, kExplSubAreas - 1), "COMMENT CATACOMBS") == 0);
-    CHECK(std::strcmp(shopName(3), "SPAM & SCRAM") == 0);
-    CHECK(std::strcmp(modShopName(3), "THE GHOST IN THE MACHINE") == 0);
+    // Content spot-checks, addressed by area ID rather than ladder index: what an area
+    // IS must survive being moved, so a reorder should never land here. The one genuinely
+    // positional fact — its tier — is asserted against the position, not a literal.
+    auto rung = [](const char* id) {
+        for (int i = 0; i < kExplSectors; ++i)
+            if (std::strcmp(area(i).id, id) == 0) return i;
+        return -1;
+    };
+    const int sea = rung("net_sea_crossing");     // sailed, between the bayou and the moors
+    CHECK(sea >= 0);
+    CHECK(std::strcmp(explSectorName(sea), "NET-SEA CROSSING") == 0);
+    CHECK(explSectorTier(sea) == sea + 1);
+    CHECK(std::strcmp(sectorTitle(sea), "BUNDLE BREAKER") == 0);
+    CHECK(std::strcmp(explSubAreaName(sea, 0), "UNINSTALL UNDERTOW") == 0);
+    CHECK(std::strcmp(explSubAreaName(sea, kExplSubAreas - 1), "SANDBOX BEACH") == 0);
+    CHECK(std::strcmp(shopName(sea), "FLOATING POINT") == 0);
+    CHECK(std::strcmp(modShopName(sea), "THE HARDENED SHELL") == 0);
+    const int moors = rung("napstorrent_moors");  // Napster/P2P, marshy journey → the castle
+    CHECK(moors >= 0);
+    CHECK(std::strcmp(explSectorName(moors), "NAPSTORRENT MOORS") == 0);
+    CHECK(explSectorTier(moors) == moors + 1);
+    CHECK(std::strcmp(sectorTitle(moors), "MOOR MARAUDER") == 0);
+    CHECK(std::strcmp(explSubAreaName(moors, 0), "SEEDER SHALLOWS") == 0);
+    CHECK(std::strcmp(explSubAreaName(moors, kExplSubAreas - 1), "CASTLE CAUSEWAY") == 0);
+    CHECK(std::strcmp(shopName(moors), "MOOR-TO-MOOR") == 0);
+    const int keep = rung("castle_rapidscare");   // where the Moors' Castle Causeway arrives
+    CHECK(keep >= 0);
+    CHECK(std::strcmp(explSectorName(keep), "CASTLE RAPIDSCARE") == 0);
+    CHECK(explSectorTier(keep) == keep + 1);
+    CHECK(std::strcmp(sectorTitle(keep), "KING OF THE KEEP") == 0);
+    CHECK(std::strcmp(explSubAreaName(keep, 0), "404 DRAWBRIDGE") == 0);
+    CHECK(std::strcmp(explSubAreaName(keep, kExplSubAreas - 1), "COMMENT CATACOMBS") == 0);
+    CHECK(std::strcmp(shopName(keep), "SPAM & SCRAM") == 0);
+    CHECK(std::strcmp(modShopName(keep), "THE GHOST IN THE MACHINE") == 0);
+    // The causeway walks up to the keep, so the fiction needs those two ADJACENT — the
+    // one ordering constraint on the ladder, and the thing a future insert must not break.
+    CHECK(keep == moors + 1);
 }
 
 // Every EXPL sub-area row has to fit BESIDE its right-aligned state tag, and every
@@ -8664,9 +8709,11 @@ static void test_area_boss_gauntlet_composition() {
     }
 }
 
-// Deferred-mod pass — the two THREATS debut on the area-adjacent SIGNATURE boss (sub 4):
-// Pirate Bayou (area 1) → the STUN (system_hang), Napstorrent (area 2) → the DoT (data_rot).
-// No other area/sub carries them (they're telegraphed, matched to the counter-mod earned there).
+// A THREAT rider is declared on the area's OWN row (AreaDef::apexThreatMoveId) and
+// reaches a player on exactly one enemy: that area's SIGNATURE sub-boss (sub 4), where it
+// is telegraphed and matched by the counter-mod that area's loot table pays out. Walked
+// off the ladder rather than named per index, so splicing an area in carries every rider
+// with it instead of failing here.
 static void test_boss_threat_moves_area_adjacent() {
     auto hasMove = [](const BossGauntlet& g, const char* id) {
         for (const char* m : g.rounds[0].moveIds)
@@ -8674,20 +8721,25 @@ static void test_boss_threat_moves_area_adjacent() {
         return false;
     };
     const int sig = kExplSubAreas - 1;
-    CHECK(hasMove(subAreaBoss(1, sig), "system_hang"));    // Bayou signature stuns
-    CHECK(hasMove(subAreaBoss(2, sig), "data_rot"));       // Napstorrent signature rots
-    // Not on the non-signature subs of those areas, nor on any other area's signature.
-    CHECK(!hasMove(subAreaBoss(1, 0), "system_hang"));
-    CHECK(!hasMove(subAreaBoss(2, 0), "data_rot"));
-    CHECK(!hasMove(subAreaBoss(0, sig), "system_hang"));
-    CHECK(!hasMove(subAreaBoss(0, sig), "data_rot"));
-    CHECK(!hasMove(subAreaBoss(2, sig), "system_hang"));   // areas don't cross threats
-    CHECK(!hasMove(subAreaBoss(1, sig), "data_rot"));
-    // The keep's apex carries the composite rider — one move that freezes AND rots, so
-    // it wants both earlier counters at once. Still its own id, still signature-only.
-    CHECK(hasMove(subAreaBoss(3, sig), "nag_screen"));
-    CHECK(!hasMove(subAreaBoss(3, 0), "nag_screen"));
-    CHECK(!hasMove(subAreaBoss(1, sig), "nag_screen"));
+    int riders = 0, unarmed = 0;
+    for (int a = 0; a < kExplSectors; ++a) {
+        const char* rider = area(a).apexThreatMoveId;
+        if (!rider) { ++unarmed; continue; }         // an area may debut no threat
+        ++riders;
+        CHECK(hasMove(subAreaBoss(a, sig), rider));  // on its own signature...
+        CHECK(!hasMove(subAreaBoss(a, 0), rider));   // ...and no earlier sub of it
+        for (int b = 0; b < kExplSectors; ++b) {     // nor any other area's signature:
+            if (b == a) continue;                    // areas never cross threats
+            CHECK(!hasMove(subAreaBoss(b, sig), rider));
+            CHECK(area(b).apexThreatMoveId == nullptr ||
+                  std::strcmp(area(b).apexThreatMoveId, rider) != 0);  // one rider, one area
+        }
+    }
+    // Both shapes are actually represented, or the loop above proves nothing: at least one
+    // rung declares no rider (the entry area, where a telegraph would have no counter to
+    // buy yet) and most declare one.
+    CHECK(unarmed >= 1);
+    CHECK(riders >= 3);
 }
 
 // Two-level nested-list nav: the TOP level lands on the DeepWeb
@@ -12643,6 +12695,92 @@ static void test_save_v41_renames_retired_creature_ids() {
     CHECK(std::strcmp(back.activeId, "bruinforce") == 0);
 }
 
+// v43: NET-SEA CROSSING spliced into the MIDDLE of the ladder. Every persisted EXPL field
+// is positional, so a v42 blob's flags from rung 2 on describe the area now one rung to
+// their left. The failure this guards is silent and generous in the worst direction — the
+// player is handed the new area pre-cleared and loses the deepest one they actually beat —
+// so it is asserted field by field on a save whose rungs are deliberately all different.
+static void test_save_v43_ladder_insert_shifts_expl_progress() {
+    SaveData a;
+    // A v42 ladder: 4 rungs, cleared through rung 2 (the old Napstorrent) and mid-run on 3.
+    a.sectorCleared    = {1, 1, 1, 0};
+    a.bossUnlocked     = {1, 1, 1, 0};
+    a.subCleared       = {0x1F, 0x1F, 0x1F, 0x03};   // bitmask per area, bit s = sub s
+    a.subBossUnlocked  = {0x1F, 0x1F, 0x1F, 0x07};
+    a.subRefarm.assign(4 * kSubAreasPerArea, 0);
+    for (int i = 0; i < 4 * kSubAreasPerArea; ++i)
+        a.subRefarm[i] = static_cast<uint16_t>(100 + i);   // every cell distinguishable
+    a.titlesUnlocked = 0b0111;                        // rungs 0,1,2 earned
+    a.equippedTitle  = 2;                             // showing the old rung 2's Title
+
+    std::vector<uint8_t> blob = serializeSave(a);
+    blob[4] = 42; blob[5] = 0;                        // stamp back to v42
+    SaveData out;
+    CHECK(deserializeSave(blob, out));
+
+    // Rungs 0 and 1 are BELOW the splice and must not move at all.
+    CHECK(out.sectorCleared.size() == 5);
+    CHECK(out.sectorCleared[0] == 1 && out.sectorCleared[1] == 1);
+    CHECK(out.bossUnlocked[0] == 1 && out.bossUnlocked[1] == 1);
+    CHECK(out.subCleared[0] == 0x1F && out.subCleared[1] == 0x1F);
+    CHECK(out.subBossUnlocked[0] == 0x1F && out.subBossUnlocked[1] == 0x1F);
+    // Rung 2 is the new area: blank, so it has to be played rather than arriving beaten.
+    CHECK(out.sectorCleared[2] == 0);
+    CHECK(out.bossUnlocked[2] == 0);
+    CHECK(out.subCleared[2] == 0);
+    CHECK(out.subBossUnlocked[2] == 0);
+    // ...and everything the player DID beat is still beaten, one rung deeper.
+    CHECK(out.sectorCleared[3] == 1 && out.sectorCleared[4] == 0);
+    CHECK(out.subCleared[3] == 0x1F && out.subCleared[4] == 0x03);
+    CHECK(out.subBossUnlocked[3] == 0x1F && out.subBossUnlocked[4] == 0x07);
+
+    // subRefarm moves a whole ROW, not a cell: the new rung's five counts read 0 and every
+    // old count keeps the sub-area it was earned in.
+    CHECK(out.subRefarm.size() == 5 * kSubAreasPerArea);
+    for (int i = 0; i < 2 * kSubAreasPerArea; ++i)
+        CHECK(out.subRefarm[i] == 100 + i);                       // below the splice
+    for (int s = 0; s < kSubAreasPerArea; ++s)
+        CHECK(out.subRefarm[2 * kSubAreasPerArea + s] == 0);      // the opened row
+    for (int i = 2 * kSubAreasPerArea; i < 4 * kSubAreasPerArea; ++i)
+        CHECK(out.subRefarm[i + kSubAreasPerArea] == 100 + i);    // shifted, order intact
+
+    // The Titles are a bitmask over the same rungs, and the equipped one is an index into
+    // it — both move, or the player's shown Title silently becomes a different area's.
+    CHECK(out.titlesUnlocked == 0b1011);              // rungs 0,1 stay; old 2 -> 3
+    CHECK(out.equippedTitle == 3);
+
+    // A CURRENT blob is left alone — the pass is version-gated, so it cannot keep
+    // shifting the same save every time it loads.
+    std::vector<uint8_t> now = serializeSave(a);
+    SaveData back;
+    CHECK(deserializeSave(now, back));
+    CHECK(back.sectorCleared.size() == 4);
+    CHECK(back.sectorCleared[2] == 1);
+    CHECK(back.titlesUnlocked == 0b0111);
+    CHECK(back.equippedTitle == 2);
+}
+
+// The splice table's own invariants, so save.h's rules are enforced rather than merely
+// written down. A stale row here re-shifts a save that was already correct, which no
+// other test would notice.
+static void test_ladder_inserts_table_invariants() {
+    int n = 0;
+    const LadderInsert* rows = ladderInserts(n);
+    for (int i = 0; i < n; ++i) {
+        // Retirement: a row whose blobs the codec no longer opens is dead weight, so
+        // raising kOldestAcceptedVersion is what tells you to delete it.
+        CHECK(rows[i].sinceVersion > kOldestAcceptedVersion);
+        CHECK(rows[i].sinceVersion <= kSaveVersion);
+        // A splice lands ON the ladder. Past its end it would be an append, which needs
+        // no row at all — so such a row is a mistake, not a no-op.
+        CHECK(rows[i].atIndex >= 0);
+        CHECK(rows[i].atIndex < kExplSectors);
+        // Oldest-first, which is what lets each atIndex read against the ladder its
+        // predecessors built instead of being restated whenever a later splice lands.
+        if (i > 0) CHECK(rows[i - 1].sinceVersion <= rows[i].sinceVersion);
+    }
+}
+
 // Spoilage: a perishable held through a feeding turns into its `spoilsInto` row, and the
 // conversion is one-for-one — a stack that rots must not lose or gain count, which is the
 // failure a percentage roll would otherwise hide behind "unlucky".
@@ -14211,6 +14349,8 @@ static void test_firmware_version_ordering() {
     RUN(test_save_v39_raised_tally_roundtrip_and_migration) \
     RUN(test_save_v41_renames_retired_creature_ids) \
     RUN(test_renamed_ids_table_invariants)  \
+    RUN(test_save_v43_ladder_insert_shifts_expl_progress) \
+    RUN(test_ladder_inserts_table_invariants) \
     RUN(test_perishable_food_spoils_on_a_feeding) \
     RUN(test_icon_tint_and_theme_indirection) \
     RUN(test_full_pedia_achievement_reads_the_raised_tally) \

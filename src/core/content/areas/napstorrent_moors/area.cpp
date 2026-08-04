@@ -1,6 +1,8 @@
-// Napstorrent Moors — area 2, tier 3: Napster/P2P, a marshy journey toward the
-// castle it foreshadows (AREA_NAMING.md). Opens once The Pirate Bayou's
-// gauntlet is cleared.
+// Napstorrent Moors — Napster/P2P, a marshy journey toward the castle it
+// foreshadows (AREA_NAMING.md). Reached by landing off the Net-Sea and walking
+// inland; its CASTLE CAUSEWAY is what walks up to Castle Rapidscare, so the moors
+// must stay directly before the keep in kAreaList — that adjacency is the one thing
+// about this area's position the fiction actually depends on.
 #include "core/content/areas/area_defs.h"
 
 #include "tunables.h"
@@ -37,7 +39,6 @@ const ShopListingDef kModShopListings[] = {
 const AreaDef kAreaNapstorrentMoors = {
     "napstorrent_moors",
     "NAPSTORRENT MOORS",
-    /*tier=*/3,
     "MOOR MARAUDER",
     {"SEEDER SHALLOWS", "LEECHER FEN", "THE SHARED BOG", "SPECTRE SWAMP",
      "CASTLE CAUSEWAY"},

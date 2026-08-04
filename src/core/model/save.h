@@ -254,7 +254,12 @@ constexpr int kSaveTextCap = 28;     // matches EventLog's LogEntry.text
 // deserialize accepts every version from kOldestAcceptedVersion up: an older blob
 // loads with the newer fields defaulted (forward-compat is the contract). Health is
 // transient and never serialized.
-constexpr uint16_t kSaveVersion = 42;
+// v43 adds no bytes. It marks the splice of NET-SEA CROSSING into the middle of the EXPL
+// ladder (rung 2, between The Pirate Bayou and Napstorrent Moors). Every persisted EXPL
+// field is positional, so a v42-or-older blob has its flags from rung 2 on describing the
+// area one rung to their left; the version is what lets `ladderInserts` (below) open a
+// blank rung in exactly those saves and skip the pass for anything newer.
+constexpr uint16_t kSaveVersion = 43;
 
 // The oldest blob deserialize will read. Raising it is how a device stops carrying
 // migration weight for saves nobody can still be holding — and it is the ONLY thing
@@ -288,6 +293,35 @@ struct RenamedId {
     uint16_t sinceVersion;
 };
 const RenamedId* renamedIds(int& count);
+
+// An area SPLICED INTO THE MIDDLE of the EXPL ladder (kAreaList, areas/area_defs.h).
+//
+// Every persisted EXPL field is POSITIONAL — indexed by ladder rung, never by area id —
+// so a blob written before the splice describes, from `atIndex` on, the area now one rung
+// to its LEFT. Read verbatim it would hand the player the new area already cleared and
+// silently take the deepest one back. That makes a mid-ladder insert a FORMAT concern, so
+// like a renamed content id it is handled here rather than in the game layer: the codec
+// opens a blank rung in each positional field and everything downstream reads a save that
+// looks exactly like one written after the splice. Appending to the END of the ladder
+// needs no row — nothing shifts, and the new rung defaults to uncleared on its own.
+//
+// The fields this has to move are every ladder-indexed one in SaveData: `sectorCleared`,
+// `bossUnlocked`, `subCleared`, `subBossUnlocked`, `subRefarm` (row-major, one row per
+// area), the `titlesUnlocked` bitmask, and the `equippedTitle` index.
+//
+// `atIndex` is the rung the area landed on, in the ladder AS IT WAS at that moment. Rows
+// apply oldest-first, so each one reads against the ladder its predecessors already built
+// and no row has to be restated when a later insert lands ahead of it.
+//
+// `sinceVersion` is the first kSaveVersion whose blobs already carry the slot, so a row
+// applies only to a blob older than it — the same contract as `renamedIds`, and the same
+// RETIREMENT rule: a row may be deleted exactly when `kOldestAcceptedVersion >
+// sinceVersion`, at which point no blob the codec will open still predates the splice.
+struct LadderInsert {
+    int atIndex;
+    uint16_t sinceVersion;
+};
+const LadderInsert* ladderInserts(int& count);
 
 // Max home-network display-name length incl. the NUL — matches the ledger's own
 // Entry::name cell (core/net/network_ledger.h) and Game::PendingNetwork::name.

@@ -22,11 +22,13 @@ pedia: dump-content
 dump-content: build/dump_content
 build/dump_content: tools/dump_content.cpp src/core/content/effect_text.cpp \
                     $(wildcard src/core/content/content_*.cpp) \
+                    $(wildcard src/core/content/areas/*/area.cpp) \
                     $(wildcard src/core/content/*.h) src/core/content/effect_text.h \
                     src/core/app/game_achievements.h src/core/app/game_rig_shop.h
 	@mkdir -p build
 	$(CXX) -std=c++17 -O1 -I src -I include -o $@ \
 	    tools/dump_content.cpp src/core/content/content_*.cpp \
+	    src/core/content/areas/*/area.cpp \
 	    src/core/content/effect_text.cpp
 
 # CI-staleness guard: regenerate to a temp file and diff against the committed copy.

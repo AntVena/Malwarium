@@ -55,7 +55,7 @@ bool explSectorOpen(int idx, const bool* sectorCleared) {
 // accessors above, which intentionally fall back to area 0's storefront. So these
 // bounds-check explicitly rather than relying on mal::area()'s clamp.
 int explSectorTier(int idx) {
-    return (idx >= 0 && idx < kExplSectors) ? area(idx).tier : 1;
+    return (idx >= 0 && idx < kExplSectors) ? areaTier(idx) : 1;
 }
 const char* explSectorName(int idx) {
     return (idx >= 0 && idx < kExplSectors) ? area(idx).name : "";

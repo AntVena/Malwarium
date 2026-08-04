@@ -1099,7 +1099,8 @@ void applySimDummyLevelScale(CombatEnemy& e, int petLevel) {
 }
 
 BossGauntlet subAreaBoss(int areaIdx, int sub) {
-    // One strong malbeast. Health climbs with the area's tier + the sub index
+    // One strong malbeast. Health climbs with the area's LADDER DEPTH (areaTier)
+    // + the sub index
     // so sub 1 opens easy and the signature sub 5 is the wall; moves thicken as the
     // sub climbs. Returned as a length-1 gauntlet so the carried-Health round plumbing
     // (startBossRound/finishBossRound) drives it unchanged. Generic frame (no new art).
@@ -1110,7 +1111,7 @@ BossGauntlet subAreaBoss(int areaIdx, int sub) {
     if (sub < 0) sub = 0;
     if (sub >= kSubAreasPerArea) sub = kSubAreasPerArea - 1;
     const AreaDef& a = area(areaIdx);
-    const int tier = a.tier;
+    const int tier = areaTier(areaIdx);
     const int health = kSubBossHealthBase + tier * 8 + sub * kSubBossHealthStep;
     const int speed = kSubBossSpeedBase + tier + (sub >= kSubAreasPerArea - 1 ? 2 : 0);
     std::vector<const char*> moves = {"quick_jab"};
@@ -1134,7 +1135,7 @@ BossGauntlet areaBoss(int areaIdx) {
     if (areaIdx < 0) areaIdx = 0;
     if (areaIdx >= kAreaCount) areaIdx = kAreaCount - 1;
     const AreaDef& a = area(areaIdx);
-    BossGauntlet g{a.areaBossName, a.tier + 1, {}};
+    BossGauntlet g{a.areaBossName, areaTier(areaIdx) + 1, {}};
     for (int s = 0; s < kSubAreasPerArea; ++s)
         g.rounds.push_back(subAreaBoss(areaIdx, s).rounds[0]);
     return g;

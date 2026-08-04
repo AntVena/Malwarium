@@ -465,7 +465,7 @@ window.PEDIA_DATA = {
       "id": "buffer_wyrm",
       "name": "Buffer Wyrm",
       "tier": 3,
-      "sector": "Napstorrent Moors",
+      "sector": "Net-Sea Crossing and deeper",
       "hp": 80,
       "pow": 14,
       "moves": [
@@ -482,7 +482,7 @@ window.PEDIA_DATA = {
       "id": "kernel_leviathan",
       "name": "Kernel Leviathan",
       "tier": 3,
-      "sector": "Napstorrent Moors",
+      "sector": "Net-Sea Crossing and deeper",
       "hp": 85,
       "pow": 13,
       "moves": [
@@ -852,8 +852,8 @@ window.PEDIA_DATA = {
       "name": "Backup Drive",
       "type": "BUFFS",
       "rarity": "RARE",
-      "effect": "Arms a 60-minute combat shield: negates the next hit and heals to half Health, then consumed.",
-      "stats": "SHIELD 60MIN",
+      "effect": "For 60 minutes, a pet that goes down is restored with half its max Health. One save.",
+      "stats": "DEATH SAVE 60MIN",
       "icon": "assets/icons/ICON_ITEM_BACKUP_DRIVE.png"
     },
     {
@@ -1044,7 +1044,7 @@ window.PEDIA_DATA = {
       "name": "Overclock Chip",
       "tag": "+SPD",
       "rarity": "UNCOMMON",
-      "tier": 3,
+      "tier": 4,
       "effect": "Raises battle initiative speed by 5; costs 8% power.",
       "stats": "SPEED +5 / POWER -8%",
       "icon": "assets/icons/ICON_MODS_SLOT.png",
@@ -1055,7 +1055,7 @@ window.PEDIA_DATA = {
       "name": "Heat Sink",
       "tag": "-FRAG",
       "rarity": "RARE",
-      "tier": 3,
+      "tier": 4,
       "effect": "Cuts battle-fatigue Frag by 60%.",
       "stats": "FATIGUE FRAG -60%",
       "icon": "assets/icons/ICON_MODS_SLOT.png",
@@ -1066,7 +1066,7 @@ window.PEDIA_DATA = {
       "name": "Honeytoken",
       "tag": "THORNS",
       "rarity": "RARE",
-      "tier": 3,
+      "tier": 4,
       "effect": "Chips any attacker that hits you for 4.",
       "stats": "THORNS 4",
       "icon": "assets/icons/ICON_MODS_SLOT.png",
@@ -1077,7 +1077,7 @@ window.PEDIA_DATA = {
       "name": "Cipher ASIC",
       "tag": "+DEF",
       "rarity": "RARE",
-      "tier": 3,
+      "tier": 4,
       "effect": "Cuts damage 10% (20% for Ransomware).",
       "stats": "DMG CUT 10% / ON LINE +10",
       "icon": "assets/icons/ICON_MODS_SLOT.png",
@@ -1089,7 +1089,7 @@ window.PEDIA_DATA = {
       "name": "Deadman Switch",
       "tag": "ON-KO",
       "rarity": "EPIC",
-      "tier": 4,
+      "tier": 5,
       "effect": "On your KO, blasts the enemy for 12.",
       "stats": "ON KO 12",
       "icon": "assets/icons/ICON_MODS_SLOT.png",
@@ -1100,7 +1100,7 @@ window.PEDIA_DATA = {
       "name": "RAID Mirror",
       "tag": "1-SHOT",
       "rarity": "EPIC",
-      "tier": 4,
+      "tier": 5,
       "effect": "Survives one fatal hit, then is consumed.",
       "stats": "SURVIVES 1 FATAL HIT",
       "icon": "assets/icons/ICON_MOD_RAID_MIRROR.png",
@@ -1111,7 +1111,7 @@ window.PEDIA_DATA = {
       "name": "ECC Memory",
       "tag": "HIT-CAP",
       "rarity": "EPIC",
-      "tier": 4,
+      "tier": 5,
       "effect": "No single hit exceeds 35% of max Health.",
       "stats": "HIT CAP 35%HP",
       "icon": "assets/icons/ICON_MODS_SLOT.png",
@@ -1122,7 +1122,7 @@ window.PEDIA_DATA = {
       "name": "Load Balancer",
       "tag": "SPLIT",
       "rarity": "EPIC",
-      "tier": 4,
+      "tier": 5,
       "effect": "Hits over 30% of max Health split - 50% lands next turn.",
       "stats": "SPLIT OVER 30%HP / DEFER 50%",
       "icon": "assets/icons/ICON_MODS_SLOT.png",
@@ -1144,7 +1144,7 @@ window.PEDIA_DATA = {
       "name": "Faraday Cage",
       "tag": "SHIELD",
       "rarity": "EPIC",
-      "tier": 3,
+      "tier": 4,
       "effect": "Cuts corruption damage-over-time by 100%.",
       "stats": "DOT -100%",
       "icon": "assets/icons/ICON_MODS_SLOT.png",
@@ -1217,11 +1217,66 @@ window.PEDIA_DATA = {
       "iconFallback": true
     },
     {
+      "id": "hardened_shell",
+      "name": "Hardened Shell",
+      "tag": "+DEF",
+      "rarity": "UNCOMMON",
+      "tier": 3,
+      "effect": "Cuts incoming damage by 20%.",
+      "stats": "DMG CUT 20%",
+      "icon": "assets/icons/ICON_MODS_SLOT.png",
+      "iconFallback": true
+    },
+    {
+      "id": "bundle_stripper",
+      "name": "Bundle Stripper",
+      "tag": "1ST-CUT",
+      "rarity": "RARE",
+      "tier": 3,
+      "effect": "First hit taken each fight is cut an extra 60%.",
+      "stats": "1ST HIT CUT 60%",
+      "icon": "assets/icons/ICON_MODS_SLOT.png",
+      "iconFallback": true
+    },
+    {
+      "id": "ballast_cache",
+      "name": "Ballast Cache",
+      "tag": "+HP",
+      "rarity": "UNCOMMON",
+      "tier": 3,
+      "effect": "Raises max Health by 30.",
+      "stats": "MAX HP +30",
+      "icon": "assets/icons/ICON_MODS_SLOT.png",
+      "iconFallback": true
+    },
+    {
+      "id": "sonar_ping",
+      "name": "Sonar Ping",
+      "tag": "+SPD",
+      "rarity": "UNCOMMON",
+      "tier": 3,
+      "effect": "Raises battle initiative speed by 7.",
+      "stats": "SPEED +7",
+      "icon": "assets/icons/ICON_MODS_SLOT.png",
+      "iconFallback": true
+    },
+    {
+      "id": "salvage_rig",
+      "name": "Salvage Rig",
+      "tag": "+BITS",
+      "rarity": "COMMON",
+      "tier": 3,
+      "effect": "Earns 14 extra Bits from a won fight.",
+      "stats": "WIN BITS +14",
+      "icon": "assets/icons/ICON_MODS_SLOT.png",
+      "iconFallback": true
+    },
+    {
       "id": "prowlware",
       "name": "Prowlware",
       "tag": "1ST HIT",
       "rarity": "RARE",
-      "tier": 3,
+      "tier": 4,
       "effect": "First damaging hit multiplies by your Attack-move power rank.",
       "stats": "1ST HIT x ATK RANK",
       "icon": "assets/icons/ICON_MODS_SLOT.png",
@@ -1232,7 +1287,7 @@ window.PEDIA_DATA = {
       "name": "Meltdown Core",
       "tag": "COMEBACK",
       "rarity": "RARE",
-      "tier": 3,
+      "tier": 4,
       "effect": "Below 30% Health, attack power rises 40%.",
       "stats": "BELOW 30%HP / POWER +40%",
       "icon": "assets/icons/ICON_MODS_SLOT.png",
@@ -1243,7 +1298,7 @@ window.PEDIA_DATA = {
       "name": "Zero-Day Exploit",
       "tag": "GAMBLE",
       "rarity": "RARE",
-      "tier": 3,
+      "tier": 4,
       "effect": "25% chance to raise attack power 60% for the whole fight.",
       "stats": "CHANCE 25% / POWER +60%",
       "icon": "assets/icons/ICON_MODS_SLOT.png",
@@ -1254,7 +1309,7 @@ window.PEDIA_DATA = {
       "name": "Phishing Rod",
       "tag": "SIPHON+",
       "rarity": "EPIC",
-      "tier": 4,
+      "tier": 5,
       "effect": "Waiting for that perfect bite: while your bubble's up, amplifies the bonus siphon by 75%. Phishing pets only.",
       "stats": "SIPHON+ +75%",
       "icon": "assets/icons/ICON_MODS_SLOT.png",
@@ -1266,7 +1321,7 @@ window.PEDIA_DATA = {
       "name": "Extortion Ledger",
       "tag": "+POW",
       "rarity": "EPIC",
-      "tier": 4,
+      "tier": 5,
       "effect": "Raises attack power by 30%. Ransomware pets only.",
       "stats": "POWER +30%",
       "icon": "assets/icons/ICON_MODS_SLOT.png",
@@ -1278,7 +1333,7 @@ window.PEDIA_DATA = {
       "name": "Backup Uplink",
       "tag": "+BITS",
       "rarity": "RARE",
-      "tier": 4,
+      "tier": 5,
       "effect": "Earns 20 extra Bits from a won fight.",
       "stats": "WIN BITS +20",
       "icon": "assets/icons/ICON_MODS_SLOT.png",
@@ -1289,7 +1344,7 @@ window.PEDIA_DATA = {
       "name": "Ghost Process",
       "tag": "-FRAG",
       "rarity": "EPIC",
-      "tier": 4,
+      "tier": 5,
       "effect": "Battle fatigue leaves no trace: cuts Frag by 100%.",
       "stats": "FATIGUE FRAG -100%",
       "icon": "assets/icons/ICON_MODS_SLOT.png",
@@ -1299,8 +1354,9 @@ window.PEDIA_DATA = {
   "modTiers": {
     "1": "Citrus Circuit",
     "2": "The Pirate Bayou",
-    "3": "Napstorrent Moors",
-    "4": "Castle Rapidscare / DeepWeb Dive"
+    "3": "Net-Sea Crossing",
+    "4": "Napstorrent Moors",
+    "5": "Castle Rapidscare / DeepWeb Dive"
   },
   "moves": [
     {
@@ -1629,6 +1685,18 @@ window.PEDIA_DATA = {
       "icon": "assets/icons/ICON_MOVE_SLOT_LOCKED.png"
     },
     {
+      "id": "decoy_download",
+      "name": "Decoy Download",
+      "kind": "ATK",
+      "power": 8,
+      "turns": 1,
+      "minStage": "Boot Sector",
+      "desc": "The button that wasn't the button - frozen for 3 turns.",
+      "stats": "ATK 8 / FREEZE 3",
+      "group": "core",
+      "icon": "assets/icons/ICON_MOVE_SLOT.png"
+    },
+    {
       "id": "nag_screen",
       "name": "Nag Screen",
       "kind": "ATK",
@@ -1695,6 +1763,24 @@ window.PEDIA_DATA = {
       "name": "Packet Exchange",
       "trigger": "Fight another operator's pet over the LINK.",
       "icon": "assets/icons/ICON_ACH_FIRST_DUEL.png"
+    },
+    {
+      "key": "BACK_UP_AND_DRIVEN",
+      "name": "Back-Up & Driven",
+      "trigger": "Win a fight your pet only survived because a Backup Drive restored it.",
+      "icon": "assets/icons/ICON_ACH_BACK_UP_AND_DRIVEN.png"
+    },
+    {
+      "key": "NEEDED_MORE_BACKUP",
+      "name": "Needed More Backup",
+      "trigger": "Lose a fight after a Backup Drive had already brought your pet back.",
+      "icon": "assets/icons/ICON_ACH_NEEDED_MORE_BACKUP.png"
+    },
+    {
+      "key": "SHATTERED_PLATTER",
+      "name": "Shattered Platter",
+      "trigger": "Go down so hard that a Backup Drive's restore couldn't lift your pet back up.",
+      "icon": "assets/icons/ICON_ACH_SHATTERED_PLATTER.png"
     },
     {
       "key": "DEVTOOLS_INTRUDER",
@@ -1881,9 +1967,9 @@ window.PEDIA_DATA = {
     {
       "key": "SUBS_ALL",
       "name": "Every Last Node",
-      "trigger": "Clear all 20 sub-areas of the 'net.",
+      "trigger": "Clear all 25 sub-areas of the 'net.",
       "icon": "assets/icons/ICON_ACH_SUBS_ALL.png",
-      "goal": 20
+      "goal": 25
     },
     {
       "key": "AREA_FIRST",
@@ -1895,9 +1981,9 @@ window.PEDIA_DATA = {
     {
       "key": "AREAS_ALL",
       "name": "Net Runner",
-      "trigger": "Beat the area boss of all 4 areas.",
+      "trigger": "Beat the area boss of all 5 areas.",
       "icon": "assets/icons/ICON_ACH_AREAS_ALL.png",
-      "goal": 4
+      "goal": 5
     },
     {
       "key": "MALBEAST_3",

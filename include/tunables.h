@@ -271,14 +271,19 @@ constexpr int kWildLossFrag = 18;          // +Frag on a wild (live-stakes) loss
 //     tier's band width — a lucky roll lets a lower-level pet field a stronger mod (a
 //     level-15 pet equipping a tier-3 "L20-30" mod), an unlucky one gates it higher.
 //     The rolled req is per-instance (stored with the owned spare, save v18). ----------
-constexpr int kModPowerTiers = 4;                 // tiers map to Areas 0..2 + DeepWeb
-// Nominal equip-level FLOOR per tier (index tier-1). A dropped instance's required
-// level = floor + randInt(-kModEquipLevelVariance, +kModEquipLevelVariance), clamped
-// >= 0. Window width kModEquipLevelWindow (10); variance = 50% of it (±5). So a tier-3
-// mod (floor 20) rolls a req in [15, 25] — an L20-30 band, lucky→L15.
-constexpr int kModEquipLevelFloorByTier[kModPowerTiers] = {0, 10, 20, 30};
+//     The rank COUNT is not here: it is kModPowerTiers (areas/area_defs.h), which is
+//     the ladder's own length, so adding an area opens a rank rather than overflowing
+//     a fixed table. What stays here is the band each rank maps to.
 constexpr int kModEquipLevelWindow = 10;          // band width per tier
 constexpr int kModEquipLevelVariance = 5;         // ±50% of the window (the rolled swing)
+// Nominal equip-level FLOOR for a tier. A dropped instance's required level =
+// floor + randInt(-kModEquipLevelVariance, +kModEquipLevelVariance), clamped >= 0. So a
+// tier-3 mod (floor 20) rolls a req in [15, 25] — an L20-30 band, lucky→L15.
+// A formula rather than a table so it answers for any rank the ladder grows to; the
+// shipped ranks 1..4 give the same 0/10/20/30 the table used to spell out.
+constexpr int modEquipLevelFloor(int tier) {
+    return (tier < 1 ? 0 : tier - 1) * kModEquipLevelWindow;
+}
 // Drop cadence (Q4: sub-boss roll + area-boss guaranteed + DeepWeb rare + Epic caches).
 // A mod earned is permanent, so sources are milestone/rare — never common wild drops.
 constexpr int kModSubBossDropPct = 35;            // sub-area boss FIRST clear: mod-drop chance

@@ -19,7 +19,7 @@ src/core/content/areas/
   deepweb_dive/area.{h,cpp}   the terminal endless zone — see below, not an AreaDef
 ```
 
-An `AreaDef` row owns, in one place: the area's name/tier/Title, its 5 sub-area names, its
+An `AreaDef` row owns, in one place: the area's name/Title, its 5 sub-area names, its
 5 sub-area boss names + area-boss banner, its signature boss's threat-move rider
 (`apexThreatMoveId`), its storefront (`AreaShopDef` — name, stocked item(s), restock
 count, and the price charged for each), and its mod-loot pool. `expl_screen.cpp` (the EXPL
@@ -39,11 +39,31 @@ per-area layout — don't pre-split ahead of actual growth.
    `const AreaDef kArea<Name> = {...};` (see any existing area.cpp for the field order).
 2. Declare `extern const AreaDef kArea<Name>;` and add one entry to `kAreaList[]` in
    `area_defs.h`, at the ladder position the new area unlocks at.
-3. That's it for identity/content. `kAreaCount`, `kExplSectors` (expl_screen.h), and every
-   fixed-size save-flag array in `game.h` (`sectorCleared_`, `subCleared_`, …) all follow
-   automatically — there is no second count anywhere to remember to bump.
+3. That's it for identity/content. `kAreaCount`, `kExplSectors` (expl_screen.h),
+   `kModPowerTiers`, the area's difficulty (`areaTier`), and every fixed-size save-flag
+   array in `game.h` (`sectorCleared_`, `subCleared_`, …) all follow automatically — there
+   is no second count anywhere to remember to bump.
 4. Add art (`ICON_SECTOR_<id>`/`BG_SECTOR_<id>`, `assets/ASSET_MANIFEST.md` §J) and
    check the naming rules before claiming a brand: `AREA_NAMING.md`.
+
+### If it lands anywhere but the END of the list
+
+Appending is free. **Splicing into the middle is not**, because two things are keyed by
+ladder POSITION rather than by area id, and both go wrong silently:
+
+- **Every persisted EXPL flag.** `sectorCleared`, `bossUnlocked`, `subCleared`,
+  `subBossUnlocked`, `subRefarm`, `titlesUnlocked` and `equippedTitle` are all indexed by
+  rung, so an existing save's progress would shift onto the wrong areas — handing the
+  player the new area pre-cleared and taking back the deepest one they beat. Bump
+  `kSaveVersion` and add one row to `ladderInserts` (`core/model/save.h`) **in the same
+  commit**; the codec then opens a blank rung and everything downstream reads a migrated
+  save as if it had always had one.
+- **Each mod's `powerTier`** (`content_mods.cpp`). A rank is a ladder depth spelled out on
+  the row, so every mod authored at or below the seam moves up one rank. The native gate
+  catches this — it checks each mod's rank against the shallowest pool that drops it —
+  but it is an edit to make, not something that follows.
+
+The sector ART family is index-keyed too; see the note under `ASSET_MANIFEST.md` §J.
 
 There is deliberately no separate "area count" constant to hand-maintain anywhere else:
 `kAreaCount` is `sizeof(kAreaList)/sizeof(kAreaList[0])`, so an area that isn't in the list
@@ -61,9 +81,16 @@ own `tier`/index — they live in `tunables.h`/`combat.cpp` and are not duplicat
 The wild-malbeast tier roster (`combat.cpp`'s `wildMalbeast`) is similarly TIER-keyed, not
 per-area, and stays central.
 
-`AreaDef::tier` is the one place an area's difficulty tier is declared — `combat.cpp`'s boss
-composition reads it directly rather than re-deriving a tier from a separate formula, so
-there is only the one field for boss scaling and the EXPL list to ever disagree about.
+An area's difficulty tier is **not on the row at all** — `areaTier(idx)` derives it from
+ladder position (`area_defs.h`), and `combat.cpp`'s boss composition and the EXPL list both
+read that one function. Order is the sole statement of depth: reorder `kAreaList[]`, or
+splice an area into the middle of it, and every enemy above the seam re-scales to its new
+depth with nothing to re-tune. An authored `tier` field would restate the same fact, and the
+two would disagree the first time the ladder moved — which is exactly what inserting an area
+does.
+
+The corollary is that **an area's own `area.cpp` must not name its ladder position or tier**,
+in a comment or anywhere else: that is the one fact about an area which its file does not own.
 
 ## Shop stock and price
 

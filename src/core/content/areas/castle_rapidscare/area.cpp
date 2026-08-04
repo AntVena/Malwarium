@@ -1,7 +1,8 @@
-// Castle Rapidscare — area 3, tier 4: RapidShare's file-locker keep
-// (AREA_NAMING.md), the castle the Napstorrent Moors' CASTLE CAUSEWAY walks up to.
-// Opens once the Moors' gauntlet is cleared, and is the last named area before the
-// endless DeepWeb Dive. Its five stretches are held by a card/chess court — pawns at
+// Castle Rapidscare — RapidShare's file-locker keep (AREA_NAMING.md), the castle
+// the Napstorrent Moors' CASTLE CAUSEWAY walks up to. Last in kAreaList, which is
+// what makes it the deepest named area before the endless DeepWeb Dive — and the
+// reason its pool is the endgame one. Its five stretches are held by a card/chess
+// court — pawns at
 // the gate, a Red Queen in the mirrors, a Joker in the decoys, the King in the
 // catacombs — all flying COUNT COPYLEFT's banner.
 #include "core/content/areas/area_defs.h"
@@ -44,7 +45,6 @@ const ShopListingDef kModShopListings[] = {
 const AreaDef kAreaCastleRapidscare = {
     "castle_rapidscare",
     "CASTLE RAPIDSCARE",
-    /*tier=*/4,
     "KING OF THE KEEP",
     {"404 DRAWBRIDGE", "MIRROR MAZE", "OPT-OUT OBSCURA", "DECOY DUNGEON",
      "COMMENT CATACOMBS"},

@@ -2,6 +2,8 @@
 
 #include <cstring>
 
+#include "core/content/areas/area_defs.h"   // kSubAreasPerArea — subRefarm's row width
+
 namespace mal {
 
 namespace {
@@ -112,11 +114,62 @@ void renameRetiredIds(SaveData& d, uint16_t version) {
     for (SaveId& s : d.speciesDiveIds) renameId(s.id, version);
 }
 
+// The mid-ladder splice table. Adding and retiring a row: save.h's `ladderInserts`.
+constexpr LadderInsert kLadderInserts[] = {
+    {/*atIndex=*/2, 43},   // NET-SEA CROSSING, between The Pirate Bayou and the Moors
+};
+
+// The newest version any row still shifts — a blob at or above it needs no pass.
+constexpr uint16_t newestLadderInsertVersion() {
+    uint16_t v = 0;
+    for (const LadderInsert& l : kLadderInserts)
+        if (l.sinceVersion > v) v = l.sinceVersion;
+    return v;
+}
+
+// Open one blank rung at `at` in every ladder-indexed field. A vector shorter than `at`
+// is left alone rather than padded: it simply never recorded that far, and the loaders
+// already read a short vector as "nothing cleared past its end".
+void openLadderRung(SaveData& d, int at) {
+    if (at < 0) return;
+    auto openByte = [at](std::vector<uint8_t>& v) {
+        if (at <= static_cast<int>(v.size())) v.insert(v.begin() + at, 0);
+    };
+    openByte(d.sectorCleared);
+    openByte(d.bossUnlocked);
+    openByte(d.subCleared);        // one bitmask byte per area, so still one cell
+    openByte(d.subBossUnlocked);
+    // subRefarm is row-major with kSubAreasPerArea counts per area — a whole ROW opens.
+    const size_t row = static_cast<size_t>(at) * kSubAreasPerArea;
+    if (row <= d.subRefarm.size())
+        d.subRefarm.insert(d.subRefarm.begin() + row, kSubAreasPerArea, 0);
+    // titlesUnlocked is a bitmask indexed by rung: everything at or above `at` moves up
+    // one bit, leaving the new rung's Title correctly unearned.
+    if (at < 32) {
+        const uint32_t below = d.titlesUnlocked & ((1u << at) - 1u);
+        const uint32_t atOrAbove = d.titlesUnlocked & ~((1u << at) - 1u);
+        d.titlesUnlocked = below | (atOrAbove << 1);
+    }
+    // equippedTitle is a rung index (or -1 for none), so it moves with the Title it names.
+    if (d.equippedTitle >= at) ++d.equippedTitle;
+}
+
+void applyLadderInserts(SaveData& d, uint16_t version) {
+    // Oldest-first, so each row's atIndex reads against the ladder its predecessors built.
+    for (const LadderInsert& l : kLadderInserts)
+        if (version < l.sinceVersion) openLadderRung(d, l.atIndex);
+}
+
 }  // namespace
 
 const RenamedId* renamedIds(int& count) {
     count = static_cast<int>(sizeof(kRenamedIds) / sizeof(kRenamedIds[0]));
     return kRenamedIds;
+}
+
+const LadderInsert* ladderInserts(int& count) {
+    count = static_cast<int>(sizeof(kLadderInserts) / sizeof(kLadderInserts[0]));
+    return kLadderInserts;
 }
 
 void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
@@ -864,6 +917,9 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
 
     if (!r.ok) { out = SaveData{}; return false; }  // truncated -> empty
     if (version < newestRenameVersion()) renameRetiredIds(d, version);
+    // After every tail is read, never between them: the shift moves whole ladder-indexed
+    // vectors, so it has to see them at their final lengths.
+    if (version < newestLadderInsertVersion()) applyLadderInserts(d, version);
     out = std::move(d);
     return true;
 }

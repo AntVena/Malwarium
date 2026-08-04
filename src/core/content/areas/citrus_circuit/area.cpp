@@ -1,6 +1,7 @@
-// Citrus Circuit — area 0, tier 1: the LimeWire-era download-culture ladder entry
-// (AREA_NAMING.md). Always open; every other area gates
-// behind clearing the one before it.
+// Citrus Circuit — the LimeWire-era download-culture ladder entry
+// (AREA_NAMING.md). Sits first in kAreaList, which is what makes it the always-open
+// one: every other area gates behind clearing the one before it. Its difficulty
+// follows from that position (areaTier), not from anything on the row below.
 #include "core/content/areas/area_defs.h"
 
 #include "tunables.h"
@@ -32,7 +33,6 @@ const ShopListingDef kModShopListings[] = {
 const AreaDef kAreaCitrusCircuit = {
     "citrus_circuit",
     "CITRUS CIRCUIT",
-    /*tier=*/1,
     "CERTIFIED DOWNLOADER",
     {"FAKE FILE FLATS", "BUFFERING BLUFFS", "99% CACHE", "THE SHARED FOLDER",
      "DIAL-UP DRAW"},

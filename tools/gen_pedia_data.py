@@ -154,14 +154,31 @@ MOVE_ICONS = {
     "fork_bomb": "ICON_MOVE_FORK_BOMB",
     "checksum_guard": "ICON_MOVE_CHECKSUM_GUARD",
 }
-MOD_TIERS = {1: "Citrus Circuit", 2: "The Pirate Bayou", 3: "Napstorrent Moors",
-             4: "Castle Rapidscare / DeepWeb Dive"}
+# No MOD_TIERS / sector map here on purpose: a mod's tier IS a ladder position, and the
+# ladder is the firmware's to state (areas/area_defs.h, published through the dump's
+# "areas"). A copy kept here would read correctly right up until an area was inserted or
+# reordered, then quietly label every mod with the wrong area — with nothing on either
+# side to notice. Both are built from the dump instead, in build_ladder_names().
 CONTEXT_USE = {"LockoutOnly": "LOCKOUT ONLY", "PreEncounter": "PRE-ENCOUNTER"}
 MOVE_GROUPS = {
     "core": "CORE MOVES", "ransomware": "RANSOMWARE LINE",
     "phishing": "PHISHING LINE — dormant", "threat": "THREAT SIGNATURES — wielded against you",
 }
 THREAT_MOVES = {"system_hang", "data_rot", "nag_screen"}
+
+def build_ladder_names(content):
+    """Tier -> the area(s) that hand out that rank, straight off the published ladder.
+
+    The deepest rung shares its rank with the DeepWeb Dive (one past the ladder, no
+    AreaDef of its own), so that entry names both — which is what the site shows for an
+    endgame mod that can come from either.
+    """
+    areas = content["areas"]
+    names = {a["tier"]: a["name"].title() for a in areas}
+    if areas:
+        deepest = max(names)
+        names[deepest] = names[deepest] + " / DeepWeb Dive"
+    return names
 
 def strip_comments(src):
     src = re.sub(r"/\*.*?\*/", "", src, flags=re.S)
@@ -191,6 +208,7 @@ def main():
     repo = args.repo
 
     content = load_content(args.dump_content)
+    ladder_names = build_ladder_names(content)
     warnings = []
 
     # ---- creatures ----
@@ -290,13 +308,21 @@ def main():
     combat = strip_comments((repo / "src/core/model/combat.cpp").read_text(encoding="utf-8", errors="replace"))
     fn = combat[combat.index("CombatEnemy wildMalbeast"):]
     fn = fn[: fn.index("\n}") + 2]
-    sectors = {1: "Citrus Circuit", 2: "The Pirate Bayou", 3: "Napstorrent Moors"}
+    rows = list(re.finditer(r'\{"([^"]+)",\s*"([^"]+)",\s*(\d+),\s*(\d+),\s*(\d+),\s*\{([^}]*)\}', fn))
+    # The wild roster is TIER-keyed and stops SHORT of the ladder's depth — wildMalbeast
+    # clamps, so its top tier is what every deeper area fights too. Naming only the rung
+    # that tier's number happens to match would read as though the castle had wilds of its
+    # own. Derived from the roster's own top tier, so extending it re-labels by itself.
+    deepest_wild = max(int(m.group(3)) for m in rows) if rows else 0
     beasts = []
-    for m in re.finditer(r'\{"([^"]+)",\s*"([^"]+)",\s*(\d+),\s*(\d+),\s*(\d+),\s*\{([^}]*)\}', fn):
+    for m in rows:
         name, _sprite, tier, hp, pow_ = m.group(1), m.group(2), int(m.group(3)), int(m.group(4)), int(m.group(5))
         mv = [x.strip().strip('"') for x in m.group(6).split(",") if x.strip()]
         bid = re.sub(r"[^a-z0-9]+", "_", name.lower()).strip("_")
-        beast = {"id": bid, "name": name, "tier": tier, "sector": sectors.get(tier, "?"),
+        sector = ladder_names.get(tier, "?")
+        if tier == deepest_wild and deepest_wild < max(ladder_names, default=0):
+            sector += " and deeper"
+        beast = {"id": bid, "name": name, "tier": tier, "sector": sector,
                  "hp": hp, "pow": pow_, "moves": mv}
         beast.update(sprite_geometry(repo, "SPR_MALBEAST_" + bid.upper(), warnings))
         beasts.append(beast)
@@ -332,7 +358,7 @@ def main():
         "malbeasts": beasts,
         "items": items,
         "mods": mods,
-        "modTiers": {str(k): v for k, v in MOD_TIERS.items()},
+        "modTiers": {str(k): v for k, v in ladder_names.items()},
         "moves": moves,
         "moveGroups": MOVE_GROUPS,
         "achievements": achievements,

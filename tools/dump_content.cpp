@@ -22,6 +22,7 @@
 #include <cstring>
 
 #include "core/app/game_achievements.h"   // achievementTrigger/Goal — kGoalAll resolution
+#include "core/content/areas/area_defs.h"
 #include "core/content/content_achievements.h"
 #include "core/content/content_tables.h"
 #include "core/content/effect_text.h"
@@ -193,6 +194,25 @@ void dumpMods() {
     std::fputs("],\n", stdout);
 }
 
+// The EXPL ladder, in order. Published so the generator can label a mod by WHERE it
+// drops without keeping its own copy of the ladder in Python — a copy that goes quietly
+// wrong the moment an area is inserted or reordered, since a rank is a ladder position
+// and nothing in the site would notice the two disagreeing. `tier` is areaTier's derived
+// depth, which is what a mod's own `tier` field above is comparable against.
+void dumpAreas() {
+    std::fputs("\"areas\": [\n", stdout);
+    for (int i = 0; i < kAreaCount; ++i) {
+        const AreaDef& a = area(i);
+        std::fputs("  {", stdout);
+        field("id", a.id);
+        field("name", a.name);
+        fieldInt("tier", areaTier(i));
+        field("title", a.title, /*comma=*/false);
+        std::fputs(i + 1 < kAreaCount ? "},\n" : "}\n", stdout);
+    }
+    std::fputs("],\n", stdout);
+}
+
 void dumpMoves() {
     std::fputs("\"moves\": [\n", stdout);
     for (int i = 0; i < kMovesCount; ++i) {
@@ -239,6 +259,7 @@ int main() {
     dumpEggLines();
     dumpItems();
     dumpMods();
+    dumpAreas();
     dumpMoves();
     dumpAchievements();
     std::fputs("}\n", stdout);

@@ -319,6 +319,15 @@ yolk-in-shell · leek · cereal box · mug · sachet · apple · taproot · nood
 > Sectors are indexed by difficulty; identity (name/icon/backdrop) is swappable data keyed by
 > sector id — add `ICON_SECTOR_<id>`/`BG_SECTOR_<id>` per sector as authored. **Naming
 > direction:** real-world malware-encounter places, punned (LimeWire → "Citrus Circuit").
+>
+> **The `<id>` is a LADDER POSITION, not an area identity**, so splicing an area into the
+> middle of `kAreaList` (areas/area_defs.h) renumbers every sector file above it — the art
+> would silently re-point at the wrong area. Nothing has been misrouted so far, because the
+> only sector files that exist are 0 (Citrus Circuit) and 1 (Pirate Bayou) and no insert has
+> landed below them. Before a THIRD sector file is drawn, rename this family to key off the
+> area's stable `AreaDef::id` instead; drawing more index-keyed files first just makes that
+> rename bigger. Current ladder, for whoever draws next: 0 Citrus Circuit · 1 Pirate Bayou ·
+> 2 Net-Sea Crossing · 3 Napstorrent Moors · 4 Castle Rapidscare.
 > Only `sector[0]` is open at start; rest progression-gated. Packet Capture minigame + wild-
 > encounter combat art are deferred (QUESTIONS S11). Walk reuses pet idle frames — no walk frame.
 

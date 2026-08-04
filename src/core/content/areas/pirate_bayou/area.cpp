@@ -1,6 +1,6 @@
-// The Pirate Bayou — area 1, tier 2: software-piracy/swamp
-// (AREA_NAMING.md). Opens once Citrus Circuit's
-// gauntlet is cleared.
+// The Pirate Bayou — software-piracy/swamp (AREA_NAMING.md). The bayou is where
+// the ladder first reaches water; its BOOTY CACHE is the last dry stretch before
+// the open Net-Sea.
 #include "core/content/areas/area_defs.h"
 
 #include "tunables.h"
@@ -37,7 +37,6 @@ const ShopListingDef kModShopListings[] = {
 const AreaDef kAreaPirateBayou = {
     "pirate_bayou",
     "THE PIRATE BAYOU",
-    /*tier=*/2,
     "LEECH LORD",
     {"LEECH LANDING", "TORRENT SWAMP", "THE CRACKED KEYS", "WAREZ MARSH",
      "BOOTY CACHE"},

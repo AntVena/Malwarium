@@ -151,6 +151,14 @@ const MoveDef kMoves[] = {
     {"data_rot", "Data Rot", MoveDef::Kind::Attack, 6, 1,
      "A hit that corrupts - {dot} damage/turn for {dotTurns} turns.", Stage::BootSector,
      nullptr, 0, 0, 0, 0, 0, /*lockTurns=*/0, /*dotDamage=*/5, /*dotTurns=*/3},
+    // The Net-Sea's apex (THE GREEN BUTTON) wields the STUN rider the Bayou debuted,
+    // one turn longer: the fake download button doesn't corrupt anything, it just takes
+    // the next few turns away from you. So the Net-Sea's own pool re-stocks Watchdog
+    // Timer rather than paying out a third counter — a longer freeze is still a freeze,
+    // and the mod clamps any of them to one turn.
+    {"decoy_download", "Decoy Download", MoveDef::Kind::Attack, 8, 1,
+     "The button that wasn't the button - frozen for {lock} turns.", Stage::BootSector,
+     nullptr, 0, 0, 0, 0, 0, /*lockTurns=*/3, /*dot=*/0, 0},
     // Castle Rapidscare's apex carries BOTH riders at once — the keep asks for the two
     // counters the earlier areas handed out separately, and re-stocks them in its own
     // mod pool for a player who never rolled one.
