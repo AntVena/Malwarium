@@ -72,6 +72,7 @@ enum class AchSeries : uint8_t {
     Handshakes,         // lifetime unique WPA handshakes captured
     BitsHeld,           // Bits held at once (a high-water check, never spent back down)
     PetsRaised,         // pets raised across lifecycles
+    StackerWins,        // lifetime DEFRAG minigame boards cleared (core/model/stacker.h)
 };
 
 // `goal` sentinel: compare against the series' TOTAL rather than a fixed number, so the
@@ -150,6 +151,10 @@ inline constexpr const char* kAirGapped        = "AIR_GAPPED";
 inline constexpr const char* kDevtoolsIntruder = "DEVTOOLS_INTRUDER";
 inline constexpr const char* kTrojanUnleashed  = "TROJAN_UNLEASHED";
 inline constexpr const char* kFirstDuel        = "FIRST_DUEL";
+// The two DEFRAG-minigame rows that a board's SHAPE decides rather than a tally: how
+// wide the run was when it reached the top. Both fire from Game::finishStacker.
+inline constexpr const char* kPerfectDefrag    = "PERFECT_DEFRAG";
+inline constexpr const char* kHangingByABit    = "HANGING_BY_A_BIT";
 // The three endings a spent Backup Drive can buy, all fired from Game::settleBackupDrive
 // off Combatant::BackupUse and the fight's outcome.
 inline constexpr const char* kBackUpAndDriven  = "BACK_UP_AND_DRIVEN";

@@ -94,6 +94,15 @@ class Stacker {
     int left() const { return left_; }      // its leftmost column
     int width() const { return width_; }    // how many blocks are in hand
 
+    // How many blocks a locked row kept. On a won board the TOP row's count is what the
+    // run survived with — 1 is the narrowest a win can be and kStackerStartWidth means
+    // nothing was ever shaved — which is more than `width()` can say, since a win stops
+    // the run before the survivors become the next hand.
+    int rowWidth(int r) const {
+        if (r < 0 || r >= kStackerRows) return 0;
+        return popcount(locked_[r]);
+    }
+
     // Is (row, col) a LOCKED block? Rows at or above the moving run are always empty —
     // the run in hand is not part of the board until it drops.
     bool locked(int r, int c) const {

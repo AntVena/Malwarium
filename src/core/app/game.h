@@ -1202,6 +1202,9 @@ public:
     // Lifetime boss rounds won (save v40). Each round of a gauntlet counts — beating a
     // three-boss gauntlet is three bosses defeated, which is what it felt like.
     int bossWins() const { return bossWins_; }
+    // Lifetime DEFRAG minigame boards cleared (save v44). Only the Stacker variant
+    // counts — a Quick or Tool defrag is bought, not played.
+    int stackerWins() const { return stackerWins_; }
     // Has this item EVER been in the bag? (save v40) — the collection tally behind the
     // cuisine/rarity achievements, and a truer answer than "is it in the bag now" for
     // anything asking what the player has seen. Written by a sweep over the live
@@ -1247,6 +1250,9 @@ public:
     // Credit boss rounds without fighting them (tests / headless runs) — reaching the
     // deeper boss rungs honestly would mean walking a whole gauntlet ladder per rung.
     void debugAddBossWins(int n) { bossWins_ += n; markSaveDirty(); }
+    // Credit cleared DEFRAG boards without playing them (tests / headless runs). The
+    // deeper rungs are dozens of hand-played runs, each of which also spends Bits.
+    void debugAddStackerWins(int n) { stackerWins_ += n; markSaveDirty(); }
     // Record a species' DeepWeb depth without diving (tests / headless runs), so the
     // depth ladders can be exercised without a several-hundred-fight run.
     void debugRecordSpeciesDive(const char* creatureId, int depth) {
@@ -1342,6 +1348,11 @@ public:
     // tests and dump_frame use to place the run deliberately instead of by stopwatch.
     void debugStepStacker() { stacker_.step(); }
     const Stacker& stacker() const { return stacker_; }
+    // Enter a fresh Stacker board without paying for it (tests / dump_frame). Skips only
+    // the purchase — from here onButton drives the REAL board and a finished run lands in
+    // the real finishStacker, which is where the played-defrag tally and its two
+    // shape-of-the-board achievements are decided.
+    void debugStartStackerDefrag() { startStackerDefrag(); }
     // Set the Bits wallet directly (tests / economy-gated flows like the shop's
     // "not enough Bits" gate). Clamped at 0.
     void debugSetBits(int n);
@@ -2241,6 +2252,11 @@ private:
     void sweepCollectedItems();
     // Lifetime boss rounds won (save v40) — counted in Game::finishBossRound.
     int bossWins_ = 0;
+    // Lifetime DEFRAG minigame boards CLEARED (save v44) — counted in
+    // Game::finishStacker. Player-level, unlike defragCount_ beside it, which is the
+    // active pet's own tally of defrags of every variant: this one is a record of skill
+    // and so belongs to the operator, not to whichever pet happened to be on the shelf.
+    int stackerWins_ = 0;
     // The deepest DeepWeb Dive reached BY SPECIES (save v40). A per-species record rather
     // than one device high-water mark, so "take three different species deep" is
     // answerable and a line's own record is the max over its members. Borrowed registry

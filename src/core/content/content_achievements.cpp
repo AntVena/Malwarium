@@ -312,6 +312,33 @@ const AchievementDef kAchievements[] = {
      AchSeries::Handshakes, /*goal=*/50, nullptr, 0,
      {bits(400), item("commend_cache")}},
 
+    // --- The DEFRAG minigame --------------------------------------------------------
+    // The Stacker variant is the one maintenance path that pays with SKILL rather than
+    // luck or an item (core/model/stacker.h), and it is deterministic, so these are the
+    // only rows on the board that a player can practise their way to rather than grind.
+    // The ladder counts cleared boards; the two below it read the width the run reached
+    // the top with, which is the whole difficulty curve in one number.
+    {/*wire=*/63, "DEFRAG_BY_HAND", "Defragged by Hand",
+     "Clear {n} disk by hand in the DEFRAG minigame.", "ICON_ACH_DEFRAG_BY_HAND",
+     AchSeries::StackerWins, /*goal=*/1, nullptr, 0, {bits(25)}},
+    {/*wire=*/64, "STACK_10", "Sector Stacker",
+     "Clear {n} disks by hand in the DEFRAG minigame.", "ICON_ACH_STACK_10",
+     AchSeries::StackerWins, /*goal=*/10, nullptr, 0,
+     {bits(60), item("sealed_cache_common")}},
+    {/*wire=*/65, "STACK_50", "Contiguous",
+     "Clear {n} disks by hand in the DEFRAG minigame.", "ICON_ACH_STACK_50",
+     AchSeries::StackerWins, /*goal=*/50, nullptr, 0,
+     {bits(250), item("sealed_cache_rare")}},
+    // Reaching the top having never once overhung the row below — nine perfect locks,
+    // the last four of them at the doubled step. Priced as a capstone because it is one:
+    // no amount of playing makes it likelier, only getting better at it does.
+    {/*wire=*/66, "PERFECT_DEFRAG", "Zero Fragmentation",
+     "Clear a DEFRAG board without shaving off a single block.", "ICON_ACH_PERFECT_DEFRAG",
+     AchSeries::Event, /*goal=*/0, nullptr, 0, {bits(400), item("commend_cache")}},
+    {/*wire=*/67, "HANGING_BY_A_BIT", "Hanging by a Bit",
+     "Clear a DEFRAG board with a single block left standing.", "ICON_ACH_HANGING_BY_A_BIT",
+     AchSeries::Event, /*goal=*/0, nullptr, 0, {bits(150), item("sealed_cache_rare")}},
+
     // --- The wallet ---------------------------------------------------------------
     {/*wire=*/6, "BIT_BARON", "Bit Baron",
      "Hold {n} Bits at once.", "ICON_ACH_BIT_BARON",

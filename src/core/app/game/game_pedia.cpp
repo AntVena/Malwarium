@@ -229,6 +229,8 @@ int Game::achValue(const AchievementDef& d) const {
             return bits_;
         case AchSeries::PetsRaised:
             return petsRaised_;
+        case AchSeries::StackerWins:
+            return stackerWins_;
     }
     return 0;
 }

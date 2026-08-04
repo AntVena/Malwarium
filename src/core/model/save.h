@@ -259,7 +259,14 @@ constexpr int kSaveTextCap = 28;     // matches EventLog's LogEntry.text
 // field is positional, so a v42-or-older blob has its flags from rung 2 on describing the
 // area one rung to their left; the version is what lets `ladderInserts` (below) open a
 // blank rung in exactly those saves and skip the pass for anything newer.
-constexpr uint16_t kSaveVersion = 43;
+// v44 appends `stackerWins` — how many DEFRAG minigame boards the operator has cleared by
+// hand. Player-level, and the counter behind the played-defrag ladder: it cannot ride on
+// `defragCount` (v16), which is the ACTIVE PET's tally of defrags of every variant and
+// resets with the pet, where this is a record of the operator's own skill. Nothing else in
+// a save can stand in for it either — a bought or rolled defrag leaves the same trace a
+// played one does — so a pre-v44 blob reads back 0 and starts the ladder fresh rather than
+// being seeded from a number that would over-credit every Quick defrag ever run.
+constexpr uint16_t kSaveVersion = 44;
 
 // The oldest blob deserialize will read. Raising it is how a device stops carrying
 // migration weight for saves nobody can still be holding — and it is the ONLY thing
@@ -691,6 +698,12 @@ struct SaveData {
     // Per-pet; zeroed the moment care recovers below 5/5, so a later brush with death
     // starts clean. Pre-v42 → 0.
     uint32_t dyingElapsedMs = 0;
+
+    // --- v44: the played-defrag tally ----------------------------------------
+    // DEFRAG minigame boards cleared, lifetime. Player-level (survives a pet reset, like
+    // bossWins above); distinct from the per-pet `defragCount`, which counts defrags of
+    // every variant. Pre-v44 → 0; nothing in an older blob can be honestly read as this.
+    int32_t stackerWins = 0;
 
     // v35: this pet's own best-ever DeepWeb Dive depth ------------------------
     // Per-pet (reset on a new egg, like mistakeShieldActive). The active pet's

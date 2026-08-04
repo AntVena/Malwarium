@@ -235,6 +235,7 @@ SaveData Game::captureSave() const {
     d.achievementEarned.assign(achEarned_, achEarned_ + kAchBytes);
     d.achievementNotified.assign(achNotified_, achNotified_ + kAchBytes);
     d.bossWins = bossWins_;
+    d.stackerWins = stackerWins_;   // v44
     d.collectedItems.reserve(collectedItems_.size());
     for (const ItemDef* it : collectedItems_) {
         SaveId id;
@@ -570,6 +571,9 @@ void Game::applySave(const SaveData& d) {
                 if (subCleared_[a][s]) ++bossWins_;
         }
     }
+    // v44: boards cleared by hand. No pre-v44 seed — see the version note in save.h for
+    // why defragCount is not one.
+    stackerWins_ = d.stackerWins;
     collectedItems_.clear();
     for (const auto& s : d.collectedItems)
         if (const ItemDef* it = registry_.item(s.id)) collectedItems_.push_back(it);

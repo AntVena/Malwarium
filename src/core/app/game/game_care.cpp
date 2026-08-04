@@ -108,6 +108,17 @@ void Game::finishStacker() {
     // defrag does, and a lost board takes the same care mistake a failed Quick one does.
     maintKind_ = MaintKind::Defrag;
     maintSuccess_ = stacker_.won();
+    if (maintSuccess_) {
+        ++stackerWins_;                          // the played ladder, player-level
+        // The two rows a board's SHAPE earns. The top row's surviving width is the whole
+        // record of how the run went: the full starting width means nothing was ever
+        // shaved, and one block means the last lock had a single column to land on.
+        // Read here rather than inside Stacker because the model has no idea achievements
+        // exist — it answers "how wide", and this is what that width is worth.
+        const int kept = stacker_.rowWidth(kStackerRows - 1);
+        if (kept >= kStackerStartWidth) unlockAchievement(ach::kPerfectDefrag);
+        if (kept == 1) unlockAchievement(ach::kHangingByABit);
+    }
     processBeat_ = kProcessBeats;                // the work is done; show the outcome
     processResolved_ = false;
     nav_ = Nav::Process;

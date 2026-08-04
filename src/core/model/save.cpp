@@ -441,6 +441,9 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     w.u32(d.dyingElapsedMs);
     w.u16(static_cast<uint16_t>(d.rack.size()));
     for (const auto& p : d.rack) w.u32(p.dyingElapsedMs);
+
+    // v44: DEFRAG minigame boards cleared, lifetime.
+    w.i32(d.stackerWins);
 }
 
 std::vector<uint8_t> serializeSave(const SaveData& d) {
@@ -914,6 +917,12 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
             if (i < d.rack.size()) d.rack[i].dyingElapsedMs = v;
         }
     }
+
+    // v44 tail: the played-defrag tally. Absent in a v1..v43 blob → 0, which starts the
+    // ladder fresh. Deliberately NOT seeded from `defragCount`: that counts defrags of
+    // every variant, so seeding from it would credit bought and rolled cleans as boards
+    // played by hand — over-crediting, the direction a migration must never take.
+    if (version >= 44) d.stackerWins = r.i32();
 
     if (!r.ok) { out = SaveData{}; return false; }  // truncated -> empty
     if (version < newestRenameVersion()) renameRetiredIds(d, version);

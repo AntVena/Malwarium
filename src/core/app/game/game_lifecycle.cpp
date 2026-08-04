@@ -539,6 +539,7 @@ void Game::wipeDeviceProgress() {
     collectedItems_.clear();
     speciesDives_.clear();
     bossWins_ = 0;
+    stackerWins_ = 0;
     hackerRank_ = 0;
     networksSeen_ = 0;
     handshakesSeen_ = 0;

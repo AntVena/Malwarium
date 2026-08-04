@@ -41,6 +41,7 @@ inline int achievementSeriesTotal(AchSeries series, const char* key, int param) 
         case AchSeries::Handshakes:
         case AchSeries::BitsHeld:
         case AchSeries::PetsRaised:
+        case AchSeries::StackerWins:
             return 0;                                   // unbounded — no "all of them"
         case AchSeries::SpeciesAtDepth:
         case AchSeries::SpeciesRaised:

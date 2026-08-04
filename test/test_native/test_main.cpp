@@ -12780,6 +12780,29 @@ static void test_ladder_inserts_table_invariants() {
     }
 }
 
+// An area's sector glyph is keyed by its own id, never by its rung. That is the whole
+// reason the name lives on the row, and it is exactly the sort of thing a copy-pasted
+// area.cpp breaks silently: two areas sharing a glyph still resolves, still draws, and
+// shows the wrong picture. Derived here from the id rather than compared against a list,
+// so a new area is covered the moment it joins the ladder.
+static void test_area_icons_are_keyed_by_area_id() {
+    for (int i = 0; i < kAreaCount; ++i) {
+        const AreaDef& a = area(i);
+        CHECK(a.icon && a.icon[0]);
+        char want[64];
+        std::snprintf(want, sizeof(want), "ICON_SECTOR_%s", a.id);
+        for (char* p = want; *p; ++p)
+            *p = static_cast<char>(std::toupper(static_cast<unsigned char>(*p)));
+        if (std::strcmp(a.icon, want) != 0)
+            std::printf("  AREA ICON OFF ITS ID: %s names %s, wanted %s\n", a.id, a.icon,
+                        want);
+        CHECK(std::strcmp(a.icon, want) == 0);
+        // ...and no two areas can end up pointing at one picture.
+        for (int j = i + 1; j < kAreaCount; ++j)
+            CHECK(std::strcmp(area(j).icon, a.icon) != 0);
+    }
+}
+
 // The DEFRAG minigame's rules (core/model/stacker.h), driven a press at a time. The model
 // is deterministic on purpose — no RNG anywhere — which is what lets a run be replayed
 // exactly here, and what makes the variant it backs a test of skill rather than luck.
@@ -12890,6 +12913,124 @@ static void test_stacker_run_stays_on_board_and_contiguous() {
         if (count == 0) continue;
         CHECK(last - first + 1 == count);      // no gaps
     }
+}
+
+// `rowWidth` is what the achievement rows read, and it has to answer for the TOP row of a
+// won board — the one case `width()` can't cover, since a win stops the run before the
+// survivors become the next hand.
+static void test_stacker_row_width_reports_the_survivors() {
+    Stacker s;
+    CHECK(s.rowWidth(0) == 0);                 // nothing locked yet
+    CHECK(stackerDropAt(s, 1));
+    CHECK(s.rowWidth(0) == kStackerStartWidth);
+    CHECK(stackerDropAt(s, 2));                // one column of overhang, shaved
+    CHECK(s.rowWidth(1) == 2);
+    CHECK(s.rowWidth(-1) == 0 && s.rowWidth(kStackerRows) == 0);   // out of range
+}
+
+namespace {
+// Play a whole board through the REAL button path, locking each row at `col(row)`. Leaves
+// the run parked on its result; the caller presses once more to finish it. False if a
+// column turned out unreachable, which would make the test a no-op rather than a failure.
+template <typename ColFn>
+bool playStackerBoard(Game& g, ColFn col) {
+    for (int r = 0; r < kStackerRows && g.stacker().running(); ++r) {
+        const int want = col(r);
+        bool aligned = false;
+        for (int guard = 0; guard < 4 * kStackerCols; ++guard) {
+            if (g.stacker().left() == want) { aligned = true; break; }
+            g.debugStepStacker();
+        }
+        if (!aligned) return false;
+        g.onButton(press(Button::B));
+    }
+    return true;
+}
+}  // namespace
+
+// The two rows a board's SHAPE earns, and the tally underneath them. A perfect board and
+// a one-block board are the two ends of the same measurement, so they are asserted
+// against each other rather than one at a time — reading the wrong end of it is the
+// mistake worth catching.
+static void test_stacker_win_credits_the_tally_and_the_shape_rows() {
+    // Column 0 every row: nothing ever overhangs, so the run reaches the top at full
+    // width. That is the perfect board, and NOT the narrow one.
+    Game g{StartMode::Hatched};
+    g.model().setFragmentation(60);
+    CHECK(g.stackerWins() == 0);
+    g.debugStartStackerDefrag();
+    CHECK(playStackerBoard(g, [](int) { return 0; }));
+    CHECK(g.stacker().won());
+    CHECK(g.stacker().rowWidth(kStackerRows - 1) == kStackerStartWidth);
+    g.onButton(press(Button::B));                   // park -> finish
+    CHECK(g.stackerWins() == 1);
+    CHECK(g.hasAchievement(ach::kPerfectDefrag));
+    CHECK(!g.hasAchievement(ach::kHangingByABit));
+
+    // Step one column right per row until the run is down to a single block, then hold
+    // that column to the top: a win, but the narrowest one there is.
+    Game n{StartMode::Hatched};
+    n.model().setFragmentation(60);
+    n.debugStartStackerDefrag();
+    CHECK(playStackerBoard(n, [](int r) { return r < 2 ? r : 2; }));
+    CHECK(n.stacker().won());
+    CHECK(n.stacker().rowWidth(kStackerRows - 1) == 1);
+    n.onButton(press(Button::B));
+    CHECK(n.stackerWins() == 1);
+    CHECK(n.hasAchievement(ach::kHangingByABit));
+    CHECK(!n.hasAchievement(ach::kPerfectDefrag));
+}
+
+// A lost board pays nothing. The tally is a record of boards CLEARED, so a run that ended
+// in mid-air must not creep into it — and the shape rows read a top row that was never
+// reached.
+static void test_stacker_loss_credits_nothing() {
+    Game g{StartMode::Hatched};
+    g.model().setFragmentation(60);
+    g.debugStartStackerDefrag();
+    // Base row at 0..2, then a drop with no column in common with it — the run keeps
+    // nothing and the board ends there, well short of the top.
+    CHECK(playStackerBoard(g, [](int r) { return r == 0 ? 0 : 4; }));
+    CHECK(!g.stacker().running() && !g.stacker().won());
+    CHECK(g.stacker().row() < kStackerRows - 1);
+    g.onButton(press(Button::B));
+    CHECK(g.stackerWins() == 0);
+    CHECK(!g.hasAchievement(ach::kPerfectDefrag));
+    CHECK(!g.hasAchievement(ach::kHangingByABit));
+}
+
+// The counting ladder rides the ordinary sweep, like every other counted series, and the
+// tally is PLAYER-level: it has to survive the pet that set it.
+static void test_stacker_wins_ladder_sweeps_and_persists() {
+    Game g{StartMode::Hatched};
+    uint32_t t = 0;
+    g.debugAddStackerWins(10);
+    g.tick(t += kAchSweepIntervalMs);
+    CHECK(g.hasAchievement("DEFRAG_BY_HAND"));
+    CHECK(g.hasAchievement("STACK_10"));
+    CHECK(!g.hasAchievement("STACK_50"));
+
+    // v44 on the wire, and back into a Game: the tally is the operator's, so it has to
+    // come back on a device that has been power-cycled since.
+    SaveData a; std::strcpy(a.activeId, "paypup"); a.generation = 1;
+    a.stackerWins = 10;
+    SaveData out;
+    CHECK(deserializeSave(serializeSave(a), out));
+    CHECK(out.stackerWins == 10);
+    MemSaveStore store; store.save(serializeSave(a));
+    Game loaded(StartMode::Hatched, "paypup", &store);
+    CHECK(loaded.stackerWins() == 10);
+
+    // A pre-v44 blob starts the ladder at zero rather than inheriting the pet's own
+    // defrag tally, which counts bought and rolled cleans too.
+    SaveData old; std::strcpy(old.activeId, "paypup"); old.generation = 1;
+    old.defragCount = 40;
+    std::vector<uint8_t> blob = serializeSave(old);
+    blob[4] = 43; blob[5] = 0;                     // stamp back to v43
+    MemSaveStore oldStore; oldStore.save(blob);
+    Game migrated(StartMode::Hatched, "paypup", &oldStore);
+    CHECK(migrated.stackerWins() == 0);
+    CHECK(!migrated.hasAchievement("DEFRAG_BY_HAND"));
 }
 
 // The Game seam: a played result reaches the SAME outcome path a rolled or bought one
@@ -13236,7 +13377,8 @@ static void test_achievement_table_is_well_formed() {
                            ach::kGoneRogue, ach::kWormWhisperer, ach::kAirGapped,
                            ach::kDevtoolsIntruder, ach::kTrojanUnleashed, ach::kFirstDuel,
                            ach::kBackUpAndDriven, ach::kNeededMoreBackup,
-                           ach::kShatteredPlatter,
+                           ach::kShatteredPlatter, ach::kPerfectDefrag,
+                           ach::kHangingByABit,
                            ach::kDeepWebDepth8, ach::kDeepWebDepth64}) {
         if (!achievementById(id)) std::printf("  MISSING ACHIEVEMENT ID: %s\n", id);
         CHECK(achievementById(id) != nullptr);
@@ -14545,10 +14687,15 @@ static void test_firmware_version_ordering() {
     RUN(test_renamed_ids_table_invariants)  \
     RUN(test_save_v43_ladder_insert_shifts_expl_progress) \
     RUN(test_ladder_inserts_table_invariants) \
+    RUN(test_area_icons_are_keyed_by_area_id) \
     RUN(test_stacker_shaves_the_overhang)     \
     RUN(test_stacker_missing_entirely_loses)  \
     RUN(test_stacker_clearing_every_row_wins) \
     RUN(test_stacker_run_stays_on_board_and_contiguous) \
+    RUN(test_stacker_row_width_reports_the_survivors) \
+    RUN(test_stacker_win_credits_the_tally_and_the_shape_rows) \
+    RUN(test_stacker_loss_credits_nothing) \
+    RUN(test_stacker_wins_ladder_sweeps_and_persists) \
     RUN(test_stacker_defrag_pays_out_like_any_other) \
     RUN(test_replication_ghost_is_raised_by_a_failed_defrag_on_a_critical_disk) \
     RUN(test_air_gapped_snack_cures_the_ghost_and_unlocks) \

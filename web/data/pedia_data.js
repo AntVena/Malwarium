@@ -2133,6 +2133,39 @@ window.PEDIA_DATA = {
       "goal": 50
     },
     {
+      "key": "DEFRAG_BY_HAND",
+      "name": "Defragged by Hand",
+      "trigger": "Clear 1 disk by hand in the DEFRAG minigame.",
+      "icon": "assets/icons/ICON_ACH_DEFRAG_BY_HAND.png",
+      "goal": 1
+    },
+    {
+      "key": "STACK_10",
+      "name": "Sector Stacker",
+      "trigger": "Clear 10 disks by hand in the DEFRAG minigame.",
+      "icon": "assets/icons/ICON_ACH_STACK_10.png",
+      "goal": 10
+    },
+    {
+      "key": "STACK_50",
+      "name": "Contiguous",
+      "trigger": "Clear 50 disks by hand in the DEFRAG minigame.",
+      "icon": "assets/icons/ICON_ACH_STACK_50.png",
+      "goal": 50
+    },
+    {
+      "key": "PERFECT_DEFRAG",
+      "name": "Zero Fragmentation",
+      "trigger": "Clear a DEFRAG board without shaving off a single block.",
+      "icon": "assets/icons/ICON_ACH_PERFECT_DEFRAG.png"
+    },
+    {
+      "key": "HANGING_BY_A_BIT",
+      "name": "Hanging by a Bit",
+      "trigger": "Clear a DEFRAG board with a single block left standing.",
+      "icon": "assets/icons/ICON_ACH_HANGING_BY_A_BIT.png"
+    },
+    {
       "key": "BIT_BARON",
       "name": "Bit Baron",
       "trigger": "Hold 10000 Bits at once.",
