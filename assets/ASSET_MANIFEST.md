@@ -27,10 +27,9 @@ final art still wanted) · `☑` DELIVERED · `⌫` PARKED (drawn, but nothing c
 delivered** (`/assets/PAL_CORE.json`) — bind colours to `PAL_CORE` role tokens (never literal
 hex). Sizes below are *logical* pixels.
 
-**Design studies — NOT shippable.** Underscore-prefixed files are references, never ship/convert
-them: `assets/_contact_sheet.png` (icon/sprite contact sheet), `assets/_explore_paypup_acid.png` /
-`_clinical.png` / `_locker.png` (Paypup palette exploration — Acid is the chosen lead),
-and the Malbear shading studies.
+**Design studies — NOT shippable.** An underscore-prefixed file (or folder) is a reference:
+`gen_assets.py` skips it, so it never reaches flash. Park studies that way rather than deleting
+them mid-decision, and clear them out once the decision they informed is shipped.
 
 ---
 
