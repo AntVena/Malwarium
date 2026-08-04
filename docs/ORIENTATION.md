@@ -279,7 +279,7 @@ the flasher offers whatever the manifest beside it names, and a site one release
 host would offer a version nobody is holding. `pages/README.md` is that directory's own
 standard; `make pages` is the whole publish, and what CI runs.
 
-Cutting a release is `git tag vX.Y.Z && git push github vX.Y.Z`. **Bump both versions first** —
+Cutting a release is `git tag vX.Y.Z && git push origin vX.Y.Z`. **Bump both versions first** —
 `include/version.h` and `web/VERSION`. A device installs only what beats what it already runs, so
 an unbumped publish is one nobody receives, and bumping both means never having to work out which
 one moved. `make manifest` validates its own output with the device's parser before anything is
