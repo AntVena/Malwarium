@@ -114,21 +114,16 @@ which is why gameplay ships first and the drawing follows.
 
 **Art notes that live nowhere else.** Only judgement calls, not status:
 
-- **`SPR_PET_BERSERKERNEL` shares `SPR_PET_BRUINFORCE`'s exact green palette.** The Good/Bad branch
-  reads from posture and face — reared and roaring vs. squared and guarding — never from hue. That
-  is what keeps the pair legible under the grayscale gate (`CREATURE_VISUAL_RULES.md §5`), and it
-  is the model for every future branch pair.
-- **`SPR_PET_PINGCUB` carries the same five greens as `SPR_PET_MALBEAR`/`SPR_PET_BRUINFORCE`**, so
-  cub → bear → grown-bear reads as one animal across three drawings. Still `▨`: it has one idle
-  frame and wants a second to match the 2-frame norm above.
+- **Colour is the line's, not the creature's** — see `CREATURE_VISUAL_RULES.md §4`. Nothing about
+  hue belongs in this file.
+- **`SPR_PET_PINGCUB` is `▨`** — it has one idle frame and wants a second to match the 2-frame
+  norm above. The drawing itself is final.
 - **`SPR_PET_EGG_PHISH_HATCH` is deliberately the only egg file.** Frames 0–1 are the idle loop and
   0–7 the hatch one-shot (`Game::hatchCrackFrame` walks it). A separately-drawn single-frame
   `SPR_PET_EGG_PHISH` was byte-identical to frame 0, so shipping it too would only duplicate flash.
 - **`SPR_PET_CACHEMUTT` is an enemy frame, not a pet.** No `CreatureDef` points at it; the Sim
   dummy, the EXPL bosses and the Lethal test enemy all borrow it (`game_combat.cpp`, `combat.cpp`).
-- **Trojan pets re-skin their origin line.** A Trojan looks like the line it diverted from — right
-  colour, one small "wrong" tell — so its brief is a palette re-skin, not a new silhouette
-  (`src/core/content/LINE_MOVE_IDENTITIES.md §3`).
+- **Trojan pets re-skin their origin line** — see `CREATURE_VISUAL_RULES.md §4`.
 
 ### C.2 Wild malbeasts (`SPR_MALBEAST_*`)
 

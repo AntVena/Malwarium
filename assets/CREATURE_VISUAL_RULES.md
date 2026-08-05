@@ -73,9 +73,28 @@ topography for light to describe, so it flattens and reads *less* evolved despit
 
 ## 4. Colour, anatomy, texture
 
-- **Colour shift:** deep, slightly-more-saturated base reads "advanced" — **but keep the
-  highlight tone bright** (Paypup-family) so the lighter greens still live on lit crowns and
-  plates. Don't lock the light palette away.
+**A species has a mother colour, and every creature on that line wears it.** Ransomware is green,
+Phishing is blue. It is the line's signature, not any one creature's — so two creatures being the
+same hue tells you they share a line, and nothing else. A Good/Bad branch pair is the same colour
+because it is one line, not because a branch is supposed to match.
+
+**The range inside that colour widens as the stage advances.** An early creature can be carried by
+a few shades; a Daemon needs more of them to hold the extra plating and texture without going
+muddy. So "more shades of the mother colour" is what growth looks like, not a shift to a new hue.
+
+**A Trojan wears the colour of the line it diverted from**, since it is pretending to be one —
+right hue, one small "wrong" tell. That makes a Trojan's brief a re-skin of its origin line rather
+than a new silhouette, and it follows from the rule above rather than being a separate one.
+
+**This is a rule of thumb, not a gate.** Accents — metallic parts, eyes, a tell — sit outside it
+freely, and plenty of shipped sprites already break it that way. Nothing enforces it and nothing
+should: the enforced test is §5's grayscale read, and if flash or RAM ever demanded it, drawing
+every sprite in greyscale and colouring it through a per-line mapping at draw time would be a
+perfectly good reason to drop the rule entirely.
+
+- **Colour shift within the line:** deep, slightly-more-saturated base reads "advanced" — **but
+  keep the highlight tone bright** so the lighter shades still live on lit crowns and plates.
+  Don't lock the light palette away.
 - **Back-pocket anatomy:** **exactly one** dramatic new piece per creature, hinting the Daemon
   (Malbear's dorsal crest + shoulder plates; the Daemon gets the full plating). Smaller bits
   (claws, beaks) are free but must read **"becoming," not "deadly."** Hold the real escalation
