@@ -118,7 +118,11 @@ click-distance, so the most-used categories are the cheapest to reach.
 | 8 CFG | 1 back | Config | system info, HackerTag, title, device, radio, updates |
 
 **A+C on the top-level carousel flips to the parallel Hacker face** (PROFILE / CREW / SHOP / VAULT /
-MERGE HUB / PEERS / LINK), which is where device-level identity and radio social features live.
+MERGE HUB / PEERS / LINK), which is where device-level identity and radio social features live —
+except while explore-mode is running, where the chord opens that walk's control overlay instead
+(Network Ping / Warp / Stop), and a second chord there arms **auto-progress**: the walk steps the
+area ladder by itself, positionally, so a finished ladder keeps rotating instead of stopping at the
+frontier. The EXPL globe on the carousel turns while it's armed.
 
 ---
 

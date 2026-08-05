@@ -47,7 +47,7 @@ void Game::render(Framebuffer& fb) const {
         case Nav::ExploreControl:
             // The A+C control overlay floats over the idle habitat.
             drawHabitat(fb, -1);
-            drawExploreControl(fb, !heldWarpKeys().empty());
+            drawExploreControl(fb, !heldWarpKeys().empty(), autoProgress_);
             break;
         case Nav::Encounter: drawEncounterScreen(fb); break;
         case Nav::Wifi: drawWifiScreen(fb); break;
@@ -312,11 +312,17 @@ void Game::drawHabitat(Framebuffer& fb, int cursor) const {
     // transient, and the pet is still there underneath when it clears).
     drawAchievementBanner(fb);
 
-    // Grey out the care/combat slots while the pet is still an egg.
-    unsigned eggLockMask = 0;
-    for (int i = 0; i < kCarouselSlots; ++i)
-        if (eggSlotLocked(carouselSlots()[i].id)) eggLockMask |= (1u << i);
-    drawCarousel(fb, cursor, uiMode_, beat_, eggLockMask);
+    // Grey out the care/combat slots while the pet is still an egg. EXPL's globe turns
+    // while AUTO-PROGRESS is armed — the walk is running itself in the background, and
+    // the shelf is the only screen that's always up to say so.
+    unsigned eggLockMask = 0, spinMask = 0;
+    for (int i = 0; i < kCarouselSlots; ++i) {
+        const SubmenuId id = carouselSlots()[i].id;
+        if (eggSlotLocked(id)) eggLockMask |= (1u << i);
+        if (id == SubmenuId::Expl && autoProgress_ && exploreActive_)
+            spinMask |= (1u << i);
+    }
+    drawCarousel(fb, cursor, uiMode_, beat_, eggLockMask, spinMask);
 }
 
 void Game::drawAchievementBanner(Framebuffer& fb) const {
@@ -478,9 +484,19 @@ void Game::drawSubmenu(Framebuffer& fb) const {
             bool cleared[kExplSectors * kExplSubAreas];
             bool boss[kExplSectors * kExplSubAreas];
             flattenSubFlags(cleared, boss);
-            drawExplList(fb, listRow_, sectorCleared_, cleared, boss,
-                         exploreActive_ ? exploreSector_ : -1,
-                         exploreActive_ ? exploreSub_ : -1, explNavArea_, beat_);
+            ExplListView v;
+            v.cursor = listRow_;
+            v.areaCleared = sectorCleared_;
+            v.subCleared = cleared;
+            v.subBossUnlocked = boss;
+            v.exploringSector = exploreActive_ ? exploreSector_ : -1;
+            v.exploringSub = exploreActive_ ? exploreSub_ : -1;
+            v.navArea = explNavArea_;
+            v.streakWins = exploreStreak_;
+            v.winsToBoss = kExploreStreakToBoss;
+            v.bestDeepWebDepth = bestDeepWebDepth_;
+            v.beat = beat_;
+            drawExplList(fb, registry_, v);
             break;
         }
         default:

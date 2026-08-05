@@ -28,9 +28,14 @@
 //        simbattle [fight [stats]] (the REAL entry — buffs carried in from outside,
 //             e.g. armbuffs simbattle fight stats) · malbear
 //        bruinforce (Good Daemon) · berserkernel (Bad Daemon) · csf (Critical Failure)
-// expl (the nested area/sub-area ladder) · explore (armed → the idle
-// explore badge)
-// explorectl (the A+C control overlay) · encounter [sinkhole] ·
+// expl [inside|bossready|endgame] (the nested area/sub-area ladder — one nav
+//        LEVEL per frame: the top-level zone picker, "inside" for area 0's own block,
+//        "bossready" for that block with its gauntlet unlocked, "rerun" for it already
+//        beaten, "endgame" for the every-area-cleared picker) ·
+//        explore (armed → the idle explore badge)
+// explorectl [auto] (the A+C control overlay; "auto" arms AUTO-PROGRESS with the
+//        second chord) · explore auto (the armed habitat with it running — the EXPL
+//        globe spins, so pass a `beats` count to land on a frame) · encounter [sinkhole] ·
 //        wildcombat (arm → Network Ping to a wild intro → live combat; sinkhole seeds
 //        a Sinkhole Trap so the 3rd intro option shows) · walk (alias of explore)
 // wifi (arm → ping to the Wi-Fi network event,; bounded search,
@@ -491,10 +496,36 @@ int main(int argc, char** argv) {
         // Seed a mid-ladder nested state so the EXPL list shows every tag at
         // once: area 0 has subs 1-2 CLEARED, sub 3 BOSS-READY (> FIGHT BOSS), subs 4-5
         // OPEN; area 1 stays LOCKED (its subs "??????"). Grayscale-safe row tags.
-        game.debugSetSubCleared(0, 0, true);
-        game.debugSetSubCleared(0, 1, true);
-        game.debugSetSubBossUnlocked(0, 2, true);
+        // The list draws one nav LEVEL at a time, so the two levels are two frames:
+        // without a flag it's the TOP-level zone picker, "inside" drills into area 0
+        // for that area's own block (its gauntlet row + the five sub-areas).
+        // "endgame" is the other end of the same screen: every area CLEARED, so the
+        // DeepWeb row is a live "> DIVE" and each zone shows its own glyph (or the
+        // pending-art frame) — the densest the top level ever gets. "bossready" clears
+        // area 0's five sub-areas WITHOUT clearing the area, which is the one state that
+        // names the area gauntlet's boss on its row.
+        const bool rerun = hasFlag(argc, argv, "rerun");
+        const bool bossReady = rerun || hasFlag(argc, argv, "bossready");
+        if (hasFlag(argc, argv, "endgame")) {
+            for (int a = 0; a < kExplSectors; ++a) {
+                game.debugSetSectorCleared(a, true);
+                for (int s = 0; s < kExplSubAreas; ++s) game.debugSetSubCleared(a, s, true);
+            }
+        } else if (bossReady) {
+            for (int s = 0; s < kExplSubAreas; ++s) game.debugSetSubCleared(0, s, true);
+            // "rerun" beats the gauntlet too, so its row shows the CLEARED area's
+            // re-runnable form ("> RERUN") rather than the first-clear "> AREA BOSS".
+            if (rerun) game.debugSetSectorCleared(0, true);
+        } else {
+            game.debugSetSubCleared(0, 0, true);
+            game.debugSetSubCleared(0, 1, true);
+            game.debugSetSubBossUnlocked(0, 2, true);
+        }
         enterSlot(SubmenuId::Expl);
+        // B drills into the focused ZONE — area 0 here, except in "endgame", where the
+        // cursor rightly parks on the DeepWeb row and B arms the dive instead.
+        if (bossReady || hasFlag(argc, argv, "inside"))
+            game.onButton({Button::B, true, false});
     } else if (hasFlag(argc, argv, "hacker")) {
         // Hacker face (07): A+C flips PET → HACKER. Seed identity + economy so
         // the PROFILE viewer + SHOP list read populated. `profile`/`shop` open a slot;
@@ -618,6 +649,16 @@ int main(int argc, char** argv) {
         if (hasFlag(argc, argv, "explorectl")) {
             game.inventory().add("access_token", 1); // so WARP shows enabled
             game.onButton({Button::A, true, true});  // A+C -> the control overlay
+            // "auto" arms AUTO-PROGRESS with a second chord — the overlay's ON state,
+            // and what sets the carousel's EXPL globe spinning ("explore auto", below).
+            if (hasFlag(argc, argv, "auto"))
+                game.onButton({Button::A, true, true});
+        } else if (hasFlag(argc, argv, "auto")) {
+            // The armed habitat with auto-progress running: the EXPL globe turns on the
+            // shelf. Pass a `beats` count to land on a particular frame of the spin.
+            game.onButton({Button::A, true, true});  // A+C -> the control overlay
+            game.onButton({Button::A, true, true});  // ...again -> arm auto-progress
+            game.onButton({Button::A, true, false}); // A -> ping, which also leaves it
         } else if (hasFlag(argc, argv, "warp")) {
             // Warp picker: hold both keys, open the control overlay, B -> picker.
             game.inventory().add("access_token", 1);

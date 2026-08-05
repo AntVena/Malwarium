@@ -13,6 +13,7 @@
 
 namespace mal {
 
+class ContentRegistry;
 class Framebuffer;
 struct SpriteData;
 
@@ -40,9 +41,9 @@ constexpr int kExplRowsPerArea = 1 + kExplSubAreas;      // header + 5 sub rows
 // of the AreaDef rows (area_defs.h); it's a single special list row (no
 // sub-areas), armed like explore.
 constexpr int kDeepWebSector = kExplSectors;
-// The list = the DeepWeb Dive row FIRST (row 0), then the real area/sub rows. DeepWeb
-// leads because it's the most-rewarding farming zone once unlocked, so entering EXPL
-// parks the cursor on it (firstSelectableExplRow) — the fewest presses to the best
+// Row 0 is the DeepWeb Dive, then the real area/sub rows. DeepWeb leads because it's
+// the most-rewarding farming zone once unlocked, so an entry with nothing else to
+// resume parks the cursor on it (Game::openExplList) — the fewest presses to the best
 // grind. While locked it's an inert "??????" teaser at the top.
 inline int explRowCount() { return 1 + kExplSectors * kExplRowsPerArea; }
 inline bool explRowIsDeepWeb(int row) { return row == 0; }
@@ -79,16 +80,47 @@ ExplRowState explRowState(int row, const bool* areaCleared, const bool* subClear
 // locked rows). Pure function of the state.
 bool explRowSelectable(ExplRowState s);
 
-// L2 nested area/sub-area list. `cursor` is the focused row (0..explRowCount
-// ()-1). See the flag-block contract above. `exploringSector`/`exploringSub` mark the
-// armed/running sub-area (or -1) → the EXPLORING tag. `navArea` is the two-level nav
-// level: -1 = TOP level (B on an area header ENTERs it), >= 0 = inside
-// that area (B acts on a sub / boss, C pops back out) — only drives the footer hint.
-// `beat` drives one thing: a focused ZONE title (area header / DeepWeb row) pulses,
-// so a heading-shaped row still reads as the armed selection.
-void drawExplList(Framebuffer& fb, int cursor, const bool* areaCleared,
-                  const bool* subCleared, const bool* subBossUnlocked,
-                  int exploringSector, int exploringSub, int navArea, int beat = 0);
+// THE LEVEL IS THE LIST: which rows are drawn at nav level `navArea` (-1 = top).
+// The top level is a ZONE PICKER — the DeepWeb row plus one row per area, and none of
+// the sub-areas; inside area N it is N's own block — the area-boss row plus N's
+// sub-areas. So the drawn list is 1+kExplSectors rows or 1+kExplSubAreas rows, never
+// the whole explRowCount() ladder, and the screen a player reads is the level they are
+// navigating. `explRowLandable` (Game) is the further "does the cursor stop here"
+// filter on top of this — every landable row is in-level, but not the reverse (a
+// locked area is shown as "??????" and skipped by the cursor).
+inline bool explRowInLevel(int row, int navArea) {
+    if (explRowIsDeepWeb(row)) return navArea < 0;
+    if (navArea < 0) return explRowSub(row) < 0;      // area headers only
+    return explRowArea(row) == navArea;               // that area's header + subs
+}
+
+// Everything drawExplList renders. A view struct rather than a parameter list because
+// the screen reads a dozen unrelated facts and a positional call of that length is
+// unreadable at both ends (same reason as ShopRowView, below).
+struct ExplListView {
+    int cursor = 0;                  // focused row, 0..explRowCount()-1
+    // The durable flag blocks — see the contract above. Any may be null (all-false).
+    const bool* areaCleared = nullptr;
+    const bool* subCleared = nullptr;
+    const bool* subBossUnlocked = nullptr;
+    int exploringSector = -1;        // the armed/running sub-area (or -1) → EXPLORING
+    int exploringSub = -1;
+    int navArea = -1;                // the nav level — see explRowInLevel above
+    // The armed sub-area's win streak and the count that unlocks its boss, so the
+    // frontier row answers "how close am I" where the choice is made, instead of only
+    // on the habitat badge (drawExploreBadge).
+    int streakWins = 0;
+    int winsToBoss = 0;
+    int bestDeepWebDepth = 0;        // the DeepWeb row's own progress readout (0 = none)
+    // `beat` drives one thing: a focused ZONE title (an area, the area-boss row, the
+    // DeepWeb row) pulses, so a heading-shaped row still reads as the armed selection.
+    int beat = 0;
+};
+
+// L2 nested area/sub-area list, drawn one LEVEL at a time (explRowInLevel). Areas
+// carry their own sector glyph (ICON_SECTOR_<AREA_ID>, resolved through `reg` — a
+// missing one draws as an empty frame rather than shifting the row).
+void drawExplList(Framebuffer& fb, const ContentRegistry& reg, const ExplListView& v);
 
 // Explore-mode idle badge: a thin status line under the top track, drawn
 // over the idle habitat while explore-mode is active — a pulsing cursor +
@@ -105,9 +137,10 @@ enum class ExploreBadgeMode { Wins, BossReady, Farming, DeepDive };
 void drawExploreBadge(Framebuffer& fb, const char* label, int count, int countMax,
                       ExploreBadgeMode mode);
 
-// Explore-control overlay: the A+C chord's 3-action strip over the
-// habitat — A Network Ping · B Warp (dimmed when no key is held) · C Stop explore.
-void drawExploreControl(Framebuffer& fb, bool hasWarpKey);
+// Explore-control overlay: the A+C chord's 3-action strip over the habitat — A Network
+// Ping · B Warp (dimmed when no key is held) · C Stop explore — plus the AUTO-PROGRESS
+// mode below a rule, toggled by the same chord that opened the overlay.
+void drawExploreControl(Framebuffer& fb, bool hasWarpKey, bool autoProgress);
 
 // Sector accessors ("difficulty-scaled by sector tier") — sector identity
 // is data owned by this file; Game reads it through these rather than duplicating

@@ -5423,9 +5423,10 @@ static void test_train_expl_shells() {
       g.onButton(press(Button::B));                  // arm sub-area 1 (index 0)
       CHECK(g.nav() == Game::Nav::Idle);
       CHECK(g.exploreActive() && g.exploreSector() == 0 && g.exploreSub() == 0);
-      // Re-open: drill in, then A advances to the next open sub-area (sub 2), B arms it.
+      // Re-open with explore-mode RUNNING: EXPL resumes inside area 0 with the cursor
+      // already on the armed sub-area (no drill press), so A advances straight to
+      // sub-area 2 and B arms it.
       enterSubmenuId(g, SubmenuId::Expl);
-      g.onButton(press(Button::B));                  // drill into area 0 (cursor -> sub 1)
       g.onButton(press(Button::A));                  // sub-area 1 -> sub-area 2
       g.onButton(press(Button::B));                  // arm explore on sub-area 2
       CHECK(g.nav() == Game::Nav::Idle && g.exploreSub() == 1);
@@ -8731,20 +8732,57 @@ static void test_expl_sector_linear_gating() {
 // the other with no warning, on a screen no test renders name-by-name. Measured
 // through the renderers' own metrics so it can't drift from what ships.
 static void test_expl_names_fit_their_rows() {
-    // Sub-area rows: name starts at x=34; the widest tag rowTag() can pair with a
-    // sub-area row is "> FIGHT BOSS", right-aligned against the 8px margin.
-    const int subNameW = kActiveW - 8 - textWidth("> FIGHT BOSS") - 34;
-    // Area headers start at x=12 and pair with the widest area tag, "> AREA BOSS".
-    const int areaNameW = kActiveW - 8 - textWidth("> AREA BOSS") - 12;
+    // Every EXPL row is a TITLE line — name at x=34, state tag right-aligned against the
+    // 8px margin — over a DETAIL line running the full width from the same x. Each name
+    // is budgeted against the widest tag ITS OWN row can pair with.
+    const int titleX = 34, margin = 8;
+    const int subNameW  = kActiveW - margin - textWidth("> FIGHT BOSS") - titleX;
+    const int areaNameW = kActiveW - margin - textWidth("CLEARED") - titleX;
+    const int bossNameW = kActiveW - margin - textWidth("> AREA BOSS") - titleX;
+    const int detailW   = kActiveW - margin - titleX;
+    // The breadcrumb header inside an area: "EXPL", the cursor triangle, then the area
+    // name at a fixed offset past both.
+    const int crumbX = margin + textWidth("EXPL") + 16;
     for (int s = 0; s < kExplSectors; ++s) {
-        CHECK(textWidth(explSectorName(s)) <= areaNameW);
-        for (int i = 0; i < kExplSubAreas; ++i)
+        CHECK(textWidth(explSectorName(s)) <= areaNameW);         // top-level zone row
+        CHECK(textWidth(explSectorName(s)) <= kActiveW - margin - crumbX);
+        CHECK(textWidth(area(s).areaBossName) <= bossNameW);      // the area-gauntlet row
+        // The Title a cleared area grants rides that same row's DETAIL line, as do the
+        // sub-boss names on a boss-ready sub-area row.
+        CHECK(textWidth("TITLE: ") + textWidth(sectorTitle(s)) <= detailW);
+        for (int i = 0; i < kExplSubAreas; ++i) {
             CHECK(textWidth(explSubAreaName(s, i)) <= subNameW);
+            CHECK(textWidth("BOSS: ") + textWidth(area(s).subBossNames[i]) <= detailW);
+        }
         // Storefront headers: drawn at the left margin, with the Bits wallet right-
         // aligned opposite. Budget the wallet at a 6-figure purse plus its unit.
-        const int storeNameW = kActiveW - 2 * 8 - textWidth("999999 B");
+        const int storeNameW = kActiveW - 2 * margin - textWidth("999999 B");
         CHECK(textWidth(shopName(s)) <= storeNameW);
         CHECK(textWidth(modShopName(s)) <= storeNameW);
+    }
+}
+
+// THE LEVEL IS THE LIST (explRowInLevel): the TOP level draws the DeepWeb row plus one
+// row per AREA and none of the sub-areas; inside an area it draws that area's own block
+// and nothing else. That is what keeps the drawn list ~6 rows however long the ladder
+// grows, instead of a 13-row window over the whole thing.
+static void test_expl_level_scoped_rows() {
+    int top = 0;
+    for (int r = 0; r < explRowCount(); ++r) {
+        if (!explRowInLevel(r, -1)) continue;
+        ++top;
+        CHECK(explRowIsDeepWeb(r) || explRowSub(r) < 0);   // zones only, no sub-areas
+    }
+    CHECK(top == 1 + kExplSectors);                        // DeepWeb + every area
+    for (int a = 0; a < kExplSectors; ++a) {
+        int inside = 0;
+        for (int r = 0; r < explRowCount(); ++r) {
+            if (!explRowInLevel(r, a)) continue;
+            ++inside;
+            // Its own block only — not a neighbour's rows, and not the DeepWeb row.
+            CHECK(!explRowIsDeepWeb(r) && explRowArea(r) == a);
+        }
+        CHECK(inside == 1 + kExplSubAreas);                 // boss row + its sub-areas
     }
 }
 
@@ -8834,6 +8872,82 @@ static void clearSubArea(Game& g, int area, int sub) {
     CHECK(g.subCleared(area, sub));                // its boss beaten → sub-area cleared
 }
 
+// Run the armed walk — auto-fighting whatever it rolls, declining storefronts — until
+// `done`, or a bound. The walk stopping (a loss cancels explore-mode) ends it too, so a
+// caller's CHECK reports the real outcome instead of the loop spinning to its bound.
+template <typename F>
+static void runWalkUntil(Game& g, F done) {
+    uint32_t t = 0;
+    for (int i = 0; i < 60000 && !done(); ++i) {
+        switch (g.nav()) {
+            case Game::Nav::Idle:
+                if (!g.exploreActive()) return;    // the walk ended — stop, don't re-arm
+                pingExplore(g);
+                break;
+            case Game::Nav::Combat:
+                for (int j = 0; j < 800 &&
+                        g.combat().outcome() == Combat::Outcome::Ongoing; ++j)
+                    g.tick(t += kHeartbeatMs);
+                g.onButton(press(Button::B));
+                break;
+            case Game::Nav::Shop:
+            case Game::Nav::ModShop: g.onButton(press(Button::C)); break;
+            default: g.onButton(press(Button::B)); break;
+        }
+    }
+}
+
+// AUTO-PROGRESS steps the ladder POSITIONALLY — the next rung by index, never "the next
+// unbeaten one". That is what lets a finished ladder keep rotating, and it means an area
+// spliced into the middle of kAreaList joins the rotation with no rule to update.
+static void test_auto_progress_steps_positionally() {
+    // Mid-area, every sub-area already cleared (so no sub-boss is ever due again and
+    // only the positional step can move the walk): the rung after 1 is 2.
+    { Game g{StartMode::Hatched, "bruinforce"};
+      g.debugAddCombatXp(600000);
+      for (int s = 0; s < kExplSubAreas; ++s) g.debugSetSubCleared(0, s, true);
+      g.debugSetSectorCleared(0, true);
+      g.debugSetAutoProgress(true);
+      g.debugArmExplore(0, 1);
+      g.debugSetExploreStreak(kExploreStreakToBoss);   // the step condition, met
+      runWalkUntil(g, [&] { return g.exploreSub() != 1; });
+      CHECK(g.exploreActive() && g.exploreSector() == 0 && g.exploreSub() == 2);
+      CHECK(g.exploreStreak() < kExploreStreakToBoss); }  // re-armed → streak reset
+
+    // On the LAST sub-area with the gauntlet not standing (an earlier sub-area is still
+    // unbeaten — what arming auto-progress midway through an area leaves behind), the
+    // rotation wraps to the area's first rung rather than stalling on a fight it can't
+    // start. Coming round again is what eventually makes the gauntlet reachable.
+    { Game g{StartMode::Hatched, "bruinforce"};
+      g.debugAddCombatXp(600000);
+      const int last = kExplSubAreas - 1;
+      g.debugSetSubCleared(0, last, true);         // ...but sub-area 0 is not
+      g.debugSetAutoProgress(true);
+      g.debugArmExplore(0, last);
+      g.debugSetExploreStreak(kExploreStreakToBoss);
+      runWalkUntil(g, [&] { return g.exploreSub() != last; });
+      CHECK(g.exploreActive() && g.exploreSector() == 0 && g.exploreSub() == 0); }
+}
+
+// A won gauntlet rolls the rotation on to the next OPEN area instead of relaunching
+// itself — the one step the shared hand-back hook can't read off the armed sub-area,
+// since "the gauntlet is next" and "the gauntlet just happened" leave the walk standing
+// on the same rung. Also proves a CLEARED area's gauntlet is re-runnable at all.
+static void test_auto_progress_gauntlet_rolls_to_next_area() {
+    Game g{StartMode::Hatched, "bruinforce"};
+    g.debugAddCombatXp(600000);                    // level hard: the gauntlet is winnable
+    for (int s = 0; s < kExplSubAreas; ++s) g.debugSetSubCleared(0, s, true);
+    g.debugSetSectorCleared(0, true);              // area 0 DONE — and so re-runnable
+    g.debugSetAutoProgress(true);
+    g.debugArmExplore(0, kExplSubAreas - 1);       // the last rung before the gauntlet
+    g.debugSetExploreStreak(kExploreStreakToBoss);
+    const int bits0 = g.bits();
+    runWalkUntil(g, [&] { return g.exploreSector() != 0; });
+    CHECK(g.exploreActive());
+    CHECK(g.exploreSector() == 1 && g.exploreSub() == 0);   // rolled on, didn't repeat
+    CHECK(g.bits() > bits0);                       // the re-run paid its Bits lump
+}
+
 // End-to-end: clear all 5 sub-areas of an area (each = a 10-win streak →
 // FIGHT BOSS), which unlocks the AREA boss = a 5-stage gauntlet of those sub-area
 // bosses; beating that sets sectorCleared[0], unlocks area 1, pays a Bits lump, and
@@ -8856,12 +8970,12 @@ static void test_explore_streak_unlocks_boss_then_clears() {
     CHECK(g.areaBossReady(0));                      // all 5 sub-areas cleared → area boss
     const int bits0 = g.bits();
 
-    // Trigger the AREA boss: the 5-stage gauntlet, carried Health, no heal. Two-level nav
-    // B on the area-0 header DRILLS in; inside, all subs are cleared so
-    // the boss-ready header is first-landable → a second B launches the AREA BOSS.
+    // Trigger the AREA boss: the 5-stage gauntlet, carried Health, no heal. clearSubArea
+    // leaves explore-mode armed on the last sub, so EXPL resumes INSIDE area 0 on that
+    // row; A wraps within the area to the boss-ready header and B launches the AREA BOSS.
     uint32_t t = 0;
     enterSubmenuId(g, SubmenuId::Expl);
-    g.onButton(press(Button::B));                  // drill into area 0
+    g.onButton(press(Button::A));                  // armed sub -> boss-ready header
     g.onButton(press(Button::B));                  // AREA BOSS (boss-ready header)
     CHECK(g.nav() == Game::Nav::Combat);
     for (int i = 0; i < 80000 && !g.sectorCleared(0); ++i) {
@@ -9063,6 +9177,53 @@ static void test_expl_nested_list_nav() {
       CHECK(g.nav() == Game::Nav::Submenu);         // still in EXPL, not the carousel
       g.onButton(press(Button::C));                 // C at TOP → leave EXPL
       CHECK(g.nav() == Game::Nav::Cursor); }
+
+    // Opening EXPL while explore-mode is RUNNING RESUMES where the pet is — already
+    // drilled into the armed area, cursor already on the armed sub-area. Checking or
+    // changing the current walk is why the list gets opened mid-run, so it costs no
+    // presses: a single B acts on that sub (re-arms it) rather than drilling anywhere.
+    { Game g{StartMode::Hatched, "bruinforce"};
+      g.debugArmExplore(0, 3);
+      enterSubmenuId(g, SubmenuId::Expl);
+      g.onButton(press(Button::B));
+      CHECK(g.nav() == Game::Nav::Idle);            // acted, not drilled
+      CHECK(g.exploreActive() && g.exploreSector() == 0 && g.exploreSub() == 3); }
+
+    // A CLEARED area's gauntlet stays re-runnable, the way a cleared sub-area stays
+    // re-farmable: inside the area, B on its boss row starts the 5-round gauntlet again.
+    { Game g{StartMode::Hatched, "bruinforce"};
+      for (int s = 0; s < kExplSubAreas; ++s) g.debugSetSubCleared(0, s, true);
+      g.debugSetSectorCleared(0, true);
+      enterSubmenuId(g, SubmenuId::Expl);
+      g.onButton(press(Button::B));                 // drill into the cleared area 0
+      g.onButton(press(Button::B));                 // B on its boss row → RERUN
+      CHECK(g.nav() == Game::Nav::Combat); }
+
+    // AUTO-PROGRESS is armed by the SAME chord that opens the explore-control overlay:
+    // A+C from the habitat opens it, A+C again toggles the mode, and the overlay's three
+    // single-press actions are untouched. It is off until asked for.
+    { Game g{StartMode::Hatched, "bruinforce"};
+      g.debugArmExplore(0, 0);
+      CHECK(!g.autoProgress());
+      g.onButton(chordAC());                        // habitat → the control overlay
+      CHECK(g.nav() == Game::Nav::ExploreControl);
+      g.onButton(chordAC());                        // ...again → arm auto-progress
+      CHECK(g.autoProgress());
+      CHECK(g.nav() == Game::Nav::ExploreControl);  // still on the overlay
+      g.onButton(chordAC());
+      CHECK(!g.autoProgress());                     // and it toggles back off
+      g.onButton(press(Button::C));                 // C still stops the walk
+      CHECK(!g.exploreActive()); }
+
+    // The DeepWeb dive resumes at the TOP level instead — its row lives there, not
+    // inside any area — so one B re-arms the dive.
+    { Game g{StartMode::Hatched, "bruinforce"};
+      for (int a = 0; a < kExplSectors; ++a) g.debugSetSectorCleared(a, true);
+      g.debugStartDeepWebDive();
+      enterSubmenuId(g, SubmenuId::Expl);
+      g.onButton(press(Button::B));
+      CHECK(g.nav() == Game::Nav::Idle);
+      CHECK(g.exploreActive() && g.exploreSector() == kDeepWebSector); }
 }
 
 // the DEEPWEB DIVE endless zone: unlocked only by clearing every area,
@@ -14840,9 +15001,12 @@ static void test_firmware_version_ordering() {
     RUN(test_post_encounter_never_for_sim_battle) \
     RUN(test_expl_sector_linear_gating)           \
     RUN(test_expl_names_fit_their_rows)           \
+    RUN(test_expl_level_scoped_rows)              \
     RUN(test_combat_carry_health)                 \
     RUN(test_bits_reward_bounds)                   \
     RUN(test_explore_streak_unlocks_boss_then_clears) \
+    RUN(test_auto_progress_steps_positionally)    \
+    RUN(test_auto_progress_gauntlet_rolls_to_next_area) \
     RUN(test_expl_nested_row_helpers)             \
     RUN(test_area_boss_gauntlet_composition)      \
     RUN(test_boss_threat_moves_area_adjacent)     \

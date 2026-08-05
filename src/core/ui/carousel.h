@@ -62,8 +62,12 @@ const HackerCarouselSlot* hackerCarouselSlots();
 // `lockedMask` disables slots by index (bit i set = slot i inert): the icon/text
 // stays dimmed even when focused and the focus box reads muted — the Boot-Sector
 // egg greys out the care/combat slots (nothing to do to an egg).
+// `spinMask` animates slots by index (bit i set = slot i's icon runs its frames off
+// `beat` instead of resting on frame 0), so a running background mode is legible from
+// the shelf itself: EXPL's globe turns while auto-progress is armed. A slot whose icon
+// is single-frame ignores its bit.
 void drawCarousel(Framebuffer& fb, int cursor, UiMode mode, int beat,
-                  unsigned lockedMask = 0);
+                  unsigned lockedMask = 0, unsigned spinMask = 0);
 
 // Draw the Hacker-face carousel: the same track/geometry as drawCarousel,
 // but the hacker slot roster + the inaccessible marker over any slot whose

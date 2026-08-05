@@ -254,6 +254,7 @@ public:
     int exploreStreak() const { return exploreStreak_; }    // current win-streak
     int exploreSector() const { return exploreSector_; }    // armed area (or last)
     int exploreSub() const { return exploreSub_; }          // armed sub-area
+    bool autoProgress() const { return autoProgress_; }     // hands-off ladder stepping
     // the endless DeepWeb Dive (terminal zone) is armed. It's an explore mode
     // on the virtual kDeepWebSector — no sub-area/boss, enemies scale to the pet.
     bool inDeepWebDive() const {
@@ -1395,6 +1396,12 @@ public:
         if (area >= 0 && area < kExplSectors && sub >= 0 && sub < kExplSubAreas)
             startExplore(area, sub);
     }
+    // Arm AUTO-PROGRESS, and set the armed sub-area's win streak (tests). Real path:
+    // the A+C chord on the explore-control overlay, and ten wild wins. A test of the
+    // STEP rule shouldn't have to grind the streak that triggers it — that grind is
+    // covered on its own by test_explore_streak_unlocks_boss_then_clears.
+    void debugSetAutoProgress(bool v) { autoProgress_ = v; }
+    void debugSetExploreStreak(int v) { exploreStreak_ = v < 0 ? 0 : v; }
     // Launch a specific sub-area boss directly (tests): same rationale as
     // debugArmExplore — the EXPL "first-selectable" row is ambiguous once cleared subs
     // are re-farmable, so a test reaching the boss of an as-yet-uncleared sub triggers
@@ -1574,7 +1581,9 @@ private:
     // expl_screen row helpers read ([area*kExplSubAreas+sub]).
     void flattenSubFlags(bool (&cleared)[kExplSectors * kExplSubAreas],
                          bool (&bossUnlocked)[kExplSectors * kExplSubAreas]) const;
-    int firstSelectableExplRow() const;             // land the cursor on a real row
+    // Open EXPL: pick the nav level + cursor row to enter on (resuming a running
+    // explore-mode where it left off, else the top level's first landable row).
+    void openExplList();
     // Two-level EXPL nav is `row` a stop at the CURRENT level
     // (explNavArea_)? Top level → DeepWeb + open area headers; inside an area → that
     // area's own selectable rows. `areaHeaderRow` is an area's header row index.
@@ -1583,6 +1592,14 @@ private:
     // Compose the idle badge label — the armed area's short (first-word) name + the
     // 1-based sub number, e.g. "CITRUS 3". Compact + collision-free.
     void exploreBadgeLabel(char* out, size_t n) const;
+    // AUTO-PROGRESS. `autoProgressStep` is the hook every hand-back to the walk runs
+    // (returnToExplore): it fires only once the armed sub-area has met its win target,
+    // and then either fights the boss standing there or steps on. `autoProgressAdvance`
+    // is the step rule itself — POSITIONAL, so it keeps cycling instead of stopping at
+    // the frontier. `nextOpenArea` wraps to the next unlocked rung.
+    void autoProgressStep();
+    void autoProgressAdvance(int area, int sub);
+    int nextOpenArea(int area) const;
     void startExplore(int sector, int sub);         // arm a sub-area → idle background mode
     void startDeepWebDive();                         // arm the endless terminal zone
     void doExploreStep();                           // one guaranteed-event step
@@ -1923,6 +1940,13 @@ private:
     // DeepWeb), >= 0 = inside that area (its sub-areas). Runtime-only; reset to -1 each
     // time the EXPL submenu is opened.
     int explNavArea_ = -1;
+    // AUTO-PROGRESS: the walk steps the ladder by itself (autoProgressStep). Armed with
+    // the A+C chord from inside the explore-control overlay, which is only reachable
+    // while explore-mode is running — so the mode is scoped to exploring by
+    // construction. Runtime-only, and deliberately NOT persisted: explore-mode itself
+    // doesn't survive a reboot, so a restored flag would arm a mode with nothing to act
+    // on. It DOES outlive one walk, so cancelling and re-arming explore keeps it set.
+    bool autoProgress_ = false;
     const ItemDef* detailItem_ = nullptr;  // ITEMS detail subject
     // d: the active ITEMS type-tab filter. Runtime-only (never persisted) —
     // enterSubmenu() (and the Lockout Open-Items path) reset it to All every time

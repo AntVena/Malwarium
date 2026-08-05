@@ -100,13 +100,23 @@ int Game::areaHeaderRow(int area) const {
     return 1 + area * kExplRowsPerArea;              // row 0 = DeepWeb; area blocks follow
 }
 
-int Game::firstSelectableExplRow() const {
-    // Called on entering EXPL — always start at the TOP level (explNavArea_ reset by the
-    // submenu entry) and park on the first landable row (DeepWeb if unlocked, else area 0).
+void Game::openExplList() {
+    // Entering EXPL. An explore-mode already running is almost always why the list is
+    // being opened mid-walk — to check the streak, or to move on — so a real area RESUMES
+    // where the pet is: drilled into that area, parked on the armed sub-area. Everything
+    // else (including the DeepWeb dive, whose row is the top level's first) opens at the
+    // TOP level on the first landable row — DeepWeb if unlocked, else area 0.
+    if (exploreActive_ && exploreSector_ >= 0 && exploreSector_ < kExplSectors) {
+        explNavArea_ = exploreSector_;
+        listRow_ = areaHeaderRow(exploreSector_) + 1 + exploreSub_;
+        if (explRowLandable(listRow_)) return;
+        explNavArea_ = -1;                           // unreachable row → fall through
+    }
+    explNavArea_ = -1;
     const int n = explRowCount();
     for (int r = 0; r < n; ++r)
-        if (explRowLandable(r)) return r;
-    return 0;                                        // nothing landable → park at 0
+        if (explRowLandable(r)) { listRow_ = r; return; }
+    listRow_ = 0;                                    // nothing landable → park at 0
 }
 
 void Game::onExplList(const ButtonEvent& ev) {
@@ -138,7 +148,8 @@ void Game::onExplList(const ButtonEvent& ev) {
         const int area = explRowArea(listRow_);
         const int sub = explRowSub(listRow_);
         switch (st) {
-            case ExplRowState::AreaBossReady: startAreaBoss(area); break;
+            case ExplRowState::AreaBossReady:
+            case ExplRowState::AreaCleared:   startAreaBoss(area); break;
             case ExplRowState::SubBossReady:  startSubAreaBoss(area, sub); break;
             case ExplRowState::DeepWebOpen:                     // endless zone
             case ExplRowState::DeepWebDiving: startDeepWebDive(); break;
@@ -250,6 +261,51 @@ void Game::returnToExplore() {
     applyPendingRankUp();
     autoArmBackupShield(kRigRowContinuousBackup);   // Rig Shop h — mid-run re-arm
     maybeAutoDefrag();                              // Rig Shop i — hands-off upkeep
+    autoProgressStep();                             // may take over and re-aim the walk
+}
+
+void Game::autoProgressStep() {
+    // The one place auto-progress acts. Every hand-back to the walk runs it, so the
+    // condition — not the call site — decides when a step happens: the armed sub-area
+    // has to have met its win target. Below that, nothing (the player is still grinding
+    // it), which is why an unrelated hand-back like a resolved shop is harmless.
+    if (!autoProgress_ || !exploreActive_) return;
+    if (inDeepWebDive()) return;                    // endless: depth IS the progress
+    const int a = exploreSector_, s = exploreSub_;
+    if (a < 0 || a >= kExplSectors || s < 0 || s >= kExplSubAreas) return;
+    if (exploreStreak_ < kExploreStreakToBoss) return;
+    // A boss unlocked by that streak and still standing is the step. A sub-area that's
+    // already cleared never unlocks one again (game_combat.cpp), so on a re-run of a
+    // done area this falls straight through to the positional advance below — which is
+    // what keeps the loop turning instead of parking on a fight that can't happen.
+    if (subBossUnlocked_[a][s] && !subCleared_[a][s]) { startSubAreaBoss(a, s); return; }
+    autoProgressAdvance(a, s);
+}
+
+void Game::autoProgressAdvance(int area, int sub) {
+    // The step rule: the NEXT rung by index, never "the next unfinished one" — that
+    // would strand auto-progress the moment the ladder was complete, which is exactly
+    // when a hands-off farm loop is worth having. Everything here is derived from the
+    // area/sub indices, so an area spliced into the middle of kAreaList takes its place
+    // in the rotation with no rule to update.
+    if (sub < kExplSubAreas - 1) { startExplore(area, sub + 1); return; }
+    // Past the last sub-area the area's own gauntlet is the next rung — when it's
+    // actually standing. Arming auto-progress midway through an area leaves earlier
+    // sub-areas unbeaten, so there the rotation wraps to the first one and comes back
+    // round to the gauntlet once they all are.
+    if (areaBossReady(area) || sectorCleared_[area]) { startAreaBoss(area); return; }
+    startExplore(area, 0);
+}
+
+int Game::nextOpenArea(int area) const {
+    // The rung after `area`, wrapping past any still-locked area to the front of the
+    // ladder. `area` itself is the fallback and is always valid — you cannot be standing
+    // in a locked one.
+    for (int i = 1; i <= kExplSectors; ++i) {
+        const int a = (area + i) % kExplSectors;
+        if (explSectorOpen(a, sectorCleared_)) return a;
+    }
+    return area;
 }
 
 void Game::autoArmBackupShield(int gateRow) {
@@ -564,10 +620,18 @@ void Game::finishBossRound() {
             unlockTitle(bossSector_);       // clearing the area grants its Title
             log_.push(LogEventType::CombatWon, "AREA CLEARED");
             // the AREA boss's first clear GUARANTEES a mod from the area table —
-            // the marquee reward for beating the 5-stage gauntlet.
+            // the marquee reward for beating the 5-stage gauntlet. A re-run is not a
+            // first clear, so it pays its Bits lump and XP (above) and no mod — the same
+            // rule a re-farmed sub-area follows.
             if (firstClear)
                 if (const char* id = rollAreaModId(bossSector_))
                     grantMod(id);
+            // Auto-progress moves off the gauntlet HERE rather than in autoProgressStep,
+            // which cannot tell "the gauntlet is the next rung" from "the gauntlet is
+            // the rung just finished" — the armed sub-area is the area's last either
+            // way. Re-aiming at the next area resets the streak, so the shared hook
+            // finds nothing to do and the rotation carries on.
+            if (autoProgress_) startExplore(nextOpenArea(bossSector_), 0);
         }
     } else {
         // Any non-win loses the whole gauntlet. A loss takes the standard

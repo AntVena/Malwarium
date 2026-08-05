@@ -141,8 +141,8 @@ void drawHackerCarousel(Framebuffer& fb, int cursor, UiMode mode, int /*beat*/,
     }
 }
 
-void drawCarousel(Framebuffer& fb, int cursor, UiMode mode, int /*beat*/,
-                  unsigned lockedMask) {
+void drawCarousel(Framebuffer& fb, int cursor, UiMode mode, int beat,
+                  unsigned lockedMask, unsigned spinMask) {
     const CarouselSlot* slots = carouselSlots();
     const Rgb565 paper = palColor(Pal::PAPER);
 
@@ -175,7 +175,13 @@ void drawCarousel(Framebuffer& fb, int cursor, UiMode mode, int /*beat*/,
             drawTextCentered(fb, col, kSlotW, slotTrackTop(i) + (kTrackH - kFontH) / 2,
                              slots[i].label, tc);
         } else {
-            drawSprite(fb, *slots[i].icon, 0, ix, iy);
+            // A spinning slot cycles its own frames off the shared beat; every other
+            // slot rests on frame 0. Sprite frames are the whole animation state, so a
+            // slot that hasn't been given more than one just ignores its bit.
+            const SpriteData& s = *slots[i].icon;
+            const int frame =
+                ((spinMask >> i) & 1u) && s.frames > 1 ? beat % s.frames : 0;
+            drawSprite(fb, s, frame, ix, iy);
             // Wash the icon toward paper: unfocused = one pass (~50%); a locked slot
             // gets two passes so it reads distinctly greyed-out (disabled) even at
             // rest, when the whole shelf is already receded.
