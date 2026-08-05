@@ -112,7 +112,7 @@ window.PEDIA_DATA = {
       "sprite": "assets/sprites/SPR_PET_MALBEAR.png",
       "cellW": 56,
       "cellH": 48,
-      "sheetW": 56,
+      "sheetW": 448,
       "sheetH": 48,
       "branchSplit": true
     },
