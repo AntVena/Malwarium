@@ -118,15 +118,33 @@ table and calls it the single source; in code there is no source at all. `kMargi
 `kRowH` and `kLineH` are re-declared in a file-private anonymous namespace in every screen that
 draws a list, and the copies have already diverged:
 
-- **`kMargin` is 8 in every `src/core/ui/*_screen.cpp`, and 10 in every list drawn from a
-  `game_*.cpp` unit** — `game_crew`, `game_peers`, `game_pvp`, `game_merge`, `game_hacker`. The
-  Hacker-face and peer screens therefore sit 2 logical px further in than every carousel screen,
-  which is drift nothing would catch: each file is self-consistent.
+The header band is the clearest case. Four files each hold a private copy of the same four-line
+helper — `fb.clear`, title at `kMargin`, a divider rule — and no two agree:
+
+| Where | Title x | Rule y |
+|---|---|---|
+| `items_screen` / `mods_screen` / `maint_screen` / `cfg_screen` / `arch_screen` | 8 | 22 (`kHeaderRule`) |
+| `game_hacker.cpp`'s `header` lambda (SHOP/VAULT/CREW/PEERS/LINK) | **10** | **20** (a literal) |
+
+That lambda's own comment says it "mirrors the pet submenus". It doesn't: the title sits 2px
+further right and the rule 2px higher than the band it claims to match. Nobody decided that — the
+helper was copied, and the copy drifted, because there is nothing to share. The Hacker sub-screens
+then draw a *second* title at y=28 with a rule at y=44, a sub-band the carousel screens have no
+equivalent of; that one may well be deliberate, but it is undocumented and also hard-coded.
+
+The same pattern below the header:
+
+- **`kMargin` is 8 in every `src/core/ui/*_screen.cpp` and 10 in every list drawn from a
+  `game_*.cpp` unit** (`game_crew`, `game_peers`, `game_pvp`, `game_merge`, `game_hacker`). Both
+  families use it for exactly the same thing — the left text inset and its mirror,
+  `kActiveW - kMargin - textWidth(...)` — so this is one concept with two values.
 - **`kLineH`** is `kFontH + 5` in `game_crew`/`game_peers`/`game_pvp` and `kFontH + 4` in
   `game_merge`.
 - **`kRowTop` is 26 everywhere except `expl_screen.cpp`, which uses 40** — the carousel track
   height, not the submenu header band. Possibly deliberate for EXPL's chrome; undocumented either
   way.
+
+`widgets.h` has no header primitive at all, which is why every screen rolls its own.
 
 The fix is a UI-internal layout header the screens share, and it is the **same header §3 already
 names as the blocker on the `cfg_screen.cpp` split** ("promoting those into a UI-internal header

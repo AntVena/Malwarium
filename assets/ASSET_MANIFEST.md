@@ -1,8 +1,18 @@
 # Malwarium — Asset Manifest
 
-Master list of every visual asset the pet-side UI needs. Whoever picks up a `☐ TODO` row draws it
-within the constraints, saves to `/assets/...`, and updates Status + File in the same pass.
-**Empty `File` cells are the work to be done.**
+The visual assets the pet-side UI needs, and the constraints they're drawn to. Whoever picks up a
+`☐ TODO` row draws it within those constraints, saves to `/assets/...`, and updates Status + File
+in the same pass. **Empty `File` cells are the work to be done.**
+
+> **This file records judgement, not inventory.** Where an asset id is *derived* from a content
+> row — `ICON_ITEM_<ID>`, `ICON_MOD_<ID>`, `ICON_MOVE_<ID>`, a creature's `spriteName` — there is
+> deliberately **no table here listing them**, because the roster already exists in
+> `src/core/content/` and the drawings already exist in `assets/`. A third list pairing them is a
+> copy that drifts silently, and it did: §C once claimed Goliauth was on a generic placeholder
+> after the data had moved it to its own sprite. What belongs here is what no code carries — the
+> art *rules* (how a rarity ramp stays countable in grayscale, why a branch pair shares a palette)
+> and whether a delivered drawing is good enough (`▨` vs `☑`). If you find yourself adding a row
+> per content row, the row belongs in `content_*.cpp` or nowhere.
 
 **Status:** `☐` TODO · `✎` WIP · `▨` PLACEHOLDER (a correctly-sized/named stand-in is shipping;
 final art still wanted) · `☑` DELIVERED · `⌫` PARKED (drawn, but nothing consumes it — see below) ·
@@ -83,45 +93,59 @@ frame set so the engine animates any creature identically:
 Corruption, channel-shift, and ghost are **engine passes (`FX_*`)** applied on top — **no
 per-creature art needed** for them.
 
-### C.1 Sheet checklist (status per creature)
+### C.1 Which creatures still want art
 
-Full roster: the `CreatureDef` rows in `src/core/content/content_creatures.cpp`. Seeded below; add a
-row per creature as each is scheduled. `SPR_PET_<NAME>`.
+**There is no roster table here, deliberately.** Every column one would have — creature, line,
+stage, sprite id, evolution chain, which hatch gates it — is already a field on a `CreatureDef`
+row in `src/core/content/content_creatures.cpp`, and a second copy in prose is a copy that goes
+stale without anything failing. The one thing the code does not carry is whether a delivered
+drawing is *good enough*, and that is all this section is for.
 
-| Asset ID | Line / Stage | Creature | Status | File |
-|---|---|---|---|---|
-| `SPR_PET_CRYPTOSHELL` | L1 · Boot Sector (egg) | CryptoShell | ☑ | `/assets/sprites/SPR_PET_CRYPTOSHELL.png` (4 hatch frames) |
-| `SPR_PET_PAYPUP`      | L1 · Process | Paypup     | ☑ | `/assets/sprites/SPR_PET_PAYPUP.png` (448×48, 8 frames; Acid palette) |
-| `SPR_PET_PHISHLET`    | L1 · Process | Phishlet   | ☑ | `/assets/sprites/SPR_PET_PHISHLET.png` — final anglerfish art; the deep-dive (`DEEPWEB_DEPTH_64`) catch on the Phishing egg (see the anglerfish-line note below) |
-| `SPR_PET_TADPOLL`     | L1 · Process | Tadpoll    | ☑ | `/assets/sprites/SPR_PET_TADPOLL.png` (112×48, 2 frames) — final tadpole art for the **Phishing-line Tadpoll** |
-| `SPR_PET_CACHEMUTT`   | enemy frame (no creature row) | — | ☑ | `/assets/sprites/SPR_PET_CACHEMUTT.png` (112×48, 2 frames) — the shared borrowed frame for the Sim dummy, the EXPL sub-area/area bosses and the Lethal test enemy (`game_combat.cpp`, `combat.cpp`). No `CreatureDef` points at it, so it is never a pet |
-| `SPR_PET_PINGCUB`     | L1 · Process | Pingcub    | ▨ | `/assets/sprites/SPR_PET_PINGCUB.png` (56×48, 1 frame) — the ursine line's own head, wired as the third CryptoShell hatch outcome and hopping into Malbear. Carries the exact five greens of `SPR_PET_MALBEAR`/`SPR_PET_BRUINFORCE`, so cub→bear→grown-bear reads as one animal; wants a 2nd idle frame to match the 2-frame norm |
-| `SPR_PET_RINGWYRM`    | L2 · Boot Sector (egg) | Ringwyrm | ⌫ | placeholder `/assets/_attic/SPR_PET_RINGWYRM.png` |
-| `SPR_PET_BRUINFORCE` | L4 · Daemon (Good branch) | Bruinforce | ☑ | 56×48; `/assets/sprites/SPR_PET_BRUINFORCE.png` — the durable Good-branch frame: squared up, guarding |
-| `SPR_PET_BERSERKERNEL` | L4 · Daemon (Bad branch) | Berserkernel | ☑ | 56×48; `/assets/sprites/SPR_PET_BERSERKERNEL.png` — the glass-cannon Bad-branch frame: same bear reared up and roaring, red eyes, claws out. Deliberately the SAME green palette as its Good sibling — the branch reads from posture and face, not hue, which is what keeps it legible in grayscale (`CREATURE_VISUAL_RULES.md §5`) |
-| `SPR_PET_CROAKEN`     | Script (Phishing line) | Croaken | ☑ | `/assets/sprites/SPR_PET_CROAKEN.png` (224×48, 4 frames) — final toad-kraken art on the standard 56×48 pet cell, wired to the **Phishing-line Croaken** (Script) |
-| `SPR_PET_EGG_PHISH_HATCH` | Boot Sector (egg, Phishing line) | Phrogspawn | ☑ | `/assets/sprites/SPR_PET_EGG_PHISH_HATCH.png` (448×48, 8 frames) — the shared Phishing egg shell. Frames 0–1 are the idle loop, 0–7 the hatch one-shot (`Game::hatchCrackFrame` walks it). Deliberately the ONLY egg file: the separately-delivered single-frame `SPR_PET_EGG_PHISH` is byte-identical to frame 0, so shipping it too would just duplicate flash |
-| … | | *(remaining L1 Script/Daemon + full L2 — same template)* | ☐ | |
+**The queue is derivable, so read it from the data, not from here:** a creature wired to a
+`SPR_PET_GENERIC_{PROCESS,SCRIPT,DAEMON}` sprite is on a stage placeholder and wants its own
+drawing; a creature with its own `SPR_PET_<NAME>` has been drawn.
 
-> **Lines on generic-stage placeholders** — gameplay first; final art is follow-up polish, and
-> swapping it in needs no engine change. Wired in `embedded_content.cpp`, rendering via
-> `assets/SPR_PET_GENERIC_*`: **cat Ransomware** — `conkittenate` (→ `_GENERIC_PROCESS`),
-> `kalico` (`_GENERIC_SCRIPT`), `pwnther` + `breecheetah` (`_GENERIC_DAEMON`); **canine
-> Ransomware** — `barkmail` (`_GENERIC_SCRIPT`), `wire_heir` + `extorgi` (`_GENERIC_DAEMON`),
-> off the final `SPR_PET_PAYPUP`; **frog Phishing** —
-> `goliauth` (`_GENERIC_DAEMON`). `phrogspawn`/`tadpoll`/`croaken` use the final
-> `SPR_PET_EGG_PHISH_HATCH`/`SPR_PET_TADPOLL`/`SPR_PET_CROAKEN` above. The generics are pulled into
-> the atlas by `gen_assets.py` (which also handles non-56px single-frame Daemon sprites).
+```sh
+grep -oE '"[a-z0-9_]+", *"[^"]+".*"SPR_PET_GENERIC_[A-Z]+"' src/core/content/content_creatures.cpp
+```
 
-> **Anglerfish line — a 2nd Phishing hatch outcome, DEEP-DIVE-gated.** A second
-> Process pet on the `phishing` line joins the Phrogspawn egg's random hatch pool, but only once
-> **`DEEPWEB_DEPTH_64`** (the 2nd DeepWeb-depth milestone) is earned — then the egg hatches Tadpoll
-> **or** Phishlet at 50/50 (`Game::hatchProcessUnlocked` is the gate; depth-8 unlocks the line,
-> depth-64 unlocks this rarer catch). Chain: **`phishlet`** (Process — uses the FINAL anglerfish
-> `SPR_PET_PHISHLET`, no longer a `▨` placeholder) → **`clickbait`** (Script, `_GENERIC_SCRIPT`) → a
-> Good/Bad Daemon branch **`spamwhale`** (durable, `_GENERIC_DAEMON`) / **`baitracuda`** (glass
-> cannon, `_GENERIC_DAEMON`), carrying the same §1.10 power/Frag multipliers as the Bruinforce/Berserkernel pair.
-> Final art for ClickBait + both Daemons is follow-up polish (drop-in, no engine change).
+Swapping a generic for final art is a one-field edit on that row plus the PNG — no engine change,
+which is why gameplay ships first and the drawing follows.
+
+**Art notes that live nowhere else.** Only judgement calls, not status:
+
+- **`SPR_PET_BERSERKERNEL` shares `SPR_PET_BRUINFORCE`'s exact green palette.** The Good/Bad branch
+  reads from posture and face — reared and roaring vs. squared and guarding — never from hue. That
+  is what keeps the pair legible under the grayscale gate (`CREATURE_VISUAL_RULES.md §5`), and it
+  is the model for every future branch pair.
+- **`SPR_PET_PINGCUB` carries the same five greens as `SPR_PET_MALBEAR`/`SPR_PET_BRUINFORCE`**, so
+  cub → bear → grown-bear reads as one animal across three drawings. Still `▨`: it has one idle
+  frame and wants a second to match the 2-frame norm above.
+- **`SPR_PET_EGG_PHISH_HATCH` is deliberately the only egg file.** Frames 0–1 are the idle loop and
+  0–7 the hatch one-shot (`Game::hatchCrackFrame` walks it). A separately-drawn single-frame
+  `SPR_PET_EGG_PHISH` was byte-identical to frame 0, so shipping it too would only duplicate flash.
+- **`SPR_PET_CACHEMUTT` is an enemy frame, not a pet.** No `CreatureDef` points at it; the Sim
+  dummy, the EXPL bosses and the Lethal test enemy all borrow it (`game_combat.cpp`, `combat.cpp`).
+- **Trojan pets re-skin their origin line.** A Trojan looks like the line it diverted from — right
+  colour, one small "wrong" tell — so its brief is a palette re-skin, not a new silhouette
+  (`src/core/content/LINE_MOVE_IDENTITIES.md §3`).
+
+### C.2 Wild malbeasts (`SPR_MALBEAST_*`)
+
+Wild creatures for encounters/exploration (the 'net). Cell **56×48**, apex tier **64×56**; single
+idle frame each, so a wild reads as a still until final sheets follow the §C frame template.
+**Every one is currently `▨`** — sized and named correctly, drawn to placeholder quality.
+
+The roster is not listed here either: each wild is a row in `wildMalbeast()`
+(`src/core/model/combat.cpp`), which is the only place a wild's sprite is chosen and whose display
+names are also the source of truth for `kWildMalbeastIds`, the 'Pedia's seen/defeated masks. A
+native test asserts every wild's sprite both resolves AND is distinct from its siblings — sprites
+resolve by string at draw time, so a wrong name draws nothing rather than erroring, and that test
+is what makes the omission of a table here safe.
+
+> **Sub-area and area bosses still borrow `SPR_PET_CACHEMUTT`** (`subAreaBoss`, same file). Which
+> malbeast frame — or bespoke art — each named boss should wear is a design call, not a mechanical
+> swap, so it is open.
 
 ### C.3 Clutch Pick — the Phishing egg's hatch minigame
 
@@ -138,39 +162,6 @@ every 14px cell whole-pixel, so the live tile lands dead-on the decoy it replace
 
 > Reused, no new art: the aim/eliminate scrim and the aimed-half edge bar are engine fills over
 > `PAL_CORE` tokens, and the verdict/round lines are `FONT_UI` text — no tag or overlay art.
-
-> **Trojan line — reached by cross-line divert, NOT an egg (see `src/core/content/LINE_MOVE_IDENTITIES.md §3`).**
-> A Process pet with a Trojan divert target has a ~10% chance to evolve into a Trojan instead of its
-> normal successor. A Trojan **looks like its origin line** (right colour, a small "wrong" tell), so
-> its art brief is a re-skin of the source line's palette. First cut: **`keyloggerhead`** (Script) uses
-> the existing (placeholder-empty) `SPR_PET_KEYLOGGERHEAD` frame; **`placeholder_daemon`** (Daemon,
-> literal name "Placeholder") uses `SPR_PET_GENERIC_DAEMON`. Follow-up art: the "Phishing-blue turtle
-> with a tell" Keyloggerhead sprite + a real, renamed Trojan Daemon — both drop-in, no engine change.
-
-### C.2 Wild malbeasts (`SPR_MALBEAST_*`)
-
-Wild creatures for encounters/exploration (the 'net). Cell 56×48 (apex tier 64×56); single idle
-frame each, so a wild reads as a still until final sheets follow the §C frame template.
-
-Each one is wired to its own row in `wildMalbeast()` (`src/core/model/combat.cpp`), which is the
-only place a wild's sprite is chosen. That function's display names are also the source of truth
-for `kWildMalbeastIds`, the 'Pedia's seen/defeated masks — so renaming a wild moves both. A native
-test asserts every wild's sprite both resolves AND is distinct from its siblings, which is the
-condition that used to fail silently: sprites resolve by string at draw time, so a wrong name
-draws nothing rather than erroring.
-
-| Asset ID | Tier | Creature | Status | File |
-|---|---|---|---|---|
-| `SPR_MALBEAST_GLITCHHOG`        | 1 | GlitchHog        | ▨ | `/assets/sprites/SPR_MALBEAST_GLITCHHOG.png` |
-| `SPR_MALBEAST_SEGFAULT_PUP`     | 1 | Segfault Pup     | ▨ | `/assets/sprites/SPR_MALBEAST_SEGFAULT_PUP.png` |
-| `SPR_MALBEAST_PACKET_WRAITH`    | 2 | Packet Wraith    | ▨ | `/assets/sprites/SPR_MALBEAST_PACKET_WRAITH.png` |
-| `SPR_MALBEAST_CACHE_GHOUL`      | 2 | Cache Ghoul      | ▨ | `/assets/sprites/SPR_MALBEAST_CACHE_GHOUL.png` |
-| `SPR_MALBEAST_BUFFER_WYRM`      | 2 | Buffer Wyrm      | ▨ | `/assets/sprites/SPR_MALBEAST_BUFFER_WYRM.png` |
-| `SPR_MALBEAST_KERNEL_LEVIATHAN` | 3 | Kernel Leviathan | ▨ | 64×56; `/assets/sprites/SPR_MALBEAST_KERNEL_LEVIATHAN.png` |
-
-> **Sub-area and area bosses still borrow `SPR_PET_CACHEMUTT`** (`subAreaBoss` in the same file) —
-> the same defect this section just fixed, one layer up. Which malbeast frame (or bespoke art) each
-> named boss should wear is a design call, not a mechanical swap, so it is left open.
 
 ---
 
@@ -237,53 +228,37 @@ on placeholder palette.
 ---
 
 ## H. ITEMS submenu
+
+**No per-item roster.** An item's glyph id is *derived*, not recorded: `itemIcon()`
+(`src/core/content/effect_text.cpp`) uppercases the item id into `ICON_ITEM_<ID>` and looks that
+up. So the item list is `content_items.cpp`, the icon list is `assets/icons/`, and a table pairing
+them here would be a third copy that can disagree with both. A row added without art draws a
+blank — that is the prompt to draw one, and `check_orphan_assets.py` catches the reverse.
+
 | Asset ID | Element | Logical size | Notes | Status | File |
 |---|---|---|---|---|---|
 | `UI_RARITY_TAG` | Rarity tag style (Common/Uncommon/Rare/Epic) | ~44×14 | ramp set: `rarity-common…epic`, dull→bright, read by position; tag style in board | ☑ | `/assets/PAL_CORE.json` |
-| `ICON_ITEM_AIRGAP_SNACK` | Air-Gapped Snack icon | 20×20 | Food | ☑ | `/assets/icons/ICON_ITEM_AIRGAP_SNACK.png` |
-| `ICON_ITEM_DECRYPT_KEY` | Decryption Key icon | 20×20 | Quest/utility | ☑ | `/assets/icons/ICON_ITEM_DECRYPT_KEY.png` |
-| `ICON_ITEM_BACKUP_DRIVE` | Backup Drive icon | 20×20 | Buff (combat shield) | ☑ | `/assets/icons/ICON_ITEM_BACKUP_DRIVE.png` |
-| `ICON_ITEM_TORTILLA_CHIP` | Tor-Tilla Chip icon | 20×20 | Buff | ☑ | `/assets/icons/ICON_ITEM_TORTILLA_CHIP.png` |
-| `ICON_ITEM_YUBI_COOKIE` | Yubi-Cookie icon | 20×20 | Buff | ☑ | `/assets/icons/ICON_ITEM_YUBI_COOKIE.png` |
-| `ICON_ITEM_SINKHOLE_TRAP` | Sinkhole Trap icon | 20×20 | Buff/utility | ☑ | `/assets/icons/ICON_ITEM_SINKHOLE_TRAP.png` |
-| `ICON_ITEM_NULL_NOODLES` | Null Noodles icon | 20×20 | Consumable (defrag/anti-food) | ☑ | `/assets/icons/ICON_ITEM_NULL_NOODLES.png` |
-| `ICON_ITEM_R007_B33R` | R007_B33R icon | 20×20 | Consumable (junk food) | ☑ | `/assets/icons/ICON_ITEM_R007_B33R.png` |
-| `ICON_ITEM_SEALED_CACHE` | Sealed Cache icon | 20×20 | Quest (openable); base + rarity-tinted variants below | ☑ | `/assets/icons/ICON_ITEM_SEALED_CACHE.png` |
-| `ICON_ITEM_SEALED_CACHE_COMMON` | Sealed Cache — Common | 20×20 | rarity-ramp variant of Sealed Cache — **1 chevron**, stacked upward from the base, so the tier is countable and the ramp survives grayscale | ☑ | `/assets/icons/ICON_ITEM_SEALED_CACHE_COMMON.png` |
-| `ICON_ITEM_SEALED_CACHE_UNCOMMON` | Sealed Cache — Uncommon | 20×20 | rarity-ramp variant of Sealed Cache — **2 chevrons**, stacked upward from the base, so the tier is countable and the ramp survives grayscale | ☑ | `/assets/icons/ICON_ITEM_SEALED_CACHE_UNCOMMON.png` |
-| `ICON_ITEM_SEALED_CACHE_RARE` | Sealed Cache — Rare | 20×20 | rarity-ramp variant of Sealed Cache — **3 chevrons**, stacked upward from the base, so the tier is countable and the ramp survives grayscale | ☑ | `/assets/icons/ICON_ITEM_SEALED_CACHE_RARE.png` |
-| `ICON_ITEM_SEALED_CACHE_EPIC` | Sealed Cache — Epic | 20×20 | rarity-ramp variant of Sealed Cache — **4 chevrons**, stacked upward from the base, so the tier is countable and the ramp survives grayscale | ☑ | `/assets/icons/ICON_ITEM_SEALED_CACHE_EPIC.png` |
-| `ICON_ITEM_ACCESS_TOKEN` | Access Token icon | 20×20 | Quest (warp → shop) | ☑ | `/assets/icons/ICON_ITEM_ACCESS_TOKEN.png` |
-| `ICON_ITEM_SAFE_MODE_KEY` | Safe-Mode Key icon | 20×20 | Quest (warp → safe rest) | ☑ | `/assets/icons/ICON_ITEM_SAFE_MODE_KEY.png` |
-| `ICON_ITEM_DECRYPTOGRAM` | Decryptogram icon | 20×20 | Quest — **starting item**, speeds egg decryption | ☑ | `/assets/icons/ICON_ITEM_DECRYPTOGRAM.png` |
-| `ICON_ITEM_ROLLBACK` | Rollback icon | 20×20 | Quest/utility — stat picker: shed a chosen stat by 1 (−1 level) to re-roll | ☑ | `/assets/icons/ICON_ITEM_ROLLBACK.png` |
-| `ICON_ITEM_PWNZU_SAUCE` | Pwnzu Sauce icon | 20×20 | Food — Merge Hub ingredient (`pwnzu_patched_noodles`) | ☑ | `/assets/icons/ICON_ITEM_PWNZU_SAUCE.png` |
-| `ICON_ITEM_OSI_DIP` | OSI Dip icon | 20×20 | Food — Merge Hub ingredient (`fully_stacked_nachos`) | ☑ | `/assets/icons/ICON_ITEM_OSI_DIP.png` |
-| `ICON_ITEM_PWNZU_PATCHED_NOODLES` | Pwnzu-Patched Noodles icon | 20×20 | Food — Merge Hub output, null_noodles + pwnzu_sauce | ☑ | `/assets/icons/ICON_ITEM_PWNZU_PATCHED_NOODLES.png` |
-| `ICON_ITEM_FULLY_STACKED_NACHOS` | Fully-Stacked Nachos icon | 20×20 | Food — Merge Hub output, tortilla_chip + osi_dip; fills every stat | ▨ | `/assets/icons/ICON_ITEM_FULLY_STACKED_NACHOS.png` (reused `ICON_ITEM_TORTILLA_CHIP` — placeholder, not bespoke) |
-| `ICON_ITEM_COMMEND_CACHE` | Commendation Cache icon | 20×20 | Quest — the ACHIEVEMENT reward container, earned and never found. **Inverts the fill** (hollow shell + star) instead of adding a chevron, so it reads as a different KIND of cache rather than a fifth rarity step | ☑ | `/assets/icons/ICON_ITEM_COMMEND_CACHE.png` |
-| `ICON_ITEM_COMMEND_CACHE` major variant | Crowned/rayed Commendation Cache | 20×20 | ⌫ parked at `/assets/_attic/ICON_ITEM_SEALED_CACHE_COMMENDATION_MAJOR.png` — `commend_cache` is a single item row (`content_items.cpp`), so there is no second tier for it to mark. Promote it if a higher commendation container is ever authored | ⌫ | `/assets/_attic/ICON_ITEM_SEALED_CACHE_COMMENDATION_MAJOR.png` |
 
-### H.1 The pantry — drawn as one batch
+**The art rules the ids don't carry:**
 
-The **staple ingredients** (`content_items.cpp`'s STAPLE INGREDIENTS block) plus the two dishes
-cooked from them ship as a single coherent 20×20 food set, drawn together so the shelf reads as a
-pantry rather than twenty unrelated glyphs. Three want to be legible AS PAIRS, and are: Fresh
-Macrol is a whole fish where Spoiled Macrol is its skeleton, C-Salt and Desalinated C-Salt share a
-cap and differ only in whether the body has anything in it, and the two Browns are the same branded
-patty with and without salt above it.
-
-Distinctness was the brief — these sit in one scrolling list — so no two share a silhouette:
-tin · crumbs · shaker · cruet · holed flask · fish · pouch-and-clock · cubes · vial · spuds ·
-yolk-in-shell · leek · cereal box · mug · sachet · apple · taproot · noodle bowl · patty.
-
-| Asset ID | For | Size | Status | Diff to integrate |
-|---|---|---|---|---|
-| `ICON_ITEM_*` (pantry batch, 22) | staple ingredients + the two Browns | 20×20 ea | ☑ | shipped |
-
-> Add an `ICON_ITEM_*` row per new item as the roster grows. Every shipped item now has its
-> own `ICON_ITEM_<ID>`, so `itemIcon()` is a straight name lookup with no borrowed-glyph table
-> behind it — a row added without art shows a blank, which is the prompt to draw one.
+- **Cache rarity is chevrons, counted.** `ICON_ITEM_SEALED_CACHE_{COMMON,UNCOMMON,RARE,EPIC}` stack
+  1–4 chevrons upward from the base cache, so the tier is *countable* and the ramp survives
+  grayscale rather than relying on the rarity hue.
+- **`ICON_ITEM_COMMEND_CACHE` inverts the fill instead** — hollow shell plus a star, not a fifth
+  chevron — because a commendation cache is earned rather than found. It reads as a different KIND
+  of container, not a higher tier. (A crowned "major" variant is parked in `_attic/`; `commend_cache`
+  is a single item row, so there is no second tier for it to mark yet.)
+- **The pantry was drawn as one batch.** The staple ingredients (`content_items.cpp`'s STAPLE
+  INGREDIENTS block) plus the two dishes cooked from them are one coherent 20×20 food set, so the
+  shelf reads as a pantry rather than twenty unrelated glyphs. Three are legible AS PAIRS: Fresh
+  Macrol is a whole fish where Spoiled Macrol is its skeleton; C-Salt and Desalinated C-Salt share
+  a cap and differ only in whether the body has anything in it; the two Browns are the same branded
+  patty with and without salt above it. Distinctness was the brief — they sit in one scrolling
+  list — so no two share a silhouette: tin · crumbs · shaker · cruet · holed flask · fish ·
+  pouch-and-clock · cubes · vial · spuds · yolk-in-shell · leek · cereal box · mug · sachet ·
+  apple · taproot · noodle bowl · patty.
+- **`ICON_ITEM_FULLY_STACKED_NACHOS` is `▨`** — it reuses `ICON_ITEM_TORTILLA_CHIP` rather than
+  being bespoke. The only item icon that is a stand-in.
 
 ---
 
@@ -339,18 +314,15 @@ yolk-in-shell · leek · cereal box · mug · sachet · apple · taproot · nood
 ---
 
 ## L. MODS submenu
+
+**No per-mod roster, for the same reason as §H** — `mods_screen.cpp` builds `ICON_MOD_<UPPER ID>`
+from the mod id, and `train_screen.cpp` does the same for `ICON_MOVE_<UPPER ID>`. The rosters are
+`content_mods.cpp` and `content_moves.cpp`; the drawings are `assets/icons/`. Effect tags
+(`+def`/`+spd`/`1-shot`) are `FONT_UI` text, so a new mod needs one PNG and no row here.
+
 | Asset ID | Element | Logical size | Notes | Status | File |
 |---|---|---|---|---|---|
-| `ICON_MODS_SLOT` | Equip-slot row glyph (+ empty variant) | 20×20 | filled vs empty slot | ☑ | `/assets/icons/ICON_MODS_SLOT{,_EMPTY}.png` |
-| `ICON_MOD_FIREWALL_PATCH` | Firewall Patch icon | 20×20 | +def | ☑ | `/assets/icons/ICON_MOD_FIREWALL_PATCH.png` |
-| `ICON_MOD_CLOCK_SPEED_BOOST` | Clock-Speed Boost icon | 20×20 | +spd (initiative) | ☑ | `/assets/icons/ICON_MOD_CLOCK_SPEED_BOOST.png` |
-| `ICON_MOD_QUANTISATION` | Quantisation icon | 20×20 | +spd −dmg (shrink-the-model speed/power tradeoff) | ⌫ | `/assets/_attic/ICON_MOD_QUANTISATION.png` |
-| `ICON_MOD_PACKET_SNIFFER` | Packet Sniffer icon | 20×20 | +Bits from explore loot | ☑ | `/assets/icons/ICON_MOD_PACKET_SNIFFER.png` |
-| `ICON_MOD_RAID_MIRROR` | RAID Mirror icon | 20×20 | one-shot | ☑ | `/assets/icons/ICON_MOD_RAID_MIRROR.png` |
-
-> Effect tags (`+def`/`+spd`/`1-shot`) are `FONT_UI` text — no tag art. Doc 07 defensive mods
-> (Honeypot/IDS) join the same slot system later (out of pet-side scope). Add `ICON_MOD_*` per
-> new mod as the roster grows.
+| `ICON_MODS_SLOT` | Equip-slot row glyph (+ empty variant) | 20×20 | filled vs empty slot — chrome, not per-mod | ☑ | `/assets/icons/ICON_MODS_SLOT{,_EMPTY}.png` |
 
 ---
 
@@ -445,7 +417,7 @@ Most chrome is reused — only the rows below are new, and most are optional pol
 | `UI_OVERRIDE_PIP` | Once-per-battle Exploit-override indicator | 16×16 | ready (bolt) / spent (×) | ☑ | `/assets/icons/ICON_OVERRIDE_PIP{,_SPENT}.png` |
 | `UI_MOVE_CHANNEL` | Multi-turn move wind-up | ~120×12 | `UI_GAUGE` variant; override decision cue | ☑ | engine-drawn |
 | `ICON_MOVE_SLOT` | Loadout equip-slot row glyph | 20×20 | filled / empty / locked variants | ☑ | `/assets/icons/ICON_MOVE_SLOT{,_EMPTY,_LOCKED}.png` |
-| `ICON_MOVE_<name>` | Per-move glyph (roster) | 20×20 | all six shipping; the glyph name is built at draw time as `ICON_MOVE_` + the move id uppercased (`train_screen.cpp`), so a new move's icon needs no wiring — drop it in `assets/` and it lights up. TRAIN falls back to text for a move with none | ☑/▨ | `/assets/icons/ICON_MOVE_{PACKET_STORM,FORK_BOMB,CHECKSUM_GUARD,BUFFER_OVERFLOW,ROOTKIT_STRIKE,NULL_ROUTE}.png` (last three are `▨` stand-ins) |
+| `ICON_MOVE_<ID>` | Per-move glyph | 20×20 | derived at draw time from the move id (`train_screen.cpp`), so a new move's icon needs no wiring — drop the PNG in `assets/icons/` and it lights up. TRAIN falls back to text for a move with none, which is why most of the roster has no glyph yet: `ls assets/icons/ICON_MOVE_*` against `content_moves.cpp` is the real count | ☑/▨ | `/assets/icons/` |
 | `UI_DAMAGE_POPUP` | Floating damage number | — | `FONT_UI` tabular digits — **procedural, no art** | ⊘ | — |
 | `SPR_DUMMY` | Sim-Battle training-dummy sprite | ≤128×64 | wired for both tiers in `simDummy()` (`src/core/model/combat.cpp`) — they are the same prop, and the tier reads off the level/stat rows | ▨ | `/assets/sprites/SPR_DUMMY.png` (56×48) |
 | `ICON_EVENT_WIFI` | Wi-Fi network event glyph | 20×20 | **optional**; else reuse the EXPL Wi-Fi-globe motif | ⌫ | placeholder `/assets/_attic/ICON_EVENT_WIFI.png` |

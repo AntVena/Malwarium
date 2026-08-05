@@ -88,6 +88,12 @@ too, not just the marker — every concrete path had gone stale against the `ico
 `ui/` split, which no status marker would have caught. Watch for the two basenames that exist
 in both a live folder and `_attic/`: a naive stem→path map resolves them to the parked copy.
 
+**The stronger check is: should this row exist at all?** Any asset whose id is derived from a
+content row (`ICON_ITEM_<ID>`, `ICON_MOD_<ID>`, `ICON_MOVE_<ID>`, a creature's `spriteName`) must
+NOT have a per-row table in the manifest — that is a hand-maintained mirror of `content_*.cpp`
+that drifts without failing anything. The manifest's lede states the rule; enforce it. A row
+earns its place only by carrying an art *rule* or a quality judgement no code holds.
+
 ---
 
 Add a new entry here when a new recurring quality dimension comes up. Keep each entry to *what it
