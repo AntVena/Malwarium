@@ -297,12 +297,9 @@ high→low value:
 
 - **Three move glyphs** still placeholder: `ICON_MOVE_BUFFER_OVERFLOW`, `_ROOTKIT_STRIKE`,
   `_NULL_ROUTE` (TRAIN falls back to text without them).
-- **The sector glyph family is one of five.** Each area names its own glyph on its row
-  (`AreaDef::icon`, keyed by area id), but only `ICON_SECTOR_CITRUS_CIRCUIT` is drawn — so no
-  screen draws any of them yet: lighting one area and leaving four bare is worse than leaving all
-  five to the text rows. The other four come with their areas' art (§2c). Nothing else blocks it:
-  the names resolve, and a 14px EXPL list row is too short for a 20×20 glyph, so the drawing site
-  is a walk/detail header rather than the list. Diff **S** once the family is complete.
+- **`ICON_SECTOR_CITRUS_CIRCUIT` is a generic map pin** where its four siblings are motif
+  glyphs (skull, sail, download arrow, keep) — the family reads as four zones plus a marker.
+  A redraw on the area's own LimeWire-era motif is pure legibility polish; it ships as is.
 - **`ICON_LINE_WORM` is drawn and has nothing to label** — the Worm line has no content rows at
   all, so it waits on a creature line, not on wiring. Held in `check_orphan_assets.py`'s KEEP list
   meanwhile.
@@ -318,17 +315,17 @@ high→low value:
 
 ### 2c. New art implied by unbuilt features
 
-These come with the features above rather than ahead of them. Every "sector glyph + backdrop"
-below means `ICON_SECTOR_<AREA_ID>` / `BG_SECTOR_<AREA_ID>` — the area's own id, upper-cased,
-which is the name its row already asks for.
+These come with the features above rather than ahead of them. Every "backdrop" below means
+`BG_SECTOR_<AREA_ID>` — the area's own id, upper-cased, which is the name its row already asks
+for. The `ICON_SECTOR_*` half of each family is drawn and live on the EXPL zone picker.
 
-- **Net-Sea Crossing area art** (shipped mechanically, art pending): the sector glyph + backdrop
+- **Net-Sea Crossing area art** (shipped mechanically, art pending): the backdrop
   (open water, shipping lanes, landfall at Sandbox Beach) and the `FLOATING POINT` / `THE HARDENED
   SHELL` storefront motifs. Its five mods are drawn — the whole `ICON_MOD_*` family is, so no area
   owes one. Like the keep, it fights with the shared tier roster and has no malbeasts of its own.
-- **Napstorrent Moors area art** (shipped mechanically, art pending): the sector glyph + backdrop
+- **Napstorrent Moors area art** (shipped mechanically, art pending): the backdrop
   (marshy → castle progression), the `MOOR-TO-MOOR` storefront motif.
-- **Castle Rapidscare art** (shipped mechanically, art pending): the sector glyph + backdrop,
+- **Castle Rapidscare art** (shipped mechanically, art pending): the backdrop,
   castle-themed malbeasts + a `COUNT COPYLEFT` apex, and the `SPAM & SCRAM` / `THE GHOST IN THE
   MACHINE` storefront motifs. The keep also fights with the tier-3 wild roster today — it has no
   malbeasts of its own, since a new `SPR_MALBEAST_*` grows `kWildMalbeastCount` and with it the
@@ -405,4 +402,4 @@ Two more are past the rule and were not on this watch at all:
 
 1. **FONT_UI integration (§1e)** — the highest per-screen leverage left, and the art is already drawn.
 2. **Net-Sea Crossing art (§2c)** — the area ships mechanically; it is the only rung with no
-   sector glyph, backdrop or malbeasts of its own.
+   backdrop or malbeasts of its own.

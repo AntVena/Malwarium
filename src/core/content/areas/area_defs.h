@@ -171,5 +171,6 @@ inline int areaTier(int idx) {
 // tunables.h, since nothing outside DeepWeb reads them).
 extern const char* const kAreaModsDeepWeb[];
 extern const int kAreaModsDeepWebCount;
+extern const char* const kDeepWebIcon;   // its EXPL row glyph (AreaDef::icon's stand-in)
 
 }  // namespace mal

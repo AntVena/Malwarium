@@ -76,6 +76,7 @@ PET_PREFIX = "SPR_PET_"
 # keyed by asset name -> one frame's width. See frame_width().
 FRAME_W_OVERRIDES = {
     "SPR_EGG_PHISH_MICRO": 14,   # 28x14 = the clutch tile's 2-frame swim loop
+    "ICON_EXPL": 28,             # 168x28 = the globe's 6-frame rotation
 }
 
 

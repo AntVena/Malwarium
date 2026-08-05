@@ -57,7 +57,7 @@ focused bright) — supply one master, brightness handled in engine unless noted
 | `ICON_STAT`  | 1 STAT  | Heart w/ graph line       | 28×28 | dim/bright | ☑ | `/assets/icons/ICON_STAT.png` |
 | `ICON_ITEMS` | 2 ITEMS | USB drive                 | 28×28 | dim/bright | ☑ | `/assets/icons/ICON_ITEMS.png` |
 | `ICON_TRAIN` | 3 TRAIN | Target reticle in terminal| 28×28 | dim/bright | ☑ | `/assets/icons/ICON_TRAIN.png` |
-| `ICON_EXPL`  | 4 EXPL  | Wi-Fi mesh globe          | 28×28 | dim/bright | ☑ | `/assets/icons/ICON_EXPL.png` |
+| `ICON_EXPL`  | 4 EXPL  | Wi-Fi mesh globe, 6-frame rotation | 28×28 ×6 | dim/bright; spins while auto-progress is armed, else rests on frame 0 | ☑ | `/assets/icons/ICON_EXPL.png` |
 | `ICON_MAINT` | 5 MAINT | Fragmented HDD            | 28×28 | dim/bright | ☑ | `/assets/icons/ICON_MAINT.png` |
 | `ICON_MODS`  | 6 MODS  | Cracked CPU               | 28×28 | dim/bright | ☑ | `/assets/icons/ICON_MODS.png` |
 | `ICON_ARCH`  | 7 ARCH  | Server rack               | 28×28 | dim/bright | ☑ | `/assets/icons/ICON_ARCH.png` |
@@ -276,7 +276,7 @@ blank — that is the prompt to draw one, and `check_orphan_assets.py` catches t
 | `ICON_EXPLORE_STATE` | Sub-area row state marker (EXPL) | 16×16 | *optional* — exploring/cleared/boss-ready/locked; else `FONT_UI` tags | ☐ | |
 | `UI_DIFFICULTY_PIPS` | Sector difficulty tier (filled/empty diamonds) | ~30×10 | e.g. `◆◇◇` | ⌫ | placeholder `/assets/_attic/UI_DIFFICULTY_PIPS.png` |
 | ~~`ICON_EXPL_PACKET`~~ | ~~Packet Capture row glyph~~ | — | **REMOVED** — Packet Capture minigame scrapped; "packet sniffing" is now the Wi-Fi explore event | ⊘ | — |
-| `ICON_SECTOR_<AREA_ID>` | Per-area row glyph | 20×20 | one per area; Citrus Circuit delivered, the other four open | ☑ | `/assets/icons/ICON_SECTOR_CITRUS_CIRCUIT.png` |
+| `ICON_SECTOR_<AREA_ID>` | Per-area row glyph, EXPL zone picker | 20×20 | one per area, named on that area's own `AreaDef::icon`; the DeepWeb Dive has no AreaDef and names `ICON_SECTOR_DEEPWEB_DIVE` from `areas/deepweb_dive/area.cpp` instead | ☑ | `/assets/icons/ICON_SECTOR_*.png` |
 | `BG_SECTOR_<AREA_ID>` | Per-area walk backdrop | 128×128 | optional; flat colour OK v1 | ⌫ | placeholders `/assets/_attic/BG_SECTOR_CITRUS_CIRCUIT.png` + `BG_SECTOR_PIRATE_BAYOU.png` |
 
 > An area's identity (name/icon/backdrop) is swappable data; its difficulty is its rung.

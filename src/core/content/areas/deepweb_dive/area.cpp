@@ -11,6 +11,11 @@ const int kDeepWebDepthLevelPerLog2 = 2;
 const int kDeepWebDepthBitsPctPerLog2 = 32;
 const int kDeepWebDepthBitsMaxPct = 512;
 
+// The dive's EXPL row glyph. The terminal zone is no AreaDef, so it names its own
+// art here rather than inheriting the ICON_SECTOR_<AREA_ID> convention off a row it
+// doesn't have — same reason its pool and scaling constants live here.
+const char* const kDeepWebIcon = "ICON_SECTOR_DEEPWEB_DIVE";
+
 // The dive's mod pool — earned from milestone wins in the endless zone, the
 // defensive/build-around endgame Epics.
 const char* const kAreaModsDeepWeb[] = {
