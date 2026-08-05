@@ -647,12 +647,14 @@ void loop() {
         static uint32_t lastHeap = 0;
         if (millis() - lastHeap >= HEAP_TRACE_MS) {
             lastHeap = millis();
-            Serial.printf("[heap] t=%lus free=%u largest=%u save=%s floor=%u held=%d low=%u\n",
+            Serial.printf("[heap] t=%lus free=%u largest=%u save=%s floor=%u held=%d low=%u "
+                          "wfail=%d\n",
                           millis() / 1000,
                           (unsigned)ESP.getFreeHeap(), (unsigned)ESP.getMaxAllocHeap(),
                           game->saveHasHeadroom() ? "ok" : "DEFERRED",
                           (unsigned)game->saveHeapFloor(),
-                          game->savesDeferred(), (unsigned)game->savesDeferredLowMark());
+                          game->savesDeferred(), (unsigned)game->savesDeferredLowMark(),
+                          game->saveWritesFailed());
         }
     }
 #endif

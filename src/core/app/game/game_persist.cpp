@@ -662,6 +662,14 @@ void Game::applySave(const SaveData& d) {
 
 void Game::persistSave() {
     if (!store_) return;
+    // An explicit persistSave() ASSERTS there is something worth writing, so it says so
+    // before anything below can turn it away. Every guard past this point leaves the
+    // flag set, which is what makes the next tick try again — the contract
+    // kSaveHeapFloorBytes already documents, and which the ten "persist immediately"
+    // call sites (a laid egg, a hatch, a retire) would otherwise each have to remember
+    // to arrange for themselves. The autosave path reaches here only when it already
+    // wanted a write; a landed one clears the flag on the way out regardless.
+    saveDirty_ = true;
     // Defer rather than risk the write. A save fires off a timer, so it can land while
     // something else holds the heap — on device, the audit capture arming is the
     // measured case. Leaving saveDirty_ set means the next tick tries again, so the
@@ -692,21 +700,34 @@ void Game::persistSave() {
         saveBlob_.reserve(saveBlobTargetBytes());
     }
     serializeSaveInto(captured, saveBlob_);
-    store_->save(saveBlob_);
-    lastBlobSize_ = saveBlob_.size();
+    lastBlobSize_ = saveBlob_.size();   // the buffer got sized and filled either way
+    // A store that REFUSED the write leaves the blob on flash stale relative to RAM,
+    // which is the failure that reads as "progress silently reverted" a reboot later —
+    // the pet you just hatched replaced by the one before it. Treating it as a write
+    // that landed is what makes it silent: the flag would clear, nothing would retry,
+    // and saveNow() would tell the travel-sleep path it was safe to power down on a
+    // save that never happened. So the flag stays set. lastSaveMs_ still advances,
+    // which paces the retries at kSaveDebounceMs rather than one per beat — a store
+    // that just said no is not one to hammer, and a short write is usually transient.
+    if (!store_->save(saveBlob_)) {
+        ++saveWritesFailed_;
+        lastSaveMs_ = nowMs_;
+        return;
+    }
     savesDeferred_ = 0;
+    saveWritesFailed_ = 0;
     lastSaveMs_ = nowMs_;
     saveDirty_ = false;
 }
 
 bool Game::saveNow() {
     if (!store_) return true;   // nothing to lose: no store, no state to strand
-    // Unconditional, and marked dirty FIRST for two reasons. The state is about to
-    // stop existing in RAM, so "nothing has changed since the last autosave" is not
-    // good enough — passive decay moves the model without marking itself. And it is
-    // what gives the return value meaning: persistSave clears the flag only on a
-    // write that landed, and leaves it set when the heap guard turned it away.
-    markSaveDirty();
+    // Unconditional: the state is about to stop existing in RAM, so "nothing has
+    // changed since the last autosave" is not good enough — passive decay moves the
+    // model without marking itself, and persistSave's own opening line covers that.
+    // The return value is the flag persistSave clears ONLY on a write that landed, so
+    // false means the state is still only in RAM — whether the heap guard turned the
+    // write away or the store refused it. Either way the caller must not power down.
     persistSave();
     return !saveDirty_;
 }

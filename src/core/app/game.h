@@ -366,6 +366,11 @@ public:
     // apart from a device that happened to have room.
     int savesDeferred() const { return savesDeferred_; }
     uint32_t savesDeferredLowMark() const { return savesDeferredLow_; }
+    // How many writes in a row the STORE has refused — a save that was built, handed
+    // over, and turned down by the medium rather than held back by the heap. Non-zero
+    // means the blob on flash is older than what is in RAM right now, which is the one
+    // state that survives a reboot as lost progress.
+    int saveWritesFailed() const { return saveWritesFailed_; }
 
     void setSdStatus(const SdStatus& s) {
         // A card just becoming present (boot mount OR a runtime re-check) arms the
@@ -2393,6 +2398,11 @@ private:
     }
     int savesDeferred_ = 0;              // consecutive refusals; 0 once one lands
     uint32_t savesDeferredLow_ = 0;      // worst headroom seen while refusing
+    // Consecutive writes the STORE refused, which is a different failure from the heap
+    // guard above: the save was built and handed over, and the medium turned it down.
+    // Counted for the same reason — a retry that works is indistinguishable from one
+    // that never had to happen unless something keeps score.
+    int saveWritesFailed_ = 0;
     void noteSaveDeferred() {
         const uint32_t h = heapHeadroom();
         if (savesDeferred_ == 0 || h < savesDeferredLow_) savesDeferredLow_ = h;

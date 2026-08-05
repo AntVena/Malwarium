@@ -76,6 +76,26 @@ private:
     std::vector<uint8_t> blob_;
 };
 
+// A store that can be told to refuse a write. The heap guard's refusal is already
+// drivable (setHeapProbe); this is the other half — the save was built and handed over,
+// and the MEDIUM said no, which on device is a short NVS write.
+class RefusingSaveStore : public ISaveStore {
+public:
+    std::vector<uint8_t> load() override { return blob_; }
+    bool save(const std::vector<uint8_t>& d) override {
+        ++attempts;
+        if (refuse) return false;          // whatever was on "flash" stays there
+        blob_ = d;
+        return true;
+    }
+    void clear() override { blob_.clear(); }
+    const std::vector<uint8_t>& bytes() const { return blob_; }
+    bool refuse = false;
+    int attempts = 0;
+private:
+    std::vector<uint8_t> blob_;
+};
+
 // The Bits an achievement pays on unlock, read off its own row. Gates that check a
 // wallet after an action that also EARNS something use this instead of restating the
 // number, so retuning a reward doesn't need a test edit to go with it.
@@ -4159,6 +4179,94 @@ static void test_save_defers_when_the_heap_is_too_low() {
     SaveData after;
     CHECK(deserializeSave(store.bytes(), after));
     CHECK(after.linkEnabled);
+}
+
+// A write the STORE refused is not a write. Counting it as one is what makes the
+// failure silent: the flag clears, nothing retries, and a reboot later the blob on
+// flash is older than the state that produced it — which is the one symptom that has no
+// other explanation, a pet replaced by the one before it with nothing in between having
+// looked wrong. So the refusal has to survive as an obligation.
+static void test_a_refused_write_is_not_a_save() {
+    RefusingSaveStore store;
+    Game g(StartMode::Hatched, "paypup", &store);
+    uint32_t t = 0;
+    g.setApEnabled(true);
+    for (int i = 1; i <= 5; ++i) g.tick(t += 1000);
+    SaveData landed;
+    CHECK(deserializeSave(store.bytes(), landed));       // a baseline reached "flash"
+    CHECK(landed.apEnabled);
+    CHECK(g.saveWritesFailed() == 0);
+
+    // Now the medium starts refusing, and the state moves on without it.
+    store.refuse = true;
+    g.setLinkEnabled(true);
+    CHECK(!g.saveNow());                                 // reported, not swallowed
+    CHECK(g.saveWritesFailed() > 0);
+    SaveData stale;
+    CHECK(deserializeSave(store.bytes(), stale));
+    CHECK(!stale.linkEnabled);                           // flash is behind RAM: the revert
+
+    // It keeps trying rather than giving up — and NOT once per beat. A store that just
+    // said no is not one to hammer, so the retries are paced by the same debounce every
+    // other write is.
+    const int before = store.attempts;
+    g.tick(t += 10);
+    CHECK(store.attempts == before);                     // inside the debounce window
+    for (int i = 1; i <= 5; ++i) g.tick(t += kSaveDebounceMs);
+    CHECK(store.attempts > before);
+
+    // ...and the moment it accepts, the state stranded in RAM lands, which is the whole
+    // point of having kept the obligation.
+    store.refuse = false;
+    for (int i = 1; i <= 3; ++i) g.tick(t += kSaveDebounceMs);
+    CHECK(g.saveWritesFailed() == 0);
+    CHECK(g.saveNow());
+    SaveData caught;
+    CHECK(deserializeSave(store.bytes(), caught));
+    CHECK(caught.linkEnabled);
+}
+
+// The reported shape of it, end to end. A hatch persists IMMEDIATELY, and that one call
+// is all that stands between a new pet and a reboot: nothing in completeHatch marks the
+// save dirty on its own — installPet doesn't, and the first-hatch achievement has
+// already fired by the second egg — so a write turned away there used to leave the pet
+// in RAM only. It is persistSave itself that now owes the retry, which is what makes
+// this true of every "persist immediately" call site rather than the ones that
+// remembered.
+static void test_a_hatch_the_store_refused_still_reaches_flash() {
+    RefusingSaveStore store;
+    Game g(StartMode::FreshHatch, "paypup", &store);
+    pickFirstEggLine(g);
+    uint32_t t = 0;
+    g.tick(t += 1000);
+    // The egg's own persist has landed by now, so "flash" holds the pet the device
+    // would come back as — the previous one, in the report.
+    SaveData onFlash;
+    CHECK(deserializeSave(store.bytes(), onFlash));
+    const std::string previous = onFlash.activeId;
+    CHECK(!previous.empty());
+
+    store.refuse = true;                                 // the medium starts saying no
+    g.tick(t += kBootHatchMs / 2);
+    g.onButton(press(Button::B));                        // open the decrypt
+    const int presses = kHatchDurationMs / kHatchPressReductionMs;
+    for (int i = 0; i < presses; ++i) g.onButton(press(Button::B));
+    CHECK(g.pet() != nullptr && g.pet()->stage == Stage::Process);
+    const std::string hatched = g.pet()->id;
+    CHECK(hatched != previous);                          // RAM has moved on
+    CHECK(g.saveWritesFailed() > 0);                     // the hatch's own write bounced
+    SaveData still;
+    CHECK(deserializeSave(store.bytes(), still));
+    CHECK(previous == still.activeId);                   // a reboot here = the old pet
+
+    // The pet is owed a write, so the next store that says yes gets it — no further
+    // player action, and no waiting out the 30s autosave.
+    store.refuse = false;
+    g.tick(t += kSaveDebounceMs);
+    SaveData back;
+    CHECK(deserializeSave(store.bytes(), back));
+    CHECK(hatched == back.activeId);
+    CHECK(g.saveWritesFailed() == 0);
 }
 
 // The three radio consents are independent: none of them may imply another, so
@@ -14630,6 +14738,8 @@ static void test_firmware_version_ordering() {
     RUN(test_save_v37_to_v38_net_default)         \
     RUN(test_radio_consents_are_independent)      \
     RUN(test_save_defers_when_the_heap_is_too_low) \
+    RUN(test_a_refused_write_is_not_a_save) \
+    RUN(test_a_hatch_the_store_refused_still_reaches_flash) \
     RUN(test_net_access_needs_a_live_job)     \
     RUN(test_net_attempt_outcomes)                \
     RUN(test_qr_setup_step_appears_only_until_provisioned) \
