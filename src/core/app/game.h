@@ -1938,13 +1938,19 @@ private:
     int bulkYieldRow_ = 0;   // A-scroll cursor into bulkYieldTally_
     MaintKind maintKind_ = MaintKind::Defrag;
     // 0 = Quick (Bits, may fail) · 1 = Tool (an item, guaranteed) · 2 = Stacker (the
-    // minigame, guaranteed if you clear it). Three ways to pay for the same clean —
-    // luck, an item, or skill — which is why the third one needs no new currency.
+    // minigame, worth exactly what the board earns). Three ways to pay for the same
+    // clean — luck, an item, or skill — which is why the third one needs no new
+    // currency: it is the only one that can wipe a disk outright, and the only one that
+    // can come up short without failing.
     int defragVariant_ = 0;
     Stacker stacker_;                      // the variant-2 run in flight (never saved:
-                                           // an abandoned run forfeits its Bits, like a
-                                           // failed Quick defrag does)
+                                           // a run interrupted by a power cycle forfeits
+                                           // its Bits, board and all)
     uint32_t lastStackerStepMs_ = 0;
+    // What the last played board took off the disk (finishStacker). Held only so the
+    // outcome toast can print the number the board earned, which — unlike the fixed
+    // kDefragReduction a rolled or bought run reports — isn't knowable from the variant.
+    int stackerFragRemoved_ = 0;
     int defragCount_ = 0;                  // this pet's successful defrags —
                                            // persists through ARCH freeze/thaw (save v16)
     // Care-mistake SHIELD (save v21) — per-pet, reset on a new egg (startHatch). A

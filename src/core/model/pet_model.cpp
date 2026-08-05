@@ -69,6 +69,11 @@ bool PetModel::applyDefrag(bool success) {
     return true;   // the +1 care mistake is applied Game-side (shielded)
 }
 
+void PetModel::applyPlayedDefrag(int fragRemoved) {
+    if (fragRemoved <= 0) return;                  // a board worth nothing changes nothing
+    fragmentation_ = clamp100(fragmentation_ - fragRemoved);
+}
+
 bool PetModel::applyAntivirus(bool success) {
     if (success) {
         fragmentation_ = clamp100(fragmentation_ - kAvReduction);

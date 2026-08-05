@@ -2,6 +2,7 @@
 
 #include <cstdio>
 
+#include "tunables.h"
 #include "core/render/canvas.h"
 #include "core/render/font5x7.h"
 #include "core/render/framebuffer.h"
@@ -73,7 +74,17 @@ void drawMaintAction(Framebuffer& fb, MaintKind kind, const PetModel& m,
     char line[40];
     if (kind == MaintKind::Defrag) {
         header(fb, "DEFRAGMENTATION");
-        drawText(fb, kMargin, 34, "REDUCES FRAGMENTATION BY 20.", palColor(Pal::INK));
+        // The headline effect is the FOCUSED variant's, because the three don't pay the
+        // same: two take a fixed bite, and the played one is the only route to a clean
+        // disk. Naming the fixed number on a screen where it can be wrong would be worse
+        // than naming nothing.
+        if (variant == kDefragVariantStacker) {
+            drawText(fb, kMargin, 34, "CLEAR THE BOARD: FRAG TO 0.", palColor(Pal::INK));
+        } else {
+            std::snprintf(line, sizeof(line), "REDUCES FRAGMENTATION BY %d.",
+                          kDefragReduction);
+            drawText(fb, kMargin, 34, line, palColor(Pal::INK));
+        }
         std::snprintf(line, sizeof(line), "CURRENT FRAG: %d", m.fragmentation());
         drawText(fb, kMargin, 50, line, palColor(Pal::INK));
         // this pet's running defrag tally (persists through freeze/thaw),
@@ -108,7 +119,7 @@ void drawMaintAction(Framebuffer& fb, MaintKind kind, const PetModel& m,
                 tagCol = toolCount > 0 ? palColor(Pal::CALM) : palColor(Pal::WARN);
             } else {
                 std::snprintf(line, sizeof(line), "STACKER  -%d B", cost);
-                tag = "YOUR AIM";
+                tag = "ROWS PAY";       // never fails; the board sets the size of the clean
             }
             drawText(fb, kMargin + 12, rowY[i], line, col);
             drawText(fb, kActiveW - kMargin - textWidth(tag), rowY[i], tag, tagCol);
@@ -199,7 +210,7 @@ void drawStackerBoard(Framebuffer& fb, const Stacker& s, int frag) {
         std::snprintf(line, sizeof(line), "ROW %d/%d  BLOCKS %d",
                       s.row() + 1, kStackerRows, s.width());
         drawText(fb, kMargin, 182, line, palColor(Pal::INK_DIM));
-        drawText(fb, kMargin, 196, "B DROP    C GIVE UP", palColor(Pal::ACCENT));
+        drawText(fb, kMargin, 196, "B DROP    C STOP", palColor(Pal::ACCENT));
     } else if (s.won()) {
         drawText(fb, kMargin, 182, "DISK ALIGNED.", palColor(Pal::CALM));
         drawText(fb, kMargin, 196, "ANY BUTTON", palColor(Pal::ACCENT));
@@ -210,6 +221,23 @@ void drawStackerBoard(Framebuffer& fb, const Stacker& s, int frag) {
     }
     std::snprintf(line, sizeof(line), "FRAG %d", frag);
     drawText(fb, kActiveW - kMargin - textWidth(line), 182, line, palColor(Pal::INK_DIM));
+
+    // The banked clean, in the same place all the way through: it climbs as the run
+    // does, and freezes on whatever the board ended up worth. This is the whole reason
+    // to keep climbing, so it can't be something the player only sees afterwards — and
+    // it stays a number of FRAG rather than a score, because a score would be a second
+    // currency the player would have to learn the exchange rate for.
+    const int worth = stackerFragWorth(s, frag);
+    std::snprintf(line, sizeof(line), "-%d FRAG", worth);
+    drawText(fb, kActiveW - kMargin - textWidth(line), 196, line,
+             worth > 0 ? palColor(Pal::CALM) : palColor(Pal::INK_DIM));
+}
+
+int stackerFragWorth(const Stacker& s, int frag) {
+    // A cleared board is a FULL defrag, so it is worth the whole disk however bad it
+    // was; short of that, the blocks pay for themselves at the tunable rate.
+    if (s.won()) return frag;
+    return s.score() / kStackerScorePerFrag;
 }
 
 void drawMaintProcess(Framebuffer& fb, MaintKind kind, float t) {
@@ -221,15 +249,32 @@ void drawMaintProcess(Framebuffer& fb, MaintKind kind, float t) {
                     palColor(Pal::ACCENT));
 }
 
-void drawMaintOutcome(Framebuffer& fb, MaintKind kind, bool success) {
+void drawMaintOutcome(Framebuffer& fb, MaintKind kind, MaintOutcome outcome,
+                      int fragRemoved) {
     header(fb, kind == MaintKind::Defrag ? "DEFRAGMENTATION" : "ANTIVIRUS");
-    const char* msg;
-    if (kind == MaintKind::Defrag)
-        msg = success ? "DEFRAG COMPLETE  -20 FRAG" : "DEFRAG FAILED  +15 FRAG";
-    else
-        msg = success ? "AV COMPLETE  SYSTEM CLEAN" : "AV FAILED  +15 FRAG";
-    drawText(fb, kMargin, 100, msg,
-             success ? palColor(Pal::CALM) : palColor(Pal::HOT));
+    char line[40];
+    const char* msg = line;
+    Rgb565 col = palColor(Pal::CALM);
+    if (outcome == MaintOutcome::Failed) {
+        std::snprintf(line, sizeof(line), "%s FAILED  +%d FRAG",
+                      kind == MaintKind::Defrag ? "DEFRAG" : "AV", kMaintFailPenalty);
+        col = palColor(Pal::HOT);
+    } else if (kind == MaintKind::Av) {
+        msg = "AV COMPLETE  SYSTEM CLEAN";
+    } else if (outcome == MaintOutcome::Partial) {
+        // A board that stopped short still cleaned something, and says so in the same
+        // words a full run does — the difference is the adjective and the number, not a
+        // failure notice, because nothing failed.
+        if (fragRemoved > 0) {
+            std::snprintf(line, sizeof(line), "PARTIAL DEFRAG  -%d FRAG", fragRemoved);
+        } else {
+            msg = "NO BLOCKS PLACED.  NO CHANGE.";
+            col = palColor(Pal::INK_DIM);
+        }
+    } else {
+        std::snprintf(line, sizeof(line), "DEFRAG COMPLETE  -%d FRAG", fragRemoved);
+    }
+    drawText(fb, kMargin, 100, msg, col);
 }
 
 }  // namespace mal

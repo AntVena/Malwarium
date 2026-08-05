@@ -716,11 +716,21 @@ void Game::drawStacker(Framebuffer& fb) const {
 }
 
 void Game::drawProcess(Framebuffer& fb) const {
-    if (!processResolved_)
+    if (!processResolved_) {
         drawMaintProcess(fb, maintKind_,
                          static_cast<float>(processBeat_) / kProcessBeats);
+        return;
+    }
+    // A PLAYED defrag reports what its own board was worth and can come up short without
+    // failing; a rolled or bought one reports the fixed reduction it either got or missed.
+    if (maintKind_ == MaintKind::Defrag && defragVariant_ == kDefragVariantStacker)
+        drawMaintOutcome(fb, maintKind_,
+                         maintSuccess_ ? MaintOutcome::Cleaned : MaintOutcome::Partial,
+                         stackerFragRemoved_);
     else
-        drawMaintOutcome(fb, maintKind_, maintSuccess_);
+        drawMaintOutcome(fb, maintKind_,
+                         maintSuccess_ ? MaintOutcome::Cleaned : MaintOutcome::Failed,
+                         maintKind_ == MaintKind::Defrag ? kDefragReduction : kAvReduction);
 }
 
 void Game::drawEvolve(Framebuffer& fb) const {

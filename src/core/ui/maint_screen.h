@@ -32,14 +32,29 @@ void drawMaintAction(Framebuffer& fb, MaintKind kind, const PetModel& m,
                      int defragCount);
 
 // The Stacker board (variant 2). Draws the locked stack, the run currently in hand, and
-// either the controls or the result. `frag` is shown only as context for what clearing
-// the board would fix.
+// either the controls or the result. `frag` is the disk as it stands: context for what
+// clearing the board would fix, and — since a cleared board wipes it — the win's own
+// payout, which is why the screen can price the run without being told.
 void drawStackerBoard(Framebuffer& fb, const Stacker& s, int frag);
+
+// What a played board is worth in Fragmentation: kStackerScorePerFrag points to the
+// point, or the whole disk if it was cleared. Shared by the board and its outcome toast
+// so the number the player watched climb is the number they end up with.
+int stackerFragWorth(const Stacker& s, int frag);
 
 // Running process: a progress bar (C ignored until it resolves). `t` 0..1.
 void drawMaintProcess(Framebuffer& fb, MaintKind kind, float t);
 
-// Outcome toast after the process resolves.
-void drawMaintOutcome(Framebuffer& fb, MaintKind kind, bool success);
+// What a finished run did to the disk. Failed and Cleaned are the only two a ROLLED or
+// BOUGHT run can reach; Partial belongs to the played one, whose board can come up short
+// without that being a failure — no penalty, no care mistake, just a smaller clean.
+enum class MaintOutcome : uint8_t { Failed, Cleaned, Partial };
+
+// Outcome toast after the process resolves. `fragRemoved` is what actually came off:
+// the fixed kDefragReduction/kAvReduction for a rolled or bought run, the board's own
+// worth for a played one — which is why the toast prints a number instead of implying
+// one. Ignored on Failed, which paid kMaintFailPenalty instead.
+void drawMaintOutcome(Framebuffer& fb, MaintKind kind, MaintOutcome outcome,
+                      int fragRemoved);
 
 } // namespace mal

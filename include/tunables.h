@@ -730,6 +730,18 @@ constexpr int kDefragVariantStacker = 2;
 // heartbeat (the kCombatAnimMs precedent) — at 250ms a step the timing is trivial, and
 // the whole variant is a timing test. Only ticks while the board is on screen.
 constexpr int kStackerStepMs = 110;
+// A played clean is priced by the BOARD, not by kDefragReduction. Clearing it is a full
+// defrag — Fragmentation straight to zero, which is the only thing in the game that
+// wipes a disk outright, and the reason the variant is worth the difficulty. Anything
+// short of that still pays for the blocks it landed: Stacker::score, at this many points
+// to one point of Fragmentation.
+//
+// The rate is set so that a board which stalls on the LAST row is worth roughly one
+// ordinary defrag (kStackerMaxScore is 135; a near miss scores ~108, so ~21 off) and a
+// board that stalls halfway is worth a third of that. A run therefore cannot be worse
+// than not playing — there is no fail penalty and no care mistake down this path, only
+// a smaller clean — because the player already paid the entry in Bits and in attention.
+constexpr int kStackerScorePerFrag = 5;
 
 // Menu navigation ------------------------------------------------
 // One global idle timer governs the whole menu tree: 5s of silence collapses

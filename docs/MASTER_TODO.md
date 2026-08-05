@@ -323,10 +323,9 @@ below means `ICON_SECTOR_<AREA_ID>` / `BG_SECTOR_<AREA_ID>` — the area's own i
 which is the name its row already asks for.
 
 - **Net-Sea Crossing area art** (shipped mechanically, art pending): the sector glyph + backdrop
-  (open water, shipping lanes, landfall at Sandbox Beach), the `FLOATING POINT` / `THE HARDENED
-  SHELL` storefront motifs, and glyphs for its five new mods (`ICON_MOD_HARDENED_SHELL`,
-  `_BUNDLE_STRIPPER`, `_BALLAST_CACHE`, `_SONAR_PING`, `_SALVAGE_RIG` — generic until drawn). Like
-  the keep, it fights with the shared tier roster and has no malbeasts of its own.
+  (open water, shipping lanes, landfall at Sandbox Beach) and the `FLOATING POINT` / `THE HARDENED
+  SHELL` storefront motifs. Its five mods are drawn — the whole `ICON_MOD_*` family is, so no area
+  owes one. Like the keep, it fights with the shared tier roster and has no malbeasts of its own.
 - **Napstorrent Moors area art** (shipped mechanically, art pending): the sector glyph + backdrop
   (marshy → castle progression), the `MOOR-TO-MOOR` storefront motif.
 - **Castle Rapidscare art** (shipped mechanically, art pending): the sector glyph + backdrop,

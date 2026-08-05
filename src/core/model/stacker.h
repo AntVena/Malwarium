@@ -34,6 +34,10 @@ constexpr int kStackerFastFromRow = 5;
 constexpr int kStackerSlowStep = 1;
 constexpr int kStackerFastStep = 2;
 
+// The best a board can be worth (see score()): every block kept, all the way up.
+constexpr int kStackerMaxScore =
+    kStackerStartWidth * kStackerRows * (kStackerRows + 1) / 2;
+
 class Stacker {
   public:
     enum class State : uint8_t { Running, Won, Lost };
@@ -101,6 +105,21 @@ class Stacker {
     int rowWidth(int r) const {
         if (r < 0 || r >= kStackerRows) return 0;
         return popcount(locked_[r]);
+    }
+
+    // What the board is WORTH so far: every block that reached a level is worth that
+    // level, level 1 being the base row. So height is paid for twice over — once by
+    // reaching a row at all, and again by how many blocks survived the climb to it —
+    // which is what makes a run that stalled two rows short worth more than one that
+    // stalled halfway, without the model knowing what the number buys.
+    //
+    // Only LOCKED rows count. The run in hand hasn't landed anywhere yet, so it is worth
+    // nothing until it does, and a board is scored the same whether the player stopped or
+    // ran out of blocks.
+    int score() const {
+        int total = 0;
+        for (int r = 0; r < kStackerRows; ++r) total += popcount(locked_[r]) * (r + 1);
+        return total;
     }
 
     // Is (row, col) a LOCKED block? Rows at or above the moving run are always empty —

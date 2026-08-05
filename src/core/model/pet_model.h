@@ -52,6 +52,12 @@ public:
     // SHIELDED path (v21 Restore Point covers maint fails too) — PetModel no longer
     // touches the mistake counter itself.
     bool applyDefrag(bool success);
+    // Defrag by an EXPLICIT amount, with no outcome to report: the Stacker variant's
+    // clean is PLAYED, so the board decides how much comes off (Game-side, from
+    // Stacker::score) and a run that came up short removes less rather than failing.
+    // Nothing here can raise a care mistake, which is why it returns void where
+    // applyDefrag returns a failure flag.
+    void applyPlayedDefrag(int fragRemoved);
     // AV: success -kAvReduction frag + clears ghost/debuffs; failure as Defrag.
     // Returns TRUE on a FAILURE (same shielded-mistake contract as applyDefrag).
     bool applyAntivirus(bool success);

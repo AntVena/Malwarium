@@ -81,8 +81,8 @@ void Game::startMaint() {
 
 void Game::startStackerDefrag() {
     // The Bits are already spent (startMaint charges before branching), so from here the
-    // run owes the player only an outcome. C abandons it and forfeits them, exactly as a
-    // failed Quick defrag forfeits them — the spend is what gates spamming, not the result.
+    // run owes the player only a board. Every way out of it pays what that board is
+    // worth; the spend is what gates spamming, not the result.
     stacker_.reset();
     lastStackerStepMs_ = nowMs_;
     nav_ = Nav::Stacker;
@@ -96,19 +96,28 @@ void Game::onStacker(const ButtonEvent& ev) {
     if (ev.button == Button::B) {
         stacker_.drop();
     } else if (ev.button == Button::C) {
-        // Abandon. The Bits are gone, but nothing else happened — no clean, and no care
-        // mistake either, because walking away isn't a botched defrag.
-        nav_ = Nav::Detail;
+        // Stop early and bank the board. Since a run that ends in mid-air keeps whatever
+        // it locked, quitting has to keep it too — otherwise C would be a button that
+        // throws away frag the player has already earned, which is a trap, not a choice.
+        finishStacker();
     }
 }
 
 void Game::finishStacker() {
-    // Hand the played result back to the shared maint outcome path, so a cleared board
-    // reduces Fragmentation and bumps the tally through exactly the same seam a Tool
-    // defrag does, and a lost board takes the same care mistake a failed Quick one does.
+    // A played board cannot FAIL; it can only be worth less. Clearing it is a full
+    // defrag — the disk goes to zero, which nothing else in the game does — and a board
+    // that stopped short still takes off what its blocks earned, at
+    // kStackerScorePerFrag points to the point. So this path deliberately does NOT run
+    // resolveMaint(): there is no fail roll to honour, no +kMaintFailPenalty, no care
+    // mistake and no Replication Ghost, because the outcome was played rather than
+    // gambled. What it does share is everything a clean is bookkeeping-wise — the tally,
+    // the care signal, the dirty save.
     maintKind_ = MaintKind::Defrag;
-    maintSuccess_ = stacker_.won();
-    if (maintSuccess_) {
+    const bool cleared = stacker_.won();
+    stackerFragRemoved_ = cleared ? model_.fragmentation()
+                                  : stacker_.score() / kStackerScorePerFrag;
+    maintSuccess_ = cleared;
+    if (cleared) {
         ++stackerWins_;                          // the played ladder, player-level
         // The two rows a board's SHAPE earns. The top row's surviving width is the whole
         // record of how the run went: the full starting width means nothing was ever
@@ -119,10 +128,14 @@ void Game::finishStacker() {
         if (kept >= kStackerStartWidth) unlockAchievement(ach::kPerfectDefrag);
         if (kept == 1) unlockAchievement(ach::kHangingByABit);
     }
+    model_.applyPlayedDefrag(stackerFragRemoved_);
+    // The tally counts disks that got cleaner, so a board worth nothing doesn't score one.
+    if (stackerFragRemoved_ > 0) ++defragCount_;
+    noteCareSignal(DominantSignal::Maintenance);
+    markSaveDirty();
     processBeat_ = kProcessBeats;                // the work is done; show the outcome
-    processResolved_ = false;
+    processResolved_ = true;
     nav_ = Nav::Process;
-    resolveMaint();
 }
 
 void Game::resolveMaint() {
@@ -141,7 +154,8 @@ void Game::resolveMaint() {
             // deliberately not a dice roll on top of a dice roll — the state the player
             // is in is what decides it, so the way to never see a ghost is to not let
             // Fragmentation reach Critical before defragmenting (or to stop rolling for
-            // it: the Tool and Stacker variants can't fail).
+            // it: the Tool and Stacker variants never reach this path — one is bought and
+            // the other is played, and neither has a roll to lose).
             if (model_.fragmentation() >= kFragCriticalMin && !model_.hasGhost()) {
                 model_.setGhost(true);
                 log_.push(LogEventType::CareMistake, "REPLICATION GHOST");

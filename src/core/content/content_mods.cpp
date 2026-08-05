@@ -17,7 +17,8 @@ namespace mal {
 // and sets its nominal equip-LEVEL band (each dropped copy rolls its own gate within it,
 // kModEquipLevel* in tunables). Fields: id, name, tag, effect-text, oneShot, rarity,
 // powerTier, effectKind, magnitude, magnitude2, line, affinityBonus. Per-mod glyph is
-// ICON_MOD_<UPPER ID> (generic icon until art lands).
+// ICON_MOD_<UPPER ID> — every row here has one, so a NEW row needs a new PNG or it draws
+// nothing at all (mods_screen skips a missing sprite rather than substituting).
 //
 // Never type a magnitude into the description text: write `{mag}` / `{mag2}` /
 // `{magBonus}` and effect_text.h substitutes it from this same row, so retuning a

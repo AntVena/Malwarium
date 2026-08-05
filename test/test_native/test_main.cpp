@@ -12928,6 +12928,38 @@ static void test_stacker_row_width_reports_the_survivors() {
     CHECK(s.rowWidth(-1) == 0 && s.rowWidth(kStackerRows) == 0);   // out of range
 }
 
+// score() is the whole reward curve, so the thing worth pinning is that HEIGHT is paid
+// for twice — a block on a high row is worth more than the same block low down, which is
+// what makes stalling two rows short beat stalling halfway.
+static void test_stacker_score_pays_for_height_twice() {
+    Stacker s;
+    CHECK(s.score() == 0);                        // nothing locked, nothing earned
+
+    // Base row (level 1) at full width.
+    CHECK(stackerDropAt(s, 0));
+    CHECK(s.score() == kStackerStartWidth);
+
+    // Row 1 (level 2) at full width again: three more blocks, each worth two.
+    CHECK(stackerDropAt(s, 0));
+    CHECK(s.score() == kStackerStartWidth * 3);
+
+    // A clean board all the way up is the ceiling, and the ceiling is the constant the
+    // payout rate is calibrated against.
+    Stacker best;
+    for (int r = 0; r < kStackerRows; ++r) CHECK(stackerDropAt(best, 0));
+    CHECK(best.won());
+    CHECK(best.score() == kStackerMaxScore);
+
+    // Two boards that reached the same height with different survivors: the wider one is
+    // worth more, and a board is scored on what LOCKED, never on the run still in hand.
+    Stacker narrow;
+    CHECK(stackerDropAt(narrow, 0));
+    CHECK(stackerDropAt(narrow, 2));              // shaved to one block
+    CHECK(narrow.rowWidth(1) == 1);
+    CHECK(narrow.score() == kStackerStartWidth + 2);
+    CHECK(narrow.running() && narrow.row() == 2);  // the hand on level 3 counts for nothing
+}
+
 namespace {
 // Play a whole board through the REAL button path, locking each row at `col(row)`. Leaves
 // the run parked on its result; the caller presses once more to finish it. False if a
@@ -12981,22 +13013,98 @@ static void test_stacker_win_credits_the_tally_and_the_shape_rows() {
     CHECK(!n.hasAchievement(ach::kPerfectDefrag));
 }
 
-// A lost board pays nothing. The tally is a record of boards CLEARED, so a run that ended
-// in mid-air must not creep into it — and the shape rows read a top row that was never
-// reached.
-static void test_stacker_loss_credits_nothing() {
+// A board that ends in mid-air is NOT a failed defrag: it pays for the blocks it landed
+// and costs nothing extra. The two halves of that are asserted together because taking
+// only one of them is the mistake — a partial payout that still charged the care mistake
+// would be worse than the old all-or-nothing rule.
+static void test_stacker_short_board_pays_what_it_stacked_and_costs_nothing() {
     Game g{StartMode::Hatched};
     g.model().setFragmentation(60);
+    const int mistakes = g.model().careMistakes();
     g.debugStartStackerDefrag();
     // Base row at 0..2, then a drop with no column in common with it — the run keeps
     // nothing and the board ends there, well short of the top.
     CHECK(playStackerBoard(g, [](int r) { return r == 0 ? 0 : 4; }));
     CHECK(!g.stacker().running() && !g.stacker().won());
     CHECK(g.stacker().row() < kStackerRows - 1);
+    const int worth = g.stacker().score() / kStackerScorePerFrag;
     g.onButton(press(Button::B));
-    CHECK(g.stackerWins() == 0);
+    CHECK(g.model().fragmentation() == 60 - worth);     // cleaned, just not much
+    CHECK(g.model().careMistakes() == mistakes);        // no failure, so no mistake
+    CHECK(!g.model().hasGhost());                       // and no fork, however bad the disk
+    CHECK(g.stackerWins() == 0);                        // the tally counts CLEARED boards
     CHECK(!g.hasAchievement(ach::kPerfectDefrag));
     CHECK(!g.hasAchievement(ach::kHangingByABit));
+
+    // The rate is what makes height worth climbing for: the same run stopped one row
+    // higher has to be worth strictly more.
+    Game low{StartMode::Hatched};
+    low.model().setFragmentation(90);
+    low.debugStartStackerDefrag();
+    CHECK(playStackerBoard(low, [](int r) { return r < 2 ? 0 : 4; }));
+    Game high{StartMode::Hatched};
+    high.model().setFragmentation(90);
+    high.debugStartStackerDefrag();
+    CHECK(playStackerBoard(high, [](int r) { return r < 6 ? 0 : 4; }));
+    low.onButton(press(Button::B));
+    high.onButton(press(Button::B));
+    CHECK(high.model().fragmentation() < low.model().fragmentation());
+    CHECK(low.model().fragmentation() < 90);            // both still cleaned something
+
+    // A board with a critical disk under it stays a partial clean, not a ghost fork:
+    // the played path never reaches the failed-defrag branch that raises one.
+    Game crit{StartMode::Hatched};
+    crit.model().setFragmentation(kFragCriticalMin + 10);
+    crit.debugStartStackerDefrag();
+    CHECK(playStackerBoard(crit, [](int r) { return r == 0 ? 0 : 4; }));
+    crit.onButton(press(Button::B));
+    CHECK(!crit.model().hasGhost());
+}
+
+// A cleared board is a FULL defrag — the only thing in the game that takes a disk to
+// zero, and the reason the variant is worth its difficulty.
+static void test_stacker_cleared_board_wipes_the_disk() {
+    Game g{StartMode::Hatched};
+    g.model().setFragmentation(95);                     // far past what one defrag fixes
+    g.debugStartStackerDefrag();
+    CHECK(playStackerBoard(g, [](int) { return 0; }));
+    CHECK(g.stacker().won());
+    g.onButton(press(Button::B));
+    CHECK(g.model().fragmentation() == 0);
+    CHECK(g.model().careMistakes() == 0);
+
+    // The narrowest possible win is still a win, so it wipes the disk exactly the same:
+    // the top row's width buys achievement rows, never a bigger or smaller clean.
+    Game n{StartMode::Hatched};
+    n.model().setFragmentation(95);
+    n.debugStartStackerDefrag();
+    CHECK(playStackerBoard(n, [](int r) { return r < 2 ? r : 2; }));
+    CHECK(n.stacker().won() && n.stacker().rowWidth(kStackerRows - 1) == 1);
+    n.onButton(press(Button::B));
+    CHECK(n.model().fragmentation() == 0);
+}
+
+// C stops the run early, and banking is the point: since a board that runs out of blocks
+// keeps what it locked, quitting has to keep it too, or C would be a button that throws
+// away Fragmentation the player already earned.
+static void test_stacker_stopping_early_banks_the_board() {
+    Game g{StartMode::Hatched};
+    g.model().setFragmentation(70);
+    g.debugStartStackerDefrag();
+    for (int r = 0; r < 4; ++r) {
+        for (int guard = 0; guard < 4 * kStackerCols; ++guard) {
+            if (g.stacker().left() == 0) break;
+            g.debugStepStacker();
+        }
+        g.onButton(press(Button::B));
+    }
+    CHECK(g.stacker().running());
+    const int worth = g.stacker().score() / kStackerScorePerFrag;
+    CHECK(worth > 0);
+    g.onButton(press(Button::C));
+    CHECK(g.model().fragmentation() == 70 - worth);
+    CHECK(g.model().careMistakes() == 0);
+    CHECK(g.stackerWins() == 0);
 }
 
 // The counting ladder rides the ordinary sweep, like every other counted series, and the
@@ -13033,10 +13141,11 @@ static void test_stacker_wins_ladder_sweeps_and_persists() {
     CHECK(!migrated.hasAchievement("DEFRAG_BY_HAND"));
 }
 
-// The Game seam: a played result reaches the SAME outcome path a rolled or bought one
-// does. That is the whole point of routing the minigame through resolveMaint rather than
-// letting it apply its own effects — a win has to be worth exactly what a Tool defrag is.
-static void test_stacker_defrag_pays_out_like_any_other() {
+// The ROLLED/BOUGHT defrag seam, which the played one deliberately does not share: a
+// Quick or Tool run takes a fixed bite or pays a fixed penalty, and the penalty is where
+// the care mistake lives. Asserted here so a change to the played variant's own payout
+// can't quietly move what the other two are worth.
+static void test_rolled_defrag_takes_its_fixed_bite() {
     Game g{StartMode::Hatched};
     g.model().setFragmentation(60);
     const int before = g.model().fragmentation();
@@ -14693,10 +14802,13 @@ static void test_firmware_version_ordering() {
     RUN(test_stacker_clearing_every_row_wins) \
     RUN(test_stacker_run_stays_on_board_and_contiguous) \
     RUN(test_stacker_row_width_reports_the_survivors) \
+    RUN(test_stacker_score_pays_for_height_twice) \
     RUN(test_stacker_win_credits_the_tally_and_the_shape_rows) \
-    RUN(test_stacker_loss_credits_nothing) \
+    RUN(test_stacker_short_board_pays_what_it_stacked_and_costs_nothing) \
+    RUN(test_stacker_cleared_board_wipes_the_disk) \
+    RUN(test_stacker_stopping_early_banks_the_board) \
     RUN(test_stacker_wins_ladder_sweeps_and_persists) \
-    RUN(test_stacker_defrag_pays_out_like_any_other) \
+    RUN(test_rolled_defrag_takes_its_fixed_bite) \
     RUN(test_replication_ghost_is_raised_by_a_failed_defrag_on_a_critical_disk) \
     RUN(test_air_gapped_snack_cures_the_ghost_and_unlocks) \
     RUN(test_ghost_also_clears_through_a_successful_av_scan) \

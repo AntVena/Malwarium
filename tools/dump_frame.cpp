@@ -8,7 +8,7 @@
 //        feed:<item_id> (eat one named food through the real Use path and hold the
 //             feeding modal — how to eyeball that its gauges follow that item's own
 //             effects, e.g. feed:tortilla_chip, feed:null_noodles)
-//        maint [detail] [stacker [slide|drop ...]] · lockout · hatch [crack] · evolve
+//        maint [detail] [stacker [slide|drop|stop ...]] · lockout · hatch [crack] · evolve
 //        clutch [aim] [round ...] | clutch win (the Phishing egg's Clutch Pick; "aim"
 //        flips to the second half and "round" commits, interleaved to walk any path —
 //        three "round"s land on the lost reveal, "win" plays it perfectly instead)
@@ -242,11 +242,15 @@ int main(int argc, char** argv) {
             game.onButton({Button::B, true, false});          // run it
             // "drop" locks the run where it stands; "slide" advances it one beat first,
             // so interleaving the two walks the run off the stack and renders a loss.
+            // "stop" ends the run there and banks it, which is also the only way to reach
+            // the outcome toast for a board that was neither cleared nor stalled.
             for (int i = 1; i < argc; ++i) {
                 if (std::strcmp(argv[i], "drop") == 0)
                     game.onButton({Button::B, true, false});
                 else if (std::strcmp(argv[i], "slide") == 0)
                     game.debugStepStacker();
+                else if (std::strcmp(argv[i], "stop") == 0)
+                    game.onButton({Button::C, true, false});
             }
         }
     } else if (hasFlag(argc, argv, "cfg")) {
