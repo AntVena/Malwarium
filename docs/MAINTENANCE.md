@@ -1,8 +1,9 @@
 # Malwarium — Maintenance Routine
 
 A recurring self-review pile. Start a session with **"let's do a maintenance run"** — pick the
-item below with the oldest "Last run" date, do it for real (not a superficial pass), then update
-its date + a one-line note of what changed. Commit the result.
+item below with the oldest "Last run" date, do it for real (not a superficial pass), then bump its
+date and commit. The date is the only breadcrumb this file keeps; what the run actually found goes
+in the commit, and anything left open becomes a row on `docs/MASTER_TODO.md`.
 
 **Philosophy:** docs describe **current state and forward-facing work**, not a changelog — `git
 log` is the changelog. The specific rule: cite **how/where**, never **when**. *When* something was
@@ -17,7 +18,7 @@ overdue cleanup.
 
 ## The pile
 
-### Docs cleanup / decision-history sweep — Last run: 2026-07-19
+### Docs cleanup / decision-history sweep — Last run: 2026-08-05
 Two surfaces, two rules.
 
 **Docs (`docs/`, and the standards beside the code):** cull dated historical narration (session logs, "shipped on <date>",
@@ -41,17 +42,17 @@ unit needs no build-file edit — the cost of a split is the reading, not the pl
 unit is big but genuinely one concern (a dispatcher, a flat save mapping, a screen-per-function
 render file), leave it and say so: length that follows from the number of cases is not creep.
 
-### Design consistency pass — Last run: never
+### Design consistency pass — Last run: 2026-08-05
 Spot-check shipped screens against the system they're authored to (`assets/VISUAL_LANGUAGE.md`,
 `assets/CREATURE_VISUAL_RULES.md`) and against each other — a screen that solves a problem its
 siblings solve differently is the drift worth catching. Fix the standard to match reality, or if
 the drift looks like an undocumented real decision, surface it explicitly.
 
-### Stale cross-reference sweep — Last run: 2026-07-18
+### Stale cross-reference sweep — Last run: 2026-08-05
 Grep for links/citations across the docs — file paths, line numbers, `D#`/`S#`/`C#`/`FB-*` row
 IDs — and verify they still resolve to something real. Fix or remove dangling references.
 
-### Test/gate health check — Last run: never
+### Test/gate health check — Last run: 2026-08-05
 Run the gates. Confirm native gates and the S3 build are actually green, not assumed green from
 a doc. Look for test debt — tests asserting behaviour that no longer occurs in
 real play.
@@ -63,15 +64,21 @@ scalar-field sprawl or `if (id == "...")` branches), one-file-per-type under
 `tunables.h`. Sweep: `grep -nE 'constexpr .* k\w+ *=' include/tunables.h` and flag any whose
 comment names ONE item/mod/move/creature — inline it onto that row. Verify claims against code.
 
-### Unused-include sweep — Last run: never
-This is a small device — every `#include` we don't use is wasted flash/RAM (headers pull in code
-and data), and the clangd "included header X is not used directly" warnings are noise we burn tokens
-reading past. Periodically prune them. The `game_*.cpp` units are the worst offenders: they all
-carry the same broad render/UI header block copied from `game_render.cpp`, most of which a given
-unit (e.g. `game_persist.cpp`, `game_combat.cpp`) doesn't use. Trust the clangd
-`unused-includes` diagnostics as the finder, but **verify a real host build still compiles after
-each removal** (a header may satisfy a transitive dependency clangd can't see) — the native gate is
-authoritative. Don't remove a device-only header while building host-only, and vice-versa.
+### Unused-include sweep — Last run: never (blocked)
+The clangd "included header X is not used directly" warnings are noise we burn tokens reading
+past, and the `game_*.cpp` units are the worst offenders: they all carry the same broad render/UI
+header block copied from `game_render.cpp`, most of which a given unit doesn't use.
+
+**This is blocked on `game.h`'s 36 includes** (`MASTER_TODO.md §3`). Strip-and-rebuild says 295
+includes across `src/core` are removable, and that number is meaningless — `game.h` supplies
+almost everything transitively, so "it still compiles" proves nothing about whether an include is
+needed. The one subset that IS mechanically safe is the ~60 lines the `game_*.cpp` units
+re-include that `game.h` already provides; that is cosmetic and can ride along with any other
+edit. Do the `game.h` row first, then this entry has a real signal.
+
+When it unblocks: trust the clangd `unused-includes` diagnostics as the finder, **verify a real
+host build still compiles after each removal**, and note that the native gate is authoritative —
+don't remove a device-only header while building host-only, or vice-versa.
 
 ### Asset manifest accuracy audit — Last run: 2026-08-05
 Cross-check `assets/ASSET_MANIFEST.md` status markers (☑/▨/☐) against what's actually in
@@ -84,5 +91,4 @@ in both a live folder and `_attic/`: a naive stem→path map resolves them to th
 ---
 
 Add a new entry here when a new recurring quality dimension comes up. Keep each entry to *what it
-checks* and *where* — not a running log of past findings; the "Last run" date is the only
-breadcrumb this file keeps, the fix itself belongs in the commit.
+checks*, *where*, and what currently blocks it — not a running log of past findings.

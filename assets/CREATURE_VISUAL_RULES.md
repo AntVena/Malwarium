@@ -1,8 +1,8 @@
-# 08 — Creature Visual Rules (Stage evolution + shading law)
+# Creature Visual Rules — stage evolution + shading law
 
-The standards established for pet sprites across the four stages, so they survive between
-sessions. Gold standards: **`SPR_PET_PAYPUP`** and **Malbear** — every new creature is held to
-their bar — the shipped `assets/SPR_PET_PAYPUP.png` and `SPR_PET_MALBEAR.png` are the reference.
+The standard every pet sprite is drawn to across the four stages. Gold standards:
+**`SPR_PET_PAYPUP`** and **Malbear** — every new creature is held to their bar, and the shipped
+`assets/sprites/SPR_PET_PAYPUP.png` and `assets/sprites/SPR_PET_MALBEAR.png` are the reference.
 
 ---
 
@@ -122,12 +122,12 @@ topography for light to describe, so it flattens and reads *less* evolved despit
 
 ---
 
-## 8. Next-session prompt (redraw + refinement)
+## 8. The redraw brief (refinement pass)
 
 > **Malwarium — redraw pass: hit the Paypup/Malbear bar, kill the blob.**
 >
-> Read first: this file. Gold standards: `assets/SPR_PET_PAYPUP.png` and
-> `assets/SPR_PET_MALBEAR.png`. Locked — don't touch them.
+> Read first: this file. Gold standards: `assets/sprites/SPR_PET_PAYPUP.png` and
+> `assets/sprites/SPR_PET_MALBEAR.png`. Locked — don't touch them.
 >
 > **The problem to fix:** the latest roster sculpts (Cryptoad, FireWallaby, Brute Badger,
 > Keyloggerhead front) have gone **blobby** — in black-and-white they collapse into one flat,

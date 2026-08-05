@@ -1,12 +1,10 @@
-# Wokwi simulation tier — recipe + Phase-1 decision
+# Wokwi simulation tier — recipe + why it is deferred
 
-> **Decision (2026-06-30): the Wokwi *screenshot* tier is DEFERRED for Phase 1.**
-> The Simulation tier's **native-unit row is delivered** (`pio test -e native` — 46
-> Unity cases, the same gates ctest runs). The Wokwi PNG-regression row is deferred
-> and the **host-tier render + grayscale gates stand in as the Phase-1 acceptance
-> proxy** for layout/rendering; the **real board is the timing authority** (TEST_STRATEGY
-> says Wokwi timing is not cycle-accurate). This is recorded in the
-> `malwarium-open-decisions` memory for the PO. Rationale below.
+> **The Wokwi *screenshot* tier is DEFERRED.** The Simulation tier's **native-unit row is
+> delivered** (`pio test -e native`, the same cases the gates run through ctest). The Wokwi
+> PNG-regression row is not, and the **host-tier render + grayscale gates stand in as the
+> acceptance proxy** for layout/rendering; the **real board is the timing authority**
+> (`docs/TEST_STRATEGY.md` — Wokwi timing is not cycle-accurate). Rationale below.
 
 ## Why deferred (not "couldn't be bothered")
 
@@ -23,9 +21,9 @@
    unique value (rough MCU timing) is explicitly non-authoritative; the device covers it.
 
 Net: the marginal value of the Wokwi screenshot tier over `host gates + on-device smoke`
-is low for Phase 1, and the two blockers above make it un-runnable here regardless.
+is low, and the two blockers above make it un-runnable here regardless.
 
-## To stand it up later (when the PO wants it)
+## To stand it up later
 
 1. **Install + auth:**
    ```sh

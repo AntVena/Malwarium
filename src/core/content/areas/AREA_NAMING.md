@@ -4,8 +4,8 @@
 > When a new location name is needed, run it through this standard before proposing it.
 
 > **Note:** This is a **two-tier** standard, distinct from both the creature Phonetic-Integration
-> Standard (`04_creature_naming_conventions.md`) and the item Functional-Clarity Standard
-> (`05_item_naming_conventions.md`). Areas and Sub-areas are named by **different rules from each
+> Standard (`../CREATURE_NAMING.md`) and the item Functional-Clarity Standard
+> (`../ITEM_NAMING.md`). Areas and Sub-areas are named by **different rules from each
 > other** — that's the core of this doc.
 
 ---
@@ -29,10 +29,10 @@ a Sub-area name.
 ## 1. Area Names — The Direct-Reference Standard
 
 An Area name is a **direct, traceable pun on one specific real site/service/brand**, built the
-same way the creature standard blends an animal and a tech term (`04 §1`) — except here the two
+same way the creature standard blends an animal and a tech term (`../CREATURE_NAMING.md §1`) — except here the two
 ingredients are **the brand name** and **an evocative place-type word or adjacent real word**.
 
-### 1.1 The Gliding Rule (reused from `04 §1`)
+### 1.1 The Gliding Rule (reused from `../CREATURE_NAMING.md §1`)
 
 The transform — a swapped letter, a swapped syllable, a homophone, an inserted sound — must
 require *zero change in mouth positioning* at the seam. Say it out loud. If you hesitate mid-word,
@@ -54,7 +54,7 @@ it fails.
 
 ### 1.2 Traceability Is Mandatory
 
-Unlike creature names (where the animal must survive, `04 §2`), here it's the **brand** that must
+Unlike creature names (where the animal must survive, `../CREATURE_NAMING.md §2`), here it's the **brand** that must
 survive recognizably. A player who knows the site should get the reference within a beat; a player
 who doesn't should still read it as a plausible place name. If the source is only guessable from
 the *aesthetic*, not the *name itself*, it's not passing this standard — it's closer to the older,
@@ -177,8 +177,8 @@ This standard applies to:
 
 This standard does **not** apply to:
 
-- **Creature names** — governed by `04_creature_naming_conventions.md`.
-- **Item names** — governed by `05_item_naming_conventions.md`.
+- **Creature names** — governed by `../CREATURE_NAMING.md`.
+- **Item names** — governed by `../ITEM_NAMING.md`.
 - **Storefront / shop names** (e.g. Byte to Eat, Pier-to-Peer) — these follow the item doc's
   Tech-Anchor spirit loosely but aren't formally specced; treat as a soft extension of Area flavor,
   not a third tier.

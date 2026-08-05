@@ -111,6 +111,30 @@ Intentional simplifications. None is a bug; each is a "confirm as v1 or revise".
   ripples through the docs and the peer/duel screens' copy. Diff **S** (taste, then a
   mechanical rename).
 
+### 1f-ii. UI layout constants have no single source
+
+[`assets/VISUAL_LANGUAGE.md`](../assets/VISUAL_LANGUAGE.md) §4 presents the layout grid as one
+table and calls it the single source; in code there is no source at all. `kMargin`, `kRowTop`,
+`kRowH` and `kLineH` are re-declared in a file-private anonymous namespace in every screen that
+draws a list, and the copies have already diverged:
+
+- **`kMargin` is 8 in every `src/core/ui/*_screen.cpp`, and 10 in every list drawn from a
+  `game_*.cpp` unit** — `game_crew`, `game_peers`, `game_pvp`, `game_merge`, `game_hacker`. The
+  Hacker-face and peer screens therefore sit 2 logical px further in than every carousel screen,
+  which is drift nothing would catch: each file is self-consistent.
+- **`kLineH`** is `kFontH + 5` in `game_crew`/`game_peers`/`game_pvp` and `kFontH + 4` in
+  `game_merge`.
+- **`kRowTop` is 26 everywhere except `expl_screen.cpp`, which uses 40** — the carousel track
+  height, not the submenu header band. Possibly deliberate for EXPL's chrome; undocumented either
+  way.
+
+The fix is a UI-internal layout header the screens share, and it is the **same header §3 already
+names as the blocker on the `cfg_screen.cpp` split** ("promoting those into a UI-internal header
+is the actual design decision, and it would serve every other `*_screen.cpp` too"). Doing it once
+settles both. Diff **M** — the decision is which constants are grid (shared) and which are a
+screen's own business; the edit after that is mechanical. Land the shared header first, then
+reconcile the 8/10 margin as a deliberate call rather than an accident.
+
 ### 1g. Test-infrastructure gaps
 
 - **No serial test-hook / no automated on-device gameplay verification.** Every device check to date
@@ -333,7 +357,30 @@ than done:
   header is needed for the split itself. **The blocker is the shared anonymous namespace:** the
   update block calls `header()` and reads `kMargin`/`kRowTop`/`kRowH`/`kVisibleRows`, all
   file-private at the top of `cfg_screen.cpp`. Promoting those into a UI-internal header is the
-  actual design decision, and it would serve every other `*_screen.cpp` too. Diff **M**.
+  actual design decision, and it would serve every other `*_screen.cpp` too. Diff **M**. See
+  §1f-ii — that header is the same one the layout-constant drift needs.
+
+Two more are past the rule and were not on this watch at all:
+
+- **`game.h` (2681)** — the umbrella header. It is not a unit that grew a second concern; it is
+  one class's declaration, so the line count is arguably honest. The cost is its **36 includes**:
+  it hands every TU that includes it 9 UI screen headers plus the whole model/net/render stack.
+  Two consequences. The `game_*.cpp` units re-include ~5 headers each (`carousel.h`,
+  `items_screen.h`, `maint_screen.h`, `modals.h`, `train_screen.h`) that `game.h` already
+  provides — ~60 redundant lines, free to delete, but only cosmetic. The real one is that **the
+  unused-include sweep cannot be run while this stands**: strip any include from any `src/core`
+  TU and it still compiles, because `game.h` supplied the symbol transitively. A mechanical
+  strip-and-build sweep says 295 of them are removable, which is a measurement of `game.h`, not
+  of the includes. Diff **L** — the question is whether `Game` can declare against forward
+  declarations and push the screen headers down into the `.cpp` units that draw. Until then the
+  maintenance pile's *Unused-include sweep* has no signal to work with.
+- **`test_main.cpp` (14746, 466 cases)** — the largest file in the repo by an order of magnitude,
+  and healthy by every check that exists: every defined `test_*` is registered, nothing is
+  skipped or disabled, and the suite is green. But one file holding the whole native tier means
+  a reviewer cannot find the tests for a subsystem except by grep, and the `RUN()` list at the
+  bottom is a 467-line macro nobody can diff usefully. Splitting by subsystem
+  (`test_combat.cpp`, `test_save.cpp`, …) is mechanical, since registration is already a macro
+  list. Diff **M** — the volume, not the difficulty.
 
 ---
 

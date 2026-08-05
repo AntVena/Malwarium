@@ -3,7 +3,7 @@
 > **Authoritative reference for naming all items** — food, buffs, quest items, equipment, and any future categories.
 > When a new item name is needed, run it through this standard before proposing it.
 
-> **Note:** Item naming is **not** governed by the creature Phonetic-Integration Standard (`04_creature_naming_conventions.md`).
+> **Note:** Item naming is **not** governed by the creature Phonetic-Integration Standard (`CREATURE_NAMING.md`).
 > Items serve a different role in the vocabulary — they must communicate *function* at a glance, not *identity* through phonetic blending.
 
 ---
@@ -105,7 +105,7 @@ This standard applies to:
 
 This standard does **not** apply to:
 
-- **Creature names** — governed by `04_creature_naming_conventions.md` (Phonetic-Integration Standard).
-- **World area names** — governed by `08_world_area_naming_conventions.md` (Site-Pun Standard),
+- **Creature names** — governed by `CREATURE_NAMING.md` (Phonetic-Integration Standard).
+- **World area names** — governed by `areas/AREA_NAMING.md` (Site-Pun Standard),
   cross-referenced from the area roster in `areas/`.
 - **Move / combat ability names** — separate convention TBD.

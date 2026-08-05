@@ -1,8 +1,8 @@
-# 05 — Visual Language (Area 6)
+# Visual Language
 
 The shared visual system every pet-side screen draws on: the **palette** (`PAL_CORE`), the
-**font** (`FONT_UI`), the **icon system**, and the **layout grid**. Areas 1–5 deferred all
-colour/font/silhouette craft here so it's decided **once**.
+**font** (`FONT_UI`), the **icon system**, and the **layout grid**. Every screen defers its
+colour/font/silhouette craft here so it is decided **once**.
 
 This doc is a **system spec + constraints brief**, not finished pixels: it fixes the *roles,
 sizes, tiers, and rules* that any particular hue, font face or silhouette then has to satisfy.
@@ -35,10 +35,10 @@ pass-order) live in `src/core/render/RENDER_PIPELINE.md` — **referenced, not d
 The framebuffer is **RGB565** (16-bit) on a 262K-capable ST7789. Plenty of
 colour headroom, so the limit is **design discipline, not hardware**: `PAL_CORE` is a small,
 fixed set of **named role tokens**. UI chrome only ever references a token, never a literal —
-so an Area-6 hue change reskins the whole UI from one place. (Pet sprites carry their own
+so a hue change reskins the whole UI from one place. (Pet sprites carry their own
 per-creature colours within the same discipline; they are **not** part of `PAL_CORE`.)
 
-### 1.2 Token model (roles, not hex — Design sets the hues)
+### 1.2 Token model (roles, not hex)
 
 | Group | Token | Used by | Notes |
 |---|---|---|---|
@@ -54,7 +54,7 @@ per-creature colours within the same discipline; they are **not** part of `PAL_C
 
 Target size: **~12–16 UI tokens total** (structural + semantic + rarity), plus the creature
 palette outside `PAL_CORE`. Small enough for a coherent retro read; large enough to cover
-every chrome need designed in Areas 1–5.
+every chrome need across the shipped screens.
 
 ### 1.3 Rules
 
@@ -66,8 +66,8 @@ every chrome need designed in Areas 1–5.
 - **Contrast budget:** `ink`-on-`paper` is the highest-contrast pair (text/numerics legibility
   on washed-out panels). `warn`/`hot` must also clear contrast on `paper` since they tint text
   (gauge numerics, Lockout digits).
-- **Brightness/dim states are engine-derived**, not extra tokens — Design supplies **one master
-  value per token** (manifest §A).
+- **Brightness/dim states are engine-derived**, not extra tokens — one master value per token
+  (manifest §A), dimmed in engine.
 
 ---
 
@@ -92,8 +92,8 @@ A single **pixel/bitmap** family (no anti-aliased vector — it smears at this s
 | Caption / hint | 8–10 | `CAP_SLOT_LABEL`, `UI_HINT_BAND`, tags |
 | Numeric | 10–12 (tabular) | gauge values, `UI_COUNTDOWN`, counts |
 
-One family at a few sizes — not multiple faces. Final face selection is Design; it must
-satisfy §2.1 at every size above.
+One family at a few sizes — not multiple faces. Any replacement face must satisfy §2.1 at
+every size above.
 
 ---
 
@@ -125,14 +125,16 @@ weight consistent across the UI.
 
 Concepts are **fixed** by the carousel (`docs/ORIENTATION.md`): Heart-w/-graph = STAT, USB =
 ITEMS, reticle = TRAIN, Wi-Fi globe = EXPL, fragmented HDD = MAINT, cracked CPU = MODS, rack =
-ARCH, gear+terminal = CFG). Execution (final silhouettes) is Design. Size 28×28, dim/bright.
+ARCH, gear+terminal = CFG). Size 28×28, one master each, dim/bright in engine.
 
 ---
 
-## 4. Layout grid (single source)
+## 4. Layout grid
 
-The per-screen grids, consolidated into one table (each screen is built — see the matching
-`src/core/ui/*_screen.cpp` for the live layout):
+The per-screen grids, consolidated into one table. **This table is the intent, not the
+authority** — each screen declares its own `kMargin`/`kRowTop`/`kRowH` in a file-private
+namespace, and those copies have drifted (`docs/MASTER_TODO.md §1f-ii`). Read the matching
+`src/core/ui/*_screen.cpp` for what a screen actually does.
 
 | Screen type | Vertical zones (logical, within 224×224 active) | Columns |
 |---|---|---|
@@ -167,13 +169,13 @@ render all three:
 
 ## 6. Assets → `ASSET_MANIFEST.md`
 
-Area 6 mostly **locks existing pending rows** rather than adding art:
+This system **locks existing manifest rows** rather than adding art — no art ID originates here:
 
-- **§E `FONT_UI` / `PAL_CORE`:** update to reference this doc — `PAL_CORE` = the §1.2 token set
-  (~12–16 roles); `FONT_UI` = the §2 pixel family + type scale. Still `☐` until Design delivers
-  the hues/face; the **"don't hard-code colours" caveat stays** until then.
+- **§E `FONT_UI` / `PAL_CORE`:** `PAL_CORE` is the §1.2 token set (14 roles), delivered as
+  `assets/PAL_CORE.json`; `FONT_UI` is the §2 pixel family + type scale, delivered as Pixel
+  Operator Mono. UI chrome binds to a token, never a literal hex — that is what keeps a hue
+  change a one-file reskin.
 - **§A slot icons:** concepts fixed (§3.3); the **28×28 + dim/bright** spec is confirmed.
-- **Icon size tiers (§3.1)** added as a manifest note so every future `ICON_*` row picks a tier.
-- No new art IDs originate in Area 6 — it's the system the existing IDs resolve against.
+- **Icon size tiers (§3.1)** are a manifest note, so every future `ICON_*` row picks a tier.
 
 ---
