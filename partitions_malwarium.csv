@@ -27,7 +27,7 @@
 # (config.h's NVS_SAVE_PARTITION; src/platform/esp32/save_store_esp32.h) — so
 # the save blob lives here instead of sharing the stock 20KB `nvs` partition
 # (which stays default-sized, serving Wi-Fi/BT calibration data as usual).
-# 256KB is roughly a 40x margin over the current ~5.7KB save blob. No `spiffs`:
+# 256KB is a ~40x margin over the measured ~6.6KB save blob (v45). No `spiffs`:
 # nothing in this codebase uses it (assets are SD_MMC-hosted).
 #
 # NVS content is page-based and position-independent, so the save survives a

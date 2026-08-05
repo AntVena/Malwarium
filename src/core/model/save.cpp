@@ -205,6 +205,12 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
 
     w.u16(static_cast<uint16_t>(d.items.size()));
     for (const auto& s : d.items) writeStack(w, s);
+    // The pre-v45 spare pool: one id cell per COPY. captureSave stopped filling it at
+    // v45 (the pool ships as ownedModCounts in the v45 tail), so from here it always
+    // writes a count of zero — but it still WRITES, because this format is append-only
+    // and every position in it is load-bearing. Deleting a field mid-stream would
+    // desync a v45 blob from the layout every older version's reader expects, which is
+    // exactly what the migration tests forge by stamping the version word down.
     w.u16(static_cast<uint16_t>(d.ownedMods.size()));
     for (const auto& m : d.ownedMods) writeId(w, m);
     w.u16(static_cast<uint16_t>(d.equipped.size()));
@@ -293,8 +299,9 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     w.u16(static_cast<uint16_t>(d.rack.size()));
     for (const auto& p : d.rack) w.i32(p.defragCount);
 
-    // v18: the per-spare mod equip-level gates. A parallel tail, one i32 per
-    // ownedMods entry (same order), so the v17 `ownedMods` cells stay byte-compatible.
+    // v18: the per-spare rolled equip-level gates, parallel to ownedMods. Empty from
+    // v45 on (the roll is gone), and written for the same append-only reason as the
+    // list it parallels.
     w.u16(static_cast<uint16_t>(d.ownedModReqLevels.size()));
     for (int32_t lvl : d.ownedModReqLevels) w.i32(lvl);
 
@@ -444,6 +451,14 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
 
     // v44: DEFRAG minigame boards cleared, lifetime.
     w.i32(d.stackerWins);
+
+    // v45: the owned-mod spare pool, a nibble of COUNT per ModDef::wire. Length-prefixed
+    // like the achievement masks, and for the same reason: the array is only as long as
+    // the highest wire actually held, so a roster that grows doesn't lengthen the saves
+    // of players who own none of the new rows, and a longer array from a later build
+    // reads back into a shorter view as "not held" rather than as a corrupt stream.
+    w.u16(static_cast<uint16_t>(d.ownedModCounts.size()));
+    for (uint8_t b : d.ownedModCounts) w.u8(b);
 }
 
 std::vector<uint8_t> serializeSave(const SaveData& d) {
@@ -488,6 +503,9 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
         SaveStack s; r.bytes(s.id, kSaveIdCap); s.id[kSaveIdCap - 1] = '\0';
         s.qty = r.i32(); d.items.push_back(s);
     }
+    // The pre-v45 spare pool: one id cell per COPY. A v45 blob carries a count of zero
+    // here and its pool in the v45 tail instead; anything older carries the real list,
+    // which is what the migration tallies.
     const uint16_t nOwned = r.u16();
     for (uint16_t i = 0; i < nOwned && r.ok; ++i) {
         SaveId m; r.bytes(m.id, kSaveIdCap); m.id[kSaveIdCap - 1] = '\0';
@@ -671,9 +689,9 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
     // the loader knows `ownedMods` already excludes the equipped mods (no migration).
     if (version >= 17) d.hasPermanentModData = true;
 
-    // v18 tail: the per-spare mod equip-level gates, parallel to ownedMods.
-    // Absent in a v1..v17 blob — ownedModReqLevels stays empty and hasModEquipLevelData
-    // false, so the loader grants every spare at req 0 (no retroactive equip gate).
+    // v18 tail: the per-spare mod equip-level gates, parallel to ownedMods. v45 dropped
+    // the rolled gate, so from that version on this reads back empty and the levels a
+    // migrating blob does carry are discarded once the copies are tallied.
     if (version >= 18) {
         const uint16_t nReq = r.u16();
         for (uint16_t i = 0; i < nReq && r.ok; ++i)
@@ -923,6 +941,15 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
     // every variant, so seeding from it would credit bought and rolled cleans as boards
     // played by hand — over-crediting, the direction a migration must never take.
     if (version >= 44) d.stackerWins = r.i32();
+
+    // v45 tail: the counted mod pool. Absent in a v1..v44 blob → the array stays empty
+    // and hasModCountData false, which is what routes the loader onto the migration that
+    // tallies the old flat `ownedMods` list instead.
+    if (version >= 45) {
+        const uint16_t nCounts = r.u16();
+        for (uint16_t i = 0; i < nCounts && r.ok; ++i) d.ownedModCounts.push_back(r.u8());
+        d.hasModCountData = r.ok;
+    }
 
     if (!r.ok) { out = SaveData{}; return false; }  // truncated -> empty
     if (version < newestRenameVersion()) renameRetiredIds(d, version);

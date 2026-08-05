@@ -265,23 +265,40 @@ constexpr int kWildLossFrag = 18;          // +Frag on a wild (live-stakes) loss
 //     passive layer (D3); this is the earn + power model that finally lets them enter
 //     play. Two independent axes on ModDef (defs.h): `rarity` = DROP WEIGHT within an
 //     area's loot table; `powerTier` (1..kModPowerTiers) = the sliding EFFECTIVENESS
-//     rank that both picks the area a mod lives in AND sets its nominal equip-LEVEL
-//     band. Each DROPPED instance rolls its OWN required pet-level within ±50% of its
-//     tier's band width — a lucky roll lets a lower-level pet field a stronger mod (a
-//     level-15 pet equipping a tier-3 "L20-30" mod), an unlucky one gates it higher.
-//     The rolled req is per-instance (stored with the owned spare, save v18). ----------
+//     rank that both picks the area a mod lives in AND sets its equip-LEVEL gate.
+//     ONE level per mod, shared by every copy: the picker lists mods by TYPE and has
+//     never had a way to show one copy over another, so a per-copy roll was a number
+//     no player could see, act on, or choose between. The same effect at a different
+//     level is a second content row, not a roll. ----------
 //     The rank COUNT is not here: it is kModPowerTiers (areas/area_defs.h), which is
 //     the ladder's own length, so adding an area opens a rank rather than overflowing
 //     a fixed table. What stays here is the band each rank maps to.
 constexpr int kModEquipLevelWindow = 10;          // band width per tier
-constexpr int kModEquipLevelVariance = 5;         // ±50% of the window (the rolled swing)
-// Nominal equip-level FLOOR for a tier. A dropped instance's required level =
-// floor + randInt(-kModEquipLevelVariance, +kModEquipLevelVariance), clamped >= 0. So a
-// tier-3 mod (floor 20) rolls a req in [15, 25] — an L20-30 band, lucky→L15.
-// A formula rather than a table so it answers for any rank the ladder grows to; the
+// The equip-level gate for a tier — the whole gate, not a band to roll inside. A
+// formula rather than a table so it answers for any rank the ladder grows to; the
 // shipped ranks 1..4 give the same 0/10/20/30 the table used to spell out.
 constexpr int modEquipLevelFloor(int tier) {
     return (tier < 1 ? 0 : tier - 1) * kModEquipLevelWindow;
+}
+// How many spare copies of ONE mod the pool will hold. A cap exists because the pool
+// had none: mods drop from milestones and the only sink is equipping one, so copies
+// accumulated for the life of the device — the measured save had 424 spares of 24 mods,
+// 132 of them the same one, which is the save's single largest section and a number no
+// player has ever had a use for. Raised by the Rig Shop's MOD STORAGE row.
+//
+// The ceiling is the SAVE's, not the shop's: the pool ships as a nibble per mod
+// (content_tables.h kModWireCap), so 15 is what a count can say. Tiers may grow toward
+// it freely; past it needs a wider cell and a save version.
+constexpr int kModCopyCapBase = 2;
+constexpr int kModCopyCapMax = 15;                // 4 bits per mod on the wire
+constexpr int kModStorageMaxTier = 3;             // shop tiers above the base cap
+constexpr int kModStorageCapByTier[kModStorageMaxTier] = {4, 6, 8};
+constexpr int kModStorageStart = 512;             // doubling ladder, like the rack slot
+// The cap in force at a MOD STORAGE purchase level (0 = never bought).
+constexpr int modCopyCap(int tier) {
+    if (tier <= 0) return kModCopyCapBase;
+    const int t = tier < kModStorageMaxTier ? tier : kModStorageMaxTier;
+    return kModStorageCapByTier[t - 1];
 }
 // Drop cadence (Q4: sub-boss roll + area-boss guaranteed + DeepWeb rare + Epic caches).
 // A mod earned is permanent, so sources are milestone/rare — never common wild drops.
@@ -687,9 +704,13 @@ constexpr uint32_t kSaveDebounceMs = 2000;    // coalesce rapid changes into one
 constexpr uint32_t kSaveAutosaveMs = 30000;   // periodic write (captures slow decay)
 //     The smallest a serialize buffer is ever sized to, so a save is ONE allocation
 //     instead of a doubling ladder that peaks at ~1.5x the blob (see save.cpp for why
-//     that peak is dangerous). Sized above a real populated save — a long-lived pet
-//     with a full rack, log and 'Pedia tallies measured ~15.5KB — with room to grow;
-//     it is a floor, not a cap, so overrunning it costs one realloc, not a failure.
+//     that peak is dangerous). Sized well above a real populated save: a measured
+//     device — generation 10, full rack, 51 items met, every 'Pedia tally — writes
+//     ~6.6KB at v45. The same device read 18.5KB at v44, and 64% of that was the
+//     owned-mod pool, which spent a 24-byte id cell per COPY held, uncapped, growing 28
+//     bytes a drop forever. v45 made it a nibble per mod (save.h), so what is left grows
+//     with the SIZE of the content tables rather than with how long a device has been
+//     played. A floor, not a cap — overrunning it costs one realloc, not a failure.
 //     Game owns a buffer of at least this size and writes every save into it
 //     (game_persist.cpp), so the allocation is paid once rather than at each write.
 constexpr size_t kSaveReserveBytes = 24576;   // 24KB

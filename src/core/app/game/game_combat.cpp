@@ -558,7 +558,7 @@ void Game::applyCombatResult() {
                     rng_ = rng_ * 1664525u + 1013904223u;
                     if (static_cast<int>((rng_ >> 16) % 100) < kModDeepWebDropPct)
                         if (const char* id = rollAreaModId(kDeepWebSector))
-                            grantRolledMod(id);
+                            grantMod(id);
                 }
                 log_.push(LogEventType::CombatWon, "WON BATTLE");
             }

@@ -45,6 +45,16 @@ const ItemDef* ContentRegistry::item(const char* id) const {
     return nullptr;
 }
 
+const ModDef* ContentRegistry::modByWire(int wire) const {
+    for (const ContentSource* src : sources_) {
+        int n = 0;
+        const ModDef* arr = src->mods(n);
+        for (int i = 0; i < n; ++i)
+            if (arr[i].wire == wire) return &arr[i];
+    }
+    return nullptr;
+}
+
 const ModDef* ContentRegistry::mod(const char* id) const {
     for (const ContentSource* src : sources_) {
         int n = 0;

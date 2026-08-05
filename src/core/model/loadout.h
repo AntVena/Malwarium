@@ -12,13 +12,15 @@
 
 namespace mal {
 
-// An un-equipped spare in the pool. `reqLevel` is the PER-INSTANCE rolled required
-// pet-level to equip it: a mod's power tier sets a nominal band, and each
-// dropped copy rolls its own gate within ±50% of that band, so a lucky drop lets a
-// lower-level pet field a stronger mod. Ids are stable content-ids (borrowed).
+// Un-equipped spares of one mod. A COUNT, not a list of instances: copies of a mod are
+// interchangeable, because the equip-level gate belongs to the mod
+// (modEquipLevelFloor(powerTier)) and not to the copy — the picker lists mods by type
+// and never had a way to offer one copy over another. Ids are stable content-ids
+// (borrowed), so the pool costs one pointer and one int per mod OWNED rather than per
+// copy held. `count` is >= 1; a mod that reaches zero leaves the pool entirely.
 struct OwnedMod {
     const char* id;
-    int reqLevel;
+    int count;
 };
 
 class Loadout {
@@ -36,18 +38,15 @@ public:
     // How many un-equipped spare copies of `id` are held.
     int countOf(const char* id) const;
 
-    // The LOWEST rolled required level among held spares of `id` (the best copy the
-    // player could field), or -1 if none is held. The equip gate compares this against
-    // the pet's level; equip() then consumes that best copy.
-    int reqLevelFor(const char* id) const;
+    // Add one copy of `id` to the available pool (save restore / earn source), up to
+    // `cap` copies of that one mod. Returns FALSE when the pool was already at the cap
+    // and nothing was added — the caller decides what a drop with nowhere to go is
+    // worth, because Loadout has no idea Bits exist. `cap` is the player's current MOD
+    // STORAGE allowance (modCopyCap, tunables); a cap below 1 grants nothing.
+    bool grant(const char* id, int cap);
 
-    // Add one copy of `id` to the available pool (save restore / rare earn source).
-    // Allows duplicates (a multiset). `reqLevel` is the rolled per-instance equip gate
-    // (0 = freely equippable — the default for the starting seed + pre-v18 migration).
-    void grant(const char* id, int reqLevel = 0);
-
-    // CONSUME one available copy of `id` (the LOWEST-reqLevel spare — the best copy)
-    // and install it permanently into `slot` (D3). The mod previously in `slot` is
+    // CONSUME one available copy of `id` and install it permanently into `slot` (D3).
+    // Copies are interchangeable, so which one goes is not a question. The mod previously in `slot` is
     // DISCARDED — not returned to the pool. Inert if no copy is available, or if
     // `id` already occupies a DIFFERENT slot (a mod holds one slot per pet — no
     // stacking the same passive twice). No unequip. The equip-LEVEL gate is

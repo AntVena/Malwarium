@@ -2876,9 +2876,11 @@ static void test_mod_detail_oneshot() {
     Framebuffer os(kActiveW, kActiveH), ru(kActiveW, kActiveH);
     Loadout load;
     drawModDetail(os, r, load, *oneShot, /*equippedHere=*/false, /*slot=*/2,
-                  /*reqLevel=*/0, /*petLevel=*/0, /*petLine=*/nullptr);
+                  /*reqLevel=*/0, /*petLevel=*/0, /*petLine=*/nullptr,
+                  /*storageCap=*/kModCopyCapBase);
     drawModDetail(ru, r, load, *reuse, /*equippedHere=*/false, /*slot=*/2,
-                  /*reqLevel=*/0, /*petLevel=*/0, /*petLine=*/nullptr);
+                  /*reqLevel=*/0, /*petLevel=*/0, /*petLine=*/nullptr,
+                  /*storageCap=*/kModCopyCapBase);
     CHECK(anyNonPaper(os, 0, 0, kActiveW, kActiveH));     // renders
     // The ONE-SHOT line sits alone at y~130; present (non-paper ink) for the one-shot,
     // blank (all paper) for the reusable mod (whose effect text ends well above it).
@@ -2890,8 +2892,9 @@ static void test_mod_detail_oneshot() {
 // occupying a different slot, and doesn't consume a spare on refusal.
 static void test_loadout_one_slot_per_mod() {
     Loadout l;
-    l.grant("firewall_patch", 0);
-    l.grant("firewall_patch", 0);
+    CHECK(l.grant("firewall_patch", kModCopyCapBase));
+    CHECK(l.grant("firewall_patch", kModCopyCapBase));
+    CHECK(l.countOf("firewall_patch") == 2);
     l.equip(0, "firewall_patch");
     CHECK(std::strcmp(l.equipped(0), "firewall_patch") == 0);
     CHECK(l.countOf("firewall_patch") == 1);
@@ -2912,7 +2915,7 @@ static void test_mod_effects_data_driven() {
     Loadout empty;                                        // no slots filled
     Combatant base = makePlayerCombatant(r, *pet, ml, empty);
     auto build = [&](const char* mod) {
-        Loadout l; l.grant(mod); l.equip(0, mod);
+        Loadout l; l.grant(mod, kModCopyCapBase); l.equip(0, mod);
         return makePlayerCombatant(r, *pet, ml, l);
     };
     CHECK(build("crypto_coprocessor").powerMultPct == base.powerMultPct + 10);
@@ -3060,7 +3063,7 @@ static void test_mod_ecc_memory_hitcap() {
     Loadout empty;
     Combatant base = makePlayerCombatant(r, *pet, ml, empty);
     CHECK(base.mods.mag(ModEffect::MaxHitCapPct) == 0);                   // no mod → uncapped
-    Loadout l; l.grant("ecc_memory"); l.equip(0, "ecc_memory");
+    Loadout l; l.grant("ecc_memory", kModCopyCapBase); l.equip(0, "ecc_memory");
     Combatant ecc = makePlayerCombatant(r, *pet, ml, l);
     CHECK(ecc.mods.mag(ModEffect::MaxHitCapPct) == base.maxHealth * 35 / 100);
     CHECK(ecc.mods.mag(ModEffect::MaxHitCapPct) > 0);
@@ -3105,7 +3108,7 @@ static void test_mod_load_balancer_split() {
     Loadout empty;
     Combatant base = makePlayerCombatant(r, *pet, ml, empty);
     CHECK(base.mods.mag(ModEffect::LoadBalance) == 0);
-    Loadout l; l.grant("load_balancer"); l.equip(0, "load_balancer");
+    Loadout l; l.grant("load_balancer", kModCopyCapBase); l.equip(0, "load_balancer");
     Combatant lb = makePlayerCombatant(r, *pet, ml, l);
     CHECK(lb.mods.mag(ModEffect::LoadBalance) == base.maxHealth * 30 / 100);
     CHECK(lb.mods.mag(ModEffect::LoadBalance) > 0);
@@ -3148,7 +3151,7 @@ static void test_mod_watchdog_timer() {
     Loadout empty;
     Combatant base = makePlayerCombatant(r, *pet, ml, empty);
     CHECK(base.mods.mag(ModEffect::WatchdogClamp) == 0);
-    Loadout l; l.grant("watchdog_timer"); l.equip(0, "watchdog_timer");
+    Loadout l; l.grant("watchdog_timer", kModCopyCapBase); l.equip(0, "watchdog_timer");
     Combatant w = makePlayerCombatant(r, *pet, ml, l);
     CHECK(w.mods.mag(ModEffect::WatchdogClamp) == 1);
 }
@@ -3198,7 +3201,7 @@ static void test_mod_faraday_cage() {
     Loadout empty;
     Combatant base = makePlayerCombatant(r, *pet, ml, empty);
     CHECK(base.mods.mag(ModEffect::FaradayCut) == 0);
-    Loadout l; l.grant("faraday_cage"); l.equip(0, "faraday_cage");
+    Loadout l; l.grant("faraday_cage", kModCopyCapBase); l.equip(0, "faraday_cage");
     Combatant f = makePlayerCombatant(r, *pet, ml, l);
     CHECK(f.mods.mag(ModEffect::FaradayCut) == 100);
 }
@@ -3282,7 +3285,7 @@ static void test_mod_content_rarity_tier() {
 }
 
 // earn path: an area's mod loot table draws ONLY that area's power tier (an
-// early area never hands out a late mod), and grantRolledMod rolls the per-instance
+// early area never hands out a late mod), and grantMod rolls the per-instance
 // equip-level gate inside the tier's band (the "lucky roll" mechanic).
 static void test_mod_earn_tables_and_reqlevel() {
     ContentRegistry r = ContentRegistry::embedded();
@@ -3314,20 +3317,20 @@ static void test_mod_earn_tables_and_reqlevel() {
             CHECK(sampled.count(area(a).modPoolIds[k]) == 1);
     for (int k = 0; k < kAreaModsDeepWebCount; ++k)
         CHECK(sampled.count(kAreaModsDeepWeb[k]) == 1);
-    // The rolled equip gate lands inside its tier's band: floor = (tier-1)*window, ±variance,
-    // clamped at 0. Sampled off two real mods at opposite ends rather than named tiers.
-    const int deepTier = r.mod("ghost_process")->powerTier;
-    const int deepFloor = modEquipLevelFloor(deepTier);
-    for (int i = 0; i < 60; ++i) {
+    // A mod's equip gate is its OWN, off its power tier, and the same for every copy —
+    // there is no roll to land inside a band. Sampled off two real mods at opposite ends
+    // of the ladder rather than named tiers, and asserted to be deterministic, which is
+    // the property that replaced the roll.
+    const ModDef* deep = r.mod("ghost_process");
+    const ModDef* shallow = r.mod("crypto_coprocessor");
+    CHECK(modEquipLevel(*deep) == modEquipLevelFloor(deep->powerTier));
+    CHECK(modEquipLevel(*shallow) == 0);            // the shallowest rung
+    CHECK(modEquipLevel(*deep) > modEquipLevel(*shallow));
+    for (int i = 0; i < 8; ++i) {                   // every grant agrees with the row
         Game gd{StartMode::Hatched};
-        gd.debugGrantRolledMod("ghost_process");
-        const int rd = gd.loadout().reqLevelFor("ghost_process");
-        CHECK(rd >= deepFloor - kModEquipLevelVariance);
-        CHECK(rd <= deepFloor + kModEquipLevelVariance);
-        Game g1{StartMode::Hatched};
-        g1.debugGrantRolledMod("crypto_coprocessor");     // the shallowest rung: floor 0
-        const int r1 = g1.loadout().reqLevelFor("crypto_coprocessor");
-        CHECK(r1 >= 0 && r1 <= kModEquipLevelVariance);
+        gd.debugGrantMod("ghost_process");
+        CHECK(gd.loadout().countOf("ghost_process") == 1);
+        CHECK(modEquipLevel(*r.mod("ghost_process")) == modEquipLevel(*deep));
     }
 }
 
@@ -3342,7 +3345,7 @@ static void test_mod_niche_flavour_data_driven() {
     Loadout empty;
     Combatant base = makePlayerCombatant(r, *pet, ml, empty);
     auto build = [&](const char* mod) {
-        Loadout l; l.grant(mod); l.equip(0, mod);
+        Loadout l; l.grant(mod, kModCopyCapBase); l.equip(0, mod);
         return makePlayerCombatant(r, *pet, ml, l);
     };
     CHECK(build("prowlware").mods.armed(ModEffect::FirstStrikeRankMult));
@@ -3387,11 +3390,11 @@ static void test_mod_botnet_swarm_and_airgap_ward() {
     Combatant base = makePlayerCombatant(r, *pet, ml, empty);
     CHECK(base.moves.size() == 3);
 
-    Loadout withSwarm; withSwarm.grant("botnet_swarm"); withSwarm.equip(0, "botnet_swarm");
+    Loadout withSwarm; withSwarm.grant("botnet_swarm", kModCopyCapBase); withSwarm.equip(0, "botnet_swarm");
     Combatant sw = makePlayerCombatant(r, *pet, ml, withSwarm);
     CHECK(sw.powerMultPct == base.powerMultPct + 6 * 2);    // +6% per Attack move (2)
 
-    Loadout withWard; withWard.grant("airgap_ward"); withWard.equip(0, "airgap_ward");
+    Loadout withWard; withWard.grant("airgap_ward", kModCopyCapBase); withWard.equip(0, "airgap_ward");
     Combatant wd = makePlayerCombatant(r, *pet, ml, withWard);
     CHECK(wd.dmgReducePct == base.dmgReducePct + 6 * 1);    // +6% per Defend move (1)
 }
@@ -3490,7 +3493,7 @@ static void test_mod_prowlware_rank_computation() {
     ml.equip(0, "quick_jab");       // power 6  -> weakest tier
     ml.equip(1, "packet_storm");    // power 12 -> strongest tier
     // slot 2 (Defend-typed) left unequipped -> falls back to quick_jab (Attack, power 6).
-    Loadout l; l.grant("prowlware"); l.equip(0, "prowlware");
+    Loadout l; l.grant("prowlware", kModCopyCapBase); l.equip(0, "prowlware");
     Combatant c = makePlayerCombatant(r, *pet, ml, l);
     CHECK(c.mods.armed(ModEffect::FirstStrikeRankMult));
     CHECK(c.moves.size() == 3);
@@ -3816,20 +3819,19 @@ static void test_min_damage_penetration() {
 // mirroring test_mod_equip_level_gate's pattern — Paypup's starting owned spares are
 // exactly {packet_sniffer, raid_mirror} (Loadout::starting()), so granting ONE more
 // mod always lands it at picker row 2 (registry order, filtered to owned).
-// The top of a mod's rolled equip-level band — level a test pet to this and no rolled
-// gate for that mod can still block it. Derived from the mod's own rank rather than
-// written as a literal, so shifting the ladder moves these tests' targets with it
-// instead of stranding them under a level that used to be enough.
+// A mod's equip gate — level a test pet to this and that mod is equippable. Derived from
+// the mod's own rank rather than written as a literal, so shifting the ladder moves these
+// tests' targets with it instead of stranding them under a level that used to be enough.
 static int modGateCeiling(const char* id) {
     ContentRegistry r = ContentRegistry::embedded();
-    return modEquipLevelFloor(r.mod(id)->powerTier) + kModEquipLevelVariance;
+    return modEquipLevel(*r.mod(id));
 }
 
 static void test_mod_hard_line_gate() {
     Game g{StartMode::Hatched};                             // Paypup, ransomware line
     const int deepGate = modGateCeiling("extortion_ledger");  // both spares share a rank
     while (g.combatLevel() < deepGate) g.debugAddCombatXp(g.xpToNextLevel());
-    g.debugGrantRolledMod("phishing_rod");                  // requiresLine = phishing (mismatch)
+    g.debugGrantMod("phishing_rod");                  // requiresLine = phishing (mismatch)
     enterSubmenuId(g, SubmenuId::Mods);
     g.onButton(press(Button::A)); g.onButton(press(Button::A));  // listRow 0->2 (empty slot)
     g.onButton(press(Button::B));                           // open slot-2 picker
@@ -3841,7 +3843,7 @@ static void test_mod_hard_line_gate() {
 
     Game g2{StartMode::Hatched};
     while (g2.combatLevel() < deepGate) g2.debugAddCombatXp(g2.xpToNextLevel());
-    g2.debugGrantRolledMod("extortion_ledger");             // requiresLine = ransomware (match)
+    g2.debugGrantMod("extortion_ledger");             // requiresLine = ransomware (match)
     enterSubmenuId(g2, SubmenuId::Mods);
     g2.onButton(press(Button::A)); g2.onButton(press(Button::A));
     g2.onButton(press(Button::B));
@@ -3856,9 +3858,9 @@ static void test_mod_hard_line_gate() {
 // equipped; leveling past it unlocks the equip. Driven through the real MODS UI.
 static void test_mod_equip_level_gate() {
     Game g{StartMode::Hatched};                            // pet at level 0
-    g.debugGrantRolledMod("overclock_chip");               // a mid-ladder rank: req > 0
+    g.debugGrantMod("overclock_chip");               // a mid-ladder rank: req > 0
     const int ocGate = modGateCeiling("overclock_chip");
-    CHECK(g.loadout().reqLevelFor("overclock_chip") >= ocGate - 2 * kModEquipLevelVariance);
+    CHECK(ocGate > 0);                                     // a mid-ladder rank does gate
     // Navigate: MODS → slot 3 (empty) picker → select the overclock spare → EQUIP.
     enterSubmenuId(g, SubmenuId::Mods);
     g.onButton(press(Button::A)); g.onButton(press(Button::A));  // listRow 0→2 (empty slot)
@@ -3890,7 +3892,7 @@ static void test_mod_picker_windows_large_pool() {
     Loadout load;
     const auto allMods = r.allMods();
     CHECK(allMods.size() > 6);                  // the pool this test needs to overflow
-    for (const ModDef* m : allMods) load.grant(m->id, 0);  // freely equippable (reqLevel 0)
+    for (const ModDef* m : allMods) load.grant(m->id, kModCopyCapBase);  // one spare each
 
     const auto owned = ownedModList(r, load);
     const int lastPick = static_cast<int>(owned.size()) - 1;
@@ -4021,6 +4023,152 @@ static void test_save_v18_mod_reqlevel() {
     CHECK(!mig.hasModEquipLevelData);
     CHECK(mig.ownedModReqLevels.empty());        // no tail → apply defaults every req to 0
     CHECK(mig.ownedMods.size() == 2);            // the spares themselves still load
+}
+
+// The pool has a ceiling now, and the Rig Shop row is what moves it. Both halves matter:
+// a cap with no way to raise it is a nerf, and a shop row that doesn't actually change
+// what a grant does is a Bits sink that sells nothing.
+static void test_mod_storage_cap_bounds_the_pool_and_the_shop_raises_it() {
+    // The tier table has to stay inside what a nibble can hold, or a bought tier would
+    // sell room the save cannot describe.
+    CHECK(kModCopyCapBase >= 1 && kModCopyCapBase <= kModCopyCapMax);
+    for (int t = 0; t <= kModStorageMaxTier; ++t) {
+        CHECK(modCopyCap(t) >= kModCopyCapBase);
+        CHECK(modCopyCap(t) <= kModCopyCapMax);
+    }
+    CHECK(modCopyCap(0) == kModCopyCapBase);
+    CHECK(modCopyCap(kModStorageMaxTier) > kModCopyCapBase);       // the ladder climbs
+    CHECK(modCopyCap(kModStorageMaxTier + 9) == modCopyCap(kModStorageMaxTier));  // clamps
+
+    Loadout l;
+    CHECK(l.grant("heat_sink", kModCopyCapBase));
+    CHECK(l.grant("heat_sink", kModCopyCapBase));
+    CHECK(!l.grant("heat_sink", kModCopyCapBase));   // full: reported, not silently dropped
+    CHECK(l.countOf("heat_sink") == kModCopyCapBase);
+    // Equipping frees a copy, so the cap bounds what is HELD, not what may ever be earned.
+    l.equip(0, "heat_sink");
+    CHECK(l.countOf("heat_sink") == kModCopyCapBase - 1);
+    CHECK(l.grant("heat_sink", kModCopyCapBase));
+
+    // A drop into a full pool leaves the pool alone, and the count doesn't creep.
+    Game g{StartMode::Hatched};
+    const int cap = g.modStorageCap();
+    CHECK(cap == kModCopyCapBase);                  // nothing bought yet
+    for (int i = 0; i < cap + 5; ++i) g.debugGrantMod("heat_sink");
+    CHECK(g.loadout().countOf("heat_sink") == cap);
+
+    // Buying MOD STORAGE raises what the same call will accept.
+    g.debugSetBits(kModStorageStart);
+    g.debugBuyModStorage();                         // through the real till
+    CHECK(g.modStorageCap() == modCopyCap(1));
+    CHECK(g.modStorageCap() > cap);
+    g.debugGrantMod("heat_sink");
+    CHECK(g.loadout().countOf("heat_sink") == cap + 1);
+}
+
+// The v45 pool is a nibble of COUNT per mod wire, two mods to a byte. The packing is
+// where this could go wrong invisibly — a count bleeding into the neighbouring nibble
+// hands the player copies of a mod they never earned — so the odd/even split, the 0..15
+// range and the clamp are asserted directly rather than through a save.
+static void test_save_mod_count_nibbles_pack_two_mods_per_byte() {
+    std::vector<uint8_t> packed;
+    CHECK(saveModCount(packed, 0) == 0);            // nothing written reads as none held
+    CHECK(saveModCount(packed, 999) == 0);          // ...and so does out of range
+    CHECK(saveModCount(packed, -1) == 0);
+
+    saveSetModCount(packed, 4, 3);                  // even wire -> low nibble
+    saveSetModCount(packed, 5, 12);                 // odd wire  -> high nibble, same byte
+    CHECK(packed.size() == 3);                      // wires 0..5 -> 3 bytes
+    CHECK(saveModCount(packed, 4) == 3);
+    CHECK(saveModCount(packed, 5) == 12);
+    CHECK(saveModCount(packed, 3) == 0);            // neighbours untouched
+    CHECK(saveModCount(packed, 6) == 0);
+
+    // Rewriting one nibble must leave its partner alone — the bug that would silently
+    // move copies between two unrelated mods.
+    saveSetModCount(packed, 4, 1);
+    CHECK(saveModCount(packed, 4) == 1 && saveModCount(packed, 5) == 12);
+
+    // 15 is what 4 bits can say, and kModCopyCapMax is set to exactly that. A count past
+    // it clamps rather than wrapping into the next mod.
+    CHECK(kModCopyCapMax == 15);
+    saveSetModCount(packed, 5, 99);
+    CHECK(saveModCount(packed, 5) == kModCopyCapMax);
+    CHECK(saveModCount(packed, 4) == 1);
+}
+
+// A v44 blob's flat per-copy pool migrates to counts, clamped to the base cap. This is
+// the one that ran against a real device save: 424 copies of 24 mods, which is what the
+// whole change is for.
+static void test_save_v44_to_v45_mod_pool_migration() {
+    SaveData a; std::strcpy(a.activeId, "paypup"); a.generation = 1;
+    // Nine copies of one mod and one of another, with rolled levels that no longer mean
+    // anything — the shape the measured save was made of.
+    for (int i = 0; i < 9; ++i) {
+        a.ownedMods.push_back(SaveId{"packet_sniffer"});
+        a.ownedModReqLevels.push_back(i);
+    }
+    a.ownedMods.push_back(SaveId{"raid_mirror"});
+    a.ownedModReqLevels.push_back(4);
+    // A plain serialize + version stamp, NOT forgeLegacyNetworkBytes: that helper
+    // re-inserts the pre-v21 network-field bytes, which a v44 blob doesn't carry. v45
+    // only APPENDS to v44, so trimming its 2-byte tail leaves a byte-exact v44 stream —
+    // which is the property that made the old flat list survivable to migrate at all.
+    auto blob = serializeSave(a);
+    blob.resize(blob.size() - 2);                 // drop the v45 tail's length word
+    blob[4] = 44; blob[5] = 0;
+
+    SaveData out;
+    CHECK(deserializeSave(blob, out));
+    CHECK(!out.hasModCountData);                 // no v45 tail -> the migration path
+    CHECK(out.ownedMods.size() == 10);           // the old flat list still loads
+
+    MemSaveStore store; store.save(blob);
+    Game g(StartMode::Hatched, "paypup", &store);
+    // Nine copies come back as the cap, not as nine. The surplus is dropped, which no
+    // screen has ever been able to show.
+    CHECK(g.loadout().countOf("packet_sniffer") == kModCopyCapBase);
+    CHECK(g.loadout().countOf("raid_mirror") == 1);
+
+    // And the save it writes back is the counted one, which is the whole point: the same
+    // pool costs a nibble a mod instead of 28 bytes a copy.
+    CHECK(g.saveNow());
+    SaveData back;
+    CHECK(deserializeSave(store.bytes(), back));
+    CHECK(back.hasModCountData);
+    CHECK(back.ownedMods.empty());               // the flat list is written empty from v45
+    const ContentRegistry reg = ContentRegistry::embedded();
+    CHECK(saveModCount(back.ownedModCounts, reg.mod("packet_sniffer")->wire)
+          == kModCopyCapBase);
+    CHECK(saveModCount(back.ownedModCounts, reg.mod("raid_mirror")->wire) == 1);
+    // And the encoding is the point. The pool the v44 blob spent 10 id cells on now costs
+    // a nibble per MOD held — measured against the list it replaced, not against a whole
+    // save, since the two blobs describe different games.
+    const int wasBytes = static_cast<int>(out.ownedMods.size()) * kSaveIdCap;
+    CHECK(static_cast<int>(back.ownedModCounts.size()) < wasBytes);
+    CHECK(back.ownedModCounts.size() * 2 <= static_cast<size_t>(kModWireCap));
+}
+
+// A count stored against a wire the running content no longer defines is dropped rather
+// than resurrected under some other mod's id — the failure a positional array would have
+// and a wire-keyed one must not.
+static void test_save_mod_count_for_a_retired_wire_is_dropped() {
+    MemSaveStore store;
+    {
+        Game g(StartMode::Hatched, "paypup", &store);
+        CHECK(g.saveNow());
+    }
+    SaveData d;
+    CHECK(deserializeSave(store.bytes(), d));
+    // kModWireCap - 1 is addressable by the format and belongs to no shipped row.
+    CHECK(ContentRegistry::embedded().modByWire(kModWireCap - 1) == nullptr);
+    saveSetModCount(d.ownedModCounts, kModWireCap - 1, 5);
+    store.save(serializeSave(d));
+
+    Game g2(StartMode::Hatched, "paypup", &store);
+    int copies = 0;
+    for (const OwnedMod& m : g2.loadout().owned()) copies += m.count;
+    CHECK(copies == 2);                          // just the two the seed grants
 }
 
 // a pre-v19 blob (no Hacker SHOP tail) still loads, defaulting bwUpgradeCount
@@ -13543,6 +13691,36 @@ static void test_full_pedia_achievement_reads_the_raised_tally() {
 
 // --- Achievement catalogue + machinery ------------------------------------------
 
+// The mod table carries save wire numbers for the same reason the achievement table does
+// — the owned-mod pool is stored as a count per wire — so it needs the same guard. A
+// duplicated number would make two mods share a slot in that array, which reads back as
+// the wrong mod in the player's pool rather than as any kind of error.
+static void test_mod_table_wires_are_unique_and_in_range() {
+    CHECK(kModsCount > 0);
+    for (int i = 0; i < kModsCount; ++i) {
+        const ModDef& m = kMods[i];
+        CHECK(m.id && m.id[0]);
+        CHECK(m.displayName && m.displayName[0]);
+        // The pool array is sized by this cap; a row past it would never persist.
+        CHECK(m.wire >= 0 && m.wire < kModWireCap);
+        for (int j = i + 1; j < kModsCount; ++j) {
+            if (kMods[j].wire == m.wire)
+                std::printf("  DUPLICATE MOD WIRE %d: %s / %s\n", m.wire, m.id, kMods[j].id);
+            CHECK(kMods[j].wire != m.wire);
+            CHECK(std::strcmp(kMods[j].id, m.id) != 0);
+        }
+    }
+    // And the registry has to agree, since that is the lookup the save actually uses.
+    ContentRegistry reg = ContentRegistry::embedded();
+    for (int i = 0; i < kModsCount; ++i) {
+        const ModDef* byWire = reg.modByWire(kMods[i].wire);
+        CHECK(byWire != nullptr);
+        CHECK(std::strcmp(byWire->id, kMods[i].id) == 0);
+    }
+    CHECK(reg.modByWire(kModWireCap) == nullptr);      // out of range resolves to nothing
+    CHECK(reg.modByWire(-1) == nullptr);
+}
+
 // Table integrity. These are the invariants the whole system leans on, and every one of
 // them is the sort of thing a hand-edited table breaks silently: a duplicated wire number
 // would make two rows share a save bit, a renamed id would strand a call site, and a
@@ -14829,6 +15007,10 @@ static void test_firmware_version_ordering() {
     RUN(test_mod_equip_level_gate)                \
     RUN(test_mod_picker_windows_large_pool)       \
     RUN(test_save_v18_mod_reqlevel)               \
+    RUN(test_mod_storage_cap_bounds_the_pool_and_the_shop_raises_it) \
+    RUN(test_save_mod_count_nibbles_pack_two_mods_per_byte) \
+    RUN(test_save_v44_to_v45_mod_pool_migration) \
+    RUN(test_save_mod_count_for_a_retired_wire_is_dropped) \
     RUN(test_save_v18_to_v19_bwupgrade_default)   \
     RUN(test_save_v19_to_v20_ap_default)          \
     RUN(test_save_v21_shield_roundtrip)           \
@@ -14927,6 +15109,7 @@ static void test_firmware_version_ordering() {
     RUN(test_full_pedia_achievement_reads_the_raised_tally) \
     /* Achievements: the catalogue's own invariants, the data-driven ladder sweep, \
        the kGoalAll sentinel, the home-screen banner queue, and v40 save migration */ \
+    RUN(test_mod_table_wires_are_unique_and_in_range) \
     RUN(test_achievement_table_is_well_formed) \
     RUN(test_achievement_ladder_unlocks_and_pays) \
     RUN(test_backup_drive_achievement_mapping) \

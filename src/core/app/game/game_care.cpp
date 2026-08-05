@@ -233,8 +233,8 @@ void Game::onModPicker(const ButtonEvent& ev) {
             const ModDef* pendMod = modPendingId_ ? registry_.mod(modPendingId_) : nullptr;
             const bool lineOk = !pendMod || !pendMod->requiresLine ||
                 (pet_ && pet_->line && std::strcmp(pendMod->requiresLine, pet_->line) == 0);
-            if (modConfirmChoice_ == 1 && modPendingId_ && lineOk &&
-                loadout_.reqLevelFor(modPendingId_) <= combatLevel_) {
+            if (modConfirmChoice_ == 1 && modPendingId_ && lineOk && pendMod &&
+                modEquipLevel(*pendMod) <= combatLevel_) {
                 // D3: consumes the new mod AND discards the one already in the slot.
                 // (Re-check the equip-LEVEL + hard line gates defensively — commitModEquip
                 // already gated both before setting modPendingId_.)
@@ -279,15 +279,16 @@ void Game::onModDetail(const ButtonEvent& ev) {
 void Game::commitModEquip() {
     const char* id = modDetailId_;
     if (!id) return;
-    // the rolled equip-LEVEL gate — a mod is held forever but equippable only
-    // once the pet is high enough. reqLevelFor is the best (lowest) held copy's gate; a
-    // sub-level mod is blocked here (the detail already shows LOCKED + the requirement).
-    if (loadout_.reqLevelFor(id) > combatLevel_) return;
+    // The equip-LEVEL gate — a mod is held forever but equippable only once the pet is
+    // high enough. The gate is the MOD's (modEquipLevel, off its power tier), the same
+    // for every copy; a sub-level mod is blocked here, and the detail already shows
+    // LOCKED + the requirement.
+    const ModDef* md = registry_.mod(id);
+    if (md && modEquipLevel(*md) > combatLevel_) return;
     // Niche-flavour pass: the HARD line gate (ModDef::requiresLine) — distinct from the
     // soft `line`/`affinityBonus` bonus every other mod uses. A mod like Phishing Rod or
     // Extortion Ledger simply cannot be installed unless the active pet's line matches;
     // it can still drop and sit in inventory for whenever the player raises that line.
-    const ModDef* md = registry_.mod(id);
     if (md && md->requiresLine &&
         (!pet_ || !pet_->line || std::strcmp(md->requiresLine, pet_->line) != 0))
         return;

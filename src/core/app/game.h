@@ -178,6 +178,11 @@ public:
     // multiplier live on kDiskMaintenanceThreshold/kDiskMaintenanceCostMult
     // (game_rig_shop.h), read by Game::maybeAutoDefrag.
     int diskMaintenanceLevel() const { return rigLevel_[kRigRowDiskMaintenance]; }
+    // Mod Storage tier -> how many spare copies of ONE mod the pool will hold
+    // (modCopyCap, tunables). Every grant runs through it, so a player who wants a
+    // bench of a favourite mod buys the room for it rather than accumulating copies
+    // nobody counted.
+    int modStorageCap() const { return modCopyCap(rigLevel_[kRigRowModStorage]); }
     // Price of the NEXT purchase at a Rig Shop row (game_rig_shop.h) — every row
     // resolves its own cost from its own costStart/curve/costStep, so this is the one
     // place that math happens; every named *Cost() below is a thin wrapper over it.
@@ -1293,6 +1298,9 @@ public:
     // (tests) — the two rows that arm the Backup Drive death-save for free.
     void debugBuyAutoBackup() { buyRigUpgrade(kRigRowAutoBackup); }
     void debugBuyContinuousBackup() { buyRigUpgrade(kRigRowContinuousBackup); }
+    // Buy the next MOD STORAGE tier via the real buy path (tests) — what raises how many
+    // spare copies of one mod the pool will hold (modStorageCap).
+    void debugBuyModStorage() { buyRigUpgrade(kRigRowModStorage); }
     // Hand back to the idle habitat exactly as a resolved explore event does (tests) —
     // the Continuous Auto-Backup / auto-defrag seam, without driving a whole random
     // event to reach it.
@@ -1403,7 +1411,7 @@ public:
     // grant a mod through the real earn path (rolls its per-instance equip-level gate).
     // Real path: boss clears / DeepWeb wins / Epic caches — same helpers, gated there.
     const char* debugRollAreaModId(int area) { return rollAreaModId(area); }
-    void debugGrantRolledMod(const char* id) { grantRolledMod(id); }
+    void debugGrantMod(const char* id) { grantMod(id); }
     // Set the Bandwidth farming pool directly (tests): reach the depleted state
     // that switches farming from full-loot to the diminishing-returns curve without
     // grinding kBandwidthMax wins. Clamped to [0, bandwidthMax()].
@@ -1596,12 +1604,12 @@ private:
     void grantLootReward(char* outFlavor, size_t outFlavorSize);  // shared reward-pool draw
     // MODS earn path. rollAreaModId draws a rarity-weighted id from an area's
     // loot table (area 0..kExplSectors-1 or kDeepWebSector); rollAnyModId draws globally
-    // (Epic cache jackpot); grantRolledMod rolls the per-instance equip-LEVEL gate off the
-    // mod's power tier, grants the spare, and logs it. Drop sites: boss clears + DeepWeb
-    // wins (game_explore/game_combat), Epic sealed caches (game_items).
+    // (Epic cache jackpot); grantMod adds the spare if there is room for it under
+    // modStorageCap() and logs either way. Drop sites: boss clears + DeepWeb wins
+    // (game_explore/game_combat), Epic sealed caches (game_items).
     const char* rollAreaModId(int area);
     const char* rollAnyModId();
-    void grantRolledMod(const char* id);
+    void grantMod(const char* id);
     void startEncounter();                          // roll the malbeast, open the intro
     void onEncounter(const ButtonEvent& ev);        // Fight / Flee / Sinkhole
     void resolveFlee();                             // pre-fight escape roll

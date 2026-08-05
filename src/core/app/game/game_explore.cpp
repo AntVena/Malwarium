@@ -463,26 +463,21 @@ const char* Game::rollAnyModId() {
     return all.empty() ? nullptr : all.back()->id;
 }
 
-void Game::grantRolledMod(const char* id) {
+void Game::grantMod(const char* id) {
     if (!id) return;
     const ModDef* m = registry_.mod(id);
     if (!m) return;
-    // Roll the per-instance equip-LEVEL gate within the mod's power-tier band:
-    // floor(tier) ± kModEquipLevelVariance, clamped >= 0. A lucky low roll lets a lower-
-    // level pet field a stronger mod; the spare is held permanently until then.
-    int tier = m->powerTier;
-    if (tier < 1) tier = 1;
-    if (tier > kModPowerTiers) tier = kModPowerTiers;
-    const int floor = modEquipLevelFloor(tier);
-    rng_ = rng_ * 1664525u + 1013904223u;
-    const int span = kModEquipLevelVariance * 2 + 1;                 // [-var, +var]
-    const int delta = static_cast<int>((rng_ >> 16) % static_cast<unsigned>(span))
-                      - kModEquipLevelVariance;
-    int req = floor + delta;
-    if (req < 0) req = 0;
-    loadout_.grant(id, req);
     char buf[kSaveTextCap];
-    std::snprintf(buf, sizeof(buf), "MOD %s L%d", m->displayName, req);
+    // A pool already holding modStorageCap() of this mod takes no more. The drop is
+    // reported rather than swallowed, because a milestone reward that silently evaporates
+    // reads as a bug — and the line names the thing that would have caught it, which is
+    // the Rig Shop row that exists precisely to be wanted here.
+    if (!loadout_.grant(id, modStorageCap())) {
+        std::snprintf(buf, sizeof(buf), "%s: NO ROOM", m->displayName);
+        log_.push(LogEventType::ItemGained, buf);
+        return;
+    }
+    std::snprintf(buf, sizeof(buf), "MOD %s L%d", m->displayName, modEquipLevel(*m));
     log_.push(LogEventType::ItemGained, buf);
     markSaveDirty();
 }
@@ -561,7 +556,7 @@ void Game::finishBossRound() {
                 rng_ = rng_ * 1664525u + 1013904223u;
                 if (static_cast<int>((rng_ >> 16) % 100) < kModSubBossDropPct)
                     if (const char* id = rollAreaModId(bossSector_))
-                        grantRolledMod(id);
+                        grantMod(id);
             }
         } else {
             const bool firstClear = !sectorCleared_[bossSector_];
@@ -572,7 +567,7 @@ void Game::finishBossRound() {
             // the marquee reward for beating the 5-stage gauntlet.
             if (firstClear)
                 if (const char* id = rollAreaModId(bossSector_))
-                    grantRolledMod(id);
+                    grantMod(id);
         }
     } else {
         // Any non-win loses the whole gauntlet. A loss takes the standard

@@ -441,6 +441,13 @@ enum class ModEffect : uint8_t {
 // via a hardcoded per-mod `if`). `line`/`affinityBonus` give a few signature mods a
 // bonus for a matching line (still equippable by anyone — line-agnostic).
 struct ModDef {
+    // Stable SAVE identity, and the reason it comes first: the owned-mod pool is stored
+    // as a count per wire number, not as a list of ids (save.h), so this number is what
+    // a blob means by "two Firewall Patches". Never reused, never renumbered — a row may
+    // be reordered, regrouped by area or retired freely, but its number is spent
+    // forever. Exactly the contract kAchievements has carried since v1; the native gate
+    // enforces uniqueness the same way.
+    int wire;
     const char* id;          // stable id, e.g. "firewall_patch"
     const char* displayName; // e.g. "Firewall Patch"
     const char* effectTag;   // short tag shown on the slot row, e.g. "+DEF" / "1-SHOT"
@@ -463,6 +470,12 @@ struct ModDef {
     // matching line. nullptr = no hard gate (every existing/line-agnostic mod).
     const char* requiresLine = nullptr;
 };
+
+// The pet level `m` needs before it can be equipped — the mod's OWN gate, derived from
+// its power tier, identical for every copy the player holds. One function rather than a
+// field so the gate can't drift from the tier that sets the mod's place in the ladder,
+// and one call site's worth of arithmetic so no screen has to remember the formula.
+inline int modEquipLevel(const ModDef& m) { return modEquipLevelFloor(m.powerTier); }
 
 // A combat move — a collectible roster like creatures/items/mods.
 // The autonomous combat engine rolls a pet's equipped moves off its attack/defend

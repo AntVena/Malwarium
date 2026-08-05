@@ -45,17 +45,19 @@ void drawModPicker(Framebuffer& fb, const ContentRegistry& reg,
 
 // L4 mod detail: the read-then-act inspector reached by selecting a mod
 // in the picker — mirrors drawItemDetail. Shows the icon + name, the held spare
-// count ("HAVE xN"), the effect TAG (the stat-delta shorthand, in ACCENT), the full
-// wrapped effect text, a ONE-SHOT flag when the mod is consumed on trigger, the
-// rolled REQUIRES LVL n gate, and the EQUIP action (EQUIPPED if it's already in
+// count against its storage cap ("HAVE 2/2"), the effect TAG (the stat-delta shorthand,
+// in ACCENT), the full wrapped effect text, a ONE-SHOT flag when the mod is consumed on
+// trigger, the REQUIRES LVL n gate, and the EQUIP action (EQUIPPED if it's already in
 // this `slot`; LOCKED if under-level, wrong-line, or already installed in a
 // different slot on this pet — a mod holds one slot per pet). `equippedHere`
-// drives the action label; `reqLevel` is the best held copy's rolled gate and
-// `petLevel` the pet's current level. `petLine` gates a mod carrying
+// drives the action label; `reqLevel` is the mod's own gate (modEquipLevel — every copy
+// shares it) and `petLevel` the pet's current level. `petLine` gates a mod carrying
 // ModDef::requiresLine the same way (niche-flavour pass). `load` supplies the held
-// count and the elsewhere-equipped check.
+// count and the elsewhere-equipped check; `storageCap` is what that count is measured
+// against (Game::modStorageCap), so a full pool reads as full rather than as a number
+// with no ceiling.
 void drawModDetail(Framebuffer& fb, const ContentRegistry& reg, const Loadout& load,
                    const ModDef& mod, bool equippedHere, int slot,
-                   int reqLevel, int petLevel, const char* petLine);
+                   int reqLevel, int petLevel, const char* petLine, int storageCap);
 
 } // namespace mal

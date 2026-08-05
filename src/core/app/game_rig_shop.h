@@ -63,6 +63,7 @@ enum RigRow {
     kRigRowItemPicker = 18,
     kRigRowRecipeHashedBrowns = 19,
     kRigRowRecipeSaltedBrowns = 20,
+    kRigRowModStorage = 21,
 };
 
 // --- a: Increase Bandwidth --------------------------------------------------
@@ -416,6 +417,15 @@ inline const RigUpgradeDef kRigUpgrades[] = {
      kRigBrownsRecipeCost, 0, RigEffectKind::None, 0, "BOUGHT SALTED RECIPE",
      {{"SALT + BROWNS"}}, kRigRowMergeHub,
      {"hashed_browns", "salted_hashed_browns"}},
+
+    // --- Mod storage: how many spares of ONE mod the pool will hold ---------------
+    // The counterpart to kModCopyCapBase (tunables): the base cap is deliberately tight
+    // enough that a player who wants a bench of a favourite mod has something to spend
+    // Bits on, and the tiers stop well short of the save's own 15-per-mod ceiling.
+    {"mod_storage", "MOD STORAGE", kModStorageMaxTier, RigCostCurve::kDoubling,
+     kModStorageStart, 0, RigEffectKind::None, 0, "BOUGHT +MOD STORAGE",
+     {{"PER MOD", RigValueCurve::Tiers, kModCopyCapBase, 0, kModStorageCapByTier,
+       kModStorageMaxTier, "x%d"}}},
 };
 inline constexpr int kRigUpgradeCount =
     static_cast<int>(sizeof(kRigUpgrades) / sizeof(kRigUpgrades[0]));

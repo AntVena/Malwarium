@@ -52,14 +52,13 @@ SaveData Game::captureSave() const {
         ss.qty = s.qty;
         d.items.push_back(ss);
     }
-    d.ownedMods.reserve(loadout_.owned().size());
-    d.ownedModReqLevels.reserve(loadout_.owned().size());
-    for (const OwnedMod& m : loadout_.owned()) {
-        SaveId id;
-        std::strncpy(id.id, m.id, kSaveIdCap - 1);
-        d.ownedMods.push_back(id);
-        d.ownedModReqLevels.push_back(m.reqLevel);   // v18: parallel rolled equip gate
-    }
+    // v45: the spare pool as a count per mod WIRE. A mod the running content no longer
+    // defines has no wire to write to and is dropped here rather than at load — the pool
+    // in RAM was built from the registry, so this can only miss a row retired underneath
+    // a live game, which is a developer state, not a player one.
+    for (const OwnedMod& m : loadout_.owned())
+        if (const ModDef* def = registry_.mod(m.id))
+            saveSetModCount(d.ownedModCounts, def->wire, m.count);
     d.equipped.reserve(kModSlots);
     for (int i = 0; i < kModSlots; ++i) {
         SaveId id;
@@ -305,21 +304,36 @@ void Game::applySave(const SaveData& d) {
     // — its ownedMods still listed the equipped mods, so drop any owned id that also
     // sits in a slot, else the migrated save would gift a duplicate spare of each.
     loadout_ = Loadout{};
-    for (int mi = 0; mi < static_cast<int>(d.ownedMods.size()); ++mi) {
-        const auto& m = d.ownedMods[mi];
-        const ModDef* def = registry_.mod(m.id);
-        if (!def) continue;
-        if (!d.hasPermanentModData) {
-            bool inSlot = false;
-            for (const auto& e : d.equipped)
-                if (std::strcmp(e.id, m.id) == 0) { inSlot = true; break; }
-            if (inSlot) continue;                 // migrate: equipped mod isn't a spare
+    if (d.hasModCountData) {
+        // v45: a count per wire. The stored count was already capped when it was written,
+        // so it is its own ceiling here — passing modStorageCap() instead would silently
+        // confiscate copies from a player who had bought MOD STORAGE and then, somehow,
+        // lost the purchase. A wire the running content no longer defines resolves to
+        // nullptr and its copies are dropped, which is what retiring a mod should do.
+        for (int wire = 0; wire < kModWireCap; ++wire) {
+            const int n = saveModCount(d.ownedModCounts, wire);
+            if (n <= 0) continue;
+            const ModDef* def = registry_.modByWire(wire);
+            if (!def) continue;
+            for (int i = 0; i < n; ++i) loadout_.grant(def->id, n);
         }
-        // v18: restore the rolled equip gate parallel to this spare; a pre-v18 blob has
-        // no tail → req 0 (freely equippable, no retroactive gate).
-        const int req = mi < static_cast<int>(d.ownedModReqLevels.size())
-                            ? d.ownedModReqLevels[mi] : 0;
-        loadout_.grant(def->id, req);
+    } else {
+        // v44 and older: a flat list, one entry per COPY, with a rolled equip level
+        // alongside that no longer means anything. Tally per id and keep up to the BASE
+        // cap — not modStorageCap(), because the MOD STORAGE row ships with this version
+        // and no migrating save can have bought it, so the base is both correct and
+        // independent of whether rigLevel_ has been restored yet.
+        for (const auto& m : d.ownedMods) {
+            const ModDef* def = registry_.mod(m.id);
+            if (!def) continue;
+            if (!d.hasPermanentModData) {
+                bool inSlot = false;
+                for (const auto& e : d.equipped)
+                    if (std::strcmp(e.id, m.id) == 0) { inSlot = true; break; }
+                if (inSlot) continue;             // migrate: equipped mod isn't a spare
+            }
+            loadout_.grant(def->id, kModCopyCapBase);   // surplus copies simply don't fit
+        }
     }
     for (int i = 0; i < static_cast<int>(d.equipped.size()) && i < kModSlots; ++i)
         if (const ModDef* def = registry_.mod(d.equipped[i].id))

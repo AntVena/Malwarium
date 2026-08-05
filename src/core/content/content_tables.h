@@ -24,6 +24,14 @@ extern const char* const kBackupDriveId;  // "backup_drive" — the combat-shiel
 // table because it is a set of item ids; every CACHE's pool is on its own row's CacheDef.
 extern const LootEntry kLootPool[];      extern const int kLootPoolCount;
 extern const ModDef          kMods[];          extern const int kModsCount;
+// Save capacity for the owned-mod pool, in ModDef::wire numbers. The pool ships as a
+// COUNT PER WIRE — a nibble each — so what this bounds is the array's addressable range,
+// NOT how many mods exist: a roster twice this long is a content problem, a wire number
+// past it is a save problem. Raise it in multiples of 2 (a whole byte of nibbles) with a
+// save-version note. The array is length-prefixed like the achievement masks, so a
+// longer one loads into an older build's shorter view harmlessly and a shorter one reads
+// back as "none held".
+inline constexpr int kModWireCap = 128;
 extern const MoveDef         kMoves[];         extern const int kMovesCount;
 extern const DaemonPoolDef   kDaemonPools[];   extern const int kDaemonPoolsCount;
 

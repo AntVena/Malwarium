@@ -432,7 +432,7 @@ void Game::grantCacheReward(const ItemDef& d, int& bitsOut, const ItemDef** item
         rng_ = rng_ * 1664525u + 1013904223u;
         if (static_cast<int>((rng_ >> 16) % 100) < c.modChancePct)
             if (const char* id = rollAnyModId())
-                grantRolledMod(id);
+                grantMod(id);
     }
 }
 

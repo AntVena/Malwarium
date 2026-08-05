@@ -23,34 +23,25 @@ int Loadout::slotOf(const char* id) const {
     return -1;
 }
 
-bool Loadout::owns(const char* id) const {
-    if (!id) return false;
-    for (const OwnedMod& m : owned_)
-        if (std::strcmp(m.id, id) == 0) return true;
-    return false;
-}
-
-int Loadout::reqLevelFor(const char* id) const {
-    if (!id) return -1;
-    int best = -1;
-    for (const OwnedMod& m : owned_)
-        if (std::strcmp(m.id, id) == 0)
-            if (best < 0 || m.reqLevel < best) best = m.reqLevel;   // lowest = best copy
-    return best;
-}
+bool Loadout::owns(const char* id) const { return countOf(id) > 0; }
 
 int Loadout::countOf(const char* id) const {
     if (!id) return 0;
-    int n = 0;
     for (const OwnedMod& m : owned_)
-        if (std::strcmp(m.id, id) == 0) ++n;
-    return n;
+        if (std::strcmp(m.id, id) == 0) return m.count;
+    return 0;
 }
 
-void Loadout::grant(const char* id, int reqLevel) {
-    if (!id) return;
-    if (reqLevel < 0) reqLevel = 0;
-    owned_.push_back({id, reqLevel});       // multiset — duplicate spares allowed
+bool Loadout::grant(const char* id, int cap) {
+    if (!id || cap < 1) return false;
+    for (OwnedMod& m : owned_)
+        if (std::strcmp(m.id, id) == 0) {
+            if (m.count >= cap) return false;   // full — the caller decides what that's worth
+            ++m.count;
+            return true;
+        }
+    owned_.push_back({id, 1});
+    return true;
 }
 
 void Loadout::equip(int slot, const char* id) {
@@ -59,15 +50,15 @@ void Loadout::equip(int slot, const char* id) {
     // One slot per id per pet — refuse rather than let the same passive stack.
     for (int i = 0; i < kModSlots; ++i)
         if (i != slot && slots_[i] && std::strcmp(slots_[i], id) == 0) return;
-    // Consume the LOWEST-reqLevel copy — the best one the player could field (D3:
-    // consume-on-equip). Inert if none is held.
-    auto best = owned_.end();
-    for (auto it = owned_.begin(); it != owned_.end(); ++it)
-        if (std::strcmp(it->id, id) == 0)
-            if (best == owned_.end() || it->reqLevel < best->reqLevel) best = it;
-    if (best == owned_.end()) return;
-    owned_.erase(best);
-    slots_[slot] = id;                      // any mod already here is DISCARDED (permanent)
+    // Consume one copy (D3: consume-on-equip). Inert if none is held. A mod spent down
+    // to nothing leaves the pool rather than sitting in it at zero, so `owned_` stays a
+    // list of what the player actually has — which is what the picker draws from.
+    for (auto it = owned_.begin(); it != owned_.end(); ++it) {
+        if (std::strcmp(it->id, id) != 0) continue;
+        if (--it->count <= 0) owned_.erase(it);
+        slots_[slot] = id;                  // any mod already here is DISCARDED (permanent)
+        return;
+    }
 }
 
 void Loadout::setEquipped(int slot, const char* id) {
@@ -83,9 +74,9 @@ void Loadout::resetSlots() {
 
 Loadout Loadout::starting() {
     Loadout l;
-    // sample: two spares held, freely equippable (reqLevel 0 — the seed isn't a
-    // rolled drop; the earn path is what rolls a real equip-level gate).
-    l.owned_ = {{"packet_sniffer", 0}, {"raid_mirror", 0}};
+    // sample: one spare each. Both are tier-1/5 rows whose own equip level is what
+    // gates them — the seed grants copies, never a gate of its own.
+    l.owned_ = {{"packet_sniffer", 1}, {"raid_mirror", 1}};
     l.ensureSlots();
     l.setEquipped(0, "firewall_patch");             // two installed permanently
     l.setEquipped(1, "clock_speed_boost");

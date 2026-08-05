@@ -37,6 +37,11 @@ public:
     std::vector<const ItemDef*> allItems() const;
     // Every known mod def (the MODS picker builds off this, same rationale).
     std::vector<const ModDef*> allMods() const;
+    // The mod carrying save wire number `wire` (ModDef::wire), or nullptr — the lookup
+    // the save's owned-mod pool needs, since a blob names a mod by number and not by id.
+    // A number belonging to a RETIRED row resolves to nullptr, which is exactly what
+    // should happen: its copies are dropped on load rather than resurrected.
+    const ModDef* modByWire(int wire) const;
     // Every known move def (the TRAIN move picker builds off this, same rationale).
     std::vector<const MoveDef*> allMoves() const;
     // Every known creature def, across all sources. Roster-wide invariants build

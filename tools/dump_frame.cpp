@@ -399,7 +399,7 @@ int main(int argc, char** argv) {
     } else if (hasFlag(argc, argv, "mods")) {
         // grant a tier-3 spare (equip gate ~L15-25) so the picker shows a
         // LOCKED row for a level-0 pet (the rolled equip-level gate, grayscale-safe).
-        if (hasFlag(argc, argv, "modlocked")) game.debugGrantRolledMod("overclock_chip");
+        if (hasFlag(argc, argv, "modlocked")) game.debugGrantMod("overclock_chip");
         enterSlot(SubmenuId::Mods);
         if (hasFlag(argc, argv, "picker")) game.onButton({Button::B, true, false});
         if (hasFlag(argc, argv, "detail")) {         // mod detail (a ONE-SHOT)

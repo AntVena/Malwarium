@@ -540,8 +540,9 @@ void Game::drawDetail(Framebuffer& fb) const {
                     const char* cur = loadout_.equipped(modSlot_);
                     drawModDetail(fb, registry_, loadout_, *md,
                                   cur && std::strcmp(cur, modDetailId_) == 0,
-                                  modSlot_, loadout_.reqLevelFor(modDetailId_),
-                                  combatLevel_, pet_ ? pet_->line : nullptr);
+                                  modSlot_, modEquipLevel(*md),
+                                  combatLevel_, pet_ ? pet_->line : nullptr,
+                                  modStorageCap());
                     break;
                 }
             }

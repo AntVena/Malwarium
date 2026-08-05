@@ -266,7 +266,24 @@ constexpr int kSaveTextCap = 28;     // matches EventLog's LogEntry.text
 // a save can stand in for it either — a bought or rolled defrag leaves the same trace a
 // played one does — so a pre-v44 blob reads back 0 and starts the ladder fresh rather than
 // being seeded from a number that would over-credit every Quick defrag ever run.
-constexpr uint16_t kSaveVersion = 44;
+// v45 replaces the owned-mod spare pool. It was a flat list — one 24-byte id cell per
+// COPY held, plus the v18 parallel i32 of that copy's rolled equip level — and it had no
+// cap, because mods drop from milestones and the only sink is equipping one. On a
+// measured device it had grown to 424 copies of 24 mods (132 of them the same mod):
+// 11,876 bytes, 64% of the entire save, growing 28 bytes a drop forever.
+//
+// It is now a COUNT PER MOD, a nibble each over ModDef::wire (ownedModCounts,
+// saveModCount) — 17 bytes at the current roster, and flat: it grows with the SIZE of
+// the mod table, never with play. The rolled per-copy level went with it. That roll was
+// never visible: the picker lists mods by type and shows one gate, so a copy could never
+// be chosen over another, and the level is now the mod's own (modEquipLevel, off its
+// power tier). Copies are bounded by kModCopyCapBase, raised by the Rig Shop's MOD
+// STORAGE row.
+//
+// A v44-or-older blob migrates by tallying `ownedMods` per id and clamping to the base
+// cap; the surplus and the rolled levels are dropped. Nothing player-visible is lost —
+// no screen has ever shown a copy, only a type and a count.
+constexpr uint16_t kSaveVersion = 45;
 
 // The oldest blob deserialize will read. Raising it is how a device stops carrying
 // migration weight for saves nobody can still be holding — and it is the ONLY thing
@@ -415,8 +432,16 @@ struct SaveData {
 
     // Collections.
     std::vector<SaveStack> items;
+    // v1..v44 ONLY, read on migration and never written: the spare pool as a flat list
+    // of ids, one cell per COPY, each with its own rolled equip level alongside. See the
+    // v45 note in the banner for why both are gone.
     std::vector<SaveId> ownedMods;
-    std::vector<int32_t> ownedModReqLevels;  // v18: rolled equip-level per owned spare
+    std::vector<int32_t> ownedModReqLevels;
+    // v45: the spare pool as a COUNT PER MOD, packed a nibble each over ModDef::wire —
+    // low nibble = even wire, high = odd (saveModCount below). Copies of a mod are
+    // interchangeable, so a save has to remember how many, not which; 4 bits is what
+    // bounds kModCopyCapMax.
+    std::vector<uint8_t> ownedModCounts;
     std::vector<SaveId> equipped;     // one cell per equip slot ("" = empty)
     std::vector<SaveLogEntry> log;    // chronological, oldest first
     std::vector<SaveStoredPet> rack;
@@ -542,10 +567,17 @@ struct SaveData {
     bool hasPermanentModData = false;
 
     // v18: per-spare mod equip-level gates -------------------
-    // Set by deserialize: true when the blob carried the v18 parallel tail. A pre-v18
-    // blob leaves it false so the loader grants every spare at req 0 (no retroactive
-    // gate). ownedModReqLevels above is the wire field (one i32 per ownedMods entry).
+    // Set by deserialize: true when the blob carried the v18 parallel tail. Read only on
+    // the v44-and-older migration path now, and never written — v45 dropped the rolled
+    // gate, so the levels this flag guards no longer mean anything to a live save.
     bool hasModEquipLevelData = false;
+
+    // v45: the counted mod pool ------------------------------
+    // Set by deserialize: true when the blob carried the v45 nibble array. False means a
+    // v44-or-older blob, and the loader migrates by tallying `ownedMods` per id and
+    // clamping each to kModCopyCapBase — the surplus copies are dropped, which is no
+    // loss the player can see: the picker has only ever listed mods by type.
+    bool hasModCountData = false;
 
     // v19: Hacker SHOP account upgrades ----------------------
     // Player-level, persists across pets like the HackerTag. This session ships the
@@ -712,6 +744,30 @@ struct SaveData {
     // dived).
     int32_t bestDeepWebDepth = 0;
 };
+
+// Read/write one mod's spare count in the v45 packed pool (SaveData::ownedModCounts) by
+// its ModDef::wire. Two mods to a byte: even wires in the low nibble, odd in the high,
+// so a count is 0..15 (kModCopyCapMax) and the whole pool is one byte per two mods
+// however many copies are held. Out-of-range or unwritten wires read as 0 — the same
+// "not held" a shorter array from an older build reads as.
+inline int saveModCount(const std::vector<uint8_t>& packed, int wire) {
+    if (wire < 0) return 0;
+    const size_t byte = static_cast<size_t>(wire) / 2;
+    if (byte >= packed.size()) return 0;
+    return (wire & 1) ? (packed[byte] >> 4) : (packed[byte] & 0x0F);
+}
+
+// Set one mod's count, growing `packed` to reach it. Counts above 15 clamp rather than
+// wrap into the neighbouring mod's nibble, which is the one way this could silently
+// hand the player copies of something they never earned.
+inline void saveSetModCount(std::vector<uint8_t>& packed, int wire, int count) {
+    if (wire < 0 || count <= 0) return;
+    if (count > 15) count = 15;
+    const size_t byte = static_cast<size_t>(wire) / 2;
+    if (byte >= packed.size()) packed.resize(byte + 1, 0);
+    if (wire & 1) packed[byte] = static_cast<uint8_t>((packed[byte] & 0x0F) | (count << 4));
+    else          packed[byte] = static_cast<uint8_t>((packed[byte] & 0xF0) | count);
+}
 
 // Encode `data` into the on-disk blob (magic + version + stream), replacing whatever
 // `out` held and keeping the capacity it already has. Writing into a caller-owned

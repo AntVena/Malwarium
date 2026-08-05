@@ -158,7 +158,7 @@ void drawModPicker(Framebuffer& fb, const ContentRegistry& reg,
             drawRowCursor(fb, 8, y + 4, palColor(Pal::ACCENT));
         }
         const ModDef* m = owned[i];
-        const int req = load.reqLevelFor(m->id);
+        const int req = modEquipLevel(*m);
         const bool wrongLine = lineLocked(m, petLine);
         const int elsewhere = load.slotOf(m->id);
         const bool inOtherSlot = elsewhere >= 0 && elsewhere != slot;
@@ -210,7 +210,7 @@ void drawModPicker(Framebuffer& fb, const ContentRegistry& reg,
         const int afterProse =
             drawSpecSheet(fb, kMargin, listEnd + 10, kActiveW - 2 * kMargin,
                           kActiveH - 14, sheet).endY;
-        const int req = load.reqLevelFor(fm->id);
+        const int req = modEquipLevel(*fm);
         const bool wrongLine = lineLocked(fm, petLine);
         const int elsewhere = load.slotOf(fm->id);
         const bool inOtherSlot = elsewhere >= 0 && elsewhere != slot;
@@ -260,7 +260,7 @@ void drawModPicker(Framebuffer& fb, const ContentRegistry& reg,
 
 void drawModDetail(Framebuffer& fb, const ContentRegistry& reg, const Loadout& load,
                    const ModDef& mod, bool equippedHere, int slot,
-                   int reqLevel, int petLevel, const char* petLine) {
+                   int reqLevel, int petLevel, const char* petLine, int storageCap) {
     header(fb, "MODS");
 
     // Icon + name + the effect TAG (the stat-delta shorthand, e.g. "+DEF").
@@ -308,9 +308,15 @@ void drawModDetail(Framebuffer& fb, const ContentRegistry& reg, const Loadout& l
     char slotLbl[16];
     std::snprintf(slotLbl, sizeof(slotLbl), "SLOT %d", slot + 1);
     drawText(fb, kMargin, 144, slotLbl, palColor(Pal::INK_DIM));
-    char have[16];   // held spare count — mirrors ITEMS' "HAVE xN" (items_screen.cpp)
-    std::snprintf(have, sizeof(have), "HAVE x%d", load.countOf(mod.id));
-    drawText(fb, kActiveW - kMargin - textWidth(have), 144, have, palColor(Pal::INK_DIM));
+    // Held spares against the cap that bounds them. ITEMS says "HAVE xN" because an
+    // inventory stack has no ceiling; a mod pool does, and a player at it needs to see
+    // that the number stopped climbing on purpose — that is the MOD STORAGE row's whole
+    // pitch, and the only place it gets made.
+    char have[16];
+    const int held = load.countOf(mod.id);
+    std::snprintf(have, sizeof(have), "HAVE %d/%d", held, storageCap);
+    drawText(fb, kActiveW - kMargin - textWidth(have), 144, have,
+             held >= storageCap ? palColor(Pal::WARN) : palColor(Pal::INK_DIM));
     char req[24];
     std::snprintf(req, sizeof(req), "REQUIRES LVL %d", reqLevel);
     int y = 156;

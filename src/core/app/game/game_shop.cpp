@@ -142,11 +142,11 @@ void Game::buyShopItem() {
 
     char buf[28];
     if (shopIsModShop_) {
-        // A shop buy is a guaranteed acquisition, not a lucky drop — grant at
-        // reqLevel 0 (freely equippable) rather than rolling grantRolledMod's
-        // per-instance gate.
+        // A shop buy runs through the same storage cap a drop does — the row is
+        // affordability-gated at the till (shopRowBuyable), so reaching here means
+        // there was room for it.
         const ModDef* m = registry_.mod(def.id);
-        loadout_.grant(def.id, /*reqLevel=*/0);
+        loadout_.grant(def.id, modStorageCap());
         std::snprintf(buf, sizeof(buf), "BOUGHT %s", m ? m->displayName : def.id);
     } else {
         inventory_.add(def.id, 1);
