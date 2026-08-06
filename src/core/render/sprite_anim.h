@@ -23,9 +23,10 @@ struct AnimClip {
 // clip's playback (e.g. holdBeats=2 halves its speed) without touching frames.
 inline const AnimClip kAnimClips[] = {
     {"SPR_PET_KEYLOGGERHEAD", "idle", 0, 8, /*holdBeats=*/4},
-    // Row 1 is a duplicate of row 0 in the source PNG, kept only to prove the
-    // multi-row grid reads correctly end to end; nothing draws "attack" yet.
     {"SPR_PET_KEYLOGGERHEAD", "attack", 1, 4},
+
+    {"SPR_PET_MALBEAR", "idle", /*row=*/0, /*frames=*/3, /*holdBeats=*/4},
+    {"SPR_PET_MALBEAR", "attack", /*row=*/0, /*frames=*/8, /*holdBeats=*/2},  // whatever columns those are
 };
 inline constexpr int kAnimClipCount =
     static_cast<int>(sizeof(kAnimClips) / sizeof(kAnimClips[0]));

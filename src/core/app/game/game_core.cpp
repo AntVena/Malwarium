@@ -175,11 +175,14 @@ bool Game::tick(uint32_t nowMs) {
                 if (++combatTurnBeat_ >= combatBeatsForTurn()) advanceCombatTurn();
             } else if (combat_.outcome() != Combat::Outcome::Ongoing) {
                 ++combatBeat_;
-                // Hands-off auto-explore: a wild fight's result is a REVEAL
+                // Hands-off auto-explore: a wild or boss fight's result is a REVEAL
                 // with no human to press B, so hold it ~3s then auto-dismiss back to
-                // the habitat so exploration keeps stepping (finishCombat advances the
-                // streak / cancels on a loss). Boss/Sim fights stay player-driven.
-                if (exploreActive_ && combatCaller_ == CombatCaller::Wild &&
+                // the habitat (finishCombat advances the streak / cancels on a loss)
+                // or straight into the gauntlet's next round (finishBossRound). Sim
+                // fights stay player-driven — there's no auto-anything to keep moving.
+                if (exploreActive_ &&
+                    (combatCaller_ == CombatCaller::Wild ||
+                     combatCaller_ == CombatCaller::Boss) &&
                     combatBeat_ >= kExploreRevealHoldBeats) {
                     finishCombat();
                 }
