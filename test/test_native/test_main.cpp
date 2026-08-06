@@ -13955,6 +13955,18 @@ static void test_achievement_table_is_well_formed() {
 // The three Backup Drive achievements are cut from one mapping (backupDriveAchievement):
 // what the drive did, crossed with how the fight ended. Asserted directly rather than by
 // staging three fights, because the mapping IS the thing that can be wrong.
+//
+// Compared by std::strcmp, not `==`: the two sides are `inline constexpr const char*`
+// string-literal pointers read from DIFFERENT translation units (this file and
+// game_combat.cpp). The variable itself is one address (C++17 guarantees that), but
+// nothing guarantees the LITERAL each TU's copy of that address points at is the same
+// object across TUs — only linkers that happen to fold identical string constants make
+// raw `==` pass. That held on macOS/ld64 (folds by default) and failed on Linux/GCC's
+// default linker, which doesn't — the same cross-TU hazard achievementById() already
+// avoids by looking up ids with strcmp instead of pointer identity.
+static bool sameAchId(const char* got, const char* want) {
+    return got && want && std::strcmp(got, want) == 0;
+}
 static void test_backup_drive_achievement_mapping() {
     using BU = Combatant::BackupUse;
     using O = Combat::Outcome;
@@ -13962,14 +13974,14 @@ static void test_backup_drive_achievement_mapping() {
     for (O o : {O::Win, O::Lose, O::Fled, O::Ongoing})
         CHECK(backupDriveAchievement(BU::None, o) == nullptr);
     // Saved and went on to win / to lose anyway.
-    CHECK(backupDriveAchievement(BU::Restored, O::Win) == ach::kBackUpAndDriven);
-    CHECK(backupDriveAchievement(BU::Restored, O::Lose) == ach::kNeededMoreBackup);
+    CHECK(sameAchId(backupDriveAchievement(BU::Restored, O::Win), ach::kBackUpAndDriven));
+    CHECK(sameAchId(backupDriveAchievement(BU::Restored, O::Lose), ach::kNeededMoreBackup));
     // Fleeing settles nothing: the pet is alive and the story isn't over.
     CHECK(backupDriveAchievement(BU::Restored, O::Fled) == nullptr);
     // The restore that wasn't enough — including on a mutual KO, which resolves as a Win
     // even though the pet never got back up.
-    CHECK(backupDriveAchievement(BU::Overwhelmed, O::Lose) == ach::kShatteredPlatter);
-    CHECK(backupDriveAchievement(BU::Overwhelmed, O::Win) == ach::kShatteredPlatter);
+    CHECK(sameAchId(backupDriveAchievement(BU::Overwhelmed, O::Lose), ach::kShatteredPlatter));
+    CHECK(sameAchId(backupDriveAchievement(BU::Overwhelmed, O::Win), ach::kShatteredPlatter));
 }
 
 // A ladder unlocks off its series' progress with no per-row code, pays the row's own
