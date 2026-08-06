@@ -36,7 +36,6 @@ building it up organically.
 | NA | **Sub-area bosses that are themselves gauntlets** — `subAreaBoss` returns a length-1 `BossGauntlet`, so a sub-area boss is always exactly one fight; only the AREA boss is multi-round. Castle Rapidscare's THE EIGHT PWNS wants to be a minor gauntlet, and its JOKER VIRUS wants to *loop back* into another Pwns run after it falls. | `combat.cpp`'s `subAreaBoss`/`areaBoss`, plus the round plumbing in `game_explore.cpp` (`startBossRound`/`finishBossRound`). | L | The re-entrant loop is the novel part — the carried-Health round machinery is linear today, with no notion of a round that re-queues an earlier one. Needs a design pass on how a loop terminates and what it pays. |
 | NA | **Confirm on device that a save lands while audit capture is armed.** The write path no longer asks for the blob in one piece: `Game` owns the serialize buffer and `captureSave` reserves every collection to its exact count, so an ordinary save is judged against `kSaveHeapFloorBytes` (12KB) rather than the reservation. Built and green on the native + S3 gates; the hardware run that proves `held` stays at 0 through a whole capture session has not been done. | `game_persist.cpp`'s `persistSave` and the `kSaveHeapFloorBytes` / `kSaveGrowHeapFloorBytes` pair. | S | `HEAP_TRACE_ENABLED` (config.h) → 1, then CFG → RADIO → AUDIT → SCAN+CAP, 'Pedia AP on and off again. Success = `held=0` with `floor=12288` and no boot banner. Read the log, not the panel — a reset is fast enough to look like nothing happened. |
 | NA | **Capture arming costs ~70KB and the AP ~58KB**, against ~126KB free with the radio idle. The device works, and the save no longer needs a big contiguous block, but that was the only thing standing on this — anything else that grows will hit the same wall. Worth a pass at what the capture path actually needs. | `net_capture.h`'s `powerUp` (`esp_wifi_init` + promiscuous + the pcap SD buffers). | M | Measured on device, not estimated: `[ap] down free=126408` → `[cap] armed free=56188`. |
-| NA | **PSRAM is disabled.** The board carries 8MB (`platformio.ini` leaves it off — "nothing needs it yet"), and it is the biggest available lever on the row above: Wi-Fi needs internal DRAM for DMA, the pcap and save buffers do not. Enabling it changes the *bootloader*, which an OTA never writes — so it can only reach a shipped device through the browser flasher (`pages/flash/`), and switching it on means asking a remote operator to plug in. | `platformio.ini` (`-DBOARD_HAS_PSRAM`, `board_build.arduino.memory_type`). No configured pin uses GPIO 33-37, so an octal part looks unobstructed — unverified. | M | No longer blocked on tooling, only on the cost of the ask. **Do the flasher bench run below first** — it is what proves the escape hatch works before a change depends on it. Confirm with `ESP.getPsramSize()` on the boot line if it is ever switched on. |
 
 ### 1a-ii. Evolution routing — one weighted edge list per creature
 
@@ -252,6 +251,15 @@ SHA-256 over it, and an archive whose bytes move with the build turns that diges
 against the next publish — a device that fetched the manifest before a rebuild and the artifact
 after one would report `Corrupt` for what is really the same content.
 
+PSRAM is ON (`platformio.ini`'s `board_build.arduino.memory_type = qio_opi`), which is what makes
+the manifest fetch reliable at all: mbedTLS's TLS session buffers are a large-enough allocation
+(the Arduino core's `CONFIG_SPIRAM_MALLOC_ALWAYSINTERNAL` sends anything over 4KB to PSRAM) that
+internal SRAM alone — split by the ~98KB framebuffer plus the Wi-Fi stack's own reserve — could
+plateau its largest contiguous free block around 16KB and fail `WiFiClientSecure::connect` with
+`start_ssl_client: -32512` regardless of total free heap. A device flashed before this landed is
+still on the old bootloader and needs the USB/browser-flasher path once, same as any bootloader
+change — an app-only OTA can't carry it.
+
 **Open:**
 
 - **Bench the failure paths.** Every one is handled in code and none has been exercised on a board;
@@ -266,15 +274,15 @@ after one would report `Corrupt` for what is really the same content.
   last CONNECT failed should pop the captive portal onto `/setup` for a phone joining its AP. It
   compiles and the logic is one condition in `handleProbe`, but no phone has met it.
 
-- **Bench the browser flasher on a board.** `pages/flash/` (vendored `esptool-js`) writes all four
-  boot images at their S3 addresses and is verified end-to-end *up to* the serial port: the pages
-  render, the manifest hydrates, the artifacts fetch and the firmware's SHA-256 matches what the
-  manifest publishes. No board has been on the other end of it. What a run has to answer: that
-  holding **A** (GPIO0, the download strap) while connecting enumerates a port Chrome will offer;
-  that `default_reset` → `UsbJtagSerialReset` syncs on the S3's native USB; that a flash at
-  `baudrate == romBaudrate` finishes in a tolerable time; and that the board comes back with its
-  **save intact** when ERASE is left off, since that is the promise the page makes in bold. Then
-  the same run with ERASE on. Diff **M** (needs a board). The device-side half — CFG →
+- **Bench the browser flasher, ERASE path.** The normal (ERASE off) run is now proven on a board:
+  holding **A** (GPIO0, the download strap) while connecting enumerated as `USB JTAG/serial debug
+  unit` (Espressif VID `0x303a`) for Chrome's picker, `default_reset` synced on the S3's native USB,
+  all four images wrote, and the board came back up with its save intact and passing its own update
+  check. Still open: the same run with ERASE on — a full-chip wipe hasn't been exercised. One
+  platform note from the run: the flasher needs a real Chrome/Edge window with actual Web Serial
+  support; an embedded/automation-driven browser pane can present `navigator.serial` without
+  implementing the OS device-picker UI behind it, in which case `requestPort()` just hangs with no
+  error to catch. Diff **S** (needs a board). The device-side half — CFG →
   UPDATES → FLASH OVER USB drawing the code — is native-gated and rendered, not yet scanned.
 - **Hosting is settled and live** — GitHub Pages, deployed by `.github/workflows/publish.yml` on a
   `v*` tag; see ORIENTATION's *Releasing*. `https://antvena.github.io/Malwarium/manifest.json` has
@@ -435,7 +443,11 @@ Two more are past the rule and were not on this watch at all:
 
 ---
 
-## 4. If picking up cold
+## Pipeline
+The Github pipeline is complaining that Node 20 is deprecated and it's using node 24. Bump node. We can and should
+be testing our code against what's actually going to be used.
+
+## If picking up cold
 
 1. **FONT_UI integration (§1e)** — the highest per-screen leverage left, and the art is already drawn.
 2. **Net-Sea Crossing art (§2c)** — the area ships mechanically; it is the only rung with no
