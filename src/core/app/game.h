@@ -1947,6 +1947,10 @@ private:
     // doesn't survive a reboot, so a restored flag would arm a mode with nothing to act
     // on. It DOES outlive one walk, so cancelling and re-arming explore keeps it set.
     bool autoProgress_ = false;
+    // Focused row of the explore-control overlay (0..kExploreControlRows-1). Reset to
+    // the first action each time the chord opens it, so the list never reopens pointing
+    // at whatever was last pressed.
+    int exploreCtlRow_ = 0;
     const ItemDef* detailItem_ = nullptr;  // ITEMS detail subject
     // d: the active ITEMS type-tab filter. Runtime-only (never persisted) —
     // enterSubmenu() (and the Lockout Open-Items path) reset it to All every time

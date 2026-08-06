@@ -460,25 +460,49 @@ void drawExploreBadge(Framebuffer& fb, const char* label, int count, int countMa
 // over the habitat — A Network Ping (force the next step) · B Warp (if a key is
 // held) · C Stop. Standard A/B/C returns, spelled out (grayscale-safe). A bordered
 // PAPER panel (TRACK outline via a 2px inset) centered over the living area.
-void drawExploreControl(Framebuffer& fb, bool hasWarpKey, bool autoProgress) {
-    const int boxW = 184, boxH = 112;
+void drawExploreControl(Framebuffer& fb, int cursor, bool hasWarpKey,
+                        bool autoProgress) {
+    const int boxW = 184, boxH = 124;
     const int bx = (kActiveW - boxW) / 2, by = (kActiveH - boxH) / 2;
     fb.fillRect(bx - 2, by - 2, boxW + 4, boxH + 4, palColor(Pal::TRACK));
     fb.fillRect(bx, by, boxW, boxH, palColor(Pal::PAPER));
     drawText(fb, bx + 10, by + 8, "EXPLORE", palColor(Pal::INK));
     fb.fillRect(bx + 8, by + 22, boxW - 16, 1, palColor(Pal::TRACK));
-    drawText(fb, bx + 10, by + 30, "A  NETWORK PING", palColor(Pal::INK));
-    drawText(fb, bx + 10, by + 46, hasWarpKey ? "B  WARP" : "B  WARP (NO KEY)",
-             hasWarpKey ? palColor(Pal::INK) : palColor(Pal::INK_DIM));
-    drawText(fb, bx + 10, by + 62, "C  STOP EXPLORE", palColor(Pal::INK));
-    // The chord that opened this toggles AUTO-PROGRESS, below a rule that separates a
-    // persistent MODE from the three one-shot actions above it. Dual-coded by the word
-    // ON/OFF, never by colour alone.
-    fb.fillRect(bx + 8, by + 78, boxW - 16, 1, palColor(Pal::TRACK));
-    drawText(fb, bx + 10, by + 86, "A+C  AUTO-PROGRESS", palColor(Pal::INK));
-    const char* state = autoProgress ? "ON" : "OFF";
-    drawText(fb, bx + boxW - 10 - textWidth(state), by + 86, state,
-             autoProgress ? palColor(Pal::ACCENT) : palColor(Pal::INK_DIM));
+
+    // One row per action, cursor-highlighted — the same filled-track + caret idiom every
+    // other list uses, so it reads in grayscale. WARP with no key held stays on the list
+    // rather than being skipped: the row is what says the action exists at all, and its
+    // reason is spelled out beside it.
+    static const char* kLabels[kExploreControlRows] = {
+        "NETWORK PING", "WARP", "AUTO-PROGRESS", "STOP EXPLORE"};
+    const int rowTop = by + 28, rowH = 18;
+    for (int i = 0; i < kExploreControlRows; ++i) {
+        const int y = rowTop + i * rowH;
+        const bool focused = (i == cursor);
+        const bool inert = (i == static_cast<int>(ExploreControlRow::Warp)) && !hasWarpKey;
+        if (focused) {
+            fb.fillRect(bx + 6, y - 3, boxW - 12, rowH - 2, palColor(Pal::TRACK));
+            drawRowCursor(fb, bx + 8, y, palColor(Pal::ACCENT));
+        }
+        drawText(fb, bx + 20, y, kLabels[i],
+                 inert ? palColor(Pal::INK_DIM) : palColor(Pal::INK));
+        // Right field: the mode's ON/OFF, or WARP's reason for being inert. Both are
+        // WORDS — nothing here is carried by colour alone.
+        const char* right = nullptr;
+        Rgb565 rc = palColor(Pal::INK_DIM);
+        if (i == static_cast<int>(ExploreControlRow::AutoProgress)) {
+            right = autoProgress ? "ON" : "OFF";
+            if (autoProgress) rc = palColor(Pal::ACCENT);
+        } else if (inert) {
+            right = "NO KEY";
+        }
+        if (right)
+            drawText(fb, bx + boxW - 10 - textWidth(right), y, right, rc);
+    }
+
+    const char* hint = "A NEXT  B DO  C BACK";
+    drawText(fb, bx + (boxW - textWidth(hint)) / 2, by + boxH - 14, hint,
+             palColor(Pal::INK_DIM));
 }
 
 void drawEncounterIntro(Framebuffer& fb, const char* enemyName, int diffPips,

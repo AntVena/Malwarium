@@ -324,23 +324,40 @@ void Game::dismissPostEncounter() {
 }
 
 void Game::onExploreControl(const ButtonEvent& ev) {
-    // The A+C control overlay: A = Network Ping (fire the next guaranteed
-    // event NOW, skipping the ~3s timer); B = Warp (open the held-key picker, else
-    // inert); C = Stop explore (cancel the mode; the streak resets). Standard
-    // A/B/C returns, exactly like combat's override picker.
+    // The A+C control overlay is a CURSOR LIST, exactly like combat's Exploit picker:
+    // the chord opens it, and inside it A cycles the row, B does the focused thing and
+    // C backs out to the habitat with the walk still running. The chord is the way in
+    // and nothing else — using it to drive a screen it opened is both against what the
+    // Exploit chord means and awkward to press, since A registers on its own first.
     if (ev.button == Button::A) {
-        nav_ = Nav::Idle;
-        doExploreStep();                // may re-enter a full-screen event
-    } else if (ev.button == Button::B) {
-        if (!heldWarpKeys().empty()) { warpRow_ = 0; nav_ = Nav::WarpPicker; }
-        // else inert — no key to spend; stay in the overlay.
-    } else if (ev.button == Button::C) {
-        exploreActive_ = false;
-        exploreStreak_ = 0;
-        deepWebDepthMultiplier_ = 1;
-        exploreFlavor_[0] = '\0';
-        nav_ = Nav::Idle;
-        markSaveDirty();
+        exploreCtlRow_ = (exploreCtlRow_ + 1) % kExploreControlRows;
+        return;
+    }
+    if (ev.button == Button::C) { nav_ = Nav::Idle; return; }   // back — walk continues
+    if (ev.button != Button::B) return;
+    switch (static_cast<ExploreControlRow>(exploreCtlRow_)) {
+        case ExploreControlRow::Ping:
+            // Fire the next guaranteed event NOW, skipping the step timer.
+            nav_ = Nav::Idle;
+            doExploreStep();                        // may re-enter a full-screen event
+            break;
+        case ExploreControlRow::Warp:
+            // Inert with no key to spend — the row stays, and says so.
+            if (!heldWarpKeys().empty()) { warpRow_ = 0; nav_ = Nav::WarpPicker; }
+            break;
+        case ExploreControlRow::AutoProgress:
+            // A MODE, not an action: toggling it leaves the overlay open so the ON/OFF
+            // it just changed is the thing the player is looking at.
+            autoProgress_ = !autoProgress_;
+            break;
+        case ExploreControlRow::Stop:
+            exploreActive_ = false;
+            exploreStreak_ = 0;
+            deepWebDepthMultiplier_ = 1;
+            exploreFlavor_[0] = '\0';
+            nav_ = Nav::Idle;
+            markSaveDirty();
+            break;
     }
 }
 

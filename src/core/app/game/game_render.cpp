@@ -47,7 +47,8 @@ void Game::render(Framebuffer& fb) const {
         case Nav::ExploreControl:
             // The A+C control overlay floats over the idle habitat.
             drawHabitat(fb, -1);
-            drawExploreControl(fb, !heldWarpKeys().empty(), autoProgress_);
+            drawExploreControl(fb, exploreCtlRow_, !heldWarpKeys().empty(),
+                               autoProgress_);
             break;
         case Nav::Encounter: drawEncounterScreen(fb); break;
         case Nav::Wifi: drawWifiScreen(fb); break;

@@ -642,28 +642,35 @@ int main(int argc, char** argv) {
         game.onButton({Button::B, true, false});     // expand sector[0]
         game.onButton({Button::B, true, false});     // arm sub-area[0] -> idle explore-mode
         auto ping = [&]{
-            game.onButton({Button::A, true, true});  // A+C chord -> control overlay
-            game.onButton({Button::A, true, false}); // A -> Network Ping (next event)
+            game.onButton({Button::A, true, true});  // A+C chord -> overlay, on PING
+            game.onButton({Button::B, true, false}); // B -> do it (the next event)
+        };
+        // The overlay opens on PING; AUTO-PROGRESS is two rows down.
+        auto armAuto = [&]{
+            game.onButton({Button::A, true, true});  // A+C -> the control overlay
+            game.onButton({Button::A, true, false}); // -> WARP
+            game.onButton({Button::A, true, false}); // -> AUTO-PROGRESS
+            game.onButton({Button::B, true, false}); // arm it
         };
         uint32_t t = static_cast<uint32_t>(beats) * kHeartbeatMs;
         if (hasFlag(argc, argv, "explorectl")) {
             game.inventory().add("access_token", 1); // so WARP shows enabled
-            game.onButton({Button::A, true, true});  // A+C -> the control overlay
-            // "auto" arms AUTO-PROGRESS with a second chord — the overlay's ON state,
-            // and what sets the carousel's EXPL globe spinning ("explore auto", below).
-            if (hasFlag(argc, argv, "auto"))
-                game.onButton({Button::A, true, true});
+            // "auto" walks to the AUTO-PROGRESS row and arms it, which is also what
+            // sets the carousel's EXPL globe spinning ("explore auto", below); without
+            // it the overlay rests on its first row.
+            if (hasFlag(argc, argv, "auto")) armAuto();
+            else game.onButton({Button::A, true, true});   // A+C -> the control overlay
         } else if (hasFlag(argc, argv, "auto")) {
             // The armed habitat with auto-progress running: the EXPL globe turns on the
             // shelf. Pass a `beats` count to land on a particular frame of the spin.
-            game.onButton({Button::A, true, true});  // A+C -> the control overlay
-            game.onButton({Button::A, true, true});  // ...again -> arm auto-progress
-            game.onButton({Button::A, true, false}); // A -> ping, which also leaves it
+            armAuto();
+            game.onButton({Button::C, true, false}); // C -> back to the habitat
         } else if (hasFlag(argc, argv, "warp")) {
-            // Warp picker: hold both keys, open the control overlay, B -> picker.
+            // Warp picker: hold both keys, open the control overlay, walk to WARP.
             game.inventory().add("access_token", 1);
             game.inventory().add("safe_mode_key", 1);
-            game.onButton({Button::A, true, true});  // A+C -> control overlay
+            game.onButton({Button::A, true, true});  // A+C -> overlay, on PING
+            game.onButton({Button::A, true, false}); // A -> WARP
             game.onButton({Button::B, true, false}); // B -> warp-key picker
         } else if (hasFlag(argc, argv, "encounter") || hasFlag(argc, argv, "wildcombat")) {
             for (int i = 0; i < 400 && game.nav() != Game::Nav::Encounter; ++i) {

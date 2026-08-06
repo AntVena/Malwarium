@@ -137,10 +137,18 @@ enum class ExploreBadgeMode { Wins, BossReady, Farming, DeepDive };
 void drawExploreBadge(Framebuffer& fb, const char* label, int count, int countMax,
                       ExploreBadgeMode mode);
 
-// Explore-control overlay: the A+C chord's 3-action strip over the habitat — A Network
-// Ping · B Warp (dimmed when no key is held) · C Stop explore — plus the AUTO-PROGRESS
-// mode below a rule, toggled by the same chord that opened the overlay.
-void drawExploreControl(Framebuffer& fb, bool hasWarpKey, bool autoProgress);
+// Explore-control overlay: the walk's own action list, opened by the A+C chord over the
+// habitat. A CURSOR list, exactly like combat's Exploit picker — the chord opens it and
+// then plain A/B/C drive it (A next row, B do it, C back out). The chord itself is never
+// a navigation key inside a screen it opened: that is not what the Exploit chord is for,
+// and A+C is awkward to hit besides, since A registers on its own first.
+enum class ExploreControlRow { Ping, Warp, AutoProgress, Stop };
+constexpr int kExploreControlRows = 4;
+
+// `hasWarpKey` dims the WARP row (B on it is inert with no key held); `autoProgress` is
+// the mode row's ON/OFF state, dual-coded by the word.
+void drawExploreControl(Framebuffer& fb, int cursor, bool hasWarpKey,
+                        bool autoProgress);
 
 // Sector accessors ("difficulty-scaled by sector tier") — sector identity
 // is data owned by this file; Game reads it through these rather than duplicating

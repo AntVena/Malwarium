@@ -119,10 +119,11 @@ click-distance, so the most-used categories are the cheapest to reach.
 
 **A+C on the top-level carousel flips to the parallel Hacker face** (PROFILE / CREW / SHOP / VAULT /
 MERGE HUB / PEERS / LINK), which is where device-level identity and radio social features live —
-except while explore-mode is running, where the chord opens that walk's control overlay instead
-(Network Ping / Warp / Stop), and a second chord there arms **auto-progress**: the walk steps the
-area ladder by itself, positionally, so a finished ladder keeps rotating instead of stopping at the
-frontier. The EXPL globe on the carousel turns while it's armed.
+except while explore-mode is running, where the chord opens that walk's control overlay instead.
+That overlay is a cursor list, like combat's Exploit picker — the chord is the way in, and plain
+A/B/C drive it from there. Its rows are Network Ping · Warp · **auto-progress** · Stop explore.
+Auto-progress steps the area ladder by itself, positionally, so a finished ladder keeps rotating
+instead of stopping at the frontier. The EXPL globe on the carousel turns while it's armed.
 
 ---
 

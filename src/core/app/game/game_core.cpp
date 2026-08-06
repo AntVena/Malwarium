@@ -492,14 +492,10 @@ void Game::onButton(const ButtonEvent& ev) {
         // habitat opens the control overlay (A ping / B warp / C stop) instead of the
         // Hacker face — a deliberate tradeoff (the Hacker face is unreachable until you
         // Cancel explore). An egg can't explore, so the hatch chord below is unaffected.
-        else if (exploreActive_ && (nav_ == Nav::Idle || nav_ == Nav::Cursor))
+        else if (exploreActive_ && (nav_ == Nav::Idle || nav_ == Nav::Cursor)) {
             nav_ = Nav::ExploreControl;
-        // The chord AGAIN, on the overlay it just opened, arms AUTO-PROGRESS. A+C is
-        // what got the player here, so repeating it costs no new binding and leaves the
-        // overlay's three single-press actions (ping / warp / stop) exactly as they
-        // were. The EXPL globe spins while it's on, so the mode is legible from the
-        // carousel without reopening this.
-        else if (nav_ == Nav::ExploreControl) autoProgress_ = !autoProgress_;
+            exploreCtlRow_ = 0;                     // always opens on the first action
+        }
         // Egg home stretch (redesign): the Exploit chord IS how you hatch —
         // the ⚡ exploit symbol on the idle screen invites A+C to crack the egg. Which
         // screen that opens is the line's business: a Decrypt line gets its brute-force

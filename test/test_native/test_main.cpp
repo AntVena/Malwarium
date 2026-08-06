@@ -7432,8 +7432,18 @@ static void enterWalk(Game& g) {
 // the chord opens the control overlay, A fires doExploreStep. Only valid
 // from the idle habitat while exploring.
 static void pingExplore(Game& g) {
-    g.onButton(chordAC());                        // A+C -> control overlay
-    g.onButton(press(Button::A));                 // A -> Network Ping (next event)
+    g.onButton(chordAC());                        // A+C -> control overlay, on PING
+    g.onButton(press(Button::B));                 // B -> do it (the next event)
+}
+
+// Cancel explore-mode through the real UI. STOP EXPLORE is the control overlay's LAST
+// row, so this is: chord in (landing on PING), A to the bottom, B. A shared helper
+// because a running walk claims the A+C chord — any test that needs the Hacker face
+// has to put the walk down first, and would otherwise open the overlay instead.
+static void stopExplore(Game& g) {
+    g.onButton(chordAC());
+    for (int i = 0; i < kExploreControlRows - 1; ++i) g.onButton(press(Button::A));
+    g.onButton(press(Button::B));
 }
 
 // Steps explore-mode until a guaranteed step types a WILD encounter. In the
@@ -7513,10 +7523,13 @@ static void test_explore_arm_returns_to_idle() {
     Framebuffer fb(kActiveW, kActiveH);
     g.render(fb);
     CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));   // the badge draws over the habitat
-    // The A+C control chord opens the explore-control overlay.
+    // The A+C control chord opens the explore-control overlay; STOP EXPLORE is its
+    // last row, reached by cycling with A and done with B.
     g.onButton(chordAC());
     CHECK(g.nav() == Game::Nav::ExploreControl);
-    g.onButton(press(Button::C));                       // C -> Stop explore (cancel)
+    g.onButton(press(Button::C));                       // C backs out, walk untouched
+    CHECK(g.nav() == Game::Nav::Idle && g.exploreActive());
+    stopExplore(g);                                     // ...the STOP row does cancel it
     CHECK(g.nav() == Game::Nav::Idle);
     CHECK(!g.exploreActive());
     CHECK(g.exploreStreak() == 0);
@@ -9199,21 +9212,31 @@ static void test_expl_nested_list_nav() {
       g.onButton(press(Button::B));                 // B on its boss row → RERUN
       CHECK(g.nav() == Game::Nav::Combat); }
 
-    // AUTO-PROGRESS is armed by the SAME chord that opens the explore-control overlay:
-    // A+C from the habitat opens it, A+C again toggles the mode, and the overlay's three
-    // single-press actions are untouched. It is off until asked for.
+    // The explore-control overlay is a CURSOR LIST: the A+C chord opens it, and from
+    // there plain A/B/C drive it — the chord is the way in and never a navigation key
+    // inside the screen it opened. It opens on the first action, A walks the rows, B
+    // does the focused one, C backs out with the walk still running.
     { Game g{StartMode::Hatched, "bruinforce"};
       g.debugArmExplore(0, 0);
       CHECK(!g.autoProgress());
-      g.onButton(chordAC());                        // habitat → the control overlay
+      g.onButton(chordAC());                        // habitat → the overlay, on PING
       CHECK(g.nav() == Game::Nav::ExploreControl);
-      g.onButton(chordAC());                        // ...again → arm auto-progress
+      g.onButton(press(Button::A));                 // → WARP
+      g.onButton(press(Button::A));                 // → AUTO-PROGRESS
+      g.onButton(press(Button::B));                 // arm it
       CHECK(g.autoProgress());
-      CHECK(g.nav() == Game::Nav::ExploreControl);  // still on the overlay
-      g.onButton(chordAC());
-      CHECK(!g.autoProgress());                     // and it toggles back off
-      g.onButton(press(Button::C));                 // C still stops the walk
-      CHECK(!g.exploreActive()); }
+      CHECK(g.nav() == Game::Nav::ExploreControl);  // a MODE leaves the list open
+      g.onButton(press(Button::B));
+      CHECK(!g.autoProgress());                     // and toggles back off
+      g.onButton(press(Button::C));                 // C backs out, walk untouched
+      CHECK(g.nav() == Game::Nav::Idle && g.exploreActive()); }
+
+    // STOP EXPLORE is now a row rather than the C key, so backing out of the overlay
+    // can no longer cancel the walk by accident.
+    { Game g{StartMode::Hatched, "bruinforce"};
+      g.debugArmExplore(0, 0);
+      stopExplore(g);
+      CHECK(!g.exploreActive() && g.nav() == Game::Nav::Idle); }
 
     // The DeepWeb dive resumes at the TOP level instead — its row lives there, not
     // inside any area — so one B re-arms the dive.
@@ -10168,8 +10191,9 @@ static void test_access_token_warps_to_shop() {
     Game g{StartMode::Hatched};
     enterWalk(g);
     g.inventory().add("access_token", 1);
-    g.onButton(chordAC());                           // A+C -> control overlay
+    g.onButton(chordAC());                           // A+C -> control overlay, on PING
     CHECK(g.nav() == Game::Nav::ExploreControl);
+    g.onButton(press(Button::A));                    // A -> the WARP row
     g.onButton(press(Button::B));                    // B -> warp picker
     CHECK(g.nav() == Game::Nav::WarpPicker);
     g.onButton(press(Button::B));                    // spend the focused key
@@ -10184,7 +10208,8 @@ static void test_safe_mode_key_warps_to_rest() {
     enterWalk(g);
     g.model().setFragmentation(60);
     g.inventory().add("safe_mode_key", 1);
-    g.onButton(chordAC());                           // A+C -> control overlay
+    g.onButton(chordAC());                           // A+C -> control overlay, on PING
+    g.onButton(press(Button::A));                    // A -> the WARP row
     g.onButton(press(Button::B));                    // B -> warp picker
     CHECK(g.nav() == Game::Nav::WarpPicker);
     g.onButton(press(Button::B));                    // spend the focused key
@@ -10198,8 +10223,9 @@ static void test_safe_mode_key_warps_to_rest() {
 static void test_explore_warp_no_keys_is_noop() {
     Game g{StartMode::Hatched};
     enterWalk(g);
-    g.onButton(chordAC());                           // A+C -> control overlay
+    g.onButton(chordAC());                           // A+C -> control overlay, on PING
     CHECK(g.nav() == Game::Nav::ExploreControl);
+    g.onButton(press(Button::A));                    // A -> the WARP row
     g.onButton(press(Button::B));                    // Warp with no key held -> inert
     CHECK(g.nav() == Game::Nav::ExploreControl);     // no picker opened
 }
@@ -11879,10 +11905,9 @@ static void test_crew_screen_pick_home_then_enlist() {
     // Explore-mode claims A+C for its control overlay, so stop exploring first —
     // the Hacker face is only reachable from a quiet habitat.
     while (g.nav() != Game::Nav::Idle) g.onButton(press(Button::C));
-    if (g.exploreActive()) {
-        g.onButton({Button::A, true, true});        // A+C -> explore control overlay
-        g.onButton(press(Button::C));               // C -> stop exploring
-    }
+    // A running walk claims the A+C chord for its control overlay, so the Hacker face
+    // below is unreachable until the walk is put down.
+    if (g.exploreActive()) stopExplore(g);
     CHECK(!g.exploreActive() && g.nav() == Game::Nav::Idle);
     g.onButton({Button::A, true, true});           // A+C -> hacker face
     CHECK(g.face() == Game::Face::Hacker);
