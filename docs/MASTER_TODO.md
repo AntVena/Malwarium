@@ -443,10 +443,6 @@ Two more are past the rule and were not on this watch at all:
 
 ---
 
-## Pipeline
-The Github pipeline is complaining that Node 20 is deprecated and it's using node 24. Bump node. We can and should
-be testing our code against what's actually going to be used.
-
 ## If picking up cold
 
 1. **FONT_UI integration (§1e)** — the highest per-screen leverage left, and the art is already drawn.

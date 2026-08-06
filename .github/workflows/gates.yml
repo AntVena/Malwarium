@@ -15,7 +15,7 @@ jobs:
     name: native gates
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Generate the sprite/palette codegen
         # src/generated is not committed — it is derived from assets/, and the
         # engine does not compile without it.
@@ -31,15 +31,15 @@ jobs:
     name: S3 firmware build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
       - name: Cache the PlatformIO toolchain
         # The espressif32 platform and its Xtensa toolchain are a few hundred MB
         # and change only when platformio.ini does. Without this every run pays
         # the download again.
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ~/.platformio
