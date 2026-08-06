@@ -1940,13 +1940,15 @@ private:
     // DeepWeb), >= 0 = inside that area (its sub-areas). Runtime-only; reset to -1 each
     // time the EXPL submenu is opened.
     int explNavArea_ = -1;
-    // AUTO-PROGRESS: the walk steps the ladder by itself (autoProgressStep). Armed with
-    // the A+C chord from inside the explore-control overlay, which is only reachable
-    // while explore-mode is running — so the mode is scoped to exploring by
+    // AUTO-PROGRESS: the walk steps the ladder by itself (autoProgressStep). Toggled
+    // with the A+C chord from inside the explore-control overlay, which is only
+    // reachable while explore-mode is running — so the mode is scoped to exploring by
     // construction. Runtime-only, and deliberately NOT persisted: explore-mode itself
     // doesn't survive a reboot, so a restored flag would arm a mode with nothing to act
     // on. It DOES outlive one walk, so cancelling and re-arming explore keeps it set.
-    bool autoProgress_ = false;
+    // Defaults ON — hands-off ladder stepping is the expected experience; the chord
+    // opts OUT rather than in.
+    bool autoProgress_ = true;
     // Focused row of the explore-control overlay (0..kExploreControlRows-1). Reset to
     // the first action each time the chord opens it, so the list never reopens pointing
     // at whatever was last pressed.

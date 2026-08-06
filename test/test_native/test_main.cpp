@@ -7426,6 +7426,13 @@ static void enterWalk(Game& g) {
     enterSubmenuId(g, SubmenuId::Expl);
     g.onButton(press(Button::B));                    // drill into the focused area
     g.onButton(press(Button::B));                    // arm its first open sub-area
+    // Auto-progress now defaults ON (production), but this is the shared entry point
+    // for tests that drive the walk fight-by-fight by hand — a streak/clear crossing
+    // its threshold mid-test would otherwise auto-launch a boss (or re-arm the next
+    // sub-area, resetting exploreSteps_) out from under whatever the test is mid-
+    // asserting. Tests exercising auto-progress itself opt back in explicitly
+    // (debugSetAutoProgress(true)), same as before this default flipped.
+    g.debugSetAutoProgress(false);
 }
 
 // Fire the next GUARANTEED explore step NOW via the A+C control chord's Network Ping
@@ -8845,6 +8852,11 @@ static void test_bits_reward_bounds() {
 // 0..4 one by one. Assumes a pet strong enough to win reliably (a leveled Daemon).
 static void clearSubArea(Game& g, int area, int sub) {
     uint32_t t = 0;
+    // This helper drives the sub-boss (debugFightSubBoss) and the area boss (the
+    // caller's own loop) by hand, one fight at a time — auto-progress defaulting ON
+    // would otherwise auto-launch each boss itself the instant a streak/clear crosses
+    // its threshold, out from under the manual trigger this helper is mid-sequencing.
+    g.debugSetAutoProgress(false);
     g.debugArmExplore(area, sub);                  // (re)arm THIS sub-area (cleared subs
                                                    // are now selectable → "first row" is
                                                    // ambiguous; arm the target directly)
@@ -9218,16 +9230,16 @@ static void test_expl_nested_list_nav() {
     // does the focused one, C backs out with the walk still running.
     { Game g{StartMode::Hatched, "bruinforce"};
       g.debugArmExplore(0, 0);
-      CHECK(!g.autoProgress());
+      CHECK(g.autoProgress());                      // defaults ON
       g.onButton(chordAC());                        // habitat → the overlay, on PING
       CHECK(g.nav() == Game::Nav::ExploreControl);
       g.onButton(press(Button::A));                 // → WARP
       g.onButton(press(Button::A));                 // → AUTO-PROGRESS
-      g.onButton(press(Button::B));                 // arm it
-      CHECK(g.autoProgress());
+      g.onButton(press(Button::B));                 // opt out
+      CHECK(!g.autoProgress());
       CHECK(g.nav() == Game::Nav::ExploreControl);  // a MODE leaves the list open
       g.onButton(press(Button::B));
-      CHECK(!g.autoProgress());                     // and toggles back off
+      CHECK(g.autoProgress());                      // and toggles back on
       g.onButton(press(Button::C));                 // C backs out, walk untouched
       CHECK(g.nav() == Game::Nav::Idle && g.exploreActive()); }
 

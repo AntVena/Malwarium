@@ -72,6 +72,21 @@ uint8_t impactFlashAmt(int hitBeat) {
     return static_cast<uint8_t>(200 * (kImpactPeriod - hitBeat) / kImpactPeriod);
 }
 
+// Attack "hop" cue (no new art/frames, no change to either fighter's resting stage
+// position): the combatant that just acted steps a couple of active-px TOWARD its
+// target and the target steps the same distance AWAY, decaying over
+// kAttackHopPeriod anim-ticks. Unlike the impact punch above — which needs a landed,
+// non-charge hit — this fires on every resolved, non-charge move, so a fully-
+// shielded swing still reads as "who just attacked" instead of standing still.
+// Because the local seat sits left of the rival seat, "attacker forward" and
+// "target away" happen to point the same screen direction for BOTH fighters on a
+// given turn, so one dir/beat pair drives both sprites.
+constexpr int kAttackHopPeriod = 4;
+int attackHopPx(int hopBeat, int dir) {
+    if (hopBeat < 0 || hopBeat >= kAttackHopPeriod) return 0;
+    return dir * (kAttackHopPeriod - hopBeat);   // 4 -> 3 -> 2 -> 1 -> 0 active-px
+}
+
 // The passive strip — one combatant's live line-passive state as a bar plus a pip row,
 // drawn immediately outside its Health gauge. Both fighters get one: a passive changes who
 // wins, so hiding the opponent's would leave the player watching a fight decided by
@@ -229,12 +244,18 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
         std::max(windupFlashAmt(en.channelMoveIdx >= 0, animBeat), impactFlashAmt(rivalHitBeat));
     const uint8_t localFlash =
         std::max(windupFlashAmt(pl.channelMoveIdx >= 0, animBeat), impactFlashAmt(localHitBeat));
+    // Attacker-forward / target-back hop: any resolved, non-charge move, hit or not
+    // (see attackHopPx above for why one dir/beat pair covers both sprites).
+    const bool moveResolved = combat.lastMoveName()[0] != '\0' && !combat.lastWasCharge();
+    const int hopBeat = moveResolved ? hitBeat : -1;
+    const int hopDir = lastByLocal ? +1 : -1;
+    const int hop = attackHopPx(hopBeat, hopDir);
     // Rival first: where two tall Daemons overlap at the centre, the local pet reads on
     // top of its opponent.
     drawSpriteCentered(fb, rivalSprite, kRivalStageX, kStageY, kStageW, kStageH, animBeat,
-                       rivalFlash, impactNudgePx(rivalHitBeat, +1));
+                       rivalFlash, impactNudgePx(rivalHitBeat, +1) + hop);
     drawSpriteCentered(fb, localSprite, kLocalStageX, kStageY, kStageW, kStageH, animBeat,
-                       localFlash, impactNudgePx(localHitBeat, -1));
+                       localFlash, impactNudgePx(localHitBeat, -1) + hop);
 
     // --- Player Health: zoned gauge + numeric ------------------------------
     const int phY = kSpriteShelf + 10;
