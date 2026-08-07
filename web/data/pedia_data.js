@@ -1310,7 +1310,7 @@ window.PEDIA_DATA = {
       "tag": "SIPHON+",
       "rarity": "EPIC",
       "tier": 5,
-      "effect": "Waiting for that perfect bite: while your bubble's up, amplifies the bonus siphon by 75%. Phishing pets only.",
+      "effect": "Waiting for that perfect bite: while your bubble's up, amplifies the bonus siphon by 75%.",
       "stats": "SIPHON+ +75%",
       "icon": "assets/icons/ICON_MODS_SLOT.png",
       "iconFallback": true,
