@@ -35,11 +35,14 @@ permissions:
   pages: write
   id-token: write
 
-# One publish at a time, and never cancel one midway — a half-deployed Pages site
-# is a manifest pointing at artifacts that may not be there yet.
+# TEMPORARY: true to force-clear a zombie run wedged in the `pages` group that
+# the cancel/delete API refuses to touch (409/403 on every call). Revert to
+# false right after — a half-deployed Pages site is a manifest pointing at
+# artifacts that may not be there yet, which is the whole reason this is
+# normally off.
 concurrency:
   group: pages
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   build:
