@@ -91,14 +91,25 @@ real art review. Not urgent — flash sits at 24% and tinting doesn't depend on 
 red/green semantic pair onto a blue/orange axis) needs hue decisions, plus a CFG row to select it
 and a save field to remember it. Diff **M**.
 
-### 1e. FONT_UI integration (drawn, not wired)
+### 1e. FONT_UI — the face is chosen, the file does not exist
 
-`FONT_UI` (Pixel Operator Mono) is delivered as art/spec but code still renders every screen through
-the built-in 5×7 placeholder (`src/core/render/font5x7.*`). Highest per-screen leverage of any single
-change — one integration lifts typography device-wide, and tabular digits improve every gauge, stat
-and timer at once. The manifest marks it `☑` delivered, which is about the art: **the code side is
-unbuilt.** Diff **M** (bitmap-font pipeline into LovyanGFX + re-verifying every grayscale
-and layout gate is fiddly and cross-cutting).
+**Blocked on an asset, not on code.** Pixel Operator Mono is the settled choice, and that is all
+that is settled: there is no font binary anywhere in the repo, `gen_assets.py` has no ingestion
+path for one, and `pages/style.css` asks for `local('Pixel Operator Mono')` so anyone without it
+installed reads the site in system mono. Every screen renders through the 5×7 placeholder
+(`src/core/render/font5x7.*`).
+
+Still the highest per-screen leverage left — one integration lifts typography device-wide, and a
+type scale (VISUAL_LANGUAGE §2.2 wants 12 / 10–12 / 8–10) is what the placeholder cannot give at
+all: it has one size and an integer `scale`, so there is no 10px between 7 and 14.
+
+The API surface is already the seam. All 507 call sites go through four functions — `drawText`,
+`textWidth`, `drawTextWrapped`, `textWrapLines` — so a face swap is behind those, not through the
+screens. What the work needs, in order: **the font file** (Pixel Operator is CC0; TTF and BDF are
+both published), then a glyph-table emitter in `gen_assets.py`, then a size argument on those four
+in place of the integer `scale`, then a re-verify of every grayscale and layout gate. Diff **L**
+once the file lands — the placeholder's fixed 6px advance is baked into layout constants that a
+proportional-metrics face would move, and the grid in `src/core/ui/layout.h` is where that lands.
 
 ### 1f. Standing stubs / interim mechanics to revisit
 
@@ -374,6 +385,7 @@ Two more are past the rule and were not on this watch at all:
 
 ## If picking up cold
 
-1. **FONT_UI integration (§1e)** — the highest per-screen leverage left, and the art is already drawn.
+1. **FONT_UI (§1e)** — the highest per-screen leverage left, but it needs the font FILE first;
+   nothing about it is a code question until then.
 2. **Net-Sea Crossing art (§2c)** — the area ships mechanically; it is the only rung with no
    backdrop or malbeasts of its own.
