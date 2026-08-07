@@ -10,6 +10,7 @@
 #include "core/render/font5x7.h"
 #include "core/render/palette.h"
 #include "core/render/sprite.h"
+#include "core/ui/layout.h"
 #include "core/ui/theme.h"
 #include "core/ui/widgets.h"
 #include "generated/assets.h"
@@ -45,12 +46,10 @@
 namespace mal {
 
 namespace {
-constexpr int kMargin = 10;
-constexpr int kLineH = kFontH + 5;
 // A challengeable row is tag / pet — two lines, so the list clears the header rule with
 // room for the status band and the hint band underneath.
-constexpr int kRowH = kLineH * 3 + 6;   // tag · pet+stage · crew
-constexpr int kVisibleRows = 3;
+constexpr int kPvpBlockH = kLineH * 3 + 6;   // tag · pet+stage · crew
+constexpr int kPvpVisibleRows = 3;
 constexpr int kMaxRows = 32;
 }  // namespace
 
@@ -500,7 +499,7 @@ int Game::pvpChallengeableKeys(uint64_t* out, int max) const {
 // --- Rendering ---------------------------------------------------------------
 
 void Game::drawHackerLink(Framebuffer& fb) const {
-    drawText(fb, kMargin, 28, "LINK", palColor(Pal::INK));
+    drawText(fb, kMargin, kContextY, "LINK", palColor(Pal::INK));
 
     // Name whoever actually holds the radio rather than implying LINK has it. An empty
     // list means something entirely different when the 'Pedia AP owns the radio than
@@ -509,9 +508,9 @@ void Game::drawHackerLink(Framebuffer& fb) const {
     const char* radioState = apEnabled_                  ? "AP HAS RADIO"
                              : auditCapture_.capturing() ? "CAPTURE HAS RADIO"
                                                          : "LINKING";
-    drawText(fb, kActiveW - kMargin - textWidth(radioState), 28, radioState,
+    drawText(fb, kActiveW - kMargin - textWidth(radioState), kContextY, radioState,
              starved ? palColor(Pal::WARN) : palColor(Pal::INK_DIM));
-    fb.fillRect(0, 44, kActiveW, 1, palColor(Pal::TRACK));
+    fb.fillRect(0, kContextRule, kActiveW, 1, palColor(Pal::TRACK));
 
     // Every non-Idle phase takes over the body: what the operator needs to know is the
     // state of the one session, not a list they can't act on.
@@ -569,17 +568,17 @@ void Game::drawHackerLink(Framebuffer& fb) const {
         int sel = pvpRow_;
         if (sel >= n) sel = 0;
         int scrollTop = 0;
-        if (n > kVisibleRows) {
-            if (sel >= kVisibleRows) scrollTop = sel - kVisibleRows + 1;
-            scrollTop = std::min(scrollTop, n - kVisibleRows);
+        if (n > kPvpVisibleRows) {
+            if (sel >= kPvpVisibleRows) scrollTop = sel - kPvpVisibleRows + 1;
+            scrollTop = std::min(scrollTop, n - kPvpVisibleRows);
         }
-        for (int v = 0; v < kVisibleRows && scrollTop + v < n; ++v) {
+        for (int v = 0; v < kPvpVisibleRows && scrollTop + v < n; ++v) {
             const uint64_t key = keys[scrollTop + v];
             const PeerHello* h = nullptr;
             for (int i = 0; i < livePeerCount_; ++i)
                 if (livePeers_[i].key == key) h = &livePeers_[i].hello;
             if (!h) continue;
-            const int rowY = listTop + v * kRowH;
+            const int rowY = listTop + v * kPvpBlockH;
             const bool s = scrollTop + v == sel;
             if (s) drawRowCursor(fb, 2, rowY + 1, palColor(Pal::ACCENT));
 

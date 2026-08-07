@@ -13,6 +13,7 @@
 #include "core/render/framebuffer.h"
 #include "core/render/palette.h"
 #include "core/render/sprite.h"
+#include "core/ui/layout.h"
 #include "core/ui/spec_sheet.h"
 #include "core/ui/widgets.h"
 #include "generated/assets.h"
@@ -21,21 +22,10 @@ namespace mal {
 
 namespace {
 
-constexpr int kMargin = 8;
-constexpr int kHeaderRule = 22;
-constexpr int kRowTop = 26;
-constexpr int kRowH = 28;
-constexpr int kIcon = 20;
 // Ceiling on the mod picker's list, not its fixed height (mirrors train_screen's
 // kMovePickerMaxRows): the list draws only the rows it has and scrolls past this cap,
 // so the slack goes to the spec panel below instead of being reserved empty.
 constexpr int kModPickerMaxRows = 6;
-
-void header(Framebuffer& fb, const char* title) {
-    fb.clear(palColor(Pal::PAPER));
-    drawText(fb, kMargin, 6, title, palColor(Pal::INK));
-    fb.fillRect(0, kHeaderRule, kActiveW, 1, palColor(Pal::TRACK));
-}
 
 // ICON_MOD_<UPPER ID> — the per-mod glyph naming convention.
 const SpriteData* modIcon(const ContentRegistry& reg, const char* id) {
@@ -79,7 +69,7 @@ std::vector<const ModDef*> ownedModList(const ContentRegistry& reg,
 
 void drawModsList(Framebuffer& fb, const ContentRegistry& reg,
                   const Loadout& load, int cursor) {
-    header(fb, "MODS");
+    drawHeaderBand(fb, "MODS");
     for (int i = 0; i < kModSlots; ++i) {
         const int y = kRowTop + i * kRowH;
         if (i == cursor) {
@@ -92,7 +82,7 @@ void drawModsList(Framebuffer& fb, const ContentRegistry& reg,
         if (id) {
             const ModDef* m = reg.mod(id);
             const SpriteData* icon = modIcon(reg, id);
-            if (icon) drawSprite(fb, *icon, 0, 16, y + (kRowH - kIcon) / 2);
+            if (icon) drawSprite(fb, *icon, 0, 16, y + (kRowH - kRowIcon) / 2);
             drawText(fb, 40, y + (kRowH - kFontH) / 2,
                      m ? m->displayName : id, palColor(Pal::INK));
             if (m)
@@ -101,7 +91,7 @@ void drawModsList(Framebuffer& fb, const ContentRegistry& reg,
                          palColor(Pal::ACCENT));
         } else {
             drawSprite(fb, ASSET_ICON_MODS_SLOT_EMPTY, 0, 16,
-                       y + (kRowH - kIcon) / 2);
+                       y + (kRowH - kRowIcon) / 2);
             drawText(fb, 40, y + (kRowH - kFontH) / 2, "- EMPTY -",
                      palColor(Pal::INK_DIM));
         }
@@ -116,7 +106,7 @@ void drawModPicker(Framebuffer& fb, const ContentRegistry& reg,
                    const char* petLine) {
     char title[12];
     std::snprintf(title, sizeof(title), "SLOT %d", slot + 1);
-    header(fb, title);
+    drawHeaderBand(fb, title);
 
     const std::vector<const ModDef*> owned = ownedModList(reg, load);
     const int rows = static_cast<int>(owned.size());       // available spares to install
@@ -261,12 +251,12 @@ void drawModPicker(Framebuffer& fb, const ContentRegistry& reg,
 void drawModDetail(Framebuffer& fb, const ContentRegistry& reg, const Loadout& load,
                    const ModDef& mod, bool equippedHere, int slot,
                    int reqLevel, int petLevel, const char* petLine, int storageCap) {
-    header(fb, "MODS");
+    drawHeaderBand(fb, "MODS");
 
     // Icon + name + the effect TAG (the stat-delta shorthand, e.g. "+DEF").
     const SpriteData* icon = modIcon(reg, mod.id);
     if (icon) drawSprite(fb, *icon, 0, kMargin, 30);
-    const int nameX = icon ? kMargin + kIcon + 6 : kMargin;
+    const int nameX = icon ? kMargin + kRowIcon + 6 : kMargin;
     drawText(fb, nameX, 36, mod.displayName, palColor(Pal::INK));
     drawText(fb, kActiveW - kMargin - textWidth(mod.effectTag), 36, mod.effectTag,
              palColor(Pal::ACCENT));

@@ -14,6 +14,7 @@
 #include "core/render/framebuffer.h"
 #include "core/render/palette.h"
 #include "core/render/sprite.h"
+#include "core/ui/layout.h"
 #include "core/ui/spec_sheet.h"
 #include "core/ui/widgets.h"
 #include "generated/assets.h"
@@ -22,17 +23,10 @@ namespace mal {
 
 namespace {
 
-constexpr int kMargin = 8;
 // Ceiling on the move picker's list, not its fixed height: the list draws only the
 // rows it has (drawMovePicker's `visibleRows`) and scrolls past this cap, so the
 // slack goes to the description panel below instead of being reserved empty.
 constexpr int kMovePickerMaxRows = 6;
-
-void header(Framebuffer& fb, const char* title) {
-    fb.clear(palColor(Pal::PAPER));
-    drawText(fb, kMargin, 6, title, palColor(Pal::INK));
-    fb.fillRect(0, 22, kActiveW, 1, palColor(Pal::TRACK));
-}
 
 // ICON_MOVE_<UPPER ID> — the per-move glyph naming convention (like ICON_MOD_*).
 const SpriteData* moveIcon(const ContentRegistry& reg, const char* id) {
@@ -82,7 +76,7 @@ int loadoutSelectableCount(Stage stage) {
 void drawLoadout(Framebuffer& fb, const ContentRegistry& reg,
                  const MoveLoadout& load, Stage stage, int cursor,
                  const MoveDef::Kind* slotKinds) {
-    header(fb, "TRAIN");
+    drawHeaderBand(fb, "TRAIN");
     const int unlocked = MoveLoadout::slotsForStage(stage);
 
     // No standalone "default" row: Quick Jab is a per-slot FALLBACK, not a
@@ -152,7 +146,7 @@ void drawMovePicker(Framebuffer& fb, const ContentRegistry& reg,
     char title[20];
     std::snprintf(title, sizeof(title), "SLOT %d - %s%s", slot + 1,
                   moveKindTag(requiredKind), showAll ? " ALL" : "");
-    header(fb, title);
+    drawHeaderBand(fb, title);
 
     const std::vector<const MoveDef*> owned =
         ownedMoveList(reg, load, requiredKind, petStage, petLine, slot, showAll);
@@ -304,7 +298,7 @@ int moveProseLines(const MoveDef& m) {
 
 void drawMoveDetail(Framebuffer& fb, const ContentRegistry& reg, const MoveDef& m,
                     Stage petStage, bool equippedHere, int proseScroll) {
-    header(fb, "MOVE");
+    drawHeaderBand(fb, "MOVE");
 
     // Icon + name + kind tag. Most moves have no glyph yet, so the name only indents
     // when there is actually art to indent past (mirrors drawModDetail's nameX).
@@ -352,7 +346,7 @@ void drawMoveDetail(Framebuffer& fb, const ContentRegistry& reg, const MoveDef& 
 }
 
 void drawSimTier(Framebuffer& fb, int tier, int tierCount) {
-    header(fb, "SIM-BATTLE");
+    drawHeaderBand(fb, "SIM-BATTLE");
     char line[28];
     std::snprintf(line, sizeof(line), "< %s >", simDummyName(tier));
     drawText(fb, kMargin, 40, "DUMMY TIER:", palColor(Pal::INK_DIM));

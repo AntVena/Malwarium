@@ -8,6 +8,7 @@
 #include "core/render/framebuffer.h"
 #include "core/render/palette.h"
 #include "core/render/sprite.h"
+#include "core/ui/layout.h"
 #include "core/ui/widgets.h"
 #include "generated/assets.h"
 
@@ -15,17 +16,6 @@ namespace mal {
 
 namespace {
 
-constexpr int kMargin = 8;
-constexpr int kHeaderRule = 22;
-constexpr int kRowTop = 26;
-constexpr int kRowH = 28;
-constexpr int kIcon = 20;
-
-void header(Framebuffer& fb, const char* title) {
-    fb.clear(palColor(Pal::PAPER));
-    drawText(fb, kMargin, 6, title, palColor(Pal::INK));
-    fb.fillRect(0, kHeaderRule, kActiveW, 1, palColor(Pal::TRACK));
-}
 
 // A 1px outline. Local because the Stacker's in-hand run is the only thing that wants
 // one — a filled block is a placed block everywhere else, so "outlined" reading as "not
@@ -47,7 +37,7 @@ void avStatus(const PetModel& m, char* out, int n) {
 }  // namespace
 
 void drawMaintList(Framebuffer& fb, const PetModel& m, int cursor) {
-    header(fb, "MAINT");
+    drawHeaderBand(fb, "MAINT");
 
     const SpriteData* icons[2] = {&ASSET_ICON_MAINT_DEFRAG, &ASSET_ICON_MAINT_AV};
     const char* labels[2] = {"DEFRAGMENTATION", "ANTIVIRUS"};
@@ -61,7 +51,7 @@ void drawMaintList(Framebuffer& fb, const PetModel& m, int cursor) {
             fb.fillRect(4, y + 2, kActiveW - 8, kRowH - 4, palColor(Pal::TRACK));
             drawRowCursor(fb, 8, y + (kRowH - 7) / 2, palColor(Pal::ACCENT));
         }
-        drawSprite(fb, *icons[i], 0, 16, y + (kRowH - kIcon) / 2);
+        drawSprite(fb, *icons[i], 0, 16, y + (kRowH - kRowIcon) / 2);
         drawText(fb, 40, y + (kRowH - kFontH) / 2, labels[i], palColor(Pal::INK));
         drawText(fb, kActiveW - kMargin - textWidth(status[i]),
                  y + (kRowH - kFontH) / 2, status[i], palColor(Pal::INK_DIM));
@@ -73,7 +63,7 @@ void drawMaintAction(Framebuffer& fb, MaintKind kind, const PetModel& m,
                      int defragCount) {
     char line[40];
     if (kind == MaintKind::Defrag) {
-        header(fb, "DEFRAGMENTATION");
+        drawHeaderBand(fb, "DEFRAGMENTATION");
         // The headline effect is the FOCUSED variant's, because the three don't pay the
         // same: two take a fixed bite, and the played one is the only route to a clean
         // disk. Naming the fixed number on a screen where it can be wrong would be worse
@@ -142,7 +132,7 @@ void drawMaintAction(Framebuffer& fb, MaintKind kind, const PetModel& m,
             drawText(fb, kMargin + 12, 176, "B RUN   A SWITCH", palColor(Pal::ACCENT));
         }
     } else {
-        header(fb, "ANTIVIRUS");
+        drawHeaderBand(fb, "ANTIVIRUS");
         drawText(fb, kMargin, 36, "SCANS + REMOVES ROGUE PROCS.", palColor(Pal::INK));
         drawText(fb, kMargin, 52, "-10 FRAG. CLEARS DEBUFFS +", palColor(Pal::INK));
         drawText(fb, kMargin, 64, "REPLICATION GHOST.", palColor(Pal::INK));
@@ -160,7 +150,7 @@ void drawMaintAction(Framebuffer& fb, MaintKind kind, const PetModel& m,
 }
 
 void drawStackerBoard(Framebuffer& fb, const Stacker& s, int frag) {
-    header(fb, "DEFRAGMENTING");
+    drawHeaderBand(fb, "DEFRAGMENTING");
 
     // Drawn bottom-up: row 0 is the base, so it sits at the FOOT of the well and the run
     // climbs toward the header. Cells are WIDE and short — a disk block, not a tile — and
@@ -241,7 +231,7 @@ int stackerFragWorth(const Stacker& s, int frag) {
 }
 
 void drawMaintProcess(Framebuffer& fb, MaintKind kind, float t) {
-    header(fb, kind == MaintKind::Defrag ? "DEFRAGMENTATION" : "ANTIVIRUS");
+    drawHeaderBand(fb, kind == MaintKind::Defrag ? "DEFRAGMENTATION" : "ANTIVIRUS");
     drawText(fb, kMargin, 90,
              kind == MaintKind::Defrag ? "DEFRAGMENTING..." : "SCANNING...",
              palColor(Pal::INK));
@@ -251,7 +241,7 @@ void drawMaintProcess(Framebuffer& fb, MaintKind kind, float t) {
 
 void drawMaintOutcome(Framebuffer& fb, MaintKind kind, MaintOutcome outcome,
                       int fragRemoved) {
-    header(fb, kind == MaintKind::Defrag ? "DEFRAGMENTATION" : "ANTIVIRUS");
+    drawHeaderBand(fb, kind == MaintKind::Defrag ? "DEFRAGMENTATION" : "ANTIVIRUS");
     char line[40];
     const char* msg = line;
     Rgb565 col = palColor(Pal::CALM);

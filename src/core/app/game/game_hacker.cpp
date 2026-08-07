@@ -13,6 +13,7 @@
 #include "core/render/sprite.h"
 #include "core/ui/carousel.h"
 #include "core/ui/items_screen.h"
+#include "core/ui/layout.h"
 #include "core/ui/theme.h"
 #include "core/ui/widgets.h"
 #include "generated/assets.h"
@@ -38,7 +39,6 @@
 namespace mal {
 
 namespace {
-constexpr int kMargin = 10;
 
 // Is this row on sale right now? Three ways it isn't: it's maxed/owned (nothing
 // left to buy), its prerequisite row is still unbought (RigUpgradeDef::requiresRow —
@@ -316,22 +316,13 @@ void Game::drawHackerHome(Framebuffer& fb, int cursor) const {
 }
 
 void Game::drawHackerSubmenu(Framebuffer& fb) const {
-    // Shared header band (mirrors the pet submenus): title at left + a divider rule.
-    auto header = [&](const char* title) {
-        fb.clear(palColor(Pal::PAPER));
-        drawText(fb, kMargin, 6, title, palColor(Pal::INK));
-        fb.fillRect(0, 20, kActiveW, 1, palColor(Pal::TRACK));
-    };
-
     if (enteredHackerId() == HackerSlotId::Shop) {
         // SHOP — the Rig Shop (game_rig_shop.h). Header carries the Bits wallet (the
         // storefront grammar). The list iterates kRigUpgrades generically, windowed to
         // kRigVisibleRows (mirrors drawItemsList/drawMovePicker).
         char bitsStr[16];
         std::snprintf(bitsStr, sizeof(bitsStr), "%d BITS", bits_);
-        header("SHOP");
-        drawText(fb, kActiveW - kMargin - textWidth(bitsStr), 6, bitsStr,
-                 palColor(Pal::ACCENT));
+        drawHeaderBand(fb, "SHOP", bitsStr, palColor(Pal::ACCENT));
 
         // Maxed/owned rows have nothing left to buy — filter them out entirely so
         // the list only ever shows purchasable rows (visRows is in table order).
@@ -411,7 +402,7 @@ void Game::drawHackerSubmenu(Framebuffer& fb) const {
     if (enteredHackerId() == HackerSlotId::Vault) {
         // VAULT — decrypt owned sealed caches OFF pet ITEMS. One row per owned
         // openable stack (name + count); A cycles, B decrypts (openSealedCache), C exits.
-        header("VAULT");
+        drawHeaderBand(fb, "VAULT");
 
         const ItemDef* rows[16];
         const int n = vaultOwnedRows(rows, 16);
@@ -468,7 +459,7 @@ void Game::drawHackerSubmenu(Framebuffer& fb) const {
     if (enteredHackerId() == HackerSlotId::Crew) {
         // CREW — its own screen, own file (game_crew.cpp): enlist in a crew + pick
         // the home network membership hangs off.
-        header("CREW");
+        drawHeaderBand(fb, "CREW");
         drawHackerCrew(fb);
         return;
     }
@@ -476,7 +467,7 @@ void Game::drawHackerSubmenu(Framebuffer& fb) const {
     if (enteredHackerId() == HackerSlotId::Peers) {
         // PEERS — its own screen, own file (game_peers.cpp): the operators this
         // device has met, live ones first.
-        header("PEERS");
+        drawHeaderBand(fb, "PEERS");
         drawHackerPeers(fb);
         return;
     }
@@ -484,22 +475,21 @@ void Game::drawHackerSubmenu(Framebuffer& fb) const {
     if (enteredHackerId() == HackerSlotId::Link) {
         // LINK — its own screen, own file (game_pvp.cpp): challenge an operator who is
         // in range right now to a no-stakes 1v1.
-        header("LINK");
+        drawHeaderBand(fb, "LINK");
         drawHackerLink(fb);
         return;
     }
 
     if (enteredHackerId() == HackerSlotId::Merge) {
         // MERGE HUB — its own screen, own file (game_merge.cpp): combines two owned
-        // ingredient items into a rarer one. header() is a tiny local lambda (4
-        // lines) rather than a shared helper — not worth the indirection.
-        header("MERGE HUB");
+        // ingredient items into a rarer one.
+        drawHeaderBand(fb, "MERGE HUB");
         drawHackerMerge(fb);
         return;
     }
 
     // PROFILE — the read-only operator viewer (the STAT analog).
-    header("PROFILE");
+    drawHeaderBand(fb, "PROFILE");
     char tag[kHackerTagMax + 8];
     std::snprintf(tag, sizeof(tag), "// %s //", hackerTag_);
     drawText(fb, kMargin, 28, tag, palColor(Pal::INK));

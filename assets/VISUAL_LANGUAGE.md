@@ -131,15 +131,18 @@ ARCH, gear+terminal = CFG). Size 28×28, one master each, dim/bright in engine.
 
 ## 4. Layout grid
 
-The per-screen grids, consolidated into one table. **This table is the intent, not the
-authority** — each screen declares its own `kMargin`/`kRowTop`/`kRowH` in a file-private
-namespace, and those copies have drifted (`docs/MASTER_TODO.md §1f-ii`). Read the matching
-`src/core/ui/*_screen.cpp` for what a screen actually does.
+The per-screen grids, consolidated into one table — the zones to draw art against.
+[`src/core/ui/layout.h`](../src/core/ui/layout.h) is the same grid as numbers, and it is what
+every screen reads: `kMargin` · `kTitleY` · `kHeaderRule` · `kRowTop` · `kRowH` · `kRowIcon` ·
+`kVisibleRows` · `kLineH`. A screen that wants a value off this grid names it for itself
+(`kTrackRowTop`, `kPickRowH`) rather than redefining one of those, so a deviation is visible
+where it happens.
 
 | Screen type | Vertical zones (logical, within 224×224 active) | Columns |
 |---|---|---|
 | **Canvas / carousel** | top track **40** · living area **144** · bottom track **40** | 4 × **56** per track |
-| **Submenu (list/viewer)** | header band **24** · content **~200** · rows **28** → **6 rows** | full width |
+| **Submenu (list/viewer)** | header band **24** (title at **6**, rule at **22**) · content **~200** · rows **28** → **6 rows** | full width |
+| **Hacker sub-screen** | the submenu band, plus a context line at **28** ruled off at **44** | full width |
 | **STAT vitals** | name+stage **~28** · gauge rows **~24** ea · care **~22** | full width |
 | **Modal event** | full **224×224**, no header/track chrome | — |
 

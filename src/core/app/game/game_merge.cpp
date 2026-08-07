@@ -7,6 +7,7 @@
 #include "core/render/canvas.h"
 #include "core/render/font5x7.h"
 #include "core/render/palette.h"
+#include "core/ui/layout.h"
 #include "core/ui/widgets.h"
 
 // game_merge.cpp — the Hacker-face MERGE HUB (MRG) slot: combines two owned
@@ -58,9 +59,7 @@ void Game::craftRecipe(int recipeIndex) {
 }
 
 void Game::drawHackerMerge(Framebuffer& fb) const {
-    constexpr int kMargin = 10;
     constexpr int kIndent = kMargin + 6;         // ingredient lines nest under the title
-    constexpr int kLineH = kFontH + 4;
     constexpr int kRowGap = 6;                   // breathing room between recipes
 
     if (!mergeHubUnlocked()) {   // defensive; the carousel already gates entry

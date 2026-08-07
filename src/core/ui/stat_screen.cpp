@@ -13,6 +13,7 @@
 #include "core/render/framebuffer.h"
 #include "core/render/palette.h"
 #include "core/render/sprite.h"
+#include "core/ui/layout.h"
 #include "core/ui/widgets.h"
 #include "generated/assets.h"
 #include "tunables.h"
@@ -21,7 +22,6 @@ namespace mal {
 
 namespace {
 
-constexpr int kMargin = 8;
 constexpr int kLabelX = kMargin;
 constexpr int kGaugeX = 70;
 constexpr int kGaugeW = 110;
@@ -33,7 +33,7 @@ constexpr int kPageCount = 5;
 // of them) with the active page filled. The pager is the non-colour channel for
 // "which page" (dot position), so the status pages stay distinguishable in grayscale.
 void statHeader(Framebuffer& fb, const char* title, int page) {
-    drawText(fb, kMargin, 6, title, palColor(Pal::INK));
+    drawHeaderBand(fb, title);
     for (int i = 0; i < kPageCount; ++i) {
         const int x = kActiveW - 8 - (kPageCount - i) * 8;
         fb.fillRect(x, 8, 4, 4,
@@ -104,9 +104,7 @@ std::vector<LoadoutRow> buildLoadoutRows(const ContentRegistry& reg,
 
 void drawLoadoutScreen(Framebuffer& fb, const std::vector<LoadoutRow>& rows,
                        int scrollTop, int /*beat*/) {
-    fb.clear(palColor(Pal::PAPER));
     statHeader(fb, "LOADOUT", 1);
-    fb.fillRect(0, 20, kActiveW, 1, palColor(Pal::TRACK));
 
     const int total = static_cast<int>(rows.size());
     const bool overflow = total > kLoadoutVisibleRows;
@@ -193,9 +191,7 @@ constexpr int kBuffRowH = 44;
 constexpr int kBuffEffectLines = 2;
 
 void drawBuffsScreen(Framebuffer& fb, const std::vector<BuffRow>& rows, int /*beat*/) {
-    fb.clear(palColor(Pal::PAPER));
     statHeader(fb, "BUFFS", 2);
-    fb.fillRect(0, 20, kActiveW, 1, palColor(Pal::TRACK));
 
     if (rows.empty()) {
         drawText(fb, kMargin, 60, "- NO ACTIVE BUFFS -", palColor(Pal::INK_DIM));
@@ -222,9 +218,7 @@ void drawBuffsScreen(Framebuffer& fb, const std::vector<BuffRow>& rows, int /*be
 
 void drawSpeciesScreen(Framebuffer& fb, const char* name, const char* line,
                        const char* hint, const char* context, int /*beat*/) {
-    fb.clear(palColor(Pal::PAPER));
     statHeader(fb, "SPECIES", 3);
-    fb.fillRect(0, 20, kActiveW, 1, palColor(Pal::TRACK));
 
     drawText(fb, kMargin, 30, name ? name : "", palColor(Pal::INK));
     if (line && line[0]) {
@@ -235,29 +229,30 @@ void drawSpeciesScreen(Framebuffer& fb, const char* name, const char* line,
         drawText(fb, kActiveW - kMargin - textWidth(tag), 30, tag, palColor(Pal::INK_DIM));
     }
 
-    constexpr int kLineH = kFontH + 3;
+    // Tighter than the grid's kLineH: SPECIES stacks two wrapped prose blocks and
+    // a REFERENCE heading in one screen, and the leading is what has to give.
+    constexpr int kProseLineH = kFontH + 3;
     int y = 50;
     if (hint && hint[0]) {
         drawTextWrapped(fb, kMargin, y, kActiveW - 2 * kMargin, hint,
-                          palColor(Pal::INK), kLineH, 5);
-        y += kLineH * 5 + 8;
+                          palColor(Pal::INK), kProseLineH, 5);
+        y += kProseLineH * 5 + 8;
     } else {
         drawText(fb, kMargin, y, "- NO DATA -", palColor(Pal::INK_DIM));
-        y += kLineH + 8;
+        y += kProseLineH + 8;
     }
 
     drawText(fb, kMargin, y, "REFERENCE", palColor(Pal::INK_DIM));
     y += kFontH + 4;
     if (context && context[0])
         drawTextWrapped(fb, kMargin, y, kActiveW - 2 * kMargin, context,
-                          palColor(Pal::INK_DIM), kLineH, 3);
+                          palColor(Pal::INK_DIM), kProseLineH, 3);
 }
 
 void drawStatScreen(Framebuffer& fb, const PetModel& m, const char* name,
                     Stage stage, int generation, int level, int combatXp,
                     int xpToNext, int beat, bool hasNextEvo, uint32_t evoRemainMs) {
     const bool pulseOn = ((beat / 2) & 1) == 0;   // ~1Hz
-    fb.clear(palColor(Pal::PAPER));
     statHeader(fb, "STAT", 0);
 
     // Name · generation · stage.
@@ -331,9 +326,7 @@ const SpriteData* logGlyph(LogEventType t) {
 } // namespace
 
 void drawAuditLog(Framebuffer& fb, const EventLog& log, int /*beat*/) {
-    fb.clear(palColor(Pal::PAPER));
     statHeader(fb, "AUDIT LOG", 4);
-    fb.fillRect(0, 20, kActiveW, 1, palColor(Pal::TRACK));
 
     // The log lives on its own page now, so it can show more than the old 3-line
     // teaser — the last 6 events, newest-first (the ring keeps 8).

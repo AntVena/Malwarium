@@ -5,6 +5,8 @@
 #include "core/render/framebuffer.h"
 #include "core/render/palette.h"
 #include "core/render/sprite.h"
+#include "core/ui/layout.h"
+#include "core/ui/widgets.h"
 #include "generated/assets.h"
 
 namespace mal {
@@ -210,10 +212,7 @@ void drawCarousel(Framebuffer& fb, int cursor, UiMode mode, int beat,
 }
 
 void drawPlaceholderSubmenu(Framebuffer& fb, const char* title) {
-    fb.clear(palColor(Pal::PAPER));
-    // Header band: title at left + a divider rule.
-    drawText(fb, 8, 6, title, palColor(Pal::INK));
-    fb.fillRect(0, 22, kActiveW, 1, palColor(Pal::TRACK));
+    drawHeaderBand(fb, title);
     // Centered status tag — this category's submenu isn't built yet.
     drawTextCentered(fb, 0, kActiveW, kActiveH / 2 - 7, "SOON", palColor(Pal::INK_DIM), 2);
 }

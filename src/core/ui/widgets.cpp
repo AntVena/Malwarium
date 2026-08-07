@@ -1,11 +1,23 @@
 #include "core/ui/widgets.h"
 
 #include "tunables.h"
+#include "core/render/canvas.h"
 #include "core/render/font5x7.h"
 #include "core/render/framebuffer.h"
 #include "core/render/palette.h"
+#include "core/ui/layout.h"
 
 namespace mal {
+
+void drawHeaderBand(Framebuffer& fb, const char* title, const char* right,
+                    Rgb565 rightColor, Rgb565 titleColor) {
+    fb.clear(palColor(Pal::PAPER));
+    drawText(fb, kMargin, kTitleY, title, titleColor);
+    if (right && right[0])
+        drawText(fb, kActiveW - kMargin - textWidth(right), kTitleY, right,
+                 rightColor);
+    fb.fillRect(0, kHeaderRule, kActiveW, 1, palColor(Pal::TRACK));
+}
 
 namespace {
 

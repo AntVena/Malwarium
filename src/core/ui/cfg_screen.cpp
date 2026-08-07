@@ -12,6 +12,7 @@
 #include "core/render/qrcodegen.h"  // real QR encode for the 'Pedia AP landing URL
 #include "core/render/sprite.h"
 #include "core/ui/expl_screen.h"  // sectorTitle, kExplSectors
+#include "core/ui/layout.h"
 #include "core/ui/widgets.h"
 #include "dev_config.h"
 #include "generated/assets.h"
@@ -20,18 +21,6 @@ namespace mal {
 
 namespace {
 
-constexpr int kMargin = 8;
-constexpr int kHeaderRule = 22;
-constexpr int kRowTop = 26;
-constexpr int kRowH = 28;
-constexpr int kIcon = 20;
-constexpr int kVisibleRows = 6;   // rows that fit under the header (see items_screen)
-
-void header(Framebuffer& fb, const char* title) {
-    fb.clear(palColor(Pal::PAPER));
-    drawText(fb, kMargin, 6, title, palColor(Pal::INK));
-    fb.fillRect(0, kHeaderRule, kActiveW, 1, palColor(Pal::TRACK));
-}
 
 // A simple key/value info line for the read-only viewers.
 void infoLine(Framebuffer& fb, int y, const char* key, const char* val,
@@ -67,7 +56,7 @@ void settingsRow(Framebuffer& fb, int y, const CfgRow& row, bool focused,
         drawRowCursor(fb, 8, y + (kRowH - 7) / 2, palColor(Pal::ACCENT));
     }
     if (row.icon)
-        drawSprite(fb, *row.icon, 0, 16, y + (kRowH - kIcon) / 2);
+        drawSprite(fb, *row.icon, 0, 16, y + (kRowH - kRowIcon) / 2);
     drawText(fb, 40, y + (kRowH - kFontH) / 2, row.label, palColor(Pal::INK));
     if (val)
         drawText(fb, kActiveW - kMargin - textWidth(val),
@@ -219,7 +208,7 @@ CfgScreen cfgParentGroup(CfgScreen s) {
 
 void drawCfgList(Framebuffer& fb, int cursor, const char* hackerTag,
                  const char* equippedTitle, RadioOwner radioOwner) {
-    header(fb, "CFG");
+    drawHeaderBand(fb, "CFG");
     const CfgRow* rows = nullptr;
     const int n = cfgRows(rows);
 
@@ -249,7 +238,7 @@ void drawCfgList(Framebuffer& fb, int cursor, const char* hackerTag,
 }
 
 void drawCfgDevice(Framebuffer& fb, int cursor, UiMode uiMode, int brightness) {
-    header(fb, "DEVICE");
+    drawHeaderBand(fb, "DEVICE");
     const CfgRow* rows = nullptr;
     const int n = cfgGroupRows(CfgScreen::Device, rows);
 
@@ -266,7 +255,7 @@ void drawCfgDevice(Framebuffer& fb, int cursor, UiMode uiMode, int brightness) {
 }
 
 void drawTravelConfirm(Framebuffer& fb, int pick) {
-    header(fb, "TRAVEL MODE?");
+    drawHeaderBand(fb, "TRAVEL MODE?");
 
     // What it costs and what it buys, in that order. "Nothing ages" is the whole
     // point of the mode and the reason it is not the same as switching the device
@@ -295,7 +284,7 @@ void drawTravelConfirm(Framebuffer& fb, int pick) {
 }
 
 void drawTravelSleeping(Framebuffer& fb) {
-    header(fb, "TRAVEL MODE");
+    drawHeaderBand(fb, "TRAVEL MODE");
     drawText(fb, kMargin, 80, "GOING TO SLEEP...", palColor(Pal::INK));
     drawText(fb, kMargin, 104, "HOLD B+C TOGETHER", palColor(Pal::ACCENT));
     drawText(fb, kMargin, 116, "TO WAKE ME UP.", palColor(Pal::ACCENT));
@@ -303,7 +292,7 @@ void drawTravelSleeping(Framebuffer& fb) {
 
 void drawCfgRadio(Framebuffer& fb, int cursor, RadioOwner owner, int auditLevel,
                   bool linkOn, bool apOn, bool updateLive) {
-    header(fb, "RADIO");
+    drawHeaderBand(fb, "RADIO");
     const CfgRow* rows = nullptr;
     const int n = cfgGroupRows(CfgScreen::Radio, rows);
 
@@ -373,7 +362,7 @@ void drawSysInfo(Framebuffer& fb, uint32_t uptimeMs, UiMode uiMode,
                  const PowerStatus& power, const SdStatus& sd, bool captureEnabled,
                  int handshakesSeen, const char* equippedTitle, RadioOwner owner,
                  float holdFrac) {
-    header(fb, "SYSTEM INFO");
+    drawHeaderBand(fb, "SYSTEM INFO");
 
     // RADIO: which contender the arbiter has actually granted, named in
     // words. Four toggles resolve to one owner, and this is the only screen that
@@ -460,7 +449,7 @@ void drawSysInfo(Framebuffer& fb, uint32_t uptimeMs, UiMode uiMode,
 }
 
 void drawHackerTag(Framebuffer& fb, const char* tag, int caret) {
-    header(fb, "HACKERTAG");
+    drawHeaderBand(fb, "HACKERTAG");
 
     // Arcade entry grid: one cell per character, caret highlighted, a trailing ⏎
     // confirm cell. A/B/C carry editor meanings, so a hint band is shown.
@@ -492,7 +481,7 @@ void drawHackerTag(Framebuffer& fb, const char* tag, int caret) {
 }
 
 void drawUiModeToggle(Framebuffer& fb, int pick, UiMode current) {
-    header(fb, "UI MODE");
+    drawHeaderBand(fb, "UI MODE");
     const UiMode modes[3] = {UiMode::IconsLabel, UiMode::IconsOnly,
                              UiMode::TextOnly};
     for (int i = 0; i < 3; ++i) {
@@ -512,7 +501,7 @@ void drawUiModeToggle(Framebuffer& fb, int pick, UiMode current) {
 }
 
 void drawBrightness(Framebuffer& fb, int pick, int current) {
-    header(fb, "BRIGHTNESS");
+    drawHeaderBand(fb, "BRIGHTNESS");
     if (pick < 0) pick = 0;
     if (pick >= kBrightnessLevels) pick = kBrightnessLevels - 1;
 
@@ -547,7 +536,7 @@ void drawBrightness(Framebuffer& fb, int pick, int current) {
 
 void drawTitles(Framebuffer& fb, int focusSector, uint32_t unlockedMask,
                 int equippedSector) {
-    header(fb, "TITLE");
+    drawHeaderBand(fb, "TITLE");
     drawText(fb, kMargin, 30, "EARNED BY CLEARING ZONES.", palColor(Pal::INK_DIM));
 
     // Row 0 is NONE (sector -1); rows 1..kExplSectors are each sector's Title.
@@ -577,7 +566,7 @@ void drawTitles(Framebuffer& fb, int focusSector, uint32_t unlockedMask,
 }
 
 void drawAuditMode(Framebuffer& fb, int pick, int current) {
-    header(fb, "AUDIT");
+    drawHeaderBand(fb, "AUDIT");
 
     // The escalating ladder is the whole point of the screen — each step spells out
     // what it does + its battery cost, so raising it is an informed, affirmative
@@ -608,7 +597,7 @@ void drawAuditMode(Framebuffer& fb, int pick, int current) {
 }
 
 void drawApToggle(Framebuffer& fb, int pick, bool current) {
-    header(fb, "PEDIA AP");
+    drawHeaderBand(fb, "PEDIA AP");
 
     // The 'Pedia local Access Point: hosts a small Wi-Fi network + web page (no
     // internet). Naming the SSID + URL here is the whole affordance — connect,
@@ -635,7 +624,7 @@ void drawApToggle(Framebuffer& fb, int pick, bool current) {
 }
 
 void drawLinkToggle(Framebuffer& fb, int pick, bool current, bool ambientStarved) {
-    header(fb, "LINK");
+    drawHeaderBand(fb, "LINK");
 
     // The consent this row asks for is the whole affordance, so it is spelled out
     // rather than implied: LINK TRANSMITS. It is deliberately not folded into the
@@ -737,7 +726,7 @@ void drawUpdateCheck(Framebuffer& fb, bool ready, bool provisioned,
                      bool sourceKnown, const UpdateStatus& status,
                      const NetStatus& net, const char* firmwareVersion,
                      const char* manifestUrl, int row) {
-    header(fb, "UPDATES");
+    drawHeaderBand(fb, "UPDATES");
 
     // What is on this device right now, so the verdict below has something to be
     // newer THAN. The web bundle's own version is only known once a check has read
@@ -874,7 +863,7 @@ void drawUpdateCheck(Framebuffer& fb, bool ready, bool provisioned,
 
 void drawUpdateConfirm(Framebuffer& fb, UpdateTarget target, const char* fromVersion,
                        const char* toVersion, int pick) {
-    header(fb, "INSTALL?");
+    drawHeaderBand(fb, "INSTALL?");
 
     const bool fw = target == UpdateTarget::Firmware;
     drawText(fb, kMargin, 30, fw ? "FIRMWARE" : "PEDIA SITE", palColor(Pal::INK));
@@ -914,7 +903,7 @@ void drawUpdateConfirm(Framebuffer& fb, UpdateTarget target, const char* fromVer
 
 void drawUpdateProgress(Framebuffer& fb, const InstallStatus& install,
                         const NetStatus& net) {
-    header(fb, "INSTALLING");
+    drawHeaderBand(fb, "INSTALLING");
 
     const bool fw = install.target == UpdateTarget::Firmware;
     drawText(fb, kMargin, 30, fw ? "FIRMWARE" : "PEDIA SITE", palColor(Pal::INK));
@@ -1040,7 +1029,7 @@ void drawPediaQr(Framebuffer& fb, int page, bool provisioned) {
     const bool join = (page == 0);
     const bool setup = !provisioned && page == 1;
 
-    header(fb, join ? "QR: JOIN WI-FI" : setup ? "QR: SET UP WI-FI" : "QR: OPEN PEDIA");
+    drawHeaderBand(fb, join ? "QR: JOIN WI-FI" : setup ? "QR: SET UP WI-FI" : "QR: OPEN PEDIA");
 
     const char* payload = join  ? "WIFI:S:Malwarium;T:nopass;;"
                         : setup ? "http://192.168.4.1/setup"
@@ -1072,7 +1061,7 @@ void drawPediaQr(Framebuffer& fb, int page, bool provisioned) {
 }
 
 void drawUpdateQr(Framebuffer& fb, const char* manifestUrl) {
-    header(fb, "QR: FLASH BY USB");
+    drawHeaderBand(fb, "QR: FLASH BY USB");
 
     char url[192];
     if (!updateFlasherUrl(manifestUrl, url, sizeof(url))) {
@@ -1106,7 +1095,7 @@ void drawUpdateQr(Framebuffer& fb, const char* manifestUrl) {
 }
 
 void drawFactoryReset(Framebuffer& fb, int scope, float holdFrac) {
-    header(fb, "FACTORY RESET");
+    drawHeaderBand(fb, "FACTORY RESET");
     const char* scopeName = scope == 0 ? "RESET PET" : "WIPE EVERYTHING";
     char line[28];
     std::snprintf(line, sizeof(line), "SCOPE: %s", scopeName);

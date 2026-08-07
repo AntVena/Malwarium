@@ -8,27 +8,13 @@
 #include "core/render/framebuffer.h"
 #include "core/render/palette.h"
 #include "core/render/sprite.h"
+#include "core/ui/layout.h"
 #include "core/ui/widgets.h"
 #include "generated/assets.h"
 
 namespace mal {
 
 namespace {
-
-constexpr int kMargin = 8;
-constexpr int kHeaderRule = 22;
-constexpr int kRowTop = 26;
-constexpr int kRowH = 28;
-constexpr int kIcon = 20;
-
-void header(Framebuffer& fb, const char* title, const char* right) {
-    fb.clear(palColor(Pal::PAPER));
-    drawText(fb, kMargin, 6, title, palColor(Pal::INK));
-    if (right)
-        drawText(fb, kActiveW - kMargin - textWidth(right), 6, right,
-                 palColor(Pal::INK_DIM));
-    fb.fillRect(0, kHeaderRule, kActiveW, 1, palColor(Pal::TRACK));
-}
 
 // One rack row: slot glyph + name + stage caption + a right-aligned status.
 // `slotIcon` distinguishes a live slot from a record's spent one, so the row's
@@ -40,7 +26,7 @@ void rackRow(Framebuffer& fb, int y, bool focused, const SpriteData& slotIcon,
         fb.fillRect(4, y + 2, kActiveW - 8, kRowH - 4, palColor(Pal::TRACK));
         drawRowCursor(fb, 8, y + (kRowH - 7) / 2, palColor(Pal::ACCENT));
     }
-    drawSprite(fb, slotIcon, 0, 16, y + (kRowH - kIcon) / 2);
+    drawSprite(fb, slotIcon, 0, 16, y + (kRowH - kRowIcon) / 2);
     drawText(fb, 40, y + (kRowH - kFontH) / 2, name, palColor(Pal::INK));
     drawText(fb, 40, y + kRowH - kFontH, stage, palColor(Pal::INK_DIM));
     drawText(fb, kActiveW - kMargin - textWidth(status), y + (kRowH - kFontH) / 2,
@@ -65,7 +51,7 @@ void drawArchList(Framebuffer& fb, const ContentRegistry& reg,
     char slots[16];
     std::snprintf(slots, sizeof(slots), "SLOTS %d/%d",
                   static_cast<int>(rack.size()), maxSlots);
-    header(fb, "ARCH", slots);
+    drawHeaderBand(fb, "ARCH", slots);
 
     if (!active && rack.empty() && records.empty()) {
         drawText(fb, kMargin, kRowTop + 8, "- NO PETS -", palColor(Pal::INK_DIM));
@@ -99,7 +85,7 @@ void drawArchRecordDetail(Framebuffer& fb, const ContentRegistry& reg,
                           const SaveRecord& rec) {
     const CreatureDef* c = reg.creature(rec.id);
     const char* tag = recordStatusTag(rec);
-    header(fb, c ? c->displayName : "?", tag);
+    drawHeaderBand(fb, c ? c->displayName : "?", tag);
 
     char sub[28];
     std::snprintf(sub, sizeof(sub), "%s  GEN %d",
@@ -117,10 +103,10 @@ void drawArchRecordDetail(Framebuffer& fb, const ContentRegistry& reg,
 void drawArchRecord(Framebuffer& fb, const CreatureDef* pet, bool isActive,
                     int generation, ArchAction action, bool sellEnabled,
                     bool rackFull, bool confirmOpen, int confirmChoice) {
-    if (!pet) { header(fb, "ARCH", nullptr); return; }
+    if (!pet) { drawHeaderBand(fb, "ARCH"); return; }
     char title[28];
     std::snprintf(title, sizeof(title), "%s", pet->displayName);
-    header(fb, title, isActive ? "ACTIVE" : "STORED");
+    drawHeaderBand(fb, title, isActive ? "ACTIVE" : "STORED");
 
     char sub[28];
     std::snprintf(sub, sizeof(sub), "%s  GEN %d", stageName(pet->stage), generation);

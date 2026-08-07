@@ -10,15 +10,16 @@
 #include "core/render/framebuffer.h"
 #include "core/render/palette.h"
 #include "core/render/sprite.h"
+#include "core/ui/layout.h"
 #include "core/ui/widgets.h"
 
 namespace mal {
 
 namespace {
 
-constexpr int kMargin = 8;
-constexpr int kRowTop = 40;
-constexpr int kRowH = 28;
+// EXPL's list starts below the top carousel track (kTrackH), not under a plain
+// header band — hence its own name rather than layout.h's kRowTop.
+constexpr int kTrackRowTop = 40;
 
 // Difficulty pips: `filled` of `total` (UI_DIFFICULTY_PIPS stub — small filled/empty
 // squares so the tier reads in grayscale by count + fill). `total` is the scale the
@@ -175,7 +176,6 @@ RowTag rowTag(ExplRowState s) {
 constexpr int kListTop = 26;
 constexpr int kListBottom = kActiveH - 16;           // the hint band
 constexpr int kIconX = 10;
-constexpr int kIcon = 20;
 constexpr int kTextX = 34;
 constexpr int kRowMax = 30;                          // two lines + breathing room
 constexpr int kRowMin = 14;                          // one line, the packed floor
@@ -191,8 +191,8 @@ constexpr int kLevelRowsMax =
 // yet, and a column of identical frames would drown the one zone that does.
 void drawIconSlot(Framebuffer& fb, const SpriteData* icon, int x, int y, Rgb565 tint) {
     if (icon) { drawSpriteTinted(fb, *icon, 0, x, y, tint); return; }
-    fb.fillRect(x, y, kIcon, kIcon, palColor(Pal::TRACK));
-    fb.fillRect(x + 1, y + 1, kIcon - 2, kIcon - 2, palColor(Pal::PAPER));
+    fb.fillRect(x, y, kRowIcon, kRowIcon, palColor(Pal::TRACK));
+    fb.fillRect(x + 1, y + 1, kRowIcon - 2, kRowIcon - 2, palColor(Pal::PAPER));
 }
 
 // An area's sector glyph, by the ICON_SECTOR_<AREA_ID> convention (the same
@@ -209,17 +209,17 @@ const SpriteData* sectorIcon(const ContentRegistry& reg, int areaIdx) {
 } // namespace
 
 void drawExplList(Framebuffer& fb, const ContentRegistry& reg, const ExplListView& v) {
-    fb.clear(palColor(Pal::PAPER));
-    // Breadcrumb header — the nav level, spelled out. Inside an area the area's NAME is
-    // the crumb, which is why the row beneath it is the area's boss and not its name
-    // again. The 5x7 font has no '>', so the row cursor's triangle is the separator.
-    drawText(fb, kMargin, 6, "EXPL", palColor(Pal::INK));
+    // Breadcrumb header — the nav level, spelled out on the band's title. Inside an
+    // area the area's NAME is the crumb, which is why the row beneath it is the area's
+    // boss and not its name again. The 5x7 font has no '>', so the row cursor's
+    // triangle is the separator.
+    drawHeaderBand(fb, "EXPL");
     if (v.navArea >= 0) {
-        drawRowCursor(fb, kMargin + textWidth("EXPL") + 6, 6, palColor(Pal::INK_DIM));
-        drawText(fb, kMargin + textWidth("EXPL") + 16, 6, explSectorName(v.navArea),
-                 palColor(Pal::ACCENT));
+        drawRowCursor(fb, kMargin + textWidth("EXPL") + 6, kTitleY,
+                      palColor(Pal::INK_DIM));
+        drawText(fb, kMargin + textWidth("EXPL") + 16, kTitleY,
+                 explSectorName(v.navArea), palColor(Pal::ACCENT));
     }
-    fb.fillRect(0, 22, kActiveW, 1, palColor(Pal::TRACK));
 
     // THE LEVEL IS THE LIST (explRowInLevel): the top level draws the DeepWeb row plus
     // one row per AREA, and drilling into an area swaps the whole screen for that area's
@@ -288,7 +288,7 @@ void drawExplList(Framebuffer& fb, const ContentRegistry& reg, const ExplListVie
             fb.fillRect(8, y + pitch - 1, kActiveW - 16, 1, palColor(Pal::TRACK));
             if (!locked)
                 drawIconSlot(fb, reg.sprite(kDeepWebIcon), kIconX,
-                             y + (pitch - kIcon) / 2, palColor(Pal::INK));
+                             y + (pitch - kRowIcon) / 2, palColor(Pal::INK));
             title = locked ? "??????" : "DEEPWEB DIVE";
             titleInk = locked ? palColor(Pal::INK_DIM) : zoneInk;
             if (!locked && v.bestDeepWebDepth > 0)
@@ -302,7 +302,7 @@ void drawExplList(Framebuffer& fb, const ContentRegistry& reg, const ExplListVie
             const bool locked = (st == ExplRowState::AreaLocked);
             if (!locked)
                 drawIconSlot(fb, sectorIcon(reg, areaIdx), kIconX,
-                             y + (pitch - kIcon) / 2, palColor(Pal::INK));
+                             y + (pitch - kRowIcon) / 2, palColor(Pal::INK));
             title = locked ? "??????" : explSectorName(areaIdx);
             titleInk = locked ? palColor(Pal::INK_DIM) : zoneInk;
             if (!locked && twoLine) {
@@ -318,7 +318,7 @@ void drawExplList(Framebuffer& fb, const ContentRegistry& reg, const ExplListVie
             // names the area, so this row spends its title on the BOSS — named only once
             // it's reachable, so the marquee fight stays a reveal rather than a spoiler
             // on a row you can't press yet.
-            drawIconSlot(fb, sectorIcon(reg, areaIdx), kIconX, y + (pitch - kIcon) / 2,
+            drawIconSlot(fb, sectorIcon(reg, areaIdx), kIconX, y + (pitch - kRowIcon) / 2,
                          palColor(Pal::INK));
             const bool named = (st == ExplRowState::AreaBossReady ||
                                 st == ExplRowState::AreaCleared);
@@ -345,7 +345,7 @@ void drawExplList(Framebuffer& fb, const ContentRegistry& reg, const ExplListVie
             const bool locked = (st == ExplRowState::SubLocked);
             char num[4];
             std::snprintf(num, sizeof(num), "%d", sub + 1);
-            drawText(fb, kIconX + (kIcon - textWidth(num)) / 2,
+            drawText(fb, kIconX + (kRowIcon - textWidth(num)) / 2,
                      y + (pitch - kFontH) / 2, num, palColor(Pal::INK_DIM));
             title = locked ? "??????" : explSubAreaName(areaIdx, sub);
             titleInk = locked ? palColor(Pal::INK_DIM) : palColor(Pal::INK);
@@ -508,9 +508,8 @@ void drawExploreControl(Framebuffer& fb, int cursor, bool hasWarpKey,
 void drawEncounterIntro(Framebuffer& fb, const char* enemyName, int diffPips,
                         int level, const SpriteData* enemySprite,
                         bool sinkholeAvailable, int choice, int beat) {
-    fb.clear(palColor(Pal::PAPER));
-    drawText(fb, kMargin, 6, "WILD MALBEAST", palColor(Pal::WARN));
-    fb.fillRect(0, 22, kActiveW, 1, palColor(Pal::TRACK));
+    drawHeaderBand(fb, "WILD MALBEAST", nullptr, palColor(Pal::INK_DIM),
+                   palColor(Pal::WARN));
 
     if (enemySprite) {
         const int frame = idleFrame(*enemySprite, beat);
@@ -547,9 +546,7 @@ void drawEncounterIntro(Framebuffer& fb, const char* enemyName, int diffPips,
 
 void drawWifiEvent(Framebuffer& fb, const char* sectorName,
                    const char* outcomeLine, const char* discoveryLine) {
-    fb.clear(palColor(Pal::PAPER));
-    drawText(fb, kMargin, 6, sectorName, palColor(Pal::INK));
-    fb.fillRect(0, 22, kActiveW, 1, palColor(Pal::TRACK));
+    drawHeaderBand(fb, sectorName);
 
     // The real-network-discovery beat (new / familiar / home-turf / empty-queue)
     // sits in the gap above the guardian/cache/friendly banner — an independent
@@ -617,15 +614,11 @@ void drawShopRow(Framebuffer& fb, int rowY, const ShopRowView& row, bool selecte
 void drawShop(Framebuffer& fb, const char* storeName, int walletBits,
               const ShopRowView* rows, int rowCount, int cursor,
               const char* selectedDescription, const char* statusLine) {
-    fb.clear(palColor(Pal::PAPER));
     // Storefront banner + wallet header (dual-coded: the numbers carry meaning,
     // colour is only emphasis).
-    drawText(fb, kMargin, 6, storeName, palColor(Pal::INK));
     char wallet[16];
     std::snprintf(wallet, sizeof(wallet), "%dB", walletBits);
-    drawText(fb, kActiveW - kMargin - textWidth(wallet), 6, wallet,
-             palColor(Pal::ACCENT));
-    fb.fillRect(0, 22, kActiveW, 1, palColor(Pal::TRACK));
+    drawHeaderBand(fb, storeName, wallet, palColor(Pal::ACCENT));
 
     // Windowed list (mirrors the Rig Shop, game_hacker.cpp's drawHackerSubmenu) —
     // an arbitrary listing count scrolls past kShopMaxRows instead of growing
@@ -677,16 +670,14 @@ void drawShop(Framebuffer& fb, const char* storeName, int walletBits,
 
 void drawWarpPicker(Framebuffer& fb, const char* const* keyNames, int keyCount,
                     int cursor) {
-    fb.clear(palColor(Pal::PAPER));
     // Header: what this is, spelled out so it reads without colour.
-    drawText(fb, kMargin, 6, "WARP KEY", palColor(Pal::INK));
-    fb.fillRect(0, 22, kActiveW, 1, palColor(Pal::TRACK));
+    drawHeaderBand(fb, "WARP KEY");
     drawText(fb, kMargin, 28, "JUMP TO...", palColor(Pal::INK_DIM));
 
     // One row per held key, cursor-highlighted (a filled track + the row cursor —
     // the same idiom as the sector list / shop row, so it reads in grayscale).
     for (int i = 0; i < keyCount; ++i) {
-        const int y = kRowTop + i * kRowH;
+        const int y = kTrackRowTop + i * kRowH;
         if (i == cursor) {
             fb.fillRect(4, y + 2, kActiveW - 8, kRowH - 4, palColor(Pal::TRACK));
             drawRowCursor(fb, 8, y + (kRowH - 7) / 2, palColor(Pal::ACCENT));
@@ -707,9 +698,7 @@ void drawWarpPicker(Framebuffer& fb, const char* const* keyNames, int keyCount,
 void drawPostEncounter(Framebuffer& fb, int bwBefore, int bwAfter, int bwMax,
                        PostEncounterFragState fragState, int fragDelta,
                        const char* levelLine) {
-    fb.clear(palColor(Pal::PAPER));
-    drawText(fb, kMargin, 6, "STATUS", palColor(Pal::INK));
-    fb.fillRect(0, 22, kActiveW, 1, palColor(Pal::TRACK));
+    drawHeaderBand(fb, "STATUS");
 
     // Bandwidth line: current/max + this encounter's delta, dual-coded by the
     // explicit signed number — except when there was nothing left to spend

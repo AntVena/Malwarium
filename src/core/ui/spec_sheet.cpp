@@ -5,12 +5,12 @@
 #include "core/render/font5x7.h"
 #include "core/render/framebuffer.h"
 #include "core/render/palette.h"
+#include "core/ui/layout.h"
 #include "core/ui/widgets.h"
 
 namespace mal {
 
 namespace {
-constexpr int kLineH = 12;      // one text line + leading, shared by grid and prose
 constexpr int kBlockGap = 4;    // between the name, the readout and the prose
 }  // namespace
 

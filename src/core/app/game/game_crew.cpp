@@ -10,6 +10,7 @@
 #include "core/render/font5x7.h"
 #include "core/render/palette.h"
 #include "core/render/sprite.h"
+#include "core/ui/layout.h"
 #include "core/ui/theme.h"
 #include "core/ui/widgets.h"
 #include "generated/assets.h"
@@ -33,8 +34,6 @@
 namespace mal {
 
 namespace {
-constexpr int kMargin = 10;
-constexpr int kLineH = kFontH + 5;
 // The picker window. Each row is a name line plus room for the HOME/LIVE sub-tags
 // beneath it; six of them clear the body between the header rule and the hint band.
 constexpr int kNetRowPitch = kFontH + 14;
@@ -158,7 +157,7 @@ void Game::drawHackerCrew(Framebuffer& fb) const {
     if (crewNetPicker_) {
         CrewNetRow rows[kNetMaxRows];
         const int n = crewNetworkRows(rows, kNetMaxRows);
-        drawText(fb, kMargin, 28, "PICK HOME NET", palColor(Pal::INK));
+        drawText(fb, kMargin, kContextY, "PICK HOME NET", palColor(Pal::INK));
         // The radio has exactly ONE owner (platform RadioArbiter, priority AP >
         // CAPTURE > SCAN), so name whoever actually holds it rather than claiming
         // SCANNING unconditionally: an empty list means something completely
@@ -169,7 +168,7 @@ void Game::drawHackerCrew(Framebuffer& fb) const {
         const char* radioState = apEnabled_                 ? "AP HAS RADIO"
                                  : auditCapture_.capturing() ? "CAPTURE HAS RADIO"
                                                              : "SCANNING";
-        drawText(fb, kActiveW - kMargin - textWidth(radioState), 28, radioState,
+        drawText(fb, kActiveW - kMargin - textWidth(radioState), kContextY, radioState,
                  starved ? palColor(Pal::WARN) : palColor(Pal::INK_DIM));
 
         if (n == 0) {
@@ -229,12 +228,12 @@ void Game::drawHackerCrew(Framebuffer& fb) const {
     // HOME NET row — the gate everything below reads from, so it leads.
     const bool homeSel = crewRow_ == 0;
     if (homeSel) drawRowCursor(fb, 2, 29, palColor(Pal::ACCENT));
-    drawText(fb, kMargin, 28, "HOME NET",
+    drawText(fb, kMargin, kContextY, "HOME NET",
              homeSel ? palColor(Pal::INK) : palColor(Pal::INK_DIM));
     const char* homeVal = hasHomeNetwork() ? homeNetworkName_ : "NOT SET";
-    drawText(fb, kActiveW - kMargin - textWidth(homeVal), 28, homeVal,
+    drawText(fb, kActiveW - kMargin - textWidth(homeVal), kContextY, homeVal,
              hasHomeNetwork() ? palColor(Pal::INK) : palColor(Pal::WARN));
-    fb.fillRect(0, 44, kActiveW, 1, palColor(Pal::TRACK));
+    fb.fillRect(0, kContextRule, kActiveW, 1, palColor(Pal::TRACK));
 
     // One block per crew: name + team, motto, the Exploit it grants, and the state.
     // Windowed (kCrewVisibleRows) — the roster is a content table free to grow, so the

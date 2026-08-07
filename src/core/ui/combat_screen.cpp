@@ -11,6 +11,7 @@
 #include "core/render/framebuffer.h"
 #include "core/render/palette.h"
 #include "core/render/sprite.h"
+#include "core/ui/layout.h"
 #include "core/ui/widgets.h"
 #include "generated/assets.h"
 
@@ -18,7 +19,6 @@ namespace mal {
 
 namespace {
 
-constexpr int kMargin = 8;
 
 // Player Health zone from the remaining fraction (vitality polarity): cool
 // -> warn -> hot+pulse as it empties, the same danger language as a Critical vital.
@@ -167,7 +167,7 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
     // Difficulty pips already showed once, on the pre-fight encounter intro
     // (drawEncounterIntro, expl_screen.cpp) — repeating them here just ate a
     // full header row for no new information, so this HUD skips them.
-    drawText(fb, kMargin, 6, en.name, palColor(Pal::INK));
+    drawText(fb, kMargin, kTitleY, en.name, palColor(Pal::INK));
 
     // Override pip (UI_OVERRIDE_PIP): bright ready / greyed spent. With more
     // than one Exploit use a small "xN" count of the remaining uses rides

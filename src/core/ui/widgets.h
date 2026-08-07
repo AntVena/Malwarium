@@ -1,4 +1,5 @@
 // widgets.h — reusable engine-drawn UI primitives (no art files).
+//   UI_SUBMENU_HEADER   title + optional right label + divider rule
 //   UI_GAUGE         10-cell segmented bar (dual-coded: fill level + zone colour)
 //   UI_CARE_PIPS     2 Good + gate + 3 Bad mistake budget
 //   UI_STAGE_INDICATOR  4 lifecycle nodes
@@ -8,10 +9,30 @@
 #include "core/content/effect_text.h"   // SpecRow — drawSpecGrid's input
 #include "core/model/pet_model.h"
 #include "core/render/color.h"
+#include "core/render/palette.h"   // palColor — drawHeaderBand's default right colour
 
 namespace mal {
 
 class Framebuffer;
+
+// UI_SUBMENU_HEADER: the band every list and viewer screen opens with — `title`
+// at the left margin, `right` (optional) right-aligned opposite it, and the
+// divider rule under both, all on layout.h's grid.
+//
+// It clears the canvas to PAPER first, because opening a screen with this band IS
+// what every list and viewer does, and thirty copies of the same clear is how the
+// per-screen header helpers drifted apart. A screen that wants a backdrop under
+// its band is the growth point that splits the clear back out.
+//
+// Both colours are the caller's because what a label MEANS varies — ARCH's slot
+// count is secondary information (INK_DIM), SHOP's Bits wallet is the thing the
+// screen is about (ACCENT), the cache screens tint by rarity, and the wild
+// encounter's title is the alarm itself (WARN). Only ever emphasis: the words are
+// already there, so the band survives the grayscale gate either way.
+void drawHeaderBand(Framebuffer& fb, const char* title,
+                    const char* right = nullptr,
+                    Rgb565 rightColor = palColor(Pal::INK_DIM),
+                    Rgb565 titleColor = palColor(Pal::INK));
 
 // Segmented 10-cell gauge in the box (x,y,w,h). `value` 0..100 sets lit cells
 // (floor(value/10)). Vitality/Hazard polarity is already baked into `zone`.

@@ -12,6 +12,7 @@
 #include "core/render/framebuffer.h"
 #include "core/render/palette.h"
 #include "core/render/sprite.h"
+#include "core/ui/layout.h"
 #include "core/ui/spec_sheet.h"
 #include "core/ui/theme.h"
 #include "core/ui/widgets.h"
@@ -20,12 +21,6 @@ namespace mal {
 
 namespace {
 
-constexpr int kMargin = 8;
-constexpr int kHeaderRule = 22;
-constexpr int kRowTop = 26;
-constexpr int kRowH = 28;
-constexpr int kVisibleRows = 6;
-constexpr int kIcon = 20;
 
 // Group key orders the list; lower sorts first. -1 == the Lockout RESOLVE group.
 int groupKey(const ItemDef& d, bool lockout) {
@@ -74,15 +69,13 @@ void drawRarityPips(Framebuffer& fb, int x, int y, ItemDef::Rarity r) {
 constexpr int kDetailPanelTop = 56;
 constexpr int kDetailPanelBottom = 146;
 
-void drawHeaderBand(Framebuffer& fb, const char* title, int sel, int total) {
-    drawText(fb, kMargin, 6, title, palColor(Pal::INK));
-    if (total > kVisibleRows) {  // n/total when the list scrolls
-        char nt[12];
-        std::snprintf(nt, sizeof(nt), "%d/%d", sel, total);
-        drawText(fb, kActiveW - kMargin - textWidth(nt), 6, nt,
-                 palColor(Pal::INK_DIM));
-    }
-    fb.fillRect(0, kHeaderRule, kActiveW, 1, palColor(Pal::TRACK));
+// The band with ITEMS' own right label: the n/total position counter, shown only
+// once the list is long enough to scroll out from under the cursor.
+void listHeader(Framebuffer& fb, const char* title, int sel, int total) {
+    char nt[12];
+    nt[0] = '\0';
+    if (total > kVisibleRows) std::snprintf(nt, sizeof(nt), "%d/%d", sel, total);
+    drawHeaderBand(fb, title, nt);
 }
 
 }  // namespace
@@ -215,8 +208,7 @@ std::vector<ItemPickRow> buildItemPickerRows(const ContentRegistry& reg,
 
 void drawItemTypePicker(Framebuffer& fb, const std::vector<ItemPickRow>& tiles,
                         int cursor) {
-    fb.clear(palColor(Pal::PAPER));
-    drawHeaderBand(fb, "ITEMS - PICK TYPE", 0, 0);
+    listHeader(fb, "ITEMS - PICK TYPE", 0, 0);
 
     constexpr int kPickRowH = 32;
     const int n = static_cast<int>(tiles.size());
@@ -260,9 +252,9 @@ void drawItemsList(Framebuffer& fb, const std::vector<InvRow>& rows, int cursor,
     if (filterHintVisible) {
         char title[32];
         std::snprintf(title, sizeof(title), "%s - %s", base, itemFilterLabel(filter));
-        drawHeaderBand(fb, title, sel, total);
+        listHeader(fb, title, sel, total);
     } else {
-        drawHeaderBand(fb, base, sel, total);
+        listHeader(fb, base, sel, total);
     }
 
     // The bottom hint band (exception rule) — each owned upgrade contributes its own
@@ -312,7 +304,7 @@ void drawItemsList(Framebuffer& fb, const std::vector<InvRow>& rows, int cursor,
         // Icon takes the rarity colour, exactly as the detail page does; the ladder
         // opposite it is the same fact without colour, so the row survives grayscale.
         if (r.icon)
-            drawSpriteTinted(fb, *r.icon, 0, 16, y + (kRowH - kIcon) / 2,
+            drawSpriteTinted(fb, *r.icon, 0, 16, y + (kRowH - kRowIcon) / 2,
                              rarityColor(r.def->rarity));
         char qty[8];
         std::snprintf(qty, sizeof(qty), "x%d", r.qty);
@@ -342,14 +334,12 @@ void drawItemsList(Framebuffer& fb, const std::vector<InvRow>& rows, int cursor,
 
 void drawItemDetail(Framebuffer& fb, const ItemDef& def, const SpriteData* icon,
                     int qty, bool usable, const char* gateMsg, int /*beat*/) {
-    fb.clear(palColor(Pal::PAPER));
-    drawText(fb, kMargin, 6, "ITEMS", palColor(Pal::INK));
-    fb.fillRect(0, kHeaderRule, kActiveW, 1, palColor(Pal::TRACK));
+    drawHeaderBand(fb, "ITEMS");
 
     // Icon + name + rarity tag. The icon takes the rarity's colour, which is pure
     // decoration on top of the word printed opposite it — see core/ui/theme.h.
     if (icon) drawSpriteTinted(fb, *icon, 0, kMargin, 30, rarityColor(def.rarity));
-    const int nameX = icon ? kMargin + kIcon + 6 : kMargin;
+    const int nameX = icon ? kMargin + kRowIcon + 6 : kMargin;
     drawText(fb, nameX, 36, def.displayName, palColor(Pal::INK));
     // Rarity tag (the 5x7 font has no brackets — colour + word carry it).
     const char* tag = rarityName(def.rarity);
@@ -392,13 +382,9 @@ void drawItemDetail(Framebuffer& fb, const ItemDef& def, const SpriteData* icon,
 void drawCacheYield(Framebuffer& fb, const ItemDef& cache, int bits,
                     const ItemDef* const* items, const SpriteData* const* icons,
                     int count) {
-    fb.clear(palColor(Pal::PAPER));
     // Header: the decoded container + its rarity word (colour is emphasis only).
-    drawText(fb, kMargin, 6, "CACHE DECODED", palColor(Pal::INK));
-    const char* rtag = rarityName(cache.rarity);
-    drawText(fb, kActiveW - kMargin - textWidth(rtag), 6, rtag,
-             rarityColor(cache.rarity));
-    fb.fillRect(0, kHeaderRule, kActiveW, 1, palColor(Pal::TRACK));
+    drawHeaderBand(fb, "CACHE DECODED", rarityName(cache.rarity),
+                   rarityColor(cache.rarity));
 
     // Which container it was.
     drawText(fb, kMargin, 30, cache.displayName, palColor(Pal::INK_DIM));
@@ -418,7 +404,7 @@ void drawCacheYield(Framebuffer& fb, const ItemDef& cache, int bits,
         for (int i = 0; i < count; ++i) {
             if (icons && icons[i])
                 drawSprite(fb, *icons[i], 0, kMargin + 4, y - 6);
-            const int nx = (icons && icons[i]) ? kMargin + 4 + kIcon + 6
+            const int nx = (icons && icons[i]) ? kMargin + 4 + kRowIcon + 6
                                                : kMargin + 4;
             drawText(fb, nx, y, items[i] ? items[i]->displayName : "?",
                      palColor(Pal::INK));
@@ -439,14 +425,10 @@ void drawCacheYield(Framebuffer& fb, const ItemDef& cache, int bits,
 
 void drawBulkYield(Framebuffer& fb, const ItemDef& cache, int cachesOpened, int bits,
                    const BulkYieldRow* rows, int count, int cursor) {
-    fb.clear(palColor(Pal::PAPER));
     // Header: how many of the rarity group were opened + the rarity word.
     char hdr[36];
     std::snprintf(hdr, sizeof(hdr), "OPENED %d %s", cachesOpened, rarityName(cache.rarity));
-    drawText(fb, kMargin, 6, hdr, palColor(Pal::INK));
-    const char* tag = "CACHES";
-    drawText(fb, kActiveW - kMargin - textWidth(tag), 6, tag, rarityColor(cache.rarity));
-    fb.fillRect(0, kHeaderRule, kActiveW, 1, palColor(Pal::TRACK));
+    drawHeaderBand(fb, hdr, "CACHES", rarityColor(cache.rarity));
 
     char bitsStr[20];
     std::snprintf(bitsStr, sizeof(bitsStr), "+%d BITS", bits);
@@ -498,8 +480,7 @@ void drawBulkYield(Framebuffer& fb, const ItemDef& cache, int cachesOpened, int 
 
 void drawRollbackPicker(Framebuffer& fb, const int points[4], int cursor) {
     static const char* const kStatLabel[4] = {"POWER", "DEFENSE", "SPEED", "MAX-HP"};
-    fb.clear(palColor(Pal::PAPER));
-    drawHeaderBand(fb, "ROLLBACK", 0, 0);
+    listHeader(fb, "ROLLBACK", 0, 0);
     // Purpose line (dual-coded: the whole action is spelled out in text).
     drawText(fb, kMargin, 30, "SHED 1 STAT (-1 LVL) TO", palColor(Pal::INK_DIM));
     drawText(fb, kMargin, 42, "RE-ROLL IT", palColor(Pal::INK_DIM));

@@ -7,13 +7,13 @@
 #include "core/render/framebuffer.h"
 #include "core/render/palette.h"
 #include "core/render/sprite.h"
+#include "core/ui/layout.h"
 #include "core/ui/widgets.h"
 
 namespace mal {
 
 namespace {
 
-constexpr int kMargin = 8;
 
 void drawPetCentered(Framebuffer& fb, const SpriteData* pet, int beat, int cy) {
     if (!pet) return;
@@ -167,11 +167,11 @@ void drawFeedingModal(Framebuffer& fb, const SpriteData* pet, const ItemDef* foo
 
     // The block stays centred on the old single-gauge line, so a one-stat morsel
     // sits exactly where it always did and a three-stat feast grows around it.
-    constexpr int kRowH = 22;   // the STAT vitals row pitch
-    const int top = 168 - (n - 1) * kRowH / 2;
+    constexpr int kVitalsRowH = 22;   // tighter than the grid: gauges, not text rows
+    const int top = 168 - (n - 1) * kVitalsRowH / 2;
     for (int i = 0; i < n; ++i) {
         const FeedGaugeRow& r = rows[i];
-        const int y = top + i * kRowH;
+        const int y = top + i * kVitalsRowH;
         drawText(fb, kMargin, y, r.label, palColor(Pal::INK));
         drawGauge(fb, 70, y - 2, 110, 10, r.value, r.zone, r.fragRamp, true);
         char num[8];
