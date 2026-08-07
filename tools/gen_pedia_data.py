@@ -304,9 +304,18 @@ def main():
             mv["innate"] = True
         moves.append(mv)
 
-    # ---- wild malbeasts (combat.cpp) ----
-    combat = strip_comments((repo / "src/core/model/combat.cpp").read_text(encoding="utf-8", errors="replace"))
-    fn = combat[combat.index("CombatEnemy wildMalbeast"):]
+    # ---- wild malbeasts (combat_factory.cpp) ----
+    # The roster lives with the encounter FACTORIES, not the turn engine. Fail loudly
+    # naming the function if it moves again: the alternative is a KeyError deep in the
+    # parse, or worse an empty roster that generates a 'Pedia quietly missing its
+    # malbeasts.
+    src_path = repo / "src/core/model/combat_factory.cpp"
+    combat = strip_comments(src_path.read_text(encoding="utf-8", errors="replace"))
+    marker = "CombatEnemy wildMalbeast"
+    if marker not in combat:
+        sys.exit(f"error: '{marker}' not found in {src_path} — the wild roster moved; "
+                 f"point this at its new home.")
+    fn = combat[combat.index(marker):]
     fn = fn[: fn.index("\n}") + 2]
     rows = list(re.finditer(r'\{"([^"]+)",\s*"([^"]+)",\s*(\d+),\s*(\d+),\s*(\d+),\s*\{([^}]*)\}', fn))
     # The wild roster is TIER-keyed and stops SHORT of the ladder's depth — wildMalbeast
