@@ -108,6 +108,9 @@ Intentional simplifications. None is a bug; each is a "confirm as v1 or revise".
   EXPL/combat/Wi-Fi/rank-up on the real panel in a long time. Diff **M** (harness design). A
   human bench pass is also owed.
 - **No Wokwi screenshot-regression tier** — deferred by decision; the host tier covers most of it.
+  `tools/screens.sh` covers the LOOKING half (one contact sheet of every screen, no baselines),
+  which is what catches two things drawn over each other — the one failure a string-width
+  budget cannot express.
 
 ### 1h. Web 'Pedia
 

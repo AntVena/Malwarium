@@ -42,6 +42,17 @@ void drawTextMarquee(Framebuffer& fb, int x, int y, int w, const char* s,
     fb.clearClip();
 }
 
+void drawLabelValue(Framebuffer& fb, int x, int y, const char* label, Rgb565 labelCol,
+                    const char* value, Rgb565 valueCol, int beat, bool scroll) {
+    int room = kActiveW - kMargin - x;
+    if (value && value[0]) {
+        const int vx = kActiveW - kMargin - textWidth(value);
+        drawText(fb, vx, y, value, valueCol);
+        room = vx - kMargin - x;          // a margin's gap between the two
+    }
+    if (room > 0) drawTextMarquee(fb, x, y, room, label, labelCol, beat, scroll);
+}
+
 namespace {
 
 Rgb565 zoneColor(Zone z) {

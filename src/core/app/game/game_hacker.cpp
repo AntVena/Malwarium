@@ -365,12 +365,12 @@ void Game::drawHackerSubmenu(Framebuffer& fb) const {
             const int cost = rigUpgradeCostFor(row);
             const bool afford = bits_ >= cost;
 
-            drawText(fb, kMargin, rowY, def.displayName,
-                     sel ? palColor(Pal::INK) : palColor(Pal::INK_DIM));
             char rhs[16];
             std::snprintf(rhs, sizeof(rhs), "%d BITS", cost);
-            drawText(fb, kActiveW - kMargin - textWidth(rhs), rowY, rhs,
-                     afford ? palColor(Pal::INK) : palColor(Pal::INK_DIM));
+            drawLabelValue(fb, kMargin, rowY, def.displayName,
+                           sel ? palColor(Pal::INK) : palColor(Pal::INK_DIM), rhs,
+                           afford ? palColor(Pal::INK) : palColor(Pal::INK_DIM),
+                           beat_, sel);
 
             const SpecRows spec = rigSpec(def, level);
             drawSpecGrid(fb, kMargin, rowY + kFontH + 5, kActiveW - 2 * kMargin,

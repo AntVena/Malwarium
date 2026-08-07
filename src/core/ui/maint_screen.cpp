@@ -109,15 +109,14 @@ void drawMaintAction(Framebuffer& fb, MaintKind kind, const PetModel& m,
                 std::snprintf(line, sizeof(line), "QUICK  -%d B", cost);
                 tag = "MAY FAIL";
             } else if (i == 1) {
-                std::snprintf(line, sizeof(line), "TOOL   -%d B -1 TOOL", cost);
+                std::snprintf(line, sizeof(line), "TOOL  -%d B -1", cost);
                 tag = toolCount > 0 ? "GUARANTEED" : "NO TOOL";
                 tagCol = toolCount > 0 ? palColor(Pal::CALM) : palColor(Pal::WARN);
             } else {
                 std::snprintf(line, sizeof(line), "STACKER  -%d B", cost);
                 tag = "ROWS PAY";       // never fails; the board sets the size of the clean
             }
-            drawText(fb, kMargin + 12, rowY[i], line, col);
-            drawText(fb, kActiveW - kMargin - textWidth(tag), rowY[i], tag, tagCol);
+            drawLabelValue(fb, kMargin + 12, rowY[i], line, col, tag, tagCol, 0, false);
         }
         std::snprintf(line, sizeof(line), "HELD DEFRAG TOOLS: %d", toolCount);
         drawText(fb, kMargin, 154, line, palColor(Pal::INK_DIM));

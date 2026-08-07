@@ -123,29 +123,26 @@ void drawArchRecord(Framebuffer& fb, const CreatureDef* pet, bool isActive,
 
     if (action == primary) drawRowCursor(fb, kMargin, primY, palColor(Pal::ACCENT));
     if (isActive) {
-        drawText(fb, kMargin + 12, primY, "STORE", palColor(Pal::INK));
-        drawText(fb, kActiveW - kMargin - textWidth("(SET ASIDE -> NEW EGG)"), primY,
-                 rackFull ? "- RACK FULL -" : "(SET ASIDE -> NEW EGG)",
-                 palColor(Pal::INK_DIM));
+        drawLabelValue(fb, kMargin + 12, primY, "STORE", palColor(Pal::INK),
+                       rackFull ? "RACK FULL" : "SET ASIDE", palColor(Pal::INK_DIM),
+                       0, false);
     } else {
-        drawText(fb, kMargin + 12, primY, "DEPLOY", palColor(Pal::INK));
-        drawText(fb, kActiveW - kMargin - textWidth("(MAKE ACTIVE)"), primY,
-                 "(MAKE ACTIVE)", palColor(Pal::INK_DIM));
+        drawLabelValue(fb, kMargin + 12, primY, "DEPLOY", palColor(Pal::INK),
+                       "MAKE ACTIVE", palColor(Pal::INK_DIM), 0, false);
     }
 
     if (action == ArchAction::Sell) drawRowCursor(fb, kMargin, sellY, palColor(Pal::ACCENT));
-    drawText(fb, kMargin + 12, sellY, "SELL",
-             sellEnabled ? palColor(Pal::INK) : palColor(Pal::INK_DIM));
-    drawText(fb, kActiveW - kMargin - textWidth("- DAEMONS ONLY -"), sellY,
-             sellEnabled ? "PERMANENT" : "- DAEMONS ONLY -", palColor(Pal::INK_DIM));
+    drawLabelValue(fb, kMargin + 12, sellY, "SELL",
+                   sellEnabled ? palColor(Pal::INK) : palColor(Pal::INK_DIM),
+                   sellEnabled ? "PERMANENT" : "DAEMONS ONLY", palColor(Pal::INK_DIM),
+                   0, false);
 
     // Release: stored pets only — a no-reward drop that frees a rack slot.
     if (!isActive) {
         if (action == ArchAction::Release)
             drawRowCursor(fb, kMargin, releaseY, palColor(Pal::ACCENT));
-        drawText(fb, kMargin + 12, releaseY, "RELEASE", palColor(Pal::INK));
-        drawText(fb, kActiveW - kMargin - textWidth("(FREE SLOT - NO REWARD)"), releaseY,
-                 "(FREE SLOT - NO REWARD)", palColor(Pal::INK_DIM));
+        drawLabelValue(fb, kMargin + 12, releaseY, "RELEASE", palColor(Pal::INK),
+                       "NO REWARD", palColor(Pal::INK_DIM), 0, false);
     }
 
     // Inline confirm: a light prompt with Cancel/Confirm (default Cancel).
@@ -155,7 +152,7 @@ void drawArchRecord(Framebuffer& fb, const CreatureDef* pet, bool isActive,
         const char* prompt = (action == ArchAction::Store)
                                  ? "STORE & HATCH A NEW EGG?"
                              : (action == ArchAction::Release)
-                                 ? "RELEASE THIS PET? NO REWARD."
+                                 ? "RELEASE? NO REWARD."
                                  : "DEPLOY THIS PET?";
         drawText(fb, kMargin, by + 8, prompt, palColor(Pal::INK));
         const char* cancel = "CANCEL";

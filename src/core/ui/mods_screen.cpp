@@ -53,9 +53,14 @@ bool lineLocked(const ModDef* m, const char* petLine) {
            (!petLine || std::strcmp(m->requiresLine, petLine) != 0);
 }
 
-// Detail-page prose cap: the prose starts under the name/readout block and has to
-// leave room for the slot readout + gate rows in the lower third.
-constexpr int kDetailProseLines = 4;
+// Detail-page prose reserve: the prose starts under the name/readout block and has to
+// leave room for the slot readout + gate rows below it. modDetailProseLines() is what
+// the prose ACTUALLY gets — this reserve minus the gap the readout leaves behind it.
+constexpr int kDetailProseLines = 5;
+// The gate rows under the panel. They sit near the bottom of a page with no hint band,
+// so the panel takes the room and these take what they need.
+constexpr int kDetailSlotY = 156;
+constexpr int kDetailGateY = 170;
 
 } // namespace
 
@@ -248,6 +253,12 @@ void drawModPicker(Framebuffer& fb, const ContentRegistry& reg,
     }
 }
 
+int modDetailProseLines() {
+    // The band between where the grid ends (grid lines + kBlockGap) and proseFloor.
+    // Both move with the grid, so the difference is fixed.
+    return (kDetailProseLines * kLineH - kSpecBlockGap) / kLineH;
+}
+
 void drawModDetail(Framebuffer& fb, const ContentRegistry& reg, const Loadout& load,
                    const ModDef& mod, bool equippedHere, int slot,
                    int reqLevel, int petLevel, const char* petLine, int storageCap) {
@@ -271,8 +282,8 @@ void drawModDetail(Framebuffer& fb, const ContentRegistry& reg, const Loadout& l
     sheet.rows = spec.rows;
     sheet.rowCount = spec.count;
     sheet.prose = prose.c_str();
-    const int proseFloor = 56 + kDetailProseLines * 12 +
-                           gridLines(kActiveW - 2 * kMargin, spec.rows, spec.count) * 12;
+    const int proseFloor = 56 + kDetailProseLines * kLineH +
+                           gridLines(kActiveW - 2 * kMargin, spec.rows, spec.count) * kLineH;
     const int afterStats =
         drawSpecSheet(fb, kMargin, 56, kActiveW - 2 * kMargin, proseFloor, sheet).endY;
 
@@ -281,8 +292,8 @@ void drawModDetail(Framebuffer& fb, const ContentRegistry& reg, const Loadout& l
     // fixed y so short descriptions all agree on where to look, but a long one
     // pushes it down rather than being written over.
     if (mod.oneShot)
-        drawText(fb, kMargin, std::max(130, afterStats + 4),
-                 "ONE-SHOT: CONSUMED ON TRIGGER", palColor(Pal::HOT));
+        drawText(fb, kMargin, std::max(138, afterStats + 4),
+                 "ONE-SHOT: CONSUMED ON USE", palColor(Pal::HOT));
 
     // Target slot readout + the rolled equip-LEVEL gate + the hard line gate
     // (niche-flavour pass, ModDef::requiresLine) + the one-slot-per-pet gate
@@ -297,7 +308,7 @@ void drawModDetail(Framebuffer& fb, const ContentRegistry& reg, const Loadout& l
     const bool locked = levelLocked || wrongLine || inOtherSlot;
     char slotLbl[16];
     std::snprintf(slotLbl, sizeof(slotLbl), "SLOT %d", slot + 1);
-    drawText(fb, kMargin, 144, slotLbl, palColor(Pal::INK_DIM));
+    drawText(fb, kMargin, kDetailSlotY, slotLbl, palColor(Pal::INK_DIM));
     // Held spares against the cap that bounds them. ITEMS says "HAVE xN" because an
     // inventory stack has no ceiling; a mod pool does, and a player at it needs to see
     // that the number stopped climbing on purpose — that is the MOD STORAGE row's whole
@@ -305,20 +316,20 @@ void drawModDetail(Framebuffer& fb, const ContentRegistry& reg, const Loadout& l
     char have[16];
     const int held = load.countOf(mod.id);
     std::snprintf(have, sizeof(have), "HAVE %d/%d", held, storageCap);
-    drawText(fb, kActiveW - kMargin - textWidth(have), 144, have,
+    drawText(fb, kActiveW - kMargin - textWidth(have), kDetailSlotY, have,
              held >= storageCap ? palColor(Pal::WARN) : palColor(Pal::INK_DIM));
     char req[24];
     std::snprintf(req, sizeof(req), "REQUIRES LVL %d", reqLevel);
-    int y = 156;
+    int y = kDetailGateY;
     drawText(fb, kMargin, y, req, levelLocked ? palColor(Pal::HOT) : palColor(Pal::INK_DIM));
-    y += 10;
+    y += kFontH + 4;
     if (mod.requiresLine) {
         char up[16];
         upperLine(up, sizeof(up), mod.requiresLine);
         char lineReq[32];
         std::snprintf(lineReq, sizeof(lineReq), "REQUIRES %s LINE", up);
         drawText(fb, kMargin, y, lineReq, wrongLine ? palColor(Pal::HOT) : palColor(Pal::INK_DIM));
-        y += 10;
+        y += kFontH + 4;
     }
 
     // Action line: EQUIPPED (dim, already here) / LOCKED (level, line, or already

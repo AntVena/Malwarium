@@ -50,6 +50,16 @@ void drawHeaderBand(Framebuffer& fb, const char* title,
 void drawTextMarquee(Framebuffer& fb, int x, int y, int w, const char* s,
                      Rgb565 color, int beat, bool scroll);
 
+// A one-line label/value pair: `value` right-aligned against the right margin, `label`
+// running from `x` and yielding to it — scrolling when `scroll`, clipped otherwise.
+//
+// Nearly every readout and list row on the device is this shape, and drawn as two
+// independent drawText calls it fails the same way every time: the label grows, the
+// two overlap, and the row still "renders". Going through here makes the gap a
+// property of the pair instead of an assumption about the copy.
+void drawLabelValue(Framebuffer& fb, int x, int y, const char* label, Rgb565 labelCol,
+                    const char* value, Rgb565 valueCol, int beat, bool scroll);
+
 // Segmented 10-cell gauge in the box (x,y,w,h). `value` 0..100 sets lit cells
 // (floor(value/10)). Vitality/Hazard polarity is already baked into `zone`.
 // fragRamp=true tints lit cells purple->pink by position instead of by zone.

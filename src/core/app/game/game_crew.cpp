@@ -251,8 +251,7 @@ void Game::drawHackerCrew(Framebuffer& fb) const {
         const bool joined = crewIndex_ == i;
         if (sel) drawRowCursor(fb, 2, rowY + 1, palColor(Pal::ACCENT));
 
-        drawText(fb, kMargin, rowY, c.displayName,
-                 sel ? palColor(Pal::INK) : palColor(Pal::INK_DIM));
+
         // Team is triple-coded: the word, its glyph, and the side's own colour —
         // and in that order of authority. The tint (core/ui/theme.h) is the last
         // channel added and the only one that can be lost, so desaturating this
@@ -265,15 +264,22 @@ void Game::drawHackerCrew(Framebuffer& fb) const {
         drawText(fb, teamX, rowY, team, side);
         drawSpriteTinted(fb, red ? ASSET_ICON_TEAM_RED : ASSET_ICON_TEAM_BLUE,
                          0, teamX - 20, rowY - 5, side);
+        // The name yields to the team block (word + glyph), which is the shorter,
+        // fixed half; the tagline and the Exploit line are content and travel too.
+        drawTextMarquee(fb, kMargin, rowY, teamX - 20 - kMargin - kMargin,
+                        c.displayName,
+                        sel ? palColor(Pal::INK) : palColor(Pal::INK_DIM), beat_, sel);
 
-        drawText(fb, kMargin + 6, rowY + kLineH, c.tagline, palColor(Pal::INK_DIM));
+        drawTextMarquee(fb, kMargin + 6, rowY + kLineH, kActiveW - kMargin * 2 - 6,
+                        c.tagline, palColor(Pal::INK_DIM), beat_, sel);
 
         // The Exploit the crew grants, with its magnitude spelled out — the reason to
         // join reads off the row without entering a fight to find out.
         char exploit[40];
         std::snprintf(exploit, sizeof(exploit), "%s  %s x%d", c.exploit.name,
                       crewExploitTag(c.exploit.kind), c.exploit.magnitude);
-        drawText(fb, kMargin + 6, rowY + kLineH * 2, exploit, palColor(Pal::INK_DIM));
+        drawTextMarquee(fb, kMargin + 6, rowY + kLineH * 2, kActiveW - kMargin * 2 - 6,
+                        exploit, palColor(Pal::INK_DIM), beat_, sel);
 
         // Status line: the whole join gate in words.
         const char* status = joined              ? "JOINED"

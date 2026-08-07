@@ -177,7 +177,7 @@ const ModDef kMods[] = {
     // --- DeepWeb Dive (tier 5) — the endgame mods, incl. the two hard-gated signatures --
     {/*wire=*/31, "phishing_rod", "Phishing Rod", "SIPHON+",
      "Waiting for that perfect bite: while your bubble's up, amplifies the bonus "
-     "siphon by {mag}%. Phishing pets only.", false,
+     "siphon by {mag}%.", false,
      ItemDef::Rarity::Epic, 5, ModEffect::StealAmplifyPct, 75, 0, nullptr, 0,
      /*requiresLine=*/"phishing"},
     {/*wire=*/32, "extortion_ledger", "Extortion Ledger", "+POW",

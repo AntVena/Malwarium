@@ -560,7 +560,7 @@ window.PEDIA_DATA = {
       "name": "Air-Gapped Snack",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Fills 40 Hunger. Patches 30 Health mid-fight. Cuts a Replication Ghost loose.",
+      "effect": "Fills 40 Hunger. Patches 30 Health. Cuts a Replication Ghost loose.",
       "stats": "HUNGER +40 / HEAL 30",
       "icon": "assets/icons/ICON_ITEM_AIRGAP_SNACK.png"
     },
@@ -606,7 +606,7 @@ window.PEDIA_DATA = {
       "name": "R007_B33R",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Junk food: fills 15 Hunger and lifts Happiness 25, at the cost of 5 Fragmentation.",
+      "effect": "Junk food: 15 Hunger and 25 Happiness, at 5 Fragmentation.",
       "stats": "HUNGER +15 / HAPPY +25 / FRAG +5",
       "icon": "assets/icons/ICON_ITEM_R007_B33R.png",
       "bits": 5
@@ -643,7 +643,7 @@ window.PEDIA_DATA = {
       "name": "Spam",
       "type": "FOOD",
       "rarity": "COMMON",
-      "effect": "Plentiful. Very, very plentiful. Too plentiful. Better find something to do with it all.",
+      "effect": "Plentiful. Far too plentiful. Find something to do with it all.",
       "stats": "HUNGER +2",
       "icon": "assets/icons/ICON_ITEM_SPAM.png"
     },

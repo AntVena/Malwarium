@@ -102,6 +102,12 @@ void drawItemsList(Framebuffer& fb, const std::vector<InvRow>& rows, int cursor,
 
 // L3 item detail. `usable` gates the Use action; when false `gateMsg` states
 // where the item applies instead.
+// Lines the ITEMS detail panel holds — the name, the readout grid and the prose all
+// share this band. Published because the content tests hold every item's readout +
+// description to it, and a copy of the number in the test is a copy that goes stale
+// the first time the band or the line height moves.
+int itemDetailPanelLines();
+
 void drawItemDetail(Framebuffer& fb, const ItemDef& def, const SpriteData* icon,
                     int qty, bool usable, const char* gateMsg, int beat);
 

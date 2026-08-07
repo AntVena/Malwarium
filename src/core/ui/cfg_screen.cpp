@@ -521,7 +521,7 @@ void drawBrightness(Framebuffer& fb, int pick, int current) {
 }
 
 void drawTitles(Framebuffer& fb, int focusSector, uint32_t unlockedMask,
-                int equippedSector) {
+                int equippedSector, int beat) {
     drawHeaderBand(fb, "TITLE");
     drawText(fb, kMargin, 30, "EARNED BY CLEARING ZONES.", palColor(Pal::INK_DIM));
 
@@ -542,11 +542,10 @@ void drawTitles(Framebuffer& fb, int focusSector, uint32_t unlockedMask,
         const Rgb565 c = locked ? palColor(Pal::INK_DIM)
                        : equipped ? palColor(Pal::ACCENT)
                                   : palColor(Pal::INK);
-        drawText(fb, 24, y + 4, name, c);
-        const char* tag = locked ? "LOCKED" : equipped ? "ACTIVE" : nullptr;
-        if (tag)
-            drawText(fb, kActiveW - kMargin - textWidth(tag), y + 4, tag,
-                     locked ? palColor(Pal::INK_DIM) : palColor(Pal::ACCENT));
+        const char* tag = locked ? "LOCKED" : equipped ? "ACTIVE" : "";
+        drawLabelValue(fb, 24, y + 4, name, c, tag,
+                       locked ? palColor(Pal::INK_DIM) : palColor(Pal::ACCENT),
+                       beat, focusSector == sector);
     }
     drawText(fb, kMargin, 184, "A NEXT  B EQUIP  C BACK", palColor(Pal::INK_DIM));
 }

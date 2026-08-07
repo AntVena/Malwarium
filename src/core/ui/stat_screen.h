@@ -52,7 +52,7 @@ std::vector<LoadoutRow> buildLoadoutRows(const ContentRegistry& reg,
 // Visible row window (mirrors drawMovePicker's kMovePickerVisibleRows,
 // train_screen.cpp) — exported so the engine can compute wrap/clamp bounds for
 // the B-scroll gesture without re-deriving the layout constant.
-constexpr int kLoadoutVisibleRows = 5;
+constexpr int kLoadoutVisibleRows = 4;
 
 // STAT page 1 — LOADOUT: the windowed row list from buildLoadoutRows, each row's
 // name + wrapped effect text, a scrollbar + "B - SCROLL" hint band when the list

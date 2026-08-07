@@ -80,16 +80,12 @@ void Game::drawHackerMerge(Framebuffer& fb) const {
 
         const bool owned = rigUpgradeOwned(r.rigRow);
 
-        // Title. LOCKED (recipe not bought yet) is a genuinely different state
-        // from "missing ingredients" — it still gets a tag, but a short one, so
-        // it never collides with the name.
-        drawText(fb, kMargin, rowY, r.displayName,
-                 sel ? palColor(Pal::INK) : palColor(Pal::INK_DIM));
-        if (!owned) {
-            const char* tag = "LOCKED";
-            drawText(fb, kActiveW - kMargin - textWidth(tag), rowY, tag,
-                     palColor(Pal::INK_DIM));
-        }
+        // Title. LOCKED (recipe not bought yet) is a genuinely different state from
+        // "missing ingredients", and it is the state the row cannot lose — the dish
+        // name yields to it and scrolls when focused.
+        drawLabelValue(fb, kMargin, rowY, r.displayName,
+                       sel ? palColor(Pal::INK) : palColor(Pal::INK_DIM),
+                       owned ? "" : "LOCKED", palColor(Pal::INK_DIM), beat_, sel);
         rowY += kLineH;
 
         if (sel) {
@@ -99,12 +95,12 @@ void Game::drawHackerMerge(Framebuffer& fb) const {
                 if (!in.id) continue;
                 const ItemDef* def = registry_.item(in.id);
                 const int have = inventory_.count(in.id);
-                drawText(fb, kIndent, rowY, def ? def->displayName : in.id,
-                         palColor(Pal::INK_DIM));
                 char qty[12];
                 std::snprintf(qty, sizeof(qty), "%d/%d", have, in.qty);
-                drawText(fb, kActiveW - kMargin - textWidth(qty), rowY, qty,
-                         have >= in.qty ? palColor(Pal::INK) : palColor(Pal::WARN));
+                drawLabelValue(fb, kIndent, rowY, def ? def->displayName : in.id,
+                               palColor(Pal::INK_DIM), qty,
+                               have >= in.qty ? palColor(Pal::INK) : palColor(Pal::WARN),
+                               beat_, false);
                 rowY += kLineH;
             }
         }

@@ -1924,8 +1924,11 @@ static void test_effect_text_templates_resolve() {
 // silently (a 20-char flag losing its last letter is invisible in review).
 static void test_effect_text_fits_its_screen_budget() {
     constexpr int kMaxW = kActiveW - 2 * 8;   // both margins, every panel screen
-    constexpr int kLineH = 12;
-    constexpr int kDetailPanelLines = 7;      // items/mods: y=56 to the footer rows
+    // Both taken from the screens themselves (layout.h's kLineH, items_screen's own
+    // band): a literal here is a number that goes stale the moment the font or the
+    // panel moves, and a panel budget that reads high is one that passes an item
+    // whose description is being cut on the device.
+    const int kDetailPanelLines = itemDetailPanelLines();
     constexpr int kMoveGridReserve = 4;       // train_screen's kDetailGridLines
     auto proseLines = [&](const EffectText& t) {
         return textWrapLines(t.c_str(), kMaxW);
@@ -1946,8 +1949,13 @@ static void test_effect_text_fits_its_screen_budget() {
     };
     for (int i = 0; i < kItemsCount; ++i)
         CHECK(panelFits(specRows(kItems[i]), effectText(kItems[i])));
-    for (int i = 0; i < kModsCount; ++i)
-        CHECK(panelFits(specRows(kMods[i]), effectText(kMods[i])));
+    // MODS budgets its panel differently: its floor grows with the readout, so the
+    // prose gets a FIXED number of lines whatever the grid costs. Held to that number
+    // rather than to the ITEMS band, which would pass a mod whose tail is being cut.
+    for (int i = 0; i < kModsCount; ++i) {
+        CHECK(labelsIntact(specRows(kMods[i])));
+        CHECK(proseLines(effectText(kMods[i])) <= modDetailProseLines());
+    }
     for (int i = 0; i < kMovesCount; ++i) {
         const SpecRows s = specRows(kMoves[i]);
         CHECK(labelsIntact(s));

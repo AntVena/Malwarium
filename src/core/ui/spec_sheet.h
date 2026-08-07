@@ -45,6 +45,12 @@ struct SpecSheetLayout {
 };
 
 // Draw into the band [y, maxY) across `w` pixels from `x`. Never draws past maxY.
+// The gap drawSpecSheet leaves between the readout block and the prose under it.
+// Public because a screen sizing its own prose band has to subtract it — a panel
+// budget that forgets it reads one line high, and the line it loses is the tail of a
+// description, cut with nothing on screen to say so.
+constexpr int kSpecBlockGap = 4;
+
 SpecSheetLayout drawSpecSheet(Framebuffer& fb, int x, int y, int w, int maxY,
                               const SpecSheet& s);
 

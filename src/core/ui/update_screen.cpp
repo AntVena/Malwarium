@@ -115,7 +115,7 @@ void drawUpdateCheck(Framebuffer& fb, bool ready, bool provisioned,
     // newer THAN. The web bundle's own version is only known once a check has read
     // the card's marker, so it appears with the result rather than here.
     drawText(fb, kMargin, 28, "INSTALLED", palColor(Pal::INK_DIM));
-    drawText(fb, kMargin, 40, firmwareVersion, palColor(Pal::INK));
+
 
     // WHERE it looks, beside what it would replace. The full manifest URL is set
     // from the 'Pedia and is far too long for this panel, so this shows the host —
@@ -126,8 +126,8 @@ void drawUpdateCheck(Framebuffer& fb, bool ready, bool provisioned,
              palColor(Pal::INK_DIM));
     char host[24];
     urlHost(manifestUrl, host, sizeof(host));
-    drawText(fb, kActiveW - kMargin - textWidth(host), 40, host,
-             sourceKnown ? palColor(Pal::INK) : palColor(Pal::INK_DIM));
+    drawLabelValue(fb, kMargin, 40, firmwareVersion, palColor(Pal::INK), host,
+                   sourceKnown ? palColor(Pal::INK) : palColor(Pal::INK_DIM), 0, false);
 
     // Row 0 is always the check, the last is always the flasher, and between them
     // sit what the check found. An install row names the artifact AND the version

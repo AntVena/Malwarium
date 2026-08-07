@@ -64,10 +64,14 @@ void drawRarityPips(Framebuffer& fb, int x, int y, ItemDef::Rarity r) {
     }
 }
 
-// Detail-page description block: the readout starts at y=56 and the prose flows under
-// it, and both have to land above the HAVE row at y=150.
+// Detail-page description block: the readout starts at kDetailPanelTop and the prose
+// flows under it, down to kDetailPanelBottom. The HAVE row and the action line sit
+// below that, near the bottom of a page that has no hint band — so the panel gets the
+// room, and the two footer lines take what they need rather than the reverse.
 constexpr int kDetailPanelTop = 56;
-constexpr int kDetailPanelBottom = 146;
+constexpr int kDetailPanelBottom = 158;
+constexpr int kDetailHaveY = 164;
+constexpr int kDetailActionY = 184;
 
 // The band with ITEMS' own right label: the n/total position counter, shown only
 // once the list is long enough to scroll out from under the cursor.
@@ -330,19 +334,22 @@ void drawItemsList(Framebuffer& fb, const std::vector<InvRow>& rows, int cursor,
     }
 }
 
+int itemDetailPanelLines() {
+    return (kDetailPanelBottom - kDetailPanelTop) / kLineH;
+}
+
 void drawItemDetail(Framebuffer& fb, const ItemDef& def, const SpriteData* icon,
-                    int qty, bool usable, const char* gateMsg, int /*beat*/) {
+                    int qty, bool usable, const char* gateMsg, int beat) {
     drawHeaderBand(fb, "ITEMS");
 
     // Icon + name + rarity tag. The icon takes the rarity's colour, which is pure
     // decoration on top of the word printed opposite it — see core/ui/theme.h.
     if (icon) drawSpriteTinted(fb, *icon, 0, kMargin, 30, rarityColor(def.rarity));
     const int nameX = icon ? kMargin + kRowIcon + 6 : kMargin;
-    drawText(fb, nameX, 36, def.displayName, palColor(Pal::INK));
-    // Rarity tag (the 5x7 font has no brackets — colour + word carry it).
-    const char* tag = rarityName(def.rarity);
-    drawText(fb, kActiveW - kMargin - textWidth(tag), 36, tag,
-             rarityColor(def.rarity));
+    // Rarity tag (the font has no brackets — colour + word carry it). It owns the
+    // right end; the name yields and scrolls, since the tier is the shorter fact.
+    drawLabelValue(fb, nameX, 36, def.displayName, palColor(Pal::INK),
+                   rarityName(def.rarity), rarityColor(def.rarity), beat, true);
 
     // The readout as an aligned grid, then the prose under it (spec_sheet.h): the grid
     // reports every magnitude the row hands the engine whether or not the prose
@@ -359,20 +366,20 @@ void drawItemDetail(Framebuffer& fb, const ItemDef& def, const SpriteData* icon,
     // Quantity.
     char have[16];
     std::snprintf(have, sizeof(have), "HAVE x%d", qty);
-    drawText(fb, kMargin, 150, have, palColor(Pal::INK_DIM));
+    drawText(fb, kMargin, kDetailHaveY, have, palColor(Pal::INK_DIM));
 
     // Action / gate line.
     if (usable) {
-        drawRowCursor(fb, kMargin, 170, palColor(Pal::ACCENT));
+        drawRowCursor(fb, kMargin, kDetailActionY, palColor(Pal::ACCENT));
         // A re-roll reads ROLLBACK; the egg accelerator reads DECRYPT
         // everything else USE. (Sealed caches decrypt from the Hacker VAULT,
         // so no OPEN verb appears here.)
         const char* verb = def.use == ItemDef::Use::DecryptEgg ? "DECRYPT"
                          : def.use == ItemDef::Use::Rollback   ? "ROLLBACK"
                                                                : "USE";
-        drawText(fb, kMargin + 10, 170, verb, palColor(Pal::ACCENT));
+        drawText(fb, kMargin + 10, kDetailActionY, verb, palColor(Pal::ACCENT));
     } else {
-        drawText(fb, kMargin, 170, gateMsg ? gateMsg : "- UNUSABLE HERE -",
+        drawText(fb, kMargin, kDetailActionY, gateMsg ? gateMsg : "- UNUSABLE HERE -",
                  palColor(Pal::INK_DIM));
     }
 }

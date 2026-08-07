@@ -164,7 +164,7 @@ void drawBrightness(Framebuffer& fb, int pick, int current);
 // unlocked; `equippedSector` is the currently-applied Title (-1 = none). Dual-coded
 // (LOCKED/ACTIVE text + the row cursor) — grayscale-safe. B applies, C cancels.
 void drawTitles(Framebuffer& fb, int focusSector, uint32_t unlockedMask,
-                int equippedSector);
+                int equippedSector, int beat);
 
 // L3 Audit-mode escalating picker. One ordered control:
 // 0 OFF (radio idle) / 1 SCAN (passive

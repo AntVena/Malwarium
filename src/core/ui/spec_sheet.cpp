@@ -11,7 +11,6 @@
 namespace mal {
 
 namespace {
-constexpr int kBlockGap = 4;    // between the name, the readout and the prose
 }  // namespace
 
 int proseLineCount(int w, const char* prose) {
@@ -35,7 +34,7 @@ SpecSheetLayout drawSpecSheet(Framebuffer& fb, int x, int y, int w, int maxY,
     if (s.rowCount > 0) {
         cy = drawSpecGrid(fb, x, cy, w, s.rows, s.rowCount, kLineH,
                           palColor(Pal::INK_DIM), palColor(Pal::ACCENT));
-        cy += kBlockGap;
+        cy += kSpecBlockGap;
     }
 
     // Prose gets whatever is left. If that isn't all of it, say so via the layout

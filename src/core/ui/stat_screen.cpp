@@ -56,8 +56,12 @@ void vitalsRow(Framebuffer& fb, int y, const char* label, int value, Zone zone,
 // kLoadoutEffectLines of wrapped effect text below it) so the windowing math
 // stays a simple row-index scroll, mirroring drawMovePicker (train_screen.cpp).
 constexpr int kLoadoutRowTop = 26;
-constexpr int kLoadoutRowH = 32;
-constexpr int kLoadoutEffectLines = 2;
+// A row is the name line plus kLoadoutEffectLines of wrapped effect under it, at
+// kLoadoutProseLineH — so the pitch has to clear kFontH + 3 + lines * lineH, or the
+// last line of one effect lands on the next row's name.
+constexpr int kLoadoutEffectLines = 3;
+constexpr int kLoadoutProseLineH = kFontH + 2;
+constexpr int kLoadoutRowH = kFontH + 3 + kLoadoutEffectLines * kLoadoutProseLineH + 5;
 
 } // namespace
 
@@ -103,7 +107,7 @@ std::vector<LoadoutRow> buildLoadoutRows(const ContentRegistry& reg,
 }
 
 void drawLoadoutScreen(Framebuffer& fb, const std::vector<LoadoutRow>& rows,
-                       int scrollTop, int /*beat*/) {
+                       int scrollTop, int beat) {
     statHeader(fb, "LOADOUT", 1);
 
     const int total = static_cast<int>(rows.size());
@@ -122,13 +126,12 @@ void drawLoadoutScreen(Framebuffer& fb, const std::vector<LoadoutRow>& rows,
             drawText(fb, kMargin, y, r.label, palColor(Pal::INK_DIM));
             continue;
         }
-        const int nx = drawText(fb, kMargin, y, r.label, palColor(Pal::INK));
-        if (r.isDefault)
-            drawText(fb, nx + kFontAdvance, y, "(DEFAULT)", palColor(Pal::INK_DIM));
+        drawLabelValue(fb, kMargin, y, r.label, palColor(Pal::INK),
+                       r.isDefault ? "DEFAULT" : "", palColor(Pal::INK_DIM), beat, false);
         if (!r.effect.empty())
             drawTextWrapped(fb, kMargin, y + kFontH + 3, kActiveW - 2 * kMargin,
-                              r.effect.c_str(), palColor(Pal::INK_DIM), kFontH + 2,
-                              kLoadoutEffectLines);
+                              r.effect.c_str(), palColor(Pal::INK_DIM),
+                              kLoadoutProseLineH, kLoadoutEffectLines);
     }
 
     if (overflow) {

@@ -56,6 +56,12 @@ void drawModPicker(Framebuffer& fb, const ContentRegistry& reg,
 // count and the elsewhere-equipped check; `storageCap` is what that count is measured
 // against (Game::modStorageCap), so a full pool reads as full rather than as a number
 // with no ceiling.
+// Prose lines the MODS detail panel actually holds. Its floor grows with the readout,
+// so this is a constant whatever the grid costs — but it is the reserve MINUS the gap
+// the grid leaves behind it, which is not the reserve. Published so the content tests
+// hold a mod's description to what the screen will really draw.
+int modDetailProseLines();
+
 void drawModDetail(Framebuffer& fb, const ContentRegistry& reg, const Loadout& load,
                    const ModDef& mod, bool equippedHere, int slot,
                    int reqLevel, int petLevel, const char* petLine, int storageCap);

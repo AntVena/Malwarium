@@ -342,7 +342,7 @@ void Game::drawCfg(Framebuffer& fb) const {
             break;
         case CfgScreen::HackerTag: drawHackerTag(fb, editTag_, editCaret_); break;
         case CfgScreen::Titles:
-            drawTitles(fb, cfgTitlePick_, titlesUnlocked_, equippedTitle_); break;
+            drawTitles(fb, cfgTitlePick_, titlesUnlocked_, equippedTitle_, beat_); break;
         case CfgScreen::UiMode: drawUiModeToggle(fb, cfgUiPick_, uiMode_); break;
         case CfgScreen::Brightness: drawBrightness(fb, cfgBrightPick_, brightness_); break;
         case CfgScreen::Audit:

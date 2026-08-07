@@ -602,18 +602,22 @@ int shopDescLines(int visibleRows) {
 // One storefront row: name, full price (Bits + any item costs), and remaining
 // stock as a count (so it reads in grayscale — sold out shows STOCK 0, not just a
 // greyed row). `selected` draws the row cursor.
-void drawShopRow(Framebuffer& fb, int rowY, const ShopRowView& row, bool selected) {
+void drawShopRow(Framebuffer& fb, int rowY, const ShopRowView& row, bool selected,
+                 int beat) {
     fb.fillRect(4, rowY - 2, kActiveW - 8, kShopRowPitch - 6, palColor(Pal::TRACK));
     if (selected) drawRowCursor(fb, 10, rowY + 4, palColor(Pal::ACCENT));
-    drawText(fb, 24, rowY + 2, row.name, palColor(Pal::INK));
+    drawTextMarquee(fb, 24, rowY + 2, kActiveW - kMargin - 24, row.name,
+                    palColor(Pal::INK), beat, selected);
 
+    // The price line carries the item costs too, so it is the half that grows; STOCK
+    // is the fact a shopper cannot lose, so the price yields to it.
     char priceStr[48];
     formatShopPrice(priceStr, sizeof(priceStr), row);
-    drawText(fb, 24, rowY + 16, priceStr, palColor(Pal::INK_DIM));
     char stockStr[16];
     std::snprintf(stockStr, sizeof(stockStr), "STOCK %d", row.stock);
-    drawText(fb, kActiveW - kMargin - textWidth(stockStr), rowY + 16, stockStr,
-             row.stock > 0 ? palColor(Pal::CALM) : palColor(Pal::WARN));
+    drawLabelValue(fb, 24, rowY + 16, priceStr, palColor(Pal::INK_DIM), stockStr,
+                   row.stock > 0 ? palColor(Pal::CALM) : palColor(Pal::WARN),
+                   beat, selected);
 }
 } // namespace
 
@@ -645,7 +649,7 @@ void drawShop(Framebuffer& fb, const char* storeName, int walletBits,
     }
     for (int v = 0; v < visibleRows && scrollTop + v < rowCount; ++v) {
         const int row = scrollTop + v;
-        drawShopRow(fb, kShopRowTop + v * kShopRowPitch, rows[row], row == cursor);
+        drawShopRow(fb, kShopRowTop + v * kShopRowPitch, rows[row], row == cursor, beat);
     }
     if (rowCount > kShopMaxRows) {   // UI_SCROLLBAR
         const int barX = kActiveW - 3;

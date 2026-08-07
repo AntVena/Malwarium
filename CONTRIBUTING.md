@@ -85,6 +85,11 @@ CI on every push (`.github/workflows/gates.yml`).
 `src/generated/` is compiled from `assets/` by `tools/gen_assets.py` and is not committed — the
 gates regenerate it, so a fresh clone needs no extra step.
 
+Neither tier can see two things drawn on top of each other, or a panel cutting its own
+copy. `./tools/screens.sh` renders the screen catalogue to one contact sheet for that —
+a looking tool, not a gate. Run it after touching the layout grid, the font, or a shared
+widget.
+
 Commit verified work as logical units. A message should carry the motivation and the *why*, not
 a restatement of the diff.
 
