@@ -158,11 +158,6 @@ roster, and the wild half keeps its own roster-keyed masks).
   ever want a device-side list, the Hacker face's PROFILE slot is the natural home. Diff **M**.
 - **Unverified:** on-device serving of the SD-hosted bundle + the live endpoints
   (`GET /pedia_state.json`, `POST /api/tag`) on a real board.
-- **The web bundle and the publish pages both ask for `local('Pixel Operator Mono')`**, so a
-  reader without it installed gets system mono while the device beside them renders the real
-  face. The TTF is in the repo (`assets/fonts/`, CC0), so this is an embed — a `@font-face`
-  with the file staged into `web/` and `pages/` — not a sourcing problem. Weigh the bundle
-  size against a fallback nobody notices on a phone. Diff **S**.
 
 ### 1i. Hacker-face CREW — enlistment shipped, Red/Blue archetype layer open
 
@@ -346,20 +341,12 @@ for. The `ICON_SECTOR_*` half of each family is drawn and live on the EXPL zone 
 ## 3. Size / reviewability watch
 
 Same rule as the `game_*.cpp` units: split *at* ~600 lines, not before, and split by concern
-rather than by line count. `expl_screen.cpp` (754), `cfg_screen.cpp` (669) and `save.cpp` (936)
-are each past the number and each still ONE concern — save.cpp is long because the format is
-flat, which is not a second responsibility.
+rather than by line count. `save.cpp` (963), `combat.cpp` (823), `expl_screen.cpp` (757) and
+`cfg_screen.cpp` (668) are each past the number and each still ONE concern — save.cpp is long
+because the format is flat, which is not a second responsibility, and combat.cpp is the turn
+engine alone now that the factories have their own unit beside it.
 
-One has grown to roughly double the rule and has a real seam, so the "if they keep growing"
-condition has fired. It is not a mechanical move, which is why it is a row rather than done:
-
-- **`combat.cpp` (1212)** — the turn engine is lines 21–788; from `makePlayerCombatant`
-  (line 790) on, ~420 lines are combatant/encounter FACTORIES: the wild-malbeast roster and its
-  ramps, the sim dummy, the Bits/XP reward curves, `makeEnemyCombatant`. That tail is a
-  `combat_factory.cpp`. Diff **M** — the two halves share statics that would have to be sorted
-  out first.
-
-Two more are past the rule and were not on this watch at all:
+Two are past the rule and were not on this watch at all:
 
 - **`game.h` (2681)** — the umbrella header. It is not a unit that grew a second concern; it is
   one class's declaration, so the line count is arguably honest. The cost is its **36 includes**:
@@ -387,4 +374,5 @@ Two more are past the rule and were not on this watch at all:
 
 1. **Net-Sea Crossing art (§2c)** — the area ships mechanically; it is the only rung with no
    backdrop or malbeasts of its own.
-2. **`combat.cpp`'s factory split (§3)** — the one unit past double the size rule with a real seam.
+2. **`game.h`'s include diet (§3)** — the one change that unblocks another (the unused-include
+   sweep has no signal until it lands).
