@@ -11,7 +11,13 @@
    The local() probes name the 8px cut EXACTLY: the wider "Pixel Operator Mono"
    family is a different cut, and matching it would dress the page in a face the
    device never draws. An exact local hit skips the download; anything else takes
-   the url(). The AP server serves .ttf as font/ttf (esp32/ap_server.h). */
+   the url(). The AP server serves .ttf as font/ttf (esp32/ap_server.h).
+
+   It dresses NAMES AND CHROME ONLY — the wordmark, tabs, section rules, and the
+   card/row/cell/entry names that are the device's own copy. Descriptions, hints,
+   effect text and meta lines stay on the system mono stack: the face carries the
+   identity at label length and costs legibility at sentence length, which is the
+   same call pages/style.css makes. Hence two tokens below rather than one. */
 @font-face {
   font-family: 'Pixel Operator Mono';
   src: local('Pixel Operator Mono 8'), local('PixelOperatorMono8'),
@@ -43,7 +49,8 @@
   --frag-wash:   rgba(122, 61, 240, .16);    /* frag-lo @ 16%                 */
   --scan:        rgba(0, 0, 0, .11);         /* scanline stripe               */
 
-  --font-ui: 'Pixel Operator Mono', ui-monospace, 'Cascadia Mono', Menlo, Consolas, monospace;
+  --font-display: 'Pixel Operator Mono', ui-monospace, 'Cascadia Mono', Menlo, Consolas, monospace;
+  --font-body:    ui-monospace, 'Cascadia Mono', Menlo, Consolas, monospace;
 }
 
 * { box-sizing: border-box; }
@@ -51,7 +58,7 @@
 html { background: var(--paper-deep); }
 body {
   margin: 0;
-  font-family: var(--font-ui);
+  font-family: var(--font-body);
   font-size: 14px;
   line-height: 1.6;
   color: var(--ink);
@@ -78,6 +85,7 @@ header.site .brand {
   display: flex; justify-content: space-between; align-items: baseline; gap: 8px;
 }
 header.site .brand a.logo {
+  font-family: var(--font-display);
   font-size: 19px; letter-spacing: 1px; color: var(--calm);
   border-bottom: none; font-weight: 700;
 }
@@ -87,6 +95,7 @@ header.site .sub .prompt { color: var(--calm); }
 
 nav.tabs { display: flex; background: var(--track); gap: 1px; border-bottom: 1px solid var(--track); }
 nav.tabs a {
+  font-family: var(--font-display);
   flex: 1; text-align: center; padding: 9px 0 8px;
   font-size: 12px; letter-spacing: 1px;
   color: var(--ink-dim); background: var(--paper); border-bottom: none;
@@ -99,7 +108,7 @@ nav.tabs a.active { color: var(--paper-deep); background: var(--calm); font-weig
   padding: 10px 14px; background: var(--paper); border-bottom: 1px solid var(--track);
   font-size: 12px; color: var(--ink-dim);
 }
-.identity .tag { font-size: 14px; color: var(--ink); letter-spacing: 1px; }
+.identity .tag { font-family: var(--font-display); font-size: 14px; color: var(--ink); letter-spacing: 1px; }
 .identity b { color: var(--ink); font-weight: 400; }
 
 main { padding: 14px; padding-bottom: 48px; }
@@ -113,6 +122,7 @@ footer.site .ip { color: var(--calm); }
 
 /* ---- section headers ----------------------------------------------- */
 h2.sect {
+  font-family: var(--font-display);
   font-size: 13px; letter-spacing: 2px; color: var(--calm); font-weight: 700;
   border-bottom: 1px solid var(--track); padding-bottom: 6px; margin: 22px 0 12px;
   display: flex; align-items: center; gap: 8px;
@@ -150,7 +160,7 @@ a.card:hover { background: var(--paper); border-color: var(--accent); color: inh
 
 .card.locked { background: var(--paper-sunk); border-style: dashed; }
 .card .body { min-width: 0; flex: 1; }
-.card .name { font-size: 16px; letter-spacing: 1px; color: var(--ink); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.card .name { font-family: var(--font-display); font-size: 16px; letter-spacing: 1px; color: var(--ink); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .card .name.masked { color: var(--ink-dim); letter-spacing: 2px; }
 .card .meta { font-size: 11px; color: var(--ink-dim); margin-top: 2px; }
 .card .meta .lit { color: var(--calm); }
@@ -191,7 +201,7 @@ a.card:hover { background: var(--paper); border-color: var(--accent); color: inh
 }
 .cell:hover { border-color: var(--accent); background: var(--paper); color: inherit; }
 .cell.locked { background: var(--paper-sunk); border-style: dashed; }
-.cell .nm { font-size: 11px; letter-spacing: 1px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.cell .nm { font-family: var(--font-display); font-size: 11px; letter-spacing: 1px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 .cell.locked .nm, .cell .nm.masked { color: var(--ink-dim); }
 .cell .st { font-size: 9px; letter-spacing: 1px; }
 
@@ -206,7 +216,7 @@ a.card:hover { background: var(--paper); border-color: var(--accent); color: inh
 .entry-hero { display: flex; flex-direction: column; align-items: center; padding: 18px 0 8px; }
 .entry-hero .stagepos { font-size: 11px; color: var(--ink-dim); letter-spacing: 1px; margin-top: 10px; }
 .entry-title { text-align: center; margin: 8px 0 2px; }
-.entry-title .nm { font-size: 22px; letter-spacing: 2px; font-weight: 700; }
+.entry-title .nm { font-family: var(--font-display); font-size: 22px; letter-spacing: 2px; font-weight: 700; }
 .entry-title .nm.masked { color: var(--ink-dim); }
 .backlink { font-size: 12px; }
 
@@ -230,7 +240,7 @@ a.card:hover { background: var(--paper); border-color: var(--accent); color: inh
 }
 .row.locked { background: var(--paper-sunk); border-style: dashed; }
 .row .body { flex: 1; min-width: 0; }
-.row .nm { font-size: 14px; letter-spacing: 1px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.row .nm { font-family: var(--font-display); font-size: 14px; letter-spacing: 1px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .row.locked .nm { color: var(--ink-dim); letter-spacing: 2px; }
 .row .fx { font-size: 12px; color: var(--ink-dim); margin-top: 1px; }
 /* The derived stat line: the row's raw magnitudes, accented so it reads as data
@@ -254,7 +264,7 @@ a.card:hover { background: var(--paper); border-color: var(--accent); color: inh
 .ach.complete .frame { border-color: var(--calm); background: var(--calm-wash); }
 .ach .frame img { width: 28px; height: 28px; image-rendering: pixelated; }
 .ach.incomplete .frame img { opacity: .35; }
-.ach .nm { font-size: 14px; letter-spacing: 1px; }
+.ach .nm { font-family: var(--font-display); font-size: 14px; letter-spacing: 1px; }
 .ach.incomplete .nm { color: var(--ink-dim); }
 .ach .tr { font-size: 11px; color: var(--ink-dim); }
 /* progress on an unfinished countable ladder — a slimmer .bar, since it sits
@@ -287,7 +297,7 @@ a.card:hover { background: var(--paper); border-color: var(--accent); color: inh
 .tagform { display: flex; gap: 8px; }
 .tagform input {
   flex: 1; min-width: 0; background: var(--paper-deep); border: 1px solid var(--track);
-  border-radius: 2px; color: var(--ink); font-family: var(--font-ui); font-size: 16px;
+  border-radius: 2px; color: var(--ink); font-family: var(--font-body); font-size: 16px;
   letter-spacing: 2px; padding: 10px 12px; text-transform: uppercase;
 }
 .tagform input::placeholder { color: var(--ink-dim); letter-spacing: 1px; }
@@ -303,14 +313,14 @@ a.card:hover { background: var(--paper); border-color: var(--accent); color: inh
 .netform { margin-bottom: 8px; }
 .tagform select {
   flex: 1; min-width: 0; background: var(--paper-deep); border: 1px solid var(--track);
-  border-radius: 2px; color: var(--ink); font-family: var(--font-ui); font-size: 14px;
+  border-radius: 2px; color: var(--ink); font-family: var(--font-body); font-size: 14px;
   letter-spacing: 1px; padding: 10px 12px; min-height: 44px;
 }
 #netrescan { flex: 0 0 auto; padding: 10px 14px; font-size: 16px; }
 #netpass { text-transform: none; letter-spacing: 2px; font-size: 14px; }
 .tagform button {
   background: var(--calm); color: var(--paper-deep); border: none; border-radius: 2px;
-  font-family: var(--font-ui); font-size: 13px; letter-spacing: 1px; font-weight: 700;
+  font-family: var(--font-body); font-size: 13px; letter-spacing: 1px; font-weight: 700;
   padding: 10px 16px; cursor: pointer; min-height: 44px;
 }
 .tagform button:hover { background: var(--ink); }
