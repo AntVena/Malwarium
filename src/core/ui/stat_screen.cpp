@@ -256,49 +256,49 @@ void drawStatScreen(Framebuffer& fb, const PetModel& m, const char* name,
     statHeader(fb, "STAT", 0);
 
     // Name · generation · stage.
-    drawText(fb, kMargin, 20, name, palColor(Pal::INK));
+    drawText(fb, kMargin, kRowTop, name, palColor(Pal::INK));
     const char* st = stageName(stage);
     const int stX = kActiveW - kMargin - textWidth(st);
-    drawText(fb, stX, 20, st, palColor(Pal::ACCENT));
+    drawText(fb, stX, kRowTop, st, palColor(Pal::ACCENT));
     char gen[12];
     std::snprintf(gen, sizeof(gen), "GEN %d", generation);
-    drawText(fb, stX - 6 - textWidth(gen), 20, gen, palColor(Pal::INK_DIM));
+    drawText(fb, stX - 6 - textWidth(gen), kRowTop, gen, palColor(Pal::INK_DIM));
 
-    drawStageIndicator(fb, kMargin, 34, 130, stage);
+    drawStageIndicator(fb, kMargin, 40, 130, stage);
     // Creature level: LVL n beside the stage bar — text-only, grayscale-safe.
     char lvl[12];
     std::snprintf(lvl, sizeof(lvl), "LVL %d", level);
-    drawText(fb, kActiveW - kMargin - textWidth(lvl), 38, lvl, palColor(Pal::ACCENT));
+    drawText(fb, kActiveW - kMargin - textWidth(lvl), 44, lvl, palColor(Pal::ACCENT));
 
     // XP toward the next level: a slim progress bar under the stage row,
     // banked-XP / next-level-cost. Fill level is the grayscale channel; the numeric
     // readout spells out the exact threshold.
     const float xt = xpToNext > 0 ? static_cast<float>(combatXp) / xpToNext : 0.f;
-    drawText(fb, kLabelX, 51, "XP", palColor(Pal::INK_DIM));
-    drawProgressBar(fb, 30, 50, 118, 7, xt, palColor(Pal::ACCENT));
+    drawText(fb, kLabelX, 60, "XP", palColor(Pal::INK_DIM));
+    drawProgressBar(fb, 30, 59, 118, 7, xt, palColor(Pal::ACCENT));
     char xp[16];
     std::snprintf(xp, sizeof(xp), "%d/%d", combatXp, xpToNext);
-    drawText(fb, kActiveW - kMargin - textWidth(xp), 51, xp, palColor(Pal::INK_DIM));
+    drawText(fb, kActiveW - kMargin - textWidth(xp), 60, xp, palColor(Pal::INK_DIM));
 
     // Three vitals gauges.
-    vitalsRow(fb, 60, "HUNGER", m.hunger(), m.hungerZone(), false, pulseOn, beat);
-    vitalsRow(fb, 82, "FRAG", m.fragmentation(), m.fragZone(), true, pulseOn, beat);
-    vitalsRow(fb, 104, "HAPPY", m.happiness(), m.happyZone(), false, pulseOn, beat);
+    vitalsRow(fb, 74, "HUNGER", m.hunger(), m.hungerZone(), false, pulseOn, beat);
+    vitalsRow(fb, 96, "FRAG", m.fragmentation(), m.fragZone(), true, pulseOn, beat);
+    vitalsRow(fb, 118, "HAPPY", m.happiness(), m.happyZone(), false, pulseOn, beat);
 
     // Care mistakes.
-    drawText(fb, kLabelX, 134, "CARE", palColor(Pal::INK));
-    drawCarePips(fb, kGaugeX, 132, m.careMistakes(), pulseOn);
+    drawText(fb, kLabelX, 146, "CARE", palColor(Pal::INK));
+    drawCarePips(fb, kGaugeX, 144, m.careMistakes(), pulseOn);
     char num[8];
     std::snprintf(num, sizeof(num), "%d", m.careMistakes());
     Rgb565 nc = (m.careBranch() == CareBranch::Dying) ? palColor(Pal::HOT)
                                                       : palColor(Pal::INK);
-    drawText(fb, kNumX + 12, 134, num, nc);
+    drawText(fb, kNumX + 12, 146, num, nc);
 
     // Time-to-next-evolution (all stages). An egg counts down to its HATCH; a
     // mid-chain pet to its next EVOLVE; a Daemon terminus reads MAX (no successor).
     // Ink text readout — grayscale-safe, no colour channel needed.
     const char* evoLabel = (stage == Stage::BootSector) ? "HATCH" : "EVOLVE";
-    drawText(fb, kLabelX, 156, evoLabel, palColor(Pal::INK));
+    drawText(fb, kLabelX, 168, evoLabel, palColor(Pal::INK));
     char evo[12];
     if (hasNextEvo) {
         const uint32_t s = evoRemainMs / 1000u;
@@ -308,7 +308,7 @@ void drawStatScreen(Framebuffer& fb, const PetModel& m, const char* name,
     } else {
         std::snprintf(evo, sizeof(evo), "MAX");
     }
-    drawText(fb, kActiveW - kMargin - textWidth(evo), 156, evo, palColor(Pal::INK));
+    drawText(fb, kActiveW - kMargin - textWidth(evo), 168, evo, palColor(Pal::INK));
 }
 
 namespace {

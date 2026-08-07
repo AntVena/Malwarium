@@ -234,7 +234,7 @@ void drawItemTypePicker(Framebuffer& fb, const std::vector<ItemPickRow>& tiles,
 }
 
 void drawItemsList(Framebuffer& fb, const std::vector<InvRow>& rows, int cursor,
-                   bool lockout, int /*beat*/, ItemFilter filter,
+                   bool lockout, int beat, ItemFilter filter,
                    bool tabsOwned, bool pickerOwned) {
     const bool filterHintVisible = tabsOwned || pickerOwned;
     fb.clear(palColor(Pal::PAPER));
@@ -313,13 +313,11 @@ void drawItemsList(Framebuffer& fb, const std::vector<InvRow>& rows, int cursor,
         drawText(fb, qtyX, textY, qty, palColor(Pal::INK));
         drawRarityPips(fb, pipsX, textY, r.def->rarity);
         // The ladder and the count own the right end of the row, so the name yields:
-        // clipped to whatever is left rather than drawing through them. Only the
-        // longest names in the biggest stacks ever reach it.
-        char name[40];
-        const int nameChars = std::min(static_cast<int>(sizeof(name)) - 1,
-                                       std::max(0, (pipsX - 8 - 40) / kFontAdvance));
-        std::snprintf(name, sizeof(name), "%.*s", nameChars, r.label);
-        drawText(fb, 40, textY, name, palColor(Pal::INK));
+        // it scrolls within what is left rather than drawing through them (widgets.h).
+        // Only the focused row travels — a list of names all sliding at once is
+        // unreadable, and the cursor already says which one the player is asking about.
+        drawTextMarquee(fb, 40, textY, std::max(0, pipsX - 8 - 40), r.label,
+                        palColor(Pal::INK), beat, i == cursor);
     }
 
     if (n > kVisibleRows) {  // slim scrollbar (UI_SCROLLBAR)

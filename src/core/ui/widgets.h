@@ -34,6 +34,22 @@ void drawHeaderBand(Framebuffer& fb, const char* title,
                     Rgb565 rightColor = palColor(Pal::INK_DIM),
                     Rgb565 titleColor = palColor(Pal::INK));
 
+// Text in a column narrower than it needs. Draws `s` at (x,y) clipped to `w`; if
+// it fits, this is exactly drawText and costs nothing extra.
+//
+// When it doesn't fit and `scroll` is set, the line travels: it holds at the head
+// long enough to read, walks to the tail, holds again, and snaps back — driven by
+// `beat`, so it advances on the ~4fps heartbeat like every other motion on the
+// device rather than on a timer of its own.
+//
+// Only the FOCUSED row of a list should scroll. An unfocused overflowing row is
+// clipped instead: a screen of lines all travelling at once is unreadable, and
+// the cursor is already the thing that says which row the player is asking about.
+// The 5x7-era ellipsis is not available — the glyph table is ASCII, which the
+// content tests enforce — so the clip is the truncation cue.
+void drawTextMarquee(Framebuffer& fb, int x, int y, int w, const char* s,
+                     Rgb565 color, int beat, bool scroll);
+
 // Segmented 10-cell gauge in the box (x,y,w,h). `value` 0..100 sets lit cells
 // (floor(value/10)). Vitality/Hazard polarity is already baked into `zone`.
 // fragRamp=true tints lit cells purple->pink by position instead of by zone.

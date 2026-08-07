@@ -165,7 +165,7 @@ const ItemDef kItems[] = {
     // pet with no ghost; the clear is a no-op then.
     {"airgap_snack", "Air-Gapped Snack", ItemDef::Type::Food,
      ItemDef::Rarity::Uncommon,
-     "Fills {hunger} Hunger. Patches {heal} Health mid-fight. Cuts a Replication "
+     "Fills {hunger} Hunger. Patches {heal} Health. Cuts a Replication "
      "Ghost loose.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 40}, {IE::Kind::ClearReplicationGhost, 0}}, /*combatHeal=*/30},
@@ -193,8 +193,7 @@ const ItemDef kItems[] = {
     
      {"r007_b33r", "R007_B33R", ItemDef::Type::Food,
      ItemDef::Rarity::Uncommon,
-     "Junk food: fills {hunger} Hunger and lifts Happiness {happy}, at the cost of "
-     "{frag} Fragmentation.",
+     "Junk food: {hunger} Hunger and {happy} Happiness, at {frag} Fragmentation.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 15}, {IE::Kind::Happy, 25}, {IE::Kind::Frag, 5}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/5},
@@ -237,8 +236,7 @@ const ItemDef kItems[] = {
     // more often than the ones it says you don't (Root Veg, Fresh Macrol).
     //
     {"spam", "Spam", ItemDef::Type::Food, ItemDef::Rarity::Common,
-     "Plentiful. Very, very plentiful. Too plentiful. Better find something to do "
-     "with it all.",
+     "Plentiful. Far too plentiful. Find something to do with it all.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 2}}, /*combatHeal=*/0,
      /*preEncounterXp=*/0, /*bits=*/0, /*walkWarp=*/ItemDef::WalkWarp::None,
      /*use=*/ItemDef::Use::Consume, /*category=*/ItemDef::Category::Derive,

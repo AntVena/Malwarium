@@ -461,7 +461,7 @@ void Game::drawSubmenu(Framebuffer& fb) const {
             break;
         }
         case SubmenuId::Maint:
-            drawMaintList(fb, model_, listRow_);
+            drawMaintList(fb, model_, listRow_, beat_);
             break;
         case SubmenuId::Cfg:
             drawCfgList(fb, listRow_, hackerTag_, equippedTitleName(), radioOwner_);
@@ -477,7 +477,7 @@ void Game::drawSubmenu(Framebuffer& fb) const {
             MoveDef::Kind sk[kMaxMoveSlots];
             for (int i = 0; i < kMaxMoveSlots; ++i) sk[i] = slotRequiredKind(i);
             drawLoadout(fb, registry_, moveLoadout_,
-                        pet_ ? pet_->stage : Stage::BootSector, trainRow_, sk);
+                        pet_ ? pet_->stage : Stage::BootSector, trainRow_, sk, beat_);
             break;
         }
         case SubmenuId::Expl: {
@@ -648,7 +648,7 @@ void Game::drawShopScreen(Framebuffer& fb) const {
         }
     }
     drawShop(fb, shopStoreName(), bits_, rows, n, shopCursor_,
-             shopListingDescription(shopCursor_).c_str(), shopStatusLine());
+             shopListingDescription(shopCursor_).c_str(), shopStatusLine(), beat_);
 }
 
 void Game::drawPostEncounterScreen(Framebuffer& fb) const {
