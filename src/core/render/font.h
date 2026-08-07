@@ -9,9 +9,14 @@
 // Every glyph is one 8x8 cell and advances 8px, ink inset a column from the
 // left with the last row reserved for descenders. Copy renders in caps: the
 // fold lives in fontGlyph (font_glyphs.h), not in the call sites.
+//
+// FontFace (font_glyphs.h) picks the cut, and every call below defaults to
+// Regular. Both cuts share the cell and the advance, so a face is never a
+// reason to measure or lay anything out differently.
 #pragma once
 
 #include "core/render/color.h"
+#include "core/render/font_glyphs.h"
 
 namespace mal {
 
@@ -24,10 +29,12 @@ constexpr int kFontAdvance = 8;
 // Draw text at (x,y) — y is the cell top. Unknown glyphs render as blank.
 // `scale` multiplies pixel size. Returns the x just past the drawn text.
 int drawText(Framebuffer& fb, int x, int y, const char* s, Rgb565 color,
-             int scale = 1);
+             int scale = 1, FontFace face = FontFace::Regular);
 
 // Width in pixels a string would occupy at `scale`. Exact, not an estimate —
-// the face is monospaced.
+// the face is monospaced. Takes NO face: every cut shares kFontAdvance, so
+// measuring is face-invariant and a parameter here would be one the function
+// ignores. A cut that ever advanced differently would have to appear here.
 int textWidth(const char* s, int scale = 1);
 
 // Draw `s` word-wrapped into `maxW` pixels, `lineH` apart: skips the first
@@ -41,10 +48,12 @@ int textWidth(const char* s, int scale = 1);
 // right edge. Cap `maxLines` at whatever the surrounding layout can spare —
 // a fixed-height list row gets 2, a detail page gets the rest of the screen.
 int drawTextWrapped(Framebuffer& fb, int x, int y, int maxW, const char* s,
-                    Rgb565 color, int lineH, int maxLines, int firstLine = 0);
+                    Rgb565 color, int lineH, int maxLines, int firstLine = 0,
+                    FontFace face = FontFace::Regular);
 
 // How many lines `s` wraps to at `maxW` — for a caller sizing a block or clamping
-// a scroll offset without drawing first. Same break rule as drawTextWrapped.
+// a scroll offset without drawing first. Same break rule as drawTextWrapped, and
+// face-invariant for the same reason textWidth is.
 int textWrapLines(const char* s, int maxW);
 
 } // namespace mal

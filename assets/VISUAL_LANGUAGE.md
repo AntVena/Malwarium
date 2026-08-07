@@ -96,8 +96,39 @@ size is not a free parameter: the sizes available are the cut's own **8** and, t
 rules out — `gen_font.py` refuses to emit it rather than leaving that to be spotted on the
 panel.
 
-A second role at 16 is a design decision nobody has taken; until then, hierarchy is carried by
-weight and position (`Pal::INK` vs `INK_DIM`, the header band, indentation) rather than by size.
+**8 is also the floor, and that is physical, not a preference.** The panel is 240×240 on a
+1.54" square — 220 PPI, so one active pixel is 0.115mm and a UI pixel is a panel pixel (§0
+architecture: chrome draws at native active res, no upscale). The cap band is rows 0–6 of the
+cell, which puts cap height at **0.81mm** and the full cell at 0.92mm. A face cut smaller —
+a 5px body, say — lands near 0.46mm, under what a held device can ask of a reader. So a
+smaller companion cut for secondary copy is not an available move: there is nothing below
+this to demote text into.
+
+### 2.3 Weight, not size — the two cuts
+
+Hierarchy therefore runs on **weight**, and `FontFace` (`src/core/render/font_glyphs.h`) is
+that axis. `Regular` is what the TTF rasterises to; `Bold` is derived from it in the
+generator, each scanline smeared a column right, so the two share `kFontW` / `kFontH` /
+`kFontAdvance` **exactly**. That is the whole reason it is derived rather than a second TTF: a
+sourced bold arrives with its own advance, and every constant in `src/core/ui/layout.h` is
+built on this one. Switching face moves nothing and costs a layout nothing.
+
+**Reserve Bold for the one thing on a screen that outranks the rest.** Today that is the
+header band's title and nothing else — emphasis stops meaning anything the moment two things
+claim it. Position and `Pal::INK` vs `INK_DIM` still carry the rest.
+
+The smear is not free on the 7 cells that already span the box (`% @ M W _ m w`); they
+thicken into their own counters, and `_` loses its rightmost column. The generated table names
+them, counted off the rasterised data rather than written down. It reads as bold rather than
+as damage on real copy — what breaks it is a run of consecutive wide glyphs, which no title
+has. Replacing the derived cut with the family's own Bold, which would fix those 7, is a
+sourcing job that changes nothing above.
+
+A second **size** role at 16 stays untaken, and the reason is now on the record rather than
+merely unexamined: at an 8px advance a 224px line holds 28 characters and at 16 it holds 14,
+on a screen where the item detail page already truncates a name at 14. Weight buys the same
+hierarchy for none of that width.
+
 One family, not multiple faces — any replacement must satisfy §2.1 at whatever size it ships.
 
 ---
@@ -181,8 +212,8 @@ This system **locks existing manifest rows** rather than adding art — no art I
 
 - **§E `FONT_UI` / `PAL_CORE`:** `PAL_CORE` is the §1.2 token set (14 roles), delivered as
   `assets/PAL_CORE.json`; `FONT_UI` is the §2 pixel family, delivered as Pixel Operator
-  Mono's own 8px cut. UI chrome binds to a token, never a literal hex — that is what keeps a hue
-  change a one-file reskin.
+  Mono's own 8px cut plus the bold §2.3 derives from it. UI chrome binds to a token, never a
+  literal hex — that is what keeps a hue change a one-file reskin.
 - **§A slot icons:** concepts fixed (§3.3); the **28×28 + dim/bright** spec is confirmed.
 - **Icon size tiers (§3.1)** are a manifest note, so every future `ICON_*` row picks a tier.
 

@@ -12,7 +12,10 @@ namespace mal {
 void drawHeaderBand(Framebuffer& fb, const char* title, const char* right,
                     Rgb565 rightColor, Rgb565 titleColor) {
     fb.clear(palColor(Pal::PAPER));
-    drawText(fb, kMargin, kTitleY, title, titleColor);
+    // The band's title is the one piece of copy that says where you are, so it
+    // carries the bold cut and nothing else on the screen does. Same cell and
+    // advance as the regular face (font_glyphs.h), so the band does not move.
+    drawText(fb, kMargin, kTitleY, title, titleColor, 1, FontFace::Bold);
     if (right && right[0])
         drawText(fb, kActiveW - kMargin - textWidth(right), kTitleY, right,
                  rightColor);
