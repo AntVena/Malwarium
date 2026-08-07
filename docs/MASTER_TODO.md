@@ -33,6 +33,7 @@ building it up organically.
 | FB-UI4 | **Evolution reveal animation** — flash the pet silhouette + the possible-evolution silhouettes repeatedly before landing. | Evolve overlay. Needs the branch-candidate set + silhouette rendering. | L | Depends on the eye/silhouette metadata below. Design-heavy. |
 | NA | **Bench travel mode ON BATTERY.** Entering the sleep and waking on B+C are confirmed on a board — the device goes down, comes back, and the USB link drops and re-enumerates across the gap as a deep-sleep reset should. That run was USB-TETHERED, which leaves the one thing it could not test: **the power latch**. On USB, VBUS feeds VSYS directly, so `PIN_POWER_HOLD` is not what holds the rail up and `gpio_hold_en` over it was never exercised. If the hold does not survive on battery, travel mode is a power-off that only PWR undoes. Also open from the same run: that a SINGLE button re-sleeps without booting (the wake gate's software chord), that the pet returns with the hunger/happiness/evolve timer it went down with, and the current draw asleep — which is the whole point. | `platform/esp32/main.cpp`'s `travelDeepSleep` / `travelWakeGate`. | S | Needs a battery and a way to read µA — no code expected, this is a measurement. |
 | FB-DSGN7 | **Iconic per-line move effects** (Ransomware: gamma pulse + scaled white/green silhouette layers, +1px layer per Evo-level of the move). | Move-fx system, per-line. | L | Needs a creature-line taxonomy + the effect system first. Cosmetic only. |
+| NA | **The detail pages read as one flat column.** On an item detail the readout panel is reserved `kDetailPanelTop`(56)→`kDetailPanelBottom`(158) whether the prose fills it or not, so a three-line description leaves ~60px of dead space before `HAVE`, and five roles end up evenly spread down the screen with no grouping. Hierarchy is available from spacing here without spending a font on it — the readout and prose as one block, `HAVE`/the action line as a footer pair. | `items_screen.cpp`'s `kDetail*` constants; `mods_screen.cpp` / `train_screen.cpp` have the same shape. | S | Look at `tools/screens.sh` output before and after; this is a judgement, not a measurement. |
 | NA | **Sub-area bosses that are themselves gauntlets** — `subAreaBoss` returns a length-1 `BossGauntlet`, so a sub-area boss is always exactly one fight; only the AREA boss is multi-round. Castle Rapidscare's THE EIGHT PWNS wants to be a minor gauntlet, and its JOKER VIRUS wants to *loop back* into another Pwns run after it falls. | `combat.cpp`'s `subAreaBoss`/`areaBoss`, plus the round plumbing in `game_explore.cpp` (`startBossRound`/`finishBossRound`). | L | The re-entrant loop is the novel part — the carried-Health round machinery is linear today, with no notion of a round that re-queues an earlier one. Needs a design pass on how a loop terminates and what it pays. |
 | NA | **Confirm on device that a save lands while audit capture is armed.** The write path no longer asks for the blob in one piece: `Game` owns the serialize buffer and `captureSave` reserves every collection to its exact count, so an ordinary save is judged against `kSaveHeapFloorBytes` (12KB) rather than the reservation. Built and green on the native + S3 gates; the hardware run that proves `held` stays at 0 through a whole capture session has not been done. | `game_persist.cpp`'s `persistSave` and the `kSaveHeapFloorBytes` / `kSaveGrowHeapFloorBytes` pair. | S | `HEAP_TRACE_ENABLED` (config.h) → 1, then CFG → RADIO → AUDIT → SCAN+CAP, 'Pedia AP on and off again. Success = `held=0` with `floor=12288` and no boot banner. Read the log, not the panel — a reset is fast enough to look like nothing happened. |
 | NA | **Capture arming costs ~70KB and the AP ~58KB**, against ~126KB free with the radio idle. The device works, and the save no longer needs a big contiguous block, but that was the only thing standing on this — anything else that grows will hit the same wall. Worth a pass at what the capture path actually needs. | `net_capture.h`'s `powerUp` (`esp_wifi_init` + promiscuous + the pcap SD buffers). | M | Measured on device, not estimated: `[ap] down free=126408` → `[cap] armed free=56188`. |
@@ -95,12 +96,18 @@ and a save field to remember it. Diff **M**.
 
 Intentional simplifications. None is a bug; each is a "confirm as v1 or revise".
 
-- **One type size carries every role.** `FONT_UI` is crisp only at its own 8px cut and integer
-  multiples of it (VISUAL_LANGUAGE §2.2), so titles, rows, captions and numerics all render at
-  8 and hierarchy comes from weight and position instead. A 16px title role is available for
-  free — `drawText`'s `scale` is whole-pixel — but every band and row pitch on the grid
-  (`src/core/ui/layout.h`) is sized for one line height, so taking it is a layout pass, not a
-  parameter. Diff **M**, and a design call before it is a build.
+- **Only the header-band title claims Bold.** `FontFace::Bold` exists and costs a layout
+  nothing (VISUAL_LANGUAGE §2.3), so the question is now where else emphasis is earned rather
+  than whether it is available. Candidates: an item/mod/move detail page's NAME, and the
+  selected row in a list. The rule that keeps it worth having is that one thing per screen
+  outranks the rest — confirm as v1 or extend it deliberately, one surface at a time. Diff
+  **S** per surface, taste before code.
+- **The derived bold is a smear, not a drawn cut.** 7 cells (`% @ M W _ m w`) already span the
+  box and thicken into their own counters. It reads as bold rather than damage on every title
+  that ships, so this is polish, not a defect. Pixel Operator's family carries its own Bold
+  under the same CC0 — sourcing that cut and pointing `gen_font.py` at it would fix all 7 and
+  changes nothing above it, PROVIDED the bold's advance is still 8. If it isn't, deriving stays
+  correct and this row closes unbuilt. Diff **S**, sourcing before code.
 - **An empty TRAIN slot marks its fallback move with shape, not a word.** The empty-slot glyph
   (distinct from the locked one beside it) plus a dimmed name are the two non-colour channels
   carrying it, which clears the grayscale gate — but the row has no width left for the word
@@ -120,6 +127,14 @@ Intentional simplifications. None is a bug; each is a "confirm as v1 or revise".
   is "flash, read the boot line, confirm no crash loop" — nobody has walked the buttons through
   EXPL/combat/Wi-Fi/rank-up on the real panel in a long time. Diff **M** (harness design). A
   human bench pass is also owed.
+- **`make pedia-check` calls itself a CI-staleness guard and no CI runs it.** `.github/workflows/gates.yml`
+  runs the native build/test and the S3 build; nothing invokes the target, and `tools/gates.sh`
+  doesn't either. It is a real guard — it catches both a content edit without a re-gen AND a
+  generator that can no longer parse what it scrapes (`gen_pedia_data.py` reads the wild roster
+  out of a named function by string index, so moving that function breaks it silently). Today
+  the first thing to notice either is `make pedia-tar`, i.e. a PUBLISH. Diff **S**: it needs a
+  C++ compile for `dump_content` plus Python, both already present in the native job. Decide
+  whether it belongs in `gates.sh` (runs on every edit loop) or only in CI (keeps the loop fast).
 - **No Wokwi screenshot-regression tier** — deferred by decision; the host tier covers most of it.
   `tools/screens.sh` covers the LOOKING half (one contact sheet of every screen, no baselines),
   which is what catches two things drawn over each other — the one failure a string-width
