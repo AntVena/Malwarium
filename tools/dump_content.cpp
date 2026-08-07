@@ -25,6 +25,7 @@
 #include "core/content/areas/area_defs.h"
 #include "core/content/content_achievements.h"
 #include "core/content/content_tables.h"
+#include "core/content/creatures/creature_lines.h"
 #include "core/content/effect_text.h"
 
 using namespace mal;
@@ -117,8 +118,12 @@ void fieldIdOrNull(const char* key, const char* val, bool comma = true) {
 
 void dumpCreatures() {
     std::fputs("\"creatures\": [\n", stdout);
-    for (int i = 0; i < kCreaturesCount; ++i) {
-        const CreatureDef& c = kCreatures[i];
+    // Family by family, in kCreatureLines order — the roster has no flat form, and
+    // this order is what the 'Pedia lists species in.
+    int i = 0;
+    for (const CreatureLine& line : kCreatureLines)
+    for (int r = 0; r < line.count; ++r, ++i) {
+        const CreatureDef& c = line.rows[r];
         std::fputs("  {", stdout);
         field("id", c.id);
         field("name", c.displayName);
@@ -133,7 +138,7 @@ void dumpCreatures() {
         fieldIdOrNull("line", c.line);
         fieldIdOrNull("hint", c.hint);
         fieldIdOrNull("context", c.context, /*comma=*/false);
-        std::fputs(i + 1 < kCreaturesCount ? "},\n" : "}\n", stdout);
+        std::fputs(i + 1 < kCreatureCount ? "},\n" : "}\n", stdout);
     }
     std::fputs("],\n", stdout);
 }

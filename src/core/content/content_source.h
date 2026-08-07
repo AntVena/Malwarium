@@ -13,7 +13,10 @@ namespace mal {
 
 struct ContentSource {
     virtual ~ContentSource() = default;
-    virtual const CreatureDef* creatures(int& count) const = 0;
+    // Creatures arrive grouped into families (CreatureLine), not as one flat
+    // roster: a family's rows are authored together and a source that ships one
+    // ships all of it. The registry flattens on read, so nothing downstream cares.
+    virtual const CreatureLine* creatureLines(int& count) const = 0;
     virtual const EggLineDef* eggLines(int& count) const = 0;
     virtual const ItemDef* items(int& count) const = 0;
     virtual const ModDef* mods(int& count) const = 0;

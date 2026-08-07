@@ -9,6 +9,7 @@
 
 #include "core/content/content_source.h"
 #include "core/content/content_tables.h"
+#include "core/content/creatures/creature_lines.h"
 #include "generated/assets.h"
 
 namespace mal {
@@ -17,9 +18,9 @@ namespace {
 
 class EmbeddedContent : public ContentSource {
 public:
-    const CreatureDef* creatures(int& count) const override {
-        count = kCreaturesCount;
-        return kCreatures;
+    const CreatureLine* creatureLines(int& count) const override {
+        count = kCreatureLineCount;
+        return kCreatureLines;
     }
     const EggLineDef* eggLines(int& count) const override {
         count = kEggLinesCount;

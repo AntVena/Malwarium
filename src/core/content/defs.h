@@ -59,6 +59,33 @@ inline const char* dominantSignalName(DominantSignal s) {
     return "?";
 }
 
+// How many named animation loops one creature may declare. A structural bound on
+// CreatureDef::clips, not a balance number — raise it when a creature genuinely
+// needs a fifth loop, which costs every row the slot whether it fills it or not.
+constexpr int kMaxAnimClips = 4;
+
+// One named animation loop over a single row of a creature's sprite sheet. A sheet
+// can stack several rows of equal-width frames (sprite.h); a clip says which row
+// plays, how many of that row's columns it uses, and how long each frame holds.
+// Clips are declared on the creature's own row (CreatureDef::clips below), so a
+// sheet and the loops over it are read in one place — a sprite name names ART, and
+// is not also a key into a table somewhere else that can silently fail to match.
+struct AnimClip {
+    const char* name = nullptr;  // "idle", "attack", ...; nullptr = unused slot
+    int row = 0;                 // sheet row this clip plays from
+    int frames = 0;              // columns 0..frames-1 of that row
+    int holdBeats = 1;           // heartbeats (kHeartbeatMs each) each frame holds
+
+    // The frame to draw on a given heartbeat: each frame holds `holdBeats` beats,
+    // wrapping every frames*holdBeats. Raise holdBeats to slow a clip down
+    // (holdBeats=2 halves its speed) without redrawing or re-counting frames.
+    int frameAt(int beat) const {
+        if (frames <= 0) return 0;
+        const int hold = holdBeats > 0 ? holdBeats : 1;
+        return (beat / hold) % frames;
+    }
+};
+
 struct CreatureDef {
     const char* id;          // stable id, e.g. "paypup"
     const char* displayName; // e.g. "Paypup"
@@ -123,6 +150,33 @@ struct CreatureDef {
     // so there is no line-level answer to inherit. The default is a floor for a row
     // that predates a new mover kind, not a licence to leave it off.
     Locomotion locomotion = Locomotion::Walk;
+    // Named animation loops over this creature's OWN sheet (spriteName above), in
+    // whatever order reads best — `clip()` finds them by name, nothing by position.
+    // An unfilled slot has a null name. A creature that declares no clip at all
+    // falls back to sprite.h's idleFrame() breathe/blink heuristic on row 0, which
+    // is what a single-frame placeholder wants; declaring one is how a multi-row
+    // sheet becomes reachable. Sheet layout for a new creature: see
+    // src/core/content/creatures/CREATURE_CONTENT_STANDARD.md.
+    AnimClip clips[kMaxAnimClips] = {};
+
+    // This creature's clip of the given name, or nullptr if it declares none.
+    const AnimClip* clip(const char* clipName) const {
+        if (!clipName) return nullptr;
+        for (const AnimClip& c : clips)
+            if (c.name && std::strcmp(c.name, clipName) == 0) return &c;
+        return nullptr;
+    }
+};
+
+// One creature FAMILY — the rows of a single evolution line, which is what
+// CreatureDef::line names on every one of them. Each family is defined together in
+// src/core/content/creatures/<id>/line.h and listed once in creature_lines.h; the
+// registry reads creatures family-by-family rather than as one flat roster, so
+// adding a family is a folder plus one line, with no count to bump anywhere.
+struct CreatureLine {
+    const char* id;           // matches CreatureDef::line on every row it holds
+    const CreatureDef* rows;
+    int count;
 };
 
 // Which minigame an egg line's hatch runs. One entry per interaction shape; the

@@ -208,7 +208,8 @@ def frame_width(name, img_w):
 
 def frame_rows(name, img_h):
     # A pet sheet's height that's a clean multiple of PET_ROW_H is a vertical
-    # stack of that many rows (one animation loop per row, see sprite_anim.h);
+    # stack of that many rows; which row plays which named loop is declared on the
+    # creature's own content row (CreatureDef::clips, core/content/defs.h);
     # anything else (single-row sheets, and oversized single-frame Daemon
     # cells like Cryptoad's 80x52) is one row.
     if name.startswith(PET_PREFIX) and img_h % PET_ROW_H == 0:

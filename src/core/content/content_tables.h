@@ -1,8 +1,8 @@
 // content_tables.h — the embedded content tables, one per entity type.
 //
 // The data is split across sibling content_*.cpp units (one file per content
-// type, so each stays skimmable: content_creatures / content_items / content_mods
-// / content_moves / content_evolution). Each table is defined with external
+// type, so each stays skimmable: content_items / content_mods / content_moves /
+// content_evolution). Each table is defined with external
 // linkage in its own unit and declared here; `embedded_content.cpp` assembles them
 // into the ContentSource the registry reads. `<table>Count` travels with each
 // array (sizeof only works in the defining unit).
@@ -15,7 +15,10 @@
 
 namespace mal {
 
-extern const CreatureDef    kCreatures[];     extern const int kCreaturesCount;
+// Creatures are NOT here: they are grouped into families, one folder each, and
+// listed in creatures/creature_lines.h (kCreatureLines). A family's rows are
+// authored together, so the roster is a list of families rather than a table of
+// rows — see creatures/CREATURE_CONTENT_STANDARD.md.
 extern const EggLineDef      kEggLines[];      extern const int kEggLinesCount;
 extern const ItemDef         kItems[];         extern const int kItemsCount;
 extern const char* const kDefragToolId;  // "disk_scrubber" — MAINT's TOOL-defrag item id

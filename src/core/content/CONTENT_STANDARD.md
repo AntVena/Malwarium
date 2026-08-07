@@ -43,11 +43,17 @@ thing and every lever it pulls**. Hold all content to it.
      give the new `ItemEffect::Kind` a name in `itemEffectToken()` beside its applier
      case, so a new mechanic reaches the prose the same way it reaches the pet.
 
-4. **One content type per file.** Each table lives in its own `src/core/content/content_<type>.cpp`
-   unit (declared in `content_tables.h`, assembled by `embedded_content.cpp`). Split *at*
-   growth, keep each unit skimmable. Adding a type = a new `content_<type>.cpp` + one
-   `extern` pair in `content_tables.h` + one accessor in `embedded_content.cpp`. Adding a
-   row = edit that one table.
+4. **One content type per file** — and, once a type's rows group into families a reader would
+   want to open one at a time, one FOLDER per family. Each table lives in its own
+   `src/core/content/content_<type>.cpp` unit (declared in `content_tables.h`, assembled by
+   `embedded_content.cpp`). Split *at* growth, keep each unit skimmable. Adding a type = a new
+   `content_<type>.cpp` + one `extern` pair in `content_tables.h` + one accessor in
+   `embedded_content.cpp`. Adding a row = edit that one table.
+   - *Types that outgrew one file:* EXPL areas (one folder per area,
+     `areas/AREA_CONTENT_STANDARD.md`) and creatures (one folder per evolution line,
+     `creatures/CREATURE_CONTENT_STANDARD.md`). Both keep a single list naming the members —
+     `kAreaList` / `kCreatureLines` — from which every count derives, so the split never adds a
+     number to keep in sync. Reach for it when one file stops being skimmable, not before.
    - *Downstream:* the web 'Pedia reads these tables through the firmware's own code —
      `tools/dump_content.cpp` links them and prints JSON, which `tools/gen_pedia_data.py`
      consumes. So a struct-shape change needs no matching edit in the generator; run

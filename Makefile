@@ -23,6 +23,8 @@ dump-content: build/dump_content
 build/dump_content: tools/dump_content.cpp src/core/content/effect_text.cpp \
                     $(wildcard src/core/content/content_*.cpp) \
                     $(wildcard src/core/content/areas/*/area.cpp) \
+                    $(wildcard src/core/content/creatures/*/line.h) \
+                    $(wildcard src/core/content/creatures/*.h) \
                     $(wildcard src/core/content/*.h) src/core/content/effect_text.h \
                     src/core/app/game_achievements.h src/core/app/game_rig_shop.h
 	@mkdir -p build

@@ -22,7 +22,8 @@
 #include "core/app/game_rig_shop.h"            // kRigUpgrades — the rig row/level totals
 #include "core/content/areas/area_defs.h"      // kAreaCount / kSubAreasPerArea
 #include "core/content/content_achievements.h"
-#include "core/content/content_tables.h"       // kCreatures / kItems
+#include "core/content/content_tables.h"       // kItems
+#include "core/content/creatures/creature_lines.h"  // kCreatureCount / creatureLine()
 #include "core/content/effect_text.h"
 #include "core/model/combat.h"                 // kWildMalbeastCount
 
@@ -45,7 +46,7 @@ inline int achievementSeriesTotal(AchSeries series, const char* key, int param) 
             return 0;                                   // unbounded — no "all of them"
         case AchSeries::SpeciesAtDepth:
         case AchSeries::SpeciesRaised:
-            return kCreaturesCount;
+            return kCreatureCount;
         case AchSeries::AreasCleared:
             return kAreaCount;
         case AchSeries::SubAreasCleared:
@@ -53,12 +54,11 @@ inline int achievementSeriesTotal(AchSeries series, const char* key, int param) 
         case AchSeries::MalbeastsDefeated:
             return kWildMalbeastCount;
         case AchSeries::LineRaised: {
-            int n = 0;
-            for (int i = 0; i < kCreaturesCount; ++i)
-                if (kCreatures[i].line && key &&
-                    std::strcmp(kCreatures[i].line, key) == 0)
-                    ++n;
-            return n;
+            // A line IS a family, so "how many creatures are on it" is the family's
+            // own count — no roster scan, and no way to miscount a row whose `line`
+            // disagrees with the folder it was authored in.
+            const CreatureLine* line = creatureLine(key);
+            return line ? line->count : 0;
         }
         case AchSeries::FoodsCollected: {
             int n = 0;

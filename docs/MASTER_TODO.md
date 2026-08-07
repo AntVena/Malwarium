@@ -61,29 +61,6 @@ information about what it has to carry. Consumer surface is small — `evolution
 registry accessor, one `ContentSource` virtual, one test. No save concern; routing is not persisted.
 Diff **M**.
 
-### 1a-iii. Animation clips live off the creature row
-
-`sprite_anim.h`'s `kAnimClips` is a second table, keyed by `spriteName` string, that says which
-row/frames/holdBeats a creature's named clips play — parallel to `CreatureDef` in
-`content_creatures.cpp`, which already keys off the same `SPR_PET_*` string for `hint`, `context`
-and `slotKinds`. Same anti-pattern CONTENT_STANDARD rule 1 already calls out elsewhere in this
-file (1a-ii): a creature's own data living in a spec-derived side table instead of on its row. The
-string match between the two tables can drift silently — typo a sprite name in `kAnimClips` and a
-creature just falls back to `idleFrame()`'s breathe/blink heuristic with no error.
-
-Checked: `findAnimClip`/`clipFrame` have exactly one call site (`game_render.cpp`'s pet-draw path),
-and it already holds a `const CreatureDef*` (`pet_`) — it reaches through `pet_->spriteName` only
-because that's `kAnimClips`'s lookup key, not because the caller lacks the row. No enemy/item
-sprite path touches either function, so nothing else depends on a bare-sprite-name lookup surviving.
-
-Target shape: a small fixed-size `AnimClip` array (or count + pointer) on `CreatureDef` itself,
-populated per-row the way `slotKinds` is today; `kAnimClips`/`findAnimClip` retire once every
-creature that wants a clip declares it on its own row. `game_render.cpp:131` changes from
-`findAnimClip(pet_->spriteName, "idle")` to reading `pet_`'s own clip list directly.
-
-MALBEAR is the forcing case: its sheet (`aa28646`) is 8 frames on a 56x48 grid and has no
-`kAnimClips` entry yet, so only frames 0-2 are reachable at all (via the default heuristic). Diff **S**.
-
 ### 1b. Cooking — the open follow-ups
 
 The pantry, per-item drop weights and the N-ingredient Merge Hub are built. What the first cut left:
@@ -323,17 +300,19 @@ Sizes are logical px; bind colour to `PAL_CORE` tokens. Inventory: `assets/ASSET
 
 ### 2a-ii. Template pet sheet — one row per default animation
 
-No starting point exists for a new creature sheet today; MALBEAR's 8-frame sheet (`aa28646`)
-landed with no row plan and only became reachable as idle/breathe/blink by accident of frame
-count (see 1a-iii). `gen_assets.py` already slices a pet sheet into independent rows of up to 8
-56×48 columns each (`frame_rows`/`PET_ROW_H`), and once 1a-iii lands a creature's clips already
-name an arbitrary row + frame count on its own row — so this is purely an authoring aid, no
-ingestion change needed. A template just needs one labeled row per current default animation
-(idle, walk, attack — whatever `kAnimClips`/CreatureDef's clip list covers once 1a-iii ships),
-each row 8 cells wide with placeholder ink or guide marks, so an artist opens one file and knows
-where "walk" goes without reading `sprite_anim.h`. Lives beside `CREATURE_VISUAL_RULES.md` (which
-currently stops at "keep them as single frames... start frame sets" with no sheet layout to start
-from). Diff **S**, sequenced after 1a-iii so the row list it documents is the real one.
+No starting point exists for a new creature sheet today. `gen_assets.py` already slices a pet sheet
+into independent rows of up to 8 56×48 columns each (`frame_rows`/`PET_ROW_H`), and a creature's
+`CreatureDef::clips` already name an arbitrary row + frame count on its own row — so this is purely
+an authoring aid, no ingestion change needed. A template just needs one labeled row per default
+animation (idle, attack, plus the locomotion cycle §2c wants), each row 8 cells wide with
+placeholder ink or guide marks, so an artist opens one file and knows where "walk" goes without
+reading a content header. Lives beside `CREATURE_VISUAL_RULES.md` (which currently stops at "keep
+them as single frames... start frame sets" with no sheet layout to start from), and the clip rules
+it documents are in `src/core/content/creatures/CREATURE_CONTENT_STANDARD.md` § *Clips*.
+
+MALBEAR is the case that shows why it's wanted: its 8-column sheet declares `idle` as frames 0-2
+and `attack` as all 8 of the same row, because the sheet arrived with no row plan saying which
+columns were which. A template makes that a drawing instruction rather than a guess. Diff **S**.
 
 ### 2b. Placeholder → final art
 

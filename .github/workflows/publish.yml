@@ -35,15 +35,12 @@ permissions:
   pages: write
   id-token: write
 
-# One publish at a time, and never cancel one midway — a half-deployed Pages site
-# is a manifest pointing at artifacts that may not be there yet.
-concurrency:
-  group: pages
-  cancel-in-progress: false
-
 jobs:
   build:
     runs-on: ubuntu-latest
+    # A publish that cannot finish should fail rather than hold the deploy slot:
+    # every step here is minutes, so anything near the cap is stuck, not slow.
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -77,6 +74,19 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # One deploy at a time, and never cancel one midway — a half-deployed Pages
+    # site is a manifest pointing at artifacts that may not be there yet. Only
+    # the DEPLOY is serialised, not the whole workflow: a concurrency group at
+    # workflow level parks the loser as a run with no jobs in it, and a run with
+    # no jobs is one the API will neither cancel nor delete if it ever stops
+    # advancing — it just holds the group against every later publish. Held here,
+    # a blocked publish is a visible queued job inside a run that `gh run cancel`
+    # can clear. Builds are free to overlap; they only produce artifacts, and the
+    # last deploy to run is the one the site serves either way.
+    concurrency:
+      group: pages-deploy
+      cancel-in-progress: false
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

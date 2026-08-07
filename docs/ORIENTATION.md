@@ -161,8 +161,8 @@ plays the **Clutch Pick**, a one-shot game of nerve the instant the egg is laid,
 egg animates among identical decoys. Either way, in the last stretch of any incubation the Exploit
 chord cracks the shell on demand — so a line whose minigame happens early can't hatch off-screen.
 
-Rosters, evolution routing and per-stage flavour are data on `CreatureDef` rows
-(`src/core/content/content_creatures.cpp`), not a table in a doc.
+Rosters, evolution routing and per-stage flavour are data on `CreatureDef` rows, one folder per
+evolution line under `src/core/content/creatures/` — not a table in a doc.
 
 ---
 

@@ -97,8 +97,8 @@ per-creature art needed** for them.
 
 **There is no roster table here, deliberately.** Every column one would have — creature, line,
 stage, sprite id, evolution chain, which hatch gates it — is already a field on a `CreatureDef`
-row in `src/core/content/content_creatures.cpp`, and a second copy in prose is a copy that goes
-stale without anything failing. The one thing the code does not carry is whether a delivered
+row under `src/core/content/creatures/` (one folder per evolution line), and a second copy in prose
+is a copy that goes stale without anything failing. The one thing the code does not carry is whether a delivered
 drawing is *good enough*, and that is all this section is for.
 
 **The queue is derivable, so read it from the data, not from here:** a creature wired to a
@@ -106,7 +106,7 @@ drawing is *good enough*, and that is all this section is for.
 drawing; a creature with its own `SPR_PET_<NAME>` has been drawn.
 
 ```sh
-grep -oE '"[a-z0-9_]+", *"[^"]+".*"SPR_PET_GENERIC_[A-Z]+"' src/core/content/content_creatures.cpp
+grep -oE '"[a-z0-9_]+", *"[^"]+".*"SPR_PET_GENERIC_[A-Z]+"' src/core/content/creatures/*/line.h
 ```
 
 Swapping a generic for final art is a one-field edit on that row plus the PNG — no engine change,

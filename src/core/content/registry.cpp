@@ -7,9 +7,11 @@ namespace mal {
 const CreatureDef* ContentRegistry::creature(const char* id) const {
     for (const ContentSource* src : sources_) {
         int n = 0;
-        const CreatureDef* arr = src->creatures(n);
-        for (int i = 0; i < n; ++i)
-            if (std::strcmp(arr[i].id, id) == 0) return &arr[i];
+        const CreatureLine* lines = src->creatureLines(n);
+        for (int l = 0; l < n; ++l)
+            for (int i = 0; i < lines[l].count; ++i)
+                if (std::strcmp(lines[l].rows[i].id, id) == 0)
+                    return &lines[l].rows[i];
     }
     return nullptr;
 }
@@ -138,12 +140,15 @@ std::vector<const CreatureDef*> ContentRegistry::allCreatures() const {
     std::vector<const CreatureDef*> out;
     for (const ContentSource* src : sources_) {
         int n = 0;
-        const CreatureDef* arr = src->creatures(n);
-        for (int i = 0; i < n; ++i) {
-            bool dup = false;
-            for (const CreatureDef* e : out)
-                if (std::strcmp(e->id, arr[i].id) == 0) { dup = true; break; }
-            if (!dup) out.push_back(&arr[i]);
+        const CreatureLine* lines = src->creatureLines(n);
+        for (int l = 0; l < n; ++l) {
+            for (int i = 0; i < lines[l].count; ++i) {
+                const CreatureDef& c = lines[l].rows[i];
+                bool dup = false;
+                for (const CreatureDef* e : out)
+                    if (std::strcmp(e->id, c.id) == 0) { dup = true; break; }
+                if (!dup) out.push_back(&c);
+            }
         }
     }
     return out;

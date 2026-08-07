@@ -14,7 +14,7 @@ numbers cannot disagree with the device's. `make pedia` compiles the tool first;
 --dump-content elsewhere to use a build you already have.
 
 Creature snarky hints + infosec context ride along on each CreatureDef row
-(content_creatures.cpp owns them — the game is the single source of truth for its own
+(creatures/<line>/line.h owns them — the game is the single source of truth for its own
 flavour text, the same way ItemDef carries `effect`). Do NOT re-key copy here.
 
 Also COPIES every asset the generated data references into the served bundle
@@ -217,7 +217,7 @@ def main():
         stnum, stname = STAGE.get(c["stage"], (0, c["stage"]))
         hint, context = c["hint"], c["context"]
         if not hint:
-            warnings.append(f"creature '{c['id']}' has no hint field — add one to content_creatures.cpp")
+            warnings.append(f"creature '{c['id']}' has no hint field — add one to its creatures/<line>/line.h row")
             hint, context = "TODO: add a hint to this creature's row.", context or "TODO"
         # A branch node names a Good AND a Bad successor; a linear hop names one.
         linear, good, bad = c["evolvesToId"], c["evolvesToGoodId"], c["evolvesToBadId"]

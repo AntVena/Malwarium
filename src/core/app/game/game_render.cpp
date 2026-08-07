@@ -11,7 +11,6 @@
 #include "core/render/font5x7.h"
 #include "core/render/palette.h"
 #include "core/render/sprite.h"
-#include "core/render/sprite_anim.h"
 #include "core/ui/carousel.h"
 #include "core/ui/combat_screen.h"
 #include "core/ui/items_screen.h"
@@ -128,9 +127,9 @@ void Game::drawHabitat(Framebuffer& fb, int cursor) const {
     if (pet) {
         // An authored "idle" clip plays its full row in order; otherwise fall
         // back to the breathe/blink heuristic on row 0.
-        const AnimClip* idle = pet_ ? findAnimClip(pet_->spriteName, "idle") : nullptr;
+        const AnimClip* idle = pet_ ? pet_->clip("idle") : nullptr;
         const int row = idle ? idle->row : 0;
-        const int frame = idle ? clipFrame(*idle, beat_) : idleFrame(*pet, beat_);
+        const int frame = idle ? idle->frameAt(beat_) : idleFrame(*pet, beat_);
         // Two motions, and the creature is the only thing on this screen that takes
         // either. The BOB is the pose's own 2px lift on alternate beats — what
         // animates a single-frame creature; a swimmer skips it, since a bob on top of
