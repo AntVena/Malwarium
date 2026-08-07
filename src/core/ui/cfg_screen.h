@@ -14,6 +14,12 @@
 // Reaching the 'net is NOT a row here. It has no standing setting to hold: UPDATES
 // raises the association as part of a job and drops it when the job ends, which is
 // why that screen reports the connection instead of one of its own.
+//
+// Two units implement this header. cfg_screen.cpp draws the settings list and its
+// viewers, toggles and groups — screens over state this device already holds.
+// update_screen.cpp draws the UPDATES faces and the QR pages — screens that run a
+// job, or hand a URL to something that can. The declarations below are grouped the
+// same way, settings first.
 #pragma once
 
 #include <cstddef>

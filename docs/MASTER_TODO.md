@@ -110,48 +110,6 @@ Intentional simplifications. None is a bug; each is a "confirm as v1 or revise".
   ripples through the docs and the peer/duel screens' copy. Diff **S** (taste, then a
   mechanical rename).
 
-### 1f-ii. UI layout constants have no single source
-
-[`assets/VISUAL_LANGUAGE.md`](../assets/VISUAL_LANGUAGE.md) §4 presents the layout grid as one
-table and calls it the single source; in code there is no source at all. `kMargin`, `kRowTop`,
-`kRowH` and `kLineH` are re-declared in a file-private anonymous namespace in every screen that
-draws a list, and the copies have already diverged:
-
-The header band is the clearest case. Four files each hold a private copy of the same four-line
-helper — `fb.clear`, title at `kMargin`, a divider rule — and no two agree:
-
-| Where | Title x | Rule y |
-|---|---|---|
-| `items_screen` / `mods_screen` / `maint_screen` / `cfg_screen` / `arch_screen` | 8 | 22 (`kHeaderRule`) |
-| `game_hacker.cpp`'s `header` lambda (SHOP/VAULT/CREW/PEERS/LINK) | **10** | **20** (a literal) |
-
-That lambda's own comment says it "mirrors the pet submenus". It doesn't: the title sits 2px
-further right and the rule 2px higher than the band it claims to match. Nobody decided that — the
-helper was copied, and the copy drifted, because there is nothing to share. The Hacker sub-screens
-then draw a *second* title at y=28 with a rule at y=44, a sub-band the carousel screens have no
-equivalent of; that one may well be deliberate, but it is undocumented and also hard-coded.
-
-The same pattern below the header:
-
-- **`kMargin` is 8 in every `src/core/ui/*_screen.cpp` and 10 in every list drawn from a
-  `game_*.cpp` unit** (`game_crew`, `game_peers`, `game_pvp`, `game_merge`, `game_hacker`). Both
-  families use it for exactly the same thing — the left text inset and its mirror,
-  `kActiveW - kMargin - textWidth(...)` — so this is one concept with two values.
-- **`kLineH`** is `kFontH + 5` in `game_crew`/`game_peers`/`game_pvp` and `kFontH + 4` in
-  `game_merge`.
-- **`kRowTop` is 26 everywhere except `expl_screen.cpp`, which uses 40** — the carousel track
-  height, not the submenu header band. Possibly deliberate for EXPL's chrome; undocumented either
-  way.
-
-`widgets.h` has no header primitive at all, which is why every screen rolls its own.
-
-The fix is a UI-internal layout header the screens share, and it is the **same header §3 already
-names as the blocker on the `cfg_screen.cpp` split** ("promoting those into a UI-internal header
-is the actual design decision, and it would serve every other `*_screen.cpp` too"). Doing it once
-settles both. Diff **M** — the decision is which constants are grid (shared) and which are a
-screen's own business; the edit after that is mechanical. Land the shared header first, then
-reconcile the 8/10 margin as a deliberate call rather than an accident.
-
 ### 1g. Test-infrastructure gaps
 
 - **No serial test-hook / no automated on-device gameplay verification.** Every device check to date
@@ -377,26 +335,18 @@ for. The `ICON_SECTOR_*` half of each family is drawn and live on the EXPL zone 
 ## 3. Size / reviewability watch
 
 Same rule as the `game_*.cpp` units: split *at* ~600 lines, not before, and split by concern
-rather than by line count. `expl_screen.cpp` (586) and `save.cpp` (936) are still one concern
-each — save.cpp is long because the format is flat, which is not a second responsibility.
+rather than by line count. `expl_screen.cpp` (754), `cfg_screen.cpp` (669) and `save.cpp` (936)
+are each past the number and each still ONE concern — save.cpp is long because the format is
+flat, which is not a second responsibility.
 
-Two have grown to roughly double the rule and have a real seam, so the "if they keep growing"
-condition has fired on both. Neither is a mechanical move, which is why they are rows rather
-than done:
+One has grown to roughly double the rule and has a real seam, so the "if they keep growing"
+condition has fired. It is not a mechanical move, which is why it is a row rather than done:
 
 - **`combat.cpp` (1212)** — the turn engine is lines 21–788; from `makePlayerCombatant`
   (line 790) on, ~420 lines are combatant/encounter FACTORIES: the wild-malbeast roster and its
   ramps, the sim dummy, the Bits/XP reward curves, `makeEnemyCombatant`. That tail is a
   `combat_factory.cpp`. Diff **M** — the two halves share statics that would have to be sorted
   out first.
-- **`cfg_screen.cpp` (1126)** — lines 679–1107 are the software-update and QR flows
-  (`updateInstallRows` through `drawUpdateQr`), a concern distinct from the device-settings
-  screens around them, and every one of them is already declared in `cfg_screen.h` so no new
-  header is needed for the split itself. **The blocker is the shared anonymous namespace:** the
-  update block calls `header()` and reads `kMargin`/`kRowTop`/`kRowH`/`kVisibleRows`, all
-  file-private at the top of `cfg_screen.cpp`. Promoting those into a UI-internal header is the
-  actual design decision, and it would serve every other `*_screen.cpp` too. Diff **M**. See
-  §1f-ii — that header is the same one the layout-constant drift needs.
 
 Two more are past the rule and were not on this watch at all:
 
