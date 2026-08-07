@@ -77,23 +77,28 @@ every chrome need across the shipped screens.
 
 A single **pixel/bitmap** family (no anti-aliased vector — it smears at this size). Must be:
 
-- **Legible at the logical sizes below**, after the whole-canvas ×1.75 upscale.
+- **Legible at the size below.** UI chrome is drawn at native active resolution, not
+  in the 128 authoring space, so a text size here is a real panel pixel and takes no upscale.
 - **Disambiguated glyphs:** distinct `0/O`, `1/I/l`, `5/S`, `8/B` — load-bearing for gauge
   numerics, the Lockout countdown, the HackerTag editor (`A–Z 0–9 _`), and the FW version string.
 - **Tabular (fixed-width) digits** so gauge values and countdowns don't reflow as they change.
 - **Generous x-height, no condensed forms** — low-literacy legibility (§0.3).
 
-### 2.2 Type scale (logical px, pre-upscale)
+### 2.2 Type size (active px)
 
-| Role | ~Size | Used by |
-|---|---|---|
-| Title / header | 12 | `UI_SUBMENU_HEADER`, modal titles |
-| Body / row | 10–12 | list rows, item effect text, record fields |
-| Caption / hint | 8–10 | `CAP_SLOT_LABEL`, `UI_HINT_BAND`, tags |
-| Numeric | 10–12 (tabular) | gauge values, `UI_COUNTDOWN`, counts |
+**One size carries every role: an 8×8 cell on an 8px advance.** Titles, list rows, captions,
+hints and numerics all render at it — `src/core/render/font.h`'s `kFontW` / `kFontH` /
+`kFontAdvance`, drawn from the table `tools/gen_font.py` rasterises.
 
-One family at a few sizes — not multiple faces. Any replacement face must satisfy §2.1 at
-every size above.
+A pixel face is only crisp at the size it was drawn for and integer multiples of it, so the
+size is not a free parameter: the sizes available are the cut's own **8** and, through
+`drawText`'s whole-pixel `scale`, **16**. Anything between comes out anti-aliased, which §2.1
+rules out — `gen_font.py` refuses to emit it rather than leaving that to be spotted on the
+panel.
+
+A second role at 16 is a design decision nobody has taken; until then, hierarchy is carried by
+weight and position (`Pal::INK` vs `INK_DIM`, the header band, indentation) rather than by size.
+One family, not multiple faces — any replacement must satisfy §2.1 at whatever size it ships.
 
 ---
 
@@ -175,8 +180,8 @@ render all three:
 This system **locks existing manifest rows** rather than adding art — no art ID originates here:
 
 - **§E `FONT_UI` / `PAL_CORE`:** `PAL_CORE` is the §1.2 token set (14 roles), delivered as
-  `assets/PAL_CORE.json`; `FONT_UI` is the §2 pixel family + type scale, delivered as Pixel
-  Operator Mono. UI chrome binds to a token, never a literal hex — that is what keeps a hue
+  `assets/PAL_CORE.json`; `FONT_UI` is the §2 pixel family, delivered as Pixel Operator
+  Mono's own 8px cut. UI chrome binds to a token, never a literal hex — that is what keeps a hue
   change a one-file reskin.
 - **§A slot icons:** concepts fixed (§3.3); the **28×28 + dim/bright** spec is confirmed.
 - **Icon size tiers (§3.1)** are a manifest note, so every future `ICON_*` row picks a tier.

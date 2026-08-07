@@ -63,10 +63,11 @@ malwarium/
 │   └── areas/              one folder per EXPL area
 ├── src/core/model/      ← save codec, combat model
 ├── src/core/net/        ← audit capture, peer ledger, update manifest, tar reader
-├── src/core/render/     ← framebuffer, sprites, upscaler + RENDER_PIPELINE.md
-├── src/core/ui/         ← the shipped screens
+├── src/core/render/     ← framebuffer, sprites, upscaler, FONT_UI + RENDER_PIPELINE.md
+├── src/core/ui/         ← the shipped screens, on layout.h's grid
 ├── src/platform/esp32/  ← drivers, radio arbiter, AP server + HARDWARE.md
-├── tools/               ← gen_assets.py, gen_pedia_data.py, make_web_tar.py, host helpers
+├── tools/               ← gen_assets.py, gen_font.py (by hand, not a gate), gen_pedia_data.py,
+│                          make_web_tar.py, screens.sh, host helpers
 ├── .github/workflows/   ← gates (every push) · publish (a v* tag → GitHub Pages)
 ├── pages/               ← the publish host's own pages: a landing page + the USB flasher
 └── web/                 ← the SD-served 'Pedia bundle

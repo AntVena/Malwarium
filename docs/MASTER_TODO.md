@@ -95,6 +95,19 @@ and a save field to remember it. Diff **M**.
 
 Intentional simplifications. None is a bug; each is a "confirm as v1 or revise".
 
+- **One type size carries every role.** `FONT_UI` is crisp only at its own 8px cut and integer
+  multiples of it (VISUAL_LANGUAGE §2.2), so titles, rows, captions and numerics all render at
+  8 and hierarchy comes from weight and position instead. A 16px title role is available for
+  free — `drawText`'s `scale` is whole-pixel — but every band and row pitch on the grid
+  (`src/core/ui/layout.h`) is sized for one line height, so taking it is a layout pass, not a
+  parameter. Diff **M**, and a design call before it is a build.
+- **An empty TRAIN slot marks its fallback move with shape, not a word.** The empty-slot glyph
+  (distinct from the locked one beside it) plus a dimmed name are the two non-colour channels
+  carrying it, which clears the grayscale gate — but the row has no width left for the word
+  "DEFAULT" beside the accepted-kind tag. Confirm as v1 or find it room.
+- **The STAT LOADOUT page shows four entries.** A move description wraps to three lines at
+  `FONT_UI`'s advance, and the row pitch is sized to hold all three rather than cut the last
+  mid-word. Revisit if the page starts reading as a scroll rather than a list.
 - **"LINK" names two different things.** The CFG **RADIO → LINK** row is consent to BROADCAST
   identity over ESP-NOW; the Hacker face's **LINK** slot is the 1v1 duel surface that consent
   enables. Adjacent screens, same word, different referents. Naming call, not code: renaming either
@@ -145,7 +158,11 @@ roster, and the wild half keeps its own roster-keyed masks).
   ever want a device-side list, the Hacker face's PROFILE slot is the natural home. Diff **M**.
 - **Unverified:** on-device serving of the SD-hosted bundle + the live endpoints
   (`GET /pedia_state.json`, `POST /api/tag`) on a real board.
-- **Polish:** the real `FONT_UI` face for the web bundle (a system-mono fallback today).
+- **The web bundle and the publish pages both ask for `local('Pixel Operator Mono')`**, so a
+  reader without it installed gets system mono while the device beside them renders the real
+  face. The TTF is in the repo (`assets/fonts/`, CC0), so this is an embed — a `@font-face`
+  with the file staged into `web/` and `pages/` — not a sourcing problem. Weigh the bundle
+  size against a fallback nobody notices on a phone. Diff **S**.
 
 ### 1i. Hacker-face CREW — enlistment shipped, Red/Blue archetype layer open
 

@@ -5,6 +5,12 @@ and compiles them into flash, skipping anything whose name — file or folder �
 correctly-named stand-in ships exactly like final art, `_*.png` are design studies that never ship,
 and art with no consumer waits in `_attic/` (untracked, uncompiled) rather than costing flash.
 
+**`fonts/` is a source, not art.** `FONT_UI`'s TTF lives there with its licence, and nothing
+compiles it: `gen_assets.py` only ever walks for PNGs, and the glyph table that actually ships
+is committed source (`src/core/render/font_glyphs.cpp`), rasterised on demand by
+`tools/gen_font.py`. So the TTF costs no flash and has no consumer to be orphaned from — it is
+the thing the table is regenerated FROM, which is why it is in the tree at all.
+
 **An asset's id is its BASENAME, not its path.** `sprites/` · `icons/` · `ui/` are for readers only —
 `SPR_PET_PAYPUP` resolves the same wherever the file sits, so art can be refiled without touching a
 line of code. The price is that basenames must be globally unique; `gen_assets.py` raises on a
