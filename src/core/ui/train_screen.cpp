@@ -10,7 +10,7 @@
 #include "core/model/combat.h"   // simDummyName for the tier label
 #include "core/model/move_loadout.h"
 #include "core/render/canvas.h"
-#include "core/render/font5x7.h"
+#include "core/render/font.h"
 #include "core/render/framebuffer.h"
 #include "core/render/palette.h"
 #include "core/render/sprite.h"

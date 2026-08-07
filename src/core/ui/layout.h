@@ -17,7 +17,7 @@
 // a list. The band itself is drawn by widgets.h's drawHeaderBand.
 #pragma once
 
-#include "core/render/font5x7.h"  // kFontH — kLineH is derived from it
+#include "core/render/font.h"  // kFontH — kLineH is derived from it
 
 namespace mal {
 

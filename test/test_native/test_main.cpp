@@ -41,7 +41,7 @@
 #include "core/model/pvp_battle.h"
 #include "core/render/canvas.h"
 #include "core/render/color.h"
-#include "core/render/font5x7.h"      // textWidth — mirroring a screen's own layout maths
+#include "core/render/font.h"      // textWidth — mirroring a screen's own layout maths
 #include "core/render/framebuffer.h"
 #include "core/render/palette.h"
 #include "core/render/sprite.h"
@@ -1872,8 +1872,8 @@ static void test_effect_text_templates_resolve() {
     CHECK(chip && std::strstr(effectText(*chip).c_str(), "10") == nullptr);
     CHECK(chip && std::strcmp(statLine(*chip).c_str(), "HAPPY +10") == 0);
 
-    // Descriptions are drawn with the 5x7 font (core/render/font5x7.cpp), which has
-    // no glyph above ASCII — a typographic dash or ellipsis renders as a run of
+    // Descriptions are drawn with FONT_UI (core/render/font_glyphs.cpp), whose table
+    // stops at ASCII 126 — a typographic dash or ellipsis renders as a run of
     // blanks AND measures 3 characters wide, throwing off every wrap that sizes
     // itself with textWidth(). So the tables stay ASCII-only.
     auto ascii = [](const char* s) {

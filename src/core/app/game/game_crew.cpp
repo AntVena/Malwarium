@@ -7,7 +7,7 @@
 #include "core/app/game_internal.h"   // drawScrollbar — shared with game_peers.cpp
 #include "core/content/content_crews.h"
 #include "core/render/canvas.h"
-#include "core/render/font5x7.h"
+#include "core/render/font.h"
 #include "core/render/palette.h"
 #include "core/render/sprite.h"
 #include "core/ui/layout.h"
