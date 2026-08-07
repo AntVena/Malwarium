@@ -91,25 +91,33 @@ real art review. Not urgent — flash sits at 24% and tinting doesn't depend on 
 red/green semantic pair onto a blue/orange axis) needs hue decisions, plus a CFG row to select it
 and a save field to remember it. Diff **M**.
 
-### 1e. FONT_UI — the face is chosen, the file does not exist
+### 1e. FONT_UI — ingested and rendering; one copy decision left
 
-**Blocked on an asset, not on code.** Pixel Operator Mono is the settled choice, and that is all
-that is settled: there is no font binary anywhere in the repo, `gen_assets.py` has no ingestion
-path for one, and `pages/style.css` asks for `local('Pixel Operator Mono')` so anyone without it
-installed reads the site in system mono. Every screen renders through the 5×7 placeholder
-(`src/core/render/font5x7.*`).
+The face is in (`assets/fonts/PixelOperatorMono8.ttf`, Pixel Operator by Jayvee Enaguas, CC0,
+licence beside it) and the whole code side is built on the **`font-ui` branch**: `tools/gen_font.py`
+rasterises it into a committed glyph table, `font.cpp` renders from that, and `font5x7.*` is gone.
+The generator is deliberately not in the gates — rasterising a TTF needs Pillow, and
+`gen_assets.py`'s pure-stdlib rule is what lets a fresh clone regenerate the atlas — so the
+committed table is what builds. It refuses any size the face would be antialiased at, which is
+the one defect nobody can spot reading a hex table.
 
-Still the highest per-screen leverage left — one integration lifts typography device-wide, and a
-type scale (VISUAL_LANGUAGE §2.2 wants 12 / 10–12 / 8–10) is what the placeholder cannot give at
-all: it has one size and an integer `scale`, so there is no 10px between 7 and 14.
+**What it costs, measured rather than estimated.** The face is crisp only at the size it was drawn
+for; 12px comes out with 32 grey levels, which VISUAL_LANGUAGE §2.1 rules out. At its own 8px cut
+the advance is 8px against the placeholder's 6 — and 8 is not padding: `M`, `W`, `%` and `#` really
+do span 7 columns, so tightening it would run adjacent letters together. Every string is therefore
+**a third wider**, and the suite's own copy-fit checks catch it: **51 failing checks**, all of them
+"does this name still fit its column".
 
-The API surface is already the seam. All 507 call sites go through four functions — `drawText`,
-`textWidth`, `drawTextWrapped`, `textWrapLines` — so a face swap is behind those, not through the
-screens. What the work needs, in order: **the font file** (Pixel Operator is CC0; TTF and BDF are
-both published), then a glyph-table emitter in `gen_assets.py`, then a size argument on those four
-in place of the integer `scale`, then a re-verify of every grayscale and layout gate. Diff **L**
-once the file lands — the placeholder's fixed 6px advance is baked into layout constants that a
-proportional-metrics face would move, and the grid in `src/core/ui/layout.h` is where that lands.
+**The fork, and it is a copy decision, not a code one:**
+
+- Leave the UI's row tags as they are → **37 world strings overflow**, so the areas, sub-areas,
+  bosses and storefronts get renamed. Naming is a design pass (`AREA_NAMING.md`), not a refactor.
+- Shorten the EXPL row's own chrome — `> FIGHT BOSS` → `BOSS`, `CLEARED` → `DONE` → **5 overflow**,
+  all on the detail line, and all 5 clear it if the `TITLE: ` / `BOSS: ` prefixes go too. Zero
+  content renames. But it is a shipped screen's copy, and a shipped screen is its own contract:
+  the prefix is what says whether a detail line is naming a Title or a boss.
+
+Nothing else is blocking. Pick the lever and the branch closes.
 
 ### 1f. Standing stubs / interim mechanics to revisit
 
@@ -385,7 +393,7 @@ Two more are past the rule and were not on this watch at all:
 
 ## If picking up cold
 
-1. **FONT_UI (§1e)** — the highest per-screen leverage left, but it needs the font FILE first;
-   nothing about it is a code question until then.
+1. **FONT_UI (§1e)** — built and waiting on the `font-ui` branch; what is left is one decision
+   about EXPL's row copy, not code.
 2. **Net-Sea Crossing art (§2c)** — the area ships mechanically; it is the only rung with no
    backdrop or malbeasts of its own.
