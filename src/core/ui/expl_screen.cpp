@@ -6,7 +6,7 @@
 
 #include "core/content/registry.h"
 #include "core/render/canvas.h"
-#include "core/render/font5x7.h"
+#include "core/render/font.h"
 #include "core/render/framebuffer.h"
 #include "core/render/palette.h"
 #include "core/render/sprite.h"
@@ -153,18 +153,18 @@ namespace {
 struct RowTag { const char* text; Rgb565 col; };
 RowTag rowTag(ExplRowState s) {
     switch (s) {
-        case ExplRowState::AreaLocked:   return {"LOCKED",       palColor(Pal::INK_DIM)};
-        case ExplRowState::AreaCleared:  return {"CLEARED",      palColor(Pal::CALM)};
-        case ExplRowState::AreaBossReady:return {"> AREA BOSS",  palColor(Pal::ACCENT)};
-        case ExplRowState::AreaProgress: return {"",             palColor(Pal::INK_DIM)};
-        case ExplRowState::SubLocked:    return {"LOCKED",       palColor(Pal::INK_DIM)};
-        case ExplRowState::SubExploring: return {"EXPLORING",    palColor(Pal::ACCENT)};
-        case ExplRowState::SubBossReady: return {"> FIGHT BOSS", palColor(Pal::ACCENT)};
-        case ExplRowState::SubCleared:   return {"CLEARED",      palColor(Pal::CALM)};
-        case ExplRowState::SubOpen:      return {"OPEN",         palColor(Pal::CALM)};
-        case ExplRowState::DeepWebLocked:return {"LOCKED",       palColor(Pal::INK_DIM)};
-        case ExplRowState::DeepWebOpen:  return {"> DIVE",       palColor(Pal::ACCENT)};
-        case ExplRowState::DeepWebDiving:return {"DIVING",       palColor(Pal::ACCENT)};
+        case ExplRowState::AreaLocked:   return {"LOCKED",  palColor(Pal::INK_DIM)};
+        case ExplRowState::AreaCleared:  return {"DONE",    palColor(Pal::CALM)};
+        case ExplRowState::AreaBossReady:return {"> BOSS",  palColor(Pal::ACCENT)};
+        case ExplRowState::AreaProgress: return {"",        palColor(Pal::INK_DIM)};
+        case ExplRowState::SubLocked:    return {"LOCKED",  palColor(Pal::INK_DIM)};
+        case ExplRowState::SubExploring: return {"EXPLORING", palColor(Pal::ACCENT)};
+        case ExplRowState::SubBossReady: return {"> BOSS",  palColor(Pal::ACCENT)};
+        case ExplRowState::SubCleared:   return {"DONE",    palColor(Pal::CALM)};
+        case ExplRowState::SubOpen:      return {"OPEN",    palColor(Pal::CALM)};
+        case ExplRowState::DeepWebLocked:return {"LOCKED",  palColor(Pal::INK_DIM)};
+        case ExplRowState::DeepWebOpen:  return {"> DIVE",  palColor(Pal::ACCENT)};
+        case ExplRowState::DeepWebDiving:return {"DIVING",  palColor(Pal::ACCENT)};
     }
     return {"", palColor(Pal::INK_DIM)};
 }
@@ -175,8 +175,8 @@ RowTag rowTag(ExplRowState s) {
 // area/sub-area/boss name is held to (test_expl_names_fit_their_rows).
 constexpr int kListTop = 26;
 constexpr int kListBottom = kActiveH - 16;           // the hint band
-constexpr int kIconX = 10;
-constexpr int kTextX = 34;
+constexpr int kIconX = kMargin;
+constexpr int kTextX = kIconX + kRowIcon + 2;
 constexpr int kRowMax = 30;                          // two lines + breathing room
 constexpr int kRowMin = 14;                          // one line, the packed floor
 // The widest a level gets: the top level is DeepWeb + every area, inside an area it is
@@ -369,12 +369,18 @@ void drawExplList(Framebuffer& fb, const ContentRegistry& reg, const ExplListVie
             }
         }
 
-        drawText(fb, kTextX, titleY, title, titleInk);
+        // Title and detail are both held to the room their row actually leaves — the
+        // tag's width varies by state, so the budget is computed here rather than
+        // assumed. The focused row scrolls what doesn't fit; the rest clip (widgets.h).
+        const int tagW = tag.text[0] ? textWidth(tag.text) + kMargin : 0;
+        drawTextMarquee(fb, kTextX, titleY, kActiveW - kMargin - tagW - kTextX, title,
+                        titleInk, v.beat, focused);
         if (tag.text[0])
             drawText(fb, kActiveW - kMargin - textWidth(tag.text), titleY, tag.text,
                      tag.col);
         if (twoLine && detail[0])
-            drawText(fb, kTextX, detailY, detail, palColor(Pal::INK_DIM));
+            drawTextMarquee(fb, kTextX, detailY, kActiveW - kMargin - kTextX, detail,
+                            palColor(Pal::INK_DIM), v.beat, focused);
     }
 
     // Slim scrollbar (UI_SCROLLBAR), matching items/cfg — the non-colour "there's more"
@@ -613,12 +619,16 @@ void drawShopRow(Framebuffer& fb, int rowY, const ShopRowView& row, bool selecte
 
 void drawShop(Framebuffer& fb, const char* storeName, int walletBits,
               const ShopRowView* rows, int rowCount, int cursor,
-              const char* selectedDescription, const char* statusLine) {
+              const char* selectedDescription, const char* statusLine, int beat) {
     // Storefront banner + wallet header (dual-coded: the numbers carry meaning,
-    // colour is only emphasis).
+    // colour is only emphasis). The banner scrolls when the wallet crowds it —
+    // a store name is the screen's whole identity, so it is not the half that gives.
     char wallet[16];
     std::snprintf(wallet, sizeof(wallet), "%dB", walletBits);
-    drawHeaderBand(fb, storeName, wallet, palColor(Pal::ACCENT));
+    drawHeaderBand(fb, "", wallet, palColor(Pal::ACCENT));
+    drawTextMarquee(fb, kMargin, kTitleY,
+                    kActiveW - 2 * kMargin - textWidth(wallet) - kMargin, storeName,
+                    palColor(Pal::INK), beat, true);
 
     // Windowed list (mirrors the Rig Shop, game_hacker.cpp's drawHackerSubmenu) —
     // an arbitrary listing count scrolls past kShopMaxRows instead of growing

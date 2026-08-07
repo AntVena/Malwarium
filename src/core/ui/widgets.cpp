@@ -2,7 +2,7 @@
 
 #include "tunables.h"
 #include "core/render/canvas.h"
-#include "core/render/font5x7.h"
+#include "core/render/font.h"
 #include "core/render/framebuffer.h"
 #include "core/render/palette.h"
 #include "core/ui/layout.h"
@@ -17,6 +17,29 @@ void drawHeaderBand(Framebuffer& fb, const char* title, const char* right,
         drawText(fb, kActiveW - kMargin - textWidth(right), kTitleY, right,
                  rightColor);
     fb.fillRect(0, kHeaderRule, kActiveW, 1, palColor(Pal::TRACK));
+}
+
+void drawTextMarquee(Framebuffer& fb, int x, int y, int w, const char* s,
+                     Rgb565 color, int beat, bool scroll) {
+    const int overflow = textWidth(s) - w;
+    if (overflow <= 0) { drawText(fb, x, y, s, color); return; }
+
+    int offset = 0;
+    if (scroll) {
+        // Beats, not milliseconds: this rides the same heartbeat as the pet's
+        // wander and the carousel's spin, so the whole screen moves on one clock.
+        constexpr int kHoldBeats = 6;    // ~1.5s at each end — time to read it
+        constexpr int kPxPerBeat = 2;    // ~8px/s, about a character every second
+        const int travel = (overflow + kPxPerBeat - 1) / kPxPerBeat;
+        const int phase = beat % (2 * kHoldBeats + travel);
+        if (phase >= kHoldBeats)
+            offset = (phase - kHoldBeats) * kPxPerBeat;
+        if (offset > overflow) offset = overflow;   // the hold at the tail
+    }
+
+    fb.setClip(x, y, w, kFontH);
+    drawText(fb, x - offset, y, s, color);
+    fb.clearClip();
 }
 
 namespace {

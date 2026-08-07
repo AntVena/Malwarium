@@ -1,8 +1,14 @@
-// font5x7.h — minimal built-in 5x7 bitmap font for the tracer UI.
+// font.h — FONT_UI text rendering: the four calls every screen draws through.
 //
-// Placeholder for FONT_UI (Pixel Operator Mono), which the spec ships as the
-// real face but is not in assets/ yet. Covers A-Z, 0-9 and the punctuation the
-// UI needs. Monospace: 6px advance (5 + 1 gap), 7px tall. Digits are tabular.
+// The face is Pixel Operator Mono at its own 8px cut (assets/fonts/, CC0),
+// rasterised into font_glyphs.cpp by tools/gen_font.py. Mono is what makes the
+// digits tabular, so a gauge value or a countdown never reflows as it changes,
+// and the cut is what keeps it crisp — the generator refuses a size the face
+// would be antialiased at (VISUAL_LANGUAGE.md §2.1).
+//
+// Every glyph is one 8x8 cell and advances 8px, ink inset a column from the
+// left with the last row reserved for descenders. Copy renders in caps: the
+// fold lives in fontGlyph (font_glyphs.h), not in the call sites.
 #pragma once
 
 #include "core/render/color.h"
@@ -11,16 +17,17 @@ namespace mal {
 
 class Framebuffer;
 
-constexpr int kFontW = 5;
-constexpr int kFontH = 7;
-constexpr int kFontAdvance = 6;
+constexpr int kFontW = 8;
+constexpr int kFontH = 8;
+constexpr int kFontAdvance = 8;
 
-// Draw uppercase text. Lowercase is upcased; unknown glyphs render as blank.
+// Draw text at (x,y) — y is the cell top. Unknown glyphs render as blank.
 // `scale` multiplies pixel size. Returns the x just past the drawn text.
 int drawText(Framebuffer& fb, int x, int y, const char* s, Rgb565 color,
              int scale = 1);
 
-// Width in pixels a string would occupy at `scale`.
+// Width in pixels a string would occupy at `scale`. Exact, not an estimate —
+// the face is monospaced.
 int textWidth(const char* s, int scale = 1);
 
 // Draw `s` word-wrapped into `maxW` pixels, `lineH` apart: skips the first

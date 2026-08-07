@@ -175,13 +175,12 @@ Listed so Design **skips** them; they're implemented per `src/core/render/RENDER
 ---
 
 ## E. Fonts & palette
-System specced in `VISUAL_LANGUAGE.md`. The hues are delivered; the face is CHOSEN but its file is
-not here — see the row below. UI chrome still references a `PAL_CORE` token rather than a literal,
-so a hue change reskins from one place.
+System specced in `VISUAL_LANGUAGE.md`; the face and the hues are both delivered below. UI chrome
+still references a `PAL_CORE` token rather than a literal, so a hue change reskins from one place.
 
 | Asset ID | Element | Status | File |
 |---|---|---|---|
-| `FONT_UI` | primary UI **pixel** font — type scale + tabular digits + disambiguated glyphs (`VISUAL_LANGUAGE.md §2`). **Face = Pixel Operator Mono** (bitmap, monospace⇒tabular, slashed 0, ESP32-GFX–portable) — the CHOICE is settled; no font file is in `assets/`, `gen_assets.py` has no ingestion path for one, and every screen renders through the 5×7 placeholder (`src/core/render/font5x7.*`). Empty File cell, per the rule at the top | ☐ | |
+| `FONT_UI` | primary UI **pixel** font — tabular digits + disambiguated `0/O 1/I 5/S 8/B` (`VISUAL_LANGUAGE.md §2`). **Face = Pixel Operator Mono**, its own 8px cut (CC0, licence beside the TTF). Rasterised to a glyph table by `tools/gen_font.py` — an authoring step, not a gate, so `gen_assets.py` stays pure-stdlib; the generator refuses any size the face would be antialiased at | ☑ | `/assets/fonts/PixelOperatorMono8.ttf` |
 | `PAL_CORE` | core palette = **14 role tokens** (structural · semantic `calm`/`warn`/`hot` · rarity) + team pair. Hues set — danger-ascending, `accent` ≠ status | ☑ | `/assets/PAL_CORE.json` |
 
 ---

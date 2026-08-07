@@ -41,7 +41,7 @@ int loadoutSelectableCount(Stage stage);
 // ATK/DEF tag alongside the slot number.
 void drawLoadout(Framebuffer& fb, const ContentRegistry& reg,
                  const MoveLoadout& load, Stage stage, int cursor,
-                 const MoveDef::Kind* slotKinds);
+                 const MoveDef::Kind* slotKinds, int beat);
 
 // L3 move picker for `slot` (mirrors drawModPicker): "— empty (unequip) —" + the
 // moves the pet can equip here right now (ownedMoveList), the focused move's

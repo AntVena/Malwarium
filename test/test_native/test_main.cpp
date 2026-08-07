@@ -41,7 +41,7 @@
 #include "core/model/pvp_battle.h"
 #include "core/render/canvas.h"
 #include "core/render/color.h"
-#include "core/render/font5x7.h"      // textWidth — mirroring a screen's own layout maths
+#include "core/render/font.h"      // textWidth — mirroring a screen's own layout maths
 #include "core/render/framebuffer.h"
 #include "core/render/palette.h"
 #include "core/render/sprite.h"
@@ -435,9 +435,9 @@ static void test_grayscale_gate() {
     Framebuffer fb(kActiveW, kActiveH);
     game.render(fb);                     // beat 0 = pulse "on"
 
-    CHECK(litCellsGray(fb, GX, GW, 60) == 1);   // hunger 12 -> 1
-    CHECK(litCellsGray(fb, GX, GW, 82) == 8);   // frag 82 -> 8
-    CHECK(litCellsGray(fb, GX, GW, 104) == 5);  // happy 50 -> 5
+    CHECK(litCellsGray(fb, GX, GW, 74) == 1);   // hunger 12 -> 1
+    CHECK(litCellsGray(fb, GX, GW, 96) == 8);   // frag 82 -> 8
+    CHECK(litCellsGray(fb, GX, GW, 118) == 5);  // happy 50 -> 5
 }
 
 // Carousel summon + book-wrap -----------------------
@@ -1236,11 +1236,18 @@ static void test_items_grayscale() {
     const int cur = firstSelectableRow(rows);        // first FOOD row (v=1)
     Framebuffer fb(kActiveW, kActiveH);
     drawItemsList(fb, rows, cur, false, 0);
-    // The cursor triangle (accent) sits at x~9 of the focused row; an unfocused
-    // item row has only paper there. Separable by luminance alone.
-    const int focusY = kItemsRowTop + 1 * 28 + 13;   // row v=1, mid-triangle
-    const int plainY = kItemsRowTop + 3 * 28 + 13;   // row v=3, no marker
-    CHECK(luminance(fb.get(9, focusY)) - luminance(fb.get(9, plainY)) > 0.3f);
+    // The claim is that the MARKER reads against the selection band it sits on, with
+    // no colour: probe the cursor triangle at x=9 against the bare band two columns
+    // left of it, on the same row. Comparing against a different ROW is what a probe
+    // must not do — a group header draws its label from the left margin too, so the
+    // "empty" row is only empty until the inventory shifts under it.
+    int drawnRow = 0;
+    for (int i = 0, v = 0; i < static_cast<int>(rows.size()); ++i) {
+        if (i == cur) { drawnRow = v; break; }
+        ++v;
+    }
+    const int rowY = kItemsRowTop + drawnRow * 28 + 13;
+    CHECK(luminance(fb.get(9, rowY)) - luminance(fb.get(5, rowY)) > 0.3f);
 }
 
 // Forward decls: the egg-at-idle gates below reuse these carousel/render helpers
@@ -1726,16 +1733,16 @@ static void test_stat_paging_loadout_xp() {
     enterSubmenuId(g, SubmenuId::Stat);
     Framebuffer p0(kActiveW, kActiveH);
     g.render(p0);                                    // page 0 = VITALS (landing)
-    CHECK(litCellsGray(p0, 70, 110, 60) == 10);       // full hunger gauge (fresh pet)
+    CHECK(litCellsGray(p0, 70, 110, 74) == 10);       // full hunger gauge (fresh pet)
 
-    // the XP bar at y=50 fills with banked XP — a half-level of XP paints
+    // the XP bar fills with banked XP — a half-level of XP paints
     // the fill region that an empty (0 XP) fresh pet leaves blank on the landing page.
     Game g3{StartMode::Hatched};
     g3.debugAddCombatXp(g3.xpToNextLevel() / 2);
     enterSubmenuId(g3, SubmenuId::Stat);
     Framebuffer p0xp(kActiveW, kActiveH);
     g3.render(p0xp);
-    CHECK(regionDiffers(p0, p0xp, 31, 51, 120, 57));  // XP bar fill differs
+    CHECK(regionDiffers(p0, p0xp, 31, 60, 120, 66));  // XP bar fill differs
 
     // A -> page 1 = LOADOUT (a distinct page).
     g.onButton(press(Button::A));
@@ -1872,8 +1879,8 @@ static void test_effect_text_templates_resolve() {
     CHECK(chip && std::strstr(effectText(*chip).c_str(), "10") == nullptr);
     CHECK(chip && std::strcmp(statLine(*chip).c_str(), "HAPPY +10") == 0);
 
-    // Descriptions are drawn with the 5x7 font (core/render/font5x7.cpp), which has
-    // no glyph above ASCII — a typographic dash or ellipsis renders as a run of
+    // Descriptions are drawn with FONT_UI (core/render/font_glyphs.cpp), whose table
+    // stops at ASCII 126 — a typographic dash or ellipsis renders as a run of
     // blanks AND measures 3 characters wide, throwing off every wrap that sizes
     // itself with textWidth(). So the tables stay ASCII-only.
     auto ascii = [](const char* s) {
@@ -1919,7 +1926,7 @@ static void test_effect_text_fits_its_screen_budget() {
     constexpr int kMaxW = kActiveW - 2 * 8;   // both margins, every panel screen
     constexpr int kLineH = 12;
     constexpr int kDetailPanelLines = 7;      // items/mods: y=56 to the footer rows
-    constexpr int kMoveGridReserve = 3;       // train_screen's kDetailGridLines
+    constexpr int kMoveGridReserve = 4;       // train_screen's kDetailGridLines
     auto proseLines = [&](const EffectText& t) {
         return textWrapLines(t.c_str(), kMaxW);
     };
@@ -8747,38 +8754,57 @@ static void test_expl_sector_linear_gating() {
     CHECK(keep == moors + 1);
 }
 
-// Every EXPL sub-area row has to fit BESIDE its right-aligned state tag, and every
-// storefront header beside the wallet — a name that outgrows either just draws over
-// the other with no warning, on a screen no test renders name-by-name. Measured
-// through the renderers' own metrics so it can't drift from what ships.
-static void test_expl_names_fit_their_rows() {
-    // Every EXPL row is a TITLE line — name at x=34, state tag right-aligned against the
-    // 8px margin — over a DETAIL line running the full width from the same x. Each name
-    // is budgeted against the widest tag ITS OWN row can pair with.
-    const int titleX = 34, margin = 8;
-    const int subNameW  = kActiveW - margin - textWidth("> FIGHT BOSS") - titleX;
-    const int areaNameW = kActiveW - margin - textWidth("CLEARED") - titleX;
-    const int bossNameW = kActiveW - margin - textWidth("> AREA BOSS") - titleX;
+// Every EXPL name and storefront banner is drawn through drawTextMarquee (widgets.h),
+// so one that outgrows the column beside its right-aligned tag SCROLLS rather than
+// drawing over it. That is what lets the world keep names like UNINSTALL UNDERTOW at
+// FONT_UI's 8px advance instead of renaming the ladder to fit a font.
+//
+// What still has to hold is that the overflow stays scrollable. A line more than twice
+// its column takes a cycle longer than anyone will watch it for, and a name that long
+// is a naming problem the marquee would only be hiding. Budgets are measured through
+// the renderers' own metrics so they can't drift from what ships.
+// A hint band is the one line on a screen that CANNOT yield: it is drawn centred in a
+// full-width strip, nothing scrolls it, and a band wider than the canvas loses whichever
+// control sits at the ends — silently, and only in the state that draws that band. So
+// every band's copy is measured here rather than discovered on the panel.
+static void test_hint_bands_fit_the_canvas() {
+    static const char* const kBands[] = {
+        "B CONTINUE", "A CYCLE B COMMIT C CANCEL", "A+C CMD B STAT C RUN A SKIP",
+        "A ZONE  B ENTER  C BACK", "B - OPEN  C - BACK", "B SELECT   C DISABLED",
+        "A NEXT", "B SET  C BACK", "B BUY   C LEAVE", "B APPLIES",
+    };
+    for (const char* b : kBands) CHECK(textWidth(b) <= kActiveW);
+}
+
+static void test_expl_names_stay_scrollable() {
+    // Every EXPL row is a TITLE line — name at kTextX, state tag right-aligned against
+    // the 8px margin with a margin's gap — over a DETAIL line running the full width
+    // from the same x. Each name is budgeted against the widest tag ITS OWN row pairs
+    // with, then allowed twice that before it counts as unscrollable.
+    const int titleX = 8 + 20 + 2, margin = 8;      // expl_screen's kTextX
+    const int subNameW  = kActiveW - margin - (textWidth("EXPLORING") + margin) - titleX;
+    const int areaNameW = kActiveW - margin - (textWidth("LOCKED") + margin) - titleX;
+    const int bossNameW = kActiveW - margin - (textWidth("> BOSS") + margin) - titleX;
     const int detailW   = kActiveW - margin - titleX;
     // The breadcrumb header inside an area: "EXPL", the cursor triangle, then the area
     // name at a fixed offset past both.
     const int crumbX = margin + textWidth("EXPL") + 16;
     for (int s = 0; s < kExplSectors; ++s) {
-        CHECK(textWidth(explSectorName(s)) <= areaNameW);         // top-level zone row
-        CHECK(textWidth(explSectorName(s)) <= kActiveW - margin - crumbX);
-        CHECK(textWidth(area(s).areaBossName) <= bossNameW);      // the area-gauntlet row
+        CHECK(textWidth(explSectorName(s)) <= 2 * areaNameW);         // top-level zone row
+        CHECK(textWidth(explSectorName(s)) <= 2 * (kActiveW - margin - crumbX));
+        CHECK(textWidth(area(s).areaBossName) <= 2 * bossNameW);      // the area-gauntlet row
         // The Title a cleared area grants rides that same row's DETAIL line, as do the
         // sub-boss names on a boss-ready sub-area row.
-        CHECK(textWidth("TITLE: ") + textWidth(sectorTitle(s)) <= detailW);
+        CHECK(textWidth("TITLE: ") + textWidth(sectorTitle(s)) <= 2 * detailW);
         for (int i = 0; i < kExplSubAreas; ++i) {
-            CHECK(textWidth(explSubAreaName(s, i)) <= subNameW);
-            CHECK(textWidth("BOSS: ") + textWidth(area(s).subBossNames[i]) <= detailW);
+            CHECK(textWidth(explSubAreaName(s, i)) <= 2 * subNameW);
+            CHECK(textWidth("BOSS: ") + textWidth(area(s).subBossNames[i]) <= 2 * detailW);
         }
         // Storefront headers: drawn at the left margin, with the Bits wallet right-
         // aligned opposite. Budget the wallet at a 6-figure purse plus its unit.
         const int storeNameW = kActiveW - 2 * margin - textWidth("999999 B");
-        CHECK(textWidth(shopName(s)) <= storeNameW);
-        CHECK(textWidth(modShopName(s)) <= storeNameW);
+        CHECK(textWidth(shopName(s)) <= 2 * storeNameW);
+        CHECK(textWidth(modShopName(s)) <= 2 * storeNameW);
     }
 }
 
@@ -15049,7 +15075,8 @@ static void test_firmware_version_ordering() {
     RUN(test_post_encounter_level_line_renders) \
     RUN(test_post_encounter_never_for_sim_battle) \
     RUN(test_expl_sector_linear_gating)           \
-    RUN(test_expl_names_fit_their_rows)           \
+    RUN(test_hint_bands_fit_the_canvas)            \
+    RUN(test_expl_names_stay_scrollable)           \
     RUN(test_expl_level_scoped_rows)              \
     RUN(test_combat_carry_health)                 \
     RUN(test_bits_reward_bounds)                   \

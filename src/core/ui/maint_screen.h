@@ -18,7 +18,7 @@ inline bool avGated(const PetModel& m) {
 }
 
 // L2: two rows previewing current Fragmentation / debuff+ghost status.
-void drawMaintList(Framebuffer& fb, const PetModel& m, int cursor);
+void drawMaintList(Framebuffer& fb, const PetModel& m, int cursor, int beat);
 
 // L3 action screen: effect summary + Run/Scan (or the gated line).: a
 // Defrag shows its stage-scaled Bits `cost` and gates on the `walletBits` balance

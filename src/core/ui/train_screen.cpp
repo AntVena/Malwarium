@@ -10,7 +10,7 @@
 #include "core/model/combat.h"   // simDummyName for the tier label
 #include "core/model/move_loadout.h"
 #include "core/render/canvas.h"
-#include "core/render/font5x7.h"
+#include "core/render/font.h"
 #include "core/render/framebuffer.h"
 #include "core/render/palette.h"
 #include "core/render/sprite.h"
@@ -37,14 +37,22 @@ const SpriteData* moveIcon(const ContentRegistry& reg, const char* id) {
     return reg.sprite(name);
 }
 
+// One equipped-move row: glyph, name, and the move's own kind tag at the right edge.
+// The tag is enforced to match the slot (#12), so it is the fact the row cannot lose —
+// the name yields to it and scrolls when `focused` (widgets.h).
 void moveRowText(Framebuffer& fb, const ContentRegistry& reg, const char* id,
-                 int x, int y, Rgb565 nameCol) {
+                 int x, int y, Rgb565 nameCol, int beat, bool focused) {
     const MoveDef* m = reg.move(id);
     if (const SpriteData* ic = moveIcon(reg, id)) drawSprite(fb, *ic, 0, x, y - 6);
-    drawText(fb, x + 22, y, m ? m->displayName : id, nameCol);
-    if (m)
-        drawText(fb, kActiveW - kMargin - textWidth(moveKindTag(m->kind)), y,
-                 moveKindTag(m->kind), palColor(Pal::ACCENT));
+    int nameW = kActiveW - kMargin - (x + 22);
+    if (m) {
+        const char* tag = moveKindTag(m->kind);
+        const int tagX = kActiveW - kMargin - textWidth(tag);
+        drawText(fb, tagX, y, tag, palColor(Pal::ACCENT));
+        nameW = tagX - kMargin - (x + 22);
+    }
+    drawTextMarquee(fb, x + 22, y, nameW, m ? m->displayName : id, nameCol, beat,
+                    focused);
 }
 
 } // namespace
@@ -75,16 +83,22 @@ int loadoutSelectableCount(Stage stage) {
 
 void drawLoadout(Framebuffer& fb, const ContentRegistry& reg,
                  const MoveLoadout& load, Stage stage, int cursor,
-                 const MoveDef::Kind* slotKinds) {
+                 const MoveDef::Kind* slotKinds, int beat) {
     drawHeaderBand(fb, "TRAIN");
     const int unlocked = MoveLoadout::slotsForStage(stage);
 
     // No standalone "default" row: Quick Jab is a per-slot FALLBACK, not a
     // fixture — it's shown inside an empty slot below, never as a slot of its own.
     drawText(fb, kMargin, 30, "LOADOUT", palColor(Pal::INK_DIM));
-    fb.fillRect(kMargin + textWidth("LOADOUT") + 6, 33, 90, 1, palColor(Pal::TRACK));
+    fb.fillRect(kMargin + textWidth("LOADOUT") + 6, 34, 90, 1, palColor(Pal::TRACK));
 
-    const int rowH = 20, top = 42;
+    // Row columns: the slot label on the margin, the state glyph, then the content,
+    // with the accepted-kind tag right-aligned opposite. `top` clears the LOADOUT
+    // caption's own row, which the focused band would otherwise draw over.
+    const int rowH = 20, top = 48;
+    constexpr int kSlotLabelX = 20;   // clear of the row cursor at the margin
+    constexpr int kSlotGlyphX = 72;
+    constexpr int kSlotTextX = 96;
     for (int i = 0; i < kMaxMoveSlots; ++i) {
         const int y = top + i * rowH;
         const bool unlockedSlot = i < unlocked;
@@ -94,28 +108,29 @@ void drawLoadout(Framebuffer& fb, const ContentRegistry& reg,
         }
         char slotLbl[10];
         std::snprintf(slotLbl, sizeof(slotLbl), "SLOT %d", i + 1);
-        drawText(fb, 16, y, slotLbl, palColor(Pal::INK_DIM));
+        drawText(fb, kSlotLabelX, y, slotLbl, palColor(Pal::INK_DIM));
         if (!unlockedSlot) {
             // Locked slot: the path-ahead affordance (🔒 unlocks at {Stage}).
-            drawSprite(fb, ASSET_ICON_MOVE_SLOT_LOCKED, 0, 60, y - 6);
+            drawSprite(fb, ASSET_ICON_MOVE_SLOT_LOCKED, 0, kSlotGlyphX, y - 6);
             char lk[28];
-            std::snprintf(lk, sizeof(lk), "UNLOCKS AT %s",
+            std::snprintf(lk, sizeof(lk), "AT %s",
                           stageName(MoveLoadout::stageUnlockingSlot(i)));
-            drawText(fb, 82, y, lk, palColor(Pal::INK_DIM));
+            drawText(fb, kSlotTextX, y, lk, palColor(Pal::INK_DIM));
         } else if (const char* id = load.equipped(i)) {
             // The equipped move's own kind tag (moveRowText, right edge) already
             // reads as this slot's type — it's enforced to match (#12).
-            moveRowText(fb, reg, id, 60, y, palColor(Pal::INK));
+            moveRowText(fb, reg, id, kSlotGlyphX, y, palColor(Pal::INK), beat,
+                        i == cursor);
         } else {
             // An EMPTY unlocked slot falls back to the innate default (Quick Jab) in
-            // combat (per-slot fallback), so show it here IN the slot — dimmed +
-            // "(DEFAULT)" so it reads as the stand-in, not an equipped choice. This is
-            // the ONLY place Quick Jab surfaces; there is no dedicated default row.
-            drawSprite(fb, ASSET_ICON_MOVE_SLOT_EMPTY, 0, 60, y - 6);
+            // combat (per-slot fallback), so show it here IN the slot. Two non-colour
+            // channels say it is a stand-in rather than a choice: the empty-slot glyph
+            // (distinct from the locked one beside it) and the dimmed name. This is the
+            // ONLY place Quick Jab surfaces; there is no dedicated default row.
+            drawSprite(fb, ASSET_ICON_MOVE_SLOT_EMPTY, 0, kSlotGlyphX, y - 6);
             const MoveDef* def = reg.move(load.defaultMove());
-            const int nx = drawText(fb, 82, y, def ? def->displayName : "QUICK JAB",
-                                    palColor(Pal::INK_DIM));
-            drawText(fb, nx + kFontAdvance, y, "(DEFAULT)", palColor(Pal::INK_DIM));
+            drawText(fb, kSlotTextX, y, def ? def->displayName : "QUICK JAB",
+                     palColor(Pal::INK_DIM));
             // Keep the slot's accepted-kind tag at the right edge (#12) — tells the
             // player what they can equip to replace the fallback.
             const char* tag = moveKindTag(slotKinds[i]);
@@ -130,10 +145,10 @@ void drawLoadout(Framebuffer& fb, const ContentRegistry& reg,
         fb.fillRect(4, simY - 7, kActiveW - 8, rowH - 4, palColor(Pal::TRACK));
         drawRowCursor(fb, 8, simY - 3, palColor(Pal::ACCENT));
     }
-    drawSprite(fb, ASSET_ICON_TRAIN_SIM, 0, 16, simY - 6);
-    drawText(fb, 44, simY, "SIM-BATTLE", palColor(Pal::INK));
-    drawText(fb, kActiveW - kMargin - textWidth("TEST LOADOUT"), simY,
-             "TEST LOADOUT", palColor(Pal::INK_DIM));
+    drawSprite(fb, ASSET_ICON_TRAIN_SIM, 0, kMargin, simY - 6);
+    drawText(fb, kSlotTextX - 44, simY, "SIM-BATTLE", palColor(Pal::INK));
+    drawText(fb, kActiveW - kMargin - textWidth("TEST"), simY, "TEST",
+             palColor(Pal::INK_DIM));
 }
 
 void drawMovePicker(Framebuffer& fb, const ContentRegistry& reg,
@@ -279,16 +294,17 @@ void drawMovePicker(Framebuffer& fb, const ContentRegistry& reg,
 
 namespace {
 // The detail page's panel band: the readout starts here and the prose flows under it,
-// down to the action line above the hint band. A move's readout is at most 3 grid
+// down to the action line above the hint band. A move's readout is at most 4 grid
 // lines, so the prose band's height is stable enough for the scroll bounds below to
-// be a pure function of the move.
+// be a pure function of the move. The prose pays for the reserve and can afford to:
+// it pages on A, where the readout has nowhere to go.
 constexpr int kDetailPanelTop = 66;
-constexpr int kDetailGridLines = 3;
+constexpr int kDetailGridLines = 4;
 constexpr int kDetailPanelBottom = kActiveH - 34;
 }  // namespace
 
 int moveDetailProseLines() {
-    return (kDetailPanelBottom - kDetailPanelTop) / 12 - kDetailGridLines;
+    return (kDetailPanelBottom - kDetailPanelTop) / kLineH - kDetailGridLines;
 }
 
 int moveProseLines(const MoveDef& m) {

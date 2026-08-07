@@ -91,34 +91,6 @@ real art review. Not urgent — flash sits at 24% and tinting doesn't depend on 
 red/green semantic pair onto a blue/orange axis) needs hue decisions, plus a CFG row to select it
 and a save field to remember it. Diff **M**.
 
-### 1e. FONT_UI — ingested and rendering; one copy decision left
-
-The face is in (`assets/fonts/PixelOperatorMono8.ttf`, Pixel Operator by Jayvee Enaguas, CC0,
-licence beside it) and the whole code side is built on the **`font-ui` branch**: `tools/gen_font.py`
-rasterises it into a committed glyph table, `font.cpp` renders from that, and `font5x7.*` is gone.
-The generator is deliberately not in the gates — rasterising a TTF needs Pillow, and
-`gen_assets.py`'s pure-stdlib rule is what lets a fresh clone regenerate the atlas — so the
-committed table is what builds. It refuses any size the face would be antialiased at, which is
-the one defect nobody can spot reading a hex table.
-
-**What it costs, measured rather than estimated.** The face is crisp only at the size it was drawn
-for; 12px comes out with 32 grey levels, which VISUAL_LANGUAGE §2.1 rules out. At its own 8px cut
-the advance is 8px against the placeholder's 6 — and 8 is not padding: `M`, `W`, `%` and `#` really
-do span 7 columns, so tightening it would run adjacent letters together. Every string is therefore
-**a third wider**, and the suite's own copy-fit checks catch it: **51 failing checks**, all of them
-"does this name still fit its column".
-
-**The fork, and it is a copy decision, not a code one:**
-
-- Leave the UI's row tags as they are → **37 world strings overflow**, so the areas, sub-areas,
-  bosses and storefronts get renamed. Naming is a design pass (`AREA_NAMING.md`), not a refactor.
-- Shorten the EXPL row's own chrome — `> FIGHT BOSS` → `BOSS`, `CLEARED` → `DONE` → **5 overflow**,
-  all on the detail line, and all 5 clear it if the `TITLE: ` / `BOSS: ` prefixes go too. Zero
-  content renames. But it is a shipped screen's copy, and a shipped screen is its own contract:
-  the prefix is what says whether a detail line is naming a Title or a boss.
-
-Nothing else is blocking. Pick the lever and the branch closes.
-
 ### 1f. Standing stubs / interim mechanics to revisit
 
 Intentional simplifications. None is a bug; each is a "confirm as v1 or revise".
@@ -393,7 +365,6 @@ Two more are past the rule and were not on this watch at all:
 
 ## If picking up cold
 
-1. **FONT_UI (§1e)** — built and waiting on the `font-ui` branch; what is left is one decision
-   about EXPL's row copy, not code.
-2. **Net-Sea Crossing art (§2c)** — the area ships mechanically; it is the only rung with no
+1. **Net-Sea Crossing art (§2c)** — the area ships mechanically; it is the only rung with no
    backdrop or malbeasts of its own.
+2. **`combat.cpp`'s factory split (§3)** — the one unit past double the size rule with a real seam.

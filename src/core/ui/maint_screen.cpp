@@ -4,7 +4,7 @@
 
 #include "tunables.h"
 #include "core/render/canvas.h"
-#include "core/render/font5x7.h"
+#include "core/render/font.h"
 #include "core/render/framebuffer.h"
 #include "core/render/palette.h"
 #include "core/render/sprite.h"
@@ -36,7 +36,7 @@ void avStatus(const PetModel& m, char* out, int n) {
 
 }  // namespace
 
-void drawMaintList(Framebuffer& fb, const PetModel& m, int cursor) {
+void drawMaintList(Framebuffer& fb, const PetModel& m, int cursor, int beat) {
     drawHeaderBand(fb, "MAINT");
 
     const SpriteData* icons[2] = {&ASSET_ICON_MAINT_DEFRAG, &ASSET_ICON_MAINT_AV};
@@ -52,9 +52,14 @@ void drawMaintList(Framebuffer& fb, const PetModel& m, int cursor) {
             drawRowCursor(fb, 8, y + (kRowH - 7) / 2, palColor(Pal::ACCENT));
         }
         drawSprite(fb, *icons[i], 0, 16, y + (kRowH - kRowIcon) / 2);
-        drawText(fb, 40, y + (kRowH - kFontH) / 2, labels[i], palColor(Pal::INK));
-        drawText(fb, kActiveW - kMargin - textWidth(status[i]),
-                 y + (kRowH - kFontH) / 2, status[i], palColor(Pal::INK_DIM));
+        const int textY = y + (kRowH - kFontH) / 2;
+        const int statusX = kActiveW - kMargin - textWidth(status[i]);
+        drawText(fb, statusX, textY, status[i], palColor(Pal::INK_DIM));
+        // The status owns the right end, so the process name yields to it and scrolls
+        // when focused (widgets.h) — DEFRAGMENTATION spelled out is the whole point of
+        // the row, so it is not the half that gets cut.
+        drawTextMarquee(fb, 40, textY, statusX - kMargin - 40, labels[i],
+                        palColor(Pal::INK), beat, i == cursor);
     }
 }
 

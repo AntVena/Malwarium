@@ -222,7 +222,7 @@ constexpr int kShopDescLines = 3;
 // event chrome.
 void drawShop(Framebuffer& fb, const char* storeName, int walletBits,
               const ShopRowView* rows, int rowCount, int cursor,
-              const char* selectedDescription, const char* statusLine);
+              const char* selectedDescription, const char* statusLine, int beat);
 
 // Warp-key picker: the walk's B overlay listing the held warp keys
 // (Access Token / Safe-Mode Key), one row each, cursor-highlighted, with an

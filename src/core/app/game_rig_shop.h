@@ -349,7 +349,7 @@ inline const RigUpgradeDef kRigUpgrades[] = {
 
     {"data_mining", "ENHANCED DATAMINING", kDataMiningMax, RigCostCurve::kLogStepHalf,
      kDataMiningStart, 0, RigEffectKind::None, 0, "BOUGHT DATAMINE LVL",
-     {{"CACHE BITS", RigValueCurve::Ramp, 0, kDataMiningPctPerLevel, nullptr, 0,
+     {{"CACHES", RigValueCurve::Ramp, 0, kDataMiningPctPerLevel, nullptr, 0,
        "+%d%%", "+0%"}}},
 
     {"merge_hub", "MERGE HUB", 1, RigCostCurve::kFixed, kRigMergeHubCost, 0,

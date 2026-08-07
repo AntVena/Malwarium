@@ -7,7 +7,7 @@
 #include "tunables.h"        // kLevelDmgReduceMaxPct — the never-immune defence clamp
 #include "core/model/combat.h"
 #include "core/render/canvas.h"
-#include "core/render/font5x7.h"
+#include "core/render/font.h"
 #include "core/render/framebuffer.h"
 #include "core/render/palette.h"
 #include "core/render/sprite.h"
@@ -465,8 +465,8 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
     // Mandatory hint band: A+C live, C reassigned -----------------
     const char* hint = combat.outcome() != Combat::Outcome::Ongoing
                            ? "B CONTINUE"
-                       : combat.overrideOpen() ? "A CYCLE  B COMMIT  C CANCEL"
-                                               : "A+C CMD  B STATS  C FLEE  A SKIP";
+                       : combat.overrideOpen() ? "A CYCLE B COMMIT C CANCEL"
+                                               : "A+C CMD B STAT C RUN A SKIP";
     fb.fillRect(0, kActiveH - 16, kActiveW, 16, palColor(Pal::TRACK));
     drawText(fb, (kActiveW - textWidth(hint)) / 2, kActiveH - 12, hint,
              palColor(Pal::INK));
