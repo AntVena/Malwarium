@@ -66,10 +66,11 @@ pedia-sd: pedia
 		echo "  make pedia-sd DEST=/Volumes/MALWARIUM"; \
 		exit 1; \
 	fi
-	@mkdir -p "$(DEST)/web/assets" "$(DEST)/web/data"
+	@mkdir -p "$(DEST)/web/assets" "$(DEST)/web/data" "$(DEST)/web/fonts"
 	@cp web/index.html web/style.css web/app.js web/VERSION "$(DEST)/web/"
 	@cp -R web/assets/. "$(DEST)/web/assets/"
 	@cp -R web/data/. "$(DEST)/web/data/"
+	@cp -R web/fonts/. "$(DEST)/web/fonts/"
 	@# macOS cp writes AppleDouble ._* sidecars (+ .DS_Store) when copying xattrs
 	@# onto a FAT/exFAT card — harmless to the device but dead-weight litter. Strip
 	@# them so the staged bundle is exactly the served files.
@@ -81,6 +82,7 @@ pedia-sd: pedia
 	@echo "  $(DEST)/web/VERSION  ($$(grep '^code=' web/VERSION))"
 	@echo "  $(DEST)/web/assets/  ($$(find web/assets -type f | wc -l | tr -d ' ') files)"
 	@echo "  $(DEST)/web/data/    ($$(find web/data -type f | wc -l | tr -d ' ') files)"
+	@echo "  $(DEST)/web/fonts/   ($$(find web/fonts -type f | wc -l | tr -d ' ') files)"
 
 # Build the `web` artifact an on-device update downloads, and print the manifest
 # row that describes it. The device unpacks this over /sdcard/web with no

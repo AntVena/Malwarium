@@ -13,7 +13,7 @@ Open `index.html` from disk and it runs on the sample fixture.
 | `data/pedia_data.js` | **GENERATED** content pack — run `tools/gen_pedia_data.py` after editing the firmware content tables |
 | `fixtures/pedia_state.js` | sample per-player state (every reveal state represented) |
 | `assets/` | **SYNCED** copies of the repo's canonical PNGs — `tools/gen_pedia_data.py` copies in exactly what the generated data references, so this never drifts from `/assets` |
-| `fonts/` | *(you add)* `PixelOperatorMono.ttf` — then re-add the `url('fonts/PixelOperatorMono.ttf')` src line noted in style.css's @font-face; until then a system-mono fallback stack applies |
+| `fonts/` | `PixelOperatorMono8.ttf` — FONT_UI's own cut (CC0, 20KB), copied from `assets/fonts/`. Hand-staged, not synced: nothing in the generated data references it, so it rides `make pedia-sd` and the tar by being listed in each (`SUBDIRS` in `tools/make_web_tar.py`) |
 
 ## Engineering integration
 

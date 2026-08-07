@@ -10,9 +10,16 @@
    not a file — one is downloaded by a device, the other never is.
    ============================================================ */
 
+/* FONT_UI = Pixel Operator Mono 8 — the same cut the device renders, vendored in
+   fonts/ (CC0, 20KB) so the pages read in the real face on a machine that has
+   never installed it. The local() probes name the 8px cut EXACTLY: the wider
+   "Pixel Operator Mono" family is a different cut, and matching it would dress
+   the page in a face the device never draws. `make site` copies this directory
+   whole, so the file publishes with no staging step of its own. */
 @font-face {
   font-family: 'Pixel Operator Mono';
-  src: local('Pixel Operator Mono'), local('PixelOperatorMono');
+  src: local('Pixel Operator Mono 8'), local('PixelOperatorMono8'),
+       url('fonts/PixelOperatorMono8.ttf') format('truetype');
   font-display: swap;
 }
 

@@ -40,7 +40,7 @@ FIXED_MTIME = 1577836800  # 2020-01-01T00:00:00Z
 # What belongs in the bundle, relative to the source dir. Mirrors `make pedia-sd`
 # so a card written by an update and one staged by hand hold the same files.
 TOP_LEVEL_FILES = ("index.html", "style.css", "app.js", "VERSION")
-SUBDIRS = ("assets", "data")
+SUBDIRS = ("assets", "data", "fonts")
 
 # Editor and Finder droppings that must never reach the device.
 def _excluded(name):

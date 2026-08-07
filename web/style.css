@@ -5,15 +5,17 @@
    Phone-first (375px), desktop-fine. No CDN, no framework.
    ============================================================ */
 
-/* FONT_UI = Pixel Operator Mono. The bundle ships NO font binary, so this rule
-   only probes locally-installed copies — no network/file request is ever made.
-   When you drop fonts/PixelOperatorMono.ttf (public domain) into the bundle,
-   add this line back into src, before local():
-     url('fonts/PixelOperatorMono.ttf') format('truetype'),
-   Until then the stack falls through to a faithful system mono (W7). */
+/* FONT_UI = Pixel Operator Mono 8 — the SAME cut the device renders, shipped in
+   the bundle (fonts/, CC0, 20KB) so a reader gets the real face rather than a
+   system mono standing in beside a panel showing the true one.
+   The local() probes name the 8px cut EXACTLY: the wider "Pixel Operator Mono"
+   family is a different cut, and matching it would dress the page in a face the
+   device never draws. An exact local hit skips the download; anything else takes
+   the url(). The AP server serves .ttf as font/ttf (esp32/ap_server.h). */
 @font-face {
   font-family: 'Pixel Operator Mono';
-  src: local('Pixel Operator Mono'), local('PixelOperatorMono');
+  src: local('Pixel Operator Mono 8'), local('PixelOperatorMono8'),
+       url('fonts/PixelOperatorMono8.ttf') format('truetype');
   font-display: swap;
 }
 

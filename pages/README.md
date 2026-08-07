@@ -12,6 +12,7 @@ versions with the firmware; this is read by a person, in a browser, on a compute
 pages/
 ├── index.html · home.js   the landing page — what this is, and which of the two update paths to use
 ├── style.css              the shared look (see below)
+├── fonts/                 PixelOperatorMono8.ttf — FONT_UI's own cut (CC0), copied from assets/fonts/
 ├── flash/                 the USB flasher: index.html is the operator's instructions, flash.js drives it
 └── vendor/esptool-js/     Espressif's loader, vendored — its README carries the version and digest
 ```
