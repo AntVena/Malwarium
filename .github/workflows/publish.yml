@@ -84,6 +84,10 @@ jobs:
     # a blocked publish is a visible queued job inside a run that `gh run cancel`
     # can clear. Builds are free to overlap; they only produce artifacts, and the
     # last deploy to run is the one the site serves either way.
+    # The group NAME is arbitrary but is not free to recycle: groups are matched
+    # by literal string across the whole repo, so a name that some undead run is
+    # still holding is a name every later publish queues behind forever. If this
+    # ever wedges again, rename the group rather than trying to clear the run.
     concurrency:
       group: pages-deploy
       cancel-in-progress: false
