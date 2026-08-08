@@ -9,7 +9,7 @@ the stack in `docs/ORIENTATION.md`.
 
 | Tier | Command / tool | Covers | Hardware |
 |---|---|---|---|
-| **Native unit** | `pio test -e native` / `ctest` (dual-mode via `PIO_UNIT_TESTING`, same `test/test_native/test_main.cpp`) | Pure game logic — stat decay, care-budget transitions, hatch sequence, state machines | None (runs on PC) |
+| **Native unit** | `pio test -e native` / `ctest` (dual-mode via `PIO_UNIT_TESTING`, same `test/test_native/`) | Pure game logic — stat decay, care-budget transitions, hatch sequence, state machines | None (runs on PC) |
 | **Host preview** | CMake + SDL2, `./build/malwarium_host` | Game logic *and* the render pipeline on the PC — layout/rendering verifiable without hardware. The grayscale gate runs in-process against the rendered framebuffer (`test_grayscale_gate`); `tools/dump_frame` writes PPM panels for eyeballing/baselines. | None |
 | **On-device** | Claude Code over USB | Drivers, ~4fps timing, SD_MMC, audio/IMU/radio | 1 board (2 for radio) |
 
@@ -20,6 +20,26 @@ acceptance, and the real board is the timing authority. Recipe + rationale: `sim
 **The serial test-hook** (debug builds injecting synthetic `INPUT_NEXT/ACCEPT/CANCEL` tokens and
 dumping current screen/state over serial, so navigation is assertable without physical buttons) is
 still **unbuilt** — see `docs/MASTER_TODO.md §1f`.
+
+### How the native suite is laid out
+
+`test/test_native/` is one gate per `void test_*()`, split across `test_<subject>.cpp`
+units — combat, save, explore, audit, and so on. Three files carry the machinery:
+
+- **`test_gates.h`** — the includes, the `CHECK` macro in both harness flavours, and the
+  drivers more than one unit needs (`enterSlot`, `walkToEncounter`, `pickFirstEggLine`…).
+  A helper that drives one subject stays private to its unit; it moves here when a second
+  unit reaches for it.
+- **`test_main.cpp`** — `MAL_RUN_ALL_GATES`, the single roster, in milestone order. It is
+  expanded three times: once to declare every gate, and once by each harness to call them.
+- **`tools/check_test_roster.py`** — a ctest entry (`test_roster`). The roster generating
+  the declarations means an entry naming nothing fails to link, but a gate written and
+  never listed would simply not run; that direction has no compiler behind it.
+
+**Adding a gate:** write it in the unit whose subject it belongs to, add one `RUN(...)` to
+the roster. A new subject is a new file and no build edit — the sources are globbed. A
+save-`vNN` migration gate sits with the feature whose field it migrates, not in a
+migrations pile of its own, which is why save gates appear in several units.
 
 ---
 

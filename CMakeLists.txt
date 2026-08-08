@@ -56,7 +56,11 @@ target_link_libraries(check_manifest PRIVATE malcore)
 
 # --- Native tests -----------------------------------------------------------
 enable_testing()
-add_executable(mal_tests test/test_native/test_main.cpp)
+# Globbed: the suite is one gate roster (test_main.cpp) over per-subject units, and
+# a new test_<subject>.cpp should cost a file, not a build edit — same rule the
+# engine sources follow. CONFIGURE_DEPENDS re-globs when a file appears.
+file(GLOB MAL_TEST_SOURCES CONFIGURE_DEPENDS test/test_native/*.cpp)
+add_executable(mal_tests ${MAL_TEST_SOURCES})
 target_link_libraries(mal_tests PRIVATE malcore)
 add_test(NAME mal_tests COMMAND mal_tests)
 
@@ -74,4 +78,9 @@ if(Python3_Interpreter_FOUND)
     add_test(NAME comment_standard
              COMMAND ${Python3_EXECUTABLE}
                      ${CMAKE_SOURCE_DIR}/tools/check_comment_standard.py)
+    # A gate written but never added to the roster doesn't run, and a green suite
+    # says nothing about it. The compiler catches the other direction on its own.
+    add_test(NAME test_roster
+             COMMAND ${Python3_EXECUTABLE}
+                     ${CMAKE_SOURCE_DIR}/tools/check_test_roster.py)
 endif()

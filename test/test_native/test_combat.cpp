@@ -1,0 +1,1475 @@
+// test_combat.cpp — native gates for the combat engine and MODS.
+//
+// One slice of the native suite; see test_gates.h for the shared fixtures and
+// test_main.cpp for the roster that runs these. A save-vNN gate sits with the
+// feature whose field it migrates, not in a migrations pile of its own.
+#include "test_gates.h"
+
+// ARCH: the rack list shows the active pet; the record opens, cycles its
+// actions (Store/Sell), and backs out. Both actions are inert shells.
+void test_arch_list_and_record() {
+    Game g{StartMode::Hatched};
+    enterSubmenuId(g, SubmenuId::Arch);
+    CHECK(g.nav() == Game::Nav::Submenu);
+    Framebuffer fb(kActiveW, kActiveH);
+    g.render(fb);
+    CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));   // list reads in grayscale
+
+    g.onButton(press(Button::B));                       // open the pet record (L3)
+    CHECK(g.nav() == Game::Nav::Detail);
+    g.render(fb);
+    CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));    // record reads in grayscale
+    g.onButton(press(Button::A));                       // cycle Store -> Sell (inert)
+    CHECK(g.nav() == Game::Nav::Detail);                // still on the record
+    g.onButton(press(Button::C));                       // back to the rack
+    CHECK(g.nav() == Game::Nav::Submenu);
+    g.onButton(press(Button::C));                       // back to the carousel
+    CHECK(g.nav() == Game::Nav::Cursor);
+}
+
+// MODS data model (D3): mods are PERMANENT — consumed from the spare pool
+// when equipped, never unequipped, only overwritten (the old one discarded, not
+// returned). The seed installs two mods and holds two spares.
+void test_loadout_permanent_mods() {
+    Loadout l = Loadout::starting();
+    CHECK(l.slotOf("firewall_patch") == 0);        // installed, not a spare
+    CHECK(l.slotOf("clock_speed_boost") == 1);
+    CHECK(!l.owns("firewall_patch"));              // equipped mods aren't in the pool
+    CHECK(l.owns("packet_sniffer") && l.owns("raid_mirror"));  // two spares held
+    CHECK(l.equipped(2) == nullptr);
+
+    // Equip a spare into an empty slot: it's CONSUMED out of the pool.
+    l.equip(2, "packet_sniffer");
+    CHECK(l.slotOf("packet_sniffer") == 2);
+    CHECK(!l.owns("packet_sniffer"));              // consumed on equip
+    CHECK(l.equipped(0) != nullptr);               // did NOT move firewall out of slot 0
+
+    // Overwrite a slot: the displaced mod is DISCARDED (not returned to the pool),
+    // the new one consumed.
+    l.equip(0, "raid_mirror");
+    CHECK(l.slotOf("raid_mirror") == 0);
+    CHECK(l.slotOf("firewall_patch") == -1);       // firewall gone for good
+    CHECK(!l.owns("firewall_patch") && !l.owns("raid_mirror"));
+
+    // Inert with no spare of that id available.
+    l.equip(3, "firewall_patch");
+    CHECK(l.equipped(3) == nullptr);
+}
+
+// MoveLoadout: a move lives in one slot — equipping it elsewhere
+// MOVES it; the innate default sits outside the slots; slot COUNT grows by Stage.
+void test_move_loadout() {
+    MoveLoadout l = MoveLoadout::starting();
+    CHECK(std::strcmp(l.defaultMove(), "quick_jab") == 0);
+    CHECK(l.slotOf("packet_storm") == 0);
+    CHECK(l.equipped(1) == nullptr);                // slot 1 = Quick Jab per-slot fallback (#11)
+    // fork_bomb + checksum_guard start OWNED but unequipped (the Attack/Defend spares).
+    CHECK(l.owns("fork_bomb") && l.slotOf("fork_bomb") < 0);
+    CHECK(l.owns("checksum_guard") && l.slotOf("checksum_guard") < 0);
+    l.equip(2, "packet_storm");                       // move 0 -> 2
+    CHECK(l.slotOf("packet_storm") == 2 && l.equipped(0) == nullptr);
+    l.unequip(2);
+    CHECK(l.equipped(2) == nullptr && l.owns("packet_storm"));   // stays owned
+
+    // Slot counts grow Boot(1) -> Process(2) -> Script(3) -> Daemon(4).
+    CHECK(MoveLoadout::slotsForStage(Stage::BootSector) == 1);
+    CHECK(MoveLoadout::slotsForStage(Stage::Process) == 2);
+    CHECK(MoveLoadout::slotsForStage(Stage::Script) == 3);
+    CHECK(MoveLoadout::slotsForStage(Stage::Daemon) == kMaxMoveSlots);
+    // Slot 1 first becomes available at Process (the "unlocks at" affordance).
+    CHECK(MoveLoadout::stageUnlockingSlot(0) == Stage::BootSector);
+    CHECK(MoveLoadout::stageUnlockingSlot(1) == Stage::Process);
+    CHECK(MoveLoadout::stageUnlockingSlot(3) == Stage::Daemon);
+
+    // The roster + default resolve through the registry.
+    ContentRegistry r = ContentRegistry::embedded();
+    CHECK(r.move("quick_jab") && r.move("quick_jab")->kind == MoveDef::Kind::Attack);
+    CHECK(r.move("checksum_guard")->kind == MoveDef::Kind::Defend);
+    CHECK(r.move("fork_bomb")->channelTurns == 2);
+    CHECK(static_cast<int>(r.allMoves().size()) >= 4);
+}
+
+// Every combatant the game can put on screen must name a sprite the atlas actually
+// carries. Sprites resolve by STRING at draw time, so a name with no PNG behind it
+// is not a compile error and not a crash — it silently draws nothing, which is how
+// the wild roster spent its life wearing the pet dog's frame. Distinctness is half
+// the point: six wilds sharing one sprite is the bug this locks out.
+void test_every_combatant_sprite_resolves() {
+    ContentRegistry r = ContentRegistry::embedded();
+    std::vector<const char*> wildSprites;
+
+    for (int tier = 1; tier <= 3; ++tier) {
+        for (uint32_t variant = 0; variant < 2; ++variant) {
+            const CombatEnemy e = wildMalbeast(tier, variant);
+            CHECK(e.spriteName != nullptr);
+            CHECK(r.sprite(e.spriteName) != nullptr);
+            wildSprites.push_back(e.spriteName);
+            // The name is also what the 'Pedia's seen/defeated masks key on.
+            CHECK(wildMalbeastIndex(e.name) >= 0);
+        }
+    }
+    CHECK(static_cast<int>(wildSprites.size()) == kWildMalbeastCount);
+    for (size_t i = 0; i < wildSprites.size(); ++i)
+        for (size_t j = i + 1; j < wildSprites.size(); ++j)
+            CHECK(std::strcmp(wildSprites[i], wildSprites[j]) != 0);
+
+    for (int tier = 0; tier <= 1; ++tier) {
+        const CombatEnemy d = simDummy(tier);
+        CHECK(d.spriteName != nullptr);
+        CHECK(r.sprite(d.spriteName) != nullptr);
+    }
+
+    // Same contract for the raisable roster: every creature row's art exists.
+    for (const CreatureDef* c : r.allCreatures()) {
+        CHECK(c->spriteName != nullptr);
+        CHECK(r.creatureSprite(*c) != nullptr);
+    }
+}
+
+// ===========================================================================
+// The shared combat engine
+// ===========================================================================
+
+static Combat::Outcome runToEnd(Combat& cb) {
+    int guard = 0;
+    while (cb.outcome() == Combat::Outcome::Ongoing && guard++ < 1000) cb.step();
+    return cb.outcome();
+}
+
+// Deterministic resolution: the same seed replays an identical fight; a strong
+// player beats a weak dummy.
+void test_combat_deterministic() {
+    ContentRegistry r = ContentRegistry::embedded();
+    Combatant p = mkCombatant(r, "P", 60, 10, {"quick_jab", "packet_storm"});
+    Combatant e = mkCombatant(r, "E", 20, 8, {"quick_jab"});
+
+    Combat a; a.begin(p, e, Combat::Stakes::Safe, 12345);
+    CHECK(runToEnd(a) == Combat::Outcome::Win);
+    Combat b; b.begin(p, e, Combat::Stakes::Safe, 12345);
+    CHECK(runToEnd(b) == Combat::Outcome::Win);
+    CHECK(a.player().health == b.player().health);   // identical replay
+}
+
+// The autonomous roll never repeats a move twice in a row.
+void test_combat_no_consecutive() {
+    ContentRegistry r = ContentRegistry::embedded();
+    Combatant p = mkCombatant(r, "P", 100, 10, {"quick_jab", "packet_storm"});
+    Combatant e = mkCombatant(r, "E", 100, 5, {"quick_jab"});
+    Combat cb; cb.begin(p, e, Combat::Stakes::Safe, 777);
+    const char* prev = nullptr; int checks = 0;
+    for (int i = 0; i < 80 && cb.outcome() == Combat::Outcome::Ongoing; ++i) {
+        const bool pturn = cb.playerTurnNext();
+        cb.step();
+        if (pturn) {
+            if (prev) CHECK(std::strcmp(prev, cb.lastMoveName()) != 0);
+            prev = cb.lastMoveName(); ++checks;
+        }
+    }
+    CHECK(checks > 3);
+}
+
+// The Exploit override commands the next move AND breaks the no-consecutive rule:
+// it can repeat the move just played. Opening doesn't spend; committing does.
+void test_combat_override_breaks_rule() {
+    ContentRegistry r = ContentRegistry::embedded();
+    Combatant p = mkCombatant(r, "P", 100, 10, {"quick_jab", "packet_storm"});
+    Combatant e = mkCombatant(r, "E", 300, 10, {"quick_jab"});   // equal speed → strict alternation
+    Combat cb; cb.begin(p, e, Combat::Stakes::Safe, 42);
+    // Resolve the first player turn, note the move it played.
+    cb.step();                                   // player acts (player-first on tie)
+    const char* m1 = cb.lastMoveName();
+    int idx = -1;
+    for (int i = 0; i < static_cast<int>(cb.player().moves.size()); ++i)
+        if (std::strcmp(cb.player().moves[i]->displayName, m1) == 0) idx = i;
+    CHECK(idx >= 0);
+
+    CHECK(cb.overrideReady());
+    cb.openOverride();
+    CHECK(cb.overrideReady());                   // opening does NOT spend
+    while (cb.overridePick() != idx) cb.cycleOverride();
+    cb.commitOverride();                         // commit the SAME move → spends
+    CHECK(!cb.overrideReady());
+
+    cb.step();                                   // enemy turn
+    cb.step();                                   // player turn → forced repeat
+    CHECK(std::strcmp(cb.lastMoveName(), m1) == 0 && cb.lastByPlayer());
+}
+
+// The Exploit picker's USE-ITEM branch: committing an item patches transient
+// Health (clamped to max), spends one use, and reports the id back for the Game to
+// consume exactly once. The item sits past the moves in the flat picker list.
+void test_combat_override_item_use() {
+    ContentRegistry r = ContentRegistry::embedded();
+    Combatant p = mkCombatant(r, "P", 100, 10, {"quick_jab", "packet_storm"});
+    Combatant e = mkCombatant(r, "E", 300, 5, {"quick_jab"});
+    Combat cb;
+    cb.begin(p, e, Combat::Stakes::Safe, 42, /*forceEnemyFirst=*/false,
+             /*carryPlayerHealth=*/50, /*exploitUses=*/1);
+    CHECK(cb.player().health == 50);
+    cb.openOverride({{"airgap_snack", "Air-Gapped Snack", 30}});
+    CHECK(cb.overrideOpen() && cb.overrideMoveCount() == 2);
+    while (cb.overridePick() != cb.overrideMoveCount()) cb.cycleOverride();
+    cb.commitOverride();
+    CHECK(cb.player().health == 80);             // +30 patch
+    CHECK(!cb.overrideReady());                  // the single use is spent
+    const char* used = cb.takeCommittedItem();
+    CHECK(used && std::strcmp(used, "airgap_snack") == 0);
+    CHECK(cb.takeCommittedItem() == nullptr);    // reported exactly once
+
+    // The patch clamps to max Health (no overheal).
+    cb.begin(p, e, Combat::Stakes::Safe, 42, false, /*carryPlayerHealth=*/90, 1);
+    cb.openOverride({{"airgap_snack", "Air-Gapped Snack", 30}});
+    while (cb.overridePick() != cb.overrideMoveCount()) cb.cycleOverride();
+    cb.commitOverride();
+    CHECK(cb.player().health == 100);
+}
+
+// exploitUsesPerBattle: >1 lets the override fire more than once; each commit
+// spends one, and begin() resets the allowance for the next fight / gauntlet round.
+void test_exploit_uses_per_battle() {
+    ContentRegistry r = ContentRegistry::embedded();
+    Combatant p = mkCombatant(r, "P", 100, 10, {"quick_jab", "packet_storm"});
+    Combatant e = mkCombatant(r, "E", 300, 5, {"quick_jab"});
+    Combat cb;
+    cb.begin(p, e, Combat::Stakes::Safe, 42, false, -1, /*exploitUses=*/2);
+    CHECK(cb.overrideUsesTotal() == 2 && cb.overrideUsesLeft() == 2);
+    cb.openOverride(); cb.commitOverride();       // force a move
+    CHECK(cb.overrideUsesLeft() == 1 && cb.overrideReady());
+    cb.openOverride(); cb.commitOverride();
+    CHECK(cb.overrideUsesLeft() == 0 && !cb.overrideReady());
+    cb.openOverride();
+    CHECK(!cb.overrideOpen());                    // exhausted → won't reopen
+    cb.begin(p, e, Combat::Stakes::Safe, 7, false, -1, 2);
+    CHECK(cb.overrideUsesLeft() == 2);            // a fresh fight restores it
+}
+
+// End-to-end: A+C in a live fight opens the picker with the combat item, and
+// committing it consumes the inventory stack + spends the single use.
+void test_combat_item_in_game() {
+    Game g{StartMode::Hatched, "paypup"};
+    g.debugStartCombat(/*live=*/true);
+    CHECK(g.nav() == Game::Nav::Combat);
+    const int snacks0 = g.inventory().count("airgap_snack");
+    CHECK(snacks0 > 0);
+    g.onButton({Button::A, true, true});           // A+C -> open picker
+    CHECK(g.combat().overrideOpen());
+    const int moveN = g.combat().overrideMoveCount();
+    while (g.combat().overridePick() != moveN)      // cursor onto the item row
+        g.onButton(press(Button::A));
+    g.onButton(press(Button::B));                  // commit -> use item
+    CHECK(g.inventory().count("airgap_snack") == snacks0 - 1);
+    CHECK(!g.combat().overrideReady());            // single use spent
+}
+
+// A multi-turn channel move winds up (no damage) then detonates for full power.
+void test_combat_channel() {
+    ContentRegistry r = ContentRegistry::embedded();
+    Combatant p = mkCombatant(r, "P", 100, 10, {"fork_bomb"});   // channel 2, power 26
+    Combatant e = mkCombatant(r, "E", 100, 10, {"quick_jab"});   // equal speed → P,E,P
+    Combat cb; cb.begin(p, e, Combat::Stakes::Safe, 1);
+    cb.step();                                   // player: wind-up
+    CHECK(cb.lastByPlayer() && cb.lastWasCharge() && cb.lastDamage() == 0);
+    CHECK(cb.enemy().health == 100);             // no payoff yet
+    cb.step();                                   // enemy turn
+    cb.step();                                   // player: detonate
+    CHECK(cb.lastByPlayer() && !cb.lastWasCharge() && cb.lastDamage() == 26);
+    CHECK(cb.enemy().health == 74);
+}
+
+// MODS passives measurably change the fight.
+void test_combat_mod_passives() {
+    ContentRegistry r = ContentRegistry::embedded();
+    Combatant enemy = mkCombatant(r, "E", 100, 10, {"packet_storm"});  // 12 dmg, fast
+
+    // Firewall Patch cuts incoming damage by its own magnitude (read off the mod row).
+    const int fwCut = r.mod("firewall_patch")->magnitude;
+    Combatant plain = mkCombatant(r, "P", 100, 5, {"quick_jab"});      // slower → enemy first
+    Combat a; a.begin(plain, enemy, Combat::Stakes::Safe, 5);
+    a.step();
+    CHECK(a.player().health == 88);                                    // 12 full
+    Combatant fire = plain; fire.dmgReducePct = fwCut;
+    Combat b; b.begin(fire, enemy, Combat::Stakes::Safe, 5);
+    b.step();
+    CHECK(b.player().health == 100 - 12 * (100 - fwCut) / 100);        // reduced
+
+    // RAID Mirror negates exactly the first incoming hit, then is consumed.
+    Combatant mir = plain; mir.mods.arm(ModEffect::RaidMirror);
+    Combat c; c.begin(mir, enemy, Combat::Stakes::Safe, 5);
+    c.step();
+    CHECK(c.player().health == 100);                                   // first hit negated
+    c.step(); c.step();                                               // player, then enemy again
+    CHECK(c.player().health == 88);                                    // mirror gone → full hit
+
+    // Clock-Speed Boost flips initiative: enemy(12) outspeeds base(10), the boost wins.
+    Combatant base = mkCombatant(r, "P", 100, kCombatBaseSpeed, {"quick_jab"});
+    Combatant fast = mkCombatant(r, "E", 100, 12, {"quick_jab"});
+    Combat d; d.begin(base, fast, Combat::Stakes::Safe, 9);
+    CHECK(!d.playerActsFirst());
+    Combatant boosted = base; boosted.speed += r.mod("clock_speed_boost")->magnitude;
+    Combat eC; eC.begin(boosted, fast, Combat::Stakes::Safe, 9);
+    CHECK(eC.playerActsFirst());
+}
+
+// Stakes: safe flee quits immediately (Sim-Battle C). makePlayer/Enemy builders
+// wire stage→maxHealth, the default move, and mod passives.
+void test_combat_builders_and_flee() {
+    ContentRegistry r = ContentRegistry::embedded();
+    const CreatureDef* pet = r.creature("paypup");        // Process → 2 slots, 60 HP
+    MoveLoadout ml = MoveLoadout::starting();
+    Loadout mods = Loadout::starting();                   // Firewall + Clock-Speed equipped
+    Combatant pc = makePlayerCombatant(r, *pet, ml, mods);
+    CHECK(pc.maxHealth == kMaxHealthByStage[stageIndex(Stage::Process)]);
+    // #11: one pool entry per unlocked slot — slot 0's equipped packet_storm, and
+    // slot 1 falls back to the Quick Jab default (the starter leaves it unequipped).
+    CHECK(pc.moves.size() == 2);
+    CHECK(std::strcmp(pc.moves[0]->id, "packet_storm") == 0);
+    CHECK(std::strcmp(pc.moves[1]->id, "quick_jab") == 0);
+    CHECK(pc.speed == kCombatBaseSpeed + r.mod("clock_speed_boost")->magnitude);  // Clock-Speed read
+    CHECK(pc.dmgReducePct == r.mod("firewall_patch")->magnitude);                 // Firewall read
+
+    CombatEnemy spec{"Dummy", "SPR_PET_CACHEMUTT", 1, 30, 8, {"quick_jab"}};
+    Combatant ec = makeEnemyCombatant(r, spec);
+    CHECK(ec.maxHealth == 30 && ec.diffPips == 1 && ec.moves.size() == 1);
+
+    Combat cb; cb.begin(pc, ec, Combat::Stakes::Safe, 3);
+    cb.flee();
+    CHECK(cb.outcome() == Combat::Outcome::Fled);          // safe stakes → instant quit
+}
+
+// MODS equip flow: open an empty slot's picker, choose a spare, inspect its detail
+// then equip it (no confirm for an empty slot). The mod is CONSUMED out of
+// the spare pool (D3) — equipping is permanent.
+void test_mods_equip_flow() {
+    Game g{StartMode::Hatched};
+    enterSubmenuId(g, SubmenuId::Mods);
+    CHECK(g.nav() == Game::Nav::Submenu);
+    Framebuffer fb(kActiveW, kActiveH);
+    g.render(fb);
+    CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));     // list grayscale
+
+    g.onButton(press(Button::A));                  // slot 1 -> slot 2
+    g.onButton(press(Button::A));                  // slot 2 -> slot 3 (empty)
+    CHECK(g.loadout().equipped(2) == nullptr);
+    g.onButton(press(Button::B));                  // open slot 3 picker
+    CHECK(g.nav() == Game::Nav::Detail);
+    g.render(fb);
+    CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));     // picker grayscale
+    g.onButton(press(Button::B));                  // open the first spare's detail
+    Framebuffer det = fb;
+    g.render(det);
+    CHECK(hasDarkInk(det, 0, 0, kActiveW, kActiveH));    // detail grayscale
+    CHECK(g.loadout().equipped(2) == nullptr);          // inspecting equips nothing yet
+    // C backs out of the detail to the picker without equipping.
+    g.onButton(press(Button::C));
+    CHECK(g.nav() == Game::Nav::Detail && g.loadout().equipped(2) == nullptr);
+    g.onButton(press(Button::B));                  // re-open detail
+    g.onButton(press(Button::B));                  // EQUIP from the detail
+    CHECK(g.nav() == Game::Nav::Submenu);
+    const char* installed = g.loadout().equipped(2);
+    CHECK(installed != nullptr);                    // a spare is now installed there
+    CHECK(!g.loadout().owns(installed));            // consumed out of the pool (permanent)
+}
+
+// MODS overwrite confirm (D3): equipping over a slot that already holds a
+// different mod opens the inline Cancel/Confirm "discards {current} — permanent"
+// warning. Confirm installs the new mod and DISCARDS the old one; Cancel leaves the
+// slot unchanged and the spare un-consumed.
+void test_mods_overwrite_confirm() {
+    // Confirm path. Slot 0 holds Firewall Patch; selecting a spare opens its detail
+    // and EQUIP raises the overwrite confirm back on the picker.
+    { Game g{StartMode::Hatched};
+      enterSubmenuId(g, SubmenuId::Mods);          // slot 1 holds Firewall Patch
+      CHECK(std::strcmp(g.loadout().equipped(0), "firewall_patch") == 0);
+      g.onButton(press(Button::B));                // open slot 1 picker (rows = spares)
+      const char* spare = g.loadout().owned().front().id;  // first available spare
+      g.onButton(press(Button::B));                // open the spare's detail
+      g.onButton(press(Button::B));                // EQUIP -> inline confirm on picker
+      CHECK(g.nav() == Game::Nav::Detail);         // still in the picker (confirm up)
+      Framebuffer fb(kActiveW, kActiveH); g.render(fb);
+      CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));
+      g.onButton(press(Button::A));                // Cancel -> Confirm
+      g.onButton(press(Button::B));                // commit
+      CHECK(g.nav() == Game::Nav::Submenu);
+      CHECK(std::strcmp(g.loadout().equipped(0), spare) == 0);   // new mod installed
+      CHECK(g.loadout().slotOf("firewall_patch") == -1);         // old mod discarded
+      CHECK(!g.loadout().owns("firewall_patch")); }              // not returned to pool
+
+    // Cancel path leaves the slot unchanged and the spare un-consumed.
+    { Game g{StartMode::Hatched};
+      enterSubmenuId(g, SubmenuId::Mods);
+      const char* spare = g.loadout().owned().front().id;
+      g.onButton(press(Button::B));                // open slot 1 picker
+      g.onButton(press(Button::B));                // open the spare's detail
+      g.onButton(press(Button::B));                // EQUIP -> confirm (default Cancel)
+      g.onButton(press(Button::B));                // B on Cancel -> abort
+      CHECK(std::strcmp(g.loadout().equipped(0), "firewall_patch") == 0);
+      CHECK(g.loadout().owns(spare)); }            // spare still held (not consumed)
+}
+
+// the mod detail spells out the effect + flags a ONE-SHOT. The one-shot
+// caveat line (y~130) is drawn for a consumed-on-trigger mod and absent otherwise —
+// the grayscale-safe channel that distinguishes the two mod kinds.
+void test_mod_detail_oneshot() {
+    ContentRegistry r = ContentRegistry::embedded();
+    const ModDef* oneShot = r.mod("raid_mirror");        // oneShot == true
+    const ModDef* reuse = r.mod("firewall_patch");       // oneShot == false
+    CHECK(oneShot && reuse);
+    CHECK(oneShot->oneShot && !reuse->oneShot);
+
+    Framebuffer os(kActiveW, kActiveH), ru(kActiveW, kActiveH);
+    Loadout load;
+    drawModDetail(os, r, load, *oneShot, /*equippedHere=*/false, /*slot=*/2,
+                  /*reqLevel=*/0, /*petLevel=*/0, /*petLine=*/nullptr,
+                  /*storageCap=*/kModCopyCapBase);
+    drawModDetail(ru, r, load, *reuse, /*equippedHere=*/false, /*slot=*/2,
+                  /*reqLevel=*/0, /*petLevel=*/0, /*petLine=*/nullptr,
+                  /*storageCap=*/kModCopyCapBase);
+    CHECK(anyNonPaper(os, 0, 0, kActiveW, kActiveH));     // renders
+    // The ONE-SHOT line sits alone at y~130; present (non-paper ink) for the one-shot,
+    // blank (all paper) for the reusable mod (whose effect text ends well above it).
+    CHECK(anyNonPaper(os, 0, 128, kActiveW, 140));
+    CHECK(!anyNonPaper(ru, 0, 128, kActiveW, 140));
+}
+
+// A mod holds at most one slot per pet: equip() refuses to install an id already
+// occupying a different slot, and doesn't consume a spare on refusal.
+void test_loadout_one_slot_per_mod() {
+    Loadout l;
+    CHECK(l.grant("firewall_patch", kModCopyCapBase));
+    CHECK(l.grant("firewall_patch", kModCopyCapBase));
+    CHECK(l.countOf("firewall_patch") == 2);
+    l.equip(0, "firewall_patch");
+    CHECK(std::strcmp(l.equipped(0), "firewall_patch") == 0);
+    CHECK(l.countOf("firewall_patch") == 1);
+
+    l.equip(1, "firewall_patch");
+    CHECK(l.equipped(1) == nullptr);
+    CHECK(l.countOf("firewall_patch") == 1);
+}
+
+// mod effects are DATA-DRIVEN (effectKind + magnitude) — makePlayerCombatant
+// reads each equipped mod and pokes the matching Combatant field, replacing the old
+// hardcoded per-mod `if`. A line-affinity mod adds its bonus only for a matching line.
+void test_mod_effects_data_driven() {
+    ContentRegistry r = ContentRegistry::embedded();
+    const CreatureDef* pet = r.creature("paypup");        // Process, ransomware line
+    CHECK(pet && pet->line && std::strcmp(pet->line, "ransomware") == 0);
+    MoveLoadout ml = MoveLoadout::starting();
+    Loadout empty;                                        // no slots filled
+    Combatant base = makePlayerCombatant(r, *pet, ml, empty);
+    auto build = [&](const char* mod) {
+        Loadout l; l.grant(mod, kModCopyCapBase); l.equip(0, mod);
+        return makePlayerCombatant(r, *pet, ml, l);
+    };
+    CHECK(build("crypto_coprocessor").powerMultPct == base.powerMultPct + 10);
+    CHECK(build("tpm_chip").dmgReducePct == base.dmgReducePct + 15);
+    CHECK(build("solid_state_cache").maxHealth == base.maxHealth + 12);
+    Combatant oc = build("overclock_chip");
+    CHECK(oc.speed == base.speed + 5);                                  // +speed
+    CHECK(oc.powerMultPct == base.powerMultPct * (100 - 8) / 100);      // ...at a power cost
+    CHECK(build("honeytoken").mods.mag(ModEffect::Thorns) == 4);
+    CHECK(build("deadman_switch").mods.mag(ModEffect::DeathBlast) == 12);
+    // Line affinity: Cipher ASIC is +10% cut generic, +10 more for a Ransomware pet (=20).
+    CHECK(build("cipher_asic").dmgReducePct == base.dmgReducePct + 20);
+    // The plain-magnitude originals apply their row value straight through.
+    CHECK(build("firewall_patch").dmgReducePct == base.dmgReducePct + r.mod("firewall_patch")->magnitude);
+    CHECK(build("clock_speed_boost").speed == base.speed + r.mod("clock_speed_boost")->magnitude);
+    CHECK(build("raid_mirror").mods.armed(ModEffect::RaidMirror));
+}
+
+// Backup Drive's death-save (ItemEffect::ArmCombatShieldBuff, save v30) is NOT the RAID
+// Mirror's negate-the-first-hit: a survivable hit lands in full and leaves the drive
+// untouched, so it's still there for the blow that actually puts the pet down.
+void test_backup_drive_death_save_ignores_survivable_hits() {
+    ContentRegistry r = ContentRegistry::embedded();
+    Combatant pc = mkCombatant(r, "P", 100, 5, {"quick_jab"});
+    pc.itemShield = true;
+    Combatant e = mkCombatant(r, "E", 100, 12, {"packet_storm"});  // fast → hits first
+    Combat c; c.begin(pc, e, Combat::Stakes::Safe, 5);             // full Health: survivable
+    c.step();
+    CHECK(c.player().health < 100);              // the hit landed in full...
+    CHECK(c.player().health > 0);
+    CHECK(c.player().itemShield);                // ...and the drive is still held
+    CHECK(c.player().backupUse == Combatant::BackupUse::None);
+}
+
+// A pet that goes down is restored with half its MAX Health, measured from where it
+// actually landed — so the same drive gives back the same amount whatever knocked it
+// over. Records BackupUse::Restored (unlike mirrorFired, not reset per-turn) so Game can
+// clear the buff's timed save-side deadline once the fight ends.
+void test_backup_drive_death_save_restores_half_max_health() {
+    ContentRegistry r = ContentRegistry::embedded();
+    Combatant pc = mkCombatant(r, "P", 100, 5, {"quick_jab"});
+    pc.itemShield = true;
+    Combatant e = mkCombatant(r, "E", 100, 12, {"quick_jab"});
+    // begin() always resets Health to maxHealth unless told to carry a wounded value in
+    // (the gauntlet no-heal-between-rounds path) — use that to start on death's door.
+    Combat c; c.begin(pc, e, Combat::Stakes::Safe, 5, /*forceEnemyFirst=*/false,
+                       /*carryPlayerHealth=*/1);
+    const int jab = r.move("quick_jab")->power;
+    c.step();
+    // 1 Health, minus the jab that took it under, plus the drive's half of max (50).
+    CHECK(c.player().health == 1 - jab + 50);
+    CHECK(c.player().health > 0);
+    CHECK(!c.player().itemShield);               // spent
+    CHECK(c.player().backupUse == Combatant::BackupUse::Restored);  // Game reads this post-fight
+    CHECK(c.outcome() != Combat::Outcome::Lose); // the fight did NOT end here
+}
+
+// The save asks one question — is this pet down? — so it needs to know nothing about
+// what put it there: a fatal DoT tick at turn-start restores exactly like a fatal hit.
+void test_backup_drive_death_save_covers_a_fatal_dot() {
+    ContentRegistry r = ContentRegistry::embedded();
+    Combatant pc = mkCombatant(r, "P", 100, 12, {"quick_jab"});   // fast → its turn first
+    pc.itemShield = true;
+    pc.dotPerTurn = 8;
+    pc.dotTurnsLeft = 3;
+    Combatant e = mkCombatant(r, "E", 100, 5, {"quick_jab"});
+    Combat c; c.begin(pc, e, Combat::Stakes::Safe, 5, /*forceEnemyFirst=*/false,
+                       /*carryPlayerHealth=*/5);
+    c.step();                                    // the pet's turn opens with the rot tick
+    CHECK(c.player().health == 5 - 8 + 50);      // rotted under, then restored
+    CHECK(c.player().backupUse == Combatant::BackupUse::Restored);
+    CHECK(c.outcome() != Combat::Outcome::Lose);
+}
+
+// ...and it is a restore, not immortality: half of max added to a deep enough hole still
+// leaves the pet under, and it dies. This is the case that keeps the save honest — it
+// falls straight out of adding a fixed amount rather than setting a floor.
+void test_backup_drive_death_save_loses_to_overkill() {
+    ContentRegistry r = ContentRegistry::embedded();
+    Combatant pc = mkCombatant(r, "P", 100, 12, {"quick_jab"});
+    pc.itemShield = true;
+    pc.dotPerTurn = 90;                          // 5 - 90 = -85, past the drive's 50
+    pc.dotTurnsLeft = 3;
+    Combatant e = mkCombatant(r, "E", 100, 5, {"quick_jab"});
+    Combat c; c.begin(pc, e, Combat::Stakes::Safe, 5, /*forceEnemyFirst=*/false,
+                       /*carryPlayerHealth=*/5);
+    c.step();
+    CHECK(c.player().health == 0);               // clamped at the floor, and gone
+    CHECK(c.player().backupUse == Combatant::BackupUse::Overwhelmed);  // spent trying
+    CHECK(c.outcome() == Combat::Outcome::Lose);
+}
+
+// Thorns (Honeytoken) reflects onto any attacker; Deadman Switch blasts the
+// enemy when the pet is KO'd (a mutual KO resolves as a Win via enemy-death priority).
+void test_mod_thorns_and_deathblast() {
+    ContentRegistry r = ContentRegistry::embedded();
+    // Thorns: a fast enemy hits the player and takes the reflect back.
+    Combatant pc = mkCombatant(r, "P", 100, 5, {"quick_jab"});
+    pc.mods.arm(ModEffect::Thorns, 4);
+    Combatant enemy = mkCombatant(r, "E", 100, 12, {"quick_jab"});     // fast → acts first
+    Combat c; c.begin(pc, enemy, Combat::Stakes::Safe, 5);
+    c.step();                                                          // enemy hits player
+    CHECK(c.player().health < 100);                                    // player took the hit
+    CHECK(c.enemy().health == 96);                                     // ...reflected 4 back
+    // Deadman Switch: a hit that KOs the pet blasts the enemy for deathBlast. A blast
+    // that also drops the enemy is a mutual KO → resolves as a Win (enemy-death priority).
+    Combatant weak = mkCombatant(r, "P", 5, 5, {"quick_jab"});
+    weak.mods.arm(ModEffect::DeathBlast, 12);
+    Combatant strong = mkCombatant(r, "E", 12, 12, {"packet_storm"});  // 12 dmg → KOs the 5hp pet
+    Combat d; d.begin(weak, strong, Combat::Stakes::Safe, 5);
+    d.step();                                                          // enemy KO → deathblast
+    CHECK(d.player().health == 0);
+    CHECK(d.enemy().health == 0);                                      // 12 - 12 parting blast
+    CHECK(d.outcome() == Combat::Outcome::Win);                        // mutual KO = a Win
+    // A blast that does NOT finish the enemy is still a Loss (no free win).
+    Combatant weak2 = mkCombatant(r, "P", 5, 5, {"quick_jab"});
+    weak2.mods.arm(ModEffect::DeathBlast, 12);
+    Combatant tank = mkCombatant(r, "E", 40, 12, {"packet_storm"});    // survives the 12 blast
+    Combat d2; d2.begin(weak2, tank, Combat::Stakes::Safe, 5);
+    d2.step();
+    CHECK(d2.enemy().health == 28);                                    // 40 - 12
+    CHECK(d2.outcome() == Combat::Outcome::Lose);
+}
+
+// Deferred-mod pass — ECC Memory: a max single-hit cap. The primitive clamps any ONE
+// incoming hit to the cap (after all mitigation); makePlayerCombatant resolves the
+// mod's magnitude% of max Health into that flat cap.
+void test_mod_ecc_memory_hitcap() {
+    ContentRegistry r = ContentRegistry::embedded();
+    // Primitive: a 20-power enemy hit is clamped to the cap; without the cap it lands full.
+    auto oneHit = [&](int cap) {
+        Combatant pc = mkCombatant(r, "P", 100, 5, {"quick_jab"});
+        pc.mods.arm(ModEffect::MaxHitCapPct, cap);
+        Combatant e = mkCombatant(r, "E", 100, 12, {"buffer_overflow"});  // 20 dmg, acts first
+        Combat c; c.begin(pc, e, Combat::Stakes::Safe, 5);
+        c.step();                                                          // enemy hits player
+        return c.player().health;
+    };
+    CHECK(oneHit(0) == 80);      // uncapped: 100 - 20
+    CHECK(oneHit(15) == 85);     // capped at 15: 100 - 15
+    CHECK(oneHit(30) == 80);     // cap above the hit is inert (still 100 - 20)
+    // Data-driven wiring: equipping ecc_memory resolves cap = 35% of the pet's max Health.
+    const CreatureDef* pet = r.creature("paypup");
+    MoveLoadout ml = MoveLoadout::starting();
+    Loadout empty;
+    Combatant base = makePlayerCombatant(r, *pet, ml, empty);
+    CHECK(base.mods.mag(ModEffect::MaxHitCapPct) == 0);                   // no mod → uncapped
+    Loadout l; l.grant("ecc_memory", kModCopyCapBase); l.equip(0, "ecc_memory");
+    Combatant ecc = makePlayerCombatant(r, *pet, ml, l);
+    CHECK(ecc.mods.mag(ModEffect::MaxHitCapPct) == base.maxHealth * 35 / 100);
+    CHECK(ecc.mods.mag(ModEffect::MaxHitCapPct) > 0);
+}
+
+// Deferred-mod pass — Load Balancer: a big hit is SPLIT (immediate portion now, the rest
+// deferred to the victim's next turn-start). Unlike ECC it doesn't reduce total damage.
+void test_mod_load_balancer_split() {
+    ContentRegistry r = ContentRegistry::embedded();
+    // Split + timing: a 20 hit (>= threshold 10) with split 50% lands 10 now, 10 next turn.
+    Combatant pc = mkCombatant(r, "P", 100, 5, {"quick_jab"});
+    pc.mods.arm(ModEffect::LoadBalance, 10, 50);
+    Combatant e = mkCombatant(r, "E", 100, 5, {"buffer_overflow"});        // 20 dmg
+    // Equal speed + forceEnemyFirst → strict E,P,E,P (enemy leads, no double-actions).
+    Combat c; c.begin(pc, e, Combat::Stakes::Safe, 5, /*forceEnemyFirst=*/true);
+    c.step();                                                              // enemy hits player
+    CHECK(c.player().health == 90);                                        // only the immediate half
+    c.step();                                                              // player's turn-start tick
+    CHECK(c.player().health == 80);                                        // deferred half now due
+    CHECK(c.enemy().health == 94);                                         // ...and the pet still acted (jab 6)
+    // Below the threshold: the hit is NOT split — it lands full immediately, no debt.
+    Combatant pc2 = mkCombatant(r, "P", 100, 5, {"quick_jab"});
+    pc2.mods.arm(ModEffect::LoadBalance, 25, 50);                          // 20 < 25 → untouched
+    Combat c2; c2.begin(pc2, e, Combat::Stakes::Safe, 5, /*forceEnemyFirst=*/true);
+    c2.step();  CHECK(c2.player().health == 80);                           // full 20 now
+    c2.step();  CHECK(c2.player().health == 80);                           // no deferred tick
+    // The deferred debt can KO ON ITS OWN at turn-start — and the actor then doesn't act.
+    Combatant weak = mkCombatant(r, "P", 12, 5, {"quick_jab"});
+    weak.mods.arm(ModEffect::LoadBalance, 10, 50);
+    Combat d; d.begin(weak, e, Combat::Stakes::Safe, 5, /*forceEnemyFirst=*/true);
+    d.step();                                                              // 20 → 10 now (12→2), 10 deferred
+    CHECK(d.player().health == 2 && d.outcome() == Combat::Outcome::Ongoing);
+    d.step();                                                              // turn-start debt: 2 - 10 → KO
+    CHECK(d.player().health == 0);
+    CHECK(d.outcome() == Combat::Outcome::Lose);
+    CHECK(d.enemy().health == 100);                                        // pet never got to swing
+    CHECK(std::strcmp(d.lastMoveName(), "OVERLOAD") == 0);
+    // Data-driven wiring: equipping load_balancer resolves threshold = 30% of max Health,
+    // split = 50%; an unmodded pet has no threshold (feature off).
+    const CreatureDef* pet = r.creature("paypup");
+    MoveLoadout ml = MoveLoadout::starting();
+    Loadout empty;
+    Combatant base = makePlayerCombatant(r, *pet, ml, empty);
+    CHECK(base.mods.mag(ModEffect::LoadBalance) == 0);
+    Loadout l; l.grant("load_balancer", kModCopyCapBase); l.equip(0, "load_balancer");
+    Combatant lb = makePlayerCombatant(r, *pet, ml, l);
+    CHECK(lb.mods.mag(ModEffect::LoadBalance) == base.maxHealth * 30 / 100);
+    CHECK(lb.mods.mag(ModEffect::LoadBalance) > 0);
+    CHECK(lb.mods.mag2(ModEffect::LoadBalance) == 50);
+}
+
+// Deferred-mod pass — Watchdog Timer: the THREAT is a STUN move (system_hang, lockTurns)
+// that freezes the player's turns; the MOD clamps how many turns a stun may last (a hung
+// process reboots after N turns).
+void test_mod_watchdog_timer() {
+    ContentRegistry r = ContentRegistry::embedded();
+    // Burn: a pre-set 2-turn stun costs exactly 2 turns and deals NO damage in either
+    // direction — the enemy is untouched until the pet is free.
+    Combatant pc = mkCombatant(r, "P", 100, 12, {"quick_jab"});            // acts first
+    pc.lockedTurnsLeft = 2;
+    Combatant e = mkCombatant(r, "E", 100, 12, {"quick_jab"});            // equal → P,E,P,E,P
+    Combat c; c.begin(pc, e, Combat::Stakes::Safe, 5);
+    c.step();  CHECK(c.enemy().health == 100);                            // turn 1 skipped
+    CHECK(std::strcmp(c.lastMoveName(), "STUN LOCK") == 0);
+    c.step();                                                             // enemy hits pet
+    c.step();  CHECK(c.enemy().health == 100);                            // turn 2 still skipped
+    CHECK(std::strcmp(c.lastMoveName(), "STUN LOCK") == 0);
+    c.step();                                                             // enemy hits pet
+    c.step();  CHECK(c.enemy().health == 94);                             // freed → jab lands (6)
+    // Clamp at application: the STUN move sets the lock to lockTurns (2), but the pet's
+    // Watchdog clamps it to its own magnitude. Read the live lock right after the hit lands.
+    auto lockAfterHit = [&](int watchdog) {
+        Combatant p = mkCombatant(r, "P", 100, 5, {"quick_jab"});         // slow → stunned
+        p.mods.arm(ModEffect::WatchdogClamp, watchdog);
+        Combatant s = mkCombatant(r, "E", 100, 12, {"system_hang"});      // lockTurns 2, first
+        Combat cb; cb.begin(p, s, Combat::Stakes::Safe, 5);
+        cb.step();                                                        // enemy stuns the pet
+        return cb.player().lockedTurnsLeft;
+    };
+    CHECK(lockAfterHit(0) == 2);                                          // no watchdog: full 2
+    CHECK(lockAfterHit(1) == 1);                                          // watchdog clamps to 1
+    // Data-driven wiring: equipping watchdog_timer sets the clamp to its magnitude (1).
+    const CreatureDef* pet = r.creature("paypup");
+    MoveLoadout ml = MoveLoadout::starting();
+    Loadout empty;
+    Combatant base = makePlayerCombatant(r, *pet, ml, empty);
+    CHECK(base.mods.mag(ModEffect::WatchdogClamp) == 0);
+    Loadout l; l.grant("watchdog_timer", kModCopyCapBase); l.equip(0, "watchdog_timer");
+    Combatant w = makePlayerCombatant(r, *pet, ml, l);
+    CHECK(w.mods.mag(ModEffect::WatchdogClamp) == 1);
+}
+
+// Deferred-mod pass — Faraday Cage: the THREAT is a DoT move (data_rot, dot*) that plants
+// corruption ticking at each of the victim's turn-starts; the MOD cuts (or negates) it.
+void test_mod_faraday_cage() {
+    ContentRegistry r = ContentRegistry::embedded();
+    // DoT tick: a pre-set 5/turn × 3 DoT bites at the START of each of the pet's next 3 turns,
+    // independent of acting. Enemy only DEFENDS, so the pet's Health drops purely from the DoT.
+    Combatant pc = mkCombatant(r, "P", 100, 12, {"quick_jab"});           // acts first
+    pc.dotPerTurn = 5; pc.dotTurnsLeft = 3;
+    Combatant e = mkCombatant(r, "E", 200, 5, {"checksum_guard"});        // never hits back
+    Combat c; c.begin(pc, e, Combat::Stakes::Safe, 5);
+    c.step();  CHECK(c.player().health == 95);                            // tick 1 (-5)
+    c.step();                                                             // enemy defends
+    c.step();  CHECK(c.player().health == 90);                            // tick 2
+    c.step();
+    c.step();  CHECK(c.player().health == 85);                            // tick 3
+    c.step();
+    c.step();  CHECK(c.player().health == 85);                            // DoT spent — no tick 4
+    // Faraday cut at application: the DoT magnitude is reduced (or zeroed) when it's PLANTED.
+    auto dotAfterHit = [&](int cut) {
+        Combatant p = mkCombatant(r, "P", 100, 5, {"quick_jab"});
+        p.mods.arm(ModEffect::FaradayCut, cut);
+        Combatant s = mkCombatant(r, "E", 100, 12, {"data_rot"});         // 5/turn, acts first
+        Combat cb; cb.begin(p, s, Combat::Stakes::Safe, 5);
+        cb.step();                                                        // enemy plants the DoT
+        return cb.player().dotPerTurn;
+    };
+    CHECK(dotAfterHit(0) == 5);                                           // no cage: full 5/turn
+    CHECK(dotAfterHit(50) == 2);                                          // 50% cut: 5*50/100
+    CHECK(dotAfterHit(100) == 0);                                         // immune: nothing planted
+    // The DoT can KO on its own at a turn-start (and the pet then doesn't act).
+    Combatant weak = mkCombatant(r, "P", 8, 12, {"quick_jab"});
+    weak.dotPerTurn = 5; weak.dotTurnsLeft = 3;
+    Combatant tank = mkCombatant(r, "E", 200, 5, {"checksum_guard"});
+    Combat d; d.begin(weak, tank, Combat::Stakes::Safe, 5);
+    d.step();  CHECK(d.player().health == 3 && d.outcome() == Combat::Outcome::Ongoing);
+    d.step();                                                             // enemy defends
+    d.step();  CHECK(d.player().health == 0);                             // 3 - 5 → KO
+    CHECK(d.outcome() == Combat::Outcome::Lose);
+    CHECK(std::strcmp(d.lastMoveName(), "CORRUPTED") == 0);
+    // Data-driven wiring: equipping faraday_cage sets the cut to its magnitude (100 = immune).
+    const CreatureDef* pet = r.creature("paypup");
+    MoveLoadout ml = MoveLoadout::starting();
+    Loadout empty;
+    Combatant base = makePlayerCombatant(r, *pet, ml, empty);
+    CHECK(base.mods.mag(ModEffect::FaradayCut) == 0);
+    Loadout l; l.grant("faraday_cage", kModCopyCapBase); l.equip(0, "faraday_cage");
+    Combatant f = makePlayerCombatant(r, *pet, ml, l);
+    CHECK(f.mods.mag(ModEffect::FaradayCut) == 100);
+}
+
+// content calibration: each mod carries the right rarity, its power tier agrees with
+// where it actually DROPS, and the signature Cipher ASIC is the ransomware-affinity mod.
+void test_mod_content_rarity_tier() {
+    ContentRegistry r = ContentRegistry::embedded();
+    struct Exp { const char* id; ItemDef::Rarity rar; };
+    const Exp exp[] = {
+        {"clock_speed_boost", ItemDef::Rarity::Common},
+        {"packet_sniffer", ItemDef::Rarity::Common},
+        {"crypto_coprocessor", ItemDef::Rarity::Uncommon},
+        {"tpm_chip", ItemDef::Rarity::Uncommon},
+        {"solid_state_cache", ItemDef::Rarity::Uncommon},
+        {"firewall_patch", ItemDef::Rarity::Rare},
+        {"watchdog_timer", ItemDef::Rarity::Epic},  // threat-adjacent (Pirate Bayou)
+        {"overclock_chip", ItemDef::Rarity::Uncommon},
+        {"heat_sink", ItemDef::Rarity::Rare},
+        {"honeytoken", ItemDef::Rarity::Rare},
+        {"cipher_asic", ItemDef::Rarity::Rare},
+        {"faraday_cage", ItemDef::Rarity::Epic},    // threat-adjacent (Napstorrent)
+        {"deadman_switch", ItemDef::Rarity::Epic},
+        {"raid_mirror", ItemDef::Rarity::Epic},
+        {"ecc_memory", ItemDef::Rarity::Epic},
+        {"load_balancer", ItemDef::Rarity::Epic},
+        // --- Niche-flavour mods ---
+        {"canary_trap", ItemDef::Rarity::Rare},
+        {"scratch_disk_buffer", ItemDef::Rarity::Common},
+        {"botnet_swarm", ItemDef::Rarity::Uncommon},
+        {"airgap_ward", ItemDef::Rarity::Uncommon},
+        {"tripwire", ItemDef::Rarity::Rare},
+        {"cold_storage", ItemDef::Rarity::Uncommon},
+        {"prowlware", ItemDef::Rarity::Rare},
+        {"meltdown_core", ItemDef::Rarity::Rare},
+        {"zero_day_exploit", ItemDef::Rarity::Rare},
+        {"phishing_rod", ItemDef::Rarity::Epic},
+        {"extortion_ledger", ItemDef::Rarity::Epic},
+        {"backup_uplink", ItemDef::Rarity::Rare},
+    };
+    for (const Exp& e : exp) {
+        const ModDef* m = r.mod(e.id);
+        CHECK(m);
+        CHECK(m->rarity == e.rar);
+    }
+    // powerTier is NOT restated above, because it is not independent data: a rank IS a
+    // ladder depth, so a mod's rank must equal the tier of the SHALLOWEST area whose pool
+    // drops it. (Shallowest, not only: a deeper area may re-stock an earlier counter — the
+    // keep does it for Watchdog and Faraday, the Net-Sea for Watchdog — and that restock
+    // must not restate the mod as harder than where it first appears.) Checked by walking
+    // the pools, so inserting or reordering an area is caught here as a contradiction
+    // rather than passing on a table nobody re-derived.
+    for (const ModDef* mp : r.allMods()) {
+        const ModDef& m = *mp;
+        int home = -1;
+        for (int a = 0; a < kExplSectors && home < 0; ++a)
+            for (int k = 0; k < area(a).modPoolCount; ++k)
+                if (std::strcmp(area(a).modPoolIds[k], m.id) == 0) { home = areaTier(a); break; }
+        if (home < 0)                                  // DeepWeb-only: one past the ladder,
+            for (int k = 0; k < kAreaModsDeepWebCount; ++k)   // sharing the last rung's depth
+                if (std::strcmp(kAreaModsDeepWeb[k], m.id) == 0) { home = areaTier(kAreaCount - 1); break; }
+        CHECK(home > 0);                               // every mod drops SOMEWHERE
+        CHECK(m.powerTier == home);
+    }
+    const ModDef* ca = r.mod("cipher_asic");
+    CHECK(ca && ca->line && std::strcmp(ca->line, "ransomware") == 0);
+    CHECK(ca->affinityBonus == 10);
+    // Niche-flavour pass: the two hard-gated signatures carry ModDef::requiresLine (a
+    // real EQUIP block, distinct from the soft `line`/`affinityBonus` every other mod
+    // uses — Cipher ASIC above stays fully line-agnostic).
+    const ModDef* pr = r.mod("phishing_rod");
+    CHECK(pr && pr->requiresLine && std::strcmp(pr->requiresLine, "phishing") == 0);
+    const ModDef* el = r.mod("extortion_ledger");
+    CHECK(el && el->requiresLine && std::strcmp(el->requiresLine, "ransomware") == 0);
+    // Every OTHER mod carries no hard gate.
+    for (const ModDef* m : r.allMods()) {
+        if (std::strcmp(m->id, "phishing_rod") == 0 || std::strcmp(m->id, "extortion_ledger") == 0)
+            continue;
+        CHECK(m->requiresLine == nullptr);
+    }
+}
+
+// earn path: an area's mod loot table draws ONLY that area's power tier (an
+// early area never hands out a late mod), and grantMod rolls the per-instance
+// equip-level gate inside the tier's band (the "lucky roll" mechanic).
+void test_mod_earn_tables_and_reqlevel() {
+    ContentRegistry r = ContentRegistry::embedded();
+    Game g{StartMode::Hatched};
+    // An area's table never rolls a mod from DEEPER than that area: a rung may re-stock
+    // an earlier counter (the keep does, for both), but nothing hands out a mod from
+    // further down the ladder than the player has reached. Walked off the ladder, so an
+    // insert re-derives the bound instead of failing on a stale index.
+    auto sampled = std::set<std::string>{};
+    for (int i = 0; i < 120; ++i) {
+        for (int a = 0; a < kExplSectors; ++a) {
+            const char* id = g.debugRollAreaModId(a);
+            CHECK(id);
+            CHECK(r.mod(id)->powerTier <= areaTier(a));
+            sampled.insert(id);
+        }
+        const char* dw = g.debugRollAreaModId(kDeepWebSector);
+        CHECK(dw);
+        CHECK(r.mod(dw)->powerTier == areaTier(kAreaCount - 1));  // DeepWeb: deepest only
+        sampled.insert(dw);
+    }
+    // Every pooled mod is actually REACHABLE — the tier check above would pass just as
+    // happily on a pool whose ids never came up, so assert the sample covers the union of
+    // every table. That subsumes the per-id spot-checks this used to spell out (ECC, Load
+    // Balancer, Watchdog, Faraday, Ghost Process, the niche-flavour ids), and it keeps
+    // covering a new area's pool the day it lands without a line added here.
+    for (int a = 0; a < kExplSectors; ++a)
+        for (int k = 0; k < area(a).modPoolCount; ++k)
+            CHECK(sampled.count(area(a).modPoolIds[k]) == 1);
+    for (int k = 0; k < kAreaModsDeepWebCount; ++k)
+        CHECK(sampled.count(kAreaModsDeepWeb[k]) == 1);
+    // A mod's equip gate is its OWN, off its power tier, and the same for every copy —
+    // there is no roll to land inside a band. Sampled off two real mods at opposite ends
+    // of the ladder rather than named tiers, and asserted to be deterministic, which is
+    // the property that replaced the roll.
+    const ModDef* deep = r.mod("ghost_process");
+    const ModDef* shallow = r.mod("crypto_coprocessor");
+    CHECK(modEquipLevel(*deep) == modEquipLevelFloor(deep->powerTier));
+    CHECK(modEquipLevel(*shallow) == 0);            // the shallowest rung
+    CHECK(modEquipLevel(*deep) > modEquipLevel(*shallow));
+    for (int i = 0; i < 8; ++i) {                   // every grant agrees with the row
+        Game gd{StartMode::Hatched};
+        gd.debugGrantMod("ghost_process");
+        CHECK(gd.loadout().countOf("ghost_process") == 1);
+        CHECK(modEquipLevel(*r.mod("ghost_process")) == modEquipLevel(*deep));
+    }
+}
+
+// --- Niche-flavour mods -----------------------------------------------------------
+
+// Data-driven wiring: makePlayerCombatant reads each new ModEffect kind and pokes the
+// matching Combatant field, same idiom as test_mod_effects_data_driven above.
+void test_mod_niche_flavour_data_driven() {
+    ContentRegistry r = ContentRegistry::embedded();
+    const CreatureDef* pet = r.creature("paypup");         // Process, ransomware line
+    MoveLoadout ml = MoveLoadout::starting();
+    Loadout empty;
+    Combatant base = makePlayerCombatant(r, *pet, ml, empty);
+    auto build = [&](const char* mod) {
+        Loadout l; l.grant(mod, kModCopyCapBase); l.equip(0, mod);
+        return makePlayerCombatant(r, *pet, ml, l);
+    };
+    CHECK(build("prowlware").mods.armed(ModEffect::FirstStrikeRankMult));
+    CHECK(build("canary_trap").mods.mag(ModEffect::FirstHitCutPct) == 50);
+    Combatant mc = build("meltdown_core");
+    CHECK(mc.mods.mag(ModEffect::LowHealthPowerPct) == 30 &&
+          mc.mods.mag2(ModEffect::LowHealthPowerPct) == 40);
+    Combatant zd = build("zero_day_exploit");
+    CHECK(zd.mods.mag(ModEffect::GambleBattlePowerPct) == 25 &&
+          zd.mods.mag2(ModEffect::GambleBattlePowerPct) == 60);
+    Combatant tw = build("tripwire");
+    CHECK(tw.mods.mag(ModEffect::ConditionalThorns) == 10 &&
+          tw.mods.mag2(ModEffect::ConditionalThorns) == 40);
+    Combatant cs = build("cold_storage");
+    CHECK(cs.maxHealth == base.maxHealth + 20);
+    CHECK(cs.speed == base.speed - 2);
+    CHECK(build("scratch_disk_buffer").dmgReducePct == base.dmgReducePct + 8);
+    CHECK(build("phishing_rod").mods.mag(ModEffect::StealAmplifyPct) == 75);
+    // Extortion Ledger's requiresLine gate is an EQUIP-time UI check (game_care.cpp),
+    // not a combat-engine one — makePlayerCombatant applies whatever is already
+    // installed, so it correctly still wires up here even off-line (see
+    // test_mod_hard_line_gate for the actual gate enforcement).
+    CHECK(build("extortion_ledger").powerMultPct == base.powerMultPct + 30);
+    // Backup Uplink is read post-battle by the Game (like Packet Sniffer), not stored
+    // on Combatant at all — assert its content data directly instead.
+    const ModDef* bu = r.mod("backup_uplink");
+    CHECK(bu && bu->effectKind == ModEffect::PostBattleBits && bu->magnitude == 20);
+}
+
+// Botnet Swarm / Air-Gap Ward: bonus scales with the COUNT of equipped Attack/Defend
+// moves — built with an explicit loadout so the composition (2 Attack, 1 Defend) is
+// self-evident rather than relying on MoveLoadout::starting()'s defaults.
+void test_mod_botnet_swarm_and_airgap_ward() {
+    ContentRegistry r = ContentRegistry::embedded();
+    const CreatureDef* pet = r.creature("malbear");        // Script, 3 unlocked slots
+    CHECK(pet);
+    MoveLoadout ml = MoveLoadout::starting();
+    ml.equip(0, "packet_storm");    // Attack
+    ml.equip(1, "fork_bomb");       // Attack
+    ml.equip(2, "checksum_guard");  // Defend
+    Loadout empty;
+    Combatant base = makePlayerCombatant(r, *pet, ml, empty);
+    CHECK(base.moves.size() == 3);
+
+    Loadout withSwarm; withSwarm.grant("botnet_swarm", kModCopyCapBase); withSwarm.equip(0, "botnet_swarm");
+    Combatant sw = makePlayerCombatant(r, *pet, ml, withSwarm);
+    CHECK(sw.powerMultPct == base.powerMultPct + 6 * 2);    // +6% per Attack move (2)
+
+    Loadout withWard; withWard.grant("airgap_ward", kModCopyCapBase); withWard.equip(0, "airgap_ward");
+    Combatant wd = makePlayerCombatant(r, *pet, ml, withWard);
+    CHECK(wd.dmgReducePct == base.dmgReducePct + 6 * 1);    // +6% per Defend move (1)
+}
+
+// The per-kind combine rules (mod_state.cpp) — what happens when two equipped mods
+// declare the same ModEffect. Asserted straight on ModStateSet::apply: the loadout can
+// only reach a handful of these pairings with the shipped roster, but every rule has to
+// hold for the next mod that lands on an existing kind.
+void test_mod_state_combine_rules() {
+    // Sum: magnitudes accumulate.
+    ModStateSet sum;
+    sum.apply(ModEffect::Thorns, 4, 0);
+    sum.apply(ModEffect::Thorns, 3, 0);
+    CHECK(sum.mag(ModEffect::Thorns) == 7);
+
+    // HighestMag: the stronger cut wins outright and brings its OWN mag2 with it, so a
+    // weaker copy can neither dilute it nor swap in a mismatched payload.
+    ModStateSet high;
+    high.apply(ModEffect::LowHealthPowerPct, 30, 40);
+    high.apply(ModEffect::LowHealthPowerPct, 20, 90);
+    CHECK(high.mag(ModEffect::LowHealthPowerPct) == 30 &&
+          high.mag2(ModEffect::LowHealthPowerPct) == 40);
+    high.apply(ModEffect::LowHealthPowerPct, 45, 10);
+    CHECK(high.mag(ModEffect::LowHealthPowerPct) == 45 &&
+          high.mag2(ModEffect::LowHealthPowerPct) == 10);
+
+    // ...and a capped kind never records past its ceiling.
+    ModStateSet capped;
+    capped.apply(ModEffect::FaradayCut, 150, 0);
+    CHECK(capped.mag(ModEffect::FaradayCut) == 100);
+
+    // LowestMag: the tightest guarantee wins, so stacking a second copy can only ever
+    // narrow the ceiling. A 0 magnitude reads as "no ceiling yet", not as the tightest.
+    ModStateSet low;
+    CHECK(low.mag(ModEffect::MaxHitCapPct) == 0);          // absent reads as 0
+    low.apply(ModEffect::MaxHitCapPct, 0, 0);              // declares nothing
+    CHECK(low.mag(ModEffect::MaxHitCapPct) == 0);
+    low.apply(ModEffect::MaxHitCapPct, 35, 0);
+    low.apply(ModEffect::MaxHitCapPct, 50, 0);             // looser — loses
+    CHECK(low.mag(ModEffect::MaxHitCapPct) == 35);
+    low.apply(ModEffect::MaxHitCapPct, 20, 0);             // tighter — wins
+    CHECK(low.mag(ModEffect::MaxHitCapPct) == 20);
+    // The winner's mag2 rides along (Load Balancer's split share follows its threshold).
+    ModStateSet lb;
+    lb.apply(ModEffect::LoadBalance, 30, 50);
+    lb.apply(ModEffect::LoadBalance, 20, 75);
+    CHECK(lb.mag(ModEffect::LoadBalance) == 20 && lb.mag2(ModEffect::LoadBalance) == 75);
+
+    // HighestMag2: Tripwire's threshold is its SECOND magnitude, so the widest window
+    // wins and carries its own reflect amount.
+    ModStateSet tw;
+    tw.apply(ModEffect::ConditionalThorns, 10, 40);
+    tw.apply(ModEffect::ConditionalThorns, 99, 25);
+    CHECK(tw.mag(ModEffect::ConditionalThorns) == 10 &&
+          tw.mag2(ModEffect::ConditionalThorns) == 40);
+
+    // Replace: a gamble has no "better" pair to prefer, so the last one equipped defines it.
+    ModStateSet gamble;
+    gamble.apply(ModEffect::GambleBattlePowerPct, 25, 60);
+    gamble.apply(ModEffect::GambleBattlePowerPct, 10, 90);
+    CHECK(gamble.mag(ModEffect::GambleBattlePowerPct) == 10 &&
+          gamble.mag2(ModEffect::GambleBattlePowerPct) == 90);
+
+    // Arm + one-shot: a second copy adds no extra use, and spend() burns exactly one.
+    ModStateSet arm;
+    CHECK(!arm.armed(ModEffect::RaidMirror) && !arm.spend(ModEffect::RaidMirror));
+    arm.apply(ModEffect::RaidMirror, 0, 0);
+    arm.apply(ModEffect::RaidMirror, 0, 0);
+    CHECK(arm.armed(ModEffect::RaidMirror));
+    CHECK(arm.spend(ModEffect::RaidMirror));
+    CHECK(!arm.armed(ModEffect::RaidMirror) && !arm.spend(ModEffect::RaidMirror));
+
+    // A kind that folds into a base stat (or is read post-battle) keeps no entry at all.
+    ModStateSet none;
+    none.apply(ModEffect::PowerPct, 10, 0);
+    none.apply(ModEffect::PostBattleBits, 10, 0);
+    CHECK(none.size() == 0);
+
+    // arm() stages a passive at resolved values, one-shots included, and re-arming the
+    // same kind overwrites rather than stacking a second entry.
+    ModStateSet direct;
+    direct.arm(ModEffect::FirstHitCutPct, 50);
+    CHECK(direct.mag(ModEffect::FirstHitCutPct) == 50 &&
+          direct.armed(ModEffect::FirstHitCutPct));
+    direct.arm(ModEffect::FirstHitCutPct, 20);
+    CHECK(direct.mag(ModEffect::FirstHitCutPct) == 20 && direct.size() == 1);
+}
+
+// Prowlware's rank: distinct Attack-move power tiers, ascending (weakest = rank 1),
+// resolved per slot — including the empty-slot Quick Jab fallback.
+void test_mod_prowlware_rank_computation() {
+    ContentRegistry r = ContentRegistry::embedded();
+    const CreatureDef* pet = r.creature("malbear");        // Script; slotKinds A,A,D,A
+    CHECK(pet);
+    MoveLoadout ml = MoveLoadout::starting();
+    ml.equip(0, "quick_jab");       // power 6  -> weakest tier
+    ml.equip(1, "packet_storm");    // power 12 -> strongest tier
+    // slot 2 (Defend-typed) left unequipped -> falls back to quick_jab (Attack, power 6).
+    Loadout l; l.grant("prowlware", kModCopyCapBase); l.equip(0, "prowlware");
+    Combatant c = makePlayerCombatant(r, *pet, ml, l);
+    CHECK(c.mods.armed(ModEffect::FirstStrikeRankMult));
+    CHECK(c.moves.size() == 3);
+    CHECK(attackPowerRank(c.moves, 0) == 1);   // quick_jab (6) -> weakest of 2 tiers
+    CHECK(attackPowerRank(c.moves, 1) == 2);   // packet_storm (12) -> strongest
+    CHECK(attackPowerRank(c.moves, 2) == 1);   // fallback quick_jab -> weakest
+    CHECK(attackPowerRank(c.moves, 3) == 0);   // past the kit -> no rank
+    CHECK(attackPowerRank(c.moves, -1) == 0);  // a hijacked cast indexes no slot
+    // A Defend move never ranks, and a kit with one attack tier ranks 1 throughout (no
+    // bonus) — the mod only pays off on a genuine power spread.
+    Combatant flat = mkCombatant(r, "F", 100, 5, {"quick_jab", "checksum_guard"});
+    CHECK(attackPowerRank(flat.moves, 0) == 1);
+    CHECK(attackPowerRank(flat.moves, 1) == 0);
+}
+
+// Prowlware's runtime effect: the first landed damaging hit multiplies by rank, fires
+// only once, and a fully-mirrored (0-damage) hit doesn't consume it.
+void test_mod_prowlware_combat_effect() {
+    ContentRegistry r = ContentRegistry::embedded();
+    // Three distinct Attack tiers, strongest in slot 0 (rank 3). The Exploit override
+    // commands that slot both times, so the two hits are the same move and the only
+    // difference between them is whether Prowlware is still armed.
+    Combatant pc = mkCombatant(r, "P", 100, 12,
+                               {"buffer_overflow", "quick_jab", "packet_storm"});
+    pc.mods.arm(ModEffect::FirstStrikeRankMult);
+    Combatant e = mkCombatant(r, "E", 100, 5, {"quick_jab"});
+    Combat c; c.begin(pc, e, Combat::Stakes::Safe, 5, /*forceEnemyFirst=*/false,
+                      /*carryPlayerHealth=*/-1, /*exploitUses=*/2);
+    c.openOverride(); c.commitOverride(); c.step();                // forced buffer_overflow
+    CHECK(c.enemy().health == 100 - 20 * 3);                       // rank-3 multiplied
+    CHECK(!c.player().mods.armed(ModEffect::FirstStrikeRankMult)); // consumed
+    const int afterFirst = c.enemy().health;
+    while (!c.playerTurnNext()) c.step();                          // let the enemy swing
+    c.openOverride(); c.commitOverride(); c.step();                // the same move again
+    CHECK(c.enemy().health == afterFirst - 20);                    // plain damage, no repeat
+
+    Combatant pc2 = mkCombatant(r, "P", 100, 12, {"quick_jab"});
+    pc2.mods.arm(ModEffect::FirstStrikeRankMult);
+    Combatant e2 = mkCombatant(r, "E", 100, 5, {"quick_jab"});
+    e2.mods.arm(ModEffect::RaidMirror);                           // negates the first hit
+    Combat c2; c2.begin(pc2, e2, Combat::Stakes::Safe, 5);
+    c2.step();
+    CHECK(c2.enemy().health == 100);                              // fully mirrored
+    CHECK(c2.player().mods.armed(ModEffect::FirstStrikeRankMult));  // not consumed
+}
+
+// Canary Trap: an extra cut on the FIRST hit taken this fight only.
+void test_mod_canary_trap() {
+    ContentRegistry r = ContentRegistry::embedded();
+    Combatant pc = mkCombatant(r, "P", 100, 5, {"quick_jab"});    // slow, acts second
+    pc.mods.arm(ModEffect::FirstHitCutPct, 50);
+    Combatant e = mkCombatant(r, "E", 100, 12, {"packet_storm"}); // fast, power 12
+    Combat c; c.begin(pc, e, Combat::Stakes::Safe, 5);
+    c.step();                                                     // enemy's first hit
+    CHECK(c.player().health == 100 - 6);                          // 12 cut 50% -> 6
+    CHECK(!c.player().mods.armed(ModEffect::FirstHitCutPct));   // absorbed
+    c.step();                                                     // player's turn
+    c.step();                                                     // enemy's second hit — no cut
+    CHECK(c.player().health == 100 - 6 - 12);
+}
+
+// Meltdown Core: attack power gains the comeback bonus only while at/under the
+// health threshold — checked live every attack, not a one-shot.
+void test_mod_meltdown_core() {
+    ContentRegistry r = ContentRegistry::embedded();
+    Combatant low = mkCombatant(r, "P", 100, 12, {"quick_jab"});
+    low.health = 25;                                              // 25% <= the 30% threshold
+    low.mods.arm(ModEffect::LowHealthPowerPct, 30, 40);
+    Combatant e1 = mkCombatant(r, "E", 100, 5, {"quick_jab"});
+    // begin() otherwise starts the player at full Health — carryPlayerHealth is what
+    // actually seats the pre-set low.health (25) for the fight.
+    Combat c1; c1.begin(low, e1, Combat::Stakes::Safe, 5, false, 25);
+    c1.step();
+    CHECK(c1.enemy().health == 100 - 6 * 140 / 100);              // 6 * 1.4 -> 8
+
+    Combatant healthy = mkCombatant(r, "P", 100, 12, {"quick_jab"});
+    healthy.health = 50;                                          // above the threshold
+    healthy.mods.arm(ModEffect::LowHealthPowerPct, 30, 40);
+    Combatant e2 = mkCombatant(r, "E", 100, 5, {"quick_jab"});
+    Combat c2; c2.begin(healthy, e2, Combat::Stakes::Safe, 5, false, 50);
+    c2.step();
+    CHECK(c2.enemy().health == 100 - 6);                          // no bonus
+}
+
+// Zero-Day Exploit: a one-time gamble rolled in Combat::begin(). Tested at its two
+// deterministic boundaries (0% and 100% chance) rather than reverse-engineering a seed.
+void test_mod_zero_day_exploit() {
+    ContentRegistry r = ContentRegistry::embedded();
+    Combatant always = mkCombatant(r, "P", 100, 12, {"quick_jab"});
+    always.mods.arm(ModEffect::GambleBattlePowerPct, 100, 60);
+    Combatant e1 = mkCombatant(r, "E", 100, 5, {"quick_jab"});
+    Combat c1; c1.begin(always, e1, Combat::Stakes::Safe, 5);
+    CHECK(c1.player().powerMultPct == 160);
+
+    Combatant never = mkCombatant(r, "P", 100, 12, {"quick_jab"});
+    never.mods.arm(ModEffect::GambleBattlePowerPct, 0, 60);
+    Combatant e2 = mkCombatant(r, "E", 100, 5, {"quick_jab"});
+    Combat c2; c2.begin(never, e2, Combat::Stakes::Safe, 5);
+    CHECK(c2.player().powerMultPct == 100);
+}
+
+// Tripwire: reflects only while own Health is at/under the threshold, and stays a
+// SEPARATE accumulation from an always-on Thorns mod (Honeytoken) equipped alongside it.
+void test_mod_tripwire() {
+    ContentRegistry r = ContentRegistry::embedded();
+    Combatant low = mkCombatant(r, "P", 100, 5, {"quick_jab"});
+    low.health = 30;                                              // 30% <= the 40% threshold
+    low.mods.arm(ModEffect::ConditionalThorns, 10, 40);
+    Combatant e1 = mkCombatant(r, "E", 100, 12, {"quick_jab"});    // fast, hits first
+    // carryPlayerHealth seats the pre-set low.health (30) — begin() otherwise resets
+    // the player to full.
+    Combat c1; c1.begin(low, e1, Combat::Stakes::Safe, 5, false, 30);
+    c1.step();
+    CHECK(c1.enemy().health == 100 - 10);                         // reflected
+
+    Combatant healthy = mkCombatant(r, "P", 100, 5, {"quick_jab"});
+    healthy.health = 100;                                         // above the threshold
+    healthy.mods.arm(ModEffect::ConditionalThorns, 10, 40);
+    Combatant e2 = mkCombatant(r, "E", 100, 12, {"quick_jab"});
+    Combat c2; c2.begin(healthy, e2, Combat::Stakes::Safe, 5, false, 100);
+    c2.step();
+    CHECK(c2.enemy().health == 100);                              // dormant
+
+    Combatant both = mkCombatant(r, "P", 100, 5, {"quick_jab"});
+    both.health = 100;                                            // above Tripwire's threshold
+    both.mods.arm(ModEffect::Thorns, 4);                           // Honeytoken: always-on
+    both.mods.arm(ModEffect::ConditionalThorns, 10, 40);           // Tripwire: dormant here
+    Combatant e3 = mkCombatant(r, "E", 100, 12, {"quick_jab"});
+    Combat c3; c3.begin(both, e3, Combat::Stakes::Safe, 5, false, 100);
+    c3.step();
+    CHECK(c3.enemy().health == 100 - 4);                          // only Honeytoken fires
+}
+
+// Bubble-gated half of the steal track: stealSpeedPct/stealCurrentHpPct only fire while
+// the caster's Obfuscation shield is up (shieldHp > 0) — the interplay the line is built
+// around (the volatile bonus costs the defensive pool's uptime). Both combatants sit at
+// speed 50 (not the usual 10) so 6% of it — smish_hook's stealSpeedPct — lands on an
+// exact float (3.0) instead of a repeating binary fraction. Stage stays at its BootSector
+// default so the Perfect-Bite chance is a guaranteed 0% (kPhishingBiteChancePctByStage[0]),
+// isolating the BASE bubble-gated amounts from the chance-based bonus (see
+// test_phishing_perfect_bite). Feed-frenzy also lives here, since a landed power siphon
+// while the bubble's up triggers it: the enemy never attacks, so Health moves via the
+// lifesteal + frenzy heal alone. Order is P(wind-up), E(guard), P(detonate).
+void test_phishing_bubble_steal() {
+    ContentRegistry r = ContentRegistry::embedded();
+    auto run = [&](int shield, Combat& out) {
+        Combatant pc = mkCombatant(r, "P", 100, 50, {"smish_hook"});
+        pc.shieldHp = shield;
+        Combatant e = mkCombatant(r, "E", 100, 50, {"quick_jab"});
+        out.begin(pc, e, Combat::Stakes::Safe, 1);
+        out.step(); out.step(); out.step();
+    };
+    // No bubble: only the unconditional power siphon fires. quick_jab (6 dmg) is the
+    // only thing touching player Health, and enemy Health only takes the attack's own
+    // damage — no lifesteal, no frenzy.
+    Combat c0; run(0, c0);
+    CHECK(c0.player().speed == 50 && c0.enemy().speed == 50);
+    CHECK(c0.player().health == 94);              // 100 - 6 (quick_jab), no heals
+    CHECK(c0.enemy().health == 92);                // 100 - 8 (smish_hook), no lifesteal
+    CHECK(c0.player().powerMultPct == 108 && c0.enemy().powerMultPct == 92);
+
+    // Bubble up: stealSpeedPct/stealCurrentHpPct now fire at their base (6%) amounts on
+    // top of the power siphon, and the landed power siphon feeds Feed-Frenzy. The
+    // player's OWN shieldHp(50) also absorbs quick_jab's 6 damage outright (the
+    // pre-existing Obfuscation absorb, ahead of any steal effect) instead of it
+    // touching Health, so Health only ever moves via this hit's own heals.
+    Combat c1; run(50, c1);
+    CHECK(c1.player().speed == 53.0f && c1.enemy().speed == 47.0f);   // 6% of 50 = 3
+    // enemy.health: 100 - 8 (attack) - 5 (6% of 92, lifesteal) = 87.
+    CHECK(c1.enemy().health == 87);
+    // player.health: 100 (quick_jab absorbed by shieldHp, not Health) + 5 (lifesteal)
+    // + 1 (frenzy: floor(44*7.5/1000) floored to a minimum of 1) = 100, capped.
+    CHECK(c1.player().health == 100);
+}
+
+// Perfect Bite: while the bubble's up, a stage-scaled chance (kPhishingBiteChancePctByStage)
+// additionally doubles WHICHEVER of stealSpeedPct/stealCurrentHpPct lands the hit (picked at
+// random when a move sets both, as every Phishing steal-attack does); the Phishing Rod's
+// the Phishing Rod scales that bonus specifically, not the base amount. Daemon (45%) is the
+// easiest stage to observe both a biting and a non-biting roll in a short scan. Stage is
+// set directly on the Combatant purely to select the chance-table row — Combat itself never
+// checks a move's minStage (that gate lives at the picker/equip layer).
+void test_phishing_perfect_bite() {
+    ContentRegistry r = ContentRegistry::embedded();
+    auto run = [&](uint32_t seed, int amplify, Combat& out) {
+        Combatant pc = mkCombatant(r, "P", 100, 50, {"smish_hook"});
+        pc.stage = Stage::Daemon;
+        pc.shieldHp = 50;
+        pc.mods.arm(ModEffect::StealAmplifyPct, amplify);
+        Combatant e = mkCombatant(r, "E", 100, 50, {"quick_jab"});
+        out.begin(pc, e, Combat::Stakes::Safe, seed, /*forceEnemyFirst=*/false,
+                  /*carryPlayerHealth=*/50);
+        out.step(); out.step(); out.step();
+    };
+    // Baselines (no bite): speed 50 -> 53/47 (6% of 50). Health: quick_jab's 6 damage
+    // is absorbed by the player's OWN shieldHp(50), not Health (the pre-existing
+    // Obfuscation absorb, ahead of any steal effect) — so carryPlayerHealth(50) stays
+    // 50 through step 2, then +5 lifesteal (6% of 92) +1 frenzy (floored) = 56.
+    constexpr float kBaseSpeed = 53.0f;
+    constexpr int kBaseHealth = 56;
+
+    uint32_t biteSpeedSeed = 0, biteHpSeed = 0, noBiteSeed = 0;
+    for (uint32_t s = 1; s <= 80 && !(biteSpeedSeed && biteHpSeed && noBiteSeed); ++s) {
+        Combat c; run(s, 0, c);
+        const bool bitSpeed = c.player().speed > kBaseSpeed;
+        const bool bitHp = c.player().health > kBaseHealth;
+        CHECK(!(bitSpeed && bitHp));                 // exactly one stat bites per hit
+        if (bitSpeed && !biteSpeedSeed) biteSpeedSeed = s;
+        else if (bitHp && !biteHpSeed) biteHpSeed = s;
+        else if (!bitSpeed && !bitHp && !noBiteSeed) noBiteSeed = s;
+    }
+    CHECK(biteSpeedSeed && biteHpSeed && noBiteSeed);   // all three outcomes reachable
+
+    // Rod: re-running a biting seed with the Rod equipped scales that hit's bonus up
+    // further (still only the bitten stat — the other stays at its base value).
+    Combat plainSpeed; run(biteSpeedSeed, 0, plainSpeed);
+    Combat rodSpeed; run(biteSpeedSeed, 75, rodSpeed);
+    CHECK(rodSpeed.player().speed > plainSpeed.player().speed);
+    CHECK(rodSpeed.player().health == plainSpeed.player().health);   // hp untouched
+
+    Combat plainHp; run(biteHpSeed, 0, plainHp);
+    Combat rodHp; run(biteHpSeed, 75, rodHp);
+    CHECK(rodHp.player().health > plainHp.player().health);
+    CHECK(rodHp.player().speed == plainHp.player().speed);   // speed untouched
+}
+
+// Obfuscation shield pool (Phishing defensive track): a shieldPool Defend move POOLS
+// into shieldHp (a second health bar) that absorbs before real Health, overflows the
+// remainder to Health when it pops, and STACKS additively on recast — distinct from the
+// one-shot `guard` brace every other Defend move sets.
+void test_phishing_shield_pool() {
+    ContentRegistry r = ContentRegistry::embedded();
+    const MoveDef* sb = r.move("spoof_bubble");
+    CHECK(sb && sb->kind == MoveDef::Kind::Defend && sb->shieldPool > 0 && sb->power == 8);
+
+    // Absorb + overflow: cast the bubble (shieldHp 8), then eat a 20-power hit — the
+    // shield soaks 8 and pops, the remaining 12 carries through to Health.
+    Combatant p = mkCombatant(r, "P", 100, 10, {"spoof_bubble"});
+    Combatant e = mkCombatant(r, "E", 100, 10, {"buffer_overflow"});  // 20 power, no rider
+    Combat c; c.begin(p, e, Combat::Stakes::Safe, 1);
+    c.step();                                            // P casts Spoof-Bubble
+    CHECK(c.player().shieldHp == 8);
+    CHECK(c.player().health == 100);                     // nothing spent yet
+    c.step();                                            // E hits for 20
+    CHECK(c.player().shieldHp == 0);                     // popped
+    CHECK(c.player().health == 88);                      // overflow 12 through to Health
+
+    // A non-shield Defend move still sets the one-shot guard, NOT the pool.
+    Combatant p2 = mkCombatant(r, "P", 100, 10, {"checksum_guard"});
+    Combatant e2 = mkCombatant(r, "E", 100, 10, {"checksum_guard"});
+    Combat c2; c2.begin(p2, e2, Combat::Stakes::Safe, 1);
+    c2.step();
+    CHECK(c2.player().shieldHp == 0);
+    CHECK(c2.player().guard == 14);                      // ordinary brace, not pooled
+
+    // Additive stacking: with an enemy that only defends (no damage), two player casts
+    // pool to 16 rather than refreshing to 8.
+    Combatant p3 = mkCombatant(r, "P", 100, 10, {"spoof_bubble"});
+    Combatant e3 = mkCombatant(r, "E", 100, 10, {"checksum_guard"});
+    Combat c3; c3.begin(p3, e3, Combat::Stakes::Safe, 1);
+    c3.step();                                           // P bubble -> 8
+    c3.step();                                           // E defends (no damage to P)
+    c3.step();                                           // P bubble again -> 16 (stacks)
+    CHECK(c3.player().shieldHp == 16);
+}
+
+// Speed action economy: relative speed drives how many actions each pet gets. Equal
+// speed alternates strictly (matches the pre-scheduler engine); a faster pet acts more
+// often, in proportion to the speed ratio.
+void test_speed_action_economy() {
+    ContentRegistry r = ContentRegistry::embedded();
+    // Equal speed -> strict alternation. Both pets only defend, so nobody dies and the
+    // scheduler can be observed over many turns.
+    {
+        Combatant p = mkCombatant(r, "P", 100, 10, {"checksum_guard"});
+        Combatant e = mkCombatant(r, "E", 100, 10, {"checksum_guard"});
+        Combat c; c.begin(p, e, Combat::Stakes::Safe, 1);
+        bool want = c.playerActsFirst();
+        for (int i = 0; i < 8; ++i) {
+            CHECK(c.playerTurnNext() == want);
+            c.step();
+            want = !want;
+        }
+    }
+    // A 3x-faster pet takes comfortably more than twice as many actions over a long run.
+    {
+        Combatant p = mkCombatant(r, "P", 100, 30, {"checksum_guard"});
+        Combatant e = mkCombatant(r, "E", 100, 10, {"checksum_guard"});
+        Combat c; c.begin(p, e, Combat::Stakes::Safe, 1);
+        int pl = 0, en = 0;
+        for (int i = 0; i < 40; ++i) {
+            if (c.playerTurnNext()) ++pl; else ++en;
+            c.step();
+        }
+        CHECK(pl > en * 2);
+    }
+}
+
+// Minimum penetration: a real attack always lands >=1 through pure defensive mitigation
+// (% cut + guard), so no pet is an invincible wall — but RAID Mirror's deliberate full
+// negation is still exempt.
+void test_min_damage_penetration() {
+    ContentRegistry r = ContentRegistry::embedded();
+    // Quick Jab (6) into a maxed damage-cut would round to 0; the floor lands 1.
+    Combatant p = mkCombatant(r, "P", 100, 20, {"quick_jab"});
+    Combatant e = mkCombatant(r, "E", 100, 5, {"checksum_guard"});
+    e.dmgReducePct = 95;                                 // clamps high; 6 * ~15% -> 0
+    Combat c; c.begin(p, e, Combat::Stakes::Safe, 1);
+    c.step();                                            // P jabs the wall
+    CHECK(c.enemy().health == 99);                       // 1 penetrated, not 0
+
+    // RAID Mirror still negates the whole hit (its own branch, exempt from the floor).
+    Combatant p2 = mkCombatant(r, "P", 100, 20, {"quick_jab"});
+    Combatant e2 = mkCombatant(r, "E", 100, 5, {"checksum_guard"});
+    e2.mods.arm(ModEffect::RaidMirror);
+    Combat c2; c2.begin(p2, e2, Combat::Stakes::Safe, 1);
+    c2.step();
+    CHECK(c2.enemy().health == 100);                     // fully mirrored, 0 damage
+}
+
+// The HARD line gate (ModDef::requiresLine, niche-flavour pass): distinct from every
+// other mod's soft `line`/`affinityBonus` bonus. Driven through the real MODS UI,
+// mirroring test_mod_equip_level_gate's pattern — Paypup's starting owned spares are
+// exactly {packet_sniffer, raid_mirror} (Loadout::starting()), so granting ONE more
+// mod always lands it at picker row 2 (registry order, filtered to owned).
+// A mod's equip gate — level a test pet to this and that mod is equippable. Derived from
+// the mod's own rank rather than written as a literal, so shifting the ladder moves these
+// tests' targets with it instead of stranding them under a level that used to be enough.
+static int modGateCeiling(const char* id) {
+    ContentRegistry r = ContentRegistry::embedded();
+    return modEquipLevel(*r.mod(id));
+}
+
+void test_mod_hard_line_gate() {
+    Game g{StartMode::Hatched};                             // Paypup, ransomware line
+    const int deepGate = modGateCeiling("extortion_ledger");  // both spares share a rank
+    while (g.combatLevel() < deepGate) g.debugAddCombatXp(g.xpToNextLevel());
+    g.debugGrantMod("phishing_rod");                  // requiresLine = phishing (mismatch)
+    enterSubmenuId(g, SubmenuId::Mods);
+    g.onButton(press(Button::A)); g.onButton(press(Button::A));  // listRow 0->2 (empty slot)
+    g.onButton(press(Button::B));                           // open slot-2 picker
+    g.onButton(press(Button::A)); g.onButton(press(Button::A));  // pick row 2 = phishing_rod
+    g.onButton(press(Button::B));                           // open its detail
+    g.onButton(press(Button::B));                           // EQUIP -> blocked (wrong line)
+    CHECK(g.loadout().equipped(2) == nullptr);
+    CHECK(g.loadout().owns("phishing_rod"));                // spare not consumed
+
+    Game g2{StartMode::Hatched};
+    while (g2.combatLevel() < deepGate) g2.debugAddCombatXp(g2.xpToNextLevel());
+    g2.debugGrantMod("extortion_ledger");             // requiresLine = ransomware (match)
+    enterSubmenuId(g2, SubmenuId::Mods);
+    g2.onButton(press(Button::A)); g2.onButton(press(Button::A));
+    g2.onButton(press(Button::B));
+    g2.onButton(press(Button::A)); g2.onButton(press(Button::A));
+    g2.onButton(press(Button::B));
+    g2.onButton(press(Button::B));                          // EQUIP -> allowed (matching line)
+    CHECK(g2.loadout().slotOf("extortion_ledger") == 2);
+    CHECK(!g2.loadout().owns("extortion_ledger"));
+}
+
+// the rolled equip-LEVEL gate — a spare above the pet's level can't be
+// equipped; leveling past it unlocks the equip. Driven through the real MODS UI.
+void test_mod_equip_level_gate() {
+    Game g{StartMode::Hatched};                            // pet at level 0
+    g.debugGrantMod("overclock_chip");               // a mid-ladder rank: req > 0
+    const int ocGate = modGateCeiling("overclock_chip");
+    CHECK(ocGate > 0);                                     // a mid-ladder rank does gate
+    // Navigate: MODS → slot 3 (empty) picker → select the overclock spare → EQUIP.
+    enterSubmenuId(g, SubmenuId::Mods);
+    g.onButton(press(Button::A)); g.onButton(press(Button::A));  // listRow 0→2 (empty slot)
+    g.onButton(press(Button::B));                          // open slot-2 picker
+    // Owned spares in registry order: packet_sniffer, overclock_chip, raid_mirror.
+    g.onButton(press(Button::A));                          // pick row 1 = overclock
+    g.onButton(press(Button::B));                          // open its detail
+    g.onButton(press(Button::B));                          // EQUIP → blocked (under-level)
+    CHECK(g.loadout().equipped(2) == nullptr);             // not installed
+    CHECK(g.loadout().owns("overclock_chip"));             // spare not consumed
+    // Level the pet above the gate, then the same equip succeeds.
+    while (g.combatLevel() < ocGate) g.debugAddCombatXp(g.xpToNextLevel());
+    enterSubmenuId(g, SubmenuId::Mods);
+    g.onButton(press(Button::A)); g.onButton(press(Button::A));
+    g.onButton(press(Button::B));
+    g.onButton(press(Button::A));
+    g.onButton(press(Button::B));
+    g.onButton(press(Button::B));                          // EQUIP → now allowed
+    CHECK(g.loadout().slotOf("overclock_chip") == 2);
+    CHECK(!g.loadout().owns("overclock_chip"));            // consumed on equip
+}
+
+// drawModPicker windowing (twin of train_screen's drawMovePicker fix): with more
+// than kModPickerVisibleRows owned mods, the row list must CAP at the window and
+// SCROLL to follow the cursor, never overrun into the description zone at y=150.
+// Grants every embedded mod (16, well past the 6-row window) as an owned spare.
+void test_mod_picker_windows_large_pool() {
+    ContentRegistry r = ContentRegistry::embedded();
+    Loadout load;
+    const auto allMods = r.allMods();
+    CHECK(allMods.size() > 6);                  // the pool this test needs to overflow
+    for (const ModDef* m : allMods) load.grant(m->id, kModCopyCapBase);  // one spare each
+
+    const auto owned = ownedModList(r, load);
+    const int lastPick = static_cast<int>(owned.size()) - 1;
+    CHECK(lastPick >= 6);
+
+    // (a) The focused row-cursor triangle for the LAST mod must still land inside
+    // the windowed list band (y in [22,150)) — the pre-fix math (`kRowTop +
+    // pick*rowH`) would place it at 26 + 15*18 = 296, off the 224-tall panel and
+    // nowhere near the visible list.
+    Framebuffer last(kActiveW, kActiveH);
+    drawModPicker(last, r, load, /*slot=*/0, lastPick, /*confirmActive=*/false,
+                  0, nullptr, /*petLevel=*/99, /*petLine=*/nullptr);
+    bool cursorInWindow = false;
+    for (int y = 22; y < 150 && !cursorInWindow; ++y)
+        for (int x = 6; x < 20; ++x)
+            if (last.get(x, y) == palColor(Pal::ACCENT)) { cursorInWindow = true; break; }
+    CHECK(cursorInWindow);
+
+    // (b) The window actually FOLLOWS the cursor rather than just clipping: the
+    // picker focused on the first mod renders differently from the one focused
+    // on the last mod (different rows are on screen).
+    Framebuffer first(kActiveW, kActiveH);
+    drawModPicker(first, r, load, 0, 0, false, 0, nullptr, 99, nullptr);
+    CHECK(!fbEqual(first, last));
+
+    // (c) The invariant holds across the whole pool, not just at the last index:
+    // for every pick value the row-cursor triangle stays inside the window.
+    for (int pick = 0; pick <= lastPick; pick += 3) {
+        Framebuffer fb(kActiveW, kActiveH);
+        drawModPicker(fb, r, load, 0, pick, false, 0, nullptr, 99, nullptr);
+        bool inWindow = false;
+        for (int y = 22; y < 150 && !inWindow; ++y)
+            for (int x = 6; x < 20; ++x)
+                if (fb.get(x, y) == palColor(Pal::ACCENT)) { inWindow = true; break; }
+        CHECK(inWindow);
+    }
+}

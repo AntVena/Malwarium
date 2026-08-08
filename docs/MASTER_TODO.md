@@ -352,7 +352,7 @@ rather than by line count. `save.cpp` (963), `combat.cpp` (823), `expl_screen.cp
 because the format is flat, which is not a second responsibility, and combat.cpp is the turn
 engine alone now that the factories have their own unit beside it.
 
-Two are past the rule and were not on this watch at all:
+One more is past the rule and was not on this watch at all:
 
 - **`game.h` (2730)** — the umbrella header. It is not a unit that grew a second concern; it is
   one class's declaration, so the line count is arguably honest. The cost is its includes, and
@@ -369,13 +369,6 @@ Two are past the rule and were not on this watch at all:
   declaration, or does it hold the type by value? Diff **L**, and unlike the UI slice these are
   held by value almost everywhere, so the answer is likely "no" for most and the honest outcome
   may be that `game.h` is as thin as it gets.
-- **`test_main.cpp` (14746, 466 cases)** — the largest file in the repo by an order of magnitude,
-  and healthy by every check that exists: every defined `test_*` is registered, nothing is
-  skipped or disabled, and the suite is green. But one file holding the whole native tier means
-  a reviewer cannot find the tests for a subsystem except by grep, and the `RUN()` list at the
-  bottom is a 467-line macro nobody can diff usefully. Splitting by subsystem
-  (`test_combat.cpp`, `test_save.cpp`, …) is mechanical, since registration is already a macro
-  list. Diff **M** — the volume, not the difficulty.
 
 ---
 
