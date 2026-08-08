@@ -89,21 +89,23 @@ scalar-field sprawl or `if (id == "...")` branches), one-file-per-type under
 `tunables.h`. Sweep: `grep -nE 'constexpr .* k\w+ *=' include/tunables.h` and flag any whose
 comment names ONE item/mod/move/creature — inline it onto that row. Verify claims against code.
 
-### Unused-include sweep — Last run: never
+### Unused-include sweep — Last run: 2026-08-08
 The clangd "included header X is not used directly" warnings are noise we burn tokens reading
-past, and the `game_*.cpp` units are the worst offenders: they all carry the same broad render/UI
+past, and the `game_*.cpp` units are the worst offenders: they all carry the same broad render
 header block copied from `game_render.cpp`, most of which a given unit doesn't use.
 
-**The `core/ui` half now has real signal.** `game.h` no longer includes a single screen header
-(it takes `core/ui/ui_state.h` for the ids `Game` holds), so stripping a `core/ui` include from a
-`game_*.cpp` unit and rebuilding is a genuine test of whether that unit draws through it:
-strip-and-rebuild across those units reports 33 load-bearing against 63 removable, where the same
-sweep with the umbrella in place could only find 13.
+**The `core/ui` half is swept.** `game.h` no longer includes a screen header (it takes
+`core/ui/ui_state.h` for the ids `Game` holds), which is what made stripping one a genuine test of
+whether the unit draws through it. What's left is load-bearing: `game_render.cpp` keeps all eleven
+because it IS the render dispatcher, and every other unit keeps only the screens it enters —
+`game_config.cpp` its `cfg_screen.h`, `game_explore.cpp`/`game_net.cpp`/`game_lifecycle.cpp` their
+`expl_screen.h`, the four `layout.h`/`theme.h`/`widgets.h` units their drawing primitives. Re-run
+it when a unit is split or a screen header moves.
 
 **The `core/model` + `core/render` half is still blocked** on the rest of `game.h`'s includes
 (`MASTER_TODO.md §3`): it hands every TU `combat.h`, `save.h`, `registry.h`, `framebuffer.h` and
-`platform.h`, so "it still compiles without it" proves nothing about those. Sweep `core/ui` now
-and leave the rest for whoever lands the next slice.
+`platform.h`, so "it still compiles without it" proves nothing about those. Leave that half for
+whoever lands the next `game.h` slice.
 
 Method: trust the clangd `unused-includes` diagnostics as the finder, **verify a real host build
 still compiles after each removal**, and note that the native gate is authoritative — don't

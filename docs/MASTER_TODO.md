@@ -364,8 +364,9 @@ One more is past the rule and was not on this watch at all:
   includes, 51 → 43 transitive.
   **What's left is the model/net/render stack**: `combat.h`, `save.h`, `registry.h`,
   `framebuffer.h`, `platform.h` and the rest still reach every TU that includes `game.h`, so the
-  unused-include sweep still has no signal outside `core/ui` (it has one there now — see
-  `MAINTENANCE.md`). The same question applies to each: can `Game` declare against a forward
+  unused-include sweep has no signal outside `core/ui` — where it has now run, leaving 38
+  load-bearing includes of the 96 the units carried. The same question applies to each: can
+  `Game` declare against a forward
   declaration, or does it hold the type by value? Diff **L**, and unlike the UI slice these are
   held by value almost everywhere, so the answer is likely "no" for most and the honest outcome
   may be that `game.h` is as thin as it gets.
@@ -376,5 +377,5 @@ One more is past the rule and was not on this watch at all:
 
 1. **Net-Sea Crossing art (§2c)** — the area ships mechanically; it is the only rung with no
    backdrop or malbeasts of its own.
-2. **The `core/ui` unused-include sweep** (`MAINTENANCE.md`) — newly unblocked and mechanical:
-   33 of the 96 `core/ui` includes across the `game_*.cpp` units are load-bearing.
+2. **The template pet sheet (§2a-ii)** — an authoring aid with no ingestion change behind it:
+   one labeled row per default animation, so a new creature sheet starts from a plan.

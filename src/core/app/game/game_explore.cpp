@@ -11,14 +11,7 @@
 #include "core/render/font.h"
 #include "core/render/palette.h"
 #include "core/render/sprite.h"
-#include "core/ui/carousel.h"
-#include "core/ui/combat_screen.h"
 #include "core/ui/expl_screen.h"
-#include "core/ui/items_screen.h"
-#include "core/ui/maint_screen.h"
-#include "core/ui/modals.h"
-#include "core/ui/stat_screen.h"
-#include "core/ui/train_screen.h"
 #include "generated/assets.h"
 
 namespace mal {
