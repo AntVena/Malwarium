@@ -108,22 +108,36 @@ void drawReplica(Framebuffer& fb, const SpriteData& s, int frame, int cx, int sh
     drawSpriteUpscaled(fb, s, frame, cx - w / 2, shelfY - h, kScaleNum, kScaleDen);
 }
 
-// One side's replicas, laid left-to-right from `x0` inside `w`, plus the dissolve of a
-// copy this turn destroyed (kill.happened). `attacking` plays the chomp pair — true for
-// the side that just acted, so the whole board swings together with its parent.
+// One slot's width on the shelf: the glyph plus a little air, so neighbours read as
+// separate copies rather than one crowd.
+constexpr int kReplicaSlotW = 30;
+
+// One side's replicas, plus the dissolve of a copy this turn destroyed (kill.happened).
+//
+// The board stands BETWEEN its parent and the enemy — that is what a copy is for, so it
+// is where it stands. `frontX` is the parent's seat edge facing the opponent and
+// `stride` steps AWAY from that edge (negative for the left seat, positive for the
+// right), so slot 0 is always the front rank nearest the enemy and later copies fall in
+// behind it. Anchoring at the front rather than distributing across the seat is what
+// keeps the line stable: gaining or losing a copy adds or removes one at the BACK
+// instead of sliding every copy sideways.
+//
+// `attacking` plays the chomp pair — true for the side that just acted, so the whole
+// board swings together with its parent.
 void drawReplicaRow(Framebuffer& fb, const Combatant& c, bool attacking,
-                    const WormKill& kill, int killBeat, int x0, int w, int shelfY,
-                    int animBeat) {
+                    const WormKill& kill, int killBeat, int frontX, int stride,
+                    int shelfY, int animBeat) {
     const bool dying = kill.happened && killBeat >= 0 && killBeat < kReplicaDeathPeriod;
     const int n = c.wormReplicaCount + (dying ? 1 : 0);
     if (n <= 0) return;
-    // Slots share the band evenly, so a board of one sits centred and a full board packs
-    // without ever running past the parent's seat.
-    const int step = w / (n > 0 ? n : 1);
     const int base = attacking ? kReplicaAttackFrame : kReplicaIdleFrame;
-    for (int i = 0; i < n; ++i) {
-        const int cx = x0 + step * i + step / 2;
-        const bool ghost = dying && i == n - 1;   // the dissolve trails the live board
+    // Back to front, so the nearer rank overlaps the one behind it if the two ever meet.
+    for (int i = n - 1; i >= 0; --i) {
+        const int cx = frontX + stride * i + stride / 2;
+        // The dissolve takes the slot BEHIND the live board rather than the slot its
+        // copy actually held — which is unknowable, since the array packs the moment one
+        // dies. It reads as the board having lost its last rank, which is the true part.
+        const bool ghost = dying && i == n - 1;
         const bool defender = ghost ? kill.defender : c.wormReplicas[i].defender;
         const SpriteData& s = defender ? ASSET_SPR_WORM_REPLICA_DEFEND
                                        : ASSET_SPR_WORM_REPLICA_ATTACK;
@@ -323,23 +337,25 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
     drawSpriteCentered(fb, localSprite, kLocalStageX, kStageY, kStageW, kStageH, animBeat,
                        localFlash, impactNudgePx(localHitBeat, -1) + hop);
 
-    // Worm replicas, on the same shelf and across their parent's own seat, drawn AFTER
-    // both fighters so the copies read as standing in front of the worm that made them.
-    // Nothing is drawn for any other line — wormReplicaCount is 0 and the row returns.
+    // Worm replicas, on the same shelf, standing BETWEEN their parent and its opponent —
+    // each row starts at the seat edge facing the other fighter and falls back from
+    // there, so a copy is always in the way of the thing it is there to catch. Drawn
+    // AFTER both fighters so they read in front of the worm that made them. Nothing is
+    // drawn for any other line — wormReplicaCount is 0 and the row returns.
     // (A worm's own sprite is meant to be small enough to leave this room; the stand-in
-    // frame the line ships with is not, so the copies currently crowd its feet.)
+    // frame the line ships with is not, so the back ranks currently sit over its body.)
     //
     // WormKill names its side in Combat's player_/enemy_ terms, so it is rebound to the
     // local/rival roles the same way everything else on this screen is.
     const WormKill& kill = combat.lastWormKill();
     const bool killOnLocal = kill.onPlayer != flip;
     const bool swinging = moveResolved && hitBeat >= 0 && hitBeat < kAttackHopPeriod;
-    drawReplicaRow(fb, en, swinging && !lastByLocal, kill,
-                   killOnLocal ? -1 : hitBeat, kRivalStageX, kStageW, kSpriteShelf,
+    drawReplicaRow(fb, en, swinging && !lastByLocal, kill, killOnLocal ? -1 : hitBeat,
+                   /*frontX=*/kRivalStageX, /*stride=*/kReplicaSlotW, kSpriteShelf,
                    animBeat);
-    drawReplicaRow(fb, pl, swinging && lastByLocal, kill,
-                   killOnLocal ? hitBeat : -1, kLocalStageX, kStageW, kSpriteShelf,
-                   animBeat);
+    drawReplicaRow(fb, pl, swinging && lastByLocal, kill, killOnLocal ? hitBeat : -1,
+                   /*frontX=*/kLocalStageX + kStageW, /*stride=*/-kReplicaSlotW,
+                   kSpriteShelf, animBeat);
 
     // --- Player Health: zoned gauge + numeric ------------------------------
     const int phY = kSpriteShelf + 10;
