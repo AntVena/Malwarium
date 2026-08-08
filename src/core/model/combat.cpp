@@ -65,6 +65,11 @@ void Combat::begin(const Combatant& player, const Combatant& enemy, Stakes stake
     // live "stat state" change the player needs to watch.
     player_.basePowerMultPct = player_.powerMultPct;
     enemy_.basePowerMultPct = enemy_.powerMultPct;
+    // Shared Resources (Worm): the match happens BEFORE the speed baseline is captured,
+    // so a worm's own "start of fight" speed is the matched one. The stat panel then
+    // shows a delta only when the pair have actually MOVED together mid-fight, rather
+    // than reporting the opening handshake as a siphon.
+    syncWormSpeed();
     player_.baseSpeed = player_.speed;
     enemy_.baseSpeed = enemy_.speed;
     // Seed the speed scheduler with empty gauges, then pick the opening actor by speed.
@@ -88,6 +93,7 @@ void Combat::begin(const Combatant& player, const Combatant& enemy, Stakes stake
     lastByPlayer_ = false;
     lastWasCharge_ = false;
     lastRansomed_ = false;
+    lastWormKill_ = {};
 }
 
 void Combat::setLast(const char* name, int dmg, bool byPlayer, bool charge,
@@ -151,10 +157,45 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
         // floor rather than raw damage, so this flat bonus (above) is what actually
         // makes a sustained frenzy dangerous instead of a long string of 1s.
         if (mv->stealPowerPct > 0) dmg += actor.phishComboBonus;
+        // Worm attacker replicas pile onto their parent's swing (wormReplicaDamage).
+        // The parent's own attacks are deliberately weak, so on a Worm this is most of
+        // the damage — and it is why the line's threat scales with the BOARD rather than
+        // with the move rolled. Added before mitigation, so the pile goes through the
+        // target's defence like any other damage. Zero on every non-Worm side.
+        dmg += wormReplicaDamage(actor);
         // Wild-encounter challenge buff: explore malbeasts hit
         // harder so a win costs real Health. enemyDamageMultPct is 100 for the
         // player, bosses, and Sim dummies, so this is a no-op off the wild path.
         if (!byPlayer) dmg = dmg * actor.enemyDamageMultPct / 100;
+        // Worm replication (target side): an attack aimed at a worm picks its victim
+        // among the parent and every live replica, weighted so a defender draws hardest
+        // (wormTargetPick / content_passives.h). A replica that catches the hit eats it
+        // WHOLE — no mitigation, no riders, no overflow to the parent — and dies if
+        // overrun, freeing its slot. That is the passive: replication does not make the
+        // worm tougher, it makes the worm harder to actually be the one hit.
+        //
+        // Rolled only when the target actually has replicas out, so no other line ever
+        // perturbs the stream. One rng() draw, resolved by a pure function, so both
+        // devices of a duel name the same victim from the same seed.
+        if (target.wormReplicaCount > 0) {
+            const int victim = wormTargetPick(target, rng());
+            if (victim >= 0) {
+                WormReplica& r = target.wormReplicas[victim];
+                const int dealt = dmg < r.health ? dmg : r.health;
+                r.health -= dealt;
+                if (r.health <= 0) {   // packed: the last replica fills the freed slot
+                    // Recorded before the pack erases it — the copy is about to stop
+                    // existing, and the screen needs to know it ever did (WormKill).
+                    lastWormKill_ = {/*happened=*/true, /*onPlayer=*/!byPlayer,
+                                     r.defender};
+                    target.wormReplicas[victim] =
+                        target.wormReplicas[target.wormReplicaCount - 1];
+                    target.wormReplicas[--target.wormReplicaCount] = WormReplica{};
+                }
+                setLast(mv->displayName, dealt, byPlayer, /*charge=*/false);
+                return;
+            }
+        }
         const int baseDmg = dmg;    // pre-mitigation, for the min-1 penetration floor
         const bool crewNegates =
             target.crewExploit.armed(CrewExploitKind::NegateNextHits);
@@ -493,6 +534,54 @@ bool Combat::bubbleBiteRolls(Stage stage) {
     return static_cast<int>(rng() % 100) < pct;
 }
 
+// Whether a side carries the Worm line's passives. Same string check every other
+// per-line hook here uses, kept in one place because three of them ask.
+static bool isWorm(const Combatant& c) {
+    return c.line && std::strcmp(c.line, "worm") == 0;
+}
+
+void Combat::syncWormSpeed() {
+    // Shared Resources: the worm's speed IS the opponent's, so the relative speed that
+    // deals actions (pickNextActor) is always 1:1 and nothing out-actions a worm.
+    //
+    // Exactly one worm, or nothing happens. With none there is nobody to match; with two
+    // (a duel of worms) each would be assigned the other's value and the pair would swap
+    // speeds every tick forever — and they are already in lockstep by definition, since
+    // whatever moves one moves the other. Leaving both alone is that fact stated.
+    const bool pw = isWorm(player_), ew = isWorm(enemy_);
+    if (pw == ew) return;
+    if (pw) player_.speed = enemy_.speed;
+    else    enemy_.speed = player_.speed;
+}
+
+void Combat::rollWormSpawn(Combatant& actor, const MoveDef* mv) {
+    // Slots are the hard cap on replication (kWormReplicaSlots), and a full board simply
+    // doesn't roll — so a worm holding three replicas draws no rng here and the stream
+    // stays identical to one that never had the chance.
+    if (actor.wormReplicaCount >= kWormReplicaSlots) return;
+    if (static_cast<int>(rng() % 100) >= mv->replicaSpawnPct) return;
+    WormReplica& r = actor.wormReplicas[actor.wormReplicaCount];
+    r = WormReplica{};
+    r.defender = mv->kind == MoveDef::Kind::Defend;
+    if (r.defender) {
+        // A defender is a body: real Health, no swing of its own. Its size is banked here
+        // from the attackers already out (wormDefenderHealth) — spawn order is the
+        // decision the player is making.
+        r.maxHealth = wormDefenderHealth(actor, mv->replicaHealthPct);
+        r.health = r.maxHealth;
+    } else {
+        // An attacker is thin — one hit takes it — and pays its way by piling onto the
+        // parent's swings (wormReplicaDamage). Its base is a share of the move that made
+        // it, scaled by the same attack lean the parent's own damage is scaled by, so a
+        // Bad-branch worm's copies hit like it does.
+        r.maxHealth = 1;
+        r.health = 1;
+        r.attack = mv->power * mv->replicaPowerPct / 100 * actor.powerMultPct / 100;
+        if (r.attack < 1) r.attack = 1;
+    }
+    ++actor.wormReplicaCount;
+}
+
 int Combat::execOverrideChance(const Combatant& trojan) const {
     // The Execution-Override passive belongs to the Trojan line only. The line check
     // short-circuits to 0 BEFORE any rng() draw at the call site, so a non-Trojan pet
@@ -632,6 +721,16 @@ void Combat::resolveTurn(Combatant& actor, Combatant& target, bool byPlayer) {
     }
 
     applyEffect(actor, target, mv, byPlayer, moveIdx);
+    // Shared Resources (Worm), the replication half: a cast carrying replicaSpawnPct
+    // rolls for a copy once it has RESOLVED, so a fresh replica joins the next swing
+    // rather than the one that spawned it. One site for both kinds — the move's own
+    // `kind` picks which sort appears (rollWormSpawn) — and it still runs on a swing
+    // that was redirected into a replica, which is a cast like any other.
+    //
+    // Deliberately not reachable from the Execution-Override branch above: a hijacked
+    // cast is the Trojan's, and a Trojan is not a Worm, so a stolen move replicates for
+    // nobody. Guarded on the field AND the line, so no other line draws rng here.
+    if (mv->replicaSpawnPct > 0 && isWorm(actor)) rollWormSpawn(actor, mv);
     actor.lastMoveIdx = moveIdx;
 }
 
@@ -650,6 +749,11 @@ void Combat::checkOutcome() {
 }
 
 bool Combat::pickNextActor() {
+    // Shared Resources (Worm): match a worm's speed to its opponent's before the gauges
+    // read it, at EVERY scheduling tick — so a mid-fight change on either side (a
+    // Phishing siphon, a Clock-Speed mod) is matched the instant it lands rather than
+    // leaving the worm behind until the next fight. No-op without exactly one worm.
+    syncWormSpeed();
     // Fill both gauges by their live speed (min 1, so a fully-siphoned pet still acts
     // eventually and the loop always terminates) until a gauge reaches the threshold;
     // that side takes the action and spends one threshold's worth, leaving the other's
@@ -675,6 +779,9 @@ bool Combat::pickNextActor() {
 
 bool Combat::step() {
     if (outcome_ != Outcome::Ongoing || overrideOpen_) return false;
+    // A destroyed replica is news about THIS turn only, so it is cleared before the turn
+    // rather than accumulated — the same one-turn lifetime lastDamage_ and friends have.
+    lastWormKill_ = {};
     // Feeding-frenzy streak: continues the running count if the same side is acting
     // again, else restarts it at 1 for the new actor. Computed BEFORE resolveTurn so
     // applyEffect (the Phishing combo bonus) sees this hit's own place in the run.
@@ -818,6 +925,57 @@ int attackPowerRank(const std::vector<const MoveDef*>& moves, int moveIdx) {
     for (int k = 0; k < distinctCount; ++k)
         if (distinctPowers[k] == moves[moveIdx]->power) return k + 1;
     return 0;
+}
+
+// --- Worm replication, the pure half (see combat.h for what each one is for) --------
+
+int wormReplicaCount(const Combatant& c, bool defenders) {
+    int n = 0;
+    for (int i = 0; i < c.wormReplicaCount; ++i)
+        if (c.wormReplicas[i].defender == defenders) ++n;
+    return n;
+}
+
+// The multiplier one kind of replica takes from the other's live count.
+static int wormCrossMult(int otherKindCount) {
+    return otherKindCount < kWormReplicaMultFloor ? kWormReplicaMultFloor : otherKindCount;
+}
+
+int wormReplicaDamage(const Combatant& c) {
+    const int mult = wormCrossMult(wormReplicaCount(c, /*defenders=*/true));
+    int total = 0;
+    for (int i = 0; i < c.wormReplicaCount; ++i)
+        if (!c.wormReplicas[i].defender) total += c.wormReplicas[i].attack * mult;
+    return total;
+}
+
+int wormDefenderHealth(const Combatant& parent, int pct) {
+    const int mult = wormCrossMult(wormReplicaCount(parent, /*defenders=*/false));
+    const int hp = parent.maxHealth * pct / 100 * mult;
+    return hp < 1 ? 1 : hp;   // a defender that spawns with no Health is not a body
+}
+
+std::vector<int> wormTargetWeights(const Combatant& c) {
+    std::vector<int> w;
+    w.reserve(1 + c.wormReplicaCount);
+    w.push_back(kWormTargetWeightParent);
+    for (int i = 0; i < c.wormReplicaCount; ++i)
+        w.push_back(c.wormReplicas[i].defender ? kWormTargetWeightDefender
+                                               : kWormTargetWeightAttacker);
+    return w;
+}
+
+int wormTargetPick(const Combatant& c, uint32_t roll) {
+    const std::vector<int> w = wormTargetWeights(c);
+    int total = 0;
+    for (int x : w) total += x;
+    if (total <= 0) return -1;
+    int cursor = static_cast<int>(roll % static_cast<uint32_t>(total));
+    for (int i = 0; i < static_cast<int>(w.size()); ++i) {
+        cursor -= w[i];
+        if (cursor < 0) return i - 1;   // index 0 is the parent, so shift down by one
+    }
+    return -1;
 }
 
 } // namespace mal

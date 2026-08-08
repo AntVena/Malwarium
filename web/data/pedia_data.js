@@ -6,10 +6,12 @@ window.PEDIA_DATA = {
     "lines": {
       "ransomware": "Ransomware",
       "phishing": "Phishing",
-      "trojan": "Trojan"
+      "trojan": "Trojan",
+      "worm": "Worm"
     },
     "lineIcons": {
-      "ransomware": "assets/icons/ICON_LINE_RANSOMWARE.png"
+      "ransomware": "assets/icons/ICON_LINE_RANSOMWARE.png",
+      "worm": "assets/icons/ICON_LINE_WORM.png"
     },
     "lockIcon": "assets/icons/ICON_LOCK.png"
   },
@@ -380,7 +382,7 @@ window.PEDIA_DATA = {
     },
     {
       "id": "placeholder_daemon",
-      "name": "Placeholder",
+      "name": "Trojan Placeholder",
       "stage": 4,
       "stageName": "Daemon",
       "line": "trojan",
@@ -392,6 +394,57 @@ window.PEDIA_DATA = {
       "cellH": 64,
       "sheetW": 96,
       "sheetH": 64
+    },
+    {
+      "id": "nodeatode",
+      "name": "Nodeatode",
+      "stage": 2,
+      "stageName": "Process",
+      "line": "worm",
+      "evolvesTo": [
+        "worm_placeholder_good",
+        "worm_placeholder_bad"
+      ],
+      "hint": "A thread-thin nematode that chews from one node to the next. Small, slow, and by morning there is never just the one.",
+      "context": "Worms / self-replicating network propagation",
+      "sprite": "assets/sprites/SPR_MALBEAST_BUFFER_WYRM.png",
+      "cellW": 56,
+      "cellH": 48,
+      "sheetW": 56,
+      "sheetH": 48,
+      "branchSplit": true
+    },
+    {
+      "id": "worm_placeholder_good",
+      "name": "Worm Placeholder I",
+      "stage": 3,
+      "stageName": "Script",
+      "line": "worm",
+      "evolvesTo": [],
+      "hint": "A worm that grew up cautious - it spends its copies on cover rather than on teeth.",
+      "context": "Worm payload, durable branch (placeholder)",
+      "sprite": "assets/sprites/SPR_PET_GENERIC_SCRIPT.png",
+      "cellW": 56,
+      "cellH": 48,
+      "sheetW": 56,
+      "sheetH": 48,
+      "branch": "good"
+    },
+    {
+      "id": "worm_placeholder_bad",
+      "name": "Worm Placeholder II",
+      "stage": 3,
+      "stageName": "Script",
+      "line": "worm",
+      "evolvesTo": [],
+      "hint": "A worm that grew up hungry - it spends its copies on teeth and trusts there to be enough of them.",
+      "context": "Worm payload, aggressive branch (placeholder)",
+      "sprite": "assets/sprites/SPR_PET_GENERIC_SCRIPT.png",
+      "cellW": 56,
+      "cellH": 48,
+      "sheetW": 56,
+      "sheetH": 48,
+      "branch": "bad"
     }
   ],
   "malbeasts": [
@@ -1658,6 +1711,78 @@ window.PEDIA_DATA = {
       "desc": "The deadliest trap: evades 45%, reflects 60% mitigated, rots 12% armor, and adds 20% override chance while held.",
       "stats": "EVADE 45% / REBOUND 60% / ARMOR ROT 12% / OVERRIDE +20%",
       "group": "trojan",
+      "icon": "assets/icons/ICON_MOVE_SLOT.png"
+    },
+    {
+      "id": "mass_mailer",
+      "name": "Mass-Mailer",
+      "kind": "ATK",
+      "power": 6,
+      "turns": 1,
+      "minStage": "Process",
+      "desc": "Mails itself everywhere - 50% chance to spawn an attacking copy worth 60% of this hit, multiplied by the defenders standing.",
+      "stats": "ATK 6 / SPAWN ATK 50% / COPY PWR 60%",
+      "group": "worm",
+      "icon": "assets/icons/ICON_MOVE_SLOT.png"
+    },
+    {
+      "id": "subnet_sweep",
+      "name": "Subnet-Sweep",
+      "kind": "ATK",
+      "power": 9,
+      "turns": 1,
+      "minStage": "Script",
+      "desc": "Sweeps the whole subnet - 60% chance to spawn an attacking copy worth 70% of this hit, multiplied by the defenders standing.",
+      "stats": "ATK 9 / SPAWN ATK 60% / COPY PWR 70%",
+      "group": "worm",
+      "icon": "assets/icons/ICON_MOVE_SLOT.png"
+    },
+    {
+      "id": "slammer_burst",
+      "name": "Slammer-Burst",
+      "kind": "ATK",
+      "power": 12,
+      "turns": 1,
+      "minStage": "Daemon",
+      "desc": "Saturates every link at once - 70% chance to spawn an attacking copy worth 80% of this hit, multiplied by the defenders standing.",
+      "stats": "ATK 12 / SPAWN ATK 70% / COPY PWR 80%",
+      "group": "worm",
+      "icon": "assets/icons/ICON_MOVE_SLOT.png"
+    },
+    {
+      "id": "host_squat",
+      "name": "Host-Squat",
+      "kind": "DEF",
+      "power": 10,
+      "turns": 1,
+      "minStage": "Process",
+      "desc": "Parks a copy in the way - a body with 20% of your Health per attacking copy out. Braces 10 instead when the slots are full.",
+      "stats": "DEF 10 / SPAWN DEF 100% / COPY HP 20%",
+      "group": "worm",
+      "icon": "assets/icons/ICON_MOVE_SLOT.png"
+    },
+    {
+      "id": "swarm_wall",
+      "name": "Swarm-Wall",
+      "kind": "DEF",
+      "power": 14,
+      "turns": 1,
+      "minStage": "Script",
+      "desc": "Stacks the copies into a wall - a body with 25% of your Health per attacking copy out. Braces 14 instead when the slots are full.",
+      "stats": "DEF 14 / SPAWN DEF 100% / COPY HP 25%",
+      "group": "worm",
+      "icon": "assets/icons/ICON_MOVE_SLOT.png"
+    },
+    {
+      "id": "botnet_bulwark",
+      "name": "Botnet-Bulwark",
+      "kind": "DEF",
+      "power": 18,
+      "turns": 1,
+      "minStage": "Daemon",
+      "desc": "The whole swarm takes the hit - a body with 30% of your Health per attacking copy out. Braces 18 instead when the slots are full.",
+      "stats": "DEF 18 / SPAWN DEF 100% / COPY HP 30%",
+      "group": "worm",
       "icon": "assets/icons/ICON_MOVE_SLOT.png"
     },
     {

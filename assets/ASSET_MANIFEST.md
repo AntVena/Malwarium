@@ -158,6 +158,28 @@ every 14px cell whole-pixel, so the live tile lands dead-on the decoy it replace
 > Reused, no new art: the aim/eliminate scrim and the aimed-half edge bar are engine fills over
 > `PAL_CORE` tokens, and the verdict/round lines are `FONT_UI` text — no tag or overlay art.
 
+### C.4 Worm replicas (`SPR_WORM_REPLICA_*`)
+
+Two glyphs for the **whole Worm line**, not per creature — the same "one shared vocabulary"
+economy the `ICON_ITEM_*` family runs on. A worm in combat is a parent plus up to
+`kWormReplicaSlots` copies on one shelf (`content_passives.h`, drawn by `combat_screen.cpp`), so
+per-creature copies would multiply every worm sheet by two and buy nothing: the read that matters
+is **attacker vs defender**, and that is a shape difference, not a portrait.
+
+Both are **1-bit masks on `ink`** — `gen_assets.py` detects that from the pixels rather than the
+name, so they cost their own silhouette and nothing more. They are also why the line's parents are
+drawn small (`CREATURE_VISUAL_RULES.md §4`): the room the copies stand in comes out of the parent's
+cell.
+
+| Asset ID | Element | Logical size | Notes | Status | File |
+|---|---|---|---|---|---|
+| `SPR_WORM_REPLICA_ATTACK` | Attacking copy | 16×8 ×6 | Round head over a thin stalk — the head implies teeth, and the chomp pair is the only frame where it opens. Needs the `FRAME_W_OVERRIDES` row in `tools/gen_assets.py` to read as a strip | ▨ | `/assets/sprites/SPR_WORM_REPLICA_ATTACK.png` |
+| `SPR_WORM_REPLICA_DEFEND` | Defending copy | 16×8 ×6 | Body as wide as its head — a column, no taper, so the two kinds part at a glance in silhouette. Same `FRAME_W_OVERRIDES` row | ▨ | `/assets/sprites/SPR_WORM_REPLICA_DEFEND.png` |
+
+Six frames each, in pairs the renderer picks between by combat state: **0–1 idle** (squiggle),
+**2–3 attack** (chomp, played while its parent swings), **4–5 death** (dissolve, played over the
+freed slot off `Combat::lastWormKill`).
+
 ---
 
 ## D. Engine effect passes (FX) — no art required

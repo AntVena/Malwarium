@@ -1,8 +1,8 @@
 # Line Move & Passive Identities — design bank
 
 > **What this file is.** How to give a **creature line** (not each species) a distinct combat
-> identity: a signature passive + a named attack/defense move track. Ransomware, Phishing, and
-> Trojan lines are built this way — their moves, passives, and stacking rules live in
+> identity: a signature passive + a named attack/defense move track. The Ransomware, Phishing,
+> Trojan and Worm lines are built this way — their moves, passives, and stacking rules live in
 > `src/core/content/content_moves.cpp` / `combat.cpp`, not here. This file is the **design bank**
 > for lines not built yet: the grounding a new line's identity must slot into, plus the open items
 > for whoever picks the next one up.
@@ -20,12 +20,13 @@ facts so a new line's identity stays buildable:
   `moveAllowedForLine()` gate a move to one line while leaving the generic pool open to everyone;
   `quick_jab` is the line-agnostic default every pet starts with.
 - **A line's signature ability is a passive hook**, not a stat field — today the per-line passives
-  are Ransomware's Ransom Note, Phishing's Feed-Frenzy + Perfect Bite, and Trojan's
-  Execution-Override, each a bespoke check in `combat.cpp`/`game_combat.cpp`. Ransom Note and
-  Execution-Override gate explicitly on `CreatureDef.line`; Perfect Bite instead gates on generic
-  combat state (`Combatant::shieldHp > 0`) that only Phishing content happens to populate — either
-  shape is fine, pick whichever the passive naturally keys off. A new line's passive needs the same
-  kind of gated hook, not a generic field on `Combatant`. Per-line passive TUNING constants
+  are Ransomware's Ransom Note, Phishing's Feed-Frenzy + Perfect Bite, Trojan's Execution-Override,
+  and Worm's Shared Resources, each a bespoke check in `combat.cpp`/`game_combat.cpp`. Ransom Note,
+  Execution-Override and Shared Resources gate explicitly on `CreatureDef.line`; Perfect Bite
+  instead gates on generic combat state (`Combatant::shieldHp > 0`) that only Phishing content
+  happens to populate — either shape is fine, pick whichever the passive naturally keys off. A new
+  line's passive needs the same kind of gated hook, not a generic field on `Combatant`. Per-line
+  passive TUNING constants
   (stage-scaled chances/percentages, floors, caps) live in `src/core/content/content_passives.h`,
   grouped by line, not in `tunables.h` — they only ever move together with that line's move
   magnitudes in the matching `content_moves.cpp` rows.
@@ -55,6 +56,12 @@ facts so a new line's identity stays buildable:
   or a held-damage pool (Ransomware's Ransom Note) each need their own `Combatant` field or hook
   the first time a line needs them; check `combat.h`/`combat.cpp` for what already exists before
   assuming a new primitive is required.
+- **A line may add BODIES to the fight, but not ACTORS.** The Worm's replicas
+  (`Combatant::wormReplicas`) are the precedent and the ceiling: they are drawn separately, they
+  soak attacks aimed at them and they scale their parent's damage — and they never take a turn,
+  never roll a move and never enter the speed scheduler. Turn order is the thing a duel's two
+  devices reconstruct independently, so a third initiative is a third thing for their RNG streams
+  to disagree about. Anything a new line wants on the board should be state the parent owns.
 - **A passive that can fire in a DUEL must be decided per TURN, not per incoming hit.** Both
   devices resolve the same seeded fight independently (`core/model/pvp_battle.h`), so anything
   whose roll timing depends on how many actions the opponent's speed buys is a desync risk and a

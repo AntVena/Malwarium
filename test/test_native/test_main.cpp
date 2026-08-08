@@ -406,6 +406,9 @@ int g_failures = 0;
     RUN(test_phishing_bubble_steal)               \
     RUN(test_phishing_perfect_bite)               \
     RUN(test_phishing_shield_pool)                \
+    RUN(test_worm_shared_resources_speed)         \
+    RUN(test_worm_replica_arithmetic)             \
+    RUN(test_worm_replication_in_combat)          \
     RUN(test_speed_action_economy)                \
     RUN(test_min_damage_penetration)              \
     RUN(test_mod_hard_line_gate)                  \

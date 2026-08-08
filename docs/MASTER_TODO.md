@@ -162,12 +162,27 @@ roster, and the wild half keeps its own roster-keyed masks).
   `cachemutt` a crying frame), and the 'Pedia is static where the device animates. If that's the
   complaint it wants the anim-clip table exported to the web and is **M**, not a bug fix.
   **Needs the PO to say which screen and which creature looked wrong.**
-- **`WORM_WHISPERER` has no firing site**, and what's missing is not the unlock CALL: the Worm
-  line has no content rows at all, so there is nothing to hatch. It needs a creature line —
-  sprites, an evolution chain, an egg line — before it needs a line of code. That also unblocks
-  `ICON_LINE_WORM`, which is drawn and has nothing to label (§2b). Diff **L**, content-led.
-  (`AIR_GAPPED` is done: a defrag that fails on an already-Critical disk raises a Replication
-  Ghost, and the Air-Gapped Snack cuts it loose.)
+- **`WORM_WHISPERER` has no firing site**, and what it is waiting on is now exactly one thing: the
+  Worm line has creatures, moves and both passives, but **no `EggLineDef`** — so the line cannot be
+  HATCHED, which is what the achievement's own trigger prose asks for. Reachable today only as a
+  Process pet for testing (`creatures/worm/line.h`), the same way the Trojan family is reachable
+  only by divert. Give it a Boot-Sector creature + an egg row (`content_evolution.cpp`), decide
+  whether it hatches by Decrypt or Clutch, and gate the line-select unlock; then wire the
+  achievement. Diff **M**, content-led. (`AIR_GAPPED` is done: a defrag that fails on an
+  already-Critical disk raises a Replication Ghost, and the Air-Gapped Snack cuts it loose.)
+  **The line also has no `FULL_LINE_WORM` row**, where the other three lines each have one —
+  deliberately held back, because that row costs a new `wire` bit and an `ICON_ACH_FULL_LINE_WORM`
+  glyph, and it should land with the egg above rather than ahead of it.
+- **The Worm line's balance is unmeasured.** Every number on it — `kWormReplicaSlots`, the three
+  targeting weights, the per-move spawn chances and the two magnitudes each replica reads — is a
+  first cut chosen for internal consistency, not a calibration pass against a real fight. The
+  fastest way to find the cliff: a full board is a **hard** floor of 1-in-13 that any given hit
+  reaches the parent at all, on a line that also cannot be out-actioned, so if the passive is
+  broken it will be broken there. Diff **S**, one balance sitting.
+- **The Worm's parents are drawn at full size**, against the line's own rule that they read
+  smaller to leave the replicas room (`CREATURE_VISUAL_RULES.md §4`). Nodeatode borrows the wild
+  Buffer Wyrm's 56×48 frame whole, so its copies currently crowd its feet rather than standing
+  beside it, and the two Script successors are on the generic stage stand-in. Diff **M**, art.
 - **No on-device browser.** The home-screen banner is the whole feedback channel. If achievements
   ever want a device-side list, the Hacker face's PROFILE slot is the natural home. Diff **M**.
 - **Unverified:** on-device serving of the SD-hosted bundle + the live endpoints
@@ -302,9 +317,6 @@ high→low value:
 - **`ICON_SECTOR_CITRUS_CIRCUIT` is a generic map pin** where its four siblings are motif
   glyphs (skull, sail, download arrow, keep) — the family reads as four zones plus a marker.
   A redraw on the area's own LimeWire-era motif is pure legibility polish; it ships as is.
-- **`ICON_LINE_WORM` is drawn and has nothing to label** — the Worm line has no content rows at
-  all, so it waits on a creature line, not on wiring. Held in `check_orphan_assets.py`'s KEEP list
-  meanwhile.
 - **Six wild malbeasts** (`SPR_MALBEAST_*`) and **`SPR_DUMMY`**.
 - **Process alternates:** `SPR_PET_PHISHLET`, `SPR_PET_CIPHADPOLE`, `SPR_PET_PINGCUB`; **Boot L2:**
   `SPR_PET_RINGWYRM`.

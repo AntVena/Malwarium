@@ -190,6 +190,9 @@ EffectText effectText(const MoveDef& d) {
         {"rebound", d.trapReboundPct},
         {"armorRot", d.trapArmorRot},
         {"trapBonus", d.trapPassiveBonusPct},
+        {"replicaChance", d.replicaSpawnPct},
+        {"replicaPower", d.replicaPowerPct},
+        {"replicaHealth", d.replicaHealthPct},
     };
     EffectText out;
     expand(out, d.effect, toks, sizeof(toks) / sizeof(toks[0]));
@@ -347,6 +350,16 @@ SpecRows specRows(const MoveDef& d) {
         // (Combat::execOverrideChance) — otherwise the row's one magnitude that
         // reaches the player nowhere at all.
         if (d.trapPassiveBonusPct) s.add("OVERRIDE", "%+d%%", d.trapPassiveBonusPct);
+    }
+    // Worm replication: what the cast puts on the board. The move's own `kind` already
+    // decided which sort spawns, so the readout names the sort rather than repeating the
+    // chance under two labels — and only the magnitude that kind actually reads follows
+    // it. Both are shares of the parent, which is why they carry a %.
+    if (d.replicaSpawnPct) {
+        const bool defender = d.kind == MoveDef::Kind::Defend;
+        s.add(defender ? "SPAWN DEF" : "SPAWN ATK", "%d%%", d.replicaSpawnPct);
+        if (defender) s.add("COPY HP", "%d%%", d.replicaHealthPct);
+        else s.add("COPY PWR", "%d%%", d.replicaPowerPct);
     }
     return s.out;
 }

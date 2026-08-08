@@ -20,6 +20,7 @@
 #include "core/content/creatures/phishing/line.h"
 #include "core/content/creatures/ransomware/line.h"
 #include "core/content/creatures/trojan/line.h"
+#include "core/content/creatures/worm/line.h"
 #include "core/content/defs.h"
 
 namespace mal {
@@ -28,6 +29,7 @@ inline constexpr CreatureLine kCreatureLines[] = {
     {"ransomware", kRansomwareCreatures, kRansomwareCreatureCount},
     {"phishing", kPhishingCreatures, kPhishingCreatureCount},
     {"trojan", kTrojanCreatures, kTrojanCreatureCount},
+    {"worm", kWormCreatures, kWormCreatureCount},
 };
 inline constexpr int kCreatureLineCount =
     sizeof(kCreatureLines) / sizeof(kCreatureLines[0]);

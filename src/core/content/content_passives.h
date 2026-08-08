@@ -1,7 +1,7 @@
 // content_passives.h — per-LINE combat passive tuning.
 //
 // A line's signature ability is a bespoke hook in Combat (ransomArmRolls,
-// execOverrideChance, the steal-track siphon + bubble-bite in
+// execOverrideChance, syncWormSpeed, the steal-track siphon + bubble-bite in
 // applyEffect), gated on Combatant::line or (for the steal track) purely on which
 // MoveDef fields a line's rows populate. This file holds the CONSTANTS those hooks
 // read — grouped by line, alongside content_moves.cpp's per-move magnitudes, not in
@@ -60,5 +60,39 @@ constexpr int kPhishingBiteChancePctByStage[4] = {0, 32, 48, 64};
 // few pips) — also sizes Combatant::trojanTraps' fixed array.
 constexpr int kExecOverrideBasePct = 8;
 constexpr int kTrojanTrapCap       = 3;
+
+// --- Worm — Shared Resources + the replication slots ---------------------------
+// Shared Resources has two halves that only make sense together.
+//
+// SPEED LOCKSTEP: a worm's speed is not its own — it is continuously assigned the
+// OPPONENT's (Combat::syncWormSpeed, re-applied at every scheduling tick). Actions are
+// dealt by RELATIVE speed (Combat::pickNextActor), so a worm can never be out-actioned:
+// whatever buffs or siphons the other side, the gauges stay level and the fight
+// alternates. It costs the worm every speed lever in the game — nothing it equips or
+// steals can buy it an extra action either. The fiction is the resource share: a worm
+// duplicating on your machine runs on your cycles, so the two of you slow down together.
+// No constant needed for it; matching exactly IS the passive.
+//
+// REPLICATION SLOTS: the screen is 224px of active canvas and a replica is drawn art, so
+// replication is capped by SLOTS rather than left open. One pool shared by both kinds,
+// which is what makes the split a decision — a slot spent on a defender is a slot no
+// attacker can use.
+constexpr int kWormReplicaSlots = 3;
+
+// A replica's magnitude comes from the OTHER kind's live count, which is the line's whole
+// strategy: attackers are worthless without defenders behind them and defenders are thin
+// without attackers to guard. The first replica of either kind would multiply by zero, so
+// the count floors here — a lone replica is worth exactly its base rather than nothing,
+// and every one after it is the real multiplier.
+constexpr int kWormReplicaMultFloor = 1;
+
+// Incoming attacks pick their victim among the parent and its replicas by weight
+// (wormTargetWeights, combat.h). Defenders draw hardest — a body thrown in front is what
+// a defender IS — with attackers next and the parent itself the rarest target, so a full
+// board genuinely hides the worm. These are the numbers to turn if the parent reads
+// either untouchable or unprotected.
+constexpr int kWormTargetWeightParent   = 1;
+constexpr int kWormTargetWeightAttacker = 2;
+constexpr int kWormTargetWeightDefender = 4;
 
 }  // namespace mal

@@ -77,6 +77,11 @@ PET_PREFIX = "SPR_PET_"
 FRAME_W_OVERRIDES = {
     "SPR_EGG_PHISH_MICRO": 14,   # 28x14 = the clutch tile's 2-frame swim loop
     "ICON_EXPL": 28,             # 168x28 = the globe's 6-frame rotation
+    # 96x8 = the Worm replicas' six 16x8 frames, in idle/attack/death pairs. Not
+    # SPR_PET_ sheets: a replica is one glyph shared by the whole line rather than a
+    # creature with a 56x48 cell, so it needs the override to be a strip at all.
+    "SPR_WORM_REPLICA_ATTACK": 16,
+    "SPR_WORM_REPLICA_DEFEND": 16,
 }
 
 

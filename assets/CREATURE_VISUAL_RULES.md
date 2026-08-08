@@ -74,9 +74,9 @@ topography for light to describe, so it flattens and reads *less* evolved despit
 ## 4. Colour, anatomy, texture
 
 **A species has a mother colour, and every creature on that line wears it.** Ransomware is green,
-Phishing is blue. It is the line's signature, not any one creature's — so two creatures being the
-same hue tells you they share a line, and nothing else. A Good/Bad branch pair is the same colour
-because it is one line, not because a branch is supposed to match.
+Phishing is blue, Worm is orange. It is the line's signature, not any one creature's — so two
+creatures being the same hue tells you they share a line, and nothing else. A Good/Bad branch pair
+is the same colour because it is one line, not because a branch is supposed to match.
 
 **The range inside that colour widens as the stage advances.** An early creature can be carried by
 a few shades; a Daemon needs more of them to hold the extra plating and texture without going
@@ -85,6 +85,23 @@ muddy. So "more shades of the mother colour" is what growth looks like, not a sh
 **A Trojan wears the colour of the line it diverted from**, since it is pretending to be one —
 right hue, one small "wrong" tell. That makes a Trojan's brief a re-skin of its origin line rather
 than a new silhouette, and it follows from the rule above rather than being a separate one.
+
+### The Worm exception: draw it small
+
+**A Worm creature reads SMALLER in its cell than any other line's creature at the same stage** —
+noticeably so, not by a few pixels. It is the one line whose sprite budget is not its own: a worm
+in combat is a parent plus up to `kWormReplicaSlots` replicas (`content_passives.h`), and every
+one of them is drawn on the same shelf. The room the replicas stand in has to come from the
+parent, so the parent gives it up by design.
+
+This does not soften the stage arc (§0) — a Worm Daemon still reads as the payoff against a Worm
+Process. It is scaled against its own line, not against the roster. And it is why the line's
+back-pocket idea (§4) is best spent on something the SWARM reads at a glance rather than on
+detail the shrunken parent cannot carry.
+
+The replicas themselves are not creature art and are not held to this file: they are one shared
+pair of 1-bit glyphs for the whole line (`SPR_WORM_REPLICA_ATTACK` / `_DEFEND`), the same way the
+`ICON_ITEM_*` family is one vocabulary rather than a drawing per item.
 
 **This is a rule of thumb, not a gate.** Accents — metallic parts, eyes, a tell — sit outside it
 freely, and plenty of shipped sprites already break it that way. Nothing enforces it and nothing

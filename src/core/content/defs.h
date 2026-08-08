@@ -619,6 +619,23 @@ struct MoveDef {
     int trapReboundPct = 0;       // % of the mitigated damage reflected at the attacker
     int trapArmorRot = 0;         // flat % Defense stripped from the attacker (permanent)
     int trapPassiveBonusPct = 0;  // this armed trap's bump to the Execution-Override chance
+
+    // --- Worm replication track (Worm line) --------------------------------------
+    // A worm move that carries replicaSpawnPct may SPAWN a replica into one of the
+    // caster's free replication slots (kWormReplicaSlots): an Attack row spawns an
+    // ATTACKER, a Defend row a DEFENDER, so the move's own `kind` decides which and no
+    // row ever has to say it twice. 0 = no replication (every non-Worm move, and any
+    // Worm row that is purely a swing).
+    //
+    // The two magnitudes below are each read by ONE kind, and each is a percentage of
+    // the PARENT, so a replica is always a fraction of the worm that made it:
+    //   replicaPowerPct  — an ATTACKER's base damage, as % of this move's own power.
+    //   replicaHealthPct — a DEFENDER's base Health, as % of the parent's maxHealth.
+    // Their multipliers (the live count of the OTHER kind) are the passive's half and
+    // live in content_passives.h, not here.
+    int replicaSpawnPct = 0;
+    int replicaPowerPct = 0;
+    int replicaHealthPct = 0;
 };
 
 inline const char* moveKindTag(MoveDef::Kind k) {

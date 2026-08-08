@@ -47,15 +47,15 @@ KEEP = {
     "SPR_PET_GENERIC_PROCESS",
     "SPR_PET_GENERIC_SCRIPT",
     "SPR_PET_GENERIC_DAEMON",
-    # Drawn art whose real consumer is not built. Parking it in _attic/ would drop it
-    # from version control (that folder is gitignored), and it is finished art for a
-    # feature that is coming, so it stays compiled — a few hundred bytes.
+    # Nothing else. Art drawn ahead of the feature that will draw it belongs here while
+    # it waits, but every entry is a check the tree stops making — so an exception earns
+    # its place only for as long as there is genuinely no consumer to point at.
     #
-    # The sector glyphs are NOT here: each area names its own in `AreaDef::icon`
-    # (src/core/content/areas/area_defs.h), which rule 1 above already counts as a
-    # consumer. That is the point of naming it on the row — the art is kept alive by
-    # the area that owns it, not by an entry in this list.
-    "ICON_LINE_WORM",           # the Worm line has no content rows yet
+    # Two kinds of art look like they need one and do not. A sector glyph is named on its
+    # own `AreaDef::icon` row (src/core/content/areas/area_defs.h), which is a consumer
+    # like any other. A line glyph (`ICON_LINE_*`) is claimed by whichever creature rows
+    # carry that line, through the path the 'Pedia writes into web/data/pedia_data.js —
+    # so adding a family is what un-orphans its glyph, and no list has to be edited.
 }
 
 # Directories holding hand-written code. src/generated/ is excluded on purpose: it's

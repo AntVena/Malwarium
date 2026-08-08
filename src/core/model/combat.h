@@ -19,7 +19,8 @@
 
 #include "core/content/content_crews.h"     // CrewExploitKind — the crew Exploit vocabulary
 #include "core/content/content_passives.h"  // kTrojanTrapCap sizes trojanTraps below;
-                                             // kRansomHoldTurns sizes the ransom countdown
+                                             // kRansomHoldTurns sizes the ransom countdown;
+                                             // kWormReplicaSlots sizes wormReplicas
 #include "core/content/defs.h"
 #include "core/model/mod_state.h"           // ModStateSet — the equipped mods' per-fight state
 
@@ -42,6 +43,27 @@ struct CrewExploitState {
     int turns = 0;      // duration-metered kinds
     // True while `k` is the armed kind AND it still has a charge to spend.
     bool armed(CrewExploitKind k) const { return kind == k && charges > 0; }
+};
+
+// One live copy a Worm has replicated into a replication slot (Combatant::wormReplicas).
+// NOT a Combatant: a replica never takes a turn of its own, never rolls a move and never
+// appears in the speed scheduler — it is a piece of its parent's state that happens to
+// be drawn separately. That is a deliberate ceiling, because the turn order is what both
+// devices in a linked duel resolve independently (core/model/pvp_battle.h): a third
+// actor with its own initiative would be a third thing for their two RNG streams to
+// disagree about.
+//
+// So a replica does exactly two things — it SOAKS an incoming attack aimed at it
+// (wormTargetWeights below), and, if it is an attacker, it PILES onto its parent's own
+// swings (wormReplicaDamage below). Transient (per-fight) like every other combat field.
+struct WormReplica {
+    bool defender = false;  // spawned by a Defend move (soaks); else an attacker (piles on)
+    int health = 0;
+    int maxHealth = 0;
+    // An attacker's BASE damage per parent swing, banked at spawn; 0 on a defender. The
+    // live contribution multiplies this by the defender count at the moment of the swing
+    // (wormReplicaDamage), which is why the base is what's stored.
+    int attack = 0;
 };
 
 // A combat participant. moves[0] is always the innate DEFAULT (so a pet is never
@@ -161,6 +183,14 @@ struct Combatant {
     const MoveDef* trojanTraps[kTrojanTrapCap] = {};
     int trojanTrapCount = 0;
 
+    // Worm replicas (Worm line) — the live occupants of this side's replication slots,
+    // spawned by its own moves' replicaSpawnPct (see WormReplica above for what one is
+    // and what it can do). Packed: a replica killed by a redirected hit is swapped out
+    // and the count drops, freeing its slot for the next spawn. Transient (per-fight);
+    // only ever non-empty on a Worm pet.
+    WormReplica wormReplicas[kWormReplicaSlots] = {};
+    int wormReplicaCount = 0;
+
     // Per-fight turn state (no-consecutive + channel wind-up).
     int lastMoveIdx = -1;
     int channelMoveIdx = -1;    // mid-channel move (-1 = not channelling)
@@ -185,6 +215,39 @@ struct Combatant {
 // one attack tier ranks 1 everywhere and pays nothing — the mod only rewards a genuine
 // power spread. Pure, so it's directly assertable.
 int attackPowerRank(const std::vector<const MoveDef*>& moves, int moveIdx);
+
+// --- Worm replication, the pure half ------------------------------------------------
+// Each of these is a total function of a Combatant's own replica array, so the balance
+// they encode is assertable directly rather than only through a resolved fight.
+
+// How many of `c`'s live replicas are of the given kind.
+int wormReplicaCount(const Combatant& c, bool defenders);
+
+// The damage `c`'s ATTACKER replicas add to one of its parent's swings: each attacker's
+// banked base times the live DEFENDER count (floored at kWormReplicaMultFloor, so a
+// board with no defenders still pays each attacker its base). Multiplied LIVE rather
+// than banked at spawn, because "the number of defenders currently summoned" is the
+// dial the player is actually turning — spawning a defender pumps every attacker
+// already out, and losing one deflates them again.
+int wormReplicaDamage(const Combatant& c);
+
+// A DEFENDER's Health at the moment it spawns: `pct` of the parent's maxHealth times the
+// live ATTACKER count (same floor). Banked at spawn rather than recomputed, because a
+// defender's Health is a pool being chipped and cannot be restated once a hit has come
+// out of it — so the order is a real decision: attackers first, then a defender that
+// inherits their number.
+int wormDefenderHealth(const Combatant& parent, int pct);
+
+// The per-target draw weights an incoming attack picks its victim from: index 0 is the
+// PARENT and index 1+i is replica i, so the returned vector is always
+// 1 + c.wormReplicaCount long. Weights come from content_passives.h; the shape is
+// exposed so a test can assert the distribution without resolving a fight.
+std::vector<int> wormTargetWeights(const Combatant& c);
+
+// Resolve `roll` (any uint32_t — the caller's own rng draw) against wormTargetWeights:
+// returns -1 for the parent, else the index into c.wormReplicas that eats the hit.
+// Pure, so the same roll always names the same victim on both devices of a duel.
+int wormTargetPick(const Combatant& c, uint32_t roll);
 
 // Enemy archetype spec — what the engine needs to build an enemy Combatant.
 // Sim-Battle Dummy tiers use it now; sector malbeasts reuse the shape for EXPL.
@@ -226,6 +289,18 @@ struct CrewExploit {
     const char* label = nullptr;
     CrewExploitKind kind = CrewExploitKind::None;
     int magnitude = 0;
+};
+
+// A Worm replica destroyed by the turn that just resolved. Replicas are packed out of
+// Combatant::wormReplicas the instant they die, so by the time anything looks at the
+// board the copy is simply gone — and a death that leaves no trace is the one moment of
+// the line's whole mechanic the player never gets to see. This is that trace: enough for
+// the combat screen to play the glyph's dissolve frames over the freed slot, and nothing
+// more. Overwritten by the next resolved turn (Combat::step), never accumulated.
+struct WormKill {
+    bool happened = false;
+    bool onPlayer = false;   // whose board lost the copy (Combat's slot, not the seat)
+    bool defender = false;   // which of the two glyphs dissolves
 };
 
 class Combat {
@@ -301,6 +376,8 @@ public:
     // screen captions the popup differently for it, so a still Health bar under a
     // damage number reads as the passive working rather than as a stuck gauge.
     bool lastRansomed() const { return lastRansomed_; }
+    // The Worm replica the last resolved turn destroyed, if any (see WormKill).
+    const WormKill& lastWormKill() const { return lastWormKill_; }
     // Consecutive same-actor turns (a lopsided speed edge — a Phishing speed siphon —
     // pays one side extra actions in a row). 0 before the first turn; 1 on a fresh
     // actor's first hit; increments each turn that side keeps acting; resets to 1 the
@@ -331,6 +408,17 @@ private:
     // caster's Obfuscation shield is up, to double whichever of stealSpeedPct/
     // stealCurrentHpPct lands this hit (see applyEffect).
     bool bubbleBiteRolls(Stage stage);
+    // Shared Resources (Worm), the speed half: assign a worm side the OPPONENT's live
+    // speed. Called from every scheduling point (begin + pickNextActor) rather than once
+    // at fight start, so a mid-fight speed change on either side is matched immediately.
+    // No rng, and no effect on a fight without exactly one Worm in it.
+    void syncWormSpeed();
+    // Shared Resources (Worm), the replication half: `mv` has just been cast by `actor`
+    // and carries replicaSpawnPct, so roll for a spawn into a free replication slot. The
+    // move's own kind decides which sort spawns (Attack -> attacker, Defend -> defender)
+    // and both magnitudes are read off `mv`. The caller checks replicaSpawnPct > 0
+    // first, so no rng is drawn for a line that doesn't replicate.
+    void rollWormSpawn(Combatant& actor, const MoveDef* mv);
     // Advance the speed gauges and return whether the player takes the next action.
     // Reads live speed, so a mid-fight speed change (siphon, buff) shifts the tempo at
     // once. Deterministic (no rng), so replays stay reproducible.
@@ -365,6 +453,7 @@ private:
     bool lastByPlayer_ = false;
     bool lastWasCharge_ = false;
     bool lastRansomed_ = false;
+    WormKill lastWormKill_;
 };
 
 // Build the player Combatant from live game state (active pet + loadouts + mods).

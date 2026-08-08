@@ -1473,3 +1473,161 @@ void test_mod_picker_windows_large_pool() {
         CHECK(inWindow);
     }
 }
+
+// Shared Resources (Worm), the SPEED half: a worm's speed is not its own — it is the
+// opponent's, continuously. It matches at the opening bell (so the baseline the stat
+// panel diffs against is already the matched value), it re-matches the moment the
+// opponent's speed MOVES mid-fight, and the equal gauges it produces mean neither side
+// ever takes two actions in a row.
+void test_worm_shared_resources_speed() {
+    ContentRegistry r = ContentRegistry::embedded();
+
+    // Matched at the bell, from far behind: a speed-10 worm against a speed-40 enemy
+    // opens the fight at 40, not at 10.
+    Combatant slow = mkCombatant(r, "W", 100, 10, {"quick_jab"});
+    slow.line = "worm";
+    Combatant fast = mkCombatant(r, "E", 100, 40, {"quick_jab"});
+    Combat c; c.begin(slow, fast, Combat::Stakes::Safe, 1);
+    CHECK(c.player().speed == 40.0f);
+    CHECK(c.player().baseSpeed == 40.0f);          // baselined AFTER the match
+    // ...and lockstep speed means lockstep turns: nobody ever gets a second action
+    // before the other has had one.
+    for (int i = 0; i < 8; ++i) { c.step(); CHECK(c.streakCount() == 1); }
+
+    // It TRACKS: a Phishing speed siphon drags the enemy's speed up and would normally
+    // leave its victim behind — the worm comes with it instead, and the pair stay equal.
+    Combatant worm = mkCombatant(r, "W", 100, 50, {"quick_jab"});
+    worm.line = "worm";
+    Combatant thief = mkCombatant(r, "E", 100, 50, {"smish_hook"});
+    thief.shieldHp = 50;                            // the bubble the siphon is gated on
+    Combat c2; c2.begin(worm, thief, Combat::Stakes::Safe, 1);
+    for (int i = 0; i < 4; ++i) c2.step();
+    CHECK(c2.enemy().speed > 50.0f);                // the siphon moved it
+    CHECK(c2.player().speed == c2.enemy().speed);   // and the worm moved with it
+
+    // No worm in the fight, nothing matched — an ordinary speed gap stays a speed gap.
+    Combatant a = mkCombatant(r, "A", 100, 10, {"quick_jab"});
+    Combatant b = mkCombatant(r, "B", 100, 40, {"quick_jab"});
+    Combat c3; c3.begin(a, b, Combat::Stakes::Safe, 1);
+    CHECK(c3.player().speed == 10.0f && c3.enemy().speed == 40.0f);
+}
+
+// Shared Resources (Worm), the ARITHMETIC half — the pure functions the balance is
+// actually written in (combat.h). Each kind's magnitude comes from the OTHER kind's live
+// count, floored at kWormReplicaMultFloor so the first copy of either sort is worth its
+// base rather than nothing; incoming attacks draw a victim by weight, defenders hardest.
+void test_worm_replica_arithmetic() {
+    Combatant w;
+    w.maxHealth = 100;
+    CHECK(wormReplicaDamage(w) == 0);                     // an empty board adds nothing
+
+    // One attacker, no defenders: the floor pays it its base and no more.
+    w.wormReplicas[w.wormReplicaCount++] = {/*defender=*/false, 1, 1, /*attack=*/5};
+    CHECK(wormReplicaCount(w, /*defenders=*/false) == 1);
+    CHECK(wormReplicaDamage(w) == 5);
+    // Two defenders behind it double that attacker, live — this is the line's whole
+    // strategy, and it is why spawning cover makes the teeth hurt more.
+    w.wormReplicas[w.wormReplicaCount++] = {/*defender=*/true, 20, 20, 0};
+    w.wormReplicas[w.wormReplicaCount++] = {/*defender=*/true, 20, 20, 0};
+    CHECK(wormReplicaCount(w, /*defenders=*/true) == 2);
+    CHECK(wormReplicaDamage(w) == 10);
+
+    // A defender's Health is the mirror image: a share of the PARENT's max, times the
+    // attackers already standing (and the same floor when there are none).
+    Combatant q;
+    q.maxHealth = 100;
+    CHECK(wormDefenderHealth(q, 20) == 20);
+    q.wormReplicas[q.wormReplicaCount++] = {false, 1, 1, 5};
+    q.wormReplicas[q.wormReplicaCount++] = {false, 1, 1, 5};
+    CHECK(wormDefenderHealth(q, 20) == 40);
+
+    // Targeting: index 0 is the parent, 1+ the replicas, weighted by kind.
+    const std::vector<int> wt = wormTargetWeights(w);
+    CHECK(wt.size() == 4);
+    CHECK(wt[0] == kWormTargetWeightParent);
+    CHECK(wt[1] == kWormTargetWeightAttacker);
+    CHECK(wt[2] == kWormTargetWeightDefender && wt[3] == kWormTargetWeightDefender);
+    CHECK(kWormTargetWeightDefender > kWormTargetWeightAttacker);
+    CHECK(kWormTargetWeightAttacker > kWormTargetWeightParent);
+
+    // ...resolved by a pure roll, so a duel's two devices name the same victim. Total
+    // weight is 1+2+4+4 = 11, laid out parent / attacker / defender / defender.
+    CHECK(wormTargetPick(w, 0) == -1);                    // the parent itself
+    CHECK(wormTargetPick(w, 1) == 0 && wormTargetPick(w, 2) == 0);
+    CHECK(wormTargetPick(w, 3) == 1 && wormTargetPick(w, 6) == 1);
+    CHECK(wormTargetPick(w, 7) == 2 && wormTargetPick(w, 10) == 2);
+    CHECK(wormTargetPick(w, 11) == -1);                   // wraps
+
+    // A worm with no copies out is always the target — nothing to hide behind.
+    Combatant bare;
+    CHECK(wormTargetPick(bare, 0) == -1 && wormTargetPick(bare, 999) == -1);
+}
+
+// Shared Resources (Worm) in a resolved fight: a Defend move puts a body on the board
+// with certainty and stops at the slot cap; attacking copies pile onto the parent's own
+// swings; and an attack aimed at the worm is often eaten by a copy instead, which dies
+// and frees its slot.
+void test_worm_replication_in_combat() {
+    ContentRegistry r = ContentRegistry::embedded();
+    const MoveDef* squat = r.move("host_squat");
+    CHECK(squat && squat->kind == MoveDef::Kind::Defend && squat->replicaSpawnPct == 100);
+
+    // A Defend cast is certain, and its body is sized off the parent (20% of 100, times
+    // the floor with no attackers out). The enemy only braces, so nothing kills a copy.
+    Combatant p = mkCombatant(r, "W", 100, 10, {"host_squat"});
+    p.line = "worm";
+    Combatant e = mkCombatant(r, "E", 100, 10, {"checksum_guard"});
+    Combat c; c.begin(p, e, Combat::Stakes::Safe, 1);
+    c.step();                                        // equal speed, the tie goes to P
+    CHECK(c.player().wormReplicaCount == 1);
+    CHECK(c.player().wormReplicas[0].defender);
+    CHECK(c.player().wormReplicas[0].maxHealth == 20);
+    // ...and the slots are a hard ceiling: four more of the worm's own turns add three.
+    for (int i = 0; i < 8; ++i) c.step();
+    CHECK(c.player().wormReplicaCount == kWormReplicaSlots);
+
+    // Attacking copies pile onto the parent's swing, multiplied by the defenders behind
+    // them. Built directly on the Combatant so the arithmetic is read off one swing
+    // rather than through a run of spawn rolls.
+    auto swing = [&](int attackers, int defenders) {
+        Combatant w = mkCombatant(r, "W", 100, 10, {"quick_jab"});   // 6 power
+        w.line = "worm";
+        for (int i = 0; i < attackers; ++i)
+            w.wormReplicas[w.wormReplicaCount++] = {false, 1, 1, /*attack=*/4};
+        for (int i = 0; i < defenders; ++i)
+            w.wormReplicas[w.wormReplicaCount++] = {true, 20, 20, 0};
+        Combatant t = mkCombatant(r, "T", 100, 10, {"checksum_guard"});
+        Combat f; f.begin(w, t, Combat::Stakes::Safe, 1);
+        f.step();                                    // the worm swings first
+        return 100 - f.enemy().health;
+    };
+    CHECK(swing(0, 0) == 6);                         // the parent alone is feeble
+    CHECK(swing(1, 0) == 10);                        // + one attacker at the floor
+    CHECK(swing(1, 2) == 14);                        // + that attacker doubled
+
+    // An attack into a worm picks its victim by weight. Both outcomes are reachable, and
+    // when a copy catches it the parent takes NOTHING — a copy is not armour, it is
+    // somebody else standing there. A 1-Health attacker dies to it and frees its slot,
+    // leaving the trace the combat screen plays the dissolve from.
+    bool sawParentHit = false, sawCopyKilled = false;
+    for (uint32_t seed = 1; seed <= 40; ++seed) {
+        Combatant w = mkCombatant(r, "W", 100, 10, {"checksum_guard"});
+        w.line = "worm";
+        w.wormReplicas[w.wormReplicaCount++] = {false, 1, 1, 4};
+        Combatant hitter = mkCombatant(r, "H", 100, 10, {"buffer_overflow"});  // 20 power
+        Combat f; f.begin(w, hitter, Combat::Stakes::Safe, seed,
+                          /*forceEnemyFirst=*/true);
+        f.step();                                    // the enemy's opening swing
+        if (f.player().wormReplicaCount == 0) {      // the copy ate it and popped
+            CHECK(f.player().health == 100);         // ...and the worm is untouched
+            CHECK(f.lastWormKill().happened && !f.lastWormKill().defender);
+            CHECK(f.lastWormKill().onPlayer);
+            sawCopyKilled = true;
+        } else {                                     // the roll found the parent
+            CHECK(f.player().health < 100);
+            CHECK(!f.lastWormKill().happened);
+            sawParentHit = true;
+        }
+    }
+    CHECK(sawCopyKilled && sawParentHit);
+}

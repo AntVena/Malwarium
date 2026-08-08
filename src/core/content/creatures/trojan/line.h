@@ -25,9 +25,9 @@ inline constexpr CreatureDef kTrojanCreatures[] = {
      /*evolvesToTrojanId=*/nullptr, Locomotion::Swim,
      /*clips=*/{{"idle", /*row=*/0, /*frames=*/8, /*holdBeats=*/4},
                 {"attack", /*row=*/1, /*frames=*/4}}},
-    // First-cut Trojan Daemon terminus (name literal "Placeholder"; a disguise-themed
+    // First-cut Trojan Daemon terminus (the name says what it is; a disguise-themed
     // rename + real sprite are follow-ups). Generic Daemon frame for now.
-    {"placeholder_daemon", "Placeholder", Stage::Daemon, "SPR_PET_GENERIC_DAEMON",
+    {"placeholder_daemon", "Trojan Placeholder", Stage::Daemon, "SPR_PET_GENERIC_DAEMON",
      nullptr, nullptr, nullptr, 100, 100, "trojan",
      "A Trojan still deciding what to impersonate - for now it just wears a name tag that reads 'Placeholder'.",
      "Trojan payload (placeholder)",

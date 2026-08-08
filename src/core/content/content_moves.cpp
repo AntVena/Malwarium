@@ -139,6 +139,49 @@ const MoveDef kMoves[] = {
      "trojan", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
      /*trapArm=*/1, /*evasion=*/45, /*rebound=*/60, /*armorRot=*/12, /*passiveBonus=*/20},
 
+    // --- Worm LINE moves -------------------------
+    // line = "worm" → only Worm pets can learn/equip. The line does not fight with its
+    // moves, it fights with the BOARD they build: every row's own `power` is the lowest
+    // on any line's track, and the damage arrives from the attacking copies piling onto
+    // each swing (Combat::applyEffect, wormReplicaDamage). Fields after minStage/line
+    // run to replicaSpawnPct, replicaPowerPct, replicaHealthPct (defs.h), with the 19
+    // untouched effect fields between zeroed.
+    //
+    // The two tracks are deliberately asymmetric. An ATTACK rolls for its copy — the
+    // swing still lands if the roll misses, so replication is the bonus. A DEFEND is
+    // certain, because a defender IS the move; the row keeps a real `power` only so the
+    // turn still braces when every replication slot is already full.
+    {"mass_mailer", "Mass-Mailer", MoveDef::Kind::Attack, 6, 1,
+     "Mails itself everywhere - {replicaChance}% chance to spawn an attacking copy "
+     "worth {replicaPower}% of this hit, multiplied by the defenders standing.",
+     Stage::Process, "worm", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+     /*replicaSpawnPct=*/50, /*replicaPowerPct=*/60},
+    {"subnet_sweep", "Subnet-Sweep", MoveDef::Kind::Attack, 9, 1,
+     "Sweeps the whole subnet - {replicaChance}% chance to spawn an attacking copy "
+     "worth {replicaPower}% of this hit, multiplied by the defenders standing.",
+     Stage::Script, "worm", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+     /*replicaSpawnPct=*/60, /*replicaPowerPct=*/70},
+    {"slammer_burst", "Slammer-Burst", MoveDef::Kind::Attack, 12, 1,
+     "Saturates every link at once - {replicaChance}% chance to spawn an attacking copy "
+     "worth {replicaPower}% of this hit, multiplied by the defenders standing.",
+     Stage::Daemon, "worm", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+     /*replicaSpawnPct=*/70, /*replicaPowerPct=*/80},
+    {"host_squat", "Host-Squat", MoveDef::Kind::Defend, 10, 1,
+     "Parks a copy in the way - a body with {replicaHealth}% of your Health per "
+     "attacking copy out. Braces {power} instead when the slots are full.",
+     Stage::Process, "worm", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+     /*replicaSpawnPct=*/100, /*replicaPowerPct=*/0, /*replicaHealthPct=*/20},
+    {"swarm_wall", "Swarm-Wall", MoveDef::Kind::Defend, 14, 1,
+     "Stacks the copies into a wall - a body with {replicaHealth}% of your Health per "
+     "attacking copy out. Braces {power} instead when the slots are full.",
+     Stage::Script, "worm", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+     /*replicaSpawnPct=*/100, /*replicaPowerPct=*/0, /*replicaHealthPct=*/25},
+    {"botnet_bulwark", "Botnet-Bulwark", MoveDef::Kind::Defend, 18, 1,
+     "The whole swarm takes the hit - a body with {replicaHealth}% of your Health per "
+     "attacking copy out. Braces {power} instead when the slots are full.",
+     Stage::Daemon, "worm", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+     /*replicaSpawnPct=*/100, /*replicaPowerPct=*/0, /*replicaHealthPct=*/30},
+
     // --- The THREAT moves (Watchdog / Faraday counter these) -----------------------
     // Generic ENEMY-flavoured attacks that carry a rider (lockTurns / dot*). Never owned
     // or learnable — TRAIN lists only moves in the pet's owned pool — they reach a player

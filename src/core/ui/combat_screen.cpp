@@ -87,6 +87,51 @@ int attackHopPx(int hopBeat, int dir) {
     return dir * (kAttackHopPeriod - hopBeat);   // 4 -> 3 -> 2 -> 1 -> 0 active-px
 }
 
+// --- Worm replicas ------------------------------------------------------------------
+// The replication board, drawn on the same shelf as its parent so a worm and its copies
+// read as one force rather than as a pet with UI stuck to it. Two glyphs for the whole
+// line (SPR_WORM_REPLICA_ATTACK/_DEFEND), each a 6-frame strip in idle/attack/death
+// pairs — see assets/CREATURE_VISUAL_RULES.md for why the line shares them instead of
+// shrinking every worm sprite.
+constexpr int kReplicaIdleFrame = 0;    // + (beat & 1) for the squiggle
+constexpr int kReplicaAttackFrame = 2;  // + (beat & 1) for the chomp
+constexpr int kReplicaDeathFrame = 4;   // + (beat & 1) for the dissolve
+// How long a destroyed copy's dissolve plays, in anim-ticks — matched to the impact
+// punch (kImpactPeriod) so the pop and the recoil that caused it read as one beat.
+constexpr int kReplicaDeathPeriod = 4;
+
+// Seat one glyph. Bottom-anchored on the shelf like the fighters, so the replicas stand
+// on the same ground line the parent does.
+void drawReplica(Framebuffer& fb, const SpriteData& s, int frame, int cx, int shelfY) {
+    const int w = s.frameW * kScaleNum / kScaleDen;
+    const int h = s.h * kScaleNum / kScaleDen;
+    drawSpriteUpscaled(fb, s, frame, cx - w / 2, shelfY - h, kScaleNum, kScaleDen);
+}
+
+// One side's replicas, laid left-to-right from `x0` inside `w`, plus the dissolve of a
+// copy this turn destroyed (kill.happened). `attacking` plays the chomp pair — true for
+// the side that just acted, so the whole board swings together with its parent.
+void drawReplicaRow(Framebuffer& fb, const Combatant& c, bool attacking,
+                    const WormKill& kill, int killBeat, int x0, int w, int shelfY,
+                    int animBeat) {
+    const bool dying = kill.happened && killBeat >= 0 && killBeat < kReplicaDeathPeriod;
+    const int n = c.wormReplicaCount + (dying ? 1 : 0);
+    if (n <= 0) return;
+    // Slots share the band evenly, so a board of one sits centred and a full board packs
+    // without ever running past the parent's seat.
+    const int step = w / (n > 0 ? n : 1);
+    const int base = attacking ? kReplicaAttackFrame : kReplicaIdleFrame;
+    for (int i = 0; i < n; ++i) {
+        const int cx = x0 + step * i + step / 2;
+        const bool ghost = dying && i == n - 1;   // the dissolve trails the live board
+        const bool defender = ghost ? kill.defender : c.wormReplicas[i].defender;
+        const SpriteData& s = defender ? ASSET_SPR_WORM_REPLICA_DEFEND
+                                       : ASSET_SPR_WORM_REPLICA_ATTACK;
+        const int frame = (ghost ? kReplicaDeathFrame : base) + (animBeat & 1);
+        drawReplica(fb, s, frame, cx, shelfY);
+    }
+}
+
 // The passive strip — one combatant's live line-passive state as a bar plus a pip row,
 // drawn immediately outside its Health gauge. Both fighters get one: a passive changes who
 // wins, so hiding the opponent's would leave the player watching a fight decided by
@@ -94,9 +139,9 @@ int attackHopPx(int hopBeat, int dir) {
 // smaller, which is the whole reason this takes its sizes as parameters — same language,
 // less weight, because the pet you're steering is the one you act on.
 //
-// A pet has exactly ONE line, so the three states below are mutually exclusive in practice
-// and share the strip rather than stacking rows: a Phishing shield, a Trojan trap stack,
-// and a Ransomware pool never co-occur on the same combatant.
+// A pet has exactly ONE line, so the states below are mutually exclusive in practice and
+// share the strip rather than stacking rows: a Phishing shield, a Worm replication board,
+// a Trojan trap stack and a Ransomware pool never co-occur on the same combatant.
 void drawPassiveStrip(Framebuffer& fb, const Combatant& c, int x, int y, int w, int barH,
                       int pipW, int pipH, int beat) {
     const int gap = 2;
@@ -115,6 +160,27 @@ void drawPassiveStrip(Framebuffer& fb, const Combatant& c, int x, int y, int w, 
             ? static_cast<float>(c.shieldHp) / c.maxHealth : 0.f;
         drawProgressBar(fb, x, y, w, barH, 1.0f - std::exp(-ratio), palColor(Pal::TEAM_BLUE),
                         c.shieldHp > c.maxHealth, beat);
+        return;
+    }
+    // Worm replication slots (combat.h wormReplicaCount): one pip per slot, up to
+    // kWormReplicaSlots — "how much replication is left" is the worm's whole resource,
+    // and it is a count with no magnitude, so it reads as pips like the trap stack does.
+    // The two kinds are told apart by FILL, not by hue: a defender's pip is solid and an
+    // attacker's is a hollow outline, because which sort is standing decides what the
+    // other sort is worth (wormReplicaDamage) and that has to survive grayscale.
+    if (c.wormReplicaCount > 0) {
+        for (int i = 0; i < kWormReplicaSlots; ++i) {
+            const int px = x + i * (pipW + gap * 2), pw = pipW + gap;
+            if (i >= c.wormReplicaCount) {
+                fb.fillRect(px, y, pw, pipH, palColor(Pal::INK_DIM));
+            } else if (c.wormReplicas[i].defender) {
+                fb.fillRect(px, y, pw, pipH, palColor(Pal::ACCENT));
+            } else {
+                fb.fillRect(px, y, pw, pipH, palColor(Pal::ACCENT));
+                if (pw > 2 && pipH > 2)
+                    fb.fillRect(px + 1, y + 1, pw - 2, pipH - 2, palColor(Pal::PAPER));
+            }
+        }
         return;
     }
     // Trojan traps (combat.h trojanTrapCount): one pip per armed trap, up to the cap —
@@ -256,6 +322,24 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
                        rivalFlash, impactNudgePx(rivalHitBeat, +1) + hop);
     drawSpriteCentered(fb, localSprite, kLocalStageX, kStageY, kStageW, kStageH, animBeat,
                        localFlash, impactNudgePx(localHitBeat, -1) + hop);
+
+    // Worm replicas, on the same shelf and across their parent's own seat, drawn AFTER
+    // both fighters so the copies read as standing in front of the worm that made them.
+    // Nothing is drawn for any other line — wormReplicaCount is 0 and the row returns.
+    // (A worm's own sprite is meant to be small enough to leave this room; the stand-in
+    // frame the line ships with is not, so the copies currently crowd its feet.)
+    //
+    // WormKill names its side in Combat's player_/enemy_ terms, so it is rebound to the
+    // local/rival roles the same way everything else on this screen is.
+    const WormKill& kill = combat.lastWormKill();
+    const bool killOnLocal = kill.onPlayer != flip;
+    const bool swinging = moveResolved && hitBeat >= 0 && hitBeat < kAttackHopPeriod;
+    drawReplicaRow(fb, en, swinging && !lastByLocal, kill,
+                   killOnLocal ? -1 : hitBeat, kRivalStageX, kStageW, kSpriteShelf,
+                   animBeat);
+    drawReplicaRow(fb, pl, swinging && lastByLocal, kill,
+                   killOnLocal ? hitBeat : -1, kLocalStageX, kStageW, kSpriteShelf,
+                   animBeat);
 
     // --- Player Health: zoned gauge + numeric ------------------------------
     const int phY = kSpriteShelf + 10;
