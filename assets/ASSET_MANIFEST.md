@@ -128,11 +128,31 @@ which is why gameplay ships first and the drawing follows.
   drawing vocabulary — one ink, outline-never-silhouette, segment chords, exactly one solid mass,
   superellipses over ellipses — and each worm-line creature is a RECIPE over it. The vocabulary is
   body-plan agnostic on purpose, since the line's later rows are not all literally worms; what they
-  share is the finishing pass, and a recipe cannot opt out of it. `SPR_PET_NODEATODE` and
-  `SPR_PET_ROOTGRUB` are generated today, and the `worm_art_recipes` ctest fails if a committed
-  sheet and its recipe ever disagree. The Vermicell shell and the replica glyphs are still
-  hand-drawn and become recipes when next touched — their pixels are approved and shipped, so
-  there is nothing to gain from moving them now.
+  share is the finishing pass, and a recipe cannot opt out of it. `SPR_PET_NODEATODE`,
+  `SPR_PET_ROOTGRUB`, `SPR_PET_SHENLOOP` and `SPR_PET_THREADBORE` are generated today — every
+  drawn row of the line — and the `worm_art_recipes` ctest fails if a committed sheet and its
+  recipe ever disagree. The Vermicell shell and the replica glyphs are still hand-drawn and
+  become recipes when next touched — their pixels are approved and shipped, so there is nothing
+  to gain from moving them now.
+- **Every worm-line sheet is 56×48, including the two Daemons.** The oversized 96×64 Daemon cell
+  §7 of `CREATURE_VISUAL_RULES.md` allows is for SINGLE-frame creatures like Cryptoad: a
+  multi-row sheet at that size cannot be cut by `gen_assets.py` at all, because `frame_width()`
+  only splits 56px frames when the width divides by 56 and `frame_rows()` only finds rows when
+  the height divides by 48 — a 4×4 sheet of 96×64 cells is 384×256 and satisfies neither, so it
+  would compile as one 384×256 frame. It is also the wrong thing to want here: the line grows
+  **heavier, not bigger** (§4 there), so a Worm Daemon buys its stage read with mass, length and
+  posture inside the same cell every other row of the family uses.
+- **The two Daemons carry no ground contact, and that is load-bearing.** Every crawling row of
+  the line ends its recipe with a 1px bar on the shelf. Shenloop (`Swim`) and Threadbore (`Fly`)
+  deliberately have no ink near the bottom of the cell, so the drawing agrees with the
+  locomotion instead of leaving the habitat's wander to argue a planted sprite off the floor.
+- **A wing is a limb carrying a membrane, not a shape stuck on a back.** Threadbore's wings were
+  first drawn as one vane hinged flush to the body, and on a creature this fat most of that
+  triangle is buried inside the silhouette — what is left above the back reads as a fin or a
+  crest. What fixes it is the bare arm: the membrane starts a long way out from the flank, and
+  the GAP between limb and body is what says *wing*. The fan beyond the wrist is `vane` used
+  several times over, each panel taking the next panel's tip as its heel, so the union's outer
+  boundary steps tip to tip and falling radii make it a scalloped trailing edge.
 - **A mouth is two different forms, and picking the wrong one costs the creature.** `gape` is a
   jaw in PROFILE — it cuts a wedge from the head and routes the outline around it, so the
   silhouette still closes and the opening reads as hinged. `maw` is a mouth seen down its own

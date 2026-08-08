@@ -457,11 +457,11 @@ window.PEDIA_DATA = {
       "evolvesTo": [],
       "hint": "The same appetite grown upward instead of outward - a long clawless serpent that holds one connection open across the whole network and waits at the far end of it for as long as that takes.",
       "context": "Beacon loops / an implant that holds its channel open and calls home",
-      "sprite": "assets/sprites/SPR_PET_GENERIC_DAEMON.png",
-      "cellW": 96,
-      "cellH": 64,
-      "sheetW": 96,
-      "sheetH": 64
+      "sprite": "assets/sprites/SPR_PET_SHENLOOP.png",
+      "cellW": 56,
+      "cellH": 48,
+      "sheetW": 224,
+      "sheetH": 192
     },
     {
       "id": "threadbore",
@@ -472,11 +472,11 @@ window.PEDIA_DATA = {
       "evolvesTo": [],
       "hint": "Wider than it is long, and almost all of that is jaw. It grew a pair of wings with no business lifting anything this heavy, and lifts anyway, and arrives.",
       "context": "Thread-pool exhaustion / a payload that consumes the host it lands on",
-      "sprite": "assets/sprites/SPR_PET_GENERIC_DAEMON.png",
-      "cellW": 96,
-      "cellH": 64,
-      "sheetW": 96,
-      "sheetH": 64
+      "sprite": "assets/sprites/SPR_PET_THREADBORE.png",
+      "cellW": 56,
+      "cellH": 48,
+      "sheetW": 224,
+      "sheetH": 192
     }
   ],
   "malbeasts": [

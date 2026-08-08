@@ -239,6 +239,40 @@ def poly(mask, pts, r=0.0):
     return mask
 
 
+def vane_pts(root, length, angle, spread, taper=0.6):
+    """The three corners of a vane. Geometry only — the form itself is `vane` below.
+
+    Split out because the two halves of a wing go to different planes: the membrane is a
+    BODY form, so only the union's outline survives and the wing shares a silhouette with
+    whatever it grows from, while the ribs across it are `ink` and are drawn exactly as
+    laid down. A recipe therefore needs these corners twice, and computing them twice by
+    hand is how the ribs end up crossing a membrane that has since moved.
+    """
+    tip = (root[0] + math.cos(angle) * length,
+           root[1] + math.sin(angle) * length)
+    heel = (root[0] + math.cos(angle + spread) * length * taper,
+            root[1] + math.sin(angle + spread) * length * taper)
+    return [root, tip, heel]
+
+
+def vane(mask, root, length, angle, spread, taper=0.6):
+    """A membrane wing or fin: a flat triangular vane hinged at a point on the body.
+
+    The one form the rest of this vocabulary cannot reach. `disc`, `tube` and
+    `superellipse` are all round, and roundness is precisely what a wing is not — a wing
+    is a flat thing stretched between a straight leading edge and a slack trailing one,
+    and the rounded approximation of it reads as a flipper. `poly` can of course draw the
+    triangle, but then the wing is four hand-placed corners per frame instead of an
+    angle, which is not a form the line can say twice.
+
+    It takes no phase and does no flapping. A frame's worth of flap is `angle` swung and
+    `length` foreshortened, and those are two numbers the RECIPE already varies per frame
+    exactly the way it varies a spine's control points. Baking a beat in here would put
+    animation into the vocabulary, which no other form has ever carried.
+    """
+    return poly(mask, vane_pts(root, length, angle, spread, taper))
+
+
 def stroke(mask, p0, p1, r=0.5):
     """A thick line segment, as a run of stamped discs."""
     dx, dy = p1[0] - p0[0], p1[1] - p0[1]
@@ -287,6 +321,91 @@ def bezier(p0, c0, c1, p1):
         return (a * p0[0] + b * c0[0] + c * c1[0] + d * p1[0],
                 a * p0[1] + b * c0[1] + c * c1[1] + d * p1[1])
     return f
+
+
+def catmull(pts, alpha=0.5):
+    """A smooth path through EVERY point in `pts`, as a callable t -> (x, y).
+
+    `bezier` steers a body with two control points the curve only leans toward, which is
+    the right handle for a spine with ONE bend in it and no handle at all for a spine
+    with three: a single cubic cannot double back on itself, so a coiled body has to be
+    said point by point. The signature is deliberately identical, so `tube`, `tangent`
+    and `Cell.chords` neither know nor care which kind of path they were handed.
+
+    CENTRIPETAL (alpha=0.5) rather than uniform — knots spaced by the square root of
+    chord length. A uniform Catmull-Rom through unevenly spaced points overshoots into a
+    cusp or a small loop wherever the spacing changes sharply, and a cusp inside a body
+    that is being stamped with discs surfaces as a bulge in the outline rather than as an
+    obvious error, so it would be found by eye and blamed on the drawing. Centripetal is
+    the parameterisation that provably cannot produce one.
+
+    `t` runs 0..1 over the SEGMENTS rather than over arc length, so a widely spaced pair
+    of points is travelled faster than a close one. Chord parameters get picked by eye
+    against the drawing anyway, and the alternative is an arc-length table nothing else
+    here would use.
+    """
+    p = list(pts)
+    if len(p) < 2:
+        raise ValueError("a path needs at least two points")
+    # A reflected point off each end, so the curve has a tangent AT its first and last
+    # point instead of starting one segment short of them.
+    p = ([(2 * p[0][0] - p[1][0], 2 * p[0][1] - p[1][1])] + p
+         + [(2 * p[-1][0] - p[-2][0], 2 * p[-1][1] - p[-2][1])])
+    segs = len(p) - 3
+
+    def knots(q):
+        ks = [0.0]
+        for i in range(3):
+            d = math.hypot(q[i + 1][0] - q[i][0], q[i + 1][1] - q[i][1]) ** alpha
+            ks.append(ks[-1] + max(d, 1e-6))   # coincident points would divide by zero
+        return ks
+
+    def f(t):
+        u = min(max(t, 0.0), 1.0) * segs
+        i = min(int(u), segs - 1)
+        q = p[i:i + 4]
+        t0, t1, t2, t3 = knots(q)
+        tt = t1 + (t2 - t1) * (u - i)
+
+        def mix(a, b, ta, tb):
+            w = (tb - tt) / (tb - ta)
+            return (w * a[0] + (1 - w) * b[0], w * a[1] + (1 - w) * b[1])
+
+        a1, a2, a3 = mix(q[0], q[1], t0, t1), mix(q[1], q[2], t1, t2), \
+            mix(q[2], q[3], t2, t3)
+        return mix(mix(a1, a2, t0, t2), mix(a2, a3, t1, t3), t1, t2)
+    return f
+
+
+def sample(path, n):
+    """`n` evenly-parameterised points off a path callable — the bridge back to a list.
+
+    Paths and point lists are the two ways a spine gets said here, and each can do one
+    thing the other cannot: a path is smooth and can be walked at any t, a list can be
+    bent point by point by `wave`. Sampling one into the other is what lets a body carry
+    a big sweep AND a ripple riding on it, which no single curve of either kind draws.
+    """
+    return [path(i / (n - 1.0)) for i in range(n)]
+
+
+def wave(pts, amp, phase, period=3.2):
+    """Push every INTERIOR point of a polyline off its own normal, in a travelling wave.
+
+    The polyline counterpart of swinging a Bézier's two control points in quadrature: a
+    bulge that walks from one end of the body to the other as `phase` advances, rather
+    than a lean that visits two shapes and goes back. Ends are held exactly, because on a
+    resting creature it is the SPINE that moves and the head that holds station — a head
+    that travels with the wave has turned an undulation into a bob.
+    """
+    out = [pts[0]]
+    for i in range(1, len(pts) - 1):
+        (ax, ay), (bx, by) = pts[i - 1], pts[i + 1]
+        d = math.hypot(bx - ax, by - ay) or 1.0
+        nx, ny = -(by - ay) / d, (bx - ax) / d
+        k = amp * math.sin(2 * math.pi * i / period - phase)
+        out.append((pts[i][0] + nx * k, pts[i][1] + ny * k))
+    out.append(pts[-1])
+    return out
 
 
 def tangent(path, t, eps=1e-3):
@@ -734,12 +853,326 @@ def rootgrub():
     return sheet
 
 
+def _shenloop_cell(pts, whisker=1.0, level=0.75):
+    """One Shenloop frame: a long clawless serpent coiled in on itself, off the floor.
+
+    The good Daemon, and the row where nearly every habit of the line so far gets
+    dropped. There is NO taper — `tube` is handed the same radius twice, because a
+    serpent is near-constant from end to end and the taper that made Nodeatode read as
+    led by its head is exactly what a snake does not have. There is no head BULB either,
+    only enough swell to seat an eye in; on this creature the head is where the body
+    stops, not a mass the body carries.
+
+    And there is no mouth, of either kind. The maw belongs to the branch that eats, and
+    lending it here would collapse the fork the two Daemons exist to be — a clawless
+    serpent that also has a maw is just Threadbore drawn thin. What it has instead is
+    LENGTH, doubled back on itself: the same footprint as the Script row holding three
+    times the body, which is where its stage read comes from now that width has been
+    spent by the other branch.
+
+    Its one solid mass is an eye again, per `Cell.solid` — Rootgrub's throat was the
+    exception, and this row is why it had to be one. A creature with no talons that holds
+    a connection open and waits at the far end of it is a thing that LOOKS.
+    """
+    # Constant, and thick enough for the outline's two walls to stay a clear 3px apart
+    # around the ribbon's tightest bend. The head is the SMALLEST in the line in absolute
+    # terms — under Nodeatode's — and it is a swell rather than a bulb: the body does not
+    # taper into it, it simply widens far enough to seat an eye and a pair of barbels and
+    # stops. Any more and the creature is led by its head, which is the Process row's read
+    # and not this one's.
+    r, head_r = 3.1, 4.8
+    cell = Cell(CW, CH)
+    spine = catmull(pts)
+
+    # More steps than a Bézier body needs. This spine is roughly three times as long, and
+    # the stamps have to overlap on the OUTSIDE of the sharpest bend or the outline picks
+    # up notches there — which is the only place on this drawing they could appear.
+    tube(cell.body, spine, r, r, steps=320)
+    head = pts[-1]
+    disc(cell.body, head[0], head[1], head_r)
+
+    # Seven rungs where Rootgrub has three, and that inversion is the whole argument
+    # between the two Daemons. Rungs close together subdivide a body and make it read as
+    # articulated and therefore LIGHT; this creature wants to be read as light, so it
+    # takes the segmentation the fat branch gave up.
+    cell.chords(spine, (0.08, 0.20, 0.32, 0.44, 0.56, 0.67, 0.78),
+                lambda t: r, overhang=0.35)
+
+    # The head is LEVELLED off the neck instead of pointing wherever the spine happens to
+    # arrive, and that one rotation is most of the creature's stage read. §2 of
+    # CREATURE_VISUAL_RULES is explicit that the levers are posture rather than parts —
+    # a head carried along its own neck reads as a body going somewhere, and the same
+    # head held level on a rising neck reads as one that arrived and is now waiting,
+    # which is exactly what the row's flavour says it does. Fins down the back would have
+    # bought the dragon read too, and would have been the parts-list §1 bans.
+    tx, ty = tangent(spine, 1.0)
+    a = math.atan2(ty, tx) * (1.0 - level)
+    facing = (math.cos(a), math.sin(a))
+    cell.eye(head, facing, head_r, along=0.34, across=0.28)
+
+    # Barbels — the eastern-dragon tell, and the reason this row does not need horns, a
+    # mane or a crest to be read as one. Two `line` runs each rather than a form: nothing
+    # else in the line has whiskers, and a primitive that one creature uses is a
+    # primitive that has not earned its name yet.
+    if whisker > 0:
+        a0 = math.atan2(facing[1], facing[0])
+        snout = (head[0] + facing[0] * head_r * 0.9,
+                 head[1] + facing[1] * head_r * 0.9)
+        for side in (-1, 1):
+            # ONE straight run each, flaring off the snout. A curled barbel was the first
+            # thing tried and it reads as an antenna: the curl needs a second segment,
+            # and the second segment is long enough to be a limb on a creature that must
+            # not appear to have any. Straight and divergent is what a viewer names as
+            # whiskers at this size, and it is also all the drawing can afford.
+            a = a0 + side * 0.75
+            line(cell.ink, snout,
+                 (snout[0] + math.cos(a) * 5.5 * whisker,
+                  snout[1] + math.sin(a) * 5.5 * whisker))
+
+    # No ground plant, and nothing near the bottom of the cell. Every crawling row of the
+    # line ends with a bar on the shelf; this one is a swimmer (Locomotion::Swim, on its
+    # content row) and the habitat drifts it on both axes, so a contact mark would be a
+    # floor it is demonstrably not on.
+    return cell
+
+
+def shenloop():
+    """SPR_PET_SHENLOOP — the Worm line's good Daemon, and the branch that grew UP.
+
+    Four rows of four 56x48 frames, the same clip set as the two rows below it:
+
+      0  idle    4 frames — a wave travelling the length of the coil, head holding
+                            station. The one motion a body this long can make for free.
+      1  attack  4 frames — the coil GATHERS and then unwinds, throwing the head out.
+                            It has no mouth to strike with, so the body is the strike.
+      2  droop   2 frames — the coil sags open and the head comes down.
+      3  weak    2 frames — nearly uncoiled, sunk low, holding almost no shape.
+
+    Every pose in all four rows is the same three numbers — where the tail is, where the
+    head is, and how much wave is in between — so there are no hand-placed spines here at
+    all. That is not tidiness: a body of ten points hand-placed four times is a body that
+    stops being the same animal by the fourth frame, and this creature's whole read is
+    that there is a great deal of ONE continuous thing in the cell.
+    """
+    sheet = Sheet(4, 4, CW, CH)
+
+    def ribbon(tail, head, amp, phase):
+        """A serpent between two points, with `amp` of travelling wave in between.
+
+        The body FOLDS rather than crossing over itself, and the difference is not
+        stylistic: two lengths of a 3px-wide outlined body laid across each other merge
+        into a knot at this scale, and the read goes from "long" to "tangled" with no
+        way back. A wave doubles back three times and never touches itself, which buys
+        the same length for none of the confusion.
+        """
+        axis = [(tail[0] + (head[0] - tail[0]) * i / 9.0,
+                 tail[1] + (head[1] - tail[1]) * i / 9.0) for i in range(10)]
+        return wave(axis, amp, phase, period=6.0)
+
+    # Idle. Reared: the axis climbs three quarters of the cell's height, so the body is a
+    # column with a fold in it rather than a line crossing the floor diagonally. That is
+    # where the stage read lives — a serpent laid out flat is going somewhere and is a
+    # long worm while it does, and the same body stood up and holding still is a creature
+    # that has arrived and is waiting, which is what this row's flavour text says it does.
+    #
+    # The wave travels and the ENDS hold station, per `wave`'s contract, so what moves is
+    # the length of the body while the head keeps looking at one thing. For a creature
+    # with no limbs and no ground contact that is not one idle option among several — it
+    # is the only motion available at all.
+    for i in range(4):
+        sheet.place(i, 0, _shenloop_cell(
+            ribbon((9.0, 40.0), (43.0, 10.0), 6.8, 2 * math.pi * i / 4)))
+
+    # Attack. A serpent strikes by SPENDING its wave: it gathers by pulling its reach in
+    # and driving the amplitude up, then arrives by flattening the same body along a
+    # longer axis. Nothing is added to the drawing to make it lunge — the length that was
+    # folded up is the length that reaches, which is the one thing about a snake worth
+    # animating and is three numbers here.
+    #
+    # `level` is the other half of it. The head is carried level at rest and gives that up
+    # on the way out, so the strike is the one moment the creature commits to a direction
+    # — and the recovery frame takes the level back, which is what makes the whole clip
+    # read as returning to the pose above rather than ending somewhere new.
+    for i, (tl, hd, amp, lv, wk) in enumerate([
+        ((12.0, 40.0), (38.0, 16.0), 7.4, 1.00, 1.0),
+        ((13.0, 41.0), (35.0, 19.0), 8.0, 1.00, 1.0),
+        ((8.0, 39.0), (44.0, 18.0), 3.2, 0.35, 0.8),
+        ((8.0, 38.0), (45.0, 21.0), 2.2, 0.55, 0.6),
+    ]):
+        sheet.place(i, 1, _shenloop_cell(ribbon(tl, hd, amp, 0.6 * i),
+                                         whisker=wk, level=lv))
+
+    # Droop. The rear comes down and the wave goes soft: the same column with the height
+    # taken out of it, which on a creature whose posture IS its stage is the cheapest
+    # possible way to say it is not holding itself well.
+    for i in range(2):
+        sheet.place(i, 2, _shenloop_cell(
+            ribbon((10.0, 41.0), (38.0, 23.0), 4.6 - 0.4 * i, 0.9 + i * math.pi),
+            level=0.85))
+
+    # Weak. Barely reared and barely waved, head sagging off the level. For a creature
+    # whose whole read is length held up against nothing, having none of it left is the
+    # strongest thing this sheet can say about how badly it is doing.
+    for i in range(2):
+        sheet.place(i, 3, _shenloop_cell(
+            ribbon((11.0, 42.0), (36.0, 31.0), 2.6 - 0.3 * i, 0.4 + i * 0.8),
+            whisker=0.55, level=0.45))
+
+    return sheet
+
+
+def _threadbore_cell(head, c0, c1, mouth, flap, teeth=8, phase=0.0):
+    """One Threadbore frame: Rootgrub with everything that was not mouth spent on mouth.
+
+    The bad Daemon, and the only row here that is a straight continuation rather than an
+    argument — `_rootgrub_cell` with its numbers pushed until they stop being sensible,
+    which is the joke the creature is. The taper runs 7.6 to 10.2 where the Script row
+    runs 6.2 to 8.4, on a spine SHORTER than that row's, so the body ends up wider than
+    it is long and the flavour text on its content row is a literal description.
+
+    TWO chords where Rootgrub has three and Nodeatode four. That progression is the
+    line's whole statement about mass: rungs close together subdivide a body and make it
+    read as articulated and therefore light, so each stage of the fat branch removes one
+    and lets the unbroken panel of flank between them carry more. Two is the floor —
+    at one there is no segmentation left and rule 3 stops being satisfied at all.
+
+    It keeps the THROAT as its one solid mass, where Shenloop went back to an eye. That
+    is the fork stated in the place it costs the most to state: both Daemons inherit
+    exactly one thing from Rootgrub, and which one they inherit is the entire branch.
+    """
+    tail = (16.0, 34.0)
+    r_tail, r_neck = 7.6, 10.2
+    head_r = 12.0 + 1.6 * mouth
+    cell = Cell(CW, CH)
+    spine = bezier(tail, c0, c1, head)
+
+    tube(cell.body, spine, r_tail, r_neck)
+    disc(cell.body, head[0], head[1], head_r)
+
+    # The wings. A wing is a LIMB carrying a membrane, and drawing it as one shape rooted
+    # on the back was the version that failed: a triangle hinged flush to a body this fat
+    # has most of itself buried inside the silhouette, and the sliver left above the back
+    # reads as a fin or a crest. What fixes it is the bare arm — the membrane starts a
+    # long way out from the body, so the gap between limb and flank is what says the thing
+    # is a wing rather than something growing off it.
+    #
+    # The fan is where `vane` earns being general instead of being a wing function. Each
+    # entry below is one finger panel: a vane from the wrist out to its own tip, with the
+    # NEXT panel's tip as its heel, so consecutive panels share an edge and the union's
+    # outer boundary steps from tip to tip. Falling radii make that boundary a scalloped
+    # trailing edge, which is the thing a viewer actually names as a bat wing — and it is
+    # the same primitive four times over rather than a hand-placed polygon per frame.
+    fan = ((-0.20, 1.00), (-0.62, 0.88), (-1.05, 0.74), (-1.50, 0.58), (-1.95, 0.42))
+    # Near wing, then the far one — shorter, held more upright and rooted closer to the
+    # head so it clears the near wing's silhouette instead of tangling with it. A 1-bit
+    # outline has no other way to say there are two of something behind each other, and
+    # two identical wings simply collapse into one shape.
+    for t, scale, tilt, armr in ((0.62, 1.00, 0.00, 1.0), (0.72, 0.70, -0.22, 0.9)):
+        bx, by = spine(t)
+        rr = r_tail + (r_neck - r_tail) * t
+        shoulder = (bx, by - rr * 0.55)
+        # `flap` is the one number the recipe varies per frame: the arm swings and the
+        # whole wing foreshortens with it, which is what a wing seen side-on does. Neither
+        # `vane` nor `stroke` knows a beat exists — see `vane`'s docstring.
+        a = -math.pi / 2 - 0.45 - tilt + 0.38 * flap
+        k = scale * (0.88 + 0.12 * math.cos(flap * 1.1))
+        wrist = (shoulder[0] + math.cos(a) * 14.5 * k,
+                 shoulder[1] + math.sin(a) * 14.5 * k)
+        stroke(cell.body, shoulder, wrist, r=armr)
+        tips = [(a + da, 15.5 * k * f) for da, f in fan]
+        for (a0, l0), (a1, l1) in zip(tips, tips[1:]):
+            vane(cell.body, wrist, l0, a0, a1 - a0, taper=l1 / l0)
+        # The fingers, into `ink`. Without them the membrane is a blank shape and reads as
+        # a sail; these are what say it is stretched over something, and they are the
+        # wing's answer to the segment chords the body carries. Only the interior ones —
+        # the outer two are already the membrane's own boundary.
+        for a1, l1 in tips[1:-1]:
+            line(cell.ink, wrist,
+                 (wrist[0] + math.cos(a1) * l1, wrist[1] + math.sin(a1) * l1))
+
+    cell.chords(spine, (0.26, 0.56),
+                lambda t: r_tail + (r_neck - r_tail) * t, overhang=0.3)
+
+    facing = tangent(spine, 1.0)
+    # Deeper teeth than the Script row's, on a wider head. Rootgrub's maw already IS its
+    # face, so "bigger" here cannot mean a bigger share of the silhouette — it has to be
+    # reach into the hole, or the promotion is a scale-up and nothing else.
+    cell.maw(head, head_r, teeth=teeth, depth=head_r * (0.30 + 0.20 * mouth),
+             phase=phase, facing=facing, arc=math.radians(255))
+    throat = 5 + (1 if mouth > 0.7 else 0)
+    cell.solid(int(round(head[0] - (throat - 1) / 2.0)),
+               int(round(head[1] - (throat - 1) / 2.0)), throat, throat)
+
+    # No ground plant, and the body is held clear of the bottom of the cell. Every
+    # crawling row of the line ends with a bar on the shelf; this one FLIES
+    # (Locomotion::Fly, on its content row) and the habitat holds it at an altitude, so
+    # ink anywhere near y = CH-1 would read as crawling no matter what the engine does
+    # with the anchor.
+    return cell
+
+
+def threadbore():
+    """SPR_PET_THREADBORE — the Worm line's bad Daemon, and the branch that grew OUT.
+
+    Four rows of four 56x48 frames, the same clip set as every drawn row of the line:
+
+      0  idle    4 frames — a hover. The wings beat through the loop and the body hangs
+                            under them barely moving, which is what too little wing
+                            working too hard looks like.
+      1  attack  4 frames — a downbeat, a gape, and it arrives on top of the target.
+      2  droop   2 frames — sagging between beats, maw slack, wings half folded.
+      3  weak    2 frames — barely airborne, wings almost shut, mouth nearly closed.
+    """
+    sheet = Sheet(4, 4, CW, CH)
+
+    # Idle. The wings run a full beat over the four frames while the body moves about a
+    # pixel — deliberately the wrong way round for a flier this heavy, because the reason
+    # to draw wings this small is to be caught working. The maw chews on the same loop,
+    # which it inherits from the Script row along with the throat.
+    for i in range(4):
+        a = 2 * math.pi * i / 4
+        head = (37.0 + 0.8 * math.sin(a), 30.0 - 0.7 * math.cos(a))
+        sheet.place(i, 0, _threadbore_cell(
+            head, (18.0, 33.0), (25.0, 32.0 + 0.5 * math.sin(a)),
+            0.44 + 0.18 * math.sin(a), flap=math.sin(a), phase=a * 0.25))
+
+    # Attack. It does not lunge and it does not rear — it gets ABOVE and comes down, and
+    # the wings are what put it there. The gape is widest on the way down rather than at
+    # the end, so the mouth arrives already open.
+    for i, (hd, c0, c1, mouth, flap) in enumerate([
+        ((36.0, 26.0), (18.0, 30.0), (25.0, 28.0), 0.32, -0.9),
+        ((36.0, 23.0), (18.0, 28.0), (25.0, 25.0), 1.00, -1.5),
+        ((38.0, 31.0), (18.5, 33.0), (27.0, 32.0), 1.00, 1.2),
+        ((38.0, 33.0), (19.0, 35.0), (28.0, 34.0), 0.36, 0.4),
+    ]):
+        sheet.place(i, 1, _threadbore_cell(hd, c0, c1, mouth, flap, phase=i * 0.22))
+
+    # Droop. Sagging between beats with the wings half folded and nothing behind the
+    # mouth. It cannot sink far — a flier that settles onto the shelf has stopped being
+    # one — so the mood is carried by the wings and the slack jaw rather than by height.
+    for i in range(2):
+        sheet.place(i, 2, _threadbore_cell(
+            (37.0, 31.5 + 1.0 * i), (19.0, 35.0), (27.0, 34.0 + i),
+            0.28, flap=1.0 + 0.15 * i, teeth=8))
+
+    # Weak. Wings nearly shut and the maw almost closed — which on this creature is the
+    # strongest statement the sheet can make, exactly as it is on the row below it.
+    for i in range(2):
+        sheet.place(i, 3, _threadbore_cell(
+            (36.0, 32.5 + 0.5 * i), (19.0, 36.0), (27.0, 35.0 + i),
+            0.12, flap=1.7, teeth=6))
+
+    return sheet
+
+
 # Every sheet this tool owns. A creature is added by writing its recipe above and one
 # row here; nothing else in the repo needs to know the tool exists, because what ships
 # is the committed PNG either way.
 RECIPES = {
     "SPR_PET_NODEATODE": nodeatode,
     "SPR_PET_ROOTGRUB": rootgrub,
+    "SPR_PET_SHENLOOP": shenloop,
+    "SPR_PET_THREADBORE": threadbore,
 }
 
 

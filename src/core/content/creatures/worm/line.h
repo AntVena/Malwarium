@@ -12,7 +12,7 @@
 // two of the same species at once. Its hatch minigame is the Isolation Protocol
 // (game_isolation.cpp), and finishing one clean is what fires WORM_WHISPERER.
 //
-// The two Daemon rows are still stand-ins. The line's own art rules are in
+// Every row of the line is drawn now. The line's own art rules are in
 // assets/CREATURE_VISUAL_RULES.md: a worm reads SMALLER in its cell than any other
 // line's creature, because the replicas need the room beside it, and the family
 // spends 1-bit line art where the other lines spend a signature hue. Its drawn rows
@@ -87,28 +87,53 @@ inline constexpr CreatureDef kWormCreatures[] = {
                 {"weak", /*row=*/3, /*frames=*/2, /*holdBeats=*/3}}},
     // The two Daemons are the answer to Rootgrub's question, and they are the first
     // rows of the line to leave the floor — which is why the family's Crawl stops
-    // here. Both are designed and neither is drawn: generic Daemon frame for now.
+    // here. Both are drawn, in the same tool and the same vocabulary as the two rows
+    // above, and neither carries a ground plant: every crawling row of the line ends
+    // with a bar on the shelf and these two deliberately have nothing near the bottom
+    // of the cell, so the sheets agree with the locomotion rather than relying on the
+    // habitat to sell it.
     //
     // Shenloop grew UP. An eastern dragon with no talons, so there is nothing on it
     // for gripping — it does not take a host, it stays connected to one. Swim rather
     // than Fly because that is the mover with no altitude to hold: a serpent in air
     // drifts on both axes, which is the whole read.
-    {"shenloop", "Shenloop", Stage::Daemon, "SPR_PET_GENERIC_DAEMON",
+    //
+    // Its sheet spends the stage on LENGTH and POSTURE where its sibling spends it on
+    // width: a constant-radius body with no taper and no head bulb, reared into a
+    // column and folded, with the head carried level off the neck. It is the row that
+    // takes the line's one solid mass back to an EYE after Rootgrub spent it on a
+    // throat, and that single choice is most of what separates the two branches.
+    {"shenloop", "Shenloop", Stage::Daemon, "SPR_PET_SHENLOOP",
      nullptr, nullptr, nullptr, kBranchGoodPowerPct, kBranchGoodFragPct, "worm",
      "The same appetite grown upward instead of outward - a long clawless serpent that holds one connection open across the whole network and waits at the far end of it for as long as that takes.",
      "Beacon loops / an implant that holds its channel open and calls home",
      {MoveKind::Attack, MoveKind::Defend, MoveKind::Defend, MoveKind::Defend},
-     /*evolvesToTrojanId=*/nullptr, Locomotion::Swim},
+     /*evolvesToTrojanId=*/nullptr, Locomotion::Swim,
+     /*clips=*/{{"idle", /*row=*/0, /*frames=*/4, /*holdBeats=*/2},
+                {"attack", /*row=*/1, /*frames=*/4},
+                {"droop", /*row=*/2, /*frames=*/2, /*holdBeats=*/3},
+                {"weak", /*row=*/3, /*frames=*/2, /*holdBeats=*/3}}},
     // Threadbore grew OUT. Rootgrub again with everything that was not mouth spent on
     // more mouth, and a pair of wings far too small for what they are lifting. Fly, not
     // Swim: it holds an altitude by working at it, and the difference between the two
     // Daemons is meant to be legible from the resting motion alone.
-    {"threadbore", "Threadbore", Stage::Daemon, "SPR_PET_GENERIC_DAEMON",
+    //
+    // It keeps the THROAT its parent spends its one solid mass on, where its sibling
+    // goes back to an eye — both Daemons inherit exactly one thing from Rootgrub, and
+    // which one they inherit is the branch. Its wings are the only form the line's
+    // drawing vocabulary had to grow to draw: a bare limb out from the body, then a
+    // membrane fanned off the wrist in panels, which is a general form in the tool
+    // rather than anything this creature owns.
+    {"threadbore", "Threadbore", Stage::Daemon, "SPR_PET_THREADBORE",
      nullptr, nullptr, nullptr, kBranchBadPowerPct, kBranchBadFragPct, "worm",
      "Wider than it is long, and almost all of that is jaw. It grew a pair of wings with no business lifting anything this heavy, and lifts anyway, and arrives.",
      "Thread-pool exhaustion / a payload that consumes the host it lands on",
      {MoveKind::Attack, MoveKind::Defend, MoveKind::Attack, MoveKind::Attack},
-     /*evolvesToTrojanId=*/nullptr, Locomotion::Fly},
+     /*evolvesToTrojanId=*/nullptr, Locomotion::Fly,
+     /*clips=*/{{"idle", /*row=*/0, /*frames=*/4, /*holdBeats=*/2},
+                {"attack", /*row=*/1, /*frames=*/4},
+                {"droop", /*row=*/2, /*frames=*/2, /*holdBeats=*/3},
+                {"weak", /*row=*/3, /*frames=*/2, /*holdBeats=*/3}}},
 };
 inline constexpr int kWormCreatureCount =
     sizeof(kWormCreatures) / sizeof(kWormCreatures[0]);

@@ -168,11 +168,18 @@ perfectly good reason to drop the rule entirely.
 - **LOCKED:** Malbear (Sulk × Edge, Smooth finish; deep base + acid-bright crown; dorsal crest +
   shoulder plates; idle = a slow shoulder-roll "huff"). Gold standard alongside Paypup.
 - **APPROVED back/shell:** Keyloggerhead (keycap shell + blinking cursor-cap).
-- **APPROVED 1-bit:** Vermicell, Nodeatode and Rootgrub — the Worm line's style-instead-of-hue exception
-  above. Held to the outline + segment-chords + one solid eye vocabulary, not to §3's shading law.
+- **APPROVED 1-bit:** Vermicell, Nodeatode, Rootgrub, Shenloop and Threadbore — the whole Worm
+  line, its style-instead-of-hue exception above. Held to the outline + segment-chords + one solid
+  mass vocabulary, not to §3's shading law.
   That vocabulary is `tools/gen_worm_art.py`, which is where a new worm-line creature is drawn:
   the style is mechanical enough to be code, and a recipe over it cannot express a second ink or a
   filled silhouette. Read the tool before drawing this line by hand.
+  The two Daemons are what §2's *posture, not parts* looks like when a line has no cell room left
+  to spend: Shenloop is a constant-radius body reared into a folded column with its head carried
+  level off the neck, and a dorsal ridge was tried and cut for being exactly the parts-list §1
+  bans. Its sibling takes the opposite lever — width, a bigger maw, and one fewer segment chord
+  than the row below it, because widely spaced rungs leave unbroken panels of flank and the
+  panels are what carry mass.
 - **NEEDS REDRAW (too blobby / fail grayscale):** Keyloggerhead front, FireWallaby, Brute Badger,
   Cryptoad re-sculpt. Concepts are right; execution must hit the Paypup/Malbear bar.
 - **Engine cell:** 56×48 logical (Script), 96×64 (Daemon e.g. Cryptoad). ×1.75 to panel, no
