@@ -124,10 +124,19 @@ which is why gameplay ships first and the drawing follows.
   single-frame egg was byte-identical to frame 0, so shipping it too would only duplicate flash.
 - **`SPR_PET_EGG_WORM_HATCH` is `▨`, and 1-bit on purpose** — the same masks-on-`ink` economy as
   the Worm replicas below (§C.4), which is the line's own visual signature rather than a
-  simplification. A rounded shell with the worm coiled on a circular track inside it and one loose
-  byte ahead of its head: the Isolation Protocol (§C.5) seen from outside the egg. The worm creeps
-  22° per frame and reaches the byte at frame 5, which is where the shell gives way — so the hatch
-  reads as something the worm DID, not something a timer did to it.
+  simplification. A shell with the worm coiled on a track inside it and one loose byte ahead of
+  its head: the Isolation Protocol (§C.5) seen from outside the egg. The byte is gone from frame
+  5, eaten, which is the frame the shell gives way on — so the hatch reads as something the worm
+  DID, not something a timer did to it. Two rules carry the look:
+  - **Squared, not round.** Shell and track are both **superellipses at exponent 2.4**, not
+    ellipses — flat sides and top with the corners rounded off. At 56×48 a true curve is a
+    smoothness the pixels can't deliver, so the drawing commits to the blocky read instead of
+    fighting for one.
+  - **It squashes under the worm.** The shell is drawn TALL and narrow when the worm's head is at
+    the top of its track and WIDE and short when it is at the bottom — the worm's weight is the
+    only force in the picture, so the shell answers it. This is also what makes the two-frame idle
+    loop work at all: the head moves ~200° per frame rather than creeping, because the head's
+    HEIGHT is what drives the squash and two frames only read as motion if that height differs.
 - **`SPR_PET_CACHEMUTT` is an enemy frame, not a pet.** No `CreatureDef` points at it; the Sim
   dummy, the EXPL bosses and the Lethal test enemy all borrow it (`game_combat.cpp`, `combat.cpp`).
 - **Trojan pets re-skin their origin line** — see `CREATURE_VISUAL_RULES.md §4`.
