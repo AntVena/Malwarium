@@ -20,6 +20,7 @@
 #include "core/app/radio_status.h"
 #include "core/app/sd_status.h"
 #include "core/content/areas/area_defs.h"
+#include "core/content/content_passives.h"  // kWormReplicaSlots sizes companionWander_
 #include "core/content/defs.h"
 #include "core/content/effect_text.h"
 #include "core/content/registry.h"
@@ -980,6 +981,18 @@ public:
     // shelf anchor (core/model/idle_wander.h). drawHabitat draws from this; it is
     // exposed so the resting motion can be inspected without a framebuffer.
     const IdleWander& petWander() const { return petWander_; }
+    // How many ambient copies walk the habitat beside the pet right now. Purely
+    // presentational and entirely derived — Combatant::wormReplicas is combat state,
+    // wiped at the end of every fight, so a worm at home has no replicas to draw and
+    // needs its own idle notion of "there is never just the one".
+    //
+    // It is a question the habitat ASKS rather than a line it tests for, so the
+    // Worm's exception lives here on the model side and drawHabitat stays a renderer.
+    // Everything that isn't a raised worm answers 0.
+    int idleCompanionCount() const;
+    // Where companion `i` (0..idleCompanionCount()-1) is standing, same units as
+    // petWander(). Each keeps its own stream so the group never marches in step.
+    const IdleWander& companionWander(int i) const { return companionWander_[i]; }
     // Hatch inspection (tests): progress 0..1 and the mapped crack frame (in the
     // decrypt minigame). `inHatch()` = the minigame modal is up.
     bool inHatch() const { return nav_ == Nav::ModalHatch; }
@@ -1932,6 +1945,10 @@ private:
     // Stepped once per heartbeat off pet_->locomotion and parked when there is no
     // mover, so it never needs a reset hook on hatch, evolution or a loaded save.
     IdleWander petWander_;
+    // ...and where the ambient copies beside it are standing. One per replication
+    // slot, of which idleCompanionCount() are live; each is seeded apart in Game's
+    // constructor, since identical wanders move identically.
+    IdleWander companionWander_[kWormReplicaSlots];
     // Per-stage tally of care interactions, indexed by DominantSignal, feeding
     // the evolution routing tables. Reset when a new stage begins
     // (hatch / evolution). Runtime-only scaffold: not persisted yet — a reboot

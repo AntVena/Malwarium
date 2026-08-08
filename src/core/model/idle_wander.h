@@ -5,7 +5,8 @@
 // different each time the screen is looked at. One move is a short trip to a nearby
 // point followed by a pause, and how the trip reads is the creature's Locomotion
 // (content/defs.h): a walker's feet stay on the shelf, a flier holds an altitude
-// above it, a swimmer ignores the shelf entirely and drifts on both axes at once.
+// above it, a swimmer ignores the shelf entirely and drifts on both axes at once,
+// and a crawler is a slow walker that also gives up the shelf bob.
 //
 // Offsets are LOGICAL px from the anchor — +x right, +y UP off the shelf. The
 // habitat (game_render.cpp drawHabitat) scales them into the active canvas and
@@ -47,10 +48,20 @@ public:
     int offsetX() const { return x_; }   // logical px, + right of the anchor
     int offsetY() const { return y_; }   // logical px above the shelf, never below it
 
-    // Whether this mover's pose carries the shelf bob on top of the drift. A swimmer
-    // moves continuously already, and a bob over that reads as jitter rather than
-    // breathing.
-    static bool bobs(Locomotion loco) { return loco != Locomotion::Swim; }
+    // Whether this mover's pose carries the shelf bob on top of the drift. Two movers
+    // skip it, for opposite reasons: a swimmer moves continuously already, so a bob
+    // over that reads as jitter rather than breathing, while a crawler is defined by
+    // never breaking contact with the floor — a 2px lift, even for one beat, is the
+    // one thing a thing that crawls must not do.
+    static bool bobs(Locomotion loco) {
+        return loco != Locomotion::Swim && loco != Locomotion::Crawl;
+    }
+
+    // Re-point this wander's own stream. Two wanders start life identical, so several
+    // on one screen — a worm and the ambient copies beside it — would otherwise march
+    // in lockstep and read as one animation drawn three times instead of as separate
+    // creatures. Seeding is the whole of what tells them apart.
+    void seed(uint32_t s) { rng_ = s; }
 
 private:
     void retarget();

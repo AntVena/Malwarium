@@ -74,9 +74,13 @@ topography for light to describe, so it flattens and reads *less* evolved despit
 ## 4. Colour, anatomy, texture
 
 **A species has a mother colour, and every creature on that line wears it.** Ransomware is green,
-Phishing is blue, Worm is orange. It is the line's signature, not any one creature's — so two
-creatures being the same hue tells you they share a line, and nothing else. A Good/Bad branch pair
-is the same colour because it is one line, not because a branch is supposed to match.
+Phishing is blue. It is the line's signature, not any one creature's — so two creatures being the
+same hue tells you they share a line, and nothing else. A Good/Bad branch pair is the same colour
+because it is one line, not because a branch is supposed to match.
+
+**A line may spend a mother STYLE instead of a mother colour**, and the Worm is the one that does
+— see below. What the rule actually asks for is a signature the eye can carry from one creature to
+the next; a hue is the cheapest way to buy one, not the only way.
 
 **The range inside that colour widens as the stage advances.** An early creature can be carried by
 a few shades; a Daemon needs more of them to hold the extra plating and texture without going
@@ -86,7 +90,7 @@ muddy. So "more shades of the mother colour" is what growth looks like, not a sh
 right hue, one small "wrong" tell. That makes a Trojan's brief a re-skin of its origin line rather
 than a new silhouette, and it follows from the rule above rather than being a separate one.
 
-### The Worm exception: draw it small
+### The Worm exception: draw it small, and draw it 1-bit
 
 **A Worm creature reads SMALLER in its cell than any other line's creature at the same stage** —
 noticeably so, not by a few pixels. It is the one line whose sprite budget is not its own: a worm
@@ -99,9 +103,18 @@ Process. It is scaled against its own line, not against the roster. And it is wh
 back-pocket idea (§4) is best spent on something the SWARM reads at a glance rather than on
 detail the shrunken parent cannot carry.
 
-The replicas themselves are not creature art and are not held to this file: they are one shared
-pair of 1-bit glyphs for the whole line (`SPR_WORM_REPLICA_ATTACK` / `_DEFEND`), the same way the
-`ICON_ITEM_*` family is one vocabulary rather than a drawing per item.
+**The Worm has no mother colour. Its signature is 1-bit line art plus copies**, which is the same
+exception read from the other end: the line already puts more things on the screen than any other,
+so it pays for them by asking each one to carry less. A worm is an outline with a solid eye — every
+row of the family, from the Vermicell shell down, and the shared replica glyphs beside them
+(`SPR_WORM_REPLICA_ATTACK` / `_DEFEND`) drawn in exactly the same vocabulary. The parent and its
+copies are one drawing style at two sizes, not creature art with UI standing next to it, which is
+what makes a crowd of them read as one family rather than as clutter.
+
+At worm scale the outline also simply holds more shape than a filled silhouette does: a Nodeatode
+is roughly 30x24 px of its 56x48 cell, and at that size the segment chords across the body are what
+say *worm* rather than *tube*. §5's grayscale test is free for this line — there was never a colour
+channel carrying meaning to lose.
 
 **This is a rule of thumb, not a gate.** Accents — metallic parts, eyes, a tell — sit outside it
 freely, and plenty of shipped sprites already break it that way. Nothing enforces it and nothing
@@ -151,6 +164,8 @@ perfectly good reason to drop the rule entirely.
 - **LOCKED:** Malbear (Sulk × Edge, Smooth finish; deep base + acid-bright crown; dorsal crest +
   shoulder plates; idle = a slow shoulder-roll "huff"). Gold standard alongside Paypup.
 - **APPROVED back/shell:** Keyloggerhead (keycap shell + blinking cursor-cap).
+- **APPROVED 1-bit:** Vermicell and Nodeatode — the Worm line's style-instead-of-hue exception
+  above. Held to the outline + segment-chords + one solid eye vocabulary, not to §3's shading law.
 - **NEEDS REDRAW (too blobby / fail grayscale):** Keyloggerhead front, FireWallaby, Brute Badger,
   Cryptoad re-sculpt. Concepts are right; execution must hit the Paypup/Malbear bar.
 - **Engine cell:** 56×48 logical (Script), 96×64 (Daemon e.g. Cryptoad). ×1.75 to panel, no

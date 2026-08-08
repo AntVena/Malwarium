@@ -618,7 +618,8 @@ static WanderTrace traceWander(Locomotion loco, int beats) {
 // mover that walks out of it walks off the canvas. Every locomotion is bounded by
 // the same box no matter how long it runs, and none of them ever go BELOW the shelf.
 void test_idle_wander_stays_inside_the_living_box() {
-    for (Locomotion loco : {Locomotion::Walk, Locomotion::Fly, Locomotion::Swim}) {
+    for (Locomotion loco : {Locomotion::Walk, Locomotion::Fly, Locomotion::Swim,
+                            Locomotion::Crawl}) {
         const WanderTrace t = traceWander(loco, 4000);
         CHECK(t.minX >= -kWanderHalfSpanX && t.maxX <= kWanderHalfSpanX);
         CHECK(t.minY >= 0 && t.maxY <= kWanderRiseMax);
@@ -650,6 +651,20 @@ void test_idle_wander_reads_differently_per_locomotion() {
     CHECK(swim.highBeats * 10 > beats);       // ...and nothing holds it up either:
     CHECK(swim.lowBeats * 10 > beats);        // it uses the whole depth of the box
     CHECK(swim.movingBeats > beats / 2 && swim.movedYBeats > beats / 4);
+}
+
+// A crawler is the floor-mover a walker only nearly is. It shares the shelf, but it
+// also gives up the 2px shelf bob the habitat draws on top of the drift — which is
+// the whole of the difference, and the reason the Worm line needed its own row.
+void test_idle_wander_crawler_never_leaves_the_floor() {
+    const int beats = 4000;
+    const WanderTrace crawl = traceWander(Locomotion::Crawl, beats);
+    CHECK(crawl.onShelfBeats == beats);
+    CHECK(crawl.movedYBeats == 0);
+    CHECK(crawl.movingBeats > 0);            // it does still get about, slowly
+
+    CHECK(!IdleWander::bobs(Locomotion::Crawl));
+    CHECK(IdleWander::bobs(Locomotion::Walk));   // ...where a walker still lifts
 }
 
 // The habitat has ONE call site and no reset hook, so the component has to notice a

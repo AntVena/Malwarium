@@ -22,6 +22,7 @@
 #include "core/ui/mods_screen.h"
 #include "core/ui/stat_screen.h"
 #include "core/ui/train_screen.h"
+#include "core/ui/worm_replicas.h"
 #include "generated/assets.h"
 
 namespace mal {
@@ -149,6 +150,28 @@ void Game::drawHabitat(Framebuffer& fb, int cursor) const {
         const int petY =
             kLivingBottom - petH - bob - logicalToActive(petWander_.offsetY());
         drawSpriteUpscaled(fb, *pet, frame, petX, petY, kScaleNum, kScaleDen, row);
+    }
+
+    // The Worm line's copies, at home. In a fight the board is Combatant::wormReplicas
+    // and it stands in RANK between its parent and the enemy; here there is no enemy
+    // and no combat state at all, so the habitat asks the model how many copies the
+    // family currently has (idleCompanionCount) and simply lets them mill about.
+    //
+    // Each takes a seat one slot-width out from the parent, alternating sides so the
+    // family stays balanced around it, and then wanders off its OWN stream from there
+    // — the seat is where a copy belongs, not where it stands. The seat plus a full
+    // drift can reach past the bezel, so the centre is clamped to whatever keeps the
+    // whole glyph on canvas: a copy pressed against the edge still reads as a copy,
+    // and half a copy does not. The glyphs alternate attack/defend for the same
+    // reason the line's slots do — a board of nothing but teeth is not what a worm is.
+    for (int i = 0; i < idleCompanionCount(); ++i) {
+        const SpriteData& glyph = (i & 1) ? ASSET_SPR_WORM_REPLICA_DEFEND
+                                          : ASSET_SPR_WORM_REPLICA_ATTACK;
+        const int w = glyph.frameW * kScaleNum / kScaleDen;
+        const int seat = kReplicaSlotW * (i / 2 + 1) * ((i & 1) ? -1 : 1);
+        int cx = kActiveW / 2 + seat + logicalToActive(companionWander(i).offsetX());
+        cx = std::max(w / 2, std::min(kActiveW - w / 2, cx));
+        drawReplica(fb, glyph, kReplicaIdleFrame + (beat_ & 1), cx, kLivingBottom);
     }
 
     // Boot-Sector incubation prompt (redesign): an unhatched egg shows its

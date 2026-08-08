@@ -116,15 +116,23 @@ which is why gameplay ships first and the drawing follows.
 
 - **Colour is the line's, not the creature's** — see `CREATURE_VISUAL_RULES.md §4`. Nothing about
   hue belongs in this file.
+- **The Worm line has no mother colour at all** — it spends **1-bit line art** as its signature
+  instead (`CREATURE_VISUAL_RULES.md §4`), which is the judgement call worth recording: the line
+  puts more things on the screen than any other, so every one of them carries less. Every row from
+  the Vermicell shell to `SPR_PET_NODEATODE` is an outline with one solid eye, drawn in the same
+  vocabulary as the replica glyphs beside it (§C.4) — the parent and its copies are one style at
+  two sizes rather than creature art with UI standing next to it. At worm scale the outline is also
+  simply the better drawing: a filled silhouette at ~30×24 px says *tube*, and the segment chords
+  across an outlined body are what say *worm*.
 - **`SPR_PET_PINGCUB` is `▨`** — it has one idle frame and wants a second to match the 2-frame
   norm above. The drawing itself is final.
 - **An egg line ships ONE egg file, not two.** `SPR_PET_EGG_PHISH_HATCH` and
   `SPR_PET_EGG_WORM_HATCH` are each an 8-frame `56×48` sheet that is both the idle loop (frames
   0–1) and the hatch one-shot (0–7, walked by `Game::hatchCrackFrame`). A separately-drawn
   single-frame egg was byte-identical to frame 0, so shipping it too would only duplicate flash.
-- **`SPR_PET_EGG_WORM_HATCH` is `▨`, and 1-bit on purpose** — the same masks-on-`ink` economy as
-  the Worm replicas below (§C.4), which is the line's own visual signature rather than a
-  simplification. A shell with the worm coiled on a track inside it and one loose byte ahead of
+- **`SPR_PET_EGG_WORM_HATCH` is `▨`, and 1-bit for the reason above** — the line's signature, not a
+  simplification, and the same masks-on-`ink` economy the replicas run on (§C.4).
+  A shell with the worm coiled on a track inside it and one loose byte ahead of
   its head: the Isolation Protocol (§C.5) seen from outside the egg. The byte is gone from frame
   5, eaten, which is the frame the shell gives way on — so the hatch reads as something the worm
   DID, not something a timer did to it. Two rules carry the look:
@@ -195,6 +203,13 @@ cell.
 Six frames each, in pairs the renderer picks between by combat state: **0–1 idle** (squiggle),
 **2–3 attack** (chomp, played while its parent swings), **4–5 death** (dissolve, played over the
 freed slot off `Combat::lastWormKill`).
+
+**The same glyphs also walk the idle habitat.** `Combatant::wormReplicas` is combat state and is
+wiped with the fight, so a worm at home has none; the habitat instead draws one ambient copy per
+stage raised (`Game::idleCompanionCount`), each crawling the shelf off its own `IdleWander`. It
+plays the idle pair only — nothing at home attacks or dies. The frame constants and the seating
+helper are shared by both screens in `src/core/ui/worm_replicas.h`, which is what stops a copy
+looking like one creature in a fight and another at home.
 
 ### C.5 Isolation Protocol — the Worm egg's hatch minigame
 

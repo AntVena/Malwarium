@@ -50,6 +50,7 @@ SCENES=(
   "lockout|lockout"
   "isolation|isolation steps:900"   "isolation_crash|isolation crash"
   "worm_egg|isolation crash bank"
+  "worm_home|pet:nodeatode"
 )
 
 n=0

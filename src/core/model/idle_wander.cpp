@@ -7,7 +7,9 @@ namespace {
 // heartbeats parked between trips. Only the wander spends these, so the magnitudes
 // sit with it rather than in tunables.h. The shape of each row IS the locomotion —
 // a walker takes long pauses and never leaves the shelf (stepY 0), a flier is almost
-// always gliding somewhere, and a swimmer drifts on both axes at a single slow pace.
+// always gliding somewhere, a swimmer drifts on both axes at a single slow pace, and
+// a crawler is a walker slowed down: half the pace over a shorter reach, resting
+// longer at the end of it.
 struct Pace {
     int stepX;     // horizontal px per heartbeat
     int stepY;     // vertical px per heartbeat; 0 pins the mover to the shelf
@@ -17,11 +19,12 @@ struct Pace {
 };
 
 constexpr Pace kPaces[] = {
-    /* Walk */ {2, 0, 6, 12, 10},
-    /* Fly  */ {2, 1, 1,  4, 12},
-    /* Swim */ {1, 1, 0,  5, 12},
+    /* Walk  */ {2, 0, 6, 12, 10},
+    /* Fly   */ {2, 1, 1,  4, 12},
+    /* Swim  */ {1, 1, 0,  5, 12},
+    /* Crawl */ {1, 0, 10, 14, 7},
 };
-static_assert(static_cast<int>(Locomotion::Swim) + 1 ==
+static_assert(static_cast<int>(Locomotion::Crawl) + 1 ==
                   static_cast<int>(sizeof(kPaces) / sizeof(kPaces[0])),
               "one Pace row per Locomotion");
 
@@ -77,7 +80,8 @@ void IdleWander::retarget() {
 
     switch (loco_) {
         case Locomotion::Walk:
-            targetY_ = 0;   // the shelf is the whole of a walker's world
+        case Locomotion::Crawl:
+            targetY_ = 0;   // the shelf is the whole of a floor-mover's world
             break;
         case Locomotion::Fly:
             targetY_ = roll(kLowPassOdds) == 0

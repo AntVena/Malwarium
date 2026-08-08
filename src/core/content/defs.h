@@ -25,9 +25,10 @@ enum class MoveKind { Attack, Defend };
 
 // How a creature gets around under its own power, which is what the idle habitat's
 // resting motion reads (core/model/idle_wander.h): a walker keeps its feet on the
-// shelf, a flier holds an altitude above it, a swimmer ignores the shelf entirely.
+// shelf, a flier holds an altitude above it, a swimmer ignores the shelf entirely,
+// and a crawler is a walker that never once breaks contact with the floor.
 // MOVEMENT only — which sprite row a mover animates on is the sheet's business.
-enum class Locomotion : uint8_t { Walk, Fly, Swim };
+enum class Locomotion : uint8_t { Walk, Fly, Swim, Crawl };
 
 inline const char* stageName(Stage s) {
     switch (s) {

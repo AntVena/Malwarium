@@ -18,6 +18,13 @@ namespace mal {
 
 Game::Game(StartMode mode, const char* hatchedCreature, ISaveStore* store)
     : registry_(ContentRegistry::embedded()), bits_(kStartBits), store_(store) {
+    // Set the ambient copies' wanders apart before anything can return early. They are
+    // otherwise identical objects, and identical wanders walk identical paths — the
+    // seed is the only thing that makes three copies read as three creatures.
+    for (int i = 0; i < kWormReplicaSlots; ++i) {
+        companionWander_[i].seed(0x2545f491u + 0x9e3779b9u * static_cast<uint32_t>(i + 1));
+    }
+
     inventory_ = Inventory::starting();
     loadout_ = Loadout::starting();
     moveLoadout_ = MoveLoadout::startingForLine(registry_, nullptr);  // overwritten below
@@ -52,6 +59,17 @@ Game::Game(StartMode mode, const char* hatchedCreature, ISaveStore* store)
         // Real first boot: empty save -> Decryption Hatch.
         startHatch();
     }
+}
+
+int Game::idleCompanionCount() const {
+    if (!pet_ || inEggPhase()) return 0;   // an egg has no copies; nor has an empty save
+    if (!pet_->line || std::strcmp(pet_->line, "worm") != 0) return 0;
+    // One more copy per stage raised, which is Nodeatode's own hint text made visible:
+    // a Process worm has found one friend, and by the Daemon the family fills every
+    // replication slot the line ever gets. The clamp is what keeps the two agreeing if
+    // a fifth stage or a fourth slot ever lands.
+    const int byStage = stageIndex(pet_->stage);
+    return byStage < kWormReplicaSlots ? byStage : kWormReplicaSlots;
 }
 
 // --- Tick ------------------------------------------------------------------
@@ -145,8 +163,16 @@ bool Game::tick(uint32_t nowMs) {
         // anchor, the way its species moves (core/model/idle_wander.h). An egg is
         // parked instead — it sits where it was laid, with its incubation readout
         // drawn directly above it — and so is an empty save, which has no pet at all.
+        // A worm's ambient copies walk the same shelf on the same beat, each off its
+        // own stream; the ones past the live count are parked so a shrinking family
+        // (an evolution, a fresh egg) leaves nothing mid-stride to walk back in.
         if (pet_ && !inEggPhase()) petWander_.step(pet_->locomotion);
         else petWander_.park();
+        const int companions = idleCompanionCount();
+        for (int i = 0; i < kWormReplicaSlots; ++i) {
+            if (i < companions) companionWander_[i].step(pet_->locomotion);
+            else companionWander_[i].park();
+        }
         // Modal / process timers run on the heartbeat (their own lifecycle).
         if (nav_ == Nav::ModalFeeding) {
             if (++feedBeat_ >= kFeedBeats) endFeeding();

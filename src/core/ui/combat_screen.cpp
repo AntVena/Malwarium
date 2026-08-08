@@ -13,6 +13,7 @@
 #include "core/render/sprite.h"
 #include "core/ui/layout.h"
 #include "core/ui/widgets.h"
+#include "core/ui/worm_replicas.h"
 #include "generated/assets.h"
 
 namespace mal {
@@ -89,28 +90,13 @@ int attackHopPx(int hopBeat, int dir) {
 
 // --- Worm replicas ------------------------------------------------------------------
 // The replication board, drawn on the same shelf as its parent so a worm and its copies
-// read as one force rather than as a pet with UI stuck to it. Two glyphs for the whole
-// line (SPR_WORM_REPLICA_ATTACK/_DEFEND), each a 6-frame strip in idle/attack/death
-// pairs — see assets/CREATURE_VISUAL_RULES.md for why the line shares them instead of
-// shrinking every worm sprite.
-constexpr int kReplicaIdleFrame = 0;    // + (beat & 1) for the squiggle
-constexpr int kReplicaAttackFrame = 2;  // + (beat & 1) for the chomp
-constexpr int kReplicaDeathFrame = 4;   // + (beat & 1) for the dissolve
+// read as one force rather than as a pet with UI stuck to it. The glyphs, their frame
+// pairs and how one is seated are in core/ui/worm_replicas.h, shared with the idle
+// habitat — only the fight's own reading of them is below.
+
 // How long a destroyed copy's dissolve plays, in anim-ticks — matched to the impact
 // punch (kImpactPeriod) so the pop and the recoil that caused it read as one beat.
 constexpr int kReplicaDeathPeriod = 4;
-
-// Seat one glyph. Bottom-anchored on the shelf like the fighters, so the replicas stand
-// on the same ground line the parent does.
-void drawReplica(Framebuffer& fb, const SpriteData& s, int frame, int cx, int shelfY) {
-    const int w = s.frameW * kScaleNum / kScaleDen;
-    const int h = s.h * kScaleNum / kScaleDen;
-    drawSpriteUpscaled(fb, s, frame, cx - w / 2, shelfY - h, kScaleNum, kScaleDen);
-}
-
-// One slot's width on the shelf: the glyph plus a little air, so neighbours read as
-// separate copies rather than one crowd.
-constexpr int kReplicaSlotW = 30;
 
 // One side's replicas, plus the dissolve of a copy this turn destroyed (kill.happened).
 //

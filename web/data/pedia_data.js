@@ -424,11 +424,11 @@ window.PEDIA_DATA = {
       ],
       "hint": "A thread-thin nematode that chews from one node to the next. Small, slow, and by morning there is never just the one.",
       "context": "Worms / self-replicating network propagation",
-      "sprite": "assets/sprites/SPR_MALBEAST_BUFFER_WYRM.png",
+      "sprite": "assets/sprites/SPR_PET_NODEATODE.png",
       "cellW": 56,
       "cellH": 48,
-      "sheetW": 56,
-      "sheetH": 48,
+      "sheetW": 224,
+      "sheetH": 192,
       "branchSplit": true
     },
     {
