@@ -536,9 +536,18 @@ void Game::applySave(const SaveData& d) {
     // web-'Pedia reveal state (v25). seenCreatures resolves each saved id to the
     // registry's stable pointer, dropping unknown ids (mirrors rack_/records_); the
     // masks restore verbatim.
+    //
+    // The dedupe is not belt-and-braces: a blob can legitimately carry two ids that are
+    // now ONE creature, because a rename row may retire several ids onto the same
+    // successor (save.h's `renamedIds` — the Worm line's two Script placeholders both
+    // land on Rootgrub). These lists are tallies, and AchSeries::LineRaised COUNTS the
+    // raised one per line, so a duplicate does not merely waste a slot — it awards a
+    // line achievement for a creature the operator raised once. The mark* helpers are
+    // idempotent for the same reason; this path bypasses them, so it has to say so.
     seenCreatures_.clear();
     for (const auto& s : d.seenCreatures)
-        if (const CreatureDef* c = registry_.creature(s.id)) seenCreatures_.push_back(c);
+        if (const CreatureDef* c = registry_.creature(s.id))
+            if (!creatureSeen(c->id)) seenCreatures_.push_back(c);
     malbeastSeenMask_ = d.malbeastSeen;
     malbeastDefeatedMask_ = d.malbeastDefeated;
 
@@ -606,7 +615,8 @@ void Game::applySave(const SaveData& d) {
     // is covered by installPet below.
     raisedCreatures_.clear();
     for (const auto& s : d.raisedCreatures)
-        if (const CreatureDef* c = registry_.creature(s.id)) raisedCreatures_.push_back(c);
+        if (const CreatureDef* c = registry_.creature(s.id))
+            if (!creatureRaised(c->id)) raisedCreatures_.push_back(c);
     for (const auto& p : d.rack) markCreatureRaised(p.id);
     for (const auto& r : d.records) markCreatureRaised(r.id);
 

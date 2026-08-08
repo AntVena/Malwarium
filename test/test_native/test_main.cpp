@@ -494,6 +494,7 @@ int g_failures = 0;
     RUN(test_pedia_raised_tally_survives_evolution)    \
     RUN(test_save_v39_raised_tally_roundtrip_and_migration) \
     RUN(test_save_v41_renames_retired_creature_ids) \
+    RUN(test_save_v46_two_retired_ids_collapse_without_double_tally) \
     RUN(test_renamed_ids_table_invariants)  \
     RUN(test_save_v43_ladder_insert_shifts_expl_progress) \
     RUN(test_ladder_inserts_table_invariants) \

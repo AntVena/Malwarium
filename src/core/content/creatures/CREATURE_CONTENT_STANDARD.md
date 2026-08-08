@@ -68,6 +68,25 @@ spliced in anywhere or reordered with no `kSaveVersion` bump and no migration. T
 reorder changes is the order the web 'Pedia lists species in, because `tools/dump_content.cpp`
 walks `kCreatureLines` in order.
 
+### …but names are not
+
+Position costs nothing to change. An **id** costs a save format. It is a wire value (`save.h`), so
+renaming one means a `renamedIds` row plus a `kSaveVersion` bump, and the row then has to be
+carried until `kOldestAcceptedVersion` rises past it. Two consequences worth planning around:
+
+- **Get the name right before the creature ships,** not after. A placeholder that reaches a release
+  is a rename row forever; one caught beforehand is a one-field edit.
+- **A rename may be MANY-TO-ONE** — several retired ids landing on the same successor, which is
+  what happens when a branch collapses. That is legal (the flattening rule only requires distinct
+  `from`s), but it is the case where a blob can name one creature twice, and the seen/raised
+  tallies are lists that something counts. `applySave` dedupes on load for exactly this reason.
+
+**A display name is a portmanteau of a computing term and a creature word** — Vermicell, Nodeatode,
+Cryptoad, Berserkernel, Keyloggerhead. Check the stem against the WHOLE roster, not just the line
+you are adding to: the Worm line's good Daemon was very nearly *Longpoll*, which collides with the
+Phishing line's Tadpoll on a suffix that already means something. `dump_content` will not catch it
+and neither will the gates — the ids differ, so only a reader notices, and by then it has shipped.
+
 ## Clips
 
 `CreatureDef::clips` declares up to `kMaxAnimClips` named loops over the creature's own sheet. A

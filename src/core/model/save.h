@@ -283,7 +283,12 @@ constexpr int kSaveTextCap = 28;     // matches EventLog's LogEntry.text
 // A v44-or-older blob migrates by tallying `ownedMods` per id and clamping to the base
 // cap; the surplus and the rolled levels are dropped. Nothing player-visible is lost —
 // no screen has ever shown a copy, only a type and a count.
-constexpr uint16_t kSaveVersion = 45;
+// v46 adds no bytes. It marks the Worm line collapsing its two Script placeholders into
+// one designed Script row (Rootgrub) and moving the care branch down to the Daemon, the
+// shape every other line already had. Both retired ids are in the rename table below, so
+// a pre-v46 blob holding either arrives on Rootgrub; the version is what lets that pass
+// be skipped for anything newer, and what will let those two rows retire.
+constexpr uint16_t kSaveVersion = 46;
 
 // The oldest blob deserialize will read. Raising it is how a device stops carrying
 // migration weight for saves nobody can still be holding — and it is the ONLY thing

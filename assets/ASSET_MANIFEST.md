@@ -128,10 +128,20 @@ which is why gameplay ships first and the drawing follows.
   drawing vocabulary — one ink, outline-never-silhouette, segment chords, exactly one solid mass,
   superellipses over ellipses — and each worm-line creature is a RECIPE over it. The vocabulary is
   body-plan agnostic on purpose, since the line's later rows are not all literally worms; what they
-  share is the finishing pass, and a recipe cannot opt out of it. `SPR_PET_NODEATODE` is generated
-  today, and the `worm_art_recipes` ctest fails if a committed sheet and its recipe ever disagree.
-  The Vermicell shell and the replica glyphs are still hand-drawn and become recipes when next
-  touched — their pixels are approved and shipped, so there is nothing to gain from moving them now.
+  share is the finishing pass, and a recipe cannot opt out of it. `SPR_PET_NODEATODE` and
+  `SPR_PET_ROOTGRUB` are generated today, and the `worm_art_recipes` ctest fails if a committed
+  sheet and its recipe ever disagree. The Vermicell shell and the replica glyphs are still
+  hand-drawn and become recipes when next touched — their pixels are approved and shipped, so
+  there is nothing to gain from moving them now.
+- **A mouth is two different forms, and picking the wrong one costs the creature.** `gape` is a
+  jaw in PROFILE — it cuts a wedge from the head and routes the outline around it, so the
+  silhouette still closes and the opening reads as hinged. `maw` is a mouth seen down its own
+  AXIS — teeth stepping inward off the head's own rim, around a solid throat. Nodeatode has a
+  face, so it gapes; Rootgrub's whole front is the opening, so it maws. Swapped, the first reads
+  as a chipped edge and the second as a wound. Two small rules make either survive: a tooth is
+  rooted just INSIDE the rim (flush leaves it floating, outside makes the creature spiky rather
+  than toothed), and an even tooth count keeps the long/short fang alternation from landing two
+  long teeth together at the wrap — equal-length spokes around a circle read as a flower.
 - **`SPR_PET_PINGCUB` is `▨`** — it has one idle frame and wants a second to match the 2-frame
   norm above. The drawing itself is final.
 - **An egg line ships ONE egg file, not two.** `SPR_PET_EGG_PHISH_HATCH` and

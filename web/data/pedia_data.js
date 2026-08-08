@@ -419,8 +419,7 @@ window.PEDIA_DATA = {
       "stageName": "Process",
       "line": "worm",
       "evolvesTo": [
-        "worm_placeholder_good",
-        "worm_placeholder_bad"
+        "rootgrub"
       ],
       "hint": "A thread-thin nematode that chews from one node to the next. Small, slow, and by morning there is never just the one.",
       "context": "Worms / self-replicating network propagation",
@@ -428,40 +427,56 @@ window.PEDIA_DATA = {
       "cellW": 56,
       "cellH": 48,
       "sheetW": 224,
+      "sheetH": 192
+    },
+    {
+      "id": "rootgrub",
+      "name": "Rootgrub",
+      "stage": 3,
+      "stageName": "Script",
+      "line": "worm",
+      "evolvesTo": [
+        "shenloop",
+        "threadbore"
+      ],
+      "hint": "A thumb-thick grub that has stopped chewing between nodes and started chewing through them. Its mouth is the widest part of it now, and it has not settled whether to go on growing out or start growing up.",
+      "context": "Resource-exhausting payloads / a worm that trades reach for appetite",
+      "sprite": "assets/sprites/SPR_PET_ROOTGRUB.png",
+      "cellW": 56,
+      "cellH": 48,
+      "sheetW": 224,
       "sheetH": 192,
       "branchSplit": true
     },
     {
-      "id": "worm_placeholder_good",
-      "name": "Worm Placeholder I",
-      "stage": 3,
-      "stageName": "Script",
+      "id": "shenloop",
+      "name": "Shenloop",
+      "stage": 4,
+      "stageName": "Daemon",
       "line": "worm",
       "evolvesTo": [],
-      "hint": "A worm that grew up cautious - it spends its copies on cover rather than on teeth.",
-      "context": "Worm payload, durable branch (placeholder)",
-      "sprite": "assets/sprites/SPR_PET_GENERIC_SCRIPT.png",
-      "cellW": 56,
-      "cellH": 48,
-      "sheetW": 56,
-      "sheetH": 48,
-      "branch": "good"
+      "hint": "The same appetite grown upward instead of outward - a long clawless serpent that holds one connection open across the whole network and waits at the far end of it for as long as that takes.",
+      "context": "Beacon loops / an implant that holds its channel open and calls home",
+      "sprite": "assets/sprites/SPR_PET_GENERIC_DAEMON.png",
+      "cellW": 96,
+      "cellH": 64,
+      "sheetW": 96,
+      "sheetH": 64
     },
     {
-      "id": "worm_placeholder_bad",
-      "name": "Worm Placeholder II",
-      "stage": 3,
-      "stageName": "Script",
+      "id": "threadbore",
+      "name": "Threadbore",
+      "stage": 4,
+      "stageName": "Daemon",
       "line": "worm",
       "evolvesTo": [],
-      "hint": "A worm that grew up hungry - it spends its copies on teeth and trusts there to be enough of them.",
-      "context": "Worm payload, aggressive branch (placeholder)",
-      "sprite": "assets/sprites/SPR_PET_GENERIC_SCRIPT.png",
-      "cellW": 56,
-      "cellH": 48,
-      "sheetW": 56,
-      "sheetH": 48,
-      "branch": "bad"
+      "hint": "Wider than it is long, and almost all of that is jaw. It grew a pair of wings with no business lifting anything this heavy, and lifts anyway, and arrives.",
+      "context": "Thread-pool exhaustion / a payload that consumes the host it lands on",
+      "sprite": "assets/sprites/SPR_PET_GENERIC_DAEMON.png",
+      "cellW": 96,
+      "cellH": 64,
+      "sheetW": 96,
+      "sheetH": 64
     }
   ],
   "malbeasts": [

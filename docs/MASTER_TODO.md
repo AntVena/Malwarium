@@ -175,12 +175,13 @@ roster, and the wild half keeps its own roster-keyed masks).
   fastest way to find the cliff: a full board is a **hard** floor of 1-in-13 that any given hit
   reaches the parent at all, on a line that also cannot be out-actioned, so if the passive is
   broken it will be broken there. Diff **S**, one balance sitting.
-- **The Worm line stops after its Process row.** Both Script successors are on the generic stage
-  stand-in **and are still named `Worm Placeholder I`/`II`** — the care branch and its power/Frag
-  lean are wired, the creatures on the end of it are not designed. Drawing them means committing
-  to the line's own vocabulary (1-bit outline, drawn small, `CREATURE_VISUAL_RULES.md §4`) at a
-  stage that is meant to read as *more* than the Process row, which is the actual design question
-  and the reason this is not just two PNGs. Diff **M**, art + naming.
+- **The Worm line's two Daemons are designed but not drawn.** Shenloop and Threadbore are the
+  answer to Rootgrub's question — grow up, or grow out — and both are on the generic Daemon
+  stand-in. Neither is a straight run through `tools/gen_worm_art.py` as it stands: Shenloop is a
+  clawless eastern serpent, so it wants a long spine with no taper and no head bulb at all, and
+  Threadbore is Rootgrub past the point of sense, which needs a wing form the vocabulary has never
+  had to draw. They are also the first rows of the line to leave the floor (`Swim` and `Fly`), so
+  the resting motion has to tell them apart at a glance. Diff **M**, two recipes + a wing form.
 - **The Isolation Protocol's difficulty is unmeasured.** `kIsolationStepMs`, `kIsolationGrowth`
   and the 16×11 buffer are a first cut set to one identity — 30 bytes eats the whole incubation
   clock and leaves the worm across a third of the board — never played against a real thumb on a

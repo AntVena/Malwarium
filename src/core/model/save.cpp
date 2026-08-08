@@ -84,6 +84,13 @@ void writeStored(Writer& w, const SaveStoredPet& p) {
 constexpr RenamedId kRenamedIds[] = {
     {"grizzgabyte_good", "bruinforce", 41},
     {"grizzgabyte_bad", "berserkernel", 41},
+    // The Worm line's two Script placeholders became ONE designed Script row, with the
+    // care branch moved down to the Daemon. Both retired ids land on it: they were the
+    // same rung of the same ladder, so whichever a blob is carrying, the pet it names
+    // is the one Rootgrub now is. The branch that pet was headed for is not lost — it
+    // is re-read from the care tally at the Daemon evolution, one stage later.
+    {"worm_placeholder_good", "rootgrub", 46},
+    {"worm_placeholder_bad", "rootgrub", 46},
 };
 
 // The newest version any row still rewrites — a blob at or above it needs no pass.

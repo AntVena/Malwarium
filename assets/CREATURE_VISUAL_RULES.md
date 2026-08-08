@@ -99,7 +99,11 @@ one of them is drawn on the same shelf. The room the replicas stand in has to co
 parent, so the parent gives it up by design.
 
 This does not soften the stage arc (§0) — a Worm Daemon still reads as the payoff against a Worm
-Process. It is scaled against its own line, not against the roster. And it is why the line's
+Process. It is scaled against its own line, not against the roster. **A worm grows by getting
+HEAVIER, not by getting bigger:** Rootgrub is barely wider in its cell than Nodeatode and reads as
+a whole stage more, because the mass moved — thin and long became short and thick, and a head
+became a mouth. That is the move this line has instead of the extra cell room every other line
+spends on its Script. And it is why the line's
 back-pocket idea (§4) is best spent on something the SWARM reads at a glance rather than on
 detail the shrunken parent cannot carry.
 
@@ -164,7 +168,7 @@ perfectly good reason to drop the rule entirely.
 - **LOCKED:** Malbear (Sulk × Edge, Smooth finish; deep base + acid-bright crown; dorsal crest +
   shoulder plates; idle = a slow shoulder-roll "huff"). Gold standard alongside Paypup.
 - **APPROVED back/shell:** Keyloggerhead (keycap shell + blinking cursor-cap).
-- **APPROVED 1-bit:** Vermicell and Nodeatode — the Worm line's style-instead-of-hue exception
+- **APPROVED 1-bit:** Vermicell, Nodeatode and Rootgrub — the Worm line's style-instead-of-hue exception
   above. Held to the outline + segment-chords + one solid eye vocabulary, not to §3's shading law.
   That vocabulary is `tools/gen_worm_art.py`, which is where a new worm-line creature is drawn:
   the style is mechanical enough to be code, and a recipe over it cannot express a second ink or a

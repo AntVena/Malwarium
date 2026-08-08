@@ -851,6 +851,29 @@ void test_save_v41_renames_retired_creature_ids() {
     CHECK(std::strcmp(back.activeId, "bruinforce") == 0);
 }
 
+// v46: two retired ids that land on the SAME successor — the Worm line's two Script
+// placeholders both becoming Rootgrub. Every earlier rename row was one-to-one, so this
+// is the first blob that can name one creature twice. The tallies are lists, not sets,
+// and AchSeries::LineRaised counts the raised one per line, so the failure is not a
+// wasted slot: it is a line achievement awarded for a creature raised once.
+void test_save_v46_two_retired_ids_collapse_without_double_tally() {
+    SaveData a;
+    std::strcpy(a.activeId, "worm_placeholder_good");
+    a.seenCreatures.push_back(SaveId{"worm_placeholder_good"});
+    a.seenCreatures.push_back(SaveId{"worm_placeholder_bad"});
+    a.raisedCreatures.push_back(SaveId{"worm_placeholder_good"});
+    a.raisedCreatures.push_back(SaveId{"worm_placeholder_bad"});
+
+    std::vector<uint8_t> blob = serializeSave(a);
+    blob[4] = 45; blob[5] = 0;                      // stamp back to v45
+    MemSaveStore store; store.save(blob);
+    Game g(StartMode::Hatched, "paypup", &store);
+
+    CHECK(g.pet() && std::strcmp(g.pet()->id, "rootgrub") == 0);
+    CHECK(g.creatureRaised("rootgrub"));
+    CHECK(g.speciesRaised() == 1);   // one entry, not two — the whole point
+}
+
 // v43: NET-SEA CROSSING spliced into the MIDDLE of the ladder. Every persisted EXPL field
 // is positional, so a v42 blob's flags from rung 2 on describe the area now one rung to
 // their left. The failure this guards is silent and generous in the worst direction — the

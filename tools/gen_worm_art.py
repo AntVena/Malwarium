@@ -34,6 +34,12 @@ same three lines of recipe with different forms unioned in. What they SHARE is t
 finishing pass — outline, chords, one solid mass — and that is the part no recipe gets
 to opt out of.
 
+The same parameters saying opposite things is the test of whether that is working.
+Nodeatode and Rootgrub are both `tube` along a Bézier with chords and a mouth: one is
+thin, long and led by a head, the other short, thick and led by a hole. Nothing in the
+vocabulary knows which is which — the recipes do, and they differ by about a dozen
+numbers and one choice of mouth.
+
 The five rules the vocabulary encodes
 -------------------------------------
 1.  ONE INK, on transparent. `INK` below, and nothing may emit another value. This is
@@ -45,8 +51,13 @@ The five rules the vocabulary encodes
 3.  SEGMENT CHORDS. Perpendicular rungs across a body at fixed spine parameters. This
     is the single strongest tell: without them an outlined tube reads as *tube*, and
     with them it reads as *worm*.
-4.  EXACTLY ONE SOLID MASS — the eye. It is the only filled pixels in the cell, so it
-    is what the eye of the viewer lands on first. `Cell.solid` refuses a second one.
+4.  EXACTLY ONE SOLID MASS. The only filled pixels in the cell, so it is what the
+    viewer's eye lands on first — which makes WHERE a recipe spends it the strongest
+    single statement it makes about the creature. Most rows spend it on an eye
+    (`Cell.eye`); Rootgrub spends it on the throat at the back of its maw, and that one
+    choice is most of why it reads as something that eats rather than something that
+    looks. `Cell.solid` refuses a second, because "the one solid thing" stops being
+    true the first time a recipe adds another.
 5.  SQUARED, NOT ROUND. `superellipse` at exponent ~2.4 by default. At these sizes a
     true ellipse is a smoothness the pixels cannot deliver, so the drawing commits to
     the blocky read instead of fighting for one.
@@ -362,7 +373,7 @@ class Cell:
             line(self.ink, (cx - nx * r, cy - ny * r), (cx + nx * r, cy + ny * r))
         return self
 
-    def gape(self, center, r, facing, amount, teeth=True):
+    def gape(self, center, r, facing, amount, teeth=1, spread=1.0):
         """Open a jaw in a head that is otherwise a closed ring.
 
         A wedge is CUT from the ring and the two cut edges are then drawn back in as
@@ -370,15 +381,19 @@ class Cell:
         still CLOSES around the opening. That is the whole trick: an outline with a
         piece missing reads as a damaged sprite, and the same outline routed around a
         notch reads as a mouth. Lips pointing outward from the cut do not achieve it;
-        at 10px across, the eye needs the shape to be enclosed to name it.
+        at ten pixels across, the eye needs the shape to be enclosed to name it.
 
-        `amount` is 0 (shut) to 1 (widest). Teeth are a single pixel per jaw and only
-        appear once the gape is wide enough for them to sit in open space.
+        `amount` is 0 (shut) to 1 (widest). `spread` scales how far round the head the
+        jaw reaches, so a mouth can be the creature's whole front rather than a notch
+        in it. `teeth` is ticks PER JAW, set perpendicular to the jaw line and pointing
+        into the opening: one is a fang, four is a maw. They are drawn on the jaw edges
+        rather than floating in the gap because a tooth that does not meet the jaw it
+        grows from reads as grit in the mouth.
         """
         if amount <= 0:
             return self
         a0 = math.atan2(facing[1], facing[0])
-        half = math.radians(14 + 30 * amount)
+        half = math.radians((14 + 30 * amount) * spread)
 
         # Cut the ring between the jaws. The band is generous on either side of r so a
         # ring drawn 2px thick where it meets the neck is cleared through.
@@ -397,13 +412,64 @@ class Cell:
             a = a0 + sign * half
             rim = (center[0] + math.cos(a) * r, center[1] + math.sin(a) * r)
             line(self.ink, hinge, rim)
-            if teeth and amount > 0.5:
-                t = 0.62
-                self.ink.set(
-                    int(round(hinge[0] + (rim[0] - hinge[0]) * t
-                              - math.cos(a0 + sign * math.pi / 2))),
-                    int(round(hinge[1] + (rim[1] - hinge[1]) * t
-                              - math.sin(a0 + sign * math.pi / 2))))
+            # Into the gape is the jaw's perpendicular rotated toward the mouth axis,
+            # which flips with the jaw — so the two rows of teeth face each other
+            # instead of both combing the same way.
+            ix, iy = sign * math.sin(a), -sign * math.cos(a)
+            depth = 1 + int(round(1.4 * amount)) if teeth > 1 else 1
+            for k in range(teeth):
+                t = (k + 1) / (teeth + 1)
+                bx = hinge[0] + (rim[0] - hinge[0]) * t
+                by = hinge[1] + (rim[1] - hinge[1]) * t
+                line(self.ink, (bx, by), (bx + ix * depth, by + iy * depth))
+        return self
+
+    def maw(self, center, r, teeth=7, depth=2.6, phase=0.0, stagger=0.45,
+            facing=None, arc=2 * math.pi):
+        """A mouth seen down its own AXIS: teeth stepping inward off the head's own rim.
+
+        `gape` above is a mouth in profile — a jaw that hinges. This is the other one, a
+        ring of teeth around an opening you are looking into, and the two are not
+        interchangeable: at this size a profile jaw on a creature whose whole front is
+        its mouth reads as a chipped edge, and an axial maw on a creature with a face
+        reads as a wound. Which one a recipe reaches for is the single biggest thing it
+        says about what the creature is.
+
+        No rim is drawn — the head's own outline already is one. The teeth are radial
+        spokes stepping IN from it, so the mouth is a hole bounded by the silhouette
+        rather than a shape floating inside it, and `phase` rotates them, which is a
+        chew when it moves frame to frame.
+
+        `stagger` shortens every other tooth. Spokes of equal length around a circle
+        read as a FLOWER, and no amount of menace elsewhere in the drawing argues the
+        viewer out of it; alternating long and short is what makes the same spokes read
+        as fangs. It is the one parameter here that is doing work no geometry demands —
+        and it is why `teeth` wants to be EVEN, so the alternation closes instead of
+        landing two long teeth side by side at the wrap.
+
+        `arc` (with `facing`) keeps teeth off the part of the rim that is BURIED in the
+        body. Where a head sits deep on a thick neck, part of its circle is interior to
+        the merged silhouette and has no rim at all — teeth there root on nothing and
+        float inside the creature, reading as swallowed debris. Which arc is exposed is
+        the recipe's business, since only it knows how deep the head is set.
+        """
+        for k in range(teeth):
+            a = phase + 2 * math.pi * k / teeth
+            if facing is not None:
+                off = abs((a - math.atan2(facing[1], facing[0]) + math.pi)
+                          % (2 * math.pi) - math.pi)
+                if off > arc / 2:
+                    continue
+            d = depth * (1.0 - stagger * (k % 2))
+            # Rooted just INSIDE the nominal radius. Flush with it leaves some teeth
+            # a pixel clear of the rasterised rim, reading as debris in the mouth;
+            # outside it they break the silhouette and the maw reads as spiky rather
+            # than as toothed, which is a different creature entirely.
+            line(self.ink,
+                 (center[0] + math.cos(a) * (r - 0.9),
+                  center[1] + math.sin(a) * (r - 0.9)),
+                 (center[0] + math.cos(a) * (r - 0.9 - d),
+                  center[1] + math.sin(a) * (r - 0.9 - d)))
         return self
 
     def bake(self):
@@ -559,11 +625,121 @@ def nodeatode():
     return sheet
 
 
+def _rootgrub_cell(head, c0, c1, mouth, teeth=8, phase=0.0):
+    """One Rootgrub frame: a thick short body reared off the shelf under a big maw.
+
+    The Script row, and the same vocabulary saying the opposite thing to Nodeatode's.
+    Where the Process worm is thin and long and led by a head, this is SHORT and FAT
+    and led by a mouth.
+
+    WIDTH is how it reads as a whole stage more than what it came from. It has barely
+    more spine than Nodeatode and no more cell, so length and scale are both spent —
+    the only axis left is girth, and the taper runs 6.2 to 8.4 where the Process row
+    runs 2.6 to 4.6. Roughly double the body on the same footprint, which is also why
+    the line's draw-small rule survives the promotion.
+
+    FEWER segments, for the same reason. Rungs close together subdivide a body and make
+    it read as articulated and therefore light; three widely spaced ones leave big
+    unbroken panels of flank between them, and the panels are what carry the mass.
+    Nodeatode has four rungs on a thin body; this has three on a fat one.
+
+    Its single solid mass is the THROAT, not an eye (see `Cell.solid`). A sandworm's
+    whole face is the hole, and a creature whose one filled shape sits at the back of
+    an open mouth reads as something that eats — which is the branch this row is on.
+    """
+    tail = (24.0, GROUND + 1)
+    # The taper RUNS OUT before the head, so the maw sits on the body as a distinct
+    # bulb. Nodeatode's head is barely wider than its neck and reads as a continuation;
+    # here the neck has to give ground for the mouth to be a thing the body carries.
+    r_tail, r_neck = 6.2, 8.4
+    head_r = 10.4 + 1.5 * mouth
+    cell = Cell(CW, CH)
+    spine = bezier(tail, c0, c1, head)
+
+    tube(cell.body, spine, r_tail, r_neck)
+    disc(cell.body, head[0], head[1], head_r)
+
+    cell.chords(spine, (0.22, 0.46, 0.70),
+                lambda t: r_tail + (r_neck - r_tail) * t, overhang=0.3)
+
+    facing = tangent(spine, 1.0)
+    # Seen down its own axis, because on this creature the mouth IS the front. Teeth
+    # are sized off the head rather than in absolute px, so the maw stays in proportion
+    # as it dilates instead of the fangs shrinking into a wider ring. The head also
+    # sits DEEP on this neck — a fat body swallows most of a circle — so the ring
+    # stops short of where the body enters it.
+    cell.maw(head, head_r, teeth=teeth, depth=head_r * (0.24 + 0.16 * mouth),
+             phase=phase, facing=facing, arc=math.radians(280))
+    # The one solid mass is the THROAT, where every other row of the line spends it on
+    # an eye. A creature whose single filled shape sits at the back of an open mouth
+    # reads as something that eats, which is the branch this row is on.
+    throat = 4 + (1 if mouth > 0.7 else 0)
+    cell.solid(int(round(head[0] - (throat - 1) / 2.0)),
+               int(round(head[1] - (throat - 1) / 2.0)), throat, throat)
+
+    line(cell.ink, (tail[0] - 5, GROUND + 1), (tail[0] + 6, GROUND + 1))
+    return cell
+
+
+def rootgrub():
+    """SPR_PET_ROOTGRUB — the Worm line's Script pet, and its fork in the road.
+
+    Four rows of four 56x48 frames, same clip set as the Process row above:
+
+      0  idle    4 frames — reared off the shelf, maw working. It never fully shuts:
+                            the mouth is the silhouette, so closing it would cost the
+                            creature its read on the one screen it is seen on most.
+      1  attack  4 frames — rear back, gape wide, drive down, close.
+      2  droop   2 frames — settled onto the shelf, maw slack.
+      3  weak    2 frames — collapsed, barely reared at all.
+    """
+    sheet = Sheet(4, 4, CW, CH)
+
+    # Idle. A short body has little spine to run a wave down, so the motion is in the
+    # MAW instead — it opens and closes on the loop while the body sways a pixel or two
+    # under it. Same rule as Nodeatode's: whatever moves, the shelf contact does not.
+    for i in range(4):
+        a = 2 * math.pi * i / 4
+        head = (34.0 + 1.2 * math.sin(a), 25.0 - 0.8 * math.cos(a))
+        c0 = (24.0, 40.0)
+        c1 = (28.0 + 1.4 * math.sin(a), 31.0)
+        sheet.place(i, 0, _rootgrub_cell(head, c0, c1, 0.42 + 0.20 * math.sin(a),
+                                         phase=a * 0.25))
+
+    # Attack. It does not lunge the way the Process row does — it rears and comes DOWN,
+    # which is what a mouth that size is for.
+    for i, (hd, c0, c1, mouth) in enumerate([
+        ((33.0, 22.0), (24.0, 40.0), (27.0, 28.0), 0.30),
+        ((34.0, 20.0), (24.0, 39.0), (28.0, 26.0), 1.00),
+        ((38.0, 26.0), (24.5, 40.0), (32.0, 30.0), 1.00),
+        ((39.0, 30.0), (25.0, 41.0), (34.0, 34.0), 0.35),
+    ]):
+        sheet.place(i, 1, _rootgrub_cell(hd, c0, c1, mouth, phase=i * 0.22))
+
+    # Droop. Down off its rear, maw hanging half open with nothing behind it.
+    for i, (hd, c0, c1) in enumerate([
+        ((39.0, 33.0), (25.0, 44.0), (32.0, 37.0)),
+        ((39.5, 34.5), (25.0, 44.5), (32.5, 38.5)),
+    ]):
+        sheet.place(i, 2, _rootgrub_cell(hd, c0, c1, 0.30, teeth=8))
+
+    # Weak. Flat on the shelf. The maw is nearly shut, which for this creature is the
+    # strongest thing the sheet can say about how badly it is doing.
+    for i, (hd, c0, c1) in enumerate([
+        ((40.0, 38.0), (26.0, 46.0), (33.0, 41.0)),
+        ((40.0, 39.0), (26.0, 46.5), (33.0, 42.0)),
+    ]):
+        sheet.place(i, 3, _rootgrub_cell(hd, c0, c1, 0.14, teeth=6))
+
+    return sheet
+
+
 # Every sheet this tool owns. A creature is added by writing its recipe above and one
 # row here; nothing else in the repo needs to know the tool exists, because what ships
 # is the committed PNG either way.
 RECIPES = {
     "SPR_PET_NODEATODE": nodeatode,
+    "SPR_PET_ROOTGRUB": rootgrub,
 }
 
 
