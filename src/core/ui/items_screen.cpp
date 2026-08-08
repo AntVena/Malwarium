@@ -68,10 +68,17 @@ void drawRarityPips(Framebuffer& fb, int x, int y, ItemDef::Rarity r) {
 // flows under it, down to kDetailPanelBottom. The HAVE row and the action line sit
 // below that, near the bottom of a page that has no hint band — so the panel gets the
 // room, and the two footer lines take what they need rather than the reverse.
+//
+// HAVE and the action line are a PAIR and are spaced to say so: their pitch is tighter
+// than the prose pitch above them (kFontH + 4 against kLineH), while the panel's
+// unfilled reserve leaves a gap above them that is wider than either. That is the whole
+// grouping channel on this page — a short description spends its slack in one place
+// instead of two, and neither footer line reads as a stray row of the block. It is the
+// same footer pitch drawModDetail stacks its gate rows on, so the two pages agree.
 constexpr int kDetailPanelTop = 56;
 constexpr int kDetailPanelBottom = 158;
-constexpr int kDetailHaveY = 164;
 constexpr int kDetailActionY = 184;
+constexpr int kDetailHaveY = kDetailActionY - (kFontH + 4);
 
 // The band with ITEMS' own right label: the n/total position counter, shown only
 // once the list is long enough to scroll out from under the cursor.

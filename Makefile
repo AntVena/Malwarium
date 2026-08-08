@@ -33,9 +33,13 @@ build/dump_content: tools/dump_content.cpp src/core/content/effect_text.cpp \
 	    src/core/content/areas/*/area.cpp \
 	    src/core/content/effect_text.cpp
 
-# CI-staleness guard: regenerate to a temp file and diff against the committed copy.
+# Staleness guard: regenerate to a temp file and diff against the committed copy.
 # Fails (non-zero) if they differ, so a content change without a re-gen gets caught.
 # Data only — the asset sync is `pedia`'s job, and a check shouldn't edit the tree.
+#
+# Run by the native CI job (.github/workflows/gates.yml) and deliberately NOT by
+# tools/gates.sh: it guards a publish rather than a build, and the edit loop stays
+# cheap. Run it by hand after a content-table edit if you want the answer sooner.
 pedia-check: dump-content
 	@tmp=$$(mktemp); \
 	python3 tools/gen_pedia_data.py --repo . --out $$tmp --no-sync-assets; \

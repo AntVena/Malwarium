@@ -15,7 +15,9 @@
 #   ./tools/gates.sh --verbose    stream everything instead of logging it
 #
 # Exits non-zero if any tier fails. CI runs the same two tiers as separate jobs
-# (.github/workflows/gates.yml) so a failure names which one broke.
+# (.github/workflows/gates.yml) so a failure names which one broke. CI also runs
+# `make pedia-check`, which is not here on purpose: it guards a publish, not a
+# build, and paying for it on every edit loop would buy nothing the loop can act on.
 set -uo pipefail
 
 cd "$(dirname "$0")/.." || exit 1

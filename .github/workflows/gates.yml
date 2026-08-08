@@ -26,6 +26,19 @@ jobs:
         run: cmake --build build
       - name: Test
         run: ctest --test-dir build --output-on-failure
+      - name: 'Pedia data freshness
+        # Here and NOT in tools/gates.sh: this guards a PUBLISH, not a build. Stale
+        # pedia data cannot break the firmware or the device, and gates.sh is the
+        # tight edit loop whose whole bet is that it stays cheap enough to always
+        # run. This job already has the two halves the check needs — a C++ compiler
+        # for tools/dump_content.cpp and python3 — so it costs one compile here.
+        #
+        # It catches two things: a content-table edit that never got re-generated,
+        # and a generator that can no longer parse what it scrapes (gen_pedia_data.py
+        # reads the wild roster out of a named function, so moving that function
+        # breaks it silently). Without this, the first thing to notice either is a
+        # `make pedia-tar`, i.e. too late.
+        run: make pedia-check
 
   device:
     name: S3 firmware build
