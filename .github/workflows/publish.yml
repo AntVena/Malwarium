@@ -55,6 +55,12 @@ jobs:
           key: pio-${{ runner.os }}-${{ hashFiles('platformio.ini') }}
       - name: Install PlatformIO
         run: pip install --upgrade platformio
+      # The other half of the pair in gates.yml: a workflow that fails to parse
+      # never starts, so it cannot report its own outage. This file runs on a tag
+      # and gates.yml on every push — whichever of the two is intact reports the
+      # other, and a release is exactly when a silently dead gates tier matters.
+      - name: Workflows parse
+        run: pip install pyyaml && python3 tools/check_workflows.py
       - name: Generate the sprite/palette codegen
         run: python3 tools/gen_assets.py
       - name: Build the artifacts, the manifest and the pages

@@ -16,6 +16,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+      # Every workflow in the tree, which is what makes this worth a CI step at
+      # all: a file that fails to parse never starts, so it can never check
+      # ITSELF. publish.yml runs the same script, so each covers the other and
+      # neither outage can go unreported. The runner has PyYAML; a dev box may
+      # not, which is why the local test tolerates its absence and this does not.
+      - name: Workflows parse
+        run: python3 tools/check_workflows.py
       - name: Generate the sprite/palette codegen
         # src/generated is not committed — it is derived from assets/, and the
         # engine does not compile without it.
@@ -26,7 +33,11 @@ jobs:
         run: cmake --build build
       - name: Test
         run: ctest --test-dir build --output-on-failure
-      - name: 'Pedia data freshness
+      # The leading apostrophe is part of the NAME ('Pedia), so the whole string is
+      # double-quoted. Bare, it opens a YAML single-quoted scalar that never closes
+      # and the file stops parsing — which GitHub reports as a 0-second run with no
+      # jobs and no logs, not as a syntax error.
+      - name: "'Pedia data freshness"
         # Here and NOT in tools/gates.sh: this guards a PUBLISH, not a build. Stale
         # pedia data cannot break the firmware or the device, and gates.sh is the
         # tight edit loop whose whole bet is that it stays cheap enough to always

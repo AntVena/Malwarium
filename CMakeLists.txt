@@ -83,4 +83,10 @@ if(Python3_Interpreter_FOUND)
     add_test(NAME test_roster
              COMMAND ${Python3_EXECUTABLE}
                      ${CMAKE_SOURCE_DIR}/tools/check_test_roster.py)
+    # Local, because CI cannot check the file that starts CI: an unparseable
+    # workflow completes in zero seconds with no jobs and no logs, so the tier
+    # simply stops running and nothing says so. Skips itself without PyYAML.
+    add_test(NAME workflows_parse
+             COMMAND ${Python3_EXECUTABLE}
+                     ${CMAKE_SOURCE_DIR}/tools/check_workflows.py)
 endif()
