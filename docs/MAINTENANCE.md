@@ -48,6 +48,31 @@ Spot-check shipped screens against the system they're authored to (`assets/VISUA
 siblings solve differently is the drift worth catching. Fix the standard to match reality, or if
 the drift looks like an undocumented real decision, surface it explicitly.
 
+### Screen separation pass — Last run: never
+Take the contact sheet (`./tools/screens.sh`) and go screen by screen through every one that
+stacks **multiple distinct row groups**, asking one question: can a reader tell where one group
+ends and the next begins, without reading the words?
+
+The trap this run exists to catch is **emphasis spent where separation was already free**. The
+item detail page is the worked example: its `ITEMS` banner carries `FontFace::Bold`, but that
+banner already sits at the top of the screen with a rule under it — it was never the thing a
+reader could lose. The groups below it (the readout grid, the prose, `HAVE`, the action line)
+are the ones running together with nothing between them, and they get no help. Emphasis landed
+where it was cheapest to apply rather than where the screen needed it.
+
+Four levers, and the run should reach for them in this order — the cheapest one that works wins:
+
+- **Spacing and grouping.** Bands whose height is reserved regardless of content (the detail
+  pages' `kDetailPanelTop`/`Bottom`) leave dead gaps mid-screen and none at the seams.
+- **Rules and indentation**, which the header band already uses.
+- **`Pal::INK` vs `INK_DIM`**, the separation that costs nothing and survives grayscale.
+- **`FontFace::Bold` last**, and only where the other three don't reach — one thing per screen
+  claims emphasis (VISUAL_LANGUAGE §2.3), so every new use spends a budget the screen has one of.
+
+Where a screen genuinely reads fine, say so and move on; the output that matters is the handful
+that don't. Anything needing a real layout change becomes a row on `docs/MASTER_TODO.md` rather
+than being done inside the run.
+
 ### Stale cross-reference sweep — Last run: 2026-08-05
 Grep for links/citations across the docs — file paths, line numbers, `D#`/`S#`/`C#`/`FB-*` row
 IDs — and verify they still resolve to something real. Fix or remove dangling references.
