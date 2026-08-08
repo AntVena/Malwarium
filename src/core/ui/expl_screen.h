@@ -36,11 +36,9 @@ constexpr int kExplSubAreas = kSubAreasPerArea;
 //   subBossUnlocked  — [kExplSectors * kExplSubAreas]    (10-win streak unlocked its boss)
 // Any block may be null (treated as all-false). Row-major index = area*kExplSubAreas+sub.
 constexpr int kExplRowsPerArea = 1 + kExplSubAreas;      // header + 5 sub rows
-// a virtual "area" index for the DEEPWEB DIVE — always one past the real
-// ladder, so it stays the terminal zone even if kExplSectors grows. It is NOT one
-// of the AreaDef rows (area_defs.h); it's a single special list row (no
-// sub-areas), armed like explore.
-constexpr int kDeepWebSector = kExplSectors;
+// The DEEPWEB DIVE draws as kDeepWebSector (area_defs.h) — one past the real ladder,
+// so it stays the terminal zone even as the ladder grows. It is NOT one of the
+// AreaDef rows; it's a single special list row (no sub-areas), armed like explore.
 // Row 0 is the DeepWeb Dive, then the real area/sub rows. DeepWeb leads because it's
 // the most-rewarding farming zone once unlocked, so an entry with nothing else to
 // resume parks the cursor on it (Game::openExplList) — the fewest presses to the best

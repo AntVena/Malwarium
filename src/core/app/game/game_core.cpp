@@ -678,6 +678,10 @@ void Game::onButton(const ButtonEvent& ev) {
 
 // --- Navigation ------------------------------------------------------------
 
+// Out of line so game.h can name SubmenuId (ui_state.h) without pulling in the slot
+// table that maps a cursor position to one.
+SubmenuId Game::enteredId() const { return carouselSlots()[cursor_].id; }
+
 void Game::summonCursor(int slot) { cursor_ = slot; nav_ = Nav::Cursor; }
 
 void Game::enterSubmenu() {

@@ -354,18 +354,21 @@ engine alone now that the factories have their own unit beside it.
 
 Two are past the rule and were not on this watch at all:
 
-- **`game.h` (2681)** — the umbrella header. It is not a unit that grew a second concern; it is
-  one class's declaration, so the line count is arguably honest. The cost is its **36 includes**:
-  it hands every TU that includes it 9 UI screen headers plus the whole model/net/render stack.
-  Two consequences. The `game_*.cpp` units re-include ~5 headers each (`carousel.h`,
-  `items_screen.h`, `maint_screen.h`, `modals.h`, `train_screen.h`) that `game.h` already
-  provides — ~60 redundant lines, free to delete, but only cosmetic. The real one is that **the
-  unused-include sweep cannot be run while this stands**: strip any include from any `src/core`
-  TU and it still compiles, because `game.h` supplied the symbol transitively. A mechanical
-  strip-and-build sweep says 295 of them are removable, which is a measurement of `game.h`, not
-  of the includes. Diff **L** — the question is whether `Game` can declare against forward
-  declarations and push the screen headers down into the `.cpp` units that draw. Until then the
-  maintenance pile's *Unused-include sweep* has no signal to work with.
+- **`game.h` (2730)** — the umbrella header. It is not a unit that grew a second concern; it is
+  one class's declaration, so the line count is arguably honest. The cost is its includes, and
+  **the UI half is now off**: the nine `core/ui/*_screen.h` headers are gone, replaced by
+  `core/ui/ui_state.h` — the ids `Game` actually holds as members (`SubmenuId`, `CfgScreen`,
+  `ItemFilter`, `UiMode`, `MaintKind`, `ArchAction`, `HackerSlotId`, `FeedVitals`), split out on
+  the rule that an id naming where the player IS is engine state while a `draw*` signature is
+  not. A screen header now lives in the `game_*.cpp` unit that calls it. 36 → 28 direct
+  includes, 51 → 43 transitive.
+  **What's left is the model/net/render stack**: `combat.h`, `save.h`, `registry.h`,
+  `framebuffer.h`, `platform.h` and the rest still reach every TU that includes `game.h`, so the
+  unused-include sweep still has no signal outside `core/ui` (it has one there now — see
+  `MAINTENANCE.md`). The same question applies to each: can `Game` declare against a forward
+  declaration, or does it hold the type by value? Diff **L**, and unlike the UI slice these are
+  held by value almost everywhere, so the answer is likely "no" for most and the honest outcome
+  may be that `game.h` is as thin as it gets.
 - **`test_main.cpp` (14746, 466 cases)** — the largest file in the repo by an order of magnitude,
   and healthy by every check that exists: every defined `test_*` is registered, nothing is
   skipped or disabled, and the suite is green. But one file holding the whole native tier means
@@ -380,5 +383,5 @@ Two are past the rule and were not on this watch at all:
 
 1. **Net-Sea Crossing art (§2c)** — the area ships mechanically; it is the only rung with no
    backdrop or malbeasts of its own.
-2. **`game.h`'s include diet (§3)** — the one change that unblocks another (the unused-include
-   sweep has no signal until it lands).
+2. **The `core/ui` unused-include sweep** (`MAINTENANCE.md`) — newly unblocked and mechanical:
+   33 of the 96 `core/ui` includes across the `game_*.cpp` units are load-bearing.

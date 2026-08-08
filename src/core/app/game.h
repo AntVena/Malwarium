@@ -38,15 +38,10 @@
 #include "core/net/peer_ledger.h"
 #include "core/net/pvp_link.h"
 #include "core/render/framebuffer.h"
-#include "core/ui/arch_screen.h"
-#include "core/ui/carousel.h"
-#include "core/ui/cfg_screen.h"
-#include "core/ui/expl_screen.h"
-#include "core/ui/items_screen.h"
-#include "core/ui/maint_screen.h"
-#include "core/ui/modals.h"
-#include "core/ui/mods_screen.h"
-#include "core/ui/train_screen.h"
+// ui_state.h ONLY, never a core/ui/*_screen.h: Game holds the ids below as members
+// but draws nothing itself, and this header is included by every TU in the engine.
+// A screen header belongs in the game_*.cpp unit that calls its draw functions.
+#include "core/ui/ui_state.h"
 #include "platform/platform.h"
 
 namespace mal {
@@ -263,7 +258,7 @@ public:
     // Every real area's gauntlet is cleared — the DeepWeb Dive unlock ("beat the
     // exploration game"). Derived, so it needs no separate persisted flag.
     bool allSectorsCleared() const {
-        for (int a = 0; a < kExplSectors; ++a) if (!sectorCleared_[a]) return false;
+        for (int a = 0; a < kAreaCount; ++a) if (!sectorCleared_[a]) return false;
         return true;
     }
     // is hands-off auto-explore paused because the pet is too fragmented
@@ -275,13 +270,13 @@ public:
     // Has sub-area (`area`,`sub`)'s boss been UNLOCKED by a 10-win streak? A
     // durable per-sub flag (persisted, save v13) — distinct from the volatile streak.
     bool subBossUnlocked(int area, int sub) const {
-        return area >= 0 && area < kExplSectors && sub >= 0 &&
-               sub < kExplSubAreas && subBossUnlocked_[area][sub];
+        return area >= 0 && area < kAreaCount && sub >= 0 &&
+               sub < kSubAreasPerArea && subBossUnlocked_[area][sub];
     }
     // Has sub-area (`area`,`sub`)'s boss been BEATEN? Durable (save v13).
     bool subCleared(int area, int sub) const {
-        return area >= 0 && area < kExplSectors && sub >= 0 &&
-               sub < kExplSubAreas && subCleared_[area][sub];
+        return area >= 0 && area < kAreaCount && sub >= 0 &&
+               sub < kSubAreasPerArea && subCleared_[area][sub];
     }
     // Is the AREA boss reachable? All 5 sub-areas cleared, area not yet.
     bool areaBossReady(int area) const;
@@ -317,7 +312,7 @@ public:
     // EXPL sector-clear flags: has sector `idx`'s boss/gauntlet
     // been cleared? Drives the linear unlock (sector N+1 opens when N clears).
     bool sectorCleared(int idx) const {
-        return idx >= 0 && idx < kExplSectors && sectorCleared_[idx];
+        return idx >= 0 && idx < kAreaCount && sectorCleared_[idx];
     }
 
     // Power/battery status pushed from the platform tier (device reads the ADC +
@@ -1102,7 +1097,7 @@ public:
     // Player-level, persisted (survive a pet reset, like the sector-clear flags).
     // A cleared sector's Title unlocks; one may be equipped for display.
     bool titleUnlocked(int sector) const {
-        return sector >= 0 && sector < kExplSectors &&
+        return sector >= 0 && sector < kAreaCount &&
                (titlesUnlocked_ & (1u << sector)) != 0;
     }
     int titlesUnlockedCount() const;
@@ -1369,19 +1364,19 @@ public:
     // streak. No-op for out-of-range indices; the real paths are clearSubArea's streak
     // + FIGHT BOSS. Marks the save dirty so a follow-on persist captures it.
     void debugSetSubCleared(int area, int sub, bool v) {
-        if (area >= 0 && area < kExplSectors && sub >= 0 && sub < kExplSubAreas) {
+        if (area >= 0 && area < kAreaCount && sub >= 0 && sub < kSubAreasPerArea) {
             subCleared_[area][sub] = v; markSaveDirty();
         }
     }
     void debugSetSubBossUnlocked(int area, int sub, bool v) {
-        if (area >= 0 && area < kExplSectors && sub >= 0 && sub < kExplSubAreas) {
+        if (area >= 0 && area < kAreaCount && sub >= 0 && sub < kSubAreasPerArea) {
             subBossUnlocked_[area][sub] = v; markSaveDirty();
         }
     }
     // Set an AREA's cleared flag directly (tests): reach the "all areas cleared" state
     // (the DeepWeb Dive unlock) without grinding every gauntlet. Real path: area boss.
     void debugSetSectorCleared(int area, bool v) {
-        if (area >= 0 && area < kExplSectors) { sectorCleared_[area] = v; markSaveDirty(); }
+        if (area >= 0 && area < kAreaCount) { sectorCleared_[area] = v; markSaveDirty(); }
     }
     // The level stamped on the last rolled wild encounter (DeepWeb scaling test).
     int debugEncounterEnemyLevel() const { return encounterEnemy_.level; }
@@ -1393,7 +1388,7 @@ public:
     // that needs a particular frontier arms it here instead of A-cycling. Real path:
     // EXPL → B on the row. No-op for out-of-range indices.
     void debugArmExplore(int area, int sub) {
-        if (area >= 0 && area < kExplSectors && sub >= 0 && sub < kExplSubAreas)
+        if (area >= 0 && area < kAreaCount && sub >= 0 && sub < kSubAreasPerArea)
             startExplore(area, sub);
     }
     // Arm AUTO-PROGRESS, and set the armed sub-area's win streak (tests). Real path:
@@ -1407,7 +1402,7 @@ public:
     // are re-farmable, so a test reaching the boss of an as-yet-uncleared sub triggers
     // it here. Real path: EXPL → B on a "> FIGHT BOSS" row.
     void debugFightSubBoss(int area, int sub) {
-        if (area >= 0 && area < kExplSectors && sub >= 0 && sub < kExplSubAreas)
+        if (area >= 0 && area < kAreaCount && sub >= 0 && sub < kSubAreasPerArea)
             startSubAreaBoss(area, sub);
     }
     // Grant combat XP directly through the real addCombatXp path (tests): banks the
@@ -1440,7 +1435,7 @@ public:
     void debugTickHunger(uint32_t elapsedMs) { tickHungerAndAwardXp(elapsedMs); }
     // The live post-clear re-farm win count for a sub-area (tests).
     int debugSubRefarmCount(int area, int sub) const {
-        if (area < 0 || area >= kExplSectors || sub < 0 || sub >= kExplSubAreas)
+        if (area < 0 || area >= kAreaCount || sub < 0 || sub >= kSubAreasPerArea)
             return 0;
         return subRefarmCount_[area][sub];
     }
@@ -1489,7 +1484,7 @@ private:
     void summonCursor(int slot);
     void enterSubmenu();
     void dropCursor();
-    SubmenuId enteredId() const { return carouselSlots()[cursor_].id; }
+    SubmenuId enteredId() const;                   // the slot table's id for cursor_
     // Boot-Sector egg lock (redesign): while the pet is still an unhatched
     // egg, the care/combat slots (TRAIN/EXPL/MAINT/MODS) are inert — there's
     // nothing to train, explore, maintain, or mod on an egg. STAT + ITEMS stay
@@ -1578,9 +1573,9 @@ private:
     // (Nav::ExploreControl → A ping / B warp / C stop).
     void onExplList(const ButtonEvent& ev);
     // Flatten the durable per-sub flag blocks to the row-major layout the shared
-    // expl_screen row helpers read ([area*kExplSubAreas+sub]).
-    void flattenSubFlags(bool (&cleared)[kExplSectors * kExplSubAreas],
-                         bool (&bossUnlocked)[kExplSectors * kExplSubAreas]) const;
+    // expl_screen row helpers read ([area*kSubAreasPerArea+sub]).
+    void flattenSubFlags(bool (&cleared)[kAreaCount * kSubAreasPerArea],
+                         bool (&bossUnlocked)[kAreaCount * kSubAreasPerArea]) const;
     // Open EXPL: pick the nav level + cursor row to enter on (resuming a running
     // explore-mode where it left off, else the top level's first landable row).
     void openExplList();
@@ -1620,7 +1615,7 @@ private:
     void resolveCacheEvent();                       // drop a Sealed Cache (non-interrupting)
     void grantLootReward(char* outFlavor, size_t outFlavorSize);  // shared reward-pool draw
     // MODS earn path. rollAreaModId draws a rarity-weighted id from an area's
-    // loot table (area 0..kExplSectors-1 or kDeepWebSector); rollAnyModId draws globally
+    // loot table (area 0..kAreaCount-1 or kDeepWebSector); rollAnyModId draws globally
     // (Epic cache jackpot); grantMod adds the spare if there is room for it under
     // modStorageCap() and logs either way. Drop sites: boss clears + DeepWeb wins
     // (game_explore/game_combat), Epic sealed caches (game_items).
@@ -2216,15 +2211,15 @@ private:
     // bossRound_ the current round, bossSector_ which area it belongs to, bossSub_ the
     // sub-area (>=0) or -1 for the area boss (tells finishBossRound which clear to
     // record), bossBitsAccrued_ the banked lump paid on a full clear.
-    bool sectorCleared_[kExplSectors] = {};
-    bool subCleared_[kExplSectors][kExplSubAreas] = {};
-    bool subBossUnlocked_[kExplSectors][kExplSubAreas] = {};
+    bool sectorCleared_[kAreaCount] = {};
+    bool subCleared_[kAreaCount][kSubAreasPerArea] = {};
+    bool subBossUnlocked_[kAreaCount][kSubAreasPerArea] = {};
     // post-clear wild-win count per sub-area — the decay input for its
     // diminishing non-Bits drop chances (refarmDropScalePct). PER-PET: it
     // persists across a reboot for the active pet (save v15) but RESETS on a new egg
     // (startHatch) and on a pet-swap (archDeployStored), so every pet finds a cleared
     // area an undepleted training ground — the point of re-farm (not per-device).
-    uint16_t subRefarmCount_[kExplSectors][kExplSubAreas] = {};
+    uint16_t subRefarmCount_[kAreaCount][kSubAreasPerArea] = {};
     BossGauntlet bossGauntlet_{"", 0, {}};
     int bossRound_ = 0;
     int bossSector_ = 0;

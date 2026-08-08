@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "core/content/defs.h"
+#include "core/ui/ui_state.h"  // ItemFilter
 
 namespace mal {
 
@@ -23,15 +24,13 @@ struct InvRow {
     const SpriteData* icon;   // ICON_ITEM_* (null on a header row)
 };
 
-// Item-type filter: narrows the ITEMS list to one type. All = the full grouped
-// list — the default, and what every player without a filter upgrade always sees.
-// Two Rig Shop rows read this on two different axes:
+// Two Rig Shop rows read ItemFilter (ui_state.h) on two different axes:
 //   * ITEMS Type-Tabs (hold-A on the list) walks the TYPE axis, ALL/FOOD/BUFFS/QUEST.
 //   * ITEMS Type-Picker (the L2 tile screen) walks the finer CATEGORY axis,
 //     ALL/FOOD/BUFFS/KEYS/TOOLS — QUEST split into the keys you spend and the
 //     tools you carry (ItemDef::Category). Owning it upgrades hold-A to that axis
 //     too, so the picker and the gesture never disagree about what a tab means.
-enum class ItemFilter { All, Food, Buffs, Quest, Keys, Tools };
+// All = the full grouped list, and what every player without an upgrade sees.
 
 // Short chip word for the active filter (ALL/FOOD/BUFFS/QUEST/KEYS/TOOLS) — shown
 // in the ITEMS header once a filter upgrade is owned, and on the picker's tiles.

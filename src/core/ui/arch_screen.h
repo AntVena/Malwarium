@@ -9,16 +9,12 @@
 
 #include "core/content/defs.h"
 #include "core/model/save.h"
+#include "core/ui/ui_state.h"  // ArchAction
 
 namespace mal {
 
 class Framebuffer;
 class ContentRegistry;
-
-// The record actions, cycled by A in the L3 record. Availability
-// depends on the pet: active → Store + Sell; stored → Deploy + Sell. Sell stays
-// Daemon-only (deferred until the Daemon stage exists).
-enum class ArchAction { Store, Deploy, Sell, Release };
 
 // L2 rack list. Row 0 is the active pet; the next rows are the frozen
 // rack entries; the trailing rows are RETIRED/CORRUPTED records (greyed, no slot —

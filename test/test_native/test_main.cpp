@@ -46,9 +46,13 @@
 #include "core/render/palette.h"
 #include "core/render/sprite.h"
 #include "core/render/upscaler.h"
+#include "core/ui/arch_screen.h"
 #include "core/ui/carousel.h"
+#include "core/ui/cfg_screen.h"
 #include "core/ui/combat_screen.h"
 #include "core/ui/expl_screen.h"
+#include "core/ui/modals.h"
+#include "core/ui/train_screen.h"
 #include "core/app/game_rig_shop.h"  // rigSpec — the Rig Shop shares the readout rails
 #include "core/app/game_internal.h"  // kRigRowPitch — the SHOP row geometry
 #include "core/ui/widgets.h"      // gridLines — the readout grid's own packing rule

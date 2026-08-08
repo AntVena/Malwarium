@@ -5,6 +5,7 @@
 
 #include "core/content/defs.h"
 #include "core/model/pet_model.h"
+#include "core/ui/ui_state.h"  // FeedVitals
 
 namespace mal {
 
@@ -30,17 +31,6 @@ void drawEvolveModal(Framebuffer& fb, const SpriteData* from, const SpriteData* 
 // grayscale-safe channel). `revealed` gates the B-acknowledge hint until the crash
 // has held; C is disabled (death is not cancellable). Grayscale-safe.
 void drawCSFModal(Framebuffer& fb, const SpriteData* pet, bool revealed, int beat);
-
-// The pet's vitals as they stood BEFORE the food was applied. The feeding modal
-// reports the change that actually happened, which is the only way a pull TOWARD
-// 50% Happiness, or a top-up onto an already-full stat, can state its own
-// direction — the magnitude on the row doesn't know either. Game::startFeeding
-// snapshots this the instant before Game::applyItemEffects.
-struct FeedVitals {
-    int hunger = 0;
-    int frag = 0;
-    int happy = 0;
-};
 
 // Feeding beat: the pet eats, and a gauge reads back each stat the food
 // touched. The rows are derived from `food`'s own ItemEffect list

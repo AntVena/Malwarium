@@ -30,21 +30,12 @@
 #include "core/app/radio_status.h"
 #include "core/app/sd_status.h"
 #include "core/app/update_status.h"
-#include "core/ui/carousel.h"  // UiMode
+#include "core/ui/ui_state.h"  // CfgScreen, UiMode
 
 namespace mal {
 
 class Framebuffer;
 struct SpriteData;
-
-// L3 destinations a CFG row can open. Device and Radio are the two GROUP screens
-// (their own children follow them here). ResetHatch is the DEV-only quick reset (an
-// immediate action, no L3 screen). FactoryReset is reached only via the hidden
-// hold-B gesture, never a list row.
-enum class CfgScreen { SysInfo, HackerTag, Titles,
-                       Device, UiMode, Brightness, Travel,
-                       Radio, Audit, Link, PediaAp, PediaQr,
-                       Update, UpdateQr, ResetHatch, FactoryReset };
 
 // One CFG settings row: glyph + label + its L3 target. Shared by the top-level
 // list and both group screens, so a row reads the same wherever it lives.

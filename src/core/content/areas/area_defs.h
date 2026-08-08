@@ -173,4 +173,11 @@ extern const char* const kAreaModsDeepWeb[];
 extern const int kAreaModsDeepWebCount;
 extern const char* const kDeepWebIcon;   // its EXPL row glyph (AreaDef::icon's stand-in)
 
+// The sector index that MEANS DeepWeb: one past the last real area, so any
+// `0 <= idx < kAreaCount` test excludes it by construction and nothing has to know
+// the zone by name to skip it. It sits here with the ladder it indexes past rather
+// than in expl_screen.h, because the run state that carries it (Game's active
+// sector) outlives any screen — the picker just happens to draw a row for it.
+constexpr int kDeepWebSector = kAreaCount;
+
 }  // namespace mal

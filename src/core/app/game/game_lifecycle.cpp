@@ -10,6 +10,7 @@
 #include "core/render/sprite.h"
 #include "core/ui/carousel.h"
 #include "core/ui/combat_screen.h"
+#include "core/ui/expl_screen.h"
 #include "core/ui/items_screen.h"
 #include "core/ui/maint_screen.h"
 #include "core/ui/modals.h"
@@ -546,9 +547,9 @@ void Game::wipeDeviceProgress() {
     seenHandshakeBssids_.clear();
     titlesUnlocked_ = 0;
     equippedTitle_ = -1;
-    for (int a = 0; a < kExplSectors; ++a) {
+    for (int a = 0; a < kAreaCount; ++a) {
         sectorCleared_[a] = false;
-        for (int s = 0; s < kExplSubAreas; ++s) {
+        for (int s = 0; s < kSubAreasPerArea; ++s) {
             subCleared_[a][s] = false;
             subBossUnlocked_[a][s] = false;
         }
@@ -629,7 +630,7 @@ void Game::unlockTitle(int sector) {
     // Grant the sector's Title (player-level). Idempotent — re-clearing a sector
     // (or a migrated save that already had it) never double-logs. Auto-equip the
     // first Title earned so the reward is visible without a trip to CFG.
-    if (sector < 0 || sector >= kExplSectors) return;
+    if (sector < 0 || sector >= kAreaCount) return;
     if (titlesUnlocked_ & (1u << sector)) return;      // already earned
     titlesUnlocked_ |= (1u << sector);
     if (equippedTitle_ < 0) equippedTitle_ = sector;   // first Title auto-equips
@@ -639,7 +640,7 @@ void Game::unlockTitle(int sector) {
 
 int Game::titlesUnlockedCount() const {
     int n = 0;
-    for (int i = 0; i < kExplSectors; ++i)
+    for (int i = 0; i < kAreaCount; ++i)
         if (titlesUnlocked_ & (1u << i)) ++n;
     return n;
 }
@@ -651,8 +652,8 @@ const char* Game::equippedTitleName() const {
 int Game::nextSelectableTitle(int cur) const {
     // Selectable ring: NONE (-1), then each unlocked sector in ascending order.
     // Walk forward from `cur`, wrapping through -1, to the next selectable value.
-    for (int step = 0; step < kExplSectors + 1; ++step) {
-        cur = (cur + 1 > kExplSectors - 1) ? -1 : cur + 1;   // ... , n-1, -1, 0, ...
+    for (int step = 0; step < kAreaCount + 1; ++step) {
+        cur = (cur + 1 > kAreaCount - 1) ? -1 : cur + 1;   // ... , n-1, -1, 0, ...
         if (cur < 0 || titleUnlocked(cur)) return cur;
     }
     return -1;   // nothing unlocked → only NONE is selectable

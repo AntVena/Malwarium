@@ -15,6 +15,7 @@
 #include "core/ui/items_screen.h"
 #include "core/ui/maint_screen.h"
 #include "core/ui/modals.h"
+#include "core/ui/mods_screen.h"
 #include "core/ui/stat_screen.h"
 #include "core/ui/train_screen.h"
 #include "generated/assets.h"

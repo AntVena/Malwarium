@@ -10,6 +10,7 @@
 #include "core/render/palette.h"
 #include "core/render/sprite.h"
 #include "core/ui/carousel.h"
+#include "core/ui/cfg_screen.h"
 #include "core/ui/combat_screen.h"
 #include "core/ui/items_screen.h"
 #include "core/ui/maint_screen.h"

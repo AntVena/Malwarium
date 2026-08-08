@@ -63,6 +63,8 @@
 #include "core/render/framebuffer.h"
 #include "core/render/palette.h"
 #include "core/ui/carousel.h"
+#include "core/ui/cfg_screen.h"
+#include "core/ui/expl_screen.h"
 
 using namespace mal;
 

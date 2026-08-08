@@ -89,21 +89,27 @@ scalar-field sprawl or `if (id == "...")` branches), one-file-per-type under
 `tunables.h`. Sweep: `grep -nE 'constexpr .* k\w+ *=' include/tunables.h` and flag any whose
 comment names ONE item/mod/move/creature — inline it onto that row. Verify claims against code.
 
-### Unused-include sweep — Last run: never (blocked)
+### Unused-include sweep — Last run: never
 The clangd "included header X is not used directly" warnings are noise we burn tokens reading
 past, and the `game_*.cpp` units are the worst offenders: they all carry the same broad render/UI
 header block copied from `game_render.cpp`, most of which a given unit doesn't use.
 
-**This is blocked on `game.h`'s 36 includes** (`MASTER_TODO.md §3`). Strip-and-rebuild says 295
-includes across `src/core` are removable, and that number is meaningless — `game.h` supplies
-almost everything transitively, so "it still compiles" proves nothing about whether an include is
-needed. The one subset that IS mechanically safe is the ~60 lines the `game_*.cpp` units
-re-include that `game.h` already provides; that is cosmetic and can ride along with any other
-edit. Do the `game.h` row first, then this entry has a real signal.
+**The `core/ui` half now has real signal.** `game.h` no longer includes a single screen header
+(it takes `core/ui/ui_state.h` for the ids `Game` holds), so stripping a `core/ui` include from a
+`game_*.cpp` unit and rebuilding is a genuine test of whether that unit draws through it:
+strip-and-rebuild across those units reports 33 load-bearing against 63 removable, where the same
+sweep with the umbrella in place could only find 13.
 
-When it unblocks: trust the clangd `unused-includes` diagnostics as the finder, **verify a real
-host build still compiles after each removal**, and note that the native gate is authoritative —
-don't remove a device-only header while building host-only, or vice-versa.
+**The `core/model` + `core/render` half is still blocked** on the rest of `game.h`'s includes
+(`MASTER_TODO.md §3`): it hands every TU `combat.h`, `save.h`, `registry.h`, `framebuffer.h` and
+`platform.h`, so "it still compiles without it" proves nothing about those. Sweep `core/ui` now
+and leave the rest for whoever lands the next slice.
+
+Method: trust the clangd `unused-includes` diagnostics as the finder, **verify a real host build
+still compiles after each removal**, and note that the native gate is authoritative — don't
+remove a device-only header while building host-only, or vice-versa. Removable is not the same as
+wrong: an include a unit uses DIRECTLY stays even when some other header happens to supply it, and
+the trap in a mechanical scan is a symbol that only appears in a comment.
 
 ### Asset manifest accuracy audit — Last run: 2026-08-05
 Cross-check `assets/ASSET_MANIFEST.md` status markers (☑/▨/☐) against what's actually in

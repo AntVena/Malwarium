@@ -124,20 +124,20 @@ SaveData Game::captureSave() const {
 
     // v8: the EXPL AREA-clear flags — one byte per area so the linear
     // complete-to-advance ladder survives a reboot.
-    d.sectorCleared.assign(kExplSectors, 0);
-    for (int i = 0; i < kExplSectors; ++i)
+    d.sectorCleared.assign(kAreaCount, 0);
+    for (int i = 0; i < kAreaCount; ++i)
         d.sectorCleared[i] = sectorCleared_[i] ? 1 : 0;
 
     // v12: the legacy per-sector boss-unlock byte. Superseded at runtime by the v13
     // per-sub flags, but still written (the stream is version-layered) — derived as
     // "any sub-area boss unlocked in this area" so it stays self-consistent.
-    d.bossUnlocked.assign(kExplSectors, 0);
+    d.bossUnlocked.assign(kAreaCount, 0);
     // v13: the EXPL per-sub-area clear + boss-unlock bitmasks — one byte per
     // area, bit s = sub-area s. Player-level, like the area-clear flags.
-    d.subCleared.assign(kExplSectors, 0);
-    d.subBossUnlocked.assign(kExplSectors, 0);
-    for (int a = 0; a < kExplSectors; ++a)
-        for (int s = 0; s < kExplSubAreas; ++s) {
+    d.subCleared.assign(kAreaCount, 0);
+    d.subBossUnlocked.assign(kAreaCount, 0);
+    for (int a = 0; a < kAreaCount; ++a)
+        for (int s = 0; s < kSubAreasPerArea; ++s) {
             if (subCleared_[a][s]) d.subCleared[a] |= static_cast<uint8_t>(1u << s);
             if (subBossUnlocked_[a][s]) {
                 d.subBossUnlocked[a] |= static_cast<uint8_t>(1u << s);
@@ -159,11 +159,11 @@ SaveData Game::captureSave() const {
     d.brightness = brightness_;
 
     // v15: the EXPL per-sub-area re-farm win counts — flat row-major
-    // (area*kExplSubAreas + sub), so a depleted area stays depleted for future pets.
-    d.subRefarm.assign(static_cast<size_t>(kExplSectors) * kExplSubAreas, 0);
-    for (int a = 0; a < kExplSectors; ++a)
-        for (int s = 0; s < kExplSubAreas; ++s)
-            d.subRefarm[a * kExplSubAreas + s] = subRefarmCount_[a][s];
+    // (area*kSubAreasPerArea + sub), so a depleted area stays depleted for future pets.
+    d.subRefarm.assign(static_cast<size_t>(kAreaCount) * kSubAreasPerArea, 0);
+    for (int a = 0; a < kAreaCount; ++a)
+        for (int s = 0; s < kSubAreasPerArea; ++s)
+            d.subRefarm[a * kSubAreasPerArea + s] = subRefarmCount_[a][s];
 
     // v16: the active pet's defrag tally. The rack pets' tallies already
     // ride on d.rack (= rack_, whose SaveStoredPet::defragCount freezePet stamped).
@@ -465,7 +465,7 @@ void Game::applySave(const SaveData& d) {
     // Area-clear flags (v8). A pre-v8 blob carries an empty vector → nothing cleared
     // (only area 0 open — the correct default for a save that predates linear gating).
     // Extra saved entries (a future area shrink) are ignored.
-    for (int i = 0; i < kExplSectors; ++i)
+    for (int i = 0; i < kAreaCount; ++i)
         sectorCleared_[i] = i < static_cast<int>(d.sectorCleared.size()) &&
                             d.sectorCleared[i] != 0;
 
@@ -476,12 +476,12 @@ void Game::applySave(const SaveData& d) {
     // default — the legacy per-sector bossUnlocked byte doesn't map to a specific
     // sub-area, so an in-flight unlock is dropped rather than mis-attributed).
     const bool haveSub = !d.subCleared.empty() || !d.subBossUnlocked.empty();
-    for (int a = 0; a < kExplSectors; ++a) {
+    for (int a = 0; a < kAreaCount; ++a) {
         const uint8_t cm = a < static_cast<int>(d.subCleared.size())
                                ? d.subCleared[a] : 0;
         const uint8_t bm = a < static_cast<int>(d.subBossUnlocked.size())
                                ? d.subBossUnlocked[a] : 0;
-        for (int s = 0; s < kExplSubAreas; ++s) {
+        for (int s = 0; s < kSubAreasPerArea; ++s) {
             if (haveSub) {
                 subCleared_[a][s] = (cm & (1u << s)) != 0;
                 subBossUnlocked_[a][s] = (bm & (1u << s)) != 0;
@@ -501,7 +501,7 @@ void Game::applySave(const SaveData& d) {
     // (nothing earned — the correct default for a save that predates Titles). Mask
     // off bits above the live sector count, and drop a stale equip whose Title isn't
     // actually unlocked (a future sector shrink), so equippedTitleName() stays honest.
-    titlesUnlocked_ = d.titlesUnlocked & ((1u << kExplSectors) - 1u);
+    titlesUnlocked_ = d.titlesUnlocked & ((1u << kAreaCount) - 1u);
     equippedTitle_ = d.equippedTitle;
     if (!titleUnlocked(equippedTitle_)) equippedTitle_ = -1;
 
@@ -515,9 +515,9 @@ void Game::applySave(const SaveData& d) {
     // Per-sub-area re-farm counts (v15). A v15+ blob restores the flat
     // row-major list; a pre-v15 blob carries an empty vector → every count defaults to
     // 0 (a migrated save's cleared areas start un-depleted, full drops until farmed).
-    for (int a = 0; a < kExplSectors; ++a)
-        for (int s = 0; s < kExplSubAreas; ++s) {
-            const size_t idx = static_cast<size_t>(a) * kExplSubAreas + s;
+    for (int a = 0; a < kAreaCount; ++a)
+        for (int s = 0; s < kSubAreasPerArea; ++s) {
+            const size_t idx = static_cast<size_t>(a) * kSubAreasPerArea + s;
             subRefarmCount_[a][s] = idx < d.subRefarm.size() ? d.subRefarm[idx] : 0;
         }
 
@@ -579,9 +579,9 @@ void Game::applySave(const SaveData& d) {
         // boss beaten at least once. Seeding from them means an established device
         // doesn't have to re-beat content it has already finished to earn the early
         // rungs — and it can only ever UNDER-count, which is the safe direction.
-        for (int a = 0; a < kExplSectors; ++a) {
+        for (int a = 0; a < kAreaCount; ++a) {
             if (sectorCleared_[a]) ++bossWins_;
-            for (int s = 0; s < kExplSubAreas; ++s)
+            for (int s = 0; s < kSubAreasPerArea; ++s)
                 if (subCleared_[a][s]) ++bossWins_;
         }
     }

@@ -8,27 +8,14 @@
 // fall out of the linear index.
 #pragma once
 
+#include "core/ui/ui_state.h"  // SubmenuId, HackerSlotId, UiMode
+
 namespace mal {
 
 class Framebuffer;
 struct SpriteData;
 
-// Which submenu a slot routes to on B. The engine dispatches on this id; adding
-// a real submenu later is a new case, not a rewire (registration seam). A slot
-// with no built screen renders the ·soon· placeholder.
-enum class SubmenuId { Stat, Items, Train, Expl, Maint, Mods, Arch, Cfg };
-
-// Hacker-face slot ids. CREW/PROFILE/SHOP/VAULT/MERGE/PEERS are the designed slots;
-// SCAN/LINK render the inaccessible marker until designed. PROFILE, CREW, SHOP,
-// VAULT, and PEERS are live from the static table; MERGE starts statically inaccessible but
-// flips accessible at runtime once mergeHubUnlocked() is bought in SHOP
-// (Game::hackerSlotAccessible + drawHackerCarousel's `mergeUnlocked` override — the
-// static table alone can't express "locked until purchased").
-enum class HackerSlotId { Crew, Profile, Shop, Vault, Merge, Scan, Link, Peers };
-
-// Carousel / label presentation (CFG cycles these).
-enum class UiMode { IconsLabel, IconsOnly, TextOnly };
-
+// A slot with no built screen renders the ·soon· placeholder.
 struct CarouselSlot {
     const char* label;       // full word: CAP_SLOT_LABEL + Text-only slot text
     const SpriteData* icon;  // 28x28 native icon (ASSET_ICON_*)

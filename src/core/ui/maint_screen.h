@@ -4,12 +4,11 @@
 
 #include "core/model/pet_model.h"
 #include "core/model/stacker.h"
+#include "core/ui/ui_state.h"  // MaintKind
 
 namespace mal {
 
 class Framebuffer;
-
-enum class MaintKind { Defrag, Av };
 
 // Gated states: nothing to do, so the action is inert.
 inline bool defragGated(const PetModel& m) { return m.fragmentation() == 0; }
