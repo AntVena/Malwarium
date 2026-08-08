@@ -1395,8 +1395,10 @@ void test_pedia_qr_two_pages_no_timeout() {
     CHECK(!g.qrScreenActive());
     CHECK(g.cfgScreen() == CfgScreen::Radio);
 
-    // Timeout resumes: now a long idle tick collapses the menu to idle as usual.
+    // CFG screens never auto-defocus at all (the operator is mid-setup) — a long
+    // idle tick leaves the RADIO group right where it was.
     t += kAutoDefocusMs * 2 + kHeartbeatMs;
     g.tick(t);
-    CHECK(g.nav() == Game::Nav::Idle);
+    CHECK(g.nav() == Game::Nav::Detail);
+    CHECK(g.cfgScreen() == CfgScreen::Radio);
 }

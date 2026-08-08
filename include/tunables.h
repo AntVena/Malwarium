@@ -784,9 +784,12 @@ constexpr int kStackerStepMs = 110;
 constexpr int kStackerScorePerFrag = 5;
 
 // Menu navigation ------------------------------------------------
-// One global idle timer governs the whole menu tree: 5s of silence collapses
-// every layer back to idle. Suspended inside modal events / minigames.
-constexpr uint32_t kAutoDefocusMs = 5000;
+// One global idle timer governs the whole menu tree: silence collapses every
+// layer back to idle. Suspended inside modal events / minigames. Tripled from
+// the original 5s — plain rows read in under that, but the more text-heavy
+// screens (detail panels, the 'Pedia, event log) didn't leave enough time to
+// actually read before the tree collapsed out from under the operator.
+constexpr uint32_t kAutoDefocusMs = 15000;
 // A RADIO SCREEN (Game::radioScreenOpen — CREW's home-network picker, PEERS)
 // gets its own, far longer budget. Both are HANDS-OFF screens the way the Pedia QR
 // page is: the operator walks toward the network they mean to claim, or holds the
@@ -798,6 +801,6 @@ constexpr uint32_t kAutoDefocusMs = 5000;
 // the operator is waiting for — the screen starves itself. Five seconds is shorter
 // than a Wi-Fi sweep takes, and far shorter than two devices need to hear each
 // other's beacons.
-constexpr uint32_t kRadioScreenDefocusMs = 300u * 1000u;  // 5 min of hands-off watching
+constexpr uint32_t kRadioScreenDefocusMs = 600u * 1000u;  // 10 min of hands-off watching
 
 } // namespace mal

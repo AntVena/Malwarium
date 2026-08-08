@@ -414,10 +414,15 @@ bool Game::tick(uint32_t nowMs) {
         changed = true;
     }
 
-    // The global 5s idle timer collapses the menu tree — suspended inside modals
-    // a running process / an active Lockout, and while a CFG /
-    // ITEMS-filter / VAULT-bulk hold gesture is mid-flight (no new presses during
-    // the hold).
+    // The global idle timer collapses the menu tree — suspended inside modals,
+    // a running process / an active Lockout, the CFG screens and the Stacker
+    // defrag board, and while an ITEMS-filter / VAULT-bulk hold gesture is
+    // mid-flight (no new presses during the hold). UPDATES is carved back out of
+    // the CFG exemption: it already gets the long hands-off radio budget below
+    // (it holds a live association) but must still eventually collapse an
+    // abandoned check, or a forgotten screen pins the radio open forever.
+    const bool inCfgScreen = nav_ == Nav::Detail && enteredId() == SubmenuId::Cfg &&
+                              !updateScreenOpen();
     const bool suspended = lockoutActive_ || nav_ == Nav::ModalFeeding ||
                            nav_ == Nav::Process || nav_ == Nav::ModalHatch ||
                            nav_ == Nav::ModalLineSelect || nav_ == Nav::ModalEggPick ||
@@ -428,6 +433,7 @@ bool Game::tick(uint32_t nowMs) {
                            nav_ == Nav::Shop || nav_ == Nav::ModShop ||
                            nav_ == Nav::CacheYield ||
                            nav_ == Nav::BulkYield || nav_ == Nav::PostEncounter ||
+                           nav_ == Nav::Stacker || inCfgScreen ||
                            bHeld_ || aHeld_ ||
                            qrScreenActive() ||  // scanning a QR takes longer than 5s
                            tagEditorActive() || // ...so does composing a tag

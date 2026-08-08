@@ -195,9 +195,9 @@ void test_carousel_autodefocus() {
     r.onButton(press(Button::A));
     r.tick(4000);                        // advances time, no defocus
     r.onButton(press(Button::A));        // press resets the timer (stamped @4000)
-    r.tick(8000);                        // 4s since reset -> still summoned
+    r.tick(4000 + kAutoDefocusMs - 1000);  // just under the budget since reset -> still summoned
     CHECK(r.nav() == Game::Nav::Cursor);
-    r.tick(9001);                        // >5s since reset -> idle
+    r.tick(4000 + kAutoDefocusMs + 1);     // past the budget since reset -> idle
     CHECK(r.nav() == Game::Nav::Idle);
 }
 
