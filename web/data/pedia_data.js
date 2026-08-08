@@ -6,8 +6,8 @@ window.PEDIA_DATA = {
     "lines": {
       "ransomware": "Ransomware",
       "phishing": "Phishing",
-      "trojan": "Trojan",
-      "worm": "Worm"
+      "worm": "Worm",
+      "trojan": "Trojan"
     },
     "lineIcons": {
       "ransomware": "assets/icons/ICON_LINE_RANSOMWARE.png",
@@ -394,6 +394,23 @@ window.PEDIA_DATA = {
       "cellH": 64,
       "sheetW": 96,
       "sheetH": 64
+    },
+    {
+      "id": "vermicell",
+      "name": "Vermicell",
+      "stage": 1,
+      "stageName": "Boot Sector",
+      "line": "worm",
+      "evolvesTo": [
+        "nodeatode"
+      ],
+      "hint": "A soft translucent capsule with one worm coiled inside it, endlessly chasing a single loose byte around the shell wall.",
+      "context": "Worm eggs / a payload waiting on a host",
+      "sprite": "assets/sprites/SPR_PET_EGG_WORM_HATCH.png",
+      "cellW": 56,
+      "cellH": 48,
+      "sheetW": 448,
+      "sheetH": 48
     },
     {
       "id": "nodeatode",
@@ -1882,6 +1899,12 @@ window.PEDIA_DATA = {
       "name": "Trojan Unleashed",
       "trigger": "Have a pet defect into the Trojan family mid-evolution. Unlocks the line.",
       "icon": "assets/icons/ICON_ACH_TROJAN_UNLEASHED.png"
+    },
+    {
+      "key": "SECOND_INSTANCE",
+      "name": "Second Instance",
+      "trigger": "Hold two of the same species in the ARCH rack at once. Unlocks the Worm line.",
+      "icon": "assets/icons/ICON_ACH_SECOND_INSTANCE.png"
     },
     {
       "key": "FIRST_DUEL",

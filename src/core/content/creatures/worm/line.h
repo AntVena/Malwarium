@@ -7,14 +7,15 @@
 // speed matched to the opponent's forever, and a fixed pile of replication slots — and
 // both live in content_passives.h.
 //
-// The line is NOT hatched from an egg yet (it has no EggLineDef, same as the Trojan
-// family): this is the process-level slice, reachable for testing rather than through
-// a raise. An egg line is what the WORM_WHISPERER achievement is still waiting on.
+// The line hatches from the Vermicell egg (content_evolution.cpp's "worm" EggLineDef),
+// which is EARNED rather than offered: it appears at line-select once the archive holds
+// two of the same species at once. Its hatch minigame is the Isolation Protocol
+// (game_isolation.cpp), and finishing one clean is what fires WORM_WHISPERER.
 //
-// Sprites here are stand-ins. The line's own art rule — a worm reads SMALLER in its
-// cell than any other line's creature, because the replicas need the room beside it —
-// is in assets/CREATURE_VISUAL_RULES.md, and the borrowed Buffer Wyrm frame below does
-// not obey it.
+// Sprites are stand-ins from the Process row down. The line's own art rule — a worm
+// reads SMALLER in its cell than any other line's creature, because the replicas need
+// the room beside it — is in assets/CREATURE_VISUAL_RULES.md, and the borrowed Buffer
+// Wyrm frame below does not obey it.
 #pragma once
 
 #include "core/content/defs.h"
@@ -23,6 +24,17 @@
 namespace mal {
 
 inline constexpr CreatureDef kWormCreatures[] = {
+    // The egg. Its 8-frame sheet is both the idle loop (frames 0-1) and the hatch
+    // sequence (0-7, walked by Game::hatchCrackFrame as the incubation clock runs
+    // down) — the same shape SPR_PET_EGG_PHISH_HATCH uses. Drawn 1-bit, like the
+    // replica glyphs the line fights with: a shell with one worm coiled inside it and
+    // one byte in front of the head, which is the Isolation Protocol seen from outside.
+    {"vermicell", "Vermicell", Stage::BootSector, "SPR_PET_EGG_WORM_HATCH", "nodeatode",
+     nullptr, nullptr, 100, 100, "worm",
+     "A soft translucent capsule with one worm coiled inside it, endlessly chasing a single loose byte around the shell wall.",
+     "Worm eggs / a payload waiting on a host",
+     {MoveKind::Attack, MoveKind::Attack, MoveKind::Attack, MoveKind::Attack},
+     /*evolvesToTrojanId=*/nullptr, Locomotion::Walk},
     // Nodeatode is the family's Process pet, and the only row with real character so
     // far. Its sheet is the wild Buffer Wyrm's single 56x48 frame borrowed whole, so it
     // declares no clip and falls back to sprite.h's idle heuristic.

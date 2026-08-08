@@ -48,6 +48,8 @@ SCENES=(
   "shop|shop"                       "encounter|encounter"
   "combat|combat"                   "postencounter|postencounter"
   "lockout|lockout"
+  "isolation|isolation steps:900"   "isolation_crash|isolation crash"
+  "worm_egg|isolation crash bank"
 )
 
 n=0

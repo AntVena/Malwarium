@@ -188,6 +188,9 @@ enum class HatchGame : uint8_t {
                // in the second half of its clock (Game::openDecryptMinigame).
     Clutch,    // Clutch Pick: the egg is laid among identical decoys and found by
                // halving the clutch, right away (Game::startEggPick).
+    Isolation, // Isolation Protocol: the worm inside the shell is turned loose in a
+               // quarantine buffer and eats the incubation clock a minute at a time,
+               // right away (Game::startIsolation).
 };
 
 struct EggLineDef {

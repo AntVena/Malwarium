@@ -508,6 +508,18 @@ int g_failures = 0;
     RUN(test_stacker_cleared_board_wipes_the_disk) \
     RUN(test_stacker_stopping_early_banks_the_board) \
     RUN(test_stacker_wins_ladder_sweeps_and_persists) \
+    /* Isolation Protocol — the Worm egg's hatch minigame + its line gate */ \
+    RUN(test_isolation_opens_on_the_middle_row)   \
+    RUN(test_isolation_step_moves_without_growing) \
+    RUN(test_isolation_double_turn_is_one_quarter) \
+    RUN(test_isolation_wall_ends_the_run)         \
+    RUN(test_isolation_self_collision_ends_the_run) \
+    RUN(test_isolation_cycle_run_finishes_clean)  \
+    RUN(test_worm_line_gated_on_second_instance)  \
+    RUN(test_isolation_opens_on_a_laid_worm_egg)  \
+    RUN(test_isolation_steps_on_its_own_cadence)  \
+    RUN(test_isolation_crash_banks_a_minute_per_byte) \
+    RUN(test_isolation_clean_run_hatches_and_unlocks) \
     RUN(test_rolled_defrag_takes_its_fixed_bite) \
     RUN(test_replication_ghost_is_raised_by_a_failed_defrag_on_a_critical_disk) \
     RUN(test_air_gapped_snack_cures_the_ghost_and_unlocks) \

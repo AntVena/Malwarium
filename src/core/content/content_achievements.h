@@ -151,6 +151,7 @@ inline constexpr const char* kAirGapped        = "AIR_GAPPED";
 inline constexpr const char* kDevtoolsIntruder = "DEVTOOLS_INTRUDER";
 inline constexpr const char* kTrojanUnleashed  = "TROJAN_UNLEASHED";
 inline constexpr const char* kFirstDuel        = "FIRST_DUEL";
+inline constexpr const char* kSecondInstance   = "SECOND_INSTANCE";
 // The two DEFRAG-minigame rows that a board's SHAPE decides rather than a tally: how
 // wide the run was when it reached the top. Both fire from Game::finishStacker.
 inline constexpr const char* kPerfectDefrag    = "PERFECT_DEFRAG";
@@ -161,7 +162,8 @@ inline constexpr const char* kBackUpAndDriven  = "BACK_UP_AND_DRIVEN";
 inline constexpr const char* kNeededMoreBackup = "NEEDED_MORE_BACKUP";
 inline constexpr const char* kShatteredPlatter = "SHATTERED_PLATTER";
 // Read as CONTENT GATES, not just badges: depth 8 unlocks the Phishing egg line at
-// line-select (Game::eggLineUnlocked) and depth 64 adds Phishlet to that egg's hatch pool
+// line-select (Game::eggLineUnlocked, which reads kSecondInstance above the same way for
+// the Worm line) and depth 64 adds Phishlet to that egg's hatch pool
 // (Game::hatchProcessUnlocked).
 inline constexpr const char* kDeepWebDepth8    = "DEEPWEB_DEPTH_8";
 inline constexpr const char* kDeepWebDepth64   = "DEEPWEB_DEPTH_64";

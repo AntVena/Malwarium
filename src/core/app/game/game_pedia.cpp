@@ -349,11 +349,15 @@ bool Game::hatchProcessUnlocked(const CreatureDef* proc) const {
 
 bool Game::eggLineUnlocked(const EggLineDef* line) const {
     if (!line) return false;
-    // The Phishing line is a reward for the endless zone: hidden at line-select until
-    // the first DeepWeb-depth milestone (depth 8) is earned. Every other line (today
-    // just Ransomware, the default) is always available.
+    // Two of the three lines are earned, and each one asks for the kind of play it is
+    // about. Phishing is a reward for the endless zone — hidden until the first
+    // DeepWeb-depth milestone (depth 8). Worm is a reward for REPLICATING — hidden until
+    // the archive has held two of one species at once (SECOND_INSTANCE, fired from
+    // archStoreActive). Ransomware, the default, is always available.
     if (line->id && std::strcmp(line->id, "phishing") == 0)
         return hasAchievement(ach::kDeepWebDepth8);
+    if (line->id && std::strcmp(line->id, "worm") == 0)
+        return hasAchievement(ach::kSecondInstance);
     return true;
 }
 

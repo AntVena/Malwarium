@@ -181,6 +181,9 @@ void Game::startHatchGame(const EggLineDef* line) {
         case HatchGame::Clutch:
             startEggPick();
             break;
+        case HatchGame::Isolation:
+            startIsolation();
+            break;
     }
 }
 

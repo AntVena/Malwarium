@@ -112,6 +112,26 @@ constexpr uint32_t kBootHatchNetworkAccelMs = 60u * 1000u;     // -1 min per new
 constexpr uint32_t kHatchRevealMs = 5u * 60u * 1000u;    // last 5 min: crackable on demand
 constexpr int kHatchRevealHoldBeats = 2;                 // beats to hold the final frame
 
+// --- Isolation Protocol: the Worm egg's hatch minigame, played once at lay-time
+//     (core/model/isolation.h for the rules, game_isolation.cpp for the screen). The
+//     worm inside the shell is turned loose in a quarantine buffer and eats; every byte
+//     it swallows is kIsolationDotMs off the incubation clock, and grows it by
+//     kIsolationGrowth cells. Crash into a wall or into itself and the run ends with
+//     whatever it has already earned — there is no penalty for a bad run, only a smaller
+//     prize, the same deal the Stacker offers.
+//
+//     The economy is set by one identity: kBootHatchMs / kIsolationDotMs = 30 bytes eats
+//     the WHOLE clock, which is the clean run WORM_WHISPERER pays for. Thirty of them at
+//     kIsolationGrowth apiece leaves the worm 63 cells long in a 176-cell buffer — about
+//     a third of the board — so a clean protocol is a real arcade run rather than a
+//     formality, and the growing body IS the difficulty ramp (which is why the cadence
+//     below is flat: nothing needs to speed up when the room is disappearing).
+constexpr uint32_t kIsolationDotMs = 60u * 1000u;   // -1 min of incubation per byte eaten
+// The worm's step cadence, on its own real-ms clock rather than the shared 4fps
+// heartbeat — the kStackerStepMs precedent. At 250ms a turn there is no game here; this
+// is quick enough to demand attention and slow enough to steer with two buttons.
+constexpr int kIsolationStepMs = 220;
+
 // Idle-screen status icons (canvas). Transient reveals in the living
 //     area, dual-coded by icon shape + position (not colour): the SD-present icon
 //     flashes up for kSdIconRevealMs whenever the card becomes present (boot, or a

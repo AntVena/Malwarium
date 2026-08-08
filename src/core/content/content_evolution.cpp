@@ -15,6 +15,12 @@ const EggLineDef kEggLines[] = {
     // so the hatch is a Clutch Pick played once at lay-time rather than a decrypt
     // grind against the incubation clock.
     {"phishing", "Phishing", "phrogspawn", HatchGame::Clutch},
+    // The third egg line, and the one that has to be EARNED by replicating rather than
+    // by diving: Game::eggLineUnlocked hides it until the archive holds two of the same
+    // species at once (ach::kSecondInstance). Its hatch is the Isolation Protocol, played
+    // once at lay-time like the Clutch — a worm loose in a quarantine buffer, eating the
+    // incubation clock a minute at a time.
+    {"worm", "Worm", "vermicell", HatchGame::Isolation},
 };
 const int kEggLinesCount = sizeof(kEggLines) / sizeof(kEggLines[0]);
 

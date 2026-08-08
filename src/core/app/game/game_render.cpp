@@ -73,6 +73,7 @@ void Game::render(Framebuffer& fb) const {
             break;
         }
         case Nav::ModalEggPick: drawEggPick(fb); break;
+        case Nav::Isolation: drawIsolation(fb); break;
         case Nav::ModalHatchReveal: drawHatchReveal(fb); break;
         case Nav::ModalFeeding:
             drawFeedingModal(fb, pet, feedItem_, model_, feedBefore_, feedBeat_);

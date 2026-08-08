@@ -73,6 +73,16 @@ const AchievementDef kAchievements[] = {
     {/*wire=*/13, "TROJAN_UNLEASHED", "Trojan Unleashed",
      "Have a pet defect into the Trojan family mid-evolution. Unlocks the line.", "ICON_ACH_TROJAN_UNLEASHED",
      AchSeries::Event, /*goal=*/0, nullptr, 0, {bits(400), item("commend_cache")}},
+    // The Worm line's unlock, and the second row (with TROJAN_UNLEASHED above) that a
+    // line-select gate reads rather than a 'Pedia page. Fires from Game::archStoreActive
+    // the moment a freeze leaves the rack holding two of one species — the player has
+    // replicated something, which is the only credential the replication line asks for.
+    // Sticky by construction: it is an earned bit, so releasing one of the pair later
+    // cannot take the line back off the menu.
+    {/*wire=*/68, "SECOND_INSTANCE", "Second Instance",
+     "Hold two of the same species in the ARCH rack at once. Unlocks the Worm line.",
+     "ICON_ACH_SECOND_INSTANCE",
+     AchSeries::Event, /*goal=*/0, nullptr, 0, {bits(200), item("sealed_cache_rare")}},
     {/*wire=*/14, "FIRST_DUEL", "Packet Exchange",
      "Fight another operator's pet over the LINK.", "ICON_ACH_FIRST_DUEL",
      AchSeries::Event, /*goal=*/0, nullptr, 0, {bits(60), item("sealed_cache_common")}},

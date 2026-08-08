@@ -12,6 +12,11 @@
 //        clutch [aim] [round ...] | clutch win (the Phishing egg's Clutch Pick; "aim"
 //        flips to the second half and "round" commits, interleaved to walk any path —
 //        three "round"s land on the lost reveal, "win" plays it perfectly instead)
+//        isolation [steps:<n>] [crash] [bank] (the Worm egg's Isolation Protocol;
+//             "steps:<n>" walks the worm n moves along the buffer's Hamiltonian cycle so
+//             the frame shows a long coil mid-run, "crash" drives it into the wall to
+//             hold the verdict, and "bank" takes the B off it to leave the Vermicell egg
+//             at idle)
 //        hatchreveal [frame:<n>] (the on-demand crack cinematic, held on frame n)
 //        cfg updates [ready] [checking|nojoin|found|confirm [yes]|installing|failed|
 //             flashqr] (the UPDATES screen; without "ready" it shows which setup step
@@ -795,6 +800,45 @@ int main(int argc, char** argv) {
                     game.onButton({Button::B, true, false});
             }
         }
+    } else if (hasFlag(argc, argv, "isolation")) {
+        // Lay a Worm egg, which opens its Isolation Protocol on the spot.
+        game.unlockAchievement(ach::kSecondInstance);   // unlocks the Worm line
+        game.resetToHatch();
+        game.onButton({Button::A, true, false});   // cycle line-select to Worm
+        game.onButton({Button::B, true, false});   // lay it -> Nav::Isolation
+        uint32_t it = 0;
+        if (hasFlag(argc, argv, "crash")) {
+            game.onButton({Button::A, true, false});    // turn into the near wall
+            for (int i = 0; i < 4 * kIsolationRows && game.isolation().running(); ++i)
+                game.tick(it += kIsolationStepMs);
+        } else {
+            // Follow the buffer's Hamiltonian cycle (row 0 is the return corridor, every
+            // column below it walked down when even and up when odd) so the worm eats
+            // rather than crashes, and the frame shows a coil worth looking at.
+            int steps = 0;
+            for (int i = 3; i < argc; ++i)
+                if (std::strncmp(argv[i], "steps:", 6) == 0) steps = std::atoi(argv[i] + 6);
+            for (int i = 0; i < steps && game.isolation().running(); ++i) {
+                const int cell = game.isolation().head();
+                const int col = cell % kIsolationCols, row = cell / kIsolationCols;
+                int next;
+                if (row == 0) next = col > 0 ? cell - 1 : kIsolationCols;
+                else if (col == kIsolationCols - 1 && row == 1) next = col;
+                else if (col % 2 == 0)
+                    next = row < kIsolationRows - 1 ? cell + kIsolationCols : cell + 1;
+                else next = row > 1 ? cell - kIsolationCols : cell + 1;
+                const int d = next - cell;
+                const int want = d == 1 ? 0 : d == kIsolationCols ? 1 : d == -1 ? 2 : 3;
+                const int turn = (want - game.isolation().dir() + 4) % 4;
+                if (turn == 3) game.onButton({Button::A, true, false});
+                else if (turn) game.onButton({Button::B, true, false});
+                game.tick(it += kIsolationStepMs);
+            }
+        }
+        // "bank" takes the verdict's B, which spends the run and leaves the Vermicell
+        // egg incubating at idle — the state the whole minigame hands back to.
+        if (hasFlag(argc, argv, "bank") && !game.isolation().running())
+            game.onButton({Button::B, true, false});
     } else if (hasFlag(argc, argv, "hatchreveal")) {
         // Run a Phishing egg's incubation down into the reveal window, then crack it
         // with the chord. "frame:<n>" holds the cinematic on that frame of the one-shot.

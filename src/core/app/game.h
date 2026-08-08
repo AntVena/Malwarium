@@ -32,6 +32,7 @@
 #include "core/model/move_loadout.h"
 #include "core/model/pet_model.h"
 #include "core/model/save.h"
+#include "core/model/isolation.h"
 #include "core/model/stacker.h"
 #include "core/net/audit_capture.h"
 #include "core/net/network_ledger.h"
@@ -70,7 +71,7 @@ public:
     //   Detail      — L3 (item detail · MAINT action).
     //   Process     — a running MAINT process (non-interruptible).
     //   ModalFeeding / ModalLockout — event overlays.
-    enum class Nav { Idle, Cursor, Submenu, Detail, Process, ModalFeeding, ModalLockout, ModalLineSelect, ModalHatch, ModalEggPick, ModalHatchReveal, ModalEvolve, ModalCSF, Combat, ExploreControl, Encounter, Wifi, Shop, ModShop, WarpPicker, RollbackPicker, CacheYield, BulkYield, PostEncounter, Stacker };
+    enum class Nav { Idle, Cursor, Submenu, Detail, Process, ModalFeeding, ModalLockout, ModalLineSelect, ModalHatch, ModalEggPick, ModalHatchReveal, ModalEvolve, ModalCSF, Combat, ExploreControl, Encounter, Wifi, Shop, ModShop, WarpPicker, RollbackPicker, CacheYield, BulkYield, PostEncounter, Stacker, Isolation };
 
     // Which L2 screen the ITEMS submenu is showing. Picker (the category tile
     // screen) only ever appears when itemPickerUnlocked(); every other path — no
@@ -1051,6 +1052,15 @@ public:
     // already lost, even though the remaining rounds still play out.
     bool eggPickTargetInSpan() const;
 
+    // --- Isolation Protocol (the Worm line's hatch minigame) ---------------
+    // A Vermicell egg turns the worm inside it loose in a quarantine buffer: A steers
+    // left, B steers right, and every byte it swallows is kIsolationDotMs off the
+    // incubation clock. Crashing banks what it earned; eating the WHOLE clock finishes
+    // the protocol clean, which hatches on the spot and fires WORM_WHISPERER. The rules
+    // are core/model/isolation.h; the screen and the payout are game_isolation.cpp.
+    bool inIsolation() const { return nav_ == Nav::Isolation; }
+    const Isolation& isolation() const { return isolation_; }
+
     int cursor() const { return cursor_; }      // focused carousel slot 0..7
     UiMode uiMode() const { return uiMode_; }
     void setUiMode(UiMode m) { uiMode_ = m; dirty_ = true; }
@@ -1518,6 +1528,7 @@ private:
     void archStoreActive();                        // active pet → rack → new egg
     void archDeployStored(int storedIdx);          // stored pet → active (slot-neutral)
     void archReleaseStored(int storedIdx);         // stored pet → gone (frees a slot, no reward)
+    void noteRackDuplicates();                     // two of one species on the shelf → SECOND_INSTANCE
     bool archRowIsActive() const { return listRow_ == 0; }
     // Records (RETIRED/CORRUPTED) trail the active + rack rows and have no slot.
     bool archRowIsRecord() const { return listRow_ > static_cast<int>(rack_.size()); }
@@ -1878,6 +1889,12 @@ private:
     // hatchRevealReady(). Non-interactive: it runs on the heartbeat and hatches itself.
     void openHatchReveal();
     void drawHatchReveal(Framebuffer& fb) const;
+
+    // Isolation Protocol lifecycle (game_isolation.cpp) — see inIsolation() above.
+    void startIsolation();               // turn the worm loose in the buffer, open the screen
+    void onIsolation(const ButtonEvent& ev);
+    void finishIsolation();              // spend the bytes on the clock and leave
+    void drawIsolation(Framebuffer& fb) const;
 
     // Evolution boundary lifecycle (stub).
     bool evolveEligible() const;   // time-in-stage + care gate + a defined successor
@@ -2673,6 +2690,14 @@ private:
     bool eggPickSecondHalf_ = false; // C-half (right/bottom) aimed at, vs the A-half
     bool eggPickResolved_ = false;   // rounds done -> the reveal, waiting on B
     bool eggPickWon_ = false;
+
+    // Isolation Protocol (the Worm hatch minigame, game_isolation.cpp). Un-persisted for
+    // the same reason the Clutch Pick above is: it is played out in the minute after the
+    // egg is laid, so a reboot mid-run forfeits the bonus and leaves a normal egg
+    // incubating. The run's own step clock is real-ms, like the Stacker's.
+    Isolation isolation_;
+    uint32_t lastIsolationStepMs_ = 0;
+    int isolationBanked_ = 0;        // bytes already spent on the clock, so B can't double-pay
 
     // Hatch reveal cinematic. Counts heartbeats since the chord cracked the egg, which
     // maps straight onto the shell's hatch frames; completeHatch fires off the end.

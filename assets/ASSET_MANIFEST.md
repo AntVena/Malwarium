@@ -118,9 +118,16 @@ which is why gameplay ships first and the drawing follows.
   hue belongs in this file.
 - **`SPR_PET_PINGCUB` is `▨`** — it has one idle frame and wants a second to match the 2-frame
   norm above. The drawing itself is final.
-- **`SPR_PET_EGG_PHISH_HATCH` is deliberately the only egg file.** Frames 0–1 are the idle loop and
-  0–7 the hatch one-shot (`Game::hatchCrackFrame` walks it). A separately-drawn single-frame
-  `SPR_PET_EGG_PHISH` was byte-identical to frame 0, so shipping it too would only duplicate flash.
+- **An egg line ships ONE egg file, not two.** `SPR_PET_EGG_PHISH_HATCH` and
+  `SPR_PET_EGG_WORM_HATCH` are each an 8-frame `56×48` sheet that is both the idle loop (frames
+  0–1) and the hatch one-shot (0–7, walked by `Game::hatchCrackFrame`). A separately-drawn
+  single-frame egg was byte-identical to frame 0, so shipping it too would only duplicate flash.
+- **`SPR_PET_EGG_WORM_HATCH` is `▨`, and 1-bit on purpose** — the same masks-on-`ink` economy as
+  the Worm replicas below (§C.4), which is the line's own visual signature rather than a
+  simplification. A rounded shell with the worm coiled on a circular track inside it and one loose
+  byte ahead of its head: the Isolation Protocol (§C.5) seen from outside the egg. The worm creeps
+  22° per frame and reaches the byte at frame 5, which is where the shell gives way — so the hatch
+  reads as something the worm DID, not something a timer did to it.
 - **`SPR_PET_CACHEMUTT` is an enemy frame, not a pet.** No `CreatureDef` points at it; the Sim
   dummy, the EXPL bosses and the Lethal test enemy all borrow it (`game_combat.cpp`, `combat.cpp`).
 - **Trojan pets re-skin their origin line** — see `CREATURE_VISUAL_RULES.md §4`.
@@ -179,6 +186,24 @@ cell.
 Six frames each, in pairs the renderer picks between by combat state: **0–1 idle** (squiggle),
 **2–3 attack** (chomp, played while its parent swings), **4–5 death** (dissolve, played over the
 freed slot off `Combat::lastWormKill`).
+
+### C.5 Isolation Protocol — the Worm egg's hatch minigame
+
+**No art at all, and that is the design.** The Worm egg turns its worm loose in a quarantine buffer
+and the player steers it into loose bytes (`src/core/app/game/game_isolation.cpp`; the rules are
+`src/core/model/isolation.h`). Every mark on the screen is an engine fill over a `PAL_CORE` token
+on a 12px cell grid, so the whole screen costs zero flash and restyles with the theme:
+
+| Element | How it is drawn | Why not art |
+|---|---|---|
+| The buffer wall | 2px `ink` frame **outside** the 16×11 play area | A cell touching the wall has to still be a whole cell — the wall is lethal, so where it starts is arithmetic, not a drawing |
+| The worm's body | `ink` cells inset 1px | The 1px seam is what makes a coil countable |
+| The worm's head | `accent`, filling its cell edge to edge | Size is the grayscale channel; the tint only repeats it, and accent here is focus, not a status |
+| The loose byte | 2px **hollow** `ink` square | Solid-vs-hollow survives any brightness, which matters most on the one thing the player is aiming at |
+
+> Renderable from the catalogue: `./tools/screens.sh` carries `isolation`, `isolation_crash` and
+> `worm_egg` scenes (`tools/dump_frame.cpp`, which walks the buffer's Hamiltonian cycle so a frame
+> can show a long coil mid-run rather than the three cells it opens with).
 
 ---
 

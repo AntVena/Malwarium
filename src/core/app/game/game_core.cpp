@@ -98,13 +98,21 @@ bool Game::tick(uint32_t nowMs) {
             }
         }
         // Boot-Sector incubation clock (egg-at-idle): counts down in real time while
-        // the egg sits at idle. Frozen inside either hatch modal — the decrypt runs its
-        // own countdown, and the crack cinematic must be allowed to finish its frames
-        // (it can legitimately be opened with seconds left, and the clock running out
-        // underneath would hatch the pet mid-animation). Reaching 0 out here
-        // auto-hatches straight to Process (no soft-lock if the player never opens
-        // either one).
-        if (inEggPhase() && nav_ != Nav::ModalHatch && nav_ != Nav::ModalHatchReveal) {
+        // the egg sits at idle. Frozen inside every screen that is itself about the
+        // hatch — the decrypt runs its own countdown; the crack cinematic must be
+        // allowed to finish its frames (it can legitimately be opened with seconds
+        // left, and the clock running out underneath would hatch the pet
+        // mid-animation); and the Isolation Protocol priced its goal off the clock as
+        // it stood when the run began, so draining it underneath would quietly discount
+        // the run. Reaching 0 out here auto-hatches straight to Process (no soft-lock if
+        // the player never opens any of them).
+        //
+        // Note what inEggPhase() means for anything that shaves the clock from OUTSIDE
+        // this block: it requires a remainder above zero, so an egg shaved straight to 0
+        // elsewhere leaves the phase in the same instant and this will never see it.
+        // Such a caller has to hatch the egg itself — Game::finishIsolation does.
+        if (inEggPhase() && nav_ != Nav::ModalHatch &&
+            nav_ != Nav::ModalHatchReveal && nav_ != Nav::Isolation) {
             bootHatchRemainMs_ = bootHatchRemainMs_ > elapsed
                                      ? bootHatchRemainMs_ - elapsed : 0;
             if (bootHatchRemainMs_ == 0) { completeHatch(); changed = true; }
@@ -244,6 +252,20 @@ bool Game::tick(uint32_t nowMs) {
         }
     } else {
         lastStackerStepMs_ = nowMs;   // primed, so entering the game doesn't burst-catch-up
+    }
+
+    // The Isolation Protocol's worm moves on its own cadence for the same reason, and
+    // more so: it is the one screen where standing still is never an option, so the beat
+    // it walks to IS the difficulty. Only while the run is live — a crashed or finished
+    // board holds still under the verdict.
+    if (nav_ == Nav::Isolation) {
+        if (nowMs - lastIsolationStepMs_ >= static_cast<uint32_t>(kIsolationStepMs)) {
+            lastIsolationStepMs_ = nowMs;
+            isolation_.step();
+            changed = true;
+        }
+    } else {
+        lastIsolationStepMs_ = nowMs;
     }
 
     // Post-encounter status readout: a real-ms auto-dismiss window
@@ -399,7 +421,7 @@ bool Game::tick(uint32_t nowMs) {
     const bool suspended = lockoutActive_ || nav_ == Nav::ModalFeeding ||
                            nav_ == Nav::Process || nav_ == Nav::ModalHatch ||
                            nav_ == Nav::ModalLineSelect || nav_ == Nav::ModalEggPick ||
-                           nav_ == Nav::ModalHatchReveal ||
+                           nav_ == Nav::ModalHatchReveal || nav_ == Nav::Isolation ||
                            nav_ == Nav::ModalEvolve || nav_ == Nav::ModalCSF ||
                            nav_ == Nav::Combat || nav_ == Nav::ExploreControl ||
                            nav_ == Nav::Encounter || nav_ == Nav::Wifi ||
@@ -599,6 +621,7 @@ void Game::onButton(const ButtonEvent& ev) {
         // button (A/B/C) dismisses it, unlike the standard A/B/C contract.
         case Nav::PostEncounter: dismissPostEncounter(); break;
         case Nav::Stacker: onStacker(ev); break;
+        case Nav::Isolation: onIsolation(ev); break;
         case Nav::Process:
             // Non-interruptible: ignored while running; the outcome dismisses.
             if (processResolved_ && (ev.button == Button::B || ev.button == Button::C))

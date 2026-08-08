@@ -131,6 +131,24 @@ static SaveStoredPet freezePet(const CreatureDef* pet, const PetModel& m, int ge
     return p;
 }
 
+void Game::noteRackDuplicates() {
+    // SECOND_INSTANCE: the rack is holding two of one species at once. Called after
+    // every mutation that can create such a pair — a freeze into a free slot, and the
+    // swap, which can drop the active pet in beside a twin already on the shelf.
+    //
+    // The unlock it gates (the Worm egg line, Game::eggLineUnlocked) is therefore an
+    // earned BIT rather than a live read of the rack: releasing one of the pair later
+    // must not take the line back off line-select. archStoreActive calls this before
+    // startHatch() for the same reason in the other direction — the freeze that earns
+    // the line is usually the one whose line-select should already be offering it.
+    for (size_t i = 0; i + 1 < rack_.size(); ++i)
+        for (size_t j = i + 1; j < rack_.size(); ++j)
+            if (std::strcmp(rack_[i].id, rack_[j].id) == 0) {
+                unlockAchievement(ach::kSecondInstance);
+                return;
+            }
+}
+
 void Game::archStoreActive() {
     if (!pet_ || static_cast<int>(rack_.size()) >= rackSlots()) return;
     // Set the active pet aside into a free slot, then vacate the active save → the
@@ -141,6 +159,7 @@ void Game::archStoreActive() {
                                combatXp_, statPoints_, slotKinds_, moveLoadout_, loadout_,
                                nowMs_ - stageEnteredMs_, bestDeepWebDepth_,
                                dyingElapsedMs_));
+    noteRackDuplicates();   // before startHatch: a line earned HERE belongs on THIS menu
     archConfirm_ = false;
     listRow_ = 0;
     startHatch();        // pet_ = nullptr, nav_ = ModalHatch
@@ -210,6 +229,7 @@ void Game::archDeployStored(int storedIdx) {
     // longer matches its slot's stamped kind.
     stampSlotKinds();
     enforceSlotKindInvariant();
+    noteRackDuplicates();   // the swap can drop this pet in beside a twin on the shelf
     archConfirm_ = false;
     listRow_ = 0;
     nav_ = Nav::Idle;                              // show the newly-active pet

@@ -162,17 +162,13 @@ roster, and the wild half keeps its own roster-keyed masks).
   `cachemutt` a crying frame), and the 'Pedia is static where the device animates. If that's the
   complaint it wants the anim-clip table exported to the web and is **M**, not a bug fix.
   **Needs the PO to say which screen and which creature looked wrong.**
-- **`WORM_WHISPERER` has no firing site**, and what it is waiting on is now exactly one thing: the
-  Worm line has creatures, moves and both passives, but **no `EggLineDef`** — so the line cannot be
-  HATCHED, which is what the achievement's own trigger prose asks for. Reachable today only as a
-  Process pet for testing (`creatures/worm/line.h`), the same way the Trojan family is reachable
-  only by divert. Give it a Boot-Sector creature + an egg row (`content_evolution.cpp`), decide
-  whether it hatches by Decrypt or Clutch, and gate the line-select unlock; then wire the
-  achievement. Diff **M**, content-led. (`AIR_GAPPED` is done: a defrag that fails on an
-  already-Critical disk raises a Replication Ghost, and the Air-Gapped Snack cuts it loose.)
-  **The line also has no `FULL_LINE_WORM` row**, where the other three lines each have one —
-  deliberately held back, because that row costs a new `wire` bit and an `ICON_ACH_FULL_LINE_WORM`
-  glyph, and it should land with the egg above rather than ahead of it.
+- **The Worm line has no `FULL_LINE_WORM` row**, where the other three lines each have one. It
+  costs a new `wire` bit and an `ICON_ACH_FULL_LINE_WORM` glyph, and it wants the line's two
+  placeholder Script successors designed first — a "seen every row" achievement over two rows
+  called *Worm Placeholder I* and *II* is a badge for reading a stub. Diff **S**, once the art and
+  names below land. (The line itself is raiseable now: the Vermicell egg hatches it through the
+  Isolation Protocol, `WORM_WHISPERER` fires on a clean run, and `SECOND_INSTANCE` — two of one
+  species in the ARCH rack — is what puts the line on the menu.)
 - **The Worm line's balance is unmeasured.** Every number on it — `kWormReplicaSlots`, the three
   targeting weights, the per-move spawn chances and the two magnitudes each replica reads — is a
   first cut chosen for internal consistency, not a calibration pass against a real fight. The
@@ -182,7 +178,16 @@ roster, and the wild half keeps its own roster-keyed masks).
 - **The Worm's parents are drawn at full size**, against the line's own rule that they read
   smaller to leave the replicas room (`CREATURE_VISUAL_RULES.md §4`). Nodeatode borrows the wild
   Buffer Wyrm's 56×48 frame whole, so its copies currently crowd its feet rather than standing
-  beside it, and the two Script successors are on the generic stage stand-in. Diff **M**, art.
+  beside it, and the two Script successors are on the generic stage stand-in **and are still
+  named `Worm Placeholder I`/`II`** — the care branch and its power/Frag lean are wired, the
+  creatures on the end of it are not designed. The Vermicell egg above is drawn (1-bit, like the
+  replicas) and is not part of this. Diff **M**, art + naming.
+- **The Isolation Protocol's difficulty is unmeasured.** `kIsolationStepMs`, `kIsolationGrowth`
+  and the 16×11 buffer are a first cut set to one identity — 30 bytes eats the whole incubation
+  clock and leaves the worm across a third of the board — never played against a real thumb on a
+  real panel. The question to answer in one sitting: is a clean run (and with it
+  `WORM_WHISPERER`) *hard*, or is it *unreachable* at 220ms a step on the S3's buttons? Diff **S**,
+  one balance sitting on device.
 - **No on-device browser.** The home-screen banner is the whole feedback channel. If achievements
   ever want a device-side list, the Hacker face's PROFILE slot is the natural home. Diff **M**.
 - **Unverified:** on-device serving of the SD-hosted bundle + the live endpoints
