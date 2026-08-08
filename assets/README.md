@@ -11,6 +11,14 @@ is committed source (`src/core/render/font_glyphs.cpp`), rasterised on demand by
 `tools/gen_font.py`. So the TTF costs no flash and has no consumer to be orphaned from — it is
 the thing the table is regenerated FROM, which is why it is in the tree at all.
 
+**A few PNGs have a generator that OWNS them.** The Worm line's sheets are drawn by
+`tools/gen_worm_art.py` from a recipe, not by hand, because that line's signature is a *style*
+rather than a colour (see [CREATURE_VISUAL_RULES.md](CREATURE_VISUAL_RULES.md) §4) and a style holds
+across a dozen sprites only if something mechanical is holding it. Such a file is still the shipped
+sprite — nothing else changes about how it compiles — but editing its pixels by hand is a change the
+next run of the tool silently reverts, so the `worm_art_recipes` ctest fails on any drift between a
+committed sheet and its recipe. Change the recipe, re-run the tool, commit the PNG it writes.
+
 **An asset's id is its BASENAME, not its path.** `sprites/` · `icons/` · `ui/` are for readers only —
 `SPR_PET_PAYPUP` resolves the same wherever the file sits, so art can be refiled without touching a
 line of code. The price is that basenames must be globally unique; `gen_assets.py` raises on a

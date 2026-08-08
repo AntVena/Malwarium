@@ -166,6 +166,9 @@ perfectly good reason to drop the rule entirely.
 - **APPROVED back/shell:** Keyloggerhead (keycap shell + blinking cursor-cap).
 - **APPROVED 1-bit:** Vermicell and Nodeatode — the Worm line's style-instead-of-hue exception
   above. Held to the outline + segment-chords + one solid eye vocabulary, not to §3's shading law.
+  That vocabulary is `tools/gen_worm_art.py`, which is where a new worm-line creature is drawn:
+  the style is mechanical enough to be code, and a recipe over it cannot express a second ink or a
+  filled silhouette. Read the tool before drawing this line by hand.
 - **NEEDS REDRAW (too blobby / fail grayscale):** Keyloggerhead front, FireWallaby, Brute Badger,
   Cryptoad re-sculpt. Concepts are right; execution must hit the Paypup/Malbear bar.
 - **Engine cell:** 56×48 logical (Script), 96×64 (Daemon e.g. Cryptoad). ×1.75 to panel, no

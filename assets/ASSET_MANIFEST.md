@@ -124,6 +124,14 @@ which is why gameplay ships first and the drawing follows.
   two sizes rather than creature art with UI standing next to it. At worm scale the outline is also
   simply the better drawing: a filled silhouette at ~30×24 px says *tube*, and the segment chords
   across an outlined body are what say *worm*.
+- **…and that style is held by a tool, not by a hand.** `tools/gen_worm_art.py` carries the line's
+  drawing vocabulary — one ink, outline-never-silhouette, segment chords, exactly one solid mass,
+  superellipses over ellipses — and each worm-line creature is a RECIPE over it. The vocabulary is
+  body-plan agnostic on purpose, since the line's later rows are not all literally worms; what they
+  share is the finishing pass, and a recipe cannot opt out of it. `SPR_PET_NODEATODE` is generated
+  today, and the `worm_art_recipes` ctest fails if a committed sheet and its recipe ever disagree.
+  The Vermicell shell and the replica glyphs are still hand-drawn and become recipes when next
+  touched — their pixels are approved and shipped, so there is nothing to gain from moving them now.
 - **`SPR_PET_PINGCUB` is `▨`** — it has one idle frame and wants a second to match the 2-frame
   norm above. The drawing itself is final.
 - **An egg line ships ONE egg file, not two.** `SPR_PET_EGG_PHISH_HATCH` and

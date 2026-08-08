@@ -83,6 +83,13 @@ if(Python3_Interpreter_FOUND)
     add_test(NAME test_roster
              COMMAND ${Python3_EXECUTABLE}
                      ${CMAKE_SOURCE_DIR}/tools/check_test_roster.py)
+    # The Worm line's sheets are generated, and the generator owns them: a hand edit
+    # to a committed PNG is a change nothing can reproduce, so the next run of the
+    # tool silently reverts it. This fails instead, and names the command that fixes
+    # it. Costs nothing when no worm-line art has moved.
+    add_test(NAME worm_art_recipes
+             COMMAND ${Python3_EXECUTABLE}
+                     ${CMAKE_SOURCE_DIR}/tools/gen_worm_art.py --check)
     # Local, because CI cannot check the file that starts CI: an unparseable
     # workflow completes in zero seconds with no jobs and no logs, so the tier
     # simply stops running and nothing says so. Skips itself without PyYAML.
