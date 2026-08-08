@@ -1683,12 +1683,13 @@ private:
     // (startShopEvent), Safe-Mode Key → a safe rest (resolveSafeRestEvent). The keys
     // are inert from the ITEMS use path ("USE ON THE WALK") so they can only be spent
     // on a walk. heldWarpKeys() enumerates the currently-held keys (for the picker +
-    // draw); resolveSafeRestEvent() de-frags the pet and returns to the walk.
+    // draw); resolveSafeRestEvent() applies the key's own effects (a negative Frag
+    // magnitude on its row) and returns to the walk.
     void resolveKeyItemEvent();
     std::vector<const ItemDef*> heldWarpKeys() const;
     void onWarpPicker(const ButtonEvent& ev);
     void useWarpKey(const ItemDef& d);
-    void resolveSafeRestEvent();
+    void resolveSafeRestEvent(const ItemDef& d);
     void drawWarpPickerScreen(Framebuffer& fb) const;
 
     // Hacker Rank: re-derives rank from networksSeen_ after

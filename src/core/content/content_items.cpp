@@ -516,11 +516,15 @@ const ItemDef kItems[] = {
      /*bits=*/0, /*walkWarp=*/ItemDef::WalkWarp::Shop, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Keys},
     
-    // Warp to a save zone to restore some fragmentation
+    // Warp to a safe zone and rest off some fragmentation. The rest is the whole
+    // point of the key, so how deep it cleans is a magnitude on THIS row (a negative
+    // Frag effect — rest de-frags), applied by resolveSafeRestEvent through the same
+    // applyItemEffects every other item goes through.
     {"safe_mode_key", "Safe-Mode Key", ItemDef::Type::Quest,
      ItemDef::Rarity::Uncommon,
      "Explore-use: warp straight to a safe rest.",
-     ItemDef::Context::Anytime, /*effects=*/{}, /*combatHeal=*/0, /*preEncounterXp=*/0,
+     ItemDef::Context::Anytime,
+     /*effects=*/{{ItemEffect::Kind::Frag, -20}}, /*combatHeal=*/0, /*preEncounterXp=*/0,
      /*bits=*/0, /*walkWarp=*/ItemDef::WalkWarp::SafeRest, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Keys},
     

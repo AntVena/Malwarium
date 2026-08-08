@@ -104,12 +104,14 @@ const SpriteData* itemIcon(const ContentRegistry& reg, const char* id) {
     return reg.sprite(name);
 }
 
-// Lockout-resolving items float to the top in Lockout context: any
-// food, plus the Decryption Key (Backup Drive is now a combat buff, not a Lockout
-// item — see content_items.cpp).
+// Lockout-resolving items float to the top in Lockout context: any food (the demand
+// is hunger), plus any row whose own context says LockoutOnly — which is what that
+// context MEANS, so the set is read off the rows instead of being a list of ids here
+// (src/core/content/CONTENT_STANDARD.md rule 1). Authoring a second lockout key is a
+// row, not an edit to this function.
 bool itemResolvesLockout(const ItemDef& d) {
     return d.type == ItemDef::Type::Food ||
-           std::strcmp(d.id, "decrypt_key") == 0;
+           d.context == ItemDef::Context::LockoutOnly;
 }
 
 const char* itemFilterLabel(ItemFilter f) {

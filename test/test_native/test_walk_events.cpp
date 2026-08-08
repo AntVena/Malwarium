@@ -682,8 +682,18 @@ void test_access_token_warps_to_shop() {
 }
 
 // Using the Safe-Mode Key while exploring warps to a safe rest: it de-frags the pet
-// by kSafeRestDefrag, consumes the key, and returns to the idle habitat (no combat).
+// by the key ROW's own Frag magnitude, consumes the key, and returns to the idle
+// habitat (no combat). Read off the row rather than a constant, so retuning the key
+// retunes the gate — the magnitude is the row's to own.
 void test_safe_mode_key_warps_to_rest() {
+    ContentRegistry reg = ContentRegistry::embedded();
+    const ItemDef* key = reg.item("safe_mode_key");
+    CHECK(key != nullptr);
+    int rowFrag = 0;
+    for (const ItemEffect& e : key->effects)
+        if (e.kind == ItemEffect::Kind::Frag) rowFrag += e.magnitude;
+    CHECK(rowFrag < 0);   // the row de-frags (negative Frag), not fragments
+
     Game g{StartMode::Hatched};
     enterWalk(g);
     g.model().setFragmentation(60);
@@ -694,7 +704,7 @@ void test_safe_mode_key_warps_to_rest() {
     CHECK(g.nav() == Game::Nav::WarpPicker);
     g.onButton(press(Button::B));                    // spend the focused key
     CHECK(g.nav() == Game::Nav::Idle);               // safe rest resolves in place
-    CHECK(g.model().fragmentation() == 60 - kSafeRestDefrag);  // rest de-frags
+    CHECK(g.model().fragmentation() == 60 + rowFrag);           // rest de-frags
     CHECK(g.inventory().count("safe_mode_key") == 0);          // key consumed
 }
 

@@ -83,9 +83,19 @@ has already rewritten once.
 
 Not yet cleaned up — do it opportunistically when working nearby, not as a big-bang pass.
 
-*(None outstanding. The last one — a `strcmp(d.id, "sealed_cache_epic")` branch deciding which
-container also drops a mod — became `ItemDef::cache.modChancePct`, a number on the row, when the
-cache tables moved onto the item rows.)*
+- **Two content-unlock gates are id branches** (rule 1). `Game::eggLineUnlocked` and
+  `Game::hatchProcessUnlocked` (`game_pedia.cpp`) each read `strcmp(id, "phishing")` /
+  `strcmp(id, "phishlet")` and answer with a `hasAchievement` check — so "this row is earned,
+  not given" is engine knowledge instead of something the row states. The shape it wants is an
+  achievement-id field on `EggLineDef` and `CreatureDef`, with the gate reading whatever the row
+  names; the cost is that `CreatureDef`'s aggregate initialisers run positionally through
+  `clips`, so a new member has to go after it.
+- **The wild-win item drop pool is a literal array in the engine** (rule 1 + the pool rule in
+  *When you add content*). `game_combat.cpp` builds `wildLootPool` from four hardcoded ids and
+  then splices a fifth by `if (exploreSector_ == 0)` / `== kDeepWebSector` — a per-area loot
+  table living in combat logic, where every other pool is a `LootEntry` list beside the rows it
+  draws from. It wants to be an area-authored pool on `AreaDef` (`content/areas/`) with the
+  shared `rollLootEntry` drawing it.
 
 ## When you add content
 

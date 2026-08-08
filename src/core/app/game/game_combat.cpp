@@ -504,7 +504,7 @@ void Game::applyCombatResult() {
                     // flavoured way to farm the same ingredient the Uncommon cache pool
                     // (game_internal.h) already offers everywhere.
                     const char* wildLootPool[5] = {"airgap_snack", "tortilla_chip",
-                                                   "backup_drive", kDefragToolId};
+                                                   kBackupDriveId, kDefragToolId};
                     int wildLootCount = 4;
                     if (exploreSector_ == 0) wildLootPool[wildLootCount++] = "osi_dip";
                     else if (exploreSector_ == kDeepWebSector)

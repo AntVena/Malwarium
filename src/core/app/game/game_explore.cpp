@@ -394,18 +394,22 @@ void Game::useWarpKey(const ItemDef& d) {
     markSaveDirty();
     switch (d.walkWarp) {
         case ItemDef::WalkWarp::Shop:     startShopEvent(); break;
-        case ItemDef::WalkWarp::SafeRest: resolveSafeRestEvent(); break;
+        case ItemDef::WalkWarp::SafeRest: resolveSafeRestEvent(d); break;
         case ItemDef::WalkWarp::None:     returnToExplore(); break;  // unreachable
     }
 }
 
-void Game::resolveSafeRestEvent() {
-    // A guaranteed-safe rest: no combat, no roll — the pet rests and the
-    // Safe-Mode boot lowers Fragmentation (rest de-frags). Resolves in place and
-    // hands back to the idle habitat with a flavor line.
-    model_.setFragmentation(model_.fragmentation() - kSafeRestDefrag);
+void Game::resolveSafeRestEvent(const ItemDef& d) {
+    // A guaranteed-safe rest: no combat, no roll — the pet rests and the Safe-Mode
+    // boot lowers Fragmentation (rest de-frags). HOW MUCH is the key's own negative
+    // Frag effect, so it applies through applyItemEffects like any other item and a
+    // second, deeper rest key is a row rather than a branch here. The flavor line
+    // reports the delta actually taken, not the row's magnitude, so a pet already
+    // near clean doesn't get told it shed more than it had.
+    const int before = model_.fragmentation();
+    applyItemEffects(d);
     std::snprintf(exploreFlavor_, sizeof(exploreFlavor_),
-                 "SAFE MODE - RESTED (-%d FRAG)", kSafeRestDefrag);
+                 "SAFE MODE - RESTED (-%d FRAG)", before - model_.fragmentation());
     markSaveDirty();
     returnToExplore();
 }

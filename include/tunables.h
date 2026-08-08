@@ -463,10 +463,9 @@ constexpr int kExploreKeyPct   = 6;    // guaranteed-event roll: Key-item find (
 // manually triggered from EXPL). A loss cancels the mode and resets the streak.
 constexpr int kExploreStreakToBoss = 10;
 constexpr int kLootBitsReward = 10;    // flat Bits on a loot-cache event (TBD)
-// Safe rest event: the Safe-Mode Key warps to a guaranteed-safe
-// rest that de-frags the pet by this much (rest lowers Fragmentation) — no combat,
-// no roll. First-cut value (family).
-constexpr int kSafeRestDefrag = 20;
+// How deep a Safe-Mode Key's rest de-frags is NOT here: it belongs to that one key,
+// so it is a negative Frag effect on its own row (content_items.cpp), applied by
+// Game::resolveSafeRestEvent.
 constexpr int kLootItemChancePct = 30; // chance a loot cache also drops an item
 
 // Sealed caches. A cache find rolls one of the findable containers,

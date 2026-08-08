@@ -8,12 +8,12 @@ namespace mal {
 
 const EggLineDef kEggLines[] = {
     {"ransomware", "Ransomware", "cryptoshell", HatchGame::Decrypt},
-    // A second baseline line (model): its own Boot-Sector egg, so a
-    // fresh save's line-select offers Ransomware vs Phishing. Both unlocked
-    // from the start in v1 (no unlock gating yet); the modal auto-skips when only one
-    // line exists, so with only one line the boot drops straight into CryptoShell.
-    // Its egg is laid into a clutch of decoys, so the hatch is a Clutch Pick played
-    // once at lay-time rather than a decrypt grind against the incubation clock.
+    // A second line with its own Boot-Sector egg, so line-select offers Ransomware
+    // vs Phishing — but only once it is EARNED: Game::eggLineUnlocked hides it until
+    // the first DeepWeb-depth milestone, so a fresh save sees one line and the modal
+    // auto-skips straight into CryptoShell. Its egg is laid into a clutch of decoys,
+    // so the hatch is a Clutch Pick played once at lay-time rather than a decrypt
+    // grind against the incubation clock.
     {"phishing", "Phishing", "phrogspawn", HatchGame::Clutch},
 };
 const int kEggLinesCount = sizeof(kEggLines) / sizeof(kEggLines[0]);

@@ -934,7 +934,7 @@ window.PEDIA_DATA = {
       "type": "QUEST",
       "rarity": "UNCOMMON",
       "effect": "Explore-use: warp straight to a safe rest.",
-      "stats": "",
+      "stats": "FRAG -20",
       "icon": "assets/icons/ICON_ITEM_SAFE_MODE_KEY.png"
     },
     {

@@ -88,7 +88,7 @@ Run the gates. Confirm native gates and the S3 build are actually green, not ass
 a doc. Look for test debt — tests asserting behaviour that no longer occurs in
 real play.
 
-### Content/tunables standard drift — Last run: 2026-07-19
+### Content/tunables standard drift — Last run: 2026-08-08
 Check new content against `src/core/content/CONTENT_STANDARD.md`: structured effect vocabulary (no new
 scalar-field sprawl or `if (id == "...")` branches), one-file-per-type under
 `src/core/content/content_*.cpp`, and — the easy grep — no single-entity magnitude in
