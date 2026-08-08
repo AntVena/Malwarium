@@ -237,6 +237,13 @@ void drawRowCursor(Framebuffer& fb, int x, int y, Rgb565 c) {
     }
 }
 
+void drawHintBand(Framebuffer& fb, const char* hint) {
+    constexpr int kBandH = 16;
+    fb.fillRect(0, kActiveH - kBandH, kActiveW, kBandH, palColor(Pal::TRACK));
+    drawText(fb, (kActiveW - textWidth(hint)) / 2, kActiveH - kBandH + 4, hint,
+             palColor(Pal::INK));
+}
+
 void drawStageIndicator(Framebuffer& fb, int x, int y, int w, Stage current) {
     const char* labels[4] = {"BOOT", "PROC", "SCR", "DMN"};
     const int cur = stageIndex(current);

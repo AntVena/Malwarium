@@ -57,10 +57,16 @@ bool lineLocked(const ModDef* m, const char* petLine) {
 // leave room for the slot readout + gate rows below it. modDetailProseLines() is what
 // the prose ACTUALLY gets — this reserve minus the gap the readout leaves behind it.
 constexpr int kDetailProseLines = 5;
-// The gate rows under the panel. They sit near the bottom of a page with no hint band,
-// so the panel takes the room and these take what they need.
-constexpr int kDetailSlotY = 156;
-constexpr int kDetailGateY = 170;
+// The footer under the panel. SLOT/HAVE, the gate rows and the verdict line answer ONE
+// question between them — can this go on, and where — so they stack at a single pitch,
+// tighter than the prose pitch above them, with the panel's unfilled reserve as the gap
+// that fences the group off. Spacing them unevenly is what made the dim SLOT/HAVE row
+// read as a tail of the block above rather than the head of this one. Same footer pitch
+// drawItemDetail stacks its HAVE/action pair on, so the two detail pages agree. The page
+// has no hint band, so the group takes what it needs off the bottom.
+constexpr int kDetailFooterPitch = kFontH + 4;
+constexpr int kDetailSlotY = 160;
+constexpr int kDetailGateY = kDetailSlotY + kDetailFooterPitch;
 
 } // namespace
 
@@ -322,14 +328,14 @@ void drawModDetail(Framebuffer& fb, const ContentRegistry& reg, const Loadout& l
     std::snprintf(req, sizeof(req), "REQUIRES LVL %d", reqLevel);
     int y = kDetailGateY;
     drawText(fb, kMargin, y, req, levelLocked ? palColor(Pal::HOT) : palColor(Pal::INK_DIM));
-    y += kFontH + 4;
+    y += kDetailFooterPitch;
     if (mod.requiresLine) {
         char up[16];
         upperLine(up, sizeof(up), mod.requiresLine);
         char lineReq[32];
         std::snprintf(lineReq, sizeof(lineReq), "REQUIRES %s LINE", up);
         drawText(fb, kMargin, y, lineReq, wrongLine ? palColor(Pal::HOT) : palColor(Pal::INK_DIM));
-        y += kFontH + 4;
+        y += kDetailFooterPitch;
     }
 
     // Action line: EQUIPPED (dim, already here) / LOCKED (level, line, or already

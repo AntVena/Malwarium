@@ -1,5 +1,6 @@
 // widgets.h — reusable engine-drawn UI primitives (no art files).
 //   UI_SUBMENU_HEADER   title + optional right label + divider rule
+//   UI_HINT_BAND     centred control hint in a filled strip at the canvas foot
 //   UI_GAUGE         10-cell segmented bar (dual-coded: fill level + zone colour)
 //   UI_CARE_PIPS     2 Good + gate + 3 Bad mistake budget
 //   UI_STAGE_INDICATOR  4 lifecycle nodes
@@ -94,6 +95,16 @@ void drawProgressBar(Framebuffer& fb, int x, int y, int w, int h, float t,
 // UI_CURSOR_ROW: a 5x7 right-pointing triangle marker for a focused list row
 // (the 5x7 font has no '>'). Left-anchored, tapering to a point at the right.
 void drawRowCursor(Framebuffer& fb, int x, int y, Rgb565 c);
+
+// UI_HINT_BAND: the control hint, centred in a filled strip pinned to the foot of
+// the canvas. The fill is what makes it a BAND rather than one more row — a hint
+// set as bare text a row-pitch under a list reads as another entry in the list, and
+// dimming it is no help to a reader who is scanning shape rather than words.
+//
+// Pinned to the bottom rather than following the content, so it lands in the same
+// place whether the list above it is full or half empty. Consumers: the list and
+// picker screens that end in one (EXPL, SHOP, TITLE).
+void drawHintBand(Framebuffer& fb, const char* hint);
 
 // The derived readout (effect_text.h's specRows) as an aligned grid: label left,
 // magnitude RIGHT-aligned in its column, so two rows of a list line their numbers

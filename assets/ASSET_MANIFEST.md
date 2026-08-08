@@ -202,13 +202,18 @@ on placeholder palette.
 
 > **On `UI_HINT_BAND`'s rule.** It was originally specced exception-only — a band ONLY
 > where a screen broke the standard A/B/C contract. What shipped is broader and better:
-> every self-contained context draws one (`drawExplList`, `drawShop`, `drawWarpPicker`,
-> `drawPostEncounter`, the combat screen, the duel screens, the Clutch Pick, the MOVE
-> reader), naming what's live even when the mapping is ordinary — because a player who
-> just arrived somewhere shouldn't have to infer the controls from the layout. The
-> carousel's own submenu spine (STAT/ITEMS/MODS/ARCH/CFG lists) still goes without,
-> since A/B/C never changes there. A band is still REQUIRED wherever the mapping is
-> non-standard; it is no longer limited to those cases.
+> every self-contained context draws one (EXPL's zone and sub-area lists, the storefronts,
+> the Warp picker, the post-encounter and combat screens, the duel screens, the Clutch
+> Pick, the MOVE reader, CFG's TITLE picker), naming what's live even when the mapping is
+> ordinary — because a player who just arrived somewhere shouldn't have to infer the
+> controls from the layout. The carousel's own submenu spine (STAT/ITEMS/MODS/ARCH/CFG
+> **lists**) still goes without, since A/B/C never changes there; an L3 picker hanging off
+> one is a self-contained context and does draw a band. A band is still REQUIRED wherever
+> the mapping is non-standard; it is no longer limited to those cases.
+>
+> Drawn by `widgets.h`'s `drawHintBand` — one filled strip pinned to the canvas foot. The
+> fill is the load-bearing part, not the dimming: a hint set as bare text a row-pitch under
+> a list reads as one more entry in the list.
 
 ---
 

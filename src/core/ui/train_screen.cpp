@@ -352,13 +352,11 @@ void drawMoveDetail(Framebuffer& fb, const ContentRegistry& reg, const MoveDef& 
 
     // A already means "advance", so paging the prose with it needs no exception to the
     // A/B/C contract — the band just names what is live on this screen.
-    fb.fillRect(0, kActiveH - 16, kActiveW, 16, palColor(Pal::TRACK));
     const char* hint = laid.proseScrollable
                            ? (locked || equippedHere ? "A MORE   C BACK"
                                                      : "A MORE  B EQUIP  C BACK")
                            : (locked || equippedHere ? "C BACK" : "B EQUIP   C BACK");
-    drawText(fb, (kActiveW - textWidth(hint)) / 2, kActiveH - 12, hint,
-             palColor(Pal::INK));
+    drawHintBand(fb, hint);
 }
 
 void drawSimTier(Framebuffer& fb, int tier, int tierCount) {

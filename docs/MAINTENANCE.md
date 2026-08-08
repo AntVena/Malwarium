@@ -48,7 +48,7 @@ Spot-check shipped screens against the system they're authored to (`assets/VISUA
 siblings solve differently is the drift worth catching. Fix the standard to match reality, or if
 the drift looks like an undocumented real decision, surface it explicitly.
 
-### Screen separation pass — Last run: never
+### Screen separation pass — Last run: 2026-08-08
 Take the contact sheet (`./tools/screens.sh`) and go screen by screen through every one that
 stacks **multiple distinct row groups**, asking one question: can a reader tell where one group
 ends and the next begins, without reading the words?
@@ -72,6 +72,12 @@ Four levers, and the run should reach for them in this order — the cheapest on
 Where a screen genuinely reads fine, say so and move on; the output that matters is the handful
 that don't. Anything needing a real layout change becomes a row on `docs/MASTER_TODO.md` rather
 than being done inside the run.
+
+Two things the sheet will show you that are NOT findings. A name cut mid-word on a list row is
+usually `drawTextMarquee` caught mid-travel, not a clip — the Hacker face's SHOP/CREW rows all
+look truncated in a still and scroll on the device. And a band that ends short of the screen is
+only a defect if the group BELOW it has nothing separating it; empty canvas under the last group
+is just empty canvas.
 
 ### Stale cross-reference sweep — Last run: 2026-08-05
 Grep for links/citations across the docs — file paths, line numbers, `D#`/`S#`/`C#`/`FB-*` row

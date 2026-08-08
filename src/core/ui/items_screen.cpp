@@ -430,9 +430,7 @@ void drawCacheYield(Framebuffer& fb, const ItemDef& cache, int bits,
     }
 
     const char* hint = "B  OK";
-    fb.fillRect(0, kActiveH - 16, kActiveW, 16, palColor(Pal::TRACK));
-    drawText(fb, (kActiveW - textWidth(hint)) / 2, kActiveH - 12, hint,
-             palColor(Pal::INK));
+    drawHintBand(fb, hint);
 }
 
 void drawBulkYield(Framebuffer& fb, const ItemDef& cache, int cachesOpened, int bits,
@@ -485,9 +483,7 @@ void drawBulkYield(Framebuffer& fb, const ItemDef& cache, int cachesOpened, int 
     }
 
     const char* hint = count > kBulkVisibleRows ? "A SCROLL  B/C OK" : "B/C  OK";
-    fb.fillRect(0, kActiveH - 16, kActiveW, 16, palColor(Pal::TRACK));
-    drawText(fb, (kActiveW - textWidth(hint)) / 2, kActiveH - 12, hint,
-             palColor(Pal::INK));
+    drawHintBand(fb, hint);
 }
 
 void drawRollbackPicker(Framebuffer& fb, const int points[4], int cursor) {

@@ -416,9 +416,7 @@ void drawExplList(Framebuffer& fb, const ContentRegistry& reg, const ExplListVie
         else if (focus == ExplRowState::AreaCleared) hint = "A NEXT  B RERUN BOSS  C BACK";
         else if (focus == ExplRowState::SubCleared) hint = "A NEXT  B FARM  C BACK";
     }
-    fb.fillRect(0, kActiveH - 16, kActiveW, 16, palColor(Pal::TRACK));
-    drawText(fb, (kActiveW - textWidth(hint)) / 2, kActiveH - 12, hint,
-             palColor(Pal::INK));
+    drawHintBand(fb, hint);
 }
 
 // Explore-mode idle badge: a thin status line under the top track — a
@@ -545,9 +543,7 @@ void drawEncounterIntro(Framebuffer& fb, const char* enemyName, int diffPips,
     // Mandatory-in-spirit hint band (the wireframe,, shows it) — C's
     // "flee" meaning here isn't the standard back-contract, so it's spelled out.
     const char* hint = "A SWITCH  B CONFIRM  C FLEE";
-    fb.fillRect(0, kActiveH - 16, kActiveW, 16, palColor(Pal::TRACK));
-    drawText(fb, (kActiveW - textWidth(hint)) / 2, kActiveH - 12, hint,
-             palColor(Pal::INK));
+    drawHintBand(fb, hint);
 }
 
 void drawWifiEvent(Framebuffer& fb, const char* sectorName,
@@ -569,9 +565,7 @@ void drawWifiEvent(Framebuffer& fb, const char* sectorName,
                  palColor(Pal::INK_DIM));
 
     const char* hint = "B CONTINUE";
-    fb.fillRect(0, kActiveH - 16, kActiveW, 16, palColor(Pal::TRACK));
-    drawText(fb, (kActiveW - textWidth(hint)) / 2, kActiveH - 12, hint,
-             palColor(Pal::INK));
+    drawHintBand(fb, hint);
 }
 
 namespace {
@@ -589,14 +583,20 @@ void formatShopPrice(char* buf, size_t n, const ShopRowView& row) {
         off += std::snprintf(buf + off, n - off, " +%d %s", row.costQty[i], row.costName[i]);
 }
 
+// The buy reason's own line, pinned just above the hint band. It is the VERDICT on the
+// focused listing, not a tail of the description, so it sits in one place whatever the
+// prose ran to and lets the description's unfilled reserve be the gap between the two —
+// the same footer grouping drawItemDetail uses for its HAVE/action pair. Set flowing at
+// a few px under the prose it read as the description's last line instead.
+constexpr int kShopStatusY = kActiveH - 16 - (kFontH + 6);
+
 // Lines the description gets for a list of `visibleRows`: the band between the last
-// listing and the centred buy reason above the hint band. At the row cap this is
-// kShopDescLines (expl_screen.h — the worst case a stocked row has to clear); a
-// one-listing storefront gets several times that.
+// listing and kShopStatusY. At the row cap this is kShopDescLines (expl_screen.h — the
+// worst case a stocked row has to clear); a one-listing storefront gets several times
+// that.
 int shopDescLines(int visibleRows) {
     const int top = kShopRowTop + visibleRows * kShopRowPitch + 2;
-    const int bottom = kActiveH - 16 - (kFontH + 6);   // hint band + the status line
-    return std::max(1, (bottom - top) / (kFontH + 3));
+    return std::max(1, (kShopStatusY - top) / (kFontH + 3));
 }
 
 // One storefront row: name, full price (Bits + any item costs), and remaining
@@ -664,22 +664,19 @@ void drawShop(Framebuffer& fb, const char* storeName, int walletBits,
     // both survive grayscale — "SOLD OUT" / "NOT ENOUGH BITS" / "NOT ENOUGH ITEMS" /
     // "B TO BUY".
     // The description is a content row's own prose (core/content/content_*.cpp), far
-    // wider than the 208px here, so it wraps; the buy reason then flows under whatever
-    // it took, keeping both clear of the hint band.
+    // wider than the 208px here, so it wraps into the band above kShopStatusY; the buy
+    // reason takes that line whatever the prose ran to.
     const int descY = kShopRowTop + visibleRows * kShopRowPitch + 2;
-    int statusY = descY;
     if (selectedDescription && selectedDescription[0])
-        statusY = drawTextWrapped(fb, kMargin, descY, kActiveW - 2 * kMargin,
-                                  selectedDescription, palColor(Pal::INK_DIM),
-                                  kFontH + 3, shopDescLines(visibleRows));
+        drawTextWrapped(fb, kMargin, descY, kActiveW - 2 * kMargin,
+                        selectedDescription, palColor(Pal::INK_DIM),
+                        kFontH + 3, shopDescLines(visibleRows));
     if (statusLine && statusLine[0])
-        drawText(fb, (kActiveW - textWidth(statusLine)) / 2, statusY + 4, statusLine,
+        drawText(fb, (kActiveW - textWidth(statusLine)) / 2, kShopStatusY, statusLine,
                  palColor(Pal::INK_DIM));
 
     const char* hint = rowCount > 1 ? "A NEXT  B BUY  C LEAVE" : "B BUY   C LEAVE";
-    fb.fillRect(0, kActiveH - 16, kActiveW, 16, palColor(Pal::TRACK));
-    drawText(fb, (kActiveW - textWidth(hint)) / 2, kActiveH - 12, hint,
-             palColor(Pal::INK));
+    drawHintBand(fb, hint);
 }
 
 void drawWarpPicker(Framebuffer& fb, const char* const* keyNames, int keyCount,
@@ -701,9 +698,7 @@ void drawWarpPicker(Framebuffer& fb, const char* const* keyNames, int keyCount,
     }
 
     const char* hint = "A NEXT  B USE  C BACK";
-    fb.fillRect(0, kActiveH - 16, kActiveW, 16, palColor(Pal::TRACK));
-    drawText(fb, (kActiveW - textWidth(hint)) / 2, kActiveH - 12, hint,
-             palColor(Pal::INK));
+    drawHintBand(fb, hint);
 }
 
 // Post-encounter status readout: a brief, informational-only
@@ -749,9 +744,7 @@ void drawPostEncounter(Framebuffer& fb, int bwBefore, int bwAfter, int bwMax,
         drawText(fb, kMargin, 100, levelLine, palColor(Pal::CALM));
 
     const char* hint = "ANY BUTTON";
-    fb.fillRect(0, kActiveH - 16, kActiveW, 16, palColor(Pal::TRACK));
-    drawText(fb, (kActiveW - textWidth(hint)) / 2, kActiveH - 12, hint,
-             palColor(Pal::INK));
+    drawHintBand(fb, hint);
 }
 
 } // namespace mal

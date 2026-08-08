@@ -547,7 +547,7 @@ void drawTitles(Framebuffer& fb, int focusSector, uint32_t unlockedMask,
                        locked ? palColor(Pal::INK_DIM) : palColor(Pal::ACCENT),
                        beat, focusSector == sector);
     }
-    drawText(fb, kMargin, 184, "A NEXT  B EQUIP  C BACK", palColor(Pal::INK_DIM));
+    drawHintBand(fb, "A NEXT  B EQUIP  C BACK");
 }
 
 void drawAuditMode(Framebuffer& fb, int pick, int current) {

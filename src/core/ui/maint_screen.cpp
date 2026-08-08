@@ -92,13 +92,21 @@ void drawMaintAction(Framebuffer& fb, MaintKind kind, const PetModel& m,
         const bool afford = walletBits >= cost;
         drawText(fb, kMargin, 78, line,
                  afford ? palColor(Pal::INK) : palColor(Pal::WARN));
+        // The tool count is a WALLET line, not a pick: it belongs beside HAVE %d B at
+        // the readout pitch, above the list, rather than trailing the list at the list's
+        // own pitch — where a dim unindented row still reads as a fourth thing to land
+        // the cursor on.
+        std::snprintf(line, sizeof(line), "HELD DEFRAG TOOLS: %d", toolCount);
+        drawText(fb, kMargin, 90, line, palColor(Pal::INK_DIM));
 
         // the three payment VARIANTS as a 3-row pick (A switches, B runs the
         // focused one). QUICK = Bits-only, may fail; TOOL = spend a Defrag Tool for a
         // guaranteed clean; STACKER = the same Bits, then play for it. Grayscale-safe:
         // the cursor marks the focus, and each row spells its terms in words (MAY FAIL /
-        // GUARANTEED / NO TOOL / YOUR AIM).
-        const int rowY[3] = {100, 118, 136};
+        // GUARANTEED / NO TOOL / YOUR AIM). The 22px above the first row and the 28px
+        // below the last are what fence the pick off from the readouts and the action
+        // line — both wider than the 18px the rows keep between themselves.
+        const int rowY[3] = {112, 130, 148};
         for (int i = 0; i < 3; ++i) {
             const bool focus = variant == i;
             if (focus) drawRowCursor(fb, kMargin, rowY[i], palColor(Pal::ACCENT));
@@ -118,8 +126,6 @@ void drawMaintAction(Framebuffer& fb, MaintKind kind, const PetModel& m,
             }
             drawLabelValue(fb, kMargin + 12, rowY[i], line, col, tag, tagCol, 0, false);
         }
-        std::snprintf(line, sizeof(line), "HELD DEFRAG TOOLS: %d", toolCount);
-        drawText(fb, kMargin, 154, line, palColor(Pal::INK_DIM));
 
         // Bottom action line: the gated reason, or the RUN/SWITCH hint.
         const bool toolReady = toolCount > 0;

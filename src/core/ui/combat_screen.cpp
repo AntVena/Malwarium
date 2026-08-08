@@ -467,9 +467,7 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
                            ? "B CONTINUE"
                        : combat.overrideOpen() ? "A CYCLE B COMMIT C CANCEL"
                                                : "A+C CMD B STAT C RUN A SKIP";
-    fb.fillRect(0, kActiveH - 16, kActiveW, 16, palColor(Pal::TRACK));
-    drawText(fb, (kActiveW - textWidth(hint)) / 2, kActiveH - 12, hint,
-             palColor(Pal::INK));
+    drawHintBand(fb, hint);
 }
 
 } // namespace mal

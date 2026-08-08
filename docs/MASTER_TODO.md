@@ -114,6 +114,12 @@ Intentional simplifications. None is a bug; each is a "confirm as v1 or revise".
 - **The STAT LOADOUT page shows four entries.** A move description wraps to three lines at
   `FONT_UI`'s advance, and the row pitch is sized to hold all three rather than cut the last
   mid-word. Revisit if the page starts reading as a scroll rather than a list.
+  The separation pass adds a second complaint to the same row: because the pitch is reserved
+  rather than measured, a two-line description spends its slack AFTER itself, so the gap lands
+  inside the MOVES group while the group's own seams — `MOVES` to its first entry, one entry to
+  the next — get nothing. The dim `MOVES`/`MODS` labels are carrying the whole grouping alone.
+  Measuring the pitch per entry and spending a fixed gap at the seams instead is the fix, and it
+  is a real layout change rather than a constant. Diff **S**.
 - **"LINK" names two different things.** The CFG **RADIO → LINK** row is consent to BROADCAST
   identity over ESP-NOW; the Hacker face's **LINK** slot is the 1v1 duel surface that consent
   enables. Adjacent screens, same word, different referents. Naming call, not code: renaming either
