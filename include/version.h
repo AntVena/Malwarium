@@ -44,7 +44,7 @@
 #  define FW_VERSION_MINOR 5
 #endif
 #ifndef FW_VERSION_PATCH
-#  define FW_VERSION_PATCH 0
+#  define FW_VERSION_PATCH 1
 #endif
 
 // Two-step expansion: the outer macro forces its argument to expand to a
