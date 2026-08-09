@@ -73,6 +73,13 @@ enum class AchSeries : uint8_t {
     BitsHeld,           // Bits held at once (a high-water check, never spent back down)
     PetsRaised,         // pets raised across lifecycles
     StackerWins,        // lifetime DEFRAG minigame boards cleared (core/model/stacker.h)
+    // The GAMES arcade (content_arcade.h). Runs and wins are summed across every
+    // cabinet; losses are the difference, counted in its own series so "kept playing
+    // and kept losing" is a row rather than arithmetic a reader has to do.
+    ArcadePlays,
+    ArcadeWins,
+    ArcadeLosses,
+    ArcadeCabinetWins,  // ... wins on the one cabinet named by `key`
 };
 
 // `goal` sentinel: compare against the series' TOTAL rather than a fixed number, so the
@@ -156,6 +163,10 @@ inline constexpr const char* kSecondInstance   = "SECOND_INSTANCE";
 // wide the run was when it reached the top. Both fire from Game::finishStacker.
 inline constexpr const char* kPerfectDefrag    = "PERFECT_DEFRAG";
 inline constexpr const char* kHangingByABit    = "HANGING_BY_A_BIT";
+// The other end of the same board, and the reason it is here rather than beside the
+// arcade's counted rows: losing on the second row is a shape, not a tally, so it fires
+// wherever the board is played.
+inline constexpr const char* kStackOverflow    = "STACK_OVERFLOW";
 // The three endings a spent Backup Drive can buy, all fired from Game::settleBackupDrive
 // off Combatant::BackupUse and the fight's outcome.
 inline constexpr const char* kBackUpAndDriven  = "BACK_UP_AND_DRIVEN";

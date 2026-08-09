@@ -353,6 +353,11 @@ bool playStackerBoard(Game& g, ColFn col) {
 // Open the GAMES cabinet on roster `row` and cycle its dial to `difficulty`. Leaves the
 // player on the cabinet page (L3), one B away from starting the run.
 inline void enterArcadeCabinet(Game& g, int row, ArcadeDifficulty difficulty) {
+    // Back out of wherever the last run left the menu — enterSubmenuId starts from the
+    // carousel, and a second cabinet in one session starts from the list it just used.
+    for (int i = 0; i < 4 && (g.nav() == Game::Nav::Detail ||
+                              g.nav() == Game::Nav::Submenu); ++i)
+        g.onButton(press(Button::C));
     enterSubmenuId(g, SubmenuId::Games);
     for (int i = 0; i < row; ++i) g.onButton(press(Button::A));
     g.onButton(press(Button::B));

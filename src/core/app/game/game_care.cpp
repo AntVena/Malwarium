@@ -105,6 +105,10 @@ void Game::onStacker(const ButtonEvent& ev) {
 }
 
 void Game::finishStacker() {
+    // The board's own joke, and it belongs to the BOARD rather than to either context:
+    // the run that lost its whole hand on the second lock, in the arcade or on a disk.
+    if (!stacker_.running() && !stacker_.won() && stacker_.row() == 1)
+        unlockAchievement(ach::kStackOverflow);
     // An arcade board is off the disk entirely: no clean, no tally, no care signal
     // from this path — the till applies its own. Taken before any of the defrag
     // bookkeeping so a cabinet run can never touch Fragmentation.

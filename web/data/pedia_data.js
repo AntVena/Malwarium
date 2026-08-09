@@ -2329,6 +2329,55 @@ window.PEDIA_DATA = {
       "icon": "assets/icons/ICON_ACH_HANGING_BY_A_BIT.png"
     },
     {
+      "key": "ARCADE_FIRST",
+      "name": "Insert Bit",
+      "trigger": "Finish 1 run in the GAMES arcade.",
+      "icon": "assets/icons/ICON_ACH_ARCADE_FIRST.png",
+      "goal": 1
+    },
+    {
+      "key": "ARCADE_25",
+      "name": "Idle Cycles",
+      "trigger": "Finish 25 runs in the GAMES arcade.",
+      "icon": "assets/icons/ICON_ACH_ARCADE_25.png",
+      "goal": 25
+    },
+    {
+      "key": "ARCADE_100",
+      "name": "Thrashing",
+      "trigger": "Finish 100 runs in the GAMES arcade.",
+      "icon": "assets/icons/ICON_ACH_ARCADE_100.png",
+      "goal": 100
+    },
+    {
+      "key": "ARCADE_WINS_10",
+      "name": "High Score",
+      "trigger": "Win 10 arcade runs.",
+      "icon": "assets/icons/ICON_ACH_ARCADE_WINS_10.png",
+      "goal": 10
+    },
+    {
+      "key": "SUNK_COST",
+      "name": "Sunk Cost",
+      "trigger": "Come away from 25 arcade runs without a win.",
+      "icon": "assets/icons/ICON_ACH_SUNK_COST.png",
+      "goal": 25
+    },
+    {
+      "key": "TOWER_OF_FRAGGLE",
+      "name": "Tower of Fraggle",
+      "trigger": "Clear the DEFRAG STACKER cabinet in the GAMES arcade.",
+      "icon": "assets/icons/ICON_ACH_TOWER_OF_FRAGGLE.png",
+      "goal": 1
+    },
+    {
+      "key": "STACK_OVERFLOW",
+      "name": "Stack Overflow",
+      "trigger": "Lose a Stacker board on the second row.",
+      "icon": "assets/icons/ICON_ACH_STACK_OVERFLOW.png",
+      "hidden": true
+    },
+    {
       "key": "BIT_BARON",
       "name": "Bit Baron",
       "trigger": "Hold 10000 Bits at once.",

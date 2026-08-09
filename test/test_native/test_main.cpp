@@ -517,6 +517,8 @@ int g_failures = 0;
     RUN(test_arcade_difficulty_paces_the_run)     \
     RUN(test_arcade_clutch_rounds_follow_the_dial) \
     RUN(test_arcade_isolation_is_off_the_clock)   \
+    RUN(test_arcade_ladders_split_plays_wins_losses) \
+    RUN(test_stack_overflow_fires_on_the_second_row) \
     RUN(test_arcade_tallies_persist)              \
     /* Isolation Protocol — the Worm egg's hatch minigame + its line gate */ \
     RUN(test_isolation_opens_on_the_middle_row)   \

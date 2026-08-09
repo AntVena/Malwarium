@@ -231,6 +231,20 @@ int Game::achValue(const AchievementDef& d) const {
             return petsRaised_;
         case AchSeries::StackerWins:
             return stackerWins_;
+        case AchSeries::ArcadePlays:
+        case AchSeries::ArcadeWins:
+        case AchSeries::ArcadeLosses: {
+            int plays = 0, wins = 0;
+            for (int i = 0; i < arcadeGameCount() && i < kArcadeMaxCabinets; ++i) {
+                plays += arcadePlays_[i];
+                wins += arcadeWins_[i];
+            }
+            if (d.series == AchSeries::ArcadeWins) return wins;
+            if (d.series == AchSeries::ArcadeLosses) return plays - wins;
+            return plays;
+        }
+        case AchSeries::ArcadeCabinetWins:
+            return arcadeWins(arcadeGameIndexById(d.key));
     }
     return 0;
 }

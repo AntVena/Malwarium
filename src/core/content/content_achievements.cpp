@@ -349,6 +349,43 @@ const AchievementDef kAchievements[] = {
      "Clear a DEFRAG board with a single block left standing.", "ICON_ACH_HANGING_BY_A_BIT",
      AchSeries::Event, /*goal=*/0, nullptr, 0, {bits(150), item("sealed_cache_rare")}},
 
+    // --- The GAMES arcade ----------------------------------------------------------
+    // Counted off the cabinets' own tallies (content_arcade.h), so every cabinet feeds
+    // the same three ladders and a new one needs no row here. The arcade pays for the
+    // attempt, and so do these: the plays ladder is the long one, and the losses row
+    // exists so a run of bad luck is still going somewhere.
+    {/*wire=*/75, "ARCADE_FIRST", "Insert Bit",
+     "Finish {n} run in the GAMES arcade.", "ICON_ACH_ARCADE_FIRST",
+     AchSeries::ArcadePlays, /*goal=*/1, nullptr, 0, {bits(25)}},
+    {/*wire=*/76, "ARCADE_25", "Idle Cycles",
+     "Finish {n} runs in the GAMES arcade.", "ICON_ACH_ARCADE_25",
+     AchSeries::ArcadePlays, /*goal=*/25, nullptr, 0,
+     {bits(60), item("sealed_cache_common")}},
+    {/*wire=*/77, "ARCADE_100", "Thrashing",
+     "Finish {n} runs in the GAMES arcade.", "ICON_ACH_ARCADE_100",
+     AchSeries::ArcadePlays, /*goal=*/100, nullptr, 0,
+     {bits(250), item("sealed_cache_rare")}},
+    {/*wire=*/78, "ARCADE_WINS_10", "High Score",
+     "Win {n} arcade runs.", "ICON_ACH_ARCADE_WINS_10",
+     AchSeries::ArcadeWins, /*goal=*/10, nullptr, 0,
+     {bits(60), item("sealed_cache_common")}},
+    // Losing is a tally too, and it is the one a bad player fills fastest — which is
+    // exactly why it pays: the arcade should never be a place effort goes nowhere.
+    {/*wire=*/79, "SUNK_COST", "Sunk Cost",
+     "Come away from {n} arcade runs without a win.", "ICON_ACH_SUNK_COST",
+     AchSeries::ArcadeLosses, /*goal=*/25, nullptr, 0,
+     {bits(60), item("sealed_cache_common")}},
+    // Cabinet-specific, keyed on the row's own id — the arcade Stacker, not the DEFRAG
+    // one, which has its own rows above.
+    {/*wire=*/80, "TOWER_OF_FRAGGLE", "Tower of Fraggle",
+     "Clear the DEFRAG STACKER cabinet in the GAMES arcade.", "ICON_ACH_TOWER_OF_FRAGGLE",
+     AchSeries::ArcadeCabinetWins, /*goal=*/1, "stacker", 0,
+     {bits(60), item("sealed_cache_common")}},
+    // Hidden: the joke only lands if the player wasn't aiming for it.
+    {/*wire=*/81, "STACK_OVERFLOW", "Stack Overflow",
+     "Lose a Stacker board on the second row.", "ICON_ACH_STACK_OVERFLOW",
+     AchSeries::Event, /*goal=*/0, nullptr, 0, {bits(40)}, /*hidden=*/true},
+
     // --- The wallet ---------------------------------------------------------------
     {/*wire=*/6, "BIT_BARON", "Bit Baron",
      "Hold {n} Bits at once.", "ICON_ACH_BIT_BARON",
