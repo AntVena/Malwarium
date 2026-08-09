@@ -510,6 +510,14 @@ int g_failures = 0;
     RUN(test_stacker_cleared_board_wipes_the_disk) \
     RUN(test_stacker_stopping_early_banks_the_board) \
     RUN(test_stacker_wins_ladder_sweeps_and_persists) \
+    /* GAMES — the arcade: the till, the dial, and the stakes it must not touch */ \
+    RUN(test_arcade_pays_the_attempt)             \
+    RUN(test_arcade_perfect_board_pays_the_bonus) \
+    RUN(test_arcade_stacker_leaves_the_disk_alone) \
+    RUN(test_arcade_difficulty_paces_the_run)     \
+    RUN(test_arcade_clutch_rounds_follow_the_dial) \
+    RUN(test_arcade_isolation_is_off_the_clock)   \
+    RUN(test_arcade_tallies_persist)              \
     /* Isolation Protocol — the Worm egg's hatch minigame + its line gate */ \
     RUN(test_isolation_opens_on_the_middle_row)   \
     RUN(test_isolation_step_moves_without_growing) \

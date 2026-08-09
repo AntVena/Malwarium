@@ -331,6 +331,34 @@ inline Combatant mkCombatant(const ContentRegistry& r, const char* name, int hp,
     return c;
 }
 
+// Play a whole Stacker board through the REAL button path, locking each row at
+// `col(row)`. Leaves the run parked on its result; the caller presses once more to
+// finish it. False if a column turned out unreachable, which would make the test a
+// no-op rather than a failure. Shared by the Defrag gates and the arcade's.
+template <typename ColFn>
+bool playStackerBoard(Game& g, ColFn col) {
+    for (int r = 0; r < kStackerRows && g.stacker().running(); ++r) {
+        const int want = col(r);
+        bool aligned = false;
+        for (int guard = 0; guard < 4 * kStackerCols; ++guard) {
+            if (g.stacker().left() == want) { aligned = true; break; }
+            g.debugStepStacker();
+        }
+        if (!aligned) return false;
+        g.onButton(press(Button::B));
+    }
+    return true;
+}
+
+// Open the GAMES cabinet on roster `row` and cycle its dial to `difficulty`. Leaves the
+// player on the cabinet page (L3), one B away from starting the run.
+inline void enterArcadeCabinet(Game& g, int row, ArcadeDifficulty difficulty) {
+    enterSubmenuId(g, SubmenuId::Games);
+    for (int i = 0; i < row; ++i) g.onButton(press(Button::A));
+    g.onButton(press(Button::B));
+    while (g.arcadeDifficulty() != difficulty) g.onButton(press(Button::A));
+}
+
 // Open the LOADOUT hub (MODS) on `row` — 0 MODS · 1 MOVES · 2 PRACTISE — and enter it.
 inline void enterLoadoutTab(Game& g, int row) {
     enterSubmenuId(g, SubmenuId::Mods);

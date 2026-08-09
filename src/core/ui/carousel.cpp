@@ -52,7 +52,7 @@ const CarouselSlot* carouselSlots() {
     static const CarouselSlot kSlots[kCarouselSlots] = {
         {"STAT",  &ASSET_ICON_STAT,  false, SubmenuId::Stat},
         {"ITEMS", &ASSET_ICON_ITEMS, false, SubmenuId::Items},
-        {"GAMES", &ASSET_ICON_GAMES, true,  SubmenuId::Games},
+        {"GAMES", &ASSET_ICON_GAMES, false, SubmenuId::Games},
         {"EXPL",  &ASSET_ICON_EXPL,  false, SubmenuId::Expl},
         {"MAINT", &ASSET_ICON_MAINT, false, SubmenuId::Maint},
         {"MODS",  &ASSET_ICON_MODS,  false, SubmenuId::Mods},

@@ -228,6 +228,16 @@ SaveData Game::captureSave() const {
     d.achievementNotified.assign(achNotified_, achNotified_ + kAchBytes);
     d.bossWins = bossWins_;
     d.stackerWins = stackerWins_;   // v44
+    // v47: one row per cabinet that has actually been played, id-keyed. A cabinet with
+    // no runs writes nothing — the save carries history, not the roster.
+    for (int i = 0; i < arcadeGameCount() && i < kArcadeMaxCabinets; ++i) {
+        if (arcadePlays_[i] == 0) continue;
+        SaveId id;
+        std::strncpy(id.id, arcadeGames()[i].id, kSaveIdCap - 1);
+        d.arcadeIds.push_back(id);
+        d.arcadePlays.push_back(arcadePlays_[i]);
+        d.arcadeWins.push_back(arcadeWins_[i]);
+    }
     d.collectedItems.reserve(collectedItems_.size());
     for (const ItemDef* it : collectedItems_) {
         SaveId id;
@@ -590,6 +600,15 @@ void Game::applySave(const SaveData& d) {
     // v44: boards cleared by hand. No pre-v44 seed — see the version note in save.h for
     // why defragCount is not one.
     stackerWins_ = d.stackerWins;
+    // v47: the arcade tallies, resolved back through the roster — a row naming a
+    // cabinet this build no longer has simply doesn't land anywhere.
+    for (int i = 0; i < kArcadeMaxCabinets; ++i) { arcadePlays_[i] = 0; arcadeWins_[i] = 0; }
+    for (size_t i = 0; i < d.arcadeIds.size(); ++i) {
+        const int row = arcadeGameIndexById(d.arcadeIds[i].id);
+        if (row < 0 || row >= kArcadeMaxCabinets) continue;
+        arcadePlays_[row] = i < d.arcadePlays.size() ? d.arcadePlays[i] : 0;
+        arcadeWins_[row] = i < d.arcadeWins.size() ? d.arcadeWins[i] : 0;
+    }
     collectedItems_.clear();
     for (const auto& s : d.collectedItems)
         if (const ItemDef* it = registry_.item(s.id)) collectedItems_.push_back(it);

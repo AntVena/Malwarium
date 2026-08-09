@@ -288,7 +288,12 @@ constexpr int kSaveTextCap = 28;     // matches EventLog's LogEntry.text
 // shape every other line already had. Both retired ids are in the rename table below, so
 // a pre-v46 blob holding either arrives on Rootgrub; the version is what lets that pass
 // be skipped for anything newer, and what will let those two rows retire.
-constexpr uint16_t kSaveVersion = 46;
+// v47 appends the GAMES arcade's per-cabinet tallies — how many runs each cabinet has
+// seen and how many were won — as parallel id/plays/wins runs, the shape speciesDive
+// already uses. Keyed by the cabinet's content id rather than by roster position, so
+// the GAMES list can be reordered or extended without a migration. Pre-v47 → empty,
+// which is the truth: nobody has played a cabinet that did not exist.
+constexpr uint16_t kSaveVersion = 47;
 
 // The oldest blob deserialize will read. Raising it is how a device stops carrying
 // migration weight for saves nobody can still be holding — and it is the ONLY thing
@@ -741,6 +746,15 @@ struct SaveData {
     // bossWins above); distinct from the per-pet `defragCount`, which counts defrags of
     // every variant. Pre-v44 → 0; nothing in an older blob can be honestly read as this.
     int32_t stackerWins = 0;
+
+    // --- v47: the arcade's per-cabinet tallies -------------------------------
+    // Three parallel runs: a cabinet's content id, its lifetime run count, and how many
+    // of those runs were won. Player-level, like stackerWins above. Id-keyed, so the
+    // GAMES roster (content_arcade.cpp) can be reordered and a retired cabinet's row
+    // simply stops resolving. Pre-v47 → empty.
+    std::vector<SaveId> arcadeIds;
+    std::vector<int32_t> arcadePlays;
+    std::vector<int32_t> arcadeWins;
 
     // v35: this pet's own best-ever DeepWeb Dive depth ------------------------
     // Per-pet (reset on a new egg, like mistakeShieldActive). The active pet's

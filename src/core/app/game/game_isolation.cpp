@@ -53,15 +53,9 @@ int cellY(int cell) { return kBoardY + (cell / kIsolationCols) * kCell; }
 
 // --- Lifecycle -------------------------------------------------------------
 
-void Game::startIsolation() {
-    // The goal is the WHOLE incubation clock, priced in bytes — so "clean" means the run
-    // that hatched the egg by itself, and the achievement has something exact to test.
-    // Rounded up, so a clock that isn't a whole number of minutes still has to be
-    // finished rather than merely reached.
-    const int goal =
-        static_cast<int>((bootHatchRemainMs_ + kIsolationDotMs - 1) / kIsolationDotMs);
+void Game::startIsolation(int goalDots) {
     rng_ = rng_ * 1664525u + 1013904223u;   // the shared LCG seeds the byte sequence
-    isolation_.reset(rng_, goal);
+    isolation_.reset(rng_, goalDots);
     isolationBanked_ = 0;
     lastIsolationStepMs_ = nowMs_;
     nav_ = Nav::Isolation;
@@ -84,6 +78,12 @@ void Game::onIsolation(const ButtonEvent& ev) {
 }
 
 void Game::finishIsolation() {
+    // An arcade run has no clock to spend the bytes on, and no achievement riding on a
+    // clean one: the till takes the score and that is the whole settlement.
+    if (arcadeRun_) {
+        finishArcadeRun(isolation_.clean(), isolation_.dots(), isolation_.goal());
+        return;
+    }
     // Spend the run. Banked against isolationBanked_ rather than paid straight out, so a
     // second press on the result screen can't buy the same bytes twice.
     const int owed = isolation_.dots() - isolationBanked_;
@@ -146,8 +146,13 @@ void Game::drawIsolation(Framebuffer& fb) const {
         const char* verdict = clean ? "BUFFER CLEAN" : "COLLISION - RUN ENDED";
         drawText(fb, (kActiveW - textWidth(verdict)) / 2, kVerdictY, verdict, ink);
 
+        // The effect line is priced in incubation, which an arcade run doesn't have —
+        // there it reports the buffer itself and lets the payout screen do the money.
         char effect[28];
-        if (clean) std::snprintf(effect, sizeof(effect), "HATCHING NOW");
+        if (arcadeRun_)
+            std::snprintf(effect, sizeof(effect), "%d / %d BYTES", isolation_.dots(),
+                          isolation_.goal());
+        else if (clean) std::snprintf(effect, sizeof(effect), "HATCHING NOW");
         else std::snprintf(effect, sizeof(effect), "-%d MIN INCUBATION",
                            isolation_.dots());
         drawText(fb, (kActiveW - textWidth(effect)) / 2, kEffectY, effect,
@@ -162,8 +167,12 @@ void Game::drawIsolation(Framebuffer& fb) const {
     // unit the prize is paid in, so the player is reading the incubation clock rather
     // than a score they'd have to convert.
     char status[32];
-    std::snprintf(status, sizeof(status), "-%d MIN   %d TO CLEAN", isolation_.dots(),
-                  isolation_.goal() - isolation_.dots());
+    if (arcadeRun_)
+        std::snprintf(status, sizeof(status), "%d BYTES   %d TO CLEAN",
+                      isolation_.dots(), isolation_.goal() - isolation_.dots());
+    else
+        std::snprintf(status, sizeof(status), "-%d MIN   %d TO CLEAN", isolation_.dots(),
+                      isolation_.goal() - isolation_.dots());
     drawText(fb, (kActiveW - textWidth(status)) / 2, kEffectY, status, ink);
 
     // UI_HINT_BAND. A and B steer here instead of stepping and accepting, so the band

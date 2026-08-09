@@ -83,7 +83,7 @@ bool slotWraps(int slot) { return slotX(slot) + kCell > kClutchW; }
 
 // --- Lifecycle -------------------------------------------------------------
 
-void Game::startEggPick() {
+void Game::startEggPick(int rounds) {
     // Hide the live egg: an equal-weight draw over the non-wrapping slots, off the same
     // shared LCG every other content draw uses (rollHatchProcess, the Trojan divert).
     rng_ = rng_ * 1664525u + 1013904223u;
@@ -93,6 +93,7 @@ void Game::startEggPick() {
         if (!slotWraps(s)) pool[n++] = s;
     eggPickTarget_ = static_cast<uint8_t>(pool[(rng_ >> 16) % n]);
 
+    eggPickRounds_ = static_cast<uint8_t>(rounds < 1 ? 1 : rounds);
     eggPickRound_ = 0;
     eggPickCol_ = 0;
     eggPickColSpan_ = kEggPickCols;
@@ -133,6 +134,13 @@ void Game::eggPickAim(bool secondHalf) {
 
 void Game::eggPickCommit() {
     if (eggPickResolved_) {
+        // An arcade raft has no egg behind it, so there is no clock to halve — the
+        // till takes the verdict instead. Win-or-lose: a halving either kept the live
+        // egg or it didn't, and there is no partial credit to award.
+        if (arcadeRun_) {
+            finishArcadeRun(eggPickWon_, 0, 0);
+            return;
+        }
         // The reveal has been read: bank the result and drop the player at idle with
         // their egg. Winning halves what's left of the incubation clock; that IS the
         // whole prize, since this line never opens the decrypt modal to grind down.
@@ -155,7 +163,7 @@ void Game::eggPickCommit() {
     ++eggPickRound_;
     eggPickSecondHalf_ = false;   // every round re-opens aimed at its first half
 
-    if (eggPickRound_ >= kEggPickRounds) {
+    if (eggPickRound_ >= eggPickRounds_) {
         eggPickResolved_ = true;
         eggPickWon_ = eggPickTargetInSpan();
     }
@@ -249,7 +257,11 @@ void Game::drawEggPick(Framebuffer& fb) const {
 
     if (eggPickResolved_) {
         const char* verdict = eggPickWon_ ? "LIVE EGG FOUND" : "DECOY - IT GOT AWAY";
-        const char* effect = eggPickWon_ ? "INCUBATION HALVED" : "FULL INCUBATION";
+        // The effect line is the one thing an arcade raft can't inherit: there is no
+        // egg behind it, so it names the payout screen that comes next instead of a
+        // clock it didn't touch.
+        const char* effect = arcadeRun_ ? (eggPickWon_ ? "CABINET CLEARED" : "NO PRIZE")
+                             : eggPickWon_ ? "INCUBATION HALVED" : "FULL INCUBATION";
         drawText(fb, (kActiveW - textWidth(verdict)) / 2, 30, verdict,
                  palColor(Pal::INK));
         drawText(fb, (kActiveW - textWidth(effect)) / 2, 186, effect,
@@ -261,7 +273,7 @@ void Game::drawEggPick(Framebuffer& fb) const {
 
     char round[24];
     std::snprintf(round, sizeof(round), "ROUND %d / %d", eggPickRound_ + 1,
-                  kEggPickRounds);
+                  eggPickRounds_);
     drawText(fb, (kActiveW - textWidth(round)) / 2, 30, round, palColor(Pal::INK_DIM));
 
     // A solid bar down the outer edge of the aimed half. The scrim already carries the

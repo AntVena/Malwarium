@@ -466,6 +466,13 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     // reads back into a shorter view as "not held" rather than as a corrupt stream.
     w.u16(static_cast<uint16_t>(d.ownedModCounts.size()));
     for (uint8_t b : d.ownedModCounts) w.u8(b);
+
+    // v47: the arcade's per-cabinet tallies, as parallel id/plays/wins runs (the
+    // speciesDive shape) so the GAMES roster stays free to reorder.
+    w.u16(static_cast<uint16_t>(d.arcadeIds.size()));
+    for (const auto& s : d.arcadeIds) writeId(w, s);
+    for (int32_t v : d.arcadePlays) w.i32(v);
+    for (int32_t v : d.arcadeWins) w.i32(v);
 }
 
 std::vector<uint8_t> serializeSave(const SaveData& d) {
@@ -956,6 +963,19 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
         const uint16_t nCounts = r.u16();
         for (uint16_t i = 0; i < nCounts && r.ok; ++i) d.ownedModCounts.push_back(r.u8());
         d.hasModCountData = r.ok;
+    }
+
+    // v47 tail: the arcade tallies. Absent in a v1..v46 blob → empty, and every
+    // cabinet reads as never played. There is nothing older to seed them from, and
+    // inventing one would credit runs that never happened.
+    if (version >= 47) {
+        const uint16_t nCab = r.u16();
+        for (uint16_t i = 0; i < nCab && r.ok; ++i) {
+            SaveId s; r.bytes(s.id, kSaveIdCap); s.id[kSaveIdCap - 1] = '\0';
+            d.arcadeIds.push_back(s);
+        }
+        for (uint16_t i = 0; i < nCab && r.ok; ++i) d.arcadePlays.push_back(r.i32());
+        for (uint16_t i = 0; i < nCab && r.ok; ++i) d.arcadeWins.push_back(r.i32());
     }
 
     if (!r.ok) { out = SaveData{}; return false; }  // truncated -> empty

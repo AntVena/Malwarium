@@ -20,6 +20,7 @@
 #include "core/app/radio_status.h"
 #include "core/app/sd_status.h"
 #include "core/content/areas/area_defs.h"
+#include "core/content/content_arcade.h"    // kArcadeMaxCabinets sizes the arcade tallies
 #include "core/content/content_passives.h"  // kWormReplicaSlots sizes companionWander_
 #include "core/content/defs.h"
 #include "core/content/effect_text.h"
@@ -72,7 +73,7 @@ public:
     //   Detail      — L3 (item detail · MAINT action).
     //   Process     — a running MAINT process (non-interruptible).
     //   ModalFeeding / ModalLockout — event overlays.
-    enum class Nav { Idle, Cursor, Submenu, Detail, Process, ModalFeeding, ModalLockout, ModalLineSelect, ModalHatch, ModalEggPick, ModalHatchReveal, ModalEvolve, ModalCSF, Combat, ExploreControl, Encounter, Wifi, Shop, ModShop, WarpPicker, RollbackPicker, CacheYield, BulkYield, PostEncounter, Stacker, Isolation };
+    enum class Nav { Idle, Cursor, Submenu, Detail, Process, ModalFeeding, ModalLockout, ModalLineSelect, ModalHatch, ModalEggPick, ModalHatchReveal, ModalEvolve, ModalCSF, Combat, ExploreControl, Encounter, Wifi, Shop, ModShop, WarpPicker, RollbackPicker, CacheYield, BulkYield, PostEncounter, Stacker, Isolation, ArcadeResult };
 
     // Which L2 screen the ITEMS submenu is showing. Picker (the category tile
     // screen) only ever appears when itemPickerUnlocked(); every other path — no
@@ -1065,6 +1066,24 @@ public:
     // already lost, even though the remaining rounds still play out.
     bool eggPickTargetInSpan() const;
 
+    // --- GAMES (the arcade) ------------------------------------------------
+    // The same minigames the hatches and the Defrag run, off their stakes: a cabinet
+    // starts one with nothing riding on it and pays a flat participation reward plus
+    // a skill bonus (content_arcade.h; game_arcade.cpp is the whole mechanism). The
+    // arcade never reimplements a game — arcadeRun_ is the only thing that tells a
+    // running minigame it is being played for fun, and it changes the PAYOUT and the
+    // pacing, never the rules.
+    bool inArcadeRun() const { return arcadeRun_; }
+    // Lifetime tallies per roster row (content_arcade.h's index order). Out-of-range
+    // reads 0, so a caller iterating a roster that shrank can't fall off the array.
+    int arcadePlays(int i) const {
+        return (i >= 0 && i < kArcadeMaxCabinets) ? arcadePlays_[i] : 0;
+    }
+    int arcadeWins(int i) const {
+        return (i >= 0 && i < kArcadeMaxCabinets) ? arcadeWins_[i] : 0;
+    }
+    ArcadeDifficulty arcadeDifficulty() const { return arcadeDifficulty_; }
+
     // --- Isolation Protocol (the Worm line's hatch minigame) ---------------
     // A Vermicell egg turns the worm inside it loose in a quarantine buffer: A steers
     // left, B steers right, and every byte it swallows is kIsolationDotMs off the
@@ -1546,6 +1565,23 @@ private:
     bool archRowIsActive() const { return listRow_ == 0; }
     // Records (RETIRED/CORRUPTED) trail the active + rack rows and have no slot.
     bool archRowIsRecord() const { return listRow_ > static_cast<int>(rack_.size()); }
+    // GAMES: the cabinet list (L2) -> one cabinet (L3) -> a real minigame -> payout.
+    void onArcadeList(const ButtonEvent& ev);
+    void onArcadeCabinet(const ButtonEvent& ev);
+    void onArcadeResult(const ButtonEvent& ev);
+    // Launch the focused cabinet's minigame with arcadeRun_ armed. The one place a
+    // cabinet's ArcadeGameKind turns into behaviour.
+    void startArcadeRun();
+    // Bank a finished run and open the payout screen. `scoreMax` 0 means the cabinet
+    // scores win-or-lose, which is what decides how the bonus half is worked out.
+    void finishArcadeRun(bool won, int score, int scoreMax);
+    // A paced minigame's step cadence under the current difficulty — `baseMs` scaled
+    // by the dial, or `baseMs` untouched outside a cabinet run.
+    int arcadeStepMs(int baseMs) const;
+    void drawArcade(Framebuffer& fb) const;         // L2 cabinet list
+    void drawArcadeDetail(Framebuffer& fb) const;   // L3 the focused cabinet
+    void drawArcadeOutcome(Framebuffer& fb) const;  // the payout screen
+
     // MODS: the LOADOUT hub (L2) and the mod-slot half it fronts.
     void onLoadoutHub(const ButtonEvent& ev);
     void openLoadoutTab(LoadoutTab tab);        // hub row -> its page, seeding the page
@@ -1863,6 +1899,7 @@ private:
     void drawRollbackPickerScreen(Framebuffer& fb) const;
     void startMaint();
     void startStackerDefrag();
+    void beginStackerBoard();   // reset the board + enter it, whoever is paying for it
     void finishStacker();
     void resolveMaint();
     bool rollMaintSuccess();
@@ -1900,8 +1937,10 @@ private:
     void startHatchGame(const EggLineDef* line);  // route a freshly laid egg to its HatchGame
     void drawLineSelect(Framebuffer& fb) const;  // the line-select modal
 
-    // Clutch Pick lifecycle (game_eggpick.cpp) — see kEggPickRounds above.
-    void startEggPick();                 // hide the live egg in the clutch, open the modal
+    // Clutch Pick lifecycle (game_eggpick.cpp) — see kEggPickRounds above. `rounds` is
+    // how many halvings this run asks for: the hatch always passes kEggPickRounds, and
+    // the arcade passes its difficulty.
+    void startEggPick(int rounds);       // hide the live egg in the clutch, open the modal
     void eggPickAim(bool secondHalf);    // A/C: highlight the first/second half
     void eggPickCommit();                // B: halve, or dismiss the reveal
     void drawEggPick(Framebuffer& fb) const;
@@ -1912,7 +1951,9 @@ private:
     void drawHatchReveal(Framebuffer& fb) const;
 
     // Isolation Protocol lifecycle (game_isolation.cpp) — see inIsolation() above.
-    void startIsolation();               // turn the worm loose in the buffer, open the screen
+    // `goalDots` is how many bytes make a CLEAN run: the hatch prices it off whatever
+    // is left of the incubation clock, the arcade off a flat target.
+    void startIsolation(int goalDots);   // turn the worm loose in the buffer, open the screen
     void onIsolation(const ButtonEvent& ev);
     void finishIsolation();              // spend the bytes on the clock and leave
     void drawIsolation(Framebuffer& fb) const;
@@ -2712,6 +2753,29 @@ private:
     uint32_t hatchPressMs_ = 0;
     uint32_t bootHatchRemainMs_ = 0;
 
+    // GAMES / the arcade (game_arcade.cpp). arcadeRow_ is the cabinet list's cursor and
+    // arcadeGame_ the roster index of whatever is RUNNING — the two part company as
+    // soon as a run starts, since the list stays where the player left it. arcadeRun_
+    // is what a minigame reads to know it is being played for fun: it redirects the
+    // payout and scales the pacing, and it is cleared by finishArcadeRun and by every
+    // reset that could strand a run (a wipe, a fresh egg).
+    //
+    // The result block is the finished run frozen for the payout screen, because the
+    // minigame's own state is free to be reset the instant the next one starts.
+    //
+    // Only the two TALLIES persist (save v47), keyed on the wire by each row's id so
+    // the roster can be reordered.
+    int arcadeRow_ = 0;
+    int arcadeGame_ = 0;
+    bool arcadeRun_ = false;
+    ArcadeDifficulty arcadeDifficulty_ = ArcadeDifficulty::Medium;
+    bool arcadeWon_ = false;
+    int arcadeScore_ = 0;
+    int arcadeScoreMax_ = 0;          // 0 = a win-or-lose cabinet, with no score to show
+    int arcadeBits_ = 0;              // what the run actually paid
+    int arcadePlays_[kArcadeMaxCabinets] = {0};
+    int arcadeWins_[kArcadeMaxCabinets] = {0};
+
     // Clutch Pick modal (the Phishing hatch minigame, game_eggpick.cpp). Runtime-only
     // and deliberately un-persisted: the whole game is played in the seconds after the
     // egg is laid, so a reboot mid-pick simply forfeits the bonus and leaves a normal
@@ -2725,6 +2789,10 @@ private:
     bool eggPickSecondHalf_ = false; // C-half (right/bottom) aimed at, vs the A-half
     bool eggPickResolved_ = false;   // rounds done -> the reveal, waiting on B
     bool eggPickWon_ = false;
+    // How many halvings THIS run asks for. The hatch always plays kEggPickRounds; the
+    // arcade's difficulty dial is this number, since a narrower survivor is the only
+    // axis a puzzle with no clock has.
+    uint8_t eggPickRounds_ = kEggPickRounds;
 
     // Isolation Protocol (the Worm hatch minigame, game_isolation.cpp). Un-persisted for
     // the same reason the Clutch Pick above is: it is played out in the minute after the

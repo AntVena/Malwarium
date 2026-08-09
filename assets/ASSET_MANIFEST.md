@@ -520,8 +520,15 @@ Battle. Combat Health/charge bars are **`UI_GAUGE` variants**, not new primitive
 combat hit/clash FX are **procedural activity visuals, NOT pipeline passes**.
 Most chrome is reused — only the rows below are new, and most are optional polish.
 
+**The GAMES arcade needs one glyph per cabinet** (`ArcadeGameDef::iconName`,
+`content_arcade.cpp`) and nothing else: it draws the menu round a minigame and never the
+game, so every screen inside a cabinet is that game's own. Two of the three cabinets
+reuse a glyph that already names their subject — `ICON_MAINT_DEFRAG` (§K) for the
+Stacker and `ICON_LINE_WORM` for the Isolation Protocol.
+
 | Asset ID | Element | Logical size | Notes | Status | File |
 |---|---|---|---|---|---|
+| `ICON_ARCADE_CLUTCH` | SPOT THE PHISH cabinet row glyph | 20×20 | fish hook | ☑ | `/assets/icons/ICON_ARCADE_CLUTCH.png` |
 | `UI_HEALTH_BAR` | Combat-Health row | ~208×24 | `UI_GAUGE` variant — transient Health | ☑ | engine-drawn |
 | `UI_OVERRIDE_PIP` | Once-per-battle Exploit-override indicator | 16×16 | ready (bolt) / spent (×) | ☑ | `/assets/icons/ICON_OVERRIDE_PIP{,_SPENT}.png` |
 | `UI_MOVE_CHANNEL` | Multi-turn move wind-up | ~120×12 | `UI_GAUGE` variant; override decision cue | ☑ | engine-drawn |

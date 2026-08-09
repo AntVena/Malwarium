@@ -159,8 +159,8 @@ void drawMaintAction(Framebuffer& fb, MaintKind kind, const PetModel& m,
     }
 }
 
-void drawStackerBoard(Framebuffer& fb, const Stacker& s, int frag) {
-    drawHeaderBand(fb, "DEFRAGMENTING");
+void drawStackerBoard(Framebuffer& fb, const Stacker& s, int frag, bool arcade) {
+    drawHeaderBand(fb, arcade ? "DEFRAG STACKER" : "DEFRAGMENTING");
 
     // Drawn bottom-up: row 0 is the base, so it sits at the FOOT of the well and the run
     // climbs toward the header. Cells are WIDE and short — a disk block, not a tile — and
@@ -219,14 +219,23 @@ void drawStackerBoard(Framebuffer& fb, const Stacker& s, int frag) {
         drawText(fb, kMargin, 182, line, palColor(Pal::HOT));
         drawText(fb, kMargin, 196, "ANY BUTTON", palColor(Pal::ACCENT));
     }
+    // The right column is what the run is FOR, which is the one thing the two contexts
+    // don't share: a Defrag is buying Fragmentation off a disk, and a cabinet run is
+    // banking a score. Either way it climbs live rather than arriving afterwards —
+    // that is the whole reason to keep locking rows.
+    if (arcade) {
+        std::snprintf(line, sizeof(line), "MAX %d", kStackerMaxScore);
+        drawText(fb, kActiveW - kMargin - textWidth(line), 182, line,
+                 palColor(Pal::INK_DIM));
+        std::snprintf(line, sizeof(line), "SCORE %d", s.score());
+        drawText(fb, kActiveW - kMargin - textWidth(line), 196, line,
+                 s.score() > 0 ? palColor(Pal::CALM) : palColor(Pal::INK_DIM));
+        return;
+    }
     std::snprintf(line, sizeof(line), "FRAG %d", frag);
     drawText(fb, kActiveW - kMargin - textWidth(line), 182, line, palColor(Pal::INK_DIM));
-
-    // The banked clean, in the same place all the way through: it climbs as the run
-    // does, and freezes on whatever the board ended up worth. This is the whole reason
-    // to keep climbing, so it can't be something the player only sees afterwards — and
-    // it stays a number of FRAG rather than a score, because a score would be a second
-    // currency the player would have to learn the exchange rate for.
+    // The banked clean stays a number of FRAG rather than a score, because a score
+    // would be a second currency the player would have to learn the exchange rate for.
     const int worth = stackerFragWorth(s, frag);
     std::snprintf(line, sizeof(line), "-%d FRAG", worth);
     drawText(fb, kActiveW - kMargin - textWidth(line), 196, line,

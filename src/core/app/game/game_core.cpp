@@ -271,7 +271,8 @@ bool Game::tick(uint32_t nowMs) {
     // slow for a timing test. Only runs while the board is up, and only while the run is
     // still live — a finished board holds still.
     if (nav_ == Nav::Stacker) {
-        if (nowMs - lastStackerStepMs_ >= static_cast<uint32_t>(kStackerStepMs)) {
+        if (nowMs - lastStackerStepMs_ >=
+            static_cast<uint32_t>(arcadeStepMs(kStackerStepMs))) {
             lastStackerStepMs_ = nowMs;
             stacker_.step();
             changed = true;
@@ -285,7 +286,8 @@ bool Game::tick(uint32_t nowMs) {
     // it walks to IS the difficulty. Only while the run is live — a crashed or finished
     // board holds still under the verdict.
     if (nav_ == Nav::Isolation) {
-        if (nowMs - lastIsolationStepMs_ >= static_cast<uint32_t>(kIsolationStepMs)) {
+        if (nowMs - lastIsolationStepMs_ >=
+            static_cast<uint32_t>(arcadeStepMs(kIsolationStepMs))) {
             lastIsolationStepMs_ = nowMs;
             isolation_.step();
             changed = true;
@@ -462,7 +464,8 @@ bool Game::tick(uint32_t nowMs) {
                            nav_ == Nav::Shop || nav_ == Nav::ModShop ||
                            nav_ == Nav::CacheYield ||
                            nav_ == Nav::BulkYield || nav_ == Nav::PostEncounter ||
-                           nav_ == Nav::Stacker || inCfgScreen ||
+                           nav_ == Nav::Stacker || nav_ == Nav::ArcadeResult ||
+                           inCfgScreen ||
                            bHeld_ || aHeld_ ||
                            qrScreenActive() ||  // scanning a QR takes longer than 5s
                            tagEditorActive() || // ...so does composing a tag
@@ -631,6 +634,7 @@ void Game::onButton(const ButtonEvent& ev) {
                     else if (loadoutTab_ == LoadoutTab::Moves) onTrainList(ev);
                     else onLoadoutHub(ev);
                     break;
+                case SubmenuId::Games: onArcadeList(ev); break;
                 case SubmenuId::Expl: onExplList(ev); break;
                 default: if (ev.button == Button::C) nav_ = Nav::Cursor; break;
             }
@@ -647,6 +651,7 @@ void Game::onButton(const ButtonEvent& ev) {
                     else if (modDetail_) onModDetail(ev);
                     else onModPicker(ev);
                     break;
+                case SubmenuId::Games: onArcadeCabinet(ev); break;
                 default: if (ev.button == Button::C) nav_ = Nav::Cursor; break;
             }
             break;
@@ -665,6 +670,9 @@ void Game::onButton(const ButtonEvent& ev) {
         case Nav::PostEncounter: dismissPostEncounter(); break;
         case Nav::Stacker: onStacker(ev); break;
         case Nav::Isolation: onIsolation(ev); break;
+        // The arcade payout: informational, so ANY button dismisses it (the
+        // PostEncounter contract, not the standard A/B/C one).
+        case Nav::ArcadeResult: onArcadeResult(ev); break;
         case Nav::Process:
             // Non-interruptible: ignored while running; the outcome dismisses.
             if (processResolved_ && (ev.button == Button::B || ev.button == Button::C))
@@ -770,6 +778,7 @@ void Game::enterSubmenu() {
             modDetailId_ = nullptr;
             trainRow_ = 0; trainScreen_ = TrainScreen::MovePicker;
             moveConfirm_ = false; movePendingId_ = nullptr; break;
+        case SubmenuId::Games: arcadeRow_ = 0; break;
         case SubmenuId::Expl: openExplList(); break;
         case SubmenuId::Stat: statPage_ = 0; loadoutScroll_ = 0; break;
         default: break;

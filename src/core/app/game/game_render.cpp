@@ -47,6 +47,7 @@ void Game::render(Framebuffer& fb) const {
         case Nav::Detail:  drawDetail(fb); break;
         case Nav::Process: drawProcess(fb); break;
         case Nav::Stacker: drawStacker(fb); break;
+        case Nav::ArcadeResult: drawArcadeOutcome(fb); break;
         case Nav::Combat: drawCombatScreen(fb); break;
         case Nav::ExploreControl:
             // The A+C control overlay floats over the idle habitat.
@@ -511,6 +512,9 @@ void Game::drawSubmenu(Framebuffer& fb) const {
             }
             break;
         }
+        case SubmenuId::Games:
+            drawArcade(fb);
+            break;
         case SubmenuId::Expl: {
             bool cleared[kExplSectors * kExplSubAreas];
             bool boss[kExplSectors * kExplSubAreas];
@@ -604,6 +608,9 @@ void Game::drawDetail(Framebuffer& fb) const {
             drawModPicker(fb, registry_, loadout_, modSlot_, modPick_,
                           modConfirm_, modConfirmChoice_, modPendingId_, combatLevel_,
                           pet_ ? pet_->line : nullptr);
+            break;
+        case SubmenuId::Games:
+            drawArcadeDetail(fb);
             break;
         default: break;
     }
@@ -761,7 +768,7 @@ void Game::drawBulkYieldScreen(Framebuffer& fb) const {
 }
 
 void Game::drawStacker(Framebuffer& fb) const {
-    drawStackerBoard(fb, stacker_, model_.fragmentation());
+    drawStackerBoard(fb, stacker_, model_.fragmentation(), arcadeRun_);
 }
 
 void Game::drawProcess(Framebuffer& fb) const {

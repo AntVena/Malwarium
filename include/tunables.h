@@ -783,6 +783,34 @@ constexpr int kStackerStepMs = 110;
 // a smaller clean — because the player already paid the entry in Bits and in attention.
 constexpr int kStackerScorePerFrag = 5;
 
+// The arcade (GAMES) --------------------------------------------
+// The same minigames, off their stakes. A cabinet run touches no egg and no disk, so
+// what it pays has to come from somewhere else — and the answer is deliberately flat:
+// the ATTEMPT is what earns, because the arcade's job is to be a thing worth doing on a
+// pet that has nothing else to do right now, not a Bits farm that outpaces exploring.
+constexpr int kArcadePlayBits = 32;    // paid for finishing a run, however it went
+constexpr int kArcadePlayHappy = 10;   // ...and the pet enjoyed itself either way
+// The skill half, on top of the flat one. An incremental game is paid this in
+// proportion to its score; a win-or-lose game takes all of it or none. Capped equal to
+// the participation payout so a perfect run is worth exactly twice a bad one — enough
+// to be worth playing well, not enough to make losing feel wasted.
+constexpr int kArcadeScoreBits = 32;
+// What the difficulty dial does to a PACED game (the Stacker's slide, the worm's step),
+// as a percentage of its shipped cadence. Medium is the game exactly as its own context
+// plays it — 100 here is load-bearing, not a placeholder.
+constexpr int kArcadeSpeedPctEasy = 160;
+constexpr int kArcadeSpeedPctMedium = 100;
+constexpr int kArcadeSpeedPctHard = 65;
+// The Clutch's dial instead moves how many times the raft halves — a narrower survivor
+// means the tell has to be found earlier. Medium matches the hatch's own three rounds.
+constexpr int kArcadeClutchRoundsEasy = 2;
+constexpr int kArcadeClutchRoundsMedium = 3;
+constexpr int kArcadeClutchRoundsHard = 4;
+// The Isolation run's goal off an egg. The hatch prices it in minutes of incubation
+// (kBootHatchMs / kIsolationDotMs = 30 bytes); the arcade has no clock to price against,
+// so it takes the same number directly and a clean run stays the same length of run.
+constexpr int kArcadeIsolationGoal = 30;
+
 // Menu navigation ------------------------------------------------
 // One global idle timer governs the whole menu tree: silence collapses every
 // layer back to idle. Suspended inside modal events / minigames. Tripled from

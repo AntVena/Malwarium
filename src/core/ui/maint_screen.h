@@ -34,7 +34,10 @@ void drawMaintAction(Framebuffer& fb, MaintKind kind, const PetModel& m,
 // either the controls or the result. `frag` is the disk as it stands: context for what
 // clearing the board would fix, and — since a cleared board wipes it — the win's own
 // payout, which is why the screen can price the run without being told.
-void drawStackerBoard(Framebuffer& fb, const Stacker& s, int frag);
+// The board. `arcade` swaps the right-hand readout: a Defrag run is counting
+// Fragmentation off a disk, and a cabinet run has no disk, so it counts the raw score
+// the arcade will actually pay on instead of a number that would mean nothing.
+void drawStackerBoard(Framebuffer& fb, const Stacker& s, int frag, bool arcade);
 
 // What a played board is worth in Fragmentation: kStackerScorePerFrag points to the
 // point, or the whole disk if it was cleared. Shared by the board and its outcome toast

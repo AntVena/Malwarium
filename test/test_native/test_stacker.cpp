@@ -158,26 +158,6 @@ void test_stacker_score_pays_for_height_twice() {
     CHECK(narrow.running() && narrow.row() == 2);  // the hand on level 3 counts for nothing
 }
 
-namespace {
-// Play a whole board through the REAL button path, locking each row at `col(row)`. Leaves
-// the run parked on its result; the caller presses once more to finish it. False if a
-// column turned out unreachable, which would make the test a no-op rather than a failure.
-template <typename ColFn>
-bool playStackerBoard(Game& g, ColFn col) {
-    for (int r = 0; r < kStackerRows && g.stacker().running(); ++r) {
-        const int want = col(r);
-        bool aligned = false;
-        for (int guard = 0; guard < 4 * kStackerCols; ++guard) {
-            if (g.stacker().left() == want) { aligned = true; break; }
-            g.debugStepStacker();
-        }
-        if (!aligned) return false;
-        g.onButton(press(Button::B));
-    }
-    return true;
-}
-}  // namespace
-
 // The two rows a board's SHAPE earns, and the tally underneath them. A perfect board and
 // a one-block board are the two ends of the same measurement, so they are asserted
 // against each other rather than one at a time — reading the wrong end of it is the

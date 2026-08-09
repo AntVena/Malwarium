@@ -179,10 +179,15 @@ void Game::startHatchGame(const EggLineDef* line) {
             // incubation clock reaches its second half (openDecryptMinigame).
             break;
         case HatchGame::Clutch:
-            startEggPick();
+            startEggPick(kEggPickRounds);
             break;
         case HatchGame::Isolation:
-            startIsolation();
+            // The goal is the WHOLE incubation clock, priced in bytes — so "clean"
+            // means the run that hatched the egg by itself, and WORM_WHISPERER has
+            // something exact to test. Rounded up, so a clock that isn't a whole
+            // number of minutes still has to be finished rather than merely reached.
+            startIsolation(static_cast<int>(
+                (bootHatchRemainMs_ + kIsolationDotMs - 1) / kIsolationDotMs));
             break;
     }
 }
@@ -595,6 +600,10 @@ void Game::resetToHatch() {
     moveLoadout_ = MoveLoadout::startingForLine(registry_, nullptr);  // startHatch() below re-seeds it
     loadoutTab_ = LoadoutTab::Hub;
     loadoutHubRow_ = 0;
+    arcadeRow_ = 0;
+    arcadeRun_ = false;                  // nothing can be mid-cabinet after a wipe
+    arcadeDifficulty_ = ArcadeDifficulty::Medium;
+    for (int i = 0; i < kArcadeMaxCabinets; ++i) { arcadePlays_[i] = 0; arcadeWins_[i] = 0; }
     trainRow_ = 0;
     trainScreen_ = TrainScreen::MovePicker;
     moveConfirm_ = false;

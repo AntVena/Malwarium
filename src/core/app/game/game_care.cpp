@@ -78,6 +78,12 @@ void Game::startStackerDefrag() {
     // The Bits are already spent (startMaint charges before branching), so from here the
     // run owes the player only a board. Every way out of it pays what that board is
     // worth; the spend is what gates spamming, not the result.
+    beginStackerBoard();
+}
+
+void Game::beginStackerBoard() {
+    // The board itself, with no opinion about who is paying for it — MAINT charges
+    // Bits and takes the clean, the arcade charges nothing and takes the score.
     stacker_.reset();
     lastStackerStepMs_ = nowMs_;
     nav_ = Nav::Stacker;
@@ -99,6 +105,13 @@ void Game::onStacker(const ButtonEvent& ev) {
 }
 
 void Game::finishStacker() {
+    // An arcade board is off the disk entirely: no clean, no tally, no care signal
+    // from this path — the till applies its own. Taken before any of the defrag
+    // bookkeeping so a cabinet run can never touch Fragmentation.
+    if (arcadeRun_) {
+        finishArcadeRun(stacker_.won(), stacker_.score(), kStackerMaxScore);
+        return;
+    }
     // A played board cannot FAIL; it can only be worth less. Clearing it is a full
     // defrag — the disk goes to zero, which nothing else in the game does — and a board
     // that stopped short still takes off what its blocks earned, at

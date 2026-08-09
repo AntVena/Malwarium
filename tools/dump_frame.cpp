@@ -428,6 +428,30 @@ int main(int argc, char** argv) {
             game.onButton({Button::B, true, false}); // open detail
             game.onButton({Button::B, true, false}); // EQUIP -> overwrite confirm
         }
+    } else if (hasFlag(argc, argv, "arcade")) {
+        enterSlot(SubmenuId::Games);
+        // cabinet → open the focused cabinet's page (L3); + hard → cycle the dial off
+        // MEDIUM so the setting is visible; clutch/worm → focus that cabinet first.
+        if (hasFlag(argc, argv, "clutch")) game.onButton({Button::A, true, false});
+        if (hasFlag(argc, argv, "worm")) {
+            game.onButton({Button::A, true, false});
+            game.onButton({Button::A, true, false});
+        }
+        if (hasFlag(argc, argv, "cabinet")) {
+            game.onButton({Button::B, true, false});
+            if (hasFlag(argc, argv, "hard")) {
+                game.onButton({Button::A, true, false});   // MEDIUM -> HARD
+            }
+            // play → start the run and take the board a few steps in.
+            if (hasFlag(argc, argv, "play")) {
+                game.onButton({Button::B, true, false});
+                for (int i = 1; i <= 6; ++i)
+                    game.tick(static_cast<uint32_t>(beats + i) * kHeartbeatMs);
+                // result → stop the run there and land on the payout screen.
+                if (hasFlag(argc, argv, "result"))
+                    game.onButton({Button::C, true, false});
+            }
+        }
     } else if (hasFlag(argc, argv, "loadout")) {
         enterSlot(SubmenuId::Mods);                  // the LOADOUT hub itself
     } else if (hasFlag(argc, argv, "train")) {
