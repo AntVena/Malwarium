@@ -125,12 +125,13 @@ const ItemDef kItems[] = {
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/5},
 
     // Decryptogram: the egg accelerator, granted into starting inventory on
-    // every new egg. Use on a Boot-Sector egg readies the decrypt now (jumps to the
-    // decrypt-ready point + opens the hatch minigame). Quest-typed (falls through the
-    // egg-phase ITEMS gate), no vitals, priceless, gated to the egg phase.
+    // every new egg. Use on a Boot-Sector egg takes a flat kDecryptogramCutMs off its
+    // incubation, floored at the crackable window — every line's hatch minigame is
+    // played at lay-time, so there is nothing left for an item to open. Quest-typed
+    // (falls through the egg-phase ITEMS gate), no vitals, priceless, egg-only.
     {"decryptogram", "Decryptogram", ItemDef::Type::Quest,
      ItemDef::Rarity::Common,
-     "Use on the egg to ready the decrypt immediately.",
+     "Use on the egg to cut 10 minutes off its incubation.",
      ItemDef::Context::Anytime, /*effects=*/{}, /*combatHeal=*/0, /*preEncounterXp=*/0,
      /*bits=*/0, /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::DecryptEgg,
      /*category=*/ItemDef::Category::Keys},

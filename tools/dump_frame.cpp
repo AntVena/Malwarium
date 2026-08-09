@@ -795,8 +795,20 @@ int main(int argc, char** argv) {
         game.onButton({Button::C, true, false});
     } else if (hasFlag(argc, argv, "carousel")) { // idle A → carousel@1
         game.onButton({Button::A, true, false});
-    } else if (hasFlag(argc, argv, "hatch") && hasFlag(argc, argv, "crack")) {
-        game.tick(3 * kHatchDurationMs / 4);       // advance the egg to a late crack stage
+    } else if (hasFlag(argc, argv, "decypher")) {
+        // A Ransomware egg opens straight onto its DISK DECYPHER board. "rows" plays
+        // three attempts first, so the frame lands on a board with history to read;
+        // "lost" plays all five, landing on the verdict + the revealed key.
+        game.resetToHatch();
+        if (game.inLineSelect()) game.onButton({Button::B, true, false});
+        const int rows = hasFlag(argc, argv, "lost") ? kDecypherAttempts
+                       : hasFlag(argc, argv, "rows") ? 3 : 0;
+        for (int r = 0; r < rows; ++r)
+            for (int s = 0; s < kDecypherSlots; ++s) {
+                for (int c = 0; c <= (r + s) % kDecypherColours; ++c)
+                    game.onButton({Button::A, true, false});
+                game.onButton({Button::B, true, false});
+            }
     } else if (hasFlag(argc, argv, "clutch")) {
         // Lay a Phishing egg, which opens its Clutch Pick. "aim" flips to the second
         // half; each "round" commits one halving, so "clutch round round round" lands

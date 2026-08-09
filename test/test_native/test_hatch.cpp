@@ -1,4 +1,5 @@
-// test_hatch.cpp — native gates for the Decryption Hatch, the egg gates and the evolution boundary.
+// test_hatch.cpp — native gates for the egg's hatch, its menu gates and the evolution
+// boundary. DISK DECYPHER's own rules live in test_decypher.cpp.
 //
 // One slice of the native suite; see test_gates.h for the shared fixtures and
 // test_main.cpp for the roster that runs these. A save-vNN gate sits with the
@@ -17,81 +18,25 @@ void test_hatch_lays_egg_at_idle() {
     CHECK(g.pet()->stage == Stage::BootSector);
     CHECK(g.inEggPhase());
     CHECK(g.bootHatchRemainMs() == kBootHatchMs);
-    CHECK(!g.hatchMinigameReady());           // first half: not decryptable yet
+    CHECK(!g.eggCrackable());                 // nowhere near the reveal window yet
     CHECK(g.generation() == 1);               // the egg is laid = generation 1
 }
 
-// The decrypt minigame is gated to the SECOND HALF of incubation: not available
-// while >half the clock remains, available once <= half. B on idle opens it then.
-void test_hatch_minigame_second_half_gate() {
+// The Ransomware egg opens straight onto its DISK DECYPHER board — the same lay-time
+// deal every other line already had — and a board that runs out of attempts costs the
+// egg nothing but the bonus.
+void test_hatch_opens_the_decypher_board() {
     Game g;
-    pickFirstEggLine(g);
-    uint32_t t = 0;
-    g.tick(t += 1000);
-    CHECK(!g.hatchMinigameReady());
-    g.onButton(press(Button::B));             // idle B is inert in the first half
+    if (g.inLineSelect()) g.onButton(press(Button::B));   // lay the Ransomware egg
+    CHECK(g.nav() == Game::Nav::Decypher);
+    CHECK(g.inEggPhase());
+    CHECK(g.bootHatchRemainMs() == kBootHatchMs);
+
+    settleDecypher(g);
     CHECK(g.nav() == Game::Nav::Idle);
-    g.tick(t += kBootHatchMs / 2);            // cross halfway
-    CHECK(g.hatchMinigameReady());
-    CHECK(g.inEggPhase());                    // still an egg until it's decrypted
-    g.onButton(press(Button::B));             // idle B now opens the decrypt modal
-    CHECK(g.nav() == Game::Nav::ModalHatch);
-    CHECK(g.hatchDeadlineMs() == t + kHatchDurationMs);
-}
-
-// Inside the decrypt modal, any A/B/C press cuts kHatchPressReductionMs off
-// the deadline (C is a press here, not "back").
-void test_hatch_press_subtracts_minute() {
-    Game g;
-    pickFirstEggLine(g);
-    uint32_t t = 0;
-    g.tick(t += 1000);
-    g.tick(t += kBootHatchMs / 2);
-    g.onButton(press(Button::B));             // open the decrypt modal
-    uint32_t d0 = g.hatchDeadlineMs();
-    g.onButton(press(Button::A));
-    CHECK(g.hatchDeadlineMs() == d0 - kHatchPressReductionMs);
-    uint32_t d1 = g.hatchDeadlineMs();
-    g.onButton(press(Button::C));             // C counts as a press here too
-    CHECK(g.hatchDeadlineMs() == d1 - kHatchPressReductionMs);
-}
-
-// Completing the decrypt (enough presses to exhaust the deadline) hatches
-// STRAIGHT TO PROCESS (Paypup) — the egg/Boot-Sector shell is skipped
-// visually, the whole point of the redesign.
-void test_hatch_decrypt_to_process() {
-    Game g;
-    pickFirstEggLine(g);
-    uint32_t t = 0;
-    g.tick(t += 1000);
-    g.tick(t += kBootHatchMs / 2);            // reach the second half
-    g.onButton(press(Button::B));             // open the decrypt modal
-    CHECK(g.nav() == Game::Nav::ModalHatch);
-    const int presses = kHatchDurationMs / kHatchPressReductionMs;
-    for (int i = 0; i < presses; ++i) g.onButton(press(Button::B));   // mash -> hatch
-    CHECK(g.nav() == Game::Nav::Idle);
-    CHECK(g.pet() != nullptr);
-    CHECK(g.pet()->stage == Stage::Process);  // hatched to a (random) Process, not CryptoShell
-    CHECK(std::strcmp(g.pet()->line, "ransomware") == 0);  // from the Ransomware egg pool
-    CHECK(!g.inEggPhase());
-    CHECK(g.model().hunger() == kStartHunger);          // fresh Process vitals
-}
-
-// Crack frame maps to elapsed fraction across the egg's frames, inside the modal.
-void test_hatch_crack_frame_mapping() {
-    Game g;
-    pickFirstEggLine(g);
-    uint32_t t = 0;
-    g.tick(t += 1000);
-    g.tick(t += kBootHatchMs / 2);
-    g.onButton(press(Button::B));             // open modal; deadline = t + dur
-    CHECK(g.hatchCrackFrame() == 0);          // progress 0 -> first frame
-    g.tick(t += kHatchDurationMs / 2);        // ~50% -> mid frame
-    CHECK(g.inHatch());
-    CHECK(g.hatchCrackFrame() == 2);          // (int)(0.5 * 4)
-    g.tick(t += kHatchDurationMs / 2 - 1000); // ~99.7% -> last frame, not yet hatched
-    CHECK(g.inHatch());
-    CHECK(g.hatchCrackFrame() == 3);
+    CHECK(g.inEggPhase());                    // still an egg, on its full clock
+    CHECK(g.bootHatchRemainMs() == kBootHatchMs);
+    CHECK(!g.hasAchievement(ach::kFirstBruteForce));   // a key that was never broken
 }
 
 // Waiting out the full incubation (never opening the minigame) auto-hatches on its
@@ -151,7 +96,7 @@ void test_hatch_seam_skips() {
     Game g{StartMode::Hatched};
     CHECK(g.nav() == Game::Nav::Idle);
     CHECK(g.pet() != nullptr);
-    CHECK(!g.inHatch());
+    CHECK(!g.inDecypher());
     CHECK(!g.inEggPhase());                   // a seam pet is already hatched
 }
 
@@ -214,22 +159,22 @@ void test_egg_items_quest_only() {
       CHECK(h.inventory().count("airgap_snack") == n0 - 1); }
 }
 
-// The A+C Exploit chord launches the Boot-Sector decrypt minigame — but only in
-// the second half of incubation (the exploit symbol's window). Inert before that.
+// The A+C Exploit chord cracks the shell — but only in the home stretch of the clock
+// (the exploit symbol's window). Inert before that, on every line.
 void test_egg_exploit_chord_hatches() {
     Game g;
     pickFirstEggLine(g);
     uint32_t t = 0;
     g.tick(t += 1000);
-    CHECK(!g.hatchMinigameReady());
-    g.onButton(chordAC());                        // first half: chord is inert
+    CHECK(!g.eggCrackable());
+    g.onButton(chordAC());                        // too early: the chord is inert
     CHECK(g.nav() == Game::Nav::Idle);
-    g.tick(t += kBootHatchMs / 2);                // cross halfway
-    CHECK(g.hatchMinigameReady());
+    g.tick(t += g.bootHatchRemainMs() - kHatchRevealMs / 2);
+    CHECK(g.eggCrackable());
     // Mirror hardware: A summons the cursor, then C completes the chord.
     g.onButton(press(Button::A));
     g.onButton(chordAC());
-    CHECK(g.nav() == Game::Nav::ModalHatch);
+    CHECK(g.nav() == Game::Nav::ModalHatchReveal);
 }
 
 // An egg can't arm explore-mode: EXPL is greyed/locked, so B on the EXPL

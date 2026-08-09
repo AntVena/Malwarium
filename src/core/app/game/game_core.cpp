@@ -102,7 +102,7 @@ bool Game::tick(uint32_t nowMs) {
     // still regenerates (so the egg can be walked to accelerate its hatch).
     if (nowMs_ > lastModelMs_) {
         const uint32_t elapsed = nowMs_ - lastModelMs_;
-        if (pet_ && nav_ != Nav::ModalHatch && !inEggPhase())
+        if (pet_ && !inEggPhase())
             tickHungerAndAwardXp(elapsed);      // no pet (empty save / line-select): nothing decays
         // Bandwidth regenerates over real active time — a slow trickle
         // back to the cap so a walk can't be farmed in one sitting but recovers
@@ -129,7 +129,7 @@ bool Game::tick(uint32_t nowMs) {
         // this block: it requires a remainder above zero, so an egg shaved straight to 0
         // elsewhere leaves the phase in the same instant and this will never see it.
         // Such a caller has to hatch the egg itself — Game::finishIsolation does.
-        if (inEggPhase() && nav_ != Nav::ModalHatch &&
+        if (inEggPhase() && nav_ != Nav::Decypher &&
             nav_ != Nav::ModalHatchReveal && nav_ != Nav::Isolation) {
             bootHatchRemainMs_ = bootHatchRemainMs_ > elapsed
                                      ? bootHatchRemainMs_ - elapsed : 0;
@@ -141,19 +141,6 @@ bool Game::tick(uint32_t nowMs) {
     // Audit-capture policy: expire the hot-broadcast window and
     // clear the re-arm cooldown on schedule (runtime-only timing; no radio here).
     auditCapture_.tick(nowMs_);
-
-    // Decryption Hatch. Arm the egg timer on the first tick (real
-    // game-ms, like Lockout), then hatch when it elapses. No fail state.
-    if (nav_ == Nav::ModalHatch) {
-        if (!hatchArmed_) {
-            hatchDeadlineMs_ = nowMs_ + kHatchDurationMs;
-            hatchArmed_ = true;
-        }
-        if (nowMs_ >= hatchDeadlineMs_) {
-            completeHatch();
-            changed = true;
-        }
-    }
 
     if (nowMs - lastBeatMs_ >= static_cast<uint32_t>(kHeartbeatMs)) {
         lastBeatMs_ = nowMs;
@@ -348,7 +335,7 @@ bool Game::tick(uint32_t nowMs) {
 
     // Lockout crisis fires when Hunger bottoms out. Never during the Hatch
     // (there's no pet), an Evolution, or a Critical System Failure (priority).
-    if (pet_ && !lockoutActive_ && nav_ != Nav::ModalHatch && nav_ != Nav::ModalEvolve &&
+    if (pet_ && !lockoutActive_ && nav_ != Nav::Decypher && nav_ != Nav::ModalEvolve &&
         nav_ != Nav::ModalCSF && model_.isStarving()) {
         fireLockout();
         changed = true;
@@ -455,7 +442,7 @@ bool Game::tick(uint32_t nowMs) {
     const bool inCfgScreen = nav_ == Nav::Detail && enteredId() == SubmenuId::Cfg &&
                               !updateScreenOpen();
     const bool suspended = lockoutActive_ || nav_ == Nav::ModalFeeding ||
-                           nav_ == Nav::Process || nav_ == Nav::ModalHatch ||
+                           nav_ == Nav::Process || nav_ == Nav::Decypher ||
                            nav_ == Nav::ModalLineSelect || nav_ == Nav::ModalEggPick ||
                            nav_ == Nav::ModalHatchReveal || nav_ == Nav::Isolation ||
                            nav_ == Nav::ModalEvolve || nav_ == Nav::ModalCSF ||
@@ -562,7 +549,6 @@ void Game::onButton(const ButtonEvent& ev) {
         // animation in the last kHatchRevealMs. (The first A/C of the chord may have
         // summoned the cursor; both openers re-check their own gate + park the modal
         // from any state.)
-        else if (hatchMinigameReady()) openDecryptMinigame();
         else if (hatchRevealReady()) openHatchReveal();
         // Otherwise (pet face, idle/cursor, not exploring, past the egg phase): flip to
         // the Hacker face. The lowest-priority top-level action, so the existing chord
@@ -575,10 +561,10 @@ void Game::onButton(const ButtonEvent& ev) {
 
     switch (nav_) {
         case Nav::Idle:
-            // B decrypts the egg once it's ready (second half of incubation,
-            // redesign) — the one idle action for an egg. A/C still summon the
+            // B cracks the egg once its clock is nearly out — the one idle action
+            // for an egg, and the same thing the A+C chord does. A/C still summon the
             // carousel (an egg can still be carried around / walked to hatch faster).
-            if (ev.button == Button::B && hatchMinigameReady()) openDecryptMinigame();
+            if (ev.button == Button::B && hatchRevealReady()) openHatchReveal();
             else if (ev.button == Button::A) summonCursor(0);
             else if (ev.button == Button::C) summonCursor(kCarouselSlots - 1);
             break;
@@ -693,12 +679,7 @@ void Game::onButton(const ButtonEvent& ev) {
             else if (ev.button == Button::B) layEgg(lines[lineSelectRow_ % n]);
             break;
         }
-        case Nav::ModalHatch:
-            // Any A/B/C press accelerates the decrypt (-1 minute + jiggle); C is
-            // not "back" here, it counts as a press too (the A+C chord is the
-            // no-op stub, already filtered above). No fail state.
-            hatchPress();
-            break;
+        case Nav::Decypher: onDecypher(ev); break;
         case Nav::ModalHatchReveal:
             // The crack cinematic runs itself and hatches off the end — every button is
             // inert for its ~2 seconds, so a stray press can't skip the one animation

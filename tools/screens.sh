@@ -52,6 +52,8 @@ SCENES=(
   "shop|shop"                       "encounter|encounter"
   "combat|combat"                   "postencounter|postencounter"
   "lockout|lockout"
+  "decypher|decypher"               "decypher_rows|decypher rows"
+  "decypher_lost|decypher lost"
   "isolation|isolation steps:900"   "isolation_crash|isolation crash"
   "worm_egg|isolation crash bank"
   "worm_home|pet:nodeatode"           "worm_script|pet:rootgrub"

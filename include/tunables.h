@@ -78,20 +78,19 @@ constexpr int kAchBannerBurstMax = 6;
 // second late is unnoticeable, and this keeps the sweep off the ~4fps repaint path.
 constexpr uint32_t kAchSweepIntervalMs = 500;
 
-// --- Decryption Hatch: A real-ms egg timer with no fail state. Any A/B/C
-//     press cuts the deadline by kHatchPressReductionMs, so enough presses
-//     hatch instantly; otherwise it waits out. Crack visuals map to elapsed
-//     fraction across the egg's frames. -----
-constexpr uint32_t kHatchDurationMs = 5u * 60u * 1000u;   // 5 min (modelled like Lockout)
-constexpr uint32_t kHatchPressReductionMs = 30u * 1000u;  // -30 s per press (10 -> instant)
-constexpr uint32_t kHatchJiggleMs = 220;                  // egg-jiggle window after a press
+// --- The Decryptogram. The one item that touches an egg, and now a flat bite out of
+//     its incubation clock rather than a way into a minigame — every line's hatch game
+//     is played once, at lay-time, so there is nothing left for an item to open. Floored
+//     at kHatchRevealMs by Game::useDecryptogram, so it can shorten the wait but never
+//     skip past the stretch where the player gets to crack the shell by hand. -----
+constexpr uint32_t kDecryptogramCutMs = 10u * 60u * 1000u;   // -10 min off the incubation
 
 // --- Boot-Sector incubation. The freshly laid egg
 //     sits at IDLE as the Boot-Sector creature (CryptoShell) — inert but on-screen
 //     and interactable — for kBootHatchMs before it can be decrypted. The
-//     Decryption Hatch minigame (above) only becomes AVAILABLE in the second half
-//     (remaining <= kBootHatchMs/2); completing it (or the timer reaching 0) hatches
-//     straight to Process. The player can rush that window by carrying the egg
+//     line's hatch minigame is played the instant it is laid, and its prize is spent
+//     against this clock; the clock reaching 0 hatches straight to Process on its own.
+//     The player can rush that window by carrying the egg
 //     around: each explore STEP shaves kBootHatchStepAccelMs and each newly-seen
 //     NETWORK shaves kBootHatchNetworkAccelMs off the incubation clock (an egg has
 //     no reason to walk/eat, but letting it interact is the point — it gives the
@@ -104,11 +103,9 @@ constexpr uint32_t kBootHatchNetworkAccelMs = 60u * 1000u;     // -1 min per new
 // --- Hatch reveal. The home stretch of ANY incubation: with this
 //     little left on the clock the egg is ready to crack, and the Exploit chord plays
 //     the shell's full hatch one-shot and hatches on the spot. It's how a line whose
-//     minigame happens elsewhere (the Phishing Clutch Pick, played at lay-time) still
-//     gets to SHOW its hatch animation instead of the egg silently becoming a pet
-//     while the player isn't looking. A Decrypt line reaches its own minigame earlier
-//     (kBootHatchMs/2), and that already plays the crack across its progress bar, so
-//     the decrypt keeps the chord and this never competes for it.
+//     minigame happens elsewhere — which by now is every one of them, all played at
+//     lay-time — still gets to SHOW its hatch animation instead of the egg silently
+//     becoming a pet while the player isn't looking.
 constexpr uint32_t kHatchRevealMs = 5u * 60u * 1000u;    // last 5 min: crackable on demand
 constexpr int kHatchRevealHoldBeats = 2;                 // beats to hold the final frame
 

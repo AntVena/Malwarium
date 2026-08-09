@@ -65,15 +65,7 @@ void Game::render(Framebuffer& fb) const {
         case Nav::BulkYield: drawBulkYieldScreen(fb); break;
         case Nav::PostEncounter: drawPostEncounterScreen(fb); break;
         case Nav::ModalLineSelect: drawLineSelect(fb); break;
-        case Nav::ModalHatch: {
-            // Transient per-press shimmy: a few-px nudge for a short window.
-            const bool jiggle = hatchPressMs_ != 0 &&
-                                (nowMs_ - hatchPressMs_) < kHatchJiggleMs;
-            const int dx = jiggle ? (((nowMs_ / 40) & 1) ? 3 : -3) : 0;
-            drawHatchModal(fb, hatchEggSprite(), hatchCrackFrame(),
-                           hatchProgress(), beat_, dx);
-            break;
-        }
+        case Nav::Decypher: drawDecypher(fb); break;
         case Nav::ModalEggPick: drawEggPick(fb); break;
         case Nav::Isolation: drawIsolation(fb); break;
         case Nav::ModalHatchReveal: drawHatchReveal(fb); break;
@@ -188,10 +180,10 @@ void Game::drawHabitat(Framebuffer& fb, int cursor) const {
         const int minY = kLivingTop + 4 + kFontH + 3;   // one line below the caption
         if (eggCrackable()) {
             // The ⚡ override pip flashes, inviting the A+C Exploit chord to crack the
-            // egg — into the decrypt minigame or the hatch cinematic, whichever this
-            // line has. A distinct glyph + "A+C" chord label carry the meaning with no
-            // colour channel. It only ever appears when the chord will actually do
-            // something, so an egg is never advertised a hatch it can't take.
+            // egg open into the hatch cinematic. A distinct glyph + "A+C" chord label
+            // carry the meaning with no colour channel. It only ever appears in the
+            // home stretch of the clock, so an egg is never advertised a crack it
+            // can't take.
             const bool on = ((beat_ / 2) & 1) == 0;   // flash to draw the eye
             if (on) {
                 const SpriteData& glyph = ASSET_ICON_OVERRIDE_PIP;

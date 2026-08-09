@@ -402,10 +402,7 @@ void test_a_hatch_the_store_refused_still_reaches_flash() {
     CHECK(!previous.empty());
 
     store.refuse = true;                                 // the medium starts saying no
-    g.tick(t += kBootHatchMs / 2);
-    g.onButton(press(Button::B));                        // open the decrypt
-    const int presses = kHatchDurationMs / kHatchPressReductionMs;
-    for (int i = 0; i < presses; ++i) g.onButton(press(Button::B));
+    g.tick(t += kBootHatchMs + kHeartbeatMs);            // the clock runs out -> hatch
     CHECK(g.pet() != nullptr && g.pet()->stage == Stage::Process);
     const std::string hatched = g.pet()->id;
     CHECK(hatched != previous);                          // RAM has moved on

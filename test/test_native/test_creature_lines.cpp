@@ -359,18 +359,16 @@ static void settleEggPick(Game& g) {
     g.onButton(press(Button::B));                 // dismiss the reveal -> idle
 }
 
-// A Phishing egg never opens the Decrypt line's minigame — its hatch game was the
-// Clutch Pick, already played at lay-time. hatchMinigameReady() carries the line half of
-// that question alongside the clock half, so every caller (idle's B and A+C, the
-// Decryptogram, and the idle prompt that advertises it) agrees.
-void test_eggpick_line_never_opens_decrypt() {
+// A settled Phishing egg has nothing left to play: its hatch game was the Clutch Pick,
+// already spent at lay-time, and the shell is not crackable until the home stretch. So
+// idle's B does nothing at all through the middle of the clock.
+void test_eggpick_line_has_nothing_mid_clock() {
     Game g = phishingEgg();
     settleEggPick(g);
     uint32_t t = 0;
     g.tick(t += 1000);
-    g.tick(t += kBootHatchMs / 2);                // the Decrypt line's arming window
-    CHECK(!g.hatchMinigameReady());               // clock says yes, but this line has no decrypt
-    CHECK(!g.eggCrackable());                     // ...so nothing is advertised yet either
+    g.tick(t += kBootHatchMs / 2);                // halfway down the clock
+    CHECK(!g.eggCrackable());                     // nothing is advertised out here
     g.onButton(press(Button::B));
     CHECK(g.nav() == Game::Nav::Idle);
     CHECK(g.inEggPhase());                        // still incubating
@@ -409,18 +407,17 @@ void test_hatch_reveal_plays_the_animation() {
     CHECK(!g.inEggPhase());
 }
 
-// A Ransomware egg is untouched by the reveal: its own decrypt minigame opens earlier
-// (and already plays its crack), so the two never compete for the chord.
-void test_hatch_reveal_leaves_decrypt_line_alone() {
+// The reveal is every line's now, the Ransomware one included: its DISK DECYPHER board
+// was spent at lay-time like everyone else's, so the home stretch belongs to the chord.
+void test_hatch_reveal_covers_the_decypher_line() {
     Game g;
     pickFirstEggLine(g);
     uint32_t t = 0;
     g.tick(t += 1000);
     g.tick(t += kBootHatchMs - kHatchRevealMs / 2);   // deep in the reveal window
-    CHECK(!g.hatchRevealReady());                     // ...but this line doesn't use it
-    CHECK(g.hatchMinigameReady() && g.eggCrackable());
+    CHECK(g.hatchRevealReady() && g.eggCrackable());
     g.onButton(chordAC());
-    CHECK(g.nav() == Game::Nav::ModalHatch);          // still the decrypt
+    CHECK(g.nav() == Game::Nav::ModalHatchReveal);
 }
 
 // Grayscale gate. The aim rides on SHAPE first — a bar down the aimed half's outer

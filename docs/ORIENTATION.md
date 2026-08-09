@@ -156,11 +156,14 @@ Fragmentation penalties scale up: neglect bites harder the older the pet is. Rec
 throughout, it just costs more attention. The mistake budget governs *which branch and when dying
 triggers*; the lifetime ramp raises the stakes with age.
 
-**Hatching** is per-line: each family's `EggLineDef::hatchGame` picks the minigame. Ransomware plays
-the **Decryption Hatch**, a patience game against the incubation clock with no fail state; Phishing
-plays the **Clutch Pick**, a one-shot game of nerve the instant the egg is laid, where only the live
-egg animates among identical decoys. Either way, in the last stretch of any incubation the Exploit
-chord cracks the shell on demand — so a line whose minigame happens early can't hatch off-screen.
+**Hatching** is per-line: each family's `EggLineDef::hatchGame` picks the minigame, and every one of
+them is played once, the instant the egg is laid. Ransomware plays **Disk Decypher**, a five-colour
+code board where cracking the key halves the incubation clock; Phishing plays the **Clutch Pick**, a
+game of nerve where only the live egg animates among identical decoys; the Worm plays the
+**Isolation Protocol**, which eats the clock a byte at a time. None of them can lose you the pet —
+a bad run costs only the bonus. In the last stretch of any incubation the Exploit chord then cracks
+the shell on demand, so an egg never hatches off-screen. All three are replayable, off their stakes,
+in the GAMES arcade.
 
 Rosters, evolution routing and per-stage flavour are data on `CreatureDef` rows, one folder per
 evolution line under `src/core/content/creatures/` — not a table in a doc.

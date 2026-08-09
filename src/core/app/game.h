@@ -26,6 +26,7 @@
 #include "core/content/effect_text.h"
 #include "core/content/registry.h"
 #include "core/model/combat.h"
+#include "core/model/disk_decypher.h"
 #include "core/model/event_log.h"
 #include "core/model/hacker_rank.h"
 #include "core/model/idle_wander.h"
@@ -73,7 +74,7 @@ public:
     //   Detail      — L3 (item detail · MAINT action).
     //   Process     — a running MAINT process (non-interruptible).
     //   ModalFeeding / ModalLockout — event overlays.
-    enum class Nav { Idle, Cursor, Submenu, Detail, Process, ModalFeeding, ModalLockout, ModalLineSelect, ModalHatch, ModalEggPick, ModalHatchReveal, ModalEvolve, ModalCSF, Combat, ExploreControl, Encounter, Wifi, Shop, ModShop, WarpPicker, RollbackPicker, CacheYield, BulkYield, PostEncounter, Stacker, Isolation, ArcadeResult };
+    enum class Nav { Idle, Cursor, Submenu, Detail, Process, ModalFeeding, ModalLockout, ModalLineSelect, ModalEggPick, ModalHatchReveal, ModalEvolve, ModalCSF, Combat, ExploreControl, Encounter, Wifi, Shop, ModShop, WarpPicker, RollbackPicker, CacheYield, BulkYield, PostEncounter, Stacker, Isolation, Decypher, ArcadeResult };
 
     // Which L2 screen the ITEMS submenu is showing. Picker (the category tile
     // screen) only ever appears when itemPickerUnlocked(); every other path — no
@@ -994,9 +995,12 @@ public:
     // Where companion `i` (0..idleCompanionCount()-1) is standing, same units as
     // petWander(). Each keeps its own stream so the group never marches in step.
     const IdleWander& companionWander(int i) const { return companionWander_[i]; }
-    // Hatch inspection (tests): progress 0..1 and the mapped crack frame (in the
-    // decrypt minigame). `inHatch()` = the minigame modal is up.
-    bool inHatch() const { return nav_ == Nav::ModalHatch; }
+    // DISK DECYPHER (the Ransomware line's hatch minigame) — the code-breaking board,
+    // played once the instant the egg is laid, exactly as the Clutch and the Isolation
+    // Protocol are. Cracking the key halves what is left of the incubation clock;
+    // running out of attempts costs only that bonus. Rules: core/model/disk_decypher.h.
+    bool inDecypher() const { return nav_ == Nav::Decypher; }
+    const DiskDecypher& decypher() const { return decypher_; }
     // Line-select modal: true while the player is choosing which egg line
     // to lay (fires at an empty save when >1 line is unlocked). `lineSelectRow()` is
     // the current cursor into the unlocked egg lines.
@@ -1012,9 +1016,6 @@ public:
     // Most Process pets are always in their line's pool; a few are DeepWeb-depth
     // rewards — Phishlet only joins the Phishing pool once DEEPWEB_DEPTH_64 is earned.
     bool hatchProcessUnlocked(const CreatureDef* proc) const;
-    uint32_t hatchDeadlineMs() const { return hatchDeadlineMs_; }
-    float hatchProgress() const;
-    int hatchCrackFrame() const;
     // Boot-Sector incubation (redesign): the freshly laid egg sits at idle as
     // the Boot-Sector creature, decrypting over kBootHatchMs. `inEggPhase()` is true
     // while it's still an unhatched egg (Boot stage + a live incubation clock);
@@ -1022,28 +1023,17 @@ public:
     bool inEggPhase() const {
         return pet_ && pet_->stage == Stage::BootSector && bootHatchRemainMs_ > 0;
     }
-    // Can the DECRYPT minigame be opened right now? The one predicate every caller
-    // asks — the idle A+C/B handlers, openDecryptMinigame's own guard, and the idle
-    // prompt that advertises it — so an egg can never be offered a hatch it won't get.
-    // Two conditions: the incubation clock is in its second half, AND this egg's line
-    // actually plays Decrypt. A Clutch line's game is played once at lay-time, so its
-    // egg simply runs its clock down and never advertises anything.
-    bool hatchMinigameReady() const {
-        return inEggPhase() && bootHatchRemainMs_ <= kBootHatchMs / 2 &&
-               (!hatchLine_ || hatchLine_->hatchGame == HatchGame::Decrypt);
-    }
-    // Can the hatch REVEAL be played on demand? The home stretch of an incubation whose
-    // line has no decrypt to offer — the chord cracks the shell there and then, so the
-    // 8-frame hatch one-shot is something the player watches rather than something that
-    // happens off-screen. Mutually exclusive with hatchMinigameReady() by construction:
-    // a Decrypt line's own minigame already plays its crack, and opens earlier.
+    // Can the hatch REVEAL be played on demand? The home stretch of ANY incubation —
+    // every line's minigame is played at lay-time now, so the last stretch of the clock
+    // is the one thing they all share, and the chord cracks the shell there and then so
+    // the 8-frame hatch one-shot is something the player watches rather than something
+    // that happens off-screen.
     bool hatchRevealReady() const {
-        return inEggPhase() && bootHatchRemainMs_ <= kHatchRevealMs &&
-               hatchLine_ && hatchLine_->hatchGame != HatchGame::Decrypt;
+        return inEggPhase() && bootHatchRemainMs_ <= kHatchRevealMs;
     }
-    // Either flavour of "the egg can be cracked open now" — what the idle prompt
-    // advertises with the flashing Exploit pip, and what the chord acts on.
-    bool eggCrackable() const { return hatchMinigameReady() || hatchRevealReady(); }
+    // "The egg can be cracked open now" — what the idle prompt advertises with the
+    // flashing Exploit pip, and what the chord acts on.
+    bool eggCrackable() const { return hatchRevealReady(); }
     int hatchRevealFrame() const;   // the one-shot's current frame (tests/render)
     uint32_t bootHatchRemainMs() const { return bootHatchRemainMs_; }
 
@@ -1929,8 +1919,14 @@ private:
     void startHatch();       // empty save -> line-select (>1 line) or lay the egg
     void layEgg(const EggLineDef* line);  // commit a chosen line: lay its Boot-Sector egg
     const CreatureDef* rollHatchProcess(const EggLineDef* line);  // random Process draw (advances rng_)
-    void openDecryptMinigame();  // second-half: B on idle -> arm the decrypt modal
-    void hatchPress();       // any A/B/C in the modal: -1 minute + jiggle
+    // DISK DECYPHER lifecycle (game_decypher.cpp) — see inDecypher() above.
+    // `allowDuplicates` lets the key repeat a colour and `easyHints` outlines the cells
+    // a played row got exactly right; the hatch passes false to both, and only the
+    // arcade's dial moves either.
+    void startDecypher(bool allowDuplicates, bool easyHints);
+    void onDecypher(const ButtonEvent& ev);
+    void finishDecypher();   // bank the crack against the clock (or the till) and leave
+    void drawDecypher(Framebuffer& fb) const;
     void completeHatch();    // decrypt done -> hatch straight to Process, return to idle
     void accelerateEggHatch(uint32_t ms);  // walk/network shave off the incubation clock
     const SpriteData* hatchEggSprite() const;
@@ -2742,16 +2738,20 @@ private:
     bool lockoutPayOption_ = false;        // false = Open Items · true = Pay Bits
     bool lockoutItemsContext_ = false;     // ITEMS opened from the Lockout modal
 
-    // Decryption Hatch modal. Deadline armed on entry (real game-ms, like Lockout);
-    // presses pull it earlier. hatchPressMs_ drives the jiggle. bootHatchRemainMs_ is
-    // the separate Boot-Sector INCUBATION clock (egg-at-idle, redesign): it counts
-    // down while the egg sits at idle and gates when the modal above may be opened
-    // (second half); persisted (save v9) so an egg survives a reboot mid-incubation.
+    // The egg being incubated: which line laid it, and the Boot-Sector INCUBATION clock
+    // (egg-at-idle) counting down while it sits there. The clock is what every hatch
+    // minigame's prize is spent against, and what hatchRevealReady() gates the on-demand
+    // crack on; persisted (save v9) so an egg survives a reboot mid-incubation.
     const EggLineDef* hatchLine_ = nullptr;
-    bool hatchArmed_ = false;
-    uint32_t hatchDeadlineMs_ = 0;
-    uint32_t hatchPressMs_ = 0;
     uint32_t bootHatchRemainMs_ = 0;
+
+    // DISK DECYPHER (the Ransomware hatch minigame, game_decypher.cpp). Un-persisted for
+    // the same reason the Clutch Pick and the Isolation Protocol below are: it is played
+    // out in the minute after the egg is laid, so a reboot mid-board forfeits the bonus
+    // and leaves a normal egg incubating. decypherEasy_ is the arcade dial's hint
+    // setting, read only by the screen.
+    DiskDecypher decypher_;
+    bool decypherEasy_ = false;
 
     // GAMES / the arcade (game_arcade.cpp). arcadeRow_ is the cabinet list's cursor and
     // arcadeGame_ the roster index of whatever is RUNNING — the two part company as

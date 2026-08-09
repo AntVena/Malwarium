@@ -45,7 +45,7 @@ const AchievementDef kAchievements[] = {
     // These leave no counter behind to test for, so each is an explicit
     // Game::unlockAchievement() at the site where it happens (AchSeries::Event).
     {/*wire=*/0, "FIRST_BRUTE_FORCE", "First Brute Force",
-     "Complete your first Decryption Hatch.", "ICON_ACH_FIRST_BRUTE_FORCE",
+     "Break a DISK DECYPHER key on a Ransomware egg.", "ICON_ACH_FIRST_BRUTE_FORCE",
      AchSeries::Event, /*goal=*/0, nullptr, 0, {bits(25)}},
     {/*wire=*/1, "SURVIVED_LOCKOUT", "Survived Lockout",
      "Resolve a Lockout Timer before it expires.", "ICON_ACH_SURVIVED_LOCKOUT",

@@ -32,6 +32,15 @@ const ArcadeGameDef kArcadeGames[] = {
      "EAT THE BUFFER WITHOUT EATING YOURSELF.",
      "ICON_LINE_WORM", "HOW FAST THE WORM MOVES.",
      ArcadeGameKind::Isolation, ArcadeScoring::Incremental},
+
+    // The Ransomware hatch, with no egg to unlock. Its dial is the only one that moves
+    // the RULES rather than the pace: easy shows which cells a row got exactly right,
+    // and hard lets the key repeat a colour, which kills the deduction that every
+    // colour ruled out narrows the rest.
+    {"decypher", "DISK DECYPHER",
+     "FIVE COLOURS, THREE SLOTS, FIVE GUESSES.",
+     "ICON_LINE_RANSOMWARE", "WHAT THE BOARD WILL TELL YOU.",
+     ArcadeGameKind::Decypher, ArcadeScoring::Incremental},
 };
 
 static_assert(sizeof(kArcadeGames) / sizeof(kArcadeGames[0]) <= kArcadeMaxCabinets,

@@ -151,9 +151,6 @@ void Game::layEgg(const EggLineDef* line) {
     exploreActive_ = false;              // an egg can't explore; clear any live mode
     exploreStreak_ = 0;
     bootHatchRemainMs_ = kBootHatchMs;   // the incubation clock (decrypt gate)
-    hatchArmed_ = false;
-    hatchDeadlineMs_ = 0;
-    hatchPressMs_ = 0;
     lastModelMs_ = nowMs_;
     stageEnteredMs_ = nowMs_;            // Boot-Sector in-stage clock starts now
     ++petsRaised_;                       // lifetime egg count; this pet's generation = its ordinal
@@ -175,8 +172,10 @@ void Game::startHatchGame(const EggLineDef* line) {
     if (!line) return;
     switch (line->hatchGame) {
         case HatchGame::Decrypt:
-            // Nothing to open now: the Decryption Hatch is offered later, once the
-            // incubation clock reaches its second half (openDecryptMinigame).
+            // The hatch board plays by the standard rules: no duplicate colours in the
+            // key, and the feedback stays anonymous. Both are the arcade's dials, and
+            // neither moves here.
+            startDecypher(/*allowDuplicates=*/false, /*easyHints=*/false);
             break;
         case HatchGame::Clutch:
             startEggPick(kEggPickRounds);
@@ -190,33 +189,6 @@ void Game::startHatchGame(const EggLineDef* line) {
                 (bootHatchRemainMs_ + kIsolationDotMs - 1) / kIsolationDotMs));
             break;
     }
-}
-
-void Game::openDecryptMinigame() {
-    // Only reachable in the second half of incubation (hatchMinigameReady). Arm the
-    // decrypt modal here (on entry) — the egg-at-idle boot no longer routes through
-    // ModalHatch, so the tick-time auto-arm never fires for it.
-    if (!hatchMinigameReady()) return;
-    // This is the Decrypt line's game specifically. A line that hatches some other way
-    // (Clutch plays once, at lay-time) must never land here, so the guard sits at the
-    // entry point rather than at each caller — idle's B, the Decryptogram, and anything
-    // added later all get it for free. Such an egg just runs its incubation clock down.
-    if (hatchLine_ && hatchLine_->hatchGame != HatchGame::Decrypt) return;
-    hatchArmed_ = true;
-    hatchDeadlineMs_ = nowMs_ + kHatchDurationMs;
-    hatchPressMs_ = 0;
-    nav_ = Nav::ModalHatch;
-    dirty_ = true;
-}
-
-void Game::hatchPress() {
-    if (!hatchArmed_) return;                 // armed on entry
-    hatchPressMs_ = nowMs_;                    // drives the render jiggle
-    if (hatchDeadlineMs_ > nowMs_ + kHatchPressReductionMs)
-        hatchDeadlineMs_ -= kHatchPressReductionMs;
-    else
-        hatchDeadlineMs_ = nowMs_;            // enough presses: due now
-    if (nowMs_ >= hatchDeadlineMs_) completeHatch();
 }
 
 void Game::accelerateEggHatch(uint32_t ms) {
@@ -266,13 +238,8 @@ void Game::completeHatch() {
     // mismatch silently into the raise.
     enforceSlotKindInvariant();
     bootHatchRemainMs_ = 0;       // no longer an egg
-    hatchArmed_ = false;
     lastModelMs_ = nowMs_;        // post-hatch decay starts now (no jump)
     stageEnteredMs_ = nowMs_;     // Process in-stage clock starts at hatch
-    // FIRST_BRUTE_FORCE: the first successfully-decrypted egg. Idempotent — every later
-    // hatch (a new egg after death/Store) re-fires harmlessly. The full-line rows need no
-    // call: installPet() has already tallied the species, and the sweep picks it up.
-    unlockAchievement(ach::kFirstBruteForce);
     nav_ = Nav::Idle;
     dirty_ = true;
     persistSave();                // a freshly hatched pet survives an immediate reboot
@@ -282,24 +249,6 @@ const SpriteData* Game::hatchEggSprite() const {
     if (!hatchLine_) return nullptr;
     const CreatureDef* egg = registry_.creature(hatchLine_->eggCreatureId);
     return egg ? registry_.creatureSprite(*egg) : nullptr;
-}
-
-float Game::hatchProgress() const {
-    if (!hatchArmed_ || hatchDeadlineMs_ <= nowMs_) return hatchArmed_ ? 1.0f : 0.0f;
-    const uint32_t remain = hatchDeadlineMs_ - nowMs_;
-    float frac = 1.0f - static_cast<float>(remain) / static_cast<float>(kHatchDurationMs);
-    if (frac < 0.0f) frac = 0.0f;
-    if (frac > 1.0f) frac = 1.0f;
-    return frac;
-}
-
-int Game::hatchCrackFrame() const {
-    const SpriteData* egg = hatchEggSprite();
-    const int frames = egg ? egg->frames : 4;
-    int f = static_cast<int>(hatchProgress() * frames);
-    if (f >= frames) f = frames - 1;
-    if (f < 0) f = 0;
-    return f;
 }
 
 // Evolution boundary (stub) -----------------------------------

@@ -358,17 +358,24 @@ void test_pedia_state_json_rack_and_record_hatched() {
     CHECK(json.find("\"archive\":[{") != std::string::npos);
 }
 
-// End-to-end trigger #1: a real FreshHatch, waited out to completion, flips
-// FIRST_BRUTE_FORCE (Game::completeHatch).
+// End-to-end trigger #1: a cracked DISK DECYPHER board flips FIRST_BRUTE_FORCE
+// (Game::finishDecypher). Waiting an egg out does NOT — the achievement is named for
+// breaking a key, and an egg that hatched on its own clock never had one to break.
 void test_pedia_first_brute_force_achievement() {
-    Game g(StartMode::FreshHatch);
-    pickFirstEggLine(g);
-    CHECK(!g.hasAchievement(ach::kFirstBruteForce));
-    uint32_t t = 1000;
-    g.tick(t);
-    g.tick(t += kBootHatchMs + kHeartbeatMs);   // wait out incubation -> hatch to Process
-    CHECK(g.pet() && g.pet()->stage != Stage::BootSector);
-    CHECK(g.hasAchievement(ach::kFirstBruteForce));
+    { Game g(StartMode::FreshHatch);
+      if (g.inLineSelect()) g.onButton(press(Button::B));
+      CHECK(g.inDecypher());
+      CHECK(!g.hasAchievement(ach::kFirstBruteForce));
+      crackDecypher(g);
+      CHECK(g.hasAchievement(ach::kFirstBruteForce)); }
+
+    { Game g(StartMode::FreshHatch);
+      pickFirstEggLine(g);                        // settles the board WITHOUT cracking it
+      uint32_t t = 1000;
+      g.tick(t);
+      g.tick(t += kBootHatchMs + kHeartbeatMs);   // wait out incubation -> hatch to Process
+      CHECK(g.pet() && g.pet()->stage != Stage::BootSector);
+      CHECK(!g.hasAchievement(ach::kFirstBruteForce)); }
 }
 
 // End-to-end trigger #2: a real Good-branch and a real Bad-branch Daemon

@@ -90,6 +90,29 @@
       "use": "Blue \u00b7 Guardians (defense) \u2014 royal blue, distinct from accent cyan"
     }
   },
+  "decypher": {
+    "_note": "DISK DECYPHER's five code colours (core/model/disk_decypher.h). Their own block rather than borrowed status hues, because they are a VOCABULARY: the puzzle means nothing unless the five read as five, and a colourblind theme has to be able to move all of them together without touching what calm/warn/hot mean everywhere else. Spread in LUMINANCE as well as hue (white > orange > green > blue > purple) so they stay five under the grayscale test — and every cell additionally carries its colour's initial, because a colour-matching puzzle is the one screen that cannot lean on colour alone.",
+    "decypher-green": {
+      "hex": "#2fae63",
+      "use": "code colour G"
+    },
+    "decypher-blue": {
+      "hex": "#3f7fe8",
+      "use": "code colour B"
+    },
+    "decypher-white": {
+      "hex": "#e8edf2",
+      "use": "code colour W"
+    },
+    "decypher-orange": {
+      "hex": "#f0b23e",
+      "use": "code colour O"
+    },
+    "decypher-purple": {
+      "hex": "#9a4df0",
+      "use": "code colour P"
+    }
+  },
   "themes": {
     "_note": "Alternate colour sets. A theme names ONLY the tokens it changes; everything else falls through to the role groups above, so a token added there can't go silently missing from a variant. Selected at runtime by palThemeIndex() (core/render/palette.h) \u2014 every colour on the device is fetched through palColor(), so a theme restyles the whole interface without any drawing call knowing. Shape of an entry, e.g. a deuteranopia-friendly set that moves the red/green semantic pair onto a blue/orange axis: \"deuteranopia\": { \"calm\": \"#...\", \"hot\": \"#...\", \"team-red\": \"#...\" }. Authoring the hues is a design pass, not a code change."
   }

@@ -12,13 +12,6 @@ namespace mal {
 class Framebuffer;
 struct SpriteData;
 
-// Decryption Hatch: the egg-hatch modal (archetype E, full canvas, no
-// chrome). `egg` is the Boot-Sector sprite sheet; `crackFrame` selects the
-// crack stage; `progressFrac` (0..1) is decrypt progress; `jiggleDx` nudges the
-// egg horizontally for the per-press shimmy. No fail state — any press helps.
-void drawHatchModal(Framebuffer& fb, const SpriteData* egg, int crackFrame,
-                    float progressFrac, int beat, int jiggleDx);
-
 // Evolution boundary: the celebratory Stage-advance cinematic. `phase`
 // runs 0 hold (the old sprite `from`) -> 1 FX_EVO_FLASH white-out -> 2 reveal
 // (`to` sprite + `toName` + the UI_STAGE_INDICATOR lit to `toStage`). B continues

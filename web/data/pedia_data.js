@@ -617,7 +617,7 @@ window.PEDIA_DATA = {
       "name": "Decryptogram",
       "type": "QUEST",
       "rarity": "COMMON",
-      "effect": "Use on the egg to ready the decrypt immediately.",
+      "effect": "Use on the egg to cut 10 minutes off its incubation.",
       "stats": "",
       "icon": "assets/icons/ICON_ITEM_DECRYPTOGRAM.png",
       "use": "EGG PHASE"
@@ -1876,7 +1876,7 @@ window.PEDIA_DATA = {
     {
       "key": "FIRST_BRUTE_FORCE",
       "name": "First Brute Force",
-      "trigger": "Complete your first Decryption Hatch.",
+      "trigger": "Break a DISK DECYPHER key on a Ransomware egg.",
       "icon": "assets/icons/ICON_ACH_FIRST_BRUTE_FORCE.png"
     },
     {

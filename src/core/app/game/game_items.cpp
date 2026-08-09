@@ -510,19 +510,23 @@ void Game::onBulkYield(const ButtonEvent& ev) {
 }
 
 void Game::useDecryptogram(const ItemDef& d) {
-    // consume the Decryptogram and ready the egg's decrypt immediately. Default
-    // effect = jump straight to the decrypt-ready point (second incubation half), then
-    // open the hatch minigame so the player decrypts NOW instead of waiting it out.
-    // itemUsable already guaranteed we're in the egg phase.
+    // A flat bite out of the incubation clock, and nothing else. Every line's hatch
+    // minigame is played once, at lay-time, so by the time an egg is sitting there
+    // being looked at there is no game left for an item to open — what is left is the
+    // wait, and this shortens it. itemUsable already guaranteed we're in the egg phase.
+    //
+    // Floored at kHatchRevealMs rather than at zero: the last stretch of the clock is
+    // where the player can crack the shell by hand and watch it (hatchRevealReady), so
+    // an item that skipped past it would take that away rather than hand it over.
     inventory_.remove(d.id, 1);
     char buf[28];
     std::snprintf(buf, sizeof(buf), "USED %s", d.displayName);
     log_.push(LogEventType::ItemUsed, buf);
-    if (bootHatchRemainMs_ > kBootHatchMs / 2) bootHatchRemainMs_ = kBootHatchMs / 2;
+    const uint32_t cut = bootHatchRemainMs_ > kDecryptogramCutMs
+                             ? bootHatchRemainMs_ - kDecryptogramCutMs : 0;
+    if (bootHatchRemainMs_ > kHatchRevealMs)
+        bootHatchRemainMs_ = cut > kHatchRevealMs ? cut : kHatchRevealMs;
     markSaveDirty();
-    // Arms the modal (hatchMinigameReady() now holds) for a Decrypt-line egg; on a line
-    // that hatches another way this no-ops and the clock cut above IS the whole effect.
-    openDecryptMinigame();
 }
 
 int Game::nextEligibleStat(int cur) const {

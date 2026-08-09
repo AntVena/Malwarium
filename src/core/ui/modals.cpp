@@ -77,34 +77,6 @@ int buildFeedGaugeRows(const ItemDef& d, const PetModel& m, const FeedVitals& b,
 
 }  // namespace
 
-void drawHatchModal(Framebuffer& fb, const SpriteData* egg, int crackFrame,
-                    float progressFrac, int beat, int jiggleDx) {
-    (void)beat;
-    fb.clear(palColor(Pal::PAPER));
-
-    drawCenteredText(fb, 14, "DECRYPTION HATCH", palColor(Pal::INK));
-
-    // The egg, at its crack stage; jiggleDx is the transient per-press shimmy.
-    if (egg) {
-        const int eggW = egg->frameW * kScaleNum / kScaleDen;
-        const int eggH = egg->h * kScaleNum / kScaleDen;
-        int f = crackFrame;
-        if (f < 0) f = 0;
-        if (f >= egg->frames) f = egg->frames - 1;
-        drawSpriteUpscaled(fb, *egg, f, (kActiveW - eggW) / 2 + jiggleDx,
-                           90 - eggH / 2, kScaleNum, kScaleDen);
-    }
-
-    // Decrypt-progress bar (fill level is the grayscale-safe channel).
-    drawText(fb, kMargin, 150, "DECRYPTING", palColor(Pal::INK));
-    drawProgressBar(fb, kMargin, 166, kActiveW - 2 * kMargin, 8, progressFrac,
-                    palColor(Pal::ACCENT));
-
-    // UI_HINT_BAND — any press accelerates the decrypt (the mapping is
-    // superseded; C is not "back" here).
-    drawCenteredText(fb, 200, "PRESS TO DECRYPT", palColor(Pal::INK_DIM));
-}
-
 void drawEvolveModal(Framebuffer& fb, const SpriteData* from, const SpriteData* to,
                      const char* toName, Stage toStage, int phase, int beat) {
     fb.clear(palColor(Pal::PAPER));

@@ -36,25 +36,6 @@ building it up organically.
 
 **Capture arming costs ~70KB and the AP ~58KB**, against ~126KB free with the radio idle. The device works, and the save no longer needs a big contiguous block, but that was the only thing standing on this — anything else that grows will hit the same wall. Worth a pass at what the capture path actually needs. | `net_capture.h`'s `powerUp` (`esp_wifi_init` + promiscuous + the pcap SD buffers). | M | Measured on device, not estimated: `[ap] down free=126408` → `[cap] armed free=56188`. |
 
-**Creature Loadout needs consolidating** : Train is really just a move selector and a low difficulty test fight, it doesn't need its own slot on the face. Roll Mods, Moves, and the dummy fight ('practise') in under the mods icon with submenus to choose which the user wants. This pairs with the next item: Games.
-
-**Games Arcade** Once the train menu is merged into mods, there's a free slot on the pet face. We can reuse that slot with a little arcade lever icon to create a games menu. We have a growing list of minigames, from hatch minigames to the defrag minigame. Make them playable here for a flat 32 bit participation reward and +10 pet happiness per time played, regardless of score as well as an additional up-to 32 bit reward in instances where score is incremental and the player wins. I don't care much about how it's split out. Make sure it's just loading the game, not reimplementng it. Changing a hatch game should change the arcade version. One difference to the hatch game would be adding a difficulty that speeds up or slows down the stacker and worm games. Egg games are medium, easy is slower, hard is faster. 
-
-**Ransomware Minigame** The other eggs have better minigames than Ransomware right now. Ransomware has a mash-button-X-times and the only barrier to it is getting an item. I'd rather something that sold the 'decryption' side of ransomware attack circumvention bit. Let's have the game play at the normal time, during egg selection. The decryptogram will be broken for the moment but that's ok, it can just deduct 10 minutes from remaining hatch time regardless of minigames, but only down to the final 5 where the player can triger the aniation manually anyway. The new rules are: Players try to guess the code progressively in a way similar to Bulls and Cows or to Mastermind or Wordle but with only 5 options and 3 slots so it will all fit on a screen:
-* There's a grid of 3 rows and 5 possible colours. Green, Blue, White, Orange, Purple.
-*  They get 5 attempts to cycle through those colours in 3 slots on the left side of the screen (a to cycle, B to lock in, C to move backwards through the grid of 3 cyclically).  
-* when all 3 are locked in, that's a player's turn. Then for each of the 3, they are told how many match the colour and how many match the position on the right side of the screen. They are not given coordinates, just the count. 
-* Then a new row appears and they repeat the process. They can see their previous atempts and how many were right or wrong and use that to hone in on the correct set of 3. 
-* Duplicates are not allowed on the normal hatch difficulty. 
-* Arade mode difficulties:
-  * Easy - the colour and location that are known are highlighted by a border on the cell if detected. 
-  * Medium - Standard rules
-  * Hard - Duplicate colours are possible 
-
-**Arcade Achievements** Arcade games played for fun should have some achievements associated with them. Overall play count as well as wins and losses should probably be tracked as a way to grant achievements. E.g: 
-* Stack Overflow - Lose on turn 2
-* Tower of Fraggle - Win Stacker
-
 ### 1a-ii. Evolution routing — one weighted edge list per creature
 
 `CreatureDef` carries four optional successor pointers (`evolvesToId`, `evolvesToGoodId`,
