@@ -162,7 +162,7 @@ void Game::archStoreActive() {
     noteRackDuplicates();   // before startHatch: a line earned HERE belongs on THIS menu
     archConfirm_ = false;
     listRow_ = 0;
-    startHatch();        // pet_ = nullptr, nav_ = ModalHatch
+    startHatch();        // pet_ = nullptr -> line-select, then a fresh egg
     persistSave();
 }
 

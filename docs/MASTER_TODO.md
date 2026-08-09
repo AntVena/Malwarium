@@ -36,6 +36,14 @@ building it up organically.
 
 **Capture arming costs ~70KB and the AP ~58KB**, against ~126KB free with the radio idle. The device works, and the save no longer needs a big contiguous block, but that was the only thing standing on this — anything else that grows will hit the same wall. Worth a pass at what the capture path actually needs. | `net_capture.h`'s `powerUp` (`esp_wifi_init` + promiscuous + the pcap SD buffers). | M | Measured on device, not estimated: `[ap] down free=126408` → `[cap] armed free=56188`. |
 
+**The arcade records plays and wins, never a best score.** `arcadePlays_`/`arcadeWins_` (save v47)
+are what the GAMES list and the cabinet's `W-L` line read, so a player has no way to see the run
+they are trying to beat — and every cabinet already reports a score to `finishArcadeRun`, which
+simply drops it after paying on it. Wants a third parallel tally beside the two, surfaced on the
+cabinet page. | `game_arcade.cpp`'s `finishArcadeRun`; `arcade_screen.cpp`; the v47 tail in
+`save.cpp`. | S | The only judgement call is whether a WinLose cabinet (the Clutch) shows anything
+at all, since its score is always 0 or absent. |
+
 ### 1a-ii. Evolution routing — one weighted edge list per creature
 
 `CreatureDef` carries four optional successor pointers (`evolvesToId`, `evolvesToGoodId`,
@@ -88,7 +96,9 @@ real art review. Not urgent — flash sits at 24% and tinting doesn't depend on 
 **A second theme is a design pass, not a build.** The machinery takes N themes today and
 `PAL_CORE.json` documents the block shape; authoring a colourblind-friendly set (moving the
 red/green semantic pair onto a blue/orange axis) needs hue decisions, plus a CFG row to select it
-and a save field to remember it. Diff **M**.
+and a save field to remember it. Diff **M**. The `decypher` block is the part that most wants one:
+its five code colours are a vocabulary a player has to tell apart at a glance, and while every cell
+carries its initial as the grayscale channel, five hues that read as five is the whole board.
 
 ### 1f. Standing stubs / interim mechanics to revisit
 

@@ -290,7 +290,7 @@ still references a `PAL_CORE` token rather than a literal, so a hue change reski
 | Asset ID | Element | Status | File |
 |---|---|---|---|
 | `FONT_UI` | primary UI **pixel** font — tabular digits + disambiguated `0/O 1/I 5/S 8/B` (`VISUAL_LANGUAGE.md §2`). **Face = Pixel Operator Mono**, its own 8px cut (CC0, licence beside the TTF). Rasterised to a glyph table by `tools/gen_font.py` — an authoring step, not a gate, so `gen_assets.py` stays pure-stdlib; the generator refuses any size the face would be antialiased at | ☑ | `/assets/fonts/PixelOperatorMono8.ttf` |
-| `PAL_CORE` | core palette = **14 role tokens** (structural · semantic `calm`/`warn`/`hot` · rarity) + team pair. Hues set — danger-ascending, `accent` ≠ status | ☑ | `/assets/PAL_CORE.json` |
+| `PAL_CORE` | core palette = role tokens in named groups (structural · semantic `calm`/`warn`/`hot` · fragmentation ramp · rarity · team pair · the five `decypher` code colours). Hues set — danger-ascending, `accent` ≠ status. A group exists where a set of colours is a VOCABULARY a theme has to move together, not where one hue was needed | ☑ | `/assets/PAL_CORE.json` |
 
 ---
 
@@ -375,7 +375,7 @@ blank — that is the prompt to draw one, and `check_orphan_assets.py` catches t
 | Asset ID | Element | Logical size | Notes | Status | File |
 |---|---|---|---|---|---|
 | `ICON_LOADOUT_MOVES` | MOVES row glyph | 20×20 | targeting reticle | ☑ | `/assets/icons/ICON_LOADOUT_MOVES.png` |
-| `ICON_TRAIN_SIM` | PRACTISE (Sim-Battle) row glyph | 20×20 | also the Sim-Battle row inside MOVES | ☑ | `/assets/icons/ICON_TRAIN_SIM.png` |
+| `ICON_TRAIN_SIM` | PRACTISE (Sim-Battle) row glyph | 20×20 | the hub's one door to the dummy fight | ☑ | `/assets/icons/ICON_TRAIN_SIM.png` |
 
 > The MODS row reuses §L's `ICON_MODS_SLOT` — the hub row and the list it opens are
 > the same subject, so they carry the same glyph.
@@ -524,7 +524,8 @@ Most chrome is reused — only the rows below are new, and most are optional pol
 `content_arcade.cpp`) and nothing else: it draws the menu round a minigame and never the
 game, so every screen inside a cabinet is that game's own. Two of the three cabinets
 reuse a glyph that already names their subject — `ICON_MAINT_DEFRAG` (§K) for the
-Stacker and `ICON_LINE_WORM` for the Isolation Protocol.
+Stacker, `ICON_LINE_WORM` for the Isolation Protocol, and `ICON_LINE_RANSOMWARE` for
+Disk Decypher.
 
 | Asset ID | Element | Logical size | Notes | Status | File |
 |---|---|---|---|---|---|
@@ -533,7 +534,7 @@ Stacker and `ICON_LINE_WORM` for the Isolation Protocol.
 | `UI_OVERRIDE_PIP` | Once-per-battle Exploit-override indicator | 16×16 | ready (bolt) / spent (×) | ☑ | `/assets/icons/ICON_OVERRIDE_PIP{,_SPENT}.png` |
 | `UI_MOVE_CHANNEL` | Multi-turn move wind-up | ~120×12 | `UI_GAUGE` variant; override decision cue | ☑ | engine-drawn |
 | `ICON_MOVE_SLOT` | Loadout equip-slot row glyph | 20×20 | filled / empty / locked variants | ☑ | `/assets/icons/ICON_MOVE_SLOT{,_EMPTY,_LOCKED}.png` |
-| `ICON_MOVE_<ID>` | Per-move glyph | 20×20 | derived at draw time from the move id (`train_screen.cpp`), so a new move's icon needs no wiring — drop the PNG in `assets/icons/` and it lights up. TRAIN falls back to text for a move with none, which is why most of the roster has no glyph yet: `ls assets/icons/ICON_MOVE_*` against `content_moves.cpp` is the real count | ☑/▨ | `/assets/icons/` |
+| `ICON_MOVE_<ID>` | Per-move glyph | 20×20 | derived at draw time from the move id (`train_screen.cpp`), so a new move's icon needs no wiring — drop the PNG in `assets/icons/` and it lights up. MOVES falls back to text for a move with none, which is why most of the roster has no glyph yet: `ls assets/icons/ICON_MOVE_*` against `content_moves.cpp` is the real count | ☑/▨ | `/assets/icons/` |
 | `UI_DAMAGE_POPUP` | Floating damage number | — | `FONT_UI` tabular digits — **procedural, no art** | ⊘ | — |
 | `SPR_DUMMY` | Sim-Battle training-dummy sprite | ≤128×64 | wired for both tiers in `simDummy()` (`src/core/model/combat.cpp`) — they are the same prop, and the tier reads off the level/stat rows | ▨ | `/assets/sprites/SPR_DUMMY.png` (56×48) |
 | `ICON_EVENT_WIFI` | Wi-Fi network event glyph | 20×20 | **optional**; else reuse the EXPL Wi-Fi-globe motif | ⌫ | placeholder `/assets/_attic/ICON_EVENT_WIFI.png` |

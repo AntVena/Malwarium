@@ -463,7 +463,7 @@ void Game::acknowledgeCSF() {
     csfBeat_ = 0;
     dyingArmed_ = false;
     dyingElapsedMs_ = 0;
-    startHatch();      // pet_ = nullptr, nav_ = ModalHatch, re-arms on the next tick
+    startHatch();      // pet_ = nullptr -> line-select, then a fresh egg
     persistSave();     // the record + vacated active survive an immediate reboot
 }
 

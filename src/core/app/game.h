@@ -2182,9 +2182,9 @@ private:
     int loadoutHubRow_ = 0;
 
     // MOVES + PRACTISE (the LOADOUT hub's other two rows) + the shared combat
-    // engine. trainRow_ is the focused MOVES row (an unlocked slot, or the
-    // Sim-Battle row); the L3 Detail is either the move picker or the Sim-Battle
-    // tier pick (trainScreen_).
+    // engine. trainRow_ is the focused MOVES row (always an unlocked slot); the L3
+    // Detail is either the move picker or, under PRACTISE, the Sim-Battle tier pick
+    // (trainScreen_).
     // The move picker mirrors MODS (slot/pick/confirm + pending). combat_ runs the
     // battle; combatBeat_ paces the auto-resolution; Health lives in combat_ and is
     // NEVER persisted (transient). combatXp_/combatLevel_ persist (save v2).

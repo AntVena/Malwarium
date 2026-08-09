@@ -160,7 +160,7 @@ weight consistent across the UI.
 ### 3.3 The 8 slot icons
 
 Concepts are **fixed** by the carousel (`docs/ORIENTATION.md`): Heart-w/-graph = STAT, USB =
-ITEMS, reticle = TRAIN, Wi-Fi globe = EXPL, fragmented HDD = MAINT, cracked CPU = MODS, rack =
+ITEMS, joystick = GAMES, Wi-Fi globe = EXPL, fragmented HDD = MAINT, cracked CPU = MODS, rack =
 ARCH, gear+terminal = CFG). Size 28×28, one master each, dim/bright in engine.
 
 ---
