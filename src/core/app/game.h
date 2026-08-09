@@ -1036,6 +1036,10 @@ public:
     bool eggCrackable() const { return hatchRevealReady(); }
     int hatchRevealFrame() const;   // the one-shot's current frame (tests/render)
     uint32_t bootHatchRemainMs() const { return bootHatchRemainMs_; }
+    // Shaves `ms` off the incubation clock (floors at 0); a no-op outside the egg
+    // phase. Walk/network steps use this to advance a laid egg, and it's also the
+    // seam dev_config.h's DEV_EGG_TIMER_MS uses to fast-forward a fresh boot.
+    void accelerateEggHatch(uint32_t ms);
 
     // --- Clutch Pick (the Phishing line's hatch minigame) ------------------
     // A Phishing egg is laid into a raft of identical decoys, and only the live
@@ -1143,6 +1147,16 @@ public:
     // one is the precondition for belonging to a crew (joinCrew refuses without it).
     int crewIndex() const { return crewIndex_; }            // kCrews row, or -1
     const CrewDef* activeCrew() const { return crew(crewIndex_); }
+    // The CREW screen's four views, deepest last. Enlisting is the one piece of player
+    // IDENTITY this device asks you to author, so the screen gives it room rather than
+    // stacking a roster into one list: the Hub states who you are and offers the two
+    // sides, a side opens its own roster, and a crew opens a page of its own. `Picker`
+    // is the home-network chooser — a modal over the Hub rather than a step past it,
+    // because designating turf is a precondition for all of this and not part of the
+    // browse. Public so the render path and the gates can name a view; the transitions
+    // are Game::onHackerCrew's alone.
+    enum class CrewView : uint8_t { Hub, Picker, Team, Detail };
+    CrewView crewView() const { return crewView_; }
     bool hasHomeNetwork() const { return homeNetworkKey_ != 0; }
     uint64_t homeNetworkKey() const { return homeNetworkKey_; }
     const char* homeNetworkName() const { return homeNetworkName_; }
@@ -1790,14 +1804,23 @@ private:
     void drawHackerMerge(Framebuffer& fb) const;   // MERGE HUB screen body (below the shared header)
 
     // CREW (game_crew.cpp) — enlist in a crew (content_crews.h) and designate the
-    // HOME NETWORK membership hangs off. The screen is one list: row 0 is the home
-    // network, rows 1.. are the crews. B on row 0 opens the home-network picker over
-    // the same body (crewNetPicker_), fed by the SD-backed NetworkLedger.
-    void onHackerCrew(const ButtonEvent& ev);      // CREW list: A cycle · B act · C back
-    void drawHackerCrew(Framebuffer& fb) const;    // CREW screen body (below the shared header)
+    // HOME NETWORK membership hangs off. Four views (CrewView, above); this pair is
+    // the whole screen, and unlike its sibling Hacker sub-screens it draws its OWN
+    // header band, because the title changes with the view (CREW / RED / the crew's
+    // own name) and only the screen knows which one is up.
+    void onHackerCrew(const ButtonEvent& ev);      // A cycle · B enter/act · C up a view
+    void drawHackerCrew(Framebuffer& fb) const;    // CREW screen, header band included
     void onHackerPeers(const ButtonEvent& ev);     // PEERS list: A cycle · C back (B unbound)
-    void drawHackerPeers(Framebuffer& fb) const;   // PEERS screen body (game_peers.cpp)
-    int crewListRows() const { return 1 + kCrewCount; }   // HOME NET row + one per crew
+    void drawHackerPeers(Framebuffer& fb) const;   // PEERS screen body (below the shared header)
+    // Per-view helpers, one pair each, so no single function carries all four layouts.
+    void drawCrewHub(Framebuffer& fb) const;
+    void drawCrewNetPicker(Framebuffer& fb) const;
+    void drawCrewTeam(Framebuffer& fb) const;
+    void drawCrewDetail(Framebuffer& fb) const;
+    // Rows on the Hub: HOME NET, then one per side. The sides are the fixed pair, not
+    // a count over the roster — an empty side still has to be visitable, or a crew
+    // added to it would have nowhere to appear.
+    static constexpr int kCrewHubRows = 3;
     // The crew Exploit row the A+C picker should offer, or a default-constructed
     // (label == nullptr) one when the player belongs to no crew.
     CrewExploit crewExploitOption() const;
@@ -1928,7 +1951,6 @@ private:
     void finishDecryption();   // bank the crack against the clock (or the till) and leave
     void drawDecryption(Framebuffer& fb) const;
     void completeHatch();    // decrypt done -> hatch straight to Process, return to idle
-    void accelerateEggHatch(uint32_t ms);  // walk/network shave off the incubation clock
     const SpriteData* hatchEggSprite() const;
     void startHatchGame(const EggLineDef* line);  // route a freshly laid egg to its HatchGame
     void drawLineSelect(Framebuffer& fb) const;  // the line-select modal
@@ -2656,11 +2678,17 @@ private:
     int hackerShopRow_ = 0;   // SHOP list cursor
     int hackerVaultRow_ = 0;  // VAULT list cursor — owned sealed-cache row
     int hackerMergeRow_ = 0;  // MERGE HUB list cursor — recipe row
-    // CREW list state. crewRow_ walks [HOME NET, crew 0..]; crewNetPicker_ swaps the
-    // body for the home-network picker (crewNetRow_ is its own cursor). All transient
-    // UI state — the membership + home network below are what persist.
-    int crewRow_ = 0;
-    bool crewNetPicker_ = false;
+    // CREW screen state. The screen is four views and `crewView_` IS the navigation:
+    // Hub (the home network and the two sides), Team (one side's roster), Detail (one
+    // crew's page), plus Picker — the home-network chooser, a modal over the Hub. C
+    // walks back up that order and only leaves the screen from the Hub. All transient
+    // UI state; the membership + home network below are what persist.
+    CrewView crewView_ = CrewView::Hub;
+    int crewHubRow_ = 0;                   // 0 = HOME NET, 1 = RED, 2 = BLUE
+    CrewTeam crewTeam_ = CrewTeam::Red;    // the side Team/Detail are showing
+    int crewTeamRow_ = 0;                  // cursor within that side's roster
+    int crewDetail_ = -1;                  // the kCrews row Detail is showing
+    int crewProseScroll_ = 0;              // Detail: first prose line drawn (A pages it)
     int crewNetRow_ = 0;
     // Rig Shop purchase levels, one int per RigRow (game_rig_shop.h) — 0 = never
     // bought; a tiered row's purchase count, or 0/1 for a one-time unlock. Player-level,

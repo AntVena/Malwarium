@@ -83,10 +83,12 @@ int main(int, char**) {
     // Persist to a file in the cwd so the preview survives a relaunch (the save
     // is loaded at boot; an empty save falls back to the start mode below).
     FileSaveStore store;
-#ifdef DEV_START_CREATURE
-    Game game(StartMode::Hatched, DEV_START_CREATURE, &store);  // dev: skip the egg
-#else
-    Game game(StartMode::FreshHatch, "paypup", &store);         // real first boot -> Hatch
+    Game game(StartMode::FreshHatch, "paypup", &store);
+#ifdef DEV_EGG_TIMER_MS
+    // Fast-forward a freshly laid egg so dev iteration doesn't wait out the real
+    // clock; a resumed save is already past the egg and this is a no-op then.
+    if (game.inEggPhase() && game.bootHatchRemainMs() > DEV_EGG_TIMER_MS)
+        game.accelerateEggHatch(game.bootHatchRemainMs() - DEV_EGG_TIMER_MS);
 #endif
     Framebuffer fb(kActiveW, kActiveH);   // active canvas is the compositor
     std::vector<Rgb565> panel;

@@ -39,10 +39,24 @@ class MoveLoadout;    // equipped moves
 // content vocabulary. Transient — wiped with the Combatant each fight.
 struct CrewExploitState {
     CrewExploitKind kind = CrewExploitKind::None;
-    int charges = 0;    // charge-metered kinds (NegateNextHits)
-    int turns = 0;      // duration-metered kinds
-    // True while `k` is the armed kind AND it still has a charge to spend.
+    int charges = 0;    // charge-metered kinds (NegateNextHits, PowerByDamageDealt)
+    int turns = 0;      // duration-metered kinds (DeathSaveRally)
+    // The three metering shapes, asked as three questions. `armed` is the charge half
+    // ("is there a charge left to spend?"), `ticking` the turn half, and `holds` the
+    // STICKY case, where being the armed kind at all is the whole condition.
     bool armed(CrewExploitKind k) const { return kind == k && charges > 0; }
+    bool ticking(CrewExploitKind k) const { return kind == k && turns > 0; }
+    bool holds(CrewExploitKind k) const { return kind == k; }
+    // Whether the armed Exploit still has anything left to do — the one question the
+    // combat screen's readout asks, so a spent charge-metered Exploit stops being
+    // reported without anything having to clear `kind` behind it.
+    bool live() const {
+        return kind != CrewExploitKind::None &&
+               (charges > 0 || turns > 0 || crewExploitIsSticky(kind));
+    }
+    // The number that prints beside the tag: whichever counter this kind meters out of,
+    // and 0 for a sticky kind (which crewExploitLabel then renders without an "xN").
+    int count() const { return charges > 0 ? charges : (turns > 0 ? turns : 0); }
 };
 
 // One live copy a Worm has replicated into a replication slot (Combatant::wormReplicas).
@@ -112,6 +126,11 @@ struct Combatant {
 
     // Transient defend state.
     int dmgReducePct = 0;       // Firewall Patch / TPM Chip — % incoming damage cut
+    int baseDmgReducePct = 0;   // dmgReducePct at fight start, captured in begin() —
+                                // the third of the three live stat LEANS (with
+                                // basePowerMultPct and baseSpeed) that a Phishing
+                                // siphon or a Trojan trap's armour rot erodes, and so
+                                // the third of the three Net Neutrality snaps back
     bool mirrorFired = false;   // set the turn a hit is fully negated (a brief flash);
                                  // also suppresses that attack's stun/DoT riders
     bool itemShield = false;    // Backup Drive's timed buff — a DEATH-SAVE, not a hit
@@ -397,6 +416,11 @@ private:
     // The single applier for every CrewExploitKind — a new crew ability is one enum
     // entry (content_crews.h) plus one case here, never a per-crew branch elsewhere.
     void applyCrewExploit();
+    // Burn one enemy turn off a turn-metered crew Exploit's clock (DeathSaveRally).
+    // Called from the two places an enemy turn resolves — step() and a failed flee —
+    // and always AFTER checkOutcome, so the turn that actually needed the save is paid
+    // out at the count it was armed with rather than one short.
+    void tickCrewExploitClock();
     // `moveIdx` is the actor's slot index for `mv` (into actor.moves) — needed by
     // Prowlware to rank that move's Attack power (attackPowerRank).
     void applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,

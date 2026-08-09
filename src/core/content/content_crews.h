@@ -40,15 +40,48 @@ namespace mal {
 // ICON_TEAM_BLUE / ICON_TEAM_RED, never colour alone.
 enum class CrewTeam : uint8_t { Blue, Red };
 
+// The side as words: the short NAME every surface shows beside the glyph ("RED"), and
+// the DOCTRINE the side's own screen leads with ("OPERATORS"). Both live here rather
+// than in the screen that happens to draw them, because the axis is content — CREW,
+// LINK and PEERS all show a side, and three private copies of the vocabulary is three
+// places for it to drift.
+const char* crewTeamName(CrewTeam team);
+const char* crewTeamDoctrine(CrewTeam team);
+
+// A side's roster, as a FILTER over kCrews rather than an ordering constraint on it:
+// how many crews sit on `team`, and the kCrews index of the `nth` of them (-1 past the
+// end). So a new crew goes wherever it reads best in the table below and the side's
+// screen still finds it, with no grouping to keep in sync.
+int crewTeamCount(CrewTeam team);
+int crewByTeam(CrewTeam team, int nth);
+
 // The effect vocabulary for a crew's signature Exploit. One entry per mechanic;
 // Combat::applyCrewExploit is the single applier, and each kind meters itself out of
 // the shared CrewExploitState counters (charges / turns) rather than its own field.
+//
+// Three metering shapes, and every kind is one of them: CHARGE-metered (spends itself
+// on events), TURN-metered (spends itself on turns), or STICKY (fires once and then
+// simply holds for the rest of the fight, counting nothing — see crewExploitIsSticky).
 enum class CrewExploitKind : uint8_t {
     None,
     // CHARGE-metered: fully negate the next `magnitude` incoming attacks, one charge
     // each — the same seam a RAID Mirror / Backup Drive one-shot uses
     // (Combat::applyEffect), so a negated hit also drops the attack's stun/DoT rider.
     NegateNextHits,
+    // CHARGE-metered: each of the next `magnitude` LANDED attacks banks its own final
+    // damage as Power for the rest of the fight. Uncapped and compounding — the bigger
+    // swing one charge buys is what the next charge banks.
+    PowerByDamageDealt,
+    // STICKY: snap the live stat LEANS (attack power, speed, damage cut) back to their
+    // fight-start baselines, then floor them there — nothing may lower them again.
+    ResetStatsAndFloor,
+    // STICKY: every self-buff the ENEMY casts (brace, shield pool, Lockout/Cipher
+    // stack) is copied onto you as it lands.
+    MirrorEnemyBuffs,
+    // TURN-metered one-shot: while it has turns left, a blow that would put the pet
+    // under 0 instead leaves it at half of max Health and pays the overkill back as
+    // Power, scaled by the turns still on the clock. Firing consumes it outright.
+    DeathSaveRally,
 };
 
 // The short mechanic word for a kind, used everywhere the effect is surfaced (the
@@ -56,14 +89,31 @@ enum class CrewExploitKind : uint8_t {
 // drift. It is the grayscale-safe channel for the effect — never a colour.
 const char* crewExploitTag(CrewExploitKind kind);
 
+// Whether a kind, once fired, simply HOLDS for the rest of the fight. A sticky kind
+// meters out of neither counter, so the armed `kind` alone is its whole state and there
+// is no number to print beside its tag.
+bool crewExploitIsSticky(CrewExploitKind kind);
+
+// The one readout formatter for an Exploit: "<TAG> xN", or a bare "<TAG>" when the
+// count is 0 (a sticky kind has nothing to count). Every surface that shows an Exploit
+// — the CREW row, the combat picker row, the commit popup, the mid-combat stat panel —
+// goes through this, so none of them can word it differently from the others.
+void crewExploitLabel(char* out, int cap, CrewExploitKind kind, int count);
+
 // A crew's signature Exploit. Nested on CrewDef rather than inlined as `exploit*`
 // fields so a crew granting more than one becomes an array here, not a rename
 // everywhere. `magnitude` is the kind's one number and lives on this row, not in
-// tunables.h — nothing outside this crew reads it.
+// tunables.h — nothing outside this crew reads it. A STICKY kind counts nothing, so
+// its magnitude is 0 and the readout drops the "xN" rather than printing a hollow one.
 struct CrewExploitDef {
     const char* name;           // picker row label ("DENIAL OF SERVICE")
     CrewExploitKind kind;
     int magnitude;
+    // What it does, in a sentence, for the CREW detail page — a TEMPLATE over this row
+    // (effect_text.h): write `{mag}` where the magnitude goes, never a digit, so
+    // retuning the number retunes the sentence. A kind with no number to cite writes
+    // pure prose; the derived "<TAG> xN" readout beside it carries the arithmetic.
+    const char* desc;
 };
 
 struct CrewDef {

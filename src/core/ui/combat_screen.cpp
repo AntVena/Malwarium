@@ -420,6 +420,19 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
         drawText(fb, 16, boxY + 4,
                  crewN ? "EXPLOIT: MOVE/ITEM/CREW" : "EXPLOIT: MOVE / ITEM",
                  palColor(Pal::INK));
+        // Every row here is the same shape: a NAME from content, and a short fixed TAG
+        // right-aligned inside the box. So the name yields to the tag — travelling
+        // inside what's left of the row while it's the focused one, clipped when it
+        // isn't. Drawn as two independent drawText calls it didn't yield at all, and a
+        // long label (a crew Exploit's name is the longest thing this list ever shows)
+        // simply ran underneath its own tag.
+        auto pickerRow = [&](int y, const char* name, Rgb565 nameCol, const char* tag,
+                             bool sel) {
+            const int tagX = kActiveW - 24 - textWidth(tag);
+            drawText(fb, tagX, y, tag, palColor(Pal::INK_DIM));
+            const int room = tagX - kMargin - 24;
+            if (room > 0) drawTextMarquee(fb, 24, y, room, name, nameCol, beat, sel);
+        };
         for (int i = 0; i < n; ++i) {
             const int y = boxY + 18 + i * 14;
             const bool sel = i == combat.overridePick();
@@ -427,24 +440,17 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
             const Rgb565 nameC = sel ? palColor(Pal::ACCENT) : palColor(Pal::INK);
             if (i < moveN) {                              // a move row
                 const MoveDef* m = combat.player().moves[i];
-                drawText(fb, 24, y, m->displayName, nameC);
-                drawText(fb, kActiveW - 24 - textWidth(moveKindTag(m->kind)), y,
-                         moveKindTag(m->kind), palColor(Pal::INK_DIM));
+                pickerRow(y, m->displayName, nameC, moveKindTag(m->kind), sel);
             } else if (i < moveN + itemN) {               // a USE-ITEM row
                 const OverrideItem& it = items[i - moveN];
-                drawText(fb, 24, y, it.label, nameC);
                 char tag[10];
                 std::snprintf(tag, sizeof(tag), "+%d HP", it.heal);
-                drawText(fb, kActiveW - 24 - textWidth(tag), y, tag,
-                         palColor(Pal::INK_DIM));
+                pickerRow(y, it.label, nameC, tag, sel);
             } else {                                      // the crew Exploit row
                 const CrewExploit& ce = combat.overrideCrew();
-                drawText(fb, 24, y, ce.label, nameC);
                 char tag[16];
-                std::snprintf(tag, sizeof(tag), "%s x%d", crewExploitTag(ce.kind),
-                              ce.magnitude);
-                drawText(fb, kActiveW - 24 - textWidth(tag), y, tag,
-                         palColor(Pal::INK_DIM));
+                crewExploitLabel(tag, sizeof(tag), ce.kind, ce.magnitude);
+                pickerRow(y, ce.label, nameC, tag, sel);
             }
         }
     }
@@ -537,10 +543,15 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
             if (c.lockedTurnsLeft > 0)
                 off += std::snprintf(s + off, sizeof(s) - off, "%sSTUN %d",
                                      off ? "  " : "", c.lockedTurnsLeft);
-            if (c.crewExploit.charges > 0)   // armed crew-Exploit charges
-                off += std::snprintf(s + off, sizeof(s) - off, "%s%s %d",
-                                     off ? "  " : "", crewExploitTag(c.crewExploit.kind),
-                                     c.crewExploit.charges);
+            // The armed crew Exploit and whatever it still has left — charges, turns,
+            // or nothing at all for a kind that simply holds (CrewExploitState::live).
+            if (c.crewExploit.live()) {
+                char ce[16];
+                crewExploitLabel(ce, sizeof(ce), c.crewExploit.kind,
+                                 c.crewExploit.count());
+                off += std::snprintf(s + off, sizeof(s) - off, "%s%s",
+                                     off ? "  " : "", ce);
+            }
             if (off > 0) row(8, s, Pal::INK_DIM);
         };
         block("YOU", pl, true);

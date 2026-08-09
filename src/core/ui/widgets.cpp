@@ -23,9 +23,9 @@ void drawHeaderBand(Framebuffer& fb, const char* title, const char* right,
 }
 
 void drawTextMarquee(Framebuffer& fb, int x, int y, int w, const char* s,
-                     Rgb565 color, int beat, bool scroll) {
+                     Rgb565 color, int beat, bool scroll, FontFace face) {
     const int overflow = textWidth(s) - w;
-    if (overflow <= 0) { drawText(fb, x, y, s, color); return; }
+    if (overflow <= 0) { drawText(fb, x, y, s, color, 1, face); return; }
 
     int offset = 0;
     if (scroll) {
@@ -41,7 +41,7 @@ void drawTextMarquee(Framebuffer& fb, int x, int y, int w, const char* s,
     }
 
     fb.setClip(x, y, w, kFontH);
-    drawText(fb, x - offset, y, s, color);
+    drawText(fb, x - offset, y, s, color, 1, face);
     fb.clearClip();
 }
 

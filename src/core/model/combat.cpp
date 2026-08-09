@@ -72,6 +72,10 @@ void Combat::begin(const Combatant& player, const Combatant& enemy, Stakes stake
     syncWormSpeed();
     player_.baseSpeed = player_.speed;
     enemy_.baseSpeed = enemy_.speed;
+    // ...and the third lean, for the same reason: a Net Neutrality reset has to know
+    // what the pet's damage cut was before a siphon or an armour rot went to work on it.
+    player_.baseDmgReducePct = player_.dmgReducePct;
+    enemy_.baseDmgReducePct = enemy_.dmgReducePct;
     // Seed the speed scheduler with empty gauges, then pick the opening actor by speed.
     // forceEnemyFirst (a failed pre-fight flee) is a hard guarantee: the enemy takes a
     // free opening action regardless of speed, and normal speed scheduling resumes after.
@@ -123,9 +127,32 @@ int Combat::chooseMove(Combatant& self) {
     return 0;
 }
 
+// Net Neutrality's floor (crew Exploit): whether `c`'s stat LEANS are locked against
+// being lowered. Every site below that would REDUCE a combatant's power / defence /
+// speed / maxHealth asks this one question first, so the next erosion mechanic has an
+// answer waiting rather than needing a case of its own.
+//
+// Health is deliberately not covered: it is the resource the fight is FOUGHT over, not
+// a lean, so a lifesteal drinks from it like any attack would.
+static bool statsFloored(const Combatant& c) {
+    return c.crewExploit.holds(CrewExploitKind::ResetStatsAndFloor);
+}
+
 void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
                          bool byPlayer, int moveIdx) {
     target.mirrorFired = false;
+    // Malbeast In The Middle (crew Exploit): while it holds, every SELF-BUFF the enemy
+    // casts is copied onto the player as it lands. Answered once here so each of the
+    // four buff sites below costs a single line, and false in every fight that hasn't
+    // armed it. `byPlayer` names who is CASTING (the Trojan hijack passes the flipped
+    // flag with the swapped roles), so this is the enemy side buffing itself and no
+    // other reading.
+    //
+    // Scoped to self-buffs, not to the steal track: a siphon's gain half is the
+    // player's OWN stat changing hands, and copying that back would hand the pet a
+    // refund rather than a copy of somebody else's advantage.
+    const bool mitmCopy =
+        !byPlayer && player_.crewExploit.holds(CrewExploitKind::MirrorEnemyBuffs);
     // Feeding-frenzy combo (Phishing steal-attacks only, mv->stealPowerPct > 0):
     // this actor's OWN run of back-to-back steal-attack casts — a mixed kit that
     // slots in a Defend move (e.g. Spoof-Bubble) between them breaks it, restarting
@@ -310,7 +337,7 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
                     actor.health -= rebound;
                 }
             }
-            if (trap->trapArmorRot > 0) {                  // rot armor for next time
+            if (trap->trapArmorRot > 0 && !statsFloored(actor)) {   // rot armor for next time
                 actor.dmgReducePct -= trap->trapArmorRot;
                 if (actor.dmgReducePct < 0) actor.dmgReducePct = 0;
             }
@@ -361,9 +388,16 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
         // stealCurrentHpPct additionally require the caster's Obfuscation shield to be
         // up (shieldHp > 0) — the Phishing interplay this track is built around: going
         // aggressive with the volatile pair costs the defensive bubble's uptime.
+        //
+        // A target whose stats are FLOORED (Net Neutrality) has nothing here to give:
+        // every branch below is a TRANSFER, so a steal that may not lower the victim
+        // does not pay the thief either — the siphon simply comes back empty. That is
+        // checked per-branch rather than around the block because stealCurrentHpPct is
+        // in here too, and Health is not one of the floored leans.
         if (dmg > 0) {
+            const bool floored = statsFloored(target);
             bool powerSiphoned = false;
-            if (mv->stealPowerPct > 0) {
+            if (mv->stealPowerPct > 0 && !floored) {
                 const int stolen = target.powerMultPct * mv->stealPowerPct / 100;
                 if (stolen > 0) {
                     actor.powerMultPct += stolen;
@@ -373,7 +407,7 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
                     powerSiphoned = true;
                 }
             }
-            if (mv->stealDefensePct > 0) {
+            if (mv->stealDefensePct > 0 && !floored) {
                 const int stolen = target.dmgReducePct * mv->stealDefensePct / 100;
                 if (stolen > 0) {
                     actor.dmgReducePct += stolen;
@@ -393,7 +427,7 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
                 if (bite && mv->stealSpeedPct > 0 && mv->stealCurrentHpPct > 0)
                     biteHitsSpeed = (rng() % 2 == 0);
             }
-            if (bubbleUp && mv->stealSpeedPct > 0) {
+            if (bubbleUp && mv->stealSpeedPct > 0 && !floored) {
                 int pct = mv->stealSpeedPct;
                 // The Phishing Rod only ever scales the BITE half — it amplifies the
                 // bonus, not the move's own base siphon.
@@ -423,7 +457,7 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
                     if (actor.health > actor.maxHealth) actor.health = actor.maxHealth;
                 }
             }
-            if (mv->stealMaxHpPct > 0) {
+            if (mv->stealMaxHpPct > 0 && !floored) {
                 const int stolen = target.maxHealth * mv->stealMaxHpPct / 100;
                 if (stolen > 0 && target.maxHealth - stolen >= 1) {
                     target.maxHealth -= stolen;                 // permanent for the fight
@@ -450,12 +484,27 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
             --dead->pending;
         }
         setLast(mv->displayName, dmg, byPlayer, false, ransomed > 0);
+        // Escalation (crew Exploit): each of the next few LANDED attacks banks its own
+        // FINAL damage — after every mitigation, and including a hit the target's ransom
+        // pool merely held — as Power for the rest of the fight. Charge-metered, so it
+        // spends itself on hits that connected rather than on turns that happened, and
+        // uncapped, unlike the Lockout track below: the crew's whole personality is that
+        // each charge pays for the bigger swing the next one banks.
+        if (dmg > 0 && actor.crewExploit.armed(CrewExploitKind::PowerByDamageDealt)) {
+            actor.stackPowerBonus += dmg;
+            --actor.crewExploit.charges;
+        }
         // Lockout track: landing the hit stacks the caster's Power for the rest
         // of the fight — additive, never reset, capped per move.
         if (mv->stackPowerPct > 0 && actor.stackPowerBonus < mv->stackPowerCap) {
-            actor.stackPowerBonus += mv->stackPowerPct;
-            if (actor.stackPowerBonus > mv->stackPowerCap)
-                actor.stackPowerBonus = mv->stackPowerCap;
+            int gain = mv->stackPowerPct;
+            if (actor.stackPowerBonus + gain > mv->stackPowerCap)
+                gain = mv->stackPowerCap - actor.stackPowerBonus;
+            actor.stackPowerBonus += gain;
+            // ...and the copy Malbeast In The Middle takes of it. The cap belongs to the
+            // enemy's move and is measured against the enemy's own pile, so it bounds
+            // what there is to copy rather than what the player may hold.
+            if (mitmCopy) player_.stackPowerBonus += gain;
         }
         // STUN rider (Watchdog-pass THREAT): a landed hit freezes the target's next
         // lockTurns turns. The target's Watchdog Timer (mod) CLAMPS it (a hung process
@@ -485,16 +534,27 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
         // additively into shieldHp (a second health bar — recasting stacks it, and the
         // attack path overflows to Health only once it pops) instead of the one-shot
         // guard brace. Every other Defend move keeps the one-shot guard.
-        if (mv->shieldPool > 0)
-            actor.shieldHp += mv->power * actor.defenseMultPct / 100;
-        else
-            actor.guard += mv->power * actor.defenseMultPct / 100;
+        //
+        // Each gain is computed once and then handed to Malbeast In The Middle as well
+        // (mitmCopy) — the enemy's brace becomes the player's brace, its pool the
+        // player's pool. The copy is additive on whatever the player already had, so a
+        // pet that braced this turn keeps its own on top of the one it stole.
+        const int braced = mv->power * actor.defenseMultPct / 100;
+        if (mv->shieldPool > 0) {
+            actor.shieldHp += braced;
+            if (mitmCopy) player_.shieldHp += braced;
+        } else {
+            actor.guard += braced;
+            if (mitmCopy) player_.guard += braced;
+        }
         // Cipher track: the cast stacks the caster's Defense (% cut) for the
         // fight, capped per move; the attack path clamps the total to 85% (never immune).
         if (mv->stackDefensePct > 0 && actor.stackDefenseBonus < mv->stackDefenseCap) {
-            actor.stackDefenseBonus += mv->stackDefensePct;
-            if (actor.stackDefenseBonus > mv->stackDefenseCap)
-                actor.stackDefenseBonus = mv->stackDefenseCap;
+            int gain = mv->stackDefensePct;
+            if (actor.stackDefenseBonus + gain > mv->stackDefenseCap)
+                gain = mv->stackDefenseCap - actor.stackDefenseBonus;
+            actor.stackDefenseBonus += gain;
+            if (mitmCopy) player_.stackDefenseBonus += gain;
         }
         // Trojan trap (Trojan line): a trap move ARMS a trap (its power is 0, so the guard
         // line above is a no-op) that stacks up to kTrojanTrapCap and springs on the enemy's
@@ -740,6 +800,23 @@ void Combat::checkOutcome() {
     // where it lands, which means the save reads the pet's STATE and never the thing
     // that got it there — a hit, a rotting DoT, a ransom bill coming due and whatever
     // gets added next all arrive here the same way, with no branch of their own.
+    //
+    // Backup Plan B (crew Exploit) looks at the hole FIRST, for the same reason its
+    // crew-mate's negation charges absorb ahead of the RAID Mirror: the player SPENT an
+    // Exploit use on this, so a granted one-shot stays held for a later hole. It
+    // restores TO half of max (the drive below ADDS half to wherever the pet ended up),
+    // and pays the overkill — how far past 0 the blow buried it — back as Power,
+    // multiplied by the turns still on its clock. So it is worth most the moment it is
+    // armed, and a bigger blow rallies harder: the hit that should have ended the fight
+    // is the one that funds the rest of it. One shot, consumed when it fires.
+    if (player_.health <= 0 &&
+        player_.crewExploit.ticking(CrewExploitKind::DeathSaveRally)) {
+        const int overkill = -player_.health;
+        player_.health = player_.maxHealth / 2;
+        if (player_.health < 1) player_.health = 1;   // a 1-HP pet still gets back up
+        player_.stackPowerBonus += overkill * player_.crewExploit.turns;
+        player_.crewExploit = CrewExploitState{};
+    }
     if (player_.health <= 0) player_.restoreFromBackup();
     // ...and the floor, after the save has had its look at how deep the hole is.
     if (player_.health < 0) player_.health = 0;
@@ -787,11 +864,28 @@ bool Combat::step() {
     // applyEffect (the Phishing combo bonus) sees this hit's own place in the run.
     if (streakCount_ > 0 && playerTurn_ == streakIsPlayer_) ++streakCount_;
     else { streakCount_ = 1; streakIsPlayer_ = playerTurn_; }
+    const bool enemyActed = !playerTurn_;
     if (playerTurn_) resolveTurn(player_, enemy_, /*byPlayer=*/true);
     else resolveTurn(enemy_, player_, /*byPlayer=*/false);
     checkOutcome();
+    if (enemyActed) tickCrewExploitClock();
     playerTurn_ = pickNextActor();   // schedule the next actor by relative speed
     return true;
+}
+
+void Combat::tickCrewExploitClock() {
+    // Backup Plan B is a death-save, so its clock is the INCOMING turns it covers
+    // rather than the pet's own — the three turns it promises are the next three the
+    // malbeast gets, which is the only count that describes what the player is buying.
+    // (Every other turn-metered thing here — a DoT, a stun, a ransom bill — ticks on
+    // its victim's turns instead, because those are things the victim is living
+    // THROUGH rather than a guard standing over it.)
+    //
+    // A turn the enemy spent stunned, rotting or paying its own ransom still counts:
+    // it was a turn, and the caller ticks after the whole turn has resolved, so every
+    // early return inside resolveTurn is counted the same as a swing.
+    if (player_.crewExploit.ticking(CrewExploitKind::DeathSaveRally))
+        --player_.crewExploit.turns;
 }
 
 int Combat::overrideMoveCount() const {
@@ -817,19 +911,43 @@ void Combat::cycleOverride() {
 void Combat::applyCrewExploit() {
     // Each kind meters itself out of the shared CrewExploitState counters; re-arming
     // the same kind stacks. Adding an ability is a case here plus its crewExploitTag().
+    // A player belongs to one crew, so `kind` is only ever set to what it already is.
+    if (crewExploit_.kind == CrewExploitKind::None) return;
+    player_.crewExploit.kind = crewExploit_.kind;
     switch (crewExploit_.kind) {
         case CrewExploitKind::NegateNextHits:
-            player_.crewExploit.kind = crewExploit_.kind;
+        case CrewExploitKind::PowerByDamageDealt:
             player_.crewExploit.charges += crewExploit_.magnitude;
             break;
+        case CrewExploitKind::DeathSaveRally:
+            player_.crewExploit.turns += crewExploit_.magnitude;
+            break;
+        case CrewExploitKind::ResetStatsAndFloor:
+            // Snap the three live stat LEANS back to what the pet walked in with — in
+            // BOTH directions, so this is a decision about timing rather than a free
+            // top-up: fire it drained and it restores, fire it buffed and it costs. The
+            // floor (statsFloored) then holds them there for the rest of the fight.
+            //
+            // Two things it deliberately leaves alone. The earned line-stack tracks
+            // (Lockout Power, Cipher Defense) are not leans — they are progress the pet
+            // cast for, and nothing erodes them, so there is nothing to reset. And
+            // maxHealth already drunk from by a steal is not given back: a pool that has
+            // been drained cannot be un-drained, and the floor only stops the next sip.
+            player_.powerMultPct = player_.basePowerMultPct;
+            player_.speed = player_.baseSpeed;
+            player_.dmgReducePct = player_.baseDmgReducePct;
+            break;
+        case CrewExploitKind::MirrorEnemyBuffs:
+            break;      // sticky: being armed IS the effect (applyEffect's mitmCopy)
         case CrewExploitKind::None:
             return;
     }
-    // "<TAG> xN" popup. dmg=0 so the combat screen's red damage number stays hidden;
-    // the readout rides in the move-name slot, and the live counter also shows in the
-    // B stat panel — all three read the same crewExploitTag().
-    std::snprintf(itemPopup_, sizeof(itemPopup_), "%s x%d",
-                  crewExploitTag(crewExploit_.kind), crewExploit_.magnitude);
+    // "<TAG> xN" popup — or a bare "<TAG>" for a sticky kind, which counts nothing.
+    // dmg=0 so the combat screen's red damage number stays hidden; the readout rides in
+    // the move-name slot, and the live counter also shows in the B stat panel — all
+    // three go through crewExploitLabel().
+    crewExploitLabel(itemPopup_, sizeof(itemPopup_), crewExploit_.kind,
+                     crewExploit_.magnitude);
     setLast(itemPopup_, 0, /*byPlayer=*/true, /*charge=*/false);
 }
 
@@ -879,6 +997,7 @@ void Combat::flee() {
     } else {
         resolveTurn(enemy_, player_, /*byPlayer=*/false);
         checkOutcome();
+        tickCrewExploitClock();   // the free turn is a turn, and costs the clock one
     }
 }
 

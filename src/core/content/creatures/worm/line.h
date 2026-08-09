@@ -40,7 +40,11 @@ inline constexpr CreatureDef kWormCreatures[] = {
      "A soft translucent capsule with one worm coiled inside it, endlessly chasing a single loose byte around the shell wall.",
      "Worm eggs / a payload waiting on a host",
      {MoveKind::Attack, MoveKind::Attack, MoveKind::Attack, MoveKind::Attack},
-     /*evolvesToTrojanId=*/nullptr, Locomotion::Crawl},
+     /*evolvesToTrojanId=*/nullptr, Locomotion::Crawl,
+     // Declared only to slow the resting breathe below the shared idleFrame()
+     // default (sprite.h) — frames 0-1 of the same 8-frame sheet the hatch
+     // one-shot walks, at half that heuristic's cadence (holdBeats 1 -> 2).
+     /*clips=*/{{"idle", /*row=*/0, /*frames=*/2, /*holdBeats=*/2}}},
     // Nodeatode is the family's Process pet, and the only row with real character so
     // far. Its own 1-bit sheet is four rows of four 56x48 frames, and the worm occupies
     // barely 30x24 of each cell — the draw-small rule kept literally. The idle row is

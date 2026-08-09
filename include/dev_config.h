@@ -5,15 +5,16 @@
 // The engine and the gates are unaffected (tests pin their own StartMode).
 #pragma once
 
-// Boot already-hatched on this creature id (skips the Decryption Hatch). Set to
-// the creature you want to iterate on — currently Paypup, the most fleshed-out
-// pet. Change the id to start on a different one, or comment the line out to get
-// the real first-boot Hatch (which installs the egg-line creature, CryptoShell).
-#define DEV_START_CREATURE "paypup"
+// Shorten a freshly laid egg's incubation clock to this many ms on a fresh boot,
+// so dev iteration doesn't wait out the real kBootHatchMs (~30 min) — the hatch
+// still runs its own line-select/minigame/random-Process-draw, so the pet that
+// comes out is a real, correctly-routed one rather than a fixed stand-in. Comment
+// this out to get the untouched real first-boot Hatch.
+#define DEV_EGG_TIMER_MS (5u * 60u * 1000u)
 
 // Add an easy-access "Reset to Hatch" row to the CFG submenu that calls
 // Game::resetToHatch() in one press — quick to hit while iterating. This is the
 // DEV reset, distinct from the spec's hidden Factory Reset (deliberately
 // hard to reach). Comment this out for a release build so the dev row does not
-// ship (mirrors DEV_START_CREATURE / the A+B device chord gating).
+// ship (mirrors DEV_EGG_TIMER_MS / the A+B device chord gating).
 #define DEV_CFG_RESET_ROW 1

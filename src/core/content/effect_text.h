@@ -29,6 +29,7 @@
 #pragma once
 
 #include "core/content/content_achievements.h"
+#include "core/content/content_crews.h"
 #include "core/content/defs.h"
 
 namespace mal {
@@ -54,6 +55,10 @@ struct EffectText {
 EffectText effectText(const ItemDef& d);
 EffectText effectText(const ModDef& d);
 EffectText effectText(const MoveDef& d);
+// A crew Exploit's `desc` prose (content_crews.h). One token, `{mag}` — the Exploit's
+// whole vocabulary is one magnitude, and a kind that meters nothing simply never
+// writes it.
+EffectText effectText(const CrewExploitDef& d);
 // An achievement's `trigger` prose. `effectiveGoal` is the threshold the row is actually
 // held to — for a kGoalAll row that is the size of the set it counts over, which only the
 // app layer can resolve (app/game_achievements.h's achievementGoal). Pass it in rather

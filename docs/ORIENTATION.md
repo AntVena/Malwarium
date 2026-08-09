@@ -257,8 +257,17 @@ mandatory, along with target cooldowns and the Honeypot/IDS defensive mods.
 
 **Crews** are a player-level allegiance on the Red/Blue axis that outlives any one pet. Enlisting
 requires a **home network** — one chosen explicitly from everything the device can see, live scan
-and walked history alike — designating the operator its defender. Each crew grants a signature PVE
-Exploit as an extra row in the combat A+C picker. The **Red/Blue archetype layer** (Operators:
+and walked history alike — designating the operator its defender. The CREW screen is **four views**
+rather than one list, because allegiance is the piece of player identity this device asks you to
+author: a hub that states who you are and offers the two sides, a side's own roster, a crew's own
+page, and the home-network picker as a modal over the hub. The side is dual-coded down all of them
+in one order of authority — the word, then the glyph, then the tint. Each crew grants a signature PVE
+Exploit as an extra row in the combat A+C picker, and the Exploit is where the crew's whole
+character lives: Red's bank damage into Power or copy the malbeast's own buffs; Blue's negate hits
+outright, snap the pet's stats back to what it walked in with, or hold a death save that pays the
+overkill back as Power. Each is one `CrewExploitKind` and one case in the single applier — three
+metering shapes (charges, turns, or sticky-for-the-fight) cover the vocabulary, so a new crew never
+widens the Combatant. The **Red/Blue archetype layer** (Operators:
 Botmaster/Insider Threat/Ghost vs. Guardians: Orchestrator/Watchdog/Dispatcher) and the contest
 around a capture are the open piece — power there must live in the *contest*, never in the capture
 itself.

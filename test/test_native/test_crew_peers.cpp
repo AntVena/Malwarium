@@ -5,6 +5,9 @@
 // feature whose field it migrates, not in a migrations pile of its own.
 #include "test_gates.h"
 
+#include "core/content/effect_text.h"   // effectText — a crew Exploit's page prose
+#include "core/ui/layout.h"             // kMargin — the width that prose is wrapped to
+
 // --- Hacker CREW: membership, the home-network gate, and the crew Exploit -------
 
 // The crew Exploit's negation charges absorb whole attacks, exactly `magnitude` of
@@ -42,6 +45,163 @@ void test_crew_exploit_negates_next_hits() {
     CHECK(cb.player().health < hp0);
 }
 
+// Every crew row is a well-formed use of the effect vocabulary: a kind that has a tag
+// to print, and a magnitude that agrees with how that kind meters itself. A STICKY kind
+// counts nothing, so a number on its row would be one the readout has to drop.
+void test_crew_roster_exploits_are_well_formed() {
+    CHECK(kCrewCount > 0);
+    for (int i = 0; i < kCrewCount; ++i) {
+        const CrewExploitDef& x = kCrews[i].exploit;
+        CHECK(x.kind != CrewExploitKind::None);
+        CHECK(crewExploitTag(x.kind)[0] != '\0');
+        if (crewExploitIsSticky(x.kind)) CHECK(x.magnitude == 0);
+        else                             CHECK(x.magnitude > 0);
+        // ...and the label the three surfaces share says exactly one of the two things.
+        char label[16];
+        crewExploitLabel(label, sizeof(label), x.kind, x.magnitude);
+        CHECK(std::strstr(label, crewExploitTag(x.kind)) == label);
+        CHECK((std::strchr(label, 'x') != nullptr) == (x.magnitude > 0));
+    }
+}
+
+// Escalation banks each landed hit's FINAL damage as Power, for exactly `magnitude`
+// hits, and compounds: every charge is worth more than the one before it because it is
+// banking a swing the previous charge paid for.
+void test_crew_escalation_banks_damage_as_power() {
+    ContentRegistry r = ContentRegistry::embedded();
+    // One move each, so chooseMove is deterministic and every player turn is the same
+    // 24-power swing scaled by whatever Power has been banked so far.
+    Combatant p = mkCombatant(r, "P", 100, 100, {"rootkit_strike"});
+    Combatant e = mkCombatant(r, "E", 5000, 1, {"checksum_guard"});
+    Combat cb;
+    cb.begin(p, e, Combat::Stakes::Safe, 7);
+
+    cb.openOverride({}, CrewExploit{"ESCALATION",
+                                    CrewExploitKind::PowerByDamageDealt, 3});
+    while (cb.overridePick() != cb.overrideMoveCount()) cb.cycleOverride();
+    cb.commitOverride();
+    CHECK(cb.player().crewExploit.charges == 3);
+    CHECK(cb.player().stackPowerBonus == 0);   // arming alone banks nothing
+
+    int guard = 0;
+    while (cb.player().crewExploit.charges > 0 && guard++ < 400) cb.step();
+    // 24 at 100% -> +24; 24 at 124% = 29 -> +29; 24 at 153% = 36 -> +36.
+    CHECK(cb.player().stackPowerBonus == 24 + 29 + 36);
+
+    // Spent: the fourth swing lands harder than any of the three, and banks nothing.
+    const int banked = cb.player().stackPowerBonus;
+    for (int i = 0; i < 6 && guard++ < 400; ++i) cb.step();
+    CHECK(cb.player().stackPowerBonus == banked);
+}
+
+// Net Neutrality snaps the live stat leans back to what the pet walked in with, and
+// then holds them there: a siphon that lands afterwards takes nothing — and, because a
+// steal is a transfer, pays the thief nothing either.
+void test_crew_net_neutrality_resets_then_floors_the_leans() {
+    ContentRegistry r = ContentRegistry::embedded();
+    Combatant p = mkCombatant(r, "P", 5000, 5, {"checksum_guard"});
+    Combatant e = mkCombatant(r, "E", 5000, 50, {"spear_strike"});
+    e.shieldHp = 500;   // the bubble the volatile half of the steal track is gated on
+    Combat cb;
+    cb.begin(p, e, Combat::Stakes::Safe, 11, /*forceEnemyFirst=*/true);
+    const int pow0 = cb.player().powerMultPct;
+    const float spd0 = cb.player().speed;
+
+    int guard = 0;
+    while (cb.player().powerMultPct == pow0 && guard++ < 400) cb.step();
+    CHECK(cb.player().powerMultPct < pow0);      // Power siphoned...
+    CHECK(cb.player().speed < spd0);             // ...and speed with it
+    const int thiefPow = cb.enemy().powerMultPct;
+
+    cb.openOverride({}, CrewExploit{"NET NEUTRALITY",
+                                    CrewExploitKind::ResetStatsAndFloor, 0});
+    while (cb.overridePick() != cb.overrideMoveCount()) cb.cycleOverride();
+    cb.commitOverride();
+    CHECK(cb.player().powerMultPct == pow0);     // snapped back to the fight-start lean
+    CHECK(cb.player().speed == spd0);
+
+    // ...and it stays there through every hit that follows, with nothing crossing over.
+    for (int i = 0; i < 40 && guard++ < 400; ++i) cb.step();
+    CHECK(cb.player().powerMultPct == pow0);
+    CHECK(cb.player().speed == spd0);
+    CHECK(cb.enemy().powerMultPct == thiefPow);  // the siphon comes back empty
+}
+
+// Malbeast In The Middle copies the enemy's own self-buffs onto the player as they
+// land — and only once it has been fired.
+void test_crew_mitm_copies_enemy_buffs() {
+    ContentRegistry r = ContentRegistry::embedded();
+    Combatant p = mkCombatant(r, "P", 5000, 1, {"quick_jab"});
+    // RSA Vault: a 20-power brace plus +12% Cipher-track Defense on cast.
+    Combatant e = mkCombatant(r, "E", 5000, 20, {"rsa_vault"});
+    Combat cb;
+    cb.begin(p, e, Combat::Stakes::Safe, 5, /*forceEnemyFirst=*/true);
+
+    cb.step();                                   // an enemy cast before the Exploit
+    CHECK(cb.enemy().guard == 20 && cb.enemy().stackDefenseBonus == 12);
+    CHECK(cb.player().guard == 0 && cb.player().stackDefenseBonus == 0);
+
+    cb.openOverride({}, CrewExploit{"MALBEAST IN THE MIDDLE",
+                                    CrewExploitKind::MirrorEnemyBuffs, 0});
+    while (cb.overridePick() != cb.overrideMoveCount()) cb.cycleOverride();
+    cb.commitOverride();
+    CHECK(cb.player().guard == 0);               // firing copies nothing already cast
+
+    int guard = 0;
+    while (cb.player().guard == 0 && guard++ < 400) cb.step();
+    CHECK(cb.player().guard == 20);              // the next brace is copied whole...
+    CHECK(cb.player().stackDefenseBonus == 12);  // ...and so is the stack it carried
+}
+
+// Backup Plan B catches the blow that would have ended the fight: half of max back,
+// the overkill paid out as Power scaled by the turns still on the clock, one shot.
+void test_crew_backup_plan_b_saves_and_rallies() {
+    ContentRegistry r = ContentRegistry::embedded();
+    Combatant p = mkCombatant(r, "P", 100, 1, {"quick_jab"});
+    Combatant e = mkCombatant(r, "E", 5000, 50, {"rootkit_strike"});   // 24 a swing
+    Combat cb;
+    // Carried in at 10 Health, so the first swing buries the pet 14 past 0.
+    cb.begin(p, e, Combat::Stakes::Safe, 3, /*forceEnemyFirst=*/true,
+             /*carryPlayerHealth=*/10);
+    cb.openOverride({}, CrewExploit{"BACKUP PLAN B",
+                                    CrewExploitKind::DeathSaveRally, 3});
+    while (cb.overridePick() != cb.overrideMoveCount()) cb.cycleOverride();
+    cb.commitOverride();
+    CHECK(cb.player().crewExploit.turns == 3);
+
+    cb.step();
+    CHECK(cb.outcome() == Combat::Outcome::Ongoing);
+    CHECK(cb.player().health == 50);                  // restored TO half of max...
+    CHECK(cb.player().stackPowerBonus == 14 * 3);     // ...and paid the overkill back
+    CHECK(cb.player().crewExploit.kind == CrewExploitKind::None);   // consumed
+    CHECK(!cb.player().crewExploit.live());
+}
+
+// ...and the clock is the incoming turns it covers. Three of the malbeast's turns pass
+// without it being needed, and the blow that comes after is simply fatal.
+void test_crew_backup_plan_b_clock_runs_out() {
+    ContentRegistry r = ContentRegistry::embedded();
+    Combatant p = mkCombatant(r, "P", 200, 1, {"quick_jab"});
+    Combatant e = mkCombatant(r, "E", 5000, 50, {"rootkit_strike"});   // 9 swings to KO
+    Combat cb;
+    cb.begin(p, e, Combat::Stakes::Safe, 3, /*forceEnemyFirst=*/true);
+    cb.openOverride({}, CrewExploit{"BACKUP PLAN B",
+                                    CrewExploitKind::DeathSaveRally, 3});
+    while (cb.overridePick() != cb.overrideMoveCount()) cb.cycleOverride();
+    cb.commitOverride();
+
+    cb.step();
+    CHECK(cb.player().crewExploit.turns == 2);   // one enemy turn, one off the clock
+    int guard = 0;
+    while (cb.player().crewExploit.turns > 0 && guard++ < 400) cb.step();
+    CHECK(!cb.player().crewExploit.live());      // expired, unfired
+    CHECK(cb.player().health > 0 && cb.outcome() == Combat::Outcome::Ongoing);
+
+    while (cb.outcome() == Combat::Outcome::Ongoing && guard++ < 400) cb.step();
+    CHECK(cb.outcome() == Combat::Outcome::Lose);
+    CHECK(cb.player().stackPowerBonus == 0);     // it never got to rally
+}
+
 // Enlisting is gated on holding a home network, and membership cannot outlive it.
 void test_crew_requires_home_network() {
     Game g{StartMode::Hatched};
@@ -64,8 +224,10 @@ void test_crew_requires_home_network() {
     CHECK(!g.hasHomeNetwork() && g.crewIndex() == -1);
 }
 
-// The CREW screen end-to-end on buttons: designate a home network from the ledger
-// the pet built by walking, then enlist. The screen renders in both sub-modes.
+// The CREW screen end-to-end on buttons, all four views: claim a home network from the
+// ledger the pet built by walking, browse a SIDE, open a crew's page, and enlist from
+// it. Every view renders, and C walks back up them one at a time rather than dropping
+// out of the screen from wherever it is pressed.
 void test_crew_screen_pick_home_then_enlist() {
     Game g{StartMode::Hatched};
     const uint8_t bssid[6] = {0x11, 0x22, 0x33, 0x44, 0x55, 0x66};
@@ -88,26 +250,147 @@ void test_crew_screen_pick_home_then_enlist() {
     CHECK(g.nav() == Game::Nav::Submenu);
 
     Framebuffer fb(kActiveW, kActiveH);
+    CHECK(g.crewView() == Game::CrewView::Hub);    // entry is always the top view
     g.render(fb);
     CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));
 
-    // Row 0 is HOME NET: B opens the picker, B again takes the focused network.
+    // Hub row 0 is HOME NET: B opens the picker over it, B again takes the focused
+    // network and drops back to the Hub.
     g.onButton(press(Button::B));
+    CHECK(g.crewView() == Game::CrewView::Picker);
     g.render(fb);
     CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));
     g.onButton(press(Button::B));
+    CHECK(g.crewView() == Game::CrewView::Hub);
     CHECK(g.hasHomeNetwork());
     CHECK(std::strcmp(g.homeNetworkName(), "Neighbour") == 0);
 
-    // A steps onto the crew row; B enlists, and B again resigns.
+    // Hub rows 1 and 2 are the two sides. Crew 0 is Blue, so step past RED to it.
+    CHECK(kCrews[0].team == CrewTeam::Blue);
+    g.onButton(press(Button::A));
     g.onButton(press(Button::A));
     g.onButton(press(Button::B));
+    CHECK(g.crewView() == Game::CrewView::Team);
+    g.render(fb);
+    CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));
+
+    // The side's first row is its first crew in table order, and B opens its page.
+    g.onButton(press(Button::B));
+    CHECK(g.crewView() == Game::CrewView::Detail);
+    g.render(fb);
+    CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));
+
+    // B is the page's one verb: enlist, then resign.
+    g.onButton(press(Button::B));
     CHECK(g.crewIndex() == 0);
+    g.render(fb);                                  // ...and the page redraws as JOINED
+    CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));
     g.onButton(press(Button::B));
     CHECK(g.crewIndex() == -1);
 
-    g.onButton(press(Button::C));                  // C backs out to the hacker carousel
+    // C steps back up one view at a time, and only leaves the screen from the Hub.
+    g.onButton(press(Button::C));
+    CHECK(g.crewView() == Game::CrewView::Team && g.nav() == Game::Nav::Submenu);
+    g.onButton(press(Button::C));
+    CHECK(g.crewView() == Game::CrewView::Hub && g.nav() == Game::Nav::Submenu);
+    g.onButton(press(Button::C));
     CHECK(g.nav() == Game::Nav::Cursor);
+}
+
+// The Hub's two side rows are the fixed Red/Blue pair, and each opens its OWN side —
+// the roster is filtered, not reordered, so a crew is found wherever it sits in the
+// table. Enlisting from the Red screen cannot land you in a Blue crew.
+void test_crew_sides_filter_the_roster() {
+    // The filter is a pure function of the table, so assert it there first: the two
+    // sides partition kCrews exactly, with nothing counted twice or dropped.
+    CHECK(crewTeamCount(CrewTeam::Red) + crewTeamCount(CrewTeam::Blue) == kCrewCount);
+    for (int t = 0; t < 2; ++t) {
+        const CrewTeam team = t == 0 ? CrewTeam::Red : CrewTeam::Blue;
+        const int n = crewTeamCount(team);
+        CHECK(crewByTeam(team, n) == -1);            // one past the end is nothing
+        int last = -1;
+        for (int i = 0; i < n; ++i) {
+            const int idx = crewByTeam(team, i);
+            CHECK(idx > last);                       // table order, no repeats
+            CHECK(kCrews[idx].team == team);
+            last = idx;
+        }
+    }
+
+    // ...and end to end: the Red row opens Red, and every crew it can reach is Red.
+    Game g{StartMode::Hatched};
+    g.setHomeNetwork(0x001122334455ull, "HOME_AP");
+    while (g.nav() != Game::Nav::Idle) g.onButton(press(Button::C));
+    g.onButton({Button::A, true, true});
+    g.onButton(press(Button::A));
+    while (hackerCarouselSlots()[g.cursor()].id != HackerSlotId::Crew)
+        g.onButton(press(Button::A));
+    g.onButton(press(Button::B));
+
+    g.onButton(press(Button::A));                    // Hub row 1 = RED
+    g.onButton(press(Button::B));
+    CHECK(g.crewView() == Game::CrewView::Team);
+    Framebuffer fb(kActiveW, kActiveH);
+    for (int i = 0; i < crewTeamCount(CrewTeam::Red); ++i) {
+        g.onButton(press(Button::B));                // open row i's page
+        CHECK(g.crewView() == Game::CrewView::Detail);
+        g.render(fb);
+        CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));
+        g.onButton(press(Button::B));                // enlist from it
+        CHECK(g.activeCrew() && g.activeCrew()->team == CrewTeam::Red);
+        g.onButton(press(Button::B));                // resign
+        CHECK(g.crewIndex() == -1);
+        g.onButton(press(Button::C));                // back to the side
+        g.onButton(press(Button::A));                // next row
+    }
+}
+
+// A crew page can't offer a button that would silently do nothing: without a home
+// network the verb is the precondition, and B changes nothing.
+void test_crew_detail_gates_enlist_on_the_home_net() {
+    Game g{StartMode::Hatched};
+    while (g.nav() != Game::Nav::Idle) g.onButton(press(Button::C));
+    g.onButton({Button::A, true, true});
+    g.onButton(press(Button::A));
+    while (hackerCarouselSlots()[g.cursor()].id != HackerSlotId::Crew)
+        g.onButton(press(Button::A));
+    g.onButton(press(Button::B));
+    CHECK(!g.hasHomeNetwork());
+
+    g.onButton(press(Button::A));                    // past HOME NET to a side
+    g.onButton(press(Button::B));
+    g.onButton(press(Button::B));                    // ...and into a crew's page
+    CHECK(g.crewView() == Game::CrewView::Detail);
+    Framebuffer fb(kActiveW, kActiveH);
+    g.render(fb);                                    // renders the gated verb
+    CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));
+
+    g.onButton(press(Button::B));                    // the verb is inert
+    CHECK(g.crewIndex() == -1);
+    CHECK(g.crewView() == Game::CrewView::Detail);   // ...and doesn't bounce you out
+}
+
+// Every crew's page has a description and it resolves its template — the same gate
+// test_effect_text_templates_resolve holds the other content types to, extended to the
+// one table that now authors prose of its own.
+//
+// The line bound is an AUTHORING budget, not a correctness one: the detail page pages
+// its description on A rather than truncating it, so a longer row would still be
+// readable — it would just cost a press nobody should have to spend on four sentences.
+void test_crew_exploit_descriptions_resolve_and_fit() {
+    for (int i = 0; i < kCrewCount; ++i) {
+        const EffectText prose = effectText(kCrews[i].exploit);
+        CHECK(!prose.empty());
+        CHECK(!prose.atCap());
+        CHECK(std::strchr(prose.c_str(), '{') == nullptr);
+        CHECK(std::strchr(prose.c_str(), '}') == nullptr);
+        CHECK(textWrapLines(prose.c_str(), kActiveW - 2 * kMargin) <= 6);
+        // ...and the motto, which the page WRAPS beside the team glyph rather than
+        // marqueeing. Three lines is what it reserves; a fourth would be cut, and a
+        // motto is exactly the kind of copy nobody notices losing the end of.
+        CHECK(textWrapLines(kCrews[i].tagline,
+                            kActiveW - kMargin - (kMargin + 16 + 8)) <= 3);
+    }
 }
 
 // The picker answers one question — "which of the networks I can hear RIGHT NOW am I

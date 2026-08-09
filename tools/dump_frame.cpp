@@ -61,7 +61,9 @@
 // hacker merge [recipes] [stock] (the MERGE HUB craft list — the slot is itself a
 //        SHOP purchase, so the scene buys it before entering) ·
 // hacker vault (the VAULT cache list, stocked with every container tier) ·
-// hacker crew [joined] [unset] [netpick] (the CREW list / home-network picker)
+// hacker crew [joined] [unset] [netpick] [red|blue [row:<n>] [detail]] (the CREW
+//        screen's four views: the Hub, the home-network picker, one side's roster,
+//        and a crew's own page)
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -651,7 +653,9 @@ int main(int argc, char** argv) {
         } else if (hasFlag(argc, argv, "crew")) {
             // CREW: seed known networks (ledger history) plus a live scan sighting, so
             // the home-network picker shows both halves of its merged list. `joined`
-            // enlists first (the JOINED state); `netpick` opens the picker.
+            // enlists first (the allegiance card's filled state); `netpick` opens the
+            // picker; `red`/`blue` open that side's roster and `detail` a crew's page
+            // — the four views of the screen, one flag each.
             game.debugSeedNetworkLedger(0x001122334455ull, "HOME_ROUTER", 12);
             game.debugSeedNetworkLedger(0x0066778899AAull, "CAFE_GUEST", 3);
             const uint8_t heard[6] = {0x00, 0x11, 0x22, 0x33, 0x44, 0x55};
@@ -662,7 +666,23 @@ int main(int argc, char** argv) {
             if (hasFlag(argc, argv, "joined")) game.joinCrew(0);
             if (hasFlag(argc, argv, "unset")) game.setHomeNetwork(0, "");
             enterHackerSlot(HackerSlotId::Crew);
-            if (hasFlag(argc, argv, "netpick")) game.onButton({Button::B, true, false});
+            const bool red = hasFlag(argc, argv, "red");
+            if (hasFlag(argc, argv, "netpick")) {
+                game.onButton({Button::B, true, false});   // Hub row 0 -> the modal
+            } else if (red || hasFlag(argc, argv, "blue")) {
+                game.onButton({Button::A, true, false});   // Hub row 1 = RED...
+                if (!red)
+                    game.onButton({Button::A, true, false});   // ...row 2 = BLUE
+                game.onButton({Button::B, true, false});
+                // `row:<n>` walks the side's cursor first, so a page other than that
+                // side's first crew is reachable.
+                for (int i = 3; i < argc; ++i)
+                    if (std::strncmp(argv[i], "row:", 4) == 0)
+                        for (int k = std::atoi(argv[i] + 4); k > 0; --k)
+                            game.onButton({Button::A, true, false});
+                if (hasFlag(argc, argv, "detail"))
+                    game.onButton({Button::B, true, false});
+            }
         }
     } else if (hasFlag(argc, argv, "explore") || hasFlag(argc, argv, "explorectl") ||
               hasFlag(argc, argv, "walk") || hasFlag(argc, argv, "encounter") ||

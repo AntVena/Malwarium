@@ -199,6 +199,13 @@ EffectText effectText(const MoveDef& d) {
     return out;
 }
 
+EffectText effectText(const CrewExploitDef& d) {
+    const Token toks[] = {{"mag", d.magnitude}};
+    EffectText out;
+    expand(out, d.desc, toks, sizeof(toks) / sizeof(toks[0]));
+    return out;
+}
+
 EffectText effectText(const AchievementDef& d, int effectiveGoal) {
     // `{n}` is the goal the row is actually held to — which for a kGoalAll row is the
     // size of the set it counts over, resolved by the caller (app/game_achievements.h).

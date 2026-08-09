@@ -377,10 +377,12 @@ void setup() {
     // NVS-backed save: loaded at boot, so a power-cycle resumes the raised pet.
     static NvsSaveStore store;
     const bool hadSave = !store.load().empty();   // probe NVS before the ctor consumes it
-#ifdef DEV_START_CREATURE
-    static Game g(StartMode::Hatched, DEV_START_CREATURE, &store);  // dev: skip the egg
-#else
     static Game g(StartMode::FreshHatch, "paypup", &store);         // real first boot -> Hatch
+#ifdef DEV_EGG_TIMER_MS
+    // Fast-forward a freshly laid egg so dev iteration doesn't wait out the real
+    // clock; a resumed save is already past the egg and this is a no-op then.
+    if (g.inEggPhase() && g.bootHatchRemainMs() > DEV_EGG_TIMER_MS)
+        g.accelerateEggHatch(g.bootHatchRemainMs() - DEV_EGG_TIMER_MS);
 #endif
     game = &g;
     // How the engine asks whether there is room to save before it commits to the

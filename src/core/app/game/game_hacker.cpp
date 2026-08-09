@@ -121,8 +121,11 @@ void Game::enterHackerSubmenu() {
     hackerShopRow_ = 0;
     hackerVaultRow_ = 0;
     hackerMergeRow_ = 0;
-    crewRow_ = 0;
-    crewNetPicker_ = false;
+    crewView_ = CrewView::Hub;   // every entry opens at the top of the CREW screen
+    crewHubRow_ = 0;
+    crewTeamRow_ = 0;
+    crewDetail_ = -1;
+    crewProseScroll_ = 0;
     crewNetRow_ = 0;
     peerRow_ = 0;
     pvpRow_ = 0;
@@ -458,8 +461,9 @@ void Game::drawHackerSubmenu(Framebuffer& fb) const {
 
     if (enteredHackerId() == HackerSlotId::Crew) {
         // CREW — its own screen, own file (game_crew.cpp): enlist in a crew + pick
-        // the home network membership hangs off.
-        drawHeaderBand(fb, "CREW");
+        // the home network membership hangs off. The one sub-screen here that draws
+        // its OWN header band: it is four views deep and the title (and its tint)
+        // changes with the view, which only the screen knows.
         drawHackerCrew(fb);
         return;
     }

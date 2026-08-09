@@ -488,8 +488,17 @@ int g_failures = 0;
     RUN(test_save_v27_roundtrip)                        \
     RUN(test_save_v32_roundtrip)                        \
     RUN(test_crew_exploit_negates_next_hits)            \
+    RUN(test_crew_roster_exploits_are_well_formed)      \
+    RUN(test_crew_escalation_banks_damage_as_power)     \
+    RUN(test_crew_net_neutrality_resets_then_floors_the_leans) \
+    RUN(test_crew_mitm_copies_enemy_buffs)              \
+    RUN(test_crew_backup_plan_b_saves_and_rallies)      \
+    RUN(test_crew_backup_plan_b_clock_runs_out)         \
     RUN(test_crew_requires_home_network)                \
     RUN(test_crew_screen_pick_home_then_enlist)         \
+    RUN(test_crew_sides_filter_the_roster)              \
+    RUN(test_crew_detail_gates_enlist_on_the_home_net)  \
+    RUN(test_crew_exploit_descriptions_resolve_and_fit) \
     RUN(test_crew_picker_offers_networks_in_range)   \
     RUN(test_crew_picker_unaffected_by_saturated_reward_queue)   \
     RUN(test_crew_picker_drops_networks_out_of_range)   \

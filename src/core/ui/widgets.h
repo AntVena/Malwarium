@@ -10,6 +10,7 @@
 #include "core/content/effect_text.h"   // SpecRow — drawSpecGrid's input
 #include "core/model/pet_model.h"
 #include "core/render/color.h"
+#include "core/render/font_glyphs.h"   // FontFace — drawTextMarquee's cut
 #include "core/render/palette.h"   // palColor — drawHeaderBand's default right colour
 
 namespace mal {
@@ -48,8 +49,13 @@ void drawHeaderBand(Framebuffer& fb, const char* title,
 // the cursor is already the thing that says which row the player is asking about.
 // The 5x7-era ellipsis is not available — the glyph table is ASCII, which the
 // content tests enforce — so the clip is the truncation cue.
+//
+// `face` rides along because a row's NAME is often both the heading of its row and the
+// thing too long for it — a title-weight label that overflows still has to travel, and
+// dropping to Regular to get that is a weight change nobody asked for.
 void drawTextMarquee(Framebuffer& fb, int x, int y, int w, const char* s,
-                     Rgb565 color, int beat, bool scroll);
+                     Rgb565 color, int beat, bool scroll,
+                     FontFace face = FontFace::Regular);
 
 // A one-line label/value pair: `value` right-aligned against the right margin, `label`
 // running from `x` and yielding to it — scrolling when `scroll`, clipped otherwise.
