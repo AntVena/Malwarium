@@ -129,7 +129,7 @@ bool Game::tick(uint32_t nowMs) {
         // this block: it requires a remainder above zero, so an egg shaved straight to 0
         // elsewhere leaves the phase in the same instant and this will never see it.
         // Such a caller has to hatch the egg itself — Game::finishIsolation does.
-        if (inEggPhase() && nav_ != Nav::Decypher &&
+        if (inEggPhase() && nav_ != Nav::Decryption &&
             nav_ != Nav::ModalHatchReveal && nav_ != Nav::Isolation) {
             bootHatchRemainMs_ = bootHatchRemainMs_ > elapsed
                                      ? bootHatchRemainMs_ - elapsed : 0;
@@ -335,7 +335,7 @@ bool Game::tick(uint32_t nowMs) {
 
     // Lockout crisis fires when Hunger bottoms out. Never during the Hatch
     // (there's no pet), an Evolution, or a Critical System Failure (priority).
-    if (pet_ && !lockoutActive_ && nav_ != Nav::Decypher && nav_ != Nav::ModalEvolve &&
+    if (pet_ && !lockoutActive_ && nav_ != Nav::Decryption && nav_ != Nav::ModalEvolve &&
         nav_ != Nav::ModalCSF && model_.isStarving()) {
         fireLockout();
         changed = true;
@@ -442,7 +442,7 @@ bool Game::tick(uint32_t nowMs) {
     const bool inCfgScreen = nav_ == Nav::Detail && enteredId() == SubmenuId::Cfg &&
                               !updateScreenOpen();
     const bool suspended = lockoutActive_ || nav_ == Nav::ModalFeeding ||
-                           nav_ == Nav::Process || nav_ == Nav::Decypher ||
+                           nav_ == Nav::Process || nav_ == Nav::Decryption ||
                            nav_ == Nav::ModalLineSelect || nav_ == Nav::ModalEggPick ||
                            nav_ == Nav::ModalHatchReveal || nav_ == Nav::Isolation ||
                            nav_ == Nav::ModalEvolve || nav_ == Nav::ModalCSF ||
@@ -679,7 +679,7 @@ void Game::onButton(const ButtonEvent& ev) {
             else if (ev.button == Button::B) layEgg(lines[lineSelectRow_ % n]);
             break;
         }
-        case Nav::Decypher: onDecypher(ev); break;
+        case Nav::Decryption: onDecryption(ev); break;
         case Nav::ModalHatchReveal:
             // The crack cinematic runs itself and hatches off the end — every button is
             // inert for its ~2 seconds, so a stray press can't skip the one animation

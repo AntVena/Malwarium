@@ -37,10 +37,10 @@ const ArcadeGameDef kArcadeGames[] = {
     // the RULES rather than the pace: easy shows which cells a row got exactly right,
     // and hard lets the key repeat a colour, which kills the deduction that every
     // colour ruled out narrows the rest.
-    {"decypher", "DISK DECYPHER",
+    {"decryption", "DISK DECRYPTION",
      "FIVE COLOURS, THREE SLOTS, FIVE GUESSES.",
      "ICON_LINE_RANSOMWARE", "WHAT THE BOARD WILL TELL YOU.",
-     ArcadeGameKind::Decypher, ArcadeScoring::Incremental},
+     ArcadeGameKind::Decryption, ArcadeScoring::Incremental},
 };
 
 static_assert(sizeof(kArcadeGames) / sizeof(kArcadeGames[0]) <= kArcadeMaxCabinets,

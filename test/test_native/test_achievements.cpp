@@ -358,15 +358,15 @@ void test_pedia_state_json_rack_and_record_hatched() {
     CHECK(json.find("\"archive\":[{") != std::string::npos);
 }
 
-// End-to-end trigger #1: a cracked DISK DECYPHER board flips FIRST_BRUTE_FORCE
-// (Game::finishDecypher). Waiting an egg out does NOT — the achievement is named for
+// End-to-end trigger #1: a cracked DISK DECRYPTION board flips FIRST_BRUTE_FORCE
+// (Game::finishDecryption). Waiting an egg out does NOT — the achievement is named for
 // breaking a key, and an egg that hatched on its own clock never had one to break.
 void test_pedia_first_brute_force_achievement() {
     { Game g(StartMode::FreshHatch);
       if (g.inLineSelect()) g.onButton(press(Button::B));
-      CHECK(g.inDecypher());
+      CHECK(g.inDecryption());
       CHECK(!g.hasAchievement(ach::kFirstBruteForce));
-      crackDecypher(g);
+      crackDecryption(g);
       CHECK(g.hasAchievement(ach::kFirstBruteForce)); }
 
     { Game g(StartMode::FreshHatch);

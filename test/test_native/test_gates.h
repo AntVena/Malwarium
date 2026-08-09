@@ -189,25 +189,25 @@ inline void enterSlot(Game& g, SubmenuId id) {
 // (Ransomware + Phishing). These gates predate line-select, so pick the first line
 // (Ransomware) to lay its egg and match the historical straight-to-egg behaviour. A
 // no-op when the modal isn't up (e.g. a save-store boot that loaded a live pet).
-// Play out a DISK DECYPHER board without cracking it, and dismiss the verdict — the
+// Play out a DISK DECRYPTION board without cracking it, and dismiss the verdict — the
 // egg keeps its full clock and the run costs nothing. Deterministic by construction:
 // B alone never cycles a colour, so every row is locked in as GGG, and the hatch board
 // bars duplicate colours in the key, so GGG is a code it cannot have drawn.
-inline void settleDecypher(Game& g) {
-    if (!g.inDecypher()) return;
-    for (int i = 0; i < kDecypherAttempts * kDecypherSlots; ++i)
+inline void settleDecryption(Game& g) {
+    if (!g.inDecryption()) return;
+    for (int i = 0; i < kDecryptionAttempts * kDecryptionSlots; ++i)
         g.onButton(press(Button::B));
     g.onButton(press(Button::B));   // the verdict -> idle
 }
 
-// Play a DISK DECYPHER board out on the FIRST guess, by reading the key straight off
+// Play a DISK DECRYPTION board out on the FIRST guess, by reading the key straight off
 // the model — the one thing a player can't do, and the only way a test gets a
 // deterministic crack out of a seeded code.
-inline void crackDecypher(Game& g) {
-    if (!g.inDecypher()) return;
-    for (int s = 0; s < kDecypherSlots; ++s) {
-        const int want = g.decypher().codeAt(s);
-        for (int i = 0; i < kDecypherColours && g.decypher().guess(s) != want; ++i)
+inline void crackDecryption(Game& g) {
+    if (!g.inDecryption()) return;
+    for (int s = 0; s < kDecryptionSlots; ++s) {
+        const int want = g.decryption().codeAt(s);
+        for (int i = 0; i < kDecryptionColours && g.decryption().guess(s) != want; ++i)
             g.onButton(press(Button::A));
         g.onButton(press(Button::B));
     }
@@ -219,7 +219,7 @@ inline void crackDecypher(Game& g) {
 // lay-time now, so getting to "an egg is sitting there" always costs this.
 inline void pickFirstEggLine(Game& g) {
     if (g.inLineSelect()) g.onButton(press(Button::B));
-    settleDecypher(g);
+    settleDecryption(g);
 }
 
 // Helper: advance the cinematic past hold + flash into the reveal.

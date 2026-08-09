@@ -1,5 +1,5 @@
 // test_hatch.cpp — native gates for the egg's hatch, its menu gates and the evolution
-// boundary. DISK DECYPHER's own rules live in test_decypher.cpp.
+// boundary. DISK DECRYPTION's own rules live in test_decryption.cpp.
 //
 // One slice of the native suite; see test_gates.h for the shared fixtures and
 // test_main.cpp for the roster that runs these. A save-vNN gate sits with the
@@ -22,17 +22,17 @@ void test_hatch_lays_egg_at_idle() {
     CHECK(g.generation() == 1);               // the egg is laid = generation 1
 }
 
-// The Ransomware egg opens straight onto its DISK DECYPHER board — the same lay-time
+// The Ransomware egg opens straight onto its DISK DECRYPTION board — the same lay-time
 // deal every other line already had — and a board that runs out of attempts costs the
 // egg nothing but the bonus.
-void test_hatch_opens_the_decypher_board() {
+void test_hatch_opens_the_decryption_board() {
     Game g;
     if (g.inLineSelect()) g.onButton(press(Button::B));   // lay the Ransomware egg
-    CHECK(g.nav() == Game::Nav::Decypher);
+    CHECK(g.nav() == Game::Nav::Decryption);
     CHECK(g.inEggPhase());
     CHECK(g.bootHatchRemainMs() == kBootHatchMs);
 
-    settleDecypher(g);
+    settleDecryption(g);
     CHECK(g.nav() == Game::Nav::Idle);
     CHECK(g.inEggPhase());                    // still an egg, on its full clock
     CHECK(g.bootHatchRemainMs() == kBootHatchMs);
@@ -96,7 +96,7 @@ void test_hatch_seam_skips() {
     Game g{StartMode::Hatched};
     CHECK(g.nav() == Game::Nav::Idle);
     CHECK(g.pet() != nullptr);
-    CHECK(!g.inDecypher());
+    CHECK(!g.inDecryption());
     CHECK(!g.inEggPhase());                   // a seam pet is already hatched
 }
 

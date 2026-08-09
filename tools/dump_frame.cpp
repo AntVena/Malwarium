@@ -8,7 +8,12 @@
 //        feed:<item_id> (eat one named food through the real Use path and hold the
 //             feeding modal — how to eyeball that its gauges follow that item's own
 //             effects, e.g. feed:tortilla_chip, feed:null_noodles)
-//        maint [detail] [stacker [slide|drop|stop ...]] · lockout · hatch [crack] · evolve
+//        maint [detail] [stacker [slide|drop|stop ...]] · lockout · evolve
+//        decryption [rows|lost] (the Ransomware egg's DISK DECRYPTION board; "rows"
+//             plays three attempts so the history and its corruption overlay are on
+//             screen, "lost" plays all five and holds the verdict + revealed key)
+//        arcade [clutch|worm] [cabinet [hard] [play [result]]] (the GAMES list, one
+//             cabinet's page, its running board, and the payout)
 //        clutch [aim] [round ...] | clutch win (the Phishing egg's Clutch Pick; "aim"
 //        flips to the second half and "round" commits, interleaved to walk any path —
 //        three "round"s land on the lost reveal, "win" plays it perfectly instead)
@@ -84,7 +89,7 @@ int main(int argc, char** argv) {
     const char* out = (argc > 2) ? argv[2] : "frame.ppm";
 
     // Default to an already-hatched pet so the existing nav flags work; the
-    // "hatch" flag exercises the Decryption Hatch instead. "evolve" starts
+    // "hatch" flag starts from an empty save instead. "evolve" starts
     // on the Boot-Sector CryptoShell so the evolution boundary has a successor to reveal.
     const bool evolveFlag = hasFlag(argc, argv, "evolve");
     // Start creature: cryptoshell for the evolve cinematic; malbear/bruinforce to
@@ -432,19 +437,28 @@ int main(int argc, char** argv) {
         enterSlot(SubmenuId::Games);
         // cabinet → open the focused cabinet's page (L3); + hard → cycle the dial off
         // MEDIUM so the setting is visible; clutch/worm → focus that cabinet first.
-        if (hasFlag(argc, argv, "clutch")) game.onButton({Button::A, true, false});
-        if (hasFlag(argc, argv, "worm")) {
-            game.onButton({Button::A, true, false});
-            game.onButton({Button::A, true, false});
-        }
+        const int focus = hasFlag(argc, argv, "clutch") ? 1
+                        : hasFlag(argc, argv, "worm") ? 2
+                        : hasFlag(argc, argv, "decryption") ? 3 : 0;
+        for (int i = 0; i < focus; ++i) game.onButton({Button::A, true, false});
         if (hasFlag(argc, argv, "cabinet")) {
             game.onButton({Button::B, true, false});
-            if (hasFlag(argc, argv, "hard")) {
-                game.onButton({Button::A, true, false});   // MEDIUM -> HARD
+            if (hasFlag(argc, argv, "hard")) game.onButton({Button::A, true, false});
+            if (hasFlag(argc, argv, "easy")) {             // MEDIUM -> HARD -> EASY
+                game.onButton({Button::A, true, false});
+                game.onButton({Button::A, true, false});
             }
             // play → start the run and take the board a few steps in.
             if (hasFlag(argc, argv, "play")) {
                 game.onButton({Button::B, true, false});
+                if (game.inDecryption()) {
+                    for (int r = 0; r < 3; ++r)
+                        for (int s = 0; s < kDecryptionSlots; ++s) {
+                            for (int c = 0; c <= (r + s) % kDecryptionColours; ++c)
+                                game.onButton({Button::A, true, false});
+                            game.onButton({Button::B, true, false});
+                        }
+                }
                 for (int i = 1; i <= 6; ++i)
                     game.tick(static_cast<uint32_t>(beats + i) * kHeartbeatMs);
                 // result → stop the run there and land on the payout screen.
@@ -795,17 +809,17 @@ int main(int argc, char** argv) {
         game.onButton({Button::C, true, false});
     } else if (hasFlag(argc, argv, "carousel")) { // idle A → carousel@1
         game.onButton({Button::A, true, false});
-    } else if (hasFlag(argc, argv, "decypher")) {
-        // A Ransomware egg opens straight onto its DISK DECYPHER board. "rows" plays
+    } else if (hasFlag(argc, argv, "decryption")) {
+        // A Ransomware egg opens straight onto its DISK DECRYPTION board. "rows" plays
         // three attempts first, so the frame lands on a board with history to read;
         // "lost" plays all five, landing on the verdict + the revealed key.
         game.resetToHatch();
         if (game.inLineSelect()) game.onButton({Button::B, true, false});
-        const int rows = hasFlag(argc, argv, "lost") ? kDecypherAttempts
+        const int rows = hasFlag(argc, argv, "lost") ? kDecryptionAttempts
                        : hasFlag(argc, argv, "rows") ? 3 : 0;
         for (int r = 0; r < rows; ++r)
-            for (int s = 0; s < kDecypherSlots; ++s) {
-                for (int c = 0; c <= (r + s) % kDecypherColours; ++c)
+            for (int s = 0; s < kDecryptionSlots; ++s) {
+                for (int c = 0; c <= (r + s) % kDecryptionColours; ++c)
                     game.onButton({Button::A, true, false});
                 game.onButton({Button::B, true, false});
             }

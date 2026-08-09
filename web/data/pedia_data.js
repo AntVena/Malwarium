@@ -1876,7 +1876,7 @@ window.PEDIA_DATA = {
     {
       "key": "FIRST_BRUTE_FORCE",
       "name": "First Brute Force",
-      "trigger": "Break a DISK DECYPHER key on a Ransomware egg.",
+      "trigger": "Break a DISK DECRYPTION key on a Ransomware egg.",
       "icon": "assets/icons/ICON_ACH_FIRST_BRUTE_FORCE.png"
     },
     {

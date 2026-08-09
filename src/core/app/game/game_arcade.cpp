@@ -76,10 +76,10 @@ void Game::startArcadeRun() {
         case ArcadeGameKind::Isolation:
             startIsolation(kArcadeIsolationGoal);
             break;
-        case ArcadeGameKind::Decypher:
+        case ArcadeGameKind::Decryption:
             // The only cabinet whose dial moves the RULES: easy outlines the cells a
             // row got exactly right, hard lets the key repeat a colour.
-            startDecypher(
+            startDecryption(
                 /*allowDuplicates=*/arcadeDifficulty_ == ArcadeDifficulty::Hard,
                 /*easyHints=*/arcadeDifficulty_ == ArcadeDifficulty::Easy);
             break;

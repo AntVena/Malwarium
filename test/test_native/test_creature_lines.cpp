@@ -407,9 +407,9 @@ void test_hatch_reveal_plays_the_animation() {
     CHECK(!g.inEggPhase());
 }
 
-// The reveal is every line's now, the Ransomware one included: its DISK DECYPHER board
+// The reveal is every line's now, the Ransomware one included: its DISK DECRYPTION board
 // was spent at lay-time like everyone else's, so the home stretch belongs to the chord.
-void test_hatch_reveal_covers_the_decypher_line() {
+void test_hatch_reveal_covers_the_decryption_line() {
     Game g;
     pickFirstEggLine(g);
     uint32_t t = 0;

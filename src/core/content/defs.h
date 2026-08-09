@@ -185,8 +185,8 @@ struct CreatureLine {
 // route out of layEgg(). A line that wants a new shape adds a kind here plus one
 // case there — never an `if (lineId == "...")` at a call site.
 enum class HatchGame : uint8_t {
-    Decrypt,   // DISK DECYPHER: the payload's key is broken on a five-colour code
-               // board, right away (Game::startDecypher).
+    Decrypt,   // DISK DECRYPTION: the payload's key is broken on a five-colour code
+               // board, right away (Game::startDecryption).
     Clutch,    // Clutch Pick: the egg is laid among identical decoys and found by
                // halving the clutch, right away (Game::startEggPick).
     Isolation, // Isolation Protocol: the worm inside the shell is turned loose in a

@@ -33,7 +33,7 @@ enum class ArcadeGameKind : uint8_t {
     Stacker,     // the played Defrag board (core/model/stacker.h)
     Clutch,      // the Phishing line's Spot the Phish (game_eggpick.cpp)
     Isolation,   // the Worm line's quarantine buffer (core/model/isolation.h)
-    Decypher,    // the Ransomware line's code board (core/model/disk_decypher.h)
+    Decryption,    // the Ransomware line's code board (core/model/disk_decryption.h)
 };
 
 // How a run is scored, which is the whole difference between the two payout shapes.

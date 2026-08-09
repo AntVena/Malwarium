@@ -96,7 +96,7 @@ real art review. Not urgent — flash sits at 24% and tinting doesn't depend on 
 **A second theme is a design pass, not a build.** The machinery takes N themes today and
 `PAL_CORE.json` documents the block shape; authoring a colourblind-friendly set (moving the
 red/green semantic pair onto a blue/orange axis) needs hue decisions, plus a CFG row to select it
-and a save field to remember it. Diff **M**. The `decypher` block is the part that most wants one:
+and a save field to remember it. Diff **M**. The `decryption` block is the part that most wants one:
 its five code colours are a vocabulary a player has to tell apart at a glance, and while every cell
 carries its initial as the grayscale channel, five hues that read as five is the whole board.
 

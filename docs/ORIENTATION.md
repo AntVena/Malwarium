@@ -157,7 +157,7 @@ throughout, it just costs more attention. The mistake budget governs *which bran
 triggers*; the lifetime ramp raises the stakes with age.
 
 **Hatching** is per-line: each family's `EggLineDef::hatchGame` picks the minigame, and every one of
-them is played once, the instant the egg is laid. Ransomware plays **Disk Decypher**, a five-colour
+them is played once, the instant the egg is laid. Ransomware plays **Disk Decryption**, a five-colour
 code board where cracking the key halves the incubation clock; Phishing plays the **Clutch Pick**, a
 game of nerve where only the live egg animates among identical decoys; the Worm plays the
 **Isolation Protocol**, which eats the clock a byte at a time. None of them can lose you the pet —

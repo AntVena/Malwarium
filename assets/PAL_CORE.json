@@ -90,26 +90,26 @@
       "use": "Blue \u00b7 Guardians (defense) \u2014 royal blue, distinct from accent cyan"
     }
   },
-  "decypher": {
-    "_note": "DISK DECYPHER's five code colours (core/model/disk_decypher.h). Their own block rather than borrowed status hues, because they are a VOCABULARY: the puzzle means nothing unless the five read as five, and a colourblind theme has to be able to move all of them together without touching what calm/warn/hot mean everywhere else. Spread in LUMINANCE as well as hue (white > orange > green > blue > purple) so they stay five under the grayscale test — and every cell additionally carries its colour's initial, because a colour-matching puzzle is the one screen that cannot lean on colour alone.",
-    "decypher-green": {
-      "hex": "#2fae63",
+  "decryption": {
+    "_note": "DISK DECRYPTION's five code colours (core/model/disk_decryption.h). Their own block rather than borrowed status hues, because they are a VOCABULARY: the puzzle means nothing unless the five read as five, and a colourblind theme has to be able to move all of them together without touching what calm/warn/hot mean everywhere else. LUMINANCE IS THE DUAL-CODING CHANNEL and the reason these hues are not free: they are spaced ~0.18 apart down an even ladder (white > orange > green > blue > purple) so the five stay five as five greys, which is what carries the board through the grayscale test with nothing written on the cells. Retune a hue and the ladder is what has to survive it — test_decryption_grayscale asserts the spacing.",
+    "decryption-green": {
+      "hex": "#35b268",
       "use": "code colour G"
     },
-    "decypher-blue": {
-      "hex": "#3f7fe8",
+    "decryption-blue": {
+      "hex": "#2f66c8",
       "use": "code colour B"
     },
-    "decypher-white": {
+    "decryption-white": {
       "hex": "#e8edf2",
       "use": "code colour W"
     },
-    "decypher-orange": {
-      "hex": "#f0b23e",
+    "decryption-orange": {
+      "hex": "#f8bb46",
       "use": "code colour O"
     },
-    "decypher-purple": {
-      "hex": "#9a4df0",
+    "decryption-purple": {
+      "hex": "#58239a",
       "use": "code colour P"
     }
   },

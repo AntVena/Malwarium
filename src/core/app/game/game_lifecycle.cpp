@@ -175,7 +175,7 @@ void Game::startHatchGame(const EggLineDef* line) {
             // The hatch board plays by the standard rules: no duplicate colours in the
             // key, and the feedback stays anonymous. Both are the arcade's dials, and
             // neither moves here.
-            startDecypher(/*allowDuplicates=*/false, /*easyHints=*/false);
+            startDecryption(/*allowDuplicates=*/false, /*easyHints=*/false);
             break;
         case HatchGame::Clutch:
             startEggPick(kEggPickRounds);

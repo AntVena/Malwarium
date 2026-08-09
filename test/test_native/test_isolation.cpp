@@ -274,7 +274,7 @@ void test_isolation_clean_run_hatches_and_unlocks() {
     for (int guard = 0; guard < 20000 && g.isolation().running(); ++guard) {
         const int turn = isoCycleTurn(g.isolation().head(), g.isolation().dir());
         if (turn < 0) g.onButton(press(Button::A));
-        else if (turn > 0) g.onButton(press(Button::B));
+        else if (turn > 0) g.onButton(press(Button::C));
         g.tick(t += kIsolationStepMs);
     }
     CHECK(g.isolation().clean());

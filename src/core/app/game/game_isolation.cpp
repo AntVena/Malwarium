@@ -11,7 +11,7 @@
 // game_isolation.cpp — the Isolation Protocol, the Worm line's hatch minigame.
 //
 // A Vermicell egg is laid and the worm inside it is turned straight loose in a
-// quarantine buffer: it never stops moving, A steers it left, B steers it right, and
+// quarantine buffer: it never stops moving, A steers it left, C steers it right, and
 // every byte it swallows is kIsolationDotMs off the incubation clock. Crash into a wall
 // or into its own body and the run banks what it earned; swallow the whole clock and the
 // protocol finished CLEAN — the egg hatches out of the minigame and WORM_WHISPERER
@@ -69,11 +69,13 @@ void Game::onIsolation(const ButtonEvent& ev) {
         if (ev.button == Button::B) finishIsolation();
         return;
     }
-    // A and B STEER, which is the deviation from the standard A/B/C contract this screen
-    // spells out in its hint band. C is inert: a run ends by crashing or by finishing,
-    // and quitting out of one would be a third way with nothing to say about it.
+    // A and C STEER — the OUTER two buttons, so the hand maps left to left and right to
+    // right — which is the deviation from the standard A/B/C contract this screen spells
+    // out in its hint band. B is inert while the run is live: a run ends by crashing or
+    // by finishing, and quitting out of one would be a third way with nothing to say
+    // about it. B comes back as CONTINUE on the verdict above.
     if (ev.button == Button::A) isolation_.turnLeft();
-    else if (ev.button == Button::B) isolation_.turnRight();
+    else if (ev.button == Button::C) isolation_.turnRight();
     dirty_ = true;
 }
 
@@ -175,9 +177,10 @@ void Game::drawIsolation(Framebuffer& fb) const {
                       isolation_.goal() - isolation_.dots());
     drawText(fb, (kActiveW - textWidth(status)) / 2, kEffectY, status, ink);
 
-    // UI_HINT_BAND. A and B steer here instead of stepping and accepting, so the band
-    // names the turn each one makes and sits them the way the buttons do, A left of B.
-    const char* hint = "A LEFT   B RIGHT";
+    // UI_HINT_BAND. A and C steer here instead of stepping and cancelling, so the band
+    // names the turn each one makes and sits them the way the buttons do — A on the
+    // left of the device turns left, C on the right turns right.
+    const char* hint = "A LEFT   C RIGHT";
     drawText(fb, (kActiveW - textWidth(hint)) / 2, kHintY, hint, palColor(Pal::INK_DIM));
 }
 

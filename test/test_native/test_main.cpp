@@ -81,16 +81,16 @@ int g_failures = 0;
     RUN(test_items_grayscale)               \
     /* The egg's hatch */                   \
     RUN(test_hatch_lays_egg_at_idle)        \
-    RUN(test_hatch_opens_the_decypher_board) \
-    /* DISK DECYPHER — the Ransomware line's board */ \
-    RUN(test_decypher_three_locks_play_a_row) \
-    RUN(test_decypher_counts_exact_and_elsewhere) \
-    RUN(test_decypher_scores_the_attempts_it_saved) \
-    RUN(test_decypher_duplicate_rule_is_the_key) \
-    RUN(test_decypher_hatch_pays_the_clock) \
-    RUN(test_decypher_hatch_ignores_the_arcade_dial) \
-    RUN(test_decypher_arcade_pays_on_score) \
-    RUN(test_decypher_grayscale)            \
+    RUN(test_hatch_opens_the_decryption_board) \
+    /* DISK DECRYPTION — the Ransomware line's board */ \
+    RUN(test_decryption_three_locks_play_a_row) \
+    RUN(test_decryption_counts_exact_and_elsewhere) \
+    RUN(test_decryption_scores_the_attempts_it_saved) \
+    RUN(test_decryption_duplicate_rule_is_the_key) \
+    RUN(test_decryption_hatch_pays_the_clock) \
+    RUN(test_decryption_hatch_ignores_the_arcade_dial) \
+    RUN(test_decryption_arcade_pays_on_score) \
+    RUN(test_decryption_grayscale)            \
     RUN(test_hatch_waits_out)               \
     RUN(test_hatch_network_accelerates)     \
     RUN(test_hatch_egg_vitals_frozen)       \
@@ -471,7 +471,7 @@ int g_failures = 0;
     RUN(test_eggpick_target_never_wraps)          \
     RUN(test_eggpick_line_has_nothing_mid_clock)    \
     RUN(test_hatch_reveal_plays_the_animation)    \
-    RUN(test_hatch_reveal_covers_the_decypher_line) \
+    RUN(test_hatch_reveal_covers_the_decryption_line) \
     RUN(test_eggpick_grayscale)                   \
     RUN(test_frog_line_move_access)               \
     RUN(test_dominant_signal_from_care)           \
