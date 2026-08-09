@@ -406,12 +406,15 @@ bool Game::tick(uint32_t nowMs) {
         changed = true;
     }
 
-    // TRAIN move picker's hold-A gesture (reuses aHeld_/aDownMs_): A already
+    // The MOVES picker's hold-A gesture (reuses aHeld_/aDownMs_): A already
     // stepped movePick_ on press (onMovePicker); crossing kMoveFilterHoldMs while
     // still held ADDITIONALLY toggles moveShowAll_ and re-parks the cursor at row 0
     // (the row set changes size). A release before this fires leaves the step as
-    // the only effect. No unlock gate, unlike the ITEMS filter above.
-    if (aHeld_ && nav_ == Nav::Detail && trainScreen_ == TrainScreen::MovePicker &&
+    // the only effect. No unlock gate, unlike the ITEMS filter above. The tab check
+    // is load-bearing: trainScreen_ keeps its value across a hub page change, so the
+    // MODS picker sits at the same Nav::Detail with a stale MovePicker beside it.
+    if (aHeld_ && nav_ == Nav::Detail && loadoutTab_ == LoadoutTab::Moves &&
+        trainScreen_ == TrainScreen::MovePicker &&
         !moveConfirm_ && nowMs_ - aDownMs_ >= kMoveFilterHoldMs) {
         aHeld_ = false;
         moveShowAll_ = !moveShowAll_;
@@ -513,8 +516,8 @@ void Game::onButton(const ButtonEvent& ev) {
     // bulk-open hold (releasing before kBulkOpenHoldMs resolves as the ordinary
     // single-open instead, vaultBulkReleaseB — a no-op for any other bHeld_ user).
     // A released A resolves the d ITEMS filter hold's short-press half the
-    // same way (itemFilterReleaseA — a no-op unless that hold is armed). The TRAIN
-    // move picker's hold (kMoveFilterHoldMs below) shares aHeld_/aDownMs_ too, but
+    // same way (itemFilterReleaseA — a no-op unless that hold is armed). The MOVES
+    // picker's hold (kMoveFilterHoldMs below) shares aHeld_/aDownMs_ too, but
     // has no release-time action of its own — A already stepped on press, so a
     // release just needs the arm cleared, which itemFilterReleaseA's unconditional
     // `aHeld_ = false` does regardless of which screen set it (its own context
@@ -620,8 +623,14 @@ void Game::onButton(const ButtonEvent& ev) {
                 case SubmenuId::Maint: onMaintList(ev); break;
                 case SubmenuId::Cfg: onCfgList(ev); break;
                 case SubmenuId::Arch: onArchList(ev); break;
-                case SubmenuId::Mods: onModsList(ev); break;
-                case SubmenuId::Train: onTrainList(ev); break;
+                // MODS is the LOADOUT hub: the same L2 fronts three pages, and which
+                // one is open is loadoutTab_ (PRACTISE never rests here — it opens
+                // straight into its L3).
+                case SubmenuId::Mods:
+                    if (loadoutTab_ == LoadoutTab::Mods) onModsList(ev);
+                    else if (loadoutTab_ == LoadoutTab::Moves) onTrainList(ev);
+                    else onLoadoutHub(ev);
+                    break;
                 case SubmenuId::Expl: onExplList(ev); break;
                 default: if (ev.button == Button::C) nav_ = Nav::Cursor; break;
             }
@@ -633,9 +642,11 @@ void Game::onButton(const ButtonEvent& ev) {
                 case SubmenuId::Cfg: onCfgDetail(ev); break;
                 case SubmenuId::Arch: onArchRecord(ev); break;
                 case SubmenuId::Mods:
-                    if (modDetail_) onModDetail(ev); else onModPicker(ev);
+                    if (loadoutTab_ == LoadoutTab::Practise) onSimTier(ev);
+                    else if (loadoutTab_ == LoadoutTab::Moves) onTrainDetail(ev);
+                    else if (modDetail_) onModDetail(ev);
+                    else onModPicker(ev);
                     break;
-                case SubmenuId::Train: onTrainDetail(ev); break;
                 default: if (ev.button == Button::C) nav_ = Nav::Cursor; break;
             }
             break;
@@ -716,7 +727,7 @@ void Game::onButton(const ButtonEvent& ev) {
                     // A crisis skips the type-picker even when it's owned — the
                     // Lockout list already floats the resolving items to the top.
                     itemsScreen_ = ItemsScreen::List;
-                    cursor_ = itemsSlot();
+                    cursor_ = carouselSlotOf(SubmenuId::Items);
                     auto rows = buildInventoryRows(registry_, inventory_, true, itemFilter_);
                     listRow_ = firstSelectableRow(rows);
                     nav_ = Nav::Submenu;
@@ -752,10 +763,11 @@ void Game::enterSubmenu() {
         case SubmenuId::Cfg: listRow_ = 0; bHeld_ = false; break;
         case SubmenuId::Arch:
             listRow_ = 0; archAction_ = ArchAction::Store; archConfirm_ = false; break;
+        // MODS always opens on the hub, whichever of its three pages was last used.
         case SubmenuId::Mods:
+            loadoutTab_ = LoadoutTab::Hub; loadoutHubRow_ = 0;
             listRow_ = 0; modConfirm_ = false; modDetail_ = false;
-            modDetailId_ = nullptr; break;
-        case SubmenuId::Train:
+            modDetailId_ = nullptr;
             trainRow_ = 0; trainScreen_ = TrainScreen::MovePicker;
             moveConfirm_ = false; movePendingId_ = nullptr; break;
         case SubmenuId::Expl: openExplList(); break;
@@ -775,14 +787,17 @@ void Game::dropCursor() {
 bool Game::eggSlotLocked(SubmenuId id) const {
     if (!inEggPhase()) return false;
     switch (id) {
-        case SubmenuId::Train:
+        case SubmenuId::Games:
         case SubmenuId::Maint:
         case SubmenuId::Mods:
         case SubmenuId::Expl:
             // Explore-mode is unavailable to a Boot-Sector egg — an egg
-            // can't fight, so it can't explore (nor train / maintain / mod). The
+            // can't fight, so it can't explore (nor equip or maintain). The
             // old walk-to-accelerate-hatch path retires with the Walk screen; the
             // egg still hatches on its incubation clock + the Wi-Fi network accel.
+            // GAMES is locked with them: the arcade pays a pet in Bits and
+            // Happiness, and an egg is neither playing nor able to bank either. Its
+            // own hatch minigame reaches it from the habitat, not from here.
             return true;
         default:
             // STAT + ITEMS (quest-only) + ARCH/CFG stay reachable for an egg.
@@ -790,10 +805,10 @@ bool Game::eggSlotLocked(SubmenuId id) const {
     }
 }
 
-int Game::itemsSlot() const {
+int Game::carouselSlotOf(SubmenuId id) const {
     for (int i = 0; i < kCarouselSlots; ++i)
-        if (carouselSlots()[i].id == SubmenuId::Items) return i;
-    return 1;
+        if (carouselSlots()[i].id == id) return i;
+    return 0;
 }
 
 

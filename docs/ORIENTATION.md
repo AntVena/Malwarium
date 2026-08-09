@@ -33,7 +33,7 @@ Use these consistently across UI, assets and the 'Pedia.
 | Phase | Theme | Status |
 |---|---|---|
 | **1** | Render pipeline · idle canvas · carousel · STAT/ITEMS/MAINT · gauges & care · Decryption Hatch · Paypup | ✅ shipped |
-| **2** | Remaining submenus (TRAIN/EXPL/MODS/ARCH/CFG) · more Process pets · persistence | ✅ shipped |
+| **2** | Remaining submenus (GAMES/EXPL/MODS/ARCH/CFG) · more Process pets · persistence | ✅ shipped |
 | **3** | Script & Daemon stages · evolution branching · combat / loadout | ✅ shipped |
 | **4** | Radio / sensing / exploration | passive Wi-Fi sensing, audit/pcap capture, CREW enlistment + home network, ESP-NOW discovery (PEERS) and 1v1 duels (LINK) ✅ shipped; the Red/Blue archetype system is the one open piece |
 
@@ -102,7 +102,7 @@ again. A advances the cursor, C reverses it (or exits a submenu). Slots are assi
 click-distance, so the most-used categories are the cheapest to reach.
 
 ```
-[TOP TRACK]     [1 STAT] [2 ITEMS] [3 TRAIN] [4 EXPL]
+[TOP TRACK]     [1 STAT] [2 ITEMS] [3 GAMES] [4 EXPL]
                      [ VIRTUAL PET CANVAS ]
 [BOTTOM TRACK]  [5 MAINT] [6 MODS] [7 ARCH] [8 CFG]
 ```
@@ -111,10 +111,10 @@ click-distance, so the most-used categories are the cheapest to reach.
 |---|---|---|---|
 | 1 STAT | 0 (summon) | Status | vitals, care pips, the last few Hacker-Log events |
 | 2 ITEMS | 1 fwd | Consumables | inventory browser + item detail |
-| 3 TRAIN | 2 fwd | Training | move loadout, Sim-Battle |
+| 3 GAMES | 2 fwd | Arcade | the minigames, replayable for Bits + Happiness |
 | 4 EXPL | 3 fwd | Explore | the area ladder, walk mode, events |
 | 5 MAINT | 4 either | Maintenance | Defrag, AV scan |
-| 6 MODS | 3 back | Mods | slot-based hardware equips |
+| 6 MODS | 3 back | Loadout | the MODS/MOVES/PRACTISE hub — hardware equips, move slots, Sim-Battle |
 | 7 ARCH | 2 back | Archive | the pet rack + records, Deploy |
 | 8 CFG | 1 back | Config | system info, HackerTag, title, device, radio, updates |
 

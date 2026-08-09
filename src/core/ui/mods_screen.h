@@ -1,7 +1,11 @@
-// mods_screen.h — MODS submenu: the equip-slot list (L2) + the mod
-// picker (L3). Slot-based hardware equips; mods move freely between slots. Mod
-// EFFECTS apply in combat — the equip/inspect UI + the Loadout data model live
-// here.
+// mods_screen.h — MODS submenu: the LOADOUT hub (L2) that fronts it, the
+// equip-slot list, and the mod picker. Slot-based hardware equips; mods move freely
+// between slots. Mod EFFECTS apply in combat — the equip/inspect UI + the Loadout
+// data model live here.
+//
+// MODS is the pet's whole combat loadout, so the hub's other two rows open screens
+// that live elsewhere: MOVES is train_screen.h's slot list and PRACTISE is its
+// Sim-Battle tier pick. Only the hub itself is drawn here.
 #pragma once
 
 #include <vector>
@@ -13,6 +17,18 @@ namespace mal {
 class Framebuffer;
 class ContentRegistry;
 class Loadout;
+class MoveLoadout;
+
+// Hub rows, in cursor order — MODS, MOVES, PRACTISE (LoadoutTab's non-Hub values,
+// offset by one). The Game wraps its cursor on this.
+inline constexpr int kLoadoutHubRows = 3;
+
+// L2 LOADOUT hub: MODS / MOVES / PRACTISE, one row each with its own filled-vs-total
+// readout (PRACTISE has nothing to count and states its stakes instead). `cursor` is
+// the focused row in that order; `stage` is what decides how many move slots the
+// MOVES row is counting against.
+void drawLoadoutHub(Framebuffer& fb, const Loadout& load, const MoveLoadout& moves,
+                    Stage stage, int cursor, int beat);
 
 // Owned mods in a stable display order (registry order, filtered to owned). The
 // picker rows are this list, prefixed by the "— empty (unequip) —" option.

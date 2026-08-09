@@ -497,15 +497,18 @@ void Game::drawSubmenu(Framebuffer& fb) const {
         case SubmenuId::Arch:
             drawArchList(fb, registry_, pet_, rack_, records_, listRow_, rackSlots());
             break;
-        case SubmenuId::Mods:
-            drawModsList(fb, registry_, loadout_, listRow_);
-            break;
-        case SubmenuId::Train: {
-            // #12: each slot's stamped required kind, for the row tags.
-            MoveDef::Kind sk[kMaxMoveSlots];
-            for (int i = 0; i < kMaxMoveSlots; ++i) sk[i] = slotRequiredKind(i);
-            drawLoadout(fb, registry_, moveLoadout_,
-                        pet_ ? pet_->stage : Stage::BootSector, trainRow_, sk, beat_);
+        case SubmenuId::Mods: {
+            const Stage st = pet_ ? pet_->stage : Stage::BootSector;
+            if (loadoutTab_ == LoadoutTab::Mods) {
+                drawModsList(fb, registry_, loadout_, listRow_);
+            } else if (loadoutTab_ == LoadoutTab::Moves) {
+                // #12: each slot's stamped required kind, for the row tags.
+                MoveDef::Kind sk[kMaxMoveSlots];
+                for (int i = 0; i < kMaxMoveSlots; ++i) sk[i] = slotRequiredKind(i);
+                drawLoadout(fb, registry_, moveLoadout_, st, trainRow_, sk, beat_);
+            } else {
+                drawLoadoutHub(fb, loadout_, moveLoadout_, st, loadoutHubRow_, beat_);
+            }
             break;
         }
         case SubmenuId::Expl: {
@@ -578,6 +581,14 @@ void Game::drawDetail(Framebuffer& fb) const {
             break;
         }
         case SubmenuId::Mods:
+            if (loadoutTab_ == LoadoutTab::Practise) {
+                drawSimTier(fb, simTier_, kSimDummyTiers);
+                break;
+            }
+            if (loadoutTab_ == LoadoutTab::Moves) {
+                drawTrain(fb);
+                break;
+            }
             if (modDetail_ && modDetailId_) {
                 const ModDef* md = registry_.mod(modDetailId_);
                 if (md) {
@@ -594,18 +605,11 @@ void Game::drawDetail(Framebuffer& fb) const {
                           modConfirm_, modConfirmChoice_, modPendingId_, combatLevel_,
                           pet_ ? pet_->line : nullptr);
             break;
-        case SubmenuId::Train:
-            drawTrain(fb);
-            break;
         default: break;
     }
 }
 
 void Game::drawTrain(Framebuffer& fb) const {
-    if (trainScreen_ == TrainScreen::SimTier) {
-        drawSimTier(fb, simTier_, kSimDummyTiers);
-        return;
-    }
     if (trainScreen_ == TrainScreen::MoveDetail) {
         // The reader half of the picker (hold-B). A cursor that has somehow lost its
         // move falls back to the picker rather than drawing an empty page.

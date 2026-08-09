@@ -42,7 +42,7 @@ struct LoadoutRow {
 // tagged, followed by each equipped — unlocked-slot — move) then a MODS section
 // (each equipped mod, or a single "- NONE -" row when nothing's equipped).
 // EMPTY slots are skipped entirely — nothing to describe. `isEgg` collapses the
-// whole page to a single "- NO LOADOUT -" row (TRAIN/MODS are inert for an egg,
+// whole page to a single "- NO LOADOUT -" row (MODS is inert for an egg,
 // `Game::eggSlotLocked`), since there is no combat loadout to show.
 std::vector<LoadoutRow> buildLoadoutRows(const ContentRegistry& reg,
                                          const MoveLoadout& moveLoad,

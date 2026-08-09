@@ -697,7 +697,7 @@ void test_move_evolution_gating() {
     CHECK(ownedMoveList(r, g.moveLoadout(), g.slotRequiredKind(0), g.pet()->stage,
                         g.pet()->line, 0, /*showAll=*/false)
               .empty());
-    enterSubmenuId(g, SubmenuId::Train);
+    enterLoadoutTab(g, 1);
     g.onButton(press(Button::B));                 // open slot 0 picker
     g.onButton(press(Button::A));                 // filtered list is just [unequip]; A stays put
     g.onButton(press(Button::B));                 // B on [unequip] clears the slot -> Submenu
@@ -793,7 +793,7 @@ void test_move_slot_type_lock() {
     // Drive the real picker for slot 2 (Defend): B on its first candidate row
     // (aes_lockbox — Process-gated, already unlocked at Script) equips it — a
     // matching kind succeeds through the actual UI, not just the data layer.
-    enterSubmenuId(g, SubmenuId::Train);
+    enterLoadoutTab(g, 1);
     g.onButton(press(Button::A));                    // slot0 -> slot1
     g.onButton(press(Button::A));                    // slot1 -> slot2
     g.onButton(press(Button::B));                     // open slot 2's picker (row0 = unequip)
@@ -1012,7 +1012,7 @@ void test_move_loadout_persist() {
     {
         Game g(StartMode::Hatched, "malbear", &store);
         CHECK(std::strcmp(g.moveLoadout().equipped(0), "payload_drop") == 0);
-        enterSubmenuId(g, SubmenuId::Train);
+        enterLoadoutTab(g, 1);
         g.onButton(press(Button::B));              // open slot 0 picker
         g.onButton(press(Button::A));              // unequip -> payload_drop
         g.onButton(press(Button::A));              // -> double_extortion (a different move)

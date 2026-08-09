@@ -331,12 +331,16 @@ inline Combatant mkCombatant(const ContentRegistry& r, const char* name, int hp,
     return c;
 }
 
-// Walk TRAIN's loadout to the Sim-Battle row and launch the practice fight.
+// Open the LOADOUT hub (MODS) on `row` — 0 MODS · 1 MOVES · 2 PRACTISE — and enter it.
+inline void enterLoadoutTab(Game& g, int row) {
+    enterSubmenuId(g, SubmenuId::Mods);
+    for (int i = 0; i < row; ++i) g.onButton(press(Button::A));
+    g.onButton(press(Button::B));
+}
+
+// Walk the hub to PRACTISE and launch the practice fight.
 inline void enterSimBattle(Game& g) {
-    enterSubmenuId(g, SubmenuId::Train);
-    const int unlocked = MoveLoadout::slotsForStage(g.pet()->stage);
-    for (int i = 0; i < unlocked; ++i) g.onButton(press(Button::A));  // -> Sim-Battle row
-    g.onButton(press(Button::B));                 // -> tier pick (Detail)
+    enterLoadoutTab(g, 2);                        // -> tier pick (Detail)
     g.onButton(press(Button::B));                 // Start -> combat
 }
 

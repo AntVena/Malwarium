@@ -3,7 +3,7 @@
 // The slot table is the registration seam: each category is a data row,
 // so new modes drop in without
 // rewiring nav. Cursor order is the canonical slot assignment 1..8 (STAT, ITEMS,
-// TRAIN, EXPL, MAINT, MODS, ARCH, CFG); top track = cursor 0..3, bottom = 4..7.
+// GAMES, EXPL, MAINT, MODS, ARCH, CFG); top track = cursor 0..3, bottom = 4..7.
 // Book-wrap is then just (cursor±1) mod 8 — the 4->5 / 8->1 cross-screen jumps
 // fall out of the linear index.
 #pragma once

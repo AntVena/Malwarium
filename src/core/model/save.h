@@ -137,7 +137,7 @@ constexpr int kSaveTextCap = 28;     // matches EventLog's LogEntry.text
 // next Process->Script Trojan divert, replacing the kTrojanDivertPct roll). Per-pet,
 // like mistakeShieldActive; resets on a new egg. A pre-v28 blob has no tail → stays
 // false (no divert armed).
-// v29 appends the per-STORED-PET move + mod loadout — a pet's TRAIN/MODS state
+// v29 appends the per-STORED-PET move + mod loadout — a pet's MOVES/MODS state
 // has-a home on the pet, not on the player. SaveStoredPet gains `ownedMoves` (this
 // pet's earned move pool, length-prefixed) + `equippedMoves` (kMaxMoveSlots) +
 // `equippedMods` (kModSlots), serialized in a parallel tail (mirrors v26) so

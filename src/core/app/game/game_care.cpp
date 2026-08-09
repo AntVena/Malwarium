@@ -200,7 +200,56 @@ bool Game::rollMaintSuccess() {
     return roll >= failPct;
 }
 
-// MODS ----------------------------------------------------------
+// MODS — the LOADOUT hub ----------------------------------------
+
+void Game::onLoadoutHub(const ButtonEvent& ev) {
+    if (ev.button == Button::A) {
+        loadoutHubRow_ = (loadoutHubRow_ + 1) % kLoadoutHubRows;
+    } else if (ev.button == Button::B) {
+        // Row order is the hub's draw order, which is LoadoutTab's own order past Hub.
+        openLoadoutTab(static_cast<LoadoutTab>(loadoutHubRow_ + 1));
+    } else if (ev.button == Button::C) {
+        nav_ = Nav::Cursor;
+    }
+}
+
+void Game::openLoadoutTab(LoadoutTab tab) {
+    loadoutTab_ = tab;
+    switch (tab) {
+        case LoadoutTab::Mods:
+            listRow_ = 0;
+            modConfirm_ = false;
+            modDetail_ = false;
+            modDetailId_ = nullptr;
+            nav_ = Nav::Submenu;
+            break;
+        case LoadoutTab::Moves:
+            trainRow_ = 0;
+            trainScreen_ = TrainScreen::MovePicker;
+            moveConfirm_ = false;
+            movePendingId_ = nullptr;
+            nav_ = Nav::Submenu;
+            break;
+        case LoadoutTab::Practise:
+            // The dummy fight has no list of its own to rest on — the hub row IS its
+            // L2, so it opens straight into the tier pick.
+            trainScreen_ = TrainScreen::SimTier;
+            simTier_ = 0;
+            nav_ = Nav::Detail;
+            break;
+        case LoadoutTab::Hub:
+            nav_ = Nav::Submenu;
+            break;
+    }
+}
+
+void Game::leaveLoadoutTab() {
+    // Also re-park the cursor, because one caller (finishCombat, off PRACTISE) gets
+    // here from a full-screen activity rather than from inside the hub.
+    loadoutTab_ = LoadoutTab::Hub;
+    cursor_ = carouselSlotOf(SubmenuId::Mods);
+    nav_ = Nav::Submenu;
+}
 
 void Game::onModsList(const ButtonEvent& ev) {
     if (ev.button == Button::A) {
@@ -214,7 +263,7 @@ void Game::onModsList(const ButtonEvent& ev) {
         modDetailId_ = nullptr;
         nav_ = Nav::Detail;
     } else if (ev.button == Button::C) {
-        nav_ = Nav::Cursor;
+        leaveLoadoutTab();
     }
 }
 

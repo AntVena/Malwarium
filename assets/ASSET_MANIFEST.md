@@ -56,7 +56,7 @@ focused bright) — supply one master, brightness handled in engine unless noted
 |---|---|---|---|---|---|---|
 | `ICON_STAT`  | 1 STAT  | Heart w/ graph line       | 28×28 | dim/bright | ☑ | `/assets/icons/ICON_STAT.png` |
 | `ICON_ITEMS` | 2 ITEMS | USB drive                 | 28×28 | dim/bright | ☑ | `/assets/icons/ICON_ITEMS.png` |
-| `ICON_TRAIN` | 3 TRAIN | Target reticle in terminal| 28×28 | dim/bright | ☑ | `/assets/icons/ICON_TRAIN.png` |
+| `ICON_GAMES` | 3 GAMES | Arcade joystick lever     | 28×28 | dim/bright | ☑ | `/assets/icons/ICON_GAMES.png` |
 | `ICON_EXPL`  | 4 EXPL  | Wi-Fi mesh globe, 6-frame rotation | 28×28 ×6 | dim/bright; spins while auto-progress is armed, else rests on frame 0 | ☑ | `/assets/icons/ICON_EXPL.png` |
 | `ICON_MAINT` | 5 MAINT | Fragmented HDD            | 28×28 | dim/bright | ☑ | `/assets/icons/ICON_MAINT.png` |
 | `ICON_MODS`  | 6 MODS  | Cracked CPU               | 28×28 | dim/bright | ☑ | `/assets/icons/ICON_MODS.png` |
@@ -371,14 +371,14 @@ blank — that is the prompt to draw one, and `check_orphan_assets.py` catches t
 
 ---
 
-## I. TRAIN submenu
+## I. LOADOUT hub (MODS submenu, L2)
 | Asset ID | Element | Logical size | Notes | Status | File |
 |---|---|---|---|---|---|
-| `ICON_TRAIN_SIM` | Sim-Battle (Dummy) row glyph | 20×20 | reserved placeholder row | ☑ | `/assets/icons/ICON_TRAIN_SIM.png` |
+| `ICON_LOADOUT_MOVES` | MOVES row glyph | 20×20 | targeting reticle | ☑ | `/assets/icons/ICON_LOADOUT_MOVES.png` |
+| `ICON_TRAIN_SIM` | PRACTISE (Sim-Battle) row glyph | 20×20 | also the Sim-Battle row inside MOVES | ☑ | `/assets/icons/ICON_TRAIN_SIM.png` |
 
-> TRAIN ships as a reserved placeholder row (action deferred). `·soon·` tag
-> reuses §13 `locked`-state styling — no new tag art. Pedia-Challenge dropped. All
-> minigame/reaction + turn-based battle screen art waits for the deferred minigame pass.
+> The MODS row reuses §L's `ICON_MODS_SLOT` — the hub row and the list it opens are
+> the same subject, so they carry the same glyph.
 
 ---
 

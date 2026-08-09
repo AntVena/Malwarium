@@ -9,7 +9,7 @@
 // persisted; max scales with Stage). Resolution is deterministic from a
 // seed so tests + replays are reproducible.
 //
-// The engine is shared: Sim-Battle (TRAIN, safe stakes) drives it now; EXPL
+// The engine is shared: Sim-Battle (PRACTISE, safe stakes) drives it now; EXPL
 // wild encounters (live stakes) reuse it later — the only difference is the
 // `stakes` flag (whether a loss touches Fragmentation).
 #pragma once

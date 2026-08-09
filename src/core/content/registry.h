@@ -42,7 +42,7 @@ public:
     // A number belonging to a RETIRED row resolves to nullptr, which is exactly what
     // should happen: its copies are dropped on load rather than resurrected.
     const ModDef* modByWire(int wire) const;
-    // Every known move def (the TRAIN move picker builds off this, same rationale).
+    // Every known move def (the MOVES picker builds off this, same rationale).
     std::vector<const MoveDef*> allMoves() const;
     // Every known creature def, across all sources. Roster-wide invariants build
     // off this (e.g. the wild-name / roster-name disjointness gate).

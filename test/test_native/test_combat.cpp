@@ -341,7 +341,7 @@ void test_combat_builders_and_flee() {
 // the spare pool (D3) — equipping is permanent.
 void test_mods_equip_flow() {
     Game g{StartMode::Hatched};
-    enterSubmenuId(g, SubmenuId::Mods);
+    enterLoadoutTab(g, 0);
     CHECK(g.nav() == Game::Nav::Submenu);
     Framebuffer fb(kActiveW, kActiveH);
     g.render(fb);
@@ -378,7 +378,7 @@ void test_mods_overwrite_confirm() {
     // Confirm path. Slot 0 holds Firewall Patch; selecting a spare opens its detail
     // and EQUIP raises the overwrite confirm back on the picker.
     { Game g{StartMode::Hatched};
-      enterSubmenuId(g, SubmenuId::Mods);          // slot 1 holds Firewall Patch
+      enterLoadoutTab(g, 0);          // slot 1 holds Firewall Patch
       CHECK(std::strcmp(g.loadout().equipped(0), "firewall_patch") == 0);
       g.onButton(press(Button::B));                // open slot 1 picker (rows = spares)
       const char* spare = g.loadout().owned().front().id;  // first available spare
@@ -396,7 +396,7 @@ void test_mods_overwrite_confirm() {
 
     // Cancel path leaves the slot unchanged and the spare un-consumed.
     { Game g{StartMode::Hatched};
-      enterSubmenuId(g, SubmenuId::Mods);
+      enterLoadoutTab(g, 0);
       const char* spare = g.loadout().owned().front().id;
       g.onButton(press(Button::B));                // open slot 1 picker
       g.onButton(press(Button::B));                // open the spare's detail
@@ -1375,7 +1375,7 @@ void test_mod_hard_line_gate() {
     const int deepGate = modGateCeiling("extortion_ledger");  // both spares share a rank
     while (g.combatLevel() < deepGate) g.debugAddCombatXp(g.xpToNextLevel());
     g.debugGrantMod("phishing_rod");                  // requiresLine = phishing (mismatch)
-    enterSubmenuId(g, SubmenuId::Mods);
+    enterLoadoutTab(g, 0);
     g.onButton(press(Button::A)); g.onButton(press(Button::A));  // listRow 0->2 (empty slot)
     g.onButton(press(Button::B));                           // open slot-2 picker
     g.onButton(press(Button::A)); g.onButton(press(Button::A));  // pick row 2 = phishing_rod
@@ -1387,7 +1387,7 @@ void test_mod_hard_line_gate() {
     Game g2{StartMode::Hatched};
     while (g2.combatLevel() < deepGate) g2.debugAddCombatXp(g2.xpToNextLevel());
     g2.debugGrantMod("extortion_ledger");             // requiresLine = ransomware (match)
-    enterSubmenuId(g2, SubmenuId::Mods);
+    enterLoadoutTab(g2, 0);
     g2.onButton(press(Button::A)); g2.onButton(press(Button::A));
     g2.onButton(press(Button::B));
     g2.onButton(press(Button::A)); g2.onButton(press(Button::A));
@@ -1405,7 +1405,7 @@ void test_mod_equip_level_gate() {
     const int ocGate = modGateCeiling("overclock_chip");
     CHECK(ocGate > 0);                                     // a mid-ladder rank does gate
     // Navigate: MODS → slot 3 (empty) picker → select the overclock spare → EQUIP.
-    enterSubmenuId(g, SubmenuId::Mods);
+    enterLoadoutTab(g, 0);
     g.onButton(press(Button::A)); g.onButton(press(Button::A));  // listRow 0→2 (empty slot)
     g.onButton(press(Button::B));                          // open slot-2 picker
     // Owned spares in registry order: packet_sniffer, overclock_chip, raid_mirror.
@@ -1416,7 +1416,7 @@ void test_mod_equip_level_gate() {
     CHECK(g.loadout().owns("overclock_chip"));             // spare not consumed
     // Level the pet above the gate, then the same equip succeeds.
     while (g.combatLevel() < ocGate) g.debugAddCombatXp(g.xpToNextLevel());
-    enterSubmenuId(g, SubmenuId::Mods);
+    enterLoadoutTab(g, 0);
     g.onButton(press(Button::A)); g.onButton(press(Button::A));
     g.onButton(press(Button::B));
     g.onButton(press(Button::A));

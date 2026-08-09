@@ -47,12 +47,12 @@ void drawTextCentered(Framebuffer& fb, int x0, int w, int y, const char* s,
 const CarouselSlot* carouselSlots() {
     // Cursor order == slot assignment 1..8. All eight slots now route
     // to a real submenu, so no slot carries
-    // the carousel ·soon· marker; deferred *content* inside TRAIN/EXPL/ARCH/MODS
+    // the carousel ·soon· marker; deferred *content* inside GAMES/EXPL/ARCH/MODS
     // is flagged per-row instead (·soon·/locked tags).
     static const CarouselSlot kSlots[kCarouselSlots] = {
         {"STAT",  &ASSET_ICON_STAT,  false, SubmenuId::Stat},
         {"ITEMS", &ASSET_ICON_ITEMS, false, SubmenuId::Items},
-        {"TRAIN", &ASSET_ICON_TRAIN, false, SubmenuId::Train},
+        {"GAMES", &ASSET_ICON_GAMES, true,  SubmenuId::Games},
         {"EXPL",  &ASSET_ICON_EXPL,  false, SubmenuId::Expl},
         {"MAINT", &ASSET_ICON_MAINT, false, SubmenuId::Maint},
         {"MODS",  &ASSET_ICON_MODS,  false, SubmenuId::Mods},

@@ -1,4 +1,4 @@
-// move_loadout.h — the pet's equipped combat moves (TRAIN).
+// move_loadout.h — the pet's equipped combat moves (MOVES).
 //
 // Mirrors Loadout (MODS), with two combat-specific twists:
 //  * an innate DEFAULT move that lives OUTSIDE the equip slots and is always

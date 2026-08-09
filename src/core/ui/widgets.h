@@ -115,7 +115,7 @@ void drawHintBand(Framebuffer& fb, const char* hint);
 // the y just past the last line. It never truncates: the caller is responsible for
 // handing it enough room, which is what gridLines() below is for.
 //
-// Consumers: the MODS/ITEMS/TRAIN detail + picker panels (spec_sheet.h).
+// Consumers: the MODS/ITEMS/MOVES detail + picker panels (spec_sheet.h).
 int drawSpecGrid(Framebuffer& fb, int x, int y, int w, const SpecRow* rows, int n,
                  int lineH, Rgb565 labelColor, Rgb565 valueColor);
 

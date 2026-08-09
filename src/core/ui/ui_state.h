@@ -22,7 +22,14 @@ namespace mal {
 // Which submenu an L1 carousel slot routes to on B. The engine dispatches on this
 // id; adding a real submenu later is a new case, not a rewire (registration seam).
 // The slot table that maps cursor position to one of these is carousel.h's.
-enum class SubmenuId { Stat, Items, Train, Expl, Maint, Mods, Arch, Cfg };
+enum class SubmenuId { Stat, Items, Games, Expl, Maint, Mods, Arch, Cfg };
+
+// Which page of the MODS submenu is open. MODS is the pet's whole combat LOADOUT:
+// the hub (L2) is a three-row menu, and each row hands the same L2/L3 pair to a
+// different half of it — the mod slot list, the move slot list, or the Sim-Battle
+// tier pick. Practise never rests at the hub level: it opens straight into its L3,
+// so `Hub` is where C from any of the three returns to.
+enum class LoadoutTab { Hub, Mods, Moves, Practise };
 
 // Hacker-face slot ids. CREW/PROFILE/SHOP/VAULT/MERGE/PEERS are the designed slots;
 // SCAN/LINK render the inaccessible marker until designed. PROFILE, CREW, SHOP,

@@ -593,6 +593,8 @@ void Game::resetToHatch() {
     records_.clear();
     loadout_ = Loadout::starting();
     moveLoadout_ = MoveLoadout::startingForLine(registry_, nullptr);  // startHatch() below re-seeds it
+    loadoutTab_ = LoadoutTab::Hub;
+    loadoutHubRow_ = 0;
     trainRow_ = 0;
     trainScreen_ = TrainScreen::MovePicker;
     moveConfirm_ = false;

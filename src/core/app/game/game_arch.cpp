@@ -93,7 +93,7 @@ void Game::onArchRecord(const ButtonEvent& ev) {
 // Freeze a SaveStoredPet snapshot of a live pet (active save → rack, or the
 // outgoing active during a Deploy swap): vitals, creature-level state
 // (combatLevel/combatXp/statPoints/slotKinds), and the pet's own move + mod
-// loadout (owned/equipped moves, installed mod slots) — a pet's TRAIN/MODS state
+// loadout (owned/equipped moves, installed mod slots) — a pet's MOVES/MODS state
 // travels with it through the rack, like its level.
 static SaveStoredPet freezePet(const CreatureDef* pet, const PetModel& m, int gen,
                                int defragCount, int combatLevel, int combatXp,
@@ -202,7 +202,7 @@ void Game::archDeployStored(int storedIdx) {
     for (int i = 0; i < kMaxMoveSlots; ++i)
         slotKinds_[i] = static_cast<SlotKind>(incoming.slotKinds[i]);
     // The incoming pet's own move + mod loadout: has-a, not shared. Empty
-    // ownedMoves marks a pre-v29 stored pet with no recorded TRAIN state, so it
+    // ownedMoves marks a pre-v29 stored pet with no recorded move state, so it
     // seeds its line's starting kit instead. The mod SPARE pool stays untouched
     // (player-level, like the ITEMS inventory) — only the installed slots are per-pet.
     if (!incoming.ownedMoves.empty()) {

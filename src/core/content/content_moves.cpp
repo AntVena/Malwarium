@@ -184,7 +184,7 @@ const MoveDef kMoves[] = {
 
     // --- The THREAT moves (Watchdog / Faraday counter these) -----------------------
     // Generic ENEMY-flavoured attacks that carry a rider (lockTurns / dot*). Never owned
-    // or learnable — TRAIN lists only moves in the pet's owned pool — they reach a player
+    // or learnable — MOVES lists only moves in the pet's owned pool — they reach a player
     // as an area apex's signature: each is an AreaDef::apexThreatMoveId, debuting in the
     // area whose own loot table pays out its counter-mod. Fields after armorPiercePct(0):
     // lockTurns, dotDamage, dotTurns.

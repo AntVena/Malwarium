@@ -125,7 +125,7 @@ Intentional simplifications. None is a bug; each is a "confirm as v1 or revise".
   under the same CC0 — sourcing that cut and pointing `gen_font.py` at it would fix all 7 and
   changes nothing above it, PROVIDED the bold's advance is still 8. If it isn't, deriving stays
   correct and this row closes unbuilt. Diff **S**, sourcing before code.
-- **An empty TRAIN slot marks its fallback move with shape, not a word.** The empty-slot glyph
+- **An empty MOVES slot marks its fallback move with shape, not a word.** The empty-slot glyph
   (distinct from the locked one beside it) plus a dimmed name are the two non-colour channels
   carrying it, which clears the grayscale gate — but the row has no width left for the word
   "DEFAULT" beside the accepted-kind tag. Confirm as v1 or find it room.
@@ -327,7 +327,7 @@ These read fine by name + pips today; final art is polish, dropped in where it l
 high→low value:
 
 - **Three move glyphs** still placeholder: `ICON_MOVE_BUFFER_OVERFLOW`, `_ROOTKIT_STRIKE`,
-  `_NULL_ROUTE` (TRAIN falls back to text without them).
+  `_NULL_ROUTE` (MOVES falls back to text without them).
 - **`ICON_SECTOR_CITRUS_CIRCUIT` is a generic map pin** where its four siblings are motif
   glyphs (skull, sail, download arrow, keep) — the family reads as four zones plus a marker.
   A redraw on the area's own LimeWire-era motif is pure legibility polish; it ships as is.

@@ -381,7 +381,7 @@ void test_remaining_screens_grayscale() {
       g.render(fb); CHECK(hasDarkInk(fb, 0, 0, W, H)); }
 
     // TRAIN list shell (a submenu with a deferred ·soon· action).
-    { Game g{StartMode::Hatched}; enterSubmenuId(g, SubmenuId::Train);
+    { Game g{StartMode::Hatched}; enterLoadoutTab(g, 1);
       g.render(fb); CHECK(hasDarkInk(fb, 0, 0, W, H)); }
 }
 

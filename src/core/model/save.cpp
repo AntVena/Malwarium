@@ -380,7 +380,7 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     w.u8(d.forceTrojanDivert);
 
     // v29: per-stored-pet move + mod loadout, parallel to d.rack (mirrors v26's
-    // pattern) so a rack pet's TRAIN/MODS state survives an ARCH Store/Deploy cycle.
+    // pattern) so a rack pet's MOVES/MODS state survives an ARCH Store/Deploy cycle.
     w.u16(static_cast<uint16_t>(d.rack.size()));
     for (const auto& p : d.rack) {
         w.u16(static_cast<uint16_t>(p.ownedMoves.size()));

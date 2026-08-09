@@ -8,6 +8,7 @@
 #include "core/content/effect_text.h"
 #include "core/content/registry.h"
 #include "core/model/loadout.h"
+#include "core/model/move_loadout.h"
 #include "core/render/canvas.h"
 #include "core/render/font.h"
 #include "core/render/framebuffer.h"
@@ -76,6 +77,46 @@ std::vector<const ModDef*> ownedModList(const ContentRegistry& reg,
     for (const ModDef* m : reg.allMods())
         if (load.owns(m->id)) out.push_back(m);
     return out;
+}
+
+void drawLoadoutHub(Framebuffer& fb, const Loadout& load, const MoveLoadout& moves,
+                    Stage stage, int cursor, int beat) {
+    drawHeaderBand(fb, "LOADOUT");
+
+    const SpriteData* icons[kLoadoutHubRows] = {
+        &ASSET_ICON_MODS_SLOT, &ASSET_ICON_LOADOUT_MOVES, &ASSET_ICON_TRAIN_SIM};
+    const char* labels[kLoadoutHubRows] = {"MODS", "MOVES", "PRACTISE"};
+
+    int modsOn = 0;
+    for (int i = 0; i < kModSlots; ++i)
+        if (load.equipped(i)) ++modsOn;
+    const int moveSlots = MoveLoadout::slotsForStage(stage);
+    int movesOn = 0;
+    for (int i = 0; i < moveSlots; ++i)
+        if (moves.equipped(i)) ++movesOn;
+
+    // Each row's readout answers "how much of this is filled in", so the hub is a
+    // status page as well as a menu — the two counted rows show n/total and PRACTISE,
+    // which counts nothing, names its stakes instead (the one thing worth knowing
+    // before entering it).
+    char status[kLoadoutHubRows][16];
+    std::snprintf(status[0], sizeof(status[0]), "%d/%d", modsOn, kModSlots);
+    std::snprintf(status[1], sizeof(status[1]), "%d/%d", movesOn, moveSlots);
+    std::snprintf(status[2], sizeof(status[2]), "SAFE");
+
+    for (int i = 0; i < kLoadoutHubRows; ++i) {
+        const int y = kRowTop + i * kRowH;
+        if (i == cursor) {
+            fb.fillRect(4, y + 2, kActiveW - 8, kRowH - 4, palColor(Pal::TRACK));
+            drawRowCursor(fb, 8, y + (kRowH - 7) / 2, palColor(Pal::ACCENT));
+        }
+        drawSprite(fb, *icons[i], 0, 16, y + (kRowH - kRowIcon) / 2);
+        const int textY = y + (kRowH - kFontH) / 2;
+        const int statusX = kActiveW - kMargin - textWidth(status[i]);
+        drawText(fb, statusX, textY, status[i], palColor(Pal::INK_DIM));
+        drawTextMarquee(fb, 40, textY, statusX - kMargin - 40, labels[i],
+                        palColor(Pal::INK), beat, i == cursor);
+    }
 }
 
 void drawModsList(Framebuffer& fb, const ContentRegistry& reg,

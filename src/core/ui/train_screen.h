@@ -1,8 +1,8 @@
-// train_screen.h — TRAIN submenu. The
-// combat-prep menu: TRAIN opens straight to the LOADOUT (L2) — the innate default
-// move (read-only) + the evolution-gated equip slots + a Sim-Battle launch row.
-// Selecting a slot opens the move picker (L3, mirrors MODS); Sim-Battle opens
-// a dummy-tier pick (L3) then launches the combat activity (safe stakes).
+// train_screen.h — the MOVES and PRACTISE halves of the LOADOUT hub
+// (mods_screen.h). MOVES is the slot list — the innate default move (read-only) +
+// the evolution-gated equip slots + a Sim-Battle launch row; selecting a slot opens
+// the move picker (mirrors MODS). PRACTISE is the same Sim-Battle, reached from the
+// hub instead: a dummy-tier pick, then the combat activity at safe stakes.
 #pragma once
 
 #include <vector>
@@ -29,13 +29,13 @@ std::vector<const MoveDef*> ownedMoveList(const ContentRegistry& reg,
                                           Stage petStage, const char* petLine,
                                           int slot, bool showAll);
 
-// Selectable loadout rows in cursor order: one per UNLOCKED slot, then Sim-Battle.
-// (The default row, the LOADOUT divider, and locked slots are shown but skipped.)
-// Returns how many selectable rows there are for the pet at `stage`.
+// Selectable move rows in cursor order: one per UNLOCKED slot. (The EQUIPPED
+// divider and locked slots are shown but skipped.) Returns how many selectable rows
+// there are for the pet at `stage` — 0 for an egg, which has none.
 int loadoutSelectableCount(Stage stage);
 
-// L2 loadout list. `cursor` is the selectable-row index (0..unlocked-1 = a slot;
-// == unlocked = the Sim-Battle row). `stage` gates which slots are unlocked.
+// MOVES slot list. `cursor` is the selectable-row index — an unlocked slot.
+// `stage` gates which slots are unlocked.
 // `slotKinds` (#12) is a kMaxMoveSlots array of each slot's stamped required kind
 // (only entries < the unlocked count are drawn) — each unlocked slot row shows its
 // ATK/DEF tag alongside the slot number.

@@ -142,7 +142,7 @@ int g_failures = 0;
     RUN(test_mod_detail_oneshot)            \
     RUN(test_loadout_one_slot_per_mod)      \
     /* TRAIN / EXPL shells */               \
-    RUN(test_train_expl_shells)             \
+    RUN(test_loadout_expl_nav)              \
     /* Persistence */                       \
     RUN(test_save_roundtrip)                \
     RUN(test_save_version_and_empty)        \

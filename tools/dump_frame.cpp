@@ -413,6 +413,7 @@ int main(int argc, char** argv) {
         // LOCKED row for a level-0 pet (the rolled equip-level gate, grayscale-safe).
         if (hasFlag(argc, argv, "modlocked")) game.debugGrantMod("overclock_chip");
         enterSlot(SubmenuId::Mods);
+        game.onButton({Button::B, true, false});     // LOADOUT hub row 0 -> the mod slots
         if (hasFlag(argc, argv, "picker")) game.onButton({Button::B, true, false});
         if (hasFlag(argc, argv, "detail")) {         // mod detail (a ONE-SHOT)
             game.onButton({Button::A, true, false}); // slot 1 -> slot 2
@@ -427,8 +428,12 @@ int main(int argc, char** argv) {
             game.onButton({Button::B, true, false}); // open detail
             game.onButton({Button::B, true, false}); // EQUIP -> overwrite confirm
         }
+    } else if (hasFlag(argc, argv, "loadout")) {
+        enterSlot(SubmenuId::Mods);                  // the LOADOUT hub itself
     } else if (hasFlag(argc, argv, "train")) {
-        enterSlot(SubmenuId::Train);
+        enterSlot(SubmenuId::Mods);
+        game.onButton({Button::A, true, false});     // hub -> MOVES
+        game.onButton({Button::B, true, false});     // -> the move slot list
         // trainpicker → open the focused slot's move picker (L3); + focus → step the
         // cursor onto a real move row (row 0 is unequip); movedetail → drill into that
         // move's own entry (L4).
@@ -439,9 +444,8 @@ int main(int argc, char** argv) {
             if (hasFlag(argc, argv, "movedetail")) game.onButton({Button::B, true, false});
         }
     } else if (hasFlag(argc, argv, "simbattle")) {
-        enterSlot(SubmenuId::Train);
-        // Step past the unlocked slots to the Sim-Battle row (Process pet = 2 slots),
-        // then open the dummy-tier pick (L3).
+        enterSlot(SubmenuId::Mods);
+        // Hub -> PRACTISE (row 2), which opens straight into the dummy-tier pick.
         game.onButton({Button::A, true, false});
         game.onButton({Button::A, true, false});
         game.onButton({Button::B, true, false});

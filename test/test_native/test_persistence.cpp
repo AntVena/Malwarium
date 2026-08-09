@@ -5,18 +5,32 @@
 // feature whose field it migrates, not in a migrations pile of its own.
 #include "test_gates.h"
 
-// TRAIN is now the real combat-prep loadout; EXPL stays a deferred shell.
-void test_train_expl_shells() {
+// The LOADOUT hub's back-out chain, and EXPL's nested list.
+void test_loadout_expl_nav() {
     Framebuffer fb(kActiveW, kActiveH);
-    // TRAIN: opens straight to the loadout (L2); B on a slot opens the move picker
-    // (L3); C backs out to the carousel.
-    { Game g{StartMode::Hatched}; enterSubmenuId(g, SubmenuId::Train);
+    // MODS opens on the hub; MOVES is one row in, and its move picker one more. C
+    // walks all three back out in order — picker -> slot list -> hub -> carousel —
+    // so the hub costs exactly one press and never swallows the one that leaves.
+    { Game g{StartMode::Hatched}; enterLoadoutTab(g, 1);
       CHECK(g.nav() == Game::Nav::Submenu);
       g.render(fb); CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));
       g.onButton(press(Button::B));                  // slot 1 -> move picker
       CHECK(g.nav() == Game::Nav::Detail);
       g.render(fb); CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));
-      g.onButton(press(Button::C));                  // back to the loadout
+      g.onButton(press(Button::C));                  // back to the slot list
+      CHECK(g.nav() == Game::Nav::Submenu);
+      g.onButton(press(Button::C));                  // back to the hub — still L2
+      CHECK(g.nav() == Game::Nav::Submenu);
+      g.render(fb); CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));
+      g.onButton(press(Button::C));
+      CHECK(g.nav() == Game::Nav::Cursor); }
+
+    // PRACTISE has no list of its own: the hub row opens straight into the tier pick
+    // (L3), and C from there returns to the hub rather than to an empty level.
+    { Game g{StartMode::Hatched}; enterLoadoutTab(g, 2);
+      CHECK(g.nav() == Game::Nav::Detail);
+      g.render(fb); CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));
+      g.onButton(press(Button::C));
       CHECK(g.nav() == Game::Nav::Submenu);
       g.onButton(press(Button::C));
       CHECK(g.nav() == Game::Nav::Cursor); }

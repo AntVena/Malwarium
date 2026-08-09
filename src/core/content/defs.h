@@ -537,7 +537,7 @@ inline int modEquipLevel(const ModDef& m) { return modEquipLevelFloor(m.powerTie
 
 // A combat move — a collectible roster like creatures/items/mods.
 // The autonomous combat engine rolls a pet's equipped moves off its attack/defend
-// lean; the player's agency is which moves they slot (TRAIN) + the A+C
+// lean; the player's agency is which moves they slot (MOVES) + the A+C
 // override. Effects beyond power/kind/channel are a later content pass; this
 // seeds the system. Per-move glyph is ICON_MOVE_<UPPER ID> (like ICON_MOD_*).
 struct MoveDef {

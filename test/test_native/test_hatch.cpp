@@ -163,14 +163,14 @@ static void cursorToSlot(Game& g, SubmenuId id) {
         g.onButton(press(Button::A));
 }
 
-// Egg-phase menu lock: TRAIN/MAINT/MODS/EXPL are inert while the
+// Egg-phase menu lock: GAMES/MAINT/MODS/EXPL are inert while the
 // pet is an egg (B on them does not open the submenu) — an egg can't explore. Only
 // STAT/ITEMS stay reachable. Once hatched, every slot enters normally.
 void test_egg_menu_locks() {
     Game g;                                       // FreshHatch -> egg at idle
     pickFirstEggLine(g);
     CHECK(g.inEggPhase());
-    for (SubmenuId locked : {SubmenuId::Train, SubmenuId::Maint, SubmenuId::Mods,
+    for (SubmenuId locked : {SubmenuId::Games, SubmenuId::Maint, SubmenuId::Mods,
                              SubmenuId::Expl}) {
         cursorToSlot(g, locked);
         CHECK(g.nav() == Game::Nav::Cursor);
@@ -188,7 +188,7 @@ void test_egg_menu_locks() {
     // Hatched: the egg-locked slots are open.
     Game h{StartMode::Hatched};
     CHECK(!h.inEggPhase());
-    cursorToSlot(h, SubmenuId::Train);
+    cursorToSlot(h, SubmenuId::Mods);
     h.onButton(press(Button::B));
     CHECK(h.nav() == Game::Nav::Submenu);
 }

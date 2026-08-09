@@ -385,7 +385,7 @@
           '<div class="body"><div class="nm">' + (owned ? esc(m.name.toUpperCase()) : mask(m.name)) +
           '<span class="chip ' + (m.kind === 'ATK' ? 'crashed' : 'owned') + '">' + m.kind + '</span>' +
           (m.innate ? '<span class="chip enc">INNATE</span>' : '') + '</div>' +
-          '<div class="fx">' + (owned ? esc(m.desc) : 'technique encrypted \u2014 learn it in TRAIN') + '</div>' +
+          '<div class="fx">' + (owned ? esc(m.desc) : 'technique encrypted \u2014 learn it in MOVES') + '</div>' +
           (owned ? stats(m.stats) : '') + '</div>' +
           '<div class="stat"><b>' + m.power + '</b> PWR<br><b>' + m.turns + '</b>T \u00b7 ' + esc(m.minStage.toUpperCase()) + '+</div>' +
           '</div>';

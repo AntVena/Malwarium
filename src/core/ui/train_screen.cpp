@@ -78,19 +78,19 @@ std::vector<const MoveDef*> ownedMoveList(const ContentRegistry& reg,
 }
 
 int loadoutSelectableCount(Stage stage) {
-    return MoveLoadout::slotsForStage(stage) + 1;   // unlocked slots + Sim-Battle
+    return MoveLoadout::slotsForStage(stage);
 }
 
 void drawLoadout(Framebuffer& fb, const ContentRegistry& reg,
                  const MoveLoadout& load, Stage stage, int cursor,
                  const MoveDef::Kind* slotKinds, int beat) {
-    drawHeaderBand(fb, "TRAIN");
+    drawHeaderBand(fb, "MOVES");
     const int unlocked = MoveLoadout::slotsForStage(stage);
 
     // No standalone "default" row: Quick Jab is a per-slot FALLBACK, not a
     // fixture — it's shown inside an empty slot below, never as a slot of its own.
-    drawText(fb, kMargin, 30, "LOADOUT", palColor(Pal::INK_DIM));
-    fb.fillRect(kMargin + textWidth("LOADOUT") + 6, 34, 90, 1, palColor(Pal::TRACK));
+    drawText(fb, kMargin, 30, "EQUIPPED", palColor(Pal::INK_DIM));
+    fb.fillRect(kMargin + textWidth("EQUIPPED") + 6, 34, 90, 1, palColor(Pal::TRACK));
 
     // Row columns: the slot label on the margin, the state glyph, then the content,
     // with the accepted-kind tag right-aligned opposite. `top` clears the LOADOUT
@@ -138,17 +138,6 @@ void drawLoadout(Framebuffer& fb, const ContentRegistry& reg,
                      palColor(Pal::ACCENT));
         }
     }
-
-    // Sim-Battle launch row.
-    const int simY = top + kMaxMoveSlots * rowH + 6;
-    if (cursor == unlocked) {
-        fb.fillRect(4, simY - 7, kActiveW - 8, rowH - 4, palColor(Pal::TRACK));
-        drawRowCursor(fb, 8, simY - 3, palColor(Pal::ACCENT));
-    }
-    drawSprite(fb, ASSET_ICON_TRAIN_SIM, 0, kMargin, simY - 6);
-    drawText(fb, kSlotTextX - 44, simY, "SIM-BATTLE", palColor(Pal::INK));
-    drawText(fb, kActiveW - kMargin - textWidth("TEST"), simY, "TEST",
-             palColor(Pal::INK_DIM));
 }
 
 void drawMovePicker(Framebuffer& fb, const ContentRegistry& reg,

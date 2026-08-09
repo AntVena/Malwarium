@@ -1496,7 +1496,7 @@ private:
     void drawStacker(Framebuffer& fb) const;
     void drawEvolve(Framebuffer& fb) const;
     void drawCSF(Framebuffer& fb) const;          // Critical System Failure
-    void drawTrain(Framebuffer& fb) const;        // L3 dispatch (move picker / sim tier)
+    void drawTrain(Framebuffer& fb) const;        // MOVES L3 (move picker / detail)
     void drawCombatScreen(Framebuffer& fb) const;
     void drawEncounterScreen(Framebuffer& fb) const;
     void drawWifiScreen(Framebuffer& fb) const;
@@ -1509,8 +1509,9 @@ private:
     void dropCursor();
     SubmenuId enteredId() const;                   // the slot table's id for cursor_
     // Boot-Sector egg lock (redesign): while the pet is still an unhatched
-    // egg, the care/combat slots (TRAIN/EXPL/MAINT/MODS) are inert — there's
-    // nothing to train, explore, maintain, or mod on an egg. STAT + ITEMS stay
+    // egg, the care/combat slots (GAMES/EXPL/MAINT/MODS) are inert — there's
+    // nothing to equip, explore, maintain, or play with on an egg (the egg's own
+    // hatch minigame is not the arcade's). STAT + ITEMS stay
     // live (ITEMS gates non-quest items separately, see itemUsable). Drives both
     // the greyed carousel and the blocked submenu entry.
     bool eggSlotLocked(SubmenuId id) const;
@@ -1545,12 +1546,16 @@ private:
     bool archRowIsActive() const { return listRow_ == 0; }
     // Records (RETIRED/CORRUPTED) trail the active + rack rows and have no slot.
     bool archRowIsRecord() const { return listRow_ > static_cast<int>(rack_.size()); }
+    // MODS: the LOADOUT hub (L2) and the mod-slot half it fronts.
+    void onLoadoutHub(const ButtonEvent& ev);
+    void openLoadoutTab(LoadoutTab tab);        // hub row -> its page, seeding the page
+    void leaveLoadoutTab();                     // any page -> back to the hub
     void onModsList(const ButtonEvent& ev);
     void onModPicker(const ButtonEvent& ev);
     void onModDetail(const ButtonEvent& ev);   // mod detail (read-then-act)
     void commitModEquip();                      // shared equip-or-confirm for a mod
 
-    // TRAIN: loadout L2 -> move picker / Sim-Battle tier (L3) -> combat.
+    // MOVES: slot list (L2) -> move picker / Sim-Battle tier (L3) -> combat.
     void onTrainList(const ButtonEvent& ev);
     void onTrainDetail(const ButtonEvent& ev);     // dispatch MovePicker / MoveDetail / SimTier
     void onMovePicker(const ButtonEvent& ev);
@@ -1878,7 +1883,10 @@ private:
     void fireLockout();
     void expireLockout();
     void resolveLockout();
-    int itemsSlot() const;   // carousel index of the ITEMS slot
+    // Carousel index of the slot routing to `id` — for the paths that park the
+    // cursor on a submenu they weren't navigated into (a Lockout opening ITEMS, a
+    // Sim-Battle returning to the LOADOUT hub). Falls back to 0 if `id` has no slot.
+    int carouselSlotOf(SubmenuId id) const;
 
     // Decryption Hatch lifecycle
     void startHatch();       // empty save -> line-select (>1 line) or lay the egg
@@ -2127,9 +2135,19 @@ private:
     bool modDetail_ = false;
     const char* modDetailId_ = nullptr;
 
-    // TRAIN submenu + the shared combat engine. trainRow_ is the
-    // focused L2 selectable row (an unlocked slot, or the Sim-Battle row); the L3
-    // Detail is either the move picker or the Sim-Battle tier pick (trainScreen_).
+    // Which half of the LOADOUT hub is open (ui_state.h). Hub is the three-row menu
+    // itself; the other three route the SAME Nav::Submenu/Nav::Detail pair to the
+    // mod slots, the move slots, or the Sim-Battle tier pick — so C from any of them
+    // returns here rather than to the carousel. loadoutHubRow_ is the hub's own
+    // cursor, kept across an entry so leaving a page lands back on the row that
+    // opened it.
+    LoadoutTab loadoutTab_ = LoadoutTab::Hub;
+    int loadoutHubRow_ = 0;
+
+    // MOVES + PRACTISE (the LOADOUT hub's other two rows) + the shared combat
+    // engine. trainRow_ is the focused MOVES row (an unlocked slot, or the
+    // Sim-Battle row); the L3 Detail is either the move picker or the Sim-Battle
+    // tier pick (trainScreen_).
     // The move picker mirrors MODS (slot/pick/confirm + pending). combat_ runs the
     // battle; combatBeat_ paces the auto-resolution; Health lives in combat_ and is
     // NEVER persisted (transient). combatXp_/combatLevel_ persist (save v2).
@@ -2192,7 +2210,7 @@ private:
     // is RUNTIME-ONLY (a reboot stops it; the streak resets — default). The
     // wild-encounter intro / event screens are their own Nav states, beyond the
     // 3-deep menu budget, suspending the global auto-defocus (analogy).
-    // combatCaller_ tells finishCombat() which caller to return to: the TRAIN loadout
+    // combatCaller_ tells finishCombat() which caller to return to: the LOADOUT hub
     // (Sim-Battle) or the explore habitat (a wild encounter, — never the carousel).
     // (D2): Bandwidth is the FARMING resource — spent 1/re-farm win to keep
     // cleared-sub loot full (freezing the decay); when empty, the decay curve

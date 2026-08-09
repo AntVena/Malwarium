@@ -38,38 +38,33 @@ int sumEquippedModMagnitude(const ContentRegistry& reg, const Loadout& load,
 }
 }  // namespace
 
-// TRAIN + the combat activity ---------------------------
+// MOVES + the combat activity ---------------------------
 
 void Game::onTrainList(const ButtonEvent& ev) {
-    // L2 loadout list. A steps the selectable rows (unlocked slots + Sim-Battle,
-    // skipping the read-only default + locked slots); B opens the picker / the
-    // Sim-Battle tier; C backs to the carousel.
+    // The MOVES slot list. A steps the unlocked slots (skipping the locked ones), B
+    // opens the focused slot's move picker, C backs to the LOADOUT hub. An egg has no
+    // unlocked slot at all, so `sel` can legitimately be 0 — a state MOVES is
+    // unreachable in (eggSlotLocked), but the wrap has to survive it regardless.
     const Stage st = pet_ ? pet_->stage : Stage::BootSector;
     const int sel = loadoutSelectableCount(st);
     if (ev.button == Button::A) {
-        trainRow_ = (trainRow_ + 1) % sel;
+        trainRow_ = sel > 0 ? (trainRow_ + 1) % sel : 0;
     } else if (ev.button == Button::B) {
-        const int unlocked = MoveLoadout::slotsForStage(st);
-        if (trainRow_ >= unlocked) {                      // the Sim-Battle row
-            trainScreen_ = TrainScreen::SimTier;
-            simTier_ = 0;
-        } else {                                          // open a slot's move picker
-            trainScreen_ = TrainScreen::MovePicker;
-            moveSlot_ = trainRow_;
-            movePick_ = 0;
-            moveShowAll_ = false;
-            moveConfirm_ = false;
-            movePendingId_ = nullptr;
-        }
+        if (sel <= 0) return;
+        trainScreen_ = TrainScreen::MovePicker;
+        moveSlot_ = trainRow_;
+        movePick_ = 0;
+        moveShowAll_ = false;
+        moveConfirm_ = false;
+        movePendingId_ = nullptr;
         nav_ = Nav::Detail;
     } else if (ev.button == Button::C) {
-        nav_ = Nav::Cursor;
+        leaveLoadoutTab();
     }
 }
 
 void Game::onTrainDetail(const ButtonEvent& ev) {
-    if (trainScreen_ == TrainScreen::SimTier) onSimTier(ev);
-    else if (trainScreen_ == TrainScreen::MoveDetail) onMoveDetail(ev);
+    if (trainScreen_ == TrainScreen::MoveDetail) onMoveDetail(ev);
     else onMovePicker(ev);
 }
 
@@ -182,9 +177,11 @@ void Game::onMovePicker(const ButtonEvent& ev) {
 }
 
 void Game::onSimTier(const ButtonEvent& ev) {
+    // PRACTISE's only screen, so C leaves the whole page rather than stepping back a
+    // level — there is no list underneath it, only the hub row that opened it.
     if (ev.button == Button::A) simTier_ = (simTier_ + 1) % kSimDummyTiers;
     else if (ev.button == Button::B) startSimBattle();
-    else if (ev.button == Button::C) nav_ = Nav::Submenu;
+    else if (ev.button == Button::C) leaveLoadoutTab();
 }
 
 const char* backupDriveAchievement(Combatant::BackupUse used, Combat::Outcome outcome) {
@@ -593,7 +590,7 @@ void Game::finishCombat() {
     if (combatCaller_ == CombatCaller::Boss) { finishBossRound(); return; }
     applyCombatResult();
     // Return to the caller — never a fixed layer. Sim-Battle returns to the
-    // TRAIN loadout; a wild encounter returns to the idle habitat (explore-mode),
+    // LOADOUT hub; a wild encounter returns to the idle habitat (explore-mode),
     // not the EXPL list or the carousel.
     if (combatCaller_ == CombatCaller::Wild) {
         // Explore win-streak: a win advances the streak (10 in a row →
@@ -649,8 +646,10 @@ void Game::finishCombat() {
             returnToExplore();
         }
     } else {
+        // Sim-Battle came from PRACTISE, so it goes back to the LOADOUT hub with that
+        // row still focused — the fight is over, not the menu.
         trainScreen_ = TrainScreen::MovePicker;
-        nav_ = Nav::Submenu;
+        leaveLoadoutTab();
     }
     dirty_ = true;
     persistSave();
@@ -673,7 +672,7 @@ void Game::debugStartCombat(bool live, bool lethal) {
     combat_.begin(p, e, live ? Combat::Stakes::Live : Combat::Stakes::Safe, rng_,
                   /*forceEnemyFirst=*/false, /*carryPlayerHealth=*/-1,
                   exploitUsesPerBattle());
-    combatCaller_ = CombatCaller::Sim;   // the dev hook always returns to TRAIN
+    combatCaller_ = CombatCaller::Sim;   // the dev hook always returns to the hub
     combatBeat_ = 0;
     combatTurnBeat_ = 0;
     nav_ = Nav::Combat;
