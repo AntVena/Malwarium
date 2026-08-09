@@ -489,10 +489,26 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
     r.bytes(magic, 4);
     if (!r.ok || std::memcmp(magic, kMagic, 4) != 0) { out = SaveData{}; return false; }
     const uint16_t version = r.u16();
-    // Accept the current version AND every prior one still in support (forward-compat
-    // contract): an older blob simply lacks the newer appended tails, which load with
-    // defaults.
-    if (version < kOldestAcceptedVersion || version > kSaveVersion) {
+    // Accept every version still in support, in BOTH directions.
+    //
+    // Older is the easy half (forward-compat): a v(N-1) blob simply lacks the newer
+    // appended tails, which load with defaults.
+    //
+    // NEWER is the half that matters on a device. An OTA image boots once on trial and
+    // the bootloader reverts it if the device resets before it commits — so the previous
+    // firmware can find itself underneath a save the newer one already rewrote. Refusing
+    // that blob does not fail safe: it deserializes as empty, and an empty save is a
+    // fresh hatch with the pet, the rack and the records gone. Reading the prefix we
+    // understand and ignoring a tail we don't loses only what the newer build added,
+    // which is the worst a rollback should ever cost.
+    //
+    // What that rests on: THE STREAM IS APPEND-ONLY. Every field a later version adds
+    // goes on the end behind its own `version >= N` gate, and a field that retires keeps
+    // being consumed behind a `version < N` gate (see the v33 and v45 tails). A version
+    // that inserts or drops a field mid-stream breaks this and must raise
+    // kOldestAcceptedVersion instead. `r.ok` is the backstop either way — a stream that
+    // desyncs runs short and is rejected below.
+    if (version < kOldestAcceptedVersion) {
         out = SaveData{};
         return false;
     }

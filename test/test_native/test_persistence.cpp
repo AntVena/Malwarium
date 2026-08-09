@@ -405,7 +405,7 @@ void test_save_v1_migration() {
     CHECK(g.combatLevel() == 0);   // pre-v11 blob migrates to a fresh level 0
 }
 
-// A missing / bad-magic / wrong-version / truncated blob deserializes as empty.
+// A missing / bad-magic / too-old / truncated blob deserializes as empty.
 void test_save_version_and_empty() {
     SaveData out;
     CHECK(!deserializeSave({}, out));                       // empty -> false
@@ -414,11 +414,37 @@ void test_save_version_and_empty() {
     CHECK(!deserializeSave(junk, out));                     // bad magic
     SaveData a; std::strcpy(a.activeId, "paypup");
     auto blob = serializeSave(a);
-    blob[4] = 0xFF; blob[5] = 0xFF;                         // corrupt the version word
+    blob[4] = 0; blob[5] = 0;                               // below kOldestAcceptedVersion
     CHECK(!deserializeSave(blob, out));
     auto trunc = serializeSave(a); trunc.resize(10);        // cut mid-stream
     CHECK(!deserializeSave(trunc, out));
     CHECK(out.activeId[0] == '\0');
+}
+
+// A blob from a NEWER build still loads. This is the OTA rollback: an image boots on
+// trial, rewrites the save at its own version, and the bootloader can then put the
+// previous firmware back underneath it. Rejecting that blob would deserialize as empty
+// — a fresh hatch with the pet, the rack and the records gone — so the reader takes the
+// prefix it understands and drops only the tail it doesn't.
+void test_save_from_a_newer_build_still_loads() {
+    SaveData a;
+    std::strcpy(a.activeId, "paypup");
+    a.hunger = 61; a.happy = 43; a.bits = 777;
+    auto blob = serializeSave(a);
+
+    // Stamp it a version ahead and append a tail this build knows nothing about — the
+    // exact shape every version bump here adds.
+    const uint16_t future = kSaveVersion + 1;
+    blob[4] = static_cast<uint8_t>(future);
+    blob[5] = static_cast<uint8_t>(future >> 8);
+    for (int i = 0; i < 32; ++i) blob.push_back(static_cast<uint8_t>(0xA5));
+
+    SaveData out;
+    CHECK(deserializeSave(blob, out));
+    CHECK(std::strcmp(out.activeId, "paypup") == 0);        // the pet survives a rollback
+    CHECK(out.hunger == 61);
+    CHECK(out.happy == 43);
+    CHECK(out.bits == 777);
 }
 
 // Boot-from-save vs Hatch: an empty store hatches; once a pet is raised + saved,

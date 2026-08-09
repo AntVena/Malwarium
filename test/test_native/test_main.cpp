@@ -152,6 +152,7 @@ int g_failures = 0;
     /* Persistence */                       \
     RUN(test_save_roundtrip)                \
     RUN(test_save_version_and_empty)        \
+    RUN(test_save_from_a_newer_build_still_loads) \
     RUN(test_save_v1_migration)             \
     RUN(test_save_v7_to_v8_migration)       \
     RUN(test_save_v8_to_v9_migration)       \

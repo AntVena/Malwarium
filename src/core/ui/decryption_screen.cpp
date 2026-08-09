@@ -64,25 +64,26 @@ uint32_t lcgNext(uint32_t& s) {
     return s;
 }
 
-// Corrupt a cell the way the STAT page corrupts the Fragmentation gauge's frontier: a
-// 3x3 sub-grid of the cell, with `rolls` blocks drawn at random and allowed to collide,
-// so the damage clumps instead of spreading evenly. Tinted along the frag ramp by how
-// wrong the row was — purple when the guess is nearly there, pink when it isn't.
+// Corrupt a cell the way the STAT page corrupts the Fragmentation gauge: the cell is a
+// 3x3 sub-grid, and damage is sub-blocks that AREN'T THERE — punched back to paper, not
+// tinted. Rolls are allowed to collide, so the damage clumps instead of spreading
+// evenly, and a colour eaten down to two blocks reads as a colour under attack rather
+// than as a different colour.
 //
 // This is the board's one piece of ambient feedback: a row's answer is two numbers the
-// player has to hold in their head, and the overlay turns the same fact into something
-// the eye reads without counting. It never says WHICH cell is wrong (that is the easy
-// setting's job, below) — a whole row is corrupted together.
-void corruptCell(Framebuffer& fb, int x, int y, int rolls, float ramp, uint32_t& seed) {
+// player has to hold in their head, and the holes turn the same fact into something the
+// eye reads without counting. It never says WHICH cell is wrong (that is the easy
+// setting's job, below) — a whole row is eaten together.
+void punchCorruption(Framebuffer& fb, int x, int y, int rolls, uint32_t& seed) {
     if (rolls <= 0) return;
-    const Rgb565 c = fragRamp(ramp);
+    const Rgb565 paper = palColor(Pal::PAPER);
     const int sw = kCellW / 3, sh = kCellH / 3;
     for (int k = 0; k < rolls; ++k) {
         const int idx = static_cast<int>(lcgNext(seed) % 9u);
         const int row = idx / 3, col = idx % 3;
         const int bw = (col == 2) ? kCellW - 2 * sw : sw;
         const int bh = (row == 2) ? kCellH - 2 * sh : sh;
-        fb.fillRect(x + col * sw, y + row * sh, bw, bh, c);
+        fb.fillRect(x + col * sw, y + row * sh, bw, bh, paper);
     }
 }
 
@@ -118,8 +119,6 @@ void drawDiskDecryption(Framebuffer& fb, const DiskDecryption& d, bool showExact
         if (r < played) {                                   // a played row + its answer
             const DiskDecryption::Row& row = d.row(r);
             const int corruption = d.corruption(r);
-            const float ramp = static_cast<float>(corruption) /
-                               static_cast<float>(DiskDecryption::maxCorruption());
             // One stream per row, seeded off what the row IS rather than off the beat,
             // so the corruption holds still between repaints instead of crawling.
             uint32_t seed = 1u + static_cast<uint32_t>(r) * 7919u +
@@ -133,9 +132,9 @@ void drawDiskDecryption(Framebuffer& fb, const DiskDecryption& d, bool showExact
                 // spreads the same total across the whole row and tells you nothing
                 // about where it came from.
                 if (showExactHints)
-                    corruptCell(fb, cellX(s), y, d.exactAt(r, s) ? 0 : 3, ramp, seed);
+                    punchCorruption(fb, cellX(s), y, d.exactAt(r, s) ? 0 : 3, seed);
                 else
-                    corruptCell(fb, cellX(s), y, corruption, ramp, seed);
+                    punchCorruption(fb, cellX(s), y, corruption, seed);
             }
             char tag[20];
             std::snprintf(tag, sizeof(tag), "%d POSITION%s", row.exact,
