@@ -40,7 +40,7 @@ inline constexpr CreatureDef kRansomwareCreatures[] = {
      "Software payloads / tracking cookies",
      {MoveKind::Attack, MoveKind::Defend, MoveKind::Defend, MoveKind::Defend},
      /*evolvesToTrojanId=*/nullptr, Locomotion::Walk},
-    {"barkmail", "Barkmail", Stage::Script, "SPR_PET_GENERIC_SCRIPT", nullptr,
+    {"barkmail", "Barkmail", Stage::Script, "SPR_PET_BARKMAIL", nullptr,
      /*good=*/"wire_heir", /*bad=*/"extorgi", 100, 100, "ransomware",
      "The pup grown into its armour, plated in overlapping links it calls correspondence. Every one of them is a letter, and every letter says the same thing louder.",
      "Blackmail / the ransom note that follows encryption",

@@ -164,6 +164,15 @@ which is why gameplay ships first and the drawing follows.
   long teeth together at the wrap — equal-length spokes around a circle read as a flower.
 - **`SPR_PET_PINGCUB` is `▨`** — it has one idle frame and wants a second to match the 2-frame
   norm above. The drawing itself is final.
+- **`SPR_PET_BARKMAIL` is `▨`, and what wants redrawing is the MAIL rather than the dog.** Its
+  source is 81×66 against the 56×48 Script cell, so it is width-bound decimated onto it and 622
+  single-pixel features land on a deleted lattice line. Chain-mail *is* 1px texture, so it absorbs
+  almost all of that: the rings degrade into a stipple that reads as an armour drape rather than as
+  links. What survives is what matters — the silhouette, the stage read, and Paypup's visor band, the
+  one detail carrying the evolution — which is why it ships. **The lesson generalises: decimation
+  destroys thin structural LINES and merely coarsens TEXTURE**, so it is survivable exactly when the
+  detail at risk is a value field rather than an outline. A redraw wants the mail drawn as a
+  deliberately coarser pattern the cell can hold, not the same pattern sourced larger.
 - **`SPR_PET_CONKITTENATE` is one 448×48 row, all eight columns of it idle.** It carries the cat
   branch's two-headed signature (`CREATURE_VISUAL_RULES §4`) on Kalico's machined finish held back to
   Process restraint — a few panel seams, one joint puck per haunch, a segmented tail — so the kitten
