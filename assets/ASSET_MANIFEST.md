@@ -164,6 +164,12 @@ which is why gameplay ships first and the drawing follows.
   long teeth together at the wrap — equal-length spokes around a circle read as a flower.
 - **`SPR_PET_PINGCUB` is `▨`** — it has one idle frame and wants a second to match the 2-frame
   norm above. The drawing itself is final.
+- **`SPR_PET_CONKITTENATE` is `▨`** for the same reason — one idle frame against the 2-frame norm.
+  The drawing is final: it carries the cat branch's two-headed signature (`CREATURE_VISUAL_RULES §4`)
+  on Kalico's machined finish held back to Process restraint — a few panel seams, one joint puck per
+  haunch, a segmented tail — so the kitten reads as the cub Kalico grew out of rather than a
+  different animal. Extra frames are a round trip away rather than a redraw, per the animation note
+  below.
 - **A sheet spends either ROWS or COLUMN RANGES on its clips, and the two cost very differently.**
   Malbear puts `idle` and `attack` both on row 0 — 3 columns for the rest, all 8 for the swing — so
   its whole clip set costs one 448×48 row. `SPR_PET_KALICO` spends a row per clip instead, four of
@@ -179,6 +185,22 @@ which is why gameplay ships first and the drawing follows.
   hand pass or a re-source at cell scale. It also carries 133 colours where the line's other sheets
   carry 7–8; that costs nothing in flash, since sprites are stored per-pixel and never palettised,
   but it is why the cat does not yet sit next to Paypup as obviously one family.
+- **Generated art reaches cell scale by FRAMING, not by asking for a size.** A generator's width and
+  height are a hint — `generate_game_art` reports `size_behavior: "hint"` and returns its own canvas
+  (100×100 against a 56×48 request), and the guided character path carries no size field at all. What
+  the request does control is how much of that canvas the subject fills, so the lever is the prompt:
+  ask for a tiny subject floating in a wide empty margin and the drawing arrives at project scale on
+  its own, whatever the canvas around it. `SPR_PET_CONKITTENATE` has a 48×36 content box inside a
+  100×100 canvas, which centres into the 56×48 cell untouched. **The number that matters is the
+  content box, never the canvas** — the canvas is padding, and padding is free to discard.
+- **An animation round trip keeps the pixel scale and loses the palette.** Feeding a cell-scale
+  sprite to `animate_game_art` returns frames drawn at that same scale — a 48×36 subject comes back
+  47×37 across eight frames — so the sheet crops into the cell with no resampling, which is what
+  makes a multi-frame row affordable off one drawn frame. Two things do not survive the trip: every
+  hex drifts a channel or two (`#46711a` returns as `#447019`), and the matte colour leaks a pixel or
+  two per frame into the silhouette edge. Both are repaired by snapping the sheet back to the line's
+  hexes before packing, and neither shows up by eye — the sheet looks right and measures wrong, so
+  measure the palette rather than trusting it.
 - **An egg line ships ONE egg file, not two.** `SPR_PET_EGG_PHISH_HATCH` and
   `SPR_PET_EGG_WORM_HATCH` are each an 8-frame `56×48` sheet that is both the idle loop (frames
   0–1) and the hatch one-shot (0–7, walked by `Game::hatchCrackFrame`). A separately-drawn

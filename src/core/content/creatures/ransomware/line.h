@@ -95,7 +95,7 @@ inline constexpr CreatureDef kRansomwareCreatures[] = {
      /*evolvesToTrojanId=*/nullptr, Locomotion::Walk},
 
     // --- Cat line ----
-    {"conkittenate", "Conkittenate", Stage::Process, "SPR_PET_GENERIC_PROCESS", "kalico",
+    {"conkittenate", "Conkittenate", Stage::Process, "SPR_PET_CONKITTENATE", "kalico",
      nullptr, nullptr, 100, 100, "ransomware",
      "A sly kitten that concatenates your files into one encrypted hairball and demands tuna to undo it.",
      "String concatenation / ransomware payloads",
