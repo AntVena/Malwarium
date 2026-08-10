@@ -164,20 +164,22 @@ which is why gameplay ships first and the drawing follows.
   long teeth together at the wrap — equal-length spokes around a circle read as a flower.
 - **`SPR_PET_PINGCUB` is `▨`** — it has one idle frame and wants a second to match the 2-frame
   norm above. The drawing itself is final.
-- **`SPR_PET_CONKITTENATE` is `▨`** for the same reason — one idle frame against the 2-frame norm.
-  The drawing is final: it carries the cat branch's two-headed signature (`CREATURE_VISUAL_RULES §4`)
-  on Kalico's machined finish held back to Process restraint — a few panel seams, one joint puck per
-  haunch, a segmented tail — so the kitten reads as the cub Kalico grew out of rather than a
-  different animal. Extra frames are a round trip away rather than a redraw, per the animation note
-  below.
+- **`SPR_PET_CONKITTENATE` is one 448×48 row, all eight columns of it idle.** It carries the cat
+  branch's two-headed signature (`CREATURE_VISUAL_RULES §4`) on Kalico's machined finish held back to
+  Process restraint — a few panel seams, one joint puck per haunch, a segmented tail — so the kitten
+  reads as the cub Kalico grew out of rather than a different animal. The eight frames are the
+  animation round trip below rather than eight drawings: one cell-scale frame in, a sheet out, which
+  is why a Process creature can afford a full row where the norm is two frames.
 - **A sheet spends either ROWS or COLUMN RANGES on its clips, and the two cost very differently.**
   Malbear puts `idle` and `attack` both on row 0 — 3 columns for the rest, all 8 for the swing — so
   its whole clip set costs one 448×48 row. `SPR_PET_KALICO` spends a row per clip instead, four of
   them, because its clips are genuinely different drawings rather than ranges of one motion. That is
-  a real choice and not a free one: at RGB565 + alpha every row is 63 KB of flash, so Kalico's sheet
-  is 252 KB against Malbear's 63 KB, and three of its four rows have no caller yet — `drawHabitat`
-  looks up `idle` and nothing looks up the others. Prefer Malbear's shape unless the art genuinely
-  differs; when it does, know that the rows nothing plays are still paying rent.
+  a real choice and not a free one: at RGB565 + alpha every row is 63 KB of flash (measured, not
+  computed — `SPR_PET_PAYPUP` is 42 KB of `_rgb` plus 21 KB of `_a` in the linked image, and nothing
+  compresses on the way in), so Kalico's sheet is 252 KB against Malbear's 63 KB. All four of
+  Kalico's rows play: `idle`/`walk` split the habitat on whether the wander is moving the anchor, and
+  `attack`/`hurt` pose the fight. Prefer Malbear's shape unless the art genuinely differs — a row
+  nothing looks up pays the same rent as one that plays.
 - **`SPR_PET_KALICO` is `▨` — the drawing is final, the resampling is not.** The source frames were
   60×60 and the cell is 56×48, so the sheet was decimated 4:5 onto the cell: one row and column in
   five deleted. The art is true 1:1 pixel work, so that lands on roughly a fifth of its

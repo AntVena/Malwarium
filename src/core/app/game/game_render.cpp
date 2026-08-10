@@ -124,11 +124,19 @@ void Game::drawHabitat(Framebuffer& fb, int cursor) const {
 
     const SpriteData* pet = pet_ ? registry_.creatureSprite(*pet_) : nullptr;
     if (pet) {
-        // An authored "idle" clip plays its full row in order; otherwise fall
-        // back to the breathe/blink heuristic on row 0.
-        const AnimClip* idle = pet_ ? pet_->clip("idle") : nullptr;
-        const int row = idle ? idle->row : 0;
-        const int frame = idle ? idle->frameAt(beat_) : idleFrame(*pet, beat_);
+        // An authored clip plays its full row in order; otherwise fall back to the
+        // breathe/blink heuristic on row 0. A creature that authored a "walk" takes it
+        // for exactly the beats the wander below is actually moving the anchor, so the
+        // legs and the drift are one motion rather than two that happen to overlap;
+        // one that authored none simply keeps breathing while it slides, which is what
+        // every single-row sheet does.
+        const AnimClip* clip = nullptr;
+        if (pet_) {
+            if (petWander_.travelling()) clip = pet_->clip("walk");
+            if (!clip) clip = pet_->clip("idle");
+        }
+        const int row = clip ? clip->row : 0;
+        const int frame = clip ? clip->frameAt(beat_) : idleFrame(*pet, beat_);
         // Two motions, and the creature is the only thing on this screen that takes
         // either. The BOB is the pose's own 2px lift on alternate beats — what
         // animates a single-frame creature; a swimmer skips it, since a bob on top of

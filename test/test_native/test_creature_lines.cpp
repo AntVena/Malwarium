@@ -537,3 +537,121 @@ void test_firmware_version_ordering() {
     constexpr uint32_t kV1_0_0  = 1 * 10000u + 0 * 100u + 0;
     CHECK(kV0_1_0 < kV0_1_99 && kV0_1_99 < kV0_99_0 && kV0_99_0 < kV1_0_0);
 }
+
+// A clip names a row and a column count on the creature's OWN sheet, and nothing at
+// draw time re-checks that the row exists — drawSpriteUpscaled indexes it. So the gate
+// is here, across the whole roster rather than the cat line alone: a sheet re-cut to
+// fewer rows, or a clip row typed one too high, reads off the end of the pixel array
+// and lands as garbage on the panel rather than as a build failure.
+void test_creature_clips_fit_their_sheets() {
+    ContentRegistry r = ContentRegistry::embedded();
+    int declared = 0;
+    for (const CreatureDef* c : r.allCreatures()) {
+        const SpriteData* s = r.creatureSprite(*c);
+        CHECK(s);
+        for (const AnimClip& clip : c->clips) {
+            if (!clip.name) continue;                  // unused slot
+            ++declared;
+            CHECK(clip.row >= 0 && clip.row < s->rows);
+            CHECK(clip.frames > 0 && clip.frames <= s->frames);
+            CHECK(clip.holdBeats > 0);
+            // frameAt must stay inside the declared columns for any beat, including the
+            // wrap — the whole point of holdBeats is that it slows a clip without
+            // walking off the end of it.
+            for (int beat = 0; beat < clip.frames * clip.holdBeats * 3; ++beat)
+                CHECK(clip.frameAt(beat) >= 0 && clip.frameAt(beat) < clip.frames);
+        }
+    }
+    CHECK(declared > 0);                               // the roster does author clips
+}
+
+// Kalico spends a row per pose, and the two screens that pose it look the clips up BY
+// NAME (drawHabitat's walk/idle; fightPose's hurt/attack). Renaming a row here without
+// renaming its caller leaves a silent fallback to idle rather than a failure, so the
+// names are pinned. Conkittenate is the other shape: one row, all of it idle.
+void test_cat_line_clip_wiring() {
+    ContentRegistry r = ContentRegistry::embedded();
+    const CreatureDef* kalico = r.creature("kalico");
+    CHECK(kalico);
+    for (const char* name : {"idle", "walk", "attack", "hurt"}) {
+        const AnimClip* c = kalico->clip(name);
+        CHECK(c);
+        CHECK(c->frames == 8);
+    }
+    // One pose per row, no two sharing — the reason this sheet costs four rows.
+    CHECK(kalico->clip("idle")->row == 0);
+    CHECK(kalico->clip("walk")->row == 1);
+    CHECK(kalico->clip("attack")->row == 2);
+    CHECK(kalico->clip("hurt")->row == 3);
+
+    const CreatureDef* conk = r.creature("conkittenate");
+    CHECK(conk);
+    CHECK(conk->clip("idle") && conk->clip("idle")->frames == 8);
+    CHECK(!conk->clip("walk"));      // one row: the habitat falls back to idle
+    CHECK(!conk->clip("attack"));    // ...and the fight to its breathe loop
+}
+
+// The fight poses a sprite off the creature it is fighting AS, so the builder has to
+// carry the row through. An enemy built from a sprite-named spec has no creature at
+// all, which is what makes the pose lookup optional rather than a null deref.
+void test_combatant_carries_its_creature() {
+    ContentRegistry r = ContentRegistry::embedded();
+    const CreatureDef* kalico = r.creature("kalico");
+    CHECK(kalico);
+    MoveLoadout ml;
+    Loadout mods;
+    Combatant p = makePlayerCombatant(r, *kalico, ml, mods);
+    CHECK(p.creature == kalico);                  // the registry's row, not a copy
+    CHECK(p.creature->clip("attack"));
+}
+
+// The walk clip is gated on the wander actually moving the anchor, so "travelling" has
+// to go false the beat the trip lands — otherwise a parked creature keeps walking on
+// the spot for the whole rest period.
+void test_wander_travelling_tracks_the_trip() {
+    IdleWander w;
+    CHECK(!w.travelling());                       // fresh: on the anchor, no target
+    bool moved = false;
+    for (int i = 0; i < 200; ++i) {
+        w.step(Locomotion::Walk);
+        if (w.travelling()) moved = true;
+        // Whenever it says it is travelling, the next step must actually move it.
+        if (w.travelling()) {
+            const int x = w.offsetX(), y = w.offsetY();
+            w.step(Locomotion::Walk);
+            CHECK(w.offsetX() != x || w.offsetY() != y);
+        }
+    }
+    CHECK(moved);                                 // it does leave the anchor
+    w.park();
+    CHECK(!w.travelling());                       // parked is never walking
+}
+
+// Pose precedence in a fight: a trade shows the recoil, not the swing. The two flags
+// arrive independently (a fighter can be hit on the same tick it lands one), so the
+// order they are tested in is the whole of the rule and nothing downstream re-decides
+// it. Kalico authors all four rows; Conkittenate authors only idle, which is what makes
+// the fallbacks load-bearing rather than theoretical.
+void test_fight_pose_precedence() {
+    ContentRegistry r = ContentRegistry::embedded();
+    MoveLoadout ml;
+    Loadout mods;
+    Combatant kal = makePlayerCombatant(r, *r.creature("kalico"), ml, mods);
+
+    auto row = [](const AnimClip* c) { return c ? c->row : -1; };
+    CHECK(row(fightPose(kal, false, false)) == 0);   // idle
+    CHECK(row(fightPose(kal, false, true)) == 2);    // swinging -> attack
+    CHECK(row(fightPose(kal, true, false)) == 3);    // hit -> hurt
+    CHECK(row(fightPose(kal, true, true)) == 3);     // both -> hurt wins the trade
+
+    // A one-row sheet asks for poses it never authored and gets its idle every time,
+    // so the fight draws row 0 rather than indexing off the end of the sheet.
+    Combatant conk = makePlayerCombatant(r, *r.creature("conkittenate"), ml, mods);
+    CHECK(row(fightPose(conk, true, true)) == 0);
+    CHECK(row(fightPose(conk, false, true)) == 0);
+
+    // No creature behind the combatant at all (a sprite-named enemy spec): no pose, and
+    // the draw falls through to its breathe heuristic.
+    Combatant bare;
+    CHECK(fightPose(bare, true, true) == nullptr);
+}

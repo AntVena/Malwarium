@@ -48,6 +48,15 @@ public:
     int offsetX() const { return x_; }   // logical px, + right of the anchor
     int offsetY() const { return y_; }   // logical px above the shelf, never below it
 
+    // Mid-trip rather than parked between them — what a creature with an authored walk
+    // clip poses on, so the legs move exactly on the beats the anchor does. BOTH terms
+    // are load-bearing: step() retargets the moment a trip lands, so there is distance
+    // left to the next target for the whole of the rest that follows, and distance alone
+    // would walk a parked creature on the spot until it set off again.
+    bool travelling() const {
+        return rest_ == 0 && (x_ != targetX_ || y_ != targetY_);
+    }
+
     // Whether this mover's pose carries the shelf bob on top of the drift. Two movers
     // skip it, for opposite reasons: a swimmer moves continuously already, so a bob
     // over that reads as jitter rather than breathing, while a crawler is defined by

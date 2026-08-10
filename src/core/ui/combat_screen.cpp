@@ -33,18 +33,36 @@ Zone healthZone(int health, int maxHealth) {
 
 void drawSpriteCentered(Framebuffer& fb, const SpriteData* s, int boxX, int boxY,
                         int boxW, int boxH, int animBeat, uint8_t flashAmt = 0,
-                        int xNudge = 0) {
+                        int xNudge = 0, const AnimClip* pose = nullptr) {
     if (!s) return;
     const int w = s->frameW * kScaleNum / kScaleDen;
     const int h = s->h * kScaleNum / kScaleDen;
     const int x = boxX + (boxW - w) / 2 + xNudge;
     const int y = boxY + (boxH - h);
+    // An authored pose plays its own sheet row in order; without one the breathe
+    // heuristic runs on row 0, which is the whole of a single-row sheet.
+    const int row = pose ? pose->row : 0;
+    const int frame = pose ? pose->frameAt(animBeat) : idleFrame(*s, animBeat);
     if (flashAmt > 0)
-        drawSpriteFlash(fb, *s, idleFrame(*s, animBeat), x, y, kScaleNum, kScaleDen,
-                        palColor(Pal::INK), flashAmt);
+        drawSpriteFlash(fb, *s, frame, x, y, kScaleNum, kScaleDen,
+                        palColor(Pal::INK), flashAmt, row);
     else
-        drawSpriteUpscaled(fb, *s, idleFrame(*s, animBeat), x, y, kScaleNum, kScaleDen);
+        drawSpriteUpscaled(fb, *s, frame, x, y, kScaleNum, kScaleDen, row);
 }
+
+}  // namespace
+
+// Pose precedence and its reasoning are on the declaration (combat_screen.h).
+const AnimClip* fightPose(const Combatant& c, bool takingHit, bool swinging) {
+    if (!c.creature) return nullptr;
+    if (takingHit)
+        if (const AnimClip* hurt = c.creature->clip("hurt")) return hurt;
+    if (swinging)
+        if (const AnimClip* attack = c.creature->clip("attack")) return attack;
+    return c.creature->clip("idle");
+}
+
+namespace {
 
 // Windup "hit shader" cue (no new art/frames): a channeling combatant's
 // silhouette snaps toward ink-white then decays back to normal over
@@ -316,12 +334,19 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
     const int hopBeat = moveResolved ? hitBeat : -1;
     const int hopDir = lastByLocal ? +1 : -1;
     const int hop = attackHopPx(hopBeat, hopDir);
+    // The swing window is the hop's own, so an authored attack clip runs exactly as long
+    // as the lunge that carries it — one motion, not a pose that outlives its nudge.
+    const bool swinging = moveResolved && hitBeat >= 0 && hitBeat < kAttackHopPeriod;
     // Rival first: where two tall Daemons overlap at the centre, the local pet reads on
     // top of its opponent.
     drawSpriteCentered(fb, rivalSprite, kRivalStageX, kStageY, kStageW, kStageH, animBeat,
-                       rivalFlash, impactNudgePx(rivalHitBeat, +1) + hop);
+                       rivalFlash, impactNudgePx(rivalHitBeat, +1) + hop,
+                       fightPose(en, rivalHitBeat >= 0 && rivalHitBeat < kImpactPeriod,
+                                 swinging && !lastByLocal));
     drawSpriteCentered(fb, localSprite, kLocalStageX, kStageY, kStageW, kStageH, animBeat,
-                       localFlash, impactNudgePx(localHitBeat, -1) + hop);
+                       localFlash, impactNudgePx(localHitBeat, -1) + hop,
+                       fightPose(pl, localHitBeat >= 0 && localHitBeat < kImpactPeriod,
+                                 swinging && lastByLocal));
 
     // Worm replicas, on the same shelf, standing BETWEEN their parent and its opponent —
     // each row starts at the seat edge facing the other fighter and falls back from
@@ -335,7 +360,6 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
     // local/rival roles the same way everything else on this screen is.
     const WormKill& kill = combat.lastWormKill();
     const bool killOnLocal = kill.onPlayer != flip;
-    const bool swinging = moveResolved && hitBeat >= 0 && hitBeat < kAttackHopPeriod;
     drawReplicaRow(fb, en, swinging && !lastByLocal, kill, killOnLocal ? -1 : hitBeat,
                    /*frontX=*/kRivalStageX, /*stride=*/kReplicaSlotW, kSpriteShelf,
                    animBeat);

@@ -15,6 +15,19 @@ namespace mal {
 class Framebuffer;
 class Combat;
 struct SpriteData;
+struct Combatant;
+struct AnimClip;
+
+// Which authored clip a fighter shows this tick, or nullptr for a combatant with no
+// creature behind it (a sprite-named enemy spec) — which the draw reads as the row-0
+// breathe loop every single-row sheet already takes.
+//
+// TAKING a hit outranks throwing one, so a trade reads as the recoil: the impact flash
+// and knock-back nudge are already telling that story, and a fighter that appears to
+// swing through a blow it is visibly absorbing reads as a dropped frame rather than as
+// aggression. A creature missing the pose it is asked for falls back to its idle, so a
+// sheet may author any subset of them.
+const AnimClip* fightPose(const Combatant& c, bool takingHit, bool swinging);
 
 // Which side of a fight the local operator is on, plus what to call the two of them.
 //

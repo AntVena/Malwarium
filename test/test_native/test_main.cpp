@@ -458,6 +458,11 @@ int g_failures = 0;
     RUN(test_canine_line_evolution_branch)        \
     RUN(test_pingcub_rejoins_the_bear_line)       \
     RUN(test_cat_line_evolution_branch)           \
+    RUN(test_creature_clips_fit_their_sheets)     \
+    RUN(test_cat_line_clip_wiring)                \
+    RUN(test_combatant_carries_its_creature)      \
+    RUN(test_wander_travelling_tracks_the_trip)   \
+    RUN(test_fight_pose_precedence)               \
     RUN(test_frog_line_linear)                    \
     RUN(test_anglerfish_deepdive_hatch_gate)      \
     RUN(test_anglerfish_line_evolution_branch)    \

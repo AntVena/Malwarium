@@ -95,17 +95,23 @@ inline constexpr CreatureDef kRansomwareCreatures[] = {
      /*evolvesToTrojanId=*/nullptr, Locomotion::Walk},
 
     // --- Cat line ----
+    // Conkittenate's sheet is a single 448x48 row of 8 columns, all of it one idle
+    // loop — the cub has one thing to do and spends its whole row doing it, where
+    // Kalico below splits four rows across four poses.
     {"conkittenate", "Conkittenate", Stage::Process, "SPR_PET_CONKITTENATE", "kalico",
      nullptr, nullptr, 100, 100, "ransomware",
      "A sly kitten that concatenates your files into one encrypted hairball and demands tuna to undo it.",
      "String concatenation / ransomware payloads",
      {MoveKind::Attack, MoveKind::Attack, MoveKind::Defend, MoveKind::Attack},
-     /*evolvesToTrojanId=*/nullptr, Locomotion::Walk},
+     /*evolvesToTrojanId=*/nullptr, Locomotion::Walk,
+     /*clips=*/{{"idle", /*row=*/0, /*frames=*/8, /*holdBeats=*/2}}},
     // Kalico's sheet is four rows of 8 columns (56x48 each), one row per clip, so
-    // unlike Malbear above it spends a row rather than a column range on each. Only
-    // "idle" has a caller today (drawHabitat, game_render.cpp); the other three are
-    // declared against the art that exists so wiring them later is a code change
-    // with no art step.
+    // unlike Malbear above it spends a row rather than a column range on each. All four
+    // play: "idle" and "walk" split the habitat on whether the wander is moving the
+    // anchor (drawHabitat, game_render.cpp), and "attack"/"hurt" pose the fight on the
+    // swing and the recoil (fightPose, combat_screen.cpp). The clip names are the
+    // contract — a creature that declares none of them draws its row 0 and nothing
+    // else changes, which is what every single-row sheet in this file relies on.
     {"kalico", "Kalico", Stage::Script, "SPR_PET_KALICO", nullptr,
      /*good=*/"pwnther", /*bad=*/"breecheetah", 100, 100, "ransomware",
      "A patchy calico that longs for dank hacks. It's got all of the tools but not yet the knack.",

@@ -118,6 +118,14 @@ struct Combatant {
     Stage stage = Stage::BootSector;
     const char* line = nullptr;
 
+    // The creature this combatant IS, when it is one — the fight reads its authored
+    // clips (CreatureDef::clips) to pose the sprite while swinging or being hit.
+    // A registry row outlives any fight, so this is a borrow, not ownership.
+    // Null for a combatant built from a sprite-named spec rather than a creature
+    // (makeEnemyCombatant), which the combat screen reads as "no authored poses" and
+    // draws on row 0 — the single row every stand-in sheet ships.
+    const CreatureDef* creature = nullptr;
+
     // Equipped MOD passives, keyed by the ModEffect that declares them (mod_state.h).
     // Effects that simply move a base stat (PowerPct, MaxHealth, …) are already folded
     // into the fields above by makePlayerCombatant; this holds the ones that stay live

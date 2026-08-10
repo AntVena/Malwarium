@@ -17,6 +17,7 @@ Combatant makePlayerCombatant(const ContentRegistry& reg, const CreatureDef& pet
     Combatant c;
     c.name = pet.displayName;
     c.spriteName = pet.spriteName;
+    c.creature = &pet;                              // authored clips, for the fight's poses
     c.stage = pet.stage;                            // drives the per-line passive
     c.line = pet.line;                              // line-gating identity carried into combat
     c.maxHealth = kMaxHealthByStage[stageIndex(pet.stage)];
