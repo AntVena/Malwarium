@@ -207,6 +207,14 @@ which is why gameplay ships first and the drawing follows.
   `SPR_PET_CONKITTENATE` has a 48×36 content box inside a 100×100 canvas and `SPR_PET_PWNTHER` an
   86×40 one inside 197×200; both centre into their cells untouched. **The number that matters is the
   content box, never the canvas** — the canvas is padding, and padding is free to discard.
+- **A creature is SEATED in its cell, not centred in it — and the cell is a bounding box, not a
+  target.** `drawHabitat` bottom-anchors the whole cell, so every logical px of transparent padding
+  left under the feet is a px the creature hovers over the shelf: a 44-tall drawing centred in the
+  64-tall Daemon cell floats 10 logical px, which is 17 on the panel. The shipped roster seats its
+  feet one px off the cell floor and that is the number to reproduce. Nothing about this shows up in
+  a sprite viewer — it is only visible against the shelf — so it is a packing rule rather than a
+  drawing one. Under-filling the cell is otherwise fine and expected: a corgi is smaller than a
+  panther, and the cell only says how much room the drawing is *allowed*, never how much it must use.
 - **A dark-armoured creature has to clear the background, and the generator will not do it for you.**
   The habitat paints `PAPER` at luma 19, so a tone at or near it is a hole in the silhouette rather
   than a shadow. Asked for grey armour on a stealthy animal, the generator returns something close to

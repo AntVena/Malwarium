@@ -53,7 +53,7 @@ inline constexpr CreatureDef kRansomwareCreatures[] = {
      "Wire transfers - a ransom paid down, a debt taken up",
      {MoveKind::Attack, MoveKind::Defend, MoveKind::Defend, MoveKind::Defend},
      /*evolvesToTrojanId=*/nullptr, Locomotion::Walk},
-    {"extorgi", "Extorgi", Stage::Daemon, "SPR_PET_GENERIC_DAEMON",
+    {"extorgi", "Extorgi", Stage::Daemon, "SPR_PET_EXTORGI",
      nullptr, nullptr, nullptr, kBranchBadPowerPct, kBranchBadFragPct, "ransomware",
      "Aspiring undemocratically self-elected regent of Castle Rapidscare. Other candidates have been warned to back down once if they want to keep their files, It expects to keep the racket going many terms running.",
      "Extortion / double-extortion ransomware",
