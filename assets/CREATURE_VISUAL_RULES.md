@@ -49,6 +49,14 @@ it holds itself**:
 | Gaze | Unguarded — it hasn't learned to hold anything back | Half-lidded, knowing — "doesn't need to try" |
 | Silhouette mass | One soft round blob | Body / head split, shoulder bulk — adolescent weight, not added pixels |
 
+**A creature TURNS TOWARD the viewer; it does not stand in flat profile.** The standing pose is
+three-quarter: the body reads across the cell so its length and build are legible, but it is rotated
+far enough that some of the chest shows and the head is turned out with BOTH eyes on the viewer. Flat
+profile loses the face, which is where every line keeps its signature — the dog branch's dark eye
+box, a cat's twin heads — and a creature that never looks at you never engages you. A true side view
+is not wasted work, though: it is the pose a WALK cycle wants, so a profile drawing belongs in a
+clip row rather than in the idle the habitat rests on.
+
 **The gaze row is a DIRECTION, not an eye shape.** What has to read is that a Script's eyes have
 settled relative to the Process form standing next to it — the contrast between the two stages is
 the whole content of the row. A creature whose concept is demure starts further along that axis and

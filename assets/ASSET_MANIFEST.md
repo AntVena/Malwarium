@@ -164,6 +164,14 @@ which is why gameplay ships first and the drawing follows.
   long teeth together at the wrap — equal-length spokes around a circle read as a flower.
 - **`SPR_PET_PINGCUB` is `▨`** — it has one idle frame and wants a second to match the 2-frame
   norm above. The drawing itself is final.
+- **`SPR_PET_WIRE_HEIR` is `▨`, and what it owes is COLOUR SEPARATION, not a redraw.** The drawing is
+  the one that is wanted — a long low dachshund turned three-quarter to the viewer, its dark eye box
+  carried down from Paypup, a plumed helm answering the horizontal body with a vertical, a heraldic
+  device on the surcoat. What it does not yet do is `CREATURE_VISUAL_RULES §2`'s material rule: helm,
+  surcoat and cloak sit in the same green as the animal, so the regalia reads as more creature rather
+  than as cloth and steel over one. That is a recolour of existing pixels — the forms are already
+  separated, only the hues are not — so it is a paint pass on the shipped file rather than another
+  generation. `SPR_PET_PWNTHER` is the reference for how far the tones have to move apart.
 - **`SPR_PET_BARKMAIL` is `▨`, and what wants redrawing is the MAIL rather than the dog.** Its
   source is 81×66 against the 56×48 Script cell, so it is width-bound decimated onto it and 622
   single-pixel features land on a deleted lattice line. Chain-mail *is* 1px texture, so it absorbs

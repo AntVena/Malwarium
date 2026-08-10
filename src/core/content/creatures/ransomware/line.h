@@ -47,7 +47,7 @@ inline constexpr CreatureDef kRansomwareCreatures[] = {
      {MoveKind::Attack, MoveKind::Defend, MoveKind::Defend, MoveKind::Attack},
      /*evolvesToTrojanId=*/nullptr, Locomotion::Walk},
     // Barkmail's two Daemons: the noble line and the one that took it.
-    {"wire_heir", "Wire Heir", Stage::Daemon, "SPR_PET_GENERIC_DAEMON",
+    {"wire_heir", "Wire Heir", Stage::Daemon, "SPR_PET_WIRE_HEIR",
      nullptr, nullptr, nullptr, kBranchGoodPowerPct, kBranchGoodFragPct, "ransomware",
      "Roaming the Napstorrent Moors and decrypting hard drives in need, it bears a suspicious resemblence the exiled heir to the throne of the Lockshund kingdom...",
      "Wire transfers - a ransom paid down, a debt taken up",
