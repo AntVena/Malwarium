@@ -18,7 +18,7 @@
 // spends 1-bit line art where the other lines spend a signature hue. Its drawn rows
 // come out of tools/gen_worm_art.py, which holds that style as code.
 //
-// Everything up to and including the Script row CRAWLS (Locomotion::Crawl) — the
+// Everything up to and including the Script row CRAWLS (Locomotion::Ground) — the
 // line's identity rather than a per-row tuning choice, which is why it is stated the
 // same way three times. Both Daemons then leave the floor, and that is the payoff:
 // the one line whose creatures have never once been off the ground earns it last.
@@ -40,7 +40,7 @@ inline constexpr CreatureDef kWormCreatures[] = {
      "A soft translucent capsule with one worm coiled inside it, endlessly chasing a single loose byte around the shell wall.",
      "Worm eggs / a payload waiting on a host",
      {MoveKind::Attack, MoveKind::Attack, MoveKind::Attack, MoveKind::Attack},
-     /*evolvesToTrojanId=*/nullptr, Locomotion::Crawl,
+     /*evolvesToTrojanId=*/nullptr, Locomotion::Ground,
      // Declared only to slow the resting breathe below the shared idleFrame()
      // default (sprite.h) — frames 0-1 of the same 8-frame sheet the hatch
      // one-shot walks, at half that heuristic's cadence (holdBeats 1 -> 2).
@@ -63,7 +63,7 @@ inline constexpr CreatureDef kWormCreatures[] = {
      "A thread-thin nematode that chews from one node to the next. Small, slow, and by morning there is never just the one.",
      "Worms / self-replicating network propagation",
      {MoveKind::Attack, MoveKind::Defend, MoveKind::Attack, MoveKind::Defend},
-     /*evolvesToTrojanId=*/nullptr, Locomotion::Crawl,
+     /*evolvesToTrojanId=*/nullptr, Locomotion::Ground,
      /*clips=*/{{"idle", /*row=*/0, /*frames=*/4, /*holdBeats=*/2},
                 {"attack", /*row=*/1, /*frames=*/4},
                 {"droop", /*row=*/2, /*frames=*/2, /*holdBeats=*/3},
@@ -84,7 +84,7 @@ inline constexpr CreatureDef kWormCreatures[] = {
      "A thumb-thick grub that has stopped chewing between nodes and started chewing through them. Its mouth is the widest part of it now, and it has not settled whether to go on growing out or start growing up.",
      "Resource-exhausting payloads / a worm that trades reach for appetite",
      {MoveKind::Attack, MoveKind::Defend, MoveKind::Attack, MoveKind::Defend},
-     /*evolvesToTrojanId=*/nullptr, Locomotion::Crawl,
+     /*evolvesToTrojanId=*/nullptr, Locomotion::Ground,
      /*clips=*/{{"idle", /*row=*/0, /*frames=*/4, /*holdBeats=*/2},
                 {"attack", /*row=*/1, /*frames=*/4},
                 {"droop", /*row=*/2, /*frames=*/2, /*holdBeats=*/3},

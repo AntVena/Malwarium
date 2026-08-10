@@ -659,7 +659,7 @@ static WanderTrace traceWander(Locomotion loco, int beats) {
 // the same box no matter how long it runs, and none of them ever go BELOW the shelf.
 void test_idle_wander_stays_inside_the_living_box() {
     for (Locomotion loco : {Locomotion::Walk, Locomotion::Fly, Locomotion::Swim,
-                            Locomotion::Crawl}) {
+                            Locomotion::Ground}) {
         const WanderTrace t = traceWander(loco, 4000);
         CHECK(t.minX >= -kWanderHalfSpanX && t.maxX <= kWanderHalfSpanX);
         CHECK(t.minY >= 0 && t.maxY <= kWanderRiseMax);
@@ -698,12 +698,12 @@ void test_idle_wander_reads_differently_per_locomotion() {
 // the whole of the difference, and the reason the Worm line needed its own row.
 void test_idle_wander_crawler_never_leaves_the_floor() {
     const int beats = 4000;
-    const WanderTrace crawl = traceWander(Locomotion::Crawl, beats);
+    const WanderTrace crawl = traceWander(Locomotion::Ground, beats);
     CHECK(crawl.onShelfBeats == beats);
     CHECK(crawl.movedYBeats == 0);
     CHECK(crawl.movingBeats > 0);            // it does still get about, slowly
 
-    CHECK(!IdleWander::bobs(Locomotion::Crawl));
+    CHECK(!IdleWander::bobs(Locomotion::Ground));
     CHECK(IdleWander::bobs(Locomotion::Walk));   // ...where a walker still lifts
 }
 

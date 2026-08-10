@@ -24,11 +24,21 @@ enum class Stage { BootSector, Process, Script, Daemon };
 enum class MoveKind { Attack, Defend };
 
 // How a creature gets around under its own power, which is what the idle habitat's
-// resting motion reads (core/model/idle_wander.h): a walker keeps its feet on the
-// shelf, a flier holds an altitude above it, a swimmer ignores the shelf entirely,
-// and a crawler is a walker that never once breaks contact with the floor.
-// MOVEMENT only — which sprite row a mover animates on is the sheet's business.
-enum class Locomotion : uint8_t { Walk, Fly, Swim, Crawl };
+// resting motion reads (core/model/idle_wander.h). MOVEMENT only — which sprite row a
+// mover animates on is the sheet's business.
+//
+// It decides two things at once: the
+// wander's pace (idle_wander.cpp's kPaces) and whether the pose takes the shelf BOB —
+// the 2px lift on alternate beats that is the only motion a single-frame sprite has.
+// The two floor-dwellers differ ONLY in that lift, which is why they are named for it:
+//   Walk   — on the floor, and LIFTS. The bob is its breathing.
+//   Ground — on the floor and STAYS there, no lift at all. For anything whose read
+//            depends on never breaking contact (the worm line), and for anything
+//            carrying an authored idle of its own, where a second rise on top of the
+//            drawn one lands on a different beat and reads as a bounce.
+//   Fly    — holds an altitude clear of the shelf.
+//   Swim   — drifts on both axes; no bob, since a lift over a drift reads as jitter.
+enum class Locomotion : uint8_t { Walk, Fly, Swim, Ground };
 
 inline const char* stageName(Stage s) {
     switch (s) {

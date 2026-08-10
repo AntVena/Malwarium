@@ -56,7 +56,10 @@ inline constexpr CreatureDef kRansomwareCreatures[] = {
      "Roaming the Napstorrent Moors and decrypting hard drives in need, it bears a suspicious resemblence the exiled heir to the throne of the Lockshund kingdom...",
      "Wire transfers - a ransom paid down, a debt taken up",
      {MoveKind::Attack, MoveKind::Defend, MoveKind::Defend, MoveKind::Defend},
-     /*evolvesToTrojanId=*/nullptr, Locomotion::Walk,
+     // Ground rather than Walk: its sheet already breathes on its own frames, and the
+     // shelf bob on top of that lands on a different beat and reads as a bounce. The
+     // slower Ground pace suits a long dog on short legs anyway.
+     /*evolvesToTrojanId=*/nullptr, Locomotion::Ground,
      /*clips=*/{{"idle", /*row=*/0, /*frames=*/8, /*holdBeats=*/2}}},
     {"extorgi", "Extorgi", Stage::Daemon, "SPR_PET_EXTORGI",
      nullptr, nullptr, nullptr, kBranchBadPowerPct, kBranchBadFragPct, "ransomware",
