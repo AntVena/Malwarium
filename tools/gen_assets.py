@@ -82,6 +82,11 @@ FRAME_W_OVERRIDES = {
     # creature with a 56x48 cell, so it needs the override to be a strip at all.
     "SPR_WORM_REPLICA_ATTACK": 16,
     "SPR_WORM_REPLICA_DEFEND": 16,
+    # 768x64 = eight 96x64 frames. An ANIMATED sheet at the oversized Daemon cell needs
+    # the override for the same reason a Script sheet does not: the rule below cuts a
+    # SPR_PET_ sheet on 56px only when the width divides by it, and 768 does not, so
+    # without this the whole strip reads as one very wide single frame.
+    "SPR_PET_WIRE_HEIR": 96,
 }
 
 

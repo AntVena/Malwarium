@@ -47,12 +47,17 @@ inline constexpr CreatureDef kRansomwareCreatures[] = {
      {MoveKind::Attack, MoveKind::Defend, MoveKind::Defend, MoveKind::Attack},
      /*evolvesToTrojanId=*/nullptr, Locomotion::Walk},
     // Barkmail's two Daemons: the noble line and the one that took it.
+    // Wire Heir's sheet is one row of 8 frames at the 96x64 Daemon cell, so unlike every
+    // 56x48 sheet it needs its frame width declared in gen_assets.py's FRAME_W_OVERRIDES —
+    // 768 is not a whole number of 56px cells, and the default rule would read the strip
+    // as one very wide frame.
     {"wire_heir", "Wire Heir", Stage::Daemon, "SPR_PET_WIRE_HEIR",
      nullptr, nullptr, nullptr, kBranchGoodPowerPct, kBranchGoodFragPct, "ransomware",
      "Roaming the Napstorrent Moors and decrypting hard drives in need, it bears a suspicious resemblence the exiled heir to the throne of the Lockshund kingdom...",
      "Wire transfers - a ransom paid down, a debt taken up",
      {MoveKind::Attack, MoveKind::Defend, MoveKind::Defend, MoveKind::Defend},
-     /*evolvesToTrojanId=*/nullptr, Locomotion::Walk},
+     /*evolvesToTrojanId=*/nullptr, Locomotion::Walk,
+     /*clips=*/{{"idle", /*row=*/0, /*frames=*/8, /*holdBeats=*/2}}},
     {"extorgi", "Extorgi", Stage::Daemon, "SPR_PET_EXTORGI",
      nullptr, nullptr, nullptr, kBranchBadPowerPct, kBranchBadFragPct, "ransomware",
      "Aspiring undemocratically self-elected regent of Castle Rapidscare. Other candidates have been warned to back down once if they want to keep their files, It expects to keep the racket going many terms running.",
