@@ -132,7 +132,12 @@ inline constexpr CreatureDef kRansomwareCreatures[] = {
      "System pwnage / privilege takeover",
      {MoveKind::Attack, MoveKind::Attack, MoveKind::Defend, MoveKind::Defend},
      /*evolvesToTrojanId=*/nullptr, Locomotion::Walk},
-    {"breecheetah", "Breecheetah", Stage::Daemon, "SPR_PET_GENERIC_DAEMON",
+    // Breecheetah takes the same 96x64 cell and the same palette as its Good sibling
+    // above, and spends both differently — where Pwnther is bulk under grey plate,
+    // this is a bare green sprinter wearing its shell as glowing pips and flat decal
+    // tiles. Same line, same branch signature, opposite silhouettes: which one a
+    // player got reads across the room (CREATURE_VISUAL_RULES §4).
+    {"breecheetah", "Breecheetah", Stage::Daemon, "SPR_PET_BREECHEETAH",
      nullptr, nullptr, nullptr, kBranchBadPowerPct, kBranchBadFragPct, "ransomware",
      "The fastest cat on the wire - breaches the perimeter then bails before alerts even fire.",
      "Data breach / exfiltration",
