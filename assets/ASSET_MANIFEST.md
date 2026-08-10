@@ -189,12 +189,24 @@ which is why gameplay ships first and the drawing follows.
   but it is why the cat does not yet sit next to Paypup as obviously one family.
 - **Generated art reaches cell scale by FRAMING, not by asking for a size.** A generator's width and
   height are a hint — `generate_game_art` reports `size_behavior: "hint"` and returns its own canvas
-  (100×100 against a 56×48 request), and the guided character path carries no size field at all. What
-  the request does control is how much of that canvas the subject fills, so the lever is the prompt:
-  ask for a tiny subject floating in a wide empty margin and the drawing arrives at project scale on
-  its own, whatever the canvas around it. `SPR_PET_CONKITTENATE` has a 48×36 content box inside a
-  100×100 canvas, which centres into the 56×48 cell untouched. **The number that matters is the
+  (100×100 against a 56×48 request, ~200×200 against a 96×64 one, so the canvas runs about double
+  whatever it was asked for). What the request does control is how much of that canvas the subject
+  fills, so the lever is the prompt: ask for a small subject floating in a wide empty margin and the
+  drawing arrives at project scale on its own, whatever the canvas around it. **The framing has to be
+  MEASURED to hold** — "a generous margin" fills 90% of the frame anyway, while "spans no more than
+  half the width, a full quarter empty on the left and a quarter on the right" lands near 45%.
+  `SPR_PET_CONKITTENATE` has a 48×36 content box inside a 100×100 canvas and `SPR_PET_PWNTHER` an
+  86×40 one inside 197×200; both centre into their cells untouched. **The number that matters is the
   content box, never the canvas** — the canvas is padding, and padding is free to discard.
+- **A dark-armoured creature has to clear the background, and the generator will not do it for you.**
+  The habitat paints `PAPER` at luma 19, so a tone at or near it is a hole in the silhouette rather
+  than a shadow. Asked for grey armour on a stealthy animal, the generator returns something close to
+  37% pure black — which measures as a third of the body missing on the panel and looks perfectly
+  fine on a white desktop. `SPR_PET_PWNTHER` therefore drops the line's `#101c12` ink from its
+  palette entirely and floors at `#1b241f` (luma 33): still the darkest thing on the creature, still
+  reading as an outline, but a clear step above the background it sits on. **Measure the darkest tone
+  against `PAPER` before shipping any sprite that leans dark** — the eye cannot catch this on a
+  monitor.
 - **An animation round trip keeps the pixel scale and loses the palette.** Feeding a cell-scale
   sprite to `animate_game_art` returns frames drawn at that same scale — a 48×36 subject comes back
   47×37 across eight frames — so the sheet crops into the cell with no resampling, which is what

@@ -122,7 +122,11 @@ inline constexpr CreatureDef kRansomwareCreatures[] = {
                 {"walk", /*row=*/1, /*frames=*/8, /*holdBeats=*/2},
                 {"attack", /*row=*/2, /*frames=*/8, /*holdBeats=*/1},
                 {"hurt", /*row=*/3, /*frames=*/8, /*holdBeats=*/1}}},
-    {"pwnther", "Pwnther", Stage::Daemon, "SPR_PET_GENERIC_DAEMON",
+    // Pwnther spends the 96x64 Daemon cell (CREATURE_VISUAL_RULES §7) rather than the
+    // 56x48 the Script rows above take — the stage's payoff is read as scale, and one
+    // oversized frame is what gen_assets cuts a pet sheet into when its width is not a
+    // whole number of 56px cells.
+    {"pwnther", "Pwnther", Stage::Daemon, "SPR_PET_PWNTHER",
      nullptr, nullptr, nullptr, kBranchGoodPowerPct, kBranchGoodFragPct, "ransomware",
      "Small signature. Big cat. Massive data loss",
      "System pwnage / privilege takeover",
