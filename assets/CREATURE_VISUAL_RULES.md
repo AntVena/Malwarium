@@ -46,8 +46,15 @@ it holds itself**:
 | Lever | Process | Script |
 |---|---|---|
 | Centre of gravity | High, bouncy, light contact — almost a head with legs | Drops low, weight settles forward; a clear body the head sits ON |
-| Gaze | Wide, open, eager | Half-lidded, knowing — "doesn't need to try" |
+| Gaze | Unguarded — it hasn't learned to hold anything back | Half-lidded, knowing — "doesn't need to try" |
 | Silhouette mass | One soft round blob | Body / head split, shoulder bulk — adolescent weight, not added pixels |
+
+**The gaze row is a DIRECTION, not an eye shape.** What has to read is that a Script's eyes have
+settled relative to the Process form standing next to it — the contrast between the two stages is
+the whole content of the row. A creature whose concept is demure starts further along that axis and
+its Script leans harder into it; a cat can be half-lidded at Process and still read as cute, and
+forcing wide eyes onto it to satisfy the table buys nothing the silhouette and posture were not
+already carrying. Wide-and-eager is one way to draw *unguarded*, not the requirement.
 
 ---
 
