@@ -101,12 +101,21 @@ inline constexpr CreatureDef kRansomwareCreatures[] = {
      "String concatenation / ransomware payloads",
      {MoveKind::Attack, MoveKind::Attack, MoveKind::Defend, MoveKind::Attack},
      /*evolvesToTrojanId=*/nullptr, Locomotion::Walk},
-    {"kalico", "Kalico", Stage::Script, "SPR_PET_GENERIC_SCRIPT", nullptr,
+    // Kalico's sheet is four rows of 8 columns (56x48 each), one row per clip, so
+    // unlike Malbear above it spends a row rather than a column range on each. Only
+    // "idle" has a caller today (drawHabitat, game_render.cpp); the other three are
+    // declared against the art that exists so wiring them later is a code change
+    // with no art step.
+    {"kalico", "Kalico", Stage::Script, "SPR_PET_KALICO", nullptr,
      /*good=*/"pwnther", /*bad=*/"breecheetah", 100, 100, "ransomware",
      "A patchy calico that longs for dank hacks. It's got all of the tools but not yet the knack.",
      "Ransomware payload staging",
      {MoveKind::Attack, MoveKind::Attack, MoveKind::Defend, MoveKind::Attack},
-     /*evolvesToTrojanId=*/nullptr, Locomotion::Walk},
+     /*evolvesToTrojanId=*/nullptr, Locomotion::Walk,
+     /*clips=*/{{"idle", /*row=*/0, /*frames=*/8, /*holdBeats=*/2},
+                {"walk", /*row=*/1, /*frames=*/8, /*holdBeats=*/2},
+                {"attack", /*row=*/2, /*frames=*/8, /*holdBeats=*/1},
+                {"hurt", /*row=*/3, /*frames=*/8, /*holdBeats=*/1}}},
     {"pwnther", "Pwnther", Stage::Daemon, "SPR_PET_GENERIC_DAEMON",
      nullptr, nullptr, nullptr, kBranchGoodPowerPct, kBranchGoodFragPct, "ransomware",
      "Small signature. Big cat. Massive data loss",

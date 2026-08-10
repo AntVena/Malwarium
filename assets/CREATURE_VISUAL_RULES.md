@@ -90,6 +90,15 @@ muddy. So "more shades of the mother colour" is what growth looks like, not a sh
 right hue, one small "wrong" tell. That makes a Trojan's brief a re-skin of its origin line rather
 than a new silhouette, and it follows from the rule above rather than being a separate one.
 
+**A BRANCH may carry a signature of its own on top of the line's.** Ransomware's cat branch —
+Conkittenate, Kalico, and the Pwnther/Breecheetah pair — is **two-headed**, every row of it, because
+the branch is named for concatenation and two things stuck together is the joke the whole chain
+inherits. It sits on top of the mother colour rather than replacing it: a cat is green like every
+other ransomware creature, and two-headed like no other line. Draw the second head as a full head on
+the same neck, not a mirrored decal — the silhouette is the read, so it has to survive the §5
+grayscale test on shape alone. The dog branch of the same line has one head, which is the point:
+the signature separates branches inside a line that colour cannot, since colour is the line's.
+
 ### The Worm exception: draw it small, and draw it 1-bit
 
 **A Worm creature reads SMALLER in its cell than any other line's creature at the same stage** —

@@ -164,6 +164,21 @@ which is why gameplay ships first and the drawing follows.
   long teeth together at the wrap — equal-length spokes around a circle read as a flower.
 - **`SPR_PET_PINGCUB` is `▨`** — it has one idle frame and wants a second to match the 2-frame
   norm above. The drawing itself is final.
+- **A sheet spends either ROWS or COLUMN RANGES on its clips, and the two cost very differently.**
+  Malbear puts `idle` and `attack` both on row 0 — 3 columns for the rest, all 8 for the swing — so
+  its whole clip set costs one 448×48 row. `SPR_PET_KALICO` spends a row per clip instead, four of
+  them, because its clips are genuinely different drawings rather than ranges of one motion. That is
+  a real choice and not a free one: at RGB565 + alpha every row is 63 KB of flash, so Kalico's sheet
+  is 252 KB against Malbear's 63 KB, and three of its four rows have no caller yet — `drawHabitat`
+  looks up `idle` and nothing looks up the others. Prefer Malbear's shape unless the art genuinely
+  differs; when it does, know that the rows nothing plays are still paying rent.
+- **`SPR_PET_KALICO` is `▨` — the drawing is final, the resampling is not.** The source frames were
+  60×60 and the cell is 56×48, so the sheet was decimated 4:5 onto the cell: one row and column in
+  five deleted. The art is true 1:1 pixel work, so that lands on roughly a fifth of its
+  single-pixel features — the outline survives, the finer interior detail does not, and it wants a
+  hand pass or a re-source at cell scale. It also carries 133 colours where the line's other sheets
+  carry 7–8; that costs nothing in flash, since sprites are stored per-pixel and never palettised,
+  but it is why the cat does not yet sit next to Paypup as obviously one family.
 - **An egg line ships ONE egg file, not two.** `SPR_PET_EGG_PHISH_HATCH` and
   `SPR_PET_EGG_WORM_HATCH` are each an 8-frame `56×48` sheet that is both the idle loop (frames
   0–1) and the hatch one-shot (0–7, walked by `Game::hatchCrackFrame`). A separately-drawn
