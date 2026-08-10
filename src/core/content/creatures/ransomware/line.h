@@ -111,7 +111,9 @@ inline constexpr CreatureDef kRansomwareCreatures[] = {
      "A sly kitten that concatenates your files into one encrypted hairball and demands tuna to undo it.",
      "String concatenation / ransomware payloads",
      {MoveKind::Attack, MoveKind::Attack, MoveKind::Defend, MoveKind::Attack},
-     /*evolvesToTrojanId=*/nullptr, Locomotion::Walk,
+     // Ground, not Walk: a sheet that breathes on its own frames does not also want
+     // the shelf bob under it (Locomotion, defs.h).
+     /*evolvesToTrojanId=*/nullptr, Locomotion::Ground,
      /*clips=*/{{"idle", /*row=*/0, /*frames=*/8, /*holdBeats=*/2}}},
     // Kalico's sheet is four rows of 8 columns (56x48 each), one row per clip, so
     // unlike Malbear above it spends a row rather than a column range on each. All four
@@ -125,7 +127,9 @@ inline constexpr CreatureDef kRansomwareCreatures[] = {
      "A patchy calico that longs for dank hacks. It's got all of the tools but not yet the knack.",
      "Ransomware payload staging",
      {MoveKind::Attack, MoveKind::Attack, MoveKind::Defend, MoveKind::Attack},
-     /*evolvesToTrojanId=*/nullptr, Locomotion::Walk,
+     // Ground, not Walk: all four of its rows are drawn motion, so the shelf bob
+     // would land a second rise on top of them (Locomotion, defs.h).
+     /*evolvesToTrojanId=*/nullptr, Locomotion::Ground,
      /*clips=*/{{"idle", /*row=*/0, /*frames=*/8, /*holdBeats=*/2},
                 {"walk", /*row=*/1, /*frames=*/8, /*holdBeats=*/2},
                 {"attack", /*row=*/2, /*frames=*/8, /*holdBeats=*/1},
