@@ -89,7 +89,20 @@ multi-colour and correctly stayed full storage.
 
 What's left is those sheets, which are where the bytes actually are: up to 19 distinct
 colours each. 8-bit indexing is safe (~3×); 4-bit needs a per-sprite colour reduction and
-real art review. Not urgent — flash sits at 24% and tinting doesn't depend on it. Diff **L**.
+real art review. Diff **L**.
+
+**What decides when this gets pulled is the ANIMATION standard, not the roster size.** Measured
+off the ELF: the image is 33% of the 0x790000 app slot, assets are 47% of the image, and pet
+sheets are 92% of the assets — every other family together (icons, UI, backdrops, malbeasts)
+is under 8%, because the 1-bit pass above already took them. Storage is 3 B per logical px, so
+one 8-frame `448×48` row costs 64,512 B and a creature's cost is decided entirely by how many
+rows it keeps. Taking all 28 creatures to Malbear's one-row shape lands the image at 41% and
+needs nothing here. Taking them to `SPR_PET_KALICO`'s four rows needs 7.2 MB of pet art alone
+and **overflows the slot by 762 KB** — and an OTA has to fit the same-sized second slot, so
+that ceiling is hard and the partition table cannot move it (`partitions_malwarium.csv`).
+Indexed storage is what buys the four-row standard: it puts that same roster at 49%. So the
+order is *decide the per-creature row budget first*; this row is only urgent if the answer is
+"more than one".
 
 ### 1c-ii. Tinting — a second theme
 
