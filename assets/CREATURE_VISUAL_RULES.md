@@ -179,7 +179,21 @@ perfectly good reason to drop the rule entirely.
   collapse into one flat untextured blob in B&W** — adjacent masses need distinct value steps and
   a core-shadow seam between them.
 - **Cover-the-eyes test:** the body alone still reads as a solid, sculpted object.
-- **Silhouette test:** the black silhouette reads as *one clear idea* in a single glance.
+- **Silhouette test:** the black silhouette reads as *one clear idea* in a single glance — and
+  **run it against the rest of the line, not on its own.** A row can pass in isolation and still
+  be a failure, because the question a player actually asks is *which creature is this*, and a
+  silhouette that matches its cousin's answers nothing. Fill every row of a line black, put them
+  side by side, and any two that share an envelope are a bug in whichever one moved last.
+
+  What makes this bite is that **an interior feature contributes nothing at all to a silhouette.**
+  Rootgrub and Threadbore are both "a tube with a maw", and the maw is drawn *inside* the head —
+  so filled in black they were the same kidney bean and the only thing separating a Script from
+  the Daemon it grows into was a pair of wings. Nodeatode and Coaxeel were both thin squiggles,
+  three stages apart. The fix is never more detail; it is a different **envelope**: Rootgrub's
+  mouth became a flat-rimmed bell so the mouth is in the outline, Threadbore's head became a wide
+  slab, Coaxeel became a coil — the one shape in the line with a hole in it — and Shenloop became
+  a doubling-back S with a spade tail. Six rows, six envelopes, and the tool that draws them has a
+  `--preview` for exactly this.
 
 ---
 
@@ -208,11 +222,11 @@ perfectly good reason to drop the rule entirely.
   drawn: the style is mechanical enough to be code, and a recipe over it cannot express a second
   ink or a filled silhouette. Read the tool before drawing any of these by hand.
   The two Worm Daemons are what §2's *posture, not parts* looks like when a line has no cell room
-  left to spend: Shenloop is a constant-radius body reared into a folded column with its head
-  carried level off the neck, and a dorsal ridge was tried and cut for being exactly the
-  parts-list §1 bans. Its sibling takes the opposite lever — width, a bigger maw, and one fewer
-  segment chord than the row below it, because widely spaced rungs leave unbroken panels of flank
-  and the panels are what carry mass.
+  left to spend: Shenloop is a tapered body doubled back through an S with its head carried level
+  off the neck, and a dorsal ridge was tried and cut for being exactly the parts-list §1 bans. Its
+  sibling takes the opposite lever — width, a bigger maw, and one fewer segment chord than the row
+  below it, because widely spaced rungs leave unbroken panels of flank and the panels are what
+  carry mass.
   **Two reads had to be bought back after the fact, and both were the same mistake.** Rootgrub and
   Threadbore's maw is spokes around a solid mass, which is also the diagram of an EYE, and at this
   size the eye wins — both shipped reading as a fuzzy eyeball. The fix is a *lip*: a two-pixel

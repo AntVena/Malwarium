@@ -862,12 +862,40 @@ def _rootgrub_cell(head, c0, c1, mouth, teeth=8, phase=0.0):
     spine = bezier(tail, c0, c1, head)
 
     tube(cell.body, spine, r_tail, r_neck)
-    disc(cell.body, head[0], head[1], head_r)
+
+    facing = tangent(spine, 1.0)
+    # The head is a BELL, not a ball — a short tube flaring out along the facing axis
+    # from narrower than the neck to wider than it. That is the §5 silhouette test being
+    # taken seriously rather than assumed: this row's whole idea is a mouth, the mouth is
+    # drawn INSIDE the head, and an interior feature contributes nothing at all to a
+    # silhouette. Filled in black, the ball-headed version was a plain kidney bean — and
+    # so was Threadbore, which is built from the same numbers, so the Script and the
+    # Daemon it grows into were the same shape with wings. A flare puts the mouth in the
+    # OUTLINE: the creature is a stump with a trumpet on the end of it, which is what
+    # "its mouth is the widest part of it now" says on its own content row.
+    #
+    # `poly` rather than a flaring `tube`, and the difference is the whole feature. A tube
+    # is a run of stamped discs, so however hard it flares its wide end is still a round
+    # cap — filled in black that is a ball on a stick, which is the shape this was trying
+    # to stop being. Four corners give the rim a FLAT front, and a cone cut off square is
+    # the only version of this the eye names as a bell rather than as a club.
+    # The bell has to be DEEP enough along its own axis to hold the maw, which is drawn
+    # down that axis as a circle. A shallow flare is the prettier trumpet and it does not
+    # work: the mouth overruns the rim and the lips end up drawn outside the head, which
+    # reads as a broken sprite rather than as a wide one.
+    px, py = facing[1], -facing[0]
+    back, front = -6.5, 7.0
+    back_r, rim_r = r_neck * 0.60, head_r * 1.02
+    poly(cell.body, [
+        (head[0] + facing[0] * back + px * back_r, head[1] + facing[1] * back + py * back_r),
+        (head[0] + facing[0] * front + px * rim_r, head[1] + facing[1] * front + py * rim_r),
+        (head[0] + facing[0] * front - px * rim_r, head[1] + facing[1] * front - py * rim_r),
+        (head[0] + facing[0] * back - px * back_r, head[1] + facing[1] * back - py * back_r),
+    ])
 
     cell.chords(spine, (0.22, 0.46, 0.70),
                 lambda t: r_tail + (r_neck - r_tail) * t, overhang=0.3)
 
-    facing = tangent(spine, 1.0)
     # Seen down its own axis, because on this creature the mouth IS the front. Teeth
     # are sized off the head rather than in absolute px, so the maw stays in proportion
     # as it dilates instead of the fangs shrinking into a wider ring.
@@ -879,9 +907,10 @@ def _rootgrub_cell(head, c0, c1, mouth, teeth=8, phase=0.0):
     # the short version is that the mouth needs a boundary of its own, thicker than
     # every other line in the cell and inside the silhouette, plus somewhere on the head
     # that is NOT mouth for the boundary to be inside of.
-    mouth_c = (head[0] + facing[0] * head_r * 0.28,
-               head[1] + facing[1] * head_r * 0.28)
-    mouth_r = head_r * 0.66
+    # It sits in the mouth of the BELL — the widest point, at the far end of the flare,
+    # not a fraction of the way along a round head.
+    mouth_c = (head[0] + facing[0] * 0.8, head[1] + facing[1] * 0.8)
+    mouth_r = head_r * 0.58
     cell.maw(mouth_c, mouth_r, teeth=teeth,
              depth=mouth_r * (0.48 + 0.20 * mouth), phase=phase, lip=2.0)
     # The one solid mass is the THROAT, where every other row of the line spends it on
@@ -992,19 +1021,46 @@ def _shenloop_cell(pts, whisker=1.0, level=0.75):
     the list §1 bans, while a mane is local to the head the viewer is already reading and
     is the single most-named eastern-dragon tell there is.
     """
-    # Constant, and thick enough for the outline's two walls to stay a clear 3px apart
-    # around the ribbon's tightest bend. The head is still SMALL — the skull is barely
-    # wider than the body — but it is no longer round: `head_len` is what carries the
-    # snout out in front of it, and the ratio between the two is the dragon read.
-    r, skull_r, head_len, muzzle_r = 2.9, 6.2, 6.4, 2.8
+    # TAPERED, thin at the tail and thick under the head. This row spent a version
+    # constant — the argument being that a snake has no taper and that the taper is what
+    # made Nodeatode read as led by its head — and the argument was about the wrong
+    # animal. An eastern dragon is not a snake: it is heaviest at the shoulder and runs
+    # out to a whip, which is most of why the reference reads as a dragon in eight
+    # pixels. `r_tail` stays thick enough for the outline's two walls to hold a clear gap
+    # around the tightest bend, because a tube that tapers to a point stops being a body
+    # and becomes a piece of string.
+    #
+    # The head is still SMALL — the skull is barely wider than the shoulder — but it is
+    # not round: `head_len` carries the snout out in front of it, and the ratio between
+    # the two is the other half of the dragon read.
+    r_tail, r_neck = 1.9, 3.4
+    skull_r, head_len, muzzle_r = 6.2, 6.4, 2.8
     cell = Cell(CW, CH)
     spine = catmull(pts)
 
     # More steps than a Bézier body needs. This spine is roughly three times as long, and
     # the stamps have to overlap on the OUTSIDE of the sharpest bend or the outline picks
     # up notches there — which is the only place on this drawing they could appear.
-    tube(cell.body, spine, r, r, steps=320)
+    tube(cell.body, spine, r_tail, r_neck, steps=320)
     head = pts[-1]
+
+    # The tail spade. Every dragon in the reference set ends in one, and at this size it
+    # does more work than any other single mark on the body: a tapering ribbon that stops
+    # is a tail, and a tapering ribbon that stops in a widened point is a DRAGON'S tail,
+    # with nothing else in the drawing having to argue for it. It is also the cheapest
+    # possible answer to the silhouette test at the end of the body furthest from the
+    # head, which is where this creature's length puts a lot of its outline.
+    ttx, tty = tangent(spine, 0.0)
+    bx, by = -ttx, -tty                       # t=0's tangent runs INTO the body
+    spx, spy = -by, bx
+    tail0 = pts[0]
+    waist = (tail0[0] + bx * 2.4, tail0[1] + by * 2.4)
+    poly(cell.body, [
+        tail0,
+        (waist[0] + spx * 3.0, waist[1] + spy * 3.0),
+        (tail0[0] + bx * 6.2, tail0[1] + by * 6.2),
+        (waist[0] - spx * 3.0, waist[1] - spy * 3.0),
+    ])
 
     # The head is LEVELLED off the neck instead of pointing wherever the spine happens to
     # arrive, and that one rotation is most of the creature's stage read. §2 of
@@ -1063,8 +1119,8 @@ def _shenloop_cell(pts, whisker=1.0, level=0.75):
     # between the two Daemons. Rungs close together subdivide a body and make it read as
     # articulated and therefore LIGHT; this creature wants to be read as light, so it
     # takes the segmentation the fat branch gave up.
-    cell.chords(spine, (0.08, 0.20, 0.32, 0.44, 0.56, 0.67, 0.78),
-                lambda t: r, overhang=0.35)
+    cell.chords(spine, (0.14, 0.26, 0.38, 0.50, 0.62, 0.73, 0.84),
+                lambda t: r_tail + (r_neck - r_tail) * t, overhang=0.35)
 
     # The eye sits in the SKULL, not in the head as a whole — the muzzle is in front of
     # it now, and an eye placed off the combined form's centre walks out along the snout.
@@ -1103,81 +1159,99 @@ def shenloop():
 
     Four rows of four 56x48 frames, the same clip set as the two rows below it:
 
-      0  idle    4 frames — a wave travelling the length of the coil, head holding
-                            station. The one motion a body this long can make for free.
-      1  attack  4 frames — the coil GATHERS and then unwinds, throwing the head out.
-                            It has no mouth to strike with, so the body is the strike.
-      2  droop   2 frames — the coil sags open and the head comes down.
-      3  weak    2 frames — nearly uncoiled, sunk low, holding almost no shape.
+      0  idle    4 frames — the loop breathing under a head that holds station. What
+                            moves is how tightly the body is gathered, not where it is.
+      1  attack  4 frames — the loop OPENS OUT and the head is thrown along it. It has no
+                            mouth to strike with, so the body is the strike.
+      2  droop   2 frames — the loop sags wide and the head comes down onto it.
+      3  weak    2 frames — barely a loop left, head sunk almost onto the coil.
 
-    Every pose in all four rows is the same three numbers — where the tail is, where the
-    head is, and how much wave is in between — so there are no hand-placed spines here at
-    all. That is not tidiness: a body of ten points hand-placed four times is a body that
-    stops being the same animal by the fourth frame, and this creature's whole read is
-    that there is a great deal of ONE continuous thing in the cell.
+    Every pose in all four rows is the same four numbers — where the loop is centred, how
+    big it is, how much of it is missing, and where the head is carried — so there are no
+    hand-placed spines here at all. That is not tidiness: a body of thirteen points placed
+    by hand four times stops being the same animal by the fourth frame, and this
+    creature's whole read is that there is a great deal of ONE continuous thing in the
+    cell.
     """
     sheet = Sheet(4, 4, CW, CH)
 
-    def ribbon(tail, head, amp, phase):
-        """A serpent between two points, with `amp` of travelling wave in between.
-
-        The body FOLDS rather than crossing over itself, and the difference is not
-        stylistic: two lengths of a 3px-wide outlined body laid across each other merge
-        into a knot at this scale, and the read goes from "long" to "tangled" with no
-        way back. A wave doubles back three times and never touches itself, which buys
-        the same length for none of the confusion.
-        """
-        axis = [(tail[0] + (head[0] - tail[0]) * i / 9.0,
-                 tail[1] + (head[1] - tail[1]) * i / 9.0) for i in range(10)]
-        return wave(axis, amp, phase, period=6.0)
-
-    # Idle. Reared: the axis climbs three quarters of the cell's height, so the body is a
-    # column with a fold in it rather than a line crossing the floor diagonally. That is
-    # where the stage read lives — a serpent laid out flat is going somewhere and is a
-    # long worm while it does, and the same body stood up and holding still is a creature
-    # that has arrived and is waiting, which is what this row's flavour text says it does.
+    # The one hand-placed thing on this sheet, and the only thing that has to be: the S
+    # the body doubles back through. Tail first, head last.
     #
-    # The wave travels and the ENDS hold station, per `wave`'s contract, so what moves is
-    # the length of the body while the head keeps looking at one thing. For a creature
-    # with no limbs and no ground contact that is not one idle option among several — it
-    # is the only motion available at all.
-    for i in range(4):
-        sheet.place(i, 0, _shenloop_cell(
-            ribbon((6.0, 44.0), (32.0, 15.0), 7.2, 2 * math.pi * i / 4)))
+    # It is an S rather than the closed coil this row was tried as, and the reference is
+    # what settles it: an eastern dragon gathers by REVERSING — the body runs one way,
+    # turns, and runs back — and both ends finish free, which is how the tail spade and
+    # the head can each be read. A ring hides one end inside itself, and it also collides
+    # with Coaxeel, whose whole silhouette claim in this vocabulary is that it is the
+    # shape with a hole in it. Two creatures cannot both own that.
+    #
+    # Nine knots, spaced so no two runs of the body come within about eight pixels of each
+    # other. Two lengths of an outlined body laid closer than that merge into a knot at
+    # this scale and the read goes from "long" to "tangled" with no way back — the same
+    # constraint every pose in this file is built around.
+    BASE = [(19.0, 43.0), (28.0, 43.5), (33.5, 38.0), (29.0, 32.0), (20.0, 29.5),
+            (14.5, 23.5), (20.0, 17.5), (29.0, 15.0), (36.0, 13.0)]
 
-    # Attack. A serpent strikes by SPENDING its wave: it gathers by pulling its reach in
-    # and driving the amplitude up, then arrives by flattening the same body along a
-    # longer axis. Nothing is added to the drawing to make it lunge — the length that was
-    # folded up is the length that reaches, which is the one thing about a snake worth
-    # animating and is three numbers here.
+    def serpent(amp, phase, gather=1.0, drop=0.0, straight=0.0):
+        """The S, breathed by `amp`/`phase` and reshaped by the other three.
+
+        `gather` scales the whole body toward the HEAD, so a pose that pulls in keeps its
+        head where it was and draws its length in behind it — which is the way round that
+        matters, because the head is what the player is looking at. `drop` sinks it and
+        `straight` lerps every knot toward the tail-to-head chord, spending the S. Three
+        numbers instead of four hand-placed spines: a body of nine knots placed by hand
+        per frame stops being the same animal by the fourth one.
+        """
+        hx, hy = BASE[-1]
+        axis = [(hx + (x - hx) * gather, hy + (y - hy) * gather + drop) for x, y in BASE]
+        if straight > 0:
+            t0, t1, n = axis[0], axis[-1], len(axis) - 1.0
+            axis = [(x + (t0[0] + (t1[0] - t0[0]) * i / n - x) * straight,
+                     y + (t0[1] + (t1[1] - t0[1]) * i / n - y) * straight)
+                    for i, (x, y) in enumerate(axis)]
+        return wave(axis, amp, phase, period=5.0)
+
+    # Idle. A wave travels the S while both ends hold station, per `wave`'s contract, so
+    # what moves is the length of the body while the head keeps looking at one thing. For
+    # a creature with no limbs and no ground contact that is not one idle option among
+    # several; it is the only motion available at all.
+    for i in range(4):
+        sheet.place(i, 0, _shenloop_cell(serpent(2.2, 2 * math.pi * i / 4)))
+
+    # Attack. A serpent strikes by SPENDING its shape: the S flattens toward the straight
+    # run between its own two ends, and the length that was doubled back is the length
+    # that reaches. Nothing is added to the drawing to make it lunge.
     #
     # `level` is the other half of it. The head is carried level at rest and gives that up
     # on the way out, so the strike is the one moment the creature commits to a direction
     # — and the recovery frame takes the level back, which is what makes the whole clip
     # read as returning to the pose above rather than ending somewhere new.
-    for i, (tl, hd, amp, lv, wk) in enumerate([
-        ((9.0, 42.0), (27.0, 20.0), 7.0, 1.00, 1.0),
-        ((10.0, 43.0), (24.0, 23.0), 7.6, 1.00, 1.0),
-        ((6.0, 41.0), (33.0, 21.0), 3.0, 0.35, 0.8),
-        ((6.0, 40.0), (34.0, 24.0), 2.0, 0.55, 0.6),
+    for i, (amp, gather, straight, lv, wk) in enumerate([
+        (3.4, 0.94, 0.00, 1.00, 1.0),
+        (4.0, 0.88, 0.00, 1.00, 1.0),
+        (1.4, 1.02, 0.55, 0.35, 0.8),
+        (1.0, 1.04, 0.72, 0.55, 0.6),
     ]):
-        sheet.place(i, 1, _shenloop_cell(ribbon(tl, hd, amp, 0.6 * i),
-                                         whisker=wk, level=lv))
+        sheet.place(i, 1, _shenloop_cell(
+            serpent(amp, 0.6 * i, gather=gather, straight=straight),
+            whisker=wk, level=lv))
 
-    # Droop. The rear comes down and the wave goes soft: the same column with the height
+    # Droop. The S sags open and the whole body sinks: the same shape with the gathering
     # taken out of it, which on a creature whose posture IS its stage is the cheapest
     # possible way to say it is not holding itself well.
     for i in range(2):
         sheet.place(i, 2, _shenloop_cell(
-            ribbon((8.0, 43.0), (29.0, 27.0), 4.4 - 0.4 * i, 0.9 + i * math.pi),
+            serpent(1.4 - 0.2 * i, 0.9 + i * math.pi, gather=0.92, drop=4.0 + i,
+                    straight=0.30),
             level=0.85))
 
-    # Weak. Barely reared and barely waved, head sagging off the level. For a creature
-    # whose whole read is length held up against nothing, having none of it left is the
+    # Weak. Almost none of the S left and the body flat in the cell. For a creature whose
+    # whole read is a great deal of length held in a shape, having no shape left is the
     # strongest thing this sheet can say about how badly it is doing.
     for i in range(2):
         sheet.place(i, 3, _shenloop_cell(
-            ribbon((9.0, 44.0), (28.0, 33.0), 2.4 - 0.3 * i, 0.4 + i * 0.8),
+            serpent(0.8 - 0.2 * i, 0.4 + i * 0.8, gather=0.88, drop=7.0 + i,
+                    straight=0.58),
             whisker=0.55, level=0.45))
 
     return sheet
@@ -1209,7 +1283,14 @@ def _threadbore_cell(head, c0, c1, mouth, flap, teeth=8, phase=0.0):
     spine = bezier(tail, c0, c1, head)
 
     tube(cell.body, spine, r_tail, r_neck)
-    disc(cell.body, head[0], head[1], head_r)
+    # A SLAB of a head — wider than it is tall and squared off at n=3.2, where the Script
+    # row's is a round bell flaring off the neck. That contrast is deliberate and it is
+    # the §5 silhouette test, not decoration: both rows are the same tube with the same
+    # maw drawn inside it, so filled in black they were the same kidney bean and the only
+    # thing telling the Script from the Daemon was a pair of wings. The two heads now
+    # disagree in the outline — a trumpet against a slab — which is where "wider than it
+    # is long, and almost all of that is jaw" was supposed to be legible all along.
+    superellipse(cell.body, head[0], head[1], head_r * 1.02, head_r * 0.74, n=3.2)
 
     # The wings. A wing is a LIMB carrying a membrane, and drawing it as one shape rooted
     # on the back was the version that failed: a triangle hinged flush to a body this fat
@@ -1461,12 +1542,26 @@ def usbasilisk():
 
 
 def _coaxeel_cell(pts, gape=0.4, strip=1.0):
-    """One Coaxeel frame: a long low serpent whose TAIL is a cut length of coax.
+    """One Coaxeel frame: a COILED length of coax with a head on one end.
 
     The Good-care divert, and the mirror of its sibling in every way that matters. That
-    one rears and the shell is at the front; this one lies along the floor and the
-    hardware is at the back — a thing that is plugged IN against a thing that is plugged
-    in FROM. The pair is the branch, so the two poses have to disagree at a glance.
+    one rears and the shell is at the front; this one lies on the floor and the hardware
+    is at the back — a thing that is plugged IN against a thing that is plugged in FROM.
+    The pair is the branch, so the two poses have to disagree at a glance.
+
+    It is coiled because of the §5 silhouette test, and coiled specifically rather than
+    merely posed differently. Drawn as a low wave — which is what it was first — this row
+    filled in black is a thin squiggle, and so is Nodeatode: two creatures three stages
+    apart sharing an envelope, told apart only by interior detail that a silhouette by
+    definition throws away. A coil is the one shape in this vocabulary with a HOLE in it,
+    and enclosed-versus-not is the largest difference two silhouettes can have. It is also
+    the only shape that says *cable* before it says *animal*, which for this creature is
+    the right order to be read in.
+
+    The turn stops short of closing, so the body never crosses itself. Two runs of a 3px
+    outlined body laid over each other merge into a knot at this size — the same reason
+    Shenloop folds instead of coiling — and a coil that touches is a doughnut rather than
+    something wound up.
 
     Its one solid mass is at the wrong end of the creature, which no other row in this
     vocabulary has ever done: the centre conductor, standing proud of a stripped end that
@@ -1529,7 +1624,12 @@ def _coaxeel_cell(pts, gape=0.4, strip=1.0):
     facing = (math.cos(fa), math.sin(fa))
     cell.gape(head, head_r, facing, gape, teeth=2, spread=0.9)
 
-    line(cell.ink, (head[0] - 4, GROUND + 1), (head[0] + 4, GROUND + 1))
+    # The shelf mark sits under the lowest point of the COIL. On every other crawling row
+    # it goes under the tail, because the tail is what is on the floor; here the tail is
+    # held up clear of it and the loop is what rests, so a bar under either end would be a
+    # contact the drawing does not make.
+    low = max(pts, key=lambda q: q[1])
+    line(cell.ink, (low[0] - 4, GROUND + 1), (low[0] + 4, GROUND + 1))
     return cell
 
 
@@ -1538,44 +1638,68 @@ def coaxeel():
 
     Four rows of four 56x48 frames, the same clip set as every drawn row of the line:
 
-      0  idle    4 frames — a wave running the length of a body lying along the shelf.
-                            Low and long where its sibling is reared and still.
-      1  attack  4 frames — gather, strike along the floor, snap, recover.
-      2  droop   2 frames — slack, jaw hanging, the stripped end dragging.
-      3  weak    2 frames — nearly straight, mouth shut, holding no wave at all.
+      0  idle    4 frames — the coil breathing: winding a little tighter and letting go.
+                            The head holds station on the shelf while the loop works, so
+                            what moves is the slack, which is what a cable has instead of
+                            muscles.
+      1  attack  4 frames — the coil UNWINDS. It has nothing to swing, so the strike is
+                            the loop spending itself into a straight run and the head
+                            arriving at the far end of it.
+      2  droop   2 frames — the loop sags open and flattens.
+      3  weak    2 frames — barely wound at all, mouth shut, the cut end dragging.
+
+    Every pose is the same four numbers — where the coil is centred, how big it is, how
+    far round it goes and where it starts — so there are no hand-placed spines here. On a
+    shape whose whole read is that it is ONE continuous run wound up, a body placed point
+    by point four times stops being the same length by the fourth frame.
     """
     sheet = Sheet(4, 4, CW, CH)
 
-    def cable(tail, head, amp, phase):
-        axis = [(tail[0] + (head[0] - tail[0]) * i / 9.0,
-                 tail[1] + (head[1] - tail[1]) * i / 9.0) for i in range(10)]
-        return wave(axis, amp, phase, period=6.0)
+    def coil(cx, cy, r_out, r_in, a0, span, n=11):
+        """Points along an opening spiral: head at the last point, cut end at the first.
 
-    # Idle. The head is ON the shelf and the body runs back and up off it, so the cut end
-    # is the highest thing in the cell — the read starts at the mouth and is walked
-    # backwards to the plug, which is the order the creature is funny in.
+        The radius falls from `r_out` to `r_in` along the way, which is what keeps the
+        turn from closing on itself — a constant-radius arc of more than a full turn would
+        lay its own end across its own start, and at a 3px body that is a knot. It also
+        gives the coil a direction to be read in, the way a spring does.
+        """
+        return [(cx + math.cos(a0 + span * i / (n - 1.0))
+                 * (r_out + (r_in - r_out) * i / (n - 1.0)),
+                 cy + math.sin(a0 + span * i / (n - 1.0))
+                 * (r_out + (r_in - r_out) * i / (n - 1.0)))
+                for i in range(n)]
+
+    # Idle. The turn tightens and loosens by about a pixel of radius over the loop, and
+    # the head stays put — the same "the ends hold station and the body moves" contract
+    # every resting row in this file keeps, said with a radius instead of a wave.
     for i in range(4):
+        a = 2 * math.pi * i / 4
         sheet.place(i, 0, _coaxeel_cell(
-            cable((11.0, 27.0), (44.0, GROUND - 5.5), 5.4, 2 * math.pi * i / 4),
-            gape=0.34 + 0.14 * math.sin(2 * math.pi * i / 4)))
+            coil(27.0, 25.0, 15.0 + 0.7 * math.sin(a), 9.0, -0.55, -4.9),
+            gape=0.34 + 0.14 * math.sin(a)))
 
-    for i, (tl, hd, amp, g) in enumerate([
-        ((14.0, 25.0), (37.0, GROUND - 5.5), 6.4, 0.20),
-        ((15.0, 24.0), (34.0, GROUND - 5.5), 7.0, 0.85),
-        ((10.0, 28.0), (47.0, GROUND - 5.5), 2.6, 1.00),
-        ((10.0, 29.0), (48.0, GROUND - 5.5), 2.0, 0.40),
+    # Attack. The loop is spent: `span` collapses from most of a turn to almost none and
+    # the radius runs out with it, so the same length of cable that was wound up is the
+    # length that reaches. Nothing is added to the drawing to make it lunge.
+    for i, (rout, rin, a0, span, g) in enumerate([
+        (15.6, 8.4, -0.50, -5.3, 0.20),
+        (16.2, 8.0, -0.42, -5.6, 0.85),
+        (13.0, 11.5, -1.05, -2.6, 1.00),
+        (12.0, 11.0, -1.25, -1.9, 0.40),
     ]):
-        sheet.place(i, 1, _coaxeel_cell(cable(tl, hd, amp, 0.6 * i), gape=g))
+        sheet.place(i, 1, _coaxeel_cell(coil(27.0, 25.0, rout, rin, a0, span), gape=g))
 
+    # Droop. The loop sags open — a wider, shallower turn sitting lower in the cell, which
+    # on a creature whose stage read IS how tightly it is wound is the cheapest way to say
+    # it has stopped holding itself.
     for i in range(2):
         sheet.place(i, 2, _coaxeel_cell(
-            cable((12.0, 33.0), (43.0, GROUND - 5.5), 3.4 - 0.3 * i, 0.9 + i * math.pi),
-            gape=0.26))
+            coil(27.0, 29.0 + i, 14.0, 11.0 - 0.4 * i, -0.75, -4.1), gape=0.26))
 
+    # Weak. Barely a turn left in it and the cut end dragging on the shelf.
     for i in range(2):
         sheet.place(i, 3, _coaxeel_cell(
-            cable((13.0, 38.0), (42.0, GROUND - 5.5), 1.8 - 0.3 * i, 0.4 + i * 0.8),
-            gape=0.10, strip=0.85))
+            coil(27.0, 33.0 + i, 12.5, 11.5, -0.95, -3.1), gape=0.10, strip=0.85))
 
     return sheet
 
