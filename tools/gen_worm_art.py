@@ -445,7 +445,7 @@ def sample(path, n):
     return [path(i / (n - 1.0)) for i in range(n)]
 
 
-def wave(pts, amp, phase, period=3.2):
+def wave(pts, amp, phase, period=3.2, taper=0.0):
     """Push every INTERIOR point of a polyline off its own normal, in a travelling wave.
 
     The polyline counterpart of swinging a Bézier's two control points in quadrature: a
@@ -453,13 +453,24 @@ def wave(pts, amp, phase, period=3.2):
     than a lean that visits two shapes and goes back. Ends are held exactly, because on a
     resting creature it is the SPINE that moves and the head that holds station — a head
     that travels with the wave has turned an undulation into a bob.
+
+    `taper` falls the amplitude off toward the LAST point, from full at the first to
+    `1 - taper` at the last. It exists because a uniform wave and a tapered body are not
+    compatible at this scale: a body that is thin at the tail and thick at the shoulder
+    can carry big humps down at the whip end and cannot carry them up at the thick end,
+    where two limbs of the same wave will simply merge into each other. Which is also how
+    the animal works — a tail lashes and a shoulder does not — so the number that keeps
+    the drawing legible is the same number that makes the motion look right, and the
+    amplitude a recipe passes becomes the amplitude at the TAIL rather than an average
+    nothing on the body actually has.
     """
     out = [pts[0]]
+    n = len(pts) - 1.0
     for i in range(1, len(pts) - 1):
         (ax, ay), (bx, by) = pts[i - 1], pts[i + 1]
         d = math.hypot(bx - ax, by - ay) or 1.0
         nx, ny = -(by - ay) / d, (bx - ax) / d
-        k = amp * math.sin(2 * math.pi * i / period - phase)
+        k = amp * (1.0 - taper * i / n) * math.sin(2 * math.pi * i / period - phase)
         out.append((pts[i][0] + nx * k, pts[i][1] + ny * k))
     out.append(pts[-1])
     return out
@@ -1175,48 +1186,56 @@ def shenloop():
     """
     sheet = Sheet(4, 4, CW, CH)
 
-    # The one hand-placed thing on this sheet, and the only thing that has to be: the S
-    # the body doubles back through. Tail first, head last.
+    # There is nothing hand-placed on this sheet. The whole body is `wave` run along a
+    # straight tail-to-head axis, and the number that decides what the creature IS is the
+    # PERIOD.
     #
-    # It is an S rather than the closed coil this row was tried as, and the reference is
-    # what settles it: an eastern dragon gathers by REVERSING — the body runs one way,
-    # turns, and runs back — and both ends finish free, which is how the tail spade and
-    # the head can each be read. A ring hides one end inside itself, and it also collides
-    # with Coaxeel, whose whole silhouette claim in this vocabulary is that it is the
-    # shape with a hole in it. Two creatures cannot both own that.
+    # An eastern dragon does not have one bend in it. Every reference has at least an S
+    # and usually a W — three humps, the body crossing its own axis four times — and that
+    # count is not decoration, it is the read: one bend is a snake that happens to be
+    # curved, and three is a body long enough that it has to be put somewhere. The two
+    # versions this row shipped before both got that wrong in the same way while arguing
+    # about different things. A travelling wave at period 6 over nine knots is one lazy
+    # fold; a closed coil is one turn. Period 5.0 over twelve is 2.2 cycles, and 2.2
+    # cycles lands three humps in the cell.
     #
-    # Nine knots, spaced so no two runs of the body come within about eight pixels of each
-    # other. Two lengths of an outlined body laid closer than that merge into a knot at
-    # this scale and the read goes from "long" to "tangled" with no way back — the same
-    # constraint every pose in this file is built around.
-    BASE = [(19.0, 43.0), (28.0, 43.5), (33.5, 38.0), (29.0, 32.0), (20.0, 29.5),
-            (14.5, 23.5), (20.0, 17.5), (29.0, 15.0), (36.0, 13.0)]
+    # The axis runs DIAGONALLY corner to corner, because humps need length and 51px of
+    # diagonal is the most this cell has. That length is also the whole budget: at 4px of
+    # body at the tail and 7px at the shoulder, two limbs of the wave closer than about
+    # nine pixels merge into a knot, and the read goes from "long" to "tangled" with no
+    # way back. Half a wavelength here is 11px, which is the entire margin — the earlier
+    # attempt at a genuine three-cycle W had 6px of half-wavelength and drew a tangle.
+    # That is the real reason `wave` grew a taper: the amplitude a W wants at the whip end
+    # is more than the shoulder end can survive, so it has to be two numbers.
+    TAIL, HEAD = (4.0, 44.0), (38.0, 13.0)
 
-    def serpent(amp, phase, gather=1.0, drop=0.0, straight=0.0):
-        """The S, breathed by `amp`/`phase` and reshaped by the other three.
+    def serpent(amp, phase, period=5.0, gather=1.0, drop=0.0, straight=0.0,
+                taper=0.55, n=12):
+        """The W, breathed by `amp`/`phase` and reshaped by the other three.
 
-        `gather` scales the whole body toward the HEAD, so a pose that pulls in keeps its
-        head where it was and draws its length in behind it — which is the way round that
-        matters, because the head is what the player is looking at. `drop` sinks it and
-        `straight` lerps every knot toward the tail-to-head chord, spending the S. Three
-        numbers instead of four hand-placed spines: a body of nine knots placed by hand
-        per frame stops being the same animal by the fourth one.
+        `gather` scales the axis toward the HEAD, so a pose that pulls in keeps its head
+        where it was and draws its length in behind it — which is the way round that
+        matters, because the head is what the player is looking at. `drop` sinks it, and
+        `straight` is spent by raising `period` and dropping `amp` at the call site, since
+        on a wave-built body those two ARE how much shape is left in it.
         """
-        hx, hy = BASE[-1]
-        axis = [(hx + (x - hx) * gather, hy + (y - hy) * gather + drop) for x, y in BASE]
+        hx, hy = HEAD
+        axis = [(hx + (TAIL[0] + (hx - TAIL[0]) * i / (n - 1.0) - hx) * gather,
+                 hy + (TAIL[1] + (hy - TAIL[1]) * i / (n - 1.0) - hy) * gather + drop)
+                for i in range(n)]
         if straight > 0:
-            t0, t1, n = axis[0], axis[-1], len(axis) - 1.0
-            axis = [(x + (t0[0] + (t1[0] - t0[0]) * i / n - x) * straight,
-                     y + (t0[1] + (t1[1] - t0[1]) * i / n - y) * straight)
+            t0, t1 = axis[0], axis[-1]
+            axis = [(x + (t0[0] + (t1[0] - t0[0]) * i / (n - 1.0) - x) * straight,
+                     y + (t0[1] + (t1[1] - t0[1]) * i / (n - 1.0) - y) * straight)
                     for i, (x, y) in enumerate(axis)]
-        return wave(axis, amp, phase, period=5.0)
+        return wave(axis, amp, phase, period=period, taper=taper)
 
     # Idle. A wave travels the S while both ends hold station, per `wave`'s contract, so
     # what moves is the length of the body while the head keeps looking at one thing. For
     # a creature with no limbs and no ground contact that is not one idle option among
     # several; it is the only motion available at all.
     for i in range(4):
-        sheet.place(i, 0, _shenloop_cell(serpent(2.2, 2 * math.pi * i / 4)))
+        sheet.place(i, 0, _shenloop_cell(serpent(6.5, 2 * math.pi * i / 4)))
 
     # Attack. A serpent strikes by SPENDING its shape: the S flattens toward the straight
     # run between its own two ends, and the length that was doubled back is the length
@@ -1226,23 +1245,22 @@ def shenloop():
     # on the way out, so the strike is the one moment the creature commits to a direction
     # — and the recovery frame takes the level back, which is what makes the whole clip
     # read as returning to the pose above rather than ending somewhere new.
-    for i, (amp, gather, straight, lv, wk) in enumerate([
-        (3.4, 0.94, 0.00, 1.00, 1.0),
-        (4.0, 0.88, 0.00, 1.00, 1.0),
-        (1.4, 1.02, 0.55, 0.35, 0.8),
-        (1.0, 1.04, 0.72, 0.55, 0.6),
+    for i, (amp, per, gather, lv, wk) in enumerate([
+        (7.6, 4.7, 0.92, 1.00, 1.0),
+        (8.4, 4.5, 0.86, 1.00, 1.0),
+        (3.2, 6.4, 1.02, 0.35, 0.8),
+        (2.0, 7.4, 1.05, 0.55, 0.6),
     ]):
         sheet.place(i, 1, _shenloop_cell(
-            serpent(amp, 0.6 * i, gather=gather, straight=straight),
-            whisker=wk, level=lv))
+            serpent(amp, 0.6 * i, period=per, gather=gather), whisker=wk, level=lv))
 
     # Droop. The S sags open and the whole body sinks: the same shape with the gathering
     # taken out of it, which on a creature whose posture IS its stage is the cheapest
     # possible way to say it is not holding itself well.
     for i in range(2):
         sheet.place(i, 2, _shenloop_cell(
-            serpent(1.4 - 0.2 * i, 0.9 + i * math.pi, gather=0.92, drop=4.0 + i,
-                    straight=0.30),
+            serpent(4.6 - 0.4 * i, 0.9 + i * math.pi, period=5.6, gather=0.94,
+                    drop=3.0 + i),
             level=0.85))
 
     # Weak. Almost none of the S left and the body flat in the cell. For a creature whose
@@ -1250,8 +1268,8 @@ def shenloop():
     # strongest thing this sheet can say about how badly it is doing.
     for i in range(2):
         sheet.place(i, 3, _shenloop_cell(
-            serpent(0.8 - 0.2 * i, 0.4 + i * 0.8, gather=0.88, drop=7.0 + i,
-                    straight=0.58),
+            serpent(2.6 - 0.4 * i, 0.4 + i * 0.8, period=6.4, gather=0.90,
+                    drop=5.0 + i),
             whisker=0.55, level=0.45))
 
     return sheet
