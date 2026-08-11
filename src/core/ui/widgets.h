@@ -67,6 +67,34 @@ void drawTextMarquee(Framebuffer& fb, int x, int y, int w, const char* s,
 void drawLabelValue(Framebuffer& fb, int x, int y, const char* label, Rgb565 labelCol,
                     const char* value, Rgb565 valueCol, int beat, bool scroll);
 
+// --- The fragmentation dither -----------------------------------------------
+//
+// Fragmentation is the one stat drawn as something still HAPPENING rather than as
+// a level: its pixels are rolled fresh from `beat`, so the pattern reshuffles every
+// repaint and the disk reads as actively garbling itself. Both screens that show
+// fragmentation go through these two calls so they say it the same way — the FRAG
+// gauge's frontier cell (drawGauge below) and Disk Decryption's played rows
+// (decryption_screen.h). Anything else that grows a fragmentation read should join
+// them here rather than rolling its own dither.
+//
+// Re-rolling is not decoration. Rolls collide, so the sub-cells lit by ONE roll are a
+// sample of the damage rather than a count of it — 4 rolls land as anywhere from 1 to
+// 4 blocks. Held still, a screen shows the player a single draw and invites them to
+// read it as the number; re-rolled per beat, the samples average back to the true
+// figure over the frames they watch.
+
+// Fills `lit` with `draws` rolls into a 3x3 grid, from `seed`. Rolls collide, so
+// fewer than `draws` sub-cells light: the shortfall is RETURNED as the collision
+// debt, which the gauge spends bleeding holes backward into the cell behind the
+// frontier. Salt `seed` per site (cell index, row) or neighbouring dithers shuffle
+// in lockstep and read as one flashing block rather than as noise.
+int fragDitherPattern(bool lit[9], int draws, uint32_t seed);
+
+// Paints a 3x3 sub-grid of `c` inside (x,y,w,h) per `lit` (row-major), absorbing
+// any rounding at the far edge so the sub-cells tile the box exactly.
+void drawSubGrid(Framebuffer& fb, int x, int y, int w, int h, const bool lit[9],
+                 Rgb565 c);
+
 // Segmented 10-cell gauge in the box (x,y,w,h). `value` 0..100 sets lit cells
 // (floor(value/10)). Vitality/Hazard polarity is already baked into `zone`.
 // fragRamp=true tints lit cells purple->pink by position instead of by zone.

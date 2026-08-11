@@ -17,7 +17,13 @@ class DiskDecryption;
 // is information the standard rules keep anonymous, and why nothing but the arcade's
 // easy cabinet may pass true. `arcade` swaps the prize line, which is otherwise priced
 // in incubation a cabinet run doesn't have.
+//
+// `beat` re-rolls the corruption dither on every repaint. A played row's damage is
+// drawn as rolls into a 3x3 grid that may collide, so any ONE frame is a sample of the
+// damage and not a reading of it; animating it lets the eye average the samples back
+// into the real number. It shares the dither with the FRAG gauge (widgets.h), because
+// both are drawing the same stat.
 void drawDiskDecryption(Framebuffer& fb, const DiskDecryption& d, bool showExactHints,
-                      bool arcade);
+                        bool arcade, int beat);
 
 }  // namespace mal

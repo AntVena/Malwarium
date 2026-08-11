@@ -8,6 +8,7 @@
 #include "core/render/framebuffer.h"
 #include "core/render/palette.h"
 #include "core/ui/layout.h"
+#include "core/ui/widgets.h"
 
 namespace mal {
 
@@ -59,32 +60,29 @@ void strokeRect(Framebuffer& fb, int x, int y, int w, int h, int t, Rgb565 c) {
     fb.fillRect(x + w - t, y, t, h, c);
 }
 
-uint32_t lcgNext(uint32_t& s) {
-    s = s * 1664525u + 1013904223u;
-    return s;
-}
-
-// Corrupt a cell the way the STAT page corrupts the Fragmentation gauge: the cell is a
-// 3x3 sub-grid, and damage is sub-blocks that AREN'T THERE — punched back to paper, not
-// tinted. Rolls are allowed to collide, so the damage clumps instead of spreading
-// evenly, and a colour eaten down to two blocks reads as a colour under attack rather
-// than as a different colour.
+// Corrupt a cell the way the STAT page corrupts the Fragmentation gauge — the same
+// dither, through the same call (widgets.h): the cell is a 3x3 sub-grid, and damage is
+// sub-blocks that AREN'T THERE, punched back to paper rather than tinted. Rolls are
+// allowed to collide, so the damage clumps instead of spreading evenly, and a colour
+// eaten down to two blocks reads as a colour under attack rather than as a different
+// colour.
 //
 // This is the board's one piece of ambient feedback: a row's answer is two numbers the
 // player has to hold in their head, and the holes turn the same fact into something the
 // eye reads without counting. It never says WHICH cell is wrong (that is the easy
 // setting's job, below) — a whole row is eaten together.
-void punchCorruption(Framebuffer& fb, int x, int y, int rolls, uint32_t& seed) {
+//
+// The roll is RE-DRAWN EVERY BEAT, which is what makes it honest. `rolls` collisions
+// mean one frame's holes are a sample of the damage rather than a measure of it: three
+// rolls can land as three holes or as one. Holding a single sample still would show the
+// player one draw and let them read it as the number. Re-rolling averages the samples
+// out over the frames they watch, so the hole count converges on the damage — and the
+// motion is the point besides, since fragmentation is something the disk is DOING.
+void punchCorruption(Framebuffer& fb, int x, int y, int rolls, uint32_t seed) {
     if (rolls <= 0) return;
-    const Rgb565 paper = palColor(Pal::PAPER);
-    const int sw = kCellW / 3, sh = kCellH / 3;
-    for (int k = 0; k < rolls; ++k) {
-        const int idx = static_cast<int>(lcgNext(seed) % 9u);
-        const int row = idx / 3, col = idx % 3;
-        const int bw = (col == 2) ? kCellW - 2 * sw : sw;
-        const int bh = (row == 2) ? kCellH - 2 * sh : sh;
-        fb.fillRect(x + col * sw, y + row * sh, bw, bh, paper);
-    }
+    bool holes[9];
+    fragDitherPattern(holes, rolls, seed);
+    drawSubGrid(fb, x, y, kCellW, kCellH, holes, palColor(Pal::PAPER));
 }
 
 // The key cells on a lost board, drawn small and right-aligned. Returns the x it
@@ -104,7 +102,7 @@ int drawRevealedKey(Framebuffer& fb, const DiskDecryption& d) {
 }  // namespace
 
 void drawDiskDecryption(Framebuffer& fb, const DiskDecryption& d, bool showExactHints,
-                        bool arcade) {
+                        bool arcade, int beat) {
     fb.clear(palColor(Pal::PAPER));
 
     const char* title = "DISK DECRYPTION";
@@ -119,12 +117,14 @@ void drawDiskDecryption(Framebuffer& fb, const DiskDecryption& d, bool showExact
         if (r < played) {                                   // a played row + its answer
             const DiskDecryption::Row& row = d.row(r);
             const int corruption = d.corruption(r);
-            // One stream per row, seeded off what the row IS rather than off the beat,
-            // so the corruption holds still between repaints instead of crawling.
-            uint32_t seed = 1u + static_cast<uint32_t>(r) * 7919u +
-                            static_cast<uint32_t>(corruption) * 131u +
-                            static_cast<uint32_t>(row.slots[0]) * 17u;
+            // Seeded off the beat so the damage re-rolls every repaint, and off what the
+            // row IS so the rows aren't all shuffling the same pattern in lockstep.
+            const uint32_t rowSeed = 1u + static_cast<uint32_t>(beat) * 977u +
+                                     static_cast<uint32_t>(r) * 7919u +
+                                     static_cast<uint32_t>(corruption) * 131u +
+                                     static_cast<uint32_t>(row.slots[0]) * 17u;
             for (int s = 0; s < kDecryptionSlots; ++s) {
+                const uint32_t seed = rowSeed + static_cast<uint32_t>(s) * 6151u;
                 fb.fillRect(cellX(s), y, kCellW, kCellH, colourOf(row.slots[s]));
                 // EASY spends the corruption PER CELL, which is what gives the setting
                 // away: a cell that was exactly right stays clean, so the overlay stops

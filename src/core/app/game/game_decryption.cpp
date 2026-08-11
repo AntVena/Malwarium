@@ -65,7 +65,7 @@ void Game::finishDecryption() {
 }
 
 void Game::drawDecryption(Framebuffer& fb) const {
-    drawDiskDecryption(fb, decryption_, decryptionEasy_, arcadeRun_);
+    drawDiskDecryption(fb, decryption_, decryptionEasy_, arcadeRun_, beat_);
 }
 
 }  // namespace mal

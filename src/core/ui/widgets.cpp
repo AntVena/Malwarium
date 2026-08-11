@@ -81,7 +81,20 @@ uint32_t lcgNext(uint32_t& s) {
     return s;
 }
 
-// Draws a 3x3 sub-grid of `c`/empty within (x,y,w,h) per `lit[9]` (row-major).
+} // namespace
+
+int fragDitherPattern(bool lit[9], int draws, uint32_t seed) {
+    for (int j = 0; j < 9; ++j) lit[j] = false;
+    uint32_t s = seed;
+    int distinct = 0;
+    for (int k = 0; k < draws; ++k) {
+        const int idx = static_cast<int>(lcgNext(s) % 9u);
+        if (!lit[idx]) ++distinct;
+        lit[idx] = true;
+    }
+    return draws - distinct;      // collisions -> spillover debt
+}
+
 void drawSubGrid(Framebuffer& fb, int x, int y, int w, int h, const bool lit[9],
                  Rgb565 c) {
     const int sw = w / 3;
@@ -96,8 +109,6 @@ void drawSubGrid(Framebuffer& fb, int x, int y, int w, int h, const bool lit[9],
         fb.fillRect(sx, sy, fw, fh, c);
     }
 }
-
-} // namespace
 
 void drawGauge(Framebuffer& fb, int x, int y, int w, int h, int value,
                Zone zone, bool fragRamp, bool pulseOn, int beat) {
@@ -120,16 +131,9 @@ void drawGauge(Framebuffer& fb, int x, int y, int w, int h, int value,
         if (frac10 > 0 && full < cells) {
             hasFrontier = true;
             const int draws = (frac10 * 9 + 5) / 10;  // round frac10/10 * 9 sub-cells
-            uint32_t s1 = static_cast<uint32_t>(beat) * 977u + 101u +
-                          static_cast<uint32_t>(value) * 7u + 1u;
-            int distinct = 0;
-            bool seen[9] = {};
-            for (int k = 0; k < draws; ++k) {
-                const int idx = static_cast<int>(lcgNext(s1) % 9u);
-                if (!seen[idx]) { seen[idx] = true; ++distinct; }
-                frontierLit[idx] = true;
-            }
-            const int debt = draws - distinct;      // collisions -> spillover debt
+            const uint32_t s1 = static_cast<uint32_t>(beat) * 977u + 101u +
+                                static_cast<uint32_t>(value) * 7u + 1u;
+            const int debt = fragDitherPattern(frontierLit, draws, s1);
             if (debt > 0 && full - 1 >= 0) {
                 hasBleed = true;
                 uint32_t s2 = static_cast<uint32_t>(beat) * 131u + 202u +
