@@ -76,7 +76,7 @@ window.PEDIA_DATA = {
       "stageName": "Daemon",
       "line": "ransomware",
       "evolvesTo": [],
-      "hint": "Roaming the Napstorrent Moors and decrypting hard drives in need, it bears a suspicious resemblence the exiled heir to the throne of the Lockshund kingdom...",
+      "hint": "Roaming the Napstorrent Moors and decrypting hard drives in need, it bears a suspicious resemblence to Priince Sauspionage, the exiled heir to the throne of the Lockshund kingdom...",
       "context": "Wire transfers - a ransom paid down, a debt taken up",
       "sprite": "assets/sprites/SPR_PET_WIRE_HEIR.png",
       "cellW": 96,

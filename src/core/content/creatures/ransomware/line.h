@@ -53,7 +53,7 @@ inline constexpr CreatureDef kRansomwareCreatures[] = {
     // as one very wide frame.
     {"wire_heir", "Wire Heir", Stage::Daemon, "SPR_PET_WIRE_HEIR",
      nullptr, nullptr, nullptr, kBranchGoodPowerPct, kBranchGoodFragPct, "ransomware",
-     "Roaming the Napstorrent Moors and decrypting hard drives in need, it bears a suspicious resemblence the exiled heir to the throne of the Lockshund kingdom...",
+     "Roaming the Napstorrent Moors and decrypting hard drives in need, it bears a suspicious resemblence to Priince Sauspionage, the exiled heir to the throne of the Lockshund kingdom...",
      "Wire transfers - a ransom paid down, a debt taken up",
      {MoveKind::Attack, MoveKind::Defend, MoveKind::Defend, MoveKind::Defend},
      // Ground rather than Walk: its sheet already breathes on its own frames, and the
