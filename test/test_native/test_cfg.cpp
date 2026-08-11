@@ -5,6 +5,8 @@
 // feature whose field it migrates, not in a migrations pile of its own.
 #include "test_gates.h"
 
+#include "core/ui/layout.h"  // listScrollTop — the shared list-window offset
+
 // CFG UI Mode toggle is wired to the live Game::setUiMode: cycle the
 // option, B applies and changes the carousel presentation in-menu.
 void test_cfg_uimode_toggle() {
@@ -151,18 +153,18 @@ void test_cfg_radio_rows_follow_arbiter_priority() {
 // helper keeps the cursor on-screen and clamps to a valid window.
 void test_cfg_list_scroll_offset() {
     // Fits entirely: never scrolls.
-    CHECK(cfgScrollTop(0, 6, 6) == 0);
-    CHECK(cfgScrollTop(5, 6, 6) == 0);
+    CHECK(listScrollTop(0, 6, 6) == 0);
+    CHECK(listScrollTop(5, 6, 6) == 0);
     // Overflows (10 rows, 6 visible): top rows show window 0; the cursor stays
     // pinned to the bottom visible slot as it descends; clamps at n-visible.
-    CHECK(cfgScrollTop(0, 10, 6) == 0);
-    CHECK(cfgScrollTop(5, 10, 6) == 0);      // last fully-visible row at window 0
-    CHECK(cfgScrollTop(6, 10, 6) == 1);      // one past -> scroll by 1
-    CHECK(cfgScrollTop(9, 10, 6) == 4);      // last row -> max window (10-6)
+    CHECK(listScrollTop(0, 10, 6) == 0);
+    CHECK(listScrollTop(5, 10, 6) == 0);      // last fully-visible row at window 0
+    CHECK(listScrollTop(6, 10, 6) == 1);      // one past -> scroll by 1
+    CHECK(listScrollTop(9, 10, 6) == 4);      // last row -> max window (10-6)
     // The live table, whatever its current length, always keeps the last row visible.
     const CfgRow* rows = nullptr;
     const int n = cfgRows(rows);
-    const int top = cfgScrollTop(n - 1, n, 6);
+    const int top = listScrollTop(n - 1, n, 6);
     CHECK(top >= 0);
     CHECK(n - 1 >= top);                       // cursor at or after the window start
     CHECK(n - 1 < top + 6);                    // ...and within the visible window

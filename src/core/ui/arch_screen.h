@@ -20,6 +20,10 @@ class ContentRegistry;
 // rack entries; the trailing rows are RETIRED/CORRUPTED records (greyed, no slot —
 // they don't count toward `SLOTS n/N`). `cursor` is the focused row. `maxSlots` is
 // the rack capacity (kRackSlots + any Containment Rack Slot purchases).
+//
+// The three sections share one row space, and it outgrows the screen: capacity is
+// purchasable and records only accumulate. The list draws a kVisibleRows window
+// that follows `cursor`, with the slim scrollbar items/mods/cfg use.
 void drawArchList(Framebuffer& fb, const ContentRegistry& reg,
                   const CreatureDef* active, const std::vector<SaveStoredPet>& rack,
                   const std::vector<SaveRecord>& records, int cursor, int maxSlots);

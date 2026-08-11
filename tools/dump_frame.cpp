@@ -33,7 +33,9 @@
 //             group screens, and radio is seeded with a live arbiter owner —
 //             "idle" seeds nothing on air, "all" seeds every toggle on under a
 //             running update job)
-//        arch [stored] [detail] [confirm]
+//        arch [stored] [rackfull] [row:<n>] [detail] [confirm] (rackfull buys slots
+//             and fills them, so the list overflows kVisibleRows and scrolls;
+//             row:<n> walks the cursor down it)
 //        train [trainpicker] · combat [override] [stats] (the raw dev hook) ·
 //        simbattle [fight [stats]] (the REAL entry — buffs carried in from outside,
 //             e.g. armbuffs simbattle fight stats) · malbear
@@ -131,6 +133,16 @@ int main(int argc, char** argv) {
     if (hasFlag(argc, argv, "textonly")) game.setUiMode(UiMode::TextOnly);
     // ARCH rack: seed a frozen stored pet so the rack list / Deploy record render.
     if (hasFlag(argc, argv, "stored")) game.debugSeedRack("cryptoshell");
+    // ...and the overflowing rack: buy past kRackSlots and fill every slot, which is
+    // the state the list has to WINDOW rather than draw straight down the screen.
+    if (hasFlag(argc, argv, "rackfull")) {
+        game.debugSetBits(1 << 16);
+        for (int i = 0; i < 4; ++i) game.debugBuyRackSlotUpgrade();
+        static const char* const kSeed[] = {"cryptoshell", "phishlet", "tadpoll",
+                                            "croaken",     "paypup",   "malbear",
+                                            "clickbait",   "spamwhale"};
+        for (const char* id : kSeed) game.debugSeedRack(id);
+    }
     // CSF: drive the pet to the 5/5 dying state so the ageing window can expire.
     if (hasFlag(argc, argv, "csf")) game.model().setCareMistakes(kCareDying);
     // Achievement banner: earn one and let the next tick raise its announcement over the
@@ -411,6 +423,12 @@ int main(int argc, char** argv) {
         enterSlot(SubmenuId::Arch);
         if (hasFlag(argc, argv, "stored"))           // focus the stored pet row
             game.onButton({Button::A, true, false});
+        // "row:<n>" walks the cursor down the rack, which is how a windowed list is
+        // looked at: the rows on screen only change once the cursor leaves the window.
+        for (int i = 3; i < argc; ++i)
+            if (std::strncmp(argv[i], "row:", 4) == 0)
+                for (int k = std::atoi(argv[i] + 4); k > 0; --k)
+                    game.onButton({Button::A, true, false});
         if (hasFlag(argc, argv, "detail")) game.onButton({Button::B, true, false});
         if (hasFlag(argc, argv, "confirm")) {        // open the Store/Deploy confirm
             game.onButton({Button::B, true, false}); // record -> confirm

@@ -44,8 +44,19 @@ constexpr int kRowIcon = 20;  // the 20x20 icon tier (VISUAL_LANGUAGE §3.1)
 
 // Rows that fit between kRowTop and the bottom hint band. A list longer than
 // this scrolls rather than growing the screen; the scrollbar geometry in
-// items/mods/cfg is all derived from it.
+// arch/items/mods/cfg is all derived from it.
 constexpr int kVisibleRows = 6;
+
+// The first visible row when a `n`-row list is focused on `cursor`: it holds the
+// cursor inside the window and clamps to a window that exists. A scrolling list
+// derives both the rows it draws AND its scrollbar thumb from this one number, so
+// the two cannot disagree about where the list is.
+constexpr int listScrollTop(int cursor, int n, int visible) {
+    if (n <= visible) return 0;
+    const int top = cursor >= visible ? cursor - visible + 1 : 0;
+    const int maxTop = n - visible;
+    return top < 0 ? 0 : (top > maxTop ? maxTop : top);
+}
 
 // Text line pitch for a block of prose or a stacked multi-line row — one glyph
 // height plus leading.

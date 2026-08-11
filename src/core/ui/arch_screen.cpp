@@ -1,5 +1,6 @@
 #include "core/ui/arch_screen.h"
 
+#include <algorithm>
 #include <cstdio>
 
 #include "core/content/registry.h"
@@ -58,26 +59,45 @@ void drawArchList(Framebuffer& fb, const ContentRegistry& reg,
         return;
     }
 
-    int y = kRowTop;
-    int row = 0;
-    if (active) {
-        rackRow(fb, y, cursor == row, ASSET_ICON_ARCH_SLOT, active->displayName,
-                stageName(active->stage), "ACTIVE", palColor(Pal::ACCENT));
-        ++row;
+    // The three sections are one flat row space, in the order the cursor walks
+    // them (Game::onArchList): the active pet, then the frozen rack, then the
+    // records. Capacity is purchasable to kRackSlots + kRackSlotUpgradeMax and
+    // records only ever accumulate, so the list outgrows the screen — it takes a
+    // kVisibleRows window onto that space rather than drawing every row and
+    // running off the bottom.
+    const int activeRows = active ? 1 : 0;
+    const int rackRows = static_cast<int>(rack.size());
+    const int n = activeRows + rackRows + static_cast<int>(records.size());
+
+    const int scrollTop = listScrollTop(cursor, n, kVisibleRows);
+
+    for (int v = 0; v < kVisibleRows && scrollTop + v < n; ++v) {
+        const int i = scrollTop + v;
+        const int y = kRowTop + v * kRowH;
+        if (i < activeRows) {
+            rackRow(fb, y, i == cursor, ASSET_ICON_ARCH_SLOT, active->displayName,
+                    stageName(active->stage), "ACTIVE", palColor(Pal::ACCENT));
+        } else if (i < activeRows + rackRows) {
+            const CreatureDef* c = reg.creature(rack[i - activeRows].id);
+            rackRow(fb, y, i == cursor, ASSET_ICON_ARCH_SLOT, c ? c->displayName : "?",
+                    c ? stageName(c->stage) : "-", "FROZEN", palColor(Pal::INK_DIM));
+        } else {
+            // RETIRED/CORRUPTED records: greyed, no slot, read-only.
+            const SaveRecord& rec = records[i - activeRows - rackRows];
+            const CreatureDef* c = reg.creature(rec.id);
+            rackRow(fb, y, i == cursor, ASSET_ICON_ARCH_SLOT_RETIRED,
+                    c ? c->displayName : "?", c ? stageName(c->stage) : "-",
+                    recordStatusTag(rec), palColor(Pal::INK_DIM));
+        }
     }
-    for (int i = 0; i < static_cast<int>(rack.size()); ++i, ++row) {
-        y += kRowH;
-        const CreatureDef* c = reg.creature(rack[i].id);
-        rackRow(fb, y, cursor == row, ASSET_ICON_ARCH_SLOT, c ? c->displayName : "?",
-                c ? stageName(c->stage) : "-", "FROZEN", palColor(Pal::INK_DIM));
-    }
-    // RETIRED/CORRUPTED records: greyed, no slot, read-only.
-    for (int i = 0; i < static_cast<int>(records.size()); ++i, ++row) {
-        y += kRowH;
-        const CreatureDef* c = reg.creature(records[i].id);
-        rackRow(fb, y, cursor == row, ASSET_ICON_ARCH_SLOT_RETIRED,
-                c ? c->displayName : "?", c ? stageName(c->stage) : "-",
-                recordStatusTag(records[i]), palColor(Pal::INK_DIM));
+
+    if (n > kVisibleRows) {  // slim scrollbar (UI_SCROLLBAR)
+        const int barX = kActiveW - 3;
+        const int trackH = kVisibleRows * kRowH;
+        fb.fillRect(barX, kRowTop, 2, trackH, palColor(Pal::TRACK));
+        const int thumbH = std::max(8, trackH * kVisibleRows / n);
+        const int thumbY = kRowTop + trackH * scrollTop / n;
+        fb.fillRect(barX, thumbY, 2, thumbH, palColor(Pal::INK_DIM));
     }
 }
 

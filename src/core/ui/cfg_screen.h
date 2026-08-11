@@ -64,11 +64,6 @@ CfgScreen cfgParentGroup(CfgScreen s);
 // Human-readable UI Mode label (shared by the list preview + the toggle screen).
 const char* uiModeName(UiMode m);
 
-// Cursor-following scroll offset: the top row index to draw so a list of
-// `n` rows showing `visible` at once keeps `cursor` on-screen. Clamped to
-// [0, n-visible]; returns 0 when the whole list fits. Pure — unit-tested.
-int cfgScrollTop(int cursor, int n, int visible);
-
 // L2 settings list. `hackerTag` drives the HACKERTAG row's value preview,
 // `equippedTitle` the TITLE row's (the equipped Title name, or "NONE"), and
 // `radioOwner` the RADIO row's — the row previews what the radio is DOING, not

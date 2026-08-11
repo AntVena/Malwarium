@@ -94,14 +94,6 @@ void radioRow(Framebuffer& fb, int y, const CfgRow& row, bool focused, bool on,
 
 } // namespace
 
-int cfgScrollTop(int cursor, int n, int visible) {
-    if (n <= visible) return 0;
-    int top = 0;
-    if (cursor < top) top = cursor;
-    if (cursor >= top + visible) top = cursor - visible + 1;
-    return std::max(0, std::min(top, n - visible));
-}
-
 const char* uiModeName(UiMode m) {
     switch (m) {
         case UiMode::IconsLabel: return "ICONS+LABEL";
@@ -201,7 +193,7 @@ void drawCfgList(Framebuffer& fb, int cursor, const char* hackerTag,
     // Scroll a cursor-following window when the list is taller than the viewport
     // (mirrors items_screen). Every CFG row is selectable, so no header-skipping.
     // The release table fits exactly, so this only ever engages in a dev build.
-    const int scrollTop = cfgScrollTop(cursor, n, kVisibleRows);
+    const int scrollTop = listScrollTop(cursor, n, kVisibleRows);
 
     for (int v = 0; v < kVisibleRows && scrollTop + v < n; ++v) {
         const int i = scrollTop + v;
