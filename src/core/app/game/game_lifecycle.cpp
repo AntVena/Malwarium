@@ -335,22 +335,39 @@ void Game::fireEvolution() {
     const char* id = evolutionTargetId();
     const CreatureDef* next = id ? registry_.creature(id) : nullptr;
     if (!next) return;
-    // Cross-line Trojan infiltration: a Process pet with a divert target has a
+    // Cross-line Trojan infiltration: a pet whose row names a divert target has a
     // kTrojanDivertPct chance to become a Trojan instead of its normal successor. Rolled
     // once here — fireEvolution runs once per boundary, whereas evolutionTargetId is
     // const and called repeatedly, so the roll can't live there. Same LCG as the hatch draw.
+    //
+    // The ROW is the gate, not the stage. This used to test `stage == Process`, from when
+    // the only divert in the roster was Phishlet's and a Trojan was by definition a Script
+    // you got instead of your own. The Worm line diverts one boundary later — Rootgrub
+    // trades its Daemon for one, not its Script — and a stage test here would have made
+    // that a second mechanism rather than the same one used twice. Nothing is lost by
+    // dropping it: a creature with no successor never reaches fireEvolution at all, and a
+    // row that must not divert says so by leaving evolvesToTrojanId null.
+    //
     // An armed Ambig-USB (forceTrojanDivert_, save v28) skips the roll and guarantees
     // the divert instead; consumed here either way, even if there's no divert target
     // to trigger (the flag doesn't linger onto the pet's next lifecycle).
-    if (pet_ && pet_->stage == Stage::Process) {
+    if (pet_) {
         const bool forced = forceTrojanDivert_;
         forceTrojanDivert_ = false;
         if (pet_->evolvesToTrojanId) {
             rng_ = rng_ * 1664525u + 1013904223u;
             const bool rolled = (rng_ >> 16) % 100 < static_cast<uint32_t>(kTrojanDivertPct);
-            if (forced || rolled)
-                if (const CreatureDef* t = registry_.creature(pet_->evolvesToTrojanId))
+            if (forced || rolled) {
+                // A divert that lands on a Daemon is a BRANCH, read off the same care
+                // budget the normal Script->Daemon hop reads (evolutionTargetId). The
+                // divert takes the pet's line away from it; it does not also take away
+                // the one thing the player spent the whole stage deciding.
+                const char* to = pet_->evolvesToTrojanId;
+                if (pet_->evolvesToTrojanBadId && model_.careBranch() == CareBranch::Bad)
+                    to = pet_->evolvesToTrojanBadId;
+                if (const CreatureDef* t = registry_.creature(to))
                     next = t;
+            }
         }
     }
     evolveTo_ = next;           // pet_ holds the OLD sprite through the cinematic

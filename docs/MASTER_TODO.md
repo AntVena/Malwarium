@@ -46,9 +46,10 @@ at all, since its score is always 0 or absent. |
 
 ### 1a-ii. Evolution routing — one weighted edge list per creature
 
-`CreatureDef` carries four optional successor pointers (`evolvesToId`, `evolvesToGoodId`,
-`evolvesToBadId`, `evolvesToTrojanId`) and `kDaemonPools` carries a fifth route in a table beside
-them — five mechanisms for one question. [`CONTENT_STANDARD.md`](../src/core/content/CONTENT_STANDARD.md)
+`CreatureDef` carries five optional successor pointers (`evolvesToId`, `evolvesToGoodId`,
+`evolvesToBadId`, `evolvesToTrojanId`, `evolvesToTrojanBadId`) and `kDaemonPools` carries a sixth
+route in a table beside them — six mechanisms for one question, and the fifth was added purely so
+one divert could land on a care branch, which an edge list would have expressed for free. [`CONTENT_STANDARD.md`](../src/core/content/CONTENT_STANDARD.md)
 rule 1 asks for the opposite shape: a typed list on the row, not optional fields bolted onto the
 shared struct. The target is one array per creature —
 
@@ -210,12 +211,17 @@ roster, and the wild half keeps its own roster-keyed masks).
   complaint it wants the anim-clip table exported to the web and is **M**, not a bug fix.
   **Needs the PO to say which screen and which creature looked wrong.**
 - **The Worm line has no `FULL_LINE_WORM` row**, where the other three lines each have one. It
-  costs a new `wire` bit and an `ICON_ACH_FULL_LINE_WORM` glyph, and it wants the line's two
-  placeholder Script successors designed first — a "seen every row" achievement over two rows
-  called *Worm Placeholder I* and *II* is a badge for reading a stub. Diff **S**, once the art and
-  names below land. (The line itself is raiseable now: the Vermicell egg hatches it through the
-  Isolation Protocol, `WORM_WHISPERER` fires on a clean run, and `SECOND_INSTANCE` — two of one
-  species in the ARCH rack — is what puts the line on the menu.)
+  costs a new `wire` bit and an `ICON_ACH_FULL_LINE_WORM` glyph. **Unblocked** — it used to want
+  the line's two placeholder Script successors designed first, because a "seen every row" badge
+  over rows called *Worm Placeholder I* and *II* is a badge for reading a stub; every row of the
+  line is now named and drawn (Vermicell · Nodeatode · Rootgrub · Shenloop · Threadbore). Diff
+  **S**. The one judgement call left is whether Rootgrub's Trojan divert counts against it: a
+  raise that diverts never reaches Shenloop or Threadbore, so a player who keeps diverting can be
+  a row short through no fault of their own, and the badge should almost certainly ignore the
+  Trojan rows the way `LineRaised` already reads one family's own count. (The line itself is
+  raiseable now: the Vermicell egg hatches it through the Isolation Protocol, `WORM_WHISPERER`
+  fires on a clean run, and `SECOND_INSTANCE` — two of one species in the ARCH rack — is what puts
+  the line on the menu.)
 - **The Worm line's balance is unmeasured.** Every number on it — `kWormReplicaSlots`, the three
   targeting weights, the per-move spawn chances and the two magnitudes each replica reads — is a
   first cut chosen for internal consistency, not a calibration pass against a real fight. The

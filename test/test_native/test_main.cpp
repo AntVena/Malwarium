@@ -468,6 +468,7 @@ int g_failures = 0;
     RUN(test_anglerfish_line_evolution_branch)    \
     RUN(test_trojan_content)                      \
     RUN(test_trojan_cross_line_divert)            \
+    RUN(test_worm_script_divert_branch)           \
     RUN(test_trojan_combat)                       \
     RUN(test_line_select_phishing_egg)            \
     RUN(test_line_select_grayscale)               \

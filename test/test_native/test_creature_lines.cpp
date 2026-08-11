@@ -176,6 +176,59 @@ void test_trojan_content() {
     const CreatureDef* ph = r.creature("phishlet");
     CHECK(ph && ph->evolvesToTrojanId &&
           std::strcmp(ph->evolvesToTrojanId, "keyloggerhead") == 0);
+    // Phishlet's divert replaces a LINEAR hop, so it names one target and no Bad half.
+    CHECK(!ph->evolvesToTrojanBadId);
+    // Rootgrub's replaces a care BRANCH, so it names both — that pairing is the whole
+    // reason evolvesToTrojanBadId exists, and a row with a Bad half but no Good one
+    // would silently never divert.
+    const CreatureDef* rg = r.creature("rootgrub");
+    CHECK(rg && rg->stage == Stage::Script);
+    CHECK(rg->evolvesToTrojanId && std::strcmp(rg->evolvesToTrojanId, "coaxeel") == 0);
+    CHECK(rg->evolvesToTrojanBadId &&
+          std::strcmp(rg->evolvesToTrojanBadId, "usbasilisk") == 0);
+    for (const char* id : {"coaxeel", "usbasilisk"}) {
+        const CreatureDef* d = r.creature(id);
+        CHECK(d && d->stage == Stage::Daemon && std::strcmp(d->line, "trojan") == 0);
+        // Both crawl: the divert costs the Worm line its one payoff, which is that both
+        // of its real Daemons leave the floor (creatures/trojan/line.h).
+        CHECK(d->locomotion == Locomotion::Ground);
+    }
+}
+
+// The Worm line's divert, which is the SAME hook one boundary later: Rootgrub trades its
+// Daemon rather than its Script, and the pair it lands on is care-branched exactly like
+// the Shenloop/Threadbore pair it replaced. Guards the two things that would break
+// quietly — the stage gate in Game::fireEvolution having been dropped, and the Bad half
+// being read from the care budget rather than the divert always taking the Good one.
+void test_worm_script_divert_branch() {
+    {   // Good care + divert seed: Rootgrub -> Coaxeel, NOT Shenloop.
+        Game g{StartMode::Hatched, "rootgrub"};
+        CHECK(g.model().careBranch() == CareBranch::Good);
+        g.debugSeedRng(13);                                  // rolls < kTrojanDivertPct
+        uint32_t t = 0;
+        g.debugTriggerEvolution(); advanceToReveal(g, t); g.onButton(press(Button::B));
+        CHECK(g.pet() && std::strcmp(g.pet()->id, "coaxeel") == 0);
+        CHECK(std::strcmp(g.pet()->line, "trojan") == 0);
+        CHECK(g.moveLoadout().owns("backdoor_breach"));      // re-seeded to the Trojan kit
+        CHECK(g.hasAchievement(ach::kTrojanUnleashed));
+    }
+    {   // Bad care + the same divert seed: the branch still resolves off the raise.
+        Game g{StartMode::Hatched, "rootgrub"};
+        g.model().setCareMistakes(3);
+        CHECK(g.model().careBranch() == CareBranch::Bad);
+        g.debugSeedRng(13);
+        uint32_t t = 0;
+        g.debugTriggerEvolution(); advanceToReveal(g, t); g.onButton(press(Button::B));
+        CHECK(g.pet() && std::strcmp(g.pet()->id, "usbasilisk") == 0);
+    }
+    {   // No-divert seed: the Worm line's own branch is untouched.
+        Game g{StartMode::Hatched, "rootgrub"};
+        g.debugSeedRng(1);                                   // rolls >= kTrojanDivertPct
+        uint32_t t = 0;
+        g.debugTriggerEvolution(); advanceToReveal(g, t); g.onButton(press(Button::B));
+        CHECK(g.pet() && std::strcmp(g.pet()->id, "shenloop") == 0);
+        CHECK(!g.hasAchievement(ach::kTrojanUnleashed));
+    }
 }
 
 // The cross-line infiltration divert (the headline mechanic): a Phishlet that rolls the

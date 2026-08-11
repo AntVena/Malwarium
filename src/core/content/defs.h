@@ -147,13 +147,22 @@ struct CreatureDef {
     // Good (durable) -> Defend, Bad (glass cannon) -> Attack.
     MoveKind slotKinds[kMaxMoveSlots] = {MoveKind::Attack, MoveKind::Attack,
                                          MoveKind::Attack, MoveKind::Attack};
-    // Cross-line Trojan infiltration hook. When a Process pet with this set evolves,
-    // a kTrojanDivertPct chance (Game::fireEvolution) diverts it into this Trojan
+    // Cross-line Trojan infiltration hook. When a pet with this set evolves, a
+    // kTrojanDivertPct chance (Game::fireEvolution) diverts it into this Trojan
     // creature instead of its normal successor — the pet keeps its old line's colour
     // but is now a Trojan (losing its line moves for the Trojan kit; see
     // Game::completeEvolution). The first divert unlocks the family. nullptr = no
-    // divert path (every non-infiltratable creature).
+    // divert path (every non-infiltratable creature). The row is the only gate: the
+    // divert fires at whatever boundary the creature carrying it evolves across, so
+    // Phishlet trades its Script for one and Rootgrub trades its Daemon.
     const char* evolvesToTrojanId = nullptr;
+    // The Bad-care half of a divert that lands on a BRANCH — set only alongside the
+    // field above, and only where the divert replaces a Script->Daemon hop that had a
+    // care branch of its own to replace. Leaving it null makes the divert unconditional
+    // (Phishlet's is), which is right when the boundary being replaced had no branch
+    // either. Resolved from the same CareBranch as evolvesToGoodId/BadId, so a diverted
+    // pet keeps the outcome the raise earned and loses only its line.
+    const char* evolvesToTrojanBadId = nullptr;
     // How this creature moves around its habitat at rest. EVERY row states it, even
     // the walkers: how a creature moves is a fact about that creature, and it belongs
     // where the rest of it is read rather than being inferred from an absence. It

@@ -40,7 +40,7 @@ inline constexpr CreatureDef kWormCreatures[] = {
      "A soft translucent capsule with one worm coiled inside it, endlessly chasing a single loose byte around the shell wall.",
      "Worm eggs / a payload waiting on a host",
      {MoveKind::Attack, MoveKind::Attack, MoveKind::Attack, MoveKind::Attack},
-     /*evolvesToTrojanId=*/nullptr, Locomotion::Ground,
+     /*evolvesToTrojanId=*/nullptr, /*evolvesToTrojanBadId=*/nullptr, Locomotion::Ground,
      // Declared only to slow the resting breathe below the shared idleFrame()
      // default (sprite.h) — frames 0-1 of the same 8-frame sheet the hatch
      // one-shot walks, at half that heuristic's cadence (holdBeats 1 -> 2).
@@ -63,7 +63,7 @@ inline constexpr CreatureDef kWormCreatures[] = {
      "A thread-thin nematode that chews from one node to the next. Small, slow, and by morning there is never just the one.",
      "Worms / self-replicating network propagation",
      {MoveKind::Attack, MoveKind::Defend, MoveKind::Attack, MoveKind::Defend},
-     /*evolvesToTrojanId=*/nullptr, Locomotion::Ground,
+     /*evolvesToTrojanId=*/nullptr, /*evolvesToTrojanBadId=*/nullptr, Locomotion::Ground,
      /*clips=*/{{"idle", /*row=*/0, /*frames=*/4, /*holdBeats=*/2},
                 {"attack", /*row=*/1, /*frames=*/4},
                 {"droop", /*row=*/2, /*frames=*/2, /*holdBeats=*/3},
@@ -79,12 +79,24 @@ inline constexpr CreatureDef kWormCreatures[] = {
     // is thin and long, and led by a mouth rather than by a head. It is also the one
     // row of the line whose single solid mass is not an eye but a THROAT — see
     // tools/gen_worm_art.py, where both are the same `Cell.solid`.
+    //
+    // It is also the line's infiltration point, and the only row in the roster that
+    // diverts at the Script->Daemon boundary rather than the Process->Script one. That is
+    // the same mechanism Phishlet uses, spent one stage later, and it is spent there
+    // because of what this row's evolution IS: everything below it crawls, and the hop
+    // out of it is where the family finally leaves the floor. A Trojan is what happens
+    // when that hop goes somewhere else instead — so the divert here costs the payoff the
+    // whole line has been climbing towards, which is a price a divert at the Process row
+    // could not have charged. Both targets are Daemons and the pair is a care BRANCH
+    // (creatures/trojan/line.h): the raise still decides which one, the divert only
+    // decides whose line it belongs to.
     {"rootgrub", "Rootgrub", Stage::Script, "SPR_PET_ROOTGRUB", nullptr,
      /*good=*/"shenloop", /*bad=*/"threadbore", 100, 100, "worm",
      "A thumb-thick grub that has stopped chewing between nodes and started chewing through them. Its mouth is the widest part of it now, and it has not settled whether to go on growing out or start growing up.",
      "Resource-exhausting payloads / a worm that trades reach for appetite",
      {MoveKind::Attack, MoveKind::Defend, MoveKind::Attack, MoveKind::Defend},
-     /*evolvesToTrojanId=*/nullptr, Locomotion::Ground,
+     /*evolvesToTrojanId=*/"coaxeel", /*evolvesToTrojanBadId=*/"usbasilisk",
+     Locomotion::Ground,
      /*clips=*/{{"idle", /*row=*/0, /*frames=*/4, /*holdBeats=*/2},
                 {"attack", /*row=*/1, /*frames=*/4},
                 {"droop", /*row=*/2, /*frames=*/2, /*holdBeats=*/3},
@@ -112,7 +124,7 @@ inline constexpr CreatureDef kWormCreatures[] = {
      "The same appetite grown upward instead of outward - a long clawless serpent that holds one connection open across the whole network and waits at the far end of it for as long as that takes.",
      "Beacon loops / an implant that holds its channel open and calls home",
      {MoveKind::Attack, MoveKind::Defend, MoveKind::Defend, MoveKind::Defend},
-     /*evolvesToTrojanId=*/nullptr, Locomotion::Swim,
+     /*evolvesToTrojanId=*/nullptr, /*evolvesToTrojanBadId=*/nullptr, Locomotion::Swim,
      /*clips=*/{{"idle", /*row=*/0, /*frames=*/4, /*holdBeats=*/2},
                 {"attack", /*row=*/1, /*frames=*/4},
                 {"droop", /*row=*/2, /*frames=*/2, /*holdBeats=*/3},
@@ -133,7 +145,7 @@ inline constexpr CreatureDef kWormCreatures[] = {
      "Wider than it is long, and almost all of that is jaw. It grew a pair of wings with no business lifting anything this heavy, and lifts anyway, and arrives.",
      "Thread-pool exhaustion / a payload that consumes the host it lands on",
      {MoveKind::Attack, MoveKind::Defend, MoveKind::Attack, MoveKind::Attack},
-     /*evolvesToTrojanId=*/nullptr, Locomotion::Fly,
+     /*evolvesToTrojanId=*/nullptr, /*evolvesToTrojanBadId=*/nullptr, Locomotion::Fly,
      /*clips=*/{{"idle", /*row=*/0, /*frames=*/4, /*holdBeats=*/2},
                 {"attack", /*row=*/1, /*frames=*/4},
                 {"droop", /*row=*/2, /*frames=*/2, /*holdBeats=*/3},

@@ -33,19 +33,19 @@ inline constexpr CreatureDef kRansomwareCreatures[] = {
      "A digital shell so tough, even its mother has to brute-force the password to hatch it.",
      "Cryptographic shells / brute-force",
      {MoveKind::Attack, MoveKind::Attack, MoveKind::Attack, MoveKind::Attack},
-     /*evolvesToTrojanId=*/nullptr, Locomotion::Walk},
+     /*evolvesToTrojanId=*/nullptr, /*evolvesToTrojanBadId=*/nullptr, Locomotion::Walk},
     {"paypup", "Paypup", Stage::Process, "SPR_PET_PAYPUP", "barkmail",
      nullptr, nullptr, 100, 100, "ransomware",
      "Loves chasing code, fetching cookies, and dropping malicious payloads.",
      "Software payloads / tracking cookies",
      {MoveKind::Attack, MoveKind::Defend, MoveKind::Defend, MoveKind::Defend},
-     /*evolvesToTrojanId=*/nullptr, Locomotion::Walk},
+     /*evolvesToTrojanId=*/nullptr, /*evolvesToTrojanBadId=*/nullptr, Locomotion::Walk},
     {"barkmail", "Barkmail", Stage::Script, "SPR_PET_BARKMAIL", nullptr,
      /*good=*/"wire_heir", /*bad=*/"extorgi", 100, 100, "ransomware",
      "The pup grown into its armour, plated in overlapping links it calls correspondence. Every one of them is a letter, and every letter says the same thing louder.",
      "Blackmail / the ransom note that follows encryption",
      {MoveKind::Attack, MoveKind::Defend, MoveKind::Defend, MoveKind::Attack},
-     /*evolvesToTrojanId=*/nullptr, Locomotion::Walk},
+     /*evolvesToTrojanId=*/nullptr, /*evolvesToTrojanBadId=*/nullptr, Locomotion::Walk},
     // Barkmail's two Daemons: the noble line and the one that took it.
     // Wire Heir's sheet is one row of 8 frames at the 96x64 Daemon cell, so unlike every
     // 56x48 sheet it needs its frame width declared in gen_assets.py's FRAME_W_OVERRIDES —
@@ -59,14 +59,14 @@ inline constexpr CreatureDef kRansomwareCreatures[] = {
      // Ground rather than Walk: its sheet already breathes on its own frames, and the
      // shelf bob on top of that lands on a different beat and reads as a bounce. The
      // slower Ground pace suits a long dog on short legs anyway.
-     /*evolvesToTrojanId=*/nullptr, Locomotion::Ground,
+     /*evolvesToTrojanId=*/nullptr, /*evolvesToTrojanBadId=*/nullptr, Locomotion::Ground,
      /*clips=*/{{"idle", /*row=*/0, /*frames=*/8, /*holdBeats=*/2}}},
     {"extorgi", "Extorgi", Stage::Daemon, "SPR_PET_EXTORGI",
      nullptr, nullptr, nullptr, kBranchBadPowerPct, kBranchBadFragPct, "ransomware",
      "Aspiring undemocratically self-elected regent of Castle Rapidscare. Other candidates have been warned to back down once if they want to keep their files, It expects to keep the racket going many terms running.",
      "Extortion / double-extortion ransomware",
      {MoveKind::Attack, MoveKind::Defend, MoveKind::Defend, MoveKind::Attack},
-     /*evolvesToTrojanId=*/nullptr, Locomotion::Walk},
+     /*evolvesToTrojanId=*/nullptr, /*evolvesToTrojanBadId=*/nullptr, Locomotion::Walk},
     // Malbear's sheet is one row of 8 columns (56x48 each): the first 3 are the
     // resting loop, and the full 8 are the swing. Both clips therefore play row 0
     // — which columns the attack actually wants is an art call, not a code one.
@@ -75,7 +75,7 @@ inline constexpr CreatureDef kRansomwareCreatures[] = {
      "A moody, oversized adolescent that sits directly on your user interface and refuses to move.",
      "UI hijacking / standard malware scripts",
      {MoveKind::Attack, MoveKind::Attack, MoveKind::Defend, MoveKind::Attack},
-     /*evolvesToTrojanId=*/nullptr, Locomotion::Walk,
+     /*evolvesToTrojanId=*/nullptr, /*evolvesToTrojanBadId=*/nullptr, Locomotion::Walk,
      /*clips=*/{{"idle", /*row=*/0, /*frames=*/3, /*holdBeats=*/4},
                 {"attack", /*row=*/0, /*frames=*/8, /*holdBeats=*/2}}},
     // Malbear's two Daemons: the same bear either way — one holds the line, the other
@@ -86,13 +86,13 @@ inline constexpr CreatureDef kRansomwareCreatures[] = {
      "A colossal, corrupted grizzly of a process that leans on your save files until they let it in, then sits in the doorway so nothing else can.",
      "Brute force cracking",
      {MoveKind::Attack, MoveKind::Attack, MoveKind::Defend, MoveKind::Defend},
-     /*evolvesToTrojanId=*/nullptr, Locomotion::Walk},
+     /*evolvesToTrojanId=*/nullptr, /*evolvesToTrojanBadId=*/nullptr, Locomotion::Walk},
     {"berserkernel", "Berserkernel", Stage::Daemon, "SPR_PET_BERSERKERNEL",
      nullptr, nullptr, nullptr, kBranchBadPowerPct, kBranchBadFragPct, "ransomware",
      "The same bear, reared up and screaming, having chewed its way down past every layer that was supposed to stop it. It does not intend to come back out.",
      "Memory-corruption",
      {MoveKind::Attack, MoveKind::Attack, MoveKind::Defend, MoveKind::Attack},
-     /*evolvesToTrojanId=*/nullptr, Locomotion::Walk},
+     /*evolvesToTrojanId=*/nullptr, /*evolvesToTrojanBadId=*/nullptr, Locomotion::Walk},
 
     // --- Ursine cub ---------------------
     {"pingcub", "Pingcub", Stage::Process, "SPR_PET_PINGCUB", "malbear",
@@ -100,7 +100,7 @@ inline constexpr CreatureDef kRansomwareCreatures[] = {
      "A round little cub that pings every address on the network to see who answers, and remembers every single one that does.",
      "ICMP echo / ping sweeps for host discovery",
      {MoveKind::Attack, MoveKind::Attack, MoveKind::Defend, MoveKind::Attack},
-     /*evolvesToTrojanId=*/nullptr, Locomotion::Walk},
+     /*evolvesToTrojanId=*/nullptr, /*evolvesToTrojanBadId=*/nullptr, Locomotion::Walk},
 
     // --- Cat line ----
     // Conkittenate's sheet is a single 448x48 row of 8 columns, all of it one idle
@@ -113,7 +113,7 @@ inline constexpr CreatureDef kRansomwareCreatures[] = {
      {MoveKind::Attack, MoveKind::Attack, MoveKind::Defend, MoveKind::Attack},
      // Ground, not Walk: a sheet that breathes on its own frames does not also want
      // the shelf bob under it (Locomotion, defs.h).
-     /*evolvesToTrojanId=*/nullptr, Locomotion::Ground,
+     /*evolvesToTrojanId=*/nullptr, /*evolvesToTrojanBadId=*/nullptr, Locomotion::Ground,
      /*clips=*/{{"idle", /*row=*/0, /*frames=*/8, /*holdBeats=*/2}}},
     // Kalico's sheet is four rows of 8 columns (56x48 each), one row per clip, so
     // unlike Malbear above it spends a row rather than a column range on each. All four
@@ -129,7 +129,7 @@ inline constexpr CreatureDef kRansomwareCreatures[] = {
      {MoveKind::Attack, MoveKind::Attack, MoveKind::Defend, MoveKind::Attack},
      // Ground, not Walk: all four of its rows are drawn motion, so the shelf bob
      // would land a second rise on top of them (Locomotion, defs.h).
-     /*evolvesToTrojanId=*/nullptr, Locomotion::Ground,
+     /*evolvesToTrojanId=*/nullptr, /*evolvesToTrojanBadId=*/nullptr, Locomotion::Ground,
      /*clips=*/{{"idle", /*row=*/0, /*frames=*/8, /*holdBeats=*/2},
                 {"walk", /*row=*/1, /*frames=*/8, /*holdBeats=*/2},
                 {"attack", /*row=*/2, /*frames=*/8, /*holdBeats=*/1},
@@ -143,7 +143,7 @@ inline constexpr CreatureDef kRansomwareCreatures[] = {
      "Small signature. Big cat. Massive data loss",
      "System pwnage / privilege takeover",
      {MoveKind::Attack, MoveKind::Attack, MoveKind::Defend, MoveKind::Defend},
-     /*evolvesToTrojanId=*/nullptr, Locomotion::Walk},
+     /*evolvesToTrojanId=*/nullptr, /*evolvesToTrojanBadId=*/nullptr, Locomotion::Walk},
     // Breecheetah takes the same 96x64 cell and the same palette as its Good sibling
     // above, and spends both differently — where Pwnther is bulk under grey plate,
     // this is a bare green sprinter wearing its shell as glowing pips and flat decal
@@ -154,7 +154,7 @@ inline constexpr CreatureDef kRansomwareCreatures[] = {
      "The fastest cat on the wire - breaches the perimeter then bails before alerts even fire.",
      "Data breach / exfiltration",
      {MoveKind::Attack, MoveKind::Attack, MoveKind::Defend, MoveKind::Attack},
-     /*evolvesToTrojanId=*/nullptr, Locomotion::Walk},
+     /*evolvesToTrojanId=*/nullptr, /*evolvesToTrojanBadId=*/nullptr, Locomotion::Walk},
 };
 inline constexpr int kRansomwareCreatureCount =
     sizeof(kRansomwareCreatures) / sizeof(kRansomwareCreatures[0]);

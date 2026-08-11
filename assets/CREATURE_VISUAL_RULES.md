@@ -105,6 +105,14 @@ muddy. So "more shades of the mother colour" is what growth looks like, not a sh
 right hue, one small "wrong" tell. That makes a Trojan's brief a re-skin of its origin line rather
 than a new silhouette, and it follows from the rule above rather than being a separate one.
 
+Read it as *the line's signature*, not literally as its hue, and the Worm case falls out on its
+own: USBasilisk and Coaxeel diverted out of the line that spends a STYLE, so they wear the style —
+1-bit, outlined, segmented, drawn by `tools/gen_worm_art.py` alongside the two Daemons they were
+substituted for. Their "wrong" tell is where the one solid mass goes. Every Worm row spends it on a
+face (an eye, or Rootgrub's throat); these two spend it on a **contact** — the tongue inside a
+type-A plug, the centre conductor on a stripped cable end — which is the only thing on either
+drawing that a worm would not have.
+
 **A BRANCH may carry a signature of its own on top of the line's.** Ransomware's cat branch —
 Conkittenate, Kalico, and the Pwnther/Breecheetah pair — is **two-headed**, every row of it, because
 the branch is named for concatenation and two things stuck together is the joke the whole chain
@@ -193,17 +201,29 @@ perfectly good reason to drop the rule entirely.
   shoulder plates; idle = a slow shoulder-roll "huff"). Gold standard alongside Paypup.
 - **APPROVED back/shell:** Keyloggerhead (keycap shell + blinking cursor-cap).
 - **APPROVED 1-bit:** Vermicell, Nodeatode, Rootgrub, Shenloop and Threadbore — the whole Worm
-  line, its style-instead-of-hue exception above. Held to the outline + segment-chords + one solid
-  mass vocabulary, not to §3's shading law.
-  That vocabulary is `tools/gen_worm_art.py`, which is where a new worm-line creature is drawn:
-  the style is mechanical enough to be code, and a recipe over it cannot express a second ink or a
-  filled silhouette. Read the tool before drawing this line by hand.
-  The two Daemons are what §2's *posture, not parts* looks like when a line has no cell room left
-  to spend: Shenloop is a constant-radius body reared into a folded column with its head carried
-  level off the neck, and a dorsal ridge was tried and cut for being exactly the parts-list §1
-  bans. Its sibling takes the opposite lever — width, a bigger maw, and one fewer segment chord
-  than the row below it, because widely spaced rungs leave unbroken panels of flank and the
-  panels are what carry mass.
+  line, its style-instead-of-hue exception above — plus the two Trojan Daemons it diverts into,
+  USBasilisk and Coaxeel. Held to the outline + segment-chords + one solid mass vocabulary, not to
+  §3's shading law.
+  That vocabulary is `tools/gen_worm_art.py`, which is where a new creature in this style is
+  drawn: the style is mechanical enough to be code, and a recipe over it cannot express a second
+  ink or a filled silhouette. Read the tool before drawing any of these by hand.
+  The two Worm Daemons are what §2's *posture, not parts* looks like when a line has no cell room
+  left to spend: Shenloop is a constant-radius body reared into a folded column with its head
+  carried level off the neck, and a dorsal ridge was tried and cut for being exactly the
+  parts-list §1 bans. Its sibling takes the opposite lever — width, a bigger maw, and one fewer
+  segment chord than the row below it, because widely spaced rungs leave unbroken panels of flank
+  and the panels are what carry mass.
+  **Two reads had to be bought back after the fact, and both were the same mistake.** Rootgrub and
+  Threadbore's maw is spokes around a solid mass, which is also the diagram of an EYE, and at this
+  size the eye wins — both shipped reading as a fuzzy eyeball. The fix is a *lip*: a two-pixel
+  rim, the heaviest ink in the cell, drawn inside the silhouette with the teeth rooted on it and
+  the whole mouth set forward on the head so there is cheek behind it. Shenloop shipped reading as
+  a caterpillar because posture was asked to carry the species on its own — a levelled head does
+  say *waiting*, but a round bulb with an eye in it is a Nodeatode head, and the viewer names the
+  creature off the head. It needed the head to become a head: a skull with a squared muzzle
+  projecting off it, a backswept horn pair as its one back-pocket piece, and asymmetric barbels.
+  The lesson for the next row here is that posture decides what a creature is *doing* and the head
+  decides what it *is*, and no amount of the first will supply the second.
 - **NEEDS REDRAW (too blobby / fail grayscale):** Keyloggerhead front, FireWallaby, Brute Badger,
   Cryptoad re-sculpt. Concepts are right; execution must hit the Paypup/Malbear bar.
 - **Engine cell:** 56×48 logical (Script), 96×64 (Daemon e.g. Cryptoad). ×1.75 to panel, no

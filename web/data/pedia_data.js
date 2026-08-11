@@ -396,6 +396,36 @@ window.PEDIA_DATA = {
       "sheetH": 64
     },
     {
+      "id": "coaxeel",
+      "name": "Coaxeel",
+      "stage": 4,
+      "stageName": "Daemon",
+      "line": "trojan",
+      "evolvesTo": [],
+      "hint": "Most of it is cable. It lies along the floor of the rack pretending to be the run that was always there, and at the far end of it something has been stripped back to the bare conductor.",
+      "context": "Hardware implants / network taps spliced into the run",
+      "sprite": "assets/sprites/SPR_PET_COAXEEL.png",
+      "cellW": 56,
+      "cellH": 48,
+      "sheetW": 224,
+      "sheetH": 192
+    },
+    {
+      "id": "usbasilisk",
+      "name": "USBasilisk",
+      "stage": 4,
+      "stageName": "Daemon",
+      "line": "trojan",
+      "evolvesTo": [],
+      "hint": "It rears up, spreads a hood it has no business having, and holds perfectly still - because the front of it is a plug, and a plug only has to be picked up once.",
+      "context": "BadUSB / a peripheral that enumerates as something it is not",
+      "sprite": "assets/sprites/SPR_PET_USBASILISK.png",
+      "cellW": 56,
+      "cellH": 48,
+      "sheetW": 224,
+      "sheetH": 192
+    },
+    {
       "id": "vermicell",
       "name": "Vermicell",
       "stage": 1,
@@ -2004,9 +2034,9 @@ window.PEDIA_DATA = {
     {
       "key": "FULL_LINE_TROJAN",
       "name": "Full 'Pedia: Trojan",
-      "trigger": "Raise every one of the 2 creatures in the trojan line.",
+      "trigger": "Raise every one of the 4 creatures in the trojan line.",
       "icon": "assets/icons/ICON_ACH_FULL_LINE_TROJAN.png",
-      "goal": 2
+      "goal": 4
     },
     {
       "key": "DEEPWEB_DEPTH_8",
