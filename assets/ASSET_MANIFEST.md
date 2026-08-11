@@ -205,13 +205,19 @@ which is why gameplay ships first and the drawing follows.
   carry 7–8; that costs nothing in flash, since sprites are stored per-pixel and never palettised,
   but it is why the cat does not yet sit next to Paypup as obviously one family.
 - **Generated art reaches cell scale by FRAMING, not by asking for a size.** A generator's width and
-  height are a hint — `generate_game_art` reports `size_behavior: "hint"` and returns its own canvas
-  (100×100 against a 56×48 request, ~200×200 against a 96×64 one, so the canvas runs about double
-  whatever it was asked for). What the request does control is how much of that canvas the subject
-  fills, so the lever is the prompt: ask for a small subject floating in a wide empty margin and the
-  drawing arrives at project scale on its own, whatever the canvas around it. **The framing has to be
-  MEASURED to hold** — "a generous margin" fills 90% of the frame anyway, while "spans no more than
-  half the width, a full quarter empty on the left and a quarter on the right" lands near 45%.
+  height are a hint — `generate_game_art` reports `size_behavior: "hint"` and returns a canvas of
+  its own choosing. **That canvas is not a function of the request**: the same 96×64 ask returns
+  100×100 on one call and 200×200 on the next, so nothing downstream may assume a scale, and the
+  content box has to be measured every time. What the request does control is how much of that
+  canvas the subject fills, so the lever is the prompt: ask for a small subject floating in a wide
+  empty margin and the drawing arrives at project scale on its own, whatever the canvas around it. **The framing has to be
+  MEASURED to hold** — "a generous margin" fills 90% of the frame anyway, while a quantity ("spans
+  no more than half the width, a full quarter empty on the left and a quarter on the right") is
+  what moves it. **Ask for far less than the number wanted**: the fraction asked for is a floor the
+  subject overshoots, and the overshoot is large and not repeatable. Measured on the phishing
+  Daemons — "half the width" returned 76%, "one third" returned 80% on one call and 85% on
+  another. Budget for the miss by asking small and letting an under-filled cell stand, since
+  under-filling costs nothing and overshooting costs a decimation pass.
   `SPR_PET_CONKITTENATE` has a 48×36 content box inside a 100×100 canvas and `SPR_PET_PWNTHER` an
   86×40 one inside 197×200; both centre into their cells untouched. **The number that matters is the
   content box, never the canvas** — the canvas is padding, and padding is free to discard.
@@ -232,6 +238,30 @@ which is why gameplay ships first and the drawing follows.
   reading as an outline, but a clear step above the background it sits on. **Measure the darkest tone
   against `PAPER` before shipping any sprite that leans dark** — the eye cannot catch this on a
   monitor.
+- **A punned creature has to draw BOTH halves of its pun.** The Phishing line's anglerfish chain
+  first came back with plain angler's lures — a correct fish, and a creature indistinguishable
+  from any other deep-sea predator. What makes it *phishing* is that the bait is an INTERFACE:
+  `SPR_PET_CLICKBAIT` dangles a notification panel, `SPR_PET_SPAMWHALE` a popup above a mouth of
+  glowing filter bars, `SPR_PET_BAITRACUDA` a dialog with a cursor on it and a rig of cursor
+  arrows where an angler would carry hooks. The line's own lure organ is the slot the joke goes
+  in, and it is inherited down the chain from `SPR_PET_PHISHLET`, so each row spends it on the
+  interface its malware type actually baits with. Generation prompts do not volunteer this —
+  asked for an anglerfish they draw an anglerfish — so the UI half has to be the loudest
+  instruction in the prompt, described as a named widget rather than as "something techy".
+- **The teal floor is `#123a40`, and the older phishing sheets predate it.** `SPR_PET_CLICKBAIT`,
+  `SPR_PET_SPAMWHALE` and `SPR_PET_BAITRACUDA` measure 0% of their pixels within 12 luma of
+  `PAPER`. `SPR_PET_PHISHLET`, `_TADPOLL`, `_CROAKEN` and `_GOLIAUTH` carry 19–34% at that
+  measure, because they reuse `#06272b`/`#0d1414`/`#0a0f0f` — at or below the habitat background,
+  so those pixels are holes rather than shadow (the same failure `SPR_PET_PWNTHER` fixed for the
+  cat branch). Their recolour is a second pass, not a redraw. New art on this line floors at
+  `#123a40`; a hand pass that samples ink off a shipped phishing sprite will reintroduce the
+  fault, so measure the darkest tone rather than picking it.
+- **`SPR_PET_BAITRACUDA` is `▨`, and what it owes is RESOLUTION.** Its source framed at 160×65
+  against the 96×64 Daemon cell, so it is width-bound decimated at 3:5 — 874 single-pixel
+  features land on a deleted lattice line, against the 622 `SPR_PET_BARKMAIL` ships with. The
+  silhouette, the teeth and the cursor rig survive; the thin filaments the cursors hang from
+  degrade to dotted lines. Re-sourcing at cell scale is the fix, and the framing lever below is
+  how: this cut asked for a third of the canvas width and got four fifths.
 - **An animation round trip keeps the pixel scale and loses the palette.** Feeding a cell-scale
   sprite to `animate_game_art` returns frames drawn at that same scale — a 48×36 subject comes back
   47×37 across eight frames — so the sheet crops into the cell with no resampling, which is what

@@ -129,6 +129,10 @@ Intentional simplifications. None is a bug; each is a "confirm as v1 or revise".
   the next — get nothing. The dim `MOVES`/`MODS` labels are carrying the whole grouping alone.
   Measuring the pitch per entry and spending a fixed gap at the seams instead is the fix, and it
   is a real layout change rather than a constant. Diff **S**.
+- **`items_screen` keeps its own copy of the list-window offset.** `listScrollTop`
+  (`core/ui/layout.h`) is the shared one, unit-tested and drawn through by ARCH and CFG; the
+  ITEMS list still inlines the same arithmetic at its two sites, so a fix to one window rule
+  reaches three of the four lists. Mechanical. Diff **S**.
 - **"LINK" names two different things.** The CFG **RADIO → LINK** row is consent to BROADCAST
   identity over ESP-NOW; the Hacker face's **LINK** slot is the 1v1 duel surface that consent
   enables. Adjacent screens, same word, different referents. Naming call, not code: renaming either
@@ -298,6 +302,16 @@ Sizes are logical px; bind colour to `PAL_CORE` tokens. Inventory: `assets/ASSET
 | `ICON_CFG_UPDATE` | UPDATES row — reuses `ICON_CFG_SYSINFO` today | 20×20 | S |
 | `ICON_CFG_TRAVEL` | DEVICE group's TRAVEL MODE row — reuses `ICON_CFG_SYSINFO` today | 20×20 | S |
 | `ICON_PEERS` | Hacker-face PEERS slot — renders text-only today | 28×28 | S |
+
+### 2a-i. The sprite-packing tools live outside the repo
+
+`sheetpack.py` (cell packing, the crop-vs-decimate choice and its damage report, the 1px floor
+gap) and `quantize.py` (palette snap + binary alpha) are what every generated sprite passes
+through, and both sit untracked in a downloads folder. Nothing reproduces a shipped sheet
+without them, and the rules they enforce — `ASSET_MANIFEST.md` §C.1's framing lever, cell
+seating and decimation trade-off — are written down in prose but held in code nowhere the repo
+can see. Promote both into `tools/`, the way `gen_worm_art.py` already holds the Worm line's
+drawing vocabulary. Diff **S** (move + a header each).
 
 ### 2a-ii. Template pet sheet — one row per default animation
 
