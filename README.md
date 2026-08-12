@@ -379,6 +379,11 @@ sentence — plus a pool of the letters that are actually in it. A few of the co
 start open. Pick a letter, pick a gap you think it belongs in, and if you're right *every*
 instance of that letter opens at once.
 
+**A and C move the cursor in both directions** — through the pool, then through the gaps
+once you've taken a letter — and holding either runs it along. That leaves no spare button
+for a cancel, so **A+C hands the letter back**. There's no way off a board once it's
+started: the ticket is spent either way.
+
 Get the whole quote out and you're paid in Bits plus a free account upgrade, and you finally
 see who said it. Put one letter in the wrong place and the run is over — but that quote comes
 back easier next time you find a ticket, and easier again after that, so nothing is lost

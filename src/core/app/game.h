@@ -2245,6 +2245,15 @@ private:
     // the pet face, one lingering on the hacker face after a toggle — belt & braces).
     bool aHeld_ = false;
     uint32_t aDownMs_ = 0;
+    // The DECRYPTOGRAM board's cursor repeat (kCryptogramRepeatMs). C gets a held flag
+    // of its own here for the first time — nothing else on the device holds C — and the
+    // repeat runs on its OWN cadence in tick(), like combat's sprites, because stepping
+    // a thirty-cell cursor on the 4fps heartbeat would take ten seconds to lap.
+    // cryptoRepeatLastMs_ is when the last repeated step fired, kept primed while
+    // nothing is held so entering the board can't burst-catch-up.
+    bool cHeld_ = false;
+    uint32_t cDownMs_ = 0;
+    uint32_t cryptoRepeatLastMs_ = 0;
     char hackerTag_[kHackerTagMax + 1] = "NETRUNNER_99";  // persisted
     // HackerTag on-device arcade editor: a working buffer + caret. Caret
     // kHackerTagMax = the ⏎ confirm cell.

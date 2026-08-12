@@ -9,9 +9,10 @@
 //             feeding modal — how to eyeball that its gauges follow that item's own
 //             effects, e.g. feed:tortilla_chip, feed:null_noodles)
 //        maint [detail] [stacker [slide|drop|stop ...]] · lockout · evolve
-//        cryptogram [open:<n>] [win|lose] (THE DECRYPTOGRAM's quote board, cashed at the
-//             VAULT; "open:<n>" places n letters correctly so the frame shows a part-
-//             solved quote, "win" plays it out to the attribution + prize and "lose"
+//        cryptogram [open:<n>] [take] [win|lose] (THE DECRYPTOGRAM's quote board, cashed
+//             at the VAULT; "open:<n>" places n letters correctly so the frame shows a
+//             part-solved quote, "take" leaves a letter in hand for the cell-cursor
+//             control state, "win" plays it out to the attribution + prize and "lose"
 //             misplaces one to hold the verdict)
 //        decryption [rows|lost] (the Ransomware egg's DISK DECRYPTION board; "rows"
 //             plays three attempts so the history and its corruption overlay are on
@@ -885,6 +886,10 @@ int main(int argc, char** argv) {
             game.onButton({Button::B, true, false});   // take it
             game.onButton({Button::B, true, false});   // place it
         }
+        // "take" leaves a letter in hand, which is the OTHER control state — the
+        // cell cursor and its own hint band.
+        if (hasFlag(argc, argv, "take") && game.cryptogram().running())
+            game.onButton({Button::B, true, false});
         if (hasFlag(argc, argv, "lose") && game.cryptogram().running()) {
             const Cryptogram& c = game.cryptogram();
             const char want = c.at(c.cellCursor());

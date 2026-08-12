@@ -548,7 +548,9 @@ int g_failures = 0;
     RUN(test_cryptogram_difficulty_opens_more)    \
     RUN(test_cryptogram_right_letter_opens_every_instance) \
     RUN(test_cryptogram_one_wrong_letter_ends_the_run) \
-    RUN(test_cryptogram_c_drops_the_letter_but_never_leaves) \
+    RUN(test_cryptogram_cursors_run_both_ways) \
+    RUN(test_cryptogram_chord_drops_the_letter_but_never_leaves) \
+    RUN(test_cryptogram_held_cursor_repeats)     \
     RUN(test_cryptogram_vault_ticket_pays_bits_and_an_upgrade) \
     RUN(test_cryptogram_losing_ratchets_the_quote_easier) \
     RUN(test_cryptogram_gated_quotes_wait_for_their_achievement) \

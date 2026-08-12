@@ -407,6 +407,21 @@ constexpr uint32_t kItemFilterHoldMs = 800;   // ms held before A cycles the ITE
 constexpr uint32_t kMoveFilterHoldMs = 800;
 constexpr uint32_t kBulkOpenHoldMs = 800;     // ms held before B bulk-opens a Hacker VAULT
                                               // row's rarity (the Rig Shop's Bulk-Open unlock gates this)
+// THE DECRYPTOGRAM's cursor repeat — the only hold gesture on the device that REPEATS
+// rather than firing once at a threshold, because it is the only place a cursor has
+// thirty-odd stops to walk. Holding A or C past the delay steps every interval until it
+// is released. The delay is long enough that an ordinary tap never triggers it, and the
+// interval is set so a full lap of the longest quote takes a couple of seconds rather
+// than the ten a 4fps heartbeat would cost — which is why this ticks on its own cadence
+// (Game::tick) the way combat's sprites and the Stacker's slide do.
+//
+// The interval sits just inside kStackerStepMs, which is the fastest repaint the panel
+// is known to sustain. It could go faster on paper — a repeat is a two-second burst,
+// not a whole run like the Stacker's — but there is no reason to find the ceiling here:
+// with the cursor running both ways the worst case is HALF a lap, so this is already
+// about a second and a half to reach any gap on the board.
+constexpr uint32_t kCryptogramRepeatDelayMs = 350;
+constexpr uint32_t kCryptogramRepeatMs = 80;
 // The Reduce-Explore-Frag-TRIGGER Rig Shop upgrade's effective chance per tier (tier
 // 0 = the unchanged kBattleFatigueChancePct baseline). Dual-consumed: the Rig Shop's row
 // text AND Game::applyBattleFatigue's combat calc both read this ladder, so it stays here

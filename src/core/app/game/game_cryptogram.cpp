@@ -123,12 +123,26 @@ void Game::onCryptogram(const ButtonEvent& ev) {
         if (ev.button == Button::B) finishCryptogram();
         return;
     }
-    // A cycles (the pool, or the open cells once a letter is in hand), B takes the
-    // letter and then places it, C hands the letter back. C is not "cancel" here, which
-    // is the deviation the hint band spells out.
-    if (ev.button == Button::A) cryptogram_.cycle();
-    else if (ev.button == Button::B) cryptogram_.accept();
-    else if (ev.button == Button::C) cryptogram_.stepBack();
+    // A and C are the live cursor's two DIRECTIONS — forward and back through the pool,
+    // or through the closed cells once a letter is in hand. Bidirectional because a
+    // board opens with thirty-odd gaps, and overshooting by one on a forward-only
+    // cursor costs a full lap of the quote.
+    //
+    // That spends both of the buttons a cancel would want, so A+C hands the letter back
+    // — the chord, which this board is routed for. C is therefore not "cancel" here and
+    // there is no way off a board at all, which is the deal every ticket is bought on.
+    if (ev.chordAC) { cryptogram_.dropLetter(); dirty_ = true; return; }
+    if (ev.button == Button::A) {
+        cryptogram_.cycle();
+        aHeld_ = true;              // ...and holding it repeats (tick, kCryptogramRepeatMs)
+        aDownMs_ = nowMs_;
+    } else if (ev.button == Button::C) {
+        cryptogram_.cycleBack();
+        cHeld_ = true;
+        cDownMs_ = nowMs_;
+    } else if (ev.button == Button::B) {
+        cryptogram_.accept();
+    }
     if (!cryptogram_.running()) settleCryptogram();
     dirty_ = true;
 }

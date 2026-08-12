@@ -253,6 +253,24 @@ bool Game::tick(uint32_t nowMs) {
         lastCombatAnimMs_ = nowMs;   // stay primed so re-entering combat doesn't burst-catch-up
     }
 
+    // THE DECRYPTOGRAM's cursor repeats while A or C is held, on its own cadence for the
+    // same reason the two below have one: a board opens with thirty-odd closed cells, and
+    // stepping those on the shared 4fps heartbeat would take ten seconds to lap. EXACTLY
+    // one of the two held — both is the drop chord, which has already fired and must not
+    // also scrub the cursor out from under it.
+    if (nav_ == Nav::Cryptogram && cryptogram_.running() && (aHeld_ != cHeld_)) {
+        const uint32_t downMs = aHeld_ ? aDownMs_ : cDownMs_;
+        if (nowMs - downMs >= kCryptogramRepeatDelayMs &&
+            nowMs - cryptoRepeatLastMs_ >= kCryptogramRepeatMs) {
+            cryptoRepeatLastMs_ = nowMs;
+            if (aHeld_) cryptogram_.cycle();
+            else cryptogram_.cycleBack();
+            changed = true;
+        }
+    } else {
+        cryptoRepeatLastMs_ = nowMs;   // primed, so arriving on the board can't burst
+    }
+
     // The Stacker's run slides on its own faster cadence for the same reason combat's
     // sprites do: the shared 4fps heartbeat is legible for a progress bar and far too
     // slow for a timing test. Only runs while the board is up, and only while the run is
@@ -528,6 +546,8 @@ void Game::onButton(const ButtonEvent& ev) {
             if (wasHeld) vaultBulkReleaseB();
         } else if (ev.button == Button::A) {
             itemFilterReleaseA();
+        } else if (ev.button == Button::C) {
+            cHeld_ = false;   // ends a DECRYPTOGRAM back-step repeat; inert elsewhere
         }
         return;
     }
@@ -538,6 +558,9 @@ void Game::onButton(const ButtonEvent& ev) {
     // only in the combat Nav state, which routes the chord to the override picker.
     if (ev.chordAC) {
         if (nav_ == Nav::Combat) onCombat(ev);
+        // THE DECRYPTOGRAM: A and C are the cursor's two directions, so the chord is
+        // what hands a taken letter back to the pool. Nothing else claims it here.
+        else if (nav_ == Nav::Cryptogram) onCryptogram(ev);
         // Hacker face: A+C at the top level flips PET ↔ HACKER. On the HACKER
         // face this takes priority so the player can ALWAYS return to the pet — nothing
         // else claims the chord there (you can't explore/combat/hatch from it).

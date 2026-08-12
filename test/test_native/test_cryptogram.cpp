@@ -212,24 +212,101 @@ void test_cryptogram_one_wrong_letter_ends_the_run() {
     CHECK(c.wrongLetter() == wrong && c.wrongCell() == cell);
     // The board is inert afterwards — no press can revive it or bank a late letter.
     const int left = c.cellsLeft();
-    c.cycle(); c.accept(); c.stepBack();
+    c.cycle(); c.cycleBack(); c.accept(); c.dropLetter();
     CHECK(c.state() == Cryptogram::State::Failed && c.cellsLeft() == left);
 }
 
-// C hands the letter back; it never leaves the board. A ticket is spent the moment it
-// is cashed, so an escape hatch here would be a free retry.
-void test_cryptogram_c_drops_the_letter_but_never_leaves() {
+// BOTH cursors run both ways. This is the whole reason the chord is spent on "put the
+// letter back": a board opens with thirty-odd closed cells, and a forward-only cursor
+// makes overshooting by one cost a full lap of the quote.
+void test_cryptogram_cursors_run_both_ways() {
+    Game g{StartMode::Hatched};
+    cashADecryptogram(g);
+    const Cryptogram& c = g.cryptogram();
+    CHECK(c.stage() == Cryptogram::Stage::PickLetter);
+
+    // The pool: forward then back lands exactly where it started, and back from the
+    // first letter wraps to the last rather than sticking.
+    const int start = c.poolCursor();
+    g.onButton(press(Button::A));
+    CHECK(c.poolCursor() != start);
+    g.onButton(press(Button::C));
+    CHECK(c.poolCursor() == start);
+    g.onButton(press(Button::C));
+    CHECK(c.poolCursor() == c.poolSize() - 1);
+    g.onButton(press(Button::A));
+    CHECK(c.poolCursor() == start);
+
+    // The cells: same contract, and every stop is a CLOSED cell in both directions —
+    // a back-step that landed on an already-open one would be a stop the forward walk
+    // never offers.
+    g.onButton(press(Button::B));                 // take the letter
+    CHECK(c.stage() == Cryptogram::Stage::PickCell);
+    const int cell = c.cellCursor();
+    for (int i = 0; i < 5; ++i) {
+        g.onButton(press(Button::A));
+        CHECK(!c.isOpen(c.cellCursor()));
+    }
+    for (int i = 0; i < 5; ++i) {
+        g.onButton(press(Button::C));
+        CHECK(!c.isOpen(c.cellCursor()));
+    }
+    CHECK(c.cellCursor() == cell);                // five out, five back, same gap
+}
+
+// A+C hands the letter back; nothing leaves the board. A ticket is spent the moment it
+// is cashed, so an escape hatch here would be a free retry — and with A and C spent on
+// the two cursor directions, the chord is the only button left to be one.
+void test_cryptogram_chord_drops_the_letter_but_never_leaves() {
     Game g{StartMode::Hatched};
     cashADecryptogram(g);
     CHECK(g.nav() == Game::Nav::Cryptogram);
     CHECK(g.cryptogram().stage() == Cryptogram::Stage::PickLetter);
-    g.onButton(press(Button::C));                 // inert at the pool
+    g.onButton(chordAC());                        // inert at the pool, and never an exit
     CHECK(g.nav() == Game::Nav::Cryptogram);
+    CHECK(g.cryptogram().stage() == Cryptogram::Stage::PickLetter);
+
     g.onButton(press(Button::B));                 // take a letter
     CHECK(g.cryptogram().stage() == Cryptogram::Stage::PickCell);
-    g.onButton(press(Button::C));                 // ...and put it back
+    g.onButton(chordAC());                        // ...and put it back
     CHECK(g.cryptogram().stage() == Cryptogram::Stage::PickLetter);
     CHECK(g.nav() == Game::Nav::Cryptogram);
+
+    // C alone is a cursor step, never an exit — the deviation the hint band spells out.
+    g.onButton(press(Button::C));
+    CHECK(g.nav() == Game::Nav::Cryptogram);
+}
+
+// Holding a direction repeats it, which is what makes a thirty-cell walk bearable at
+// all. Nothing fires before the delay (an ordinary tap must never trigger a run), and
+// holding BOTH is the drop chord, not a repeat in some arbitrary direction.
+void test_cryptogram_held_cursor_repeats() {
+    Game g{StartMode::Hatched};
+    cashADecryptogram(g);
+    const Cryptogram& c = g.cryptogram();
+    uint32_t t = 1000;
+    g.tick(t);
+
+    g.onButton(press(Button::A));                 // steps once, and arms the hold
+    const int afterTap = c.poolCursor();
+    g.tick(t += kCryptogramRepeatDelayMs - 50);   // still inside the delay
+    CHECK(c.poolCursor() == afterTap);
+    g.tick(t += 100);                             // ...past it: the first repeat lands
+    CHECK(c.poolCursor() != afterTap);
+
+    int steps = 0;
+    for (int i = 0; i < 6; ++i) {
+        const int was = c.poolCursor();
+        g.tick(t += kCryptogramRepeatMs);
+        if (c.poolCursor() != was) ++steps;
+    }
+    CHECK(steps == 6);                            // one step per interval, not per beat
+
+    // Releasing stops it dead.
+    g.onButton({Button::A, false, false});
+    const int parked = c.poolCursor();
+    for (int i = 0; i < 4; ++i) g.tick(t += kCryptogramRepeatMs);
+    CHECK(c.poolCursor() == parked);
 }
 
 // The VAULT is the door: the ticket is spent there, a quote comes up unsolved, and

@@ -158,20 +158,26 @@ void Cryptogram::openLetter(char c) {
     rebuildPool();
 }
 
-void Cryptogram::cycle() {
+// One step of either cursor in either direction. `dir` is +1 or -1; the two public
+// verbs are this with the sign flipped, so forwards and backwards can never disagree
+// about what counts as a stop.
+void Cryptogram::step(int dir) {
     if (!running()) return;
     if (stage_ == Stage::PickLetter) {
-        if (poolSize_ > 0) poolCursor_ = (poolCursor_ + 1) % poolSize_;
+        if (poolSize_ > 0) poolCursor_ = (poolCursor_ + poolSize_ + dir) % poolSize_;
         return;
     }
     if (len_ <= 0) return;
-    // Walk forward to the next CLOSED cell, wrapping. Bounded by len_ so a board with
-    // nothing closed (which Solved would already have caught) cannot spin.
-    for (int step = 1; step <= len_; ++step) {
-        const int i = (cellCursor_ + step) % len_;
+    // Walk to the next CLOSED cell, wrapping. Bounded by len_ so a board with nothing
+    // closed (which Solved would already have caught) cannot spin.
+    for (int n = 1; n <= len_; ++n) {
+        const int i = ((cellCursor_ + dir * n) % len_ + len_) % len_;
         if (!isOpen(i)) { cellCursor_ = i; return; }
     }
 }
+
+void Cryptogram::cycle() { step(1); }
+void Cryptogram::cycleBack() { step(-1); }
 
 void Cryptogram::accept() {
     if (!running() || poolSize_ == 0) return;
@@ -197,7 +203,7 @@ void Cryptogram::accept() {
     if (isOpen(cellCursor_)) cellCursor_ = firstClosedCell();
 }
 
-void Cryptogram::stepBack() {
+void Cryptogram::dropLetter() {
     if (!running()) return;
     if (stage_ == Stage::PickCell) stage_ = Stage::PickLetter;
 }

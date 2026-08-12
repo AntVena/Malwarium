@@ -103,8 +103,8 @@ class Cryptogram {
     // Which half of the two-stage pick the buttons are driving. A press means different
     // things in each, and the hint band says which — see Game::onCryptogram.
     enum class Stage : uint8_t {
-        PickLetter,   // A cycles the pool, B takes the focused letter
-        PickCell,     // A cycles the open cells, B places, C goes back to the pool
+        PickLetter,   // A/C walk the pool, B takes the focused letter
+        PickCell,     // A/C walk the closed cells, B places, A+C hands the letter back
     };
 
     Cryptogram() { reset("", 0); }
@@ -163,9 +163,16 @@ class Cryptogram {
     int cellCursor() const { return cellCursor_; }
 
     // --- Play --------------------------------------------------------------
-    void cycle();     // A — next pool letter, or next closed cell
-    void accept();    // B — take the letter, or place it (which decides the run)
-    void stepBack();  // C — from a cell back to the pool; inert in PickLetter
+    //
+    // Both cursors run BOTH WAYS, which on a board this size is not a convenience: a
+    // quote opens with thirty-odd closed cells, so a forward-only cursor makes
+    // overshooting by one cost a full lap of the quote. A and C are the two directions
+    // — which leaves no button for "put the letter back", so that is the A+C chord
+    // (Game::onCryptogram). Held, either direction repeats; see kCryptogramRepeatMs.
+    void cycle();       // A — next pool letter, or next closed cell
+    void cycleBack();   // C — the same, backwards
+    void accept();      // B — take the letter, or place it (which decides the run)
+    void dropLetter();  // A+C — hand the letter back; inert in PickLetter
 
     // --- The verdict -------------------------------------------------------
     // What went wrong, for the screen to point at: the letter that was placed and the
@@ -184,6 +191,7 @@ class Cryptogram {
     void openLetter(char c);
     void rebuildPool();
     int firstClosedCell() const;   // where the cell cursor parks; 0 if nothing is closed
+    void step(int dir);            // one move of the live cursor; dir is +1 or -1
     // How many letters open before the first press: kCryptogramMinReveal, raised if the
     // pool would otherwise overflow, plus the difficulty's `extra` — and always at least
     // one letter short of the whole alphabet the quote uses, because a board that opens
