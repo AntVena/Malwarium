@@ -238,6 +238,9 @@ SaveData Game::captureSave() const {
         d.arcadePlays.push_back(arcadePlays_[i]);
         d.arcadeWins.push_back(arcadeWins_[i]);
     }
+    // v48: the DECRYPTOGRAM per-quote states, at their full in-memory width — a pool
+    // that grows into spare capacity needs no save change at all.
+    d.quoteStates.assign(quoteStates_, quoteStates_ + kQuoteStateBytes);
     d.collectedItems.reserve(collectedItems_.size());
     for (const ItemDef* it : collectedItems_) {
         SaveId id;
@@ -609,6 +612,12 @@ void Game::applySave(const SaveData& d) {
         arcadePlays_[row] = i < d.arcadePlays.size() ? d.arcadePlays[i] : 0;
         arcadeWins_[row] = i < d.arcadeWins.size() ? d.arcadeWins[i] : 0;
     }
+    // v48: the per-quote board states. Copy what overlaps and leave the rest zero, the
+    // way the achievement bitsets do — which is what makes the length prefix worth
+    // having. A pre-v48 blob carries none, so every quote reads back as never played.
+    for (uint8_t& b : quoteStates_) b = 0;
+    for (size_t i = 0; i < d.quoteStates.size() && i < kQuoteStateBytes; ++i)
+        quoteStates_[i] = d.quoteStates[i];
     collectedItems_.clear();
     for (const auto& s : d.collectedItems)
         if (const ItemDef* it = registry_.item(s.id)) collectedItems_.push_back(it);

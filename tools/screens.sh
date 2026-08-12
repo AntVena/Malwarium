@@ -36,6 +36,8 @@ SCENES=(
   "item_detail|items detail"        "arcade|arcade"
   "arcade_cabinet|arcade cabinet"   "arcade_board|arcade cabinet play"
   "arcade_result|arcade cabinet play result"
+  "cryptogram|cryptogram"           "cryptogram_part|cryptogram open:4"
+  "cryptogram_win|cryptogram win"   "cryptogram_lost|cryptogram lose"
   "loadout|loadout"
   "mods|mods"                       "mod_detail|mods detail"
   "train|train"

@@ -394,7 +394,8 @@ struct ItemDef {
         Consume,        // feed / buff / lockout-resolve — the default path
         OpenContainer,  // Sealed Cache: decrypt for a reward draw (VAULT)
         Rollback,       // open the stat picker to shed a level
-        DecryptEgg,     // ready a Boot-Sector egg's decrypt NOW (Decryptogram)
+        DecryptEgg,     // cut a flat bite off a Boot-Sector egg's incubation (Boot Accelerator)
+        PlayCryptogram, // cash in for a DECRYPTOGRAM board (VAULT, game_cryptogram.cpp)
     };
     // The ITEMS type-picker's axis (items_screen.h) — one notch finer than `type`,
     // which only knows Food/Buff/Quest. `Derive` (the default, and what every row

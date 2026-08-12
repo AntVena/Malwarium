@@ -9,11 +9,17 @@
 //             feeding modal — how to eyeball that its gauges follow that item's own
 //             effects, e.g. feed:tortilla_chip, feed:null_noodles)
 //        maint [detail] [stacker [slide|drop|stop ...]] · lockout · evolve
+//        cryptogram [open:<n>] [win|lose] (THE DECRYPTOGRAM's quote board, cashed at the
+//             VAULT; "open:<n>" places n letters correctly so the frame shows a part-
+//             solved quote, "win" plays it out to the attribution + prize and "lose"
+//             misplaces one to hold the verdict)
 //        decryption [rows|lost] (the Ransomware egg's DISK DECRYPTION board; "rows"
 //             plays three attempts so the history and its corruption overlay are on
 //             screen, "lost" plays all five and holds the verdict + revealed key)
-//        arcade [clutch|worm] [cabinet [hard] [play [result]]] (the GAMES list, one
-//             cabinet's page, its running board, and the payout)
+//        arcade [solved] [clutch|worm|decryption|quote] [cabinet [hard] [play [result]]]
+//             (the GAMES list, one cabinet's page, its running board, and the payout;
+//             "solved" banks the eight quote wins that reveal the DECRYPTOGRAM cabinet,
+//             which "quote" then focuses)
 //        clutch [aim] [round ...] | clutch win (the Phishing egg's Clutch Pick; "aim"
 //        flips to the second half and "round" commits, interleaved to walk any path —
 //        three "round"s land on the lost reveal, "win" plays it perfectly instead)
@@ -62,7 +68,8 @@
 //        down the list to reach them) ·
 // hacker merge [recipes] [stock] (the MERGE HUB craft list — the slot is itself a
 //        SHOP purchase, so the scene buys it before entering) ·
-// hacker vault (the VAULT cache list, stocked with every container tier) ·
+// hacker vault (the VAULT cash-in list, stocked with a Decryptogram ticket and
+//        every container tier) ·
 // hacker crew [joined] [unset] [netpick] [red|blue [row:<n>] [detail]] (the CREW
 //        screen's four views: the Hub, the home-network picker, one side's roster,
 //        and a crew's own page)
@@ -454,12 +461,18 @@ int main(int argc, char** argv) {
             game.onButton({Button::B, true, false}); // EQUIP -> overwrite confirm
         }
     } else if (hasFlag(argc, argv, "arcade")) {
+        // "solved" banks the eight quote wins that unlock the DECRYPTOGRAM cabinet, so
+        // the list can be looked at both with the row absent and with it present.
+        if (hasFlag(argc, argv, "solved"))
+            for (int i = 0; i < kQuoteArcadeUnlockWins; ++i)
+                game.debugSetQuoteTier(i, CryptogramTier::Solved);
         enterSlot(SubmenuId::Games);
         // cabinet → open the focused cabinet's page (L3); + hard → cycle the dial off
         // MEDIUM so the setting is visible; clutch/worm → focus that cabinet first.
         const int focus = hasFlag(argc, argv, "clutch") ? 1
                         : hasFlag(argc, argv, "worm") ? 2
-                        : hasFlag(argc, argv, "decryption") ? 3 : 0;
+                        : hasFlag(argc, argv, "decryption") ? 3
+                        : hasFlag(argc, argv, "quote") ? 4 : 0;
         for (int i = 0; i < focus; ++i) game.onButton({Button::A, true, false});
         if (hasFlag(argc, argv, "cabinet")) {
             game.onButton({Button::B, true, false});
@@ -663,6 +676,7 @@ int main(int argc, char** argv) {
             // VAULT: stock one of every container tier, deliberately added in the
             // WRONG order — the list's own sort is what should land Epic on top.
             game.inventory().add("sealed_cache_common", 3);
+            game.inventory().add("decryptogram", 2);   // the ticket row, above the caches
             game.inventory().add("sealed_cache_epic", 1);
             game.inventory().add("sealed_cache_uncommon", 2);
             game.inventory().add("commend_cache", 1);
@@ -847,6 +861,38 @@ int main(int argc, char** argv) {
         game.onButton({Button::C, true, false});
     } else if (hasFlag(argc, argv, "carousel")) { // idle A → carousel@1
         game.onButton({Button::A, true, false});
+    } else if (hasFlag(argc, argv, "cryptogram")) {
+        // Cash a Decryptogram at the VAULT, which is the real door in. "open:<n>"
+        // places n letters correctly (reading each off the cell the cursor is already
+        // on, the way a player who has deduced it would), "win" plays the whole quote
+        // out so the attribution and the prize line are on screen, and "lose" misplaces
+        // one letter to hold the verdict with its highlighted cell.
+        game.inventory().add("decryptogram", 1);
+        game.onButton({Button::A, true, true});      // A+C chord -> the Hacker face
+        game.onButton({Button::A, true, false});     // summon the hacker cursor
+        while (hackerCarouselSlots()[game.cursor()].id != HackerSlotId::Vault)
+            game.onButton({Button::A, true, false});
+        game.onButton({Button::B, true, false});     // -> the VAULT
+        game.onButton({Button::B, true, false});     // cash it -> the board
+        int opens = hasFlag(argc, argv, "win") ? 64 : 0;
+        for (int i = 3; i < argc; ++i)
+            if (std::strncmp(argv[i], "open:", 5) == 0) opens = std::atoi(argv[i] + 5);
+        for (int n = 0; n < opens && game.cryptogram().running(); ++n) {
+            const Cryptogram& c = game.cryptogram();
+            const char want = c.at(c.cellCursor());
+            for (int i = 0; i < c.poolSize() && c.poolLetter(c.poolCursor()) != want; ++i)
+                game.onButton({Button::A, true, false});
+            game.onButton({Button::B, true, false});   // take it
+            game.onButton({Button::B, true, false});   // place it
+        }
+        if (hasFlag(argc, argv, "lose") && game.cryptogram().running()) {
+            const Cryptogram& c = game.cryptogram();
+            const char want = c.at(c.cellCursor());
+            for (int i = 0; i < c.poolSize() && c.poolLetter(c.poolCursor()) == want; ++i)
+                game.onButton({Button::A, true, false});
+            game.onButton({Button::B, true, false});
+            game.onButton({Button::B, true, false});
+        }
     } else if (hasFlag(argc, argv, "decryption")) {
         // A Ransomware egg opens straight onto its DISK DECRYPTION board. "rows" plays
         // three attempts first, so the frame lands on a board with history to read;

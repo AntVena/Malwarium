@@ -101,7 +101,7 @@ bool Game::itemUsable(const ItemDef& d, const char*& gateMsg) const {
     if (d.use == ItemDef::Use::Rollback && combatLevel_ <= 0) {
         gateMsg = "NO LEVELS TO ROLL"; return false;
     }
-    // Decryptogram only readies an egg's decrypt — nothing to do once hatched.
+    // The Boot Accelerator only shortens an egg's incubation — nothing to do once hatched.
     if (d.use == ItemDef::Use::DecryptEgg && !inEggPhase()) {
         gateMsg = "USABLE ON EGG ONLY"; return false;
     }
@@ -114,6 +114,11 @@ bool Game::itemUsable(const ItemDef& d, const char*& gateMsg) const {
     // pet-side ITEMS. Gate here so the detail action reads DECRYPT IN VAULT and B is inert.
     if (d.use == ItemDef::Use::OpenContainer) {
         gateMsg = "DECRYPT IN VAULT"; return false;
+    }
+    // The Decryptogram is cashed in at the same VAULT, for the same reason: what it buys
+    // is a player-level unlock, not anything done to the pet.
+    if (d.use == ItemDef::Use::PlayCryptogram) {
+        gateMsg = "CASH IN AT VAULT"; return false;
     }
     // Nothing left for this one to do — say so and keep the item, rather than
     // spending it on a state it already holds.
@@ -231,8 +236,8 @@ void Game::useItem() {
     // (C) leaves it in the bag. detailItem_ stays set so the shed path can consume it.
     if (d.use == ItemDef::Use::Rollback) { openRollbackPicker(); return; }
 
-    // Decryptogram: Use readies the egg's decrypt NOW instead of feeding.
-    if (d.use == ItemDef::Use::DecryptEgg) { useDecryptogram(d); return; }
+    // Boot Accelerator: Use shortens the egg's incubation instead of feeding.
+    if (d.use == ItemDef::Use::DecryptEgg) { useBootAccelerator(d); return; }
 
     if (d.type == ItemDef::Type::Food) {
         startFeeding(d, lockoutItemsContext_);
@@ -509,7 +514,7 @@ void Game::onBulkYield(const ButtonEvent& ev) {
     }
 }
 
-void Game::useDecryptogram(const ItemDef& d) {
+void Game::useBootAccelerator(const ItemDef& d) {
     // A flat bite out of the incubation clock, and nothing else. Every line's hatch
     // minigame is played once, at lay-time, so by the time an egg is sitting there
     // being looked at there is no game left for an item to open — what is left is the
@@ -522,8 +527,8 @@ void Game::useDecryptogram(const ItemDef& d) {
     char buf[28];
     std::snprintf(buf, sizeof(buf), "USED %s", d.displayName);
     log_.push(LogEventType::ItemUsed, buf);
-    const uint32_t cut = bootHatchRemainMs_ > kDecryptogramCutMs
-                             ? bootHatchRemainMs_ - kDecryptogramCutMs : 0;
+    const uint32_t cut = bootHatchRemainMs_ > kBootAcceleratorCutMs
+                             ? bootHatchRemainMs_ - kBootAcceleratorCutMs : 0;
     if (bootHatchRemainMs_ > kHatchRevealMs)
         bootHatchRemainMs_ = cut > kHatchRevealMs ? cut : kHatchRevealMs;
     markSaveDirty();

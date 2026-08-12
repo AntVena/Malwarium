@@ -192,15 +192,6 @@ void test_pvp_seating_order_is_load_bearing() {
     CHECK(forward.stakes() == Combat::Stakes::Safe);
 }
 
-// Walk the hacker carousel to `slot` and enter it.
-static void enterHackerSlot(Game& g, HackerSlotId slot) {
-    while (g.nav() != Game::Nav::Idle) g.onButton(press(Button::C));
-    g.onButton({Button::A, true, true});                  // A+C -> hacker face
-    g.onButton(press(Button::A));
-    while (hackerCarouselSlots()[g.cursor()].id != slot) g.onButton(press(Button::A));
-    g.onButton(press(Button::B));
-}
-
 // Move every frame `from` has queued FOR `to` into `to`, as a unicast radio would.
 // Honouring the destination MAC matters: a device mid-duel is queueing frames for its
 // opponent, and delivering those to an unrelated third device would be a fiction the

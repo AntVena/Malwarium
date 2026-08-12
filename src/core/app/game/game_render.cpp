@@ -66,6 +66,7 @@ void Game::render(Framebuffer& fb) const {
         case Nav::PostEncounter: drawPostEncounterScreen(fb); break;
         case Nav::ModalLineSelect: drawLineSelect(fb); break;
         case Nav::Decryption: drawDecryption(fb); break;
+        case Nav::Cryptogram: drawCryptogram(fb); break;
         case Nav::ModalEggPick: drawEggPick(fb); break;
         case Nav::Isolation: drawIsolation(fb); break;
         case Nav::ModalHatchReveal: drawHatchReveal(fb); break;

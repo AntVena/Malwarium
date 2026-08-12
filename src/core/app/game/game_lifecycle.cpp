@@ -488,8 +488,9 @@ void Game::acknowledgeCSF() {
 
 void Game::wipeDeviceProgress() {
     // Everything the device knows that OUTLIVES a pet: the 'Pedia's reveal tiers,
-    // the operator's rank and discovery history, earned Titles, world progress, the
-    // Rig Shop's account upgrades, the crew allegiance, and every radio consent
+    // the operator's rank and discovery history, earned Titles, world progress, every
+    // quote's standing, the Rig Shop's account upgrades, the crew allegiance, and every
+    // radio consent
     // (out of the box, all three are off). resetToHatch() clears the per-pet half;
     // together they are a device with no history. Deliberately NOT cleared: the
     // screen preferences (brightness / UI mode), which are how the operator likes
@@ -508,6 +509,7 @@ void Game::wipeDeviceProgress() {
     speciesDives_.clear();
     bossWins_ = 0;
     stackerWins_ = 0;
+    for (uint8_t& b : quoteStates_) b = 0;   // every quote back to never played
     hackerRank_ = 0;
     networksSeen_ = 0;
     handshakesSeen_ = 0;
@@ -568,6 +570,9 @@ void Game::resetToHatch() {
     loadoutHubRow_ = 0;
     arcadeRow_ = 0;
     arcadeRun_ = false;                  // nothing can be mid-cabinet after a wipe
+    cryptogramQuote_ = -1;               // ...nor mid-board
+    cryptogramPrizeBits_ = 0;
+    cryptogramPrize_ = {};
     arcadeDifficulty_ = ArcadeDifficulty::Medium;
     for (int i = 0; i < kArcadeMaxCabinets; ++i) { arcadePlays_[i] = 0; arcadeWins_[i] = 0; }
     trainRow_ = 0;

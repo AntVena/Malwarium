@@ -22,10 +22,12 @@
 #include "core/content/areas/area_defs.h"
 #include "core/content/content_arcade.h"    // kArcadeMaxCabinets sizes the arcade tallies
 #include "core/content/content_passives.h"  // kWormReplicaSlots sizes companionWander_
+#include "core/content/content_quotes.h"    // kQuoteStateBytes sizes the per-quote states
 #include "core/content/defs.h"
 #include "core/content/effect_text.h"
 #include "core/content/registry.h"
 #include "core/model/combat.h"
+#include "core/model/cryptogram.h"
 #include "core/model/disk_decryption.h"
 #include "core/model/event_log.h"
 #include "core/model/hacker_rank.h"
@@ -74,7 +76,7 @@ public:
     //   Detail      — L3 (item detail · MAINT action).
     //   Process     — a running MAINT process (non-interruptible).
     //   ModalFeeding / ModalLockout — event overlays.
-    enum class Nav { Idle, Cursor, Submenu, Detail, Process, ModalFeeding, ModalLockout, ModalLineSelect, ModalEggPick, ModalHatchReveal, ModalEvolve, ModalCSF, Combat, ExploreControl, Encounter, Wifi, Shop, ModShop, WarpPicker, RollbackPicker, CacheYield, BulkYield, PostEncounter, Stacker, Isolation, Decryption, ArcadeResult };
+    enum class Nav { Idle, Cursor, Submenu, Detail, Process, ModalFeeding, ModalLockout, ModalLineSelect, ModalEggPick, ModalHatchReveal, ModalEvolve, ModalCSF, Combat, ExploreControl, Encounter, Wifi, Shop, ModShop, WarpPicker, RollbackPicker, CacheYield, BulkYield, PostEncounter, Stacker, Isolation, Decryption, Cryptogram, ArcadeResult };
 
     // Which L2 screen the ITEMS submenu is showing. Picker (the category tile
     // screen) only ever appears when itemPickerUnlocked(); every other path — no
@@ -84,6 +86,12 @@ public:
     // Wi-Fi network event sub-outcomes. Public so tests/dev tools can
     // steer/inspect which outcome the step-roll landed on.
     enum class WifiOutcome { SleepingGuardian, AwakenedGuardian, OpenCache, FriendlyVisit };
+
+    // Which slice of the DECRYPTOGRAM pool a roll is allowed to land in. The VAULT
+    // wants an unsolved quote (a prize to win) or, once there are none, a solved one to
+    // re-run; the arcade cabinet only ever wants a solved one. Public so a test can
+    // interrogate the pool without playing a board.
+    enum class QuotePick : uint8_t { Unsolved, SolvedOnly, Any };
 
     // Move-slot rework #12: the per-pet, per-slot Attack/Defend STAMP. Unset until
     // the slot first unlocks for this pet (stampSlotKinds), then locked forever —
@@ -1001,6 +1009,27 @@ public:
     // running out of attempts costs only that bonus. Rules: core/model/disk_decryption.h.
     bool inDecryption() const { return nav_ == Nav::Decryption; }
     const DiskDecryption& decryption() const { return decryption_; }
+    // THE DECRYPTOGRAM (game_cryptogram.cpp) — the quote board, launched by cashing a
+    // Decryptogram in at the Hacker VAULT and, once kQuoteArcadeUnlockWins quotes are
+    // solved, from its own arcade cabinet. Rules: core/model/cryptogram.h; the pool:
+    // core/content/content_quotes.h.
+    bool inCryptogram() const { return nav_ == Nav::Cryptogram; }
+    const Cryptogram& cryptogram() const { return cryptogram_; }
+    // The roster row (content_quotes.h index) the board is playing, or -1.
+    int cryptogramQuote() const { return cryptogramQuote_; }
+    // This device's standing with the quote on roster row `i`. Out-of-range, and any
+    // row whose wire is past kQuoteWireCap, read Hard — never played.
+    CryptogramTier quoteTier(int i) const;
+    // Quotes SOLVED, which is what gates the arcade cabinet and what decides whether
+    // the VAULT still has a first-solve prize to offer.
+    int quotesSolved() const;
+    // Whether the pool has an unsolved, gate-passing quote left. False means a cashed
+    // Decryptogram replays a solved one for Bits only.
+    bool quotesLeftToWin() const;
+    // Is this quote offerable at all — its achievement gate earned, and its solved
+    // standing matching what the caller is after. The one place both eligibility axes
+    // are answered, so the VAULT and the cabinet can never disagree about the pool.
+    bool quoteEligible(int i, QuotePick pick) const;
     // Line-select modal: true while the player is choosing which egg line
     // to lay (fires at an empty save when >1 line is unlocked). `lineSelectRow()` is
     // the current cursor into the unlocked egg lines.
@@ -1077,6 +1106,15 @@ public:
         return (i >= 0 && i < kArcadeMaxCabinets) ? arcadeWins_[i] : 0;
     }
     ArcadeDifficulty arcadeDifficulty() const { return arcadeDifficulty_; }
+    // The cabinet list's cursor, as a ROSTER index (content_arcade.h's order) rather
+    // than a row position — the two differ whenever a cabinet is locked out of the list.
+    int arcadeRow() const { return arcadeRow_; }
+    // Is cabinet `i` in the GAMES list right now (ArcadeUnlock)? A locked cabinet is
+    // absent, not greyed. Shared by the A-cycle, the render loop and B, so the list can
+    // never show a row the cursor skips or start one it never drew.
+    bool arcadeCabinetOffered(int i) const;
+    // The roster indices of every offered cabinet, in table order. Returns the count.
+    int arcadeOfferedRows(int* out, int max) const;
 
     // --- Isolation Protocol (the Worm line's hatch minigame) ---------------
     // A Vermicell egg turns the worm inside it loose in a quarantine buffer: A steers
@@ -1397,6 +1435,16 @@ public:
     // tests and dump_frame use to place the run deliberately instead of by stopwatch.
     void debugStepStacker() { stacker_.step(); }
     const Stacker& stacker() const { return stacker_; }
+    // Set a quote's standing directly (tests / dump_frame): reach the eight-solve
+    // arcade unlock, or a mid-ladder tier, without playing eight boards by hand. The
+    // real paths are Game::settleCryptogram's win and its loss ratchet.
+    void debugSetQuoteTier(int i, CryptogramTier t) { setQuoteTier(i, t); }
+    // Open a SPECIFIC quote's board (tests / dump_frame). Skips only the ticket and the
+    // roll — from here onButton drives the real board and the real settle, which is
+    // where the ratchet and the prize are decided. Real path: the VAULT cash-in.
+    void debugStartCryptogram(int quote, int extraReveals) {
+        startCryptogram(quote, extraReveals);
+    }
     // Enter a fresh Stacker board without paying for it (tests / dump_frame). Skips only
     // the purchase — from here onButton drives the REAL board and a finished run lands in
     // the real finishStacker, which is where the played-defrag tally and its two
@@ -1793,6 +1841,12 @@ private:
     // (only Bandwidth has one — the live-pool grant), logs, persists. One function for
     // every row (a-f + both recipes) — adding a row is a table entry, not a new buyX().
     void buyRigUpgrade(int row);
+    // The OWNING half of that, with no till in it: bump the row `levels` times, apply
+    // its RigEffectKind each time, log and persist. Split out because a rig level can
+    // now also be WON (a solved Decryptogram's prize, game_cryptogram.cpp) — a granted
+    // level and a bought one must land identically, and this is the one place either
+    // lands. Out-of-range rows and non-positive counts are inert.
+    void grantRigLevel(int row, int levels);
     bool rigUpgradeOwned(int row) const { return rigLevel_[row] > 0; }  // level > 0
 
     // MERGE HUB (game_merge.cpp) — the f Rig Shop unlock combines two owned
@@ -1840,6 +1894,10 @@ private:
     // VAULT's owned-openable row list (shared by input + render + the bulk-open
     // trigger), capped at `max`. Returns the count written into `rows`.
     int vaultOwnedRows(const ItemDef** rows, int max) const;
+    // Spend the focused VAULT row on whatever it is for — a cache opens for a reward
+    // draw, a Decryptogram rolls a quote and starts a board. The one place a VAULT B
+    // resolves, so the tap path and the bulk-hold's release path cannot diverge.
+    void cashVaultRow(const ItemDef& d);
     // e: resolves the VAULT hold-B gesture's SHORT-press half — called from
     // onButton on every B release. No-op unless the hold was armed here (not by the
     // unrelated CFG Factory-Reset hold, which also uses bHeld_/bDownMs_) AND never
@@ -1897,8 +1955,8 @@ private:
     // dismisses back to the VAULT list (Nav::Submenu — mirrors onCacheYield).
     void onBulkYield(const ButtonEvent& ev);
     void drawBulkYieldScreen(Framebuffer& fb) const;
-    // Decryptogram: consume it + ready the egg's decrypt (opens the minigame).
-    void useDecryptogram(const ItemDef& d);
+    // Boot Accelerator: consume it + take kBootAcceleratorCutMs off the incubation.
+    void useBootAccelerator(const ItemDef& d);
     // Rollback: open the stat picker (nav_ = RollbackPicker) parked on the
     // first eligible stat; onRollbackPicker drives A cycle / B shed / C cancel;
     // rollbackEligible tests a stat has ≥1 earned point (skipped otherwise);
@@ -1950,6 +2008,27 @@ private:
     void onDecryption(const ButtonEvent& ev);
     void finishDecryption();   // bank the crack against the clock (or the till) and leave
     void drawDecryption(Framebuffer& fb) const;
+
+    // DECRYPTOGRAM lifecycle (game_cryptogram.cpp) — see inCryptogram() above.
+    // `quote` is a content_quotes.h roster row and `extraReveals` the opening gift; the
+    // VAULT reads both off the quote's own tier, and the arcade's dial supplies the
+    // second. Nothing here rolls the quote: pickQuote does that, once, at the cash-in.
+    void startCryptogram(int quote, int extraReveals);
+    void onCryptogram(const ButtonEvent& ev);
+    // Runs the instant the board stops, not when the player leaves it: the tier ratchet
+    // and the prize both have to have LANDED before the verdict screen can name them.
+    // A no-op on an arcade run, which never touches a quote's standing.
+    void settleCryptogram();
+    void finishCryptogram();   // leave the board — to the arcade's till, or to the VAULT
+    void drawCryptogram(Framebuffer& fb) const;
+    // A roster row to play, drawn off the shared LCG from whatever is eligible, or -1
+    // when nothing is. Advances rng_.
+    int pickQuote(QuotePick pick);
+    void setQuoteTier(int i, CryptogramTier t);
+    void applyQuoteReward();   // the win: Bits + the one account unlock
+    // The unlock's display name for the board's prize line, or nullptr — resolved off
+    // whichever content table the reward kind names.
+    const char* cryptogramPrizeLabel() const;
     void completeHatch();    // decrypt done -> hatch straight to Process, return to idle
     const SpriteData* hatchEggSprite() const;
     void startHatchGame(const EggLineDef* line);  // route a freshly laid egg to its HatchGame
@@ -2780,6 +2859,21 @@ private:
     // setting, read only by the screen.
     DiskDecryption decryption_;
     bool decryptionEasy_ = false;
+
+    // THE DECRYPTOGRAM (game_cryptogram.cpp). The BOARD is un-persisted like the three
+    // above — a reboot mid-quote forfeits the Decryptogram, which is the same deal
+    // every other minigame offers. What does persist (save v48) is quoteStates_: two
+    // bits per QuoteDef::wire holding the tier ladder, which is simultaneously the loss
+    // ratchet and the "already won" record. Player-level, so it outlives a pet.
+    //
+    // cryptogramPrize_ is the finished run frozen for the verdict screen, for the same
+    // reason the arcade's result block is: the payout has already landed on bits_ and
+    // the rig by the time the player reads it.
+    Cryptogram cryptogram_;
+    int cryptogramQuote_ = -1;        // roster row being played, or -1
+    int cryptogramPrizeBits_ = 0;     // what the solve actually paid
+    QuoteReward cryptogramPrize_ = {};  // ...and the unlock beside it (None = replay)
+    uint8_t quoteStates_[kQuoteStateBytes] = {0};
 
     // GAMES / the arcade (game_arcade.cpp). arcadeRow_ is the cabinet list's cursor and
     // arcadeGame_ the roster index of whatever is RUNNING — the two part company as

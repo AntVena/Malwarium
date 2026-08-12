@@ -177,6 +177,16 @@ inline int litCellsGray(const Framebuffer& fb, int gx, int gw, int rowY) {
     return lit;
 }
 
+// Walk the HACKER carousel to `slot` and enter it — the A+C chord flips the face
+// first, so a caller mid-submenu is backed out to idle before the chord is spent.
+inline void enterHackerSlot(Game& g, HackerSlotId slot) {
+    while (g.nav() != Game::Nav::Idle) g.onButton(press(Button::C));
+    g.onButton({Button::A, true, true});                  // A+C -> hacker face
+    g.onButton(press(Button::A));
+    while (hackerCarouselSlots()[g.cursor()].id != slot) g.onButton(press(Button::A));
+    g.onButton(press(Button::B));
+}
+
 // Walk the carousel cursor from idle to the slot routing to `id`, then enter it.
 inline void enterSlot(Game& g, SubmenuId id) {
     g.onButton(press(Button::A));                     // idle A -> cursor @ slot 0

@@ -11,6 +11,7 @@ a magnitude only one entity reads lives **on that row**, never in `tunables.h`.
 | Name an item | [ITEM_NAMING.md](ITEM_NAMING.md) — the functional-clarity standard |
 | Give a line its combat identity, or add a move to one | [LINE_MOVE_IDENTITIES.md](LINE_MOVE_IDENTITIES.md) — what each family's kit is *for* |
 | Add or edit an EXPL area | [areas/README.md](areas/README.md) — the folder shape and the naming tiers |
+| Add a DECRYPTOGRAM quote | [content_quotes.h](content_quotes.h) — the two rules a row must pass (it WRAPS into the grid; ASCII only), the wire-number discipline, and where a per-quote prize would go. `test_cryptogram_quotes_fit_the_panel` is the gate: write the row, run it. |
 
 **Renaming an id is free** — rewrite the row and add a rename row to the save codec
 (`core/model/save.h`'s `renamedIds`). Never leave an alias behind in a content table.

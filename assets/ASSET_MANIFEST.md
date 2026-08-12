@@ -474,6 +474,10 @@ blank — that is the prompt to draw one, and `check_orphan_assets.py` catches t
   apple · taproot · noodle bowl · patty.
 - **`ICON_ITEM_FULLY_STACKED_NACHOS` is `▨`** — it reuses `ICON_ITEM_TORTILLA_CHIP` rather than
   being bespoke. The only item icon that is a stand-in.
+- **`ICON_ITEM_BOOT_ACCELERATOR` is `☐` and currently draws blank.** The egg accelerator and the
+  Decryptogram are two items now: the ticket kept `ICON_ITEM_DECRYPTOGRAM` (a sealed document, which
+  is what a cryptogram is), and the accelerator has no glyph yet. It ships in the starting bag, so
+  this blank is the most visible one on the device.
 
 ---
 

@@ -176,29 +176,64 @@ void Game::onHackerShop(const ButtonEvent& ev) {
     }
 }
 
+namespace {
+// Is this an item the VAULT cashes in? Two Use-actions qualify: a sealed cache opens
+// for a reward draw, and a Decryptogram buys a board. Both are spent HERE rather than
+// pet-side, because what either pays out is player-level — which is also what
+// itemUsable's two gate messages say from the other side.
+bool vaultCashable(const ItemDef& d) {
+    return d.use == ItemDef::Use::OpenContainer || d.use == ItemDef::Use::PlayCryptogram;
+}
+}  // namespace
+
 int Game::vaultOwnedRows(const ItemDef** rows, int max) const {
     int n = 0;
     for (const auto& s : inventory_.stacks()) {
         if (s.qty <= 0) continue;
         const ItemDef* d = registry_.item(s.id);
-        if (d && d->use == ItemDef::Use::OpenContainer && n < max) rows[n++] = d;
+        if (d && vaultCashable(*d) && n < max) rows[n++] = d;
     }
-    // Richest draw first — a cache's rarity IS its payout tier (content_items.cpp
-    // grades bits/draws/pool by it), so the top row is always the best thing to open.
-    // Inventory order is insertion order, which says nothing a player cares about.
+    // Tickets above caches, then richest draw first — a cache's rarity IS its payout
+    // tier (content_items.cpp grades bits/draws/pool by it), so the top cache row is
+    // always the best thing to open, and a Decryptogram outranks all of them because it
+    // is the only row here that is a GAME rather than a draw. Inventory order is
+    // insertion order, which says nothing a player cares about.
     std::stable_sort(rows, rows + n, [](const ItemDef* a, const ItemDef* b) {
+        const bool at = a->use == ItemDef::Use::PlayCryptogram;
+        const bool bt = b->use == ItemDef::Use::PlayCryptogram;
+        if (at != bt) return at;
         return a->rarity > b->rarity;
     });
     return n;
 }
 
+void Game::cashVaultRow(const ItemDef& d) {
+    if (d.use != ItemDef::Use::PlayCryptogram) { openSealedCache(d); return; }
+    // Spend the ticket FIRST: the board cannot be walked out of, so there is no path
+    // where it is consumed and no board follows, and taking it up front means a reboot
+    // mid-quote costs the ticket rather than duplicating it.
+    if (inventory_.count(d.id) <= 0) return;
+    // Every quote won already? Then there is no first-solve prize left and the board is
+    // replayed for Bits — the same deal the arcade cabinet offers, minus the cabinet.
+    const int quote = pickQuote(quotesLeftToWin() ? QuotePick::Unsolved
+                                                  : QuotePick::SolvedOnly);
+    if (quote < 0) return;   // an empty pool: keep the ticket rather than eat it
+    inventory_.remove(d.id, 1);
+    char buf[28];
+    std::snprintf(buf, sizeof(buf), "USED %s", d.displayName);
+    log_.push(LogEventType::ItemUsed, buf);
+    markSaveDirty();
+    startCryptogram(quote, cryptogramExtraReveals(quoteTier(quote)));
+}
+
 void Game::onHackerVault(const ButtonEvent& ev) {
-    // VAULT — decrypt owned sealed caches here, OFF pet ITEMS. Build the list
-    // of owned openable stacks; A cycles, C backs to the carousel. B: unowned e
-    // decrypts the focused row immediately (openSealedCache, unchanged behaviour);
-    // owned, B becomes a tap/hold gesture — arm here and resolve on the button-RELEASE
-    // edge (vaultBulkReleaseB, a short tap opens just the one) or on the hold crossing
-    // kBulkOpenHoldMs (tick() bulk-opens every cache sharing the row's rarity instead).
+    // VAULT — cash in what a pet has no use for, OFF pet ITEMS. Build the list of
+    // owned cashable stacks (caches to decrypt, Decryptograms to play); A cycles, C
+    // backs to the carousel. B: unowned e resolves the focused row immediately
+    // (cashVaultRow); owned, B becomes a tap/hold gesture ON A CACHE ROW — arm here and
+    // resolve on the button-RELEASE edge (vaultBulkReleaseB, a short tap cashes just
+    // the one) or on the hold crossing kBulkOpenHoldMs (tick() bulk-opens every cache
+    // sharing the row's rarity instead).
     const ItemDef* rows[16];
     const int n = vaultOwnedRows(rows, 16);
     if (ev.button == Button::C) { nav_ = Nav::Cursor; return; }
@@ -207,11 +242,15 @@ void Game::onHackerVault(const ButtonEvent& ev) {
     if (ev.button == Button::A) {
         hackerVaultRow_ = (hackerVaultRow_ + 1) % n;
     } else if (ev.button == Button::B) {
-        if (bulkOpenUnlocked()) {
+        // The hold gesture is a CACHE gesture — "open every cache of this rarity" means
+        // nothing on a Decryptogram, and arming it there would swallow the tap that is
+        // supposed to start a board. A ticket row therefore always resolves on the press.
+        if (bulkOpenUnlocked() &&
+            rows[hackerVaultRow_]->use == ItemDef::Use::OpenContainer) {
             bHeld_ = true;
             bDownMs_ = nowMs_;
         } else {
-            openSealedCache(*rows[hackerVaultRow_]);          // consumes + reward draw
+            cashVaultRow(*rows[hackerVaultRow_]);   // a reward draw, or a board
         }
     }
 }
@@ -224,7 +263,7 @@ void Game::vaultBulkReleaseB() {
     const int n = vaultOwnedRows(rows, 16);
     if (n == 0) return;
     if (hackerVaultRow_ >= n) hackerVaultRow_ = 0;
-    openSealedCache(*rows[hackerVaultRow_]);
+    cashVaultRow(*rows[hackerVaultRow_]);
     dirty_ = true;
     lastInputMs_ = nowMs_;
 }
@@ -235,16 +274,25 @@ void Game::buyRigUpgrade(int row) {
     const int cost = rigUpgradeCostFor(row);
     if (bits_ < cost) return;                       // NOT ENOUGH BITS — inert
     bits_ -= cost;
-    ++rigLevel_[row];
-    // Bandwidth is the one row with an immediate effect: the freshly-bought pool
-    // capacity is available to farm with right away, not just on the next regen tick.
-    if (def.effectKind == RigEffectKind::GrantBandwidth) {
-        bandwidth_ += def.effectMagnitude;
-        if (bandwidth_ > bandwidthMax()) bandwidth_ = bandwidthMax();
+    grantRigLevel(row, 1);
+    dirty_ = true;
+}
+
+void Game::grantRigLevel(int row, int levels) {
+    if (row < 0 || row >= kRigUpgradeCount || levels <= 0) return;
+    const RigUpgradeDef& def = kRigUpgrades[row];
+    for (int i = 0; i < levels; ++i) {
+        ++rigLevel_[row];
+        // Bandwidth is the one row with an immediate effect: the freshly-owned pool
+        // capacity is available to farm with right away, not just on the next regen
+        // tick. Applied per level so a multi-level grant tops up by the whole amount.
+        if (def.effectKind == RigEffectKind::GrantBandwidth) {
+            bandwidth_ += def.effectMagnitude;
+            if (bandwidth_ > bandwidthMax()) bandwidth_ = bandwidthMax();
+        }
     }
     log_.push(LogEventType::ItemGained, def.logText);
     markSaveDirty();
-    dirty_ = true;
 }
 
 // --- Rendering -------------------------------------------------------------
@@ -403,14 +451,14 @@ void Game::drawHackerSubmenu(Framebuffer& fb) const {
     }
 
     if (enteredHackerId() == HackerSlotId::Vault) {
-        // VAULT — decrypt owned sealed caches OFF pet ITEMS. One row per owned
-        // openable stack (name + count); A cycles, B decrypts (openSealedCache), C exits.
+        // VAULT — cash in what a pet has no use for, OFF pet ITEMS. One row per owned
+        // cashable stack (name + count); A cycles, B spends it (cashVaultRow), C exits.
         drawHeaderBand(fb, "VAULT");
 
         const ItemDef* rows[16];
         const int n = vaultOwnedRows(rows, 16);
         if (n == 0) {
-            drawText(fb, kMargin, 40, "NO SEALED CACHES", palColor(Pal::INK_DIM));
+            drawText(fb, kMargin, 40, "NOTHING TO CASH IN", palColor(Pal::INK_DIM));
             return;
         }
         int sel = hackerVaultRow_;
@@ -450,10 +498,15 @@ void Game::drawHackerSubmenu(Framebuffer& fb) const {
             fb.fillRect(barX, thumbY, 2, thumbH, palColor(Pal::INK_DIM));
         }
         fb.fillRect(0, kActiveH - 26, kActiveW, 1, palColor(Pal::TRACK));
-        drawText(fb, kMargin, kActiveH - 20, "B DECRYPT", palColor(Pal::ACCENT));
+        // B does two different things here, so it says which: a cache is DECRYPTED for
+        // a draw, a Decryptogram is PLAYED as a board.
+        const bool ticket = rows[sel]->use == ItemDef::Use::PlayCryptogram;
+        drawText(fb, kMargin, kActiveH - 20, ticket ? "B PLAY" : "B DECRYPT",
+                 palColor(Pal::ACCENT));
         // e hint (exception rule) — only once owned, so an unowned
-        // player's VAULT is pixel-identical to before this upgrade existed.
-        if (bulkOpenUnlocked())
+        // player's VAULT is pixel-identical to before this upgrade existed. Never on a
+        // ticket row, which has no bulk gesture to advertise.
+        if (bulkOpenUnlocked() && !ticket)
             drawText(fb, kActiveW - kMargin - textWidth("HOLD - OPEN ALL"),
                      kActiveH - 20, "HOLD - OPEN ALL", palColor(Pal::INK_DIM));
         return;

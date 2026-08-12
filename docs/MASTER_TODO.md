@@ -44,6 +44,22 @@ cabinet page. | `game_arcade.cpp`'s `finishArcadeRun`; `arcade_screen.cpp`; the 
 `save.cpp`. | S | The only judgement call is whether a WinLose cabinet (the Clutch) shows anything
 at all, since its score is always 0 or absent. |
 
+**The DECRYPTOGRAM pays one prize, and every quote pays the same one.** `quoteWinReward()`
+answers with a fixed `+1 bandwidth` for the whole pool, and `kQuoteWinBits` is one number — a
+GAME-level answer standing in for what will eventually be a per-quote one (a marquee quote worth a
+rack slot, a throwaway worth half the Bits). `QuoteReward` already carries the kind+magnitude+id
+vocabulary and `applyQuoteReward` already switches on it, so the change is an optional reward field
+on `QuoteDef` plus resolving it off the row when present. | `content_quotes.h`'s two reward
+accessors; `game_cryptogram.cpp`'s `applyQuoteReward`. | S | Do it when a row actually wants a
+different prize — until then a per-row field is the same literal pasted three hundred times. |
+
+**A crew cannot be DISCOVERED.** `QuoteReward::Kind` has room for it and it is one of the prizes
+the board was designed to hand over ("you find a crew to join"), but crews are ungated today —
+every row in `content_crews.cpp` is enlistable from the first boot, so there is nothing for a
+prize to unlock. Wants a discovery axis on `CrewDef` first, then one `Kind` and one applier case. |
+`content_crews.h`; `game_crew.cpp`'s roster filter; `QuoteReward::Kind`. | M | The gating axis is
+the real work; the prize is three lines once it exists. |
+
 ### 1a-ii. Evolution routing — one weighted edge list per creature
 
 `CreatureDef` carries five optional successor pointers (`evolvesToId`, `evolvesToGoodId`,
@@ -344,6 +360,7 @@ Sizes are logical px; bind colour to `PAL_CORE` tokens. Inventory: `assets/ASSET
 | `ICON_CFG_UPDATE` | UPDATES row — reuses `ICON_CFG_SYSINFO` today | 20×20 | S |
 | `ICON_CFG_TRAVEL` | DEVICE group's TRAVEL MODE row — reuses `ICON_CFG_SYSINFO` today | 20×20 | S |
 | `ICON_PEERS` | Hacker-face PEERS slot — renders text-only today | 28×28 | S |
+| `ICON_ITEM_BOOT_ACCELERATOR` | the egg accelerator split off the Decryptogram — draws a BLANK row in ITEMS today, and it is in the starting bag, so it is the first thing a new player sees missing | 20×20 | S |
 
 ### 2a-i. The sprite-packing tools live outside the repo
 

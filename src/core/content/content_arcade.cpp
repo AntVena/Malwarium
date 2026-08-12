@@ -41,6 +41,16 @@ const ArcadeGameDef kArcadeGames[] = {
      "FIVE COLOURS, THREE SLOTS, FIVE GUESSES.",
      "ICON_LINE_RANSOMWARE", "WHAT THE BOARD WILL TELL YOU.",
      ArcadeGameKind::Decryption, ArcadeScoring::Incremental},
+
+    // The VAULT's quote board, with no ticket spent and no prize but Bits — and only
+    // over quotes already solved, so the cabinet is a re-run rather than a way to farm
+    // the pool for free. That is also why it is the one gated row: there is nothing to
+    // re-run until kQuoteArcadeUnlockWins quotes have been cracked the honest way.
+    {"cryptogram", "DECRYPTOGRAM",
+     "OPEN THE QUOTE. ONE WRONG LETTER ENDS IT.",
+     "ICON_ITEM_DECRYPTOGRAM", "HOW MANY LETTERS ARE OPEN.",
+     ArcadeGameKind::Cryptogram, ArcadeScoring::Incremental,
+     ArcadeUnlock::QuotesSolved},
 };
 
 static_assert(sizeof(kArcadeGames) / sizeof(kArcadeGames[0]) <= kArcadeMaxCabinets,

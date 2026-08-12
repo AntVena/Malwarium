@@ -671,7 +671,7 @@ void test_hacker_shop_item_picker_buy() {
 }
 
 // The category axis splits QUEST into KEYS + TOOLS without touching the type axis:
-// the starting shelf's 2 quest items are both Keys (Decryption Key, Decryptogram),
+// the starting shelf's 2 quest items are both Keys (Decryption Key, Boot Accelerator),
 // so a fresh bag has an EMPTY Tools category until a Defrag Tool lands in it. The
 // filtered list's one header names the CATEGORY, not the type it sits under.
 void test_item_category_filters_split_quest() {

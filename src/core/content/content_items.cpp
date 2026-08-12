@@ -45,6 +45,7 @@ const LootEntry kCachePoolCommon[]   = {{"airgap_snack"}, {"tortilla_chip"},
 const LootEntry kCachePoolUncommon[] = {{"airgap_snack"}, {"r007_b33r"},
                                         {"sinkhole_trap"}, {"pwnzu_sauce"},
                                         {"osi_dip"}, {"rootkit_bell"},
+                                        {"decryptogram"},
                                         // The uncommon half of the pantry.
                                         {"java"}, {"kernel_oil"},
                                         {"syntactic_sugar"}, {"applets"},
@@ -52,7 +53,7 @@ const LootEntry kCachePoolUncommon[] = {{"airgap_snack"}, {"r007_b33r"},
                                         {"desalinated_c_salt"}};
 const LootEntry kCachePoolRare[]     = {{"backup_drive"}, {"sinkhole_trap"},
                                         {"rollback"}, {"deep_learning_module"},
-                                        {"kernel_bell"}};
+                                        {"kernel_bell"}, {"decryptogram"}};
 const LootEntry kCachePoolEpic[]     = {{"rollback"}, {"yubi_cookie"},
                                         {"backup_drive"}, {"restore_point"},
                                         {"deep_learning_core"}, {"zeroday_bell"}};
@@ -80,7 +81,7 @@ constexpr int kStapleWalkWeight = 8;
 const LootEntry kLootPool[] = {{"airgap_snack"}, {"tortilla_chip"},
     {"pwnzu_sauce"}, {"backup_drive"}, {"rollback"}, {"osi_dip"},
     {"deep_learning_module"}, {"deep_learning_core"}, {"backdoor_bell"},
-    {"rootkit_bell"}, {"kernel_bell"}, {"zeroday_bell"},
+    {"rootkit_bell"}, {"kernel_bell"}, {"zeroday_bell"}, {"decryptogram"},
     // The pantry, thinned to kStapleWalkWeight apiece — see the note on that constant.
     {"spam", kStapleWalkWeight}, {"breadcrumbs", kStapleWalkWeight},
     {"c_salt", kStapleWalkWeight}, {"grepsed_oil", kStapleWalkWeight},
@@ -124,17 +125,30 @@ const ItemDef kItems[] = {
      {{IE::Kind::Hunger, -15}, {IE::Kind::Frag, -15}, {IE::Kind::HappyToward50, 20}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/5},
 
-    // Decryptogram: the egg accelerator, granted into starting inventory on
-    // every new egg. Use on a Boot-Sector egg takes a flat kDecryptogramCutMs off its
+    // Boot Accelerator: the egg accelerator, granted into starting inventory on every
+    // new egg. Use on a Boot-Sector egg takes a flat kBootAcceleratorCutMs off its
     // incubation, floored at the crackable window — every line's hatch minigame is
     // played at lay-time, so there is nothing left for an item to open. Quest-typed
-    // (falls through the egg-phase ITEMS gate), no vitals, priceless, egg-only.
-    {"decryptogram", "Decryptogram", ItemDef::Type::Quest,
+    // (falls through the egg-phase ITEMS gate), no vitals, egg-only.
+    {"boot_accelerator", "Boot Accelerator", ItemDef::Type::Quest,
      ItemDef::Rarity::Common,
      "Use on the egg to cut 10 minutes off its incubation.",
      ItemDef::Context::Anytime, /*effects=*/{}, /*combatHeal=*/0, /*preEncounterXp=*/0,
      /*bits=*/0, /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::DecryptEgg,
      /*category=*/ItemDef::Category::Keys},
+
+    // Decryptogram: a found ticket to one DECRYPTOGRAM board (content_quotes.h). Cashed
+    // in at the Hacker VAULT, never from ITEMS — the prize is a player-level account
+    // unlock, so it is spent where the other things you cash in are, and itemUsable
+    // gates the pet path with "CASH IN AT VAULT" the way it does a sealed cache.
+    // Priceless on purpose: no storefront sells one, so the pool only drains as fast as
+    // the walk hands them over.
+    {"decryptogram", "Decryptogram", ItemDef::Type::Quest,
+     ItemDef::Rarity::Uncommon,
+     "Cash in at the VAULT to crack a quote for Bits and an upgrade.",
+     ItemDef::Context::Anytime, /*effects=*/{}, /*combatHeal=*/0, /*preEncounterXp=*/0,
+     /*bits=*/0, /*walkWarp=*/ItemDef::WalkWarp::None,
+     /*use=*/ItemDef::Use::PlayCryptogram, /*category=*/ItemDef::Category::Keys},
 
      // A random reward that doesn't have to come from the source zone's drop table.
      // The four rarity caches' findWeight values are the walk's cache-find distribution

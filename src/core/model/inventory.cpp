@@ -42,7 +42,7 @@ Inventory Inventory::starting() {
     inv.add("restore_point", 1);  // care-mistake shield (save v21)
     inv.add("decrypt_key", 1);
     inv.add("backup_drive", 1);
-    inv.add("decryptogram", 1);   // egg decrypt accelerator
+    inv.add("boot_accelerator", 1);   // egg decrypt accelerator
     return inv;
 }
 

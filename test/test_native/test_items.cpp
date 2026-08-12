@@ -18,7 +18,10 @@ void test_inventory() {
 
     Inventory s = Inventory::starting();
     CHECK(s.count("airgap_snack") == 3 && s.count("backup_drive") == 1);
-    CHECK(s.count("decryptogram") == 1);             // egg accelerator
+    CHECK(s.count("boot_accelerator") == 1);         // egg accelerator
+    // The Decryptogram is FOUND, never issued — it buys a quote board, and the starting
+    // kit does not hand one over.
+    CHECK(s.count("decryptogram") == 0);
 }
 
 void test_event_log() {

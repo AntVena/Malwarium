@@ -334,9 +334,14 @@ bool Game::tick(uint32_t nowMs) {
     }
 
     // Lockout crisis fires when Hunger bottoms out. Never during the Hatch
-    // (there's no pet), an Evolution, or a Critical System Failure (priority).
-    if (pet_ && !lockoutActive_ && nav_ != Nav::Decryption && nav_ != Nav::ModalEvolve &&
-        nav_ != Nav::ModalCSF && model_.isStarving()) {
+    // (there's no pet), an Evolution, or a Critical System Failure (priority) — nor
+    // over a DECRYPTOGRAM board, which is the one preemption that would DESTROY
+    // something: the board cannot be walked out of and the ticket into it is already
+    // spent, so firing across it would take a found item and give nothing back. The
+    // crisis loses nothing by waiting — its deadline starts when it fires, and this
+    // check runs again the moment the board is left.
+    if (pet_ && !lockoutActive_ && nav_ != Nav::Decryption && nav_ != Nav::Cryptogram &&
+        nav_ != Nav::ModalEvolve && nav_ != Nav::ModalCSF && model_.isStarving()) {
         fireLockout();
         changed = true;
     }
@@ -426,7 +431,10 @@ bool Game::tick(uint32_t nowMs) {
         const int n = vaultOwnedRows(rows, 16);
         if (n > 0) {
             if (hackerVaultRow_ >= n) hackerVaultRow_ = 0;
-            openAllCachesOfRarity(*rows[hackerVaultRow_]);
+            // Caches only — the row can have moved under a held B, and "open every one
+            // of these" is not a thing a Decryptogram can do.
+            if (rows[hackerVaultRow_]->use == ItemDef::Use::OpenContainer)
+                openAllCachesOfRarity(*rows[hackerVaultRow_]);
         }
         lastInputMs_ = nowMs_;
         changed = true;
@@ -445,6 +453,7 @@ bool Game::tick(uint32_t nowMs) {
                            nav_ == Nav::Process || nav_ == Nav::Decryption ||
                            nav_ == Nav::ModalLineSelect || nav_ == Nav::ModalEggPick ||
                            nav_ == Nav::ModalHatchReveal || nav_ == Nav::Isolation ||
+                           nav_ == Nav::Cryptogram ||
                            nav_ == Nav::ModalEvolve || nav_ == Nav::ModalCSF ||
                            nav_ == Nav::Combat || nav_ == Nav::ExploreControl ||
                            nav_ == Nav::Encounter || nav_ == Nav::Wifi ||
@@ -680,6 +689,7 @@ void Game::onButton(const ButtonEvent& ev) {
             break;
         }
         case Nav::Decryption: onDecryption(ev); break;
+        case Nav::Cryptogram: onCryptogram(ev); break;
         case Nav::ModalHatchReveal:
             // The crack cinematic runs itself and hatches off the end — every button is
             // inert for its ~2 seconds, so a stray press can't skip the one animation

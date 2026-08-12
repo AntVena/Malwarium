@@ -33,12 +33,12 @@ constexpr int kCabStartY = 176;
 }  // namespace
 
 void drawArcadeList(Framebuffer& fb, const ContentRegistry& reg, const int* plays,
-                    int cursor, int beat) {
+                    const int* rows, int n, int cursor, int beat) {
     drawHeaderBand(fb, "GAMES");
-    const int n = arcadeGameCount();
-    for (int i = 0; i < n; ++i) {
+    for (int v = 0; v < n; ++v) {
+        const int i = rows[v];
         const ArcadeGameDef& d = arcadeGames()[i];
-        const int y = kRowTop + i * kRowH;
+        const int y = kRowTop + v * kRowH;
         if (i == cursor) {
             fb.fillRect(4, y + 2, kActiveW - 8, kRowH - 4, palColor(Pal::TRACK));
             drawRowCursor(fb, 8, y + (kRowH - 7) / 2, palColor(Pal::ACCENT));

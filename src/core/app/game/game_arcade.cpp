@@ -2,6 +2,7 @@
 
 #include "tunables.h"
 #include "core/content/content_arcade.h"
+#include "core/content/content_quotes.h"
 #include "core/ui/arcade_screen.h"
 
 // game_arcade.cpp — GAMES: the arcade cabinets.
@@ -21,13 +22,39 @@
 namespace mal {
 
 // --- The cabinet list (L2) -------------------------------------------------
+//
+// A locked cabinet is ABSENT from the list, not greyed in it — the Rig Shop's rule
+// (shopRowOffered), and for the same reason: a menu should not advertise a door the
+// player has no key to. arcadeRow_ stays a ROSTER index throughout, so the tallies and
+// the START call index the same space whether or not anything is hidden.
+
+bool Game::arcadeCabinetOffered(int i) const {
+    if (i < 0 || i >= arcadeGameCount()) return false;
+    switch (arcadeGames()[i].unlock) {
+        case ArcadeUnlock::Always: return true;
+        case ArcadeUnlock::QuotesSolved: return quotesSolved() >= kQuoteArcadeUnlockWins;
+    }
+    return true;
+}
+
+int Game::arcadeOfferedRows(int* out, int max) const {
+    int n = 0;
+    for (int i = 0; i < arcadeGameCount() && n < max; ++i)
+        if (arcadeCabinetOffered(i)) out[n++] = i;
+    return n;
+}
 
 void Game::onArcadeList(const ButtonEvent& ev) {
-    const int n = arcadeGameCount();
+    const int total = arcadeGameCount();
     if (ev.button == Button::A) {
-        arcadeRow_ = n > 0 ? (arcadeRow_ + 1) % n : 0;
+        // Step through raw table order to the next offered row, wrapping; a roster with
+        // nothing offered leaves the cursor where it is.
+        for (int step = 1; step <= total; ++step) {
+            const int next = (arcadeRow_ + step) % total;
+            if (arcadeCabinetOffered(next)) { arcadeRow_ = next; break; }
+        }
     } else if (ev.button == Button::B) {
-        if (n <= 0) return;
+        if (!arcadeCabinetOffered(arcadeRow_)) return;
         nav_ = Nav::Detail;
     } else if (ev.button == Button::C) {
         nav_ = Nav::Cursor;
@@ -58,8 +85,7 @@ int Game::arcadeStepMs(int baseMs) const {
 }
 
 void Game::startArcadeRun() {
-    const int n = arcadeGameCount();
-    if (arcadeRow_ < 0 || arcadeRow_ >= n) return;
+    if (!arcadeCabinetOffered(arcadeRow_)) return;   // range + the unlock, in one ask
     arcadeGame_ = arcadeRow_;
     arcadeRun_ = true;
     switch (arcadeGames()[arcadeGame_].kind) {
@@ -77,12 +103,28 @@ void Game::startArcadeRun() {
             startIsolation(kArcadeIsolationGoal);
             break;
         case ArcadeGameKind::Decryption:
-            // The only cabinet whose dial moves the RULES: easy outlines the cells a
-            // row got exactly right, hard lets the key repeat a colour.
+            // One of the two cabinets whose dial moves the RULES: easy outlines the
+            // cells a row got exactly right, hard lets the key repeat a colour.
             startDecryption(
                 /*allowDuplicates=*/arcadeDifficulty_ == ArcadeDifficulty::Hard,
                 /*easyHints=*/arcadeDifficulty_ == ArcadeDifficulty::Easy);
             break;
+        case ArcadeGameKind::Cryptogram: {
+            // The dial IS the quote's difficulty ladder, so the cabinet reuses the same
+            // opening the VAULT would give — no second answer to what MEDIUM means on
+            // a quote board. Only a SOLVED quote is offered: the cabinet is a re-run,
+            // never a free route through the pool.
+            const int quote = pickQuote(QuotePick::SolvedOnly);
+            if (quote < 0) {
+                arcadeRun_ = false;   // nothing to re-run — leave the cabinet page up
+                return;
+            }
+            CryptogramTier t = CryptogramTier::Hard;
+            if (arcadeDifficulty_ == ArcadeDifficulty::Medium) t = CryptogramTier::Medium;
+            else if (arcadeDifficulty_ == ArcadeDifficulty::Easy) t = CryptogramTier::Easy;
+            startCryptogram(quote, cryptogramExtraReveals(t));
+            break;
+        }
     }
     dirty_ = true;
 }
@@ -139,7 +181,9 @@ void Game::drawArcade(Framebuffer& fb) const {
     int plays[kArcadeMaxCabinets] = {0};
     for (int i = 0; i < arcadeGameCount() && i < kArcadeMaxCabinets; ++i)
         plays[i] = arcadePlays_[i];
-    drawArcadeList(fb, registry_, plays, arcadeRow_, beat_);
+    int rows[kArcadeMaxCabinets] = {0};
+    const int n = arcadeOfferedRows(rows, kArcadeMaxCabinets);
+    drawArcadeList(fb, registry_, plays, rows, n, arcadeRow_, beat_);
 }
 
 void Game::drawArcadeDetail(Framebuffer& fb) const {

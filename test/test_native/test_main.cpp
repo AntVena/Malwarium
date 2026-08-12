@@ -542,6 +542,20 @@ int g_failures = 0;
     RUN(test_arcade_ladders_split_plays_wins_losses) \
     RUN(test_stack_overflow_fires_on_the_second_row) \
     RUN(test_arcade_tallies_persist)              \
+    /* THE DECRYPTOGRAM — the quote board, its pool's fit, and both doors in */ \
+    RUN(test_cryptogram_quotes_fit_the_panel)     \
+    RUN(test_cryptogram_opens_at_least_three_letters) \
+    RUN(test_cryptogram_difficulty_opens_more)    \
+    RUN(test_cryptogram_right_letter_opens_every_instance) \
+    RUN(test_cryptogram_one_wrong_letter_ends_the_run) \
+    RUN(test_cryptogram_c_drops_the_letter_but_never_leaves) \
+    RUN(test_cryptogram_vault_ticket_pays_bits_and_an_upgrade) \
+    RUN(test_cryptogram_losing_ratchets_the_quote_easier) \
+    RUN(test_cryptogram_gated_quotes_wait_for_their_achievement) \
+    RUN(test_cryptogram_states_persist)           \
+    RUN(test_cryptogram_arcade_cabinet_waits_for_eight_wins) \
+    RUN(test_cryptogram_arcade_replays_a_solved_quote_for_bits) \
+    RUN(test_cryptogram_grayscale)                \
     /* Isolation Protocol — the Worm egg's hatch minigame + its line gate */ \
     RUN(test_isolation_opens_on_the_middle_row)   \
     RUN(test_isolation_step_moves_without_growing) \

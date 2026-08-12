@@ -78,12 +78,12 @@ constexpr int kAchBannerBurstMax = 6;
 // second late is unnoticeable, and this keeps the sweep off the ~4fps repaint path.
 constexpr uint32_t kAchSweepIntervalMs = 500;
 
-// --- The Decryptogram. The one item that touches an egg, and now a flat bite out of
-//     its incubation clock rather than a way into a minigame — every line's hatch game
-//     is played once, at lay-time, so there is nothing left for an item to open. Floored
-//     at kHatchRevealMs by Game::useDecryptogram, so it can shorten the wait but never
+// --- The Boot Accelerator. The one item that touches an egg: a flat bite out of its
+//     incubation clock, never a way into a minigame — every line's hatch game is played
+//     once, at lay-time, so there is nothing left for an item to open. Floored at
+//     kHatchRevealMs by Game::useBootAccelerator, so it can shorten the wait but never
 //     skip past the stretch where the player gets to crack the shell by hand. -----
-constexpr uint32_t kDecryptogramCutMs = 10u * 60u * 1000u;   // -10 min off the incubation
+constexpr uint32_t kBootAcceleratorCutMs = 10u * 60u * 1000u;   // -10 min off the incubation
 
 // --- Boot-Sector incubation. The freshly laid egg
 //     sits at IDLE as the Boot-Sector creature (CryptoShell) — inert but on-screen

@@ -22,7 +22,7 @@ const char* const kModPool[] = {"tpm_chip", "solid_state_cache", "firewall_patch
 // is deliberately rarer than catching a fish and letting it turn (content_items.cpp).
 const ShopListingDef kShopListings[] = {
     {"r007_b33r", 8, 5},
-    {"decryptogram", 3, 1024},
+    {"boot_accelerator", 3, 1024},
     {"desalinated_c_salt", 4, 0, {{"spoiled_macrol", 1}}},
 };
 

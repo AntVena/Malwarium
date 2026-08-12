@@ -34,6 +34,22 @@ enum class ArcadeGameKind : uint8_t {
     Clutch,      // the Phishing line's Spot the Phish (game_eggpick.cpp)
     Isolation,   // the Worm line's quarantine buffer (core/model/isolation.h)
     Decryption,    // the Ransomware line's code board (core/model/disk_decryption.h)
+    Cryptogram,  // the VAULT's quote board (core/model/cryptogram.h)
+};
+
+// What has to be true before a cabinet appears in the GAMES list at all. An ABSENT row,
+// not a greyed one — the same rule the Rig Shop's requiresRow follows, and for the same
+// reason: a list should never advertise something the player has no route to.
+//
+// One entry per condition, resolved in one place (Game::arcadeCabinetOffered). Most
+// cabinets are Always: their game already exists somewhere else in the device, so the
+// arcade is only a second door to it.
+enum class ArcadeUnlock : uint8_t {
+    Always,
+    // ...once kQuoteArcadeUnlockWins quotes are solved (content_quotes.h). The cabinet
+    // replays a SOLVED quote for Bits, so before there is a back catalogue there is
+    // nothing for it to offer.
+    QuotesSolved,
 };
 
 // How a run is scored, which is the whole difference between the two payout shapes.
@@ -58,6 +74,7 @@ struct ArcadeGameDef {
     const char* difficultyBlurb;  // what the dial moves HERE, in this game's terms
     ArcadeGameKind kind;
     ArcadeScoring scoring;
+    ArcadeUnlock unlock = ArcadeUnlock::Always;   // what has to be true to see the row
 };
 
 // Compile-time ceiling on the roster, so the per-cabinet save tallies can be a plain

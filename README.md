@@ -346,7 +346,7 @@ The device has **three buttons: A, B, C.**
 
 ### Hatching your egg 
 The egg incubates for a while on its own. Once it's halfway there, a flashing ⚡ symbol appears — press **B** (or the A+C chord) to start a hatch minigame. Your first one is Ransomware, so the game is a short button sequence you repeat to "brute-force the lock." Nail it and the Cryptoshell cracks open into your first creature. In a hurry? 
-A **Decryptogram** item in your bag can skip the wait.
+A **Boot Accelerator** item in your bag can skip part of the wait.
 
 Not every line hatches the same way. A Phishing egg plays the **Clutch Pick** instead — a
 one-shot game of nerve the moment the egg is laid, where only the live egg twitches among
@@ -365,12 +365,25 @@ Explore the 'net for battles, loot, and Bits to spend.
 ### Your half of the device 
 **A+C on the main screen flips to the Hacker face** — the parallel menu where *you* live
 rather than the pet. It holds your operator profile and HackerTag, a **shop** for mods and
-food, a **vault** of sealed caches, a **merge hub** for cooking ingredients into better
+food, a **vault** where you cash things in, a **merge hub** for cooking ingredients into better
 items, and the two social slots below.
 
 You also collect **achievements** (they survive your pet's death — they're yours, not its),
 **Titles** you can equip beside your tag, and a **Hacker Rank** that climbs as you see more
 of the world.
+
+### The Decryptogram 
+A **Decryptogram** is a rare find you cash in at the vault. It puts a quote on screen with
+every letter struck out — punctuation and spacing stay, so you can read the shape of the
+sentence — plus a pool of the letters that are actually in it. A few of the commonest ones
+start open. Pick a letter, pick a gap you think it belongs in, and if you're right *every*
+instance of that letter opens at once.
+
+Get the whole quote out and you're paid in Bits plus a free account upgrade, and you finally
+see who said it. Put one letter in the wrong place and the run is over — but that quote comes
+back easier next time you find a ticket, and easier again after that, so nothing is lost
+forever. Crack eight of them and a cabinet appears in **GAMES** where you can replay the ones
+you've already beaten for Bits.
 
 ### The radio 
 Everything wireless is off until you switch it on, and there are **two separate switches,

@@ -293,7 +293,15 @@ constexpr int kSaveTextCap = 28;     // matches EventLog's LogEntry.text
 // already uses. Keyed by the cabinet's content id rather than by roster position, so
 // the GAMES list can be reordered or extended without a migration. Pre-v47 → empty,
 // which is the truth: nobody has played a cabinet that did not exist.
-constexpr uint16_t kSaveVersion = 47;
+// v48 appends the DECRYPTOGRAM board's per-quote state — a 2-BIT field per
+// QuoteDef::wire (content_quotes.h), four to a byte, length-prefixed like the v40
+// achievement bitsets and for the same reason: the pool is expected to reach the
+// hundreds, and a save should only be as long as the quotes that device has actually
+// met. The four states are the whole record a quote needs, because the loss ratchet and
+// the win are one axis: 0 never played (and so HARD), 1 lost once (MEDIUM), 2 lost twice
+// or more (EASY, the floor), 3 SOLVED. A pre-v48 blob has no tail → every quote reads
+// back as never played, which is the honest default for a device that had no board.
+constexpr uint16_t kSaveVersion = 48;
 
 // The oldest blob deserialize will read. Raising it is how a device stops carrying
 // migration weight for saves nobody can still be holding — and it is the ONLY thing
@@ -755,6 +763,13 @@ struct SaveData {
     std::vector<SaveId> arcadeIds;
     std::vector<int32_t> arcadePlays;
     std::vector<int32_t> arcadeWins;
+
+    // --- v48: the DECRYPTOGRAM board's per-quote state -----------------------
+    // Two bits per QuoteDef::wire, low pair first within each byte. Player-level, like
+    // the achievement bitsets it borrows its length-prefixed shape from; pack/unpack
+    // through quoteStateGet/quoteStateSet below so no call site does the shifting.
+    // Pre-v48 → empty, and every quote reads as never played.
+    std::vector<uint8_t> quoteStates;
 
     // v35: this pet's own best-ever DeepWeb Dive depth ------------------------
     // Per-pet (reset on a new egg, like mistakeShieldActive). The active pet's

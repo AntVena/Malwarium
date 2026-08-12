@@ -643,14 +643,23 @@ window.PEDIA_DATA = {
       "bits": 5
     },
     {
-      "id": "decryptogram",
-      "name": "Decryptogram",
+      "id": "boot_accelerator",
+      "name": "Boot Accelerator",
       "type": "QUEST",
       "rarity": "COMMON",
       "effect": "Use on the egg to cut 10 minutes off its incubation.",
       "stats": "",
-      "icon": "assets/icons/ICON_ITEM_DECRYPTOGRAM.png",
+      "icon": "assets/icons/ICON_ITEMS.png",
       "use": "EGG PHASE"
+    },
+    {
+      "id": "decryptogram",
+      "name": "Decryptogram",
+      "type": "QUEST",
+      "rarity": "UNCOMMON",
+      "effect": "Cash in at the VAULT to crack a quote for Bits and an upgrade.",
+      "stats": "",
+      "icon": "assets/icons/ICON_ITEM_DECRYPTOGRAM.png"
     },
     {
       "id": "sealed_cache_common",

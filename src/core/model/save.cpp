@@ -473,6 +473,12 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     for (const auto& s : d.arcadeIds) writeId(w, s);
     for (int32_t v : d.arcadePlays) w.i32(v);
     for (int32_t v : d.arcadeWins) w.i32(v);
+
+    // v48: the DECRYPTOGRAM per-quote state, two bits per QuoteDef::wire. Length-
+    // prefixed at its full in-memory width, like the v40 achievement bitsets — a pool
+    // that grows into spare capacity needs no save change at all.
+    w.u16(static_cast<uint16_t>(d.quoteStates.size()));
+    for (uint8_t b : d.quoteStates) w.u8(b);
 }
 
 std::vector<uint8_t> serializeSave(const SaveData& d) {
@@ -992,6 +998,14 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
         }
         for (uint16_t i = 0; i < nCab && r.ok; ++i) d.arcadePlays.push_back(r.i32());
         for (uint16_t i = 0; i < nCab && r.ok; ++i) d.arcadeWins.push_back(r.i32());
+    }
+
+    // v48 tail: the per-quote board state. Absent in a v1..v47 blob → empty, and every
+    // quote reads as never played. There is nothing older to seed it from — the board
+    // did not exist, so no quote can honestly be called solved.
+    if (version >= 48) {
+        const uint16_t nQuote = r.u16();
+        for (uint16_t i = 0; i < nQuote && r.ok; ++i) d.quoteStates.push_back(r.u8());
     }
 
     if (!r.ok) { out = SaveData{}; return false; }  // truncated -> empty

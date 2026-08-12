@@ -24,6 +24,7 @@
 
 #include <cstdio>
 #include <cstdint>
+#include <cstring>
 
 #include "core/content/effect_text.h"   // SpecRows/SpecBuilder — the shared readout
 #include "tunables.h"
@@ -429,5 +430,15 @@ inline const RigUpgradeDef kRigUpgrades[] = {
 };
 inline constexpr int kRigUpgradeCount =
     static_cast<int>(sizeof(kRigUpgrades) / sizeof(kRigUpgrades[0]));
+
+// The RigRow whose row carries `id`, or -1. For anything that names a rig row as DATA
+// rather than as a cursor position — a quote's prize (content_quotes.h) is the first —
+// so a reward table spells "bandwidth" and not the integer 0.
+inline int rigRowIndexById(const char* id) {
+    if (!id) return -1;
+    for (int i = 0; i < kRigUpgradeCount; ++i)
+        if (std::strcmp(kRigUpgrades[i].id, id) == 0) return i;
+    return -1;
+}
 
 }  // namespace mal
