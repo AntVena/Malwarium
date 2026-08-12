@@ -649,7 +649,7 @@ window.PEDIA_DATA = {
       "rarity": "COMMON",
       "effect": "Use on the egg to cut 10 minutes off its incubation.",
       "stats": "",
-      "icon": "assets/icons/ICON_ITEMS.png",
+      "icon": "assets/icons/ICON_ITEM_BOOT_ACCELERATOR.png",
       "use": "EGG PHASE"
     },
     {

@@ -360,7 +360,6 @@ Sizes are logical px; bind colour to `PAL_CORE` tokens. Inventory: `assets/ASSET
 | `ICON_CFG_UPDATE` | UPDATES row — reuses `ICON_CFG_SYSINFO` today | 20×20 | S |
 | `ICON_CFG_TRAVEL` | DEVICE group's TRAVEL MODE row — reuses `ICON_CFG_SYSINFO` today | 20×20 | S |
 | `ICON_PEERS` | Hacker-face PEERS slot — renders text-only today | 28×28 | S |
-| `ICON_ITEM_BOOT_ACCELERATOR` | the egg accelerator split off the Decryptogram — draws a BLANK row in ITEMS today, and it is in the starting bag, so it is the first thing a new player sees missing | 20×20 | S |
 
 ### 2a-i. The sprite-packing tools live outside the repo
 
