@@ -1,5 +1,6 @@
 #include "core/model/save.h"
 
+#include <algorithm>
 #include <cstring>
 
 #include "core/content/areas/area_defs.h"   // kSubAreasPerArea — subRefarm's row width
@@ -165,6 +166,41 @@ void applyLadderInserts(SaveData& d, uint16_t version) {
     // Oldest-first, so each row's atIndex reads against the ladder its predecessors built.
     for (const LadderInsert& l : kLadderInserts)
         if (version < l.sinceVersion) openLadderRung(d, l.atIndex);
+}
+
+// --- v49: cooking leaves the Rig Shop ---------------------------------------
+//
+// A pre-v49 blob describes four recipes as rig rows: Patched Noodles and Stacked Nachos
+// as bits 0/1 of `recipesUnlocked` (already where v49 wants them), and the two Browns
+// recipes as rig rows 19 and 20 — which sat MID-TABLE, so deleting them shifts every
+// later row down two places in the positional `rigLevelsExt` tail. Rows before them are
+// untouched, so the whole migration is: lift the two recipe entries out into their own
+// bits, then close the gap they leave.
+//
+// The old layout is spelled out here rather than derived, because the current table can
+// no longer describe it — that is exactly what makes this a migration and not a lookup.
+constexpr int kV48ExtBase = 11;          // first row in the old ext tail
+constexpr int kV48ExtHashedBrowns = 19 - kV48ExtBase;   // -> recipe wire 2
+constexpr int kV48ExtSaltedBrowns = 20 - kV48ExtBase;   // -> recipe wire 3
+
+void migrateRecipeRows(SaveData& d, uint16_t version) {
+    if (version >= 49) return;
+    auto ext = [&d](size_t i) -> uint16_t {
+        return i < d.rigLevelsExt.size() ? d.rigLevelsExt[i] : 0;
+    };
+    if (ext(kV48ExtHashedBrowns)) d.recipesUnlocked |= 1u << 2;
+    if (ext(kV48ExtSaltedBrowns)) d.recipesUnlocked |= 1u << 3;
+    // Close the two-slot gap: everything above the pair slides down onto it. A blob
+    // that never reached those slots has nothing to slide and is left as it is.
+    if (d.rigLevelsExt.size() > static_cast<size_t>(kV48ExtSaltedBrowns)) {
+        d.rigLevelsExt.erase(
+            d.rigLevelsExt.begin() + kV48ExtHashedBrowns,
+            d.rigLevelsExt.begin() +
+                std::min(d.rigLevelsExt.size(),
+                         static_cast<size_t>(kV48ExtSaltedBrowns) + 1));
+    } else if (d.rigLevelsExt.size() > static_cast<size_t>(kV48ExtHashedBrowns)) {
+        d.rigLevelsExt.resize(kV48ExtHashedBrowns);
+    }
 }
 
 }  // namespace
@@ -1013,6 +1049,7 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
     // After every tail is read, never between them: the shift moves whole ladder-indexed
     // vectors, so it has to see them at their final lengths.
     if (version < newestLadderInsertVersion()) applyLadderInserts(d, version);
+    migrateRecipeRows(d, version);   // same rule: rigLevelsExt has to be whole first
     out = std::move(d);
     return true;
 }

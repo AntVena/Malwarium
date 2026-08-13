@@ -472,6 +472,16 @@ blank — that is the prompt to draw one, and `check_orphan_assets.py` catches t
   list — so no two share a silhouette: tin · crumbs · shaker · cruet · holed flask · fish ·
   pouch-and-clock · cubes · vial · spuds · yolk-in-shell · leek · cereal box · mug · sachet ·
   apple · taproot · noodle bowl · patty.
+- **The seven cooked dishes are the pantry's second batch**, drawn to the same brief and held to
+  the same rule: no two silhouettes alike, in a list where they sit together. Where the staples are
+  mostly upright containers, these lean on outlines nothing else in the bag has — a pair of
+  DIAGONAL rolls (Cracquettes), a leaning parallelogram (Serial Bar), a long-handled pan seen from
+  above with two yolks open in it (Hackshuka), a vented dome (Applet Turnover), a lidded takeaway
+  cup (Vanilla Java Roast), and a pot with a gnu's horns sweeping off its rim (GNUlash — the one
+  glyph that is a pun rather than a picture). **Macrol Fry-Up is the deliberate exception**: it is
+  Fresh Macrol's own fish under the steam mark, because the recipe's whole claim is that it is the
+  same fish, cooked, and no longer going off. Steam is the family's shared "it's hot" mark, carried
+  over from `ICON_ITEM_JAVA`.
 - **`ICON_ITEM_FULLY_STACKED_NACHOS` is `▨`** — it reuses `ICON_ITEM_TORTILLA_CHIP` rather than
   being bespoke. The only item icon that is a stand-in.
 - **`ICON_ITEM_BOOT_ACCELERATOR` and `ICON_ITEM_ROLLBACK` are the set's two BARE symbols** — no

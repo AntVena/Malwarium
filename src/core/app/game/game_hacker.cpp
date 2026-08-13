@@ -25,8 +25,8 @@
 // states and the same A/B/C cursor cycling — so the only bespoke code here is the
 // hacker slot roster, the live L2 screens (PROFILE viewer + SHOP list + VAULT), and
 // the terminal-reskin centre canvas. MERGE HUB's own L2 screen lives in
-// game_merge.cpp (its rows are declared here via the shared RigRow enum,
-// game_rig_shop.h), and CREW's (enlist + home network) in game_crew.cpp.
+// game_merge.cpp (this face only sells the hub itself — the recipes cooked in it are
+// won off a Decryptogram), and CREW's (enlist + home network) in game_crew.cpp.
 // PEERS (met operators) lives in game_peers.cpp and LINK (1v1 duels) in game_pvp.cpp;
 // SCAN renders the inaccessible marker and B is inert.
 //
@@ -40,42 +40,36 @@ namespace mal {
 
 namespace {
 
-// Is this row on sale right now? Three ways it isn't: it's maxed/owned (nothing
-// left to buy), its prerequisite row is still unbought (RigUpgradeDef::requiresRow —
-// a recipe with no MERGE HUB to cook it in), or an item it wants the operator to have
-// MET is one they've never held (requiresItems — a recipe for a dish they wouldn't
-// recognise). The single answer the A-cycle, the render loop and buyRigUpgrade all
-// defer to, so the list can't show a row the cursor skips, or sell one it never drew.
-bool shopRowOffered(const Game& g, const int* rigLevel, int i) {
-    if (i < 0 || i >= kRigUpgradeCount) return false;
-    const RigUpgradeDef& d = kRigUpgrades[i];
-    if (rigLevel[i] >= d.maxLevel) return false;
-    if (d.requiresRow >= 0 && rigLevel[d.requiresRow] <= 0) return false;
-    for (const char* need : d.requiresItems)
-        if (need && !g.itemCollected(need)) return false;
-    return true;
-}
-
 // The indices of every offered row, in table order — the SHOP list only ever
 // shows rows with something to do.
-int visibleShopRows(const Game& g, const int* rigLevel, int* out, int max) {
+int visibleShopRows(const Game& g, int* out, int max) {
     int n = 0;
     for (int i = 0; i < kRigUpgradeCount && n < max; ++i)
-        if (shopRowOffered(g, rigLevel, i)) out[n++] = i;
+        if (g.shopRowOffered(i)) out[n++] = i;
     return n;
 }
 
 // Step `row` forward through raw table order to the next offered row, wrapping;
 // leaves `row` unchanged if nothing is on sale.
-int nextVisibleShopRow(const Game& g, const int* rigLevel, int row) {
+int nextVisibleShopRow(const Game& g, int row) {
     int next = row;
     for (int step = 0; step < kRigUpgradeCount; ++step) {
         next = (next + 1) % kRigUpgradeCount;
-        if (shopRowOffered(g, rigLevel, next)) return next;
+        if (g.shopRowOffered(next)) return next;
     }
     return row;
 }
 }  // namespace
+
+// Is this row on sale right now? One way it isn't: it's maxed/owned, with nothing left
+// to buy. Every row in the table is an ordinary purchase — the one Hacker-face unlock
+// that ISN'T is a MERGE HUB recipe, which is won off a Decryptogram and was never a rig
+// row to gate. The single answer the A-cycle, the render loop and buyRigUpgrade all
+// defer to, so the list can't show a row the cursor skips, or sell one it never drew.
+bool Game::shopRowOffered(int i) const {
+    if (i < 0 || i >= kRigUpgradeCount) return false;
+    return rigLevel_[i] < kRigUpgrades[i].maxLevel;
+}
 
 // --- Face toggle + navigation ---------------------------------------------
 
@@ -162,15 +156,13 @@ void Game::onHackerSubmenu(const ButtonEvent& ev) {
 
 void Game::onHackerShop(const ButtonEvent& ev) {
     if (ev.button == Button::A) {
-        hackerShopRow_ = nextVisibleShopRow(*this, rigLevel_, hackerShopRow_);  // skip unoffered
+        hackerShopRow_ = nextVisibleShopRow(*this, hackerShopRow_);  // skip unoffered
     } else if (ev.button == Button::B) {
         buyRigUpgrade(hackerShopRow_);
         // That purchase may have just taken the focused row out of the list — hop
         // to the next offered one so the cursor never rests on a row nobody drew.
-        // (A purchase can also ADD rows: buying the MERGE HUB reveals its recipes,
-        // which land below it, so the hop naturally arrives on the first of them.)
-        if (!shopRowOffered(*this, rigLevel_, hackerShopRow_))
-            hackerShopRow_ = nextVisibleShopRow(*this, rigLevel_, hackerShopRow_);
+        if (!shopRowOffered(hackerShopRow_))
+            hackerShopRow_ = nextVisibleShopRow(*this, hackerShopRow_);
     } else if (ev.button == Button::C) {
         nav_ = Nav::Cursor;
     }
@@ -269,7 +261,7 @@ void Game::vaultBulkReleaseB() {
 }
 
 void Game::buyRigUpgrade(int row) {
-    if (!shopRowOffered(*this, rigLevel_, row)) return;   // MAXED/OWNED, or gated — inert
+    if (!shopRowOffered(row)) return;   // MAXED/OWNED, or gated — inert
     const RigUpgradeDef& def = kRigUpgrades[row];
     const int cost = rigUpgradeCostFor(row);
     if (bits_ < cost) return;                       // NOT ENOUGH BITS — inert
@@ -378,7 +370,7 @@ void Game::drawHackerSubmenu(Framebuffer& fb) const {
         // Maxed/owned rows have nothing left to buy — filter them out entirely so
         // the list only ever shows purchasable rows (visRows is in table order).
         int visRows[kRigUpgradeCount];
-        const int visN = visibleShopRows(*this, rigLevel_, visRows, kRigUpgradeCount);
+        const int visN = visibleShopRows(*this, visRows, kRigUpgradeCount);
 
         if (visN == 0) {
             drawText(fb, kMargin, 34, "ALL UPGRADES OWNED", palColor(Pal::INK_DIM));
@@ -538,9 +530,16 @@ void Game::drawHackerSubmenu(Framebuffer& fb) const {
     }
 
     if (enteredHackerId() == HackerSlotId::Merge) {
-        // MERGE HUB — its own screen, own file (game_merge.cpp): combines two owned
-        // ingredient items into a rarer one.
-        drawHeaderBand(fb, "MERGE HUB");
+        // MERGE HUB — its own screen, own file (game_merge.cpp): combines owned
+        // ingredient items into a rarer one. The roster outgrew the panel, so the body
+        // windows it and the band carries the n/N the scroll would otherwise hide
+        // (the same note drawItemsList's header prints, and only when it scrolls).
+        char pos[12];
+        pos[0] = '\0';
+        if (kMergeRecipeCount > kMergeVisibleRows)
+            std::snprintf(pos, sizeof(pos), "%d/%d", hackerMergeRow_ + 1,
+                          kMergeRecipeCount);
+        drawHeaderBand(fb, "MERGE HUB", pos);
         drawHackerMerge(fb);
         return;
     }

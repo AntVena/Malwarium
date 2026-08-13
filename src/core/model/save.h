@@ -149,16 +149,15 @@ constexpr int kSaveTextCap = 28;     // matches EventLog's LogEntry.text
 // v30 appends backupShieldUntilMs — the Backup Drive buff's armed-until deadline
 // (Game::lifetimeUptimeMs(), 0 = inactive). Per-pet, like mistakeShieldActive; resets
 // on a new egg. A pre-v30 blob has no tail → stays 0 (no shield armed).
-// v31 appends the f Hacker-SHOP Merge Hub unlocks: mergeHubUnlocked (makes the MRG
-// carousel slot accessible) and recipesUnlocked (a bitmask over game_merge.cpp's
-// kMergeRecipes table — bit i = that recipe separately bought). Both player-level,
-// survive lifecycles like itemTabsUnlocked. A pre-v31 blob has no tail → both
-// default to 0 (a migrated save has bought neither the Hub nor any recipe).
-// v32 appends rigLevelsExt — a forward-compatible tail for Rig Shop rows BEYOND the
-// 11 that ship today (game_rig_shop.h's kRigUpgrades, indices past
-// kRigRowRecipeNachos), so a future new row persists without another named field +
-// version bump: index i in the vector = rig row (kRigRowRecipeNachos + 1 + i), value
-// = its purchased level. Player-level, survives lifecycles. A pre-v32 blob (or one
+// v31 appends the f Hacker-SHOP Merge Hub unlock (mergeHubUnlocked — makes the MRG
+// carousel slot accessible) and recipesUnlocked, a bitmask over game_internal.h's
+// kMergeRecipes table (bit = MergeRecipe::wire, see v49 for the widening). Both
+// player-level, survive lifecycles like itemTabsUnlocked. A pre-v31 blob has no tail →
+// both default to 0 (has neither the Hub nor any recipe).
+// v32 appends rigLevelsExt — a forward-compatible tail for every Rig Shop row from
+// kRigRowExtBase up (game_rig_shop.h's kRigUpgrades), so a new row persists without
+// another named field + version bump: index i in the vector = rig row
+// (kRigRowExtBase + i), value = its purchased level. Player-level, survives lifecycles. A pre-v32 blob (or one
 // short of a later-added row) has no tail/entry → that row defaults to level 0
 // (never bought). Rows 0-10 keep using their own named fields above (unchanged).
 // v33 REMOVES the v4/v21 networkSeenMask byte+u64 and the v7 seenBssids vector —
@@ -301,7 +300,17 @@ constexpr int kSaveTextCap = 28;     // matches EventLog's LogEntry.text
 // the win are one axis: 0 never played (and so HARD), 1 lost once (MEDIUM), 2 lost twice
 // or more (EASY, the floor), 3 SOLVED. A pre-v48 blob has no tail → every quote reads
 // back as never played, which is the honest default for a device that had no board.
-constexpr uint16_t kSaveVersion = 48;
+// v49 adds no bytes. It marks COOKING moving off the Rig Shop: a MERGE HUB recipe is
+// won off a solved Decryptogram, never bought, so the four rows that used to sell one
+// are gone from kRigUpgrades and every recipe now lives in the v31 `recipesUnlocked`
+// mask outright (bit = MergeRecipe::wire). Two things move on the wire without changing
+// its shape, both handled by `migrateRecipeRows` below:
+//   * the mask widens from the 2 bits that mirrored rows 9/10 to one per recipe, and
+//   * `rigLevelsExt` is positional, so deleting the two mid-table Browns recipe rows
+//     shifts every row after them — an older blob's entries are remapped by hand.
+// A v49+ blob needs neither pass. This is also the version to raise
+// kOldestAcceptedVersion past once every device is current, which retires that function.
+constexpr uint16_t kSaveVersion = 49;
 
 // The oldest blob deserialize will read. Raising it is how a device stops carrying
 // migration weight for saves nobody can still be holding — and it is the ONLY thing
@@ -680,17 +689,19 @@ struct SaveData {
     // the moment it negates a hit in combat, regardless of time remaining.
     uint32_t backupShieldUntilMs = 0;
 
-    // v31: the f Hacker-SHOP Merge Hub unlocks ---------------------------------
-    // Player-level (survive lifecycles, like itemTabsUnlocked). mergeHubUnlocked
-    // makes the MRG carousel slot accessible; recipesUnlocked is a bitmask over
-    // game_merge.cpp's kMergeRecipes table. Pre-v31 → both 0 (bought neither).
+    // v31: the Merge Hub unlock + the recipes known -----------------------------
+    // Player-level (survive lifecycles, like itemTabsUnlocked). mergeHubUnlocked makes
+    // the MRG carousel slot accessible; recipesUnlocked is a bitmask over
+    // game_internal.h's kMergeRecipes, bit = MergeRecipe::wire. Pre-v31 → both 0 (no
+    // Hub, no recipes). Pre-v49 the mask only carried its first two bits and the rest
+    // of cooking rode the rig rows — see migrateRecipeRows.
     uint8_t mergeHubUnlocked = 0;
     uint32_t recipesUnlocked = 0;
 
-    // v32: Rig Shop rows beyond the legacy 11 above ---------------------------
+    // v32: Rig Shop rows from kRigRowExtBase up ---------------------------
     // Player-level (survive lifecycles, like bwUpgradeCount). Index i = rig row
-    // (kRigRowRecipeNachos + 1 + i), value = its purchased level. Pre-v32 → empty
-    // (every such row defaults to 0 — a migrated save has bought none of them).
+    // (kRigRowExtBase + i), value = its purchased level. Pre-v32 → empty (every such
+    // row defaults to 0 — a migrated save has bought none of them).
     std::vector<uint16_t> rigLevelsExt;
 
     // v36: Hacker CREW allegiance + the home network it hangs off -------------

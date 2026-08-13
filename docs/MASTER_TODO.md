@@ -44,14 +44,14 @@ cabinet page. | `game_arcade.cpp`'s `finishArcadeRun`; `arcade_screen.cpp`; the 
 `save.cpp`. | S | The only judgement call is whether a WinLose cabinet (the Clutch) shows anything
 at all, since its score is always 0 or absent. |
 
-**The DECRYPTOGRAM pays one prize, and every quote pays the same one.** `quoteWinReward()`
-answers with a fixed `+1 bandwidth` for the whole pool, and `kQuoteWinBits` is one number — a
-GAME-level answer standing in for what will eventually be a per-quote one (a marquee quote worth a
-rack slot, a throwaway worth half the Bits). `QuoteReward` already carries the kind+magnitude+id
-vocabulary and `applyQuoteReward` already switches on it, so the change is an optional reward field
-on `QuoteDef` plus resolving it off the row when present. | `content_quotes.h`'s two reward
-accessors; `game_cryptogram.cpp`'s `applyQuoteReward`. | S | Do it when a row actually wants a
-different prize — until then a per-row field is the same literal pasted three hundred times. |
+**The DECRYPTOGRAM's prize is a LADDER, not a per-quote answer.** A first solve pays the next
+MERGE HUB recipe the operator can't cook (`quotePrizeLadder`), then falls back to `+1 bandwidth`
+once the kitchen is complete — so the prize varies by how far in you are, but still not by WHICH
+quote came up, and `kQuoteWinBits` is one number for the whole pool. A marquee quote worth a rack
+slot, or a throwaway worth half the Bits, still wants an optional reward field on `QuoteDef`
+resolved off the row when present. | `content_quotes.h`'s ladder + fallback;
+`game_cryptogram.cpp`'s `quoteFirstSolvePrize`. | S | Do it when a row actually wants a different
+prize — until then a per-row field is the same literal pasted three hundred times. |
 
 **A crew cannot be DISCOVERED.** `QuoteReward::Kind` has room for it and it is one of the prizes
 the board was designed to hand over ("you find a crew to join"), but crews are ungated today —
@@ -87,7 +87,8 @@ Diff **M**.
 
 ### 1b. Cooking — the open follow-ups
 
-The pantry, per-item drop weights and the N-ingredient Merge Hub are built. What the first cut left:
+The pantry, per-item drop weights, the N-ingredient Merge Hub and its eleven recipes are built, and
+a recipe is won off a Decryptogram rather than bought. What the first cut left:
 
 - **Drop weights are unmeasured.** The pantry's numbers are authored by flavour, not play data. The
   walk-pool thinning constant (`kStapleWalkWeight`) especially is a guess at how much staple a player

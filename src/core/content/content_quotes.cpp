@@ -93,7 +93,36 @@ int quoteIndexByWire(int wire) {
     return -1;
 }
 
-QuoteReward quoteWinReward() {
+// The prize ladder — the dish each solve teaches, in payout order. See the banner in
+// the header for why these are all recipes and why the order is the one it is.
+namespace {
+const char* const kQuotePrizeLadder[] = {
+    // The two starters, then the pantry's own fry-ups.
+    "pwnzu_patched_noodles",
+    "fully_stacked_nachos",
+    "cracquettes",
+    "hackshuka",
+    "serial_bar",
+    "applet_turnover",
+    // The Browns pair carries its own "have you met the dish" gate, so it can be
+    // skipped and come back around later without holding the rest of the ladder up.
+    "hashed_browns",
+    "salted_hashed_browns",
+    // The three that heal in combat, and the roast that strips the most Fragmentation
+    // — the dishes worth walking a long pool of quotes for.
+    "macrol_fry_up",
+    "vanilla_java_roast",
+    "gnulash",
+};
+}  // namespace
+
+const char* const* quotePrizeLadder() { return kQuotePrizeLadder; }
+
+int quotePrizeLadderCount() {
+    return static_cast<int>(sizeof(kQuotePrizeLadder) / sizeof(kQuotePrizeLadder[0]));
+}
+
+QuoteReward quoteFallbackReward() {
     return {QuoteReward::Kind::RigGrant, 1, "bandwidth"};
 }
 

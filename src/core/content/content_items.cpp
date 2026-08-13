@@ -423,9 +423,10 @@ const ItemDef kItems[] = {
 
     // Hashed Browns + Salted&Hashed Browns: the pantry's first cooked dish and its
     // second pass through the pan. Both are MERGE HUB outputs (game_internal.h's
-    // kMergeRecipes) AND stocked at Moor-to-Moor — buying one is how a player meets
-    // the dish before they can cook it, which is exactly what the Rig Shop asks for
-    // before it will sell either recipe (game_rig_shop.h's requiresItems).
+    // kMergeRecipes) AND stocked at Moor-to-Moor — buying one is how a player MEETS
+    // the dish, which is what a Decryptogram asks for before it will teach either
+    // recipe (game_internal.h's MergeRecipe::requiresItems). They are also the only
+    // cooked dishes a storefront carries: every other one is the recipe or nothing.
     {"hashed_browns", "Hashed Browns", ItemDef::Type::Food,
      ItemDef::Rarity::Uncommon, "Crispy!",
      ItemDef::Context::Anytime,
@@ -438,6 +439,63 @@ const ItemDef kItems[] = {
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 20}, {IE::Kind::Happy, 20}, {IE::Kind::Frag, -5}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/512},
+
+    //
+    // COOKED DISHES --------------------------
+    // What the pantry is FOR. Every row below is a MERGE HUB output and nothing else —
+    // no shop stocks one, no pool drops one, so the only way to hold a plate is to own
+    // the recipe (game_rig_shop.h) and have the raw staples in the bag. They are filed
+    // together rather than under their rarity headings for the same reason the staples
+    // are: what defines one is being COOKED, and the tier only says how much of a step
+    // up from its own ingredients it is.
+    //
+    // Each one earns its keep by doing something its ingredients can't. A staple eaten
+    // raw moves one number by a handful; a dish moves the numbers a pet actually cares
+    // about, and three of them heal in combat, which no staple does at all.
+    {"cracquettes", "Cracquettes", ItemDef::Type::Food,
+     ItemDef::Rarity::Uncommon,
+     "Everything the filter caught, fried into one patty. Not classy, but the "
+     "folder is finally empty.",
+     ItemDef::Context::Anytime,
+     {{IE::Kind::Hunger, 60}, {IE::Kind::Happy, 5}, {IE::Kind::Frag, 5}}},
+
+    {"hackshuka", "Hackshuka", ItemDef::Type::Food,
+     ItemDef::Rarity::Uncommon,
+     "Everything that was in the bag, in one pan. Now nobody can tell what leaked.",
+     ItemDef::Context::Anytime,
+     {{IE::Kind::Hunger, 35}, {IE::Kind::Happy, 15}}, /*combatHeal=*/40},
+
+    {"applet_turnover", "Applet Turnover", ItemDef::Type::Food,
+     ItemDef::Rarity::Uncommon,
+     "Sandboxed in pastry. It still runs.",
+     ItemDef::Context::Anytime,
+     {{IE::Kind::Hunger, 20}, {IE::Kind::Happy, 35}, {IE::Kind::Frag, -10}}},
+
+    {"serial_bar", "Serial Bar", ItemDef::Type::Food,
+     ItemDef::Rarity::Uncommon,
+     "Nine hundred serving suggestions, pressed into one you can carry.",
+     ItemDef::Context::Anytime,
+     {{IE::Kind::Hunger, 30}, {IE::Kind::Happy, 10}, {IE::Kind::Frag, -5}}},
+
+    {"macrol_fry_up", "Macrol Fry-Up", ItemDef::Type::Food,
+     ItemDef::Rarity::Rare,
+     "Cooked through, so it stops going off. Whatever the pier says, this is the "
+     "right end of a Fresh Macrol's short life.",
+     ItemDef::Context::Anytime,
+     {{IE::Kind::Hunger, 45}, {IE::Kind::Happy, 20}}, /*combatHeal=*/30},
+
+    {"vanilla_java_roast", "Vanilla Java Roast", ItemDef::Type::Food,
+     ItemDef::Rarity::Rare,
+     "Roasted dark, sweetened hard, and nobody's framework anywhere near it.",
+     ItemDef::Context::Anytime,
+     {{IE::Kind::Hunger, 5}, {IE::Kind::Happy, 45}, {IE::Kind::Frag, -30}}},
+
+    {"gnulash", "GNUlash", ItemDef::Type::Food,
+     ItemDef::Rarity::Rare,
+     "Everything in the pot at once, at a rolling boil, no plan whatsoever. Free to "
+     "copy, and somehow it comes out right.",
+     ItemDef::Context::Anytime,
+     {{IE::Kind::Hunger, 70}, {IE::Kind::Frag, -25}}, /*combatHeal=*/60},
 
     // Backup Drive: a combat buff, not a Lockout item. Use arms a 1-hour DEATH-SAVE
     // (ItemEffect::ArmCombatShieldBuff, save v30). Every hit lands in full; the drive is

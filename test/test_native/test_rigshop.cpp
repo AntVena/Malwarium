@@ -5,6 +5,8 @@
 // feature whose field it migrates, not in a migrations pile of its own.
 #include "test_gates.h"
 
+#include "core/ui/layout.h"   // kLineH — the MERGE HUB window mirrors the list metrics
+
 // An armed Backup Drive save rides into a REAL fight (Game::buildPlayerCombatant, not
 // the raw makePlayerCombatant the combat-model tests use) — the wiring that matters,
 // since the Sim Battle it's stripped from is the only fight that doesn't carry it.
@@ -936,4 +938,33 @@ void test_cache_not_openable_from_items() {
     g.debugOpenCache("sealed_cache_epic");                 // VAULT path decrypts it
     CHECK(g.inventory().count("sealed_cache_epic") == 0);  // consumed
     CHECK(g.nav() == Game::Nav::CacheYield);
+}
+
+// THE MERGE HUB'S ROSTER OUTGREW ITS PANEL, which is why the list windows
+// (kMergeVisibleRows). Two things have to hold whatever the recipe table grows to: the
+// tallest screen the window can produce still clears the A NEXT / B MERGE footer, and
+// the focused row is always one of the rows drawn — a cursor the player can't see is
+// worse than a list that runs off the bottom, because it moves invisibly.
+void test_merge_hub_windows_its_roster() {
+    // Mirrors drawHackerMerge's own layout: rows start at 28, each folded row costs a
+    // line plus the gap, and the focused one also unfolds up to kMaxRecipeInputs
+    // ingredient lines. The footer rule is the budget.
+    constexpr int kRowTop = 28, kRowGap = 6;
+    const int tallest = kRowTop + (kMergeVisibleRows - 1) * (kLineH + kRowGap) +
+                        (kLineH + kMaxRecipeInputs * kLineH + kRowGap);
+    CHECK(tallest <= kActiveH - 26);
+
+    Game g{StartMode::Hatched};
+    g.debugSetBits(99999);
+    g.debugBuyMergeHub();
+    enterHackerSlot(g, HackerSlotId::Merge);
+
+    // Every row in turn, including the last — the clamp's own edge.
+    for (int i = 0; i < kMergeRecipeCount; ++i) {
+        Framebuffer fb(kActiveW, kActiveH);
+        g.render(fb);
+        // The focused row's cursor marker lives in the left gutter, above the footer.
+        CHECK(anyNonPaper(fb, 0, kRowTop - 4, 6, kActiveH - 26));
+        g.onButton(press(Button::A));
+    }
 }

@@ -72,8 +72,11 @@ int g_failures = 0;
     RUN(test_lockout_expire_mistakes)       \
     RUN(test_backup_drive_arms_and_lapses)  \
     RUN(test_inert_use_keeps_the_item)      \
-    RUN(test_recipe_rows_wait_on_the_merge_hub) \
+    RUN(test_recipes_are_not_for_sale_at_any_price) \
+    RUN(test_recipes_wait_on_the_merge_hub) \
     RUN(test_browns_recipes_wait_on_meeting_both_dishes) \
+    RUN(test_recipes_persist) \
+    RUN(test_save_v49_recipes_leave_the_rig_rows) \
     RUN(test_four_ingredient_recipe_consumes_all_inputs) \
     RUN(test_stacking_food_run_climbs_then_resets_on_decay) \
     RUN(test_loot_pools_resolve_and_carry_weight) \
@@ -242,6 +245,7 @@ int g_failures = 0;
     RUN(test_hacker_shop_hunger_xp_farming)       \
     RUN(test_hacker_shop_combat_xp_boost)         \
     RUN(test_cache_not_openable_from_items)       \
+    RUN(test_merge_hub_windows_its_roster)        \
     RUN(test_battle_fatigue)                      \
     RUN(test_explore_auto_continues_after_fight)  \
     RUN(test_post_encounter_reports_bandwidth_shield) \
@@ -552,6 +556,9 @@ int g_failures = 0;
     RUN(test_cryptogram_cursors_run_both_ways) \
     RUN(test_cryptogram_chord_drops_the_letter_but_never_leaves) \
     RUN(test_cryptogram_held_cursor_repeats)     \
+    RUN(test_quote_prize_ladder_covers_every_recipe) \
+    RUN(test_quote_prize_pays_the_next_recipe) \
+    RUN(test_quote_prize_falls_back_without_a_kitchen) \
     RUN(test_cryptogram_vault_ticket_pays_bits_and_an_upgrade) \
     RUN(test_cryptogram_losing_ratchets_the_quote_easier) \
     RUN(test_cryptogram_gated_quotes_wait_for_their_achievement) \

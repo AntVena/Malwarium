@@ -43,6 +43,9 @@ struct QuoteReward {
         None = 0,
         RigGrant,   // +magnitude levels on the Rig Shop row `id`, free (game_rig_shop.h)
         Item,       // +magnitude copies of item `id`
+        Recipe,     // the MERGE HUB recipe that COOKS item `id` (magnitude unused) —
+                    // named by the dish, because that is what the board prints and what
+                    // the player is actually winning
     };
     Kind kind = Kind::None;
     int magnitude = 0;
@@ -80,13 +83,29 @@ inline constexpr int kQuoteStateBytes = kQuoteWireCap / 4;
 // resolve it off the row instead of ignoring it. That is the growth point; until a row
 // actually wants a different prize, a per-row field would be 300 copies of the same
 // literal for whoever is pasting the table in.
-//
-// Bandwidth is the deliberate first (and only) unlock kind in play: it is the one Rig
-// Shop row with no purchase cap, so a prize can never be dead on arrival for a player
-// who already owns everything, and it is the cheapest thing they are likely to want a
-// lot of.
 inline constexpr int kQuoteWinBits = 256;
-QuoteReward quoteWinReward();
+
+// THE PRIZE LADDER — what a first solve hands over, in payout order. Each entry is a
+// DISH, naming the MERGE HUB recipe that cooks it (game_internal.h's kMergeRecipes).
+//
+// A recipe is the one thing in the game Bits cannot buy: no shop lists one at any
+// price. That is the deal the board is offering — the pantry drops staples for free all
+// day, the hub is on the shelf for anyone who saves up, and the METHOD only ever comes
+// off a quote nobody has cracked yet. It also fixes what a Decryptogram used to be
+// worth, which was a Bandwidth level a rich player already had and a poor one could
+// have bought.
+//
+// A solve pays the first dish on this list the operator can't already cook, skipping
+// any the kitchen isn't ready for — no hub to cook in, or a dish they've never met
+// (Game::recipeGrantable). Order is therefore the difficulty curve of the kitchen, not
+// a ranking: plain fry-ups first, the dishes that heal mid-combat last.
+//
+// Run out of recipes and the fallback takes over. Bandwidth is what it falls back TO
+// for the reason it used to be the only prize: it is the one Rig Shop row with no
+// purchase cap, so the last quote of the pool can never pay out nothing.
+const char* const* quotePrizeLadder();
+int quotePrizeLadderCount();
+QuoteReward quoteFallbackReward();
 
 // A quote already solved has no first-solve prize left, so re-playing one — from the
 // VAULT once the whole pool is won, or from the arcade cabinet — pays only Bits. The

@@ -8,7 +8,7 @@
 #include <algorithm>
 #include <cstring>
 
-#include "core/app/game_rig_shop.h"   // RigRow — kMergeRecipes names its unlock row
+#include "core/app/game_rig_shop.h"   // kRigVisibleRows/kRigRowPitch — the SHOP list's geometry
 #include "core/model/combat.h"        // Combatant::BackupUse / Combat::Outcome
 #include "core/render/canvas.h"       // kActiveW — the bar hangs off the right edge
 #include "core/render/framebuffer.h"
@@ -61,18 +61,36 @@ constexpr int kRigRowPitch = 54;
 
 // Merge Hub recipes (Hacker MRG) ---------------------------------
 // A recipe combines owned ingredient items into a rarer one. Shared by
-// game_merge.cpp (craft/render) and the native item earn-path coverage test: a
-// recipe's OUTPUT is earnable by being crafted, which the generic starting-shelf/
-// cache-pool/shop/container/warp checks can't see on their own. Whether a recipe is
-// UNLOCKED lives on its own Rig Shop row (game_rig_shop.h), named here by `rigRow` —
-// this table only owns the craft mechanic: the input/output ids + quantities
-// craftRecipe consumes/grants, and the Hacker-Log line the craft writes.
+// game_merge.cpp (craft/render), game_cryptogram.cpp (a solved board's prize) and the
+// native item earn-path coverage test: a recipe's OUTPUT is earnable by being crafted,
+// which the generic starting-shelf/cache-pool/shop/container/warp checks can't see on
+// their own.
 //
-// Adding a recipe is one row here plus one row in kRigUpgrades, wired to each other
-// by `rigRow`. Nothing derives one from the other's POSITION, so the two tables can
-// grow independently (rig rows are append-only for save compatibility; this one is
-// free to be reordered).
+// A recipe is WON, NEVER BOUGHT. It has no price, no levels and no storefront row —
+// the only thing that hands one over is a first solve on the DECRYPTOGRAM, in the order
+// content_quotes.h's prize ladder names them. So this table owns the whole of a
+// recipe: what it consumes, what it makes, what it must not be handed over before, and
+// the save bit that says you have it.
+//
+// Adding a recipe is one row here plus its output dish on the prize ladder — a recipe
+// missing from the ladder is one nothing can hand over, which the native gate fails on.
+// The rows themselves are free to be reordered; `wire` is what the save holds onto.
 constexpr int kMaxRecipeInputs = 4;
+
+// Items a recipe must not be handed over before the operator has MET
+// (MergeRecipe::requiresItems).
+constexpr int kMaxRecipeRequiredItems = 2;
+
+// Capacity for the save's owned-recipe bitmask, in wire numbers — one bit each, so the
+// whole set is a single uint32 on the blob (SaveData::recipesUnlocked). Raise it (and
+// the field's width, with a save-version note) as the table approaches it.
+constexpr int kMergeRecipeWireCap = 32;
+
+// Recipes on screen at once in the MERGE HUB (drawHackerMerge's window, the sibling of
+// kRigVisibleRows above). Five is what the panel holds in the worst case: four folded
+// titles plus the focused row unfolding kMaxRecipeInputs ingredient lines, all above
+// the A NEXT / B MERGE footer rule.
+constexpr int kMergeVisibleRows = 5;
 
 // One ingredient a recipe consumes. `id` nullptr = unused slot, so a two-ingredient
 // recipe writes two and stops.
@@ -85,24 +103,74 @@ struct MergeRecipe {
     const char* displayName;
     RecipeInput inputs[kMaxRecipeInputs];
     const char* outputId; int outputQty;
-    int rigRow;                // the Rig Shop row that unlocks this recipe
+    // Stable save identity — the owned-recipe bitmask's bit index (SaveData::
+    // recipesUnlocked). NEVER reused, never renumbered: rows may be reordered or
+    // retired freely, but a retired recipe's number stays burned, exactly as a quote's
+    // wire does. The gate asserts uniqueness and that every number is under
+    // kMergeRecipeWireCap.
+    int wire;
     const char* logText;       // Hacker-Log line written on a successful craft
+    // Item ids the operator must have COLLECTED (ever held — Game::itemCollected, not
+    // current possession) before the prize ladder will hand this recipe over. A
+    // nullptr slot ends the list; an all-null array (what most rows carry) = no gate.
+    // For a dish sold somewhere: meet it first, then win the method for it.
+    const char* requiresItems[kMaxRecipeRequiredItems] = {};
 };
 inline const MergeRecipe kMergeRecipes[] = {
     {"Pwnzu-Patched Noodles", {{"null_noodles", 1}, {"pwnzu_sauce", 1}},
-     "pwnzu_patched_noodles", 1, kRigRowRecipeNoodles, "MERGED PATCHED NOODLES"},
+     "pwnzu_patched_noodles", 1, /*wire=*/0, "MERGED PATCHED NOODLES"},
     {"Fully-Stacked Nachos", {{"tortilla_chip", 1}, {"osi_dip", 1}},
-     "fully_stacked_nachos", 1, kRigRowRecipeNachos, "MERGED STACKED NACHOS"},
+     "fully_stacked_nachos", 1, /*wire=*/1, "MERGED STACKED NACHOS"},
     // The pantry's own two: a four-ingredient base dish, then a one-ingredient pass
-    // back through the pan that turns it into the better version of itself.
+    // back through the pan that turns it into the better version of itself. Both are
+    // stocked at Moor-to-Moor, which is why both carry the met-the-dish gate.
     {"Hashed Browns",
      {{"c_salt", 1}, {"grepsed_oil", 1}, {"cronstarch", 1}, {"polltatoes", 1}},
-     "hashed_browns", 1, kRigRowRecipeHashedBrowns, "MERGED HASHED BROWNS"},
+     "hashed_browns", 1, /*wire=*/2, "MERGED HASHED BROWNS",
+     {"hashed_browns", "salted_hashed_browns"}},
     {"Salted&Hashed Browns", {{"c_salt", 1}, {"hashed_browns", 1}},
-     "salted_hashed_browns", 1, kRigRowRecipeSaltedBrowns, "MERGED SALTED BROWNS"},
+     "salted_hashed_browns", 1, /*wire=*/3, "MERGED SALTED BROWNS",
+     {"hashed_browns", "salted_hashed_browns"}},
+    // The rest of the pantry, cooked. Between them these use every staple but Spoiled
+    // Macrol (which is Pier-to-Peer's currency, not an ingredient), so no shelf of the
+    // pantry is only ever eaten raw. Quantities are the point of each row as much as the
+    // ids are: a dish that wants four Spam is a dish that clears the folder.
+    {"Cracquettes",
+     {{"spam", 4}, {"breadcrumbs", 2}, {"regeggs", 1}, {"grepsed_oil", 1}},
+     "cracquettes", 1, /*wire=*/4, "MERGED CRACQUETTES"},
+    {"Hackshuka",
+     {{"regeggs", 2}, {"data_leek", 1}, {"boolean_cubes", 1}, {"c_salt", 1}},
+     "hackshuka", 1, /*wire=*/5, "MERGED HACKSHUKA"},
+    {"Applet Turnover",
+     {{"applets", 2}, {"syntactic_sugar", 1}, {"cronstarch", 1}, {"vanilla_extract", 1}},
+     "applet_turnover", 1, /*wire=*/6, "MERGED APPLET TURNOVER"},
+    {"Serial Bar",
+     {{"universal_cereal_box", 1}, {"breadcrumbs", 2}, {"syntactic_sugar", 1},
+      {"boolean_cubes", 1}},
+     "serial_bar", 1, /*wire=*/7, "MERGED SERIAL BAR"},
+    {"Macrol Fry-Up",
+     {{"fresh_macrol", 2}, {"grepsed_oil", 1}, {"breadcrumbs", 1}, {"c_salt", 1}},
+     "macrol_fry_up", 1, /*wire=*/8, "MERGED MACROL FRY-UP"},
+    {"Vanilla Java Roast",
+     {{"java", 2}, {"syntactic_sugar", 1}, {"vanilla_extract", 1}, {"kernel_oil", 1}},
+     "vanilla_java_roast", 1, /*wire=*/9, "MERGED JAVA ROAST"},
+    {"GNUlash",
+     {{"root_veg", 1}, {"kernel_oil", 1}, {"polltatoes", 2},
+      {"desalinated_c_salt", 1}},
+     "gnulash", 1, /*wire=*/10, "MERGED GNULASH"},
 };
 inline constexpr int kMergeRecipeCount =
     static_cast<int>(sizeof(kMergeRecipes) / sizeof(kMergeRecipes[0]));
+
+// The recipe that MAKES `outputId`, or -1 — how the Decryptogram's prize ladder names
+// a recipe: by the dish you win the ability to cook, not by an index into this table.
+// Outputs are unique across the table (the gate asserts it), so the dish IS the key.
+inline int recipeIndexByOutput(const char* outputId) {
+    if (!outputId) return -1;
+    for (int i = 0; i < kMergeRecipeCount; ++i)
+        if (std::strcmp(kMergeRecipes[i].outputId, outputId) == 0) return i;
+    return -1;
+}
 
 // How many ingredient slots `r` actually uses.
 inline int recipeInputCount(const MergeRecipe& r) {

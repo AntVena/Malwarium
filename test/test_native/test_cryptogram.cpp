@@ -309,8 +309,77 @@ void test_cryptogram_held_cursor_repeats() {
     CHECK(c.poolCursor() == parked);
 }
 
+// THE PRIZE LADDER AND THE RECIPE TABLE MUST DESCRIBE THE SAME KITCHEN. A recipe is
+// won off a board or not at all, so one missing from the ladder is one nothing in the
+// game can hand over — a dish that exists, has ingredients, and can never be cooked.
+// The wire numbers carry the save, so they get the same uniqueness check the quotes'
+// do, and the outputs are checked too because the ladder names a recipe BY its dish.
+void test_quote_prize_ladder_covers_every_recipe() {
+    CHECK(quotePrizeLadderCount() == kMergeRecipeCount);
+
+    for (int i = 0; i < kMergeRecipeCount; ++i) {
+        const MergeRecipe& r = kMergeRecipes[i];
+        CHECK(r.wire >= 0 && r.wire < kMergeRecipeWireCap);
+        for (int j = i + 1; j < kMergeRecipeCount; ++j) {
+            CHECK(r.wire != kMergeRecipes[j].wire);
+            CHECK(std::strcmp(r.outputId, kMergeRecipes[j].outputId) != 0);
+        }
+        // Its dish is on the ladder, exactly once.
+        int listed = 0;
+        for (int k = 0; k < quotePrizeLadderCount(); ++k)
+            if (std::strcmp(quotePrizeLadder()[k], r.outputId) == 0) ++listed;
+        CHECK(listed == 1);
+    }
+    // ...and nothing on the ladder names a dish no recipe makes.
+    for (int k = 0; k < quotePrizeLadderCount(); ++k)
+        CHECK(recipeIndexByOutput(quotePrizeLadder()[k]) >= 0);
+}
+
+// What a first solve is FOR: the next recipe down the ladder, free. Nothing else in
+// the game hands one over, so this is the whole supply of cooking.
+void test_quote_prize_pays_the_next_recipe() {
+    Game g{StartMode::Hatched};
+    g.debugSetBits(99999);
+    g.debugBuyMergeHub();
+
+    const int first = recipeIndexByOutput(quotePrizeLadder()[0]);
+    const int second = recipeIndexByOutput(quotePrizeLadder()[1]);
+    CHECK(first >= 0 && second >= 0);
+    CHECK(!g.debugRecipeOwned(first));
+
+    cashADecryptogram(g, 2);
+    solveBoard(g);
+    CHECK(g.debugRecipeOwned(first));
+    CHECK(!g.debugRecipeOwned(second));   // one board, one recipe
+
+    // B parks back in the VAULT with the second ticket under the cursor, so the next
+    // board is the same two presses a player makes — and it pays the next rung down,
+    // because the first is no longer something the operator can't cook.
+    g.onButton(press(Button::B));
+    CHECK(g.nav() == Game::Nav::Submenu);
+    g.onButton(press(Button::B));
+    CHECK(g.nav() == Game::Nav::Cryptogram);
+    solveBoard(g);
+    CHECK(g.debugRecipeOwned(second));
+}
+
+// With no MERGE HUB there is nothing a recipe could be cooked in, so the ladder is
+// stepped over entirely and the board pays the Bandwidth fallback instead — the prize
+// a Decryptogram used to pay always. Nothing is ever won dead.
+void test_quote_prize_falls_back_without_a_kitchen() {
+    Game g{StartMode::Hatched};
+    CHECK(!g.mergeHubUnlocked());
+    const int bought = g.bwUpgradeCount();
+
+    cashADecryptogram(g);
+    solveBoard(g);
+    CHECK(g.bwUpgradeCount() == bought + 1);
+    for (int i = 0; i < kMergeRecipeCount; ++i) CHECK(!g.debugRecipeOwned(i));
+}
+
 // The VAULT is the door: the ticket is spent there, a quote comes up unsolved, and
-// solving it pays Bits plus the one account unlock.
+// solving it pays Bits plus the one account unlock. Driven with no Merge Hub, so the
+// unlock half is the Bandwidth fallback — the recipe ladder has its own gate above.
 void test_cryptogram_vault_ticket_pays_bits_and_an_upgrade() {
     Game g{StartMode::Hatched};
     const int bits = g.bits();

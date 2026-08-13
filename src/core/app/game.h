@@ -195,6 +195,10 @@ public:
     // bench of a favourite mod buys the room for it rather than accumulating copies
     // nobody counted.
     int modStorageCap() const { return modCopyCap(rigLevel_[kRigRowModStorage]); }
+    // Is `row` on sale right now — anything left to buy on it? The single answer the
+    // SHOP's A-cycle, its render loop and buyRigUpgrade all defer to, so the list can't
+    // show a row the cursor skips.
+    bool shopRowOffered(int row) const;
     // Price of the NEXT purchase at a Rig Shop row (game_rig_shop.h) — every row
     // resolves its own cost from its own costStart/curve/costStep, so this is the one
     // place that math happens; every named *Cost() below is a thin wrapper over it.
@@ -1375,10 +1379,12 @@ public:
     void debugBuyBulkOpen() { buyRigUpgrade(kRigRowBulkOpen); }
     // Buy the ITEMS type-picker upgrade via the real buy path (tests).
     void debugBuyItemPicker() { buyRigUpgrade(kRigRowItemPicker); }
-    // Buy the MERGE HUB slot and its per-recipe unlocks via the real buy path
-    // (tests / dump_frame). A recipe row is only OFFERED once the hub is owned, so
-    // these are called in that order.
+    // Buy the MERGE HUB slot via the real buy path (tests / dump_frame). The recipes
+    // cooked in it are won, not bought — debugWinRecipe below.
     void debugBuyMergeHub() { buyRigUpgrade(kRigRowMergeHub); }
+    // Any rig row by index, through the real buy path — for a test that sweeps the
+    // whole storefront rather than naming one row.
+    void debugBuyRigRow(int row) { buyRigUpgrade(row); }
     // Buy the g/h Auto Backup / Continuous Auto-Backup unlocks via the real buy path
     // (tests) — the two rows that arm the Backup Drive death-save for free.
     void debugBuyAutoBackup() { buyRigUpgrade(kRigRowAutoBackup); }
@@ -1390,13 +1396,16 @@ public:
     // the Continuous Auto-Backup / auto-defrag seam, without driving a whole random
     // event to reach it.
     void debugReturnToExplore() { returnToExplore(); }
-    // `i` indexes kMergeRecipes; the row it buys is that recipe's own rigRow, so this
-    // keeps working when either table grows. Out-of-line (game_merge.cpp) because the
-    // recipe table is engine-private.
-    void debugBuyRecipe(int i);
+    // `i` indexes kMergeRecipes; the row it GRANTS is that recipe's own rigRow, so this
+    // keeps working when either table grows. A grant, not a purchase — no Bits path
+    // reaches a recipe any more; the Decryptogram's prize ladder is the only one.
+    // Out-of-line (game_merge.cpp) because the recipe table is engine-private.
+    void debugWinRecipe(int i);
     // The MERGE HUB craft, driven without the screen (tests / dump_frame). Same two
     // calls B on the hub makes: ask, then do.
     bool debugRecipeCraftable(int i) const { return recipeCraftable(i); }
+    bool debugRecipeOwned(int i) const { return recipeOwned(i); }
+    bool debugRecipeGrantable(int i) const { return recipeGrantable(i); }
     void debugCraftRecipe(int i) { craftRecipe(i); }
     // Set the ITEMS type filter directly (tests): the real path is the ITEMS hold-A
     // gesture (nextItemFilter); this exercises buildInventoryRows/drawItemsList
@@ -1849,9 +1858,9 @@ private:
     void onHackerShop(const ButtonEvent& ev);      // SHOP list: A cycle · B buy · C back
     void onHackerVault(const ButtonEvent& ev);     // VAULT list: A cycle · B decrypt · C back
     // Generic Rig Shop buy: looks up `row`'s RigUpgradeDef (game_rig_shop.h), checks
-    // maxed/afford, deducts Bits, bumps rigLevel_[row], applies the row's RigEffectKind
-    // (only Bandwidth has one — the live-pool grant), logs, persists. One function for
-    // every row (a-f + both recipes) — adding a row is a table entry, not a new buyX().
+    // offered/afford, deducts Bits, bumps rigLevel_[row], applies the row's
+    // RigEffectKind (only Bandwidth has one — the live-pool grant), logs, persists. One
+    // function for every row — adding a row is a table entry, not a new buyX().
     void buyRigUpgrade(int row);
     // The OWNING half of that, with no till in it: bump the row `levels` times, apply
     // its RigEffectKind each time, log and persist. Split out because a rig level can
@@ -1861,11 +1870,11 @@ private:
     void grantRigLevel(int row, int levels);
     bool rigUpgradeOwned(int row) const { return rigLevel_[row] > 0; }  // level > 0
 
-    // MERGE HUB (game_merge.cpp) — the f Rig Shop unlock combines two owned
-    // ingredient items into a rarer one. Owning the Hub makes the MRG slot
-    // accessible; each recipe is a SEPARATE one-time Rig Shop row gating whether
-    // it can be crafted — owning the recipe is necessary but not sufficient, the
-    // raw ingredients still have to be in the bag.
+    // MERGE HUB (game_merge.cpp) — the f Rig Shop unlock combines owned ingredient
+    // items into a rarer one. Owning the Hub makes the MRG slot accessible; each
+    // RECIPE is won separately off a Decryptogram (recipeOwned, below) and gates
+    // whether it can be cooked — knowing the recipe is necessary but not sufficient,
+    // the raw ingredients still have to be in the bag.
     void onHackerMerge(const ButtonEvent& ev);     // MERGE HUB list: A cycle · B craft · C back
     void drawHackerMerge(Framebuffer& fb) const;   // MERGE HUB screen body (below the shared header)
 
@@ -1890,7 +1899,14 @@ private:
     // The crew Exploit row the A+C picker should offer, or a default-constructed
     // (label == nullptr) one when the player belongs to no crew.
     CrewExploit crewExploitOption() const;
-    bool recipeCraftable(int recipeIndex) const;   // owned (Rig Shop) + both ingredients in the bag
+    // Cooking, indexed by kMergeRecipes row (game_internal.h). Ownership is a bit per
+    // recipe wire in recipesOwned_, and this trio is the only code that knows that.
+    bool recipeOwned(int recipeIndex) const;       // won off a Decryptogram — never bought
+    void grantRecipe(int recipeIndex);             // the win: light the bit, persist
+    // May the prize ladder hand this one over right now? Not owned, MERGE HUB built,
+    // and any dish the recipe wants MET has been held at least once.
+    bool recipeGrantable(int recipeIndex) const;
+    bool recipeCraftable(int recipeIndex) const;   // owned + every ingredient in the bag
     void craftRecipe(int recipeIndex);             // consume the ingredients → grant the output
     // Shared by applyCombatBitsBonus/applyCacheBitsBonus/applyCombatXpBonus: floors
     // the % bonus at +1 whenever it's active, so a truncated-to-0 grant (a small
@@ -2037,6 +2053,11 @@ private:
     // when nothing is. Advances rng_.
     int pickQuote(QuotePick pick);
     void setQuoteTier(int i, CryptogramTier t);
+    // What a FIRST solve is playing for: the first recipe on content_quotes.h's prize
+    // ladder whose gates are met and which isn't owned yet, or the Bandwidth fallback
+    // once the kitchen is complete. Read at board START, so the stake can be printed
+    // while the player is still deciding to place a letter.
+    QuoteReward quoteFirstSolvePrize() const;
     void applyQuoteReward();   // the win: Bits + the one account unlock
     // The unlock's display name for the board's prize line, or nullptr — resolved off
     // whichever content table the reward kind names.
@@ -2807,11 +2828,19 @@ private:
     int crewNetRow_ = 0;
     // Rig Shop purchase levels, one int per RigRow (game_rig_shop.h) — 0 = never
     // bought; a tiered row's purchase count, or 0/1 for a one-time unlock. Player-level,
-    // survives lifecycles. Persistence (game_persist.cpp) maps rows [0, kRigRowRecipeNachos]
-    // onto the legacy per-row SaveGame fields (bwUpgradeCount/fragAmountTier/etc., save
-    // v19-v31, unchanged wire format) and any row beyond that into the forward-compatible
-    // `rigLevelsExt` vector (save v32) — so a new row never needs a save.h edit.
+    // survives lifecycles. Persistence (game_persist.cpp) maps rows below
+    // kRigRowExtBase onto the legacy per-row SaveGame fields (bwUpgradeCount/
+    // fragAmountTier/etc., save v19-v31, unchanged wire format) and every row from
+    // there up into the forward-compatible `rigLevelsExt` vector (save v32) — so a new
+    // row never needs a save.h edit.
     int rigLevel_[kMaxRigUpgrades] = {};
+
+    // Which MERGE HUB recipes are known — one bit per MergeRecipe::wire
+    // (game_internal.h), read and written only through recipeOwned/grantRecipe.
+    // Player-level, survives lifecycles; persisted whole as SaveData::recipesUnlocked
+    // (save v31, widened from the two bits the Rig Shop rows used to mirror).
+    // A recipe is never bought — the Decryptogram's prize ladder is the only writer.
+    uint32_t recipesOwned_ = 0;
 
     // Warp-key picker. warpRow_ is the focused row into the live
     // heldWarpKeys() list while nav_ == Nav::WarpPicker; transient run state (the

@@ -88,6 +88,7 @@
 
 #include "tunables.h"
 #include "core/app/game.h"
+#include "core/app/game_internal.h"   // kMergeRecipeCount — the MERGE HUB dump wins them all
 #include "core/render/canvas.h"
 #include "core/render/framebuffer.h"
 #include "core/render/palette.h"
@@ -670,9 +671,8 @@ int main(int argc, char** argv) {
             enterHackerSlot(HackerSlotId::Link);
         }
         else if (hasFlag(argc, argv, "shop")) {
-            // "hub" buys the MERGE HUB first, which is what makes its two recipe
-            // rows appear at all (RigUpgradeDef::requiresRow) — the way to see the
-            // list with and without them. "row:<n>" then A-cycles down to reach them.
+            // "hub" buys the MERGE HUB first — the way to see the list with and
+            // without it. "row:<n>" then A-cycles down to reach a given row.
             if (hasFlag(argc, argv, "hub")) { game.debugSetBits(99999); game.debugBuyMergeHub(); }
             enterHackerSlot(HackerSlotId::Shop);
             for (int i = 3; i < argc; ++i)
@@ -682,15 +682,14 @@ int main(int argc, char** argv) {
             if (hasFlag(argc, argv, "buy")) game.onButton({Button::B, true, false});
         } else if (hasFlag(argc, argv, "merge")) {
             // MERGE HUB: the slot is a Rig Shop purchase, so buy it before entering
-            // or the carousel gates the slot. "recipes" also buys both recipe rows
-            // (they gate on the hub, so they aren't even offered until it's owned),
-            // and "stock" fills the bag so a row reads craftable rather than short.
+            // or the carousel gates the slot. "recipes" then wins every recipe the way
+            // a solved Decryptogram does (no Bits path reaches one), so the list draws
+            // unlocked rather than a column of LOCKED; "stock" fills the bag so the
+            // focused row reads craftable rather than short.
             game.debugSetBits(99999);
             game.debugBuyMergeHub();
-            if (hasFlag(argc, argv, "recipes")) {
-                game.debugBuyRecipe(0);
-                game.debugBuyRecipe(1);
-            }
+            if (hasFlag(argc, argv, "recipes"))
+                for (int i = 0; i < kMergeRecipeCount; ++i) game.debugWinRecipe(i);
             if (hasFlag(argc, argv, "stock")) {
                 game.inventory().add("null_noodles", 4);
                 game.inventory().add("pwnzu_sauce", 4);

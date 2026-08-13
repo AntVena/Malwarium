@@ -10,15 +10,19 @@
 #include "core/ui/layout.h"
 #include "core/ui/widgets.h"
 
-// game_merge.cpp — the Hacker-face MERGE HUB (MRG) slot: combines two owned
-// ingredient items into a rarer one. Unlocked itself as a one-time f Rig Shop
-// purchase (kRigRowMergeHub, game_rig_shop.h) that flips the MRG carousel slot
-// accessible (Game::hackerSlotAccessible / drawHackerCarousel's `mergeUnlocked`).
-// Each RECIPE is a SEPARATE one-time Rig Shop row (kRigRowRecipeNoodles/Nachos) —
-// owning a recipe is necessary but not sufficient to craft it here, the raw
-// ingredients still have to be in the bag; buying + row rendering are generic
-// (Game::buyRigUpgrade / drawHackerSubmenu's SHOP branch, game_hacker.cpp). This
-// file only owns the craft mechanic: MergeRecipe (game_internal.h) + the screen body.
+// game_merge.cpp — the Hacker-face MERGE HUB (MRG) slot: combines owned ingredient
+// items into a rarer one. The HUB is a one-time Rig Shop purchase (kRigRowMergeHub,
+// game_rig_shop.h) that flips the MRG carousel slot accessible
+// (Game::hackerSlotAccessible / drawHackerCarousel's `mergeUnlocked`).
+//
+// The RECIPES cooked in it are not for sale at any price: each is won off a first
+// solve on the DECRYPTOGRAM (game_cryptogram.cpp's prize ladder), and owning one is
+// necessary but not sufficient to craft — the raw ingredients still have to be in the
+// bag. Ownership is a bit per recipe wire in recipesOwned_ (save v31's recipesUnlocked
+// mask), which this file is the only writer of.
+//
+// So this file owns cooking end to end: the ownership bit, the craft mechanic over
+// MergeRecipe (game_internal.h), and the screen body.
 
 namespace mal {
 
@@ -32,15 +36,49 @@ void Game::onHackerMerge(const ButtonEvent& ev) {
     }
 }
 
-void Game::debugBuyRecipe(int i) {
-    if (i < 0 || i >= kMergeRecipeCount) return;
-    buyRigUpgrade(kMergeRecipes[i].rigRow);
+void Game::debugWinRecipe(int i) { grantRecipe(i); }
+
+// --- Which recipes the operator has ----------------------------------------
+//
+// One bit per MergeRecipe::wire in recipesOwned_. Every read and write of that packing
+// is in this pair, so nothing else has to know the layout (the same discipline the
+// quote tiers keep, game_cryptogram.cpp).
+
+bool Game::recipeOwned(int recipeIndex) const {
+    if (recipeIndex < 0 || recipeIndex >= kMergeRecipeCount) return false;
+    const int wire = kMergeRecipes[recipeIndex].wire;
+    if (wire < 0 || wire >= kMergeRecipeWireCap) return false;
+    return (recipesOwned_ & (1u << wire)) != 0;
+}
+
+void Game::grantRecipe(int recipeIndex) {
+    if (recipeIndex < 0 || recipeIndex >= kMergeRecipeCount) return;
+    const MergeRecipe& r = kMergeRecipes[recipeIndex];
+    if (r.wire < 0 || r.wire >= kMergeRecipeWireCap) return;
+    if (recipesOwned_ & (1u << r.wire)) return;      // already known — nothing to write
+    recipesOwned_ |= 1u << r.wire;
+    markSaveDirty();
+    dirty_ = true;
+}
+
+// Is this recipe one the operator is ALLOWED to be handed right now? Not owned yet,
+// somewhere to cook it, and — for a dish a storefront stocks — proof they have met the
+// dish. The Decryptogram's prize ladder asks this and nothing else does, but it lives
+// here beside the ownership bit rather than in the board's file, because what makes a
+// recipe grantable is a fact about cooking.
+bool Game::recipeGrantable(int recipeIndex) const {
+    if (recipeIndex < 0 || recipeIndex >= kMergeRecipeCount) return false;
+    if (recipeOwned(recipeIndex)) return false;
+    if (!mergeHubUnlocked()) return false;
+    for (const char* need : kMergeRecipes[recipeIndex].requiresItems)
+        if (need && !itemCollected(need)) return false;
+    return true;
 }
 
 bool Game::recipeCraftable(int recipeIndex) const {
     if (recipeIndex < 0 || recipeIndex >= kMergeRecipeCount) return false;
     const MergeRecipe& r = kMergeRecipes[recipeIndex];
-    if (!rigUpgradeOwned(r.rigRow)) return false;   // recipe not bought
+    if (!recipeOwned(recipeIndex)) return false;   // recipe not won yet
     for (const RecipeInput& in : r.inputs)
         if (in.id && inventory_.count(in.id) < in.qty) return false;
     return true;
@@ -63,6 +101,7 @@ void Game::drawHackerMerge(Framebuffer& fb) const {
     constexpr int kRowGap = 6;                   // breathing room between recipes
 
     if (!mergeHubUnlocked()) {   // defensive; the carousel already gates entry
+        // The HUB is the part that's for sale — the recipes inside it never are.
         drawText(fb, kMargin, 40, "LOCKED - BUY IN SHOP", palColor(Pal::INK_DIM));
         return;
     }
@@ -71,18 +110,34 @@ void Game::drawHackerMerge(Framebuffer& fb) const {
     // FOCUSED one unfolds its ingredients. Recipes carry between one and
     // kMaxRecipeInputs of them, so a flat layout would either overflow the panel or
     // have to be sized for the longest recipe and waste the space on every other one.
-    // Unfolding one at a time keeps the whole roster on screen whatever it grows into.
+    //
+    // Folded rows are cheap but not free, so the roster is also WINDOWED to
+    // kMergeVisibleRows (the same scroll the SHOP list runs, drawHackerSubmenu): a
+    // fully-stocked kitchen is more titles than the panel has lines, and a list that
+    // ran off the bottom would hide the recipe the cursor is on. The window follows the
+    // cursor and clamps, so the first and last screens are full ones.
+    int scrollTop = 0;
+    if (kMergeRecipeCount > kMergeVisibleRows) {
+        scrollTop = hackerMergeRow_ - kMergeVisibleRows / 2;
+        if (scrollTop < 0) scrollTop = 0;
+        if (scrollTop > kMergeRecipeCount - kMergeVisibleRows)
+            scrollTop = kMergeRecipeCount - kMergeVisibleRows;
+    }
+    const int rowsShown = kMergeRecipeCount < kMergeVisibleRows ? kMergeRecipeCount
+                                                                : kMergeVisibleRows;
+
     int rowY = 28;
-    for (int i = 0; i < kMergeRecipeCount; ++i) {
+    for (int v = 0; v < rowsShown; ++v) {
+        const int i = scrollTop + v;
         const MergeRecipe& r = kMergeRecipes[i];
         const bool sel = hackerMergeRow_ == i;
         if (sel) drawRowCursor(fb, 2, rowY + 1, palColor(Pal::ACCENT));
 
-        const bool owned = rigUpgradeOwned(r.rigRow);
+        const bool owned = recipeOwned(i);
 
-        // Title. LOCKED (recipe not bought yet) is a genuinely different state from
-        // "missing ingredients", and it is the state the row cannot lose — the dish
-        // name yields to it and scrolls when focused.
+        // Title. LOCKED (the recipe hasn't been won off a Decryptogram yet) is a
+        // genuinely different state from "missing ingredients", and it is the state the
+        // row cannot lose — the dish name yields to it and scrolls when focused.
         drawLabelValue(fb, kMargin, rowY, r.displayName,
                        sel ? palColor(Pal::INK) : palColor(Pal::INK_DIM),
                        owned ? "" : "LOCKED", palColor(Pal::INK_DIM), beat_, sel);

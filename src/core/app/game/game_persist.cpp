@@ -269,19 +269,18 @@ SaveData Game::captureSave() const {
     // reset on a new egg).
     d.backupShieldUntilMs = backupShieldUntilMs_;
 
-    // v31: the f Rig Shop Merge Hub unlocks (player-level, like itemTabsUnlocked).
-    // recipesUnlocked's 2 bits mirror rigLevel_[kRigRowRecipeNoodles/Nachos] (0/1 each).
+    // v31: the f Rig Shop Merge Hub unlock, and (v49) the whole owned-recipe mask —
+    // both player-level, like itemTabsUnlocked. The mask used to mirror two rig rows;
+    // recipes own their state outright now, so it is written straight through.
     d.mergeHubUnlocked = rigLevel_[kRigRowMergeHub] ? 1 : 0;
-    d.recipesUnlocked = (rigLevel_[kRigRowRecipeNoodles] ? 1u << 0 : 0u) |
-                        (rigLevel_[kRigRowRecipeNachos] ? 1u << 1 : 0u);
+    d.recipesUnlocked = recipesOwned_;
 
-    // v32: rig rows BEYOND the legacy 11 above (kRigRowRecipeNachos+1 onward) — a
-    // forward-compatible tail so a future new Rig Shop row never needs a save.h edit.
-    // Mirrors the subRefarm vector pattern: length-prefixed, bounds-checked on read,
-    // short/missing defaults every level to 0. Empty today (no row 11 exists yet).
+    // v32: every rig row from kRigRowExtBase up — a forward-compatible tail so a new
+    // Rig Shop row never needs a save.h edit. Mirrors the subRefarm vector pattern:
+    // length-prefixed, bounds-checked on read, short/missing defaults every level to 0.
     d.rigLevelsExt.clear();
-    d.rigLevelsExt.reserve(kRigUpgradeCount - (kRigRowRecipeNachos + 1));
-    for (int i = kRigRowRecipeNachos + 1; i < kRigUpgradeCount; ++i)
+    d.rigLevelsExt.reserve(kRigUpgradeCount - kRigRowExtBase);
+    for (int i = kRigRowExtBase; i < kRigUpgradeCount; ++i)
         d.rigLevelsExt.push_back(static_cast<uint16_t>(rigLevel_[i]));
     return d;
 }
@@ -662,16 +661,17 @@ void Game::applySave(const SaveData& d) {
     // pre-v30 blob defaults it to 0 — no shield armed).
     backupShieldUntilMs_ = d.backupShieldUntilMs;
 
-    // v31: the f Rig Shop Merge Hub unlocks (a pre-v31 blob defaults both to 0 —
-    // bought neither the Hub nor any recipe).
+    // v31: the Merge Hub unlock and the owned-recipe mask (a pre-v31 blob defaults both
+    // to 0 — no Hub, no recipes). The mask arrives already in v49's layout: a pre-v49
+    // blob had two of its recipes riding rig rows instead, and save.cpp's reader folds
+    // those into the bits before handing the struct over.
     rigLevel_[kRigRowMergeHub] = d.mergeHubUnlocked ? 1 : 0;
-    rigLevel_[kRigRowRecipeNoodles] = (d.recipesUnlocked & (1u << 0)) ? 1 : 0;
-    rigLevel_[kRigRowRecipeNachos] = (d.recipesUnlocked & (1u << 1)) ? 1 : 0;
+    recipesOwned_ = d.recipesUnlocked;
 
-    // v32: rig rows beyond the legacy 11 (a pre-v32 blob carries an empty vector →
-    // every such row defaults to 0 — a migrated save has bought none of them).
-    for (int i = kRigRowRecipeNachos + 1; i < kRigUpgradeCount; ++i) {
-        const size_t idx = static_cast<size_t>(i - (kRigRowRecipeNachos + 1));
+    // v32: every rig row from kRigRowExtBase up (a pre-v32 blob carries an empty vector
+    // → every such row defaults to 0 — a migrated save has bought none of them).
+    for (int i = kRigRowExtBase; i < kRigUpgradeCount; ++i) {
+        const size_t idx = static_cast<size_t>(i - kRigRowExtBase);
         rigLevel_[i] = idx < d.rigLevelsExt.size() ? d.rigLevelsExt[idx] : 0;
     }
 

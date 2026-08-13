@@ -446,29 +446,38 @@ void test_inert_use_keeps_the_item() {
     CHECK(g.inventory().count("yubi_cookie") == spent);
 }
 
-// A Rig Shop row with a prerequisite (RigUpgradeDef::requiresRow) isn't on sale
-// until that row is owned: the recipes need the MERGE HUB they'd be cooked in.
-// The SHOP list and the buy path share one predicate (shopRowOffered), so
-// refusing the purchase and hiding the row are the same fact asserted once.
-void test_recipe_rows_wait_on_the_merge_hub() {
+// No Bits path reaches a recipe. The SHOP sells the MERGE HUB and nothing that
+// happens inside it — a recipe is won off a Decryptogram, so the only thing a full
+// wallet can do about cooking is buy the kitchen.
+void test_recipes_are_not_for_sale_at_any_price() {
     Game g{StartMode::Hatched};
     g.debugSetBits(99999);
-    const int start = g.bits();
-    g.debugBuyRecipe(0);
-    CHECK(g.bits() == start);           // gated: nothing bought, nothing charged
-    CHECK(!g.mergeHubUnlocked());
-
-    g.debugBuyMergeHub();
+    for (int i = 0; i < kRigUpgradeCount; ++i)
+        CHECK(std::strncmp(kRigUpgrades[i].id, "recipe_", 7) != 0);
+    // Buy out the whole storefront; the kitchen stays empty.
+    for (int i = 0; i < kRigUpgradeCount; ++i) g.debugBuyRigRow(i);
     CHECK(g.mergeHubUnlocked());
-    CHECK(g.bits() == start - kRigMergeHubCost);
-    g.debugBuyRecipe(0);                // now offered, so it sells
-    CHECK(g.bits() == start - kRigMergeHubCost - kRigRecipeUnlockCost);
+    for (int i = 0; i < kMergeRecipeCount; ++i) CHECK(!g.debugRecipeOwned(i));
 }
 
-// The second gate axis (RigUpgradeDef::requiresItems): the Browns recipes want the
-// operator to have HELD both dishes, not just to own the hub. It's an ever-held
-// record (Game::itemCollected), so meeting a dish and then eating it still counts —
-// which is the whole reason the gate reads that and not the current bag.
+// A recipe can't be handed over before there is anywhere to cook it: the prize ladder
+// steps over one whose MERGE HUB hasn't been built, and comes back to it later.
+void test_recipes_wait_on_the_merge_hub() {
+    Game g{StartMode::Hatched};
+    for (int i = 0; i < kMergeRecipeCount; ++i) CHECK(!g.debugRecipeGrantable(i));
+    CHECK(!g.mergeHubUnlocked());
+
+    g.debugSetBits(99999);
+    g.debugBuyMergeHub();
+    CHECK(g.mergeHubUnlocked());
+    CHECK(g.debugRecipeGrantable(0));   // the hub is what it was waiting on
+}
+
+// The second gate (MergeRecipe::requiresItems): the Browns recipes want the operator
+// to have HELD both dishes, not just to own the hub — Moor-to-Moor stocks them, so the
+// ladder won't teach the method for a dish nobody has met. It's an ever-held record
+// (Game::itemCollected), so meeting a dish and then eating it still counts — which is
+// the whole reason the gate reads that and not the current bag.
 void test_browns_recipes_wait_on_meeting_both_dishes() {
     Game g{StartMode::Hatched};
     g.debugSetBits(99999);
@@ -479,26 +488,19 @@ void test_browns_recipes_wait_on_meeting_both_dishes() {
         if (std::strcmp(kMergeRecipes[i].outputId, "hashed_browns") == 0) brownsRecipe = i;
     CHECK(brownsRecipe >= 0);
 
-    // Whether the row actually sold, measured across the call — an absolute Bits
-    // figure would drift the moment a tick pays out an achievement.
-    auto sold = [&] {
-        const int before = g.bits();
-        g.debugBuyRecipe(brownsRecipe);
-        return g.bits() != before;
-    };
     // The collected-items record is folded in by the achievement sweep, which is
     // throttled — walk the clock past its interval rather than by a millisecond.
     // Game::tick takes an ABSOLUTE timestamp, so the cursor has to advance.
     uint32_t now = 0;
     auto settle = [&] { now += kAchSweepIntervalMs + 1; g.tick(now); };
 
-    CHECK(!sold());                            // never met either dish -> not on sale
+    CHECK(!g.debugRecipeGrantable(brownsRecipe));   // never met either dish
 
     // One of the two isn't enough: the row names both.
     g.inventory().add("hashed_browns", 1);
     settle();
     CHECK(g.itemCollected("hashed_browns"));
-    CHECK(!sold());
+    CHECK(!g.debugRecipeGrantable(brownsRecipe));
 
     g.inventory().add("salted_hashed_browns", 1);
     settle();
@@ -506,7 +508,67 @@ void test_browns_recipes_wait_on_meeting_both_dishes() {
     // Eat the evidence — a met dish stays met.
     g.inventory().remove("hashed_browns", 1);
     g.inventory().remove("salted_hashed_browns", 1);
-    CHECK(sold());
+    CHECK(g.debugRecipeGrantable(brownsRecipe));
+}
+
+// The recipes a device knows survive a power cycle — they are player-level, like the
+// rig levels beside them, and a lifecycle doesn't cost the operator their cooking.
+void test_recipes_persist() {
+    MemSaveStore store;
+    {
+        Game g{StartMode::Hatched, "malbear", &store};
+        g.debugWinRecipe(0);
+        g.debugWinRecipe(3);
+        g.tick(kSaveAutosaveMs + kHeartbeatMs);   // autosave
+    }
+    Game g2(StartMode::Hatched, "paypup", &store);
+    CHECK(g2.debugRecipeOwned(0));
+    CHECK(g2.debugRecipeOwned(3));
+    CHECK(!g2.debugRecipeOwned(1));
+    CHECK(!g2.debugRecipeOwned(2));
+}
+
+// v49 — cooking left the Rig Shop, and a save written before it described four recipes
+// as rig rows. Two were already bits 0/1 of the mask; the other two were rows 19 and 20,
+// which sat MID-TABLE, so their removal slides every later row down two slots in the
+// positional rigLevelsExt tail. Both halves are asserted here on a forged v48 blob,
+// because getting either wrong silently moves a purchase onto the wrong upgrade.
+void test_save_v49_recipes_leave_the_rig_rows() {
+    SaveData a;
+    std::strcpy(a.activeId, "paypup");
+    a.generation = 1;
+    a.recipesUnlocked = 1u << 1;             // v48: Nachos known, Noodles not
+    // The old ext layout, rows 11..21: Auto Backup .. Item Picker, then the two Browns
+    // recipe rows, then Mod Storage last.
+    a.rigLevelsExt = {1, 0, 2, 0, 0, 0, 0, 1,
+                      /*hashed browns=*/1, /*salted browns=*/0, /*mod storage=*/3};
+
+    // v49 adds no bytes, so a current blob is already v48-shaped — stamping the version
+    // word down is the whole forgery.
+    std::vector<uint8_t> blob = serializeSave(a);
+    blob[4] = 48; blob[5] = 0;
+
+    SaveData out;
+    CHECK(deserializeSave(blob, out));
+    // The Browns row that was owned becomes a recipe bit; the one that wasn't stays off.
+    CHECK((out.recipesUnlocked & (1u << 1)) != 0);   // Nachos, untouched
+    CHECK((out.recipesUnlocked & (1u << 2)) != 0);   // Hashed Browns, migrated
+    CHECK((out.recipesUnlocked & (1u << 3)) == 0);   // Salted, never owned
+    // ...and the tail closes over the gap they left, so Mod Storage keeps its level
+    // instead of landing on the row two places below it.
+    CHECK(out.rigLevelsExt.size() == 9);
+    const std::vector<uint16_t> expected = {1, 0, 2, 0, 0, 0, 0, 1, 3};
+    CHECK(out.rigLevelsExt == expected);
+
+    // Booted off that blob, that is exactly one known recipe beyond the Nachos, and the
+    // Mod Storage tier the operator actually paid for.
+    MemSaveStore store;
+    store.save(blob);
+    Game g{StartMode::Hatched, "paypup", &store};
+    CHECK(g.debugRecipeOwned(recipeIndexByOutput("fully_stacked_nachos")));
+    CHECK(g.debugRecipeOwned(recipeIndexByOutput("hashed_browns")));
+    CHECK(!g.debugRecipeOwned(recipeIndexByOutput("salted_hashed_browns")));
+    CHECK(g.modStorageCap() == modCopyCap(3));
 }
 
 // A recipe consumes every ingredient it names, not just the first two: Hashed Browns
@@ -526,7 +588,7 @@ void test_four_ingredient_recipe_consumes_all_inputs() {
     g.inventory().add("hashed_browns", 1);
     g.inventory().add("salted_hashed_browns", 1);
     g.tick(kAchSweepIntervalMs + 1);   // the sweep records both as met
-    g.debugBuyRecipe(idx);
+    g.debugWinRecipe(idx);
 
     // Three of the four in the bag: still refused, nothing consumed.
     for (int i = 0; i < 3; ++i) g.inventory().add(r.inputs[i].id, r.inputs[i].qty);

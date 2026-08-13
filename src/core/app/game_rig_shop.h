@@ -2,13 +2,13 @@
 
 // game_rig_shop.h — the Rig Shop: the Hacker-face SHOP's account-upgrade rows
 // (bandwidth pool, explore-frag reducers, ITEMS/VAULT gesture unlocks, rack slots,
-// combat/cache Bits %, Merge Hub + its two recipe unlocks). Named "Rig" to stay
-// unambiguous from the *explore-event* shops 
+// combat/cache Bits %, the Merge Hub). Named "Rig" to stay unambiguous from the
+// *explore-event* shops
 //
 // Private, engine-internal, sibling to game_internal.h — inline const (C++17 inline
 // variable, header-only), shared by game_hacker.cpp (buy dispatch + row rendering) and
-// game_merge.cpp (the Merge Hub + recipe rows reuse the same table/engine). Every row is
-// data: adding an upgrade is a new `kRigUpgrades[]` entry, never new buy/render logic.
+// game_merge.cpp (which reads the Merge Hub row). Every row is data: adding an upgrade
+// is a new `kRigUpgrades[]` entry, never new buy/render logic.
 //
 // Magnitudes live on the row (src/core/content/CONTENT_STANDARD.md rule 2) — each constant below is
 // used by exactly one row, so none of it lives in tunables.h. The one exception is
@@ -39,9 +39,15 @@ inline constexpr int kMaxRigUpgrades = 24;   // headroom for future rows
 inline constexpr int kRigLevelUnlimited = 1 << 20;
 
 // Rig row indices — the SHOP list's cursor space and Game::rigLevel_'s index space.
-// Values are stable (persisted positionally via the legacy save fields in
-// game_persist.cpp) — never reorder existing rows; append new ones after
-// kRigRowRecipeNachos.
+// Values are stable (persisted positionally: rows below kRigRowExtBase have their own
+// named save fields, the rest ride the rigLevelsExt tail by position) — never reorder
+// existing rows, and append new ones at the END.
+//
+// Everything here is BOUGHT. The one thing the Hacker face hands out that isn't — a
+// MERGE HUB recipe — is not a row at all: recipes are their own table with their own
+// save bits (game_internal.h's kMergeRecipes), because a recipe has no price, no
+// levels and no place in a storefront list. The hub itself is the last rig row cooking
+// needs.
 enum RigRow {
     kRigRowBandwidth = 0,
     kRigRowFragReduce = 1,
@@ -52,20 +58,21 @@ enum RigRow {
     kRigRowScraping = 6,
     kRigRowDataMining = 7,
     kRigRowMergeHub = 8,
-    kRigRowRecipeNoodles = 9,
-    kRigRowRecipeNachos = 10,
-    kRigRowAutoBackup = 11,
-    kRigRowContinuousBackup = 12,
-    kRigRowDiskMaintenance = 13,
-    kRigRowHungerXpRate = 14,
-    kRigRowHungerXpWindow = 15,
-    kRigRowCombatXpPct = 16,
-    kRigRowCombatXpWindow = 17,
-    kRigRowItemPicker = 18,
-    kRigRowRecipeHashedBrowns = 19,
-    kRigRowRecipeSaltedBrowns = 20,
-    kRigRowModStorage = 21,
+    kRigRowAutoBackup = 9,
+    kRigRowContinuousBackup = 10,
+    kRigRowDiskMaintenance = 11,
+    kRigRowHungerXpRate = 12,
+    kRigRowHungerXpWindow = 13,
+    kRigRowCombatXpPct = 14,
+    kRigRowCombatXpWindow = 15,
+    kRigRowItemPicker = 16,
+    kRigRowModStorage = 17,
 };
+
+// The first row that persists positionally in SaveData::rigLevelsExt rather than
+// through a named field of its own (save.h v32). Every row below it predates that tail
+// and keeps its own field; every row from here up is `rigLevelsExt[row - this]`.
+inline constexpr int kRigRowExtBase = kRigRowAutoBackup;
 
 // --- a: Increase Bandwidth --------------------------------------------------
 // Each purchase adds kBandwidthUpgradeStep to the farming-pool cap (kBandwidthMax,
@@ -127,23 +134,13 @@ inline constexpr int kDataMiningStart = 128;
 inline constexpr int kDataMiningMax = 256;
 inline constexpr int kDataMiningPctPerLevel = 4;
 
-// --- f: Merge Hub + its two recipe unlocks ------------------------------------
-// Merge Hub is a one-time unlock that makes the MRG carousel slot accessible
-// (Game::mergeHubUnlocked). Each recipe is a SEPARATE one-time unlock gating whether
-// game_merge.cpp's craftRecipe can run — owning a recipe is necessary but not
-// sufficient, the raw ingredients still have to be in the bag. The recipe rows' input/
-// output ids/quantities live in game_internal.h's MergeRecipe table (the craft
-// mechanic); these rows only own "is it unlocked + what does it cost".
+// --- f: the Merge Hub ---------------------------------------------------------
+// A one-time unlock that makes the MRG carousel slot accessible
+// (Game::mergeHubUnlocked). The hub is ALL of cooking that Bits can reach: the recipes
+// cooked in it are won off a Decryptogram, one per first solve, and are not rig rows at
+// all (game_internal.h's kMergeRecipes, content_quotes.h's prize ladder). So this row
+// buys the kitchen and nothing that happens in it.
 inline constexpr int kRigMergeHubCost = 4096;
-inline constexpr int kRigRecipeUnlockCost = 512;
-
-// --- The two Browns recipes ---------------------------------------------------
-// Same shape as the two recipe rows above, with one addition: they are also gated on
-// having COLLECTED both dishes (requiresItems). Moor-to-Moor stocks both, so the
-// intended route is buy one, eat it, decide you'd rather cook them — the Rig Shop
-// won't sell you the method for a dish you've never met. `itemCollected` is an
-// ever-held record, not current possession, so eating the evidence doesn't revoke it.
-inline constexpr int kRigBrownsRecipeCost = 512;
 
 // --- g/h: Auto Backup / Continuous Auto-Backup --------------------------------
 // One-time unlocks that spare the player a manual Backup Drive use — they arm the same
@@ -247,10 +244,6 @@ struct RigReadout {
 // same shape as ModDef's magnitude/magnitude2 pair.
 inline constexpr int kMaxRigReadouts = 2;
 
-// Max items a row's "you must have met these first" gate can name
-// (RigUpgradeDef::requiresItems).
-inline constexpr int kMaxRigRequiredItems = 2;
-
 struct RigUpgradeDef {
     const char* id;
     const char* displayName;      // SHOP row name
@@ -262,19 +255,6 @@ struct RigUpgradeDef {
     int effectMagnitude;
     const char* logText;            // Hacker-Log line on purchase
     RigReadout readouts[kMaxRigReadouts];
-    // Another RigRow that must be OWNED before this one is offered at all — the
-    // row is absent from the SHOP, not greyed, so the list never advertises a
-    // purchase whose home doesn't exist yet (a recipe with no MERGE HUB to cook
-    // in). -1 (the default every unconditional row carries) = always offered.
-    // Enforced in one place, shopRowOffered (game_hacker.cpp), which the A-cycle,
-    // the render loop and buyRigUpgrade all share.
-    int requiresRow = -1;
-    // Item ids that must have been COLLECTED (ever held — Game::itemCollected, not
-    // current possession) before this row is offered. The second gate axis alongside
-    // requiresRow: that one asks what you've BOUGHT, this one asks what you've MET.
-    // A nullptr slot ends the list; an all-null array (what every other row carries)
-    // = no item gate. Enforced in the same one place, shopRowOffered.
-    const char* requiresItems[kMaxRigRequiredItems] = {};
 };
 
 // This readout's value at purchase level `lvl`.
@@ -356,16 +336,6 @@ inline const RigUpgradeDef kRigUpgrades[] = {
     {"merge_hub", "MERGE HUB", 1, RigCostCurve::kFixed, kRigMergeHubCost, 0,
      RigEffectKind::None, 0, "BOUGHT MERGE HUB", {{"COMBINE ITEMS"}}},
 
-    // Both recipes wait on the hub itself: a recipe is only cookable in the MERGE
-    // HUB, so offering one first sells a key to a room the player can't enter.
-    {"recipe_noodles", "RECIPE: PATCHED NOODLES", 1, RigCostCurve::kFixed,
-     kRigRecipeUnlockCost, 0, RigEffectKind::None, 0, "BOUGHT NOODLES RECIPE",
-     {{"NOODLES + SAUCE"}}, kRigRowMergeHub},
-
-    {"recipe_nachos", "RECIPE: STACKED NACHOS", 1, RigCostCurve::kFixed,
-     kRigRecipeUnlockCost, 0, RigEffectKind::None, 0, "BOUGHT NACHOS RECIPE",
-     {{"CHIP + DIP"}}, kRigRowMergeHub},
-
     {"auto_backup", "AUTO BACKUP", 1, RigCostCurve::kFixed, kRigAutoBackupCost, 0,
      RigEffectKind::None, 0, "BOUGHT AUTO BACKUP", {{"DEATH SAVE ON EXPLORE"}}},
 
@@ -405,20 +375,6 @@ inline const RigUpgradeDef kRigUpgrades[] = {
     {"item_picker", "ITEMS TYPE-PICKER", 1, RigCostCurve::kFixed, kShopItemPickerCost, 0,
      RigEffectKind::None, 0, "BOUGHT TYPE PICKER", {{"B: PICK A TYPE"}}},
 
-    // Both Browns recipes want the same two things first: somewhere to cook (the hub)
-    // and first-hand knowledge of BOTH dishes. Moor-to-Moor sells them, so the gate is
-    // reachable without ever owning a recipe — which is the point of gating on the
-    // dishes rather than on each other.
-    {"recipe_hashed_browns", "RECIPE: HASHED BROWNS", 1, RigCostCurve::kFixed,
-     kRigBrownsRecipeCost, 0, RigEffectKind::None, 0, "BOUGHT BROWNS RECIPE",
-     {{"4-INGREDIENT COOK"}}, kRigRowMergeHub,
-     {"hashed_browns", "salted_hashed_browns"}},
-
-    {"recipe_salted_browns", "RECIPE: SALTED&HASHED", 1, RigCostCurve::kFixed,
-     kRigBrownsRecipeCost, 0, RigEffectKind::None, 0, "BOUGHT SALTED RECIPE",
-     {{"SALT + BROWNS"}}, kRigRowMergeHub,
-     {"hashed_browns", "salted_hashed_browns"}},
-
     // --- Mod storage: how many spares of ONE mod the pool will hold ---------------
     // The counterpart to kModCopyCapBase (tunables): the base cap is deliberately tight
     // enough that a player who wants a bench of a favourite mod has something to spend
@@ -427,6 +383,7 @@ inline const RigUpgradeDef kRigUpgrades[] = {
      kModStorageStart, 0, RigEffectKind::None, 0, "BOUGHT +MOD STORAGE",
      {{"PER MOD", RigValueCurve::Tiers, kModCopyCapBase, 0, kModStorageCapByTier,
        kModStorageMaxTier, "x%d"}}},
+
 };
 inline constexpr int kRigUpgradeCount =
     static_cast<int>(sizeof(kRigUpgrades) / sizeof(kRigUpgrades[0]));

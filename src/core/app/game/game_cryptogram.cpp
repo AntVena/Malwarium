@@ -1,5 +1,6 @@
 #include "core/app/game.h"
 
+#include "core/app/game_internal.h"   // kMergeRecipes — the prize ladder names a recipe
 #include "core/content/content_quotes.h"
 #include "core/ui/cryptogram_screen.h"
 
@@ -96,6 +97,22 @@ int Game::pickQuote(QuotePick pick) {
     return -1;
 }
 
+// --- What a first solve is playing for --------------------------------------
+
+QuoteReward Game::quoteFirstSolvePrize() const {
+    // The ladder in payout order (content_quotes.h): the first dish the operator can't
+    // already cook and is ready to be taught. A recipe with no MERGE HUB to cook it in,
+    // or for a dish never met, is stepped over rather than handed out dead — it comes
+    // back around on a later board once the kitchen has caught up.
+    const char* const* ladder = quotePrizeLadder();
+    for (int i = 0; i < quotePrizeLadderCount(); ++i) {
+        if (recipeGrantable(recipeIndexByOutput(ladder[i])))
+            return {QuoteReward::Kind::Recipe, 0, ladder[i]};
+    }
+    // Nothing left to teach. Bandwidth is uncapped, so this can't come up empty.
+    return quoteFallbackReward();
+}
+
 // --- Lifecycle --------------------------------------------------------------
 
 void Game::startCryptogram(int quote, int extraReveals) {
@@ -107,7 +124,7 @@ void Game::startCryptogram(int quote, int extraReveals) {
     // — and a quote already solved has no first-solve prize left to win twice.
     const bool firstSolve = !arcadeRun_ && quoteTier(quote) != CryptogramTier::Solved;
     cryptogramPrizeBits_ = arcadeRun_ ? 0 : (firstSolve ? kQuoteWinBits : kQuoteReplayBits);
-    cryptogramPrize_ = firstSolve ? quoteWinReward() : QuoteReward{};
+    cryptogramPrize_ = firstSolve ? quoteFirstSolvePrize() : QuoteReward{};
     // A quote the content gate has passed always fits, so the return is ignored here
     // and asserted there instead — a board that refused to load at runtime would strand
     // a spent ticket with nothing to show for it.
@@ -183,6 +200,11 @@ void Game::applyQuoteReward() {
             if (cryptogramPrize_.id && registry_.item(cryptogramPrize_.id))
                 inventory_.add(cryptogramPrize_.id, cryptogramPrize_.magnitude);
             break;
+        case QuoteReward::Kind::Recipe:
+            // The prize was picked at board start; the kitchen can't have changed under
+            // it mid-board, and grantRecipe is idempotent besides.
+            grantRecipe(recipeIndexByOutput(cryptogramPrize_.id));
+            break;
         case QuoteReward::Kind::None:
             break;
     }
@@ -215,6 +237,12 @@ const char* Game::cryptogramPrizeLabel() const {
             const ItemDef* d = cryptogramPrize_.id ? registry_.item(cryptogramPrize_.id)
                                                    : nullptr;
             return d ? d->displayName : nullptr;
+        }
+        case QuoteReward::Kind::Recipe: {
+            // The recipe's own name, not the dish's — what is being won is the METHOD,
+            // and the board should say so while the stake is still riding.
+            const int i = recipeIndexByOutput(cryptogramPrize_.id);
+            return i >= 0 ? kMergeRecipes[i].displayName : nullptr;
         }
         case QuoteReward::Kind::None:
             break;

@@ -18,9 +18,10 @@ const char* const kModPool[] = {"overclock_chip", "heat_sink", "honeytoken",
 
 // MOOR-TO-MOOR — the item storefront: this area's own stock/price per item, same
 // pattern as the mod storefront below.
-// Both Browns are stocked here and nowhere else: meeting a dish is what the Rig Shop
-// asks for before it will sell the recipe for it (game_rig_shop.h's requiresItems),
-// so this counter is the front door to cooking them.
+// Both Browns are stocked here and nowhere else: meeting a dish is what a
+// Decryptogram asks for before its prize ladder will teach the recipe for it
+// (game_internal.h's MergeRecipe::requiresItems), so this counter is the front door to
+// cooking them.
 const ShopListingDef kShopListings[] = {
     {"disk_scrubber", 8, 14},
     {"ambig_usb", 2, 1024},
