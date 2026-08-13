@@ -27,6 +27,36 @@
 
 namespace mal {
 
+// --- STAT's flowed prose pages ---------------------------------------------
+
+std::vector<LoadoutRow> Game::statLoadoutRows() const {
+    return buildLoadoutRows(registry_, moveLoadout_, loadout_,
+                            pet_ ? pet_->stage : Stage::BootSector, inEggPhase());
+}
+
+std::vector<BuffRow> Game::statBuffRows() const {
+    const uint32_t backupRemainMs =
+        backupShieldArmed() ? (backupShieldUntilMs_ - lifetimeUptimeMs()) : 0;
+    return buildBuffRows(registry_, mistakeShieldActive_, forceTrojanDivert_,
+                         backupShieldArmed(), backupRemainMs, deepWebDepthMultiplier_,
+                         pendingDeepWebStartDepth_ != -1,
+                         pendingDeepWebStartDepth_ == kDeepWebStartDepthUseBest,
+                         pendingDeepWebStartDepth_);
+}
+
+Game::StatScrollSpan Game::statScrollSpan() const {
+    if (!pet_) return {0, 0};
+    if (statPage_ == 1) {
+        const std::vector<LoadoutRow> rows = statLoadoutRows();
+        return {loadoutRowsFitting(rows, statScroll_), static_cast<int>(rows.size())};
+    }
+    if (statPage_ == 2) {
+        const std::vector<BuffRow> rows = statBuffRows();
+        return {buffRowsFitting(rows, statScroll_), static_cast<int>(rows.size())};
+    }
+    return {0, 0};
+}
+
 // --- Render ----------------------------------------------------------------
 
 void Game::render(Framebuffer& fb) const {
@@ -452,26 +482,10 @@ void Game::drawSubmenu(Framebuffer& fb) const {
                                    xpToNextLevel(), beat_, hasNextEvolution(),
                                    evolveRemainMs());
                 else if (statPage_ == 1)
-                    drawLoadoutScreen(fb,
-                                      buildLoadoutRows(registry_, moveLoadout_,
-                                                        loadout_, pet_->stage,
-                                                        inEggPhase()),
-                                      loadoutScroll_, beat_);
-                else if (statPage_ == 2) {
-                    const uint32_t backupRemainMs =
-                        backupShieldArmed() ? (backupShieldUntilMs_ - lifetimeUptimeMs())
-                                            : 0;
-                    drawBuffsScreen(fb,
-                                    buildBuffRows(registry_, mistakeShieldActive_,
-                                                  forceTrojanDivert_,
-                                                  backupShieldArmed(), backupRemainMs,
-                                                  deepWebDepthMultiplier_,
-                                                  pendingDeepWebStartDepth_ != -1,
-                                                  pendingDeepWebStartDepth_ ==
-                                                      kDeepWebStartDepthUseBest,
-                                                  pendingDeepWebStartDepth_),
-                                    beat_);
-                } else if (statPage_ == 3)
+                    drawLoadoutScreen(fb, statLoadoutRows(), statScroll_, beat_);
+                else if (statPage_ == 2)
+                    drawBuffsScreen(fb, statBuffRows(), statScroll_, beat_);
+                else if (statPage_ == 3)
                     drawSpeciesScreen(fb, pet_->displayName, pet_->line, pet_->hint,
                                       pet_->context, beat_);
                 else

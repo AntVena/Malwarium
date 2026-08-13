@@ -1,5 +1,6 @@
 #include "core/app/game.h"
 
+#include <algorithm>
 #include <cstdio>
 
 #include "core/render/canvas.h"
@@ -163,9 +164,16 @@ void Game::eggPickCommit() {
     ++eggPickRound_;
     eggPickSecondHalf_ = false;   // every round re-opens aimed at its first half
 
-    if (eggPickRound_ >= eggPickRounds_) {
+    // The moment the live egg falls out of the surviving span, the run is already
+    // decided — playing out the rounds that are left would just be asking the player
+    // to keep halving a raft that can no longer contain the answer. Resolve here,
+    // on the turn that actually lost it, rather than at the scheduled last round.
+    if (!eggPickTargetInSpan()) {
         eggPickResolved_ = true;
-        eggPickWon_ = eggPickTargetInSpan();
+        eggPickWon_ = false;
+    } else if (eggPickRound_ >= eggPickRounds_) {
+        eggPickResolved_ = true;
+        eggPickWon_ = true;   // still in span at the last round = the live egg survived
     }
     dirty_ = true;
 }
@@ -198,16 +206,32 @@ void drawArrow(Framebuffer& fb, int x, int y, Arrow dir, Rgb565 c) {
     }
 }
 
-// Wash a slot's cell in PAPER at `amt`, dimming whatever the backdrop baked there. A
-// wrapped cell is painted at both of its positions so the two visible halves match.
-void drawCellScrim(Framebuffer& fb, int slot, uint8_t amt) {
-    const Rgb565 c = palColor(Pal::PAPER);
-    for (int pass = 0; pass < (slotWraps(slot) ? 2 : 1); ++pass) {
-        const int x0 = kPanelX + (slotX(slot) - pass * kClutchW) * kZoom;
-        const int y0 = kPanelY + slotY(slot) * kZoom;
-        for (int y = 0; y < kCell * kZoom; ++y)
-            for (int x = 0; x < kCell * kZoom; ++x)
-                fb.blendPixel(x0 + x, y0 + y, c, amt);
+// How big a crop of `colSpan` x `rowSpan` CELLS reads at, in whole-pixel zoom. Shrinks
+// less than one pass in from the full raft (there's nowhere smaller to grow into yet)
+// and grows as the span narrows, so the surviving batch keeps filling roughly the same
+// stage instead of shrinking to a speck in the middle of an empty panel.
+int cropZoom(int colSpan, int rowSpan) {
+    constexpr int kAvailW = 200, kAvailH = 120;
+    const int zw = kAvailW / (colSpan * kCell);
+    const int zh = kAvailH / (rowSpan * kCell);
+    const int z = zw < zh ? zw : zh;
+    return z < 2 ? 2 : z;
+}
+
+// Blit a SHEET-space rectangle of the clutch backdrop, upscaled by `zoom`. The x axis
+// samples modulo the sheet width, the same wrap slotX() itself uses — a crop that
+// includes an odd row's half-cell shift needs it (see kOddRowShift), and it costs
+// nothing when the crop never reaches the wrap.
+void drawClutchCrop(Framebuffer& fb, int srcX0, int srcY0, int srcW, int srcH,
+                    int destX, int destY, int zoom) {
+    const SpriteData& s = ASSET_BG_EGG_CLUTCH;
+    for (int oy = 0; oy < srcH * zoom; ++oy) {
+        const int py = srcY0 + oy / zoom;
+        for (int ox = 0; ox < srcW * zoom; ++ox) {
+            const int px = (srcX0 + ox / zoom) % kClutchW;
+            fb.blendPixel(destX + ox, destY + oy, spriteColorAt(s, px, py),
+                          spriteAlphaAt(s, px, py));
+        }
     }
 }
 
@@ -219,40 +243,45 @@ void Game::drawEggPick(Framebuffer& fb) const {
     const char* title = "SPOT THE PHISH";
     drawText(fb, (kActiveW - textWidth(title)) / 2, 14, title, palColor(Pal::INK));
 
-    // The raft of decoys, then the one live egg swapped in over its own cell. The tile
-    // is opaque and cell-sized, so it replaces a decoy exactly; alternating its two
-    // frames on the heartbeat is the only motion on screen.
-    drawSpriteUpscaled(fb, ASSET_BG_EGG_CLUTCH, 0, kPanelX, kPanelY, kZoom, 1);
-    drawSpriteUpscaled(fb, ASSET_SPR_EGG_PHISH_MICRO, beat_ & 1,
-                       kPanelX + slotX(eggPickTarget_) * kZoom,
-                       kPanelY + slotY(eggPickTarget_) * kZoom, kZoom, 1);
+    // Crop to the batch the player can still actually pick — eliminated cells aren't
+    // drawn at all, so "the buttons' effect" is never left ambiguous by a wash over a
+    // raft that's still fully on screen. Running, that's the surviving span (both row
+    // parities' half-shift included, since that's the real shape of those cells, not
+    // neighbour bleed — see kOddRowShift). Resolved, it narrows to the live egg's own
+    // cell alone, blown up as large as the panel allows, so a miss shows the actual
+    // tile that got away rather than asking the player to spot it in the full raft.
+    int srcX0, srcY0, srcW, srcH, zoom;
+    if (eggPickResolved_) {
+        srcX0 = slotX(eggPickTarget_);
+        srcY0 = slotY(eggPickTarget_);
+        srcW = kCell;
+        srcH = kCell;
+        zoom = cropZoom(1, 1);
+    } else {
+        srcX0 = eggPickCol_ * kCell;
+        srcY0 = eggPickRow_ * kCell;
+        // The shift only ever widens the box; a span already covering every column
+        // wraps back onto itself rather than actually needing the extra width, so cap
+        // it at the sheet's own size instead of overhanging both panel edges.
+        srcW = std::min(eggPickColSpan_ * kCell + kOddRowShift, kClutchW);
+        srcH = eggPickRowSpan_ * kCell;
+        zoom = cropZoom(eggPickColSpan_, eggPickRowSpan_);
+    }
+    const int destX = kActiveW / 2 - (srcW * zoom) / 2;
+    const int destY = kActiveH / 2 - (srcH * zoom) / 2;
+    drawClutchCrop(fb, srcX0, srcY0, srcW, srcH, destX, destY, zoom);
 
-    const bool byColumn =
-        splitsColumns(eggPickRound_, eggPickColSpan_, eggPickRowSpan_);
-    // Where this round's cut falls inside the surviving span; only meaningful while
-    // rounds remain, and unread once eggPickResolved_.
-    const int cutCol = eggPickCol_ + eggPickColSpan_ / 2;
-    const int cutRow = eggPickRow_ + eggPickRowSpan_ / 2;
-
-    for (int s = 0; s < kSlots; ++s) {
-        const int c = slotCol(s), r = slotRow(s);
-        const bool alive = c >= eggPickCol_ && c < eggPickCol_ + eggPickColSpan_ &&
-                           r >= eggPickRow_ && r < eggPickRow_ + eggPickRowSpan_;
-        // The reveal buries every cell but the live egg's, so wherever the run went the
-        // answer is the one thing still lit on screen. The verdict line adjudicates
-        // it in words — drawing the committed span too would only add a second bright
-        // shape to compare against, and its bounding box can't be honest anyway once
-        // the odd-row shift straddles a column edge.
-        if (eggPickResolved_) {
-            if (s != eggPickTarget_) drawCellScrim(fb, s, kScrimDead);
-            continue;
-        }
-        if (!alive) {
-            drawCellScrim(fb, s, kScrimDead);
-            continue;
-        }
-        const bool inSecondHalf = byColumn ? (c >= cutCol) : (r >= cutRow);
-        if (inSecondHalf != eggPickSecondHalf_) drawCellScrim(fb, s, kScrimIdle);
+    // The live egg, in that same cropped/zoomed space. It's always inside the crop —
+    // running, because eggPickCommit resolves the run the instant it isn't; resolved,
+    // because the crop IS its cell — so its offset from the crop's own origin is what
+    // places it, wrapping the same way slotX() does.
+    {
+        const int tx = slotX(eggPickTarget_), ty = slotY(eggPickTarget_);
+        int dx = tx - srcX0;
+        if (dx < 0) dx += kClutchW;
+        const int dy = ty - srcY0;
+        drawSpriteUpscaled(fb, ASSET_SPR_EGG_PHISH_MICRO, beat_ & 1, destX + dx * zoom,
+                           destY + dy * zoom, zoom, 1);
     }
 
     if (eggPickResolved_) {
@@ -276,18 +305,20 @@ void Game::drawEggPick(Framebuffer& fb) const {
                   eggPickRounds_);
     drawText(fb, (kActiveW - textWidth(round)) / 2, 30, round, palColor(Pal::INK_DIM));
 
-    // A solid bar down the outer edge of the aimed half. The scrim already carries the
-    // choice in luminance; this repeats it as pure SHAPE and position, so the aim reads
-    // at a glance and doesn't lean on the dimming alone.
+    const bool byColumn = splitsColumns(eggPickRound_, eggPickColSpan_, eggPickRowSpan_);
+
+    // A solid bar down the outer edge of the aimed half, hugging the crop itself now
+    // that the eliminated cells aren't drawn at all — the aim reads as pure shape and
+    // position against the batch that's actually still in play.
     constexpr int kEdge = 4;
     const Rgb565 aim = palColor(Pal::ACCENT);
-    const int panelH = kClutchH * kZoom;
+    const int dw = srcW * zoom, dh = srcH * zoom;
     if (byColumn) {
-        fb.fillRect(eggPickSecondHalf_ ? kActiveW - kEdge : 0, kPanelY, kEdge, panelH,
+        fb.fillRect(eggPickSecondHalf_ ? destX + dw - kEdge : destX, destY, kEdge, dh,
                     aim);
     } else {
-        fb.fillRect(0, eggPickSecondHalf_ ? kPanelY + panelH - kEdge : kPanelY,
-                    kActiveW, kEdge, aim);
+        fb.fillRect(destX, eggPickSecondHalf_ ? destY + dh - kEdge : destY, dw, kEdge,
+                    aim);
     }
 
     const char* aimed = byColumn ? (eggPickSecondHalf_ ? "RIGHT HALF" : "LEFT HALF")

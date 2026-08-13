@@ -49,14 +49,17 @@ std::vector<LoadoutRow> buildLoadoutRows(const ContentRegistry& reg,
                                          const Loadout& modLoad,
                                          Stage stage, bool isEgg);
 
-// Visible row window (mirrors drawMovePicker's kMovePickerVisibleRows,
-// train_screen.cpp) — exported so the engine can compute wrap/clamp bounds for
-// the B-scroll gesture without re-deriving the layout constant.
-constexpr int kLoadoutVisibleRows = 4;
+// How many rows starting at `top` fit the LOADOUT page. NOT a constant: a row is
+// sized to the prose it holds (a four-line mod description is a taller row than a
+// two-line one), so the window is whatever the flow can seat, and it changes as
+// the player equips. Exported because the engine advances the B-scroll by exactly
+// what is on screen — the alternative is the two of them disagreeing about where
+// the next window starts, which reads as skipped or repeated rows.
+int loadoutRowsFitting(const std::vector<LoadoutRow>& rows, int top);
 
 // STAT page 1 — LOADOUT: the windowed row list from buildLoadoutRows, each row's
-// name + wrapped effect text, a scrollbar + "B - SCROLL" hint band when the list
-// overflows the visible window (mirrors drawMovePicker's windowing).
+// name + its effect text wrapped WHOLE beneath it, a scrollbar + "B SCROLL" hint
+// band when the list outruns one screen.
 // `scrollTop` is engine-owned — this page has no cursor to drive scrolling off
 // (it's read-only), so STAT's B press advances it instead (game_core.cpp).
 void drawLoadoutScreen(Framebuffer& fb, const std::vector<LoadoutRow>& rows,
@@ -106,16 +109,27 @@ std::vector<BuffRow> buildBuffRows(const ContentRegistry& reg,
                                     bool startDepthUsesBest,
                                     int startDepthValue);
 
+// The BUFFS page's own window, same flow and same reason as loadoutRowsFitting:
+// five buffs can be armed at once and their descriptions run to four lines, which
+// is more than one screen holds.
+int buffRowsFitting(const std::vector<BuffRow>& rows, int top);
+
 // STAT page 2 — BUFFS: the armed-buff list from buildBuffRows, each with its
-// effect text wrapped below the name (and a remaining-time readout for the
-// timed ones). Empty list shows a plain "no active buffs" line.
-void drawBuffsScreen(Framebuffer& fb, const std::vector<BuffRow>& rows, int beat);
+// effect text wrapped WHOLE below the name (and a remaining-time readout for the
+// timed ones), scrolling on B like LOADOUT when more are armed than fit. Empty
+// list shows a plain "no active buffs" line.
+void drawBuffsScreen(Framebuffer& fb, const std::vector<BuffRow>& rows, int scrollTop,
+                     int beat);
 
 // STAT page 3 — SPECIES: the pet's own lore, straight off its CreatureDef row
 // (`hint`/`context`, defs.h) — the game owns this copy, same as an item's
 // `effect` text. `line` is the raw line id (e.g. "ransomware"), upper-cased
-// for display; `hint` is the one-line snarky read, `context` the real
-// infosec reference behind the pun. Either may be null (no lore authored).
+// for display; `hint` is the snarky read, `context` the real infosec reference
+// behind the pun, set dim a paragraph below it as an unlabelled footnote. Either
+// may be null (no lore authored). Both are wrapped to as many lines as they need:
+// `context` is measured first and held back, and `hint` takes the room that
+// leaves, so a Daemon's long read is shown whole instead of stopping mid-sentence
+// with the foot of the screen still empty.
 void drawSpeciesScreen(Framebuffer& fb, const char* name, const char* line,
                        const char* hint, const char* context, int beat);
 

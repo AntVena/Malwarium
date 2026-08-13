@@ -52,16 +52,80 @@ void vitalsRow(Framebuffer& fb, int y, const char* label, int value, Zone zone,
     drawText(fb, kNumX, y + 2, num, nc);
 }
 
-// LOADOUT page layout: a fixed-height block per entry (name line + up to
-// kLoadoutEffectLines of wrapped effect text below it) so the windowing math
-// stays a simple row-index scroll, mirroring drawMovePicker (train_screen.cpp).
+// --- Prose row flow -------------------------------------------------------
+//
+// LOADOUT and BUFFS both stack rows of the same shape: a name line with the row's
+// own effect text wrapped under it. That text is AUTHORED PROSE, written to be
+// read and not sized to the panel, so a fixed per-row line budget can only be
+// wrong in one of two directions — too small cuts the sentence (a mod that wraps
+// to four lines under a three-line budget), too large runs the last visible row
+// off the foot of the screen and over the hint band. Neither page budgets:
+// every row is MEASURED (textWrapLines) and takes exactly the height its own text
+// needs, rows pack down from the top, and whatever doesn't fit is simply where
+// the next B-scroll window starts.
+constexpr int kProseW = kActiveW - 2 * kMargin;
+constexpr int kProseLineH = kFontH + 2;
+constexpr int kProseNameGap = 3;   // name line -> its first prose line
+constexpr int kProseRowGap = 6;    // last prose line -> the next row's name
+// A section header (LOADOUT's MOVES/MODS) is one line of its own with a little
+// extra air ahead of the block it opens.
+constexpr int kProseHeaderH = kFontH + kProseRowGap + 2;
+
+// The foot of the flow: the hint band's strip is reserved whether or not the hint
+// is drawn, so a page can never discover it after a row is already using the space.
+constexpr int kProseBottom = kActiveH - kHintBandH;
+
+int proseRowH(const char* effect) {
+    const int lines = (effect && effect[0]) ? textWrapLines(effect, kProseW) : 0;
+    return kFontH + (lines > 0 ? kProseNameGap + lines * kProseLineH : 0) + kProseRowGap;
+}
+
+// How many rows from `top` fit between `rowTop` and the foot. Always at least one:
+// a row taller than the whole body still draws (clipped) rather than stalling the
+// B-scroll on a window of zero rows, which would never reach the end and wrap.
+int proseFitCount(const std::vector<int>& heights, int top, int rowTop) {
+    int y = rowTop;
+    int n = 0;
+    for (int i = top; i < static_cast<int>(heights.size()); ++i) {
+        if (n > 0 && y + heights[i] > kProseBottom) break;
+        y += heights[i];
+        ++n;
+    }
+    return n;
+}
+
+// UI_SCROLLBAR for a flowed page (mirrors drawMovePicker, train_screen.cpp), plus
+// the contextual hint: B is normally a no-op on STAT, so a page that gives it
+// meaning has to name it. Measured in ROWS, not pixels — the thumb reports
+// position in the list, which is what the reader is tracking.
+void drawProseScrollbar(Framebuffer& fb, int rowTop, int top, int shown, int total) {
+    const int barX = kActiveW - 3;
+    const int trackH = kProseBottom - rowTop;
+    fb.fillRect(barX, rowTop, 2, trackH, palColor(Pal::TRACK));
+    const int thumbH = std::max(8, trackH * shown / total);
+    const int thumbY = rowTop + trackH * top / total;
+    fb.fillRect(barX, thumbY, 2, thumbH, palColor(Pal::INK_DIM));
+    drawHintBand(fb, "B SCROLL");
+}
+
 constexpr int kLoadoutRowTop = 26;
-// A row is the name line plus kLoadoutEffectLines of wrapped effect under it, at
-// kLoadoutProseLineH — so the pitch has to clear kFontH + 3 + lines * lineH, or the
-// last line of one effect lands on the next row's name.
-constexpr int kLoadoutEffectLines = 3;
-constexpr int kLoadoutProseLineH = kFontH + 2;
-constexpr int kLoadoutRowH = kFontH + 3 + kLoadoutEffectLines * kLoadoutProseLineH + 5;
+
+std::vector<int> loadoutRowHeights(const std::vector<LoadoutRow>& rows) {
+    std::vector<int> h;
+    h.reserve(rows.size());
+    for (const LoadoutRow& r : rows)
+        h.push_back(r.header ? kProseHeaderH : proseRowH(r.effect.c_str()));
+    return h;
+}
+
+constexpr int kBuffRowTop = 28;
+
+std::vector<int> buffRowHeights(const std::vector<BuffRow>& rows) {
+    std::vector<int> h;
+    h.reserve(rows.size());
+    for (const BuffRow& r : rows) h.push_back(proseRowH(r.effect.c_str()));
+    return h;
+}
 
 } // namespace
 
@@ -106,46 +170,41 @@ std::vector<LoadoutRow> buildLoadoutRows(const ContentRegistry& reg,
     return out;
 }
 
+int loadoutRowsFitting(const std::vector<LoadoutRow>& rows, int top) {
+    return proseFitCount(loadoutRowHeights(rows), top, kLoadoutRowTop);
+}
+
 void drawLoadoutScreen(Framebuffer& fb, const std::vector<LoadoutRow>& rows,
                        int scrollTop, int beat) {
     statHeader(fb, "LOADOUT", 1);
 
+    const std::vector<int> heights = loadoutRowHeights(rows);
     const int total = static_cast<int>(rows.size());
-    const bool overflow = total > kLoadoutVisibleRows;
+    const bool overflow = proseFitCount(heights, 0, kLoadoutRowTop) < total;
     // Clamp (not wrap) here — the wrap-on-B logic lives in the caller
     // (game_core.cpp), which knows the total row count too; this just protects
     // against an out-of-range scrollTop reaching the renderer.
-    const int top = overflow
-                        ? std::max(0, std::min(scrollTop, total - kLoadoutVisibleRows))
-                        : 0;
+    const int top = overflow ? std::max(0, std::min(scrollTop, total - 1)) : 0;
+    const int shown = proseFitCount(heights, top, kLoadoutRowTop);
 
-    for (int v = 0; v < kLoadoutVisibleRows && top + v < total; ++v) {
+    int y = kLoadoutRowTop;
+    for (int v = 0; v < shown; ++v) {
         const LoadoutRow& r = rows[top + v];
-        const int y = kLoadoutRowTop + v * kLoadoutRowH;
         if (r.header) {
             drawText(fb, kMargin, y, r.label, palColor(Pal::INK_DIM));
-            continue;
+        } else {
+            drawLabelValue(fb, kMargin, y, r.label, palColor(Pal::INK),
+                           r.isDefault ? "DEFAULT" : "", palColor(Pal::INK_DIM), beat,
+                           false);
+            if (!r.effect.empty())
+                drawTextWrapped(fb, kMargin, y + kFontH + kProseNameGap, kProseW,
+                                  r.effect.c_str(), palColor(Pal::INK_DIM), kProseLineH,
+                                  textWrapLines(r.effect.c_str(), kProseW));
         }
-        drawLabelValue(fb, kMargin, y, r.label, palColor(Pal::INK),
-                       r.isDefault ? "DEFAULT" : "", palColor(Pal::INK_DIM), beat, false);
-        if (!r.effect.empty())
-            drawTextWrapped(fb, kMargin, y + kFontH + 3, kActiveW - 2 * kMargin,
-                              r.effect.c_str(), palColor(Pal::INK_DIM),
-                              kLoadoutProseLineH, kLoadoutEffectLines);
+        y += heights[top + v];
     }
 
-    if (overflow) {
-        // UI_SCROLLBAR (mirrors drawMovePicker, train_screen.cpp).
-        const int barX = kActiveW - 3;
-        const int trackH = kLoadoutVisibleRows * kLoadoutRowH;
-        fb.fillRect(barX, kLoadoutRowTop, 2, trackH, palColor(Pal::TRACK));
-        const int thumbH = std::max(8, trackH * kLoadoutVisibleRows / total);
-        const int thumbY = kLoadoutRowTop + trackH * top / total;
-        fb.fillRect(barX, thumbY, 2, thumbH, palColor(Pal::INK_DIM));
-        // Contextual hint: B is normally a no-op on STAT, so a screen
-        // that gives it meaning must name it.
-        drawText(fb, kMargin, kActiveH - 10, "B - SCROLL", palColor(Pal::INK_DIM));
-    }
+    if (overflow) drawProseScrollbar(fb, kLoadoutRowTop, top, shown, total);
 }
 
 std::vector<BuffRow> buildBuffRows(const ContentRegistry& reg,
@@ -189,11 +248,12 @@ std::vector<BuffRow> buildBuffRows(const ContentRegistry& reg,
     return out;
 }
 
-constexpr int kBuffRowTop = 28;
-constexpr int kBuffRowH = 44;
-constexpr int kBuffEffectLines = 2;
+int buffRowsFitting(const std::vector<BuffRow>& rows, int top) {
+    return proseFitCount(buffRowHeights(rows), top, kBuffRowTop);
+}
 
-void drawBuffsScreen(Framebuffer& fb, const std::vector<BuffRow>& rows, int /*beat*/) {
+void drawBuffsScreen(Framebuffer& fb, const std::vector<BuffRow>& rows, int scrollTop,
+                     int /*beat*/) {
     statHeader(fb, "BUFFS", 2);
 
     if (rows.empty()) {
@@ -201,9 +261,15 @@ void drawBuffsScreen(Framebuffer& fb, const std::vector<BuffRow>& rows, int /*be
         return;
     }
 
-    for (std::size_t i = 0; i < rows.size(); ++i) {
-        const BuffRow& r = rows[i];
-        const int y = kBuffRowTop + static_cast<int>(i) * kBuffRowH;
+    const std::vector<int> heights = buffRowHeights(rows);
+    const int total = static_cast<int>(rows.size());
+    const bool overflow = proseFitCount(heights, 0, kBuffRowTop) < total;
+    const int top = overflow ? std::max(0, std::min(scrollTop, total - 1)) : 0;
+    const int shown = proseFitCount(heights, top, kBuffRowTop);
+
+    int y = kBuffRowTop;
+    for (int v = 0; v < shown; ++v) {
+        const BuffRow& r = rows[top + v];
         const int nx = drawText(fb, kMargin, y, r.label, palColor(Pal::INK));
         if (r.hasTimer) {
             char t[16];
@@ -213,10 +279,13 @@ void drawBuffsScreen(Framebuffer& fb, const std::vector<BuffRow>& rows, int /*be
             drawText(fb, nx + kFontAdvance, y, t, palColor(Pal::ACCENT));
         }
         if (!r.effect.empty())
-            drawTextWrapped(fb, kMargin, y + kFontH + 3, kActiveW - 2 * kMargin,
-                              r.effect.c_str(), palColor(Pal::INK_DIM), kFontH + 2,
-                              kBuffEffectLines);
+            drawTextWrapped(fb, kMargin, y + kFontH + kProseNameGap, kProseW,
+                              r.effect.c_str(), palColor(Pal::INK_DIM), kProseLineH,
+                              textWrapLines(r.effect.c_str(), kProseW));
+        y += heights[top + v];
     }
+
+    if (overflow) drawProseScrollbar(fb, kBuffRowTop, top, shown, total);
 }
 
 void drawSpeciesScreen(Framebuffer& fb, const char* name, const char* line,
@@ -232,24 +301,40 @@ void drawSpeciesScreen(Framebuffer& fb, const char* name, const char* line,
         drawText(fb, kActiveW - kMargin - textWidth(tag), 30, tag, palColor(Pal::INK_DIM));
     }
 
-    // Tighter than the grid's kLineH: SPECIES stacks two wrapped prose blocks and
-    // a REFERENCE heading in one screen, and the leading is what has to give.
-    constexpr int kProseLineH = kFontH + 3;
-    int y = 50;
+    // Tighter than the grid's kLineH: SPECIES stacks two wrapped prose blocks in one
+    // screen, and the leading is what has to give.
+    constexpr int kSpeciesLineH = kFontH + 3;
+    constexpr int kSpeciesTop = 50;
+    // A paragraph break, not a section: the second block carries no heading of its
+    // own, so the gap and the dimmer ink are the whole of what separates them —
+    // which is enough, because it reads as a footnote to the block above rather than
+    // as a different KIND of thing. It also leaves the foot of the page free for
+    // whatever the page grows next.
+    constexpr int kBlockGap = 14;
+    // The two blocks are a creature's own authored lore, and the roster's are not
+    // the same length — a Daemon's read runs to nine wrapped lines where a
+    // Boot-Sector's takes three. So the first block is given the room that is
+    // actually LEFT rather than a fixed allowance: measure the second, hold that
+    // back, and the read takes the rest. Still capped by what remains, but the cap
+    // is the screen's own edge rather than a number set ahead of the content.
+    const int ctxLines = (context && context[0]) ? textWrapLines(context, kProseW) : 0;
+    const int hintRoom = kActiveH - kMargin - kSpeciesTop - kBlockGap -
+                         ctxLines * kSpeciesLineH;
+    const int hintMax = std::max(1, hintRoom / kSpeciesLineH);
+
+    int y = kSpeciesTop;
     if (hint && hint[0]) {
-        drawTextWrapped(fb, kMargin, y, kActiveW - 2 * kMargin, hint,
-                          palColor(Pal::INK), kProseLineH, 5);
-        y += kProseLineH * 5 + 8;
+        y = drawTextWrapped(fb, kMargin, y, kProseW, hint, palColor(Pal::INK),
+                              kSpeciesLineH, hintMax);
     } else {
         drawText(fb, kMargin, y, "- NO DATA -", palColor(Pal::INK_DIM));
-        y += kProseLineH + 8;
+        y += kSpeciesLineH;
     }
+    y += kBlockGap;
 
-    drawText(fb, kMargin, y, "REFERENCE", palColor(Pal::INK_DIM));
-    y += kFontH + 4;
-    if (context && context[0])
-        drawTextWrapped(fb, kMargin, y, kActiveW - 2 * kMargin, context,
-                          palColor(Pal::INK_DIM), kProseLineH, 3);
+    if (ctxLines > 0)
+        drawTextWrapped(fb, kMargin, y, kProseW, context, palColor(Pal::INK_DIM),
+                          kSpeciesLineH, ctxLines);
 }
 
 void drawStatScreen(Framebuffer& fb, const PetModel& m, const char* name,

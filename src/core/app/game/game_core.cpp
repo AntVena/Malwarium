@@ -11,7 +11,6 @@
 #include "core/render/sprite.h"
 #include "core/ui/carousel.h"
 #include "core/ui/items_screen.h"
-#include "core/ui/stat_screen.h"
 #include "generated/assets.h"
 
 namespace mal {
@@ -618,22 +617,20 @@ void Game::onButton(const ButtonEvent& ev) {
                 case SubmenuId::Stat:
                     if (ev.button == Button::A) {
                         statPage_ = (statPage_ + 1) % 5;
-                        loadoutScroll_ = 0;         // fresh page -> scroll to the top
+                        statScroll_ = 0;         // fresh page -> scroll to the top
                     } else if (ev.button == Button::C) {
-                        nav_ = Nav::Cursor; statPage_ = 0; loadoutScroll_ = 0;
-                    } else if (ev.button == Button::B && statPage_ == 1) {
-                        // B is a no-op on every other page (the `statPage_ == 1`
-                        // guard) — it only scrolls the LOADOUT page's row window,
-                        // and only when
-                        // there's something to scroll (mirrors drawMovePicker's
-                        // scroll math, train_screen.cpp). Wraps back to the top.
-                        const auto rows = buildLoadoutRows(
-                            registry_, moveLoadout_, loadout_,
-                            pet_ ? pet_->stage : Stage::BootSector, inEggPhase());
-                        const int total = static_cast<int>(rows.size());
-                        if (total > kLoadoutVisibleRows) {
-                            loadoutScroll_ += kLoadoutVisibleRows;
-                            if (loadoutScroll_ >= total) loadoutScroll_ = 0;
+                        nav_ = Nav::Cursor; statPage_ = 0; statScroll_ = 0;
+                    } else if (ev.button == Button::B) {
+                        // B scrolls the two pages that flow prose rows (LOADOUT and
+                        // BUFFS) and is a no-op everywhere else — statScrollSpan
+                        // reports {0, 0} for a page with nothing to scroll, and for
+                        // one whose rows all fit. It advances by the window the page
+                        // actually drew (rows are sized to their own text, so that
+                        // count varies), and wraps back to the top past the end.
+                        const StatScrollSpan span = statScrollSpan();
+                        if (span.shown > 0 && span.shown < span.total) {
+                            statScroll_ += span.shown;
+                            if (statScroll_ >= span.total) statScroll_ = 0;
                         }
                     }
                     break;
@@ -794,7 +791,7 @@ void Game::enterSubmenu() {
             moveConfirm_ = false; movePendingId_ = nullptr; break;
         case SubmenuId::Games: arcadeRow_ = 0; break;
         case SubmenuId::Expl: openExplList(); break;
-        case SubmenuId::Stat: statPage_ = 0; loadoutScroll_ = 0; break;
+        case SubmenuId::Stat: statPage_ = 0; statScroll_ = 0; break;
         default: break;
     }
 }
@@ -804,7 +801,7 @@ void Game::dropCursor() {
     listRow_ = 0;
     detailItem_ = nullptr;
     statPage_ = 0;
-    loadoutScroll_ = 0;
+    statScroll_ = 0;
 }
 
 bool Game::eggSlotLocked(SubmenuId id) const {

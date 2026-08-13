@@ -42,6 +42,17 @@ Real screens, straight off the 240×240 display:
 </tr>
 </table>
 
+**Minigames**, replayable for Bits from the GAMES arcade once you've beaten them once:
+
+<table>
+<tr>
+<td align="center"><img src="docs/media/screens/decryptogram.png" width="150" alt="The Decryptogram quote board"><br><sub><b>Crack a quote.</b> The Decryptogram, one letter at a time.</sub></td>
+<td align="center"><img src="docs/media/screens/disk-decryption.png" width="150" alt="The Disk Decryption minigame"><br><sub><b>Brute-force the key.</b> Disk Decryption — a Ransomware egg's hatch game.</sub></td>
+<td align="center"><img src="docs/media/screens/clutch-pick.png" width="150" alt="The Clutch Pick minigame, Spot the Phish"><br><sub><b>Spot the phish.</b> Clutch Pick — only the live egg twitches.</sub></td>
+<td align="center"><img src="docs/media/screens/isolation.png" width="150" alt="The Isolation Protocol minigame"><br><sub><b>Stay uncaught.</b> Isolation Protocol — a Worm egg's hatch game.</sub></td>
+</tr>
+</table>
+
 ---
 
 ## What you'll need

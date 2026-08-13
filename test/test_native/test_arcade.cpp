@@ -110,24 +110,39 @@ void test_arcade_difficulty_paces_the_run() {
 }
 
 // The Clutch has no clock to speed up, so its dial is how many times the raft halves —
-// a narrower survivor, found from less information. Asserted as the round COUNT,
-// because that is the only thing the setting is allowed to change.
+// a narrower survivor, found from less information. The run now resolves the instant
+// the live egg falls out of the surviving span (see game_eggpick.cpp), so the dial is
+// a CEILING, not a guaranteed length — only a run that keeps the egg in span the whole
+// way actually spends every round the dial allows. Asserted on that perfect path, which
+// is still the one thing the setting is allowed to change.
 void test_arcade_clutch_rounds_follow_the_dial() {
-    auto roundsToResolve = [](ArcadeDifficulty d) {
+    auto roundsToResolvePerfect = [](ArcadeDifficulty d) {
         Game g{StartMode::Hatched};
         enterArcadeCabinet(g, arcadeRowOf("clutch"), d);
         g.onButton(press(Button::B));             // START
         CHECK(g.nav() == Game::Nav::ModalEggPick);
+        // Mirror game_eggpick.cpp's splitsColumns: columns halve first, alternating
+        // with rows, except once one axis is down to a single track the other takes
+        // every remaining round.
+        const int col = g.eggPickTargetSlot() % Game::kEggPickCols;
+        const int row = g.eggPickTargetSlot() / Game::kEggPickCols;
+        int c0 = 0, cw = Game::kEggPickCols, r0 = 0, rh = Game::kEggPickRows;
         int commits = 0;
         while (!g.eggPickResolved() && commits < 16) {
+            const bool byColumn = cw >= 2 && (rh < 2 || commits % 2 == 0);
+            bool second;
+            if (byColumn) { cw /= 2; second = col >= c0 + cw; if (second) c0 += cw; }
+            else          { rh /= 2; second = row >= r0 + rh; if (second) r0 += rh; }
+            g.onButton(press(second ? Button::C : Button::A));
             g.onButton(press(Button::B));
             ++commits;
         }
+        CHECK(g.eggPickWon());   // the egg was kept in span every round — never lost early
         return commits;
     };
-    CHECK(roundsToResolve(ArcadeDifficulty::Easy) == kArcadeClutchRoundsEasy);
-    CHECK(roundsToResolve(ArcadeDifficulty::Medium) == kArcadeClutchRoundsMedium);
-    CHECK(roundsToResolve(ArcadeDifficulty::Hard) == kArcadeClutchRoundsHard);
+    CHECK(roundsToResolvePerfect(ArcadeDifficulty::Easy) == kArcadeClutchRoundsEasy);
+    CHECK(roundsToResolvePerfect(ArcadeDifficulty::Medium) == kArcadeClutchRoundsMedium);
+    CHECK(roundsToResolvePerfect(ArcadeDifficulty::Hard) == kArcadeClutchRoundsHard);
 }
 
 // An Isolation cabinet run has no egg behind it: it must not shave the incubation clock

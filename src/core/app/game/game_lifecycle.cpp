@@ -58,7 +58,7 @@ void Game::expireLockout() {
     nav_ = Nav::Idle;
     detailItem_ = nullptr;
     statPage_ = 0;
-    loadoutScroll_ = 0;
+    statScroll_ = 0;
     markSaveDirty();
 }
 
@@ -74,7 +74,7 @@ void Game::resolveLockout() {
     listRow_ = 0;
     detailItem_ = nullptr;
     statPage_ = 0;
-    loadoutScroll_ = 0;
+    statScroll_ = 0;
     markSaveDirty();
 }
 
@@ -432,6 +432,25 @@ void Game::stampSlotKinds() {
         slotKinds_[i] = pet_->slotKinds[i] == MoveKind::Defend ? SlotKind::Defend
                                                                 : SlotKind::Attack;
     }
+    // A pet always fights with everything it's earned: an unlocked slot that's
+    // still empty (never equipped, or a slot whose only candidate unlocked AFTER
+    // it was stamped — e.g. a second Attack slot stamped at Process, still empty,
+    // gets filled the moment Script unlocks a second owned Attack move) falls back
+    // to the strongest owned+unlocked move of its stamped kind instead of sitting
+    // on the generic Quick Jab. Walked in slot order, live-checking slotOf() as it
+    // goes, so two empty same-kind slots never both grab the same move.
+    for (int i = 0; i < unlocked && i < kMaxMoveSlots; ++i) {
+        if (moveLoadout_.equipped(i) || slotKinds_[i] == SlotKind::Unset) continue;
+        const MoveDef::Kind kind = slotRequiredKind(i);
+        for (const MoveDef* m : registry_.allMoves()) {
+            if (!moveLoadout_.owns(m->id) || m->kind != kind) continue;
+            if (!moveUnlockedAtStage(*m, pet_->stage)) continue;
+            if (!moveAllowedForLine(*m, pet_->line)) continue;
+            if (moveLoadout_.slotOf(m->id) >= 0) continue;    // already filling another slot
+            moveLoadout_.equip(i, m->id);
+            break;
+        }
+    }
 }
 
 void Game::enforceSlotKindInvariant() {
@@ -544,7 +563,7 @@ void Game::resetToHatch() {
     listRow_ = 0;
     detailItem_ = nullptr;
     statPage_ = 0;
-    loadoutScroll_ = 0;
+    statScroll_ = 0;
     maintKind_ = MaintKind::Defrag;
     processResolved_ = false;
     feedItem_ = nullptr;

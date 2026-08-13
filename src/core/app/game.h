@@ -53,6 +53,11 @@
 namespace mal {
 
 struct SpriteData;
+// STAT's two flowed prose pages (core/ui/stat_screen.h). Named here only as the
+// return type of the row builders below — the screen header itself stays in
+// game_render.cpp, per the include note above.
+struct LoadoutRow;
+struct BuffRow;
 
 // How a Game starts. FreshHatch = empty save -> Decryption Hatch (the real
 // first boot). Hatched = skip straight to a raised pet (the test/dev
@@ -1406,6 +1411,13 @@ public:
     // the tap/hold timing.
     void debugSetMoveShowAll(bool v) { moveShowAll_ = v; dirty_ = true; }
     bool moveShowAll() const { return moveShowAll_; }
+    // Fill every unlocked move slot and every mod slot (tests / tools/dump_frame.cpp).
+    // A Daemon carrying a full kit is the state STAT's LOADOUT page has to WINDOW
+    // rather than run down the screen, and it is otherwise only reachable by playing
+    // a pet to the end of its line. Moves come from what the pet's own line owns,
+    // matched to each slot's stamped kind; mods are placed without consuming a spare,
+    // since what this stages is the display and not the economy.
+    void debugFillLoadout();
     // Run the e bulk-open path directly on the item `id` (tests): the real
     // trigger is the VAULT hold-B gesture; this exercises openAllCachesOfRarity's
     // aggregation (consume-all-of-rarity + tally + Bits sum) without the hold timing.
@@ -2067,8 +2079,12 @@ private:
     // that's still Unset from the CURRENT pet_'s CreatureDef::slotKinds, then never
     // touch that slot again — so which creature occupies the evolution path at the
     // moment a slot unlocks decides that slot's kind for the rest of the raise.
-    // Called after every pet install: completeHatch, completeEvolution, applySave,
-    // and an ARCH Deploy swap. A no-op if pet_ is null.
+    // Also backfills: any unlocked slot still empty gets the strongest owned+
+    // unlocked move of its stamped kind not already sitting in another slot, so a
+    // pet is never idling a slot on Quick Jab when it's earned something real to
+    // put there — including a move unlocked at an earlier stage than the slot
+    // itself. Called after every pet install: completeHatch, completeEvolution,
+    // applySave, and an ARCH Deploy swap. A no-op if pet_ is null.
     void stampSlotKinds();
     // Defensive invariant: unequip any move whose kind no longer matches its
     // slot's stamped kind (a pre-v24 save migration, or any other drift). Called
@@ -2216,10 +2232,21 @@ private:
     int stackingFoodRun_ = 0;
 
     int statPage_ = 0;   // STAT: 0 vitals · 1 loadout · 2 buffs · 3 species · 4 audit log
-    // LOADOUT page (page 1) row-window scroll offset — B advances
-    // it (wrapping) when the row list overflows kLoadoutVisibleRows; A cycling
-    // pages / C backing out / any of the statPage_ reset sites reset this too.
-    int loadoutScroll_ = 0;
+    // Row-window scroll offset for whichever of STAT's two flowed prose pages is
+    // open (LOADOUT and BUFFS) — B advances it, wrapping, when that page's rows
+    // outrun one screen. ONE offset serves both because a page change resets it
+    // anyway, alongside C backing out and every other statPage_ reset site.
+    int statScroll_ = 0;
+    // The rows those two pages show. Game owns the state they report, stat_screen.h
+    // owns the shape, and these are the marshalling between the two — shared by the
+    // page draw (game_render.cpp) and the B-scroll, which has to advance by the same
+    // window the page drew or it skips and repeats rows.
+    std::vector<LoadoutRow> statLoadoutRows() const;
+    std::vector<BuffRow> statBuffRows() const;
+    // {rows on screen starting at statScroll_, rows in total} for the open STAT page;
+    // {0, 0} for a page that doesn't flow rows and so doesn't scroll.
+    struct StatScrollSpan { int shown; int total; };
+    StatScrollSpan statScrollSpan() const;
 
     // CFG submenu. cfgScreen_ is the entered L3; cfgGroupRow_ the focused row of a
     // group screen (DISPLAY / RADIO), kept apart from listRow_ so backing out of a

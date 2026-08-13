@@ -1683,7 +1683,7 @@ window.PEDIA_DATA = {
       "power": 8,
       "turns": 2,
       "minStage": "Process",
-      "desc": "Sprays a lure, then strikes - siphons 8% power, and mid-bite drains 6% Health and 6% speed.",
+      "desc": "Sprays a lure, then strikes - siphons 8% power, drains 6% Health and 6% speed mid-bite.",
       "stats": "ATK 8 / CHANNEL 2 / SIPHON PWR 8% / BITE SPD 6% / BITE DRAIN 6%",
       "group": "phishing",
       "icon": "assets/icons/ICON_MOVE_SLOT_LOCKED.png"
@@ -1755,7 +1755,7 @@ window.PEDIA_DATA = {
       "power": 0,
       "turns": 1,
       "minStage": "Process",
-      "desc": "Arms a trap: evades 20%, reflects 40% mitigated, rots 5% armor, and adds 10% override chance while held.",
+      "desc": "Arms a trap: evades 20%, reflects 40%, rots 5% armor, +10% override chance.",
       "stats": "EVADE 20% / REBOUND 40% / ARMOR ROT 5% / OVERRIDE +10%",
       "group": "trojan",
       "icon": "assets/icons/ICON_MOVE_SLOT.png"
@@ -1767,7 +1767,7 @@ window.PEDIA_DATA = {
       "power": 0,
       "turns": 1,
       "minStage": "Script",
-      "desc": "A deeper trap: evades 30%, reflects 50% mitigated, rots 8% armor, and adds 15% override chance while held.",
+      "desc": "A deeper trap: evades 30%, reflects 50%, rots 8% armor, +15% override chance.",
       "stats": "EVADE 30% / REBOUND 50% / ARMOR ROT 8% / OVERRIDE +15%",
       "group": "trojan",
       "icon": "assets/icons/ICON_MOVE_SLOT.png"
@@ -1779,7 +1779,7 @@ window.PEDIA_DATA = {
       "power": 0,
       "turns": 1,
       "minStage": "Daemon",
-      "desc": "The deadliest trap: evades 45%, reflects 60% mitigated, rots 12% armor, and adds 20% override chance while held.",
+      "desc": "The deadliest trap: evades 45%, reflects 60%, rots 12% armor, +20% override chance.",
       "stats": "EVADE 45% / REBOUND 60% / ARMOR ROT 12% / OVERRIDE +20%",
       "group": "trojan",
       "icon": "assets/icons/ICON_MOVE_SLOT.png"
@@ -1791,7 +1791,7 @@ window.PEDIA_DATA = {
       "power": 6,
       "turns": 1,
       "minStage": "Process",
-      "desc": "Mails itself everywhere - 50% chance to spawn an attacking copy worth 60% of this hit, multiplied by the defenders standing.",
+      "desc": "Mails itself everywhere - 50% chance to spawn a copy worth 60%, per defender standing.",
       "stats": "ATK 6 / SPAWN ATK 50% / COPY PWR 60%",
       "group": "worm",
       "icon": "assets/icons/ICON_MOVE_SLOT.png"
@@ -1803,7 +1803,7 @@ window.PEDIA_DATA = {
       "power": 9,
       "turns": 1,
       "minStage": "Script",
-      "desc": "Sweeps the whole subnet - 60% chance to spawn an attacking copy worth 70% of this hit, multiplied by the defenders standing.",
+      "desc": "Sweeps the whole subnet - 60% chance to spawn a copy worth 70%, per defender standing.",
       "stats": "ATK 9 / SPAWN ATK 60% / COPY PWR 70%",
       "group": "worm",
       "icon": "assets/icons/ICON_MOVE_SLOT.png"
@@ -1815,7 +1815,7 @@ window.PEDIA_DATA = {
       "power": 12,
       "turns": 1,
       "minStage": "Daemon",
-      "desc": "Saturates every link at once - 70% chance to spawn an attacking copy worth 80% of this hit, multiplied by the defenders standing.",
+      "desc": "Saturates every link at once - 70% chance to spawn a copy worth 80%, per defender standing.",
       "stats": "ATK 12 / SPAWN ATK 70% / COPY PWR 80%",
       "group": "worm",
       "icon": "assets/icons/ICON_MOVE_SLOT.png"
@@ -1827,7 +1827,7 @@ window.PEDIA_DATA = {
       "power": 10,
       "turns": 1,
       "minStage": "Process",
-      "desc": "Parks a copy in the way - a body with 20% of your Health per attacking copy out. Braces 10 instead when the slots are full.",
+      "desc": "Parks a copy in the way - a body worth 20% Health per copy out. Braces 10 when the slots are full.",
       "stats": "DEF 10 / SPAWN DEF 100% / COPY HP 20%",
       "group": "worm",
       "icon": "assets/icons/ICON_MOVE_SLOT.png"
@@ -1839,7 +1839,7 @@ window.PEDIA_DATA = {
       "power": 14,
       "turns": 1,
       "minStage": "Script",
-      "desc": "Stacks the copies into a wall - a body with 25% of your Health per attacking copy out. Braces 14 instead when the slots are full.",
+      "desc": "Stacks the copies into a wall - 25% Health per copy out; braces 14 when slots are full.",
       "stats": "DEF 14 / SPAWN DEF 100% / COPY HP 25%",
       "group": "worm",
       "icon": "assets/icons/ICON_MOVE_SLOT.png"
@@ -1851,7 +1851,7 @@ window.PEDIA_DATA = {
       "power": 18,
       "turns": 1,
       "minStage": "Daemon",
-      "desc": "The whole swarm takes the hit - a body with 30% of your Health per attacking copy out. Braces 18 instead when the slots are full.",
+      "desc": "The whole swarm takes the hit - 30% Health per copy out; braces 18 when slots are full.",
       "stats": "DEF 18 / SPAWN DEF 100% / COPY HP 30%",
       "group": "worm",
       "icon": "assets/icons/ICON_MOVE_SLOT.png"

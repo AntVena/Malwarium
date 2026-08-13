@@ -40,6 +40,7 @@ int g_failures = 0;
     RUN(test_effect_text_templates_resolve) \
     RUN(test_effect_text_fits_its_screen_budget) \
     RUN(test_stat_loadout_b_scroll)         \
+    RUN(test_stat_prose_windows_tile_the_list) \
     /* Carousel */                          \
     RUN(test_carousel_summon)               \
     RUN(test_carousel_bookwrap)             \

@@ -138,6 +138,13 @@ void drawRowCursor(Framebuffer& fb, int x, int y, Rgb565 c);
 // Pinned to the bottom rather than following the content, so it lands in the same
 // place whether the list above it is full or half empty. Consumers: the list and
 // picker screens that end in one (EXPL, SHOP, TITLE).
+//
+// The height is named because a screen that FLOWS its content (STAT's prose pages
+// size each row to the text it holds) has to subtract the band from the room it
+// has before it lays anything out — the band is drawn last but occupies its strip
+// from the start, and a page that discovers it after filling the screen has
+// already overprinted it.
+constexpr int kHintBandH = 16;
 void drawHintBand(Framebuffer& fb, const char* hint);
 
 // The derived readout (effect_text.h's specRows) as an aligned grid: label left,

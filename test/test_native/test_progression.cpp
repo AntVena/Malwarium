@@ -1005,27 +1005,33 @@ void test_combat_screen_grayscale() {
 // The move loadout survives a reboot (save v2): equip a different move via the
 // TRAIN picker, autosave, and confirm a fresh Game over the store restores it.
 // Uses malbear (Script) rather than Paypup (Process): a pet now owns its whole
-// line's kit from hatch, but Paypup's Process stage only has ONE unlocked Attack
-// row (payload_drop) to switch between — Script unlocks a second (double_extortion).
+// line's kit from hatch AND auto-fills every unlocked slot with the strongest
+// owned+unlocked move it can hold (#12 backfill) — both Attack slots are already
+// spoken for (payload_drop/double_extortion) the instant the pet is installed, so
+// slot 2 (Defend) is the one with a real second option to switch to: it opens on
+// aes_lockbox (Process-tier, unlocked before the slot itself existed) and Script
+// has since unlocked a second Defend (rsa_vault) to switch it to.
 void test_move_loadout_persist() {
     MemSaveStore store;
     {
         Game g(StartMode::Hatched, "malbear", &store);
-        CHECK(std::strcmp(g.moveLoadout().equipped(0), "payload_drop") == 0);
+        CHECK(std::strcmp(g.moveLoadout().equipped(2), "aes_lockbox") == 0);
         enterLoadoutTab(g, 1);
-        g.onButton(press(Button::B));              // open slot 0 picker
-        g.onButton(press(Button::A));              // unequip -> payload_drop
-        g.onButton(press(Button::A));              // -> double_extortion (a different move)
+        g.onButton(press(Button::A));              // slot0 -> slot1
+        g.onButton(press(Button::A));              // slot1 -> slot2
+        g.onButton(press(Button::B));              // open slot 2 picker
+        g.onButton(press(Button::A));              // unequip -> aes_lockbox
+        g.onButton(press(Button::A));              // -> rsa_vault (a different move)
         g.onButton(press(Button::B));              // drill into its detail page
         g.onButton(press(Button::B));              // equip -> hands back the overwrite confirm
         g.onButton(press(Button::A));              // Cancel -> Confirm
         g.onButton(press(Button::B));              // commit
-        CHECK(std::strcmp(g.moveLoadout().equipped(0), "double_extortion") == 0);
+        CHECK(std::strcmp(g.moveLoadout().equipped(2), "rsa_vault") == 0);
         g.tick(kSaveAutosaveMs + kHeartbeatMs);    // autosave
     }
     Game g2(StartMode::Hatched, "malbear", &store);
     CHECK(g2.nav() == Game::Nav::Idle);
-    CHECK(std::strcmp(g2.moveLoadout().equipped(0), "double_extortion") == 0);   // restored
+    CHECK(std::strcmp(g2.moveLoadout().equipped(2), "rsa_vault") == 0);   // restored
 }
 
 // --- Evolution branching (Good/Bad) + Critical System Failure ------------------

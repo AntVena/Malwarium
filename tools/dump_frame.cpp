@@ -8,6 +8,10 @@
 //        feed:<item_id> (eat one named food through the real Use path and hold the
 //             feeding modal — how to eyeball that its gauges follow that item's own
 //             effects, e.g. feed:tortilla_chip, feed:null_noodles)
+//        stat [loadout|buffs|species|log] [scroll:<n>] (the 5 STAT pages; "scroll:<n>"
+//             takes B n times, which walks the row window of the two pages that flow
+//             prose — pair it with "fullkit" and a Daemon for the longest lists)
+//        fullkit (every unlocked move slot and every mod slot equipped)
 //        maint [detail] [stacker [slide|drop|stop ...]] · lockout · evolve
 //        cryptogram [open:<n>] [take] [win|lose] (THE DECRYPTOGRAM's quote board, cashed
 //             at the VAULT; "open:<n>" places n letters correctly so the frame shows a
@@ -21,9 +25,12 @@
 //             (the GAMES list, one cabinet's page, its running board, and the payout;
 //             "solved" banks the eight quote wins that reveal the DECRYPTOGRAM cabinet,
 //             which "quote" then focuses)
-//        clutch [aim] [round ...] | clutch win (the Phishing egg's Clutch Pick; "aim"
-//        flips to the second half and "round" commits, interleaved to walk any path —
-//        three "round"s land on the lost reveal, "win" plays it perfectly instead)
+//        clutch [aim] [round ...] | clutch win | clutch lose (the Phishing egg's Clutch
+//        Pick; "aim" flips to the second half and "round" commits, interleaved to walk
+//        any path — the run now resolves the instant the live egg leaves the surviving
+//        span, so a "round" past that point CONTINUES the reveal instead of playing
+//        another one; "win" plays it perfectly, "lose" aims wrong on purpose so it
+//        resolves deterministically on round one)
 //        isolation [steps:<n>] [crash] [bank] (the Worm egg's Isolation Protocol;
 //             "steps:<n>" walks the worm n moves along the buffer's Hamiltonian cycle so
 //             the frame shows a long coil mid-run, "crash" drives it into the wall to
@@ -188,7 +195,16 @@ int main(int argc, char** argv) {
         game.debugUseItem("ambig_usb");
         game.inventory().add("backup_drive", 2);
         game.debugUseItem("backup_drive");
+        // The two DeepWeb depth buffs as well, which takes BUFFS to all five rows it
+        // can hold at once — the state the page has to scroll rather than draw.
+        game.inventory().add("deep_learning_core", 2);
+        game.debugUseItem("deep_learning_core");
+        game.inventory().add("zeroday_bell", 2);
+        game.debugUseItem("zeroday_bell");
     }
+    // "fullkit" equips every unlocked move slot and every mod slot — pair it with a
+    // Daemon (pet:wire_heir) for the deepest LOADOUT page the game can produce.
+    if (hasFlag(argc, argv, "fullkit")) game.debugFillLoadout();
 
     // Apply navigation AFTER ticking so the 5s auto-defocus timer (which keys off
     // the last tick) doesn't collapse the menu before we render it.
@@ -226,6 +242,13 @@ int main(int argc, char** argv) {
                   : hasFlag(argc, argv, "log")      ? 4
                                                      : 0;
         while (steps-- > 0) game.onButton({Button::A, true, false});
+        // "scroll:<n>" then takes B n times, which on the two flowed pages
+        // (LOADOUT/BUFFS) advances the row window — the way to see the rows past the
+        // first screenful, and that the last window lands clear of the hint band.
+        for (int i = 3; i < argc; ++i)
+            if (std::strncmp(argv[i], "scroll:", 7) == 0)
+                for (int n = std::atoi(argv[i] + 7); n > 0; --n)
+                    game.onButton({Button::B, true, false});
     } else if (hasFlag(argc, argv, "cache")) {
         // Cache yield reveal: open a rarity-tiered cache and land on the
         // Nav::CacheYield screen naming what came out. `epic` = the 2-item tier.
@@ -933,6 +956,17 @@ int main(int argc, char** argv) {
                 game.onButton({second ? Button::C : Button::A, true, false});
                 game.onButton({Button::B, true, false});
             }
+        } else if (hasFlag(argc, argv, "lose")) {
+            // Aim at whichever half does NOT hold the live egg — the mirror of "win" —
+            // so the run resolves on round one every time, deterministic regardless of
+            // seed. The clutch now ends the instant the target leaves the span (see
+            // game_eggpick.cpp), so unlike "win" this never needs more than one commit.
+            const int col = game.eggPickTargetSlot() % Game::kEggPickCols;
+            const int row = game.eggPickTargetSlot() / Game::kEggPickCols;
+            const bool second = col < Game::kEggPickCols / 2;   // wrong half of round 1's column cut
+            (void)row;
+            game.onButton({second ? Button::C : Button::A, true, false});
+            game.onButton({Button::B, true, false});
         } else {
             for (int i = 3; i < argc; ++i) {
                 // "round" commits the current aim; "aim" flips to the second half, so
@@ -973,8 +1007,14 @@ int main(int argc, char** argv) {
                 const int d = next - cell;
                 const int want = d == 1 ? 0 : d == kIsolationCols ? 1 : d == -1 ? 2 : 3;
                 const int turn = (want - game.isolation().dir() + 4) % 4;
+                // Every corner on this path is a single quarter-turn (the path never
+                // reverses on itself), so turn is always 1 or 3 here — 1 is a RIGHT
+                // turn (C), which this used to send to B, a no-op while running (only
+                // A/C steer — see onIsolation). That silently dropped every right turn,
+                // so the worm took its one working left turn and then ran straight
+                // until it stalled on a wall, instead of actually walking the cycle.
                 if (turn == 3) game.onButton({Button::A, true, false});
-                else if (turn) game.onButton({Button::B, true, false});
+                else if (turn == 1) game.onButton({Button::C, true, false});
                 game.tick(it += kIsolationStepMs);
             }
         }

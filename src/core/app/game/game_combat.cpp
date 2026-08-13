@@ -517,16 +517,24 @@ void Game::applyCombatResult() {
                 }
                 // A separate, independent move-drop roll from the move-drop pool
                 // (embedded_content.cpp) — mirrors the item roll above, right next to
-                // it. The pool is the GENERIC roster only: every pet already owns its
-                // own line's moves from hatch (its nature, not luck), so the rare thing
-                // a wild win can teach is one of the desirable off-line generic moves —
-                // taming a malbeast for its trick. Filters to not-yet-owned first
-                // rather than reroll-looping: "all already owned" is a legitimate "no
-                // drop this time."
+                // it. The pool is the GENERIC roster (the desirable off-line trick a
+                // taming teaches), PLUS a fallback: any move of the pet's OWN line it
+                // doesn't already own. A fresh hatch owns its whole line kit already
+                // (MoveLoadout::startingForLine), so that half is normally a no-op —
+                // it only fires for a pet raised before that line move existed, or
+                // before the line owned its whole kit at all, catching it up the same
+                // way a generic trick is learned rather than silently backfilling it
+                // on the next load. Filters to not-yet-owned first rather than
+                // reroll-looping: "all already owned" is a legitimate "no drop this
+                // time."
                 rng_ = rng_ * 1664525u + 1013904223u;
                 if (static_cast<int>((rng_ >> 16) % 100) < moveDropPct) {
                     std::vector<const char*> pool = {"buffer_overflow",
                                                      "rootkit_strike", "null_route"};
+                    if (pet_ && pet_->line)
+                        for (const MoveDef* m : registry_.allMoves())
+                            if (m->line && std::strcmp(m->line, pet_->line) == 0)
+                                pool.push_back(m->id);
                     std::vector<const char*> candidates;
                     for (const char* id : pool)
                         if (!moveLoadout_.owns(id)) candidates.push_back(id);
@@ -701,6 +709,30 @@ void Game::debugOpenCache(const char* id) {
 }
 
 void Game::debugSetBits(int n) { bits_ = n < 0 ? 0 : n; }
+
+void Game::debugFillLoadout() {
+    if (!pet_) return;
+    // Moves: the first owned move that matches the slot's stamped kind and isn't
+    // already sitting in an earlier slot (equipping a move MOVES it, so reusing one
+    // would empty the slot behind us and leave the page shorter than it should be).
+    const int slots = MoveLoadout::slotsForStage(pet_->stage);
+    for (int s = 0; s < slots; ++s)
+        for (const char* id : moveLoadout_.owned()) {
+            const MoveDef* m = registry_.move(id);
+            if (!m || m->kind != slotRequiredKind(s)) continue;
+            if (moveLoadout_.slotOf(id) >= 0) continue;
+            moveLoadout_.equip(s, m->id);
+            break;
+        }
+    // Mods: any three distinct rows, placed directly (setEquipped, no spare consumed).
+    int filled = 0;
+    for (const ModDef* d : registry_.allMods()) {
+        if (filled >= kModSlots) break;
+        if (loadout_.slotOf(d->id) >= 0) continue;
+        loadout_.setEquipped(filled++, d->id);
+    }
+    markSaveDirty();
+}
 
 
 void Game::startEncounter() {

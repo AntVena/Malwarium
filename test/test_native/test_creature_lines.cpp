@@ -355,8 +355,9 @@ void test_eggpick_win_halves_incubation() {
     CHECK(g.inEggPhase());                          // still an egg, just a faster one
 }
 
-// Picking the wrong half loses the egg for good — the remaining rounds still play out
-// (the player isn't told mid-run), and the incubation clock is left at full length.
+// Picking the wrong half loses the egg for good — the run resolves on THAT turn rather
+// than playing out the rounds it has left, and the incubation clock is left at full
+// length.
 void test_eggpick_miss_keeps_full_incubation() {
     Game g = phishingEgg();
     const int col = g.eggPickTargetSlot() % Game::kEggPickCols;
@@ -364,12 +365,8 @@ void test_eggpick_miss_keeps_full_incubation() {
     g.onButton(press(correct ? Button::A : Button::C));   // aim at the half it ISN'T in
     g.onButton(press(Button::B));
     CHECK(!g.eggPickTargetInSpan());                      // already lost
-    CHECK(!g.eggPickResolved());                          // but the run keeps going
-    for (int i = 1; i < Game::kEggPickRounds; ++i) {
-        g.onButton(press(Button::A));
-        g.onButton(press(Button::B));
-    }
-    CHECK(g.eggPickResolved() && !g.eggPickWon());
+    CHECK(g.eggPickResolved() && !g.eggPickWon());         // and the run knows it, now
+    CHECK(g.eggPickRound() == 1);                          // resolved on the turn it lost it
     g.onButton(press(Button::B));
     CHECK(g.nav() == Game::Nav::Idle);
     CHECK(g.bootHatchRemainMs() == kBootHatchMs);         // no bonus, no penalty
@@ -487,29 +484,29 @@ void test_eggpick_grayscale() {
     // The panel is centred and drawn at x2: 224x112 spanning y 56..168.
     const int top = 62, bot = 160;
 
-    {   // Round 1 cuts columns and opens aimed LEFT.
+    {   // Round 1 cuts columns and opens aimed LEFT: the bar sits on the left edge.
         Game g = phishingEgg();
         g.render(fb);
         CHECK(hasDarkInk(fb, 0, 0, kActiveW, 40));          // title + round counter
         CHECK(meanLum(0, 4, top, bot) > meanLum(kActiveW - 4, kActiveW, top, bot));
-        CHECK(meanLum(8, 104, top, bot) > meanLum(120, 216, top, bot));
     }
-    {   // C flips the aim: the bar and the bright half both move to the right.
+    {   // C flips the aim: the bar moves to the right edge instead.
         Game g = phishingEgg();
         g.onButton(press(Button::C));
         g.render(fb);
         CHECK(meanLum(kActiveW - 4, kActiveW, top, bot) > meanLum(0, 4, top, bot));
-        CHECK(meanLum(120, 216, top, bot) > meanLum(8, 104, top, bot));
     }
-    {   // After committing left, round 2 cuts rows: aimed top > in-play bottom-left >
-        // the eliminated right, three ordered steps with no colour involved.
+    {   // Committing round 1 halves the columns, so the surviving crop is strictly
+        // narrower than the full raft and recentres on it — the panel's own outer edge,
+        // which round 1 still covered in backdrop art, is now bare background rather
+        // than a decoy. A stand-in for "eliminated cells aren't drawn at all" that
+        // doesn't hardcode the crop's own zoom/centring arithmetic.
         Game g = phishingEgg();
         g.onButton(press(Button::B));
         g.render(fb);
-        const float aimed = meanLum(8, 104, top, 110);
-        const float inPlay = meanLum(8, 104, 118, bot);
-        const float dead = meanLum(120, 216, top, bot);
-        CHECK(aimed > inPlay && inPlay > dead);
+        const float centre = meanLum(kActiveW / 2 - 4, kActiveW / 2 + 4, top, bot);
+        const float edge = meanLum(0, 4, top, bot);
+        CHECK(centre > edge);
     }
 }
 

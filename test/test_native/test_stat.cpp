@@ -200,6 +200,9 @@ void test_effect_text_templates_resolve() {
 //     that page pages it on A rather than truncating.
 //   * every RIG SHOP row's readout, swept across its whole tier ladder, must fit the
 //     space under its name in a kRigRowPitch row (game_rig_shop.h's rigSpec).
+// STAT's LOADOUT and BUFFS pages are deliberately NOT on this list: they budget no
+// lines at all, sizing each row to the prose it holds and scrolling what is left
+// over (stat_screen.cpp), so there is no number for content to outgrow there.
 // Prose is also checked against EffectText's own buffer, which caps it before any
 // screen is involved.
 // It also catches a readout LABEL that outgrew SpecRow's buffer, which truncates
@@ -283,11 +286,11 @@ void test_effect_text_fits_its_screen_budget() {
     }
 }
 
-// The STAT LOADOUT page's B-scroll: B is a no-op on pages 0/2
-// (only page 1 gives it meaning), it advances the row window on page 1, and
-// wraps back to the top once it runs past the end. The fresh starting loadout
-// (2 moves + 2 mods + 2 section headers = 7 rows) already overflows
-// kLoadoutVisibleRows (5), so no extra setup is needed to force a scroll.
+// The STAT LOADOUT page's B-scroll: B is a no-op on the pages that don't flow rows
+// (0 VITALS / 4 AUDIT LOG), it advances the row window on page 1, and wraps back to
+// the top once it runs past the end. The fresh starting loadout (2 moves + 2 mods +
+// 2 section headers) already outruns one screen, so no extra setup is needed to
+// force a scroll.
 void test_stat_loadout_b_scroll() {
     Game g{StartMode::Hatched};
     enterSubmenuId(g, SubmenuId::Stat);
@@ -303,18 +306,26 @@ void test_stat_loadout_b_scroll() {
     g.onButton(press(Button::A));
     auto rows = buildLoadoutRows(g.content(), g.moveLoadout(), g.loadout(),
                                  g.pet()->stage, g.inEggPhase());
-    CHECK(static_cast<int>(rows.size()) > kLoadoutVisibleRows);
+    CHECK(loadoutRowsFitting(rows, 0) < static_cast<int>(rows.size()));
 
     Framebuffer l0(kActiveW, kActiveH); g.render(l0);
     g.onButton(press(Button::B));               // scroll forward one window
     Framebuffer l1(kActiveW, kActiveH); g.render(l1);
     CHECK(!fbEqual(l0, l1));                     // the row window actually moved
 
-    g.onButton(press(Button::B));                // past the end -> wraps to the top
-    Framebuffer l2(kActiveW, kActiveH); g.render(l2);
-    CHECK(fbEqual(l0, l2));
+    // Keep pressing to the end of the list: every window is a fresh view, and the
+    // one past the last wraps home. How many windows that takes depends on how tall
+    // the rows are (each is sized to its own prose), so the walk is bounded by the
+    // row count rather than assuming a fixed window.
+    bool wrapped = false;
+    for (int i = 0; i < static_cast<int>(rows.size()) && !wrapped; ++i) {
+        g.onButton(press(Button::B));
+        Framebuffer ln(kActiveW, kActiveH); g.render(ln);
+        wrapped = fbEqual(l0, ln);
+    }
+    CHECK(wrapped);
 
-    // C -> back to the carousel (resets statPage_/loadoutScroll_); B re-enters
+    // C -> back to the carousel (resets statPage_/statScroll_); B re-enters
     // the submenu (cursor is still parked on STAT's slot); A -> page 1 confirms
     // the scroll reset (renders identically to the very first page-1 view, l0).
     g.onButton(press(Button::C));
@@ -323,12 +334,44 @@ void test_stat_loadout_b_scroll() {
     Framebuffer l3(kActiveW, kActiveH); g.render(l3);
     CHECK(fbEqual(l0, l3));
 
-    // Page 2 (AUDIT LOG): B is a no-op there too.
+    // Page 2 (BUFFS) flows rows too, but with nothing armed it has none to scroll,
+    // so B is inert there; page 4 (AUDIT LOG) never scrolls at all.
     g.onButton(press(Button::A));                // page 1 -> page 2
+    Framebuffer b0(kActiveW, kActiveH); g.render(b0);
+    g.onButton(press(Button::B));
+    Framebuffer b0b(kActiveW, kActiveH); g.render(b0b);
+    CHECK(fbEqual(b0, b0b));
+
+    g.onButton(press(Button::A));                // -> page 3 (SPECIES)
+    g.onButton(press(Button::A));                // -> page 4 (AUDIT LOG)
     Framebuffer a0(kActiveW, kActiveH); g.render(a0);
     g.onButton(press(Button::B));
     Framebuffer a0b(kActiveW, kActiveH); g.render(a0b);
     CHECK(fbEqual(a0, a0b));
+}
+
+// The flowed pages TILE their rows: consecutive windows skip nothing and repeat
+// nothing, and the walk terminates. This is the invariant the engine's B press and
+// the page's own layout have to agree on — they measure the window separately
+// (game_core.cpp's statScrollSpan vs. the renderer), and a disagreement shows up as
+// a row that can never be read or one that shows twice. Checked on a Daemon holding
+// a full kit, the longest list the page can be handed.
+void test_stat_prose_windows_tile_the_list() {
+    Game g{StartMode::Hatched, "wire_heir"};
+    g.debugFillLoadout();
+    const auto rows = buildLoadoutRows(g.content(), g.moveLoadout(), g.loadout(),
+                                       g.pet()->stage, g.inEggPhase());
+    const int total = static_cast<int>(rows.size());
+    CHECK(loadoutRowsFitting(rows, 0) < total);   // it really does need scrolling
+
+    int covered = 0;
+    for (int top = 0; top < total;) {
+        const int n = loadoutRowsFitting(rows, top);
+        CHECK(n > 0);            // a zero-row window would never reach the end
+        covered += n;
+        top += n;
+    }
+    CHECK(covered == total);     // every row seen exactly once
 }
 
 // Release gate 1 (grayscale readability) on every screen that lacked a dedicated

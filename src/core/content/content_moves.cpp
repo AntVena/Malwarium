@@ -87,8 +87,8 @@ const MoveDef kMoves[] = {
      "The deepest buried identity - a {power}-damage shield.", Stage::Daemon,
      "phishing", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, /*shieldPool=*/1},
     {"smish_hook", "Smish-Hook", MoveDef::Kind::Attack, 8, 2,
-     "Sprays a lure, then strikes - siphons {stealPower}% power, and mid-bite "
-     "drains {stealHp}% Health and {stealSpeed}% speed.",
+     "Sprays a lure, then strikes - siphons {stealPower}% power, drains {stealHp}% "
+     "Health and {stealSpeed}% speed mid-bite.",
      Stage::Process, "phishing", 0, 0, 0, 0, 0, 0, 0, 0, /*stealPowerPct=*/8,
      /*stealDefensePct=*/0, /*stealSpeedPct=*/6, /*stealCurrentHpPct=*/6},
     {"spear_strike", "Spear-Strike", MoveDef::Kind::Attack, 12, 2,
@@ -124,18 +124,18 @@ const MoveDef kMoves[] = {
     // Held traps also feed the Execution-Override hijack chance, so each names the
     // bonus it contributes ({trapBonus}) alongside what it does on its own.
     {"logic_bomb", "Logic-Bomb", MoveDef::Kind::Defend, 0, 1,
-     "Arms a trap: evades {evade}%, reflects {rebound}% mitigated, rots {armorRot}% "
-     "armor, and adds {trapBonus}% override chance while held.", Stage::Process,
+     "Arms a trap: evades {evade}%, reflects {rebound}%, rots {armorRot}% armor, "
+     "+{trapBonus}% override chance.", Stage::Process,
      "trojan", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
      /*trapArm=*/1, /*evasion=*/20, /*rebound=*/40, /*armorRot=*/5, /*passiveBonus=*/10},
     {"sandbox_snare", "Sandbox-Snare", MoveDef::Kind::Defend, 0, 1,
-     "A deeper trap: evades {evade}%, reflects {rebound}% mitigated, rots {armorRot}% "
-     "armor, and adds {trapBonus}% override chance while held.", Stage::Script,
+     "A deeper trap: evades {evade}%, reflects {rebound}%, rots {armorRot}% armor, "
+     "+{trapBonus}% override chance.", Stage::Script,
      "trojan", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
      /*trapArm=*/1, /*evasion=*/30, /*rebound=*/50, /*armorRot=*/8, /*passiveBonus=*/15},
     {"killswitch", "Killswitch", MoveDef::Kind::Defend, 0, 1,
-     "The deadliest trap: evades {evade}%, reflects {rebound}% mitigated, rots "
-     "{armorRot}% armor, and adds {trapBonus}% override chance while held.", Stage::Daemon,
+     "The deadliest trap: evades {evade}%, reflects {rebound}%, rots {armorRot}% "
+     "armor, +{trapBonus}% override chance.", Stage::Daemon,
      "trojan", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
      /*trapArm=*/1, /*evasion=*/45, /*rebound=*/60, /*armorRot=*/12, /*passiveBonus=*/20},
 
@@ -152,33 +152,33 @@ const MoveDef kMoves[] = {
     // certain, because a defender IS the move; the row keeps a real `power` only so the
     // turn still braces when every replication slot is already full.
     {"mass_mailer", "Mass-Mailer", MoveDef::Kind::Attack, 6, 1,
-     "Mails itself everywhere - {replicaChance}% chance to spawn an attacking copy "
-     "worth {replicaPower}% of this hit, multiplied by the defenders standing.",
+     "Mails itself everywhere - {replicaChance}% chance to spawn a copy worth "
+     "{replicaPower}%, per defender standing.",
      Stage::Process, "worm", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
      /*replicaSpawnPct=*/50, /*replicaPowerPct=*/60},
     {"subnet_sweep", "Subnet-Sweep", MoveDef::Kind::Attack, 9, 1,
-     "Sweeps the whole subnet - {replicaChance}% chance to spawn an attacking copy "
-     "worth {replicaPower}% of this hit, multiplied by the defenders standing.",
+     "Sweeps the whole subnet - {replicaChance}% chance to spawn a copy worth "
+     "{replicaPower}%, per defender standing.",
      Stage::Script, "worm", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
      /*replicaSpawnPct=*/60, /*replicaPowerPct=*/70},
     {"slammer_burst", "Slammer-Burst", MoveDef::Kind::Attack, 12, 1,
-     "Saturates every link at once - {replicaChance}% chance to spawn an attacking copy "
-     "worth {replicaPower}% of this hit, multiplied by the defenders standing.",
+     "Saturates every link at once - {replicaChance}% chance to spawn a copy worth "
+     "{replicaPower}%, per defender standing.",
      Stage::Daemon, "worm", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
      /*replicaSpawnPct=*/70, /*replicaPowerPct=*/80},
     {"host_squat", "Host-Squat", MoveDef::Kind::Defend, 10, 1,
-     "Parks a copy in the way - a body with {replicaHealth}% of your Health per "
-     "attacking copy out. Braces {power} instead when the slots are full.",
+     "Parks a copy in the way - a body worth {replicaHealth}% Health per copy out. "
+     "Braces {power} when the slots are full.",
      Stage::Process, "worm", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
      /*replicaSpawnPct=*/100, /*replicaPowerPct=*/0, /*replicaHealthPct=*/20},
     {"swarm_wall", "Swarm-Wall", MoveDef::Kind::Defend, 14, 1,
-     "Stacks the copies into a wall - a body with {replicaHealth}% of your Health per "
-     "attacking copy out. Braces {power} instead when the slots are full.",
+     "Stacks the copies into a wall - {replicaHealth}% Health per copy out; braces "
+     "{power} when slots are full.",
      Stage::Script, "worm", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
      /*replicaSpawnPct=*/100, /*replicaPowerPct=*/0, /*replicaHealthPct=*/25},
     {"botnet_bulwark", "Botnet-Bulwark", MoveDef::Kind::Defend, 18, 1,
-     "The whole swarm takes the hit - a body with {replicaHealth}% of your Health per "
-     "attacking copy out. Braces {power} instead when the slots are full.",
+     "The whole swarm takes the hit - {replicaHealth}% Health per copy out; braces "
+     "{power} when slots are full.",
      Stage::Daemon, "worm", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
      /*replicaSpawnPct=*/100, /*replicaPowerPct=*/0, /*replicaHealthPct=*/30},
 

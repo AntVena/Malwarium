@@ -242,9 +242,8 @@ void drawRowCursor(Framebuffer& fb, int x, int y, Rgb565 c) {
 }
 
 void drawHintBand(Framebuffer& fb, const char* hint) {
-    constexpr int kBandH = 16;
-    fb.fillRect(0, kActiveH - kBandH, kActiveW, kBandH, palColor(Pal::TRACK));
-    drawText(fb, (kActiveW - textWidth(hint)) / 2, kActiveH - kBandH + 4, hint,
+    fb.fillRect(0, kActiveH - kHintBandH, kActiveW, kHintBandH, palColor(Pal::TRACK));
+    drawText(fb, (kActiveW - textWidth(hint)) / 2, kActiveH - kHintBandH + 4, hint,
              palColor(Pal::INK));
 }
 
