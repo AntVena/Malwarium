@@ -972,6 +972,69 @@ window.PEDIA_DATA = {
       "bits": 512
     },
     {
+      "id": "cracquettes",
+      "name": "Cracquettes",
+      "type": "FOOD",
+      "rarity": "UNCOMMON",
+      "effect": "Everything the filter caught, fried into one patty. Not classy, but the folder is finally empty.",
+      "stats": "HUNGER +60 / HAPPY +5 / FRAG +5",
+      "icon": "assets/icons/ICON_ITEM_CRACQUETTES.png"
+    },
+    {
+      "id": "hackshuka",
+      "name": "Hackshuka",
+      "type": "FOOD",
+      "rarity": "UNCOMMON",
+      "effect": "Everything that was in the bag, in one pan. Now nobody can tell what leaked.",
+      "stats": "HUNGER +35 / HAPPY +15 / HEAL 40",
+      "icon": "assets/icons/ICON_ITEM_HACKSHUKA.png"
+    },
+    {
+      "id": "applet_turnover",
+      "name": "Applet Turnover",
+      "type": "FOOD",
+      "rarity": "UNCOMMON",
+      "effect": "Sandboxed in pastry. It still runs.",
+      "stats": "HUNGER +20 / HAPPY +35 / FRAG -10",
+      "icon": "assets/icons/ICON_ITEM_APPLET_TURNOVER.png"
+    },
+    {
+      "id": "serial_bar",
+      "name": "Serial Bar",
+      "type": "FOOD",
+      "rarity": "UNCOMMON",
+      "effect": "Nine hundred serving suggestions, pressed into one you can carry.",
+      "stats": "HUNGER +30 / HAPPY +10 / FRAG -5",
+      "icon": "assets/icons/ICON_ITEM_SERIAL_BAR.png"
+    },
+    {
+      "id": "macrol_fry_up",
+      "name": "Macrol Fry-Up",
+      "type": "FOOD",
+      "rarity": "RARE",
+      "effect": "Cooked through, so it stops going off. Whatever the pier says, this is the right end of a Fresh Macrol's short life.",
+      "stats": "HUNGER +45 / HAPPY +20 / HEAL 30",
+      "icon": "assets/icons/ICON_ITEM_MACROL_FRY_UP.png"
+    },
+    {
+      "id": "vanilla_java_roast",
+      "name": "Vanilla Java Roast",
+      "type": "FOOD",
+      "rarity": "RARE",
+      "effect": "Roasted dark, sweetened hard, and nobody's framework anywhere near it.",
+      "stats": "HUNGER +5 / HAPPY +45 / FRAG -30",
+      "icon": "assets/icons/ICON_ITEM_VANILLA_JAVA_ROAST.png"
+    },
+    {
+      "id": "gnulash",
+      "name": "GNUlash",
+      "type": "FOOD",
+      "rarity": "RARE",
+      "effect": "Everything in the pot at once, at a rolling boil, no plan whatsoever. Free to copy, and somehow it comes out right.",
+      "stats": "HUNGER +70 / FRAG -25 / HEAL 60",
+      "icon": "assets/icons/ICON_ITEM_GNULASH.png"
+    },
+    {
       "id": "backup_drive",
       "name": "Backup Drive",
       "type": "BUFFS",
@@ -2218,9 +2281,9 @@ window.PEDIA_DATA = {
     {
       "key": "CUISINE_ALL",
       "name": "Full Buffet",
-      "trigger": "Get hold of all 29 foods, the cooked ones included.",
+      "trigger": "Get hold of all 36 foods, the cooked ones included.",
       "icon": "assets/icons/ICON_ACH_CUISINE_ALL.png",
-      "goal": 29
+      "goal": 36
     },
     {
       "key": "COOK_NOODLES",
@@ -2239,9 +2302,9 @@ window.PEDIA_DATA = {
     {
       "key": "COLLECT_RARE",
       "name": "Rare Collector",
-      "trigger": "Get hold of all 7 Rare items.",
+      "trigger": "Get hold of all 10 Rare items.",
       "icon": "assets/icons/ICON_ACH_COLLECT_RARE.png",
-      "goal": 7
+      "goal": 10
     },
     {
       "key": "COLLECT_EPIC",
@@ -2274,16 +2337,16 @@ window.PEDIA_DATA = {
     {
       "key": "RIG_ALL",
       "name": "Full Rig",
-      "trigger": "Own at least one level of all 22 rig upgrades.",
+      "trigger": "Own at least one level of all 18 rig upgrades.",
       "icon": "assets/icons/ICON_ACH_RIG_ALL.png",
-      "goal": 22
+      "goal": 18
     },
     {
       "key": "RIG_MAXED",
       "name": "Maxed Out",
-      "trigger": "Buy all 482 capped rig upgrade levels there are.",
+      "trigger": "Buy all 478 capped rig upgrade levels there are.",
       "icon": "assets/icons/ICON_ACH_RIG_MAXED.png",
-      "goal": 482
+      "goal": 478
     },
     {
       "key": "NETS_10",
