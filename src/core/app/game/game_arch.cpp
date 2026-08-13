@@ -101,7 +101,7 @@ static SaveStoredPet freezePet(const CreatureDef* pet, const PetModel& m, int ge
                                const Game::SlotKind (&slotKinds)[kMaxMoveSlots],
                                const MoveLoadout& moveLoadout, const Loadout& loadout,
                                uint32_t timeInStageMs, int bestDeepWebDepth,
-                               uint32_t dyingElapsedMs) {
+                               uint32_t dyingElapsedMs, int bandwidthRegenBonusMin) {
     SaveStoredPet p;
     std::strncpy(p.id, pet->id, kSaveIdCap - 1);
     p.hunger = m.hunger();
@@ -128,6 +128,9 @@ static SaveStoredPet freezePet(const CreatureDef* pet, const PetModel& m, int ge
     p.timeInStageMs = timeInStageMs;   // evolution-timer progress survives freeze/thaw
     p.bestDeepWebDepth = bestDeepWebDepth;  // this pet's own DeepWeb record survives freeze/thaw
     p.dyingElapsedMs = dyingElapsedMs;      // a 5/5 pet thaws mid-window, not with a fresh one
+    // Tiramisudo's permanent regen shave belongs to the CREATURE, so the rack keeps it:
+    // storing a pet must never cost it an upgrade it was fed.
+    p.bandwidthRegenBonusMin = bandwidthRegenBonusMin;
     return p;
 }
 
@@ -158,7 +161,7 @@ void Game::archStoreActive() {
     rack_.push_back(freezePet(pet_, model_, generation_, defragCount_, combatLevel_,
                                combatXp_, statPoints_, slotKinds_, moveLoadout_, loadout_,
                                nowMs_ - stageEnteredMs_, bestDeepWebDepth_,
-                               dyingElapsedMs_));
+                               dyingElapsedMs_, bandwidthRegenBonusMin_));
     noteRackDuplicates();   // before startHatch: a line earned HERE belongs on THIS menu
     archConfirm_ = false;
     listRow_ = 0;
@@ -176,7 +179,7 @@ void Game::archDeployStored(int storedIdx) {
     rack_[storedIdx] = freezePet(pet_, model_, generation_, defragCount_, combatLevel_,
                                   combatXp_, statPoints_, slotKinds_, moveLoadout_, loadout_,
                                   nowMs_ - stageEnteredMs_, bestDeepWebDepth_,
-                                  dyingElapsedMs_);
+                                  dyingElapsedMs_, bandwidthRegenBonusMin_);
 
     installPet(next);
     model_ = PetModel();
@@ -194,6 +197,9 @@ void Game::archDeployStored(int storedIdx) {
     // current clock while this accumulator carries the only figure that means anything.
     dyingElapsedMs_ = incoming.dyingElapsedMs;
     dyingArmed_ = false;
+    // ...and the incoming pet's own Bandwidth-regen upgrade, which is why the rig
+    // regenerates at different speeds under different pets.
+    bandwidthRegenBonusMin_ = incoming.bandwidthRegenBonusMin;
     // v26: thaw the incoming pet's creature-level state (was previously never
     // restored — the deployed pet silently inherited the outgoing pet's level).
     combatLevel_ = incoming.combatLevel;

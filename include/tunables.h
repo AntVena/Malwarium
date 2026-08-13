@@ -398,6 +398,12 @@ constexpr int kWalkAutoStepBeats = 12;  // heartbeats between auto-steps (~3s @ 
 // (game_rig_shop.h anchors the curve to it), and there is no third thing to delete.
 constexpr int kBandwidthMax = 10;       // shielded fights before fragmentation resumes
 constexpr uint32_t kBandwidthRegenMinutesPerPoint = 2;  // regen +1 / 3 min real time
+// The floor that interval can be shaved to. A pet that has eaten a Tiramisudo carries a
+// permanent -1 minute (ItemEffect::BandwidthRegenBonusMin, a magnitude on that item's
+// own row); this is the shared limit, not the item's number — it belongs here because
+// it protects the regen LOOP (Game::tick) rather than describing any one food, and a
+// second such dish would be held to the same floor without touching it.
+constexpr uint32_t kBandwidthRegenMinutesFloor = 1;
 constexpr uint32_t kItemFilterHoldMs = 800;   // ms held before A cycles the ITEMS type filter
                                               // (the Rig Shop's Items Type-Tabs unlock gates this)
 // TRAIN move picker: holding A past kMoveFilterHoldMs toggles moveShowAll_ (the

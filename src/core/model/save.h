@@ -300,6 +300,13 @@ constexpr int kSaveTextCap = 28;     // matches EventLog's LogEntry.text
 // the win are one axis: 0 never played (and so HARD), 1 lost once (MEDIUM), 2 lost twice
 // or more (EASY, the floor), 3 SOLVED. A pre-v48 blob has no tail → every quote reads
 // back as never played, which is the honest default for a device that had no board.
+// v50 appends the per-pet BANDWIDTH-REGEN upgrade — minutes shaved off this pet's
+// Bandwidth regen interval by a Tiramisudo (ItemEffect::BandwidthRegenBonusMin), as the
+// active pet's value then a parallel list mapped onto d.rack by index. The same shape
+// as v42's dying window, and for the same reason: it is per-pet state that must ALSO
+// survive an ARCH freeze, since the upgrade belongs to the creature rather than the run.
+// A pre-v50 blob has no tail → 0 for every pet, which is the truth (no dish that grants
+// it existed).
 // v49 adds no bytes. It marks COOKING moving off the Rig Shop: a MERGE HUB recipe is
 // won off a solved Decryptogram, never bought, so the four rows that used to sell one
 // are gone from kRigUpgrades and every recipe now lives in the v31 `recipesUnlocked`
@@ -310,7 +317,7 @@ constexpr int kSaveTextCap = 28;     // matches EventLog's LogEntry.text
 //     shifts every row after them — an older blob's entries are remapped by hand.
 // A v49+ blob needs neither pass. This is also the version to raise
 // kOldestAcceptedVersion past once every device is current, which retires that function.
-constexpr uint16_t kSaveVersion = 49;
+constexpr uint16_t kSaveVersion = 50;
 
 // The oldest blob deserialize will read. Raising it is how a device stops carrying
 // migration weight for saves nobody can still be holding — and it is the ONLY thing
@@ -425,6 +432,10 @@ struct SaveStoredPet {
     // without this its window would restart on Deploy, and freezing would be the
     // same reprieve a power cycle used to be.
     uint32_t dyingElapsedMs = 0;
+    // v50: minutes shaved off this pet's Bandwidth regen interval, in a parallel tail.
+    // Frozen with the pet because the upgrade is the creature's, not the rig's — a pet
+    // put on the shelf and deployed again keeps what it was fed.
+    int32_t bandwidthRegenBonusMin = 0;
 };
 
 // The permanent status of an ARCH record: a greyed, read-only entry that
@@ -781,6 +792,13 @@ struct SaveData {
     // through quoteStateGet/quoteStateSet below so no call site does the shifting.
     // Pre-v48 → empty, and every quote reads as never played.
     std::vector<uint8_t> quoteStates;
+
+    // --- v50: the ACTIVE pet's Bandwidth-regen upgrade -----------------------
+    // Minutes shaved off its regen interval by a Tiramisudo. Per-pet (reset on a new
+    // egg, like mistakeShieldActive) AND frozen with the pet — the rack pets' own
+    // values ride on SaveStoredPet::bandwidthRegenBonusMin, a parallel tail. Pre-v50 →
+    // 0, which is the truth: nothing granted it before this version.
+    int32_t bandwidthRegenBonusMin = 0;
 
     // v35: this pet's own best-ever DeepWeb Dive depth ------------------------
     // Per-pet (reset on a new egg, like mistakeShieldActive). The active pet's

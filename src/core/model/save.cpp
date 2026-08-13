@@ -515,6 +515,12 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     // that grows into spare capacity needs no save change at all.
     w.u16(static_cast<uint16_t>(d.quoteStates.size()));
     for (uint8_t b : d.quoteStates) w.u8(b);
+
+    // v50: the per-pet Bandwidth-regen upgrade — the active pet's minutes, then a
+    // parallel list mapped onto the rack by index (the v42 dying-window shape).
+    w.i32(d.bandwidthRegenBonusMin);
+    w.u16(static_cast<uint16_t>(d.rack.size()));
+    for (const auto& p : d.rack) w.i32(p.bandwidthRegenBonusMin);
 }
 
 std::vector<uint8_t> serializeSave(const SaveData& d) {
@@ -1042,6 +1048,18 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
     if (version >= 48) {
         const uint16_t nQuote = r.u16();
         for (uint16_t i = 0; i < nQuote && r.ok; ++i) d.quoteStates.push_back(r.u8());
+    }
+
+    // v50 tail: the Bandwidth-regen upgrade — the active pet's, then a parallel list
+    // mapped back onto the rack pets by index. Absent in a v1..v49 blob → 0 for every
+    // pet, which is the truth rather than a compromise: no dish granted it before v50.
+    if (version >= 50) {
+        d.bandwidthRegenBonusMin = r.i32();
+        const uint16_t nBw = r.u16();
+        for (uint16_t i = 0; i < nBw && r.ok; ++i) {
+            const int32_t v = r.i32();
+            if (i < d.rack.size()) d.rack[i].bandwidthRegenBonusMin = v;
+        }
     }
 
     if (!r.ok) { out = SaveData{}; return false; }  // truncated -> empty

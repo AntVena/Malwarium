@@ -207,6 +207,13 @@ bool Game::itemUseIsInert(const ItemDef& d, const char*& why) const {
                 if (model_.hasGhost()) return false;
                 if (!reason) reason = "NO REPLICATION GHOST";
                 break;
+            // Neither of these can achieve nothing. A regen shave already spent is the
+            // ordinary case for the dish that carries it — a pet that is already rooted
+            // eats it for the food and the Bandwidth, which is exactly what the second
+            // helping is meant to be, so refusing the use would be refusing a meal.
+            case ItemEffect::Kind::BandwidthRegenBonusMin:
+            case ItemEffect::Kind::Bandwidth:
+                return false;
         }
     }
     // A row with no arming effects at all does its work through a hand-off field
@@ -342,6 +349,22 @@ void Game::applyItemEffects(const ItemDef& d) {
                 // exploreStreak_ resets to 0 (game_explore.cpp/game_combat.cpp/
                 // game_lifecycle.cpp).
                 deepWebDepthMultiplier_ = e.magnitude;
+                break;
+            case ItemEffect::Kind::BandwidthRegenBonusMin:
+                // Tiramisudo (save v50): the FIRST helping shaves magnitude minutes off
+                // this pet's Bandwidth regen for good; later ones latch out here and
+                // leave only the row's ordinary food levers — including its +Bandwidth,
+                // which is what a second helping is actually for. Granting once is the
+                // whole design: the upgrade is per-pet, so the way to have it twice is
+                // to raise a second pet, not to eat a second plate.
+                if (bandwidthRegenBonusMin_ == 0) bandwidthRegenBonusMin_ = e.magnitude;
+                break;
+            case ItemEffect::Kind::Bandwidth:
+                // A top-up of the live pool, capped at the ceiling the rig has bought —
+                // the same clamp grantRigLevel applies, since overfilling would hand
+                // back shielded fights the cap says the operator hasn't paid for.
+                bandwidth_ += e.magnitude;
+                if (bandwidth_ > bandwidthMax()) bandwidth_ = bandwidthMax();
                 break;
             case ItemEffect::Kind::SetDeepWebStartDepth:
                 // Backdoor/Rootkit/Kernel Bell: arm the NEXT startDeepWebDive() to

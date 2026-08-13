@@ -99,6 +99,10 @@ struct BuffRow {
 // startDepthArmed/startDepthUsesBest/startDepthValue: resolved from
 // Game::pendingDeepWebStartDepth_ (armed = != -1; usesBest = the
 // kDeepWebStartDepthUseBest sentinel, in which case startDepthValue is unused).
+// bandwidthRegenUpgraded: Game::bandwidthRegenUpgraded() — the one PERMANENT entry in
+// the list. It arms nothing and never lapses, so it carries no timer and no home-screen
+// icon (the idle status row is for states the operator has to act on); the BUFFS page is
+// where a pet's standing upgrades are readable, which is the only place it belongs.
 std::vector<BuffRow> buildBuffRows(const ContentRegistry& reg,
                                     bool restorePointArmed,
                                     bool trojanDivertArmed,
@@ -107,7 +111,8 @@ std::vector<BuffRow> buildBuffRows(const ContentRegistry& reg,
                                     int depthMultiplier,
                                     bool startDepthArmed,
                                     bool startDepthUsesBest,
-                                    int startDepthValue);
+                                    int startDepthValue,
+                                    bool bandwidthRegenUpgraded);
 
 // The BUFFS page's own window, same flow and same reason as loadoutRowsFitting:
 // five buffs can be armed at once and their descriptions run to four lines, which

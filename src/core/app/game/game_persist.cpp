@@ -272,6 +272,10 @@ SaveData Game::captureSave() const {
     // v31: the f Rig Shop Merge Hub unlock, and (v49) the whole owned-recipe mask —
     // both player-level, like itemTabsUnlocked. The mask used to mirror two rig rows;
     // recipes own their state outright now, so it is written straight through.
+    // v50: this pet's Bandwidth-regen upgrade. The rack pets' own values ride along on
+    // their SaveStoredPet records, frozen at store time (game_arch.cpp's freezePet).
+    d.bandwidthRegenBonusMin = bandwidthRegenBonusMin_;
+
     d.mergeHubUnlocked = rigLevel_[kRigRowMergeHub] ? 1 : 0;
     d.recipesUnlocked = recipesOwned_;
 
@@ -667,6 +671,10 @@ void Game::applySave(const SaveData& d) {
     // those into the bits before handing the struct over.
     rigLevel_[kRigRowMergeHub] = d.mergeHubUnlocked ? 1 : 0;
     recipesOwned_ = d.recipesUnlocked;
+
+    // v50: the active pet's Bandwidth-regen upgrade (a pre-v50 blob → 0: no dish granted
+    // one). The rack's own values come back with the stored records themselves.
+    bandwidthRegenBonusMin_ = d.bandwidthRegenBonusMin;
 
     // v32: every rig row from kRigRowExtBase up (a pre-v32 blob carries an empty vector
     // → every such row defaults to 0 — a migrated save has bought none of them).

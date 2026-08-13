@@ -157,6 +157,18 @@ public:
         return kBandwidthMax + rigLevel_[kRigRowBandwidth] * kBandwidthUpgradeStep;
     }
     int bwUpgradeCount() const { return rigLevel_[kRigRowBandwidth]; }   // a purchases made
+    // Minutes of real active time per +1 Bandwidth for the ACTIVE pet: the shared
+    // interval less whatever this pet has been fed (Tiramisudo), never below the floor.
+    // Per-pet, so the same rig regenerates at different speeds under different pets.
+    uint32_t bandwidthRegenMinutes() const {
+        const uint32_t bonus = static_cast<uint32_t>(bandwidthRegenBonusMin_);
+        return bonus >= kBandwidthRegenMinutesPerPoint - kBandwidthRegenMinutesFloor
+                   ? kBandwidthRegenMinutesFloor
+                   : kBandwidthRegenMinutesPerPoint - bonus;
+    }
+    // Has this pet had its permanent regen upgrade? The STAT BUFFS page's own question,
+    // and the reason a second Tiramisudo is a top-up rather than a second upgrade.
+    bool bandwidthRegenUpgraded() const { return bandwidthRegenBonusMin_ > 0; }
     // Player-level Fragmentation-amount tier (b, save v21): shaves the battle-fatigue
     // frag AMOUNT cap (Game::applyBattleFatigue).
     uint8_t fragAmountTier() const { return static_cast<uint8_t>(rigLevel_[kRigRowFragReduce]); }
@@ -1385,6 +1397,12 @@ public:
     // Any rig row by index, through the real buy path — for a test that sweeps the
     // whole storefront rather than naming one row.
     void debugBuyRigRow(int row) { buyRigUpgrade(row); }
+    // Draw the Bandwidth pool down without staging a fight to spend it, so a test can
+    // watch it REGENERATE (which is the only way to observe a pet's regen interval).
+    void debugSpendBandwidth(int n) {
+        bandwidth_ -= n;
+        if (bandwidth_ < 0) bandwidth_ = 0;
+    }
     // Buy the g/h Auto Backup / Continuous Auto-Backup unlocks via the real buy path
     // (tests) — the two rows that arm the Backup Drive death-save for free.
     void debugBuyAutoBackup() { buyRigUpgrade(kRigRowAutoBackup); }
@@ -2216,6 +2234,13 @@ private:
     bool mistakeShieldActive_ = false;
     bool shieldItemConsumed_ = false;
     bool yubiConsumed_ = false;
+    // Tiramisudo's permanent upgrade (save v50) — MINUTES shaved off this pet's
+    // Bandwidth regen interval (bandwidthRegenMinutes(), read by Game::tick). Per-pet
+    // and granted once: the first helping roots the pet, every one after it is just
+    // food. Unlike the two once-per-lifetime gates above it FREEZES WITH THE PET
+    // (SaveStoredPet), because it is a property of the creature rather than of the run
+    // — storing a pet in the rack must not cost it an upgrade it earned.
+    int bandwidthRegenBonusMin_ = 0;
     // Ambig-USB's armed effect (save v28) — per-pet, reset on a new egg (layEgg).
     // Guarantees the pet's next Process->Script Trojan divert (Game::fireEvolution)
     // instead of leaving it to the kTrojanDivertPct roll; consumed there regardless

@@ -87,8 +87,10 @@ Diff **M**.
 
 ### 1b. Cooking — the open follow-ups
 
-The pantry, per-item drop weights, the N-ingredient Merge Hub and its eleven recipes are built, and
-a recipe is won off a Decryptogram rather than bought. What the first cut left:
+The pantry, per-item drop weights, the N-ingredient Merge Hub and its eighteen recipes are built, and
+a recipe is won off a Decryptogram rather than bought. Cooking is two-deep as of Cacherole (a recipe
+whose lead ingredient is another dish — no new mechanism, since an input id is just an item id), and
+Tiramisudo is the one food that upgrades the pet eating it rather than feeding it. What is left:
 
 - **Drop weights are unmeasured.** The pantry's numbers are authored by flavour, not play data. The
   walk-pool thinning constant (`kStapleWalkWeight`) especially is a guess at how much staple a player

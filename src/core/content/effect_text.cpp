@@ -134,6 +134,8 @@ const char* itemEffectToken(ItemEffect::Kind k) {
         case ItemEffect::Kind::ArmDeepWebDepthMultiplier: return "depthStep";
         case ItemEffect::Kind::SetDeepWebStartDepth: return "depth";
         case ItemEffect::Kind::SetDeepWebStartDepthToBest: return "bestDepth";
+        case ItemEffect::Kind::BandwidthRegenBonusMin: return "regenMins";
+        case ItemEffect::Kind::Bandwidth: return "bandwidth";
     }
     return nullptr;
 }
@@ -257,6 +259,12 @@ SpecRows specRows(const ItemDef& d) {
                 break;
             case ItemEffect::Kind::SetDeepWebStartDepthToBest:
                 s.flag("DIVE FROM BEST");
+                break;
+            case ItemEffect::Kind::BandwidthRegenBonusMin:
+                s.add("BW REGEN", "-%dMIN", e.magnitude);
+                break;
+            case ItemEffect::Kind::Bandwidth:
+                s.add("BANDWIDTH", "%+d", e.magnitude);
                 break;
         }
     }

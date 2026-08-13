@@ -76,6 +76,10 @@ int g_failures = 0;
     RUN(test_recipes_wait_on_the_merge_hub) \
     RUN(test_browns_recipes_wait_on_meeting_both_dishes) \
     RUN(test_recipes_persist) \
+    RUN(test_tiramisudo_upgrades_once_then_feeds) \
+    RUN(test_tiramisudo_regen_actually_runs_faster) \
+    RUN(test_tiramisudo_upgrade_survives_the_rack) \
+    RUN(test_save_v50_bandwidth_regen_upgrade) \
     RUN(test_save_v49_recipes_leave_the_rig_rows) \
     RUN(test_four_ingredient_recipe_consumes_all_inputs) \
     RUN(test_stacking_food_run_climbs_then_resets_on_decay) \

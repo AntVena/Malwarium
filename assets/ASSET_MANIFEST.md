@@ -396,6 +396,13 @@ still references a `PAL_CORE` token rather than a literal, so a hue change reski
 | Asset ID | Element | Status | File |
 |---|---|---|---|
 | `FONT_UI` | primary UI **pixel** font — tabular digits + disambiguated `0/O 1/I 5/S 8/B` (`VISUAL_LANGUAGE.md §2`). **Face = Pixel Operator Mono**, its own 8px cut (CC0, licence beside the TTF). Rasterised to a glyph table by `tools/gen_font.py` — an authoring step, not a gate, so `gen_assets.py` stays pure-stdlib; the generator refuses any size the face would be antialiased at | ☑ | `/assets/fonts/PixelOperatorMono8.ttf` |
+
+> **One glyph is hand-drawn, not rasterised.** `gen_font.py`'s `OVERRIDES` table replaces the
+> face's own cell for `&` (U+0026): Pixel Operator's ampersand at 8px differs from its own `S`
+> in two pixels, so `Salted&Hashed Browns` read on the panel as `SALTEDSHASHED BROWNS`. The
+> replacement keeps a closed top bowl and throws the leg out to the lower right — the pair of
+> features that separates an ampersand from an `S` at any size. The bar for a second override is
+> the same one: **illegible, not merely ugly**, because the committed table should be the face.
 | `PAL_CORE` | core palette = role tokens in named groups (structural · semantic `calm`/`warn`/`hot` · fragmentation ramp · rarity · team pair · the five `decypher` code colours). Hues set — danger-ascending, `accent` ≠ status. A group exists where a set of colours is a VOCABULARY a theme has to move together, not where one hue was needed | ☑ | `/assets/PAL_CORE.json` |
 
 ---
@@ -472,7 +479,7 @@ blank — that is the prompt to draw one, and `check_orphan_assets.py` catches t
   list — so no two share a silhouette: tin · crumbs · shaker · cruet · holed flask · fish ·
   pouch-and-clock · cubes · vial · spuds · yolk-in-shell · leek · cereal box · mug · sachet ·
   apple · taproot · noodle bowl · patty.
-- **The seven cooked dishes are the pantry's second batch**, drawn to the same brief and held to
+- **The cooked dishes are the pantry's second and third batches** (fourteen of them now), drawn to the same brief and held to
   the same rule: no two silhouettes alike, in a list where they sit together. Where the staples are
   mostly upright containers, these lean on outlines nothing else in the bag has — a pair of
   DIAGONAL rolls (Cracquettes), a leaning parallelogram (Serial Bar), a long-handled pan seen from
@@ -481,7 +488,13 @@ blank — that is the prompt to draw one, and `check_orphan_assets.py` catches t
   glyph that is a pun rather than a picture). **Macrol Fry-Up is the deliberate exception**: it is
   Fresh Macrol's own fish under the steam mark, because the recipe's whole claim is that it is the
   same fish, cooked, and no longer going off. Steam is the family's shared "it's hot" mark, carried
-  over from `ICON_ITEM_JAVA`.
+  over from `ICON_ITEM_JAVA`. The later batch keeps going the same way: chopsticks
+  standing in a bowl (RAMen — Null Noodles is already a bowl, so the sticks are the whole
+  silhouette), a slab of stacked layers (LANsagne), a dimpled torn flatbread (Forkaccia), a wide
+  low plate heaped with grain (RISCotto) against Hackshuka's deep round pan, a dusted tumbler
+  (Tiramisudo), two pleated pouches (Core Dumplings), and a SQUARE lidded bake with side handles
+  (Cacherole) against GNUlash's round horned pot. Every near-miss in that list is a pair drawn
+  apart on purpose: bowl/pan, pot/bake, layers/dimples.
 - **`ICON_ITEM_FULLY_STACKED_NACHOS` is `▨`** — it reuses `ICON_ITEM_TORTILLA_CHIP` rather than
   being bespoke. The only item icon that is a stand-in.
 - **`ICON_ITEM_BOOT_ACCELERATOR` and `ICON_ITEM_ROLLBACK` are the set's two BARE symbols** — no

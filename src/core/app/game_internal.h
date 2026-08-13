@@ -158,6 +158,34 @@ inline const MergeRecipe kMergeRecipes[] = {
      {{"root_veg", 1}, {"kernel_oil", 1}, {"polltatoes", 2},
       {"desalinated_c_salt", 1}},
      "gnulash", 1, /*wire=*/10, "MERGED GNULASH"},
+    // The second service. Three of these are the ingredient's own joke finished:
+    // Boolean Cubes ARE a risotto's stock, OSI Dip's seven layers ARE the lasagne, and
+    // a RAMen bowl is exactly noodles, egg and leek.
+    {"RISCotto",
+     {{"boolean_cubes", 2}, {"root_veg", 1}, {"kernel_oil", 1}, {"c_salt", 1}},
+     "riscotto", 1, /*wire=*/11, "MERGED RISCOTTO"},
+    {"LANsagne",
+     {{"osi_dip", 1}, {"null_noodles", 2}, {"pwnzu_sauce", 1}, {"c_salt", 1}},
+     "lansagne", 1, /*wire=*/12, "MERGED LANSAGNE"},
+    {"RAMen",
+     {{"null_noodles", 2}, {"regeggs", 1}, {"data_leek", 1}, {"kernel_oil", 1}},
+     "ramen", 1, /*wire=*/13, "MERGED RAMEN"},
+    {"Tiramisudo",
+     {{"java", 2}, {"syntactic_sugar", 1}, {"breadcrumbs", 2},
+      {"vanilla_extract", 1}},
+     "tiramisudo", 1, /*wire=*/14, "MERGED TIRAMISUDO"},
+    {"Core Dumplings",
+     {{"cronstarch", 2}, {"spam", 2}, {"data_leek", 1}, {"c_salt", 1}},
+     "core_dumplings", 1, /*wire=*/15, "MERGED CORE DUMPLINGS"},
+    {"Forkaccia",
+     {{"cronstarch", 2}, {"grepsed_oil", 1}, {"breadcrumbs", 2}, {"c_salt", 1}},
+     "forkaccia", 1, /*wire=*/16, "MERGED FORKACCIA"},
+    // The first recipe whose lead ingredient is another DISH. Nothing new was needed
+    // to express it — an input id is an item id, and a cooked dish is an item — which
+    // is the point: the pantry can now stack without a second mechanism.
+    {"Cacherole",
+     {{"hashed_browns", 1}, {"spam", 2}, {"boolean_cubes", 1}, {"grepsed_oil", 1}},
+     "cacherole", 1, /*wire=*/17, "MERGED CACHEROLE"},
 };
 inline constexpr int kMergeRecipeCount =
     static_cast<int>(sizeof(kMergeRecipes) / sizeof(kMergeRecipes[0]));

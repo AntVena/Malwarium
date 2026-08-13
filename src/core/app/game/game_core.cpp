@@ -108,7 +108,9 @@ bool Game::tick(uint32_t nowMs) {
         // on its own between sessions, independent of whether EXPL is open.
         if (bandwidth_ < bandwidthMax()) {
             bandwidthAccumMs_ += elapsed;
-            const uint32_t step = kBandwidthRegenMinutesPerPoint * 60u * 1000u;
+            // Per-PET interval: the shared one, less any permanent shave this pet has
+            // eaten (bandwidthRegenMinutes — Tiramisudo's upgrade).
+            const uint32_t step = bandwidthRegenMinutes() * 60u * 1000u;
             while (bandwidthAccumMs_ >= step && bandwidth_ < bandwidthMax()) {
                 bandwidthAccumMs_ -= step;
                 ++bandwidth_;

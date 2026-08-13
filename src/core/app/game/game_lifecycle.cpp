@@ -138,6 +138,9 @@ void Game::layEgg(const EggLineDef* line) {
     yubiConsumed_ = false;
     forceTrojanDivert_ = false;
     backupShieldUntilMs_ = 0;
+    // ...and no Bandwidth-regen upgrade: Tiramisudo roots a PET, so a new egg starts
+    // back at the shared interval however many the last one ate (save v50).
+    bandwidthRegenBonusMin_ = 0;
     // This pet's own DeepWeb Dive record (save v35) and any armed depth-multiplier/
     // start-depth Pass — a fresh egg has never dived and carries nothing armed.
     bestDeepWebDepth_ = 0;

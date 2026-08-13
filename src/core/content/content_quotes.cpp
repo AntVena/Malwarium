@@ -113,6 +113,18 @@ const char* const kQuotePrizeLadder[] = {
     "macrol_fry_up",
     "vanilla_java_roast",
     "gnulash",
+    // The second service, and the ladder's real endgame. RISCotto and LANsagne are the
+    // two dishes whose ingredients tell the same joke as their names, so they lead it;
+    // Cacherole wants a dish already cooked, so a player who has come this far has one.
+    // Tiramisudo is last on purpose: it is the only food that permanently upgrades the
+    // pet eating it, and nothing else in the game hands that over at any price.
+    "riscotto",
+    "ramen",
+    "forkaccia",
+    "core_dumplings",
+    "lansagne",
+    "cacherole",
+    "tiramisudo",
 };
 }  // namespace
 

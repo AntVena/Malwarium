@@ -490,6 +490,61 @@ const ItemDef kItems[] = {
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 5}, {IE::Kind::Happy, 45}, {IE::Kind::Frag, -30}}},
 
+    // The pantry's second service. Three of these are the ingredient's own joke
+    // finished: RISCotto is cooked in Boolean Cubes, which is what a risotto's stock
+    // is; LANsagne is built on OSI Dip, whose seven layers are the dish; RAMen wants
+    // exactly the noodles, egg and leek a bowl of it is made of.
+    {"riscotto", "RISCotto", ItemDef::Type::Food,
+     ItemDef::Rarity::Rare,
+     "Cooked down slowly until there is nothing left in it that didn't need to be. "
+     "Fewer instructions, better executed.",
+     ItemDef::Context::Anytime,
+     {{IE::Kind::Hunger, 50}, {IE::Kind::Frag, -40}}},
+
+    {"lansagne", "LANsagne", ItemDef::Type::Food,
+     ItemDef::Rarity::Rare,
+     "Seven layers, and every one of them talks only to the layer above it.",
+     ItemDef::Context::Anytime,
+     {{IE::Kind::Hunger, 60}, {IE::Kind::Happy, 20}}, /*combatHeal=*/40},
+
+    {"ramen", "RAMen", ItemDef::Type::Food,
+     ItemDef::Rarity::Uncommon,
+     "Hot, fast and gone the moment the power is. Eat it while it's live.",
+     ItemDef::Context::Anytime,
+     {{IE::Kind::Hunger, 45}, {IE::Kind::Happy, 15}, {IE::Kind::Frag, -10}}},
+
+    // The one dish that is also an UPGRADE. First helping only — see the effect's note
+    // in defs.h; after that the pet already has root and it is simply a very good
+    // pudding that tops the pool up.
+    {"tiramisudo", "Tiramisudo", ItemDef::Type::Food,
+     ItemDef::Rarity::Rare,
+     "Ask the rig nicely and it says no. Ask it again like this and it says of course.",
+     ItemDef::Context::Anytime,
+     {{IE::Kind::BandwidthRegenBonusMin, 1}, {IE::Kind::Bandwidth, 1},
+      {IE::Kind::Happy, 50}, {IE::Kind::Frag, -15}}},
+
+    {"core_dumplings", "Core Dumplings", ItemDef::Type::Food,
+     ItemDef::Rarity::Uncommon,
+     "Everything that was in memory when it went down, wrapped and steamed.",
+     ItemDef::Context::Anytime,
+     {{IE::Kind::Hunger, 55}, {IE::Kind::Happy, 5}}},
+
+    {"forkaccia", "Forkaccia", ItemDef::Type::Food,
+     ItemDef::Rarity::Uncommon,
+     "Tear off a piece and it carries on rising on its own.",
+     ItemDef::Context::Anytime,
+     {{IE::Kind::Hunger, 40}, {IE::Kind::Happy, 10}}},
+
+    // The pantry's first SECOND-ORDER dish: its lead ingredient is another cooked
+    // dish, not a staple. Which is what a casserole is — yesterday's cooking, kept.
+    {"cacherole", "Cacherole", ItemDef::Type::Food,
+     ItemDef::Rarity::Rare,
+     "Whatever was still warm from the last cook, held for later and served again "
+     "faster than it was made.",
+     ItemDef::Context::Anytime,
+     {{IE::Kind::Hunger, 65}, {IE::Kind::Happy, 15}, {IE::Kind::Frag, -10}},
+     /*combatHeal=*/25},
+
     {"gnulash", "GNUlash", ItemDef::Type::Food,
      ItemDef::Rarity::Rare,
      "Everything in the pot at once, at a rolling boil, no plan whatsoever. Free to "

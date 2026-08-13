@@ -297,6 +297,19 @@ struct ItemEffect {
         SetDeepWebStartDepthToBest, // Zero-Day Bell: arms the next DeepWeb Dive to
                               // start at THIS PET's own best-ever depth
                               // (Game::bestDeepWebDepth_) rather than a fixed number.
+        BandwidthRegenBonusMin,// Tiramisudo: shave magnitude MINUTES off THIS PET's
+                              // Bandwidth regen interval, permanently and once per pet
+                              // (Game::bandwidthRegenBonusMin_, save v50). The first
+                              // helping is the upgrade; every one after it is just the
+                              // food, because the pet already has root. Per-pet and
+                              // frozen with the pet, so an ARCH Store/Deploy keeps it —
+                              // it is a property of the creature, not of the rig.
+                              // Floored at kBandwidthRegenMinutesFloor, so no stack of
+                              // helpings makes the pool refill instantly.
+        Bandwidth,            // +magnitude to the LIVE Bandwidth pool, capped at
+                              // Game::bandwidthMax(). The item-side twin of the Rig
+                              // Shop's GrantBandwidth: an ordinary top-up anyone can
+                              // eat, as against a level that raises the ceiling.
         ClearReplicationGhost, // Air-Gapped Snack: clear a Replication Ghost
                               // (PetModel::ghost_), the phantom process a defrag that
                               // failed on a Critical disk leaves behind. Magnitude-free

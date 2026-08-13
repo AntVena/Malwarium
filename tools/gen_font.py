@@ -54,6 +54,22 @@ CELL = 8       # mono advance and cell height at that size
 FIRST = 32     # ' '
 LAST = 126     # '~'
 
+# Hand-drawn cells that REPLACE what the face rasterises, keyed by codepoint.
+#
+# The bar for adding one is high: the committed table should be the face, so that
+# changing the face changes the text. A row belongs here only when the cut is
+# genuinely illegible at SIZE — not when it is merely ugly.
+#
+# U+0026 AMPERSAND is the one that qualifies. Pixel Operator's '&' at 8px collapses
+# to a shape that differs from its own 'S' in two pixels, so "Salted&Hashed Browns"
+# reads on the device as "SALTEDSHASHED BROWNS". The replacement keeps a closed top
+# bowl and puts the leg out to the lower right, which is the pair of features that
+# tells an ampersand from an S at any size. Same cell rules as the rasteriser: no
+# ink in column 0 or column CELL-1, and the last row is left to descenders.
+OVERRIDES = {
+    0x26: [0x30, 0x48, 0x48, 0x30, 0x54, 0x48, 0x34, 0x00],
+}
+
 
 def rasterise():
     """Every codepoint FIRST..LAST as CELL rows of bits, bit(CELL-1) leftmost."""
@@ -76,6 +92,9 @@ def rasterise():
                                  anchor="ls")
         px = img.load()
         check_crisp(cp, px)
+        if cp in OVERRIDES:
+            out.append((cp, list(OVERRIDES[cp])))
+            continue
         rows = []
         for y in range(CELL):
             bits = 0

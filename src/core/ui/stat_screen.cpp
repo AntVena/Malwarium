@@ -215,7 +215,8 @@ std::vector<BuffRow> buildBuffRows(const ContentRegistry& reg,
                                     int depthMultiplier,
                                     bool startDepthArmed,
                                     bool startDepthUsesBest,
-                                    int startDepthValue) {
+                                    int startDepthValue,
+                                    bool bandwidthRegenUpgraded) {
     std::vector<BuffRow> out;
     auto add = [&](const char* itemId, bool armed, bool timed, uint32_t remain) {
         if (!armed) return;
@@ -245,6 +246,11 @@ std::vector<BuffRow> buildBuffRows(const ContentRegistry& reg,
         else
             addByEffect(ItemEffect::Kind::SetDeepWebStartDepth, startDepthValue, false);
     }
+    // Last, because it is the only row that never lapses: the pet's permanent
+    // Bandwidth-regen shave. Found by effect like the dive buffs above rather than by
+    // id, so the dish that grants it can be renamed without touching this file.
+    if (bandwidthRegenUpgraded)
+        addByEffect(ItemEffect::Kind::BandwidthRegenBonusMin, 0, true);
     return out;
 }
 
