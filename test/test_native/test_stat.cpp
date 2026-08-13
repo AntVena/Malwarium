@@ -481,3 +481,24 @@ void test_sprite_grayscale_legibility() {
 // ===========================================================================
 // Carousel submenus (CFG · ARCH · MODS · TRAIN · EXPL)
 // ===========================================================================
+
+// The permanent upgrade has to be READABLE, or a player has no way to know a pet
+// carries it: nothing else reports it — no home-screen icon (it never lapses and asks
+// nothing of the operator), no shop row, no timer. The BUFFS page is the whole surface.
+void test_buffs_page_lists_the_bandwidth_upgrade() {
+    ContentRegistry r = ContentRegistry::embedded();
+    // Nothing armed, and not upgraded: the page is empty.
+    CHECK(buildBuffRows(r, false, false, false, 0, 1, false, false, 0, false).empty());
+
+    const std::vector<BuffRow> rows =
+        buildBuffRows(r, false, false, false, 0, 1, false, false, 0, true);
+    CHECK(rows.size() == 1);
+    // Named by the DISH that grants it, resolved off the item table rather than a
+    // literal here — renaming the dish must not need a test edit to go with it.
+    const ItemDef* d = nullptr;
+    for (const ItemDef* it : r.allItems())
+        for (const ItemEffect& e : it->effects)
+            if (e.kind == ItemEffect::Kind::BandwidthRegenBonusMin) d = it;
+    CHECK(d && std::strcmp(rows[0].label, d->displayName) == 0);
+    CHECK(!rows[0].hasTimer);        // it never lapses, so it carries no countdown
+}
