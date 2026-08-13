@@ -1026,6 +1026,69 @@ window.PEDIA_DATA = {
       "icon": "assets/icons/ICON_ITEM_VANILLA_JAVA_ROAST.png"
     },
     {
+      "id": "riscotto",
+      "name": "RISCotto",
+      "type": "FOOD",
+      "rarity": "RARE",
+      "effect": "Cooked down slowly until there is nothing left in it that didn't need to be. Fewer instructions, better executed.",
+      "stats": "HUNGER +50 / FRAG -40",
+      "icon": "assets/icons/ICON_ITEM_RISCOTTO.png"
+    },
+    {
+      "id": "lansagne",
+      "name": "LANsagne",
+      "type": "FOOD",
+      "rarity": "RARE",
+      "effect": "Seven layers, and every one of them talks only to the layer above it.",
+      "stats": "HUNGER +60 / HAPPY +20 / HEAL 40",
+      "icon": "assets/icons/ICON_ITEM_LANSAGNE.png"
+    },
+    {
+      "id": "ramen",
+      "name": "RAMen",
+      "type": "FOOD",
+      "rarity": "UNCOMMON",
+      "effect": "Hot, fast and gone the moment the power is. Eat it while it's live.",
+      "stats": "HUNGER +45 / HAPPY +15 / FRAG -10",
+      "icon": "assets/icons/ICON_ITEM_RAMEN.png"
+    },
+    {
+      "id": "tiramisudo",
+      "name": "Tiramisudo",
+      "type": "FOOD",
+      "rarity": "RARE",
+      "effect": "Ask the rig nicely and it says no. Ask it again like this and it says of course.",
+      "stats": "BW REGEN -1MIN / BANDWIDTH +1 / HAPPY +50 / FRAG -15",
+      "icon": "assets/icons/ICON_ITEM_TIRAMISUDO.png"
+    },
+    {
+      "id": "core_dumplings",
+      "name": "Core Dumplings",
+      "type": "FOOD",
+      "rarity": "UNCOMMON",
+      "effect": "Everything that was in memory when it went down, wrapped and steamed.",
+      "stats": "HUNGER +55 / HAPPY +5",
+      "icon": "assets/icons/ICON_ITEM_CORE_DUMPLINGS.png"
+    },
+    {
+      "id": "forkaccia",
+      "name": "Forkaccia",
+      "type": "FOOD",
+      "rarity": "UNCOMMON",
+      "effect": "Tear off a piece and it carries on rising on its own.",
+      "stats": "HUNGER +40 / HAPPY +10",
+      "icon": "assets/icons/ICON_ITEM_FORKACCIA.png"
+    },
+    {
+      "id": "cacherole",
+      "name": "Cacherole",
+      "type": "FOOD",
+      "rarity": "RARE",
+      "effect": "Whatever was still warm from the last cook, held for later and served again faster than it was made.",
+      "stats": "HUNGER +65 / HAPPY +15 / FRAG -10 / HEAL 25",
+      "icon": "assets/icons/ICON_ITEM_CACHEROLE.png"
+    },
+    {
       "id": "gnulash",
       "name": "GNUlash",
       "type": "FOOD",
@@ -2281,9 +2344,9 @@ window.PEDIA_DATA = {
     {
       "key": "CUISINE_ALL",
       "name": "Full Buffet",
-      "trigger": "Get hold of all 36 foods, the cooked ones included.",
+      "trigger": "Get hold of all 43 foods, the cooked ones included.",
       "icon": "assets/icons/ICON_ACH_CUISINE_ALL.png",
-      "goal": 36
+      "goal": 43
     },
     {
       "key": "COOK_NOODLES",
@@ -2302,9 +2365,9 @@ window.PEDIA_DATA = {
     {
       "key": "COLLECT_RARE",
       "name": "Rare Collector",
-      "trigger": "Get hold of all 10 Rare items.",
+      "trigger": "Get hold of all 14 Rare items.",
       "icon": "assets/icons/ICON_ACH_COLLECT_RARE.png",
-      "goal": 10
+      "goal": 14
     },
     {
       "key": "COLLECT_EPIC",
