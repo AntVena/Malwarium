@@ -36,14 +36,6 @@ building it up organically.
 
 **Capture arming costs ~70KB and the AP ~58KB**, against ~126KB free with the radio idle. The device works, and the save no longer needs a big contiguous block, but that was the only thing standing on this — anything else that grows will hit the same wall. Worth a pass at what the capture path actually needs. | `net_capture.h`'s `powerUp` (`esp_wifi_init` + promiscuous + the pcap SD buffers). | M | Measured on device, not estimated: `[ap] down free=126408` → `[cap] armed free=56188`. |
 
-**The arcade records plays and wins, never a best score.** `arcadePlays_`/`arcadeWins_` (save v47)
-are what the GAMES list and the cabinet's `W-L` line read, so a player has no way to see the run
-they are trying to beat — and every cabinet already reports a score to `finishArcadeRun`, which
-simply drops it after paying on it. Wants a third parallel tally beside the two, surfaced on the
-cabinet page. | `game_arcade.cpp`'s `finishArcadeRun`; `arcade_screen.cpp`; the v47 tail in
-`save.cpp`. | S | The only judgement call is whether a WinLose cabinet (the Clutch) shows anything
-at all, since its score is always 0 or absent. |
-
 **The DECRYPTOGRAM's prize is a LADDER, not a per-quote answer.** A first solve pays the next
 MERGE HUB recipe the operator can't cook (`quotePrizeLadder`), then falls back to `+1 bandwidth`
 once the kitchen is complete — so the prize varies by how far in you are, but still not by WHICH
