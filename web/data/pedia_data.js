@@ -3704,6 +3704,83 @@ window.PEDIA_DATA = {
       "goal": 1
     },
     {
+      "key": "CUISINE_25",
+      "name": "Line Cook",
+      "trigger": "Get hold of 25 different foods.",
+      "icon": "assets/icons/ICON_ACH_CUISINE_6.png",
+      "goal": 25
+    },
+    {
+      "key": "CUISINE_60",
+      "name": "Sous Chef",
+      "trigger": "Get hold of 60 different foods.",
+      "icon": "assets/icons/ICON_ACH_CUISINE_6.png",
+      "goal": 60
+    },
+    {
+      "key": "CUISINE_120",
+      "name": "Head Chef",
+      "trigger": "Get hold of 120 different foods.",
+      "icon": "assets/icons/ICON_ACH_CUISINE_ALL.png",
+      "goal": 120
+    },
+    {
+      "key": "RECIPES_1",
+      "name": "First Method",
+      "trigger": "Learn your first Merge Hub recipe.",
+      "icon": "assets/icons/ICON_ACH_COOK_NOODLES.png",
+      "goal": 1
+    },
+    {
+      "key": "RECIPES_10",
+      "name": "Working Kitchen",
+      "trigger": "Know 10 Merge Hub recipes.",
+      "icon": "assets/icons/ICON_ACH_COOK_NOODLES.png",
+      "goal": 10
+    },
+    {
+      "key": "RECIPES_30",
+      "name": "The Book",
+      "trigger": "Know 30 Merge Hub recipes.",
+      "icon": "assets/icons/ICON_ACH_COOK_NACHOS.png",
+      "goal": 30
+    },
+    {
+      "key": "RECIPES_60",
+      "name": "Brigade",
+      "trigger": "Know 60 Merge Hub recipes.",
+      "icon": "assets/icons/ICON_ACH_COOK_NACHOS.png",
+      "goal": 60
+    },
+    {
+      "key": "RECIPES_ALL",
+      "name": "Every Method",
+      "trigger": "Learn all 100 Merge Hub recipes.",
+      "icon": "assets/icons/ICON_ACH_CUISINE_ALL.png",
+      "goal": 100
+    },
+    {
+      "key": "COOK_TIRAMISUDO",
+      "name": "Ask It Nicely",
+      "trigger": "Cook a Tiramisudo at the Merge Hub.",
+      "icon": "assets/icons/ICON_ACH_COOK_NACHOS.png",
+      "goal": 1
+    },
+    {
+      "key": "COOK_PORTRIDGE",
+      "name": "Runs Anywhere",
+      "trigger": "Cook a Portridge, and change absolutely nothing.",
+      "icon": "assets/icons/ICON_ACH_COOK_NOODLES.png",
+      "goal": 1
+    },
+    {
+      "key": "COOK_TURDUCKEN",
+      "name": "Base Case",
+      "trigger": "Cook a Recursive Turducken at the Merge Hub.",
+      "icon": "assets/icons/ICON_ACH_COOK_NACHOS.png",
+      "goal": 1
+    },
+    {
       "key": "COLLECT_RARE",
       "name": "Rare Collector",
       "trigger": "Get hold of all 46 Rare items.",

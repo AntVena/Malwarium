@@ -578,8 +578,10 @@ void test_item_earn_coverage() {
         return false;
     };
     auto isMergeOutput = [](const char* id) {
-        for (const MergeRecipe& rec : kMergeRecipes)
-            if (std::strcmp(rec.outputId, id) == 0) return true;
+        // Indexed, not ranged: the table is an extern array in content_recipes.cpp, so
+        // its bound is not visible here — kMergeRecipeCount is what travels with it.
+        for (int i = 0; i < kMergeRecipeCount; ++i)
+            if (std::strcmp(kMergeRecipes[i].outputId, id) == 0) return true;
         return false;
     };
     auto inLootPool = [](const char* id) {

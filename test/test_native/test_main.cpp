@@ -597,6 +597,7 @@ int g_failures = 0;
     RUN(test_mod_table_wires_are_unique_and_in_range) \
     RUN(test_achievement_table_is_well_formed) \
     RUN(test_achievement_ladder_unlocks_and_pays) \
+    RUN(test_recipes_known_counts_methods_not_dishes) \
     RUN(test_backup_drive_achievement_mapping) \
     RUN(test_achievement_goal_all_tracks_the_set_size) \
     RUN(test_achievement_banner_announces_on_the_home_screen) \

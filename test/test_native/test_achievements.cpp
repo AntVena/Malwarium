@@ -167,6 +167,31 @@ void test_achievement_ladder_unlocks_and_pays() {
     CHECK(g.inventory().count("sealed_cache_common") == caches0 + 1);
 }
 
+// RecipesKnown counts METHODS, not plates. The distinction is the whole reason the
+// series exists beside FoodsCollected — a dish handed over by a cache must not advance
+// it, because the ladder it measures is the Decryptogram's.
+void test_recipes_known_counts_methods_not_dishes() {
+    Game g{StartMode::Hatched};
+    uint32_t t = 0;
+    g.tick(t += kHeartbeatMs);
+    CHECK(!g.hasAchievement("RECIPES_1"));
+
+    // Holding the dish is not knowing the method: put a cooked plate in the bag and the
+    // rung stays shut.
+    g.inventory().add("pwnzu_patched_noodles", 1);
+    g.tick(t += kAchSweepIntervalMs);
+    CHECK(!g.hasAchievement("RECIPES_1"));
+
+    g.debugWinRecipe(0);
+    g.tick(t += kAchSweepIntervalMs);
+    CHECK(g.hasAchievement("RECIPES_1"));
+    CHECK(!g.hasAchievement("RECIPES_10"));
+
+    for (int i = 1; i < 10; ++i) g.debugWinRecipe(i);
+    g.tick(t += kAchSweepIntervalMs);
+    CHECK(g.hasAchievement("RECIPES_10"));
+}
+
 // kGoalAll is the sentinel that makes "all of them" an ordinary row: it resolves against
 // the size of the set the series counts over, so the row keeps meaning "all" when the set
 // grows instead of freezing at a hand-typed number.

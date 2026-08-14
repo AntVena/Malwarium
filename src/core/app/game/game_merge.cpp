@@ -19,10 +19,10 @@
 // solve on the DECRYPTOGRAM (game_cryptogram.cpp's prize ladder), and owning one is
 // necessary but not sufficient to craft — the raw ingredients still have to be in the
 // bag. Ownership is a bit per recipe wire in recipesOwned_ (save v31's recipesUnlocked
-// mask), which this file is the only writer of.
+// bitset, save v51), which this file is the only writer of.
 //
 // So this file owns cooking end to end: the ownership bit, the craft mechanic over
-// MergeRecipe (game_internal.h), and the screen body.
+// MergeRecipe (core/content/content_recipes.h), and the screen body.
 
 namespace mal {
 

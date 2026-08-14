@@ -262,6 +262,62 @@ const AchievementDef kAchievements[] = {
      "Cook Fully-Stacked Nachos at the Merge Hub.", "ICON_ACH_COOK_NACHOS",
      AchSeries::ItemCollected, /*goal=*/1, "fully_stacked_nachos", 0,
      {bits(150), item("sealed_cache_rare")}},
+    // The rungs between "you have eaten a few things" and the whole shelf. The pantry is
+    // now the biggest table in the game, so Taste Tester to Full Buffet without these is
+    // three foods and then two hundred — a ladder with no middle is a ladder nobody
+    // climbs. Icons are shared with the rungs above and below on purpose: this is one
+    // series getting more steps, not four new kinds of thing to recognise.
+    {/*wire=*/82, "CUISINE_25", "Line Cook",
+     "Get hold of {n} different foods.", "ICON_ACH_CUISINE_6",
+     AchSeries::FoodsCollected, /*goal=*/25, nullptr, 0,
+     {bits(120), item("sealed_cache_uncommon")}},
+    {/*wire=*/83, "CUISINE_60", "Sous Chef",
+     "Get hold of {n} different foods.", "ICON_ACH_CUISINE_6",
+     AchSeries::FoodsCollected, /*goal=*/60, nullptr, 0,
+     {bits(200), item("sealed_cache_rare")}},
+    {/*wire=*/84, "CUISINE_120", "Head Chef",
+     "Get hold of {n} different foods.", "ICON_ACH_CUISINE_ALL",
+     AchSeries::FoodsCollected, /*goal=*/120, nullptr, 0,
+     {bits(300), item("sealed_cache_epic")}},
+
+    // What a player actually climbs: not dishes HELD but methods KNOWN. Every rung here
+    // is a Decryptogram somebody cracked, since no shop sells a recipe at any price — so
+    // this series is the one place the board's whole prize ladder is measured back.
+    {/*wire=*/85, "RECIPES_1", "First Method",
+     "Learn your first Merge Hub recipe.", "ICON_ACH_COOK_NOODLES",
+     AchSeries::RecipesKnown, /*goal=*/1, nullptr, 0, {bits(50)}},
+    {/*wire=*/86, "RECIPES_10", "Working Kitchen",
+     "Know {n} Merge Hub recipes.", "ICON_ACH_COOK_NOODLES",
+     AchSeries::RecipesKnown, /*goal=*/10, nullptr, 0,
+     {bits(150), item("sealed_cache_uncommon")}},
+    {/*wire=*/87, "RECIPES_30", "The Book",
+     "Know {n} Merge Hub recipes.", "ICON_ACH_COOK_NACHOS",
+     AchSeries::RecipesKnown, /*goal=*/30, nullptr, 0,
+     {bits(300), item("sealed_cache_rare")}},
+    {/*wire=*/88, "RECIPES_60", "Brigade",
+     "Know {n} Merge Hub recipes.", "ICON_ACH_COOK_NACHOS",
+     AchSeries::RecipesKnown, /*goal=*/60, nullptr, 0,
+     {bits(500), item("sealed_cache_epic")}},
+    {/*wire=*/89, "RECIPES_ALL", "Every Method",
+     "Learn all {n} Merge Hub recipes.", "ICON_ACH_CUISINE_ALL",
+     AchSeries::RecipesKnown, kGoalAll, nullptr, 0,
+     {bits(800), item("commend_cache")}},
+
+    // Three dishes worth their own row, for what cooking one PROVES rather than for the
+    // plate: Tiramisudo is the only food that permanently upgrades the pet, Portridge is
+    // the method that changes nothing, and Recursive Turducken wants three of one bird.
+    {/*wire=*/90, "COOK_TIRAMISUDO", "Ask It Nicely",
+     "Cook a Tiramisudo at the Merge Hub.", "ICON_ACH_COOK_NACHOS",
+     AchSeries::ItemCollected, /*goal=*/1, "tiramisudo", 0,
+     {bits(250), item("sealed_cache_rare")}},
+    {/*wire=*/91, "COOK_PORTRIDGE", "Runs Anywhere",
+     "Cook a Portridge, and change absolutely nothing.", "ICON_ACH_COOK_NOODLES",
+     AchSeries::ItemCollected, /*goal=*/1, "portridge", 0, {bits(75)}},
+    {/*wire=*/92, "COOK_TURDUCKEN", "Base Case",
+     "Cook a Recursive Turducken at the Merge Hub.", "ICON_ACH_COOK_NACHOS",
+     AchSeries::ItemCollected, /*goal=*/1, "recursive_turducken", 0,
+     {bits(250), item("sealed_cache_rare")}},
+
     // Rarity as a whole: the standout for the item collection.
     {/*wire=*/45, "COLLECT_RARE", "Rare Collector",
      "Get hold of all {n} Rare items.", "ICON_ACH_COLLECT_RARE",

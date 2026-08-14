@@ -63,6 +63,11 @@ enum class AchSeries : uint8_t {
     FoodsCollected,     // distinct Food items ever held (total = every food)
     RarityCollected,    // distinct items of rarity `param` ever held (total = all of them)
     ItemCollected,      // whether item `key` has ever been held — goal 1
+    // MERGE HUB recipes known (total = every recipe that ships). Distinct from
+    // FoodsCollected: holding a dish says somebody handed you one, knowing the method
+    // says a Decryptogram taught you to make it, and only the second is a ladder the
+    // player climbs deliberately.
+    RecipesKnown,
     RigRowsOwned,       // Rig Shop rows bought at least once (total = every row)
     // Rig Shop levels bought on the CAPPED rows only (total = every one of them maxed).
     // Bandwidth is deliberately excluded: it has no purchase cap, so counting it would

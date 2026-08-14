@@ -22,6 +22,7 @@
 #include "core/app/game_rig_shop.h"            // kRigUpgrades — the rig row/level totals
 #include "core/content/areas/area_defs.h"      // kAreaCount / kSubAreasPerArea
 #include "core/content/content_achievements.h"
+#include "core/content/content_recipes.h"      // kMergeRecipeCount
 #include "core/content/content_tables.h"       // kItems
 #include "core/content/creatures/creature_lines.h"  // kCreatureCount / creatureLine()
 #include "core/content/effect_text.h"
@@ -78,6 +79,8 @@ inline int achievementSeriesTotal(AchSeries series, const char* key, int param) 
         }
         case AchSeries::ItemCollected:
             return 1;
+        case AchSeries::RecipesKnown:
+            return kMergeRecipeCount;
         case AchSeries::RigRowsOwned:
             return kRigUpgradeCount;
         case AchSeries::RigCappedLevels: {
