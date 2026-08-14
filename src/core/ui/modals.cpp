@@ -137,8 +137,9 @@ void drawFeedingModal(Framebuffer& fb, const SpriteData* pet, const ItemDef* foo
     FeedGaugeRow rows[3];
     const int n = food ? buildFeedGaugeRows(*food, m, before, rows) : 0;
 
-    // The block stays centred on the old single-gauge line, so a one-stat morsel
-    // sits exactly where it always did and a three-stat feast grows around it.
+    // Centred on the y=168 line whatever the row count, so a one-stat morsel sits on
+    // that line and a three-stat feast grows symmetrically around it, rather than the
+    // block hanging from a fixed top and pushing longer meals down the screen.
     constexpr int kVitalsRowH = 22;   // tighter than the grid: gauges, not text rows
     const int top = 168 - (n - 1) * kVitalsRowH / 2;
     for (int i = 0; i < n; ++i) {

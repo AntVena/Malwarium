@@ -190,8 +190,8 @@ int Game::crewNetworkRows(CrewNetRow* rows, int max) const {
         const uint32_t count = networkLedger_.lookup(v.key, &known) ? known.count : 0;
         rows[n++] = {v.key, v.name, count};
     }
-    // Most-walked first — the same signal the old most-seen inference used, now
-    // offered as a choice rather than a guess. Stable within a tie, so the order stays
+    // Most-walked first — the strongest available signal for which network is actually
+    // yours, offered as a choice rather than inferred. Stable within a tie, so the order stays
     // steady between repaints instead of shuffling under the cursor.
     std::stable_sort(rows, rows + n, [](const CrewNetRow& a, const CrewNetRow& b) {
         return a.count > b.count;
@@ -503,8 +503,8 @@ void Game::drawCrewTeam(Framebuffer& fb) const {
         const bool joined = crewIndex_ == i;
         if (s) drawRowCursor(fb, 2, y + 1, palColor(Pal::ACCENT));
         // One job per line, each with the full row to do it in — no two things on this
-        // screen compete for the same pixels, which is what let the old two-line row
-        // clip every crew name it had.
+        // screen compete for the same pixels, which is what keeps a long crew name from
+        // clipping.
         const int tx = kMargin + 10;
         const int w = kActiveW - kMargin - tx;
         // 1 — the name, at title weight and in the side's colour while focused.

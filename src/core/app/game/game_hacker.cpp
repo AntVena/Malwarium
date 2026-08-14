@@ -395,8 +395,8 @@ void Game::drawHackerSubmenu(Framebuffer& fb) const {
         // Each row: name + price on one line, then the row's own readout as the shared
         // aligned grid underneath (rigSpec + drawSpecGrid). The price moves up beside
         // the NAME rather than sharing the readout's line, because a "NOW -> NEXT" pair
-        // is wider than the leftovers next to a right-aligned "16384 BITS" — the two
-        // used to overprint each other.
+        // is wider than the leftovers next to a right-aligned "16384 BITS", so the two
+        // would overprint.
         for (int v = 0; v < visibleRows && scrollTop + v < visN; ++v) {
             const int row = visRows[scrollTop + v];
             const int rowY = 34 + v * kRigRowPitch;

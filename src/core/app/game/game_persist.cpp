@@ -270,8 +270,8 @@ SaveData Game::captureSave() const {
     d.backupShieldUntilMs = backupShieldUntilMs_;
 
     // v31: the f Rig Shop Merge Hub unlock, and (v49) the whole owned-recipe mask —
-    // both player-level, like itemTabsUnlocked. The mask used to mirror two rig rows;
-    // recipes own their state outright now, so it is written straight through.
+    // both player-level, like itemTabsUnlocked. Recipes own their state outright rather
+    // than mirroring rig rows, so the mask is written straight through.
     // v50: this pet's Bandwidth-regen upgrade. The rack pets' own values ride along on
     // their SaveStoredPet records, frozen at store time (game_arch.cpp's freezePet).
     d.bandwidthRegenBonusMin = bandwidthRegenBonusMin_;

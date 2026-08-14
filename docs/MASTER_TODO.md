@@ -60,6 +60,29 @@ prize to unlock. Wants a discovery axis on `CrewDef` first, then one `Kind` and 
 `content_crews.h`; `game_crew.cpp`'s roster filter; `QuoteReward::Kind`. | M | The gating axis is
 the real work; the prize is three lines once it exists. |
 
+
+**Entering explore mode clears the buff bought for explore mode.** The Deep-Learning Module/Core
+arms `deepWebDepthMultiplier_`, and both `startExplore` and `startDeepWebDive` reset it to 1 on the
+way in — so a player Uses the Core, dives, and the multiplier is gone before the first step. The
+coupling is stated in the effect's own comment ("cleared back to 1 wherever `exploreStreak_` resets
+to 0"), and that is the defect: the streak legitimately resets at BOTH ends of a run, the buff only
+at the end. Wants the two start-side resets dropped, leaving the end-side owners (`Stop`, a combat
+Lose, and the lifecycle clears). | `game_explore.cpp:174` + `:197` (drop); `game_items.cpp:346`
+(the arming case + its comment); end-side keeps are `game_explore.cpp:350`, `game_combat.cpp:642`,
+`game_lifecycle.cpp:41`/`:147`/`:480`. | S | Check whether arming BEFORE explore is meant to
+survive a *sector* walk too, or only a DeepWeb dive — the item text says only "DeepWeb Dive win",
+so `startExplore`'s reset may be deliberate and only `startDeepWebDive`'s is wrong. |
+
+**The item screens don't scale to the item count.** The pool is 216 rows, 192 of them food, against
+a picker designed when it was a fraction of that; the two Rig Shop upgrades widen the view but not
+the traversal, so reaching a late row is ~50 presses of A and overshooting it by one costs the
+whole trip again — out of the menu and back in. Wants a real seek: a jump-by-letter or page-step
+input, and/or a wrap at the ends so an overshoot costs one press instead of a re-entry. | the item
+picker in `game_items.cpp`; `ItemFilter` (`core/ui/ui_state.h`); the Rig Shop's existing item-screen
+rows in `game_rig_shop.h`. | M | Wrapping is the cheap half and fixes the overshoot on its own —
+worth doing first and re-judging whether the seek is still needed. The 'Pedia hit the same wall and
+answered it by splitting FOOD onto its own page, which is the other available shape. |
+
 ### 1a-ii. Evolution routing — one weighted edge list per creature
 
 `CreatureDef` carries five optional successor pointers (`evolvesToId`, `evolvesToGoodId`,
@@ -209,6 +232,18 @@ Intentional simplifications. None is a bug; each is a "confirm as v1 or revise".
   `tools/screens.sh` covers the LOOKING half (one contact sheet of every screen, no baselines),
   which is what catches two things drawn over each other — the one failure a string-width
   budget cannot express.
+- **`check_comment_standard.py` gates the mechanical half of the standard and misses the half that
+  actually rots.** It fails on board names, `FB-*`/`Phase N` ids, attributions and dates — all of
+  which stay clean because they are gated — while *change narration* ("the old X", "used to", "now
+  lives on", "this session ships") is unchecked prose, and it is where essentially every finding of
+  a docs-cleanup maintenance pass comes from. A phrase list would catch most of it mechanically and
+  turn a recurring manual sweep into a build failure. | `tools/check_comment_standard.py`; the
+  strip-list in `docs/COMMENT_STANDARD.md` is already the spec. | S | The catch is false positives,
+  and they are concentrated and skippable rather than scattered: `save.cpp`/`save.h`/
+  `game_persist.cpp` describe old wire formats as their actual subject (an explicit standard
+  exception), and present-tense uses ("a row that no longer exists", "used to re-derive") read as
+  hits on a naive substring match. Scope it to past-tense constructions and exempt the migration
+  units, or it will cry wolf and get muted. |
 
 ### 1h. Web 'Pedia
 
@@ -234,10 +269,10 @@ roster, and the wild half keeps its own roster-keyed masks).
   complaint it wants the anim-clip table exported to the web and is **M**, not a bug fix.
   **Needs the PO to say which screen and which creature looked wrong.**
 - **The Worm line has no `FULL_LINE_WORM` row**, where the other three lines each have one. It
-  costs a new `wire` bit and an `ICON_ACH_FULL_LINE_WORM` glyph. **Unblocked** — it used to want
-  the line's two placeholder Script successors designed first, because a "seen every row" badge
-  over rows called *Worm Placeholder I* and *II* is a badge for reading a stub; every row of the
-  line is now named and drawn (Vermicell · Nodeatode · Rootgrub · Shenloop · Threadbore). Diff
+  costs a new `wire` bit and an `ICON_ACH_FULL_LINE_WORM` glyph. **Unblocked**: the badge needs
+  every row of the line named and drawn, and all five are (Vermicell · Nodeatode · Rootgrub ·
+  Shenloop · Threadbore) — a "seen every row" badge over rows called *Worm Placeholder I* and
+  *II* would be a badge for reading a stub. Diff
   **S**. The one judgement call left is whether Rootgrub's Trojan divert counts against it: a
   raise that diverts never reaches Shenloop or Threadbore, so a player who keeps diverting can be
   a row short through no fault of their own, and the badge should almost certainly ignore the
@@ -474,7 +509,7 @@ One more is past the rule and was not on this watch at all:
   `core/ui/ui_state.h` — the ids `Game` actually holds as members (`SubmenuId`, `CfgScreen`,
   `ItemFilter`, `UiMode`, `MaintKind`, `ArchAction`, `HackerSlotId`, `FeedVitals`), split out on
   the rule that an id naming where the player IS is engine state while a `draw*` signature is
-  not. A screen header now lives in the `game_*.cpp` unit that calls it. 36 → 28 direct
+  not. A screen header lives in the `game_*.cpp` unit that calls it. 36 → 28 direct
   includes, 51 → 43 transitive.
   **What's left is the model/net/render stack**: `combat.h`, `save.h`, `registry.h`,
   `framebuffer.h`, `platform.h` and the rest still reach every TU that includes `game.h`, so the

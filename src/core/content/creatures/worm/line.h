@@ -68,9 +68,9 @@ inline constexpr CreatureDef kWormCreatures[] = {
                 {"attack", /*row=*/1, /*frames=*/4},
                 {"droop", /*row=*/2, /*frames=*/2, /*holdBeats=*/3},
                 {"weak", /*row=*/3, /*frames=*/2, /*holdBeats=*/3}}},
-    // Rootgrub is the fork in the road, which is why the line has ONE Script row where
-    // it used to have two. The care branch now resolves a stage later, at the Daemon,
-    // the way every other line's does — and this row is what the branch is about: a
+    // Rootgrub is the fork in the road, which is why the line has ONE Script row: the
+    // care branch resolves a stage later, at the Daemon, the way every other line's
+    // does — and this row is what the branch is about: a
     // body that has run out of ways to get longer and has to choose a direction to
     // spend its mass in.
     //

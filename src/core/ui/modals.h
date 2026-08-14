@@ -13,7 +13,7 @@ class Framebuffer;
 struct SpriteData;
 
 // Evolution boundary: the celebratory Stage-advance cinematic. `phase`
-// runs 0 hold (the old sprite `from`) -> 1 FX_EVO_FLASH white-out -> 2 reveal
+// runs 0 hold (the pre-evolution `from` sprite) -> 1 FX_EVO_FLASH white-out -> 2 reveal
 // (`to` sprite + `toName` + the UI_STAGE_INDICATOR lit to `toStage`). B continues
 // (host side); C is disabled (nothing to cancel). Grayscale-safe.
 void drawEvolveModal(Framebuffer& fb, const SpriteData* from, const SpriteData* to,

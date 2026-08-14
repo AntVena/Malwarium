@@ -136,7 +136,7 @@ constexpr int kAreaCount = sizeof(kAreaList) / sizeof(kAreaList[0]);
 // number of ranks is the number of rungs, and lives here beside the list rather than
 // as a hand-typed count in tunables.h that a new area would silently outgrow. The
 // equip-level BAND each rank maps to is a balance magnitude and stays a tunable
-// (modEquipLevelFloor), but its input no longer has to be maintained by hand.
+// (modEquipLevelFloor), but its input is derived here rather than maintained by hand.
 constexpr int kModPowerTiers = kAreaCount;
 
 // Bounds-clamped accessor — out-of-range clamps to area 0, matching the fallback

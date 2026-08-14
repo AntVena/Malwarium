@@ -29,7 +29,7 @@ const char* rollHandshakeCaptureCacheId(int roll) {
     return "sealed_cache_epic";
 }
 // Packs a 6-byte BSSID into the same 48-bit key used by every other dedup
-// ledger in this unit (seenHandshakeBssids_, and formerly seenBssids_).
+// ledger in this unit (seenHandshakeBssids_).
 uint64_t packBssid(const uint8_t* bssid) {
     uint64_t key = 0;
     for (int i = 0; i < 6; ++i) key = (key << 8) | bssid[i];
@@ -300,7 +300,7 @@ void Game::resolveNetworkDiscovery() {
     NetworkLedger::Entry existing;
     if (!networkLedger_.lookup(picked.key, &existing)) {
         // Genuinely new — the sole source of Hacker Rank XP + the Sealed-Cache
-        // discovery reward (moved here verbatim from the old registerNetwork).
+        // discovery reward.
         networkLedger_.recordNew(picked.key, picked.name);
         ++networksSeen_;
         // (Hatch acceleration already fired when this sighting was queued, in

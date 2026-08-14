@@ -422,8 +422,8 @@ const SpriteData* logGlyph(LogEventType t) {
 void drawAuditLog(Framebuffer& fb, const EventLog& log, int /*beat*/) {
     statHeader(fb, "AUDIT LOG", 4);
 
-    // The log lives on its own page now, so it can show more than the old 3-line
-    // teaser — the last 6 events, newest-first (the ring keeps 8).
+    // A full page to itself, so it shows a real slice rather than a teaser: the last
+    // 6 events, newest-first (the ring keeps 8).
     constexpr int kShown = 6;
     const int shown = log.size() < kShown ? log.size() : kShown;
     if (shown == 0) {

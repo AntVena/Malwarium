@@ -91,9 +91,8 @@ inline constexpr int kQuoteWinBits = 256;
 // A recipe is the one thing in the game Bits cannot buy: no shop lists one at any
 // price. That is the deal the board is offering — the pantry drops staples for free all
 // day, the hub is on the shelf for anyone who saves up, and the METHOD only ever comes
-// off a quote nobody has cracked yet. It also fixes what a Decryptogram used to be
-// worth, which was a Bandwidth level a rich player already had and a poor one could
-// have bought.
+// off a quote nobody has cracked yet. It is also the only prize a rich player cannot
+// already have: a Bandwidth level is buyable, and a method is not.
 //
 // A solve pays the first dish on this list the operator can't already cook, skipping
 // any the kitchen isn't ready for — no hub to cook in, or a dish they've never met
@@ -101,8 +100,8 @@ inline constexpr int kQuoteWinBits = 256;
 // a ranking: plain fry-ups first, the dishes that heal mid-combat last.
 //
 // Run out of recipes and the fallback takes over. Bandwidth is what it falls back TO
-// for the reason it used to be the only prize: it is the one Rig Shop row with no
-// purchase cap, so the last quote of the pool can never pay out nothing.
+// because it is the one Rig Shop row with no purchase cap, so the last quote of the
+// pool can never pay out nothing.
 const char* const* quotePrizeLadder();
 int quotePrizeLadderCount();
 QuoteReward quoteFallbackReward();

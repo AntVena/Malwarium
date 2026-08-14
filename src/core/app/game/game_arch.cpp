@@ -200,8 +200,8 @@ void Game::archDeployStored(int storedIdx) {
     // ...and the incoming pet's own Bandwidth-regen upgrade, which is why the rig
     // regenerates at different speeds under different pets.
     bandwidthRegenBonusMin_ = incoming.bandwidthRegenBonusMin;
-    // v26: thaw the incoming pet's creature-level state (was previously never
-    // restored — the deployed pet silently inherited the outgoing pet's level).
+    // v26: thaw the incoming pet's creature-level state. Without it the deployed pet
+    // silently inherits the outgoing pet's level.
     combatLevel_ = incoming.combatLevel;
     combatXp_ = incoming.combatXp;
     for (int i = 0; i < kLevelStatCount; ++i) statPoints_[i] = incoming.statPoints[i];

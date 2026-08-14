@@ -623,9 +623,9 @@ struct SaveData {
     bool hasModCountData = false;
 
     // v19: Hacker SHOP account upgrades ----------------------
-    // Player-level, persists across pets like the HackerTag. This session ships the
-    // first upgrade: bwUpgradeCount = how many "Increase Bandwidth" upgrades were
-    // bought (each raises the farming-pool cap by kBandwidthUpgradeStep). Pre-v19 → 0
+    // Player-level, persists across pets like the HackerTag. bwUpgradeCount = how many
+    // "Increase Bandwidth" upgrades were bought (each raises the farming-pool cap by
+    // kBandwidthUpgradeStep). Pre-v19 → 0
     // (a migrated save has bought none). Bandwidth itself is NOT persisted (it refills
     // on reboot); only the purchased CAP increase is.
     int32_t bwUpgradeCount = 0;

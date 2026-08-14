@@ -161,8 +161,8 @@ inline constexpr int kRigMergeHubCost = 4096;
 // returnToExplore) — so it re-arms mid-run whenever a fight spends the save or its hour
 // lapses. Both are no-ops while the save is already live — never doubles up.
 //
-// These sit high on the price ladder on purpose: what they automate is no longer a
-// negated hit but a life, so Continuous in particular is close to "the pet does not die
+// These sit high on the price ladder on purpose: what they automate is not a negated
+// hit but a life, so Continuous in particular is close to "the pet does not die
 // while exploring" and has to read as an endgame purchase.
 inline constexpr int kRigAutoBackupCost = 4096;
 inline constexpr int kRigContinuousBackupCost = 8192;
