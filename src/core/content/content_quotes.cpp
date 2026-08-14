@@ -125,6 +125,25 @@ const char* const kQuotePrizeLadder[] = {
     "lansagne",
     "cacherole",
     "tiramisudo",
+    // The third service. Portridge leads it because it is the cheapest method in the
+    // kitchen — one Bootmeal, one bowl — and Halloumi, World is the one anybody can
+    // cook the moment they own it. The two that want a dish already cooked (Chrootons)
+    // or the scarcest shelf (Semaphreddo) sit at the back, and the last three are the
+    // biggest plates the pantry can make.
+    "portridge",
+    "halloumi_world",
+    "nan_bread",
+    "bisectuits",
+    "lossy_lassi",
+    "emacsaroni",
+    "cod_review",
+    "spaghetti_code",
+    "chrootons",
+    "quicksortbet",
+    "gzipacho",
+    "semaphreddo",
+    "peking_duck_typing",
+    "recursive_turducken",
 };
 }  // namespace
 

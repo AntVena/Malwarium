@@ -186,6 +186,55 @@ inline const MergeRecipe kMergeRecipes[] = {
     {"Cacherole",
      {{"hashed_browns", 1}, {"spam", 2}, {"boolean_cubes", 1}, {"grepsed_oil", 1}},
      "cacherole", 1, /*wire=*/17, "MERGED CACHEROLE"},
+    // The third service, which spends the last of kMergeRecipeWireCap. Two rows are
+    // the method itself rather than an upgrade: Portridge cooks one Bootmeal into the
+    // same bowl at the same tier, and Recursive Turducken is three of one bird — an
+    // input QUANTITY, not three ingredients, so the base case is the ingredient.
+    {"Portridge", {{"bootmeal", 1}},
+     "portridge", 1, /*wire=*/18, "MERGED PORTRIDGE"},
+    {"Halloumi, World", {{"cruds", 2}, {"c_salt", 1}},
+     "halloumi_world", 1, /*wire=*/19, "MERGED HALLOUMI WORLD"},
+    {"NaN Bread",
+     {{"self_signed_flour", 2}, {"c_salt", 1}, {"grepsed_oil", 1}},
+     "nan_bread", 1, /*wire=*/20, "MERGED NAN BREAD"},
+    // Second-order, like Cacherole: the loaf it wants is another dish off this table.
+    {"Chrootons",
+     {{"nan_bread", 1}, {"grepsed_oil", 1}, {"c_salt", 1}},
+     "chrootons", 1, /*wire=*/21, "MERGED CHROOTONS"},
+    {"Gzipacho",
+     {{"bytesteak_tomatoes", 2}, {"gherkins", 1}, {"breadcrumbs", 2},
+      {"grepsed_oil", 1}},
+     "gzipacho", 1, /*wire=*/22, "MERGED GZIPACHO"},
+    // Honeypot Yogurt is deliberately absent — a lassi's one missing ingredient, and
+    // the dish's own description names everything here and nothing else.
+    {"Lossy Lassi",
+     {{"papaya", 2}, {"syntactic_sugar", 1}, {"c_salt", 1}},
+     "lossy_lassi", 1, /*wire=*/23, "MERGED LOSSY LASSI"},
+    {"Cod Review",
+     {{"red_herring", 2}, {"self_signed_flour", 1}, {"grepsed_oil", 1}},
+     "cod_review", 1, /*wire=*/24, "MERGED COD REVIEW"},
+    {"Recursive Turducken", {{"rubber_ducks", 3}, {"c_salt", 1}},
+     "recursive_turducken", 1, /*wire=*/25, "MERGED TURDUCKEN"},
+    {"Peking Duck Typing",
+     {{"rubber_ducks", 1}, {"imaple_syrup", 1}, {"shellots", 2},
+      {"cronstarch", 1}},
+     "peking_duck_typing", 1, /*wire=*/26, "MERGED DUCK TYPING"},
+    {"Semaphreddo",
+     {{"double_precision_cream", 2}, {"syntactic_sugar", 1}, {"cocoa", 1}},
+     "semaphreddo", 1, /*wire=*/27, "MERGED SEMAPHREDDO"},
+    {"Spaghetti Code",
+     {{"linkguine", 2}, {"bytesteak_tomatoes", 2}, {"garlic_escapes", 1},
+      {"grepsed_oil", 1}},
+     "spaghetti_code", 1, /*wire=*/28, "MERGED SPAGHETTI CODE"},
+    {"Emacsaroni",
+     {{"linkguine", 2}, {"mozillarella", 2}, {"churned_butter", 1}},
+     "emacsaroni", 1, /*wire=*/29, "MERGED EMACSARONI"},
+    {"Bisectuits",
+     {{"self_signed_flour", 2}, {"churned_butter", 1}, {"syntactic_sugar", 1}},
+     "bisectuits", 1, /*wire=*/30, "MERGED BISECTUITS"},
+    {"Quicksortbet",
+     {{"grepefruit", 2}, {"honeypot_yogurt", 1}, {"syntactic_sugar", 1}},
+     "quicksortbet", 1, /*wire=*/31, "MERGED QUICKSORTBET"},
 };
 inline constexpr int kMergeRecipeCount =
     static_cast<int>(sizeof(kMergeRecipes) / sizeof(kMergeRecipes[0]));

@@ -934,6 +934,168 @@ window.PEDIA_DATA = {
       "icon": "assets/icons/ICON_ITEM_DESALINATED_C_SALT.png"
     },
     {
+      "id": "self_signed_flour",
+      "name": "Self-Signed Flour",
+      "type": "FOOD",
+      "rarity": "COMMON",
+      "effect": "It raised itself. Nobody else vouched for it.",
+      "stats": "HUNGER +2 / HAPPY -3",
+      "icon": "assets/icons/ICON_ITEMS.png"
+    },
+    {
+      "id": "shellots",
+      "name": "Shellots",
+      "type": "FOOD",
+      "rarity": "COMMON",
+      "effect": "Peel a layer off and there is another prompt underneath.",
+      "stats": "HUNGER +2 / HAPPY -4",
+      "icon": "assets/icons/ICON_ITEMS.png"
+    },
+    {
+      "id": "linkguine",
+      "name": "Linkguine",
+      "type": "FOOD",
+      "rarity": "COMMON",
+      "effect": "Long, thin, and every strand joined to the last one.",
+      "stats": "HUNGER +4",
+      "icon": "assets/icons/ICON_ITEMS.png"
+    },
+    {
+      "id": "churned_butter",
+      "name": "Churned Butter",
+      "type": "FOOD",
+      "rarity": "COMMON",
+      "effect": "Twelve thousand revisions. Same butter.",
+      "stats": "HUNGER +3 / FRAG +2",
+      "icon": "assets/icons/ICON_ITEMS.png"
+    },
+    {
+      "id": "bytesteak_tomatoes",
+      "name": "Bytesteak Tomatoes",
+      "type": "FOOD",
+      "rarity": "COMMON",
+      "effect": "They grow in eights. There has never been a ninth.",
+      "stats": "HUNGER +3 / HAPPY +2",
+      "icon": "assets/icons/ICON_ITEMS.png"
+    },
+    {
+      "id": "gherkins",
+      "name": "Gherkins",
+      "type": "FOOD",
+      "rarity": "COMMON",
+      "effect": "Given a jar, when you open it, then.",
+      "stats": "HAPPY -3 / FRAG -2",
+      "icon": "assets/icons/ICON_ITEMS.png"
+    },
+    {
+      "id": "cruds",
+      "name": "CRUDs",
+      "type": "FOOD",
+      "rarity": "COMMON",
+      "effect": "Create one, read it, update it. Mostly delete it.",
+      "stats": "HUNGER +4 / HAPPY -2",
+      "icon": "assets/icons/ICON_ITEMS.png"
+    },
+    {
+      "id": "bootmeal",
+      "name": "Bootmeal",
+      "type": "FOOD",
+      "rarity": "COMMON",
+      "effect": "Nothing else in the morning starts until this has.",
+      "stats": "HUNGER +10 / HAPPY -5",
+      "icon": "assets/icons/ICON_ITEMS.png"
+    },
+    {
+      "id": "garlic_escapes",
+      "name": "Garlic Escapes",
+      "type": "FOOD",
+      "rarity": "COMMON",
+      "effect": "Escape them properly or the whole line breaks.",
+      "stats": "HAPPY -6 / FRAG -4",
+      "icon": "assets/icons/ICON_ITEMS.png"
+    },
+    {
+      "id": "grepefruit",
+      "name": "Grepefruit",
+      "type": "FOOD",
+      "rarity": "COMMON",
+      "effect": "Bitter. Only the segments that match are worth eating.",
+      "stats": "HUNGER +3 / HAPPY -4 / FRAG -4",
+      "icon": "assets/icons/ICON_ITEMS.png"
+    },
+    {
+      "id": "red_herring",
+      "name": "Red Herring",
+      "type": "FOOD",
+      "rarity": "COMMON",
+      "effect": "It is a decoy. Eat it anyway.",
+      "stats": "HUNGER +5 / HAPPY -5",
+      "icon": "assets/icons/ICON_ITEMS.png"
+    },
+    {
+      "id": "papaya",
+      "name": "PAPaya",
+      "type": "FOOD",
+      "rarity": "UNCOMMON",
+      "effect": "Hands over everything the moment anyone asks.",
+      "stats": "HUNGER +4 / HAPPY +6",
+      "icon": "assets/icons/ICON_ITEMS.png"
+    },
+    {
+      "id": "mozillarella",
+      "name": "Mozillarella",
+      "type": "FOOD",
+      "rarity": "UNCOMMON",
+      "effect": "Free to copy, and it stretches further than anything else on the shelf.",
+      "stats": "HUNGER +6 / HAPPY +4",
+      "icon": "assets/icons/ICON_ITEMS.png"
+    },
+    {
+      "id": "imaple_syrup",
+      "name": "IMAPle Syrup",
+      "type": "FOOD",
+      "rarity": "UNCOMMON",
+      "effect": "Take as much as you like. It all stays on the tree.",
+      "stats": "HUNGER +2 / HAPPY +12 / FRAG +2",
+      "icon": "assets/icons/ICON_ITEMS.png"
+    },
+    {
+      "id": "double_precision_cream",
+      "name": "Double-Precision Cream",
+      "type": "FOOD",
+      "rarity": "UNCOMMON",
+      "effect": "Twice the storage of the single. Pours exactly the same.",
+      "stats": "HUNGER +7 / FRAG +3",
+      "icon": "assets/icons/ICON_ITEMS.png"
+    },
+    {
+      "id": "cocoa",
+      "name": "Cocoa",
+      "type": "FOOD",
+      "rarity": "UNCOMMON",
+      "effect": "Deprecated for years. Still ships in everything.",
+      "stats": "HAPPY +10 / FRAG -3",
+      "icon": "assets/icons/ICON_ITEMS.png"
+    },
+    {
+      "id": "rubber_ducks",
+      "name": "Rubber Ducks",
+      "type": "FOOD",
+      "rarity": "UNCOMMON",
+      "effect": "Explain the recipe to one before you start. It never argues.",
+      "stats": "HUNGER +8 / HAPPY +5",
+      "icon": "assets/icons/ICON_ITEMS.png"
+    },
+    {
+      "id": "honeypot_yogurt",
+      "name": "Honeypot Yogurt",
+      "type": "FOOD",
+      "rarity": "UNCOMMON",
+      "effect": "Left out where anyone could take it. That is the point of it.",
+      "stats": "HUNGER +5 / HAPPY +8 / FRAG -4",
+      "icon": "assets/icons/ICON_ITEMS.png"
+    },
+    {
       "id": "pwnzu_patched_noodles",
       "name": "Pwnzu-Patched Noodles",
       "type": "FOOD",
@@ -1096,6 +1258,132 @@ window.PEDIA_DATA = {
       "effect": "Everything in the pot at once, at a rolling boil, no plan whatsoever. Free to copy, and somehow it comes out right.",
       "stats": "HUNGER +70 / FRAG -25 / HEAL 60",
       "icon": "assets/icons/ICON_ITEM_GNULASH.png"
+    },
+    {
+      "id": "portridge",
+      "name": "Portridge",
+      "type": "FOOD",
+      "rarity": "COMMON",
+      "effect": "Cooked, plated, and identical to what went in. Runs anywhere.",
+      "stats": "HUNGER +10 / HAPPY -5",
+      "icon": "assets/icons/ICON_ITEMS.png"
+    },
+    {
+      "id": "halloumi_world",
+      "name": "Halloumi, World",
+      "type": "FOOD",
+      "rarity": "UNCOMMON",
+      "effect": "The first thing anybody cooks. It squeaks, and it works.",
+      "stats": "HUNGER +25 / HAPPY +15",
+      "icon": "assets/icons/ICON_ITEMS.png"
+    },
+    {
+      "id": "nan_bread",
+      "name": "NaN Bread",
+      "type": "FOOD",
+      "rarity": "UNCOMMON",
+      "effect": "No two loaves are equal. Not even to themselves.",
+      "stats": "HUNGER +35 / FRAG -5",
+      "icon": "assets/icons/ICON_ITEMS.png"
+    },
+    {
+      "id": "chrootons",
+      "name": "Chrootons",
+      "type": "FOOD",
+      "rarity": "UNCOMMON",
+      "effect": "Cubed, fried, and unable to reach the rest of the bowl.",
+      "stats": "HUNGER +20 / HAPPY +15 / FRAG -10",
+      "icon": "assets/icons/ICON_ITEMS.png"
+    },
+    {
+      "id": "gzipacho",
+      "name": "Gzipacho",
+      "type": "FOOD",
+      "rarity": "RARE",
+      "effect": "Everything that was in the pot, in a quarter of the space. Served cold.",
+      "stats": "HUNGER +55 / FRAG -20 / HEAL 30",
+      "icon": "assets/icons/ICON_ITEMS.png"
+    },
+    {
+      "id": "lossy_lassi",
+      "name": "Lossy Lassi",
+      "type": "FOOD",
+      "rarity": "UNCOMMON",
+      "effect": "Papaya, sugar, a pinch of salt. Whatever else was in it did not arrive.",
+      "stats": "HUNGER +20 / HAPPY +30 / FRAG -5",
+      "icon": "assets/icons/ICON_ITEMS.png"
+    },
+    {
+      "id": "cod_review",
+      "name": "Cod Review",
+      "type": "FOOD",
+      "rarity": "UNCOMMON",
+      "effect": "Somebody else looked at it before it shipped. They said it was fine.",
+      "stats": "HUNGER +40 / HAPPY +10 / HEAL 25",
+      "icon": "assets/icons/ICON_ITEMS.png"
+    },
+    {
+      "id": "recursive_turducken",
+      "name": "Recursive Turducken",
+      "type": "FOOD",
+      "rarity": "RARE",
+      "effect": "A duck, in a duck, in a duck. The innermost one is only a duck.",
+      "stats": "HUNGER +70 / HAPPY +10 / HEAL 40",
+      "icon": "assets/icons/ICON_ITEMS.png"
+    },
+    {
+      "id": "peking_duck_typing",
+      "name": "Peking Duck Typing",
+      "type": "FOOD",
+      "rarity": "RARE",
+      "effect": "If it looks like dinner and quacks like dinner, serve it.",
+      "stats": "HUNGER +60 / HAPPY +25 / FRAG -10",
+      "icon": "assets/icons/ICON_ITEMS.png"
+    },
+    {
+      "id": "semaphreddo",
+      "name": "Semaphreddo",
+      "type": "FOOD",
+      "rarity": "RARE",
+      "effect": "One spoon at a time. Everybody else waits their turn.",
+      "stats": "HUNGER +25 / HAPPY +45 / FRAG -20",
+      "icon": "assets/icons/ICON_ITEMS.png"
+    },
+    {
+      "id": "spaghetti_code",
+      "name": "Spaghetti Code",
+      "type": "FOOD",
+      "rarity": "UNCOMMON",
+      "effect": "It came out as one piece. Nowhere in it does a strand start.",
+      "stats": "HUNGER +55 / FRAG +15",
+      "icon": "assets/icons/ICON_ITEMS.png"
+    },
+    {
+      "id": "emacsaroni",
+      "name": "Emacsaroni",
+      "type": "FOOD",
+      "rarity": "UNCOMMON",
+      "effect": "Comes with a mail client, a calendar, and a cheese sauce.",
+      "stats": "HUNGER +45 / HAPPY +20",
+      "icon": "assets/icons/ICON_ITEMS.png"
+    },
+    {
+      "id": "bisectuits",
+      "name": "Bisectuits",
+      "type": "FOOD",
+      "rarity": "UNCOMMON",
+      "effect": "Halve the tin, taste, halve again. The bad one is in there somewhere.",
+      "stats": "HUNGER +25 / HAPPY +20",
+      "icon": "assets/icons/ICON_ITEMS.png"
+    },
+    {
+      "id": "quicksortbet",
+      "name": "Quicksortbet",
+      "type": "FOOD",
+      "rarity": "RARE",
+      "effect": "Pick one, split the rest around it, repeat. Served in order.",
+      "stats": "HUNGER +20 / HAPPY +40 / FRAG -15",
+      "icon": "assets/icons/ICON_ITEMS.png"
     },
     {
       "id": "backup_drive",
@@ -2344,9 +2632,9 @@ window.PEDIA_DATA = {
     {
       "key": "CUISINE_ALL",
       "name": "Full Buffet",
-      "trigger": "Get hold of all 43 foods, the cooked ones included.",
+      "trigger": "Get hold of all 75 foods, the cooked ones included.",
       "icon": "assets/icons/ICON_ACH_CUISINE_ALL.png",
-      "goal": 43
+      "goal": 75
     },
     {
       "key": "COOK_NOODLES",
@@ -2365,9 +2653,9 @@ window.PEDIA_DATA = {
     {
       "key": "COLLECT_RARE",
       "name": "Rare Collector",
-      "trigger": "Get hold of all 14 Rare items.",
+      "trigger": "Get hold of all 19 Rare items.",
       "icon": "assets/icons/ICON_ACH_COLLECT_RARE.png",
-      "goal": 14
+      "goal": 19
     },
     {
       "key": "COLLECT_EPIC",

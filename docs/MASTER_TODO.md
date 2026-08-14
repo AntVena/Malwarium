@@ -87,11 +87,19 @@ Diff **M**.
 
 ### 1b. Cooking — the open follow-ups
 
-The pantry, per-item drop weights, the N-ingredient Merge Hub and its eighteen recipes are built, and
-a recipe is won off a Decryptogram rather than bought. Cooking is two-deep as of Cacherole (a recipe
-whose lead ingredient is another dish — no new mechanism, since an input id is just an item id), and
-Tiramisudo is the one food that upgrades the pet eating it rather than feeding it. What is left:
+The pantry, per-item drop weights, the N-ingredient Merge Hub and its thirty-two recipes are built,
+and a recipe is won off a Decryptogram rather than bought. Cooking is two-deep as of Cacherole and
+Chrootons (a recipe whose lead ingredient is another dish — no new mechanism, since an input id is
+just an item id), Tiramisudo is the one food that upgrades the pet eating it rather than feeding it,
+and Portridge is the one whose output matches its single ingredient's tier and magnitudes exactly.
+What is left:
 
+- **The recipe table is FULL.** `kMergeRecipes` holds thirty-two rows against a
+  `kMergeRecipeWireCap` of 32, and the cap is the width of `SaveData::recipesUnlocked` — a
+  `uint32_t` bitmask indexed by `wire`. A thirty-third recipe therefore needs the mask widened
+  (`uint64_t`, or a length-prefixed byte array like the achievement masks) and a save-version
+  note, which is one of the two changes that gets confirmed before it ships. Roughly sixty more
+  dishes and ten more staples are designed and waiting on exactly this. Diff **L**.
 - **Drop weights are unmeasured.** The pantry's numbers are authored by flavour, not play data. The
   walk-pool thinning constant (`kStapleWalkWeight`) especially is a guess at how much staple a player
   should wade through to reach a diving bell. Diff **M** (needs measurement runs).
@@ -395,6 +403,15 @@ columns were which. A template makes that a drawing instruction rather than a gu
 These read fine by name + pips today; final art is polish, dropped in where it lands. Roughly
 high→low value:
 
+- **Thirty-two food glyphs** — the third service and the second pantry shelf are the only items in
+  the table with no art, so every one falls back to the generic `ICON_ITEMS` (`tools/gen_pedia.py`
+  names them all on any run). Eighteen staples: `self_signed_flour`, `shellots`, `linkguine`,
+  `churned_butter`, `bytesteak_tomatoes`, `gherkins`, `cruds`, `bootmeal`, `garlic_escapes`,
+  `grepefruit`, `red_herring`, `papaya`, `mozillarella`, `imaple_syrup`,
+  `double_precision_cream`, `cocoa`, `rubber_ducks`, `honeypot_yogurt`. Fourteen dishes:
+  `portridge`, `halloumi_world`, `nan_bread`, `chrootons`, `gzipacho`, `lossy_lassi`,
+  `cod_review`, `recursive_turducken`, `peking_duck_typing`, `semaphreddo`, `spaghetti_code`,
+  `emacsaroni`, `bisectuits`, `quicksortbet`. Diff **M** — one glyph each, no new mechanism.
 - **Three move glyphs** still placeholder: `ICON_MOVE_BUFFER_OVERFLOW`, `_ROOTKIT_STRIKE`,
   `_NULL_ROUTE` (MOVES falls back to text without them).
 - **`ICON_SECTOR_CITRUS_CIRCUIT` is a generic map pin** where its four siblings are motif
