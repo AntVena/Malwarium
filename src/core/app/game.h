@@ -2862,10 +2862,11 @@ private:
 
     // Which MERGE HUB recipes are known — one bit per MergeRecipe::wire
     // (game_internal.h), read and written only through recipeOwned/grantRecipe.
-    // Player-level, survives lifecycles; persisted whole as SaveData::recipesUnlocked
-    // (save v31, widened from the two bits the Rig Shop rows used to mirror).
-    // A recipe is never bought — the Decryptogram's prize ladder is the only writer.
-    uint32_t recipesOwned_ = 0;
+    // Player-level, survives lifecycles; persisted whole as SaveData::recipeOwned
+    // (save v51), with its first four bytes also riding the legacy u32 a v31..v50
+    // reader understands. A recipe is never bought — the Decryptogram's prize ladder
+    // is the only writer.
+    uint8_t recipesOwned_[kMergeRecipeWireBytes] = {};
 
     // Warp-key picker. warpRow_ is the focused row into the live
     // heldWarpKeys() list while nav_ == Nav::WarpPicker; transient run state (the

@@ -521,6 +521,12 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     w.i32(d.bandwidthRegenBonusMin);
     w.u16(static_cast<uint16_t>(d.rack.size()));
     for (const auto& p : d.rack) w.i32(p.bandwidthRegenBonusMin);
+
+    // v51: the whole owned-recipe bitset, length-prefixed like the v40 achievement
+    // masks. Its first four bytes are also written above as the v31 u32, so a reader
+    // that stops at v50 still gets the recipes it can name.
+    w.u16(static_cast<uint16_t>(d.recipeOwned.size()));
+    for (uint8_t b : d.recipeOwned) w.u8(b);
 }
 
 std::vector<uint8_t> serializeSave(const SaveData& d) {
@@ -1062,12 +1068,28 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
         }
     }
 
+    // v51 tail: the whole owned-recipe bitset. Absent in a v1..v50 blob → left empty
+    // here and seeded below from the u32 the older stream did carry, once
+    // migrateRecipeRows has finished folding the retired rig rows into it.
+    if (version >= 51) {
+        const uint16_t nRecipe = r.u16();
+        for (uint16_t i = 0; i < nRecipe && r.ok; ++i) d.recipeOwned.push_back(r.u8());
+    }
+
     if (!r.ok) { out = SaveData{}; return false; }  // truncated -> empty
     if (version < newestRenameVersion()) renameRetiredIds(d, version);
     // After every tail is read, never between them: the shift moves whole ladder-indexed
     // vectors, so it has to see them at their final lengths.
     if (version < newestLadderInsertVersion()) applyLadderInserts(d, version);
     migrateRecipeRows(d, version);   // same rule: rigLevelsExt has to be whole first
+    // A blob older than the bitset says everything it knows in the u32, and
+    // migrateRecipeRows has just finished adding to it — so the seed happens last, and
+    // only when the tail was genuinely absent (an empty v51 set means "knows none").
+    if (version < 51 && d.recipesUnlocked != 0) {
+        d.recipeOwned.assign(4, 0);
+        for (int i = 0; i < 4; ++i)
+            d.recipeOwned[i] = static_cast<uint8_t>((d.recipesUnlocked >> (i * 8)) & 0xFF);
+    }
     out = std::move(d);
     return true;
 }

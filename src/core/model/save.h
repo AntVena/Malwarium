@@ -317,7 +317,7 @@ constexpr int kSaveTextCap = 28;     // matches EventLog's LogEntry.text
 //     shifts every row after them — an older blob's entries are remapped by hand.
 // A v49+ blob needs neither pass. This is also the version to raise
 // kOldestAcceptedVersion past once every device is current, which retires that function.
-constexpr uint16_t kSaveVersion = 50;
+constexpr uint16_t kSaveVersion = 51;
 
 // The oldest blob deserialize will read. Raising it is how a device stops carrying
 // migration weight for saves nobody can still be holding — and it is the ONLY thing
@@ -706,6 +706,11 @@ struct SaveData {
     // game_internal.h's kMergeRecipes, bit = MergeRecipe::wire. Pre-v31 → both 0 (no
     // Hub, no recipes). Pre-v49 the mask only carried its first two bits and the rest
     // of cooking rode the rig rows — see migrateRecipeRows.
+    //
+    // SUPERSEDED as of v51 by `recipeOwned` below, which holds the whole set. This u32
+    // stays on the wire at its v31 position carrying wires 0-31, because a v31..v50
+    // reader is still entitled to the recipes it can name — an OTA that rolls back must
+    // not cost a player the kitchen it understands.
     uint8_t mergeHubUnlocked = 0;
     uint32_t recipesUnlocked = 0;
 
@@ -799,6 +804,15 @@ struct SaveData {
     // values ride on SaveStoredPet::bandwidthRegenBonusMin, a parallel tail. Pre-v50 →
     // 0, which is the truth: nothing granted it before this version.
     int32_t bandwidthRegenBonusMin = 0;
+
+    // --- v51: the owned-recipe bitset ----------------------------------------
+    // One bit per MergeRecipe::wire (game_internal.h), low bit first within each byte,
+    // stored length-prefixed so the kitchen can outgrow any fixed width — the same
+    // shape and the same reason as the v40 achievement bitsets. Supersedes the v31
+    // `recipesUnlocked` u32 above, which still carries wires 0-31 for readers that
+    // predate this. Player-level. Pre-v51 → seeded by the loader from that u32, so an
+    // upgraded device keeps every recipe it had.
+    std::vector<uint8_t> recipeOwned;
 
     // v35: this pet's own best-ever DeepWeb Dive depth ------------------------
     // Per-pet (reset on a new egg, like mistakeShieldActive). The active pet's

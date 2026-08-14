@@ -528,6 +528,57 @@ void test_recipes_persist() {
     CHECK(!g2.debugRecipeOwned(2));
 }
 
+// v51 — the owned-recipe set outgrew the u32 it used to be. A recipe whose wire is at
+// or past 32 is exactly the case the old field could not express, so it is the one worth
+// round-tripping; and the u32 still has to carry the low wires, because a device that
+// rolls back to a v31..v50 build must keep the recipes that build can name.
+void test_recipes_past_the_legacy_mask_persist() {
+    int lowIdx = -1, highIdx = -1;
+    for (int i = 0; i < kMergeRecipeCount; ++i) {
+        if (kMergeRecipes[i].wire < 32 && lowIdx < 0) lowIdx = i;
+        if (kMergeRecipes[i].wire >= 32 && highIdx < 0) highIdx = i;
+    }
+    CHECK(lowIdx >= 0 && highIdx >= 0);          // the table has both sides of the line
+
+    MemSaveStore store;
+    {
+        Game g{StartMode::Hatched, "malbear", &store};
+        g.debugWinRecipe(lowIdx);
+        g.debugWinRecipe(highIdx);
+        g.tick(kSaveAutosaveMs + kHeartbeatMs);
+    }
+    Game g2(StartMode::Hatched, "paypup", &store);
+    CHECK(g2.debugRecipeOwned(lowIdx));
+    CHECK(g2.debugRecipeOwned(highIdx));         // the bit the u32 had no room for
+
+    // What the blob itself says: the full set in the bitset, the low wires mirrored into
+    // the legacy field, and nothing above wire 31 pretending to fit there.
+    SaveData d{};
+    CHECK(deserializeSave(store.bytes(), d));
+    const int lowWire = kMergeRecipes[lowIdx].wire;
+    CHECK((d.recipesUnlocked & (1u << lowWire)) != 0);
+    CHECK(static_cast<int>(d.recipeOwned.size()) == kMergeRecipeWireBytes);
+    const int highWire = kMergeRecipes[highIdx].wire;
+    CHECK((d.recipeOwned[highWire / 8] & (1u << (highWire % 8))) != 0);
+}
+
+// The other direction: a blob that predates the bitset says everything it knows in the
+// u32, and an upgraded device must not lose the kitchen it already had.
+void test_pre_v51_recipe_mask_seeds_the_bitset() {
+    SaveData a{};
+    a.recipesUnlocked = (1u << 1) | (1u << 5);
+    // v51 appends a tail, so stamping the version word down is the whole forgery — the
+    // reader stops before it and never sees the bytes.
+    std::vector<uint8_t> blob = serializeSave(a);
+    blob[4] = 50; blob[5] = 0;
+
+    SaveData out{};
+    CHECK(deserializeSave(blob, out));
+    CHECK((out.recipeOwned[0] & (1u << 1)) != 0);
+    CHECK((out.recipeOwned[0] & (1u << 5)) != 0);
+    CHECK((out.recipeOwned[0] & (1u << 2)) == 0);
+}
+
 // v49 — cooking left the Rig Shop, and a save written before it described four recipes
 // as rig rows. Two were already bits 0/1 of the mask; the other two were rows 19 and 20,
 // which sat MID-TABLE, so their removal slides every later row down two slots in the

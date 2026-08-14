@@ -76,6 +76,8 @@ int g_failures = 0;
     RUN(test_recipes_wait_on_the_merge_hub) \
     RUN(test_browns_recipes_wait_on_meeting_both_dishes) \
     RUN(test_recipes_persist) \
+    RUN(test_recipes_past_the_legacy_mask_persist) \
+    RUN(test_pre_v51_recipe_mask_seeds_the_bitset) \
     RUN(test_tiramisudo_upgrades_once_then_feeds) \
     RUN(test_tiramisudo_regen_actually_runs_faster) \
     RUN(test_tiramisudo_upgrade_survives_the_rack) \

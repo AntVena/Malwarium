@@ -48,15 +48,17 @@ bool Game::recipeOwned(int recipeIndex) const {
     if (recipeIndex < 0 || recipeIndex >= kMergeRecipeCount) return false;
     const int wire = kMergeRecipes[recipeIndex].wire;
     if (wire < 0 || wire >= kMergeRecipeWireCap) return false;
-    return (recipesOwned_ & (1u << wire)) != 0;
+    return (recipesOwned_[wire / 8] & (1u << (wire % 8))) != 0;
 }
 
 void Game::grantRecipe(int recipeIndex) {
     if (recipeIndex < 0 || recipeIndex >= kMergeRecipeCount) return;
     const MergeRecipe& r = kMergeRecipes[recipeIndex];
     if (r.wire < 0 || r.wire >= kMergeRecipeWireCap) return;
-    if (recipesOwned_ & (1u << r.wire)) return;      // already known — nothing to write
-    recipesOwned_ |= 1u << r.wire;
+    uint8_t& byte = recipesOwned_[r.wire / 8];
+    const uint8_t bit = static_cast<uint8_t>(1u << (r.wire % 8));
+    if (byte & bit) return;                          // already known — nothing to write
+    byte = static_cast<uint8_t>(byte | bit);
     markSaveDirty();
     dirty_ = true;
 }

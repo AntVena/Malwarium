@@ -277,7 +277,12 @@ SaveData Game::captureSave() const {
     d.bandwidthRegenBonusMin = bandwidthRegenBonusMin_;
 
     d.mergeHubUnlocked = rigLevel_[kRigRowMergeHub] ? 1 : 0;
-    d.recipesUnlocked = recipesOwned_;
+    // The whole set goes out as the v51 bitset; its first four bytes ALSO go out as the
+    // v31 u32, which is all a reader that predates the bitset can hold.
+    d.recipeOwned.assign(recipesOwned_, recipesOwned_ + kMergeRecipeWireBytes);
+    d.recipesUnlocked = 0;
+    for (int i = 0; i < 4; ++i)
+        d.recipesUnlocked |= static_cast<uint32_t>(recipesOwned_[i]) << (i * 8);
 
     // v32: every rig row from kRigRowExtBase up — a forward-compatible tail so a new
     // Rig Shop row never needs a save.h edit. Mirrors the subRefarm vector pattern:
@@ -670,7 +675,13 @@ void Game::applySave(const SaveData& d) {
     // blob had two of its recipes riding rig rows instead, and save.cpp's reader folds
     // those into the bits before handing the struct over.
     rigLevel_[kRigRowMergeHub] = d.mergeHubUnlocked ? 1 : 0;
-    recipesOwned_ = d.recipesUnlocked;
+    // The bitset is authoritative — save.cpp has already seeded it from the u32 for any
+    // blob that predates v51, so this reads one field however old the save is. A set
+    // longer than this build understands is truncated, which is what "a shorter view"
+    // means: those recipes exist in the blob and come back on the build that has them.
+    for (uint8_t& b : recipesOwned_) b = 0;
+    for (size_t i = 0; i < d.recipeOwned.size() && i < kMergeRecipeWireBytes; ++i)
+        recipesOwned_[i] = d.recipeOwned[i];
 
     // v50: the active pet's Bandwidth-regen upgrade (a pre-v50 blob → 0: no dish granted
     // one). The rack's own values come back with the stored records themselves.

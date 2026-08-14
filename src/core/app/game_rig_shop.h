@@ -48,6 +48,16 @@ inline constexpr int kRigLevelUnlimited = 1 << 20;
 // save bits (game_internal.h's kMergeRecipes), because a recipe has no price, no
 // levels and no place in a storefront list. The hub itself is the last rig row cooking
 // needs.
+//
+// Capacity for the owned-recipe bitset, in MergeRecipe::wire numbers — one bit each,
+// carried length-prefixed as SaveData::recipeOwned so the table can outgrow any fixed
+// width. It sits HERE rather than beside the recipes because `Game` itself has to size
+// its in-memory copy, and game.h cannot see the private game_internal.h that holds the
+// table. Raise it in multiples of 8 (a whole byte) with a save-version note; the native
+// gate asserts every wire is under it.
+inline constexpr int kMergeRecipeWireCap = 128;
+inline constexpr int kMergeRecipeWireBytes = kMergeRecipeWireCap / 8;
+
 enum RigRow {
     kRigRowBandwidth = 0,
     kRigRowFragReduce = 1,

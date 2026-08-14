@@ -87,19 +87,24 @@ Diff **M**.
 
 ### 1b. Cooking — the open follow-ups
 
-The pantry, per-item drop weights, the N-ingredient Merge Hub and its thirty-two recipes are built,
-and a recipe is won off a Decryptogram rather than bought. Cooking is two-deep as of Cacherole and
-Chrootons (a recipe whose lead ingredient is another dish — no new mechanism, since an input id is
-just an item id), Tiramisudo is the one food that upgrades the pet eating it rather than feeding it,
-and Portridge is the one whose output matches its single ingredient's tier and magnitudes exactly.
+The pantry's three shelves, per-item drop weights, the N-ingredient Merge Hub and its hundred
+recipes are built, and a recipe is won off a Decryptogram rather than bought. Cooking is two-deep
+in several places (a recipe whose lead ingredient is another dish — no new mechanism, since an
+input id is just an item id), Tiramisudo is the one food that upgrades the pet eating it rather
+than feeding it, and Portridge is the one whose output matches its single ingredient's tier and
+magnitudes exactly. The owned-recipe set is a length-prefixed bitset (save v51) against a
+`kMergeRecipeWireCap` of 128, so the table has room to roughly double again without a save change.
 What is left:
 
-- **The recipe table is FULL.** `kMergeRecipes` holds thirty-two rows against a
-  `kMergeRecipeWireCap` of 32, and the cap is the width of `SaveData::recipesUnlocked` — a
-  `uint32_t` bitmask indexed by `wire`. A thirty-third recipe therefore needs the mask widened
-  (`uint64_t`, or a length-prefixed byte array like the achievement masks) and a save-version
-  note, which is one of the two changes that gets confirmed before it ships. Roughly sixty more
-  dishes and ten more staples are designed and waiting on exactly this. Diff **L**.
+- **The prize ladder is more than twice the length of the quote pool.** `quotePrizeLadder` names
+  100 dishes; `content_quotes.cpp` holds 44 quotes, and a first solve is the only thing that ever
+  hands a recipe over. So a player who cracks every board in the game wins at most 44 of the 100
+  methods, and the back half of the ladder — everything from the puddings down — is currently
+  unreachable rather than merely distant. The fix is quotes, which are the cheapest content in the
+  repo: one row each, no save concern (wires are stable and `kQuoteWireCap` is 256), and the
+  header states the two rules a row must pass. Wants ~60 more to make the ladder winnable, and
+  they must be genuinely attributed — a misattributed quote is worse than a missing one.
+  Diff **M**, and it is the single thing most limiting what a player can actually cook.
 - **Drop weights are unmeasured.** The pantry's numbers are authored by flavour, not play data. The
   walk-pool thinning constant (`kStapleWalkWeight`) especially is a guess at how much staple a player
   should wade through to reach a diving bell. Diff **M** (needs measurement runs).
@@ -403,15 +408,13 @@ columns were which. A template makes that a drawing instruction rather than a gu
 These read fine by name + pips today; final art is polish, dropped in where it lands. Roughly
 high→low value:
 
-- **Thirty-two food glyphs** — the third service and the second pantry shelf are the only items in
-  the table with no art, so every one falls back to the generic `ICON_ITEMS` (`tools/gen_pedia.py`
-  names them all on any run). Eighteen staples: `self_signed_flour`, `shellots`, `linkguine`,
-  `churned_butter`, `bytesteak_tomatoes`, `gherkins`, `cruds`, `bootmeal`, `garlic_escapes`,
-  `grepefruit`, `red_herring`, `papaya`, `mozillarella`, `imaple_syrup`,
-  `double_precision_cream`, `cocoa`, `rubber_ducks`, `honeypot_yogurt`. Fourteen dishes:
-  `portridge`, `halloumi_world`, `nan_bread`, `chrootons`, `gzipacho`, `lossy_lassi`,
-  `cod_review`, `recursive_turducken`, `peking_duck_typing`, `semaphreddo`, `spaghetti_code`,
-  `emacsaroni`, `bisectuits`, `quicksortbet`. Diff **M** — one glyph each, no new mechanism.
+- **The pantry's 149 glyphs are generated, not drawn.** `tools/gen_item_icons.py` holds a form
+  vocabulary and one recipe per item, and the gates check the committed PNGs against it. They read
+  as a set and they read at 20px, which is the bar; what they are not is individually observed
+  drawing, so a dish whose joke lives in a specific shape (Twisted Pairetzels, Pretzel; Punchcard
+  Punch, the card) is better served than one riding a shared form (eight `dome` items differ only
+  by how many slashes are cut into the crust). Worth a pass with a real eye, form by form, and the
+  tool is the place to do it — a redrawn form fixes every item using it. Diff **M**.
 - **Three move glyphs** still placeholder: `ICON_MOVE_BUFFER_OVERFLOW`, `_ROOTKIT_STRIKE`,
   `_NULL_ROUTE` (MOVES falls back to text without them).
 - **`ICON_SECTOR_CITRUS_CIRCUIT` is a generic map pin** where its four siblings are motif

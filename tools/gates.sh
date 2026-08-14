@@ -64,6 +64,12 @@ run() {
     return 0
 }
 
+# The pantry's ITEMS glyphs are generated from tools/gen_item_icons.py, and the PNGs
+# it owns are committed — so this catches a recipe edited without regenerating, and an
+# icon hand-edited out from under its recipe. Runs before codegen, because a stale
+# glyph would otherwise be compiled into the atlas without complaint.
+run "item icons" python3 tools/gen_item_icons.py --check || exit 1
+
 # src/generated is derived from assets/ and not committed, so a clean checkout has
 # no engine to compile. Cheap enough to always run.
 run "codegen" python3 tools/gen_assets.py || exit 1
