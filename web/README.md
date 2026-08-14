@@ -25,8 +25,10 @@ Open `index.html` from disk and it runs on the sample fixture.
    fixture stays. The fixture is a DESK convenience and is deliberately not staged onto
    the card, so on-device the site must survive it being absent — hence the empty-state
    floor in `app.js`.
-   Extensions used by the site: `active_pet`, `malbeasts`, `mods`, `archive`
-   (documented inline in `fixtures/pedia_state.js`).
+   Extensions used by the site: `active_pet`, `malbeasts`, `mods`, `recipes`, `archive`
+   (documented inline in `fixtures/pedia_state.js`). `items` is EVER HELD, not held now —
+   the same lifetime tally the cuisine achievements count, so food does not un-reveal
+   itself by being eaten.
 3. Handle the two POSTs (both fail gracefully offline):
    - `POST /api/tag` `{"tag":"A-Z0-9_ ≤12"}` — HackerTag rename (the site's one write).
    - `POST /api/achievement/DEVTOOLS_INTRUDER` — the honeytoken callback (§03 arch).

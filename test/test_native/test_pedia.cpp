@@ -229,6 +229,47 @@ void test_pedia_state_json_fresh_hatch_egg() {
     CHECK(json.find("\"cryptoshell\":\"hatched\"") != std::string::npos);
 }
 
+// The recipes{} block alone. items{} and recipes{} are keyed alike on purpose — a
+// method is named by the dish it cooks — so a bare find() over the whole payload would
+// happily match the wrong map's entry for the same id.
+static std::string recipesBlock(const std::string& json) {
+    const size_t k = json.find("\"recipes\":{");
+    if (k == std::string::npos) return "";
+    return json.substr(k, json.find('}', k) - k);
+}
+
+// The 'Pedia's two KITCHEN axes, which the FOOD tab masks independently: items{} is
+// "ever held" (Game::itemCollected, the cuisine ladder's own tally) and recipes{} is
+// whether the METHOD has been won. Holding a dish must not imply knowing how to cook
+// it — several are sold on shelves — and eating one must not un-reveal it, which is
+// exactly what keying items{} on current possession used to do.
+void test_pedia_state_kitchen_axes() {
+    Game g{StartMode::Hatched};
+    uint32_t t = 0;
+
+    // Nothing met, nothing known.
+    CHECK(recipesBlock(buildPediaStateJson(g))
+              .find("\"pwnzu_patched_noodles\":\"locked\"") != std::string::npos);
+
+    // Meet the dish, then eat it to zero: it stays revealed.
+    g.inventory().add("pwnzu_patched_noodles", 1);
+    g.tick(t += kAchSweepIntervalMs);                    // sweepCollectedItems runs here
+    CHECK(g.inventory().remove("pwnzu_patched_noodles", 1));
+    CHECK(!g.inventory().has("pwnzu_patched_noodles"));
+    {
+        const std::string json = buildPediaStateJson(g);
+        CHECK(json.find("\"pwnzu_patched_noodles\":\"unlocked\"") != std::string::npos);
+        // ...and the method is still its own, unwon question.
+        CHECK(recipesBlock(json).find("\"pwnzu_patched_noodles\":\"locked\"") !=
+              std::string::npos);
+    }
+
+    // Win the method (index 0 IS that dish's row) and only the recipes{} half flips.
+    g.debugWinRecipe(0);
+    CHECK(recipesBlock(buildPediaStateJson(g))
+              .find("\"pwnzu_patched_noodles\":\"known\"") != std::string::npos);
+}
+
 // Save v25: web-'Pedia reveal-state bookkeeping -----
 
 // wildMalbeastIndex: name -> roster index via slugging; anything outside the

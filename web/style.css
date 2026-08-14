@@ -102,6 +102,13 @@ nav.tabs a {
 }
 nav.tabs a:hover { color: var(--ink); background: var(--paper); }
 nav.tabs a.active { color: var(--paper-deep); background: var(--calm); font-weight: 700; }
+/* Six sections is one more than a phone's width divides comfortably at the display
+   face's tracking — the longest label ends up flush against its divider. Give the
+   letters back their air on the narrow screens this is mostly read on, rather than
+   shortening the labels: they are the device's own words for these screens. */
+@media (max-width: 420px) {
+  nav.tabs a { font-size: 11px; letter-spacing: 0; padding: 9px 2px 8px; }
+}
 
 .identity {
   display: flex; justify-content: space-between; align-items: center;
@@ -247,6 +254,15 @@ a.card:hover { background: var(--paper); border-color: var(--accent); color: inh
    rather than prose. Letter-spaced because it is all caps and mostly numbers. */
 .row .fxnum { font-size: 11px; color: var(--accent); margin-top: 2px;
               letter-spacing: 0.06em; }
+/* A recipe row's METHOD line — what the dish takes, as against .fx/.fxnum's what it
+   does. Ruled and indented so the two can't be read as one paragraph, the same nesting
+   the device's own MERGE HUB draws ingredients with (game_merge.cpp's kIndent). It
+   carries INK rather than the accent: on this page the ingredient list is the answer,
+   not an aside, and .fxnum is already spending the accent one line above it. */
+.row .method { font-size: 11px; color: var(--ink); margin-top: 4px;
+               padding-left: 8px; border-left: 2px solid var(--track);
+               letter-spacing: 0.04em; }
+.row.locked .method { color: var(--ink-dim); letter-spacing: 0; }
 .row .bits { font-size: 11px; color: var(--warn); flex: none; }
 .row .stat { font-size: 10px; color: var(--ink-dim); letter-spacing: 1px; flex: none; text-align: right; }
 .row .stat b { color: var(--ink); font-weight: 400; }

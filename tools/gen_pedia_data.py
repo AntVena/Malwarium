@@ -304,6 +304,26 @@ def main():
             mv["innate"] = True
         moves.append(mv)
 
+    # ---- recipes (the MERGE HUB table) ----
+    # Ids only, exactly as the dump publishes them: an ingredient id IS an item id, so
+    # the site joins each one onto the item row it already has rather than carrying a
+    # second copy of every dish name. A row whose output isn't in the item table is a
+    # real break — the dish would render nameless — so it warns rather than passing
+    # through quietly.
+    item_ids = {d["id"] for d in items}
+    recipes = []
+    for r in content["recipes"]:
+        if r["output"] not in item_ids:
+            warnings.append(f"recipe '{r['name']}' outputs '{r['output']}', "
+                            "which is not an item — it will render nameless")
+        for inp in r["inputs"]:
+            if inp["id"] not in item_ids:
+                warnings.append(f"recipe '{r['name']}' wants ingredient '{inp['id']}', "
+                                "which is not an item")
+        recipes.append({"name": r["name"], "output": r["output"],
+                        "outputQty": r["outputQty"], "inputs": r["inputs"],
+                        "requires": r["requires"]})
+
     # ---- wild malbeasts (combat_factory.cpp) ----
     # The roster lives with the encounter FACTORIES, not the turn engine. Fail loudly
     # naming the function if it moves again: the alternative is a KeyError deep in the
@@ -366,6 +386,7 @@ def main():
         "creatures": creatures,
         "malbeasts": beasts,
         "items": items,
+        "recipes": recipes,
         "mods": mods,
         "modTiers": {str(k): v for k, v in ladder_names.items()},
         "moves": moves,
@@ -380,7 +401,8 @@ def main():
     out.write_text(js, encoding="utf-8")
 
     print(f"wrote {out}  ({len(creatures)} creatures, {len(beasts)} malbeasts, "
-          f"{len(items)} items, {len(mods)} mods, {len(moves)} moves)")
+          f"{len(items)} items, {len(recipes)} recipes, {len(mods)} mods, "
+          f"{len(moves)} moves)")
 
     if args.sync_assets:
         total, copied, pruned = sync_assets(repo, data, args.bundle, warnings)

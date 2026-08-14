@@ -203,7 +203,16 @@ a plain-text fallback, and the core game loop is unaffected.
 
 State is served as JSON with **string keys, not integer flags**, so it stays readable and
 forward-compatible. A creature or item reads as `locked` (hidden behind a placeholder), `seen`
-(glitch silhouette + a snarky hint, name masked) or `hatched`/`unlocked` (full reveal).
+(glitch silhouette + a snarky hint, name masked) or `hatched`/`unlocked` (full reveal). An item's
+`unlocked` means **ever held**, not held right now — the same lifetime tally the cuisine ladder
+counts, so a consumable does not un-reveal itself by being consumed.
+
+**Food gets its own section, on two independent axes.** Meeting a dish (`items`) decrypts what it
+does; winning its **method** off a Decryptogram (`recipes`, `known`/`locked`) decrypts what it
+takes. Neither implies the other — dishes are sold on shelves, and methods are never sold at any
+price — so a row masks each half separately and says which one it is waiting on. That second gate
+is why food has a page of its own rather than a section of ITEMS: it makes a dish an earned entry
+rather than a line item.
 
 **The DevTools "exploit" is intentional.** The full dataset is sent to the client and CSS classes
 control visibility, so a curious player who opens F12 and strips the `locked` rules can peek at

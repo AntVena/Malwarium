@@ -24,6 +24,7 @@
 #include "core/app/game_achievements.h"   // achievementTrigger/Goal — kGoalAll resolution
 #include "core/content/areas/area_defs.h"
 #include "core/content/content_achievements.h"
+#include "core/content/content_recipes.h"
 #include "core/content/content_tables.h"
 #include "core/content/creatures/creature_lines.h"
 #include "core/content/effect_text.h"
@@ -237,6 +238,51 @@ void dumpMoves() {
     std::fputs("],\n", stdout);
 }
 
+// The MERGE HUB table. Ids only — an ingredient id IS an item id, and the site already
+// has the item table, so resolving names here would put a second copy of every dish name
+// in the data file for the generator to keep in step. What only the firmware knows is the
+// ROW: which dish a method makes, what it costs, and which dish it wants met first.
+//
+// No `wire`: that number is a save-bit identity, meaningless off-device, and publishing
+// it would invite the site to key on it. The output id is the table's own key
+// (recipeIndexByOutput), and it is an item id the site can join on.
+void dumpRecipes() {
+    std::fputs("\"recipes\": [\n", stdout);
+    for (int i = 0; i < kMergeRecipeCount; ++i) {
+        const MergeRecipe& r = kMergeRecipes[i];
+        std::fputs("  {", stdout);
+        field("name", r.displayName);
+        field("output", r.outputId);
+        fieldInt("outputQty", r.outputQty);
+
+        std::fputs("\"inputs\": [", stdout);
+        bool first = true;
+        for (const RecipeInput& in : r.inputs) {
+            if (!in.id) continue;
+            if (!first) std::fputs(", ", stdout);
+            first = false;
+            std::fputs("{", stdout);
+            field("id", in.id);
+            fieldInt("qty", in.qty, /*comma=*/false);
+            std::fputs("}", stdout);
+        }
+        std::fputs("], ", stdout);
+
+        // The met-the-dish gate, empty on most rows.
+        std::fputs("\"requires\": [", stdout);
+        first = true;
+        for (const char* id : r.requiresItems) {
+            if (!id) continue;
+            if (!first) std::fputs(", ", stdout);
+            first = false;
+            jstr(id);
+        }
+        std::fputs("]", stdout);
+        std::fputs(i + 1 < kMergeRecipeCount ? "},\n" : "}\n", stdout);
+    }
+    std::fputs("],\n", stdout);
+}
+
 // The achievement catalogue. `trigger` goes out ALREADY EXPANDED — the row writes `{n}`
 // and the resolved goal is substituted here (app/game_achievements.h), so a kGoalAll row
 // publishes the real set size and the site never has to know what the sentinel means.
@@ -266,6 +312,7 @@ int main() {
     dumpMods();
     dumpAreas();
     dumpMoves();
+    dumpRecipes();
     dumpAchievements();
     std::fputs("}\n", stdout);
     return 0;

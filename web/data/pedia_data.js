@@ -2566,6 +2566,2090 @@ window.PEDIA_DATA = {
       "icon": "assets/icons/ICON_ITEM_DEEP_LEARNING_CORE.png"
     }
   ],
+  "recipes": [
+    {
+      "name": "Pwnzu-Patched Noodles",
+      "output": "pwnzu_patched_noodles",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "null_noodles",
+          "qty": 1
+        },
+        {
+          "id": "pwnzu_sauce",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Fully-Stacked Nachos",
+      "output": "fully_stacked_nachos",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "tortilla_chip",
+          "qty": 1
+        },
+        {
+          "id": "osi_dip",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Hashed Browns",
+      "output": "hashed_browns",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "c_salt",
+          "qty": 1
+        },
+        {
+          "id": "grepsed_oil",
+          "qty": 1
+        },
+        {
+          "id": "cronstarch",
+          "qty": 1
+        },
+        {
+          "id": "polltatoes",
+          "qty": 1
+        }
+      ],
+      "requires": [
+        "hashed_browns",
+        "salted_hashed_browns"
+      ]
+    },
+    {
+      "name": "Salted&Hashed Browns",
+      "output": "salted_hashed_browns",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "c_salt",
+          "qty": 1
+        },
+        {
+          "id": "hashed_browns",
+          "qty": 1
+        }
+      ],
+      "requires": [
+        "hashed_browns",
+        "salted_hashed_browns"
+      ]
+    },
+    {
+      "name": "Cracquettes",
+      "output": "cracquettes",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "spam",
+          "qty": 4
+        },
+        {
+          "id": "breadcrumbs",
+          "qty": 2
+        },
+        {
+          "id": "regeggs",
+          "qty": 1
+        },
+        {
+          "id": "grepsed_oil",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Hackshuka",
+      "output": "hackshuka",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "regeggs",
+          "qty": 2
+        },
+        {
+          "id": "data_leek",
+          "qty": 1
+        },
+        {
+          "id": "boolean_cubes",
+          "qty": 1
+        },
+        {
+          "id": "c_salt",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Applet Turnover",
+      "output": "applet_turnover",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "applets",
+          "qty": 2
+        },
+        {
+          "id": "syntactic_sugar",
+          "qty": 1
+        },
+        {
+          "id": "cronstarch",
+          "qty": 1
+        },
+        {
+          "id": "vanilla_extract",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Serial Bar",
+      "output": "serial_bar",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "universal_cereal_box",
+          "qty": 1
+        },
+        {
+          "id": "breadcrumbs",
+          "qty": 2
+        },
+        {
+          "id": "syntactic_sugar",
+          "qty": 1
+        },
+        {
+          "id": "boolean_cubes",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Macrol Fry-Up",
+      "output": "macrol_fry_up",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "fresh_macrol",
+          "qty": 2
+        },
+        {
+          "id": "grepsed_oil",
+          "qty": 1
+        },
+        {
+          "id": "breadcrumbs",
+          "qty": 1
+        },
+        {
+          "id": "c_salt",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Vanilla Java Roast",
+      "output": "vanilla_java_roast",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "java",
+          "qty": 2
+        },
+        {
+          "id": "syntactic_sugar",
+          "qty": 1
+        },
+        {
+          "id": "vanilla_extract",
+          "qty": 1
+        },
+        {
+          "id": "kernel_oil",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "GNUlash",
+      "output": "gnulash",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "root_veg",
+          "qty": 1
+        },
+        {
+          "id": "kernel_oil",
+          "qty": 1
+        },
+        {
+          "id": "polltatoes",
+          "qty": 2
+        },
+        {
+          "id": "desalinated_c_salt",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "RISCotto",
+      "output": "riscotto",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "boolean_cubes",
+          "qty": 2
+        },
+        {
+          "id": "root_veg",
+          "qty": 1
+        },
+        {
+          "id": "kernel_oil",
+          "qty": 1
+        },
+        {
+          "id": "c_salt",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "LANsagne",
+      "output": "lansagne",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "osi_dip",
+          "qty": 1
+        },
+        {
+          "id": "null_noodles",
+          "qty": 2
+        },
+        {
+          "id": "pwnzu_sauce",
+          "qty": 1
+        },
+        {
+          "id": "c_salt",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "RAMen",
+      "output": "ramen",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "null_noodles",
+          "qty": 2
+        },
+        {
+          "id": "regeggs",
+          "qty": 1
+        },
+        {
+          "id": "data_leek",
+          "qty": 1
+        },
+        {
+          "id": "kernel_oil",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Tiramisudo",
+      "output": "tiramisudo",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "java",
+          "qty": 2
+        },
+        {
+          "id": "syntactic_sugar",
+          "qty": 1
+        },
+        {
+          "id": "breadcrumbs",
+          "qty": 2
+        },
+        {
+          "id": "vanilla_extract",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Core Dumplings",
+      "output": "core_dumplings",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "cronstarch",
+          "qty": 2
+        },
+        {
+          "id": "spam",
+          "qty": 2
+        },
+        {
+          "id": "data_leek",
+          "qty": 1
+        },
+        {
+          "id": "c_salt",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Forkaccia",
+      "output": "forkaccia",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "cronstarch",
+          "qty": 2
+        },
+        {
+          "id": "grepsed_oil",
+          "qty": 1
+        },
+        {
+          "id": "breadcrumbs",
+          "qty": 2
+        },
+        {
+          "id": "c_salt",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Cacherole",
+      "output": "cacherole",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "hashed_browns",
+          "qty": 1
+        },
+        {
+          "id": "spam",
+          "qty": 2
+        },
+        {
+          "id": "boolean_cubes",
+          "qty": 1
+        },
+        {
+          "id": "grepsed_oil",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Portridge",
+      "output": "portridge",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "bootmeal",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Halloumi, World",
+      "output": "halloumi_world",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "cruds",
+          "qty": 2
+        },
+        {
+          "id": "c_salt",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "NaN Bread",
+      "output": "nan_bread",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "self_signed_flour",
+          "qty": 2
+        },
+        {
+          "id": "c_salt",
+          "qty": 1
+        },
+        {
+          "id": "grepsed_oil",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Chrootons",
+      "output": "chrootons",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "nan_bread",
+          "qty": 1
+        },
+        {
+          "id": "grepsed_oil",
+          "qty": 1
+        },
+        {
+          "id": "c_salt",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Gzipacho",
+      "output": "gzipacho",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "bytesteak_tomatoes",
+          "qty": 2
+        },
+        {
+          "id": "gherkins",
+          "qty": 1
+        },
+        {
+          "id": "breadcrumbs",
+          "qty": 2
+        },
+        {
+          "id": "grepsed_oil",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Lossy Lassi",
+      "output": "lossy_lassi",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "papaya",
+          "qty": 2
+        },
+        {
+          "id": "syntactic_sugar",
+          "qty": 1
+        },
+        {
+          "id": "c_salt",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Cod Review",
+      "output": "cod_review",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "red_herring",
+          "qty": 2
+        },
+        {
+          "id": "self_signed_flour",
+          "qty": 1
+        },
+        {
+          "id": "grepsed_oil",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Recursive Turducken",
+      "output": "recursive_turducken",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "rubber_ducks",
+          "qty": 3
+        },
+        {
+          "id": "c_salt",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Peking Duck Typing",
+      "output": "peking_duck_typing",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "rubber_ducks",
+          "qty": 1
+        },
+        {
+          "id": "imaple_syrup",
+          "qty": 1
+        },
+        {
+          "id": "shellots",
+          "qty": 2
+        },
+        {
+          "id": "cronstarch",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Semaphreddo",
+      "output": "semaphreddo",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "double_precision_cream",
+          "qty": 2
+        },
+        {
+          "id": "syntactic_sugar",
+          "qty": 1
+        },
+        {
+          "id": "cocoa",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Spaghetti Code",
+      "output": "spaghetti_code",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "linkguine",
+          "qty": 2
+        },
+        {
+          "id": "bytesteak_tomatoes",
+          "qty": 2
+        },
+        {
+          "id": "garlic_escapes",
+          "qty": 1
+        },
+        {
+          "id": "grepsed_oil",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Emacsaroni",
+      "output": "emacsaroni",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "linkguine",
+          "qty": 2
+        },
+        {
+          "id": "mozillarella",
+          "qty": 2
+        },
+        {
+          "id": "churned_butter",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Bisectuits",
+      "output": "bisectuits",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "self_signed_flour",
+          "qty": 2
+        },
+        {
+          "id": "churned_butter",
+          "qty": 1
+        },
+        {
+          "id": "syntactic_sugar",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Quicksortbet",
+      "output": "quicksortbet",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "grepefruit",
+          "qty": 2
+        },
+        {
+          "id": "honeypot_yogurt",
+          "qty": 1
+        },
+        {
+          "id": "syntactic_sugar",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Buguette",
+      "output": "buguette",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "self_signed_flour",
+          "qty": 3
+        },
+        {
+          "id": "c_salt",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "CHAPati",
+      "output": "chapati",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "self_signed_flour",
+          "qty": 2
+        },
+        {
+          "id": "churned_butter",
+          "qty": 1
+        },
+        {
+          "id": "c_salt",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Corrumpets",
+      "output": "corrumpets",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "self_signed_flour",
+          "qty": 2
+        },
+        {
+          "id": "double_precision_cream",
+          "qty": 1
+        },
+        {
+          "id": "c_salt",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Packettone",
+      "output": "packettone",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "self_signed_flour",
+          "qty": 2
+        },
+        {
+          "id": "epoch_dates",
+          "qty": 1
+        },
+        {
+          "id": "syntactic_sugar",
+          "qty": 1
+        },
+        {
+          "id": "churned_butter",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Hot-Swapped Buns",
+      "output": "hot_swapped_buns",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "self_signed_flour",
+          "qty": 2
+        },
+        {
+          "id": "cinnamon",
+          "qty": 1
+        },
+        {
+          "id": "syntactic_sugar",
+          "qty": 1
+        },
+        {
+          "id": "churned_butter",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Current Buns",
+      "output": "current_buns",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "self_signed_flour",
+          "qty": 2
+        },
+        {
+          "id": "table_grapes",
+          "qty": 2
+        },
+        {
+          "id": "syntactic_sugar",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Config Rolls",
+      "output": "config_rolls",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "dotfigs",
+          "qty": 2
+        },
+        {
+          "id": "self_signed_flour",
+          "qty": 2
+        },
+        {
+          "id": "syntactic_sugar",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Crostini",
+      "output": "crostini",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "buguette",
+          "qty": 1
+        },
+        {
+          "id": "grepsed_oil",
+          "qty": 1
+        },
+        {
+          "id": "garlic_escapes",
+          "qty": 1
+        },
+        {
+          "id": "bytesteak_tomatoes",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Payloaf",
+      "output": "payloaf",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "nan_bread",
+          "qty": 1
+        },
+        {
+          "id": "spam",
+          "qty": 2
+        },
+        {
+          "id": "c_salt",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Firewaffle",
+      "output": "firewaffle",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "self_signed_flour",
+          "qty": 2
+        },
+        {
+          "id": "regeggs",
+          "qty": 1
+        },
+        {
+          "id": "churned_butter",
+          "qty": 1
+        },
+        {
+          "id": "imaple_syrup",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Chownder",
+      "output": "chownder",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "red_herring",
+          "qty": 2
+        },
+        {
+          "id": "polltatoes",
+          "qty": 1
+        },
+        {
+          "id": "perl_barley",
+          "qty": 1
+        },
+        {
+          "id": "double_precision_cream",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Cronsomme",
+      "output": "cronsomme",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "boolean_cubes",
+          "qty": 2
+        },
+        {
+          "id": "parsenips",
+          "qty": 1
+        },
+        {
+          "id": "string_beans",
+          "qty": 1
+        },
+        {
+          "id": "c_salt",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "WANton Soup",
+      "output": "wanton_soup",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "self_signed_flour",
+          "qty": 2
+        },
+        {
+          "id": "minified_beef",
+          "qty": 1
+        },
+        {
+          "id": "snap_peas",
+          "qty": 1
+        },
+        {
+          "id": "boolean_cubes",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Piperogi",
+      "output": "piperogi",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "self_signed_flour",
+          "qty": 2
+        },
+        {
+          "id": "polltatoes",
+          "qty": 2
+        },
+        {
+          "id": "cruds",
+          "qty": 1
+        },
+        {
+          "id": "shellots",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Queuesadilla",
+      "output": "queuesadilla",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "nixtamal",
+          "qty": 2
+        },
+        {
+          "id": "mozillarella",
+          "qty": 2
+        },
+        {
+          "id": "flatpak_choi",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Ravioli Code",
+      "output": "ravioli_code",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "vpenne",
+          "qty": 2
+        },
+        {
+          "id": "squid_ink",
+          "qty": 1
+        },
+        {
+          "id": "cruds",
+          "qty": 1
+        },
+        {
+          "id": "paramesan",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Idleys",
+      "output": "idleys",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "basicmati_rice",
+          "qty": 2
+        },
+        {
+          "id": "lintils",
+          "qty": 2
+        },
+        {
+          "id": "c_salt",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "MS-Dosa",
+      "output": "ms_dosa",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "basicmati_rice",
+          "qty": 2
+        },
+        {
+          "id": "lintils",
+          "qty": 1
+        },
+        {
+          "id": "grepsed_oil",
+          "qty": 1
+        },
+        {
+          "id": "polltatoes",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "ARPas",
+      "output": "arpas",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "nixtamal",
+          "qty": 2
+        },
+        {
+          "id": "cruds",
+          "qty": 1
+        },
+        {
+          "id": "c_salt",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Kafkofta",
+      "output": "kafkofta",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "minified_beef",
+          "qty": 1
+        },
+        {
+          "id": "lambda_chops",
+          "qty": 1
+        },
+        {
+          "id": "breadcrumbs",
+          "qty": 2
+        },
+        {
+          "id": "cinnamon",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Kernel Panini",
+      "output": "kernel_panini",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "buguette",
+          "qty": 1
+        },
+        {
+          "id": "mozillarella",
+          "qty": 2
+        },
+        {
+          "id": "bytesteak_tomatoes",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Racelette",
+      "output": "racelette",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "mozillarella",
+          "qty": 2
+        },
+        {
+          "id": "polltatoes",
+          "qty": 1
+        },
+        {
+          "id": "kaliflower",
+          "qty": 1
+        },
+        {
+          "id": "gherkins",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Scrambled RegEggs",
+      "output": "scrambled_regeggs",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "regeggs",
+          "qty": 3
+        },
+        {
+          "id": "churned_butter",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Char-Grilled Array",
+      "output": "char_grilled_array",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "swiss_chard",
+          "qty": 2
+        },
+        {
+          "id": "bitroot",
+          "qty": 1
+        },
+        {
+          "id": "capsicum",
+          "qty": 1
+        },
+        {
+          "id": "grepsed_oil",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Tarballs",
+      "output": "tarballs",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "minified_beef",
+          "qty": 2
+        },
+        {
+          "id": "breadcrumbs",
+          "qty": 2
+        },
+        {
+          "id": "grepsed_oil",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Bashed Potatoes",
+      "output": "bashed_potatoes",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "polltatoes",
+          "qty": 2
+        },
+        {
+          "id": "squash",
+          "qty": 1
+        },
+        {
+          "id": "churned_butter",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Onion Rings",
+      "output": "onion_rings",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "shellots",
+          "qty": 3
+        },
+        {
+          "id": "self_signed_flour",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Flash-Fried Chips",
+      "output": "flash_fried_chips",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "polltatoes",
+          "qty": 2
+        },
+        {
+          "id": "plaintain",
+          "qty": 1
+        },
+        {
+          "id": "kernel_oil",
+          "qty": 1
+        },
+        {
+          "id": "c_salt",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Twisted Pairetzels",
+      "output": "twisted_pairetzels",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "self_signed_flour",
+          "qty": 2
+        },
+        {
+          "id": "chia_seeds",
+          "qty": 1
+        },
+        {
+          "id": "c_salt",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Jitter Fritters",
+      "output": "jitter_fritters",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "awkra",
+          "qty": 2
+        },
+        {
+          "id": "unmonitored_oats",
+          "qty": 1
+        },
+        {
+          "id": "grepsed_oil",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "SHAshimi",
+      "output": "shashimi",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "red_herring",
+          "qty": 2
+        },
+        {
+          "id": "romaine",
+          "qty": 1
+        },
+        {
+          "id": "natto",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Spare RIBs",
+      "output": "spare_ribs",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "saasage",
+          "qty": 2
+        },
+        {
+          "id": "imaple_syrup",
+          "qty": 1
+        },
+        {
+          "id": "capsicum",
+          "qty": 1
+        },
+        {
+          "id": "c_salt",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "RESTed Steak",
+      "output": "rested_steak",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "file_mignon",
+          "qty": 2
+        },
+        {
+          "id": "churned_butter",
+          "qty": 1
+        },
+        {
+          "id": "peppermint",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Privilege Escalope",
+      "output": "privilege_escalope",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "file_mignon",
+          "qty": 2
+        },
+        {
+          "id": "breadcrumbs",
+          "qty": 2
+        },
+        {
+          "id": "regeggs",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Force-Pulled Pork",
+      "output": "force_pulled_pork",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "spam",
+          "qty": 4
+        },
+        {
+          "id": "pwnzu_sauce",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Rubber Duck Confit",
+      "output": "rubber_duck_confit",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "rubber_ducks",
+          "qty": 2
+        },
+        {
+          "id": "kernel_oil",
+          "qty": 2
+        },
+        {
+          "id": "garlic_escapes",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Vacuum-Sealed Leftovers",
+      "output": "vacuum_sealed_leftovers",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "tarballs",
+          "qty": 1
+        },
+        {
+          "id": "spam",
+          "qty": 2
+        },
+        {
+          "id": "gherkins",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Disk Platter",
+      "output": "disk_platter",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "crostini",
+          "qty": 1
+        },
+        {
+          "id": "packed_sardines",
+          "qty": 1
+        },
+        {
+          "id": "archichoke",
+          "qty": 1
+        },
+        {
+          "id": "paramesan",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Serverless Platter",
+      "output": "serverless_platter",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "cache_ews",
+          "qty": 1
+        },
+        {
+          "id": "macadamia",
+          "qty": 1
+        },
+        {
+          "id": "nibbles",
+          "qty": 1
+        },
+        {
+          "id": "silicon_wafers",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Pickle Jar",
+      "output": "pickle_jar",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "gherkins",
+          "qty": 3
+        },
+        {
+          "id": "c_salt",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "AI-oli",
+      "output": "ai_oli",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "garlic_escapes",
+          "qty": 2
+        },
+        {
+          "id": "regeggs",
+          "qty": 1
+        },
+        {
+          "id": "grepsed_oil",
+          "qty": 2
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Vi-naigrette",
+      "output": "vinaigrette",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "hard_cidr",
+          "qty": 1
+        },
+        {
+          "id": "grepsed_oil",
+          "qty": 2
+        },
+        {
+          "id": "c_salt",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Malwarmalade",
+      "output": "malwarmalade",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "grepefruit",
+          "qty": 3
+        },
+        {
+          "id": "syntactic_sugar",
+          "qty": 2
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Signal Jam",
+      "output": "signal_jam",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "cloudberries",
+          "qty": 3
+        },
+        {
+          "id": "syntactic_sugar",
+          "qty": 2
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "POP3sicle",
+      "output": "pop3sicle",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "pingapple",
+          "qty": 2
+        },
+        {
+          "id": "syntactic_sugar",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Mergingue",
+      "output": "mergingue",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "regeggs",
+          "qty": 2
+        },
+        {
+          "id": "syntactic_sugar",
+          "qty": 2
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Declair",
+      "output": "declair",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "self_signed_flour",
+          "qty": 2
+        },
+        {
+          "id": "double_precision_cream",
+          "qty": 1
+        },
+        {
+          "id": "cocoa",
+          "qty": 1
+        },
+        {
+          "id": "regeggs",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Profilerole",
+      "output": "profilerole",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "self_signed_flour",
+          "qty": 2
+        },
+        {
+          "id": "double_precision_cream",
+          "qty": 2
+        },
+        {
+          "id": "cocoa",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "COBOLer",
+      "output": "coboler",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "apiricot",
+          "qty": 2
+        },
+        {
+          "id": "self_signed_flour",
+          "qty": 2
+        },
+        {
+          "id": "syntactic_sugar",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Clustard",
+      "output": "clustard",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "regeggs",
+          "qty": 2
+        },
+        {
+          "id": "double_precision_cream",
+          "qty": 2
+        },
+        {
+          "id": "vanilla_extract",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Bashlava",
+      "output": "bashlava",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "macadamia",
+          "qty": 2
+        },
+        {
+          "id": "self_signed_flour",
+          "qty": 2
+        },
+        {
+          "id": "imaple_syrup",
+          "qty": 1
+        },
+        {
+          "id": "churned_butter",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Deflated Souffle",
+      "output": "deflated_souffle",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "regeggs",
+          "qty": 3
+        },
+        {
+          "id": "mozillarella",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Fork Bombe",
+      "output": "fork_bombe",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "double_precision_cream",
+          "qty": 2
+        },
+        {
+          "id": "cocoa",
+          "qty": 1
+        },
+        {
+          "id": "marshalled_mallows",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Optical Mousse",
+      "output": "optical_mousse",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "cocoa",
+          "qty": 2
+        },
+        {
+          "id": "double_precision_cream",
+          "qty": 2
+        },
+        {
+          "id": "regeggs",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Cherry-Picked Tart",
+      "output": "cherry_picked_tart",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "cloudberries",
+          "qty": 2
+        },
+        {
+          "id": "self_signed_flour",
+          "qty": 2
+        },
+        {
+          "id": "syntactic_sugar",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Raspberry Pie",
+      "output": "raspberry_pie",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "raspberry_pis",
+          "qty": 2
+        },
+        {
+          "id": "self_signed_flour",
+          "qty": 2
+        },
+        {
+          "id": "syntactic_sugar",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Rainbow Tablet",
+      "output": "rainbow_tablet",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "syntactic_sugar",
+          "qty": 2
+        },
+        {
+          "id": "double_precision_cream",
+          "qty": 1
+        },
+        {
+          "id": "humbugs",
+          "qty": 1
+        },
+        {
+          "id": "peer_drops",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Mint Choc Chip",
+      "output": "mint_choc_chip",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "peppermint",
+          "qty": 2
+        },
+        {
+          "id": "cocoa",
+          "qty": 1
+        },
+        {
+          "id": "double_precision_cream",
+          "qty": 2
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Candied YAMLs",
+      "output": "candied_yamls",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "yamls",
+          "qty": 2
+        },
+        {
+          "id": "syntactic_sugar",
+          "qty": 2
+        },
+        {
+          "id": "churned_butter",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Flat White",
+      "output": "flat_white",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "java",
+          "qty": 2
+        },
+        {
+          "id": "double_precision_cream",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Mockachino",
+      "output": "mockachino",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "java",
+          "qty": 1
+        },
+        {
+          "id": "cocoa",
+          "qty": 2
+        },
+        {
+          "id": "double_precision_cream",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Blockchai",
+      "output": "blockchai",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "leaf_node_tea",
+          "qty": 2
+        },
+        {
+          "id": "cinnamon",
+          "qty": 1
+        },
+        {
+          "id": "double_precision_cream",
+          "qty": 1
+        },
+        {
+          "id": "syntactic_sugar",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "SYN-ACK Shake",
+      "output": "syn_ack_shake",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "double_precision_cream",
+          "qty": 2
+        },
+        {
+          "id": "syntactic_sugar",
+          "qty": 1
+        },
+        {
+          "id": "honeypot_yogurt",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Buffer Overfloat",
+      "output": "buffer_overfloat",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "r007_b33r",
+          "qty": 1
+        },
+        {
+          "id": "double_precision_cream",
+          "qty": 2
+        },
+        {
+          "id": "syntactic_sugar",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Hard CIDR",
+      "output": "hard_cidr",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "applets",
+          "qty": 3
+        },
+        {
+          "id": "syntactic_sugar",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Port 80",
+      "output": "port_80",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "table_grapes",
+          "qty": 3
+        },
+        {
+          "id": "syntactic_sugar",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "FizzBuzz",
+      "output": "fizzbuzz",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "mixins",
+          "qty": 2
+        },
+        {
+          "id": "burp_sweets",
+          "qty": 1
+        },
+        {
+          "id": "syntactic_sugar",
+          "qty": 1
+        }
+      ],
+      "requires": []
+    },
+    {
+      "name": "Punchcard Punch",
+      "output": "punchcard_punch",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "pingapple",
+          "qty": 1
+        },
+        {
+          "id": "apiricot",
+          "qty": 1
+        },
+        {
+          "id": "mixins",
+          "qty": 2
+        }
+      ],
+      "requires": []
+    }
+  ],
   "mods": [
     {
       "id": "clock_speed_boost",

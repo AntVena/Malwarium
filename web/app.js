@@ -64,6 +64,8 @@
       hatched:   ['hatched', '\u25a0 HATCHED'],
       unlocked:  ['owned', '\u25a0 UNLOCKED'],
       owned:     ['owned', '\u25a0 OWNED'],
+      known:     ['owned', '\u25a0 KNOWN'],
+      unknown:   ['locked', '\u26bf METHOD LOCKED'],
       seen:      ['seen', '\u2593 SEEN'],
       defeated:  ['hatched', '\u25a0 DEFEATED'],
       locked:    ['locked', '\u26bf LOCKED'],
@@ -109,6 +111,7 @@
     h += '<h2 class="sect">// SECTIONS</h2>';
     [['#/index', 'CREATURE INDEX', 'petware + wild malbeasts, three reveal states'],
      ['#/items', 'ITEMS + MODS', 'consumables, keys, caches, hardware mods'],
+     ['#/food', 'FOOD + RECIPES', 'the pantry, the dishes, and the methods that cook them'],
      ['#/moves', 'MOVES', 'core kit + line signatures'],
      ['#/ach', 'ACHIEVEMENTS', 'the permanent record'],
      ['#/archive', 'ARCHIVE', 'past pets \u00b7 retired and crashed'],
@@ -340,9 +343,13 @@
       '</div>';
   }
 
+  /* FOOD is not here — it has its own tab (vFood). A dish is the one item type with a
+     second gate on it (the method that cooks it), and at 192 of 216 rows the pantry
+     was also most of this page: leaving it in buried the two dozen items that AREN'T
+     food under nine screens of groceries. */
   function vItems() {
     var h = '';
-    var groups = [['FOOD', 'FOOD'], ['BUFFS', 'BUFFS'], ['QUEST', 'QUEST']];
+    var groups = [['BUFFS', 'BUFFS'], ['QUEST', 'QUEST']];
     groups.forEach(function (g) {
       var list = D.items.filter(function (i) { return i.type === g[0]; });
       if (!list.length) return;
@@ -368,6 +375,116 @@
           (un ? stats(m.stats) : '') + '</div></div>';
       }).join('');
     });
+    return h;
+  }
+
+  /* ---------- the kitchen ---------- */
+
+  /* An item row by id, for the ingredient and dish lookups below. Built once, lazily:
+     the recipe table names ~400 ingredients across its rows, and a linear scan of 216
+     items per name is the kind of thing a phone browser notices. */
+  var _itemIx = null;
+  function itemById(id) {
+    if (!_itemIx) {
+      _itemIx = {};
+      D.items.forEach(function (i) { _itemIx[i.id] = i; });
+    }
+    return _itemIx[id];
+  }
+
+  function itemName(id) {
+    var it = itemById(id);
+    return esc((it ? it.name : id).toUpperCase());
+  }
+
+  /* One MERGE HUB method. The kitchen gates on two INDEPENDENT axes and this row shows
+     both, because which one a player is waiting on is the whole question:
+
+       MET    — the dish has been held at least once (items{}), which decrypts what it
+                DOES. A dish can be met without its method: several are sold on shelves.
+       KNOWN  — the method itself was won off a Decryptogram's prize ladder (recipes{}),
+                which decrypts what it TAKES. Methods are never bought at any price.
+
+     The dish NAME survives both, matching the device's own hub (game_merge.cpp draws
+     every recipe's title and tags the unwon ones LOCKED): you are meant to be able to
+     see what you're cooking toward. */
+  function recipeRow(r) {
+    var known = st('recipes', r.output) === 'known';
+    var met = st('items', r.output) === 'unlocked';
+    var dish = itemById(r.output);
+
+    var ingredients = r.inputs.map(function (i) {
+      return i.qty + '× ' + itemName(i.id);
+    }).join(' · ');
+
+    /* The met-the-dish gate (requiresItems): the ladder holds these rows back until
+       you've actually eaten the thing, so a locked row says which dish it's waiting
+       on rather than looking like bad luck. Named only while it's still unmet. */
+    var waiting = (r.requires || []).filter(function (id) {
+      return st('items', id) !== 'unlocked';
+    });
+
+    var method = known
+      ? '<div class="method">' + ingredients + '</div>'
+      : '<div class="method">method encrypted — won off a DECRYPTOGRAM, never sold' +
+        (waiting.length
+          ? ' · held back until you’ve met ' +
+            waiting.map(itemName).join(' + ')
+          : '') + '</div>';
+
+    return '<div class="row ' + (known ? '' : 'locked') + '">' +
+      '<img class="icon20 ' + (met ? '' : 'dim') + '" src="' +
+      (met && dish ? dish.icon : D.meta.lockIcon) + '" alt="">' +
+      '<div class="body"><div class="nm">' + itemName(r.output) +
+      (dish ? rar(dish.rarity) : '') + chip(known ? 'known' : 'unknown') + '</div>' +
+      '<div class="fx">' + (met && dish ? esc(dish.effect)
+        : 'dish encrypted — get hold of one to read what it does') + '</div>' +
+      (met && dish ? stats(dish.stats) : '') + method + '</div>' +
+      (met && dish && dish.bits ? '<span class="bits">' + dish.bits + ' BITS</span>' : '') +
+      '</div>';
+  }
+
+  /* PANTRY + RECIPES. Split by whether a recipe MAKES the food: a staple is a row you
+     find, buy or forage, a dish is a row you cook — and the dish's own entry is its
+     recipe, so listing it twice would say the same thing in the weaker place. */
+  function vFood() {
+    var cooked = {};
+    D.recipes.forEach(function (r) { cooked[r.output] = true; });
+    var foods = D.items.filter(function (i) { return i.type === 'FOOD'; });
+    var pantry = foods.filter(function (i) { return !cooked[i.id]; });
+
+    var metFoods = foods.filter(function (i) { return st('items', i.id) === 'unlocked'; }).length;
+    var knownRecipes = D.recipes.filter(function (r) {
+      return st('recipes', r.output) === 'known';
+    }).length;
+
+    /* Both ladders up front, because both are achievement rungs the device gives no
+       other view of: the cuisine ladder counts foods ever held, the RecipesKnown ladder
+       counts methods won. Dual-coded (fill + fraction) like the achievement bars. */
+    var h = '<h2 class="sect">// THE KITCHEN</h2>';
+    h += '<div class="card"><div class="body">' +
+      '<div class="bar"><div class="rail"><div class="fill" style="width:' +
+      (100 * metFoods / (foods.length || 1)) + '%"></div></div>' +
+      '<span class="num">' + metFoods + '/' + foods.length + '</span>' +
+      '<span class="lbl">FOODS MET</span></div>' +
+      '<div class="bar"><div class="rail"><div class="fill" style="width:' +
+      (100 * knownRecipes / (D.recipes.length || 1)) + '%"></div></div>' +
+      '<span class="num">' + knownRecipes + '/' + D.recipes.length + '</span>' +
+      '<span class="lbl">METHODS KNOWN</span></div>' +
+      '</div></div>';
+
+    var gotPantry = pantry.filter(function (i) { return st('items', i.id) === 'unlocked'; }).length;
+    h += '<h2 class="sect">// PANTRY<span class="count">' + gotPantry + '/' + pantry.length +
+      '</span></h2>';
+    h += '<div class="note">raw staples · found, foraged or bought — edible as-is, ' +
+      'better cooked</div>';
+    h += pantry.map(itemRow).join('');
+
+    h += '<h2 class="sect">// RECIPES<span class="count">' + knownRecipes + '/' +
+      D.recipes.length + '</span></h2>';
+    h += '<div class="note">cooked at the MERGE HUB · buy the hub in the RIG SHOP, ' +
+      'then win the methods one solved DECRYPTOGRAM at a time</div>';
+    h += D.recipes.map(recipeRow).join('');
     return h;
   }
 
@@ -663,7 +780,7 @@
 
   /* ---------- shell ---------- */
   var routes = {
-    '': vLanding, 'index': vIndex, 'items': vItems, 'moves': vMoves,
+    '': vLanding, 'index': vIndex, 'items': vItems, 'food': vFood, 'moves': vMoves,
     'ach': vAch, 'archive': vArchive, 'tag': vTag
   };
 

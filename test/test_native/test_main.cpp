@@ -500,6 +500,7 @@ int g_failures = 0;
     RUN(test_set_hacker_tag_validates)            \
     RUN(test_pedia_state_json_shape)              \
     RUN(test_pedia_state_json_fresh_hatch_egg)    \
+    RUN(test_pedia_state_kitchen_axes)            \
     RUN(test_wild_malbeast_index_mapping)              \
     RUN(test_save_v24_to_v25_pedia_defaults)           \
     RUN(test_save_v25_roundtrip)                       \

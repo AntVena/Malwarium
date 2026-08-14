@@ -8,10 +8,10 @@
 #include "core/app/game.h"
 #include "core/app/game_achievements.h"
 #include "core/content/content_achievements.h"
+#include "core/content/content_recipes.h"
 #include "core/content/defs.h"
 #include "core/content/registry.h"
 #include "core/model/combat.h"
-#include "core/model/inventory.h"
 #include "core/model/loadout.h"
 #include "core/model/move_loadout.h"
 #include "core/model/pet_model.h"
@@ -166,11 +166,11 @@ std::string buildPediaStateJson(const Game& g) {
     }
     out += "},";
 
-    // --- items{} (owned = a positive stack right now) -----------------------
-    // NOTE: this is CURRENT possession, not "ever seen" — an item consumed to
-    // zero reports "locked" again. Good enough for a first cut; a proper
-    // reveal-once-then-remember model is a TODO(pedia-v2) if that distinction
-    // matters later.
+    // --- items{} (unlocked = ever held, not held right now) -----------------
+    // Game::itemCollected, the same lifetime tally the cuisine and rarity achievement
+    // ladders count. Current possession would un-reveal a row the moment its last copy
+    // was spent, which is wrong everywhere and worst in the kitchen: food is FOR eating,
+    // so a pantry keyed on the bag would empty itself as it was played.
     appendJsonString(out, "items");
     out += ':';
     out += '{';
@@ -178,9 +178,25 @@ std::string buildPediaStateJson(const Game& g) {
         const std::vector<const ItemDef*> items = g.content().allItems();
         for (size_t i = 0; i < items.size(); ++i) {
             const ItemDef* it = items[i];
-            const bool owned = g.inventory().has(it->id);
-            appendKeyString(out, it->id, owned ? "unlocked" : "locked", i + 1 < items.size());
+            const bool met = g.itemCollected(it->id);
+            appendKeyString(out, it->id, met ? "unlocked" : "locked", i + 1 < items.size());
         }
+    }
+    out += "},";
+
+    // --- recipes{} (the MERGE HUB methods, keyed by the dish they make) ------
+    // The kitchen's second axis. Meeting a dish (items{} above) and knowing how to cook
+    // it are independent facts — a dish can be bought off a shelf without its method
+    // ever dropping — so the site needs both to say which of the two a row is waiting on.
+    // Enumerated from the content table and answered by Game, so adding a recipe row
+    // reaches the site with no edit here.
+    appendJsonString(out, "recipes");
+    out += ':';
+    out += '{';
+    for (int i = 0; i < kMergeRecipeCount; ++i) {
+        const MergeRecipe& r = kMergeRecipes[i];
+        appendKeyString(out, r.outputId, g.recipeKnown(r.outputId) ? "known" : "locked",
+                        i + 1 < kMergeRecipeCount);
     }
     out += "},";
 

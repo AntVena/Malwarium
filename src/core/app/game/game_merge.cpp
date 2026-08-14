@@ -51,6 +51,13 @@ bool Game::recipeOwned(int recipeIndex) const {
     return (recipesOwned_[wire / 8] & (1u << (wire % 8))) != 0;
 }
 
+// The same bit, asked the way anything OUTSIDE the engine has to ask it: by the dish.
+// A caller that can see kMergeRecipes has the index; one that can only see item ids
+// (the 'Pedia payload) has the output, which is the table's unique key.
+bool Game::recipeKnown(const char* outputId) const {
+    return recipeOwned(recipeIndexByOutput(outputId));
+}
+
 void Game::grantRecipe(int recipeIndex) {
     if (recipeIndex < 0 || recipeIndex >= kMergeRecipeCount) return;
     const MergeRecipe& r = kMergeRecipes[recipeIndex];

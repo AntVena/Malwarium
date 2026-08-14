@@ -1316,6 +1316,12 @@ public:
     // inventory, so every path that grants an item is covered by construction.
     bool itemCollected(const char* id) const;
     int itemsCollected() const { return static_cast<int>(collectedItems_.size()); }
+    // Has the METHOD for `outputId` been won? (save v31) — the kitchen's other axis:
+    // meeting a dish and knowing how to cook it are independent, and a recipe is only
+    // ever won off a Decryptogram, never bought. Keyed by the dish because that is the
+    // recipe table's own key (content_recipes.h recipeIndexByOutput). Out-of-line
+    // (game_merge.cpp): that table is engine-private, so this header cannot see it.
+    bool recipeKnown(const char* outputId) const;
     // The deepest DeepWeb Dive this SPECIES has ever reached on this device (save v40),
     // 0 if it never dived. Per-species rather than per-pet, so the record outlives the
     // individual: the pet's own in-progress best is bestDeepWebDepth() above.
@@ -2882,10 +2888,9 @@ private:
     char rankUpFlavor_[32] = "";
 
     // Audit-mode passive discovery scan. netScanEnabled_ is the
-    // persisted runtime opt-in (save v5, default OFF). The real-radio BSSID dedup
-    // set that used to live here (seenBssids_) moved to the SD-backed
-    // networkLedger_ above (see its comment) — the scan now only queues a sighting
-    // via registerNetwork, never dedups/credits directly.
+    // persisted runtime opt-in (save v5, default OFF). Real-radio BSSID dedup lives in
+    // the SD-backed networkLedger_ above (see its comment), not here: this scan only
+    // queues a sighting via registerNetwork, and never dedups or credits directly.
     bool netScanEnabled_ = false;
     // 'Pedia local-AP runtime opt-in (save v20, default OFF). Read by the device
     // tier's RadioArbiter (top radio owner while on). See apEnabled() above.

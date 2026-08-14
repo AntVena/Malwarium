@@ -51,7 +51,43 @@ window.PEDIA_STATE_FIXTURE = {
     "access_token": "unlocked",
     "safe_mode_key": "locked",
     "rollback": "locked",
-    "decryptogram": "unlocked"
+    "decryptogram": "unlocked",
+
+    // The pantry sample. "unlocked" here is EVER HELD, not held right now
+    // (pedia_state.cpp items{}), which is why food can be eaten without un-revealing
+    // itself. Cooked dishes are listed alongside the staples on purpose — a dish is an
+    // item like any other, and `recipes` below is the separate question of whether the
+    // method for it has been won.
+    "pwnzu_sauce": "unlocked",
+    "c_salt": "unlocked",
+    "grepsed_oil": "unlocked",
+    "cronstarch": "locked",
+    "polltatoes": "unlocked",
+    "spam": "unlocked",
+    "regeggs": "locked",
+    "data_leek": "locked",
+    "pwnzu_patched_noodles": "unlocked",
+    "hashed_browns": "unlocked",
+    "salted_hashed_browns": "locked"
+  },
+
+  // extension: the MERGE HUB methods, keyed by the dish each one cooks. The device
+  // emits one entry per recipe row (pedia_state.cpp); a sample of the SHAPES is enough
+  // here, and a row absent from this map correctly renders as an unwon method. Every
+  // combination the FOOD tab draws appears once on purpose:
+  //   known + met      pwnzu_patched_noodles  — the full row, ingredients and all
+  //   known + unmet    ramen                  — you can cook it, you've never eaten it
+  //   unwon + met      hashed_browns          — bought off a shelf, method still out there
+  //   unwon + gated    salted_hashed_browns   — held back until its dish is met
+  // Cracquettes carries the WIDEST method the row has to draw — four ingredients, the
+  // kMaxRecipeInputs ceiling — so the ingredient line's wrapping is exercised offline.
+  "recipes": {
+    "pwnzu_patched_noodles": "known",
+    "fully_stacked_nachos": "known",
+    "ramen": "known",
+    "cracquettes": "known",
+    "hashed_browns": "locked",
+    "salted_hashed_browns": "locked"
   },
 
   "mods": {
