@@ -96,15 +96,6 @@ magnitudes exactly. The owned-recipe set is a length-prefixed bitset (save v51) 
 `kMergeRecipeWireCap` of 128, so the table has room to roughly double again without a save change.
 What is left:
 
-- **The prize ladder is more than twice the length of the quote pool.** `quotePrizeLadder` names
-  100 dishes; `content_quotes.cpp` holds 44 quotes, and a first solve is the only thing that ever
-  hands a recipe over. So a player who cracks every board in the game wins at most 44 of the 100
-  methods, and the back half of the ladder — everything from the puddings down — is currently
-  unreachable rather than merely distant. The fix is quotes, which are the cheapest content in the
-  repo: one row each, no save concern (wires are stable and `kQuoteWireCap` is 256), and the
-  header states the two rules a row must pass. Wants ~60 more to make the ladder winnable, and
-  they must be genuinely attributed — a misattributed quote is worse than a missing one.
-  Diff **M**, and it is the single thing most limiting what a player can actually cook.
 - **Drop weights are unmeasured.** The pantry's numbers are authored by flavour, not play data. The
   walk-pool thinning constant (`kStapleWalkWeight`) especially is a guess at how much staple a player
   should wade through to reach a diving bell. Diff **M** (needs measurement runs).

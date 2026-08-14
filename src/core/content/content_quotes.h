@@ -72,7 +72,7 @@ struct QuoteDef {
 // multiples of 4, with a save-version note) as the table approaches it; the array is
 // length-prefixed, so a longer one loads into an older build's shorter view harmlessly
 // and a shorter one reads back as "never played".
-inline constexpr int kQuoteWireCap = 256;
+inline constexpr int kQuoteWireCap = 512;
 inline constexpr int kQuoteStateBytes = kQuoteWireCap / 4;
 
 // --- What a board pays -------------------------------------------------------

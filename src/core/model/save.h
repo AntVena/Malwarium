@@ -317,7 +317,12 @@ constexpr int kSaveTextCap = 28;     // matches EventLog's LogEntry.text
 //     shifts every row after them — an older blob's entries are remapped by hand.
 // A v49+ blob needs neither pass. This is also the version to raise
 // kOldestAcceptedVersion past once every device is current, which retires that function.
-constexpr uint16_t kSaveVersion = 51;
+// v52 widens kQuoteWireCap (content_quotes.h) from 256 to 512, which doubles the
+// quoteStates array. The wire format does not change: the array has been length-
+// prefixed since v48, so a longer one loads into a shorter build's view as "the
+// quotes it knows" and a shorter one reads back as "never played". The version moves
+// anyway, because the header that owns the cap asks for a note when it does.
+constexpr uint16_t kSaveVersion = 52;
 
 // The oldest blob deserialize will read. Raising it is how a device stops carrying
 // migration weight for saves nobody can still be holding — and it is the ONLY thing
