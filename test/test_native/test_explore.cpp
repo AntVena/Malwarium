@@ -957,6 +957,43 @@ void test_deepweb_dive() {
         CHECK(g.nav() == Game::Nav::Combat);          // a wild dive fight started
         CHECK(g.debugEncounterEnemyLevel() == L + kDeepWebEnemyLevelOffset);  // scaled to pet
     }
+    // (4) The Deep-Learning buff SURVIVES the dive it was armed for. It is a
+    //     Context::Anytime item, so the whole point is arming it before diving —
+    //     resetting the multiplier in startDeepWebDive would consume it on the way in
+    //     and it would never once apply. Only a dive ENDING spends it.
+    {
+        Game g{StartMode::Hatched, "bruinforce"};
+        for (int a = 0; a < kExplSectors; ++a) g.debugSetSectorCleared(a, true);
+        CHECK(g.debugDepthMultiplier() == 1);              // nothing armed
+
+        g.inventory().add("deep_learning_core", 1);
+        g.debugUseItem("deep_learning_core");
+        CHECK(g.debugDepthMultiplier() == 4);              // armed, before the dive
+
+        g.debugStartDeepWebDive();
+        CHECK(g.inDeepWebDive());
+        CHECK(g.debugDepthMultiplier() == 4);              // ...and it is STILL armed
+
+        // Stopping the dive spends it.
+        stopExplore(g);
+        CHECK(!g.inDeepWebDive());
+        CHECK(g.debugDepthMultiplier() == 1);
+    }
+    // (5) A SECTOR walk is not a dive: arming the buff and then taking an ordinary
+    //     walk must not eat it, because the multiplier only ever applies on
+    //     kDeepWebSector (the inDeepWebDive() guard on the streak advance).
+    {
+        Game g{StartMode::Hatched, "bruinforce"};
+        g.inventory().add("deep_learning_module", 1);
+        g.debugUseItem("deep_learning_module");
+        CHECK(g.debugDepthMultiplier() == 2);
+
+        g.debugArmExplore(0, 0);
+        CHECK(g.exploreActive() && !g.inDeepWebDive());
+        CHECK(g.debugDepthMultiplier() == 2);              // survives entering a walk
+        stopExplore(g);
+        CHECK(g.debugDepthMultiplier() == 2);              // ...and leaving one
+    }
 }
 
 // Combat::begin's forceEnemyFirst override (retained combat-engine mechanic):

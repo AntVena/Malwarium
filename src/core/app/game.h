@@ -1522,6 +1522,10 @@ public:
     // Arm the DeepWeb Dive directly (tests) — keeps its own all-areas-cleared guard.
     // Real path: EXPL → B on the "> DIVE" row.
     void debugStartDeepWebDive() { startDeepWebDive(); }
+    // The armed Deep-Learning Module/Core depth step (1 = none armed). No production
+    // reader outside the engine — the habitat draws it via game_render.cpp — so tests
+    // read it here to assert the buff survives the dive it was armed for.
+    int debugDepthMultiplier() const { return deepWebDepthMultiplier_; }
     // Arm explore-mode on a SPECIFIC sub-area directly (tests): once cleared sub-areas
     // are re-farmable the EXPL "first-selectable" row is ambiguous, so a test
     // that needs a particular frontier arms it here instead of A-cycling. Real path:

@@ -632,9 +632,12 @@ void Game::finishCombat() {
                 }
             }
         } else if (combat_.outcome() == Combat::Outcome::Lose) {
+            // A loss ends the run. Same rule as the Stop row: only a DIVE ending spends
+            // the depth multiplier, and inDeepWebDive() is derived from exploreActive_,
+            // so it has to be read first.
+            if (inDeepWebDive()) deepWebDepthMultiplier_ = 1;
             exploreActive_ = false;
             exploreStreak_ = 0;
-            deepWebDepthMultiplier_ = 1;
         }
         // Post-encounter status readout: a FOUGHT battle (win or
         // loss) parks on the BANDWIDTH/FRAG readout before the habitat — a flee

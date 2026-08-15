@@ -166,7 +166,6 @@ void Game::startExplore(int sector, int sub) {
     exploreSector_ = sector;
     exploreSub_ = sub;
     exploreStreak_ = 0;
-    deepWebDepthMultiplier_ = 1;
     exploreSteps_ = 0;
     exploreStepBeat_ = 0;
     exploreFlavor_[0] = '\0';
@@ -189,7 +188,10 @@ void Game::startDeepWebDive() {
     exploreSector_ = kDeepWebSector;
     exploreSub_ = 0;
     exploreStreak_ = 0;
-    deepWebDepthMultiplier_ = 1;
+    // NB: deepWebDepthMultiplier_ is deliberately NOT reset here. A Deep-Learning
+    // Module/Core is armed BEFORE the dive (ItemDef::Context::Anytime) precisely so it
+    // applies to this dive — clearing it on the way in would consume the buff in the
+    // one mode it exists for. It is cleared where a dive ENDS instead.
     // A Backdoor/Rootkit/Kernel/Zero-Day Bell arms a start depth ahead of time
     // (Game::applyItemEffects); consume it here so a fresh dive begins there instead
     // of at 0. Zero-Day's sentinel resolves to this pet's own best depth NOW (not at
@@ -340,9 +342,12 @@ void Game::onExploreControl(const ButtonEvent& ev) {
             autoProgress_ = !autoProgress_;
             break;
         case ExploreControlRow::Stop:
+            // Read the dive flag BEFORE clearing exploreActive_ — inDeepWebDive() is
+            // derived from it. Only a DIVE ending spends the depth multiplier; stopping
+            // a sector walk leaves an armed Module/Core armed for the dive it was for.
+            if (inDeepWebDive()) deepWebDepthMultiplier_ = 1;
             exploreActive_ = false;
             exploreStreak_ = 0;
-            deepWebDepthMultiplier_ = 1;
             exploreFlavor_[0] = '\0';
             nav_ = Nav::Idle;
             markSaveDirty();

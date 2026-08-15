@@ -60,18 +60,6 @@ prize to unlock. Wants a discovery axis on `CrewDef` first, then one `Kind` and 
 the real work; the prize is three lines once it exists. |
 
 
-**Entering explore mode clears the buff bought for explore mode.** The Deep-Learning Module/Core
-arms `deepWebDepthMultiplier_`, and both `startExplore` and `startDeepWebDive` reset it to 1 on the
-way in — so a player Uses the Core, dives, and the multiplier is gone before the first step. The
-coupling is stated in the effect's own comment ("cleared back to 1 wherever `exploreStreak_` resets
-to 0"), and that is the defect: the streak legitimately resets at BOTH ends of a run, the buff only
-at the end. Wants the two start-side resets dropped, leaving the end-side owners (`Stop`, a combat
-Lose, and the lifecycle clears). | `game_explore.cpp:174` + `:197` (drop); `game_items.cpp:346`
-(the arming case + its comment); end-side keeps are `game_explore.cpp:350`, `game_combat.cpp:642`,
-`game_lifecycle.cpp:41`/`:147`/`:480`. | S | Check whether arming BEFORE explore is meant to
-survive a *sector* walk too, or only a DeepWeb dive — the item text says only "DeepWeb Dive win",
-so `startExplore`'s reset may be deliberate and only `startDeepWebDive`'s is wrong. |
-
 **The item screens don't scale to the item count.** The pool is 216 rows, 192 of them food, against
 a picker designed when it was a fraction of that; the two Rig Shop upgrades widen the view but not
 the traversal, so reaching a late row is ~50 presses of A and overshooting it by one costs the

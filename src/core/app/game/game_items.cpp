@@ -340,9 +340,12 @@ void Game::applyItemEffects(const ItemDef& d) {
                 break;
             case ItemEffect::Kind::ArmDeepWebDepthMultiplier:
                 // Deep-Learning Module/Core: overwrites, never stacks — buying a second one
-                // just replaces the multiplier. Cleared back to 1 wherever
-                // exploreStreak_ resets to 0 (game_explore.cpp/game_combat.cpp/
-                // game_lifecycle.cpp).
+                // just replaces the multiplier. Armed AHEAD of the dive it applies to
+                // (Context::Anytime), so it is cleared only where a DIVE ENDS — the Stop
+                // row and a combat loss, both guarded on inDeepWebDive() — and on a new
+                // pet (game_lifecycle.cpp). Deliberately NOT tied to exploreStreak_'s
+                // reset: the streak resets at both ends of a run, so following it would
+                // clear the buff on the way INTO the dive it was bought for.
                 deepWebDepthMultiplier_ = e.magnitude;
                 break;
             case ItemEffect::Kind::BandwidthRegenBonusMin:
