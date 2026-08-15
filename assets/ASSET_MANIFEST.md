@@ -698,7 +698,7 @@ Disk Decypher.
 **Scope: the archetype submenu's own art** — the Hacker-face terminal centre-canvas treatment,
 PROFILE/SHOP/VAULT/MERGE HUB, the CREW slot (enlistment + home network), PEERS and LINK (1v1
 duels) are all built; the Red/Blue archetype system that would consume the per-archetype rows is
-not (`docs/MASTER_TODO.md §1i`). Author on
+not (the Hacker-face CREW row on `docs/MASTER_TODO.md`). Author on
 placeholder palette; team Red/Blue hues + status/accent separation are still unset. Most
 chrome is reused from §F — only the rows below are new, and per-archetype icons are optional.
 

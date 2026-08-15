@@ -19,7 +19,7 @@ acceptance, and the real board is the timing authority. Recipe + rationale: `sim
 
 **The serial test-hook** (debug builds injecting synthetic `INPUT_NEXT/ACCEPT/CANCEL` tokens and
 dumping current screen/state over serial, so navigation is assertable without physical buttons) is
-still **unbuilt** — see `docs/MASTER_TODO.md §1f`.
+still **unbuilt** — see the test-infrastructure row on `docs/MASTER_TODO.md`.
 
 ### How the native suite is laid out
 

@@ -32,15 +32,6 @@ building it up organically.
 
 **Capture arming costs ~70KB and the AP ~58KB**, against ~126KB free with the radio idle. The device works, and the save no longer needs a big contiguous block, but that was the only thing standing on this — anything else that grows will hit the same wall. Worth a pass at what the capture path actually needs. | `net_capture.h`'s `powerUp` (`esp_wifi_init` + promiscuous + the pcap SD buffers). | M | Measured on device, not estimated: `[ap] down free=126408` → `[cap] armed free=56188`. |
 
-**The DECRYPTOGRAM's prize is a LADDER, not a per-quote answer.** A first solve pays the next
-MERGE HUB recipe the operator can't cook (`quotePrizeLadder`), then falls back to `+1 bandwidth`
-once the kitchen is complete — so the prize varies by how far in you are, but still not by WHICH
-quote came up, and `kQuoteWinBits` is one number for the whole pool. A marquee quote worth a rack
-slot, or a throwaway worth half the Bits, still wants an optional reward field on `QuoteDef`
-resolved off the row when present. | `content_quotes.h`'s ladder + fallback;
-`game_cryptogram.cpp`'s `quoteFirstSolvePrize`. | S | Do it when a row actually wants a different
-prize — until then a per-row field is the same literal pasted three hundred times. |
-
 **A crew cannot be DISCOVERED.** `QuoteReward::Kind` has room for it and it is one of the prizes
 the board was designed to hand over ("you find a crew to join"), but crews are ungated today —
 every row in `content_crews.cpp` is enlistable from the first boot, so there is nothing for a
@@ -48,7 +39,24 @@ prize to unlock. Wants a discovery axis on `CrewDef` first, then one `Kind` and 
 `content_crews.h`; `game_crew.cpp`'s roster filter; `QuoteReward::Kind`. | M | The gating axis is
 the real work; the prize is three lines once it exists. |
 
-### 1a-ii. Evolution routing — one weighted edge list per creature
+### 1b. A separation pass over every screen
+
+**There are only three levers for making one thing read apart from another**: put it in a
+HEADER, set it BOLD, or spend SCREEN SPACE on a gap. Two of them are free and one is not —
+a 224×224 panel has a fixed amount of space and every gap is taken from something else on
+the page. So the failure mode is not "this screen is hard to read", it is **spending a
+header or a bolding on a distinction that did not need it, and having nothing left but
+pixels when a more important one turns up.** That cost lands one screen later than the
+decision that caused it, which is why it wants a pass rather than a fix.
+
+The pass: walk every screen, name which lever each distinction is currently using, and check
+that the page's most important separation is not the one paying in space. Where the levers
+stand today — `drawHeaderBand` is the only thing claiming Bold; VISUAL_LANGUAGE §4.1's
+dim-means-READOUT split is the detail pages' free lever and the one that survives grayscale;
+the STAT LOADOUT group seams are space spent deliberately, on the page with the least of it.
+Diff **M**, taste before code.
+
+### 1c. Evolution routing — one weighted edge list per creature
 
 `CreatureDef` carries five optional successor pointers (`evolvesToId`, `evolvesToGoodId`,
 `evolvesToBadId`, `evolvesToTrojanId`, `evolvesToTrojanBadId`) and `kDaemonPools` carries a sixth
@@ -73,25 +81,7 @@ information about what it has to carry. Consumer surface is small — `evolution
 registry accessor, one `ContentSource` virtual, one test. No save concern; routing is not persisted.
 Diff **M**.
 
-### 1b. Cooking — the open follow-ups
-
-The pantry's three shelves, per-item drop weights, the N-ingredient Merge Hub and its hundred
-recipes are built, and a recipe is won off a Decryptogram rather than bought. Cooking is two-deep
-in several places (a recipe whose lead ingredient is another dish — no new mechanism, since an
-input id is just an item id), Tiramisudo is the one food that upgrades the pet eating it rather
-than feeding it, and Portridge is the one whose output matches its single ingredient's tier and
-magnitudes exactly. The owned-recipe set is a length-prefixed bitset (save v51) against a
-`kMergeRecipeWireCap` of 128, so the table has room to roughly double again without a save change.
-What is left:
-
-- **Drop weights are unmeasured.** The pantry's numbers are authored by flavour, not play data. The
-  walk-pool thinning constant (`kStapleWalkWeight`) especially is a guess at how much staple a player
-  should wade through to reach a diving bell. Diff **M** (needs measurement runs).
-- **The pantry is line-agnostic.** Every staple drops everywhere. Once per-area food sets land (§2c)
-  the two systems should meet — a `LootEntry` weight override per area pool is already the mechanism,
-  so that's content, not code.
-
-### 1c. Sprite storage — indexed colour - Break-Glass-Flash-Memory-Saving Lever
+### 1d. Sprite storage — indexed colour - Break-Glass-Flash-Memory-Saving Lever
 
 The 1-bit mask half is done: `gen_assets.py` detects an asset that carries nothing a bitmap
 would lose (every alpha 0 or 255, every opaque pixel one colour) and emits a packed mask +
@@ -139,7 +129,7 @@ Indexed storage is what buys the four-row standard: it puts that same roster at 
 order is *decide the per-creature row budget first*; this row is only urgent if the answer is
 "more than one".
 
-### 1c-ii. Tinting — a second theme
+### 1e. Tinting — a second theme
 
 **A second theme is a design pass, not a build.** The machinery takes N themes today and
 `PAL_CORE.json` documents the block shape; authoring a colourblind-friendly set (moving the
@@ -152,12 +142,6 @@ carries its initial as the grayscale channel, five hues that read as five is the
 
 Intentional simplifications. None is a bug; each is a "confirm as v1 or revise".
 
-- **Only the header-band title claims Bold.** `FontFace::Bold` exists and costs a layout
-  nothing (VISUAL_LANGUAGE §2.3), so the question is now where else emphasis is earned rather
-  than whether it is available. Candidates: an item/mod/move detail page's NAME, and the
-  selected row in a list. The rule that keeps it worth having is that one thing per screen
-  outranks the rest — confirm as v1 or extend it deliberately, one surface at a time. Diff
-  **S** per surface, taste before code.
 - **The derived bold is a smear, not a drawn cut.** 7 cells (`% @ M W _ m w`) already span the
   box and thicken into their own counters. It reads as bold rather than damage on every title
   that ships, so this is polish, not a defect. Pixel Operator's family carries its own Bold
@@ -171,10 +155,6 @@ Intentional simplifications. None is a bug; each is a "confirm as v1 or revise".
   is "flash, read the boot line, confirm no crash loop" — nobody has walked the buttons through
   EXPL/combat/Wi-Fi/rank-up on the real panel in a long time. Diff **M** (harness design). A
   human bench pass is also owed.
-- **No Wokwi screenshot-regression tier** — deferred by decision; the host tier covers most of it.
-  `tools/screens.sh` covers the LOOKING half (one contact sheet of every screen, no baselines),
-  which is what catches two things drawn over each other — the one failure a string-width
-  budget cannot express.
 - **`check_comment_standard.py` gates the mechanical half of the standard and misses the half that
   actually rots.** It fails on board names, `FB-*`/`Phase N` ids, attributions and dates — all of
   which stay clean because they are gated — while *change narration* ("the old X", "used to", "now
@@ -202,12 +182,6 @@ roster, and the wild half keeps its own roster-keyed masks).
 - **A solo operator's "seen" tier is empty until they duel.** If the Daemon branch-sibling reveal is
   worth persisting it wants its own tier ("teased") rather than sharing this bit — two meanings on
   one flag is what was deliberately removed. Diff **S** (design, not storage).
-- **The Worm line's balance is unmeasured.** Every number on it — `kWormReplicaSlots`, the three
-  targeting weights, the per-move spawn chances and the two magnitudes each replica reads — is a
-  first cut chosen for internal consistency, not a calibration pass against a real fight. The
-  fastest way to find the cliff: a full board is a **hard** floor of 1-in-13 that any given hit
-  reaches the parent at all, on a line that also cannot be out-actioned, so if the passive is
-  broken it will be broken there. Diff **S**, one balance sitting.
 - **The achievement banner doesn't linger long enough.** The home-screen banner is the whole
   feedback channel, so an achievement whose name outruns the time the banner is up is simply lost.
   Wants a marquee plus a minimum time on screen derived from the name's length — characters ×
@@ -233,33 +207,11 @@ roster, and the wild half keeps its own roster-keyed masks).
 
 ### 1j. Over-the-air updates — shipping; the failure paths are what's left
 
-The device-side path exists and is native-gated: the job-scoped STA association, a phone-driven
-setup portal, a strict manifest parser, the CFG **UPDATES** screen (connect → check → per-artifact
-verdict → yes/no → download → SHA-256 → install), firmware via `Update.h` into the inactive OTA slot
-and the web bundle via uncompressed tar onto SD. Settled and NOT open: going online is scoped to a
-running job and never persisted, so there is no internet toggle to leave on; always check → ask →
-explicit yes, never auto-install; integrity by per-artifact SHA-256 with **no code signing** and
-`setInsecure()` — the hash guards a corrupted download, not a hostile network, and that trade is
-written down in `update_manifest.h`.
-
-Both halves have installed on hardware over the air, firmware and web bundle, with no USB involved.
-A firmware install now boots on trial and rolls itself back unless it reaches the main loop, paints
-a frame and stays up for `OTA_PROVE_MS`.
-
-Publishing is CI-driven off a `v*` tag (ORIENTATION's *Releasing*). The web bundle is written by
-`tools/make_web_tar.py` rather than `tar` so it is byte-reproducible: the manifest publishes a
-SHA-256 over it, and an archive whose bytes move with the build turns that digest check into a race
-against the next publish — a device that fetched the manifest before a rebuild and the artifact
-after one would report `Corrupt` for what is really the same content.
-
-PSRAM is ON (`platformio.ini`'s `board_build.arduino.memory_type = qio_opi`), which is what makes
-the manifest fetch reliable at all: mbedTLS's TLS session buffers are a large-enough allocation
-(the Arduino core's `CONFIG_SPIRAM_MALLOC_ALWAYSINTERNAL` sends anything over 4KB to PSRAM) that
-internal SRAM alone — split by the ~98KB framebuffer plus the Wi-Fi stack's own reserve — could
-plateau its largest contiguous free block around 16KB and fail `WiFiClientSecure::connect` with
-`start_ssl_client: -32512` regardless of total free heap. A device flashed before this landed is
-still on the old bootloader and needs the USB/browser-flasher path once, same as any bootloader
-change — an app-only OTA can't carry it.
+The device-side path is built and has installed on hardware over the air, both artifacts, with no
+USB involved: a firmware install boots on trial and rolls itself back unless it reaches the main
+loop, paints a frame and stays up for `OTA_PROVE_MS`. Publishing is CI-driven off a `v*` tag —
+ORIENTATION's *Releasing* is the whole story, and the security trade (SHA-256 per artifact, no code
+signing, `setInsecure()`) is written down in `update_manifest.h`.
 
 **Open:**
 
@@ -285,20 +237,6 @@ change — an app-only OTA can't carry it.
   implementing the OS device-picker UI behind it, in which case `requestPort()` just hangs with no
   error to catch. Diff **S** (needs a board). The device-side half — CFG →
   UPDATES → FLASH OVER USB drawing the code — is native-gated and rendered, not yet scanned.
-- **Hosting is settled and live** — GitHub Pages, deployed by `.github/workflows/publish.yml` on a
-  `v*` tag; see ORIENTATION's *Releasing*. `https://antvena.github.io/Malwarium/manifest.json` has
-  served a real publish, verified by fetching it back and re-parsing the served bytes with the
-  device's own parser. The same deploy now carries `pages/` and the three boot images, so the host
-  answers both halves. `UPDATE_MANIFEST_URL` is compiled IN under `BOARD_WAVESHARE_S3_154`
-  (config.h) and names that Pages address — confirmed by finding the string in a published
-  `mal-*.bin`. That is what makes "flash from the browser, then let the device fetch its own
-  'Pedia onto a blank card" a complete path for someone with no toolchain: nothing has to be
-  typed into the device but a Wi-Fi password. A stored override from the setup page still wins
-  when set, and the empty default applies only to a board block naming no address of its own.
-  Nothing open here.
-- **Credentials sit in NVS in PLAINTEXT** (stock ESP32 NVS is unencrypted). Stated plainly rather
-  than implied-protected; NVS encryption is a separate feature and is not enabled. Revisit only if
-  the threat model changes.
 
 ---
 
@@ -400,8 +338,8 @@ save.cpp is long because the format is flat, which is not a second responsibilit
 is the turn engine alone, with the factories in `combat_factory.cpp` (400) beside it.
 
 **The unit rule is holding; the mass has moved inside individual functions, where it does not
-look.** Three are past the point a reviewer can hold one in their head, and the "it is a
-dispatcher, its length follows from the number of cases" defence only covers one of them:
+look.** Two are past the point a reviewer can hold one in their head, and the "it is a
+dispatcher, its length follows from the number of cases" defence covers neither:
 
 - **`Combat::applyEffect` (433 lines, `combat.cpp:141`)** — the sharp one. It has **zero `case`
   labels**: it is a sequential if-chain over effect mechanics, not a dispatch table, so length
@@ -414,29 +352,6 @@ dispatcher, its length follows from the number of cases" defence only covers one
   autosave · evolution · lockout · idle collapse · …), 18 top-level control blocks, almost no
   interleaving between them. The comments already name the split. | M | Each section is a
   candidate `tickX()` private method; the ordering between them is the only real constraint. |
-- **`Game::onButton` (235 lines, `game_core.cpp:531`)** — genuinely input dispatch, and its
-  length does follow from the number of navigation states. **Leave it**; noted so a later pass
-  does not re-derive the same verdict.
-
-One more is past the rule and was not on this watch at all:
-
-- **`game.h` (3077)** — the umbrella header. It is not a unit that grew a second concern; it is
-  one class's declaration, so the line count is arguably honest. The cost is its includes, and
-  **the UI half is now off**: the nine `core/ui/*_screen.h` headers are gone, replaced by
-  `core/ui/ui_state.h` — the ids `Game` actually holds as members (`SubmenuId`, `CfgScreen`,
-  `ItemFilter`, `UiMode`, `MaintKind`, `ArchAction`, `HackerSlotId`, `FeedVitals`), split out on
-  the rule that an id naming where the player IS is engine state while a `draw*` signature is
-  not. A screen header lives in the `game_*.cpp` unit that calls it. **37 direct includes today**
-  — the UI slice took it to 28 and the model/net stack has since added back, so the count is
-  worth re-measuring (`grep -cE '^\s*#include' src/core/app/game.h`) rather than quoted.
-  **What's left is the model/net/render stack**: `combat.h`, `save.h`, `registry.h`,
-  `framebuffer.h`, `platform.h` and the rest still reach every TU that includes `game.h`, so the
-  unused-include sweep has no signal outside `core/ui` — where it has now run, leaving 38
-  load-bearing includes of the 96 the units carried. The same question applies to each: can
-  `Game` declare against a forward
-  declaration, or does it hold the type by value? Diff **L**, and unlike the UI slice these are
-  held by value almost everywhere, so the answer is likely "no" for most and the honest outcome
-  may be that `game.h` is as thin as it gets.
 
 ---
 
