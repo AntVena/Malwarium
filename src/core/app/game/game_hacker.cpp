@@ -16,7 +16,6 @@
 #include "core/ui/layout.h"
 #include "core/ui/theme.h"
 #include "core/ui/widgets.h"
-#include "generated/assets.h"
 
 // game_hacker.cpp — the Hacker face (07, /HACK2/SHOP1).
 //

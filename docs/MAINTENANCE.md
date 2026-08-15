@@ -96,14 +96,14 @@ Run the gates. Confirm native gates and the S3 build are actually green, not ass
 a doc. Look for test debt — tests asserting behaviour that no longer occurs in
 real play.
 
-### Content/tunables standard drift — Last run: 2026-08-08
+### Content/tunables standard drift — Last run: 2026-08-15
 Check new content against `src/core/content/CONTENT_STANDARD.md`: structured effect vocabulary (no new
 scalar-field sprawl or `if (id == "...")` branches), one-file-per-type under
 `src/core/content/content_*.cpp`, and — the easy grep — no single-entity magnitude in
 `tunables.h`. Sweep: `grep -nE 'constexpr .* k\w+ *=' include/tunables.h` and flag any whose
 comment names ONE item/mod/move/creature — inline it onto that row. Verify claims against code.
 
-### Unused-include sweep — Last run: 2026-08-08
+### Unused-include sweep — Last run: 2026-08-15
 The clangd "included header X is not used directly" warnings are noise we burn tokens reading
 past, and the `game_*.cpp` units are the worst offenders: they all carry the same broad render
 header block copied from `game_render.cpp`, most of which a given unit doesn't use.
@@ -116,10 +116,25 @@ because it IS the render dispatcher, and every other unit keeps only the screens
 `expl_screen.h`, the four `layout.h`/`theme.h`/`widgets.h` units their drawing primitives. Re-run
 it when a unit is split or a screen header moves.
 
-**The `core/model` + `core/render` half is still blocked** on the rest of `game.h`'s includes
-(`MASTER_TODO.md §3`): it hands every TU `combat.h`, `save.h`, `registry.h`, `framebuffer.h` and
-`platform.h`, so "it still compiles without it" proves nothing about those. Leave that half for
-whoever lands the next `game.h` slice.
+**The `core/render` DRAWING headers are swept too, and the block was narrower than it looked.**
+`game.h` hands out exactly one `core/render` header — `framebuffer.h` — and nothing it includes
+pulls `canvas.h`, `font.h`, `palette.h`, `sprite.h` or `generated/assets.h`. Those five were
+therefore always testable, and the broad block copied from `game_render.cpp` is gone from every
+unit that did not draw: 43 includes across 11 units, both tiers green.
+
+What remains carries its weight — `game_render.cpp` (the dispatcher, all five), `game_crew`,
+`game_eggpick`, `game_peers`, `game_pvp`, `game_hacker`, `game_isolation`, `game_merge` (the
+subsets they draw with), and `game_core`/`game_lifecycle` (`sprite.h`, plus `canvas.h` in
+`game_core` for the tick cadences).
+
+**What IS still blocked** is the `core/model` half: `game.h` hands every TU `combat.h`, `save.h`,
+`registry.h`, `framebuffer.h` and `platform.h`, so "it still compiles without it" proves nothing
+about those. Leave that half for whoever lands the next `game.h` slice.
+
+Method note earned the hard way: **grep the header's CONSTANTS, not just its functions and
+types.** A symbol scan built from function names alone cleared `canvas.h` out of `game_core.cpp`,
+which uses it only for `kHeartbeatMs`/`kCombatAnimMs` — the native build caught it, which is
+exactly why the build is the gate and the scan is only the finder.
 
 Method: trust the clangd `unused-includes` diagnostics as the finder, **verify a real host build
 still compiles after each removal**, and note that the native gate is authoritative — don't

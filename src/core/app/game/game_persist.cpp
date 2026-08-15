@@ -4,11 +4,6 @@
 #include <cstring>
 
 #include "tunables.h"
-#include "core/render/canvas.h"
-#include "core/render/font.h"
-#include "core/render/palette.h"
-#include "core/render/sprite.h"
-#include "generated/assets.h"
 
 namespace mal {
 

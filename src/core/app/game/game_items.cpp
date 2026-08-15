@@ -6,12 +6,7 @@
 
 #include "tunables.h"
 #include "core/content/content_tables.h"
-#include "core/render/canvas.h"
-#include "core/render/font.h"
-#include "core/render/palette.h"
-#include "core/render/sprite.h"
 #include "core/ui/items_screen.h"
-#include "generated/assets.h"
 
 namespace mal {
 

@@ -6,13 +6,8 @@
 #include "tunables.h"
 #include "core/app/game_internal.h"   // backupDriveAchievement — declared, defined here
 #include "core/content/content_tables.h"
-#include "core/render/canvas.h"
-#include "core/render/font.h"
-#include "core/render/palette.h"
-#include "core/render/sprite.h"
 #include "core/ui/expl_screen.h"
 #include "core/ui/train_screen.h"
-#include "generated/assets.h"
 
 namespace mal {
 
