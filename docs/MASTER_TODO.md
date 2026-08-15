@@ -341,20 +341,6 @@ Engine slots for these exist (they render via placeholder or text today), so mos
 moment they're drawn**.
 Sizes are logical px; bind colour to `PAL_CORE` tokens. Inventory: `assets/ASSET_MANIFEST.md`.
 
-### 2a. Ready-now, zero-friction
-
-| Asset | For | Size | Diff to integrate |
-|---|---|---|---|
-| `ICON_EXPLORE_STATE` | optional sub-area row state marker | 16×16 | S |
-
-The four `UI_*` rows that used to sit here — `UI_HINT_BAND`, `UI_PROGRESS_BAR`, `UI_SLOTS_USED`,
-`UI_COUNTDOWN` — were never art tasks, and are all built: `widgets.h` draws the first two by those
-exact names, `arch_screen.cpp` formats `SLOTS n/m` into its header band, and `modals.cpp` sets the
-Lockout's `00:SS` in `FONT_UI` over a progress bar. None of the four *could* be a PNG — a bar whose
-fill is a runtime fraction, a band sized to the words in it and a countdown that counts are drawing
-code by nature. `ASSET_MANIFEST.md` §F/§I/§O carries them as `☑ engine-drawn`, beside the rest of
-the shared chrome that already read that way.
-
 ### 2a-i. The sprite-packing tools live outside the repo
 
 `sheetpack.py` (cell packing, the crop-vs-decimate choice and its damage report, the 1px floor
