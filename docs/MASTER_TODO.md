@@ -32,6 +32,22 @@ building it up organically.
 
 **Capture arming costs ~70KB and the AP ~58KB**, against ~126KB free with the radio idle. The device works, and the save no longer needs a big contiguous block, but that was the only thing standing on this — anything else that grows will hit the same wall. Worth a pass at what the capture path actually needs. | `net_capture.h`'s `powerUp` (`esp_wifi_init` + promiscuous + the pcap SD buffers). | M | Measured on device, not estimated: `[ap] down free=126408` → `[cap] armed free=56188`. |
 
+**The discoverable move pool is three moves deep.** The wild-win move drop rolls over a hardcoded
+`{buffer_overflow, rootkit_strike, null_route}` plus an own-line catch-up that a fresh hatch has
+already satisfied — so `kWildMoveDropPct` pays out at most three times per pet and is dead weight
+for the rest of that pet's life. The roster wants enough generic moves that taming keeps teaching
+something, and they want to be *found* rather than granted at a stage. | `game_combat.cpp`'s
+move-drop block; `content_moves.cpp`'s generic roster. | M | The mechanism is built and working;
+this is a content pass plus a rarity axis on the pool so the good ones stay rare. |
+
+**A boss drops no moves at all.** A boss round returns via `finishBossRound()` before the drop
+block in `applyCombatResult` ever runs, so the only reason to re-run a cleared gauntlet is Bits.
+Bosses handing over the move they beat you with — at a low rate, generic so every line benefits —
+is the re-run incentive the mode is missing. | `game_explore.cpp`'s `finishBossRound`; the drop
+block it currently bypasses. | M | Wants the pool row above to land first, or there is nothing
+distinctive for a boss to give. Needs its own rate and its own refarm curve — `refarmDropScalePct`
+is wild-specific and a cleared boss is a deliberate re-run, not a farm. |
+
 **A crew cannot be DISCOVERED.** `QuoteReward::Kind` has room for it and it is one of the prizes
 the board was designed to hand over ("you find a crew to join"), but crews are ungated today —
 every row in `content_crews.cpp` is enlistable from the first boot, so there is nothing for a
