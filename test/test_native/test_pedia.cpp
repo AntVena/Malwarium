@@ -20,32 +20,73 @@ void test_move_loadout_grant_no_duplicate() {
 }
 
 // The wild-win reward path (game.cpp applyCombatResult) wires an independent
-// move-drop roll (kWildMoveDropPct) right next to the existing item-drop roll.
-// Reuses walkToAnyCombat (defined above) in a bounded loop — it's driven
-// entirely by live nav state (each explore step is a guaranteed event), so
-// it composes across repeated calls on the same Game. Searches for a "LEARNED ..."
-// log entry, confirming the roll is actually wired, not just present in the pool.
-void test_wild_win_can_drop_a_move() {
-    Game g{StartMode::Hatched};
-    enterWalk(g);                                        // arm explore-mode first
-    bool learned = false;
-    for (int tries = 0; tries < 20 && !learned; ++tries) {
+// move-drop roll (kWildMoveDropPct) right next to the existing item-drop roll, and the
+// pool is the DEFEATED ENEMY'S OWN KIT — you learn a move by being hit with it.
+//
+// Asserted as a CONTRAST rather than a bare "something dropped", because that is what
+// tells the enemy's kit apart from any fixed table: at sub 0 an area-0 wild swings only
+// the innate jab, so a hundred wins teach nothing at all; at sub 2 the ladder is
+// {quick_jab, packet_storm, buffer_overflow} and NOTHING outside those two teachable
+// names may ever be learned there. The old fixed pool carried rootkit_strike and
+// null_route, so it would fail the second half even while passing the first.
+static bool learnedMoveNamed(Game& g, const char* displayName) {
+    for (int k = 0; k < g.log().size(); ++k) {
+        const LogEntry& e = g.log().at(k);
+        if (e.type != LogEventType::ItemGained) continue;
+        if (std::strncmp(e.text, "LEARNED ", 8) != 0) continue;
+        if (!displayName || std::strcmp(e.text + 8, displayName) == 0) return true;
+    }
+    return false;
+}
+
+// True when every move this pet was taught came out of `allowed` — the enemy's own kit.
+static bool learnedOnlyFrom(Game& g, std::vector<const char*> allowed) {
+    for (int k = 0; k < g.log().size(); ++k) {
+        const LogEntry& e = g.log().at(k);
+        if (e.type != LogEventType::ItemGained) continue;
+        if (std::strncmp(e.text, "LEARNED ", 8) != 0) continue;
+        bool ok = false;
+        for (const char* a : allowed)
+            if (std::strcmp(e.text + 8, a) == 0) { ok = true; break; }
+        if (!ok) return false;
+    }
+    return true;
+}
+
+// Grind wild wins in one armed sub-area, stopping early once something is learned.
+static bool farmForAMove(Game& g, int area, int sub, int tries) {
+    g.debugSetAutoProgress(false);
+    for (int i = 0; i < tries; ++i) {
+        g.debugArmExplore(area, sub);
         walkToAnyCombat(g);
-        if (g.nav() != Game::Nav::Combat) break;        // search exhausted
+        if (g.nav() != Game::Nav::Combat) continue;
         uint32_t t = 0;
         for (int j = 0; j < 400 && g.combat().outcome() == Combat::Outcome::Ongoing; ++j)
             g.tick(t += kHeartbeatMs);
         g.onButton(press(Button::B));                    // dismiss -> apply reward
-        for (int k = 0; k < g.log().size(); ++k) {
-            const LogEntry& e = g.log().at(k);
-            if (e.type == LogEventType::ItemGained &&
-                std::strncmp(e.text, "LEARNED ", 8) == 0) {
-                learned = true;
-                break;
-            }
-        }
+        if (learnedMoveNamed(g, nullptr)) return true;
     }
-    CHECK(learned);
+    return false;
+}
+
+void test_wild_win_can_drop_a_move() {
+    // The default pet is a Paypup — a Ransomware-LINE pet, so startingForLine gives it
+    // its line kit and nothing generic. Sub 2's ladder is {quick_jab, packet_storm,
+    // buffer_overflow}: the jab is innate and never taught, leaving exactly two names.
+    Game deep{StartMode::Hatched};
+    enterWalk(deep);
+    CHECK(farmForAMove(deep, 0, 2, 40));
+    CHECK(learnedOnlyFrom(deep, {"Packet Storm", "Buffer Overflow"}));
+    CHECK(deep.moveLoadout().owns("packet_storm") ||
+          deep.moveLoadout().owns("buffer_overflow"));
+    CHECK(!learnedMoveNamed(deep, "Quick Jab"));        // innate, never a reward
+
+    // Sub 0 keeps the tier-1 roster kit — the innate jab alone — so there is nothing
+    // there to be taught, however long the pet farms it. This is the half that fails if
+    // the pool ever goes back to a fixed table.
+    Game shallow{StartMode::Hatched};
+    enterWalk(shallow);
+    CHECK(!farmForAMove(shallow, 0, 0, 40));
 }
 
 // wildMalbeast now rolls among 2 variants per sector tier instead of

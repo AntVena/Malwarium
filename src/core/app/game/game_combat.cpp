@@ -503,29 +503,46 @@ void Game::applyCombatResult() {
                     const AreaLootTable t = areaWildLootTable(exploreSector_);
                     drawCacheItem(t.rows, t.count);
                 }
-                // A separate, independent move-drop roll from the move-drop pool
-                // (embedded_content.cpp) — mirrors the item roll above, right next to
-                // it. The pool is the GENERIC roster (the desirable off-line trick a
-                // taming teaches), PLUS a fallback: any move of the pet's OWN line it
-                // doesn't already own. A fresh hatch owns its whole line kit already
-                // (MoveLoadout::startingForLine), so that half is normally a no-op —
-                // it only fires for a pet raised before that line move existed, or
-                // before the line owned its whole kit at all, catching it up the same
-                // way a generic trick is learned rather than silently backfilling it
-                // on the next load. Filters to not-yet-owned first rather than
-                // reroll-looping: "all already owned" is a legitimate "no drop this
-                // time."
+                // A separate, independent move-drop roll, mirroring the item roll above.
+                // You learn a move by being HIT with it: the pool is the defeated
+                // enemy's own kit, so what a malbeast is worth farming is legible from
+                // the fight itself and a move becomes findable purely by giving it to
+                // something that uses it — no drop table to keep in step with the
+                // roster. Filters to not-yet-owned rather than reroll-looping, so "it
+                // taught nothing I don't have" is a legitimate no-drop.
+                //
+                // A move exclusive to ANOTHER line is skipped rather than dropped: the
+                // equip gate would refuse it anyway (MoveDef::line), so granting it
+                // would be a reward the pet can never field. Generic moves (line ==
+                // nullptr) drop to everyone, which is what makes an area's apex rider
+                // worth hunting whatever you hatched.
                 rng_ = rng_ * 1664525u + 1013904223u;
                 if (static_cast<int>((rng_ >> 16) % 100) < moveDropPct) {
-                    std::vector<const char*> pool = {"buffer_overflow",
-                                                     "rootkit_strike", "null_route"};
-                    if (pet_ && pet_->line)
+                    std::vector<const char*> candidates;
+                    auto consider = [&](const MoveDef* m) {
+                        if (!m || moveLoadout_.owns(m->id)) return;
+                        // The innate jab is never "learned": it sits outside the owned
+                        // pool and outside the slots, so owns() says no about a move
+                        // every pet already has. Every tier-1 wild swings it.
+                        if (const char* innate = moveLoadout_.defaultMove())
+                            if (std::strcmp(m->id, innate) == 0) return;
+                        if (m->line && (!pet_ || !pet_->line ||
+                                        std::strcmp(m->line, pet_->line) != 0))
+                            return;                    // another line's exclusive move
+                        for (const char* c : candidates)
+                            if (std::strcmp(c, m->id) == 0) return;    // kit may repeat
+                        candidates.push_back(m->id);
+                    };
+                    for (const MoveDef* m : combat_.enemy().moves) consider(m);
+                    // Own-line catch-up, unchanged in purpose but now a FALLBACK rather
+                    // than a peer of the main pool: a pet raised before one of its line
+                    // moves existed still fills the gap in, on a win the enemy taught
+                    // nothing new. A fresh hatch owns its whole line kit already
+                    // (MoveLoadout::startingForLine), so this is normally a no-op.
+                    if (candidates.empty() && pet_ && pet_->line)
                         for (const MoveDef* m : registry_.allMoves())
                             if (m->line && std::strcmp(m->line, pet_->line) == 0)
-                                pool.push_back(m->id);
-                    std::vector<const char*> candidates;
-                    for (const char* id : pool)
-                        if (!moveLoadout_.owns(id)) candidates.push_back(id);
+                                consider(m);
                     if (!candidates.empty()) {
                         rng_ = rng_ * 1664525u + 1013904223u;
                         const char* id =
