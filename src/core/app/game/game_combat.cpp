@@ -5,7 +5,6 @@
 
 #include "tunables.h"
 #include "core/app/game_internal.h"   // backupDriveAchievement — declared, defined here
-#include "core/content/content_tables.h"
 #include "core/ui/expl_screen.h"
 #include "core/ui/train_screen.h"
 
@@ -497,27 +496,12 @@ void Game::applyCombatResult() {
                 const int moveDropPct = kWildMoveDropPct * dropScalePct / 100;
                 rng_ = rng_ * 1664525u + 1013904223u;
                 if (static_cast<int>((rng_ >> 16) % 100) < itemDropPct) {
-                    // the Defrag Tool joins the pool — fighting fragments the
-                    // pet (battle fatigue), so a wild win is where you top up the cleaner.
-                    // Two areas also splice in a Merge Hub ingredient exclusive to that
-                    // area's wild fights — Citrus Circuit (sector 0) gets osi_dip, the
-                    // DeepWeb Dive gets pwnzu_sauce — so a wild win is a second, area-
-                    // flavoured way to farm the same ingredient the Uncommon cache pool
-                    // (game_internal.h) already offers everywhere.
-                    const char* wildLootPool[5] = {"airgap_snack", "tortilla_chip",
-                                                   kBackupDriveId, kDefragToolId};
-                    int wildLootCount = 4;
-                    if (exploreSector_ == 0) wildLootPool[wildLootCount++] = "osi_dip";
-                    else if (exploreSector_ == kDeepWebSector)
-                        wildLootPool[wildLootCount++] = "pwnzu_sauce";
-                    rng_ = rng_ * 1664525u + 1013904223u;
-                    const char* id = wildLootPool[(rng_ >> 16) % wildLootCount];
-                    inventory_.add(id, 1);
-                    const ItemDef* d = registry_.item(id);
-                    char buf[32];
-                    std::snprintf(buf, sizeof(buf), "FOUND %s",
-                                 d ? d->displayName : id);
-                    log_.push(LogEventType::ItemGained, buf);
+                    // What a wild win pays is the AREA's business: each row under
+                    // content/areas/ carries its own wild drop table, including whichever
+                    // Merge Hub ingredient it makes farmable here. Drawn by the same
+                    // weighted walk every other pool uses.
+                    const AreaLootTable t = areaWildLootTable(exploreSector_);
+                    drawCacheItem(t.rows, t.count);
                 }
                 // A separate, independent move-drop roll from the move-drop pool
                 // (embedded_content.cpp) — mirrors the item roll above, right next to

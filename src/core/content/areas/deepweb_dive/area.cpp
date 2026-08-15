@@ -24,4 +24,13 @@ const char* const kAreaModsDeepWeb[] = {
 };
 const int kAreaModsDeepWebCount = arrLen(kAreaModsDeepWeb);
 
+// The dive's WILD-win drop table. Same staple set every area's row carries, plus the
+// dive's own exclusive Merge Hub ingredient — the terminal zone is no AreaDef, so its
+// pool is named here for the same reason its glyph and scaling constants are.
+const LootEntry kWildLootDeepWeb[] = {
+    {"airgap_snack"}, {"tortilla_chip"}, {"backup_drive"}, {"disk_scrubber"},
+    {"pwnzu_sauce"},
+};
+const int kWildLootDeepWebCount = arrLen(kWildLootDeepWeb);
+
 }  // namespace mal

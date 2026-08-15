@@ -12,6 +12,15 @@
 namespace mal {
 
 namespace {
+// This area's WILD-win drop table — what a won wild encounter here hands over.
+// Rows draw at each item's own dropWeight (a bare id is the rule; see
+// content_items.cpp). The first four are the staple set every area shares: two
+// snacks, the combat shield, and the cleaner — fighting fragments the pet, so a
+// wild win is where you top the cleaner up.
+const LootEntry kWildLoot[] = {
+    {"airgap_snack"}, {"tortilla_chip"}, {"backup_drive"}, {"disk_scrubber"},
+};
+
 // The crossing's own pool — seamanship over sabotage: hold the hull, hear what's
 // coming, strip the junk off what you hauled aboard. Plus Watchdog Timer, the counter
 // to this area's own apex rider (decoy_download, below): the same debut-the-threat-
@@ -53,6 +62,8 @@ const AreaDef kAreaNetSeaCrossing = {
     {"THE HARDENED SHELL", kModShopListings, arrLen(kModShopListings)},
     kModPool,
     arrLen(kModPool),
+    kWildLoot,
+    arrLen(kWildLoot),
 };
 
 }  // namespace mal

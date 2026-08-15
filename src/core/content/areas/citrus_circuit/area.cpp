@@ -9,6 +9,18 @@
 namespace mal {
 
 namespace {
+// This area's WILD-win drop table — what a won wild encounter here hands over.
+// Rows draw at each item's own dropWeight (a bare id is the rule; see
+// content_items.cpp). The first four are the staple set every area shares: two
+// snacks, the combat shield, and the cleaner — fighting fragments the pet, so a
+// wild win is where you top the cleaner up.
+// Plus this area's exclusive Merge Hub ingredient, so a wild win here is a second,
+// area-flavoured way to farm what the Uncommon cache pool already offers everywhere.
+const LootEntry kWildLoot[] = {
+    {"airgap_snack"}, {"tortilla_chip"}, {"backup_drive"}, {"disk_scrubber"},
+    {"osi_dip"},
+};
+
 // Niche-flavour pass mod pool: rolled (weighted by rarity) on this area's
 // milestone drops (sub/area-boss clear, Epic cache).
 const char* const kModPool[] = {"clock_speed_boost", "packet_sniffer",
@@ -45,6 +57,8 @@ const AreaDef kAreaCitrusCircuit = {
     {"CHIP SHOP", kModShopListings, arrLen(kModShopListings)},
     kModPool,
     arrLen(kModPool),
+    kWildLoot,
+    arrLen(kWildLoot),
 };
 
 }  // namespace mal

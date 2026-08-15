@@ -3,7 +3,8 @@
 //
 // An AreaDef is everything that makes one explorable area of the linear ladder
 // itself: its name/Title, its 5 sub-area names, its 5 sub-area boss names +
-// the area-boss banner, its storefront, and its mod-loot pool. Find an area's
+// the area-boss banner, its storefront, and its two loot pools (mod + wild-win item).
+// Find an area's
 // folder (areas/<name>/area.cpp) to change anything about that area; nothing about
 // one area's identity is split across another file.
 //
@@ -23,6 +24,8 @@
 // an AreaDef — see the plain declarations at the bottom, defined in
 // areas/deepweb_dive/area.cpp.
 #pragma once
+
+#include "core/content/defs.h"  // LootEntry — an area's wild-win drop table
 
 namespace mal {
 
@@ -107,6 +110,13 @@ struct AreaDef {
     AreaStorefrontDef modShop;  // mod storefront — listings resolve via ContentRegistry::mod
     const char* const* modPoolIds;  // this area's mod-loot table (drop weighted by rarity)
     int modPoolCount;
+    // This area's WILD-win item drop table — what a won wild encounter here can hand
+    // over, drawn by Game::rollLootEntry like every other pool. Authored in full rather
+    // than as a delta on a shared base: an area's drop table is a fact about that area,
+    // and a reader editing this row should see all of it. Most areas share a staple set
+    // and then differ in one entry, which is exactly the difference this makes visible.
+    const LootEntry* wildLootPool;
+    int wildLootPoolCount;
 };
 
 extern const AreaDef kAreaCitrusCircuit;
@@ -165,13 +175,21 @@ inline int areaTier(int idx) {
 }
 
 // DeepWeb Dive: the always-last endless zone, unlocked once every real area is
-// cleared. It has no sub-ladder/boss/shop, just its own mod pool — defined in
+// cleared. It has no sub-ladder/boss/shop, just its own two loot pools — defined in
 // areas/deepweb_dive/area.cpp alongside the endless-scaling constants below (kept
 // beside the pool + boss-scaling code they exist for, rather than cross-cutting
 // tunables.h, since nothing outside DeepWeb reads them).
 extern const char* const kAreaModsDeepWeb[];
 extern const int kAreaModsDeepWebCount;
+extern const LootEntry kWildLootDeepWeb[];   // AreaDef::wildLootPool's stand-in
+extern const int kWildLootDeepWebCount;
 extern const char* const kDeepWebIcon;   // its EXPL row glyph (AreaDef::icon's stand-in)
+
+// The wild-win drop pool for `areaIdx` (0..kAreaCount-1 or kDeepWebSector), or an
+// empty pool if the index names neither. The one place the dive's standalone pool is
+// reconciled with the ladder's rows, so a caller draws from a pool without knowing
+// which of the two shapes it came from — same job areaModTable does for mods.
+struct AreaLootTable { const LootEntry* rows; int count; };
 
 // The sector index that MEANS DeepWeb: one past the last real area, so any
 // `0 <= idx < kAreaCount` test excludes it by construction and nothing has to know
@@ -179,5 +197,15 @@ extern const char* const kDeepWebIcon;   // its EXPL row glyph (AreaDef::icon's 
 // than in expl_screen.h, because the run state that carries it (Game's active
 // sector) outlives any screen — the picker just happens to draw a row for it.
 constexpr int kDeepWebSector = kAreaCount;
+
+inline AreaLootTable areaWildLootTable(int areaIdx) {
+    if (areaIdx == kDeepWebSector) return {kWildLootDeepWeb, kWildLootDeepWebCount};
+    // Bounds-checked rather than leaning on area()'s clamp-to-0: handing back area 0's
+    // drop table for an out-of-range sector would be a silent wrong answer, where an
+    // empty pool is a visible one (rollLootEntry returns nullptr and nothing drops).
+    if (areaIdx < 0 || areaIdx >= kAreaCount) return {nullptr, 0};
+    const AreaDef& a = area(areaIdx);
+    return {a.wildLootPool, a.wildLootPoolCount};
+}
 
 }  // namespace mal
