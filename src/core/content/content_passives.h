@@ -52,6 +52,21 @@ constexpr float kFrenzyHealPermille = 15.0f;   // 0.X% of live shieldHp, min 1
 // stealCurrentHpPct, these only fire at all while the caster's bubble is up (shieldHp > 0)
 constexpr int kPhishingBiteChancePctByStage[4] = {0, 32, 48, 64};
 
+// Frenzy lean: once the bubble has been stacked past the pet's own max Health — the
+// point the shield bar starts churning, so the screen has already promised something
+// changed — more bubble buys less than a bite does, and Combat::chooseMove starts
+// re-rolling Defend picks into Attack ones. The chance ramps with how far past max
+// Health the pool was stacked, reaching kPhishFrenzyLeanMaxPct at this multiple of it.
+//
+// It reads the pool's HIGH-WATER mark (phishShieldPeak), not its live size, so the lean
+// does NOT ease off as the bubble is chewed back down — a pet that banked a wall commits
+// to spending it. The ratchet releases only when the bubble actually POPS, which is the
+// off-ramp: stop bracing, the enemy eventually breaks through, and the pet returns to
+// mixed play. Re-casting the bubble before it pops holds the frenzy open, which is what
+// makes a committed override (Combat::commitOverride) worth spending on this line.
+constexpr int kPhishFrenzyLeanFullMult = 2;    // peak >= this x maxHealth -> full lean
+constexpr int kPhishFrenzyLeanMaxPct = 100;
+
 // --- Trojan — Execution-Override + trap cap ------------------------------------
 // On an enemy's move-pick a Trojan has kExecOverrideBasePct chance PLUS the sum of
 // its armed traps' trapPassiveBonusPct to hijack that move and turn it on the enemy.

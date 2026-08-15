@@ -190,14 +190,24 @@ struct Combatant {
     int stackDefenseBonus = 0;
 
     // Feeding-frenzy combo (Phishing steal-attacks only, see Combat::applyEffect):
-    // phishStreak counts this combatant's OWN run of back-to-back steal-attack casts
-    // (an interleaved non-phishing move — e.g. Spoof-Bubble — breaks it, restarting
-    // at 1); phishComboBonus is the flat damage those casts have permanently banked
-    // this fight. Unlike stackPowerBonus (a % mult, capped, per-move-defined), this is
-    // flat damage, uncapped, and grows by the run length itself — early runs add a
-    // sliver, a long one snowballs.
+    // phishStreak counts this combatant's OWN run of steal-attack casts made WITH THE
+    // BUBBLE UP (shieldHp > 0); phishComboBonus is the flat damage those casts have
+    // permanently banked this fight. Unlike stackPowerBonus (a % mult, capped,
+    // per-move-defined), this is flat damage, uncapped, and grows by the run length
+    // itself — early runs add a sliver, a long one snowballs.
+    //
+    // Casting the bubble HOLDS the run rather than breaking it: the same shieldHp that
+    // gates stealSpeedPct/stealCurrentHpPct and Perfect Bite gates the combo, so the
+    // whole line answers to one question ("is the bubble up?") instead of the brace
+    // being simultaneously required by three riders and fatal to a fourth. The run
+    // breaks on a steal-attack cast made with the bubble DOWN — caught out mid-frenzy.
     int phishStreak = 0;
     int phishComboBonus = 0;
+
+    // High-water mark of shieldHp since the pool last popped, driving the frenzy lean
+    // in Combat::chooseMove (content_passives.h sizes it). Ratchets up as the bubble is
+    // stacked and is cleared ONLY when the pool is overrun, never when it merely shrinks.
+    int phishShieldPeak = 0;
 
     // STUN (a landed hit's lockTurns rider) — set ON THE VICTIM. While
     // lockedTurnsLeft > 0 the victim burns its turn doing nothing, then it lifts.
@@ -431,6 +441,7 @@ public:
 private:
     uint32_t rng();
     int chooseMove(Combatant& self);                 // autonomous roll (lean + no-repeat)
+    int pickSlot(const Combatant& self, bool attacksOnly, bool allowRepeat);  // -1 = none
     void resolveTurn(Combatant& actor, Combatant& target, bool byPlayer);
     // The single applier for every CrewExploitKind — a new crew ability is one enum
     // entry (content_crews.h) plus one case here, never a per-crew branch elsewhere.

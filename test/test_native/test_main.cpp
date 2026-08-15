@@ -425,6 +425,9 @@ int g_failures = 0;
     RUN(test_mod_tripwire)                        \
     RUN(test_phishing_bubble_steal)               \
     RUN(test_phishing_perfect_bite)               \
+    RUN(test_phishing_frenzy_survives_the_bubble) \
+    RUN(test_phishing_frenzy_breaks_when_exposed) \
+    RUN(test_phishing_frenzy_lean_ratchets_until_the_bubble_pops) \
     RUN(test_phishing_shield_pool)                \
     RUN(test_worm_shared_resources_speed)         \
     RUN(test_worm_replica_arithmetic)             \

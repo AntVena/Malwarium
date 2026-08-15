@@ -28,6 +28,13 @@ void Combat::begin(const Combatant& player, const Combatant& enemy, Stakes stake
         player_.health = player_.maxHealth;
     }
     enemy_.health = enemy_.maxHealth;
+    // The frenzy ratchet is "the most bubble this pet has held", so it can never start
+    // below a pool the combatant walked in with — a duel round or a gauntlet leg that
+    // carries a live shield arms the lean on the same terms a cast would.
+    if (player_.phishShieldPeak < player_.shieldHp)
+        player_.phishShieldPeak = player_.shieldHp;
+    if (enemy_.phishShieldPeak < enemy_.shieldHp)
+        enemy_.phishShieldPeak = enemy_.shieldHp;
     stakes_ = stakes;
     outcome_ = Outcome::Ongoing;
     rng_ = seed ? seed : 1u;
@@ -109,22 +116,70 @@ void Combat::setLast(const char* name, int dmg, bool byPlayer, bool charge,
     lastRansomed_ = ransomed;
 }
 
+// Uniform pick over `self`'s slots, skipping lastMoveIdx (the no-consecutive-repeat
+// rule) unless `allowRepeat`, and — when `attacksOnly` — every Defend slot. Draws
+// exactly one rng() when it has anything to choose between. Returns -1 when nothing
+// qualifies, which is the caller's cue to keep what it already had rather than force
+// an unplayable slot.
+int Combat::pickSlot(const Combatant& self, bool attacksOnly, bool allowRepeat) {
+    const int n = static_cast<int>(self.moves.size());
+    const bool excludeLast =
+        !allowRepeat && self.lastMoveIdx >= 0 && self.lastMoveIdx < n;
+    auto eligible = [&](int i) {
+        if (excludeLast && i == self.lastMoveIdx) return false;
+        return !attacksOnly || self.moves[i]->kind == MoveDef::Kind::Attack;
+    };
+    int span = 0;
+    for (int i = 0; i < n; ++i)
+        if (eligible(i)) ++span;
+    if (span <= 0) return -1;
+    const int target = static_cast<int>(rng() % static_cast<uint32_t>(span));
+    int seen = 0;
+    for (int i = 0; i < n; ++i) {
+        if (!eligible(i)) continue;
+        if (seen == target) return i;
+        ++seen;
+    }
+    return -1;
+}
+
+// The frenzy lean (Phishing): how strongly an over-stacked Obfuscation bubble pushes
+// this pet off bracing and onto biting. 0 for every combatant that has never pooled a
+// shield past its own max Health — which is every non-Phishing pet in the game, and so
+// the guard that keeps this whole path from drawing rng() in a fight without the track.
+static int phishFrenzyLeanPct(const Combatant& c) {
+    if (c.phishShieldPeak <= c.maxHealth || c.maxHealth <= 0) return 0;
+    const int span = c.maxHealth * (kPhishFrenzyLeanFullMult - 1);
+    if (span <= 0) return kPhishFrenzyLeanMaxPct;
+    const int pct = (c.phishShieldPeak - c.maxHealth) * 100 / span;
+    return pct > kPhishFrenzyLeanMaxPct ? kPhishFrenzyLeanMaxPct : pct;
+}
+
 int Combat::chooseMove(Combatant& self) {
     const int n = static_cast<int>(self.moves.size());
     if (n <= 1) return 0;
     // Uniform over the moves != lastMoveIdx — no-consecutive-repeat. Uniform
     // selection makes the attack/defend lean emerge directly from the slot mix
     // more attack slots → more attack rolls, no separate ratio dial.
-    const bool excludeLast = self.lastMoveIdx >= 0 && self.lastMoveIdx < n;
-    const int span = excludeLast ? n - 1 : n;
-    int target = static_cast<int>(rng() % static_cast<uint32_t>(span));
-    int seen = 0;
-    for (int i = 0; i < n; ++i) {
-        if (excludeLast && i == self.lastMoveIdx) continue;
-        if (seen == target) return i;
-        ++seen;
+    int idx = pickSlot(self, /*attacksOnly=*/false, /*allowRepeat=*/false);
+    if (idx < 0) return 0;
+    // ...with ONE exception, and it is a Phishing state rather than a dial: a bubble
+    // stacked past the pet's own max Health has bought more wall than the fight can
+    // spend, while a bite still buys something. Past that point a Defend pick is
+    // re-rolled into an Attack one, at a chance that ramps with how far the pool was
+    // stacked (phishFrenzyLeanPct, content_passives.h).
+    //
+    // The re-roll ignores no-consecutive-repeat, the same licence a committed override
+    // takes: a frenzy is a pet biting single-mindedly, and a two-slot Phishing kit whose
+    // only attack was the last move would otherwise be unable to frenzy at all. It can
+    // still decline to find an attack (a Defend-only kit), and then the original stands.
+    const int leanPct = phishFrenzyLeanPct(self);
+    if (leanPct > 0 && self.moves[idx]->kind != MoveDef::Kind::Attack &&
+        static_cast<int>(rng() % 100) < leanPct) {
+        const int atk = pickSlot(self, /*attacksOnly=*/true, /*allowRepeat=*/true);
+        if (atk >= 0) idx = atk;
     }
-    return 0;
+    return idx;
 }
 
 // Net Neutrality's floor (crew Exploit): whether `c`'s stat LEANS are locked against
@@ -153,19 +208,26 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
     // refund rather than a copy of somebody else's advantage.
     const bool mitmCopy =
         !byPlayer && player_.crewExploit.holds(CrewExploitKind::MirrorEnemyBuffs);
-    // Feeding-frenzy combo (Phishing steal-attacks only, mv->stealPowerPct > 0):
-    // this actor's OWN run of back-to-back steal-attack casts — a mixed kit that
-    // slots in a Defend move (e.g. Spoof-Bubble) between them breaks it, restarting
-    // at 1. A continuing run permanently banks (run length - 1) flat damage into
-    // phishComboBonus, applied below to every future steal-attack hit this fight —
-    // so a short early run adds a sliver, a long one snowballs, and it never decays
-    // even after this particular run ends (unlike Combat::streakCount_, the
-    // turn-order streak driving the render pace, which resets clean each time).
+    // Feeding-frenzy combo (Phishing steal-attacks only, mv->stealPowerPct > 0): this
+    // actor's OWN run of steal-attack casts made WITH THE BUBBLE UP. A continuing run
+    // permanently banks (run length - 1) flat damage into phishComboBonus, applied below
+    // to every future steal-attack hit this fight — so a short early run adds a sliver,
+    // a long one snowballs, and it never decays even after this particular run ends
+    // (unlike Combat::streakCount_, the turn-order streak driving the render pace, which
+    // resets clean each time).
+    //
+    // The bubble is the gate, not the interruption. A Defend cast — the very move that
+    // raises the bubble — leaves the run standing, because every other rider on this line
+    // (stealSpeedPct, stealCurrentHpPct, Perfect Bite, the frenzy heal) already requires
+    // shieldHp > 0: a brace that armed four riders while breaking a fifth was the one
+    // place the track argued with itself. What breaks the run is biting while EXPOSED.
     if (mv->stealPowerPct > 0) {
-        actor.phishStreak++;
-        if (actor.phishStreak > 1) actor.phishComboBonus += actor.phishStreak - 1;
-    } else {
-        actor.phishStreak = 0;
+        if (actor.shieldHp > 0) {
+            actor.phishStreak++;
+            if (actor.phishStreak > 1) actor.phishComboBonus += actor.phishStreak - 1;
+        } else {
+            actor.phishStreak = 0;    // caught out with the bubble down
+        }
     }
     if (mv->kind == MoveDef::Kind::Attack) {
         // Base damage scaled by the actor's branch attack-power lean PLUS any
@@ -312,9 +374,15 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
         // guard / ECC / Load Balancer) so it's the final wall before Health. A hit
         // fully soaked by the shield (dmg -> 0) triggers no on-hit rider below — the
         // same "no damage landed" semantics guard already gives.
+        //
+        // Overrunning it also releases the frenzy ratchet (phishShieldPeak): the lean
+        // that a stacked pool armed is spent, and the pet goes back to mixed play. Only
+        // the POP clears it — a pool merely chewed down keeps the lean, which is what
+        // makes the enemy's way out of a frenzy "break the bubble", not "wait".
         if (dmg > 0 && target.shieldHp > 0) {
             if (target.shieldHp >= dmg) { target.shieldHp -= dmg; dmg = 0; }
             else { dmg -= target.shieldHp; target.shieldHp = 0; }
+            if (target.shieldHp == 0) target.phishShieldPeak = 0;
         }
         // Trojan trap (Trojan line): an incoming attack springs the top armed trap. It
         // deletes trapEvasionPct% of the hit (the survival-in-lieu-of-healing tool),
@@ -542,7 +610,16 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
         const int braced = mv->power * actor.defenseMultPct / 100;
         if (mv->shieldPool > 0) {
             actor.shieldHp += braced;
-            if (mitmCopy) player_.shieldHp += braced;
+            // Ratchet the frenzy high-water mark on every top-up (chooseMove reads it).
+            // Re-casting onto a live pool is therefore how a pet holds a frenzy open past
+            // the hits that would otherwise have popped it.
+            if (actor.shieldHp > actor.phishShieldPeak)
+                actor.phishShieldPeak = actor.shieldHp;
+            if (mitmCopy) {
+                player_.shieldHp += braced;
+                if (player_.shieldHp > player_.phishShieldPeak)
+                    player_.phishShieldPeak = player_.shieldHp;
+            }
         } else {
             actor.guard += braced;
             if (mitmCopy) player_.guard += braced;

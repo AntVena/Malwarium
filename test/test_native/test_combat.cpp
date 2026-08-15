@@ -1263,6 +1263,77 @@ void test_phishing_perfect_bite() {
     CHECK(rodHp.player().speed == plainHp.player().speed);   // speed untouched
 }
 
+// Feed-frenzy combo gate: the run is counted by the BUBBLE, not by move adjacency. A
+// two-slot kit alternates strictly (no-consecutive-repeat over two moves), so the
+// Spoof-Bubble cast lands between every pair of bites — and the run survives it, because
+// raising the bubble is the thing the combo is gated ON. maxHealth is far above anything
+// the pool reaches so the frenzy LEAN stays off and this measures the gate alone.
+void test_phishing_frenzy_survives_the_bubble() {
+    ContentRegistry r = ContentRegistry::embedded();
+    Combatant pc = mkCombatant(r, "P", 4000, 50, {"smish_hook", "spoof_bubble"});
+    pc.shieldHp = 200;                       // up from the first bite onward
+    Combatant e = mkCombatant(r, "E", 4000, 50, {"quick_jab"});
+    Combat cb;
+    cb.begin(pc, e, Combat::Stakes::Safe, 1);
+    for (int i = 0; i < 40; ++i) cb.step();
+
+    // Interleaving the brace no longer restarts the run: several bites have banked, so
+    // the streak is past its first cast and the flat bonus is non-zero. Under the old
+    // adjacency rule this kit could never bank anything at all.
+    CHECK(cb.player().phishStreak > 1);
+    CHECK(cb.player().phishComboBonus > 0);
+}
+
+// ...and the run DOES break on a bite taken with the bubble down — the fail state that
+// replaces the old "any other move breaks it". Same kit, same seed, no starting pool and
+// no way to raise one (attack-only kit), so every cast is an exposed one.
+void test_phishing_frenzy_breaks_when_exposed() {
+    ContentRegistry r = ContentRegistry::embedded();
+    Combatant pc = mkCombatant(r, "P", 4000, 50, {"smish_hook"});
+    Combatant e = mkCombatant(r, "E", 4000, 50, {"quick_jab"});
+    Combat cb;
+    cb.begin(pc, e, Combat::Stakes::Safe, 1);
+    for (int i = 0; i < 40; ++i) cb.step();
+    CHECK(cb.player().phishStreak == 0);        // never got off the ground
+    CHECK(cb.player().phishComboBonus == 0);    // and banked nothing
+}
+
+// The frenzy LEAN: a pool stacked past the pet's own max Health re-rolls Defend picks
+// into Attack ones, and the ratchet reads the pool's HIGH-WATER mark, so it holds while
+// the bubble is chewed down and releases only when the pool is actually overrun.
+void test_phishing_frenzy_lean_ratchets_until_the_bubble_pops() {
+    ContentRegistry r = ContentRegistry::embedded();
+    auto run = [&](int maxHp, int shield, int enemyPower, Combat& out) {
+        Combatant pc = mkCombatant(r, "P", maxHp, 50, {"smish_hook", "spoof_bubble"});
+        pc.shieldHp = shield;
+        Combatant e = mkCombatant(r, "E", 4000, 50, {enemyPower ? "rootkit_strike"
+                                                                : "quick_jab"});
+        e.powerMultPct = enemyPower ? enemyPower : 100;
+        out.begin(pc, e, Combat::Stakes::Safe, 1);
+    };
+    // maxHealth 20 against a 200 pool: peak is 10x max Health, so the lean saturates.
+    // begin() seeds the ratchet off a pool the pet walked in with.
+    Combat armed; run(20, 200, 0, armed);
+    CHECK(armed.player().phishShieldPeak == 200);
+    for (int i = 0; i < 40; ++i) armed.step();
+    CHECK(armed.player().phishShieldPeak == 200);   // ratchet holds as the pool drains
+
+    // The SAME kit and seed with max Health above the pool leaves the lean off, so the
+    // pet keeps alternating and tops the bubble up instead of only spending it.
+    Combat unarmed; run(4000, 200, 0, unarmed);
+    for (int i = 0; i < 40; ++i) unarmed.step();
+    CHECK(unarmed.player().shieldHp > armed.player().shieldHp);
+
+    // Popping it releases the ratchet: a heavy hitter breaks through the pool, and the
+    // peak clears so the pet returns to mixed play.
+    Combat popped; run(20, 40, 900, popped);
+    CHECK(popped.player().phishShieldPeak == 40);
+    int guard = 0;
+    while (popped.player().shieldHp > 0 && guard++ < 200) popped.step();
+    CHECK(popped.player().shieldHp == 0);           // overrun
+    CHECK(popped.player().phishShieldPeak == 0);    // ...and the lean is spent
+}
+
 // Obfuscation shield pool (Phishing defensive track): a shieldPool Defend move POOLS
 // into shieldHp (a second health bar) that absorbs before real Health, overflows the
 // remainder to Health when it pops, and STACKS additively on recast — distinct from the
