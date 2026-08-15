@@ -1839,8 +1839,9 @@ private:
     const char* rollAreaModId(int area);
     const char* rollAnyModId();
     void grantMod(const char* id);
-    // MOVES earn path — you learn a move by being hit with it. Rolls `dropPct` and, on a
-    // hit, teaches one move off `from`'s own kit that this pet lacks and could actually
+    // MOVES earn path — you learn a move by BEATING something that knows it. Rolls
+    // `dropPct` and, on a hit, teaches one move off `from`'s KIT (everything it could
+    // have used, not what it happened to cast) that this pet lacks and could actually
     // field. The one implementation both earn sites share (wild wins in
     // applyCombatResult, boss rounds in finishBossRound), so the filters that decide what
     // is teachable cannot drift apart between them. Returns whether anything was learned.

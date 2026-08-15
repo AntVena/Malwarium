@@ -21,7 +21,8 @@ void test_move_loadout_grant_no_duplicate() {
 
 // The wild-win reward path (game.cpp applyCombatResult) wires an independent
 // move-drop roll (kWildMoveDropPct) right next to the existing item-drop roll, and the
-// pool is the DEFEATED ENEMY'S OWN KIT — you learn a move by being hit with it.
+// pool is the DEFEATED ENEMY'S WHOLE KIT — you learn a move by beating something that
+// knows it, whether or not it got round to using it on you.
 //
 // Asserted as a CONTRAST rather than a bare "something dropped", because that is what
 // tells the enemy's kit apart from any fixed table: at sub 0 an area-0 wild swings only

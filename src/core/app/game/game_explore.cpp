@@ -554,13 +554,17 @@ void Game::grantMod(const char* id) {
 }
 
 bool Game::rollEnemyMoveDrop(const Combatant& from, int dropPct) {
-    // You learn a move by being HIT with it: the pool is the defeated enemy's own kit,
-    // so what a fight is worth farming is legible from the fight itself and a move
-    // becomes findable purely by giving it to something that uses it — no drop table to
-    // keep in step with the roster. Filters to not-yet-owned rather than reroll-looping,
-    // so "it taught nothing I don't have" is a legitimate no-drop, and it is also what
-    // keeps a re-run self-limiting without a decay curve: an enemy you have learned out
-    // stops paying on its own.
+    // You learn a move by BEATING something that knows it. The pool is the defeated
+    // enemy's whole KIT — every move it could have used, not the ones it happened to
+    // roll — so a win teaches the same set however the fight actually went, and a short
+    // fight is never a worse teacher than a long one. What a given enemy is worth
+    // farming is therefore a property of the enemy, legible before the first swing.
+    //
+    // It also means a move becomes findable purely by giving it to something that uses
+    // it, with no drop table to keep in step with the roster. Filters to not-yet-owned
+    // rather than reroll-looping, so "it knew nothing I don't" is a legitimate no-drop,
+    // and that is also what keeps a re-run self-limiting without a decay curve: an enemy
+    // you have learned out stops paying on its own.
     rng_ = rng_ * 1664525u + 1013904223u;
     if (static_cast<int>((rng_ >> 16) % 100) >= dropPct) return false;
     std::vector<const char*> candidates;

@@ -32,8 +32,9 @@ building it up organically.
 
 **Capture arming costs ~70KB and the AP ~58KB**, against ~126KB free with the radio idle. The device works, and the save no longer needs a big contiguous block, but that was the only thing standing on this — anything else that grows will hit the same wall. Worth a pass at what the capture path actually needs. | `net_capture.h`'s `powerUp` (`esp_wifi_init` + promiscuous + the pcap SD buffers). | M | Measured on device, not estimated: `[ap] down free=126408` → `[cap] armed free=56188`. |
 
-**No enemy in the game swings a DEFEND move**, so under learn-from-the-enemy the two generic
-braces — `null_route` and `checksum_guard` — are unobtainable for a line pet, which is every pet.
+**No enemy's KIT carries a DEFEND move**, so — drops being drawn from what the enemy knows — the
+two generic braces, `null_route` and `checksum_guard`, are unobtainable for a line pet, which is
+every pet.
 A line pet still has its own line's braces, so this is dead content rather than a hole in the
 kit, but it is the sharpest single symptom of the row below. | `combat_factory.cpp`'s
 `subAreaBoss` (or `wildMalbeast` / `kLadder`). | S | Now a one-line change: boss rounds pay a move
