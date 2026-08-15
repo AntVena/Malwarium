@@ -34,13 +34,21 @@ its keep-anyway exceptions (other-code refs, living how-to standards, `vNN` save
 tests, and the domain terms that only look like refs: EAPOL `M1`–`M4`, `S3`/`C5`, `D0`–`D3`, world
 `Area 0`–`3`). Cross-check any claim against the actual code before trusting it.
 
-### Self-architecture review — Last run: 2026-08-05
+### Self-architecture review — Last run: 2026-08-15
 Check the `game_*.cpp` module split for size creep past ~600 lines. Look for cross-file duplication, dead code, and orphaned helpers
 that should have moved to `game_internal.h` or been deleted. Verify actual file sizes, don't trust
 what a doc says they are. Sources are globbed (`CMakeLists.txt`, `build_src_filter`), so a new
 unit needs no build-file edit — the cost of a split is the reading, not the plumbing. When a
 unit is big but genuinely one concern (a dispatcher, a flat save mapping, a screen-per-function
 render file), leave it and say so: length that follows from the number of cases is not creep.
+
+**Measure FUNCTIONS too, not just files.** The unit rule has been holding while the mass moved
+inside individual functions, where a file-size check cannot see it — the units sit near 600 while
+single functions run past 400. Get the shape from the gap between definitions
+(`grep -nE '^[A-Za-z_].*::.*\(' <unit>`), then apply the same one-concern test. The dispatcher
+exception is the one to apply honestly: **count the `case` labels before granting it.** A long
+`switch` over a vocabulary is fine; a long if-chain is accumulated special cases wearing the same
+length, and the two are indistinguishable by line count alone.
 
 ### Design consistency pass — Last run: 2026-08-05
 Spot-check shipped screens against the system they're authored to (`assets/VISUAL_LANGUAGE.md`,
@@ -79,11 +87,11 @@ look truncated in a still and scroll on the device. And a band that ends short o
 only a defect if the group BELOW it has nothing separating it; empty canvas under the last group
 is just empty canvas.
 
-### Stale cross-reference sweep — Last run: 2026-08-05
+### Stale cross-reference sweep — Last run: 2026-08-15
 Grep for links/citations across the docs — file paths, line numbers, `D#`/`S#`/`C#`/`FB-*` row
 IDs — and verify they still resolve to something real. Fix or remove dangling references.
 
-### Test/gate health check — Last run: 2026-08-05
+### Test/gate health check — Last run: 2026-08-15
 Run the gates. Confirm native gates and the S3 build are actually green, not assumed green from
 a doc. Look for test debt — tests asserting behaviour that no longer occurs in
 real play.

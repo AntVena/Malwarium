@@ -478,7 +478,7 @@ for. The `ICON_SECTOR_*` half of each family is drawn and live on the EXPL zone 
   tadpole that slides. Wants an extra clip row per mover on the existing sheets (swim cycle,
   wingbeat, step cycle), keyed off the same field — sheet rows, not new sprites. `Fly` has no
   creature on it yet either; the first flier is a roster question, not a code one. Diff **M**.
-- **Per-line move-fx assets / silhouette + eye-anchor data** (FB-DSGN7, FB-UI4) — eye-pixel metadata
+- **Per-line move-fx assets / silhouette + eye-anchor data** — eye-pixel metadata
   per sprite + the layered gamma-pulse treatment. Largely procedural + data, not flat icons.
 - **Branching-roster sprites** — full `SPR_PET_*` sheets for the named alternates once the roster
   naming session lands.
@@ -488,21 +488,41 @@ for. The `ICON_SECTOR_*` half of each family is drawn and live on the EXPL zone 
 ## 3. Size / reviewability watch
 
 Same rule as the `game_*.cpp` units: split *at* ~600 lines, not before, and split by concern
-rather than by line count. `save.cpp` (963), `combat.cpp` (823), `expl_screen.cpp` (757) and
-`cfg_screen.cpp` (668) are each past the number and each still ONE concern — save.cpp is long
-because the format is flat, which is not a second responsibility, and combat.cpp is the turn
-engine alone now that the factories have their own unit beside it.
+rather than by line count. `save.cpp` (1097), `combat.cpp` (1100), `expl_screen.cpp` (750) and
+`cfg_screen.cpp` (660) are each past the number and each still ONE concern at UNIT level —
+save.cpp is long because the format is flat, which is not a second responsibility, and combat.cpp
+is the turn engine alone, with the factories in `combat_factory.cpp` (400) beside it.
+
+**The unit rule is holding; the mass has moved inside individual functions, where it does not
+look.** Three are past the point a reviewer can hold one in their head, and the "it is a
+dispatcher, its length follows from the number of cases" defence only covers one of them:
+
+- **`Combat::applyEffect` (433 lines, `combat.cpp:141`)** — the sharp one. It has **zero `case`
+  labels**: it is a sequential if-chain over effect mechanics, not a dispatch table, so length
+  here follows from accumulated special cases rather than from a vocabulary. The likeliest seam
+  is per-effect-family helpers, matching the structured effect vocabulary the content standard
+  already asks rows to be written in. | S per family, L in total. | Worth doing incrementally —
+  one family lifted per pass, not a rewrite. |
+- **`Game::tick` (434 lines, `game_core.cpp:76`)** — 24 labelled sections in a flat sequence
+  (achievements sweep · duel upkeep · decay · capture policy · combat anim · cursor repeat ·
+  autosave · evolution · lockout · idle collapse · …), 18 top-level control blocks, almost no
+  interleaving between them. The comments already name the split. | M | Each section is a
+  candidate `tickX()` private method; the ordering between them is the only real constraint. |
+- **`Game::onButton` (235 lines, `game_core.cpp:531`)** — genuinely input dispatch, and its
+  length does follow from the number of navigation states. **Leave it**; noted so a later pass
+  does not re-derive the same verdict.
 
 One more is past the rule and was not on this watch at all:
 
-- **`game.h` (2730)** — the umbrella header. It is not a unit that grew a second concern; it is
+- **`game.h` (3077)** — the umbrella header. It is not a unit that grew a second concern; it is
   one class's declaration, so the line count is arguably honest. The cost is its includes, and
   **the UI half is now off**: the nine `core/ui/*_screen.h` headers are gone, replaced by
   `core/ui/ui_state.h` — the ids `Game` actually holds as members (`SubmenuId`, `CfgScreen`,
   `ItemFilter`, `UiMode`, `MaintKind`, `ArchAction`, `HackerSlotId`, `FeedVitals`), split out on
   the rule that an id naming where the player IS is engine state while a `draw*` signature is
-  not. A screen header lives in the `game_*.cpp` unit that calls it. 36 → 28 direct
-  includes, 51 → 43 transitive.
+  not. A screen header lives in the `game_*.cpp` unit that calls it. **37 direct includes today**
+  — the UI slice took it to 28 and the model/net stack has since added back, so the count is
+  worth re-measuring (`grep -cE '^\s*#include' src/core/app/game.h`) rather than quoted.
   **What's left is the model/net/render stack**: `combat.h`, `save.h`, `registry.h`,
   `framebuffer.h`, `platform.h` and the rest still reach every TU that includes `game.h`, so the
   unused-include sweep has no signal outside `core/ui` — where it has now run, leaving 38
