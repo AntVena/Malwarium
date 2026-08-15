@@ -271,6 +271,7 @@ int g_failures = 0;
     RUN(test_expl_nested_row_helpers)             \
     RUN(test_area_boss_gauntlet_composition)      \
     RUN(test_boss_threat_moves_area_adjacent)     \
+    RUN(test_boss_teaches_its_own_apex_move)      \
     RUN(test_expl_nested_list_nav)                \
     RUN(test_deepweb_dive)                        \
     RUN(test_zone_titles_equip_via_cfg_and_persist) \

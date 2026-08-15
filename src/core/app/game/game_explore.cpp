@@ -553,6 +553,55 @@ void Game::grantMod(const char* id) {
     markSaveDirty();
 }
 
+bool Game::rollEnemyMoveDrop(const Combatant& from, int dropPct) {
+    // You learn a move by being HIT with it: the pool is the defeated enemy's own kit,
+    // so what a fight is worth farming is legible from the fight itself and a move
+    // becomes findable purely by giving it to something that uses it — no drop table to
+    // keep in step with the roster. Filters to not-yet-owned rather than reroll-looping,
+    // so "it taught nothing I don't have" is a legitimate no-drop, and it is also what
+    // keeps a re-run self-limiting without a decay curve: an enemy you have learned out
+    // stops paying on its own.
+    rng_ = rng_ * 1664525u + 1013904223u;
+    if (static_cast<int>((rng_ >> 16) % 100) >= dropPct) return false;
+    std::vector<const char*> candidates;
+    auto consider = [&](const MoveDef* m) {
+        if (!m || moveLoadout_.owns(m->id)) return;
+        // The innate jab is never "learned": it sits outside the owned pool and outside
+        // the slots, so owns() says no about a move every pet already has. Every tier-1
+        // wild swings it, and the first round of every gauntlet opens with it.
+        if (const char* innate = moveLoadout_.defaultMove())
+            if (std::strcmp(m->id, innate) == 0) return;
+        // A move exclusive to ANOTHER line is skipped rather than dropped: the equip
+        // gate would refuse it anyway (MoveDef::line), so granting it would be a reward
+        // the pet can never field. Generic moves (line == nullptr) drop to everyone,
+        // which is what makes an area's apex rider worth hunting whatever you hatched.
+        if (m->line &&
+            (!pet_ || !pet_->line || std::strcmp(m->line, pet_->line) != 0))
+            return;
+        for (const char* c : candidates)
+            if (std::strcmp(c, m->id) == 0) return;              // a kit may repeat
+        candidates.push_back(m->id);
+    };
+    for (const MoveDef* m : from.moves) consider(m);
+    // Own-line catch-up — a FALLBACK rather than a peer of the main pool: a pet raised
+    // before one of its line moves existed still fills the gap in, on a win the enemy
+    // taught nothing new. A fresh hatch owns its whole line kit already
+    // (MoveLoadout::startingForLine), so this is normally a no-op.
+    if (candidates.empty() && pet_ && pet_->line)
+        for (const MoveDef* m : registry_.allMoves())
+            if (m->line && std::strcmp(m->line, pet_->line) == 0) consider(m);
+    if (candidates.empty()) return false;
+    rng_ = rng_ * 1664525u + 1013904223u;
+    const char* id = candidates[(rng_ >> 16) % candidates.size()];
+    moveLoadout_.grant(id);
+    const MoveDef* m = registry_.move(id);
+    char buf[32];
+    std::snprintf(buf, sizeof(buf), "LEARNED %s", m ? m->displayName : id);
+    log_.push(LogEventType::ItemGained, buf);
+    markSaveDirty();
+    return true;
+}
+
 // Boss ladder ----------------------------------------------------
 
 void Game::startSubAreaBoss(int area, int sub) {
@@ -604,6 +653,19 @@ void Game::finishBossRound() {
     if (combat_.outcome() == Combat::Outcome::Win) {
         // Bank this round's boss roll (a gauntlet pays the lump at the end).
         bossBitsAccrued_ += bossBitsReward(bossGauntlet_.stageRank, rng_);
+        // ...and roll THIS round's boss for a move off its own kit, before the gauntlet
+        // advances and replaces the combatant. Per round rather than once at the clear,
+        // because each round is a different boss with a different kit: the signature
+        // (sub 4) round is the only one carrying its area's apexThreatMoveId, so rolling
+        // once at the end would make the marquee move the rarest thing in the game by
+        // accident. It also means a 5-round area gauntlet pays five chances against a
+        // sub-boss's one, which is the right proportion to what each costs to reach.
+        //
+        // No refarm decay, deliberately: refarmDropScalePct exists to tax grinding one
+        // wild rung, and a cleared gauntlet is a deliberate re-run, not a farm. The
+        // not-yet-owned filter already makes a boss stop paying once it has taught
+        // everything it knows, which is a cap that needs no curve.
+        rollEnemyMoveDrop(combat_.enemy(), kBossMoveDropPct);
         const int surviving = combat_.player().health;
         ++bossRound_;
         ++bossWins_;   // per ROUND, so a three-boss gauntlet counts as three bosses beaten

@@ -1839,6 +1839,12 @@ private:
     const char* rollAreaModId(int area);
     const char* rollAnyModId();
     void grantMod(const char* id);
+    // MOVES earn path — you learn a move by being hit with it. Rolls `dropPct` and, on a
+    // hit, teaches one move off `from`'s own kit that this pet lacks and could actually
+    // field. The one implementation both earn sites share (wild wins in
+    // applyCombatResult, boss rounds in finishBossRound), so the filters that decide what
+    // is teachable cannot drift apart between them. Returns whether anything was learned.
+    bool rollEnemyMoveDrop(const Combatant& from, int dropPct);
     void startEncounter();                          // roll the malbeast, open the intro
     void onEncounter(const ButtonEvent& ev);        // Fight / Flee / Sinkhole
     void resolveFlee();                             // pre-fight escape roll

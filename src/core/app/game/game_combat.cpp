@@ -504,57 +504,7 @@ void Game::applyCombatResult() {
                     drawCacheItem(t.rows, t.count);
                 }
                 // A separate, independent move-drop roll, mirroring the item roll above.
-                // You learn a move by being HIT with it: the pool is the defeated
-                // enemy's own kit, so what a malbeast is worth farming is legible from
-                // the fight itself and a move becomes findable purely by giving it to
-                // something that uses it — no drop table to keep in step with the
-                // roster. Filters to not-yet-owned rather than reroll-looping, so "it
-                // taught nothing I don't have" is a legitimate no-drop.
-                //
-                // A move exclusive to ANOTHER line is skipped rather than dropped: the
-                // equip gate would refuse it anyway (MoveDef::line), so granting it
-                // would be a reward the pet can never field. Generic moves (line ==
-                // nullptr) drop to everyone, which is what makes an area's apex rider
-                // worth hunting whatever you hatched.
-                rng_ = rng_ * 1664525u + 1013904223u;
-                if (static_cast<int>((rng_ >> 16) % 100) < moveDropPct) {
-                    std::vector<const char*> candidates;
-                    auto consider = [&](const MoveDef* m) {
-                        if (!m || moveLoadout_.owns(m->id)) return;
-                        // The innate jab is never "learned": it sits outside the owned
-                        // pool and outside the slots, so owns() says no about a move
-                        // every pet already has. Every tier-1 wild swings it.
-                        if (const char* innate = moveLoadout_.defaultMove())
-                            if (std::strcmp(m->id, innate) == 0) return;
-                        if (m->line && (!pet_ || !pet_->line ||
-                                        std::strcmp(m->line, pet_->line) != 0))
-                            return;                    // another line's exclusive move
-                        for (const char* c : candidates)
-                            if (std::strcmp(c, m->id) == 0) return;    // kit may repeat
-                        candidates.push_back(m->id);
-                    };
-                    for (const MoveDef* m : combat_.enemy().moves) consider(m);
-                    // Own-line catch-up, unchanged in purpose but now a FALLBACK rather
-                    // than a peer of the main pool: a pet raised before one of its line
-                    // moves existed still fills the gap in, on a win the enemy taught
-                    // nothing new. A fresh hatch owns its whole line kit already
-                    // (MoveLoadout::startingForLine), so this is normally a no-op.
-                    if (candidates.empty() && pet_ && pet_->line)
-                        for (const MoveDef* m : registry_.allMoves())
-                            if (m->line && std::strcmp(m->line, pet_->line) == 0)
-                                consider(m);
-                    if (!candidates.empty()) {
-                        rng_ = rng_ * 1664525u + 1013904223u;
-                        const char* id =
-                            candidates[(rng_ >> 16) % candidates.size()];
-                        moveLoadout_.grant(id);
-                        const MoveDef* m = registry_.move(id);
-                        char buf[32];
-                        std::snprintf(buf, sizeof(buf), "LEARNED %s",
-                                     m ? m->displayName : id);
-                        log_.push(LogEventType::ItemGained, buf);
-                    }
-                }
+                rollEnemyMoveDrop(combat_.enemy(), moveDropPct);
                 // the endless DeepWeb Dive is the tier-4 mod source — a rare
                 // roll on a win drops one of its permanent endgame mods (Deadman Switch /
                 // RAID Mirror). The rolled equip-LEVEL gate still applies, so a lucky drop

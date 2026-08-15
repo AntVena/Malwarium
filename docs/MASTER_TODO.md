@@ -32,24 +32,15 @@ building it up organically.
 
 **Capture arming costs ~70KB and the AP ~58KB**, against ~126KB free with the radio idle. The device works, and the save no longer needs a big contiguous block, but that was the only thing standing on this — anything else that grows will hit the same wall. Worth a pass at what the capture path actually needs. | `net_capture.h`'s `powerUp` (`esp_wifi_init` + promiscuous + the pcap SD buffers). | M | Measured on device, not estimated: `[ap] down free=126408` → `[cap] armed free=56188`. |
 
-**Bosses already carry four unique moves nobody can learn.** `data_rot`, `nag_screen`,
-`decoy_download` and `system_hang` are each a signature sub-area boss's `apexThreatMoveId`
-(`AreaDef`), all `line = nullptr`, all fully specced with the stun/DoT riders — and all
-unobtainable, because a boss round returns via `finishBossRound()` before the drop block ever
-runs. Wiring the drop above into the boss path turns the existing apex threats into the re-run
-incentive with no new content at all. | `game_explore.cpp`'s `finishBossRound`; the drop block it
-bypasses. | S | Wants its own rate and its own refarm curve — `refarmDropScalePct` is built for
-wild grinding, and a cleared boss is a deliberate re-run rather than a farm, so decaying it the
-same way punishes the behaviour this is trying to create. |
-
 **No enemy in the game swings a DEFEND move**, so under learn-from-the-enemy the two generic
 braces — `null_route` and `checksum_guard` — are unobtainable for a line pet, which is every pet.
 A line pet still has its own line's braces, so this is dead content rather than a hole in the
-kit, but it is the sharpest single symptom of the row below and the cheapest to fix: one wild or
-sub-boss that actually brace. | `combat_factory.cpp`'s `wildMalbeast` / `kLadder` / `subAreaBoss`.
-| S | Costs a rung's tuning — a wild that spends turns bracing deals less per turn, and `kLadder`
-is explicitly ordered by effective per-turn damage. Cheapest home is a sub-boss, which sits
-outside the ladder, once boss drops land. |
+kit, but it is the sharpest single symptom of the row below. | `combat_factory.cpp`'s
+`subAreaBoss` (or `wildMalbeast` / `kLadder`). | S | Now a one-line change: boss rounds pay a move
+drop, so pushing a brace onto a sub-boss's kit makes it learnable immediately. Put it on a
+sub-boss rather than a wild — `kLadder` is explicitly ordered by EFFECTIVE per-turn damage, and a
+wild that spends turns bracing deals less per turn, so it would soften the rung it sits on. A
+sub-boss sits outside the ladder and pays that cost nowhere. |
 
 **The wild roster's whole vocabulary is five attacks.** `wildMalbeast` gives tiers 1/2/3
 `{quick_jab}` / `{quick_jab, packet_storm}` / `{packet_storm, fork_bomb}`, and the sub-area ladder

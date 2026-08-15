@@ -756,6 +756,39 @@ void test_boss_threat_moves_area_adjacent() {
     CHECK(riders >= 3);
 }
 
+// The apex riders are the only thing a boss knows that nothing else does, and until the
+// move drop reached the boss path they were unobtainable — a boss round returns via
+// finishBossRound() before applyCombatResult's drop block ever runs. Beating Pirate
+// Bayou's signature sub-boss (the one carrying `system_hang`) enough times must
+// eventually teach it, which is the re-run incentive the mode was missing.
+//
+// Re-fought rather than cleared once: the roll is kBossMoveDropPct and its kit holds
+// three moves a Ransomware pet lacks, so any single win is a minority chance. It
+// converges fast because learning one narrows the pool for the next.
+void test_boss_teaches_its_own_apex_move() {
+    const int sig = kExplSubAreas - 1;
+    const char* rider = area(1).apexThreatMoveId;      // Pirate Bayou -> system_hang
+    CHECK(rider && std::strcmp(rider, "system_hang") == 0);
+
+    Game g{StartMode::Hatched, "bruinforce"};
+    g.debugAddCombatXp(600000);                        // level hard: the boss is winnable
+    g.debugSetAutoProgress(false);
+    CHECK(!g.moveLoadout().owns(rider));               // unobtainable at the start
+
+    uint32_t t = 0;
+    for (int fight = 0; fight < 40 && !g.moveLoadout().owns(rider); ++fight) {
+        g.debugFightSubBoss(1, sig);
+        if (g.nav() != Game::Nav::Combat) break;
+        for (int i = 0; i < 800 && g.nav() == Game::Nav::Combat; ++i) {
+            for (int j = 0; j < 800 &&
+                    g.combat().outcome() == Combat::Outcome::Ongoing; ++j)
+                g.tick(t += kHeartbeatMs);
+            g.onButton(press(Button::B));              // advance the round / dismiss
+        }
+    }
+    CHECK(g.moveLoadout().owns(rider));                // ...and now it is a reward
+}
+
 // Two-level nested-list nav: the TOP level lands on the DeepWeb
 // row + area HEADERS; B on an area DRILLS in; INSIDE, A cycles that area's subs (+ the
 // boss-ready header) and B acts (arm / FIGHT BOSS / AREA BOSS); C pops back to the area

@@ -549,9 +549,16 @@ constexpr int kWildXpDiffMaxPct      = 1024; // ceiling: cap the punching-up bon
 // only thickens WITHIN a sector: +Health per sub, +1 speed at the two deepest rungs.
 constexpr int kWildSubAreaHealthStep = 6;   // +Health per sub-area index in the ramp
 constexpr int kWildItemDropPct = 35;   // chance a wild win also drops an item
-constexpr int kWildMoveDropPct = 20;   // chance a wild win also drops a NEW generic
-                                        // move (TBD) — independent roll, rerolled
-                                        // against already-owned moves (game_combat.cpp)
+constexpr int kWildMoveDropPct = 20;   // chance a wild win teaches a move off the
+                                        // DEFEATED ENEMY'S kit — independent roll,
+                                        // filtered against already-owned moves
+                                        // (Game::rollEnemyMoveDrop)
+// The same roll on a BOSS round, which gets its own rate for two reasons: a boss is
+// reached deliberately rather than wandered into, and it is the only thing carrying its
+// area's apexThreatMoveId, so the rate has to be generous enough that the marquee move
+// is actually gettable. Rolled PER ROUND, so a 5-round area gauntlet is five chances and
+// a sub-area boss is one. No refarm decay rides this — see finishBossRound.
+constexpr int kBossMoveDropPct = 35;
 // Re-farming an already-CLEARED sub-area gives DIMINISHING
 // non-Bits rewards — Bits + XP stay full (so a done area is still a training ground for
 // future pets), but the item/move DROP chances decay per re-farm win down to a floor
