@@ -64,9 +64,9 @@ const CarouselSlot* carouselSlots() {
 
 const HackerCarouselSlot* hackerCarouselSlots() {
     // roster. PROFILE leads (slot 0) so it maps to the pet face's STAT slot at
-    // the same position; CREW/SHOP/VAULT/MERGE follow. SCAN and PEERS have no icon
-    // drawn yet and render their marker/label alone — a null icon is a legal slot,
-    // not a broken one. PROFILE, CREW (enlist + home network), SHOP, and VAULT
+    // the same position; CREW/SHOP/VAULT/MERGE follow. SCAN has no icon drawn yet
+    // and renders its marker/label alone — a null icon is a legal slot, not a
+    // broken one. PROFILE, CREW (enlist + home network), SHOP, and VAULT
     // (sealed-cache decrypt, off pet ITEMS), PEERS (met operators) and LINK (1v1
     // duels) are statically live; SCAN is statically
     // inaccessible (marker + inert B); MERGE (item-combining) starts statically
@@ -82,7 +82,7 @@ const HackerCarouselSlot* hackerCarouselSlots() {
         {"MRG",     &ASSET_ICON_MRG,     false, HackerSlotId::Merge},
         {"SCAN",    nullptr,             false, HackerSlotId::Scan},
         {"LINK",    &ASSET_ICON_LINK,    true,  HackerSlotId::Link},
-        {"PEERS",   nullptr,             true,  HackerSlotId::Peers},
+        {"PEERS",   &ASSET_ICON_PEERS,   true,  HackerSlotId::Peers},
     };
     return kSlots;
 }

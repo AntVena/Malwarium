@@ -591,15 +591,15 @@ own rows from the same `CfgRow` shape and reuses the glyphs below, so grouping n
 
 | Asset ID | Element | Logical size | Notes | Status | File |
 |---|---|---|---|---|---|
-| `ICON_CFG_SYSINFO` | System Info row glyph | 20×20 | UPDATES borrows it too, pending its own | ☑ | `/assets/icons/ICON_CFG_SYSINFO.png` |
+| `ICON_CFG_SYSINFO` | System Info row glyph | 20×20 | the RADIO group's AUDIT row borrows it too, pending its own | ☑ | `/assets/icons/ICON_CFG_SYSINFO.png` |
 | `ICON_CFG_TAG` | HackerTag row glyph | 20×20 | | ☑ | `/assets/icons/ICON_CFG_TAG.png` |
 | `ICON_CFG_UIMODE` | UI Mode row glyph | 20×20 | also the DEVICE group row + BRIGHTNESS | ☑ | `/assets/icons/ICON_CFG_UIMODE.png` |
 | `ICON_CFG_TITLE` | TITLE row glyph (zone-Title picker) | 20×20 | v1 stopgap home for zone Titles; moves to Hacker HUD later | ☑ | `/assets/icons/ICON_CFG_TITLE.png` |
-| `ICON_CFG_RADIO` | RADIO group row glyph | 20×20 | the four radio consents under one row; **reuses `ICON_SYS_WIFI` today**, which PEDIA AP + INTERNET also use — a distinct glyph would separate "the radio, as a place" from "a Wi-Fi service". A square-wave alternate is parked at `/assets/_attic/ICON_SYS_WIFI_ALT.png`; it needs a 20×20 redraw and a design call on whether that motif is the one that carries the split | ☐ | |
-| `ICON_CFG_UPDATE` | UPDATES row glyph | 20×20 | **reuses `ICON_CFG_SYSINFO` today**; a download/arrow motif would clear it | ☐ | |
-| `ICON_CFG_TRAVEL` | TRAVEL MODE row glyph (DEVICE group) | 20×20 | **reuses `ICON_CFG_SYSINFO` today**. A sleep motif — crescent, or a powered-down screen — would say what the row does; it is the one row in the group that is an action rather than a setting | ☐ | |
+| `ICON_CFG_RADIO` | RADIO group row glyph | 20×20 | the four radio consents under one row. A transmitter mast, not the square-wave alternate parked at `/assets/_attic/ICON_SYS_WIFI_ALT.png`: the split it has to carry is "the radio, as hardware" against "a Wi-Fi service", and a squared-off fan is still the fan `ICON_SYS_WIFI` draws on PEDIA AP + INTERNET. A mast also covers both consent axes at once — it is the thing that listens and the thing that transmits | ☑ | `/assets/icons/ICON_CFG_RADIO.png` |
+| `ICON_CFG_UPDATE` | UPDATES row glyph | 20×20 | an arrow landing in a tray; a download is everything the row does before it asks | ☑ | `/assets/icons/ICON_CFG_UPDATE.png` |
+| `ICON_CFG_TRAVEL` | TRAVEL MODE row glyph (DEVICE group) | 20×20 | a crescent. It is the one row in the group that is an action rather than a setting, and the action is sleep | ☑ | `/assets/icons/ICON_CFG_TRAVEL.png` |
 | `ICON_SYS_BATTERY` | Battery status glyph | 16×16 | System Info | ⌫ | `/assets/_attic/ICON_SYS_BATTERY.png` |
-| `ICON_SYS_WIFI` | Wi-Fi AP status glyph | 16×16 | System Info; also the PEDIA AP / INTERNET / RADIO rows | ☑ | `/assets/icons/ICON_SYS_WIFI.png` |
+| `ICON_SYS_WIFI` | Wi-Fi AP status glyph | 16×16 | System Info; also the PEDIA AP / INTERNET rows | ☑ | `/assets/icons/ICON_SYS_WIFI.png` |
 | `ICON_SYS_SD` | SD-card status glyph | 16×16 | System Info | ☑ | `/assets/icons/ICON_SYS_SD.png` |
 | `ICON_CFG_QR` | Pedia QR row glyph | 20×20 | **drawn but unconsumed** — the QR is reached from PEDIA AP, not a row of its own, so nothing renders this. Keep for a future row; it costs atlas space until then | ⌫ | `/assets/_attic/ICON_CFG_QR.png` |
 
@@ -707,7 +707,7 @@ chrome is reused from §F — only the rows below are new, and per-archetype ico
 | `ICON_VAULT` | Hacker-face VAULT slot icon | 28×28 | dim/bright; safe/lockbox motif — sealed-cache decrypt | ☑ | `/assets/icons/ICON_VAULT.png` |
 | `ICON_MRG` | Hacker-face MERGE HUB slot icon | 28×28 | dim/bright; two nodes branching into one. The slot starts inaccessible, so it usually draws under `ICON_SLOT_INACCESSIBLE` — the glyph is legible through the double-dim, which is what makes the SHOP purchase read as unlocking a real slot | ☑ | `/assets/icons/ICON_MRG.png` |
 | `ICON_MRG` locked variants | Bespoke locked Merge glyphs (padlock badge · severed branch + padlock) | 28×28 | ⌫ parked at `/assets/_attic/ICON_MERGE_LOCKED{,_ALT}.png` — the carousel composites the shared `ICON_SLOT_INACCESSIBLE` marker over every inaccessible slot, so a per-slot locked master would make MRG the one exception to a device-wide convention | ⌫ | `/assets/_attic/ICON_MERGE_LOCKED{,_ALT}.png` |
-| `ICON_PEERS` | Hacker-face PEERS slot icon | 28×28 | dim/bright; met-operators motif (two figures / a handshake). The slot is **live** and renders text-only in the carousel without it — drop-in, no engine change | ☐ | |
+| `ICON_PEERS` | Hacker-face PEERS slot icon | 28×28 | dim/bright; one device over a bus with three operators hanging off it. A figure motif would have collided with CREW's two busts and PROFILE's framed one, so the slot says *the roster of who this device has heard* instead of *people* | ☑ | `/assets/icons/ICON_PEERS.png` |
 | `ICON_LINK` | Hacker-face LINK slot icon | 28×28 | dim/bright; two pets facing off across a bolt — the 1v1 duel slot | ☑ | `/assets/icons/ICON_LINK.png` |
 | `ICON_SLOT_INACCESSIBLE` | Inaccessible-slot overlay (both faces) | 20×20 | composited over a 28×28 slot; no-entry/lock motif; distinct from row-level `ICON_LOCK`; used for undesigned Hacker slots + stage-locked pet slots | ☑ | `/assets/icons/ICON_SLOT_INACCESSIBLE.png` |
 | `ICON_AUDIT_ARMED` | Audit-capture state — armed/sealed | 16×16 | pcap capture-policy state marker (STATUS §Audit; hot/seal/cooldown SM) | ⌫ | `/assets/_attic/ICON_AUDIT_ARMED.png` |
@@ -747,5 +747,4 @@ content tables through the firmware's own code (`tools/dump_content.cpp`) plus
 Every asset-consuming system is built. The one open feature behind §R's rows is the Red/Blue
 archetype layer (its optional `ICON_ARCHETYPE_*` art) — see the Hacker-face CREW section of
 `docs/MASTER_TODO.md`. CREW,
-PEERS and LINK all ship today: CREW and LINK have their icons, while PEERS renders its label
-alone until `ICON_PEERS` is drawn.
+PEERS and LINK all ship today, each with its own icon.

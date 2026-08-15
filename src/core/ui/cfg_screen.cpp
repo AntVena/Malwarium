@@ -113,8 +113,8 @@ int cfgRows(const CfgRow*& out) {
         {"HACKERTAG", &ASSET_ICON_CFG_TAG, CfgScreen::HackerTag},
         {"TITLE", &ASSET_ICON_CFG_TITLE, CfgScreen::Titles},
         {"DEVICE", &ASSET_ICON_CFG_UIMODE, CfgScreen::Device},
-        {"RADIO", &ASSET_ICON_SYS_WIFI, CfgScreen::Radio},
-        {"UPDATES", &ASSET_ICON_CFG_SYSINFO, CfgScreen::Update},
+        {"RADIO", &ASSET_ICON_CFG_RADIO, CfgScreen::Radio},
+        {"UPDATES", &ASSET_ICON_CFG_UPDATE, CfgScreen::Update},
         // SD RECHECK is not a row: it acts on the SD line it reports through, so it
         // is the A press on System Info. PEDIA QR isn't one either — it's reached
         // from PEDIA AP (turning the AP ON opens the QR to connect).
@@ -135,7 +135,7 @@ int cfgGroupRows(CfgScreen group, const CfgRow*& out) {
     static const CfgRow kDevice[] = {
         {"UI MODE", &ASSET_ICON_CFG_UIMODE, CfgScreen::UiMode},
         {"BRIGHTNESS", &ASSET_ICON_CFG_UIMODE, CfgScreen::Brightness},
-        {"TRAVEL MODE", &ASSET_ICON_CFG_SYSINFO, CfgScreen::Travel},
+        {"TRAVEL MODE", &ASSET_ICON_CFG_TRAVEL, CfgScreen::Travel},
     };
     // The three radio TOGGLES, listed in the arbiter's own priority order, highest
     // first — so "the one nearest the top wins" is a rule the reader can check
