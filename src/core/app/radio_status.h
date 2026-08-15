@@ -26,7 +26,7 @@ inline const char* radioOwnerName(RadioOwner o) {
     switch (o) {
         case RadioOwner::Scan: return "AUDIT SCAN";
         case RadioOwner::Capture: return "AUDIT CAPTURE";
-        case RadioOwner::Link: return "LINK";
+        case RadioOwner::Link: return "PASSIVE LINK";
         case RadioOwner::Ap: return "PEDIA AP";
         case RadioOwner::Update: return "UPDATE";
         case RadioOwner::None: break;

@@ -49,7 +49,7 @@ Framebuffer* fb = nullptr;
 NetSniff netSniff;      // Audit passive scan  (runtime-gated via CFG "AUDIT SCAN")
 NetCapture netCapture;  // Audit promiscuous EAPOL .pcap capture ("AUDIT CAPTURE")
 ApServer apServer;      // 'Pedia local SoftAP + HTTP landing page ("PEDIA AP")
-NetLink netLink;        // pet-to-pet ESP-NOW discovery ("LINK")
+NetLink netLink;        // pet-to-pet ESP-NOW discovery (CFG's "PASSIVE LINK")
 NetSta netSta;          // home-network association, raised by an update job only
 NetUpdate netUpdate;    // update CHECK — rides netSta's association, owns no radio
 RadioArbiter radio;     // single radio owner: STA XOR AP XOR link XOR capture XOR scan XOR off

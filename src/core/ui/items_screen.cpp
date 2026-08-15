@@ -70,15 +70,25 @@ void drawRarityPips(Framebuffer& fb, int x, int y, ItemDef::Rarity r) {
 // room, and the two footer lines take what they need rather than the reverse.
 //
 // HAVE and the action line are a PAIR and are spaced to say so: their pitch is tighter
-// than the prose pitch above them (kFontH + 4 against kLineH), while the panel's
-// unfilled reserve leaves a gap above them that is wider than either. That is the whole
-// grouping channel on this page — a short description spends its slack in one place
-// instead of two, and neither footer line reads as a stray row of the block. It is the
-// same footer pitch drawModDetail stacks its gate rows on, so the two pages agree.
+// than the prose pitch above them (kFontH + 4 against kLineH), while the gap ABOVE them
+// is wider than either. That is the whole grouping channel on this page — neither footer
+// line reads as a stray row of the block. It is the same footer pitch drawModDetail
+// stacks its gate rows on, so the two pages agree.
+//
+// The gap is MEASURED, not reserved. The panel's reserve bounds how far the readout and
+// prose may reach (a magnitude can never be displaced), but a two-line description ended
+// far short of it and the pair stayed pinned to the bottom anyway — so most of the page
+// was the fence. drawSpecSheet already reports where it actually stopped, so the pair
+// follows that by kDetailFooterGap and is clamped at the reserve, which is exactly its
+// old position. A full panel is therefore unchanged and only a short one moves.
+//
+// The trade: the action line's y now varies by item. It is the same trade drawModDetail
+// already makes for its ONE-SHOT caveat, and it buys back most of a screen.
 constexpr int kDetailPanelTop = 56;
 constexpr int kDetailPanelBottom = 158;
-constexpr int kDetailActionY = 184;
-constexpr int kDetailHaveY = kDetailActionY - (kFontH + 4);
+constexpr int kDetailFooterPitch = kFontH + 4;
+constexpr int kDetailFooterGap = 14;
+constexpr int kDetailHaveMaxY = kDetailPanelBottom + kDetailFooterGap;
 
 // The band with ITEMS' own right label: the n/total position counter, shown only
 // once the list is long enough to scroll out from under the cursor.
@@ -364,26 +374,32 @@ void drawItemDetail(Framebuffer& fb, const ItemDef& def, const SpriteData* icon,
     sheet.rows = spec.rows;
     sheet.rowCount = spec.count;
     sheet.prose = prose.c_str();
-    drawSpecSheet(fb, kMargin, kDetailPanelTop, kActiveW - 2 * kMargin,
-                  kDetailPanelBottom, sheet);
+    const int panelEnd = drawSpecSheet(fb, kMargin, kDetailPanelTop,
+                                       kActiveW - 2 * kMargin, kDetailPanelBottom,
+                                       sheet).endY;
+
+    // The footer pair, flowed under what the panel actually drew (see the note on
+    // kDetailFooterGap). The clamp is what keeps a full panel where it always was.
+    const int haveY = std::min(kDetailHaveMaxY, panelEnd + kDetailFooterGap);
+    const int actionY = haveY + kDetailFooterPitch;
 
     // Quantity.
     char have[16];
     std::snprintf(have, sizeof(have), "HAVE x%d", qty);
-    drawText(fb, kMargin, kDetailHaveY, have, palColor(Pal::INK_DIM));
+    drawText(fb, kMargin, haveY, have, palColor(Pal::INK_DIM));
 
     // Action / gate line.
     if (usable) {
-        drawRowCursor(fb, kMargin, kDetailActionY, palColor(Pal::ACCENT));
+        drawRowCursor(fb, kMargin, actionY, palColor(Pal::ACCENT));
         // A re-roll reads ROLLBACK; the egg accelerator reads DECRYPT
         // everything else USE. (Sealed caches decrypt from the Hacker VAULT,
         // so no OPEN verb appears here.)
         const char* verb = def.use == ItemDef::Use::DecryptEgg ? "DECRYPT"
                          : def.use == ItemDef::Use::Rollback   ? "ROLLBACK"
                                                                : "USE";
-        drawText(fb, kMargin + 10, kDetailActionY, verb, palColor(Pal::ACCENT));
+        drawText(fb, kMargin + 10, actionY, verb, palColor(Pal::ACCENT));
     } else {
-        drawText(fb, kMargin, kDetailActionY, gateMsg ? gateMsg : "- UNUSABLE HERE -",
+        drawText(fb, kMargin, actionY, gateMsg ? gateMsg : "- UNUSABLE HERE -",
                  palColor(Pal::INK_DIM));
     }
 }

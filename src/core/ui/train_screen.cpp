@@ -110,10 +110,18 @@ void drawLoadout(Framebuffer& fb, const ContentRegistry& reg,
         std::snprintf(slotLbl, sizeof(slotLbl), "SLOT %d", i + 1);
         drawText(fb, kSlotLabelX, y, slotLbl, palColor(Pal::INK_DIM));
         if (!unlockedSlot) {
-            // Locked slot: the path-ahead affordance (🔒 unlocks at {Stage}).
+            // Locked slot: the path-ahead affordance. The glyph says "shut" and the
+            // line says what opens it — "AT SCRIPT" alone read as a property of the
+            // slot rather than as the way out of it.
+            //
+            // It is "UNLOCK:" and not "UNLOCK AT" because of the budget: the line
+            // starts at kSlotTextX and a locked row draws no kind tag, so it owns
+            // everything to the right margin — 15 cells at the mono advance. Slot 0
+            // is never locked (kMoveSlotsByStage starts at 1), so the longest stage
+            // that can appear here is PROCESS, and "UNLOCK AT PROCESS" is 17.
             drawSprite(fb, ASSET_ICON_MOVE_SLOT_LOCKED, 0, kSlotGlyphX, y - 6);
             char lk[28];
-            std::snprintf(lk, sizeof(lk), "AT %s",
+            std::snprintf(lk, sizeof(lk), "UNLOCK: %s",
                           stageName(MoveLoadout::stageUnlockingSlot(i)));
             drawText(fb, kSlotTextX, y, lk, palColor(Pal::INK_DIM));
         } else if (const char* id = load.equipped(i)) {

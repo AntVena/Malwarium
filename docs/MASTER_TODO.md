@@ -164,24 +164,6 @@ Intentional simplifications. None is a bug; each is a "confirm as v1 or revise".
   under the same CC0 — sourcing that cut and pointing `gen_font.py` at it would fix all 7 and
   changes nothing above it, PROVIDED the bold's advance is still 8. If it isn't, deriving stays
   correct and this row closes unbuilt. Diff **S**, sourcing before code.
-- **An empty MOVES slot marks its fallback move with shape, not a word.** The empty-slot glyph
-  (distinct from the locked one beside it) plus a dimmed name are the two non-colour channels
-  carrying it, which clears the grayscale gate — but the row has no width left for the word
-  "DEFAULT" beside the accepted-kind tag. Confirm as v1 or find it room.
-- **The STAT LOADOUT page shows four entries.** A move description wraps to three lines at
-  `FONT_UI`'s advance, and the row pitch is sized to hold all three rather than cut the last
-  mid-word. Revisit if the page starts reading as a scroll rather than a list.
-  The separation pass adds a second complaint to the same row: because the pitch is reserved
-  rather than measured, a two-line description spends its slack AFTER itself, so the gap lands
-  inside the MOVES group while the group's own seams — `MOVES` to its first entry, one entry to
-  the next — get nothing. The dim `MOVES`/`MODS` labels are carrying the whole grouping alone.
-  Measuring the pitch per entry and spending a fixed gap at the seams instead is the fix, and it
-  is a real layout change rather than a constant. Diff **S**.
-- **"LINK" names two different things.** The CFG **RADIO → LINK** row is consent to BROADCAST
-  identity over ESP-NOW; the Hacker face's **LINK** slot is the 1v1 duel surface that consent
-  enables. Adjacent screens, same word, different referents. Naming call, not code: renaming either
-  ripples through the docs and the peer/duel screens' copy. Diff **S** (taste, then a
-  mechanical rename).
 
 ### 1g. Test-infrastructure gaps
 
@@ -317,21 +299,6 @@ change — an app-only OTA can't carry it.
 - **Credentials sit in NVS in PLAINTEXT** (stock ESP32 NVS is unencrypted). Stated plainly rather
   than implied-protected; NVS encryption is a separate feature and is not enabled. Revisit only if
   the threat model changes.
-
-### 1k. The detail-page family — the reserved band
-
-`item_detail`, `mod_detail` and `maint_detail` now agree on what dim means, on how a
-failing gate lights up, and on where the action line goes; the contract is
-[`VISUAL_LANGUAGE.md`](../assets/VISUAL_LANGUAGE.md) §4.1, and `maint_detail`'s second
-action zone is a stated exception there rather than a difference.
-
-- **`item_detail`'s reserved panel band is a dead gap when the prose is short.** The
-  `kDetailPanelTop`/`Bottom` reserve is what guarantees a long description can never
-  displace a magnitude, and its leftover is deliberately the fence above the HAVE/action
-  pair — so the gap is load-bearing, not an oversight. What is still open is whether it
-  should be that WIDE: on a two-line description it is most of the screen. Reclaiming
-  part of it means measuring the panel rather than reserving it, which is a real layout
-  change. | M | Confirm as v1 or measure — taste before code. |
 
 ---
 

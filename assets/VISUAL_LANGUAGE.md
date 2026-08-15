@@ -203,7 +203,13 @@ moment it is the thing stopping you — MODS' `REQUIRES LVL n`, MAINT's `COST n 
 carries it in grayscale; the colour is emphasis on top.
 
 **One action line, last.** The verdict — the cursor plus a verb, or the reason there is no
-verb — is the bottom line of the page. **Stated exception:** `maint_detail` has a second
+verb — is the last line of the page. Last in READING ORDER, not pinned to the panel's
+floor: `item_detail` flows its HAVE/action pair under whatever the readout and prose
+actually drew (`drawSpecSheet` reports it), clamped at the reserve so a full panel lands
+where it always did. A short description would otherwise leave most of the screen standing
+open between the block and its own verdict, which reads as two islands rather than one
+page. The pair's y therefore varies by row; the gap above it does not. **Stated exception:**
+`maint_detail` has a second
 action zone above it, the QUICK/TOOL/STACKER picker, because it is the one detail page
 whose action takes a parameter. The picker is fenced off by pitch (22px above its first row
 and 28px below its last, against the 18px its rows keep between themselves); the bottom

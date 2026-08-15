@@ -66,10 +66,21 @@ void vitalsRow(Framebuffer& fb, int y, const char* label, int value, Zone zone,
 constexpr int kProseW = kActiveW - 2 * kMargin;
 constexpr int kProseLineH = kFontH + 2;
 constexpr int kProseNameGap = 3;   // name line -> its first prose line
-constexpr int kProseRowGap = 6;    // last prose line -> the next row's name
-// A section header (LOADOUT's MOVES/MODS) is one line of its own with a little
-// extra air ahead of the block it opens.
-constexpr int kProseHeaderH = kFontH + kProseRowGap + 2;
+constexpr int kProseRowGap = 8;    // last prose line -> the next row's name
+// A section header (LOADOUT's MOVES/MODS) belongs to the block UNDER it, so it takes
+// its air from ABOVE: a wide lead-in fences one group off from the last, and a tight
+// tail keeps the label attached to the entry it names.
+//
+// The two numbers have to stay ordered kProseHeaderTail < kProseRowGap < kProseGroupLead
+// or the page loses its grouping. Before this, a header's air was spent entirely BELOW
+// it and came to 8px against 6 between entries — two pixels of difference asked to say
+// "new section", which left the dim MOVES/MODS labels carrying the grouping alone.
+//
+// The lead is suppressed on the FIRST row: the header band above it is already the fence,
+// and paying for a second one would push the whole page down for nothing.
+constexpr int kProseGroupLead = 14;   // blank above a section header
+constexpr int kProseHeaderTail = 3;   // header -> its first entry
+constexpr int kProseHeaderH = kFontH + kProseHeaderTail;
 
 // The foot of the flow: the hint band's strip is reserved whether or not the hint
 // is drawn, so a page can never discover it after a row is already using the space.
@@ -110,11 +121,16 @@ void drawProseScrollbar(Framebuffer& fb, int rowTop, int top, int shown, int tot
 
 constexpr int kLoadoutRowTop = 26;
 
+// The lead is part of the row's HEIGHT, not a gap the draw loop adds, so the fit and
+// scroll maths see the same page the reader does.
+int loadoutHeaderLead(int index) { return index == 0 ? 0 : kProseGroupLead; }
+
 std::vector<int> loadoutRowHeights(const std::vector<LoadoutRow>& rows) {
     std::vector<int> h;
     h.reserve(rows.size());
-    for (const LoadoutRow& r : rows)
-        h.push_back(r.header ? kProseHeaderH : proseRowH(r.effect.c_str()));
+    for (int i = 0; i < static_cast<int>(rows.size()); ++i)
+        h.push_back(rows[i].header ? loadoutHeaderLead(i) + kProseHeaderH
+                                   : proseRowH(rows[i].effect.c_str()));
     return h;
 }
 
@@ -191,7 +207,8 @@ void drawLoadoutScreen(Framebuffer& fb, const std::vector<LoadoutRow>& rows,
     for (int v = 0; v < shown; ++v) {
         const LoadoutRow& r = rows[top + v];
         if (r.header) {
-            drawText(fb, kMargin, y, r.label, palColor(Pal::INK_DIM));
+            drawText(fb, kMargin, y + loadoutHeaderLead(top + v), r.label,
+                     palColor(Pal::INK_DIM));
         } else {
             drawLabelValue(fb, kMargin, y, r.label, palColor(Pal::INK),
                            r.isDefault ? "DEFAULT" : "", palColor(Pal::INK_DIM), beat,

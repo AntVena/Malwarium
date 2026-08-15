@@ -140,7 +140,9 @@ int cfgGroupRows(CfgScreen group, const CfgRow*& out) {
     // The three radio TOGGLES, listed in the arbiter's own priority order, highest
     // first — so "the one nearest the top wins" is a rule the reader can check
     // against the screen instead of being told. PEDIA AP hosts, LINK transmits,
-    // AUDIT listens. Each is still its own affirmative choice on its own screen:
+    // AUDIT listens. PASSIVE LINK is named for the half it is: consent to be heard,
+    // against the Hacker face's LINK slot, which is the duel that consent enables.
+    // Each is still its own affirmative choice on its own screen:
     // grouping them says they contend for one radio, not that switching one on
     // switches another.
     //
@@ -149,7 +151,7 @@ int cfgGroupRows(CfgScreen group, const CfgRow*& out) {
     // them for exactly as long as it holds the radio.
     static const CfgRow kRadio[] = {
         {"PEDIA AP", &ASSET_ICON_SYS_WIFI, CfgScreen::PediaAp},
-        {"LINK", &ASSET_ICON_CREW, CfgScreen::Link},
+        {"PASSIVE LINK", &ASSET_ICON_CREW, CfgScreen::Link},
         {"AUDIT", &ASSET_ICON_CFG_SYSINFO, CfgScreen::Audit},
     };
     if (group == CfgScreen::Device) {
@@ -601,10 +603,10 @@ void drawApToggle(Framebuffer& fb, int pick, bool current) {
 }
 
 void drawLinkToggle(Framebuffer& fb, int pick, bool current, bool ambientStarved) {
-    drawHeaderBand(fb, "LINK");
+    drawHeaderBand(fb, "PASSIVE LINK");
 
     // The consent this row asks for is the whole affordance, so it is spelled out
-    // rather than implied: LINK TRANSMITS. It is deliberately not folded into the
+    // rather than implied: it TRANSMITS. It is deliberately not folded into the
     // AUDIT ladder, whose escalation is about how hard the radio LISTENS — this one
     // is about what the device says out loud, which is a different question.
     drawText(fb, kMargin, 30, "MEET NEARBY MALWARIUMS.", palColor(Pal::INK_DIM));
