@@ -186,6 +186,29 @@ Global: **8px bezel** (no UI) every edge; whole-canvas **×1.75** integer upscal
 downscaling**. Author all UI to land on clean logical-pixel boundaries so the
 upscale stays crisp.
 
+### 4.1 Detail pages
+
+A DETAIL page is what a list row opens onto: `item_detail`, `mod_detail`, `maint_detail`.
+They are siblings and should read as siblings, so the three agreements below are the
+contract rather than three independent choices.
+
+**Dim means READOUT.** `Pal::INK_DIM` marks a measured fact — a magnitude, a tally, a
+holding, a requirement that is currently satisfied. `Pal::INK` is reserved for the PROSE
+that says what the thing does. That split is the page's whole grouping channel and the
+only one that survives grayscale, so spending dim row-by-row (which makes it alternate and
+mark nothing) spends the page's one free lever.
+
+**A failing gate lights up.** A requirement drawn dim while it holds goes `HOT`/`WARN` the
+moment it is the thing stopping you — MODS' `REQUIRES LVL n`, MAINT's `COST n B`. The word
+carries it in grayscale; the colour is emphasis on top.
+
+**One action line, last.** The verdict — the cursor plus a verb, or the reason there is no
+verb — is the bottom line of the page. **Stated exception:** `maint_detail` has a second
+action zone above it, the QUICK/TOOL/STACKER picker, because it is the one detail page
+whose action takes a parameter. The picker is fenced off by pitch (22px above its first row
+and 28px below its last, against the 18px its rows keep between themselves); the bottom
+line still holds the verdict.
+
 ---
 
 ## 5. UI Mode + caption

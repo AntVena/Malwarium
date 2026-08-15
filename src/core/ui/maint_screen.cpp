@@ -80,18 +80,27 @@ void drawMaintAction(Framebuffer& fb, MaintKind kind, const PetModel& m,
                           kDefragReduction);
             drawText(fb, kMargin, 34, line, palColor(Pal::INK));
         }
+        // Everything under the headline is a READOUT, and dim is what says so — the
+        // same job it does on ITEMS and MODS, where the magnitude grid under the name is
+        // dim and the prose above it is INK. Colouring these by row instead made dim
+        // alternate down the page and mark no group at all, which spent the one
+        // separation channel that survives grayscale on texture. The two pairs are
+        // fenced by pitch instead: frag facts, then what you have to spend, 16px apart
+        // where each pair keeps 12.
         std::snprintf(line, sizeof(line), "CURRENT FRAG: %d", m.fragmentation());
-        drawText(fb, kMargin, 50, line, palColor(Pal::INK));
+        drawText(fb, kMargin, 50, line, palColor(Pal::INK_DIM));
         // this pet's running defrag tally (persists through freeze/thaw),
         // surfaced here and nowhere else.
         std::snprintf(line, sizeof(line), "DEFRAGS DONE: %d", defragCount);
         drawText(fb, kMargin, 62, line, palColor(Pal::INK_DIM));
-        // stage-scaled Bits cost + the wallet, both spelled out so the
-        // affordability reads in grayscale (COST N B / HAVE N B).
+        // stage-scaled Bits cost + the wallet, both spelled out so the affordability
+        // reads in grayscale (COST N B / HAVE N B). It goes WARN when the wallet is
+        // short, which is how a FAILING gate reads on MODS too — dim while it passes,
+        // lit the moment it is the thing stopping you.
         std::snprintf(line, sizeof(line), "COST %d B   HAVE %d B", cost, walletBits);
         const bool afford = walletBits >= cost;
         drawText(fb, kMargin, 78, line,
-                 afford ? palColor(Pal::INK) : palColor(Pal::WARN));
+                 afford ? palColor(Pal::INK_DIM) : palColor(Pal::WARN));
         // The tool count is a WALLET line, not a pick: it belongs beside HAVE %d B at
         // the readout pitch, above the list, rather than trailing the list at the list's
         // own pitch — where a dim unindented row still reads as a fourth thing to land
