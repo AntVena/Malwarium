@@ -146,29 +146,38 @@ void Game::onMovePicker(const ButtonEvent& ev) {
     }
 
     if (ev.button == Button::A) {
-        movePick_ = (movePick_ + 1) % rows;   // steps immediately, same as ever
-        // Also arm the hold-only toggle: if this press is still down when tick()
-        // next runs past kMoveFilterHoldMs, it flips moveShowAll_ IN ADDITION to
-        // the step above (a real hold both steps once and then reveals the full
-        // list) — release before that just clears the arm below, no other effect.
-        aHeld_ = true;
-        aDownMs_ = nowMs_;
+        movePick_ = (movePick_ + 1) % rows;   // steps, and holding it repeats
     } else if (ev.button == Button::B) {
-        if (movePick_ == 0) {                              // unequip this slot
-            moveLoadout_.unequip(moveSlot_);
-            markSaveDirty();
-            nav_ = Nav::Submenu;
-        } else {
-            // A real move row DRILLS DOWN to its own entry rather than equipping from
-            // the list — the same list -> B -> detail -> B -> act shape ITEMS uses. It's
-            // what lets the picker stay a comparison view (the aligned readout) and the
-            // detail page be the reader, instead of one screen failing at both.
-            trainScreen_ = TrainScreen::MoveDetail;
-            moveProseScroll_ = 0;
-        }
+        // B is the tap/hold pair here (the ITEMS list's shape): arm now and resolve on
+        // the RELEASE edge (moveFilterReleaseB — a short tap unequips or drills into
+        // the focused move) or on the hold crossing kMoveFilterHoldMs, where tick()
+        // reveals the full roster instead.
+        bHeld_ = true;
+        bDownMs_ = nowMs_;
     } else if (ev.button == Button::C) {
         nav_ = Nav::Submenu;
     }
+}
+
+void Game::moveFilterReleaseB() {
+    // Screen check only — onButton owns bHeld_ (see itemFilterReleaseB).
+    if (!(nav_ == Nav::Detail && loadoutTab_ == LoadoutTab::Moves &&
+          trainScreen_ == TrainScreen::MovePicker && !moveConfirm_))
+        return;   // bHeld_ was armed elsewhere (the ITEMS / VAULT / CFG holds) — no-op
+    if (movePick_ == 0) {                              // unequip this slot
+        moveLoadout_.unequip(moveSlot_);
+        markSaveDirty();
+        nav_ = Nav::Submenu;
+    } else {
+        // A real move row DRILLS DOWN to its own entry rather than equipping from
+        // the list — the same list -> B -> detail -> B -> act shape ITEMS uses. It's
+        // what lets the picker stay a comparison view (the aligned readout) and the
+        // detail page be the reader, instead of one screen failing at both.
+        trainScreen_ = TrainScreen::MoveDetail;
+        moveProseScroll_ = 0;
+    }
+    dirty_ = true;
+    lastInputMs_ = nowMs_;
 }
 
 void Game::onSimTier(const ButtonEvent& ev) {

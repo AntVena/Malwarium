@@ -71,11 +71,26 @@ constexpr int kDetailGateY = kDetailSlotY + kDetailFooterPitch;
 
 } // namespace
 
-std::vector<const ModDef*> ownedModList(const ContentRegistry& reg,
-                                        const Loadout& load) {
+bool modLockedFor(const ModDef& m, int petLevel, const char* petLine,
+                  const Loadout& load, int slot) {
+    const int elsewhere = load.slotOf(m.id);
+    return modEquipLevel(m) > petLevel || lineLocked(&m, petLine) ||
+           (elsewhere >= 0 && elsewhere != slot);
+}
+
+std::vector<const ModDef*> ownedModList(const ContentRegistry& reg, const Loadout& load,
+                                        int petLevel, const char* petLine, int slot) {
     std::vector<const ModDef*> out;
     for (const ModDef* m : reg.allMods())
         if (load.owns(m->id)) out.push_back(m);
+    // Fittable first. std::stable_sort, not sort: registry order is the mod table's own
+    // order and is what keeps a pool that grows by one from reshuffling everything the
+    // player had learned the position of — so the two halves each keep it.
+    std::stable_sort(out.begin(), out.end(),
+                     [&](const ModDef* a, const ModDef* b) {
+                         return modLockedFor(*a, petLevel, petLine, load, slot) <
+                                modLockedFor(*b, petLevel, petLine, load, slot);
+                     });
     return out;
 }
 
@@ -120,7 +135,7 @@ void drawLoadoutHub(Framebuffer& fb, const Loadout& load, const MoveLoadout& mov
 }
 
 void drawModsList(Framebuffer& fb, const ContentRegistry& reg,
-                  const Loadout& load, int cursor) {
+                  const Loadout& load, int cursor, int beat) {
     drawHeaderBand(fb, "MODS");
     for (int i = 0; i < kModSlots; ++i) {
         const int y = kRowTop + i * kRowH;
@@ -135,12 +150,12 @@ void drawModsList(Framebuffer& fb, const ContentRegistry& reg,
             const ModDef* m = reg.mod(id);
             const SpriteData* icon = modIcon(reg, id);
             if (icon) drawSprite(fb, *icon, 0, 16, y + (kRowH - kRowIcon) / 2);
-            drawText(fb, 40, y + (kRowH - kFontH) / 2,
-                     m ? m->displayName : id, palColor(Pal::INK));
-            if (m)
-                drawText(fb, kActiveW - kMargin - textWidth(m->effectTag),
-                         y + (kRowH - kFontH) / 2, m->effectTag,
-                         palColor(Pal::ACCENT));
+            // The effect tag owns the right end; the name yields to it and scrolls when
+            // focused, so a long mod name can't print through its own tag.
+            drawLabelValue(fb, 40, y + (kRowH - kFontH) / 2,
+                           m ? m->displayName : id, palColor(Pal::INK),
+                           m ? m->effectTag : nullptr, palColor(Pal::ACCENT), beat,
+                           i == cursor);
         } else {
             drawSprite(fb, ASSET_ICON_MODS_SLOT_EMPTY, 0, 16,
                        y + (kRowH - kRowIcon) / 2);
@@ -155,12 +170,13 @@ void drawModsList(Framebuffer& fb, const ContentRegistry& reg,
 void drawModPicker(Framebuffer& fb, const ContentRegistry& reg,
                    const Loadout& load, int slot, int pick, bool confirmActive,
                    int confirmChoice, const char* pendingId, int petLevel,
-                   const char* petLine) {
+                   const char* petLine, int beat) {
     char title[12];
     std::snprintf(title, sizeof(title), "SLOT %d", slot + 1);
     drawHeaderBand(fb, title);
 
-    const std::vector<const ModDef*> owned = ownedModList(reg, load);
+    const std::vector<const ModDef*> owned =
+        ownedModList(reg, load, petLevel, petLine, slot);
     const int rows = static_cast<int>(owned.size());       // available spares to install
 
     // Position indicator (mirrors drawMovePicker's header) once the list
@@ -185,13 +201,7 @@ void drawModPicker(Framebuffer& fb, const ContentRegistry& reg,
     if (rows == 0)
         drawText(fb, 22, kRowTop + 4, "- NO MODS HELD -", palColor(Pal::INK_DIM));
     const int visibleRows = std::max(1, std::min(rows, kModPickerMaxRows));
-    int scrollTop = 0;
-    if (rows > kModPickerMaxRows) {
-        if (pick < scrollTop) scrollTop = pick;
-        if (pick >= scrollTop + kModPickerMaxRows)
-            scrollTop = pick - kModPickerMaxRows + 1;
-        scrollTop = std::max(0, std::min(scrollTop, rows - kModPickerMaxRows));
-    }
+    const int scrollTop = listScrollTop(pick, rows, kModPickerMaxRows);
     for (int v = 0; v < visibleRows && scrollTop + v < rows; ++v) {
         const int i = scrollTop + v;
         const int y = kRowTop + v * rowH;
@@ -204,28 +214,31 @@ void drawModPicker(Framebuffer& fb, const ContentRegistry& reg,
         const bool wrongLine = lineLocked(m, petLine);
         const int elsewhere = load.slotOf(m->id);
         const bool inOtherSlot = elsewhere >= 0 && elsewhere != slot;
-        const bool locked = req > petLevel || wrongLine || inOtherSlot;
+        const bool locked = modLockedFor(*m, petLevel, petLine, load, slot);
         char name[40];
         const int qty = load.countOf(m->id);
         if (qty > 1) std::snprintf(name, sizeof(name), "%s x%d", m->displayName, qty);
         else std::snprintf(name, sizeof(name), "%s", m->displayName);
-        drawText(fb, 22, y + 4, name,
-                 locked ? palColor(Pal::INK_DIM) : palColor(Pal::INK));
+        // The right column is whichever fact the row cannot lose — why it is locked, or
+        // what it does. The name yields to it and scrolls within what is left
+        // (drawLabelValue), because a long mod name drawn at full width runs straight
+        // under that column and the two print on top of each other.
+        char rl[12];
+        Rgb565 tagCol = palColor(Pal::ACCENT);
+        const char* tag = m->effectTag;
         if (inOtherSlot) {
-            char rl[10];
             std::snprintf(rl, sizeof(rl), "SLOT %d", elsewhere + 1);
-            drawText(fb, kActiveW - kMargin - textWidth(rl), y + 4, rl,
-                     palColor(Pal::HOT));
+            tag = rl;
+            tagCol = palColor(Pal::HOT);
         } else if (locked) {
-            char rl[8];
             if (wrongLine) std::snprintf(rl, sizeof(rl), "LINE");
             else std::snprintf(rl, sizeof(rl), "L%d", req);
-            drawText(fb, kActiveW - kMargin - textWidth(rl), y + 4, rl,
-                     palColor(Pal::HOT));
-        } else {
-            drawText(fb, kActiveW - kMargin - textWidth(m->effectTag), y + 4,
-                     m->effectTag, palColor(Pal::ACCENT));
+            tag = rl;
+            tagCol = palColor(Pal::HOT);
         }
+        drawLabelValue(fb, 22, y + 4, name,
+                       locked ? palColor(Pal::INK_DIM) : palColor(Pal::INK),
+                       tag, tagCol, beat, i == pick);
     }
     if (rows > kModPickerMaxRows) {   // UI_SCROLLBAR (mirrors drawMovePicker)
         const int barX = kActiveW - 3;
@@ -308,16 +321,18 @@ int modDetailProseLines() {
 
 void drawModDetail(Framebuffer& fb, const ContentRegistry& reg, const Loadout& load,
                    const ModDef& mod, bool equippedHere, int slot,
-                   int reqLevel, int petLevel, const char* petLine, int storageCap) {
+                   int reqLevel, int petLevel, const char* petLine, int storageCap,
+                   int beat) {
     drawHeaderBand(fb, "MODS");
 
-    // Icon + name + the effect TAG (the stat-delta shorthand, e.g. "+DEF").
+    // Icon + name + the effect TAG (the stat-delta shorthand, e.g. "+DEF"). The tag owns
+    // the right end and the name yields, exactly as drawItemDetail's rarity tag does —
+    // this page's name has an icon's width less to work with than the picker row's.
     const SpriteData* icon = modIcon(reg, mod.id);
     if (icon) drawSprite(fb, *icon, 0, kMargin, 30);
     const int nameX = icon ? kMargin + kRowIcon + 6 : kMargin;
-    drawText(fb, nameX, 36, mod.displayName, palColor(Pal::INK));
-    drawText(fb, kActiveW - kMargin - textWidth(mod.effectTag), 36, mod.effectTag,
-             palColor(Pal::ACCENT));
+    drawLabelValue(fb, nameX, 36, mod.displayName, palColor(Pal::INK), mod.effectTag,
+                   palColor(Pal::ACCENT), beat, true);
 
     // The readout as an aligned grid, then the prose under it (spec_sheet.h): every
     // magnitude the row hands combat is reserved room and drawn, and the prose takes

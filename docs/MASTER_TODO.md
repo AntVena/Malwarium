@@ -59,17 +59,6 @@ prize to unlock. Wants a discovery axis on `CrewDef` first, then one `Kind` and 
 `content_crews.h`; `game_crew.cpp`'s roster filter; `QuoteReward::Kind`. | M | The gating axis is
 the real work; the prize is three lines once it exists. |
 
-
-**The item screens don't scale to the item count.** The pool is 216 rows, 192 of them food, against
-a picker designed when it was a fraction of that; the two Rig Shop upgrades widen the view but not
-the traversal, so reaching a late row is ~50 presses of A and overshooting it by one costs the
-whole trip again — out of the menu and back in. Wants a real seek: a jump-by-letter or page-step
-input, and/or a wrap at the ends so an overshoot costs one press instead of a re-entry. | the item
-picker in `game_items.cpp`; `ItemFilter` (`core/ui/ui_state.h`); the Rig Shop's existing item-screen
-rows in `game_rig_shop.h`. | M | Wrapping is the cheap half and fixes the overshoot on its own —
-worth doing first and re-judging whether the seek is still needed. The 'Pedia hit the same wall and
-answered it by splitting FOOD onto its own page, which is the other available shape. |
-
 ### 1a-ii. Evolution routing — one weighted edge list per creature
 
 `CreatureDef` carries five optional successor pointers (`evolvesToId`, `evolvesToGoodId`,
@@ -199,10 +188,6 @@ Intentional simplifications. None is a bug; each is a "confirm as v1 or revise".
   the next — get nothing. The dim `MOVES`/`MODS` labels are carrying the whole grouping alone.
   Measuring the pitch per entry and spending a fixed gap at the seams instead is the fix, and it
   is a real layout change rather than a constant. Diff **S**.
-- **`items_screen` keeps its own copy of the list-window offset.** `listScrollTop`
-  (`core/ui/layout.h`) is the shared one, unit-tested and drawn through by ARCH and CFG; the
-  ITEMS list still inlines the same arithmetic at its two sites, so a fix to one window rule
-  reaches three of the four lists. Mechanical. Diff **S**.
 - **"LINK" names two different things.** The CFG **RADIO → LINK** row is consent to BROADCAST
   identity over ESP-NOW; the Hacker face's **LINK** slot is the 1v1 duel surface that consent
   enables. Adjacent screens, same word, different referents. Naming call, not code: renaming either

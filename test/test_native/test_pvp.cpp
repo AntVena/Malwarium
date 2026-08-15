@@ -276,7 +276,7 @@ void test_pvp_two_devices_duel_end_to_end() {
     // Neither screen can pause or bail: A+C is inert and C does not flee.
     a.onButton({Button::A, true, true});
     CHECK(!a.combat().overrideOpen());
-    a.onButton(press(Button::C));
+    tapC(a);
     CHECK(a.combat().outcome() == Combat::Outcome::Ongoing);
 
     // Play both out. Each device is stepping its OWN copy; they must stay identical.
@@ -686,7 +686,7 @@ void test_crew_exploit_in_combat_picker() {
 
     g.onButton({Button::A, true, true});           // A+C -> picker
     CHECK(g.combat().overrideOpen() && g.combat().overrideCrewRows() == 0);
-    g.onButton(press(Button::C));                  // cancel -> no spend
+    tapC(g);                  // cancel -> no spend
     CHECK(g.combat().overrideReady());
 
     g.setHomeNetwork(0xAABBCCDDEEFFull, "HOME");

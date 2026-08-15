@@ -53,7 +53,7 @@ enum class CfgScreen { SysInfo, HackerTag, Titles,
 
 // The ITEMS list's active tab. Two axes share the field: the base cycle walks the
 // TYPE axis (ALL/FOOD/BUFFS/QUEST), and owning the type-picker upgrade widens the
-// hold-A gesture to the finer CATEGORY axis (ALL/FOOD/BUFFS/KEYS/TOOLS). See
+// hold-B gesture to the finer CATEGORY axis (ALL/FOOD/BUFFS/KEYS/TOOLS). See
 // items_screen.h's nextItemFilter for the cycle order and which axis is live.
 enum class ItemFilter { All, Food, Buffs, Quest, Keys, Tools };
 

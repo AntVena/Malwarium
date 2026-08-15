@@ -17,7 +17,7 @@ void test_backup_drive_save_armed_into_wild_combat() {
     // Consuming the last Backup Drive drops useItem() into Nav::Submenu (the ITEMS
     // "item left the list" case) — back out to the carousel before the EXPL walk,
     // which assumes it's starting from the carousel/idle layer.
-    g.onButton(press(Button::C));
+    tapC(g);
     walkToEncounter(g);
     CHECK(g.nav() == Game::Nav::Combat);
     CHECK(g.combat().player().itemShield);
@@ -70,7 +70,7 @@ void test_explore_arm_returns_to_idle() {
     // last row, reached by cycling with A and done with B.
     g.onButton(chordAC());
     CHECK(g.nav() == Game::Nav::ExploreControl);
-    g.onButton(press(Button::C));                       // C backs out, walk untouched
+    tapC(g);                       // C backs out, walk untouched
     CHECK(g.nav() == Game::Nav::Idle && g.exploreActive());
     stopExplore(g);                                     // ...the STOP row does cancel it
     CHECK(g.nav() == Game::Nav::Idle);
@@ -217,9 +217,9 @@ void test_bandwidth_farming_resource() {
             switch (g.nav()) {
                 case Game::Nav::Idle: if (g.inDeepWebDive()) pingExplore(g); else guard = 400; break;
                 case Game::Nav::Wifi: g.onButton(press(Button::B)); break;
-                case Game::Nav::Shop: g.onButton(press(Button::C)); break;
-                case Game::Nav::ModShop: g.onButton(press(Button::C)); break;
-                default: g.onButton(press(Button::C)); break;
+                case Game::Nav::Shop: tapC(g); break;
+                case Game::Nav::ModShop: tapC(g); break;
+                default: tapC(g); break;
             }
             (void)t;
         }
@@ -267,7 +267,7 @@ void test_hacker_face_toggle() {
         g.onButton(press(Button::A));
     g.onButton(press(Button::B));
     CHECK(g.nav() == Game::Nav::Submenu);               // PROFILE opened
-    g.onButton(press(Button::C));
+    tapC(g);
     CHECK(g.nav() == Game::Nav::Cursor);                // C backs to the hacker carousel
 
     // B on an inaccessible slot (SCAN) is inert — stays on the carousel.
@@ -599,24 +599,25 @@ void test_item_filter_narrows_rows() {
     for (const auto& row : quest) if (!row.header) CHECK(row.def->type == ItemDef::Type::Quest);
 }
 
-// d — the ITEMS hold-A gesture. Unowned: A steps the cursor immediately on
+// The ITEMS hold-B gesture. Unowned: B opens the focused row's detail immediately on
 // PRESS (zero regression — no hold, no release wait). Owned: a short tap (release
-// before kItemFilterHoldMs) still steps on release; holding past the threshold
-// cycles the filter instead (ALL -> FOOD), narrowing the list, and the eventual
-// release is a no-op (aHeld_ already consumed by the hold-fire).
-void test_item_hold_a_cycles_filter_tap_steps() {
-    // (a) Unowned: A fires the step on PRESS alone (no release needed).
+// before kItemFilterHoldMs) still opens it, on the release edge; holding past the
+// threshold cycles the filter instead (ALL -> FOOD), narrowing the list, and the
+// eventual release is a no-op (bHeld_ already consumed by the hold-fire). A is the
+// plain step throughout — the gesture never touches it.
+void test_item_hold_b_cycles_filter_tap_opens() {
+    // (a) Unowned: B opens the focused row on PRESS alone (no release needed).
     {
         Game g{StartMode::Hatched};
         CHECK(!g.itemTabsUnlocked());
         enterSubmenuId(g, SubmenuId::Items);          // row 0 = Air-Gapped Snack (FOOD)
-        g.onButton(press(Button::A));                 // PRESS only — steps immediately
+        g.onButton(press(Button::A));                 // A still steps immediately
         const int tc0 = g.inventory().count("tortilla_chip");
         g.onButton(press(Button::B));                 // open the now-focused row's detail
         g.onButton(press(Button::B));                 // Use
         CHECK(g.inventory().count("tortilla_chip") == tc0 - 1);  // row 1 (Tor-Tilla Chip, FOOD)
     }
-    // (b) Owned, short tap: release before the hold threshold still steps (on release).
+    // (b) Owned, short tap: release before the hold threshold still opens the row.
     {
         Game g{StartMode::Hatched};
         g.debugSetBits(kShopItemTabsCost);
@@ -626,16 +627,17 @@ void test_item_hold_a_cycles_filter_tap_steps() {
         CHECK(g.itemFilter() == ItemFilter::All);
         uint32_t t = 0;
         g.tick(t);
-        g.onButton(press(Button::A));                 // arm the hold — no step yet
-        g.tick(t += kItemFilterHoldMs / 2);            // well under the threshold
-        g.onButton({Button::A, false, false});         // release -> short tap -> step
-        CHECK(g.itemFilter() == ItemFilter::All);      // a tap never touches the filter
+        g.onButton(press(Button::A));                 // A steps to row 1 on press
+        g.onButton(lift(Button::A));
         const int tc0 = g.inventory().count("tortilla_chip");
-        g.onButton(press(Button::B));
-        g.onButton(press(Button::B));                  // Use
+        g.onButton(press(Button::B));                 // arm the hold — nothing opens yet
+        g.tick(t += kItemFilterHoldMs / 2);           // well under the threshold
+        g.onButton(lift(Button::B));                  // release -> short tap -> opens
+        CHECK(g.itemFilter() == ItemFilter::All);     // a tap never touches the filter
+        g.onButton(press(Button::B));                 // Use
         CHECK(g.inventory().count("tortilla_chip") == tc0 - 1);  // row 1, same as unowned
     }
-    // (c) Owned, a hold past the threshold cycles the filter instead of stepping.
+    // (c) Owned, a hold past the threshold cycles the filter instead of opening.
     {
         Game g{StartMode::Hatched};
         g.debugSetBits(kShopItemTabsCost);
@@ -643,15 +645,18 @@ void test_item_hold_a_cycles_filter_tap_steps() {
         enterSubmenuId(g, SubmenuId::Items);
         uint32_t t = 0;
         g.tick(t);
-        g.onButton(press(Button::A));                  // arm the hold
+        g.onButton(press(Button::B));                  // arm the hold
         g.tick(t += kItemFilterHoldMs + kHeartbeatMs);  // cross the threshold -> cycles
         CHECK(g.itemFilter() == ItemFilter::Food);      // ALL -> FOOD
-        g.onButton({Button::A, false, false});          // release AFTER the fire -> no-op
-        CHECK(g.itemFilter() == ItemFilter::Food);       // unchanged by the release
+        CHECK(g.nav() == Game::Nav::Submenu);           // and never opened a detail
+        g.onButton(lift(Button::B));                    // release AFTER the fire -> no-op
+        CHECK(g.itemFilter() == ItemFilter::Food);      // unchanged by the release
+        CHECK(g.nav() == Game::Nav::Submenu);
         // The list is now narrowed to FOOD — B opens the first (only) food row.
         const int as0 = g.inventory().count("airgap_snack");
         g.onButton(press(Button::B));
-        g.onButton(press(Button::B));                    // Use
+        g.onButton(lift(Button::B));                    // tap -> opens the detail
+        g.onButton(press(Button::B));                   // Use
         CHECK(g.inventory().count("airgap_snack") == as0 - 1);
     }
 }
@@ -754,7 +759,7 @@ void test_item_picker_nav_drills_in_and_back() {
         Game g{StartMode::Hatched};
         enterSubmenuId(g, SubmenuId::Items);
         CHECK(g.itemsScreen() == Game::ItemsScreen::List);
-        g.onButton(press(Button::C));                       // straight back out
+        tapC(g);                       // straight back out
         CHECK(g.nav() == Game::Nav::Cursor);
     }
     // (b) Owned — the picker fronts the list.
@@ -773,10 +778,10 @@ void test_item_picker_nav_drills_in_and_back() {
     CHECK(g.itemFilter() == ItemFilter::Keys);
     CHECK(g.nav() == Game::Nav::Submenu);                   // still L2, new screen
 
-    g.onButton(press(Button::C));                           // back to the tiles
+    tapC(g);                           // back to the tiles
     CHECK(g.itemsScreen() == Game::ItemsScreen::Picker && g.nav() == Game::Nav::Submenu);
     CHECK(g.itemPickRow() == 3);                            // the tile is where we left it
-    g.onButton(press(Button::C));                           // out of ITEMS
+    tapC(g);                           // out of ITEMS
     CHECK(g.nav() == Game::Nav::Cursor);
 
     // Re-entering resets both the tile cursor and the filter — a visit never
@@ -793,7 +798,7 @@ void test_item_picker_nav_drills_in_and_back() {
                              g.itemFilter()).empty());
     g.onButton(press(Button::B));                           // B on an empty list is inert
     CHECK(g.nav() == Game::Nav::Submenu);
-    g.onButton(press(Button::C));
+    tapC(g);
     CHECK(g.itemsScreen() == Game::ItemsScreen::Picker);
 }
 
@@ -810,18 +815,19 @@ void test_item_picker_skipped_in_lockout() {
     g.onButton(press(Button::B));                    // "Open Items" (lockout ctx)
     CHECK(g.nav() == Game::Nav::Submenu);
     CHECK(g.itemsScreen() == Game::ItemsScreen::List);   // straight onto the list
-    g.onButton(press(Button::C));                    // C goes back to the crisis
+    tapC(g);                    // C goes back to the crisis
     CHECK(g.nav() == Game::Nav::ModalLockout);
 }
 
-// Owning the picker upgrades the hold-A tab cycle to the finer CATEGORY axis, so
+// Owning the picker upgrades the hold-B tab cycle to the finer CATEGORY axis, so
 // the gesture and the tiles can never disagree about what a tab means. Type-Tabs
-// alone still walks the type axis (its QUEST tab), and holding A on the PICKER
+// alone still walks the type axis (its QUEST tab), and holding B on the PICKER
 // screen does nothing at all — only the list arms the gesture.
-void test_item_hold_a_follows_picker_axis() {
-    auto holdA = [](Game& g, uint32_t& t) {
-        g.onButton(press(Button::A));
+void test_item_hold_b_follows_picker_axis() {
+    auto holdB = [](Game& g, uint32_t& t) {
+        g.onButton(press(Button::B));
         g.tick(t += kItemFilterHoldMs + kHeartbeatMs);
+        g.onButton(lift(Button::B));
     };
     {   // (a) Type-Tabs only: ALL -> FOOD -> BUFFS -> QUEST.
         Game g{StartMode::Hatched};
@@ -830,7 +836,7 @@ void test_item_hold_a_follows_picker_axis() {
         enterSubmenuId(g, SubmenuId::Items);
         uint32_t t = 0;
         g.tick(t);
-        holdA(g, t); holdA(g, t); holdA(g, t);
+        holdB(g, t); holdB(g, t); holdB(g, t);
         CHECK(g.itemFilter() == ItemFilter::Quest);
     }
     {   // (b) Both owned: ALL -> FOOD -> BUFFS -> KEYS -> TOOLS -> ALL.
@@ -841,19 +847,16 @@ void test_item_hold_a_follows_picker_axis() {
         enterSubmenuId(g, SubmenuId::Items);
         uint32_t t = 0;
         g.tick(t);
-        // On the PICKER, A is a plain tile step — the hold gesture is never armed.
-        holdA(g, t);
-        CHECK(g.itemFilter() == ItemFilter::All && g.itemPickRow() == 1);
-        g.onButton({Button::A, false, false});
-        g.onButton(press(Button::C));                // out and back in -> tile 0 (ALL)
-        enterSubmenuId(g, SubmenuId::Items);
-        g.onButton(press(Button::B));                // drill into ALL
+        // On the PICKER, B commits the focused tile — the hold gesture is never armed
+        // there, so holding it drills in exactly as a tap would.
+        holdB(g, t);
+        CHECK(g.itemFilter() == ItemFilter::All);
         CHECK(g.itemsScreen() == Game::ItemsScreen::List);
-        holdA(g, t); holdA(g, t); holdA(g, t);
+        holdB(g, t); holdB(g, t); holdB(g, t);
         CHECK(g.itemFilter() == ItemFilter::Keys);
-        holdA(g, t);
+        holdB(g, t);
         CHECK(g.itemFilter() == ItemFilter::Tools);
-        holdA(g, t);
+        holdB(g, t);
         CHECK(g.itemFilter() == ItemFilter::All);    // wraps, never lands on QUEST
     }
 }
@@ -911,7 +914,7 @@ void test_vault_hold_b_bulk_opens_tap_opens_one() {
     g.onButton({Button::B, false, false});                // release -> short tap -> open one
     CHECK(g.inventory().count("sealed_cache_common") == 2);   // exactly one consumed
     CHECK(g.nav() == Game::Nav::CacheYield);                  // single-open reveal
-    g.onButton(press(Button::C));                              // dismiss -> back to VAULT
+    tapC(g);                              // dismiss -> back to VAULT
     CHECK(g.nav() == Game::Nav::Submenu);
 
     // Holding past the threshold bulk-opens the rest in one action.

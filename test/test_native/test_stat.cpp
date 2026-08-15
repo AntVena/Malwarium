@@ -328,7 +328,7 @@ void test_stat_loadout_b_scroll() {
     // C -> back to the carousel (resets statPage_/statScroll_); B re-enters
     // the submenu (cursor is still parked on STAT's slot); A -> page 1 confirms
     // the scroll reset (renders identically to the very first page-1 view, l0).
-    g.onButton(press(Button::C));
+    tapC(g);
     g.onButton(press(Button::B));
     g.onButton(press(Button::A));
     Framebuffer l3(kActiveW, kActiveH); g.render(l3);

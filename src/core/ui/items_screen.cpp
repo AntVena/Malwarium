@@ -274,7 +274,7 @@ void drawItemsList(Framebuffer& fb, const std::vector<InvRow>& rows, int cursor,
     // word, so an unowned player's ITEMS list carries no band at all. The Lockout
     // context never routes through the picker, so it never offers "C - TYPES".
     char hint[32] = "";
-    if (tabsOwned) std::snprintf(hint, sizeof(hint), "HOLD A - FILTER");
+    if (tabsOwned) std::snprintf(hint, sizeof(hint), "HOLD B - FILTER");
     if (pickerOwned && !lockout)
         std::snprintf(hint + std::strlen(hint), sizeof(hint) - std::strlen(hint),
                       "%sC - TYPES", tabsOwned ? "  " : "");
@@ -292,12 +292,7 @@ void drawItemsList(Framebuffer& fb, const std::vector<InvRow>& rows, int cursor,
     }
 
     const int n = static_cast<int>(rows.size());
-    int scrollTop = 0;
-    if (n > kVisibleRows) {
-        if (cursor < scrollTop) scrollTop = cursor;
-        if (cursor >= scrollTop + kVisibleRows) scrollTop = cursor - kVisibleRows + 1;
-        scrollTop = std::max(0, std::min(scrollTop, n - kVisibleRows));
-    }
+    const int scrollTop = listScrollTop(cursor, n, kVisibleRows);
 
     for (int v = 0; v < kVisibleRows && scrollTop + v < n; ++v) {
         const int i = scrollTop + v;
@@ -420,13 +415,16 @@ void drawCacheYield(Framebuffer& fb, const ItemDef& cache, int bits,
                 drawSprite(fb, *icons[i], 0, kMargin + 4, y - 6);
             const int nx = (icons && icons[i]) ? kMargin + 4 + kRowIcon + 6
                                                : kMargin + 4;
-            drawText(fb, nx, y, items[i] ? items[i]->displayName : "?",
-                     palColor(Pal::INK));
-            if (items[i]) {
-                const char* rt = rarityName(items[i]->rarity);
-                drawText(fb, kActiveW - kMargin - textWidth(rt), y, rt,
-                         rarityColor(items[i]->rarity));
-            }
+            // The rarity word owns the right end and the name yields to it. Nothing on
+            // this page is focused — it is a reveal, not a list — so no row scrolls;
+            // a name too long for the room is clipped rather than drawn through the
+            // word that says what came out.
+            drawLabelValue(fb, nx, y, items[i] ? items[i]->displayName : "?",
+                           palColor(Pal::INK),
+                           items[i] ? rarityName(items[i]->rarity) : nullptr,
+                           items[i] ? rarityColor(items[i]->rarity)
+                                    : palColor(Pal::INK_DIM),
+                           /*beat=*/0, /*scroll=*/false);
             y += 24;
         }
     }
@@ -436,7 +434,7 @@ void drawCacheYield(Framebuffer& fb, const ItemDef& cache, int bits,
 }
 
 void drawBulkYield(Framebuffer& fb, const ItemDef& cache, int cachesOpened, int bits,
-                   const BulkYieldRow* rows, int count, int cursor) {
+                   const BulkYieldRow* rows, int count, int cursor, int beat) {
     // Header: how many of the rarity group were opened + the rarity word.
     char hdr[36];
     std::snprintf(hdr, sizeof(hdr), "OPENED %d %s", cachesOpened, rarityName(cache.rarity));
@@ -453,13 +451,8 @@ void drawBulkYield(Framebuffer& fb, const ItemDef& cache, int cachesOpened, int 
     if (count <= 0) {
         drawText(fb, kMargin, rowTop, "- NO ITEMS -", palColor(Pal::INK_DIM));
     } else {
-        int cur = (cursor >= 0 && cursor < count) ? cursor : 0;
-        int scrollTop = 0;
-        if (count > kBulkVisibleRows) {
-            if (cur < scrollTop) scrollTop = cur;
-            if (cur >= scrollTop + kBulkVisibleRows) scrollTop = cur - kBulkVisibleRows + 1;
-            scrollTop = std::max(0, std::min(scrollTop, count - kBulkVisibleRows));
-        }
+        const int cur = (cursor >= 0 && cursor < count) ? cursor : 0;
+        const int scrollTop = listScrollTop(cur, count, kBulkVisibleRows);
         for (int v = 0; v < kBulkVisibleRows && scrollTop + v < count; ++v) {
             const int i = scrollTop + v;
             const int y = rowTop + v * rowH;
@@ -469,10 +462,13 @@ void drawBulkYield(Framebuffer& fb, const ItemDef& cache, int cachesOpened, int 
                 drawRowCursor(fb, 8, y + 3, palColor(Pal::ACCENT));
             }
             if (r.icon) drawSprite(fb, *r.icon, 0, 20, y - 4);
-            drawText(fb, 46, y, r.def ? r.def->displayName : "?", palColor(Pal::INK));
+            // The count is what this tally exists to report, so it owns the right end
+            // and the name measures against it (drawLabelValue) rather than running
+            // under it — the same rule the ITEMS list rows follow.
             char cnt[8];
             std::snprintf(cnt, sizeof(cnt), "x%d", r.count);
-            drawText(fb, kActiveW - kMargin - textWidth(cnt), y, cnt, palColor(Pal::INK));
+            drawLabelValue(fb, 46, y, r.def ? r.def->displayName : "?",
+                           palColor(Pal::INK), cnt, palColor(Pal::INK), beat, i == cur);
         }
         if (count > kBulkVisibleRows) {   // UI_SCROLLBAR
             const int barX = kActiveW - 3;

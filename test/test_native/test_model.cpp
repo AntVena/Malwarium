@@ -86,7 +86,7 @@ void test_carousel_summon() {
     CHECK(anyNonPaper(fb, 0, kLivingBottom, kActiveW, kActiveH));  // bottom track chrome
 
     Game c{StartMode::Hatched};
-    c.onButton(press(Button::C));   // idle C -> carousel @ slot 8
+    tapC(c);   // idle C -> carousel @ slot 8
     CHECK(c.nav() == Game::Nav::Cursor && c.cursor() == kCarouselSlots - 1);
 
     Game b{StartMode::Hatched};                         // idle B is a no-op (no target)
@@ -100,7 +100,7 @@ void test_carousel_bookwrap() {
     const int fwd[] = {1, 2, 3, 4, 5, 6, 7, 0};   // A wraps 4->5 and 8->1
     for (int e : fwd) { g.onButton(press(Button::A)); CHECK(g.cursor() == e); }
     const int rev[] = {7, 6, 5, 4, 3, 2, 1, 0};   // C is the exact mirror
-    for (int e : rev) { g.onButton(press(Button::C)); CHECK(g.cursor() == e); }
+    for (int e : rev) { tapC(g); CHECK(g.cursor() == e); }
 }
 
 // Focus is dual-coded: the UI_CURSOR_BOX (shape) reads in grayscale, and (in
@@ -154,7 +154,7 @@ void test_carousel_enter_back() {
         for (int x = 0; x < kActiveW; ++x)
             if (got.get(x, y) != ref.get(x, y)) { same = false; break; }
     CHECK(same);
-    g.onButton(press(Button::C));   // back -> carousel, restores slot 1
+    tapC(g);   // back -> carousel, restores slot 1
     CHECK(g.nav() == Game::Nav::Cursor && g.cursor() == 0);
 
     // Enter another slot from a different cursor; back restores THAT slot.
@@ -165,7 +165,7 @@ void test_carousel_enter_back() {
     Framebuffer ph(kActiveW, kActiveH);
     g.render(ph);
     CHECK(anyNonPaper(ph, 0, 0, kActiveW, kActiveH));   // submenu renders
-    g.onButton(press(Button::C));
+    tapC(g);
     CHECK(g.nav() == Game::Nav::Cursor && g.cursor() == 2);
 }
 
@@ -173,7 +173,7 @@ void test_carousel_enter_back() {
 // bottom-row cursor never drops label text into the living area onto the pet.
 void test_caption_pinned_top() {
     Game g{StartMode::Hatched};
-    g.onButton(press(Button::C));   // summon @ slot 8 (bottom row)
+    tapC(g);   // summon @ slot 8 (bottom row)
     CHECK(g.cursor() == kCarouselSlots - 1);
     g.setUiMode(UiMode::IconsLabel);
     Framebuffer fb(kActiveW, kActiveH);

@@ -25,17 +25,17 @@ struct InvRow {
 };
 
 // Two Rig Shop rows read ItemFilter (ui_state.h) on two different axes:
-//   * ITEMS Type-Tabs (hold-A on the list) walks the TYPE axis, ALL/FOOD/BUFFS/QUEST.
+//   * ITEMS Type-Tabs (hold-B on the list) walks the TYPE axis, ALL/FOOD/BUFFS/QUEST.
 //   * ITEMS Type-Picker (the L2 tile screen) walks the finer CATEGORY axis,
 //     ALL/FOOD/BUFFS/KEYS/TOOLS — QUEST split into the keys you spend and the
-//     tools you carry (ItemDef::Category). Owning it upgrades hold-A to that axis
+//     tools you carry (ItemDef::Category). Owning it upgrades hold-B to that axis
 //     too, so the picker and the gesture never disagree about what a tab means.
 // All = the full grouped list, and what every player without an upgrade sees.
 
 // Short chip word for the active filter (ALL/FOOD/BUFFS/QUEST/KEYS/TOOLS) — shown
 // in the ITEMS header once a filter upgrade is owned, and on the picker's tiles.
 const char* itemFilterLabel(ItemFilter f);
-// The hold-A cycle order. `categoryAxis` (the type-picker is owned) walks
+// The hold-B cycle order. `categoryAxis` (the type-picker is owned) walks
 // ALL -> FOOD -> BUFFS -> KEYS -> TOOLS -> ALL; otherwise ALL -> FOOD -> BUFFS ->
 // QUEST -> ALL. Either way an off-axis filter lands back on ALL.
 ItemFilter nextItemFilter(ItemFilter f, bool categoryAxis = false);
@@ -92,7 +92,7 @@ void drawItemTypePicker(Framebuffer& fb, const std::vector<ItemPickRow>& tiles,
 // "best first" claim is checkable on the row, in grayscale.
 // `tabsOwned`/`pickerOwned` are the two Rig Shop filter rows: EITHER puts the
 // active-tab chip in the header (you always know which category you're looking at),
-// and each contributes its own word to the bottom hint band — "HOLD A - FILTER" for
+// and each contributes its own word to the bottom hint band — "HOLD B - FILTER" for
 // the gesture, "C - TYPES" for the walk back to the tiles. With neither owned the
 // list is pixel-identical to a rig that has bought no filter upgrade at all.
 void drawItemsList(Framebuffer& fb, const std::vector<InvRow>& rows, int cursor,
@@ -131,9 +131,10 @@ struct BulkYieldRow {
 // `cachesOpened`/`bits` are the totals, and `rows`/`count` are the aggregated
 // per-item tally. `cursor` is windowed exactly like drawItemsList/drawMovePicker
 // (kVisibleRows-style, scrollbar past the window) so an arbitrarily long tally
-// never overruns the screen. Dual-coded, grayscale-safe.
+// never overruns the screen. `beat` scrolls the focused row's name inside the room its
+// count leaves it. Dual-coded, grayscale-safe.
 void drawBulkYield(Framebuffer& fb, const ItemDef& cache, int cachesOpened, int bits,
-                   const BulkYieldRow* rows, int count, int cursor);
+                   const BulkYieldRow* rows, int count, int cursor, int beat);
 
 // Rollback stat picker: shed one earned combat-stat point (−1 level) to
 // re-roll it. `points` are the 4 earned counts (power/defense/speed/max-Health);

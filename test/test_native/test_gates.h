@@ -72,6 +72,26 @@ constexpr int kItemsRowTop = 26;
 
 // Button press edge (the common case in these gates).
 inline mal::ButtonEvent press(mal::Button b) { return {b, true, false}; }
+inline mal::ButtonEvent lift(mal::Button b) { return {b, false, false}; }
+
+// A COMPLETE C press — down and up. On a list C is a tap/hold pair (a tap cancels, a
+// hold walks the cursor backward, Game::listBackStep), so the press edge alone is only
+// half of one and settles nothing. Off a list the release is inert and this is just the
+// press. Every gate that means "back out of here" wants this rather than press(C).
+inline void tapC(mal::Game& g) {
+    g.onButton(press(mal::Button::C));
+    g.onButton(lift(mal::Button::C));
+}
+
+// A COMPLETE B press. Four screens read B as a tap/hold pair — the ITEMS list once
+// Type-Tabs is owned, the MOVES picker, the Hacker VAULT once Bulk-Open is owned, and
+// the CFG Factory Reset — and on those the press edge only ARMS. Everywhere else the
+// release is inert. Use this wherever a gate means "accept this row"; use a bare
+// press(B) followed by a tick only when the gate is deliberately driving a hold.
+inline void tapB(mal::Game& g) {
+    g.onButton(press(mal::Button::B));
+    g.onButton(lift(mal::Button::B));
+}
 
 using namespace mal;
 
@@ -180,7 +200,7 @@ inline int litCellsGray(const Framebuffer& fb, int gx, int gw, int rowY) {
 // Walk the HACKER carousel to `slot` and enter it — the A+C chord flips the face
 // first, so a caller mid-submenu is backed out to idle before the chord is spent.
 inline void enterHackerSlot(Game& g, HackerSlotId slot) {
-    while (g.nav() != Game::Nav::Idle) g.onButton(press(Button::C));
+    while (g.nav() != Game::Nav::Idle) tapC(g);
     g.onButton({Button::A, true, true});                  // A+C -> hacker face
     g.onButton(press(Button::A));
     while (hackerCarouselSlots()[g.cursor()].id != slot) g.onButton(press(Button::A));
@@ -396,7 +416,7 @@ inline void enterArcadeCabinet(Game& g, int row, ArcadeDifficulty difficulty) {
     // carousel, and a second cabinet in one session starts from the list it just used.
     for (int i = 0; i < 4 && (g.nav() == Game::Nav::Detail ||
                               g.nav() == Game::Nav::Submenu); ++i)
-        g.onButton(press(Button::C));
+        tapC(g);
     enterSubmenuId(g, SubmenuId::Games);
     for (int i = 0; i < row; ++i) g.onButton(press(Button::A));
     g.onButton(press(Button::B));
@@ -462,8 +482,8 @@ inline void walkToEncounter(Game& g) {
         switch (g.nav()) {
             case Game::Nav::Idle: pingExplore(g); break;
             case Game::Nav::Wifi: g.onButton(press(Button::B)); break;  // may enter combat
-            case Game::Nav::Shop: g.onButton(press(Button::C)); break;
-            case Game::Nav::ModShop: g.onButton(press(Button::C)); break;
+            case Game::Nav::Shop: tapC(g); break;
+            case Game::Nav::ModShop: tapC(g); break;
             default: g.onButton(press(Button::B)); break;
         }
     }
@@ -484,7 +504,7 @@ inline void walkToWifiEvent(Game& g) {
             g.onButton(press(Button::A));   // Flee -> Sinkhole
             g.onButton(press(Button::B));   // confirm -> back to idle
         } else if (g.nav() == Game::Nav::Shop || g.nav() == Game::Nav::ModShop) {
-            g.onButton(press(Button::C));   // leave the shop -> back to idle
+            tapC(g);   // leave the shop -> back to idle
         } else if (g.nav() == Game::Nav::Combat) {
             // An awakened-guardian fight — ride it out + dismiss so the Wi-Fi
             // search keeps going.
@@ -552,7 +572,7 @@ inline void walkToAnyCombat(Game& g) {
         } else if (g.nav() == Game::Nav::Wifi) {
             g.onButton(press(Button::B));   // resolve whatever it is
         } else if (g.nav() == Game::Nav::Shop || g.nav() == Game::Nav::ModShop) {
-            g.onButton(press(Button::C));   // leave the shop -> back to idle
+            tapC(g);   // leave the shop -> back to idle
         } else if (g.nav() == Game::Nav::PostEncounter) {
             g.onButton(press(Button::B));   // a prior fight's status readout -> dismiss
         }

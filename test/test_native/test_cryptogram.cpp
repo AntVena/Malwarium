@@ -230,9 +230,9 @@ void test_cryptogram_cursors_run_both_ways() {
     const int start = c.poolCursor();
     g.onButton(press(Button::A));
     CHECK(c.poolCursor() != start);
-    g.onButton(press(Button::C));
+    tapC(g);
     CHECK(c.poolCursor() == start);
-    g.onButton(press(Button::C));
+    tapC(g);
     CHECK(c.poolCursor() == c.poolSize() - 1);
     g.onButton(press(Button::A));
     CHECK(c.poolCursor() == start);
@@ -248,7 +248,7 @@ void test_cryptogram_cursors_run_both_ways() {
         CHECK(!c.isOpen(c.cellCursor()));
     }
     for (int i = 0; i < 5; ++i) {
-        g.onButton(press(Button::C));
+        tapC(g);
         CHECK(!c.isOpen(c.cellCursor()));
     }
     CHECK(c.cellCursor() == cell);                // five out, five back, same gap
@@ -273,7 +273,7 @@ void test_cryptogram_chord_drops_the_letter_but_never_leaves() {
     CHECK(g.nav() == Game::Nav::Cryptogram);
 
     // C alone is a cursor step, never an exit — the deviation the hint band spells out.
-    g.onButton(press(Button::C));
+    tapC(g);
     CHECK(g.nav() == Game::Nav::Cryptogram);
 }
 

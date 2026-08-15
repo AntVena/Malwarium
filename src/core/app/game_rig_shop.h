@@ -108,7 +108,7 @@ inline constexpr int kFragTriggerStart = 256;
 inline constexpr int kFragTriggerMaxTier = 6;
 
 // --- d/e: one-time gesture unlocks -------------------------------------------
-// No tiers, no computed text — Items Type-Tabs arms the ITEMS hold-A FOOD/BUFFS/QUEST
+// No tiers, no computed text — Items Type-Tabs arms the ITEMS hold-B FOOD/BUFFS/QUEST
 // filter cycle (kItemFilterHoldMs, tunables.h); Vault Bulk-Open arms the VAULT hold-B
 // "open every cache of this rarity" gesture (kBulkOpenHoldMs, tunables.h).
 inline constexpr int kShopItemTabsCost = 1024;
@@ -118,7 +118,7 @@ inline constexpr int kShopBulkOpenCost = 2048;
 // A one-time unlock that puts a category tile screen (ALL/FOOD/BUFFS/KEYS/TOOLS,
 // items_screen.h's ItemPickRow) in FRONT of the ITEMS list: entering ITEMS lands on
 // the picker, B drills into that category, C walks back to it. Independent of Items
-// Type-Tabs — either row is useful alone — but owning both upgrades the hold-A
+// Type-Tabs — either row is useful alone — but owning both upgrades the hold-B
 // gesture to the picker's finer CATEGORY axis (Game::nextItemFilter's categoryAxis),
 // so the two never disagree about what a tab means. The Lockout Open-Items path
 // never routes through the picker: a crisis doesn't get an extra screen.
@@ -227,7 +227,7 @@ enum class RigEffectKind : uint8_t {
 
 // Where a readout's number comes from at a given purchase level.
 enum class RigValueCurve : uint8_t {
-    Flag = 0,   // no number at all — the label IS the statement ("HOLD A: FILTER")
+    Flag = 0,   // no number at all — the label IS the statement ("HOLD B: FILTER")
     Ramp,       // base + level*step (step may be negative: a reducer counts down)
     Tiers,      // level 0 => base, else table[level-1] — for a hand-picked ladder
 };
@@ -324,7 +324,7 @@ inline const RigUpgradeDef kRigUpgrades[] = {
        kFragTriggerReducedPct, kFragTriggerMaxTier, "%d%%"}}},
 
     {"item_tabs", "ITEMS TYPE-TABS", 1, RigCostCurve::kFixed, kShopItemTabsCost, 0,
-     RigEffectKind::None, 0, "BOUGHT ITEM TABS", {{"HOLD A: FILTER"}}},
+     RigEffectKind::None, 0, "BOUGHT ITEM TABS", {{"HOLD B: FILTER"}}},
 
     {"bulk_open", "VAULT BULK-OPEN", 1, RigCostCurve::kFixed, kShopBulkOpenCost, 0,
      RigEffectKind::None, 0, "BOUGHT BULK OPEN", {{"HOLD B: OPEN ALL"}}},

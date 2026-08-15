@@ -507,7 +507,7 @@ void test_update_job_holds_the_radio_past_the_screen() {
 
     // Leave the screen. Nothing nav-derived is holding the radio, so if the job
     // weren't what raises it, the fetch would be cut off mid-transfer.
-    g.onButton(press(Button::C));
+    tapC(g);
     CHECK(g.cfgScreen() != CfgScreen::Update || g.nav() != Game::Nav::Detail);
     CHECK(g.updateJobLive());
     CHECK(g.netConnectWanted());
@@ -682,7 +682,7 @@ void test_update_install_takes_two_yeses() {
 
     // And C out of the confirm is equally inert.
     g.onButton(press(Button::B));
-    g.onButton(press(Button::C));
+    tapC(g);
     CHECK(!g.updateJobLive());
     CHECK(g.nav() == Game::Nav::Detail);          // C left the confirm, not the screen
 
@@ -694,7 +694,7 @@ void test_update_install_takes_two_yeses() {
     CHECK(g.updateJobTarget() == UpdateTarget::Firmware);
 
     // ...and like a check, it holds the radio past the screen it was started from.
-    g.onButton(press(Button::C));
+    tapC(g);
     CHECK(g.updateJobLive() && g.netConnectWanted());
 
     InstallStatus done;
@@ -760,7 +760,7 @@ void test_flasher_row_is_last_and_needs_no_network() {
     CHECK(g.qrScreenActive());                                // holds the panel awake
     CHECK(!g.updateJobLive());                                // and asks for no radio
 
-    g.onButton(press(Button::C));                             // back to UPDATES, not out
+    tapC(g);                             // back to UPDATES, not out
     CHECK(g.cfgScreen() == CfgScreen::Update);
     CHECK(g.nav() == Game::Nav::Detail);
     CHECK(!g.qrScreenActive());
@@ -1326,14 +1326,14 @@ void test_ap_toggle_via_cfg_and_persist() {
         g.onButton(press(Button::B));             // apply ON -> QR
         CHECK(g.apEnabled());
         CHECK(g.nav() == Game::Nav::Detail && g.cfgScreen() == CfgScreen::PediaQr);
-        g.onButton(press(Button::C));             // QR -> back to RADIO
+        tapC(g);             // QR -> back to RADIO
         CHECK(g.cfgScreen() == CfgScreen::Radio);
 
         // "See the QR" while already ON: re-open the row, apply ON (no change) -> QR.
         g.onButton(press(Button::B));             // re-open (pick starts on ON)
         g.onButton(press(Button::B));             // apply ON -> QR again
         CHECK(g.cfgScreen() == CfgScreen::PediaQr);
-        g.onButton(press(Button::C));             // back to RADIO
+        tapC(g);             // back to RADIO
 
         // Turning it OFF has no QR — it backs straight to RADIO.
         g.onButton(press(Button::B));             // re-open (pick starts on ON)
@@ -1341,7 +1341,7 @@ void test_ap_toggle_via_cfg_and_persist() {
         g.onButton(press(Button::B));             // apply OFF -> RADIO (no QR)
         CHECK(!g.apEnabled());
         CHECK(g.cfgScreen() == CfgScreen::Radio);
-        g.onButton(press(Button::C));             // RADIO -> the CFG list
+        tapC(g);             // RADIO -> the CFG list
         CHECK(g.nav() == Game::Nav::Submenu);
 
         g.setApEnabled(true);                     // leave ON for the reboot check
@@ -1388,7 +1388,7 @@ void test_pedia_qr_two_pages_no_timeout() {
 
     // Exit with C -> back to the RADIO group; the QR-page hold releases (this press
     // stamps lastInput at the current clock).
-    g.onButton(press(Button::C));
+    tapC(g);
     CHECK(!g.qrScreenActive());
     CHECK(g.cfgScreen() == CfgScreen::Radio);
 

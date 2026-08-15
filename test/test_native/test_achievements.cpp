@@ -246,7 +246,7 @@ void test_achievement_banner_waits_for_the_home_screen() {
     g.tick(t += kHeartbeatMs);
     CHECK(g.achBanner() == nullptr);              // held back
     CHECK(g.achPendingNotify() == 1);
-    g.onButton(press(Button::C));                 // back out to the habitat
+    tapC(g);                 // back out to the habitat
     while (g.nav() != Game::Nav::Idle) g.tick(t += kHeartbeatMs);
     g.tick(t += kHeartbeatMs);
     CHECK(g.achBanner() != nullptr);              // ...and delivered on arrival

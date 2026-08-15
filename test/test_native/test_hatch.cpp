@@ -121,14 +121,14 @@ void test_egg_menu_locks() {
         CHECK(g.nav() == Game::Nav::Cursor);
         g.onButton(press(Button::B));             // inert on a locked slot
         CHECK(g.nav() == Game::Nav::Cursor);      // stayed on the carousel
-        g.onButton(press(Button::C));             // back to idle for the next probe
+        tapC(g);             // back to idle for the next probe
     }
     // STAT / ITEMS still enter.
     for (SubmenuId open : {SubmenuId::Stat, SubmenuId::Items}) {
         cursorToSlot(g, open);
         g.onButton(press(Button::B));
         CHECK(g.nav() == Game::Nav::Submenu);
-        g.onButton(press(Button::C));
+        tapC(g);
     }
     // Hatched: the egg-locked slots are open.
     Game h{StartMode::Hatched};
@@ -261,7 +261,7 @@ void test_evolution_boot_to_process() {
 void test_evolution_c_disabled_b_gated() {
     Game g{StartMode::Hatched, "cryptoshell"};
     g.debugTriggerEvolution();
-    g.onButton(press(Button::C));                // disabled -> still in the modal
+    tapC(g);                // disabled -> still in the modal
     CHECK(g.nav() == Game::Nav::ModalEvolve);
     g.onButton(press(Button::B));                // pre-reveal -> ignored
     CHECK(g.nav() == Game::Nav::ModalEvolve);

@@ -178,13 +178,13 @@ public:
         return static_cast<uint8_t>(rigLevel_[kRigRowFragTrigger]);
     }
     // d/e (Rig Shop, save v23): one-time, permanent account unlocks — no
-    // tiers, just owned or not. itemTabsUnlocked arms the ITEMS hold-A filter cycle;
+    // tiers, just owned or not. itemTabsUnlocked arms the ITEMS hold-B filter cycle;
     // bulkOpenUnlocked arms the VAULT hold-B bulk-open.
     bool itemTabsUnlocked() const { return rigLevel_[kRigRowItemTabs] > 0; }
     bool bulkOpenUnlocked() const { return rigLevel_[kRigRowBulkOpen] > 0; }
     // ITEMS Type-Picker (Rig Shop): another one-time unlock — the ITEMS submenu
     // opens on the category tile screen (ItemsScreen::Picker) instead of straight
-    // onto the list, and hold-A's cycle steps up to the finer category axis.
+    // onto the list, and hold-B's cycle steps up to the finer category axis.
     bool itemPickerUnlocked() const { return rigLevel_[kRigRowItemPicker] > 0; }
     // f (Rig Shop, save v31): the Merge Hub one-time unlock — makes the MRG
     // carousel slot accessible (game_merge.cpp). Doesn't grant any recipe by
@@ -1431,7 +1431,7 @@ public:
     bool debugRecipeOwned(int i) const { return recipeOwned(i); }
     bool debugRecipeGrantable(int i) const { return recipeGrantable(i); }
     void debugCraftRecipe(int i) { craftRecipe(i); }
-    // Set the ITEMS type filter directly (tests): the real path is the ITEMS hold-A
+    // Set the ITEMS type filter directly (tests): the real path is the ITEMS hold-B
     // gesture (nextItemFilter); this exercises buildInventoryRows/drawItemsList
     // filtering without driving the tap/hold timing.
     void debugSetItemFilter(ItemFilter f) { itemFilter_ = f; dirty_ = true; }
@@ -1439,8 +1439,16 @@ public:
     // Which ITEMS L2 screen is showing, and the picker's tile cursor (tests / render).
     ItemsScreen itemsScreen() const { return itemsScreen_; }
     int itemPickRow() const { return itemPickRow_; }
+    // The shared list cursor and the MOD picker's own, for the list-navigation gates:
+    // A's repeat and C's backward walk are assertions about where a cursor ENDED UP,
+    // which is the one thing a rendered frame states least directly.
+    int listRow() const { return listRow_; }
+    int modPick() const { return modPick_; }
+    const char* modDetailId() const { return modDetailId_; }
+    // Grant mods in tests without walking a boss drop or a cache roll.
+    Loadout& debugLoadout() { return loadout_; }
     // Set the move picker's showAll flag directly (tests): the real path is its
-    // own hold-A gesture; this exercises ownedMoveList's filtering without driving
+    // own hold-B gesture; this exercises ownedMoveList's filtering without driving
     // the tap/hold timing.
     void debugSetMoveShowAll(bool v) { moveShowAll_ = v; dirty_ = true; }
     bool moveShowAll() const { return moveShowAll_; }
@@ -1636,17 +1644,56 @@ private:
     // the greyed carousel and the blocked submenu entry.
     bool eggSlotLocked(SubmenuId id) const;
 
+    // --- List navigation (game_listnav.cpp) ---------------------------------
+    // The row-stepping half of the button contract, shared by every list on the
+    // device so the three gestures behave identically wherever the player meets them:
+    // A steps forward (held, it repeats), C steps BACKWARD (held, it backs out of the
+    // list), and the row set each one walks is whatever the focused screen draws.
+    //
+    // listFocus reports which list — if any — is under the cursor right now, and is
+    // the single gate all three gestures ask. A screen absent from it keeps the plain
+    // A/B/C contract untouched: an inline confirm, a detail page, a modal and a
+    // minigame all answer None, so C stays the instant tap-to-cancel there.
+    enum class ListFocus {
+        None, ItemsPicker, ItemsList, Arch, CfgList, CfgGroup, ModSlots, LoadoutHub,
+        ModPicker, MovePicker, Expl, Maint, Arcade, HackerShop, HackerVault,
+        HackerPeers, CrewHub, CrewTeam, CrewPicker,
+    };
+    ListFocus listFocus() const;
+    // Move the focused list's cursor by `dir` (+1/-1), wrapping, skipping whatever
+    // that list considers unselectable (ITEMS headers, unoffered SHOP rows, unlandable
+    // EXPL rows). Inert when listFocus() is None.
+    void stepFocusedList(int dir);
+    // The A-repeat and the C-hold back-out, both driven off the held-button clocks.
+    // Returns true if either fired and the screen needs a repaint.
+    bool tickListNav();
+    // Arm C's tap/hold on a list. Returns true if it claimed the PRESS (nothing visible
+    // happens yet), false on a screen with no list, where C cancels on the press edge
+    // exactly as it always has.
+    bool listBackStep(const ButtonEvent& ev);
+    // Resolve that press on the release edge: a tap cancels, a hold that already walked
+    // the cursor backward does not.
+    void listBackRelease();
+    // The focused list's own C case, replayed — what a tap of C on it means.
+    void leaveFocusedList();
+
     // Per-state input handlers.
     // The ITEMS type-picker (ItemsScreen::Picker): A steps the tile, B commits that
     // tile's filter and drills into the list, C leaves ITEMS entirely.
     void onItemsPicker(const ButtonEvent& ev);
     void onItemsList(const ButtonEvent& ev);
     void onItemsDetail(const ButtonEvent& ev);
-    // d: resolves the ITEMS hold-A gesture's SHORT-press half — called from
-    // onButton on every A release. No-op unless aHeld_ is still armed (i.e. the hold
-    // never crossed kItemFilterHoldMs, which fires the cycle itself via tick() and
-    // clears aHeld_ first) AND we're still resting on an owned ITEMS list.
-    void itemFilterReleaseA();
+    // Resolves the ITEMS hold-B gesture's SHORT-press half — called from onButton on
+    // every B release. No-op unless bHeld_ is still armed (i.e. the hold never crossed
+    // kItemFilterHoldMs, which fires the filter cycle itself via tick() and clears
+    // bHeld_ first) AND we're still resting on an owned ITEMS list.
+    void itemFilterReleaseB();
+    // Drill into the focused row's item detail. Shared by B's immediate press (no
+    // type-tabs upgrade) and by the tap half of the hold gesture above, so the two
+    // paths can't drift on what "open this row" means. Builds the list itself rather
+    // than taking it: an InvRow is items_screen.h's, and game.h names no renderer type
+    // (the split ui_state.h's header comment describes).
+    void openFocusedItem();
     void onMaintList(const ButtonEvent& ev);
     void onMaintAction(const ButtonEvent& ev);
     void onStacker(const ButtonEvent& ev);
@@ -1696,6 +1743,10 @@ private:
     void onTrainList(const ButtonEvent& ev);
     void onTrainDetail(const ButtonEvent& ev);     // dispatch MovePicker / MoveDetail / SimTier
     void onMovePicker(const ButtonEvent& ev);
+    // The MOVES picker's own hold-B short-press half (the twin of itemFilterReleaseB):
+    // a tap drills into the focused move's detail, and only a hold that never reached
+    // kMoveFilterHoldMs gets here. No-op outside the picker.
+    void moveFilterReleaseB();
     void onMoveDetail(const ButtonEvent& ev);      // A pages prose, B equips, C backs
     // The move the picker's cursor is on, or nullptr on the unequip row — shared by
     // the drill-down, its input handler and the MoveDetail render.
@@ -2320,23 +2371,38 @@ private:
     int pediaQrPage_ = 0;     // PEDIA QR step (see pediaQrPage())
     int cfgTitlePick_ = 0;    // Titles picker focus (0 = NONE, else 1+sector index)
     int factoryScope_ = 0;
+    // Every screen-level hold on the device is a held B: the CFG Factory Reset, the
+    // Hacker VAULT's bulk-open, the ITEMS type-filter cycle and the MOVES picker's
+    // show-all. They share this one flag because they are guarded to four different
+    // screens and so can never be armed at the same time; the release edge
+    // (Game::onButton) offers the press to each in turn and at most one claims it.
     bool bHeld_ = false;
     uint32_t bDownMs_ = 0;
-    // d ITEMS hold-A gesture (tap = step the cursor, hold = cycle the type
-    // filter). Its OWN flag, distinct from bHeld_ — A and B are independent physical
-    // buttons that could in principle both be mid-hold at once (e.g. one gesture on
-    // the pet face, one lingering on the hacker face after a toggle — belt & braces).
+    // A's list-step repeat (game_listnav.cpp), plus the DECRYPTOGRAM's own faster one.
+    // Its OWN flag, distinct from bHeld_ — A and B are independent physical buttons
+    // that could in principle both be mid-hold at once (a step repeating while the
+    // other thumb starts a screen gesture).
     bool aHeld_ = false;
     uint32_t aDownMs_ = 0;
-    // The DECRYPTOGRAM board's cursor repeat (kCryptogramRepeatMs). C gets a held flag
-    // of its own here for the first time — nothing else on the device holds C — and the
-    // repeat runs on its OWN cadence in tick(), like combat's sprites, because stepping
-    // a thirty-cell cursor on the 4fps heartbeat would take ten seconds to lap.
-    // cryptoRepeatLastMs_ is when the last repeated step fired, kept primed while
-    // nothing is held so entering the board can't burst-catch-up.
+    // C's two holds: a list's backward walk (game_listnav.cpp) and the DECRYPTOGRAM
+    // board's cursor repeat (kCryptogramRepeatMs). The board's repeat runs on its OWN
+    // cadence in tick(), like combat's sprites, because stepping a thirty-cell cursor
+    // on the 4fps heartbeat would take ten seconds to lap. cryptoRepeatLastMs_ is when
+    // the last repeated step fired, kept primed while nothing is held so entering the
+    // board can't burst-catch-up.
     bool cHeld_ = false;
     uint32_t cDownMs_ = 0;
     uint32_t cryptoRepeatLastMs_ = 0;
+    // The list step's own two repeat clocks (game_listnav.cpp), one per direction, kept
+    // primed while nothing is held for the same reason cryptoRepeatLastMs_ is. They are
+    // separate because A and C are independent physical buttons: sharing one clock would
+    // let a release-and-press of the opposite direction inherit the other's cadence.
+    uint32_t listRepeatLastMs_ = 0;
+    uint32_t listBackRepeatLastMs_ = 0;
+    // Latched the moment a held C walks the cursor backward, and read on C's release to
+    // tell a hold from a tap: a press that moved the cursor has done its job and must
+    // not ALSO cancel out of the list on the way up.
+    bool listBackStepped_ = false;
     char hackerTag_[kHackerTagMax + 1] = "NETRUNNER_99";  // persisted
     // HackerTag on-device arcade editor: a working buffer + caret. Caret
     // kHackerTagMax = the ⏎ confirm cell.

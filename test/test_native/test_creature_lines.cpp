@@ -376,7 +376,7 @@ void test_eggpick_miss_keeps_full_incubation() {
 // re-aiming before B is free.
 void test_eggpick_aim_is_not_cancel() {
     Game g = phishingEgg();
-    g.onButton(press(Button::C));
+    tapC(g);
     CHECK(g.inEggPick() && g.eggPickRound() == 0);   // C aimed, it didn't exit or commit
     g.onButton(press(Button::A));
     CHECK(g.inEggPick() && g.eggPickRound() == 0);
@@ -447,7 +447,7 @@ void test_hatch_reveal_plays_the_animation() {
     g.tick(t += kHeartbeatMs);
     CHECK(g.hatchRevealFrame() == 1);
     g.onButton(press(Button::B));
-    g.onButton(press(Button::C));
+    tapC(g);
     CHECK(g.nav() == Game::Nav::ModalHatchReveal);   // nothing skips it
     const int frames = 8;                            // SPR_PET_EGG_PHISH_HATCH
     for (int i = 0; i < frames + kHatchRevealHoldBeats; ++i) g.tick(t += kHeartbeatMs);
@@ -492,7 +492,7 @@ void test_eggpick_grayscale() {
     }
     {   // C flips the aim: the bar moves to the right edge instead.
         Game g = phishingEgg();
-        g.onButton(press(Button::C));
+        tapC(g);
         g.render(fb);
         CHECK(meanLum(kActiveW - 4, kActiveW, top, bot) > meanLum(0, 4, top, bot));
     }
@@ -524,7 +524,7 @@ void test_line_select_phishing_egg() {
     CHECK(g.inLineSelect());
     CHECK(g.pet() == nullptr);                  // empty save while choosing
     CHECK(g.lineSelectRow() == 0);              // Ransomware first
-    g.onButton(press(Button::C));               // C disabled -> still choosing
+    tapC(g);               // C disabled -> still choosing
     CHECK(g.inLineSelect());
     g.onButton(press(Button::A));               // cycle to Phishing (row 1)
     CHECK(g.lineSelectRow() == 1);

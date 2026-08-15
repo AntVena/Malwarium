@@ -404,21 +404,43 @@ constexpr uint32_t kBandwidthRegenMinutesPerPoint = 2;  // regen +1 / 3 min real
 // it protects the regen LOOP (Game::tick) rather than describing any one food, and a
 // second such dish would be held to the same floor without touching it.
 constexpr uint32_t kBandwidthRegenMinutesFloor = 1;
-constexpr uint32_t kItemFilterHoldMs = 800;   // ms held before A cycles the ITEMS type filter
+// The three screen-level hold gestures, all on B: a tap resolves the focused row as
+// usual and the hold does the thing the SCREEN can do. They share one threshold because
+// they are one gesture wearing three hats — a player who learns the dwell on any of them
+// has learned it everywhere. A is never a hold-to-act button; it is the step, and holding
+// it repeats that step (kListRepeatMs below), which is what keeps the vocabulary uniform.
+constexpr uint32_t kItemFilterHoldMs = 800;   // ITEMS list: cycles the type filter
                                               // (the Rig Shop's Items Type-Tabs unlock gates this)
-// TRAIN move picker: holding A past kMoveFilterHoldMs toggles moveShowAll_ (the
+// TRAIN move picker: holding B past kMoveFilterHoldMs toggles moveShowAll_ (the
 // full roster, including moves the pet can't equip into the focused slot right
-// now) instead of stepping movePick_; a shorter tap still steps as before. No
-// unlock gate, unlike the ITEMS/VAULT hold gestures above.
+// now); a shorter tap still drills into the focused move's detail. No unlock gate,
+// unlike the ITEMS/VAULT hold gestures beside it.
 constexpr uint32_t kMoveFilterHoldMs = 800;
-constexpr uint32_t kBulkOpenHoldMs = 800;     // ms held before B bulk-opens a Hacker VAULT
+constexpr uint32_t kBulkOpenHoldMs = 800;     // Hacker VAULT: bulk-opens the focused
                                               // row's rarity (the Rig Shop's Bulk-Open unlock gates this)
-// THE DECRYPTOGRAM's cursor repeat — the only hold gesture on the device that REPEATS
-// rather than firing once at a threshold, because it is the only place a cursor has
-// thirty-odd stops to walk. Holding A or C past the delay steps every interval until it
-// is released. The delay is long enough that an ordinary tap never triggers it, and the
-// interval is set so a full lap of the longest quote takes a couple of seconds rather
-// than the ten a 4fps heartbeat would cost — which is why this ticks on its own cadence
+// The list step's repeat. A is "next" on every list on the device, and a list long
+// enough to scroll is a list you should not have to tap thirty times to cross — so
+// holding A past the delay keeps stepping until it is released, on every list whose A
+// is a plain step (Game::listRepeatEligible). Slower than the DECRYPTOGRAM's cadence
+// below on purpose: a board cell is one glyph and a list row is a whole line of text
+// that has to be read as it goes past, so this is set to about nine rows a second —
+// fast enough to cross a full bag in a couple of seconds, slow enough to stop on the
+// row you meant. Ticks on its own cadence (Game::tick), not the 4fps heartbeat.
+constexpr uint32_t kListRepeatDelayMs = 400;
+constexpr uint32_t kListRepeatMs = 110;
+// C keeps its tap everywhere — Cancel is the one button whose meaning never bends — so
+// a LIST puts its step BACKWARD on the hold instead: hold C and the cursor walks back
+// up the rows at the same cadence A walks down them, which is how an overshoot is
+// undone without a full lap. The threshold it starts at is kListRepeatDelayMs, the same
+// dwell that starts A's repeat, so the two directions feel like one gesture. A press
+// that never reaches it is an ordinary tap and cancels on release; a press that does
+// has stepped, and its release cancels nothing.
+// THE DECRYPTOGRAM's cursor repeat — the fastest of the two repeats, because it is the
+// only place a cursor has thirty-odd stops to walk and each one is a single letter.
+// Holding A or C past the delay steps every interval until it is released. The delay is
+// long enough that an ordinary tap never triggers it, and the interval is set so a full
+// lap of the longest quote takes a couple of seconds rather than the ten a 4fps
+// heartbeat would cost — which is why this ticks on its own cadence
 // (Game::tick) the way combat's sprites and the Stacker's slide do.
 //
 // The interval sits just inside kStackerStepMs, which is the fastest repaint the panel

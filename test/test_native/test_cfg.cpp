@@ -20,7 +20,7 @@ void test_cfg_uimode_toggle() {
     CHECK(g.nav() == Game::Nav::Detail);
     CHECK(g.cfgScreen() == CfgScreen::Device);
     CHECK(g.uiMode() == UiMode::IconsOnly);       // the live mode changed
-    g.onButton(press(Button::C));                 // and DEVICE backs out to the list
+    tapC(g);                 // and DEVICE backs out to the list
     CHECK(g.nav() == Game::Nav::Submenu);
 }
 
@@ -39,7 +39,7 @@ void test_cfg_travel_confirm_asks_twice() {
     {   // C is the other way out, and equally silent.
         Game g{StartMode::Hatched};
         enterCfgTarget(g, CfgScreen::Travel);
-        g.onButton(press(Button::C));
+        tapC(g);
         CHECK(!g.travelSleepRequested());
         CHECK(g.cfgScreen() == CfgScreen::Device);
     }
@@ -51,7 +51,7 @@ void test_cfg_travel_confirm_asks_twice() {
         CHECK(g.travelSleepRequested());
         // Latched, not a pulse: the device tier is already landing a save and
         // powering the panel down, so nothing here half-cancels it.
-        g.onButton(press(Button::C));
+        tapC(g);
         g.onButton(press(Button::A));
         CHECK(g.travelSleepRequested());
         CHECK(g.cfgScreen() == CfgScreen::Travel);
@@ -99,13 +99,13 @@ void test_cfg_group_back_resumes_row() {
     Game g{StartMode::Hatched};
     enterCfgTarget(g, CfgScreen::PediaAp);        // CFG -> RADIO -> PEDIA AP
     CHECK(g.cfgScreen() == CfgScreen::PediaAp);
-    g.onButton(press(Button::C));                 // no change -> back to RADIO
+    tapC(g);                 // no change -> back to RADIO
     CHECK(g.nav() == Game::Nav::Detail);
     CHECK(g.cfgScreen() == CfgScreen::Radio);
     g.onButton(press(Button::B));                 // B re-opens the SAME row
     CHECK(g.cfgScreen() == CfgScreen::PediaAp);
-    g.onButton(press(Button::C));
-    g.onButton(press(Button::C));                 // RADIO -> the CFG list
+    tapC(g);
+    tapC(g);                 // RADIO -> the CFG list
     CHECK(g.nav() == Game::Nav::Submenu);
 }
 
@@ -314,6 +314,6 @@ void test_cfg_sysinfo_sd_recheck() {
     CHECK(g.sdRecheckRequested());
     CHECK(g.nav() == Game::Nav::Detail);          // ...and stay to watch the SD line
     g.clearSdRecheck();                            // (the device tier's half)
-    g.onButton(press(Button::C));
+    tapC(g);
     CHECK(g.nav() == Game::Nav::Submenu);
 }

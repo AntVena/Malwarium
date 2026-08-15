@@ -516,7 +516,7 @@ void Game::drawSubmenu(Framebuffer& fb) const {
         case SubmenuId::Mods: {
             const Stage st = pet_ ? pet_->stage : Stage::BootSector;
             if (loadoutTab_ == LoadoutTab::Mods) {
-                drawModsList(fb, registry_, loadout_, listRow_);
+                drawModsList(fb, registry_, loadout_, listRow_, beat_);
             } else if (loadoutTab_ == LoadoutTab::Moves) {
                 // #12: each slot's stamped required kind, for the row tags.
                 MoveDef::Kind sk[kMaxMoveSlots];
@@ -616,13 +616,13 @@ void Game::drawDetail(Framebuffer& fb) const {
                                   cur && std::strcmp(cur, modDetailId_) == 0,
                                   modSlot_, modEquipLevel(*md),
                                   combatLevel_, pet_ ? pet_->line : nullptr,
-                                  modStorageCap());
+                                  modStorageCap(), beat_);
                     break;
                 }
             }
             drawModPicker(fb, registry_, loadout_, modSlot_, modPick_,
                           modConfirm_, modConfirmChoice_, modPendingId_, combatLevel_,
-                          pet_ ? pet_->line : nullptr);
+                          pet_ ? pet_->line : nullptr, beat_);
             break;
         case SubmenuId::Games:
             drawArcadeDetail(fb);
@@ -639,7 +639,7 @@ void Game::drawTrain(Framebuffer& fb) const {
             const char* eq = moveLoadout_.equipped(moveSlot_);
             drawMoveDetail(fb, registry_, *m,
                            pet_ ? pet_->stage : Stage::BootSector,
-                           eq && std::strcmp(eq, m->id) == 0, moveProseScroll_);
+                           eq && std::strcmp(eq, m->id) == 0, moveProseScroll_, beat_);
             return;
         }
     }
@@ -647,7 +647,7 @@ void Game::drawTrain(Framebuffer& fb) const {
                    moveConfirm_, moveConfirmChoice_, movePendingId_,
                    pet_ ? pet_->stage : Stage::BootSector,
                    pet_ ? pet_->line : nullptr,
-                   slotRequiredKind(moveSlot_), moveShowAll_);
+                   slotRequiredKind(moveSlot_), moveShowAll_, beat_);
 }
 
 void Game::drawCombatScreen(Framebuffer& fb) const {
@@ -779,7 +779,7 @@ void Game::drawBulkYieldScreen(Framebuffer& fb) const {
         rows[i].count = bulkYieldTally_[i].count;
     }
     drawBulkYield(fb, *bulkYieldCache_, bulkYieldCachesOpened_, bulkYieldBits_, rows, n,
-                 bulkYieldRow_);
+                  bulkYieldRow_, beat_);
 }
 
 void Game::drawStacker(Framebuffer& fb) const {

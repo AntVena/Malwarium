@@ -235,7 +235,7 @@ void test_crew_screen_pick_home_then_enlist() {
 
     // Explore-mode claims A+C for its control overlay, so stop exploring first —
     // the Hacker face is only reachable from a quiet habitat.
-    while (g.nav() != Game::Nav::Idle) g.onButton(press(Button::C));
+    while (g.nav() != Game::Nav::Idle) tapC(g);
     // A running walk claims the A+C chord for its control overlay, so the Hacker face
     // below is unreachable until the walk is put down.
     if (g.exploreActive()) stopExplore(g);
@@ -289,11 +289,11 @@ void test_crew_screen_pick_home_then_enlist() {
     CHECK(g.crewIndex() == -1);
 
     // C steps back up one view at a time, and only leaves the screen from the Hub.
-    g.onButton(press(Button::C));
+    tapC(g);
     CHECK(g.crewView() == Game::CrewView::Team && g.nav() == Game::Nav::Submenu);
-    g.onButton(press(Button::C));
+    tapC(g);
     CHECK(g.crewView() == Game::CrewView::Hub && g.nav() == Game::Nav::Submenu);
-    g.onButton(press(Button::C));
+    tapC(g);
     CHECK(g.nav() == Game::Nav::Cursor);
 }
 
@@ -320,7 +320,7 @@ void test_crew_sides_filter_the_roster() {
     // ...and end to end: the Red row opens Red, and every crew it can reach is Red.
     Game g{StartMode::Hatched};
     g.setHomeNetwork(0x001122334455ull, "HOME_AP");
-    while (g.nav() != Game::Nav::Idle) g.onButton(press(Button::C));
+    while (g.nav() != Game::Nav::Idle) tapC(g);
     g.onButton({Button::A, true, true});
     g.onButton(press(Button::A));
     while (hackerCarouselSlots()[g.cursor()].id != HackerSlotId::Crew)
@@ -340,7 +340,7 @@ void test_crew_sides_filter_the_roster() {
         CHECK(g.activeCrew() && g.activeCrew()->team == CrewTeam::Red);
         g.onButton(press(Button::B));                // resign
         CHECK(g.crewIndex() == -1);
-        g.onButton(press(Button::C));                // back to the side
+        tapC(g);                // back to the side
         g.onButton(press(Button::A));                // next row
     }
 }
@@ -349,7 +349,7 @@ void test_crew_sides_filter_the_roster() {
 // network the verb is the precondition, and B changes nothing.
 void test_crew_detail_gates_enlist_on_the_home_net() {
     Game g{StartMode::Hatched};
-    while (g.nav() != Game::Nav::Idle) g.onButton(press(Button::C));
+    while (g.nav() != Game::Nav::Idle) tapC(g);
     g.onButton({Button::A, true, true});
     g.onButton(press(Button::A));
     while (hackerCarouselSlots()[g.cursor()].id != HackerSlotId::Crew)
@@ -594,7 +594,7 @@ void test_peers_screen_grayscale_live_vs_remembered() {
     uint8_t frame[kPeerHelloSize];
     encodePeerHello(hello, frame, sizeof(frame));
 
-    while (g.nav() != Game::Nav::Idle) g.onButton(press(Button::C));
+    while (g.nav() != Game::Nav::Idle) tapC(g);
     g.onButton({Button::A, true, true});                  // A+C -> hacker face
     g.onButton(press(Button::A));
     while (hackerCarouselSlots()[g.cursor()].id != HackerSlotId::Peers)
@@ -631,7 +631,7 @@ void test_peers_screen_raises_link_without_touching_config() {
     Game g{StartMode::Hatched};
     CHECK(!g.linkEnabled() && !g.linkWanted());           // CFG default: LINK off
 
-    while (g.nav() != Game::Nav::Idle) g.onButton(press(Button::C));
+    while (g.nav() != Game::Nav::Idle) tapC(g);
     g.onButton({Button::A, true, true});                  // A+C -> hacker face
     g.onButton(press(Button::A));
     while (hackerCarouselSlots()[g.cursor()].id != HackerSlotId::Peers)
@@ -645,7 +645,7 @@ void test_peers_screen_raises_link_without_touching_config() {
     CHECK(!g.radioScanWanted());                          // ...and the audit scan is NOT
     CHECK(g.auditMode() == Game::AuditMode::Off);         //     dragged along with it
 
-    g.onButton(press(Button::C));                         // leave PEERS
+    tapC(g);                         // leave PEERS
     CHECK(!g.linkWanted());                               // config-dictated mode restored
 
     // The reverse, too: arming the audit scan must never start announcing.
@@ -661,7 +661,7 @@ void test_crew_screen_raises_scan_without_touching_config() {
     Game g{StartMode::Hatched};
     CHECK(!g.netScanEnabled() && !g.radioScanWanted());   // CFG default: AUDIT off
 
-    while (g.nav() != Game::Nav::Idle) g.onButton(press(Button::C));
+    while (g.nav() != Game::Nav::Idle) tapC(g);
     g.onButton({Button::A, true, true});                  // A+C -> hacker face
     g.onButton(press(Button::A));
     while (hackerCarouselSlots()[g.cursor()].id != HackerSlotId::Crew)
@@ -673,7 +673,7 @@ void test_crew_screen_raises_scan_without_touching_config() {
     CHECK(!g.netScanEnabled());                           // ...but the opt-in is untouched
     CHECK(g.auditMode() == Game::AuditMode::Off);         // ...and capture stays off
 
-    g.onButton(press(Button::C));                         // leave CREW
+    tapC(g);                         // leave CREW
     CHECK(!g.radioScanWanted());                          // config-dictated mode restored
 
     // With AUDIT already on, the screen changes nothing — it only ever raises.
@@ -681,7 +681,7 @@ void test_crew_screen_raises_scan_without_touching_config() {
     CHECK(g.radioScanWanted());
     g.onButton(press(Button::B));
     CHECK(g.radioScanWanted() && g.netScanEnabled());
-    g.onButton(press(Button::C));
+    tapC(g);
     CHECK(g.radioScanWanted() && g.netScanEnabled());
 }
 
@@ -692,7 +692,7 @@ void test_crew_screen_raises_scan_without_touching_config() {
 void test_crew_screen_outlives_the_menu_idle_timer() {
     Game g{StartMode::Hatched};
     uint32_t t = 0;
-    while (g.nav() != Game::Nav::Idle) g.onButton(press(Button::C));
+    while (g.nav() != Game::Nav::Idle) tapC(g);
     g.onButton({Button::A, true, true});                  // A+C -> hacker face
     g.onButton(press(Button::A));
     while (hackerCarouselSlots()[g.cursor()].id != HackerSlotId::Crew)
@@ -719,7 +719,7 @@ void test_crew_screen_outlives_the_menu_idle_timer() {
 void test_peers_screen_outlives_the_menu_idle_timer() {
     Game g{StartMode::Hatched};
     uint32_t t = 0;
-    while (g.nav() != Game::Nav::Idle) g.onButton(press(Button::C));
+    while (g.nav() != Game::Nav::Idle) tapC(g);
     g.onButton({Button::A, true, true});                  // A+C -> hacker face
     g.onButton(press(Button::A));
     while (hackerCarouselSlots()[g.cursor()].id != HackerSlotId::Peers)

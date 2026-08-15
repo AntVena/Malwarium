@@ -255,7 +255,7 @@ void test_isolation_crash_banks_a_minute_per_byte() {
     CHECK(!g.isolation().running());
     const int dots = g.isolation().dots();
     CHECK(g.bootHatchRemainMs() == kBootHatchMs);  // nothing spent until it is banked
-    g.onButton(press(Button::C));                  // C is disabled on the verdict
+    tapC(g);                  // C is disabled on the verdict
     CHECK(g.nav() == Game::Nav::Isolation);
     g.onButton(press(Button::B));
     CHECK(g.nav() == Game::Nav::Idle);
@@ -274,7 +274,7 @@ void test_isolation_clean_run_hatches_and_unlocks() {
     for (int guard = 0; guard < 20000 && g.isolation().running(); ++guard) {
         const int turn = isoCycleTurn(g.isolation().head(), g.isolation().dir());
         if (turn < 0) g.onButton(press(Button::A));
-        else if (turn > 0) g.onButton(press(Button::C));
+        else if (turn > 0) tapC(g);
         g.tick(t += kIsolationStepMs);
     }
     CHECK(g.isolation().clean());

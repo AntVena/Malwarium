@@ -417,7 +417,7 @@ void test_network_discovery_empty_queue_penalty_throttles() {
                 g.onButton(press(Button::A));   // Flee -> Sinkhole
                 g.onButton(press(Button::B));   // confirm -> back to idle
             } else if (g.nav() == Game::Nav::Shop || g.nav() == Game::Nav::ModShop) {
-                g.onButton(press(Button::C));   // leave the shop -> back to idle
+                tapC(g);   // leave the shop -> back to idle
             } else if (g.nav() == Game::Nav::Combat) {
                 uint32_t t = 0;
                 for (int j = 0; j < 800 &&

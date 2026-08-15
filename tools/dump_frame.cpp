@@ -207,6 +207,16 @@ int main(int argc, char** argv) {
     // Daemon (pet:wire_heir) for the deepest LOADOUT page the game can produce.
     if (hasFlag(argc, argv, "fullkit")) game.debugFillLoadout();
 
+    // A COMPLETE press — down and up. Four screens read B as a tap/hold pair and every
+    // LIST reads C as one (Game::listBackStep), so on those a press edge alone only
+    // ARMS the gesture and settles nothing: a scene that drills in with a bare press
+    // silently renders the screen ABOVE the one it named. Everywhere else the release
+    // is inert, so scenes can reach for this by default and only send a bare press when
+    // they mean to drive a hold.
+    auto tap = [&](Button b) {
+        game.onButton({b, true, false});
+        game.onButton({b, false, false});
+    };
     // Apply navigation AFTER ticking so the 5s auto-defocus timer (which keys off
     // the last tick) doesn't collapse the menu before we render it.
     auto enterSlot = [&](SubmenuId id) {           // A to walk the cursor, then B
@@ -534,10 +544,12 @@ int main(int argc, char** argv) {
         // cursor onto a real move row (row 0 is unequip); movedetail → drill into that
         // move's own entry (L4).
         if (hasFlag(argc, argv, "trainpicker") || hasFlag(argc, argv, "movedetail")) {
-            game.onButton({Button::B, true, false});
+            game.onButton({Button::B, true, false});   // slot list -> the picker
             if (hasFlag(argc, argv, "focus") || hasFlag(argc, argv, "movedetail"))
                 game.onButton({Button::A, true, false});
-            if (hasFlag(argc, argv, "movedetail")) game.onButton({Button::B, true, false});
+            // The picker's B is a tap/hold pair (hold reveals the full roster), so the
+            // drill-in needs the release edge to read as a tap.
+            if (hasFlag(argc, argv, "movedetail")) tap(Button::B);
         }
     } else if (hasFlag(argc, argv, "simbattle")) {
         enterSlot(SubmenuId::Mods);

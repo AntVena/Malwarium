@@ -35,7 +35,7 @@ void test_backup_drive_save_not_spent_in_sim_battle() {
     // Consuming the last Backup Drive drops useItem() into Nav::Submenu (the ITEMS
     // "item left the list" case) — back out to the carousel before enterSimBattle's
     // TRAIN walk, which assumes it's starting from the carousel/idle layer.
-    g.onButton(press(Button::C));
+    tapC(g);
     enterSimBattle(g);
     // A Sim Battle deliberately fights WITHOUT the save: no stakes means no death to be
     // saved from, so a training bout must never burn a Rare item (Game::startSimBattle).
@@ -131,7 +131,7 @@ void test_rollback_item() {
       g.inventory().add("rollback", 1);
       g.debugUseItem("rollback");
       CHECK(g.nav() == Game::Nav::RollbackPicker);
-      g.onButton(press(Button::C));
+      tapC(g);
       CHECK(g.combatLevel() == 1);
       CHECK(g.inventory().count("rollback") == 1); }
 }
@@ -700,13 +700,13 @@ void test_move_evolution_gating() {
     enterLoadoutTab(g, 1);
     g.onButton(press(Button::B));                 // open slot 0 picker
     g.onButton(press(Button::A));                 // filtered list is just [unequip]; A stays put
-    g.onButton(press(Button::B));                 // B on [unequip] clears the slot -> Submenu
+    tapB(g);                                      // B on [unequip] clears the slot -> Submenu
     CHECK(g.moveLoadout().equipped(0) == nullptr);
 
     g.onButton(press(Button::B));                 // re-open slot 0 picker (resets moveShowAll_)
     g.debugSetMoveShowAll(true);                  // reveal the locked row for this check
     g.onButton(press(Button::A));                 // pick row 1 = payload_drop (locked at Boot)
-    g.onButton(press(Button::B));                 // drill in — the page states the gate
+    tapB(g);                                      // drill in — the page states the gate
     g.onButton(press(Button::B));                 // attempt equip → blocked (no-op)
     CHECK(g.moveLoadout().equipped(0) == nullptr);
 }
@@ -799,7 +799,7 @@ void test_move_slot_type_lock() {
     g.onButton(press(Button::B));                     // open slot 2's picker (row0 = unequip)
     CHECK(g.nav() == Game::Nav::Detail);
     g.onButton(press(Button::A));                     // row0 -> row1 (aes_lockbox)
-    g.onButton(press(Button::B));                     // drill into its detail page
+    tapB(g);                                          // drill into its detail page
     g.onButton(press(Button::B));                      // equip — no confirm (slot was empty)
     CHECK(std::strcmp(g.moveLoadout().equipped(2), "aes_lockbox") == 0);
 }
@@ -1022,7 +1022,7 @@ void test_move_loadout_persist() {
         g.onButton(press(Button::B));              // open slot 2 picker
         g.onButton(press(Button::A));              // unequip -> aes_lockbox
         g.onButton(press(Button::A));              // -> rsa_vault (a different move)
-        g.onButton(press(Button::B));              // drill into its detail page
+        tapB(g);                                   // drill into its detail page
         g.onButton(press(Button::B));              // equip -> hands back the overwrite confirm
         g.onButton(press(Button::A));              // Cancel -> Confirm
         g.onButton(press(Button::B));              // commit
@@ -1129,7 +1129,7 @@ void test_csf_fires_and_archives() {
     g.tick(t += kCsfDyingGraceMs);                    // window expires -> CSF
     CHECK(g.nav() == Game::Nav::ModalCSF);
     CHECK(g.recordCount() == 0);                      // not archived until acknowledged
-    g.onButton(press(Button::C));                     // C disabled
+    tapC(g);                     // C disabled
     CHECK(g.nav() == Game::Nav::ModalCSF);
     g.onButton(press(Button::B));                     // B gated until the crash holds
     CHECK(g.nav() == Game::Nav::ModalCSF);
@@ -1325,7 +1325,7 @@ void test_arch_record_readonly() {
     CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));
     g.onButton(press(Button::A));                     // no actions on a record
     CHECK(g.nav() == Game::Nav::Detail);
-    g.onButton(press(Button::C));                     // C backs to the list
+    tapC(g);                     // C backs to the list
     CHECK(g.nav() == Game::Nav::Submenu);
 }
 

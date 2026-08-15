@@ -143,10 +143,11 @@ void drawLoadout(Framebuffer& fb, const ContentRegistry& reg,
 void drawMovePicker(Framebuffer& fb, const ContentRegistry& reg,
                     const MoveLoadout& load, int slot, int pick, bool confirmActive,
                     int confirmChoice, const char* pendingId, Stage petStage,
-                    const char* petLine, MoveDef::Kind requiredKind, bool showAll) {
+                    const char* petLine, MoveDef::Kind requiredKind, bool showAll,
+                    int beat) {
     // #12: the slot's type-lock is right in the header — "SLOT 2 - DEF" — so the
     // player knows why the list only shows one kind before they even scroll it.
-    // showAll (hold A) appends " ALL" — the word is the channel, grayscale-safe.
+    // showAll (hold B) appends " ALL" — the word is the channel, grayscale-safe.
     char title[20];
     std::snprintf(title, sizeof(title), "SLOT %d - %s%s", slot + 1,
                   moveKindTag(requiredKind), showAll ? " ALL" : "");
@@ -171,13 +172,7 @@ void drawMovePicker(Framebuffer& fb, const ContentRegistry& reg,
     // directly above a description that had nowhere to go.
     const int rowH = 18, rowTop = 26;
     const int visibleRows = std::min(rows, kMovePickerMaxRows);
-    int scrollTop = 0;
-    if (rows > kMovePickerMaxRows) {
-        if (pick < scrollTop) scrollTop = pick;
-        if (pick >= scrollTop + kMovePickerMaxRows)
-            scrollTop = pick - kMovePickerMaxRows + 1;
-        scrollTop = std::max(0, std::min(scrollTop, rows - kMovePickerMaxRows));
-    }
+    const int scrollTop = listScrollTop(pick, rows, kMovePickerMaxRows);
     for (int v = 0; v < visibleRows && scrollTop + v < rows; ++v) {
         const int i = scrollTop + v;
         const int y = rowTop + v * rowH;
@@ -198,26 +193,31 @@ void drawMovePicker(Framebuffer& fb, const ContentRegistry& reg,
         const bool inOtherSlot = elsewhere >= 0 && elsewhere != slot;
         const bool aboveStage = !moveUnlockedAtStage(*m, petStage);
         const bool locked = aboveStage || inOtherSlot;
-        drawText(fb, 22, y + 4, m->displayName,
-                 locked ? palColor(Pal::INK_DIM) : palColor(Pal::INK));
+        // Whatever the row's right column is — the reason it is locked, or the kind tag
+        // (with an ON marker when it is the move already in this slot) — is what the row
+        // cannot lose. The name yields to it and scrolls (drawLabelValue): a move name
+        // drawn at full width runs straight under a tag as wide as "EVO SCRIPT".
+        char lk[20];
+        Rgb565 tagCol = palColor(Pal::INK_DIM);
+        const char* tag = lk;
         if (inOtherSlot) {
-            char lk[10];
             std::snprintf(lk, sizeof(lk), "SLOT %d", elsewhere + 1);
-            drawText(fb, kActiveW - kMargin - textWidth(lk), y + 4, lk,
-                     palColor(Pal::INK_DIM));
         } else if (aboveStage) {
-            char lk[16];
             std::snprintf(lk, sizeof(lk), "EVO %s", stageName(m->minStage));
-            drawText(fb, kActiveW - kMargin - textWidth(lk), y + 4, lk,
-                     palColor(Pal::INK_DIM));
         } else {
-            drawText(fb, kActiveW - kMargin - textWidth(moveKindTag(m->kind)), y + 4,
-                     moveKindTag(m->kind), palColor(Pal::ACCENT));
-            if (equippedHere && std::strcmp(equippedHere, m->id) == 0)
-                drawText(fb, kActiveW - kMargin - textWidth(moveKindTag(m->kind)) - 4 -
-                                 textWidth("ON"),
-                         y + 4, "ON", palColor(Pal::CALM));
+            tagCol = palColor(Pal::ACCENT);
+            tag = moveKindTag(m->kind);
+            if (equippedHere && std::strcmp(equippedHere, m->id) == 0) {
+                // ON rides in front of the kind tag rather than beside it, so the pair
+                // is one right-hand column the name can measure against.
+                std::snprintf(lk, sizeof(lk), "ON %s", moveKindTag(m->kind));
+                tag = lk;
+                tagCol = palColor(Pal::CALM);
+            }
         }
+        drawLabelValue(fb, 22, y + 4, m->displayName,
+                       locked ? palColor(Pal::INK_DIM) : palColor(Pal::INK),
+                       tag, tagCol, beat, i == pick);
     }
     if (rows > kMovePickerMaxRows) {   // UI_SCROLLBAR (mirrors drawItemsList)
         const int barX = kActiveW - 3;
@@ -302,16 +302,18 @@ int moveProseLines(const MoveDef& m) {
 }
 
 void drawMoveDetail(Framebuffer& fb, const ContentRegistry& reg, const MoveDef& m,
-                    Stage petStage, bool equippedHere, int proseScroll) {
+                    Stage petStage, bool equippedHere, int proseScroll, int beat) {
     drawHeaderBand(fb, "MOVE");
 
     // Icon + name + kind tag. Most moves have no glyph yet, so the name only indents
-    // when there is actually art to indent past (mirrors drawModDetail's nameX).
+    // when there is actually art to indent past (mirrors drawModDetail's nameX). The
+    // kind tag owns the right end and the name yields to it, as on every other detail
+    // page — the longest shipped move name is wider than what is left beside it.
     const SpriteData* ic = moveIcon(reg, m.id);
     if (ic) drawSprite(fb, *ic, 0, kMargin, 30);
-    drawText(fb, ic ? kMargin + 26 : kMargin, 36, m.displayName, palColor(Pal::INK));
-    drawText(fb, kActiveW - kMargin - textWidth(moveKindTag(m.kind)), 36,
-             moveKindTag(m.kind), palColor(Pal::ACCENT));
+    drawLabelValue(fb, ic ? kMargin + 26 : kMargin, 36, m.displayName,
+                   palColor(Pal::INK), moveKindTag(m.kind), palColor(Pal::ACCENT),
+                   beat, true);
     const bool locked = !moveUnlockedAtStage(m, petStage);
 
     const SpecRows spec = specRows(m);

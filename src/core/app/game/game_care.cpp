@@ -280,7 +280,10 @@ void Game::onModsList(const ButtonEvent& ev) {
 }
 
 void Game::onModPicker(const ButtonEvent& ev) {
-    const auto owned = ownedModList(registry_, loadout_);
+    // The same five arguments drawModPicker draws with, so the cursor indexes the rows
+    // the player is looking at — fittable mods first, locked ones after them.
+    const auto owned = ownedModList(registry_, loadout_, combatLevel_,
+                                    pet_ ? pet_->line : nullptr, modSlot_);
     const int rows = static_cast<int>(owned.size());      // available spares to install
 
     if (modConfirm_) {                                    // inline overwrite confirm

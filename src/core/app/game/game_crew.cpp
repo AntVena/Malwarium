@@ -58,10 +58,6 @@ namespace {
 // beneath it; six of them clear the body between the header rule and the hint band.
 constexpr int kNetRowPitch = kFontH + 14;
 constexpr int kNetVisibleRows = 6;
-// Sized to hold a full in-range snapshot, so the window on this list is the screen's
-// six rows and never a silent truncation of what the radio heard.
-constexpr int kNetMaxRows = kNetVisibleCap;
-
 constexpr int kGlyph = 16;   // ICON_TEAM_RED / ICON_TEAM_BLUE are 16x16
 
 // --- The Hub ---------------------------------------------------------------

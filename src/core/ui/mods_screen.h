@@ -30,15 +30,33 @@ inline constexpr int kLoadoutHubRows = 3;
 void drawLoadoutHub(Framebuffer& fb, const Loadout& load, const MoveLoadout& moves,
                     Stage stage, int cursor, int beat);
 
-// Owned mods in a stable display order (registry order, filtered to owned). The
-// picker rows are this list, prefixed by the "— empty (unequip) —" option.
-std::vector<const ModDef*> ownedModList(const ContentRegistry& reg,
-                                        const Loadout& load);
+// Owned mods in picker order: the ones that can go in `slot` RIGHT NOW first, then the
+// ones that can't, each half in registry order. Nothing is hidden — a mod the pet has
+// not levelled into is the reason to keep levelling, and dropping it from the list
+// would drop the only place that reason is ever stated — but it stops sitting between
+// the player and the mods they can actually fit, which on a grown pool is most of them.
+// `petLevel` / `petLine` / `slot` are the same three gates the rows draw with
+// (drawModPicker), so the order can never disagree with the LOCKED tag beside it.
+//
+// The Game's picker cursor indexes THIS list (Game::onModPicker), so both callers must
+// pass the same three arguments — an order the cursor and the rows disagree about is a
+// mod equipped by pointing at a different one.
+std::vector<const ModDef*> ownedModList(const ContentRegistry& reg, const Loadout& load,
+                                        int petLevel, const char* petLine, int slot);
+
+// True if `m` is blocked from `slot` on this pet right now — its rolled equip level is
+// above `petLevel`, it wants a line the pet doesn't carry, or the pet already has it in
+// a different slot. The one answer the ordering above, the row's dim + reason tag, and
+// the picker's verdict line all read, so a mod can never sort as available and then
+// draw as LOCKED.
+bool modLockedFor(const ModDef& m, int petLevel, const char* petLine,
+                  const Loadout& load, int slot);
 
 // L2 equip-slot list: one row per slot, showing the equipped mod + effect tag
-// (or "— empty —"). `cursor` is the focused slot.
+// (or "— empty —"). `cursor` is the focused slot; `beat` scrolls the focused row's name
+// when it is too long to sit beside its tag.
 void drawModsList(Framebuffer& fb, const ContentRegistry& reg,
-                  const Loadout& load, int cursor);
+                  const Loadout& load, int cursor, int beat);
 
 // L3 mod picker for `slot`: the available (un-equipped) mods, the focused mod's
 // effect text below, and an inline overwrite confirm (D3) when the slot
@@ -53,11 +71,15 @@ void drawModsList(Framebuffer& fb, const ContentRegistry& reg,
 // a mod under the pet's level shows LOCKED — NEEDS LVL n (a number
 // channel, grayscale-safe), and equip is blocked in the Game. `petLine` is the active
 // pet's CreatureDef::line (or nullptr) — gates a mod carrying ModDef::requiresLine
-// (niche-flavour pass), shown as LOCKED — WRONG LINE.
+// (niche-flavour pass), shown as LOCKED — WRONG LINE. Rows are ordered fittable-first
+// (ownedModList), so the mods that can go in this slot are the ones the cursor reaches
+// first. `beat` drives the focused row's name marquee — a mod name too long to sit
+// beside its right-hand tag scrolls within the room it has instead of printing through
+// it, and only the focused row travels.
 void drawModPicker(Framebuffer& fb, const ContentRegistry& reg,
                    const Loadout& load, int slot, int pick, bool confirmActive,
                    int confirmChoice, const char* pendingId, int petLevel,
-                   const char* petLine);
+                   const char* petLine, int beat);
 
 // L4 mod detail: the read-then-act inspector reached by selecting a mod
 // in the picker — mirrors drawItemDetail. Shows the icon + name, the held spare
@@ -80,6 +102,7 @@ int modDetailProseLines();
 
 void drawModDetail(Framebuffer& fb, const ContentRegistry& reg, const Loadout& load,
                    const ModDef& mod, bool equippedHere, int slot,
-                   int reqLevel, int petLevel, const char* petLine, int storageCap);
+                   int reqLevel, int petLevel, const char* petLine, int storageCap,
+                   int beat);
 
 } // namespace mal

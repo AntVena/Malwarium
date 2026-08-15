@@ -173,7 +173,7 @@ void test_maint_flow() {
     CHECK(g.nav() == Game::Nav::Process);
 
     // C is ignored while the process runs (non-interruptible).
-    g.onButton(press(Button::C));
+    tapC(g);
     CHECK(g.nav() == Game::Nav::Process);
 
     for (int i = 1; i <= kProcessBeats + 1; ++i)
@@ -268,9 +268,9 @@ void test_defrag_count_freeze_thaw() {
     for (int i = 1; i <= kProcessBeats + 1; ++i) g.tick(t += kHeartbeatMs);
     CHECK(g.defragCount() == 1);                       // Paypup: one defrag
     g.onButton(press(Button::B));                      // dismiss outcome -> action
-    g.onButton(press(Button::C));                      // action -> MAINT list
-    g.onButton(press(Button::C));                      // list -> carousel
-    g.onButton(press(Button::C));                      // carousel -> idle habitat
+    tapC(g);                      // action -> MAINT list
+    tapC(g);                      // list -> carousel
+    tapC(g);                      // carousel -> idle habitat
 
     g.debugSeedRack("cryptoshell");                    // a stored pet at rack row 1
     auto deployRow1 = [](Game& gg) {                   // Deploy the rack-row-1 pet
@@ -825,7 +825,7 @@ void test_tiramisudo_upgrade_survives_the_rack() {
     // Using a food parks on the feeding modal; the ARCH walk below starts from the
     // carousel, so back out first. Bounded, so a nav change can't hang the gate.
     for (int i = 0; i < 4 && g.nav() != Game::Nav::Idle; ++i)
-        g.onButton(press(Button::C));
+        tapC(g);
 
     g.debugSeedRack("cryptoshell");
     enterSubmenuId(g, SubmenuId::Arch);

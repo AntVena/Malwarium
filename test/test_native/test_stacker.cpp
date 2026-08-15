@@ -279,7 +279,7 @@ void test_stacker_stopping_early_banks_the_board() {
     CHECK(g.stacker().running());
     const int worth = g.stacker().score() / kStackerScorePerFrag;
     CHECK(worth > 0);
-    g.onButton(press(Button::C));
+    tapC(g);
     CHECK(g.model().fragmentation() == 70 - worth);
     CHECK(g.model().careMistakes() == 0);
     CHECK(g.stackerWins() == 0);

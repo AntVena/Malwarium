@@ -450,14 +450,21 @@ int g_failures = 0;
     RUN(test_hacker_shop_item_tabs_buy)           \
     RUN(test_hacker_shop_bulk_open_buy)           \
     RUN(test_item_filter_narrows_rows)            \
-    RUN(test_item_hold_a_cycles_filter_tap_steps) \
+    RUN(test_item_hold_b_cycles_filter_tap_opens) \
     RUN(test_hacker_shop_item_picker_buy)         \
     RUN(test_item_category_filters_split_quest)   \
     RUN(test_item_picker_tiles_count_units)       \
     RUN(test_item_picker_grayscale)               \
     RUN(test_item_picker_nav_drills_in_and_back)  \
     RUN(test_item_picker_skipped_in_lockout)      \
-    RUN(test_item_hold_a_follows_picker_axis)     \
+    RUN(test_item_hold_b_follows_picker_axis)     \
+    /* The shared list-navigation contract (game_listnav.cpp) */ \
+    RUN(test_list_hold_a_repeats_the_step)        \
+    RUN(test_list_hold_c_steps_back_tap_cancels)  \
+    RUN(test_list_contract_skips_non_lists)       \
+    RUN(test_mod_picker_orders_fittable_first)    \
+    RUN(test_mod_picker_cursor_matches_drawn_order) \
+    RUN(test_list_rows_leave_room_for_the_name)   \
     RUN(test_vault_bulk_open_consumes_all_of_rarity) \
     RUN(test_vault_hold_b_bulk_opens_tap_opens_one) \
     RUN(test_ap_toggle_via_cfg_and_persist)       \

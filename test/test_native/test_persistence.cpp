@@ -17,12 +17,12 @@ void test_loadout_expl_nav() {
       g.onButton(press(Button::B));                  // slot 1 -> move picker
       CHECK(g.nav() == Game::Nav::Detail);
       g.render(fb); CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));
-      g.onButton(press(Button::C));                  // back to the slot list
+      tapC(g);                  // back to the slot list
       CHECK(g.nav() == Game::Nav::Submenu);
-      g.onButton(press(Button::C));                  // back to the hub — still L2
+      tapC(g);                  // back to the hub — still L2
       CHECK(g.nav() == Game::Nav::Submenu);
       g.render(fb); CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));
-      g.onButton(press(Button::C));
+      tapC(g);
       CHECK(g.nav() == Game::Nav::Cursor); }
 
     // PRACTISE has no list of its own: the hub row opens straight into the tier pick
@@ -30,9 +30,9 @@ void test_loadout_expl_nav() {
     { Game g{StartMode::Hatched}; enterLoadoutTab(g, 2);
       CHECK(g.nav() == Game::Nav::Detail);
       g.render(fb); CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));
-      g.onButton(press(Button::C));
+      tapC(g);
       CHECK(g.nav() == Game::Nav::Submenu);
-      g.onButton(press(Button::C));
+      tapC(g);
       CHECK(g.nav() == Game::Nav::Cursor); }
 
     // EXPL: the NESTED area/sub-area list. Areas are LINEAR complete-to-

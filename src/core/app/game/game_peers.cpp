@@ -39,9 +39,6 @@ namespace {
 // rule, leaving room for the hint band.
 constexpr int kPeerBlockH = kLineH * 3 + 6;
 constexpr int kPeerVisibleRows = 3;
-// The window on the merged list. Everyone in range plus everyone ever met, so the
-// screen's three rows are a window on the list rather than a silent truncation.
-constexpr int kPeerMaxRows = 64;
 }  // namespace
 
 // --- The LINK opt-in ---------------------------------------------------------

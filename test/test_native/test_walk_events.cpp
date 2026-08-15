@@ -216,7 +216,7 @@ static void walkToShopNav(Game& g, Game::Nav stopAt) {
             case Game::Nav::Wifi: g.onButton(press(Button::B)); break;
             case Game::Nav::Shop:
             case Game::Nav::ModShop:
-                g.onButton(press(Button::C));   // the OTHER shop kind -> leave, keep stepping
+                tapC(g);   // the OTHER shop kind -> leave, keep stepping
                 break;
             case Game::Nav::Combat:
                 for (int j = 0; j < 800 &&
@@ -258,7 +258,7 @@ void test_shop_event_buy_decrements() {
     CHECK(g.nav() == Game::Nav::Shop);               // still open
     CHECK(g.log().size() >= 1 &&
           g.log().at(0).type == LogEventType::ItemGained);
-    g.onButton(press(Button::C));                    // leave -> back to the habitat
+    tapC(g);                    // leave -> back to the habitat
     CHECK(g.nav() == Game::Nav::Idle);
 }
 
@@ -429,8 +429,8 @@ static void walkToCache(Game& g) {
                 g.onButton(press(Button::B));   // confirm -> back to idle
                 break;
             case Game::Nav::Wifi: g.onButton(press(Button::B)); break;
-            case Game::Nav::Shop: g.onButton(press(Button::C)); break;
-            case Game::Nav::ModShop: g.onButton(press(Button::C)); break;
+            case Game::Nav::Shop: tapC(g); break;
+            case Game::Nav::ModShop: tapC(g); break;
             case Game::Nav::Combat:
                 for (int j = 0; j < 800 &&
                         g.combat().outcome() == Combat::Outcome::Ongoing; ++j)
@@ -745,8 +745,8 @@ void test_warp_key_walk_find() {
                 g.onButton(press(Button::B));        // confirm -> back to idle
                 break;
             case Game::Nav::Wifi: g.onButton(press(Button::B)); break;
-            case Game::Nav::Shop: g.onButton(press(Button::C)); break;
-            case Game::Nav::ModShop: g.onButton(press(Button::C)); break;
+            case Game::Nav::Shop: tapC(g); break;
+            case Game::Nav::ModShop: tapC(g); break;
             case Game::Nav::Combat:
                 for (int j = 0; j < 800 &&
                         g.combat().outcome() == Combat::Outcome::Ongoing; ++j)

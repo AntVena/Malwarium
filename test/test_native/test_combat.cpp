@@ -21,9 +21,9 @@ void test_arch_list_and_record() {
     CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));    // record reads in grayscale
     g.onButton(press(Button::A));                       // cycle Store -> Sell (inert)
     CHECK(g.nav() == Game::Nav::Detail);                // still on the record
-    g.onButton(press(Button::C));                       // back to the rack
+    tapC(g);                       // back to the rack
     CHECK(g.nav() == Game::Nav::Submenu);
-    g.onButton(press(Button::C));                       // back to the carousel
+    tapC(g);                       // back to the carousel
     CHECK(g.nav() == Game::Nav::Cursor);
 }
 
@@ -360,7 +360,7 @@ void test_mods_equip_flow() {
     CHECK(hasDarkInk(det, 0, 0, kActiveW, kActiveH));    // detail grayscale
     CHECK(g.loadout().equipped(2) == nullptr);          // inspecting equips nothing yet
     // C backs out of the detail to the picker without equipping.
-    g.onButton(press(Button::C));
+    tapC(g);
     CHECK(g.nav() == Game::Nav::Detail && g.loadout().equipped(2) == nullptr);
     g.onButton(press(Button::B));                  // re-open detail
     g.onButton(press(Button::B));                  // EQUIP from the detail
@@ -420,10 +420,10 @@ void test_mod_detail_oneshot() {
     Loadout load;
     drawModDetail(os, r, load, *oneShot, /*equippedHere=*/false, /*slot=*/2,
                   /*reqLevel=*/0, /*petLevel=*/0, /*petLine=*/nullptr,
-                  /*storageCap=*/kModCopyCapBase);
+                  /*storageCap=*/kModCopyCapBase, /*beat=*/0);
     drawModDetail(ru, r, load, *reuse, /*equippedHere=*/false, /*slot=*/2,
                   /*reqLevel=*/0, /*petLevel=*/0, /*petLine=*/nullptr,
-                  /*storageCap=*/kModCopyCapBase);
+                  /*storageCap=*/kModCopyCapBase, /*beat=*/0);
     CHECK(anyNonPaper(os, 0, 0, kActiveW, kActiveH));     // renders
     // The ONE-SHOT line sits alone at y~130; present (non-paper ink) for the one-shot,
     // blank (all paper) for the reusable mod (whose effect text ends well above it).
@@ -1437,7 +1437,8 @@ void test_mod_picker_windows_large_pool() {
     CHECK(allMods.size() > 6);                  // the pool this test needs to overflow
     for (const ModDef* m : allMods) load.grant(m->id, kModCopyCapBase);  // one spare each
 
-    const auto owned = ownedModList(r, load);
+    const auto owned = ownedModList(r, load, /*petLevel=*/99, /*petLine=*/nullptr,
+                                    /*slot=*/0);
     const int lastPick = static_cast<int>(owned.size()) - 1;
     CHECK(lastPick >= 6);
 
@@ -1447,7 +1448,7 @@ void test_mod_picker_windows_large_pool() {
     // nowhere near the visible list.
     Framebuffer last(kActiveW, kActiveH);
     drawModPicker(last, r, load, /*slot=*/0, lastPick, /*confirmActive=*/false,
-                  0, nullptr, /*petLevel=*/99, /*petLine=*/nullptr);
+                  0, nullptr, /*petLevel=*/99, /*petLine=*/nullptr, /*beat=*/0);
     bool cursorInWindow = false;
     for (int y = 22; y < 150 && !cursorInWindow; ++y)
         for (int x = 6; x < 20; ++x)
@@ -1458,14 +1459,14 @@ void test_mod_picker_windows_large_pool() {
     // picker focused on the first mod renders differently from the one focused
     // on the last mod (different rows are on screen).
     Framebuffer first(kActiveW, kActiveH);
-    drawModPicker(first, r, load, 0, 0, false, 0, nullptr, 99, nullptr);
+    drawModPicker(first, r, load, 0, 0, false, 0, nullptr, 99, nullptr, 0);
     CHECK(!fbEqual(first, last));
 
     // (c) The invariant holds across the whole pool, not just at the last index:
     // for every pick value the row-cursor triangle stays inside the window.
     for (int pick = 0; pick <= lastPick; pick += 3) {
         Framebuffer fb(kActiveW, kActiveH);
-        drawModPicker(fb, r, load, 0, pick, false, 0, nullptr, 99, nullptr);
+        drawModPicker(fb, r, load, 0, pick, false, 0, nullptr, 99, nullptr, 0);
         bool inWindow = false;
         for (int y = 22; y < 150 && !inWindow; ++y)
             for (int x = 6; x < 20; ++x)

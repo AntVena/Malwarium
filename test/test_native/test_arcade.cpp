@@ -29,7 +29,7 @@ void test_arcade_pays_the_attempt() {
     g.onButton(press(Button::B));                 // START
     CHECK(g.nav() == Game::Nav::Stacker);
     CHECK(g.inArcadeRun());
-    g.onButton(press(Button::C));                 // stop on row 0 — nothing banked
+    tapC(g);                 // stop on row 0 — nothing banked
 
     CHECK(g.nav() == Game::Nav::ArcadeResult);
     CHECK(!g.inArcadeRun());
@@ -182,7 +182,7 @@ void test_arcade_ladders_split_plays_wins_losses() {
     // A run abandoned on the first row: a play and a loss, and not a win.
     enterArcadeCabinet(g, row, ArcadeDifficulty::Medium);
     g.onButton(press(Button::B));
-    g.onButton(press(Button::C));
+    tapC(g);
     g.onButton(press(Button::B));                 // dismiss the payout
     g.tick(kAchSweepIntervalMs + 1);
     CHECK(g.hasAchievement("ARCADE_FIRST"));      // the plays ladder moved

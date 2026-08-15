@@ -53,13 +53,13 @@ void test_battle_fatigue() {
                     break;
                 }
                 case Game::Nav::Wifi: g.onButton(press(Button::B)); break;
-                case Game::Nav::Shop: g.onButton(press(Button::C)); break;
-                case Game::Nav::ModShop: g.onButton(press(Button::C)); break;
+                case Game::Nav::Shop: tapC(g); break;
+                case Game::Nav::ModShop: tapC(g); break;
                 case Game::Nav::Idle:
                     if (g.exploreActive()) pingExplore(g);   // fire the next event
                     else guard = 400;                        // explore ended (a loss) → stop
                     break;
-                default: g.onButton(press(Button::C)); break;  // dismiss in-place events
+                default: tapC(g); break;  // dismiss in-place events
             }
         }
         CHECK(wilds >= 3);                               // actually fought several wilds
@@ -102,10 +102,10 @@ void test_explore_every_step_is_an_event() {
         } else {
             // Dismiss whatever full-screen event we landed on, back to Idle.
             switch (g.nav()) {
-                case Game::Nav::Encounter: g.onButton(press(Button::C)); break;  // flee
+                case Game::Nav::Encounter: tapC(g); break;  // flee
                 case Game::Nav::Wifi:      g.onButton(press(Button::B)); break;
-                case Game::Nav::Shop:      g.onButton(press(Button::C)); break;
-                case Game::Nav::ModShop:      g.onButton(press(Button::C)); break;
+                case Game::Nav::Shop:      tapC(g); break;
+                case Game::Nav::ModShop:      tapC(g); break;
                 case Game::Nav::Combat:
                     for (int j = 0; j < 400 &&
                             g.combat().outcome() == Combat::Outcome::Ongoing; ++j)
@@ -216,7 +216,7 @@ void test_post_encounter_reports_bandwidth_shield() {
     g.render(fb);
     CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));
     // Any button dismisses early, straight back to the habitat (explore-mode live).
-    g.onButton(press(Button::C));
+    tapC(g);
     CHECK(g.nav() == Game::Nav::Idle);
     CHECK(g.exploreActive());
 }
@@ -490,8 +490,8 @@ static void clearSubArea(Game& g, int area, int sub) {
                 break;
             case Game::Nav::Encounter: g.onButton(press(Button::B)); break;  // Fight
             case Game::Nav::Wifi: g.onButton(press(Button::B)); break;
-            case Game::Nav::Shop: g.onButton(press(Button::C)); break;
-            case Game::Nav::ModShop: g.onButton(press(Button::C)); break;
+            case Game::Nav::Shop: tapC(g); break;
+            case Game::Nav::ModShop: tapC(g); break;
             case Game::Nav::Combat:
                 for (int j = 0; j < 800 &&
                         g.combat().outcome() == Combat::Outcome::Ongoing; ++j)
@@ -536,7 +536,7 @@ static void runWalkUntil(Game& g, F done) {
                 g.onButton(press(Button::B));
                 break;
             case Game::Nav::Shop:
-            case Game::Nav::ModShop: g.onButton(press(Button::C)); break;
+            case Game::Nav::ModShop: tapC(g); break;
             default: g.onButton(press(Button::B)); break;
         }
     }
@@ -818,9 +818,9 @@ void test_expl_nested_list_nav() {
     { Game g{StartMode::Hatched, "bruinforce"};
       enterSubmenuId(g, SubmenuId::Expl);
       g.onButton(press(Button::B));                 // drill into area 0
-      g.onButton(press(Button::C));                 // C → back to the TOP area list
+      tapC(g);                 // C → back to the TOP area list
       CHECK(g.nav() == Game::Nav::Submenu);         // still in EXPL, not the carousel
-      g.onButton(press(Button::C));                 // C at TOP → leave EXPL
+      tapC(g);                 // C at TOP → leave EXPL
       CHECK(g.nav() == Game::Nav::Cursor); }
 
     // Opening EXPL while explore-mode is RUNNING RESUMES where the pet is — already
@@ -860,7 +860,7 @@ void test_expl_nested_list_nav() {
       CHECK(g.nav() == Game::Nav::ExploreControl);  // a MODE leaves the list open
       g.onButton(press(Button::B));
       CHECK(g.autoProgress());                      // and toggles back on
-      g.onButton(press(Button::C));                 // C backs out, walk untouched
+      tapC(g);                 // C backs out, walk untouched
       CHECK(g.nav() == Game::Nav::Idle && g.exploreActive()); }
 
     // STOP EXPLORE is now a row rather than the C key, so backing out of the overlay
@@ -948,9 +948,9 @@ void test_deepweb_dive() {
                 case Game::Nav::Idle:
                     if (g.inDeepWebDive()) pingExplore(g); else guard = 400; break;
                 case Game::Nav::Wifi: g.onButton(press(Button::B)); break;
-                case Game::Nav::Shop: g.onButton(press(Button::C)); break;
-                case Game::Nav::ModShop: g.onButton(press(Button::C)); break;
-                default: g.onButton(press(Button::C)); break;
+                case Game::Nav::Shop: tapC(g); break;
+                case Game::Nav::ModShop: tapC(g); break;
+                default: tapC(g); break;
             }
             (void)t;
         }
@@ -1032,8 +1032,8 @@ void test_encounter_sinkhole_bypass() {
                 if (g.exploreActive()) pingExplore(g); else enterWalk(g);
                 break;
             case Game::Nav::Wifi: g.onButton(press(Button::B)); break;
-            case Game::Nav::Shop: g.onButton(press(Button::C)); break;
-            case Game::Nav::ModShop: g.onButton(press(Button::C)); break;
+            case Game::Nav::Shop: tapC(g); break;
+            case Game::Nav::ModShop: tapC(g); break;
             case Game::Nav::Combat:
                 for (int j = 0; j < 400 &&
                         g.combat().outcome() == Combat::Outcome::Ongoing; ++j)
@@ -1071,8 +1071,8 @@ void test_sinkhole_xp_persists_immediately() {
                     if (g.exploreActive()) pingExplore(g); else enterWalk(g);
                     break;
                 case Game::Nav::Wifi: g.onButton(press(Button::B)); break;
-                case Game::Nav::Shop: g.onButton(press(Button::C)); break;
-                case Game::Nav::ModShop: g.onButton(press(Button::C)); break;
+                case Game::Nav::Shop: tapC(g); break;
+                case Game::Nav::ModShop: tapC(g); break;
                 case Game::Nav::Combat:
                     for (int j = 0; j < 400 &&
                             g.combat().outcome() == Combat::Outcome::Ongoing; ++j)

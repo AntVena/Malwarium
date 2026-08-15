@@ -91,7 +91,7 @@ constexpr int kSaveTextCap = 28;     // matches EventLog's LogEntry.text
 // 8 bits of the widened field. The per-pet flags reset on a new egg (startHatch);
 // networkSeenMask + fragAmountTier are player-level (survive lifecycles).
 // v23 appends the d/e Hacker-SHOP one-time account unlocks: itemTabsUnlocked
-// (arms the ITEMS hold-A FOOD/BUFFS/QUEST filter cycle) and bulkOpenUnlocked (arms
+// (arms the ITEMS hold-B FOOD/BUFFS/QUEST filter cycle) and bulkOpenUnlocked (arms
 // the VAULT hold-B "open every cache of this rarity" gesture) — player-level booleans,
 // no tiers, siblings of fragAmountTier/fragTriggerTier. A pre-v23 blob has no tail →
 // both default to false (a migrated save has bought neither).
@@ -660,7 +660,7 @@ struct SaveData {
 
     // v23: Hacker-SHOP one-time unlocks (d/e) ---------------------------
     // Player-level (survive lifecycles, like fragTriggerTier). No tiers — just
-    // owned or not. itemTabsUnlocked arms the ITEMS hold-A type-filter cycle;
+    // owned or not. itemTabsUnlocked arms the ITEMS hold-B type-filter cycle;
     // bulkOpenUnlocked arms the VAULT hold-B bulk-open. Pre-v23 → both false.
     uint8_t itemTabsUnlocked = 0;
     uint8_t bulkOpenUnlocked = 0;

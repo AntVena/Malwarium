@@ -21,7 +21,7 @@ class MoveLoadout;
 // `showAll`, this also drops every move the pet can't actually equip into `slot`
 // right now: not yet unlocked at `petStage`, wrong-line (defensive — owned() is
 // already line-scoped), or already occupying a DIFFERENT slot on this pet. `showAll`
-// (the picker's hold-A toggle) restores the full list so a move can still be moved
+// (the picker's hold-B toggle) restores the full list so a move can still be moved
 // between slots or previewed ahead of its unlock.
 std::vector<const MoveDef*> ownedMoveList(const ContentRegistry& reg,
                                           const MoveLoadout& load,
@@ -45,19 +45,21 @@ void drawLoadout(Framebuffer& fb, const ContentRegistry& reg,
 
 // L3 move picker for `slot` (mirrors drawModPicker): "— empty (unequip) —" + the
 // moves the pet can equip here right now (ownedMoveList), the focused move's
-// spec panel (spec_sheet.h), and the inline overwrite confirm. `showAll` (hold A to
+// spec panel (spec_sheet.h), and the inline overwrite confirm. `showAll` (hold B to
 // toggle) reveals the rest too: a move above `petStage` dims with an EVO-{stage} tag,
 // and a move already equipped in a different slot dims with a SLOT n tag — neither is
 // selectable, mirroring the MODS picker's IN SLOT n gate.
 //
 // The list is ADAPTIVE: it draws only the rows it has (capped + scrolled at
 // kMovePickerMaxRows), so a Process pet's 2-move roster hands its slack to the spec
-// panel rather than reserving it empty. B on a move row drills into drawMoveDetail
-// below rather than equipping from the list.
+// panel rather than reserving it empty. A tap of B on a move row drills into
+// drawMoveDetail below rather than equipping from the list. `beat` scrolls the focused
+// row's name inside the room its right-hand tag leaves it.
 void drawMovePicker(Framebuffer& fb, const ContentRegistry& reg,
                     const MoveLoadout& load, int slot, int pick, bool confirmActive,
                     int confirmChoice, const char* pendingId, Stage petStage,
-                    const char* petLine, MoveDef::Kind requiredKind, bool showAll);
+                    const char* petLine, MoveDef::Kind requiredKind, bool showAll,
+                    int beat);
 
 // L4 move detail — the whole screen for one move, drilled into with B from the picker
 // (the same list -> detail -> act shape as ITEMS). The full readout plus prose that
@@ -66,7 +68,7 @@ void drawMovePicker(Framebuffer& fb, const ContentRegistry& reg,
 // to show; the caller advances it (Game::moveProseScroll_) and wraps at
 // moveProseLines() below.
 void drawMoveDetail(Framebuffer& fb, const ContentRegistry& reg, const MoveDef& m,
-                    Stage petStage, bool equippedHere, int proseScroll);
+                    Stage petStage, bool equippedHere, int proseScroll, int beat);
 
 // How many prose lines the detail page shows at once, and how many the move needs —
 // the caller's scroll bounds. Returns 0 extra when it all fits (no scroll offered).

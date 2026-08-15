@@ -18,6 +18,15 @@
 
 namespace mal {
 
+// The two Hacker-face roster caps. Each sizes the stack buffer its screen fills, and
+// each is a real ceiling rather than a window: the list is longer than what the screen
+// shows, so a truncation here would silently lose peers or networks the radio heard.
+// Shared because game_listnav.cpp walks the same rows the screens draw, and a cursor
+// stepping past a buffer the drawing code sized differently is the one way these two
+// numbers could ever disagree.
+constexpr int kPeerMaxRows = 64;
+constexpr int kNetMaxRows = kNetVisibleCap;
+
 // Which of the three Backup Drive achievements a finished fight earned, or nullptr for
 // none — the drive unused, or a Fled fight that settled nothing. Pure over the only two
 // facts the answer depends on (what the drive did, how the fight ended), so the whole

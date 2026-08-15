@@ -396,18 +396,23 @@ bool Game::tick(uint32_t nowMs) {
         }
     }
 
-    // d: the ITEMS hold-A gesture. Once owned, crossing kItemFilterHoldMs
-    // while still resting on the ITEMS list cycles the type filter (ALL -> FOOD ->
-    // BUFFS -> QUEST -> ALL, or the finer category axis once the type-picker is
-    // owned too) and re-parks the cursor on the new list's first row; clearing
-    // aHeld_ here means a release before this fires resolves as the ordinary
-    // short-press step instead (onButton's release edge, itemFilterReleaseA).
-    // Unowned players never arm aHeld_ (onItemsList steps immediately on press), so
-    // this block never fires for them — nor does the picker screen, which arms nothing.
-    if (aHeld_ && nav_ == Nav::Submenu && face_ == Face::Pet &&
+    // The list contract's two held-button behaviours: A's repeat, and C's step-back
+    // repeat resolving into the back-out. Both are gated on there being a list under
+    // the cursor at all (game_listnav.cpp).
+    if (tickListNav()) changed = true;
+
+    // The ITEMS hold-B gesture. Once owned, crossing kItemFilterHoldMs while still
+    // resting on the ITEMS list cycles the type filter (ALL -> FOOD -> BUFFS -> QUEST ->
+    // ALL, or the finer category axis once the type-picker is owned too) and re-parks
+    // the cursor on the new list's first row; clearing bHeld_ here means a release
+    // before this fires resolves as the ordinary tap instead, opening the focused item
+    // (onButton's release edge, itemFilterReleaseB). Unowned players never arm bHeld_
+    // (onItemsList opens immediately on press), so this block never fires for them —
+    // nor does the picker screen, which arms nothing.
+    if (bHeld_ && nav_ == Nav::Submenu && face_ == Face::Pet &&
         enteredId() == SubmenuId::Items && itemsScreen_ == ItemsScreen::List &&
-        itemTabsUnlocked() && nowMs_ - aDownMs_ >= kItemFilterHoldMs) {
-        aHeld_ = false;
+        itemTabsUnlocked() && nowMs_ - bDownMs_ >= kItemFilterHoldMs) {
+        bHeld_ = false;
         itemFilter_ = nextItemFilter(itemFilter_, itemPickerUnlocked());
         auto rows = buildInventoryRows(registry_, inventory_, lockoutItemsContext_, itemFilter_);
         listRow_ = firstSelectableRow(rows);
@@ -416,17 +421,17 @@ bool Game::tick(uint32_t nowMs) {
         changed = true;
     }
 
-    // The MOVES picker's hold-A gesture (reuses aHeld_/aDownMs_): A already
-    // stepped movePick_ on press (onMovePicker); crossing kMoveFilterHoldMs while
-    // still held ADDITIONALLY toggles moveShowAll_ and re-parks the cursor at row 0
-    // (the row set changes size). A release before this fires leaves the step as
-    // the only effect. No unlock gate, unlike the ITEMS filter above. The tab check
-    // is load-bearing: trainScreen_ keeps its value across a hub page change, so the
-    // MODS picker sits at the same Nav::Detail with a stale MovePicker beside it.
-    if (aHeld_ && nav_ == Nav::Detail && loadoutTab_ == LoadoutTab::Moves &&
+    // The MOVES picker's hold-B gesture (the same shape as the ITEMS one above):
+    // crossing kMoveFilterHoldMs toggles moveShowAll_ and re-parks the cursor at row 0,
+    // since the row set changes size. A release before this fires resolves as the tap
+    // instead (moveFilterReleaseB — unequip, or drill into the focused move). No unlock
+    // gate, unlike the ITEMS filter. The tab check is load-bearing: trainScreen_ keeps
+    // its value across a hub page change, so the MODS picker sits at the same
+    // Nav::Detail with a stale MovePicker beside it.
+    if (bHeld_ && nav_ == Nav::Detail && loadoutTab_ == LoadoutTab::Moves &&
         trainScreen_ == TrainScreen::MovePicker &&
-        !moveConfirm_ && nowMs_ - aDownMs_ >= kMoveFilterHoldMs) {
-        aHeld_ = false;
+        !moveConfirm_ && nowMs_ - bDownMs_ >= kMoveFilterHoldMs) {
+        bHeld_ = false;
         moveShowAll_ = !moveShowAll_;
         movePick_ = 0;
         lastInputMs_ = nowMs_;
@@ -478,7 +483,15 @@ bool Game::tick(uint32_t nowMs) {
                            nav_ == Nav::BulkYield || nav_ == Nav::PostEncounter ||
                            nav_ == Nav::Stacker || nav_ == Nav::ArcadeResult ||
                            inCfgScreen ||
-                           bHeld_ || aHeld_ ||
+                           // A held B is one of the four hold gestures mid-flight and
+                           // must not be collapsed under. A held A is only the list
+                           // repeat, which is not in the same position: every step it
+                           // fires re-stamps lastInputMs_ (Game::tickListNav), so a
+                           // genuinely held A keeps the tree open by USING it. Listing
+                           // it here as well would mean a release edge lost anywhere —
+                           // a bounce, a screen change under the thumb — pins the whole
+                           // menu tree open until the next press.
+                           bHeld_ ||
                            qrScreenActive() ||  // scanning a QR takes longer than 5s
                            tagEditorActive() || // ...so does composing a tag
                            // Travel sleep is on its way down: the notice frame has to
@@ -526,26 +539,32 @@ void Game::tickHungerAndAwardXp(uint32_t elapsedMs) {
 // --- Input -----------------------------------------------------------------
 
 void Game::onButton(const ButtonEvent& ev) {
-    // A released B ends any in-progress hold gesture — CFG hidden Factory Reset
-    // (releasing early aborts the reveal/commit) or the e VAULT
-    // bulk-open hold (releasing before kBulkOpenHoldMs resolves as the ordinary
-    // single-open instead, vaultBulkReleaseB — a no-op for any other bHeld_ user).
-    // A released A resolves the d ITEMS filter hold's short-press half the
-    // same way (itemFilterReleaseA — a no-op unless that hold is armed). The MOVES
-    // picker's hold (kMoveFilterHoldMs below) shares aHeld_/aDownMs_ too, but
-    // has no release-time action of its own — A already stepped on press, so a
-    // release just needs the arm cleared, which itemFilterReleaseA's unconditional
-    // `aHeld_ = false` does regardless of which screen set it (its own context
-    // check then no-ops harmlessly outside ITEMS).
+    // A released B resolves whichever tap/hold gesture was armed. All four live on B and
+    // all four are guarded to their own screen, so each release asks them in turn and at
+    // most one claims it: the CFG hidden Factory Reset (releasing early aborts the
+    // reveal/commit), the VAULT bulk-open (releasing before kBulkOpenHoldMs resolves as
+    // the ordinary single-open), the ITEMS filter (a tap opens the focused item), and
+    // the MOVES picker's show-all (a tap unequips or drills into the focused move).
+    // C on a list is the same shape and settles here too (listBackRelease). Only A never
+    // needs a release action: its hold REPEATS the step its press already made rather
+    // than replacing it, so letting go only has to stop the clock tickListNav reads.
     if (!ev.pressed) {
         if (ev.button == Button::B) {
             const bool wasHeld = bHeld_;
+            if (wasHeld) {
+                vaultBulkReleaseB();
+                itemFilterReleaseB();
+                moveFilterReleaseB();
+            }
             bHeld_ = false;
-            if (wasHeld) vaultBulkReleaseB();
         } else if (ev.button == Button::A) {
-            itemFilterReleaseA();
+            aHeld_ = false;
         } else if (ev.button == Button::C) {
-            cHeld_ = false;   // ends a DECRYPTOGRAM back-step repeat; inert elsewhere
+            // On a list this is where C decides what it was: listBackRelease cancels
+            // for a tap and does nothing for a hold that already walked the cursor.
+            // Elsewhere (the DECRYPTOGRAM's own repeat) it only disarms.
+            listBackRelease();
+            cHeld_ = false;
         }
         return;
     }
@@ -587,6 +606,22 @@ void Game::onButton(const ButtonEvent& ev) {
         else if ((nav_ == Nav::Idle || nav_ == Nav::Cursor) && !inEggPhase())
             toggleFace();
         return;
+    }
+
+    // The list contract (game_listnav.cpp). Both arms are scoped to there actually
+    // being a list under the cursor, and deliberately so for A: arming aHeld_ on a
+    // screen whose A can never repeat leaves a flag nothing will ever clear if the
+    // release edge is lost, which is why tick()'s auto-defocus no longer consults it
+    // and why this does not set it in the first place. C's press is
+    // claimed outright — it settles on the release, as a tap (cancel) or a hold (the
+    // backward walk) — and the screen's own C case is reached through leaveFocusedList.
+    if (listFocus() != ListFocus::None) {
+        if (ev.button == Button::A) {
+            aHeld_ = true;
+            aDownMs_ = nowMs_;
+        } else if (listBackStep(ev)) {
+            return;
+        }
     }
 
     switch (nav_) {

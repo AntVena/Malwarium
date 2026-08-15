@@ -12,6 +12,15 @@ event-driven repaint (redraw on change) · 2-frame loops are the norm · pet cel
 logical** (max 128×64) · buttons **A=Next · B=Accept · C=Cancel**, with **A+C** the Exploit
 chord (Hacker face, combat override, egg crack).
 
+**Each button's HOLD is the bigger version of its tap**, and there are only three: hold **A**
+to repeat the step, hold **B** for the screen's second action (the ITEMS type filter, the
+MOVES show-all, the VAULT bulk-open, the CFG factory reset), hold **C** to walk a list
+backward. A hold never means something unrelated to the tap under it, and C's tap stays
+Cancel everywhere — that one does not bend. The row-stepping half is implemented once, in
+[`game_listnav.cpp`](src/core/app/game/game_listnav.cpp); a screen joins it by gaining a case
+there rather than by writing its own cursor arithmetic. A tap/hold button settles on the
+RELEASE edge, so anything driving one (a gate, `tools/dump_frame.cpp`) must send both edges.
+
 **Dual-coding release gate:** every status meaning carries a non-colour channel — **a grayscale
 screenshot of any screen must stay fully readable.** The pipeline all of this describes is
 [`src/core/render/RENDER_PIPELINE.md`](src/core/render/RENDER_PIPELINE.md).
