@@ -21,15 +21,20 @@
 #include "core/content/creatures/ransomware/line.h"
 #include "core/content/creatures/trojan/line.h"
 #include "core/content/creatures/worm/line.h"
+#include "core/content/content_achievements.h"
 #include "core/content/defs.h"
 
 namespace mal {
 
 inline constexpr CreatureLine kCreatureLines[] = {
-    {"ransomware", kRansomwareCreatures, kRansomwareCreatureCount},
+    {"ransomware", kRansomwareCreatures, kRansomwareCreatureCount,
+     linePassives(LinePassive::RansomNote)},
     {"phishing", kPhishingCreatures, kPhishingCreatureCount},
-    {"trojan", kTrojanCreatures, kTrojanCreatureCount},
-    {"worm", kWormCreatures, kWormCreatureCount},
+    // The only line a pet can ARRIVE on mid-raise (the cross-line divert), so it is the
+    // only one with an achievement for reaching it.
+    {"trojan", kTrojanCreatures, kTrojanCreatureCount,
+     linePassives(LinePassive::ExecOverride), ach::kTrojanUnleashed},
+    {"worm", kWormCreatures, kWormCreatureCount, linePassives(LinePassive::Replication)},
 };
 inline constexpr int kCreatureLineCount =
     sizeof(kCreatureLines) / sizeof(kCreatureLines[0]);

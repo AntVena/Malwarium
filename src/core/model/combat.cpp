@@ -572,11 +572,11 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
 }
 
 bool Combat::ransomArmRolls(const Combatant& c) {
-    // The Ransom Note passive belongs to the Ransomware line only, scaled by the
-    // ransomer's stage. The line check short-circuits BEFORE any rng() draw, so a
-    // non-Ransomware side never perturbs the deterministic stream (a fight with no
-    // Ransomware pet in it replays identically). Boot's 0% is inert (an egg can't fight).
-    if (!c.line || std::strcmp(c.line, "ransomware") != 0) return false;
+    // The Ransom Note passive belongs to whichever line carries the flag, scaled by the
+    // ransomer's stage. The passive check short-circuits BEFORE any rng() draw, so a side
+    // without it never perturbs the deterministic stream (a fight with no Ransom Note
+    // pet in it replays identically). Boot's 0% is inert (an egg can't fight).
+    if (!hasLinePassive(c.linePassives, LinePassive::RansomNote)) return false;
     const int si = stageIndex(c.stage);
     const int pct = (si >= 0 && si < 4) ? kRansomArmPctByStage[si] : 0;
     if (pct <= 0) return false;
@@ -594,10 +594,10 @@ bool Combat::bubbleBiteRolls(Stage stage) {
     return static_cast<int>(rng() % 100) < pct;
 }
 
-// Whether a side carries the Worm line's passives. Same string check every other
-// per-line hook here uses, kept in one place because three of them ask.
-static bool isWorm(const Combatant& c) {
-    return c.line && std::strcmp(c.line, "worm") == 0;
+// Whether a side replicates — the Worm line's passive family today. Kept in one place
+// because three hooks below ask; each reads the flag its combatant was built with.
+static bool replicates(const Combatant& c) {
+    return hasLinePassive(c.linePassives, LinePassive::Replication);
 }
 
 void Combat::syncWormSpeed() {
@@ -608,7 +608,7 @@ void Combat::syncWormSpeed() {
     // (a duel of worms) each would be assigned the other's value and the pair would swap
     // speeds every tick forever — and they are already in lockstep by definition, since
     // whatever moves one moves the other. Leaving both alone is that fact stated.
-    const bool pw = isWorm(player_), ew = isWorm(enemy_);
+    const bool pw = replicates(player_), ew = replicates(enemy_);
     if (pw == ew) return;
     if (pw) player_.speed = enemy_.speed;
     else    enemy_.speed = player_.speed;
@@ -643,11 +643,11 @@ void Combat::rollWormSpawn(Combatant& actor, const MoveDef* mv) {
 }
 
 int Combat::execOverrideChance(const Combatant& trojan) const {
-    // The Execution-Override passive belongs to the Trojan line only. The line check
-    // short-circuits to 0 BEFORE any rng() draw at the call site, so a non-Trojan pet
-    // never perturbs the deterministic stream. Base chance is low; each armed trap adds
-    // its trapPassiveBonusPct, so holding all three traps makes the hijack likely.
-    if (!trojan.line || std::strcmp(trojan.line, "trojan") != 0) return 0;
+    // The Execution-Override passive belongs to whichever line carries the flag. The
+    // check short-circuits to 0 BEFORE any rng() draw at the call site, so a pet without
+    // it never perturbs the deterministic stream. Base chance is low; each armed trap
+    // adds its trapPassiveBonusPct, so holding all three traps makes the hijack likely.
+    if (!hasLinePassive(trojan.linePassives, LinePassive::ExecOverride)) return 0;
     int pct = kExecOverrideBasePct;
     for (int i = 0; i < trojan.trojanTrapCount; ++i)
         if (trojan.trojanTraps[i]) pct += trojan.trojanTraps[i]->trapPassiveBonusPct;
@@ -790,7 +790,7 @@ void Combat::resolveTurn(Combatant& actor, Combatant& target, bool byPlayer) {
     // Deliberately not reachable from the Execution-Override branch above: a hijacked
     // cast is the Trojan's, and a Trojan is not a Worm, so a stolen move replicates for
     // nobody. Guarded on the field AND the line, so no other line draws rng here.
-    if (mv->replicaSpawnPct > 0 && isWorm(actor)) rollWormSpawn(actor, mv);
+    if (mv->replicaSpawnPct > 0 && replicates(actor)) rollWormSpawn(actor, mv);
     actor.lastMoveIdx = moveIdx;
 }
 

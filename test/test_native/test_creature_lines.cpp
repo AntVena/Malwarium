@@ -299,7 +299,7 @@ void test_trojan_combat() {
     {
         Combatant nonTrojan = mkCombatant(r, "P", 100, 10, {"quick_jab"});
         Combatant trojan = mkCombatant(r, "P", 100, 10, {"quick_jab"});
-        trojan.line = "trojan";
+        trojan.setLine(r, "trojan");
         Combat cb; cb.begin(nonTrojan, nonTrojan, Combat::Stakes::Safe, 1);
         CHECK(cb.execOverrideChance(nonTrojan) == 0);
         CHECK(cb.execOverrideChance(trojan) == kExecOverrideBasePct);

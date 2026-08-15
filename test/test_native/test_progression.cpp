@@ -450,7 +450,7 @@ void test_ransomware_stacking() {
     ContentRegistry r = ContentRegistry::embedded();
     // Lockout: Payload Drop only (single move → cast every player turn) vs a fat dummy.
     Combatant atk; atk.name = "R"; atk.maxHealth = 300; atk.health = 300; atk.speed = 10;
-    atk.line = "ransomware"; atk.stage = Stage::Process;
+    atk.setLine(r, "ransomware"); atk.stage = Stage::Process;
     atk.moves.push_back(r.move("payload_drop"));
     Combatant dummy = mkCombatant(r, "D", 500, 3, {"quick_jab"});
     Combat cb; cb.begin(atk, dummy, Combat::Stakes::Safe, 4242);
@@ -469,7 +469,7 @@ void test_ransomware_stacking() {
     // Cipher: AES Lockbox only (defend every turn) — Defense stacks to its +20% cap,
     // and the brace magnitude scales with defenseMultPct (200 → double the 14 base).
     Combatant def; def.name = "W"; def.maxHealth = 300; def.health = 300; def.speed = 20;
-    def.line = "ransomware"; def.stage = Stage::Process; def.defenseMultPct = 200;
+    def.setLine(r, "ransomware"); def.stage = Stage::Process; def.defenseMultPct = 200;
     def.moves.push_back(r.move("aes_lockbox"));
     Combatant poke = mkCombatant(r, "P", 300, 1, {"quick_jab"});
     Combat cd; cd.begin(def, poke, Combat::Stakes::Safe, 99);
@@ -486,7 +486,7 @@ void test_ransom_note() {
     ContentRegistry r = ContentRegistry::embedded();
     auto makeRansomer = [&](const char* line, Stage stage, float speed) {
         Combatant p; p.name = "R"; p.maxHealth = 5000; p.health = 5000; p.speed = speed;
-        p.line = line; p.stage = stage;
+        p.setLine(r, line); p.stage = stage;
         p.moves.push_back(r.move("quick_jab"));
         return p;
     };

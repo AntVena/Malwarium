@@ -16,6 +16,17 @@ const CreatureDef* ContentRegistry::creature(const char* id) const {
     return nullptr;
 }
 
+const CreatureLine* ContentRegistry::creatureLine(const char* lineId) const {
+    if (!lineId) return nullptr;
+    for (const ContentSource* src : sources_) {
+        int n = 0;
+        const CreatureLine* lines = src->creatureLines(n);
+        for (int l = 0; l < n; ++l)
+            if (std::strcmp(lines[l].id, lineId) == 0) return &lines[l];
+    }
+    return nullptr;
+}
+
 const EggLineDef* ContentRegistry::eggLine(const char* id) const {
     for (const ContentSource* src : sources_) {
         int n = 0;

@@ -1486,7 +1486,7 @@ void test_worm_shared_resources_speed() {
     // Matched at the bell, from far behind: a speed-10 worm against a speed-40 enemy
     // opens the fight at 40, not at 10.
     Combatant slow = mkCombatant(r, "W", 100, 10, {"quick_jab"});
-    slow.line = "worm";
+    slow.setLine(r, "worm");
     Combatant fast = mkCombatant(r, "E", 100, 40, {"quick_jab"});
     Combat c; c.begin(slow, fast, Combat::Stakes::Safe, 1);
     CHECK(c.player().speed == 40.0f);
@@ -1498,7 +1498,7 @@ void test_worm_shared_resources_speed() {
     // It TRACKS: a Phishing speed siphon drags the enemy's speed up and would normally
     // leave its victim behind — the worm comes with it instead, and the pair stay equal.
     Combatant worm = mkCombatant(r, "W", 100, 50, {"quick_jab"});
-    worm.line = "worm";
+    worm.setLine(r, "worm");
     Combatant thief = mkCombatant(r, "E", 100, 50, {"smish_hook"});
     thief.shieldHp = 50;                            // the bubble the siphon is gated on
     Combat c2; c2.begin(worm, thief, Combat::Stakes::Safe, 1);
@@ -1576,7 +1576,7 @@ void test_worm_replication_in_combat() {
     // A Defend cast is certain, and its body is sized off the parent (20% of 100, times
     // the floor with no attackers out). The enemy only braces, so nothing kills a copy.
     Combatant p = mkCombatant(r, "W", 100, 10, {"host_squat"});
-    p.line = "worm";
+    p.setLine(r, "worm");
     Combatant e = mkCombatant(r, "E", 100, 10, {"checksum_guard"});
     Combat c; c.begin(p, e, Combat::Stakes::Safe, 1);
     c.step();                                        // equal speed, the tie goes to P
@@ -1592,7 +1592,7 @@ void test_worm_replication_in_combat() {
     // rather than through a run of spawn rolls.
     auto swing = [&](int attackers, int defenders) {
         Combatant w = mkCombatant(r, "W", 100, 10, {"quick_jab"});   // 6 power
-        w.line = "worm";
+        w.setLine(r, "worm");
         for (int i = 0; i < attackers; ++i)
             w.wormReplicas[w.wormReplicaCount++] = {false, 1, 1, /*attack=*/4};
         for (int i = 0; i < defenders; ++i)
@@ -1613,7 +1613,7 @@ void test_worm_replication_in_combat() {
     bool sawParentHit = false, sawCopyKilled = false;
     for (uint32_t seed = 1; seed <= 40; ++seed) {
         Combatant w = mkCombatant(r, "W", 100, 10, {"checksum_guard"});
-        w.line = "worm";
+        w.setLine(r, "worm");
         w.wormReplicas[w.wormReplicaCount++] = {false, 1, 1, 4};
         Combatant hitter = mkCombatant(r, "H", 100, 10, {"buffer_overflow"});  // 20 power
         Combat f; f.begin(w, hitter, Combat::Stakes::Safe, seed,

@@ -354,30 +354,23 @@ void Game::tickAchievementBanner() {
 
 bool Game::hatchProcessUnlocked(const CreatureDef* proc) const {
     if (!proc) return false;
-    // Phishlet is the deep-dive reward catch on the Phishing line: it only joins the
-    // egg's random hatch pool (rollHatchProcess) once DEEPWEB_DEPTH_64 (the 2nd
-    // DeepWeb-depth milestone) is earned. So a fresh Phishing egg hatches Tadpoll until
-    // the player has dived deep, then Tadpoll-or-Phishlet at 50/50 (two equal-weight
-    // Process members). Every other Process pet is always in its line's pool. This
-    // mirrors eggLineUnlocked's depth-8 line gate one tier down (depth-8 -> the line,
-    // depth-64 -> the rarer species within it).
-    if (proc->id && std::strcmp(proc->id, "phishlet") == 0)
-        return hasAchievement(ach::kDeepWebDepth64);
-    return true;
+    // A Process row states its own gate (CreatureDef::gatedBy); an ungated row is always
+    // in its line's random hatch pool (rollHatchProcess). Phishlet is the one gated row
+    // today — the deep-dive reward catch on the Phishing line — so a fresh Phishing egg
+    // hatches Tadpoll until the player has dived deep, then Tadpoll-or-Phishlet at 50/50
+    // (two equal-weight Process members). This mirrors eggLineUnlocked one tier down:
+    // there the achievement earns a whole LINE, here the rarer species within one.
+    return !proc->gatedBy || hasAchievement(proc->gatedBy);
 }
 
 bool Game::eggLineUnlocked(const EggLineDef* line) const {
     if (!line) return false;
-    // Two of the three lines are earned, and each one asks for the kind of play it is
-    // about. Phishing is a reward for the endless zone — hidden until the first
-    // DeepWeb-depth milestone (depth 8). Worm is a reward for REPLICATING — hidden until
-    // the archive has held two of one species at once (SECOND_INSTANCE, fired from
-    // archStoreActive). Ransomware, the default, is always available.
-    if (line->id && std::strcmp(line->id, "phishing") == 0)
-        return hasAchievement(ach::kDeepWebDepth8);
-    if (line->id && std::strcmp(line->id, "worm") == 0)
-        return hasAchievement(ach::kSecondInstance);
-    return true;
+    // A line states its own gate (EggLineDef::gatedBy); an ungated row is always on
+    // line-select. Two of the three are earned today, and each asks for the kind of play
+    // it is about: Phishing for the endless zone (the first DeepWeb-depth milestone),
+    // Worm for REPLICATING (the archive holding two of one species at once, fired from
+    // archStoreActive). Ransomware, the default, is given.
+    return !line->gatedBy || hasAchievement(line->gatedBy);
 }
 
 std::vector<const EggLineDef*> Game::availableEggLines() const {

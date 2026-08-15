@@ -178,9 +178,10 @@ inline constexpr const char* kBackUpAndDriven  = "BACK_UP_AND_DRIVEN";
 inline constexpr const char* kNeededMoreBackup = "NEEDED_MORE_BACKUP";
 inline constexpr const char* kShatteredPlatter = "SHATTERED_PLATTER";
 // Read as CONTENT GATES, not just badges: depth 8 unlocks the Phishing egg line at
-// line-select (Game::eggLineUnlocked, which reads kSecondInstance above the same way for
-// the Worm line) and depth 64 adds Phishlet to that egg's hatch pool
-// (Game::hatchProcessUnlocked).
+// line-select and depth 64 adds Phishlet to that egg's hatch pool. Neither is named
+// here — a gated row names the achievement that earns it (EggLineDef::gatedBy,
+// CreatureDef::gatedBy), so this direction of the link is read off the content.
+// kSecondInstance above gates the Worm line the same way.
 inline constexpr const char* kDeepWebDepth8    = "DEEPWEB_DEPTH_8";
 inline constexpr const char* kDeepWebDepth64   = "DEEPWEB_DEPTH_64";
 }  // namespace ach

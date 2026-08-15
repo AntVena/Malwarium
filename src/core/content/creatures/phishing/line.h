@@ -12,6 +12,7 @@
 // ClickBait (see creatures/trojan/line.h).
 #pragma once
 
+#include "core/content/content_achievements.h"
 #include "core/content/defs.h"
 #include "tunables.h"
 
@@ -51,7 +52,8 @@ inline constexpr CreatureDef kPhishingCreatures[] = {
      "A tiny anglerfish that dangles a glowing 'you've won!' lure in the dark and waits for one careless nibble.",
      "Phishing lures / bait",
      {MoveKind::Attack, MoveKind::Defend, MoveKind::Defend, MoveKind::Attack},
-     /*evolvesToTrojanId=*/"keyloggerhead", /*evolvesToTrojanBadId=*/nullptr, Locomotion::Swim},
+     /*evolvesToTrojanId=*/"keyloggerhead", /*evolvesToTrojanBadId=*/nullptr, Locomotion::Swim,
+     /*clips=*/{}, /*gatedBy=*/ach::kDeepWebDepth64},
     {"clickbait", "ClickBait", Stage::Script, "SPR_PET_CLICKBAIT", nullptr,
      /*good=*/"spamwhale", /*bad=*/"baitracuda", 100, 100, "phishing",
      "A flashing deep-water sign promising ten secrets doctors hate - every click is a hook that just tempts its victim deeper deeper.",

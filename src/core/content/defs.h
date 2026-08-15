@@ -178,6 +178,12 @@ struct CreatureDef {
     // sheet becomes reachable. Sheet layout for a new creature: see
     // src/core/content/creatures/CREATURE_CONTENT_STANDARD.md.
     AnimClip clips[kMaxAnimClips] = {};
+    // The achievement that EARNS this row a place in its line's random hatch pool
+    // (content_achievements.h), or nullptr for a row that is always in it —
+    // Game::hatchProcessUnlocked reads this, the same way EggLineDef::gatedBy gates a
+    // whole line one tier up. Only a Process row is ever drawn for, so a gate on any
+    // other stage is inert.
+    const char* gatedBy = nullptr;
 
     // This creature's clip of the given name, or nullptr if it declares none.
     const AnimClip* clip(const char* clipName) const {
@@ -188,6 +194,28 @@ struct CreatureDef {
     }
 };
 
+// A combat passive family, carried by a LINE rather than by a creature. One bit per
+// passive the turn engine implements; a line's row names the ones it has, and Combat
+// tests the bit. Adding a passive is one flag here, one row edit, and one hook in
+// combat.cpp — never a line-id string literal in the turn engine.
+enum class LinePassive : uint8_t {
+    RansomNote   = 1 << 0,  // a stage-scaled roll arms a lock (Combat::ransomArmRolls)
+    Replication  = 1 << 1,  // replica spawning + Shared Resources (Combat::syncWormSpeed)
+    ExecOverride = 1 << 2,  // armed traps hijack the turn (Combat::execOverrideChance)
+};
+
+// A set of the above, held as the underlying type. Rows build one with linePassives()
+// — one spelling whether the line carries one passive or several — and the engine reads
+// it back with hasLinePassive(). An empty set is a line with no passive of its own.
+using LinePassives = uint8_t;
+template <class... Ps>
+constexpr LinePassives linePassives(Ps... ps) {
+    return static_cast<LinePassives>((0 | ... | static_cast<uint8_t>(ps)));
+}
+constexpr bool hasLinePassive(LinePassives set, LinePassive p) {
+    return (set & static_cast<uint8_t>(p)) != 0;
+}
+
 // One creature FAMILY — the rows of a single evolution line, which is what
 // CreatureDef::line names on every one of them. Each family is defined together in
 // src/core/content/creatures/<id>/line.h and listed once in creature_lines.h; the
@@ -197,6 +225,14 @@ struct CreatureLine {
     const char* id;           // matches CreatureDef::line on every row it holds
     const CreatureDef* rows;
     int count;
+    // Which combat passives every row on this line carries. The turn engine asks a
+    // combatant for a FLAG and never for a line's name, so moving a passive to another
+    // line — or landing a new line that carries one — is an edit here.
+    LinePassives passives = 0;
+    // The achievement earned the first time a pet arrives on this line, or nullptr for
+    // a line whose arrival is not itself recognised. Fired at the one evolution seam
+    // that changes a pet's line (Game::completeEvolution).
+    const char* raisedAchievement = nullptr;
 };
 
 // Which minigame an egg line's hatch runs. One entry per interaction shape; the
@@ -218,6 +254,11 @@ struct EggLineDef {
     const char* displayName;   // e.g. "Ransomware"
     const char* eggCreatureId; // the Boot-Sector creature, e.g. "cryptoshell"
     HatchGame hatchGame = HatchGame::Decrypt;
+    // The achievement that EARNS this line (content_achievements.h), or nullptr for a
+    // line that is simply given. Game::eggLineUnlocked hides a gated line from
+    // line-select until its row's achievement is held — so "this line is earned" is
+    // something the row states rather than something the engine knows about its id.
+    const char* gatedBy = nullptr;
 };
 
 // Evolution routing ----------------------------------

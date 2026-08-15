@@ -117,6 +117,17 @@ struct Combatant {
     // Lock) and is read once at fight start, same timing as MODS.
     Stage stage = Stage::BootSector;
     const char* line = nullptr;
+    // The passives that line carries, resolved off its row ONCE when the combatant is
+    // built (makePlayerCombatant) — same timing as MODS, and the reason the turn engine
+    // never names a line. Empty for a combatant with no line (every PVE enemy today).
+    // Set it through setLine(), never on its own: the id and the flags are two halves of
+    // one fact, and a combatant whose flags disagree with its id is a fight that reads
+    // its passives off one line and its move affinity off another.
+    LinePassives linePassives = 0;
+
+    // Adopt a line — the id move affinity matches on, plus the passives its family row
+    // carries — in one call. An unknown (or null) line clears both.
+    void setLine(const ContentRegistry& reg, const char* lineId);
 
     // The creature this combatant IS, when it is one — the fight reads its authored
     // clips (CreatureDef::clips) to pose the sprite while swinging or being hit.

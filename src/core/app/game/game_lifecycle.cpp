@@ -402,8 +402,11 @@ void Game::completeEvolution() {
             for (SlotKind& k : slotKinds_) k = SlotKind::Unset;
             stampSlotKinds();
             enforceSlotKindInvariant();
-            if (newLine && std::strcmp(newLine, "trojan") == 0)
-                unlockAchievement(ach::kTrojanUnleashed);
+            // Arriving on a line can be an achievement in its own right, and the line's
+            // row is what says so (CreatureLine::raisedAchievement) — the Trojan divert
+            // is the only arrival recognised today, but this seam never learns that.
+            if (const CreatureLine* cl = registry_.creatureLine(newLine))
+                if (cl->raisedAchievement) unlockAchievement(cl->raisedAchievement);
         }
     }
     evolveTo_ = nullptr;

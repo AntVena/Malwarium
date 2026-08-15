@@ -2,6 +2,7 @@
 //
 // One content table (see content_tables.h). Edit rows here; the registry picks
 // them up unchanged via embedded_content.cpp.
+#include "core/content/content_achievements.h"
 #include "core/content/content_tables.h"
 
 namespace mal {
@@ -14,13 +15,13 @@ const EggLineDef kEggLines[] = {
     // auto-skips straight into CryptoShell. Its egg is laid into a clutch of decoys,
     // so the hatch is a Clutch Pick played once at lay-time rather than a decrypt
     // grind against the incubation clock.
-    {"phishing", "Phishing", "phrogspawn", HatchGame::Clutch},
+    {"phishing", "Phishing", "phrogspawn", HatchGame::Clutch, ach::kDeepWebDepth8},
     // The third egg line, and the one that has to be EARNED by replicating rather than
     // by diving: Game::eggLineUnlocked hides it until the archive holds two of the same
     // species at once (ach::kSecondInstance). Its hatch is the Isolation Protocol, played
     // once at lay-time like the Clutch — a worm loose in a quarantine buffer, eating the
     // incubation clock a minute at a time.
-    {"worm", "Worm", "vermicell", HatchGame::Isolation},
+    {"worm", "Worm", "vermicell", HatchGame::Isolation, ach::kSecondInstance},
 };
 const int kEggLinesCount = sizeof(kEggLines) / sizeof(kEggLines[0]);
 

@@ -12,6 +12,12 @@
 
 namespace mal {
 
+void Combatant::setLine(const ContentRegistry& reg, const char* lineId) {
+    line = lineId;
+    const CreatureLine* cl = reg.creatureLine(lineId);
+    linePassives = cl ? cl->passives : 0;
+}
+
 Combatant makePlayerCombatant(const ContentRegistry& reg, const CreatureDef& pet,
                               const MoveLoadout& moves, const Loadout& mods) {
     Combatant c;
@@ -19,7 +25,7 @@ Combatant makePlayerCombatant(const ContentRegistry& reg, const CreatureDef& pet
     c.spriteName = pet.spriteName;
     c.creature = &pet;                              // authored clips, for the fight's poses
     c.stage = pet.stage;                            // drives the per-line passive
-    c.line = pet.line;                              // line-gating identity carried into combat
+    c.setLine(reg, pet.line);                       // line identity + its passives, read once
     c.maxHealth = kMaxHealthByStage[stageIndex(pet.stage)];
     c.health = c.maxHealth;
     c.speed = kCombatBaseSpeed;

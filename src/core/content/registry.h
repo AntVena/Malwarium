@@ -18,6 +18,11 @@ public:
     void setAssets(const AssetSource& assets) { assets_ = &assets; }
 
     const CreatureDef* creature(const char* id) const;
+    // The FAMILY carrying `lineId` (CreatureDef::line), or nullptr. This is how the
+    // line-level facts — the combat passives it carries, the achievement for arriving
+    // on it — are read, so neither the turn engine nor the evolution seam has to know a
+    // line by name.
+    const CreatureLine* creatureLine(const char* lineId) const;
     const EggLineDef* eggLine(const char* id) const;
     // Reverse lookup: the line whose eggCreatureId matches a Boot-Sector creature id
     // (null if none). Used to re-derive an incubating egg's line from the persisted
