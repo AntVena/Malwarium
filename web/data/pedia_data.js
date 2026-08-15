@@ -5599,6 +5599,13 @@ window.PEDIA_DATA = {
       "goal": 4
     },
     {
+      "key": "FULL_LINE_WORM",
+      "name": "Full 'Pedia: Worm",
+      "trigger": "Raise every one of the 5 creatures in the worm line.",
+      "icon": "assets/icons/ICON_ACH_FULL_LINE_WORM.png",
+      "goal": 5
+    },
+    {
       "key": "DEEPWEB_DEPTH_8",
       "name": "Down the Rabbit Hole",
       "trigger": "Reach depth 8 in a DeepWeb Dive. Unlocks the Phishing egg line.",
