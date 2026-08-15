@@ -337,11 +337,11 @@ action zone is a stated exception there rather than a difference.
 
 ## 2. Art
 
-Engine slots for these exist (they render via placeholder or text today), so most are **drop-in the
-moment they're drawn**.
-Sizes are logical px; bind colour to `PAL_CORE` tokens. Inventory: `assets/ASSET_MANIFEST.md`.
+Engine slots for most of these exist (they render via placeholder or text today), so they are
+**drop-in the moment they're drawn**. Sizes are logical px; bind colour to `PAL_CORE` tokens.
+Inventory: `assets/ASSET_MANIFEST.md`.
 
-### 2a-i. The sprite-packing tools live outside the repo
+### 2a. The sprite-packing tools live outside the repo
 
 `sheetpack.py` (cell packing, the crop-vs-decimate choice and its damage report, the 1px floor
 gap) and `quantize.py` (palette snap + binary alpha) are what every generated sprite passes
@@ -351,7 +351,7 @@ seating and decimation trade-off — are written down in prose but held in code 
 can see. Promote both into `tools/`, the way `gen_worm_art.py` already holds the Worm line's
 drawing vocabulary. Diff **S** (move + a header each).
 
-### 2a-ii. Template pet sheet — one row per default animation
+### 2a-i. Template pet sheet — one row per default animation
 
 No starting point exists for a new creature sheet today. `gen_assets.py` already slices a pet sheet
 into independent rows of up to 8 56×48 columns each (`frame_rows`/`PET_ROW_H`), and a creature's
@@ -477,5 +477,5 @@ One more is past the rule and was not on this watch at all:
 
 1. **Net-Sea Crossing art (§2c)** — the area ships mechanically; it is the only rung with no
    backdrop or malbeasts of its own.
-2. **The template pet sheet (§2a-ii)** — an authoring aid with no ingestion change behind it:
+2. **The template pet sheet (§2a-i)** — an authoring aid with no ingestion change behind it:
    one labeled row per default animation, so a new creature sheet starts from a plan.
