@@ -414,13 +414,13 @@ on placeholder palette.
 | Asset ID | Element | Logical size | Notes | Status | File |
 |---|---|---|---|---|---|
 | `UI_SUBMENU_HEADER` | Header band: title (left) + position indicator (right) | 224×24 | shorthand text + dots or `n/total` | ☑ | engine-drawn |
-| `UI_HINT_BAND` | Contextual control hint — **self-contained screens** | 224×24 | a screen the player ARRIVED at (event, activity, modal, full-screen reader) names what's live on it, whether or not the mapping is standard; the carousel's own list/detail spine doesn't, because A/B/C is constant there. See the note under this table | ☐ | |
+| `UI_HINT_BAND` | Contextual control hint — **self-contained screens** | 224×24 | a screen the player ARRIVED at (event, activity, modal, full-screen reader) names what's live on it, whether or not the mapping is standard; the carousel's own list/detail spine doesn't, because A/B/C is constant there. See the note under this table. `widgets.h`'s `drawHintBand` + `kHintBandH` | ☑ | engine-drawn |
 | `UI_PAGER_DOTS` | Page indicator for viewer/paged screens | ~24×8 | filled = current page | ☑ | engine-drawn |
 | `UI_CURSOR_ROW` | Focused-row cursor marker `▸` | 12×28 | non-destructive over row | ☑ | engine-drawn |
 | `UI_ROW_SEL` | Focused-row accent fill | 224×28 | semi-opaque highlight behind row | ☑ | engine-drawn |
 | `UI_SCROLLBAR` | Slim right-edge scroll position bar | 4×176 | shows when list > 6 rows | ☑ | engine-drawn |
 | `UI_LIST_HEADER` | Grouped-list section header row | 224×16 | non-selectable; cursor skips (e.g. `FOOD`/`BUFFS`) | ☑ | engine-drawn |
-| `UI_PROGRESS_BAR` | Reusable horizontal progress/fill bar | ~180×12 | EXPL walk, MAINT defrag/AV, hold-to-commit. **= `UI_GAUGE` variant** (neutral, no zone colour) | ☐ | |
+| `UI_PROGRESS_BAR` | Reusable horizontal progress/fill bar | ~180×12 | EXPL walk, MAINT defrag/AV, hold-to-commit. **= `UI_GAUGE` variant** (neutral, no zone colour). `widgets.h`'s `drawProgressBar`; a sprite could not carry it — the fill is a runtime fraction, and `churn` dithers its leading edge per beat | ☑ | engine-drawn |
 
 > **On `UI_HINT_BAND`'s rule.** It was originally specced exception-only — a band ONLY
 > where a screen broke the standard A/B/C contract. What shipped is broader and better:
@@ -574,7 +574,7 @@ from the mod id, and `train_screen.cpp` does the same for `ICON_MOVE_<UPPER ID>`
 | Asset ID | Element | Logical size | Notes | Status | File |
 |---|---|---|---|---|---|
 | `ICON_ARCH_SLOT` | Rack record glyph (+ retired variant) | 20×20 | active/frozen vs retired | ☑ | `/assets/icons/ICON_ARCH_SLOT{,_RETIRED}.png` |
-| `UI_SLOTS_USED` | Rack-slot usage indicator (`slots 2/4`) | ~44×12 | header widget; may reuse MODS slot-count style | ☐ | |
+| `UI_SLOTS_USED` | Rack-slot usage indicator (`slots 2/4`) | ~44×12 | header widget. `arch_screen.cpp` formats `SLOTS n/m` into `drawHeaderBand`'s right slot, so it reads off the live cap rather than a bare tunable — text, not art | ☑ | engine-drawn |
 
 > Rack rows reuse `SPR_PET_*` idle frame as a thumbnail — no new art. `[ACTIVE]`/`[RETIRED]`
 > are `FONT_UI` text tags; greying is engine dim. Stored pets consume rack slots; records
@@ -591,15 +591,15 @@ own rows from the same `CfgRow` shape and reuses the glyphs below, so grouping n
 
 | Asset ID | Element | Logical size | Notes | Status | File |
 |---|---|---|---|---|---|
-| `ICON_CFG_SYSINFO` | System Info row glyph | 20×20 | the RADIO group's AUDIT row borrows it too, pending its own | ☑ | `/assets/icons/ICON_CFG_SYSINFO.png` |
+| `ICON_CFG_SYSINFO` | System Info row glyph | 20×20 | the RADIO group's AUDIT row names it in `cfgGroupRows`, but nothing draws it — see the note under this table | ☑ | `/assets/icons/ICON_CFG_SYSINFO.png` |
 | `ICON_CFG_TAG` | HackerTag row glyph | 20×20 | | ☑ | `/assets/icons/ICON_CFG_TAG.png` |
 | `ICON_CFG_UIMODE` | UI Mode row glyph | 20×20 | also the DEVICE group row + BRIGHTNESS | ☑ | `/assets/icons/ICON_CFG_UIMODE.png` |
 | `ICON_CFG_TITLE` | TITLE row glyph (zone-Title picker) | 20×20 | v1 stopgap home for zone Titles; moves to Hacker HUD later | ☑ | `/assets/icons/ICON_CFG_TITLE.png` |
 | `ICON_CFG_RADIO` | RADIO group row glyph | 20×20 | the four radio consents under one row. A transmitter mast, not the square-wave alternate parked at `/assets/_attic/ICON_SYS_WIFI_ALT.png`: the split it has to carry is "the radio, as hardware" against "a Wi-Fi service", and a squared-off fan is still the fan `ICON_SYS_WIFI` draws on PEDIA AP + INTERNET. A mast also covers both consent axes at once — it is the thing that listens and the thing that transmits | ☑ | `/assets/icons/ICON_CFG_RADIO.png` |
-| `ICON_CFG_UPDATE` | UPDATES row glyph | 20×20 | an arrow landing in a tray; a download is everything the row does before it asks | ☑ | `/assets/icons/ICON_CFG_UPDATE.png` |
+| `ICON_CFG_UPDATE` | UPDATES row glyph | 20×20 | a refresh cycle — a ring opened at the top and fed an arrowhead. NOT a download arrow, which reads as the row's obvious motif right up until you set it beside `ICON_SECTOR_NAPSTORRENT_MOORS`: the Moors are the torrent area and the arrow-into-a-tray is theirs | ☑ | `/assets/icons/ICON_CFG_UPDATE.png` |
 | `ICON_CFG_TRAVEL` | TRAVEL MODE row glyph (DEVICE group) | 20×20 | a crescent. It is the one row in the group that is an action rather than a setting, and the action is sleep | ☑ | `/assets/icons/ICON_CFG_TRAVEL.png` |
 | `ICON_SYS_BATTERY` | Battery status glyph | 16×16 | System Info | ⌫ | `/assets/_attic/ICON_SYS_BATTERY.png` |
-| `ICON_SYS_WIFI` | Wi-Fi AP status glyph | 16×16 | System Info; also the PEDIA AP / INTERNET rows | ☑ | `/assets/icons/ICON_SYS_WIFI.png` |
+| `ICON_SYS_WIFI` | Wi-Fi AP status glyph | 16×16 | System Info; also the INTERNET row. Named by PEDIA AP too, and unrendered there for the same reason AUDIT's is | ☑ | `/assets/icons/ICON_SYS_WIFI.png` |
 | `ICON_SYS_SD` | SD-card status glyph | 16×16 | System Info | ☑ | `/assets/icons/ICON_SYS_SD.png` |
 | `ICON_CFG_QR` | Pedia QR row glyph | 20×20 | **drawn but unconsumed** — the QR is reached from PEDIA AP, not a row of its own, so nothing renders this. Keep for a future row; it costs atlas space until then | ⌫ | `/assets/_attic/ICON_CFG_QR.png` |
 
@@ -607,6 +607,14 @@ own rows from the same `CfgRow` shape and reuses the glyphs below, so grouping n
 > no art. SD RECHECK has no glyph: it is the A press on System Info, beside the SD line it
 > reports through. Factory Reset is **hidden** (no row glyph): revealed by hold-B on System
 > Info, committed by hold-B-5s; reuses `UI_PROGRESS_BAR` for both hold bars.
+>
+> **The RADIO group's three rows draw no glyph at all.** `radioRow` (`cfg_screen.cpp`) renders
+> the on-air mark, the label and the value, and never touches `CfgRow::icon` — the ●/○ pair is
+> the one thing the screen exists to say, and an icon column beside it would compete with the
+> mark for the same read. So PEDIA AP, LINK and AUDIT each name an icon in `cfgGroupRows` that
+> is never drawn, and none of the three is a row waiting for art: a bespoke `ICON_CFG_AUDIT`
+> (headphones — the axis that listens) was drawn and parked at `/assets/_attic/`, because
+> giving it a home means redesigning the screen, not drawing a glyph.
 
 ---
 
@@ -639,7 +647,7 @@ below are new art.
 | `ICON_BTN_C` | Button glyph `C` | 16×16 | | ⌫ | `/assets/_attic/ICON_BTN_C.png` |
 | `ICON_LINE_RANSOMWARE` | Line-select row glyph — Ransomware | 20×20 | one per creature line | ☑ | `/assets/icons/ICON_LINE_RANSOMWARE.png` |
 | `ICON_LINE_WORM` | Line-select row glyph — Worm | 20×20 | add `ICON_LINE_*` per line as unlocked | ☑ | `/assets/icons/ICON_LINE_WORM.png` |
-| `UI_COUNTDOWN` | Lockout countdown digits/style | ~64×24 | `FONT_UI`-based; pairs w/ `FX_LOCKOUT_BAND` | ☐ | |
+| `UI_COUNTDOWN` | Lockout countdown digits/style | ~64×24 | `FONT_UI`-based; pairs w/ `FX_LOCKOUT_BAND`. `modals.cpp`'s `drawLockoutModal` sets `00:SS` in the header band, flashing on the beat, over a `UI_PROGRESS_BAR` of the time left — a style over the shared font, never its own glyph set | ☑ | engine-drawn |
 
 > Reused, no new art: `FX_LOCKOUT_BAND` / `FX_EVO_FLASH` / `FX_CRITICAL_FAIL` / `FX_GHOST` /
 > `FX_CORRUPTION` (§D), `UI_HINT_BAND` (§F), `UI_STAT_GAUGE` / `UI_STAGE_INDICATOR` /

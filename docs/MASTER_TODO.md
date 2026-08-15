@@ -345,11 +345,15 @@ Sizes are logical px; bind colour to `PAL_CORE` tokens. Inventory: `assets/ASSET
 
 | Asset | For | Size | Diff to integrate |
 |---|---|---|---|
-| `UI_HINT_BAND` | contextual control-hint band | 224×24 | S |
-| `UI_PROGRESS_BAR` | reusable fill bar (EXPL/MAINT/hold-to-commit) | ~180×12 | S |
-| `UI_SLOTS_USED` | ARCH rack-slot usage indicator (`slots 2/4`) | ~44×12 | S |
-| `UI_COUNTDOWN` | Lockout countdown digit style | ~64×24 | S — folds into FONT_UI work |
 | `ICON_EXPLORE_STATE` | optional sub-area row state marker | 16×16 | S |
+
+The four `UI_*` rows that used to sit here — `UI_HINT_BAND`, `UI_PROGRESS_BAR`, `UI_SLOTS_USED`,
+`UI_COUNTDOWN` — were never art tasks, and are all built: `widgets.h` draws the first two by those
+exact names, `arch_screen.cpp` formats `SLOTS n/m` into its header band, and `modals.cpp` sets the
+Lockout's `00:SS` in `FONT_UI` over a progress bar. None of the four *could* be a PNG — a bar whose
+fill is a runtime fraction, a band sized to the words in it and a countdown that counts are drawing
+code by nature. `ASSET_MANIFEST.md` §F/§I/§O carries them as `☑ engine-drawn`, beside the rest of
+the shared chrome that already read that way.
 
 ### 2a-i. The sprite-packing tools live outside the repo
 
@@ -389,16 +393,9 @@ high→low value:
   Punch, the card) is better served than one riding a shared form (eight `dome` items differ only
   by how many slashes are cut into the crust). Worth a pass with a real eye, form by form, and the
   tool is the place to do it — a redrawn form fixes every item using it. Diff **M**.
-- **Three move glyphs** still placeholder: `ICON_MOVE_BUFFER_OVERFLOW`, `_ROOTKIT_STRIKE`,
-  `_NULL_ROUTE` (MOVES falls back to text without them).
-- **`ICON_SECTOR_CITRUS_CIRCUIT` is a generic map pin** where its four siblings are motif
-  glyphs (skull, sail, download arrow, keep) — the family reads as four zones plus a marker.
-  A redraw on the area's own LimeWire-era motif is pure legibility polish; it ships as is.
 - **Six wild malbeasts** (`SPR_MALBEAST_*`) and **`SPR_DUMMY`**.
 - **Process alternates:** `SPR_PET_PHISHLET`, `SPR_PET_CIPHADPOLE`, `SPR_PET_PINGCUB`; **Boot L2:**
   `SPR_PET_RINGWYRM`.
-- **Redraws:** `ICON_MOD_CLOCK_SPEED_BOOST` (reads as a broken clock part), `ICON_TRAIN_SIM`
-  (ambiguous bullseye-dummy). Both ship; pure legibility polish.
 - **Optional polish:** `UI_RANK_BADGE`, `ICON_EVENT_WIFI`, `UI_DIFFICULTY_PIPS`, a boss-tell marker
   on the charge bar, a `UI_TITLE_TAG` badge, richer per-sub-area `BG_SECTOR_*` backdrops, a
   `SPR_PET_*` attack-pose frame.
