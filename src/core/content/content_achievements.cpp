@@ -142,6 +142,14 @@ const AchievementDef kAchievements[] = {
      "Raise every one of the {n} creatures in the {key} line.", "ICON_ACH_FULL_LINE_TROJAN",
      AchSeries::LineRaised, kGoalAll, "trojan", 0,
      {bits(400), item("commend_cache")}},
+    // The Worm line reads the same as its three siblings, Rootgrub's Trojan divert
+    // included: a divert is a chance taken at one boundary, not a road closed, so a
+    // raise that loses Shenloop and Threadbore to it is a raise to do again — exactly
+    // what Phishlet's divert already means for the Phishing row above.
+    {/*wire=*/93, "FULL_LINE_WORM", "Full 'Pedia: Worm",
+     "Raise every one of the {n} creatures in the {key} line.", "ICON_ACH_FULL_LINE_WORM",
+     AchSeries::LineRaised, kGoalAll, "worm", 0,
+     {bits(400), item("commend_cache")}},
 
     // --- The DeepWeb Dive ---------------------------------------------------------
     // The device-wide ladder. Depth 8 and 64 are CONTENT GATES as well as badges (the

@@ -30,17 +30,6 @@ building it up organically.
 
 **Sub-area bosses that are themselves gauntlets** — `subAreaBoss` returns a length-1 `BossGauntlet`, so a sub-area boss is always exactly one fight; only the AREA boss is multi-round. Castle Rapidscare's THE EIGHT PWNS wants to be a minor gauntlet, and its JOKER VIRUS wants to *loop back* into another Pwns run after it falls. | `combat.cpp`'s `subAreaBoss`/`areaBoss`, plus the round plumbing in `game_explore.cpp` (`startBossRound`/`finishBossRound`). | L | The re-entrant loop is the novel part — the carried-Health round machinery is linear today, with no notion of a round that re-queues an earlier one. Needs a design pass on how a loop terminates and what it pays. |
 
-**The wild-win item drop pool is a literal array in combat logic.** `wildLootPool` is four hardcoded ids, with a fifth spliced in by `if (exploreSector_ == 0)` / `== kDeepWebSector` — a per-area loot table living in the engine, where every other pool is a `LootEntry` list beside the rows it draws from ([`CONTENT_STANDARD.md`](../src/core/content/CONTENT_STANDARD.md) rule 1). Wants to be an area-authored pool on `AreaDef`, drawn by the shared `rollLootEntry`. | `game_combat.cpp`'s wild-win drop roll; `content/areas/<area>/area.cpp` for the new pool field. | M | The area-splice branch is the tell: adding a third area-exclusive ingredient today means a third `else if` in combat. |
-
-**Three content-unlock gates are id branches, and two more id branches sit beside them.** `Game::eggLineUnlocked` (`"phishing"` → `kDeepWebDepth8`, `"worm"` → `kSecondInstance`) and `Game::hatchProcessUnlocked` (`"phishlet"` → `kDeepWebDepth64`) each `strcmp` a content id and answer with a `hasAchievement` check, so "this row is earned, not given" is engine knowledge rather than something the row states ([`CONTENT_STANDARD.md`](../src/core/content/CONTENT_STANDARD.md) rule 1). Wants an achievement-id field on `EggLineDef` and `CreatureDef`, with each gate reading whatever its row names — one field fixes all three. | `game_pedia.cpp:364`/`:376`/`:378`; `defs.h`. | S | `EggLineDef` is a 3-row table and trivial. `CreatureDef`'s aggregate initialisers run positionally through `clips`, so its new member has to go after that — awkward reading order for a gate field, which is the only real cost. |
-
-  The other two are the same shape but want different fields, and neither is fixed by the above:
-  **`combat.cpp:599`'s `isWorm()`** hangs a whole passive family off `strcmp(line, "worm")` — three
-  call sites defer to it, so an entire line's combat identity is a string literal in the turn
-  engine. That is the biggest of the five and wants a flag or passive-set on the line row. | M |
-  And **`game_lifecycle.cpp:405`** fires `kTrojanUnleashed` on `strcmp(newLine, "trojan")`, which
-  wants an achievement-id on the line the same way the gates do. | S |
-
 **Capture arming costs ~70KB and the AP ~58KB**, against ~126KB free with the radio idle. The device works, and the save no longer needs a big contiguous block, but that was the only thing standing on this — anything else that grows will hit the same wall. Worth a pass at what the capture path actually needs. | `net_capture.h`'s `powerUp` (`esp_wifi_init` + promiscuous + the pcap SD buffers). | M | Measured on device, not estimated: `[ap] down free=126408` → `[cap] armed free=56188`. |
 
 **The DECRYPTOGRAM's prize is a LADDER, not a per-quote answer.** A first solve pays the next
@@ -240,18 +229,6 @@ roster, and the wild half keeps its own roster-keyed masks).
   `cachemutt` a crying frame), and the 'Pedia is static where the device animates. If that's the
   complaint it wants the anim-clip table exported to the web and is **M**, not a bug fix.
   **Needs the PO to say which screen and which creature looked wrong.**
-- **The Worm line has no `FULL_LINE_WORM` row**, where the other three lines each have one. It
-  costs a new `wire` bit and an `ICON_ACH_FULL_LINE_WORM` glyph. **Unblocked**: the badge needs
-  every row of the line named and drawn, and all five are (Vermicell · Nodeatode · Rootgrub ·
-  Shenloop · Threadbore) — a "seen every row" badge over rows called *Worm Placeholder I* and
-  *II* would be a badge for reading a stub. Diff
-  **S**. The one judgement call left is whether Rootgrub's Trojan divert counts against it: a
-  raise that diverts never reaches Shenloop or Threadbore, so a player who keeps diverting can be
-  a row short through no fault of their own, and the badge should almost certainly ignore the
-  Trojan rows the way `LineRaised` already reads one family's own count. (The line itself is
-  raiseable now: the Vermicell egg hatches it through the Isolation Protocol, `WORM_WHISPERER`
-  fires on a clean run, and `SECOND_INSTANCE` — two of one species in the ARCH rack — is what puts
-  the line on the menu.)
 - **The Worm line's balance is unmeasured.** Every number on it — `kWormReplicaSlots`, the three
   targeting weights, the per-move spawn chances and the two magnitudes each replica reads — is a
   first cut chosen for internal consistency, not a calibration pass against a real fight. The
