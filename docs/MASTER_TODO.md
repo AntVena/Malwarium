@@ -220,29 +220,17 @@ roster, and the wild half keeps its own roster-keyed masks).
 - **A solo operator's "seen" tier is empty until they duel.** If the Daemon branch-sibling reveal is
   worth persisting it wants its own tier ("teased") rather than sharing this bit — two meanings on
   one flag is what was deliberately removed. Diff **S** (design, not storage).
-- **❓ Multi-frame sprites in the 'Pedia — NOT REPRODUCED, needs a repro.** Every one of the 26
-  creature/malbeast sheets was rendered through `sprStyle`'s own formula and each cropped frame 0
-  correctly, at every geometry the roster has (1/2/4/8-frame strips, the 2-row KeyloggerHead sheet,
-  and the oversized 96×64 and 64×56 single cells) — so the "only Malbear's dimensions work" reading
-  doesn't hold against the current data. Two candidates for what was actually seen, both real:
-  frame 0 of a multi-purpose sheet is not always the idle pose (`phrogspawn` shows a hatch swirl,
-  `cachemutt` a crying frame), and the 'Pedia is static where the device animates. If that's the
-  complaint it wants the anim-clip table exported to the web and is **M**, not a bug fix.
-  **Needs the PO to say which screen and which creature looked wrong.**
 - **The Worm line's balance is unmeasured.** Every number on it — `kWormReplicaSlots`, the three
   targeting weights, the per-move spawn chances and the two magnitudes each replica reads — is a
   first cut chosen for internal consistency, not a calibration pass against a real fight. The
   fastest way to find the cliff: a full board is a **hard** floor of 1-in-13 that any given hit
   reaches the parent at all, on a line that also cannot be out-actioned, so if the passive is
   broken it will be broken there. Diff **S**, one balance sitting.
-- **The Isolation Protocol's difficulty is unmeasured.** `kIsolationStepMs`, `kIsolationGrowth`
-  and the 16×11 buffer are a first cut set to one identity — 30 bytes eats the whole incubation
-  clock and leaves the worm across a third of the board — never played against a real thumb on a
-  real panel. The question to answer in one sitting: is a clean run (and with it
-  `WORM_WHISPERER`) *hard*, or is it *unreachable* at 220ms a step on the S3's buttons? Diff **S**,
-  one balance sitting on device.
-- **No on-device browser.** The home-screen banner is the whole feedback channel. If achievements
-  ever want a device-side list, the Hacker face's PROFILE slot is the natural home. Diff **M**.
+- **The achievement banner doesn't linger long enough.** The home-screen banner is the whole
+  feedback channel, so an achievement whose name outruns the time the banner is up is simply lost.
+  Wants a marquee plus a minimum time on screen derived from the name's length — characters ×
+  marquee speed × a balancing factor — rather than one constant that has to suit every name.
+  Diff **S**.
 - **Unverified:** on-device serving of the SD-hosted bundle + the live endpoints
   (`GET /pedia_state.json`, `POST /api/tag`) on a real board.
 
@@ -362,10 +350,6 @@ Sizes are logical px; bind colour to `PAL_CORE` tokens. Inventory: `assets/ASSET
 | `UI_SLOTS_USED` | ARCH rack-slot usage indicator (`slots 2/4`) | ~44×12 | S |
 | `UI_COUNTDOWN` | Lockout countdown digit style | ~64×24 | S — folds into FONT_UI work |
 | `ICON_EXPLORE_STATE` | optional sub-area row state marker | 16×16 | S |
-| `ICON_CFG_RADIO` | RADIO group row — reuses `ICON_SYS_WIFI` today | 20×20 | S |
-| `ICON_CFG_UPDATE` | UPDATES row — reuses `ICON_CFG_SYSINFO` today | 20×20 | S |
-| `ICON_CFG_TRAVEL` | DEVICE group's TRAVEL MODE row — reuses `ICON_CFG_SYSINFO` today | 20×20 | S |
-| `ICON_PEERS` | Hacker-face PEERS slot — renders text-only today | 28×28 | S |
 
 ### 2a-i. The sprite-packing tools live outside the repo
 
