@@ -271,6 +271,13 @@ int attackPowerRank(const std::vector<const MoveDef*>& moves, int moveIdx);
 // How many of `c`'s live replicas are of the given kind.
 int wormReplicaCount(const Combatant& c, bool defenders);
 
+// The Phishing frenzy lean, 0..kPhishFrenzyLeanMaxPct: how strongly an over-stacked
+// Obfuscation bubble pushes `c` off bracing and onto biting (Combat::chooseMove reads
+// it to re-roll Defend picks). A total function of the combatant, so the combat SCREEN
+// can draw the same state the engine is acting on rather than re-deriving a lookalike.
+// 0 for every combatant that has never pooled a shield past its own max Health.
+int phishFrenzyLeanPct(const Combatant& c);
+
 // The damage `c`'s ATTACKER replicas add to one of its parent's swings: each attacker's
 // banked base times the live DEFENDER count (floored at kWormReplicaMultFloor, so a
 // board with no defenders still pays each attacker its base). Multiplied LIVE rather

@@ -178,6 +178,21 @@ void drawPassiveStrip(Framebuffer& fb, const Combatant& c, int x, int y, int w, 
             ? static_cast<float>(c.shieldHp) / c.maxHealth : 0.f;
         drawProgressBar(fb, x, y, w, barH, 1.0f - std::exp(-ratio), palColor(Pal::TEAM_BLUE),
                         c.shieldHp > c.maxHealth, beat);
+        // Frenzy ribs. The churn above says "this pool is bigger than the bar can draw"
+        // — a statement about SIZE, live every frame the pool is over max Health. The
+        // frenzy is a different claim (the pet has committed to spending the wall) and
+        // it OUTLASTS the churn, holding until the pool pops, so the two cannot share
+        // one tell. Ribs rather than a hue shift because this strip is read in grayscale
+        // like every other gauge: the count is the signal, and it climbs 1..4 with the
+        // lean, so "how committed" reads at a glance without a legend.
+        const int leanPct = phishFrenzyLeanPct(c);
+        if (leanPct > 0 && barH > 2) {
+            const int ribs = 1 + leanPct * 3 / kPhishFrenzyLeanMaxPct;
+            for (int i = 0; i < ribs; ++i) {
+                const int rx = x + 2 + (w - 4) * (i + 1) / (ribs + 1);
+                fb.fillRect(rx, y + 1, 1, barH - 2, palColor(Pal::PAPER));
+            }
+        }
         return;
     }
     // Worm replication slots (combat.h wormReplicaCount): one pip per slot, up to

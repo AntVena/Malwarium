@@ -1303,6 +1303,19 @@ void test_phishing_frenzy_breaks_when_exposed() {
 // the bubble is chewed down and releases only when the pool is actually overrun.
 void test_phishing_frenzy_lean_ratchets_until_the_bubble_pops() {
     ContentRegistry r = ContentRegistry::embedded();
+    // The ramp itself, at its most granular point — the combat screen draws its frenzy
+    // ribs off this same function, so the tell and the behaviour can't drift apart.
+    Combatant probe = mkCombatant(r, "P", 100, 50, {"smish_hook"});
+    CHECK(phishFrenzyLeanPct(probe) == 0);            // no pool at all
+    probe.phishShieldPeak = 100;
+    CHECK(phishFrenzyLeanPct(probe) == 0);            // at max Health, not past it
+    probe.phishShieldPeak = 150;
+    CHECK(phishFrenzyLeanPct(probe) == 50);           // halfway to the full-lean point
+    probe.phishShieldPeak = 200;
+    CHECK(phishFrenzyLeanPct(probe) == kPhishFrenzyLeanMaxPct);        // 2x -> saturated
+    probe.phishShieldPeak = 10000;
+    CHECK(phishFrenzyLeanPct(probe) == kPhishFrenzyLeanMaxPct);        // ...and clamped
+
     auto run = [&](int maxHp, int shield, int enemyPower, Combat& out) {
         Combatant pc = mkCombatant(r, "P", maxHp, 50, {"smish_hook", "spoof_bubble"});
         pc.shieldHp = shield;

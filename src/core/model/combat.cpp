@@ -143,11 +143,11 @@ int Combat::pickSlot(const Combatant& self, bool attacksOnly, bool allowRepeat) 
     return -1;
 }
 
-// The frenzy lean (Phishing): how strongly an over-stacked Obfuscation bubble pushes
-// this pet off bracing and onto biting. 0 for every combatant that has never pooled a
-// shield past its own max Health — which is every non-Phishing pet in the game, and so
-// the guard that keeps this whole path from drawing rng() in a fight without the track.
-static int phishFrenzyLeanPct(const Combatant& c) {
+// The frenzy lean (Phishing) — see combat.h for the contract. 0 for every combatant that
+// has never pooled a shield past its own max Health, which is every non-Phishing pet in
+// the game, and so the guard that keeps this whole path from drawing rng() in a fight
+// without the track.
+int phishFrenzyLeanPct(const Combatant& c) {
     if (c.phishShieldPeak <= c.maxHealth || c.maxHealth <= 0) return 0;
     const int span = c.maxHealth * (kPhishFrenzyLeanFullMult - 1);
     if (span <= 0) return kPhishFrenzyLeanMaxPct;
