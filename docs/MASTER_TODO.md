@@ -32,21 +32,34 @@ building it up organically.
 
 **Capture arming costs ~70KB and the AP ~58KB**, against ~126KB free with the radio idle. The device works, and the save no longer needs a big contiguous block, but that was the only thing standing on this — anything else that grows will hit the same wall. Worth a pass at what the capture path actually needs. | `net_capture.h`'s `powerUp` (`esp_wifi_init` + promiscuous + the pcap SD buffers). | M | Measured on device, not estimated: `[ap] down free=126408` → `[cap] armed free=56188`. |
 
-**The discoverable move pool is three moves deep.** The wild-win move drop rolls over a hardcoded
-`{buffer_overflow, rootkit_strike, null_route}` plus an own-line catch-up that a fresh hatch has
-already satisfied — so `kWildMoveDropPct` pays out at most three times per pet and is dead weight
-for the rest of that pet's life. The roster wants enough generic moves that taming keeps teaching
-something, and they want to be *found* rather than granted at a stage. | `game_combat.cpp`'s
-move-drop block; `content_moves.cpp`'s generic roster. | M | The mechanism is built and working;
-this is a content pass plus a rarity axis on the pool so the good ones stay rare. |
+**You learn a move by being hit with it.** The move drop rolls over a hardcoded
+`{buffer_overflow, rootkit_strike, null_route}` regardless of who was fighting, so
+`kWildMoveDropPct` pays out at most three times per pet and is dead weight for the rest of that
+pet's life. Drop instead from the DEFEATED ENEMY'S OWN kit, filtered to what the pet doesn't own
+and can equip (`MoveDef::line` null or matching), one per win. Monkey see, monkey farm until
+monkey can do — which also means a move becomes findable purely by being given to something that
+uses it, with no drop table to maintain in parallel. | `game_combat.cpp`'s move-drop block reading
+`combat_.enemy().moves`. | M | Do this FIRST: it is the mechanism the two rows below both need. |
 
-**A boss drops no moves at all.** A boss round returns via `finishBossRound()` before the drop
-block in `applyCombatResult` ever runs, so the only reason to re-run a cleared gauntlet is Bits.
-Bosses handing over the move they beat you with — at a low rate, generic so every line benefits —
-is the re-run incentive the mode is missing. | `game_explore.cpp`'s `finishBossRound`; the drop
-block it currently bypasses. | M | Wants the pool row above to land first, or there is nothing
-distinctive for a boss to give. Needs its own rate and its own refarm curve — `refarmDropScalePct`
-is wild-specific and a cleared boss is a deliberate re-run, not a farm. |
+**Bosses already carry four unique moves nobody can learn.** `data_rot`, `nag_screen`,
+`decoy_download` and `system_hang` are each a signature sub-area boss's `apexThreatMoveId`
+(`AreaDef`), all `line = nullptr`, all fully specced with the stun/DoT riders — and all
+unobtainable, because a boss round returns via `finishBossRound()` before the drop block ever
+runs. Wiring the drop above into the boss path turns the existing apex threats into the re-run
+incentive with no new content at all. | `game_explore.cpp`'s `finishBossRound`; the drop block it
+bypasses. | S | Wants its own rate and its own refarm curve — `refarmDropScalePct` is built for
+wild grinding, and a cleared boss is a deliberate re-run rather than a farm, so decaying it the
+same way punishes the behaviour this is trying to create. |
+
+**The wild roster's whole vocabulary is the seven generic moves.** `wildMalbeast` gives tiers
+1/2/3 `{quick_jab}` / `{quick_jab, packet_storm}` / `{packet_storm, fork_bomb}`, and the sub-area
+ladder in `applyWildSubAreaScale` overrides with the same four again — keyed by DEPTH, not by
+which malbeast it is. So under learn-from-the-enemy a wild win teaches almost nothing, and no two
+malbeasts are worth farming differently. Wants distinctive kit per creature, not per rung. |
+`combat_factory.cpp`'s `wildMalbeast` + `kLadder`; `content_moves.cpp`. | L | The content pass,
+and the biggest of the three. The ladder's ordering constraint is real and documented — rungs are
+sorted by EFFECTIVE per-turn damage, so a long-channel move LOWERS a rung's average — and per-
+creature kit has to keep that ramp intact while making the creatures read apart. |
 
 **A crew cannot be DISCOVERED.** `QuoteReward::Kind` has room for it and it is one of the prizes
 the board was designed to hand over ("you find a crew to join"), but crews are ungated today —
