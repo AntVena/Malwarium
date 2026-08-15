@@ -220,13 +220,20 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
     // raises the bubble — leaves the run standing, because every other rider on this line
     // (stealSpeedPct, stealCurrentHpPct, Perfect Bite, the frenzy heal) already requires
     // shieldHp > 0: a brace that armed four riders while breaking a fifth was the one
-    // place the track argued with itself. What breaks the run is biting while EXPOSED.
-    if (mv->stealPowerPct > 0) {
-        if (actor.shieldHp > 0) {
+    // place the track argued with itself. What breaks the run is SWINGING while exposed.
+    //
+    // The break is on any Attack, not only a steal-attack: "caught out with the bubble
+    // down" is a statement about the pet's exposure, and scoping it to the line's own
+    // moves would have let a mixed kit swing generics through the whole exposed stretch
+    // with its banked run intact and re-bubble at leisure. Only the ADVANCE is
+    // line-scoped — a generic swing is frenzy-neutral, neither building nor breaking,
+    // which is what keeps a heavy off-line hitter a real choice rather than a strict one.
+    if (mv->kind == MoveDef::Kind::Attack) {
+        if (actor.shieldHp <= 0) {
+            actor.phishStreak = 0;    // caught out with the bubble down
+        } else if (mv->stealPowerPct > 0) {
             actor.phishStreak++;
             if (actor.phishStreak > 1) actor.phishComboBonus += actor.phishStreak - 1;
-        } else {
-            actor.phishStreak = 0;    // caught out with the bubble down
         }
     }
     if (mv->kind == MoveDef::Kind::Attack) {

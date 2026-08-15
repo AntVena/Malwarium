@@ -1296,6 +1296,28 @@ void test_phishing_frenzy_breaks_when_exposed() {
     for (int i = 0; i < 40; ++i) cb.step();
     CHECK(cb.player().phishStreak == 0);        // never got off the ground
     CHECK(cb.player().phishComboBonus == 0);    // and banked nothing
+
+    // The break is about EXPOSURE, not about which move: a generic swing taken with the
+    // bubble down ends a banked run too, so a mixed kit can't swing off-line moves
+    // through the exposed stretch and re-bubble with its run intact.
+    auto swing = [&](const char* moveId, int shield, int streakIn, Combat& out) {
+        Combatant p2 = mkCombatant(r, "P", 4000, 50, {moveId});
+        p2.shieldHp = shield;
+        p2.phishStreak = streakIn;
+        p2.phishComboBonus = 10;                // already banked; never decays either way
+        Combatant e2 = mkCombatant(r, "E", 4000, 1, {"quick_jab"});
+        out.begin(p2, e2, Combat::Stakes::Safe, 1);
+        for (int i = 0; i < 6; ++i) out.step();
+    };
+    Combat exposed; swing("packet_storm", 0, 5, exposed);
+    CHECK(exposed.player().phishStreak == 0);        // generic swing, bubble down: broken
+    CHECK(exposed.player().phishComboBonus == 10);   // ...but the bank is never given back
+
+    // ...and with the bubble UP a generic swing is frenzy-neutral: it neither advances
+    // the run (it steals nothing) nor breaks it, which is what keeps a heavy off-line
+    // hitter a real choice in a Phishing kit rather than a strictly wrong one.
+    Combat covered; swing("packet_storm", 400, 5, covered);
+    CHECK(covered.player().phishStreak == 5);
 }
 
 // The frenzy LEAN: a pool stacked past the pet's own max Health re-rolls Defend picks
