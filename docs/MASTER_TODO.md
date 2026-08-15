@@ -32,15 +32,6 @@ building it up organically.
 
 **Capture arming costs ~70KB and the AP ~58KB**, against ~126KB free with the radio idle. The device works, and the save no longer needs a big contiguous block, but that was the only thing standing on this — anything else that grows will hit the same wall. Worth a pass at what the capture path actually needs. | `net_capture.h`'s `powerUp` (`esp_wifi_init` + promiscuous + the pcap SD buffers). | M | Measured on device, not estimated: `[ap] down free=126408` → `[cap] armed free=56188`. |
 
-**You learn a move by being hit with it.** The move drop rolls over a hardcoded
-`{buffer_overflow, rootkit_strike, null_route}` regardless of who was fighting, so
-`kWildMoveDropPct` pays out at most three times per pet and is dead weight for the rest of that
-pet's life. Drop instead from the DEFEATED ENEMY'S OWN kit, filtered to what the pet doesn't own
-and can equip (`MoveDef::line` null or matching), one per win. Monkey see, monkey farm until
-monkey can do — which also means a move becomes findable purely by being given to something that
-uses it, with no drop table to maintain in parallel. | `game_combat.cpp`'s move-drop block reading
-`combat_.enemy().moves`. | M | Do this FIRST: it is the mechanism the two rows below both need. |
-
 **Bosses already carry four unique moves nobody can learn.** `data_rot`, `nag_screen`,
 `decoy_download` and `system_hang` are each a signature sub-area boss's `apexThreatMoveId`
 (`AreaDef`), all `line = nullptr`, all fully specced with the stun/DoT riders — and all
@@ -51,15 +42,25 @@ bypasses. | S | Wants its own rate and its own refarm curve — `refarmDropScale
 wild grinding, and a cleared boss is a deliberate re-run rather than a farm, so decaying it the
 same way punishes the behaviour this is trying to create. |
 
-**The wild roster's whole vocabulary is the seven generic moves.** `wildMalbeast` gives tiers
-1/2/3 `{quick_jab}` / `{quick_jab, packet_storm}` / `{packet_storm, fork_bomb}`, and the sub-area
-ladder in `applyWildSubAreaScale` overrides with the same four again — keyed by DEPTH, not by
-which malbeast it is. So under learn-from-the-enemy a wild win teaches almost nothing, and no two
-malbeasts are worth farming differently. Wants distinctive kit per creature, not per rung. |
-`combat_factory.cpp`'s `wildMalbeast` + `kLadder`; `content_moves.cpp`. | L | The content pass,
-and the biggest of the three. The ladder's ordering constraint is real and documented — rungs are
-sorted by EFFECTIVE per-turn damage, so a long-channel move LOWERS a rung's average — and per-
-creature kit has to keep that ramp intact while making the creatures read apart. |
+**No enemy in the game swings a DEFEND move**, so under learn-from-the-enemy the two generic
+braces — `null_route` and `checksum_guard` — are unobtainable for a line pet, which is every pet.
+A line pet still has its own line's braces, so this is dead content rather than a hole in the
+kit, but it is the sharpest single symptom of the row below and the cheapest to fix: one wild or
+sub-boss that actually brace. | `combat_factory.cpp`'s `wildMalbeast` / `kLadder` / `subAreaBoss`.
+| S | Costs a rung's tuning — a wild that spends turns bracing deals less per turn, and `kLadder`
+is explicitly ordered by effective per-turn damage. Cheapest home is a sub-boss, which sits
+outside the ladder, once boss drops land. |
+
+**The wild roster's whole vocabulary is five attacks.** `wildMalbeast` gives tiers 1/2/3
+`{quick_jab}` / `{quick_jab, packet_storm}` / `{packet_storm, fork_bomb}`, and the sub-area ladder
+in `applyWildSubAreaScale` overrides with the same handful again — keyed by DEPTH, not by which
+malbeast it is. So a Packet Wraith and a Cache Ghoul at the same rung are mechanically one fight,
+and now that drops come from the enemy's kit, no two malbeasts are worth farming differently.
+Wants distinctive kit per creature, not per rung. | `combat_factory.cpp`'s `wildMalbeast` +
+`kLadder`; `content_moves.cpp`. | L | The content pass, and the biggest of the three. The ladder's
+ordering constraint is real and documented — rungs are sorted by EFFECTIVE per-turn damage, so a
+long-channel move LOWERS a rung's average — and per-creature kit has to keep that ramp intact
+while making the creatures read apart. |
 
 **A crew cannot be DISCOVERED.** `QuoteReward::Kind` has room for it and it is one of the prizes
 the board was designed to hand over ("you find a crew to join"), but crews are ungated today —
