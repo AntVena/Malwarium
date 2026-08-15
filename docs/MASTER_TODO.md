@@ -373,6 +373,38 @@ change — an app-only OTA can't carry it.
   than implied-protected; NVS encryption is a separate feature and is not enabled. Revisit only if
   the threat model changes.
 
+### 1k. The detail-page family — one dim, and separation at the seams
+
+`item_detail`, `mod_detail` and `maint_detail` solve the same layout problem three ways. Read
+side by side off `./tools/screens.sh` they are clearly siblings, which is what makes the
+disagreements legible as drift rather than as three independent choices.
+
+- **`Pal::INK_DIM` means something different on each.** `item_detail` and `mod_detail` both use it
+  the same way — one dim readout line under the name, then INK prose — so dim reliably marks "this
+  is the secondary line". `maint_detail` alternates INK and dim row by row (REDUCES / CURRENT FRAG
+  in INK, DEFRAGS DONE dim, COST + HAVE in INK, HELD DEFRAG TOOLS dim), so dim marks no group at
+  all and reads as texture. Since dim is the separation lever that costs nothing and survives
+  grayscale, spending it on alternating rows spends the one free lever the screen had. | S |
+  Pick the item/mod reading and make maint match it; the standard should then say which it is. |
+- **`maint_detail` has two action zones**, the QUICK/TOOL/STACKER picker mid-screen and a second
+  `▶ B RUN   A SWITCH` line at the bottom, where both siblings put a single action line last. | S |
+  Possibly correct — it is the one page where the action takes a parameter — but it is undocumented
+  and should be a stated exception rather than a difference. |
+- **`item_detail` is the worked example from `MAINTENANCE.md` and still reads as described**: a dead
+  gap mid-screen from the reserved `kDetailPanelTop`/`Bottom` band, and nothing at the seams where
+  the readout, prose, HAVE and action line meet. The `ITEMS` banner spends `FontFace::Bold` on the
+  one group the rule under it had already separated. | M | Reclaiming the reserved band is the
+  layout change; the spacing follows from it. |
+- **`mod_detail` stacks four groups with nothing between them** — ONE-SHOT (HOT), SLOT + HAVE (dim),
+  REQUIRES LVL (dim/HOT), and the LOCKED action line (HOT). When the level gate is the failing one,
+  two adjacent HOT lines print the same number. That redundancy is deliberate and correct —
+  `mods_screen.cpp:347` documents it as a number channel plus a word channel so the state survives
+  grayscale — but nothing separates the four, so they read as one block. | S | The fix is spacing
+  between the groups, NOT dropping either channel. |
+
+Everything else on the 65-screen sheet reads fine: the list screens carry a header rule and a row
+cursor, which is enough. This family is the outlier.
+
 ---
 
 ## 2. Art

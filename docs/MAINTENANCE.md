@@ -50,13 +50,13 @@ exception is the one to apply honestly: **count the `case` labels before grantin
 `switch` over a vocabulary is fine; a long if-chain is accumulated special cases wearing the same
 length, and the two are indistinguishable by line count alone.
 
-### Design consistency pass — Last run: 2026-08-05
+### Design consistency pass — Last run: 2026-08-15
 Spot-check shipped screens against the system they're authored to (`assets/VISUAL_LANGUAGE.md`,
 `assets/CREATURE_VISUAL_RULES.md`) and against each other — a screen that solves a problem its
 siblings solve differently is the drift worth catching. Fix the standard to match reality, or if
 the drift looks like an undocumented real decision, surface it explicitly.
 
-### Screen separation pass — Last run: 2026-08-08
+### Screen separation pass — Last run: 2026-08-15
 Take the contact sheet (`./tools/screens.sh`) and go screen by screen through every one that
 stacks **multiple distinct row groups**, asking one question: can a reader tell where one group
 ends and the next begins, without reading the words?
@@ -127,13 +127,21 @@ remove a device-only header while building host-only, or vice-versa. Removable i
 wrong: an include a unit uses DIRECTLY stays even when some other header happens to supply it, and
 the trap in a mechanical scan is a symbol that only appears in a comment.
 
-### Asset manifest accuracy audit — Last run: 2026-08-05
+### Asset manifest accuracy audit — Last run: 2026-08-15
 Cross-check `assets/ASSET_MANIFEST.md` status markers (☑/▨/☐) against what's actually in
 `assets/` and wired into `embedded_content.cpp`. Flag mismatches in either direction
 (claimed-delivered-but-missing, or shipped-but-still-marked-TODO). Audit the **File** column
 too, not just the marker — every concrete path had gone stale against the `icons/`/`sprites/`/
 `ui/` split, which no status marker would have caught. Watch for the two basenames that exist
 in both a live folder and `_attic/`: a naive stem→path map resolves them to the parked copy.
+
+**Three ways a marker check cries wolf**, all of which look like "claimed ☑, not compiled":
+`engine-drawn` rows (`UI_GAUGE`, `UI_SCROLLBAR`, `UI_HEALTH_BAR` …) are delivered as code and are
+correctly absent from `assets.h` — read the File column before flagging; a row id can be a FAMILY
+name that expands (`ICON_LOG_EVENT` → `_ITEM`/`_WARN`/`_COMBAT`, `UI_OVERRIDE_PIP` →
+`ICON_OVERRIDE_PIP{,_SPENT}`); and `assets.h` declares sprites as `ASSET_<ID>`, so an id-prefix
+grep that forgets a prefix (`BG_`, `FX_`) invents missing rows. Check the expansions and the
+`ASSET_` form before believing any mismatch.
 
 **The stronger check is: should this row exist at all?** Any asset whose id is derived from a
 content row (`ICON_ITEM_<ID>`, `ICON_MOD_<ID>`, `ICON_MOVE_<ID>`, a creature's `spriteName`) must
