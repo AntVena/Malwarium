@@ -1,4 +1,4 @@
-// test_tourney.cpp — THE COMPO: the derivation, the headless bracket, and the run.
+// test_tourney.cpp — ROCK THE DOCK: the derivation, the headless bracket, and the run.
 //
 // The arena's whole correctness claim is that a bracket is a SEED: the same seed must
 // build the same eight operators, the matches nobody watches must be really fought and
@@ -11,6 +11,7 @@
 #include "core/content/content_tournament.h"
 #include "core/model/tournament.h"
 #include "core/ui/layout.h"
+#include "core/ui/prose_page.h"
 
 using namespace mal;
 
@@ -224,28 +225,28 @@ void test_tourney_rounds_halve_the_field() {
 void test_tourney_run_from_the_expl_row() {
     Game g{StartMode::Hatched, "bruinforce"};
     g.debugAddCombatXp(600000);                  // a pet that can actually win a match
-    const int compoRow = explRowCount() - 1;
+    const int arenaRow = explRowCount() - 1;
     bool cleared[kExplSectors * kExplSubAreas] = {};
     bool boss[kExplSectors * kExplSubAreas] = {};
     bool areas[kExplSectors] = {};
-    CHECK(explRowState(compoRow, areas, cleared, boss, -1, -1, false) ==
+    CHECK(explRowState(arenaRow, areas, cleared, boss, -1, -1, false) ==
           ExplRowState::TourneyLocked);
     CHECK(!explRowSelectable(ExplRowState::TourneyLocked));
 
     // Reaching The Pirate Bayou — clearing the area before it — is the invitation.
     g.debugSetSectorCleared(0, true);
     areas[0] = true;
-    CHECK(explRowState(compoRow, areas, cleared, boss, -1, -1, false) ==
+    CHECK(explRowState(arenaRow, areas, cleared, boss, -1, -1, false) ==
           ExplRowState::TourneyOpen);
-    CHECK(explRowState(compoRow, areas, cleared, boss, -1, -1, true) ==
+    CHECK(explRowState(arenaRow, areas, cleared, boss, -1, -1, true) ==
           ExplRowState::TourneyRunning);
 
     // Walk to the row and enter. It is the LAST row, so C-holding backward from the
     // parked area header is the short way there; A round-trips just as well.
     enterSubmenuId(g, SubmenuId::Expl);
-    for (int i = 0; i < explRowCount() && g.listRow() != compoRow; ++i)
+    for (int i = 0; i < explRowCount() && g.listRow() != arenaRow; ++i)
         g.onButton(press(Button::A));
-    CHECK(g.listRow() == compoRow);
+    CHECK(g.listRow() == arenaRow);
     g.onButton(press(Button::B));
     CHECK(g.nav() == Game::Nav::Tourney);
     CHECK(g.tourneyRunning());
@@ -257,8 +258,10 @@ void test_tourney_run_from_the_expl_row() {
     CHECK(opp >= 0 && opp != g.tourneySlot());
     CHECK(g.tourneyOpponent().spec.creatureId[0]);    // the match card has a species
 
-    // B fights it. There is no running from a bracket, so C is inert mid-match.
-    g.onButton(press(Button::B));
+    // A TAPPED B starts the bout — B is a tap/hold pair here, so the press edge only
+    // arms it and the tap resolves on the release. There is no running from a bracket,
+    // so C is inert mid-bout.
+    tapB(g);
     CHECK(g.nav() == Game::Nav::Combat);
     tapC(g);
     CHECK(g.combat().outcome() == Combat::Outcome::Ongoing);   // C did not forfeit
@@ -266,7 +269,7 @@ void test_tourney_run_from_the_expl_row() {
     for (int i = 0; i < 4000 && g.combat().outcome() == Combat::Outcome::Ongoing; ++i)
         g.tick(t += kHeartbeatMs);
     const bool won = g.combat().outcome() == Combat::Outcome::Win;
-    g.onButton(press(Button::B));                              // dismiss the verdict
+    tapB(g);                                                   // dismiss the verdict
     CHECK(g.nav() == Game::Nav::Tourney);
     if (won) {
         CHECK(g.tourneyRound() == 1);
@@ -275,7 +278,7 @@ void test_tourney_run_from_the_expl_row() {
     } else {
         CHECK(g.tourneyPhase() == Game::TourneyPhase::Eliminated);
         // A dismissed verdict forgets the run and hands the operator back to EXPL.
-        g.onButton(press(Button::B));
+        tapB(g);
         CHECK(!g.tourneyRunning() && g.nav() == Game::Nav::Submenu);
     }
 }
@@ -292,7 +295,7 @@ void test_tourney_screen_grayscale() {
         enterSubmenuId(g, SubmenuId::Expl);
         for (int i = 0; i < explRowCount() && g.listRow() != explRowCount() - 1; ++i)
             g.onButton(press(Button::A));
-        g.onButton(press(Button::B));              // draw a bracket
+        tapB(g);              // draw a bracket
         if (eliminate) g.debugEndTourneyRun(/*champion=*/false);
         g.render(fb);
     };
@@ -342,6 +345,90 @@ void test_tourney_screen_outlives_the_menu_idle_timer() {
     uint32_t t = 0;
     for (int i = 0; i < 40; ++i) g.tick(t += kAutoDefocusMs);   // far past the collapse
     CHECK(g.nav() == Game::Nav::Tourney);
+}
+
+// THE BRIEFING is the only thing that tells an operator what an arena bout is, so it
+// has to actually fit the page it is drawn on: prose past EffectText's cap is silently
+// lost, and a heading that overflows the panel is cut mid-word.
+void test_tourney_brief_fits_its_page() {
+    CHECK(kTourneyBriefCount > 0);
+    for (int i = 0; i < kTourneyBriefCount; ++i) {
+        const TourneyBriefDef& b = kTourneyBrief[i];
+        CHECK(b.heading && b.heading[0] && b.text && b.text[0]);
+        CHECK(textWidth(b.heading) <= kProseW);
+        CHECK(static_cast<int>(std::strlen(b.text)) <= EffectText::kMaxProse);
+    }
+    // ...and the built rows are the table, in order, with the prose intact.
+    Game g{StartMode::Hatched, "bruinforce"};
+    const auto rows = g.tourneyBriefRows();
+    CHECK(static_cast<int>(rows.size()) == kTourneyBriefCount);
+    for (int i = 0; i < kTourneyBriefCount; ++i) {
+        CHECK(std::strcmp(rows[i].label, kTourneyBrief[i].heading) == 0);
+        CHECK(std::strcmp(rows[i].body.c_str(), kTourneyBrief[i].text) == 0);
+        CHECK(!rows[i].body.atCap());        // nothing was clipped on the way in
+    }
+    // Every section fits a screen on its own — a section taller than the whole page
+    // would draw clipped and never scroll past.
+    for (int top = 0; top < kTourneyBriefCount; ++top)
+        CHECK(proseRowsFitting(rows, top, 46) >= 1);
+}
+
+// SCOUTING a rival is the answer to "their loadout matters now": the sheet has to name
+// every move and mod they are actually carrying, the stat spread their levels bought,
+// and the Exploit they hold — and it has to say it in the move's OWN words, because it
+// is the same builder STAT's LOADOUT page uses.
+void test_tourney_scout_shows_the_rivals_whole_kit() {
+    Game g{StartMode::Hatched, "bruinforce"};
+    g.debugSetSectorCleared(0, true);
+    enterSubmenuId(g, SubmenuId::Expl);
+    for (int i = 0; i < explRowCount() && g.listRow() != explRowCount() - 1; ++i)
+        g.onButton(press(Button::A));
+    g.onButton(press(Button::B));
+    CHECK(g.nav() == Game::Nav::Tourney);
+
+    // Park on a rival, then HOLD B — the tap starts a bout, the hold opens the sheet.
+    while (g.tourneyCursor() == g.tourneySlot()) g.onButton(press(Button::A));
+    const int scouted = g.tourneyCursor();
+    uint32_t t = 0;
+    g.onButton(press(Button::B));
+    g.tick(t += kTourneyScoutHoldMs + kHeartbeatMs);
+    g.onButton(lift(Button::B));
+    CHECK(g.tourneyView() == Game::TourneyView::Scout);
+    CHECK(g.nav() == Game::Nav::Tourney);          // a reader, not a bout
+
+    const TourneyFighter f = tourneyEntrant(g.content(), g.tourneySeed(), scouted);
+    const auto rows = g.tourneyScoutRows();
+    auto namesRow = [&](const char* label) {
+        for (const auto& r : rows)
+            if (std::strcmp(r.label, label) == 0) return true;
+        return false;
+    };
+    // Every equipped move and mod, by its own displayName.
+    for (int i = 0; i < kMaxMoveSlots; ++i)
+        if (f.spec.moveIds[i][0])
+            CHECK(namesRow(g.content().move(f.spec.moveIds[i])->displayName));
+    for (int i = 0; i < kModSlots; ++i)
+        if (f.spec.modIds[i][0])
+            CHECK(namesRow(g.content().mod(f.spec.modIds[i])->displayName));
+    // The stat spread — invisible in a move list, and half of what an opponent is.
+    for (int i = 0; i < kLevelStatCount; ++i) CHECK(namesRow(levelStatName(i)));
+    // The Exploit it holds, by name. Its TRIGGER is deliberately absent: which moment a
+    // rival commits to is the read the arena exists to teach.
+    CHECK(f.exploit.label && namesRow(f.exploit.label));
+    for (const auto& r : rows) {
+        char pct[8];
+        std::snprintf(pct, sizeof(pct), "%d%%", f.exploitAtHealthPct);
+        CHECK(std::strstr(r.body.c_str(), pct) == nullptr);
+    }
+    // C returns to the bracket, and the run is untouched by having been read.
+    tapC(g);
+    CHECK(g.tourneyView() == Game::TourneyView::Bracket && g.tourneyRunning());
+
+    // The chord opens the BRIEFING from the same screen, and C closes that too.
+    g.onButton(chordAC());
+    CHECK(g.tourneyView() == Game::TourneyView::Brief);
+    tapC(g);
+    CHECK(g.tourneyView() == Game::TourneyView::Bracket);
 }
 
 // A bracket is four bytes plus a bitmask, so it has to survive a reboot exactly —

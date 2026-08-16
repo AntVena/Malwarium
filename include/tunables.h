@@ -436,6 +436,10 @@ constexpr uint32_t kItemFilterHoldMs = 800;   // ITEMS list: cycles the type fil
 // now); a shorter tap still drills into the focused move's detail. No unlock gate,
 // unlike the ITEMS/VAULT hold gestures beside it.
 constexpr uint32_t kMoveFilterHoldMs = 800;
+// ROCK THE DOCK bracket: holding B past this opens the focused entrant's SCOUT sheet
+// instead of starting a bout. The same 800ms as its three siblings — a hold that takes
+// a different amount of time per screen is a gesture the hand has to re-learn.
+constexpr uint32_t kTourneyScoutHoldMs = 800;
 constexpr uint32_t kBulkOpenHoldMs = 800;     // Hacker VAULT: bulk-opens the focused
                                               // row's rarity (the Rig Shop's Bulk-Open unlock gates this)
 // The list step's repeat. A is "next" on every list on the device, and a list long

@@ -52,50 +52,32 @@ void vitalsRow(Framebuffer& fb, int y, const char* label, int value, Zone zone,
     drawText(fb, kNumX, y + 2, num, nc);
 }
 
-// --- Prose row flow -------------------------------------------------------
-//
-// LOADOUT and BUFFS both stack rows of the same shape: a name line with the row's
-// own effect text wrapped under it. That text is AUTHORED PROSE, written to be
-// read and not sized to the panel, so a fixed per-row line budget can only be
-// wrong in one of two directions — too small cuts the sentence (a mod that wraps
-// to four lines under a three-line budget), too large runs the last visible row
-// off the foot of the screen and over the hint band. Neither page budgets:
-// every row is MEASURED (textWrapLines) and takes exactly the height its own text
-// needs, rows pack down from the top, and whatever doesn't fit is simply where
-// the next B-scroll window starts.
-constexpr int kProseW = kActiveW - 2 * kMargin;
-constexpr int kProseLineH = kFontH + 2;
-constexpr int kProseNameGap = 3;   // name line -> its first prose line
-constexpr int kProseRowGap = 8;    // last prose line -> the next row's name
-// A section header (LOADOUT's MOVES/MODS) belongs to the block UNDER it, so it takes
-// its air from ABOVE: a wide lead-in fences one group off from the last, and a tight
-// tail keeps the label attached to the entry it names.
-//
-// The two numbers have to stay ordered kProseHeaderTail < kProseRowGap < kProseGroupLead
-// or the page loses its grouping. Before this, a header's air was spent entirely BELOW
-// it and came to 8px against 6 between entries — two pixels of difference asked to say
-// "new section", which left the dim MOVES/MODS labels carrying the grouping alone.
-//
-// The lead is suppressed on the FIRST row: the header band above it is already the fence,
-// and paying for a second one would push the whole page down for nothing.
-constexpr int kProseGroupLead = 14;   // blank above a section header
-constexpr int kProseHeaderTail = 3;   // header -> its first entry
-constexpr int kProseHeaderH = kFontH + kProseHeaderTail;
+// The two pages' own row tops. The flow itself (row heights, the fit count, the
+// scrollbar) is shared — core/ui/prose_page.h — because LOADOUT, BUFFS and the arena's
+// opponent sheet are one page wearing three headers.
+constexpr int kLoadoutRowTop = 26;
+constexpr int kBuffRowTop = 28;
 
-// The foot of the flow: the hint band's strip is reserved whether or not the hint
-// is drawn, so a page can never discover it after a row is already using the space.
-constexpr int kProseBottom = kActiveH - kHintBandH;
-
-int proseRowH(const char* effect) {
-    const int lines = (effect && effect[0]) ? textWrapLines(effect, kProseW) : 0;
-    return kFontH + (lines > 0 ? kProseNameGap + lines * kProseLineH : 0) + kProseRowGap;
+// BUFFS keeps its own heights because a buff row is a name plus a COUNTDOWN rather
+// than a name plus a tag — the timer is live state, re-read every repaint, where a
+// ProseRow's tag is set once when the row is built.
+std::vector<int> buffRowHeights(const std::vector<BuffRow>& rows) {
+    std::vector<int> h;
+    h.reserve(rows.size());
+    for (const BuffRow& r : rows)
+        h.push_back(kFontH + (r.effect.empty()
+                                  ? 0
+                                  : kProseNameGap +
+                                        textWrapLines(r.effect.c_str(), kProseW) *
+                                            kProseLineH) +
+                    kProseRowGap);
+    return h;
 }
 
-// How many rows from `top` fit between `rowTop` and the foot. Always at least one:
-// a row taller than the whole body still draws (clipped) rather than stalling the
-// B-scroll on a window of zero rows, which would never reach the end and wrap.
-int proseFitCount(const std::vector<int>& heights, int top, int rowTop) {
-    int y = rowTop;
+// BUFFS' own fit count, over its own heights — the shared proseRowsFitting takes
+// ProseRows, and this page's rows are not those.
+int buffFitCount(const std::vector<int>& heights, int top) {
+    int y = kBuffRowTop;
     int n = 0;
     for (int i = top; i < static_cast<int>(heights.size()); ++i) {
         if (n > 0 && y + heights[i] > kProseBottom) break;
@@ -105,58 +87,30 @@ int proseFitCount(const std::vector<int>& heights, int top, int rowTop) {
     return n;
 }
 
-// UI_SCROLLBAR for a flowed page (mirrors drawMovePicker, train_screen.cpp), plus
-// the contextual hint: B is normally a no-op on STAT, so a page that gives it
-// meaning has to name it. Measured in ROWS, not pixels — the thumb reports
-// position in the list, which is what the reader is tracking.
-void drawProseScrollbar(Framebuffer& fb, int rowTop, int top, int shown, int total) {
+void drawBuffScrollbar(Framebuffer& fb, int top, int shown, int total) {
     const int barX = kActiveW - 3;
-    const int trackH = kProseBottom - rowTop;
-    fb.fillRect(barX, rowTop, 2, trackH, palColor(Pal::TRACK));
+    const int trackH = kProseBottom - kBuffRowTop;
+    fb.fillRect(barX, kBuffRowTop, 2, trackH, palColor(Pal::TRACK));
     const int thumbH = std::max(8, trackH * shown / total);
-    const int thumbY = rowTop + trackH * top / total;
-    fb.fillRect(barX, thumbY, 2, thumbH, palColor(Pal::INK_DIM));
+    fb.fillRect(barX, kBuffRowTop + trackH * top / total, 2, thumbH,
+                palColor(Pal::INK_DIM));
     drawHintBand(fb, "B SCROLL");
-}
-
-constexpr int kLoadoutRowTop = 26;
-
-// The lead is part of the row's HEIGHT, not a gap the draw loop adds, so the fit and
-// scroll maths see the same page the reader does.
-int loadoutHeaderLead(int index) { return index == 0 ? 0 : kProseGroupLead; }
-
-std::vector<int> loadoutRowHeights(const std::vector<LoadoutRow>& rows) {
-    std::vector<int> h;
-    h.reserve(rows.size());
-    for (int i = 0; i < static_cast<int>(rows.size()); ++i)
-        h.push_back(rows[i].header ? loadoutHeaderLead(i) + kProseHeaderH
-                                   : proseRowH(rows[i].effect.c_str()));
-    return h;
-}
-
-constexpr int kBuffRowTop = 28;
-
-std::vector<int> buffRowHeights(const std::vector<BuffRow>& rows) {
-    std::vector<int> h;
-    h.reserve(rows.size());
-    for (const BuffRow& r : rows) h.push_back(proseRowH(r.effect.c_str()));
-    return h;
 }
 
 } // namespace
 
-std::vector<LoadoutRow> buildLoadoutRows(const ContentRegistry& reg,
-                                         const MoveLoadout& moveLoad,
-                                         const Loadout& modLoad,
-                                         Stage stage, bool isEgg) {
-    std::vector<LoadoutRow> out;
+std::vector<ProseRow> buildLoadoutRows(const ContentRegistry& reg,
+                                       const MoveLoadout& moveLoad,
+                                       const Loadout& modLoad,
+                                       Stage stage, bool isEgg) {
+    std::vector<ProseRow> out;
     // An egg can't train or mod (Game::eggSlotLocked) — nothing to show.
     if (isEgg) {
-        out.push_back({false, false, "- NO LOADOUT -", {}});
+        out.push_back({false, "- NO LOADOUT -", {}, {}});
         return out;
     }
 
-    out.push_back({true, false, "MOVES", {}});
+    out.push_back({true, "MOVES", {}, {}});
     // One row per unlocked slot: the equipped move, or — when the slot is empty — the
     // innate Quick Jab fallback marked (DEFAULT). Quick Jab is NOT a standalone row;
     // it surfaces only in a slot that has no move (mirrors the combat per-slot fallback,
@@ -165,63 +119,37 @@ std::vector<LoadoutRow> buildLoadoutRows(const ContentRegistry& reg,
     const int unlocked = MoveLoadout::slotsForStage(stage);
     for (int i = 0; i < unlocked; ++i) {
         const char* id = moveLoad.equipped(i);
-        if (const MoveDef* m = id ? reg.move(id) : nullptr)
-            out.push_back({false, false, m->displayName, effectText(*m)});
-        else if (def)
-            out.push_back({false, true, def->displayName, effectText(*def)});
+        if (const MoveDef* m = id ? reg.move(id) : nullptr) {
+            out.push_back({false, m->displayName, {}, effectText(*m)});
+        } else if (def) {
+            out.push_back({false, def->displayName, {}, effectText(*def)});
+            setProseTag(out.back(), "DEFAULT");
+        }
     }
 
-    out.push_back({true, false, "MODS", {}});
+    out.push_back({true, "MODS", {}, {}});
     bool anyMod = false;
     for (int i = 0; i < kModSlots; ++i) {
         if (const char* id = modLoad.equipped(i)) {
             if (const ModDef* m = reg.mod(id)) {
-                out.push_back({false, false, m->displayName, effectText(*m)});
+                out.push_back({false, m->displayName, {}, effectText(*m)});
                 anyMod = true;
             }
         }
     }
-    if (!anyMod) out.push_back({false, false, "- NONE -", {}});
+    if (!anyMod) out.push_back({false, "- NONE -", {}, {}});
 
     return out;
 }
 
-int loadoutRowsFitting(const std::vector<LoadoutRow>& rows, int top) {
-    return proseFitCount(loadoutRowHeights(rows), top, kLoadoutRowTop);
+int loadoutRowsFitting(const std::vector<ProseRow>& rows, int top) {
+    return proseRowsFitting(rows, top, kLoadoutRowTop);
 }
 
-void drawLoadoutScreen(Framebuffer& fb, const std::vector<LoadoutRow>& rows,
+void drawLoadoutScreen(Framebuffer& fb, const std::vector<ProseRow>& rows,
                        int scrollTop, int beat) {
     statHeader(fb, "LOADOUT", 1);
-
-    const std::vector<int> heights = loadoutRowHeights(rows);
-    const int total = static_cast<int>(rows.size());
-    const bool overflow = proseFitCount(heights, 0, kLoadoutRowTop) < total;
-    // Clamp (not wrap) here — the wrap-on-B logic lives in the caller
-    // (game_core.cpp), which knows the total row count too; this just protects
-    // against an out-of-range scrollTop reaching the renderer.
-    const int top = overflow ? std::max(0, std::min(scrollTop, total - 1)) : 0;
-    const int shown = proseFitCount(heights, top, kLoadoutRowTop);
-
-    int y = kLoadoutRowTop;
-    for (int v = 0; v < shown; ++v) {
-        const LoadoutRow& r = rows[top + v];
-        if (r.header) {
-            drawText(fb, kMargin, y + loadoutHeaderLead(top + v), r.label,
-                     palColor(Pal::INK_DIM));
-        } else {
-            drawLabelValue(fb, kMargin, y, r.label, palColor(Pal::INK),
-                           r.isDefault ? "DEFAULT" : "", palColor(Pal::INK_DIM), beat,
-                           false);
-            if (!r.effect.empty())
-                drawTextWrapped(fb, kMargin, y + kFontH + kProseNameGap, kProseW,
-                                  r.effect.c_str(), palColor(Pal::INK_DIM), kProseLineH,
-                                  textWrapLines(r.effect.c_str(), kProseW));
-        }
-        y += heights[top + v];
-    }
-
-    if (overflow) drawProseScrollbar(fb, kLoadoutRowTop, top, shown, total);
+    drawProseRows(fb, rows, scrollTop, kLoadoutRowTop, beat);
 }
 
 std::vector<BuffRow> buildBuffRows(const ContentRegistry& reg,
@@ -272,7 +200,7 @@ std::vector<BuffRow> buildBuffRows(const ContentRegistry& reg,
 }
 
 int buffRowsFitting(const std::vector<BuffRow>& rows, int top) {
-    return proseFitCount(buffRowHeights(rows), top, kBuffRowTop);
+    return buffFitCount(buffRowHeights(rows), top);
 }
 
 void drawBuffsScreen(Framebuffer& fb, const std::vector<BuffRow>& rows, int scrollTop,
@@ -286,9 +214,9 @@ void drawBuffsScreen(Framebuffer& fb, const std::vector<BuffRow>& rows, int scro
 
     const std::vector<int> heights = buffRowHeights(rows);
     const int total = static_cast<int>(rows.size());
-    const bool overflow = proseFitCount(heights, 0, kBuffRowTop) < total;
+    const bool overflow = buffFitCount(heights, 0) < total;
     const int top = overflow ? std::max(0, std::min(scrollTop, total - 1)) : 0;
-    const int shown = proseFitCount(heights, top, kBuffRowTop);
+    const int shown = buffFitCount(heights, top);
 
     int y = kBuffRowTop;
     for (int v = 0; v < shown; ++v) {
@@ -308,7 +236,7 @@ void drawBuffsScreen(Framebuffer& fb, const std::vector<BuffRow>& rows, int scro
         y += heights[top + v];
     }
 
-    if (overflow) drawProseScrollbar(fb, kBuffRowTop, top, shown, total);
+    if (overflow) drawBuffScrollbar(fb, top, shown, total);
 }
 
 void drawSpeciesScreen(Framebuffer& fb, const char* name, const char* line,

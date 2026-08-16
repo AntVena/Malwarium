@@ -1,6 +1,6 @@
-// tournament.h — THE COMPO, the pure half: a seed in, a bracket out.
+// tournament.h — ROCK THE DOCK, the pure half: a seed in, a bracket out.
 //
-// A Compo run is ONE 32-BIT SEED plus a survivor bitmask. Every entrant — its handle,
+// An arena run is ONE 32-BIT SEED plus a survivor bitmask. Every entrant — its handle,
 // species, level, stat spread, move kit, mods and the Exploit it will fire — is
 // DERIVED from (seed, slot) rather than stored, so a whole bracket costs four bytes to
 // persist and a run reloads byte-identical after a reboot. That is the same trick a
@@ -38,7 +38,7 @@ struct TourneyCard {
 // One entrant, in full. `spec` is deliberately the DUEL's fighter recipe: species,
 // equipped moves, equipped mods, level and the four per-level stat points, resolved
 // against the local registry by the one shared builder (makePvpCombatant). Reusing it
-// means a Compo opponent and a real operator's pet are built by identical code, so an
+// means an arena opponent and a real operator's pet are built by identical code, so an
 // arena fight can never quietly apply a rule the rest of the game doesn't.
 struct TourneyFighter {
     PvpFighter spec;

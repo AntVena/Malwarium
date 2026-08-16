@@ -1,20 +1,22 @@
-// content_tournament.h — THE COMPO: the operator bracket held in The Pirate Bayou.
+// content_tournament.h — ROCK THE DOCK: the operator bracket held in The Pirate Bayou.
 //
 // Everything else the ladder offers is a malbeast: a name, a sprite and a handful of
-// moves keyed to depth. The Compo is the one place the pet fights PETWARE — a rolled
+// moves keyed to depth. The Dock is the one place the pet fights PETWARE — a rolled
 // creature off the same roster the player hatches from, carrying a real kit, real
 // mods, real per-level stat points and an Exploit of its own. It is the arena for
 // tactics rather than for progress, which is why nothing in it drops and only the
 // title pays.
 //
-// This file is the arena's CONTENT: the operator handles its entrants run under, the
-// shape of the bracket, and every magnitude the roll reads. The pure derivation that
-// turns a seed into a fighter is core/model/tournament.h; the run state machine is
-// game_tourney.cpp. Nothing here knows about either.
+// This file is the arena's CONTENT: its NAME, the briefing it explains itself with,
+// the operator handles its entrants run under, the shape of the bracket, and every
+// magnitude the roll reads. The pure derivation that turns a seed into a fighter is
+// core/model/tournament.h; the run state machine is game_tourney.cpp. Nothing here
+// knows about either.
 //
-// The Compo sits in the Bayou because the Bayou is the warez water (areas/AREA_NAMING.md)
-// and a compo is what the scene holds when it wants to settle something. Its entrants
-// are named to match — see kTourneyHandles.
+// The arena sits in the Bayou because the Bayou is the warez water
+// (areas/AREA_NAMING.md), and a dock is where that water's traffic actually changes
+// hands — so a season fought on one is the scene settling something in the open
+// instead of over a wire. Its entrants are named to match; see kTourneyHandles.
 #pragma once
 
 namespace mal {
@@ -69,12 +71,33 @@ constexpr int kTourneyMatchTurnCap = 400;
 constexpr int kTourneyWinBits = 2048;
 constexpr int kTourneyWinXp = 400;
 
-// The kAreaList rung The Compo is held on: The Pirate Bayou. It answers two questions
+// The kAreaList rung the arena is held on: The Pirate Bayou. It answers two questions
 // at once, and deliberately with one number — REACHING that area is what opens the
 // arena, and that area's own mod pool is what the purse rolls its prize mod from. An
 // arena held in one water that gated on another, or paid out of another's table, would
 // be two facts pretending to be one.
 constexpr int kTourneyAreaIndex = 1;
+
+// --- What the arena is called, and how it explains itself --------------------
+// The event's name, in one place: the EXPL row, the bracket screen's header band, and
+// the log lines a run writes all read it from here rather than each spelling it out.
+extern const char* const kTourneyName;
+
+// One section of the BRIEFING — the paged explainer the bracket screen opens on the
+// A+C chord. A heading and its prose, which is the same NAME + PROSE shape STAT's
+// LOADOUT page flows (core/ui/prose_page.h), so the briefing needs no layout of its own.
+//
+// It is CONTENT and not a comment because it is the only thing that tells an operator
+// what they have walked into: an arena whose entrants, stakes and exit rules are all
+// different from the ladder's, arriving as one unexplained row on a familiar list.
+// Each section's prose is held to EffectText::kMaxProse like every other authored
+// string on the device, and `test_tourney_brief_fits_its_page` is the gate.
+struct TourneyBriefDef {
+    const char* heading;
+    const char* text;
+};
+extern const TourneyBriefDef kTourneyBrief[];
+extern const int kTourneyBriefCount;
 
 // --- The entrants' handles ---------------------------------------------------
 // Operator handles, scene-flavoured (an entrant is another operator, not a creature,

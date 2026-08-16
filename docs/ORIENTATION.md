@@ -128,9 +128,15 @@ instead of stopping at the frontier. The EXPL globe on the carousel turns while 
 
 The EXPL list is **bracketed by two rows that are not areas**. Above the ladder, the **DeepWeb
 Dive** — the endless terminal zone, unlocked by clearing every area, where enemies scale to the
-pet and the win streak *is* the depth. Below it, **THE COMPO**, an eight-operator single-
-elimination bracket held in The Pirate Bayou and opened by reaching that water. The Compo is the
-one place the pet fights **petware** rather than malbeasts: each entrant is a creature off the
+pet and the win streak *is* the depth. Below it, **ROCK THE DOCK**, an eight-operator single-
+elimination bracket held in The Pirate Bayou and opened by reaching that water. Its screen is one
+Nav with three reads — the BRACKET (the field, who is left, who is next), a **SCOUT** sheet on
+hold-B showing any entrant's whole kit, and a paged **BRIEFING** on the A+C chord, which is the
+only thing that tells an operator what an arena bout even is. Both readers flow through the shared
+name-plus-prose page (`core/ui/prose_page.h`), and the scout sheet is literally STAT's LOADOUT page
+pointed at somebody else's pet, so a rival's moves are described in the move's own words.
+
+The arena is the one place the pet fights **petware** rather than malbeasts: each entrant is a creature off the
 hatchable roster at a level up to the arena's cap, carrying a rolled move kit (line-exclusive
 moves stay inside their line), rolled mods it is high enough to equip, the per-level stat points a
 raise would have bought it, and a **crew Exploit it fires on its own** at a rolled Health trigger.
@@ -141,6 +147,15 @@ resolved by stepping the same engine headlessly, so the bracket is climbed rathe
 the whole run persists as **one seed plus a survivor bitmask** — every entrant is derived from it.
 Stakes are Safe and nothing pays until the bracket is taken, at which point the title pays once;
 a loss ends the run, which is the only thing at risk.
+
+Opponents having real loadouts is also what pushed the **mid-combat panel** to two pages. B now
+CYCLES it — closed → STATE → KIT → closed — because it answers two questions and neither fits
+beside the other: what is happening to these two right now (the live leans, absorbs and
+afflictions) and what they can DO (each side's equipped kit, and the Exploit a rival is carrying
+but has not fired). The STATE readout is a token set (`combatStateTokens`) the draw wraps rather
+than one string drawn into a 24-character box, so a fight with a shield, a brace, a ransom bill,
+traps, a rot and a stun all live reports every one of them instead of cutting whatever ran past
+the edge.
 
 ---
 

@@ -66,29 +66,32 @@ void test_loadout_rows_model() {
     CHECK(sawMovesHeader && sawModsHeader);
 
     // At Process the pet has 2 slots: slot 0 = packet_storm (equipped), slot 1 = empty →
-    // the Quick Jab fallback. So there's a default (isDefault) row, it names Quick Jab and
+    // the Quick Jab fallback. So there's a DEFAULT-tagged row, it names Quick Jab and
     // carries its effect, and it appears AFTER the equipped move (in slot order) — NOT as a
     // leading fixture. The first non-header row is the equipped move, not the default.
-    const LoadoutRow* firstMove = nullptr;
-    const LoadoutRow* defaultRow = nullptr;
+    auto isDefaultRow = [](const ProseRow& r) {
+        return std::strcmp(r.tag, "DEFAULT") == 0;
+    };
+    const ProseRow* firstMove = nullptr;
+    const ProseRow* defaultRow = nullptr;
     for (const auto& row : rows) {
         if (row.header) continue;
         if (!firstMove) firstMove = &row;
-        if (row.isDefault && !defaultRow) defaultRow = &row;
+        if (isDefaultRow(row) && !defaultRow) defaultRow = &row;
     }
-    CHECK(firstMove && !firstMove->isDefault);            // equipped move leads, not the default
+    CHECK(firstMove && !isDefaultRow(*firstMove));        // equipped move leads, not the default
     const MoveDef* def = r.move(ml.defaultMove());
     CHECK(defaultRow && def && std::strcmp(defaultRow->label, def->displayName) == 0);
-    CHECK(defaultRow && !defaultRow->effect.empty() &&
-          std::strcmp(defaultRow->effect.c_str(), effectText(*def).c_str()) == 0);
+    CHECK(defaultRow && !defaultRow->body.empty() &&
+          std::strcmp(defaultRow->body.c_str(), effectText(*def).c_str()) == 0);
 
     // Every UNLOCKED slot yields one row: equipped moves by name+effect, empty slots as
     // the default. Exact row count = 2 headers + (one row per unlocked slot) + mod rows.
     auto containsNameAndEffect = [&](const char* name, const EffectText& effect) {
         for (const auto& row : rows)
             if (!row.header && std::strcmp(row.label, name) == 0 &&
-                !row.effect.empty() &&
-                std::strcmp(row.effect.c_str(), effect.c_str()) == 0)
+                !row.body.empty() &&
+                std::strcmp(row.body.c_str(), effect.c_str()) == 0)
                 return true;
         return false;
     };
@@ -120,7 +123,7 @@ void test_loadout_rows_model() {
 
     // An egg collapses the whole page to one line, no headers.
     auto eggRows = buildLoadoutRows(r, ml, mods, Stage::BootSector, /*isEgg=*/true);
-    CHECK(eggRows.size() == 1 && !eggRows[0].header && eggRows[0].effect.empty());
+    CHECK(eggRows.size() == 1 && !eggRows[0].header && eggRows[0].body.empty());
     CHECK(std::strcmp(eggRows[0].label, "- NO LOADOUT -") == 0);
 }
 

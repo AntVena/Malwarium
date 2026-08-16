@@ -5,6 +5,7 @@
 
 #include "tunables.h"
 #include "core/app/game_internal.h"   // backupDriveAchievement — declared, defined here
+#include "core/ui/combat_screen.h"
 #include "core/ui/expl_screen.h"
 #include "core/ui/train_screen.h"
 
@@ -280,12 +281,17 @@ void Game::onCombat(const ButtonEvent& ev) {
         } else if (ev.button == Button::C) combat_.cancelOverride();
         return;
     }
-    // B toggles the stat panel — a live buff/debuff readout that does NOT pause the fight.
-    if (ev.button == Button::B) { combatStatsOpen_ = !combatStatsOpen_; return; }
+    // B CYCLES the stat panel — closed -> STATE -> KIT -> closed (combat_screen.h). A
+    // live readout that does NOT pause the fight, so paging through it costs turns and
+    // is a real decision rather than a free look.
+    if (ev.button == Button::B) {
+        combatStatsPage_ = (combatStatsPage_ + 1) % (kCombatStatPages + 1);
+        return;
+    }
     // Auto-play: A fast-forwards the current beat, C flees / quits. A fast-forward is
     // safe in a duel — it only advances THIS screen's playback of an already-decided
     // fight — but the flee isn't (see `duel` above).
-    // ...and a Compo match is the second fight with no exit: forfeiting a bracket
+    // ...and an arena bout is the second fight with no exit: forfeiting a bracket
     // mid-match would let a losing draw be replayed, which is the whole stake gone.
     // The way out of the arena is the bracket screen, before a match starts.
     const bool noExit = duel || combatCaller_ == CombatCaller::Tourney;
@@ -547,7 +553,7 @@ void Game::applyCombatResult() {
 }
 
 void Game::finishCombat() {
-    combatStatsOpen_ = false;   // clear the stat panel so the next fight opens closed
+    combatStatsPage_ = 0;       // clear the stat panel so the next fight opens closed
     // A duel has its own result path (a banner on the LINK screen and a log line, and
     // deliberately nothing else — no stakes means no reward and no penalty), so it
     // hands off before applyCombatResult() the same way a boss round does.
@@ -555,7 +561,7 @@ void Game::finishCombat() {
     // A boss/gauntlet round has its own result path (advance/clear/fail + the
     // lump), NOT the wild loot rolls — hand off before applyCombatResult().
     if (combatCaller_ == CombatCaller::Boss) { finishBossRound(); return; }
-    // A Compo match advances a bracket instead of paying a fight (game_tourney.cpp):
+    // An arena bout advances a bracket instead of paying a fight (game_tourney.cpp):
     // Safe stakes, no loot rolls, and nothing but the title pays. Same hand-off shape.
     if (combatCaller_ == CombatCaller::Tourney) { finishTourneyMatch(); return; }
     applyCombatResult();

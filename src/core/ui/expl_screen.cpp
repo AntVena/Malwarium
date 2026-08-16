@@ -92,11 +92,11 @@ int clearedSubCount(const bool* subCleared, int area) {
 ExplRowState explRowState(int row, const bool* areaCleared, const bool* subCleared,
                           const bool* subBossUnlocked, int exploringSector,
                           int exploringSub, bool tourneyRunning) {
-    if (explRowIsTourney(row)) {                          // THE COMPO, the arena
+    if (explRowIsTourney(row)) {                          // ROCK THE DOCK, the arena
         // Opened by REACHING its water rather than by clearing it: the arena is held in
         // The Pirate Bayou, and arriving there is the invitation. That is the same
         // linear gate every area answers to, asked of the arena's own rung, so the
-        // Compo needs no unlock flag of its own.
+        // arena needs no unlock flag of its own.
         if (!explSectorOpen(kTourneyAreaIndex, areaCleared))
             return ExplRowState::TourneyLocked;
         return tourneyRunning ? ExplRowState::TourneyRunning : ExplRowState::TourneyOpen;
@@ -297,7 +297,7 @@ void drawExplList(Framebuffer& fb, const ContentRegistry& reg, const ExplListVie
 
         if (explRowIsTourney(row)) {
             // The arena, under the ladder. It borrows its water's sector glyph rather
-            // than carrying one of its own — The Compo IS held in The Pirate Bayou, so
+            // than carrying one of its own — the arena IS held in The Pirate Bayou, so
             // the picture is the true one and no asset exists only to label a menu row.
             // The divider goes ABOVE this row (the dive's goes below its own), so each
             // special row is fenced off from the ladder it sits beside.
@@ -306,7 +306,7 @@ void drawExplList(Framebuffer& fb, const ContentRegistry& reg, const ExplListVie
             if (!locked)
                 drawIconSlot(fb, sectorIcon(reg, kTourneyAreaIndex), kIconX,
                              y + (pitch - kRowIcon) / 2, palColor(Pal::INK));
-            title = locked ? "??????" : "THE COMPO";
+            title = locked ? "??????" : kTourneyName;
             titleInk = locked ? palColor(Pal::INK_DIM) : zoneInk;
             if (locked)
                 ;                                    // nothing to promise but the row

@@ -50,7 +50,8 @@
 //        arch [stored] [rackfull] [row:<n>] [detail] [confirm] (rackfull buys slots
 //             and fills them, so the list overflows kVisibleRows and scrolls;
 //             row:<n> walks the cursor down it)
-//        train [trainpicker] · combat [override] [stats] (the raw dev hook) ·
+//        train [trainpicker] · combat [override] [stats] [kit] (the raw dev hook;
+//             stats opens the panel's STATE page, kit its second) ·
 //        simbattle [fight [stats]] (the REAL entry — buffs carried in from outside,
 //             e.g. armbuffs simbattle fight stats) · malbear
 //        bruinforce (Good Daemon) · berserkernel (Bad Daemon) · csf (Critical Failure)
@@ -59,8 +60,10 @@
 //        "bossready" for that block with its gauntlet unlocked, "rerun" for it already
 //        beaten, "endgame" for the every-area-cleared picker) ·
 //        explore (armed → the idle explore badge)
-// compo [fight] (THE COMPO's bracket screen — the eight-operator draw; "fight" plays
-//        the operator's own first match out so the frame shows a settled round)
+// dock [fight|scout|brief] (ROCK THE DOCK's arena screen — the eight-operator bracket;
+//        "fight" plays the operator's own first bout out so the frame shows a settled
+//        round, "scout" holds B into the focused entrant's kit sheet, "brief" chords
+//        into the paged explainer)
 // explorectl [auto] (the A+C control overlay; "auto" arms AUTO-PROGRESS with the
 //        second chord) · explore auto (the armed habitat with it running — the EXPL
 //        globe spins, so pass a `beats` count to land on a frame) · encounter [sinkhole] ·
@@ -579,8 +582,11 @@ int main(int argc, char** argv) {
             game.tick(static_cast<uint32_t>(beats + i) * kHeartbeatMs);
         if (hasFlag(argc, argv, "override"))         // open the A+C override picker
             game.onButton({Button::A, true, true});
-        if (hasFlag(argc, argv, "stats"))            // B → open the mid-combat stat panel
+        // B CYCLES the mid-combat panel (closed -> STATE -> KIT -> closed), so "stats"
+        // lands on page 1 and "kit" presses through to page 2.
+        if (hasFlag(argc, argv, "stats") || hasFlag(argc, argv, "kit"))
             game.onButton({Button::B, true, false});
+        if (hasFlag(argc, argv, "kit")) game.onButton({Button::B, true, false});
     } else if (hasFlag(argc, argv, "csf")) {
         // Critical System Failure: arm the ageing window, let it expire, then
         // hold the crash FX so B is active in the render.
@@ -647,8 +653,8 @@ int main(int argc, char** argv) {
         // cursor rightly parks on the DeepWeb row and B arms the dive instead.
         if (bossReady || hasFlag(argc, argv, "inside"))
             game.onButton({Button::B, true, false});
-    } else if (hasFlag(argc, argv, "compo")) {
-        // THE COMPO — the operator bracket (game_tourney.cpp). Clearing area 0 is what
+    } else if (hasFlag(argc, argv, "dock")) {
+        // ROCK THE DOCK — the operator bracket (game_tourney.cpp). Clearing area 0 is what
         // reaches The Pirate Bayou and so opens the arena's EXPL row, which is the LAST
         // row of the top level; A walks the cursor to it and B draws a bracket. "fight"
         // runs the operator's first match to a verdict, so the frame lands on the
@@ -660,12 +666,28 @@ int main(int argc, char** argv) {
         for (int i = 0; i < explRowCount() && game.listRow() != explRowCount() - 1; ++i)
             game.onButton({Button::A, true, false});
         game.onButton({Button::B, true, false});
-        if (hasFlag(argc, argv, "fight")) {
+        // B on the bracket is a TAP/HOLD pair (tap = start the bout, hold = the scout
+        // sheet), so every press from here has to send both edges.
+        auto tapB = [&] {
             game.onButton({Button::B, true, false});
+            game.onButton({Button::B, false, false});
+        };
+        if (hasFlag(argc, argv, "fight")) {
+            tapB();
             for (int i = 1; i <= 4000 &&
                             game.combat().outcome() == Combat::Outcome::Ongoing; ++i)
                 game.tick(static_cast<uint32_t>(beats + i) * kHeartbeatMs);
-            game.onButton({Button::B, true, false});   // dismiss the verdict
+            tapB();                                    // dismiss the verdict
+        } else if (hasFlag(argc, argv, "scout")) {
+            // Park on a rival rather than on the operator's own row, so the sheet shows
+            // somebody else's kit — which is what the gesture is for.
+            while (game.tourneyCursor() == game.tourneySlot())
+                game.onButton({Button::A, true, false});
+            game.onButton({Button::B, true, false});   // arm the hold...
+            game.tick(static_cast<uint32_t>(beats + 1) * kHeartbeatMs + kTourneyScoutHoldMs);
+            game.onButton({Button::B, false, false});
+        } else if (hasFlag(argc, argv, "brief")) {
+            game.onButton({Button::A, true, true});    // the A+C chord
         }
     } else if (hasFlag(argc, argv, "hacker")) {
         // Hacker face (07): A+C flips PET → HACKER. Seed identity + economy so

@@ -17,6 +17,7 @@
 #include "core/content/effect_text.h"
 #include "core/model/event_log.h"
 #include "core/model/pet_model.h"
+#include "core/ui/prose_page.h"
 
 namespace mal {
 
@@ -25,44 +26,35 @@ class ContentRegistry;
 class MoveLoadout;
 class Loadout;
 
-// LOADOUT page row model (mirrors InvRow/the items-screen pattern for
-// testability): a non-selectable section header (MOVES/MODS), an equipped
-// move/mod with its effect text, or the page's own empty-state line.
-struct LoadoutRow {
-    bool header;        // section header row (no effect text, drawn dim)
-    bool isDefault;      // true only for the innate default-move row (adds a tag)
-    const char* label;   // header text / move-or-mod displayName / empty-state text
-    // The move/mod's description with its own magnitudes substituted in
-    // (effect_text.h). OWNED, not borrowed: the text is built from the row rather
-    // than living in flash beside it. Empty on header/empty-state rows.
-    EffectText effect;
-};
+// Build the LOADOUT page's rows (ProseRow, core/ui/prose_page.h — the shared
+// name+prose flow this page, BUFFS, and ROCK THE DOCK's opponent sheet all use): a
+// MOVES section (the innate default move, tagged, followed by each equipped —
+// unlocked-slot — move) then a MODS section (each equipped mod, or a single
+// "- NONE -" row when nothing's equipped). EMPTY slots are skipped entirely —
+// nothing to describe. `isEgg` collapses the whole page to a single "- NO LOADOUT -"
+// row (MODS is inert for an egg, `Game::eggSlotLocked`), since there is no combat
+// loadout to show.
+//
+// Pure over its two loadouts, which is what lets the ARENA render a rolled opponent's
+// kit through the identical builder the player reads their own kit through
+// (game_tourney.cpp) — an opponent sheet that laid its own page out would be a second
+// answer to "what does this move do".
+std::vector<ProseRow> buildLoadoutRows(const ContentRegistry& reg,
+                                       const MoveLoadout& moveLoad,
+                                       const Loadout& modLoad,
+                                       Stage stage, bool isEgg);
 
-// Build the LOADOUT page's rows: a MOVES section (the innate default move,
-// tagged, followed by each equipped — unlocked-slot — move) then a MODS section
-// (each equipped mod, or a single "- NONE -" row when nothing's equipped).
-// EMPTY slots are skipped entirely — nothing to describe. `isEgg` collapses the
-// whole page to a single "- NO LOADOUT -" row (MODS is inert for an egg,
-// `Game::eggSlotLocked`), since there is no combat loadout to show.
-std::vector<LoadoutRow> buildLoadoutRows(const ContentRegistry& reg,
-                                         const MoveLoadout& moveLoad,
-                                         const Loadout& modLoad,
-                                         Stage stage, bool isEgg);
-
-// How many rows starting at `top` fit the LOADOUT page. NOT a constant: a row is
-// sized to the prose it holds (a four-line mod description is a taller row than a
-// two-line one), so the window is whatever the flow can seat, and it changes as
-// the player equips. Exported because the engine advances the B-scroll by exactly
-// what is on screen — the alternative is the two of them disagreeing about where
-// the next window starts, which reads as skipped or repeated rows.
-int loadoutRowsFitting(const std::vector<LoadoutRow>& rows, int top);
+// How many rows starting at `top` fit the LOADOUT page — the flow's own count
+// (proseRowsFitting) at this page's row top. Exported because the engine advances the
+// B-scroll by exactly what is on screen.
+int loadoutRowsFitting(const std::vector<ProseRow>& rows, int top);
 
 // STAT page 1 — LOADOUT: the windowed row list from buildLoadoutRows, each row's
 // name + its effect text wrapped WHOLE beneath it, a scrollbar + "B SCROLL" hint
 // band when the list outruns one screen.
 // `scrollTop` is engine-owned — this page has no cursor to drive scrolling off
 // (it's read-only), so STAT's B press advances it instead (game_core.cpp).
-void drawLoadoutScreen(Framebuffer& fb, const std::vector<LoadoutRow>& rows,
+void drawLoadoutScreen(Framebuffer& fb, const std::vector<ProseRow>& rows,
                        int scrollTop, int beat);
 
 // STAT page 0 — VITALS: name + generation + stage indicator, the three vitals

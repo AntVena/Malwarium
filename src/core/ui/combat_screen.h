@@ -44,14 +44,50 @@ struct CombatSides {
     bool localIsEnemySide = false;      // true on a duel guest — flips WIN/LOSE
     // Whether C still means RUN in this fight. False in the two fights there is no
     // running from — a linked duel (quitting would desync the other device's copy) and
-    // a Compo match (there is no fleeing a bracket) — where the input side already
+    // a ROCK THE DOCK bout (there is no fleeing a bracket) — where the input side already
     // makes C inert. The hint band reads this so it stops offering a key that does
     // nothing: a hint that lies is worse than no hint.
     bool canRun = true;
 };
 
-// showStats toggles the mid-combat stat panel (B) — a live buff/debuff readout for both
-// combatants, overlaid over the sprites so the always-on chrome stays uncluttered.
+// The mid-combat panel's pages. B CYCLES rather than toggles: closed -> STATE -> KIT ->
+// closed. Two pages because the panel answers two different questions and neither fits
+// beside the other — "what is happening to these two right now" (the live leans,
+// absorbs and afflictions) and "what can they DO" (the equipped kit and the Exploit
+// each is carrying). The second only became worth its own page when opponents started
+// arriving with real loadouts (ROCK THE DOCK, game_tourney.cpp): against a malbeast the
+// kit was a handful of shared moves, and against a rolled pet it is the whole read.
+constexpr int kCombatStatPages = 2;
+
+// The STATE page's readout for one fighter, as an ordered set of short TOKENS: its
+// leans (speed, attack power, the siphon and stack deltas moving them, the damage cut)
+// then its absorbs and afflictions (a shield pool, a brace, a Backup Drive, a ransom
+// bill, traps, replicas, a DoT, a stun, the armed Exploit).
+//
+// PURE and separate from the draw because the panel is 24 characters wide and this set
+// is not: the readout used to be packed into one string and drawn into that box, so the
+// moment three of these were live the rest was silently cut — precisely the fight that
+// needed reading. The draw now WRAPS the set instead, and a gate can assert directly
+// that nothing live goes missing rather than trying to read it back out of pixels.
+struct CombatTokens {
+    static constexpr int kCap = 16;     // above anything the engine can have live at once
+    static constexpr int kLen = 14;     // the widest token ("STK PWR+120") with headroom
+    char t[kCap][kLen] = {};
+    int n = 0;
+    void push(const char* fmt, ...);
+    // Whether any token starts with `prefix` — how a gate asks "is the stun reported".
+    bool has(const char* prefix) const;
+};
+
+// `withGuard` reports the one-shot defend brace, which is only meaningful on the side
+// whose braces the operator is choosing (the local pet); an enemy's brace is spent
+// before the panel could be opened on it. `leanCount` (may be null) reports how many
+// of the returned tokens are LEANS — the draw flushes the two groups separately so
+// they stay legible as groups.
+CombatTokens combatStateTokens(const Combatant& c, bool withGuard, int* leanCount = nullptr);
+
+// statPage drives that panel: 0 hides it, 1 STATE, 2 KIT. It is overlaid over the
+// sprites so the always-on chrome stays uncluttered.
 // beat paces the gauge's ~1Hz Critical pulse (the shared UI_GAUGE cadence, same as
 // every other screen); animBeat is combat's own faster (kCombatAnimMs) tick driving
 // sprite motion (idleFrame/windup-flash) so it stays lively at accelerated turn pacing
@@ -59,7 +95,7 @@ struct CombatSides {
 // landed combat_.step(), driving the post-hit impact punch/flash.
 void drawCombat(Framebuffer& fb, const Combat& combat,
                 const SpriteData* playerSprite, const SpriteData* enemySprite,
-                int beat, int animBeat, int hitBeat, bool showStats = false,
+                int beat, int animBeat, int hitBeat, int statPage = 0,
                 const CombatSides& sides = {});
 
 } // namespace mal

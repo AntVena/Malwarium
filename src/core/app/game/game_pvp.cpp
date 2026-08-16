@@ -423,7 +423,7 @@ void Game::startPvpBattle(uint32_t seed) {
     combatBeat_ = 0;
     combatTurnBeat_ = 0;
     combatHitBeat_ = 0;
-    combatStatsOpen_ = false;
+    combatStatsPage_ = 0;
     pvpPhase_ = PvpPhase::Fighting;
     pvpPhaseStartMs_ = nowMs_;
     pvpRetries_ = 0;

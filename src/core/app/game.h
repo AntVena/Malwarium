@@ -57,7 +57,7 @@ struct SpriteData;
 // STAT's two flowed prose pages (core/ui/stat_screen.h). Named here only as the
 // return type of the row builders below — the screen header itself stays in
 // game_render.cpp, per the include note above.
-struct LoadoutRow;
+struct ProseRow;
 struct BuffRow;
 
 // How a Game starts. FreshHatch = empty save -> Decryption Hatch (the real
@@ -115,6 +115,8 @@ public:
     Inventory& inventory() { return inventory_; }
     const Inventory& inventory() const { return inventory_; }
     const EventLog& log() const { return log_; }
+    // Which page of the mid-combat panel is showing (0 = closed). B cycles it.
+    int combatStatsPage() const { return combatStatsPage_; }
     const Loadout& loadout() const { return loadout_; }
     const MoveLoadout& moveLoadout() const { return moveLoadout_; }
     // Move-slot rework #12: the stamped kind for `slot`, or Unset if it hasn't
@@ -315,12 +317,19 @@ public:
     // Is the AREA boss reachable? All 5 sub-areas cleared, area not yet.
     bool areaBossReady(int area) const;
 
-    // --- THE COMPO: the operator bracket (game_tourney.cpp) ------------------
+    // --- ROCK THE DOCK: the operator bracket (game_tourney.cpp) --------------
     // How a run ENDS, which is also what the bracket screen is showing. Ready is a
     // run still being fought (or none at all); the other two are terminal banners the
     // operator has yet to dismiss, and they persist — a device put down on the verdict
     // is still showing it after a reboot.
     enum class TourneyPhase : uint8_t { Ready, Eliminated, Champion };
+    // Which of the arena screen's three READS is showing. One Nav, three views,
+    // because all three are the same screen answering different questions about the
+    // same run — and a Nav per reader would put the run's lifecycle in three places.
+    //   Bracket  the field: who is left, at what level, and who is next
+    //   Scout    the focused entrant's full kit, on the LOADOUT page's own flow
+    //   Brief    the arena explaining itself (content_tournament.h's kTourneyBrief)
+    enum class TourneyView : uint8_t { Bracket, Scout, Brief };
     // A bracket is in play. The seed IS the run (core/model/tournament.h), so a zero
     // seed means "no run" and nothing else has to be checked.
     bool tourneyRunning() const { return tourneySeed_ != 0; }
@@ -335,6 +344,13 @@ public:
     // bracket screen can name its species and Exploit without walking the content
     // tables every repaint.
     const TourneyFighter& tourneyOpponent() const { return tourneyOpponent_; }
+    TourneyView tourneyView() const { return tourneyView_; }
+    int tourneyCursor() const { return tourneyCursor_; }
+    // The two readers' row models (core/ui/prose_page.h), built on demand — both walk
+    // the content tables, so they are called on a press or a repaint, never held.
+    // Public so a gate can assert what a sheet SAYS instead of reading it out of pixels.
+    std::vector<ProseRow> tourneyScoutRows() const;
+    std::vector<ProseRow> tourneyBriefRows() const;
     WifiOutcome wifiOutcome() const { return wifiOutcome_; }   // rolled sub-outcome
     // The on-screen line resolveNetworkDiscovery() set on the last Wi-Fi event
     // (new/familiar/home-turf/empty-queue) — "" if none has resolved yet.
@@ -1560,7 +1576,7 @@ public:
     // are re-farmable the EXPL "first-selectable" row is ambiguous, so a test
     // that needs a particular frontier arms it here instead of A-cycling. Real path:
     // EXPL → B on the row. No-op for out-of-range indices.
-    // Force THE COMPO's run to a terminal banner without playing a whole bracket out.
+    // Force the arena run to a terminal banner without playing a whole bracket out.
     // The two verdict screens are otherwise reachable only by winning or losing three
     // matches, which is not what a screen gate is asking about.
     void debugEndTourneyRun(bool champion) {
@@ -2387,7 +2403,7 @@ private:
     // owns the shape, and these are the marshalling between the two — shared by the
     // page draw (game_render.cpp) and the B-scroll, which has to advance by the same
     // window the page drew or it skips and repeats rows.
-    std::vector<LoadoutRow> statLoadoutRows() const;
+    std::vector<ProseRow> statLoadoutRows() const;
     std::vector<BuffRow> statBuffRows() const;
     // {rows on screen starting at statScroll_, rows in total} for the open STAT page;
     // {0, 0} for a page that doesn't flow rows and so doesn't scroll.
@@ -2525,7 +2541,11 @@ private:
     int combatAnimBeat_ = 0;
     uint32_t lastCombatAnimMs_ = 0;
     int combatHitBeat_ = 0;
-    bool combatStatsOpen_ = false;  // B toggles the mid-combat stat panel (live readout)
+    // Which page of the mid-combat panel is showing: 0 closed, else 1..kCombatStatPages
+    // (combat_screen.h). B CYCLES it — the panel grew a second page when opponents
+    // started arriving with real loadouts, and a second key to reach it would have had
+    // to come out of the three combat already spends.
+    int combatStatsPage_ = 0;
     int combatXp_ = 0;          // XP banked toward the NEXT level (0-based model)
     int combatLevel_ = 0;       // creature level (== sum of statPoints_, the invariant)
     // Per-pet earned combat-stat points: 0 power · 1 defense · 2 speed · 3
@@ -2879,7 +2899,7 @@ private:
     uint32_t pvpSeed_ = 0;
     char pvpStatus_[32] = "";            // why the last session ended (empty = it didn't)
 
-    // --- THE COMPO's run state (game_tourney.cpp) ---------------------------
+    // --- ROCK THE DOCK's run state (game_tourney.cpp) -----------------------
     // Four bytes plus a byte of verdict is the WHOLE bracket: every entrant — handle,
     // species, level, stat spread, kit, mods, Exploit — is derived from the seed
     // (core/model/tournament.h) rather than stored, and `tourneyAlive_` is one bit per
@@ -2894,6 +2914,14 @@ private:
     // opens or a run is resumed, never persisted, because both are derivable.
     int tourneyCursor_ = 0;
     TourneyFighter tourneyOpponent_;
+    TourneyView tourneyView_ = TourneyView::Bracket;
+    // The scroll position of whichever reader is open — one field, because only one
+    // ever is, and a per-view scroll would have to be reset on every switch anyway.
+    int tourneyScroll_ = 0;
+    // The entrant the SCOUT sheet is showing. Held rather than re-derived per repaint:
+    // building one walks the whole move and mod tables, which is not a per-frame cost.
+    TourneyFighter tourneyScouted_;
+    int tourneyScoutedSlot_ = -1;
     uint32_t pvpPhaseStartMs_ = 0;       // for the phase timeout
     uint32_t pvpLastSendMs_ = 0;         // retry pacing for the frame holding the session
     int pvpRetries_ = 0;
@@ -2929,12 +2957,17 @@ private:
     // Both fighters are known and agreed: build the shared fight and enter Nav::Combat.
     void startPvpBattle(uint32_t seed);
 
-    // --- THE COMPO (game_tourney.cpp) ---------------------------------------
+    // --- ROCK THE DOCK (game_tourney.cpp) -----------------------------------
     // Open the bracket screen off the EXPL row: draws a fresh bracket when no run is
     // in play, else resumes the one that is.
     void openTourney();
-    void onTourney(const ButtonEvent& ev);         // A read the field · B fight · C back
+    void onTourney(const ButtonEvent& ev);         // A read · B bout · C back · A+C brief
     void drawTourney(Framebuffer& fb) const;
+    void drawTourneyBracket(Framebuffer& fb) const;
+    void drawTourneyScout(Framebuffer& fb) const;
+    void drawTourneyBrief(Framebuffer& fb) const;
+    void openTourneyScout();                       // hold-B on the bracket
+    void tourneyReleaseB();                        // the tap half of that gesture
     void startTourneyMatch();                      // the operator's own match, live
     void finishTourneyMatch();                     // advance the bracket, or end the run
     void abandonTourney();                         // forget the run (seed back to 0)

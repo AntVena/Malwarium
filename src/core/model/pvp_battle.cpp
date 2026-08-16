@@ -10,19 +10,10 @@ bool canBuildPvpCombatant(const ContentRegistry& reg, const PvpFighter& f) {
     return f.creatureId[0] != '\0' && reg.creature(f.creatureId) != nullptr;
 }
 
-Combatant makePvpCombatant(const ContentRegistry& reg, const PvpFighter& f) {
-    const CreatureDef* pet = f.creatureId[0] ? reg.creature(f.creatureId) : nullptr;
-    if (!pet) return Combatant{};   // caller gates on canBuildPvpCombatant
-
-    // Rehydrate the two loadouts, then hand them to the SAME makePlayerCombatant every
-    // PVE fight uses. Going through the real builder rather than re-deriving stats here
-    // is the whole point: a duel's two devices must apply the branch multipliers, the
-    // stage scaling, the move fallbacks and every mod effect identically, and the only
-    // way to guarantee that is for there to be one implementation.
-    //
+void buildPvpLoadouts(const ContentRegistry& reg, const PvpFighter& f,
+                      MoveLoadout& moves, Loadout& mods) {
     // Equipping stores the id POINTER, so it must be the registry's stable copy — the
     // spec's own char arrays live on a transient wire struct.
-    MoveLoadout moves;
     for (int i = 0; i < kMaxMoveSlots; ++i) {
         if (!f.moveIds[i][0]) continue;
         // An id this build doesn't know leaves the slot empty, which makePlayerCombatant
@@ -33,15 +24,26 @@ Combatant makePvpCombatant(const ContentRegistry& reg, const PvpFighter& f) {
             moves.equip(i, m->id);
         }
     }
-
-    // setEquipped, not equip: the remote player already paid for these mods on their own
-    // device. This is a restore, and consuming from an empty spare pool would install
-    // nothing.
-    Loadout mods;
+    // setEquipped, not equip: whoever owns this spec already paid for these mods. This
+    // is a restore, and consuming from an empty spare pool would install nothing.
     for (int i = 0; i < kModSlots; ++i) {
         if (!f.modIds[i][0]) continue;
         if (const ModDef* m = reg.mod(f.modIds[i])) mods.setEquipped(i, m->id);
     }
+}
+
+Combatant makePvpCombatant(const ContentRegistry& reg, const PvpFighter& f) {
+    const CreatureDef* pet = f.creatureId[0] ? reg.creature(f.creatureId) : nullptr;
+    if (!pet) return Combatant{};   // caller gates on canBuildPvpCombatant
+
+    // Rehydrate the two loadouts, then hand them to the SAME makePlayerCombatant every
+    // PVE fight uses. Going through the real builder rather than re-deriving stats here
+    // is the whole point: a duel's two devices must apply the branch multipliers, the
+    // stage scaling, the move fallbacks and every mod effect identically, and the only
+    // way to guarantee that is for there to be one implementation.
+    MoveLoadout moves;
+    Loadout mods;
+    buildPvpLoadouts(reg, f, moves, mods);
 
     Combatant c = makePlayerCombatant(reg, *pet, moves, mods);
     const int statPoints[4] = {f.statPoints[0], f.statPoints[1], f.statPoints[2],

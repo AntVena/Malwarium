@@ -438,6 +438,20 @@ bool Game::tick(uint32_t nowMs) {
         changed = true;
     }
 
+    // ROCK THE DOCK's hold-B gesture, the same shape as the two above: crossing
+    // kTourneyScoutHoldMs on the bracket opens the focused entrant's SCOUT sheet — its
+    // full kit, read on the very page the operator reads their own kit on. A release
+    // before it fires resolves as the ordinary tap instead (tourneyReleaseB), which is
+    // "fight my own bout". Both are ways of engaging with the fighter under the cursor,
+    // which is what keeps the hold related to the tap beneath it.
+    if (bHeld_ && nav_ == Nav::Tourney && tourneyView_ == TourneyView::Bracket &&
+        nowMs_ - bDownMs_ >= kTourneyScoutHoldMs) {
+        bHeld_ = false;
+        openTourneyScout();
+        lastInputMs_ = nowMs_;
+        changed = true;
+    }
+
     // e: the Hacker VAULT hold-B gesture (reuses bHeld_/bDownMs_ — VAULT
     // doesn't otherwise hold-B). Once owned, crossing kBulkOpenHoldMs bulk-opens
     // every owned cache sharing the focused row's rarity in one action; a release
@@ -482,7 +496,7 @@ bool Game::tick(uint32_t nowMs) {
                            nav_ == Nav::CacheYield ||
                            nav_ == Nav::BulkYield || nav_ == Nav::PostEncounter ||
                            nav_ == Nav::Stacker || nav_ == Nav::ArcadeResult ||
-                           // THE COMPO's bracket is a READING screen: eight entrants,
+                           // ROCK THE DOCK's bracket is a READING screen: eight entrants,
                            // their levels, and the next opponent's species and Exploit
                            // are what a loadout is chosen against, and five seconds is
                            // shorter than reading them. Collapsing it would also drop
@@ -562,6 +576,7 @@ void Game::onButton(const ButtonEvent& ev) {
                 vaultBulkReleaseB();
                 itemFilterReleaseB();
                 moveFilterReleaseB();
+                tourneyReleaseB();
             }
             bHeld_ = false;
         } else if (ev.button == Button::A) {
@@ -582,6 +597,12 @@ void Game::onButton(const ButtonEvent& ev) {
     // only in the combat Nav state, which routes the chord to the override picker.
     if (ev.chordAC) {
         if (nav_ == Nav::Combat) onCombat(ev);
+        // ROCK THE DOCK: the arena's BRIEFING. The chord is the device's one spare
+        // gesture and the bracket screen has already spent A, B and C, so the explainer
+        // — the only thing that tells an operator what an arena bout even is — rides
+        // the same "chord opens a reader, then plain A/B/C drive it" shape the explore
+        // control overlay uses.
+        else if (nav_ == Nav::Tourney) onTourney(ev);
         // THE DECRYPTOGRAM: A and C are the cursor's two directions, so the chord is
         // what hands a taken letter back to the pool. Nothing else claims it here.
         else if (nav_ == Nav::Cryptogram) onCryptogram(ev);

@@ -27,6 +27,8 @@
 namespace mal {
 
 class ContentRegistry;
+class Loadout;
+class MoveLoadout;
 
 // Rebuild a Combatant from a wire spec: resolve the species, moves and mods against
 // the local registry, then fold in the level stat points (applyLevelStatPoints).
@@ -39,6 +41,18 @@ class ContentRegistry;
 // An unresolvable species yields a combatant with no moves and zero Health; callers
 // check `canBuildPvpCombatant` first rather than fighting a hollow pet.
 Combatant makePvpCombatant(const ContentRegistry& reg, const PvpFighter& f);
+
+// Rehydrate just the two LOADOUTS a spec names, resolved against the local registry.
+// makePvpCombatant's own first step, split out because a spec is also something a
+// screen wants to READ rather than fight: the arena's opponent sheet renders a rolled
+// entrant's kit through the same buildLoadoutRows the player reads their own kit
+// through (core/ui/stat_screen.h), and a second rehydrator for that would be a second
+// answer to "which slot is this move in".
+//
+// An id this build doesn't know leaves its slot empty — the same shape as an
+// unequipped slot, which is exactly how the fight treats it too.
+void buildPvpLoadouts(const ContentRegistry& reg, const PvpFighter& f,
+                      MoveLoadout& moves, Loadout& mods);
 
 // Whether `f` names a species this build knows. False means the two devices are
 // carrying different content and the duel must be refused, not attempted — the fights

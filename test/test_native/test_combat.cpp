@@ -1807,3 +1807,77 @@ void test_worm_replication_in_combat() {
     }
     CHECK(sawCopyKilled && sawParentHit);
 }
+
+// THE PANEL USED TO LIE BY OMISSION. Its absorbs-and-afflictions readout was packed
+// into one string and drawn into a 24-character box, so a fighter carrying a shield, a
+// brace, a drive, a ransom bill, traps, a rot and a stun at once had most of that cut —
+// and a fight with all of them live is exactly the fight worth reading. The set is now
+// a token list the draw WRAPS, so this asserts every live state is reported.
+void test_combat_panel_reports_every_live_state() {
+    ContentRegistry r = ContentRegistry::embedded();
+    Combatant c = makeEnemyCombatant(r, simDummy(0));
+    c.shieldHp = 40;
+    c.itemShield = true;
+    c.guard = 12;
+    c.ransomPool = 30;
+    c.ransomTurnsLeft = 2;
+    c.trojanTrapCount = 2;
+    c.wormReplicaCount = 3;
+    c.dotPerTurn = 5;
+    c.dotTurnsLeft = 3;
+    c.lockedTurnsLeft = 1;
+    c.stackPowerBonus = 8;
+    c.stackDefenseBonus = 6;
+    c.dmgReducePct = 20;
+    c.speed = 14;
+    c.baseSpeed = 17;                       // a siphon took three ticks
+    c.powerMultPct = 88;
+    c.basePowerMultPct = 100;
+    c.crewExploit.kind = CrewExploitKind::NegateNextHits;
+    c.crewExploit.charges = 2;
+
+    int leans = 0;
+    const CombatTokens tk = combatStateTokens(c, /*withGuard=*/true, &leans);
+    // Every one of them, by its own tag. A missing one here is a state the operator
+    // cannot see mid-fight, which is the whole defect.
+    for (const char* tag : {"SPD", "PWR", "SIPH", "STK PWR", "DEF", "STK DEF", "SHLD",
+                            "BKUP", "GRD", "RNSM", "TRAP", "COPY", "DOT", "STUN",
+                            "NEGATE"})
+        CHECK(tk.has(tag));
+    CHECK(tk.n <= CombatTokens::kCap);       // the set fits its own store, unclipped
+    CHECK(leans > 0 && leans < tk.n);        // the two groups are both non-empty
+    // No token is itself wide enough to be cut by the panel it is drawn into.
+    for (int i = 0; i < tk.n; ++i)
+        CHECK(static_cast<int>(std::strlen(tk.t[i])) < CombatTokens::kLen);
+
+    // A plain fighter says only what it has: the leans, and nothing after them.
+    Combatant plain = makeEnemyCombatant(r, simDummy(0));
+    plain.basePowerMultPct = plain.powerMultPct;
+    plain.baseSpeed = plain.speed;
+    int plainLeans = 0;
+    const CombatTokens pt = combatStateTokens(plain, /*withGuard=*/true, &plainLeans);
+    CHECK(pt.n == plainLeans);               // no afflictions to report
+    CHECK(!pt.has("SIPH") && !pt.has("STUN") && !pt.has("SHLD"));
+}
+
+// B CYCLES the panel rather than toggling it — closed, STATE, KIT, closed — and paging
+// it never pauses the fight, which is what makes reading it a real decision.
+void test_combat_panel_pages_cycle() {
+    Game g{StartMode::Hatched, "paypup"};
+    g.debugStartCombat(/*live=*/false);
+    CHECK(g.nav() == Game::Nav::Combat);
+    CHECK(g.combatStatsPage() == 0);
+    for (int expect = 1; expect <= kCombatStatPages; ++expect) {
+        g.onButton(press(Button::B));
+        CHECK(g.combatStatsPage() == expect);
+    }
+    g.onButton(press(Button::B));
+    CHECK(g.combatStatsPage() == 0);          // wraps closed rather than sticking open
+    // The next fight opens closed, whatever the last one was left on.
+    g.onButton(press(Button::B));
+    CHECK(g.combatStatsPage() == 1);
+    while (g.combat().outcome() == Combat::Outcome::Ongoing) g.onButton(press(Button::A));
+    g.onButton(press(Button::B));
+    g.debugStartCombat(/*live=*/false);
+    CHECK(g.combatStatsPage() == 0);
+}

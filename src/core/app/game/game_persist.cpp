@@ -224,7 +224,7 @@ SaveData Game::captureSave() const {
     d.achievementNotified.assign(achNotified_, achNotified_ + kAchBytes);
     d.bossWins = bossWins_;
     d.stackerWins = stackerWins_;   // v44
-    // v53: THE COMPO's run in play. Four bytes plus a bitmask, because every entrant is
+    // v53: ROCK THE DOCK's run in play. Four bytes plus a bitmask, because every entrant is
     // derived from the seed (core/model/tournament.h) rather than written down.
     d.tourneySeed = tourneySeed_;
     d.tourneyAlive = tourneyAlive_;

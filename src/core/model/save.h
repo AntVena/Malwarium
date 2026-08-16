@@ -322,7 +322,7 @@ constexpr int kSaveTextCap = 28;     // matches EventLog's LogEntry.text
 // prefixed since v48, so a longer one loads into a shorter build's view as "the
 // quotes it knows" and a shorter one reads back as "never played". The version moves
 // anyway, because the header that owns the cap asks for a note when it does.
-// v53 appends THE COMPO's run state — the arena bracket held in The Pirate Bayou
+// v53 appends ROCK THE DOCK's run state — the arena bracket held in The Pirate Bayou
 // (core/model/tournament.h). Five bytes for a whole eight-operator tournament, because
 // every entrant is DERIVED from the run seed rather than stored: the seed, the
 // survivor bitmask, the round, and the verdict a finished run is still showing. A
@@ -825,7 +825,7 @@ struct SaveData {
     // upgraded device keeps every recipe it had.
     std::vector<uint8_t> recipeOwned;
 
-    // --- v53: THE COMPO's run in play ----------------------------------------
+    // --- v53: ROCK THE DOCK's run in play ----------------------------------------
     // The whole bracket, because the seed IS the bracket (core/model/tournament.h):
     // `tourneySeed` 0 means no run, `tourneyAlive` is one bit per original slot,
     // `tourneyRound` is 0-based, and `tourneyPhase` is Game::TourneyPhase — persisted

@@ -38,18 +38,18 @@ constexpr int kExplSubAreas = kSubAreasPerArea;
 constexpr int kExplRowsPerArea = 1 + kExplSubAreas;      // header + 5 sub rows
 // The ladder is BRACKETED by two SPECIAL rows, neither of them an AreaDef: the DEEPWEB
 // DIVE above it (which draws as kDeepWebSector, area_defs.h — one past the real ladder,
-// so it stays the terminal zone even as the ladder grows) and THE COMPO below it, the
+// so it stays the terminal zone even as the ladder grows) and ROCK THE DOCK below it, the
 // operator bracket held in The Pirate Bayou (content_tournament.h). Each is a single
 // row with no sub-areas, and while locked each is an inert "??????" teaser — which is
 // what makes both read as a promise rather than as rows that appear from nowhere.
 //
 // The POSITIONS say what each is for. DeepWeb leads because it is the most-rewarding
 // farming zone once unlocked, so an entry with nothing else to resume parks the cursor
-// on it (Game::openExplList) — the fewest presses to the best grind. The Compo trails
+// on it (Game::openExplList) — the fewest presses to the best grind. The arena trails
 // for the mirror-image reason: it pays nothing until a whole bracket is taken, so it
 // must never be what an operator lands on by default when they came to go exploring.
 constexpr int kExplLeadRows = 1;   // the DeepWeb Dive, above the ladder
-constexpr int kExplTailRows = 1;   // The Compo, below it
+constexpr int kExplTailRows = 1;   // ROCK THE DOCK, below it
 inline int explRowCount() {
     return kExplLeadRows + kExplSectors * kExplRowsPerArea + kExplTailRows;
 }
@@ -85,12 +85,12 @@ enum class ExplRowState {
     DeepWebLocked,  // DeepWeb Dive, not all areas cleared → "??????" + LOCKED
     DeepWebOpen,    // every area cleared → "> DIVE" (selectable → arm the endless dive)
     DeepWebDiving,  // the endless dive is armed → DIVING (selectable → re-arm)
-    TourneyLocked,  // The Compo, its area not reached yet → "??????" + LOCKED
+    TourneyLocked,  // the arena, its area not reached yet → "??????" + LOCKED
     TourneyOpen,    // no run in progress → "> ENTER" (selectable → draw a fresh bracket)
     TourneyRunning, // a bracket is part-fought → IN PLAY (selectable → resume it)
 };
 // `tourneyRunning` is the one piece of state not derivable from the flag blocks: The
-// Compo's UNLOCK is just "is its area open" (explSectorOpen over `areaCleared`), but
+// arena's UNLOCK is just "is its area open" (explSectorOpen over `areaCleared`), but
 // whether a bracket is half-fought lives in the run, not the ladder.
 ExplRowState explRowState(int row, const bool* areaCleared, const bool* subCleared,
                           const bool* subBossUnlocked, int exploringSector,
@@ -131,7 +131,7 @@ struct ExplListView {
     int streakWins = 0;
     int winsToBoss = 0;
     int bestDeepWebDepth = 0;        // the DeepWeb row's own progress readout (0 = none)
-    // The Compo row's own progress readout: how many entrants are still standing in the
+    // The arena row's own progress readout: how many entrants are still standing in the
     // run in progress (0 = no run), and which round it is on. Same job bestDeepWebDepth
     // does for the dive — the frontier row answers "where am I up to" where the choice
     // is made, rather than only once the screen is open.

@@ -30,7 +30,8 @@ rm -f "$OUT"/*.ppm
 
 SCENES=(
   "expl|expl"                       "expl_inside|expl inside"
-  "compo|compo"                     "compo_round2|compo fight"
+  "dock|dock"                       "dock_round2|dock fight"
+  "dock_scout|dock scout"           "dock_brief|dock brief"
   "stat|stat"                       "stat_species|stat species"
   "stat_buffs|stat buffs armbuffs"  "stat_buffs_scrolled|stat buffs armbuffs scroll:1"
   "stat_loadout|stat loadout"
@@ -68,6 +69,7 @@ SCENES=(
   "hacker_merge|hacker merge recipes stock"
   "shop|shop"                       "encounter|encounter"
   "combat|combat"                   "postencounter|postencounter"
+  "combat_stats|combat stats"       "combat_kit|combat kit"
   "lockout|lockout"
   "decryption|decryption"               "decryption_rows|decryption rows"
   "decryption_lost|decryption lost"

@@ -29,7 +29,7 @@ namespace mal {
 
 // --- STAT's flowed prose pages ---------------------------------------------
 
-std::vector<LoadoutRow> Game::statLoadoutRows() const {
+std::vector<ProseRow> Game::statLoadoutRows() const {
     return buildLoadoutRows(registry_, moveLoadout_, loadout_,
                             pet_ ? pet_->stage : Stage::BootSector, inEggPhase());
 }
@@ -47,7 +47,7 @@ std::vector<BuffRow> Game::statBuffRows() const {
 Game::StatScrollSpan Game::statScrollSpan() const {
     if (!pet_) return {0, 0};
     if (statPage_ == 1) {
-        const std::vector<LoadoutRow> rows = statLoadoutRows();
+        const std::vector<ProseRow> rows = statLoadoutRows();
         return {loadoutRowsFitting(rows, statScroll_), static_cast<int>(rows.size())};
     }
     if (statPage_ == 2) {
@@ -673,12 +673,12 @@ void Game::drawCombatScreen(Framebuffer& fb) const {
         sides.localLabel = "YOU";
         sides.localIsEnemySide = !pvpLocalIsHost();
     }
-    // A Compo match is the other pet-vs-pet fight, and the other one with no way out —
+    // An arena bout is the other pet-vs-pet fight, and the other one with no way out —
     // so it borrows the duel's caption for the opposite seat and drops the RUN hint.
     if (combatCaller_ == CombatCaller::Tourney) sides.rivalLabel = "RIVAL";
     sides.canRun = !duel && combatCaller_ != CombatCaller::Tourney;
     drawCombat(fb, combat_, ps, es, beat_, combatAnimBeat_, combatHitBeat_,
-               combatStatsOpen_, sides);
+               combatStatsPage_, sides);
 }
 
 void Game::drawEncounterScreen(Framebuffer& fb) const {

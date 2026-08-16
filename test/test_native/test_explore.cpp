@@ -410,7 +410,7 @@ void test_expl_names_stay_scrollable() {
 }
 
 // THE LEVEL IS THE LIST (explRowInLevel): the TOP level draws the two special rows
-// (the DeepWeb Dive above the ladder, The Compo below it) plus one row per AREA and
+// (the DeepWeb Dive above the ladder, ROCK THE DOCK below it) plus one row per AREA and
 // none of the sub-areas; inside an area it draws that area's own block and nothing
 // else. That is what keeps the drawn list ~7 rows however long the ladder grows,
 // instead of a 13-row window over the whole thing.
@@ -654,13 +654,13 @@ void test_explore_streak_unlocks_boss_then_clears() {
 // rows are selectable). Boss-ready takes priority over exploring so FIGHT BOSS stays
 // reachable; a cleared area's subs go inert and its header becomes AREA-BOSS ready.
 void test_expl_nested_row_helpers() {
-    // The DeepWeb Dive leads, the ladder follows offset by +1, and The Compo trails.
+    // The DeepWeb Dive leads, the ladder follows offset by +1, and the arena trails.
     CHECK(explRowCount() == 1 + kExplSectors * (1 + kExplSubAreas) + 1);
     constexpr int kDwRow = 0;                                    // the DeepWeb Dive row
-    const int kCompoRow = explRowCount() - 1;                    // The Compo row
+    const int kArenaRow = explRowCount() - 1;                    // ROCK THE DOCK's row
     CHECK(explRowIsDeepWeb(kDwRow) && !explRowIsDeepWeb(1));
-    CHECK(explRowIsTourney(kCompoRow) && !explRowIsTourney(kDwRow));
-    CHECK(explRowIsSpecial(kDwRow) && explRowIsSpecial(kCompoRow));
+    CHECK(explRowIsTourney(kArenaRow) && !explRowIsTourney(kDwRow));
+    CHECK(explRowIsSpecial(kDwRow) && explRowIsSpecial(kArenaRow));
     CHECK(!explRowIsSpecial(1));                                 // area 0's header
     CHECK(explRowArea(1) == 0 && explRowSub(1) == -1);           // area 0 header
     CHECK(explRowArea(2) == 0 && explRowSub(2) == 0);            // area 0, sub-area 1

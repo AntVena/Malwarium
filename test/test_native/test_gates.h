@@ -83,9 +83,10 @@ inline void tapC(mal::Game& g) {
     g.onButton(lift(mal::Button::C));
 }
 
-// A COMPLETE B press. Four screens read B as a tap/hold pair — the ITEMS list once
-// Type-Tabs is owned, the MOVES picker, the Hacker VAULT once Bulk-Open is owned, and
-// the CFG Factory Reset — and on those the press edge only ARMS. Everywhere else the
+// A COMPLETE B press. Five screens read B as a tap/hold pair — the ITEMS list once
+// Type-Tabs is owned, the MOVES picker, the Hacker VAULT once Bulk-Open is owned, the
+// CFG Factory Reset, and ROCK THE DOCK's bracket (tap starts the bout, hold opens the
+// focused entrant's scout sheet) — and on those the press edge only ARMS. Elsewhere the
 // release is inert. Use this wherever a gate means "accept this row"; use a bare
 // press(B) followed by a tick only when the gate is deliberately driving a hold.
 inline void tapB(mal::Game& g) {

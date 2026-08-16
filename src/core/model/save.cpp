@@ -528,7 +528,7 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     w.u16(static_cast<uint16_t>(d.recipeOwned.size()));
     for (uint8_t b : d.recipeOwned) w.u8(b);
 
-    // v53: THE COMPO's run in play — the seed the whole bracket is derived from, plus
+    // v53: ROCK THE DOCK's run in play — the seed the whole bracket is derived from, plus
     // the three bytes of state that seed cannot express (who is still standing, which
     // round, and the verdict of a finished run the operator has yet to dismiss).
     w.u32(d.tourneySeed);
@@ -1084,7 +1084,7 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
         for (uint16_t i = 0; i < nRecipe && r.ok; ++i) d.recipeOwned.push_back(r.u8());
     }
 
-    // v53 tail: THE COMPO's run. Absent in a v1..v52 blob → a zero seed, which is
+    // v53 tail: ROCK THE DOCK's run. Absent in a v1..v52 blob → a zero seed, which is
     // exactly "no bracket in play" — no migration, because a run that never existed
     // cannot be reconstructed from anything else in the save.
     if (version >= 53) {
