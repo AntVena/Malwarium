@@ -445,14 +445,4 @@ void test_tourney_run_survives_a_reboot() {
     CHECK(back.tourneyAlive == d.tourneyAlive);
     CHECK(back.tourneyRound == d.tourneyRound);
     CHECK(back.tourneyPhase == d.tourneyPhase);
-
-    // A blob from before the arena existed reads back as "no run" — the honest default,
-    // and nothing else in an older save could be mistaken for one.
-    auto blob = serializeSave(d);
-    blob.resize(blob.size() - 7);      // drop the v53 tail: u32 seed + three u8s
-    blob[4] = 52; blob[5] = 0;         // ...and stamp the version word back down
-    SaveData oldBack;
-    CHECK(deserializeSave(blob, oldBack));
-    CHECK(oldBack.tourneySeed == 0 && oldBack.tourneyAlive == 0);
-    CHECK(oldBack.tourneyPhase == static_cast<uint8_t>(Game::TourneyPhase::Ready));
 }

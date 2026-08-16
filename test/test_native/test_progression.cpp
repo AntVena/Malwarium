@@ -912,11 +912,10 @@ void test_move_slot_stamping_locks_at_unlock() {
     }
 }
 
-// Save v24: slotKinds round-trips verbatim; a pre-v24 blob (no tail) loads with
-// every slot Unset, and Game::applySave deterministically re-stamps them from the
-// loaded pet AND unequips any move that no longer matches its slot's kind.
-void test_save_v24_slot_kinds_roundtrip_and_migration() {
-    // Raw SaveData round-trip (mirrors the v22/v23 default tests' shape).
+// Save v24: slotKinds round-trips verbatim, both as raw SaveData and through an
+// ordinary autosave + reload.
+void test_save_v24_slot_kinds_roundtrip() {
+    // Raw SaveData round-trip.
     SaveData a; std::strcpy(a.activeId, "malbear"); a.generation = 1;
     a.slotKinds = {1, 1, 2, 0};   // Attack, Attack, Defend, Unset (SlotKind values)
     auto blobFull = serializeSave(a);
@@ -927,47 +926,8 @@ void test_save_v24_slot_kinds_roundtrip_and_migration() {
     CHECK(full.slotKinds[0] == 1 && full.slotKinds[1] == 1 &&
           full.slotKinds[2] == 2 && full.slotKinds[3] == 0);
 
-    // Drop the v24 tail (a u16 count of 4 + 4 bytes = 6 bytes) and stamp the
-    // version word down to 23 — a pre-v24 blob must still deserialize cleanly.
-    auto blob = forgeLegacyNetworkBytes(a, 23);
-    blob.resize(blob.size() - 6);
-    blob[4] = 23; blob[5] = 0;
-    SaveData out;
-    CHECK(deserializeSave(blob, out));
-    CHECK(!out.hasSlotKindData);
-    CHECK(out.slotKinds.empty());
-
-    // Game-level migration: load that pre-v24 blob into a Game. malbear's slots
-    // deterministically re-stamp from its own CreatureDef::slotKinds seed
-    // (Attack, Attack, Defend) via stampSlotKinds — not a guess, not left Unset.
-    MemSaveStore store; store.save(blob);
-    Game g(StartMode::Hatched, "paypup", &store);   // hatchedCreature ignored: store wins
-    CHECK(g.pet() && std::strcmp(g.pet()->id, "malbear") == 0);
-    CHECK(g.slotKind(0) == Game::SlotKind::Attack);
-    CHECK(g.slotKind(1) == Game::SlotKind::Attack);
-    CHECK(g.slotKind(2) == Game::SlotKind::Defend);
-
-    // Invalid-equip-on-load cleanup: craft a pre-v24 blob whose v2 equippedMoves
-    // puts a Defend move (checksum_guard) into slot 1, which malbear stamps
-    // Attack — applySave must unequip it rather than grandfather the mismatch.
-    SaveData bad; std::strcpy(bad.activeId, "malbear"); bad.generation = 1;
-    bad.ownedMoves.push_back(SaveId{"checksum_guard"});
-    bad.equippedMoves.push_back(SaveId{});                  // slot 0 — left empty
-    bad.equippedMoves.push_back(SaveId{"checksum_guard"});  // slot 1 — the invalid one
-    auto badBlob = forgeLegacyNetworkBytes(bad, 23);
-    // `bad.slotKinds` was never set, so the v24 tail here is just the empty
-    // length prefix (2 bytes) — unlike `a` above, which carried 4 entries.
-    badBlob.resize(badBlob.size() - 2);   // drop the v24 tail
-    badBlob[4] = 23; badBlob[5] = 0;      // pre-v24
-    MemSaveStore badStore; badStore.save(badBlob);
-    Game bg(StartMode::Hatched, "paypup", &badStore);
-    CHECK(bg.pet() && std::strcmp(bg.pet()->id, "malbear") == 0);
-    CHECK(bg.slotKind(1) == Game::SlotKind::Attack);
-    // The mismatched equip was dropped, not grandfathered.
-    CHECK(bg.moveLoadout().equipped(1) == nullptr);
-
     // Live round-trip: a Game raised to malbear, stamped kinds intact after an
-    // ordinary autosave + reload (not a migration this time).
+    // ordinary autosave + reload.
     MemSaveStore rtStore;
     {
         Game rt(StartMode::Hatched, "malbear", &rtStore);
@@ -1294,35 +1254,6 @@ void test_save_hacker_rank_roundtrip() {
     CHECK(deserializeSave(serializeSave(d), out));
     CHECK(out.networksSeen == 5);
     CHECK(out.hackerRank == 2);
-}
-
-// A v3 blob (no Hacker Rank tail) still loads: deserialize accepts it with
-// networksSeen/hackerRank defaulted to 0 (a save that predates the system
-// honestly starts at Script Kiddie / 0 networks, not a retroactively-invented
-// rank). Target version 3 is below the v4 removal point, so no forge needed —
-// see forgeLegacyNetworkBytes's comment for why versions >= 4 do need it.
-void test_save_v3_migration_defaults_hacker_rank() {
-    SaveData a; std::strcpy(a.activeId, "paypup"); a.networksSeen = 5; a.hackerRank = 2;
-    auto blob = serializeSave(a);
-    CHECK(blob.size() > 8);
-    blob.resize(blob.size() - 8);   // drop the v4 tail (i32 + i32 = 8 bytes)
-    blob[4] = 3; blob[5] = 0;       // version word -> 3
-
-    SaveData out;
-    CHECK(deserializeSave(blob, out));
-    CHECK(out.networksSeen == 0);
-    CHECK(out.hackerRank == 0);
-    CHECK(std::strcmp(out.activeId, "paypup") == 0);
-
-    // Booting a Game over the v3 store starts fresh at rank 0 (graceful
-    // forward-compat migration, same contract as the v1 move-loadout case).
-    MemSaveStore store;
-    store.save(blob);
-    Game g(StartMode::FreshHatch, "paypup", &store);
-    pickFirstEggLine(g);
-    CHECK(g.nav() == Game::Nav::Idle && g.pet());
-    CHECK(g.hackerRank() == 0);
-    CHECK(g.networksSeen() == 0);
 }
 
 // The CSF modal reads in grayscale (dual-coding gate): title/message ink survives.

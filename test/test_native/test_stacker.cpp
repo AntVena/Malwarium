@@ -306,17 +306,6 @@ void test_stacker_wins_ladder_sweeps_and_persists() {
     MemSaveStore store; store.save(serializeSave(a));
     Game loaded(StartMode::Hatched, "paypup", &store);
     CHECK(loaded.stackerWins() == 10);
-
-    // A pre-v44 blob starts the ladder at zero rather than inheriting the pet's own
-    // defrag tally, which counts bought and rolled cleans too.
-    SaveData old; std::strcpy(old.activeId, "paypup"); old.generation = 1;
-    old.defragCount = 40;
-    std::vector<uint8_t> blob = serializeSave(old);
-    blob[4] = 43; blob[5] = 0;                     // stamp back to v43
-    MemSaveStore oldStore; oldStore.save(blob);
-    Game migrated(StartMode::Hatched, "paypup", &oldStore);
-    CHECK(migrated.stackerWins() == 0);
-    CHECK(!migrated.hasAchievement("DEFRAG_BY_HAND"));
 }
 
 // The ROLLED/BOUGHT defrag seam, which the played one deliberately does not share: a
@@ -510,78 +499,22 @@ void test_renamed_ids_table_invariants() {
     }
 }
 
-void test_save_v39_raised_tally_roundtrip_and_migration() {
-    { // A real evolution, written through the live autosave, read back cold.
-        MemSaveStore store;
-        { Game g(StartMode::Hatched, "pingcub", &store);
-          g.debugTriggerEvolution();
-          uint32_t t = 0; advanceToReveal(g, t);
-          g.onButton(press(Button::B));
-          CHECK(g.pet() && std::strcmp(g.pet()->id, "malbear") == 0);
-          g.tick(t += kSaveDebounceMs + kHeartbeatMs); }   // flush the debounced save
-        SaveData out;
-        CHECK(deserializeSave(store.bytes(), out));
-        CHECK(out.raisedCreatures.size() == 2);
-        Game g2(StartMode::Hatched, "paypup", &store);   // hatchedCreature ignored
-        CHECK(g2.pet() && std::strcmp(g2.pet()->id, "malbear") == 0);
-        CHECK(g2.creatureRaised("pingcub"));               // nothing HOLDS pingcub
-        CHECK(g2.speciesRaised() == 2);
-    }
-    { // Pre-v39 shape: drop the v39 tail and stamp the version back.
-        SaveData a;
-        std::strcpy(a.activeId, "malbear");
-        SaveStoredPet stored; std::strcpy(stored.id, "pingcub");
-        a.rack.push_back(stored);
-        SaveRecord rec; std::strcpy(rec.id, "paypup");
-        a.records.push_back(rec);
-        a.raisedCreatures.push_back(SaveId{"bruinforce"});  // evolved past
-        // Stamping the version down is the whole migration: deserialize is
-        // version-gated, so it stops before the v39 tail and never reads the bytes
-        // still sitting there. No truncation — a byte count would aim at the wrong
-        // tail as soon as a later version appends its own.
-        std::vector<uint8_t> blob = serializeSave(a);
-        blob[4] = 38; blob[5] = 0;                     // stamp back to v38
-        SaveData out;
-        CHECK(deserializeSave(blob, out));
-        CHECK(out.raisedCreatures.empty());            // the codec invents nothing
-
-        MemSaveStore store; store.save(blob);
-        Game g(StartMode::Hatched, "paypup", &store);
-        CHECK(g.creatureRaised("malbear") && g.creatureRaised("pingcub") &&
-              g.creatureRaised("paypup"));             // rebuilt from what's held
-        CHECK(!g.creatureRaised("bruinforce"));  // unrecoverable, and not faked
-        CHECK(g.speciesRaised() == 3);
-    }
-    { // The shape of a real in-play save that predates the tally: a mid-line pet, a
-      // couple of generations behind it, and pets parked in the rack. The bar is that
-      // it comes back no emptier than it went in — every species the blob still points
-      // at is revealed, and the rest of the save is untouched by the migration.
-        SaveData a;
-        std::strcpy(a.activeId, "tadpoll");
-        std::strcpy(a.hackerTag, "ALG0M3AN");
-        a.generation = 2;
-        a.combatLevel = 36;
-        for (const char* id : {"pingcub", "paypup"}) {
-            SaveStoredPet stored; std::strcpy(stored.id, id);
-            a.rack.push_back(stored);
-        }
-        SaveRecord rec; std::strcpy(rec.id, "malbear");
-        rec.generation = 1;
-        a.records.push_back(rec);
-        std::vector<uint8_t> blob = serializeSave(a);
-        blob[4] = 38; blob[5] = 0;      // version-gated: the v39+ tails go unread
-
-        MemSaveStore store; store.save(blob);
-        Game g(StartMode::Hatched, "paypup", &store);
-        CHECK(g.creatureRaised("tadpoll"));            // active
-        CHECK(g.creatureRaised("pingcub") && g.creatureRaised("paypup"));  // racked
-        CHECK(g.creatureRaised("malbear"));            // recorded
-        CHECK(g.speciesRaised() == 4);
-        // Nothing else shifted: the migration adds a tally, it does not rewrite a save.
-        CHECK(std::strcmp(g.hackerTag(), "ALG0M3AN") == 0);
-        CHECK(g.generation() == 2 && g.combatLevel() == 36);
-        CHECK(g.rack().size() == 2 && g.records().size() == 1);
-    }
+void test_save_v39_raised_tally_roundtrip() {
+    // A real evolution, written through the live autosave, read back cold.
+    MemSaveStore store;
+    { Game g(StartMode::Hatched, "pingcub", &store);
+      g.debugTriggerEvolution();
+      uint32_t t = 0; advanceToReveal(g, t);
+      g.onButton(press(Button::B));
+      CHECK(g.pet() && std::strcmp(g.pet()->id, "malbear") == 0);
+      g.tick(t += kSaveDebounceMs + kHeartbeatMs); }   // flush the debounced save
+    SaveData out;
+    CHECK(deserializeSave(store.bytes(), out));
+    CHECK(out.raisedCreatures.size() == 2);
+    Game g2(StartMode::Hatched, "paypup", &store);   // hatchedCreature ignored
+    CHECK(g2.pet() && std::strcmp(g2.pet()->id, "malbear") == 0);
+    CHECK(g2.creatureRaised("pingcub"));               // nothing HOLDS pingcub
+    CHECK(g2.speciesRaised() == 2);
 }
 
 // FULL_PEDIA_L1 wants a whole line RAISED, which is only ever true across time — a

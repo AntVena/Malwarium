@@ -334,7 +334,13 @@ constexpr uint16_t kSaveVersion = 53;
 // migration weight for saves nobody can still be holding — and it is the ONLY thing
 // that retires a rename row (see `renamedIds`). Raising it strands every save older
 // than it, so it moves on a deliberate compatibility call, never as a side effect.
-constexpr uint16_t kOldestAcceptedVersion = 1;
+//
+// Raised to 53 (the version v0.25.0 already wrote) once every live device had been
+// confirmed on v0.25.0 or later — a device on that firmware or newer has autosaved at
+// v53 at least once, so nothing still holds a save older than the floor. That retired
+// both rows in `renamedIds` (sinceVersion 41 and 46) and the one in `ladderInserts`
+// (sinceVersion 43), and `migrateRecipeRows` (v49) along with them — see save.cpp.
+constexpr uint16_t kOldestAcceptedVersion = 53;
 
 // Content ids a blob may still carry under a name the tables no longer answer to.
 // A content id is a wire value, so a rename is a FORMAT concern and is handled here

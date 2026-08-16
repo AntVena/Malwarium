@@ -5,9 +5,7 @@
 // feature whose field it migrates, not in a migrations pile of its own.
 #include "test_gates.h"
 
-// save v18: the per-spare equip gate round-trips; a pre-v18 blob (version
-// stripped to 17) has no tail → ownedModReqLevels empty + hasModEquipLevelData false
-// (the game_persist apply path then grants every spare at req 0 — no retroactive gate).
+// save v18: the per-spare equip gate round-trips.
 void test_save_v18_mod_reqlevel() {
     SaveData a;
     std::strcpy(a.activeId, "paypup");
@@ -21,15 +19,6 @@ void test_save_v18_mod_reqlevel() {
     CHECK(deserializeSave(full, out));
     CHECK(out.hasModEquipLevelData);
     CHECK(out.ownedModReqLevels == a.ownedModReqLevels);
-
-    // Force the version word down to 17 → deserialize stops before the v18 tail.
-    auto blob = forgeLegacyNetworkBytes(a, 17);
-    blob[4] = 17; blob[5] = 0;
-    SaveData mig;
-    CHECK(deserializeSave(blob, mig));
-    CHECK(!mig.hasModEquipLevelData);
-    CHECK(mig.ownedModReqLevels.empty());        // no tail → apply defaults every req to 0
-    CHECK(mig.ownedMods.size() == 2);            // the spares themselves still load
 }
 
 // The pool has a ceiling now, and the Rig Shop row is what moves it. Both halves matter:
@@ -104,58 +93,6 @@ void test_save_mod_count_nibbles_pack_two_mods_per_byte() {
     CHECK(saveModCount(packed, 4) == 1);
 }
 
-// A v44 blob's flat per-copy pool migrates to counts, clamped to the base cap. This is
-// the one that ran against a real device save: 424 copies of 24 mods, which is what the
-// whole change is for.
-void test_save_v44_to_v45_mod_pool_migration() {
-    SaveData a; std::strcpy(a.activeId, "paypup"); a.generation = 1;
-    // Nine copies of one mod and one of another, with rolled levels that no longer mean
-    // anything — the shape the measured save was made of.
-    for (int i = 0; i < 9; ++i) {
-        a.ownedMods.push_back(SaveId{"packet_sniffer"});
-        a.ownedModReqLevels.push_back(i);
-    }
-    a.ownedMods.push_back(SaveId{"raid_mirror"});
-    a.ownedModReqLevels.push_back(4);
-    // A plain serialize + version stamp, NOT forgeLegacyNetworkBytes: that helper
-    // re-inserts the pre-v21 network-field bytes, which a v44 blob doesn't carry. v45
-    // only APPENDS to v44, so trimming its 2-byte tail leaves a byte-exact v44 stream —
-    // which is the property that made the old flat list survivable to migrate at all.
-    auto blob = serializeSave(a);
-    blob.resize(blob.size() - 2);                 // drop the v45 tail's length word
-    blob[4] = 44; blob[5] = 0;
-
-    SaveData out;
-    CHECK(deserializeSave(blob, out));
-    CHECK(!out.hasModCountData);                 // no v45 tail -> the migration path
-    CHECK(out.ownedMods.size() == 10);           // the old flat list still loads
-
-    MemSaveStore store; store.save(blob);
-    Game g(StartMode::Hatched, "paypup", &store);
-    // Nine copies come back as the cap, not as nine. The surplus is dropped, which no
-    // screen has ever been able to show.
-    CHECK(g.loadout().countOf("packet_sniffer") == kModCopyCapBase);
-    CHECK(g.loadout().countOf("raid_mirror") == 1);
-
-    // And the save it writes back is the counted one, which is the whole point: the same
-    // pool costs a nibble a mod instead of 28 bytes a copy.
-    CHECK(g.saveNow());
-    SaveData back;
-    CHECK(deserializeSave(store.bytes(), back));
-    CHECK(back.hasModCountData);
-    CHECK(back.ownedMods.empty());               // the flat list is written empty from v45
-    const ContentRegistry reg = ContentRegistry::embedded();
-    CHECK(saveModCount(back.ownedModCounts, reg.mod("packet_sniffer")->wire)
-          == kModCopyCapBase);
-    CHECK(saveModCount(back.ownedModCounts, reg.mod("raid_mirror")->wire) == 1);
-    // And the encoding is the point. The pool the v44 blob spent 10 id cells on now costs
-    // a nibble per MOD held — measured against the list it replaced, not against a whole
-    // save, since the two blobs describe different games.
-    const int wasBytes = static_cast<int>(out.ownedMods.size()) * kSaveIdCap;
-    CHECK(static_cast<int>(back.ownedModCounts.size()) < wasBytes);
-    CHECK(back.ownedModCounts.size() * 2 <= static_cast<size_t>(kModWireCap));
-}
-
 // A count stored against a wire the running content no longer defines is dropped rather
 // than resurrected under some other mod's id — the failure a positional array would have
 // and a wire-keyed one must not.
@@ -178,33 +115,6 @@ void test_save_mod_count_for_a_retired_wire_is_dropped() {
     CHECK(copies == 2);                          // just the two the seed grants
 }
 
-// a pre-v19 blob (no Hacker SHOP tail) still loads, defaulting bwUpgradeCount
-// to 0 (a migrated save has bought no upgrades). Forge a v18 blob by dropping the v19
-// i32 tail and stamping the version word down to 18.
-void test_save_v18_to_v19_bwupgrade_default() {
-    SaveData a; std::strcpy(a.activeId, "paypup"); a.generation = 1;
-    a.bwUpgradeCount = 4;                       // would round-trip IF the tail were read
-    auto blob = forgeLegacyNetworkBytes(a, 18);
-    blob.resize(blob.size() - 4);               // drop the v19 bwUpgradeCount i32
-    blob[4] = 18; blob[5] = 0;                  // stamp the version word down to 18
-    SaveData out;
-    CHECK(deserializeSave(blob, out));          // a v18 blob still deserializes
-    CHECK(out.bwUpgradeCount == 0);             // no tail → migrated to "bought none"
-}
-
-// v19 → v20: a pre-AP blob has no apEnabled byte; it must migrate to OFF (never
-// silently stand up an AP on a save that predates the feature).
-void test_save_v19_to_v20_ap_default() {
-    SaveData a; std::strcpy(a.activeId, "paypup"); a.generation = 1;
-    a.apEnabled = 1;                            // would round-trip IF the tail were read
-    auto blob = forgeLegacyNetworkBytes(a, 19);
-    blob.resize(blob.size() - 1);               // drop the v20 apEnabled u8
-    blob[4] = 19; blob[5] = 0;                  // stamp the version word down to 19
-    SaveData out;
-    CHECK(deserializeSave(blob, out));          // a v19 blob still deserializes
-    CHECK(out.apEnabled == 0);                  // no tail → migrated to OFF
-}
-
 // v37 round-trip: the pet-to-pet LINK opt-in. Only the consent bit is in the blob —
 // the met operators themselves ride the SD-backed PeerLedger.
 void test_save_v37_link_roundtrip() {
@@ -214,20 +124,6 @@ void test_save_v37_link_roundtrip() {
     SaveData out;
     CHECK(deserializeSave(blob, out));
     CHECK(out.linkEnabled);
-}
-
-// v36 → v37: a pre-LINK blob has no linkEnabled byte and must migrate to OFF. This
-// is the one that actually matters — a device upgrading its firmware must never
-// start broadcasting its operator's identity as a side effect of the upgrade.
-void test_save_v36_to_v37_link_default() {
-    SaveData a; std::strcpy(a.activeId, "paypup"); a.generation = 1;
-    a.linkEnabled = true;                       // would round-trip IF the tail were read
-    auto blob = serializeSave(a);
-    blob.resize(blob.size() - 1);               // drop the v37 linkEnabled u8
-    blob[4] = 36; blob[5] = 0;                  // stamp the version word down to 36
-    SaveData out;
-    CHECK(deserializeSave(blob, out));          // a v36 blob still deserializes
-    CHECK(!out.linkEnabled);                    // no tail → migrated to OFF
 }
 
 // The v38 byte is RESERVED: it held a standing internet opt-in and no longer means
@@ -253,21 +149,6 @@ void test_save_v38_net_slot_is_reserved() {
     CHECK(deserializeSave(blob, out2));
     CHECK(out2.raisedCreatures.size() == 1);
     CHECK(std::strcmp(out2.raisedCreatures[0].id, "malbear") == 0);
-}
-
-// v37 → v38: a pre-INTERNET blob has no byte in that slot at all, and must still
-// parse. The consequential half is the same either way — no firmware update, and no
-// save predating the field, may leave this device able to reach the network.
-void test_save_v37_to_v38_net_default() {
-    SaveData a; std::strcpy(a.activeId, "paypup"); a.generation = 1;
-    a.linkEnabled = true;
-    auto blob = serializeSave(a);
-    blob.resize(blob.size() - 1);               // drop the reserved v38 u8
-    blob[4] = 37; blob[5] = 0;                  // stamp the version word down to 37
-    SaveData out;
-    CHECK(deserializeSave(blob, out));          // a v37 blob still deserializes
-    CHECK(!out.netReserved);
-    CHECK(out.linkEnabled == a.linkEnabled);    // the v37 tail still reads correctly
 }
 
 // A save is the engine's biggest allocation and it fires off a timer, so it can land
@@ -1213,98 +1094,30 @@ void test_save_v21_shield_roundtrip() {
     CHECK(out.fragAmountTier == 3);
 }
 
-// v20 → v21: a pre-shield blob has no v21 tail (3 u8 + u8 = 4 bytes, current/v33
-// width). It must migrate to no shield / neither item consumed / fragAmountTier 0.
-void test_save_v20_to_v21_shield_default() {
+// v22 field round-trip: fragTriggerTier survives a full serialize/deserialize
+// alongside the v21 fields it sits behind.
+void test_save_v22_frag_trigger_roundtrip() {
     SaveData a; std::strcpy(a.activeId, "paypup"); a.generation = 1;
-    a.mistakeShieldActive = 1;                   // would round-trip IF the tail were read
-    a.fragAmountTier = 5;
-    auto blob = forgeLegacyNetworkBytes(a, 20);
-    blob.resize(blob.size() - 4);               // drop the v21 tail (3+1 bytes)
-    blob[4] = 20; blob[5] = 0;                  // stamp the version word down to 20
-    SaveData out;
-    CHECK(deserializeSave(blob, out));          // a v20 blob still deserializes
-    CHECK(out.mistakeShieldActive == 0);        // no tail → no shield
-    CHECK(out.shieldItemConsumed == 0);
-    CHECK(out.yubiConsumed == 0);
-    CHECK(out.fragAmountTier == 0);             // no tail → default tier
-}
-
-// v33 removes the v4 dedup-pool byte, the v7 seenBssids vector, and the v21 full
-// mask (real-network dedup/history moved to the SD-backed NetworkLedger) — a
-// GENUINE v32 blob (forged via forgeLegacyNetworkBytes, carrying all three
-// legacy fields a real v32 writer would have emitted) must still deserialize
-// every LATER field correctly. This is the critical byte-alignment gate: if the
-// version-gated skip logic in save.cpp's reader is even one byte off, every
-// field after the removal points comes out wrong, not just these three.
-void test_save_v33_drops_network_dedup() {
-    SaveData a; std::strcpy(a.activeId, "paypup"); a.generation = 1;
-    a.networksSeen = 3;
-    a.hackerRank = 1;
     a.mistakeShieldActive = 1;
-    a.fragAmountTier = 2;                       // a v21 field AFTER all three removals
-    a.fragTriggerTier = 6;                      // a v22 field — proves alignment holds
-    // past the v21 splice too.
-    auto blob = forgeLegacyNetworkBytes(a, 32);  // a genuine v32-shaped blob
-    blob[4] = 32; blob[5] = 0;                  // stamp the version word down to 32
-
-    SaveData out;
-    CHECK(deserializeSave(blob, out));
-    CHECK(out.networksSeen == 3);
-    CHECK(out.hackerRank == 1);
-    CHECK(out.mistakeShieldActive == 1);
-    CHECK(out.fragAmountTier == 2);
-    CHECK(out.fragTriggerTier == 6);
-    CHECK(std::strcmp(out.activeId, "paypup") == 0);
-
-    // ...and the current (v33) writer never emits the legacy bytes at all.
-    SaveData rt;
-    CHECK(deserializeSave(serializeSave(a), rt));
-    CHECK(rt.networksSeen == 3);
-    CHECK(rt.fragTriggerTier == 6);
-}
-
-// Save v21 → v22 (c): a pre-v22 blob reads fragTriggerTier as 0, and every v21
-// field still round-trips (the v22 tail is a single appended byte).
-void test_save_v21_to_v22_frag_trigger_default() {
-    SaveData a; std::strcpy(a.activeId, "paypup"); a.generation = 1;
-    a.mistakeShieldActive = 1;                  // a v21 field that must still round-trip
     a.fragAmountTier = 3;
-    a.fragTriggerTier = 4;                      // would round-trip IF the tail were read
-    auto blob = forgeLegacyNetworkBytes(a, 21);
-    blob.resize(blob.size() - 1);              // drop the v22 tail (1 byte)
-    blob[4] = 21; blob[5] = 0;                  // stamp the version word down to 21
-    SaveData out;
-    CHECK(deserializeSave(blob, out));          // a v21 blob still deserializes
-    CHECK(out.fragTriggerTier == 0);            // no tail → default trigger tier
-    CHECK(out.mistakeShieldActive == 1);        // v21 fields survive
-    CHECK(out.fragAmountTier == 3);
-
-    // ...and a full v22 round-trip preserves the new field.
+    a.fragTriggerTier = 4;
     SaveData rt;
     CHECK(deserializeSave(serializeSave(a), rt));
+    CHECK(rt.mistakeShieldActive == 1);
+    CHECK(rt.fragAmountTier == 3);
     CHECK(rt.fragTriggerTier == 4);
 }
 
-// Save v22 → v23 (d/e): a pre-v23 blob reads both one-time unlocks as false,
-// and every v22 field still round-trips (the v23 tail is two appended bytes).
-void test_save_v22_to_v23_shop_unlocks_default() {
+// v23 field round-trip: both one-time shop unlocks survive a full
+// serialize/deserialize alongside the v22 field ahead of them.
+void test_save_v23_shop_unlocks_roundtrip() {
     SaveData a; std::strcpy(a.activeId, "paypup"); a.generation = 1;
-    a.fragTriggerTier = 5;                       // a v22 field that must still round-trip
-    a.itemTabsUnlocked = 1;                      // would round-trip IF the tail were read
+    a.fragTriggerTier = 5;
+    a.itemTabsUnlocked = 1;
     a.bulkOpenUnlocked = 1;
-    auto blob = forgeLegacyNetworkBytes(a, 22);
-    blob.resize(blob.size() - 2);               // drop the v23 tail (2 bytes)
-    blob[4] = 22; blob[5] = 0;                   // stamp the version word down to 22
-    SaveData out;
-    CHECK(deserializeSave(blob, out));           // a v22 blob still deserializes
-    CHECK(out.itemTabsUnlocked == 0);            // no tail → default false
-    CHECK(out.bulkOpenUnlocked == 0);
-    CHECK(out.fragTriggerTier == 5);             // v22 fields survive
-
-    // ...and a full v23 round-trip preserves both new fields.
     SaveData rt;
     CHECK(deserializeSave(serializeSave(a), rt));
+    CHECK(rt.fragTriggerTier == 5);
     CHECK(rt.itemTabsUnlocked == 1);
     CHECK(rt.bulkOpenUnlocked == 1);
 }

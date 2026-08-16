@@ -562,66 +562,6 @@ void test_recipes_past_the_legacy_mask_persist() {
     CHECK((d.recipeOwned[highWire / 8] & (1u << (highWire % 8))) != 0);
 }
 
-// The other direction: a blob that predates the bitset says everything it knows in the
-// u32, and an upgraded device must not lose the kitchen it already had.
-void test_pre_v51_recipe_mask_seeds_the_bitset() {
-    SaveData a{};
-    a.recipesUnlocked = (1u << 1) | (1u << 5);
-    // v51 appends a tail, so stamping the version word down is the whole forgery — the
-    // reader stops before it and never sees the bytes.
-    std::vector<uint8_t> blob = serializeSave(a);
-    blob[4] = 50; blob[5] = 0;
-
-    SaveData out{};
-    CHECK(deserializeSave(blob, out));
-    CHECK((out.recipeOwned[0] & (1u << 1)) != 0);
-    CHECK((out.recipeOwned[0] & (1u << 5)) != 0);
-    CHECK((out.recipeOwned[0] & (1u << 2)) == 0);
-}
-
-// v49 — cooking left the Rig Shop, and a save written before it described four recipes
-// as rig rows. Two were already bits 0/1 of the mask; the other two were rows 19 and 20,
-// which sat MID-TABLE, so their removal slides every later row down two slots in the
-// positional rigLevelsExt tail. Both halves are asserted here on a forged v48 blob,
-// because getting either wrong silently moves a purchase onto the wrong upgrade.
-void test_save_v49_recipes_leave_the_rig_rows() {
-    SaveData a;
-    std::strcpy(a.activeId, "paypup");
-    a.generation = 1;
-    a.recipesUnlocked = 1u << 1;             // v48: Nachos known, Noodles not
-    // The old ext layout, rows 11..21: Auto Backup .. Item Picker, then the two Browns
-    // recipe rows, then Mod Storage last.
-    a.rigLevelsExt = {1, 0, 2, 0, 0, 0, 0, 1,
-                      /*hashed browns=*/1, /*salted browns=*/0, /*mod storage=*/3};
-
-    // v49 adds no bytes, so a current blob is already v48-shaped — stamping the version
-    // word down is the whole forgery.
-    std::vector<uint8_t> blob = serializeSave(a);
-    blob[4] = 48; blob[5] = 0;
-
-    SaveData out;
-    CHECK(deserializeSave(blob, out));
-    // The Browns row that was owned becomes a recipe bit; the one that wasn't stays off.
-    CHECK((out.recipesUnlocked & (1u << 1)) != 0);   // Nachos, untouched
-    CHECK((out.recipesUnlocked & (1u << 2)) != 0);   // Hashed Browns, migrated
-    CHECK((out.recipesUnlocked & (1u << 3)) == 0);   // Salted, never owned
-    // ...and the tail closes over the gap they left, so Mod Storage keeps its level
-    // instead of landing on the row two places below it.
-    CHECK(out.rigLevelsExt.size() == 9);
-    const std::vector<uint16_t> expected = {1, 0, 2, 0, 0, 0, 0, 1, 3};
-    CHECK(out.rigLevelsExt == expected);
-
-    // Booted off that blob, that is exactly one known recipe beyond the Nachos, and the
-    // Mod Storage tier the operator actually paid for.
-    MemSaveStore store;
-    store.save(blob);
-    Game g{StartMode::Hatched, "paypup", &store};
-    CHECK(g.debugRecipeOwned(recipeIndexByOutput("fully_stacked_nachos")));
-    CHECK(g.debugRecipeOwned(recipeIndexByOutput("hashed_browns")));
-    CHECK(!g.debugRecipeOwned(recipeIndexByOutput("salted_hashed_browns")));
-    CHECK(g.modStorageCap() == modCopyCap(3));
-}
-
 // A recipe consumes every ingredient it names, not just the first two: Hashed Browns
 // takes four. The craft is gated on ALL of them, so being short on the last one is
 // refused exactly like being short on the first.
@@ -848,8 +788,7 @@ void test_tiramisudo_upgrade_survives_the_rack() {
     CHECK(g.bandwidthRegenUpgraded());
 }
 
-// v50 — the upgrade round-trips for the active pet AND for a pet on the shelf, and a
-// pre-v50 blob migrates to "never upgraded", which is the truth (no dish granted it).
+// v50 — the upgrade round-trips for the active pet AND for a pet on the shelf.
 void test_save_v50_bandwidth_regen_upgrade() {
     SaveData a;
     std::strcpy(a.activeId, "paypup");
@@ -867,13 +806,4 @@ void test_save_v50_bandwidth_regen_upgrade() {
     CHECK(out.rack.size() == 2);
     CHECK(out.rack[0].bandwidthRegenBonusMin == 1);
     CHECK(out.rack[1].bandwidthRegenBonusMin == 0);
-
-    // v50 adds bytes, so a forged v49 blob is the current stream minus its own tail.
-    std::vector<uint8_t> blob = serializeSave(a);
-    blob.resize(blob.size() - (4 + 2 + 2 * 4));  // the active i32, the u16 count, two i32s
-    blob[4] = 49; blob[5] = 0;
-    SaveData migrated;
-    CHECK(deserializeSave(blob, migrated));
-    CHECK(migrated.bandwidthRegenBonusMin == 0);
-    for (const SaveStoredPet& p : migrated.rack) CHECK(p.bandwidthRegenBonusMin == 0);
 }

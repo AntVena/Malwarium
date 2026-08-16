@@ -860,8 +860,8 @@ void test_crew_exploit_in_combat_picker() {
     CHECK(g.combat().player().crewExploit.charges == kCrews[0].exploit.magnitude);
 }
 
-// v36: the crew id + home network round-trip, an unknown crew id loads as
-// unaffiliated, and a pre-v36 blob migrates to neither.
+// v36: the crew id + home network round-trip, and an unknown crew id loads as
+// unaffiliated.
 void test_save_v36_crew_roundtrip() {
     SaveData a; std::strcpy(a.activeId, "paypup"); a.generation = 1;
     std::strcpy(a.crewId, "deniers_of_service");
@@ -884,13 +884,6 @@ void test_save_v36_crew_roundtrip() {
     MemSaveStore store2; store2.save(serializeSave(b));
     Game g2(StartMode::Hatched, "paypup", &store2);
     CHECK(g2.crewIndex() == -1 && g2.hasHomeNetwork());
-
-    std::vector<uint8_t> blob = serializeSave(a);
-    blob[4] = 35; blob[5] = 0;      // version-gated: the v36+ tails go unread
-    SaveData migrated;
-    CHECK(deserializeSave(blob, migrated));
-    CHECK(migrated.crewId[0] == '\0' && migrated.homeNetworkKey == 0);
-    CHECK(migrated.homeNetworkName[0] == '\0');
 }
 
 // buildPediaStateJson: pets{} distinguishes "seen" from "hatched"/"locked";
@@ -952,142 +945,6 @@ void test_pedia_raised_tally_survives_evolution() {
     // walking a line reveals the rungs you walked, not the one you didn't.
     CHECK(!g.creatureRaised("berserkernel"));
     CHECK(json.find("\"berserkernel\":\"locked\"") != std::string::npos);
-}
-
-// Save v39: an evolved-past species reaches the blob and comes back — the one thing
-// no earlier version could express. A pre-v39 blob has no tally, so the loader
-// rebuilds what it can from the active pet + rack + records; anything evolved past
-// is simply gone from that format, and the test says so.
-// v41: a creature that was renamed in content is renamed on the WIRE too, so a blob
-// written before the rename still resolves. Every creature-id-bearing field has to be
-// covered — missing one doesn't fail loudly, it silently drops that pet/record/tally,
-// which is exactly the failure this guards.
-void test_save_v41_renames_retired_creature_ids() {
-    SaveData a;
-    std::strcpy(a.activeId, "grizzgabyte_good");
-    SaveStoredPet stored; std::strcpy(stored.id, "grizzgabyte_bad");
-    a.rack.push_back(stored);
-    SaveRecord rec; std::strcpy(rec.id, "grizzgabyte_good");
-    a.records.push_back(rec);
-    a.seenCreatures.push_back(SaveId{"grizzgabyte_bad"});
-    a.raisedCreatures.push_back(SaveId{"grizzgabyte_good"});
-    a.speciesDiveIds.push_back(SaveId{"grizzgabyte_bad"});
-    a.speciesDiveDepths.push_back(12);
-
-    std::vector<uint8_t> blob = serializeSave(a);
-    blob[4] = 40; blob[5] = 0;                      // stamp back to v40
-    SaveData out;
-    CHECK(deserializeSave(blob, out));
-    CHECK(std::strcmp(out.activeId, "bruinforce") == 0);
-    CHECK(std::strcmp(out.rack[0].id, "berserkernel") == 0);
-    CHECK(std::strcmp(out.records[0].id, "bruinforce") == 0);
-    CHECK(std::strcmp(out.seenCreatures[0].id, "berserkernel") == 0);
-    CHECK(std::strcmp(out.raisedCreatures[0].id, "bruinforce") == 0);
-    CHECK(std::strcmp(out.speciesDiveIds[0].id, "berserkernel") == 0);
-
-    // The renamed pet is a LIVE pet again, not a dropped id — which is the point of
-    // doing this in the codec rather than leaving an alias in the content tables.
-    MemSaveStore store; store.save(blob);
-    Game g(StartMode::Hatched, "paypup", &store);
-    CHECK(g.pet() && std::strcmp(g.pet()->id, "bruinforce") == 0);
-    CHECK(g.creatureSeen("berserkernel"));
-    CHECK(g.creatureRaised("bruinforce"));
-
-    // A CURRENT blob carries current ids and is left alone — the pass is gated on the
-    // version, so it can't keep rewriting ids forever.
-    SaveData b;
-    std::strcpy(b.activeId, "bruinforce");
-    SaveData back;
-    CHECK(deserializeSave(serializeSave(b), back));
-    CHECK(std::strcmp(back.activeId, "bruinforce") == 0);
-}
-
-// v46: two retired ids that land on the SAME successor — the Worm line's two Script
-// placeholders both becoming Rootgrub. Every earlier rename row was one-to-one, so this
-// is the first blob that can name one creature twice. The tallies are lists, not sets,
-// and AchSeries::LineRaised counts the raised one per line, so the failure is not a
-// wasted slot: it is a line achievement awarded for a creature raised once.
-void test_save_v46_two_retired_ids_collapse_without_double_tally() {
-    SaveData a;
-    std::strcpy(a.activeId, "worm_placeholder_good");
-    a.seenCreatures.push_back(SaveId{"worm_placeholder_good"});
-    a.seenCreatures.push_back(SaveId{"worm_placeholder_bad"});
-    a.raisedCreatures.push_back(SaveId{"worm_placeholder_good"});
-    a.raisedCreatures.push_back(SaveId{"worm_placeholder_bad"});
-
-    std::vector<uint8_t> blob = serializeSave(a);
-    blob[4] = 45; blob[5] = 0;                      // stamp back to v45
-    MemSaveStore store; store.save(blob);
-    Game g(StartMode::Hatched, "paypup", &store);
-
-    CHECK(g.pet() && std::strcmp(g.pet()->id, "rootgrub") == 0);
-    CHECK(g.creatureRaised("rootgrub"));
-    CHECK(g.speciesRaised() == 1);   // one entry, not two — the whole point
-}
-
-// v43: NET-SEA CROSSING spliced into the MIDDLE of the ladder. Every persisted EXPL field
-// is positional, so a v42 blob's flags from rung 2 on describe the area now one rung to
-// their left. The failure this guards is silent and generous in the worst direction — the
-// player is handed the new area pre-cleared and loses the deepest one they actually beat —
-// so it is asserted field by field on a save whose rungs are deliberately all different.
-void test_save_v43_ladder_insert_shifts_expl_progress() {
-    SaveData a;
-    // A v42 ladder: 4 rungs, cleared through rung 2 (the old Napstorrent) and mid-run on 3.
-    a.sectorCleared    = {1, 1, 1, 0};
-    a.bossUnlocked     = {1, 1, 1, 0};
-    a.subCleared       = {0x1F, 0x1F, 0x1F, 0x03};   // bitmask per area, bit s = sub s
-    a.subBossUnlocked  = {0x1F, 0x1F, 0x1F, 0x07};
-    a.subRefarm.assign(4 * kSubAreasPerArea, 0);
-    for (int i = 0; i < 4 * kSubAreasPerArea; ++i)
-        a.subRefarm[i] = static_cast<uint16_t>(100 + i);   // every cell distinguishable
-    a.titlesUnlocked = 0b0111;                        // rungs 0,1,2 earned
-    a.equippedTitle  = 2;                             // showing the old rung 2's Title
-
-    std::vector<uint8_t> blob = serializeSave(a);
-    blob[4] = 42; blob[5] = 0;                        // stamp back to v42
-    SaveData out;
-    CHECK(deserializeSave(blob, out));
-
-    // Rungs 0 and 1 are BELOW the splice and must not move at all.
-    CHECK(out.sectorCleared.size() == 5);
-    CHECK(out.sectorCleared[0] == 1 && out.sectorCleared[1] == 1);
-    CHECK(out.bossUnlocked[0] == 1 && out.bossUnlocked[1] == 1);
-    CHECK(out.subCleared[0] == 0x1F && out.subCleared[1] == 0x1F);
-    CHECK(out.subBossUnlocked[0] == 0x1F && out.subBossUnlocked[1] == 0x1F);
-    // Rung 2 is the new area: blank, so it has to be played rather than arriving beaten.
-    CHECK(out.sectorCleared[2] == 0);
-    CHECK(out.bossUnlocked[2] == 0);
-    CHECK(out.subCleared[2] == 0);
-    CHECK(out.subBossUnlocked[2] == 0);
-    // ...and everything the player DID beat is still beaten, one rung deeper.
-    CHECK(out.sectorCleared[3] == 1 && out.sectorCleared[4] == 0);
-    CHECK(out.subCleared[3] == 0x1F && out.subCleared[4] == 0x03);
-    CHECK(out.subBossUnlocked[3] == 0x1F && out.subBossUnlocked[4] == 0x07);
-
-    // subRefarm moves a whole ROW, not a cell: the new rung's five counts read 0 and every
-    // old count keeps the sub-area it was earned in.
-    CHECK(out.subRefarm.size() == 5 * kSubAreasPerArea);
-    for (int i = 0; i < 2 * kSubAreasPerArea; ++i)
-        CHECK(out.subRefarm[i] == 100 + i);                       // below the splice
-    for (int s = 0; s < kSubAreasPerArea; ++s)
-        CHECK(out.subRefarm[2 * kSubAreasPerArea + s] == 0);      // the opened row
-    for (int i = 2 * kSubAreasPerArea; i < 4 * kSubAreasPerArea; ++i)
-        CHECK(out.subRefarm[i + kSubAreasPerArea] == 100 + i);    // shifted, order intact
-
-    // The Titles are a bitmask over the same rungs, and the equipped one is an index into
-    // it — both move, or the player's shown Title silently becomes a different area's.
-    CHECK(out.titlesUnlocked == 0b1011);              // rungs 0,1 stay; old 2 -> 3
-    CHECK(out.equippedTitle == 3);
-
-    // A CURRENT blob is left alone — the pass is version-gated, so it cannot keep
-    // shifting the same save every time it loads.
-    std::vector<uint8_t> now = serializeSave(a);
-    SaveData back;
-    CHECK(deserializeSave(now, back));
-    CHECK(back.sectorCleared.size() == 4);
-    CHECK(back.sectorCleared[2] == 1);
-    CHECK(back.titlesUnlocked == 0b0111);
-    CHECK(back.equippedTitle == 2);
 }
 
 // The splice table's own invariants, so save.h's rules are enforced rather than merely

@@ -463,26 +463,6 @@ void test_audit_scan_toggle_persists() {
     }
 }
 
-// A v4 blob (no v5 audit tail) still loads: netScanEnabled defaults OFF (a
-// migrated save never silently arms the radio). v4 fields survive intact.
-void test_save_v4_migration_defaults_audit_off() {
-    SaveData a;
-    std::strcpy(a.activeId, "paypup");
-    a.networksSeen = 7;
-    a.hackerRank = 0;
-    a.netScanEnabled = 1;                    // set it, then strip the v5 tail below
-    auto blob = forgeLegacyNetworkBytes(a, 4);
-    CHECK(blob.size() > 1);
-    blob.resize(blob.size() - 1);            // drop the v5 tail (u8 = 1 byte)
-    blob[4] = 4; blob[5] = 0;                // version word -> 4
-
-    SaveData out;
-    CHECK(deserializeSave(blob, out));
-    CHECK(out.netScanEnabled == 0);          // absent tail -> OFF
-    CHECK(out.networksSeen == 7);            // v4 fields intact
-    CHECK(std::strcmp(out.activeId, "paypup") == 0);
-}
-
 // Audit handshake capture —.pcap writer + capture policy SM -------
 
 // A memory PcapSink: the native seam standing in for the device's SD FILE. Every
@@ -704,24 +684,6 @@ void test_audit_legacy_capture_without_scan_normalizes_on_load() {
     CHECK(g.auditMode() == Game::AuditMode::ScanCapture);
 }
 
-// A v5 blob (no v6 capture tail) still loads: auditCaptureEnabled defaults OFF,
-// v5 fields (netScanEnabled) survive intact.
-void test_save_v5_migration_defaults_capture_off() {
-    SaveData a;
-    std::strcpy(a.activeId, "paypup");
-    a.netScanEnabled = 1;
-    a.auditCaptureEnabled = 1;               // set it, then strip the v6 tail below
-    auto blob = forgeLegacyNetworkBytes(a, 5);
-    blob.resize(blob.size() - 1);            // drop the v6 tail (u8 = 1 byte)
-    blob[4] = 5; blob[5] = 0;                // version word -> 5
-
-    SaveData out;
-    CHECK(deserializeSave(blob, out));
-    CHECK(out.auditCaptureEnabled == 0);     // absent tail -> OFF
-    CHECK(out.netScanEnabled == 1);          // v5 field intact
-    CHECK(std::strcmp(out.activeId, "paypup") == 0);
-}
-
 // RF half — pure EAPOL classifier + handshake tracker -------------
 
 // Build a raw 802.11 EAPOL-Key MPDU (no radiotap — the DLT_IEEE802_11 bytes the
@@ -923,28 +885,6 @@ void test_audit_ledgers_persist_no_recredit() {
         CHECK(!g.registerHandshake(shake));
         CHECK(g.handshakesSeen() == 1);
     }
-}
-
-// A v6 blob (no v7 SHAKES-ledger tail) still loads: the ledger comes back empty +
-// handshakesSeen 0 (the pre-v7 behaviour), v6 fields survive intact.
-void test_save_v6_migration_defaults_ledgers_empty() {
-    SaveData a;
-    std::strcpy(a.activeId, "paypup");
-    a.auditCaptureEnabled = 1;
-    a.handshakesSeen = 9;                     // set the v7 field, then strip the tail
-    a.seenHandshakeBssids.push_back(0x5678);
-    // Rebuild a v6-only blob: re-serialize with the tail intent removed is fiddly,
-    // so instead force the version word to 6 — deserialize then stops after the v6
-    // tail and never reads the v7 ledger (leftover bytes are ignored). Target
-    // version 6 is still >= 4, so the v4 splice is needed (just not v7's).
-    auto blob = forgeLegacyNetworkBytes(a, 6);
-    blob[4] = 6; blob[5] = 0;                 // version word -> 6
-
-    SaveData out;
-    CHECK(deserializeSave(blob, out));
-    CHECK(out.handshakesSeen == 0);          // absent tail -> 0
-    CHECK(out.seenHandshakeBssids.empty());
-    CHECK(out.auditCaptureEnabled == 1);     // v6 field intact
 }
 
 // v7 round-trip: the SHAKES ledger + handshake count serialize and restore

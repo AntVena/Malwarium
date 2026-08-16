@@ -329,29 +329,6 @@ void test_wild_malbeast_index_mapping() {
     CHECK(wildMalbeastIndex(nullptr) == -1);
 }
 
-// Save v24 -> v25: a pre-v25 blob (no tail) loads with seenCreatures empty and both
-// malbeast masks + the achievements mask at 0 (mirrors the v20->v21 shield-default
-// pattern) — the honest default for a save that predates this system.
-void test_save_v24_to_v25_pedia_defaults() {
-    SaveData a; std::strcpy(a.activeId, "paypup"); a.generation = 1;
-    a.seenCreatures.push_back(SaveId{"malbear"});   // would round-trip IF the tail were read
-    a.malbeastSeen = 0x3;
-    a.malbeastDefeated = 0x1;
-    a.achievementsMask = 0x5;
-    auto blob = forgeLegacyNetworkBytes(a, 24);
-    // Drop the v25 tail: seenCreatures (u16 count + 1*kSaveIdCap) + 2 malbeast u16s
-    // + the achievements u32.
-    const size_t v25TailBytes = 2 + kSaveIdCap + 2 + 2 + 4;
-    blob.resize(blob.size() - v25TailBytes);
-    blob[4] = 24; blob[5] = 0;                  // stamp the version word down to 24
-    SaveData out;
-    CHECK(deserializeSave(blob, out));          // a v24 blob still deserializes
-    CHECK(out.seenCreatures.empty());
-    CHECK(out.malbeastSeen == 0);
-    CHECK(out.malbeastDefeated == 0);
-    CHECK(out.achievementsMask == 0);
-}
-
 // Save v25 round-trip: seenCreatures + both malbeast masks survive a raw
 // serialize/deserialize cycle, and a real Game::captureSave -> persistSave -> reload
 // round-trips the same state through the public API. (The v25 achievements u32 that used
@@ -385,8 +362,7 @@ void test_save_v25_roundtrip() {
     CHECK(g2.hasAchievement("BIT_BARON"));
 }
 
-// v27 — the rig-upgrade levels round-trip, and a pre-v27 blob (no tail)
-// migrates all three to 0 (a migrated save has bought none).
+// v27 — the rig-upgrade levels round-trip.
 void test_save_v27_roundtrip() {
     SaveData a; std::strcpy(a.activeId, "paypup"); a.generation = 1;
     a.rackSlotUpgradeCount = 3;
@@ -397,15 +373,6 @@ void test_save_v27_roundtrip() {
     CHECK(out.rackSlotUpgradeCount == 3);
     CHECK(out.scrapingClusterLevel == 7);
     CHECK(out.dataMiningLevel == 12);
-
-    std::vector<uint8_t> blob = forgeLegacyNetworkBytes(a, 26);
-    blob.resize(blob.size() - 3 * 4);   // drop the v27 tail (3 i32s)
-    blob[4] = 26; blob[5] = 0;          // stamp the version word down to 26
-    SaveData migrated;
-    CHECK(deserializeSave(blob, migrated));   // a v26 blob still deserializes
-    CHECK(migrated.rackSlotUpgradeCount == 0);
-    CHECK(migrated.scrapingClusterLevel == 0);
-    CHECK(migrated.dataMiningLevel == 0);
 
     // Game-level round trip through captureSave/persistSave/applySave.
     MemSaveStore store;
@@ -423,19 +390,11 @@ void test_save_v27_roundtrip() {
     CHECK(g2.dataMiningLevel() == 1);
 }
 
-// v32 — rigLevelsExt (Rig Shop rows beyond the legacy 11) round-trips, and a
-// pre-v32 blob (no tail) migrates it to empty (every such row unbought).
+// v32 — rigLevelsExt (Rig Shop rows beyond the legacy 11) round-trips.
 void test_save_v32_roundtrip() {
     SaveData a; std::strcpy(a.activeId, "paypup"); a.generation = 1;
     a.rigLevelsExt = {5, 9};
     SaveData out;
     CHECK(deserializeSave(serializeSave(a), out));
     CHECK(out.rigLevelsExt.size() == 2 && out.rigLevelsExt[0] == 5 && out.rigLevelsExt[1] == 9);
-
-    std::vector<uint8_t> blob = forgeLegacyNetworkBytes(a, 31);
-    blob.resize(blob.size() - 2 * 2 - 2);   // drop the v32 tail (u16 size + 2 u16s)
-    blob[4] = 31; blob[5] = 0;              // stamp the version word down to 31
-    SaveData migrated;
-    CHECK(deserializeSave(blob, migrated));  // a v31 blob still deserializes
-    CHECK(migrated.rigLevelsExt.empty());
 }

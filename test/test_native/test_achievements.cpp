@@ -273,53 +273,26 @@ void test_achievement_banner_collapses_a_burst() {
     CHECK(g.achPendingNotify() == 0);             // and it clears the whole backlog
 }
 
-// v40 round-trip + the pre-v40 migration, which is the part an upgraded device actually
-// walks through: the legacy u32 mask becomes the first bytes of the bitset, nothing is
-// marked announced (so the whole history parades), and the counters are seeded from what
-// the rest of the save can honestly account for.
-void test_save_v40_achievements_roundtrip_and_migration() {
-    {   // Raw round-trip of all four v40 fields.
-        SaveData a; std::strcpy(a.activeId, "paypup"); a.generation = 1;
-        a.achievementEarned.assign(8, 0);
-        a.achievementEarned[0] = 0x05;            // wires 0 and 2
-        a.achievementNotified.assign(8, 0);
-        a.achievementNotified[0] = 0x01;          // wire 0 announced, wire 2 not
-        a.bossWins = 37;
-        a.collectedItems.push_back(SaveId{"osi_dip"});
-        a.speciesDiveIds.push_back(SaveId{"malbear"});
-        a.speciesDiveDepths.push_back(312);
-        SaveData out;
-        CHECK(deserializeSave(serializeSave(a), out));
-        CHECK(out.achievementEarned.size() == 8 && out.achievementEarned[0] == 0x05);
-        CHECK(out.achievementNotified.size() == 8 && out.achievementNotified[0] == 0x01);
-        CHECK(out.bossWins == 37);
-        CHECK(out.collectedItems.size() == 1);
-        CHECK(std::strcmp(out.collectedItems[0].id, "osi_dip") == 0);
-        CHECK(out.speciesDiveIds.size() == 1 && out.speciesDiveDepths.size() == 1);
-        CHECK(out.speciesDiveDepths[0] == 312);
-    }
-    {   // A pre-v40 blob: the legacy mask migrates bit-for-bit, and the achievement it
-        // encodes is re-announced because nothing was ever marked as shown.
-        SaveData a; std::strcpy(a.activeId, "paypup"); a.generation = 1;
-        a.achievementsMask = (1u << 1) | (1u << 6);   // SURVIVED_LOCKOUT + BIT_BARON
-        a.subCleared.assign(kAreaCount, 0);
-        a.subCleared[0] = 0x03;                        // two sub-areas cleared
-        SaveStack held; std::strcpy(held.id, "airgap_snack"); held.qty = 2;
-        a.items.push_back(held);                       // something already in the bag
-        std::vector<uint8_t> blob = serializeSave(a);
-        blob[4] = 39; blob[5] = 0;                     // stamp back to v39
-        MemSaveStore store; store.save(blob);
-        Game g(StartMode::Hatched, "paypup", &store);
-        CHECK(g.hasAchievement("SURVIVED_LOCKOUT"));
-        CHECK(g.hasAchievement("BIT_BARON"));
-        CHECK(!g.hasAchievement("FLAWLESS_RUN"));
-        CHECK(g.achPendingNotify() >= 2);              // the upgrade announces its history
-        // Boss wins seed from the clears: two sub-areas beaten is two bosses beaten.
-        CHECK(g.bossWins() == 2);
-        // And what the bag already holds counts as collected, so the collection ladders
-        // don't start an established device back at zero.
-        CHECK(g.itemCollected("airgap_snack"));
-    }
+// v40 round-trip of all four achievement fields.
+void test_save_v40_achievements_roundtrip() {
+    SaveData a; std::strcpy(a.activeId, "paypup"); a.generation = 1;
+    a.achievementEarned.assign(8, 0);
+    a.achievementEarned[0] = 0x05;            // wires 0 and 2
+    a.achievementNotified.assign(8, 0);
+    a.achievementNotified[0] = 0x01;          // wire 0 announced, wire 2 not
+    a.bossWins = 37;
+    a.collectedItems.push_back(SaveId{"osi_dip"});
+    a.speciesDiveIds.push_back(SaveId{"malbear"});
+    a.speciesDiveDepths.push_back(312);
+    SaveData out;
+    CHECK(deserializeSave(serializeSave(a), out));
+    CHECK(out.achievementEarned.size() == 8 && out.achievementEarned[0] == 0x05);
+    CHECK(out.achievementNotified.size() == 8 && out.achievementNotified[0] == 0x01);
+    CHECK(out.bossWins == 37);
+    CHECK(out.collectedItems.size() == 1);
+    CHECK(std::strcmp(out.collectedItems[0].id, "osi_dip") == 0);
+    CHECK(out.speciesDiveIds.size() == 1 && out.speciesDiveDepths.size() == 1);
+    CHECK(out.speciesDiveDepths[0] == 312);
 }
 
 // The species dive record outlives the pet that set it, and is what the per-line and

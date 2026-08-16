@@ -77,13 +77,11 @@ int g_failures = 0;
     RUN(test_browns_recipes_wait_on_meeting_both_dishes) \
     RUN(test_recipes_persist) \
     RUN(test_recipes_past_the_legacy_mask_persist) \
-    RUN(test_pre_v51_recipe_mask_seeds_the_bitset) \
     RUN(test_tiramisudo_upgrades_once_then_feeds) \
     RUN(test_tiramisudo_regen_actually_runs_faster) \
     RUN(test_tiramisudo_upgrade_survives_the_rack) \
     RUN(test_save_v50_bandwidth_regen_upgrade) \
     RUN(test_buffs_page_lists_the_bandwidth_upgrade) \
-    RUN(test_save_v49_recipes_leave_the_rig_rows) \
     RUN(test_four_ingredient_recipe_consumes_all_inputs) \
     RUN(test_stacking_food_run_climbs_then_resets_on_decay) \
     RUN(test_loot_pools_resolve_and_carry_weight) \
@@ -164,15 +162,6 @@ int g_failures = 0;
     RUN(test_save_roundtrip)                \
     RUN(test_save_version_and_empty)        \
     RUN(test_save_from_a_newer_build_still_loads) \
-    RUN(test_save_v1_migration)             \
-    RUN(test_save_v7_to_v8_migration)       \
-    RUN(test_save_v8_to_v9_migration)       \
-    RUN(test_save_v9_to_v10_migration)      \
-    RUN(test_save_v16_to_v17_mod_migration) \
-    RUN(test_save_v12_to_v13_migration)     \
-    RUN(test_save_v13_to_v14_brightness_default) \
-    RUN(test_save_v14_to_v15_refarm_default) \
-    RUN(test_save_v15_to_v16_defrag_default) \
     RUN(test_boot_from_save_vs_hatch)       \
     RUN(test_reboot_preserves_active_creature_level) \
     RUN(test_persistence_reset_clears_store)\
@@ -214,7 +203,7 @@ int g_failures = 0;
     RUN(test_move_pool_per_slot_fallback)   \
     RUN(test_move_slot_type_lock)           \
     RUN(test_move_slot_stamping_locks_at_unlock) \
-    RUN(test_save_v24_slot_kinds_roundtrip_and_migration) \
+    RUN(test_save_v24_slot_kinds_roundtrip) \
     RUN(test_combat_override_in_game)       \
     RUN(test_combat_stakes_live_vs_safe)    \
     RUN(test_combat_screen_grayscale)       \
@@ -230,8 +219,6 @@ int g_failures = 0;
     RUN(test_csf_recovery_clears_burned_window) \
     RUN(test_save_records_roundtrip)        \
     RUN(test_save_hacker_rank_roundtrip)    \
-    RUN(test_save_v3_migration_defaults_hacker_rank) \
-    RUN(test_save_v4_migration_defaults_audit_off)   \
     RUN(test_audit_scan_toggle_persists)    \
     RUN(test_csf_grayscale)                 \
     RUN(test_arch_record_readonly)          \
@@ -361,7 +348,6 @@ int g_failures = 0;
     RUN(test_combat_panel_pages_cycle)      \
     RUN(test_save_v37_link_roundtrip)             \
     RUN(test_save_v38_net_slot_is_reserved)              \
-    RUN(test_save_v37_to_v38_net_default)         \
     RUN(test_radio_consents_are_independent)      \
     RUN(test_save_defers_when_the_heap_is_too_low) \
     RUN(test_a_refused_write_is_not_a_save) \
@@ -386,7 +372,6 @@ int g_failures = 0;
     RUN(test_version_marker_round_trips)          \
     RUN(test_version_marker_tolerates_real_files) \
     RUN(test_version_marker_absent_reads_as_unknown) \
-    RUN(test_save_v36_to_v37_link_default)        \
     RUN(test_peer_hello_rejects_malformed)        \
     RUN(test_peer_hello_sanitizes_hostile_fields) \
     RUN(test_peer_ledger_new_and_refresh)         \
@@ -404,7 +389,6 @@ int g_failures = 0;
     RUN(test_audit_capture_toggle_persists)       \
     RUN(test_audit_mode_enforces_scan_dependency) \
     RUN(test_audit_legacy_capture_without_scan_normalizes_on_load) \
-    RUN(test_save_v5_migration_defaults_capture_off) \
     RUN(test_eapol_parse_classifies_messages)     \
     RUN(test_eapol_parse_rejects_non_eapol)       \
     RUN(test_handshake_tracker_first_crackable)   \
@@ -412,7 +396,6 @@ int g_failures = 0;
     RUN(test_audit_capture_seal_active_from_armed) \
     RUN(test_register_handshake_dedup)            \
     RUN(test_audit_ledgers_persist_no_recredit)   \
-    RUN(test_save_v6_migration_defaults_ledgers_empty) \
     RUN(test_save_v7_ledger_roundtrip)            \
     /*pcap-blowup fix — filename-by-network + discovery rewards */ \
     RUN(test_pcap_naming_sanitizes_and_falls_back_to_bssid) \
@@ -464,15 +447,10 @@ int g_failures = 0;
     RUN(test_save_v18_mod_reqlevel)               \
     RUN(test_mod_storage_cap_bounds_the_pool_and_the_shop_raises_it) \
     RUN(test_save_mod_count_nibbles_pack_two_mods_per_byte) \
-    RUN(test_save_v44_to_v45_mod_pool_migration) \
     RUN(test_save_mod_count_for_a_retired_wire_is_dropped) \
-    RUN(test_save_v18_to_v19_bwupgrade_default)   \
-    RUN(test_save_v19_to_v20_ap_default)          \
     RUN(test_save_v21_shield_roundtrip)           \
-    RUN(test_save_v20_to_v21_shield_default)      \
-    RUN(test_save_v33_drops_network_dedup)        \
-    RUN(test_save_v21_to_v22_frag_trigger_default) \
-    RUN(test_save_v22_to_v23_shop_unlocks_default) \
+    RUN(test_save_v22_frag_trigger_roundtrip) \
+    RUN(test_save_v23_shop_unlocks_roundtrip) \
     /* ITEMS type-tabs + VAULT bulk-open (Hacker SHOP, save v23) */ \
     RUN(test_hacker_shop_item_tabs_buy)           \
     RUN(test_hacker_shop_bulk_open_buy)           \
@@ -536,7 +514,6 @@ int g_failures = 0;
     RUN(test_pedia_state_json_fresh_hatch_egg)    \
     RUN(test_pedia_state_kitchen_axes)            \
     RUN(test_wild_malbeast_index_mapping)              \
-    RUN(test_save_v24_to_v25_pedia_defaults)           \
     RUN(test_save_v25_roundtrip)                       \
     RUN(test_save_v27_roundtrip)                        \
     RUN(test_save_v32_roundtrip)                        \
@@ -561,11 +538,8 @@ int g_failures = 0;
     RUN(test_save_v36_crew_roundtrip)                   \
     RUN(test_pedia_state_json_reveal_states)           \
     RUN(test_pedia_raised_tally_survives_evolution)    \
-    RUN(test_save_v39_raised_tally_roundtrip_and_migration) \
-    RUN(test_save_v41_renames_retired_creature_ids) \
-    RUN(test_save_v46_two_retired_ids_collapse_without_double_tally) \
+    RUN(test_save_v39_raised_tally_roundtrip) \
     RUN(test_renamed_ids_table_invariants)  \
-    RUN(test_save_v43_ladder_insert_shifts_expl_progress) \
     RUN(test_ladder_inserts_table_invariants) \
     RUN(test_area_icons_are_keyed_by_area_id) \
     RUN(test_stacker_shaves_the_overhang)     \
@@ -638,7 +612,7 @@ int g_failures = 0;
     RUN(test_achievement_banner_announces_on_the_home_screen) \
     RUN(test_achievement_banner_waits_for_the_home_screen) \
     RUN(test_achievement_banner_collapses_a_burst) \
-    RUN(test_save_v40_achievements_roundtrip_and_migration) \
+    RUN(test_save_v40_achievements_roundtrip) \
     RUN(test_species_dive_records_feed_the_depth_rows) \
     RUN(test_collected_items_survive_being_spent) \
     RUN(test_pedia_state_json_rack_and_record_hatched) \

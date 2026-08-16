@@ -1,6 +1,6 @@
 #include "core/model/save.h"
 
-#include <algorithm>
+#include <array>
 #include <cstring>
 
 #include "core/content/areas/area_defs.h"   // kSubAreasPerArea — subRefarm's row width
@@ -82,17 +82,11 @@ void writeStored(Writer& w, const SaveStoredPet& p) {
 }
 
 // The retired-id table. Adding, flattening and retiring a row: save.h's `renamedIds`.
-constexpr RenamedId kRenamedIds[] = {
-    {"grizzgabyte_good", "bruinforce", 41},
-    {"grizzgabyte_bad", "berserkernel", 41},
-    // The Worm line's two Script placeholders became ONE designed Script row, with the
-    // care branch moved down to the Daemon. Both retired ids land on it: they were the
-    // same rung of the same ladder, so whichever a blob is carrying, the pet it names
-    // is the one Rootgrub now is. The branch that pet was headed for is not lost — it
-    // is re-read from the care tally at the Daemon evolution, one stage later.
-    {"worm_placeholder_good", "rootgrub", 46},
-    {"worm_placeholder_bad", "rootgrub", 46},
-};
+// Empty since kOldestAcceptedVersion passed 46: the last two rows (grizzgabyte_*/41,
+// worm_placeholder_*/46) both retired the moment no blob the codec still opens could
+// carry either id. The machinery stays — a future rename adds a row here again.
+// std::array rather than a plain C array so a zero-row table is still well-formed.
+constexpr std::array<RenamedId, 0> kRenamedIds{};
 
 // The newest version any row still rewrites — a blob at or above it needs no pass.
 constexpr uint16_t newestRenameVersion() {
@@ -123,9 +117,10 @@ void renameRetiredIds(SaveData& d, uint16_t version) {
 }
 
 // The mid-ladder splice table. Adding and retiring a row: save.h's `ladderInserts`.
-constexpr LadderInsert kLadderInserts[] = {
-    {/*atIndex=*/2, 43},   // NET-SEA CROSSING, between The Pirate Bayou and the Moors
-};
+// Empty since kOldestAcceptedVersion passed 43: the NET-SEA CROSSING row retired the
+// moment no blob the codec still opens could predate the splice. std::array rather
+// than a plain C array so a zero-row table is still well-formed.
+constexpr std::array<LadderInsert, 0> kLadderInserts{};
 
 // The newest version any row still shifts — a blob at or above it needs no pass.
 constexpr uint16_t newestLadderInsertVersion() {
@@ -168,51 +163,20 @@ void applyLadderInserts(SaveData& d, uint16_t version) {
         if (version < l.sinceVersion) openLadderRung(d, l.atIndex);
 }
 
-// --- v49: cooking leaves the Rig Shop ---------------------------------------
-//
-// A pre-v49 blob describes four recipes as rig rows: Patched Noodles and Stacked Nachos
-// as bits 0/1 of `recipesUnlocked` (already where v49 wants them), and the two Browns
-// recipes as rig rows 19 and 20 — which sat MID-TABLE, so deleting them shifts every
-// later row down two places in the positional `rigLevelsExt` tail. Rows before them are
-// untouched, so the whole migration is: lift the two recipe entries out into their own
-// bits, then close the gap they leave.
-//
-// The old layout is spelled out here rather than derived, because the current table can
-// no longer describe it — that is exactly what makes this a migration and not a lookup.
-constexpr int kV48ExtBase = 11;          // first row in the old ext tail
-constexpr int kV48ExtHashedBrowns = 19 - kV48ExtBase;   // -> recipe wire 2
-constexpr int kV48ExtSaltedBrowns = 20 - kV48ExtBase;   // -> recipe wire 3
-
-void migrateRecipeRows(SaveData& d, uint16_t version) {
-    if (version >= 49) return;
-    auto ext = [&d](size_t i) -> uint16_t {
-        return i < d.rigLevelsExt.size() ? d.rigLevelsExt[i] : 0;
-    };
-    if (ext(kV48ExtHashedBrowns)) d.recipesUnlocked |= 1u << 2;
-    if (ext(kV48ExtSaltedBrowns)) d.recipesUnlocked |= 1u << 3;
-    // Close the two-slot gap: everything above the pair slides down onto it. A blob
-    // that never reached those slots has nothing to slide and is left as it is.
-    if (d.rigLevelsExt.size() > static_cast<size_t>(kV48ExtSaltedBrowns)) {
-        d.rigLevelsExt.erase(
-            d.rigLevelsExt.begin() + kV48ExtHashedBrowns,
-            d.rigLevelsExt.begin() +
-                std::min(d.rigLevelsExt.size(),
-                         static_cast<size_t>(kV48ExtSaltedBrowns) + 1));
-    } else if (d.rigLevelsExt.size() > static_cast<size_t>(kV48ExtHashedBrowns)) {
-        d.rigLevelsExt.resize(kV48ExtHashedBrowns);
-    }
-}
+// migrateRecipeRows (the v49 cooking-leaves-the-Rig-Shop migration, folding the two
+// mid-table Browns rig rows into the recipe bitset) retired along with
+// kOldestAcceptedVersion passing 49 — see save.h's v49 note for what it used to do.
 
 }  // namespace
 
 const RenamedId* renamedIds(int& count) {
-    count = static_cast<int>(sizeof(kRenamedIds) / sizeof(kRenamedIds[0]));
-    return kRenamedIds;
+    count = static_cast<int>(kRenamedIds.size());
+    return kRenamedIds.data();
 }
 
 const LadderInsert* ladderInserts(int& count) {
-    count = static_cast<int>(sizeof(kLadderInserts) / sizeof(kLadderInserts[0]));
-    return kLadderInserts;
+    count = static_cast<int>(kLadderInserts.size());
+    return kLadderInserts.data();
 }
 
 void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
@@ -659,9 +623,6 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
     if (version >= 4) {
         d.networksSeen = r.i32();
         d.hackerRank = r.i32();
-        // A v4..v32 blob still carries the dedup-pool low byte here (removed as of
-        // v33, see save.h) — read and discard it so every later field stays aligned.
-        if (version < 33) (void)r.u8();
     }
 
     // v5 tail: the Audit-mode passive-scan toggle. Absent in a v1..v4 blob — it
@@ -682,12 +643,6 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
     // reboot re-builds the dedup set from scratch, which could re-count).
     if (version >= 7) {
         d.handshakesSeen = r.i32();
-        // A v7..v32 blob still carries the sibling NETS/seenBssids vector here
-        // (removed as of v33, see save.h) — read and discard it for alignment.
-        if (version < 33) {
-            const uint16_t nNet = r.u16();
-            for (uint16_t i = 0; i < nNet && r.ok; ++i) { r.u32(); r.u16(); }
-        }
         const uint16_t nHs = r.u16();
         for (uint16_t i = 0; i < nHs && r.ok; ++i) {
             uint64_t k = r.u32();
@@ -805,9 +760,6 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
         d.mistakeShieldActive = r.u8();
         d.shieldItemConsumed = r.u8();
         d.yubiConsumed = r.u8();
-        // A v21..v32 blob still carries the full 64-bit dedup mask here (removed as
-        // of v33, see save.h) — read and discard it for alignment.
-        if (version < 33) (void)r.u64();
         d.fragAmountTier = r.u8();
     }
 
@@ -1076,9 +1028,7 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
         }
     }
 
-    // v51 tail: the whole owned-recipe bitset. Absent in a v1..v50 blob → left empty
-    // here and seeded below from the u32 the older stream did carry, once
-    // migrateRecipeRows has finished folding the retired rig rows into it.
+    // v51 tail: the whole owned-recipe bitset.
     if (version >= 51) {
         const uint16_t nRecipe = r.u16();
         for (uint16_t i = 0; i < nRecipe && r.ok; ++i) d.recipeOwned.push_back(r.u8());
@@ -1099,15 +1049,6 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
     // After every tail is read, never between them: the shift moves whole ladder-indexed
     // vectors, so it has to see them at their final lengths.
     if (version < newestLadderInsertVersion()) applyLadderInserts(d, version);
-    migrateRecipeRows(d, version);   // same rule: rigLevelsExt has to be whole first
-    // A blob older than the bitset says everything it knows in the u32, and
-    // migrateRecipeRows has just finished adding to it — so the seed happens last, and
-    // only when the tail was genuinely absent (an empty v51 set means "knows none").
-    if (version < 51 && d.recipesUnlocked != 0) {
-        d.recipeOwned.assign(4, 0);
-        for (int i = 0; i < 4; ++i)
-            d.recipeOwned[i] = static_cast<uint8_t>((d.recipesUnlocked >> (i * 8)) & 0xFF);
-    }
     out = std::move(d);
     return true;
 }
