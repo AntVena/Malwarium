@@ -50,12 +50,16 @@ const AreaDef kAreaPirateBayou = {
     "ICON_SECTOR_PIRATE_BAYOU",
     {"LEECH LANDING", "TORRENT SWAMP", "THE CRACKED KEYS", "WAREZ MARSH",
      "BOOTY CACHE"},
-    {{"NETBUS NIPPER"},
-     {"SUPRNOVA SERPENT"},
-     {"RAZOR KRAKEN"},
-     {"WIGHT OF DRINKORDIE"},
-     {"THE SUNKEN SEVENTH"}},
+    // The cracking area, so ARMOR PIERCE is the family its bosses teach — 25%, 50%, and
+    // both of the generic pool's two full-pierce moves. A player who wants to stop caring
+    // about walls farms this water.
+    {{"NETBUS NIPPER", {"remote_handle"}},
+     {"SUPRNOVA SERPENT", {"seed_leech"}},
+     {"RAZOR KRAKEN", {"keygen_cut"}},
+     {"WIGHT OF DRINKORDIE", {"nuked_release"}},
+     {"THE SUNKEN SEVENTH", {"backdoor_knock"}}},
     "CAP'N CRACKER",
+    /*areaBossMoveId=*/"crack_the_keys",
     /*apexThreatMoveId=*/"system_hang",  // the signature boss's STUN rider
     {"PIER-TO-PEER", kShopListings, arrLen(kShopListings)},
     {"PHISHY CHIPS", kModShopListings, arrLen(kModShopListings)},

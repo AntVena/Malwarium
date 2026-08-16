@@ -109,8 +109,20 @@ struct SubBossRound {
 // gauntlet run back-to-back with carried Health, exactly like the area boss. An EMPTY list
 // (the common case) means one round named by the banner, so a plain boss stays a one-liner
 // and only a row that wants escorts pays for them.
+// How many moves one boss carries BEYOND the shared spine. Two, because the ceiling is
+// behavioural rather than storage: Combat::chooseMove is uniform over a kit, so every move
+// added to a boss is a slice of its turns spent doing that instead of what it did before.
+constexpr int kMaxBossTeaches = 2;
+
 struct SubBossDef {
     const char* name;
+    // What beating this boss can TEACH — the moves it carries on top of the depth spine
+    // subBossEnemy builds. Drops are drawn from the defeated enemy's kit
+    // (Game::rollEnemyMoveDrop), so this list is the ONLY thing that makes a move findable:
+    // a move no row here names cannot be earned anywhere in the game. Ids resolve against
+    // the move registry; the native gate fails a typo rather than shipping an unreachable
+    // move, which is the exact bug the list exists to prevent.
+    const char* teaches[kMaxBossTeaches] = {};
     SubBossRound rounds[kMaxSubBossRounds] = {};
 
     // The two readers of `rounds` (combat_factory's subAreaBoss, and the width gate) both
@@ -143,6 +155,10 @@ struct AreaDef {
     const char* subAreas[kSubAreasPerArea];      // 5 named stretches
     SubBossDef subBosses[kSubAreasPerArea];      // 5 sub-area bosses (sub 4 = signature)
     const char* areaBossName;                    // the area gauntlet's overall banner
+    // The area boss's OWN move — carried by the final round of its gauntlet and nowhere
+    // else, so it is a reward for clearing all five stages rather than for beating whichever
+    // sub-area happens to sit last. nullptr = the banner teaches nothing of its own.
+    const char* areaBossMoveId;
     // The signature (sub 4) boss's extra rider move, debuting the area's THREAT that
     // its own loot table's counter-mod answers (e.g. Pirate Bayou's system_hang stun,
     // countered by that same area's Watchdog Timer drop). nullptr = no rider.

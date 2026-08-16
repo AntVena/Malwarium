@@ -770,6 +770,87 @@ void test_sub_boss_rounds_and_escorts() {
     CHECK(gauntlets > 0);
 }
 
+// EVERY GENERIC MOVE IS CARRIED BY SOMEBODY. A drop is drawn from the defeated enemy's
+// KIT (Game::rollEnemyMoveDrop), so a generic move no enemy carries is not "rare" — it is
+// unreachable, and nothing about the row says so. Two shipped braces were exactly that
+// until the boss pool placed them. This walks the whole enemy population and fails on the
+// next one, which is the only thing that makes authoring a move safe.
+//
+// LINE moves are exempt and not accidentally so: a hatch owns its whole line kit
+// (MoveLoadout::startingForLine), so they need no enemy to teach them.
+void test_every_generic_move_is_carried() {
+    ContentRegistry reg = ContentRegistry::embedded();
+    std::vector<const char*> kits;
+    auto swallow = [&](const BossGauntlet& g) {
+        for (const CombatEnemy& e : g.rounds)
+            for (const char* m : e.moveIds) kits.push_back(m);
+    };
+    for (int a = 0; a < kExplSectors; ++a) {
+        for (int s = 0; s < kExplSubAreas; ++s) swallow(subAreaBoss(a, s));
+        swallow(areaBoss(a));
+    }
+    // The wild pool, both variants — and at every RUNG, because applyWildSubAreaRamp
+    // REPLACES a wild's kit with the depth ladder rather than adding to it. Two moves
+    // (buffer_overflow, rootkit_strike) live only on that ladder's deep rungs, so walking
+    // the unramped base kit alone would call them orphans.
+    for (int tier = 1; tier <= 3; ++tier)
+        for (uint32_t v = 0; v < 2; ++v)
+            for (int a = 0; a < kExplSectors; ++a)
+                for (int s = 0; s < kExplSubAreas; ++s) {
+                    CombatEnemy w = wildMalbeast(tier, v);
+                    applyWildSubAreaRamp(w, a, s);
+                    for (const char* m : w.moveIds) kits.push_back(m);
+                }
+    auto carried = [&](const char* id) {
+        for (const char* m : kits)
+            if (std::strcmp(m, id) == 0) return true;
+        return false;
+    };
+    int checked = 0;
+    for (int i = 0; i < kMovesCount; ++i) {
+        const MoveDef& m = kMoves[i];
+        if (m.line) continue;                        // a line kit is granted at hatch
+        // The innate jab sits outside the owned pool entirely — rollEnemyMoveDrop skips
+        // it by name, so carrying it teaches nobody anything.
+        if (std::strcmp(m.id, "quick_jab") == 0) continue;
+        ++checked;
+        CHECK(carried(m.id));
+    }
+    CHECK(checked > 20);                             // guard against a vacuous pass
+
+    // Every id a boss NAMES must resolve — a typo'd `teaches` entry would otherwise be a
+    // move that exists in the table and can never be found, the same bug from the other
+    // end. And no kit may hold two Defend moves: chooseMove is uniform, so a second brace
+    // is a boss spending half its turns bracing rather than fighting.
+    for (int a = 0; a < kExplSectors; ++a) {
+        if (const char* am = area(a).areaBossMoveId) {
+            CHECK(reg.move(am) != nullptr);
+            // The banner's own move costs the WHOLE gauntlet: it rides the final round and
+            // nowhere else, so it can't be farmed off the sub-area that happens to sit last.
+            const BossGauntlet g = areaBoss(a);
+            auto holds = [&](const CombatEnemy& e) {
+                for (const char* id : e.moveIds)
+                    if (std::strcmp(id, am) == 0) return true;
+                return false;
+            };
+            CHECK(holds(g.rounds[kExplSubAreas - 1]));
+            for (int r = 0; r < kExplSubAreas - 1; ++r) CHECK(!holds(g.rounds[r]));
+            CHECK(!holds(subAreaBoss(a, kExplSubAreas - 1).rounds[0]));
+        }
+        for (int s = 0; s < kExplSubAreas; ++s) {
+            for (const char* id : area(a).subBosses[s].teaches)
+                if (id) CHECK(reg.move(id) != nullptr);
+            for (const CombatEnemy& e : subAreaBoss(a, s).rounds) {
+                int braces = 0;
+                for (const char* id : e.moveIds)
+                    if (const MoveDef* m = reg.move(id))
+                        if (m->kind == MoveDef::Kind::Defend) ++braces;
+                CHECK(braces <= 1);
+            }
+        }
+    }
+}
+
 // A THREAT rider is declared on the area's OWN row (AreaDef::apexThreatMoveId) and
 // reaches a player on exactly one enemy: that area's SIGNATURE sub-boss (sub 4), where it
 // is telegraphed and matched by the counter-mod that area's loot table pays out. Walked

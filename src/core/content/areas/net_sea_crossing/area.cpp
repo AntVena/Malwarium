@@ -54,12 +54,16 @@ const AreaDef kAreaNetSeaCrossing = {
     "ICON_SECTOR_NET_SEA_CROSSING",
     {"UNINSTALL UNDERTOW", "POPUP WHIRLPOOL", "TRACKER TRENCH", "CODEC REEF",
      "SANDBOX BEACH"},
-    {{"THE CANDY SIREN"},
-     {"VUNDO THE UNENDING"},
-     {"THE SUPERFISH"},
-     {"ZLOB CONGER"},
-     {"THE GREEN BUTTON"}},
+    // Null Route — "reroutes the next hit to nowhere" — rides with the pop-up boss, which
+    // is the joke working twice: null-routing the ad domains is how that era actually
+    // killed them. It is the second of the two generic braces nothing used to carry.
+    {{"THE CANDY SIREN", {"bundle_wrap"}},
+     {"VUNDO THE UNENDING", {"popup_storm", "null_route"}},
+     {"THE SUPERFISH", {"cert_spoof"}},
+     {"ZLOB CONGER", {"fake_codec"}},
+     {"THE GREEN BUTTON", {"mirror_click"}}},
     "ADMIRAL CONDUIT",
+    /*areaBossMoveId=*/"toolbar_convoy",
     /*apexThreatMoveId=*/"decoy_download",  // the signature boss's long-STUN rider
     {"FLOATING POINT", kShopListings, arrLen(kShopListings)},
     {"THE HARDENED SHELL", kModShopListings, arrLen(kModShopListings)},

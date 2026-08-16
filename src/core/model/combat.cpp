@@ -225,9 +225,15 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
     // The break is on any Attack, not only a steal-attack: "caught out with the bubble
     // down" is a statement about the pet's exposure, and scoping it to the line's own
     // moves would have let a mixed kit swing generics through the whole exposed stretch
-    // with its banked run intact and re-bubble at leisure. Only the ADVANCE is
-    // line-scoped — a generic swing is frenzy-neutral, neither building nor breaking,
+    // with its banked run intact and re-bubble at leisure. Only the ADVANCE is narrowed —
+    // a swing that siphons no Power is frenzy-neutral, neither building nor breaking,
     // which is what keeps a heavy off-line hitter a real choice rather than a strict one.
+    //
+    // Note what the advance keys on: the FIELD, not the line. Any move carrying
+    // stealPowerPct feeds this run and collects phishComboBonus below, whoever authored
+    // it — which is precisely why the generic boss pool (content_moves.cpp) leaves
+    // stealPowerPct at zero on every row and shreds Defense instead. A generic move that
+    // set it would hand every Phishing pet a combo engine off-line.
     if (mv->kind == MoveDef::Kind::Attack) {
         if (actor.shieldHp <= 0) {
             actor.phishStreak = 0;    // caught out with the bubble down

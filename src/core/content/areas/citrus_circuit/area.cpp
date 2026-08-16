@@ -49,12 +49,16 @@ const AreaDef kAreaCitrusCircuit = {
     "ICON_SECTOR_CITRUS_CIRCUIT",
     {"FAKE FILE FLATS", "BUFFERING BLUFFS", "99% CACHE", "THE SHARED FOLDER",
      "DIAL-UP DRAW"},
-    {{"BENJAMIN THE FALSE"},
-     {"MORPHEUS THE MIRAGE"},
-     {"TURING THE UNHALTED"},
-     {"SHARMAN OF THE FOLD"},
-     {"TONELOC THE TOLLTAKER"}},
+    // The fake-file boss teaches the fake AND the checksum that catches it — which is why
+    // Checksum Guard, one of the two generic braces that used to be unreachable, is here
+    // rather than on whichever boss had a free slot.
+    {{"BENJAMIN THE FALSE", {"fake_seed", "checksum_guard"}},
+     {"MORPHEUS THE MIRAGE", {"stall_loop"}},
+     {"TURING THE UNHALTED", {"infinite_loop"}},
+     {"SHARMAN OF THE FOLD", {"shared_folder"}},
+     {"TONELOC THE TOLLTAKER", {"toll_charge"}}},
     "BARON BONZI",
+    /*areaBossMoveId=*/"helper_monkey",
     /*apexThreatMoveId=*/nullptr,  // the entry-level area carries no signature rider
     {"BYTE TO EAT", kShopListings, arrLen(kShopListings)},
     {"CHIP SHOP", kModShopListings, arrLen(kModShopListings)},

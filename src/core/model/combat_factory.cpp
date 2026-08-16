@@ -301,7 +301,8 @@ namespace {
 // round (SubBossRound::rung) is the same fight drawn a rung shallower, and expressing that
 // as "run the whole formula at sub-1" is what keeps an escort automatically consistent with
 // the boss it guards — there is no second stat curve to keep in step with this one.
-CombatEnemy subBossEnemy(const AreaDef& a, int tier, int sub, const char* name) {
+CombatEnemy subBossEnemy(const AreaDef& a, int tier, int sub, const char* name,
+                         const SubBossDef* teacher, const char* extraMoveId = nullptr) {
     const int health = kSubBossHealthBase + tier * 8 + sub * kSubBossHealthStep;
     const int speed = kSubBossSpeedBase + tier + (sub >= kSubAreasPerArea - 1 ? 2 : 0);
     std::vector<const char*> moves = {"quick_jab"};
@@ -314,6 +315,15 @@ CombatEnemy subBossEnemy(const AreaDef& a, int tier, int sub, const char* name) 
         // so never carries it: the rider is the wall's tell, not the doorway's.
         if (a.apexThreatMoveId) moves.push_back(a.apexThreatMoveId);
     }
+    // ...and what this boss TEACHES, on top of the depth spine. This is the only reason
+    // most of the move roster is reachable at all: a drop is drawn from the defeated
+    // enemy's kit, so a move reaches a player exactly when some boss row names it. An
+    // escort carries its boss's list too — it is that boss a rung shallower, and the drop
+    // filter (not-yet-owned) already stops the extra rounds from paying twice.
+    if (teacher)
+        for (const char* id : teacher->teaches)
+            if (id) moves.push_back(id);
+    if (extraMoveId) moves.push_back(extraMoveId);
     return {name, "SPR_PET_CACHEMUTT", tier + 1, health, speed, std::move(moves)};
 }
 }  // namespace
@@ -343,7 +353,7 @@ BossGauntlet subAreaBoss(int areaIdx, int sub) {
         int depth = sub + rd.rung;
         if (depth < -(kSubAreasPerArea - 1)) depth = -(kSubAreasPerArea - 1);
         if (depth >= kSubAreasPerArea) depth = kSubAreasPerArea - 1;
-        g.rounds.push_back(subBossEnemy(a, tier, depth, rd.name));
+        g.rounds.push_back(subBossEnemy(a, tier, depth, rd.name, &b));
     }
     return g;
 }
@@ -365,8 +375,15 @@ BossGauntlet areaBoss(int areaIdx) {
     const AreaDef& a = area(areaIdx);
     const int tier = areaTier(areaIdx);
     BossGauntlet g{a.areaBossName, tier + 1, {}};
-    for (int s = 0; s < kSubAreasPerArea; ++s)
-        g.rounds.push_back(subBossEnemy(a, tier, s, a.subBosses[s].name));
+    for (int s = 0; s < kSubAreasPerArea; ++s) {
+        // The area boss's OWN move rides on the LAST round only, so it is a reward for
+        // clearing all five stages rather than for beating whichever sub-area sits last —
+        // that sub-boss's own fight never carries it (a drop is rolled per round, off the
+        // round's own kit, so where the move sits IS what it costs to learn).
+        const bool finale = (s == kSubAreasPerArea - 1);
+        g.rounds.push_back(subBossEnemy(a, tier, s, a.subBosses[s].name, &a.subBosses[s],
+                                        finale ? a.areaBossMoveId : nullptr));
+    }
     return g;
 }
 

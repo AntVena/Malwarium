@@ -43,6 +43,28 @@ The AREA boss composes each sub-area's boss **proper** — that banner at its ow
 its escorts — so the finale stays exactly `kSubAreasPerArea` rounds however many rounds a
 single rung grows.
 
+## What a boss TEACHES
+
+`SubBossDef::teaches` names the moves a boss carries on top of the depth spine
+`subBossEnemy` builds, and `AreaDef::areaBossMoveId` does the same for the area banner (on
+the gauntlet's final round only, so it costs all five stages). **This list is the only thing
+that makes a move reachable.** A drop is drawn from the defeated enemy's kit
+(`Game::rollEnemyMoveDrop`), so a move no boss names cannot be earned anywhere in the game —
+it is not rare, it is dead, and nothing on the `MoveDef` row says so.
+`test_every_generic_move_is_carried` is what holds that line; it also rejects a `teaches` id
+that resolves to nothing, which would be the same bug approached from the other end.
+
+**Kit size is the budget, not flash.** `Combat::chooseMove` is uniform over the kit, so each
+move added to a boss is a slice of that boss's turns spent doing it — which is why
+`kMaxBossTeaches` is 2 and why a kit may hold at most one Defend (a second brace is a boss
+bracing half the time instead of fighting; the same gate checks it). Give a boss one move
+that is worth beating it for, rather than a grab-bag.
+
+Author moves themselves to `src/core/content/CONTENT_STANDARD.md`; note that several
+`MoveDef` fields look generic but carry a LINE's identity (`stackPower*` is Ransomware's,
+`stealPowerPct` feeds the Phishing frenzy on any row that sets it) — the boss pool's header
+comment in `content_moves.cpp` lists what a generic row may safely use.
+
 **One `area.cpp` per area is enough** — each area's data is a few dozen lines. If one area's
 file grows past the point of comfortable skimming (the same ~600-line instinct as the
 `game_*.cpp` module rule), split it by concern INSIDE that same folder (e.g.

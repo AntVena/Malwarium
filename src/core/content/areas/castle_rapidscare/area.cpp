@@ -60,12 +60,13 @@ const AreaDef kAreaCastleRapidscare = {
      "COMMENT CATACOMBS"},
     // Two of the court are fought as gauntlets rather than as one malbeast: the pawns come
     // in two ranks, and the Joker's fall is what lets the gate's pawns back in behind you.
-    {{"THE EIGHT PWNS", {{"THE FRONT RANK", -1}, {"THE BACK RANK"}}},
-     {"RED QUEEN MELISSA"},
-     {"KNAVE WINFIXER"},
-     {"JOKER VIRUS", {{"JOKER VIRUS"}, {"THE EIGHT PWNS", -1}}},
-     {"KING KIMBLE"}},
+    {{"THE EIGHT PWNS", {"rank_advance"}, {{"THE FRONT RANK", -1}, {"THE BACK RANK"}}},
+     {"RED QUEEN MELISSA", {"mail_merge"}},
+     {"KNAVE WINFIXER", {"false_positive"}},
+     {"JOKER VIRUS", {"wild_card"}, {{"JOKER VIRUS"}, {"THE EIGHT PWNS", -1}}},
+     {"KING KIMBLE", {"premium_wait"}}},
     "COUNT CONFICKER",
+    /*areaBossMoveId=*/"domain_flux",
     /*apexThreatMoveId=*/"nag_screen",  // the signature boss's FREEZE + DoT rider
     {"SPAM & SCRAM", kShopListings, arrLen(kShopListings)},
     {"THE GHOST IN THE MACHINE", kModShopListings, arrLen(kModShopListings)},

@@ -30,29 +30,14 @@ building it up organically.
 
 **Capture arming costs ~70KB and the AP ~58KB**, against ~126KB free with the radio idle. The device works, and the save no longer needs a big contiguous block, but that was the only thing standing on this — anything else that grows will hit the same wall. Worth a pass at what the capture path actually needs. | `net_capture.h`'s `powerUp` (`esp_wifi_init` + promiscuous + the pcap SD buffers). | M | Measured on device, not estimated: `[ap] down free=126408` → `[cap] armed free=56188`. |
 
-**Write a lot more moves, and give every one of them to a boss.** These are one job, not two:
-drops are drawn from what the defeated enemy KNOWS, so a move nobody carries cannot be found at
-all, and authoring one without placing it just adds another orphan. The roster is seven generics
-plus each line's kit, which is thin enough that a taming stops teaching almost immediately —
-what it wants is enough breadth that hunting a particular boss for a particular trick is a real
-plan. Bosses are the right home: they are deliberate, re-runnable, one per area per rung, and
-their apex riders already prove the shape works. | `content_moves.cpp` for the roster;
-`combat_factory.cpp`'s `subAreaBoss` for placement. | L | Two existing orphans ride along and
-should be swept up in the same pass — `null_route` and `checksum_guard`, the generic braces, are
-already unreachable because NO enemy's kit carries a Defend move at all.
-**Placement is not free**: `chooseMove` is uniform over a kit, so every move added to an enemy
-changes what that enemy does — a brace makes it spend turns bracing. Keep it off `kLadder`, whose
-rungs are explicitly ordered by EFFECTIVE per-turn damage; a sub-boss sits outside that ordering
-and pays the cost nowhere. Worth a gate asserting every move in `kMoves` is carried by somebody,
-so the next authored move cannot quietly become an eighth orphan. |
-
 **The wild roster's whole vocabulary is five attacks.** `wildMalbeast` gives tiers 1/2/3
 `{quick_jab}` / `{quick_jab, packet_storm}` / `{packet_storm, fork_bomb}`, and the sub-area ladder
 in `applyWildSubAreaScale` overrides with the same handful again — keyed by DEPTH, not by which
 malbeast it is. So a Packet Wraith and a Cache Ghoul at the same rung are mechanically one fight,
 and now that drops come from the enemy's kit, no two malbeasts are worth farming differently.
-Wants distinctive kit per creature, not per rung. Lower priority than the row above — bosses are
-the intended teaching path, and this is about wilds being interchangeable with each other. |
+Wants distinctive kit per creature, not per rung. Lower priority than the boss pool, which is
+built — bosses are the intended teaching path, and this is about wilds being interchangeable
+with each other. |
 `combat_factory.cpp`'s `wildMalbeast` + `kLadder`; `content_moves.cpp`. | L | The ladder's
 ordering constraint is real and documented — rungs are sorted by EFFECTIVE per-turn damage, so a
 long-channel move LOWERS a rung's average — and per-creature kit has to keep that ramp intact

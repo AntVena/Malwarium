@@ -183,11 +183,11 @@ const MoveDef kMoves[] = {
      /*replicaSpawnPct=*/100, /*replicaPowerPct=*/0, /*replicaHealthPct=*/30},
 
     // --- The THREAT moves (Watchdog / Faraday counter these) -----------------------
-    // Generic ENEMY-flavoured attacks that carry a rider (lockTurns / dot*). Never owned
-    // or learnable — MOVES lists only moves in the pet's owned pool — they reach a player
-    // as an area apex's signature: each is an AreaDef::apexThreatMoveId, debuting in the
-    // area whose own loot table pays out its counter-mod. Fields after armorPiercePct(0):
-    // lockTurns, dotDamage, dotTurns.
+    // Generic ENEMY-flavoured attacks that carry a rider (lockTurns / dot*). Each is an
+    // AreaDef::apexThreatMoveId, debuting on the signature boss of the area whose own loot
+    // table pays out its counter-mod — and, like every move an enemy carries, LEARNABLE by
+    // beating the thing that swung it (Game::rollEnemyMoveDrop). Fields after
+    // armorPiercePct(0): lockTurns, dotDamage, dotTurns.
     {"system_hang", "System Hang", MoveDef::Kind::Attack, 10, 1,
      "A hit that freezes the target for {lock} turns.", Stage::BootSector,
      nullptr, 0, 0, 0, 0, 0, /*lockTurns=*/2, /*dot=*/0, 0},
@@ -209,6 +209,154 @@ const MoveDef kMoves[] = {
      "A modal you can't dismiss - frozen {lock} turn, then {dot} damage/turn for "
      "{dotTurns} turns.", Stage::BootSector,
      nullptr, 0, 0, 0, 0, 0, /*lockTurns=*/1, /*dotDamage=*/6, /*dotTurns=*/3},
+
+    // === THE BOSS POOL — one move per boss, learned by beating the boss that swings it ==
+    //
+    // Generic (line = nullptr), so any pet can be taught any of them. Each is named by
+    // exactly one boss's AreaDef::subBosses[].teaches (or its area's areaBossMoveId), which
+    // is what makes it findable at all: drops come from the defeated enemy's kit, so a move
+    // no boss carries cannot be earned. test_every_generic_move_is_carried holds that line.
+    //
+    // These are NICHE-first, not ladder-first. The rows deliberately do not sort by power,
+    // because what they are for is giving a build something it could not do before — and
+    // two engine facts make the extremes real rather than decorative:
+    //
+    //   * The STUN and DoT riders fire on any landed cast, damage or not (combat.cpp's
+    //     applyEffect) — only the steal track is gated on dmg > 0. So a ~0-power move with
+    //     a big rider is a working move, not a wasted turn: pure control, no impact.
+    //   * A hit whose PRE-mitigation damage was non-zero is floored at 1 (combat.cpp:347).
+    //     So a low-power shred lands through any wall, however braced the target is — the
+    //     shred is the payload and the damage is the delivery.
+    //
+    // Nothing here goes below power 3: `power * powerMultPct / 100` is what the floor tests,
+    // and a Good-branch pet's softer multiplier truncates 1 and 2 to zero, which would take
+    // the steal track down with it.
+    //
+    // Fields after minStage: line, stackPowerPct, stackPowerCap, stackDefensePct,
+    // stackDefenseCap, armorPiercePct, lockTurns, dotDamage, dotTurns, stealPowerPct,
+    // stealDefensePct, ... (defs.h). The stack*/shieldPool/trap*/replica* fields and
+    // stealPowerPct stay ZERO on every row here — each belongs to a LINE's identity, and
+    // stealPowerPct additionally feeds the Phishing frenzy combo on any move that carries
+    // it, which a generic move must not do.
+
+    // --- Citrus Circuit ------------------------------------------------------------
+    {"fake_seed", "Fake Seed", MoveDef::Kind::Attack, 3, 1,
+     "It isn't what the filename said - strips {stealDef}% of the target's armor.",
+     Stage::BootSector, nullptr, 0, 0, 0, 0, 0, 0, 0, 0, /*stealPower=*/0,
+     /*stealDefensePct=*/25},
+    {"stall_loop", "Stall Loop", MoveDef::Kind::Attack, 3, 1,
+     "Hangs the target for {lock} turn. Hits for almost nothing - the turn is the point.",
+     Stage::Process, nullptr, 0, 0, 0, 0, 0, /*lockTurns=*/1},
+    {"infinite_loop", "Infinite Loop", MoveDef::Kind::Attack, 3, 1,
+     "Never terminates - {dot} damage/turn for {dotTurns} turns, the longest rot there is.",
+     Stage::Process, nullptr, 0, 0, 0, 0, 0, 0, /*dotDamage=*/5, /*dotTurns=*/6},
+    {"shared_folder", "Shared Folder", MoveDef::Kind::Attack, 4, 1,
+     "Everything in the folder at once - {dot} damage/turn for {dotTurns} turns, and "
+     "strips {stealDef}% armor.",
+     Stage::BootSector, nullptr, 0, 0, 0, 0, 0, 0, /*dotDamage=*/3, /*dotTurns=*/3,
+     /*stealPower=*/0, /*stealDefensePct=*/15},
+    {"toll_charge", "Toll Charge", MoveDef::Kind::Attack, 6, 1,
+     "Bills by the minute - takes {stealMaxHp}% of the target's max Health for the fight.",
+     Stage::Process, nullptr, 0, 0, 0, 0, 0, 0, 0, 0, /*stealPower=*/0, /*stealDef=*/0,
+     /*stealSpeed=*/0, /*stealHp=*/0, /*stealMaxHpPct=*/8},
+    {"helper_monkey", "Helper Monkey", MoveDef::Kind::Attack, 5, 1,
+     "Won't be dismissed - freezes {lock} turn AND rots {dot}/turn for {dotTurns} turns.",
+     Stage::Process, nullptr, 0, 0, 0, 0, 0, /*lockTurns=*/1, /*dotDamage=*/4,
+     /*dotTurns=*/3},
+
+    // --- The Pirate Bayou — the cracking area, so ARMOR PIERCE is its family --------
+    {"remote_handle", "Remote Handle", MoveDef::Kind::Attack, 10, 1,
+     "Drives it from somewhere else - ignores {pierce}% of armor.", Stage::Process,
+     nullptr, 0, 0, 0, 0, /*armorPiercePct=*/25},
+    {"seed_leech", "Seed Leech", MoveDef::Kind::Attack, 5, 1,
+     "Takes and never gives - {stealMaxHp}% of the target's max Health, for the fight.",
+     Stage::Process, nullptr, 0, 0, 0, 0, 0, 0, 0, 0, /*stealPower=*/0, /*stealDef=*/0,
+     /*stealSpeed=*/0, /*stealHp=*/0, /*stealMaxHpPct=*/15},
+    {"keygen_cut", "Keygen Cut", MoveDef::Kind::Attack, 14, 1,
+     "Generates the key rather than asking - ignores {pierce}% of armor.", Stage::Process,
+     nullptr, 0, 0, 0, 0, /*armorPiercePct=*/50},
+    {"nuked_release", "Nuked Release", MoveDef::Kind::Attack, 34, 3,
+     "Winds up {turns} turns, then dumps a bad rip - {dot} damage/turn for {dotTurns} after.",
+     Stage::Process, nullptr, 0, 0, 0, 0, 0, 0, /*dotDamage=*/6, /*dotTurns=*/3},
+    {"backdoor_knock", "Backdoor Knock", MoveDef::Kind::Attack, 9, 1,
+     "Already had a key - ignores ALL {pierce}% armor and freezes {lock} turn.",
+     Stage::Process, nullptr, 0, 0, 0, 0, /*armorPiercePct=*/100, /*lockTurns=*/1},
+    {"crack_the_keys", "Crack The Keys", MoveDef::Kind::Attack, 20, 1,
+     "No wall was ever the problem - ignores ALL {pierce}% of armor.", Stage::Script,
+     nullptr, 0, 0, 0, 0, /*armorPiercePct=*/100},
+
+    // --- Net-Sea Crossing — everything here arrives attached to something else ------
+    {"bundle_wrap", "Bundle Wrap", MoveDef::Kind::Attack, 7, 1,
+     "Three things you didn't ask for - {dot}/turn for {dotTurns} turns and "
+     "{stealMaxHp}% of max Health.",
+     Stage::Process, nullptr, 0, 0, 0, 0, 0, 0, /*dotDamage=*/3, /*dotTurns=*/3,
+     /*stealPower=*/0, /*stealDef=*/0, /*stealSpeed=*/0, /*stealHp=*/0,
+     /*stealMaxHpPct=*/10},
+    {"popup_storm", "Pop-Up Storm", MoveDef::Kind::Attack, 3, 1,
+     "They keep opening - {dot} damage/turn for {dotTurns} turns.", Stage::Script,
+     nullptr, 0, 0, 0, 0, 0, 0, /*dotDamage=*/9, /*dotTurns=*/5},
+    {"cert_spoof", "Cert Spoof", MoveDef::Kind::Defend, 26, 1,
+     "Wears a certificate that isn't its own - braces {power}.", Stage::Script},
+    {"fake_codec", "Fake Codec", MoveDef::Kind::Attack, 8, 1,
+     "The video was never a video - frozen for {lock} turns.", Stage::Process,
+     nullptr, 0, 0, 0, 0, 0, /*lockTurns=*/2},
+    {"mirror_click", "Mirror Click", MoveDef::Kind::Attack, 3, 1,
+     "The other download button - strips {stealDef}% of the target's armor.",
+     Stage::Script, nullptr, 0, 0, 0, 0, 0, 0, 0, 0, /*stealPower=*/0,
+     /*stealDefensePct=*/60},
+    {"toolbar_convoy", "Toolbar Convoy", MoveDef::Kind::Attack, 6, 1,
+     "Arrives in a stack - {dot}/turn for {dotTurns}, strips {stealDef}% armor, takes "
+     "{stealMaxHp}% max Health.",
+     Stage::Script, nullptr, 0, 0, 0, 0, 0, 0, /*dotDamage=*/5, /*dotTurns=*/3,
+     /*stealPower=*/0, /*stealDefensePct=*/30, /*stealSpeed=*/0, /*stealHp=*/0,
+     /*stealMaxHpPct=*/6},
+
+    // --- Napstorrent Moors ---------------------------------------------------------
+    {"admin_reversal", "Admin Reversal", MoveDef::Kind::Attack, 4, 1,
+     "Reads the privilege backwards - strips ALL {stealDef}% of the target's armor.",
+     Stage::Script, nullptr, 0, 0, 0, 0, 0, 0, 0, 0, /*stealPower=*/0,
+     /*stealDefensePct=*/100},
+    {"mail_storm", "Mail Storm", MoveDef::Kind::Attack, 38, 1,
+     "Mails itself to everyone at once. No rider, no wind-up - just the biggest swing.",
+     Stage::Script},
+    {"self_reference", "Self-Reference", MoveDef::Kind::Attack, 12, 1,
+     "A copy that describes how to copy it - {dot} damage/turn for {dotTurns} turns.",
+     Stage::Script, nullptr, 0, 0, 0, 0, 0, 0, /*dotDamage=*/8, /*dotTurns=*/4},
+    {"evade_trace", "Evade Trace", MoveDef::Kind::Defend, 32, 1,
+     "Catch it if you can - braces {power}.", Stage::Script},
+    {"attachment_bait", "Attachment Bait", MoveDef::Kind::Attack, 16, 1,
+     "You opened it - frozen {lock} turns, then {dot}/turn for {dotTurns}.", Stage::Script,
+     nullptr, 0, 0, 0, 0, 0, /*lockTurns=*/2, /*dotDamage=*/4, /*dotTurns=*/3},
+    {"runaway_fork", "Runaway Fork", MoveDef::Kind::Attack, 44, 3,
+     "Winds up {turns} turns, reinfecting what it already took - then {dot}/turn for "
+     "{dotTurns}.",
+     Stage::Script, nullptr, 0, 0, 0, 0, 0, 0, /*dotDamage=*/8, /*dotTurns=*/4},
+
+    // --- Castle Rapidscare ---------------------------------------------------------
+    {"rank_advance", "Rank Advance", MoveDef::Kind::Attack, 12, 1,
+     "One square, every square, at once - ignores {pierce}% armor, {dot}/turn for "
+     "{dotTurns}.",
+     Stage::Script, nullptr, 0, 0, 0, 0, /*armorPiercePct=*/30, 0, /*dotDamage=*/4,
+     /*dotTurns=*/2},
+    {"mail_merge", "Mail Merge", MoveDef::Kind::Attack, 3, 1,
+     "Fifty at a time, from your own address book - {dot} damage/turn for {dotTurns} turns.",
+     Stage::Daemon, nullptr, 0, 0, 0, 0, 0, 0, /*dotDamage=*/14, /*dotTurns=*/4},
+    {"false_positive", "False Positive", MoveDef::Kind::Attack, 5, 1,
+     "Sells the cure for the disease it invented - takes {stealMaxHp}% of max Health.",
+     Stage::Script, nullptr, 0, 0, 0, 0, 0, 0, 0, 0, /*stealPower=*/0, /*stealDef=*/0,
+     /*stealSpeed=*/0, /*stealHp=*/0, /*stealMaxHpPct=*/20},
+    {"wild_card", "Wild Card", MoveDef::Kind::Attack, 22, 1,
+     "Whatever it needs to be - ignores {pierce}% armor, freezes {lock} turn, {dot}/turn "
+     "for {dotTurns}.",
+     Stage::Daemon, nullptr, 0, 0, 0, 0, /*armorPiercePct=*/60, /*lockTurns=*/1,
+     /*dotDamage=*/5, /*dotTurns=*/3},
+    {"premium_wait", "Premium Wait", MoveDef::Kind::Defend, 44, 1,
+     "Your download will begin shortly - braces {power}.", Stage::Daemon},
+    {"domain_flux", "Domain Flux", MoveDef::Kind::Attack, 18, 1,
+     "A new address every day - {dot}/turn for {dotTurns} turns, and strips {stealDef}% "
+     "armor.",
+     Stage::Daemon, nullptr, 0, 0, 0, 0, 0, 0, /*dotDamage=*/10, /*dotTurns=*/5,
+     /*stealPower=*/0, /*stealDefensePct=*/40},
 };
 const int kMovesCount = sizeof(kMoves) / sizeof(kMoves[0]);
 
