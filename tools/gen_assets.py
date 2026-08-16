@@ -244,16 +244,28 @@ def gen_sprites():
         cell_h = h // rows
         sym = "ASSET_" + ident(name)
         rgb_vals, a_vals = [], []
+        # The drawn band inside a frame cell, folded across every frame and row
+        # (SpriteData::contentX0/contentX1) — measured here, in the pass that is already
+        # touching every pixel, because it is a fact about the art and nothing at
+        # runtime should be re-deriving it. A fully transparent sheet keeps the whole
+        # frame, which is what the reader's fallback answers anyway.
+        cx0, cx1 = fw, 0
         for i in range(0, len(rgba), 4):
             r, g, b, a = rgba[i], rgba[i + 1], rgba[i + 2], rgba[i + 3]
             rgb_vals.append(rgb565(r, g, b))
             a_vals.append(a)
+            if a:
+                x = (i // 4) % w % fw
+                cx0, cx1 = min(cx0, x), max(cx1, x + 1)
+        if cx1 <= cx0:
+            cx0, cx1 = 0, fw
         decls.append(f"extern const SpriteData {sym};")
         ink = mask_ink(rgb_vals, a_vals)
         if ink is None:
-            defs.append(_emit_sprite(sym, w, cell_h, fw, rows, rgb_vals, a_vals))
+            defs.append(_emit_sprite(sym, w, cell_h, fw, rows, cx0, cx1,
+                                     rgb_vals, a_vals))
         else:
-            defs.append(_emit_mask(sym, w, h, cell_h, fw, rows, a_vals, ink))
+            defs.append(_emit_mask(sym, w, h, cell_h, fw, rows, cx0, cx1, a_vals, ink))
         table.append((name, sym, w, h, fw, w // fw, rows))
     return decls, defs, table
 
@@ -284,18 +296,18 @@ def mask_ink(rgb_vals, a_vals):
     return ink                           # None for a fully transparent image: no ink
 
 
-def _emit_sprite(sym, w, cell_h, fw, rows, rgb_vals, a_vals):
+def _emit_sprite(sym, w, cell_h, fw, rows, cx0, cx1, rgb_vals, a_vals):
     rgb_arr = ", ".join(f"0x{v:04x}" for v in rgb_vals)
     a_arr = ", ".join(str(v) for v in a_vals)
     return (
         f"static const uint16_t {sym}_rgb[] = {{{rgb_arr}}};\n"
         f"static const uint8_t {sym}_a[] = {{{a_arr}}};\n"
         f"const SpriteData {sym} = {{ {w}, {cell_h}, {fw}, {w // fw}, {rows}, "
-        f"{sym}_rgb, {sym}_a }};\n"
+        f"{cx0}, {cx1}, {sym}_rgb, {sym}_a }};\n"
     )
 
 
-def _emit_mask(sym, w, h, cell_h, fw, rows, a_vals, ink):
+def _emit_mask(sym, w, h, cell_h, fw, rows, cx0, cx1, a_vals, ink):
     """Pack the alpha plane as 1bpp: row-major, MSB first, each row padded to a byte.
 
     Rows are byte-aligned so a row starts on a byte boundary and the reader's index
@@ -312,7 +324,7 @@ def _emit_mask(sym, w, h, cell_h, fw, rows, a_vals, ink):
     return (
         f"static const uint8_t {sym}_bits[] = {{{bits_arr}}};\n"
         f"const SpriteData {sym} = {{ {w}, {cell_h}, {fw}, {w // fw}, {rows}, "
-        f"nullptr, nullptr, {sym}_bits, 0x{ink:04x} }};\n"
+        f"{cx0}, {cx1}, nullptr, nullptr, {sym}_bits, 0x{ink:04x} }};\n"
     )
 
 

@@ -104,16 +104,18 @@ void Combat::begin(const Combatant& player, const Combatant& enemy, Stakes stake
     lastByPlayer_ = false;
     lastWasCharge_ = false;
     lastRansomed_ = false;
+    lastWasStrike_ = false;
     lastWormKill_ = {};
 }
 
 void Combat::setLast(const char* name, int dmg, bool byPlayer, bool charge,
-                     bool ransomed) {
+                     bool ransomed, bool strike) {
     lastMoveName_ = name;
     lastDamage_ = dmg;
     lastByPlayer_ = byPlayer;
     lastWasCharge_ = charge;
     lastRansomed_ = ransomed;
+    lastWasStrike_ = strike;
 }
 
 // Uniform pick over `self`'s slots, skipping lastMoveIdx (the no-consecutive-repeat
@@ -298,7 +300,8 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
                         target.wormReplicas[target.wormReplicaCount - 1];
                     target.wormReplicas[--target.wormReplicaCount] = WormReplica{};
                 }
-                setLast(mv->displayName, dealt, byPlayer, /*charge=*/false);
+                setLast(mv->displayName, dealt, byPlayer, /*charge=*/false,
+                        /*ransomed=*/false, /*strike=*/true);
                 return;
             }
         }
@@ -568,7 +571,7 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
             actor.health -= dead->mag;
             --dead->pending;
         }
-        setLast(mv->displayName, dmg, byPlayer, false, ransomed > 0);
+        setLast(mv->displayName, dmg, byPlayer, false, ransomed > 0, /*strike=*/true);
         // Escalation (crew Exploit): each of the next few LANDED attacks banks its own
         // FINAL damage — after every mitigation, and including a hit the target's ransom
         // pool merely held — as Power for the rest of the fight. Charge-metered, so it

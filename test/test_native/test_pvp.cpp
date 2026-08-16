@@ -547,9 +547,8 @@ void test_pvp_guest_sees_its_own_pet_on_the_bottom_gauge() {
 // the left. Rendering with ONE sprite supplied at a time pins each seat to a role:
 // whichever combatant is the local one lights the left box and leaves the right dark.
 void test_combat_seats_local_pet_on_the_left() {
-    // The two stage boxes and the band they're bottom-anchored in (combat_screen.cpp).
-    // Nothing but the sprites draws here while a fight is Ongoing.
-    constexpr int kLeftX0 = 4, kLeftX1 = 108, kRightX0 = 116, kRightX1 = 220;
+    // The band the two seats are bottom-anchored in (combat_screen.cpp). Nothing but the
+    // sprites draws here while a fight is Ongoing and neither side is winding up.
     constexpr int kBandY0 = 81, kBandY1 = 165;
 
     ContentRegistry reg;
@@ -568,10 +567,16 @@ void test_combat_seats_local_pet_on_the_left() {
     auto seatOf = [&](const SpriteData* p, const SpriteData* e, bool localIsEnemySide) {
         CombatSides sides;
         sides.localIsEnemySide = localIsEnemySide;
+        // The seats move with the two creatures' drawn widths, so the boxes to look in
+        // come from the same seating the draw used rather than from copied numbers.
+        const CombatStage st = combatStage(localIsEnemySide ? e : p,
+                                           localIsEnemySide ? p : e);
         Framebuffer fb(kActiveW, kActiveH);
         drawCombat(fb, c, p, e, 0, 0, 0, false, sides);
-        const bool left = anyLitGray(fb, kLeftX0, kBandY0, kLeftX1, kBandY1);
-        const bool right = anyLitGray(fb, kRightX0, kBandY0, kRightX1, kBandY1);
+        const bool left = anyLitGray(fb, st.localX, kBandY0,
+                                     st.localX + st.localW, kBandY1);
+        const bool right = anyLitGray(fb, st.rivalX, kBandY0,
+                                      st.rivalX + st.rivalW, kBandY1);
         CHECK(left != right);                        // exactly one seat is occupied
         return left;
     };
@@ -580,6 +585,161 @@ void test_combat_seats_local_pet_on_the_left() {
     CHECK(!seatOf(nullptr, es, false));              // PVE: the wild malbeast sits right
     CHECK(seatOf(nullptr, es, true));                // duel guest: enemy_ IS its own pet
     CHECK(!seatOf(ps, nullptr, true));               // ...so the host's pet is its rival
+}
+
+// Release gate: NO two creatures in the roster may overlap on the combat stage, and the
+// clash lane between them is always on canvas and never narrower than the strike mark
+// drawn in it. Swept over every pairing rather than a sample, because the pairs that
+// break it are exactly the rare ones — two Daemon cells whose art runs to both edges,
+// which together want 336 of the 224 px there are.
+void test_combat_stage_seats_never_overlap() {
+    ContentRegistry reg = ContentRegistry::embedded();
+    std::vector<const SpriteData*> sprites{nullptr};      // a fighter with no art too
+    for (const CreatureDef* c : reg.allCreatures())
+        if (const SpriteData* s = reg.creatureSprite(*c)) sprites.push_back(s);
+    CHECK(sprites.size() > 8);                            // the sweep found a roster
+
+    for (const SpriteData* l : sprites) {
+        for (const SpriteData* r : sprites) {
+            const CombatStage st = combatStage(l, r);
+            CHECK(st.localX + st.localW == st.laneX);     // the lane starts where mine ends
+            CHECK(st.laneX + st.laneW == st.rivalX);      // ...and ends where theirs starts
+            CHECK(st.laneW >= 18);                        // room for the strike mark
+            CHECK(st.laneX >= 0 && st.laneX + st.laneW <= kActiveW);
+            // A pair too wide to fit crops at the OUTER edges — and only whichever
+            // fighter is over its HALF of the room does. A creature that would fit in
+            // half the stage keeps every column it has, however big its opponent is.
+            const int offL = -std::min(0, st.localX);
+            const int offR = std::max(0, st.rivalX + st.rivalW - kActiveW);
+            const int half = (kActiveW - st.laneW) / 2;
+            if (st.localW <= half) CHECK(offL == 0);
+            if (st.rivalW <= half) CHECK(offR == 0);
+            // ...and neither is cropped past that half, so the loss stops being shared
+            // the moment it stops being fair.
+            CHECK(st.localW - offL >= std::min(st.localW, half - 2));
+            CHECK(st.rivalW - offR >= std::min(st.rivalW, half - 2));
+        }
+    }
+}
+
+// Release gate: the strike mark answers WHO IS HITTING WHOM without colour. It lives in
+// the lane for the swing window only, and it TRAVELS toward the fighter being hit — so
+// the two directions are different pictures, and a single frozen frame still carries the
+// answer through the mark's taper.
+void test_combat_strike_mark_travels_toward_its_target() {
+    ContentRegistry reg = ContentRegistry::embedded();
+    const SpriteData* ps = reg.sprite("SPR_PET_PAYPUP");
+    const SpriteData* es = reg.sprite("SPR_PET_PINGCUB");
+    const CombatStage st = combatStage(ps, es);
+
+    // The mark's centre of mass along the lane, in grayscale. Nothing else draws here
+    // while a fight is Ongoing: the lane is the gap the seating reserved.
+    auto laneCentroid = [&](const Framebuffer& fb, int& lit) {
+        long sum = 0;
+        lit = 0;
+        for (int y = 81; y < 165; ++y)
+            for (int x = st.laneX; x < st.laneX + st.laneW; ++x)
+                if (luminance(fb.get(x, y)) > 0.12f) { sum += x; ++lit; }
+        return lit ? static_cast<int>(sum / lit) : -1;
+    };
+    // Run a real fight forward until the wanted side lands a swing, then hold that turn
+    // and step the render's own hit clock across the swing window.
+    auto shotsFor = [&](bool byPlayer, int beat, Framebuffer& fb) {
+        Combatant p = mkCombatant(reg, "P", 400, 20, {"quick_jab"});
+        Combatant e = mkCombatant(reg, "E", 400, 1, {"quick_jab"});
+        Combat c;
+        c.begin(p, e, Combat::Stakes::Safe, 7);
+        for (int i = 0; i < 40; ++i) {
+            c.step();
+            if (c.lastWasStrike() && c.lastByPlayer() == byPlayer) break;
+        }
+        CHECK(c.lastWasStrike() && c.lastByPlayer() == byPlayer);
+        drawCombat(fb, c, ps, es, 0, 0, beat, false, CombatSides{});
+    };
+
+    int litFirst = 0, litLast = 0, litAfter = 0;
+    Framebuffer byUsFirst(kActiveW, kActiveH), byUsLast(kActiveW, kActiveH);
+    Framebuffer byThemFirst(kActiveW, kActiveH), byThemLast(kActiveW, kActiveH);
+    Framebuffer settled(kActiveW, kActiveH);
+    shotsFor(/*byPlayer=*/true, 0, byUsFirst);
+    shotsFor(/*byPlayer=*/true, 3, byUsLast);
+    shotsFor(/*byPlayer=*/false, 0, byThemFirst);
+    shotsFor(/*byPlayer=*/false, 3, byThemLast);
+    shotsFor(/*byPlayer=*/true, 12, settled);             // long past the swing window
+
+    const int usFrom = laneCentroid(byUsFirst, litFirst);
+    const int usTo = laneCentroid(byUsLast, litLast);
+    CHECK(litFirst > 0 && litLast > 0);                   // the mark is drawn, in grayscale
+    CHECK(usTo > usFrom);                                 // our swing travels rightward...
+
+    const int themFrom = laneCentroid(byThemFirst, litFirst);
+    const int themTo = laneCentroid(byThemLast, litLast);
+    CHECK(litFirst > 0 && litLast > 0);
+    CHECK(themTo < themFrom);                             // ...and theirs the other way
+
+    laneCentroid(settled, litAfter);
+    CHECK(litAfter == 0);                                 // and the lane clears afterwards
+}
+
+// Release gate: a wind-up must not read as a hit landing. The two cues are separated on
+// three channels at once — the wind-up BUILDS where an impact DECAYS, it carries a
+// countdown meter over the charging fighter's head that an impact has no equivalent of,
+// and both survive grayscale, which is where a hue difference alone would not.
+void test_combat_windup_reads_apart_from_impact() {
+    ContentRegistry reg = ContentRegistry::embedded();
+    const SpriteData* ps = reg.sprite("SPR_PET_PAYPUP");
+    const SpriteData* es = reg.sprite("SPR_PET_PINGCUB");
+    const CombatStage st = combatStage(ps, es);
+
+    // Total grayscale brightness over one fighter's seat — the flash's own channel.
+    auto seatGray = [&](const Framebuffer& fb, int x0, int w) {
+        float sum = 0;
+        for (int y = 81; y < 165; ++y)
+            for (int x = std::max(0, x0); x < std::min(kActiveW, x0 + w); ++x)
+                sum += luminance(fb.get(x, y));
+        return sum;
+    };
+    // The charging pet is the one that CAN charge: a kit without a channelled move can
+    // never wind up, which is what makes the impact frames a clean control.
+    auto render = [&](bool channel, int animBeat, int hitBeat, Framebuffer& fb) {
+        Combatant p = channel ? mkCombatant(reg, "P", 400, 20, {"fork_bomb"})
+                              : mkCombatant(reg, "P", 400, 20, {"quick_jab"});
+        Combatant e = mkCombatant(reg, "E", 400, 1, {"quick_jab"});
+        Combat c;
+        c.begin(p, e, Combat::Stakes::Safe, 7);
+        if (channel) {
+            for (int i = 0; i < 40 && c.player().channelMoveIdx < 0; ++i) c.step();
+            CHECK(c.player().channelMoveIdx >= 0);        // the pet really is charging
+        } else {
+            for (int i = 0; i < 40; ++i) {
+                c.step();
+                if (c.lastWasStrike() && !c.lastByPlayer()) break;
+            }
+            CHECK(c.lastWasStrike() && !c.lastByPlayer());  // the pet really was hit
+        }
+        drawCombat(fb, c, ps, es, 0, animBeat, hitBeat, false, CombatSides{});
+    };
+
+    // The ramp DIRECTION, read off the pet's own seat across the cue's early frames.
+    Framebuffer windEarly(kActiveW, kActiveH), windLate(kActiveW, kActiveH);
+    render(/*channel=*/true, 0, -1, windEarly);
+    render(/*channel=*/true, 6, -1, windLate);
+    CHECK(seatGray(windLate, st.localX, st.localW) >
+          seatGray(windEarly, st.localX, st.localW));     // a charge climbs
+
+    Framebuffer hitEarly(kActiveW, kActiveH), hitLate(kActiveW, kActiveH);
+    render(/*channel=*/false, 0, 0, hitEarly);
+    render(/*channel=*/false, 0, 3, hitLate);
+    CHECK(seatGray(hitEarly, st.localX, st.localW) >
+          seatGray(hitLate, st.localX, st.localW));       // an impact fades
+
+    // The countdown meter: over the charging fighter's head, and over nobody else's.
+    // It is the countable channel, and the one that holds when the flash is at its dimmest.
+    Framebuffer none(kActiveW, kActiveH);
+    render(/*channel=*/false, 0, -1, none);
+    const int markX0 = std::max(0, st.localX), markW = st.localW;
+    CHECK(anyLitGray(windEarly, markX0, 30, markX0 + markW, 78));
+    CHECK(!anyLitGray(none, markX0, 30, markX0 + markW, 78));
 }
 
 // Release gate: the ransom pool (combat.h ransomPool) must stay readable in grayscale.

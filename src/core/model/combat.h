@@ -462,6 +462,16 @@ public:
     // screen captions the popup differently for it, so a still Health bar under a
     // damage number reads as the passive working rather than as a stuck gauge.
     bool lastRansomed() const { return lastRansomed_; }
+    // Whether the last resolved turn was one fighter SWINGING AT THE OTHER — an attack
+    // move reaching its target (or one of its replicas), landed or fully absorbed. False
+    // for everything else a turn can be: a defend, an item, a crew Exploit, a wind-up
+    // turn that only charged, and the passive ticks (a DoT, a ransom bill, a stun) that
+    // move a fighter's own Health with nobody swinging at all.
+    //
+    // The combat screen's directional cues read this rather than lastDamage(), because
+    // the two questions differ in both directions: a shielded swing deals 0 and is still
+    // an attack, and a ransom bill coming due deals plenty and is not one.
+    bool lastWasStrike() const { return lastWasStrike_; }
     // The Worm replica the last resolved turn destroyed, if any (see WormKill).
     const WormKill& lastWormKill() const { return lastWormKill_; }
     // Consecutive same-actor turns (a lopsided speed edge — a Phishing speed siphon —
@@ -525,7 +535,7 @@ private:
     // once. Deterministic (no rng), so replays stay reproducible.
     bool pickNextActor();
     void setLast(const char* name, int dmg, bool byPlayer, bool charge,
-                 bool ransomed = false);
+                 bool ransomed = false, bool strike = false);
     void checkOutcome();
 
     Combatant player_, enemy_;
@@ -554,6 +564,7 @@ private:
     bool lastByPlayer_ = false;
     bool lastWasCharge_ = false;
     bool lastRansomed_ = false;
+    bool lastWasStrike_ = false;
     WormKill lastWormKill_;
 };
 

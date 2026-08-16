@@ -29,6 +29,34 @@ struct AnimClip;
 // sheet may author any subset of them.
 const AnimClip* fightPose(const Combatant& c, bool takingHit, bool swinging);
 
+// Where the two fighters stand, in active px, and the CLASH LANE between them.
+//
+// A fight is read across a gap: the lane is what keeps two creatures from merging into
+// one unreadable mass, and it is where the strike mark that says who is hitting whom is
+// drawn. So the lane is reserved FIRST and each fighter is seated against one of its
+// edges. Fixed boxes with the gap left over cannot do this — a Daemon cell is 168 active
+// px against a 104-px box, so the two biggest fighters meet in the middle.
+//
+// The bands are the DRAWING's, not the cell's (SpriteData::contentX0), because a cell is
+// routinely much wider than what is drawn in it and seating by the cell stands a
+// well-padded creature a third of its own width back from where it looks like it is.
+//
+// A pair too wide for the canvas — two content-full Daemon cells want 336px of the 224
+// there are — CROPS at the outer screen edges, and only whichever fighter is over half
+// the room does: a creature that fits in its half keeps every column however big its
+// opponent is. Losing a tail off the side of the frame reads as a camera held tight on
+// the fight; letting the two bodies intersect reads as a bug.
+struct CombatStage {
+    int localX = 0, localW = 0; // the local pet's drawn band (localX may be negative)
+    int rivalX = 0, rivalW = 0; // its rival's
+    int laneX = 0, laneW = 0;   // the clash lane, always fully on canvas
+};
+
+// Seat a fight. Either sprite may be null — a fighter with no art still holds a
+// standard-cell seat, so the side a missing sprite would have occupied stays empty
+// instead of the other fighter drifting into the middle of the stage.
+CombatStage combatStage(const SpriteData* localSprite, const SpriteData* rivalSprite);
+
 // Which side of a fight the local operator is on, plus what to call the two of them.
 //
 // The screen binds everything — captions, the left/right stage seats, the zoned gauge,

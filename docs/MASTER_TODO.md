@@ -318,6 +318,18 @@ high→low value:
 - **Optional polish:** `UI_RANK_BADGE`, `ICON_EVENT_WIFI`, `UI_DIFFICULTY_PIPS`, a boss-tell marker
   on the charge bar, a `UI_TITLE_TAG` badge, richer per-sub-area `BG_SECTOR_*` backdrops, a
   `SPR_PET_*` attack-pose frame.
+- **Five Daemon sheets are too wide to show whole against each other.** The combat stage seats
+  both fighters by their DRAWN band either side of a clash lane (`combatStage`,
+  `src/core/ui/combat_screen.h`), which leaves about 56 logical px each once both are oversized;
+  a fighter over that runs its outer end off the screen edge. Drawn width, not cell width:
+  `SPR_PET_BAITRACUDA` and `_BREECHEETAH` use all 96 columns, `_PWNTHER` 86, `_SPAMWHALE` 84,
+  `_GENERIC_DAEMON` 73. Against anything smaller they are fine — the seating gives the slack to
+  whoever needs it — so this only bites in a Daemon-vs-Daemon bout, and it costs the RIGHT-hand
+  fighter its head, since every creature is drawn head-out over a body that reads away from it.
+  Either a redraw pulls the mass in (the brief is under *Engine cell* in
+  `assets/CREATURE_VISUAL_RULES.md` §7) or the stage learns to mirror the right seat, which
+  trades the crop for a top-right key light on one side of every fight. Diff **S** for art, **M**
+  for the mirror. Decide which before the next wide Daemon is drawn.
 - **Two of the four lines have no `ICON_LINE_*`.** Ransomware and Worm are drawn; Phishing and
   Trojan are not, so their 'Pedia sections render text-only where the other two carry a glyph
   (`gen_pedia_data.py` warns per missing line). One 20×20 each, same slot as the two that exist.

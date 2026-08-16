@@ -36,12 +36,22 @@ class Framebuffer;
 // Packing: row-major over the SHEET, MSB first, each sheet row padded to a whole byte
 // (so a row starts on a byte boundary and the index math needs no carry). Read it
 // through spriteAlphaAt/spriteColorAt below rather than by hand.
+// `contentX0`/`contentX1` are the horizontal band the DRAWING actually occupies inside
+// one frame cell — the union across every frame and row, so it is a fixed property of
+// the sheet and a pose can never shift it. A cell is usually wider than what is drawn
+// in it (a 56-wide cell holding a 24-wide Cachemutt), and a screen that seats two
+// sprites against each other has to seat the drawings, not the cells: seating by the
+// cell edge stands a well-padded creature a third of its own width away from where it
+// looks like it is standing. Read them through spriteContentX0/spriteContentX1 below,
+// which fall back to the whole frame for a zero-initialized placeholder.
 struct SpriteData {
     int sheetW;
     int h;
     int frameW;
     int frames;
     int rows = 1;
+    int contentX0 = 0;
+    int contentX1 = 0;
     const uint16_t* rgb = nullptr;
     const uint8_t* a = nullptr;
     const uint8_t* bits = nullptr;   // non-null = 1-bit mask; rgb/a are then null
@@ -50,6 +60,19 @@ struct SpriteData {
 
 // Bytes per sheet row in the 1-bit form.
 inline int spriteMaskStride(const SpriteData& s) { return (s.sheetW + 7) >> 3; }
+
+// The drawn band inside one frame cell (SpriteData::contentX0/contentX1), as a half-open
+// [x0, x1) column range. A sheet that never had the span measured — a zero-initialized
+// placeholder in a test — answers with the whole frame, which is what every caller
+// assumed before the span existed. Read both through these, never the fields: a caller
+// that took one with the fallback and the other without would measure a nonsense band.
+inline bool spriteHasContentSpan(const SpriteData& s) { return s.contentX1 > s.contentX0; }
+inline int spriteContentX0(const SpriteData& s) {
+    return spriteHasContentSpan(s) ? s.contentX0 : 0;
+}
+inline int spriteContentX1(const SpriteData& s) {
+    return spriteHasContentSpan(s) ? s.contentX1 : s.frameW;
+}
 
 // One source pixel's coverage and colour, at sheet coordinates. A mask has no partial
 // coverage and no per-pixel colour by construction, so it answers the same two values

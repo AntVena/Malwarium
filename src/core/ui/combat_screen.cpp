@@ -32,23 +32,52 @@ Zone healthZone(int health, int maxHealth) {
     return Zone::Ok;
 }
 
-void drawSpriteCentered(Framebuffer& fb, const SpriteData* s, int boxX, int boxY,
-                        int boxW, int boxH, int animBeat, uint8_t flashAmt = 0,
-                        int xNudge = 0, const AnimClip* pose = nullptr) {
+// The stage floor both fighters stand on, and the band above it they occupy. The shelf
+// sits low so a tall Daemon (up to 64 logical / 112 active px) has headroom before it
+// reaches the rival's Health row, at the cost of the player block below it — that block
+// is packed tight against the hint band instead of leaving it mid-screen.
+constexpr int kSpriteShelf = 165;
+// The outer inset a fighter is seated against before it is allowed to crop, and the
+// bounds on the clash lane: never tighter than the strike mark drawn in it, never so
+// wide that two small creatures read as ignoring each other.
+constexpr int kStageEdge = 2, kLaneMin = 26, kLaneMax = 58;
+
+// Where a sheet column lands in active px under the creature upscale, as the BLITTER
+// puts it: the first destination column whose source sample has reached `x`. Seating
+// works in these, not in a plain x*num/den, because two independently truncated
+// endpoints can bracket a band one pixel wider than the band itself — and one stray
+// column is enough to put a creature inside the lane that exists to keep it out.
+constexpr int scaleUp(int x) {
+    return (x * kScaleNum + kScaleDen - 1) / kScaleDen;
+}
+
+// Seat one fighter's drawing so its band starts at `contentX`, bottom-anchored on the
+// shelf. The FRAME is placed from there — a sprite padded inside its cell hangs its
+// padding outside the band, which is the whole point of seating by content.
+void drawFighter(Framebuffer& fb, const SpriteData* s, int contentX, int animBeat,
+                 uint8_t flashAmt, Rgb565 flashColor, int xNudge,
+                 const AnimClip* pose) {
     if (!s) return;
-    const int w = s->frameW * kScaleNum / kScaleDen;
-    const int h = s->h * kScaleNum / kScaleDen;
-    const int x = boxX + (boxW - w) / 2 + xNudge;
-    const int y = boxY + (boxH - h);
+    const int x = contentX - scaleUp(spriteContentX0(*s)) + xNudge;
+    const int y = kSpriteShelf - s->h * kScaleNum / kScaleDen;
     // An authored pose plays its own sheet row in order; without one the breathe
     // heuristic runs on row 0, which is the whole of a single-row sheet.
     const int row = pose ? pose->row : 0;
     const int frame = pose ? pose->frameAt(animBeat) : idleFrame(*s, animBeat);
     if (flashAmt > 0)
-        drawSpriteFlash(fb, *s, frame, x, y, kScaleNum, kScaleDen,
-                        palColor(Pal::INK), flashAmt, row);
+        drawSpriteFlash(fb, *s, frame, x, y, kScaleNum, kScaleDen, flashColor,
+                        flashAmt, row);
     else
         drawSpriteUpscaled(fb, *s, frame, x, y, kScaleNum, kScaleDen, row);
+}
+
+// The seat a fighter with no sprite holds: one standard pet cell (the 56x48 logical
+// creature cell), so the stage keeps its shape rather than collapsing around whichever
+// side has art.
+int seatWidth(const SpriteData* s) {
+    constexpr int kPetCellW = 56;
+    if (!s) return scaleUp(kPetCellW);
+    return scaleUp(spriteContentX1(*s)) - scaleUp(spriteContentX0(*s));
 }
 
 }  // namespace
@@ -63,18 +92,121 @@ const AnimClip* fightPose(const Combatant& c, bool takingHit, bool swinging) {
     return c.creature->clip("idle");
 }
 
+// The seating rule and why it is this one are on the declaration (combat_screen.h).
+CombatStage combatStage(const SpriteData* localSprite, const SpriteData* rivalSprite) {
+    const int wL = seatWidth(localSprite), wR = seatWidth(rivalSprite);
+    // The lane takes whatever the two fighters leave, held between its bounds.
+    int lane = kActiveW - 2 * kStageEdge - wL - wR;
+    lane = std::max(kLaneMin, std::min(kLaneMax, lane));
+
+    // How much of each fighter stays on canvas. A pair that fits keeps all of both. A
+    // pair that doesn't shares the room by HALVES, not evenly: a fighter narrower than
+    // its half is never cropped, and the slack it doesn't want goes to the one that
+    // does. Splitting the deficit evenly instead would shave pixels off a Process-stage
+    // creature for the crime of being matched against a Daemon — the loss belongs to
+    // whichever fighter is over its share, and only to it.
+    const int avail = kActiveW - 2 * kStageEdge - lane;
+    int aL = wL, aR = wR;
+    if (wL + wR > avail) {
+        const int half = avail / 2;
+        if (wL <= half)      { aR = avail - wL; }
+        else if (wR <= half) { aL = avail - wR; }
+        else                 { aL = half; aR = avail - half; }
+    }
+    // The VISIBLE group is what gets centred, so a lopsided pair still sits square on
+    // the stage. Each fighter then keeps its whole band and runs its surplus off its own
+    // outer edge, where the framebuffer drops it.
+    const int x0 = (kActiveW - (aL + lane + aR)) / 2;
+    CombatStage st;
+    st.localW = wL;             st.localX = x0 + aL - wL;
+    st.laneX = x0 + aL;         st.laneW = lane;
+    st.rivalX = st.laneX + lane; st.rivalW = wR;
+    return st;
+}
+
 namespace {
 
-// Windup "hit shader" cue (no new art/frames): a channeling combatant's
-// silhouette snaps toward ink-white then decays back to normal over
-// kWindupFlashPeriod anim-ticks, repeating for as long as the wind-up lasts — a
-// charging pulse standing in for "preparing something big" instead of an
-// animation.
+// Wind-up cue: a channelling combatant's silhouette CHARGES toward warn-bright over
+// kWindupFlashPeriod anim-ticks and drops back, repeating for as long as the wind-up
+// lasts.
+//
+// The ramp climbs rather than decaying, and that direction is the whole cue. An impact
+// (impactFlashAmt below) snaps to its peak and fades, because that is what being hit
+// looks like; a wind-up that did the same read as a hit landing on the charging fighter,
+// or as a buff it had just cast on itself. Building light is accumulation, and pairs
+// with drawWindupMark's countdown over the same fighter — the countable half, and the
+// one that survives grayscale.
 constexpr int kWindupFlashPeriod = 8;
 uint8_t windupFlashAmt(bool channeling, int animBeat) {
     if (!channeling) return 0;
     const int t = animBeat % kWindupFlashPeriod;
-    return static_cast<uint8_t>(255 * (kWindupFlashPeriod - t) / kWindupFlashPeriod);
+    return static_cast<uint8_t>(180 * (t + 1) / kWindupFlashPeriod);
+}
+
+// The wind-up's countable half: a segment meter riding directly over the head of the
+// fighter that is charging, with a caret under it pointing at its owner. One cell per
+// turn of the move's whole wind-up (MoveDef::channelTurns), lit down to the turns still
+// to run — so the meter says how long the charge IS as well as how much is left, and a
+// single-turn remainder still reads as a countdown rather than as a lone blob.
+//
+// Both fighters get one, from the same code: a cue that only ever appeared over the
+// opponent would teach the operator nothing about its own pet's charge, which is the
+// half it CHOSE. Over the head rather than at the feet because the shelf there is
+// already spoken for (a Worm's replica board stands on it), and because a fighter's
+// outer flank moves off-canvas for an oversized cell that crops.
+constexpr int kWindupSeg = 7, kWindupSegH = 8, kWindupCaret = 4;
+void drawWindupMark(Framebuffer& fb, int midX, int headY, int turnsLeft, int turnsTotal) {
+    const int n = std::max(turnsLeft, std::max(1, turnsTotal));
+    const int w = n * kWindupSeg + 2;
+    // Held inside the canvas and under the chrome: a cropping Daemon's midpoint can sit
+    // past either screen edge, and a tall one's head can rise past the header — a marker
+    // that says "this one" has to be on screen, and clear of the rows above, to say it.
+    const int x = std::max(kMargin, std::min(kActiveW - kMargin - w, midX - w / 2));
+    const int y = std::max(kHeaderRule + 22, headY - kWindupSegH - kWindupCaret - 2);
+    fb.fillRect(x, y, w, kWindupSegH, palColor(Pal::INK_DIM));
+    for (int i = 0; i < n; ++i)
+        fb.fillRect(x + 1 + i * kWindupSeg, y + 1, kWindupSeg - 1, kWindupSegH - 2,
+                    palColor(i < turnsLeft ? Pal::WARN : Pal::TRACK));
+    for (int i = 0; i < kWindupCaret; ++i)
+        fb.fillRect(x + w / 2 - kWindupCaret + i, y + kWindupSegH + i,
+                    2 * (kWindupCaret - i) - 1, 1, palColor(Pal::WARN));
+}
+
+// The strike mark: WHO is hitting WHOM, drawn in the clash lane for the swing window.
+//
+// Three swept gashes that bow, fan and TRAVEL in the direction of the blow — crossing
+// the lane from the attacker's edge to its target's over the window, thinning to a point
+// at both ends the way a claw leaves a cut. Motion carries the direction first and the
+// taper carries it second, so the answer survives a single frozen frame as well as it
+// does in play. Drawn from primitives rather than art because the mark has to mirror,
+// and a mirrored sheet is a second sheet.
+//
+// It cuts across torso height — high enough to cross a short creature's body rather than
+// its feet, low enough to stay under a tall one's head.
+constexpr int kStrikeY = kSpriteShelf - 46;
+constexpr int kStrikeW = 18, kStrikeGashes = 3;
+void drawStrikeMark(Framebuffer& fb, int laneX, int laneW, int dir, int beat,
+                    int period) {   // dir: +1 the blow travels right, -1 left
+    if (beat < 0 || beat >= period) return;
+    const int travel = std::max(0, laneW - kStrikeW);
+    const int from = dir > 0 ? laneX : laneX + travel;
+    const int x = from + dir * travel * beat / std::max(1, period - 1) + kStrikeW / 2;
+    const uint8_t a = static_cast<uint8_t>(255 * (period - beat) / period);
+    const Rgb565 col = palColor(Pal::INK);
+    for (int g = 0; g < kStrikeGashes; ++g) {
+        const int half = g == 1 ? 16 : 11;         // the middle gash leads the claw
+        const int gx = x + dir * (g - 1) * 5;
+        const int gy = kStrikeY + (g - 1) * 6;
+        for (int t = -half; t <= half; ++t) {
+            // The gash bows toward the blow and thickens through its belly, so each
+            // stroke is a crescent with two points rather than a bar with two ends.
+            const int fall = half * half - t * t;
+            const int bow = 6 * fall / (half * half);
+            const int body = 1 + 3 * fall / (half * half);
+            for (int k = 0; k < body; ++k)
+                fb.blendPixel(gx + dir * (bow + k), gy + t, col, a);
+        }
+    }
 }
 
 // Impact "punch" cue (no new art/frames): the side that just took a landed hit
@@ -95,9 +227,10 @@ uint8_t impactFlashAmt(int hitBeat) {
 // Attack "hop" cue (no new art/frames, no change to either fighter's resting stage
 // position): the combatant that just acted steps a couple of active-px TOWARD its
 // target and the target steps the same distance AWAY, decaying over
-// kAttackHopPeriod anim-ticks. Unlike the impact punch above — which needs a landed,
-// non-charge hit — this fires on every resolved, non-charge move, so a fully-
-// shielded swing still reads as "who just attacked" instead of standing still.
+// kAttackHopPeriod anim-ticks. Unlike the impact punch above — which needs a landed
+// hit — this fires on every resolved STRIKE (combat.h lastWasStrike), so a fully
+// shielded swing still reads as "who just attacked" instead of standing still, while a
+// defend, an item or a ransom bill coming due moves nobody.
 // Because the local seat sits left of the rival seat, "attacker forward" and
 // "target away" happen to point the same screen direction for BOTH fighters on a
 // given turn, so one dir/beat pair drives both sprites.
@@ -392,56 +525,56 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
     }
 
     // --- Both combatant sprites (reused SPR_PET_* idle frames) --------------
-    // Bottom-anchored on the "shelf" (boxY+boxH); a sprite taller than boxH
-    // (a Daemon can run up to 64 logical / 112 active px) extends upward past
-    // boxY rather than clipping. The shelf sits low (kSpriteShelf) so a tall
-    // Daemon has headroom above before it reaches the enemy header/channel
-    // row, at the cost of the player block below it — that block is packed
-    // tight against the hint band instead of leaving it mid-screen (was 138).
-    constexpr int kSpriteShelf = 165;
     // Stage seating: the LOCAL pet holds the LEFT seat and its rival the RIGHT one, so a
     // fight reads left-to-right as "mine, then theirs" — and the roster's fixed top-left
-    // light (the roster's fixed top-left key) already turns every sprite that way, so the pets face
-    // into the fight from the left rather than out of it. The seat follows the local/
-    // rival ROLE (`flip`), never Combat's player_/enemy_ slot, so a duel guest sees its
-    // own pet on the left exactly like the host does.
-    constexpr int kStageW = 104, kStageH = 84, kStageY = kSpriteShelf - kStageH;
-    constexpr int kLocalStageX = 4, kRivalStageX = 116;
+    // key light already turns every sprite that way, so the pets face into the fight from
+    // the left rather than out of it. The seat follows the local/rival ROLE (`flip`),
+    // never Combat's player_/enemy_ slot, so a duel guest sees its own pet on the left
+    // exactly like the host does. Bottom-anchored on the shelf; a sprite taller than the
+    // band extends upward rather than clipping. Both bands and the lane between them come
+    // from combatStage() — see combat_screen.h for why the lane is reserved first.
+    const CombatStage stage = combatStage(localSprite, rivalSprite);
     // A landed, non-charge hit shoves its TARGET (not the actor) away from whoever just
     // hit it, so the recoil direction is fixed by the seat the target is in, not by who
     // attacked.
     const bool hitLanded = combat.lastDamage() > 0 && !combat.lastWasCharge();
     const int rivalHitBeat = (hitLanded && lastByLocal) ? hitBeat : -1;
     const int localHitBeat = (hitLanded && !lastByLocal) ? hitBeat : -1;
-    const uint8_t rivalFlash =
-        std::max(windupFlashAmt(en.channelMoveIdx >= 0, animBeat), impactFlashAmt(rivalHitBeat));
-    const uint8_t localFlash =
-        std::max(windupFlashAmt(pl.channelMoveIdx >= 0, animBeat), impactFlashAmt(localHitBeat));
-    // Attacker-forward / target-back hop: any resolved, non-charge move, hit or not
+    // Wind-up charges toward WARN and impact snaps toward INK: the two cues differ in
+    // ramp direction AND in hue, and the pair that is live wins on magnitude alone.
+    const uint8_t rivalWindup = windupFlashAmt(en.channelMoveIdx >= 0, animBeat);
+    const uint8_t localWindup = windupFlashAmt(pl.channelMoveIdx >= 0, animBeat);
+    const uint8_t rivalImpact = impactFlashAmt(rivalHitBeat);
+    const uint8_t localImpact = impactFlashAmt(localHitBeat);
+    // Attacker-forward / target-back hop: any resolved STRIKE, landed or fully absorbed
     // (see attackHopPx above for why one dir/beat pair covers both sprites).
-    const bool moveResolved = combat.lastMoveName()[0] != '\0' && !combat.lastWasCharge();
-    const int hopBeat = moveResolved ? hitBeat : -1;
+    const bool struck = combat.lastWasStrike();
+    const int hopBeat = struck ? hitBeat : -1;
     const int hopDir = lastByLocal ? +1 : -1;
     const int hop = attackHopPx(hopBeat, hopDir);
     // The swing window is the hop's own, so an authored attack clip runs exactly as long
     // as the lunge that carries it — one motion, not a pose that outlives its nudge.
-    const bool swinging = moveResolved && hitBeat >= 0 && hitBeat < kAttackHopPeriod;
-    // Rival first: where two tall Daemons overlap at the centre, the local pet reads on
-    // top of its opponent.
-    drawSpriteCentered(fb, rivalSprite, kRivalStageX, kStageY, kStageW, kStageH, animBeat,
-                       rivalFlash, impactNudgePx(rivalHitBeat, +1) + hop,
-                       fightPose(en, rivalHitBeat >= 0 && rivalHitBeat < kImpactPeriod,
-                                 swinging && !lastByLocal));
-    drawSpriteCentered(fb, localSprite, kLocalStageX, kStageY, kStageW, kStageH, animBeat,
-                       localFlash, impactNudgePx(localHitBeat, -1) + hop,
-                       fightPose(pl, localHitBeat >= 0 && localHitBeat < kImpactPeriod,
-                                 swinging && lastByLocal));
+    const bool swinging = struck && hitBeat >= 0 && hitBeat < kAttackHopPeriod;
+    // Rival first: where two Daemon cells run right to their band edges, the local pet
+    // reads on top of its opponent.
+    drawFighter(fb, rivalSprite, stage.rivalX, animBeat,
+                std::max(rivalWindup, rivalImpact),
+                palColor(rivalImpact >= rivalWindup ? Pal::INK : Pal::WARN),
+                impactNudgePx(rivalHitBeat, +1) + hop,
+                fightPose(en, rivalHitBeat >= 0 && rivalHitBeat < kImpactPeriod,
+                          swinging && !lastByLocal));
+    drawFighter(fb, localSprite, stage.localX, animBeat,
+                std::max(localWindup, localImpact),
+                palColor(localImpact >= localWindup ? Pal::INK : Pal::WARN),
+                impactNudgePx(localHitBeat, -1) + hop,
+                fightPose(pl, localHitBeat >= 0 && localHitBeat < kImpactPeriod,
+                          swinging && lastByLocal));
 
     // Worm replicas, on the same shelf, standing BETWEEN their parent and its opponent —
-    // each row starts at the seat edge facing the other fighter and falls back from
-    // there, so a copy is always in the way of the thing it is there to catch. Drawn
-    // AFTER both fighters so they read in front of the worm that made them. Nothing is
-    // drawn for any other line — wormReplicaCount is 0 and the row returns.
+    // each row starts at the parent's own drawn edge facing the other fighter and falls
+    // back from there, so a copy is always in the way of the thing it is there to catch.
+    // Drawn AFTER both fighters so they read in front of the worm that made them. Nothing
+    // is drawn for any other line — wormReplicaCount is 0 and the row returns.
     // (A worm's own sprite is meant to be small enough to leave this room; the stand-in
     // frame the line ships with is not, so the back ranks currently sit over its body.)
     //
@@ -450,11 +583,37 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
     const WormKill& kill = combat.lastWormKill();
     const bool killOnLocal = kill.onPlayer != flip;
     drawReplicaRow(fb, en, swinging && !lastByLocal, kill, killOnLocal ? -1 : hitBeat,
-                   /*frontX=*/kRivalStageX, /*stride=*/kReplicaSlotW, kSpriteShelf,
+                   /*frontX=*/stage.rivalX, /*stride=*/kReplicaSlotW, kSpriteShelf,
                    animBeat);
     drawReplicaRow(fb, pl, swinging && lastByLocal, kill, killOnLocal ? hitBeat : -1,
-                   /*frontX=*/kLocalStageX + kStageW, /*stride=*/-kReplicaSlotW,
+                   /*frontX=*/stage.localX + stage.localW, /*stride=*/-kReplicaSlotW,
                    kSpriteShelf, animBeat);
+
+    // The strike mark, in the lane the seating reserved for it: who is hitting whom, in
+    // the direction the blow travels. Drawn over the replicas, since a copy taking the
+    // hit is still that hit landing.
+    if (swinging)
+        drawStrikeMark(fb, stage.laneX, stage.laneW, hopDir, hitBeat, kAttackHopPeriod);
+    // The wind-up countdown, over whichever fighter is charging — the same marker on both
+    // sides, so "a hit is being wound up, by that one, N turns out" reads without colour.
+    // Seated off each sprite's own height, so it rides the head it belongs to rather than
+    // floating on a shared row a short creature never reaches.
+    auto headY = [](const SpriteData* s) {
+        return s ? kSpriteShelf - s->h * kScaleNum / kScaleDen : kSpriteShelf;
+    };
+    // The move being charged is what says how LONG the wind-up is; a combatant mid-channel
+    // always has one, and a meter with no total falls back to the turns still to run.
+    auto channelTurns = [](const Combatant& c) {
+        const int i = c.channelMoveIdx;
+        return (i >= 0 && i < static_cast<int>(c.moves.size()) && c.moves[i])
+                   ? c.moves[i]->channelTurns : 0;
+    };
+    if (en.channelMoveIdx >= 0)
+        drawWindupMark(fb, stage.rivalX + stage.rivalW / 2, headY(rivalSprite),
+                       en.channelLeft, channelTurns(en));
+    if (pl.channelMoveIdx >= 0)
+        drawWindupMark(fb, stage.localX + stage.localW / 2, headY(localSprite),
+                       pl.channelLeft, channelTurns(pl));
 
     // --- Player Health: zoned gauge + numeric ------------------------------
     const int phY = kSpriteShelf + 10;

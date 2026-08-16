@@ -339,6 +339,9 @@ int g_failures = 0;
     RUN(test_pvp_link_screen_verdict_grayscale) \
     RUN(test_pvp_guest_sees_its_own_pet_on_the_bottom_gauge) \
     RUN(test_combat_seats_local_pet_on_the_left) \
+    RUN(test_combat_stage_seats_never_overlap) \
+    RUN(test_combat_strike_mark_travels_toward_its_target) \
+    RUN(test_combat_windup_reads_apart_from_impact) \
     /* ROCK THE DOCK — the operator bracket in The Pirate Bayou */ \
     RUN(test_tourney_handles_fit_an_operator_tag) \
     RUN(test_tourney_entrants_are_derived_from_the_seed) \
