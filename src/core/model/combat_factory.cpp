@@ -292,20 +292,16 @@ void applySimDummyLevelScale(CombatEnemy& e, int petLevel) {
     if (kSimDummySpeedPerNLevels > 0) e.speed += petLevel / kSimDummySpeedPerNLevels;
 }
 
-BossGauntlet subAreaBoss(int areaIdx, int sub) {
-    // One strong malbeast. Health climbs with the area's LADDER DEPTH (areaTier)
-    // + the sub index
-    // so sub 1 opens easy and the signature sub 5 is the wall; moves thicken as the
-    // sub climbs. Returned as a length-1 gauntlet so the carried-Health round plumbing
-    // (startBossRound/finishBossRound) drives it unchanged. Generic frame (no new art).
-    // Boss names are a content pool disjoint from the roster + the wild malbeasts
-    // (namespace guard, tested), owned by each area's own AreaDef.
-    if (areaIdx < 0) areaIdx = 0;
-    if (areaIdx >= kAreaCount) areaIdx = kAreaCount - 1;
-    if (sub < 0) sub = 0;
-    if (sub >= kSubAreasPerArea) sub = kSubAreasPerArea - 1;
-    const AreaDef& a = area(areaIdx);
-    const int tier = areaTier(areaIdx);
+namespace {
+// One boss malbeast at a given DEPTH. Health climbs with the area's ladder depth
+// (areaTier) + the sub index, so sub 1 opens easy and the signature sub 5 is the wall;
+// moves thicken as the sub climbs. Generic frame (no new art).
+//
+// `sub` is the depth to build AT, which is not always the sub-area being fought: an escort
+// round (SubBossRound::rung) is the same fight drawn a rung shallower, and expressing that
+// as "run the whole formula at sub-1" is what keeps an escort automatically consistent with
+// the boss it guards — there is no second stat curve to keep in step with this one.
+CombatEnemy subBossEnemy(const AreaDef& a, int tier, int sub, const char* name) {
     const int health = kSubBossHealthBase + tier * 8 + sub * kSubBossHealthStep;
     const int speed = kSubBossSpeedBase + tier + (sub >= kSubAreasPerArea - 1 ? 2 : 0);
     std::vector<const char*> moves = {"quick_jab"};
@@ -314,24 +310,63 @@ BossGauntlet subAreaBoss(int areaIdx, int sub) {
         moves.push_back("fork_bomb");
         // The signature (sub 4) boss debuts its area's THREAT rider — the telegraphed
         // apex where you'd bring the matching counter-mod, earned in that same area's
-        // own loot table (AreaDef::modPoolIds).
+        // own loot table (AreaDef::modPoolIds). An escort drops to a shallower `sub` and
+        // so never carries it: the rider is the wall's tell, not the doorway's.
         if (a.apexThreatMoveId) moves.push_back(a.apexThreatMoveId);
     }
-    CombatEnemy e{a.subBossNames[sub], "SPR_PET_CACHEMUTT", tier + 1, health,
-                  speed, std::move(moves)};
-    return {a.subBossNames[sub], tier + 1, {e}};
+    return {name, "SPR_PET_CACHEMUTT", tier + 1, health, speed, std::move(moves)};
+}
+}  // namespace
+
+BossGauntlet subAreaBoss(int areaIdx, int sub) {
+    // The sub-area's boss, fought as the rounds its own row spells out — usually one, but
+    // a row may author escorts (Castle Rapidscare's pawn ranks) and they run back-to-back
+    // on the same carried-Health plumbing (startBossRound/finishBossRound) the area boss
+    // already uses. Boss names are a content pool disjoint from the roster + the wild
+    // malbeasts (namespace guard, tested), owned by each area's own AreaDef.
+    if (areaIdx < 0) areaIdx = 0;
+    if (areaIdx >= kAreaCount) areaIdx = kAreaCount - 1;
+    if (sub < 0) sub = 0;
+    if (sub >= kSubAreasPerArea) sub = kSubAreasPerArea - 1;
+    const AreaDef& a = area(areaIdx);
+    const SubBossDef& b = a.subBosses[sub];
+    const int tier = areaTier(areaIdx);
+    BossGauntlet g{b.name, tier + 1, {}};
+    for (int r = 0; r < b.roundCount(); ++r) {
+        const SubBossRound rd = b.round(r);
+        // An escort's rung is a DELTA, so the depth it lands on may sit BELOW the area's
+        // first sub-area — which is the point: a doorway boss (sub 0) has nowhere shallower
+        // to draw from, and flooring at 0 would silently hand it an escort identical to
+        // itself. The formula stays sound below zero (Health is base + tier*8 + depth*step,
+        // and the move rungs are all `depth >= n` tests), so the floor only has to keep
+        // Health positive: a full ladder-span below is as far as any escort can reach.
+        int depth = sub + rd.rung;
+        if (depth < -(kSubAreasPerArea - 1)) depth = -(kSubAreasPerArea - 1);
+        if (depth >= kSubAreasPerArea) depth = kSubAreasPerArea - 1;
+        g.rounds.push_back(subBossEnemy(a, tier, depth, rd.name));
+    }
+    return g;
 }
 
 BossGauntlet areaBoss(int areaIdx) {
     // The five sub-area bosses fought back-to-back. Health carries across
     // the rounds (no heal), so this is the real finale. The apex (round 5) is the
     // signature sub-area boss — the piece curation upgrades first.
+    //
+    // Each sub-area contributes its boss PROPER — that banner, at its own rung — and none
+    // of the escorts around it. So the finale stays exactly five rounds however many
+    // escorts a sub-area grows: composing whole sub-gauntlets would balloon the area boss
+    // every time one rung gained a round, a cost nobody authoring that rung intends. It is
+    // also why this builds the enemy directly instead of picking a round out of
+    // subAreaBoss: a round is named for the shape it takes IN ITS OWN fight (THE BACK
+    // RANK), and the finale is announcing the boss (THE EIGHT PWNS).
     if (areaIdx < 0) areaIdx = 0;
     if (areaIdx >= kAreaCount) areaIdx = kAreaCount - 1;
     const AreaDef& a = area(areaIdx);
-    BossGauntlet g{a.areaBossName, areaTier(areaIdx) + 1, {}};
+    const int tier = areaTier(areaIdx);
+    BossGauntlet g{a.areaBossName, tier + 1, {}};
     for (int s = 0; s < kSubAreasPerArea; ++s)
-        g.rounds.push_back(subAreaBoss(areaIdx, s).rounds[0]);
+        g.rounds.push_back(subBossEnemy(a, tier, s, a.subBosses[s].name));
     return g;
 }
 

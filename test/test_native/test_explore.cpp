@@ -392,7 +392,14 @@ void test_expl_names_stay_scrollable() {
         CHECK(textWidth("TITLE: ") + textWidth(sectorTitle(s)) <= 2 * detailW);
         for (int i = 0; i < kExplSubAreas; ++i) {
             CHECK(textWidth(explSubAreaName(s, i)) <= 2 * subNameW);
-            CHECK(textWidth("BOSS: ") + textWidth(area(s).subBossNames[i]) <= 2 * detailW);
+            // The BANNER is what the row advertises; the ROUND names are what the fight
+            // announces once it starts. Both are boss names a player reads, so both are
+            // budgeted here — an escort authored wider than its banner would otherwise
+            // ship unchecked.
+            const SubBossDef& b = area(s).subBosses[i];
+            CHECK(textWidth("BOSS: ") + textWidth(b.name) <= 2 * detailW);
+            for (int r = 0; r < b.roundCount(); ++r)
+                CHECK(textWidth("BOSS: ") + textWidth(b.round(r).name) <= 2 * detailW);
         }
         // Storefront headers: drawn at the left margin, with the Bits wallet right-
         // aligned opposite. Budget the wallet at a 6-figure purse plus its unit.
@@ -711,16 +718,56 @@ void test_expl_nested_row_helpers() {
 }
 
 // The AREA boss is a 5-stage gauntlet of the area's sub-area bosses, in
-// order, with Health climbing to the signature apex (round 5).
+// order, with Health climbing to the signature apex (round 5). Five stages whatever
+// escorts a sub-area has grown: the finale fights each BOSS, under its banner, not that
+// boss's own supporting cast.
 void test_area_boss_gauntlet_composition() {
     for (int a = 0; a < kExplSectors; ++a) {
         BossGauntlet gg = areaBoss(a);
         CHECK(static_cast<int>(gg.rounds.size()) == kExplSubAreas);   // 5 stages
         CHECK(gg.stageRank >= 2);
         for (int s = 0; s < kExplSubAreas; ++s)
-            CHECK(std::strcmp(gg.rounds[s].name, subAreaBoss(a, s).rounds[0].name) == 0);
+            CHECK(std::strcmp(gg.rounds[s].name, area(a).subBosses[s].name) == 0);
         CHECK(gg.rounds[kExplSubAreas - 1].maxHealth > gg.rounds[0].maxHealth);  // apex
     }
+}
+
+// A SUB-AREA boss is fought as the rounds its own row spells out. The default is one
+// round carrying the banner — and that round must stay identical to what a boss was
+// before rounds existed, since every unauthored rung is balanced around it. A row that
+// DOES author rounds gets them in order, with SubBossRound::rung read as a depth delta:
+// an escort is the same fight a rung shallower, so it is strictly the weaker enemy.
+void test_sub_boss_rounds_and_escorts() {
+    int plain = 0, gauntlets = 0;
+    for (int a = 0; a < kExplSectors; ++a)
+        for (int s = 0; s < kExplSubAreas; ++s) {
+            const SubBossDef& b = area(a).subBosses[s];
+            const BossGauntlet g = subAreaBoss(a, s);
+            CHECK(static_cast<int>(g.rounds.size()) == b.roundCount());
+            CHECK(std::strcmp(g.name, b.name) == 0);          // the banner is the gauntlet's
+            if (b.roundCount() == 1) {
+                ++plain;
+                CHECK(std::strcmp(g.rounds[0].name, b.name) == 0);
+                // The one round IS the area-boss round for this rung — the shared shape
+                // both paths build from, so a drift between them can't hide.
+                CHECK(g.rounds[0].maxHealth == areaBoss(a).rounds[s].maxHealth);
+                continue;
+            }
+            ++gauntlets;
+            for (int r = 0; r < b.roundCount(); ++r) {
+                CHECK(std::strcmp(g.rounds[r].name, b.round(r).name) == 0);
+                // A negative rung is strictly the softer fight AT EVERY RUNG, including
+                // sub 0 — a doorway boss's escort has to reach below the area's own first
+                // sub-area to be an escort at all, and flooring there would make the
+                // authored `-1` a silent no-op.
+                if (b.round(r).rung < 0)
+                    CHECK(g.rounds[r].maxHealth < areaBoss(a).rounds[s].maxHealth);
+                CHECK(g.rounds[r].maxHealth > 0);
+            }
+        }
+    // Both shapes are represented, or the branches above prove nothing.
+    CHECK(plain > 0);
+    CHECK(gauntlets > 0);
 }
 
 // A THREAT rider is declared on the area's OWN row (AreaDef::apexThreatMoveId) and

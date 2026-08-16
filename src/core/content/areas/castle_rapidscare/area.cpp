@@ -2,9 +2,9 @@
 // the Napstorrent Moors' CASTLE CAUSEWAY walks up to. Last in kAreaList, which is
 // what makes it the deepest named area before the endless DeepWeb Dive — and the
 // reason its pool is the endgame one. Its five stretches are held by a card/chess
-// court — pawns at
-// the gate, a Red Queen in the mirrors, a Joker in the decoys, the King in the
-// catacombs — all flying COUNT COPYLEFT's banner.
+// court — pawns at the gate, a Red Queen in the mirrors, a Knave selling fixes for
+// problems he invented, a Joker in the decoys, the King in the catacombs — all flying
+// COUNT CONFICKER's banner: the keep the copyright war never actually took.
 #include "core/content/areas/area_defs.h"
 
 #include "tunables.h"
@@ -58,9 +58,14 @@ const AreaDef kAreaCastleRapidscare = {
     "ICON_SECTOR_CASTLE_RAPIDSCARE",
     {"404 DRAWBRIDGE", "MIRROR MAZE", "OPT-OUT OBSCURA", "DECOY DUNGEON",
      "COMMENT CATACOMBS"},
-    {"THE EIGHT PWNS", "RED QUEEN MELISSA", "MOUSE-JACK", "JOKER VIRUS",
-     "KING KIMBLE"},
-    "COUNT COPYLEFT",
+    // Two of the court are fought as gauntlets rather than as one malbeast: the pawns come
+    // in two ranks, and the Joker's fall is what lets the gate's pawns back in behind you.
+    {{"THE EIGHT PWNS", {{"THE FRONT RANK", -1}, {"THE BACK RANK"}}},
+     {"RED QUEEN MELISSA"},
+     {"KNAVE WINFIXER"},
+     {"JOKER VIRUS", {{"JOKER VIRUS"}, {"THE EIGHT PWNS", -1}}},
+     {"KING KIMBLE"}},
+    "COUNT CONFICKER",
     /*apexThreatMoveId=*/"nag_screen",  // the signature boss's FREEZE + DoT rider
     {"SPAM & SCRAM", kShopListings, arrLen(kShopListings)},
     {"THE GHOST IN THE MACHINE", kModShopListings, arrLen(kModShopListings)},

@@ -21,12 +21,27 @@ src/core/content/areas/
 
 An `AreaDef` row owns, in one place: the area's name/Title, the name of its sector glyph
 (`icon` — keyed by area id, so art follows identity rather than rung), its 5 sub-area names, its
-5 sub-area boss names + area-boss banner, its signature boss's threat-move rider
+5 sub-area bosses (`SubBossDef` — a banner, plus the rounds it is fought as) + area-boss
+banner, its signature boss's threat-move rider
 (`apexThreatMoveId`), its storefront (`AreaShopDef` — name, stocked item(s), restock
 count, and the price charged for each), and its mod-loot pool. `expl_screen.cpp` (the EXPL
 list UI), `combat.cpp` (boss composition), and `game_explore.cpp` (mod-loot rolls + the shop
 event) all read an area through `mal::area(idx)` rather than owning any of this data
 themselves.
+
+**A sub-area boss is a round LIST, and most rows leave it empty.** `{"MYDOOM LICH"}` is the
+whole row for a boss that is one fight — the empty `rounds` means "one round, named by the
+banner", so only a rung that actually wants escorts pays any authoring cost for them. A row
+that does want them spells each round's name and its `rung`, a DELTA on that sub-area's own
+depth (`0` = the boss at full strength, `-1` = drawn one rung shallower). Escorts are
+therefore never a second stat block to keep in step with the boss they guard — they are the
+same curve, evaluated a rung back. Rounds run back-to-back with carried Health on the same
+plumbing the area boss uses. Name every round to `AREA_NAMING.md §3`: an escort is a name the
+player reads.
+
+The AREA boss composes each sub-area's boss **proper** — that banner at its own rung, never
+its escorts — so the finale stays exactly `kSubAreasPerArea` rounds however many rounds a
+single rung grows.
 
 **One `area.cpp` per area is enough** — each area's data is a few dozen lines. If one area's
 file grows past the point of comfortable skimming (the same ~600-line instinct as the

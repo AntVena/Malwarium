@@ -28,8 +28,6 @@ building it up organically.
 
 ### 1a. Ready to build
 
-**Sub-area bosses that are themselves gauntlets** — `subAreaBoss` returns a length-1 `BossGauntlet`, so a sub-area boss is always exactly one fight; only the AREA boss is multi-round. Castle Rapidscare's THE EIGHT PWNS wants to be a minor gauntlet, and its JOKER VIRUS wants to *loop back* into another Pwns run after it falls. | `combat.cpp`'s `subAreaBoss`/`areaBoss`, plus the round plumbing in `game_explore.cpp` (`startBossRound`/`finishBossRound`). | L | The re-entrant loop is the novel part — the carried-Health round machinery is linear today, with no notion of a round that re-queues an earlier one. Needs a design pass on how a loop terminates and what it pays. |
-
 **Capture arming costs ~70KB and the AP ~58KB**, against ~126KB free with the radio idle. The device works, and the save no longer needs a big contiguous block, but that was the only thing standing on this — anything else that grows will hit the same wall. Worth a pass at what the capture path actually needs. | `net_capture.h`'s `powerUp` (`esp_wifi_init` + promiscuous + the pcap SD buffers). | M | Measured on device, not estimated: `[ap] down free=126408` → `[cap] armed free=56188`. |
 
 **Write a lot more moves, and give every one of them to a boss.** These are one job, not two:
@@ -333,7 +331,7 @@ for. The `ICON_SECTOR_*` half of each family is drawn and live on the EXPL zone 
 - **Napstorrent Moors area art** (shipped mechanically, art pending): the backdrop
   (marshy → castle progression), the `MOOR-TO-MOOR` storefront motif.
 - **Castle Rapidscare art** (shipped mechanically, art pending): the backdrop,
-  castle-themed malbeasts + a `COUNT COPYLEFT` apex, and the `SPAM & SCRAM` / `THE GHOST IN THE
+  castle-themed malbeasts + a `COUNT CONFICKER` apex, and the `SPAM & SCRAM` / `THE GHOST IN THE
   MACHINE` storefront motifs. The keep also fights with the tier-3 wild roster today — it has no
   malbeasts of its own, since a new `SPR_MALBEAST_*` grows `kWildMalbeastCount` and with it the
   'Pedia's seen/defeated masks.

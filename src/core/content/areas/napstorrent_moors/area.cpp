@@ -53,8 +53,11 @@ const AreaDef kAreaNapstorrentMoors = {
     "ICON_SECTOR_NAPSTORRENT_MOORS",
     {"SEEDER SHALLOWS", "LEECHER FEN", "THE SHARED BOG", "SPECTRE SWAMP",
      "CASTLE CAUSEWAY"},
-    {"SHALLOW SADMINISTRATOR", "LEECH LICH", "BOG NEUMANN", "CASTELLAN CREEPER",
-     "HERALD ANNA KOVA"},
+    {{"NIMDA OF THE SHALLOWS"},
+     {"MYDOOM LICH"},
+     {"BOG NEUMANN"},
+     {"CASTELLAN CREEPER"},
+     {"HERALD ANNA KOVA"}},
     "MORRIS THE WYRM",
     /*apexThreatMoveId=*/"data_rot",  // the signature boss's DoT rider
     {"MOOR-TO-MOOR", kShopListings, arrLen(kShopListings)},

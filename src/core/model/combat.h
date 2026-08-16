@@ -624,16 +624,20 @@ struct BossGauntlet {
     std::vector<CombatEnemy> rounds;
 };
 
-// A SUB-AREA boss: one strong malbeast, unlocked by a 10-win streak and
-// fought manually. `area` (0..kExplSectors-1) picks the roster + tier; `sub`
+// A SUB-AREA boss: a strong malbeast, unlocked by a 10-win streak and fought
+// manually. `area` (0..kExplSectors-1) picks the roster + tier; `sub`
 // (0..kSubAreasPerArea-1) scales the Health/speed climb (sub 4 = the signature apex).
-// Returned as a length-1 BossGauntlet so it reuses the carried-Health round plumbing.
-// Boss names are a pool disjoint from the roster + wild malbeasts (namespace guard).
+// Usually one round — but a row may author escorts (AreaDef's SubBossDef::rounds), and
+// those run back-to-back on the same carried-Health plumbing the area boss uses, so a
+// caller never has to know which shape it got. Boss names are a pool disjoint from the
+// roster + wild malbeasts (namespace guard).
 BossGauntlet subAreaBoss(int area, int sub);
 
 // The AREA boss: a 5-stage gauntlet of the area's five sub-area bosses
 // fought back-to-back (carried Health, no heal between). Unlocked once all five
 // sub-areas are cleared; beating it clears the area (→ next area) + grants the Title.
+// Always exactly kSubAreasPerArea rounds — each sub-area's boss PROPER, never the escorts
+// that boss may have in its own fight.
 BossGauntlet areaBoss(int area);
 
 // combat Bits payout, keyed to the opponent's stage-rank R. A NORMAL opponent

@@ -352,7 +352,7 @@ void drawExplList(Framebuffer& fb, const ContentRegistry& reg, const ExplListVie
             switch (st) {
                 case ExplRowState::SubBossReady:
                     std::snprintf(detail, sizeof(detail), "BOSS: %s",
-                                  area(areaIdx).subBossNames[sub]);
+                                  area(areaIdx).subBosses[sub].name);
                     break;
                 case ExplRowState::SubExploring:
                     std::snprintf(detail, sizeof(detail), "WINS %d/%d", v.streakWins,

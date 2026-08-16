@@ -2,8 +2,9 @@
 // src/core/content/areas/.
 //
 // An AreaDef is everything that makes one explorable area of the linear ladder
-// itself: its name/Title, its 5 sub-area names, its 5 sub-area boss names +
-// the area-boss banner, its storefront, and its two loot pools (mod + wild-win item).
+// itself: its name/Title, its 5 sub-area names, its 5 sub-area bosses (each a banner plus
+// the rounds it is fought as) + the area-boss banner, its storefront, and its two loot
+// pools (mod + wild-win item).
 // Find an area's
 // folder (areas/<name>/area.cpp) to change anything about that area; nothing about
 // one area's identity is split across another file.
@@ -88,6 +89,46 @@ struct AreaStorefrontDef {
     int listingCount;
 };
 
+// How many rounds one sub-area boss can be fought as. Headroom over what any shipped row
+// uses, not a ladder — unlike kAreaCount there is no derived count to keep in sync, just
+// don't let a row's rounds[] grow past it.
+constexpr int kMaxSubBossRounds = 3;
+
+// One round of a sub-area boss fight. `rung` is a DELTA on the sub-area's own depth, so an
+// escort is authored as "a rung shallower than the boss it guards" rather than as its own
+// stat block: 0 (the default) is the boss at full strength, -1 is drawn one sub-area back.
+// A magnitude on the row, per src/core/content/CONTENT_STANDARD.md — the SCALE it feeds is
+// the shared tunable, in combat_factory.cpp's subBossEnemy.
+struct SubBossRound {
+    const char* name;
+    int rung = 0;
+};
+
+// One sub-area boss. `name` is the BANNER — what the EXPL row calls it and what the
+// confrontation is announced as. `rounds` is what it is actually FOUGHT as: an ordered
+// gauntlet run back-to-back with carried Health, exactly like the area boss. An EMPTY list
+// (the common case) means one round named by the banner, so a plain boss stays a one-liner
+// and only a row that wants escorts pays for them.
+struct SubBossDef {
+    const char* name;
+    SubBossRound rounds[kMaxSubBossRounds] = {};
+
+    // The two readers of `rounds` (combat_factory's subAreaBoss, and the width gate) both
+    // want the list already reconciled with the empty-means-one rule, so it is resolved
+    // HERE once rather than re-derived — a row that spells no rounds and a row that spells
+    // one at rung 0 are the same fight, and nothing downstream should be able to tell them
+    // apart.
+    int roundCount() const {
+        int n = 0;
+        while (n < kMaxSubBossRounds && rounds[n].name) ++n;
+        return n > 0 ? n : 1;
+    }
+    SubBossRound round(int i) const {
+        if (i < 0 || i >= kMaxSubBossRounds || !rounds[i].name) return {name, 0};
+        return rounds[i];
+    }
+};
+
 struct AreaDef {
     const char* id;    // stable id, e.g. "citrus_circuit" (matches the folder name)
     const char* name;  // display name, e.g. "CITRUS CIRCUIT"
@@ -100,7 +141,7 @@ struct AreaDef {
     // tools/check_orphan_assets.py counts a row that names an asset as its consumer.
     const char* icon;
     const char* subAreas[kSubAreasPerArea];      // 5 named stretches
-    const char* subBossNames[kSubAreasPerArea];  // 5 sub-area boss names (sub 4 = signature)
+    SubBossDef subBosses[kSubAreasPerArea];      // 5 sub-area bosses (sub 4 = signature)
     const char* areaBossName;                    // the area gauntlet's overall banner
     // The signature (sub 4) boss's extra rider move, debuting the area's THREAT that
     // its own loot table's counter-mod answers (e.g. Pirate Bayou's system_hang stun,

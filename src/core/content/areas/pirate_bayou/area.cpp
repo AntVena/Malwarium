@@ -50,8 +50,11 @@ const AreaDef kAreaPirateBayou = {
     "ICON_SECTOR_PIRATE_BAYOU",
     {"LEECH LANDING", "TORRENT SWAMP", "THE CRACKED KEYS", "WAREZ MARSH",
      "BOOTY CACHE"},
-    {"TORRENT TICK", "SEED SERPENT", "KEYGEN KRAKEN", "WAREZ WIGHT",
-     "DOUBLOON DAEMON"},
+    {{"NETBUS NIPPER"},
+     {"SUPRNOVA SERPENT"},
+     {"RAZOR KRAKEN"},
+     {"WIGHT OF DRINKORDIE"},
+     {"THE SUNKEN SEVENTH"}},
     "CAP'N CRACKER",
     /*apexThreatMoveId=*/"system_hang",  // the signature boss's STUN rider
     {"PIER-TO-PEER", kShopListings, arrLen(kShopListings)},
