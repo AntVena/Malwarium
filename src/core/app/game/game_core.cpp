@@ -256,7 +256,8 @@ bool Game::tick(uint32_t nowMs) {
     // stepping those on the shared 4fps heartbeat would take ten seconds to lap. EXACTLY
     // one of the two held — both is the drop chord, which has already fired and must not
     // also scrub the cursor out from under it.
-    if (nav_ == Nav::Cryptogram && cryptogram_.running() && (aHeld_ != cHeld_)) {
+    if (nav_ == Nav::Cryptogram && cryptogram_.running() && (aHeld_ != cHeld_) &&
+        !gameBriefOpen_) {
         const uint32_t downMs = aHeld_ ? aDownMs_ : cDownMs_;
         if (nowMs - downMs >= kCryptogramRepeatDelayMs &&
             nowMs - cryptoRepeatLastMs_ >= kCryptogramRepeatMs) {
@@ -273,7 +274,7 @@ bool Game::tick(uint32_t nowMs) {
     // sprites do: the shared 4fps heartbeat is legible for a progress bar and far too
     // slow for a timing test. Only runs while the board is up, and only while the run is
     // still live — a finished board holds still.
-    if (nav_ == Nav::Stacker) {
+    if (nav_ == Nav::Stacker && !gameBriefOpen_) {
         if (nowMs - lastStackerStepMs_ >=
             static_cast<uint32_t>(arcadeStepMs(kStackerStepMs))) {
             lastStackerStepMs_ = nowMs;
@@ -288,7 +289,7 @@ bool Game::tick(uint32_t nowMs) {
     // more so: it is the one screen where standing still is never an option, so the beat
     // it walks to IS the difficulty. Only while the run is live — a crashed or finished
     // board holds still under the verdict.
-    if (nav_ == Nav::Isolation) {
+    if (nav_ == Nav::Isolation && !gameBriefOpen_) {
         if (nowMs - lastIsolationStepMs_ >=
             static_cast<uint32_t>(arcadeStepMs(kIsolationStepMs))) {
             lastIsolationStepMs_ = nowMs;
@@ -604,8 +605,17 @@ void Game::onButton(const ButtonEvent& ev) {
         // control overlay uses.
         else if (nav_ == Nav::Tourney) onTourney(ev);
         // THE DECRYPTOGRAM: A and C are the cursor's two directions, so the chord is
-        // what hands a taken letter back to the pool. Nothing else claims it here.
+        // already spent on handing a taken letter back to the pool. onCryptogram sorts
+        // the two meanings out itself (a letter held drops it; nothing held opens the
+        // RULES page instead), since only it knows which stage the board is in.
         else if (nav_ == Nav::Cryptogram) onCryptogram(ev);
+        // The other four game engines have nothing else living on the chord, so it is
+        // always the RULES page here — open it, or close it if it's already up. The
+        // three egg-hatch entrants (Decrypt/Clutch/Isolation land on their Nav straight
+        // out of layEgg with no menu stop) have no other route to this at all.
+        else if (nav_ == Nav::Stacker || nav_ == Nav::Isolation ||
+                 nav_ == Nav::Decryption || nav_ == Nav::ModalEggPick)
+            toggleGameBrief();
         // Hacker face: A+C at the top level flips PET ↔ HACKER. On the HACKER
         // face this takes priority so the player can ALWAYS return to the pet — nothing
         // else claims the chord there (you can't explore/combat/hatch from it).
@@ -782,6 +792,9 @@ void Game::onButton(const ButtonEvent& ev) {
             // Clutch Pick: A and C AIM at the first/second half of the clutch (left/top
             // vs right/bottom, whichever way this round cuts) and B commits that half —
             // so C is not "back" here either, and the modal can't be cancelled out of.
+            // The RULES overlay (opened on the chord, above) is the one exception: while
+            // it's up, B/C read as its scroll/close instead, same as every other engine.
+            if (onGameBriefInput(ev)) break;
             if (ev.button == Button::A) eggPickAim(false);
             else if (ev.button == Button::C) eggPickAim(true);
             else if (ev.button == Button::B) eggPickCommit();

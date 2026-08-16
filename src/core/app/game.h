@@ -346,6 +346,8 @@ public:
     const TourneyFighter& tourneyOpponent() const { return tourneyOpponent_; }
     TourneyView tourneyView() const { return tourneyView_; }
     int tourneyCursor() const { return tourneyCursor_; }
+    // Is a game engine's mid-play RULES overlay open right now? (game_arcade.cpp)
+    bool gameBriefOpen() const { return gameBriefOpen_; }
     // The two readers' row models (core/ui/prose_page.h), built on demand — both walk
     // the content tables, so they are called on a press or a repaint, never held.
     // Public so a gate can assert what a sheet SAYS instead of reading it out of pixels.
@@ -1777,6 +1779,30 @@ private:
     void drawArcade(Framebuffer& fb) const;         // L2 cabinet list
     void drawArcadeDetail(Framebuffer& fb) const;   // L3 the focused cabinet
     void drawArcadeOutcome(Framebuffer& fb) const;  // the payout screen
+
+    // --- Mid-play RULES overlay (ROCK THE DOCK's BRIEFING, generalised) ----------
+    // A+C on any of the five game engines (Stacker/Isolation/Decryption/Cryptogram/
+    // Clutch) opens a paged explainer of THAT engine's own rules and pauses it
+    // underneath — the only route to one for the three that launch straight out of an
+    // egg with no menu stop along the way at all (startHatchGame: Decrypt/Clutch/
+    // Isolation land on their Nav directly). One flag rather than five: nav_ can only
+    // be one of the five at a time, so nothing can ever have two open together, and
+    // the content it reads is keyed by ArcadeGameKind rather than by cabinet row so it
+    // reads the same whether the engine was reached from its cabinet, MAINT's Stacker
+    // variant, or a hatch.
+    bool gameBriefOpen_ = false;
+    int gameBriefScroll_ = 0;
+    bool gameBriefAvailable() const;         // is nav_ one of the five?
+    ArcadeGameKind gameBriefKind() const;    // which one, as the content row's key
+    std::vector<ProseRow> gameBriefRows() const;
+    void openGameBrief();
+    void closeGameBrief();
+    void toggleGameBrief();   // the chord's job when it isn't Cryptogram's drop-letter
+    // Handles B (scroll) / C or the chord (close) while the overlay is open and
+    // returns true, so the caller returns immediately rather than also feeding the
+    // same press to the game underneath. Returns false when the overlay isn't open.
+    bool onGameBriefInput(const ButtonEvent& ev);
+    void drawGameBrief(Framebuffer& fb) const;
 
     // MODS: the LOADOUT hub (L2) and the mod-slot half it fronts.
     void onLoadoutHub(const ButtonEvent& ev);

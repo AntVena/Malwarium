@@ -129,11 +129,13 @@ void Game::startCryptogram(int quote, int extraReveals) {
     // and asserted there instead — a board that refused to load at runtime would strand
     // a spent ticket with nothing to show for it.
     cryptogram_.reset(quotes()[quote].text, extraReveals);
+    closeGameBrief();   // a stale flag from a previous board must not open paused
     nav_ = Nav::Cryptogram;
     dirty_ = true;
 }
 
 void Game::onCryptogram(const ButtonEvent& ev) {
+    if (onGameBriefInput(ev)) return;
     if (!cryptogram_.running()) {
         // Parked on the verdict, which the settle has already banked. B leaves; C is
         // DISABLED, like every other board — the ticket is spent either way.
@@ -148,7 +150,17 @@ void Game::onCryptogram(const ButtonEvent& ev) {
     // That spends both of the buttons a cancel would want, so A+C hands the letter back
     // — the chord, which this board is routed for. C is therefore not "cancel" here and
     // there is no way off a board at all, which is the deal every ticket is bought on.
-    if (ev.chordAC) { cryptogram_.dropLetter(); dirty_ = true; return; }
+    //
+    // dropLetter() is inert with nothing held (PickLetter), which is exactly when the
+    // chord is free to mean something else instead: the RULES page. A player mid-place
+    // (PickCell) still gets the drop, never the page, so the chord can never strand a
+    // held letter behind an overlay.
+    if (ev.chordAC) {
+        if (cryptogram_.stage() == Cryptogram::Stage::PickCell) cryptogram_.dropLetter();
+        else openGameBrief();
+        dirty_ = true;
+        return;
+    }
     if (ev.button == Button::A) {
         cryptogram_.cycle();
         aHeld_ = true;              // ...and holding it repeats (tick, kCryptogramRepeatMs)
@@ -251,6 +263,7 @@ const char* Game::cryptogramPrizeLabel() const {
 }
 
 void Game::drawCryptogram(Framebuffer& fb) const {
+    if (gameBriefOpen_) { drawGameBrief(fb); return; }
     const QuoteDef* q = (cryptogramQuote_ >= 0 && cryptogramQuote_ < quoteCount())
                             ? &quotes()[cryptogramQuote_] : nullptr;
     drawCryptogramBoard(fb, cryptogram_, q ? q->attribution : "",

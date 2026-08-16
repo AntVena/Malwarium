@@ -103,6 +103,7 @@ void Game::startEggPick(int rounds) {
     eggPickSecondHalf_ = false;
     eggPickResolved_ = false;
     eggPickWon_ = false;
+    closeGameBrief();   // a stale flag from a previous clutch must not open paused
     nav_ = Nav::ModalEggPick;
     dirty_ = true;
 }
@@ -238,6 +239,7 @@ void drawClutchCrop(Framebuffer& fb, int srcX0, int srcY0, int srcW, int srcH,
 }  // namespace
 
 void Game::drawEggPick(Framebuffer& fb) const {
+    if (gameBriefOpen_) { drawGameBrief(fb); return; }
     fb.clear(palColor(Pal::PAPER));
 
     const char* title = "SPOT THE PHISH";

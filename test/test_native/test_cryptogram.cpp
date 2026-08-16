@@ -256,15 +256,19 @@ void test_cryptogram_cursors_run_both_ways() {
 
 // A+C hands the letter back; nothing leaves the board. A ticket is spent the moment it
 // is cashed, so an escape hatch here would be a free retry — and with A and C spent on
-// the two cursor directions, the chord is the only button left to be one.
+// the two cursor directions, the chord is the only button left to be one. With nothing
+// held, that same chord is free to mean something else instead: the RULES overlay.
 void test_cryptogram_chord_drops_the_letter_but_never_leaves() {
     Game g{StartMode::Hatched};
     cashADecryptogram(g);
     CHECK(g.nav() == Game::Nav::Cryptogram);
     CHECK(g.cryptogram().stage() == Cryptogram::Stage::PickLetter);
-    g.onButton(chordAC());                        // inert at the pool, and never an exit
+    g.onButton(chordAC());        // nothing held: opens RULES, not an exit
     CHECK(g.nav() == Game::Nav::Cryptogram);
     CHECK(g.cryptogram().stage() == Cryptogram::Stage::PickLetter);
+    CHECK(g.gameBriefOpen());
+    g.onButton(chordAC());        // closes it, back to the board
+    CHECK(!g.gameBriefOpen());
 
     g.onButton(press(Button::B));                 // take a letter
     CHECK(g.cryptogram().stage() == Cryptogram::Stage::PickCell);

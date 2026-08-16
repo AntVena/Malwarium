@@ -58,11 +58,13 @@ void Game::startIsolation(int goalDots) {
     isolation_.reset(rng_, goalDots);
     isolationBanked_ = 0;
     lastIsolationStepMs_ = nowMs_;
+    closeGameBrief();   // a stale flag from a previous run must not open paused
     nav_ = Nav::Isolation;
     dirty_ = true;
 }
 
 void Game::onIsolation(const ButtonEvent& ev) {
+    if (onGameBriefInput(ev)) return;
     if (!isolation_.running()) {
         // Parked on the result. B banks and leaves; C is DISABLED, like every other
         // hatch screen — there is no pet to go back to, only an egg to get on with.
@@ -108,6 +110,7 @@ void Game::finishIsolation() {
 // --- Render ----------------------------------------------------------------
 
 void Game::drawIsolation(Framebuffer& fb) const {
+    if (gameBriefOpen_) { drawGameBrief(fb); return; }
     fb.clear(palColor(Pal::PAPER));
 
     const char* title = "ISOLATION PROTOCOL";

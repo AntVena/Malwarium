@@ -23,11 +23,13 @@ void Game::startDecryption(bool allowDuplicates, bool easyHints) {
     rng_ = rng_ * 1664525u + 1013904223u;   // the shared LCG draws the key
     decryption_.reset(rng_, allowDuplicates);
     decryptionEasy_ = easyHints;
+    closeGameBrief();   // a stale flag from a previous board must not open paused
     nav_ = Nav::Decryption;
     dirty_ = true;
 }
 
 void Game::onDecryption(const ButtonEvent& ev) {
+    if (onGameBriefInput(ev)) return;
     if (!decryption_.running()) {
         // Parked on the verdict. B banks and leaves; C is DISABLED, like every other
         // hatch screen — there is no pet to go back to, only an egg to get on with.
@@ -65,6 +67,7 @@ void Game::finishDecryption() {
 }
 
 void Game::drawDecryption(Framebuffer& fb) const {
+    if (gameBriefOpen_) { drawGameBrief(fb); return; }
     drawDiskDecryption(fb, decryption_, decryptionEasy_, arcadeRun_, beat_);
 }
 

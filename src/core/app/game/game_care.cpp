@@ -81,10 +81,12 @@ void Game::beginStackerBoard() {
     // Bits and takes the clean, the arcade charges nothing and takes the score.
     stacker_.reset();
     lastStackerStepMs_ = nowMs_;
+    closeGameBrief();   // a stale flag from a previous board must not open paused
     nav_ = Nav::Stacker;
 }
 
 void Game::onStacker(const ButtonEvent& ev) {
+    if (onGameBriefInput(ev)) return;
     if (!stacker_.running()) {                  // parked on the result: any press moves on
         finishStacker();
         return;

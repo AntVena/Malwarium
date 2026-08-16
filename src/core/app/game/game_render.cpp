@@ -791,6 +791,7 @@ void Game::drawBulkYieldScreen(Framebuffer& fb) const {
 }
 
 void Game::drawStacker(Framebuffer& fb) const {
+    if (gameBriefOpen_) { drawGameBrief(fb); return; }
     drawStackerBoard(fb, stacker_, model_.fragmentation(), arcadeRun_);
 }
 

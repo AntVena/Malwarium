@@ -1,9 +1,13 @@
 #include "core/app/game.h"
 
+#include <cstdio>
+
 #include "tunables.h"
 #include "core/content/content_arcade.h"
 #include "core/content/content_quotes.h"
 #include "core/ui/arcade_screen.h"
+#include "core/ui/prose_page.h"
+#include "core/ui/widgets.h"
 
 // game_arcade.cpp — GAMES: the arcade cabinets.
 //
@@ -20,6 +24,97 @@
 // The payout is deliberately mostly flat — see kArcadePlayBits in tunables.h for why.
 
 namespace mal {
+
+namespace {
+// Where the RULES page's prose starts, under drawHeaderBand's title + rule — the same
+// offset ROCK THE DOCK's own BRIEFING opens its reader at (kTourneyReaderTop,
+// game_tourney.cpp), since both sit under the identical band.
+constexpr int kGameBriefReaderTop = 46;
+}  // namespace
+
+// --- Mid-play RULES overlay --------------------------------------------------
+
+bool Game::gameBriefAvailable() const {
+    switch (nav_) {
+        case Nav::Stacker:
+        case Nav::Isolation:
+        case Nav::Decryption:
+        case Nav::Cryptogram:
+        case Nav::ModalEggPick:
+            return true;
+        default:
+            return false;
+    }
+}
+
+ArcadeGameKind Game::gameBriefKind() const {
+    switch (nav_) {
+        case Nav::Isolation:    return ArcadeGameKind::Isolation;
+        case Nav::Decryption:   return ArcadeGameKind::Decryption;
+        case Nav::Cryptogram:   return ArcadeGameKind::Cryptogram;
+        case Nav::ModalEggPick: return ArcadeGameKind::Clutch;
+        default:                return ArcadeGameKind::Stacker;
+    }
+}
+
+std::vector<ProseRow> Game::gameBriefRows() const {
+    std::vector<ProseRow> out;
+    const ArcadeGameDef* def = arcadeGameByKind(gameBriefKind());
+    if (!def) return out;
+    out.reserve(static_cast<size_t>(def->briefCount));
+    for (int i = 0; i < def->briefCount; ++i) {
+        ProseRow r;
+        r.label = def->brief[i].heading;
+        std::snprintf(r.body.buf, sizeof(r.body.buf), "%s", def->brief[i].text);
+        out.push_back(r);
+    }
+    return out;
+}
+
+void Game::openGameBrief() {
+    if (!gameBriefAvailable()) return;
+    gameBriefOpen_ = true;
+    gameBriefScroll_ = 0;
+    dirty_ = true;
+}
+
+void Game::closeGameBrief() {
+    gameBriefOpen_ = false;
+    gameBriefScroll_ = 0;
+    dirty_ = true;
+}
+
+void Game::toggleGameBrief() {
+    if (gameBriefOpen_) closeGameBrief();
+    else openGameBrief();
+}
+
+// Called first by every one of the five engines' input handlers. Consumes B (scroll)
+// and C (close) while the overlay is up and reports so via the return, so the caller
+// returns immediately instead of also feeding the same press to the paused game
+// underneath; reports false the moment the overlay isn't open, so a normal press falls
+// through untouched.
+bool Game::onGameBriefInput(const ButtonEvent& ev) {
+    if (!gameBriefOpen_) return false;
+    const std::vector<ProseRow> rows = gameBriefRows();
+    const int total = static_cast<int>(rows.size());
+    if (ev.button == Button::B && total > 0) {
+        const int shown = proseRowsFitting(rows, gameBriefScroll_, kGameBriefReaderTop);
+        gameBriefScroll_ += shown;
+        if (gameBriefScroll_ >= total) gameBriefScroll_ = 0;
+        dirty_ = true;
+    } else if (ev.button == Button::C || ev.chordAC) {
+        closeGameBrief();
+    }
+    return true;
+}
+
+void Game::drawGameBrief(Framebuffer& fb) const {
+    const ArcadeGameDef* def = arcadeGameByKind(gameBriefKind());
+    drawHeaderBand(fb, def ? def->displayName : "RULES", "RULES");
+    drawProseRows(fb, gameBriefRows(), gameBriefScroll_, kGameBriefReaderTop, beat_,
+                  "B MORE   C BACK");
+}
 
 // --- The cabinet list (L2) -------------------------------------------------
 //

@@ -66,6 +66,20 @@ inline constexpr int kArcadeDifficulties = 3;
 // EASY / MEDIUM / HARD. The word is the grayscale-safe channel for the setting.
 const char* arcadeDifficultyName(ArcadeDifficulty d);
 
+// One section of a game's RULES page — the paged explainer A+C opens mid-play,
+// pausing the engine underneath it (game.h's gameBriefOpen_). A heading and its
+// prose, the same NAME + PROSE shape ROCK THE DOCK's own BRIEFING uses
+// (content_tournament.h's TourneyBriefDef), so it flows through the same reader
+// (core/ui/prose_page.h) with no layout of its own.
+//
+// Kept SHORT on purpose, same as the arena's: a section that runs past half the panel
+// leaves the rest of the screen empty rather than seating a second one. Two or three
+// short sections read as a rules card; a wall with a scrollbar does not.
+struct GameBriefDef {
+    const char* heading;
+    const char* text;
+};
+
 struct ArcadeGameDef {
     const char* id;            // save + achievement key, e.g. "stacker"
     const char* displayName;   // the name on the cabinet
@@ -75,6 +89,8 @@ struct ArcadeGameDef {
     ArcadeGameKind kind;
     ArcadeScoring scoring;
     ArcadeUnlock unlock = ArcadeUnlock::Always;   // what has to be true to see the row
+    const GameBriefDef* brief = nullptr;   // this engine's RULES page, in reading order
+    int briefCount = 0;
 };
 
 // Compile-time ceiling on the roster, so the per-cabinet save tallies can be a plain
@@ -87,5 +103,9 @@ int arcadeGameCount();
 // Row index for `id`, or -1 — how a saved play tally finds its cabinet again after
 // the rows have been reordered.
 int arcadeGameIndexById(const char* id);
+// The row for `kind`, or nullptr. Keyed by the ENGINE rather than by cabinet row,
+// because Stacker and Isolation are also reached from MAINT and an egg's hatch with no
+// arcade row in play at all — a RULES page opened from either still needs a row.
+const ArcadeGameDef* arcadeGameByKind(ArcadeGameKind kind);
 
 }  // namespace mal
