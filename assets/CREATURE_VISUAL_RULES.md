@@ -242,16 +242,6 @@ perfectly good reason to drop the rule entirely.
   Cryptoad re-sculpt. Concepts are right; execution must hit the Paypup/Malbear bar.
 - **Engine cell:** 56×48 logical (Script), 96×64 (Daemon e.g. Cryptoad). ×1.75 to panel, no
   downscaling.
-- **The combat stage is the tightest place a creature is ever shown, and it holds TWO.** Both
-  fighters are seated by their drawn band — not their cell — either side of a clash lane
-  (`combatStage`, `src/core/ui/combat_screen.h`), so padding inside a cell costs nothing and
-  drawn width costs everything. There are 224 active px for the pair: about **100 px each**,
-  which is ~57 logical, before a creature starts cropping at the outer screen edge. A Daemon
-  whose art fills all 96 columns therefore loses its outer end against another one — and since
-  every creature is drawn head-out over a body that reads *away* from it, the fighter on the
-  right loses the end that carries its face. **Leave the outer flank of a wide Daemon cheap**:
-  spend the cell on the head and the mass under it, and let a tail, a fin or a trailing cable be
-  what runs off the edge.
 
 ---
 

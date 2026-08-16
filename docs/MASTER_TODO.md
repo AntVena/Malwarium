@@ -60,6 +60,22 @@ reusing an existing one would put two rows under one picture. Likely rows are "t
 `content_achievements.h`; `game_tourney.cpp`'s `awardTourneyPurse`; `tools/gen_pedia_data.py`. | S |
 Sourcing the icon before the code, same as every other 'Pedia-visible row. |
 
+**The combat stage has no camera, so two wide fighters cannot both be shown whole.** Seating is
+static: `combatStage` reserves the clash lane, seats each fighter's drawn band against one edge of
+it, and crops whichever one is over half the room. That is fine until both are — the widest Daemon
+art draws 96 logical columns, and at ×1.75 two of those want 336 of the 224 active px there are, so
+each loses its outer end. Since every creature is drawn head-out over a body reading away from it,
+the crop costs the RIGHT-hand fighter its face. **The fix belongs to the stage, not the art** — the
+cell budget is the cell budget, and creature design does not bend to fit a fight. Two approaches,
+neither built: PAN the view so it holds the attacker and the point of impact rather than both seats
+at once, or ZOOM the stage out for a bout that needs it. Panning changes no scale and is the safer
+of the two; zooming runs into the ×1.75 hard constraint in `CONTRIBUTING.md`, so it needs that
+question answered first — which ratios are allowed on the stage, and whether a creature may be
+drawn at a size the rest of the device never shows it at. |
+`combatStage` + `drawFighter` (`combat_screen.cpp`); the widths are `SpriteData::contentX0/X1`. |
+M | A pan needs something to follow, and the fight already publishes it: `lastWasStrike` plus
+`lastByPlayer` say who swung at whom, on the same beat the strike mark reads. |
+
 **A crew cannot be DISCOVERED.** `QuoteReward::Kind` has room for it and it is one of the prizes
 the board was designed to hand over ("you find a crew to join"), but crews are ungated today —
 every row in `content_crews.cpp` is enlistable from the first boot, so there is nothing for a
@@ -318,18 +334,6 @@ high→low value:
 - **Optional polish:** `UI_RANK_BADGE`, `ICON_EVENT_WIFI`, `UI_DIFFICULTY_PIPS`, a boss-tell marker
   on the charge bar, a `UI_TITLE_TAG` badge, richer per-sub-area `BG_SECTOR_*` backdrops, a
   `SPR_PET_*` attack-pose frame.
-- **Five Daemon sheets are too wide to show whole against each other.** The combat stage seats
-  both fighters by their DRAWN band either side of a clash lane (`combatStage`,
-  `src/core/ui/combat_screen.h`), which leaves about 56 logical px each once both are oversized;
-  a fighter over that runs its outer end off the screen edge. Drawn width, not cell width:
-  `SPR_PET_BAITRACUDA` and `_BREECHEETAH` use all 96 columns, `_PWNTHER` 86, `_SPAMWHALE` 84,
-  `_GENERIC_DAEMON` 73. Against anything smaller they are fine — the seating gives the slack to
-  whoever needs it — so this only bites in a Daemon-vs-Daemon bout, and it costs the RIGHT-hand
-  fighter its head, since every creature is drawn head-out over a body that reads away from it.
-  Either a redraw pulls the mass in (the brief is under *Engine cell* in
-  `assets/CREATURE_VISUAL_RULES.md` §7) or the stage learns to mirror the right seat, which
-  trades the crop for a top-right key light on one side of every fight. Diff **S** for art, **M**
-  for the mirror. Decide which before the next wide Daemon is drawn.
 - **Two of the four lines have no `ICON_LINE_*`.** Ransomware and Worm are drawn; Phishing and
   Trojan are not, so their 'Pedia sections render text-only where the other two carry a glyph
   (`gen_pedia_data.py` warns per missing line). One 20×20 each, same slot as the two that exist.
