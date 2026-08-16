@@ -527,6 +527,14 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     // that stops at v50 still gets the recipes it can name.
     w.u16(static_cast<uint16_t>(d.recipeOwned.size()));
     for (uint8_t b : d.recipeOwned) w.u8(b);
+
+    // v53: THE COMPO's run in play — the seed the whole bracket is derived from, plus
+    // the three bytes of state that seed cannot express (who is still standing, which
+    // round, and the verdict of a finished run the operator has yet to dismiss).
+    w.u32(d.tourneySeed);
+    w.u8(d.tourneyAlive);
+    w.u8(d.tourneyRound);
+    w.u8(d.tourneyPhase);
 }
 
 std::vector<uint8_t> serializeSave(const SaveData& d) {
@@ -1074,6 +1082,16 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
     if (version >= 51) {
         const uint16_t nRecipe = r.u16();
         for (uint16_t i = 0; i < nRecipe && r.ok; ++i) d.recipeOwned.push_back(r.u8());
+    }
+
+    // v53 tail: THE COMPO's run. Absent in a v1..v52 blob → a zero seed, which is
+    // exactly "no bracket in play" — no migration, because a run that never existed
+    // cannot be reconstructed from anything else in the save.
+    if (version >= 53) {
+        d.tourneySeed = r.u32();
+        d.tourneyAlive = r.u8();
+        d.tourneyRound = r.u8();
+        d.tourneyPhase = r.u8();
     }
 
     if (!r.ok) { out = SaveData{}; return false; }  // truncated -> empty

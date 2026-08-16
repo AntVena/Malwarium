@@ -339,6 +339,18 @@ int g_failures = 0;
     RUN(test_pvp_link_screen_verdict_grayscale) \
     RUN(test_pvp_guest_sees_its_own_pet_on_the_bottom_gauge) \
     RUN(test_combat_seats_local_pet_on_the_left) \
+    /* THE COMPO — the operator bracket in The Pirate Bayou */ \
+    RUN(test_tourney_handles_fit_an_operator_tag) \
+    RUN(test_tourney_entrants_are_derived_from_the_seed) \
+    RUN(test_tourney_entrants_are_legal_petware) \
+    RUN(test_a_fighter_can_fire_its_own_exploit) \
+    RUN(test_tourney_headless_matches_terminate_and_repeat) \
+    RUN(test_tourney_rounds_halve_the_field) \
+    RUN(test_tourney_run_from_the_expl_row) \
+    RUN(test_tourney_screen_grayscale) \
+    RUN(test_tourney_screen_copy_fits_its_panel) \
+    RUN(test_tourney_screen_outlives_the_menu_idle_timer) \
+    RUN(test_tourney_run_survives_a_reboot) \
     RUN(test_combat_ransom_pool_grayscale)  \
     RUN(test_save_v37_link_roundtrip)             \
     RUN(test_save_v38_net_slot_is_reserved)              \

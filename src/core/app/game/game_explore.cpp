@@ -73,15 +73,18 @@ bool Game::explRowLandable(int row) const {
     flattenSubFlags(cleared, boss);
     const ExplRowState st = explRowState(row, sectorCleared_, cleared, boss,
                                          exploreActive_ ? exploreSector_ : -1,
-                                         exploreActive_ ? exploreSub_ : -1);
+                                         exploreActive_ ? exploreSub_ : -1,
+                                         tourneyRunning());
     if (explNavArea_ < 0) {                          // TOP level
-        if (explRowIsDeepWeb(row)) return explRowSelectable(st);
+        // The two special rows (the dive, the arena) act directly rather than drilling,
+        // so for them "landable" is just "selectable".
+        if (explRowIsSpecial(row)) return explRowSelectable(st);
         // Area headers only, and only for OPEN areas (an open area is enterable even when
         // its header isn't a boss trigger yet — AreaProgress/BossReady/Cleared all enter).
         return explRowSub(row) < 0 && st != ExplRowState::AreaLocked;
     }
     // INSIDE an area: only that area's own selectable rows (its subs + boss-ready header).
-    if (explRowIsDeepWeb(row) || explRowArea(row) != explNavArea_) return false;
+    if (explRowIsSpecial(row) || explRowArea(row) != explNavArea_) return false;
     return explRowSelectable(st);
 }
 
@@ -115,7 +118,8 @@ void Game::onExplList(const ButtonEvent& ev) {
     const int exSub = exploreActive_ ? exploreSub_ : -1;
     const int n = explRowCount();
     auto stateOf = [&](int r) {
-        return explRowState(r, sectorCleared_, cleared, boss, exSec, exSub);
+        return explRowState(r, sectorCleared_, cleared, boss, exSec, exSub,
+                            tourneyRunning());
     };
     if (ev.button == Button::A) {
         // Advance to the next row LANDABLE at the current level, wrapping.
@@ -126,8 +130,9 @@ void Game::onExplList(const ButtonEvent& ev) {
     } else if (ev.button == Button::B) {
         if (listRow_ < 0 || listRow_ >= n || !explRowLandable(listRow_)) return;
         // TOP level, on an area header → DRILL IN: drop to that area's first landable row
-        // (its boss-ready header, else its first open/farmable sub). DeepWeb acts directly.
-        if (explNavArea_ < 0 && !explRowIsDeepWeb(listRow_)) {
+        // (its boss-ready header, else its first open/farmable sub). The special rows
+        // (the dive, the arena) have nothing to drill into and act directly.
+        if (explNavArea_ < 0 && !explRowIsSpecial(listRow_)) {
             explNavArea_ = explRowArea(listRow_);
             for (int r = 0; r < n; ++r)
                 if (explRowLandable(r)) { listRow_ = r; break; }
@@ -142,6 +147,8 @@ void Game::onExplList(const ButtonEvent& ev) {
             case ExplRowState::SubBossReady:  startSubAreaBoss(area, sub); break;
             case ExplRowState::DeepWebOpen:                     // endless zone
             case ExplRowState::DeepWebDiving: startDeepWebDive(); break;
+            case ExplRowState::TourneyOpen:                     // the operator bracket
+            case ExplRowState::TourneyRunning: openTourney(); break;
             default:                          startExplore(area, sub); break;  // arm/re-arm
         }
     } else if (ev.button == Button::C) {

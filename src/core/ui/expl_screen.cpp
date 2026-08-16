@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <cstddef>
 
+#include "core/content/content_tournament.h"
 #include "core/content/registry.h"
 #include "core/render/canvas.h"
 #include "core/render/font.h"
@@ -90,7 +91,16 @@ int clearedSubCount(const bool* subCleared, int area) {
 
 ExplRowState explRowState(int row, const bool* areaCleared, const bool* subCleared,
                           const bool* subBossUnlocked, int exploringSector,
-                          int exploringSub) {
+                          int exploringSub, bool tourneyRunning) {
+    if (explRowIsTourney(row)) {                          // THE COMPO, the arena
+        // Opened by REACHING its water rather than by clearing it: the arena is held in
+        // The Pirate Bayou, and arriving there is the invitation. That is the same
+        // linear gate every area answers to, asked of the arena's own rung, so the
+        // Compo needs no unlock flag of its own.
+        if (!explSectorOpen(kTourneyAreaIndex, areaCleared))
+            return ExplRowState::TourneyLocked;
+        return tourneyRunning ? ExplRowState::TourneyRunning : ExplRowState::TourneyOpen;
+    }
     if (explRowIsDeepWeb(row)) {                          // the terminal zone
         // Unlocked only by clearing EVERY real area ("beat the exploration game").
         bool allCleared = true;
@@ -141,6 +151,8 @@ bool explRowSelectable(ExplRowState s) {
         case ExplRowState::SubCleared:                    // re-arm to FARM
         case ExplRowState::DeepWebOpen:                   // arm the endless dive
         case ExplRowState::DeepWebDiving:                 // re-arm the running dive
+        case ExplRowState::TourneyOpen:                   // draw a fresh bracket
+        case ExplRowState::TourneyRunning:                // resume the one in play
             return true;
         default:
             return false;                                 // headers / locked
@@ -165,6 +177,9 @@ RowTag rowTag(ExplRowState s) {
         case ExplRowState::DeepWebLocked:return {"LOCKED",  palColor(Pal::INK_DIM)};
         case ExplRowState::DeepWebOpen:  return {"> DIVE",  palColor(Pal::ACCENT)};
         case ExplRowState::DeepWebDiving:return {"DIVING",  palColor(Pal::ACCENT)};
+        case ExplRowState::TourneyLocked:return {"LOCKED",  palColor(Pal::INK_DIM)};
+        case ExplRowState::TourneyOpen:  return {"> ENTER", palColor(Pal::ACCENT)};
+        case ExplRowState::TourneyRunning:return {"IN PLAY", palColor(Pal::ACCENT)};
     }
     return {"", palColor(Pal::INK_DIM)};
 }
@@ -181,8 +196,8 @@ constexpr int kRowMax = 30;                          // two lines + breathing ro
 constexpr int kRowMin = 14;                          // one line, the packed floor
 // The widest a level gets: the top level is DeepWeb + every area, inside an area it is
 // the boss row + every sub-area. Both grow from area_defs.h, so neither is hand-typed.
-constexpr int kLevelRowsMax =
-    1 + (kExplSectors > kExplSubAreas ? kExplSectors : kExplSubAreas);
+constexpr int kLevelRowsMax = kExplLeadRows + kExplTailRows +
+    (kExplSectors > kExplSubAreas ? kExplSectors : kExplSubAreas);
 
 // The 20x20 glyph column, for a zone the player can actually see. A zone whose
 // ICON_SECTOR_<AREA_ID> hasn't been drawn yet gets an empty frame rather than nothing,
@@ -257,7 +272,7 @@ void drawExplList(Framebuffer& fb, const ContentRegistry& reg, const ExplListVie
         const int sub = explRowSub(row);
         const ExplRowState st = explRowState(row, v.areaCleared, v.subCleared,
                                              v.subBossUnlocked, v.exploringSector,
-                                             v.exploringSub);
+                                             v.exploringSub, v.tourneyRunning);
         const bool focused = (row == v.cursor);
         const int y = kListTop + (slot - top) * pitch;
         // One line centres in the row; two put the title above the detail line.
@@ -280,7 +295,27 @@ void drawExplList(Framebuffer& fb, const ContentRegistry& reg, const ExplListVie
         Rgb565 titleInk = palColor(Pal::INK);
         RowTag tag = rowTag(st);
 
-        if (explRowIsDeepWeb(row)) {
+        if (explRowIsTourney(row)) {
+            // The arena, under the ladder. It borrows its water's sector glyph rather
+            // than carrying one of its own — The Compo IS held in The Pirate Bayou, so
+            // the picture is the true one and no asset exists only to label a menu row.
+            // The divider goes ABOVE this row (the dive's goes below its own), so each
+            // special row is fenced off from the ladder it sits beside.
+            const bool locked = (st == ExplRowState::TourneyLocked);
+            fb.fillRect(8, y, kActiveW - 16, 1, palColor(Pal::TRACK));
+            if (!locked)
+                drawIconSlot(fb, sectorIcon(reg, kTourneyAreaIndex), kIconX,
+                             y + (pitch - kRowIcon) / 2, palColor(Pal::INK));
+            title = locked ? "??????" : "THE COMPO";
+            titleInk = locked ? palColor(Pal::INK_DIM) : zoneInk;
+            if (locked)
+                ;                                    // nothing to promise but the row
+            else if (v.tourneyRunning)
+                std::snprintf(detail, sizeof(detail), "ROUND %d - %d LEFT",
+                              v.tourneyRound + 1, v.tourneyAlive);
+            else
+                std::snprintf(detail, sizeof(detail), "8 OPERATORS - ONE BRACKET");
+        } else if (explRowIsDeepWeb(row)) {
             // The terminal zone, top of the list. A thin divider BELOW it sets it apart
             // from the area ladder that follows; its detail line is the pet's own record,
             // which is the only progress an endless zone has.

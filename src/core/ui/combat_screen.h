@@ -42,6 +42,12 @@ struct CombatSides {
     const char* rivalLabel = "ENEMY";   // caption on the opponent's Health row
     const char* localLabel = "YOU";     // caption on the local pet's Health row
     bool localIsEnemySide = false;      // true on a duel guest — flips WIN/LOSE
+    // Whether C still means RUN in this fight. False in the two fights there is no
+    // running from — a linked duel (quitting would desync the other device's copy) and
+    // a Compo match (there is no fleeing a bracket) — where the input side already
+    // makes C inert. The hint band reads this so it stops offering a key that does
+    // nothing: a hint that lies is worse than no hint.
+    bool canRun = true;
 };
 
 // showStats toggles the mid-combat stat panel (B) — a live buff/debuff readout for both

@@ -602,7 +602,8 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
     const char* hint = combat.outcome() != Combat::Outcome::Ongoing
                            ? "B CONTINUE"
                        : combat.overrideOpen() ? "A CYCLE B COMMIT C CANCEL"
-                                               : "A+C CMD B STAT C RUN A SKIP";
+                       : sides.canRun          ? "A+C CMD B STAT C RUN A SKIP"
+                                               : "A+C CMD  B STAT  A SKIP";
     drawHintBand(fb, hint);
 }
 

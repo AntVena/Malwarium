@@ -126,6 +126,22 @@ A/B/C drive it from there. Its rows are Network Ping · Warp · **auto-progress*
 Auto-progress steps the area ladder by itself, positionally, so a finished ladder keeps rotating
 instead of stopping at the frontier. The EXPL globe on the carousel turns while it's armed.
 
+The EXPL list is **bracketed by two rows that are not areas**. Above the ladder, the **DeepWeb
+Dive** — the endless terminal zone, unlocked by clearing every area, where enemies scale to the
+pet and the win streak *is* the depth. Below it, **THE COMPO**, an eight-operator single-
+elimination bracket held in The Pirate Bayou and opened by reaching that water. The Compo is the
+one place the pet fights **petware** rather than malbeasts: each entrant is a creature off the
+hatchable roster at a level up to the arena's cap, carrying a rolled move kit (line-exclusive
+moves stay inside their line), rolled mods it is high enough to equip, the per-level stat points a
+raise would have bought it, and a **crew Exploit it fires on its own** at a rolled Health trigger.
+Both sides get Exploits, which is what a linked duel cannot offer — there the picker would pause
+one device and not the other, so a duel grants none, and the arena is where a full pet-vs-pet
+fight with the meta layer live can actually be played. The matches the operator is not in are
+resolved by stepping the same engine headlessly, so the bracket is climbed rather than sorted, and
+the whole run persists as **one seed plus a survivor bitmask** — every entrant is derived from it.
+Stakes are Safe and nothing pays until the bracket is taken, at which point the title pays once;
+a loss ends the run, which is the only thing at risk.
+
 ---
 
 ## The care model

@@ -322,7 +322,13 @@ constexpr int kSaveTextCap = 28;     // matches EventLog's LogEntry.text
 // prefixed since v48, so a longer one loads into a shorter build's view as "the
 // quotes it knows" and a shorter one reads back as "never played". The version moves
 // anyway, because the header that owns the cap asks for a note when it does.
-constexpr uint16_t kSaveVersion = 52;
+// v53 appends THE COMPO's run state — the arena bracket held in The Pirate Bayou
+// (core/model/tournament.h). Five bytes for a whole eight-operator tournament, because
+// every entrant is DERIVED from the run seed rather than stored: the seed, the
+// survivor bitmask, the round, and the verdict a finished run is still showing. A
+// pre-v53 blob has no tail → a zero seed, which reads as "no run", which is the truth
+// for a device whose ladder had no arena on it.
+constexpr uint16_t kSaveVersion = 53;
 
 // The oldest blob deserialize will read. Raising it is how a device stops carrying
 // migration weight for saves nobody can still be holding — and it is the ONLY thing
@@ -818,6 +824,18 @@ struct SaveData {
     // predate this. Player-level. Pre-v51 → seeded by the loader from that u32, so an
     // upgraded device keeps every recipe it had.
     std::vector<uint8_t> recipeOwned;
+
+    // --- v53: THE COMPO's run in play ----------------------------------------
+    // The whole bracket, because the seed IS the bracket (core/model/tournament.h):
+    // `tourneySeed` 0 means no run, `tourneyAlive` is one bit per original slot,
+    // `tourneyRound` is 0-based, and `tourneyPhase` is Game::TourneyPhase — persisted
+    // so a device put down on a verdict is still showing it after a reboot. Player-
+    // level, not per-pet: the operator entered the draw, and a run outlives a pet the
+    // way the HackerTag and the earned Titles do. Pre-v53 → a zero seed (no run).
+    uint32_t tourneySeed = 0;
+    uint8_t tourneyAlive = 0;
+    uint8_t tourneyRound = 0;
+    uint8_t tourneyPhase = 0;
 
     // v35: this pet's own best-ever DeepWeb Dive depth ------------------------
     // Per-pet (reset on a new egg, like mistakeShieldActive). The active pet's

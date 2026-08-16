@@ -196,18 +196,22 @@ static bool statsFloored(const Combatant& c) {
 void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
                          bool byPlayer, int moveIdx) {
     target.mirrorFired = false;
-    // Malbeast In The Middle (crew Exploit): while it holds, every SELF-BUFF the enemy
-    // casts is copied onto the player as it lands. Answered once here so each of the
-    // four buff sites below costs a single line, and false in every fight that hasn't
-    // armed it. `byPlayer` names who is CASTING (the Trojan hijack passes the flipped
-    // flag with the swapped roles), so this is the enemy side buffing itself and no
-    // other reading.
+    // Malbeast In The Middle (crew Exploit): while it holds, every SELF-BUFF the side
+    // OPPOSITE the holder casts is copied onto the holder as it lands. Answered once
+    // here so each of the four buff sites below costs a single line, and false in every
+    // fight that hasn't armed it. `byPlayer` names who is CASTING (the Trojan hijack
+    // passes the flipped flag with the swapped roles), so `mirror` is always the side
+    // watching this cast happen and no other reading.
+    //
+    // Read off whichever side holds it rather than off player_, because a tournament
+    // opponent arms its own Exploits (Combatant::autoExploit) and an ability that only
+    // ever worked in one seat would be a different ability depending on who drew it.
     //
     // Scoped to self-buffs, not to the steal track: a siphon's gain half is the
-    // player's OWN stat changing hands, and copying that back would hand the pet a
+    // caster's OWN stat changing hands, and copying that back would hand the holder a
     // refund rather than a copy of somebody else's advantage.
-    const bool mitmCopy =
-        !byPlayer && player_.crewExploit.holds(CrewExploitKind::MirrorEnemyBuffs);
+    Combatant& mirror = byPlayer ? enemy_ : player_;
+    const bool mitmCopy = mirror.crewExploit.holds(CrewExploitKind::MirrorEnemyBuffs);
     // Feeding-frenzy combo (Phishing steal-attacks only, mv->stealPowerPct > 0): this
     // actor's OWN run of steal-attack casts made WITH THE BUBBLE UP. A continuing run
     // permanently banks (run length - 1) flat damage into phishComboBonus, applied below
@@ -583,9 +587,9 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
                 gain = mv->stackPowerCap - actor.stackPowerBonus;
             actor.stackPowerBonus += gain;
             // ...and the copy Malbeast In The Middle takes of it. The cap belongs to the
-            // enemy's move and is measured against the enemy's own pile, so it bounds
-            // what there is to copy rather than what the player may hold.
-            if (mitmCopy) player_.stackPowerBonus += gain;
+            // caster's move and is measured against the caster's own pile, so it bounds
+            // what there is to copy rather than what the holder may hold.
+            if (mitmCopy) mirror.stackPowerBonus += gain;
         }
         // STUN rider (Watchdog-pass THREAT): a landed hit freezes the target's next
         // lockTurns turns. The target's Watchdog Timer (mod) CLAMPS it (a hung process
@@ -617,9 +621,9 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
         // guard brace. Every other Defend move keeps the one-shot guard.
         //
         // Each gain is computed once and then handed to Malbeast In The Middle as well
-        // (mitmCopy) — the enemy's brace becomes the player's brace, its pool the
-        // player's pool. The copy is additive on whatever the player already had, so a
-        // pet that braced this turn keeps its own on top of the one it stole.
+        // (mitmCopy) — the caster's brace becomes the holder's brace, its pool the
+        // holder's pool. The copy is additive on whatever the holder already had, so a
+        // fighter that braced this turn keeps its own on top of the one it stole.
         const int braced = mv->power * actor.defenseMultPct / 100;
         if (mv->shieldPool > 0) {
             actor.shieldHp += braced;
@@ -629,13 +633,13 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
             if (actor.shieldHp > actor.phishShieldPeak)
                 actor.phishShieldPeak = actor.shieldHp;
             if (mitmCopy) {
-                player_.shieldHp += braced;
-                if (player_.shieldHp > player_.phishShieldPeak)
-                    player_.phishShieldPeak = player_.shieldHp;
+                mirror.shieldHp += braced;
+                if (mirror.shieldHp > mirror.phishShieldPeak)
+                    mirror.phishShieldPeak = mirror.shieldHp;
             }
         } else {
             actor.guard += braced;
-            if (mitmCopy) player_.guard += braced;
+            if (mitmCopy) mirror.guard += braced;
         }
         // Cipher track: the cast stacks the caster's Defense (% cut) for the
         // fight, capped per move; the attack path clamps the total to 85% (never immune).
@@ -644,7 +648,7 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
             if (actor.stackDefenseBonus + gain > mv->stackDefenseCap)
                 gain = mv->stackDefenseCap - actor.stackDefenseBonus;
             actor.stackDefenseBonus += gain;
-            if (mitmCopy) player_.stackDefenseBonus += gain;
+            if (mitmCopy) mirror.stackDefenseBonus += gain;
         }
         // Trojan trap (Trojan line): a trap move ARMS a trap (its power is 0, so the guard
         // line above is a no-op) that stacks up to kTrojanTrapCap and springs on the enemy's
@@ -908,14 +912,22 @@ void Combat::checkOutcome() {
     // multiplied by the turns still on its clock. So it is worth most the moment it is
     // armed, and a bigger blow rallies harder: the hit that should have ended the fight
     // is the one that funds the rest of it. One shot, consumed when it fires.
-    if (player_.health <= 0 &&
-        player_.crewExploit.ticking(CrewExploitKind::DeathSaveRally)) {
-        const int overkill = -player_.health;
-        player_.health = player_.maxHealth / 2;
-        if (player_.health < 1) player_.health = 1;   // a 1-HP pet still gets back up
-        player_.stackPowerBonus += overkill * player_.crewExploit.turns;
-        player_.crewExploit = CrewExploitState{};
-    }
+    //
+    // Asked of BOTH sides, because a tournament opponent arms its own Exploits and a
+    // rally that only worked in the player's seat would be a different ability
+    // depending on who drew the crew. Nothing in a wild/boss/Sim fight ever arms one
+    // on the enemy, so those fights draw the same conclusion they always did.
+    auto rallySave = [](Combatant& c) {
+        if (c.health > 0 || !c.crewExploit.ticking(CrewExploitKind::DeathSaveRally))
+            return;
+        const int overkill = -c.health;
+        c.health = c.maxHealth / 2;
+        if (c.health < 1) c.health = 1;              // a 1-HP fighter still gets back up
+        c.stackPowerBonus += overkill * c.crewExploit.turns;
+        c.crewExploit = CrewExploitState{};
+    };
+    rallySave(player_);
+    rallySave(enemy_);
     if (player_.health <= 0) player_.restoreFromBackup();
     // ...and the floor, after the save has had its look at how deep the hole is.
     if (player_.health < 0) player_.health = 0;
@@ -963,28 +975,51 @@ bool Combat::step() {
     // applyEffect (the Phishing combo bonus) sees this hit's own place in the run.
     if (streakCount_ > 0 && playerTurn_ == streakIsPlayer_) ++streakCount_;
     else { streakCount_ = 1; streakIsPlayer_ = playerTurn_; }
-    const bool enemyActed = !playerTurn_;
-    if (playerTurn_) resolveTurn(player_, enemy_, /*byPlayer=*/true);
-    else resolveTurn(enemy_, player_, /*byPlayer=*/false);
+    const bool playerActed = playerTurn_;
+    // An Exploit this side fires itself SPENDS the turn (see Combatant::autoExploit),
+    // so it is asked before the move roll and short-circuits it. Nothing else about the
+    // turn changes: the streak above already counted it, and the clock + scheduler
+    // below still run, because a turn spent arming is still a turn taken.
+    Combatant& actor = playerTurn_ ? player_ : enemy_;
+    if (!fireAutoExploit(actor, playerTurn_)) {
+        if (playerTurn_) resolveTurn(player_, enemy_, /*byPlayer=*/true);
+        else resolveTurn(enemy_, player_, /*byPlayer=*/false);
+    }
     checkOutcome();
-    if (enemyActed) tickCrewExploitClock();
+    // The side that did NOT act is the one a death-save is standing over, so it is the
+    // one whose clock this turn came off.
+    tickCrewExploitClock(playerActed ? enemy_ : player_);
     playerTurn_ = pickNextActor();   // schedule the next actor by relative speed
     return true;
 }
 
-void Combat::tickCrewExploitClock() {
+bool Combat::fireAutoExploit(Combatant& actor, bool byPlayer) {
+    if (actor.autoExploitFired || !actor.autoExploit.label ||
+        actor.autoExploit.kind == CrewExploitKind::None)
+        return false;
+    // The trigger is a fraction of this fighter's OWN max, so an opponent rolled to
+    // wait for trouble waits the same number of proportional hits whatever its Health
+    // pool is. A 100% threshold is "open with it" and clears on the first turn.
+    const int maxH = actor.maxHealth > 0 ? actor.maxHealth : 1;
+    if (actor.health * 100 > actor.autoExploitAtHealthPct * maxH) return false;
+    actor.autoExploitFired = true;
+    armCrewExploit(actor, actor.autoExploit, byPlayer);
+    return true;
+}
+
+void Combat::tickCrewExploitClock(Combatant& guarded) {
     // Backup Plan B is a death-save, so its clock is the INCOMING turns it covers
-    // rather than the pet's own — the three turns it promises are the next three the
-    // malbeast gets, which is the only count that describes what the player is buying.
+    // rather than the guarded fighter's own — the three turns it promises are the next
+    // three its opponent gets, which is the only count that describes what was bought.
     // (Every other turn-metered thing here — a DoT, a stun, a ransom bill — ticks on
     // its victim's turns instead, because those are things the victim is living
     // THROUGH rather than a guard standing over it.)
     //
-    // A turn the enemy spent stunned, rotting or paying its own ransom still counts:
+    // A turn the opponent spent stunned, rotting or paying its own ransom still counts:
     // it was a turn, and the caller ticks after the whole turn has resolved, so every
     // early return inside resolveTurn is counted the same as a swing.
-    if (player_.crewExploit.ticking(CrewExploitKind::DeathSaveRally))
-        --player_.crewExploit.turns;
+    if (guarded.crewExploit.ticking(CrewExploitKind::DeathSaveRally))
+        --guarded.crewExploit.turns;
 }
 
 int Combat::overrideMoveCount() const {
@@ -1007,23 +1042,25 @@ void Combat::cycleOverride() {
     overridePick_ = (overridePick_ + 1) % n;
 }
 
-void Combat::applyCrewExploit() {
+void Combat::applyCrewExploit() { armCrewExploit(player_, crewExploit_, /*byPlayer=*/true); }
+
+void Combat::armCrewExploit(Combatant& self, const CrewExploit& x, bool byPlayer) {
     // Each kind meters itself out of the shared CrewExploitState counters; re-arming
     // the same kind stacks. Adding an ability is a case here plus its crewExploitTag().
-    // A player belongs to one crew, so `kind` is only ever set to what it already is.
-    if (crewExploit_.kind == CrewExploitKind::None) return;
-    player_.crewExploit.kind = crewExploit_.kind;
-    switch (crewExploit_.kind) {
+    // A fighter carries one Exploit, so `kind` is only ever set to what it already is.
+    if (x.kind == CrewExploitKind::None) return;
+    self.crewExploit.kind = x.kind;
+    switch (x.kind) {
         case CrewExploitKind::NegateNextHits:
         case CrewExploitKind::PowerByDamageDealt:
-            player_.crewExploit.charges += crewExploit_.magnitude;
+            self.crewExploit.charges += x.magnitude;
             break;
         case CrewExploitKind::DeathSaveRally:
-            player_.crewExploit.turns += crewExploit_.magnitude;
+            self.crewExploit.turns += x.magnitude;
             break;
         case CrewExploitKind::ResetStatsAndFloor:
-            // Snap the three live stat LEANS back to what the pet walked in with — in
-            // BOTH directions, so this is a decision about timing rather than a free
+            // Snap the three live stat LEANS back to what the fighter walked in with —
+            // in BOTH directions, so this is a decision about timing rather than a free
             // top-up: fire it drained and it restores, fire it buffed and it costs. The
             // floor (statsFloored) then holds them there for the rest of the fight.
             //
@@ -1032,9 +1069,9 @@ void Combat::applyCrewExploit() {
             // cast for, and nothing erodes them, so there is nothing to reset. And
             // maxHealth already drunk from by a steal is not given back: a pool that has
             // been drained cannot be un-drained, and the floor only stops the next sip.
-            player_.powerMultPct = player_.basePowerMultPct;
-            player_.speed = player_.baseSpeed;
-            player_.dmgReducePct = player_.baseDmgReducePct;
+            self.powerMultPct = self.basePowerMultPct;
+            self.speed = self.baseSpeed;
+            self.dmgReducePct = self.baseDmgReducePct;
             break;
         case CrewExploitKind::MirrorEnemyBuffs:
             break;      // sticky: being armed IS the effect (applyEffect's mitmCopy)
@@ -1044,10 +1081,10 @@ void Combat::applyCrewExploit() {
     // "<TAG> xN" popup — or a bare "<TAG>" for a sticky kind, which counts nothing.
     // dmg=0 so the combat screen's red damage number stays hidden; the readout rides in
     // the move-name slot, and the live counter also shows in the B stat panel — all
-    // three go through crewExploitLabel().
-    crewExploitLabel(itemPopup_, sizeof(itemPopup_), crewExploit_.kind,
-                     crewExploit_.magnitude);
-    setLast(itemPopup_, 0, /*byPlayer=*/true, /*charge=*/false);
+    // three go through crewExploitLabel(). `byPlayer` is what puts the popup over the
+    // right fighter, so an opponent's own Exploit announces itself on its own row.
+    crewExploitLabel(itemPopup_, sizeof(itemPopup_), x.kind, x.magnitude);
+    setLast(itemPopup_, 0, byPlayer, /*charge=*/false);
 }
 
 void Combat::commitOverride() {
@@ -1096,7 +1133,9 @@ void Combat::flee() {
     } else {
         resolveTurn(enemy_, player_, /*byPlayer=*/false);
         checkOutcome();
-        tickCrewExploitClock();   // the free turn is a turn, and costs the clock one
+        // The free turn is a turn, and costs the player's clock one — a flee is only
+        // ever the player retreating, so the guarded side is never in doubt here.
+        tickCrewExploitClock(player_);
     }
 }
 

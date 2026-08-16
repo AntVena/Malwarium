@@ -30,6 +30,7 @@ rm -f "$OUT"/*.ppm
 
 SCENES=(
   "expl|expl"                       "expl_inside|expl inside"
+  "compo|compo"                     "compo_round2|compo fight"
   "stat|stat"                       "stat_species|stat species"
   "stat_buffs|stat buffs armbuffs"  "stat_buffs_scrolled|stat buffs armbuffs scroll:1"
   "stat_loadout|stat loadout"

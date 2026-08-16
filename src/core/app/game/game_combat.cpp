@@ -285,8 +285,12 @@ void Game::onCombat(const ButtonEvent& ev) {
     // Auto-play: A fast-forwards the current beat, C flees / quits. A fast-forward is
     // safe in a duel — it only advances THIS screen's playback of an already-decided
     // fight — but the flee isn't (see `duel` above).
+    // ...and a Compo match is the second fight with no exit: forfeiting a bracket
+    // mid-match would let a losing draw be replayed, which is the whole stake gone.
+    // The way out of the arena is the bracket screen, before a match starts.
+    const bool noExit = duel || combatCaller_ == CombatCaller::Tourney;
     if (ev.button == Button::A) advanceCombatTurn();
-    else if (ev.button == Button::C && !duel) combat_.flee();
+    else if (ev.button == Button::C && !noExit) combat_.flee();
 }
 
 int Game::combatBeatsForTurn() const {
@@ -551,6 +555,9 @@ void Game::finishCombat() {
     // A boss/gauntlet round has its own result path (advance/clear/fail + the
     // lump), NOT the wild loot rolls — hand off before applyCombatResult().
     if (combatCaller_ == CombatCaller::Boss) { finishBossRound(); return; }
+    // A Compo match advances a bracket instead of paying a fight (game_tourney.cpp):
+    // Safe stakes, no loot rolls, and nothing but the title pays. Same hand-off shape.
+    if (combatCaller_ == CombatCaller::Tourney) { finishTourneyMatch(); return; }
     applyCombatResult();
     // Return to the caller — never a fixed layer. Sim-Battle returns to the
     // LOADOUT hub; a wild encounter returns to the idle habitat (explore-mode),

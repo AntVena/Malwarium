@@ -482,6 +482,13 @@ bool Game::tick(uint32_t nowMs) {
                            nav_ == Nav::CacheYield ||
                            nav_ == Nav::BulkYield || nav_ == Nav::PostEncounter ||
                            nav_ == Nav::Stacker || nav_ == Nav::ArcadeResult ||
+                           // THE COMPO's bracket is a READING screen: eight entrants,
+                           // their levels, and the next opponent's species and Exploit
+                           // are what a loadout is chosen against, and five seconds is
+                           // shorter than reading them. Collapsing it would also drop
+                           // the operator onto the habitat mid-decision with a run
+                           // still in play, which reads as the screen crashing.
+                           nav_ == Nav::Tourney ||
                            inCfgScreen ||
                            // A held B is one of the four hold gestures mid-flight and
                            // must not be collapsed under. A held A is only the list
@@ -706,6 +713,7 @@ void Game::onButton(const ButtonEvent& ev) {
             break;
         case Nav::Combat: onCombat(ev); break;
         case Nav::ExploreControl: onExploreControl(ev); break;
+        case Nav::Tourney: onTourney(ev); break;
         case Nav::Encounter: onEncounter(ev); break;
         case Nav::Wifi: onWifi(ev); break;
         case Nav::Shop: onShop(ev); break;

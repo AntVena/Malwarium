@@ -79,6 +79,7 @@ void Game::render(Framebuffer& fb) const {
         case Nav::Stacker: drawStacker(fb); break;
         case Nav::ArcadeResult: drawArcadeOutcome(fb); break;
         case Nav::Combat: drawCombatScreen(fb); break;
+        case Nav::Tourney: drawTourney(fb); break;
         case Nav::ExploreControl:
             // The A+C control overlay floats over the idle habitat.
             drawHabitat(fb, -1);
@@ -545,6 +546,9 @@ void Game::drawSubmenu(Framebuffer& fb) const {
             v.streakWins = exploreStreak_;
             v.winsToBoss = kExploreStreakToBoss;
             v.bestDeepWebDepth = bestDeepWebDepth_;
+            v.tourneyRunning = tourneyRunning();
+            v.tourneyAlive = tourneyAliveCount(tourneyAlive_);
+            v.tourneyRound = tourneyRound_;
             v.beat = beat_;
             drawExplList(fb, registry_, v);
             break;
@@ -669,6 +673,10 @@ void Game::drawCombatScreen(Framebuffer& fb) const {
         sides.localLabel = "YOU";
         sides.localIsEnemySide = !pvpLocalIsHost();
     }
+    // A Compo match is the other pet-vs-pet fight, and the other one with no way out —
+    // so it borrows the duel's caption for the opposite seat and drops the RUN hint.
+    if (combatCaller_ == CombatCaller::Tourney) sides.rivalLabel = "RIVAL";
+    sides.canRun = !duel && combatCaller_ != CombatCaller::Tourney;
     drawCombat(fb, combat_, ps, es, beat_, combatAnimBeat_, combatHitBeat_,
                combatStatsOpen_, sides);
 }

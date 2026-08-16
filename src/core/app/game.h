@@ -39,6 +39,7 @@
 #include "core/model/save.h"
 #include "core/model/isolation.h"
 #include "core/model/stacker.h"
+#include "core/model/tournament.h"
 #include "core/net/audit_capture.h"
 #include "core/net/network_ledger.h"
 #include "core/net/peer_ledger.h"
@@ -81,7 +82,7 @@ public:
     //   Detail      — L3 (item detail · MAINT action).
     //   Process     — a running MAINT process (non-interruptible).
     //   ModalFeeding / ModalLockout — event overlays.
-    enum class Nav { Idle, Cursor, Submenu, Detail, Process, ModalFeeding, ModalLockout, ModalLineSelect, ModalEggPick, ModalHatchReveal, ModalEvolve, ModalCSF, Combat, ExploreControl, Encounter, Wifi, Shop, ModShop, WarpPicker, RollbackPicker, CacheYield, BulkYield, PostEncounter, Stacker, Isolation, Decryption, Cryptogram, ArcadeResult };
+    enum class Nav { Idle, Cursor, Submenu, Detail, Process, ModalFeeding, ModalLockout, ModalLineSelect, ModalEggPick, ModalHatchReveal, ModalEvolve, ModalCSF, Combat, ExploreControl, Encounter, Wifi, Shop, ModShop, WarpPicker, RollbackPicker, CacheYield, BulkYield, PostEncounter, Stacker, Isolation, Decryption, Cryptogram, ArcadeResult, Tourney };
 
     // Which L2 screen the ITEMS submenu is showing. Picker (the category tile
     // screen) only ever appears when itemPickerUnlocked(); every other path — no
@@ -313,6 +314,27 @@ public:
     }
     // Is the AREA boss reachable? All 5 sub-areas cleared, area not yet.
     bool areaBossReady(int area) const;
+
+    // --- THE COMPO: the operator bracket (game_tourney.cpp) ------------------
+    // How a run ENDS, which is also what the bracket screen is showing. Ready is a
+    // run still being fought (or none at all); the other two are terminal banners the
+    // operator has yet to dismiss, and they persist — a device put down on the verdict
+    // is still showing it after a reboot.
+    enum class TourneyPhase : uint8_t { Ready, Eliminated, Champion };
+    // A bracket is in play. The seed IS the run (core/model/tournament.h), so a zero
+    // seed means "no run" and nothing else has to be checked.
+    bool tourneyRunning() const { return tourneySeed_ != 0; }
+    uint32_t tourneySeed() const { return tourneySeed_; }
+    uint8_t tourneyAlive() const { return tourneyAlive_; }   // survivor bitmask
+    int tourneyRound() const { return tourneyRound_; }       // 0-based
+    TourneyPhase tourneyPhase() const { return tourneyPhase_; }
+    // The operator's own slot, and the slot they face next (-1 once the run is over).
+    int tourneySlot() const;
+    int tourneyOpponentSlot() const;
+    // The opponent as a built fighter — resolved once when a round opens, so the
+    // bracket screen can name its species and Exploit without walking the content
+    // tables every repaint.
+    const TourneyFighter& tourneyOpponent() const { return tourneyOpponent_; }
     WifiOutcome wifiOutcome() const { return wifiOutcome_; }   // rolled sub-outcome
     // The on-screen line resolveNetworkDiscovery() set on the last Wi-Fi event
     // (new/familiar/home-turf/empty-queue) — "" if none has resolved yet.
@@ -1538,6 +1560,16 @@ public:
     // are re-farmable the EXPL "first-selectable" row is ambiguous, so a test
     // that needs a particular frontier arms it here instead of A-cycling. Real path:
     // EXPL → B on the row. No-op for out-of-range indices.
+    // Force THE COMPO's run to a terminal banner without playing a whole bracket out.
+    // The two verdict screens are otherwise reachable only by winning or losing three
+    // matches, which is not what a screen gate is asking about.
+    void debugEndTourneyRun(bool champion) {
+        if (!tourneyRunning()) return;
+        tourneyPhase_ = champion ? TourneyPhase::Champion : TourneyPhase::Eliminated;
+        if (!champion) tourneyAlive_ &= static_cast<uint8_t>(~(1u << tourneySlot()));
+        tourneyOpponent_ = TourneyFighter{};
+        dirty_ = true;
+    }
     void debugArmExplore(int area, int sub) {
         if (area >= 0 && area < kAreaCount && sub >= 0 && sub < kSubAreasPerArea)
             startExplore(area, sub);
@@ -2534,7 +2566,7 @@ private:
     CombatEnemy encounterEnemy_;
     int encounterChoice_ = 0;
     bool encounterSinkhole_ = false;
-    enum class CombatCaller { Sim, Wild, Boss };
+    enum class CombatCaller { Sim, Wild, Boss, Tourney };
     CombatCaller combatCaller_ = CombatCaller::Sim;
 
     // Post-encounter status readout (Nav::PostEncounter). Captured
@@ -2846,6 +2878,22 @@ private:
     bool pvpWon_ = false;                // the finished duel's verdict, locally framed
     uint32_t pvpSeed_ = 0;
     char pvpStatus_[32] = "";            // why the last session ended (empty = it didn't)
+
+    // --- THE COMPO's run state (game_tourney.cpp) ---------------------------
+    // Four bytes plus a byte of verdict is the WHOLE bracket: every entrant — handle,
+    // species, level, stat spread, kit, mods, Exploit — is derived from the seed
+    // (core/model/tournament.h) rather than stored, and `tourneyAlive_` is one bit per
+    // original slot. So a run costs almost nothing to persist and reloads identical.
+    // Persisted at save v53.
+    uint32_t tourneySeed_ = 0;           // 0 = no run in play
+    uint8_t tourneyAlive_ = 0;           // survivor bitmask over kTourneySlots
+    uint8_t tourneyRound_ = 0;           // 0..kTourneyRounds-1
+    TourneyPhase tourneyPhase_ = TourneyPhase::Ready;
+    // Runtime only. The bracket screen's read cursor (A steps it, nothing acts on it)
+    // and the built opponent behind the round's match card — rebuilt whenever a round
+    // opens or a run is resumed, never persisted, because both are derivable.
+    int tourneyCursor_ = 0;
+    TourneyFighter tourneyOpponent_;
     uint32_t pvpPhaseStartMs_ = 0;       // for the phase timeout
     uint32_t pvpLastSendMs_ = 0;         // retry pacing for the frame holding the session
     int pvpRetries_ = 0;
@@ -2880,6 +2928,17 @@ private:
     void endPvpSession(const char* why, bool notify);
     // Both fighters are known and agreed: build the shared fight and enter Nav::Combat.
     void startPvpBattle(uint32_t seed);
+
+    // --- THE COMPO (game_tourney.cpp) ---------------------------------------
+    // Open the bracket screen off the EXPL row: draws a fresh bracket when no run is
+    // in play, else resumes the one that is.
+    void openTourney();
+    void onTourney(const ButtonEvent& ev);         // A read the field · B fight · C back
+    void drawTourney(Framebuffer& fb) const;
+    void startTourneyMatch();                      // the operator's own match, live
+    void finishTourneyMatch();                     // advance the bracket, or end the run
+    void abandonTourney();                         // forget the run (seed back to 0)
+    void awardTourneyPurse();                      // the title's one lump
     // The duel finished — record the verdict, log it, and park on the LINK screen.
     // Deliberately does NOT go through applyCombatResult: no stakes means no XP, no
     // Bits, no Fragmentation, no care signal.

@@ -59,6 +59,8 @@
 //        "bossready" for that block with its gauntlet unlocked, "rerun" for it already
 //        beaten, "endgame" for the every-area-cleared picker) ·
 //        explore (armed → the idle explore badge)
+// compo [fight] (THE COMPO's bracket screen — the eight-operator draw; "fight" plays
+//        the operator's own first match out so the frame shows a settled round)
 // explorectl [auto] (the A+C control overlay; "auto" arms AUTO-PROGRESS with the
 //        second chord) · explore auto (the armed habitat with it running — the EXPL
 //        globe spins, so pass a `beats` count to land on a frame) · encounter [sinkhole] ·
@@ -645,6 +647,26 @@ int main(int argc, char** argv) {
         // cursor rightly parks on the DeepWeb row and B arms the dive instead.
         if (bossReady || hasFlag(argc, argv, "inside"))
             game.onButton({Button::B, true, false});
+    } else if (hasFlag(argc, argv, "compo")) {
+        // THE COMPO — the operator bracket (game_tourney.cpp). Clearing area 0 is what
+        // reaches The Pirate Bayou and so opens the arena's EXPL row, which is the LAST
+        // row of the top level; A walks the cursor to it and B draws a bracket. "fight"
+        // runs the operator's first match to a verdict, so the frame lands on the
+        // bracket with one round already settled; "out"/"champion" force a terminal
+        // banner without playing a whole tournament for it.
+        game.debugSetSectorCleared(0, true);
+        game.debugAddCombatXp(600000);               // a pet that can win a match
+        enterSlot(SubmenuId::Expl);
+        for (int i = 0; i < explRowCount() && game.listRow() != explRowCount() - 1; ++i)
+            game.onButton({Button::A, true, false});
+        game.onButton({Button::B, true, false});
+        if (hasFlag(argc, argv, "fight")) {
+            game.onButton({Button::B, true, false});
+            for (int i = 1; i <= 4000 &&
+                            game.combat().outcome() == Combat::Outcome::Ongoing; ++i)
+                game.tick(static_cast<uint32_t>(beats + i) * kHeartbeatMs);
+            game.onButton({Button::B, true, false});   // dismiss the verdict
+        }
     } else if (hasFlag(argc, argv, "hacker")) {
         // Hacker face (07): A+C flips PET → HACKER. Seed identity + economy so
         // the PROFILE viewer + SHOP list read populated. `profile`/`shop` open a slot;

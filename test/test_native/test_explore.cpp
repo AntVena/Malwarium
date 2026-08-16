@@ -409,25 +409,26 @@ void test_expl_names_stay_scrollable() {
     }
 }
 
-// THE LEVEL IS THE LIST (explRowInLevel): the TOP level draws the DeepWeb row plus one
-// row per AREA and none of the sub-areas; inside an area it draws that area's own block
-// and nothing else. That is what keeps the drawn list ~6 rows however long the ladder
-// grows, instead of a 13-row window over the whole thing.
+// THE LEVEL IS THE LIST (explRowInLevel): the TOP level draws the two special rows
+// (the DeepWeb Dive above the ladder, The Compo below it) plus one row per AREA and
+// none of the sub-areas; inside an area it draws that area's own block and nothing
+// else. That is what keeps the drawn list ~7 rows however long the ladder grows,
+// instead of a 13-row window over the whole thing.
 void test_expl_level_scoped_rows() {
     int top = 0;
     for (int r = 0; r < explRowCount(); ++r) {
         if (!explRowInLevel(r, -1)) continue;
         ++top;
-        CHECK(explRowIsDeepWeb(r) || explRowSub(r) < 0);   // zones only, no sub-areas
+        CHECK(explRowIsSpecial(r) || explRowSub(r) < 0);   // zones only, no sub-areas
     }
-    CHECK(top == 1 + kExplSectors);                        // DeepWeb + every area
+    CHECK(top == kExplLeadRows + kExplSectors + kExplTailRows);
     for (int a = 0; a < kExplSectors; ++a) {
         int inside = 0;
         for (int r = 0; r < explRowCount(); ++r) {
             if (!explRowInLevel(r, a)) continue;
             ++inside;
-            // Its own block only — not a neighbour's rows, and not the DeepWeb row.
-            CHECK(!explRowIsDeepWeb(r) && explRowArea(r) == a);
+            // Its own block only — not a neighbour's rows, and neither special row.
+            CHECK(!explRowIsSpecial(r) && explRowArea(r) == a);
         }
         CHECK(inside == 1 + kExplSubAreas);                 // boss row + its sub-areas
     }
@@ -653,10 +654,14 @@ void test_explore_streak_unlocks_boss_then_clears() {
 // rows are selectable). Boss-ready takes priority over exploring so FIGHT BOSS stays
 // reachable; a cleared area's subs go inert and its header becomes AREA-BOSS ready.
 void test_expl_nested_row_helpers() {
-    CHECK(explRowCount() == 1 + kExplSectors * (1 + kExplSubAreas));  // DeepWeb + ladder
-    // DeepWeb leads at row 0; the area ladder is offset by +1.
+    // The DeepWeb Dive leads, the ladder follows offset by +1, and The Compo trails.
+    CHECK(explRowCount() == 1 + kExplSectors * (1 + kExplSubAreas) + 1);
     constexpr int kDwRow = 0;                                    // the DeepWeb Dive row
+    const int kCompoRow = explRowCount() - 1;                    // The Compo row
     CHECK(explRowIsDeepWeb(kDwRow) && !explRowIsDeepWeb(1));
+    CHECK(explRowIsTourney(kCompoRow) && !explRowIsTourney(kDwRow));
+    CHECK(explRowIsSpecial(kDwRow) && explRowIsSpecial(kCompoRow));
+    CHECK(!explRowIsSpecial(1));                                 // area 0's header
     CHECK(explRowArea(1) == 0 && explRowSub(1) == -1);           // area 0 header
     CHECK(explRowArea(2) == 0 && explRowSub(2) == 0);            // area 0, sub-area 1
     CHECK(explRowArea(7) == 1 && explRowSub(7) == -1);           // area 1 header

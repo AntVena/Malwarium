@@ -51,6 +51,15 @@ holding its number — these two have nothing to name. |
 `effect_text.cpp`'s `itemEffectToken()` + `specRows()`; `dump_content.cpp`'s item switch. | S |
 The warnings are the whole detection mechanism; adding the cases silences them and is the fix. |
 
+**THE COMPO earns no achievement, and no other milestone in the game is silent.** Taking an
+eight-operator bracket is the one three-fight run that ends with a banner and nothing else: hatching,
+diving, duelling and clearing an area all write an `AchievementDef` row. A row here wants a `wire`
+index and an icon the web 'Pedia can show, so it is not free — the icon is the whole cost, and
+reusing an existing one would put two rows under one picture. Likely rows are "took a bracket" and
+"took one without dropping a match". |
+`content_achievements.h`; `game_tourney.cpp`'s `awardTourneyPurse`; `tools/gen_pedia_data.py`. | S |
+Sourcing the icon before the code, same as every other 'Pedia-visible row. |
+
 **A crew cannot be DISCOVERED.** `QuoteReward::Kind` has room for it and it is one of the prizes
 the board was designed to hand over ("you find a crew to join"), but crews are ungated today —
 every row in `content_crews.cpp` is enlistable from the first boot, so there is nothing for a

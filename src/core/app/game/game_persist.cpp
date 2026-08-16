@@ -4,6 +4,7 @@
 #include <cstring>
 
 #include "tunables.h"
+#include "core/content/content_tournament.h"
 
 namespace mal {
 
@@ -223,6 +224,12 @@ SaveData Game::captureSave() const {
     d.achievementNotified.assign(achNotified_, achNotified_ + kAchBytes);
     d.bossWins = bossWins_;
     d.stackerWins = stackerWins_;   // v44
+    // v53: THE COMPO's run in play. Four bytes plus a bitmask, because every entrant is
+    // derived from the seed (core/model/tournament.h) rather than written down.
+    d.tourneySeed = tourneySeed_;
+    d.tourneyAlive = tourneyAlive_;
+    d.tourneyRound = tourneyRound_;
+    d.tourneyPhase = static_cast<uint8_t>(tourneyPhase_);
     // v47: one row per cabinet that has actually been played, id-keyed. A cabinet with
     // no runs writes nothing — the save carries history, not the roster.
     for (int i = 0; i < arcadeGameCount() && i < kArcadeMaxCabinets; ++i) {
@@ -606,6 +613,17 @@ void Game::applySave(const SaveData& d) {
     // v44: boards cleared by hand. No pre-v44 seed — see the version note in save.h for
     // why defragCount is not one.
     stackerWins_ = d.stackerWins;
+    // v53: the arena run. A blob written before the arena existed reads back a zero
+    // seed, which IS "no bracket in play"; a phase byte naming a value this build does
+    // not have falls back to Ready, so a stale save resumes a fightable run rather than
+    // a screen stuck on a verdict it cannot dismiss.
+    tourneySeed_ = d.tourneySeed;
+    tourneyAlive_ = d.tourneyAlive;
+    tourneyRound_ = d.tourneyRound < kTourneyRounds
+                        ? d.tourneyRound : static_cast<uint8_t>(kTourneyRounds - 1);
+    tourneyPhase_ = d.tourneyPhase <= static_cast<uint8_t>(TourneyPhase::Champion)
+                        ? static_cast<TourneyPhase>(d.tourneyPhase)
+                        : TourneyPhase::Ready;
     // v47: the arcade tallies, resolved back through the roster — a row naming a
     // cabinet this build no longer has simply doesn't land anywhere.
     for (int i = 0; i < kArcadeMaxCabinets; ++i) { arcadePlays_[i] = 0; arcadeWins_[i] = 0; }

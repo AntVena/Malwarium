@@ -59,6 +59,20 @@ struct CrewExploitState {
     int count() const { return charges > 0 ? charges : (turns > 0 ? turns : 0); }
 };
 
+// An Exploit as it is OFFERED to a fighter — the name it is announced under, the
+// mechanic, and the one number that mechanic meters. Declared here, above Combatant,
+// because a combatant carries one it may fire on its own initiative (`autoExploit`
+// below) as well as one a human may commit from the picker (Combat::openOverride).
+//
+// The player's copy comes from their crew (content_crews.h); an AI's is rolled for it
+// by whatever built the fighter. A default-constructed one (label == nullptr) means
+// "no Exploit": no picker row is offered, and nothing ever fires on its own.
+struct CrewExploit {
+    const char* label = nullptr;
+    CrewExploitKind kind = CrewExploitKind::None;
+    int magnitude = 0;
+};
+
 // One live copy a Worm has replicated into a replication slot (Combatant::wormReplicas).
 // NOT a Combatant: a replica never takes a turn of its own, never rolls a move and never
 // appears in the speed scheduler — it is a piece of its parent's state that happens to
@@ -174,8 +188,28 @@ struct Combatant {
     BackupUse backupUse = BackupUse::None;
     // The armed crew Exploit, if any (see CrewExploitState). Its charges are spent
     // BEFORE the RAID Mirror mod so that one-shot stays held for after the charges run
-    // out. Armed only by commitOverride.
+    // out. Armed either by a human at the picker (commitOverride) or by this side
+    // firing its own (autoExploit, below) — the two paths converge on one applier, so
+    // an ability behaves the same whoever pulled the trigger.
     CrewExploitState crewExploit;
+
+    // --- The Exploit this side fires on its OWN initiative ------------------------
+    // What a fighter with nobody at the buttons carries: a rolled Exploit plus the
+    // moment it commits to using it. The TOURNAMENT arena is what has these (an
+    // opponent there is petware with a kit and an Exploit, not a malbeast); every
+    // other PVE enemy leaves `autoExploit.label` null and never draws for it.
+    //
+    // Firing COSTS the turn it happens on, exactly like a human spending their one
+    // Exploit use costs the move they'd otherwise have forced — so an opponent that
+    // opens with its Exploit really has skipped a swing to do it. That also gives the
+    // fire its own beat on the combat screen, which is the only way the player sees it
+    // happen at all.
+    CrewExploit autoExploit;
+    // The Health it waits for, as a % of its own max: 100 fires on its first turn,
+    // 30 waits until it is in real trouble. Checked on this side's own turn, so a
+    // fighter killed before its next turn never gets to spend it.
+    int autoExploitAtHealthPct = 100;
+    bool autoExploitFired = false;
     int guard = 0;              // pending mitigation from a defend move (one-shot)
     int shieldHp = 0;           // Obfuscation shield pool (Phishing) — a poolable
                                 // second health bar; absorbs before real Health, stacks
@@ -343,16 +377,6 @@ struct OverrideItem {
     int heal;            // transient combat Health restored on use
 };
 
-// The player's crew Exploit, offered as the picker's LAST row while they belong to a
-// crew (content_crews.h). Unlike an OverrideItem there is nothing for the Game to
-// consume afterwards — the effect is pure combat state, so Combat applies it itself.
-// A default-constructed one (label == nullptr) means "in no crew": no row is offered.
-struct CrewExploit {
-    const char* label = nullptr;
-    CrewExploitKind kind = CrewExploitKind::None;
-    int magnitude = 0;
-};
-
 // A Worm replica destroyed by the turn that just resolved. Replicas are packed out of
 // Combatant::wormReplicas the instant they die, so by the time anything looks at the
 // board the copy is simply gone — and a death that leaves no trace is the one moment of
@@ -459,12 +483,21 @@ private:
     void resolveTurn(Combatant& actor, Combatant& target, bool byPlayer);
     // The single applier for every CrewExploitKind — a new crew ability is one enum
     // entry (content_crews.h) plus one case here, never a per-crew branch elsewhere.
+    // `self` is the side arming it, so the human's commit and an AI firing its own run
+    // the identical code; `byPlayer` only captions the popup.
+    void armCrewExploit(Combatant& self, const CrewExploit& x, bool byPlayer);
+    // The commit-path wrapper: arm the picker's crew row onto the player.
     void applyCrewExploit();
-    // Burn one enemy turn off a turn-metered crew Exploit's clock (DeathSaveRally).
-    // Called from the two places an enemy turn resolves — step() and a failed flee —
-    // and always AFTER checkOutcome, so the turn that actually needed the save is paid
-    // out at the count it was armed with rather than one short.
-    void tickCrewExploitClock();
+    // `actor` is about to take its turn — if it carries an unfired autoExploit whose
+    // Health trigger has come, arm it and report true, which SPENDS the turn. False
+    // (the common case) leaves the turn to a move.
+    bool fireAutoExploit(Combatant& actor, bool byPlayer);
+    // Burn one turn off `guarded`'s turn-metered crew Exploit clock (DeathSaveRally).
+    // Called with the side that did NOT just act, from the two places a turn resolves —
+    // step() and a failed flee — and always AFTER checkOutcome, so the turn that
+    // actually needed the save is paid out at the count it was armed with rather than
+    // one short.
+    void tickCrewExploitClock(Combatant& guarded);
     // `moveIdx` is the actor's slot index for `mv` (into actor.moves) — needed by
     // Prowlware to rank that move's Attack power (attackPowerRank).
     void applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
