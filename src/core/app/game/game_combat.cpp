@@ -701,7 +701,8 @@ void Game::startEncounter() {
         // diving deeper gradually punches the pet up (more XP, tougher enemy) instead of
         // sitting at flat parity forever.
         encounterEnemy_ = wildMalbeast(3, rng_ >> 16);
-        applyDeepWebScale(encounterEnemy_, combatLevel_, exploreStreak_);
+        rng_ = rng_ * 1664525u + 1013904223u;                // the dive's own stat/kit roll
+        applyDeepWebScale(encounterEnemy_, combatLevel_, exploreStreak_, rng_);
     } else {
         encounterEnemy_ = wildMalbeast(explSectorTier(exploreSector_), rng_ >> 16);
         applyWildSubAreaRamp(encounterEnemy_, exploreSector_, exploreSub_);  // depth ramp

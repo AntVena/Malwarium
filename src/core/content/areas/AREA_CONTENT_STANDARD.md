@@ -153,10 +153,26 @@ by design.
 
 The DeepWeb Dive is the always-last endless zone (`kDeepWebSector`, one past the real
 ladder) — it has no sub-area ladder, no boss, no shop, so an `AreaDef` doesn't fit it. Its
-mod pool (`kAreaModsDeepWeb`) and its six endless-scaling constants
-(`kDeepWebEnemyLevelOffset` and friends) live in `areas/deepweb_dive/{area.cpp,area.h}`
+mod pool (`kAreaModsDeepWeb`), its endless-scaling constants (`kDeepWebEnemyLevelOffset`
+and friends) and its move rungs live in `areas/deepweb_dive/{area.cpp,area.h}`
 instead — moved out of the cross-cutting `tunables.h` since nothing outside the dive reads
 them, following the same "single-entity magnitude lives on that entity" rule as an AreaDef.
+
+It is also the only zone whose enemies are **rolled rather than authored**. A dive enemy
+takes a body from the tier-3 roster and gets everything else from depth: a BUDGET of stat
+points spent at random across the same four stats a pet levels (`applyDeepWebScale`), and a
+KIT drawn from the depth's move rung (`deepWebMoveIds`). Two rules constrain that, and both
+exist to protect something outside the dive:
+
+- **Boss signatures are gated to `kDeepWebBossMoveDepth`.** A boss is meant to be the first
+  place its move is ever seen; a zone handing the same move out early would retire the hunt
+  the whole roster is built around.
+- **A rolled enemy answers to the player's own curves** — `levelDefenseCutPct` and the
+  never-immune clamp — so the dive can never field a wall the player could not have built.
+
+Rung pacing is authored per depth rather than derived from the zone's log curve, because
+what a rung does to a fight is not proportional to what a stat point does. That is measured,
+not assumed; the numbers and the reason are on `kDeepWebMoveRungDepths`.
 
 ## Why areas aren't a `ContentSource`
 

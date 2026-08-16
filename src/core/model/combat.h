@@ -319,6 +319,13 @@ struct CombatEnemy {
                                         // set by applyWildSubAreaRamp, drives the
                                         // level-difference XP scaling (wildWinXp). 0 =
                                         // unranked (Sim dummies, bosses use their own).
+    // The other two of the four stats a PET levels. Absent until the DeepWeb dive needed
+    // to roll a full stat spread: every authored enemy is a Health/speed/moves statement
+    // and leans on its move rows for offence, which is exactly why a dive enemy could
+    // never hit harder no matter how deep it got. Defaults match what makeEnemyCombatant
+    // used to hard-code, so no authored row changes meaning by their arrival.
+    int powerMultPct = 100;             // attack lean, same units as Combatant's
+    int dmgReducePct = 0;               // % incoming-damage cut, same units + same clamp
     bool hasLevel = false;              // true once applyWildSubAreaRamp / applyDeepWebScale
                                         // has stamped `level`; Sim dummies + bosses never set
                                         // this, so the combat screen renders "???" for them
@@ -531,6 +538,14 @@ Combatant makePlayerCombatant(const ContentRegistry& reg, const CreatureDef& pet
 // (core/model/pvp_battle.h). A duel's two devices resolve the same seeded fight only
 // while both sides' stats agree exactly, so this arithmetic lives in exactly one place.
 void applyLevelStatPoints(Combatant& c, const int statPoints[4]);
+
+// The Defence stat's % incoming-damage cut, for `points` earned Defence points. Full rate
+// (kLevelDefensePctPerPoint) up to kLevelDefenseSoftPoints, HALF rate past it, hard-capped
+// at kLevelDefenseCapPct — the diminishing half of the one stat with a ceiling, so the
+// last points before that ceiling stop being the best purchase in the game. Pure +
+// deterministic, so it is unit-tested directly rather than through a fight. Shared with
+// the DeepWeb dive's rolled enemies, which are held to the same curve the pet is.
+int levelDefenseCutPct(int points);
 // Build an enemy Combatant from a spec.
 Combatant makeEnemyCombatant(const ContentRegistry& reg, const CombatEnemy& spec);
 
@@ -602,7 +617,14 @@ int wildWinXp(int baseXp, int enemyLevel, int petLevel);
 // punches the pet up (more XP via wildWinXp's level-diff bonus) and thickens the enemy
 // to match, logarithmically (fast early ramp, flattens at deep streaks — no endless-
 // zone runaway). Mutates `e` in place. `petLevel`/`depth` clamp at 0.
-void applyDeepWebScale(CombatEnemy& e, int petLevel, int depth = 0);
+// `roll` is caller-owned (the shared Game LCG, same pattern as wildMalbeast's variantRoll)
+// so a dive enemy is deterministic under a fixed seed like every other roll in the engine.
+void applyDeepWebScale(CombatEnemy& e, int petLevel, int depth = 0, uint32_t roll = 0);
+
+// What a DIVE enemy knows at `depth` — two distinct ids drawn from that depth's rung
+// (deepweb_dive/area.h documents the rungs and the boss-move gate). Split out from
+// applyDeepWebScale so the depth→kit rule can be tested without building an enemy.
+std::vector<const char*> deepWebMoveIds(int depth, uint32_t roll);
 
 // depth ramp, Bits half: the DEEPWEB DIVE's Bits payout (normalBitsReward,
 // keyed to diffPips/stage-rank) doesn't see the level bonus applyDeepWebScale grants

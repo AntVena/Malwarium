@@ -1046,19 +1046,71 @@ void test_expl_nested_list_nav() {
 // arms an endless explore mode on kDeepWebSector, and scales the wild enemy to the
 // PET's level (parity → full base XP forever; no boss ladder).
 void test_deepweb_dive() {
-    // (1) The pure scaler: enemy level = pet level (parity), Health climbs per level,
-    //     and parity level makes wildWinXp pay the FULL base (endless steady XP).
+    // (1) The pure scaler: enemy level = pet level (parity, so wildWinXp pays the FULL
+    //     base forever), and a BUDGET of points spent at random across the same four
+    //     stats a pet levels — not the old fixed Health+speed split. The budget is what
+    //     is pinned here; where any one roll puts it is the feature.
     {
         CombatEnemy e = wildMalbeast(3, 0);
-        const int baseHp = e.maxHealth, baseSpd = e.speed;
         applyDeepWebScale(e, 10);
         CHECK(e.level == 10 + kDeepWebEnemyLevelOffset);
-        CHECK(e.maxHealth == baseHp + 10 * kDeepWebHealthPerLevel);
-        CHECK(e.speed == baseSpd + 10 / kDeepWebSpeedPerNLevels);
         CHECK(wildWinXp(kWildWinXpReward, e.level, 10) == kWildWinXpReward);   // parity
         CombatEnemy e2 = wildMalbeast(3, 0);
         applyDeepWebScale(e2, -5);                    // petLevel clamps at 0
         CHECK(e2.level == 0 + kDeepWebEnemyLevelOffset);
+    }
+    // (1a) The spread spends the whole budget and no more, and POWER is in the hat —
+    //      the flat-offence hole that let a stacked wall chip a depth-500 enemy forever.
+    {
+        const CombatEnemy base = wildMalbeast(3, 0);
+        int sawPower = 0, sawDef = 0, sawSpeed = 0, sawHealth = 0;
+        for (uint32_t seed = 1; seed <= 40; ++seed) {
+            CombatEnemy e = wildMalbeast(3, 0);
+            applyDeepWebScale(e, 12, 0, seed);        // budget = 12 (depth 0, no linear)
+            const int pPts = (e.powerMultPct - base.powerMultPct) / kLevelPowerPctPerPoint;
+            const int sPts = (e.speed - base.speed) / kLevelSpeedPerPoint;
+            const int hPts = (e.maxHealth - base.maxHealth) / kDeepWebHealthPerLevel;
+            CHECK(pPts >= 0 && sPts >= 0 && hPts >= 0);
+            CHECK(pPts + sPts + hPts <= 12);          // the rest went to Defence
+            CHECK(e.dmgReducePct <= kLevelDefenseCapPct);
+            if (pPts > 0) ++sawPower;
+            if (e.dmgReducePct > 0) ++sawDef;
+            if (sPts > 0) ++sawSpeed;
+            if (hPts > 0) ++sawHealth;
+        }
+        // Every stat is reachable — a spread that never rolls Power would be the old bug
+        // wearing a new shape, and one that never rolls Defence is a claim the dive makes
+        // to the player that it doesn't keep.
+        CHECK(sawPower > 0 && sawDef > 0 && sawSpeed > 0 && sawHealth > 0);
+    }
+    // (1b) Same seed, same enemy — the dive rolls like every other roll in the engine.
+    {
+        CombatEnemy a = wildMalbeast(3, 0), b = wildMalbeast(3, 0);
+        applyDeepWebScale(a, 9, 40, 12345u);
+        applyDeepWebScale(b, 9, 40, 12345u);
+        CHECK(a.powerMultPct == b.powerMultPct && a.maxHealth == b.maxHealth);
+        CHECK(a.speed == b.speed && a.dmgReducePct == b.dmgReducePct);
+        CHECK(a.moveIds.size() == b.moveIds.size());
+    }
+    // (1c) DEPTH keeps paying after the log ramp flattens. The linear term is the one
+    //      that ends a run: a dive is meant to become unwinnable, not merely slow.
+    {
+        auto spend = [](int depth) {
+            const CombatEnemy base = wildMalbeast(3, 0);
+            long long total = 0;
+            for (uint32_t seed = 1; seed <= 16; ++seed) {
+                CombatEnemy e = wildMalbeast(3, 0);
+                applyDeepWebScale(e, 10, depth, seed);
+                total += (e.powerMultPct - base.powerMultPct) / kLevelPowerPctPerPoint;
+                total += (e.speed - base.speed) / kLevelSpeedPerPoint;
+                total += (e.maxHealth - base.maxHealth) / kDeepWebHealthPerLevel;
+            }
+            return total;
+        };
+        // 1024 and 2048 sit in the SAME log bracket pair but differ by 128 linear points,
+        // so this fails the moment the budget goes back to being purely logarithmic.
+        CHECK(spend(2048) > spend(1024));
+        CHECK(spend(1024) > spend(64));
     }
     // (1b) Depth ramp: a deep win-streak folds in as a logarithmic bonus effective
     //      level, so the enemy outlevels the pet and wildWinXp pays a bonus.
@@ -1073,6 +1125,42 @@ void test_deepweb_dive() {
         CombatEnemy e4 = wildMalbeast(3, 0);
         applyDeepWebScale(e4, 10, -3);                  // depth clamps at 0
         CHECK(e4.level == 10);
+    }
+    // (1d) The KIT by depth, and the gate that keeps a boss the first place its move is
+    //      ever seen. Below kDeepWebBossMoveDepth the dive may only hand back the shared
+    //      pool; at and past it, the deep pool takes over.
+    {
+        ContentRegistry reg = ContentRegistry::embedded();
+        auto isBossMove = [&](const char* id) {
+            for (int a = 0; a < kExplSectors; ++a) {
+                if (area(a).areaBossMoveId &&
+                    std::strcmp(area(a).areaBossMoveId, id) == 0) return true;
+                for (int s = 0; s < kExplSubAreas; ++s)
+                    for (const char* t : area(a).subBosses[s].teaches)
+                        if (t && std::strcmp(t, id) == 0) return true;
+            }
+            return false;
+        };
+        int deepBossHits = 0;
+        for (uint32_t seed = 1; seed <= 30; ++seed) {
+            for (int depth : {0, 1, 15, 63, 200, kDeepWebBossMoveDepth - 1}) {
+                for (const char* id : deepWebMoveIds(depth, seed)) {
+                    CHECK(reg.move(id) != nullptr);   // every rung id must resolve
+                    CHECK(!isBossMove(id));           // ...and none may be a boss's
+                }
+            }
+            for (const char* id : deepWebMoveIds(kDeepWebBossMoveDepth + 40, seed)) {
+                CHECK(reg.move(id) != nullptr);
+                if (isBossMove(id)) ++deepBossHits;
+            }
+        }
+        CHECK(deepBossHits > 0);                      // the deep pool really is the bosses'
+        // Two distinct moves, never the same one twice wearing two hats.
+        for (uint32_t seed = 1; seed <= 20; ++seed) {
+            const std::vector<const char*> k = deepWebMoveIds(500, seed);
+            CHECK(k.size() == 2);
+            CHECK(std::strcmp(k[0], k[1]) != 0);
+        }
     }
     // (1c) Depth ramp, Bits half: mirrors the same logarithmic curve onto the Bits
     //      payout pct, since diffPips-keyed Bits don't move with the level bonus above.

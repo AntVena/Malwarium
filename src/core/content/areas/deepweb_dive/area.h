@@ -35,4 +35,33 @@ extern const int kDeepWebDepthLevelPerLog2;
 extern const int kDeepWebDepthBitsPctPerLog2;
 extern const int kDeepWebDepthBitsMaxPct;  // cap the bonus (endless-zone guard)
 
+// Depth ramp, STAT half: one extra stat point in the dive's random spread
+// (applyDeepWebScale) per this many depth. LINEAR, unlike everything above it, and that
+// is the whole job — the logarithmic ramp flattens into a fair fight a good build wins
+// forever, so this is the term that eventually ends a run. Bigger = a gentler dive.
+extern const int kDeepWebDepthPointsPerN;
+
+// What a dive enemy KNOWS, by depth. The dive is the only zone whose kit is drawn rather
+// than authored per enemy, because it is the only one with no roster left to author
+// against — so its moves come from the pool the whole ladder already taught, handed back
+// in rungs. This is also the answer to a turtle: a stacked wall is beaten by ARMOR PIERCE
+// (which cuts the % reduction directly) and by DOT (which bypasses mitigation entirely,
+// biting off Health at each turn-start), and the deep rungs are built out of both.
+//
+// deepWebMoveIds() picks from the rung `depth` has reached; see combat.h.
+//
+// BOSS SIGNATURES ARE GATED to kDeepWebBossMoveDepth and beyond. A boss is meant to be the
+// first place its move is ever seen, and a zone that handed the same move out at depth 12
+// would quietly retire the hunt the whole roster is built around. By 256 wins deep the
+// player has long since had every boss on offer, and the dive is giving back what it was
+// taught rather than front-running it.
+extern const int kDeepWebBossMoveDepth;
+
+extern const char* const* const kDeepWebMoveRungs[];  // rung -> that rung's id list
+extern const int kDeepWebMoveRungCounts[];            // ...and its length
+extern const int kDeepWebMoveRungDepths[];            // ...and the depth it opens at
+extern const int kDeepWebMoveRungTotal;               // how many rungs exist
+extern const char* const kDeepWebMovesBoss[];         // the deep pool (see the gate above)
+extern const int kDeepWebMovesBossCount;
+
 }  // namespace mal

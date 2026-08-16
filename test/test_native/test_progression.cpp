@@ -94,8 +94,41 @@ void test_creature_level_feeds_combat() {
     CHECK(lv.maxHealth == base.maxHealth + pH * kLevelHealthPerPoint);
     CHECK(lv.speed == base.speed + pS * kLevelSpeedPerPoint);
     CHECK(lv.powerMultPct == base.powerMultPct + pP * kLevelPowerPctPerPoint);
-    CHECK(lv.dmgReducePct == base.dmgReducePct + pD * kLevelDefensePctPerPoint);
+    // Defence goes through its own curve rather than a flat per-point rate, so this
+    // asserts the curve and not a coincidence of the point count staying under the bend.
+    CHECK(lv.dmgReducePct == base.dmgReducePct + levelDefenseCutPct(pD));
     CHECK(lv.health == lv.maxHealth);         // starts full at the leveled max
+}
+
+// DEFENCE DIMINISHES, and then it stops. Defence is the only stat with a hard ceiling,
+// which without a bend made the last points before that ceiling the best purchase in the
+// game — buy enough and the wall was simply bought. Full rate to the soft point, half rate
+// after, capped: pure and deterministic, so it is checked directly rather than through a
+// fight that would only ever sample a few points of it.
+void test_defense_diminishing_returns() {
+    CHECK(levelDefenseCutPct(0) == 0);
+    CHECK(levelDefenseCutPct(-4) == 0);                    // negatives are not a refund
+    // Below the bend, a point is worth exactly its full rate — early Defence is untouched
+    // by this curve, which is the point of putting the soft point above the mid game.
+    for (int p = 1; p <= kLevelDefenseSoftPoints; ++p)
+        CHECK(levelDefenseCutPct(p) == p * kLevelDefensePctPerPoint);
+    // Past it, each point buys half as much...
+    const int atSoft = levelDefenseCutPct(kLevelDefenseSoftPoints);
+    CHECK(levelDefenseCutPct(kLevelDefenseSoftPoints + 2) ==
+          atSoft + kLevelDefensePctPerPoint);              // 2 bent points = 1 full one
+    // ...strictly monotonic while it climbs (a curve that stalls flat reads as a bug),
+    // and never past the ceiling however many points are poured in.
+    int prev = 0;
+    for (int p = 1; p <= 400; ++p) {
+        const int cut = levelDefenseCutPct(p);
+        CHECK(cut >= prev);
+        CHECK(cut <= kLevelDefenseCapPct);
+        prev = cut;
+    }
+    CHECK(levelDefenseCutPct(400) == kLevelDefenseCapPct); // the ceiling is reachable
+    // And the ceiling really is lower than the old flat rate would have given: the whole
+    // change is that the stretch heading for immunity now costs double.
+    CHECK(levelDefenseCutPct(40) < 40 * kLevelDefensePctPerPoint);
 }
 
 // Rollback: opens a stat picker; a confirm sheds one earned point (−1 that

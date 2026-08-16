@@ -354,6 +354,13 @@ constexpr int kLevelXpGrowthPct = 110;     // each level costs 1.1x the previous
 constexpr int kLevelStatCount = 4;         // power / defense / speed / max-Health
 constexpr int kLevelPowerPctPerPoint = 4;      // +4% attack power per power point
 constexpr int kLevelDefensePctPerPoint = 3;    // +3% incoming-damage cut per defense
+// ...at FULL rate only for the first kLevelDefenseSoftPoints; past that a point buys
+// half as much (levelDefenseCutPct, combat.h). Defense is the one stat with a hard
+// ceiling, so without a bend the last points before the cap were the most valuable
+// purchase in the game and the wall was simply a matter of spending enough. The curve
+// leaves early Defense untouched — the soft point sits above where a mid-game pet lands —
+// and only taxes the stretch that was heading for immunity.
+constexpr int kLevelDefenseSoftPoints = 10;    // full-rate points before the bend
 constexpr int kLevelDefenseCapPct = 60;        // ...level defense contribution cap
 constexpr int kLevelDmgReduceMaxPct = 85;      // ...total dmg-cut clamp (never immune)
 constexpr int kLevelSpeedPerPoint = 1;         // +1 initiative per speed point
@@ -364,6 +371,12 @@ constexpr int kLevelHealthPerPoint = 3;        // +3 max-Health per max-Health p
 // absorb, on top of the always-on dmgReducePct cut above. Braces are one-shot and
 // cost a turn, so this doesn't touch the 85% immunity clamp (that guards the % cut).
 constexpr int kLevelDefenseBracePctPerPoint = 3;
+// ...and that brace scaling now has a ceiling of its own. "One-shot and costs a turn" is
+// a real cost in a short fight, but the endless zone is not a short fight: a turtle with
+// unbounded absorb takes a whole turn to become unkillable for the next one, forever. The
+// cap is the multiplier's BONUS half (defenseMultPct starts at 100), so +200 = a brace
+// that absorbs at most three times its printed power from Defense alone.
+constexpr int kLevelDefenseBraceCapPct = 200;
 
 // Per-line combat PASSIVE constants (Ransom Lock, the Phishing steal-track floors +
 // Feed-Frenzy + Perfect Bite, Execution-Override + the Trojan trap cap) live beside

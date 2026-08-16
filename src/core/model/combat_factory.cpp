@@ -259,7 +259,34 @@ void applyWildSubAreaRamp(CombatEnemy& e, int area, int sub) {
     e.moveIds = kLadder[sub];
 }
 
-void applyDeepWebScale(CombatEnemy& e, int petLevel, int depth) {
+std::vector<const char*> deepWebMoveIds(int depth, uint32_t roll) {
+    if (depth < 0) depth = 0;
+    // Past the gate the deep pool REPLACES the rung — a boss move is the whole point of
+    // being this far down, not a rare garnish on the same kit.
+    const bool deep = depth >= kDeepWebBossMoveDepth;
+    int rung = 0;                                // the deepest rung this depth has opened
+    while (rung + 1 < kDeepWebMoveRungTotal && depth >= kDeepWebMoveRungDepths[rung + 1])
+        ++rung;
+    const char* const* pool = deep ? kDeepWebMovesBoss : kDeepWebMoveRungs[rung];
+    const int poolN = deep ? kDeepWebMovesBossCount : kDeepWebMoveRungCounts[rung];
+    // Two distinct picks: enough that a dive enemy is not one move on repeat, few enough
+    // that Combat::chooseMove's uniform pick still lets each one read. Drawn without
+    // replacement so a "pair" is never the same move twice wearing two hats.
+    std::vector<const char*> out;
+    for (int i = 0; i < 2 && static_cast<int>(out.size()) < poolN; ++i) {
+        for (int tries = 0; tries < poolN; ++tries) {
+            roll = roll * 1664525u + 1013904223u;
+            const char* pick = pool[(roll >> 16) % static_cast<uint32_t>(poolN)];
+            bool dup = false;
+            for (const char* got : out)
+                if (std::strcmp(got, pick) == 0) { dup = true; break; }
+            if (!dup) { out.push_back(pick); break; }
+        }
+    }
+    return out;
+}
+
+void applyDeepWebScale(CombatEnemy& e, int petLevel, int depth, uint32_t roll) {
     if (petLevel < 0) petLevel = 0;
     if (depth < 0) depth = 0;
     // depth (the dive's current win-streak) folds in as a logarithmic bonus "effective
@@ -273,8 +300,39 @@ void applyDeepWebScale(CombatEnemy& e, int petLevel, int depth) {
     // level-keyed) doesn't ride this scale — see deepWebDepthBitsPct below.
     e.level = effLevel + kDeepWebEnemyLevelOffset;
     e.hasLevel = true;
-    e.maxHealth += effLevel * kDeepWebHealthPerLevel;
-    if (kDeepWebSpeedPerNLevels > 0) e.speed += effLevel / kDeepWebSpeedPerNLevels;
+
+    // A BUDGET OF POINTS, SPENT AT RANDOM — the same shape a pet's own growth takes (one
+    // point per level into one of four stats, game_combat.cpp's addCombatXp), so a dive
+    // enemy is a peer built the way the player was built rather than a second curve to
+    // reason about. Health used to be the only thing depth moved, which is why a deep
+    // enemy was a bigger bag of the same harmless swings: the fix is that Power is now in
+    // the same hat as Health.
+    //
+    // The spread is per-point rather than a fixed split, so a shallow dive throws real
+    // variety — a glass cannon, a wall, a blur — while a deep one evens out on its own as
+    // the count grows. Nothing has to special-case that; it is just what many rolls do.
+    //
+    // The budget OUTGROWS the pet on purpose. effLevel's depth half is logarithmic and
+    // flattens, so on its own it converges to a fair fight that a good build wins forever.
+    // The linear term below is what makes the zone endless in the honest sense: dive far
+    // enough and the arithmetic beats you. The streak is the score.
+    const int budget = effLevel + depth / kDeepWebDepthPointsPerN;
+    int points[kLevelStatCount] = {0, 0, 0, 0};
+    for (int i = 0; i < budget; ++i) {
+        roll = roll * 1664525u + 1013904223u;
+        ++points[(roll >> 16) % kLevelStatCount];
+    }
+    // ...and what it fights WITH, drawn from the rung this depth has reached. Done here
+    // rather than at the call site so "a dive enemy" is one statement: the roster picked
+    // the body, the depth picked everything else about it.
+    e.moveIds = deepWebMoveIds(depth, roll);
+
+    e.powerMultPct += points[0] * kLevelPowerPctPerPoint;
+    // Same diminishing curve and ceiling the pet's Defence answers to — an enemy is not
+    // allowed a wall the player could not have built, and makeEnemyCombatant re-clamps.
+    e.dmgReducePct += levelDefenseCutPct(points[1]);
+    e.speed += points[2] * kLevelSpeedPerPoint;
+    e.maxHealth += points[3] * kDeepWebHealthPerLevel;
 }
 
 int deepWebDepthBitsPct(int depth) {
@@ -416,18 +474,31 @@ int wildWinXp(int baseXp, int enemyLevel, int petLevel) {
     return xp < 1 ? 1 : xp;                              // always at least a trickle
 }
 
+int levelDefenseCutPct(int points) {
+    if (points <= 0) return 0;
+    // Full rate up to the soft point, HALF rate after — the diminishing half of a stat
+    // that also has a hard ceiling. Integer and exact: the bent stretch is counted in
+    // whole points and halved once, rather than halving each point (which would round
+    // every one of them down to the same place and quietly stall the curve flat).
+    const int full = points < kLevelDefenseSoftPoints ? points : kLevelDefenseSoftPoints;
+    const int bent = points - full;
+    int cut = full * kLevelDefensePctPerPoint + bent * kLevelDefensePctPerPoint / 2;
+    if (cut > kLevelDefenseCapPct) cut = kLevelDefenseCapPct;
+    return cut;
+}
+
 void applyLevelStatPoints(Combatant& c, const int statPoints[4]) {
     if (!statPoints) return;
-    // power → +% attack lean; defense → +% incoming-damage cut (its own cap, then the
-    // total cut is clamped so defense can never null a hit) AND +% defend-move brace
-    // magnitude (symmetric to power→attack, uncapped: braces are one-shot and cost a
-    // turn); speed → +initiative; max-Health → +HP.
+    // power → +% attack lean; defense → +% incoming-damage cut (diminishing past the
+    // soft point, its own cap, then the total cut is clamped so defense can never null a
+    // hit) AND +% defend-move brace magnitude (symmetric to power→attack, capped too);
+    // speed → +initiative; max-Health → +HP.
     c.powerMultPct += statPoints[0] * kLevelPowerPctPerPoint;
-    int defAdd = statPoints[1] * kLevelDefensePctPerPoint;
-    if (defAdd > kLevelDefenseCapPct) defAdd = kLevelDefenseCapPct;
-    c.dmgReducePct += defAdd;
+    c.dmgReducePct += levelDefenseCutPct(statPoints[1]);
     if (c.dmgReducePct > kLevelDmgReduceMaxPct) c.dmgReducePct = kLevelDmgReduceMaxPct;
-    c.defenseMultPct += statPoints[1] * kLevelDefenseBracePctPerPoint;
+    int brace = statPoints[1] * kLevelDefenseBracePctPerPoint;
+    if (brace > kLevelDefenseBraceCapPct) brace = kLevelDefenseBraceCapPct;
+    c.defenseMultPct += brace;
     c.speed += statPoints[2] * kLevelSpeedPerPoint;
     c.maxHealth += statPoints[3] * kLevelHealthPerPoint;
     c.health = c.maxHealth;
@@ -443,6 +514,13 @@ Combatant makeEnemyCombatant(const ContentRegistry& reg, const CombatEnemy& spec
     c.maxHealth = spec.maxHealth;
     c.health = spec.maxHealth;
     c.speed = spec.speed;
+    c.powerMultPct = spec.powerMultPct;
+    // Held to the same never-immune clamp the player's own defence answers to, rather
+    // than trusted from the spec: a rolled dive enemy (applyDeepWebScale) can spend an
+    // arbitrary pile of points here, and an enemy nobody can hurt is the same broken
+    // fight as a pet nobody can hurt.
+    c.dmgReducePct = spec.dmgReducePct > kLevelDmgReduceMaxPct ? kLevelDmgReduceMaxPct
+                                                               : spec.dmgReducePct;
     if (spec.isWild) {                              // wild-encounter challenge buff
         c.maxHealth = c.maxHealth * kWildEnemyHealthPct / 100;
         c.health = c.maxHealth;

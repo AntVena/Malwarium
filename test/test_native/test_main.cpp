@@ -195,6 +195,7 @@ int g_failures = 0;
     RUN(test_rig_continuous_backup_rearms_mid_run) \
     RUN(test_creature_level_curve_and_invariant) \
     RUN(test_creature_level_feeds_combat)   \
+    RUN(test_defense_diminishing_returns)   \
     RUN(test_rollback_item)                 \
     RUN(test_creature_level_persist_evolution_reset_egg) \
     RUN(test_arch_store_deploy_preserves_creature_level) \
