@@ -4657,6 +4657,7 @@ window.PEDIA_DATA = {
       "tag": "+SPD",
       "rarity": "COMMON",
       "tier": 1,
+      "equipLevel": 2,
       "effect": "Raises battle initiative speed by 4.",
       "stats": "SPEED +4",
       "icon": "assets/icons/ICON_MOD_CLOCK_SPEED_BOOST.png"
@@ -4667,6 +4668,7 @@ window.PEDIA_DATA = {
       "tag": "+BITS",
       "rarity": "COMMON",
       "tier": 1,
+      "equipLevel": 0,
       "effect": "Earns 8 extra Bits from a won fight.",
       "stats": "WIN BITS +8",
       "icon": "assets/icons/ICON_MOD_PACKET_SNIFFER.png"
@@ -4677,10 +4679,10 @@ window.PEDIA_DATA = {
       "tag": "+POW",
       "rarity": "UNCOMMON",
       "tier": 1,
+      "equipLevel": 6,
       "effect": "Raises attack power by 10%.",
       "stats": "POWER +10%",
-      "icon": "assets/icons/ICON_MODS_SLOT.png",
-      "iconFallback": true
+      "icon": "assets/icons/ICON_MOD_CRYPTO_COPROCESSOR.png"
     },
     {
       "id": "tpm_chip",
@@ -4688,10 +4690,10 @@ window.PEDIA_DATA = {
       "tag": "+DEF",
       "rarity": "UNCOMMON",
       "tier": 2,
+      "equipLevel": 13,
       "effect": "Cuts incoming damage by 15%.",
       "stats": "DMG CUT 15%",
-      "icon": "assets/icons/ICON_MODS_SLOT.png",
-      "iconFallback": true
+      "icon": "assets/icons/ICON_MOD_TPM_CHIP.png"
     },
     {
       "id": "solid_state_cache",
@@ -4699,10 +4701,10 @@ window.PEDIA_DATA = {
       "tag": "+HP",
       "rarity": "UNCOMMON",
       "tier": 2,
+      "equipLevel": 12,
       "effect": "Raises max Health by 12.",
       "stats": "MAX HP +12",
-      "icon": "assets/icons/ICON_MODS_SLOT.png",
-      "iconFallback": true
+      "icon": "assets/icons/ICON_MOD_SOLID_STATE_CACHE.png"
     },
     {
       "id": "firewall_patch",
@@ -4710,6 +4712,7 @@ window.PEDIA_DATA = {
       "tag": "+DEF",
       "rarity": "RARE",
       "tier": 2,
+      "equipLevel": 22,
       "effect": "Cuts incoming damage by 40%.",
       "stats": "DMG CUT 40%",
       "icon": "assets/icons/ICON_MOD_FIREWALL_PATCH.png"
@@ -4720,10 +4723,10 @@ window.PEDIA_DATA = {
       "tag": "+SPD",
       "rarity": "UNCOMMON",
       "tier": 4,
+      "equipLevel": 36,
       "effect": "Raises battle initiative speed by 5; costs 8% power.",
       "stats": "SPEED +5 / POWER -8%",
-      "icon": "assets/icons/ICON_MODS_SLOT.png",
-      "iconFallback": true
+      "icon": "assets/icons/ICON_MOD_OVERCLOCK_CHIP.png"
     },
     {
       "id": "heat_sink",
@@ -4731,10 +4734,10 @@ window.PEDIA_DATA = {
       "tag": "-FRAG",
       "rarity": "RARE",
       "tier": 4,
+      "equipLevel": 43,
       "effect": "Cuts battle-fatigue Frag by 60%.",
       "stats": "FATIGUE FRAG -60%",
-      "icon": "assets/icons/ICON_MODS_SLOT.png",
-      "iconFallback": true
+      "icon": "assets/icons/ICON_MOD_HEAT_SINK.png"
     },
     {
       "id": "honeytoken",
@@ -4742,10 +4745,10 @@ window.PEDIA_DATA = {
       "tag": "THORNS",
       "rarity": "RARE",
       "tier": 4,
+      "equipLevel": 37,
       "effect": "Chips any attacker that hits you for 4.",
       "stats": "THORNS 4",
-      "icon": "assets/icons/ICON_MODS_SLOT.png",
-      "iconFallback": true
+      "icon": "assets/icons/ICON_MOD_HONEYTOKEN.png"
     },
     {
       "id": "cipher_asic",
@@ -4753,10 +4756,10 @@ window.PEDIA_DATA = {
       "tag": "+DEF",
       "rarity": "RARE",
       "tier": 4,
+      "equipLevel": 39,
       "effect": "Cuts damage 10% (20% for Ransomware).",
       "stats": "DMG CUT 10% / ON LINE +10",
-      "icon": "assets/icons/ICON_MODS_SLOT.png",
-      "iconFallback": true,
+      "icon": "assets/icons/ICON_MOD_CIPHER_ASIC.png",
       "line": "ransomware"
     },
     {
@@ -4765,10 +4768,10 @@ window.PEDIA_DATA = {
       "tag": "ON-KO",
       "rarity": "EPIC",
       "tier": 5,
+      "equipLevel": 49,
       "effect": "On your KO, blasts the enemy for 12.",
       "stats": "ON KO 12",
-      "icon": "assets/icons/ICON_MODS_SLOT.png",
-      "iconFallback": true
+      "icon": "assets/icons/ICON_MOD_DEADMAN_SWITCH.png"
     },
     {
       "id": "raid_mirror",
@@ -4776,6 +4779,7 @@ window.PEDIA_DATA = {
       "tag": "1-SHOT",
       "rarity": "EPIC",
       "tier": 5,
+      "equipLevel": 52,
       "effect": "Survives one fatal hit, then is consumed.",
       "stats": "SURVIVES 1 FATAL HIT",
       "icon": "assets/icons/ICON_MOD_RAID_MIRROR.png",
@@ -4787,10 +4791,10 @@ window.PEDIA_DATA = {
       "tag": "HIT-CAP",
       "rarity": "EPIC",
       "tier": 5,
+      "equipLevel": 50,
       "effect": "No single hit exceeds 35% of max Health.",
       "stats": "HIT CAP 35%HP",
-      "icon": "assets/icons/ICON_MODS_SLOT.png",
-      "iconFallback": true
+      "icon": "assets/icons/ICON_MOD_ECC_MEMORY.png"
     },
     {
       "id": "load_balancer",
@@ -4798,10 +4802,10 @@ window.PEDIA_DATA = {
       "tag": "SPLIT",
       "rarity": "EPIC",
       "tier": 5,
+      "equipLevel": 51,
       "effect": "Hits over 30% of max Health split - 50% lands next turn.",
       "stats": "SPLIT OVER 30%HP / DEFER 50%",
-      "icon": "assets/icons/ICON_MODS_SLOT.png",
-      "iconFallback": true
+      "icon": "assets/icons/ICON_MOD_LOAD_BALANCER.png"
     },
     {
       "id": "watchdog_timer",
@@ -4809,10 +4813,10 @@ window.PEDIA_DATA = {
       "tag": "UNLOCK",
       "rarity": "EPIC",
       "tier": 2,
+      "equipLevel": 23,
       "effect": "Never frozen more than 1 turn.",
       "stats": "FREEZE CAP 1TURN",
-      "icon": "assets/icons/ICON_MODS_SLOT.png",
-      "iconFallback": true
+      "icon": "assets/icons/ICON_MOD_WATCHDOG_TIMER.png"
     },
     {
       "id": "faraday_cage",
@@ -4820,10 +4824,10 @@ window.PEDIA_DATA = {
       "tag": "SHIELD",
       "rarity": "EPIC",
       "tier": 4,
+      "equipLevel": 47,
       "effect": "Cuts corruption damage-over-time by 100%.",
       "stats": "DOT -100%",
-      "icon": "assets/icons/ICON_MODS_SLOT.png",
-      "iconFallback": true
+      "icon": "assets/icons/ICON_MOD_FARADAY_CAGE.png"
     },
     {
       "id": "canary_trap",
@@ -4831,10 +4835,10 @@ window.PEDIA_DATA = {
       "tag": "1ST-CUT",
       "rarity": "RARE",
       "tier": 1,
+      "equipLevel": 10,
       "effect": "First hit taken each fight is cut an extra 50%.",
       "stats": "1ST HIT CUT 50%",
-      "icon": "assets/icons/ICON_MODS_SLOT.png",
-      "iconFallback": true
+      "icon": "assets/icons/ICON_MOD_CANARY_TRAP.png"
     },
     {
       "id": "scratch_disk_buffer",
@@ -4842,10 +4846,10 @@ window.PEDIA_DATA = {
       "tag": "+DEF",
       "rarity": "COMMON",
       "tier": 1,
+      "equipLevel": 0,
       "effect": "Cuts incoming damage by 8%.",
       "stats": "DMG CUT 8%",
-      "icon": "assets/icons/ICON_MODS_SLOT.png",
-      "iconFallback": true
+      "icon": "assets/icons/ICON_MOD_SCRATCH_DISK_BUFFER.png"
     },
     {
       "id": "botnet_swarm",
@@ -4853,10 +4857,10 @@ window.PEDIA_DATA = {
       "tag": "+POW/ATK",
       "rarity": "UNCOMMON",
       "tier": 2,
+      "equipLevel": 16,
       "effect": "Attack power rises 6% per equipped Attack move.",
       "stats": "POWER/ATK +6%",
-      "icon": "assets/icons/ICON_MODS_SLOT.png",
-      "iconFallback": true
+      "icon": "assets/icons/ICON_MOD_BOTNET_SWARM.png"
     },
     {
       "id": "airgap_ward",
@@ -4864,10 +4868,10 @@ window.PEDIA_DATA = {
       "tag": "+DEF/DEF",
       "rarity": "UNCOMMON",
       "tier": 2,
+      "equipLevel": 17,
       "effect": "Damage cut rises 6% per equipped Defend move.",
       "stats": "DMG CUT/DEF +6%",
-      "icon": "assets/icons/ICON_MODS_SLOT.png",
-      "iconFallback": true
+      "icon": "assets/icons/ICON_MOD_AIRGAP_WARD.png"
     },
     {
       "id": "tripwire",
@@ -4875,10 +4879,10 @@ window.PEDIA_DATA = {
       "tag": "THORNS",
       "rarity": "RARE",
       "tier": 2,
+      "equipLevel": 21,
       "effect": "Below 40% Health, reflects 10 damage to any attacker.",
       "stats": "BELOW 40%HP / THORNS 10",
-      "icon": "assets/icons/ICON_MODS_SLOT.png",
-      "iconFallback": true
+      "icon": "assets/icons/ICON_MOD_TRIPWIRE.png"
     },
     {
       "id": "cold_storage",
@@ -4886,10 +4890,10 @@ window.PEDIA_DATA = {
       "tag": "+HP/-SPD",
       "rarity": "UNCOMMON",
       "tier": 2,
+      "equipLevel": 20,
       "effect": "Raises max Health by 20; costs 2 initiative.",
       "stats": "MAX HP +20 / SPEED -2",
-      "icon": "assets/icons/ICON_MODS_SLOT.png",
-      "iconFallback": true
+      "icon": "assets/icons/ICON_MOD_COLD_STORAGE.png"
     },
     {
       "id": "hardened_shell",
@@ -4897,10 +4901,10 @@ window.PEDIA_DATA = {
       "tag": "+DEF",
       "rarity": "UNCOMMON",
       "tier": 3,
+      "equipLevel": 27,
       "effect": "Cuts incoming damage by 20%.",
       "stats": "DMG CUT 20%",
-      "icon": "assets/icons/ICON_MODS_SLOT.png",
-      "iconFallback": true
+      "icon": "assets/icons/ICON_MOD_HARDENED_SHELL.png"
     },
     {
       "id": "bundle_stripper",
@@ -4908,10 +4912,10 @@ window.PEDIA_DATA = {
       "tag": "1ST-CUT",
       "rarity": "RARE",
       "tier": 3,
+      "equipLevel": 35,
       "effect": "First hit taken each fight is cut an extra 60%.",
       "stats": "1ST HIT CUT 60%",
-      "icon": "assets/icons/ICON_MODS_SLOT.png",
-      "iconFallback": true
+      "icon": "assets/icons/ICON_MOD_BUNDLE_STRIPPER.png"
     },
     {
       "id": "ballast_cache",
@@ -4919,10 +4923,10 @@ window.PEDIA_DATA = {
       "tag": "+HP",
       "rarity": "UNCOMMON",
       "tier": 3,
+      "equipLevel": 25,
       "effect": "Raises max Health by 30.",
       "stats": "MAX HP +30",
-      "icon": "assets/icons/ICON_MODS_SLOT.png",
-      "iconFallback": true
+      "icon": "assets/icons/ICON_MOD_BALLAST_CACHE.png"
     },
     {
       "id": "sonar_ping",
@@ -4930,10 +4934,10 @@ window.PEDIA_DATA = {
       "tag": "+SPD",
       "rarity": "UNCOMMON",
       "tier": 3,
+      "equipLevel": 26,
       "effect": "Raises battle initiative speed by 7.",
       "stats": "SPEED +7",
-      "icon": "assets/icons/ICON_MODS_SLOT.png",
-      "iconFallback": true
+      "icon": "assets/icons/ICON_MOD_SONAR_PING.png"
     },
     {
       "id": "salvage_rig",
@@ -4941,10 +4945,10 @@ window.PEDIA_DATA = {
       "tag": "+BITS",
       "rarity": "COMMON",
       "tier": 3,
+      "equipLevel": 24,
       "effect": "Earns 14 extra Bits from a won fight.",
       "stats": "WIN BITS +14",
-      "icon": "assets/icons/ICON_MODS_SLOT.png",
-      "iconFallback": true
+      "icon": "assets/icons/ICON_MOD_SALVAGE_RIG.png"
     },
     {
       "id": "prowlware",
@@ -4952,10 +4956,10 @@ window.PEDIA_DATA = {
       "tag": "1ST HIT",
       "rarity": "RARE",
       "tier": 4,
+      "equipLevel": 45,
       "effect": "First damaging hit multiplies by your Attack-move power rank.",
       "stats": "1ST HIT x ATK RANK",
-      "icon": "assets/icons/ICON_MODS_SLOT.png",
-      "iconFallback": true
+      "icon": "assets/icons/ICON_MOD_PROWLWARE.png"
     },
     {
       "id": "meltdown_core",
@@ -4963,10 +4967,10 @@ window.PEDIA_DATA = {
       "tag": "COMEBACK",
       "rarity": "RARE",
       "tier": 4,
+      "equipLevel": 40,
       "effect": "Below 30% Health, attack power rises 40%.",
       "stats": "BELOW 30%HP / POWER +40%",
-      "icon": "assets/icons/ICON_MODS_SLOT.png",
-      "iconFallback": true
+      "icon": "assets/icons/ICON_MOD_MELTDOWN_CORE.png"
     },
     {
       "id": "zero_day_exploit",
@@ -4974,10 +4978,10 @@ window.PEDIA_DATA = {
       "tag": "GAMBLE",
       "rarity": "RARE",
       "tier": 4,
+      "equipLevel": 42,
       "effect": "25% chance to raise attack power 60% for the whole fight.",
       "stats": "CHANCE 25% / POWER +60%",
-      "icon": "assets/icons/ICON_MODS_SLOT.png",
-      "iconFallback": true
+      "icon": "assets/icons/ICON_MOD_ZERO_DAY_EXPLOIT.png"
     },
     {
       "id": "phishing_rod",
@@ -4985,10 +4989,10 @@ window.PEDIA_DATA = {
       "tag": "SIPHON+",
       "rarity": "EPIC",
       "tier": 5,
+      "equipLevel": 56,
       "effect": "Waiting for that perfect bite: while your bubble's up, amplifies the bonus siphon by 75%.",
       "stats": "SIPHON+ +75%",
-      "icon": "assets/icons/ICON_MODS_SLOT.png",
-      "iconFallback": true,
+      "icon": "assets/icons/ICON_MOD_PHISHING_ROD.png",
       "requiresLine": "phishing"
     },
     {
@@ -4997,10 +5001,10 @@ window.PEDIA_DATA = {
       "tag": "+POW",
       "rarity": "EPIC",
       "tier": 5,
+      "equipLevel": 58,
       "effect": "Raises attack power by 30%. Ransomware pets only.",
       "stats": "POWER +30%",
-      "icon": "assets/icons/ICON_MODS_SLOT.png",
-      "iconFallback": true,
+      "icon": "assets/icons/ICON_MOD_EXTORTION_LEDGER.png",
       "requiresLine": "ransomware"
     },
     {
@@ -5009,10 +5013,10 @@ window.PEDIA_DATA = {
       "tag": "+BITS",
       "rarity": "RARE",
       "tier": 5,
+      "equipLevel": 48,
       "effect": "Earns 20 extra Bits from a won fight.",
       "stats": "WIN BITS +20",
-      "icon": "assets/icons/ICON_MODS_SLOT.png",
-      "iconFallback": true
+      "icon": "assets/icons/ICON_MOD_BACKUP_UPLINK.png"
     },
     {
       "id": "ghost_process",
@@ -5020,10 +5024,148 @@ window.PEDIA_DATA = {
       "tag": "-FRAG",
       "rarity": "EPIC",
       "tier": 5,
+      "equipLevel": 60,
       "effect": "Battle fatigue leaves no trace: cuts Frag by 100%.",
       "stats": "FATIGUE FRAG -100%",
-      "icon": "assets/icons/ICON_MODS_SLOT.png",
-      "iconFallback": true
+      "icon": "assets/icons/ICON_MOD_GHOST_PROCESS.png"
+    },
+    {
+      "id": "spare_ram_stick",
+      "name": "Spare RAM Stick",
+      "tag": "+HP",
+      "rarity": "COMMON",
+      "tier": 1,
+      "equipLevel": 4,
+      "effect": "Raises max Health by 8.",
+      "stats": "MAX HP +8",
+      "icon": "assets/icons/ICON_MOD_SPARE_RAM_STICK.png"
+    },
+    {
+      "id": "capacitor_bank",
+      "name": "Capacitor Bank",
+      "tag": "THORNS",
+      "rarity": "UNCOMMON",
+      "tier": 1,
+      "equipLevel": 8,
+      "effect": "Holds a charge: chips any attacker that hits you for 1.",
+      "stats": "THORNS 1",
+      "icon": "assets/icons/ICON_MOD_CAPACITOR_BANK.png"
+    },
+    {
+      "id": "spoof_header",
+      "name": "Spoof Header",
+      "tag": "+SPD",
+      "rarity": "UNCOMMON",
+      "tier": 2,
+      "equipLevel": 14,
+      "effect": "Forged and first in the queue: 4 initiative (7 for Phishing).",
+      "stats": "SPEED +4 / ON LINE +3",
+      "icon": "assets/icons/ICON_MOD_SPOOF_HEADER.png",
+      "line": "phishing"
+    },
+    {
+      "id": "escrow_buffer",
+      "name": "Escrow Buffer",
+      "tag": "+HP",
+      "rarity": "UNCOMMON",
+      "tier": 2,
+      "equipLevel": 15,
+      "effect": "Raises max Health by 14 (20 for Ransomware).",
+      "stats": "MAX HP +14 / ON LINE +6",
+      "icon": "assets/icons/ICON_MOD_ESCROW_BUFFER.png",
+      "line": "ransomware"
+    },
+    {
+      "id": "dropper_payload",
+      "name": "Dropper Payload",
+      "tag": "+POW",
+      "rarity": "UNCOMMON",
+      "tier": 2,
+      "equipLevel": 18,
+      "effect": "Raises attack power by 13% (18% for Trojan).",
+      "stats": "POWER +13% / ON LINE +5",
+      "icon": "assets/icons/ICON_MOD_DROPPER_PAYLOAD.png",
+      "line": "trojan"
+    },
+    {
+      "id": "fork_spur",
+      "name": "Fork Spur",
+      "tag": "THORNS",
+      "rarity": "RARE",
+      "tier": 2,
+      "equipLevel": 19,
+      "effect": "Chips any attacker that hits you for 2 (4 for Worm).",
+      "stats": "THORNS 2 / ON LINE +2",
+      "icon": "assets/icons/ICON_MOD_FORK_SPUR.png",
+      "line": "worm"
+    },
+    {
+      "id": "bilge_pump",
+      "name": "Bilge Pump",
+      "tag": "-FRAG",
+      "rarity": "UNCOMMON",
+      "tier": 3,
+      "equipLevel": 28,
+      "effect": "Pumps the fatigue back overboard: cuts Frag by 35%.",
+      "stats": "FATIGUE FRAG -35%",
+      "icon": "assets/icons/ICON_MOD_BILGE_PUMP.png"
+    },
+    {
+      "id": "barnacle_plating",
+      "name": "Barnacle Plating",
+      "tag": "THORNS",
+      "rarity": "RARE",
+      "tier": 3,
+      "equipLevel": 30,
+      "effect": "Chips any attacker that hits you for 3.",
+      "stats": "THORNS 3",
+      "icon": "assets/icons/ICON_MOD_BARNACLE_PLATING.png"
+    },
+    {
+      "id": "harpoon_mount",
+      "name": "Harpoon Mount",
+      "tag": "+POW",
+      "rarity": "UNCOMMON",
+      "tier": 3,
+      "equipLevel": 31,
+      "effect": "Raises attack power by 18%.",
+      "stats": "POWER +18%",
+      "icon": "assets/icons/ICON_MOD_HARPOON_MOUNT.png"
+    },
+    {
+      "id": "distress_beacon",
+      "name": "Distress Beacon",
+      "tag": "COMEBACK",
+      "rarity": "RARE",
+      "tier": 3,
+      "equipLevel": 33,
+      "effect": "Below 25% Health, attack power rises 30%.",
+      "stats": "BELOW 25%HP / POWER +30%",
+      "icon": "assets/icons/ICON_MOD_DISTRESS_BEACON.png"
+    },
+    {
+      "id": "ring_zero_shim",
+      "name": "Ring-0 Shim",
+      "tag": "HIJACK+",
+      "rarity": "EPIC",
+      "tier": 5,
+      "equipLevel": 54,
+      "effect": "Runs your code a ring too deep: 12% more chance to hijack the enemy's move. Trojan pets only.",
+      "stats": "HIJACK +12%",
+      "icon": "assets/icons/ICON_MOD_RING_ZERO_SHIM.png",
+      "requiresLine": "trojan"
+    },
+    {
+      "id": "replication_bus",
+      "name": "Replication Bus",
+      "tag": "COPY+",
+      "rarity": "EPIC",
+      "tier": 5,
+      "equipLevel": 55,
+      "effect": "Widens the bus every copy travels: 20% more chance to replicate. Worm pets only.",
+      "stats": "REPLICATE +20%",
+      "icon": "assets/icons/ICON_MOD_REPLICATION_BUS.png",
+      "requiresLine": "worm"
     }
   ],
   "modTiers": {

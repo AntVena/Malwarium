@@ -360,16 +360,22 @@
 
     h += '<h2 class="sect">// HARDWARE MODS<span class="count">' +
       D.mods.filter(function (m) { return st('mods', m.id) === 'unlocked'; }).length + '/' + D.mods.length + '</span></h2>';
-    [1, 2, 3, 4].forEach(function (t) {
+    /* Tiers walked off the DATA, never a literal list \u2014 a literal one silently drops
+       every mod at a tier it forgets to name, and the ladder grows with the area list.
+       Sorted numerically because the keys arrive as strings. */
+    Object.keys(D.modTiers).map(Number).sort(function (a, b) { return a - b; }).forEach(function (t) {
       var list = D.mods.filter(function (m) { return m.tier === t; });
       if (!list.length) return;
       h += '<div class="note">TIER ' + t + ' \u00b7 ' + esc(D.modTiers[t].toUpperCase()) + '</div>';
-      h += list.map(function (m) {
+      h += list.sort(function (a, b) { return a.equipLevel - b.equipLevel; }).map(function (m) {
         var un = st('mods', m.id) === 'unlocked';
         return '<div class="row ' + (un ? '' : 'locked') + '">' +
           '<img class="icon20 ' + (un ? '' : 'dim') + '" src="' + (un ? m.icon : D.meta.lockIcon) + '" alt="">' +
           '<div class="body"><div class="nm">' + (un ? esc(m.name.toUpperCase()) : mask(m.name)) +
           rar(m.rarity) + '<span class="chip enc">' + esc(m.tag) + '</span>' +
+          /* The equip gate is not a spoiler \u2014 it is what tells a player whether a mod
+             they just found is usable, so it shows on a locked row too. */
+          '<span class="chip">L' + m.equipLevel + '</span>' +
           (m.oneShot ? '<span class="chip crashed">1-USE</span>' : '') + '</div>' +
           '<div class="fx">' + (un ? esc(m.effect) : 'spec encrypted \u2014 drops in ' + esc(D.modTiers[m.tier])) + '</div>' +
           (un ? stats(m.stats) : '') + '</div></div>';

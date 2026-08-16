@@ -75,7 +75,11 @@ void Loadout::resetSlots() {
 Loadout Loadout::starting() {
     Loadout l;
     // sample: one spare each. Both are tier-1/5 rows whose own equip level is what
-    // gates them — the seed grants copies, never a gate of its own.
+    // gates them — the seed grants copies, never a gate of its own. Packet Sniffer is
+    // deliberately the one mod authored at equipLevel 0 (content_mods.cpp): a fresh pet
+    // has to be able to install SOMETHING the moment it hatches, so retuning that row's
+    // gate upward breaks the first thing a player does with this screen. RAID Mirror is
+    // the opposite on purpose — a deep row shown early, to be grown into.
     l.owned_ = {{"packet_sniffer", 1}, {"raid_mirror", 1}};
     l.ensureSlots();
     l.setEquipped(0, "firewall_patch");             // two installed permanently

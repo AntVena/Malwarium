@@ -28,7 +28,9 @@ const LootEntry kWildLoot[] = {
 // is a longer version of one already in play, so this restocks that counter rather
 // than paying out a third.
 const char* const kModPool[] = {"hardened_shell", "bundle_stripper", "ballast_cache",
-                                "sonar_ping",     "salvage_rig",     "watchdog_timer"};
+                                "sonar_ping",     "salvage_rig",     "watchdog_timer",
+                                "bilge_pump",     "barnacle_plating",
+                                "harpoon_mount",  "distress_beacon"};
 
 // FLOATING POINT — the item storefront, tied up where the water is calm enough to
 // trade. Restore Point is the joke and the stock in one: the only thing worth buying

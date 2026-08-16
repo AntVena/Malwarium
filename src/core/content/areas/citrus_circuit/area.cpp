@@ -25,7 +25,8 @@ const LootEntry kWildLoot[] = {
 // milestone drops (sub/area-boss clear, Epic cache).
 const char* const kModPool[] = {"clock_speed_boost", "packet_sniffer",
                                  "crypto_coprocessor", "canary_trap",
-                                 "scratch_disk_buffer"};
+                                 "scratch_disk_buffer", "spare_ram_stick",
+                                 "capacitor_bank"};
 
 // BYTE TO EAT — the item storefront: this area's own stock/price per item, same
 // pattern as the mod storefront below.

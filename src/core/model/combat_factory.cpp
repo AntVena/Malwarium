@@ -96,6 +96,8 @@ Combatant makePlayerCombatant(const ContentRegistry& reg, const CreatureDef& pet
             case ModEffect::GambleBattlePowerPct:
             case ModEffect::ConditionalThorns:
             case ModEffect::StealAmplifyPct:
+            case ModEffect::ExecOverridePct:   // Ring-0 Shim — read at execOverrideChance
+            case ModEffect::ReplicaSpawnPct:   // Replication Bus — read at rollWormSpawn
                 c.mods.apply(m->effectKind, mag, m->magnitude2);
                 break;
             case ModEffect::AttackCountPowerPct: {  // Botnet Swarm — +mag% power PER Attack move

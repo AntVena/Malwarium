@@ -280,23 +280,30 @@ constexpr int kWildLossFrag = 18;          // +Frag on a wild (live-stakes) loss
 
 // --- MODS into combat. Mods are the PERMANENT hardware-
 //     passive layer (D3); this is the earn + power model that finally lets them enter
-//     play. Two independent axes on ModDef (defs.h): `rarity` = DROP WEIGHT within an
-//     area's loot table; `powerTier` (1..kModPowerTiers) = the sliding EFFECTIVENESS
-//     rank that both picks the area a mod lives in AND sets its equip-LEVEL gate.
+//     play. Three independent axes on ModDef (defs.h): `rarity` = DROP WEIGHT within an
+//     area's loot table; `powerTier` (1..kModPowerTiers) = the ladder DEPTH, which picks
+//     the area a mod lives in; `equipLevel` = the pet level it needs, authored on the row.
 //     ONE level per mod, shared by every copy: the picker lists mods by TYPE and has
 //     never had a way to show one copy over another, so a per-copy roll was a number
-//     no player could see, act on, or choose between. The same effect at a different
-//     level is a second content row, not a roll. ----------
-//     The rank COUNT is not here: it is kModPowerTiers (areas/area_defs.h), which is
+//     no player could see, act on, or choose between. ----------
+//     The DEPTH count is not here: it is kModPowerTiers (areas/area_defs.h), which is
 //     the ladder's own length, so adding an area opens a rank rather than overflowing
-//     a fixed table. What stays here is the band each rank maps to.
-constexpr int kModEquipLevelWindow = 10;          // band width per tier
-// The equip-level gate for a tier — the whole gate, not a band to roll inside. A
-// formula rather than a table so it answers for any rank the ladder grows to; the
-// shipped ranks 1..4 give the same 0/10/20/30 the table used to spell out.
-constexpr int modEquipLevelFloor(int tier) {
-    return (tier < 1 ? 0 : tier - 1) * kModEquipLevelWindow;
-}
+//     a fixed table.
+// Gates are authored per row (ModDef::equipLevel) against this ceiling, NOT derived from
+// the tier. The number of areas is the wrong bound on how finely mods can be spread
+// across a raise: deriving the gate gives one gate per area, so every mod in an area
+// unlocks on the same level and the whole stretch between two areas has nothing new to
+// slot. Authoring against a ceiling lets a band hold as many rungs as it has mods.
+//
+// 100 is the ceiling, NOT the reachable top. The XP curve is geometric at
+// kLevelXpGrowthPct, so cumulative cost roughly triples every ten levels: level 60 is
+// ~301k XP (a long dive), level 100 is ~13.8M. The shipped roster therefore fills
+// 0..60 — deep enough that a SIXTH area extends the ladder rather than forcing a re-band
+// of every row already on it — and leaves the rest as authoring headroom for whatever the
+// curve is when that area lands. A row gated above where a pet can actually reach is a
+// content mistake this bound cannot catch, which is what
+// test_mod_equip_ladder_is_ordered_and_dense is for.
+constexpr int kModEquipLevelMax = 100;
 // How many spare copies of ONE mod the pool will hold. A cap exists because the pool
 // had none: mods drop from milestones and the only sink is equipping one, so copies
 // accumulated for the life of the device — the measured save had 424 spares of 24 mods,

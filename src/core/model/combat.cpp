@@ -709,7 +709,11 @@ void Combat::rollWormSpawn(Combatant& actor, const MoveDef* mv) {
     // doesn't roll — so a worm holding three replicas draws no rng here and the stream
     // stays identical to one that never had the chance.
     if (actor.wormReplicaCount >= kWormReplicaSlots) return;
-    if (static_cast<int>(rng() % 100) >= mv->replicaSpawnPct) return;
+    // Replication Bus (mod) raises the RATE, never the CAP — the slot check above still
+    // runs first, so a full board draws no rng with the mod equipped exactly as it draws
+    // none without it, and the deterministic stream a duel replays stays identical.
+    const int spawnPct = mv->replicaSpawnPct + actor.mods.mag(ModEffect::ReplicaSpawnPct);
+    if (static_cast<int>(rng() % 100) >= spawnPct) return;
     WormReplica& r = actor.wormReplicas[actor.wormReplicaCount];
     r = WormReplica{};
     r.defender = mv->kind == MoveDef::Kind::Defend;
@@ -741,6 +745,11 @@ int Combat::execOverrideChance(const Combatant& trojan) const {
     int pct = kExecOverrideBasePct;
     for (int i = 0; i < trojan.trojanTrapCount; ++i)
         if (trojan.trojanTraps[i]) pct += trojan.trojanTraps[i]->trapPassiveBonusPct;
+    // Ring-0 Shim (mod) adds to the same sum the traps do, so a shim rewards a trap build
+    // instead of substituting for one. Gated to the line by ModDef::requiresLine at equip
+    // time, and the passive check above has already returned for anything that isn't a
+    // Trojan — so this can only ever read as 0 on a pet that shouldn't have it.
+    pct += trojan.mods.mag(ModEffect::ExecOverridePct);
     return pct;
 }
 

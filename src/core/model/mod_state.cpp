@@ -34,6 +34,12 @@ constexpr ModRule kModRules[] = {
     // reflect magnitude with it.
     {ModEffect::ConditionalThorns,    ModCombine::HighestMag2, 0,   false},
     {ModEffect::StealAmplifyPct,      ModCombine::Sum,         0,   false},
+    // Both line build-arounds add percentage POINTS to a passive's own roll, so they sum
+    // the way any other bonus to the same roll would, and both cap at 100 — the roll they
+    // feed is a percent chance, and a mod that could push one past certainty would turn a
+    // passive the whole line is balanced around into a guarantee.
+    {ModEffect::ExecOverridePct,      ModCombine::Sum,         100, false},
+    {ModEffect::ReplicaSpawnPct,      ModCombine::Sum,         100, false},
 };
 
 }  // namespace

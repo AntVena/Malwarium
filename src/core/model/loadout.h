@@ -14,7 +14,7 @@ namespace mal {
 
 // Un-equipped spares of one mod. A COUNT, not a list of instances: copies of a mod are
 // interchangeable, because the equip-level gate belongs to the mod
-// (modEquipLevelFloor(powerTier)) and not to the copy — the picker lists mods by type
+// (ModDef::equipLevel) and not to the copy — the picker lists mods by type
 // and never had a way to offer one copy over another. Ids are stable content-ids
 // (borrowed), so the pool costs one pointer and one int per mod OWNED rather than per
 // copy held. `count` is >= 1; a mod that reaches zero leaves the pool entirely.

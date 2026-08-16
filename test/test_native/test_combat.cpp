@@ -815,16 +815,85 @@ void test_mod_content_rarity_tier() {
     // Niche-flavour pass: the two hard-gated signatures carry ModDef::requiresLine (a
     // real EQUIP block, distinct from the soft `line`/`affinityBonus` every other mod
     // uses — Cipher ASIC above stays fully line-agnostic).
-    const ModDef* pr = r.mod("phishing_rod");
-    CHECK(pr && pr->requiresLine && std::strcmp(pr->requiresLine, "phishing") == 0);
-    const ModDef* el = r.mod("extortion_ledger");
-    CHECK(el && el->requiresLine && std::strcmp(el->requiresLine, "ransomware") == 0);
-    // Every OTHER mod carries no hard gate.
-    for (const ModDef* m : r.allMods()) {
-        if (std::strcmp(m->id, "phishing_rod") == 0 || std::strcmp(m->id, "extortion_ledger") == 0)
-            continue;
-        CHECK(m->requiresLine == nullptr);
+    // One hard-gated build-around PER LINE, each naming its own line. Walked off
+    // kCreatureLines rather than a list of ids, so a line added without a mod of its own
+    // fails here rather than shipping with nothing that speaks to what it is.
+    for (const CreatureLine& cl : kCreatureLines) {
+        int gated = 0;
+        for (const ModDef* m : r.allMods())
+            if (m->requiresLine && std::strcmp(m->requiresLine, cl.id) == 0) ++gated;
+        if (gated != 1) std::printf("  LINE %s has %d hard-gated mods\n", cl.id, gated);
+        CHECK(gated == 1);
     }
+    // A hard gate only ever names a REAL line, and only ever sits on an effect kind that
+    // would be inert off-line — the rule that keeps `requiresLine` from being reached for
+    // where a soft `line`/`affinityBonus` would do (content_mods.cpp).
+    for (const ModDef* m : r.allMods()) {
+        if (!m->requiresLine) continue;
+        CHECK(creatureLine(m->requiresLine) != nullptr);
+        CHECK(m->effectKind == ModEffect::StealAmplifyPct ||
+              m->effectKind == ModEffect::ExecOverridePct ||
+              m->effectKind == ModEffect::ReplicaSpawnPct ||
+              m->effectKind == ModEffect::PowerPct);   // Extortion Ledger, the one stat row
+        CHECK(m->line == nullptr);                     // never both shapes at once
+    }
+    // Every line also has a SOFT-affinity mod, and it gates far shallower than the hard
+    // one — "your line starts paying early" is the property, not "a line has some mod".
+    for (const CreatureLine& cl : kCreatureLines) {
+        int soft = 0, shallowest = kModEquipLevelMax, hard = 0;
+        for (const ModDef* m : r.allMods()) {
+            if (m->line && std::strcmp(m->line, cl.id) == 0) {
+                ++soft;
+                if (m->equipLevel < shallowest) shallowest = m->equipLevel;
+            }
+            if (m->requiresLine && std::strcmp(m->requiresLine, cl.id) == 0)
+                hard = m->equipLevel;
+        }
+        if (soft < 1) std::printf("  LINE %s has no soft-affinity mod\n", cl.id);
+        CHECK(soft >= 1);
+        CHECK(shallowest < hard);
+    }
+}
+
+// The equip ladder: gates are authored per row (ModDef::equipLevel) rather than derived
+// from the tier, which buys the density this checks. Ordering is checked in the same
+// place because authoring is exactly what makes it possible to break.
+void test_mod_equip_ladder_is_ordered_and_dense() {
+    ContentRegistry r = ContentRegistry::embedded();
+    // Every gate is inside the ceiling, and a deeper TIER never gates shallower than a
+    // shallower tier's deepest row. Tier still means ladder depth even though it no
+    // longer computes the level, so the two must not contradict each other.
+    int lo[kModPowerTiers + 1], hi[kModPowerTiers + 1];
+    for (int t = 0; t <= kModPowerTiers; ++t) { lo[t] = kModEquipLevelMax + 1; hi[t] = -1; }
+    for (const ModDef* m : r.allMods()) {
+        CHECK(m->equipLevel >= 0 && m->equipLevel <= kModEquipLevelMax);
+        CHECK(m->powerTier >= 1 && m->powerTier <= kModPowerTiers);
+        if (m->equipLevel < lo[m->powerTier]) lo[m->powerTier] = m->equipLevel;
+        if (m->equipLevel > hi[m->powerTier]) hi[m->powerTier] = m->equipLevel;
+    }
+    for (int t = 2; t <= kModPowerTiers; ++t) {
+        if (hi[t - 1] >= lo[t])
+            std::printf("  TIER %d tops at %d but tier %d starts at %d\n",
+                        t - 1, hi[t - 1], t, lo[t]);
+        CHECK(hi[t - 1] < lo[t]);
+    }
+    // DENSITY: walking the sorted gates, no step larger than kModLadderMaxGap. This is the
+    // whole point of authoring the level per row — a raising pet should never cross more
+    // than a couple of levels with nothing new to slot. Checked as a max STEP rather than
+    // a per-bucket count so it stays true however the roster is grouped.
+    constexpr int kModLadderMaxGap = 2;
+    std::vector<int> gates;
+    for (const ModDef* m : r.allMods()) gates.push_back(m->equipLevel);
+    std::sort(gates.begin(), gates.end());
+    CHECK(gates.front() == 0);                       // something is always equippable
+    for (size_t i = 1; i < gates.size(); ++i) {
+        if (gates[i] - gates[i - 1] > kModLadderMaxGap)
+            std::printf("  LADDER gap %d -> %d\n", gates[i - 1], gates[i]);
+        CHECK(gates[i] - gates[i - 1] <= kModLadderMaxGap);
+    }
+    // ...and it reaches deep enough that a SIXTH area extends the ladder rather than
+    // forcing a re-band of every row already on it (content_mods.cpp).
+    CHECK(gates.back() >= 60);
 }
 
 // earn path: an area's mod loot table draws ONLY that area's power tier (an
@@ -860,13 +929,13 @@ void test_mod_earn_tables_and_reqlevel() {
             CHECK(sampled.count(area(a).modPoolIds[k]) == 1);
     for (int k = 0; k < kAreaModsDeepWebCount; ++k)
         CHECK(sampled.count(kAreaModsDeepWeb[k]) == 1);
-    // A mod's equip gate is its OWN, off its power tier, and the same for every copy —
+    // A mod's equip gate is its OWN, authored on the row, and the same for every copy —
     // there is no roll to land inside a band. Sampled off two real mods at opposite ends
     // of the ladder rather than named tiers, and asserted to be deterministic, which is
     // the property that replaced the roll.
     const ModDef* deep = r.mod("ghost_process");
-    const ModDef* shallow = r.mod("crypto_coprocessor");
-    CHECK(modEquipLevel(*deep) == modEquipLevelFloor(deep->powerTier));
+    const ModDef* shallow = r.mod("packet_sniffer");
+    CHECK(modEquipLevel(*deep) == deep->equipLevel);
     CHECK(modEquipLevel(*shallow) == 0);            // the shallowest rung
     CHECK(modEquipLevel(*deep) > modEquipLevel(*shallow));
     for (int i = 0; i < 8; ++i) {                   // every grant agrees with the row

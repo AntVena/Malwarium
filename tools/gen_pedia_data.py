@@ -143,12 +143,16 @@ def item_icon(repo, item_id):
     """
     return (asset_path(repo, f"ICON_ITEM_{item_id.upper()}")
             or asset_path(repo, ITEM_ICON_REUSE.get(item_id, "")))
-MOD_ICONS = {
-    "clock_speed_boost": "ICON_MOD_CLOCK_SPEED_BOOST",
-    "packet_sniffer": "ICON_MOD_PACKET_SNIFFER",
-    "firewall_patch": "ICON_MOD_FIREWALL_PATCH",
-    "raid_mirror": "ICON_MOD_RAID_MIRROR",
-}
+def mod_icon(repo, mod_id):
+    """The glyph the device would draw for `mod_id`, or None if it has no art.
+
+    Mirrors mods_screen.cpp, which builds ICON_MOD_<UPPER ID> and draws nothing when that
+    file is absent — so this is the CONVENTION, never a hand-kept map. A map here would go
+    stale silently: a mod missing from it renders with the generic slot glyph in the bundle
+    while shipping real art on the device, and nothing on either side would say so. A None
+    is a real gap in assets/, the same as item_icon()'s.
+    """
+    return asset_path(repo, f"ICON_MOD_{mod_id.upper()}")
 MOVE_ICONS = {
     "packet_storm": "ICON_MOVE_PACKET_STORM",
     "fork_bomb": "ICON_MOVE_FORK_BOMB",
@@ -278,9 +282,10 @@ def main():
     mods = []
     for d in content["mods"]:
         m = {"id": d["id"], "name": d["name"], "tag": d["tag"], "rarity": d["rarity"],
-             "tier": d["tier"], "effect": d["effect"], "stats": d["stats"],
-             "icon": asset_path(repo, MOD_ICONS.get(d["id"], "ICON_MODS_SLOT"))}
-        if d["id"] not in MOD_ICONS:
+             "tier": d["tier"], "equipLevel": d["equipLevel"],
+             "effect": d["effect"], "stats": d["stats"],
+             "icon": mod_icon(repo, d["id"]) or asset_path(repo, "ICON_MODS_SLOT")}
+        if not mod_icon(repo, d["id"]):
             m["iconFallback"] = True
         if d["oneShot"]:
             m["oneShot"] = True

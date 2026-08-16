@@ -198,12 +198,12 @@ inline constexpr const AreaDef* const kAreaList[] = {
 };
 constexpr int kAreaCount = sizeof(kAreaList) / sizeof(kAreaList[0]);
 
-// How many distinct effectiveness ranks a mod can carry (ModDef::powerTier, defs.h).
-// A mod's rank IS a ladder depth — rank N is "what area N-1 hands out" — so the
-// number of ranks is the number of rungs, and lives here beside the list rather than
-// as a hand-typed count in tunables.h that a new area would silently outgrow. The
-// equip-level BAND each rank maps to is a balance magnitude and stays a tunable
-// (modEquipLevelFloor), but its input is derived here rather than maintained by hand.
+// How many distinct depths a mod can sit at (ModDef::powerTier, defs.h). A mod's rank
+// IS a ladder depth — rank N is "what area N-1 hands out" — so the number of ranks is
+// the number of rungs, and lives here beside the list rather than as a hand-typed count
+// in tunables.h that a new area would silently outgrow. It does NOT decide when a mod may
+// be equipped: that gate is authored per row (ModDef::equipLevel, bounded by
+// kModEquipLevelMax), since a count of areas can only ever express that many gates.
 constexpr int kModPowerTiers = kAreaCount;
 
 // Bounds-clamped accessor — out-of-range clamps to area 0, matching the fallback

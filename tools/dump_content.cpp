@@ -192,6 +192,9 @@ void dumpMods() {
         field("stats", statLine(d).c_str());
         field("rarity", rarityName(d.rarity));
         fieldInt("tier", d.powerTier);
+        // The player-facing gate. Authored per row and not derivable from the tier, so it
+        // has to travel on the wire — there is no formula the 'Pedia could recover it from.
+        fieldInt("equipLevel", modEquipLevel(d));
         fieldBool("oneShot", d.oneShot);
         fieldIdOrNull("line", d.line);
         fieldIdOrNull("requiresLine", d.requiresLine, /*comma=*/false);

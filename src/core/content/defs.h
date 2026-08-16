@@ -561,14 +561,28 @@ enum class ModEffect : uint8_t {
                           // Bite" bonus (Combat::applyEffect) by magnitude% (line-gated
                           // via ModDef::requiresLine); dormant without a live shieldHp
                           // pool to bite through, however aggressively it's equipped.
+
+    // --- Line build-arounds for the two lines that had none -----------------------
+    // Both amplify a LINE PASSIVE rather than a stat, which is why both are hard-gated
+    // (ModDef::requiresLine) the way Phishing Rod is: the passive is the thing they
+    // multiply, so off-line they would be inert rows rather than weak ones.
+    ExecOverridePct,      // Ring-0 Shim — +magnitude percentage POINTS on the Trojan's
+                          // Execution-Override hijack chance (Combat::execOverrideChance,
+                          // which is kExecOverrideBasePct + the armed traps' bonuses).
+                          // Adds to the same sum the traps do, so it stacks with a trap
+                          // build instead of replacing the reason to hold one.
+    ReplicaSpawnPct,      // Replication Bus — +magnitude percentage POINTS on every
+                          // replica-spawn roll a Worm makes (Combat::rollWormSpawn reads
+                          // MoveDef::replicaSpawnPct). Raises the RATE, never the CAP:
+                          // kWormReplicaSlots still bounds the board, so this fills the
+                          // slots sooner rather than making more of them.
 };
 
 // Slot-based hardware equip (MODS). Mods are PERMANENT (D3):
-// consumed on equip, no unequip, overwrite discards the old one. Two independent
+// consumed on equip, no unequip, overwrite discards the old one. THREE independent
 // axes drive earn + power: `rarity` is the DROP WEIGHT within an area's
-// loot table; `powerTier` (1..N) is the sliding EFFECTIVENESS rank that decides which
-// area a mod drops in AND the nominal equip-LEVEL band (a dropped instance rolls its
-// own required pet-level within ±50% of the band — see kModEquipLevel* in tunables).
+// loot table; `powerTier` (1..N) is the ladder DEPTH, which decides which area a mod
+// drops in; `equipLevel` is the pet level the mod needs, authored per row.
 // `effectKind`/`magnitude` are the structured combat effect (applied data-driven, not
 // via a hardcoded per-mod `if`). `line`/`affinityBonus` give a few signature mods a
 // bonus for a matching line (still equippable by anyone — line-agnostic).
@@ -589,7 +603,16 @@ struct ModDef {
     bool oneShot;            // consumed when it triggers in play (UI just flags it)
     // mods-into-combat pass ---
     ItemDef::Rarity rarity = ItemDef::Rarity::Common;  // drop WEIGHT in an area table
-    int powerTier = 1;                 // 1..N effectiveness rank → area home + equip band
+    int powerTier = 1;                 // 1..N ladder depth → which area's pool drops it
+    // The pet level this mod needs before it can be EQUIPPED — authored here, one level
+    // per mod, the same for every copy the player holds (the picker lists mods by TYPE
+    // and has never had a way to offer one copy over another). Legal range is
+    // [0, kModEquipLevelMax]. Deliberately NOT derived from `powerTier`: a rank is a
+    // ladder DEPTH, and a ladder has only as many rungs as there are areas, which is too
+    // few gates to spread mods across a level range that keeps growing. What does hold is
+    // that the two agree in ORDER — a deeper tier never gates lower than a shallower one
+    // (test_mod_equip_ladder_is_ordered_and_dense).
+    int equipLevel = 0;
     ModEffect effectKind = ModEffect::None;  // structured combat effect (data-driven)
     int magnitude = 0;                 // effect-specific units (%, flat HP, Bits, ...)
     int magnitude2 = 0;                // secondary knob (Overclock's power cost, ...)
@@ -603,11 +626,11 @@ struct ModDef {
     const char* requiresLine = nullptr;
 };
 
-// The pet level `m` needs before it can be equipped — the mod's OWN gate, derived from
-// its power tier, identical for every copy the player holds. One function rather than a
-// field so the gate can't drift from the tier that sets the mod's place in the ladder,
-// and one call site's worth of arithmetic so no screen has to remember the formula.
-inline int modEquipLevel(const ModDef& m) { return modEquipLevelFloor(m.powerTier); }
+// The pet level `m` needs before it can be equipped — the mod's OWN gate, identical for
+// every copy the player holds. A function rather than the raw field at each call site
+// because every screen that shows a gate must show the same one, and this is the seam to
+// change if the gate ever stops being a plain read of the row.
+inline int modEquipLevel(const ModDef& m) { return m.equipLevel; }
 
 // A combat move — a collectible roster like creatures/items/mods.
 // The autonomous combat engine rolls a pet's equipped moves off its attack/defend

@@ -275,8 +275,8 @@ constexpr int kSaveTextCap = 28;     // matches EventLog's LogEntry.text
 // saveModCount) — 17 bytes at the current roster, and flat: it grows with the SIZE of
 // the mod table, never with play. The rolled per-copy level went with it. That roll was
 // never visible: the picker lists mods by type and shows one gate, so a copy could never
-// be chosen over another, and the level is now the mod's own (modEquipLevel, off its
-// power tier). Copies are bounded by kModCopyCapBase, raised by the Rig Shop's MOD
+// be chosen over another, and the level is now the mod's own (modEquipLevel, authored on
+// the row). Copies are bounded by kModCopyCapBase, raised by the Rig Shop's MOD
 // STORAGE row.
 //
 // A v44-or-older blob migrates by tallying `ownedMods` per id and clamping to the base

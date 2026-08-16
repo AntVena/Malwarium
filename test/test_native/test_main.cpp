@@ -418,6 +418,7 @@ int g_failures = 0;
     RUN(test_mod_faraday_cage)                    \
     RUN(test_mod_content_rarity_tier)             \
     RUN(test_mod_earn_tables_and_reqlevel)        \
+    RUN(test_mod_equip_ladder_is_ordered_and_dense) \
     RUN(test_mod_niche_flavour_data_driven)       \
     RUN(test_mod_botnet_swarm_and_airgap_ward)    \
     RUN(test_mod_state_combine_rules)             \

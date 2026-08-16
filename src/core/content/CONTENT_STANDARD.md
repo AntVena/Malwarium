@@ -94,6 +94,12 @@ None outstanding.
   (`Keys` for a key/token). The default `Derive` resolves Food→FOOD, Buff→BUFFS,
   Quest→TOOLS, so only rows that break that pattern say anything.
 - New combat effect → add a `ModEffect`/`MoveDef` field or kind; magnitude on the row.
+- New MOD → its equip gate and its relationship to a creature line are both authored on the row,
+  and both have rules the table's own header states: `equipLevel` against a dense ladder (a tier
+  picks the area, not the level), and a LINE mod's shape following its effect — soft
+  `line`/`affinityBonus` on a generic kind, hard `requiresLine` only on a line-passive amplifier
+  that would be inert off-line. See `content_mods.cpp`'s header before adding a row;
+  `test_mod_equip_ladder_is_ordered_and_dense` is what fails if the ladder grows a hole.
 - New balance number → ask "does more than one entity read this?" No → on the row. Yes →
   `tunables.h`.
 - New item that should turn up in the world → add it to a pool (`content_items.cpp`'s

@@ -43,6 +43,14 @@ ordering constraint is real and documented — rungs are sorted by EFFECTIVE per
 long-channel move LOWERS a rung's average — and per-creature kit has to keep that ramp intact
 while making the creatures read apart. |
 
+**Two item effects reach neither the prose nor the 'Pedia.** `ItemEffect::ClearReplicationGhost`
+and `PlayCryptogram` have appliers but no case in the switches that turn an effect into player-
+facing text, so both compile with `-Wswitch` warnings and both items ship with a derived stat line
+that omits what they actually do. The standard's rule 3 is that a description names the field
+holding its number — these two have nothing to name. |
+`effect_text.cpp`'s `itemEffectToken()` + `specRows()`; `dump_content.cpp`'s item switch. | S |
+The warnings are the whole detection mechanism; adding the cases silences them and is the fix. |
+
 **A crew cannot be DISCOVERED.** `QuoteReward::Kind` has room for it and it is one of the prizes
 the board was designed to hand over ("you find a crew to join"), but crews are ungated today —
 every row in `content_crews.cpp` is enlistable from the first boot, so there is nothing for a
@@ -301,6 +309,9 @@ high→low value:
 - **Optional polish:** `UI_RANK_BADGE`, `ICON_EVENT_WIFI`, `UI_DIFFICULTY_PIPS`, a boss-tell marker
   on the charge bar, a `UI_TITLE_TAG` badge, richer per-sub-area `BG_SECTOR_*` backdrops, a
   `SPR_PET_*` attack-pose frame.
+- **Two of the four lines have no `ICON_LINE_*`.** Ransomware and Worm are drawn; Phishing and
+  Trojan are not, so their 'Pedia sections render text-only where the other two carry a glyph
+  (`gen_pedia_data.py` warns per missing line). One 20×20 each, same slot as the two that exist.
 - **Six archetype icons** (`ICON_ARCHETYPE_*`) — cosmetic accompaniment to §1i; parked in `_attic/`.
 
 ### 2c. New art implied by unbuilt features
@@ -311,7 +322,7 @@ for. The `ICON_SECTOR_*` half of each family is drawn and live on the EXPL zone 
 
 - **Net-Sea Crossing area art** (shipped mechanically, art pending): the backdrop
   (open water, shipping lanes, landfall at Sandbox Beach) and the `FLOATING POINT` / `THE HARDENED
-  SHELL` storefront motifs. Its five mods are drawn — the whole `ICON_MOD_*` family is, so no area
+  SHELL` storefront motifs. Its nine mods are drawn — the whole `ICON_MOD_*` family is, so no area
   owes one. Like the keep, it fights with the shared tier roster and has no malbeasts of its own.
 - **Napstorrent Moors area art** (shipped mechanically, art pending): the backdrop
   (marshy → castle progression), the `MOOR-TO-MOOR` storefront motif.

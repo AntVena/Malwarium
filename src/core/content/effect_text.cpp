@@ -322,6 +322,14 @@ SpecRows specRows(const ModDef& d) {
         case ModEffect::StealAmplifyPct:
             s.add("SIPHON+", "%+d%%", d.magnitude);
             break;
+        // Both read as percentage POINTS on a passive's roll, so the label names the roll
+        // rather than the mod — a player comparing two rows sees what moved.
+        case ModEffect::ExecOverridePct:
+            s.add("HIJACK", "%+d%%", d.magnitude);
+            break;
+        case ModEffect::ReplicaSpawnPct:
+            s.add("REPLICATE", "%+d%%", d.magnitude);
+            break;
     }
     // The Speed mod's secondary knob is a COST, not a second effect — every other
     // magnitude2 user spells its own pair out above.
