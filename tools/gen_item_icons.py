@@ -397,6 +397,35 @@ def dumpling(g, pleats=3):
         g.vline(5 + i * 4, 6, 9, 1, 0)
 
 
+def nugget(g, legs=2, plates=3):
+    """A dino-shaped nugget. The SILHOUETTE is the whole joke, so this is one closed
+    mass with no interior detail — a breaded nugget has no eye to draw, and a 1px one
+    would vanish under the x1.75 upscale even if it did.
+
+    A STEGOSAURUS, and the choice is the whole reason it reads. At 20px a dinosaur has
+    room for exactly one unmistakable feature, and the plate ridge is it: a long neck
+    over a round body drew a horse, and a big skull over two legs drew a dog. The
+    plates say "dinosaur" with nothing else having to.
+
+    Two rules the shape has to keep, both learned by breaking them:
+      * plates are TRAPEZOIDS, never triangles — a 1px apex reads as dirt, not a plate;
+      * their tops must clear the back with a gap between them, or they merge into one
+        wall and the ridge becomes a single spike.
+    """
+    g.sellipse(10, 12, 4.6, 2.4, 3.0)                  # body, low and long
+    g.sellipse(2.5, 13, 1.9, 1.6, 3.0)                 # small head, low and forward
+    g.stroke([(4, 13), (6, 12)], 3)                    # short neck
+    g.poly([(14, 11), (18, 12), (18, 14), (14, 14)])   # thick blunt tail
+    if legs:
+        g.vline(7, 14, 17, 3)
+        g.vline(12, 14, 17, 3)
+    ridge = [((4, 11), (5, 7), (7, 7), (8, 11)),       # tops at y7 / y6 / y7
+             ((8, 11), (9, 6), (11, 6), (12, 11)),
+             ((12, 11), (13, 7), (15, 7), (16, 11))]
+    for spine in ridge[:plates]:
+        g.poly(list(spine))
+
+
 def bun(g, cross=1):
     g.sellipse(9.5, 11, 7, 6, 3.0)
     g.rect(0, 17, 19, 19, 0)
@@ -515,8 +544,9 @@ RECIPES = {
     # The severed twin of linkguine above — same strands, cut across.
     "unlinkguine":             (tubes,  dict(n=4, diag=1, cut=1)),
     "jailapeno":               (pepper, dict(stalk=1, slit=1)),
-    # The everyday ration: lumps of breaded something, cut apart.
-    "dyno_nuggets":            (dumpling, dict(pleats=2)),
+    # The everyday ration, and the most-seen food glyph in the game — it gets its own
+    # form rather than a shared one, because the dino shape IS the name.
+    "dyno_nuggets":            (nugget, dict(legs=2, plates=3)),
     "churned_butter":          (block,  dict(faces=1)),
     "bytesteak_tomatoes":      (fruit,  dict(r=6, stem=1, leaf=1)),
     "gherkins":                (pod,    dict(peas=0)),
