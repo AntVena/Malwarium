@@ -7,17 +7,17 @@
 
 void test_inventory() {
     Inventory inv;
-    CHECK(inv.count("airgap_snack") == 0 && !inv.has("airgap_snack"));
-    inv.add("airgap_snack", 2);
-    inv.add("airgap_snack");                          // default +1
-    CHECK(inv.count("airgap_snack") == 3 && inv.has("airgap_snack"));
-    CHECK(inv.remove("airgap_snack", 1));
-    CHECK(inv.count("airgap_snack") == 2);
-    CHECK(!inv.remove("airgap_snack", 5));            // insufficient -> no-op
-    CHECK(inv.count("airgap_snack") == 2);
+    CHECK(inv.count("dyno_nuggets") == 0 && !inv.has("dyno_nuggets"));
+    inv.add("dyno_nuggets", 2);
+    inv.add("dyno_nuggets");                          // default +1
+    CHECK(inv.count("dyno_nuggets") == 3 && inv.has("dyno_nuggets"));
+    CHECK(inv.remove("dyno_nuggets", 1));
+    CHECK(inv.count("dyno_nuggets") == 2);
+    CHECK(!inv.remove("dyno_nuggets", 5));            // insufficient -> no-op
+    CHECK(inv.count("dyno_nuggets") == 2);
 
     Inventory s = Inventory::starting();
-    CHECK(s.count("airgap_snack") == 3 && s.count("backup_drive") == 1);
+    CHECK(s.count("dyno_nuggets") == 3 && s.count("backup_drive") == 1);
     CHECK(s.count("boot_accelerator") == 1);         // egg accelerator
     // The Decryptogram is FOUND, never issued — it buys a quote board, and the starting
     // kit does not hand one over.
@@ -48,7 +48,7 @@ void test_inventory_rows_grouped() {
     for (const auto& row : rows) (row.header ? headers : items)++;
     // FOOD/INGREDIENTS/BUFFS/QUEST: tortilla_chip is both a snack and a Nachos
     // ingredient, so it splits the starting shelf's Food stack into its own group
-    // alongside airgap_snack's.
+    // alongside dyno_nuggets's.
     CHECK(items == 7 && headers == 4);
     CHECK(rows.front().header && std::strcmp(rows.front().label, "FOOD") == 0);
 
@@ -139,11 +139,11 @@ void test_feeding_flow() {
     g.onButton(press(Button::B));                    // open first food's detail
     CHECK(g.nav() == Game::Nav::Detail);
 
-    const int q0 = g.inventory().count("airgap_snack");
+    const int q0 = g.inventory().count("dyno_nuggets");
     g.onButton(press(Button::B));                    // Use -> feeding modal
     CHECK(g.nav() == Game::Nav::ModalFeeding);
     CHECK(g.model().hunger() == 80);                 // 40 + 40 restore
-    CHECK(g.inventory().count("airgap_snack") == q0 - 1);
+    CHECK(g.inventory().count("dyno_nuggets") == q0 - 1);
     CHECK(g.log().size() >= 1 && g.log().at(0).type == LogEventType::ItemUsed);
 
     g.onButton(press(Button::B));                    // dismiss -> back to detail
@@ -809,4 +809,47 @@ void test_save_v50_bandwidth_regen_upgrade() {
     CHECK(out.rack.size() == 2);
     CHECK(out.rack[0].bandwidthRegenBonusMin == 1);
     CHECK(out.rack[1].bandwidthRegenBonusMin == 0);
+}
+
+// v54 — the first ITEM id the rename table ever carried (`renamedIds`, save.cpp).
+// Both id-bearing item fields are swept, and they fail differently if one is missed:
+// `items` is the stack the operator is holding, so a miss there loses the food; and
+// `collectedItems` is the ever-held set the earn-path achievements read, so a miss
+// there silently un-collects an item the player had already met. A pre-v54 blob is
+// rewritten as it is read, which is why the assertions are on what came BACK.
+void test_save_v54_renames_the_snack_item_id() {
+    SaveData a;
+    std::strcpy(a.activeId, "paypup");
+    a.items.push_back(SaveStack{"airgap_snack", 3});
+    a.items.push_back(SaveStack{"tortilla_chip", 1});   // a neighbour must not move
+    SaveId collected;
+    std::strcpy(collected.id, "airgap_snack");
+    a.collectedItems.push_back(collected);
+
+    // Stamp it back to the last version that still WROTE the old id. The row only
+    // applies below its sinceVersion, so a v54 blob must be left alone — which the
+    // second half of this test is for.
+    auto blob = serializeSave(a);
+    const uint16_t before = 53;
+    blob[4] = static_cast<uint8_t>(before);
+    blob[5] = static_cast<uint8_t>(before >> 8);
+
+    SaveData out;
+    CHECK(deserializeSave(blob, out));
+    CHECK(out.items.size() == 2);
+    CHECK(std::strcmp(out.items[0].id, "dyno_nuggets") == 0);
+    CHECK(out.items[0].qty == 3);                       // the count rides across intact
+    CHECK(std::strcmp(out.items[1].id, "tortilla_chip") == 0);
+    CHECK(out.collectedItems.size() == 1);
+    CHECK(std::strcmp(out.collectedItems[0].id, "dyno_nuggets") == 0);
+
+    // A CURRENT blob carries the new id already and must round-trip untouched — a
+    // rename row that also fires at or above its own version would be rewriting
+    // history it already wrote.
+    SaveData b;
+    b.items.push_back(SaveStack{"dyno_nuggets", 1});
+    SaveData back;
+    CHECK(deserializeSave(serializeSave(b), back));
+    CHECK(back.items.size() == 1);
+    CHECK(std::strcmp(back.items[0].id, "dyno_nuggets") == 0);
 }

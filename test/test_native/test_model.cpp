@@ -55,7 +55,7 @@ void test_content_registry() {
     CHECK(r.creatureSprite(*p) == &ASSET_SPR_PET_PAYPUP);  // resolved by name
     CHECK(r.creature("does_not_exist") == nullptr);
     CHECK(r.eggLine("ransomware") != nullptr);
-    CHECK(r.item("airgap_snack") != nullptr);
+    CHECK(r.item("dyno_nuggets") != nullptr);
 }
 
 void test_grayscale_gate() {

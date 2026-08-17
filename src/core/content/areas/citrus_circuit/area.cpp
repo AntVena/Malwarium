@@ -17,7 +17,7 @@ namespace {
 // Plus this area's exclusive Merge Hub ingredient, so a wild win here is a second,
 // area-flavoured way to farm what the Uncommon cache pool already offers everywhere.
 const LootEntry kWildLoot[] = {
-    {"airgap_snack"}, {"tortilla_chip"}, {"backup_drive"}, {"disk_scrubber"},
+    {"dyno_nuggets"}, {"tortilla_chip"}, {"backup_drive"}, {"disk_scrubber"},
     {"osi_dip"},
 };
 

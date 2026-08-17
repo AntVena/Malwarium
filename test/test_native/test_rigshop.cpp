@@ -611,7 +611,7 @@ void test_item_hold_b_cycles_filter_tap_opens() {
     {
         Game g{StartMode::Hatched};
         CHECK(!g.itemTabsUnlocked());
-        enterSubmenuId(g, SubmenuId::Items);          // row 0 = Air-Gapped Almonds (FOOD)
+        enterSubmenuId(g, SubmenuId::Items);          // row 0 = Dyno Nuggets (FOOD)
         g.onButton(press(Button::A));                 // A still steps immediately
         const int tc0 = g.inventory().count("tortilla_chip");
         g.onButton(press(Button::B));                 // open the now-focused row's detail
@@ -654,11 +654,11 @@ void test_item_hold_b_cycles_filter_tap_opens() {
         CHECK(g.itemFilter() == ItemFilter::Food);      // unchanged by the release
         CHECK(g.nav() == Game::Nav::Submenu);
         // The list is now narrowed to FOOD — B opens the first (only) food row.
-        const int as0 = g.inventory().count("airgap_snack");
+        const int as0 = g.inventory().count("dyno_nuggets");
         g.onButton(press(Button::B));
         g.onButton(lift(Button::B));                    // tap -> opens the detail
         g.onButton(press(Button::B));                   // Use
-        CHECK(g.inventory().count("airgap_snack") == as0 - 1);
+        CHECK(g.inventory().count("dyno_nuggets") == as0 - 1);
     }
 }
 

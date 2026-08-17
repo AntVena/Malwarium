@@ -144,19 +144,19 @@ void test_egg_items_quest_only() {
     { Game g;                                     // egg
       pickFirstEggLine(g);
       enterSubmenuId(g, SubmenuId::Items);        // ITEMS is not locked
-      g.onButton(press(Button::B));               // first selectable row = airgap_snack (FOOD)
+      g.onButton(press(Button::B));               // first selectable row = dyno_nuggets (FOOD)
       CHECK(g.nav() == Game::Nav::Detail);
-      const int n0 = g.inventory().count("airgap_snack");
+      const int n0 = g.inventory().count("dyno_nuggets");
       g.onButton(press(Button::B));               // Use -> gated on an egg
       CHECK(g.nav() == Game::Nav::Detail);        // no feeding modal
-      CHECK(g.inventory().count("airgap_snack") == n0); }
+      CHECK(g.inventory().count("dyno_nuggets") == n0); }
     { Game h{StartMode::Hatched};                 // hatched -> the same food feeds
       enterSubmenuId(h, SubmenuId::Items);
       h.onButton(press(Button::B));
-      const int n0 = h.inventory().count("airgap_snack");
+      const int n0 = h.inventory().count("dyno_nuggets");
       h.onButton(press(Button::B));               // Use -> feeds
       CHECK(h.nav() == Game::Nav::ModalFeeding);
-      CHECK(h.inventory().count("airgap_snack") == n0 - 1); }
+      CHECK(h.inventory().count("dyno_nuggets") == n0 - 1); }
 }
 
 // The A+C Exploit chord cracks the shell — but only in the home stretch of the clock
@@ -222,7 +222,7 @@ void test_reset_to_hatch() {
     Game g{StartMode::Hatched};                 // raised Paypup
     CHECK(g.nav() == Game::Nav::Idle && g.pet() != nullptr);
     g.model().setHunger(5);
-    g.inventory().remove("airgap_snack", 1);    // perturb state to prove the wipe
+    g.inventory().remove("dyno_nuggets", 1);    // perturb state to prove the wipe
     g.resetToHatch();
     pickFirstEggLine(g);                         // reset re-enters line-select; pick Ransomware
     CHECK(g.nav() == Game::Nav::Idle);          // egg laid at idle

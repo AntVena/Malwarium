@@ -18,7 +18,7 @@ namespace {
 // snacks, the combat shield, and the cleaner — fighting fragments the pet, so a
 // wild win is where you top the cleaner up.
 const LootEntry kWildLoot[] = {
-    {"airgap_snack"}, {"tortilla_chip"}, {"backup_drive"}, {"disk_scrubber"},
+    {"dyno_nuggets"}, {"tortilla_chip"}, {"backup_drive"}, {"disk_scrubber"},
 };
 
 // The endgame pool: this area's own Ghost Process, the classic tier-4 Epics, and a
@@ -35,7 +35,7 @@ const char* const kModPool[] = {"ghost_process",  "deadman_switch", "raid_mirror
 const ShopListingDef kShopListings[] = {
     {"spam", 12, 4},
     {"sinkhole_trap", 6, 40},
-    {"airgap_snack", 4, 96},
+    {"dyno_nuggets", 4, 96},
 };
 
 // THE GHOST IN THE MACHINE — the mod storefront: this area's own tier-4 Epics, priced in

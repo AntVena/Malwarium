@@ -82,11 +82,13 @@ void writeStored(Writer& w, const SaveStoredPet& p) {
 }
 
 // The retired-id table. Adding, flattening and retiring a row: save.h's `renamedIds`.
-// Empty since kOldestAcceptedVersion passed 46: the last two rows (grizzgabyte_*/41,
-// worm_placeholder_*/46) both retired the moment no blob the codec still opens could
-// carry either id. The machinery stays — a future rename adds a row here again.
 // std::array rather than a plain C array so a zero-row table is still well-formed.
-constexpr std::array<RenamedId, 0> kRenamedIds{};
+constexpr std::array<RenamedId, 1> kRenamedIds{{
+    // v54: the everyday snack lost the ghost cure to Unlinkguine and was renamed with
+    // it, so the id stopped describing the row (content_items.cpp). The FIRST item id
+    // to be renamed — every row before this one was a creature.
+    {"airgap_snack", "dyno_nuggets", 54},
+}};
 
 // The newest version any row still rewrites — a blob at or above it needs no pass.
 constexpr uint16_t newestRenameVersion() {
@@ -105,8 +107,14 @@ void renameId(char* id, uint16_t version) {
         }
 }
 
-// Every field that stores a CREATURE id. Item/mod/move ids ride their own fields and
-// are untouched — nothing has renamed one.
+// Every field that stores a content id a row might rewrite. The creature fields came
+// first; the two ITEM-id fields joined them at v54, when the first item was renamed.
+// Both item fields matter and for different reasons: `items` is what the operator is
+// holding, and `collectedItems` is the ever-held set the earn-path achievements read,
+// so missing it would quietly un-collect an item the player had already met.
+//
+// Mod and move ids ride their own fields and stay untouched — nothing has renamed one.
+// The table is flattened (no `to` is ever a `from`), so one pass over each is enough.
 void renameRetiredIds(SaveData& d, uint16_t version) {
     renameId(d.activeId, version);
     for (SaveStoredPet& p : d.rack) renameId(p.id, version);
@@ -114,6 +122,8 @@ void renameRetiredIds(SaveData& d, uint16_t version) {
     for (SaveId& s : d.seenCreatures) renameId(s.id, version);
     for (SaveId& s : d.raisedCreatures) renameId(s.id, version);
     for (SaveId& s : d.speciesDiveIds) renameId(s.id, version);
+    for (SaveStack& s : d.items) renameId(s.id, version);
+    for (SaveId& s : d.collectedItems) renameId(s.id, version);
 }
 
 // The mid-ladder splice table. Adding and retiring a row: save.h's `ladderInserts`.

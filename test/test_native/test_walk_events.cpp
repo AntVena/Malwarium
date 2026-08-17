@@ -533,7 +533,7 @@ void test_cache_epic_pool_and_multidrop() {
     CHECK(g.bits() == bits0 + ContentRegistry::embedded().item("sealed_cache_epic")->cache.bits);  // epic Bits, not the flat loot
     CHECK(epicPool() - items0 == 2);                 // epic drops TWO items
     // Nothing from a lower pool leaked in (epic pool has no common consumables).
-    CHECK(g.inventory().count("airgap_snack") == Inventory::starting().count("airgap_snack"));
+    CHECK(g.inventory().count("dyno_nuggets") == Inventory::starting().count("dyno_nuggets"));
     CHECK(g.inventory().count("null_noodles") == 0);
 }
 

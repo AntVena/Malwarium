@@ -204,7 +204,7 @@ bool Game::itemUseIsInert(const ItemDef& d, const char*& why) const {
                 break;
             case ItemEffect::Kind::ClearReplicationGhost:
                 // Nothing to cut loose on a pet with no ghost. Only reachable for a row
-                // that carries NOTHING else — the Air-Gapped Almonds' Hunger fill already
+                // that carries NOTHING else — Unlinkguine's Hunger fill already
                 // answers "not inert" above, which is the intent: it stays an ordinary
                 // food, and only its cure half is conditional.
                 ++armingEffects;
@@ -385,7 +385,7 @@ void Game::applyItemEffects(const ItemDef& d) {
                 pendingDeepWebStartDepth_ = kDeepWebStartDepthUseBest;
                 break;
             case ItemEffect::Kind::ClearReplicationGhost:
-                // Air-Gapped Almonds: cut the phantom process off from the pet it copied.
+                // Unlinkguine: cut the phantom process off from the pet it copied.
                 // Guarded on actually HAVING a ghost, so the achievement marks curing one
                 // rather than owning the snack — eating it as ordinary food is the common
                 // case and must not unlock anything.

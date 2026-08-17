@@ -206,19 +206,19 @@ void test_combat_override_item_use() {
     cb.begin(p, e, Combat::Stakes::Safe, 42, /*forceEnemyFirst=*/false,
              /*carryPlayerHealth=*/50, /*exploitUses=*/1);
     CHECK(cb.player().health == 50);
-    cb.openOverride({{"airgap_snack", "Air-Gapped Almonds", 30}});
+    cb.openOverride({{"dyno_nuggets", "Dyno Nuggets", 30}});
     CHECK(cb.overrideOpen() && cb.overrideMoveCount() == 2);
     while (cb.overridePick() != cb.overrideMoveCount()) cb.cycleOverride();
     cb.commitOverride();
     CHECK(cb.player().health == 80);             // +30 patch
     CHECK(!cb.overrideReady());                  // the single use is spent
     const char* used = cb.takeCommittedItem();
-    CHECK(used && std::strcmp(used, "airgap_snack") == 0);
+    CHECK(used && std::strcmp(used, "dyno_nuggets") == 0);
     CHECK(cb.takeCommittedItem() == nullptr);    // reported exactly once
 
     // The patch clamps to max Health (no overheal).
     cb.begin(p, e, Combat::Stakes::Safe, 42, false, /*carryPlayerHealth=*/90, 1);
-    cb.openOverride({{"airgap_snack", "Air-Gapped Almonds", 30}});
+    cb.openOverride({{"dyno_nuggets", "Dyno Nuggets", 30}});
     while (cb.overridePick() != cb.overrideMoveCount()) cb.cycleOverride();
     cb.commitOverride();
     CHECK(cb.player().health == 100);
@@ -249,7 +249,7 @@ void test_combat_item_in_game() {
     Game g{StartMode::Hatched, "paypup"};
     g.debugStartCombat(/*live=*/true);
     CHECK(g.nav() == Game::Nav::Combat);
-    const int snacks0 = g.inventory().count("airgap_snack");
+    const int snacks0 = g.inventory().count("dyno_nuggets");
     CHECK(snacks0 > 0);
     g.onButton({Button::A, true, true});           // A+C -> open picker
     CHECK(g.combat().overrideOpen());
@@ -257,7 +257,7 @@ void test_combat_item_in_game() {
     while (g.combat().overridePick() != moveN)      // cursor onto the item row
         g.onButton(press(Button::A));
     g.onButton(press(Button::B));                  // commit -> use item
-    CHECK(g.inventory().count("airgap_snack") == snacks0 - 1);
+    CHECK(g.inventory().count("dyno_nuggets") == snacks0 - 1);
     CHECK(!g.combat().overrideReady());            // single use spent
 }
 

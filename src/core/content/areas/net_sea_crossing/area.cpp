@@ -18,7 +18,7 @@ namespace {
 // snacks, the combat shield, and the cleaner — fighting fragments the pet, so a
 // wild win is where you top the cleaner up.
 const LootEntry kWildLoot[] = {
-    {"airgap_snack"}, {"tortilla_chip"}, {"backup_drive"}, {"disk_scrubber"},
+    {"dyno_nuggets"}, {"tortilla_chip"}, {"backup_drive"}, {"disk_scrubber"},
 };
 
 // The crossing's own pool — seamanship over sabotage: hold the hull, hear what's

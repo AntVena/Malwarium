@@ -63,12 +63,17 @@ const AchievementDef kAchievements[] = {
     {/*wire=*/4, "WORM_WHISPERER", "Worm Whisperer",
      "Hatch the Worm line through a clean Isolation Protocol.", "ICON_ACH_WORM_WHISPERER",
      AchSeries::Event, /*goal=*/0, nullptr, 0, {bits(150), item("sealed_cache_rare")}},
-    // Fires from the Air-Gapped Almonds' own ClearReplicationGhost effect
+    // Fires from Unlinkguine's own ClearReplicationGhost effect
     // (Game::applyItemEffects), and only when there was a ghost to cut loose — eating the
-    // snack as ordinary food is the common case and unlocks nothing. A ghost is raised by
-    // a defrag that FAILS on an already-Critical disk (Game::resolveMaint).
-    {/*wire=*/7, "AIR_GAPPED", "Air-Gapped",
-     "Cure a Replication Ghost with Air-Gapped Almonds.", "ICON_ACH_AIR_GAPPED",
+    // dish as ordinary food is the common case and unlocks nothing. A ghost is raised by
+    // a defrag that FAILS on an already-Critical disk (Game::resolveMaint), Worm line only.
+    //
+    // The `wire` and the KEY stay AIR_GAPPED though the dish that earns it is now named
+    // for unlink(): the key is exchanged verbatim in the peer/PvP JSON, so it is a wire
+    // value rather than a label, and renaming it would desync against every device still
+    // on an older build. The display name below is the part players read.
+    {/*wire=*/7, "AIR_GAPPED", "Unlinked",
+     "Cure a Replication Ghost with Unlinkguine.", "ICON_ACH_AIR_GAPPED",
      AchSeries::Event, /*goal=*/0, nullptr, 0, {bits(60), item("sealed_cache_common")}},
     {/*wire=*/13, "TROJAN_UNLEASHED", "Trojan Unleashed",
      "Have a pet defect into the Trojan family mid-evolution. Unlocks the line.", "ICON_ACH_TROJAN_UNLEASHED",

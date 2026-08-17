@@ -71,7 +71,7 @@ void test_save_roundtrip() {
     a.debuffs = 2; a.ghost = 1; a.timeInStageMs = 123456; a.generation = 4;
     a.bits = 777; std::strcpy(a.hackerTag, "L33T_HAXX0R");
     a.lifetimeUptimeMs = 99999; a.lifetimeSteps = 12; a.petsRaised = 4;
-    a.items.push_back(SaveStack{"airgap_snack", 3});
+    a.items.push_back(SaveStack{"dyno_nuggets", 3});
     a.items.push_back(SaveStack{"yubi_cookie", 1});
     a.ownedMods.push_back(SaveId{"firewall_patch"});
     a.equipped.push_back(SaveId{"firewall_patch"});
@@ -107,7 +107,7 @@ void test_save_roundtrip() {
     CHECK(b.timeInStageMs == 123456u && b.generation == 4);
     CHECK(b.bits == 777 && std::strcmp(b.hackerTag, "L33T_HAXX0R") == 0);
     CHECK(b.lifetimeUptimeMs == 99999u && b.lifetimeSteps == 12u && b.petsRaised == 4);
-    CHECK(b.items.size() == 2 && std::strcmp(b.items[0].id, "airgap_snack") == 0 &&
+    CHECK(b.items.size() == 2 && std::strcmp(b.items[0].id, "dyno_nuggets") == 0 &&
           b.items[0].qty == 3);
     CHECK(b.ownedMods.size() == 1 && b.equipped.size() == 2);
     CHECK(std::strcmp(b.equipped[0].id, "firewall_patch") == 0 && b.equipped[1].id[0] == '\0');
@@ -269,7 +269,7 @@ void test_boot_from_save_vs_hatch() {
         CHECK(g.pet() && g.pet()->stage == Stage::Process);
         CHECK(g.generation() == 1);
         g.model().setHunger(33);
-        g.inventory().remove("airgap_snack", 1);           // 3 -> 2
+        g.inventory().remove("dyno_nuggets", 1);           // 3 -> 2
         g.tick(t += kSaveAutosaveMs + kHeartbeatMs);        // periodic autosave
     }
     {
@@ -280,7 +280,7 @@ void test_boot_from_save_vs_hatch() {
         CHECK(!g.inEggPhase());                            // restored as a hatched Process pet
         CHECK(g.generation() == 1);
         CHECK(g.model().hunger() == 33);                   // vitals restored
-        CHECK(g.inventory().count("airgap_snack") == 2);   // inventory restored
+        CHECK(g.inventory().count("dyno_nuggets") == 2);   // inventory restored
     }
 }
 

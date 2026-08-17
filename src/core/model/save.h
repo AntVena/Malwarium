@@ -328,7 +328,14 @@ constexpr int kSaveTextCap = 28;     // matches EventLog's LogEntry.text
 // survivor bitmask, the round, and the verdict a finished run is still showing. A
 // pre-v53 blob has no tail → a zero seed, which reads as "no run", which is the truth
 // for a device whose ladder had no arena on it.
-constexpr uint16_t kSaveVersion = 53;
+// v54 renames one ITEM id (`airgap_snack` -> `dyno_nuggets`, see `renamedIds`) — the
+// first rename that is not a creature's, which is why `renameRetiredIds` now sweeps
+// the inventory and the ever-collected set as well. The BYTE LAYOUT is unchanged and
+// nothing is appended: the version moves only to date the rename row, so the row has
+// a `sinceVersion` to retire against. A pre-v54 blob is rewritten as it is read; a
+// v54 blob loaded by a pre-v54 build parses cleanly and simply finds one item id its
+// tables do not answer to, which costs that stack its row until the build catches up.
+constexpr uint16_t kSaveVersion = 54;
 
 // The oldest blob deserialize will read. Raising it is how a device stops carrying
 // migration weight for saves nobody can still be holding — and it is the ONLY thing

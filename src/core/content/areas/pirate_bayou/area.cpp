@@ -14,7 +14,7 @@ namespace {
 // snacks, the combat shield, and the cleaner — fighting fragments the pet, so a
 // wild win is where you top the cleaner up.
 const LootEntry kWildLoot[] = {
-    {"airgap_snack"}, {"tortilla_chip"}, {"backup_drive"}, {"disk_scrubber"},
+    {"dyno_nuggets"}, {"tortilla_chip"}, {"backup_drive"}, {"disk_scrubber"},
 };
 
 // Niche-flavour pass mod pool, plus Watchdog Timer (tier 2) — the counter to this

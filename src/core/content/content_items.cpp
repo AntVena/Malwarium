@@ -32,7 +32,7 @@ namespace mal {
 // the item's own ItemDef::dropWeight, which in turn falls back to its rarity — so read
 // the weights on the rows here as exceptions, and the item table as the rule.
 namespace {
-const LootEntry kCachePoolCommon[]   = {{"airgap_snack"}, {"tortilla_chip"},
+const LootEntry kCachePoolCommon[]   = {{"dyno_nuggets"}, {"tortilla_chip"},
                                         {"null_noodles"}, {"decrypt_key"},
                                         {"backdoor_bell"},
                                         // The common half of the pantry.
@@ -43,7 +43,8 @@ const LootEntry kCachePoolCommon[]   = {{"airgap_snack"}, {"tortilla_chip"},
                                         {"spoiled_macrol"},
                                         {"universal_cereal_box"},
                                         {"self_signed_flour"}, {"shellots"},
-                                        {"linkguine"}, {"churned_butter"},
+                                        {"linkguine"}, {"jailapeno"},
+                                        {"churned_butter"},
                                         {"bytesteak_tomatoes"}, {"gherkins"},
                                         {"cruds"}, {"bootmeal"},
                                         {"garlic_escapes"}, {"grepefruit"},
@@ -64,7 +65,7 @@ const LootEntry kCachePoolCommon[]   = {{"airgap_snack"}, {"tortilla_chip"},
                                         {"cinnamon"}, {"mixins"}, {"nibbles"},
                                         {"humbugs"}, {"burp_sweets"},
                                         {"peer_drops"}};
-const LootEntry kCachePoolUncommon[] = {{"airgap_snack"}, {"r007_b33r"},
+const LootEntry kCachePoolUncommon[] = {{"dyno_nuggets"}, {"r007_b33r"},
                                         {"sinkhole_trap"}, {"pwnzu_sauce"},
                                         {"osi_dip"}, {"rootkit_bell"},
                                         {"decryptogram"},
@@ -114,7 +115,7 @@ constexpr int kStapleWalkWeight = 8;
 // guardian / open-cache sub-outcomes), and the legacy `sealed_cache`'s draw. The
 // DeepWeb Dive's depth items ride here too — earned from any area's walk loot, not
 // gated to the dive itself (they're only USEFUL there).
-const LootEntry kLootPool[] = {{"airgap_snack"}, {"tortilla_chip"},
+const LootEntry kLootPool[] = {{"dyno_nuggets"}, {"tortilla_chip"},
     {"pwnzu_sauce"}, {"backup_drive"}, {"rollback"}, {"osi_dip"},
     {"deep_learning_module"}, {"deep_learning_core"}, {"backdoor_bell"},
     {"rootkit_bell"}, {"kernel_bell"}, {"zeroday_bell"}, {"decryptogram"},
@@ -131,7 +132,8 @@ const LootEntry kLootPool[] = {{"airgap_snack"}, {"tortilla_chip"},
     {"fresh_macrol", kStapleWalkWeight},
     {"desalinated_c_salt", kStapleWalkWeight},
     {"self_signed_flour", kStapleWalkWeight}, {"shellots", kStapleWalkWeight},
-    {"linkguine", kStapleWalkWeight}, {"churned_butter", kStapleWalkWeight},
+    {"linkguine", kStapleWalkWeight}, {"jailapeno", kStapleWalkWeight},
+    {"churned_butter", kStapleWalkWeight},
     {"bytesteak_tomatoes", kStapleWalkWeight}, {"gherkins", kStapleWalkWeight},
     {"cruds", kStapleWalkWeight}, {"bootmeal", kStapleWalkWeight},
     {"garlic_escapes", kStapleWalkWeight}, {"grepefruit", kStapleWalkWeight},
@@ -245,19 +247,32 @@ const ItemDef kItems[] = {
     //
     // UNCOMMON ITEMS --------------------------
     //
-    // The ghost cure. Air-gapping is what you do to a machine you can't trust to stay
-    // connected to itself — which is exactly a Replication Ghost's problem (Worm-line
-    // only, game_care.cpp's resolveMaint) — so this is the one food whose flavour is
-    // also its mechanic. Almonds because a bag of them is the everyday object that's
-    // actually sold individually sealed. It stays an ordinary snack on a pet with no
-    // ghost (any non-Worm pet, always); the clear is a no-op then.
-    {"airgap_snack", "Air-Gapped Almonds", ItemDef::Type::Food,
+    // The everyday ration, and the widest-spread food in the game: the starting shelf,
+    // both cache pools, the walk's loot pool, every area's drop table and one storefront
+    // all hand these over. A dyno is the container a process runs inside, so nuggets cut
+    // in its shape are what the pantry feeds a process — which is the whole joke, and the
+    // reason this is the one food that turns up everywhere rather than anywhere special.
+    // It fills and patches and does nothing else; the ghost cure is Unlinkguine's job.
+    {"dyno_nuggets", "Dyno Nuggets", ItemDef::Type::Food,
+     ItemDef::Rarity::Uncommon,
+     "Fills {hunger} Hunger. Patches {heal} Health.",
+     ItemDef::Context::Anytime,
+     {{IE::Kind::Hunger, 40}}, /*combatHeal=*/30},
+
+    // The ghost cure, and the counterpart to Linkguine ("every strand joined to the
+    // last one"): unlink() severs the reference to a copy, which is exactly a
+    // Replication Ghost's problem — the phantom process a failed defrag leaves behind
+    // on a Critical disk (Worm-line only, game_care.cpp's resolveMaint). Cooked rather
+    // than found: the Merge Hub row folds a Jailapeño into Linkguine, so curing a ghost
+    // is something you learn to make instead of something you happen to hold.
+    // A no-op on a pet with no ghost (any non-Worm pet, always).
+    {"unlinkguine", "Unlinkguine", ItemDef::Type::Food,
      ItemDef::Rarity::Uncommon,
      "Fills {hunger} Hunger. Patches {heal} Health. Cuts a Replication "
      "Ghost loose.",
      ItemDef::Context::Anytime,
-     {{IE::Kind::Hunger, 40}, {IE::Kind::ClearReplicationGhost, 0}}, /*combatHeal=*/30},
-    
+     {{IE::Kind::Hunger, 30}, {IE::Kind::ClearReplicationGhost, 0}}, /*combatHeal=*/20},
+
     // Intended to be combined with Null Noodles to produce a rare food
     {"pwnzu_sauce", "Pwnzu Sauce", ItemDef::Type::Food,
      ItemDef::Rarity::Uncommon,
@@ -499,6 +514,18 @@ const ItemDef kItems[] = {
     {"linkguine", "Linkguine", ItemDef::Type::Food, ItemDef::Rarity::Common,
      "Long, thin, and every strand joined to the last one.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 4}},
+     /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
+     /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
+     /*category=*/ItemDef::Category::Derive, /*dropWeight=*/55},
+
+    // A jail is the isolation primitive a process gets put in when it can't be trusted
+    // loose, which is what makes this the thing you fold into Linkguine to sever it.
+    // Eaten raw it is a staple like any other; its reason to exist is the recipe.
+    // ASCII only: the font is 32..126 (font_glyphs.cpp), so an "ñ" would draw as a
+    // blank cell and mis-measure textWidth, which counts bytes.
+    {"jailapeno", "Jailapeno", ItemDef::Type::Food, ItemDef::Rarity::Common,
+     "Hot enough to keep a process where you put it.",
+     ItemDef::Context::Anytime, {{IE::Kind::Hunger, 3}, {IE::Kind::Happy, 4}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/55},

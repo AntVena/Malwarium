@@ -262,7 +262,7 @@ def nut(g, halves=1):
         g.stroke([(6, 8), (13, 11)], 1, 0)
 
 
-def tubes(g, n=3, diag=1):
+def tubes(g, n=3, diag=1, cut=0):
     for i in range(n):
         x = 3 + i * 5
         if diag:
@@ -272,6 +272,11 @@ def tubes(g, n=3, diag=1):
         else:
             g.vline(x, 4, 16, 3)
             g.rect(x, 4, x + 2, 5, 0)
+    # `cut` severs every strand on one line — the difference between a pasta that
+    # is joined end to end and one that has been unlinked. Erased rather than
+    # drawn, per the vocabulary's rule that detail is cut OUT of a closed mass.
+    if cut:
+        g.rect(0, 9, 19, 10, 0)
 
 
 def nest(g, rows=3):
@@ -439,11 +444,15 @@ def drop(g, n=1):
         g.poly([(cx - r + 1, 12), (cx + r - 1, 12), (cx, 3)])
 
 
-def pepper(g, stalk=1):
+def pepper(g, stalk=1, slit=0):
     g.sellipse(9.5, 12, 5.5, 6, 3.0)
     if stalk:
         g.vline(9, 2, 7, 2)
         g.hline(6, 13, 5, 2)
+    # `slit` is what separates one pepper from another on a shelf that has more than
+    # one: a cut down the body, so a chili reads apart from a bell at 20px.
+    if slit:
+        g.vline(9, 10, 16, 1, 0)
 
 
 def mushroom(g, spots=2):
@@ -503,6 +512,11 @@ RECIPES = {
     "self_signed_flour":       (bottle, dict(neck=3, cap=1)),
     "shellots":                (root,   dict(tops=3, fat=3)),
     "linkguine":               (tubes,  dict(n=4, diag=1)),
+    # The severed twin of linkguine above — same strands, cut across.
+    "unlinkguine":             (tubes,  dict(n=4, diag=1, cut=1)),
+    "jailapeno":               (pepper, dict(stalk=1, slit=1)),
+    # The everyday ration: lumps of breaded something, cut apart.
+    "dyno_nuggets":            (dumpling, dict(pleats=2)),
     "churned_butter":          (block,  dict(faces=1)),
     "bytesteak_tomatoes":      (fruit,  dict(r=6, stem=1, leaf=1)),
     "gherkins":                (pod,    dict(peas=0)),

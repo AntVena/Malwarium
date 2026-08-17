@@ -340,6 +340,14 @@ const MergeRecipe kMergeRecipes[] = {
     {"Punchcard Punch",
      {{"pingapple", 1}, {"apiricot", 1}, {"mixins", 2}},
      "punchcard_punch", 1, /*wire=*/99, "MERGED PUNCHCARD PUNCH"},
+    // The ghost cure, and the only way to hold one: no pool, shop or drop table stocks
+    // Unlinkguine, so a Replication Ghost is cured by something you learned to cook.
+    // The row IS the pun — Linkguine is "every strand joined to the last one", a
+    // Jailapeno is what isolates a process, and unlink() is what severs the reference
+    // the ghost is. Ungated: a ghost can be raised long before a prize ladder would
+    // have handed the method over, and a cure you cannot make yet is a dead mechanic.
+    {"Unlinkguine", {{"linkguine", 2}, {"jailapeno", 1}},
+     "unlinkguine", 1, /*wire=*/100, "MERGED UNLINKGUINE"},
 };
 const int kMergeRecipeCount =
     static_cast<int>(sizeof(kMergeRecipes) / sizeof(kMergeRecipes[0]));

@@ -36,7 +36,7 @@ bool Inventory::remove(const char* id, int n) {
 Inventory Inventory::starting() {
     Inventory inv;
     // The sample shelf — enough to exercise FOOD / BUFFS / QUEST groups.
-    inv.add("airgap_snack", 3);
+    inv.add("dyno_nuggets", 3);
     inv.add("tortilla_chip", 2);
     inv.add("yubi_cookie", 1);
     inv.add("restore_point", 1);  // care-mistake shield (save v21)

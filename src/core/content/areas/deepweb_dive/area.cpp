@@ -93,7 +93,7 @@ const int kAreaModsDeepWebCount = arrLen(kAreaModsDeepWeb);
 // dive's own exclusive Merge Hub ingredient — the terminal zone is no AreaDef, so its
 // pool is named here for the same reason its glyph and scaling constants are.
 const LootEntry kWildLootDeepWeb[] = {
-    {"airgap_snack"}, {"tortilla_chip"}, {"backup_drive"}, {"disk_scrubber"},
+    {"dyno_nuggets"}, {"tortilla_chip"}, {"backup_drive"}, {"disk_scrubber"},
     {"pwnzu_sauce"},
 };
 const int kWildLootDeepWebCount = arrLen(kWildLootDeepWeb);

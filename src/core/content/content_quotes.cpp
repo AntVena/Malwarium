@@ -469,6 +469,13 @@ const char* const kQuotePrizeLadder[] = {
     "buffer_overfloat",
     "port_80",
     "serverless_platter",
+    // Last of the first-order dishes, and the only one that is a CURE rather than a
+    // meal: both its inputs are raw staples, so it sits here rather than in the tail
+    // below. Late within this run on purpose — a Replication Ghost needs a Worm-line
+    // pet and a defrag failed on an already-Critical disk, so it is not a first-week
+    // problem, and teaching it ahead of the everyday dishes would spend an early solve
+    // on a dish most operators cannot yet raise the condition for.
+    "unlinkguine",
     // The second-order tail: each of these wants a dish out of the list above it.
     "crostini",
     "kernel_panini",

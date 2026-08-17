@@ -680,13 +680,22 @@ window.PEDIA_DATA = {
       "icon": "assets/icons/ICON_ITEM_BACKDOOR_BELL.png"
     },
     {
-      "id": "airgap_snack",
-      "name": "Air-Gapped Almonds",
+      "id": "dyno_nuggets",
+      "name": "Dyno Nuggets",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Fills 40 Hunger. Patches 30 Health. Cuts a Replication Ghost loose.",
-      "stats": "HUNGER +40 / GHOST CURE / HEAL 30",
-      "icon": "assets/icons/ICON_ITEM_AIRGAP_SNACK.png"
+      "effect": "Fills 40 Hunger. Patches 30 Health.",
+      "stats": "HUNGER +40 / HEAL 30",
+      "icon": "assets/icons/ICON_ITEM_DYNO_NUGGETS.png"
+    },
+    {
+      "id": "unlinkguine",
+      "name": "Unlinkguine",
+      "type": "FOOD",
+      "rarity": "UNCOMMON",
+      "effect": "Fills 30 Hunger. Patches 20 Health. Cuts a Replication Ghost loose.",
+      "stats": "HUNGER +30 / GHOST CURE / HEAL 20",
+      "icon": "assets/icons/ICON_ITEM_UNLINKGUINE.png"
     },
     {
       "id": "pwnzu_sauce",
@@ -959,6 +968,15 @@ window.PEDIA_DATA = {
       "effect": "Long, thin, and every strand joined to the last one.",
       "stats": "HUNGER +4",
       "icon": "assets/icons/ICON_ITEM_LINKGUINE.png"
+    },
+    {
+      "id": "jailapeno",
+      "name": "Jailapeno",
+      "type": "FOOD",
+      "rarity": "COMMON",
+      "effect": "Hot enough to keep a process where you put it.",
+      "stats": "HUNGER +3 / HAPPY +4",
+      "icon": "assets/icons/ICON_ITEM_JAILAPENO.png"
     },
     {
       "id": "churned_butter",
@@ -4648,6 +4666,22 @@ window.PEDIA_DATA = {
         }
       ],
       "requires": []
+    },
+    {
+      "name": "Unlinkguine",
+      "output": "unlinkguine",
+      "outputQty": 1,
+      "inputs": [
+        {
+          "id": "linkguine",
+          "qty": 2
+        },
+        {
+          "id": "jailapeno",
+          "qty": 1
+        }
+      ],
+      "requires": []
     }
   ],
   "mods": [
@@ -5997,8 +6031,8 @@ window.PEDIA_DATA = {
     },
     {
       "key": "AIR_GAPPED",
-      "name": "Air-Gapped",
-      "trigger": "Cure a Replication Ghost with Air-Gapped Almonds.",
+      "name": "Unlinked",
+      "trigger": "Cure a Replication Ghost with Unlinkguine.",
       "icon": "assets/icons/ICON_ACH_AIR_GAPPED.png"
     },
     {
@@ -6278,9 +6312,9 @@ window.PEDIA_DATA = {
     {
       "key": "CUISINE_ALL",
       "name": "Full Buffet",
-      "trigger": "Get hold of all 192 foods, the cooked ones included.",
+      "trigger": "Get hold of all 194 foods, the cooked ones included.",
       "icon": "assets/icons/ICON_ACH_CUISINE_ALL.png",
-      "goal": 192
+      "goal": 194
     },
     {
       "key": "COOK_NOODLES",
@@ -6348,9 +6382,9 @@ window.PEDIA_DATA = {
     {
       "key": "RECIPES_ALL",
       "name": "Every Method",
-      "trigger": "Learn all 100 Merge Hub recipes.",
+      "trigger": "Learn all 101 Merge Hub recipes.",
       "icon": "assets/icons/ICON_ACH_CUISINE_ALL.png",
-      "goal": 100
+      "goal": 101
     },
     {
       "key": "COOK_TIRAMISUDO",

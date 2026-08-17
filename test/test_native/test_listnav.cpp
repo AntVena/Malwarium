@@ -16,7 +16,7 @@
 void test_list_hold_a_repeats_the_step() {
     Game g{StartMode::Hatched};
     g.inventory().add("tortilla_chip", 1);
-    g.inventory().add("airgap_snack", 1);
+    g.inventory().add("dyno_nuggets", 1);
     g.inventory().add("polltatoes", 1);
     enterSubmenuId(g, SubmenuId::Items);
     uint32_t t = 0;
@@ -60,7 +60,7 @@ void test_list_hold_c_steps_back_tap_cancels() {
     {
         Game g{StartMode::Hatched};
         g.inventory().add("tortilla_chip", 1);
-        g.inventory().add("airgap_snack", 1);
+        g.inventory().add("dyno_nuggets", 1);
         g.inventory().add("polltatoes", 1);
         enterSubmenuId(g, SubmenuId::Items);
         uint32_t t = 0;
@@ -85,7 +85,7 @@ void test_list_hold_c_steps_back_tap_cancels() {
     {
         Game g{StartMode::Hatched};
         g.inventory().add("tortilla_chip", 1);
-        g.inventory().add("airgap_snack", 1);
+        g.inventory().add("dyno_nuggets", 1);
         enterSubmenuId(g, SubmenuId::Items);
         uint32_t t = 0;
         g.tick(t);

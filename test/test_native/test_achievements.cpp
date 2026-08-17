@@ -323,12 +323,12 @@ void test_collected_items_survive_being_spent() {
     Game g{StartMode::Hatched};
     uint32_t t = 0;
     g.tick(t += kHeartbeatMs);
-    CHECK(g.itemCollected("airgap_snack"));            // on the starting shelf
+    CHECK(g.itemCollected("dyno_nuggets"));            // on the starting shelf
     const int before = g.itemsCollected();
-    while (g.inventory().count("airgap_snack") > 0)
-        g.inventory().remove("airgap_snack", 1);
+    while (g.inventory().count("dyno_nuggets") > 0)
+        g.inventory().remove("dyno_nuggets", 1);
     g.tick(t += kAchSweepIntervalMs);
-    CHECK(g.itemCollected("airgap_snack"));            // still collected
+    CHECK(g.itemCollected("dyno_nuggets"));            // still collected
     CHECK(g.itemsCollected() == before);
 }
 

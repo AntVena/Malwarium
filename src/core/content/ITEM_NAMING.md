@@ -31,23 +31,32 @@ Whereas creatures must **retain the animal identity** when blended with tech ter
 | **Portmanteau + Object** | Tor-Tilla Chip, Yubi-Cookie | Tech term is blended/hyphenated into the object word, then an object word anchors it. |
 | **Modifier + Object** | Force-Pulled Pork | Tech concept as adjective + object noun. |
 
-**All three patterns are valid.** The portmanteau style (Tor-Tilla, Yubi-Cookie) is a *stylistic variation*, not a requirement. The tech term must remain identifiable in either form.
+All three patterns are legal, but they are **not equally good** — see §2a, which is the rule that actually predicts whether a name lands.
 
 **Bad example:** `Snack` — the tech term is gone. Fails.
 **Bad example:** `The Good Thing` — no tech reference at all. Fails.
 
 ---
 
-## 2a. The Object-Specificity Rule
+## 2a. Food Names FUSE; They Don't Modify
 
-The tech-anchor rule checks that a pun survives; it says nothing about the *other* half of the name. That half has its own bar: **the object noun must name a specific, recognizable dish or ingredient — not a meta-category word that could describe almost any food in the game.**
+The patterns above describe what is *legal*. This describes what is *good*, and for FOOD it is close to a law — read the shipped pantry and it states itself:
 
-This is the rule the standard was missing, and the gap was real: `Air-Gapped Snack` (this doc's own former benchmark, §2/§5, until it shipped and read wrong in play) passes every rule above it — a clear tech anchor, no ambiguity, a valid Modifier + Object shape — while still being the one Food item in ~200 that doesn't sound like a real thing on a plate. Compare it to the roster it shipped beside: `Tor-Tilla Chip`, `Grep-sed Oil`, `Cronstarch`, `Force-Pulled Pork`, `Vacuum-Sealed Leftovers` — every other name anchors on an actual dish, cut, or pantry item. `Snack` anchors on nothing; it's the category the whole list belongs to, not a member of it.
+> `Grepefruit` · `Shellots` · `Linkguine` · `RAIDicchio` · `Parsenips` · `Pingapple` · `Archichoke` · `Cronstarch` · `Polltatoes` · `Mozillarella` · `IMAPle Syrup` · `Bitroot` · `Kaliflower` · `AWKra` · `Unlinkguine` · `Jailapeno`
 
-**The test:** could the object noun be the answer to "what specific food is this?" — or is it the answer to "what aisle is this in?" `Chip`, `Pork`, `Cornstarch`, `Cookie`, `Leftovers` are foods. `Snack`, `Treat`, `Meal`, `Dish`, `Item` are aisles.
+**The tech term belongs INSIDE the food word, not in front of it.** Every one of those is a real, specific dish or ingredient with a tech term smuggled into it, usually by changing one or two letters — the food stays fully readable and the pun arrives in the same syllables. That simultaneity is the whole effect, and no amount of polish on a Modifier + Object name reproduces it.
 
-**Bad example:** `Air-Gapped Snack` — tech anchor present, but "snack" is a category, not a dish. Renamed to `Air-Gapped Almonds` (almonds being the everyday object actually sold individually sealed).
-**Good example:** `Force-Pulled Pork` — "pork" is a specific cut; the tech modifier still reads clearly on top of it.
+**Modifier + Object is therefore the weakest shape available for a food, and needs a reason.** It has one: a name that must stay tied to a mechanic the art and achievements are already built around. Absent that, fuse it.
+
+**A corollary, not a separate rule:** the object half must still name a *specific* dish or ingredient, never a meta-category. `Chip`, `Pork`, `Cornstarch`, `Cookie`, `Leftovers` are foods; `Snack`, `Treat`, `Meal`, `Dish`, `Item` are aisles. This matters most in the weak shape, because a Modifier + Object name has nothing else holding it up.
+
+**The worked example this rule was written from.** `Air-Gapped Snack` failed on the corollary — "snack" is an aisle — and was renamed to `Air-Gapped Almonds`, which cleared that bar and *still* read wrong beside the shelf. The corollary had caught the smaller of the two faults: the name was Modifier + Object with no blending, so "air-gapped" simply sat in front of an arbitrary noun. It ultimately became two items: `Dyno Nuggets` (dino nuggets; a *dyno* is the container a process runs in) for the everyday ration, and `Unlinkguine` (linguine; `unlink()` severs a reference) for the ghost cure. Both fuse; neither needed a modifier.
+
+**Bare tech words that are already food** are the one honourable exception, and the roster has a real category of them: `Spam`, `Java`, `Cocoa`, `Squash`, `Snap Peas`, `String Beans`. No blending is required when the word arrives pre-blended.
+
+### Non-negotiable: ASCII only
+
+The panel font is ASCII 32..126 (`src/core/render/font_glyphs.cpp`). A character outside it draws as a **blank cell** and mis-measures `textWidth`, which counts bytes — so a display name is `Jailapeno`, never `Jailapeño`, however much the pun wants the tilde.
 
 ---
 
@@ -62,7 +71,7 @@ Creatures benefit from phonetic blending because the player *learns* the creatur
 
 ---
 
-## 4. Verification Checklist (Must-Pass All Four)
+## 4. Verification Checklist (Must-Pass All Six)
 
 | Criteria | Question to Ask | Pass / Fail |
 |---|---|---|
@@ -70,6 +79,8 @@ Creatures benefit from phonetic blending because the player *learns* the creatur
 | **Tech Anchor Present** | Is the infosec pun / tech term clearly identifiable in the name? | ☐ Yes / ☐ No |
 | **No Ambiguity** | Does the name avoid being a generic noun (`Snack`, `Drive`, `Chip`) without a distinguishing tech modifier? | ☐ Yes / ☐ No |
 | **Object Specificity** (§2a) | Does the object noun name a specific dish/ingredient, not a meta-category word (`Snack`, `Treat`, `Meal`, `Item`)? | ☐ Yes / ☐ No |
+| **Fusion** (§2a) | For a FOOD: is the tech term fused *into* the dish word rather than parked in front of it — and if it isn't, is there a stated reason? | ☐ Yes / ☐ No |
+| **ASCII Only** (§2a) | Is every character in the range 32..126, so the panel font can draw it? | ☐ Yes / ☐ No |
 
 ---
 
@@ -83,6 +94,8 @@ Creatures benefit from phonetic blending because the player *learns* the creatur
 | **Sinkhole Trap** | Tech + Object | "Trap that sinkholes" — clear function. |
 | **Tor-Tilla Chip** | Portmanteau + Object | "Tor" is clearly visible in "Tor-Tilla"; "chip" grounds it as an edible item. |
 | **Yubi-Cookie** | Portmanteau + Object | "Yubi" is clearly visible; "cookie" grounds it. The tech pun is preserved. |
+| **Unlinkguine** | Fused (§2a) | The best shape: `unlink()` lives inside "linguine", so the dish and the pun arrive together. Reads as pasta at a glance. |
+| **Dyno Nuggets** | Fused (§2a) | "Dino nuggets" with a *dyno* — the container a process runs in — swapped into it. One letter. |
 
 ---
 
@@ -92,7 +105,9 @@ Creatures benefit from phonetic blending because the player *learns* the creatur
 |---|---|---|
 | **Vanished Tech** | "Snack", "Cookie" (used bare, alone) | The tech term is gone entirely. No pun survives. |
 | **Pure Object** | "Drive", "Key" | Generic noun with no tech modifier. Could be anything. |
-| **Generic Object Anchor** (§2a) | "Air-Gapped Snack" | Tech term is present and the shape is valid, but the object noun ("snack") is a meta-category, not a specific dish — passes §1-§3 and still doesn't read as a real food. Shipped, then renamed to `Air-Gapped Almonds`. |
+| **Generic Object Anchor** (§2a) | "Air-Gapped Snack" | Tech term present and the shape legal, but "snack" is a meta-category, not a dish. |
+| **Unfused Modifier** (§2a) | "Air-Gapped Almonds" | The corollary fix for the row above, and still weak: a legal Modifier + Object with no blending at all, so the tech term merely sits in front of an arbitrary noun. Split into `Dyno Nuggets` + `Unlinkguine`, both fused. |
+| **Non-ASCII** (§2a) | "Jailapeño" | The panel font is 32..126; the tilde draws as a blank cell and mis-measures the row. Shipped as `Jailapeno`. |
 | **Over-blended Portmanteau** | "Cryptobite" | The blend makes the function ambiguous. Items can't rely on player discovery. |
 | **Two-Tech Collision** | "Ransomware Recovery" | Two tech terms with no object noun. Hard to parse quickly in inventory. |
 | **Redundant Tech** | "Backup Storage Drive" | Three tech-adjacent words with no object anchor. Cluttered, not clearer. |

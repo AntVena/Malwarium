@@ -368,29 +368,37 @@ void test_replication_ghost_never_raised_off_the_worm_line() {
     CHECK(!g.model().hasGhost());
 }
 
-// The cure, and the achievement that marks it. The almonds stay an ordinary food when
+// The cure, and the achievement that marks it. Unlinkguine stays an ordinary dish when
 // there is nothing to cure — which is the common case, and must not unlock anything.
-void test_air_gapped_almonds_cures_the_ghost_and_unlocks() {
+// Dyno Nuggets, which used to carry this and no longer does, must NOT cure or unlock:
+// that half is the point of the split, not incidental coverage.
+void test_unlinkguine_cures_the_ghost_and_unlocks() {
     Game g{StartMode::Hatched, "vermicell"};
-    g.inventory().add("airgap_snack", 2);
+    g.inventory().add("unlinkguine", 2);
 
     // Eaten with no ghost: it feeds, and that is all. No unlock.
     g.model().setHunger(20);
-    g.debugUseItem("airgap_snack");
-    CHECK(g.model().hunger() > 20);                 // still an ordinary snack
+    g.debugUseItem("unlinkguine");
+    CHECK(g.model().hunger() > 20);                 // still an ordinary dish
     CHECK(!g.hasAchievement(ach::kAirGapped));
 
-    // Raise a ghost the only way there is, then cure it.
+    // Raise a ghost the only way there is. The everyday snack does not touch it.
     g.model().setFragmentation(kFragCriticalMin);
     g.debugResolveDefrag(false);
     CHECK(g.model().hasGhost());
-    g.debugUseItem("airgap_snack");
+    g.inventory().add("dyno_nuggets", 1);
+    g.debugUseItem("dyno_nuggets");
+    CHECK(g.model().hasGhost());                    // still there — nuggets only feed
+    CHECK(!g.hasAchievement(ach::kAirGapped));
+
+    // ...and the dish that names the cure is the one that lands it.
+    g.debugUseItem("unlinkguine");
     CHECK(!g.model().hasGhost());
     CHECK(g.hasAchievement(ach::kAirGapped));
 }
 
 // The AV scan is the other cure, and the two are deliberately the same shape as the
-// defrag variants: the scan is free but can fail, the almonds are an item that cannot. So
+// defrag variants: the scan is free but can fail, Unlinkguine is an item that cannot. So
 // a ghost must be reachable AND clearable through both, or one of the pair is decoration.
 void test_ghost_also_clears_through_a_successful_av_scan() {
     Game g{StartMode::Hatched, "vermicell"};
@@ -400,7 +408,7 @@ void test_ghost_also_clears_through_a_successful_av_scan() {
     CHECK(!avGated(g.model()));                     // a ghost is work for the AV screen
     CHECK(!g.model().applyAntivirus(true));          // succeeded
     CHECK(!g.model().hasGhost());
-    // Curing it this way is NOT the Air-Gapped achievement — that row names the almonds.
+    // Curing it this way is NOT the Air-Gapped achievement — that row names Unlinkguine.
     CHECK(!g.hasAchievement(ach::kAirGapped));
 }
 
@@ -412,8 +420,8 @@ void test_perishable_food_spoils_on_a_feeding() {
     g.inventory().add("fresh_macrol", 40);
     int spoilages = 0, prevFresh = 40;
     for (int i = 0; i < 200; ++i) {
-        g.inventory().add("airgap_snack", 1);
-        g.debugUseItem("airgap_snack");   // eat something ELSE — the beat, not the item
+        g.inventory().add("dyno_nuggets", 1);
+        g.debugUseItem("dyno_nuggets");   // eat something ELSE — the beat, not the item
 
         const int fresh = g.inventory().count("fresh_macrol");
         CHECK(fresh + g.inventory().count("spoiled_macrol") == 40);  // conserved either way
@@ -429,8 +437,8 @@ void test_perishable_food_spoils_on_a_feeding() {
     Game h(StartMode::Hatched, "paypup");
     h.inventory().add("spoiled_macrol", 3);
     for (int i = 0; i < 200; ++i) {
-        h.inventory().add("airgap_snack", 1);
-        h.debugUseItem("airgap_snack");
+        h.inventory().add("dyno_nuggets", 1);
+        h.debugUseItem("dyno_nuggets");
     }
     CHECK(h.inventory().count("spoiled_macrol") == 3);
 }
@@ -502,8 +510,15 @@ void test_renamed_ids_table_invariants() {
 
         // The point of the table: `from` is gone from content, `to` is real. A `from`
         // that still resolves means the id was never actually retired.
-        CHECK(r.creature(rows[i].from) == nullptr);
-        CHECK(r.creature(rows[i].to) != nullptr);
+        //
+        // Asked of BOTH id spaces rather than of creatures alone: the table carried
+        // nothing but creatures until v54 renamed an item, and a check that knows only
+        // one kind would call a live item id a dead one.
+        auto resolves = [&r](const char* id) {
+            return r.creature(id) != nullptr || r.item(id) != nullptr;
+        };
+        CHECK(!resolves(rows[i].from));
+        CHECK(resolves(rows[i].to));
 
         // Flattening: distinct `from`s, and no `to` that is itself renamed — the
         // rewrite takes exactly one hop and stops.
