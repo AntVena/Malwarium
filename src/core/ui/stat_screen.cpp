@@ -372,7 +372,16 @@ void drawAuditLog(Framebuffer& fb, const EventLog& log, int /*beat*/) {
     constexpr int kShown = 6;
     const int shown = log.size() < kShown ? log.size() : kShown;
     if (shown == 0) {
-        drawText(fb, kMargin, 60, "- NO EVENTS YET -", palColor(Pal::INK_DIM));
+        // A full page's worth of empty space read as an unfinished screen rather
+        // than an empty list — every other empty-state in the app ("- NO PETS -",
+        // "- SYSTEM CLEAN -") sits inside a page with other content around it, but
+        // this page has nothing else on it. Centered in the space a populated log
+        // would fill, with a second line saying what fills it, instead of pinned
+        // to the top of a void.
+        constexpr int kCenterY = (30 + kProseBottom) / 2 - kFontH;
+        drawText(fb, kMargin, kCenterY, "- NO EVENTS YET -", palColor(Pal::INK_DIM));
+        drawText(fb, kMargin, kCenterY + 16, "FILLS IN AS YOU PLAY.",
+                 palColor(Pal::INK_DIM));
         return;
     }
     for (int i = 0; i < shown; ++i) {            // newest first

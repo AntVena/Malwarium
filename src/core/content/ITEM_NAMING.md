@@ -29,12 +29,25 @@ Whereas creatures must **retain the animal identity** when blended with tech ter
 |---|---|---|
 | **Tech + Object** | Decryption Key, Backup Drive, Sinkhole Trap | Straight noun+noun. Tech term is first (or clearly dominant). |
 | **Portmanteau + Object** | Tor-Tilla Chip, Yubi-Cookie | Tech term is blended/hyphenated into the object word, then an object word anchors it. |
-| **Modifier + Object** | Air-Gapped Snack | Tech concept as adjective + object noun. |
+| **Modifier + Object** | Force-Pulled Pork | Tech concept as adjective + object noun. |
 
 **All three patterns are valid.** The portmanteau style (Tor-Tilla, Yubi-Cookie) is a *stylistic variation*, not a requirement. The tech term must remain identifiable in either form.
 
 **Bad example:** `Snack` — the tech term is gone. Fails.
 **Bad example:** `The Good Thing` — no tech reference at all. Fails.
+
+---
+
+## 2a. The Object-Specificity Rule
+
+The tech-anchor rule checks that a pun survives; it says nothing about the *other* half of the name. That half has its own bar: **the object noun must name a specific, recognizable dish or ingredient — not a meta-category word that could describe almost any food in the game.**
+
+This is the rule the standard was missing, and the gap was real: `Air-Gapped Snack` (this doc's own former benchmark, §2/§5, until it shipped and read wrong in play) passes every rule above it — a clear tech anchor, no ambiguity, a valid Modifier + Object shape — while still being the one Food item in ~200 that doesn't sound like a real thing on a plate. Compare it to the roster it shipped beside: `Tor-Tilla Chip`, `Grep-sed Oil`, `Cronstarch`, `Force-Pulled Pork`, `Vacuum-Sealed Leftovers` — every other name anchors on an actual dish, cut, or pantry item. `Snack` anchors on nothing; it's the category the whole list belongs to, not a member of it.
+
+**The test:** could the object noun be the answer to "what specific food is this?" — or is it the answer to "what aisle is this in?" `Chip`, `Pork`, `Cornstarch`, `Cookie`, `Leftovers` are foods. `Snack`, `Treat`, `Meal`, `Dish`, `Item` are aisles.
+
+**Bad example:** `Air-Gapped Snack` — tech anchor present, but "snack" is a category, not a dish. Renamed to `Air-Gapped Almonds` (almonds being the everyday object actually sold individually sealed).
+**Good example:** `Force-Pulled Pork` — "pork" is a specific cut; the tech modifier still reads clearly on top of it.
 
 ---
 
@@ -49,13 +62,14 @@ Creatures benefit from phonetic blending because the player *learns* the creatur
 
 ---
 
-## 4. Verification Checklist (Must-Pass All Three)
+## 4. Verification Checklist (Must-Pass All Four)
 
 | Criteria | Question to Ask | Pass / Fail |
 |---|---|---|
 | **Functional Readability** | Can a player guess the item's purpose from the name alone, without reading the description? | ☐ Yes / ☐ No |
 | **Tech Anchor Present** | Is the infosec pun / tech term clearly identifiable in the name? | ☐ Yes / ☐ No |
 | **No Ambiguity** | Does the name avoid being a generic noun (`Snack`, `Drive`, `Chip`) without a distinguishing tech modifier? | ☐ Yes / ☐ No |
+| **Object Specificity** (§2a) | Does the object noun name a specific dish/ingredient, not a meta-category word (`Snack`, `Treat`, `Meal`, `Item`)? | ☐ Yes / ☐ No |
 
 ---
 
@@ -65,7 +79,7 @@ Creatures benefit from phonetic blending because the player *learns* the creatur
 |---|---|---|
 | **Decryption Key** | Tech + Object | Immediate clarity. "Key for decryption" is unambiguous. |
 | **Backup Drive** | Tech + Object | "Drive used for backup" — function is the first word. |
-| **Air-Gapped Snack** | Modifier + Object | "Air-gapped" modifies "snack" — the tech concept is front and center. |
+| **Force-Pulled Pork** | Modifier + Object | "Force-pulled" modifies "pork" — the tech concept is front and center, and "pork" is a specific cut, not a category (§2a). |
 | **Sinkhole Trap** | Tech + Object | "Trap that sinkholes" — clear function. |
 | **Tor-Tilla Chip** | Portmanteau + Object | "Tor" is clearly visible in "Tor-Tilla"; "chip" grounds it as an edible item. |
 | **Yubi-Cookie** | Portmanteau + Object | "Yubi" is clearly visible; "cookie" grounds it. The tech pun is preserved. |
@@ -76,8 +90,9 @@ Creatures benefit from phonetic blending because the player *learns* the creatur
 
 | Anti-Pattern | Example | Why It Fails |
 |---|---|---|
-| **Vanished Tech** | "Snack", "Cookie" | The tech term is gone entirely. No pun survives. |
+| **Vanished Tech** | "Snack", "Cookie" (used bare, alone) | The tech term is gone entirely. No pun survives. |
 | **Pure Object** | "Drive", "Key" | Generic noun with no tech modifier. Could be anything. |
+| **Generic Object Anchor** (§2a) | "Air-Gapped Snack" | Tech term is present and the shape is valid, but the object noun ("snack") is a meta-category, not a specific dish — passes §1-§3 and still doesn't read as a real food. Shipped, then renamed to `Air-Gapped Almonds`. |
 | **Over-blended Portmanteau** | "Cryptobite" | The blend makes the function ambiguous. Items can't rely on player discovery. |
 | **Two-Tech Collision** | "Ransomware Recovery" | Two tech terms with no object noun. Hard to parse quickly in inventory. |
 | **Redundant Tech** | "Backup Storage Drive" | Three tech-adjacent words with no object anchor. Cluttered, not clearer. |

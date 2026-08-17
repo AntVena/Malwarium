@@ -167,6 +167,22 @@ void Game::drawHackerMerge(Framebuffer& fb) const {
                                beat_, false);
                 rowY += kLineH;
             }
+        } else if (owned) {
+            // Folded rows still carry a second, dimmer line — a stocked count rather
+            // than the full ingredient breakdown, so the row keeps the shop's
+            // bold-title/dim-detail shape without reopening the overflow the
+            // accordion exists to avoid.
+            int total = 0, satisfied = 0;
+            for (const RecipeInput& in : r.inputs) {
+                if (!in.id) continue;
+                ++total;
+                if (inventory_.count(in.id) >= in.qty) ++satisfied;
+            }
+            char stock[24];
+            std::snprintf(stock, sizeof(stock), "%d/%d STOCKED", satisfied, total);
+            drawText(fb, kIndent, rowY, stock,
+                     satisfied == total ? palColor(Pal::INK_DIM) : palColor(Pal::WARN));
+            rowY += kFontH + 3;   // tighter pitch than kLineH: a summary line, not a title
         }
         rowY += kRowGap;
     }

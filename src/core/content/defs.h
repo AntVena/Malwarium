@@ -351,7 +351,7 @@ struct ItemEffect {
                               // Game::bandwidthMax(). The item-side twin of the Rig
                               // Shop's GrantBandwidth: an ordinary top-up anyone can
                               // eat, as against a level that raises the ceiling.
-        ClearReplicationGhost, // Air-Gapped Snack: clear a Replication Ghost
+        ClearReplicationGhost, // Air-Gapped Almonds: clear a Replication Ghost
                               // (PetModel::ghost_), the phantom process a defrag that
                               // failed on a Critical disk leaves behind. Magnitude-free
                               // — a ghost is a flag, not a quantity. An AV scan clears

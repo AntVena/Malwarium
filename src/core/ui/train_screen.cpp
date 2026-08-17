@@ -241,7 +241,7 @@ void drawMovePicker(Framebuffer& fb, const ContentRegistry& reg,
     const int listEnd = rowTop + visibleRows * rowH;
     fb.fillRect(kMargin, listEnd + 4, kActiveW - 2 * kMargin, 1, palColor(Pal::TRACK));
     const int panelY = listEnd + 10;
-    const int panelBottom = kActiveH - 14;
+    const int panelBottom = kActiveH - kHintBandH - 2;
     if (pick > 0 && pick - 1 < static_cast<int>(owned.size())) {
         const MoveDef* m = owned[pick - 1];
         const int elsewhere = load.slotOf(m->id);
@@ -287,6 +287,8 @@ void drawMovePicker(Framebuffer& fb, const ContentRegistry& reg,
         drawText(fb, confirmX, cy, "CONFIRM",
                  confirmChoice == 1 ? palColor(Pal::ACCENT) : palColor(Pal::INK));
     }
+    drawHintBand(fb, confirmActive ? "A TOGGLE  B COMMIT  C CANCEL"
+                                   : "A CYCLE  B VIEW  C BACK");
 }
 
 namespace {

@@ -61,6 +61,7 @@ void drawMaintList(Framebuffer& fb, const PetModel& m, int cursor, int beat) {
         drawTextMarquee(fb, 40, textY, statusX - kMargin - 40, labels[i],
                         palColor(Pal::INK), beat, i == cursor);
     }
+    drawHintBand(fb, "A CYCLE  B OPEN  C BACK");
 }
 
 void drawMaintAction(Framebuffer& fb, MaintKind kind, const PetModel& m,
@@ -136,7 +137,9 @@ void drawMaintAction(Framebuffer& fb, MaintKind kind, const PetModel& m,
             drawLabelValue(fb, kMargin + 12, rowY[i], line, col, tag, tagCol, 0, false);
         }
 
-        // Bottom action line: the gated reason, or the RUN/SWITCH hint.
+        // Bottom action line: the gated reason, or the armed action. It names the
+        // ACTION, not the buttons — the band below does those, and the AV branch's
+        // "SCAN" cursor is the same shape.
         const bool toolReady = toolCount > 0;
         const bool runnable = afford && (variant != 1 || toolReady);
         if (defragGated(m)) {
@@ -148,8 +151,9 @@ void drawMaintAction(Framebuffer& fb, MaintKind kind, const PetModel& m,
             drawText(fb, kMargin, 176, "- NO DEFRAG TOOL -", palColor(Pal::WARN));
         } else if (runnable) {
             drawRowCursor(fb, kMargin, 176, palColor(Pal::ACCENT));
-            drawText(fb, kMargin + 12, 176, "B RUN   A SWITCH", palColor(Pal::ACCENT));
+            drawText(fb, kMargin + 12, 176, "RUN", palColor(Pal::ACCENT));
         }
+        drawHintBand(fb, runnable ? "A SWITCH  B RUN  C BACK" : "A SWITCH  C BACK");
     } else {
         drawHeaderBand(fb, "ANTIVIRUS");
         drawText(fb, kMargin, 36, "SCANS + REMOVES ROGUE PROCS.", palColor(Pal::INK));
@@ -165,6 +169,7 @@ void drawMaintAction(Framebuffer& fb, MaintKind kind, const PetModel& m,
             drawRowCursor(fb, kMargin, 170, palColor(Pal::ACCENT));
             drawText(fb, kMargin + 10, 170, "SCAN", palColor(Pal::ACCENT));
         }
+        drawHintBand(fb, avGated(m) ? "C BACK" : "B SCAN  C BACK");
     }
 }
 
@@ -213,6 +218,13 @@ void drawStackerBoard(Framebuffer& fb, const Stacker& s, int frag, bool arcade) 
             strokeRect(fb, x + kGap, y + kGap, kCellW - 2 * kGap, kCellH - 2 * kGap,
                        palColor(Pal::INK));
         }
+
+    // The status/control pair below the well is a live HUD, not a static hint — its
+    // right column changes every drop (SCORE or FRAG) rather than naming a fixed
+    // button set, which is why it isn't drawHintBand. But every OTHER screen's
+    // footer sits on the same TRACK-filled band, and this one was bare background —
+    // the one place in the app that band vanishes the moment play starts.
+    fb.fillRect(0, 178, kActiveW, kActiveH - 178, palColor(Pal::TRACK));
 
     char line[40];
     if (s.running()) {

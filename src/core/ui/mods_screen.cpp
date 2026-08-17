@@ -165,6 +165,7 @@ void drawModsList(Framebuffer& fb, const ContentRegistry& reg,
         // Slot number sits dim under the mod name (a stable per-row anchor).
         drawText(fb, 40, y + kRowH - kFontH, slotLbl, palColor(Pal::INK_DIM));
     }
+    drawHintBand(fb, "A CYCLE  B OPEN  C BACK");
 }
 
 void drawModPicker(Framebuffer& fb, const ContentRegistry& reg,
@@ -261,10 +262,11 @@ void drawModPicker(Framebuffer& fb, const ContentRegistry& reg,
         sheet.rows = spec.rows;
         sheet.rowCount = spec.count;
         sheet.prose = prose.c_str();
-        // Leave the gate line its own row at the bottom of the panel band.
+        // Leave the gate line its own row at the bottom of the panel band, above
+        // the hint band rather than into it.
         const int afterProse =
             drawSpecSheet(fb, kMargin, listEnd + 10, kActiveW - 2 * kMargin,
-                          kActiveH - 14, sheet).endY;
+                          kActiveH - kHintBandH - 2, sheet).endY;
         const int req = modEquipLevel(*fm);
         const bool wrongLine = lineLocked(fm, petLine);
         const int elsewhere = load.slotOf(fm->id);
@@ -281,7 +283,7 @@ void drawModPicker(Framebuffer& fb, const ContentRegistry& reg,
         } else {
             std::snprintf(rl, sizeof(rl), "EQUIP LVL %d - OK", req);
         }
-        drawText(fb, kMargin, std::min(afterProse + 2, kActiveH - 10), rl,
+        drawText(fb, kMargin, std::min(afterProse + 2, kActiveH - kHintBandH - 8), rl,
                  (req > petLevel || wrongLine || inOtherSlot) ? palColor(Pal::HOT)
                                                                : palColor(Pal::INK_DIM));
     }
@@ -311,6 +313,8 @@ void drawModPicker(Framebuffer& fb, const ContentRegistry& reg,
         drawText(fb, confirmX, cy, "CONFIRM",
                  confirmChoice == 1 ? palColor(Pal::ACCENT) : palColor(Pal::INK));
     }
+    drawHintBand(fb, confirmActive ? "A TOGGLE  B COMMIT  C CANCEL"
+                                   : "A CYCLE  B VIEW  C BACK");
 }
 
 int modDetailProseLines() {
@@ -408,6 +412,7 @@ void drawModDetail(Framebuffer& fb, const ContentRegistry& reg, const Loadout& l
         drawRowCursor(fb, kMargin, y, palColor(Pal::ACCENT));
         drawText(fb, kMargin + 10, y, "EQUIP", palColor(Pal::ACCENT));
     }
+    drawHintBand(fb, equippedHere || locked ? "C BACK" : "B EQUIP  C BACK");
 }
 
 } // namespace mal

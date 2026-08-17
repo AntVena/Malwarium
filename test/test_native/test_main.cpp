@@ -596,7 +596,8 @@ int g_failures = 0;
     RUN(test_isolation_clean_run_hatches_and_unlocks) \
     RUN(test_rolled_defrag_takes_its_fixed_bite) \
     RUN(test_replication_ghost_is_raised_by_a_failed_defrag_on_a_critical_disk) \
-    RUN(test_air_gapped_snack_cures_the_ghost_and_unlocks) \
+    RUN(test_replication_ghost_never_raised_off_the_worm_line) \
+    RUN(test_air_gapped_almonds_cures_the_ghost_and_unlocks) \
     RUN(test_ghost_also_clears_through_a_successful_av_scan) \
     RUN(test_perishable_food_spoils_on_a_feeding) \
     RUN(test_icon_tint_and_theme_indirection) \

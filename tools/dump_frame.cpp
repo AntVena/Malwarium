@@ -3,7 +3,7 @@
 // PPM of the full 240 panel:
 //   ./dump_frame [beats] [out.ppm] [flags...]
 // flags: hungry · crit · stat · log · carousel · bottom · iconsonly · textonly
-//        items [picker [keys|tools]] [row:<n>] [detail|feed] (row:<n> walks the list
+//        items [picker [ingredients|keys|tools]] [row:<n>] [detail|feed] (row:<n> walks the list
 //             cursor first, so a detail other than the first row is renderable)
 //        feed:<item_id> (eat one named food through the real Use path and hold the
 //             feeding modal — how to eyeball that its gauges follow that item's own
@@ -288,10 +288,11 @@ int main(int argc, char** argv) {
             game.debugBuyItemPicker();
         }
         enterSlot(SubmenuId::Items);
-        // With the picker up, "keys"/"tools" walk to that tile and drill into it, so
-        // the filtered list behind a tile is renderable too.
-        const int tile = hasFlag(argc, argv, "keys") ? 3
-                       : hasFlag(argc, argv, "tools") ? 4 : -1;
+        // With the picker up, "ingredients"/"keys"/"tools" walk to that tile and
+        // drill into it, so the filtered list behind a tile is renderable too.
+        const int tile = hasFlag(argc, argv, "ingredients") ? 2
+                       : hasFlag(argc, argv, "keys") ? 4
+                       : hasFlag(argc, argv, "tools") ? 5 : -1;
         if (tile >= 0 && game.itemsScreen() == Game::ItemsScreen::Picker) {
             for (int i = 0; i < tile; ++i) game.onButton({Button::A, true, false});
             game.onButton({Button::B, true, false});

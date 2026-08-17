@@ -215,6 +215,7 @@ void drawCfgList(Framebuffer& fb, int cursor, const char* hackerTag,
         const int thumbY = kRowTop + trackH * scrollTop / n;
         fb.fillRect(barX, thumbY, 2, thumbH, palColor(Pal::INK_DIM));
     }
+    drawHintBand(fb, "A CYCLE  B OPEN  C BACK");
 }
 
 void drawCfgDevice(Framebuffer& fb, int cursor, UiMode uiMode, int brightness) {
@@ -231,7 +232,7 @@ void drawCfgDevice(Framebuffer& fb, int cursor, UiMode uiMode, int brightness) {
         settingsRow(fb, kRowTop + i * kRowH, rows[i], i == cursor, val,
                     palColor(Pal::INK_DIM));
     }
-    drawText(fb, kMargin, 170, "A NEXT  B OPENS  C BACK", palColor(Pal::INK_DIM));
+    drawHintBand(fb, "A NEXT  B OPEN  C BACK");
 }
 
 void drawTravelConfirm(Framebuffer& fb, int pick) {
@@ -260,7 +261,7 @@ void drawTravelConfirm(Framebuffer& fb, int pick) {
         drawText(fb, 24, y + 3, kOpts[i],
                  palColor(i == 1 ? Pal::WARN : Pal::INK));
     }
-    drawText(fb, kMargin, 176, "A CHOOSES  B CONFIRMS", palColor(Pal::INK_DIM));
+    drawHintBand(fb, "A CHOOSE  B CONFIRM  C BACK");
 }
 
 void drawTravelSleeping(Framebuffer& fb) {
@@ -334,7 +335,7 @@ void drawCfgRadio(Framebuffer& fb, int cursor, RadioOwner owner, int auditLevel,
     drawRadioMark(fb, 76, 158, false, palColor(Pal::INK));
     drawText(fb, 87, 158, "WAITING", palColor(Pal::INK_DIM));
     drawText(fb, kMargin, 172, "NEAREST THE TOP WINS", palColor(Pal::INK_DIM));
-    drawText(fb, kMargin, 186, "A NEXT  B OPENS  C BACK", palColor(Pal::INK_DIM));
+    drawHintBand(fb, "A NEXT  B OPEN  C BACK");
 }
 
 void drawSysInfo(Framebuffer& fb, uint32_t uptimeMs, UiMode uiMode,
@@ -414,11 +415,6 @@ void drawSysInfo(Framebuffer& fb, uint32_t uptimeMs, UiMode uiMode,
         infoLine(fb, 178, "SHAKES", shakes, palColor(Pal::INK));
     }
 
-    // A re-checks the card. It lives here rather than on a list row because the SD
-    // line above IS its result — insert a card, press A, watch the line change.
-    // (B is deliberately unnamed: it arms the hidden reveal below.)
-    drawText(fb, kMargin, 194, "A RECHECKS SD", palColor(Pal::INK_DIM));
-
     // The hidden Factory-Reset reveal: holding B fills a bar. Drawn only
     // while held so the gesture stays undocumented on a resting screen.
     if (holdFrac > 0.0f) {
@@ -426,6 +422,12 @@ void drawSysInfo(Framebuffer& fb, uint32_t uptimeMs, UiMode uiMode,
         drawProgressBar(fb, kMargin, 180, kActiveW - 2 * kMargin, 10, holdFrac,
                         palColor(Pal::HOT));
     }
+
+    // A re-checks the card (it lives here rather than on a list row because the SD
+    // line above IS its result — insert a card, press A, watch the line change) and
+    // C backs out. B is deliberately unnamed: it arms the hidden reveal above, and
+    // naming it in the band would be the same as writing it on the screen.
+    drawHintBand(fb, "A RECHECKS SD  C BACK");
 }
 
 void drawHackerTag(Framebuffer& fb, const char* tag, int caret) {
@@ -454,10 +456,12 @@ void drawHackerTag(Framebuffer& fb, const char* tag, int caret) {
     drawText(fb, cx + (cellW - textWidth("OK")) / 2, y + (cellH - kFontH) / 2, "OK",
              okFocus ? palColor(Pal::PAPER) : palColor(Pal::INK_DIM));
 
-    // Live preview of the tag + the editor hint band.
+    // Live preview of the tag.
     drawText(fb, kMargin, 110, tag, palColor(Pal::INK));
-    drawText(fb, kMargin, 168, "A CYCLE  B NEXT  C DELETE", palColor(Pal::INK_DIM));
-    drawText(fb, kMargin, 182, "OK CELL: B SAVES", palColor(Pal::INK_DIM));
+    // B's meaning changes at the confirm cell (advance vs. save), so the band
+    // reads that back rather than a caveat printed above it.
+    drawHintBand(fb, caret >= n ? "A CYCLE  B SAVE  C DELETE"
+                               : "A CYCLE  B NEXT  C DELETE");
 }
 
 void drawUiModeToggle(Framebuffer& fb, int pick, UiMode current) {
@@ -477,7 +481,7 @@ void drawUiModeToggle(Framebuffer& fb, int pick, UiMode current) {
             drawText(fb, kActiveW - kMargin - textWidth("ACTIVE"), y + 4,
                      "ACTIVE", palColor(Pal::ACCENT));
     }
-    drawText(fb, kMargin, 170, "B APPLIES", palColor(Pal::INK_DIM));
+    drawHintBand(fb, "A CYCLE  B APPLY  C BACK");
 }
 
 void drawBrightness(Framebuffer& fb, int pick, int current) {
@@ -511,7 +515,7 @@ void drawBrightness(Framebuffer& fb, int pick, int current) {
     char pct[12];
     std::snprintf(pct, sizeof(pct), "%d%%", brightnessPercent(pick));
     drawText(fb, (kActiveW - textWidth(pct)) / 2, 30, pct, palColor(Pal::INK));
-    drawText(fb, kMargin, 170, "A LEVEL   B APPLIES", palColor(Pal::INK_DIM));
+    drawHintBand(fb, "A LEVEL  B APPLY  C BACK");
 }
 
 void drawTitles(Framebuffer& fb, int focusSector, uint32_t unlockedMask,
@@ -572,7 +576,7 @@ void drawAuditMode(Framebuffer& fb, int pick, int current) {
             drawText(fb, kActiveW - kMargin - textWidth("ACTIVE"), y,
                      "ACTIVE", palColor(Pal::ACCENT));
     }
-    drawText(fb, kMargin, 170, "A CYCLES  B APPLIES", palColor(Pal::INK_DIM));
+    drawHintBand(fb, "A CYCLE  B APPLY  C BACK");
 }
 
 void drawApToggle(Framebuffer& fb, int pick, bool current) {
@@ -599,7 +603,7 @@ void drawApToggle(Framebuffer& fb, int pick, bool current) {
             drawText(fb, kActiveW - kMargin - textWidth("ACTIVE"), y + 4,
                      "ACTIVE", palColor(Pal::ACCENT));
     }
-    drawText(fb, kMargin, 170, "B APPLIES", palColor(Pal::INK_DIM));
+    drawHintBand(fb, "A TOGGLE  B APPLY  C BACK");
 }
 
 void drawLinkToggle(Framebuffer& fb, int pick, bool current, bool ambientStarved) {
@@ -638,7 +642,7 @@ void drawLinkToggle(Framebuffer& fb, int pick, bool current, bool ambientStarved
         drawText(fb, kMargin, 146, "AUDIT SCAN IS OFF:", palColor(Pal::WARN));
         drawText(fb, kMargin, 158, "ONLY MEETS ON PEERS SCREEN", palColor(Pal::WARN));
     }
-    drawText(fb, kMargin, 170, "B APPLIES", palColor(Pal::INK_DIM));
+    drawHintBand(fb, "A TOGGLE  B APPLY  C BACK");
 }
 
 void drawFactoryReset(Framebuffer& fb, int scope, float holdFrac) {
@@ -656,7 +660,10 @@ void drawFactoryReset(Framebuffer& fb, int scope, float holdFrac) {
     drawText(fb, kMargin, 150, "HOLD B TO WIPE", palColor(Pal::HOT));
     drawProgressBar(fb, kMargin, 164, kActiveW - 2 * kMargin, 12, holdFrac,
                     palColor(Pal::HOT));
-    drawText(fb, kMargin, 184, "A SCOPE   C BACK", palColor(Pal::INK_DIM));
+    // B is deliberately absent from the band: it is a HOLD, not a tap, and the
+    // HOT line + fill bar above are its affordance. Naming it here in the same
+    // voice as every tap in the app would invite one.
+    drawHintBand(fb, "A SCOPE  C BACK");
 }
 
 } // namespace mal

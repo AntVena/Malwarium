@@ -18,7 +18,7 @@ struct SpriteData;
 // One rendered row: a non-selectable section header, or an item with its count.
 struct InvRow {
     bool header;
-    const char* label;        // header text (FOOD/BUFFS/QUEST) or item display name
+    const char* label;        // header text (FOOD/INGREDIENTS/BUFFS/QUEST) or item name
     const ItemDef* def;       // null on a header row
     int qty;
     const SpriteData* icon;   // ICON_ITEM_* (null on a header row)
@@ -27,17 +27,24 @@ struct InvRow {
 // Two Rig Shop rows read ItemFilter (ui_state.h) on two different axes:
 //   * ITEMS Type-Tabs (hold-B on the list) walks the TYPE axis, ALL/FOOD/BUFFS/QUEST.
 //   * ITEMS Type-Picker (the L2 tile screen) walks the finer CATEGORY axis,
-//     ALL/FOOD/BUFFS/KEYS/TOOLS — QUEST split into the keys you spend and the
-//     tools you carry (ItemDef::Category). Owning it upgrades hold-B to that axis
-//     too, so the picker and the gesture never disagree about what a tab means.
-// All = the full grouped list, and what every player without an upgrade sees.
+//     ALL/FOOD/INGREDIENTS/BUFFS/KEYS/TOOLS — QUEST split into the keys you spend
+//     and the tools you carry (ItemDef::Category), and FOOD split into cooked
+//     dishes and the recipe ingredients you almost never eat directly
+//     (itemIsRecipeIngredient, content_recipes.h). Owning it upgrades hold-B to
+//     that axis too, so the picker and the gesture never disagree about what a
+//     tab means.
+// All = the full grouped list, and what every player without an upgrade sees —
+// FOOD there still groups into a FOOD block and an INGREDIENTS block underneath
+// it (buildInventoryRows), just without a filter to narrow to only one.
 
-// Short chip word for the active filter (ALL/FOOD/BUFFS/QUEST/KEYS/TOOLS) — shown
-// in the ITEMS header once a filter upgrade is owned, and on the picker's tiles.
+// Short chip word for the active filter (ALL/FOOD/BUFFS/QUEST/KEYS/TOOLS/
+// INGREDIENTS) — shown in the ITEMS header once a filter upgrade is owned, and on
+// the picker's tiles.
 const char* itemFilterLabel(ItemFilter f);
 // The hold-B cycle order. `categoryAxis` (the type-picker is owned) walks
-// ALL -> FOOD -> BUFFS -> KEYS -> TOOLS -> ALL; otherwise ALL -> FOOD -> BUFFS ->
-// QUEST -> ALL. Either way an off-axis filter lands back on ALL.
+// ALL -> FOOD -> INGREDIENTS -> BUFFS -> KEYS -> TOOLS -> ALL; otherwise
+// ALL -> FOOD -> BUFFS -> QUEST -> ALL. Either way an off-axis filter lands back
+// on ALL.
 ItemFilter nextItemFilter(ItemFilter f, bool categoryAxis = false);
 
 // Resolve an item's inventory icon (ICON_ITEM_<UPPER ID>) via the registry.
@@ -48,8 +55,10 @@ const SpriteData* itemIcon(const ContentRegistry& reg, const char* id);
 bool itemResolvesLockout(const ItemDef& d);
 
 // Build the grouped, sorted inventory: only stacks with qty>0, ordered
-// FOOD -> BUFFS -> QUEST with a header row per group, and RAREST FIRST inside each
-// group (Epic -> Common, alphabetical between items of equal rarity).
+// FOOD -> INGREDIENTS -> BUFFS -> QUEST with a header row per group, and RAREST
+// FIRST inside each group (Epic -> Common, alphabetical between items of equal
+// rarity). FOOD/INGREDIENTS is a split of the same Type::Food, not two types —
+// cooked dishes first, then the recipe ingredients a player rarely eats directly.
 // `lockoutSort` floats Lockout-resolving items to the very top.
 // `filter` (d) narrows the set to one type first; All = no narrowing.
 std::vector<InvRow> buildInventoryRows(const ContentRegistry& reg,
@@ -75,10 +84,11 @@ struct ItemPickRow {
     int units;
 };
 
-// The picker's fixed tile order: ALL, FOOD, BUFFS, KEYS, TOOLS. There is no CACHES
-// tile by construction — buildInventoryRows never lists a Sealed Cache (they decrypt
-// in the Hacker VAULT), so no tile could hold one. Counts come from
-// buildInventoryRows itself, so a tile can never disagree with the list behind it.
+// The picker's fixed tile order: ALL, FOOD, INGREDIENTS, BUFFS, KEYS, TOOLS. There
+// is no CACHES tile by construction — buildInventoryRows never lists a Sealed
+// Cache (they decrypt in the Hacker VAULT), so no tile could hold one. Counts come
+// from buildInventoryRows itself, so a tile can never disagree with the list
+// behind it.
 std::vector<ItemPickRow> buildItemPickerRows(const ContentRegistry& reg,
                                              const Inventory& inv);
 

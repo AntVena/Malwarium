@@ -46,7 +46,10 @@ void test_inventory_rows_grouped() {
 
     int headers = 0, items = 0;
     for (const auto& row : rows) (row.header ? headers : items)++;
-    CHECK(items == 7 && headers == 3);               // FOOD/BUFFS/QUEST
+    // FOOD/INGREDIENTS/BUFFS/QUEST: tortilla_chip is both a snack and a Nachos
+    // ingredient, so it splits the starting shelf's Food stack into its own group
+    // alongside airgap_snack's.
+    CHECK(items == 7 && headers == 4);
     CHECK(rows.front().header && std::strcmp(rows.front().label, "FOOD") == 0);
 
     const int f = firstSelectableRow(rows);

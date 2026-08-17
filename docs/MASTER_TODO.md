@@ -173,26 +173,6 @@ Indexed storage is what buys the four-row standard: it puts that same roster at 
 order is *decide the per-creature row budget first*; this row is only urgent if the answer is
 "more than one".
 
-### 1e. Tinting — a second theme
-
-**A second theme is a design pass, not a build.** The machinery takes N themes today and
-`PAL_CORE.json` documents the block shape; authoring a colourblind-friendly set (moving the
-red/green semantic pair onto a blue/orange axis) needs hue decisions, plus a CFG row to select it
-and a save field to remember it. Diff **M**. The `decryption` block is the part that most wants one:
-its five code colours are a vocabulary a player has to tell apart at a glance, and while every cell
-carries its initial as the grayscale channel, five hues that read as five is the whole board.
-
-### 1f. Standing stubs / interim mechanics to revisit
-
-Intentional simplifications. None is a bug; each is a "confirm as v1 or revise".
-
-- **The derived bold is a smear, not a drawn cut.** 7 cells (`% @ M W _ m w`) already span the
-  box and thicken into their own counters. It reads as bold rather than damage on every title
-  that ships, so this is polish, not a defect. Pixel Operator's family carries its own Bold
-  under the same CC0 — sourcing that cut and pointing `gen_font.py` at it would fix all 7 and
-  changes nothing above it, PROVIDED the bold's advance is still 8. If it isn't, deriving stays
-  correct and this row closes unbuilt. Diff **S**, sourcing before code.
-
 ### 1g. Test-infrastructure gaps
 
 - **No serial test-hook / no automated on-device gameplay verification.** Every device check to date
@@ -290,15 +270,15 @@ Engine slots for most of these exist (they render via placeholder or text today)
 **drop-in the moment they're drawn**. Sizes are logical px; bind colour to `PAL_CORE` tokens.
 Inventory: `assets/ASSET_MANIFEST.md`.
 
-### 2a. The sprite-packing tools live outside the repo
+### 2a. `quantize.py` is missing
 
 `sheetpack.py` (cell packing, the crop-vs-decimate choice and its damage report, the 1px floor
-gap) and `quantize.py` (palette snap + binary alpha) are what every generated sprite passes
-through, and both sit untracked in a downloads folder. Nothing reproduces a shipped sheet
-without them, and the rules they enforce — `ASSET_MANIFEST.md` §C.1's framing lever, cell
-seating and decimation trade-off — are written down in prose but held in code nowhere the repo
-can see. Promote both into `tools/`, the way `gen_worm_art.py` already holds the Worm line's
-drawing vocabulary. Diff **S** (move + a header each).
+gap) is promoted into `tools/`. `quantize.py` (palette snap + binary alpha) is not — it only
+ever existed in a session scratchpad, which is cleaned up between sessions, and a maintenance
+sweep already confirmed it's gone. Nothing reproduces a shipped sheet's palette snap without it.
+Needs re-sourcing (if a copy survives somewhere off-repo) or rewriting from its description here
+and its call signature (`quantize.py in.png out.png '#hex' '#hex' ...`) — then promoting into
+`tools/` the way `sheetpack.py` just was. Diff **S** once the source or a rewrite exists.
 
 ### 2a-i. Template pet sheet — one row per default animation
 
@@ -321,13 +301,6 @@ columns were which. A template makes that a drawing instruction rather than a gu
 These read fine by name + pips today; final art is polish, dropped in where it lands. Roughly
 high→low value:
 
-- **The pantry's 149 glyphs are generated, not drawn.** `tools/gen_item_icons.py` holds a form
-  vocabulary and one recipe per item, and the gates check the committed PNGs against it. They read
-  as a set and they read at 20px, which is the bar; what they are not is individually observed
-  drawing, so a dish whose joke lives in a specific shape (Twisted Pairetzels, Pretzel; Punchcard
-  Punch, the card) is better served than one riding a shared form (eight `dome` items differ only
-  by how many slashes are cut into the crust). Worth a pass with a real eye, form by form, and the
-  tool is the place to do it — a redrawn form fixes every item using it. Diff **M**.
 - **Six wild malbeasts** (`SPR_MALBEAST_*`) and **`SPR_DUMMY`**.
 - **Process alternates:** `SPR_PET_PHISHLET`, `SPR_PET_CIPHADPOLE`, `SPR_PET_PINGCUB`; **Boot L2:**
   `SPR_PET_RINGWYRM`.

@@ -281,7 +281,7 @@ void drawUpdateConfirm(Framebuffer& fb, UpdateTarget target, const char* fromVer
         drawText(fb, 24, y + 3, kOpts[i],
                  palColor(i == 1 ? Pal::WARN : Pal::INK));
     }
-    drawText(fb, kMargin, 176, "A CHOOSES  B CONFIRMS", palColor(Pal::INK_DIM));
+    drawHintBand(fb, "A CHOOSE  B CONFIRM  C CANCEL");
 }
 
 void drawUpdateProgress(Framebuffer& fb, const InstallStatus& install,
@@ -355,7 +355,7 @@ void drawUpdateProgress(Framebuffer& fb, const InstallStatus& install,
         drawText(fb, kMargin, 132, "YOU CAN LEAVE THIS SCREEN;", palColor(Pal::INK_DIM));
         drawText(fb, kMargin, 144, "IT KEEPS GOING.", palColor(Pal::INK_DIM));
     }
-    drawText(fb, kMargin, 176, "C EXITS", palColor(Pal::INK_DIM));
+    drawHintBand(fb, "C BACK");
 }
 
 // Encode `text` and blit a real, scannable QR centred at the given top-y (Nayuki
@@ -453,7 +453,7 @@ void drawUpdateQr(Framebuffer& fb, const char* manifestUrl) {
         drawText(fb, kMargin, 40, "NO UPDATE SOURCE SET:", palColor(Pal::WARN));
         drawText(fb, kMargin, 52, "THIS DEVICE KNOWS NO", palColor(Pal::WARN));
         drawText(fb, kMargin, 64, "HOST TO POINT YOU AT.", palColor(Pal::WARN));
-        drawText(fb, kMargin, 176, "C EXITS", palColor(Pal::INK_DIM));
+        drawHintBand(fb, "C BACK");
         return;
     }
 

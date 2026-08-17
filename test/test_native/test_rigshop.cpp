@@ -573,8 +573,9 @@ void test_hacker_shop_bulk_open_buy() {
 // d — buildInventoryRows(filter) actually narrows the list: Food/Buffs/Quest
 // each return only that type's rows (+ its one header); All matches today's full
 // grouped list. Inventory::starting() carries 2 Food + 3 Buffs + 2 Quest (7 items,
-// 3 headers, per test_inventory_rows_grouped) — Tor-Tilla Chip is Food (no lasting
-// buff; a happiness bump + a one-shot Deep Web surface effect, not a stat modifier).
+// 4 headers, per test_inventory_rows_grouped) — Tor-Tilla Chip is Food AND a Nachos
+// ingredient (content_recipes.cpp), so the Food filter still splits into its own
+// FOOD/INGREDIENTS pair even though the filter itself doesn't narrow by that axis.
 // Backup Drive is a Buff (its combat shield, content_items.cpp), not a Quest item.
 void test_item_filter_narrows_rows() {
     ContentRegistry r = ContentRegistry::embedded();
@@ -590,8 +591,8 @@ void test_item_filter_narrows_rows() {
     auto itemCount = [](const std::vector<InvRow>& rows) {
         int n = 0; for (const auto& row : rows) if (!row.header) ++n; return n;
     };
-    CHECK(headerCount(all) == 3 && itemCount(all) == 7);
-    CHECK(headerCount(food) == 1 && itemCount(food) == 2);
+    CHECK(headerCount(all) == 4 && itemCount(all) == 7);
+    CHECK(headerCount(food) == 2 && itemCount(food) == 2);
     CHECK(headerCount(buffs) == 1 && itemCount(buffs) == 3);
     CHECK(headerCount(quest) == 1 && itemCount(quest) == 2);
     for (const auto& row : food)  if (!row.header) CHECK(row.def->type == ItemDef::Type::Food);
@@ -610,7 +611,7 @@ void test_item_hold_b_cycles_filter_tap_opens() {
     {
         Game g{StartMode::Hatched};
         CHECK(!g.itemTabsUnlocked());
-        enterSubmenuId(g, SubmenuId::Items);          // row 0 = Air-Gapped Snack (FOOD)
+        enterSubmenuId(g, SubmenuId::Items);          // row 0 = Air-Gapped Almonds (FOOD)
         g.onButton(press(Button::A));                 // A still steps immediately
         const int tc0 = g.inventory().count("tortilla_chip");
         g.onButton(press(Button::B));                 // open the now-focused row's detail
@@ -704,19 +705,23 @@ void test_item_category_filters_split_quest() {
     CHECK(itemCount(keys) == 2);                            // Keys untouched by it
 }
 
-// The type-picker's tiles: fixed ALL/FOOD/BUFFS/KEYS/TOOLS order, each carrying the
-// UNIT count of what's behind it. Caches are absent by construction (they decrypt in
-// the VAULT, so buildInventoryRows never lists one and no tile can hold one).
+// The type-picker's tiles: fixed ALL/FOOD/INGREDIENTS/BUFFS/KEYS/TOOLS order, each
+// carrying the UNIT count of what's behind it. Caches are absent by construction
+// (they decrypt in the VAULT, so buildInventoryRows never lists one and no tile can
+// hold one). Of the 5 food units, the 2 Tor-Tilla Chips are also Nachos' ingredient
+// (content_recipes.cpp), so INGREDIENTS carries those 2 while FOOD still carries
+// all 5 — the tile narrows by filterMatches (unsplit), not by group.
 void test_item_picker_tiles_count_units() {
     ContentRegistry r = ContentRegistry::embedded();
     Inventory inv = Inventory::starting();      // 5 food + 3 buffs + 2 keys = 10 units
     auto tiles = buildItemPickerRows(r, inv);
-    CHECK(tiles.size() == 5);
-    CHECK(tiles[0].filter == ItemFilter::All   && tiles[0].units == 10);
-    CHECK(tiles[1].filter == ItemFilter::Food  && tiles[1].units == 5);
-    CHECK(tiles[2].filter == ItemFilter::Buffs && tiles[2].units == 3);
-    CHECK(tiles[3].filter == ItemFilter::Keys  && tiles[3].units == 2);
-    CHECK(tiles[4].filter == ItemFilter::Tools && tiles[4].units == 0);
+    CHECK(tiles.size() == 6);
+    CHECK(tiles[0].filter == ItemFilter::All         && tiles[0].units == 10);
+    CHECK(tiles[1].filter == ItemFilter::Food        && tiles[1].units == 5);
+    CHECK(tiles[2].filter == ItemFilter::Ingredients && tiles[2].units == 2);
+    CHECK(tiles[3].filter == ItemFilter::Buffs       && tiles[3].units == 3);
+    CHECK(tiles[4].filter == ItemFilter::Keys        && tiles[4].units == 2);
+    CHECK(tiles[5].filter == ItemFilter::Tools       && tiles[5].units == 0);
 
     inv.add("sealed_cache_epic", 4);            // a cache moves no tile at all
     auto withCache = buildItemPickerRows(r, inv);
@@ -732,14 +737,15 @@ void test_item_picker_grayscale() {
     Framebuffer fb(kActiveW, kActiveH);
     drawItemTypePicker(fb, tiles, 0);
 
-    constexpr int kPickRowH = 32;
+    constexpr int kPickRowH = 30;   // mirrors drawItemTypePicker's pitch
     const int focusY = kItemsRowTop + 0 * kPickRowH + kPickRowH / 2;  // ALL (selected)
     const int plainY = kItemsRowTop + 1 * kPickRowH + kPickRowH / 2;  // FOOD (not)
     CHECK(luminance(fb.get(9, focusY)) - luminance(fb.get(9, plainY)) > 0.3f);
 
     // An empty tile's label is dimmer than a populated one's, at the same x.
+    // Row 5 (TOOLS) is the x0 tile now that INGREDIENTS sits at row 2.
     const int filledY = kItemsRowTop + 1 * kPickRowH + (kPickRowH - 7) / 2 + 3;
-    const int emptyY  = kItemsRowTop + 4 * kPickRowH + (kPickRowH - 7) / 2 + 3;
+    const int emptyY  = kItemsRowTop + 5 * kPickRowH + (kPickRowH - 7) / 2 + 3;
     float filledMax = 0.f, emptyMax = 0.f;
     for (int x = 24; x < 24 + textWidth("BUFFS"); ++x) {
         for (int dy = -4; dy <= 4; ++dy) {
@@ -770,9 +776,10 @@ void test_item_picker_nav_drills_in_and_back() {
     CHECK(g.itemsScreen() == Game::ItemsScreen::Picker && g.itemPickRow() == 0);
 
     g.onButton(press(Button::A));                           // ALL -> FOOD
-    g.onButton(press(Button::A));                           // FOOD -> BUFFS
+    g.onButton(press(Button::A));                           // FOOD -> INGREDIENTS
+    g.onButton(press(Button::A));                           // INGREDIENTS -> BUFFS
     g.onButton(press(Button::A));                           // BUFFS -> KEYS
-    CHECK(g.itemPickRow() == 3);
+    CHECK(g.itemPickRow() == 4);
     g.onButton(press(Button::B));                           // drill into KEYS
     CHECK(g.itemsScreen() == Game::ItemsScreen::List);
     CHECK(g.itemFilter() == ItemFilter::Keys);
@@ -780,7 +787,7 @@ void test_item_picker_nav_drills_in_and_back() {
 
     tapC(g);                           // back to the tiles
     CHECK(g.itemsScreen() == Game::ItemsScreen::Picker && g.nav() == Game::Nav::Submenu);
-    CHECK(g.itemPickRow() == 3);                            // the tile is where we left it
+    CHECK(g.itemPickRow() == 4);                            // the tile is where we left it
     tapC(g);                           // out of ITEMS
     CHECK(g.nav() == Game::Nav::Cursor);
 
@@ -791,7 +798,8 @@ void test_item_picker_nav_drills_in_and_back() {
 
     // An EMPTY category still opens; the list is simply empty and C walks back.
     g.onButton(press(Button::A)); g.onButton(press(Button::A));
-    g.onButton(press(Button::A)); g.onButton(press(Button::A));   // -> TOOLS (x0)
+    g.onButton(press(Button::A)); g.onButton(press(Button::A));
+    g.onButton(press(Button::A));                                // -> TOOLS (x0)
     g.onButton(press(Button::B));
     CHECK(g.itemsScreen() == Game::ItemsScreen::List && g.itemFilter() == ItemFilter::Tools);
     CHECK(buildInventoryRows(ContentRegistry::embedded(), g.inventory(), false,
@@ -839,7 +847,7 @@ void test_item_hold_b_follows_picker_axis() {
         holdB(g, t); holdB(g, t); holdB(g, t);
         CHECK(g.itemFilter() == ItemFilter::Quest);
     }
-    {   // (b) Both owned: ALL -> FOOD -> BUFFS -> KEYS -> TOOLS -> ALL.
+    {   // (b) Both owned: ALL -> FOOD -> INGREDIENTS -> BUFFS -> KEYS -> TOOLS -> ALL.
         Game g{StartMode::Hatched};
         g.debugSetBits(kShopItemTabsCost + kShopItemPickerCost);
         g.debugBuyItemTabs();
@@ -852,7 +860,7 @@ void test_item_hold_b_follows_picker_axis() {
         holdB(g, t);
         CHECK(g.itemFilter() == ItemFilter::All);
         CHECK(g.itemsScreen() == Game::ItemsScreen::List);
-        holdB(g, t); holdB(g, t); holdB(g, t);
+        holdB(g, t); holdB(g, t); holdB(g, t); holdB(g, t);
         CHECK(g.itemFilter() == ItemFilter::Keys);
         holdB(g, t);
         CHECK(g.itemFilter() == ItemFilter::Tools);

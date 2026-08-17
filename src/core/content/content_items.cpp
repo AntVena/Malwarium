@@ -246,10 +246,12 @@ const ItemDef kItems[] = {
     // UNCOMMON ITEMS --------------------------
     //
     // The ghost cure. Air-gapping is what you do to a machine you can't trust to stay
-    // connected to itself — which is exactly a Replication Ghost's problem — so this is
-    // the one food whose flavour is also its mechanic. It stays an ordinary snack on a
-    // pet with no ghost; the clear is a no-op then.
-    {"airgap_snack", "Air-Gapped Snack", ItemDef::Type::Food,
+    // connected to itself — which is exactly a Replication Ghost's problem (Worm-line
+    // only, game_care.cpp's resolveMaint) — so this is the one food whose flavour is
+    // also its mechanic. Almonds because a bag of them is the everyday object that's
+    // actually sold individually sealed. It stays an ordinary snack on a pet with no
+    // ghost (any non-Worm pet, always); the clear is a no-op then.
+    {"airgap_snack", "Air-Gapped Almonds", ItemDef::Type::Food,
      ItemDef::Rarity::Uncommon,
      "Fills {hunger} Hunger. Patches {heal} Health. Cuts a Replication "
      "Ghost loose.",

@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <cstring>
 
+#include "core/content/content_recipes.h"  // itemIsRecipeIngredient — the FOOD split
 #include "core/content/effect_text.h"
 #include "core/content/registry.h"
 #include "core/model/inventory.h"
@@ -23,17 +24,31 @@ namespace {
 
 
 // Group key orders the list; lower sorts first. -1 == the Lockout RESOLVE group.
+// FOOD's own slot splits into two — cooked dishes, then recipe ingredients — rather
+// than the type-order cast used for Buffs/Quest: eating an ingredient directly is
+// rare, and interleaved by rarity among the actual meals it was the thing a player
+// had to scroll past to find dinner. Derived off content_recipes' own inputs
+// (itemIsRecipeIngredient), not a second hand-authored flag on the item row.
 int groupKey(const ItemDef& d, bool lockout) {
     if (lockout && itemResolvesLockout(d)) return -1;
-    return itemTypeOrder(d.type);
+    if (d.type == ItemDef::Type::Food)
+        return itemIsRecipeIngredient(d.id) ? 1 : 0;
+    return itemTypeOrder(d.type) + 1;
 }
 const char* groupLabel(int key) {
-    if (key == -1) return "RESOLVE";
-    return itemTypeName(static_cast<ItemDef::Type>(key));
+    switch (key) {
+        case -1: return "RESOLVE";
+        case 0: return "FOOD";
+        case 1: return "INGREDIENTS";
+        default: return itemTypeName(static_cast<ItemDef::Type>(key - 1));
+    }
 }
 
 // Does an item pass the active filter? All = everything. Food/Buffs/Quest read the
-// TYPE axis; Keys/Tools read the finer CATEGORY axis (itemCategory, defs.h).
+// TYPE axis; Keys/Tools/Ingredients read the finer CATEGORY axis (Ingredients splits
+// Food the same way Keys/Tools split Quest — itemIsRecipeIngredient, not
+// itemCategory, since the split is derived from the recipe table rather than the
+// row's own category field).
 bool filterMatches(ItemFilter f, const ItemDef& d) {
     switch (f) {
         case ItemFilter::All: return true;
@@ -42,6 +57,8 @@ bool filterMatches(ItemFilter f, const ItemDef& d) {
         case ItemFilter::Quest: return d.type == ItemDef::Type::Quest;
         case ItemFilter::Keys: return itemCategory(d) == ItemDef::Category::Keys;
         case ItemFilter::Tools: return itemCategory(d) == ItemDef::Category::Tools;
+        case ItemFilter::Ingredients:
+            return d.type == ItemDef::Type::Food && itemIsRecipeIngredient(d.id);
     }
     return true;
 }
@@ -132,6 +149,7 @@ const char* itemFilterLabel(ItemFilter f) {
         case ItemFilter::Quest: return "QUEST";
         case ItemFilter::Keys: return "KEYS";
         case ItemFilter::Tools: return "TOOLS";
+        case ItemFilter::Ingredients: return "INGREDIENTS";
     }
     return "ALL";
 }
@@ -140,7 +158,8 @@ ItemFilter nextItemFilter(ItemFilter f, bool categoryAxis) {
     if (categoryAxis) {
         switch (f) {
             case ItemFilter::All: return ItemFilter::Food;
-            case ItemFilter::Food: return ItemFilter::Buffs;
+            case ItemFilter::Food: return ItemFilter::Ingredients;
+            case ItemFilter::Ingredients: return ItemFilter::Buffs;
             case ItemFilter::Buffs: return ItemFilter::Keys;
             case ItemFilter::Keys: return ItemFilter::Tools;
             default: return ItemFilter::All;   // Tools, or an off-axis QUEST
@@ -217,8 +236,8 @@ int stepSelectableRow(const std::vector<InvRow>& rows, int cur, int dir) {
 std::vector<ItemPickRow> buildItemPickerRows(const ContentRegistry& reg,
                                              const Inventory& inv) {
     static const ItemFilter kTiles[] = {ItemFilter::All, ItemFilter::Food,
-                                        ItemFilter::Buffs, ItemFilter::Keys,
-                                        ItemFilter::Tools};
+                                        ItemFilter::Ingredients, ItemFilter::Buffs,
+                                        ItemFilter::Keys, ItemFilter::Tools};
     std::vector<ItemPickRow> tiles;
     for (ItemFilter f : kTiles) {
         int units = 0;
@@ -233,7 +252,12 @@ void drawItemTypePicker(Framebuffer& fb, const std::vector<ItemPickRow>& tiles,
                         int cursor) {
     listHeader(fb, "ITEMS - PICK TYPE", 0, 0);
 
-    constexpr int kPickRowH = 32;
+    // Pitch is set by the tile COUNT against the footer, not chosen for looks: the
+    // picker never scrolls (buildItemPickerRows returns a fixed set), so every tile
+    // has to fit between kRowTop and the footer rule. Six tiles at the old pitch of
+    // 32 put the last row's selection band straight through the rule — the INGREDIENTS
+    // tile is what made six. 26 + 6*30 = 206 clears the rule at kActiveH-16.
+    constexpr int kPickRowH = 30;
     const int n = static_cast<int>(tiles.size());
     for (int i = 0; i < n; ++i) {
         const ItemPickRow& t = tiles[i];
@@ -525,8 +549,7 @@ void drawRollbackPicker(Framebuffer& fb, const int points[4], int cursor) {
         }
     }
 
-    // Hint band.
-    drawText(fb, kMargin, 168, "A CYCLE  B SHED  C CANCEL", palColor(Pal::INK_DIM));
+    drawHintBand(fb, "A CYCLE  B SHED  C CANCEL");
 }
 
 }  // namespace mal

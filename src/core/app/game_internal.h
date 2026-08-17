@@ -72,9 +72,9 @@ constexpr int kRigRowPitch = 54;
 // Merge Hub list layout (Hacker MRG) -----------------------------
 // The recipe TABLE is content and lives with the other content tables
 // (core/content/content_recipes.h, included above); what stays here is the geometry it
-// is drawn through. Five rows is what the panel holds in the worst case: four folded
-// titles plus the focused row unfolding kMaxRecipeInputs ingredient lines, all above
-// the A NEXT / B MERGE footer rule.
-constexpr int kMergeVisibleRows = 5;
+// is drawn through. Four rows is what the panel holds in the worst case: three folded
+// rows (title + a dim "stocked" summary line each) plus the focused row unfolding
+// kMaxRecipeInputs ingredient lines, all above the A NEXT / B MERGE footer rule.
+constexpr int kMergeVisibleRows = 4;
 
 }  // namespace mal

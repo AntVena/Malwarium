@@ -82,7 +82,12 @@ constexpr int kSideH = 38;
 // screen of its own: five crews stacked two-to-a-row was the cramped thing this pass
 // exists to undo, and a column of NEGATE / ESCALATE / RALLY is what makes a side a
 // choice rather than five paragraphs read in turn.
-constexpr int kTeamRowH = 50;
+// Four line-heights per row — name, up to two wrapped tagline lines, then the
+// Exploit tag — plus real gap to the next row. Fixed, not measured per-row: the
+// tagline's slot is reserved at its worst case (2 lines) whether a given crew's
+// motto needs it or not, so a short motto leaves a little air and a long one
+// never competes with the row below for the same pixels.
+constexpr int kTeamRowH = 60;
 constexpr int kTeamVisibleRows = 3;
 
 // --- The Detail page --------------------------------------------------------
@@ -506,17 +511,21 @@ void Game::drawCrewTeam(Framebuffer& fb) const {
         // 1 — the name, at title weight and in the side's colour while focused.
         drawTextMarquee(fb, tx, y, w, c.displayName, s ? side : palColor(Pal::INK),
                         beat_, s, FontFace::Bold);
-        // 2 — the motto, which is the crew's whole character and the reason to read on.
-        drawTextMarquee(fb, tx, y + kLineH, w, c.tagline, palColor(Pal::INK_DIM), beat_,
-                        s);
+        // 2 — the motto, which is the crew's whole character and the reason to read
+        // on. WRAPPED, not marqueed: a marquee only ever ran for the focused row, so
+        // an unselected crew with a long motto (e.g. "fail to plan; plan to fail")
+        // was silently cut mid-word with no indication there was more. Wrapping
+        // shows the whole thing on every row, focused or not.
+        drawTextWrapped(fb, tx, y + kLineH, w, c.tagline, palColor(Pal::INK_DIM),
+                        kLineH, 2);
         // 3 — the Exploit's mechanic word, and where you already belong. The tag is the
         // comparable thing here: a column of NEGATE / STAT LOCK / RALLY is what makes a
         // side a choice you can read down rather than three pages to visit in turn.
         char tag[16];
         crewExploitLabel(tag, sizeof(tag), c.exploit.kind, c.exploit.magnitude);
-        drawText(fb, tx, y + kLineH * 2, tag, palColor(Pal::INK));
+        drawText(fb, tx, y + kLineH * 3, tag, palColor(Pal::INK));
         if (joined)
-            drawText(fb, kActiveW - kMargin - textWidth("JOINED"), y + kLineH * 2,
+            drawText(fb, kActiveW - kMargin - textWidth("JOINED"), y + kLineH * 3,
                      "JOINED", palColor(Pal::ACCENT));
     }
     if (n > kTeamVisibleRows)

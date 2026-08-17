@@ -99,6 +99,7 @@ void drawArchList(Framebuffer& fb, const ContentRegistry& reg,
         const int thumbY = kRowTop + trackH * scrollTop / n;
         fb.fillRect(barX, thumbY, 2, thumbH, palColor(Pal::INK_DIM));
     }
+    drawHintBand(fb, "A NEXT  B OPEN  C BACK");
 }
 
 void drawArchRecordDetail(Framebuffer& fb, const ContentRegistry& reg,
@@ -117,7 +118,7 @@ void drawArchRecordDetail(Framebuffer& fb, const ContentRegistry& reg,
                  : "RETIRED - PERMANENT RECORD.",
              palColor(Pal::INK_DIM));
     drawText(fb, kMargin, 150, "- NO ACTIONS (RECORD) -", palColor(Pal::INK_DIM));
-    drawText(fb, kMargin, 200, "C BACK", palColor(Pal::INK_DIM));
+    drawHintBand(fb, "C BACK");
 }
 
 void drawArchRecord(Framebuffer& fb, const CreatureDef* pet, bool isActive,
@@ -184,6 +185,8 @@ void drawArchRecord(Framebuffer& fb, const CreatureDef* pet, bool isActive,
         if (confirmChoice == 1) drawRowCursor(fb, okX - 12, cy, palColor(Pal::ACCENT));
         drawText(fb, okX, cy, ok, palColor(Pal::INK));
     }
+    drawHintBand(fb, confirmOpen ? "A TOGGLE  B COMMIT  C CANCEL"
+                                 : "A CYCLE  B SELECT  C BACK");
 }
 
 } // namespace mal

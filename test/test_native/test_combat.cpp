@@ -206,7 +206,7 @@ void test_combat_override_item_use() {
     cb.begin(p, e, Combat::Stakes::Safe, 42, /*forceEnemyFirst=*/false,
              /*carryPlayerHealth=*/50, /*exploitUses=*/1);
     CHECK(cb.player().health == 50);
-    cb.openOverride({{"airgap_snack", "Air-Gapped Snack", 30}});
+    cb.openOverride({{"airgap_snack", "Air-Gapped Almonds", 30}});
     CHECK(cb.overrideOpen() && cb.overrideMoveCount() == 2);
     while (cb.overridePick() != cb.overrideMoveCount()) cb.cycleOverride();
     cb.commitOverride();
@@ -218,7 +218,7 @@ void test_combat_override_item_use() {
 
     // The patch clamps to max Health (no overheal).
     cb.begin(p, e, Combat::Stakes::Safe, 42, false, /*carryPlayerHealth=*/90, 1);
-    cb.openOverride({{"airgap_snack", "Air-Gapped Snack", 30}});
+    cb.openOverride({{"airgap_snack", "Air-Gapped Almonds", 30}});
     while (cb.overridePick() != cb.overrideMoveCount()) cb.cycleOverride();
     cb.commitOverride();
     CHECK(cb.player().health == 100);

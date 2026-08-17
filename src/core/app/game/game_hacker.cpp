@@ -409,10 +409,14 @@ void Game::drawHackerSubmenu(Framebuffer& fb) const {
 
             char rhs[16];
             std::snprintf(rhs, sizeof(rhs), "%d BITS", cost);
+            // Marquee unconditionally, not just when focused: several rows
+            // ("REDUCE EXPLORE FRAG", "REDUCE FRAG TRIGGER") overflow the name
+            // column and, scrolling only on selection, would sit permanently cut
+            // off mid-word until a player happened to land the cursor on them.
             drawLabelValue(fb, kMargin, rowY, def.displayName,
                            sel ? palColor(Pal::INK) : palColor(Pal::INK_DIM), rhs,
                            afford ? palColor(Pal::INK) : palColor(Pal::INK_DIM),
-                           beat_, sel);
+                           beat_, true);
 
             const SpecRows spec = rigSpec(def, level);
             drawSpecGrid(fb, kMargin, rowY + kFontH + 5, kActiveW - 2 * kMargin,

@@ -164,8 +164,14 @@ void Game::resolveMaint() {
             // is in is what decides it, so the way to never see a ghost is to not let
             // Fragmentation reach Critical before defragmenting (or to stop rolling for
             // it: the Tool and Stacker variants never reach this path — one is bought and
-            // the other is played, and neither has a roll to lose).
-            if (model_.fragmentation() >= kFragCriticalMin && !model_.hasGhost()) {
+            // the other is played, and neither has a roll to lose). Worm-line only: a
+            // self-replicating phantom copy is that line's own failure mode, the way
+            // Lockout is Ransomware's — a Phishing or Trojan pet's disk just stays
+            // fragmented.
+            const bool wormLine = pet_ && pet_->line &&
+                                  std::strcmp(pet_->line, "worm") == 0;
+            if (wormLine && model_.fragmentation() >= kFragCriticalMin &&
+                !model_.hasGhost()) {
                 model_.setGhost(true);
                 log_.push(LogEventType::CareMistake, "REPLICATION GHOST");
             }

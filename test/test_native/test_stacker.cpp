@@ -333,32 +333,45 @@ void test_rolled_defrag_takes_its_fixed_bite() {
 // The Replication Ghost's whole lifecycle, which until now had no way to begin: the
 // model carried a flag, a setter and a save field that nothing ever set true, so the AV
 // screen's GHOST state and the AIR_GAPPED row were both unreachable by play.
+// Worm-line only (game_care.cpp's resolveMaint) — a phantom self-copy is that line's
+// own failure mode, the way Lockout is Ransomware's, so every raising case here hatches
+// "vermicell" (content_evolution.cpp's Worm BootSector egg) rather than the default.
 void test_replication_ghost_is_raised_by_a_failed_defrag_on_a_critical_disk() {
     // A failed defrag on a disk that is NOT yet critical is just a failed defrag.
-    Game ok{StartMode::Hatched};
+    Game ok{StartMode::Hatched, "vermicell"};
     ok.model().setFragmentation(kFragCriticalMin - kMaintFailPenalty - 1);
     ok.debugResolveDefrag(false);
     CHECK(ok.model().fragmentation() < kFragCriticalMin);
     CHECK(!ok.model().hasGhost());
 
     // Fail one on an already-critical disk and the write forks a phantom copy.
-    Game g{StartMode::Hatched};
+    Game g{StartMode::Hatched, "vermicell"};
     g.model().setFragmentation(kFragCriticalMin);
     CHECK(!g.model().hasGhost());
     g.debugResolveDefrag(false);
     CHECK(g.model().hasGhost());
 
     // A SUCCESSFUL defrag never raises one, however bad the disk was.
-    Game s{StartMode::Hatched};
+    Game s{StartMode::Hatched, "vermicell"};
     s.model().setFragmentation(90);
     s.debugResolveDefrag(true);
     CHECK(!s.model().hasGhost());
 }
 
-// The cure, and the achievement that marks it. The snack stays an ordinary food when
+// A Ransomware/Phishing/Trojan disk never forks a ghost, however critical and however
+// badly the defrag fails — the same critical-disk failure that raises one on "vermicell"
+// above must be a no-op here, or the mechanic isn't actually line-specific.
+void test_replication_ghost_never_raised_off_the_worm_line() {
+    Game g{StartMode::Hatched, "paypup"};             // Ransomware
+    g.model().setFragmentation(kFragCriticalMin);
+    g.debugResolveDefrag(false);
+    CHECK(!g.model().hasGhost());
+}
+
+// The cure, and the achievement that marks it. The almonds stay an ordinary food when
 // there is nothing to cure — which is the common case, and must not unlock anything.
-void test_air_gapped_snack_cures_the_ghost_and_unlocks() {
-    Game g{StartMode::Hatched};
+void test_air_gapped_almonds_cures_the_ghost_and_unlocks() {
+    Game g{StartMode::Hatched, "vermicell"};
     g.inventory().add("airgap_snack", 2);
 
     // Eaten with no ghost: it feeds, and that is all. No unlock.
@@ -377,17 +390,17 @@ void test_air_gapped_snack_cures_the_ghost_and_unlocks() {
 }
 
 // The AV scan is the other cure, and the two are deliberately the same shape as the
-// defrag variants: the scan is free but can fail, the snack is an item that cannot. So a
-// ghost must be reachable AND clearable through both, or one of the pair is decoration.
+// defrag variants: the scan is free but can fail, the almonds are an item that cannot. So
+// a ghost must be reachable AND clearable through both, or one of the pair is decoration.
 void test_ghost_also_clears_through_a_successful_av_scan() {
-    Game g{StartMode::Hatched};
+    Game g{StartMode::Hatched, "vermicell"};
     g.model().setFragmentation(kFragCriticalMin);
     g.debugResolveDefrag(false);
     CHECK(g.model().hasGhost());
     CHECK(!avGated(g.model()));                     // a ghost is work for the AV screen
     CHECK(!g.model().applyAntivirus(true));          // succeeded
     CHECK(!g.model().hasGhost());
-    // Curing it this way is NOT the Air-Gapped achievement — that row names the snack.
+    // Curing it this way is NOT the Air-Gapped achievement — that row names the almonds.
     CHECK(!g.hasAchievement(ach::kAirGapped));
 }
 
