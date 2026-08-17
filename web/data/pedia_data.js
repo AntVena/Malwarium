@@ -681,11 +681,11 @@ window.PEDIA_DATA = {
     },
     {
       "id": "airgap_snack",
-      "name": "Air-Gapped Snack",
+      "name": "Air-Gapped Almonds",
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "Fills 40 Hunger. Patches 30 Health. Cuts a Replication Ghost loose.",
-      "stats": "HUNGER +40 / HEAL 30",
+      "stats": "HUNGER +40 / GHOST CURE / HEAL 30",
       "icon": "assets/icons/ICON_ITEM_AIRGAP_SNACK.png"
     },
     {
@@ -5998,7 +5998,7 @@ window.PEDIA_DATA = {
     {
       "key": "AIR_GAPPED",
       "name": "Air-Gapped",
-      "trigger": "Cure a Replication Ghost with an Air-Gapped Snack.",
+      "trigger": "Cure a Replication Ghost with Air-Gapped Almonds.",
       "icon": "assets/icons/ICON_ACH_AIR_GAPPED.png"
     },
     {

@@ -43,14 +43,6 @@ ordering constraint is real and documented — rungs are sorted by EFFECTIVE per
 long-channel move LOWERS a rung's average — and per-creature kit has to keep that ramp intact
 while making the creatures read apart. |
 
-**Two item effects reach neither the prose nor the 'Pedia.** `ItemEffect::ClearReplicationGhost`
-and `PlayCryptogram` have appliers but no case in the switches that turn an effect into player-
-facing text, so both compile with `-Wswitch` warnings and both items ship with a derived stat line
-that omits what they actually do. The standard's rule 3 is that a description names the field
-holding its number — these two have nothing to name. |
-`effect_text.cpp`'s `itemEffectToken()` + `specRows()`; `dump_content.cpp`'s item switch. | S |
-The warnings are the whole detection mechanism; adding the cases silences them and is the fix. |
-
 **ROCK THE DOCK earns no achievement, and no other milestone in the game is silent.** Taking an
 eight-operator bracket is the one three-fight run that ends with a banner and nothing else: hatching,
 diving, duelling and clearing an area all write an `AchievementDef` row. A row here wants a `wire`

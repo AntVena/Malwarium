@@ -136,6 +136,11 @@ const char* itemEffectToken(ItemEffect::Kind k) {
         case ItemEffect::Kind::SetDeepWebStartDepthToBest: return "bestDepth";
         case ItemEffect::Kind::BandwidthRegenBonusMin: return "regenMins";
         case ItemEffect::Kind::Bandwidth: return "bandwidth";
+        // No token, and deliberately: a token exists so a description can name the
+        // field holding its number, and a ghost is a flag rather than a quantity.
+        // The row says what it does in words ("Cuts a Replication Ghost loose") and
+        // the spec grid carries it as a flag; neither has a magnitude to interpolate.
+        case ItemEffect::Kind::ClearReplicationGhost: return nullptr;
     }
     return nullptr;
 }
@@ -265,6 +270,12 @@ SpecRows specRows(const ItemDef& d) {
                 break;
             case ItemEffect::Kind::Bandwidth:
                 s.add("BANDWIDTH", "%+d", e.magnitude);
+                break;
+            // A flag, not a number — the cure is unconditional when a ghost is
+            // there and a no-op when it isn't, so there is nothing to print but
+            // the fact that the row does it.
+            case ItemEffect::Kind::ClearReplicationGhost:
+                s.flag("GHOST CURE");
                 break;
         }
     }
