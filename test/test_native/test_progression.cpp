@@ -416,17 +416,35 @@ static int wildWinPct(const Combatant& player, const CombatEnemy& spec,
 // The (area, sub) difficulty ramp: auto-explore must get
 // HARDER through a sector's sub-areas, "steep/gated" so a fresh Process pet clears
 // only the first sub-area or two before losses start cancelling runs. Three contracts:
-//   (1) the ramp mutates the moveset for sub>0 and is a no-op at sub 0 (baseline);
+//   (1) the ramp mutates the moveset for sub>0, and at sub 0 leaves the roster kit
+//       alone apart from this area's own Attack (which every rung fields);
 //   (2) a fresh Paypup's win-rate is monotonic non-increasing across sub 0..4;
 //   (3) it clears the early sub-areas (sub 0 near-certain) yet walls out by the apex
 //       (sub 4 a hard gate) — a real, steep spread, not a flat line.
+// Does this spec's kit name `id`? Compares by VALUE, unlike the whole-kit checks below
+// which compare the borrowed pointers a spec actually carries.
+static bool holdsMove(const CombatEnemy& e, const char* id) {
+    if (!id) return false;
+    for (const char* m : e.moveIds)
+        if (std::strcmp(m, id) == 0) return true;
+    return false;
+}
+
 void test_explore_subarea_ramp() {
     ContentRegistry r = ContentRegistry::embedded();
     // (1) Shape: sub 0 keeps the roster moves; each later sub swaps in a distinct,
-    // heavier kit. Compare against the untouched baseline spec.
+    // heavier kit. Compare against the untouched baseline spec. The area's own wild
+    // Attack rides at EVERY rung including this one, because the pair states where the
+    // player is rather than how deep — so the sub-0 kit is the baseline plus that one id,
+    // and the Defend (kWildAreaDefendSub) is the half depth actually gates.
     CombatEnemy base = wildMalbeast(1, 0);
     CombatEnemy s0 = base; applyWildSubAreaRamp(s0, 0, 0);
-    CHECK(s0.moveIds == base.moveIds);                 // sub 0 == baseline (no-op)
+    std::vector<const char*> baseline = base.moveIds;
+    baseline.push_back(area(0).wildAttackMoveId);
+    CHECK(s0.moveIds == baseline);                     // sub 0 == baseline + the Attack
+    CHECK(!holdsMove(s0, area(0).wildDefendMoveId));   // ...and not yet the Defend
+    CombatEnemy s2 = base; applyWildSubAreaRamp(s2, 0, kWildAreaDefendSub);
+    CHECK(holdsMove(s2, area(0).wildDefendMoveId));    // which the deeper rungs do field
     CombatEnemy s4 = base; applyWildSubAreaRamp(s4, 0, 4);
     CHECK(s4.moveIds != base.moveIds);                 // apex is re-kitted
     // (2)+(3) Win-rate curve for a fresh Process pet across area 0's sub-areas. Average

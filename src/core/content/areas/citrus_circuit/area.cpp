@@ -61,6 +61,11 @@ const AreaDef kAreaCitrusCircuit = {
     "BARON BONZI",
     /*areaBossMoveId=*/"helper_monkey",
     /*apexThreatMoveId=*/nullptr,  // the entry-level area carries no signature rider
+    // Nothing in the Circuit ever finishes: the wilds hand out the rot the boss pool's
+    // Infinite Loop is the endless version of, and the brace that is the 99% cache
+    // itself — a hit that finds nothing where the file was supposed to be.
+    /*wildAttackMoveId=*/"partial_download",
+    /*wildDefendMoveId=*/"cache_miss",
     {"BYTE TO EAT", kShopListings, arrLen(kShopListings)},
     {"CHIP SHOP", kModShopListings, arrLen(kModShopListings)},
     kModPool,

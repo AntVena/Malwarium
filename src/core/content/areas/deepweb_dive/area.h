@@ -57,6 +57,25 @@ extern const int kDeepWebDepthPointsPerN;
 // taught rather than front-running it.
 extern const int kDeepWebBossMoveDepth;
 
+// The dive's OWN pair — the Attack and the Defend its malbeasts field on top of whatever
+// rung they drew, the same thing an AreaDef names in wildAttackMoveId/wildDefendMoveId.
+// Named here rather than there for the reason everything else about the dive is: it has no
+// row. They ride ALONGSIDE the rungs rather than inside them, so the dive's own two moves
+// stay farmable at every depth including past kDeepWebBossMoveDepth, where the boss pool
+// replaces the rung outright.
+//
+// A dive enemy therefore fights with three or four moves, reaching the same ceiling a
+// ladder wild does (kMaxMoveSlots) but from its shallowest depth rather than its deepest.
+// That ceiling is the zone keeping its own promise: the dive builds a PEER, and four is
+// what a Daemon pet's own slots hold (kMoveSlotsByStage).
+extern const char* const kDeepWebWildAttackMoveId;
+extern const char* const kDeepWebWildDefendMoveId;
+// The depth the Defend joins at — the Attack rides from the first dive, so the pair is
+// the same shallow-one/deep-both weighting the ladder's areas use. Authored rather than
+// derived: it happens to match rung 1's threshold today, and should be free to stop
+// matching it without dragging the rung pacing along.
+extern const int kDeepWebWildDefendDepth;
+
 extern const char* const* const kDeepWebMoveRungs[];  // rung -> that rung's id list
 extern const int kDeepWebMoveRungCounts[];            // ...and its length
 extern const int kDeepWebMoveRungDepths[];            // ...and the depth it opens at

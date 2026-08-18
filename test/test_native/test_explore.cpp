@@ -801,14 +801,40 @@ void test_every_generic_move_is_carried() {
     // REPLACES a wild's kit with the depth ladder rather than adding to it. Two moves
     // (buffer_overflow, rootkit_strike) live only on that ladder's deep rungs, so walking
     // the unramped base kit alone would call them orphans.
+    //
+    // The same walk is where a wild's KIT SIZE is held to the budget, since it builds
+    // every one there is. Two moves ride on top of the ladder's own rung, and both the
+    // ceiling and the single brace matter for the same reason a boss is capped at
+    // kMaxBossTeaches: Combat::chooseMove is uniform, so each extra move is a share of
+    // the turns, and a second brace would be a wild spending half the fight holding.
+    auto sweepWild = [&](const CombatEnemy& e) {
+        int braces = 0;
+        for (const char* m : e.moveIds) {
+            kits.push_back(m);
+            if (const MoveDef* d = reg.move(m))
+                if (d->kind == MoveDef::Kind::Defend) ++braces;
+        }
+        CHECK(braces <= 1);
+        CHECK(static_cast<int>(e.moveIds.size()) <= kMaxMoveSlots);
+    };
     for (int tier = 1; tier <= 3; ++tier)
         for (uint32_t v = 0; v < 2; ++v)
             for (int a = 0; a < kExplSectors; ++a)
                 for (int s = 0; s < kExplSubAreas; ++s) {
                     CombatEnemy w = wildMalbeast(tier, v);
                     applyWildSubAreaRamp(w, a, s);
-                    for (const char* m : w.moveIds) kits.push_back(m);
+                    sweepWild(w);
                 }
+    // ...and the DEEPWEB DIVE, whose kit comes from a different path entirely
+    // (applyDeepWebScale, not the sub-area ramp). Its own pair rides ALONGSIDE the drawn
+    // rung and the Defend is depth-gated, so a spread of depths either side of
+    // kDeepWebWildDefendDepth is what proves both halves reachable.
+    for (uint32_t v = 0; v < 2; ++v)
+        for (int depth : {0, kDeepWebWildDefendDepth, kDeepWebBossMoveDepth}) {
+            CombatEnemy d = wildMalbeast(3, v);
+            applyDeepWebScale(d, /*petLevel=*/10, depth, /*roll=*/v * 7919u + 1u);
+            sweepWild(d);
+        }
     auto carried = [&](const char* id) {
         for (const char* m : kits)
             if (std::strcmp(m, id) == 0) return true;

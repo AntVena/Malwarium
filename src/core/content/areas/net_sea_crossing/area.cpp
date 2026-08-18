@@ -67,6 +67,11 @@ const AreaDef kAreaNetSeaCrossing = {
     "ADMIRAL CONDUIT",
     /*areaBossMoveId=*/"toolbar_convoy",
     /*apexThreatMoveId=*/"decoy_download",  // the signature boss's long-STUN rider
+    // Everything in the crossing costs you a turn rather than Health, all the way down to
+    // the wilds: Install Wizard is one turn where THE GREEN BUTTON takes three, and the
+    // brace is the licence screen the whole area is really made of.
+    /*wildAttackMoveId=*/"install_wizard",
+    /*wildDefendMoveId=*/"eula_wall",
     {"FLOATING POINT", kShopListings, arrLen(kShopListings)},
     {"THE HARDENED SHELL", kModShopListings, arrLen(kModShopListings)},
     kModPool,

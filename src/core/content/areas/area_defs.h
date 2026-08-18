@@ -163,6 +163,20 @@ struct AreaDef {
     // its own loot table's counter-mod answers (e.g. Pirate Bayou's system_hang stun,
     // countered by that same area's Watchdog Timer drop). nullptr = no rider.
     const char* apexThreatMoveId;
+    // This area's WILD pair — the Attack and the Defend every ordinary malbeast met here
+    // fields, handed out by combat_factory's applyWildSubAreaRamp (the Attack at every
+    // rung, the Defend from the deeper ones). Named HERE, beside the two boss hooks
+    // above, because which move an area's wilds swing is the same kind of fact as which
+    // move its banner swings: an area's identity, not a rung of the shared ramp. The ramp
+    // itself stays central — it reads these two off the row and applies one rule to every
+    // area, so an area declares WHAT it fields and never HOW DEEP.
+    //
+    // This is also the whole of what makes the pair earnable: a drop comes from the
+    // defeated enemy's kit (Game::rollEnemyMoveDrop), so naming a generic move here is
+    // what turns walking this area into a way to learn it. nullptr on either = this
+    // area's wilds add nothing of their own to the ramp's kit.
+    const char* wildAttackMoveId;
+    const char* wildDefendMoveId;
     AreaStorefrontDef shop;     // item storefront — listings resolve via ContentRegistry::item
     AreaStorefrontDef modShop;  // mod storefront — listings resolve via ContentRegistry::mod
     const char* const* modPoolIds;  // this area's mod-loot table (drop weighted by rarity)

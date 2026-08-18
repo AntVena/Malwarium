@@ -138,23 +138,36 @@ void test_combat_outro_kind() {
                       Stage::Daemon, nullptr, /*slot=*/0, /*showAll=*/true);
     for (const MoveDef* m : pickable) CHECK(!kit.isInnate(m->id));
 
-    // A rival fielding a move outside both the default and the owned set is the one
-    // that earns the absorb.
-    walkToAnyCombat(g);
+    // The dummy standing in front of it swings that default and nothing else, so it is
+    // the shape the selector must call KNOWN however the fight goes.
+    CHECK(!g.rivalFieldsUnknownMove());
+
+    // The same question asked of a real WILD, on its own Game because the sim fight above
+    // is still the one on screen. A rival fielding a move outside both the default and
+    // the owned set is what earns the absorb — and a wild always is one, at every depth,
+    // because an area hands its own Attack to every malbeast met in it
+    // (AreaDef::wildAttackMoveId). That is what makes the sweep say something about the
+    // individual enemy rather than about the tier it was drawn from: a roster of six
+    // bodies shared across five areas can only speak for its tier.
+    Game w{StartMode::Hatched};
+    walkToAnyCombat(w);
+    CHECK(w.nav() == Game::Nav::Combat);      // the rest reads the fight it reached
+    CHECK(w.rivalFieldsUnknownMove());
+    const MoveLoadout& wild = w.moveLoadout();
     bool sawUnknown = false, sawKnown = false;
-    for (const MoveDef* m : g.combat().enemy().moves) {
+    for (const MoveDef* m : w.combat().enemy().moves) {
         if (!m || !m->id) continue;
-        if (std::strcmp(m->id, kit.defaultMove()) == 0 || kit.owns(m->id)) sawKnown = true;
+        if (std::strcmp(m->id, wild.defaultMove()) == 0 || wild.owns(m->id)) sawKnown = true;
         else sawUnknown = true;
     }
-    CHECK(g.rivalFieldsUnknownMove() == sawUnknown);
+    CHECK(w.rivalFieldsUnknownMove() == sawUnknown);
+    CHECK(sawKnown);                          // the innate jab, on the owned side of it
 
     // Granting every move the rival fields must flip the answer — that is the whole
     // mechanism, and it is what makes a farmed-out opponent stop advertising itself.
-    for (const MoveDef* m : g.combat().enemy().moves)
-        if (m && m->id) g.debugGrantMove(m->id);
-    CHECK(!g.rivalFieldsUnknownMove());
-    CHECK(sawKnown || sawUnknown);            // sanity: the rival fielded something
+    for (const MoveDef* m : w.combat().enemy().moves)
+        if (m && m->id) w.debugGrantMove(m->id);
+    CHECK(!w.rivalFieldsUnknownMove());
 }
 
 // --- Gate: the Wi-Fi event's discovery beat reports which of the four it was ---

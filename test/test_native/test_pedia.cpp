@@ -72,22 +72,28 @@ static bool farmForAMove(Game& g, int area, int sub, int tries) {
 
 void test_wild_win_can_drop_a_move() {
     // The default pet is a Paypup — a Ransomware-LINE pet, so startingForLine gives it
-    // its line kit and nothing generic. Sub 2's ladder is {quick_jab, packet_storm,
-    // buffer_overflow}: the jab is innate and never taught, leaving exactly two names.
+    // its line kit and nothing generic. Sub 2 of area 0 fields the depth ladder
+    // {quick_jab, packet_storm, buffer_overflow} plus Citrus Circuit's own wild Attack —
+    // its Defend waits for kWildAreaDefendSub. The jab is innate and never taught, so
+    // those three names are the whole of what this rung can hand over, which is also the
+    // proof the drop reads the ENEMY's kit rather than a table.
     Game deep{StartMode::Hatched};
     enterWalk(deep);
     CHECK(farmForAMove(deep, 0, 2, 40));
-    CHECK(learnedOnlyFrom(deep, {"Packet Storm", "Buffer Overflow"}));
+    CHECK(learnedOnlyFrom(deep, {"Packet Storm", "Buffer Overflow", "Partial Download"}));
     CHECK(deep.moveLoadout().owns("packet_storm") ||
-          deep.moveLoadout().owns("buffer_overflow"));
+          deep.moveLoadout().owns("buffer_overflow") ||
+          deep.moveLoadout().owns("partial_download"));
     CHECK(!learnedMoveNamed(deep, "Quick Jab"));        // innate, never a reward
 
-    // Sub 0 keeps the tier-1 roster kit — the innate jab alone — so there is nothing
-    // there to be taught, however long the pet farms it. This is the half that fails if
-    // the pool ever goes back to a fixed table.
+    // Sub 0 is the shallowest rung in the game and it still teaches, because an area's
+    // wild Attack rides every rung: the ladder leaves the roster kit (the innate jab
+    // alone) standing, and Citrus Circuit's own move is what makes the first wild a
+    // player ever beats worth beating. Only that one — the Defend waits for depth.
     Game shallow{StartMode::Hatched};
     enterWalk(shallow);
-    CHECK(!farmForAMove(shallow, 0, 0, 40));
+    CHECK(farmForAMove(shallow, 0, 0, 40));
+    CHECK(learnedOnlyFrom(shallow, {"Partial Download"}));
 }
 
 // wildMalbeast now rolls among 2 variants per sector tier instead of

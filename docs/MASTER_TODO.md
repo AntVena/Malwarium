@@ -30,14 +30,15 @@ building it up organically.
 
 **Capture arming costs ~70KB and the AP ~58KB**, against ~126KB free with the radio idle. The device works, and the save no longer needs a big contiguous block, but that was the only thing standing on this — anything else that grows will hit the same wall. Worth a pass at what the capture path actually needs. | `net_capture.h`'s `powerUp` (`esp_wifi_init` + promiscuous + the pcap SD buffers). | M | Measured on device, not estimated: `[ap] down free=126408` → `[cap] armed free=56188`. |
 
-**The wild roster's whole vocabulary is five attacks.** `wildMalbeast` gives tiers 1/2/3
-`{quick_jab}` / `{quick_jab, packet_storm}` / `{packet_storm, fork_bomb}`, and the sub-area ladder
-in `applyWildSubAreaScale` overrides with the same handful again — keyed by DEPTH, not by which
-malbeast it is. So a Packet Wraith and a Cache Ghoul at the same rung are mechanically one fight,
-and now that drops come from the enemy's kit, no two malbeasts are worth farming differently.
-Wants distinctive kit per creature, not per rung. Lower priority than the boss pool, which is
-built — bosses are the intended teaching path, and this is about wilds being interchangeable
-with each other. |
+**A Packet Wraith and a Cache Ghoul at the same rung are still one fight.** `wildMalbeast` gives
+tiers 1/2/3 `{quick_jab}` / `{quick_jab, packet_storm}` / `{packet_storm, fork_bomb}`, and the
+sub-area ladder in `applyWildSubAreaRamp` overrides with the same handful again — both keyed by
+DEPTH. The zone's own pair (`AreaDef::wildAttackMoveId`/`wildDefendMoveId`, and the dive's in
+`deepweb_dive/area.h`) is what makes an encounter read as the PLACE it happened in, but the
+creature itself still says nothing: the two bodies sharing a tier carry identical kits, so no two
+malbeasts are worth farming differently. Wants distinctive kit per creature, which has nowhere to
+live today — `wildMalbeast` is the only place a malbeast's identity exists and it is keyed by tier,
+so six bodies share three kits. |
 `combat_factory.cpp`'s `wildMalbeast` + `kLadder`; `content_moves.cpp`. | L | The ladder's
 ordering constraint is real and documented — rungs are sorted by EFFECTIVE per-turn damage, so a
 long-channel move LOWERS a rung's average — and per-creature kit has to keep that ramp intact

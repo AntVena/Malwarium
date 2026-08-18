@@ -635,13 +635,18 @@ int wildMalbeastIndex(const char* enemyName);
 // the early sub-areas stay winnable for a fresh pet while the later ones (and later
 // areas) gate on a stronger/evolved one ("steep/gated" curve). Moves are the first
 // lever (fully data-driven, applied here); enemy mods, raw-stat scaling, and
-// evolution-tier substitution layer on top of this as the ramp is tuned. `area`
+// evolution-tier substitution layer on top of this as the ramp is tuned. `areaIdx`
 // (0-based sector) and `sub` (0..kSubAreasPerArea-1) fold into one depth rung.
-// A no-op at the shallowest rung (keeps the roster baseline). Mutates `e` in place.
-// it now ALSO stamps an explicit `level` (a global depth rung, +1 per
+// It ALSO stamps an explicit `level` (a global depth rung, +1 per
 // sub-area and across areas) and applies the stat half of a level-up (Health per
 // sub, speed at the deeper rungs) so deeper wilds are meaner AND worth ranking.
-void applyWildSubAreaRamp(CombatEnemy& e, int area, int sub);
+//
+// The other thing it does is the only per-AREA statement in an otherwise tier-keyed
+// path: it reads that area's own wild pair off its row (AreaDef::wildAttackMoveId /
+// wildDefendMoveId) and adds it to the kit — the Attack at every rung, the Defend from
+// kWildAreaDefendSub. wildMalbeast() cannot express that, since it is keyed by tier and
+// three tiers are shared across five areas; this is where an area gets to be itself.
+void applyWildSubAreaRamp(CombatEnemy& e, int areaIdx, int sub);
 
 // level-difference XP scaling. A wild win's XP is the
 // flat base scaled by how the ENEMY's level compares to the PET's: each level the

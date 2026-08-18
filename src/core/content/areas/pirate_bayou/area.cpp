@@ -66,6 +66,11 @@ const AreaDef kAreaPirateBayou = {
     "CAP'N CRACKER",
     /*areaBossMoveId=*/"crack_the_keys",
     /*apexThreatMoveId=*/"system_hang",  // the signature boss's STUN rider
+    // The wilds pierce too, just less: Keygen Hum is the quarter-strength version of the
+    // wall-opening this water's bosses teach outright, so a player meets the family long
+    // before THE SUNKEN SEVENTH shows them the whole of it.
+    /*wildAttackMoveId=*/"keygen_hum",
+    /*wildDefendMoveId=*/"rar_password",
     {"PIER-TO-PEER", kShopListings, arrLen(kShopListings)},
     {"PHISHY CHIPS", kModShopListings, arrLen(kModShopListings)},
     kModPool,

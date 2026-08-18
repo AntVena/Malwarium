@@ -357,6 +357,77 @@ const MoveDef kMoves[] = {
      "armor.",
      Stage::Daemon, nullptr, 0, 0, 0, 0, 0, 0, /*dotDamage=*/10, /*dotTurns=*/5,
      /*stealPower=*/0, /*stealDefensePct=*/40},
+
+    // === THE WILD POOL — one Attack + one Defend per zone, farmed off its own wilds ==
+    //
+    // Generic (line = nullptr), like the boss pool above and reachable the same way: a
+    // drop is drawn from the defeated enemy's kit, so a move is findable exactly where
+    // something carries it. What carries these is not a boss but the ORDINARY wild — each
+    // zone names its pair (AreaDef::wildAttackMoveId/wildDefendMoveId, and the dive's own
+    // kDeepWebWildAttackMoveId/kDeepWebWildDefendMoveId), and combat_factory's
+    // applyWildSubAreaRamp/applyDeepWebScale hand it to every malbeast met there.
+    //
+    // So this pool answers a different question from the one above it. A boss move is a
+    // prize for beating the wall at the end of a stretch; a wild move is what that
+    // stretch itself is MADE of — the thing you meet over and over while walking, and
+    // therefore the thing that makes an area read as itself in a fight rather than as a
+    // difficulty tier. Each pair is a weaker echo of the family its zone's bosses teach,
+    // which is what lets a player recognise the boss's move as the full-strength version
+    // of one they have already been hit by.
+    //
+    // The ATTACK carries its zone's family rider (the Bayou pierces, the Moors just
+    // swings, the crossing freezes) and the DEFEND is a plain brace, because a brace IS
+    // its power: every rider fires on the Attack branch only (Combat::applyEffect), and
+    // the interesting defensive tracks — shieldPool, trapArm, replica* — each belong to a
+    // LINE. So the six braces are a ladder of one number, deepest zone highest, and a
+    // player who wants a bigger wall than the one they own knows exactly where to walk.
+    //
+    // Same field discipline as the boss pool: stack*/shieldPool/trap*/replica* and
+    // stealPowerPct stay ZERO on every row here.
+
+    // --- Citrus Circuit — nothing here ever finishes -------------------------------
+    {"partial_download", "Partial Download", MoveDef::Kind::Attack, 5, 1,
+     "Stops at ninety-nine and stays there - {dot} damage/turn for {dotTurns} turns.",
+     Stage::BootSector, nullptr, 0, 0, 0, 0, 0, 0, /*dotDamage=*/2, /*dotTurns=*/3},
+    {"cache_miss", "Cache Miss", MoveDef::Kind::Defend, 10, 1,
+     "The file was never really there - braces {power}.", Stage::BootSector},
+
+    // --- The Pirate Bayou — the cracking water, so its wilds pierce too -------------
+    {"keygen_hum", "Keygen Hum", MoveDef::Kind::Attack, 8, 1,
+     "The chiptune plays while the wall opens - ignores {pierce}% of armor.",
+     Stage::Process, nullptr, 0, 0, 0, 0, /*armorPiercePct=*/15},
+    {"rar_password", "RAR Password", MoveDef::Kind::Defend, 16, 1,
+     "The archive wants a password nobody posted - braces {power}.", Stage::Process},
+
+    // --- Net-Sea Crossing — it takes the turn, not the Health ----------------------
+    {"install_wizard", "Install Wizard", MoveDef::Kind::Attack, 7, 1,
+     "Next, next, next, finish - frozen for {lock} turn.", Stage::Process,
+     nullptr, 0, 0, 0, 0, 0, /*lockTurns=*/1},
+    {"eula_wall", "EULA Wall", MoveDef::Kind::Defend, 22, 1,
+     "Forty pages nobody has ever read - braces {power}.", Stage::Process},
+
+    // --- Napstorrent Moors — the mail area, and mail is just the swing --------------
+    {"chain_letter", "Chain Letter", MoveDef::Kind::Attack, 18, 1,
+     "Forward it to ten more. No rider, no wind-up - just the swing.", Stage::Script},
+    {"private_tracker", "Private Tracker", MoveDef::Kind::Defend, 30, 1,
+     "Invite only, and you weren't invited - braces {power}.", Stage::Script},
+
+    // --- Castle Rapidscare — the keep charges for everything ------------------------
+    {"bandwidth_cap", "Bandwidth Cap", MoveDef::Kind::Attack, 9, 1,
+     "You have used your quota - takes {stealMaxHp}% of the target's max Health for "
+     "the fight.",
+     Stage::Script, nullptr, 0, 0, 0, 0, 0, 0, 0, 0, /*stealPower=*/0, /*stealDef=*/0,
+     /*stealSpeed=*/0, /*stealHp=*/0, /*stealMaxHpPct=*/10},
+    {"captcha_gate", "Captcha Gate", MoveDef::Kind::Defend, 38, 1,
+     "Prove you are not a robot - braces {power}.", Stage::Script},
+
+    // --- DeepWeb Dive — the deepest pair there is ------------------------------------
+    {"exit_node", "Exit Node", MoveDef::Kind::Attack, 10, 1,
+     "Everything you sent, read on the way out - strips {stealDef}% of the target's armor.",
+     Stage::Daemon, nullptr, 0, 0, 0, 0, 0, 0, 0, 0, /*stealPower=*/0,
+     /*stealDefensePct=*/35},
+    {"onion_layer", "Onion Layer", MoveDef::Kind::Defend, 48, 1,
+     "One more hop, one more layer - braces {power}.", Stage::Daemon},
 };
 const int kMovesCount = sizeof(kMoves) / sizeof(kMoves[0]);
 

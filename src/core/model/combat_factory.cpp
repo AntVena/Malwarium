@@ -219,8 +219,8 @@ int wildMalbeastIndex(const char* enemyName) {
     return -1;
 }
 
-void applyWildSubAreaRamp(CombatEnemy& e, int area, int sub) {
-    if (area < 0) area = 0;
+void applyWildSubAreaRamp(CombatEnemy& e, int areaIdx, int sub) {
+    if (areaIdx < 0) areaIdx = 0;
     if (sub < 0) sub = 0;
     if (sub >= kSubAreasPerArea) sub = kSubAreasPerArea - 1;
 
@@ -232,7 +232,7 @@ void applyWildSubAreaRamp(CombatEnemy& e, int area, int sub) {
     // wildMalbeast() (tier-2 wilds carry far more Health), so here we only thicken
     // WITHIN the sector — Health per sub (soaks longer) + speed at the deepest rungs
     // (swings sooner). Applied for every sub (including 0, a no-op stat-wise).
-    e.level = area * kSubAreasPerArea + sub;
+    e.level = areaIdx * kSubAreasPerArea + sub;
     e.hasLevel = true;
     e.maxHealth += sub * kWildSubAreaHealthStep;
     if (sub >= kSubAreasPerArea - 2) ++e.speed;
@@ -257,8 +257,24 @@ void applyWildSubAreaRamp(CombatEnemy& e, int area, int sub) {
         {"packet_storm", "buffer_overflow"},                        // sub 3  avg 16
         {"buffer_overflow", "rootkit_strike"},                      // sub 4  avg 22 (apex)
     };
-    if (sub <= 0) return;                              // baseline: keep roster moves
-    e.moveIds = kLadder[sub];
+    if (sub > 0) e.moveIds = kLadder[sub];             // sub 0: keep the roster baseline
+
+    // ...and this AREA's own pair, on top of whatever rung the ladder just set. The two
+    // levers answer different questions and so compose rather than replace: the ladder is
+    // HOW HARD this rung swings, the pair is WHERE the player is. Without it a wild reads
+    // only as its tier — the same three moves everywhere, so an encounter in the Bayou and
+    // one in the Moors are distinguishable by nothing a fight can show.
+    //
+    // Depth picks how much of the pair rides. The Attack comes from the first rung, so a
+    // zone announces itself immediately; the Defend joins deeper, which is the weighting
+    // and also the honest cost — a braced wild is a LONGER fight, not a harder one, and
+    // the rung that has already earned more Health and speed is the one that can afford
+    // to spend a turn holding. One brace, never two: chooseMove is uniform, and the same
+    // reason kMaxBossTeaches caps a boss at one applies to anything that takes turns.
+    const AreaDef& a = area(areaIdx);
+    if (a.wildAttackMoveId) e.moveIds.push_back(a.wildAttackMoveId);
+    if (a.wildDefendMoveId && sub >= kWildAreaDefendSub)
+        e.moveIds.push_back(a.wildDefendMoveId);
 }
 
 std::vector<const char*> deepWebMoveIds(int depth, uint32_t roll) {
@@ -328,6 +344,13 @@ void applyDeepWebScale(CombatEnemy& e, int petLevel, int depth, uint32_t roll) {
     // rather than at the call site so "a dive enemy" is one statement: the roster picked
     // the body, the depth picked everything else about it.
     e.moveIds = deepWebMoveIds(depth, roll);
+    // ...plus the dive's OWN pair, weighted by depth exactly as an area weights its own
+    // (deepweb_dive/area.h): the Attack from the first dive, the Defend once the zone has
+    // had a rung's worth of depth to establish itself. Appended rather than folded into
+    // the rungs so the dive's two moves survive kDeepWebBossMoveDepth, past which the boss
+    // pool replaces the rung and would otherwise take them with it.
+    e.moveIds.push_back(kDeepWebWildAttackMoveId);
+    if (depth >= kDeepWebWildDefendDepth) e.moveIds.push_back(kDeepWebWildDefendMoveId);
 
     e.powerMultPct += points[0] * kLevelPowerPctPerPoint;
     // Same diminishing curve and ceiling the pet's Defence answers to — an enemy is not

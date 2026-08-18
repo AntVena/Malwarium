@@ -572,6 +572,19 @@ constexpr int kWildXpDiffMaxPct      = 1024; // ceiling: cap the punching-up bon
 // Between-AREA growth already rides the tier roster (wildMalbeast), so this
 // only thickens WITHIN a sector: +Health per sub, +1 speed at the two deepest rungs.
 constexpr int kWildSubAreaHealthStep = 6;   // +Health per sub-area index in the ramp
+// The sub-area rung from which a wild also fields its AREA's Defend (AreaDef::
+// wildDefendMoveId) on top of its Attack, which it carries at every rung. Cross-cutting
+// because it is the shared SHAPE of the ramp — an area declares which two moves are its
+// own and this one rule decides how deep the player has to walk for the second — so it
+// sits beside the ramp's other steps rather than being restated on five rows.
+//
+// This rung and not a shallower one for two reasons that agree. The ladder's own kit
+// THINS as it deepens (its last two rungs are two moves where the middle one is three),
+// so the pair lands where there is room for it and no wild ever fights with more than
+// kMaxMoveSlots moves — the count a fully-evolved pet itself holds, which is the honest
+// ceiling for "an enemy is a peer". And an area's brace is a thing a player wants, so
+// putting it on the two meanest rungs makes the wall worth walking to.
+constexpr int kWildAreaDefendSub = 3;
 constexpr int kWildItemDropPct = 35;   // chance a wild win also drops an item
 constexpr int kWildMoveDropPct = 20;   // chance a wild win teaches a move off the
                                         // DEFEATED ENEMY'S kit — independent roll,

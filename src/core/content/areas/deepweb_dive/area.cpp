@@ -73,6 +73,13 @@ const int kDeepWebMoveRungCounts[] = {
 const int kDeepWebMoveRungTotal = arrLen(kDeepWebMoveRungs);
 const int kDeepWebMovesBossCount = arrLen(kDeepWebMovesBoss);
 
+// The dive's own wild pair (area.h). Exit Node strips armor and Onion Layer is the
+// deepest brace anywhere — the terminal zone's answer to "what is down here that is not
+// down there", handed out by the most ordinary thing in it.
+const char* const kDeepWebWildAttackMoveId = "exit_node";
+const char* const kDeepWebWildDefendMoveId = "onion_layer";
+const int kDeepWebWildDefendDepth = 12;
+
 // The dive's EXPL row glyph. The terminal zone is no AreaDef, so it names its own
 // art here rather than inheriting the ICON_SECTOR_<AREA_ID> convention off a row it
 // doesn't have — same reason its pool and scaling constants live here.

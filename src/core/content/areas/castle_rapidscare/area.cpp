@@ -68,6 +68,11 @@ const AreaDef kAreaCastleRapidscare = {
     "COUNT CONFICKER",
     /*areaBossMoveId=*/"domain_flux",
     /*apexThreatMoveId=*/"nag_screen",  // the signature boss's FREEZE + DoT rider
+    // The keep charges for everything, and its wilds bill by the same meter the court
+    // does: Bandwidth Cap takes the ceiling off a fight the way KNAVE WINFIXER does, for
+    // less, and the brace is the gate every free download in this castle sits behind.
+    /*wildAttackMoveId=*/"bandwidth_cap",
+    /*wildDefendMoveId=*/"captcha_gate",
     {"SPAM & SCRAM", kShopListings, arrLen(kShopListings)},
     {"THE GHOST IN THE MACHINE", kModShopListings, arrLen(kModShopListings)},
     kModPool,
