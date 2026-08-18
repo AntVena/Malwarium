@@ -137,7 +137,7 @@ One family, not multiple faces — any replacement must satisfy §2.1 at whateve
 
 ### 3.1 Size tiers (logical)
 
-Every icon snaps to one of **four tiers**; new icons pick the nearest. This keeps optical
+Every icon snaps to one of **five tiers**; new icons pick the nearest. This keeps optical
 weight consistent across the UI.
 
 | Tier | Used by |
@@ -146,6 +146,7 @@ weight consistent across the UI.
 | **20×20** | submenu row glyphs + content icons — `ICON_ITEM_*`, `ICON_MOD_*`, `ICON_SECTOR_*`, `ICON_LINE_*`, `ICON_MAINT_*`, `ICON_TRAIN_SIM`, `ICON_EXPL_PACKET`, `UI_ALERT_HUNGER` |
 | **16×16** | status + control glyphs — `ICON_SYS_*` (battery/wifi/SD), `ICON_BTN_A/B/C` |
 | **12×12** | inline log glyphs — `ICON_LOG_EVENT` (`item`/`warn`/`combat`) |
+| **8×8** | inline TEXT-ROW glyphs — `ICON_FIGHT_*` (the combat VS grid). One `FONT_UI` cell, which is the point: a glyph that names a row of text has to sit IN that row, and every tier above stands taller than the row is, so it would push the row apart rather than label it. Author it as if it were a letter |
 
 ### 3.2 Silhouette + state rules
 

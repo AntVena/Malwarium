@@ -125,7 +125,16 @@ constexpr int kCombatStatPages = 2;
 // operator needs is where Power actually stands and which way it is going. The two
 // mechanics are still distinguishable — the effective figure carries the sum, the delta
 // carries the movement — and it costs a row instead of three.
+// Which row this is, as a VALUE rather than as its own printed name. The draw turns it
+// into a glyph and a tint (combatVsGlyph, theme.h's combatVsColor); `tag` is the same
+// fact in words, kept because it is the channel that survives when the other two cannot
+// be read — a shape is the primary channel and a colour only ever repeats it.
+enum class CombatVsKind : uint8_t {
+    Health, Power, Defense, Speed, Stun, Dot, Shield, Guard, Ransom, Backup, Trap, Copy
+};
+
 struct CombatVsRow {
+    CombatVsKind kind = CombatVsKind::Health;
     char tag[6] = {0};
     char local[12] = {0};
     char rival[12] = {0};
@@ -137,7 +146,7 @@ struct CombatVsGrid {
     static constexpr int kCap = 12;
     CombatVsRow r[kCap];
     int n = 0;
-    void push(const char* tag, const char* a, const char* b);
+    void push(CombatVsKind kind, const char* tag, const char* a, const char* b);
     bool has(const char* tag) const;
 };
 
@@ -147,6 +156,12 @@ struct CombatVsGrid {
 // what you would do next turn, then what merely happened — because the box is finite and
 // what falls off the bottom should be the least of it.
 CombatVsGrid combatVsGrid(const Combatant& local, const Combatant& rival, bool localGuard);
+
+// The 8x8 glyph that names a VS row — one FONT CELL, so it sits in a text row without
+// changing the row's height, which is the whole reason this tier exists (the icon tiers
+// in VISUAL_LANGUAGE.md 3.1 all stand taller than the 11px the panel gives a row, so an
+// icon drawn from one of them would cost the rows the grid exists to save).
+const SpriteData* combatVsGlyph(CombatVsKind kind);
 
 // The four numbers a fight is decided by, EFFECTIVE — after every siphon, stack and
 // clamp the attack path itself applies, so they are what the next exchange will actually

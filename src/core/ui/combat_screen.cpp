@@ -18,6 +18,7 @@
 #include "core/ui/widgets.h"
 #include "core/ui/worm_replicas.h"
 #include "generated/assets.h"
+#include "core/ui/theme.h"
 
 namespace mal {
 
@@ -377,6 +378,24 @@ void drawPassiveStrip(Framebuffer& fb, const Combatant& c, int x, int y, int w, 
 
 } // namespace
 
+const SpriteData* combatVsGlyph(CombatVsKind kind) {
+    switch (kind) {
+        case CombatVsKind::Health:  return &ASSET_ICON_FIGHT_HP;
+        case CombatVsKind::Power:   return &ASSET_ICON_FIGHT_PWR;
+        case CombatVsKind::Defense: return &ASSET_ICON_FIGHT_DEF;
+        case CombatVsKind::Speed:   return &ASSET_ICON_FIGHT_SPD;
+        case CombatVsKind::Stun:    return &ASSET_ICON_FIGHT_STUN;
+        case CombatVsKind::Dot:     return &ASSET_ICON_FIGHT_DOT;
+        case CombatVsKind::Shield:  return &ASSET_ICON_FIGHT_SHLD;
+        case CombatVsKind::Guard:   return &ASSET_ICON_FIGHT_GRD;
+        case CombatVsKind::Ransom:  return &ASSET_ICON_FIGHT_RNSM;
+        case CombatVsKind::Backup:  return &ASSET_ICON_FIGHT_BKUP;
+        case CombatVsKind::Trap:    return &ASSET_ICON_FIGHT_TRAP;
+        case CombatVsKind::Copy:    return &ASSET_ICON_FIGHT_COPY;
+    }
+    return nullptr;
+}
+
 CombatVitals combatVitals(const Combatant& c) {
     CombatVitals v;
     v.health = c.health > 0 ? c.health : 0;
@@ -398,8 +417,10 @@ CombatVitals combatVitals(const Combatant& c) {
     return v;
 }
 
-void CombatVsGrid::push(const char* tag, const char* a, const char* b) {
+void CombatVsGrid::push(CombatVsKind kind, const char* tag, const char* a,
+                        const char* b) {
     if (n >= kCap) return;
+    r[n].kind = kind;
     std::snprintf(r[n].tag, sizeof(r[n].tag), "%s", tag);
     std::snprintf(r[n].local, sizeof(r[n].local), "%s", a ? a : "");
     std::snprintf(r[n].rival, sizeof(r[n].rival), "%s", b ? b : "");
@@ -419,8 +440,8 @@ CombatVsGrid combatVsGrid(const Combatant& local, const Combatant& rival,
     // A pair of cells built the same way for both fighters — the whole grid is this
     // shape, and writing it once is what stops one side from being formatted (or
     // forgotten) differently from the other.
-    auto pair = [&](const char* tag, bool live) {
-        if (live) g.push(tag, a, b);
+    auto pair = [&](CombatVsKind kind, const char* tag, bool live) {
+        if (live) g.push(kind, tag, a, b);
     };
     auto num = [](char* out, size_t cap, int v, bool live) {
         if (live) std::snprintf(out, cap, "%d", v);
@@ -432,7 +453,7 @@ CombatVsGrid combatVsGrid(const Combatant& local, const Combatant& rival,
     // --- The four vitals, always. These are the fight. ------------------------------
     std::snprintf(a, sizeof(a), "%d/%d", lv.health, lv.maxHealth);
     std::snprintf(b, sizeof(b), "%d/%d", rv.health, rv.maxHealth);
-    pair("HP", true);
+    pair(CombatVsKind::Health, "HP", true);
     // Power's delta is everything pushing on it at once — a Phishing siphon moving
     // powerMultPct and a Ransomware Lockout stack accumulating in stackPowerBonus, which
     // combat multiplies by the SUM. One signed figure says which way the pet is going;
@@ -444,7 +465,7 @@ CombatVsGrid combatVsGrid(const Combatant& local, const Combatant& rival,
     };
     pwrCell(a, sizeof(a), local, lv);
     pwrCell(b, sizeof(b), rival, rv);
-    pair("PWR", true);
+    pair(CombatVsKind::Power, "PWR", true);
     auto defCell = [](char* out, size_t cap, const Combatant& c, const CombatVitals& v) {
         if (c.stackDefenseBonus) std::snprintf(out, cap, "%d%+d", v.defense,
                                                c.stackDefenseBonus);
@@ -452,7 +473,7 @@ CombatVsGrid combatVsGrid(const Combatant& local, const Combatant& rival,
     };
     defCell(a, sizeof(a), local, lv);
     defCell(b, sizeof(b), rival, rv);
-    pair("DEF", true);
+    pair(CombatVsKind::Defense, "DEF", true);
     auto spdCell = [](char* out, size_t cap, const Combatant& c, const CombatVitals& v) {
         const int d = static_cast<int>(std::lround(c.speed - c.baseSpeed));
         if (d) std::snprintf(out, cap, "%d%+d", v.speed, d);
@@ -460,12 +481,12 @@ CombatVsGrid combatVsGrid(const Combatant& local, const Combatant& rival,
     };
     spdCell(a, sizeof(a), local, lv);
     spdCell(b, sizeof(b), rival, rv);
-    pair("SPD", true);
+    pair(CombatVsKind::Speed, "SPD", true);
 
     // --- What changes what you would do NEXT turn ------------------------------------
     num(a, sizeof(a), local.lockedTurnsLeft, local.lockedTurnsLeft > 0);
     num(b, sizeof(b), rival.lockedTurnsLeft, rival.lockedTurnsLeft > 0);
-    pair("STUN", local.lockedTurnsLeft > 0 || rival.lockedTurnsLeft > 0);
+    pair(CombatVsKind::Stun, "STUN", local.lockedTurnsLeft > 0 || rival.lockedTurnsLeft > 0);
 
     auto dotCell = [](char* out, size_t cap, const Combatant& c) {
         if (c.dotTurnsLeft > 0) std::snprintf(out, cap, "%dx%d", c.dotPerTurn,
@@ -474,16 +495,16 @@ CombatVsGrid combatVsGrid(const Combatant& local, const Combatant& rival,
     };
     dotCell(a, sizeof(a), local);
     dotCell(b, sizeof(b), rival);
-    pair("DOT", local.dotTurnsLeft > 0 || rival.dotTurnsLeft > 0);
+    pair(CombatVsKind::Dot, "DOT", local.dotTurnsLeft > 0 || rival.dotTurnsLeft > 0);
 
     num(a, sizeof(a), local.shieldHp, local.shieldHp > 0);
     num(b, sizeof(b), rival.shieldHp, rival.shieldHp > 0);
-    pair("SHLD", local.shieldHp > 0 || rival.shieldHp > 0);
+    pair(CombatVsKind::Shield, "SHLD", local.shieldHp > 0 || rival.shieldHp > 0);
 
     // The brace is the local pet's alone: a rival's is spent before this could be read.
     num(a, sizeof(a), local.guard, localGuard && local.guard > 0);
     b[0] = '\0';
-    pair("GRD", localGuard && local.guard > 0);
+    pair(CombatVsKind::Guard, "GRD", localGuard && local.guard > 0);
 
     // The ransom pool and the turns before it lands — the one affliction whose VALUE is
     // the decision, since it is how much is about to arrive and when.
@@ -494,7 +515,7 @@ CombatVsGrid combatVsGrid(const Combatant& local, const Combatant& rival,
     };
     rnsmCell(a, sizeof(a), local);
     rnsmCell(b, sizeof(b), rival);
-    pair("RNSM", local.ransomPool > 0 || rival.ransomPool > 0);
+    pair(CombatVsKind::Ransom, "RNSM", local.ransomPool > 0 || rival.ransomPool > 0);
 
     // --- What is merely standing there ----------------------------------------------
     auto bkupCell = [](char* out, size_t cap, const Combatant& c) {
@@ -506,15 +527,15 @@ CombatVsGrid combatVsGrid(const Combatant& local, const Combatant& rival,
     };
     bkupCell(a, sizeof(a), local);
     bkupCell(b, sizeof(b), rival);
-    pair("BKUP", a[0] || b[0]);
+    pair(CombatVsKind::Backup, "BKUP", a[0] || b[0]);
 
     num(a, sizeof(a), local.trojanTrapCount, local.trojanTrapCount > 0);
     num(b, sizeof(b), rival.trojanTrapCount, rival.trojanTrapCount > 0);
-    pair("TRAP", local.trojanTrapCount > 0 || rival.trojanTrapCount > 0);
+    pair(CombatVsKind::Trap, "TRAP", local.trojanTrapCount > 0 || rival.trojanTrapCount > 0);
 
     num(a, sizeof(a), local.wormReplicaCount, local.wormReplicaCount > 0);
     num(b, sizeof(b), rival.wormReplicaCount, rival.wormReplicaCount > 0);
-    pair("COPY", local.wormReplicaCount > 0 || rival.wormReplicaCount > 0);
+    pair(CombatVsKind::Copy, "COPY", local.wormReplicaCount > 0 || rival.wormReplicaCount > 0);
     return g;
 }
 
@@ -923,10 +944,14 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
             const int col2R = textR;                  // the rival's column, hard right
             const int col1R = textR - 9 * kFontAdvance;   // ...and the local pet's
             int dropped = 0;
-            auto vsRow = [&](const char* label, const char* a, Pal ac, const char* b,
-                             Pal bc) {
+            auto vsRow = [&](const SpriteData* glyph, Rgb565 glyphCol, const char* label,
+                             const char* a, Pal ac, const char* b, Pal bc) {
                 if (y + kFontH > boxBottom) { ++dropped; return; }
-                drawText(fb, textX, y, label, palColor(Pal::INK_DIM));
+                // The glyph names the row; the WORD is what draws when there is no art
+                // for it, so a missing master leaves a readable panel rather than a
+                // column of gaps.
+                if (glyph) drawSpriteTinted(fb, *glyph, 0, textX, y, glyphCol);
+                else drawText(fb, textX, y, label, palColor(Pal::INK_DIM));
                 // A dash, never a blank: a fighter that is not stunned and a stun the
                 // panel failed to report must not look the same.
                 const char* av = a[0] ? a : "-";
@@ -938,7 +963,7 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
                 y += pitch;
             };
             // Whose column is whose, in the operator's own captions for the two seats.
-            vsRow("", sides.localLabel, Pal::INK, sides.rivalLabel, Pal::INK);
+            vsRow(nullptr, 0, "", sides.localLabel, Pal::INK, sides.rivalLabel, Pal::INK);
             const CombatVsGrid g = combatVsGrid(pl, en, /*localGuard=*/true);
             for (int i = 0; i < g.n; ++i) {
                 // Health is the only row carrying a zone: a fighter in the Critical band
@@ -948,7 +973,8 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
                     hp && healthZone(pl.health, pl.maxHealth) == Zone::Critical;
                 const bool rCrit =
                     hp && healthZone(en.health, en.maxHealth) == Zone::Critical;
-                vsRow(g.r[i].tag, g.r[i].local, lCrit ? Pal::HOT : Pal::INK,
+                vsRow(combatVsGlyph(g.r[i].kind), combatVsColor(g.r[i].kind), g.r[i].tag,
+                      g.r[i].local, lCrit ? Pal::HOT : Pal::INK,
                       g.r[i].rival, rCrit ? Pal::HOT : Pal::INK);
             }
             // The armed crew Exploit is the one thing that cannot be a shared row: each

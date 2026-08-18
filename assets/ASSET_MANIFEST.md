@@ -50,7 +50,8 @@ One per carousel slot. Each icon needs two states (idle dim /
 focused bright) — supply one master, brightness handled in engine unless noted.
 
 > **Icon size tiers (`VISUAL_LANGUAGE.md §3.1`):** every `ICON_*` snaps to **28** (slot icons) · **20** (row/
-> content glyphs) · **16** (status/button glyphs) · **12** (inline log glyphs) logical px.
+> content glyphs) · **16** (status/button glyphs) · **12** (inline log glyphs) · **8** (inline TEXT-ROW
+> glyphs, one `FONT_UI` cell) logical px.
 
 | Asset ID | Slot | Concept | Logical size | States | Status | File |
 |---|---|---|---|---|---|---|
@@ -682,6 +683,33 @@ Disk Decypher.
 | `ICON_ARCADE_CLUTCH` | SPOT THE PHISH cabinet row glyph | 20×20 | fish hook | ☑ | `/assets/icons/ICON_ARCADE_CLUTCH.png` |
 | `UI_HEALTH_BAR` | Combat-Health row | ~208×24 | `UI_GAUGE` variant — transient Health | ☑ | engine-drawn |
 | `UI_OVERRIDE_PIP` | Once-per-battle Exploit-override indicator | 16×16 | ready (bolt) / spent (×) | ☑ | `/assets/icons/ICON_OVERRIDE_PIP{,_SPENT}.png` |
+
+### Q.1 The combat VS grid (`ICON_FIGHT_*`)
+
+The stat panel's VS page names each row with a glyph instead of a word (`combatVsGlyph`,
+`core/ui/combat_screen.h`). They are the **8×8 tier** — one `FONT_UI` cell — because they sit
+INSIDE a text row: every larger tier stands taller than the 11px a panel row gets, so an icon
+drawn from one would cost the rows the grid exists to save.
+
+Each is a flat 1-bit master, tinted at draw time by `combatVsColor` (`ui/theme.h`). Hues repeat
+across the set on purpose — speed and a stun are both `warn`, a wall and a bubble both
+`team-blue` — so the SHAPE is what separates them and the tint only ever repeats it. Every row
+also keeps its word (`CombatVsRow::tag`), which is what draws if a master goes missing.
+
+| Asset ID | Row | Concept | Tint | Status | File |
+|---|---|---|---|---|---|
+| `ICON_FIGHT_HP` | HP | heart | `calm` | ☑ | `/assets/icons/ICON_FIGHT_HP.png` |
+| `ICON_FIGHT_PWR` | PWR | sword, point up | `team-red` | ☑ | `/assets/icons/ICON_FIGHT_PWR.png` |
+| `ICON_FIGHT_DEF` | DEF | shield, filled — straight-sided so it does not read as the heart | `team-blue` | ☑ | `/assets/icons/ICON_FIGHT_DEF.png` |
+| `ICON_FIGHT_SPD` | SPD | double chevron | `warn` | ☑ | `/assets/icons/ICON_FIGHT_SPD.png` |
+| `ICON_FIGHT_STUN` | STUN | squared spiral | `warn` | ☑ | `/assets/icons/ICON_FIGHT_STUN.png` |
+| `ICON_FIGHT_DOT` | DOT | three bubbles, three sizes | `hot` | ☑ | `/assets/icons/ICON_FIGHT_DOT.png` |
+| `ICON_FIGHT_SHLD` | SHLD | bubble with a highlight — the Obfuscation pool | `team-blue` | ☑ | `/assets/icons/ICON_FIGHT_SHLD.png` |
+| `ICON_FIGHT_GRD` | GRD | brick wall — the one-shot brace, deliberately NOT a second shield | `team-blue` | ☑ | `/assets/icons/ICON_FIGHT_GRD.png` |
+| `ICON_FIGHT_RNSM` | RNSM | a note with a figure on it | `calm` | ☑ | `/assets/icons/ICON_FIGHT_RNSM.png` |
+| `ICON_FIGHT_BKUP` | BKUP | floppy — shutter above, label below | `ink-dim` | ☑ | `/assets/icons/ICON_FIGHT_BKUP.png` |
+| `ICON_FIGHT_TRAP` | TRAP | snare jaws | `ink-dim` | ☑ | `/assets/icons/ICON_FIGHT_TRAP.png` |
+| `ICON_FIGHT_COPY` | COPY | two overlapping bodies | `ink-dim` | ☑ | `/assets/icons/ICON_FIGHT_COPY.png` |
 | `UI_MOVE_CHANNEL` | Multi-turn move wind-up | ~120×12 | `UI_GAUGE` variant; override decision cue | ☑ | engine-drawn |
 | `ICON_MOVE_SLOT` | Loadout equip-slot row glyph | 20×20 | filled / empty / locked variants | ☑ | `/assets/icons/ICON_MOVE_SLOT{,_EMPTY,_LOCKED}.png` |
 | `ICON_MOVE_<ID>` | Per-move glyph | 20×20 | derived at draw time from the move id (`train_screen.cpp`), so a new move's icon needs no wiring — drop the PNG in `assets/icons/` and it lights up. MOVES falls back to text for a move with none, which is why most of the roster has no glyph yet: `ls assets/icons/ICON_MOVE_*` against `content_moves.cpp` is the real count | ☑/▨ | `/assets/icons/` |

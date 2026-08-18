@@ -26,6 +26,7 @@
 
 #include "core/content/defs.h"
 #include "core/render/palette.h"
+#include "core/ui/combat_screen.h"
 
 namespace mal {
 
@@ -43,6 +44,33 @@ inline Rgb565 rarityColor(ItemDef::Rarity r) {
 // a crew name, a duel banner, a team glyph — comes through here.
 inline Rgb565 teamColor(bool red) {
     return palColor(red ? Pal::TEAM_RED : Pal::TEAM_BLUE);
+}
+
+// The combat VS grid's rows. Every one of these is a token that ALREADY carries this
+// meaning somewhere on this screen or in the palette's own notes, which is why the set
+// adds no colour of its own: the team pair is authored as offense/defense and dual-coded
+// with a sword and a shield (PAL_CORE's `team` block), the shield-pool bar on the combat
+// screen already draws in TEAM_BLUE and the ransom strip in CALM.
+//
+// Hues repeat across the set on purpose — speed and a stun are both WARN, a wall and a
+// bubble are both TEAM_BLUE. The glyph is what separates them, per the tinting rule
+// above: colour may only repeat a meaning the shape already carries.
+inline Rgb565 combatVsColor(CombatVsKind k) {
+    switch (k) {
+        case CombatVsKind::Health:  return palColor(Pal::CALM);
+        case CombatVsKind::Power:   return palColor(Pal::TEAM_RED);
+        case CombatVsKind::Defense:
+        case CombatVsKind::Guard:
+        case CombatVsKind::Shield:  return palColor(Pal::TEAM_BLUE);
+        case CombatVsKind::Speed:
+        case CombatVsKind::Stun:    return palColor(Pal::WARN);
+        case CombatVsKind::Dot:     return palColor(Pal::HOT);
+        case CombatVsKind::Ransom:  return palColor(Pal::CALM);
+        case CombatVsKind::Backup:
+        case CombatVsKind::Trap:
+        case CombatVsKind::Copy:    return palColor(Pal::INK_DIM);
+    }
+    return palColor(Pal::INK_DIM);
 }
 
 } // namespace mal
