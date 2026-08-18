@@ -189,7 +189,11 @@ bool Game::tick(uint32_t nowMs) {
                 !combat_.overrideOpen()) {
                 if (++combatTurnBeat_ >= combatBeatsForTurn()) advanceCombatTurn();
             } else if (combat_.outcome() != Combat::Outcome::Ongoing) {
-                ++combatBeat_;
+                // The result beat's own clock, held back while a dissolve is still
+                // playing over the beaten rival: the verdict banner shares that space
+                // and waits for it (drawCombat), so starting the auto-dismiss underneath
+                // would leave the words a fraction of a second before the screen went.
+                if (!combatDissolveRunning()) ++combatBeat_;
                 // Hands-off auto-explore: a wild or boss fight's result is a REVEAL
                 // with no human to press B, so hold it ~3s then auto-dismiss back to
                 // the habitat (finishCombat advances the streak / cancels on a loss)
@@ -249,6 +253,24 @@ bool Game::tick(uint32_t nowMs) {
         }
     } else {
         lastCombatAnimMs_ = nowMs;   // stay primed so re-entering combat doesn't burst-catch-up
+    }
+
+    // The dissolve clock (FX_ABSORB / FX_SHRED). Fastest tick on the device, and the
+    // only one gated on a specific effect being on screen: it runs for the ~2s a sweep
+    // takes and costs nothing the rest of the time. Three hosts, one counter — only one
+    // dissolve is ever up. Each reset its own start (startFeeding / startWifiEvent /
+    // the fight's own combatBeat_ reset), so this only has to decide when to ADVANCE.
+    const bool fxSweeping =
+        nav_ == Nav::ModalFeeding || nav_ == Nav::Wifi ||
+        (nav_ == Nav::Combat && combat_.outcome() != Combat::Outcome::Ongoing);
+    if (fxSweeping) {
+        if (nowMs - lastFxMs_ >= static_cast<uint32_t>(kFxAnimMs)) {
+            lastFxMs_ = nowMs;
+            fxBeat_++;
+            changed = true;
+        }
+    } else {
+        lastFxMs_ = nowMs;   // primed, so opening a sweep doesn't burst-catch-up
     }
 
     // THE DECRYPTOGRAM's cursor repeats while A or C is held, on its own cadence for the

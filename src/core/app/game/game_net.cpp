@@ -80,6 +80,7 @@ void Game::startWifiEvent() {
         std::snprintf(wifiFlavor_, sizeof(wifiFlavor_), "A FRIEND STOPS BY...");
     }
     exploreEventBeat_ = 0;   // start the hands-off hold clock
+    fxBeat_ = 0;             // and the dissolve's, which no press restarts
     nav_ = Nav::Wifi;
 }
 
@@ -274,6 +275,7 @@ void Game::resolveNetworkDiscovery() {
     if (pendingNetworkCount_ == 0) {
         ++emptyQueueStreak_;
         netDiscoveryFlavor_[0] = '\0';
+        netDiscovery_ = NetDiscovery::None;
         // Only sting on the 1st miss, then every Nth after — a long unmonitored
         // dead-zone walk tapers off instead of grinding Happiness to 0.
         const bool strikes = emptyQueueStreak_ == 1 ||
@@ -318,6 +320,7 @@ void Game::resolveNetworkDiscovery() {
         else
             std::snprintf(netDiscoveryFlavor_, sizeof(netDiscoveryFlavor_),
                          "ENVIES %s'S BANDWIDTH", picked.name);
+        netDiscovery_ = NetDiscovery::New;
         markSaveDirty();
         return;
     }
@@ -334,12 +337,14 @@ void Game::resolveNetworkDiscovery() {
     if (wasHomeTurf) {
         std::snprintf(netDiscoveryFlavor_, sizeof(netDiscoveryFlavor_),
                      "TIRED OF %s...", picked.name);
+        netDiscovery_ = NetDiscovery::HomeTurf;
         return;
     }
     addCombatXp(kNetDiscoveryFondXpAmount);
     model_.setHappiness(model_.happiness() + kNetDiscoveryFoundHappyBonus);
     std::snprintf(netDiscoveryFlavor_, sizeof(netDiscoveryFlavor_),
                  "FONDLY REMEMBERS %s", picked.name);
+    netDiscovery_ = NetDiscovery::Fond;
     markSaveDirty();
 }
 

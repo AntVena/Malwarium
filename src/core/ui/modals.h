@@ -31,8 +31,17 @@ void drawCSFModal(Framebuffer& fb, const SpriteData* pet, bool revealed, int bea
 // Hunger bar it never touched, and the arrow comes from `before` vs. the live
 // model — a stat the food had no room left to move says so by having no arrow.
 // `food` may be null (nothing to report).
-void drawFeedingModal(Framebuffer& fb, const SpriteData* pet, const ItemDef* food,
-                      const PetModel& m, const FeedVitals& before, int beat);
+//
+// `foodIcon` is the item's own ICON_ITEM_* glyph (items_screen.h's itemIcon), which
+// the pet visibly eats: it comes apart into blocks and streams in over kAbsorbBeats
+// (FX_ABSORB, core/render/absorb.h) while the gauges settle underneath. Null draws the
+// beat without it — the modal has never depended on the picture.
+// `beat` is the heartbeat (the pet's breathe); `fxBeat` is the faster dissolve clock
+// (Game::fxBeat_) the bite is paced on — they are different rates, so a smoother sweep
+// never speeds up the creature breathing behind it.
+void drawFeedingModal(Framebuffer& fb, const SpriteData* pet, const SpriteData* foodIcon,
+                      const ItemDef* food, const PetModel& m, const FeedVitals& before,
+                      int beat, int fxBeat);
 
 // Lockout Timer: flashing countdown, a two-path resolve choice
 // (Open Items <-> Pay Bits), C disabled. `payOption` selects which path is

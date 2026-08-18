@@ -30,13 +30,19 @@ bool MoveLoadout::owns(const char* id) const {
     return false;
 }
 
+bool MoveLoadout::isInnate(const char* id) const {
+    return id && defaultId_ && std::strcmp(id, defaultId_) == 0;
+}
+
 void MoveLoadout::grant(const char* id) {
     if (id && !owns(id)) owned_.push_back(id);
 }
 
 void MoveLoadout::equip(int slot, const char* id) {
     ensureSlots();
-    if (slot < 0 || slot >= kMaxMoveSlots || !id || !owns(id)) return;
+    // The innate is owned but never occupies a slot — it is what an EMPTY slot falls
+    // back to, so slotting it would spend a slot on what that slot already does.
+    if (slot < 0 || slot >= kMaxMoveSlots || !id || !owns(id) || isInnate(id)) return;
     const int prev = slotOf(id);            // a move lives in only one slot — move it
     if (prev >= 0) slots_[prev] = nullptr;
     slots_[slot] = id;
@@ -64,7 +70,7 @@ Stage MoveLoadout::stageUnlockingSlot(int slot) {
 
 MoveLoadout MoveLoadout::starting() {
     MoveLoadout l;
-    l.owned_ = {"packet_storm", "checksum_guard", "fork_bomb"};
+    l.owned_ = {"quick_jab", "packet_storm", "checksum_guard", "fork_bomb"};
     l.ensureSlots();
     // Equip the one Attack move into slot 0; slot 1 is left to the Quick Jab per-slot
     // fallback. The Paypup line is Attack/Attack at Process (slotKinds), so the owned
@@ -79,6 +85,7 @@ MoveLoadout MoveLoadout::starting() {
 MoveLoadout MoveLoadout::startingForLine(const ContentRegistry& registry, const char* line) {
     MoveLoadout l;
     l.ensureSlots();
+    l.grant(l.defaultId_);   // the innate is part of what every pet has
     const MoveDef* firstAttack = nullptr;
     if (line) {
         for (const MoveDef* m : registry.allMoves()) {

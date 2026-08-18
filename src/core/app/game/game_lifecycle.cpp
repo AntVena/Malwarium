@@ -602,6 +602,7 @@ void Game::resetToHatch() {
     movePendingId_ = nullptr;
     simTier_ = 0;
     combatBeat_ = 0;
+    fxBeat_ = 0;
     combatTurnBeat_ = 0;
     combatXp_ = 0;
     combatLevel_ = 0;                    // a fresh egg starts at level 0

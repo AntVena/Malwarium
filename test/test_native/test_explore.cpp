@@ -185,8 +185,11 @@ void test_explore_auto_continues_after_fight() {
 static void resolveWildFightToPostEncounter(Game& g, uint32_t& t) {
     for (int i = 0; i < 400 && g.combat().outcome() == Combat::Outcome::Ongoing; ++i)
         g.tick(t += kHeartbeatMs);
-    for (int i = 0; i < 40 && g.nav() == Game::Nav::Combat; ++i)
-        g.tick(t += kHeartbeatMs);           // the explore hands-off reveal hold
+    // Bounded only so a stuck fight fails as a test rather than hanging — the loop
+    // exits the moment the nav leaves Combat. The hold is the reveal hold PLUS the
+    // beaten rival's dissolve, which the auto-dismiss waits out (combatDissolveRunning).
+    for (int i = 0; i < 200 && g.nav() == Game::Nav::Combat; ++i)
+        g.tick(t += kHeartbeatMs);
 }
 
 // A WON farm fight (a re-armed CLEARED sub-area) with Bandwidth still in the pool

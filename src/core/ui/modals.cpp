@@ -2,12 +2,15 @@
 
 #include <cstdio>
 
+#include "tunables.h"
+#include "core/render/absorb.h"
 #include "core/render/canvas.h"
 #include "core/render/font.h"
 #include "core/render/framebuffer.h"
 #include "core/render/palette.h"
 #include "core/render/sprite.h"
 #include "core/ui/layout.h"
+#include "core/ui/theme.h"
 #include "core/ui/widgets.h"
 
 namespace mal {
@@ -128,10 +131,29 @@ void drawCSFModal(Framebuffer& fb, const SpriteData* pet, bool revealed, int bea
                      palColor(Pal::INK_DIM));
 }
 
-void drawFeedingModal(Framebuffer& fb, const SpriteData* pet, const ItemDef* food,
-                      const PetModel& m, const FeedVitals& before, int beat) {
+void drawFeedingModal(Framebuffer& fb, const SpriteData* pet, const SpriteData* foodIcon,
+                      const ItemDef* food, const PetModel& m, const FeedVitals& before,
+                      int beat, int fxBeat) {
     fb.clear(palColor(Pal::PAPER));
-    drawPetCentered(fb, pet, beat, 80);
+
+    // The bite itself: the food comes apart into the pet over the first kAbsorbBeats,
+    // and the beats after are its afterglow, so the whole thing lands inside the
+    // modal's existing kFeedBeats hold. What the food DID is still the gauge rows
+    // below — the picture is the second channel, never the only one.
+    //
+    // The blocks take the food's RARITY colour (theme.h), so a rare meal goes in
+    // looking like one. That is decoration and nothing more: this screen makes no
+    // claim about rarity in the first place, so desaturating it loses a flourish
+    // rather than a fact, and the bite still reads.
+    // The lead-in leaves the food standing whole long enough to be identified before it
+    // stops being a thing; the swallow then lands near the modal's last beat.
+    const AbsorbPhase phase = absorbPhase(fxBeat, kAbsorbLeadBeats, kAbsorbBeats);
+    if (foodIcon)
+        drawPetAbsorbing(fb, pet, kActiveW / 2, 80, foodIcon,
+                         rarityColor(food ? food->rarity : ItemDef::Rarity::Common),
+                         phase, beat);
+    else
+        drawPetCentered(fb, pet, beat, 80);
     drawCenteredText(fb, 132, food ? food->displayName : "", palColor(Pal::INK));
 
     FeedGaugeRow rows[3];

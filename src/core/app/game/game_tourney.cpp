@@ -164,6 +164,7 @@ void Game::startTourneyMatch() {
                   exploitUsesPerBattle());
     combatCaller_ = CombatCaller::Tourney;
     combatBeat_ = 0;
+    fxBeat_ = 0;
     combatTurnBeat_ = 0;
     combatHitBeat_ = 0;
     combatStatsPage_ = 0;

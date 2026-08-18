@@ -372,6 +372,11 @@ void Game::applySave(const SaveData& d) {
     // migration rather than stripping it to only the innate default move.
     if (d.hasMoveData) {
         moveLoadout_ = MoveLoadout{};
+        // The innate is part of what every pet owns, and a blob written before that was
+        // true simply doesn't list it. Granted first, unconditionally — nothing about
+        // the format changes, a pet restored from any blob just has what it has always
+        // been able to swing.
+        moveLoadout_.grant(moveLoadout_.defaultMove());
         for (const auto& m : d.ownedMoves)
             if (const MoveDef* def = registry_.move(m.id)) moveLoadout_.grant(def->id);
         for (int i = 0; i < static_cast<int>(d.equippedMoves.size()) && i < kMaxMoveSlots; ++i)

@@ -829,7 +829,22 @@ constexpr uint32_t kSaveGrowHeapFloorBytes = 32768;   // 32KB
 constexpr int kHackerTagMax = 12;   // editable cells (also the buffer length)
 
 // --- Modal / process pacing (event-driven, in ~4fps beats) -----------------
-constexpr int kFeedBeats = 6;     // feeding beat before auto-dismiss
+constexpr int kFeedBeats = 10;    // feeding beat before auto-dismiss
+// FX_ABSORB / FX_SHRED dissolve length, in the FX clock's own beats (kFxAnimMs, ~16fps)
+// rather than heartbeats — every screen that plays a dissolve drives it off Game::fxBeat_,
+// so one number is the sweep length everywhere. ~2s: long enough to watch a glyph come
+// apart rather than register that it went.
+//
+// The sweep fits inside each host's own hold (kFeedBeats, kExploreRevealHoldBeats), so
+// it costs a player no extra waiting anywhere; the beats after it are the afterglow.
+constexpr int kAbsorbBeats = 32;
+// The pause before a dissolve starts, in the same beats: the thing being eaten stands
+// whole long enough to be identified first.
+constexpr int kAbsorbLeadBeats = 4;
+// Lead-in plus sweep — how long a dissolve OCCUPIES its screen. The combat outro reads
+// this to keep the verdict banner off the effect: a screen that has to wait for a
+// dissolve waits on one number, not on a sum re-derived at each site.
+constexpr int kAbsorbTotalBeats = kAbsorbLeadBeats + kAbsorbBeats;
 constexpr int kProcessBeats = 8;  // MAINT process run length before the outcome
 // The three ways to pay for the same clean: 0 Quick (Bits, may fail) · 1 Tool (an item,
 // guaranteed) · 2 Stacker (the minigame, guaranteed if you clear it). Luck, an item, or

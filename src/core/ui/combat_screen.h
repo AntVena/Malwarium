@@ -10,6 +10,8 @@
 // modes cannot drift apart in layout or in what a gauge means.
 #pragma once
 
+#include <cstdint>
+
 namespace mal {
 
 class Framebuffer;
@@ -121,9 +123,25 @@ CombatTokens combatStateTokens(const Combatant& c, bool withGuard, int* leanCoun
 // sprite motion (idleFrame/windup-flash) so it stays lively at accelerated turn pacing
 // without speeding up the gauge pulse too; hitBeat is animBeat-ticks since the last
 // landed combat_.step(), driving the post-hit impact punch/flash.
+// What becomes of the beaten rival while the result beat is held, before the status
+// readout takes the screen. The two dissolves are a VOCABULARY, not decoration:
+//
+//   Shred  — it comes apart where it stood and gives nothing (core/render/shred.h).
+//   Absorb — it streams into the pet, because it fielded a move the pet does not own
+//            (core/render/absorb.h). The one worth coming back for.
+//
+// So the last beat of a fight answers "was that worth farming" without a word of UI.
+// Both are dual-coded by SHAPE — lines flying apart against a stream converging on the
+// pet — so the distinction survives a grayscale screenshot.
+struct CombatOutro {
+    enum class Kind : uint8_t { None, Shred, Absorb };
+    Kind kind = Kind::None;
+    int beat = 0;   // heartbeats since the result landed; drives the sweep
+};
+
 void drawCombat(Framebuffer& fb, const Combat& combat,
                 const SpriteData* playerSprite, const SpriteData* enemySprite,
                 int beat, int animBeat, int hitBeat, int statPage = 0,
-                const CombatSides& sides = {});
+                const CombatSides& sides = {}, const CombatOutro& outro = {});
 
 } // namespace mal

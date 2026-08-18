@@ -386,6 +386,13 @@ Listed so Design **skips** them; they're implemented per `src/core/render/RENDER
 | `FX_EVO_FLASH`  | evolution full-screen flash | SCREEN_FX | evolution event | ⊘ |
 | `FX_LOCKOUT_BAND` | flashing red countdown band | SCREEN_FX | Lockout event | ⊘ |
 | `FX_CRITICAL_FAIL` | critical-failure crash overlay (composes w/ maxed `FX_CORRUPTION`) | SCREEN_FX | Critical System Failure event | ⊘ |
+| `FX_ABSORB` | a glyph breaking into blocks that stream behind the pet, + the pet's swallow flash | SPRITE_MODS (under) | feeding a food · the Wi-Fi event's network discovery · a beaten rival that fielded a move the pet lacks | ⊘ |
+| `FX_SHRED` | a sprite shearing into sliding, streaking scanlines that fray out where they stood | SPRITE_MODS (under) | a beaten rival that fielded nothing new | ⊘ |
+
+> `FX_ABSORB` and `FX_SHRED` are a PAIR, and the combat outro is where the pairing does
+> work: one converges on the pet, the other flies apart, so which one closes a fight says
+> whether that opponent was worth coming back for. They are dual-coded by SHAPE, not hue —
+> the distinction survives a grayscale screenshot, which is why neither needs a caption.
 
 ---
 
@@ -599,7 +606,7 @@ own rows from the same `CfgRow` shape and reuses the glyphs below, so grouping n
 | `ICON_CFG_UPDATE` | UPDATES row glyph | 20×20 | a refresh cycle — a ring opened at the top and fed an arrowhead. NOT a download arrow, which reads as the row's obvious motif right up until you set it beside `ICON_SECTOR_NAPSTORRENT_MOORS`: the Moors are the torrent area and the arrow-into-a-tray is theirs | ☑ | `/assets/icons/ICON_CFG_UPDATE.png` |
 | `ICON_CFG_TRAVEL` | TRAVEL MODE row glyph (DEVICE group) | 20×20 | a crescent. It is the one row in the group that is an action rather than a setting, and the action is sleep | ☑ | `/assets/icons/ICON_CFG_TRAVEL.png` |
 | `ICON_SYS_BATTERY` | Battery status glyph | 16×16 | System Info | ⌫ | `/assets/_attic/ICON_SYS_BATTERY.png` |
-| `ICON_SYS_WIFI` | Wi-Fi AP status glyph | 16×16 | System Info; also the INTERNET row. Named by PEDIA AP too, and unrendered there for the same reason AUDIT's is | ☑ | `/assets/icons/ICON_SYS_WIFI.png` |
+| `ICON_SYS_WIFI` | Wi-Fi AP status glyph | 16×16 | System Info; also the INTERNET row. Named by PEDIA AP too, and unrendered there for the same reason AUDIT's is. Also the thing the pet EATS on the EXPL Wi-Fi event (`FX_ABSORB`, §D), drawn there at the creature ×1.75 rather than at chrome size — so it is read as a subject, not as a status glyph, and a redraw has to hold up at both | ☑ | `/assets/icons/ICON_SYS_WIFI.png` |
 | `ICON_SYS_SD` | SD-card status glyph | 16×16 | System Info | ☑ | `/assets/icons/ICON_SYS_SD.png` |
 | `ICON_CFG_QR` | Pedia QR row glyph | 20×20 | **drawn but unconsumed** — the QR is reached from PEDIA AP, not a row of its own, so nothing renders this. Keep for a future row; it costs atlas space until then | ⌫ | `/assets/_attic/ICON_CFG_QR.png` |
 
@@ -680,7 +687,7 @@ Disk Decypher.
 | `ICON_MOVE_<ID>` | Per-move glyph | 20×20 | derived at draw time from the move id (`train_screen.cpp`), so a new move's icon needs no wiring — drop the PNG in `assets/icons/` and it lights up. MOVES falls back to text for a move with none, which is why most of the roster has no glyph yet: `ls assets/icons/ICON_MOVE_*` against `content_moves.cpp` is the real count | ☑/▨ | `/assets/icons/` |
 | `UI_DAMAGE_POPUP` | Floating damage number | — | `FONT_UI` tabular digits — **procedural, no art** | ⊘ | — |
 | `SPR_DUMMY` | Sim-Battle training-dummy sprite | ≤128×64 | wired for both tiers in `simDummy()` (`src/core/model/combat.cpp`) — they are the same prop, and the tier reads off the level/stat rows | ▨ | `/assets/sprites/SPR_DUMMY.png` (56×48) |
-| `ICON_EVENT_WIFI` | Wi-Fi network event glyph | 20×20 | **optional**; else reuse the EXPL Wi-Fi-globe motif | ⌫ | placeholder `/assets/_attic/ICON_EVENT_WIFI.png` |
+| `ICON_EVENT_WIFI` | Wi-Fi network event glyph | 20×20 | **optional**. The event draws `ICON_SYS_WIFI` for this today; a dedicated glyph would take its place as the thing the pet eats, so it is judged at creature scale mid-dissolve rather than as a 20×20 chrome mark — a fan of few, chunky strokes breaks into a better mouthful than a thin one | ⌫ | placeholder `/assets/_attic/ICON_EVENT_WIFI.png` |
 | `UI_RANK_BADGE` | Hacker-Rank badge (CFG / HackerTag) | ~16–20 | **optional**; else plain `FONT_UI` rank text | ⌫ | placeholder `/assets/_attic/UI_RANK_BADGE.png` (20×20) |
 
 > **Reused (no new art):** `UI_GAUGE` (§O), `UI_DIFFICULTY_PIPS` (§J), `UI_HINT_BAND` /

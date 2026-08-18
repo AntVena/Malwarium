@@ -7,7 +7,9 @@
 
 #include "tunables.h"        // kLevelDmgReduceMaxPct — the never-immune defence clamp
 #include "core/model/combat.h"
+#include "core/render/absorb.h"
 #include "core/render/canvas.h"
+#include "core/render/shred.h"
 #include "core/render/font.h"
 #include "core/render/framebuffer.h"
 #include "core/render/palette.h"
@@ -451,7 +453,7 @@ CombatTokens combatStateTokens(const Combatant& c, bool withGuard, int* leanCoun
 void drawCombat(Framebuffer& fb, const Combat& combat,
                 const SpriteData* playerSprite, const SpriteData* enemySprite,
                 int beat, int animBeat, int hitBeat, int statPage,
-                const CombatSides& sides) {
+                const CombatSides& sides, const CombatOutro& outro) {
     fb.clear(palColor(Pal::PAPER));
     // LOCAL and RIVAL are ROLES, not Combat's player/enemy slots. Everything the screen
     // says and seats is bound to the role: the local pet gets the bottom, zoned Health
@@ -555,17 +557,49 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
     // The swing window is the hop's own, so an authored attack clip runs exactly as long
     // as the lunge that carries it — one motion, not a pose that outlives its nudge.
     const bool swinging = struck && hitBeat >= 0 && hitBeat < kAttackHopPeriod;
+    // The beaten rival's outro takes its seat when one is running — it IS the rival for
+    // those beats, so nothing else has to know the fight ended. See CombatOutro
+    // (combat_screen.h) for why the two dissolves mean different things.
+    const AbsorbPhase outroPhase =
+        absorbPhase(outro.beat, kAbsorbLeadBeats, kAbsorbBeats);
+    const bool absorbing = outro.kind == CombatOutro::Kind::Absorb;
+
     // Rival first: where two Daemon cells run right to their band edges, the local pet
-    // reads on top of its opponent.
-    drawFighter(fb, rivalSprite, stage.rivalX, animBeat,
-                std::max(rivalWindup, rivalImpact),
-                palColor(rivalImpact >= rivalWindup ? Pal::INK : Pal::WARN),
-                impactNudgePx(rivalHitBeat, +1) + hop,
-                fightPose(en, rivalHitBeat >= 0 && rivalHitBeat < kImpactPeriod,
-                          swinging && !lastByLocal));
+    // reads on top of its opponent — and an absorbed rival must pass BEHIND the pet
+    // eating it, which is the same ordering.
+    if (outro.kind == CombatOutro::Kind::None) {
+        drawFighter(fb, rivalSprite, stage.rivalX, animBeat,
+                    std::max(rivalWindup, rivalImpact),
+                    palColor(rivalImpact >= rivalWindup ? Pal::INK : Pal::WARN),
+                    impactNudgePx(rivalHitBeat, +1) + hop,
+                    fightPose(en, rivalHitBeat >= 0 && rivalHitBeat < kImpactPeriod,
+                              swinging && !lastByLocal));
+    } else if (rivalSprite) {
+        const int rx = stage.rivalX - scaleUp(spriteContentX0(*rivalSprite));
+        const int ry = kSpriteShelf - rivalSprite->h * kScaleNum / kScaleDen;
+        if (absorbing) {
+            // Into the middle of the local pet's DRAWING, so it is eaten by the body
+            // rather than by a corner of an empty cell.
+            const int px0 = stage.localX;
+            const int py0 = kSpriteShelf - (localSprite ? localSprite->h : 0) *
+                                               kScaleNum / kScaleDen;
+            drawAbsorb(fb, *rivalSprite, 0, rx, ry, kScaleNum, kScaleDen,
+                       px0 + stage.localW / 2,
+                       py0 + (localSprite ? localSprite->h : 0) * kScaleNum /
+                                 kScaleDen / 2,
+                       palColor(Pal::ACCENT), outroPhase.progress, /*bite=*/255);
+        } else {
+            drawShred(fb, *rivalSprite, 0, rx, ry, kScaleNum, kScaleDen,
+                      palColor(Pal::INK), outroPhase.progress);
+        }
+    }
     drawFighter(fb, localSprite, stage.localX, animBeat,
-                std::max(localWindup, localImpact),
-                palColor(localImpact >= localWindup ? Pal::INK : Pal::WARN),
+                absorbing ? std::max(outroPhase.flash,
+                                     std::max(localWindup, localImpact))
+                          : std::max(localWindup, localImpact),
+                absorbing && outroPhase.flash >= std::max(localWindup, localImpact)
+                    ? palColor(Pal::ACCENT)
+                    : palColor(localImpact >= localWindup ? Pal::INK : Pal::WARN),
                 impactNudgePx(localHitBeat, -1) + hop,
                 fightPose(pl, localHitBeat >= 0 && localHitBeat < kImpactPeriod,
                           swinging && lastByLocal));
@@ -669,7 +703,14 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
         case Combat::Outcome::Fled: result = "DISENGAGED"; break;
         case Combat::Outcome::Ongoing: break;
     }
-    if (result) {
+    // The banner sits across the sprite region, which is exactly where a beaten rival
+    // comes apart — so while a dissolve is running it waits. The verdict is not being
+    // withheld: the rival visibly losing IS the verdict, and the words land the moment
+    // there is nothing left of it to cover. A fight with no outro (a loss, a duel, the
+    // Sim) is unaffected and banners immediately, as it always has.
+    const bool dissolving =
+        outro.kind != CombatOutro::Kind::None && outro.beat < kAbsorbTotalBeats;
+    if (result && !dissolving) {
         const int bannerY = kSpriteShelf - 53;   // centered over the sprite region
         fb.fillRect(0, bannerY, kActiveW, 22, palColor(Pal::TRACK));
         drawText(fb, (kActiveW - textWidth(result)) / 2, bannerY + 7, result,

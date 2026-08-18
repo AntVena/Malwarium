@@ -279,6 +279,10 @@ int g_failures = 0;
     RUN(test_wifi_never_awakens_when_not_hot)     \
     RUN(test_wifi_friendly_visit_grants_ally_buff) \
     RUN(test_wifi_auto_plays_out_after_hold)      \
+    RUN(test_wifi_discovery_kind)                 \
+    RUN(test_absorb_sweep_endpoints)              \
+    RUN(test_absorb_phase_clock)                  \
+    RUN(test_combat_outro_kind)                   \
     /*Backlog / — shop explore events + the two shop consumables */ \
     RUN(test_shop_event_buy_decrements)           \
     RUN(test_shop_buy_gated_when_broke)           \

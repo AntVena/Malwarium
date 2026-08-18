@@ -23,6 +23,14 @@ constexpr int kHeartbeatMs = 250;  // ~4fps event-driven repaint budget
 // only while active. Doesn't touch kHeartbeatMs itself, so turn pacing / idle / battery
 // cost everywhere else is unaffected; only combat's own redraw rate doubles.
 constexpr int kCombatAnimMs = kHeartbeatMs / 2;        // ~8fps while Nav::Combat is up
+// A procedural dissolve (FX_ABSORB / FX_SHRED) ticks faster still, and only for the ~2s
+// it is actually sweeping — the same "may tick faster while active" allowance the
+// corruption glitch takes, at the next step up. Nothing is stored per frame: the effect
+// is a pure function of the source pixel and the sweep position, so a smoother sweep
+// costs frames of CPU and SPI, never flash. A full 240x240 RGB565 blit is ~115KB, or
+// ~23ms at the panel's 40MHz write clock, so 16fps holds the bus around 40% busy while
+// a sweep runs and idle either side of it.
+constexpr int kFxAnimMs = kHeartbeatMs / 4;            // ~16fps while a dissolve sweeps
 
 // Idle-canvas vertical zones, in active (224) space.
 constexpr int kTrackH = 40;                       // top / bottom carousel tracks

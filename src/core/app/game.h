@@ -93,6 +93,14 @@ public:
     // steer/inspect which outcome the step-roll landed on.
     enum class WifiOutcome { SleepingGuardian, AwakenedGuardian, OpenCache, FriendlyVisit };
 
+    // What the last Wi-Fi event's real-network discovery actually was, as a value
+    // rather than only as the sentence resolveNetworkDiscovery() wrote. The Wi-Fi
+    // screen draws the pet taking the network in (FX_ABSORB), and how much of the
+    // glyph it gets through is the picture of the same reward the line states in
+    // words: a new network is eaten whole, one it is merely fond of is nibbled, its
+    // own home turf is left standing, and an empty queue has nothing to show at all.
+    enum class NetDiscovery : uint8_t { None, New, Fond, HomeTurf };
+
     // Which slice of the DECRYPTOGRAM pool a roll is allowed to land in. The VAULT
     // wants an unsolved quote (a prize to win) or, once there are none, a solved one to
     // re-run; the arcade cabinet only ever wants a solved one. Public so a test can
@@ -354,9 +362,24 @@ public:
     std::vector<ProseRow> tourneyScoutRows() const;
     std::vector<ProseRow> tourneyBriefRows() const;
     WifiOutcome wifiOutcome() const { return wifiOutcome_; }   // rolled sub-outcome
+    // Does the fighter currently in the rival seat field a move this pet does not own?
+    // The combat screen turns this into WHICH dissolve plays over the beaten rival
+    // (CombatOutro, core/ui/combat_screen.h), so a fight's last beat says whether that
+    // opponent had anything the pet hasn't got. Public so a gate can assert the answer
+    // rather than inspect pixels.
+    bool rivalFieldsUnknownMove() const;
+    // Does the fight on screen close with a dissolve over the beaten rival, and is that
+    // dissolve still running? The render side picks WHICH one plays (CombatOutro); this
+    // is the half the tick needs, because the result beat's hands-off auto-dismiss must
+    // not start counting until the effect has cleared the verdict banner's own space.
+    bool combatOutroEligible() const;
+    bool combatDissolveRunning() const;
     // The on-screen line resolveNetworkDiscovery() set on the last Wi-Fi event
     // (new/familiar/home-turf/empty-queue) — "" if none has resolved yet.
     const char* netDiscoveryFlavor() const { return netDiscoveryFlavor_; }
+    // The same beat as a value, for the screen's picture of it (and for a gate to
+    // assert against without reading the sentence).
+    NetDiscovery netDiscovery() const { return netDiscovery_; }
     int networksSeen() const { return networksSeen_; }         // lifetime, dedup'd
     // Scan-time sightings queued in RAM, not yet resolved into the SD-backed
     // NetworkLedger by an EXPL Wi-Fi event — how close the pet is to
@@ -1413,6 +1436,10 @@ public:
     // path — the only way a tool or test can populate the CREW home-network picker
     // without walking. `count` is the sighting tally the picker sorts on.
     void debugSeedNetworkLedger(uint64_t key, const char* name, int count);
+    // Put a move in the pet's OWNED set (tests / dump_frame): the real earn path is
+    // whatever eventually grants one, and there is none yet — this is how a scene puts
+    // a kit in a known state, e.g. to show the outro a rival with no new move gets.
+    void debugGrantMove(const char* id) { moveLoadout_.grant(id); }
     // Unlock a zone-completion Title without clearing its sector (tests /
     // dump_frame): the real path is a sector clear (unlockTitle). Auto-equips the
     // first Title, exactly like the real grant. No-op for an out-of-range sector.
@@ -1920,6 +1947,11 @@ private:
     // applyCombatResult, boss rounds in finishBossRound), so the filters that decide what
     // is teachable cannot drift apart between them. Returns whether anything was learned.
     bool rollEnemyMoveDrop(const Combatant& from, int dropPct);
+    // Could beating something that knows `m` actually teach it to THIS pet? The three
+    // filters rollEnemyMoveDrop applies, as one predicate, because the combat outro's
+    // absorb (rivalFieldsUnknownMove) is a PROMISE that the roll has something to give:
+    // if the two ever disagreed the screen would advertise a drop that cannot happen.
+    bool moveIsTeachable(const MoveDef* m) const;
     void startEncounter();                          // roll the malbeast, open the intro
     void onEncounter(const ButtonEvent& ev);        // Fight / Flee / Sinkhole
     void resolveFlee();                             // pre-fight escape roll
@@ -2608,6 +2640,18 @@ private:
     int exploreStepBeat_ = 0;  // heartbeats since the last auto-step (paces explore)
     int exploreEventBeat_ = 0; // heartbeats a full-screen explore event (Wi-Fi/Shop) has
                                // been held hands-off; auto-continues past its hold
+    // THE dissolve clock (FX_ABSORB / FX_SHRED), on the fast kFxAnimMs tick rather than
+    // the heartbeat — a sweep is redrawn every frame it is up, and stepping it at 4fps
+    // is what made it read as jumping rather than moving. One counter serves all three
+    // hosts because only one dissolve is ever on screen: the feeding modal, the Wi-Fi
+    // event, and the beaten rival's combat outro. Each resets it as its own sweep opens
+    // and gates its advance (game_core.cpp), so it always means beats-since-THIS-sweep.
+    //
+    // Deliberately NOT exploreEventBeat_ / combatBeat_: a press restarts those, and a
+    // dissolve animates something already resolved — replaying it under a player leaning
+    // on A would be a second helping that never happened.
+    int fxBeat_ = 0;
+    uint32_t lastFxMs_ = 0;
     char exploreFlavor_[32] = "";
     CombatEnemy encounterEnemy_;
     int encounterChoice_ = 0;
@@ -2805,6 +2849,7 @@ private:
     int pendingNetworkCount_ = 0;
     NetworkLedger networkLedger_;
     char netDiscoveryFlavor_[40] = "";
+    NetDiscovery netDiscovery_ = NetDiscovery::None;
     int emptyQueueStreak_ = 0;
 
     // Pet-to-pet discovery (game_peers.cpp, core/net/peer_link.h). The same

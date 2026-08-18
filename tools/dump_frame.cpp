@@ -69,12 +69,19 @@
 //        globe spins, so pass a `beats` count to land on a frame) · encounter [sinkhole] ·
 //        wildcombat (arm → Network Ping to a wild intro → live combat; sinkhole seeds
 //        a Sinkhole Trap so the 3rd intro option shows) · walk (alias of explore)
-// wifi (arm → ping to the Wi-Fi network event,; bounded search,
-//        auto-Sinkholes through any Wild encounters rolled along the way)
+// wifi [new|fond|hometurf] (arm → ping to the Wi-Fi network event,; bounded search,
+//        auto-Sinkholes through any Wild encounters rolled along the way. The three
+//        named forms seed the ledger so the discovery beat resolves that way, which is
+//        what picks how far the pet eats the network glyph — pass a `beats` count to
+//        land on a frame of the absorb; bare "wifi" is the empty-queue beat)
 // rank (Hacker Rank rank-up celebration on the idle badge,; crosses
 //        a rank via registerNetwork, then resolves one event to surface it)
 //        postencounter (a wild fight ridden to its own auto-dismiss, landing the
 //        frame on Nav::PostEncounter — the bandwidth/frag STATUS readout)
+// outro [known] (a wild fight ridden to a WIN and held ON the combat screen, so the
+//        frame lands inside the beaten rival's dissolve — pass a `beats` count to walk
+//        it. Bare "outro" shows whichever the pet's kit earns; "known" grants the
+//        rival's moves first, which turns the absorb back into a shred)
 // hacker (A+C → the Hacker face home) · hacker profile (the PROFILE
 // viewer) · hacker shop [hub] [row:<n>] [buy] (the SHOP; "hub" buys the MERGE HUB
 //        first, which is what reveals its two recipe rows, and row:<n> A-cycles
@@ -240,6 +247,16 @@ int main(int argc, char** argv) {
     if (feedId) {
         game.inventory().add(feedId, 2);
         game.debugUseItem(feedId);
+        // The modal opens at its own beat 0, after the heartbeat above has already run,
+        // so `beats` is re-spent inside it to land on a frame of the bite. Stepped on
+        // the DISSOLVE's clock (kFxAnimMs), which is what `beats` indexes for any scene
+        // showing an FX_ABSORB — a heartbeat step would sample every fourth frame.
+        uint32_t ft = static_cast<uint32_t>(beats) * kHeartbeatMs;
+        for (int i = 1; i <= beats; ++i) {
+            ft += kFxAnimMs;
+            game.tick(ft);
+            if (game.nav() != Game::Nav::ModalFeeding) break;   // it dismissed itself
+        }
     } else if (hasFlag(argc, argv, "rollback")) {
         // Rollback stat picker: the leveled pet (above) has points to shed;
         // open the picker directly through the real Use path.
@@ -800,7 +817,8 @@ int main(int argc, char** argv) {
               hasFlag(argc, argv, "walk") || hasFlag(argc, argv, "encounter") ||
               hasFlag(argc, argv, "wildcombat") || hasFlag(argc, argv, "wifi") ||
               hasFlag(argc, argv, "rank") || hasFlag(argc, argv, "shop") ||
-              hasFlag(argc, argv, "warp") || hasFlag(argc, argv, "postencounter")) {
+              hasFlag(argc, argv, "warp") || hasFlag(argc, argv, "postencounter") ||
+              hasFlag(argc, argv, "outro")) {
         // Explore-mode: arm sector 0 → the game drops back to the IDLE
         // habitat with the explore badge live. There is no walk screen; a step is
         // driven by the A+C control chord's Network Ping (A+C → A), which fires the
@@ -816,11 +834,23 @@ int main(int argc, char** argv) {
                 game.registerNetwork(bssid, "TestNet");
             }
         }
+        // "deep" opens the later sectors and arms one of them: sector 0's wild roster
+        // fields nothing but the innate Quick Jab, so anything that depends on the
+        // rival's KIT (the combat outro's two dissolves) has nothing to show there.
+        const bool deepSector = hasFlag(argc, argv, "deep");
+        if (deepSector)
+            for (int a = 0; a < 2; ++a) {
+                game.debugSetSectorCleared(a, true);
+                for (int s = 0; s < kExplSubAreas; ++s) game.debugSetSubCleared(a, s, true);
+            }
         enterSlot(SubmenuId::Expl);
-        // The ladder is nested: the first B expands sector[0], the second arms the
-        // sub-area the cursor lands on — and arming is what drops the game back to
+        // The ladder is nested: the first B expands the focused sector, the second arms
+        // the sub-area the cursor lands on — and arming is what drops the game back to
         // the IDLE habitat with the explore badge live.
-        game.onButton({Button::B, true, false});     // expand sector[0]
+        if (deepSector)
+            for (int i = 0; i < 2; ++i)
+                game.onButton({Button::A, true, false});   // walk to sector[2]
+        game.onButton({Button::B, true, false});     // expand the focused sector
         game.onButton({Button::B, true, false});     // arm sub-area[0] -> idle explore-mode
         auto ping = [&]{
             game.onButton({Button::A, true, true});  // A+C chord -> overlay, on PING
@@ -870,15 +900,42 @@ int main(int argc, char** argv) {
                 game.onButton({Button::B, true, false});  // Fight -> live combat
         } else if (hasFlag(argc, argv, "wifi")) {
             game.inventory().add("sinkhole_trap", 20);   // bypass wild encounters, free
+            // Which discovery the event resolves — the thing the pet does to the
+            // network glyph (FX_ABSORB). Bare "wifi" queues nothing, which is the
+            // empty-queue beat; the three named ones seed the ledger so the sighting
+            // below lands as new / fond / home-turf.
+            const uint64_t seen = 0x02'00'00'00'00'01ull;
+            if (hasFlag(argc, argv, "fond") || hasFlag(argc, argv, "hometurf")) {
+                const bool home = hasFlag(argc, argv, "hometurf");
+                // inTopN is a RANK, so "fond" needs a crowd above it to be outside the
+                // favourites and "hometurf" needs to sit at the head of one.
+                game.debugSeedNetworkLedger(seen, "THE_PROMISED_LAN", home ? 99 : 1);
+                for (int i = 0; i < kNetDiscoveryTopFavoritesCount + 2; ++i) {
+                    char nm[24];
+                    std::snprintf(nm, sizeof(nm), "NEIGHBOUR_%d", i);
+                    game.debugSeedNetworkLedger(seen + 0x100ull * (i + 1), nm, 20 + i);
+                }
+            }
+            if (hasFlag(argc, argv, "new") || hasFlag(argc, argv, "fond") ||
+                hasFlag(argc, argv, "hometurf")) {
+                const uint8_t bssid[6] = {0x02, 0x00, 0x00, 0x00, 0x00, 0x01};
+                game.registerNetwork(bssid, "THE_PROMISED_LAN");
+            }
             for (int i = 0; i < 400 && game.nav() != Game::Nav::Wifi; ++i) {
                 if (game.nav() == Game::Nav::Encounter) {
                     game.onButton({Button::A, true, false});  // Fight -> Flee
                     game.onButton({Button::A, true, false});  // Flee -> Sinkhole
                     game.onButton({Button::B, true, false});  // confirm -> back to idle
-                } else if (game.nav() == Game::Nav::Shop) {
+                } else if (game.nav() == Game::Nav::Shop ||
+                           game.nav() == Game::Nav::ModShop) {
                     game.onButton({Button::C, true, false});
                 } else ping();
             }
+            // The event opens at its own beat 0, so `beats` is re-spent inside it to
+            // land on a frame of the absorb — on the dissolve's clock, and stopping if
+            // the hands-off hold resolves the event off the screen underneath us.
+            for (int i = 1; i <= beats && game.nav() == Game::Nav::Wifi; ++i)
+                game.tick(t += kFxAnimMs);
         } else if (hasFlag(argc, argv, "rank")) {
             game.inventory().add("sinkhole_trap", 20);
             // Rank already crossed (device seam above). Fire steps until the first
@@ -917,6 +974,39 @@ int main(int argc, char** argv) {
                     game.onButton({Button::B, true, false});
                 } else ping();
             }
+        } else if (hasFlag(argc, argv, "outro")) {
+            // Ride a wild fight to a WIN and hold ON the combat screen for `beats`, so
+            // the frame lands inside the beaten rival's dissolve rather than past it.
+            // Which dissolve plays is the pet's own kit against the rival's
+            // (Game::rivalFieldsUnknownMove) — "known" grants the rival's moves first,
+            // which is what turns the absorb back into a shred.
+            const bool known = hasFlag(argc, argv, "known");
+            for (int i = 0; i < 600; ++i) {
+                if (game.nav() == Game::Nav::Wifi || game.nav() == Game::Nav::Encounter)
+                    game.onButton({Button::B, true, false});
+                else if (game.nav() == Game::Nav::Shop ||
+                         game.nav() == Game::Nav::ModShop)
+                    game.onButton({Button::C, true, false});
+                else if (game.nav() == Game::Nav::PostEncounter)
+                    game.onButton({Button::B, true, false});
+                else if (game.nav() == Game::Nav::Combat) {
+                    if (known)
+                        for (const MoveDef* m : game.combat().enemy().moves)
+                            if (m && m->id) game.debugGrantMove(m->id);
+                    for (int j = 0; j < 800 &&
+                            game.combat().outcome() == Combat::Outcome::Ongoing; ++j)
+                        game.tick(t += kHeartbeatMs);
+                    if (game.combat().outcome() == Combat::Outcome::Win) break;
+                    // A loss has no outro — keep walking until one is won.
+                    for (int k = 0; k < kExploreRevealHoldBeats + 2 &&
+                            game.nav() == Game::Nav::Combat; ++k)
+                        game.tick(t += kHeartbeatMs);
+                } else ping();
+            }
+            // The dissolve's own clock, held while the result beat is still up (
+            // finishCombat auto-dismisses it on the slower heartbeat).
+            for (int k = 0; k < beats && game.nav() == Game::Nav::Combat; ++k)
+                game.tick(t += kFxAnimMs);
         } else if (hasFlag(argc, argv, "postencounter")) {
             // Ride a wild fight to resolution, then let explore-mode's own
             // hands-off auto-dismiss land the frame on the

@@ -64,8 +64,10 @@ std::vector<const MoveDef*> ownedMoveList(const ContentRegistry& reg,
                                           int slot, bool showAll) {
     std::vector<const MoveDef*> out;
     for (const MoveDef* m : reg.allMoves()) {
-        // default isn't owned → excluded; #12: wrong-kind moves never list here.
-        if (!load.owns(m->id) || m->kind != requiredKind) continue;
+        // The innate is owned but not slottable (MoveLoadout::isInnate) — offering it
+        // would be offering to spend a slot on what an empty slot already falls back to.
+        // #12: wrong-kind moves never list here.
+        if (!load.owns(m->id) || load.isInnate(m->id) || m->kind != requiredKind) continue;
         if (!showAll) {
             if (!moveUnlockedAtStage(*m, petStage)) continue;
             if (!moveAllowedForLine(*m, petLine)) continue;

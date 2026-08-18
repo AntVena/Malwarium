@@ -421,6 +421,7 @@ void Game::startPvpBattle(uint32_t seed) {
     // pays nothing, so recording that it HAPPENED is the whole reward.
     unlockAchievement(ach::kFirstDuel);
     combatBeat_ = 0;
+    fxBeat_ = 0;
     combatTurnBeat_ = 0;
     combatHitBeat_ = 0;
     combatStatsPage_ = 0;

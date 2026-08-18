@@ -102,7 +102,9 @@ void Game::render(Framebuffer& fb) const {
         case Nav::Isolation: drawIsolation(fb); break;
         case Nav::ModalHatchReveal: drawHatchReveal(fb); break;
         case Nav::ModalFeeding:
-            drawFeedingModal(fb, pet, feedItem_, model_, feedBefore_, feedBeat_);
+            drawFeedingModal(fb, pet,
+                             feedItem_ ? itemIcon(registry_, feedItem_->id) : nullptr,
+                             feedItem_, model_, feedBefore_, feedBeat_, fxBeat_);
             break;
         case Nav::ModalEvolve: drawEvolve(fb); break;
         case Nav::ModalCSF: drawCSF(fb); break;
@@ -677,8 +679,19 @@ void Game::drawCombatScreen(Framebuffer& fb) const {
     // so it borrows the duel's caption for the opposite seat and drops the RUN hint.
     if (combatCaller_ == CombatCaller::Tourney) sides.rivalLabel = "RIVAL";
     sides.canRun = !duel && combatCaller_ != CombatCaller::Tourney;
+
+    // The beaten rival's outro, over the beats finishCombat() holds the result for.
+    // WHICH fights get one is combatOutroEligible() — shared with the tick, which has
+    // to hold the auto-dismiss back for the same fights. This side only picks which of
+    // the two dissolves plays.
+    CombatOutro outro;
+    if (combatOutroEligible()) {
+        outro.kind = rivalFieldsUnknownMove() ? CombatOutro::Kind::Absorb
+                                              : CombatOutro::Kind::Shred;
+        outro.beat = fxBeat_;
+    }
     drawCombat(fb, combat_, ps, es, beat_, combatAnimBeat_, combatHitBeat_,
-               combatStatsPage_, sides);
+               combatStatsPage_, sides, outro);
 }
 
 void Game::drawEncounterScreen(Framebuffer& fb) const {
@@ -689,7 +702,19 @@ void Game::drawEncounterScreen(Framebuffer& fb) const {
 }
 
 void Game::drawWifiScreen(Framebuffer& fb) const {
-    drawWifiEvent(fb, explSectorName(exploreSector_), wifiFlavor_, netDiscoveryFlavor_);
+    // The discovery beat's reward, as the thing the pet does to the network glyph.
+    // Untouched is not "nothing happened" — it is the pet declining its own home turf,
+    // which is what the TIRED OF line says.
+    WifiAbsorb absorb = WifiAbsorb::None;
+    switch (netDiscovery_) {
+        case NetDiscovery::New: absorb = WifiAbsorb::Whole; break;
+        case NetDiscovery::Fond: absorb = WifiAbsorb::Nibble; break;
+        case NetDiscovery::HomeTurf: absorb = WifiAbsorb::Untouched; break;
+        case NetDiscovery::None: break;
+    }
+    drawWifiEvent(fb, explSectorName(exploreSector_), wifiFlavor_, netDiscoveryFlavor_,
+                  pet_ ? registry_.creatureSprite(*pet_) : nullptr, absorb,
+                  beat_, fxBeat_);
 }
 
 void Game::drawShopScreen(Framebuffer& fb) const {

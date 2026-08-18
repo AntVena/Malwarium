@@ -42,6 +42,7 @@
 #include "core/net/update_manifest.h"
 #include "core/net/version_marker.h"
 #include "core/model/pvp_battle.h"
+#include "core/render/absorb.h"
 #include "core/render/canvas.h"
 #include "core/render/color.h"
 #include "core/render/font.h"      // textWidth — mirroring a screen's own layout maths

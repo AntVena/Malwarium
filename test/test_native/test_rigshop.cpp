@@ -102,7 +102,10 @@ static void winAutoExploreFight(Game& g) {   // resolve + auto-dismiss the wild 
     for (int i = 0; i < 400 && g.combat().outcome() == Combat::Outcome::Ongoing; ++i)
         g.tick(t += kHeartbeatMs);
     CHECK(g.combat().outcome() == Combat::Outcome::Win);
-    for (int i = 0; i < 40 && g.nav() == Game::Nav::Combat; ++i)  // auto-dismiss hold
+    // Bounded only so a stuck fight fails as a test rather than hanging — the loop
+    // exits the moment the nav leaves Combat. The hold is the reveal hold PLUS the
+    // beaten rival's dissolve, which the auto-dismiss waits out (combatDissolveRunning).
+    for (int i = 0; i < 200 && g.nav() == Game::Nav::Combat; ++i)
         g.tick(t += kHeartbeatMs);
 }
 void test_refarm_diminishing_rewards() {

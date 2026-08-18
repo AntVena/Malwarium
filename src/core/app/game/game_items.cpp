@@ -658,6 +658,7 @@ void Game::startFeeding(const ItemDef& d, bool fromLockout) {
     log_.push(LogEventType::ItemUsed, buf);
     feedItem_ = &d;
     feedBeat_ = 0;
+    fxBeat_ = 0;              // the bite's own dissolve clock
     feedFromLockout_ = fromLockout;
     rollPantrySpoilage();          // opening the bag is what disturbs the rest of it
     markSaveDirty();

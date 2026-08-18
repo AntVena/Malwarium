@@ -245,6 +245,7 @@ void Game::startSimBattle() {
     combat_.begin(p, e, Combat::Stakes::Safe, rng_, /*forceEnemyFirst=*/false,
                   /*carryPlayerHealth=*/-1, exploitUsesPerBattle());
     combatBeat_ = 0;
+    fxBeat_ = 0;
     combatTurnBeat_ = 0;
     nav_ = Nav::Combat;
     dirty_ = true;
@@ -634,6 +635,28 @@ void Game::finishCombat() {
     persistSave();
 }
 
+bool Game::combatOutroEligible() const {
+    // Only a WON fight against something the world owns. A duel or an arena bout is
+    // another operator's pet and a Sim dummy is a prop — neither is the game's to take
+    // apart, and neither answers the question the two dissolves exist to answer.
+    return !pvpFighting() && combat_.outcome() == Combat::Outcome::Win &&
+           (combatCaller_ == CombatCaller::Wild || combatCaller_ == CombatCaller::Boss);
+}
+
+bool Game::combatDissolveRunning() const {
+    return combatOutroEligible() && fxBeat_ < kAbsorbTotalBeats;
+}
+
+bool Game::rivalFieldsUnknownMove() const {
+    // Exactly the roll's own filter (moveIsTeachable), never a lookalike: the absorb is
+    // a promise that beating this thing COULD teach something, so anything the filter
+    // rejects — an already-owned move, the innate jab, another line's exclusive — must
+    // not light it up. A rival whose whole kit is rejected shreds, which is the truth.
+    for (const MoveDef* m : combat_.enemy().moves)
+        if (moveIsTeachable(m)) return true;
+    return false;
+}
+
 void Game::debugStartCombat(bool live, bool lethal) {
     if (!pet_) return;
     Combatant p = makePlayerCombatant(registry_, *pet_, moveLoadout_, loadout_);
@@ -653,6 +676,7 @@ void Game::debugStartCombat(bool live, bool lethal) {
                   exploitUsesPerBattle());
     combatCaller_ = CombatCaller::Sim;   // the dev hook always returns to the hub
     combatBeat_ = 0;
+    fxBeat_ = 0;
     combatTurnBeat_ = 0;
     nav_ = Nav::Combat;
     dirty_ = true;
@@ -795,6 +819,7 @@ void Game::startWildCombat(bool forceEnemyFirst) {
                   /*carryPlayerHealth=*/-1, exploitUsesPerBattle());
     combatCaller_ = CombatCaller::Wild;
     combatBeat_ = 0;
+    fxBeat_ = 0;
     combatTurnBeat_ = 0;
     nav_ = Nav::Combat;
     dirty_ = true;

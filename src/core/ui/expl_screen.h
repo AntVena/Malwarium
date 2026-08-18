@@ -201,13 +201,28 @@ void drawEncounterIntro(Framebuffer& fb, const char* enemyName, int diffPips,
                         int level, const SpriteData* enemySprite,
                         bool sinkholeAvailable, int choice, int beat);
 
+// How much of the network glyph the pet gets through on a Wi-Fi event — the picture of
+// the discovery beat's reward, matched to Game::NetDiscovery. Eaten whole for a network
+// it has never seen, nibbled for one it is merely fond of, left standing for its own
+// home turf, and absent entirely when the radio queued nothing to find.
+enum class WifiAbsorb { None, Whole, Nibble, Untouched };
+
 // Wi-Fi network event: a self-contained typed event that resolves in
 // place — the "NEW WI-FI NETWORK" banner + the rolled sub-outcome's flavor line +
 // a B-continue hint band. `discoveryLine` (may be empty) is the independent
 // real-network-discovery beat (Game::resolveNetworkDiscovery) drawn above the
-// banner — a second, unrelated flavor line on the same screen. No new art.
+// banner — a second, unrelated flavor line on the same screen.
+//
+// The pet stands on this screen the way it does on the walk it was interrupted from,
+// and takes the network in: `absorb` picks how far the ICON_SYS_WIFI glyph dissolves
+// (FX_ABSORB, core/render/absorb.h) over kAbsorbBeats of `beat`. The sweep is a second
+// channel for what `discoveryLine` already says in words, so a grayscale screen still
+// reads — and an untouched glyph is as much a statement as an eaten one.
+// `beat` is the heartbeat (the marquee's own pace); `fxBeat` is the faster dissolve
+// clock (Game::fxBeat_) the absorb is paced on.
 void drawWifiEvent(Framebuffer& fb, const char* sectorName,
-                   const char* outcomeLine, const char* discoveryLine);
+                   const char* outcomeLine, const char* discoveryLine,
+                   const SpriteData* pet, WifiAbsorb absorb, int beat, int fxBeat);
 
 // Storefront name accessors: each sector has an item shop AND a mod shop.
 // `shopName` is the item storefront's banner ("BYTE TO EAT" / "PIER-TO-PEER" /

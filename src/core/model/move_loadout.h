@@ -20,8 +20,17 @@ class ContentRegistry;
 
 class MoveLoadout {
 public:
-    // The always-available innate move id (outside the equip slots).
+    // The always-available innate move id. A pet OWNS it — it can use it, it is part of
+    // what this pet has, and anything reading ownership (the 'Pedia, the move-drop
+    // filter) should say so. What it is not is SLOTTABLE: it lives outside the equip
+    // slots as every empty slot's fallback, which is `isInnate` below rather than a
+    // hole in owns().
     const char* defaultMove() const { return defaultId_; }
+    // Is `id` this pet's innate move? The one place the "never occupies a slot" rule
+    // lives — the equip picker (ownedMoveList) and equip() both ask here, so ownership
+    // and slottability can be different questions without either being special-cased
+    // twice.
+    bool isInnate(const char* id) const;
 
     // Equipped move id in `slot` (0..kMaxMoveSlots-1), or nullptr if empty.
     const char* equipped(int slot) const;

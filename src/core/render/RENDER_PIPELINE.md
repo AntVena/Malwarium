@@ -37,12 +37,19 @@ DMA-blitted to the panel.
 
 ```
 1. BACKGROUND   clear / room backdrop
-2. SPRITE_BASE  current pet animation frame
-3. SPRITE_MODS  overlay pet-effects (e.g. the Worm line's Replication Ghost)
-4. CORRUPTION   frag-driven: channel-shift -> scanline-tear -> dropped-px -> glitch-blocks
-5. SCREEN_FX    full-screen overlays: evolution flash, Lockout band, critical-failure crash, fades
+2. SPRITE_MODS  pet-effects that sit UNDER the creature: FX_ABSORB's incoming blocks,
+                FX_SHRED's sliding scanlines
+3. SPRITE_BASE  current pet animation frame
+4. SPRITE_MODS  overlay pet-effects (e.g. the Worm line's Replication Ghost)
+5. CORRUPTION   frag-driven: channel-shift -> scanline-tear -> dropped-px -> glitch-blocks
+6. SCREEN_FX    full-screen overlays: evolution flash, Lockout band, critical-failure crash, fades
    (then UPSCALE + DMA blit to panel)
 ```
+
+SPRITE_MODS straddles SPRITE_BASE because a pet-effect's side of the creature is part of
+what it means: a Replication Ghost is a copy standing in front, and a block streaming into
+the pet has to pass BEHIND it or the creature reads as wearing its dinner rather than
+eating it. An effect names which side it takes when it joins the table.
 
 ## Composition rules
 

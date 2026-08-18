@@ -4,8 +4,10 @@
 #include <cstdio>
 #include <cstddef>
 
+#include "tunables.h"
 #include "core/content/content_tournament.h"
 #include "core/content/registry.h"
+#include "core/render/absorb.h"
 #include "core/render/canvas.h"
 #include "core/render/font.h"
 #include "core/render/framebuffer.h"
@@ -13,6 +15,7 @@
 #include "core/render/sprite.h"
 #include "core/ui/layout.h"
 #include "core/ui/widgets.h"
+#include "generated/assets.h"
 
 namespace mal {
 
@@ -581,23 +584,59 @@ void drawEncounterIntro(Framebuffer& fb, const char* enemyName, int diffPips,
     drawHintBand(fb, hint);
 }
 
+namespace {
+// The absorb stage: where the pet stands. The dissolve finishes well inside
+// kExploreRevealHoldBeats, so the pet is standing with its afterglow when the screen
+// auto-continues.
+constexpr int kWifiStageCy = 140;
+
+// How much of the glyph each discovery takes. A nibble is deliberately well short of
+// half: the network has to still be recognisably standing there afterwards, because
+// "some of it" is the whole reading.
+constexpr uint8_t kWifiNibbleBite = 96;
+
+uint8_t wifiAbsorbBite(WifiAbsorb a) {
+    switch (a) {
+        case WifiAbsorb::Whole: return 255;
+        case WifiAbsorb::Nibble: return kWifiNibbleBite;
+        case WifiAbsorb::Untouched: return 0;
+        case WifiAbsorb::None: break;
+    }
+    return 0;
+}
+}  // namespace
+
 void drawWifiEvent(Framebuffer& fb, const char* sectorName,
-                   const char* outcomeLine, const char* discoveryLine) {
+                   const char* outcomeLine, const char* discoveryLine,
+                   const SpriteData* pet, WifiAbsorb absorb, int beat, int fxBeat) {
     drawHeaderBand(fb, sectorName);
 
-    // The real-network-discovery beat (new / familiar / home-turf / empty-queue)
-    // sits in the gap above the guardian/cache/friendly banner — an independent
-    // line, drawn only when resolveNetworkDiscovery() actually set one.
+    // The three lines stack immediately under the header rule so the whole lower half
+    // of the canvas belongs to the pet and the glyph it is working on. The
+    // real-network-discovery beat (new / familiar / home-turf / empty-queue) is an
+    // independent line from the guardian/cache/friendly one, drawn only when
+    // resolveNetworkDiscovery() actually set it.
+    // The discovery line carries a real SSID, so it is the one that can outrun the
+    // canvas — it scrolls inside the margins rather than being centred off both edges.
     if (discoveryLine && discoveryLine[0])
-        drawText(fb, (kActiveW - textWidth(discoveryLine)) / 2, 50, discoveryLine,
-                 palColor(Pal::INK_DIM));
+        drawTextMarquee(fb, kMargin, 32, kActiveW - 2 * kMargin, discoveryLine,
+                        palColor(Pal::INK_DIM), beat, true);
 
     const char* banner = "NEW WI-FI NETWORK";
-    drawText(fb, (kActiveW - textWidth(banner)) / 2, 90, banner,
+    drawText(fb, (kActiveW - textWidth(banner)) / 2, 50, banner,
              palColor(Pal::ACCENT));
     if (outcomeLine && outcomeLine[0])
-        drawText(fb, (kActiveW - textWidth(outcomeLine)) / 2, 106, outcomeLine,
+        drawText(fb, (kActiveW - textWidth(outcomeLine)) / 2, 68, outcomeLine,
                  palColor(Pal::INK_DIM));
+
+    // The pet, and the network going into it. WifiAbsorb::None had nothing queued to
+    // find, so there is no glyph to draw at all — the pet just stands there, which is
+    // exactly what "WANTS NEW NETWORKS..." means.
+    const AbsorbPhase phase = absorbPhase(fxBeat, kAbsorbLeadBeats, kAbsorbBeats,
+                                          wifiAbsorbBite(absorb));
+    drawPetAbsorbing(fb, pet, kActiveW / 2, kWifiStageCy,
+                     absorb == WifiAbsorb::None ? nullptr : &ASSET_ICON_SYS_WIFI,
+                     palColor(Pal::ACCENT), phase, beat);
 
     const char* hint = "B CONTINUE";
     drawHintBand(fb, hint);

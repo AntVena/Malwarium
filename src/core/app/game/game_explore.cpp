@@ -560,6 +560,20 @@ void Game::grantMod(const char* id) {
     markSaveDirty();
 }
 
+bool Game::moveIsTeachable(const MoveDef* m) const {
+    // The innate is in the owned set like anything else, so one check covers it: every
+    // tier-1 wild swings it and every gauntlet opens with it, and none of that is a
+    // move to be "learned" by a pet that already has it.
+    if (!m || moveLoadout_.owns(m->id)) return false;
+    // A move exclusive to ANOTHER line is skipped rather than dropped: the equip gate
+    // would refuse it anyway (MoveDef::line), so granting it would be a reward the pet
+    // can never field. Generic moves (line == nullptr) drop to everyone, which is what
+    // makes an area's apex rider worth hunting whatever you hatched.
+    if (m->line && (!pet_ || !pet_->line || std::strcmp(m->line, pet_->line) != 0))
+        return false;
+    return true;
+}
+
 bool Game::rollEnemyMoveDrop(const Combatant& from, int dropPct) {
     // You learn a move by BEATING something that knows it. The pool is the defeated
     // enemy's whole KIT — every move it could have used, not the ones it happened to
@@ -576,19 +590,7 @@ bool Game::rollEnemyMoveDrop(const Combatant& from, int dropPct) {
     if (static_cast<int>((rng_ >> 16) % 100) >= dropPct) return false;
     std::vector<const char*> candidates;
     auto consider = [&](const MoveDef* m) {
-        if (!m || moveLoadout_.owns(m->id)) return;
-        // The innate jab is never "learned": it sits outside the owned pool and outside
-        // the slots, so owns() says no about a move every pet already has. Every tier-1
-        // wild swings it, and the first round of every gauntlet opens with it.
-        if (const char* innate = moveLoadout_.defaultMove())
-            if (std::strcmp(m->id, innate) == 0) return;
-        // A move exclusive to ANOTHER line is skipped rather than dropped: the equip
-        // gate would refuse it anyway (MoveDef::line), so granting it would be a reward
-        // the pet can never field. Generic moves (line == nullptr) drop to everyone,
-        // which is what makes an area's apex rider worth hunting whatever you hatched.
-        if (m->line &&
-            (!pet_ || !pet_->line || std::strcmp(m->line, pet_->line) != 0))
-            return;
+        if (!moveIsTeachable(m)) return;
         for (const char* c : candidates)
             if (std::strcmp(c, m->id) == 0) return;              // a kit may repeat
         candidates.push_back(m->id);
@@ -651,6 +653,7 @@ void Game::startBossRound(int carryHealth) {
                  carryHealth, exploitUsesPerBattle());
     combatCaller_ = CombatCaller::Boss;
     combatBeat_ = 0;
+    fxBeat_ = 0;
     combatTurnBeat_ = 0;
     nav_ = Nav::Combat;
     dirty_ = true;
