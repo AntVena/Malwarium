@@ -700,12 +700,12 @@ also keeps its word (`CombatVsRow::tag`), which is what draws if a master goes m
 |---|---|---|---|---|---|
 | `ICON_FIGHT_HP` | HP | heart | `calm` | ☑ | `/assets/icons/ICON_FIGHT_HP.png` |
 | `ICON_FIGHT_PWR` | PWR | sword, point up | `team-red` | ☑ | `/assets/icons/ICON_FIGHT_PWR.png` |
-| `ICON_FIGHT_DEF` | DEF | shield, filled — straight-sided so it does not read as the heart | `team-blue` | ☑ | `/assets/icons/ICON_FIGHT_DEF.png` |
+| `ICON_FIGHT_DEF` | DEF | brick wall — DEF is the STANDING damage cut, so it is the structure that is always there | `team-blue` | ☑ | `/assets/icons/ICON_FIGHT_DEF.png` |
 | `ICON_FIGHT_SPD` | SPD | double chevron | `warn` | ☑ | `/assets/icons/ICON_FIGHT_SPD.png` |
 | `ICON_FIGHT_STUN` | STUN | squared spiral | `warn` | ☑ | `/assets/icons/ICON_FIGHT_STUN.png` |
 | `ICON_FIGHT_DOT` | DOT | three bubbles, three sizes | `hot` | ☑ | `/assets/icons/ICON_FIGHT_DOT.png` |
 | `ICON_FIGHT_SHLD` | SHLD | bubble with a highlight — the Obfuscation pool | `team-blue` | ☑ | `/assets/icons/ICON_FIGHT_SHLD.png` |
-| `ICON_FIGHT_GRD` | GRD | brick wall — the one-shot brace, deliberately NOT a second shield | `team-blue` | ☑ | `/assets/icons/ICON_FIGHT_GRD.png` |
+| `ICON_FIGHT_GRD` | GRD | shield, raised — GRD is the ONE-SHOT brace, spent on the next hit, which is what raising a shield is. Straight-sided so it does not read as the heart | `team-blue` | ☑ | `/assets/icons/ICON_FIGHT_GRD.png` |
 | `ICON_FIGHT_RNSM` | RNSM | a note with a figure on it | `calm` | ☑ | `/assets/icons/ICON_FIGHT_RNSM.png` |
 | `ICON_FIGHT_BKUP` | BKUP | floppy — shutter above, label below | `ink-dim` | ☑ | `/assets/icons/ICON_FIGHT_BKUP.png` |
 | `ICON_FIGHT_TRAP` | TRAP | snare jaws | `ink-dim` | ☑ | `/assets/icons/ICON_FIGHT_TRAP.png` |

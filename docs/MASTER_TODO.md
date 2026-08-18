@@ -30,6 +30,20 @@ building it up organically.
 
 **Capture arming costs ~70KB and the AP ~58KB**, against ~126KB free with the radio idle. The device works, and the save no longer needs a big contiguous block, but that was the only thing standing on this — anything else that grows will hit the same wall. Worth a pass at what the capture path actually needs. | `net_capture.h`'s `powerUp` (`esp_wifi_init` + promiscuous + the pcap SD buffers). | M | Measured on device, not estimated: `[ap] down free=126408` → `[cap] armed free=56188`. |
 
+**A worm copy that already exists gets stronger when a NEW one spawns.** An attacker's
+contribution is `r.attack * wormCrossMult(defenderCount)` (`combat.cpp`'s `wormReplicaDamage`),
+so putting a defender on the board multiplies what every attacker already out is worth — and a
+defender's Health is the mirror of the same rule. Everything else about a copy is snapshotted
+at spawn: its `attack` banks the parent's `powerMultPct` as it stood, so a Lockout stack landed
+afterwards does not reach it. The cross-multiplier is the one thing that reaches backwards, and
+it is what makes spawn ORDER the decision the line is played on — which may be the point, or may
+be the one place the copies stop behaving like the separate things they otherwise are. Decide
+which, and if it is the latter, bank the multiplier into each copy at spawn like everything
+else. | `combat.cpp`'s `wormCrossMult`/`wormReplicaDamage`/`wormDefenderHealth`;
+`tunables.h`'s `kWormReplicaMultFloor`. | M | This is a BALANCE-shaped question in a pre-1.0
+project, so it is on the board because it is a model question ("is a copy a separate thing"),
+not because the numbers want tuning. |
+
 **A Packet Wraith and a Cache Ghoul at the same rung are still one fight.** `wildMalbeast` gives
 tiers 1/2/3 `{quick_jab}` / `{quick_jab, packet_storm}` / `{packet_storm, fork_bomb}`, and the
 sub-area ladder in `applyWildSubAreaRamp` overrides with the same handful again — both keyed by

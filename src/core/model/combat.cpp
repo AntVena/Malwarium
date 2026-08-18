@@ -195,6 +195,13 @@ static bool statsFloored(const Combatant& c) {
     return c.crewExploit.holds(CrewExploitKind::ResetStatsAndFloor);
 }
 
+// Whether a side replicates — the Worm line's passive family today. Kept in one place
+// because several hooks ask, from applyEffect down; each reads the flag its combatant
+// was built with.
+static bool replicates(const Combatant& c) {
+    return hasLinePassive(c.linePassives, LinePassive::Replication);
+}
+
 void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
                          bool byPlayer, int moveIdx) {
     target.mirrorFired = false;
@@ -628,6 +635,12 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
         // holder's pool. The copy is additive on whatever the holder already had, so a
         // fighter that braced this turn keeps its own on top of the one it stole.
         const int braced = mv->power * actor.defenseMultPct / 100;
+        // Whether this cast is going to put a DEFENDER on the board instead. A Defend's
+        // replicaSpawnPct is 100 on every row that has one, so a free slot is the whole
+        // of the question — and it has to be asked HERE, before the brace, even though
+        // the spawn itself happens after this resolves.
+        const bool spawnsDefender = mv->replicaSpawnPct > 0 && replicates(actor) &&
+                                    actor.wormReplicaCount < kWormReplicaSlots;
         if (mv->shieldPool > 0) {
             actor.shieldHp += braced;
             // Ratchet the frenzy high-water mark on every top-up (chooseMove reads it).
@@ -640,6 +653,13 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
                 if (mirror.shieldHp > mirror.phishShieldPeak)
                     mirror.phishShieldPeak = mirror.shieldHp;
             }
+        } else if (spawnsDefender) {
+            // A Worm's defend does not brace: the BODY it is about to put on the board is
+            // the move (rollWormSpawn, after this resolves), and the row's `power` exists
+            // only so the turn still does something when every replication slot is full.
+            // Bracing as well would pay twice for one cast — and would put a guard on a
+            // fighter whose whole defensive story the player reads off the copies standing
+            // in front of it.
         } else {
             actor.guard += braced;
             if (mitmCopy) mirror.guard += braced;
@@ -689,12 +709,6 @@ bool Combat::bubbleBiteRolls(Stage stage) {
     const int pct = (si >= 0 && si < 4) ? kPhishingBiteChancePctByStage[si] : 0;
     if (pct <= 0) return false;
     return static_cast<int>(rng() % 100) < pct;
-}
-
-// Whether a side replicates — the Worm line's passive family today. Kept in one place
-// because three hooks below ask; each reads the flag its combatant was built with.
-static bool replicates(const Combatant& c) {
-    return hasLinePassive(c.linePassives, LinePassive::Replication);
 }
 
 void Combat::syncWormSpeed() {

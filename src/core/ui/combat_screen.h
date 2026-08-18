@@ -157,6 +157,25 @@ struct CombatVsGrid {
 // what falls off the bottom should be the least of it.
 CombatVsGrid combatVsGrid(const Combatant& local, const Combatant& rival, bool localGuard);
 
+// What a fighter is UNDER, as a strip of glyphs the combat screen draws beneath it —
+// so a condition is visible in the fight itself and not only to someone who opened the
+// panel. Countable things repeat their glyph rather than printing a number, the same
+// dual-coding the Sealed Cache tiers use (assets/README.md's tinting rule).
+//
+// This is why the panel does not carry them: a row there would be a second, worse copy
+// of what the screen is already showing. What stays on the panel is the things whose
+// VALUE is the decision and cannot be counted at a glance — how much rot, for how many
+// turns, how big a bill and when it lands.
+//
+// Worm replicas are absent on purpose: they are already drawn as BODIES on the shelf
+// (ui/worm_replicas.h), which is the same fact said better.
+struct CombatStatusStrip {
+    static constexpr int kCap = 8;
+    CombatVsKind k[kCap] = {};
+    int n = 0;
+};
+CombatStatusStrip combatStatusStrip(const Combatant& c, bool withGuard);
+
 // The 8x8 glyph that names a VS row — one FONT CELL, so it sits in a text row without
 // changing the row's height, which is the whole reason this tier exists (the icon tiers
 // in VISUAL_LANGUAGE.md 3.1 all stand taller than the 11px the panel gives a row, so an

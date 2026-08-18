@@ -378,6 +378,25 @@ void drawPassiveStrip(Framebuffer& fb, const Combatant& c, int x, int y, int w, 
 
 } // namespace
 
+CombatStatusStrip combatStatusStrip(const Combatant& c, bool withGuard) {
+    CombatStatusStrip s;
+    auto add = [&](CombatVsKind k, int count) {
+        for (int i = 0; i < count && s.n < CombatStatusStrip::kCap; ++i) s.k[s.n++] = k;
+    };
+    // Ordered by how much it changes the next exchange, because the strip is drawn into
+    // a fighter's own width and a wide one runs out of room before a narrow one does.
+    if (c.lockedTurnsLeft > 0) add(CombatVsKind::Stun, 1);
+    if (c.dotTurnsLeft > 0) add(CombatVsKind::Dot, 1);
+    if (c.shieldHp > 0) add(CombatVsKind::Shield, 1);
+    if (withGuard && c.guard > 0) add(CombatVsKind::Guard, 1);
+    if (c.ransomPool > 0) add(CombatVsKind::Ransom, 1);
+    // The two countable ones. A trap pile and a carried drive are small numbers with a
+    // hard ceiling, so repeating the glyph says the count without spending a digit.
+    add(CombatVsKind::Trap, c.trojanTrapCount);
+    if (c.itemShield) add(CombatVsKind::Backup, 1);
+    return s;
+}
+
 const SpriteData* combatVsGlyph(CombatVsKind kind) {
     switch (kind) {
         case CombatVsKind::Health:  return &ASSET_ICON_FIGHT_HP;
@@ -517,25 +536,10 @@ CombatVsGrid combatVsGrid(const Combatant& local, const Combatant& rival,
     rnsmCell(b, sizeof(b), rival);
     pair(CombatVsKind::Ransom, "RNSM", local.ransomPool > 0 || rival.ransomPool > 0);
 
-    // --- What is merely standing there ----------------------------------------------
-    auto bkupCell = [](char* out, size_t cap, const Combatant& c) {
-        // Read from DIFFERENT fields because spending the drive clears itemShield, so
-        // testing one flag for both states would never render USED at all.
-        if (c.itemShield) std::snprintf(out, cap, "RDY");
-        else if (c.backupUse != Combatant::BackupUse::None) std::snprintf(out, cap, "USED");
-        else out[0] = '\0';
-    };
-    bkupCell(a, sizeof(a), local);
-    bkupCell(b, sizeof(b), rival);
-    pair(CombatVsKind::Backup, "BKUP", a[0] || b[0]);
-
-    num(a, sizeof(a), local.trojanTrapCount, local.trojanTrapCount > 0);
-    num(b, sizeof(b), rival.trojanTrapCount, rival.trojanTrapCount > 0);
-    pair(CombatVsKind::Trap, "TRAP", local.trojanTrapCount > 0 || rival.trojanTrapCount > 0);
-
-    num(a, sizeof(a), local.wormReplicaCount, local.wormReplicaCount > 0);
-    num(b, sizeof(b), rival.wormReplicaCount, rival.wormReplicaCount > 0);
-    pair(CombatVsKind::Copy, "COPY", local.wormReplicaCount > 0 || rival.wormReplicaCount > 0);
+    // A carried drive, a trap pile and the worm copies are NOT rows here. Each is a
+    // presence or a small count, which the fighter's own status strip says by showing
+    // (and repeating) its glyph, and the copies are bodies on the shelf already. A row
+    // would be a second, worse copy of something the screen is not hiding.
     return g;
 }
 
@@ -712,6 +716,28 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
     drawReplicaRow(fb, pl, swinging && lastByLocal, kill, killOnLocal ? hitBeat : -1,
                    /*frontX=*/stage.localX + stage.localW, /*stride=*/-kReplicaSlotW,
                    kSpriteShelf, animBeat);
+
+    // Each fighter's STATUS STRIP, on the shelf under its feet: every condition it is
+    // under, as the same glyph the panel's VS grid names that row with, so the two say
+    // one thing in one vocabulary. This is what lets the panel stop carrying a drive, a
+    // trap pile or the worm copies — none of them was ever hidden, and a row spelling out
+    // what the screen is already showing is a row spent twice.
+    //
+    // Seated at the fighter's own band and clipped to it: a strip that ran past its
+    // owner's width would read as belonging to whoever it reached.
+    auto statusStrip = [&](const Combatant& c, bool withGuard, int bandX, int bandW) {
+        const CombatStatusStrip st = combatStatusStrip(c, withGuard);
+        const int cell = kFontAdvance;
+        int x = bandX < 0 ? 0 : bandX;                     // an oversized cell may crop
+        const int right = bandX + bandW;
+        for (int i = 0; i < st.n && x + cell <= right && x + cell <= kActiveW; ++i) {
+            if (const SpriteData* g = combatVsGlyph(st.k[i]))
+                drawSpriteTinted(fb, *g, 0, x, kSpriteShelf + 1, combatVsColor(st.k[i]));
+            x += cell;
+        }
+    };
+    statusStrip(pl, /*withGuard=*/true, stage.localX, stage.localW);
+    statusStrip(en, /*withGuard=*/false, stage.rivalX, stage.rivalW);
 
     // The strike mark, in the lane the seating reserved for it: who is hitting whom, in
     // the direction the blow travels. Drawn over the replicas, since a copy taking the

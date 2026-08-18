@@ -1856,9 +1856,33 @@ void test_combat_panel_reports_every_live_state() {
     const Combatant clean = makeEnemyCombatant(r, simDummy(0));
     const CombatVsGrid g = combatVsGrid(c, clean, /*localGuard=*/true);
     for (const char* tag : {"HP", "PWR", "DEF", "SPD", "STUN", "DOT", "SHLD", "GRD",
-                            "RNSM", "BKUP", "TRAP", "COPY"})
+                            "RNSM"})
         CHECK(g.has(tag));
     CHECK(g.n <= CombatVsGrid::kCap);        // the set fits its own store, unclipped
+
+    // ...and the rest reaches the operator on the FIGHTER, as its status strip — which is
+    // why they are not grid rows. Both surfaces are swept because "the operator cannot
+    // see it mid-fight" is the defect either of them can carry, and moving a fact from
+    // one to the other must not be a way to lose it.
+    const CombatStatusStrip st = combatStatusStrip(c, /*withGuard=*/true);
+    auto onStrip = [&](CombatVsKind k) {
+        for (int i = 0; i < st.n; ++i) if (st.k[i] == k) return true;
+        return false;
+    };
+    CHECK(onStrip(CombatVsKind::Backup));
+    CHECK(onStrip(CombatVsKind::Trap));
+    // A countable one repeats its glyph rather than printing a digit, so the count IS the
+    // representation and a strip that showed one trap for a pile of two would be wrong.
+    int traps = 0;
+    for (int i = 0; i < st.n; ++i) if (st.k[i] == CombatVsKind::Trap) ++traps;
+    CHECK(traps == c.trojanTrapCount);
+    // Worm copies are on NEITHER surface on purpose: they are drawn as bodies on the
+    // shelf (drawReplicaRow, ui/worm_replicas.h), which is the same fact said better, so
+    // a glyph for them would be the third copy of one thing.
+    CHECK(!g.has("COPY"));
+    CHECK(!onStrip(CombatVsKind::Copy));
+    CHECK(c.wormReplicaCount > 0);           // ...and the fixture really does have some
+    CHECK(st.n <= CombatStatusStrip::kCap);
     // The deltas ride ON the vital they moved rather than as rows of their own — that
     // consolidation is what stopped a loaded fight from overrunning the box.
     for (int i = 0; i < g.n; ++i) {
