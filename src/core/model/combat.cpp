@@ -195,6 +195,13 @@ static bool statsFloored(const Combatant& c) {
     return c.crewExploit.holds(CrewExploitKind::ResetStatsAndFloor);
 }
 
+// The multiplier one kind of replica takes from the other's count at the moment it
+// spawns. Both kinds bank it (wormAttackerDamage / wormDefenderHealth), so it is read
+// once per copy and never again.
+static int wormCrossMult(int otherKindCount) {
+    return otherKindCount < kWormReplicaMultFloor ? kWormReplicaMultFloor : otherKindCount;
+}
+
 // Whether a side replicates — the Worm line's passive family today. Kept in one place
 // because several hooks ask, from applyEffect down; each reads the flag its combatant
 // was built with.
@@ -751,8 +758,7 @@ void Combat::rollWormSpawn(Combatant& actor, const MoveDef* mv) {
         // Bad-branch worm's copies hit like it does.
         r.maxHealth = 1;
         r.health = 1;
-        r.attack = mv->power * mv->replicaPowerPct / 100 * actor.powerMultPct / 100;
-        if (r.attack < 1) r.attack = 1;
+        r.attack = wormAttackerDamage(actor, mv->power, mv->replicaPowerPct);
     }
     ++actor.wormReplicaCount;
 }
@@ -1210,16 +1216,19 @@ int wormReplicaCount(const Combatant& c, bool defenders) {
     return n;
 }
 
-// The multiplier one kind of replica takes from the other's live count.
-static int wormCrossMult(int otherKindCount) {
-    return otherKindCount < kWormReplicaMultFloor ? kWormReplicaMultFloor : otherKindCount;
+int wormAttackerDamage(const Combatant& parent, int movePower, int pct) {
+    // A share of the move that made it, scaled by the same attack lean the parent's own
+    // damage is scaled by — so a Bad-branch worm's copies hit like it does — and by the
+    // defenders standing at this moment. Banked, exactly as a defender's Health is.
+    const int mult = wormCrossMult(wormReplicaCount(parent, /*defenders=*/true));
+    int dmg = movePower * pct / 100 * parent.powerMultPct / 100 * mult;
+    return dmg < 1 ? 1 : dmg;
 }
 
 int wormReplicaDamage(const Combatant& c) {
-    const int mult = wormCrossMult(wormReplicaCount(c, /*defenders=*/true));
     int total = 0;
     for (int i = 0; i < c.wormReplicaCount; ++i)
-        if (!c.wormReplicas[i].defender) total += c.wormReplicas[i].attack * mult;
+        if (!c.wormReplicas[i].defender) total += c.wormReplicas[i].attack;
     return total;
 }
 

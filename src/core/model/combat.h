@@ -88,9 +88,11 @@ struct WormReplica {
     bool defender = false;  // spawned by a Defend move (soaks); else an attacker (piles on)
     int health = 0;
     int maxHealth = 0;
-    // An attacker's BASE damage per parent swing, banked at spawn; 0 on a defender. The
-    // live contribution multiplies this by the defender count at the moment of the swing
-    // (wormReplicaDamage), which is why the base is what's stored.
+    // An attacker's damage per parent swing, banked whole at spawn; 0 on a defender.
+    // Whole means whole: the parent's attack lean AND the defenders standing when it
+    // spawned are already in this number (wormAttackerDamage), so nothing that happens
+    // to the parent or the board afterwards moves it. A copy is a separate thing, and a
+    // separate thing does not get stronger because a later one arrived.
     int attack = 0;
 };
 
@@ -312,12 +314,21 @@ int wormReplicaCount(const Combatant& c, bool defenders);
 // 0 for every combatant that has never pooled a shield past its own max Health.
 int phishFrenzyLeanPct(const Combatant& c);
 
-// The damage `c`'s ATTACKER replicas add to one of its parent's swings: each attacker's
-// banked base times the live DEFENDER count (floored at kWormReplicaMultFloor, so a
-// board with no defenders still pays each attacker its base). Multiplied LIVE rather
-// than banked at spawn, because "the number of defenders currently summoned" is the
-// dial the player is actually turning — spawning a defender pumps every attacker
-// already out, and losing one deflates them again.
+// What one ATTACKER is worth, at the moment it spawns: its share of the move that made
+// it, times the parent's attack lean, times the defenders already standing (floored at
+// kWormReplicaMultFloor, so a board with no cover still pays it its base).
+//
+// The cross-multiplier is read HERE and never again, which is what makes spawn ORDER the
+// decision the line is played on: cover first and the teeth that follow are worth more,
+// teeth first and they are worth their base forever. Multiplying live instead would
+// reach backwards and pump copies that are already on the board, which is the one way a
+// copy would stop behaving like the separate thing it otherwise is — it has its own
+// Health, its own damage and its own chance of being hit, and nothing that happens to
+// the parent after it spawns reaches it.
+int wormAttackerDamage(const Combatant& parent, int movePower, int pct);
+
+// The damage `c`'s ATTACKER replicas add to one of its parent's swings — the sum of what
+// each banked when it spawned, and nothing more.
 int wormReplicaDamage(const Combatant& c);
 
 // A DEFENDER's Health at the moment it spawns: `pct` of the parent's maxHealth times the

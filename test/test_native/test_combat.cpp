@@ -1689,24 +1689,38 @@ void test_worm_shared_resources_speed() {
 }
 
 // Shared Resources (Worm), the ARITHMETIC half — the pure functions the balance is
-// actually written in (combat.h). Each kind's magnitude comes from the OTHER kind's live
-// count, floored at kWormReplicaMultFloor so the first copy of either sort is worth its
+// actually written in (combat.h). Each kind's magnitude comes from the OTHER kind's count
+// AT SPAWN, floored at kWormReplicaMultFloor so the first copy of either sort is worth its
 // base rather than nothing; incoming attacks draw a victim by weight, defenders hardest.
 void test_worm_replica_arithmetic() {
     Combatant w;
     w.maxHealth = 100;
+    w.powerMultPct = 100;
     CHECK(wormReplicaDamage(w) == 0);                     // an empty board adds nothing
 
     // One attacker, no defenders: the floor pays it its base and no more.
     w.wormReplicas[w.wormReplicaCount++] = {/*defender=*/false, 1, 1, /*attack=*/5};
     CHECK(wormReplicaCount(w, /*defenders=*/false) == 1);
     CHECK(wormReplicaDamage(w) == 5);
-    // Two defenders behind it double that attacker, live — this is the line's whole
-    // strategy, and it is why spawning cover makes the teeth hurt more.
+    // Cover arriving AFTERWARDS does not reach it. A copy banks what it is worth when it
+    // spawns and keeps it: it has its own Health, its own damage and its own chance of
+    // being hit, and a later arrival is a different thing, not a buff to this one.
     w.wormReplicas[w.wormReplicaCount++] = {/*defender=*/true, 20, 20, 0};
     w.wormReplicas[w.wormReplicaCount++] = {/*defender=*/true, 20, 20, 0};
     CHECK(wormReplicaCount(w, /*defenders=*/true) == 2);
-    CHECK(wormReplicaDamage(w) == 10);
+    CHECK(wormReplicaDamage(w) == 5);
+
+    // What the cover DOES buy is worth more teeth from here on, which is the same dial
+    // read at the moment it matters — so spawn ORDER is the decision, not spawn count.
+    Combatant uncovered;
+    uncovered.maxHealth = 100;
+    uncovered.powerMultPct = 100;
+    const int alone = wormAttackerDamage(uncovered, /*movePower=*/10, /*pct=*/60);
+    const int behindCover = wormAttackerDamage(w, /*movePower=*/10, /*pct=*/60);
+    CHECK(alone == 6);                                    // 10 * 60% * 100% * floor(1)
+    CHECK(behindCover == 12);                             // ...times the two defenders
+    // ...and a copy is never worth nothing, however the shares round down.
+    CHECK(wormAttackerDamage(uncovered, /*movePower=*/1, /*pct=*/1) >= 1);
 
     // A defender's Health is the mirror image: a share of the PARENT's max, times the
     // attackers already standing (and the same floor when there are none).
@@ -1762,9 +1776,11 @@ void test_worm_replication_in_combat() {
     for (int i = 0; i < 8; ++i) c.step();
     CHECK(c.player().wormReplicaCount == kWormReplicaSlots);
 
-    // Attacking copies pile onto the parent's swing, multiplied by the defenders behind
-    // them. Built directly on the Combatant so the arithmetic is read off one swing
-    // rather than through a run of spawn rolls.
+    // Attacking copies pile onto the parent's swing, each adding exactly what it banked
+    // when it spawned. Built directly on the Combatant so the arithmetic is read off one
+    // swing rather than through a run of spawn rolls — which is also what makes the
+    // banking visible here: these copies are handed their `attack` outright, so cover
+    // standing beside them at swing time is cover that arrived too late to matter.
     auto swing = [&](int attackers, int defenders) {
         Combatant w = mkCombatant(r, "W", 100, 10, {"quick_jab"});   // 6 power
         w.setLine(r, "worm");
@@ -1778,8 +1794,15 @@ void test_worm_replication_in_combat() {
         return 100 - f.enemy().health;
     };
     CHECK(swing(0, 0) == 6);                         // the parent alone is feeble
-    CHECK(swing(1, 0) == 10);                        // + one attacker at the floor
-    CHECK(swing(1, 2) == 14);                        // + that attacker doubled
+    CHECK(swing(1, 0) == 10);                        // + one attacker's banked 4
+    CHECK(swing(1, 2) == 10);                        // cover that arrived later adds none
+    // What cover DOES buy is the next copy: banked behind two defenders, one attacker is
+    // worth double, and it keeps that for the rest of the fight however the board moves.
+    Combatant covered = mkCombatant(r, "W", 100, 10, {"quick_jab"});
+    covered.powerMultPct = 100;
+    for (int i = 0; i < 2; ++i)
+        covered.wormReplicas[covered.wormReplicaCount++] = {true, 20, 20, 0};
+    CHECK(wormAttackerDamage(covered, /*movePower=*/10, /*pct=*/20) == 4);   // 2 * floor2
 
     // An attack into a worm picks its victim by weight. Both outcomes are reachable, and
     // when a copy catches it the parent takes NOTHING — a copy is not armour, it is
