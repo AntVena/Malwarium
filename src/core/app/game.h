@@ -1717,13 +1717,19 @@ private:
     void enterSubmenu();
     void dropCursor();
     SubmenuId enteredId() const;                   // the slot table's id for cursor_
-    // Boot-Sector egg lock (redesign): while the pet is still an unhatched
-    // egg, the care/combat slots (GAMES/EXPL/MAINT/MODS) are inert — there's
-    // nothing to equip, explore, maintain, or play with on an egg (the egg's own
-    // hatch minigame is not the arcade's). STAT + ITEMS stay
-    // live (ITEMS gates non-quest items separately, see itemUsable). Drives both
-    // the greyed carousel and the blocked submenu entry.
-    bool eggSlotLocked(SubmenuId id) const;
+    // Whether a pet-face carousel slot is inert, for either reason a slot can be:
+    //
+    //   * Boot-Sector egg: while the pet is still an unhatched egg the care/combat
+    //     slots (GAMES/EXPL/MAINT/MODS) are inert — there's nothing to equip,
+    //     explore, maintain, or play with on an egg (the egg's own hatch minigame is
+    //     not the arcade's). STAT + ITEMS stay live (ITEMS gates non-quest items
+    //     separately, see itemUsable).
+    //   * Demo build: CFG configures a device the web demo does not have
+    //     (include/demo_config.h).
+    //
+    // Drives both the greyed carousel and the blocked submenu entry, so the two can
+    // never disagree about what a slot does.
+    bool slotLocked(SubmenuId id) const;
 
     // --- List navigation (game_listnav.cpp) ---------------------------------
     // The row-stepping half of the button contract, shared by every list on the

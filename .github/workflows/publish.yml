@@ -1,7 +1,7 @@
 # Publish everything the release host serves to GitHub Pages: the update
 # artifacts a device downloads and the manifest that lists them, the three boot
 # images the browser flasher writes in front of the app, and the pages themselves
-# (pages/ — a landing page and /flash/).
+# (pages/ — a landing page, /flash/, and the browser demo at /play/).
 #
 # Pages is the publish host because the device needs exactly one thing: stable
 # URLs that return bytes. It has no use for tags, an API or release metadata, and
@@ -63,6 +63,28 @@ jobs:
         run: pip install pyyaml && python3 tools/check_workflows.py
       - name: Generate the sprite/palette codegen
         run: python3 tools/gen_assets.py
+      # The browser demo is part of the publish (`make pages` runs `demo`), and it
+      # is the engine compiled to wasm — so the publish host needs a C++-to-wasm
+      # toolchain the same way it needs PlatformIO for the firmware. Pinned rather
+      # than `latest`: the demo a visitor plays should change when the engine
+      # changes, not when a toolchain rolls underneath it.
+      - name: Cache the Emscripten SDK
+        id: emsdk-cache
+        uses: actions/cache@v6
+        with:
+          path: ~/emsdk
+          key: emsdk-${{ runner.os }}-6.0.7
+      - name: Install the Emscripten SDK
+        if: steps.emsdk-cache.outputs.cache-hit != 'true'
+        run: |
+          git clone --depth 1 https://github.com/emscripten-core/emsdk.git ~/emsdk
+          ~/emsdk/emsdk install 6.0.7
+          ~/emsdk/emsdk activate 6.0.7
+      - name: Put emcc on PATH
+        run: |
+          source ~/emsdk/emsdk_env.sh
+          echo "PATH=$PATH" >> "$GITHUB_ENV"
+          echo "EMSDK=$EMSDK" >> "$GITHUB_ENV"
       - name: Build the artifacts, the manifest and the pages
         # `make pages` builds the firmware image and the web bundle, writes
         # manifest.json over them, then validates it with the DEVICE's own parser

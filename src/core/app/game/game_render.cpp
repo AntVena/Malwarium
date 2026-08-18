@@ -378,14 +378,14 @@ void Game::drawHabitat(Framebuffer& fb, int cursor) const {
     // Grey out the care/combat slots while the pet is still an egg. EXPL's globe turns
     // while AUTO-PROGRESS is armed — the walk is running itself in the background, and
     // the shelf is the only screen that's always up to say so.
-    unsigned eggLockMask = 0, spinMask = 0;
+    unsigned lockMask = 0, spinMask = 0;
     for (int i = 0; i < kCarouselSlots; ++i) {
         const SubmenuId id = carouselSlots()[i].id;
-        if (eggSlotLocked(id)) eggLockMask |= (1u << i);
+        if (slotLocked(id)) lockMask |= (1u << i);
         if (id == SubmenuId::Expl && autoProgress_ && exploreActive_)
             spinMask |= (1u << i);
     }
-    drawCarousel(fb, cursor, uiMode_, beat_, eggLockMask, spinMask);
+    drawCarousel(fb, cursor, uiMode_, beat_, lockMask, spinMask);
 }
 
 void Game::drawAchievementBanner(Framebuffer& fb) const {

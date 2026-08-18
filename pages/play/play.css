@@ -1,0 +1,98 @@
+/* ============================================================
+   MALWARIUM://PLAY — the demo shell.
+
+   Dresses only what the demo adds to pages/style.css: the panel,
+   the three keys and the hint rows. Every colour is a role token
+   from that file (which binds them to assets/PAL_CORE.json), so
+   the demo cannot invent a hue the device does not have.
+   ============================================================ */
+
+/* ---- the device -------------------------------------------------------- */
+.device { margin: 18px 0 6px; }
+
+/* The bezel around the panel. The engine already draws the device's own 8px
+   paper bezel INSIDE the 240 panel; this is the plastic around that. */
+.panel {
+  position: relative;
+  width: min(480px, 92vw);
+  margin: 0 auto;
+  aspect-ratio: 1 / 1;
+  background: var(--paper-sunk);
+  border: 1px solid var(--track);
+  border-radius: 6px;
+  padding: 10px;
+  display: grid;
+  place-items: center;
+}
+
+/* Native 240x240 scaled by CSS. `pixelated` is the whole point: art is authored at
+   128 logical and upscaled x1.75 by the engine, so any smoothing here would blur a
+   pixel grid the device renders crisply. */
+#screen {
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  background: var(--paper);
+  border-radius: 2px;
+}
+
+/* Covers the panel until the first frame lands, so a visitor never sees a blank
+   canvas and assumes it is broken. */
+.boot {
+  position: absolute; inset: 10px;
+  display: grid; place-items: center;
+  background: var(--paper);
+  color: var(--accent);
+  font-family: var(--font-display); font-size: 13px; letter-spacing: 2px;
+  border-radius: 2px;
+}
+.boot.gone { display: none; }
+
+/* ---- the three keys ---------------------------------------------------- */
+.buttons {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  width: min(480px, 92vw);
+  margin: 12px auto 0;
+}
+
+/* Sized for a thumb: 56px min height clears the ~44px touch-target floor with
+   room, because these are pressed repeatedly and held. */
+button.key {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 2px;
+  min-height: 56px;
+  padding: 8px 4px;
+  background: var(--track);
+  border: 1px solid var(--track);
+  border-radius: 4px;
+  /* A held key must not start a text selection or fire the mobile double-tap
+     zoom — both make a hold unusable on a touchscreen. */
+  user-select: none; -webkit-user-select: none;
+  touch-action: manipulation;
+}
+button.key .cap {
+  font-family: var(--font-display); font-size: 16px; letter-spacing: 1px; color: var(--ink);
+}
+button.key .fn { font-size: 10px; letter-spacing: 1px; color: var(--ink-dim); }
+
+/* Pressed state is dual-coded — the fill moves AND the border does — so the key
+   still reads as held with colour taken away. */
+button.key.down {
+  background: var(--accent-wash);
+  border-color: var(--accent);
+}
+button.key.down .cap { color: var(--accent); }
+
+/* ---- hints ------------------------------------------------------------- */
+.hints {
+  width: min(480px, 92vw);
+  margin: 10px auto 0;
+  display: flex; flex-direction: column; gap: 4px;
+  font-size: 12px; color: var(--ink-dim); text-align: center;
+}
+.hints b { color: var(--ink); font-weight: 400; }
+/* The keyboard line is noise on a device that has no keyboard. */
+@media (pointer: coarse) { .hints .kbd { display: none; } }

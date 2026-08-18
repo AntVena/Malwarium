@@ -701,7 +701,7 @@ void Game::onButton(const ButtonEvent& ev) {
             // (inaccessible ones are inert); pet-side, a locked egg slot is inert.
             else if (ev.button == Button::B) {
                 if (face_ == Face::Hacker) enterHackerSubmenu();
-                else if (!eggSlotLocked(enteredId())) enterSubmenu();
+                else if (!slotLocked(enteredId())) enterSubmenu();
             }
             break;
         case Nav::Submenu:
@@ -902,7 +902,12 @@ void Game::dropCursor() {
     statScroll_ = 0;
 }
 
-bool Game::eggSlotLocked(SubmenuId id) const {
+bool Game::slotLocked(SubmenuId id) const {
+#ifdef MALWARIUM_DEMO
+    // CFG is Wi-Fi join / update install / SD mount / Factory Reset — nothing a
+    // browser can act on, and a reset that would wipe the demo (demo_config.h).
+    if (id == SubmenuId::Cfg) return true;
+#endif
     if (!inEggPhase()) return false;
     switch (id) {
         case SubmenuId::Games:

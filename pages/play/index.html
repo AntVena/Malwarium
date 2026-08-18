@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>MALWARIUM://PLAY</title>
+<meta name="description" content="Play Malwarium in the browser — the device's own firmware, compiled to WebAssembly, with a pet already raised.">
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="play.css">
+</head>
+<body>
+<div class="wrap">
+
+  <header class="site">
+    <div class="brand">
+      <a class="logo" href="../">MALWARIUM://PLAY</a>
+      <span class="ver" id="stamp">loading the engine&hellip;</span>
+    </div>
+    <div class="sub"><span class="prompt">demo@malwarium</span>:~$ raise malware as a pet</div>
+  </header>
+
+  <nav class="tabs">
+    <a href="../">HOME</a>
+    <a href="../flash/">FLASH</a>
+    <a href="./" class="active">PLAY</a>
+  </nav>
+
+  <main>
+
+    <!-- The device. The canvas is the panel at its native 240x240 and is scaled up
+         by CSS with image-rendering:pixelated — the engine renders no extra pixels,
+         and art authored at 128 logical never gets smoothed. -->
+    <div class="device">
+      <div class="panel">
+        <canvas id="screen" width="240" height="240" aria-label="Malwarium screen"></canvas>
+        <div class="boot" id="boot">DECRYPTING&hellip;</div>
+      </div>
+
+      <!-- The three hardware buttons. Each sends both edges (pointerdown/up), because
+           every button's HOLD is the bigger version of its tap and a hold settles on
+           the release edge. -->
+      <div class="buttons" id="buttons">
+        <button class="key" data-btn="0" aria-label="A — next">
+          <span class="cap">A</span><span class="fn">NEXT</span>
+        </button>
+        <button class="key" data-btn="1" aria-label="B — accept">
+          <span class="cap">B</span><span class="fn">ACCEPT</span>
+        </button>
+        <button class="key" data-btn="2" aria-label="C — cancel">
+          <span class="cap">C</span><span class="fn">CANCEL</span>
+        </button>
+      </div>
+
+      <div class="hints">
+        <span><b>A+C together</b> is the Exploit chord — it flips to the Hacker face,
+        and opens the override picker in a fight.</span>
+        <span class="kbd">Keyboard: <b>Z</b> / <b>X</b> / <b>C</b>, or the arrow keys.</span>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button id="ui-mode">DISPLAY MODE</button>
+      <button id="restart">START OVER</button>
+    </div>
+
+    <h2 class="sect">WHAT THIS IS</h2>
+    <div class="card">
+      <div class="ctx">This is the device's own firmware &mdash; the same C++ engine, the
+      same 240&times;240 panel, the same three buttons &mdash; compiled to WebAssembly and
+      drawn onto a canvas. Nothing is re-implemented for the web, so what happens here is
+      what happens on the hardware.</div>
+    </div>
+
+    <h2 class="sect">WHERE TO START</h2>
+    <div class="card sunk">
+      <div class="kv"><span class="k">EXPL</span><span class="v">Take the pet out on the 'net. Fights, loot, and five areas deep.</span></div>
+      <div class="kv"><span class="k">GAMES</span><span class="v">The arcade &mdash; four cabinets, including a snake and a mastermind board.</span></div>
+      <div class="kv"><span class="k">ITEMS</span><span class="v">You start with food, buffs and a few Decryptograms.</span></div>
+      <div class="kv"><span class="k">A+C &rarr; VAULT</span><span class="v">Cash a Decryptogram for a quote board.</span></div>
+      <div class="kv"><span class="k">MAINT</span><span class="v">Defrag the pet. It is a puzzle, not a chore.</span></div>
+    </div>
+
+    <div class="note tip">
+      <span class="lbl">THE DEMO SKIPS THE FIRST HALF-HOUR</span>
+      A real device starts with an encrypted egg and a ~30-minute incubation you spend
+      earning down. This drops you onto a pet already six levels in, with things to spend,
+      so there is something to look at straight away.
+    </div>
+
+    <div class="note warn">
+      <span class="lbl">WHAT THE BROWSER CANNOT DO</span>
+      <b>CFG</b>, <b>SCAN</b>, <b>LINK</b> and <b>PEERS</b> are dimmed here. They are the
+      radio and the device settings &mdash; joining Wi-Fi, sniffing the air for networks to
+      tame, linking to another Malwarium to duel it, installing an update. A browser has no
+      radio, so those slots stay on the shelf rather than opening onto a screen that could
+      only ever say nothing found. They are the half of the device this demo cannot show.
+    </div>
+
+    <a class="card" href="../flash/">
+      <div class="nm">&#9889; GOT A DEVICE? FLASH IT &rarr;</div>
+      <div class="ctx">Writes a whole working Malwarium from your browser over USB.</div>
+    </a>
+
+    <p class="dim" style="font-size:12px">Progress is kept in this browser's local storage
+    and never leaves your machine. START OVER wipes it back to the starting pet.</p>
+
+  </main>
+
+  <footer class="site">
+    <span class="dim">MALWARIUM</span>
+  </footer>
+
+</div>
+<script src="malwarium.js"></script>
+<script src="play.js"></script>
+</body>
+</html>

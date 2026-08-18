@@ -1,6 +1,13 @@
 # Build output
 /build/
+/build-web/
 /.pio/
+
+# The web demo's compiled engine (tools/build_web.sh writes it into the page it is
+# served from). Built in CI on the way to a publish, like src/generated/ — a 1MB
+# binary that changes every build does not belong in the history.
+/pages/play/malwarium.js
+/pages/play/malwarium.wasm
 compile_commands.json
 /out.png
 

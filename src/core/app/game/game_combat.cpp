@@ -39,7 +39,7 @@ void Game::onTrainList(const ButtonEvent& ev) {
     // The MOVES slot list. A steps the unlocked slots (skipping the locked ones), B
     // opens the focused slot's move picker, C backs to the LOADOUT hub. An egg has no
     // unlocked slot at all, so `sel` can legitimately be 0 — a state MOVES is
-    // unreachable in (eggSlotLocked), but the wrap has to survive it regardless.
+    // unreachable in (slotLocked), but the wrap has to survive it regardless.
     const Stage st = pet_ ? pet_->stage : Stage::BootSector;
     const int sel = loadoutSelectableCount(st);
     if (ev.button == Button::A) {

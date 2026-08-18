@@ -104,7 +104,7 @@ std::vector<ProseRow> buildLoadoutRows(const ContentRegistry& reg,
                                        const Loadout& modLoad,
                                        Stage stage, bool isEgg) {
     std::vector<ProseRow> out;
-    // An egg can't train or mod (Game::eggSlotLocked) — nothing to show.
+    // An egg can't train or mod (Game::slotLocked) — nothing to show.
     if (isEgg) {
         out.push_back({false, "- NO LOADOUT -", {}, {}});
         return out;

@@ -133,7 +133,7 @@ pedia-tar: pedia
 # BASE does not reach the pages: both resolve every path against their own origin,
 # so they work under any host without being told which one (pages/README.md).
 
-.PHONY: firmware-artifact manifest manifest-check boot-images site pages
+.PHONY: firmware-artifact manifest manifest-check boot-images site pages demo
 
 DIST ?= dist
 FW_ENV ?= waveshare_s3_154
@@ -235,15 +235,23 @@ boot-images: firmware-artifact
 
 # The served pages themselves. pages/README.md documents the directory for someone
 # reading the repo and is not part of the site, so it is the one file dropped.
+# The browser demo: the engine compiled to wasm, written into pages/play/ so `site`
+# picks it up with the rest of the pages. Needs the Emscripten SDK on PATH — the
+# script says so and stops if it is missing. Not committed (see .gitignore): it is
+# derived from the engine exactly like src/generated/, and rebuilt on the way to a
+# publish so the demo can never be older than the firmware beside it.
+demo:
+	bash tools/build_web.sh
+
 site:
 	@mkdir -p "$(DIST)"
 	@cp -R pages/. "$(DIST)/"
 	@rm -f "$(DIST)/README.md"
 	@find "$(DIST)" \( -name '._*' -o -name '.DS_Store' \) -delete 2>/dev/null || true
-	@echo "staged pages/ -> $(DIST)/ (index.html, flash/, vendor/)"
+	@echo "staged pages/ -> $(DIST)/ (index.html, flash/, play/, vendor/)"
 
 # The whole publish, in the order the pieces depend on each other: the artifacts
 # and their manifest first (which is also what validates them), then the boot
 # images beside them, then the pages that read both. This is what CI runs.
-pages: manifest boot-images site
+pages: manifest boot-images demo site
 	@echo "publish ready in $(DIST)/ — serve it, or upload it as a Pages artifact"

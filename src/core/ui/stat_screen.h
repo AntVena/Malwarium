@@ -32,7 +32,7 @@ class Loadout;
 // unlocked-slot — move) then a MODS section (each equipped mod, or a single
 // "- NONE -" row when nothing's equipped). EMPTY slots are skipped entirely —
 // nothing to describe. `isEgg` collapses the whole page to a single "- NO LOADOUT -"
-// row (MODS is inert for an egg, `Game::eggSlotLocked`), since there is no combat
+// row (MODS is inert for an egg, `Game::slotLocked`), since there is no combat
 // loadout to show.
 //
 // Pure over its two loadouts, which is what lets the ARENA render a rolled opponent's

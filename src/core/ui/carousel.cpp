@@ -88,7 +88,7 @@ const HackerCarouselSlot* hackerCarouselSlots() {
 }
 
 void drawHackerCarousel(Framebuffer& fb, int cursor, UiMode mode, int /*beat*/,
-                        bool mergeUnlocked) {
+                        bool mergeUnlocked, unsigned lockedMask) {
     const HackerCarouselSlot* slots = hackerCarouselSlots();
     const Rgb565 paper = palColor(Pal::PAPER);
 
@@ -96,8 +96,9 @@ void drawHackerCarousel(Framebuffer& fb, int cursor, UiMode mode, int /*beat*/,
     fb.fillRect(0, kLivingBottom, kActiveW, kTrackH, palColor(Pal::TRACK));
 
     for (int i = 0; i < kCarouselSlots; ++i) {
-        const bool accessible = slots[i].accessible ||
-            (slots[i].id == HackerSlotId::Merge && mergeUnlocked);
+        const bool accessible = (slots[i].accessible ||
+            (slots[i].id == HackerSlotId::Merge && mergeUnlocked)) &&
+            ((lockedMask >> i) & 1u) == 0;
         const bool focused = (i == cursor);
         const int ix = slotIconX(i);
         const int iy = slotIconY(i);

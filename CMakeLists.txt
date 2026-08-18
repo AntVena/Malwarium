@@ -18,6 +18,42 @@ target_include_directories(malcore PUBLIC
     ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_SOURCE_DIR}/include)
 
+# --- Web demo (Emscripten) --------------------------------------------------
+# emcmake configures this branch. The engine is the same malcore the firmware
+# links; MALWARIUM_DEMO is what shuts the slots a browser cannot honour
+# (include/demo_config.h), and it goes on malcore because Game::slotLocked lives
+# there. src/generated/demo_save.cpp is the baked seed, produced by a NATIVE build
+# of gen_demo_save before this tree is configured — see tools/build_web.sh.
+if(EMSCRIPTEN)
+    target_compile_definitions(malcore PUBLIC MALWARIUM_DEMO)
+
+    add_executable(malwarium_web
+        src/platform/web/main_web.cpp
+        ${CMAKE_SOURCE_DIR}/src/generated/demo_save.cpp)
+    target_link_libraries(malwarium_web PRIVATE malcore)
+    set_target_properties(malwarium_web PROPERTIES OUTPUT_NAME "malwarium")
+
+    target_compile_options(malwarium_web PRIVATE -O3)
+    target_link_options(malwarium_web PRIVATE
+        -O3
+        # The atlas alone is ~1.2MB of RGB565, and the engine allocates its
+        # framebuffers on top; growth keeps that from being a fixed reservation
+        # every visitor downloads the cost of.
+        -sALLOW_MEMORY_GROWTH=1
+        # The shell page's controls (see main_web.cpp's entry points) plus the
+        # runtime helper they are called through.
+        -sEXPORTED_FUNCTIONS=['_main','_mal_button','_mal_cycle_ui_mode','_mal_reset_demo','_mal_flush_save']
+        # UTF8ToString/stringToNewUTF8 are used by the EM_JS bodies in
+        # save_store_web.h; naming them here keeps -O3 from eliminating them.
+        -sEXPORTED_RUNTIME_METHODS=['ccall','UTF8ToString','stringToNewUTF8']
+        # The page supplies its own canvas and chrome (pages/play/index.html), so
+        # emcc emits only the loader + wasm. MODULARIZE hands the page a factory it
+        # awaits, rather than a global that races the DOM being ready.
+        -sMODULARIZE=1
+        -sEXPORT_NAME=Malwarium)
+    return()
+endif()
+
 # --- Host preview (SDL2) ----------------------------------------------------
 find_package(SDL2 QUIET)
 if(NOT SDL2_FOUND)
@@ -53,6 +89,13 @@ target_link_libraries(dump_frame PRIVATE malcore)
 # banner). Driven by `make manifest` / `make manifest-check` at the repo root.
 add_executable(check_manifest tools/check_manifest.cpp)
 target_link_libraries(check_manifest PRIVATE malcore)
+
+# --- Web demo seed ----------------------------------------------------------
+# Bakes the wasm demo's starting save by running the engine's own serializer (see
+# the file banner). A HOST tool even when the demo it feeds is a wasm build, which
+# is why tools/build_web.sh configures a native tree for this before running emcmake.
+add_executable(gen_demo_save tools/gen_demo_save.cpp)
+target_link_libraries(gen_demo_save PRIVATE malcore)
 
 # --- Native tests -----------------------------------------------------------
 enable_testing()

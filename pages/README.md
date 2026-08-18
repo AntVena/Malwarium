@@ -1,9 +1,9 @@
 # `pages/` — the publish host's own pages
 
-The two static pages that get served alongside the artifacts on GitHub Pages: a landing page at
-`/`, and a browser flasher at `/flash/`. `make pages` copies this directory into `dist/`, which
-is what `.github/workflows/publish.yml` uploads, so the site and the artifacts deploy as one
-thing and can never be a release apart.
+The static pages served alongside the artifacts on GitHub Pages: a landing page at `/`, a
+browser flasher at `/flash/`, and a playable demo of the device at `/play/`. `make pages`
+copies this directory into `dist/`, which is what `.github/workflows/publish.yml` uploads, so
+the site and the artifacts deploy as one thing and can never be a release apart.
 
 Nothing here is downloaded by a device. `web/` is the bundle that ships to an SD card and
 versions with the firmware; this is read by a person, in a browser, on a computer.
@@ -14,8 +14,23 @@ pages/
 ├── style.css              the shared look (see below)
 ├── fonts/                 PixelOperatorMono8.ttf — FONT_UI's own cut (CC0), copied from assets/fonts/
 ├── flash/                 the USB flasher: index.html is the operator's instructions, flash.js drives it
+├── play/                  the browser demo — the shell around the wasm engine (see below)
 └── vendor/esptool-js/     Espressif's loader, vendored — its README carries the version and digest
 ```
+
+## The demo at `/play/`
+
+`play/index.html` + `play.css` + `play.js` are the chrome; the game itself is the firmware
+engine compiled to WebAssembly by `tools/build_web.sh`, which writes `malwarium.js` and
+`malwarium.wasm` into this directory. Those two are **build output and not committed** — `make
+pages` rebuilds them (the `demo` target), so the demo can never be a release behind the
+firmware published beside it. Building needs the Emscripten SDK on PATH; the script says so and
+stops if it is missing.
+
+Nothing is re-implemented for the browser: `src/platform/web/` is a platform layer beside
+`src/platform/esp32/` and `src/platform/host/`, supplying the same `IDisplay`/`ISaveStore`
+seams against a canvas and localStorage. What the demo hides, and why, is
+`include/demo_config.h`.
 
 ## Why a flasher exists at all
 
