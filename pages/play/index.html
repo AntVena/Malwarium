@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark">
 <title>MALWARIUM://DEMO</title>
-<meta name="description" content="A browser demo of the Malwarium handheld — a taste of the systems, running the device's own firmware. The real one is a gadget that lives in your pocket.">
+<meta name="description" content="Try Malwarium in your browser before you order a board — the device's own firmware, running in a tab, with a pet already raised.">
 <link rel="stylesheet" href="../style.css">
 <link rel="stylesheet" href="play.css">
 </head>
@@ -17,7 +17,7 @@
       <a class="logo" href="../">MALWARIUM://DEMO</a>
       <span class="ver" id="stamp">loading the engine&hellip;</span>
     </div>
-    <div class="sub"><span class="prompt">demo@malwarium</span>:~$ a taste, not the whole thing</div>
+    <div class="sub"><span class="prompt">demo@malwarium</span>:~$ try it before you flash it</div>
   </header>
 
   <nav class="tabs">
@@ -28,12 +28,11 @@
 
   <main>
 
-    <h1>A demo, so you know what you'd be buying.</h1>
-    <p class="lede">Malwarium is a handheld &mdash; a little ESP32 gadget you keep in a pocket
-    and raise a tamed computer virus on, over days. <b>This page is not that.</b> It is the
-    device's own firmware compiled to run in a browser, handed a pet somebody else already
-    raised, so you can poke the systems for ten minutes and see whether they're for you.</p>
-    <p class="dim">Everything below the screen is the honest version of what that trade costs.</p>
+    <h1>Try it before you order a board.</h1>
+    <p class="lede">Malwarium is a virtual pet you raise out of a computer virus. It runs on a
+    little ESP32 handheld that you buy and flash yourself &mdash; and this page is that same
+    firmware, running in a browser tab, with a pet somebody already raised. Have a poke around
+    and see if it's your kind of thing before you go and order hardware for it.</p>
 
     <!-- The device. The canvas is the panel at its native 240x240 and is scaled up
          by CSS with image-rendering:pixelated — the engine renders no extra pixels,
@@ -78,56 +77,54 @@
       <div class="kv"><span class="k">GAMES</span><span class="v">The arcade &mdash; four cabinets, including a snake and a mastermind board.</span></div>
       <div class="kv"><span class="k">ITEMS</span><span class="v">You start with food, buffs and a few Decryptograms.</span></div>
       <div class="kv"><span class="k">A+C &rarr; VAULT</span><span class="v">Cash a Decryptogram for a quote board.</span></div>
-      <div class="kv"><span class="k">MAINT</span><span class="v">Defrag the pet. It is a puzzle, not a chore.</span></div>
+      <div class="kv"><span class="k">MAINT</span><span class="v">Defrag the pet. It's a puzzle, not a chore.</span></div>
     </div>
 
-    <h2 class="sect">WHAT THE DEMO ISN'T</h2>
+    <h2 class="sect">WHAT THIS ISN'T</h2>
 
     <div class="note stop">
-      <span class="lbl">YOUR PROGRESS HERE IS NOT SAFE, AND THAT IS ON PURPOSE</span>
-      Whatever you do on this page is kept in <b>this browser</b>, on <b>this machine</b>, and
-      nowhere else. Clearing site data loses it. A private window never had it. Another device
-      never sees it.
+      <span class="lbl">NOTHING HERE STICKS AROUND</span>
+      Your pet lives in this browser's local storage and nowhere else. Clear your site data and
+      it's gone. Open a private window and it was never there. Sit down at another computer and
+      you get a fresh one.
       <br><br>
-      More than that: the save format moves with the firmware, and old formats get retired once
-      every real device has moved past them &mdash; a check that can be made for devices and
-      cannot be made for anonymous browser tabs. So <b>an update here can quietly reset you to
-      the starting pet</b>, with no warning and no way back. On a real device that migration is
-      handled and your pet survives. Do not get attached to anything in this tab.
+      The save format also moves as the firmware gains things, and old formats get retired
+      eventually. On a device that's fine &mdash; an update migrates your pet forward. A browser
+      tab can't be checked on the same way, so sooner or later an update here will just hand you
+      a new pet instead. <b>Treat this as a test drive, not a pet.</b>
     </div>
 
     <div class="note tip">
-      <span class="lbl">THE SLOW PART IS THE ACTUAL PRODUCT</span>
-      A real device starts you with an encrypted egg and a ~30-minute incubation, and from there
-      the pet is raised over <b>days</b> &mdash; it gets hungry while you're not looking, and what
-      it grows into depends on how you treated it. That is the whole point of the thing, and it
-      is exactly what a ten-minute browser session cannot show you. So this demo skips it: you
-      get a pet already six levels in, with things to spend, because the alternative is watching
-      an egg.
+      <span class="lbl">THE SLOW BIT IS THE POINT</span>
+      On a device you start with an encrypted egg and about half an hour of incubation, and after
+      that you're raising the thing over <b>days</b>. It gets hungry while you're not looking.
+      What it grows into depends on how you treated it. None of that fits in a browser session,
+      so the demo skips it and hands you a pet that's already six levels in with things to spend.
+      Just know that the part you're not seeing is the part people keep the device around for.
     </div>
 
     <div class="note warn">
-      <span class="lbl">HALF THE DEVICE IS MISSING HERE</span>
-      <b>CFG</b>, <b>SCAN</b>, <b>LINK</b> and <b>PEERS</b> are dimmed on the shelf. They are the
-      radio: joining Wi-Fi, sniffing the air for networks to tame and feed to the pet, linking to
-      another Malwarium to duel it, installing its own updates. A browser has no radio, so they
-      stay visible-but-shut rather than opening onto a screen that could only say nothing found.
-      The hardware half of Malwarium is not on this page.
+      <span class="lbl">NO RADIO IN A BROWSER</span>
+      <b>CFG</b>, <b>SCAN</b>, <b>LINK</b> and <b>PEERS</b> sit greyed out on the shelf. That's
+      the Wi-Fi half: joining a network, sniffing the air for networks to catch and feed to your
+      pet, linking up with someone else's Malwarium for a duel, pulling down its own updates.
+      None of it exists in a browser tab, so those slots stay shut rather than opening onto a
+      screen that could only ever say nothing found.
     </div>
 
-    <h2 class="sect">WHAT IS REAL ABOUT IT</h2>
+    <h2 class="sect">WHAT'S ACTUALLY REAL</h2>
     <div class="card">
-      <div class="ctx">The game itself. This is the device's own firmware &mdash; the same C++
-      engine, the same 240&times;240 panel, the same three buttons &mdash; compiled to
-      WebAssembly and drawn onto a canvas. Nothing is re-implemented for the web, so the
-      fights, the arcade, the items and the art are exactly what the hardware runs. What you
-      think of the systems here is a fair basis for what you'd think of the device.</div>
+      <div class="ctx">The game. This is the device's firmware compiled to WebAssembly &mdash;
+      same C++ engine, same 240&times;240 panel, same three buttons. Nothing was rebuilt for the
+      web, so the fights, the arcade, the items and the art are exactly what runs on the
+      hardware. If you like it here, you'll like it there.</div>
     </div>
 
     <a class="card" href="../flash/">
-      <div class="nm">&#9889; GOT A DEVICE? FLASH IT &rarr;</div>
-      <div class="ctx">Writes a whole working Malwarium from your browser over USB &mdash;
-      bootloader, partition table and firmware. This is the real thing, and it keeps your pet.</div>
+      <div class="nm">&#9889; PUT IT ON A REAL ONE &rarr;</div>
+      <div class="ctx">Malwarium runs on one specific board, a Waveshare ESP32-S3-LCD-1.54. Get
+      one, plug it in over USB, and the flasher writes the whole thing from your browser &mdash;
+      no toolchain, no command line. That version keeps your pet.</div>
     </a>
 
   </main>
