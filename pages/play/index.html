@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark">
-<title>MALWARIUM://PLAY</title>
-<meta name="description" content="Play Malwarium in the browser — the device's own firmware, compiled to WebAssembly, with a pet already raised.">
+<title>MALWARIUM://DEMO</title>
+<meta name="description" content="A browser demo of the Malwarium handheld — a taste of the systems, running the device's own firmware. The real one is a gadget that lives in your pocket.">
 <link rel="stylesheet" href="../style.css">
 <link rel="stylesheet" href="play.css">
 </head>
@@ -14,25 +14,33 @@
 
   <header class="site">
     <div class="brand">
-      <a class="logo" href="../">MALWARIUM://PLAY</a>
+      <a class="logo" href="../">MALWARIUM://DEMO</a>
       <span class="ver" id="stamp">loading the engine&hellip;</span>
     </div>
-    <div class="sub"><span class="prompt">demo@malwarium</span>:~$ raise malware as a pet</div>
+    <div class="sub"><span class="prompt">demo@malwarium</span>:~$ a taste, not the whole thing</div>
   </header>
 
   <nav class="tabs">
     <a href="../">HOME</a>
     <a href="../flash/">FLASH</a>
-    <a href="./" class="active">PLAY</a>
+    <a href="./" class="active">DEMO</a>
   </nav>
 
   <main>
+
+    <h1>A demo, so you know what you'd be buying.</h1>
+    <p class="lede">Malwarium is a handheld &mdash; a little ESP32 gadget you keep in a pocket
+    and raise a tamed computer virus on, over days. <b>This page is not that.</b> It is the
+    device's own firmware compiled to run in a browser, handed a pet somebody else already
+    raised, so you can poke the systems for ten minutes and see whether they're for you.</p>
+    <p class="dim">Everything below the screen is the honest version of what that trade costs.</p>
 
     <!-- The device. The canvas is the panel at its native 240x240 and is scaled up
          by CSS with image-rendering:pixelated — the engine renders no extra pixels,
          and art authored at 128 logical never gets smoothed. -->
     <div class="device">
       <div class="panel">
+        <span class="demo-tag">DEMO</span>
         <canvas id="screen" width="240" height="240" aria-label="Malwarium screen"></canvas>
         <div class="boot" id="boot">DECRYPTING&hellip;</div>
       </div>
@@ -53,7 +61,7 @@
       </div>
 
       <div class="hints">
-        <span><b>A+C together</b> is the Exploit chord — it flips to the Hacker face,
+        <span><b>A+C together</b> is the Exploit chord &mdash; it flips to the Hacker face,
         and opens the override picker in a fight.</span>
         <span class="kbd">Keyboard: <b>Z</b> / <b>X</b> / <b>C</b>, or the arrow keys.</span>
       </div>
@@ -62,14 +70,6 @@
     <div class="actions">
       <button id="ui-mode">DISPLAY MODE</button>
       <button id="restart">START OVER</button>
-    </div>
-
-    <h2 class="sect">WHAT THIS IS</h2>
-    <div class="card">
-      <div class="ctx">This is the device's own firmware &mdash; the same C++ engine, the
-      same 240&times;240 panel, the same three buttons &mdash; compiled to WebAssembly and
-      drawn onto a canvas. Nothing is re-implemented for the web, so what happens here is
-      what happens on the hardware.</div>
     </div>
 
     <h2 class="sect">WHERE TO START</h2>
@@ -81,29 +81,54 @@
       <div class="kv"><span class="k">MAINT</span><span class="v">Defrag the pet. It is a puzzle, not a chore.</span></div>
     </div>
 
+    <h2 class="sect">WHAT THE DEMO ISN'T</h2>
+
+    <div class="note stop">
+      <span class="lbl">YOUR PROGRESS HERE IS NOT SAFE, AND THAT IS ON PURPOSE</span>
+      Whatever you do on this page is kept in <b>this browser</b>, on <b>this machine</b>, and
+      nowhere else. Clearing site data loses it. A private window never had it. Another device
+      never sees it.
+      <br><br>
+      More than that: the save format moves with the firmware, and old formats get retired once
+      every real device has moved past them &mdash; a check that can be made for devices and
+      cannot be made for anonymous browser tabs. So <b>an update here can quietly reset you to
+      the starting pet</b>, with no warning and no way back. On a real device that migration is
+      handled and your pet survives. Do not get attached to anything in this tab.
+    </div>
+
     <div class="note tip">
-      <span class="lbl">THE DEMO SKIPS THE FIRST HALF-HOUR</span>
-      A real device starts with an encrypted egg and a ~30-minute incubation you spend
-      earning down. This drops you onto a pet already six levels in, with things to spend,
-      so there is something to look at straight away.
+      <span class="lbl">THE SLOW PART IS THE ACTUAL PRODUCT</span>
+      A real device starts you with an encrypted egg and a ~30-minute incubation, and from there
+      the pet is raised over <b>days</b> &mdash; it gets hungry while you're not looking, and what
+      it grows into depends on how you treated it. That is the whole point of the thing, and it
+      is exactly what a ten-minute browser session cannot show you. So this demo skips it: you
+      get a pet already six levels in, with things to spend, because the alternative is watching
+      an egg.
     </div>
 
     <div class="note warn">
-      <span class="lbl">WHAT THE BROWSER CANNOT DO</span>
-      <b>CFG</b>, <b>SCAN</b>, <b>LINK</b> and <b>PEERS</b> are dimmed here. They are the
-      radio and the device settings &mdash; joining Wi-Fi, sniffing the air for networks to
-      tame, linking to another Malwarium to duel it, installing an update. A browser has no
-      radio, so those slots stay on the shelf rather than opening onto a screen that could
-      only ever say nothing found. They are the half of the device this demo cannot show.
+      <span class="lbl">HALF THE DEVICE IS MISSING HERE</span>
+      <b>CFG</b>, <b>SCAN</b>, <b>LINK</b> and <b>PEERS</b> are dimmed on the shelf. They are the
+      radio: joining Wi-Fi, sniffing the air for networks to tame and feed to the pet, linking to
+      another Malwarium to duel it, installing its own updates. A browser has no radio, so they
+      stay visible-but-shut rather than opening onto a screen that could only say nothing found.
+      The hardware half of Malwarium is not on this page.
+    </div>
+
+    <h2 class="sect">WHAT IS REAL ABOUT IT</h2>
+    <div class="card">
+      <div class="ctx">The game itself. This is the device's own firmware &mdash; the same C++
+      engine, the same 240&times;240 panel, the same three buttons &mdash; compiled to
+      WebAssembly and drawn onto a canvas. Nothing is re-implemented for the web, so the
+      fights, the arcade, the items and the art are exactly what the hardware runs. What you
+      think of the systems here is a fair basis for what you'd think of the device.</div>
     </div>
 
     <a class="card" href="../flash/">
       <div class="nm">&#9889; GOT A DEVICE? FLASH IT &rarr;</div>
-      <div class="ctx">Writes a whole working Malwarium from your browser over USB.</div>
+      <div class="ctx">Writes a whole working Malwarium from your browser over USB &mdash;
+      bootloader, partition table and firmware. This is the real thing, and it keeps your pet.</div>
     </a>
-
-    <p class="dim" style="font-size:12px">Progress is kept in this browser's local storage
-    and never leaves your machine. START OVER wipes it back to the starting pet.</p>
 
   </main>
 

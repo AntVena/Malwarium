@@ -37,6 +37,21 @@
   border-radius: 2px;
 }
 
+/* Rides on the bezel so the framing travels with a screenshot: the panel is the part
+   of this page that gets cropped and shared, and out of context it is indistinguishable
+   from the device. Muted rather than loud — it labels the thing, it does not shout over
+   it. */
+.demo-tag {
+  position: absolute; top: 0; right: 0;
+  padding: 2px 7px;
+  font-family: var(--font-display); font-size: 10px; letter-spacing: 2px;
+  color: var(--ink-dim);
+  background: var(--paper-deep);
+  border: 1px solid var(--track);
+  border-radius: 0 5px 0 3px;
+  pointer-events: none;
+}
+
 /* Covers the panel until the first frame lands, so a visitor never sees a blank
    canvas and assumes it is broken. */
 .boot {
