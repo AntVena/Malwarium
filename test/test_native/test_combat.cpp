@@ -1836,31 +1836,57 @@ void test_combat_panel_reports_every_live_state() {
     c.crewExploit.kind = CrewExploitKind::NegateNextHits;
     c.crewExploit.charges = 2;
 
-    int leans = 0;
-    const CombatTokens tk = combatStateTokens(c, /*withGuard=*/true, &leans);
-    // Every one of them, by its own tag. A missing one here is a state the operator
-    // cannot see mid-fight, which is the whole defect.
-    for (const char* tag : {"SPD", "PWR", "SIPH", "STK PWR", "DEF", "STK DEF", "SHLD",
-                            "BKUP", "GRD", "RNSM", "TRAP", "COPY", "DOT", "STUN",
-                            "NEGATE"})
-        CHECK(tk.has(tag));
-    CHECK(tk.n <= CombatTokens::kCap);       // the set fits its own store, unclipped
-    CHECK(leans > 0 && leans < tk.n);        // the two groups are both non-empty
-    // No token is itself wide enough to be cut by the panel it is drawn into.
-    for (int i = 0; i < tk.n; ++i)
-        CHECK(static_cast<int>(std::strlen(tk.t[i])) < CombatTokens::kLen);
+    // The panel reports a fighter across TWO surfaces, and "the operator cannot see it
+    // mid-fight" is the defect either of them can carry — so both are checked here rather
+    // than only the one that happens to be a list.
+    //
+    // The four VITALS are the VS page's column of digits, effective: after the siphon,
+    // after the stack, under the never-immune clamp.
+    const CombatVitals v = combatVitals(c);
+    CHECK(v.power == 88 + 8);                // powerMultPct + stackPowerBonus, the SUM
+    CHECK(v.defense == 20 + 6);              // dmgReducePct + the Cipher stack
+    CHECK(v.defense <= kLevelDmgReduceMaxPct);
+    CHECK(v.speed == 14);
+    CHECK(v.maxHealth == c.maxHealth);
 
-    // A plain fighter says only what it has: the leans, and nothing after them.
+    // ...and everything else reaches the operator as a ROW of the VS grid: a tag with
+    // each fighter's value under its own column. This is the assertion that matters —
+    // "the operator cannot see it mid-fight" is the defect, and the grid is now the only
+    // surface that can carry it.
+    const Combatant clean = makeEnemyCombatant(r, simDummy(0));
+    const CombatVsGrid g = combatVsGrid(c, clean, /*localGuard=*/true);
+    for (const char* tag : {"HP", "PWR", "DEF", "SPD", "STUN", "DOT", "SHLD", "GRD",
+                            "RNSM", "BKUP", "TRAP", "COPY"})
+        CHECK(g.has(tag));
+    CHECK(g.n <= CombatVsGrid::kCap);        // the set fits its own store, unclipped
+    // The deltas ride ON the vital they moved rather than as rows of their own — that
+    // consolidation is what stopped a loaded fight from overrunning the box.
+    for (int i = 0; i < g.n; ++i) {
+        if (std::strcmp(g.r[i].tag, "PWR") == 0)
+            CHECK(std::strcmp(g.r[i].local, "96-4") == 0);   // 88+8 effective, -12+8 moved
+        if (std::strcmp(g.r[i].tag, "SPD") == 0)
+            CHECK(std::strcmp(g.r[i].local, "14-3") == 0);   // a siphon took three ticks
+    }
+    // A fighter with none of it leaves the cell EMPTY rather than zero, which is what
+    // lets the draw show a dash: "not in play" and "reported as nothing" must differ.
+    for (int i = 0; i < g.n; ++i)
+        if (std::strcmp(g.r[i].tag, "STUN") == 0) CHECK(g.r[i].rival[0] == '\0');
+
+    // Two clean fighters produce the four vitals and nothing else — an ordinary wild
+    // encounter does not open with a list of conditions that are not there.
     Combatant plain = makeEnemyCombatant(r, simDummy(0));
     plain.basePowerMultPct = plain.powerMultPct;
     plain.baseSpeed = plain.speed;
-    int plainLeans = 0;
-    const CombatTokens pt = combatStateTokens(plain, /*withGuard=*/true, &plainLeans);
-    CHECK(pt.n == plainLeans);               // no afflictions to report
-    CHECK(!pt.has("SIPH") && !pt.has("STUN") && !pt.has("SHLD"));
+    const CombatVsGrid pg = combatVsGrid(plain, clean, /*localGuard=*/true);
+    CHECK(pg.n == 4);
+    CHECK(pg.has("HP") && pg.has("PWR") && pg.has("DEF") && pg.has("SPD"));
+    // ...and its vitals still report, which is the half that must never go quiet.
+    const CombatVitals pv = combatVitals(plain);
+    CHECK(pv.power == plain.powerMultPct);
+    CHECK(pv.maxHealth > 0);
 }
 
-// B CYCLES the panel rather than toggling it — closed, STATE, KIT, closed — and paging
+// B CYCLES the panel rather than toggling it — closed, VS, KIT, closed — and paging
 // it never pauses the fight, which is what makes reading it a real decision.
 void test_combat_panel_pages_cycle() {
     Game g{StartMode::Hatched, "paypup"};

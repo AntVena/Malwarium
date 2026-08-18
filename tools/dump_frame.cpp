@@ -600,7 +600,7 @@ int main(int argc, char** argv) {
             game.tick(static_cast<uint32_t>(beats + i) * kHeartbeatMs);
         if (hasFlag(argc, argv, "override"))         // open the A+C override picker
             game.onButton({Button::A, true, true});
-        // B CYCLES the mid-combat panel (closed -> STATE -> KIT -> closed), so "stats"
+        // B CYCLES the mid-combat panel (closed -> VS -> KIT -> closed), so "stats"
         // lands on page 1 and "kit" presses through to page 2.
         if (hasFlag(argc, argv, "stats") || hasFlag(argc, argv, "kit"))
             game.onButton({Button::B, true, false});
@@ -884,10 +884,29 @@ int main(int argc, char** argv) {
             game.onButton({Button::A, true, false}); // A -> WARP
             game.onButton({Button::B, true, false}); // B -> warp-key picker
         } else if (hasFlag(argc, argv, "encounter") || hasFlag(argc, argv, "wildcombat")) {
-            for (int i = 0; i < 400 && game.nav() != Game::Nav::Encounter; ++i) {
-                if (game.nav() == Game::Nav::Wifi)
+            // Every screen an explore step can land on has to be answered, because the
+            // fallback is `ping`, and the A+C chord on anything but the armed habitat
+            // opens the Hacker face instead of stepping — one unhandled screen and the
+            // walk stops without ever reaching a fight.
+            // Walk until a fight is in front of us. BOTH navs end the walk, because
+            // `ping`'s second press doubles as the Encounter's own Fight key: a step
+            // that rolls an encounter often arrives already IN the fight, so a loop
+            // watching only for Encounter walks straight past the thing it wanted.
+            //
+            // Every other screen a step can land on has to be answered too, since the
+            // fallback is `ping` and the A+C chord on anything but the armed habitat
+            // opens the Hacker face instead of stepping.
+            const bool wild = hasFlag(argc, argv, "wildcombat");
+            auto atFight = [&] {
+                return game.nav() == Game::Nav::Encounter ||
+                       (wild && game.nav() == Game::Nav::Combat);
+            };
+            for (int i = 0; i < 600 && !atFight(); ++i) {
+                if (game.nav() == Game::Nav::Wifi ||
+                    game.nav() == Game::Nav::PostEncounter)
                     game.onButton({Button::B, true, false});
-                else if (game.nav() == Game::Nav::Shop)
+                else if (game.nav() == Game::Nav::Shop ||
+                         game.nav() == Game::Nav::ModShop)
                     game.onButton({Button::C, true, false});
                 else if (game.nav() == Game::Nav::Combat) {
                     for (int j = 0; j < 800 &&
@@ -896,8 +915,17 @@ int main(int argc, char** argv) {
                     game.onButton({Button::B, true, false});
                 } else ping();
             }
-            if (hasFlag(argc, argv, "wildcombat") && game.nav() == Game::Nav::Encounter)
-                game.onButton({Button::B, true, false});  // Fight -> live combat
+            if (wild) {
+                if (game.nav() == Game::Nav::Encounter)
+                    game.onButton({Button::B, true, false});  // Fight -> live combat
+                for (int i = 1; i <= 4; ++i)                  // a few action beats
+                    game.tick(t += kHeartbeatMs);
+                // B cycles the mid-fight panel, same as the `combat` dev hook — but on a
+                // REAL wild, which is the only fight whose KIT page can mark a prize.
+                if (hasFlag(argc, argv, "stats") || hasFlag(argc, argv, "kit"))
+                    game.onButton({Button::B, true, false});
+                if (hasFlag(argc, argv, "kit")) game.onButton({Button::B, true, false});
+            }
         } else if (hasFlag(argc, argv, "wifi")) {
             game.inventory().add("sinkhole_trap", 20);   // bypass wild encounters, free
             // Which discovery the event resolves — the thing the pet does to the

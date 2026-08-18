@@ -283,6 +283,9 @@ int g_failures = 0;
     RUN(test_absorb_sweep_endpoints)              \
     RUN(test_absorb_phase_clock)                  \
     RUN(test_combat_outro_kind)                   \
+    RUN(test_rival_prize_mask_matches_the_drop_filter) \
+    RUN(test_combat_kit_row_fits_the_panel)       \
+    RUN(test_combat_kit_page_holds_the_widest_boss) \
     /*Backlog / — shop explore events + the two shop consumables */ \
     RUN(test_shop_event_buy_decrements)           \
     RUN(test_shop_buy_gated_when_broke)           \

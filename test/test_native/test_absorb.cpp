@@ -170,6 +170,125 @@ void test_combat_outro_kind() {
     CHECK(!w.rivalFieldsUnknownMove());
 }
 
+// --- Gate: the KIT page's prize marks are the drop roll's own answer ---
+//
+// The panel marks a rival move with a "+" to say beating this could teach it. That is a
+// PROMISE, and the only thing that keeps it honest is that the mark and the roll read one
+// predicate: a mask bit that disagreed with moveIsTeachable would be the screen offering
+// a drop that cannot happen. The outro's dissolve is the same mask asked for a yes/no, so
+// checking the two against each other is checking the whole chain.
+void test_rival_prize_mask_matches_the_drop_filter() {
+    Game g{StartMode::Hatched};
+    walkToAnyCombat(g);
+    CHECK(g.nav() == Game::Nav::Combat);
+
+    // Derived from the pet's own public state rather than by calling the filter the mask
+    // is built from, which would only prove the loop runs: a move is a prize when this
+    // pet does not already own it and is not barred from it by line.
+    const MoveLoadout& kitOwned = g.moveLoadout();
+    const char* petLine = g.pet() ? g.pet()->line : nullptr;
+    auto isPrize = [&](const MoveDef* m) {
+        if (!m || kitOwned.owns(m->id)) return false;
+        return !m->line || (petLine && std::strcmp(m->line, petLine) == 0);
+    };
+
+    const uint32_t mask = g.rivalTeachableMoveMask();
+    const std::vector<const MoveDef*>& kit = g.combat().enemy().moves;
+    CHECK(!kit.empty());
+    int marked = 0;
+    for (size_t i = 0; i < kit.size(); ++i) {
+        const bool bit = RivalPrizes{mask}.marked(i);
+        CHECK(bit == isPrize(kit[i]));
+        if (bit) ++marked;
+    }
+    CHECK(marked > 0);                        // a wild always fields its area's Attack
+    CHECK(g.rivalFieldsUnknownMove() == (mask != 0));
+    // The pet's own block is never marked, which is what {} at the call site means: a
+    // fighter owns everything it fields, so every bit of an empty mask must read false.
+    for (size_t i = 0; i < kit.size(); ++i) CHECK(!RivalPrizes{}.marked(i));
+
+    // Learning the kit empties the mask — the mark is a standing fact about THIS pet,
+    // not about the rival, so a farmed-out opponent stops advertising itself.
+    for (const MoveDef* m : kit)
+        if (m && m->id) g.debugGrantMove(m->id);
+    CHECK(g.rivalTeachableMoveMask() == 0);
+
+    // A fight the world does not let a pet learn from marks nothing, however tempting the
+    // rival's kit: a Sim prop rolls no drop, so a "+" there would be an offer nothing can
+    // honour. The lethal dummy is the probe worth using — it swings Packet Storm, which a
+    // Ransomware-line pet genuinely does not own, so an ungated mask would light up.
+    Game sim{StartMode::Hatched};
+    sim.debugStartCombat(/*live=*/false, /*lethal=*/true);
+    bool simRivalHasUnowned = false;
+    for (const MoveDef* m : sim.combat().enemy().moves)
+        if (m && !sim.moveLoadout().owns(m->id)) simRivalHasUnowned = true;
+    CHECK(simRivalHasUnowned);                // the probe is live...
+    CHECK(sim.rivalTeachableMoveMask() == 0); // ...and the gate still refuses it
+}
+
+// --- Gate: a KIT row fits the panel it is drawn in ---
+//
+// The panel is 24 characters wide and a KIT row spends them on four things: the prize
+// gutter, the kind tag, the move's name and its power. Marquee catches an overrun at
+// runtime by scrolling, which means a row that does not fit still LOOKS drawn — the name
+// simply stops mid-word against the number. So the budget is asserted here instead, over
+// the generic pool, which is what a wild or a boss fields and therefore what the rival
+// block is actually read on. (A line move can be longer and scroll; it only ever reaches
+// this page on another operator's pet.)
+void test_combat_kit_row_fits_the_panel() {
+    // The row's own geometry, from drawCombat's stat panel: text runs from textX to
+    // textR, a move row carries no indent of its own (its gutter is the indent), and
+    // pairRow keeps a 4px gap before the value.
+    constexpr int kTextX = 16, kTextR = kActiveW - 16, kIndent = 0, kGap = 4;
+    int checked = 0;
+    for (int i = 0; i < kMovesCount; ++i) {
+        const MoveDef& m = kMoves[i];
+        if (m.line) continue;                 // line kits reach this page only in a duel
+        ++checked;
+        char label[44];
+        std::snprintf(label, sizeof(label), "+ %s %s", moveKindTag(m.kind),
+                      m.displayName);
+        char pw[8];
+        std::snprintf(pw, sizeof(pw), "%d", m.power);
+        const int room = (kTextR - textWidth(pw)) - (kTextX + kIndent) - kGap;
+        CHECK(textWidth(label) <= room);
+    }
+    CHECK(checked > 20);                      // guard against a vacuous pass
+}
+
+// --- Gate: the KIT page holds the widest kit the game can put in front of a player ---
+//
+// The panel's box is a fixed rectangle and a row that would overrun it DECLINES to draw,
+// which is the right failure (it must never overprint the fight underneath) and an
+// invisible one: the rows lost are the last ones, and on this page the last rows are the
+// boss's own signature moves — exactly what the page was opened to read.
+//
+// So the capacity is asserted against the deepest thing the ladder can field. This is
+// what a boss growing a third `teaches`, or an area declaring a wild pair the rival also
+// carries, has to come past.
+void test_combat_kit_page_holds_the_widest_boss() {
+    int widest = 0;
+    const char* worst = "";
+    auto consider = [&](const BossGauntlet& g) {
+        for (const CombatEnemy& e : g.rounds)
+            if (static_cast<int>(e.moveIds.size()) > widest) {
+                widest = static_cast<int>(e.moveIds.size());
+                worst = e.name;
+            }
+    };
+    for (int a = 0; a < kExplSectors; ++a) {
+        for (int s = 0; s < kExplSubAreas; ++s) consider(subAreaBoss(a, s));
+        consider(areaBoss(a));
+    }
+    CHECK(widest > 0 && worst[0]);           // the sweep actually found something
+    // What the page spends its rows on: the rival's name-and-Health row, one row per
+    // move, the Exploit an arena rival may be carrying, and the legend under a marked
+    // list. Nothing on this page belongs to the local pet — its moves are on the A+C
+    // command picker, which is where they are chosen from.
+    const int rowsNeeded = 1 + widest + 1 + 1;
+    CHECK(rowsNeeded <= kCombatPanelRows);
+}
+
 // --- Gate: the Wi-Fi event's discovery beat reports which of the four it was ---
 //
 // The screen turns Game::NetDiscovery into how far the pet eats the network glyph, so

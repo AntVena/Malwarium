@@ -38,7 +38,7 @@ Zone healthZone(int health, int maxHealth) {
 // sits low so a tall Daemon (up to 64 logical / 112 active px) has headroom before it
 // reaches the rival's Health row, at the cost of the player block below it — that block
 // is packed tight against the hint band instead of leaving it mid-screen.
-constexpr int kSpriteShelf = 165;
+constexpr int kSpriteShelf = kCombatSpriteShelf;   // the panel's geometry names it too
 // The outer inset a fighter is seated against before it is allowed to crop, and the
 // bounds on the clash lane: never tighter than the strike mark drawn in it, never so
 // wide that two small creatures read as ignoring each other.
@@ -377,83 +377,152 @@ void drawPassiveStrip(Framebuffer& fb, const Combatant& c, int x, int y, int w, 
 
 } // namespace
 
-void CombatTokens::push(const char* fmt, ...) {
-    if (n >= kCap) return;               // silently full is still better than overrun
-    va_list ap;
-    va_start(ap, fmt);
-    std::vsnprintf(t[n], kLen, fmt, ap);
-    va_end(ap);
-    ++n;
-}
-
-bool CombatTokens::has(const char* prefix) const {
-    const size_t len = std::strlen(prefix);
-    for (int i = 0; i < n; ++i)
-        if (std::strncmp(t[i], prefix, len) == 0) return true;
-    return false;
-}
-
-CombatTokens combatStateTokens(const Combatant& c, bool withGuard, int* leanCount) {
-    CombatTokens out;
-    // --- The LEANS -----------------------------------------------------------
+CombatVitals combatVitals(const Combatant& c) {
+    CombatVitals v;
+    v.health = c.health > 0 ? c.health : 0;
+    v.maxHealth = c.maxHealth;
+    // Attack power is the EFFECTIVE figure. Two different mechanics push on the same
+    // number from different fields — a siphon shifts powerMultPct while a Lockout stack
+    // accumulates in stackPowerBonus, and combat multiplies by the SUM (combat.cpp's
+    // applyEffect). Reading only one of them makes a stacked pet look like it is purely
+    // losing ground to a drain it is in fact out-earning.
+    v.power = c.powerMultPct + c.stackPowerBonus;
+    // The incoming-damage cut under the never-immune clamp the attack path applies, plus
+    // the Cipher track feeding it.
+    v.defense = c.dmgReducePct + c.stackDefenseBonus;
+    if (v.defense > kLevelDmgReduceMaxPct) v.defense = kLevelDmgReduceMaxPct;
     // Speed is float (a Phishing siphon steals fractional amounts); round to the nearest
     // whole tick — a decimal point would break the tabular-digit convention every other
     // numeric on the device follows.
-    const int spd = static_cast<int>(std::lround(c.speed));
-    if (c.speed != c.baseSpeed)
-        out.push("SPD %d%+d", spd,
-                 static_cast<int>(std::lround(c.speed - c.baseSpeed)));
-    else
-        out.push("SPD %d", spd);
-    // Attack power leads with the EFFECTIVE figure and then breaks out what moved it.
-    // Two different mechanics push on the same number from different fields — a siphon
-    // shifts powerMultPct while a Lockout stack accumulates in stackPowerBonus, and
-    // combat multiplies by the SUM (combat.cpp's applyEffect). Reporting only the siphon
-    // made a stacked pet look like it was purely losing ground to a drain it was in fact
-    // out-earning.
-    out.push("PWR %d", c.powerMultPct + c.stackPowerBonus);
-    if (c.powerMultPct != c.basePowerMultPct)
-        out.push("SIPH%+d", c.powerMultPct - c.basePowerMultPct);
-    if (c.stackPowerBonus > 0) out.push("STK PWR+%d", c.stackPowerBonus);
-    // The effective incoming-damage cut, under the never-immune clamp the attack path
-    // applies, plus the Cipher track feeding it.
-    int cut = c.dmgReducePct + c.stackDefenseBonus;
-    if (cut > kLevelDmgReduceMaxPct) cut = kLevelDmgReduceMaxPct;
-    if (cut > 0) out.push("DEF %d", cut);
-    if (c.stackDefenseBonus > 0) out.push("STK DEF+%d", c.stackDefenseBonus);
-    if (leanCount) *leanCount = out.n;
+    v.speed = static_cast<int>(std::lround(c.speed));
+    return v;
+}
 
-    // --- The ABSORBS and AFFLICTIONS ----------------------------------------
-    // What is standing between this fighter and its Health, and what is eating it.
-    if (c.shieldHp > 0) out.push("SHLD %d", c.shieldHp);
-    // The Backup Drive carried INTO this fight (combat.h itemShield): still holding, or
-    // already spent. The two are read from DIFFERENT fields because spending the drive
-    // clears itemShield, so testing that one flag for both states would never render
-    // USED at all.
-    if (c.itemShield || c.backupUse != Combatant::BackupUse::None)
-        out.push("BKUP %s", c.itemShield ? "RDY" : "USED");
-    if (withGuard && c.guard > 0) out.push("GRD %d", c.guard);
-    // RNSM is the numeric half of the green strip on the gauges — the pool, and the
-    // turns left before it lands.
-    if (c.ransomPool > 0) out.push("RNSM %d/%d", c.ransomPool, c.ransomTurnsLeft);
-    if (c.trojanTrapCount > 0) out.push("TRAP %d", c.trojanTrapCount);
-    if (c.wormReplicaCount > 0) out.push("COPY %d", c.wormReplicaCount);
-    if (c.dotTurnsLeft > 0) out.push("DOT %dx%d", c.dotPerTurn, c.dotTurnsLeft);
-    if (c.lockedTurnsLeft > 0) out.push("STUN %d", c.lockedTurnsLeft);
-    // The armed Exploit and whatever it still has left — charges, turns, or nothing at
-    // all for a kind that simply holds (CrewExploitState::live).
-    if (c.crewExploit.live()) {
-        char ce[16];
-        crewExploitLabel(ce, sizeof(ce), c.crewExploit.kind, c.crewExploit.count());
-        out.push("%s", ce);
-    }
-    return out;
+void CombatVsGrid::push(const char* tag, const char* a, const char* b) {
+    if (n >= kCap) return;
+    std::snprintf(r[n].tag, sizeof(r[n].tag), "%s", tag);
+    std::snprintf(r[n].local, sizeof(r[n].local), "%s", a ? a : "");
+    std::snprintf(r[n].rival, sizeof(r[n].rival), "%s", b ? b : "");
+    ++n;
+}
+
+bool CombatVsGrid::has(const char* tag) const {
+    for (int i = 0; i < n; ++i)
+        if (std::strcmp(r[i].tag, tag) == 0) return true;
+    return false;
+}
+
+CombatVsGrid combatVsGrid(const Combatant& local, const Combatant& rival,
+                          bool localGuard) {
+    CombatVsGrid g;
+    char a[12], b[12];
+    // A pair of cells built the same way for both fighters — the whole grid is this
+    // shape, and writing it once is what stops one side from being formatted (or
+    // forgotten) differently from the other.
+    auto pair = [&](const char* tag, bool live) {
+        if (live) g.push(tag, a, b);
+    };
+    auto num = [](char* out, size_t cap, int v, bool live) {
+        if (live) std::snprintf(out, cap, "%d", v);
+        else out[0] = '\0';
+    };
+
+    const CombatVitals lv = combatVitals(local), rv = combatVitals(rival);
+
+    // --- The four vitals, always. These are the fight. ------------------------------
+    std::snprintf(a, sizeof(a), "%d/%d", lv.health, lv.maxHealth);
+    std::snprintf(b, sizeof(b), "%d/%d", rv.health, rv.maxHealth);
+    pair("HP", true);
+    // Power's delta is everything pushing on it at once — a Phishing siphon moving
+    // powerMultPct and a Ransomware Lockout stack accumulating in stackPowerBonus, which
+    // combat multiplies by the SUM. One signed figure says which way the pet is going;
+    // the effective number beside it says where it has got to.
+    auto pwrCell = [](char* out, size_t cap, const Combatant& c, const CombatVitals& v) {
+        const int d = (c.powerMultPct - c.basePowerMultPct) + c.stackPowerBonus;
+        if (d) std::snprintf(out, cap, "%d%+d", v.power, d);
+        else std::snprintf(out, cap, "%d", v.power);
+    };
+    pwrCell(a, sizeof(a), local, lv);
+    pwrCell(b, sizeof(b), rival, rv);
+    pair("PWR", true);
+    auto defCell = [](char* out, size_t cap, const Combatant& c, const CombatVitals& v) {
+        if (c.stackDefenseBonus) std::snprintf(out, cap, "%d%+d", v.defense,
+                                               c.stackDefenseBonus);
+        else std::snprintf(out, cap, "%d", v.defense);
+    };
+    defCell(a, sizeof(a), local, lv);
+    defCell(b, sizeof(b), rival, rv);
+    pair("DEF", true);
+    auto spdCell = [](char* out, size_t cap, const Combatant& c, const CombatVitals& v) {
+        const int d = static_cast<int>(std::lround(c.speed - c.baseSpeed));
+        if (d) std::snprintf(out, cap, "%d%+d", v.speed, d);
+        else std::snprintf(out, cap, "%d", v.speed);
+    };
+    spdCell(a, sizeof(a), local, lv);
+    spdCell(b, sizeof(b), rival, rv);
+    pair("SPD", true);
+
+    // --- What changes what you would do NEXT turn ------------------------------------
+    num(a, sizeof(a), local.lockedTurnsLeft, local.lockedTurnsLeft > 0);
+    num(b, sizeof(b), rival.lockedTurnsLeft, rival.lockedTurnsLeft > 0);
+    pair("STUN", local.lockedTurnsLeft > 0 || rival.lockedTurnsLeft > 0);
+
+    auto dotCell = [](char* out, size_t cap, const Combatant& c) {
+        if (c.dotTurnsLeft > 0) std::snprintf(out, cap, "%dx%d", c.dotPerTurn,
+                                              c.dotTurnsLeft);
+        else out[0] = '\0';
+    };
+    dotCell(a, sizeof(a), local);
+    dotCell(b, sizeof(b), rival);
+    pair("DOT", local.dotTurnsLeft > 0 || rival.dotTurnsLeft > 0);
+
+    num(a, sizeof(a), local.shieldHp, local.shieldHp > 0);
+    num(b, sizeof(b), rival.shieldHp, rival.shieldHp > 0);
+    pair("SHLD", local.shieldHp > 0 || rival.shieldHp > 0);
+
+    // The brace is the local pet's alone: a rival's is spent before this could be read.
+    num(a, sizeof(a), local.guard, localGuard && local.guard > 0);
+    b[0] = '\0';
+    pair("GRD", localGuard && local.guard > 0);
+
+    // The ransom pool and the turns before it lands — the one affliction whose VALUE is
+    // the decision, since it is how much is about to arrive and when.
+    auto rnsmCell = [](char* out, size_t cap, const Combatant& c) {
+        if (c.ransomPool > 0) std::snprintf(out, cap, "%d/%d", c.ransomPool,
+                                            c.ransomTurnsLeft);
+        else out[0] = '\0';
+    };
+    rnsmCell(a, sizeof(a), local);
+    rnsmCell(b, sizeof(b), rival);
+    pair("RNSM", local.ransomPool > 0 || rival.ransomPool > 0);
+
+    // --- What is merely standing there ----------------------------------------------
+    auto bkupCell = [](char* out, size_t cap, const Combatant& c) {
+        // Read from DIFFERENT fields because spending the drive clears itemShield, so
+        // testing one flag for both states would never render USED at all.
+        if (c.itemShield) std::snprintf(out, cap, "RDY");
+        else if (c.backupUse != Combatant::BackupUse::None) std::snprintf(out, cap, "USED");
+        else out[0] = '\0';
+    };
+    bkupCell(a, sizeof(a), local);
+    bkupCell(b, sizeof(b), rival);
+    pair("BKUP", a[0] || b[0]);
+
+    num(a, sizeof(a), local.trojanTrapCount, local.trojanTrapCount > 0);
+    num(b, sizeof(b), rival.trojanTrapCount, rival.trojanTrapCount > 0);
+    pair("TRAP", local.trojanTrapCount > 0 || rival.trojanTrapCount > 0);
+
+    num(a, sizeof(a), local.wormReplicaCount, local.wormReplicaCount > 0);
+    num(b, sizeof(b), rival.wormReplicaCount, rival.wormReplicaCount > 0);
+    pair("COPY", local.wormReplicaCount > 0 || rival.wormReplicaCount > 0);
+    return g;
 }
 
 void drawCombat(Framebuffer& fb, const Combat& combat,
                 const SpriteData* playerSprite, const SpriteData* enemySprite,
                 int beat, int animBeat, int hitBeat, int statPage,
-                const CombatSides& sides, const CombatOutro& outro) {
+                const CombatSides& sides, const CombatOutro& outro,
+                const RivalPrizes& prizes) {
     fb.clear(palColor(Pal::PAPER));
     // LOCAL and RIVAL are ROLES, not Combat's player/enemy slots. Everything the screen
     // says and seats is bound to the role: the local pet gets the bottom, zoned Health
@@ -768,24 +837,23 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
         }
     }
 
-    // --- Stat panel (B cycles: closed -> STATE -> KIT -> closed) ------------
-    // A live readout for both fighters, boxed over the sprites so the always-on chrome
-    // stays clean. Hidden while the override picker owns the same space.
+    // --- Stat panel (B cycles: closed -> VS -> KIT -> closed) ------------
+    // A live readout, boxed over the sprites so the always-on chrome stays clean. Hidden
+    // while the override picker owns the same space. What each page is FOR, and why the
+    // split falls where it does, is on kCombatStatPages in the header.
     //
-    // THE PANEL IS 24 CHARACTERS WIDE. Everything below is laid out against that number
-    // rather than against a generous snprintf buffer, because the old panel packed its
-    // absorbs and afflictions into one 40-char string and drew it into this box: the
-    // moment three of them were live the rest was silently cut, and three of them being
-    // live is exactly the fight that needed reading. So the token half WRAPS onto as
-    // many lines as it needs, and the fixed half is laid out in aligned columns.
+    // THE PANEL IS 24 CHARACTERS WIDE, and everything below is laid out against that
+    // number rather than against a generous snprintf buffer. A row that outgrows it does
+    // not fail loudly — the marquee scrolls it and the panel still looks drawn — so the
+    // budget is held by gates over the content that reaches these rows rather than by
+    // eye. The token half WRAPS onto as many lines as it needs; the rest is columns.
     //
-    // The offense/defense figures lead with the EFFECTIVE number and then break out what
-    // moved it. This matters because two different mechanics push on the same number
-    // from different fields: a Phishing siphon shifts powerMultPct while a Ransomware
-    // Lockout stack accumulates in stackPowerBonus, and combat multiplies by the SUM
-    // (combat.cpp's applyEffect). Reporting only the siphon delta made a stacked pet
-    // look like it was purely losing ground to a drain it was in fact out-earning — and
-    // left the whole Lockout/Cipher stacking identity with no readout anywhere.
+    // THE BOX IS A FIXED RECTANGLE, sized once (kCombatPanelRows) rather than to its
+    // contents. A panel that grew and shrank as tokens came and went would redraw at a
+    // different size every turn, and a frame of chrome that moves under a reader is worse
+    // than one that is sometimes half empty. The size it is fixed AT is the worst case
+    // either page can reach: the deepest boss kit the ladder fields, which
+    // test_combat_kit_page_holds_the_widest_boss is what holds.
     if (statPage > 0 && !combat.overrideOpen()) {
         // The box stops short of the last-move line (logY) rather than running to the
         // foot: what a fighter just DID is the other half of reading a fight, and a
@@ -794,17 +862,18 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
         // that grew and shrank as tokens came and went would redraw at a different size
         // every turn, and a frame of chrome that moves under a reader is worse than one
         // that is sometimes half empty.
-        const int boxY = 28, boxBottom = logY - 6, pitch = 11;
+        const int boxY = kCombatPanelTop, boxBottom = kCombatPanelBottom,
+                  pitch = kCombatPanelPitch;
         const int textX = 16, textR = kActiveW - 16;
         fb.fillRect(8, boxY, kActiveW - 16, boxBottom - boxY, palColor(Pal::TRACK));
         char head[16];
         std::snprintf(head, sizeof(head), "%s %d/%d",
-                      statPage == 1 ? "STATE" : "KIT", statPage, kCombatStatPages);
+                      statPage == 1 ? "VS" : "KIT", statPage, kCombatStatPages);
         drawText(fb, textX, boxY + 4, head, palColor(Pal::INK));
         drawText(fb, textR - textWidth("B NEXT"), boxY + 4, "B NEXT",
                  palColor(Pal::INK_DIM));
         fb.fillRect(textX, boxY + 14, textR - textX, 1, palColor(Pal::PAPER));
-        int y = boxY + 20;
+        int y = kCombatPanelFirstRow;
 
         // Every row goes through here, and every row can DECLINE to draw: a fight with
         // enough going on to overflow the box must lose its last line rather than
@@ -827,6 +896,15 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
                                 false);
             y += pitch;
         };
+        // The hairline between the two fighters' blocks — the same inset rule the header
+        // draws, so "these rows belong to that name" is stated by the same mark on both
+        // pages rather than by a gap the eye has to measure.
+        auto sepRow = [&] {
+            if (y + 4 > boxBottom) return;
+            y += 2;
+            fb.fillRect(textX, y, textR - textX, 1, palColor(Pal::PAPER));
+            y += 4;
+        };
         // Who a block belongs to, as the operator's own caption for the seat.
         auto whoRow = [&](const char* who, const Combatant& c) {
             char hp[20];
@@ -837,68 +915,122 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
         };
 
         if (statPage == 1) {
-            // Pack the pure token set (combatStateTokens) onto as many lines as it
-            // needs. `from`/`to` is what keeps the two GROUPS legible as groups — the
-            // leans flush, then the afflictions — while neither can be cut.
-            auto flush = [&](const CombatTokens& tk, int from, int to, int indent) {
-                char line[48];
-                int len = 0;
-                const int cols = (textR - textX - indent) / kFontAdvance;
-                for (int i = from; i < to; ++i) {
-                    const int add = static_cast<int>(std::strlen(tk.t[i])) + (len ? 2 : 0);
-                    if (len && len + add > cols) {
-                        row(indent, line, Pal::INK_DIM);
-                        len = 0;
-                    }
-                    len += std::snprintf(line + len, sizeof(line) - len, "%s%s",
-                                         len ? "  " : "", tk.t[i]);
-                }
-                if (len) row(indent, line, Pal::INK_DIM);
+            // === VS — the head-to-head =====================================
+            //
+            // One grid, built by combatVsGrid: a tag, then each fighter's value for it.
+            // The rows it emits are already in decision order, so a box that runs out
+            // loses the least of it — and says so, rather than going quiet.
+            const int col2R = textR;                  // the rival's column, hard right
+            const int col1R = textR - 9 * kFontAdvance;   // ...and the local pet's
+            int dropped = 0;
+            auto vsRow = [&](const char* label, const char* a, Pal ac, const char* b,
+                             Pal bc) {
+                if (y + kFontH > boxBottom) { ++dropped; return; }
+                drawText(fb, textX, y, label, palColor(Pal::INK_DIM));
+                // A dash, never a blank: a fighter that is not stunned and a stun the
+                // panel failed to report must not look the same.
+                const char* av = a[0] ? a : "-";
+                const char* bv = b[0] ? b : "-";
+                drawText(fb, col1R - textWidth(av), y, av,
+                         palColor(a[0] ? ac : Pal::INK_DIM));
+                drawText(fb, col2R - textWidth(bv), y, bv,
+                         palColor(b[0] ? bc : Pal::INK_DIM));
+                y += pitch;
             };
-            auto stateBlock = [&](const char* who, const Combatant& c, bool withGuard) {
-                whoRow(who, c);
-                int leans = 0;
-                const CombatTokens tk = combatStateTokens(c, withGuard, &leans);
-                flush(tk, 0, leans, 8);
-                flush(tk, leans, tk.n, 8);
+            // Whose column is whose, in the operator's own captions for the two seats.
+            vsRow("", sides.localLabel, Pal::INK, sides.rivalLabel, Pal::INK);
+            const CombatVsGrid g = combatVsGrid(pl, en, /*localGuard=*/true);
+            for (int i = 0; i < g.n; ++i) {
+                // Health is the only row carrying a zone: a fighter in the Critical band
+                // is the one fact here that changes what you do next.
+                const bool hp = std::strcmp(g.r[i].tag, "HP") == 0;
+                const bool lCrit =
+                    hp && healthZone(pl.health, pl.maxHealth) == Zone::Critical;
+                const bool rCrit =
+                    hp && healthZone(en.health, en.maxHealth) == Zone::Critical;
+                vsRow(g.r[i].tag, g.r[i].local, lCrit ? Pal::HOT : Pal::INK,
+                      g.r[i].rival, rCrit ? Pal::HOT : Pal::INK);
+            }
+            // The armed crew Exploit is the one thing that cannot be a shared row: each
+            // side carries a DIFFERENT one, so the tag is per-fighter and there is no
+            // column for it to live in. It gets a line of its own, under the grid.
+            auto exploitRow = [&](const char* who, const Combatant& c) {
+                if (!c.crewExploit.live()) return;
+                if (y + kFontH > boxBottom) { ++dropped; return; }
+                char ce[16];
+                crewExploitLabel(ce, sizeof(ce), c.crewExploit.kind,
+                                 c.crewExploit.count());
+                char line[40];
+                std::snprintf(line, sizeof(line), "%s  %s", who, ce);
+                drawText(fb, textX, y, line, palColor(Pal::ACCENT));
+                y += pitch;
             };
-            stateBlock(sides.localLabel, pl, true);
-            y += 3;                   // a breath between the two fighters' blocks
-            stateBlock(sides.rivalLabel, en, false);
+            if (pl.crewExploit.live() || en.crewExploit.live()) {
+                sepRow();
+                exploitRow(sides.localLabel, pl);
+                exploitRow(sides.rivalLabel, en);
+            }
+            // Nothing may vanish without saying so. A row that could not be drawn is a
+            // fact the operator cannot see, and a panel that simply stopped would look
+            // exactly like a fighter with nothing left to report.
+            if (dropped > 0) {
+                char more[24];
+                std::snprintf(more, sizeof(more), "+%d MORE", dropped);
+                drawText(fb, textX, boxBottom - kFontH, more, palColor(Pal::WARN));
+            }
         } else {
-            // KIT: what each side can actually do. A rolled arena opponent brings a real
-            // loadout, so this is the page a counter-play is chosen off — and it says
-            // the same things about the rival that STAT's LOADOUT page says about the
-            // pet, in the same words (the move's own displayName, its kind, its power).
-            auto kitBlock = [&](const char* who, const Combatant& c, bool showCarried) {
-                whoRow(who, c);
-                for (size_t i = 0; i < c.moves.size(); ++i) {
-                    const MoveDef* m = c.moves[i];
-                    if (!m) continue;
-                    char name[40];
-                    std::snprintf(name, sizeof(name), "%s %s", moveKindTag(m->kind),
-                                  m->displayName);
-                    char pw[8];
-                    std::snprintf(pw, sizeof(pw), "%d", m->power);
-                    // The move it is CHANNELLING is the one thing on this page that is
-                    // not a standing fact, and it is the most urgent — a wind-up is a
-                    // hit already on its way.
-                    const bool winding = static_cast<int>(i) == c.channelMoveIdx;
-                    pairRow(8, name, winding ? Pal::WARN : Pal::INK_DIM, pw,
-                            Pal::INK_DIM);
-                }
-                // The Exploit this side is CARRYING but has not fired. Shown for a
-                // fighter that arms its own (an arena rival) — the operator's own is on
-                // the A+C picker, where they are about to spend it. The trigger it waits
-                // for is deliberately NOT stated: which moment a rival commits to is the
-                // read the arena exists to teach.
-                if (showCarried && c.autoExploit.label && !c.autoExploitFired)
-                    pairRow(8, c.autoExploit.label, Pal::ACCENT,
-                            crewExploitTag(c.autoExploit.kind), Pal::ACCENT);
-            };
-            kitBlock(sides.localLabel, pl, false);
-            y += 3;
-            kitBlock(sides.rivalLabel, en, true);
+            // === KIT — what the RIVAL can do, and what it is worth ===========
+            //
+            // The rival's list ONLY. The pet's own moves are on the A+C command picker,
+            // which is where they are chosen from and where their powers are already
+            // read; repeating them here bought nothing and cost half the box — and a
+            // boss fields up to seven moves, so the two lists together overran the panel
+            // and the rival's last rows, the ones a player opened this page for, were
+            // the ones silently dropped.
+            whoRow(sides.rivalLabel, en);
+            for (size_t i = 0; i < en.moves.size(); ++i) {
+                const MoveDef* m = en.moves[i];
+                if (!m) continue;
+                // Every row opens with a two-character GUTTER, marked or not, so the kind
+                // tags and the names beneath them stay in columns instead of stepping in
+                // and out by whether a row happens to be a prize. A marker that moved the
+                // text it marks would cost more legibility than it bought.
+                //
+                // The mark is a glyph rather than a word for width: the row already
+                // carries a kind tag, a name and a number inside 24 characters. The
+                // legend below is where the word goes, once, instead of on every row.
+                const bool learnable = prizes.marked(i);
+                char name[44];
+                std::snprintf(name, sizeof(name), "%s%s %s", learnable ? "+ " : "  ",
+                              moveKindTag(m->kind), m->displayName);
+                char pw[8];
+                std::snprintf(pw, sizeof(pw), "%d", m->power);
+                // The move it is CHANNELLING is the one thing here that is not a standing
+                // fact, and the most urgent — a wind-up is a hit already on its way. It
+                // takes the colour when a row is both, which costs the prize nothing: the
+                // gutter mark is a separate channel and is still there to be read.
+                const bool winding = static_cast<int>(i) == en.channelMoveIdx;
+                const Pal nameCol = winding     ? Pal::WARN
+                                    : learnable ? Pal::CALM
+                                                : Pal::INK_DIM;
+                // No row indent: the gutter IS the indent setting these under the name
+                // above, and paying for both would spend two characters of a
+                // 24-character line saying one thing.
+                pairRow(0, name, nameCol, pw, Pal::INK_DIM);
+            }
+            // The Exploit the rival is CARRYING but has not fired (an arena rival arms
+            // its own). The trigger it waits for is deliberately NOT stated: which moment
+            // a rival commits to is the read the arena exists to teach.
+            if (en.autoExploit.label && !en.autoExploitFired)
+                pairRow(16, en.autoExploit.label, Pal::ACCENT,
+                        crewExploitTag(en.autoExploit.kind), Pal::ACCENT);
+            // What the gutter mark means, spelt out once under the list that uses it —
+            // and only when something is marked, so the line answers a question the page
+            // has just raised rather than standing as chrome.
+            if (prizes.mask) {
+                y += 3;                          // a footer of the list, not a row in it
+                row(0, "+ WIN TO LEARN", Pal::CALM);
+            }
         }
     }
 

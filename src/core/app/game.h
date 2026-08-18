@@ -362,12 +362,16 @@ public:
     std::vector<ProseRow> tourneyScoutRows() const;
     std::vector<ProseRow> tourneyBriefRows() const;
     WifiOutcome wifiOutcome() const { return wifiOutcome_; }   // rolled sub-outcome
-    // Does the fighter currently in the rival seat field a move this pet does not own?
-    // The combat screen turns this into WHICH dissolve plays over the beaten rival
-    // (CombatOutro, core/ui/combat_screen.h), so a fight's last beat says whether that
-    // opponent had anything the pet hasn't got. Public so a gate can assert the answer
-    // rather than inspect pixels.
-    bool rivalFieldsUnknownMove() const;
+    // WHICH of the rival's moves beating it could teach this pet — one bit per index
+    // into its kit, and the single answer to that question anywhere on the screen. The
+    // combat STAT panel's KIT page marks each set bit in its gutter (RivalPrizes,
+    // core/ui/combat_screen.h) and the outro turns the whole mask into which dissolve
+    // plays, so the promise the last beat makes and the list the panel showed are the
+    // same fact rather than two readings of it. Empty in any fight that cannot teach.
+    uint32_t rivalTeachableMoveMask() const;
+    // ...and that mask as the yes/no the dissolve needs. Public so a gate can assert the
+    // answer rather than inspect pixels.
+    bool rivalFieldsUnknownMove() const { return rivalTeachableMoveMask() != 0; }
     // Does the fight on screen close with a dissolve over the beaten rival, and is that
     // dissolve still running? The render side picks WHICH one plays (CombatOutro); this
     // is the half the tick needs, because the result beat's hands-off auto-dismiss must
@@ -1952,6 +1956,11 @@ private:
     // absorb (rivalFieldsUnknownMove) is a PROMISE that the roll has something to give:
     // if the two ever disagreed the screen would advertise a drop that cannot happen.
     bool moveIsTeachable(const MoveDef* m) const;
+    // Is the fight on screen one the WORLD lets a pet learn from at all? A duel and an
+    // arena bout are another operator's pet and a Sim dummy is a prop, so none of them
+    // rolls a move drop — and nothing on screen may offer one. Read by the outro (which
+    // adds "and won") and by the mask the KIT page marks its prizes from.
+    bool combatCanTeach() const;
     void startEncounter();                          // roll the malbeast, open the intro
     void onEncounter(const ButtonEvent& ev);        // Fight / Flee / Sinkhole
     void resolveFlee();                             // pre-fight escape roll

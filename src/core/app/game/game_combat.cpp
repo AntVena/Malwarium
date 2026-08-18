@@ -282,7 +282,7 @@ void Game::onCombat(const ButtonEvent& ev) {
         } else if (ev.button == Button::C) combat_.cancelOverride();
         return;
     }
-    // B CYCLES the stat panel — closed -> STATE -> KIT -> closed (combat_screen.h). A
+    // B CYCLES the stat panel — closed -> VS -> KIT -> closed (combat_screen.h). A
     // live readout that does NOT pause the fight, so paging through it costs turns and
     // is a real decision rather than a free look.
     if (ev.button == Button::B) {
@@ -635,26 +635,42 @@ void Game::finishCombat() {
     persistSave();
 }
 
-bool Game::combatOutroEligible() const {
-    // Only a WON fight against something the world owns. A duel or an arena bout is
-    // another operator's pet and a Sim dummy is a prop — neither is the game's to take
-    // apart, and neither answers the question the two dissolves exist to answer.
-    return !pvpFighting() && combat_.outcome() == Combat::Outcome::Win &&
+bool Game::combatCanTeach() const {
+    // Only a fight against something the world owns. A duel or an arena bout is another
+    // operator's pet and a Sim dummy is a prop — neither is the game's to take apart, and
+    // neither rolls a drop, so neither may be shown as having anything to give.
+    return !pvpFighting() &&
            (combatCaller_ == CombatCaller::Wild || combatCaller_ == CombatCaller::Boss);
+}
+
+bool Game::combatOutroEligible() const {
+    // ...and WON, which is the only thing the dissolve adds to the question above: the
+    // KIT panel answers it live, mid-fight, off the same gate.
+    return combatCanTeach() && combat_.outcome() == Combat::Outcome::Win;
 }
 
 bool Game::combatDissolveRunning() const {
     return combatOutroEligible() && fxBeat_ < kAbsorbTotalBeats;
 }
 
-bool Game::rivalFieldsUnknownMove() const {
-    // Exactly the roll's own filter (moveIsTeachable), never a lookalike: the absorb is
-    // a promise that beating this thing COULD teach something, so anything the filter
+uint32_t Game::rivalTeachableMoveMask() const {
+    // Exactly the roll's own filter (moveIsTeachable), never a lookalike: a mark here is
+    // a promise that beating this thing COULD teach that move, so anything the filter
     // rejects — an already-owned move, the innate jab, another line's exclusive — must
-    // not light it up. A rival whose whole kit is rejected shreds, which is the truth.
-    for (const MoveDef* m : combat_.enemy().moves)
-        if (moveIsTeachable(m)) return true;
-    return false;
+    // not light up. A rival whose whole kit is rejected returns 0, and shreds, which is
+    // the truth.
+    if (!combatCanTeach()) return 0;
+    // The rival BY ROLE is Combat's enemy_ in every fight that reaches here: the one
+    // seating that differs (a duel guest, core/ui/combat_screen.h's CombatSides) is a
+    // duel, which combatCanTeach has already refused.
+    uint32_t mask = 0;
+    const std::vector<const MoveDef*>& kit = combat_.enemy().moves;
+    // 32 is far above any kit the game builds — a boss carries the depth spine, its
+    // area's rider and at most kMaxBossTeaches — so the bound is a guard on the shift,
+    // not a limit anything is authored against.
+    for (size_t i = 0; i < kit.size() && i < 32; ++i)
+        if (moveIsTeachable(kit[i])) mask |= 1u << i;
+    return mask;
 }
 
 void Game::debugStartCombat(bool live, bool lethal) {

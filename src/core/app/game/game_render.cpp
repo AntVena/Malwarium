@@ -690,8 +690,12 @@ void Game::drawCombatScreen(Framebuffer& fb) const {
                                               : CombatOutro::Kind::Shred;
         outro.beat = fxBeat_;
     }
+    // What the KIT page marks as worth winning — the same mask the outro's dissolve is
+    // the yes/no of, so the panel and the last beat of the fight cannot disagree.
+    RivalPrizes prizes;
+    prizes.mask = rivalTeachableMoveMask();
     drawCombat(fb, combat_, ps, es, beat_, combatAnimBeat_, combatHitBeat_,
-               combatStatsPage_, sides, outro);
+               combatStatsPage_, sides, outro, prizes);
 }
 
 void Game::drawEncounterScreen(Framebuffer& fb) const {
