@@ -38,9 +38,11 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-    # A publish that cannot finish should fail rather than hold the deploy slot:
-    # every step here is minutes, so anything near the cap is stuck, not slow.
-    timeout-minutes: 30
+    # A publish that cannot finish should fail rather than hold the deploy slot.
+    # The cap has to clear the worst case rather than the usual one: a cold
+    # toolchain cache turns `make pages` from minutes into most of this window,
+    # since it downloads the espressif32 toolchain before it compiles anything.
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -53,6 +55,13 @@ jobs:
             ~/.platformio
             ~/.cache/pip
           key: pio-${{ runner.os }}-${{ hashFiles('platformio.ini') }}
+          # Without a prefix fallback, ANY edit to platformio.ini misses the cache
+          # outright and re-downloads the whole espressif32 toolchain — and the
+          # save step only runs on a green job, so one timeout leaves the next run
+          # cold as well. The restore key reuses the last toolchain and lets pio
+          # fetch only what actually changed.
+          restore-keys: |
+            pio-${{ runner.os }}-
       - name: Install PlatformIO
         run: pip install --upgrade platformio
       # The other half of the pair in gates.yml: a workflow that fails to parse
