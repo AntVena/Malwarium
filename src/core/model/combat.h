@@ -163,7 +163,10 @@ struct Combatant {
     // Defence's investment tiers, resolved once by applyLevelStatPoints. Both are 0 for
     // any fighter that has not committed to the stat, which is every enemy and most pets.
     int pierceResistPct = 0;    // cuts an incoming attack's own armorPiercePct
-    int braceRetainPct = 0;     // % of an unspent brace that carries to the next hit
+    // % of an unspent brace that carries to the next hit. Starts at the baseline every
+    // fighter gets (enemies included, which is why it is a default and not something only
+    // applyLevelStatPoints sets) and Defence investment adds to it.
+    int braceRetainPct = kBraceRetainBasePct;
     int dmgReducePct = 0;       // Firewall Patch / TPM Chip — % incoming damage cut
     int baseDmgReducePct = 0;   // dmgReducePct at fight start, captured in begin() —
                                 // the third of the three live stat LEANS (with
@@ -642,8 +645,9 @@ int levelHealthBonus(int points);
 // be paid in a different kind of thing (tunables.h explains which and why).
 //
 // pierce resist: the % an attack's own armorPiercePct is cut by before it is applied.
-// brace retain: the % of an unspent one-shot brace that CARRIES to the next hit instead of
-// being discarded. 0 below the threshold, which is every pet that has not committed.
+// brace retain: what Defence investment ADDS to the baseline share of an unspent one-shot
+// brace that carries to the next hit (kBraceRetainBasePct). 0 below the threshold, which is
+// every pet that has not committed — such a pet still keeps the baseline.
 int levelDefensePierceResistPct(int points);
 int levelDefenseBraceRetainPct(int points);
 

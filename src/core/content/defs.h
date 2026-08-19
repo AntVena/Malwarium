@@ -755,7 +755,44 @@ struct MoveDef {
     // it is deliberately not something a pet can own, equip, be taught or be rolled.
     // nullptr = an ordinary move. See content_chain_steps.cpp.
     const char* chainNextId = nullptr;
+
+    // --- Tempo refund (Defend rows) ----------------------------------------------
+    // The % of one action's worth of speed gauge handed back to the caster the turn this
+    // move resolves (kSpeedActionThreshold, Combat::resolveTurn). It exists because a
+    // brace's real cost was never its magnitude: bracing spends a turn NOT swinging, and
+    // measured against attacks competing for the same slot every pure brace in the roster
+    // came out behind — while brace magnitude itself turned out to be worth almost nothing
+    // per point, so no amount of bigger numbers could have closed it.
+    //
+    // A refund shortens the wait for the next action; it can never GRANT one outright. Per
+    // ROW rather than a blanket rule on the kind, so it doubles as the lever that tells a
+    // cheap quick block apart from a heavy wall: the small braces hand back most of the
+    // tempo, the big ones stay a real commitment. 0 on every Attack, and on every Defend
+    // that already does something besides brace (a pool, a trap, a spawn, a Cipher stack)
+    // — those were never the rows paying this cost.
+    int speedRefundPct = 0;
 };
+
+// A PURE BRACE row: it mitigates and does nothing else, so the only fields that vary
+// across the eleven of them are power, the stage they unlock at, and the tempo they hand
+// back. Spelled out positionally each row would carry twenty-three zeros between minStage
+// and speedRefundPct — a shape where the one number that matters is the hardest to see, and
+// where a miscount silently assigns a magnitude to the wrong mechanic. The shape gets a
+// name instead. Every other Defend row does something besides brace and stays positional,
+// because for those the intermediate fields are the point.
+constexpr MoveDef braceRow(const char* id, const char* displayName, int power,
+                           const char* effect, Stage minStage, int speedRefundPct) {
+    MoveDef m{};
+    m.id = id;
+    m.displayName = displayName;
+    m.kind = MoveKind::Defend;
+    m.power = power;
+    m.channelTurns = 1;
+    m.effect = effect;
+    m.minStage = minStage;
+    m.speedRefundPct = speedRefundPct;
+    return m;
+}
 
 inline const char* moveKindTag(MoveDef::Kind k) {
     return k == MoveDef::Kind::Attack ? "ATK" : "DEF";

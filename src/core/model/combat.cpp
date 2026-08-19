@@ -961,6 +961,19 @@ void Combat::resolveTurn(Combatant& actor, Combatant& target, bool byPlayer) {
     }
 
     applyEffect(actor, target, mv, byPlayer, moveIdx);
+    // Tempo refund (MoveDef::speedRefundPct): hand part of an action's worth of gauge back
+    // to whoever just spent a turn bracing. Applied HERE rather than inside applyEffect
+    // because what is being refunded is the TURN, and the turn belongs to `actor` — an
+    // Execution-Override hijack routes the cast to the other side, which resolves through
+    // applyEffect directly and must not pay tempo to a fighter that spent nothing.
+    if (mv->kind == MoveDef::Kind::Defend && mv->speedRefundPct > 0) {
+        float& gauge = byPlayer ? plGauge_ : enGauge_;
+        gauge += kSpeedActionThreshold * mv->speedRefundPct / 100.0f;
+        // A refund shortens the wait; it never grants an action outright. Without this a
+        // large enough refund would cross the threshold on its own and hand the brace a
+        // free follow-up turn, which is a different mechanic from the one being paid for.
+        if (gauge >= kSpeedActionThreshold) gauge = kSpeedActionThreshold - 1;
+    }
     // Hand the slot to this move's follow-up step, if it has one. Set after the entry has
     // RESOLVED, so a cast that killed the target commits nothing, and read on the actor's
     // next turn above. `chained` guards the obvious loop: a step never chains onward, so a

@@ -413,7 +413,16 @@ constexpr int kLevelHealthSpecCap = 400;         // total level-Health contribut
 constexpr int kLevelDefensePierceResistPoints = 12;
 constexpr int kLevelDefensePierceResistPct = 40;   // cuts an attack's effective pierce
 constexpr int kLevelDefenseBraceRetainPoints = 18;
-constexpr int kLevelDefenseBraceRetainPct = 50;    // ...of an unspent brace carries over
+constexpr int kLevelDefenseBraceRetainPct = 25;    // ...ADDED to the baseline below
+
+// The share of an unspent one-shot brace that carries to the next hit for ANY fighter,
+// before Defence investment adds to it. A baseline exists because over-sizing is the
+// normal case rather than the exceptional one: measured across legal loadouts, most braces
+// swallow the whole hit they meet, so most of a brace's magnitude was being authored,
+// paid for with a turn, and then thrown away. Retaining part of it is the one thing that
+// makes a brace better without making it bigger — and brace magnitude is worth almost
+// nothing per point, so bigger was never available.
+constexpr int kBraceRetainBasePct = 25;
 
 // Per-line combat PASSIVE constants (Ransom Lock, the Phishing steal-track floors +
 // Feed-Frenzy + Perfect Bite, Execution-Override + the Trojan trap cap) live beside

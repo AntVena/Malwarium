@@ -180,6 +180,7 @@ EffectText effectText(const MoveDef& d) {
     const Token toks[] = {
         {"power", d.power},
         {"turns", d.channelTurns},
+        {"refund", d.speedRefundPct},
         {"stackPower", d.stackPowerPct},
         {"stackPowerCap", d.stackPowerCap},
         {"stackDef", d.stackDefensePct},
@@ -360,6 +361,9 @@ SpecRows specRows(const MoveDef& d) {
     if (d.shieldPool) s.add("SHIELD POOL", "%d", d.power);
     else if (!d.trapArm) s.add(moveKindTag(d.kind), "%d", d.power);
     if (d.channelTurns > 1) s.add("CHANNEL", "%d", d.channelTurns);
+    // What the cast hands back toward its next action. Sits with the power it is the
+    // counterweight to, because the two together are the whole of what a brace costs.
+    if (d.speedRefundPct) s.add("TEMPO", "%d%%", d.speedRefundPct);
     if (d.armorPiercePct) s.add("PIERCE", "%d%%", d.armorPiercePct);
     if (d.stackPowerPct) {
         s.add("POWER", "%+d%%", d.stackPowerPct);

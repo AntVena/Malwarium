@@ -568,7 +568,7 @@ void applyLevelStatPoints(Combatant& c, const int statPoints[4]) {
     c.powerMultPct = c.powerMultPct * (100 + levelPowerPct(statPoints[0])) / 100;
     c.dmgReducePct += levelDefenseCutPct(statPoints[1]);
     c.pierceResistPct = levelDefensePierceResistPct(statPoints[1]);
-    c.braceRetainPct = levelDefenseBraceRetainPct(statPoints[1]);
+    c.braceRetainPct = kBraceRetainBasePct + levelDefenseBraceRetainPct(statPoints[1]);
     if (c.dmgReducePct > kLevelDmgReduceMaxPct) c.dmgReducePct = kLevelDmgReduceMaxPct;
     int brace = statPoints[1] * kLevelDefenseBracePctPerPoint;
     if (brace > kLevelDefenseBraceCapPct) brace = kLevelDefenseBraceCapPct;

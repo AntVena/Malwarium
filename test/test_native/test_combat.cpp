@@ -324,15 +324,14 @@ void test_defence_tier_retains_an_unspent_brace() {
     };
     // Uncommitted: the brace is spent whole on one hit whatever it had left over.
     Combat plain; run(0, plain);
-    CHECK(plain.player().braceRetainPct == 0);
-    // Committed: the same brace against the same hit keeps a share of the remainder.
+    CHECK(plain.player().braceRetainPct == kBraceRetainBasePct);   // the baseline everyone has
+    // Committed: the same brace against the same hit keeps MORE of the remainder.
     Combat spec; run(kLevelDefenseBraceRetainPoints, spec);
-    CHECK(spec.player().braceRetainPct == kLevelDefenseBraceRetainPct);
+    CHECK(spec.player().braceRetainPct ==
+          kBraceRetainBasePct + kLevelDefenseBraceRetainPct);
     // One brace, then one hit into it, and compare what is left standing.
     for (int i = 0; i < 2; ++i) { plain.step(); spec.step(); }
-    CHECK(plain.player().guard == 0);                    // spent whole, remainder binned
-    CHECK(spec.player().guard > 0);                      // ...carried instead
-    CHECK(spec.player().guard > plain.player().guard);
+    CHECK(spec.player().guard > plain.player().guard);   // investment carries more of it
 }
 
 // The Exploit override commands the next move AND breaks the no-consecutive rule:
@@ -1665,9 +1664,11 @@ void test_phishing_shield_pool() {
     Combatant p3 = mkCombatant(r, "P", 100, 10, {"spoof_bubble"});
     Combatant e3 = mkCombatant(r, "E", 100, 10, {"checksum_guard"});
     Combat c3; c3.begin(p3, e3, Combat::Stakes::Safe, 1);
-    c3.step();                                           // P bubble -> 8
-    c3.step();                                           // E defends (no damage to P)
-    c3.step();                                           // P bubble again -> 16 (stacks)
+    // Stepped until the second cast lands rather than assuming a strict P,E,P order: a
+    // brace can hand tempo back (MoveDef::speedRefundPct), so which side acts next is not
+    // this test's business. What is, is that two casts POOL to 16 instead of refreshing
+    // to 8.
+    for (int i = 0; i < 10 && c3.player().shieldHp < 16; ++i) c3.step();
     CHECK(c3.player().shieldHp == 16);
 }
 
