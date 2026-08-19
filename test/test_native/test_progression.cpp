@@ -3,6 +3,8 @@
 // One slice of the native suite; see test_gates.h for the shared fixtures and
 // test_main.cpp for the roster that runs these. A save-vNN gate sits with the
 // feature whose field it migrates, not in a migrations pile of its own.
+#include <array>
+
 #include "test_gates.h"
 
 // A Sim-Battle plays end-to-end: launch from TRAIN, auto-resolve at the heartbeat,
@@ -517,17 +519,33 @@ void test_ransomware_stacking() {
     CHECK(cb.player().stackPowerBonus == 24);          // +8 ×3, capped at +24%
     CHECK(lastHit > firstHit);                          // stacked Power hits harder
 
-    // Cipher: AES Lockbox only (defend every turn) — Defense stacks to its +20% cap,
-    // and the brace magnitude scales with defenseMultPct (200 → double the 14 base).
-    Combatant def; def.name = "W"; def.maxHealth = 300; def.health = 300; def.speed = 20;
-    def.setLine(r, "ransomware"); def.stage = Stage::Process; def.defenseMultPct = 200;
-    def.moves.push_back(r.move("aes_lockbox"));
-    Combatant poke = mkCombatant(r, "P", 300, 1, {"quick_jab"});
-    Combat cd; cd.begin(def, poke, Combat::Stakes::Safe, 99);
-    cd.step();                                          // faster defender braces first
-    CHECK(cd.player().guard == 28);                     // 14 base × 200% defenseMult
-    for (int i = 0; i < 12 && cd.outcome() == Combat::Outcome::Ongoing; ++i) cd.step();
-    CHECK(cd.player().stackDefenseBonus == 20);         // +10 ×2, capped at +20%
+    // Cipher, and the INVERTED ladder that carries it. Where a row's cap sits decides how
+    // soon it can arm a seizure (RansomSeizure), so the deep row caps LOW in one step and
+    // the shallow row climbs in small ones to a much higher ceiling: the endgame row is the
+    // fast one and the beginner's row is the long game.
+    auto cipherRun = [&](const char* moveId, int steps) {
+        Combatant def; def.name = "W"; def.maxHealth = 300; def.health = 300; def.speed = 20;
+        def.setLine(r, "ransomware"); def.stage = Stage::Process; def.defenseMultPct = 200;
+        def.moves.push_back(r.move(moveId));
+        Combatant poke = mkCombatant(r, "P", 300, 1, {"quick_jab"});
+        Combat cd; cd.begin(def, poke, Combat::Stakes::Safe, 99);
+        cd.step();                                      // faster defender braces first
+        const int afterOne = cd.player().stackDefenseBonus;
+        const int guard = cd.player().guard;
+        for (int i = 0; i < steps && cd.outcome() == Combat::Outcome::Ongoing; ++i) cd.step();
+        return std::array<int, 3>{guard, afterOne, cd.player().stackDefenseBonus};
+    };
+    // Deep row: one cast IS the whole bar, which is what makes it the seizure's enabler.
+    const auto deep = cipherRun("full_disk_encryption", 12);
+    CHECK(deep[0] == 56);                               // 28 base × 200% defenseMult
+    CHECK(deep[1] == r.move("full_disk_encryption")->stackDefenseCap);
+    CHECK(deep[2] == deep[1]);                          // nothing left to climb
+    // Shallow row: a small step, and a ceiling more than twice the deep row's.
+    const auto shallow = cipherRun("aes_lockbox", 12);
+    CHECK(shallow[0] == 28);                            // 14 base × 200% defenseMult
+    CHECK(shallow[1] == r.move("aes_lockbox")->stackDefensePct);   // one small step
+    CHECK(shallow[2] == r.move("aes_lockbox")->stackDefenseCap);    // ...eventually full
+    CHECK(shallow[2] > deep[2]);                        // the long game builds the bigger wall
 }
 
 // Ransom Note: the Ransomware passive HOLDS the damage of hits taken inside an armed

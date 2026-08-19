@@ -66,15 +66,24 @@ const MoveDef kMoves[] = {
     {"mbr_wipe", "MBR Wipe", MoveDef::Kind::Attack, 28, 1,
      "Overwrites the boot sector. Ignores {pierce}% armor; +{stackPower}% Power (to +{stackPowerCap}%).",
      Stage::Daemon, "ransomware", 12, 60, 0, 0, 50},
+    // The Cipher ladder runs INVERTED, and the reason is the seizure (RansomSeizure): a
+    // full wall is what lets a brace take the attack that hits it, so where a row's CAP
+    // sits decides how soon that row can do the line's real job. The deep row therefore
+    // caps LOW in one big step — it is finished the moment it is cast, and finished is the
+    // point. The shallow row climbs in small steps to a much higher ceiling: slower to
+    // arm anything, but the wall it eventually builds is far bigger, and a seized move
+    // hits for the wall behind it. So the beginner's row is the long game and the
+    // endgame's row is the fast one, which is the opposite of how a ladder usually reads
+    // and exactly right here.
     {"aes_lockbox", "AES Lockbox", MoveDef::Kind::Defend, 14, 1,
      "Encrypts a brace. +{stackDef}% DEF on cast (stacks to +{stackDefCap}%).", Stage::Process,
-     "ransomware", 0, 0, 10, 20, 0},
+     "ransomware", 0, 0, 6, 48, 0},
     {"rsa_vault", "RSA Vault", MoveDef::Kind::Defend, 20, 1,
      "Seals the AES key. +{stackDef}% DEF on cast (stacks to +{stackDefCap}%).", Stage::Script,
-     "ransomware", 0, 0, 12, 35, 0},
+     "ransomware", 0, 0, 12, 36, 0},
     {"full_disk_encryption", "Full-Disk Encryption", MoveDef::Kind::Defend, 28, 1,
      "Locks the whole drive. +{stackDef}% DEF on cast (stacks to +{stackDefCap}%).", Stage::Daemon,
-     "ransomware", 0, 0, 15, 50, 0},
+     "ransomware", 0, 0, 20, 20, 0},
 
     // Phishing LINE moves -------------------------
     // line = "phishing" → only Phishing pets can learn/equip these.

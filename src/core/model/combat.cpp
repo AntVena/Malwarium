@@ -174,6 +174,12 @@ bool braceOnlyDefend(const MoveDef& m) {
            m.trapArm == 0 && m.replicaSpawnPct == 0;
 }
 
+int phishPoolSiphonBonusPct(const Combatant& c) {
+    if (c.shieldHp <= 0 || c.maxHealth <= 0) return 0;
+    const int pct = c.shieldHp * kPhishPoolSiphonFullPct / c.maxHealth;
+    return pct > kPhishPoolSiphonMaxPct ? kPhishPoolSiphonMaxPct : pct;
+}
+
 int Combat::chooseMove(Combatant& self) {
     const int n = static_cast<int>(self.moves.size());
     if (n <= 1) return 0;
@@ -535,6 +541,11 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
                 target.moves[slot] = mv;
                 if (slot < static_cast<int>(target.chainFollow.size()))
                     target.chainFollow[slot] = nullptr;   // the payload, not the toolkit
+                // Holding a move hostage IS a ransom, so it runs the same clock — which is
+                // also what gives the seizure its release. A pet that goes on diverting
+                // hits keeps resetting that clock and so keeps the move; one that does not
+                // hands it back when the hold lapses.
+                target.ransomTurnsLeft = kRansomHoldTurns;
             }
             seize.armed = false;
         }
@@ -606,6 +617,10 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
                 if (bite && mv->stealSpeedPct > 0 && mv->stealCurrentHpPct > 0)
                     biteHitsSpeed = (rng() % 2 == 0);
             }
+            // The pool's bonus applies to whichever gated steal fires, on top of the base
+            // and any Perfect-Bite doubling: the bubble is what permits these two AND now
+            // what sizes them.
+            const int poolBonus = phishPoolSiphonBonusPct(actor);
             if (bubbleUp && mv->stealSpeedPct > 0 && !floored) {
                 int pct = mv->stealSpeedPct;
                 // The Phishing Rod only ever scales the BITE half — it amplifies the
@@ -617,6 +632,7 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
                 // siphoned) speed — with an int this truncated to 0 the moment speed
                 // neared the floor, making repeat speed steals a dead branch in
                 // practice. Float precision keeps every landed siphon meaningful.
+                pct += mv->stealSpeedPct * poolBonus / 100;
                 const float stolen = target.speed * pct / 100.0f;
                 if (stolen > 0.0f) {
                     actor.speed += stolen;
@@ -629,6 +645,7 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
                 if (bite && !biteHitsSpeed)
                     pct += mv->stealCurrentHpPct *
                            (100 + actor.mods.mag(ModEffect::StealAmplifyPct)) / 100;
+                pct += mv->stealCurrentHpPct * poolBonus / 100;
                 const int stolen = target.health * pct / 100;   // lifesteal: target's
                 if (stolen > 0) {                               // CURRENT health drains
                     target.health -= stolen;                    // straight to the caster
@@ -762,12 +779,18 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
             actor.stackDefenseBonus += gain;
             if (mitmCopy) mirror.stackDefenseBonus += gain;
         }
-        // ...and once that wall is FULL, with a ransom already running, the next thing to
-        // hit it gets seized rather than absorbed (RansomSeizure). Asked after the stack
-        // above so the cast that FILLS the cap is already the one that arms — the pet does
-        // not have to spend a further turn topping up a bar that is finished. `moveIdx < 0`
-        // is a hijacked cast (Execution-Override), which owns no slot to seize into.
-        if (mv->stackDefensePct > 0 && moveIdx >= 0 && actor.ransomTurnsLeft > 0 &&
+        // ...and once that wall is FULL, the next thing to hit it gets seized rather than
+        // absorbed (RansomSeizure). The full wall is the WHOLE condition: requiring a
+        // ransom to already be running as well meant two independent things had to coincide,
+        // and measured across random legal kits that halved the duty cycle to 27% — a large
+        // payoff nobody meets. The seizure starts the ransom clock itself instead, which is
+        // the more honest reading anyway: taking something hostage is what begins a ransom.
+        //
+        // Asked after the stack above so the cast that FILLS the cap is already the one that
+        // arms — the pet does not spend a further turn topping up a finished bar.
+        // `moveIdx < 0` is a hijacked cast (Execution-Override), which owns no slot to
+        // seize into.
+        if (mv->stackDefensePct > 0 && moveIdx >= 0 &&
             actor.stackDefenseBonus >= mv->stackDefenseCap && !actor.ransomSeizure.holding()) {
             actor.ransomSeizure.armed = true;
             actor.ransomSeizure.slot = moveIdx;

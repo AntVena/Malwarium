@@ -1492,9 +1492,26 @@ void test_phishing_bubble_steal() {
     // pre-existing Obfuscation absorb, ahead of any steal effect) instead of it
     // touching Health, so Health only ever moves via this hit's own heals.
     Combat c1; run(50, c1);
-    CHECK(c1.player().speed == 53.0f && c1.enemy().speed == 47.0f);   // 6% of 50 = 3
-    // enemy: 100 - 6 (lure) - 5 (6% of 94, lifesteal) - 17 (siphon-boosted strike) = 72.
-    CHECK(c1.enemy().health == 72);
+    // The bubble does not merely PERMIT the two gated steals now, it SIZES them
+    // (phishPoolSiphonBonusPct): a 50 pool against a 100 body is +50%, so the authored 6%
+    // siphons at 9%. 9% of 50 = 4.5, exactly representable, which is why both sides sit at
+    // half-points rather than the whole ones the base rate gave.
+    // The scale itself, asserted where it is a pure function of a combatant rather than
+    // off the end of a fight (by then the pool has been chewed and the body has grown, so
+    // the live ratio is no longer the one that sized the siphon).
+    {
+        Combatant probe = mkCombatant(r, "X", 100, 50, {"smish_hook"});
+        CHECK(phishPoolSiphonBonusPct(probe) == 0);          // no bubble, no bonus
+        probe.shieldHp = 50;
+        CHECK(phishPoolSiphonBonusPct(probe) == 50);          // half a body -> +50%
+        probe.shieldHp = 100;
+        CHECK(phishPoolSiphonBonusPct(probe) == 100);         // a whole one -> doubled
+        probe.shieldHp = 10000;
+        CHECK(phishPoolSiphonBonusPct(probe) == kPhishPoolSiphonMaxPct);   // ...and capped
+    }
+    CHECK(c1.player().speed == 54.5f && c1.enemy().speed == 45.5f);
+    // enemy: 100 - 6 (lure) - 8 (9% of 94, lifesteal) - 17 (siphon-boosted strike) = 69.
+    CHECK(c1.enemy().health == 69);
     // player: the lifesteal lands while the ceiling is still 100 (so it caps there), the
     // crossed pool then lifts both to 106, and the frenzy's +1 caps again. quick_jab is
     // absorbed by the shield and never reaches Health.
@@ -1520,14 +1537,16 @@ void test_phishing_perfect_bite() {
                   /*carryPlayerHealth=*/50);
         out.step(); out.step(); out.step();
     };
-    // Baselines (no bite): speed 50 -> 53/47 (6% of 50). Health: quick_jab is absorbed by
-    // the player's OWN shieldHp(50), not Health (the pre-existing Obfuscation absorb,
-    // ahead of any steal effect), so carryPlayerHealth(50) only ever moves via the lure's
-    // own take — +5 lifesteal (6% of 94), +6 for the max-Health pool crossing whole, +1
-    // frenzy (floored) = 62. A bite doubles ONE of the two volatile steals: speed goes to
-    // 56, or Health to 68, never both.
-    constexpr float kBaseSpeed = 53.0f;
-    constexpr int kBaseHealth = 62;
+    // Baselines (no bite). Both gated steals are sized by the pool as well as gated by it
+    // (phishPoolSiphonBonusPct: a 50 pool on a 100 body is +50%), so the authored 6% siphons
+    // at 9%: speed 50 -> 54.5/45.5. Health: quick_jab is absorbed by the player's OWN
+    // shieldHp(50), not Health (the pre-existing Obfuscation absorb, ahead of any steal
+    // effect), so carryPlayerHealth(50) only ever moves via the lure's own take — +8
+    // lifesteal (9% of 94), +6 for the max-Health pool crossing whole, +1 frenzy = 65.
+    // A bite doubles ONE of the two volatile steals before the pool scales it: speed goes
+    // to 57.5, or Health to 71, never both.
+    constexpr float kBaseSpeed = 54.5f;
+    constexpr int kBaseHealth = 65;
 
     uint32_t biteSpeedSeed = 0, biteHpSeed = 0, noBiteSeed = 0;
     for (uint32_t s = 1; s <= 80 && !(biteSpeedSeed && biteHpSeed && noBiteSeed); ++s) {

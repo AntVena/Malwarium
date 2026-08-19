@@ -48,6 +48,20 @@ constexpr int kStealSpeedFloor = 1;
 // a small shield still contributes a meaningful heal instead of truncating to 0.
 constexpr float kFrenzyHealPermille = 15.0f;   // 0.X% of live shieldHp, min 1
 
+// Pool siphon: the Obfuscation bubble SCALES the two bubble-gated steals rather than
+// merely permitting them — a pool the size of the pet's own max Health adds this much to
+// their magnitude, capped. This is the line's defence-into-offence conversion, and the
+// counterpart to Ransomware spending its Cipher wall on a seized move: a bubble is a decoy
+// identity, and a bigger decoy takes more off whoever bites it.
+//
+// CONTINUOUS on purpose, not gated on a threshold. Ransomware's seizure is threshold-gated
+// and measured a 27% duty cycle across random legal kits — a large payoff most builds never
+// meet, because filling a bar takes more turns than a losing fight lasts. Anything that
+// scales with a live quantity instead pays every turn the quantity is live, which is the
+// difference between a mechanic a line HAS and one it reads about.
+constexpr int kPhishPoolSiphonFullPct = 100;   // ...at a pool equal to max Health
+constexpr int kPhishPoolSiphonMaxPct = 150;    // ...and never more than this
+
 // Perfect Bite: on a landed hit whose move sets stealSpeedPct and/or
 // stealCurrentHpPct, these only fire at all while the caster's bubble is up (shieldHp > 0)
 constexpr int kPhishingBiteChancePctByStage[4] = {0, 32, 48, 64};

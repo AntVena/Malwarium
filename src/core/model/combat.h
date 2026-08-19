@@ -368,6 +368,16 @@ int wormReplicaCount(const Combatant& c, bool defenders);
 // a Defend during a frenzy. Pure, so the classification is assertable without a fight.
 bool braceOnlyDefend(const MoveDef& m);
 
+// The Phishing pool siphon, 0..kPhishPoolSiphonMaxPct: what the LIVE Obfuscation pool adds
+// to the magnitude of this pet's two bubble-gated steals, as a percentage of their own
+// authored value. Scales with the pool against the pet's own max Health, so a bubble worth
+// its whole body doubles the bite. 0 with no bubble up, which is every pet off the line.
+//
+// The line's conversion from defence to offence: the bubble stops being a wall it hides
+// behind and becomes the size of what it takes. A total function of the combatant, so the
+// combat screen can show the same number the engine is acting on.
+int phishPoolSiphonBonusPct(const Combatant& c);
+
 // The Phishing frenzy lean, 0..kPhishFrenzyLeanMaxPct: how strongly an over-stacked
 // Obfuscation bubble pushes `c` off bracing and onto biting (Combat::chooseMove reads
 // it to re-roll Defend picks). A total function of the combatant, so the combat SCREEN
