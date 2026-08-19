@@ -267,6 +267,73 @@ void test_chained_move_plays_both_halves() {
     CHECK(lures > 1 && strikes > 1);
 }
 
+// The level stats' three curve SHAPES, asserted directly (each is a total function).
+// Power and max-Health ACCELERATE past their specialisation point, Defence's cut bends the
+// other way, and Defence's two tiers are thresholds rather than curves at all.
+void test_level_stat_curves() {
+    // Power: base rate to the spec point, the higher rate past it, then the cap.
+    CHECK(levelPowerPct(0) == 0);
+    CHECK(levelPowerPct(kLevelPowerSpecPoints) ==
+          kLevelPowerSpecPoints * kLevelPowerPctPerPoint);
+    CHECK(levelPowerPct(kLevelPowerSpecPoints + 2) ==
+          kLevelPowerSpecPoints * kLevelPowerPctPerPoint + 2 * kLevelPowerPctPerSpecPoint);
+    CHECK(levelPowerPct(1000) == kLevelPowerSpecCapPct);
+    // The point of the bend: the point AFTER it is worth more than the one before.
+    const int beforeBend = levelPowerPct(kLevelPowerSpecPoints) -
+                           levelPowerPct(kLevelPowerSpecPoints - 1);
+    const int afterBend = levelPowerPct(kLevelPowerSpecPoints + 2) -
+                          levelPowerPct(kLevelPowerSpecPoints + 1);
+    CHECK(afterBend > beforeBend);
+
+    CHECK(levelHealthBonus(0) == 0);
+    CHECK(levelHealthBonus(kLevelHealthSpecPoints) ==
+          kLevelHealthSpecPoints * kLevelHealthPerPoint);
+    CHECK(levelHealthBonus(1000) == kLevelHealthSpecCap);
+
+    // Defence bends the OTHER way — the two curves are deliberately mirror images.
+    const int defBefore = levelDefenseCutPct(kLevelDefenseSoftPoints) -
+                          levelDefenseCutPct(kLevelDefenseSoftPoints - 1);
+    const int defAfter = levelDefenseCutPct(kLevelDefenseSoftPoints + 2) -
+                         levelDefenseCutPct(kLevelDefenseSoftPoints + 1);
+    CHECK(defAfter < defBefore);
+
+    // Defence's tiers: nothing at all until the threshold, then the whole bonus.
+    CHECK(levelDefensePierceResistPct(kLevelDefensePierceResistPoints - 1) == 0);
+    CHECK(levelDefensePierceResistPct(kLevelDefensePierceResistPoints) ==
+          kLevelDefensePierceResistPct);
+    CHECK(levelDefenseBraceRetainPct(kLevelDefenseBraceRetainPoints - 1) == 0);
+    CHECK(levelDefenseBraceRetainPct(kLevelDefenseBraceRetainPoints) ==
+          kLevelDefenseBraceRetainPct);
+}
+
+// Defence tier 2 in a fight: an over-sized one-shot brace used to bin whatever the hit it
+// ate did not need. A committed wall CARRIES that remainder to the next hit instead —
+// efficiency, which is the thing the % cut's own ceiling stops it being paid in.
+void test_defence_tier_retains_an_unspent_brace() {
+    ContentRegistry r = ContentRegistry::embedded();
+    // Equal speed so the order is exactly P(brace), E(hit) — one brace meeting one hit is
+    // the whole question, and a speed edge either way would blur it into several.
+    auto run = [&](int defPoints, Combat& out) {
+        // A big brace against a small hit, so there is a real remainder to argue about.
+        Combatant p = mkCombatant(r, "P", 200, 50, {"onion_layer"});
+        const int pts[4] = {0, defPoints, 0, 0};
+        applyLevelStatPoints(p, pts);
+        Combatant e = mkCombatant(r, "E", 200, 50, {"quick_jab"});
+        out.begin(p, e, Combat::Stakes::Safe, 3, /*forceEnemyFirst=*/false);
+    };
+    // Uncommitted: the brace is spent whole on one hit whatever it had left over.
+    Combat plain; run(0, plain);
+    CHECK(plain.player().braceRetainPct == 0);
+    // Committed: the same brace against the same hit keeps a share of the remainder.
+    Combat spec; run(kLevelDefenseBraceRetainPoints, spec);
+    CHECK(spec.player().braceRetainPct == kLevelDefenseBraceRetainPct);
+    // One brace, then one hit into it, and compare what is left standing.
+    for (int i = 0; i < 2; ++i) { plain.step(); spec.step(); }
+    CHECK(plain.player().guard == 0);                    // spent whole, remainder binned
+    CHECK(spec.player().guard > 0);                      // ...carried instead
+    CHECK(spec.player().guard > plain.player().guard);
+}
+
 // The Exploit override commands the next move AND breaks the no-consecutive rule:
 // it can repeat the move just played. Opening doesn't spend; committing does.
 void test_combat_override_breaks_rule() {

@@ -363,8 +363,14 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
             // one-shot brace (a wiped boot sector doesn't care how hard the disk is).
             int reduce = target.dmgReducePct + target.stackDefenseBonus;
             if (reduce > kLevelDmgReduceMaxPct) reduce = kLevelDmgReduceMaxPct;
-            if (mv->armorPiercePct > 0)
-                reduce = reduce * (100 - mv->armorPiercePct) / 100;
+            if (mv->armorPiercePct > 0) {
+                // Defence tier 1: pierce exists to make a wall irrelevant, so a committed
+                // wall cuts the pierce back before it lands (levelDefensePierceResistPct).
+                // Applied to the PIERCE and not to the cut, because what the tier buys is
+                // that the cut it already earned stops being routed around.
+                int pierce = mv->armorPiercePct * (100 - target.pierceResistPct) / 100;
+                if (pierce > 0) reduce = reduce * (100 - pierce) / 100;
+            }
             if (reduce > 0) dmg = dmg * (100 - reduce) / 100;
             // Canary Trap (mod): an EXTRA cut on the first hit this pet takes, stacked
             // on top of the normal reduce above (outside the 85% clamp, and not armor-
@@ -379,10 +385,21 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
             }
             if (target.guard > 0) {                   // a defend brace (one-shot)
                 int brace = target.guard;
-                if (mv->armorPiercePct > 0)
-                    brace = brace * (100 - mv->armorPiercePct) / 100;
+                if (mv->armorPiercePct > 0) {
+                    const int pierce =
+                        mv->armorPiercePct * (100 - target.pierceResistPct) / 100;
+                    brace = brace * (100 - pierce) / 100;
+                }
+                const int unspent = brace > dmg ? brace - dmg : 0;
                 dmg = dmg > brace ? dmg - brace : 0;
-                target.guard = 0;
+                // Defence tier 2: the remainder an over-sized brace did not need CARRIES
+                // instead of being binned (levelDefenseBraceRetainPct). What a committed
+                // wall gets is efficiency — the same brace covering more hits — rather
+                // than a bigger number, which the % cut's own ceiling has already
+                // established it cannot be paid in. Measured against the pre-pierce
+                // remainder, so resisting a pierce and retaining its leftovers are one
+                // reward and not two.
+                target.guard = unspent * target.braceRetainPct / 100;
             }
             // Minimum penetration: a real attack ALWAYS lands at least 1 through pure
             // defensive mitigation (% cut + one-shot guard brace), so no pet becomes an

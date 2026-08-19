@@ -149,6 +149,8 @@ int g_failures = 0;
     RUN(test_brace_only_defend_is_not_recast) \
     RUN(test_steal_max_health_moves_the_pool) \
     RUN(test_chained_move_plays_both_halves) \
+    RUN(test_level_stat_curves)             \
+    RUN(test_defence_tier_retains_an_unspent_brace) \
     RUN(test_combat_override_breaks_rule)   \
     RUN(test_combat_override_item_use)      \
     RUN(test_exploit_uses_per_battle)       \

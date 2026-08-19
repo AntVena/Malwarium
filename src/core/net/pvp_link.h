@@ -52,7 +52,7 @@ constexpr uint8_t kPvpProtoVersion = 1;
 // separately from kPvpProtoVersion and a mismatch declines the duel outright. That is
 // the honest outcome: better a refused challenge than two screens disagreeing about
 // who won.
-constexpr uint8_t kPvpRulesVersion = 1;
+constexpr uint8_t kPvpRulesVersion = 2;
 
 // Field capacities INCLUDE the terminator. Content ids are the long pole (the longest
 // shipped move/mod/creature id is 20 chars), so one cap covers all three.

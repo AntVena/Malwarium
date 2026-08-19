@@ -385,6 +385,36 @@ constexpr int kLevelDefenseBracePctPerPoint = 3;
 // that absorbs at most three times its printed power from Defense alone.
 constexpr int kLevelDefenseBraceCapPct = 200;
 
+// --- Specialisation: what the SECOND half of an investment is worth ------------------
+// Power and max-Health bend the OPPOSITE way to Defence above. Defence diminishes because
+// it is chasing a ceiling; these two are chasing nothing, and a flat rate on them made a
+// spread of one-point-in-everything the default outcome of a raise — which is also the
+// weakest thing a pet can be, since the level-up grant picks the stat at random and a long
+// raise averages out. Past the specialisation point a point is worth MORE, so committing
+// to a stat is what pays and a pet that got lucky in one column has something to show for
+// it. Capped, because the ladder runs to level 60 and an unbounded accelerating curve
+// stops being a build and becomes the only build.
+constexpr int kLevelPowerSpecPoints = 6;         // points before the accelerating band
+constexpr int kLevelPowerPctPerSpecPoint = 10;   // ...and the rate past it (base is 4)
+constexpr int kLevelPowerSpecCapPct = 300;       // total level-Power contribution ceiling
+constexpr int kLevelHealthSpecPoints = 6;
+constexpr int kLevelHealthPerSpecPoint = 8;      // ...vs kLevelHealthPerPoint's 3
+constexpr int kLevelHealthSpecCap = 400;         // total level-Health contribution ceiling
+
+// Defence's investment TIERS. The % cut has a ceiling and a bend, so more of it is the one
+// thing Defence cannot be paid in — past a threshold it buys a different KIND of thing
+// instead, and each of these answers a way the stat was being routed around rather than
+// out-scaled:
+//   pierce resist — armorPiercePct exists to make a wall irrelevant; a committed wall
+//                   makes the pierce partly irrelevant back.
+//   brace retain  — a one-shot `guard` discards whatever the hit it ate did not need, so
+//                   an over-sized brace pays for absorption nobody asked for. Past this
+//                   threshold the unspent remainder CARRIES to the next hit instead.
+constexpr int kLevelDefensePierceResistPoints = 12;
+constexpr int kLevelDefensePierceResistPct = 40;   // cuts an attack's effective pierce
+constexpr int kLevelDefenseBraceRetainPoints = 18;
+constexpr int kLevelDefenseBraceRetainPct = 50;    // ...of an unspent brace carries over
+
 // Per-line combat PASSIVE constants (Ransom Lock, the Phishing steal-track floors +
 // Feed-Frenzy + Perfect Bite, Execution-Override + the Trojan trap cap) live beside
 // their line's moves in content_passives.h, not here — they only ever get tuned

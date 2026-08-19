@@ -507,6 +507,35 @@ int wildWinXp(int baseXp, int enemyLevel, int petLevel) {
     return xp < 1 ? 1 : xp;                              // always at least a trickle
 }
 
+// The accelerating pair. Counted the same exact way levelDefenseCutPct counts its bent
+// stretch — whole points, one multiply per band — so the two curves are readable against
+// each other and neither rounds a band away.
+int levelPowerPct(int points) {
+    if (points <= 0) return 0;
+    const int base = points < kLevelPowerSpecPoints ? points : kLevelPowerSpecPoints;
+    const int spec = points - base;
+    int pct = base * kLevelPowerPctPerPoint + spec * kLevelPowerPctPerSpecPoint;
+    if (pct > kLevelPowerSpecCapPct) pct = kLevelPowerSpecCapPct;
+    return pct;
+}
+
+int levelHealthBonus(int points) {
+    if (points <= 0) return 0;
+    const int base = points < kLevelHealthSpecPoints ? points : kLevelHealthSpecPoints;
+    const int spec = points - base;
+    int hp = base * kLevelHealthPerPoint + spec * kLevelHealthPerSpecPoint;
+    if (hp > kLevelHealthSpecCap) hp = kLevelHealthSpecCap;
+    return hp;
+}
+
+int levelDefensePierceResistPct(int points) {
+    return points >= kLevelDefensePierceResistPoints ? kLevelDefensePierceResistPct : 0;
+}
+
+int levelDefenseBraceRetainPct(int points) {
+    return points >= kLevelDefenseBraceRetainPoints ? kLevelDefenseBraceRetainPct : 0;
+}
+
 int levelDefenseCutPct(int points) {
     if (points <= 0) return 0;
     // Full rate up to the soft point, HALF rate after — the diminishing half of a stat
@@ -522,18 +551,30 @@ int levelDefenseCutPct(int points) {
 
 void applyLevelStatPoints(Combatant& c, const int statPoints[4]) {
     if (!statPoints) return;
-    // power → +% attack lean; defense → +% incoming-damage cut (diminishing past the
-    // soft point, its own cap, then the total cut is clamped so defense can never null a
-    // hit) AND +% defend-move brace magnitude (symmetric to power→attack, capped too);
-    // speed → +initiative; max-Health → +HP.
-    c.powerMultPct += statPoints[0] * kLevelPowerPctPerPoint;
+    // power → +% attack lean, ACCELERATING past its specialisation point (levelPowerPct);
+    // defense → +% incoming-damage cut (diminishing past the soft point, its own cap, then
+    // the total cut is clamped so defense can never null a hit) AND +% defend-move brace
+    // magnitude AND, past their thresholds, the two investment TIERS the % cut cannot be
+    // paid in (pierce resist, brace retain); speed → +initiative, the one stat whose value
+    // is flat in both directions; max-Health → +HP, accelerating like power.
+    // MULTIPLICATIVE, not additive — and this is not stage scaling by the back door. A
+    // level bonus added into powerMultPct lands on a base the stage multiplier has already
+    // inflated (kStagePowerScalePct runs 100 -> 230), so the same earned point was worth
+    // 32% more damage on a Process pet and 14% on a Daemon: the stat quietly decayed
+    // across exactly the stretch a player spends earning it. As a percentage OF the pet's
+    // own output it is worth the same everywhere, which is what the row always said it
+    // was. It scales whatever that output happens to be, mods included — a power bonus
+    // applying to your power is the reading every one of those rows already invites.
+    c.powerMultPct = c.powerMultPct * (100 + levelPowerPct(statPoints[0])) / 100;
     c.dmgReducePct += levelDefenseCutPct(statPoints[1]);
+    c.pierceResistPct = levelDefensePierceResistPct(statPoints[1]);
+    c.braceRetainPct = levelDefenseBraceRetainPct(statPoints[1]);
     if (c.dmgReducePct > kLevelDmgReduceMaxPct) c.dmgReducePct = kLevelDmgReduceMaxPct;
     int brace = statPoints[1] * kLevelDefenseBracePctPerPoint;
     if (brace > kLevelDefenseBraceCapPct) brace = kLevelDefenseBraceCapPct;
     c.defenseMultPct += brace;
     c.speed += statPoints[2] * kLevelSpeedPerPoint;
-    c.maxHealth += statPoints[3] * kLevelHealthPerPoint;
+    c.maxHealth += levelHealthBonus(statPoints[3]);
     c.health = c.maxHealth;
 }
 

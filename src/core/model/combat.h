@@ -160,6 +160,10 @@ struct Combatant {
     ModStateSet mods;
 
     // Transient defend state.
+    // Defence's investment tiers, resolved once by applyLevelStatPoints. Both are 0 for
+    // any fighter that has not committed to the stat, which is every enemy and most pets.
+    int pierceResistPct = 0;    // cuts an incoming attack's own armorPiercePct
+    int braceRetainPct = 0;     // % of an unspent brace that carries to the next hit
     int dmgReducePct = 0;       // Firewall Patch / TPM Chip — % incoming damage cut
     int baseDmgReducePct = 0;   // dmgReducePct at fight start, captured in begin() —
                                 // the third of the three live stat LEANS (with
@@ -625,6 +629,23 @@ Combatant makePlayerCombatant(const ContentRegistry& reg, const CreatureDef& pet
 // (core/model/pvp_battle.h). A duel's two devices resolve the same seeded fight only
 // while both sides' stats agree exactly, so this arithmetic lives in exactly one place.
 void applyLevelStatPoints(Combatant& c, const int statPoints[4]);
+
+// The level-Power % bonus for `points` earned Power points, and the flat max-Health bonus
+// for `points` earned max-Health points. Both ACCELERATE past their specialisation point
+// (tunables.h) — the mirror image of levelDefenseCutPct's bend below — and both cap. Pure
+// and total, so the curve is asserted directly rather than through a resolved fight.
+int levelPowerPct(int points);
+int levelHealthBonus(int points);
+
+// Defence's two investment tiers, each a total function of the earned Defence points.
+// They exist because the stat's own % cut is bent and capped, so past a point it can only
+// be paid in a different kind of thing (tunables.h explains which and why).
+//
+// pierce resist: the % an attack's own armorPiercePct is cut by before it is applied.
+// brace retain: the % of an unspent one-shot brace that CARRIES to the next hit instead of
+// being discarded. 0 below the threshold, which is every pet that has not committed.
+int levelDefensePierceResistPct(int points);
+int levelDefenseBraceRetainPct(int points);
 
 // The Defence stat's % incoming-damage cut, for `points` earned Defence points. Full rate
 // (kLevelDefensePctPerPoint) up to kLevelDefenseSoftPoints, HALF rate past it, hard-capped
