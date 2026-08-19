@@ -175,8 +175,16 @@ bool braceOnlyDefend(const MoveDef& m) {
 }
 
 int phishPoolSiphonBonusPct(const Combatant& c) {
-    if (c.shieldHp <= 0 || c.maxHealth <= 0) return 0;
-    const int pct = c.shieldHp * kPhishPoolSiphonFullPct / c.maxHealth;
+    if (c.shieldHp <= 0) return 0;
+    // Measured against the STAGE's body (kMaxHealthByStage), not this pet's own levelled
+    // maxHealth. Against the levelled one the conversion decayed as the pet grew: earned
+    // max-Health points inflate the denominator while the pool only tracks Defence, so a
+    // Health-steered pet at level 60 carries a body of 400-odd and a bubble that reads as
+    // nearly nothing. The pool is a statement about how deep the bubble is stacked, and a
+    // pet should not get worse at its own line's mechanic for having raised a different stat.
+    const int base = kMaxHealthByStage[stageIndex(c.stage)];
+    if (base <= 0) return 0;
+    const int pct = c.shieldHp * kPhishPoolSiphonFullPct / base;
     return pct > kPhishPoolSiphonMaxPct ? kPhishPoolSiphonMaxPct : pct;
 }
 
@@ -479,6 +487,15 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
         // the POP clears it — a pool merely chewed down keeps the lean, which is what
         // makes the enemy's way out of a frenzy "break the bubble", not "wait".
         if (dmg > 0 && target.shieldHp > 0) {
+            // Poisoned data (MoveDef::poolRetaliateDot): reading the decoy costs the reader.
+            // Planted on the ATTACKER, before the pool is chewed, so a hit that pops the
+            // bubble still poisons — the last read is the one that got through, and it was
+            // still a read. Refreshes rather than stacks, like every other DoT.
+            if (target.poolDotDamage > 0 && target.poolDotTurns > 0) {
+                const int cut = actor.mods.mag(ModEffect::FaradayCut);
+                const int per = target.poolDotDamage * (100 - cut) / 100;
+                if (per > 0) { actor.dotPerTurn = per; actor.dotTurnsLeft = target.poolDotTurns; }
+            }
             if (target.shieldHp >= dmg) { target.shieldHp -= dmg; dmg = 0; }
             else { dmg -= target.shieldHp; target.shieldHp = 0; }
             if (target.shieldHp == 0) target.phishShieldPeak = 0;
@@ -749,6 +766,15 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
                                     actor.wormReplicaCount < kWormReplicaSlots;
         if (mv->shieldPool > 0) {
             actor.shieldHp += braced;
+            // Poisoned data: a pool row may arm a RETALIATION, applied to whoever strikes
+            // the bubble (the attack path above). It rides the pool rather than the brace
+            // because the pool is what the enemy has to chew through — which is also what
+            // makes it a conversion a defend-heavy pet can actually hold, unlike this
+            // line's steals, which need its one attack slot.
+            if (mv->poolRetaliateDot > 0 && mv->poolRetaliateTurns > 0) {
+                actor.poolDotDamage = mv->poolRetaliateDot;
+                actor.poolDotTurns = mv->poolRetaliateTurns;
+            }
             // Ratchet the frenzy high-water mark on every top-up (chooseMove reads it).
             // Re-casting onto a live pool is therefore how a pet holds a frenzy open past
             // the hits that would otherwise have popped it.

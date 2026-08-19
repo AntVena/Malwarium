@@ -246,6 +246,10 @@ struct Combatant {
     int autoExploitAtHealthPct = 100;
     bool autoExploitFired = false;
     int guard = 0;              // pending mitigation from a defend move (one-shot)
+    // Poisoned data (MoveDef::poolRetaliateDot): what a strike on this pet's live bubble
+    // plants on the striker. Armed by the pool cast, and read on the attack path.
+    int poolDotDamage = 0;
+    int poolDotTurns = 0;
     int shieldHp = 0;           // Obfuscation shield pool (Phishing) — a poolable
                                 // second health bar; absorbs before real Health, stacks
                                 // on recast, pops when overrun. Transient (per-fight).

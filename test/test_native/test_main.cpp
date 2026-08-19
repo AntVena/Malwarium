@@ -152,6 +152,7 @@ int g_failures = 0;
     RUN(test_level_stat_curves)             \
     RUN(test_defence_tier_retains_an_unspent_brace) \
     RUN(test_ransom_seizes_the_attack_that_hits_a_full_wall) \
+    RUN(test_obfuscation_pool_salts_whoever_reads_it) \
     RUN(test_combat_override_breaks_rule)   \
     RUN(test_combat_override_item_use)      \
     RUN(test_exploit_uses_per_battle)       \

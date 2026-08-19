@@ -187,8 +187,8 @@ EffectText effectText(const MoveDef& d) {
         {"stackDefCap", d.stackDefenseCap},
         {"pierce", d.armorPiercePct},
         {"lock", d.lockTurns},
-        {"dot", d.dotDamage},
-        {"dotTurns", d.dotTurns},
+        {"dot", d.dotDamage ? d.dotDamage : d.poolRetaliateDot},
+        {"dotTurns", d.dotTurns ? d.dotTurns : d.poolRetaliateTurns},
         {"stealPower", d.stealPowerPct},
         {"stealDef", d.stealDefensePct},
         {"stealSpeed", d.stealSpeedPct},
@@ -364,6 +364,9 @@ SpecRows specRows(const MoveDef& d) {
     // What the cast hands back toward its next action. Sits with the power it is the
     // counterweight to, because the two together are the whole of what a brace costs.
     if (d.speedRefundPct) s.add("TEMPO", "%d%%", d.speedRefundPct);
+    // What a strike on the live pool plants on the striker (poolRow). Its own label rather
+    // than DOT's, because this one is spent by the ENEMY's action, not by the caster's.
+    if (d.poolRetaliateDot) s.add("SALT", "%dx%d", d.poolRetaliateDot, d.poolRetaliateTurns);
     if (d.armorPiercePct) s.add("PIERCE", "%d%%", d.armorPiercePct);
     if (d.stackPowerPct) {
         s.add("POWER", "%+d%%", d.stackPowerPct);

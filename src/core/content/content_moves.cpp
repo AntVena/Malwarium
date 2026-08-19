@@ -98,15 +98,22 @@ const MoveDef kMoves[] = {
     // Obfuscation bubble up (shieldHp > 0, cast via spoof_bubble/proxy_shell/
     // bathyspoof) — the "Perfect Bite" passive (content_passives.h, Combat::
     // applyEffect) then has a stage-scaled chance to double whichever of the two lands.
-    {"spoof_bubble", "Spoof-Bubble", MoveDef::Kind::Defend, 8, 1,
-     "A decoy identity that soaks {power} damage before it pops.", Stage::Process,
-     "phishing", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, /*shieldPool=*/1},
-    {"proxy_shell", "Proxy-Shell", MoveDef::Kind::Defend, 24, 1,
-     "A deeper false front - a {power}-damage pool to burn through.", Stage::Script,
-     "phishing", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, /*shieldPool=*/1},
-    {"bathyspoof", "Bathyspoof", MoveDef::Kind::Defend, 32, 1,
-     "The deepest buried identity - a {power}-damage shield.", Stage::Daemon,
-     "phishing", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, /*shieldPool=*/1},
+    // The Obfuscation ladder is a decoy that learns to bite. The first rung is pure
+    // padding; the second trades depth for POISONED DATA — read the decoy and something in
+    // it reads back, which is the line's conversion from defence into damage and the one
+    // that sits where a defend-heavy pet will actually hold it; the third does both
+    // properly. A retaliation DoT passes no cut, brace, pool or hit cap, so it stays small.
+    poolRow("spoof_bubble", "Spoof-Bubble", 8,
+            "A decoy identity that soaks {power} damage before it pops.",
+            Stage::Process, /*retaliateDot=*/0, /*retaliateTurns=*/0),
+    poolRow("proxy_shell", "Proxy-Shell", 16,
+            "A thinner false front, salted - {power}-damage pool, and reading it costs "
+            "{dot}/turn for {dotTurns}.",
+            Stage::Script, /*retaliateDot=*/4, /*retaliateTurns=*/2),
+    poolRow("bathyspoof", "Bathyspoof", 32,
+            "The deepest buried identity - a {power}-damage shield, salted at "
+            "{dot}/turn for {dotTurns}.",
+            Stage::Daemon, /*retaliateDot=*/6, /*retaliateTurns=*/3),
     // The LURE half of the line's two-beat hunt: it bites small, takes what it came for,
     // and hands the slot to its strike step (content_chain_steps.cpp) for the next turn.
     // Both turns are real casts — the track used to spend its first turn winding up,

@@ -771,6 +771,19 @@ struct MoveDef {
     // that already does something besides brace (a pool, a trap, a spawn, a Cipher stack)
     // — those were never the rows paying this cost.
     int speedRefundPct = 0;
+
+    // --- Poisoned data (Obfuscation pool rows) -----------------------------------
+    // A pool row may also POISON whoever strikes it: an enemy attack landing on the live
+    // bubble plants this DoT on the attacker (Combat::applyEffect). It is the Obfuscation
+    // track's conversion from defence into damage, and it sits on the POOL rows on purpose —
+    // the line's steals ride its ATTACK moves, which a defend-heavy pet with a single attack
+    // slot almost never equips, so a conversion routed through those never reaches the pets
+    // that need one. 0 on a pool row that only banks Health.
+    //
+    // Appended at the END of the struct, like every field before it: the rows are positional
+    // initializers, so a field inserted mid-struct silently re-aims every magnitude after it.
+    int poolRetaliateDot = 0;
+    int poolRetaliateTurns = 0;
 };
 
 // A PURE BRACE row: it mitigates and does nothing else, so the only fields that vary
@@ -791,6 +804,28 @@ constexpr MoveDef braceRow(const char* id, const char* displayName, int power,
     m.effect = effect;
     m.minStage = minStage;
     m.speedRefundPct = speedRefundPct;
+    return m;
+}
+
+// An Obfuscation POOL row (Phishing): it banks a second Health bar and, from the second
+// rung up, poisons whoever reads the decoy. Same reason braceRow exists — the fields that
+// vary sit at opposite ends of a long positional tail, and a miscount there arms the wrong
+// mechanic silently.
+constexpr MoveDef poolRow(const char* id, const char* displayName, int power,
+                          const char* effect, Stage minStage, int retaliateDot,
+                          int retaliateTurns) {
+    MoveDef m{};
+    m.id = id;
+    m.displayName = displayName;
+    m.kind = MoveKind::Defend;
+    m.power = power;
+    m.channelTurns = 1;
+    m.effect = effect;
+    m.minStage = minStage;
+    m.line = "phishing";
+    m.shieldPool = 1;
+    m.poolRetaliateDot = retaliateDot;
+    m.poolRetaliateTurns = retaliateTurns;
     return m;
 }
 

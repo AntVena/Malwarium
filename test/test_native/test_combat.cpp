@@ -369,6 +369,41 @@ void test_ransom_seizes_the_attack_that_hits_a_full_wall() {
     CHECK(cb.player().moves[slot] == cipher);            // given back, same slot
 }
 
+// Poisoned data (MoveDef::poolRetaliateDot): the Obfuscation ladder's second rung trades
+// pool depth for a bite — an enemy attack landing on the live bubble plants a DoT on the
+// ATTACKER. It rides the POOL rows on purpose: this line's steals ride its attack moves, and
+// a pet with one attack slot and three defend slots almost never equips one, so a conversion
+// routed through them never reaches the pets that need it.
+void test_obfuscation_pool_salts_whoever_reads_it() {
+    ContentRegistry r = ContentRegistry::embedded();
+    // The ladder: padding, then a bite for less padding, then both.
+    CHECK(r.move("spoof_bubble")->poolRetaliateDot == 0);
+    CHECK(r.move("proxy_shell")->poolRetaliateDot > 0);
+    CHECK(r.move("bathyspoof")->poolRetaliateDot > r.move("proxy_shell")->poolRetaliateDot);
+    CHECK(r.move("bathyspoof")->power > r.move("proxy_shell")->power);   // ...and deeper
+
+    // A phishing pet holding only the salted pool, against an attacker that only swings.
+    Combatant p = mkCombatant(r, "P", 300, 30, {"bathyspoof"});
+    p.setLine(r, "phishing");
+    p.stage = Stage::Daemon;
+    Combatant e = mkCombatant(r, "E", 300, 30, {"packet_storm"});
+    Combat cb;
+    cb.begin(p, e, Combat::Stakes::Safe, 11);
+    cb.step();                                           // P lays the pool
+    CHECK(cb.player().shieldHp > 0);
+    CHECK(cb.player().poolDotDamage == r.move("bathyspoof")->poolRetaliateDot);
+    CHECK(cb.enemy().dotTurnsLeft == 0);                 // nothing has read it yet
+    cb.step();                                           // E strikes the bubble
+    // The striker is now rotting, and the DoT it carries is the pool's, not its own.
+    CHECK(cb.enemy().dotTurnsLeft > 0);
+    CHECK(cb.enemy().dotPerTurn == r.move("bathyspoof")->poolRetaliateDot);
+    // ...and it costs the enemy real Health, through nothing it can mitigate.
+    const int before = cb.enemy().health;
+    cb.step();                                           // P again
+    cb.step();                                           // E's turn opens with the rot
+    CHECK(cb.enemy().health < before);
+}
+
 // The Exploit override commands the next move AND breaks the no-consecutive rule:
 // it can repeat the move just played. Opening doesn't spend; committing does.
 void test_combat_override_breaks_rule() {
@@ -1501,17 +1536,23 @@ void test_phishing_bubble_steal() {
     // the live ratio is no longer the one that sized the siphon).
     {
         Combatant probe = mkCombatant(r, "X", 100, 50, {"smish_hook"});
-        CHECK(phishPoolSiphonBonusPct(probe) == 0);          // no bubble, no bonus
+        // Stage set explicitly: the denominator is the STAGE's body (kMaxHealthByStage),
+        // not this pet's levelled maxHealth, so that a pet does not get worse at its own
+        // line's mechanic for having raised Health.
+        probe.stage = Stage::Daemon;                          // ...a body of 100
+        CHECK(phishPoolSiphonBonusPct(probe) == 0);           // no bubble, no bonus
         probe.shieldHp = 50;
-        CHECK(phishPoolSiphonBonusPct(probe) == 50);          // half a body -> +50%
+        CHECK(phishPoolSiphonBonusPct(probe) == 50);           // half a body -> +50%
         probe.shieldHp = 100;
-        CHECK(phishPoolSiphonBonusPct(probe) == 100);         // a whole one -> doubled
+        CHECK(phishPoolSiphonBonusPct(probe) == 100);          // a whole one -> doubled
         probe.shieldHp = 10000;
         CHECK(phishPoolSiphonBonusPct(probe) == kPhishPoolSiphonMaxPct);   // ...and capped
     }
-    CHECK(c1.player().speed == 54.5f && c1.enemy().speed == 45.5f);
-    // enemy: 100 - 6 (lure) - 8 (9% of 94, lifesteal) - 17 (siphon-boosted strike) = 69.
-    CHECK(c1.enemy().health == 69);
+    // This pet is at the BootSector default (to keep Perfect Bite at a guaranteed 0%), so
+    // its body is 40 and a 50 pool reads as +125% — the authored 6% siphons at 13%.
+    CHECK(c1.player().speed == 56.5f && c1.enemy().speed == 43.5f);   // 13% of 50 = 6.5
+    // enemy: 100 - 6 (lure) - 12 (13% of 94, lifesteal) - 17 (siphon-boosted strike) = 65.
+    CHECK(c1.enemy().health == 65);
     // player: the lifesteal lands while the ceiling is still 100 (so it caps there), the
     // crossed pool then lifts both to 106, and the frenzy's +1 caps again. quick_jab is
     // absorbed by the shield and never reaches Health.
@@ -1538,7 +1579,7 @@ void test_phishing_perfect_bite() {
         out.step(); out.step(); out.step();
     };
     // Baselines (no bite). Both gated steals are sized by the pool as well as gated by it
-    // (phishPoolSiphonBonusPct: a 50 pool on a 100 body is +50%), so the authored 6% siphons
+    // (phishPoolSiphonBonusPct: a 50 pool on a Daemon body of 100 is +50%), so the 6% siphons
     // at 9%: speed 50 -> 54.5/45.5. Health: quick_jab is absorbed by the player's OWN
     // shieldHp(50), not Health (the pre-existing Obfuscation absorb, ahead of any steal
     // effect), so carryPlayerHealth(50) only ever moves via the lure's own take — +8
