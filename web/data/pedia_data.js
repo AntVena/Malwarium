@@ -5386,8 +5386,8 @@ window.PEDIA_DATA = {
       "power": 16,
       "turns": 1,
       "minStage": "Script",
-      "desc": "A thinner false front, salted - 16-damage pool, and reading it costs 4/turn for 2.",
-      "stats": "SHIELD POOL 16 / SALT 4x2",
+      "desc": "A thinner false front, salted - 16-damage pool, and reading it costs 5/turn for 2.",
+      "stats": "SHIELD POOL 16 / SALT 5x2",
       "group": "phishing",
       "icon": "assets/icons/ICON_MOVE_SLOT_LOCKED.png"
     },
@@ -5398,8 +5398,8 @@ window.PEDIA_DATA = {
       "power": 32,
       "turns": 1,
       "minStage": "Daemon",
-      "desc": "The deepest buried identity - a 32-damage shield, salted at 6/turn for 3.",
-      "stats": "SHIELD POOL 32 / SALT 6x3",
+      "desc": "The deepest buried identity - a 32-damage shield, salted at 8/turn for 3.",
+      "stats": "SHIELD POOL 32 / SALT 8x3",
       "group": "phishing",
       "icon": "assets/icons/ICON_MOVE_SLOT_LOCKED.png"
     },

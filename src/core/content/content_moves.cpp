@@ -109,11 +109,11 @@ const MoveDef kMoves[] = {
     poolRow("proxy_shell", "Proxy-Shell", 16,
             "A thinner false front, salted - {power}-damage pool, and reading it costs "
             "{dot}/turn for {dotTurns}.",
-            Stage::Script, /*retaliateDot=*/4, /*retaliateTurns=*/2),
+            Stage::Script, /*retaliateDot=*/5, /*retaliateTurns=*/2),
     poolRow("bathyspoof", "Bathyspoof", 32,
             "The deepest buried identity - a {power}-damage shield, salted at "
             "{dot}/turn for {dotTurns}.",
-            Stage::Daemon, /*retaliateDot=*/6, /*retaliateTurns=*/3),
+            Stage::Daemon, /*retaliateDot=*/8, /*retaliateTurns=*/3),
     // The LURE half of the line's two-beat hunt: it bites small, takes what it came for,
     // and hands the slot to its strike step (content_chain_steps.cpp) for the next turn.
     // Both turns are real casts — the track used to spend its first turn winding up,
