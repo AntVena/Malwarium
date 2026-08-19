@@ -203,6 +203,33 @@ void test_brace_only_defend_is_not_recast() {
     CHECK(braces > 2);                      // the kit really did brace, repeatedly
 }
 
+// stealMaxHpPct MOVES a Health pool: the caster gains the ceiling and the Health inside
+// it, the target loses both. A ceiling alone would be unreachable — combat has no heal to
+// climb into one — so the transfer is what makes the rider a reward and not just a debuff.
+void test_steal_max_health_moves_the_pool() {
+    ContentRegistry r = ContentRegistry::embedded();
+    const MoveDef* toll = r.move("toll_charge");
+    CHECK(toll->stealMaxHpPct > 0);
+
+    // Slow, fat target so the steal lands before anything dies, and the caster opens.
+    Combatant p = mkCombatant(r, "P", 100, 30, {"toll_charge"});
+    Combatant e = mkCombatant(r, "E", 200, 1, {"quick_jab"});
+    Combat cb;
+    cb.begin(p, e, Combat::Stakes::Safe, 31337);
+    const int pMaxBefore = cb.player().maxHealth;
+    const int eMaxBefore = cb.enemy().maxHealth;
+    for (int i = 0; i < 8 && cb.outcome() == Combat::Outcome::Ongoing; ++i) {
+        const bool pturn = cb.playerTurnNext();
+        cb.step();
+        if (pturn) break;
+    }
+    const int gained = cb.player().maxHealth - pMaxBefore;
+    CHECK(gained > 0);                                   // a ceiling crossed
+    CHECK(eMaxBefore - cb.enemy().maxHealth == gained);   // ...off the target, exactly
+    // The Health came with it: the caster is not sitting under a ceiling it cannot reach.
+    CHECK(cb.player().health == cb.player().maxHealth);
+}
+
 // The Exploit override commands the next move AND breaks the no-consecutive rule:
 // it can repeat the move just played. Opening doesn't spend; committing does.
 void test_combat_override_breaks_rule() {

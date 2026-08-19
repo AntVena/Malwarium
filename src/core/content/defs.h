@@ -696,7 +696,9 @@ struct MoveDef {
     int stealCurrentHpPct = 0;   // target's CURRENT health, a lifesteal-style drain;
                                   // bubble-gated (see above)
     int stealMaxHpPct = 0;       // target's maxHealth ceiling, permanently for the
-                                  // fight (clamps target's current health down with it)
+                                  // fight — the pool MOVES, so the caster gains the
+                                  // ceiling AND the Health in it, and the target's
+                                  // current Health clamps down to its new ceiling
 
     // --- Obfuscation shield-pool (Phishing defensive track) ----------------------
     // >0 marks a Defend move as a POOLABLE shield (a "second health bar") instead of

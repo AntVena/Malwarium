@@ -583,7 +583,12 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
                 if (stolen > 0 && target.maxHealth - stolen >= 1) {
                     target.maxHealth -= stolen;                 // permanent for the fight
                     if (target.health > target.maxHealth) target.health = target.maxHealth;
+                    // The pool MOVES: the ceiling and the Health inside it both cross. A
+                    // ceiling on its own is not a reward — combat has no heal to climb
+                    // into it, so raising `maxHealth` alone hands the caster a number it
+                    // can never reach and the move only ever reads as a debuff.
                     actor.maxHealth += stolen;
+                    actor.health += stolen;
                 }
             }
             // Feed-frenzy: a landed POWER siphon from inside an Obfuscation bubble
