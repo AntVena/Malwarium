@@ -168,6 +168,41 @@ void test_combat_no_consecutive() {
     CHECK(checks > 3);
 }
 
+// A one-shot `guard` is spent whole on the next hit, so a pure-brace Defend rolled while
+// the brace is still up buys nothing but overkill. braceOnlyDefend classifies the rows it
+// applies to, and the roll re-rolls off them.
+void test_brace_only_defend_is_not_recast() {
+    ContentRegistry r = ContentRegistry::embedded();
+    // Classification first: a bare brace qualifies; a Defend that ALSO pools a shield,
+    // arms a trap or stacks the Cipher cut is worth its turn whatever the brace is doing.
+    CHECK(braceOnlyDefend(*r.move("checksum_guard")));
+    CHECK(braceOnlyDefend(*r.move("null_route")));
+    CHECK(!braceOnlyDefend(*r.move("spoof_bubble")));    // pools instead of bracing
+    CHECK(!braceOnlyDefend(*r.move("killswitch")));      // arms a trap
+    CHECK(!braceOnlyDefend(*r.move("aes_lockbox")));     // stacks the Cipher cut
+    CHECK(!braceOnlyDefend(*r.move("packet_storm")));    // not a Defend at all
+
+    // A brace-heavy kit that still owns one attack, against a slow enemy so the player
+    // takes runs of turns — the shape that used to stack brace onto live brace.
+    Combatant p = mkCombatant(r, "P", 200, 30,
+                              {"quick_jab", "checksum_guard", "null_route"});
+    Combatant e = mkCombatant(r, "E", 200, 4, {"quick_jab"});
+    Combat cb;
+    cb.begin(p, e, Combat::Stakes::Safe, 4242);
+    int braces = 0;
+    for (int i = 0; i < 200 && cb.outcome() == Combat::Outcome::Ongoing; ++i) {
+        const bool pturn = cb.playerTurnNext();
+        const int before = cb.player().guard;
+        cb.step();
+        if (!pturn) continue;
+        if (cb.player().guard > before) {   // the player braced this turn
+            CHECK(before == 0);             // ...never onto one already standing
+            ++braces;
+        }
+    }
+    CHECK(braces > 2);                      // the kit really did brace, repeatedly
+}
+
 // The Exploit override commands the next move AND breaks the no-consecutive rule:
 // it can repeat the move just played. Opening doesn't spend; committing does.
 void test_combat_override_breaks_rule() {

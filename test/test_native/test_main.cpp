@@ -146,6 +146,7 @@ int g_failures = 0;
     /* Combat engine */                     \
     RUN(test_combat_deterministic)          \
     RUN(test_combat_no_consecutive)         \
+    RUN(test_brace_only_defend_is_not_recast) \
     RUN(test_combat_override_breaks_rule)   \
     RUN(test_combat_override_item_use)      \
     RUN(test_exploit_uses_per_battle)       \

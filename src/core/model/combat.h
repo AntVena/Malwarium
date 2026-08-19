@@ -307,6 +307,18 @@ int attackPowerRank(const std::vector<const MoveDef*>& moves, int moveIdx);
 // How many of `c`'s live replicas are of the given kind.
 int wormReplicaCount(const Combatant& c, bool defenders);
 
+// Whether `m`'s ENTIRE contribution is the one-shot `guard` brace. A Defend row may also
+// pool a shield, arm a trap, spawn a defender or stack the Cipher cut, and each of those
+// is worth a turn whatever the brace situation is; a row carrying none of them does
+// nothing but add to `guard`.
+//
+// That matters because `guard` is one-shot: the whole pool absorbs the next hit and is
+// then zeroed, with any magnitude past that hit's damage discarded. So casting a
+// pure-brace Defend onto a brace that is ALREADY up spends a turn to buy overkill on a
+// single hit, and Combat::chooseMove re-rolls off it for the same reason it re-rolls off
+// a Defend during a frenzy. Pure, so the classification is assertable without a fight.
+bool braceOnlyDefend(const MoveDef& m);
+
 // The Phishing frenzy lean, 0..kPhishFrenzyLeanMaxPct: how strongly an over-stacked
 // Obfuscation bubble pushes `c` off bracing and onto biting (Combat::chooseMove reads
 // it to re-roll Defend picks). A total function of the combatant, so the combat SCREEN

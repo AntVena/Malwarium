@@ -157,6 +157,11 @@ int phishFrenzyLeanPct(const Combatant& c) {
     return pct > kPhishFrenzyLeanMaxPct ? kPhishFrenzyLeanMaxPct : pct;
 }
 
+bool braceOnlyDefend(const MoveDef& m) {
+    return m.kind == MoveDef::Kind::Defend && m.stackDefensePct == 0 && m.shieldPool == 0 &&
+           m.trapArm == 0 && m.replicaSpawnPct == 0;
+}
+
 int Combat::chooseMove(Combatant& self) {
     const int n = static_cast<int>(self.moves.size());
     if (n <= 1) return 0;
@@ -178,6 +183,20 @@ int Combat::chooseMove(Combatant& self) {
     const int leanPct = phishFrenzyLeanPct(self);
     if (leanPct > 0 && self.moves[idx]->kind != MoveDef::Kind::Attack &&
         static_cast<int>(rng() % 100) < leanPct) {
+        const int atk = pickSlot(self, /*attacksOnly=*/true, /*allowRepeat=*/true);
+        if (atk >= 0) idx = atk;
+    }
+    // ...and one more, for the same reason in a different costume: a pure-brace Defend
+    // (braceOnlyDefend) rolled while this fighter's brace is STILL UP adds to a one-shot
+    // pool that already absorbs the next hit, so the turn buys nothing but overkill.
+    // Swing instead. Unconditional rather than a chance — there is no state in which
+    // re-bracing is the better turn, so there is nothing for a dial to express.
+    //
+    // Takes the same no-consecutive-repeat licence the frenzy re-roll does, and for the
+    // same reason: a defend-heavy kit with a single attack would otherwise be unable to
+    // act on this at all, which is exactly the kit the waste falls hardest on. It can
+    // still decline to find an attack (a Defend-only kit), and then the original stands.
+    if (self.guard > 0 && braceOnlyDefend(*self.moves[idx])) {
         const int atk = pickSlot(self, /*attacksOnly=*/true, /*allowRepeat=*/true);
         if (atk >= 0) idx = atk;
     }
