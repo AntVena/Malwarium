@@ -702,7 +702,7 @@ void test_combat_windup_reads_apart_from_impact() {
     // The charging pet is the one that CAN charge: a kit without a channelled move can
     // never wind up, which is what makes the impact frames a clean control.
     auto render = [&](bool channel, int animBeat, int hitBeat, Framebuffer& fb) {
-        Combatant p = channel ? mkCombatant(reg, "P", 400, 20, {"fork_bomb"})
+        Combatant p = channel ? mkCombatant(reg, "P", 400, 20, {"runaway_fork"})
                               : mkCombatant(reg, "P", 400, 20, {"quick_jab"});
         Combatant e = mkCombatant(reg, "E", 400, 1, {"quick_jab"});
         Combat c;

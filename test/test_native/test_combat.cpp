@@ -85,7 +85,8 @@ void test_move_loadout() {
     ContentRegistry r = ContentRegistry::embedded();
     CHECK(r.move("quick_jab") && r.move("quick_jab")->kind == MoveDef::Kind::Attack);
     CHECK(r.move("checksum_guard")->kind == MoveDef::Kind::Defend);
-    CHECK(r.move("fork_bomb")->channelTurns == 2);
+    CHECK(r.move("runaway_fork")->channelTurns == 3);   // the roster's one wind-up
+    CHECK(r.move("fork_bomb")->chainNextId != nullptr);  // ...the rest chain instead
     CHECK(static_cast<int>(r.allMoves().size()) >= 4);
 }
 
@@ -430,16 +431,23 @@ void test_combat_item_in_game() {
 // A multi-turn channel move winds up (no damage) then detonates for full power.
 void test_combat_channel() {
     ContentRegistry r = ContentRegistry::embedded();
-    Combatant p = mkCombatant(r, "P", 100, 10, {"fork_bomb"});   // channel 2, power 26
-    Combatant e = mkCombatant(r, "E", 100, 10, {"quick_jab"});   // equal speed → P,E,P
+    // Runaway Fork is the roster's one remaining wind-up, and the only row where winding
+    // up IS the move — so it is what holds this path. Every other two-beat move CHAINS
+    // (MoveDef::chainNextId), which spends both of its turns on something.
+    Combatant p = mkCombatant(r, "P", 100, 10, {"runaway_fork"});  // channel 3, power 52
+    Combatant e = mkCombatant(r, "E", 100, 10, {"quick_jab"});     // equal speed → P,E,P…
     Combat cb; cb.begin(p, e, Combat::Stakes::Safe, 1);
-    cb.step();                                   // player: wind-up
+    cb.step();                                   // player: wind-up begins
     CHECK(cb.lastByPlayer() && cb.lastWasCharge() && cb.lastDamage() == 0);
     CHECK(cb.enemy().health == 100);             // no payoff yet
     cb.step();                                   // enemy turn
+    cb.step();                                   // player: still charging
+    CHECK(cb.lastByPlayer() && cb.lastWasCharge() && cb.lastDamage() == 0);
+    CHECK(cb.enemy().health == 100);             // ...and still no payoff
+    cb.step();                                   // enemy turn
     cb.step();                                   // player: detonate
-    CHECK(cb.lastByPlayer() && !cb.lastWasCharge() && cb.lastDamage() == 26);
-    CHECK(cb.enemy().health == 74);
+    CHECK(cb.lastByPlayer() && !cb.lastWasCharge() && cb.lastDamage() == 52);
+    CHECK(cb.enemy().health == 48);
 }
 
 // MODS passives measurably change the fight.

@@ -8,7 +8,9 @@ namespace mal {
 
 // Seed moves. `quick_jab` is the innate DEFAULT: always
 // available, outside the equip slots, never slotted. Single-turn unless
-// channelTurns > 1 (Fork Bomb winds up for 2).
+// channelTurns > 1 (Runaway Fork winds up for 3 — the one row where the wind-up IS the
+// move, and priced for it; the rest of the two-beat kit CHAINS instead, so both of its
+// turns do something. See MoveDef::chainNextId and content_chain_steps.cpp).
 //
 // These seven are the GENERIC roster (line = nullptr): no pet owns them from
 // hatch — a pet's own line moves (below) are its nature and are what it starts
@@ -28,8 +30,16 @@ const MoveDef kMoves[] = {
      "Innate jab. Always available.", Stage::BootSector},
     {"packet_storm", "Packet Storm", MoveDef::Kind::Attack, 12, 1,
      "Floods the target with packets.", Stage::BootSector},
-    {"fork_bomb", "Fork Bomb", MoveDef::Kind::Attack, 26, 2,
-     "Winds up {turns} turns, then detonates.", Stage::Process},
+    // No stun on the fork. Enemy kits field this row (combat_factory), so a lock here
+    // spends the PLAYER's turns doing nothing, and a turn where nothing happens is still a
+    // turn — it pushed the measured fight length past its design band from the enemy side.
+    // The ramp is the flavour, and the ramp is damage.
+    {"fork_bomb", "Fork Bomb", MoveDef::Kind::Attack, 12, 1,
+     "Forks until the table fills, then exhausts what is left.",
+     Stage::Process, nullptr, 0, 0, 0, 0, /*armorPiercePct=*/0, /*lockTurns=*/0,
+     /*dotDamage=*/0, /*dotTurns=*/0, 0, 0, 0, 0, /*stealMaxHpPct=*/0,
+     /*shieldPool=*/0, /*trapArm=*/0, 0, 0, 0, 0, /*replicaSpawnPct=*/0, 0, 0,
+     /*chainNextId=*/"process_flood"},
     {"checksum_guard", "Checksum Guard", MoveDef::Kind::Defend, 14, 1,
      "Braces against the next incoming hit.", Stage::BootSector},
     {"buffer_overflow", "Buffer Overflow", MoveDef::Kind::Attack, 20, 1,
@@ -83,7 +93,7 @@ const MoveDef kMoves[] = {
     {"proxy_shell", "Proxy-Shell", MoveDef::Kind::Defend, 24, 1,
      "A deeper false front - a {power}-damage pool to burn through.", Stage::Script,
      "phishing", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, /*shieldPool=*/1},
-    {"bathyspoof", "Bathyspoof", MoveDef::Kind::Defend, 32, 2,
+    {"bathyspoof", "Bathyspoof", MoveDef::Kind::Defend, 32, 1,
      "The deepest buried identity - a {power}-damage shield.", Stage::Daemon,
      "phishing", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, /*shieldPool=*/1},
     // The LURE half of the line's two-beat hunt: it bites small, takes what it came for,
@@ -291,9 +301,12 @@ const MoveDef kMoves[] = {
     {"keygen_cut", "Keygen Cut", MoveDef::Kind::Attack, 14, 1,
      "Generates the key rather than asking - ignores {pierce}% of armor.", Stage::Process,
      nullptr, 0, 0, 0, 0, /*armorPiercePct=*/50},
-    {"nuked_release", "Nuked Release", MoveDef::Kind::Attack, 34, 3,
-     "Winds up {turns} turns, then dumps a bad rip - {dot} damage/turn for {dotTurns} after.",
-     Stage::Process, nullptr, 0, 0, 0, 0, 0, 0, /*dotDamage=*/6, /*dotTurns=*/3},
+    {"nuked_release", "Nuked Release", MoveDef::Kind::Attack, 8, 1,
+     "Dumps a bad rip - {dot} damage/turn for {dotTurns}, and the nuke follows.",
+     Stage::Process, nullptr, 0, 0, 0, 0, /*armorPiercePct=*/0, /*lockTurns=*/0,
+     /*dotDamage=*/6, /*dotTurns=*/3, 0, 0, 0, 0, /*stealMaxHpPct=*/0,
+     /*shieldPool=*/0, /*trapArm=*/0, 0, 0, 0, 0, /*replicaSpawnPct=*/0, 0, 0,
+     /*chainNextId=*/"scene_nuke"},
     {"backdoor_knock", "Backdoor Knock", MoveDef::Kind::Attack, 9, 1,
      "Already had a key - ignores ALL {pierce}% armor and freezes {lock} turn.",
      Stage::Process, nullptr, 0, 0, 0, 0, /*armorPiercePct=*/100, /*lockTurns=*/1},
@@ -343,7 +356,7 @@ const MoveDef kMoves[] = {
     {"attachment_bait", "Attachment Bait", MoveDef::Kind::Attack, 16, 1,
      "You opened it - frozen {lock} turns, then {dot}/turn for {dotTurns}.", Stage::Script,
      nullptr, 0, 0, 0, 0, 0, /*lockTurns=*/2, /*dotDamage=*/4, /*dotTurns=*/3},
-    {"runaway_fork", "Runaway Fork", MoveDef::Kind::Attack, 44, 3,
+    {"runaway_fork", "Runaway Fork", MoveDef::Kind::Attack, 52, 3,
      "Winds up {turns} turns, reinfecting what it already took - then {dot}/turn for "
      "{dotTurns}.",
      Stage::Script, nullptr, 0, 0, 0, 0, 0, 0, /*dotDamage=*/8, /*dotTurns=*/4},
