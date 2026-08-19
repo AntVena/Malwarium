@@ -424,6 +424,16 @@ constexpr int kLevelDefenseBraceRetainPct = 25;    // ...ADDED to the baseline b
 // nothing per point, so bigger was never available.
 constexpr int kBraceRetainBasePct = 25;
 
+// What a SEIZED move hits for in Ransomware hands, as a % of the wall the pet is standing
+// behind (Combatant::stackDefenseBonus, RansomSeizure). This is the whole reason the seizure
+// is worth having: taking an attack for three turns is a small thing on its own, and
+// measured that way it moved nothing at all. What the line needed was a way to SPEND its
+// wall, because Cipher accumulates a damage cut and has nothing else to do with it — the
+// four one-attack-slot Daemons rank almost exactly by how far their line converts defence
+// into damage, and Ransomware was last with no conversion at all. The seized move is the
+// conversion: the ransom note is written in the pet's own encryption.
+constexpr int kRansomSeizedWallPct = 100;   // 100 = the full stacked cut, as bonus damage
+
 // Per-line combat PASSIVE constants (Ransom Lock, the Phishing steal-track floors +
 // Feed-Frenzy + Perfect Bite, Execution-Override + the Trojan trap cap) live beside
 // their line's moves in content_passives.h, not here — they only ever get tuned

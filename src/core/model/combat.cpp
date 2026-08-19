@@ -157,6 +157,18 @@ int phishFrenzyLeanPct(const Combatant& c) {
     return pct > kPhishFrenzyLeanMaxPct ? kPhishFrenzyLeanMaxPct : pct;
 }
 
+void Combat::releaseRansomSeizure(Combatant& c) {
+    RansomSeizure& seize = c.ransomSeizure;
+    if (!seize.holding()) return;
+    const int slot = seize.slot;
+    if (slot >= 0 && slot < static_cast<int>(c.moves.size())) {
+        c.moves[slot] = seize.heldMove;
+        if (slot < static_cast<int>(c.chainFollow.size()))
+            c.chainFollow[slot] = seize.heldFollow;
+    }
+    seize = RansomSeizure{};
+}
+
 bool braceOnlyDefend(const MoveDef& m) {
     return m.kind == MoveDef::Kind::Defend && m.stackDefensePct == 0 && m.shieldPool == 0 &&
            m.trapArm == 0 && m.replicaSpawnPct == 0;
@@ -281,6 +293,14 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
             if (actor.phishStreak > 1) actor.phishComboBonus += actor.phishStreak - 1;
         }
     }
+    // A SEIZED move swung by its captor hits for the wall behind it (kRansomSeizedWallPct).
+    // Asked here, before the damage below is scaled, so the bonus rides the same
+    // multipliers everything else does. `moveIdx` naming the seized slot is the whole
+    // test: the seized move IS that slot for as long as the ransom runs, so nothing has
+    // to compare move pointers to know it is being swung by the pet that took it.
+    const bool swingingSeized = mv->kind == MoveDef::Kind::Attack &&
+                                actor.ransomSeizure.holding() && moveIdx >= 0 &&
+                                moveIdx == actor.ransomSeizure.slot;
     if (mv->kind == MoveDef::Kind::Attack) {
         // Base damage scaled by the actor's branch attack-power lean PLUS any
         // Lockout-track Power the caster has stacked this fight: Bad-branch
@@ -298,6 +318,9 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
         // floor rather than raw damage, so this flat bonus (above) is what actually
         // makes a sustained frenzy dangerous instead of a long string of 1s.
         if (mv->stealPowerPct > 0) dmg += actor.phishComboBonus;
+        // The wall, spent. Ransomware's one currency it could never cash in.
+        if (swingingSeized && actor.stackDefenseBonus > 0)
+            dmg = dmg * (100 + actor.stackDefenseBonus * kRansomSeizedWallPct / 100) / 100;
         // Worm attacker replicas pile onto their parent's swing (wormReplicaDamage).
         // The parent's own attacks are deliberately weak, so on a Worm this is most of
         // the damage — and it is why the line's threat scales with the BOARD rather than
@@ -496,6 +519,24 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
             target.ransomPool += dmg;
             target.ransomTurnsLeft = kRansomHoldTurns;
             target.ransomArmed = false;   // the window closes on the hit it catches
+        }
+        // The SEIZURE (RansomSeizure): a full Cipher wall with a live ransom takes the
+        // attack that hits it. The pet swings it out of the brace's own slot until the
+        // ransom settles. Only an attack is worth taking, and only a hit that landed —
+        // a swing the wall shrugged off entirely was never held to anything.
+        if (dmg > 0 && target.ransomSeizure.armed && mv->kind == MoveDef::Kind::Attack) {
+            RansomSeizure& seize = target.ransomSeizure;
+            const int slot = seize.slot;
+            if (slot >= 0 && slot < static_cast<int>(target.moves.size())) {
+                seize.heldMove = target.moves[slot];
+                seize.heldFollow = slot < static_cast<int>(target.chainFollow.size())
+                                       ? target.chainFollow[slot]
+                                       : nullptr;
+                target.moves[slot] = mv;
+                if (slot < static_cast<int>(target.chainFollow.size()))
+                    target.chainFollow[slot] = nullptr;   // the payload, not the toolkit
+            }
+            seize.armed = false;
         }
         // Health is left UNCLAMPED here (and at every other site below that spends it):
         // Combat::checkOutcome owns the floor, because how far past 0 a hit buried the
@@ -721,6 +762,16 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
             actor.stackDefenseBonus += gain;
             if (mitmCopy) mirror.stackDefenseBonus += gain;
         }
+        // ...and once that wall is FULL, with a ransom already running, the next thing to
+        // hit it gets seized rather than absorbed (RansomSeizure). Asked after the stack
+        // above so the cast that FILLS the cap is already the one that arms — the pet does
+        // not have to spend a further turn topping up a bar that is finished. `moveIdx < 0`
+        // is a hijacked cast (Execution-Override), which owns no slot to seize into.
+        if (mv->stackDefensePct > 0 && moveIdx >= 0 && actor.ransomTurnsLeft > 0 &&
+            actor.stackDefenseBonus >= mv->stackDefenseCap && !actor.ransomSeizure.holding()) {
+            actor.ransomSeizure.armed = true;
+            actor.ransomSeizure.slot = moveIdx;
+        }
         // Trojan trap (Trojan line): a trap move ARMS a trap (its power is 0, so the guard
         // line above is a no-op) that stacks up to kTrojanTrapCap and springs on the enemy's
         // next hit (attack path above). When the pile is full the oldest trap drops.
@@ -878,12 +929,18 @@ void Combat::resolveTurn(Combatant& actor, Combatant& target, bool byPlayer) {
     // through would have its popup overwritten by the same turn's move. It is also the
     // passive's price — the pet bought turns of fighting at untouched Health and settles
     // up with one. Ahead of the stun below, so a frozen pet still pays on schedule.
-    if (actor.ransomTurnsLeft > 0 && --actor.ransomTurnsLeft == 0 && actor.ransomPool > 0) {
-        const int due = actor.ransomPool;
-        actor.ransomPool = 0;
-        actor.health -= due;
-        setLast("RANSOM DUE", due, byPlayer, /*charge=*/false);
-        return;
+    if (actor.ransomTurnsLeft > 0 && --actor.ransomTurnsLeft == 0) {
+        // Settled: whatever was seized goes home. Ahead of the payout's early return, and
+        // outside the pool check, because a ransom that caught no damage still ends here
+        // and a seizure must not outlive the hold that justified it.
+        releaseRansomSeizure(actor);
+        if (actor.ransomPool > 0) {
+            const int due = actor.ransomPool;
+            actor.ransomPool = 0;
+            actor.health -= due;
+            setLast("RANSOM DUE", due, byPlayer, /*charge=*/false);
+            return;
+        }
     }
 
     // STUN (Watchdog-pass THREAT): a landed hit's lockTurns rider freezes `actor` for a

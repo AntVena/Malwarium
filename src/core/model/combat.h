@@ -73,6 +73,32 @@ struct CrewExploit {
     int magnitude = 0;
 };
 
+// A move the Ransomware line is holding hostage. One block rather than a field per part,
+// for the same reason CrewExploitState is one: the passive is a single mechanic with several
+// halves, and a fighter whose halves disagree is not a state the fight should be able to
+// reach.
+//
+// Cipher stacks a damage cut and, on its own, nothing else — which is why the line's
+// defend-heavy pets measured worst of the four despite having the roster's deepest wall. A
+// wall that only survives is not a win condition. So once the Cipher stack is FULL and a
+// ransom is already running, the next brace stops merely absorbing: it SEIZES the attack
+// that hits it, and the pet swings that move from the seized slot until the ransom comes
+// due, at which point it hands it back. The line's defence becomes its offence, and it does
+// so with the line's own vocabulary — take the thing, hold it, return it on payment.
+//
+// The seized move goes into `Combatant::moves` in place of the brace, so the roll, the
+// Exploit picker and the readouts all see it without any of them learning what a seizure
+// is. `heldMove` is what to give back. `heldFollow` is that move's chain step, parked for
+// the same reason: what was seized is a payload, not the toolkit around it, so a seized
+// chain entry commits no follow-up.
+struct RansomSeizure {
+    bool armed = false;                   // a full Cipher stack met a live ransom
+    int slot = -1;                        // which of the pet's own slots is occupied
+    const MoveDef* heldMove = nullptr;    // ...and what is waiting to come back to it
+    const MoveDef* heldFollow = nullptr;
+    bool holding() const { return heldMove != nullptr; }
+};
+
 // One live copy a Worm has replicated into a replication slot (Combatant::wormReplicas).
 // NOT a Combatant: a replica never takes a turn of its own, never rolls a move and never
 // appears in the speed scheduler — it is a piece of its parent's state that happens to
@@ -266,6 +292,8 @@ struct Combatant {
     int ransomPool = 0;
     int ransomTurnsLeft = 0;
     bool ransomArmed = false;
+    // The seizure half of the same passive (see RansomSeizure). Lives on the RANSOMER too.
+    RansomSeizure ransomSeizure;
 
     // Trojan traps (Trojan line) — a stack of armed Trojan Defend moves. Each incoming
     // enemy attack TRIGGERS the top trap (evasion + rebound + armor-rot, applyEffect);
@@ -556,6 +584,10 @@ private:
     // Prowlware to rank that move's Attack power (attackPowerRank).
     void applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
                      bool byPlayer, int moveIdx);
+    // Hand a seized move back and restore what it displaced (RansomSeizure). Called the
+    // turn the ransom settles, and inert on a fighter holding nothing — so every path that
+    // ends a ransom can call it without first asking whether there was a seizure.
+    void releaseRansomSeizure(Combatant& c);
     // Ransom Note (Ransomware): whether `c`'s ransom window is armed for the turn it is
     // about to take. Rolled once per turn at turn-start, never per incoming hit.
     bool ransomArmRolls(const Combatant& c);

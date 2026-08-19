@@ -334,6 +334,41 @@ void test_defence_tier_retains_an_unspent_brace() {
     CHECK(spec.player().guard > plain.player().guard);   // investment carries more of it
 }
 
+// The Ransomware seizure (RansomSeizure): a FULL Cipher wall with a ransom already running
+// stops absorbing and takes the attack that hits it, swinging it out of the brace's own slot
+// until the ransom settles — then handing it back. Cipher on its own only ever bought
+// survival, which is why the line's defend-heavy pets measured worst of the four.
+void test_ransom_seizes_the_attack_that_hits_a_full_wall() {
+    ContentRegistry r = ContentRegistry::embedded();
+    const MoveDef* cipher = r.move("aes_lockbox");
+    const MoveDef* enemyHit = r.move("packet_storm");
+    CHECK(cipher->stackDefensePct > 0);                  // it is a Cipher row
+
+    Combatant p = mkCombatant(r, "P", 400, 10, {"aes_lockbox"});
+    p.setLine(r, "ransomware");                          // the passive rides the LINE
+    p.stage = Stage::Daemon;                             // ...and its arm chance by stage
+    Combatant e = mkCombatant(r, "E", 400, 10, {"packet_storm"});
+    Combat cb;
+    cb.begin(p, e, Combat::Stakes::Safe, 5);
+
+    // Run until the wall is full, a ransom is running, and a hit has landed into it.
+    int slot = -1;
+    for (int i = 0; i < 60 && !cb.player().ransomSeizure.holding(); ++i) cb.step();
+    CHECK(cb.player().ransomSeizure.holding());          // something was taken
+    slot = cb.player().ransomSeizure.slot;
+    CHECK(slot >= 0);
+    // What it took is the attack that hit, and it now occupies the brace's own slot — so
+    // the roll, the picker and every readout see it without knowing what a seizure is.
+    CHECK(cb.player().moves[slot] == enemyHit);
+    CHECK(cb.player().ransomSeizure.heldMove == cipher);  // ...and the brace is waiting
+    CHECK(cb.player().ransomTurnsLeft > 0);               // held only while the ransom is
+
+    // Settle the ransom: the seized move goes home and the brace comes back.
+    for (int i = 0; i < 40 && cb.player().ransomSeizure.holding(); ++i) cb.step();
+    CHECK(!cb.player().ransomSeizure.holding());
+    CHECK(cb.player().moves[slot] == cipher);            // given back, same slot
+}
+
 // The Exploit override commands the next move AND breaks the no-consecutive rule:
 // it can repeat the move just played. Opening doesn't spend; committing does.
 void test_combat_override_breaks_rule() {
