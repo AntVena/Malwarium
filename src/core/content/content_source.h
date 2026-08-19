@@ -21,6 +21,13 @@ struct ContentSource {
     virtual const ItemDef* items(int& count) const = 0;
     virtual const ModDef* mods(int& count) const = 0;
     virtual const MoveDef* moves(int& count) const = 0;
+    // Chained-move follow-up steps. DEFAULTED rather than pure: a pack that ships no
+    // chains is complete without one, and every reader already treats "no step by that
+    // id" as an ordinary move.
+    virtual const MoveDef* chainSteps(int& count) const {
+        count = 0;
+        return nullptr;
+    }
     // Script->Daemon weighted pools. A source with no multi-Daemon content
     // returns count 0 (nullptr) — the registry then falls through to the next
     // source / the per-creature evolvesTo* fields.

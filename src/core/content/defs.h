@@ -739,6 +739,22 @@ struct MoveDef {
     int replicaSpawnPct = 0;
     int replicaPowerPct = 0;
     int replicaHealthPct = 0;
+
+    // --- Chained moves -----------------------------------------------------------
+    // A move that hands its slot to a FOLLOW-UP step: casting this row resolves it
+    // normally and commits the caster's next turn to the step named here
+    // (Combat::resolveTurn, via Combatant::chainFollow). So one slot alternates between
+    // two rows — the pattern a wind-up wanted and could not express, because a wind-up
+    // spends its first turn doing nothing at all while both halves of a chain are real
+    // casts. Which is the whole point: the action-economy tax a channel pays is the
+    // turn it wastes, and a chain wastes none.
+    //
+    // The step is resolved against the registry when the Combatant is BUILT (never
+    // mid-fight, so Combat stays registry-free) and is looked up in the chain-step table
+    // rather than the move roster — a follow-up is reached only by casting its entry, so
+    // it is deliberately not something a pet can own, equip, be taught or be rolled.
+    // nullptr = an ordinary move. See content_chain_steps.cpp.
+    const char* chainNextId = nullptr;
 };
 
 inline const char* moveKindTag(MoveDef::Kind k) {

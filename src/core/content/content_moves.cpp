@@ -86,21 +86,37 @@ const MoveDef kMoves[] = {
     {"bathyspoof", "Bathyspoof", MoveDef::Kind::Defend, 32, 2,
      "The deepest buried identity - a {power}-damage shield.", Stage::Daemon,
      "phishing", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, /*shieldPool=*/1},
-    {"smish_hook", "Smish-Hook", MoveDef::Kind::Attack, 8, 2,
-     "Sprays a lure, then strikes - siphons {stealPower}% power, drains {stealHp}% "
-     "Health and {stealSpeed}% speed mid-bite.",
+    // The LURE half of the line's two-beat hunt: it bites small, takes what it came for,
+    // and hands the slot to its strike step (content_chain_steps.cpp) for the next turn.
+    // Both turns are real casts — the track used to spend its first turn winding up,
+    // which cost it more than every siphon here was worth.
+    //
+    // stealMaxHpPct is the lure's signature take, and it is the one steal that keeps
+    // paying: the pool MOVES (combat.cpp), so a landed lure hands the pet a bigger tank
+    // for the rest of the fight, which the frenzy heal is then able to fill. The volatile
+    // pair (speed + current Health) stays bubble-gated as it always was — a separate
+    // bargain from the chain, and one that still asks for the shield first.
+    {"smish_hook", "Smish-Hook", MoveDef::Kind::Attack, 6, 1,
+     "Sprays a lure - takes {stealMaxHp}% of the catch's size, siphons {stealPower}% "
+     "power, and mid-bite drains {stealHp}% Health and {stealSpeed}% speed.",
      Stage::Process, "phishing", 0, 0, 0, 0, 0, 0, 0, 0, /*stealPowerPct=*/8,
-     /*stealDefensePct=*/0, /*stealSpeedPct=*/6, /*stealCurrentHpPct=*/6},
-    {"spear_strike", "Spear-Strike", MoveDef::Kind::Attack, 12, 2,
-     "Targets one mark - siphons {stealPower}% power, and mid-bite drains "
-     "{stealHp}% Health and {stealSpeed}% speed.",
+     /*stealDefensePct=*/0, /*stealSpeedPct=*/6, /*stealCurrentHpPct=*/6,
+     /*stealMaxHpPct=*/6, /*shieldPool=*/0, /*trapArm=*/0, 0, 0, 0, 0,
+     /*replicaSpawnPct=*/0, 0, 0, /*chainNextId=*/"smish_strike"},
+    {"spear_strike", "Spear-Strike", MoveDef::Kind::Attack, 8, 1,
+     "Picks one mark - takes {stealMaxHp}% of its size, siphons {stealPower}% power, "
+     "and mid-bite drains {stealHp}% Health and {stealSpeed}% speed.",
      Stage::Script, "phishing", 0, 0, 0, 0, 0, 0, 0, 0, /*stealPowerPct=*/16,
-     /*stealDefensePct=*/0, /*stealSpeedPct=*/8, /*stealCurrentHpPct=*/4},
-    {"whaling_harpoon", "Whaling-Harpoon", MoveDef::Kind::Attack, 16, 3,
-     "Hunts the biggest catch - siphons {stealPower}% power, and mid-bite "
-     "drains {stealHp}% Health and {stealSpeed}% speed.",
+     /*stealDefensePct=*/0, /*stealSpeedPct=*/8, /*stealCurrentHpPct=*/4,
+     /*stealMaxHpPct=*/10, /*shieldPool=*/0, /*trapArm=*/0, 0, 0, 0, 0,
+     /*replicaSpawnPct=*/0, 0, 0, /*chainNextId=*/"spear_run"},
+    {"whaling_harpoon", "Whaling-Harpoon", MoveDef::Kind::Attack, 10, 1,
+     "Sets into the biggest catch - takes {stealMaxHp}% of its size, siphons "
+     "{stealPower}% power, and mid-bite drains {stealHp}% Health and {stealSpeed}% speed.",
      Stage::Daemon, "phishing", 0, 0, 0, 0, 0, 0, 0, 0, /*stealPowerPct=*/32,
-     /*stealDefensePct=*/0, /*stealSpeedPct=*/16, /*stealCurrentHpPct=*/8},
+     /*stealDefensePct=*/0, /*stealSpeedPct=*/16, /*stealCurrentHpPct=*/8,
+     /*stealMaxHpPct=*/14, /*shieldPool=*/0, /*trapArm=*/0, 0, 0, 0, 0,
+     /*replicaSpawnPct=*/0, 0, 0, /*chainNextId=*/"harpoon_haul"},
 
     // --- Trojan LINE moves -------------------------
     // line = "trojan" → only Trojan pets (Keyloggerhead + its Daemon) can learn/equip.

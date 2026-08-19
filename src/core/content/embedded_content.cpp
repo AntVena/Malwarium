@@ -38,6 +38,10 @@ public:
         count = kMovesCount;
         return kMoves;
     }
+    const MoveDef* chainSteps(int& count) const override {
+        count = kChainStepsCount;
+        return kChainSteps;
+    }
     const DaemonPoolDef* daemonPools(int& count) const override {
         count = kDaemonPoolsCount;
         return kDaemonPools;

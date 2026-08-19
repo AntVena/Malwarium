@@ -31,6 +31,11 @@ public:
     const ItemDef* item(const char* id) const;
     const ModDef* mod(const char* id) const;
     const MoveDef* move(const char* id) const;
+    // A chained move's FOLLOW-UP step by id, or nullptr. Kept apart from move() on
+    // purpose: a step is not a move a pet can hold, so nothing that enumerates the
+    // roster (allMoves, the equip picker, the drop roll) should ever see one. The only
+    // caller is the Combatant builder, resolving MoveDef::chainNextId once at build time.
+    const MoveDef* chainStep(const char* id) const;
 
     // Evolution routing. daemonPool: the Script->Daemon weighted pool for
     // `fromId` on the given branch (null if none — the caller then reads the

@@ -887,12 +887,25 @@ void Combat::resolveTurn(Combatant& actor, Combatant& target, bool byPlayer) {
         forcedMoveIdx_ = -1;
         actor.channelMoveIdx = -1;
         actor.channelLeft = 0;
+        actor.chainSlot = -1;    // commanding a move breaks a chain mid-flight
     } else if (actor.channelMoveIdx >= 0) {
         moveIdx = actor.channelMoveIdx;               // committed mid-channel
     } else {
         moveIdx = chooseMove(actor);
     }
-    const MoveDef* mv = actor.moves[moveIdx];
+    // A chained move's FOLLOW-UP step, committed by last turn's entry cast. Taken before
+    // the roll's answer is used, so the step lands on the very next turn — the entry
+    // already spent its turn doing something real, which is what separates a chain from
+    // the wind-up it replaces. The step is not one of `moves`, so `moveIdx` stays the
+    // ENTRY's slot: every mod and passive that keys off which slot was cast keeps
+    // pointing at the slot the player actually equipped.
+    const MoveDef* chained = nullptr;
+    if (actor.chainSlot >= 0 && actor.chainSlot < static_cast<int>(actor.chainFollow.size())) {
+        chained = actor.chainFollow[actor.chainSlot];
+        if (chained) moveIdx = actor.chainSlot;
+        actor.chainSlot = -1;
+    }
+    const MoveDef* mv = chained ? chained : actor.moves[moveIdx];
 
     // Execution-Override (Trojan passive): a Trojan (`target`, the side not acting)
     // hijacks the actor's freshly-picked move and runs it back AT them, consuming their
@@ -931,6 +944,13 @@ void Combat::resolveTurn(Combatant& actor, Combatant& target, bool byPlayer) {
     }
 
     applyEffect(actor, target, mv, byPlayer, moveIdx);
+    // Hand the slot to this move's follow-up step, if it has one. Set after the entry has
+    // RESOLVED, so a cast that killed the target commits nothing, and read on the actor's
+    // next turn above. `chained` guards the obvious loop: a step never chains onward, so a
+    // pair is two turns and not a track a fighter can never get off.
+    if (!chained && moveIdx >= 0 && moveIdx < static_cast<int>(actor.chainFollow.size()) &&
+        actor.chainFollow[moveIdx] && outcome_ == Outcome::Ongoing)
+        actor.chainSlot = moveIdx;
     // Shared Resources (Worm), the replication half: a cast carrying replicaSpawnPct
     // rolls for a copy once it has RESOLVED, so a fresh replica joins the next swing
     // rather than the one that spawned it. One site for both kinds — the move's own

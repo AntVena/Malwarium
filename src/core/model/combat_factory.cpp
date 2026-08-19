@@ -18,6 +18,13 @@ void Combatant::setLine(const ContentRegistry& reg, const char* lineId) {
     linePassives = cl ? cl->passives : 0;
 }
 
+void resolveChains(const ContentRegistry& reg, Combatant& c) {
+    c.chainFollow.assign(c.moves.size(), nullptr);
+    for (size_t i = 0; i < c.moves.size(); ++i)
+        if (c.moves[i] && c.moves[i]->chainNextId)
+            c.chainFollow[i] = reg.chainStep(c.moves[i]->chainNextId);
+}
+
 Combatant makePlayerCombatant(const ContentRegistry& reg, const CreatureDef& pet,
                               const MoveLoadout& moves, const Loadout& mods) {
     Combatant c;
@@ -135,6 +142,7 @@ Combatant makePlayerCombatant(const ContentRegistry& reg, const CreatureDef& pet
             lb->mag = 0;                  // no deferred share declared → nothing to split
         }
     }
+    resolveChains(reg, c);
     return c;
 }
 
@@ -555,6 +563,7 @@ Combatant makeEnemyCombatant(const ContentRegistry& reg, const CombatEnemy& spec
         if (const MoveDef* m = reg.move(id)) c.moves.push_back(m);
     if (c.moves.empty())                            // never actionless
         if (const MoveDef* d = reg.move("quick_jab")) c.moves.push_back(d);
+    resolveChains(reg, c);
     return c;
 }
 

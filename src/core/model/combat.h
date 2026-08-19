@@ -280,6 +280,20 @@ struct Combatant {
     int channelMoveIdx = -1;    // mid-channel move (-1 = not channelling)
     int channelLeft = 0;        // turns until the channel detonates
 
+    // Chained moves (MoveDef::chainNextId). Parallel to `moves`: chainFollow[i] is the
+    // step slot i hands off to, or nullptr for an ordinary move. Resolved once when the
+    // Combatant is built (resolveChains) so the turn engine never needs a registry.
+    std::vector<const MoveDef*> chainFollow;
+    // The slot whose follow-up step is COMMITTED to this fighter's next turn, or -1. It
+    // bypasses the move roll the same way a channel does, so the step lands on the very
+    // next turn and the no-consecutive rule never gets a say — a chain that had to wait
+    // for a second random roll of its own slot would almost never complete.
+    //
+    // Cleared by anything that interrupts the fighter: an Exploit override commanding a
+    // different move, and death. That is the whole of "the chain broke" — the pet simply
+    // rolls the entry again next time the slot comes up.
+    int chainSlot = -1;
+
     // Backup Drive's death-save (itemShield): burn the armed drive and add half of max
     // Health back. Called from ONE place, Combat::checkOutcome, on a combatant that has
     // just been judged overwhelmed — so it reads this pet's state and knows nothing
@@ -590,6 +604,12 @@ private:
     bool lastWasStrike_ = false;
     WormKill lastWormKill_;
 };
+
+// Fill `c.chainFollow` from each equipped move's MoveDef::chainNextId, resolved against
+// the chain-step table. Called by every Combatant builder — the player's pet, a PVE
+// enemy and a duel/arena fighter — because a chain is a property of the MOVE and so
+// belongs to whoever is holding it. Idempotent; safe to call after `moves` is final.
+void resolveChains(const ContentRegistry& reg, Combatant& c);
 
 // Build the player Combatant from live game state (active pet + loadouts + mods).
 Combatant makePlayerCombatant(const ContentRegistry& reg, const CreatureDef& pet,

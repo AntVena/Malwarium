@@ -230,6 +230,43 @@ void test_steal_max_health_moves_the_pool() {
     CHECK(cb.player().health == cb.player().maxHealth);
 }
 
+// A chained move hands its slot to a follow-up step: the entry resolves normally and
+// COMMITS the caster's next turn to the step, so both turns are real casts. That is the
+// difference from the wind-up it replaces, where the first turn resolved nothing at all.
+void test_chained_move_plays_both_halves() {
+    ContentRegistry r = ContentRegistry::embedded();
+    const MoveDef* lure = r.move("smish_hook");
+    CHECK(lure->chainNextId != nullptr);
+    CHECK(lure->channelTurns == 1);                      // a chain is not a channel
+    // The step is reachable as a step and NOT as a move: nothing can own, equip, be
+    // taught or be rolled one, which is why it lives outside the move roster.
+    CHECK(r.chainStep(lure->chainNextId) != nullptr);
+    CHECK(r.move(lure->chainNextId) == nullptr);
+
+    // A pet holding only the lure: every one of its turns is either the lure or its step,
+    // so the alternation is observable without the roll getting a say.
+    Combatant p = mkCombatant(r, "P", 400, 50, {"smish_hook"});
+    Combatant e = mkCombatant(r, "E", 400, 50, {"quick_jab"});
+    Combat cb;
+    cb.begin(p, e, Combat::Stakes::Safe, 1);
+    int lures = 0, strikes = 0;
+    const char* prev = nullptr;
+    for (int i = 0; i < 12 && cb.outcome() == Combat::Outcome::Ongoing; ++i) {
+        const bool pturn = cb.playerTurnNext();
+        cb.step();
+        if (!pturn) continue;
+        const bool isLure = std::strcmp(cb.lastMoveName(), "Smish-Hook") == 0;
+        if (isLure) ++lures; else ++strikes;
+        // Neither half ever resolves as a charge: a chain spends no turn winding up.
+        CHECK(!cb.lastWasCharge());
+        CHECK(cb.lastDamage() > 0);                      // ...and both halves connect
+        // Strictly alternating, and the step always follows its entry.
+        if (prev) CHECK(std::strcmp(prev, cb.lastMoveName()) != 0);
+        prev = cb.lastMoveName();
+    }
+    CHECK(lures > 1 && strikes > 1);
+}
+
 // The Exploit override commands the next move AND breaks the no-consecutive rule:
 // it can repeat the move just played. Opening doesn't spend; committing does.
 void test_combat_override_breaks_rule() {
@@ -1309,8 +1346,11 @@ void test_mod_tripwire() {
 // default so the Perfect-Bite chance is a guaranteed 0% (kPhishingBiteChancePctByStage[0]),
 // isolating the BASE bubble-gated amounts from the chance-based bonus (see
 // test_phishing_perfect_bite). Feed-frenzy also lives here, since a landed power siphon
-// while the bubble's up triggers it: the enemy never attacks, so Health moves via the
-// lifesteal + frenzy heal alone. Order is P(wind-up), E(guard), P(detonate).
+// while the bubble's up triggers it.
+//
+// The track is CHAINED, not channelled: order is P(lure), E(quick_jab), P(strike), and
+// every one of those turns resolves something. The lure carries the siphons; the strike
+// (smish_strike, content_chain_steps.cpp) is the damage half and steals nothing.
 void test_phishing_bubble_steal() {
     ContentRegistry r = ContentRegistry::embedded();
     auto run = [&](int shield, Combat& out) {
@@ -1320,14 +1360,22 @@ void test_phishing_bubble_steal() {
         out.begin(pc, e, Combat::Stakes::Safe, 1);
         out.step(); out.step(); out.step();
     };
-    // No bubble: only the unconditional power siphon fires. quick_jab (6 dmg) is the
-    // only thing touching player Health, and enemy Health only takes the attack's own
-    // damage — no lifesteal, no frenzy.
+    // No bubble: the unconditional siphons fire (power, and the max-Health take), the
+    // bubble-gated pair does not.
     Combat c0; run(0, c0);
-    CHECK(c0.player().speed == 50 && c0.enemy().speed == 50);
-    CHECK(c0.player().health == 94);              // 100 - 6 (quick_jab), no heals
-    CHECK(c0.enemy().health == 92);                // 100 - 8 (smish_hook), no lifesteal
+    CHECK(c0.player().speed == 50 && c0.enemy().speed == 50);      // no speed siphon
     CHECK(c0.player().powerMultPct == 108 && c0.enemy().powerMultPct == 92);
+    // The max-Health take is NOT bubble-gated, and the pool MOVES: 6% of the enemy's 100
+    // crosses whole, ceiling and contents, so the pet is topped up at its new ceiling.
+    CHECK(c0.enemy().maxHealth == 94 && c0.player().maxHealth == 106);
+    // The power siphon then feeds back into BOTH sides' later damage, which is the whole
+    // reason the line steals it: quick_jab lands 5 rather than 6 off the enemy's siphoned
+    // 92%, and the strike lands 17 rather than 16 off the pet's 108%.
+    // player: 100 + 6 (the pool that crossed) - 5 (quick_jab) = 101.
+    CHECK(c0.player().health == 101);
+    // enemy: 100 - 6 (lure) - 17 (strike) = 77. Two real casts, which is the point of the
+    // chain — the wind-up this replaced spent the fight's first turn doing nothing.
+    CHECK(c0.enemy().health == 77);
 
     // Bubble up: stealSpeedPct/stealCurrentHpPct now fire at their base (6%) amounts on
     // top of the power siphon, and the landed power siphon feeds Feed-Frenzy. The
@@ -1336,11 +1384,12 @@ void test_phishing_bubble_steal() {
     // touching Health, so Health only ever moves via this hit's own heals.
     Combat c1; run(50, c1);
     CHECK(c1.player().speed == 53.0f && c1.enemy().speed == 47.0f);   // 6% of 50 = 3
-    // enemy.health: 100 - 8 (attack) - 5 (6% of 92, lifesteal) = 87.
-    CHECK(c1.enemy().health == 87);
-    // player.health: 100 (quick_jab absorbed by shieldHp, not Health) + 5 (lifesteal)
-    // + 1 (frenzy: floor(44*7.5/1000) floored to a minimum of 1) = 100, capped.
-    CHECK(c1.player().health == 100);
+    // enemy: 100 - 6 (lure) - 5 (6% of 94, lifesteal) - 17 (siphon-boosted strike) = 72.
+    CHECK(c1.enemy().health == 72);
+    // player: the lifesteal lands while the ceiling is still 100 (so it caps there), the
+    // crossed pool then lifts both to 106, and the frenzy's +1 caps again. quick_jab is
+    // absorbed by the shield and never reaches Health.
+    CHECK(c1.player().maxHealth == 106 && c1.player().health == 106);
 }
 
 // Perfect Bite: while the bubble's up, a stage-scaled chance (kPhishingBiteChancePctByStage)
@@ -1362,12 +1411,14 @@ void test_phishing_perfect_bite() {
                   /*carryPlayerHealth=*/50);
         out.step(); out.step(); out.step();
     };
-    // Baselines (no bite): speed 50 -> 53/47 (6% of 50). Health: quick_jab's 6 damage
-    // is absorbed by the player's OWN shieldHp(50), not Health (the pre-existing
-    // Obfuscation absorb, ahead of any steal effect) — so carryPlayerHealth(50) stays
-    // 50 through step 2, then +5 lifesteal (6% of 92) +1 frenzy (floored) = 56.
+    // Baselines (no bite): speed 50 -> 53/47 (6% of 50). Health: quick_jab is absorbed by
+    // the player's OWN shieldHp(50), not Health (the pre-existing Obfuscation absorb,
+    // ahead of any steal effect), so carryPlayerHealth(50) only ever moves via the lure's
+    // own take — +5 lifesteal (6% of 94), +6 for the max-Health pool crossing whole, +1
+    // frenzy (floored) = 62. A bite doubles ONE of the two volatile steals: speed goes to
+    // 56, or Health to 68, never both.
     constexpr float kBaseSpeed = 53.0f;
-    constexpr int kBaseHealth = 56;
+    constexpr int kBaseHealth = 62;
 
     uint32_t biteSpeedSeed = 0, biteHpSeed = 0, noBiteSeed = 0;
     for (uint32_t s = 1; s <= 80 && !(biteSpeedSeed && biteHpSeed && noBiteSeed); ++s) {
@@ -1469,8 +1520,13 @@ void test_phishing_frenzy_lean_ratchets_until_the_bubble_pops() {
     probe.phishShieldPeak = 10000;
     CHECK(phishFrenzyLeanPct(probe) == kPhishFrenzyLeanMaxPct);        // ...and clamped
 
+    // The attack half is quick_jab, not one of the line's own lures: a lure takes max
+    // Health off the target and adds it to the caster, and this pet's maxHealth is the
+    // DENOMINATOR the frenzy lean is measured against (phishFrenzyLeanPct). Fighting with
+    // one would move the very quantity under test, and the ratchet would look unstable
+    // when what actually changed was the pet's size.
     auto run = [&](int maxHp, int shield, int enemyPower, Combat& out) {
-        Combatant pc = mkCombatant(r, "P", maxHp, 50, {"smish_hook", "spoof_bubble"});
+        Combatant pc = mkCombatant(r, "P", maxHp, 50, {"quick_jab", "spoof_bubble"});
         pc.shieldHp = shield;
         Combatant e = mkCombatant(r, "E", 4000, 50, {enemyPower ? "rootkit_strike"
                                                                 : "quick_jab"});

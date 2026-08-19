@@ -371,11 +371,15 @@ SpecRows specRows(const MoveDef& d) {
     }
     if (d.lockTurns) s.add("FREEZE", "%d", d.lockTurns);
     if (d.dotDamage) s.add("DOT", "%dx%d", d.dotDamage, d.dotTurns);
+    // Leads the steal block: it is the one steal that outlives its own hit, since the
+    // pool MOVES rather than the hit landing harder. Short label on purpose — the grid
+    // packs two rows to a line when both fit half-width (gridLines), so a compact row
+    // here fills the power row's line instead of opening another at the end.
+    if (d.stealMaxHpPct) s.add("MAX HP", "%d%%", d.stealMaxHpPct);
     if (d.stealPowerPct) s.add("SIPHON PWR", "%d%%", d.stealPowerPct);
     if (d.stealDefensePct) s.add("SIPHON DEF", "%d%%", d.stealDefensePct);
     if (d.stealSpeedPct) s.add("BITE SPD", "%d%%", d.stealSpeedPct);
     if (d.stealCurrentHpPct) s.add("BITE DRAIN", "%d%%", d.stealCurrentHpPct);
-    if (d.stealMaxHpPct) s.add("SIPHON MAXHP", "%d%%", d.stealMaxHpPct);
     if (d.trapArm) {
         s.add("EVADE", "%d%%", d.trapEvasionPct);
         s.add("REBOUND", "%d%%", d.trapReboundPct);

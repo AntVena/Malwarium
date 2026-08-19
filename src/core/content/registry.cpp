@@ -88,6 +88,17 @@ const MoveDef* ContentRegistry::move(const char* id) const {
     return nullptr;
 }
 
+const MoveDef* ContentRegistry::chainStep(const char* id) const {
+    if (!id) return nullptr;
+    for (const ContentSource* src : sources_) {
+        int n = 0;
+        const MoveDef* arr = src->chainSteps(n);
+        for (int i = 0; i < n; ++i)
+            if (std::strcmp(arr[i].id, id) == 0) return &arr[i];
+    }
+    return nullptr;
+}
+
 const DaemonPoolDef* ContentRegistry::daemonPool(const char* fromId,
                                                  bool badBranch) const {
     for (const ContentSource* src : sources_) {

@@ -36,6 +36,11 @@ extern const ModDef          kMods[];          extern const int kModsCount;
 // back as "none held".
 inline constexpr int kModWireCap = 128;
 extern const MoveDef         kMoves[];         extern const int kMovesCount;
+// Chained-move FOLLOW-UP steps (MoveDef::chainNextId). Same row type as a move and a
+// deliberately separate table: a step is reached only by casting the move that names it,
+// so keeping it out of kMoves is what stops it appearing in the equip picker, a hatch
+// grant, a move drop or a rolled arena kit — none of which need to know chains exist.
+extern const MoveDef         kChainSteps[];    extern const int kChainStepsCount;
 extern const DaemonPoolDef   kDaemonPools[];   extern const int kDaemonPoolsCount;
 
 }  // namespace mal

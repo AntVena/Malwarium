@@ -322,6 +322,11 @@ inline Combatant mkCombatant(const ContentRegistry& r, const char* name, int hp,
     c.name = name; c.maxHealth = hp; c.health = hp; c.speed = spd;
     for (const char* id : ids)
         if (const MoveDef* m = r.move(id)) c.moves.push_back(m);
+    // Through the same seam every production builder uses, so a chained move behaves
+    // here exactly as it does in a real fight. A hand-built Combatant that skipped this
+    // would silently re-cast a chain's ENTRY where the engine would have played its
+    // follow-up step, which is a different fight from the one under test.
+    resolveChains(r, c);
     return c;
 }
 
