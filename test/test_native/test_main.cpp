@@ -305,6 +305,8 @@ int g_failures = 0;
     RUN(test_borrowed_colours_outlive_the_rivals_turn) \
     RUN(test_borrowed_line_is_worn_against_a_rival_that_has_nothing_to_do_with_it) \
     RUN(test_camo_copies_the_rival_before_the_line) \
+    RUN(test_camo_ramp_keeps_a_colour_whose_rung_is_taken) \
+    RUN(test_camo_same_creature_across_casts_is_not_a_change) \
     RUN(test_absorb_sweep_endpoints)              \
     RUN(test_absorb_phase_clock)                  \
     RUN(test_combat_outro_kind)                   \

@@ -269,31 +269,34 @@ bool Game::tick(uint32_t nowMs) {
             const bool flip = combatLocalIsEnemySide();
             const Combatant& self = flip ? combat_.enemy() : combat_.player();
             const Combatant& rival = flip ? combat_.player() : combat_.enemy();
-            const CamoTarget want = camoTarget(self, rival);
-            const bool worn = want.source != CamoTarget::Source::Own;
-            // Trading one borrowed palette for another restarts the scatter with the old
+            const SpriteData* wear =
+                camoSpriteForTarget(camoTarget(self, rival), rival, self.stage);
+            // Trading one borrowed palette for ANOTHER restarts the scatter with the old
             // one held behind it (drawCombatScreen passes it as camo.h's `from`), so the
-            // change reads as one disguise dissolving into the next. Only while the pet
-            // is actually wearing something: from bare, there is nothing to dissolve out
-            // of and the level simply rises.
-            if (worn && want != combatCamoWorn_ && combatCamoLevel_ > 0) {
+            // change reads as one disguise dissolving into the next. Gated on the ART and
+            // not on the cast: a run of casts that keep naming the same creature — the
+            // fighter opposite, or the line it belongs to — is one unbroken disguise, and
+            // re-running the dissolve into the colour already being worn would flicker the
+            // pet for no change at all. Only while it is actually wearing something, too:
+            // from bare there is nothing to dissolve out of and the level simply rises.
+            if (wear && wear != combatCamoWorn_ && combatCamoLevel_ > 0) {
                 combatCamoLeaving_ = combatCamoWorn_;
                 combatCamoLevel_ = 0;
             }
-            if (worn) combatCamoWorn_ = want;
-            combatCamoLevel_ = camoAdvance(combatCamoLevel_, worn);
+            if (wear) combatCamoWorn_ = wear;
+            combatCamoLevel_ = camoAdvance(combatCamoLevel_, wear != nullptr);
             // The palette being left is only true mid-dissolve. Once the front is past
             // every pixel, or the pet is returning to its own colours, what the unflipped
             // pixels wear is the creature itself.
-            if (!worn || combatCamoLevel_ == 255) combatCamoLeaving_ = CamoTarget{};
+            if (!wear || combatCamoLevel_ == 255) combatCamoLeaving_ = nullptr;
             changed = true;
         }
     } else {
         lastCombatAnimMs_ = nowMs;   // stay primed so re-entering combat doesn't burst-catch-up
         // Off the fight, off the disguise — every fight opens bare.
         combatCamoLevel_ = 0;
-        combatCamoWorn_ = CamoTarget{};
-        combatCamoLeaving_ = CamoTarget{};
+        combatCamoWorn_ = nullptr;
+        combatCamoLeaving_ = nullptr;
     }
 
     // The dissolve clock (FX_ABSORB / FX_SHRED). Fastest tick on the device, and the

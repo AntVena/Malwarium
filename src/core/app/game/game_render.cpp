@@ -679,19 +679,19 @@ void Game::drawTrain(Framebuffer& fb) const {
                    slotRequiredKind(moveSlot_), moveShowAll_, beat_);
 }
 
-// What a CamoTarget is made of, in tones — the contract is on the declaration (game.h).
-CamoRamp Game::camoRampForTarget(const CamoTarget& t, const SpriteData* rivalSprite,
-                                 Stage wearer) const {
+// Which art a CamoTarget names — the contract is on the declaration (game.h).
+const SpriteData* Game::camoSpriteForTarget(const CamoTarget& t, const Combatant& rival,
+                                            Stage wearer) const {
     switch (t.source) {
         case CamoTarget::Source::Own:
-            return CamoRamp{};
+            return nullptr;
         case CamoTarget::Source::Rival:
-            return rivalSprite ? camoRampFrom(*rivalSprite) : CamoRamp{};
+            return registry_.sprite(rival.spriteName);
         case CamoTarget::Source::Line:
             break;
     }
     const CreatureLine* cl = t.line ? registry_.creatureLine(t.line) : nullptr;
-    if (!cl || cl->count <= 0) return CamoRamp{};
+    if (!cl || cl->count <= 0) return nullptr;
     // The line AT THE WEARER'S OWN TIER: the highest row that has not passed the wearer's
     // stage, falling back to the lowest row for a line whose ladder starts above it. One
     // pass, and the first row of a tie wins, so a branching line answers with the same
@@ -702,8 +702,7 @@ CamoRamp Game::camoRampForTarget(const CamoTarget& t, const SpriteData* rivalSpr
         if (r.stage > wearer) continue;
         if (pick->stage > wearer || r.stage > pick->stage) pick = &r;
     }
-    const SpriteData* s = registry_.creatureSprite(*pick);
-    return s ? camoRampFrom(*s) : CamoRamp{};
+    return registry_.creatureSprite(*pick);
 }
 
 void Game::drawCombatScreen(Framebuffer& fb) const {
@@ -744,18 +743,12 @@ void Game::drawCombatScreen(Framebuffer& fb) const {
     // the yes/no of, so the panel and the last beat of the fight cannot disagree.
     RivalPrizes prizes;
     prizes.mask = rivalTeachableMoveMask();
-    // What the pet is currently wearing (FX_CAMO). The level and the two targets are
-    // standing state the tick maintains; this draw only turns each target into the tones
-    // it names, which is the step that needs the registry.
+    // What the pet is currently wearing (FX_CAMO). The level and both sprites are standing
+    // state the tick maintains; this draw only ranks each one's colours into a ladder.
     CombatCamo camo;
     camo.level = combatCamoLevel_;
-    // The sprite the local pet would be COPYING, which is the other seat: on a guest's
-    // screen the local pet is Combat's enemy_, so the rival's art is `ps`.
-    const SpriteData* rivalSprite = sides.localIsEnemySide ? ps : es;
-    const Stage wearer = sides.localIsEnemySide ? combat_.enemy().stage
-                                                : combat_.player().stage;
-    camo.ramp = camoRampForTarget(combatCamoWorn_, rivalSprite, wearer);
-    camo.leaving = camoRampForTarget(combatCamoLeaving_, rivalSprite, wearer);
+    camo.ramp = combatCamoWorn_ ? camoRampFrom(*combatCamoWorn_) : CamoRamp{};
+    camo.leaving = combatCamoLeaving_ ? camoRampFrom(*combatCamoLeaving_) : CamoRamp{};
     drawCombat(fb, combat_, ps, es, beat_, combatAnimBeat_, combatHitBeat_,
                combatStatsPage_, sides, outro, prizes, camo);
 }

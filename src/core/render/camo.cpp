@@ -89,24 +89,37 @@ CamoRamp camoRampFrom(const SpriteData& s, int frame, int row) {
     out = camoRampFromTone(col[main], kCamoRampMax);
 
     // THEN THE REAL COLOURS, most-used first, each landing on the rung its own luminance
-    // belongs to. A rung is claimed once, so the commonest colour at that value wins it
-    // and rarer ones at the same value are dropped rather than displacing it — and every
-    // rung nobody claims keeps the derived tone underneath. The result wears as much of
-    // the other creature as it actually has, and invents only the rest.
+    // belongs to. Where that rung is already taken the colour moves to the nearest free
+    // one rather than being dropped: a rung holding a derived tone is a rung wearing a
+    // colour the other creature does not have, so filling it with a real one — even a
+    // rung off its own value — carries more of that creature than inventing a shade does.
+    // A palette with several tones packed into one value band is exactly where this pays,
+    // and it is common: two-tone creatures put both hues at the same lightness on purpose.
+    // Every rung still unclaimed at the end keeps the derived tone underneath.
     bool claimed[kCamoRampMax] = {false};
     for (int placed = 0; placed < used; ++placed) {
         int pick = -1;
         for (int i = 0; i < used; ++i)
             if (cnt[i] > 0 && (pick < 0 || cnt[i] > cnt[pick])) pick = i;
         if (pick < 0) break;
-        cnt[pick] = 0;                       // taken, whether or not it lands
+        cnt[pick] = 0;
         int rung = static_cast<int>(luminance(col[pick]) * kCamoRampMax);
         if (rung < 0) rung = 0;
         if (rung >= kCamoRampMax) rung = kCamoRampMax - 1;
-        if (!claimed[rung]) {
-            claimed[rung] = true;
-            out.tone[rung] = col[pick];
+        // Outward from its own rung, darker side first at equal distance so the same
+        // sprite always ranks the same way. The sort below puts the ladder back in value
+        // order afterwards, so a colour that moved cannot invert the scale.
+        if (claimed[rung]) {
+            int found = -1;
+            for (int d = 1; d < kCamoRampMax && found < 0; ++d) {
+                if (rung - d >= 0 && !claimed[rung - d]) found = rung - d;
+                else if (rung + d < kCamoRampMax && !claimed[rung + d]) found = rung + d;
+            }
+            if (found < 0) continue;         // every rung wears a real colour already
+            rung = found;
         }
+        claimed[rung] = true;
+        out.tone[rung] = col[pick];
     }
 
     // A VALUE SCALE above all else, which the mixing above can nudge out of order at a

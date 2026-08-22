@@ -390,3 +390,78 @@ void test_camo_copies_the_rival_before_the_line() {
     sharer.moves.push_back(generic);
     CHECK(camoTarget(p, sharer).source == CamoTarget::Source::Rival);
 }
+
+// --- Gate: a colour whose rung is taken moves over rather than being lost --------
+//
+// The ladder is indexed by the value of the pixel being replaced, so two hues a creature
+// wears at the SAME lightness — the ordinary shape of a two-tone design — both want one
+// rung. Keeping only the commonest of them spends a rung on an invented shade while a
+// real colour the creature actually has goes unworn, which is the one thing the baseline
+// exists to avoid rather than to cause.
+void test_camo_ramp_keeps_a_colour_whose_rung_is_taken() {
+    // Four colours, two of them at the same luminance and differing only in hue: a green
+    // and a purple that a value scale alone cannot tell apart.
+    uint16_t rgb[8] = {
+        rgb565(10, 10, 10),   rgb565(10, 10, 10),
+        rgb565(40, 120, 40),  rgb565(40, 120, 40),   // green, common
+        rgb565(120, 40, 120), rgb565(120, 40, 120),  // purple, same value band
+        rgb565(240, 240, 240), rgb565(240, 240, 240),
+    };
+    uint8_t a[8];
+    for (uint8_t& v : a) v = 255;
+    SpriteData s{};
+    s.sheetW = 8; s.h = 1; s.frameW = 8; s.frames = 1; s.rows = 1;
+    s.rgb = rgb; s.a = a;
+
+    const CamoRamp r = camoRampFrom(s);
+    auto wears = [&](uint16_t c) {
+        for (int i = 0; i < r.count; ++i) if (r.tone[i] == c) return true;
+        return false;
+    };
+    CHECK(wears(rgb565(40, 120, 40)));     // the common one keeps its rung...
+    CHECK(wears(rgb565(120, 40, 120)));    // ...and the one it collided with is still worn
+    CHECK(wears(rgb565(10, 10, 10)));
+    CHECK(wears(rgb565(240, 240, 240)));
+
+    // The ladder is still a value scale, which the remap cannot do without.
+    for (int i = 1; i < r.count; ++i)
+        CHECK(luminance(r.tone[i]) >= luminance(r.tone[i - 1]));
+}
+
+// --- Gate: casts that name the same creature are one unbroken disguise -----------
+//
+// The dissolve says the pet is changing what it is copying, so it may only run when that
+// is true. A metamorphic pet rolls a fresh move every turn, and a run of them can keep
+// landing on the same creature — the fighter opposite, or the line it belongs to. What
+// the pet is wearing has to sit there across all of them.
+void test_camo_same_creature_across_casts_is_not_a_change() {
+    ContentRegistry reg = ContentRegistry::embedded();
+    const CreatureDef* meta = reg.creature("cuttlefork");
+    CHECK(meta != nullptr);
+
+    Combatant p = mkCombatant(reg, "P", 4000, 5, {"instruction_swap"});
+    p.creature = meta;
+    p.stage = Stage::Script;
+    buildWildPools(reg, p, p.stage);
+
+    // Two DIFFERENT rows off the same borrowed line: different casts, one creature.
+    const MoveDef* first = nullptr;
+    const MoveDef* second = nullptr;
+    int slot = -1;
+    for (size_t i = 0; i < p.wildPools.size() && !second; ++i)
+        for (const MoveDef* row : p.wildPools[i].rows) {
+            if (!row || !row->line || std::strcmp(row->line, meta->line) == 0) continue;
+            if (!first) { first = row; slot = static_cast<int>(i); continue; }
+            if (std::strcmp(row->line, first->line) == 0) { second = row; break; }
+        }
+    CHECK(first != nullptr && second != nullptr && first != second);
+
+    Combatant wild = makeEnemyCombatant(reg, wildMalbeast(1, 0));
+    p.lastMoveIdx = slot;
+    p.wildPools[slot].lastRolled = first;
+    const CamoTarget a = camoTarget(p, wild);
+    p.wildPools[slot].lastRolled = second;
+    const CamoTarget b = camoTarget(p, wild);
+    CHECK(a.source == CamoTarget::Source::Line && b.source == CamoTarget::Source::Line);
+    CHECK(a == b);   // same line, so the same creature, so nothing to dissolve into
+}

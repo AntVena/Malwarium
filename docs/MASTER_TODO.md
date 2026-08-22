@@ -414,6 +414,16 @@ high→low value:
   Trojan are not, so their 'Pedia sections render text-only where the other two carry a glyph
   (`gen_pedia_data.py` warns per missing line). One 20×20 each, same slot as the two that exist.
 - **Six archetype icons** (`ICON_ARCHETYPE_*`) — cosmetic accompaniment to §1i; parked in `_attic/`.
+- **The Metamorphic sprites do not deepen as they evolve**, and on this line that costs a
+  mechanic rather than polish. Every other painted line widens its palette up the ladder —
+  Ransomware runs 6 colours at Boot to 14 at Daemon, Phishing 6 to 12 — while Metamorphic sits
+  at 6/6/7/6 across all four stages. FX_CAMO indexes a borrowed palette by the value of the
+  pixel it replaces (`core/render/camo.h`), so what a pet can WEAR is capped by the range of
+  values it has: Syncaelia carries 98% of its body on three luminance rungs and therefore shows
+  three tones of any eight-tone palette it copies — fewer than Cuttlefork, two stages below it.
+  The fix is on the sheets, not in the code: more distinct shades on `SPR_PET_MORPHOPUS`,
+  `SPR_PET_SYNCAELIA` and `SPR_PET_TENTACLONE`, spread across the value range rather than
+  clustered dark. Diff **S** per sheet.
 
 ### 2c. New art implied by unbuilt features
 
