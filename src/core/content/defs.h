@@ -38,7 +38,15 @@ enum class MoveKind { Attack, Defend };
 //            drawn one lands on a different beat and reads as a bounce.
 //   Fly    — holds an altitude clear of the shelf.
 //   Swim   — drifts on both axes; no bob, since a lift over a drift reads as jitter.
-enum class Locomotion : uint8_t { Walk, Fly, Swim, Ground };
+//   Static — goes NOWHERE. Not a floor-dweller that happens to be resting: a thing
+//            with no locomotion at all, which is what an egg is. It still lifts, since
+//            the bob is the breath rather than the travel, and a shell that neither
+//            moves nor breathes reads as scenery.
+//
+// An egg declares one of these like anything else, and the habitat honours it (see
+// Game::update's wander step): most eggs are Static, and one that is genuinely adrift
+// in water says Swim and drifts.
+enum class Locomotion : uint8_t { Walk, Fly, Swim, Ground, Static };
 
 inline const char* stageName(Stage s) {
     switch (s) {
@@ -233,6 +241,13 @@ struct CreatureLine {
     // a line whose arrival is not itself recognised. Fired at the one evolution seam
     // that changes a pet's line (Game::completeEvolution).
     const char* raisedAchievement = nullptr;
+    // Does this family repaint itself in another line's colours? A property of the
+    // FAMILY rather than of any row, and declared rather than inferred: FX_CAMO
+    // (core/render/camo.h) is driven in combat by what a fighter's live cast is, which
+    // says nothing to a screen with no fight on it. A caller outside combat — the
+    // CHROMATOPHORE cabinet choosing whether the pet standing there can plausibly be
+    // its subject — asks this instead of asking a creature's id.
+    bool wearsBorrowedColours = false;
 };
 
 // Which minigame an egg line's hatch runs. One entry per interaction shape; the
@@ -247,6 +262,9 @@ enum class HatchGame : uint8_t {
     Isolation, // Isolation Protocol: the worm inside the shell is turned loose in a
                // quarantine buffer and eats the incubation clock a minute at a time,
                // right away (Game::startIsolation).
+    Chroma,    // CHROMATOPHORE: the bell rehearses wearing other colours, one skin per
+               // button, against a sweep on a shrinking clock, right away
+               // (Game::startChroma).
 };
 
 struct EggLineDef {
@@ -498,6 +516,28 @@ struct ItemDef {
     SpoilDef spoil = {};                 // perishable rows only — what it turns into, and how often
 };
 
+// Does this effect cap at ONE use per PET LIFETIME? Three of them do, and they are the
+// only per-pet gates the player cannot get back by any means: a new egg clears them and
+// nothing else does. Named here rather than as a list of item ids so a new item carrying
+// one of these effects is counted without a second table to update.
+//
+// ForceTrojanDivert is deliberately NOT one of them, close as it looks: it is CONSUMED at
+// the pet's next evolution rather than capped for the life, so a second Ambig-USB after
+// that one has fired is a real use rather than a wasted item.
+constexpr bool isOncePerPetLifetime(ItemEffect::Kind k) {
+    return k == ItemEffect::Kind::RemoveCareMistakeOnce ||
+           k == ItemEffect::Kind::ClearMistakeShieldOnce ||
+           k == ItemEffect::Kind::BandwidthRegenBonusMin;
+}
+
+// ...and the same question of a whole row: does using this item spend something this pet
+// can never have again? The 'Pedia's pet page lists exactly these (pedia_state.cpp).
+inline bool itemIsOncePerPetLifetime(const ItemDef& d) {
+    for (const ItemEffect& e : d.effects)
+        if (isOncePerPetLifetime(e.kind)) return true;
+    return false;
+}
+
 // This item's drop weight: its own `dropWeight` if it names one, else its rarity's
 // default. The one place the fallback is unfolded.
 inline int itemDropWeight(const ItemDef& d) {
@@ -576,6 +616,37 @@ enum class ModEffect : uint8_t {
                           // MoveDef::replicaSpawnPct). Raises the RATE, never the CAP:
                           // kWormReplicaSlots still bounds the board, so this fills the
                           // slots sooner rather than making more of them.
+    ExtortionLedger,      // Extortion Ledger — `magnitude`% incoming-damage cut standing,
+                          // and `magnitude2`% ATTACK POWER on top while the pet is holding
+                          // an unsettled ransom pool (Combatant::ransomPool).
+                          //
+                          // Both halves serve the same reading, which is the family's own:
+                          // Ransomware is BRUTE FORCE with one gimmick, strong from the
+                          // first turn rather than ramping into it. The cut is the brute
+                          // half — it just keeps standing — and the pool is the gimmick,
+                          // paying for as long as the pet is carrying damage it has not
+                          // answered for. Gated on the POOL and not on a seizure: a
+                          // seizure needs a full Cipher stack under a live window and is a
+                          // payoff most fights never reach, so a bonus hung there averages
+                          // to nothing however large the number is made.
+    ReplicaWorthPct,      // Replication Bus — every copy a Worm puts on the board is worth
+                          // `magnitude`% more, on whichever currency that copy deals in
+                          // (an attacker's banked damage, a defender's Health). It raises
+                          // what a copy IS rather than how often one arrives: the spawn
+                          // roll is already certain on half the line's rows, and a full
+                          // board does not roll at all, so rate was never the binding
+                          // constraint — kWormReplicaSlots is, and this pays inside it.
+    PolymorphEffectPct,   // Mutation Engine — an EFFECT KIND this fighter has not reached
+                          // for yet (moveEffectMask, combat.h) pays `magnitude` of
+                          // Polymorph's own stat points, in the casting move's currency
+                          // (polymorphPay). An amplifier of the passive rather than a
+                          // bonus beside it, and inert on a fighter not running Polymorph.
+                          // A deliberately DIFFERENT axis from what it feeds: Polymorph
+                          // counts distinct MOVES, so a kit of plain swings ramps the pet
+                          // and pays this nothing. What it rewards is rolling into rows
+                          // that DO something — a stun, a pierce, a pool, a trap — which
+                          // is the reason to want the two lines a wildcard row draws from
+                          // rather than the shared roster it mostly hits.
 };
 
 // Slot-based hardware equip (MODS). Mods are PERMANENT (D3):
@@ -784,7 +855,31 @@ struct MoveDef {
     // initializers, so a field inserted mid-struct silently re-aims every magnitude after it.
     int poolRetaliateDot = 0;
     int poolRetaliateTurns = 0;
+
+    // --- Metamorphic wildcard rows ------------------------------------------------
+    // A row that does not cast ITSELF. It rolls one of the moves its pet could have been
+    // — the generic roster of this row's own `kind`, plus the two lines named here — and
+    // casts that instead (Combat::resolveTurn). Naming two of the four other lines rather
+    // than all of them is what keeps a wildcard a CHOICE: which pair a row reaches is the
+    // only thing an operator tailors about it, so the rows are worth owning separately.
+    //
+    // Both null = an ordinary move, which is every row but the metamorphic track. Set
+    // `drawLineA` alone for a row that reaches one line. The ids are resolved against the
+    // registry once, when the Combatant is built (buildWildPools) — never mid-fight, the
+    // same rule `chainNextId` answers to.
+    //
+    // A wildcard row still needs a real `power`, `kind` and `effect`: the kind decides
+    // which half of the roster it draws from, and the rest is what the loadout and picker
+    // read off it.
+    //
+    // Appended at the END of the struct, like every field before it: the rows are positional
+    // initializers, so a field inserted mid-struct silently re-aims every magnitude after it.
+    const char* drawLineA = nullptr;
+    const char* drawLineB = nullptr;
 };
+
+// Whether `m` rolls its cast out of a pool instead of being one (MoveDef::drawLineA).
+inline bool moveIsWildcard(const MoveDef& m) { return m.drawLineA || m.drawLineB; }
 
 // A PURE BRACE row: it mitigates and does nothing else, so the only fields that vary
 // across the eleven of them are power, the stage they unlock at, and the tempo they hand
@@ -826,6 +921,28 @@ constexpr MoveDef poolRow(const char* id, const char* displayName, int power,
     m.shieldPool = 1;
     m.poolRetaliateDot = retaliateDot;
     m.poolRetaliateTurns = retaliateTurns;
+    return m;
+}
+
+// A METAMORPHIC WILDCARD row: it casts nothing of its own, so the fields that would carry
+// a mechanic are exactly the ones it leaves empty, and the two that matter (the lines it
+// reaches) sit at the very end of the positional tail. Same reason braceRow and poolRow
+// exist. `power` stays 0 on every one of them — a wildcard becomes whatever it rolls, so a
+// number here would be a figure no cast ever uses.
+constexpr MoveDef wildRow(const char* id, const char* displayName, MoveKind kind,
+                          const char* effect, Stage minStage, const char* drawA,
+                          const char* drawB) {
+    MoveDef m{};
+    m.id = id;
+    m.displayName = displayName;
+    m.kind = kind;
+    m.power = 0;
+    m.channelTurns = 1;
+    m.effect = effect;
+    m.minStage = minStage;
+    m.line = "metamorphic";
+    m.drawLineA = drawA;
+    m.drawLineB = drawB;
     return m;
 }
 

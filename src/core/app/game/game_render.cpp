@@ -100,6 +100,7 @@ void Game::render(Framebuffer& fb) const {
         case Nav::Cryptogram: drawCryptogram(fb); break;
         case Nav::ModalEggPick: drawEggPick(fb); break;
         case Nav::Isolation: drawIsolation(fb); break;
+        case Nav::Chroma: drawChroma(fb); break;
         case Nav::ModalHatchReveal: drawHatchReveal(fb); break;
         case Nav::ModalFeeding:
             drawFeedingModal(fb, pet,
@@ -395,6 +396,11 @@ void Game::drawAchievementBanner(Framebuffer& fb) const {
     // doing any of the work.
     const AchievementDef* d = achBanner();
     if (!d) return;
+    // The one announcement that is not just news: an unlock that put a NEW KIND OF EGG
+    // in the hatch menu. It gets the held plate — a different colour, its own copy, and
+    // no deadline — because it is the only banner with an instruction in it, and a
+    // three-second window is no way to deliver one.
+    const EggLineDef* eggLine = achBannerCount_ == 1 ? achEggLineUnlocked(*d) : nullptr;
     // The band sits in the gap between two things it must not cover: the idle status
     // slots along the top of the living area (SD top-left, hunger top-right, the capture
     // badge under it — reserved out to kLivingTop+40, and gated as such), and the pet
@@ -405,24 +411,36 @@ void Game::drawAchievementBanner(Framebuffer& fb) const {
     // have to cover one of them.
     const int bandY = kLivingTop + 42;
     const int bandH = 38;
-    fb.fillRect(0, bandY, kActiveW, bandH, palColor(Pal::TRACK));
+    // The held plate inverts: a light NOTICE_HOLD ground with PAPER text on it, against
+    // the ordinary banner's dark TRACK with INK text. That is the part that survives
+    // desaturation — the two plates differ in VALUE, not only in hue, so a held one is
+    // recognisable as a different kind of thing before a word of it is read.
+    const bool held = eggLine != nullptr;
+    const Rgb565 plate = held ? palColor(Pal::NOTICE_HOLD) : palColor(Pal::TRACK);
+    const Rgb565 body = held ? palColor(Pal::PAPER) : palColor(Pal::INK);
+    const Rgb565 quiet = held ? palColor(Pal::PAPER) : palColor(Pal::INK_DIM);
+    fb.fillRect(0, bandY, kActiveW, bandH, plate);
     // A 1px lid and sill: the band has to read as a plate laid over the habitat rather
     // than a hole in it, and an edge is the only cue that survives desaturation.
-    fb.fillRect(0, bandY, kActiveW, 1, palColor(Pal::INK_DIM));
-    fb.fillRect(0, bandY + bandH - 1, kActiveW, 1, palColor(Pal::INK_DIM));
+    fb.fillRect(0, bandY, kActiveW, 1, quiet);
+    fb.fillRect(0, bandY + bandH - 1, kActiveW, 1, quiet);
 
-    const char* kicker = "ACHIEVEMENT";
-    drawText(fb, (kActiveW - textWidth(kicker)) / 2, bandY + 5, kicker,
-             palColor(Pal::INK_DIM));
+    const char* kicker = held ? "NEW EGG LINE" : "ACHIEVEMENT";
+    drawText(fb, (kActiveW - textWidth(kicker)) / 2, bandY + 5, kicker, quiet);
 
     // A burst says how many first and names one of them, so a long back-catalogue drop
     // still tells the player something specific about what they got.
     char line[40];
     if (achBannerCount_ > 1)
         std::snprintf(line, sizeof(line), "%d UNLOCKED", achBannerCount_);
+    else if (held)
+        // The LINE, not the achievement that earned it: "Hash Collision" is the thing
+        // they just did, and "Metamorphic" is the thing they can now do about it. Only
+        // one of those belongs on a banner whose whole job is to point at the hatch.
+        std::snprintf(line, sizeof(line), "%s", eggLine->displayName);
     else
         std::snprintf(line, sizeof(line), "%s", d->displayName);
-    drawText(fb, (kActiveW - textWidth(line)) / 2, bandY + 15, line, palColor(Pal::INK));
+    drawText(fb, (kActiveW - textWidth(line)) / 2, bandY + 15, line, body);
 
     // The third line is the reward, because that is the part with a consequence — a
     // Commendation Cache is sitting in the VAULT now and the player needs to know to
@@ -435,7 +453,11 @@ void Game::drawAchievementBanner(Framebuffer& fb) const {
         else if (r.kind == AchievementReward::Kind::Item && r.id)
             if (const ItemDef* it = registry_.item(r.id)) rewardItem = it->displayName;
     }
-    if (achBannerCount_ > 1)
+    if (held)
+        // Where to go, and how to make this go away — the two things a held plate has to
+        // say. The rewards are still paid; they are simply not what this banner is for.
+        std::snprintf(reward, sizeof(reward), "LAY ONE NEXT HATCH - ANY KEY");
+    else if (achBannerCount_ > 1)
         std::snprintf(reward, sizeof(reward), "%s +MORE", d->displayName);
     else if (rewardItem && rewardBits > 0)
         std::snprintf(reward, sizeof(reward), "+%d BITS + %s", rewardBits, rewardItem);
@@ -445,7 +467,7 @@ void Game::drawAchievementBanner(Framebuffer& fb) const {
         std::snprintf(reward, sizeof(reward), "+%d BITS", rewardBits);
     if (reward[0])
         drawText(fb, (kActiveW - textWidth(reward)) / 2, bandY + 25, reward,
-                 palColor(Pal::CALM));
+                 held ? body : palColor(Pal::CALM));
 }
 
 bool Game::captureBadge(char* out, unsigned n) const {
@@ -673,7 +695,7 @@ void Game::drawCombatScreen(Framebuffer& fb) const {
     if (duel) {
         sides.rivalLabel = "RIVAL";
         sides.localLabel = "YOU";
-        sides.localIsEnemySide = !pvpLocalIsHost();
+        sides.localIsEnemySide = combatLocalIsEnemySide();
     }
     // An arena bout is the other pet-vs-pet fight, and the other one with no way out —
     // so it borrows the duel's caption for the opposite seat and drops the RUN hint.
@@ -694,8 +716,12 @@ void Game::drawCombatScreen(Framebuffer& fb) const {
     // the yes/no of, so the panel and the last beat of the fight cannot disagree.
     RivalPrizes prizes;
     prizes.mask = rivalTeachableMoveMask();
+    // What the pet is currently wearing (FX_CAMO). A standing level the tick maintains,
+    // not a window this draw has to reconstruct.
+    CombatCamo camo;
+    camo.level = combatCamoLevel_;
     drawCombat(fb, combat_, ps, es, beat_, combatAnimBeat_, combatHitBeat_,
-               combatStatsPage_, sides, outro, prizes);
+               combatStatsPage_, sides, outro, prizes, camo);
 }
 
 void Game::drawEncounterScreen(Framebuffer& fb) const {

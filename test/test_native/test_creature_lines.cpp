@@ -510,6 +510,38 @@ void test_eggpick_grayscale() {
     }
 }
 
+// The MIRROR gate on the Metamorphic egg line. Asserted at its two joints rather than
+// by playing a duel: what can silently break here is the RULE (which opponent counts as
+// a mirror) and the LINK from the achievement to the line, and neither needs a fight to
+// exercise. A fresh save auto-hatches Ransomware, so the pet's own id is the mirror and
+// any other id is not.
+void test_mirror_gates_metamorphic_line() {
+    Game g;
+    CHECK(g.pet() != nullptr);
+    CHECK(!g.hasAchievement(ach::kHashCollision));
+
+    auto offers = [](Game& game, const char* id) {
+        for (const EggLineDef* l : game.availableEggLines())
+            if (l->id && std::strcmp(l->id, id) == 0) return true;
+        return false;
+    };
+    CHECK(!offers(g, "metamorphic"));           // gated: absent from line-select
+
+    g.noteMirrorMatch("cryptoshell_not_a_real_id");
+    CHECK(!g.hasAchievement(ach::kHashCollision));   // a DIFFERENT species is not a mirror
+    g.noteMirrorMatch(nullptr);                      // and an absent opponent is not one
+    CHECK(!g.hasAchievement(ach::kHashCollision));
+
+    g.noteMirrorMatch(g.pet()->id);                  // the pet's own species IS
+    CHECK(g.hasAchievement(ach::kHashCollision));
+    CHECK(offers(g, "metamorphic"));                 // ...and that puts the line on offer
+
+    // The line it gates lays the egg this session drew, through the ordinary row.
+    for (const EggLineDef* l : g.availableEggLines())
+        if (l->id && std::strcmp(l->id, "metamorphic") == 0)
+            CHECK(std::strcmp(l->eggCreatureId, "polystaria") == 0);
+}
+
 // The hatch line-select: the Phishing line is now gated behind the first
 // DeepWeb-depth milestone (DEEPWEB_DEPTH_8), so a fresh save offers only Ransomware
 // and line-select auto-skips. Once depth 8 is earned, a fresh hatch presents

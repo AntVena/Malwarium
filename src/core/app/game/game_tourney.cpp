@@ -152,6 +152,9 @@ void Game::startTourneyMatch() {
     // Facing a real species is the glimpse, exactly as it is in a duel — the arena is
     // the other place a creature the operator has never raised walks on screen.
     markCreatureSeen(tourneyOpponent_.spec.creatureId);
+    // The arena is the other place the operator's own species can walk on opposite them,
+    // so it fires the mirror on the same terms the duel does.
+    noteMirrorMatch(tourneyOpponent_.spec.creatureId);
     // The operator's own Exploit allowance is the normal one. THIS is the difference
     // from a linked duel, which grants zero: there, opening the picker would pause a
     // fight the other device is still stepping. Here both fighters are local, so the

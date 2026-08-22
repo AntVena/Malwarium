@@ -205,9 +205,19 @@ const ModDef kMods[] = {
      "siphon by {mag}%.", false,
      ItemDef::Rarity::Epic, 5, 56, ModEffect::StealAmplifyPct, 75, 0, nullptr, 0,
      /*requiresLine=*/"phishing"},
-    {/*wire=*/32, "extortion_ledger", "Extortion Ledger", "+POW",
-     "Raises attack power by {mag}%. Ransomware pets only.", false,
-     ItemDef::Rarity::Epic, 5, 58, ModEffect::PowerPct, 30, 0, nullptr, 0,
+    // Both halves state the same thing about the family: BRUTE FORCE with one gimmick,
+    // strong from the first turn rather than ramping into it. The cut is the brute half and
+    // needs no setup at all; the pool is the gimmick, and it pays for exactly as long as
+    // the pet is carrying damage it has not answered for.
+    //
+    // The power rides the POOL rather than a seized move. A seizure wants a full Cipher
+    // stack standing under a live window — a payoff most fights never reach — so a bonus
+    // hung there averages to nothing however large it is, while a pool holding something is
+    // the ordinary state of the line doing its job.
+    {/*wire=*/32, "extortion_ledger", "Extortion Ledger", "+DEF",
+     "Cuts damage {mag}%; an unpaid ransom adds {mag2}%+ power, more the "
+     "deeper it runs.", false,
+     ItemDef::Rarity::Epic, 5, 58, ModEffect::ExtortionLedger, 35, 90, nullptr, 0,
      /*requiresLine=*/"ransomware"},
     {/*wire=*/33, "backup_uplink", "Backup Uplink", "+BITS",
      "Earns {mag} extra Bits from a won fight.", false,
@@ -259,6 +269,14 @@ const ModDef kMods[] = {
     {/*wire=*/40, "fork_spur", "Fork Spur", "THORNS",
      "Chips any attacker that hits you for {mag} ({magBonus} for Worm).", false,
      ItemDef::Rarity::Rare, 2, 19, ModEffect::Thorns, 2, 0, "worm", 2},
+    // Junk-code insertion is how a real metamorph changes its signature without changing
+    // what it does, and padding is what it reads as here. The line's soft mod buys TIME
+    // rather than output on purpose: Polymorph pays for casts, so surviving to take more
+    // of them is the shape of an early metamorphic mod.
+    {/*wire=*/47, "junk_padding", "Junk Padding", "+DEF",
+     "Padded until nothing matches: cuts damage {mag}% "
+     "({magBonus}% for Metamorphic).", false,
+     ItemDef::Rarity::Uncommon, 2, 16, ModEffect::DamageCutPct, 9, 0, "metamorphic", 4},
 
     // --- NET-SEA CROSSING (tier 3) — the mid rungs the crossing was missing ---
     // The crossing stocked five mods, all of them hull-and-lookout: a pet crossing it had
@@ -289,10 +307,26 @@ const ModDef kMods[] = {
      ItemDef::Rarity::Epic, 5, 54, ModEffect::ExecOverridePct, 12, 0, nullptr, 0,
      /*requiresLine=*/"trojan"},
     {/*wire=*/46, "replication_bus", "Replication Bus", "COPY+",
-     "Widens the bus every copy travels: {mag}% more chance to replicate. "
+     "Widens the bus every copy travels: each one is worth {mag}% more. "
      "Worm pets only.", false,
-     ItemDef::Rarity::Epic, 5, 55, ModEffect::ReplicaSpawnPct, 20, 0, nullptr, 0,
+     ItemDef::Rarity::Epic, 5, 55, ModEffect::ReplicaWorthPct, 350, 0, nullptr, 0,
      /*requiresLine=*/"worm"},
+    // The fifth line's amplifier, and it amplifies the PASSIVE rather than sitting beside
+    // it as a stat bonus — the only shape this tier actually rewards. What leads the band
+    // takes turns (Ring-0 Shim) or refuses death (RAID Mirror, ECC Memory); flat attack
+    // power measured worth nothing here however large the number was made, which is where
+    // Extortion Ledger sits too.
+    //
+    // Its axis stays distinct from the passive it feeds: Polymorph pays for each unlearned
+    // MOVE, this pays for each effect KIND not yet reached for. A run of plain swings ramps
+    // the pet and pays this nothing, which is the reason to want the two lines a wildcard
+    // row draws from rather than the shared roster it mostly lands on. `magnitude` is stat
+    // points per new kind, spent in the casting move's own currency (polymorphPay).
+    {/*wire=*/48, "mutation_engine", "Mutation Engine", "MUTATE+",
+     "Every different effect you land is worth {mag} moves learned. "
+     "Metamorphic only.", false,
+     ItemDef::Rarity::Epic, 5, 57, ModEffect::PolymorphEffectPct, 6, 0, nullptr, 0,
+     /*requiresLine=*/"metamorphic"},
 };
 const int kModsCount = sizeof(kMods) / sizeof(kMods[0]);
 

@@ -122,7 +122,48 @@ std::string buildPediaStateJson(const Game& g) {
         appendKeyString(out, "line", pet->line ? pet->line : "");
         appendKeyString(out, "uptime", formatHms(g.lifetimeUptimeMs()).c_str());
         appendKeyInt(out, "frag_pct", g.model().fragmentation());
-        appendKeyInt(out, "mistakes", g.model().careMistakes(), /*comma=*/false);
+        appendKeyInt(out, "mistakes", g.model().careMistakes());
+
+        // THE KIT THIS PET COULD HOLD — the ids only. Which of them it has actually
+        // learned is already published in the top-level moves{} map, so this is the
+        // SCOPE and that is the STATE: two answers to one question would be two things
+        // to keep in step. The scope is the line rule (moveAllowedForLine), asked here
+        // rather than reimplemented in the front end, so a page showing "3 of 9" is
+        // counting the moves this creature can ever hold rather than the whole roster.
+        appendJsonString(out, "learnable");
+        out += ":[";
+        {
+            const std::vector<const MoveDef*> moves = g.content().allMoves();
+            bool first = true;
+            for (const MoveDef* mv : moves) {
+                if (!mv || !moveAllowedForLine(*mv, pet->line)) continue;
+                if (!first) out += ',';
+                appendJsonString(out, mv->id);
+                first = false;
+            }
+        }
+        out += "],";
+
+        // THE ONE-SHOTS. Per-pet gates that a new egg is the only way to clear
+        // (defs.h's itemIsOncePerPetLifetime), and the one part of a pet's state the
+        // site cannot work out from the catalogue: whether this life has already spent
+        // it. Keyed by item id and enumerated off the roster, so an item that grows one
+        // of these effects appears here on its own.
+        appendJsonString(out, "lifetime_items");
+        out += ":{";
+        {
+            const std::vector<const ItemDef*> items = g.content().allItems();
+            bool first = true;
+            for (const ItemDef* it : items) {
+                if (!it || !itemIsOncePerPetLifetime(*it)) continue;
+                if (!first) out += ',';
+                appendJsonString(out, it->id);
+                out += ':';
+                appendJsonString(out, g.lifetimeItemSpent(*it) ? "spent" : "unspent");
+                first = false;
+            }
+        }
+        out += '}';
         out += '}';
     } else {
         out += "null";  // no pet yet (empty save, pre-Hatch)

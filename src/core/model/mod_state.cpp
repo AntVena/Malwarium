@@ -40,6 +40,18 @@ constexpr ModRule kModRules[] = {
     // passive the whole line is balanced around into a guarantee.
     {ModEffect::ExecOverridePct,      ModCombine::Sum,         100, false},
     {ModEffect::ReplicaSpawnPct,      ModCombine::Sum,         100, false},
+    // Mutation Engine multiplies a COUNT rather than feeding a roll, so it takes no cap of
+    // its own: what it scales is how many different effect kinds a fighter reached for, and
+    // that is already bounded by the vocabulary moveEffectMask can report.
+    {ModEffect::PolymorphEffectPct,   ModCombine::Sum,         0,   false},
+    // Both scale a quantity rather than feeding a percent roll, so neither takes the 100
+    // cap its two neighbours above do — there is no certainty for them to push past.
+    //
+    // The ledger carries TWO magnitudes (standing, and again while holding a seizure), and
+    // Sum only ever accumulates the first — so it takes HighestMag, which is what every
+    // other two-magnitude row here uses (LowHealthPowerPct is the shape).
+    {ModEffect::ExtortionLedger,       ModCombine::HighestMag,  0,   false},
+    {ModEffect::ReplicaWorthPct,      ModCombine::Sum,         0,   false},
 };
 
 }  // namespace

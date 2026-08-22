@@ -26,6 +26,8 @@ constexpr int kCabBlurbY = 30;
 constexpr int kCabBlurbBottom = 74;
 constexpr int kCabDialY = 84;
 constexpr int kCabDialBlurbY = kCabDialY + kLineH;
+// What the dial blurb may wrap to before it runs into the payout block below.
+constexpr int kCabDialBlurbLines = 2;
 constexpr int kCabPaysY = 128;
 constexpr int kCabBonusY = kCabPaysY + kLineH;
 constexpr int kCabStartY = 176;
@@ -61,13 +63,18 @@ void drawArcadeList(Framebuffer& fb, const ContentRegistry& reg, const int* play
 
 void drawArcadeCabinet(Framebuffer& fb, const ContentRegistry& reg,
                        const ArcadeGameDef& def, ArcadeDifficulty difficulty,
-                       int plays, int wins) {
+                       int plays, int wins, int best) {
     drawHeaderBand(fb, def.displayName);
 
     // The record sits up in the header's own row, right-aligned — it belongs to the
-    // cabinet's identity rather than to any of the four bands below.
-    char rec[20];
-    std::snprintf(rec, sizeof(rec), "%d-%d", wins, plays - wins);
+    // cabinet's identity rather than to any of the four bands below. A cabinet that
+    // keeps a SCORE puts its best beside the record, because on a run with no finish
+    // line that number is the only thing there is to come back for.
+    char rec[28];
+    if (best > 0 && def.scoring == ArcadeScoring::Incremental)
+        std::snprintf(rec, sizeof(rec), "BEST %d   %d-%d", best, wins, plays - wins);
+    else
+        std::snprintf(rec, sizeof(rec), "%d-%d", wins, plays - wins);
     drawText(fb, kActiveW - kMargin - textWidth(rec), 6, rec, palColor(Pal::INK_DIM));
 
     const SpriteData* ic = reg.sprite(def.iconName);
@@ -85,7 +92,14 @@ void drawArcadeCabinet(Framebuffer& fb, const ContentRegistry& reg,
     drawText(fb, kMargin, kCabDialY, "DIFFICULTY:", palColor(Pal::INK_DIM));
     drawText(fb, kMargin + textWidth("DIFFICULTY:") + 8, kCabDialY, dial,
              palColor(Pal::ACCENT));
-    drawText(fb, kMargin, kCabDialBlurbY, def.difficultyBlurb, palColor(Pal::INK_DIM));
+    // WRAPPED, not clipped. The field invites a sentence — it is the only line on the
+    // page that has to explain what a dial does in this particular game's terms — and a
+    // plain drawText silently cut the longer ones mid-word at the right margin. Two
+    // lines is what the gap to the payout block below can spare, and every cabinet's
+    // copy fits inside it.
+    drawTextWrapped(fb, kMargin, kCabDialBlurbY, kActiveW - 2 * kMargin,
+                    def.difficultyBlurb, palColor(Pal::INK_DIM), kLineH,
+                    /*maxLines=*/kCabDialBlurbLines);
 
     // What a run is worth, stated before it starts — the arcade's whole pitch is that
     // finishing pays whatever happens, so the flat half leads and the skill half
@@ -108,7 +122,8 @@ void drawArcadeCabinet(Framebuffer& fb, const ContentRegistry& reg,
 }
 
 void drawArcadeResult(Framebuffer& fb, const ArcadeGameDef& def, bool won,
-                      int score, int scoreMax, int bits, int happy) {
+                      int score, int scoreMax, int best, bool newBest, int bits,
+                      int happy) {
     fb.clear(palColor(Pal::PAPER));
     drawHeaderBand(fb, def.displayName);
 
@@ -120,8 +135,16 @@ void drawArcadeResult(Framebuffer& fb, const ArcadeGameDef& def, bool won,
              won ? palColor(Pal::ACCENT) : palColor(Pal::INK), 2);
 
     if (scoreMax > 0) {
-        char line[24];
-        std::snprintf(line, sizeof(line), "SCORE %d / %d", score, scoreMax);
+        // The denominator is only interesting while the run is UNDER it. Past the line
+        // a cabinet is endless and "24 / 10" would read as a bug, so what replaces it
+        // is the thing that is actually still in play: the score to beat.
+        char line[32];
+        if (score >= scoreMax && newBest)
+            std::snprintf(line, sizeof(line), "SCORE %d - NEW BEST", score);
+        else if (score >= scoreMax && best > 0)
+            std::snprintf(line, sizeof(line), "SCORE %d   BEST %d", score, best);
+        else
+            std::snprintf(line, sizeof(line), "SCORE %d / %d", score, scoreMax);
         drawText(fb, (kActiveW - textWidth(line)) / 2, 84, line, palColor(Pal::INK_DIM));
     }
 

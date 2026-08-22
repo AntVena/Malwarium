@@ -41,6 +41,7 @@ bool Game::gameBriefAvailable() const {
         case Nav::Decryption:
         case Nav::Cryptogram:
         case Nav::ModalEggPick:
+        case Nav::Chroma:
             return true;
         default:
             return false;
@@ -53,6 +54,7 @@ ArcadeGameKind Game::gameBriefKind() const {
         case Nav::Decryption:   return ArcadeGameKind::Decryption;
         case Nav::Cryptogram:   return ArcadeGameKind::Cryptogram;
         case Nav::ModalEggPick: return ArcadeGameKind::Clutch;
+        case Nav::Chroma:       return ArcadeGameKind::Chroma;
         default:                return ArcadeGameKind::Stacker;
     }
 }
@@ -170,6 +172,11 @@ void Game::onArcadeCabinet(const ButtonEvent& ev) {
     dirty_ = true;
 }
 
+int Game::arcadeBestById(const char* id) const {
+    const int row = arcadeGameIndexById(id);
+    return row < 0 ? 0 : arcadeBest(row);
+}
+
 int Game::arcadeStepMs(int baseMs) const {
     if (!arcadeRun_) return baseMs;
     int pct = kArcadeSpeedPctMedium;
@@ -195,7 +202,10 @@ void Game::startArcadeRun() {
             break;
         }
         case ArcadeGameKind::Isolation:
-            startIsolation(kArcadeIsolationGoal);
+            // ENDLESS off a cabinet: no byte count ends the run, so it goes until the
+            // worm crashes (or fills the buffer). kArcadeIsolationWinBytes is the win
+            // line the till pays and scores against, not a finish the board stops at.
+            startIsolation(/*goalDots=*/0);
             break;
         case ArcadeGameKind::Decryption:
             // One of the two cabinets whose dial moves the RULES: easy outlines the
@@ -203,6 +213,14 @@ void Game::startArcadeRun() {
             startDecryption(
                 /*allowDuplicates=*/arcadeDifficulty_ == ArcadeDifficulty::Hard,
                 /*easyHints=*/arcadeDifficulty_ == ArcadeDifficulty::Easy);
+            break;
+        case ArcadeGameKind::Chroma:
+            // ENDLESS, like the buffer above: the board runs until the sweep finds it.
+            // The dial is the WINDOW, which is the paced games' knob (arcadeStepMs) —
+            // and hard alone turns switching on, which is the only rule any cabinet
+            // adds to a game rather than re-times.
+            startChroma(/*rounds=*/0, arcadeStepMs(kChromaWindowMs),
+                        /*switching=*/arcadeDifficulty_ == ArcadeDifficulty::Hard);
             break;
         case ArcadeGameKind::Cryptogram: {
             // The dial IS the quote's difficulty ladder, so the cabinet reuses the same
@@ -251,6 +269,12 @@ void Game::finishArcadeRun(bool won, int score, int scoreMax) {
     if (arcadeGame_ >= 0 && arcadeGame_ < kArcadeMaxCabinets) {
         ++arcadePlays_[arcadeGame_];
         if (won) ++arcadeWins_[arcadeGame_];
+        // The HIGH SCORE, which is the only one of the three tallies a run can leave
+        // worse than it found: it is kept unclamped, deliberately. The bits a run pays
+        // stop at the win line, but the number remembered here does not, because on an
+        // endless cabinet that number IS the game.
+        arcadeNewBest_ = score > arcadeBest_[arcadeGame_] && scoreMax > 0;
+        if (arcadeNewBest_) arcadeBest_[arcadeGame_] = score;
     }
     // The pet enjoyed itself, and PLAY is the signal that says so — the arcade is the
     // one place a player can hand a pet that signal on purpose.
@@ -284,13 +308,15 @@ void Game::drawArcade(Framebuffer& fb) const {
 void Game::drawArcadeDetail(Framebuffer& fb) const {
     if (arcadeRow_ < 0 || arcadeRow_ >= arcadeGameCount()) return;
     drawArcadeCabinet(fb, registry_, arcadeGames()[arcadeRow_], arcadeDifficulty_,
-                      arcadePlays(arcadeRow_), arcadeWins(arcadeRow_));
+                      arcadePlays(arcadeRow_), arcadeWins(arcadeRow_),
+                      arcadeBest(arcadeRow_));
 }
 
 void Game::drawArcadeOutcome(Framebuffer& fb) const {
     if (arcadeGame_ < 0 || arcadeGame_ >= arcadeGameCount()) return;
     drawArcadeResult(fb, arcadeGames()[arcadeGame_], arcadeWon_, arcadeScore_,
-                     arcadeScoreMax_, arcadeBits_, kArcadePlayHappy);
+                     arcadeScoreMax_, arcadeBest(arcadeGame_), arcadeNewBest_,
+                     arcadeBits_, kArcadePlayHappy);
 }
 
 }  // namespace mal

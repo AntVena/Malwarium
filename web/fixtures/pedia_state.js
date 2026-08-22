@@ -11,7 +11,19 @@ window.PEDIA_STATE_FIXTURE = {
   "networks_seen": 137,
 
   // extension: the landing page's live pet card
-  "active_pet": { "species": "paypup", "uptime": "02:14:36", "frag_pct": 12, "mistakes": 1 },
+  // `learnable` is the SCOPE (every move this pet's line may hold, published by the
+  // device) and moves{} below is the STATE — the pet page joins the two. `lifetime_items`
+  // is the one thing neither map can answer: whether THIS life has spent its one-shots.
+  "active_pet": {
+    "species": "paypup", "uptime": "02:14:36", "frag_pct": 12, "mistakes": 1,
+    "learnable": ["quick_jab", "packet_storm", "fork_bomb", "checksum_guard",
+                  "buffer_overflow", "payload_drop", "double_extortion", "aes_lockbox"],
+    "lifetime_items": {
+      "yubi_cookie": "spent",
+      "restore_point": "unspent",
+      "tiramisudo": "unspent"
+    }
+  },
 
   "pets": {
     "cryptoshell": "hatched",

@@ -19,14 +19,17 @@
 namespace mal {
 
 inline constexpr CreatureDef kPhishingCreatures[] = {
-    // The 8-frame sheet is both the idle loop (frames 0-1) and the hatch sequence
-    // (0-7, walked by Game::hatchCrackFrame as the incubation clock runs down).
+    // The 8-frame sheet is both the resting loop and the hatch one-shot (0-7, walked
+    // by Game::hatchRevealFrame on the HATCHING modal). Frames 0-2 all have to read as
+    // a sealed egg, not just 0-1: sprite.h's idleFrame() breathes between 0 and 1 and
+    // blinks to frame 2 every twelfth beat, so a shell that has visibly opened by then
+    // plays that opening while the egg is only sitting there. The cracking starts at 3.
     {"phrogspawn", "Phrogspawn", Stage::BootSector, "SPR_PET_EGG_PHISH_HATCH", "tadpoll",
      nullptr, nullptr, 100, 100, "phishing",
      "A raft of identical eggs, and only one is really yours - the rest are decoys waiting for a careless click.",
      "Frogspawn / phishing decoys",
      {MoveKind::Attack, MoveKind::Attack, MoveKind::Attack, MoveKind::Attack},
-     /*evolvesToTrojanId=*/nullptr, /*evolvesToTrojanBadId=*/nullptr, Locomotion::Swim},
+     /*evolvesToTrojanId=*/nullptr, /*evolvesToTrojanBadId=*/nullptr, Locomotion::Static},
     {"tadpoll", "Tadpoll", Stage::Process, "SPR_PET_TADPOLL", "croaken",
      nullptr, nullptr, 100, 100, "phishing",
      "A tiny wide-eyed tadpole that swims nearby networks running polls nobody agreed to take. It's small now, but it'll grow a little every time someone takes the bait.",

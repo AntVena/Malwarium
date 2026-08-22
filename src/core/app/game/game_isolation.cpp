@@ -83,9 +83,13 @@ void Game::onIsolation(const ButtonEvent& ev) {
 
 void Game::finishIsolation() {
     // An arcade run has no clock to spend the bytes on, and no achievement riding on a
-    // clean one: the till takes the score and that is the whole settlement.
+    // clean one: the till takes the score and that is the whole settlement. The cabinet
+    // run is ENDLESS, so `clean` is only the freak run that filled the whole buffer — a
+    // win is passing the till's own line (kArcadeIsolationWinBytes), which the score is
+    // free to go well past.
     if (arcadeRun_) {
-        finishArcadeRun(isolation_.clean(), isolation_.dots(), isolation_.goal());
+        finishArcadeRun(isolation_.dots() >= kArcadeIsolationWinBytes, isolation_.dots(),
+                        kArcadeIsolationWinBytes);
         return;
     }
     // Spend the run. Banked against isolationBanked_ rather than paid straight out, so a

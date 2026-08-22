@@ -6,8 +6,10 @@
 
 #include "tunables.h"
 #include "core/render/canvas.h"   // kHeartbeatMs/kCombatAnimMs — the tick cadences
+#include "core/render/camo.h"
 #include "core/render/sprite.h"
 #include "core/ui/carousel.h"
+#include "core/ui/combat_screen.h"
 #include "core/ui/items_screen.h"
 
 namespace mal {
@@ -128,7 +130,8 @@ bool Game::tick(uint32_t nowMs) {
         // elsewhere leaves the phase in the same instant and this will never see it.
         // Such a caller has to hatch the egg itself — Game::finishIsolation does.
         if (inEggPhase() && nav_ != Nav::Decryption &&
-            nav_ != Nav::ModalHatchReveal && nav_ != Nav::Isolation) {
+            nav_ != Nav::ModalHatchReveal && nav_ != Nav::Isolation &&
+            nav_ != Nav::Chroma) {
             bootHatchRemainMs_ = bootHatchRemainMs_ > elapsed
                                      ? bootHatchRemainMs_ - elapsed : 0;
             if (bootHatchRemainMs_ == 0) { completeHatch(); changed = true; }
@@ -145,13 +148,17 @@ bool Game::tick(uint32_t nowMs) {
         beat_++;
         changed = true;
         // Resting motion: the pet drifts a little way around the habitat's shelf
-        // anchor, the way its species moves (core/model/idle_wander.h). An egg is
-        // parked instead — it sits where it was laid, with its incubation readout
-        // drawn directly above it — and so is an empty save, which has no pet at all.
+        // anchor, the way its species moves (core/model/idle_wander.h). An EGG moves
+        // the way its row says too, which for almost every egg is Locomotion::Static
+        // and therefore not at all — it sits where it was laid, with its incubation
+        // readout drawn directly above it. The exception is an egg genuinely adrift in
+        // water, which says Swim and drifts, and the rule is the row rather than the
+        // stage so a hypothetical egg that flies needs no code here either. An empty
+        // save parks, having no pet at all.
         // A worm's ambient copies walk the same shelf on the same beat, each off its
         // own stream; the ones past the live count are parked so a shrinking family
         // (an evolution, a fresh egg) leaves nothing mid-stride to walk back in.
-        if (pet_ && !inEggPhase()) petWander_.step(pet_->locomotion);
+        if (pet_) petWander_.step(pet_->locomotion);
         else petWander_.park();
         const int companions = idleCompanionCount();
         for (int i = 0; i < kWormReplicaSlots; ++i) {
@@ -249,10 +256,25 @@ bool Game::tick(uint32_t nowMs) {
             lastCombatAnimMs_ = nowMs;
             combatAnimBeat_++;
             combatHitBeat_++;
+            // FX_CAMO's level eases toward what the pet's LIVE cast is wearing, read
+            // fresh every tick rather than latched at the swing: a borrowed move is
+            // still the pet's last cast while the rival takes its turn, so the colours
+            // hold until the pet itself casts something of its own. Riding a beat here
+            // instead is what let a counter-attack strand the pet mid-change.
+            //
+            // Both seats are passed, because the question is about the PAIR: the pet is
+            // only wearing the rival's colours while it is casting one of the rival's
+            // own moves (wearingBorrowedColours).
+            const bool flip = combatLocalIsEnemySide();
+            const Combatant& self = flip ? combat_.enemy() : combat_.player();
+            const Combatant& rival = flip ? combat_.player() : combat_.enemy();
+            combatCamoLevel_ = camoAdvance(combatCamoLevel_,
+                                           wearingBorrowedColours(self, rival));
             changed = true;
         }
     } else {
         lastCombatAnimMs_ = nowMs;   // stay primed so re-entering combat doesn't burst-catch-up
+        combatCamoLevel_ = 0;        // off the fight, off the disguise — every fight opens bare
     }
 
     // The dissolve clock (FX_ABSORB / FX_SHRED). Fastest tick on the device, and the
@@ -320,6 +342,22 @@ bool Game::tick(uint32_t nowMs) {
         }
     } else {
         lastIsolationStepMs_ = nowMs;
+    }
+
+    // The CHROMATOPHORE's sweep runs on real time rather than on a step, because what
+    // it is measuring IS time — how much of the window a repaint had left to finish in.
+    // It ticks at the dissolve cadence (kFxAnimMs) for the reason a dissolve does: the
+    // scatter crossing the creature is the readout, and at the 4fps heartbeat a
+    // kChromaSettleMs change would land on four frames total. Deltas, not a fixed step,
+    // so the model always sees the time that actually passed.
+    if (nav_ == Nav::Chroma && !gameBriefOpen_ && chroma_.running()) {
+        if (nowMs - lastChromaMs_ >= static_cast<uint32_t>(kFxAnimMs)) {
+            chroma_.tick(nowMs - lastChromaMs_);
+            lastChromaMs_ = nowMs;
+            changed = true;
+        }
+    } else {
+        lastChromaMs_ = nowMs;
     }
 
     // Post-encounter status readout: a real-ms auto-dismiss window
@@ -511,7 +549,7 @@ bool Game::tick(uint32_t nowMs) {
                            nav_ == Nav::Process || nav_ == Nav::Decryption ||
                            nav_ == Nav::ModalLineSelect || nav_ == Nav::ModalEggPick ||
                            nav_ == Nav::ModalHatchReveal || nav_ == Nav::Isolation ||
-                           nav_ == Nav::Cryptogram ||
+                           nav_ == Nav::Chroma || nav_ == Nav::Cryptogram ||
                            nav_ == Nav::ModalEvolve || nav_ == Nav::ModalCSF ||
                            nav_ == Nav::Combat || nav_ == Nav::ExploreControl ||
                            nav_ == Nav::Encounter || nav_ == Nav::Wifi ||
@@ -615,6 +653,17 @@ void Game::onButton(const ButtonEvent& ev) {
     }
     lastInputMs_ = nowMs_;
     dirty_ = true;
+    // A HELD announcement eats the first press, whatever it was. Only the NEW EGG LINE
+    // banner holds (Game::achBannerHeld), and only on the home screen, where it is
+    // telling the player about something they can now go and do — so the press that
+    // clears it is the acknowledgement, and letting it ALSO open the carousel underneath
+    // would mean the banner was dismissed by a gesture aimed at something else. The
+    // chord is included deliberately: A+C is a press too, and a player mashing it at a
+    // banner they want gone should get what they are asking for.
+    if (achBannerHeld()) {
+        dismissAchievementBanner();
+        return;
+    }
     // A+C is the reserved no-op stub everywhere pet-side EXCEPT combat — the one
     // place the Exploit override is live. The early-out is bypassed
     // only in the combat Nav state, which routes the chord to the override picker.
@@ -631,12 +680,15 @@ void Game::onButton(const ButtonEvent& ev) {
         // the two meanings out itself (a letter held drops it; nothing held opens the
         // RULES page instead), since only it knows which stage the board is in.
         else if (nav_ == Nav::Cryptogram) onCryptogram(ev);
-        // The other four game engines have nothing else living on the chord, so it is
+        // The other game engines have nothing else living on the chord, so it is
         // always the RULES page here — open it, or close it if it's already up. The
-        // three egg-hatch entrants (Decrypt/Clutch/Isolation land on their Nav straight
-        // out of layEgg with no menu stop) have no other route to this at all.
+        // egg-hatch entrants (Decrypt/Clutch/Isolation/Chroma land on their Nav straight
+        // out of layEgg with no menu stop) have no other route to this at all, and the
+        // CHROMATOPHORE needs it most: it is the one board whose three buttons are all
+        // spoken for, so the chord is the only press left that can explain them.
         else if (nav_ == Nav::Stacker || nav_ == Nav::Isolation ||
-                 nav_ == Nav::Decryption || nav_ == Nav::ModalEggPick)
+                 nav_ == Nav::Decryption || nav_ == Nav::ModalEggPick ||
+                 nav_ == Nav::Chroma)
             toggleGameBrief();
         // Hacker face: A+C at the top level flips PET ↔ HACKER. On the HACKER
         // face this takes priority so the player can ALWAYS return to the pet — nothing
@@ -780,6 +832,7 @@ void Game::onButton(const ButtonEvent& ev) {
         case Nav::PostEncounter: dismissPostEncounter(); break;
         case Nav::Stacker: onStacker(ev); break;
         case Nav::Isolation: onIsolation(ev); break;
+        case Nav::Chroma: onChroma(ev); break;
         // The arcade payout: informational, so ANY button dismisses it (the
         // PostEncounter contract, not the standard A/B/C one).
         case Nav::ArcadeResult: onArcadeResult(ev); break;

@@ -89,9 +89,10 @@ const char* const kDeepWebIcon = "ICON_SECTOR_DEEPWEB_DIVE";
 // defensive/build-around endgame Epics.
 const char* const kAreaModsDeepWeb[] = {
     "deadman_switch", "raid_mirror",  "ecc_memory",       "load_balancer",
-    // One hard-gated line build-around per line — the dive is where all four live, so
+    // One hard-gated line build-around per line — the dive is where they all live, so
     // reaching it is what opens the deep end of every line at once.
     "phishing_rod",    "extortion_ledger", "ring_zero_shim", "replication_bus",
+    "mutation_engine",
     "backup_uplink",
 };
 const int kAreaModsDeepWebCount = arrLen(kAreaModsDeepWeb);

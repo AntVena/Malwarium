@@ -67,6 +67,17 @@ const GameBriefDef kCryptogramBrief[] = {
                          "drops a letter, never both at once."},
 };
 
+const GameBriefDef kChromaBrief[] = {
+    {"WEAR THE WATER", "Three colours, three buttons - A, B and C each wear one. The "
+                       "water under you takes one of them, and it is never the one you "
+                       "have on."},
+    {"CHANGING TAKES TIME", "A press starts the repaint; it is a moment before you are "
+                            "actually wearing it. Caught halfway counts as caught."},
+    {"THE SWEEP", "Something crosses the water on a clock that gets shorter every "
+                  "pass. Match it and the pass is yours; miss it and the run ends with "
+                  "what you already earned."},
+};
+
 const ArcadeGameDef kArcadeGames[] = {
     // The played Defrag, off its disk. Nothing about the board changes here — it is
     // the same deterministic slide, so a run that went well in MAINT goes exactly the
@@ -117,6 +128,17 @@ const ArcadeGameDef kArcadeGames[] = {
      ArcadeUnlock::QuotesSolved,
      kCryptogramBrief,
      static_cast<int>(sizeof(kCryptogramBrief) / sizeof(kCryptogramBrief[0]))},
+
+    // The Metamorphic hatch, with no egg riding on it — and the one cabinet whose
+    // SUBJECT can change: a pet on the family that wears borrowed colours rehearses on
+    // the board itself, and anybody else's pet watches the egg do it (Game::chromaSubject).
+    // Its dial moves the window like the paced games, and HARD adds the rule the hatch
+    // never plays with: the water can change under you once you have committed.
+    {"chroma", "CHROMATOPHORE",
+     "WEAR THE WATER BEFORE THE SWEEP.",
+     "ICON_ARCADE_CHROMA", "HOW LONG YOU GET, AND IF THE WATER MOVES.",
+     ArcadeGameKind::Chroma, ArcadeScoring::Incremental, ArcadeUnlock::Always,
+     kChromaBrief, static_cast<int>(sizeof(kChromaBrief) / sizeof(kChromaBrief[0]))},
 };
 
 static_assert(sizeof(kArcadeGames) / sizeof(kArcadeGames[0]) <= kArcadeMaxCabinets,

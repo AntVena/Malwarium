@@ -410,3 +410,55 @@ void test_pedia_evolution_achievements_leave_the_sibling_locked() {
         CHECK(!g.creatureSeen("bruinforce"));
     }
 }
+
+// --- The held NEW EGG LINE banner ------------------------------------------
+
+// Every other announcement retires on a timer. The one that says a new KIND OF EGG is
+// available does not: it is the only banner with an instruction in it — go and lay one —
+// so it waits for the player to acknowledge it, and the press that does so is spent.
+void test_new_egg_line_banner_holds_until_a_press() {
+    Game g{StartMode::Hatched};
+    uint32_t t = 0;
+    g.tick(t += kHeartbeatMs);
+    while (g.achBanner()) { g.tick(t += kAchBannerMs); g.tick(t += kHeartbeatMs); }
+
+    g.unlockAchievement(ach::kHashCollision);     // the Metamorphic line's gate
+    g.tick(t += kHeartbeatMs);
+    const AchievementDef* shown = g.achBanner();
+    CHECK(shown && std::strcmp(shown->id, ach::kHashCollision) == 0);
+    CHECK(g.achBannerHeld());
+    // Held because the ROSTER says so, not because the row is flagged: the egg line
+    // names the achievement that earns it, and the banner asks that question backwards.
+    const EggLineDef* line = g.achEggLineUnlocked(*shown);
+    CHECK(line && std::strcmp(line->id, "metamorphic") == 0);
+
+    // Time alone does nothing to it, however much of it passes.
+    for (int i = 0; i < 20; ++i) g.tick(t += kAchBannerMs);
+    CHECK(g.achBanner() != nullptr);
+    CHECK(g.achPendingNotify() == 1);             // still unannounced, still waiting
+
+    // The press clears it AND is spent on it: the carousel underneath must not open, or
+    // the banner was dismissed by a gesture that was aimed at something else.
+    g.onButton(press(Button::A));
+    CHECK(g.achBanner() == nullptr);
+    CHECK(g.achPendingNotify() == 0);
+    CHECK(g.nav() == Game::Nav::Idle);
+    // ...and the next press is the player's own again.
+    g.onButton(press(Button::A));
+    CHECK(g.nav() != Game::Nav::Idle);
+}
+
+// An ordinary unlock is untouched by any of that — it still retires on its own clock,
+// which is what keeps the held plate meaning something on the rare occasions it appears.
+void test_ordinary_banner_still_retires_on_its_own() {
+    Game g{StartMode::Hatched};
+    uint32_t t = 0;
+    g.tick(t += kHeartbeatMs);
+    while (g.achBanner()) { g.tick(t += kAchBannerMs); g.tick(t += kHeartbeatMs); }
+    g.unlockAchievement(ach::kFlawlessRun);
+    g.tick(t += kHeartbeatMs);
+    CHECK(g.achBanner() != nullptr);
+    CHECK(!g.achBannerHeld());
+    g.tick(t += kAchBannerMs);
+    CHECK(g.achBanner() == nullptr);
+}

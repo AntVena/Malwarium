@@ -361,7 +361,9 @@ A **Boot Accelerator** item in your bag can skip part of the wait.
 
 Not every line hatches the same way. A Phishing egg plays the **Clutch Pick** instead — a
 one-shot game of nerve the moment the egg is laid, where only the live egg twitches among
-identical decoys.
+identical decoys. A Metamorphic egg plays the **Chromatophore**: three buttons wear three
+colours, and the egg has to be wearing the same colour as the water when the sweep comes
+past. Changing takes a moment, so being right is not the same as being early enough.
 
 ### Keeping it alive 
 Your creature has three needs: 

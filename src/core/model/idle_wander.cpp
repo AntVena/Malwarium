@@ -9,7 +9,9 @@ namespace {
 // a walker takes long pauses and never leaves the shelf (stepY 0), a flier is almost
 // always gliding somewhere, a swimmer drifts on both axes at a single slow pace, and
 // a Ground mover is a walker slowed down: half the pace over a shorter reach, resting
-// longer at the end of it, and giving up the shelf bob entirely.
+// longer at the end of it, and giving up the shelf bob entirely, and a Static one has
+// no trip at all — a zero pace is a fixed point, so it retargets forever and arrives
+// nowhere rather than being special-cased out of the walk.
 struct Pace {
     int stepX;     // horizontal px per heartbeat
     int stepY;     // vertical px per heartbeat; 0 pins the mover to the shelf
@@ -23,8 +25,9 @@ constexpr Pace kPaces[] = {
     /* Fly   */ {2, 1, 1,  4, 12},
     /* Swim  */ {1, 1, 0,  5, 12},
     /* Ground*/ {1, 0, 10, 14, 7},
+    /* Static*/ {0, 0, 10, 14, 0},
 };
-static_assert(static_cast<int>(Locomotion::Ground) + 1 ==
+static_assert(static_cast<int>(Locomotion::Static) + 1 ==
                   static_cast<int>(sizeof(kPaces) / sizeof(kPaces[0])),
               "one Pace row per Locomotion");
 
@@ -81,6 +84,7 @@ void IdleWander::retarget() {
     switch (loco_) {
         case Locomotion::Walk:
         case Locomotion::Ground:
+        case Locomotion::Static:
             targetY_ = 0;   // the shelf is the whole of a floor-mover's world
             break;
         case Locomotion::Fly:

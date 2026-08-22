@@ -51,6 +51,57 @@ const MoveDef kMoves[] = {
              "Reroutes the next hit to nowhere - gives back {refund}% of the wait.",
              Stage::Process, /*speedRefundPct=*/55),
 
+    // --- Metamorphic LINE moves -------------------------------------------------
+    // line = "metamorphic". None of these casts itself: each rolls a move out of the
+    // generic roster of its own KIND plus the two lines it names (Combat::resolveTurn via
+    // wildPick), and the pet keeps whatever passive a borrowed row brings with it. The
+    // pair is the only thing an operator tailors about a wildcard, which is what makes
+    // nine rows worth owning separately instead of one row worth equipping four times.
+    //
+    // Every ATTACK pair appears once — six of them across the four other lines — and the
+    // DEFEND rows pair only lines that HAVE a defend track. Phishing's defence is its
+    // Obfuscation pool, authored on rows the shared roster already reaches, so a Defend
+    // wildcard naming it would name a line with nothing of that kind to give and quietly
+    // hand its whole weight back to generic.
+    //
+    // Power is 0 on all nine (see wildRow): what a cast is worth is whatever it rolled.
+    wildRow("instruction_swap", "Instruction Swap", MoveDef::Kind::Attack,
+            "Swaps in an instruction it saw somewhere else - a random Ransomware or "
+            "Trojan attack, or one from the common pool.",
+            Stage::Process, "ransomware", "trojan"),
+    wildRow("register_rename", "Register Rename", MoveDef::Kind::Attack,
+            "Same operation, different register - a random Phishing or Worm attack, or "
+            "one from the common pool.",
+            Stage::Process, "phishing", "worm"),
+    wildRow("junk_insertion", "Junk Insertion", MoveDef::Kind::Attack,
+            "Pads itself with something borrowed until nothing matches - a random "
+            "Ransomware or Worm attack, or one from the common pool.",
+            Stage::Script, "ransomware", "worm"),
+    wildRow("subroutine_shuffle", "Subroutine Shuffle", MoveDef::Kind::Attack,
+            "Reorders itself mid-run - a random Phishing or Trojan attack, or one from "
+            "the common pool.",
+            Stage::Script, "phishing", "trojan"),
+    wildRow("permutation_pass", "Permutation Pass", MoveDef::Kind::Attack,
+            "Rewrites every line and means the same thing - a random Ransomware or "
+            "Phishing attack, or one from the common pool.",
+            Stage::Daemon, "ransomware", "phishing"),
+    wildRow("entry_point_swap", "Entry-Point Swap", MoveDef::Kind::Attack,
+            "Starts somewhere nobody was watching - a random Trojan or Worm attack, or "
+            "one from the common pool.",
+            Stage::Daemon, "trojan", "worm"),
+    wildRow("signature_drift", "Signature Drift", MoveDef::Kind::Defend,
+            "Drifts out from under its own signature - a random Ransomware or Trojan "
+            "defence, or one from the common pool.",
+            Stage::Process, "ransomware", "trojan"),
+    wildRow("decoy_rewrite", "Decoy Rewrite", MoveDef::Kind::Defend,
+            "Rewrites the part they are looking at - a random Ransomware or Worm "
+            "defence, or one from the common pool.",
+            Stage::Script, "ransomware", "worm"),
+    wildRow("shell_recompile", "Shell Recompile", MoveDef::Kind::Defend,
+            "Builds a new shell out of whatever compiled - a random Trojan or Worm "
+            "defence, or one from the common pool.",
+            Stage::Daemon, "trojan", "worm"),
+
     // --- Ransomware LINE moves ---------
     // line = "ransomware" → only Ransomware pets can learn/equip these. Lockout track
     // (attack, single-turn) stacks the caster's Power on landing; Cipher track (defend)

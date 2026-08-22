@@ -142,6 +142,28 @@ bool Game::itemUsable(const ItemDef& d, const char*& gateMsg) const {
     return false;
 }
 
+bool Game::lifetimeItemSpent(const ItemDef& d) const {
+    // One switch, and the only place the three per-pet gates are read as one question.
+    // itemUseIsInert below asks the same thing move by move to decide whether a USE
+    // would do anything; this asks it about the ITEM, which is what a readout wants.
+    for (const ItemEffect& e : d.effects) {
+        switch (e.kind) {
+            case ItemEffect::Kind::RemoveCareMistakeOnce:
+                if (yubiConsumed_) return true;
+                break;
+            case ItemEffect::Kind::ClearMistakeShieldOnce:
+                if (shieldItemConsumed_) return true;
+                break;
+            case ItemEffect::Kind::BandwidthRegenBonusMin:
+                if (bandwidthRegenUpgraded()) return true;
+                break;
+            default:
+                break;
+        }
+    }
+    return false;
+}
+
 bool Game::itemUseIsInert(const ItemDef& d, const char*& why) const {
     // Only the plain consume path applies effects[]; every other Use hands off to
     // its own flow and is gated by itemUsable on its own terms.

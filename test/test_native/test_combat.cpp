@@ -1074,10 +1074,15 @@ void test_mod_content_rarity_tier() {
     for (const ModDef* m : r.allMods()) {
         if (!m->requiresLine) continue;
         CHECK(creatureLine(m->requiresLine) != nullptr);
+        // Every one of them now amplifies its line's own PASSIVE. The list once admitted a
+        // plain PowerPct row (Extortion Ledger) as the exception; a flat stat bonus turned
+        // out to be the shape that could not be made worth a slot at this tier however
+        // large the number went, so there is no longer an exception to admit.
         CHECK(m->effectKind == ModEffect::StealAmplifyPct ||
               m->effectKind == ModEffect::ExecOverridePct ||
-              m->effectKind == ModEffect::ReplicaSpawnPct ||
-              m->effectKind == ModEffect::PowerPct);   // Extortion Ledger, the one stat row
+              m->effectKind == ModEffect::ReplicaWorthPct ||
+              m->effectKind == ModEffect::ExtortionLedger ||
+              m->effectKind == ModEffect::PolymorphEffectPct);
         CHECK(m->line == nullptr);                     // never both shapes at once
     }
     // Every line also has a SOFT-affinity mod, and it gates far shallower than the hard
@@ -1223,7 +1228,24 @@ void test_mod_niche_flavour_data_driven() {
     // not a combat-engine one — makePlayerCombatant applies whatever is already
     // installed, so it correctly still wires up here even off-line (see
     // test_mod_hard_line_gate for the actual gate enforcement).
-    CHECK(build("extortion_ledger").powerMultPct == base.powerMultPct + 30);
+    //
+    // It parks its two magnitudes rather than moving powerMultPct at build time: the
+    // second one only pays while a seizure is being held, which is a state a fight
+    // reaches and loses again, so the damage path reads both live.
+    // The STANDING half is a damage CUT and lands on the base; only the seizure window is
+    // parked live, because it opens and closes mid-fight. Power is deliberately not the
+    // standing currency — a flat attack bonus measured worth nothing at this tier.
+    const Combatant el = build("extortion_ledger");
+    CHECK(el.dmgReducePct == base.dmgReducePct + 35);
+    CHECK(el.powerMultPct == base.powerMultPct);
+    const ModState* els = el.mods.find(ModEffect::ExtortionLedger);
+    CHECK(els && els->mag2 == 90);
+    // Replication Bus pays a copy's WORTH, so it is visible where a copy is priced rather
+    // than on the parent's own stat line.
+    const Combatant rb = build("replication_bus");
+    CHECK(rb.mods.mag(ModEffect::ReplicaWorthPct) == 350);
+    CHECK(wormAttackerDamage(rb, /*movePower=*/20, /*pct=*/50) >
+          wormAttackerDamage(base, /*movePower=*/20, /*pct=*/50));
     // Backup Uplink is read post-battle by the Game (like Packet Sniffer), not stored
     // on Combatant at all — assert its content data directly instead.
     const ModDef* bu = r.mod("backup_uplink");
@@ -1601,17 +1623,21 @@ void test_phishing_perfect_bite() {
     }
     CHECK(biteSpeedSeed && biteHpSeed && noBiteSeed);   // all three outcomes reachable
 
-    // Rod: re-running a biting seed with the Rod equipped scales that hit's bonus up
-    // further (still only the bitten stat — the other stays at its base value).
+    // Rod: re-running a biting seed with the Rod equipped scales the hit up further. It
+    // reaches BOTH bubble-gated steals, not only the bitten one — the mod scales the pool
+    // SIPHON that gates them rather than the bite bonus alone, which is what gives it a
+    // floor to stand on (a bite is a roll on top of a condition, and a mod confined to it
+    // paid on a fraction of a fraction). The bite itself stays exclusive: still one stat
+    // doubled per hit, which the loop above is what pins.
     Combat plainSpeed; run(biteSpeedSeed, 0, plainSpeed);
     Combat rodSpeed; run(biteSpeedSeed, 75, rodSpeed);
     CHECK(rodSpeed.player().speed > plainSpeed.player().speed);
-    CHECK(rodSpeed.player().health == plainSpeed.player().health);   // hp untouched
+    CHECK(rodSpeed.player().health >= plainSpeed.player().health);
 
     Combat plainHp; run(biteHpSeed, 0, plainHp);
     Combat rodHp; run(biteHpSeed, 75, rodHp);
     CHECK(rodHp.player().health > plainHp.player().health);
-    CHECK(rodHp.player().speed == plainHp.player().speed);   // speed untouched
+    CHECK(rodHp.player().speed >= plainHp.player().speed);
 }
 
 // Feed-frenzy combo gate: the run is counted by the BUBBLE, not by move adjacency. A
@@ -2242,4 +2268,417 @@ void test_combat_panel_pages_cycle() {
     g.onButton(press(Button::B));
     g.debugStartCombat(/*live=*/false);
     CHECK(g.combatStatsPage() == 0);
+}
+
+// POLYMORPH: the distinct rule, and what one absorption pays. Asserted against a
+// hand-built Combatant rather than a resolved fight — the passive's whole question is
+// "have I cast this before", which is a property of the fighter and not of a battle.
+void test_polymorph_pays_once_per_distinct_move() {
+    const MoveDef atk{"t_atk", "T Atk", MoveDef::Kind::Attack, 10, 1, "", Stage::BootSector};
+    const MoveDef def{"t_def", "T Def", MoveDef::Kind::Defend, 10, 1, "", Stage::BootSector};
+    Combatant c;
+    c.polymorphic = true;
+    c.powerMultPct = 100;
+    c.speed = 10;
+    c.maxHealth = 40;
+    c.health = 40;
+
+    CHECK(!polymorphHasAbsorbed(c, &atk));
+    CHECK(polymorphAbsorb(c, &atk));                    // new: pays
+    CHECK(polymorphHasAbsorbed(c, &atk));
+    CHECK(c.powerMultPct == 100 + kLevelPowerPctPerPoint);
+    CHECK(c.speed == 10 + kLevelSpeedPerPoint);
+
+    CHECK(!polymorphAbsorb(c, &atk));                   // a repeat pays NOTHING
+    CHECK(c.powerMultPct == 100 + kLevelPowerPctPerPoint);
+    CHECK(c.absorbedCount == 1);
+
+    // A Defend pays the other pair, and raises the pool it is standing in as well as the
+    // ceiling — a fighter must never be left owing Health it was just granted.
+    CHECK(polymorphAbsorb(c, &def));
+    CHECK(c.maxHealth == 40 + kLevelHealthPerPoint);
+    CHECK(c.health == 40 + kLevelHealthPerPoint);
+    CHECK(c.defenseMultPct == 100 + kLevelDefenseBracePctPerPoint);
+
+    // A fighter that is not running the passive never absorbs, which is every pet off the
+    // line: the gate is the equipped wildcard row, not a line id.
+    Combatant plain;
+    CHECK(!polymorphAbsorb(plain, &atk));
+    CHECK(plain.absorbedCount == 0);
+}
+
+// The wildcard roll: every band is reachable, the weighting favours generic, and a band
+// with no rows hands its share back instead of being drawn into and found empty.
+void test_wild_pick_weights_its_bands() {
+    const MoveDef g1{"g1", "G1", MoveDef::Kind::Attack, 8, 1, "", Stage::BootSector};
+    const MoveDef g2{"g2", "G2", MoveDef::Kind::Attack, 9, 1, "", Stage::BootSector};
+    MoveDef a1{"a1", "A1", MoveDef::Kind::Attack, 8, 1, "", Stage::BootSector};
+    a1.line = "lineA";
+    MoveDef b1{"b1", "B1", MoveDef::Kind::Attack, 8, 1, "", Stage::BootSector};
+    b1.line = "lineB";
+
+    WildPool pool;
+    pool.rows = {&g1, &g2, &a1, &b1};
+    pool.genericEnd = 2;
+    pool.lineAEnd = 3;
+    pool.passivesA = linePassives(LinePassive::Replication);
+    pool.passivesB = linePassives(LinePassive::ExecOverride);
+
+    int generic = 0, lineA = 0, lineB = 0;
+    for (uint32_t r = 0; r < 4000; ++r) {
+        const MoveDef* m = wildPick(pool, r);
+        CHECK(m != nullptr);
+        if (m == &a1) ++lineA;
+        else if (m == &b1) ++lineB;
+        else ++generic;
+    }
+    CHECK(generic > 0 && lineA > 0 && lineB > 0);        // every band is reachable
+    CHECK(generic > lineA && generic > lineB);           // ...and generic is the common one
+    CHECK(lineA + lineB > generic / 2);                  // a line run is not a rarity
+
+    // A borrowed row carries its own line's flags, and a generic one carries none — which
+    // is what stops the shared roster from handing out passives nobody's line owns.
+    CHECK(wildBorrowedPassives(pool, &a1) == pool.passivesA);
+    CHECK(wildBorrowedPassives(pool, &b1) == pool.passivesB);
+    CHECK(wildBorrowedPassives(pool, &g1) == 0);
+
+    // An empty B band: its weight falls back to generic rather than rolling into nothing.
+    WildPool noB = pool;
+    noB.rows = {&g1, &g2, &a1};
+    noB.lineAEnd = 3;
+    for (uint32_t r = 0; r < 500; ++r) CHECK(wildPick(noB, r) != nullptr);
+    CHECK(wildPick(WildPool{}, 7) == nullptr);           // no pool: the row casts itself
+}
+
+// The substitution, end to end: a wildcard row never casts ITSELF while its pool has
+// anything in it, the fighter absorbs what it rolls, and the stats it swings with move as
+// it does. Built by hand rather than off content rows — Combat::begin takes Combatants, so
+// the mechanic is assertable before the metamorphic track exists to author it onto.
+void test_wildcard_slot_casts_the_pool_not_itself() {
+    static const MoveDef p1{"p1", "Pool One", MoveDef::Kind::Attack, 6, 1, "", Stage::BootSector};
+    static const MoveDef p2{"p2", "Pool Two", MoveDef::Kind::Attack, 7, 1, "", Stage::BootSector};
+    static const MoveDef p3{"p3", "Pool Three", MoveDef::Kind::Attack, 5, 1, "", Stage::BootSector};
+    static MoveDef wild{"wild", "Wildcard", MoveDef::Kind::Attack, 4, 1, "", Stage::BootSector};
+    wild.drawLineA = "lineA";                       // marks the row a wildcard
+
+    Combatant pet;
+    pet.name = "Pet";
+    pet.maxHealth = pet.health = 400;               // long enough to roll many times
+    pet.speed = 10;
+    pet.powerMultPct = 100;
+    pet.moves = {&wild};
+    pet.polymorphic = true;
+    pet.wildPools.assign(1, WildPool{});
+    pet.wildPools[0].rows = {&p1, &p2, &p3};
+    pet.wildPools[0].genericEnd = 3;                // all generic: no borrowed passives here
+    pet.wildPools[0].lineAEnd = 3;
+
+    Combatant foe;
+    foe.name = "Foe";
+    foe.maxHealth = foe.health = 400;
+    foe.speed = 10;
+    foe.moves = {&p1};
+
+    Combat c;
+    c.begin(pet, foe, Combat::Stakes::Safe, /*seed=*/12345u);
+    bool sawWildItself = false;
+    for (int i = 0; i < 60 && c.outcome() == Combat::Outcome::Ongoing; ++i) {
+        c.step();
+        if (c.lastByPlayer() && c.lastMoveName() &&
+            std::strcmp(c.lastMoveName(), wild.displayName) == 0)
+            sawWildItself = true;
+    }
+    CHECK(!sawWildItself);                          // the row is a roll, never a cast
+    // It reached more than one row of its pool, and paid for each new one exactly once.
+    CHECK(c.player().absorbedCount >= 2);
+    CHECK(c.player().absorbedCount <= 3);           // ...and never more than the pool holds
+    CHECK(c.player().powerMultPct ==
+          100 + c.player().absorbedCount * kLevelPowerPctPerPoint);
+    CHECK(c.player().speed == 10.0f + c.player().absorbedCount * kLevelSpeedPerPoint);
+
+    // Determinism survives it: the same seed replays the same fight, which is what a
+    // linked duel rebuilds independently on two devices.
+    Combat again;
+    again.begin(pet, foe, Combat::Stakes::Safe, /*seed=*/12345u);
+    for (int i = 0; i < 60 && again.outcome() == Combat::Outcome::Ongoing; ++i) again.step();
+    CHECK(again.player().absorbedCount == c.player().absorbedCount);
+    CHECK(again.player().health == c.player().health);
+    CHECK(again.enemy().health == c.enemy().health);
+}
+
+// Mutation Engine's axis is NOT Polymorph's. Two plain swings are two absorbed moves and
+// zero effect kinds; one loaded row is one absorbed move and several kinds — which is the
+// whole reason the mod is worth a slot beside the passive rather than doubling it.
+void test_mutation_engine_counts_effects_not_moves() {
+    MoveDef plainA{"ma", "Plain A", MoveDef::Kind::Attack, 10, 1, "", Stage::BootSector};
+    MoveDef plainB{"mb", "Plain B", MoveDef::Kind::Attack, 11, 1, "", Stage::BootSector};
+    CHECK(moveEffectMask(plainA) == 0);                 // damage is not an "effect"
+    CHECK(moveEffectMask(plainB) == 0);
+
+    MoveDef loaded{"ml", "Loaded", MoveDef::Kind::Attack, 9, 1, "", Stage::BootSector};
+    loaded.armorPiercePct = 30;
+    loaded.lockTurns = 1;
+    loaded.dotDamage = 4;
+    loaded.dotTurns = 2;
+    const uint32_t mask = moveEffectMask(loaded);
+    CHECK(mask != 0);
+    CHECK((mask & moveEffectMask(plainA)) == 0);
+
+    Combatant c;
+    c.polymorphic = true;
+    c.effectsSeen |= moveEffectMask(plainA);
+    c.effectsSeen |= moveEffectMask(plainB);
+    CHECK(polymorphEffectCount(c) == 0);                // two moves, no effects
+    c.effectsSeen |= mask;
+    CHECK(polymorphEffectCount(c) == 3);                // pierce + stun + DoT
+    c.effectsSeen |= mask;                              // the same row again adds nothing
+    CHECK(polymorphEffectCount(c) == 3);
+
+    // A steal that moves Speed and one that moves max-Health are two kinds, not one —
+    // the track spends a bit per stat, which is the reading the mod is named for.
+    MoveDef s1{"s1", "Steal Spd", MoveDef::Kind::Attack, 5, 1, "", Stage::BootSector};
+    s1.stealSpeedPct = 10;
+    MoveDef s2{"s2", "Steal Max", MoveDef::Kind::Attack, 5, 1, "", Stage::BootSector};
+    s2.stealMaxHpPct = 10;
+    CHECK(moveEffectMask(s1) != moveEffectMask(s2));
+    c.effectsSeen |= moveEffectMask(s1) | moveEffectMask(s2);
+    CHECK(polymorphEffectCount(c) == 5);
+}
+
+// The content actually wires up: a real metamorphic pet, built through the real factory,
+// fields a wildcard row whose pool is banded exactly as authored. The unit tests above
+// hand-build a pool; this one proves the authored rows produce one.
+void test_metamorphic_content_builds_a_real_pool() {
+    ContentRegistry r = ContentRegistry::embedded();
+
+    // The line owns its own track at hatch, stage-gated like every other line's.
+    MoveLoadout ml = MoveLoadout::startingForLine(r, "metamorphic");
+    CHECK(ml.owns("instruction_swap"));
+    CHECK(ml.owns("signature_drift"));
+
+    const CreatureDef* pet = r.creature("morphopus");        // Script: three slots unlocked
+    CHECK(pet != nullptr);
+    CHECK(pet->line && std::strcmp(pet->line, "metamorphic") == 0);
+    ml.equip(0, "instruction_swap");                       // Attack wildcard: ransomware+trojan
+    ml.equip(1, "signature_drift");                        // Defend wildcard: ransomware+trojan
+    Loadout mods;
+    Combatant c = makePlayerCombatant(r, *pet, ml, mods);
+
+    CHECK(c.polymorphic);                                  // the passive is live
+    CHECK(c.wildPools.size() == c.moves.size());
+    const WildPool& atk = c.wildPools[0];
+    CHECK(!atk.empty());
+    CHECK(atk.genericEnd > 0);                             // the shared roster is in there
+    CHECK(atk.lineAEnd > atk.genericEnd);                  // ...and both named lines
+    CHECK(static_cast<int>(atk.rows.size()) > atk.lineAEnd);
+    // Every row matches the wildcard's own KIND and is legal at this pet's stage, which is
+    // what makes an equipped slot's typing still mean what it says.
+    for (const MoveDef* m : atk.rows) {
+        CHECK(m->kind == MoveDef::Kind::Attack);
+        CHECK(moveUnlockedAtStage(*m, pet->stage));
+        CHECK(!moveIsWildcard(*m));                        // never draws another of its own
+    }
+    // A borrowed Trojan row hands over the Trojan passive; a generic one hands over nothing.
+    const MoveDef* trojanRow = nullptr;
+    for (int i = atk.genericEnd; i < static_cast<int>(atk.rows.size()); ++i)
+        if (atk.rows[i]->line && std::strcmp(atk.rows[i]->line, "trojan") == 0)
+            trojanRow = atk.rows[i];
+    CHECK(trojanRow != nullptr);
+    CHECK(wildBorrowedPassives(atk, trojanRow) != 0);
+    CHECK(wildBorrowedPassives(atk, atk.rows[0]) == 0);
+
+    // The Defend wildcard draws the defend half, which is the thinner one — it must still
+    // have found rows, or the line's whole defensive side would silently be Quick Jab.
+    const WildPool& def = c.wildPools[1];
+    CHECK(!def.empty());
+    for (const MoveDef* m : def.rows) CHECK(m->kind == MoveDef::Kind::Defend);
+
+    // A pet on any OTHER line never runs the passive, however its kit is built.
+    const CreatureDef* other = r.creature("paypup");
+    if (other) {
+        MoveLoadout pl = MoveLoadout::startingForLine(r, other->line);
+        Combatant pc = makePlayerCombatant(r, *other, pl, mods);
+        CHECK(!pc.polymorphic);
+        CHECK(pc.wildPools.empty());                       // and allocates nothing for it
+    }
+}
+
+// The LOCK: an operator spends their one Exploit to stop a wildcard slot rolling and keep
+// what it last threw. The slot becomes ORDINARY — it casts that move and nothing else —
+// and the trade is that a locked slot stops feeding Polymorph, because only unlearned
+// casts pay.
+// The Exploit picker's header must name the bands that are IN the box and no others.
+//
+// It used to be one of three fixed phrases, which cannot describe four bands: a
+// metamorphic pet in a crew showed a CREW row under a header that never mentioned it, and
+// a pet carrying no usable item was promised an ITEM band that was not there. Asserted on
+// the string rather than through a render, because the string IS the contract.
+void test_override_header_names_the_bands_present() {
+    char h[48];
+    const int room = (kActiveW - 8) - 16;          // what the picker box actually gives it
+
+    overridePickerHeader(h, sizeof(h), /*items=*/false, /*lock=*/false, /*crew=*/false, room);
+    CHECK(std::strstr(h, "MOVE") != nullptr);      // a fighter always has moves
+    CHECK(std::strstr(h, "ITEM") == nullptr);      // ...and nothing else is promised
+    CHECK(std::strstr(h, "LOCK") == nullptr);
+    CHECK(std::strstr(h, "CREW") == nullptr);
+
+    overridePickerHeader(h, sizeof(h), true, false, true, room);
+    CHECK(std::strstr(h, "ITEM") && std::strstr(h, "CREW"));
+    CHECK(std::strstr(h, "LOCK") == nullptr);      // no wildcard has rolled: no lock band
+
+    // All four at once — the case the fixed phrasing could not say. Every band survives,
+    // and it is the TITLE that yields to make room rather than any of them.
+    overridePickerHeader(h, sizeof(h), true, true, true, room);
+    for (const char* b : {"MOVE", "ITEM", "LOCK", "CREW"}) CHECK(std::strstr(h, b));
+    CHECK(textWidth(h) <= room);                   // and it fits the box it labels
+
+    // Whenever the titled form does fit, it is the one used — the fallback is a last
+    // resort, not the default.
+    overridePickerHeader(h, sizeof(h), true, true, false, room);
+    CHECK(std::strstr(h, "EXPLOIT") != nullptr);
+    CHECK(textWidth(h) <= room);
+}
+
+void test_wildcard_lock_freezes_a_slot() {
+    static const MoveDef q1{"q1", "Pool One", MoveDef::Kind::Attack, 6, 1, "", Stage::BootSector};
+    static const MoveDef q2{"q2", "Pool Two", MoveDef::Kind::Attack, 7, 1, "", Stage::BootSector};
+    static MoveDef wild{"wl", "Wildcard", MoveDef::Kind::Attack, 0, 1, "", Stage::BootSector};
+    wild.drawLineA = "lineA";
+
+    Combatant pet;
+    pet.name = "Pet";
+    pet.maxHealth = pet.health = 400;
+    pet.speed = 10;
+    pet.powerMultPct = 100;
+    pet.moves = {&wild};
+    pet.chainFollow.assign(1, nullptr);
+    pet.polymorphic = true;
+    pet.wildPools.assign(1, WildPool{});
+    pet.wildPools[0].rows = {&q1, &q2};
+    pet.wildPools[0].genericEnd = 2;
+    pet.wildPools[0].lineAEnd = 2;
+
+    Combatant foe;
+    foe.name = "Foe";
+    foe.maxHealth = foe.health = 400;
+    foe.speed = 10;
+    foe.moves = {&q1};
+
+    Combat c;
+    c.begin(pet, foe, Combat::Stakes::Safe, /*seed=*/999u, /*forceEnemyFirst=*/false,
+            /*carryPlayerHealth=*/-1, /*exploitUses=*/1);
+    CHECK(c.overrideLockCount() == 0);          // nothing has rolled yet: no row to offer
+    while (c.outcome() == Combat::Outcome::Ongoing && c.overrideLockCount() == 0) c.step();
+    CHECK(c.overrideLockCount() == 1);          // the slot fired, so it can be committed
+    const MoveDef* offered = c.overrideLockMove(0);
+    CHECK(offered == &q1 || offered == &q2);
+
+    // Commit it: the picker's LOCK band sits after the moves and items, before the crew.
+    c.openOverride();
+    CHECK(c.overrideMoveCount() == 1);
+    while (c.overridePick() != 1) c.cycleOverride();   // 0 = the move row, 1 = the lock
+    c.commitOverride();
+    CHECK(!c.overrideReady());                  // it cost the one Exploit use
+
+    CHECK(c.player().moves[0] == offered);      // the slot IS that move now
+    CHECK(c.player().wildPools[0].empty());     // ...and has nothing left to draw
+    CHECK(c.overrideLockCount() == 0);          // so it can never be locked twice
+    const int paidBefore = c.player().absorbedCount;
+    for (int i = 0; i < 30 && c.outcome() == Combat::Outcome::Ongoing; ++i) {
+        c.step();
+        if (c.lastByPlayer() && c.lastMoveName())
+            CHECK(std::strcmp(c.lastMoveName(), wild.displayName) != 0);
+    }
+    // A locked slot pays Polymorph nothing further: it has one move and already cast it.
+    CHECK(c.player().absorbedCount == paidBefore);
+}
+
+// EVERY mod must actually reach the fight. Wiring one up takes THREE edits that no
+// compiler ties together — a ModEffect value, the case in makePlayerCombatant that stores
+// or applies it, and a ModRule row without which ModStateSet::apply silently returns —
+// so a mod can ship looking complete, read as 0 at its hook, and cost a slot for nothing.
+// Walked over every row rather than a list, so the next mod is covered by arriving.
+void test_every_mod_reaches_the_fight() {
+    ContentRegistry r = ContentRegistry::embedded();
+    const CreatureDef* pet = r.creature("morphopus");
+    CHECK(pet != nullptr);
+    // The fixture kit carries BOTH kinds and a wildcard row, because several mods are
+    // conditional on what the kit holds rather than unconditional: Air-Gap Ward scales off
+    // the Defend count, Botnet Swarm off the Attack count, and Mutation Engine is inert
+    // without Polymorph running. A single-kind kit reads those as wired nowhere.
+    MoveLoadout ml = MoveLoadout::startingForLine(r, "metamorphic");
+    ml.equip(0, "instruction_swap");            // ATK wildcard — also sets `polymorphic`
+    ml.equip(1, "signature_drift");             // DEF, so the count-based mods register
+    Loadout none;
+    const Combatant base = makePlayerCombatant(r, *pet, ml, none);
+
+    for (const ModDef* m : r.allMods()) {
+        // The two kinds combat never reads: one is paid by the Game after the fight, the
+        // other against the fatigue tax. Both are legitimately invisible here.
+        if (m->effectKind == ModEffect::PostBattleBits ||
+            m->effectKind == ModEffect::FatigueFragCut ||
+            m->effectKind == ModEffect::None)
+            continue;
+        Loadout one;
+        one.setEquipped(0, m->id);
+        const Combatant with = makePlayerCombatant(r, *pet, ml, one);
+        // Either it moved a base stat at build time, or it parked a live magnitude for a
+        // hook to read. A mod that does neither is wired nowhere.
+        const bool movedStat = with.powerMultPct != base.powerMultPct ||
+                               with.dmgReducePct != base.dmgReducePct ||
+                               with.maxHealth != base.maxHealth ||
+                               with.speed != base.speed ||
+                               with.defenseMultPct != base.defenseMultPct;
+        const bool parkedLive = with.mods.find(m->effectKind) != nullptr;
+        if (!movedStat && !parkedLive)
+            std::printf("  MOD %s is wired nowhere\n", m->id);
+        CHECK(movedStat || parkedLive);
+    }
+
+    // ...and the one that just failed this, pinned by name so the regression is legible:
+    // Mutation Engine parks the stat-points-per-effect-kind the turn engine reads.
+    Loadout me;
+    me.setEquipped(0, "mutation_engine");
+    const Combatant c = makePlayerCombatant(r, *pet, ml, me);
+    const ModDef* def = r.mod("mutation_engine");
+    CHECK(def != nullptr);
+    CHECK(c.mods.mag(ModEffect::PolymorphEffectPct) == def->magnitude);
+}
+
+// The grudge curve: Extortion Ledger's power bonus scales with what the pet is holding
+// unsettled, and the scale is a property of the FIGHTER rather than of the mod — so it is
+// assertable without resolving a fight, and the combat screen can draw the number the
+// engine is multiplying by rather than a lookalike.
+void test_ledger_grudge_scales_with_the_pool() {
+    Combatant c;
+    c.stage = Stage::Process;                       // body of kMaxHealthByStage[1]
+    const int body = kMaxHealthByStage[stageIndex(c.stage)];
+
+    CHECK(ledgerGrudgePct(c) == 0);                 // nothing owed, nothing owing
+    c.ransomPool = body / 4;
+    const int quarter = ledgerGrudgePct(c);
+    CHECK(quarter > 0 && quarter < kLedgerGrudgeMaxPct);
+    c.ransomPool = body / 2;
+    CHECK(ledgerGrudgePct(c) > quarter);            // deeper pool, bigger grudge
+    c.ransomPool = body;
+    CHECK(ledgerGrudgePct(c) == kLedgerGrudgeFullPct);   // a pool its own size doubles it
+    c.ransomPool = body * 10;
+    CHECK(ledgerGrudgePct(c) == kLedgerGrudgeMaxPct);    // ...and it stops there
+
+    // Measured against the STAGE's body, not a levelled maxHealth — the same denominator
+    // the Obfuscation siphon uses, so a Health-steered pet never gets worse at its own
+    // line's mechanic for having raised a different stat.
+    Combatant levelled = c;
+    levelled.ransomPool = body / 2;
+    levelled.maxHealth = body * 8;
+    Combatant plain = c;
+    plain.ransomPool = body / 2;
+    plain.maxHealth = body;
+    CHECK(ledgerGrudgePct(levelled) == ledgerGrudgePct(plain));
+
+    // Off the line it is inert: no pool, no grudge, whoever is carrying the mod.
+    Combatant other;
+    other.stage = Stage::Process;
+    CHECK(ledgerGrudgePct(other) == 0);
 }

@@ -129,6 +129,28 @@ constexpr uint32_t kIsolationDotMs = 60u * 1000u;   // -1 min of incubation per 
 // is quick enough to demand attention and slow enough to steer with two buttons.
 constexpr int kIsolationStepMs = 220;
 
+// --- CHROMATOPHORE: the Metamorphic egg's hatch minigame, played once at lay-time
+//     (core/model/chromatophore.h for the rules, game_chroma.cpp for the screen). The
+//     water under the bell takes one of three colours, one button wears each, and a
+//     sweep crosses on a shrinking clock; every pass made in the right skin is
+//     kChromaPassMs off the incubation clock, and being caught in the wrong one — or
+//     mid-change — ends the run with what it already earned.
+//
+//     The economy is one identity, the Isolation Protocol's: kChromaRounds passes at
+//     kChromaPassMs is the WHOLE of kBootHatchMs. So a clean run hatches the egg on the
+//     spot and is worth playing perfectly, while a run that falls over at pass seven has
+//     still bought most of the wait — which is the difference between this and the
+//     all-or-nothing Clutch Pick the line used to borrow.
+constexpr int kChromaRounds = 10;                    // passes in a full run
+constexpr uint32_t kChromaPassMs = 180u * 1000u;     // -3 min of incubation per pass
+// The opening window, and what each later round sheds off it — the difficulty ramp,
+// and the only one the board has. Ten rounds takes 4s down to 1.75s, which the model's
+// own kChromaWindowFloorMs catches on the last rung, so the ramp is felt across the
+// whole run rather than bottoming out halfway. The arcade's dial scales the OPENING
+// (arcadeStepMs) rather than re-cutting the ramp.
+constexpr int kChromaWindowMs = 4000;
+constexpr int kChromaWindowStepMs = 250;
+
 // Idle-screen status icons (canvas). Transient reveals in the living
 //     area, dual-coded by icon shape + position (not colour): the SD-present icon
 //     flashes up for kSdIconRevealMs whenever the card becomes present (boot, or a
@@ -954,10 +976,18 @@ constexpr int kArcadeSpeedPctHard = 65;
 constexpr int kArcadeClutchRoundsEasy = 2;
 constexpr int kArcadeClutchRoundsMedium = 3;
 constexpr int kArcadeClutchRoundsHard = 4;
-// The Isolation run's goal off an egg. The hatch prices it in minutes of incubation
-// (kBootHatchMs / kIsolationDotMs = 30 bytes); the arcade has no clock to price against,
-// so it takes the same number directly and a clean run stays the same length of run.
-constexpr int kArcadeIsolationGoal = 30;
+// The two ENDLESS cabinets' win lines. Neither run has a finish any more — the worm
+// eats until it crashes and the bell wears skins until it is spotted — so these are not
+// goals the game stops at but the score a run is PAID in full for, and the line its win
+// tally is drawn at. A player can and should go past them; the payout simply stops
+// growing (finishArcadeRun clamps), because past this point the reward is the high score
+// itself and the achievements hanging off it.
+//
+// Both are set at the length the run used to be, so "a good run" means the same thing it
+// meant when these boards had endings: the worm's is the 30 bytes that once ate a whole
+// incubation clock, and the bell's is the 10 passes that once hatched an egg.
+constexpr int kArcadeIsolationWinBytes = 30;
+constexpr int kArcadeChromaWinPasses = kChromaRounds;
 
 // Menu navigation ------------------------------------------------
 // One global idle timer governs the whole menu tree: silence collapses every

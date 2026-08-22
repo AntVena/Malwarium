@@ -145,6 +145,15 @@ int g_failures = 0;
     RUN(test_move_loadout)                  \
     /* Combat engine */                     \
     RUN(test_combat_deterministic)          \
+    RUN(test_polymorph_pays_once_per_distinct_move) \
+    RUN(test_wild_pick_weights_its_bands)   \
+    RUN(test_wildcard_slot_casts_the_pool_not_itself) \
+    RUN(test_mutation_engine_counts_effects_not_moves) \
+    RUN(test_metamorphic_content_builds_a_real_pool) \
+    RUN(test_wildcard_lock_freezes_a_slot)  \
+    RUN(test_override_header_names_the_bands_present) \
+    RUN(test_every_mod_reaches_the_fight)   \
+    RUN(test_ledger_grudge_scales_with_the_pool) \
     RUN(test_combat_no_consecutive)         \
     RUN(test_brace_only_defend_is_not_recast) \
     RUN(test_steal_max_health_moves_the_pool) \
@@ -287,6 +296,14 @@ int g_failures = 0;
     RUN(test_wifi_friendly_visit_grants_ally_buff) \
     RUN(test_wifi_auto_plays_out_after_hold)      \
     RUN(test_wifi_discovery_kind)                 \
+    RUN(test_camo_ramp_is_a_value_scale)          \
+    RUN(test_camo_rich_palette_is_mostly_the_real_thing) \
+    RUN(test_camo_level_holds_and_releases)       \
+    RUN(test_camo_zero_is_the_plain_draw)         \
+    RUN(test_camo_flash_composes_over_it)         \
+    RUN(test_camo_holds_through_a_counter_strike) \
+    RUN(test_borrowed_colours_outlive_the_rivals_turn) \
+    RUN(test_camo_only_copies_a_move_the_rival_has) \
     RUN(test_absorb_sweep_endpoints)              \
     RUN(test_absorb_phase_clock)                  \
     RUN(test_combat_outro_kind)                   \
@@ -509,6 +526,7 @@ int g_failures = 0;
     RUN(test_trojan_cross_line_divert)            \
     RUN(test_worm_script_divert_branch)           \
     RUN(test_trojan_combat)                       \
+    RUN(test_mirror_gates_metamorphic_line)       \
     RUN(test_line_select_phishing_egg)            \
     RUN(test_line_select_grayscale)               \
     RUN(test_eggpick_win_halves_incubation)       \
@@ -526,6 +544,8 @@ int g_failures = 0;
     /*Web 'Pedia slice — HackerTag rename + the state JSON builder */ \
     RUN(test_set_hacker_tag_validates)            \
     RUN(test_pedia_state_json_shape)              \
+    RUN(test_pedia_state_publishes_the_pets_learnable_kit) \
+    RUN(test_pedia_state_publishes_the_pets_one_shot_items) \
     RUN(test_pedia_state_json_fresh_hatch_egg)    \
     RUN(test_pedia_state_kitchen_axes)            \
     RUN(test_wild_malbeast_index_mapping)              \
@@ -609,6 +629,35 @@ int g_failures = 0;
     RUN(test_isolation_steps_on_its_own_cadence)  \
     RUN(test_isolation_crash_banks_a_minute_per_byte) \
     RUN(test_isolation_clean_run_hatches_and_unlocks) \
+    /* CHROMATOPHORE: the Metamorphic egg's hatch board — the rules, the screen, the \
+       colour source it is built on, and the egg-locomotion rule its jellyfish egg is \
+       the reason for (test_chroma.cpp). */ \
+    RUN(test_chroma_opens_on_a_change)            \
+    RUN(test_chroma_settled_match_survives_the_sweep) \
+    RUN(test_chroma_caught_midchange_is_spotted)  \
+    RUN(test_chroma_wrong_skin_is_spotted)        \
+    RUN(test_chroma_pressing_the_worn_skin_is_inert) \
+    RUN(test_chroma_window_shrinks_to_a_floor)    \
+    RUN(test_chroma_water_holds_still_unless_switching) \
+    RUN(test_chroma_switching_moves_the_water_mid_window) \
+    RUN(test_chroma_clean_run_takes_every_round)  \
+    RUN(test_chroma_opens_on_a_laid_metamorphic_egg) \
+    RUN(test_chroma_runs_on_real_time_with_the_clock_frozen) \
+    RUN(test_chroma_passes_pay_the_incubation_clock) \
+    RUN(test_chroma_clean_run_buys_the_whole_clock) \
+    RUN(test_chroma_clean_hatch_pops_the_egg_and_unlocks) \
+    RUN(test_chroma_three_buttons_are_three_skins) \
+    RUN(test_chroma_subject_falls_back_to_the_egg) \
+    RUN(test_chroma_grayscale)                    \
+    RUN(test_chroma_egg_drifts_because_its_row_says_so) \
+    RUN(test_camo_ramp_from_a_named_tone_is_a_value_scale) \
+    RUN(test_chroma_endless_run_has_no_finish)    \
+    RUN(test_isolation_endless_run_has_no_finish) \
+    RUN(test_arcade_endless_chroma_records_a_high_score) \
+    RUN(test_arcade_high_score_survives_a_reboot) \
+    RUN(test_arcade_high_score_tail_is_rollback_safe) \
+    RUN(test_new_egg_line_banner_holds_until_a_press) \
+    RUN(test_ordinary_banner_still_retires_on_its_own) \
     RUN(test_rolled_defrag_takes_its_fixed_bite) \
     RUN(test_replication_ghost_is_raised_by_a_failed_defrag_on_a_critical_disk) \
     RUN(test_replication_ghost_never_raised_off_the_worm_line) \

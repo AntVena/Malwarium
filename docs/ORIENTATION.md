@@ -191,10 +191,11 @@ triggers*; the lifetime ramp raises the stakes with age.
 them is played once, the instant the egg is laid. Ransomware plays **Disk Decryption**, a five-colour
 code board where cracking the key halves the incubation clock; Phishing plays the **Clutch Pick**, a
 game of nerve where only the live egg animates among identical decoys; the Worm plays the
-**Isolation Protocol**, which eats the clock a byte at a time. None of them can lose you the pet —
-a bad run costs only the bonus. In the last stretch of any incubation the Exploit chord then cracks
-the shell on demand, so an egg never hatches off-screen. All three are replayable, off their stakes,
-in the GAMES arcade.
+**Isolation Protocol**, which eats the clock a byte at a time; the Metamorphic line plays the
+**CHROMATOPHORE**, where three buttons wear three colours and the egg has to be wearing the water
+when the sweep arrives. None of them can lose you the pet — a bad run costs only the bonus. In the
+last stretch of any incubation the Exploit chord then cracks the shell on demand, so an egg never
+hatches off-screen. Every one of them is replayable, off its stakes, in the GAMES arcade.
 
 Rosters, evolution routing and per-stage flavour are data on `CreatureDef` rows, one folder per
 evolution line under `src/core/content/creatures/` — not a table in a doc.

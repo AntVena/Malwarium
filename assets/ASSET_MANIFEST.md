@@ -374,6 +374,29 @@ on a 12px cell grid, so the whole screen costs zero flash and restyles with the 
 > `worm_egg` scenes (`tools/dump_frame.cpp`, which walks the buffer's Hamiltonian cycle so a frame
 > can show a long coil mid-run rather than the three cells it opens with).
 
+### C.6 CHROMATOPHORE — the Metamorphic egg's hatch minigame
+
+**No art either, and for a stronger reason than C.5: the board is a colour, and a colour is a
+token.** The Metamorphic egg wears one of three skins against the water it is drifting over
+(`src/core/app/game/game_chroma.cpp`; the rules are `src/core/model/chromatophore.h`). The three
+skins are the `camo` block in `PAL_CORE.json`, and every mark on the screen is derived from one of
+them through `camoRampFromTone` (`src/core/render/camo.h`) — so the water, the chip and the
+creature standing in it are provably the same colour, and a retune moves all three together.
+
+| Element | How it is drawn | Why not art |
+|---|---|---|
+| The water | Ramp mid-tone fill + a per-skin texture (weed / grains / bands) in the ramp's own dark and lit tones | The texture IS the grayscale channel — three skins have to stay three with the hue taken away |
+| The creature | `drawSpriteCamo` over the sprite the row already has, at the model's settle | The whole point is that it is the same creature in other colours; a second sheet per skin would be three more sheets per row |
+| The sweep | 2px `ink` bar with a blend-to-ink lead, clipped to the water | It is a position, not a picture |
+| The three chips | Ramp fill, `ink` frame on the worn one, name in the ramp's opposite end | Shape and word carry the state; the fill is the fast channel only |
+
+The one drawable it wanted was its arcade cabinet glyph (`ICON_ARCADE_CHROMA`, §Q), which is drawn.
+
+> Renderable from the catalogue: `./tools/screens.sh` carries `chroma` (hidden in the water),
+> `chroma_half` (mid-repaint), `chroma_spotted`, `chroma_clean` and `meta_egg` — the last being
+> the Polystaria egg back at idle, which is the one egg in the roster that DRIFTS
+> (`Locomotion::Swim`) rather than sitting where it was laid.
+
 ---
 
 ## D. Engine effect passes (FX) — no art required
@@ -389,6 +412,15 @@ Listed so Design **skips** them; they're implemented per `src/core/render/RENDER
 | `FX_CRITICAL_FAIL` | critical-failure crash overlay (composes w/ maxed `FX_CORRUPTION`) | SCREEN_FX | Critical System Failure event | ⊘ |
 | `FX_ABSORB` | a glyph breaking into blocks that stream behind the pet, + the pet's swallow flash | SPRITE_MODS (under) | feeding a food · the Wi-Fi event's network discovery · a beaten rival that fielded a move the pet lacks | ⊘ |
 | `FX_SHRED` | a sprite shearing into sliding, streaking scanlines that fray out where they stood | SPRITE_MODS (under) | a beaten rival that fielded nothing new | ⊘ |
+| `FX_CAMO` | the pet repainted tone-for-tone in the palette worn by the fighter opposite; the change arrives and leaves as a scatter behind a bright burn edge, and holds in between | SPRITE_BASE (in place) | a metamorphic pet whose live cast was rolled out of another line's pool | ⊘ |
+
+> `FX_CAMO` shares the other two's scatter (`core/render/dissolve.h`) so a screen that can
+> play more than one of them never looks like it swapped renderers mid-fight. What it does
+> not share is a clock, or the having of one: the other two are MOMENTS that run out, while
+> this is the pet's COLOUR for as long as it is channelling the borrowed line — it changes
+> when the pet's cast changes and not otherwise. It samples its palette off the opponent
+> rather than from any table, so a line's colours need no entry here and a lineless
+> malbeast still answers with whatever is on it.
 
 > `FX_ABSORB` and `FX_SHRED` are a PAIR, and the combat outro is where the pairing does
 > work: one converges on the pet, the other flies apart, so which one closes a fight says
@@ -673,14 +705,16 @@ Most chrome is reused — only the rows below are new, and most are optional pol
 
 **The GAMES arcade needs one glyph per cabinet** (`ArcadeGameDef::iconName`,
 `content_arcade.cpp`) and nothing else: it draws the menu round a minigame and never the
-game, so every screen inside a cabinet is that game's own. Two of the three cabinets
-reuse a glyph that already names their subject — `ICON_MAINT_DEFRAG` (§K) for the
-Stacker, `ICON_LINE_WORM` for the Isolation Protocol, and `ICON_LINE_RANSOMWARE` for
-Disk Decypher.
+game, so every screen inside a cabinet is that game's own. Most cabinets reuse a glyph
+that already names their subject — `ICON_MAINT_DEFRAG` (§K) for the Stacker,
+`ICON_LINE_WORM` for the Isolation Protocol, `ICON_LINE_RANSOMWARE` for Disk Decypher
+and `ICON_ITEM_DECRYPTOGRAM` for the quote board — and only a cabinet whose subject has
+no glyph anywhere else needs one drawn.
 
 | Asset ID | Element | Logical size | Notes | Status | File |
 |---|---|---|---|---|---|
 | `ICON_ARCADE_CLUTCH` | SPOT THE PHISH cabinet row glyph | 20×20 | fish hook | ☑ | `/assets/icons/ICON_ARCADE_CLUTCH.png` |
+| `ICON_ARCADE_CHROMA` | CHROMATOPHORE cabinet row glyph | 20×20 | one bell parted down the middle — the same creature wearing two skins at once, which is the board's whole idea. At this size one deliberate cut reads where a stripe pattern only reads as damage | ☑ | `/assets/icons/ICON_ARCADE_CHROMA.png` |
 | `UI_HEALTH_BAR` | Combat-Health row | ~208×24 | `UI_GAUGE` variant — transient Health | ☑ | engine-drawn |
 | `UI_OVERRIDE_PIP` | Once-per-battle Exploit-override indicator | 16×16 | ready (bolt) / spent (×) | ☑ | `/assets/icons/ICON_OVERRIDE_PIP{,_SPENT}.png` |
 
@@ -779,7 +813,7 @@ content tables through the firmware's own code (`tools/dump_content.cpp`) plus
 | `web/fixtures/pedia_state.js` | Dev-preview fixture standing in for the live `GET /pedia_state.json` | browser-preview only, not served on-device | ☑ | `/web/fixtures/pedia_state.js` |
 | `web/assets/*` | Site copies of shipped `ICON_*`/`SPR_PET_*`/`PAL_CORE.json` assets | same files as `/assets/` (§A–§R above); duplicated into `/web/assets/` for the site bundle, not new art | ☑ | `/web/assets/` |
 | **Typography** | `FONT_UI` (Pixel Operator Mono) | **font binary still TODO** — the site currently falls back to a system-mono stack; same open item as the on-device `FONT_UI` (`ASSET_MANIFEST §E`) | ☐ | — |
-| **Achievement icons** | Per-achievement glyphs, named on each row's `icon` field (`src/core/content/content_achievements.cpp`) | **One bespoke `ICON_ACH_*` glyph per row, no reuse.** Most are LADDERS, so they are one motif plus a centred tally — five skulls for the boss tiers, five depth arrows, four wifi arcs, three narrowing DEFRAG stacks, three arcade joysticks — countable before anything else, which is what lets a grid of them read in grayscale. The four creature lines are sets rather than ladders, so they use the line's own mark (lock / hook / horse / rearing worm) under a footer: a bar for "raised them all", a chevron for "took one deep". `DEVTOOLS_INTRUDER` is deliberately a question mark over a redaction bar — the 'Pedia draws a row's icon even while the row is masked, so anything representational there would spoil the one achievement whose point is working it out. The three Backup Drive rows are the other exception: a SET, not a ladder, so all three carry the same platter and differ only in its fate — restored and carried up, restored and going back down, or split with the pieces scattered | ☑ | `/assets/icons/ICON_ACH_*.png` |
+| **Achievement icons** | Per-achievement glyphs, named on each row's `icon` field (`src/core/content/content_achievements.cpp`) | **One bespoke `ICON_ACH_*` glyph per row, no reuse.** Most are LADDERS, so they are one motif plus a centred tally — five skulls for the boss tiers, five depth arrows, four wifi arcs, three narrowing DEFRAG stacks, three arcade joysticks — countable before anything else, which is what lets a grid of them read in grayscale. The four creature lines are sets rather than ladders, so they use the line's own mark (lock / hook / horse / rearing worm) under a footer: a bar for "raised them all", a chevron for "took one deep". `DEVTOOLS_INTRUDER` is deliberately a question mark over a redaction bar — the 'Pedia draws a row's icon even while the row is masked, so anything representational there would spoil the one achievement whose point is working it out. The three Backup Drive rows are the other exception: a SET, not a ladder, so all three carry the same platter and differ only in its fate — restored and carried up, restored and going back down, or split with the pieces scattered. The Metamorphic pair are a set of the same kind, both the line's bell: solid and parted for the cabinet it is played on (§Q), hollow for the hatch run that was never spotted, and behind full-width bars for the deep cabinet score | ☑ | `/assets/icons/ICON_ACH_*.png` |
 
 > **Malbeast sprites are `▨` stand-ins, but they are the shipping art** — `make pedia` copies them
 > from `assets/` into `web/assets/` like any other sprite, so the site and the device show the same

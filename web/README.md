@@ -29,6 +29,12 @@ Open `index.html` from disk and it runs on the sample fixture.
    (documented inline in `fixtures/pedia_state.js`). `items` is EVER HELD, not held now —
    the same lifetime tally the cuisine achievements count, so food does not un-reveal
    itself by being eaten.
+   Inside `active_pet`, two fields feed the pet page's own grids: `learnable` is the
+   SCOPE (the move ids this creature's line may ever hold) and `lifetime_items` is the
+   STATE of its one-shots (`"spent"` / `"unspent"`). Learned-vs-locked is NOT repeated
+   there — the page joins `learnable` against the top-level `moves` map, so there is one
+   answer to "does the pet know this" and one place it can be wrong. Both fields are
+   additive: a site running against an older device simply draws no grids.
 3. Handle the two POSTs (both fail gracefully offline):
    - `POST /api/tag` `{"tag":"A-Z0-9_ ≤12"}` — HackerTag rename (the site's one write).
    - `POST /api/achievement/DEVTOOLS_INTRUDER` — the honeytoken callback (§03 arch).

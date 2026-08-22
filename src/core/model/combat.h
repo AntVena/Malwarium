@@ -19,6 +19,7 @@
 
 #include "core/content/content_crews.h"     // CrewExploitKind — the crew Exploit vocabulary
 #include "core/content/content_passives.h"  // kTrojanTrapCap sizes trojanTraps below;
+                                             // kPolymorphAbsorbCap sizes absorbed;
                                              // kRansomHoldTurns sizes the ransom countdown;
                                              // kWormReplicaSlots sizes wormReplicas
 #include "core/content/defs.h"
@@ -120,6 +121,32 @@ struct WormReplica {
     // to the parent or the board afterwards moves it. A copy is a separate thing, and a
     // separate thing does not get stronger because a later one arrived.
     int attack = 0;
+};
+
+// One wildcard slot's draw pool (MoveDef::drawLineA/B), resolved when the Combatant is
+// built so the turn engine never needs a registry.
+//
+// THREE BANDS IN ONE VECTOR rather than three vectors: `rows` holds the generic entries
+// first, then line A's, then line B's, and the two indices below cut it. The roll picks a
+// band by weight and then an index inside it (content_passives.h), so the shape the roll
+// needs is two integers instead of three allocations per slot.
+//
+// Each line's own passive flags ride along, resolved from the same registry read that
+// found its rows — which is what lets a cast GRANT them without Combat ever looking a line
+// id up. A line the build does not know contributes no rows and no flags, and its weight
+// falls back to generic rather than being drawn into an empty band.
+struct WildPool {
+    std::vector<const MoveDef*> rows;
+    int genericEnd = 0;              // rows[0, genericEnd)        — the shared roster
+    int lineAEnd = 0;                // rows[genericEnd, lineAEnd) — line A's track
+                                      // rows[lineAEnd, size)       — line B's track
+    LinePassives passivesA = 0;
+    LinePassives passivesB = 0;
+    // What this slot rolled on its last turn, which is the move the picker's LOCK band
+    // offers to commit to. Null until the slot has actually fired once: an operator locks
+    // something they SAW work, never a pick shown to them ahead of time.
+    const MoveDef* lastRolled = nullptr;
+    bool empty() const { return rows.empty(); }
 };
 
 // A combat participant. moves[0] is always the innate DEFAULT (so a pet is never
@@ -319,6 +346,32 @@ struct Combatant {
     int channelMoveIdx = -1;    // mid-channel move (-1 = not channelling)
     int channelLeft = 0;        // turns until the channel detonates
 
+    // --- Metamorphic: the wildcard pools, and what has been absorbed ----------------
+    // One pool per SLOT (parallel to `moves`, like chainFollow), because each wildcard row
+    // names its own pair of lines — a kit holding two of them is holding two different
+    // pools, and merging them would quietly hand every row the union of what its neighbour
+    // reaches. A slot whose move is not a wildcard leaves an empty pool, which is also what
+    // makes `wildPools` safe to index with any moveIdx.
+    std::vector<WildPool> wildPools;
+
+    // POLYMORPH's memory: the distinct moves this fighter has cast, which is the only
+    // question the passive asks ("is this one new?"). A fixed array rather than a set,
+    // for the reason trojanTraps is one — a fight must not reach the heap — and its cap is
+    // technical: past kPolymorphAbsorbCap a cast simply stops being recorded and stops
+    // paying, which a fight would have to run absurdly long to reach.
+    const MoveDef* absorbed[kPolymorphAbsorbCap] = {};
+    int absorbedCount = 0;
+    // The OTHER axis, and the one Mutation Engine (ModEffect::PolymorphEffectPct) is paid on:
+    // which distinct EFFECT KINDS this fighter has cast, as a bitmask (moveEffectMask).
+    // A mask rather than a list because the vocabulary is fixed and small — the question
+    // is "has a stun happened at all", never which move brought it.
+    uint32_t effectsSeen = 0;
+    // Whether this fighter plays the metamorphic game at all — set when any of its slots
+    // holds a wildcard row. The passive gates on THIS rather than on a line id, the way
+    // Perfect Bite gates on a live bubble: the engine never learns a line's name, and a
+    // pet that has equipped none of the line's rows is not running its passive either.
+    bool polymorphic = false;
+
     // Chained moves (MoveDef::chainNextId). Parallel to `moves`: chainFollow[i] is the
     // step slot i hands off to, or nullptr for an ordinary move. Resolved once when the
     // Combatant is built (resolveChains) so the turn engine never needs a registry.
@@ -419,6 +472,76 @@ int wormDefenderHealth(const Combatant& parent, int pct);
 // exposed so a test can assert the distribution without resolving a fight.
 std::vector<int> wormTargetWeights(const Combatant& c);
 
+// The GRUDGE, 0..kLedgerGrudgeMaxPct: how much Extortion Ledger's power bonus is scaled up
+// by what this pet is currently holding unsettled, as a percentage of that bonus. Measured
+// against the stage's own body, so it says how DEEP the pool is rather than how levelled the
+// pet is. 0 for a fighter carrying no ransom, which is every pet off the line.
+//
+// A total function of the combatant, so a test can assert the curve without resolving a
+// fight and the combat screen can draw the same number the engine is multiplying by.
+int ledgerGrudgePct(const Combatant& c);
+
+// --- Polymorph, the pure half ---------------------------------------------------------
+
+// Has `c` already cast `m` this fight? The whole of what the passive asks, and the reason
+// `absorbed` is a list rather than a counter. Pure, so a test asserts the distinct rule
+// without resolving a fight.
+bool polymorphHasAbsorbed(const Combatant& c, const MoveDef* m);
+
+// Record `m` as cast and pay for it, if it is new to `c` and `c` plays this game at all.
+// Returns true when it actually paid, which is what the combat screen's popup reads.
+//
+// The payout MUTATES the fighter's live stats rather than being derived on read, and that
+// is deliberate: `Combat::begin` captures basePowerMultPct/baseSpeed/baseDmgReducePct, and
+// the stat panel renders live-against-base as a signed delta — so moving the real field is
+// what makes an absorbed stack show up on a screen that already knows how to draw it. A
+// derived bonus would be invisible there without a fourth channel teaching it the same
+// number twice.
+//
+// max-Health is the one that could not be derived even in principle: it is a pool being
+// chipped, and a pool cannot be restated once a hit has already come out of it. Both the
+// ceiling and the Health inside it rise, which is what `MaxHealth` mods already do.
+bool polymorphAbsorb(Combatant& c, const MoveDef* m);
+
+// Pay `points` stat points' worth in `kind`'s currency — Attack buys Power and Speed,
+// Defend buys Defense, brace magnitude and max-Health. The one place Polymorph and its
+// amplifier spend, so a mod that adds to the passive cannot drift from what the passive
+// itself pays.
+void polymorphPay(Combatant& c, MoveKind kind, int points);
+
+// Which distinct EFFECT KINDS `m` carries, as a bitmask — one bit per rider a row can
+// declare, so two different moves that both do nothing but damage share a mask of 0 while
+// one loaded row can set several bits at once.
+//
+// This is the axis Mutation Engine pays on, and it is deliberately not the one Polymorph
+// counts: a kit of plain swings feeds the passive perfectly well and feeds the mod
+// nothing. Derived entirely from fields a row already declares, so no move authoring
+// changes and no table has to be kept in step with the roster.
+//
+// The steal track spends a bit per STAT rather than one for the track, because a siphon
+// that moves Speed and one that moves max-Health are different things happening to the
+// fighter on the other side — which is the reading the mod is named for.
+uint32_t moveEffectMask(const MoveDef& m);
+
+// How many distinct effect kinds `c` has cast this fight — popcount over effectsSeen.
+// Pure, so the mod's magnitude is assertable without resolving a fight.
+int polymorphEffectCount(const Combatant& c);
+
+// Which row a wildcard slot casts this turn: `roll` is the caller's own rng draw, taken
+// once, and the pool's bands are weighted by content_passives.h's kWildSource*Pct. Returns
+// nullptr for an empty pool, which the caller reads as "cast the wildcard row itself".
+//
+// Pure and total, so the whole weighting is assertable against a swept roll rather than
+// only through a resolved fight — and so both devices of a duel, drawing the same number
+// from the same seeded stream, land on the same row.
+const MoveDef* wildPick(const WildPool& pool, uint32_t roll);
+
+// The passives a cast of `m` grants, given the pool of the slot that cast it: line A's
+// flags if `m` belongs to line A, line B's if it belongs to line B, and none otherwise.
+// A string compare against two ids rather than a registry lookup, which is what keeps the
+// grant on the cast path without Combat learning what a registry is.
+LinePassives wildBorrowedPassives(const WildPool& pool, const MoveDef* m);
+
 // Resolve `roll` (any uint32_t — the caller's own rng draw) against wormTargetWeights:
 // returns -1 for the parent, else the index into c.wormReplicas that eats the hit.
 // Pure, so the same roll always names the same victim on both devices of a duel.
@@ -516,6 +639,20 @@ public:
     // whether it contributes a row at all — the render walks the same three bands.
     const CrewExploit& overrideCrew() const { return crewExploit_; }
     int overrideCrewRows() const { return crewExploit_.label ? 1 : 0; }
+    // --- The metamorphic LOCK band -------------------------------------------
+    // Rows for every wildcard slot that has already fired once. Committing one spends the
+    // Exploit use to freeze that slot on the move it last rolled: the slot stops drawing
+    // and becomes an ordinary one for the rest of the fight.
+    //
+    // The band is empty for every fighter that is not running Polymorph, so no other line
+    // ever sees a row here — and it is empty in a DUEL for a different reason that needs
+    // no code: the picker never opens at all (exploitUses is 0, core/model/pvp_battle.h).
+    // Building toward a plan is a thing this line does in the field and not across a link.
+    int overrideLockCount() const;
+    // The player slot the i-th lock row refers to, or -1.
+    int overrideLockSlot(int i) const;
+    // The move that row would commit to (its slot's last roll), or nullptr.
+    const MoveDef* overrideLockMove(int i) const;
     void commitOverride();      // B → force the chosen move / use the item / fire the crew
                                  // Exploit; spends one use either way
     void cancelOverride();      // C → close the picker, no spend
@@ -663,6 +800,10 @@ private:
 // enemy and a duel/arena fighter — because a chain is a property of the MOVE and so
 // belongs to whoever is holding it. Idempotent; safe to call after `moves` is final.
 void resolveChains(const ContentRegistry& reg, Combatant& c);
+
+// Build the wildcard draw pools for every slot of `c` holding a metamorphic row, resolved
+// against `stage` (see the definition). Sets Combatant::polymorphic when any slot does.
+void buildWildPools(const ContentRegistry& reg, Combatant& c, Stage stage);
 
 // Build the player Combatant from live game state (active pet + loadouts + mods).
 Combatant makePlayerCombatant(const ContentRegistry& reg, const CreatureDef& pet,

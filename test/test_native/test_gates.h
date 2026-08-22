@@ -358,7 +358,11 @@ inline void enterArcadeCabinet(Game& g, int row, ArcadeDifficulty difficulty) {
                               g.nav() == Game::Nav::Submenu); ++i)
         tapC(g);
     enterSubmenuId(g, SubmenuId::Games);
-    for (int i = 0; i < row; ++i) g.onButton(press(Button::A));
+    // Walk to the ROW, not `row` presses: the A-cycle skips a locked cabinet
+    // (ArcadeUnlock), so counting presses lands somewhere else entirely once anything
+    // ahead of the target is hidden.
+    for (int i = 0; i < arcadeGameCount() && g.arcadeRow() != row; ++i)
+        g.onButton(press(Button::A));
     g.onButton(press(Button::B));
     while (g.arcadeDifficulty() != difficulty) g.onButton(press(Button::A));
 }

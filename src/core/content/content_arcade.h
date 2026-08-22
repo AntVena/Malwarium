@@ -8,7 +8,8 @@
 //
 // A row is therefore mostly COPY: the name on the cabinet, the line that says what the
 // game is, and what its difficulty dial actually moves (the games don't share a knob —
-// two are paced and one is precision). The two fields that aren't copy are `kind`, which
+// most are paced, one is precision, and two also change a RULE). The two fields that
+// aren't copy are `kind`, which
 // Game::startArcadeRun switches on, and `scoring`, which decides how the bonus half of
 // the payout is worked out.
 //
@@ -26,6 +27,16 @@
 
 namespace mal {
 
+// ENDLESS CABINETS. Two of these games have no ending off a cabinet — the worm eats
+// until it crashes and the bell wears skins until it is spotted. That is a property of
+// the RUN rather than of the row: the same models finish normally at a hatch, and what
+// the cabinet does is start them with no goal (Game::startArcadeRun). What a row still
+// owes such a run is a WIN LINE, which lives in tunables.h beside the other magnitudes
+// (kArcadeIsolationWinBytes, kArcadeChromaWinPasses) — the score a run is paid in full
+// for and counted as a win at, never a wall the board stops at. The score itself is
+// kept per cabinet (Game::arcadeBest, save v55), because on a run with no finish line
+// the number IS the game.
+//
 // Which minigame a cabinet starts. One entry per game; the applier is
 // Game::startArcadeRun (game_arcade.cpp), which is the map of every route into a
 // no-stakes run — never an `if (id == "...")` at a call site.
@@ -35,6 +46,7 @@ enum class ArcadeGameKind : uint8_t {
     Isolation,   // the Worm line's quarantine buffer (core/model/isolation.h)
     Decryption,    // the Ransomware line's code board (core/model/disk_decryption.h)
     Cryptogram,  // the VAULT's quote board (core/model/cryptogram.h)
+    Chroma,      // the Metamorphic line's CHROMATOPHORE (core/model/chromatophore.h)
 };
 
 // What has to be true before a cabinet appears in the GAMES list at all. An ABSENT row,

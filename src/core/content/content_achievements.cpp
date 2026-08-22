@@ -63,6 +63,12 @@ const AchievementDef kAchievements[] = {
     {/*wire=*/4, "WORM_WHISPERER", "Worm Whisperer",
      "Hatch the Worm line through a clean Isolation Protocol.", "ICON_ACH_WORM_WHISPERER",
      AchSeries::Event, /*goal=*/0, nullptr, 0, {bits(150), item("sealed_cache_rare")}},
+    // The same shape one line over: a hatch board played to the end, which on the
+    // CHROMATOPHORE means every pass made in the right skin — and since those passes
+    // price out at the whole incubation clock, the egg hatches out of the run itself.
+    {/*wire=*/97, "NEVER_SEEN", "Never Seen",
+     "Hatch the Metamorphic line without being spotted once.", "ICON_ACH_NEVER_SEEN",
+     AchSeries::Event, /*goal=*/0, nullptr, 0, {bits(150), item("sealed_cache_rare")}},
     // Fires from Unlinkguine's own ClearReplicationGhost effect
     // (Game::applyItemEffects), and only when there was a ghost to cut loose — eating the
     // dish as ordinary food is the common case and unlocks nothing. A ghost is raised by
@@ -87,6 +93,13 @@ const AchievementDef kAchievements[] = {
     {/*wire=*/68, "SECOND_INSTANCE", "Second Instance",
      "Hold two of the same species in the ARCH rack at once. Unlocks the Worm line.",
      "ICON_ACH_SECOND_INSTANCE",
+     AchSeries::Event, /*goal=*/0, nullptr, 0, {bits(200), item("sealed_cache_rare")}},
+    // The mirror match. Both fighters resolve to one species, which is the one thing a
+    // roster of distinct silhouettes is not supposed to be able to show you — so it
+    // earns the line that is ABOUT being indistinguishable from something else.
+    {/*wire=*/94, "HASH_COLLISION", "Hash Collision",
+     "Face a pet of your own species, over the LINK or in the arena. "
+     "Unlocks the Metamorphic line.", "ICON_ACH_HASH_COLLISION",
      AchSeries::Event, /*goal=*/0, nullptr, 0, {bits(200), item("sealed_cache_rare")}},
     {/*wire=*/14, "FIRST_DUEL", "Packet Exchange",
      "Fight another operator's pet over the LINK.", "ICON_ACH_FIRST_DUEL",
@@ -454,6 +467,18 @@ const AchievementDef kAchievements[] = {
     {/*wire=*/81, "STACK_OVERFLOW", "Stack Overflow",
      "Lose a Stacker board on the second row.", "ICON_ACH_STACK_OVERFLOW",
      AchSeries::Event, /*goal=*/0, nullptr, 0, {bits(40)}, /*hidden=*/true},
+    // The two ENDLESS cabinets, which are the only rows on the board that ask HOW FAR
+    // rather than how often. Both goals sit well past the till's win line — passing that
+    // is what the wins ladder already counts, so a high-score row that landed on the
+    // same run would be paying twice for one thing. These are for the run after that.
+    {/*wire=*/95, "DEEP_COVER", "Deep Cover",
+     "Reach {n} passes in one CHROMATOPHORE cabinet run.", "ICON_ACH_DEEP_COVER",
+     AchSeries::ArcadeCabinetBest, /*goal=*/20, "chroma", 0,
+     {bits(150), item("sealed_cache_rare")}},
+    {/*wire=*/96, "BUFFER_GLUTTON", "Buffer Glutton",
+     "Eat {n} bytes in one ISOLATION PROTOCOL cabinet run.", "ICON_ACH_BUFFER_GLUTTON",
+     AchSeries::ArcadeCabinetBest, /*goal=*/60, "isolation", 0,
+     {bits(150), item("sealed_cache_rare")}},
 
     // --- The wallet ---------------------------------------------------------------
     {/*wire=*/6, "BIT_BARON", "Bit Baron",

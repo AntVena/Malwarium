@@ -53,10 +53,16 @@ class Isolation {
 
     // Start a fresh run: a short worm on the middle row heading right, one byte placed,
     // and `goal` bytes to eat for a clean finish. `seed` picks the byte sequence.
+    //
+    // A `goal` of 0 or less is ENDLESS: no byte count finishes the run, so it ends the
+    // two ways it otherwise can — a crash, or a buffer with no room left to put a byte
+    // in, which is still CLEAN because there is genuinely nothing left to eat. That is
+    // the arcade's shape and not the egg's: a hatch is buying a fixed number of minutes
+    // and needs a finish line, a cabinet is a high score and a finish line would cap it.
     void reset(uint32_t seed, int goal) {
         for (int i = 0; i < kIsolationCells; ++i) body_[i] = 0;
         rng_ = seed ? seed : 1u;
-        goal_ = goal < 1 ? 1 : goal;
+        goal_ = goal < 1 ? 0 : goal;
         dots_ = 0;
         grow_ = 0;
         dir_ = 0;            // heading right
@@ -135,7 +141,7 @@ class Isolation {
             // Not removing the tail on this step already grew it by one, so only the
             // REST of the byte's worth is queued.
             grow_ += kIsolationGrowth - 1;
-            if (dots_ >= goal_) { state_ = State::Clean; return; }
+            if (goal_ > 0 && dots_ >= goal_) { state_ = State::Clean; return; }
             if (!placeDot()) state_ = State::Clean;   // no room left = nothing left to eat
         }
     }
@@ -144,7 +150,10 @@ class Isolation {
     bool running() const { return state_ == State::Running; }
     bool clean() const { return state_ == State::Clean; }
     int dots() const { return dots_; }            // bytes swallowed so far
-    int goal() const { return goal_; }            // bytes that would finish it clean
+    // Bytes that would finish it clean, or 0 for an endless run — so a caller printing
+    // "12 / 30" has to ask whether there is a denominator at all.
+    int goal() const { return goal_; }
+    bool endless() const { return goal_ <= 0; }
     int length() const { return len_; }
     int dot() const { return dot_; }              // cell index of the live byte
     int head() const { return ring_[0]; }

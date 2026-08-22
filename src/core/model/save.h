@@ -328,6 +328,13 @@ constexpr int kSaveTextCap = 28;     // matches EventLog's LogEntry.text
 // survivor bitmask, the round, and the verdict a finished run is still showing. A
 // pre-v53 blob has no tail → a zero seed, which reads as "no run", which is the truth
 // for a device whose ladder had no arena on it.
+// v55 appends the arcade's per-cabinet HIGH SCORE — a fourth run parallel to the v47
+// id/plays/wins trio, but written as its own tail at the END of the blob rather than
+// beside them, which is what lets a pre-v55 build read a v55 save and simply not see it.
+// It arrives with the two ENDLESS cabinets (the CHROMATOPHORE and the Isolation buffer):
+// a run with no finish line has a score and nothing else to be proud of, so the number
+// has to survive the run that set it. Pre-v55 → 0 for every cabinet, which is honest —
+// nothing before it was recording a best.
 // v54 renames one ITEM id (`airgap_snack` -> `dyno_nuggets`, see `renamedIds`) — the
 // first rename that is not a creature's, which is why `renameRetiredIds` now sweeps
 // the inventory and the ever-collected set as well. The BYTE LAYOUT is unchanged and
@@ -335,7 +342,7 @@ constexpr int kSaveTextCap = 28;     // matches EventLog's LogEntry.text
 // a `sinceVersion` to retire against. A pre-v54 blob is rewritten as it is read; a
 // v54 blob loaded by a pre-v54 build parses cleanly and simply finds one item id its
 // tables do not answer to, which costs that stack its row until the build catches up.
-constexpr uint16_t kSaveVersion = 54;
+constexpr uint16_t kSaveVersion = 55;
 
 // The oldest blob deserialize will read. Raising it is how a device stops carrying
 // migration weight for saves nobody can still be holding — and it is the ONLY thing
@@ -814,6 +821,13 @@ struct SaveData {
     std::vector<SaveId> arcadeIds;
     std::vector<int32_t> arcadePlays;
     std::vector<int32_t> arcadeWins;
+
+    // --- v55: the arcade's per-cabinet HIGH SCORE ----------------------------
+    // A fourth run parallel to arcadeIds above, written as its own tail at the end of
+    // the blob rather than beside them, so a pre-v55 build still parses a v55 save.
+    // Empty (or short) → 0, which is the truth for a device that has only ever played
+    // cabinets that had no score to keep.
+    std::vector<int32_t> arcadeBest;
 
     // --- v48: the DECRYPTOGRAM board's per-quote state -----------------------
     // Two bits per QuoteDef::wire, low pair first within each byte. Player-level, like

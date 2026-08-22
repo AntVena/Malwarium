@@ -23,11 +23,11 @@ const LootEntry kWildLoot[] = {
 const char* const kModPool[] = {"tpm_chip", "solid_state_cache", "firewall_patch",
                                  "watchdog_timer", "botnet_swarm", "airgap_ward",
                                  "tripwire", "cold_storage",
-                                 // The four soft line-affinity mods, one per line — this
+                                 // The soft line-affinity mods, one per line — this
                                  // pool is where a pet's LINE first starts to pay
                                  // (content_mods.cpp explains why they land together).
                                  "spoof_header", "escrow_buffer", "dropper_payload",
-                                 "fork_spur"};
+                                 "fork_spur", "junk_padding"};
 
 // PIER-TO-PEER — the item storefront: this area's own stock/price per item, same
 // pattern as the mod storefront below.

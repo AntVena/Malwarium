@@ -18,10 +18,12 @@
 // spends 1-bit line art where the other lines spend a signature hue. Its drawn rows
 // come out of tools/gen_worm_art.py, which holds that style as code.
 //
-// Everything up to and including the Script row CRAWLS (Locomotion::Ground) — the
-// line's identity rather than a per-row tuning choice, which is why it is stated the
-// same way three times. Both Daemons then leave the floor, and that is the payoff:
-// the one line whose creatures have never once been off the ground earns it last.
+// Everything that can move at all, up to and including the Script row, CRAWLS
+// (Locomotion::Ground) — the line's identity rather than a per-row tuning choice, which
+// is why it is stated the same way. Both Daemons then leave the floor, and that is the
+// payoff: the one line whose creatures have never once been off the ground earns it
+// last. The egg is Static like every egg that isn't adrift in water: a capsule waiting
+// on a host has not started crawling yet.
 #pragma once
 
 #include "core/content/defs.h"
@@ -30,9 +32,10 @@
 namespace mal {
 
 inline constexpr CreatureDef kWormCreatures[] = {
-    // The egg. Its 8-frame sheet is both the idle loop (frames 0-1) and the hatch
-    // sequence (0-7, walked by Game::hatchCrackFrame as the incubation clock runs
-    // down) — the same shape SPR_PET_EGG_PHISH_HATCH uses. Drawn 1-bit, like the
+    // The egg. Its 8-frame sheet is both the resting loop and the hatch one-shot (0-7,
+    // walked by Game::hatchRevealFrame on the HATCHING modal) — the same shape
+    // SPR_PET_EGG_PHISH_HATCH uses, including that frames 0-2 must all read as sealed,
+    // since idleFrame() blinks to frame 2 while the egg is merely resting. Drawn 1-bit, like the
     // replica glyphs the line fights with: a shell with one worm coiled inside it and
     // one byte in front of the head, which is the Isolation Protocol seen from outside.
     {"vermicell", "Vermicell", Stage::BootSector, "SPR_PET_EGG_WORM_HATCH", "nodeatode",
@@ -40,7 +43,7 @@ inline constexpr CreatureDef kWormCreatures[] = {
      "A soft translucent capsule with one worm coiled inside it, endlessly chasing a single loose byte around the shell wall.",
      "Worm eggs / a payload waiting on a host",
      {MoveKind::Attack, MoveKind::Attack, MoveKind::Attack, MoveKind::Attack},
-     /*evolvesToTrojanId=*/nullptr, /*evolvesToTrojanBadId=*/nullptr, Locomotion::Ground,
+     /*evolvesToTrojanId=*/nullptr, /*evolvesToTrojanBadId=*/nullptr, Locomotion::Static,
      // Declared only to slow the resting breathe below the shared idleFrame()
      // default (sprite.h) — frames 0-1 of the same 8-frame sheet the hatch
      // one-shot walks, at half that heuristic's cadence (holdBeats 1 -> 2).

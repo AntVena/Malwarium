@@ -404,3 +404,76 @@ void test_save_v32_roundtrip() {
     CHECK(deserializeSave(serializeSave(a), out));
     CHECK(out.rigLevelsExt.size() == 2 && out.rigLevelsExt[0] == 5 && out.rigLevelsExt[1] == 9);
 }
+
+// --- The pet page's own two blocks -----------------------------------------
+
+// One `active_pet` field, sliced out so a bare find() over the whole payload cannot
+// match the same id in one of the top-level maps (moves{} and items{} carry every id
+// these two do).
+static std::string activePetBlock(const std::string& json) {
+    const size_t k = json.find("\"active_pet\":{");
+    if (k == std::string::npos) return "";
+    int depth = 0;
+    for (size_t i = k + 13; i < json.size(); ++i) {
+        if (json[i] == '{') ++depth;
+        else if (json[i] == '}' && --depth == 0) return json.substr(k, i - k + 1);
+    }
+    return "";
+}
+
+// The kit SCOPE the pet page draws its grid from: every move this creature's line can
+// ever hold, and nothing else. Ownership is not repeated here — the top-level moves{}
+// map already carries it, and two answers to one question is two things to keep in step.
+void test_pedia_state_publishes_the_pets_learnable_kit() {
+    Game g{StartMode::Hatched, "paypup"};      // Ransomware
+    const std::string pet = activePetBlock(buildPediaStateJson(g));
+    CHECK(!pet.empty());
+    CHECK(pet.find("\"learnable\":[") != std::string::npos);
+
+    // A generic move is in scope for anybody...
+    CHECK(pet.find("\"quick_jab\"") != std::string::npos);
+    // ...its own line's signature is in scope...
+    bool sawOwnLine = false, sawOtherLine = false;
+    for (const MoveDef* mv : g.content().allMoves()) {
+        if (!mv->line) continue;
+        const bool listed =
+            pet.find("\"" + std::string(mv->id) + "\"") != std::string::npos;
+        if (std::strcmp(mv->line, "ransomware") == 0) sawOwnLine |= listed;
+        else sawOtherLine |= listed;
+    }
+    CHECK(sawOwnLine);
+    // ...and another line's never is, which is the whole point of publishing a scope.
+    CHECK(!sawOtherLine);
+}
+
+// The ONE-SHOTS: the per-pet gates a new egg is the only way to clear. Every row that
+// carries such an effect is listed, and its state flips the moment this pet spends it.
+void test_pedia_state_publishes_the_pets_one_shot_items() {
+    Game g{StartMode::Hatched, "paypup"};
+    {
+        const std::string pet = activePetBlock(buildPediaStateJson(g));
+        CHECK(pet.find("\"lifetime_items\":{") != std::string::npos);
+        CHECK(pet.find("\"yubi_cookie\":\"unspent\"") != std::string::npos);
+        CHECK(pet.find("\"restore_point\":\"unspent\"") != std::string::npos);
+        // An ordinary item is not in the block at all — it has nothing to spend.
+        CHECK(pet.find("\"rollback\"") == std::string::npos);
+    }
+
+    // Spend one, the way a player does, and only that one changes.
+    g.model().addCareMistake(1);                 // something for it to shave
+    g.debugUseItem("yubi_cookie");
+    {
+        const std::string pet = activePetBlock(buildPediaStateJson(g));
+        CHECK(pet.find("\"yubi_cookie\":\"spent\"") != std::string::npos);
+        CHECK(pet.find("\"restore_point\":\"unspent\"") != std::string::npos);
+    }
+
+    // Every listed row really does carry a once-per-lifetime effect, so the block can
+    // never quietly grow an item that has nothing to do with this.
+    for (const ItemDef* it : g.content().allItems()) {
+        const bool listed = activePetBlock(buildPediaStateJson(g))
+                                .find("\"" + std::string(it->id) + "\":\"") !=
+                            std::string::npos;
+        if (listed) CHECK(itemIsOncePerPetLifetime(*it));
+    }
+}

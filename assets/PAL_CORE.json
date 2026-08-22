@@ -113,6 +113,28 @@
       "use": "code colour P"
     }
   },
+  "camo": {
+    "_note": "The CHROMATOPHORE board's three skins (core/model/chromatophore.h). Their own block for the reason the decryption five have one: they are a VOCABULARY, meaningless unless the three read as three, and a colourblind theme has to be able to move all of them together. Each is used twice on the screen at once \u2014 as the water the pet is drifting over, and as the palette FX_CAMO repaints the pet in (camoRampFromTone builds a value ladder from the hex here), so a retune moves both halves of the match and can never desynchronise them. LUMINANCE IS THE DUAL-CODING CHANNEL: ~0.20 apart down an even ladder (bloom > silt > kelp), so hidden-vs-caught still reads as three greys with the hues stripped out \u2014 test_chroma_grayscale asserts the spacing.",
+    "camo-kelp": {
+      "hex": "#1a6040",
+      "use": "skin K \u2014 deep weed, the dark end of the ladder"
+    },
+    "camo-silt": {
+      "hex": "#b07a3c",
+      "use": "skin S \u2014 lit seabed, the middle"
+    },
+    "camo-bloom": {
+      "hex": "#e2aecb",
+      "use": "skin B \u2014 an algal bloom, the bright end"
+    }
+  },
+  "notice": {
+    "_note": "A banner that will NOT time out. Every other announcement on the device retires on its own, so the one that waits for the operator has to look different the moment it appears rather than after they have stood there wondering \u2014 that is what this hue is for, and it is why it is not `warn`: an unlock is good news, and an interface where the caution orange also means \"well done\" has spent the one colour it cannot afford to blur. Deeper and less yellow than `warn` (lum ~0.59 against warn's 0.66) so the two are separable even side by side, and dark enough that `paper` reads as text on top of it. Dual-coded regardless: the plate that uses it also says what it is in words and holds until a button clears it.",
+    "notice-hold": {
+      "hex": "#e08a2b",
+      "use": "the plate under a held announcement \u2014 today the NEW EGG LINE banner (game_render.cpp's drawAchievementBanner)"
+    }
+  },
   "themes": {
     "_note": "Alternate colour sets. A theme names ONLY the tokens it changes; everything else falls through to the role groups above, so a token added there can't go silently missing from a variant. Selected at runtime by palThemeIndex() (core/render/palette.h) \u2014 every colour on the device is fetched through palColor(), so a theme restyles the whole interface without any drawing call knowing. Shape of an entry, e.g. a deuteranopia-friendly set that moves the red/green semantic pair onto a blue/orange axis: \"deuteranopia\": { \"calm\": \"#...\", \"hot\": \"#...\", \"team-red\": \"#...\" }. Authoring the hues is a design pass, not a code change."
   }

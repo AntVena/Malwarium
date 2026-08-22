@@ -7,6 +7,7 @@ window.PEDIA_DATA = {
       "ransomware": "Ransomware",
       "phishing": "Phishing",
       "worm": "Worm",
+      "metamorphic": "Metamorphic",
       "trojan": "Trojan"
     },
     "lineIcons": {
@@ -507,6 +508,89 @@ window.PEDIA_DATA = {
       "cellH": 48,
       "sheetW": 224,
       "sheetH": 192
+    },
+    {
+      "id": "polystaria",
+      "name": "Polystaria",
+      "stage": 1,
+      "stageName": "Boot Sector",
+      "line": "metamorphic",
+      "evolvesTo": [
+        "cuttlefork"
+      ],
+      "hint": "A translucent veil folded around something that has not settled on a shape. Maybe what it holds... is potential.",
+      "context": "Metamorphic malware / mutation engines",
+      "sprite": "assets/sprites/SPR_PET_EGG_META_HATCH.png",
+      "cellW": 56,
+      "cellH": 48,
+      "sheetW": 448,
+      "sheetH": 48
+    },
+    {
+      "id": "cuttlefork",
+      "name": "Cuttlefork",
+      "stage": 2,
+      "stageName": "Process",
+      "line": "metamorphic",
+      "evolvesTo": [
+        "morphopus"
+      ],
+      "hint": "A palm-sized cuttlefish running a new colour down its skin every few seconds, forking off a copy of itself for each pattern it likes and losing track of which one it started as.",
+      "context": "Code permutation / process forking",
+      "sprite": "assets/sprites/SPR_PET_CUTTLEFORK.png",
+      "cellW": 56,
+      "cellH": 48,
+      "sheetW": 56,
+      "sheetH": 96
+    },
+    {
+      "id": "morphopus",
+      "name": "Morphopus",
+      "stage": 3,
+      "stageName": "Script",
+      "line": "metamorphic",
+      "evolvesTo": [
+        "syncaelia",
+        "tentaclone"
+      ],
+      "hint": "Eight arms, countless forms. Whatever you were about to do, it has already been something that beats it.",
+      "context": "Mimicry / instruction substitution",
+      "sprite": "assets/sprites/SPR_PET_MORPHOPUS.png",
+      "cellW": 63,
+      "cellH": 48,
+      "sheetW": 63,
+      "sheetH": 96,
+      "branchSplit": true
+    },
+    {
+      "id": "syncaelia",
+      "name": "Syncaelia",
+      "stage": 4,
+      "stageName": "Daemon",
+      "line": "metamorphic",
+      "evolvesTo": [],
+      "hint": "It can hold a very convincing surface-level conversation for a creature that's never bothered to learn what words actually mean. Don't let yourself get pulled in too deep. It can hold a conversationalist too.",
+      "context": "Behavioural mimicry / signature synchronisation",
+      "sprite": "assets/sprites/SPR_PET_SYNCAELIA.png",
+      "cellW": 71,
+      "cellH": 64,
+      "sheetW": 71,
+      "sheetH": 64
+    },
+    {
+      "id": "tentaclone",
+      "name": "Tentaclone",
+      "stage": 4,
+      "stageName": "Daemon",
+      "line": "metamorphic",
+      "evolvesTo": [],
+      "hint": "Eight arms folded into the shape of a person. It holds the pose well at a distance, and not at all once it decides it no longer needs to.",
+      "context": "Malware cloning / entry-point obscuring",
+      "sprite": "assets/sprites/SPR_PET_TENTACLONE.png",
+      "cellW": 64,
+      "cellH": 64,
+      "sheetW": 64,
+      "sheetH": 64
     }
   ],
   "malbeasts": [
@@ -5032,12 +5116,12 @@ window.PEDIA_DATA = {
     {
       "id": "extortion_ledger",
       "name": "Extortion Ledger",
-      "tag": "+POW",
+      "tag": "+DEF",
       "rarity": "EPIC",
       "tier": 5,
       "equipLevel": 58,
-      "effect": "Raises attack power by 30%. Ransomware pets only.",
-      "stats": "POWER +30%",
+      "effect": "Cuts damage 35%; an unpaid ransom adds 90%+ power, more the deeper it runs.",
+      "stats": "DMG CUT 35% / OWED POWER +90%",
       "icon": "assets/icons/ICON_MOD_EXTORTION_LEDGER.png",
       "requiresLine": "ransomware"
     },
@@ -5134,6 +5218,19 @@ window.PEDIA_DATA = {
       "line": "worm"
     },
     {
+      "id": "junk_padding",
+      "name": "Junk Padding",
+      "tag": "+DEF",
+      "rarity": "UNCOMMON",
+      "tier": 2,
+      "equipLevel": 16,
+      "effect": "Padded until nothing matches: cuts damage 9% (13% for Metamorphic).",
+      "stats": "DMG CUT 9% / ON LINE +4",
+      "icon": "assets/icons/ICON_MODS_SLOT.png",
+      "iconFallback": true,
+      "line": "metamorphic"
+    },
+    {
       "id": "bilge_pump",
       "name": "Bilge Pump",
       "tag": "-FRAG",
@@ -5196,10 +5293,23 @@ window.PEDIA_DATA = {
       "rarity": "EPIC",
       "tier": 5,
       "equipLevel": 55,
-      "effect": "Widens the bus every copy travels: 20% more chance to replicate. Worm pets only.",
-      "stats": "REPLICATE +20%",
+      "effect": "Widens the bus every copy travels: each one is worth 350% more. Worm pets only.",
+      "stats": "COPY WORTH +350%",
       "icon": "assets/icons/ICON_MOD_REPLICATION_BUS.png",
       "requiresLine": "worm"
+    },
+    {
+      "id": "mutation_engine",
+      "name": "Mutation Engine",
+      "tag": "MUTATE+",
+      "rarity": "EPIC",
+      "tier": 5,
+      "equipLevel": 57,
+      "effect": "Every different effect you land is worth 6 moves learned. Metamorphic only.",
+      "stats": "PER EFFECT +6",
+      "icon": "assets/icons/ICON_MODS_SLOT.png",
+      "iconFallback": true,
+      "requiresLine": "metamorphic"
     }
   ],
   "modTiers": {
@@ -5293,6 +5403,114 @@ window.PEDIA_DATA = {
       "desc": "Reroutes the next hit to nowhere - gives back 55% of the wait.",
       "stats": "DEF 18 / TEMPO 55%",
       "group": "core",
+      "icon": "assets/icons/ICON_MOVE_SLOT.png"
+    },
+    {
+      "id": "instruction_swap",
+      "name": "Instruction Swap",
+      "kind": "ATK",
+      "power": 0,
+      "turns": 1,
+      "minStage": "Process",
+      "desc": "Swaps in an instruction it saw somewhere else - a random Ransomware or Trojan attack, or one from the common pool.",
+      "stats": "ATK 0",
+      "group": "metamorphic",
+      "icon": "assets/icons/ICON_MOVE_SLOT.png"
+    },
+    {
+      "id": "register_rename",
+      "name": "Register Rename",
+      "kind": "ATK",
+      "power": 0,
+      "turns": 1,
+      "minStage": "Process",
+      "desc": "Same operation, different register - a random Phishing or Worm attack, or one from the common pool.",
+      "stats": "ATK 0",
+      "group": "metamorphic",
+      "icon": "assets/icons/ICON_MOVE_SLOT.png"
+    },
+    {
+      "id": "junk_insertion",
+      "name": "Junk Insertion",
+      "kind": "ATK",
+      "power": 0,
+      "turns": 1,
+      "minStage": "Script",
+      "desc": "Pads itself with something borrowed until nothing matches - a random Ransomware or Worm attack, or one from the common pool.",
+      "stats": "ATK 0",
+      "group": "metamorphic",
+      "icon": "assets/icons/ICON_MOVE_SLOT.png"
+    },
+    {
+      "id": "subroutine_shuffle",
+      "name": "Subroutine Shuffle",
+      "kind": "ATK",
+      "power": 0,
+      "turns": 1,
+      "minStage": "Script",
+      "desc": "Reorders itself mid-run - a random Phishing or Trojan attack, or one from the common pool.",
+      "stats": "ATK 0",
+      "group": "metamorphic",
+      "icon": "assets/icons/ICON_MOVE_SLOT.png"
+    },
+    {
+      "id": "permutation_pass",
+      "name": "Permutation Pass",
+      "kind": "ATK",
+      "power": 0,
+      "turns": 1,
+      "minStage": "Daemon",
+      "desc": "Rewrites every line and means the same thing - a random Ransomware or Phishing attack, or one from the common pool.",
+      "stats": "ATK 0",
+      "group": "metamorphic",
+      "icon": "assets/icons/ICON_MOVE_SLOT.png"
+    },
+    {
+      "id": "entry_point_swap",
+      "name": "Entry-Point Swap",
+      "kind": "ATK",
+      "power": 0,
+      "turns": 1,
+      "minStage": "Daemon",
+      "desc": "Starts somewhere nobody was watching - a random Trojan or Worm attack, or one from the common pool.",
+      "stats": "ATK 0",
+      "group": "metamorphic",
+      "icon": "assets/icons/ICON_MOVE_SLOT.png"
+    },
+    {
+      "id": "signature_drift",
+      "name": "Signature Drift",
+      "kind": "DEF",
+      "power": 0,
+      "turns": 1,
+      "minStage": "Process",
+      "desc": "Drifts out from under its own signature - a random Ransomware or Trojan defence, or one from the common pool.",
+      "stats": "DEF 0",
+      "group": "metamorphic",
+      "icon": "assets/icons/ICON_MOVE_SLOT.png"
+    },
+    {
+      "id": "decoy_rewrite",
+      "name": "Decoy Rewrite",
+      "kind": "DEF",
+      "power": 0,
+      "turns": 1,
+      "minStage": "Script",
+      "desc": "Rewrites the part they are looking at - a random Ransomware or Worm defence, or one from the common pool.",
+      "stats": "DEF 0",
+      "group": "metamorphic",
+      "icon": "assets/icons/ICON_MOVE_SLOT.png"
+    },
+    {
+      "id": "shell_recompile",
+      "name": "Shell Recompile",
+      "kind": "DEF",
+      "power": 0,
+      "turns": 1,
+      "minStage": "Daemon",
+      "desc": "Builds a new shell out of whatever compiled - a random Trojan or Worm defence, or one from the common pool.",
+      "stats": "DEF 0",
+      "group": "metamorphic",
       "icon": "assets/icons/ICON_MOVE_SLOT.png"
     },
     {
@@ -6174,6 +6392,12 @@ window.PEDIA_DATA = {
       "icon": "assets/icons/ICON_ACH_WORM_WHISPERER.png"
     },
     {
+      "key": "NEVER_SEEN",
+      "name": "Never Seen",
+      "trigger": "Hatch the Metamorphic line without being spotted once.",
+      "icon": "assets/icons/ICON_ACH_NEVER_SEEN.png"
+    },
+    {
       "key": "AIR_GAPPED",
       "name": "Unlinked",
       "trigger": "Cure a Replication Ghost with Unlinkguine.",
@@ -6190,6 +6414,12 @@ window.PEDIA_DATA = {
       "name": "Second Instance",
       "trigger": "Hold two of the same species in the ARCH rack at once. Unlocks the Worm line.",
       "icon": "assets/icons/ICON_ACH_SECOND_INSTANCE.png"
+    },
+    {
+      "key": "HASH_COLLISION",
+      "name": "Hash Collision",
+      "trigger": "Face a pet of your own species, over the LINK or in the arena. Unlocks the Metamorphic line.",
+      "icon": "assets/icons/ICON_ACH_HASH_COLLISION.png"
     },
     {
       "key": "FIRST_DUEL",
@@ -6730,6 +6960,20 @@ window.PEDIA_DATA = {
       "trigger": "Lose a Stacker board on the second row.",
       "icon": "assets/icons/ICON_ACH_STACK_OVERFLOW.png",
       "hidden": true
+    },
+    {
+      "key": "DEEP_COVER",
+      "name": "Deep Cover",
+      "trigger": "Reach 20 passes in one CHROMATOPHORE cabinet run.",
+      "icon": "assets/icons/ICON_ACH_DEEP_COVER.png",
+      "goal": 20
+    },
+    {
+      "key": "BUFFER_GLUTTON",
+      "name": "Buffer Glutton",
+      "trigger": "Eat 60 bytes in one ISOLATION PROTOCOL cabinet run.",
+      "icon": "assets/icons/ICON_ACH_BUFFER_GLUTTON.png",
+      "goal": 60
     },
     {
       "key": "BIT_BARON",

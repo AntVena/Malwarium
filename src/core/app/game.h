@@ -37,6 +37,7 @@
 #include "core/model/move_loadout.h"
 #include "core/model/pet_model.h"
 #include "core/model/save.h"
+#include "core/model/chromatophore.h"
 #include "core/model/isolation.h"
 #include "core/model/stacker.h"
 #include "core/model/tournament.h"
@@ -82,7 +83,7 @@ public:
     //   Detail      — L3 (item detail · MAINT action).
     //   Process     — a running MAINT process (non-interruptible).
     //   ModalFeeding / ModalLockout — event overlays.
-    enum class Nav { Idle, Cursor, Submenu, Detail, Process, ModalFeeding, ModalLockout, ModalLineSelect, ModalEggPick, ModalHatchReveal, ModalEvolve, ModalCSF, Combat, ExploreControl, Encounter, Wifi, Shop, ModShop, WarpPicker, RollbackPicker, CacheYield, BulkYield, PostEncounter, Stacker, Isolation, Decryption, Cryptogram, ArcadeResult, Tourney };
+    enum class Nav { Idle, Cursor, Submenu, Detail, Process, ModalFeeding, ModalLockout, ModalLineSelect, ModalEggPick, ModalHatchReveal, ModalEvolve, ModalCSF, Combat, ExploreControl, Encounter, Wifi, Shop, ModShop, WarpPicker, RollbackPicker, CacheYield, BulkYield, PostEncounter, Stacker, Isolation, Chroma, Decryption, Cryptogram, ArcadeResult, Tourney };
 
     // Which L2 screen the ITEMS submenu is showing. Picker (the category tile
     // screen) only ever appears when itemPickerUnlocked(); every other path — no
@@ -180,6 +181,12 @@ public:
     // Has this pet had its permanent regen upgrade? The STAT BUFFS page's own question,
     // and the reason a second Tiramisudo is a top-up rather than a second upgrade.
     bool bandwidthRegenUpgraded() const { return bandwidthRegenBonusMin_ > 0; }
+    // Has THIS pet already spent `d`'s once-per-lifetime effect (defs.h's
+    // itemIsOncePerPetLifetime)? The three gates are separate fields because they guard
+    // different things; this is the one place that answers the question generically, so
+    // a reader — the 'Pedia's pet page — never has to know which flag belongs to which
+    // item. False for any row that has no such effect: nothing to have spent.
+    bool lifetimeItemSpent(const ItemDef& d) const;
     // Player-level Fragmentation-amount tier (b, save v21): shaves the battle-fatigue
     // frag AMOUNT cap (Game::applyBattleFatigue).
     uint8_t fragAmountTier() const { return static_cast<uint8_t>(rigLevel_[kRigRowFragReduce]); }
@@ -907,6 +914,11 @@ public:
     // devices (core/model/pvp_battle.h), so the guest's own pet is the enemy_ row and
     // the combat screen relabels rather than resolving a mirrored fight.
     bool pvpLocalIsHost() const { return pvpHost_; }
+    // The same fact in the combat screen's terms (CombatSides::localIsEnemySide): the
+    // one fight where the local pet is not Combat's player_ slot is a duel this device
+    // guests. Shared by drawCombatScreen and by anything that has to bind a resolved
+    // turn to the LOCAL seat rather than to Combat's own.
+    bool combatLocalIsEnemySide() const { return pvpFighting() && !pvpLocalIsHost(); }
     const char* pvpOpponentTag() const { return pvpPeerTag_; }
     // The finished duel's verdict from the LOCAL operator's point of view. Only
     // meaningful in PvpPhase::Result.
@@ -1193,6 +1205,16 @@ public:
     int arcadeWins(int i) const {
         return (i >= 0 && i < kArcadeMaxCabinets) ? arcadeWins_[i] : 0;
     }
+    // The best score a cabinet has ever been played to. Only meaningful where a run
+    // HAS a score — a win-or-lose cabinet (the Clutch) reports 0 forever, which is why
+    // the cabinet page shows this only when the roster row scores incrementally.
+    int arcadeBest(int i) const {
+        return (i >= 0 && i < kArcadeMaxCabinets) ? arcadeBest_[i] : 0;
+    }
+    // ...by cabinet id, which is what an achievement row keys on (AchSeries::
+    // ArcadeCabinetBest) — the roster is free to reorder, so a wire-stable question has
+    // to be asked by id rather than by index.
+    int arcadeBestById(const char* id) const;
     ArcadeDifficulty arcadeDifficulty() const { return arcadeDifficulty_; }
     // The cabinet list's cursor, as a ROSTER index (content_arcade.h's order) rather
     // than a row position — the two differ whenever a cabinet is locked out of the list.
@@ -1212,6 +1234,22 @@ public:
     // are core/model/isolation.h; the screen and the payout are game_isolation.cpp.
     bool inIsolation() const { return nav_ == Nav::Isolation; }
     const Isolation& isolation() const { return isolation_; }
+
+    // --- CHROMATOPHORE (the Metamorphic line's hatch minigame) -------------
+    // A Polystaria egg rehearses the only defence its line has: the water under it
+    // takes one of kChromaSkins colours, A/B/C wear one skin each, and a sweep crosses
+    // on a shrinking clock. Every pass made in the right skin — and settled, since a
+    // repaint takes kChromaSettleMs — is kChromaPassMs off the incubation clock; being
+    // caught in the wrong one ends the run with what it already earned. The rules are
+    // core/model/chromatophore.h; the screen and the payout are game_chroma.cpp.
+    bool inChroma() const { return nav_ == Nav::Chroma; }
+    const Chromatophore& chroma() const { return chroma_; }
+    // Who the board is actually painting. The pet if its family wears borrowed colours
+    // (CreatureLine::wearsBorrowedColours) — which is every route in from a hatch,
+    // since the egg on the shelf IS that pet — and otherwise the Metamorphic egg, so
+    // an arcade cabinet played by a Ransomware pet still has a plausible subject
+    // rehearsing on it. nullptr only if the roster somehow holds neither.
+    const CreatureDef* chromaSubject() const;
 
     int cursor() const { return cursor_; }      // focused carousel slot 0..7
     UiMode uiMode() const { return uiMode_; }
@@ -1323,6 +1361,10 @@ public:
     // home-screen banner (achBanner below) — the only way an unlock reaches the player,
     // since the device has no achievement browser.
     void unlockAchievement(const char* id);
+    // The MIRROR: the pet facing its own species. Called from every seam that can seat a
+    // real species opposite the player — the LINK duel and the arena — so the rule for
+    // what counts as a mirror lives in one place rather than once per screen.
+    void noteMirrorMatch(const char* opponentCreatureId);
     bool hasAchievement(const char* id) const;
     bool hasAchievement(const AchievementDef& d) const { return achBit(achEarned_, d.wire); }
     // The player's live progress toward `d` (the numerator of its ladder). Paired with
@@ -1337,6 +1379,20 @@ public:
     // a burst too long to parade one at a time (a firmware update that retro-awards a
     // whole back catalogue), collapsed into one "N ACHIEVEMENTS" banner.
     int achBannerCount() const { return achBannerCount_; }
+    // The egg line `d` UNLOCKS, or nullptr for a row that unlocks none. Content-derived
+    // rather than a flag on the achievement: an egg line already names the achievement
+    // that earns it (EggLineDef::gatedBy), so asking the roster the question backwards
+    // means a line added later gets the treatment below for free and no row can be
+    // marked wrong. The one caller that matters is the banner: an unlock that has put a
+    // NEW KIND OF EGG in the hatch menu is the only announcement on the device with
+    // something for the player to go and DO, so it is the only one that waits for them.
+    const EggLineDef* achEggLineUnlocked(const AchievementDef& d) const;
+    // Is the banner on screen one of those, i.e. holding until a button clears it? A
+    // timed banner retires itself on the heartbeat; this one cannot, so input has to.
+    bool achBannerHeld() const;
+    // Clear a held banner (marking it announced). Any button does this on the home
+    // screen, and the press is spent doing it.
+    void dismissAchievementBanner();
     // Earned-but-not-yet-announced rows still waiting. Tests read it; so does the burst
     // check that decides between a named banner and a summary.
     int achPendingNotify() const;
@@ -2295,6 +2351,15 @@ private:
     void finishIsolation();              // spend the bytes on the clock and leave
     void drawIsolation(Framebuffer& fb) const;
 
+    // CHROMATOPHORE lifecycle (game_chroma.cpp) — see inChroma() above. `windowMs` is
+    // the opening window before the sweep arrives (the pace dial, scaled by the arcade)
+    // and `switching` lets a round change the water mid-window, which only the hardest
+    // cabinet setting turns on.
+    void startChroma(int rounds, int windowMs, bool switching);
+    void onChroma(const ButtonEvent& ev);
+    void finishChroma();                 // spend the passes on the clock and leave
+    void drawChroma(Framebuffer& fb) const;
+
     // Evolution boundary lifecycle (stub).
     bool evolveEligible() const;   // time-in-stage + care gate + a defined successor
     bool evolveRevealed() const;   // cinematic past hold+flash -> the reveal (B active)
@@ -2614,6 +2679,12 @@ private:
     int combatAnimBeat_ = 0;
     uint32_t lastCombatAnimMs_ = 0;
     int combatHitBeat_ = 0;
+    // How much of another line's colours the pet is wearing (FX_CAMO): a LEVEL, not a
+    // beat. Eased once per anim tick toward whether the pet's live cast is borrowed
+    // (camoAdvance / wearingBorrowedColours), so it holds while the pet holds the move
+    // and no other cue on the combat screen can move it. Zeroed on leaving the fight,
+    // which is the one place a disguise stops meaning anything.
+    uint8_t combatCamoLevel_ = 0;
     // Which page of the mid-combat panel is showing: 0 closed, else 1..kCombatStatPages
     // (combat_screen.h). B CYCLES it — the panel grew a second page when opponents
     // started arriving with real loadouts, and a second key to reach it would have had
@@ -3248,6 +3319,10 @@ private:
     int arcadeBits_ = 0;              // what the run actually paid
     int arcadePlays_[kArcadeMaxCabinets] = {0};
     int arcadeWins_[kArcadeMaxCabinets] = {0};
+    int arcadeBest_[kArcadeMaxCabinets] = {0};   // high score per cabinet (save v55)
+    // Did the run just finished SET that best? Runtime-only and about one screen: the
+    // payout says NEW BEST instead of quoting a number the player already had.
+    bool arcadeNewBest_ = false;
 
     // Clutch Pick modal (the Phishing hatch minigame, game_eggpick.cpp). Runtime-only
     // and deliberately un-persisted: the whole game is played in the seconds after the
@@ -3274,6 +3349,15 @@ private:
     Isolation isolation_;
     uint32_t lastIsolationStepMs_ = 0;
     int isolationBanked_ = 0;        // bytes already spent on the clock, so B can't double-pay
+
+    // CHROMATOPHORE (the Metamorphic hatch minigame, game_chroma.cpp). Un-persisted for
+    // the reason the two above are: the whole run is over in half a minute after the
+    // egg is laid, so a reboot mid-run forfeits the bonus and leaves a normal egg
+    // incubating. Its clock is real-ms and DELTAS rather than a step cadence — the
+    // board is a stopwatch, not a board that steps.
+    Chromatophore chroma_;
+    uint32_t lastChromaMs_ = 0;
+    int chromaBanked_ = 0;           // passes already spent on the clock, so B can't double-pay
 
     // Hatch reveal cinematic. Counts heartbeats since the chord cracked the egg, which
     // maps straight onto the shell's hatch frames; completeHatch fires off the end.

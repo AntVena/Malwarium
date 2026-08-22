@@ -239,6 +239,7 @@ SaveData Game::captureSave() const {
         d.arcadeIds.push_back(id);
         d.arcadePlays.push_back(arcadePlays_[i]);
         d.arcadeWins.push_back(arcadeWins_[i]);
+        d.arcadeBest.push_back(arcadeBest_[i]);
     }
     // v48: the DECRYPTOGRAM per-quote states, at their full in-memory width — a pool
     // that grows into spare capacity needs no save change at all.
@@ -631,12 +632,19 @@ void Game::applySave(const SaveData& d) {
                         : TourneyPhase::Ready;
     // v47: the arcade tallies, resolved back through the roster — a row naming a
     // cabinet this build no longer has simply doesn't land anywhere.
-    for (int i = 0; i < kArcadeMaxCabinets; ++i) { arcadePlays_[i] = 0; arcadeWins_[i] = 0; }
+    for (int i = 0; i < kArcadeMaxCabinets; ++i) {
+        arcadePlays_[i] = 0;
+        arcadeWins_[i] = 0;
+        arcadeBest_[i] = 0;
+    }
     for (size_t i = 0; i < d.arcadeIds.size(); ++i) {
         const int row = arcadeGameIndexById(d.arcadeIds[i].id);
         if (row < 0 || row >= kArcadeMaxCabinets) continue;
         arcadePlays_[row] = i < d.arcadePlays.size() ? d.arcadePlays[i] : 0;
         arcadeWins_[row] = i < d.arcadeWins.size() ? d.arcadeWins[i] : 0;
+        // Short (a pre-v55 blob, or one written by a build with fewer cabinets) reads 0
+        // rather than falling off the end: a device that never recorded a best has none.
+        arcadeBest_[row] = i < d.arcadeBest.size() ? d.arcadeBest[i] : 0;
     }
     // v48: the per-quote board states. Copy what overlaps and leave the rest zero, the
     // way the achievement bitsets do — which is what makes the length prefix worth

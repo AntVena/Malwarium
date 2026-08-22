@@ -17,6 +17,7 @@
 // See CREATURE_CONTENT_STANDARD.md for the folder shape and how to add a family.
 #pragma once
 
+#include "core/content/creatures/metamorphic/line.h"
 #include "core/content/creatures/phishing/line.h"
 #include "core/content/creatures/ransomware/line.h"
 #include "core/content/creatures/trojan/line.h"
@@ -35,6 +36,15 @@ inline constexpr CreatureLine kCreatureLines[] = {
     {"trojan", kTrojanCreatures, kTrojanCreatureCount,
      linePassives(LinePassive::ExecOverride), ach::kTrojanUnleashed},
     {"worm", kWormCreatures, kWormCreatureCount, linePassives(LinePassive::Replication)},
+    // No passive FLAG: Polymorph gates on combat state the line's own rows populate (a
+    // slot holding a wildcard row), the way Perfect Bite gates on a live bubble rather
+    // than on an id. The turn engine never learns this line's name.
+    //
+    // It is the one family that WEARS BORROWED COLOURS, which is the same sentence its
+    // wildcard slots are — declared here because a screen outside combat has no cast to
+    // read it off (CreatureLine::wearsBorrowedColours).
+    {"metamorphic", kMetamorphicCreatures, kMetamorphicCreatureCount,
+     /*passives=*/0, /*raisedAchievement=*/nullptr, /*wearsBorrowedColours=*/true},
 };
 inline constexpr int kCreatureLineCount =
     sizeof(kCreatureLines) / sizeof(kCreatureLines[0]);

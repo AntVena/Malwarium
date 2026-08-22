@@ -342,6 +342,20 @@ SpecRows specRows(const ModDef& d) {
         case ModEffect::ReplicaSpawnPct:
             s.add("REPLICATE", "%+d%%", d.magnitude);
             break;
+        // Two-magnitude rows name BOTH halves, the way LowHealthPowerPct does: what the
+        // mod does standing, and what the line's own mechanic turns that into.
+        case ModEffect::ExtortionLedger:
+            s.add("DMG CUT", "%d%%", d.magnitude);
+            s.add("OWED POWER", "%+d%%", d.magnitude2);
+            break;
+        case ModEffect::ReplicaWorthPct:
+            s.add("COPY WORTH", "%+d%%", d.magnitude);
+            break;
+        case ModEffect::PolymorphEffectPct:
+            // Not a percentage — it is stat POINTS paid per effect kind, so the value is
+            // written as the count it is rather than borrowing a %% that would read as one.
+            s.add("PER EFFECT", "%+d", d.magnitude);
+            break;
     }
     // The Speed mod's secondary knob is a COST, not a second effect — every other
     // magnitude2 user spells its own pair out above.

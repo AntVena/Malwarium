@@ -509,6 +509,13 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     w.u8(d.tourneyAlive);
     w.u8(d.tourneyRound);
     w.u8(d.tourneyPhase);
+
+    // v55: the arcade's per-cabinet high score, in the same order as the v47 arcadeIds
+    // run above. Its own tail rather than a fourth column up there, so a pre-v55 build
+    // reading this blob still finds the trio where it expects them and simply stops
+    // before this.
+    w.u16(static_cast<uint16_t>(d.arcadeBest.size()));
+    for (int32_t v : d.arcadeBest) w.i32(v);
 }
 
 std::vector<uint8_t> serializeSave(const SaveData& d) {
@@ -1052,6 +1059,15 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
         d.tourneyAlive = r.u8();
         d.tourneyRound = r.u8();
         d.tourneyPhase = r.u8();
+    }
+
+    // v55 tail: the per-cabinet high score, positionally matched to the v47 arcadeIds
+    // run. Absent in a v1..v54 blob → empty, and every cabinet reads as never scored.
+    // There is nothing older to seed it from: a win tally says a run was good enough,
+    // never how good, so inventing a best out of one would be a number nobody played.
+    if (version >= 55) {
+        const uint16_t nBest = r.u16();
+        for (uint16_t i = 0; i < nBest && r.ok; ++i) d.arcadeBest.push_back(r.i32());
     }
 
     if (!r.ok) { out = SaveData{}; return false; }  // truncated -> empty

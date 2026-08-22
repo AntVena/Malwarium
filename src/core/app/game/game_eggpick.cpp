@@ -12,7 +12,7 @@
 
 // game_eggpick.cpp — the Clutch Pick, the Phishing line's hatch minigame.
 //
-// A Phishing egg is laid into a raft of identical decoys (BG_EGG_CLUTCH), one of which
+// A Phishing or Metamorphic egg is laid into a raft of identical decoys (BG_EGG_CLUTCH), one of which
 // is quietly swapped for the live egg (SPR_EGG_PHISH_MICRO). Every decoy is baked into
 // the backdrop and dead still; only the live tile animates, so MOTION is the only tell
 // and the puzzle reads with the colour stripped out.

@@ -1,0 +1,97 @@
+// The Metamorphic family — the line that has not decided what it is.
+//
+// Every other family converges on a plan: Ransomware toward a wall or a bill, Phishing
+// toward a bubble it spends, Trojan toward a hijack, Worm toward a board. This one
+// refuses to, and its whole design follows from that refusal — its slots roll out of a
+// pool far wider than a kit, so it fields whatever comes to hand, and it pays for having
+// no plan by acting more often than anything it faces. The identity mechanic, the
+// Polymorph passive and the picker LOCK that lets an operator mutate toward a strategy
+// are specified in ../../LINE_MOVE_IDENTITIES.md.
+//
+// Registered in creature_lines.h with NO passive flag: Polymorph gates on combat state
+// this line's own rows populate — a slot holding a wildcard move — the way Perfect Bite
+// gates on a live bubble rather than on an id, so the turn engine never learns the name.
+//
+// The roster's two-mod invariant is met the way every line meets it (test_combat.cpp walks
+// kCreatureLines to enforce it): Junk Padding is the soft affinity in the Bayou band, and
+// Mutation Engine is the hard-gated amplifier at the bottom of the dive. The amplifier
+// pays on a DIFFERENT axis than the passive beside it — distinct effect KINDS landed
+// rather than distinct moves cast — so a run of plain swings ramps the pet and pays the
+// mod nothing.
+//
+// Slot typing runs Attack/Defend alternating rather than leaning one way. The line has to
+// be able to field a metamorphic row of EITHER kind — a wild Attack row and a wild Defend
+// row draw from different pools and are the line's two halves — so a kit that could only
+// hold one of them would only ever play half of it. The Daemon branch then splits slot 3
+// the way every branch does: Good takes the Defend, Bad takes the Attack.
+#pragma once
+
+#include "core/content/defs.h"
+#include "tunables.h"
+
+namespace mal {
+
+inline constexpr CreatureDef kMetamorphicCreatures[] = {
+    // The egg. Deepstaria is the jellyfish that reads as a loose bag turning itself inside
+    // out, which is the line's thesis before it has a body to state it with; POLY- is the
+    // tech half, off polymorphic code rather than off any one shape.
+    //
+    // The 8-frame sheet is both the resting loop and the hatch one-shot, the shape both
+    // other eggs use. Frames 0-2 all read as sealed because idleFrame() breathes between
+    // 0 and 1 and blinks to 2 while the egg is only sitting there; the collapse runs 3-7,
+    // where Game::hatchRevealFrame's one-shot is the only thing that reaches it. It sags
+    // and splays rather than cracking, because a bell has no shell to break.
+    //
+    {"polystaria", "Polystaria", Stage::BootSector, "SPR_PET_EGG_META_HATCH", "cuttlefork",
+     nullptr, nullptr, 100, 100, "metamorphic",
+     "A translucent veil folded around something that has not settled on a shape. Maybe what it holds... is potential.",
+     "Metamorphic malware / mutation engines",
+     {MoveKind::Attack, MoveKind::Defend, MoveKind::Attack, MoveKind::Defend},
+     /*evolvesToTrojanId=*/nullptr, /*evolvesToTrojanBadId=*/nullptr, Locomotion::Swim},
+
+    {"cuttlefork", "Cuttlefork", Stage::Process, "SPR_PET_CUTTLEFORK", "morphopus",
+     nullptr, nullptr, 100, 100, "metamorphic",
+     "A palm-sized cuttlefish running a new colour down its skin every few seconds, forking off a copy of itself for each pattern it likes and losing track of which one it started as.",
+     "Code permutation / process forking",
+     {MoveKind::Attack, MoveKind::Defend, MoveKind::Attack, MoveKind::Defend},
+     /*evolvesToTrojanId=*/nullptr, /*evolvesToTrojanBadId=*/nullptr, Locomotion::Swim,
+     // Two sculpts, one creature: the line's whole argument is that it does not hold a
+     // shape, so the shape is what changes between contexts rather than a pose over one
+     // drawing. Row 0 is gathered and upright and takes every settled moment — rest, and
+     // combat, which reaches it through fightPose()'s fall-through. Row 1 is stretched
+     // low and wide and plays only while the wander is actually travelling, so the
+     // creature is drawn mid-drift exactly when it is drifting. Both rows are one column
+     // for now; growing them is a wider sheet and a frame count, never a code change.
+     /*clips=*/{{"idle", /*row=*/0, /*frames=*/1},
+                {"walk", /*row=*/1, /*frames=*/1}}},
+    
+    {"morphopus", "Morphopus", Stage::Script, "SPR_PET_MORPHOPUS", nullptr,
+     /*good=*/"syncaelia", /*bad=*/"tentaclone", 100, 100, "metamorphic",
+     "Eight arms, countless forms. Whatever you were about to do, it has already been something that beats it.",
+     "Mimicry / instruction substitution",
+     {MoveKind::Attack, MoveKind::Defend, MoveKind::Attack, MoveKind::Defend},
+     /*evolvesToTrojanId=*/nullptr, /*evolvesToTrojanBadId=*/nullptr, Locomotion::Swim,
+     /*clips=*/{{"idle", /*row=*/0, /*frames=*/1},
+                {"walk", /*row=*/1, /*frames=*/1}}},
+    
+    // Its sheet is 71x64, which is ONE oversized frame rather than a 56x48 cell: gen_assets
+    // cuts a SPR_PET_ sheet into 56px frames only when the width divides by 56, so a width
+    // that does not is the larger Daemon box (up to 128x64). This may need addressing to allow animation to work. 
+    {"syncaelia", "Syncaelia", Stage::Daemon, "SPR_PET_SYNCAELIA",
+     nullptr, nullptr, nullptr, kBranchGoodPowerPct, kBranchGoodFragPct, "metamorphic",
+     "It can hold a very convincing surface-level conversation for a creature that's never bothered to learn what words actually mean. Don't let yourself get pulled in too deep. It can hold a conversationalist too.",
+     "Behavioural mimicry / signature synchronisation",
+     {MoveKind::Attack, MoveKind::Defend, MoveKind::Attack, MoveKind::Defend},
+     /*evolvesToTrojanId=*/nullptr, /*evolvesToTrojanBadId=*/nullptr, Locomotion::Swim},
+    
+    {"tentaclone", "Tentaclone", Stage::Daemon, "SPR_PET_TENTACLONE",
+     nullptr, nullptr, nullptr, kBranchBadPowerPct, kBranchBadFragPct, "metamorphic",
+     "Eight arms folded into the shape of a person. It holds the pose well at a distance, and not at all once it decides it no longer needs to.",
+     "Malware cloning / entry-point obscuring",
+     {MoveKind::Attack, MoveKind::Defend, MoveKind::Attack, MoveKind::Attack},
+     /*evolvesToTrojanId=*/nullptr, /*evolvesToTrojanBadId=*/nullptr, Locomotion::Swim},
+};
+inline constexpr int kMetamorphicCreatureCount =
+    sizeof(kMetamorphicCreatures) / sizeof(kMetamorphicCreatures[0]);
+
+}  // namespace mal

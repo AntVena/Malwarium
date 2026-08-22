@@ -35,6 +35,16 @@ int sumEquippedModMagnitude(const ContentRegistry& reg, const Loadout& load,
 
 // MOVES + the combat activity ---------------------------
 
+// The rule for what a MIRROR is, in the one place both seams can reach it. Compared by
+// species id rather than by anything the fight computed: two pets of one species are the
+// mirror whatever their levels, kits or branches did, and that is what the operator sees.
+// Cheap and idempotent, so a caller fires it on every bout without guarding.
+void Game::noteMirrorMatch(const char* opponentCreatureId) {
+    if (!opponentCreatureId || !pet_ || !pet_->id) return;
+    if (std::strcmp(pet_->id, opponentCreatureId) == 0)
+        unlockAchievement(ach::kHashCollision);
+}
+
 void Game::onTrainList(const ButtonEvent& ev) {
     // The MOVES slot list. A steps the unlocked slots (skipping the locked ones), B
     // opens the focused slot's move picker, C backs to the LOADOUT hub. An egg has no
@@ -318,6 +328,10 @@ void Game::advanceCombatTurn() {
     combat_.step();
     combatTurnBeat_ = 0;
     combatHitBeat_ = 0;   // restart the impact-punch decay for drawCombat
+    // FX_CAMO deliberately takes nothing from here. The colours the pet is wearing are a
+    // reading of its LIVE cast, eased every anim tick (tick(), camoAdvance) — so this
+    // step changes them only by changing what the pet is holding, and the rival's turn
+    // does not touch them at all.
 }
 
 int Game::xpToNextLevel() const {

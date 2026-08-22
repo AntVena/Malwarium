@@ -102,6 +102,8 @@
         '<div class="ctx">hatch an egg, then refresh</div></div></div>';
     }
 
+    h += vKit(pet);
+
     h += '<h2 class="sect">// DECRYPTION PROGRESS</h2>';
     h += '<div class="card"><div class="body"><div class="bar">' +
       '<div class="rail"><div class="fill" style="width:' + Math.round(100 * rc.n / rc.total) + '%"></div></div>' +
@@ -122,6 +124,126 @@
         '<span style="color:var(--ink-dim)">\u25b8</span></a>';
     });
     return h;
+  }
+
+  /* The pet's own two grids: what it has LEARNED, and what it has SPENT.
+     Both are per-pet facts the catalogue cannot answer on its own, so both are read
+     off active_pet (pedia_state.cpp) rather than derived here — `learnable` is the
+     scope this creature's line allows, and the learned/locked state comes from the
+     same moves{} map the MOVES section reads, so the two pages can never disagree.
+     A cell opens its detail in place; nothing routes, so the page does not jump. */
+  /* `lit` is the cell's state; `hide` is whether an unlit one is also a SECRET. A move
+     the pet has not learned is masked, because the 'Pedia only ever reveals what the
+     device has met. A one-shot it has already spent is not — the player knows exactly
+     what they used, and masking it would turn a record into a riddle. */
+  function kitCell(kind, id, icon, name, lit, sub, hide) {
+    var masked = !lit && hide;
+    /* The visible label is a truncated, sometimes masked word and the icon is alt="",
+       so the button would otherwise announce as nothing at all. The aria-label carries
+       what the cell means — name (or that it is encrypted) plus its state. */
+    var label = (masked ? 'encrypted ' + kind : name) + ', ' + (sub || (lit ? 'known' : 'locked'));
+    return '<button class="kitcell' + (lit ? '' : ' locked') + '" type="button"' +
+      ' aria-label="' + esc(label) + '"' +
+      ' data-kit="' + kind + '" data-id="' + esc(id) + '">' +
+      '<img class="icon20' + (lit ? '' : ' dim') + '" src="' + icon + '" alt="">' +
+      '<span class="nm' + (masked ? ' masked' : '') + '">' +
+      (masked ? mask(name) : esc(name.toUpperCase())) + '</span>' +
+      (sub ? '<span class="st">' + sub + '</span>' : '') +
+      '</button>';
+  }
+
+  function vKit(pet) {
+    var h = '';
+    var learnable = (pet && pet.learnable) || [];
+    if (learnable.length) {
+      var kit = learnable.map(function (id) {
+        return D.moves.find(function (m) { return m.id === id; });
+      }).filter(Boolean);
+      var known = kit.filter(function (m) { return st('moves', m.id) === 'owned'; });
+      h += '<h2 class="sect">// LEARNED MOVES<span class="count">' +
+        known.length + '/' + kit.length + '</span></h2>';
+      h += '<div class="kitgrid">' + kit.map(function (m) {
+        var owned = st('moves', m.id) === 'owned';
+        return kitCell('move', m.id, m.icon, m.name, owned, owned ? m.kind : '\u26bf',
+          /*hide=*/true);
+      }).join('') + '</div>';
+      h += '<div class="kitdetail" id="kit-move-detail" hidden></div>';
+    }
+
+    var one = (pet && pet.lifetime_items) || {};
+    var oneIds = Object.keys(one);
+    if (oneIds.length) {
+      var left = oneIds.filter(function (id) { return one[id] !== 'spent'; }).length;
+      h += '<h2 class="sect">// ONE-TIME ITEMS<span class="count">' +
+        left + '/' + oneIds.length + ' LEFT</span></h2>';
+      h += '<div class="kitgrid">' + oneIds.map(function (id) {
+        var it = D.items.find(function (x) { return x.id === id; });
+        if (!it) return '';
+        var unspent = one[id] !== 'spent';
+        return kitCell('item', id, it.icon, it.name, unspent,
+          unspent ? 'UNSPENT' : 'SPENT', /*hide=*/false);
+      }).join('') + '</div>';
+      h += '<div class="kitdetail" id="kit-item-detail" hidden></div>';
+    }
+    return h;
+  }
+
+  /* Open one cell's detail under its own grid. Local DOM, not a route: the grids sit
+     halfway down the landing page, and render() scrolls to the top, so routing a
+     selection would throw the reader back up the page every time they tapped one. */
+  function armKitGrids() {
+    var cells = document.querySelectorAll('.kitcell');
+    if (!cells.length) return;
+    cells.forEach(function (el) {
+      el.addEventListener('click', function () {
+        var kind = el.getAttribute('data-kit'), id = el.getAttribute('data-id');
+        var panel = document.getElementById('kit-' + kind + '-detail');
+        if (!panel) return;
+        var already = el.classList.contains('sel');
+        document.querySelectorAll('.kitcell[data-kit="' + kind + '"]')
+          .forEach(function (o) { o.classList.remove('sel'); });
+        if (already) { panel.hidden = true; panel.innerHTML = ''; return; }
+        el.classList.add('sel');
+        panel.hidden = false;
+        panel.innerHTML = kind === 'move' ? kitMoveDetail(id) : kitItemDetail(id);
+      });
+    });
+  }
+
+  function kitMoveDetail(id) {
+    var m = D.moves.find(function (x) { return x.id === id; });
+    if (!m) return '';
+    var owned = st('moves', m.id) === 'owned';
+    /* Masked when it isn't learned, the same rule the MOVES section follows: the
+       'Pedia reveals what the device has actually met, and a grid that spoiled every
+       technique the pet could one day hold would make that rule a fiction. */
+    return '<div class="row' + (owned ? '' : ' locked') + '">' +
+      '<img class="icon20' + (owned ? '' : ' dim') + '" src="' + m.icon + '" alt="">' +
+      '<div class="body"><div class="nm">' + (owned ? esc(m.name.toUpperCase()) : mask(m.name)) +
+      '<span class="chip ' + (m.kind === 'ATK' ? 'crashed' : 'owned') + '">' + m.kind + '</span>' +
+      (m.innate ? '<span class="chip enc">INNATE</span>' : '') + '</div>' +
+      '<div class="fx">' + (owned ? esc(m.desc) : 'technique encrypted \u2014 learn it in MOVES') + '</div>' +
+      (owned ? stats(m.stats) : '') + '</div>' +
+      '<div class="stat"><b>' + m.power + '</b> PWR<br><b>' + m.turns + '</b>T \u00b7 ' + esc(m.minStage.toUpperCase()) + '+</div>' +
+      '</div>';
+  }
+
+  function kitItemDetail(id) {
+    var it = D.items.find(function (x) { return x.id === id; });
+    if (!it) return '';
+    var spent = S.active_pet && S.active_pet.lifetime_items &&
+      S.active_pet.lifetime_items[id] === 'spent';
+    /* Never masked: a one-shot is listed because THIS pet either has or has not spent
+       it, which is a fact about the pet rather than a reveal about the catalogue. */
+    return '<div class="row' + (spent ? ' locked' : '') + '">' +
+      '<img class="icon20' + (spent ? ' dim' : '') + '" src="' + it.icon + '" alt="">' +
+      '<div class="body"><div class="nm">' + esc(it.name.toUpperCase()) + rar(it.rarity) +
+      '<span class="chip ' + (spent ? 'enc' : 'owned') + '">' +
+      (spent ? 'SPENT THIS LIFE' : 'UNSPENT') + '</span></div>' +
+      '<div class="fx">' + esc(it.effect || '') + '</div>' +
+      '<div class="fx">' + (spent
+        ? 'this pet has had its one. a new egg is the only way back.'
+        : 'one use, this life only.') + '</div></div></div>';
   }
 
   function creatureCell(c) {
@@ -812,6 +934,7 @@
         (active === 'entry' || active === 'beast' ? a.getAttribute('data-tab') === 'index' : false));
     });
     armHoneytoken();
+    armKitGrids();
     armTagForm();
     armNetForm();
     armUrlForm();

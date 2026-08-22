@@ -170,8 +170,21 @@ void Combat::releaseRansomSeizure(Combatant& c) {
 }
 
 bool braceOnlyDefend(const MoveDef& m) {
+    // A WILDCARD row declares none of the fields below and is still not a pure brace: it
+    // has not decided what it is yet, and what it rolls may be a pool, a trap or a spawn.
+    // Reading it off its own empty fields would re-roll the metamorphic line off its own
+    // defend half every time a brace happened to be standing.
+    if (moveIsWildcard(m)) return false;
     return m.kind == MoveDef::Kind::Defend && m.stackDefensePct == 0 && m.shieldPool == 0 &&
            m.trapArm == 0 && m.replicaSpawnPct == 0;
+}
+
+int ledgerGrudgePct(const Combatant& c) {
+    if (c.ransomPool <= 0) return 0;
+    const int base = kMaxHealthByStage[stageIndex(c.stage)];
+    if (base <= 0) return 0;
+    const int pct = c.ransomPool * kLedgerGrudgeFullPct / base;
+    return pct > kLedgerGrudgeMaxPct ? kLedgerGrudgeMaxPct : pct;
 }
 
 int phishPoolSiphonBonusPct(const Combatant& c) {
@@ -184,8 +197,124 @@ int phishPoolSiphonBonusPct(const Combatant& c) {
     // pet should not get worse at its own line's mechanic for having raised a different stat.
     const int base = kMaxHealthByStage[stageIndex(c.stage)];
     if (base <= 0) return 0;
-    const int pct = c.shieldHp * kPhishPoolSiphonFullPct / base;
+    // Phishing Rod (mod) scales the siphon ITSELF, not its ceiling — a cap almost no
+    // fight reaches is not a bonus. Perfect Bite, which the mod was written for alone, is
+    // a roll on top of a condition (bubble up, then the chance lands), so a mod confined
+    // to it paid on a fraction of a fraction. The pool siphon is the line's continuous
+    // half and pays every turn the bubble is live, which is the floor the mod needed.
+    int pct = c.shieldHp * kPhishPoolSiphonFullPct / base;
+    pct = pct * (100 + c.mods.mag(ModEffect::StealAmplifyPct)) / 100;
     return pct > kPhishPoolSiphonMaxPct ? kPhishPoolSiphonMaxPct : pct;
+}
+
+// --- Polymorph, the pure half ---------------------------------------------------------
+
+bool polymorphHasAbsorbed(const Combatant& c, const MoveDef* m) {
+    if (!m) return false;
+    for (int i = 0; i < c.absorbedCount; ++i)
+        if (c.absorbed[i] == m) return true;
+    return false;
+}
+
+bool polymorphAbsorb(Combatant& c, const MoveDef* m) {
+    if (!c.polymorphic || !m) return false;
+    if (c.absorbedCount >= kPolymorphAbsorbCap) return false;   // technical bound only
+    if (polymorphHasAbsorbed(c, m)) return false;               // a repeat pays nothing
+    c.absorbed[c.absorbedCount++] = m;
+    polymorphPay(c, m->kind, 1);
+    return true;
+}
+
+void polymorphPay(Combatant& c, MoveKind kind, int points) {
+    if (points <= 0) return;
+    // One stat point's worth each, in the vocabulary applyLevelStatPoints already spends.
+    // The KIND picks which pair is paid, so a varied kit shapes what the pet becomes
+    // rather than every payment landing on the same stat.
+    if (kind == MoveKind::Attack) {
+        c.powerMultPct += kLevelPowerPctPerPoint * points;
+        c.speed += static_cast<float>(kLevelSpeedPerPoint * points);
+    } else {
+        c.dmgReducePct += kLevelDefensePctPerPoint * points;
+        if (c.dmgReducePct > kLevelDmgReduceMaxPct) c.dmgReducePct = kLevelDmgReduceMaxPct;
+        c.defenseMultPct += kLevelDefenseBracePctPerPoint * points;
+        // The ceiling AND the Health standing in it — a pool cannot be raised from under
+        // a fighter without giving it the room it just gained.
+        c.maxHealth += kLevelHealthPerPoint * points;
+        c.health += kLevelHealthPerPoint * points;
+    }
+}
+
+uint32_t moveEffectMask(const MoveDef& m) {
+    // One bit per rider, in the order MoveDef declares them. Bit POSITIONS are internal —
+    // nothing persists this mask — so a new rider appends a bit here and needs no
+    // migration, only a row that sets the field it reads.
+    uint32_t mask = 0;
+    int bit = 0;
+    auto set = [&](bool on) { if (on) mask |= 1u << bit; ++bit; };
+    set(m.channelTurns > 1);
+    set(m.armorPiercePct > 0);
+    set(m.lockTurns > 0);
+    set(m.dotDamage > 0 && m.dotTurns > 0);
+    set(m.stealPowerPct > 0);
+    set(m.stealDefensePct > 0);
+    set(m.stealSpeedPct > 0);
+    set(m.stealCurrentHpPct > 0);
+    set(m.stealMaxHpPct > 0);
+    set(m.shieldPool > 0);
+    set(m.trapArm > 0);
+    set(m.replicaSpawnPct > 0);
+    set(m.stackPowerPct > 0);
+    set(m.stackDefensePct > 0);
+    set(m.chainNextId != nullptr);
+    set(m.speedRefundPct > 0);
+    set(m.poolRetaliateDot > 0);
+    return mask;
+}
+
+int polymorphEffectCount(const Combatant& c) {
+    int n = 0;
+    for (uint32_t m = c.effectsSeen; m; m &= m - 1) ++n;   // popcount, no <bit> needed
+    return n;
+}
+
+const MoveDef* wildPick(const WildPool& pool, uint32_t roll) {
+    if (pool.rows.empty()) return nullptr;
+    const int total = static_cast<int>(pool.rows.size());
+    const int genericN = pool.genericEnd;
+    const int lineAN = pool.lineAEnd - pool.genericEnd;
+    const int lineBN = total - pool.lineAEnd;
+    // A band with no rows hands its weight back to generic rather than being rolled into
+    // and found empty — which is what a pool naming a line this build doesn't know, or a
+    // line with no rows of this kind (Phishing fields no Defend track), actually is.
+    int wGeneric = genericN > 0 ? kWildSourceGenericPct : 0;
+    const int wA = lineAN > 0 ? kWildSourceLineAPct : 0;
+    const int wB = lineBN > 0 ? kWildSourceLineBPct : 0;
+    if (lineAN == 0) wGeneric += kWildSourceLineAPct;
+    if (lineBN == 0) wGeneric += kWildSourceLineBPct;
+    const int sum = wGeneric + wA + wB;
+    if (sum <= 0) return pool.rows[roll % total];   // no weights: fall back to a flat draw
+    // ONE draw does both halves — the low bits pick the band, the high bits the row inside
+    // it. Two draws would consume two numbers from the seeded stream, and a duel's two
+    // devices only stay in step while they take the same count.
+    int band = static_cast<int>(roll % static_cast<uint32_t>(sum));
+    const uint32_t within = roll / static_cast<uint32_t>(sum);
+    if (band < wGeneric && genericN > 0) return pool.rows[within % genericN];
+    band -= wGeneric;
+    if (band < wA && lineAN > 0) return pool.rows[pool.genericEnd + (within % lineAN)];
+    if (lineBN > 0) return pool.rows[pool.lineAEnd + (within % lineBN)];
+    if (genericN > 0) return pool.rows[within % genericN];
+    return pool.rows[within % total];
+}
+
+LinePassives wildBorrowedPassives(const WildPool& pool, const MoveDef* m) {
+    if (!m || !m->line) return 0;
+    for (int i = pool.genericEnd; i < pool.lineAEnd; ++i)
+        if (pool.rows[i]->line && std::strcmp(pool.rows[i]->line, m->line) == 0)
+            return pool.passivesA;
+    for (size_t i = static_cast<size_t>(pool.lineAEnd); i < pool.rows.size(); ++i)
+        if (pool.rows[i]->line && std::strcmp(pool.rows[i]->line, m->line) == 0)
+            return pool.passivesB;
+    return 0;
 }
 
 int Combat::chooseMove(Combatant& self) {
@@ -321,6 +450,22 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
         // petware hits harder, Good-branch softer, a stacked wall harder still. Meltdown
         // Core (mod) adds a further comeback bonus while the actor is critically low.
         int mult = actor.powerMultPct + actor.stackPowerBonus;
+        // Extortion Ledger (mod), the POWER half — paid while this pet is holding damage it
+        // has not settled for. An UNPAID ransom, not a seized move: a seizure needs a full
+        // Cipher stack standing under a live window and closes on the next bill, which is
+        // a payoff most fights never reach, and a bonus hung on it averages to nothing
+        // however large it is. A pool with anything in it is the ordinary state of the
+        // line doing its job, so this pays on the turns the pet is actually playing.
+        //
+        // It also reads as the thing the family IS: what the pool holds is what the pet has
+        // taken and not answered for yet, and it hits harder for as long as that is true.
+        // ...scaled by how much is on the ledger. The bonus pays at any pool size and grows
+        // with what the pet is owed, which is what makes the pool worth CARRYING rather
+        // than merely worth having opened.
+        if (actor.ransomPool > 0) {
+            const int owed = actor.mods.mag2(ModEffect::ExtortionLedger);
+            mult += owed * (100 + ledgerGrudgePct(actor)) / 100;
+        }
         const int meltdownPct = actor.mods.mag(ModEffect::LowHealthPowerPct);
         if (meltdownPct > 0 && actor.maxHealth > 0) {
             const int healthPct = actor.health * 100 / actor.maxHealth;
@@ -547,7 +692,14 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
         // attack that hits it. The pet swings it out of the brace's own slot until the
         // ransom settles. Only an attack is worth taking, and only a hit that landed —
         // a swing the wall shrugged off entirely was never held to anything.
-        if (dmg > 0 && target.ransomSeizure.armed && mv->kind == MoveDef::Kind::Attack) {
+        // ...and never a WILDCARD row. A metamorphic pet's slot resolves to whatever it
+        // rolled before this point, so what lands here is an ordinary move and the seizure
+        // gets something real — but a pool with nothing in it leaves the row itself, and a
+        // row that casts nothing is worth nothing to whoever takes it. The ransomer has no
+        // pool of its own to resolve one with, so it would swing an empty slot for the
+        // whole hold.
+        if (dmg > 0 && target.ransomSeizure.armed && mv->kind == MoveDef::Kind::Attack &&
+            !moveIsWildcard(*mv)) {
             RansomSeizure& seize = target.ransomSeizure;
             const int slot = seize.slot;
             if (slot >= 0 && slot < static_cast<int>(target.moves.size())) {
@@ -1030,6 +1182,25 @@ void Combat::resolveTurn(Combatant& actor, Combatant& target, bool byPlayer) {
     }
     const MoveDef* mv = chained ? chained : actor.moves[moveIdx];
 
+    // METAMORPHIC: a wildcard row does not cast itself — it rolls one of the moves this pet
+    // could have been. A single branch and not a loop, so a pool that somehow held another
+    // wildcard row would resolve it as an ordinary move rather than re-entering the roll;
+    // an empty pool leaves `mv` as the row itself, which is the same fall-through a slot
+    // with nothing usable in it already takes. Not reachable from `chained`: a follow-up
+    // step is a payload, not a slot, and has no pool of its own.
+    const WildPool* wild = nullptr;
+    if (!chained && moveIsWildcard(*mv) && moveIdx >= 0 &&
+        moveIdx < static_cast<int>(actor.wildPools.size())) {
+        wild = &actor.wildPools[moveIdx];
+        if (const MoveDef* drawn = wildPick(*wild, rng())) {
+            mv = drawn;
+            // What the picker's LOCK band offers to commit to. Written on the ROLL rather
+            // than on a resolved hit: an operator locks the move they watched come up,
+            // and a swing the enemy absorbed came up all the same.
+            actor.wildPools[moveIdx].lastRolled = drawn;
+        }
+    }
+
     // Execution-Override (Trojan passive): a Trojan (`target`, the side not acting)
     // hijacks the actor's freshly-picked move and runs it back AT them, consuming their
     // turn. execOverrideChance is 0 for a non-Trojan target, so rng() is only drawn when
@@ -1064,6 +1235,31 @@ void Combat::resolveTurn(Combatant& actor, Combatant& target, bool byPlayer) {
             }
         }
         actor.channelMoveIdx = -1;                    // detonate this turn
+    }
+
+    // POLYMORPH, and the identity a borrowed row brings with it. Both run BEFORE the cast
+    // resolves, so the stats this move swings with already include what absorbing it paid
+    // — the fighter has become the thing before it does the thing, which is the whole read
+    // — and a Worm row spawns on the same turn it grants Replication rather than the next.
+    if (wild) actor.linePassives |= wildBorrowedPassives(*wild, mv);
+    polymorphAbsorb(actor, mv);
+    // Mutation Engine's axis. Recorded on the CAST, the same moment as the absorb, rather
+    // than on whichever riders survived the target's defences — what the mod reads is the
+    // range of things this fighter has reached for, and a stun the enemy shrugged off was
+    // still a stun it had to shrug off.
+    if (actor.polymorphic) {
+        const uint32_t before = actor.effectsSeen;
+        actor.effectsSeen |= moveEffectMask(*mv);
+        // Mutation Engine (mod): a KIND this fighter has not reached for before pays the
+        // passive's own stat point, the same way an unlearned move does. An amplifier of
+        // Polymorph rather than a percentage beside it — which is also the only shape this
+        // tier rewards: what leads the band takes turns or refuses death, and a flat
+        // attack-power bonus measured worth nothing there however large it was made.
+        if (const int per = actor.mods.mag(ModEffect::PolymorphEffectPct); per > 0) {
+            int fresh = 0;
+            for (uint32_t d = actor.effectsSeen & ~before; d; d &= d - 1) ++fresh;
+            polymorphPay(actor, mv->kind, per * fresh);
+        }
     }
 
     applyEffect(actor, target, mv, byPlayer, moveIdx);
@@ -1229,6 +1425,27 @@ int Combat::overrideMoveCount() const {
     return static_cast<int>(player_.moves.size());
 }
 
+int Combat::overrideLockCount() const {
+    int n = 0;
+    for (const WildPool& p : player_.wildPools)
+        if (p.lastRolled) ++n;
+    return n;
+}
+
+int Combat::overrideLockSlot(int i) const {
+    if (i < 0) return -1;
+    for (size_t s = 0; s < player_.wildPools.size(); ++s) {
+        if (!player_.wildPools[s].lastRolled) continue;
+        if (i-- == 0) return static_cast<int>(s);
+    }
+    return -1;
+}
+
+const MoveDef* Combat::overrideLockMove(int i) const {
+    const int slot = overrideLockSlot(i);
+    return slot < 0 ? nullptr : player_.wildPools[slot].lastRolled;
+}
+
 void Combat::openOverride(std::vector<OverrideItem> items, CrewExploit crew) {
     if (overrideUsesLeft_ <= 0 || outcome_ != Outcome::Ongoing) return;
     overrideItems_ = std::move(items);
@@ -1240,7 +1457,7 @@ void Combat::openOverride(std::vector<OverrideItem> items, CrewExploit crew) {
 void Combat::cycleOverride() {
     if (!overrideOpen_) return;
     const int n = overrideMoveCount() + static_cast<int>(overrideItems_.size()) +
-                  overrideCrewRows();
+                  overrideLockCount() + overrideCrewRows();
     if (n <= 0) return;
     overridePick_ = (overridePick_ + 1) % n;
 }
@@ -1294,10 +1511,26 @@ void Combat::commitOverride() {
     if (!overrideOpen_) return;
     const int moves = overrideMoveCount();
     const int items = static_cast<int>(overrideItems_.size());
+    const int locks = overrideLockCount();
     if (overridePick_ < moves) {
         forcedMoveIdx_ = overridePick_;         // forces the player's next move
-    } else if (overridePick_ >= moves + items) {
+    } else if (overridePick_ >= moves + items + locks) {
         applyCrewExploit();                     // the crew row (last band)
+    } else if (overridePick_ >= moves + items) {
+        // LOCK: the slot stops drawing and keeps what it last rolled. Replacing the row in
+        // `moves` rather than flagging it is what makes the slot ORDINARY from here —
+        // every reader (the roll, this picker, the KIT page, Prowlware's power ranking)
+        // sees the committed move with nothing new taught to any of them.
+        //
+        // Its own chain step is deliberately not committed: a locked cast is a substituted
+        // one, and a substituted move hands nothing on, the same rule wildPick's result
+        // already answers to. Resolving one would need the registry, mid-fight.
+        const int slot = overrideLockSlot(overridePick_ - moves - items);
+        if (slot >= 0 && slot < static_cast<int>(player_.moves.size())) {
+            player_.moves[slot] = player_.wildPools[slot].lastRolled;
+            player_.wildPools[slot] = WildPool{};   // drawing stops; nothing left to offer
+            player_.chainFollow[slot] = nullptr;
+        }
     } else {
         // USE ITEM: patch transient Health here (combat state); the Game consumes
         // the stack + applies the item's own effect off takeCommittedItem().
@@ -1396,12 +1629,20 @@ int wormReplicaCount(const Combatant& c, bool defenders) {
     return n;
 }
 
+// Replication Bus (mod): what one copy's banked figure is multiplied by. Applied at SPAWN
+// like every other term in a copy's value, so a bus equipped mid-run never reaches back and
+// pumps copies that are already standing — a separate thing stays separate.
+static int replicaWorthMult(const Combatant& parent) {
+    return 100 + parent.mods.mag(ModEffect::ReplicaWorthPct);
+}
+
 int wormAttackerDamage(const Combatant& parent, int movePower, int pct) {
     // A share of the move that made it, scaled by the same attack lean the parent's own
     // damage is scaled by — so a Bad-branch worm's copies hit like it does — and by the
     // defenders standing at this moment. Banked, exactly as a defender's Health is.
     const int mult = wormCrossMult(wormReplicaCount(parent, /*defenders=*/true));
     int dmg = movePower * pct / 100 * parent.powerMultPct / 100 * mult;
+    dmg = dmg * replicaWorthMult(parent) / 100;
     return dmg < 1 ? 1 : dmg;
 }
 
@@ -1414,7 +1655,7 @@ int wormReplicaDamage(const Combatant& c) {
 
 int wormDefenderHealth(const Combatant& parent, int pct) {
     const int mult = wormCrossMult(wormReplicaCount(parent, /*defenders=*/false));
-    const int hp = parent.maxHealth * pct / 100 * mult;
+    const int hp = parent.maxHealth * pct / 100 * mult * replicaWorthMult(parent) / 100;
     return hp < 1 ? 1 : hp;   // a defender that spawns with no Health is not a body
 }
 

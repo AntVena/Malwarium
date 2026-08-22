@@ -21,7 +21,8 @@
 //        decryption [rows|lost] (the Ransomware egg's DISK DECRYPTION board; "rows"
 //             plays three attempts so the history and its corruption overlay are on
 //             screen, "lost" plays all five and holds the verdict + revealed key)
-//        arcade [solved] [clutch|worm|decryption|quote] [cabinet [hard] [play [result]]]
+//        arcade [solved] [clutch|worm|decryption|quote|chroma] [cabinet [hard]
+//             [play [result]]]
 //             (the GAMES list, one cabinet's page, its running board, and the payout;
 //             "solved" banks the eight quote wins that reveal the DECRYPTOGRAM cabinet,
 //             which "quote" then focuses)
@@ -36,6 +37,14 @@
 //             the frame shows a long coil mid-run, "crash" drives it into the wall to
 //             hold the verdict, and "bank" takes the B off it to leave the Vermicell egg
 //             at idle)
+//        chroma [wear|half|spotted] [clean] [bank] (the Metamorphic egg's CHROMATOPHORE;
+//             "wear" settles into the water for the hidden frame, "half" holds the
+//             repaint mid-scatter, "spotted" wears the wrong skin into the sweep,
+//             "clean" plays every round and holds the verdict, "bank" takes the B off
+//             it to leave the Polystaria egg at idle)
+//        ach | achburst | acheggline (the unlock announcement over the idle habitat:
+//             one row by name, a collapsed burst, or the HELD new-egg-line plate that
+//             waits for a button instead of timing out)
 //        hatchreveal [frame:<n>] (the on-demand crack cinematic, held on frame n)
 //        cfg updates [ready] [checking|nojoin|found|confirm [yes]|installing|failed|
 //             flashqr] (the UPDATES screen; without "ready" it shows which setup step
@@ -100,6 +109,7 @@
 
 #include "tunables.h"
 #include "core/app/game.h"
+#include "core/content/content_arcade.h"
 #include "core/app/game_internal.h"   // kMergeRecipeCount — the MERGE HUB dump wins them all
 #include "core/render/canvas.h"
 #include "core/render/framebuffer.h"
@@ -109,6 +119,13 @@
 #include "core/ui/expl_screen.h"
 
 using namespace mal;
+
+// The CHROMATOPHORE's three buttons are three skins, in chip order — so a dump that
+// wants a particular skin worn presses the button that wears it rather than a cursor.
+static ButtonEvent chromaPress(int skin) {
+    const Button b = skin == 0 ? Button::A : skin == 1 ? Button::B : Button::C;
+    return {b, true, false};
+}
 
 static bool hasFlag(int argc, char** argv, const char* f) {
     for (int i = 3; i < argc; ++i)
@@ -177,6 +194,10 @@ int main(int argc, char** argv) {
     // idle habitat. "achburst" earns enough at once to trip the collapse-into-a-summary
     // threshold instead, which is the other shape the banner takes.
     if (hasFlag(argc, argv, "ach")) game.unlockAchievement(ach::kTrojanUnleashed);
+    // "acheggline" earns the unlock that puts a new KIND of egg in the hatch menu,
+    // which is the one announcement that HOLDS — its own plate, its own copy, and no
+    // deadline (Game::achBannerHeld).
+    if (hasFlag(argc, argv, "acheggline")) game.unlockAchievement(ach::kHashCollision);
     if (hasFlag(argc, argv, "achburst"))
         for (int i = 0; i < kAchievementCount && i <= kAchBannerBurstMax; ++i)
             game.unlockAchievement(kAchievements[i].id);
@@ -526,12 +547,21 @@ int main(int argc, char** argv) {
                 game.debugSetQuoteTier(i, CryptogramTier::Solved);
         enterSlot(SubmenuId::Games);
         // cabinet → open the focused cabinet's page (L3); + hard → cycle the dial off
-        // MEDIUM so the setting is visible; clutch/worm → focus that cabinet first.
-        const int focus = hasFlag(argc, argv, "clutch") ? 1
-                        : hasFlag(argc, argv, "worm") ? 2
-                        : hasFlag(argc, argv, "decryption") ? 3
-                        : hasFlag(argc, argv, "quote") ? 4 : 0;
-        for (int i = 0; i < focus; ++i) game.onButton({Button::A, true, false});
+        // MEDIUM so the setting is visible; clutch/worm/... → focus that cabinet first.
+        // Walked by ID rather than by a press count, because the A-cycle SKIPS a locked
+        // row: counting presses lands on a different cabinet depending on whether the
+        // quote board has been unlocked, which is exactly the frame a dump is trying
+        // to pin down.
+        const char* want = hasFlag(argc, argv, "clutch")       ? "clutch"
+                           : hasFlag(argc, argv, "worm")       ? "isolation"
+                           : hasFlag(argc, argv, "decryption") ? "decryption"
+                           : hasFlag(argc, argv, "quote")      ? "cryptogram"
+                           : hasFlag(argc, argv, "chroma")     ? "chroma"
+                                                               : nullptr;
+        for (int i = 0; want && i < arcadeGameCount(); ++i) {
+            if (std::strcmp(arcadeGames()[game.arcadeRow()].id, want) == 0) break;
+            game.onButton({Button::A, true, false});
+        }
         if (hasFlag(argc, argv, "cabinet")) {
             game.onButton({Button::B, true, false});
             if (hasFlag(argc, argv, "hard")) game.onButton({Button::A, true, false});
@@ -1195,6 +1225,44 @@ int main(int argc, char** argv) {
         // "bank" takes the verdict's B, which spends the run and leaves the Vermicell
         // egg incubating at idle — the state the whole minigame hands back to.
         if (hasFlag(argc, argv, "bank") && !game.isolation().running())
+            game.onButton({Button::B, true, false});
+    } else if (hasFlag(argc, argv, "chroma")) {
+        // Lay a Metamorphic egg, which opens its CHROMATOPHORE on the spot.
+        game.unlockAchievement(ach::kHashCollision);   // unlocks the Metamorphic line
+        game.resetToHatch();
+        for (int i = 0; i < 8; ++i) {
+            const auto lines = game.availableEggLines();
+            if (!lines.empty() &&
+                std::strcmp(lines[game.lineSelectRow() % lines.size()]->id,
+                            "metamorphic") == 0)
+                break;
+            game.onButton({Button::A, true, false});
+        }
+        game.onButton({Button::B, true, false});   // lay it -> Nav::Chroma
+        uint32_t ct = 0;
+        // "wear" wears the water and settles into it, which is the frame the board is
+        // FOR: the creature standing in the same colours as what is under it.
+        // "half" stops the repaint partway, holding the scatter FX_CAMO draws.
+        // "spotted" wears the wrong skin and lets the sweep arrive, for the verdict.
+        if (hasFlag(argc, argv, "spotted")) {
+            game.onButton(chromaPress((game.chroma().plate() + 1) % kChromaSkins));
+            while (game.chroma().running()) game.tick(ct += kFxAnimMs);
+        } else if (hasFlag(argc, argv, "wear") || hasFlag(argc, argv, "half")) {
+            const bool half = hasFlag(argc, argv, "half");
+            game.onButton(chromaPress(game.chroma().plate()));
+            while (game.chroma().running() &&
+                   game.chroma().wearPct() < (half ? 50 : 100))
+                game.tick(ct += kFxAnimMs);
+        }
+        // "clean" plays every round perfectly and holds the verdict; "bank" then takes
+        // the B off it, leaving the Polystaria egg incubating at idle.
+        if (hasFlag(argc, argv, "clean")) {
+            while (game.chroma().running()) {
+                game.onButton(chromaPress(game.chroma().plate()));
+                game.tick(ct += kFxAnimMs);
+            }
+        }
+        if (hasFlag(argc, argv, "bank") && !game.chroma().running())
             game.onButton({Button::B, true, false});
     } else if (hasFlag(argc, argv, "hatchreveal")) {
         // Run a Phishing egg's incubation down into the reveal window, then crack it

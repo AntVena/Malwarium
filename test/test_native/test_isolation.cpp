@@ -289,3 +289,33 @@ void test_isolation_clean_run_hatches_and_unlocks() {
     CHECK(g.pet() && g.pet()->stage == Stage::Process);
     CHECK(g.pet()->line && std::strcmp(g.pet()->line, "worm") == 0);
 }
+
+// Off a CABINET the buffer is endless: no byte count finishes the run, so it goes until
+// the worm crashes (or fills the buffer, which is the only clean an endless run has).
+// kArcadeIsolationWinBytes is the till's win line, not a wall the board stops at.
+void test_isolation_endless_run_has_no_finish() {
+    Isolation iso;
+    iso.reset(7u, /*goal=*/0);
+    CHECK(iso.endless() && iso.goal() == 0);
+    // Walk the buffer's Hamiltonian cycle (the same route the steps: dump uses) far
+    // enough to pass the old finish line, and check nothing stops it there.
+    for (int i = 0; i < 4000 && iso.running(); ++i) {
+        const int cell = iso.head();
+        const int col = cell % kIsolationCols, row = cell / kIsolationCols;
+        int next;
+        if (row == 0) next = col > 0 ? cell - 1 : kIsolationCols;
+        else if (col == kIsolationCols - 1 && row == 1) next = col;
+        else if (col % 2 == 0)
+            next = row < kIsolationRows - 1 ? cell + kIsolationCols : cell + 1;
+        else next = row > 1 ? cell - kIsolationCols : cell + 1;
+        const int d = next - cell;
+        const int want = d == 1 ? 0 : d == kIsolationCols ? 1 : d == -1 ? 2 : 3;
+        const int turn = (want - iso.dir() + 4) % 4;
+        if (turn == 3) iso.turnLeft();
+        else if (turn == 1) iso.turnRight();
+        iso.step();
+        if (iso.dots() > kArcadeIsolationWinBytes) break;
+    }
+    CHECK(iso.dots() > kArcadeIsolationWinBytes);   // straight past the old ending
+    CHECK(iso.running() && !iso.clean());
+}

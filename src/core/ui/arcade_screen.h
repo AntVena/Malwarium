@@ -23,15 +23,20 @@ void drawArcadeList(Framebuffer& fb, const ContentRegistry& reg, const int* play
                     const int* rows, int n, int cursor, int beat);
 
 // L3 cabinet page: what the game asks, what the dial moves, what a run pays, and the
-// START row. `plays`/`wins` are this cabinet's own lifetime tallies.
+// START row. `plays`/`wins` are this cabinet's own lifetime tallies, and `best` its
+// high score — drawn only where a run HAS a score to keep, which is what makes the two
+// endless cabinets legible as endless: their page shows a number to beat rather than a
+// finish to reach.
 void drawArcadeCabinet(Framebuffer& fb, const ContentRegistry& reg,
                        const ArcadeGameDef& def, ArcadeDifficulty difficulty,
-                       int plays, int wins);
+                       int plays, int wins, int best);
 
 // The payout screen a finished run lands on. `score`/`scoreMax` are the run's own
 // numbers (both 0 for a win-or-lose cabinet, which has nothing to show but the
-// verdict); `bits`/`happy` are what was actually banked.
+// verdict); `best`/`newBest` are the cabinet's high score after this run and whether
+// this run is what set it; `bits`/`happy` are what was actually banked.
 void drawArcadeResult(Framebuffer& fb, const ArcadeGameDef& def, bool won,
-                      int score, int scoreMax, int bits, int happy);
+                      int score, int scoreMax, int best, bool newBest, int bits,
+                      int happy);
 
 }  // namespace mal

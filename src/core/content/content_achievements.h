@@ -85,6 +85,12 @@ enum class AchSeries : uint8_t {
     ArcadeWins,
     ArcadeLosses,
     ArcadeCabinetWins,  // ... wins on the one cabinet named by `key`
+    // The best SCORE ever reached on the cabinet named by `key`, against a goal that is
+    // that score. The two endless cabinets (the CHROMATOPHORE, the Isolation buffer) run
+    // until the player fails rather than until they finish, so a win tally says only
+    // that a run cleared the till's line — this is the series that can ask how far past
+    // it they went. Meaningless on a win-or-lose cabinet, which never reports a score.
+    ArcadeCabinetBest,
 };
 
 // `goal` sentinel: compare against the series' TOTAL rather than a fixed number, so the
@@ -159,11 +165,17 @@ inline constexpr const char* kSurvivedLockout  = "SURVIVED_LOCKOUT";
 inline constexpr const char* kFlawlessRun      = "FLAWLESS_RUN";
 inline constexpr const char* kGoneRogue        = "GONE_ROGUE";
 inline constexpr const char* kWormWhisperer    = "WORM_WHISPERER";
+inline constexpr const char* kNeverSeen        = "NEVER_SEEN";
 inline constexpr const char* kAirGapped        = "AIR_GAPPED";
 inline constexpr const char* kDevtoolsIntruder = "DEVTOOLS_INTRUDER";
 inline constexpr const char* kTrojanUnleashed  = "TROJAN_UNLEASHED";
 inline constexpr const char* kFirstDuel        = "FIRST_DUEL";
 inline constexpr const char* kSecondInstance   = "SECOND_INSTANCE";
+// The mirror, and the gate on the Metamorphic egg line: the operator's own species
+// walking on as the opponent. Fired from Game::noteMirrorMatch, which BOTH places a
+// real species can be faced call — the LINK duel and the arena — because what earns it
+// is the meeting, not which screen arranged it.
+inline constexpr const char* kHashCollision    = "HASH_COLLISION";
 // The two DEFRAG-minigame rows that a board's SHAPE decides rather than a tally: how
 // wide the run was when it reached the top. Both fire from Game::finishStacker.
 inline constexpr const char* kPerfectDefrag    = "PERFECT_DEFRAG";

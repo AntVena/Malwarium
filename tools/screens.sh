@@ -75,6 +75,10 @@ SCENES=(
   "decryption_lost|decryption lost"
   "isolation|isolation steps:600"   "isolation_crash|isolation crash"
   "worm_egg|isolation crash bank"
+  "ach_egg_line|acheggline"
+  "chroma|chroma wear"                "chroma_half|chroma half"
+  "chroma_spotted|chroma spotted"     "chroma_clean|chroma clean"
+  "meta_egg|chroma clean bank"
   "worm_home|pet:nodeatode"           "worm_script|pet:rootgrub"
 )
 

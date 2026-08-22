@@ -33,7 +33,7 @@ inline constexpr CreatureDef kRansomwareCreatures[] = {
      "A digital shell so tough, even its mother has to brute-force the password to hatch it.",
      "Cryptographic shells / brute-force",
      {MoveKind::Attack, MoveKind::Attack, MoveKind::Attack, MoveKind::Attack},
-     /*evolvesToTrojanId=*/nullptr, /*evolvesToTrojanBadId=*/nullptr, Locomotion::Walk},
+     /*evolvesToTrojanId=*/nullptr, /*evolvesToTrojanBadId=*/nullptr, Locomotion::Static},
     {"paypup", "Paypup", Stage::Process, "SPR_PET_PAYPUP", "barkmail",
      nullptr, nullptr, 100, 100, "ransomware",
      "Loves chasing code, fetching cookies, and dropping malicious payloads.",

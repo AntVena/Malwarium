@@ -36,6 +36,18 @@ namespace mal {
 constexpr int kRansomArmPctByStage[4] = {0, 40, 55, 70};
 constexpr int kRansomHoldTurns = 3;   // also sizes the combat screen's blip row
 
+// THE GRUDGE (Extortion Ledger's scale). What the pool holds is what the pet has taken and
+// not answered for, so the ledger hits harder the longer that list gets: the mod's power
+// bonus is scaled by the pool measured against the pet's own STAGE body — the same
+// denominator the Obfuscation siphon uses, and for the same reason (a levelled maxHealth
+// would make a Health-steered pet worse at its own line's mechanic).
+//
+// Deliberately a modest scale on top of a bonus that already pays at any pool size. The
+// line is brute force with one gimmick and is meant to be strong from the first turn, not
+// to ramp — so this tilts a fight the pet is already in rather than deciding one.
+constexpr int kLedgerGrudgeFullPct = 100;   // ...at a pool the size of the stage's own body
+constexpr int kLedgerGrudgeMaxPct = 100;    // ...and never more than doubling
+
 // --- Phishing — steal track + Obfuscation-bubble passives ---------------------
 // Floors for the generic per-field siphon in Combat::applyEffect (MoveDef's steal*
 // fields): a power siphon can't drag powerMultPct below kStealPowerFloorPct; a speed
@@ -123,5 +135,34 @@ constexpr int kWormReplicaMultFloor = 1;
 constexpr int kWormTargetWeightParent   = 1;
 constexpr int kWormTargetWeightAttacker = 2;
 constexpr int kWormTargetWeightDefender = 4;
+
+// --- Metamorphic — Polymorph + the wildcard roll --------------------------------
+// POLYMORPH. Every move this pet casts that it has not already cast THIS FIGHT is
+// absorbed, and pays one stat point's worth in the vocabulary a level-up already spends:
+// an Attack pays Power and Speed, a Defend pays Defense and max-Health (the magnitudes
+// are tunables.h's kLevel*PerPoint, read rather than restated, so the two stay one fact).
+// A repeat pays nothing, which is what makes the line's reward RANGE instead of volume.
+//
+// Nothing caps the payout. The line has no plan to converge on — its slots roll out of a
+// pool far wider than a kit — and acting more often is the whole of what it gets instead,
+// so the ramp is the mechanic rather than something to hold down. It compounds on
+// purpose: Speed buys actions, actions buy casts, casts buy Speed. A long fight is where
+// that pops off, and a long fight is what this line is for.
+constexpr int kPolymorphAbsorbCap = 24;   // TECHNICAL bound on the absorbed set, not a
+                                           // balance ceiling — a gauntlet round must not be
+                                           // able to overrun the array (Combatant::absorbed)
+
+// THE WILDCARD ROLL is two steps: pick a SOURCE by weight, then a row uniformly inside it.
+// A flat pick over the merged pool cannot work — the generic roster runs about four Attack
+// rows for every one a line contributes, so line moves would surface roughly an eighth of
+// the time and the RUNS that make a borrowed passive worth anything would never happen.
+// Weighting the source instead buys both halves at once: a line's rows come up often enough
+// to string together (three Cipher braces in a row is a wall the pet stumbled into), and the
+// Defend roster's thinness stops setting how often anything appears.
+//
+// A starting shape to measure against, not a tuned one.
+constexpr int kWildSourceGenericPct = 50;   // ...and the remainder splits between the row's
+constexpr int kWildSourceLineAPct   = 25;   // two named lines, so a pool missing one line
+constexpr int kWildSourceLineBPct   = 25;   // hands its share back to generic
 
 }  // namespace mal

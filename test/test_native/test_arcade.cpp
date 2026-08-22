@@ -155,7 +155,9 @@ void test_arcade_isolation_is_off_the_clock() {
     enterArcadeCabinet(g, row, ArcadeDifficulty::Medium);
     g.onButton(press(Button::B));                 // START
     CHECK(g.nav() == Game::Nav::Isolation);
-    CHECK(g.isolation().goal() == kArcadeIsolationGoal);
+    // ENDLESS off a cabinet: no byte count finishes it, so the run is only ever ended by
+    // the player. kArcadeIsolationWinBytes is the till's win line, not the board's.
+    CHECK(g.isolation().endless() && g.isolation().goal() == 0);
     CHECK(!g.inEggPhase());                       // a raised pet, playing for fun
 
     // Steer nothing: the worm starts heading right and walks into the far wall, which
@@ -242,4 +244,110 @@ void test_arcade_tallies_persist() {
         // A cabinet nobody played writes no row at all, and reads back as untouched.
         CHECK(g.arcadePlays(arcadeGameIndexById("clutch")) == 0);
     }
+}
+
+// --- The two ENDLESS cabinets ----------------------------------------------
+
+// The button that wears skin `s` on the CHROMATOPHORE, in the order the chips draw.
+static Button chromaSkinButton(int skin) {
+    return skin == 0 ? Button::A : skin == 1 ? Button::B : Button::C;
+}
+
+// A cabinet run of the CHROMATOPHORE has no finish line: the till's line decides what a
+// WIN is, and the score is free to leave it behind. What comes back is a high score,
+// which is the only thing an endless board can be proud of.
+void test_arcade_endless_chroma_records_a_high_score() {
+    Game g{StartMode::Hatched};
+    const int row = arcadeRowOf("chroma");
+    CHECK(g.arcadeBest(row) == 0);
+    uint32_t t = 0;
+
+    // A short run: miss the very first pass on purpose.
+    enterArcadeCabinet(g, row, ArcadeDifficulty::Medium);
+    g.onButton(press(Button::B));                     // START
+    CHECK(g.nav() == Game::Nav::Chroma);
+    CHECK(g.chroma().endless() && g.chroma().goal() == 0);
+    g.onButton(press(chromaSkinButton((g.chroma().plate() + 1) % kChromaSkins)));
+    while (g.chroma().running()) g.tick(t += kFxAnimMs);
+    CHECK(g.chroma().passes() == 0);
+    g.onButton(press(Button::B));                     // bank it
+    CHECK(g.nav() == Game::Nav::ArcadeResult);
+    CHECK(g.arcadePlays(row) == 1);
+    CHECK(g.arcadeWins(row) == 0);                    // nowhere near the line
+    CHECK(g.arcadeBest(row) == 0);
+
+    // A real one: play perfectly PAST the win line, then miss.
+    g.onButton(press(Button::B));                     // dismiss the payout
+    enterArcadeCabinet(g, row, ArcadeDifficulty::Medium);
+    g.onButton(press(Button::B));
+    while (g.chroma().running() && g.chroma().passes() <= kArcadeChromaWinPasses) {
+        g.onButton(press(chromaSkinButton(g.chroma().plate())));
+        g.tick(t += kFxAnimMs);
+    }
+    const int scored = g.chroma().passes();
+    CHECK(scored > kArcadeChromaWinPasses);           // it did not stop at the line
+    g.onButton(press(chromaSkinButton((g.chroma().plate() + 1) % kChromaSkins)));
+    while (g.chroma().running()) g.tick(t += kFxAnimMs);
+    g.onButton(press(Button::B));
+    CHECK(g.arcadeWins(row) == 1);                    // past the line = a win
+    CHECK(g.arcadeBest(row) == scored);               // ...and the best is uncapped
+    CHECK(g.arcadeBestById("chroma") == scored);      // reachable by id, as a row keys it
+}
+
+// The high score is player-level and survives a power cycle (save v55) — a run with no
+// finish line has a number and nothing else to come back for, so the number has to last.
+void test_arcade_high_score_survives_a_reboot() {
+    MemSaveStore store;
+    int scored = 0;
+    const int row = arcadeRowOf("chroma");
+    {
+        Game g{StartMode::Hatched, "paypup", &store};
+        uint32_t t = 0;
+        enterArcadeCabinet(g, row, ArcadeDifficulty::Medium);
+        g.onButton(press(Button::B));
+        while (g.chroma().running() && g.chroma().passes() < 3) {
+            g.onButton(press(chromaSkinButton(g.chroma().plate())));
+            g.tick(t += kFxAnimMs);
+        }
+        g.onButton(press(chromaSkinButton((g.chroma().plate() + 1) % kChromaSkins)));
+        while (g.chroma().running()) g.tick(t += kFxAnimMs);
+        scored = g.chroma().passes();
+        CHECK(scored >= 3);
+        g.onButton(press(Button::B));                 // bank -> the till records it
+        CHECK(g.arcadeBest(row) == scored);
+        g.tick(t + kSaveAutosaveMs + kHeartbeatMs);   // force the autosave
+    }
+    Game back{StartMode::Hatched, "paypup", &store};
+    CHECK(back.arcadeBest(row) == scored);
+    CHECK(back.arcadePlays(row) == 1);
+}
+
+// SAVE v55, THE ROLLBACK DIRECTION. A trial-boot that fails puts the PREVIOUS firmware
+// back underneath a save the new one has already rewritten, so a v55 blob has to load on
+// a build that has never heard of v55. It does, because the tail is written last and read
+// behind its own version gate: rewriting the version stamp in place is exactly what an
+// older reader sees — every field before the tail intact, and the tail simply not read.
+void test_arcade_high_score_tail_is_rollback_safe() {
+    MemSaveStore store;
+    Game g{StartMode::Hatched, "paypup", &store};
+    CHECK(g.setHackerTag("ROLLBACK_9"));
+    g.tick(kSaveAutosaveMs + kHeartbeatMs);         // force the write
+    std::vector<uint8_t> blob = store.bytes();
+    CHECK(!blob.empty());
+
+    SaveData now;
+    CHECK(deserializeSave(blob, now));
+    CHECK(now.arcadeBest.size() == now.arcadeIds.size());
+
+    // The version stamp is a u16 right after the 4-byte magic (serializeSaveInto).
+    CHECK(blob[4] == static_cast<uint8_t>(kSaveVersion & 0xFF));
+    blob[4] = static_cast<uint8_t>(54 & 0xFF);
+    blob[5] = static_cast<uint8_t>((54 >> 8) & 0xFF);
+
+    SaveData older;
+    CHECK(deserializeSave(blob, older));            // the old build still loads it...
+    CHECK(older.arcadeBest.empty());                // ...and only loses what v55 added
+    CHECK(std::strcmp(older.hackerTag, now.hackerTag) == 0);
+    CHECK(older.arcadeIds.size() == now.arcadeIds.size());
+    CHECK(older.bits == now.bits);
 }

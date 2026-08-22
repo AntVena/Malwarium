@@ -250,6 +250,8 @@ int Game::achValue(const AchievementDef& d) const {
         }
         case AchSeries::ArcadeCabinetWins:
             return arcadeWins(arcadeGameIndexById(d.key));
+        case AchSeries::ArcadeCabinetBest:
+            return arcadeBestById(d.key);
     }
     return 0;
 }
@@ -301,11 +303,39 @@ const AchievementDef* Game::achBanner() const {
     return nullptr;
 }
 
+const EggLineDef* Game::achEggLineUnlocked(const AchievementDef& d) const {
+    if (!d.id) return nullptr;
+    for (const EggLineDef* line : registry_.allEggLines())
+        if (line && line->gatedBy && std::strcmp(line->gatedBy, d.id) == 0) return line;
+    return nullptr;
+}
+
+bool Game::achBannerHeld() const {
+    // A COLLAPSED burst is never held, however many egg lines are inside it: that banner
+    // is already saying "a lot happened", and holding the home screen hostage on a
+    // firmware update that retro-awarded the back catalogue is the opposite of a favour.
+    if (achBannerCount_ != 1) return false;
+    const AchievementDef* d = achBanner();
+    return d && achEggLineUnlocked(*d) != nullptr;
+}
+
+void Game::dismissAchievementBanner() {
+    if (achBannerWire_ < 0) return;
+    setAchBit(achNotified_, achBannerWire_);
+    achBannerWire_ = -1;
+    achBannerCount_ = 0;
+    markSaveDirty();
+    dirty_ = true;
+}
+
 void Game::tickAchievementBanner() {
     // Retire the banner on screen, marking everything it spoke for as announced. Only
     // here — a banner that was never shown is never marked, so an unlock earned during a
     // fight waits for the player to come home rather than being spent on nobody.
-    if (achBannerWire_ >= 0 && nowMs_ >= achBannerUntilMs_) {
+    // A HELD banner has no deadline — it waits for dismissAchievementBanner() — so the
+    // retire below must not see it. Everything after that point is unchanged: one at a
+    // time, and only while the player is actually looking at the home screen.
+    if (achBannerWire_ >= 0 && nowMs_ >= achBannerUntilMs_ && !achBannerHeld()) {
         if (achBannerCount_ > 1) {
             for (int i = 0; i < kAchievementCount; ++i)
                 if (achBit(achEarned_, kAchievements[i].wire))
@@ -366,10 +396,11 @@ bool Game::hatchProcessUnlocked(const CreatureDef* proc) const {
 bool Game::eggLineUnlocked(const EggLineDef* line) const {
     if (!line) return false;
     // A line states its own gate (EggLineDef::gatedBy); an ungated row is always on
-    // line-select. Two of the three are earned today, and each asks for the kind of play
-    // it is about: Phishing for the endless zone (the first DeepWeb-depth milestone),
-    // Worm for REPLICATING (the archive holding two of one species at once, fired from
-    // archStoreActive). Ransomware, the default, is given.
+    // line-select. Three of the four are earned today, and each asks for the kind of
+    // play it is about: Phishing for the endless zone (the first DeepWeb-depth
+    // milestone), Worm for REPLICATING (the archive holding two of one species at once,
+    // fired from archStoreActive), Metamorphic for the MIRROR — the pet meeting its own
+    // species over the LINK or in the arena. Ransomware, the default, is given.
     return !line->gatedBy || hasAchievement(line->gatedBy);
 }
 

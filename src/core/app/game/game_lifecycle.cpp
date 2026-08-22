@@ -187,6 +187,13 @@ void Game::startHatchGame(const EggLineDef* line) {
             startIsolation(static_cast<int>(
                 (bootHatchRemainMs_ + kIsolationDotMs - 1) / kIsolationDotMs));
             break;
+        case HatchGame::Chroma:
+            // The board as shipped: the window shrinks round by round and the water
+            // never changes under the pet mid-window. Switching is the arcade's HARD
+            // setting alone — a hatch is somebody's first minute with a new line, and
+            // the ramp it needs is the one it can see coming.
+            startChroma(kChromaRounds, kChromaWindowMs, /*switching=*/false);
+            break;
     }
 }
 
@@ -595,7 +602,11 @@ void Game::resetToHatch() {
     cryptogramPrizeBits_ = 0;
     cryptogramPrize_ = {};
     arcadeDifficulty_ = ArcadeDifficulty::Medium;
-    for (int i = 0; i < kArcadeMaxCabinets; ++i) { arcadePlays_[i] = 0; arcadeWins_[i] = 0; }
+    for (int i = 0; i < kArcadeMaxCabinets; ++i) {
+        arcadePlays_[i] = 0;
+        arcadeWins_[i] = 0;
+        arcadeBest_[i] = 0;
+    }
     trainRow_ = 0;
     trainScreen_ = TrainScreen::MovePicker;
     moveConfirm_ = false;

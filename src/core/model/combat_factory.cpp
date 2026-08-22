@@ -18,6 +18,56 @@ void Combatant::setLine(const ContentRegistry& reg, const char* lineId) {
     linePassives = cl ? cl->passives : 0;
 }
 
+// The wildcard pools (MoveDef::drawLineA/B), built alongside the chain steps and for the
+// same reason: the registry is read HERE so the turn engine never has to.
+//
+// One pool per slot, banded generic-then-A-then-B in a single vector (WildPool). A row is
+// eligible when it matches the wildcard's own KIND — an Attack wildcard rolls attacks, so
+// the slot typing an operator equipped into still means what it says — and when the pet's
+// stage has unlocked it, which is what keeps a Boot pet off the Daemon roster without a
+// per-stage table anywhere.
+//
+// The metamorphic track excludes itself for free: a pool is the generic roster plus two of
+// the OTHER lines, and a line's own rows are gated to its line, so nothing here has to
+// filter them and no roll can nest.
+void buildWildPools(const ContentRegistry& reg, Combatant& c, Stage stage) {
+    // Nothing is allocated for a kit holding no wildcard row, which is every fight the
+    // metamorphic track is not in. The pools are the only per-fight heap this file would
+    // add, and a build that pays for them regardless would charge every pet on the roster
+    // for a line it is not on — on a board where an allocation that fails takes the whole
+    // device down with it (no exceptions).
+    bool any = false;
+    for (const MoveDef* m : c.moves)
+        if (m && moveIsWildcard(*m)) { any = true; break; }
+    if (!any) return;
+    c.wildPools.assign(c.moves.size(), WildPool{});
+    for (size_t i = 0; i < c.moves.size(); ++i) {
+        const MoveDef* w = c.moves[i];
+        if (!w || !moveIsWildcard(*w)) continue;
+        c.polymorphic = true;
+        WildPool& p = c.wildPools[i];
+        auto take = [&](const char* line) {
+            for (const MoveDef* m : reg.allMoves()) {
+                if (m->kind != w->kind || !moveUnlockedAtStage(*m, stage)) continue;
+                const bool generic = m->line == nullptr;
+                if (line ? (generic || std::strcmp(m->line, line) != 0) : !generic) continue;
+                p.rows.push_back(m);
+            }
+        };
+        take(nullptr);                                  // the shared roster
+        p.genericEnd = static_cast<int>(p.rows.size());
+        if (w->drawLineA) take(w->drawLineA);
+        p.lineAEnd = static_cast<int>(p.rows.size());
+        if (w->drawLineB) take(w->drawLineB);
+        // A borrowed row arrives carrying its line's passive, so the flags are resolved
+        // from the same read that found the rows (Combatant::setLine makes this lookup too).
+        if (const CreatureLine* la = w->drawLineA ? reg.creatureLine(w->drawLineA) : nullptr)
+            p.passivesA = la->passives;
+        if (const CreatureLine* lb = w->drawLineB ? reg.creatureLine(w->drawLineB) : nullptr)
+            p.passivesB = lb->passives;
+    }
+}
+
 void resolveChains(const ContentRegistry& reg, Combatant& c) {
     c.chainFollow.assign(c.moves.size(), nullptr);
     for (size_t i = 0; i < c.moves.size(); ++i)
@@ -105,6 +155,17 @@ Combatant makePlayerCombatant(const ContentRegistry& reg, const CreatureDef& pet
             case ModEffect::StealAmplifyPct:
             case ModEffect::ExecOverridePct:   // Ring-0 Shim — read at execOverrideChance
             case ModEffect::ReplicaSpawnPct:   // Replication Bus — read at rollWormSpawn
+            case ModEffect::ExtortionLedger:
+                // The STANDING half is a damage cut and lands on the base, under the same
+                // never-immune clamp every other cut answers to. Only the seizure WINDOW
+                // stays live, since it opens and closes mid-fight.
+                c.dmgReducePct += mag;
+                if (c.dmgReducePct > kLevelDmgReduceMaxPct)
+                    c.dmgReducePct = kLevelDmgReduceMaxPct;
+                c.mods.apply(m->effectKind, mag, m->magnitude2);
+                break;
+            case ModEffect::ReplicaWorthPct:     // Replication Bus — read at a copy's spawn
+            case ModEffect::PolymorphEffectPct:  // Mutation Engine — read at the turn engine
                 c.mods.apply(m->effectKind, mag, m->magnitude2);
                 break;
             case ModEffect::AttackCountPowerPct: {  // Botnet Swarm — +mag% power PER Attack move
@@ -143,6 +204,7 @@ Combatant makePlayerCombatant(const ContentRegistry& reg, const CreatureDef& pet
         }
     }
     resolveChains(reg, c);
+    buildWildPools(reg, c, c.stage);
     return c;
 }
 
@@ -605,6 +667,7 @@ Combatant makeEnemyCombatant(const ContentRegistry& reg, const CombatEnemy& spec
     if (c.moves.empty())                            // never actionless
         if (const MoveDef* d = reg.move("quick_jab")) c.moves.push_back(d);
     resolveChains(reg, c);
+    buildWildPools(reg, c, c.stage);
     return c;
 }
 

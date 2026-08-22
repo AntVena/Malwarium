@@ -420,6 +420,9 @@ void Game::startPvpBattle(uint32_t seed) {
     // ...and on the same rule, the achievement for facing another operator at all. A duel
     // pays nothing, so recording that it HAPPENED is the whole reward.
     unlockAchievement(ach::kFirstDuel);
+    // ...and, on the same rule, the mirror — recorded at the START because the meeting is
+    // the whole event, exactly as it is for the reveal and the duel above.
+    noteMirrorMatch(pvpRemoteFighter_.creatureId);
     combatBeat_ = 0;
     fxBeat_ = 0;
     combatTurnBeat_ = 0;

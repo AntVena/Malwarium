@@ -22,6 +22,21 @@ const EggLineDef kEggLines[] = {
     // once at lay-time like the Clutch — a worm loose in a quarantine buffer, eating the
     // incubation clock a minute at a time.
     {"worm", "Worm", "vermicell", HatchGame::Isolation, ach::kSecondInstance},
+    // The fourth egg line, earned by the MIRROR: the operator's pet facing its own
+    // species, over the LINK or in the arena (ach::kHashCollision). Every earned line
+    // asks for the kind of play it is about, and this is the sharpest of the four — a
+    // roster of distinct silhouettes exists so you can tell one creature from another,
+    // and the one moment that fails is the one that earns the line about being
+    // indistinguishable. Leaving it ungated is not a free choice: an ungated fourth row
+    // puts TWO lines in front of a fresh save, turning the opening auto-skip into a
+    // line-select modal, which test_creature_lines.cpp holds.
+    //
+    // Its hatch is the CHROMATOPHORE (game_chroma.cpp): the bell rehearses wearing three
+    // other colours against a sweep, one skin per button. The line's own argument as a
+    // board — every other hatch game asks the player to FIND something, and this one
+    // asks them to become something in time, which is the one thing this family does
+    // that no other does.
+    {"metamorphic", "Metamorphic", "polystaria", HatchGame::Chroma, ach::kHashCollision},
 };
 const int kEggLinesCount = sizeof(kEggLines) / sizeof(kEggLines[0]);
 

@@ -39,7 +39,8 @@ DMA-blitted to the panel.
 1. BACKGROUND   clear / room backdrop
 2. SPRITE_MODS  pet-effects that sit UNDER the creature: FX_ABSORB's incoming blocks,
                 FX_SHRED's sliding scanlines
-3. SPRITE_BASE  current pet animation frame
+3. SPRITE_BASE  current pet animation frame, in whatever colours it is currently wearing:
+                FX_CAMO's borrowed palette, with the hit flash composed over it
 4. SPRITE_MODS  overlay pet-effects (e.g. the Worm line's Replication Ghost)
 5. CORRUPTION   frag-driven: channel-shift -> scanline-tear -> dropped-px -> glitch-blocks
 6. SCREEN_FX    full-screen overlays: evolution flash, Lockout band, critical-failure crash, fades
@@ -50,6 +51,13 @@ SPRITE_MODS straddles SPRITE_BASE because a pet-effect's side of the creature is
 what it means: a Replication Ghost is a copy standing in front, and a block streaming into
 the pet has to pass BEHIND it or the creature reads as wearing its dinner rather than
 eating it. An effect names which side it takes when it joins the table.
+
+An effect that recolours the creature is IN SPRITE_BASE rather than either side of it —
+there is one frame on the canvas, drawn in other colours, not a second thing layered over
+a first. `FX_CAMO` is the creature's colour while it wears it, so the impact flash is
+applied over the recoloured pixels rather than in place of them: the pet flashes in the
+borrowed palette. A hit must stay legible on a camouflaged fighter, and a camouflaged
+fighter must not appear to be undressed by being hit.
 
 ## Composition rules
 
@@ -69,3 +77,45 @@ No new visual effect ships without (a) a row in the table above naming its stage
 stat/state that drives its intensity, and (b) an `FX_*` row in `assets/ASSET_MANIFEST.md §D` so
 Design knows to skip it. An effect that isn't in the table has no defined composition order with
 the ones that are.
+
+An effect also has to name **what it is a function of**, and answer one question first:
+is it a MOMENT or a STATE? A moment decays off a beat — that is what the combat screen's
+`hitBeat` is, and it is right for a punch. A state is a standing value that holds until
+the thing it describes changes, and it must not be built out of a beat at all.
+
+Getting that backwards is not a tuning problem, it is a lie: `FX_CAMO` says which line the
+pet is currently channelling, so a version of it that ran out on a timer described a swing
+that had already finished, and one derived from `hitBeat` — which names the most recent
+strike by *either* fighter and is reassigned to the other seat the moment the rival hits
+back — was stripped off the pet by the commonest thing that can happen next. It is now a
+level (`CombatCamo`, `camoAdvance`) eased toward a live reading of the pet's own last cast,
+with no clock in it anywhere. `FX_ABSORB`/`FX_SHRED` are genuinely moments and keep their
+own beat (`CombatOutro::beat`) — their own, because the strike clock is not theirs either.
+
+`FX_CAMO` has **two colour sources and two drivers**, which is the shape an effect takes
+when a second screen wants it. The palette is either sampled off the sprite standing
+opposite (`camoRampFrom`, the fight) or built from one PAL_CORE token (`camoRampFromTone`,
+a screen that means a specific colour and has no opponent to sample). The level is either
+`camoAdvance` eased toward the pet's live cast (the fight) or a caller's own settled
+fraction — the CHROMATOPHORE hands it `Chromatophore::wearPct`, so the scatter on the
+creature is the same number the board is about to score. Both remain STATES; neither
+source or driver is allowed to be a beat.
+
+The sampled source is really the derived one **with the real colours laid over it**: the
+ladder is built whole from the sprite's main colour first, then its actual tones are
+placed on the rungs their own luminance names, commonest first. A ramp is therefore
+always complete — the property the remap cannot do without — while still wearing as much
+of the other creature as that creature actually has. The two failure modes this replaced
+are worth naming, because both looked like damage rather than disguise: a palette
+stretched over the whole value range flattens the pet into a silhouette, and one that
+fills only part of the ladder flecks a borrowed tone over its shadows and leaves the
+rest. A 1-bit opponent is the case that shows it — one white ink, so the pet keeps every
+bit of its own shading and simply loses its colour.
+
+Changing FROM one borrowed palette to another is the same pass with the old ramp passed as
+`from`: un-flipped pixels wear the palette being left rather than the creature's own. A
+fight leaves it null, because there the pet really is returning to itself.
+
+Two effects that recolour the same creature **compose or rank, and say which.** `FX_CAMO`
+is what colour the pet *is*, so the impact flash blends over it; drawn as alternatives,
+every hit taken read as cancelling the disguise.

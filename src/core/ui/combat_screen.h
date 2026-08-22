@@ -237,6 +237,61 @@ struct CombatOutro {
     int beat = 0;   // heartbeats since the result landed; drives the sweep
 };
 
+// How much of another line's colours the local pet is currently wearing (FX_CAMO,
+// core/render/camo.h) — 0 its own, 255 fully the borrowed line's.
+//
+// A LEVEL, not a window, and that distinction is the whole of this struct. Every other
+// cue on this screen is a decay off `hitBeat`, which names the most recent strike by
+// EITHER fighter and is reassigned to the other seat the moment the rival hits back.
+// Anything derived from it lasts exactly one strike — right for a punch, wrong for a
+// colour, which has to stay put while the pet is holding what it borrowed and while it
+// takes whatever the rival throws in the meantime. So the level is carried by the
+// caller (Game::combatCamoLevel_), eased toward what the pet's LIVE cast is wearing
+// (wearingBorrowedColours) once per anim tick, and read here as a fact rather than
+// recomputed from a clock.
+struct CombatCamo {
+    uint8_t level = 0;
+};
+
+// Is this fighter's live cast a move borrowed from THE FIGHTER OPPOSITE — the state
+// CombatCamo eases toward? Two conditions, and the effect needs both.
+//
+// BORROWED. Gated on the CAST rather than on who is casting, following a wildcard slot
+// through to what it rolled: moveAllowedForLine (content/defs.h) already stops every
+// other line from holding a move that is not its own, so "the line on the move differs
+// from the line on the caster" can only ever be true for a metamorphic pet, and the turn
+// engine still never learns that line's name.
+//
+// FROM THEM. The move has to be one `rival` is actually carrying. Wearing another line's
+// colours for a move that line's creature opposite you does not even have is a costume,
+// not camouflage — and the picture the effect draws (the pet in the rival's own palette,
+// sampled off the rival's own sprite) is only true when the thing being copied is in
+// front of you. A rival with no move list — a Sim dummy — is therefore never copied,
+// which is correct: there is nothing there to copy.
+//
+// It is a STATE and not an event: `Combatant::lastMoveIdx` and `WildPool::lastRolled` are
+// per-fighter and rewritten only when THAT fighter acts, so this stays true across any
+// number of rival turns and goes false when the pet itself casts something of its own.
+bool wearingBorrowedColours(const Combatant& c, const Combatant& rival);
+
+// The A+C Exploit picker's header, as TEXT rather than as a phrase chosen from a list.
+//
+// The box holds up to four bands — the pet's moves, combat-usable items, the metamorphic
+// LOCK rows, and the crew Exploit — and which of them are present varies per fight, so no
+// fixed wording is honest: a metamorphic pet in a crew shows all four, and a pet carrying
+// no usable item shows two. Naming a band that is not in the box, or leaving one out while
+// naming its neighbours, is the same class of lie as a hint offering a key that does
+// nothing (CombatSides::canRun).
+//
+// MOVE is unconditional — a fighter always has moves. If the titled form will not fit
+// `roomPx`, the TITLE is what yields and the band list survives: what the operator is
+// about to scroll through outranks the label on the box.
+//
+// Pure and separate from the draw for the same reason combatVsGrid is, so a gate can
+// assert what reaches the operator instead of reading it back out of pixels.
+void overridePickerHeader(char* out, size_t cap, bool items, bool lock, bool crew,
+                          int roomPx);
+
 // Which of the RIVAL's moves the KIT page marks as a PRIZE — one this pet does not
 // have and that beating this rival could teach it. The outro answers the same question
 // with a whole-fight yes/no (Absorb vs Shred); this is that answer broken out per move,
@@ -262,6 +317,6 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
                 const SpriteData* playerSprite, const SpriteData* enemySprite,
                 int beat, int animBeat, int hitBeat, int statPage = 0,
                 const CombatSides& sides = {}, const CombatOutro& outro = {},
-                const RivalPrizes& prizes = {});
+                const RivalPrizes& prizes = {}, const CombatCamo& camo = {});
 
 } // namespace mal

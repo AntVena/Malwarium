@@ -463,11 +463,15 @@ static WanderTrace traceWander(Locomotion loco, int beats) {
 // the same box no matter how long it runs, and none of them ever go BELOW the shelf.
 void test_idle_wander_stays_inside_the_living_box() {
     for (Locomotion loco : {Locomotion::Walk, Locomotion::Fly, Locomotion::Swim,
-                            Locomotion::Ground}) {
+                            Locomotion::Ground, Locomotion::Static}) {
         const WanderTrace t = traceWander(loco, 4000);
         CHECK(t.minX >= -kWanderHalfSpanX && t.maxX <= kWanderHalfSpanX);
         CHECK(t.minY >= 0 && t.maxY <= kWanderRiseMax);
-        CHECK(t.maxX > 0 && t.minX < 0);      // and it uses both sides, not one
+        // ...and every mover that moves at all uses both sides of the box rather than
+        // one. Static is the exception by definition: it is the row an egg declares to
+        // say it goes nowhere, so "nowhere" is what it has to keep doing.
+        if (loco == Locomotion::Static) CHECK(t.movingBeats == 0);
+        else CHECK(t.maxX > 0 && t.minX < 0);
     }
 }
 

@@ -50,6 +50,62 @@ facts so a new line's identity stays buildable:
 
 ---
 
+## 1. Metamorphic — the line that is built, and what tuning it will ask
+
+The line ships: creature rows in `creatures/metamorphic/line.h`, a nine-row wildcard track in
+`content_moves.cpp`, Polymorph and the source weights in `content_passives.h`, the engine in
+`core/model/combat.h`'s `WildPool` / `polymorphAbsorb` / `wildPick`, and its two mods (Junk
+Padding, Mutation Engine) in `content_mods.cpp`. Each of those states its own mechanism, so
+none of it is restated here. What belongs in a design bank is the reasoning a code comment has
+no business carrying: why the shape is this one, and which dial to reach for first.
+
+**Botnet was the same fantasy, and the Worm had already spent it.** Many machines under one
+command is replication — `LinePassive::Replication`, `Combatant::wormReplicas`, and the
+bodies-not-actors ceiling below. Metamorphism collides with nothing, because everything it does
+happens on the parent, which is also why it needs no new actor in the turn order and stays safe
+across a link.
+
+**What bounds the ramp is the KIT, not a constant.** Nothing clamps Polymorph, and the speed
+half compounds on purpose — Speed buys actions, actions buy casts, casts buy Speed. The brake
+is how much of a kit is wildcard rows: `Combat::pickSlot` draws uniformly over the slots that
+are not the last used, so a wild slot fires about its share, and two of four slots is roughly
+four absorbed casts in an eight-action fight. That is a player-facing choice, which is where a
+bound of this kind belongs.
+
+**Repeats cannot be the brake, and it is worth knowing why before reaching for them.** Against
+a Daemon Attack pool near fifty rows, better than seven casts in eight are new; the effective
+pool has to fall under about six before the curve bends at all. The dial that actually moves
+this is `kWildSource*Pct` — weighting the source shrinks the band a roll lands in, where
+filtering the pool only shortens a list that was never the constraint.
+
+**Measure it on the LONGEST fight, not the shortest.** The usual warning below is that a
+passive gets too few chances to fire; this line inverts it. A gauntlet round or an arena
+bracket is where it pops off, and the gauntlet carries Health between rounds, which compounds
+it again. That is the intended payoff rather than a case to clamp — but it is the case to put
+numbers on first.
+
+### Still open
+
+- **Its own Defend rows, or more generic braces.** Eleven generic Defend rows against
+  forty-two Attack is thin enough that the weighted source roll is carrying it, and it is why
+  a Defend wildcard pairs only lines that have a defend track.
+- **The source weights are the unmeasured number.** `kWildSource*Pct` has never been swept
+  against an alternative, and it is the dial with the most reach — it sets how often a roll
+  lands in a three-row line band rather than the wide generic one, which is both the repeat
+  rate and how often a borrowed passive shows up at all.
+- **What IS calibrated:** the line sits inside the roster's existing spread rather than above
+  it, and its nine wildcard rows beat the generic roster without beating each other. What that
+  leaves untested is the LOCK, which no sweep reaches — the picker is a human pausing the
+  fight, so its value has to be judged by playing rather than measured by resolving.
+- **A line's Epic has to pay in the currency its tier rewards.** Mutation Engine began as a
+  flat attack-power bonus and could not be made worth a slot by raising the number: what leads
+  that band takes turns or refuses death, and every percentage-of-damage row there sits at the
+  band mean whatever its magnitude. Amplifying the line's own passive is what moved it, which
+  is the shape `ExecOverridePct` and `ReplicaSpawnPct` already have. Worth knowing before
+  authoring the next line's pair.
+
+---
+
 ## Open items for whoever picks this up next
 
 - **A new line's engine hooks are additive, not free** — a shield/absorb pool, a stat-siphon list,

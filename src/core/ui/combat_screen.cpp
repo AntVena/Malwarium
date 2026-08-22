@@ -4,10 +4,12 @@
 #include <cmath>
 #include <cstdarg>
 #include <cstdio>
+#include <cstring>
 
 #include "tunables.h"        // kLevelDmgReduceMaxPct — the never-immune defence clamp
 #include "core/model/combat.h"
 #include "core/render/absorb.h"
+#include "core/render/camo.h"
 #include "core/render/canvas.h"
 #include "core/render/shred.h"
 #include "core/render/font.h"
@@ -59,7 +61,8 @@ constexpr int scaleUp(int x) {
 // padding outside the band, which is the whole point of seating by content.
 void drawFighter(Framebuffer& fb, const SpriteData* s, int contentX, int animBeat,
                  uint8_t flashAmt, Rgb565 flashColor, int xNudge,
-                 const AnimClip* pose) {
+                 const AnimClip* pose, const CamoRamp* camo = nullptr,
+                 uint8_t camoAmt = 0) {
     if (!s) return;
     const int x = contentX - scaleUp(spriteContentX0(*s)) + xNudge;
     const int y = kSpriteShelf - s->h * kScaleNum / kScaleDen;
@@ -67,7 +70,14 @@ void drawFighter(Framebuffer& fb, const SpriteData* s, int contentX, int animBea
     // heuristic runs on row 0, which is the whole of a single-row sheet.
     const int row = pose ? pose->row : 0;
     const int frame = pose ? pose->frameAt(animBeat) : idleFrame(*s, animBeat);
-    if (flashAmt > 0)
+    // The camouflage is what colour the creature IS while it wears it, so the flash goes
+    // OVER it rather than instead of it: a fighter struck mid-disguise flashes in the
+    // borrowed colours. Drawn as alternatives, every hit taken read as cancelling the
+    // camouflage — which is exactly what it is not allowed to do.
+    if (camo && camoAmt > 0 && !camo->empty())
+        drawSpriteCamo(fb, *s, frame, x, y, kScaleNum, kScaleDen, *camo, camoAmt,
+                       flashColor, flashAmt, row);
+    else if (flashAmt > 0)
         drawSpriteFlash(fb, *s, frame, x, y, kScaleNum, kScaleDen, flashColor,
                         flashAmt, row);
     else
@@ -84,6 +94,48 @@ int seatWidth(const SpriteData* s) {
 }
 
 }  // namespace
+
+// The move a combatant actually cast last, following a wildcard slot through to what it
+// ROLLED — a metamorphic row is a pool, so the slot's own MoveDef says nothing about
+// which line the cast came from and `lastRolled` is the only thing that does.
+const MoveDef* castMove(const Combatant& c) {
+    if (c.lastMoveIdx < 0) return nullptr;
+    if (c.lastMoveIdx < static_cast<int>(c.wildPools.size()))
+        return c.wildPools[c.lastMoveIdx].lastRolled;
+    return nullptr;
+}
+
+// What this predicate is for, and why it is gated on the cast, are on the declaration
+// (combat_screen.h). Game::advanceCombatTurn is what asks it.
+bool wearingBorrowedColours(const Combatant& c, const Combatant& rival) {
+    const MoveDef* m = castMove(c);
+    if (!m || !m->line || !c.creature || !c.creature->line) return false;
+    if (std::strcmp(m->line, c.creature->line) == 0) return false;   // its own move
+    // ...and one the fighter opposite is actually holding. Compared by ID rather than by
+    // pointer: both sides resolve their rows out of the same registry today, but a
+    // combatant built from a spec rather than from a loadout is free not to, and a
+    // costume that only shows up on one build path is worse than no costume.
+    for (const MoveDef* r : rival.moves)
+        if (r && r->id && m->id && std::strcmp(r->id, m->id) == 0) return true;
+    return false;
+}
+
+// What this builds and why it is built rather than chosen are on the declaration
+// (combat_screen.h).
+void overridePickerHeader(char* out, size_t cap, bool items, bool lock, bool crew,
+                          int roomPx) {
+    char bands[32];
+    int n = std::snprintf(bands, sizeof(bands), "MOVE");
+    auto add = [&](const char* b) {
+        n += std::snprintf(bands + n, sizeof(bands) - n, "/%s", b);
+    };
+    if (items) add("ITEM");
+    if (lock) add("LOCK");
+    if (crew) add("CREW");
+    char titled[48];
+    std::snprintf(titled, sizeof(titled), "EXPLOIT: %s", bands);
+    std::snprintf(out, cap, "%s", textWidth(titled) <= roomPx ? titled : bands);
+}
 
 // Pose precedence and its reasoning are on the declaration (combat_screen.h).
 const AnimClip* fightPose(const Combatant& c, bool takingHit, bool swinging) {
@@ -547,7 +599,7 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
                 const SpriteData* playerSprite, const SpriteData* enemySprite,
                 int beat, int animBeat, int hitBeat, int statPage,
                 const CombatSides& sides, const CombatOutro& outro,
-                const RivalPrizes& prizes) {
+                const RivalPrizes& prizes, const CombatCamo& camo) {
     fb.clear(palColor(Pal::PAPER));
     // LOCAL and RIVAL are ROLES, not Combat's player/enemy slots. Everything the screen
     // says and seats is bound to the role: the local pet gets the bottom, zoned Health
@@ -651,6 +703,17 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
     // The swing window is the hop's own, so an authored attack clip runs exactly as long
     // as the lunge that carries it — one motion, not a pose that outlives its nudge.
     const bool swinging = struck && hitBeat >= 0 && hitBeat < kAttackHopPeriod;
+    // FX_CAMO. A pet holding a move borrowed from another line wears that line's colours
+    // for as long as it holds it — the level is the caller's (CombatCamo), read straight
+    // rather than derived from any beat on this screen, so nothing that happens between
+    // the pet's own casts can move it. The palette is SAMPLED off the fighter opposite
+    // rather than read from a table: a line's creatures wear its colour, so the thing
+    // standing there is already the right answer, and against a malbeast or a boss —
+    // which belong to no line and have no table entry — it still answers with whatever
+    // colours are on that thing, which is the only honest answer available.
+    const uint8_t localCamoAmt = camo.level;
+    const CamoRamp localCamo =
+        localCamoAmt > 0 && rivalSprite ? camoRampFrom(*rivalSprite) : CamoRamp{};
     // The beaten rival's outro takes its seat when one is running — it IS the rival for
     // those beats, so nothing else has to know the fight ended. See CombatOutro
     // (combat_screen.h) for why the two dissolves mean different things.
@@ -696,7 +759,8 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
                     : palColor(localImpact >= localWindup ? Pal::INK : Pal::WARN),
                 impactNudgePx(localHitBeat, -1) + hop,
                 fightPose(pl, localHitBeat >= 0 && localHitBeat < kImpactPeriod,
-                          swinging && lastByLocal));
+                          swinging && lastByLocal),
+                &localCamo, localCamoAmt);
 
     // Worm replicas, on the same shelf, standing BETWEEN their parent and its opponent —
     // each row starts at the parent's own drawn edge facing the other fighter and falls
@@ -841,14 +905,18 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
         const int moveN = combat.overrideMoveCount();
         const auto& items = combat.overrideItems();
         const int itemN = static_cast<int>(items.size());
+        const int lockN = combat.overrideLockCount();
         const int crewN = combat.overrideCrewRows();
-        const int n = moveN + itemN + crewN;
+        const int n = moveN + itemN + lockN + crewN;
         const int boxH = 22 + n * 14;
         const int boxY = 40;
         fb.fillRect(8, boxY, kActiveW - 16, boxH, palColor(Pal::TRACK));
-        drawText(fb, 16, boxY + 4,
-                 crewN ? "EXPLOIT: MOVE/ITEM/CREW" : "EXPLOIT: MOVE / ITEM",
-                 palColor(Pal::INK));
+        // Named from what is actually in the box (overridePickerHeader), against the room
+        // between the text inset and the box's own right edge.
+        char head[48];
+        overridePickerHeader(head, sizeof(head), itemN > 0, lockN > 0, crewN > 0,
+                             (kActiveW - 8) - 16);
+        drawText(fb, 16, boxY + 4, head, palColor(Pal::INK));
         // Every row here is the same shape: a NAME from content, and a short fixed TAG
         // right-aligned inside the box. So the name yields to the tag — travelling
         // inside what's left of the row while it's the focused one, clipped when it
@@ -875,6 +943,12 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
                 char tag[10];
                 std::snprintf(tag, sizeof(tag), "+%d HP", it.heal);
                 pickerRow(y, it.label, nameC, tag, sel);
+            } else if (i < moveN + itemN + lockN) {       // a LOCK row
+                // The move this slot last rolled, tagged as what committing does rather
+                // than as what the move is — the kind tag is already on its own row above,
+                // and what an operator is deciding here is whether to stop rolling.
+                const MoveDef* lm = combat.overrideLockMove(i - moveN - itemN);
+                pickerRow(y, lm ? lm->displayName : "-", nameC, "LOCK", sel);
             } else {                                      // the crew Exploit row
                 const CrewExploit& ce = combat.overrideCrew();
                 char tag[16];
@@ -1056,7 +1130,11 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
                 std::snprintf(name, sizeof(name), "%s%s %s", learnable ? "+ " : "  ",
                               moveKindTag(m->kind), m->displayName);
                 char pw[8];
-                std::snprintf(pw, sizeof(pw), "%d", m->power);
+                // A wildcard row becomes whatever it rolls, so it HAS no power to print —
+                // and a number here would be the one readout on this page that lies. The
+                // dash is the same mark the VS page uses for a quantity not in play.
+                if (moveIsWildcard(*m)) std::snprintf(pw, sizeof(pw), "-");
+                else std::snprintf(pw, sizeof(pw), "%d", m->power);
                 // The move it is CHANNELLING is the one thing here that is not a standing
                 // fact, and the most urgent — a wind-up is a hit already on its way. It
                 // takes the colour when a row is both, which costs the prize nothing: the

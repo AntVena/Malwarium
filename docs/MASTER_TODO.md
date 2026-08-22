@@ -28,7 +28,48 @@ building it up organically.
 
 ### 1a. Ready to build
 
+**Rollback is filed as a Buff and it is not one.** Every other Buff does something TO the pet
+and is spent doing it; Rollback opens a picker and hands the player a lever over the stat RNG,
+which is a different kind of object and reads wrong sitting in the same band as Pwnzu Sauce.
+`ItemDef::Type` is `{Food, Buff, Quest}`, so this wants a fourth member rather than a re-label —
+and the type is not cosmetic: it drives the inventory's fixed use-frequency order (`itemTypeOrder`)
+and the ITEMS hold-B type filter, so a new band has to earn its place in both. Worth checking what
+else is sitting in Buff for want of somewhere better before deciding whether the band is
+`Tool` alone or a wider re-cut. |
+`content_items.cpp`'s `rollback` row + the `Type` enum in `defs.h`; `itemTypeOrder`; the ITEMS
+filter in `game_items.cpp`. | M | The row's own comment currently argues the opposite ("a level
+re-roll BUFF, not a quest item") — that reasoning was about it not being a QUEST item, and it
+answered the wrong question. |
+
+**The Metamorphic line changes colour in a fight and on its hatch board, but never at home.**
+FX_CAMO (`core/render/camo.h`) is a standing level over a `CamoRamp`, and neither half is
+combat-specific. So the idle habitat can run the same effect as an occasional ambient flourish —
+the pet drifts into some other line's colours for a few seconds and comes back — which is where a
+player actually watches their pet, and it costs one more caller rather than a second effect. Wants
+a trigger cadence that reads as the creature doing it rather than as a glitch, plus a rule for
+which colours it reaches for when there is nobody standing opposite to sample. |
+`core/render/camo.h`; `game_render.cpp`'s idle habitat draw. | S | The colour-source seam it
+needed already exists: `camoRampFromTone` builds a value ladder from one PAL_CORE token, which is
+what the CHROMATOPHORE's three skins are made of. So does the two-palette change (`from`), which is
+what a drift from one line's colours into another's wants. What is left here is only the TRIGGER —
+when a resting pet decides to do it, and which token it picks. The same hand-built ramp is what a
+"pet glows purple for a few seconds after a rare food" would use. |
+
 **Capture arming costs ~70KB and the AP ~58KB**, against ~126KB free with the radio idle. The device works, and the save no longer needs a big contiguous block, but that was the only thing standing on this — anything else that grows will hit the same wall. Worth a pass at what the capture path actually needs. | `net_capture.h`'s `powerUp` (`esp_wifi_init` + promiscuous + the pcap SD buffers). | M | Measured on device, not estimated: `[ap] down free=126408` → `[cap] armed free=56188`. |
+
+**A bonus that lands on a full cap pays literally nothing, and the row still reads as if it
+paid.** Several stats clamp — `kLevelDmgReduceMaxPct` at 85% is the sharpest, and `defenseMultPct`,
+the level-Defense cap and the Obfuscation siphon ceiling all do the same thing — so a pet that has
+already reached one gets zero from the next mod, move or level point that adds to it, with nothing
+on any screen saying so. The Epics make it easy to hit: Extortion Ledger alone adds 35 points of
+cut to a line that also stacks Cipher. Wants OVERFLOW: what would have been clamped away converts
+into some other benefit (max-Health is the natural sink, being the one pool nothing caps) rather
+than evaporating. One conversion at each clamp site, and the cap stays exactly where it is — this
+is about the discard, not the ceiling. |
+`combat_factory.cpp`'s `applyLevelStatPoints` + the mod switch; `combat.cpp`'s clamp sites. | M |
+Same class of silent-zero as a mod wired to no hook, which is the failure the
+`test_every_mod_reaches_the_fight` gate exists to catch — that one catches a mod that never
+applies, this is a mod that applies into a full bucket. |
 
 **A Packet Wraith and a Cache Ghoul at the same rung are still one fight.** `wildMalbeast` gives
 tiers 1/2/3 `{quick_jab}` / `{quick_jab, packet_storm}` / `{packet_storm, fork_bomb}`, and the
@@ -263,15 +304,24 @@ Engine slots for most of these exist (they render via placeholder or text today)
 **drop-in the moment they're drawn**. Sizes are logical px; bind colour to `PAL_CORE` tokens.
 Inventory: `assets/ASSET_MANIFEST.md`.
 
-### 2a. `quantize.py` is missing
+### 2a. `quantize.py` — rebuilt and promoted ✔
 
-`sheetpack.py` (cell packing, the crop-vs-decimate choice and its damage report, the 1px floor
-gap) is promoted into `tools/`. `quantize.py` (palette snap + binary alpha) is not — it only
-ever existed in a session scratchpad, which is cleaned up between sessions, and a maintenance
-sweep already confirmed it's gone. Nothing reproduces a shipped sheet's palette snap without it.
-Needs re-sourcing (if a copy survives somewhere off-repo) or rewriting from its description here
-and its call signature (`quantize.py in.png out.png '#hex' '#hex' ...`) — then promoting into
-`tools/` the way `sheetpack.py` just was. Diff **S** once the source or a rewrite exists.
+Was missing: it only ever existed in a session scratchpad, which is cleaned between sessions.
+Rewritten from its documented call signature and promoted into `tools/` beside `sheetpack.py`,
+which it splits work with — **`sheetpack.py` owns geometry, `quantize.py` owns colour and
+coverage**, and neither knows about the other, so a sheet can be re-snapped without repacking.
+
+It carries four passes that each exist because of a bug that shipped or nearly did: sharpen
+BEFORE an area-average downscale (a plain average at 4:1 melts adjacent forms together);
+area-average rather than nearest (nearest deletes whole lattice lines — one egg lost 3,983
+one-pixel features that way); a luminance-weighted snap (plain RGB nearest trades away value
+steps); and an **accent channel**, which is the one that actually bit — a small eye averaged
+into the body around it snaps to the body colour and the eyes vanish silently at every scale
+ratio, with nothing about the output looking broken.
+
+`--outline` implements the §2a-ii convention for a single sheet. Verified against
+`SPR_PET_SYNCAELIA`: reproduces it from source and, in doing so, found and removed a stray
+bright pixel a hand-rolled version of the accent rule had promoted out of a dark brown one.
 
 ### 2a-i. Template pet sheet — one row per default animation
 
@@ -288,6 +338,66 @@ it documents are in `src/core/content/creatures/CREATURE_CONTENT_STANDARD.md` §
 MALBEAR is the case that shows why it's wanted: its 8-column sheet declares `idle` as frames 0-2
 and `attack` as all 8 of the same row, because the sheet arrived with no row plan saying which
 columns were which. A template makes that a drawing instruction rather than a guess. Diff **S**.
+
+### 2a-0. Croaken and Goliauth want redrawing, not repairing
+
+**The Phishing line's top two are the roster's weakest art and the decision is to redo them, not
+patch them.** They are also the two worst offenders under 2a-iii — `SPR_PET_GOLIAUTH` puts 109
+opaque pixels on its left frame edge and 109 on its right, `SPR_PET_CROAKEN` 33/33 with another
+34 across the top — so whatever is drawn there is already spilling out of the cell rather than
+being composed inside it. That makes them the wrong sheets to sweep: a re-crop would only trim a
+drawing that is being replaced.
+
+They are one problem and not two: `croaken` (Script) evolves into `goliauth` (Daemon), so the
+pair has to read as one animal growing, the way Cuttlefork does into Morphopus. Tadpoll below
+them stays as it is and is what they have to grow out of. |
+`src/core/content/creatures/phishing/line.h`; `assets/sprites/SPR_PET_{CROAKEN,GOLIAUTH}.png`. |
+M | Blocked on the direction, which is not written down anywhere: the intent is that they read
+MORE FROG than they currently do, but what that means concretely — and what the line's silhouette
+argument is, the way the Metamorphic line's is "it does not hold a shape" — has only ever been
+said out loud. Settle that on the line's own rows first; the art follows it, not the other way
+round. |
+
+### 2a-iii. Every limb must end inside its own frame
+
+**A limb cut off by the frame edge reads as a rendering bug on the device, not as a crop.** At
+x1.75 a tentacle or a tail that simply stops on a flat vertical line looks like the blitter
+failed, and no amount of good drawing above it recovers the read. So the rule is: a creature
+must fit, whole, inside its own frame — the FRAME is sized to the creature, never the creature
+trimmed to the frame. The cell may grow (`gen_assets.py` reads any `SPR_PET_` sheet whose width
+is not a multiple of 56 as one oversized frame, up to the 128x64 sprite box), which is the
+release valve that makes the rule always satisfiable.
+
+The bottom edge is exempt and only the bottom edge: that one is the FLOOR, and a creature
+standing on the shelf belongs on it.
+
+Measured over the roster, counting opaque pixels on a frame's left, right and top edges: **24
+sheets are clean, 14 are not.** The worst are `SPR_PET_GOLIAUTH` (109 left, 109 right) and
+`SPR_PET_CROAKEN` (33/33/34); the mildest are one or two stray pixels on `SPR_PET_MALBEAR` and
+`SPR_PET_BRUINFORCE`. Some of these are deliberate — a boss filling its cell — so the sweep is a
+judgement per sheet, not a blanket re-crop, and that is why this is not already a gate. |
+`assets/` + `tools/quantize.py`; the check itself is ~20 lines over `gen_assets.frame_width` /
+`frame_rows`. | M | Do it in the same pass as 2a-ii — both walk every pixel of every sheet, and
+both end in the same place: a mechanical check in the gates once the roster agrees with itself.
+Until then this is a drawing rule enforced by eye, which is how it got broken twice. |
+
+### 2a-ii. Outline consistency pass over the whole roster
+
+**The roster does not agree with itself about outlines.** Measured on the silhouette edge —
+every opaque pixel touching transparency — the shipped sprites split three ways:
+`SPR_PET_PAYPUP` is **one tone at 100%**, `SPR_PET_CROAKEN` is one tone at 96%, and
+`SPR_PET_MALBEAR` and `SPR_PET_BRUINFORCE` are ~67% over five or six tones. So the gold
+standard states a rule the rest of the roster only half-follows, and nothing writes it down.
+
+Two things to settle, in this order. **Pick the convention** — a single dark ink on every
+boundary pixel (what Paypup does, and what `SPR_PET_SYNCAELIA` now does) or no forced outline
+at all. Either is defensible; having both is what reads as sloppy at x1.75. Then **sweep the
+roster to match**, which is mechanical: for each sprite, recolour boundary pixels to the
+line's darkest tone. Worth doing in the same pass as any re-quantise, since both walk every
+pixel of every sheet.
+
+The tool for it already exists: `tools/quantize.py --outline '#hex'` forces the convention on
+one sheet (§2a). What is left is the DECISION and then the sweep across the roster. Diff **M**.
 
 ### 2b. Placeholder → final art
 
@@ -330,8 +440,9 @@ for. The `ICON_SECTOR_*` half of each family is drawn and live on the EXPL zone 
   + a permanent stat modifier. Mechanic + design, pairs with the above. Diff **M**.
 - **Locomotion poses to match the resting motion.** Every creature declares how it gets around
   (`CreatureDef::locomotion`) and the habitat already moves it that way — a walker ambles along the
-  shelf, a swimmer drifts through the box, a flier holds an altitude (`core/model/idle_wander.h`).
-  The POSE is still the breathe/blink idle for all three, so a drifting tadpole is a standing
+  shelf, a swimmer drifts through the box, a flier holds an altitude, and a `Static` row (every egg
+  but the jellyfish one) sits exactly where it was put (`core/model/idle_wander.h`).
+  The POSE is still the breathe/blink idle for all of them, so a drifting tadpole is a standing
   tadpole that slides. Wants an extra clip row per mover on the existing sheets (swim cycle,
   wingbeat, step cycle), keyed off the same field — sheet rows, not new sprites. `Fly` has no
   creature on it yet either; the first flier is a roster question, not a code one. Diff **M**.
