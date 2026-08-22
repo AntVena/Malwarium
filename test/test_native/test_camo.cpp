@@ -232,6 +232,7 @@ void test_camo_holds_through_a_counter_strike() {
     auto shot = [&](uint8_t level, Framebuffer& fb) {
         CombatCamo camo;
         camo.level = level;
+        camo.ramp = camoRampFrom(*es);   // the caller resolves the palette (camoTarget)
         drawCombat(fb, c, ps, es, 0, /*animBeat=*/4, /*hitBeat=*/1, 0, CombatSides{},
                    CombatOutro{}, RivalPrizes{}, camo);
     };
@@ -249,8 +250,8 @@ void test_camo_holds_through_a_counter_strike() {
 // pet is wearing is a reading of ITS OWN last cast (`Combatant::lastMoveIdx`,
 // `WildPool::lastRolled`), and both are per-fighter and rewritten only when that fighter
 // acts — so a borrowed move is still what the pet is holding while the rival takes its
-// turn, hits it, and hits it again. Every earlier version of this effect was derived from
-// something the rival's turn moved, which is why it kept coming off.
+// turn, hits it, and hits it again. An effect derived from anything the rival's turn
+// moves comes off the pet at the commonest thing that can happen next.
 void test_borrowed_colours_outlive_the_rivals_turn() {
     ContentRegistry reg = ContentRegistry::embedded();
     const CreatureDef* meta = reg.creature("cuttlefork");
@@ -267,28 +268,23 @@ void test_borrowed_colours_outlive_the_rivals_turn() {
         p.stage = Stage::Script;
         buildWildPools(reg, p, p.stage);
         CHECK(p.polymorphic);                        // the row really is a wildcard
-        // The rival CARRIES the whole pool the pet can roll out of, so whatever the
-        // wildcard lands on is a move it can honestly be said to be copying. That is the
-        // condition the effect now needs (wearingBorrowedColours) and the one the fight
-        // below is not about — the property under test is that the answer HOLDS.
         Combatant e = mkCombatant(reg, "E", 4000, 25, {"quick_jab"});
-        for (const WildPool& pool : p.wildPools)
-            for (const MoveDef* row : pool.rows) e.moves.push_back(row);
         Combat c;
         c.begin(p, e, Combat::Stakes::Safe, seed);
 
-        // Walk the fight. After each of the PET's own casts, what it is wearing is that
-        // cast's answer; after everything else — every blow the rival lands in between —
-        // it has to still be the same answer, because none of that is the pet's cast.
-        bool worn = false;
+        // Walk the fight. After each of the PET's own casts, whose colours it is in is
+        // that cast's answer; after everything else — every blow the rival lands in
+        // between — it has to still be the same answer, because none of that is the
+        // pet's cast.
+        CamoTarget worn;
         for (int i = 0; i < 120 && c.outcome() == Combat::Outcome::Ongoing; ++i) {
             c.step();
             if (c.lastByPlayer()) {
-                worn = wearingBorrowedColours(c.player(), c.enemy());
-                (worn ? sawBorrowed : sawOwn) = true;
-            } else if (worn) {
+                worn = camoTarget(c.player(), c.enemy());
+                (worn.source != CamoTarget::Source::Own ? sawBorrowed : sawOwn) = true;
+            } else if (worn.source != CamoTarget::Source::Own) {
                 ++rivalTurnsWhileWorn;
-                CHECK(wearingBorrowedColours(c.player(), c.enemy()));
+                CHECK(camoTarget(c.player(), c.enemy()) == worn);
             }
         }
     }
@@ -297,13 +293,14 @@ void test_borrowed_colours_outlive_the_rivals_turn() {
     CHECK(rivalTurnsWhileWorn > 0);  // and the rival did act while the pet was wearing them
 }
 
-// --- Gate: the pet copies the fighter OPPOSITE, not just anybody -----------
+// --- Gate: a borrowed cast is worn even when the rival is nothing to do with it ---
 //
-// The narrowing that makes the effect mean something. Wearing another line's colours for
-// a move the creature in front of you does not have is a costume: the palette is sampled
-// off that creature's own sprite, so the picture is only true when what is being copied
-// is standing there. Same cast, two different rivals, two different answers.
-void test_camo_only_copies_a_move_the_rival_has() {
+// The single-player case, and the one the whole effect lives or dies on: a wild malbeast
+// belongs to no line and fields only generic rows, so a rule that asked the fighter
+// opposite to be carrying the rolled move left the pet in its own colours through every
+// fight the game actually offers. What a borrowed cast names then is the LINE it came
+// out of, which is a fact about the cast and needs nothing from the other seat.
+void test_borrowed_line_is_worn_against_a_rival_that_has_nothing_to_do_with_it() {
     ContentRegistry reg = ContentRegistry::embedded();
     const CreatureDef* meta = reg.creature("cuttlefork");
     CHECK(meta != nullptr);
@@ -312,10 +309,6 @@ void test_camo_only_copies_a_move_the_rival_has() {
     p.creature = meta;
     p.stage = Stage::Script;
     buildWildPools(reg, p, p.stage);
-    CHECK(p.polymorphic);
-
-    // Find a row in the pool that belongs to ANOTHER line, and make the pet's live cast
-    // that row — the state a wildcard leaves behind when it rolls into a borrowed track.
     const MoveDef* borrowed = nullptr;
     int slot = -1;
     for (size_t i = 0; i < p.wildPools.size() && !borrowed; ++i)
@@ -329,19 +322,71 @@ void test_camo_only_copies_a_move_the_rival_has() {
     p.wildPools[slot].lastRolled = borrowed;
     p.lastMoveIdx = slot;
 
-    // A rival that does not carry it: the pet is using somebody else's trick, but not
-    // THIS somebody's, so there is nothing in front of it to disappear into.
+    // A real wild: built from a spec, so it carries no creature and therefore no line,
+    // and its kit is the generic spine.
+    Combatant wild = makeEnemyCombatant(reg, wildMalbeast(1, 0));
+    CHECK(wild.creature == nullptr);
+    const CamoTarget t = camoTarget(p, wild);
+    CHECK(t.source == CamoTarget::Source::Line);
+    CHECK(t.line != nullptr && std::strcmp(t.line, borrowed->line) == 0);
+}
+
+// --- Gate: copying the fighter opposite outranks wearing the line ------------
+//
+// Two ways a cast can be somebody else's, and the pet takes the more specific one. A move
+// sitting in the rival's own kit — or belonging to the rival's line — makes the pet a copy
+// of THAT creature, down to whatever accent it alone carries; a move from a line the
+// rival has nothing to do with makes it the line. The rank matters because both are true
+// at once whenever the rival is on the line the roll came from.
+void test_camo_copies_the_rival_before_the_line() {
+    ContentRegistry reg = ContentRegistry::embedded();
+    const CreatureDef* meta = reg.creature("cuttlefork");
+    CHECK(meta != nullptr);
+
+    Combatant p = mkCombatant(reg, "P", 4000, 5, {"instruction_swap"});
+    p.creature = meta;
+    p.stage = Stage::Script;
+    buildWildPools(reg, p, p.stage);
+    const MoveDef* borrowed = nullptr;
+    const MoveDef* generic = nullptr;
+    int slot = -1;
+    for (size_t i = 0; i < p.wildPools.size(); ++i)
+        for (const MoveDef* row : p.wildPools[i].rows) {
+            if (row && row->line && std::strcmp(row->line, meta->line) != 0 && !borrowed) {
+                borrowed = row;
+                slot = static_cast<int>(i);
+            }
+            // Any generic row the stranger below is not itself holding — the innate jab
+            // is in every kit in the game, so it cannot separate the two cases.
+            if (row && !row->line && !generic && std::strcmp(row->id, "quick_jab") != 0)
+                generic = row;
+        }
+    CHECK(borrowed != nullptr && generic != nullptr && slot >= 0);
+
+    // A creature ON the line the cast came from: the pet is copying that fighter, whether
+    // or not this particular one has the row equipped.
+    const CreatureDef* owner = nullptr;
+    for (const CreatureDef* c : reg.allCreatures())
+        if (c->line && std::strcmp(c->line, borrowed->line) == 0) { owner = c; break; }
+    CHECK(owner != nullptr);
+    Combatant lineMate = mkCombatant(reg, "L", 4000, 25, {"quick_jab"});
+    lineMate.creature = owner;
+    p.wildPools[slot].lastRolled = borrowed;
+    p.lastMoveIdx = slot;
+    CHECK(camoTarget(p, lineMate).source == CamoTarget::Source::Rival);
+
+    // A lineless rival that has the row in its kit is copied for the same reason: the
+    // name the pet is wearing is one the stats page shows on the other side.
+    Combatant carrier = mkCombatant(reg, "C", 4000, 25, {"quick_jab"});
+    carrier.moves.push_back(borrowed);
+    CHECK(camoTarget(p, carrier).source == CamoTarget::Source::Rival);
+
+    // A GENERIC roll is nobody's line, so only the rival's kit can claim it — which is
+    // what puts the pet in a wild malbeast's colours for a move they both know.
+    p.wildPools[slot].lastRolled = generic;
     Combatant stranger = mkCombatant(reg, "S", 4000, 25, {"quick_jab"});
-    CHECK(!wearingBorrowedColours(p, stranger));
-
-    // The same cast against a rival that does carry it.
-    Combatant owner = mkCombatant(reg, "O", 4000, 25, {"quick_jab"});
-    owner.moves.push_back(borrowed);
-    CHECK(wearingBorrowedColours(p, owner));
-
-    // A rival with no move list at all — a Sim dummy — is never copied, because there is
-    // nothing there to copy.
-    Combatant dummy = mkCombatant(reg, "D", 4000, 25, {});
-    dummy.moves.clear();
-    CHECK(!wearingBorrowedColours(p, dummy));
+    CHECK(camoTarget(p, stranger).source == CamoTarget::Source::Own);
+    Combatant sharer = mkCombatant(reg, "H", 4000, 25, {"quick_jab"});
+    sharer.moves.push_back(generic);
+    CHECK(camoTarget(p, sharer).source == CamoTarget::Source::Rival);
 }

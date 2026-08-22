@@ -6,14 +6,16 @@
 //
 // WHAT IT IS FOR. The Metamorphic line fields moves rolled out of other lines' pools
 // (MoveDef::drawLineA, defs.h). This is that borrowing made visible: while the pet's live
-// cast belongs to another line, the pet IS that line's colours.
+// cast is somebody else's, the pet IS their colours. Whose, exactly, is ranked by
+// camoTarget (core/ui/combat_screen.h) — the fighter opposite when the cast is one of
+// theirs, otherwise the line the cast came out of.
 //
-// A STATE, not a moment. The pet's colour says which line it is currently channelling,
-// and it stays said until the pet casts something else — a wildcard row that rolls a
-// GENERIC move (most of any pool, buildWildPools) puts it back in its own. That is the
-// whole read, and it only works if the colour holds: an effect that ran out on a timer
-// would be telling you about a swing that has already finished, and one that could be
-// interrupted would be lying about what the pet is holding.
+// A STATE, not a moment. The pet's colour says whose move it is currently holding, and it
+// stays said until the pet casts something else — a wildcard row that rolls a GENERIC move
+// (most of any pool, buildWildPools) puts it back in its own. That is the whole read, and
+// it only works if the colour holds: an effect that ran out on a timer would be telling
+// you about a swing that has already finished, and one that could be interrupted would be
+// lying about what the pet is holding.
 //
 // WHY A RAMP AND NOT A TINT. drawSpriteTinted flattens a sprite to one colour, which
 // loses the form. Here every source pixel is re-coloured by WHERE ITS OWN LUMINANCE
@@ -29,6 +31,7 @@
 #pragma once
 
 #include <cstdint>
+#include <cstring>
 
 #include "core/render/color.h"
 
@@ -52,14 +55,39 @@ struct CamoRamp {
     bool empty() const { return count <= 0; }
 };
 
+// WHOSE colours a creature is wearing — the palette named as a source rather than as a
+// ramp, so a caller can carry the answer around, compare it, and resolve it to tones only
+// where it has the sprites to sample (Game::drawCombatScreen). Which source a fight picks,
+// and why the fighter opposite outranks the line, is camoTarget (core/ui/combat_screen.h).
+struct CamoTarget {
+    // Whose colours, in the order camoTarget ranks them.
+    enum class Source : uint8_t {
+        Own,     // the creature's own — nothing is worn and the effect no-ops
+        Rival,   // the fighter opposite, sampled off its sprite
+        Line,    // a creature line, sampled off that line's own creature
+    };
+    Source source = Source::Own;
+    // The line to wear, when `source` is Line. Null otherwise.
+    const char* line = nullptr;
+};
+
+// Two targets are the same colours when they name the same source and the same line, so a
+// caller can tell a palette CHANGE from a level that is simply still moving.
+inline bool operator==(const CamoTarget& a, const CamoTarget& b) {
+    if (a.source != b.source) return false;
+    if (!a.line || !b.line) return a.line == b.line;
+    return std::strcmp(a.line, b.line) == 0;
+}
+inline bool operator!=(const CamoTarget& a, const CamoTarget& b) { return !(a == b); }
+
 // The palette a sprite is actually drawn in, darkest first — the colours it uses most,
 // ranked by luminance so the ramp reads as a value scale rather than a bag of hues.
 //
-// Sampling the OPPONENT is what makes this work without a per-line colour table: a
-// line's creatures wear that line's colour, so the sprite standing opposite already IS
-// the line's palette. It also degrades correctly against something that belongs to no
-// line at all — a malbeast, a boss, the dummy — where there is no table to look in and
-// the honest answer is "whatever colours are on that thing".
+// Sampling A CREATURE is what makes this work without a per-line colour table: a line's
+// creatures wear that line's colour, so any of them already IS the line's palette, and the
+// one standing opposite carries whatever accent it alone has on top of that. It also
+// answers for something that belongs to no line — a malbeast, a boss, the dummy — where
+// there is no table to look in and the truth is "whatever colours are on that thing".
 //
 // A BASELINE, THEN AS MUCH OF THE REAL THING AS THERE IS. The ladder is first derived
 // whole from the sprite's MAIN colour (camoRampFromTone below), so every rung has a tone

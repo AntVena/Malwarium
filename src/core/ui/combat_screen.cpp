@@ -62,7 +62,7 @@ constexpr int scaleUp(int x) {
 void drawFighter(Framebuffer& fb, const SpriteData* s, int contentX, int animBeat,
                  uint8_t flashAmt, Rgb565 flashColor, int xNudge,
                  const AnimClip* pose, const CamoRamp* camo = nullptr,
-                 uint8_t camoAmt = 0) {
+                 uint8_t camoAmt = 0, const CamoRamp* camoFrom = nullptr) {
     if (!s) return;
     const int x = contentX - scaleUp(spriteContentX0(*s)) + xNudge;
     const int y = kSpriteShelf - s->h * kScaleNum / kScaleDen;
@@ -72,11 +72,12 @@ void drawFighter(Framebuffer& fb, const SpriteData* s, int contentX, int animBea
     const int frame = pose ? pose->frameAt(animBeat) : idleFrame(*s, animBeat);
     // The camouflage is what colour the creature IS while it wears it, so the flash goes
     // OVER it rather than instead of it: a fighter struck mid-disguise flashes in the
-    // borrowed colours. Drawn as alternatives, every hit taken read as cancelling the
-    // camouflage — which is exactly what it is not allowed to do.
+    // borrowed colours, and a hit stays legible on a disguised fighter without reading as
+    // stripping the disguise off. `camoFrom` carries the palette a swap is leaving, so one
+    // borrowed set dissolves into the next instead of detouring through the pet's own.
     if (camo && camoAmt > 0 && !camo->empty())
         drawSpriteCamo(fb, *s, frame, x, y, kScaleNum, kScaleDen, *camo, camoAmt,
-                       flashColor, flashAmt, row);
+                       flashColor, flashAmt, row, camoFrom);
     else if (flashAmt > 0)
         drawSpriteFlash(fb, *s, frame, x, y, kScaleNum, kScaleDen, flashColor,
                         flashAmt, row);
@@ -93,8 +94,6 @@ int seatWidth(const SpriteData* s) {
     return scaleUp(spriteContentX1(*s)) - scaleUp(spriteContentX0(*s));
 }
 
-}  // namespace
-
 // The move a combatant actually cast last, following a wildcard slot through to what it
 // ROLLED — a metamorphic row is a pool, so the slot's own MoveDef says nothing about
 // which line the cast came from and `lastRolled` is the only thing that does.
@@ -105,19 +104,39 @@ const MoveDef* castMove(const Combatant& c) {
     return nullptr;
 }
 
-// What this predicate is for, and why it is gated on the cast, are on the declaration
-// (combat_screen.h). Game::advanceCombatTurn is what asks it.
-bool wearingBorrowedColours(const Combatant& c, const Combatant& rival) {
-    const MoveDef* m = castMove(c);
-    if (!m || !m->line || !c.creature || !c.creature->line) return false;
-    if (std::strcmp(m->line, c.creature->line) == 0) return false;   // its own move
-    // ...and one the fighter opposite is actually holding. Compared by ID rather than by
-    // pointer: both sides resolve their rows out of the same registry today, but a
-    // combatant built from a spec rather than from a loadout is free not to, and a
-    // costume that only shows up on one build path is worse than no costume.
-    for (const MoveDef* r : rival.moves)
+// The line a combatant belongs to, or null for one built from a sprite-named spec rather
+// than from a creature — a malbeast, a boss, the dummy. That null is the case the kit
+// match below exists for.
+const char* fighterLine(const Combatant& c) {
+    return c.creature ? c.creature->line : nullptr;
+}
+
+// Is `m` a row this fighter is carrying? By ID rather than by pointer: both sides resolve
+// their rows out of the same registry today, but a combatant built from a spec rather than
+// from a loadout is free not to, and colours that only appear on one build path are worse
+// than none.
+bool kitHolds(const Combatant& c, const MoveDef* m) {
+    for (const MoveDef* r : c.moves)
         if (r && r->id && m->id && std::strcmp(r->id, m->id) == 0) return true;
     return false;
+}
+
+}  // namespace
+
+// What this ranks and why it ranks that way are on the declaration (combat_screen.h).
+// Game::tick is what asks it, once per anim tick.
+CamoTarget camoTarget(const Combatant& c, const Combatant& rival) {
+    const MoveDef* m = castMove(c);
+    if (!m) return {};
+    const char* rivalLine = fighterLine(rival);
+    const bool theirs =
+        kitHolds(rival, m) ||
+        (rivalLine && m->line && std::strcmp(m->line, rivalLine) == 0);
+    if (theirs) return {CamoTarget::Source::Rival, nullptr};
+    const char* own = fighterLine(c);
+    if (m->line && own && std::strcmp(m->line, own) != 0)
+        return {CamoTarget::Source::Line, m->line};
+    return {};
 }
 
 // What this builds and why it is built rather than chosen are on the declaration
@@ -703,17 +722,15 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
     // The swing window is the hop's own, so an authored attack clip runs exactly as long
     // as the lunge that carries it — one motion, not a pose that outlives its nudge.
     const bool swinging = struck && hitBeat >= 0 && hitBeat < kAttackHopPeriod;
-    // FX_CAMO. A pet holding a move borrowed from another line wears that line's colours
-    // for as long as it holds it — the level is the caller's (CombatCamo), read straight
-    // rather than derived from any beat on this screen, so nothing that happens between
-    // the pet's own casts can move it. The palette is SAMPLED off the fighter opposite
-    // rather than read from a table: a line's creatures wear its colour, so the thing
-    // standing there is already the right answer, and against a malbeast or a boss —
-    // which belong to no line and have no table entry — it still answers with whatever
-    // colours are on that thing, which is the only honest answer available.
-    const uint8_t localCamoAmt = camo.level;
-    const CamoRamp localCamo =
-        localCamoAmt > 0 && rivalSprite ? camoRampFrom(*rivalSprite) : CamoRamp{};
+    // FX_CAMO. A pet holding a move borrowed from another line wears the colours of
+    // whoever that move belongs to for as long as it holds it. Both halves are the
+    // caller's (CombatCamo) and read straight: the level rather than derived from any
+    // beat on this screen, so nothing between the pet's own casts can move it, and the
+    // palette rather than sampled here, because which sprite to sample is a question
+    // about the fight (camoTarget) that only the caller can answer.
+    const uint8_t localCamoAmt = camo.ramp.empty() ? 0 : camo.level;
+    const CamoRamp& localCamo = camo.ramp;
+    const CamoRamp* localCamoFrom = camo.leaving.empty() ? nullptr : &camo.leaving;
     // The beaten rival's outro takes its seat when one is running — it IS the rival for
     // those beats, so nothing else has to know the fight ended. See CombatOutro
     // (combat_screen.h) for why the two dissolves mean different things.
@@ -760,7 +777,7 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
                 impactNudgePx(localHitBeat, -1) + hop,
                 fightPose(pl, localHitBeat >= 0 && localHitBeat < kImpactPeriod,
                           swinging && lastByLocal),
-                &localCamo, localCamoAmt);
+                &localCamo, localCamoAmt, localCamoFrom);
 
     // Worm replicas, on the same shelf, standing BETWEEN their parent and its opponent —
     // each row starts at the parent's own drawn edge facing the other fighter and falls

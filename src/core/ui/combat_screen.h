@@ -13,6 +13,7 @@
 #include <cstddef>
 #include <cstdint>
 
+#include "core/render/camo.h"   // CamoRamp — the palette CombatCamo carries
 #include "core/render/font.h"
 
 namespace mal {
@@ -237,42 +238,56 @@ struct CombatOutro {
     int beat = 0;   // heartbeats since the result landed; drives the sweep
 };
 
-// How much of another line's colours the local pet is currently wearing (FX_CAMO,
-// core/render/camo.h) — 0 its own, 255 fully the borrowed line's.
+// WHOSE colours the local pet's live cast makes it, and how far into them it is
+// (FX_CAMO, core/render/camo.h).
 //
 // A LEVEL, not a window, and that distinction is the whole of this struct. Every other
 // cue on this screen is a decay off `hitBeat`, which names the most recent strike by
 // EITHER fighter and is reassigned to the other seat the moment the rival hits back.
 // Anything derived from it lasts exactly one strike — right for a punch, wrong for a
 // colour, which has to stay put while the pet is holding what it borrowed and while it
-// takes whatever the rival throws in the meantime. So the level is carried by the
-// caller (Game::combatCamoLevel_), eased toward what the pet's LIVE cast is wearing
-// (wearingBorrowedColours) once per anim tick, and read here as a fact rather than
-// recomputed from a clock.
+// takes whatever the rival throws in the meantime. So the level is carried by the caller
+// (Game::combatCamoLevel_), eased toward what the pet's LIVE cast is wearing (camoTarget)
+// once per anim tick, and read here as a fact rather than recomputed from a clock.
+//
+// The RAMPS are resolved by the caller too (Game::drawCombatScreen), because turning a
+// CamoTarget into a palette means sampling a sprite out of the registry and this screen
+// is handed its rows already resolved. `ramp` is what the pet is wearing at `level`;
+// `leaving` is the palette the un-flipped pixels still hold while one borrowed palette
+// dissolves into another (camo.h's `from`), and is empty for a change that starts or ends
+// at the pet's own colours.
 struct CombatCamo {
     uint8_t level = 0;
+    CamoRamp ramp{};
+    CamoRamp leaving{};
 };
 
-// Is this fighter's live cast a move borrowed from THE FIGHTER OPPOSITE — the state
-// CombatCamo eases toward? Two conditions, and the effect needs both.
+// WHAT the local pet's live cast makes it look like — the state CombatCamo's level eases
+// toward. Gated on the CAST rather than on who is casting, following a wildcard slot
+// through to what it rolled: moveAllowedForLine (content/defs.h) holds every other line
+// to its own moves, so a cast whose line differs from its caster's belongs to a
+// metamorphic pet, and the turn engine still never learns that line's name.
 //
-// BORROWED. Gated on the CAST rather than on who is casting, following a wildcard slot
-// through to what it rolled: moveAllowedForLine (content/defs.h) already stops every
-// other line from holding a move that is not its own, so "the line on the move differs
-// from the line on the caster" can only ever be true for a metamorphic pet, and the turn
-// engine still never learns that line's name.
+// It is a STATE: `Combatant::lastMoveIdx` and `WildPool::lastRolled` are per-fighter and
+// rewritten only when THAT fighter acts, so an answer holds across any number of rival
+// turns and changes when the pet itself casts something else.
+// Whose colours `c`'s live cast puts it in, against the fighter opposite.
 //
-// FROM THEM. The move has to be one `rival` is actually carrying. Wearing another line's
-// colours for a move that line's creature opposite you does not even have is a costume,
-// not camouflage — and the picture the effect draws (the pet in the rival's own palette,
-// sampled off the rival's own sprite) is only true when the thing being copied is in
-// front of you. A rival with no move list — a Sim dummy — is therefore never copied,
-// which is correct: there is nothing there to copy.
+// THE RIVAL comes first, and outranks the line for the picture it draws: the pet swinging
+// the thing in front of it in that thing's own palette, down to whatever accent that one
+// creature happens to carry. It is what the cast being THEIRS looks like, and a cast is
+// theirs when the rolled move sits in their kit — matched by id, so a pet reading the
+// rival's move list on the stats page sees the same name it is wearing — or when the
+// rolled move belongs to their line, which covers the rows they could field and have not.
 //
-// It is a STATE and not an event: `Combatant::lastMoveIdx` and `WildPool::lastRolled` are
-// per-fighter and rewritten only when THAT fighter acts, so this stays true across any
-// number of rival turns and goes false when the pet itself casts something of its own.
-bool wearingBorrowedColours(const Combatant& c, const Combatant& rival);
+// THE LINE is the answer when the roll came from another line's pool and the fighter
+// opposite has nothing to do with it: the pet wears the line it is channelling, sampled
+// off that line's own creature (Game::drawCombatScreen). This is the common case in a
+// wild encounter, where the rival belongs to no line at all.
+//
+// OWN colours are what a roll into the generic roster leaves — most of any pool
+// (buildWildPools) — and what every fighter outside the metamorphic line ever gets.
+CamoTarget camoTarget(const Combatant& c, const Combatant& rival);
 
 // The A+C Exploit picker's header, as TEXT rather than as a phrase chosen from a list.
 //

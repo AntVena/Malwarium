@@ -256,25 +256,44 @@ bool Game::tick(uint32_t nowMs) {
             lastCombatAnimMs_ = nowMs;
             combatAnimBeat_++;
             combatHitBeat_++;
-            // FX_CAMO's level eases toward what the pet's LIVE cast is wearing, read
-            // fresh every tick rather than latched at the swing: a borrowed move is
-            // still the pet's last cast while the rival takes its turn, so the colours
-            // hold until the pet itself casts something of its own. Riding a beat here
-            // instead is what let a counter-attack strand the pet mid-change.
+            // FX_CAMO. Whose colours the pet is in is read fresh every tick rather than
+            // latched at the swing: a borrowed move is still the pet's last cast while
+            // the rival takes its turn, so the colours hold until the pet itself casts
+            // something else. A beat driving this instead would hand the change to
+            // whichever fighter swung last, and a counter-attack would strip it.
             //
-            // Both seats are passed, because the question is about the PAIR: the pet is
-            // only wearing the rival's colours while it is casting one of the rival's
-            // own moves (wearingBorrowedColours).
+            // Both seats are passed, because the question is about the PAIR: which source
+            // a cast names depends on what the fighter opposite is carrying (camoTarget).
+            // Only the TARGET is resolved here — turning it into tones means ranking a
+            // sprite's colours, which the draw already does once per repaint.
             const bool flip = combatLocalIsEnemySide();
             const Combatant& self = flip ? combat_.enemy() : combat_.player();
             const Combatant& rival = flip ? combat_.player() : combat_.enemy();
-            combatCamoLevel_ = camoAdvance(combatCamoLevel_,
-                                           wearingBorrowedColours(self, rival));
+            const CamoTarget want = camoTarget(self, rival);
+            const bool worn = want.source != CamoTarget::Source::Own;
+            // Trading one borrowed palette for another restarts the scatter with the old
+            // one held behind it (drawCombatScreen passes it as camo.h's `from`), so the
+            // change reads as one disguise dissolving into the next. Only while the pet
+            // is actually wearing something: from bare, there is nothing to dissolve out
+            // of and the level simply rises.
+            if (worn && want != combatCamoWorn_ && combatCamoLevel_ > 0) {
+                combatCamoLeaving_ = combatCamoWorn_;
+                combatCamoLevel_ = 0;
+            }
+            if (worn) combatCamoWorn_ = want;
+            combatCamoLevel_ = camoAdvance(combatCamoLevel_, worn);
+            // The palette being left is only true mid-dissolve. Once the front is past
+            // every pixel, or the pet is returning to its own colours, what the unflipped
+            // pixels wear is the creature itself.
+            if (!worn || combatCamoLevel_ == 255) combatCamoLeaving_ = CamoTarget{};
             changed = true;
         }
     } else {
         lastCombatAnimMs_ = nowMs;   // stay primed so re-entering combat doesn't burst-catch-up
-        combatCamoLevel_ = 0;        // off the fight, off the disguise — every fight opens bare
+        // Off the fight, off the disguise — every fight opens bare.
+        combatCamoLevel_ = 0;
+        combatCamoWorn_ = CamoTarget{};
+        combatCamoLeaving_ = CamoTarget{};
     }
 
     // The dissolve clock (FX_ABSORB / FX_SHRED). Fastest tick on the device, and the

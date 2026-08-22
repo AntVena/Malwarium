@@ -93,13 +93,23 @@ with no clock in it anywhere. `FX_ABSORB`/`FX_SHRED` are genuinely moments and k
 own beat (`CombatOutro::beat`) — their own, because the strike clock is not theirs either.
 
 `FX_CAMO` has **two colour sources and two drivers**, which is the shape an effect takes
-when a second screen wants it. The palette is either sampled off the sprite standing
-opposite (`camoRampFrom`, the fight) or built from one PAL_CORE token (`camoRampFromTone`,
-a screen that means a specific colour and has no opponent to sample). The level is either
-`camoAdvance` eased toward the pet's live cast (the fight) or a caller's own settled
-fraction — the CHROMATOPHORE hands it `Chromatophore::wearPct`, so the scatter on the
-creature is the same number the board is about to score. Both remain STATES; neither
-source or driver is allowed to be a beat.
+when a second screen wants it. The palette is either sampled off a creature (`camoRampFrom`,
+the fight) or built from one PAL_CORE token (`camoRampFromTone`, a screen that means a
+specific colour and has no creature to sample). The level is either `camoAdvance` eased
+toward the pet's live cast (the fight) or a caller's own settled fraction — the
+CHROMATOPHORE hands it `Chromatophore::wearPct`, so the scatter on the creature is the same
+number the board is about to score. Both remain STATES; neither source or driver is allowed
+to be a beat.
+
+WHICH creature the fight samples is `CamoTarget` (`core/ui/combat_screen.h`), ranked so the
+more specific answer wins. A rolled move sitting in the rival's kit — or belonging to the
+rival's line — makes the pet a copy of the fighter opposite, accent and all. A move from a
+line the rival has nothing to do with makes the pet that LINE, sampled off the line's own
+creature at the wearer's stage, which is the answer in every wild encounter: a malbeast
+belongs to no line and fields only generic rows, so a rule that needed the fighter opposite
+to be holding the move would leave the pet bare through the whole single-player game. The
+target is resolved in the tick and turned into tones at the draw (`Game::camoRampForTarget`),
+because ranking a sprite's colours is work the repaint already does once.
 
 The sampled source is really the derived one **with the real colours laid over it**: the
 ladder is built whole from the sprite's main colour first, then its actual tones are
@@ -114,7 +124,8 @@ bit of its own shading and simply loses its colour.
 
 Changing FROM one borrowed palette to another is the same pass with the old ramp passed as
 `from`: un-flipped pixels wear the palette being left rather than the creature's own. A
-fight leaves it null, because there the pet really is returning to itself.
+fight uses it for the swap between two borrowed palettes and leaves it null at either end,
+where the pet really is coming out of, or returning to, itself.
 
 Two effects that recolour the same creature **compose or rank, and say which.** `FX_CAMO`
 is what colour the pet *is*, so the impact flash blends over it; drawn as alternatives,

@@ -45,6 +45,7 @@
 #include "core/net/network_ledger.h"
 #include "core/net/peer_ledger.h"
 #include "core/net/pvp_link.h"
+#include "core/render/camo.h"          // CamoTarget — the FX_CAMO state the tick keeps
 #include "core/render/framebuffer.h"
 // ui_state.h ONLY, never a core/ui/*_screen.h: Game holds the ids below as members
 // but draws nothing itself, and this header is included by every TU in the engine.
@@ -1763,6 +1764,14 @@ private:
     void drawCSF(Framebuffer& fb) const;          // Critical System Failure
     void drawTrain(Framebuffer& fb) const;        // MOVES L3 (move picker / detail)
     void drawCombatScreen(Framebuffer& fb) const;
+    // The tones a CamoTarget names (FX_CAMO), for the fighter whose stage is `wearer`.
+    // Resolved at the draw rather than in the tick because it ranks a sprite's colours:
+    // Rival samples the sprite standing opposite, Line samples that line's own creature
+    // at the wearer's stage — a pet channelling Ransomware looks like a Ransomware of its
+    // own tier rather than like that line's hatchling. Own returns an empty ramp, which
+    // the effect reads as nothing to wear.
+    CamoRamp camoRampForTarget(const CamoTarget& t, const SpriteData* rivalSprite,
+                               Stage wearer) const;
     void drawEncounterScreen(Framebuffer& fb) const;
     void drawWifiScreen(Framebuffer& fb) const;
     void drawShopScreen(Framebuffer& fb) const;
@@ -2679,11 +2688,16 @@ private:
     int combatAnimBeat_ = 0;
     uint32_t lastCombatAnimMs_ = 0;
     int combatHitBeat_ = 0;
-    // How much of another line's colours the pet is wearing (FX_CAMO): a LEVEL, not a
-    // beat. Eased once per anim tick toward whether the pet's live cast is borrowed
-    // (camoAdvance / wearingBorrowedColours), so it holds while the pet holds the move
-    // and no other cue on the combat screen can move it. Zeroed on leaving the fight,
-    // which is the one place a disguise stops meaning anything.
+    // Whose colours the pet is wearing (FX_CAMO), as a target plus a LEVEL — neither is
+    // a beat. The target is a reading of the pet's live cast (camoTarget), so it holds
+    // while the pet holds the move and no other cue on the combat screen can move it;
+    // the level is eased toward it once per anim tick (camoAdvance). Which SPRITE each
+    // target samples is resolved at the draw (drawCombatScreen), where the registry is
+    // already being asked for rows. `combatCamoLeaving_` is the target a swap is coming
+    // off, held until the dissolve between two borrowed palettes finishes. All three are
+    // cleared on leaving the fight, the one place a disguise stops meaning anything.
+    CamoTarget combatCamoWorn_{};
+    CamoTarget combatCamoLeaving_{};
     uint8_t combatCamoLevel_ = 0;
     // Which page of the mid-combat panel is showing: 0 closed, else 1..kCombatStatPages
     // (combat_screen.h). B CYCLES it — the panel grew a second page when opponents

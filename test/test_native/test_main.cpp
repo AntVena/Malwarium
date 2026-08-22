@@ -303,7 +303,8 @@ int g_failures = 0;
     RUN(test_camo_flash_composes_over_it)         \
     RUN(test_camo_holds_through_a_counter_strike) \
     RUN(test_borrowed_colours_outlive_the_rivals_turn) \
-    RUN(test_camo_only_copies_a_move_the_rival_has) \
+    RUN(test_borrowed_line_is_worn_against_a_rival_that_has_nothing_to_do_with_it) \
+    RUN(test_camo_copies_the_rival_before_the_line) \
     RUN(test_absorb_sweep_endpoints)              \
     RUN(test_absorb_phase_clock)                  \
     RUN(test_combat_outro_kind)                   \
