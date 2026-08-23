@@ -101,6 +101,37 @@ the next; a hue is the cheapest way to buy one, not the only way.
 a few shades; a Daemon needs more of them to hold the extra plating and texture without going
 muddy. So "more shades of the mother colour" is what growth looks like, not a shift to a new hue.
 
+**Metamorphic is warm coral-red**, and it is the line where the rule above stops being a matter
+of taste. `FX_CAMO` (`src/core/render/camo.h`) builds a ladder out of whatever creature this line
+is copying, then repaints each of the wearer's pixels with the rung its OWN luminance lands on —
+so the number of luminance bands a Metamorphic sheet occupies is a hard cap on how many borrowed
+tones can ever show on it. A creature carrying most of its body on three rungs shows three tones
+of an eight-tone palette however richly the thing it is copying was drawn. Widening this line's
+range is therefore not polish; it is the difference between the signature ability working and
+not. `kCamoRampMax` is 8, which is the number to draw against.
+
+**The ladder saturates, and on this line that is correct.** Eight is the ceiling, so every stage
+past the egg is drawn to reach it: a Process form wearing seven borrowed tones where it could wear
+eight is giving up camouflage to keep a tidy count, and the count is not what the player sees. The
+Boot form is the one deliberate exception — it keeps a single dark and no cool shadow, because a
+sealed shell shows nothing of what is inside.
+
+**What widens with the stage is what the rungs are SPENT ON.** Process is smooth-skinned and takes
+no specular (§3 already caps it lower). Script is modelled as the bundle of tubes it is, and only
+hints the tell. Daemon adds the specular crown and wears the tell at full strength. Once the count
+is full the stage reads through vocabulary — texture, specular, how much tell — which is a better
+carrier for §0's arc than a number was.
+
+**The tell is violet, and it owns a rung nothing else does.** Blue-ringed-octopus warning rings —
+an annulus, with the creature's own skin showing through the middle and its own skin DARKENED
+around the outside, never a coloured outline. They stay legible THROUGH a disguise for one reason:
+every pixel is still repainted, but the rung the rings sit on carries no body mass, so they always
+come back as a tone the rest of the creature is not wearing. That is why the effect needs no
+exemption and `camo.h`'s "no index, no palette metadata, no per-creature table" stands. The ring's
+two violets share that one rung on purpose — it gains a shade in its own colours without spending
+a second camouflage slot. Keep sprite violet desaturated and clear of `PAL_CORE`'s fragmentation
+pair (frag-lo `#7a3df0`, frag-hi `#ff5cb8`); the vocabularies must not collide.
+
 **A Trojan wears the colour of the line it diverted from**, since it is pretending to be one —
 right hue, one small "wrong" tell. That makes a Trojan's brief a re-skin of its origin line rather
 than a new silhouette, and it follows from the rule above rather than being a separate one.

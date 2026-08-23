@@ -540,8 +540,8 @@ window.PEDIA_DATA = {
       "sprite": "assets/sprites/SPR_PET_CUTTLEFORK.png",
       "cellW": 56,
       "cellH": 48,
-      "sheetW": 56,
-      "sheetH": 96
+      "sheetW": 224,
+      "sheetH": 192
     },
     {
       "id": "morphopus",

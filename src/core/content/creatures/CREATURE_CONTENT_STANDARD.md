@@ -108,3 +108,11 @@ each frame holds:
 - **The sheet decides what's legal.** `tools/gen_assets.py` slices a `SPR_PET_*` sheet into rows of
   `PET_ROW_H`, up to 8 columns of `PET_FRAME_W` each; a clip naming a row or frame the sheet does
   not have draws nothing, and the blitter skips it rather than flickering the pet.
+- **EVERY FRAME OF AN `attack` ROW MUST READ AS A COMPLETE STRIKE ON ITS OWN.** `frameAt()` indexes
+  off the GLOBAL anim beat and nothing restarts a clip when a swing starts, so the swing's window
+  (`kAttackHopPeriod`, `core/ui/combat_screen.cpp`) can open on any column of the row and end on
+  any other. A windup-then-strike ordering will show its windup last as often as first, and on a
+  short row may show nothing else. So attack frames differ in DETAIL — which limb leads, where the
+  markings sit — never in PHASE, and `holdBeats` is set so the row walks its columns across that
+  window about once. This is a drawing instruction before it is a data one: it decides what the
+  artist puts in the cells, and no clip field can rescue a row drawn as a sequence.

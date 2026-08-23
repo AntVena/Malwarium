@@ -55,15 +55,24 @@ inline constexpr CreatureDef kMetamorphicCreatures[] = {
      "Code permutation / process forking",
      {MoveKind::Attack, MoveKind::Defend, MoveKind::Attack, MoveKind::Defend},
      /*evolvesToTrojanId=*/nullptr, /*evolvesToTrojanBadId=*/nullptr, Locomotion::Swim,
-     // Two sculpts, one creature: the line's whole argument is that it does not hold a
+     // Four sculpts, one creature: the line's whole argument is that it does not hold a
      // shape, so the shape is what changes between contexts rather than a pose over one
-     // drawing. Row 0 is gathered and upright and takes every settled moment — rest, and
-     // combat, which reaches it through fightPose()'s fall-through. Row 1 is stretched
-     // low and wide and plays only while the wander is actually travelling, so the
-     // creature is drawn mid-drift exactly when it is drifting. Both rows are one column
-     // for now; growing them is a wider sheet and a frame count, never a code change.
-     /*clips=*/{{"idle", /*row=*/0, /*frames=*/1},
-                {"walk", /*row=*/1, /*frames=*/1}}},
+     // drawing. Row 0 hovers and takes every settled moment. Row 1 is the stretched
+     // travelling torpedo and plays only while the wander is actually travelling. Row 2
+     // is the flamboyant threat display — papillae up, violet flushed — and row 3 is the
+     // blanched flinch.
+     //
+     // BOTH ATTACK FRAMES ARE A COMPLETE STRIKE, and that is a requirement rather than a
+     // style. frameAt() indexes off the global anim beat and nothing restarts a clip when
+     // a swing begins, so a swing's kAttackHopPeriod window (ui/combat_screen.cpp) can
+     // open on either column and end on either. A windup-then-strike pair would show its
+     // windup last as often as first. So the two frames differ in DETAIL — which arm is
+     // forward, where the bands sit — never in phase, and holdBeats=2 walks the pair
+     // across the window exactly once.
+     /*clips=*/{{"idle", /*row=*/0, /*frames=*/4, /*holdBeats=*/2},
+                {"walk", /*row=*/1, /*frames=*/1},
+                {"attack", /*row=*/2, /*frames=*/2, /*holdBeats=*/2},
+                {"hurt", /*row=*/3, /*frames=*/1}}},
     
     {"morphopus", "Morphopus", Stage::Script, "SPR_PET_MORPHOPUS", nullptr,
      /*good=*/"syncaelia", /*bad=*/"tentaclone", 100, 100, "metamorphic",
