@@ -26,14 +26,15 @@ void drawSprite(Framebuffer& fb, const SpriteData& s, int frame, int x, int y,
 }
 
 void drawSpriteTinted(Framebuffer& fb, const SpriteData& s, int frame, int x, int y,
-                      Rgb565 tint, int row) {
+                      Rgb565 tint, int row, bool mirror, uint8_t alpha) {
     if (frame < 0 || frame >= s.frames || row < 0 || row >= s.rows) return;
-    const int fx0 = frame * s.frameW;
     const int fy0 = row * s.h;
     for (int r = 0; r < s.h; ++r) {
         for (int col = 0; col < s.frameW; ++col) {
             // shape from alpha, colour from the caller
-            fb.blendPixel(x + col, y + r, tint, spriteAlphaAt(s, fx0 + col, fy0 + r));
+            const int cov = spriteAlphaAt(s, spriteSrcX(s, frame, col, mirror), fy0 + r);
+            fb.blendPixel(x + col, y + r, tint,
+                          static_cast<uint8_t>(cov * alpha / 255));
         }
     }
 }

@@ -60,6 +60,36 @@ constexpr int kHurtPosePctOfMax = 20;
 // becomes harder to read — this reserves the pose, it does not hide the damage.
 bool hurtPoseEarned(const Combatant& target, int damage);
 
+// The strike mark a fighter's last swing draws: which source's sheet, and which half of
+// that source's pair.
+//
+// Keyed on the MOVE's line rather than on the creature's, because what the operator is
+// being told is what was SWUNG. Three cases fall out of that and all three are wanted: a
+// wild with no line of its own still shows a line's mark when it casts a line's move; a
+// Metamorphic pet shows the mark of whatever its wildcard ROLLED, which is the same
+// answer FX_CAMO gives about its colours and arrived at the same way; and a cast with no
+// line at all — the common pool, or a swing this screen cannot identify — shows the
+// common mark.
+//
+// The variant walks the FIGHT's swing count (Combat::strikeCount), so no two blows in a
+// row draw the same frame. That is the sequence the player is watching — one attack after
+// another, whoever threw it — and it is the only reading under which the pair does the job
+// it exists for.
+//
+// Counting per FIGHTER instead reads as the more careful answer and is not: two same-line
+// fighters trading blows each advance their own count in lockstep, so the screen shows
+// v1, v1, v0, v0 and every second pair of consecutive attacks is a repeat. The narrow
+// cost of counting per fight is the mirror of that — under strictly alternating turns a
+// given fighter always draws the same half of its pair — and it is a cost almost nothing
+// ever pays: it needs both fighters on the SAME line (different lines draw from different
+// sheets entirely) and exactly matched speed (any streak breaks the parity). Even then the
+// two sides are mirrored against each other, so the same frame does not look the same.
+struct StrikeMark {
+    const SpriteData* sheet;
+    int variant;
+};
+StrikeMark strikeMark(const Combatant& actor, int strikeSeq);
+
 // Where the two fighters stand, in active px, and the CLASH LANE between them.
 //
 // A fight is read across a gap: the lane is what keeps two creatures from merging into

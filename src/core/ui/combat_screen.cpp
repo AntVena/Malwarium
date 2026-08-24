@@ -112,6 +112,21 @@ const MoveDef* castMove(const Combatant& c) {
     return nullptr;
 }
 
+// The row this fighter actually cast, whichever kind of slot it came out of: a wildcard
+// answers with what it ROLLED, every other slot answers with itself.
+//
+// Deliberately NOT castMove above, which stays wildcard-only. That one feeds FX_CAMO,
+// which asks whether a cast was BORROWED — widen it and an ordinary fighter casting a
+// move its opponent happens to carry would start wearing that opponent's colours.
+const MoveDef* castRow(const Combatant& c) {
+    if (c.lastMoveIdx < 0) return nullptr;
+    if (c.lastMoveIdx < static_cast<int>(c.wildPools.size()) &&
+        c.wildPools[c.lastMoveIdx].lastRolled)
+        return c.wildPools[c.lastMoveIdx].lastRolled;
+    if (c.lastMoveIdx < static_cast<int>(c.moves.size())) return c.moves[c.lastMoveIdx];
+    return nullptr;
+}
+
 // The line a combatant belongs to, or null for one built from a sprite-named spec rather
 // than from a creature — a malbeast, a boss, the dummy. That null is the case the kit
 // match below exists for.
@@ -162,6 +177,23 @@ void overridePickerHeader(char* out, size_t cap, bool items, bool lock, bool cre
     char titled[48];
     std::snprintf(titled, sizeof(titled), "EXPLOIT: %s", bands);
     std::snprintf(out, cap, "%s", textWidth(titled) <= roomPx ? titled : bands);
+}
+
+// What this answers and why it is answered off the MOVE are on the declaration
+// (combat_screen.h).
+StrikeMark strikeMark(const Combatant& actor, int strikeSeq) {
+    const MoveDef* m = castRow(actor);
+    const SpriteData* sheet = &ASSET_UI_STRIKE_COMMON;
+    if (m && m->line) {
+        if (std::strcmp(m->line, "ransomware") == 0) sheet = &ASSET_UI_STRIKE_RANSOMWARE;
+        else if (std::strcmp(m->line, "phishing") == 0) sheet = &ASSET_UI_STRIKE_PHISHING;
+        else if (std::strcmp(m->line, "trojan") == 0) sheet = &ASSET_UI_STRIKE_TROJAN;
+        else if (std::strcmp(m->line, "worm") == 0) sheet = &ASSET_UI_STRIKE_WORM;
+    }
+    const int n = sheet->frames > 0 ? sheet->frames : 1;
+    // Modulo the fight's swing count, so the pair walks however many frames the sheet
+    // actually ships — a source drawn with one is simply never alternated.
+    return {sheet, ((strikeSeq % n) + n) % n};
 }
 
 // The threshold and why it is measured this way are on the declaration
@@ -262,41 +294,34 @@ void drawWindupMark(Framebuffer& fb, int midX, int headY, int turnsLeft, int tur
                     2 * (kWindupCaret - i) - 1, 1, palColor(Pal::WARN));
 }
 
-// The strike mark: WHO is hitting WHOM, drawn in the clash lane for the swing window.
+// The strike mark: WHO is hitting WHOM, WITH WHAT, drawn in the clash lane for the
+// swing window.
 //
-// Three swept gashes that bow, fan and TRAVEL in the direction of the blow — crossing
-// the lane from the attacker's edge to its target's over the window, thinning to a point
-// at both ends the way a claw leaves a cut. Motion carries the direction first and the
-// taper carries it second, so the answer survives a single frozen frame as well as it
-// does in play. Drawn from primitives rather than art because the mark has to mirror,
-// and a mirrored sheet is a second sheet.
+// It TRAVELS in the direction of the blow, crossing the lane from the attacker's edge to
+// its target's over the window and fading as it goes. Motion carries the direction, and
+// the sheet is drawn as though the blow travels right and mirrored for one going left
+// (SpriteData::facing), so a frozen frame answers "which way" as well as play does.
+//
+// WHAT is the source of the cast — its line, or the common pool — and each source owns a
+// PAIR, walked on the fight's own swing count so no two blows in a row draw the same
+// frame (strikeMark, combat_screen.h). One mark per source read as wallpaper within a few
+// turns; two make each swing its own event. The art and the reasoning behind each shape
+// are tools/gen_fight_art.py.
 //
 // It cuts across torso height — high enough to cross a short creature's body rather than
 // its feet, low enough to stay under a tall one's head.
 constexpr int kStrikeY = kSpriteShelf - 46;
-constexpr int kStrikeW = 18, kStrikeGashes = 3;
-void drawStrikeMark(Framebuffer& fb, int laneX, int laneW, int dir, int beat,
-                    int period) {   // dir: +1 the blow travels right, -1 left
+
+void drawStrikeMark(Framebuffer& fb, int laneX, int laneW, int dir, int beat, int period,
+                    const SpriteData& mark, int variant) {   // dir: +1 travels right
     if (beat < 0 || beat >= period) return;
-    const int travel = std::max(0, laneW - kStrikeW);
+    const int travel = std::max(0, laneW - mark.frameW);
     const int from = dir > 0 ? laneX : laneX + travel;
-    const int x = from + dir * travel * beat / std::max(1, period - 1) + kStrikeW / 2;
+    const int x = from + dir * travel * beat / std::max(1, period - 1);
     const uint8_t a = static_cast<uint8_t>(255 * (period - beat) / period);
-    const Rgb565 col = palColor(Pal::INK);
-    for (int g = 0; g < kStrikeGashes; ++g) {
-        const int half = g == 1 ? 16 : 11;         // the middle gash leads the claw
-        const int gx = x + dir * (g - 1) * 5;
-        const int gy = kStrikeY + (g - 1) * 6;
-        for (int t = -half; t <= half; ++t) {
-            // The gash bows toward the blow and thickens through its belly, so each
-            // stroke is a crescent with two points rather than a bar with two ends.
-            const int fall = half * half - t * t;
-            const int bow = 6 * fall / (half * half);
-            const int body = 1 + 3 * fall / (half * half);
-            for (int k = 0; k < body; ++k)
-                fb.blendPixel(gx + dir * (bow + k), gy + t, col, a);
-        }
-    }
+    drawSpriteTinted(fb, mark, variant % std::max(1, mark.frames), x,
+                     kStrikeY - mark.h / 2, palColor(Pal::INK), /*row=*/0,
+                     spriteMirrorToFace(mark, /*faceRight=*/dir > 0), a);
 }
 
 // Impact "punch" cue (no new art/frames): the side that just took a landed hit
@@ -484,6 +509,15 @@ CombatStatusStrip combatStatusStrip(const Combatant& c, bool withGuard) {
     add(CombatVsKind::Trap, c.trojanTrapCount);
     if (c.itemShield) add(CombatVsKind::Backup, 1);
     return s;
+}
+
+// Which frame of a status glyph is up. A sheet with one cell holds still and one with
+// more walks them, so giving a condition an animation is an art change and not a code
+// change — the same bargain idleFrame makes for creatures (core/render/sprite.h). Halved
+// off the anim beat because the strip sits under a fighter's feet: at the full rate a
+// rocking skull competes with the fight it is describing.
+int glyphFrame(const SpriteData& s, int animBeat) {
+    return s.frames > 1 ? (animBeat / 2) % s.frames : 0;
 }
 
 const SpriteData* combatVsGlyph(CombatVsKind kind) {
@@ -845,7 +879,8 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
         const int right = bandX + bandW;
         for (int i = 0; i < st.n && x + cell <= right && x + cell <= kActiveW; ++i) {
             if (const SpriteData* g = combatVsGlyph(st.k[i]))
-                drawSpriteTinted(fb, *g, 0, x, kSpriteShelf + 1, combatVsColor(st.k[i]));
+                drawSpriteTinted(fb, *g, glyphFrame(*g, animBeat), x, kSpriteShelf + 1,
+                                 combatVsColor(st.k[i]));
             x += cell;
         }
     };
@@ -855,8 +890,14 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
     // The strike mark, in the lane the seating reserved for it: who is hitting whom, in
     // the direction the blow travels. Drawn over the replicas, since a copy taking the
     // hit is still that hit landing.
-    if (swinging)
-        drawStrikeMark(fb, stage.laneX, stage.laneW, hopDir, hitBeat, kAttackHopPeriod);
+    if (swinging) {
+        // The ACTOR decides WHICH mark (what was swung); the fight's swing count decides
+        // which half of its pair, so this blow never repeats the one before it.
+        const StrikeMark mark =
+            strikeMark(lastByLocal ? pl : en, combat.strikeCount());
+        drawStrikeMark(fb, stage.laneX, stage.laneW, hopDir, hitBeat, kAttackHopPeriod,
+                       *mark.sheet, mark.variant);
+    }
     // The wind-up countdown, over whichever fighter is charging — the same marker on both
     // sides, so "a hit is being wound up, by that one, N turns out" reads without colour.
     // Seated off each sprite's own height, so it rides the head it belongs to rather than

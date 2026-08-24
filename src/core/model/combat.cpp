@@ -105,6 +105,7 @@ void Combat::begin(const Combatant& player, const Combatant& enemy, Stakes stake
     lastWasCharge_ = false;
     lastRansomed_ = false;
     lastWasStrike_ = false;
+    strikeCount_ = 0;
     lastWormKill_ = {};
 }
 
@@ -116,6 +117,9 @@ void Combat::setLast(const char* name, int dmg, bool byPlayer, bool charge,
     lastWasCharge_ = charge;
     lastRansomed_ = ransomed;
     lastWasStrike_ = strike;
+    // The one funnel every resolved turn passes through, which is why the fight's strike
+    // count is kept here rather than at each of the call sites that can swing.
+    if (strike) strikeCount_++;
 }
 
 // Uniform pick over `self`'s slots, skipping lastMoveIdx (the no-consecutive-repeat

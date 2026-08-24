@@ -106,6 +106,14 @@ FACING = {
     "SPR_PET_USBASILISK": "Right",
     "SPR_PET_COAXEEL": "Right",
 
+    # The strike marks, every one drawn as though the blow travels right; the screen
+    # mirrors them for a blow going the other way.
+    "UI_STRIKE_COMMON": "Right",
+    "UI_STRIKE_RANSOMWARE": "Right",
+    "UI_STRIKE_PHISHING": "Right",
+    "UI_STRIKE_TROJAN": "Right",
+    "UI_STRIKE_WORM": "Right",
+
     # Head to the left of the cell.
     "SPR_PET_BARKMAIL": "Left",
     "SPR_PET_CUTTLEFORK": "Left",
@@ -134,6 +142,19 @@ FRAME_W_OVERRIDES = {
     # creature with a 56x48 cell, so it needs the override to be a strip at all.
     "SPR_WORM_REPLICA_ATTACK": 16,
     "SPR_WORM_REPLICA_DEFEND": 16,
+    # The combat screen's strike marks: 56x44 = two 28x44 frames, the pair a source
+    # alternates between (tools/gen_fight_art.py). Wider than tall, so without the
+    # override each would read as one very wide single frame.
+    "UI_STRIKE_COMMON": 28,
+    "UI_STRIKE_RANSOMWARE": 28,
+    "UI_STRIKE_PHISHING": 28,
+    "UI_STRIKE_TROJAN": 28,
+    "UI_STRIKE_WORM": 28,
+    # 16x8 = the two ANIMATED fight-status glyphs, a skull that rocks and a pair of
+    # stars going round. The rest of the ICON_FIGHT_* family is a single 8x8 cell and
+    # needs no row here.
+    "ICON_FIGHT_DOT": 8,
+    "ICON_FIGHT_STUN": 8,
     # 768x64 = eight 96x64 frames. An ANIMATED sheet at the oversized Daemon cell needs
     # the override for the same reason a Script sheet does not: the rule below cuts a
     # SPR_PET_ sheet on 56px only when the width divides by it, and 768 does not, so

@@ -77,6 +77,30 @@ focused bright) — supply one master, brightness handled in engine unless noted
 | `UI_ALERT_HUNGER` | Idle low-power / hunger icon    | 20×20         | blink ~1Hz in engine | ☑ | `/assets/ui/UI_ALERT_HUNGER.png` |
 | `UI_DEFOCUS_FADE` | Track fade-in/out treatment     | —             | engine alpha; mask only if needed | ⊘ | — |
 
+### B.1 Combat strike marks
+
+One PAIR per attack SOURCE, drawn 1-bit and tinted at draw time. The mark travels the clash
+lane in the direction of the blow and fades as it crosses; it is drawn as a rightward blow and
+mirrored for a leftward one, so each source is one sheet rather than two. Which pair a swing
+draws is the **move's** line, not the creature's — so a wild casting a line's move gets that
+line's mark, and a Metamorphic wildcard gets the mark of whatever it rolled. That is why the
+Metamorphic line has no pair of its own and cannot want one.
+
+Two frames each because fighters trade blows all fight: one mark per source became wallpaper
+inside a few turns. The pair walks the FIGHT's swing count, so no two blows in a row draw the
+same frame — whoever threw them.
+
+**Recipes: `tools/gen_fight_art.py`** — it owns these PNGs, `--check` gates them, and it
+enforces the margin a strike cell keeps. Draw a new one there, not by hand.
+
+| Asset ID | Source | Logical size | The pair | Status | File |
+|---|---|---|---|---|---|
+| `UI_STRIKE_COMMON`     | common pool | 28×44 ×2 | two short cuts / three shorter ticks | ☑ | `/assets/ui/UI_STRIKE_COMMON.png` |
+| `UI_STRIKE_RANSOMWARE` | Ransomware  | 28×44 ×2 | three full-reach slashes / a crossed pair | ☑ | `/assets/ui/UI_STRIKE_RANSOMWARE.png` |
+| `UI_STRIKE_PHISHING`   | Phishing    | 28×44 ×2 | bubbles rising off the bait / the barbed thrust after it | ☑ | `/assets/ui/UI_STRIKE_PHISHING.png` |
+| `UI_STRIKE_TROJAN`     | Trojan      | 28×44 ×2 | a trap open / the same trap shut, throwing sparks | ☑ | `/assets/ui/UI_STRIKE_TROJAN.png` |
+| `UI_STRIKE_WORM`       | Worm        | 28×44 ×2 | three fat projectiles / a looser spread of five | ☑ | `/assets/ui/UI_STRIKE_WORM.png` |
+
 ---
 
 ## C. Pet sprite sheets
@@ -753,14 +777,26 @@ across the set on purpose — speed and a stun are both `warn`, a wall and a bub
 `team-blue` — so the SHAPE is what separates them and the tint only ever repeats it. Every row
 also keeps its word (`CombatVsRow::tag`), which is what draws if a master goes missing.
 
+The same glyphs also stand under each fighter's feet on the combat stage as its STATUS STRIP,
+which is why the two say one thing in one vocabulary. **Two of them animate**: DOT and STUN
+ship a second frame, and the strip walks whatever frames a sheet has (`glyphFrame`,
+`ui/combat_screen.cpp`). Giving another condition an animation is therefore an art change and
+not a code change — a one-cell sheet simply holds still. Those two are drawn by
+`tools/gen_fight_art.py`, which also owns the strike marks (§B.1); the rest of the family is
+hand-drawn and single-frame.
+
+TRAP's snare jaws and the Trojan strike mark are deliberately the same idea at two sizes: the
+line's passive is an armed trap taking the turn, and a player who has learned the glyph should
+recognise the blow.
+
 | Asset ID | Row | Concept | Tint | Status | File |
 |---|---|---|---|---|---|
 | `ICON_FIGHT_HP` | HP | heart | `calm` | ☑ | `/assets/icons/ICON_FIGHT_HP.png` |
 | `ICON_FIGHT_PWR` | PWR | sword, point up | `team-red` | ☑ | `/assets/icons/ICON_FIGHT_PWR.png` |
 | `ICON_FIGHT_DEF` | DEF | brick wall — DEF is the STANDING damage cut, so it is the structure that is always there | `team-blue` | ☑ | `/assets/icons/ICON_FIGHT_DEF.png` |
 | `ICON_FIGHT_SPD` | SPD | double chevron | `warn` | ☑ | `/assets/icons/ICON_FIGHT_SPD.png` |
-| `ICON_FIGHT_STUN` | STUN | squared spiral | `warn` | ☑ | `/assets/icons/ICON_FIGHT_STUN.png` |
-| `ICON_FIGHT_DOT` | DOT | three bubbles, three sizes | `hot` | ☑ | `/assets/icons/ICON_FIGHT_DOT.png` |
+| `ICON_FIGHT_STUN` | STUN | two stars going round, swapping size and corner across the pair | `warn` | ☑ | `/assets/icons/ICON_FIGHT_STUN.png` |
+| `ICON_FIGHT_DOT` | DOT | a skull, rocking one way then the other | `hot` | ☑ | `/assets/icons/ICON_FIGHT_DOT.png` |
 | `ICON_FIGHT_SHLD` | SHLD | bubble with a highlight — the Obfuscation pool | `team-blue` | ☑ | `/assets/icons/ICON_FIGHT_SHLD.png` |
 | `ICON_FIGHT_GRD` | GRD | shield, raised — GRD is the ONE-SHOT brace, spent on the next hit, which is what raising a shield is. Straight-sided so it does not read as the heart | `team-blue` | ☑ | `/assets/icons/ICON_FIGHT_GRD.png` |
 | `ICON_FIGHT_RNSM` | RNSM | a note with a figure on it | `calm` | ☑ | `/assets/icons/ICON_FIGHT_RNSM.png` |

@@ -695,6 +695,15 @@ public:
     // the two questions differ in both directions: a shielded swing deals 0 and is still
     // an attack, and a ransom bill coming due deals plenty and is not one.
     bool lastWasStrike() const { return lastWasStrike_; }
+
+    // How many strikes this fight has resolved, either side, counting from its start.
+    // The combat screen walks its strike mark's pair off this (ui/combat_screen.cpp), so
+    // no two swings IN A ROW draw the same frame — which is what the player is actually
+    // watching, a sequence of blows rather than one fighter's private history.
+    //
+    // Derived from the resolved turn (setLast) and never from a clock, so both devices of
+    // a duel land on the same frame with nothing sent between them.
+    int strikeCount() const { return strikeCount_; }
     // The Worm replica the last resolved turn destroyed, if any (see WormKill).
     const WormKill& lastWormKill() const { return lastWormKill_; }
     // Consecutive same-actor turns (a lopsided speed edge — a Phishing speed siphon —
@@ -792,6 +801,7 @@ private:
     bool lastWasCharge_ = false;
     bool lastRansomed_ = false;
     bool lastWasStrike_ = false;
+    int strikeCount_ = 0;
     WormKill lastWormKill_;
 };
 

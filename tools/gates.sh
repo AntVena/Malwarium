@@ -70,6 +70,12 @@ run() {
 # glyph would otherwise be compiled into the atlas without complaint.
 run "item icons" python3 tools/gen_item_icons.py --check || exit 1
 
+# The combat screen's strike marks and fight-status glyphs, on the same footing and for
+# the same reasons (tools/gen_fight_art.py). This one also enforces the margin a strike
+# cell keeps, so a recipe that grew past its frame fails here rather than shipping a
+# slash with its point quietly cut off.
+run "fight art" python3 tools/gen_fight_art.py --check || exit 1
+
 # src/generated is derived from assets/ and not committed, so a clean checkout has
 # no engine to compile. Cheap enough to always run.
 run "codegen" python3 tools/gen_assets.py || exit 1

@@ -302,6 +302,13 @@ int g_failures = 0;
     RUN(test_facing_undeclared_is_never_mirrored) \
     RUN(test_facing_roster_declarations_hold)     \
     RUN(test_hurt_pose_is_reserved_for_real_hits) \
+    RUN(test_strike_mark_follows_the_move_not_the_creature) \
+    RUN(test_strike_mark_follows_a_wildcard_to_its_roll) \
+    RUN(test_strike_mark_never_repeats_between_blows) \
+    RUN(test_strike_mark_walks_whatever_the_sheet_ships) \
+    RUN(test_strike_sheets_are_pairs_facing_right) \
+    RUN(test_strike_count_advances_over_a_real_fight) \
+    RUN(test_fight_status_glyphs_animate_by_sheet) \
     RUN(test_camo_ramp_is_a_value_scale)          \
     RUN(test_camo_rich_palette_is_mostly_the_real_thing) \
     RUN(test_camo_level_holds_and_releases)       \

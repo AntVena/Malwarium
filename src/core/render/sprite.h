@@ -142,15 +142,19 @@ void drawSprite(Framebuffer& fb, const SpriteData& s, int frame, int x, int y,
 //
 // Callers pass a colour from core/ui/theme.h, never a literal — and only where the
 // screen already states the same meaning some other way. See that file's rule.
+//
+// `mirror` turns the glyph (spriteSrcX below) and `alpha` scales the coverage it is
+// blended at, 255 being the sprite's own. Both exist for the combat screen's strike
+// marks (ui/combat_screen.cpp): a mark is drawn as though the blow travels right and is
+// turned for one going the other way, and it fades as it crosses the lane.
 void drawSpriteTinted(Framebuffer& fb, const SpriteData& s, int frame, int x, int y,
-                      Rgb565 tint, int row = 0);
+                      Rgb565 tint, int row = 0, bool mirror = false,
+                      uint8_t alpha = 255);
 
 // Same, but nearest-neighbour upscaled by num/den (the creature/pixel-art
 // path of the hybrid model). (destX, destY) is the top-left in active space.
 // `mirror` flips it horizontally inside its own cell — see spriteSrcX above, and
-// spriteContentX0 for seating one. The 1:1 blitters above take no such flag: the
-// ICON_*/UI_* family they serve is chrome, which has a reading direction rather than a
-// facing.
+// spriteContentX0 for seating one.
 void drawSpriteUpscaled(Framebuffer& fb, const SpriteData& s, int frame,
                         int destX, int destY, int num, int den, int row = 0,
                         bool mirror = false);

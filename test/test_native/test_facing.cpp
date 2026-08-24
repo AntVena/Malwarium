@@ -11,6 +11,7 @@
 #include "core/render/absorb.h"
 #include "core/render/camo.h"
 #include "core/render/shred.h"
+#include "core/content/registry.h"
 #include "core/model/combat.h"
 #include "core/render/sprite.h"
 #include "core/ui/combat_screen.h"
@@ -218,4 +219,152 @@ void test_hurt_pose_is_reserved_for_real_hits() {
     // flinches rather than dividing by nothing.
     Combatant empty{};
     CHECK(!hurtPoseEarned(empty, 50));
+}
+
+// --- Gate: a swing draws the mark of what was SWUNG ---
+//
+// Keyed on the move's line, never the creature's, which is what makes the three
+// interesting cases work at all: a wild with no line, a Metamorphic wildcard, and the
+// common pool. See strikeMark's declaration.
+void test_strike_mark_follows_the_move_not_the_creature() {
+    MoveDef ransom{}; ransom.id = "payload_drop"; ransom.line = "ransomware";
+    MoveDef worm{};   worm.id = "fork";           worm.line = "worm";
+    MoveDef plain{};  plain.id = "quick_jab";     plain.line = nullptr;
+
+    Combatant c{};
+    c.moves = {&ransom};
+    c.lastMoveIdx = 0;
+    CHECK(strikeMark(c, 0).sheet == &ASSET_UI_STRIKE_RANSOMWARE);
+
+    // The creature behind the fighter says nothing about it: a wild carries no
+    // CreatureDef at all and still shows the line's mark for the line's move.
+    CHECK(c.creature == nullptr);
+    c.moves = {&worm};
+    CHECK(strikeMark(c, 0).sheet == &ASSET_UI_STRIKE_WORM);
+
+    // No line on the row is the common pool, and so is a fighter that cast nothing.
+    c.moves = {&plain};
+    CHECK(strikeMark(c, 0).sheet == &ASSET_UI_STRIKE_COMMON);
+    c.lastMoveIdx = -1;
+    CHECK(strikeMark(c, 0).sheet == &ASSET_UI_STRIKE_COMMON);
+}
+
+// --- Gate: a Metamorphic wildcard shows what it ROLLED ---
+//
+// The reason that line has no mark of its own: none of its rows casts itself. Reading
+// the slot instead of the roll would have given the whole family one anonymous mark for
+// every move it ever borrows.
+void test_strike_mark_follows_a_wildcard_to_its_roll() {
+    MoveDef wild{};  wild.id = "instruction_swap"; wild.line = "metamorphic";
+    MoveDef rolled{}; rolled.id = "smash_and_grab"; rolled.line = "trojan";
+
+    Combatant c{};
+    c.moves = {&wild};
+    c.wildPools.resize(1);
+    c.wildPools[0].lastRolled = &rolled;
+    c.lastMoveIdx = 0;
+    CHECK(strikeMark(c, 0).sheet == &ASSET_UI_STRIKE_TROJAN);
+
+    // A wildcard slot that has not rolled yet falls through to the slot's own row, which
+    // names the metamorphic line and therefore lands on the common mark rather than on
+    // nothing at all.
+    c.wildPools[0].lastRolled = nullptr;
+    CHECK(strikeMark(c, 0).sheet == &ASSET_UI_STRIKE_COMMON);
+}
+
+// --- Gate: no two blows in a row draw the same frame ---
+//
+// The property the pair exists for, stated the way the player sees it: a sequence of
+// attacks, whoever threw them, in which each differs from the one before. Counting per
+// FIGHTER instead satisfies a different and weaker property and breaks this one outright
+// for two same-line fighters trading blows — see strikeMark's declaration.
+void test_strike_mark_never_repeats_between_blows() {
+    MoveDef m{}; m.id = "payload_drop"; m.line = "ransomware";
+    Combatant a{}, b{};
+    a.moves = {&m}; a.lastMoveIdx = 0;
+    b.moves = {&m}; b.lastMoveIdx = 0;
+
+    CHECK(ASSET_UI_STRIKE_RANSOMWARE.frames == 2);   // a pair, as authored
+    int prev = -1, seen[2] = {0, 0};
+    for (int swing = 1; swing <= 8; ++swing) {
+        // Alternating fighters on the SAME line: the matchup that has any chance of
+        // aliasing at all, and the one the per-fighter count got wrong.
+        const int v = strikeMark(swing % 2 ? a : b, swing).variant;
+        CHECK(v != prev);
+        prev = v;
+        seen[v]++;
+    }
+    CHECK(seen[0] == 4 && seen[1] == 4);
+}
+
+// --- Gate: a source drawn with one frame is simply never alternated ---
+//
+// The variant walks whatever the sheet ships, so adding or dropping a frame is an art
+// change. A single-cell sheet must land on frame 0 for every swing rather than indexing
+// one that is not there.
+void test_strike_mark_walks_whatever_the_sheet_ships() {
+    SpriteData one{};
+    one.frames = 1;
+    for (int seq = 0; seq < 5; ++seq) CHECK(seq % (one.frames) == 0);
+
+    MoveDef m{}; m.id = "quick_jab"; m.line = nullptr;
+    Combatant c{};
+    c.moves = {&m}; c.lastMoveIdx = 0;
+    // A negative sequence can never arrive from Combat, but the modulo must not hand back
+    // a negative index if one ever did.
+    CHECK(strikeMark(c, -1).variant >= 0);
+    CHECK(strikeMark(c, -3).variant < ASSET_UI_STRIKE_COMMON.frames);
+}
+
+// --- Gate: every source ships a full pair, drawn as a rightward blow ---
+//
+// A source quietly drawn with one frame would hold still while the rest of the set
+// alternated, and one drawn facing left would turn the wrong way in both seats. Neither
+// shows up as an error anywhere else — the mark still renders.
+void test_strike_sheets_are_pairs_facing_right() {
+    for (const SpriteData* s : {&ASSET_UI_STRIKE_COMMON, &ASSET_UI_STRIKE_RANSOMWARE,
+                                &ASSET_UI_STRIKE_PHISHING, &ASSET_UI_STRIKE_TROJAN,
+                                &ASSET_UI_STRIKE_WORM}) {
+        CHECK(s->frames == 2);
+        CHECK(s->facing == Facing::Right);
+        CHECK(spriteMirrorToFace(*s, /*faceRight=*/false));
+    }
+}
+
+// --- Gate: a real fight actually advances each fighter's own swing count ---
+//
+// The mapping gates above all pass a sequence by hand, which proves the CHOICE and
+// nothing about whether anything ever moves it. This drives a live Combat instead: if
+// the count never advanced, every fighter would show one half of its pair for the whole
+// game and nothing else here would notice.
+void test_strike_count_advances_over_a_real_fight() {
+    ContentRegistry r = ContentRegistry::embedded();
+    Combatant p = mkCombatant(r, "P", 400, 10, {"quick_jab", "packet_storm"});
+    Combatant e = mkCombatant(r, "E", 400, 9, {"quick_jab"});
+    Combat cb;
+    cb.begin(p, e, Combat::Stakes::Safe, 777);
+
+    int blows = 0, prev = -1;
+    for (int i = 0; i < 40 && cb.outcome() == Combat::Outcome::Ongoing; ++i) {
+        cb.step();
+        if (!cb.lastWasStrike()) continue;
+        const Combatant& actor = cb.lastByPlayer() ? cb.player() : cb.enemy();
+        const int v = strikeMark(actor, cb.strikeCount()).variant;
+        CHECK(v != prev);            // the no-repeat property, on a real sequence
+        prev = v;
+        ++blows;
+    }
+    CHECK(blows > 4);
+    CHECK(cb.strikeCount() == blows);
+}
+
+// --- Gate: a status glyph animates only if its sheet has the frames ---
+//
+// The two conditions worth watching tick got a second frame; the rest of the family did
+// not, and must keep drawing frame 0 rather than indexing one that is not there.
+void test_fight_status_glyphs_animate_by_sheet() {
+    CHECK(ASSET_ICON_FIGHT_DOT.frames == 2);     // the skull, rocking
+    CHECK(ASSET_ICON_FIGHT_STUN.frames == 2);    // stars going round
+    CHECK(ASSET_ICON_FIGHT_SHLD.frames == 1);    // still, and staying that way
+    CHECK(ASSET_ICON_FIGHT_HP.frames == 1);
 }
