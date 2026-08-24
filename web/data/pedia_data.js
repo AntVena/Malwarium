@@ -275,12 +275,12 @@ window.PEDIA_DATA = {
       "evolvesTo": [
         "goliauth"
       ],
-      "hint": "A warty toad-kraken hybrid that has grown fat camped atop a corporate email server. It croaks in hunger as its tentacles search for just one more credential.",
-      "context": "Credential harvesting / phishing",
+      "hint": "Half-grown and pleased about it. The legs have come in, the tail has not quite gone, and the throat has already learned to flash a six-digit code at anyone who asks. The number is real. The reason it wants yours is not.",
+      "context": "Token theft / one-time passcode phishing",
       "sprite": "assets/sprites/SPR_PET_CROAKEN.png",
       "cellW": 56,
       "cellH": 48,
-      "sheetW": 224,
+      "sheetW": 56,
       "sheetH": 48
     },
     {
@@ -290,13 +290,13 @@ window.PEDIA_DATA = {
       "stageName": "Daemon",
       "line": "phishing",
       "evolvesTo": [],
-      "hint": "It hasn't had to move in years since it started using its deep croak to impersonate IT helpdesk. It probably has a tentacle in the desk-phone of every C-level exec in the country.",
+      "hint": "It has not moved in years and has never needed to. The throat does the work: a croak pitched exactly like the helpdesk, over a prompt everyone has approved a hundred times without reading. It only has to be believed once.",
       "context": "Vishing / phone phishing (phreaking)",
       "sprite": "assets/sprites/SPR_PET_GOLIAUTH.png",
-      "cellW": 56,
-      "cellH": 48,
-      "sheetW": 224,
-      "sheetH": 48
+      "cellW": 96,
+      "cellH": 64,
+      "sheetW": 96,
+      "sheetH": 64
     },
     {
       "id": "phishlet",

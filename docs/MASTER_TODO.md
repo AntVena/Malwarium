@@ -339,25 +339,6 @@ MALBEAR is the case that shows why it's wanted: its 8-column sheet declares `idl
 and `attack` as all 8 of the same row, because the sheet arrived with no row plan saying which
 columns were which. A template makes that a drawing instruction rather than a guess. Diff **S**.
 
-### 2a-0. Croaken and Goliauth want redrawing, not repairing
-
-**The Phishing line's top two are the roster's weakest art and the decision is to redo them, not
-patch them.** They are also the two worst offenders under 2a-iii — `SPR_PET_GOLIAUTH` puts 109
-opaque pixels on its left frame edge and 109 on its right, `SPR_PET_CROAKEN` 33/33 with another
-34 across the top — so whatever is drawn there is already spilling out of the cell rather than
-being composed inside it. That makes them the wrong sheets to sweep: a re-crop would only trim a
-drawing that is being replaced.
-
-They are one problem and not two: `croaken` (Script) evolves into `goliauth` (Daemon), so the
-pair has to read as one animal growing, the way Cuttlefork does into Morphopus. Tadpoll below
-them stays as it is and is what they have to grow out of. |
-`src/core/content/creatures/phishing/line.h`; `assets/sprites/SPR_PET_{CROAKEN,GOLIAUTH}.png`. |
-M | Blocked on the direction, which is not written down anywhere: the intent is that they read
-MORE FROG than they currently do, but what that means concretely — and what the line's silhouette
-argument is, the way the Metamorphic line's is "it does not hold a shape" — has only ever been
-said out loud. Settle that on the line's own rows first; the art follows it, not the other way
-round. |
-
 ### 2a-iii. Every limb must end inside its own frame
 
 **A limb cut off by the frame edge reads as a rendering bug on the device, not as a crop.** At
@@ -372,9 +353,11 @@ The bottom edge is exempt and only the bottom edge: that one is the FLOOR, and a
 standing on the shelf belongs on it.
 
 Measured over the roster, counting opaque pixels on a frame's left, right and top edges: **24
-sheets are clean, 14 are not.** The worst are `SPR_PET_GOLIAUTH` (109 left, 109 right) and
-`SPR_PET_CROAKEN` (33/33/34); the mildest are one or two stray pixels on `SPR_PET_MALBEAR` and
-`SPR_PET_BRUINFORCE`. Some of these are deliberate — a boss filling its cell — so the sweep is a
+sheets are clean, 12 are not.** The two worst — `SPR_PET_GOLIAUTH` (109 left, 109 right) and
+`SPR_PET_CROAKEN` (33/33/34) — were fixed by the redraw that 2a-0 called for, and the fix is the
+pattern: neither was cropped, both were re-composed inside a cell chosen to fit them, which is
+why Goliauth now sits in the 96x64 Daemon box rather than the 56px cell it was overflowing. The
+mildest remaining are one or two stray pixels on `SPR_PET_MALBEAR` and `SPR_PET_BRUINFORCE`. Some of these are deliberate — a boss filling its cell — so the sweep is a
 judgement per sheet, not a blanket re-crop, and that is why this is not already a gate. |
 `assets/` + `tools/quantize.py`; the check itself is ~20 lines over `gen_assets.frame_width` /
 `frame_rows`. | M | Do it in the same pass as 2a-ii — both walk every pixel of every sheet, and

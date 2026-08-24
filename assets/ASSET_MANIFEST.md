@@ -251,12 +251,30 @@ which is why gameplay ships first and the drawing follows.
   instruction in the prompt, described as a named widget rather than as "something techy".
 - **The teal floor is `#123a40`, and the older phishing sheets predate it.** `SPR_PET_CLICKBAIT`,
   `SPR_PET_SPAMWHALE` and `SPR_PET_BAITRACUDA` measure 0% of their pixels within 12 luma of
-  `PAPER`. `SPR_PET_PHISHLET`, `_TADPOLL`, `_CROAKEN` and `_GOLIAUTH` carry 19–34% at that
-  measure, because they reuse `#06272b`/`#0d1414`/`#0a0f0f` — at or below the habitat background,
-  so those pixels are holes rather than shadow (the same failure `SPR_PET_PWNTHER` fixed for the
-  cat branch). Their recolour is a second pass, not a redraw. New art on this line floors at
-  `#123a40`; a hand pass that samples ink off a shipped phishing sprite will reintroduce the
-  fault, so measure the darkest tone rather than picking it.
+  `PAPER`. `SPR_PET_PHISHLET` still carries 19–34% at that measure, because it reuses
+  `#06272b`/`#0d1414`/`#0a0f0f` — at or below the habitat background, so those pixels are holes
+  rather than shadow (the same failure `SPR_PET_PWNTHER` fixed for the cat branch). Its recolour
+  is a second pass, not a redraw.
+
+  The frog chain is the worked example of the fix, and the two halves of it are worth telling
+  apart. `SPR_PET_CROAKEN` and `_GOLIAUTH` were snapped through `tools/quantize.py` with the
+  floor as the first palette entry AND as `--outline`, which is what makes the darkest tone a
+  decision rather than a sample. `SPR_PET_TADPOLL` did not need re-snapping — it was already at
+  cell scale and on-palette, so it took a remap of its ink instead, which is the cheaper repair
+  whenever the art itself is sound. That pass also caught 9 pixels of pure `#000000` in its
+  second frame's tail: a sheet can hold a handful of off-palette pixels that no eye will find
+  and no colour count will flag if the count is taken per frame. **Measure the darkest tone over
+  the WHOLE sheet, against `PAPER`, before shipping** — a hand pass that picks ink off a shipped
+  phishing sprite reintroduces the fault, so measure rather than choosing by eye.
+- **`quantize.py --accent` floods any dark mark drawn INSIDE an accent region.** Its rule is "a
+  source block holding any accent keeps it", which is exactly right for a three-pixel eye on a
+  body — the fault it was written to fix. But the frog chain's organ is a LIT PANEL with dark
+  glyphs on it, and the same rule eats them: at a 3:1 downscale every block along a digit also
+  touches the panel's glow, so the panel returns as a featureless slab and the pupils inside the
+  eyes vanish with it. Nothing looks broken; the sprite just reads as blank. The repair is to
+  restamp after the snap — walk the output's accent pixels, area-average each one's source block,
+  and put the floor ink back wherever that block was actually dark. Worth knowing before drawing
+  any creature whose tell is dark-on-bright rather than bright-on-dark.
 - **`SPR_PET_BAITRACUDA` is `▨`, and what it owes is RESOLUTION.** Its source framed at 160×65
   against the 96×64 Daemon cell, so it is width-bound decimated at 3:5 — 874 single-pixel
   features land on a deleted lattice line, against the 622 `SPR_PET_BARKMAIL` ships with. The
