@@ -94,6 +94,11 @@ frame set so the engine animates any creature identically:
 Corruption, channel-shift, and ghost are **engine passes (`FX_*`)** applied on top — **no
 per-creature art needed** for them.
 
+**Nor is a second copy facing the other way.** A sheet whose drawing has a side declares it once
+(`FACING`, `tools/gen_assets.py`) and the engine mirrors it into whichever seat or heading it is
+drawn for. Draw a creature the way it wants to be drawn; see `CREATURE_VISUAL_RULES.md` §2 for
+when a sheet is worth declaring and what the mirror costs.
+
 ### C.1 Which creatures still want art
 
 **There is no roster table here, deliberately.** Every column one would have — creature, line,

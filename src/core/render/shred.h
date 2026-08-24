@@ -33,6 +33,6 @@ struct SpriteData;
 // scatter, so the subject falls apart rather than being pushed anywhere.
 void drawShred(Framebuffer& fb, const SpriteData& s, int frame,
                int srcX, int srcY, int num, int den, Rgb565 tint, uint8_t progress,
-               int row = 0);
+               int row = 0, bool mirror = false);
 
 } // namespace mal

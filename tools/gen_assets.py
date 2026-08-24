@@ -72,6 +72,58 @@ PET_FRAME_W = 56          # spec: pet sprite cell is 56x48 logical
 PET_ROW_H = 48            # a pet sheet's height, if a clean multiple of this, is that many rows
 PET_PREFIX = "SPR_PET_"
 
+# Which way the DRAWING in a sheet is turned (SpriteData::facing, core/render/sprite.h).
+# An authorial fact about the art, so it is declared here rather than measured: no pass
+# over pixels can tell a head from a tail.
+#
+# ONLY the sheets with a side to them appear. Everything absent is Facing::None and is
+# never mirrored, which is right for the three-quarter turned-to-the-viewer standing
+# pose assets/CREATURE_VISUAL_RULES.md §2 asks every creature for (Paypup, Malbear,
+# Pingcub, the whole Metamorphic octopus branch), for every egg and stand-in, and for
+# all of the icon/UI family. The Worm replica glyphs are absent deliberately: 16x8 of
+# 1-bit outline is below the size at which a facing reads at all, and the rank they
+# stand in is already seated toward the enemy by the caller (ui/worm_replicas.h).
+#
+# Add a row when a new sheet's body reads across its cell. Getting one wrong turns a
+# creature away from its opponent, which is exactly what this table exists to prevent —
+# check it against the sheet, not against the creature's cousins.
+FACING = {
+    # Head to the right of the cell.
+    "SPR_PET_BAITRACUDA": "Right",
+    "SPR_PET_BREECHEETAH": "Right",
+    "SPR_PET_CLICKBAIT": "Right",
+    "SPR_PET_CROAKEN": "Right",
+    "SPR_PET_GOLIAUTH": "Right",
+    "SPR_PET_PWNTHER": "Right",
+    "SPR_PET_SPAMWHALE": "Right",
+    "SPR_PET_GENERIC_DAEMON": "Right",
+    # The whole Worm line, drawn head-to-upper-right by tools/gen_worm_art.py — the one
+    # family that is mechanically consistent, because a tool draws it.
+    "SPR_PET_NODEATODE": "Right",
+    "SPR_PET_ROOTGRUB": "Right",
+    "SPR_PET_SHENLOOP": "Right",
+    "SPR_PET_THREADBORE": "Right",
+    "SPR_PET_USBASILISK": "Right",
+    "SPR_PET_COAXEEL": "Right",
+
+    # Head to the left of the cell.
+    "SPR_PET_BARKMAIL": "Left",
+    "SPR_PET_CUTTLEFORK": "Left",
+    "SPR_PET_EXTORGI": "Left",
+    "SPR_PET_KALICO": "Left",
+    "SPR_PET_KEYLOGGERHEAD": "Left",
+    "SPR_PET_PHISHLET": "Left",
+    "SPR_PET_TADPOLL": "Left",
+    "SPR_PET_WIRE_HEIR": "Left",
+    "SPR_PET_GENERIC_SCRIPT": "Left",
+    # Every wild malbeast with a side to it faces left, and a wild always holds the
+    # right-hand seat, so the line already looks into the fight and mirrors nowhere.
+    "SPR_MALBEAST_BUFFER_WYRM": "Left",
+    "SPR_MALBEAST_CACHE_GHOUL": "Left",
+    "SPR_MALBEAST_GLITCHHOG": "Left",
+    "SPR_MALBEAST_KERNEL_LEVIATHAN": "Left",
+}
+
 # Non-pet sheets that are horizontal frame strips rather than one wide image,
 # keyed by asset name -> one frame's width. See frame_width().
 FRAME_W_OVERRIDES = {
@@ -227,12 +279,25 @@ def frame_rows(name, img_h):
     return 1
 
 
+def facing(name):
+    # The C++ enumerator for this sheet's declared facing; unlisted is the never-mirrored
+    # default. See FACING above.
+    return "Facing::" + FACING.get(name, "None")
+
+
 def gen_sprites():
     # Everything asset_paths() finds, in one flat namespace. That includes the
     # SPR_PET_GENERIC_* stage stand-ins: a creature whose final art isn't drawn yet is
     # wired to one of those, so content never waits on art.
     decls, defs, table = [], [], []
-    for name, rel in asset_paths().items():
+    paths = asset_paths()
+    # A FACING key that names nothing is a typo that would silently leave a creature
+    # turned away from its opponent — the one failure this table exists to stop — and it
+    # would never show up as an error anywhere else, so it is caught here.
+    unknown = sorted(set(FACING) - set(paths))
+    if unknown:
+        raise ValueError("FACING names assets that do not exist: " + ", ".join(unknown))
+    for name, rel in paths.items():
         path = os.path.join(REPO, rel)
         w, h, rgba = decode_png_rgba(path)
         fw = frame_width(name, w)
@@ -263,9 +328,10 @@ def gen_sprites():
         ink = mask_ink(rgb_vals, a_vals)
         if ink is None:
             defs.append(_emit_sprite(sym, w, cell_h, fw, rows, cx0, cx1,
-                                     rgb_vals, a_vals))
+                                     facing(name), rgb_vals, a_vals))
         else:
-            defs.append(_emit_mask(sym, w, h, cell_h, fw, rows, cx0, cx1, a_vals, ink))
+            defs.append(_emit_mask(sym, w, h, cell_h, fw, rows, cx0, cx1, facing(name),
+                                   a_vals, ink))
         table.append((name, sym, w, h, fw, w // fw, rows))
     return decls, defs, table
 
@@ -296,18 +362,18 @@ def mask_ink(rgb_vals, a_vals):
     return ink                           # None for a fully transparent image: no ink
 
 
-def _emit_sprite(sym, w, cell_h, fw, rows, cx0, cx1, rgb_vals, a_vals):
+def _emit_sprite(sym, w, cell_h, fw, rows, cx0, cx1, face, rgb_vals, a_vals):
     rgb_arr = ", ".join(f"0x{v:04x}" for v in rgb_vals)
     a_arr = ", ".join(str(v) for v in a_vals)
     return (
         f"static const uint16_t {sym}_rgb[] = {{{rgb_arr}}};\n"
         f"static const uint8_t {sym}_a[] = {{{a_arr}}};\n"
         f"const SpriteData {sym} = {{ {w}, {cell_h}, {fw}, {w // fw}, {rows}, "
-        f"{cx0}, {cx1}, {sym}_rgb, {sym}_a }};\n"
+        f"{cx0}, {cx1}, {face}, {sym}_rgb, {sym}_a }};\n"
     )
 
 
-def _emit_mask(sym, w, h, cell_h, fw, rows, cx0, cx1, a_vals, ink):
+def _emit_mask(sym, w, h, cell_h, fw, rows, cx0, cx1, face, a_vals, ink):
     """Pack the alpha plane as 1bpp: row-major, MSB first, each row padded to a byte.
 
     Rows are byte-aligned so a row starts on a byte boundary and the reader's index
@@ -324,7 +390,7 @@ def _emit_mask(sym, w, h, cell_h, fw, rows, cx0, cx1, a_vals, ink):
     return (
         f"static const uint8_t {sym}_bits[] = {{{bits_arr}}};\n"
         f"const SpriteData {sym} = {{ {w}, {cell_h}, {fw}, {w // fw}, {rows}, "
-        f"{cx0}, {cx1}, nullptr, nullptr, {sym}_bits, 0x{ink:04x} }};\n"
+        f"{cx0}, {cx1}, {face}, nullptr, nullptr, {sym}_bits, 0x{ink:04x} }};\n"
     )
 
 

@@ -33,7 +33,7 @@ constexpr uint8_t kFrayFrom = 140;
 
 void drawShred(Framebuffer& fb, const SpriteData& s, int frame,
                int srcX, int srcY, int num, int den, Rgb565 tint, uint8_t progress,
-               int row) {
+               int row, bool mirror) {
     if (frame < 0 || frame >= s.frames || row < 0 || row >= s.rows) return;
     if (den <= 0 || num <= 0) return;
     if (progress >= 255) return;                      // nothing left of it
@@ -68,13 +68,13 @@ void drawShred(Framebuffer& fb, const SpriteData& s, int frame,
         }
 
         for (int px = 0; px < cellW; ++px) {
-            if (spriteAlphaAt(s, frame * cellW + px, row * cellH + py) < 128) continue;
+            const int sx = spriteSrcX(s, frame, px, mirror);
+            if (spriteAlphaAt(s, sx, row * cellH + py) < 128) continue;
             // A frayed row drops the pixels its own scatter picks, so the sliver comes
             // apart along its length rather than dimming as a bar.
             if (fraying && (dissolveHash(px, py) & 1u)) continue;
 
-            const Rgb565 col =
-                s.bits ? tint : spriteColorAt(s, frame * cellW + px, row * cellH + py);
+            const Rgb565 col = s.bits ? tint : spriteColorAt(s, sx, row * cellH + py);
             const int restX = srcX + px * num / den;
             const int y = srcY + py * num / den;
 

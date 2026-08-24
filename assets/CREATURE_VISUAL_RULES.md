@@ -64,6 +64,28 @@ its Script leans harder into it; a cat can be half-lidded at Process and still r
 forcing wide eyes onto it to satisfy the table buys nothing the silhouette and posture were not
 already carrying. Wide-and-eager is one way to draw *unguarded*, not the requirement.
 
+### Which way it faces, and who decides
+
+A drawing with a side to it — a profile walk row, a fish, any body that reads across its cell —
+**declares that side**, as `Facing::Left` or `Facing::Right` in `tools/gen_assets.py`'s `FACING`
+table. It rides on the SHEET rather than on a creature row because a wild malbeast is built from a
+sprite-named spec and has no creature row at all (`makeEnemyCombatant`,
+`src/core/model/combat_factory.cpp`), and the reader is `SpriteData::facing`
+(`src/core/render/sprite.h`).
+
+**Draw it whichever way it wants to be drawn.** Nothing here asks for a canonical direction, and
+the table is not a to-do list of sprites to redraw: a screen that seats a creature against an
+opponent mirrors it into the seat (`drawFighter`, `src/core/ui/combat_screen.cpp` — the local pet
+looks right, its rival left), and the idle habitat turns it to the way its wander is actually
+travelling. What the table buys is that a creature is never shown its opponent's back.
+
+**Most rows declare nothing, and that is correct.** §2's turned-to-the-viewer standing pose has no
+side to mirror, so `Facing::None` is the default and is never turned — Paypup, Malbear, Pingcub and
+the whole Metamorphic octopus branch all sit there. Declare a side only when the drawing has one.
+Two things make a row a bad candidate even when it does: a readable asymmetric detail that must not
+come out backwards, and anything small enough that a facing does not read at all (the 16×8 replica
+glyphs).
+
 ---
 
 ## 3. The shading law (the Paypup standard)
@@ -71,7 +93,7 @@ already carrying. Wide-and-eager is one way to draw *unguarded*, not the require
 **Light wraps the form; it never stacks in rows.** Every tone is decided by the surface *facing
 the light*, not by its height on the sprite.
 
-1. **One light, fixed for the whole roster: top, slightly left.**
+1. **One light: top, slightly left.**
 2. **Shade by surface normal** — highlight pools on the single highest rounded mass; core shadow
    on the turn-away and **under every overhang**; the silhouette has a clear top / front / under.
 3. **Up to 4 tones per local colour** for the bigger Script masses, plus an optional 1px

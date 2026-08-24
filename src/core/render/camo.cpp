@@ -165,7 +165,7 @@ void drawSpriteCamo(Framebuffer& fb, const SpriteData& s, int frame,
                     int destX, int destY, int num, int den,
                     const CamoRamp& ramp, uint8_t level,
                     Rgb565 flashColor, uint8_t flashAmt, int row,
-                    const CamoRamp* from) {
+                    const CamoRamp* from, bool mirror) {
     if (frame < 0 || frame >= s.frames || row < 0 || row >= s.rows) return;
     if (den <= 0 || num <= 0) return;
     if (from && from->empty()) from = nullptr;
@@ -176,22 +176,24 @@ void drawSpriteCamo(Framebuffer& fb, const SpriteData& s, int frame,
     if (ramp.empty() || level == 0) {
         if (from)
             drawSpriteCamo(fb, s, frame, destX, destY, num, den, *from, 255, flashColor,
-                           flashAmt, row);
+                           flashAmt, row, /*from=*/nullptr, mirror);
         else
             drawSpriteFlash(fb, s, frame, destX, destY, num, den, flashColor, flashAmt,
-                            row);
+                            row, mirror);
         return;
     }
     const Rgb565 burn = ramp.tone[ramp.count - 1];
-    const int fx0 = frame * s.frameW, fy0 = row * s.h;
+    const int fy0 = row * s.h;
     const int dw = s.frameW * num / den, dh = s.h * num / den;
     for (int oy = 0; oy < dh; ++oy) {
         const int py = fy0 + oy * den / num;
         for (int ox = 0; ox < dw; ++ox) {
-            const int px = fx0 + ox * den / num;
+            const int px = spriteSrcX(s, frame, ox * den / num, mirror);
             const Rgb565 own = spriteColorAt(s, px, py);
             // Hashed on the SOURCE pixel, not the destination one, so the grain is a
-            // property of the sprite and does not crawl when the scale changes.
+            // property of the sprite and does not crawl when the scale changes — and,
+            // for the same reason, turns with the creature rather than staying put
+            // underneath it when the draw is mirrored.
             const uint8_t h = dissolveHash(px, py) & 0xFF;
             Rgb565 c = from ? wornTone(own, *from) : own;
             // Inclusive, so a settled 255 leaves nothing behind: the front has to be

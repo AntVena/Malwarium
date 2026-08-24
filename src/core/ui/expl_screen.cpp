@@ -559,7 +559,12 @@ void drawEncounterIntro(Framebuffer& fb, const char* enemyName, int diffPips,
         const int h = enemySprite->h * kScaleNum / kScaleDen;
         const int x = (kActiveW - w) / 2;
         const int y = 96 - h;
-        drawSpriteUpscaled(fb, *enemySprite, frame, x, y, kScaleNum, kScaleDen);
+        // Turned the way the RIGHT-hand combat seat will hold it (ui/combat_screen.cpp),
+        // which is the seat every wild takes: the creature the player is sizing up here
+        // is the one they are about to face, and it should not turn round between the two
+        // screens. Centred rather than seated, so the mirror is the whole of the change.
+        drawSpriteUpscaled(fb, *enemySprite, frame, x, y, kScaleNum, kScaleDen, /*row=*/0,
+                           spriteMirrorToFace(*enemySprite, /*faceRight=*/false));
     }
     drawText(fb, kMargin, 100, enemyName, palColor(Pal::INK));
     char lvBuf[8];

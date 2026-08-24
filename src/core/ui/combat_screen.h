@@ -33,7 +33,32 @@ struct AnimClip;
 // swing through a blow it is visibly absorbing reads as a dropped frame rather than as
 // aggression. A creature missing the pose it is asked for falls back to its idle, so a
 // sheet may author any subset of them.
+//
+// `takingHit` is "this fighter flinches NOW", not "this fighter was damaged" —
+// hurtPoseEarned below is what separates the two.
 const AnimClip* fightPose(const Combatant& c, bool takingHit, bool swinging);
+
+// How big a single hit has to be, as a percentage of the TARGET's own maxHealth, before
+// it is worth an authored `hurt` pose.
+//
+// Fighters alternate, so almost every resolved turn lands a hit on somebody: a flinch
+// that answered any landed damage answered roughly every other beat of the fight, and a
+// creature permanently flinching has no idle left to flinch OUT of. The pose has to be
+// rarer than the thing it reacts to in order to mean anything.
+//
+// Measured against maxHealth rather than as a flat number so the bar asks the same
+// QUESTION of every fighter — "did that take a real bite out of it" — whether it is a
+// Process form or a Daemon with four times the pool.
+constexpr int kHurtPosePctOfMax = 20;
+
+// Has `target` earned the flinch for a hit of `damage`? A LOCKED fighter always has:
+// there the pose is the state it is stuck in rather than a reaction to one blow, and a
+// creature being hit while it cannot act should look like it.
+//
+// Only the authored pose asks. The impact flash and the knock-back nudge are the "a hit
+// just happened" tell and still fire for EVERY landed hit, so nothing about the fight
+// becomes harder to read — this reserves the pose, it does not hide the damage.
+bool hurtPoseEarned(const Combatant& target, int damage);
 
 // Where the two fighters stand, in active px, and the CLASH LANE between them.
 //

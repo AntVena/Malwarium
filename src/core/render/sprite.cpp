@@ -2,7 +2,9 @@
 //
 // Every blitter walks SHEET COORDINATES and reads through spriteAlphaAt/spriteColorAt
 // (sprite.h) rather than indexing rgb[]/a[] directly, so the same four loops serve both
-// the full-colour and the 1-bit-mask storage forms.
+// the full-colour and the 1-bit-mask storage forms. The upscaled pair source their
+// column through spriteSrcX, which is also the whole of how a mirrored draw works —
+// the destination walk is identical either way.
 #include "core/render/sprite.h"
 
 #include "core/render/framebuffer.h"
@@ -37,16 +39,16 @@ void drawSpriteTinted(Framebuffer& fb, const SpriteData& s, int frame, int x, in
 }
 
 void drawSpriteUpscaled(Framebuffer& fb, const SpriteData& s, int frame,
-                        int destX, int destY, int num, int den, int row) {
+                        int destX, int destY, int num, int den, int row,
+                        bool mirror) {
     if (frame < 0 || frame >= s.frames || row < 0 || row >= s.rows) return;
-    const int fx0 = frame * s.frameW;
     const int fy0 = row * s.h;
     const int dw = s.frameW * num / den;
     const int dh = s.h * num / den;
     for (int oy = 0; oy < dh; ++oy) {
         const int py = fy0 + oy * den / num;
         for (int ox = 0; ox < dw; ++ox) {
-            const int px = fx0 + ox * den / num;
+            const int px = spriteSrcX(s, frame, ox * den / num, mirror);
             fb.blendPixel(destX + ox, destY + oy, spriteColorAt(s, px, py),
                           spriteAlphaAt(s, px, py));
         }
@@ -55,20 +57,19 @@ void drawSpriteUpscaled(Framebuffer& fb, const SpriteData& s, int frame,
 
 void drawSpriteFlash(Framebuffer& fb, const SpriteData& s, int frame,
                      int destX, int destY, int num, int den,
-                     Rgb565 flashColor, uint8_t flashAmt, int row) {
+                     Rgb565 flashColor, uint8_t flashAmt, int row, bool mirror) {
     if (frame < 0 || frame >= s.frames || row < 0 || row >= s.rows) return;
     if (flashAmt == 0) {
-        drawSpriteUpscaled(fb, s, frame, destX, destY, num, den, row);
+        drawSpriteUpscaled(fb, s, frame, destX, destY, num, den, row, mirror);
         return;
     }
-    const int fx0 = frame * s.frameW;
     const int fy0 = row * s.h;
     const int dw = s.frameW * num / den;
     const int dh = s.h * num / den;
     for (int oy = 0; oy < dh; ++oy) {
         const int py = fy0 + oy * den / num;
         for (int ox = 0; ox < dw; ++ox) {
-            const int px = fx0 + ox * den / num;
+            const int px = spriteSrcX(s, frame, ox * den / num, mirror);
             const Rgb565 c = blend(spriteColorAt(s, px, py), flashColor, flashAmt);
             fb.blendPixel(destX + ox, destY + oy, c, spriteAlphaAt(s, px, py));
         }

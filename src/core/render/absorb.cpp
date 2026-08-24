@@ -52,7 +52,7 @@ int easeOut(int q) { return 255 - (255 - q) * (255 - q) / 255; }
 void drawAbsorb(Framebuffer& fb, const SpriteData& s, int frame,
                 int srcX, int srcY, int num, int den,
                 int dstX, int dstY, Rgb565 tint, uint8_t progress, uint8_t bite,
-                int row) {
+                int row, bool mirror) {
     if (frame < 0 || frame >= s.frames || row < 0 || row >= s.rows) return;
     if (den <= 0 || num <= 0) return;
 
@@ -72,7 +72,8 @@ void drawAbsorb(Framebuffer& fb, const SpriteData& s, int frame,
 
     for (int py = 0; py < cellH; ++py) {
         for (int px = 0; px < cellW; ++px) {
-            if (spriteAlphaAt(s, frame * cellW + px, row * cellH + py) < 128) continue;
+            const int sx = spriteSrcX(s, frame, px, mirror);
+            if (spriteAlphaAt(s, sx, row * cellH + py) < 128) continue;
 
             // Each per-block quantity below is a slice of this one scatter, so a block
             // keeps its own departure time, fan and shiver for the whole sweep.
@@ -80,8 +81,7 @@ void drawAbsorb(Framebuffer& fb, const SpriteData& s, int frame,
             // A flat ICON_* mask has no colour of its own and takes the tint; a
             // full-colour sprite keeps its pixels, so a creature comes apart into its
             // own blocks rather than into a silhouette of itself.
-            const Rgb565 col =
-                s.bits ? tint : spriteColorAt(s, frame * cellW + px, row * cellH + py);
+            const Rgb565 col = s.bits ? tint : spriteColorAt(s, sx, row * cellH + py);
 
             // Departure time: how far down the pull this block sits, blended with its
             // own scatter, then compressed into kDepartSpan.

@@ -71,6 +71,18 @@ STAT-screen gauges are **chrome, not passes** — the Critical ~1Hz pulse is a U
 from the procedural `FX_CORRUPTION` sprite glitch. Combat hit/clash FX are likewise activity
 visuals, not passes.
 
+### Orientation
+
+A sheet declares which way its drawing is turned (`SpriteData::facing`, `sprite.h`; the table is
+`FACING` in `tools/gen_assets.py`), and a screen that has an opinion about where a creature should
+be looking asks for a mirror rather than for a second sheet. Mirroring is not a pass and costs
+nothing: every blitter walks its destination unchanged and sources its column through
+`spriteSrcX`, so a scatter keyed to a screen position never learns that the sprite turned round.
+
+One consequence worth holding on to: **seating is measured mirrored** — `spriteContentX0` takes
+the flag, because a drawing padded to one side of its cell moves that padding's width when it
+turns. Which sheets are worth declaring at all is `assets/CREATURE_VISUAL_RULES.md` §2.
+
 ## The maintenance rule
 
 No new visual effect ships without (a) a row in the table above naming its stage **and** the

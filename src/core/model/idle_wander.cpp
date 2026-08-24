@@ -90,6 +90,9 @@ void IdleWander::retarget() {
     // across its box over several moves instead of teleporting the anchor from one
     // random side to the other.
     targetX_ = hop(x_, p.reach, -kWanderHalfSpanX, kWanderHalfSpanX);
+    // A trip that goes nowhere sideways leaves the heading alone, so a flier climbing
+    // straight up keeps looking the way it was already looking.
+    if (targetX_ != x_) headingRight_ = targetX_ > x_;
 
     switch (loco_) {
         case Locomotion::Walk:

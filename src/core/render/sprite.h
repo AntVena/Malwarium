@@ -9,6 +9,23 @@ namespace mal {
 
 class Framebuffer;
 
+// Which way the DRAWING in a sheet is turned. A fact about the art rather than about
+// any creature, which is why it rides on the sheet: a wild malbeast is built from a
+// sprite-named spec and carries no CreatureDef at all (model/combat_factory.cpp's
+// makeEnemyCombatant), so a facing declared on a content row could never reach one.
+// Declared per asset in tools/gen_assets.py.
+//
+// `None` is the three-quarter, turned-to-the-viewer standing pose that
+// assets/CREATURE_VISUAL_RULES.md §2 asks every creature for, plus every icon and
+// panel — a drawing with no side to it, or one carrying a detail that must not read
+// backwards. It is also the floor for a sheet that has not been looked at yet, and it
+// never mirrors, so an undeclared asset draws exactly as it is stored.
+//
+// `Right`/`Left` are for the sheets that DO have a side: a profile walk row, a fish, a
+// creature whose body reads across its cell. A screen that seats a drawing against an
+// opponent asks spriteMirrorToFace() below which way to turn it.
+enum class Facing : uint8_t { None = 0, Right, Left };
+
 // A sprite sheet: a grid of `rows` rows stacked vertically, each row a
 // horizontal strip of `frames` cells sized `frameW` x `h`. `rgb`/`a` are
 // sheetW(=frameW*frames) x (h*rows), row-major top-to-bottom; `a` is 0..255.
@@ -52,6 +69,7 @@ struct SpriteData {
     int rows = 1;
     int contentX0 = 0;
     int contentX1 = 0;
+    Facing facing = Facing::None;    // which way the drawing is turned; see above
     const uint16_t* rgb = nullptr;
     const uint8_t* a = nullptr;
     const uint8_t* bits = nullptr;   // non-null = 1-bit mask; rgb/a are then null
@@ -66,12 +84,35 @@ inline int spriteMaskStride(const SpriteData& s) { return (s.sheetW + 7) >> 3; }
 // placeholder in a test — answers with the whole frame, which is what every caller
 // assumed before the span existed. Read both through these, never the fields: a caller
 // that took one with the fallback and the other without would measure a nonsense band.
+// `mirror` asks for the band a MIRRORED draw occupies, which is the same band measured
+// from the other cell edge. A screen seating a turned drawing has to seat where it will
+// actually land, or a sprite padded to one side of its cell steps that padding's width
+// away from its seat the moment it turns round. The WIDTH is the same either way, so a
+// caller measuring only the span (seatWidth, ui/combat_screen.cpp) needs no flag.
 inline bool spriteHasContentSpan(const SpriteData& s) { return s.contentX1 > s.contentX0; }
-inline int spriteContentX0(const SpriteData& s) {
-    return spriteHasContentSpan(s) ? s.contentX0 : 0;
+inline int spriteContentX0(const SpriteData& s, bool mirror = false) {
+    if (!spriteHasContentSpan(s)) return 0;
+    return mirror ? s.frameW - s.contentX1 : s.contentX0;
 }
-inline int spriteContentX1(const SpriteData& s) {
-    return spriteHasContentSpan(s) ? s.contentX1 : s.frameW;
+inline int spriteContentX1(const SpriteData& s, bool mirror = false) {
+    if (!spriteHasContentSpan(s)) return s.frameW;
+    return mirror ? s.frameW - s.contentX0 : s.contentX1;
+}
+
+// Does drawing `s` so that it looks toward `faceRight` need the horizontal mirror? An
+// undeclared sheet (Facing::None) answers false and is drawn exactly as stored, so a
+// front-on creature, an icon or a panel is never turned round by a caller that asks.
+inline bool spriteMirrorToFace(const SpriteData& s, bool faceRight) {
+    if (s.facing == Facing::None) return false;
+    return (s.facing == Facing::Right) != faceRight;
+}
+
+// The SHEET column a frame's own column `col` reads from. This is the whole of what a
+// mirror is: every blitter walks its DESTINATION unchanged and only sources from the
+// far side of the cell, so nothing that is keyed to a screen position — a dissolve's
+// scatter, a shred row's slide — has to know a sprite turned round.
+inline int spriteSrcX(const SpriteData& s, int frame, int col, bool mirror) {
+    return frame * s.frameW + (mirror ? s.frameW - 1 - col : col);
 }
 
 // One source pixel's coverage and colour, at sheet coordinates. A mask has no partial
@@ -106,8 +147,13 @@ void drawSpriteTinted(Framebuffer& fb, const SpriteData& s, int frame, int x, in
 
 // Same, but nearest-neighbour upscaled by num/den (the creature/pixel-art
 // path of the hybrid model). (destX, destY) is the top-left in active space.
+// `mirror` flips it horizontally inside its own cell — see spriteSrcX above, and
+// spriteContentX0 for seating one. The 1:1 blitters above take no such flag: the
+// ICON_*/UI_* family they serve is chrome, which has a reading direction rather than a
+// facing.
 void drawSpriteUpscaled(Framebuffer& fb, const SpriteData& s, int frame,
-                        int destX, int destY, int num, int den, int row = 0);
+                        int destX, int destY, int num, int den, int row = 0,
+                        bool mirror = false);
 
 // Same as drawSpriteUpscaled, but each visible pixel is lerped toward
 // `flashColor` by `flashAmt` (0 = unchanged, 255 = solid flashColor) before
@@ -116,7 +162,8 @@ void drawSpriteUpscaled(Framebuffer& fb, const SpriteData& s, int frame,
 // new animation frame. flashAmt=0 is just drawSpriteUpscaled.
 void drawSpriteFlash(Framebuffer& fb, const SpriteData& s, int frame,
                      int destX, int destY, int num, int den,
-                     Rgb565 flashColor, uint8_t flashAmt, int row = 0);
+                     Rgb565 flashColor, uint8_t flashAmt, int row = 0,
+                     bool mirror = false);
 
 // Idle-loop frame for a creature sprite, clamped to what the sheet actually has:
 // the breathe alt-frame (1) only with a 2nd frame, an occasional blink (2) only

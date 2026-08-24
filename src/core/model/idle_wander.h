@@ -57,6 +57,16 @@ public:
         return rest_ == 0 && (x_ != targetX_ || y_ != targetY_);
     }
 
+    // Which way the creature is HEADING, for a screen that turns its sprite to match
+    // (game_render.cpp's drawHabitat). Latched rather than derived from the live target:
+    // a creature spends most of its life parked between trips, and a heading that
+    // collapsed to a default the instant it arrived would snap the sprite round at the
+    // end of every walk. It holds the last direction it actually moved in, so a pet
+    // resting faces the way it came. True until something has moved it — nothing has a
+    // heading before its first trip, and rightward is the direction the roster's own
+    // seat convention treats as forward (core/render/sprite.h).
+    bool headingRight() const { return headingRight_; }
+
     // Whether this mover's pose carries the shelf bob on top of the drift. Two movers
     // skip it, for opposite reasons: a swimmer moves continuously already, so a bob
     // over that reads as jitter rather than breathing, while a Ground mover is defined
@@ -81,6 +91,7 @@ private:
     int x_ = 0, y_ = 0;             // where the anchor is now
     int targetX_ = 0, targetY_ = 0; // ...and where this trip is taking it
     int rest_ = 0;                  // heartbeats left parked before the next trip
+    bool headingRight_ = true;      // last direction actually travelled; see headingRight()
     Locomotion loco_ = Locomotion::Walk;
     uint32_t rng_ = 0x2545f491u;
 };

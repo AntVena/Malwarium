@@ -59,12 +59,20 @@ constexpr int scaleUp(int x) {
 // Seat one fighter's drawing so its band starts at `contentX`, bottom-anchored on the
 // shelf. The FRAME is placed from there — a sprite padded inside its cell hangs its
 // padding outside the band, which is the whole point of seating by content.
+//
+// `faceRight` is the direction this SEAT wants its occupant to look, and the sheet's own
+// declared Facing (core/render/sprite.h) decides whether that costs a mirror. A sheet
+// with no declared facing — the three-quarter standing pose most of the roster is drawn
+// in — is never turned, so this is a no-op for it. Seating reads the MIRRORED content
+// band for the same reason it reads the band at all: a creature padded to one side of
+// its cell would otherwise step that padding's width off its seat the moment it turns.
 void drawFighter(Framebuffer& fb, const SpriteData* s, int contentX, int animBeat,
-                 uint8_t flashAmt, Rgb565 flashColor, int xNudge,
+                 uint8_t flashAmt, Rgb565 flashColor, int xNudge, bool faceRight,
                  const AnimClip* pose, const CamoRamp* camo = nullptr,
                  uint8_t camoAmt = 0, const CamoRamp* camoFrom = nullptr) {
     if (!s) return;
-    const int x = contentX - scaleUp(spriteContentX0(*s)) + xNudge;
+    const bool mirror = spriteMirrorToFace(*s, faceRight);
+    const int x = contentX - scaleUp(spriteContentX0(*s, mirror)) + xNudge;
     const int y = kSpriteShelf - s->h * kScaleNum / kScaleDen;
     // An authored pose plays its own sheet row in order; without one the breathe
     // heuristic runs on row 0, which is the whole of a single-row sheet.
@@ -77,12 +85,12 @@ void drawFighter(Framebuffer& fb, const SpriteData* s, int contentX, int animBea
     // borrowed set dissolves into the next instead of detouring through the pet's own.
     if (camo && camoAmt > 0 && !camo->empty())
         drawSpriteCamo(fb, *s, frame, x, y, kScaleNum, kScaleDen, *camo, camoAmt,
-                       flashColor, flashAmt, row, camoFrom);
+                       flashColor, flashAmt, row, camoFrom, mirror);
     else if (flashAmt > 0)
         drawSpriteFlash(fb, *s, frame, x, y, kScaleNum, kScaleDen, flashColor,
-                        flashAmt, row);
+                        flashAmt, row, mirror);
     else
-        drawSpriteUpscaled(fb, *s, frame, x, y, kScaleNum, kScaleDen, row);
+        drawSpriteUpscaled(fb, *s, frame, x, y, kScaleNum, kScaleDen, row, mirror);
 }
 
 // The seat a fighter with no sprite holds: one standard pet cell (the 56x48 logical
@@ -154,6 +162,14 @@ void overridePickerHeader(char* out, size_t cap, bool items, bool lock, bool cre
     char titled[48];
     std::snprintf(titled, sizeof(titled), "EXPLOIT: %s", bands);
     std::snprintf(out, cap, "%s", textWidth(titled) <= roomPx ? titled : bands);
+}
+
+// The threshold and why it is measured this way are on the declaration
+// (combat_screen.h).
+bool hurtPoseEarned(const Combatant& target, int damage) {
+    if (target.lockedTurnsLeft > 0) return true;
+    return target.maxHealth > 0 &&
+           damage * 100 >= kHurtPosePctOfMax * target.maxHealth;
 }
 
 // Pose precedence and its reasoning are on the declaration (combat_screen.h).
@@ -289,6 +305,8 @@ void drawStrikeMark(Framebuffer& fb, int laneX, int laneW, int dir, int beat,
 // of the breathe-loop frame, so an accelerated feeding-frenzy streak still feels like
 // a string of impacts rather than a silent, motionless damage number.
 constexpr int kImpactPeriod = 4;
+
+
 int impactNudgePx(int hitBeat, int dir) {   // dir: -1 (shove left) / +1 (shove right)
     if (hitBeat < 0 || hitBeat >= kImpactPeriod) return 0;
     return dir * (kImpactPeriod - hitBeat) * 2;   // 8 -> 6 -> 4 -> 2 -> 0 active-px
@@ -693,9 +711,10 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
 
     // --- Both combatant sprites (reused SPR_PET_* idle frames) --------------
     // Stage seating: the LOCAL pet holds the LEFT seat and its rival the RIGHT one, so a
-    // fight reads left-to-right as "mine, then theirs" — and the roster's fixed top-left
-    // key light already turns every sprite that way, so the pets face into the fight from
-    // the left rather than out of it. The seat follows the local/rival ROLE (`flip`),
+    // fight reads left-to-right as "mine, then theirs". A seat also states which way its
+    // occupant LOOKS — left seat rightward, right seat leftward — and a sheet drawn the
+    // other way round is mirrored into it (drawFighter), so neither fighter is ever shown
+    // the back of the thing it is fighting. The seat follows the local/rival ROLE (`flip`),
     // never Combat's player_/enemy_ slot, so a duel guest sees its own pet on the left
     // exactly like the host does. Bottom-anchored on the shelf; a sprite taller than the
     // band extends upward rather than clipping. Both bands and the lane between them come
@@ -707,6 +726,11 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
     const bool hitLanded = combat.lastDamage() > 0 && !combat.lastWasCharge();
     const int rivalHitBeat = (hitLanded && lastByLocal) ? hitBeat : -1;
     const int localHitBeat = (hitLanded && !lastByLocal) ? hitBeat : -1;
+    // Whether the hit that just landed is one the TARGET flinches at — see
+    // hurtPoseEarned. Only the authored pose asks; the flash and the nudge below run off
+    // the hit beats above and fire for every landed hit exactly as before.
+    const bool rivalFlinches = hurtPoseEarned(en, combat.lastDamage());
+    const bool localFlinches = hurtPoseEarned(pl, combat.lastDamage());
     // Wind-up charges toward WARN and impact snaps toward INK: the two cues differ in
     // ramp direction AND in hue, and the pair that is live wins on magnitude alone.
     const uint8_t rivalWindup = windupFlashAmt(en.channelMoveIdx >= 0, animBeat);
@@ -745,11 +769,16 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
         drawFighter(fb, rivalSprite, stage.rivalX, animBeat,
                     std::max(rivalWindup, rivalImpact),
                     palColor(rivalImpact >= rivalWindup ? Pal::INK : Pal::WARN),
-                    impactNudgePx(rivalHitBeat, +1) + hop,
-                    fightPose(en, rivalHitBeat >= 0 && rivalHitBeat < kImpactPeriod,
+                    impactNudgePx(rivalHitBeat, +1) + hop, /*faceRight=*/false,
+                    fightPose(en,
+                              rivalFlinches && rivalHitBeat >= 0 &&
+                                  rivalHitBeat < kImpactPeriod,
                               swinging && !lastByLocal));
     } else if (rivalSprite) {
-        const int rx = stage.rivalX - scaleUp(spriteContentX0(*rivalSprite));
+        // Same turn the live draw above takes: a rival that spun round on the beat it
+        // died would read as the outro doing it, not as the fight ending.
+        const bool rivalMirror = spriteMirrorToFace(*rivalSprite, /*faceRight=*/false);
+        const int rx = stage.rivalX - scaleUp(spriteContentX0(*rivalSprite, rivalMirror));
         const int ry = kSpriteShelf - rivalSprite->h * kScaleNum / kScaleDen;
         if (absorbing) {
             // Into the middle of the local pet's DRAWING, so it is eaten by the body
@@ -761,10 +790,11 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
                        px0 + stage.localW / 2,
                        py0 + (localSprite ? localSprite->h : 0) * kScaleNum /
                                  kScaleDen / 2,
-                       palColor(Pal::ACCENT), outroPhase.progress, /*bite=*/255);
+                       palColor(Pal::ACCENT), outroPhase.progress, /*bite=*/255,
+                       /*row=*/0, rivalMirror);
         } else {
             drawShred(fb, *rivalSprite, 0, rx, ry, kScaleNum, kScaleDen,
-                      palColor(Pal::INK), outroPhase.progress);
+                      palColor(Pal::INK), outroPhase.progress, /*row=*/0, rivalMirror);
         }
     }
     drawFighter(fb, localSprite, stage.localX, animBeat,
@@ -774,8 +804,10 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
                 absorbing && outroPhase.flash >= std::max(localWindup, localImpact)
                     ? palColor(Pal::ACCENT)
                     : palColor(localImpact >= localWindup ? Pal::INK : Pal::WARN),
-                impactNudgePx(localHitBeat, -1) + hop,
-                fightPose(pl, localHitBeat >= 0 && localHitBeat < kImpactPeriod,
+                impactNudgePx(localHitBeat, -1) + hop, /*faceRight=*/true,
+                fightPose(pl,
+                          localFlinches && localHitBeat >= 0 &&
+                              localHitBeat < kImpactPeriod,
                           swinging && lastByLocal),
                 &localCamo, localCamoAmt, localCamoFrom);
 

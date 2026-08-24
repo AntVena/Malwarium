@@ -141,7 +141,7 @@ void drawSpriteCamo(Framebuffer& fb, const SpriteData& s, int frame,
                     int destX, int destY, int num, int den,
                     const CamoRamp& ramp, uint8_t level,
                     Rgb565 flashColor = 0, uint8_t flashAmt = 0, int row = 0,
-                    const CamoRamp* from = nullptr);
+                    const CamoRamp* from = nullptr, bool mirror = false);
 
 // How much of the way the level moves toward its target in one tick of the caller's
 // clock. 255 in four steps: fast enough that the colour has changed by the time the

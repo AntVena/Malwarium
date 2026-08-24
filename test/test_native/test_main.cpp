@@ -296,6 +296,12 @@ int g_failures = 0;
     RUN(test_wifi_friendly_visit_grants_ally_buff) \
     RUN(test_wifi_auto_plays_out_after_hold)      \
     RUN(test_wifi_discovery_kind)                 \
+    RUN(test_facing_mirror_reverses_the_draw)     \
+    RUN(test_facing_mirror_reaches_every_creature_blit) \
+    RUN(test_facing_content_span_follows_the_mirror) \
+    RUN(test_facing_undeclared_is_never_mirrored) \
+    RUN(test_facing_roster_declarations_hold)     \
+    RUN(test_hurt_pose_is_reserved_for_real_hits) \
     RUN(test_camo_ramp_is_a_value_scale)          \
     RUN(test_camo_rich_palette_is_mostly_the_real_thing) \
     RUN(test_camo_level_holds_and_releases)       \

@@ -42,7 +42,7 @@ struct SpriteData;
 void drawAbsorb(Framebuffer& fb, const SpriteData& s, int frame,
                 int srcX, int srcY, int num, int den,
                 int dstX, int dstY, Rgb565 tint, uint8_t progress, uint8_t bite,
-                int row = 0);
+                int row = 0, bool mirror = false);
 
 // One frame of an absorb, as the numbers a screen hands to the two draws it makes.
 struct AbsorbPhase {

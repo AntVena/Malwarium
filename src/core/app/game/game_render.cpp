@@ -186,7 +186,14 @@ void Game::drawHabitat(Framebuffer& fb, int cursor) const {
         const int petX = (kActiveW - petW) / 2 + logicalToActive(petWander_.offsetX());
         const int petY =
             kLivingBottom - petH - bob - logicalToActive(petWander_.offsetY());
-        drawSpriteUpscaled(fb, *pet, frame, petX, petY, kScaleNum, kScaleDen, row);
+        // Turned to the way it is actually going. A sheet with no declared facing is
+        // never mirrored, so this only moves the creatures the wander was already
+        // walking backwards — the ones drawn in profile rather than in §2's
+        // turned-to-the-viewer pose (assets/CREATURE_VISUAL_RULES.md). The habitat has
+        // no seat and no opponent, so unlike the combat stage the direction comes off
+        // the trip itself.
+        drawSpriteUpscaled(fb, *pet, frame, petX, petY, kScaleNum, kScaleDen, row,
+                           spriteMirrorToFace(*pet, petWander_.headingRight()));
     }
 
     // The Worm line's copies, at home. In a fight the board is Combatant::wormReplicas
