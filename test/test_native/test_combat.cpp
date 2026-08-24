@@ -942,6 +942,48 @@ void test_mod_watchdog_timer() {
     CHECK(w.mods.mag(ModEffect::WatchdogClamp) == 1);
 }
 
+// Stun chaining: a lock that lands leaves RESISTANCE behind (one point per turn frozen,
+// shed one per turn the victim gets to act), and the next stun has to roll against it —
+// so a chain-stunned fighter is never locked out of its own fight with no way back.
+void test_stun_chain_resistance() {
+    ContentRegistry r = ContentRegistry::embedded();
+    // The odds themselves, off the combatant: full chance with a clean pile, falling per
+    // banked point and floored so a stun never becomes impossible to land.
+    Combatant c = mkCombatant(r, "P", 100, 12, {"quick_jab"});
+    CHECK(stunLandPct(c) == 100);
+    c.lockResist = 1;  CHECK(stunLandPct(c) == 100 - kLockResistStepPct);
+    c.lockResist = 2;  CHECK(stunLandPct(c) == 100 - 2 * kLockResistStepPct);
+    c.lockResist = 9;  CHECK(stunLandPct(c) == kLockResistFloorPct);
+    // Ratchet: a landed 2-turn stun banks 2 points on the VICTIM...
+    Combatant p = mkCombatant(r, "P", 100, 5, {"quick_jab"});             // slow → stunned
+    Combatant e = mkCombatant(r, "E", 100, 12, {"system_hang"});          // lockTurns 2, first
+    Combat cb; cb.begin(p, e, Combat::Stakes::Safe, 5);
+    cb.step();                                                            // enemy stuns the pet
+    CHECK(cb.player().lockedTurnsLeft == 2);
+    CHECK(cb.player().lockResist == 2);
+    // ...which the two BURNED turns leave alone, and the first turn the pet actually
+    // spends fighting pays one back.
+    int guard = 0;
+    while (cb.player().lockedTurnsLeft > 0 && guard++ < 20) cb.step();
+    CHECK(cb.player().lockResist == 2);                                   // burnt turns pay nothing
+    while (cb.player().lockResist == 2 && guard++ < 20) cb.step();
+    CHECK(cb.player().lockResist == 1);
+    // The roll itself: against a pet already carrying resistance the same stun sometimes
+    // lands and sometimes doesn't — and the hit that fails to freeze still does its damage.
+    int landed = 0, missed = 0;
+    for (uint32_t seed = 1; seed <= 40; ++seed) {
+        Combatant rp = mkCombatant(r, "P", 100, 5, {"quick_jab"});
+        rp.lockResist = 1;
+        Combatant re = mkCombatant(r, "E", 100, 12, {"system_hang"});
+        Combat rc; rc.begin(rp, re, Combat::Stakes::Safe, seed);
+        rc.step();
+        CHECK(rc.player().health < 100);                                  // damage lands either way
+        if (rc.player().lockedTurnsLeft > 0) ++landed; else ++missed;
+    }
+    CHECK(landed > 0);
+    CHECK(missed > 0);
+}
+
 // Deferred-mod pass — Faraday Cage: the THREAT is a DoT move (data_rot, dot*) that plants
 // corruption ticking at each of the victim's turn-starts; the MOD cuts (or negates) it.
 void test_mod_faraday_cage() {

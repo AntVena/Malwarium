@@ -884,11 +884,19 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
         // lockTurns turns. The target's Watchdog Timer (mod) CLAMPS it (a hung process
         // reboots after its clamp's turns). Doesn't stack onto a live stun; a fully-
         // mirrored hit (RAID Mirror negated the whole attack) carries no rider.
+        //
+        // A stun that comes straight back onto a fighter still shaking one off has to beat
+        // that fighter's lock resistance (stunLands) — one that fails plants nothing, and
+        // the hit is just the damage it already dealt. The resistance is banked in the
+        // CLAMPED turns, so a Watchdog pet trades some of the pile for the shorter lock.
         if (mv->lockTurns > 0 && !target.mirrorFired && target.lockedTurnsLeft == 0) {
             int k = mv->lockTurns;
             const int watchdog = target.mods.mag(ModEffect::WatchdogClamp);
             if (watchdog > 0 && k > watchdog) k = watchdog;
-            if (k > 0) target.lockedTurnsLeft = k;
+            if (k > 0 && stunLands(target)) {
+                target.lockedTurnsLeft = k;
+                target.lockResist += k;
+            }
         }
         // DoT rider (Faraday-pass THREAT): a landed hit plants corruption — dotDamage/turn for
         // dotTurns of the target's upcoming turn-starts. The target's Faraday Cage (mod) cuts
@@ -1013,6 +1021,20 @@ bool Combat::bubbleBiteRolls(Stage stage) {
     const int pct = (si >= 0 && si < 4) ? kPhishingBiteChancePctByStage[si] : 0;
     if (pct <= 0) return false;
     return static_cast<int>(rng() % 100) < pct;
+}
+
+int stunLandPct(const Combatant& c) {
+    if (c.lockResist <= 0) return 100;
+    const int pct = 100 - c.lockResist * kLockResistStepPct;
+    return pct < kLockResistFloorPct ? kLockResistFloorPct : pct;
+}
+
+bool Combat::stunLands(const Combatant& target) {
+    // Nothing to beat, no draw: the first stun of a chain always lands, and a fight in
+    // which nobody is being chain-stunned perturbs the rng stream exactly as it did
+    // before the resistance existed (the terms ransomArmRolls short-circuits on).
+    if (target.lockResist <= 0) return true;
+    return static_cast<int>(rng() % 100) < stunLandPct(target);
 }
 
 void Combat::syncWormSpeed() {
@@ -1155,6 +1177,11 @@ void Combat::resolveTurn(Combatant& actor, Combatant& target, bool byPlayer) {
         setLast("STUN LOCK", 0, byPlayer, /*charge=*/true);
         return;
     }
+    // Past the lock, so this is a turn `actor` gets to spend: shed one resist point. Only
+    // a turn spent FIGHTING pays it back — a turn burned to the lock (above) or to a
+    // ransom bill (which returned already) leaves the pile where it is, which is what
+    // makes the resistance grow through a chain and drain once the chain breaks.
+    if (actor.lockResist > 0) actor.lockResist--;
 
     int moveIdx;
     if (byPlayer && forcedMoveIdx_ >= 0 &&

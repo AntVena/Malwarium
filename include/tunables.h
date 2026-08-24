@@ -253,6 +253,15 @@ constexpr int kFleeChancePct = 50;         // wild flee success (Sim quits free)
 // wired now so that item is pure data. begin() resets it every fight, so each
 // gauntlet round gets its own fresh allowance.
 constexpr int kExploitUsesPerBattle = 1;
+// STUN chaining (Combat::stunLands). A landed stun (MoveDef::lockTurns) ratchets the
+// victim's lock resistance by the turns it actually froze, and every turn the victim
+// spends acting sheds one of them back; the next stun rolls against what is left. So the
+// first lock is free, the one that comes straight back onto it is a maybe, and the one
+// after that mostly just a hit — a chain-stunned fighter always fights its way out,
+// without a stun ever becoming a thing an attacker cannot land. The floor is what keeps
+// the rider real: a pet that has eaten four locks can still be frozen by the fifth.
+constexpr int kLockResistStepPct = 40;   // land chance lost per stacked resist point
+constexpr int kLockResistFloorPct = 15;  // ...and the chance a stun never drops below
 // Wild-encounter difficulty (challenge pass). With the flat base stats a wild win
 // was a near-untouched romp — the pet finished at ~80–86% Health, so EXPL fights
 // carried no risk. These buff EXPL malbeasts only (isWild-gated in makeEnemyCombatant;

@@ -626,9 +626,18 @@ CombatVsGrid combatVsGrid(const Combatant& local, const Combatant& rival,
     pair(CombatVsKind::Speed, "SPD", true);
 
     // --- What changes what you would do NEXT turn ------------------------------------
-    num(a, sizeof(a), local.lockedTurnsLeft, local.lockedTurnsLeft > 0);
-    num(b, sizeof(b), rival.lockedTurnsLeft, rival.lockedTurnsLeft > 0);
-    pair(CombatVsKind::Stun, "STUN", local.lockedTurnsLeft > 0 || rival.lockedTurnsLeft > 0);
+    // Frozen: how many turns are left in the lock. Free but still carrying resistance from
+    // one: the odds the NEXT stun sticks (stunLandPct). Which of the two a fighter needs is
+    // exactly which one it is showing — the number flips the moment the lock lifts, and a
+    // fighter that has shaken the whole pile off drops out of the row.
+    auto stunCell = [](char* out, size_t cap, const Combatant& c) {
+        if (c.lockedTurnsLeft > 0) std::snprintf(out, cap, "%d", c.lockedTurnsLeft);
+        else if (c.lockResist > 0) std::snprintf(out, cap, "%d%%", stunLandPct(c));
+        else out[0] = '\0';
+    };
+    stunCell(a, sizeof(a), local);
+    stunCell(b, sizeof(b), rival);
+    pair(CombatVsKind::Stun, "STUN", a[0] || b[0]);
 
     auto dotCell = [](char* out, size_t cap, const Combatant& c) {
         if (c.dotTurnsLeft > 0) std::snprintf(out, cap, "%dx%d", c.dotPerTurn,

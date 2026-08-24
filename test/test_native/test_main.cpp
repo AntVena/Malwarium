@@ -465,6 +465,7 @@ int g_failures = 0;
     RUN(test_mod_ecc_memory_hitcap)               \
     RUN(test_mod_load_balancer_split)             \
     RUN(test_mod_watchdog_timer)                  \
+    RUN(test_stun_chain_resistance)               \
     RUN(test_mod_faraday_cage)                    \
     RUN(test_mod_content_rarity_tier)             \
     RUN(test_mod_earn_tables_and_reqlevel)        \

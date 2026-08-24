@@ -312,6 +312,11 @@ struct Combatant {
     // STUN (a landed hit's lockTurns rider) — set ON THE VICTIM. While
     // lockedTurnsLeft > 0 the victim burns its turn doing nothing, then it lifts.
     int lockedTurnsLeft = 0;
+    // ...and what a landed one leaves behind: one resist point per turn it froze, shed
+    // one per turn this fighter gets to act (Combat::resolveTurn). The next stun rolls
+    // against the pile (Combat::stunLands, kLockResistStepPct), so being chain-stunned is
+    // the thing that buys a way out of it. Transient (per-fight), like lockedTurnsLeft.
+    int lockResist = 0;
 
     // Ransom Note (Ransomware passive) — all three live on the RANSOMER (the pet that
     // owns the passive), never the attacker. `ransomArmed` is re-rolled at the start of
@@ -424,6 +429,12 @@ int wormReplicaCount(const Combatant& c, bool defenders);
 // single hit, and Combat::chooseMove re-rolls off it for the same reason it re-rolls off
 // a Defend during a frenzy. Pure, so the classification is assertable without a fight.
 bool braceOnlyDefend(const MoveDef& m);
+
+// The odds a stun rider aimed at `c` right now would actually freeze it: 100 while `c`
+// holds no lock resistance, falling kLockResistStepPct per resist point it has banked
+// and never past kLockResistFloorPct. A total function of the combatant, so the combat
+// screen reads out the same number Combat::stunLands is rolling against.
+int stunLandPct(const Combatant& c);
 
 // The Phishing pool siphon, 0..kPhishPoolSiphonMaxPct: what the LIVE Obfuscation pool adds
 // to the magnitude of this pet's two bubble-gated steals, as a percentage of their own
@@ -755,6 +766,10 @@ private:
     // caster's Obfuscation shield is up, to double whichever of stealSpeedPct/
     // stealCurrentHpPct lands this hit (see applyEffect).
     bool bubbleBiteRolls(Stage stage);
+    // Whether a stun rider beats `target`'s built-up lock resistance (Combatant::lockResist,
+    // kLockResistStepPct). Answers true with no rng draw at all on an unresisted target —
+    // the common case, and the one that keeps an unchained fight's stream deterministic.
+    bool stunLands(const Combatant& target);
     // Shared Resources (Worm), the speed half: assign a worm side the OPPONENT's live
     // speed. Called from every scheduling point (begin + pickNextActor) rather than once
     // at fight start, so a mid-fight speed change on either side is matched immediately.
