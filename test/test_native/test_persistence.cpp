@@ -438,11 +438,12 @@ struct WanderTrace {
     int highBeats = 0;         // ...and in the top third
     int movingBeats = 0;       // ...spent going somewhere on either axis
     int movedYBeats = 0;       // ...spent changing height
+    int longestStill = 0;      // the longest unbroken stretch parked between trips
 };
 static WanderTrace traceWander(Locomotion loco, int beats) {
     IdleWander w;
     WanderTrace t;
-    int lastX = 0, lastY = 0;
+    int lastX = 0, lastY = 0, still = 0;
     for (int i = 0; i < beats; ++i) {
         w.step(loco);
         const int x = w.offsetX(), y = w.offsetY();
@@ -451,7 +452,8 @@ static WanderTrace traceWander(Locomotion loco, int beats) {
         if (y == 0) ++t.onShelfBeats;
         if (y <= kWanderRiseMax / 3) ++t.lowBeats;
         if (y >= kWanderRiseMax * 2 / 3) ++t.highBeats;
-        if (x != lastX || y != lastY) ++t.movingBeats;
+        if (x != lastX || y != lastY) { ++t.movingBeats; still = 0; }
+        else t.longestStill = std::max(t.longestStill, ++still);
         if (y != lastY) ++t.movedYBeats;
         lastX = x; lastY = y;
     }
@@ -478,7 +480,15 @@ void test_idle_wander_stays_inside_the_living_box() {
 // The three read as three different creatures, which is the point of the field:
 // a walker is a floor animal that ambles and then stands still, a flier is almost
 // always in the air, and a swimmer is neither pulled down nor holding a height —
-// it just keeps drifting, on both axes at once.
+// it drifts on both axes at once, and then holds station.
+//
+// That last clause is load-bearing rather than descriptive. The habitat swaps a
+// creature's "walk" clip in for as long as the wander is travelling, so a mover that
+// retargets the beat it arrives never shows its idle at all — whatever is authored on
+// row 0 is simply never reached. A swimmer's rest is therefore sized against the clip
+// it has to make room for, which is why longestStill is asserted and not just the
+// moving share: the question is not "does it pause" but "does it pause for long
+// enough to play something through".
 void test_idle_wander_reads_differently_per_locomotion() {
     const int beats = 4000;
 
@@ -493,12 +503,17 @@ void test_idle_wander_reads_differently_per_locomotion() {
     CHECK(fly.lowBeats * 10 < beats);         // and is rarely even near the floor
     CHECK(fly.maxY == kWanderRiseMax);        // it is the top of the box it lives in
     CHECK(fly.movingBeats > beats / 2);       // hardly ever still
+    CHECK(fly.longestStill < 8);              // and never long enough to pose
 
     const WanderTrace swim = traceWander(Locomotion::Swim, beats);
     CHECK(swim.onShelfBeats * 100 < beats);   // nothing pulls it down...
     CHECK(swim.highBeats * 10 > beats);       // ...and nothing holds it up either:
     CHECK(swim.lowBeats * 10 > beats);        // it uses the whole depth of the box
-    CHECK(swim.movingBeats > beats / 2 && swim.movedYBeats > beats / 4);
+    CHECK(swim.movingBeats > beats / 3);      // it does spend its time drifting...
+    CHECK(swim.movingBeats < beats * 2 / 3);  // ...but it is not the flier: it stops
+    CHECK(swim.movedYBeats > beats / 5);      // and the drift is on both axes
+    // Long enough parked for a four-frame idle at holdBeats=2 to run its whole loop.
+    CHECK(swim.longestStill >= 8);
 }
 
 // A crawler is the floor-mover a walker only nearly is. It shares the shelf, but it

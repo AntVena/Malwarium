@@ -7,11 +7,21 @@ namespace {
 // heartbeats parked between trips. Only the wander spends these, so the magnitudes
 // sit with it rather than in tunables.h. The shape of each row IS the locomotion —
 // a walker takes long pauses and never leaves the shelf (stepY 0), a flier is almost
-// always gliding somewhere, a swimmer drifts on both axes at a single slow pace, and
-// a Ground mover is a walker slowed down: half the pace over a shorter reach, resting
-// longer at the end of it, and giving up the shelf bob entirely, and a Static one has
-// no trip at all — a zero pace is a fixed point, so it retargets forever and arrives
-// nowhere rather than being special-cased out of the walk.
+// always gliding somewhere, a swimmer drifts on both axes at a single slow pace and then
+// holds station, a Ground mover is a walker slowed down: half the pace over a shorter
+// reach, resting longer at the end of it, and giving up the shelf bob entirely, and a
+// Static one has no trip at all — a zero pace is a fixed point, so it retargets forever
+// and arrives nowhere rather than being special-cased out of the walk.
+//
+// THE SWIMMER'S REST IS SIZED AGAINST THE CLIP IT HAS TO MAKE ROOM FOR, which is why it
+// is the one row here whose rest is not just a matter of feel. The habitat swaps a
+// creature's "walk" clip in for as long as the wander is travelling, so a mover that
+// retargeted the beat it arrived would never be seen doing anything but travelling and
+// whatever is authored on row 0 would simply never be reached. A swimmer parked for
+// restMin beats can play a four-frame idle at holdBeats=2 all the way through; that is
+// the number the row is set to, and test_persistence.cpp asserts it as longestStill
+// rather than asserting the moving share, because the question is not whether it pauses
+// but whether it pauses for long enough to play something.
 struct Pace {
     int stepX;     // horizontal px per heartbeat
     int stepY;     // vertical px per heartbeat; 0 pins the mover to the shelf
@@ -23,7 +33,7 @@ struct Pace {
 constexpr Pace kPaces[] = {
     /* Walk  */ {2, 0, 6, 12, 10},
     /* Fly   */ {2, 1, 1,  4, 12},
-    /* Swim  */ {1, 1, 0,  5, 12},
+    /* Swim  */ {1, 1, 5,  8, 12},
     /* Ground*/ {1, 0, 10, 14, 7},
     /* Static*/ {0, 0, 10, 14, 0},
 };
