@@ -811,6 +811,246 @@ void test_save_v50_bandwidth_regen_upgrade() {
     CHECK(out.rack[1].bandwidthRegenBonusMin == 0);
 }
 
+// THE EPIC TIER — the five dishes beyond Tiramisudo that permanently upgrade the pet
+// eating them (core/model/pet_upgrades.h). What is asserted here is the shape they all
+// share: the grant lands OFF the level, it lands once, and a second helping is a meal.
+//
+// The dishes are found BY EFFECT rather than named, so retiring or renaming one is a
+// content edit and not a test edit — what the gate is protecting is the mechanic.
+namespace {
+
+// The item whose row carries `k`, or nullptr. Every Epic grant is on exactly one row,
+// which test_every_permanent_grant_is_one_epic_dish below is the gate on.
+const ItemDef* dishGranting(ItemEffect::Kind k) {
+    for (const ItemDef* d : ContentRegistry::embedded().allItems())
+        for (const ItemEffect& e : d->effects)
+            if (e.kind == k) return d;
+    return nullptr;
+}
+
+int countLogLinesContaining(const Game& g, const char* needle) {
+    int n = 0;
+    for (int i = 0; i < g.log().size(); ++i)
+        if (std::strstr(g.log().at(i).text, needle)) ++n;
+    return n;
+}
+
+const ItemEffect::Kind kStatGrantKinds[kLevelStatCount] = {
+    ItemEffect::Kind::StatPointPower, ItemEffect::Kind::StatPointDefense,
+    ItemEffect::Kind::StatPointSpeed, ItemEffect::Kind::StatPointHealth};
+
+}  // namespace
+
+// A granted point is NOT a level. It shows up in the pet's total, it does not move
+// combatLevel, and it never appears in statPoints_ — which is the whole reason a
+// Rollback cannot reach it (test_rollback_cannot_shed_a_granted_point below).
+void test_epic_dish_grants_an_off_level_stat_point() {
+    for (int stat = 0; stat < kLevelStatCount; ++stat) {
+        const ItemDef* d = dishGranting(kStatGrantKinds[stat]);
+        CHECK(d);
+        if (!d) continue;
+        // Epic is the tier the permanent grants are reserved to, and the dish has to be
+        // COOKED — nothing sells one, which is what makes the recipe the payoff.
+        CHECK(d->rarity == ItemDef::Rarity::Epic);
+        CHECK(d->type == ItemDef::Type::Food);
+
+        Game g{StartMode::Hatched, "paypup"};
+        CHECK(g.statBonusPoint(stat) == 0);
+        g.inventory().add(d->id, 2);
+        g.debugUseItem(d->id);
+        CHECK(g.statBonusPoint(stat) == 1);
+        // The moment is written down — a once-per-pet upgrade the operator can scroll
+        // back to, not just a "FED <dish>" line like every other plate.
+        const int loggedGrants = countLogLinesContaining(g, "FOR LIFE");
+        CHECK(loggedGrants == 1);
+        CHECK(g.totalStatPoint(stat) == 1);
+        CHECK(g.levelStatPoint(stat) == 0);        // not an EARNED point...
+        CHECK(g.combatLevel() == 0);               // ...so the level has not moved
+        // A second plate does not stack the grant — the pet already has the point —
+        // but it is still EATEN rather than refused, which is what stops the dish from
+        // becoming a dead row the moment it has paid out (Game::itemUseIsInert).
+        CHECK(g.inventory().count(d->id) == 1);
+        g.debugUseItem(d->id);
+        CHECK(g.statBonusPoint(stat) == 1);
+        CHECK(g.inventory().count(d->id) == 0);
+        CHECK(countLogLinesContaining(g, "FOR LIFE") == loggedGrants);  // granted once
+    }
+}
+
+// The point is real where it matters: a fighter built from a pet that ate the dish is
+// stronger than the same pet that did not, by exactly the one point.
+void test_granted_stat_point_reaches_combat() {
+    const ItemDef* d = dishGranting(ItemEffect::Kind::StatPointHealth);
+    CHECK(d);
+    if (!d) return;
+    Game g0{StartMode::Hatched, "paypup"};
+    enterSimBattle(g0);
+    const int baseHp = g0.combat().player().maxHealth;
+
+    Game g1{StartMode::Hatched, "paypup"};
+    g1.inventory().add(d->id, 1);
+    g1.debugUseItem(d->id);
+    for (int i = 0; i < 4 && g1.nav() != Game::Nav::Idle; ++i) tapC(g1);
+    enterSimBattle(g1);
+    CHECK(g1.combat().player().maxHealth == baseHp + kLevelHealthPerPoint);
+}
+
+// THE PROTECTION. A Rollback sheds an EARNED point and takes the level down with it;
+// the granted point is on neither axis, so the pet keeps it all the way down to level 0
+// — which is the floor the picker itself refuses to go under.
+void test_rollback_cannot_shed_a_granted_point() {
+    const ItemDef* d = dishGranting(ItemEffect::Kind::StatPointPower);
+    CHECK(d);
+    if (!d) return;
+    Game g{StartMode::Hatched, "paypup"};
+    g.inventory().add(d->id, 1);
+    g.debugUseItem(d->id);
+    for (int i = 0; i < 4 && g.nav() != Game::Nav::Idle; ++i) tapC(g);
+    CHECK(g.statBonusPoint(0) == 1);
+
+    // Earn exactly one level, then roll it back off.
+    g.debugAddCombatXp(kLevelXpBase);
+    CHECK(g.combatLevel() == 1);
+    g.inventory().add("rollback", 1);
+    g.debugUseItem("rollback");
+    CHECK(g.nav() == Game::Nav::RollbackPicker);
+    g.onButton(press(Button::B));
+    CHECK(g.combatLevel() == 0);                 // every earned point is gone
+    int earned = 0;
+    for (int i = 0; i < kLevelStatCount; ++i) earned += g.levelStatPoint(i);
+    CHECK(earned == 0);
+    CHECK(g.statBonusPoint(0) == 1);             // ...and the granted one is untouched
+    CHECK(g.totalStatPoint(0) == 1);
+
+    // With nothing earned left the picker is inert, so there is no second shed that
+    // could reach the grant by going negative.
+    g.inventory().add("rollback", 1);
+    g.debugUseItem("rollback");
+    CHECK(g.nav() != Game::Nav::RollbackPicker);
+    CHECK(g.inventory().count("rollback") == 1);  // not consumed
+}
+
+// Profilerole's rate is applied at addCombatXp, the one door every XP source comes
+// through, so an upgraded pet banks more from the same award.
+void test_epic_dish_grants_a_permanent_xp_rate() {
+    const ItemDef* d = dishGranting(ItemEffect::Kind::XpRateBonusPct);
+    CHECK(d);
+    if (!d) return;
+    CHECK(d->rarity == ItemDef::Rarity::Epic);
+    int rate = 0;
+    for (const ItemEffect& e : d->effects)
+        if (e.kind == ItemEffect::Kind::XpRateBonusPct) rate = e.magnitude;
+    CHECK(rate > 0);
+
+    Game g{StartMode::Hatched, "paypup"};
+    CHECK(g.xpRateBonusPct() == 0);
+    g.inventory().add(d->id, 2);
+    g.debugUseItem(d->id);
+    CHECK(g.xpRateBonusPct() == rate);
+    // A lump short of the first level, so the whole award stays visible in the bucket.
+    const int award = kLevelXpBase / 2;
+    g.debugAddCombatXp(award);
+    CHECK(g.combatLevel() == 0);
+    CHECK(g.combatXp() == award + award * rate / 100);
+    CHECK(g.combatXp() > award);
+    // Second helping: the rate is already the pet's, so it does not compound.
+    g.debugUseItem(d->id);
+    CHECK(g.xpRateBonusPct() == rate);
+}
+
+// The grants belong to the CREATURE, so the rack keeps them and a new egg does not
+// inherit them — the same deal Tiramisudo's regen shave gets, asserted over the pair
+// that share a save tail with it.
+void test_granted_upgrades_survive_the_rack_and_reset_on_a_new_egg() {
+    const ItemDef* pw = dishGranting(ItemEffect::Kind::StatPointPower);
+    const ItemDef* xp = dishGranting(ItemEffect::Kind::XpRateBonusPct);
+    CHECK(pw && xp);
+    if (!pw || !xp) return;
+
+    Game g{StartMode::Hatched, "paypup"};
+    g.inventory().add(pw->id, 1);
+    g.inventory().add(xp->id, 1);
+    g.debugUseItem(pw->id);
+    for (int i = 0; i < 4 && g.nav() != Game::Nav::Idle; ++i) tapC(g);
+    g.debugUseItem(xp->id);
+    for (int i = 0; i < 4 && g.nav() != Game::Nav::Idle; ++i) tapC(g);
+    CHECK(g.statBonusPoint(0) == 1 && g.xpRateBonusPct() > 0);
+
+    g.debugSeedRack("cryptoshell");
+    auto deployFirstStored = [&] {
+        enterSubmenuId(g, SubmenuId::Arch);
+        g.onButton(press(Button::A));
+        g.onButton(press(Button::B));
+        g.onButton(press(Button::B));
+        g.onButton(press(Button::A));
+        g.onButton(press(Button::B));
+    };
+    deployFirstStored();
+    CHECK(g.pet() && std::strcmp(g.pet()->id, "cryptoshell") == 0);
+    CHECK(g.statBonusPoint(0) == 0 && g.xpRateBonusPct() == 0);  // never fed either
+    deployFirstStored();
+    CHECK(g.pet() && std::strcmp(g.pet()->id, "paypup") == 0);
+    CHECK(g.statBonusPoint(0) == 1 && g.xpRateBonusPct() > 0);   // came back with them
+
+    // A new egg is a new pet, so it starts with nothing granted.
+    g.resetToHatch();
+    pickFirstEggLine(g);
+    for (int i = 0; i < kLevelStatCount; ++i) CHECK(g.statBonusPoint(i) == 0);
+    CHECK(g.xpRateBonusPct() == 0);
+}
+
+// v57 — the off-level points and the XP rate round-trip for the active pet AND for a
+// pet on the shelf, positionally matched the way the v50 tail beside them is.
+void test_save_v57_permanent_grants() {
+    SaveData a;
+    std::strcpy(a.activeId, "paypup");
+    a.generation = 1;
+    for (int i = 0; i < kLevelStatCount; ++i) a.statBonus[i] = i;
+    a.xpRateBonusPct = 25;
+    SaveStoredPet stored;
+    std::strcpy(stored.id, "cryptoshell");
+    stored.statBonus[2] = 1;
+    stored.xpRateBonusPct = 25;
+    a.rack.push_back(stored);
+    a.rack.push_back(SaveStoredPet{});          // an ungranted shelf-mate
+
+    SaveData out;
+    CHECK(deserializeSave(serializeSave(a), out));
+    for (int i = 0; i < kLevelStatCount; ++i) CHECK(out.statBonus[i] == i);
+    CHECK(out.xpRateBonusPct == 25);
+    CHECK(out.rack.size() == 2);
+    CHECK(out.rack[0].statBonus[2] == 1);
+    CHECK(out.rack[0].xpRateBonusPct == 25);
+    for (int i = 0; i < kLevelStatCount; ++i) CHECK(out.rack[1].statBonus[i] == 0);
+    CHECK(out.rack[1].xpRateBonusPct == 0);
+}
+
+// One grant, one dish, one Epic row. The mechanic's scarcity IS the design — a second
+// row carrying the same grant would give a player two chances at a once-per-pet upgrade
+// — so the roster is held to it here rather than by everyone remembering.
+void test_every_permanent_grant_is_one_epic_dish() {
+    const ItemEffect::Kind kGrants[] = {
+        ItemEffect::Kind::BandwidthRegenBonusMin, ItemEffect::Kind::StatPointPower,
+        ItemEffect::Kind::StatPointDefense,       ItemEffect::Kind::StatPointSpeed,
+        ItemEffect::Kind::StatPointHealth,        ItemEffect::Kind::XpRateBonusPct};
+    for (ItemEffect::Kind k : kGrants) {
+        int rows = 0;
+        for (const ItemDef* d : ContentRegistry::embedded().allItems()) {
+            bool carries = false;
+            for (const ItemEffect& e : d->effects)
+                if (e.kind == k) { carries = true; CHECK(e.magnitude > 0); }
+            if (!carries) continue;
+            ++rows;
+            CHECK(d->rarity == ItemDef::Rarity::Epic);
+            CHECK(itemIsOncePerPetLifetime(*d));    // the 'Pedia's pet page reads this
+            // Cooked, never bought: the recipe is the payoff, so no shop lists a price.
+            CHECK(d->bitsPrice == 0);
+            CHECK(recipeIndexByOutput(d->id) >= 0);
+        }
+        CHECK(rows == 1);
+    }
+}
+
 // v54 — the first ITEM id the rename table ever carried (`renamedIds`, save.cpp).
 // Both id-bearing item fields are swept, and they fail differently if one is missed:
 // `items` is the stack the operator is holding, so a miss there loses the food; and

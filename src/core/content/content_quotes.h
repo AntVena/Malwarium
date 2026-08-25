@@ -97,7 +97,9 @@ inline constexpr int kQuoteWinBits = 256;
 // A solve pays the first dish on this list the operator can't already cook, skipping
 // any the kitchen isn't ready for — no hub to cook in, or a dish they've never met
 // (Game::recipeGrantable). Order is therefore the difficulty curve of the kitchen, not
-// a ranking: plain fry-ups first, the dishes that heal mid-combat last.
+// a ranking: plain fry-ups first, then the dishes that heal mid-combat, and the EPIC
+// tier last of all — the six that permanently upgrade the pet eating them
+// (core/model/pet_upgrades.h), which is the one thing nothing else in the game sells.
 //
 // Run out of recipes and the fallback takes over. Bandwidth is what it falls back TO
 // because it is the one Rig Shop row with no purchase cap, so the last quote of the

@@ -1064,6 +1064,15 @@ const ItemDef kItems[] = {
     // Each one earns its keep by doing something its ingredients can't. A staple eaten
     // raw moves one number by a handful; a dish moves the numbers a pet actually cares
     // about, and three of them heal in combat, which no staple does at all.
+    //
+    // At the top of the tier ladder sit the six EPIC dishes, and they are the reason to
+    // cook at all: each grants the pet eating it something PERMANENT, once in that pet's
+    // life (core/model/pet_upgrades.h). Tiramisudo shaves its Bandwidth regen; Privilege
+    // Escalope, Spare RIBs, Racelette and Buffer Overfloat each hand it an off-level
+    // point of Power / Defence / Speed / max-Health that no Rollback can take back; and
+    // Profilerole raises what every XP source pays it. Six, not sixty: the whole weight
+    // of the mechanic is that a pet can only ever be handed these once, so a second
+    // helping of any of them is simply a very good meal.
     {"cracquettes", "Cracquettes", ItemDef::Type::Food,
      ItemDef::Rarity::Uncommon,
      "Everything the filter caught, fried into one patty. Not classy, but the "
@@ -1125,11 +1134,12 @@ const ItemDef kItems[] = {
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 45}, {IE::Kind::Happy, 15}, {IE::Kind::Frag, -10}}},
 
-    // The one dish that is also an UPGRADE. First helping only — see the effect's note
-    // in defs.h; after that the pet already has root and it is simply a very good
-    // pudding that tops the pool up.
+    // EPIC — the upgrade that is not a stat: a permanently shorter Bandwidth regen.
+    // First helping only, like every grant in the tier; after that the pet already has
+    // root and this is simply a very good pudding that tops the pool up, which is what
+    // its second effect is for.
     {"tiramisudo", "Tiramisudo", ItemDef::Type::Food,
-     ItemDef::Rarity::Rare,
+     ItemDef::Rarity::Epic,
      "Ask the rig nicely and it says no. Ask it again like this and it says of course.",
      ItemDef::Context::Anytime,
      {{IE::Kind::BandwidthRegenBonusMin, 1}, {IE::Kind::Bandwidth, 1},
@@ -1364,10 +1374,12 @@ const ItemDef kItems[] = {
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 55}, {IE::Kind::Happy, 20}}, /*combatHeal=*/30},
 
-    {"racelette", "Racelette", ItemDef::Type::Food, ItemDef::Rarity::Rare,
-     "Two of you scraping at the same pan. Whoever gets there first.",
+    // EPIC — a race is decided by who gets there first, which is what a Speed point buys.
+    {"racelette", "Racelette", ItemDef::Type::Food, ItemDef::Rarity::Epic,
+     "Two of you scraping at the same pan. Whoever gets there first. "
+     "Once per pet: +{speed} SPEED for life.",
      ItemDef::Context::Anytime,
-     {{IE::Kind::Hunger, 50}, {IE::Kind::Happy, 25}}},
+     {{IE::Kind::StatPointSpeed, 1}, {IE::Kind::Hunger, 50}, {IE::Kind::Happy, 25}}},
 
     {"scrambled_regeggs", "Scrambled RegEggs", ItemDef::Type::Food,
      ItemDef::Rarity::Uncommon,
@@ -1421,21 +1433,28 @@ const ItemDef kItems[] = {
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 45}, {IE::Kind::Happy, 25}, {IE::Kind::Frag, -15}}},
 
-    {"spare_ribs", "Spare RIBs", ItemDef::Type::Food, ItemDef::Rarity::Rare,
-     "Keep a copy. You will want to know how you got here.",
+    // EPIC — a spare in the array is the whole idea of a Defence point: one more thing
+    // that has to fail before anything is actually lost.
+    {"spare_ribs", "Spare RIBs", ItemDef::Type::Food, ItemDef::Rarity::Epic,
+     "Keep a copy. You will want to know how you got here. "
+     "Once per pet: +{defense} DEFENSE for life.",
      ItemDef::Context::Anytime,
-     {{IE::Kind::Hunger, 65}, {IE::Kind::Happy, 15}}, /*combatHeal=*/30},
+     {{IE::Kind::StatPointDefense, 1}, {IE::Kind::Hunger, 65}, {IE::Kind::Happy, 15}},
+     /*combatHeal=*/30},
 
     {"rested_steak", "RESTed Steak", ItemDef::Type::Food, ItemDef::Rarity::Rare,
      "Stateless. Every bite stands entirely on its own.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 60}, {IE::Kind::Happy, 20}}, /*combatHeal=*/35},
 
+    // EPIC — the pet keeps a Power point for life. The pun is the mechanic: an escalation
+    // is not a thing you do twice, so the first plate roots it and later ones are veal.
     {"privilege_escalope", "Privilege Escalope", ItemDef::Type::Food,
-     ItemDef::Rarity::Rare,
-     "Ordered the veal. Came back with the run of the kitchen.",
+     ItemDef::Rarity::Epic,
+     "Ordered the veal. Came back with the run of the kitchen. "
+     "Once per pet: +{power} POWER for life.",
      ItemDef::Context::Anytime,
-     {{IE::Kind::Hunger, 55}, {IE::Kind::Happy, 30}}},
+     {{IE::Kind::StatPointPower, 1}, {IE::Kind::Hunger, 55}, {IE::Kind::Happy, 30}}},
 
     {"force_pulled_pork", "Force-Pulled Pork", ItemDef::Type::Food,
      ItemDef::Rarity::Rare,
@@ -1512,10 +1531,14 @@ const ItemDef kItems[] = {
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 20}, {IE::Kind::Happy, 30}}},
 
-    {"profilerole", "Profilerole", ItemDef::Type::Food, ItemDef::Rarity::Rare,
-     "Small, rich, and afterwards you know exactly where the time went.",
+    // EPIC — the one Epic dish that grants no stat at all. A profiler doesn't make the
+    // pet stronger, it makes every hour it spends teach it more, which is an XP rate.
+    {"profilerole", "Profilerole", ItemDef::Type::Food, ItemDef::Rarity::Epic,
+     "Small, rich, and afterwards you know exactly where the time went. "
+     "Once per pet: +{xpRate}% XP for life.",
      ItemDef::Context::Anytime,
-     {{IE::Kind::Hunger, 25}, {IE::Kind::Happy, 38}, {IE::Kind::Frag, -10}}},
+     {{IE::Kind::XpRateBonusPct, 25}, {IE::Kind::Hunger, 25}, {IE::Kind::Happy, 38},
+      {IE::Kind::Frag, -10}}},
 
     {"coboler", "COBOLer", ItemDef::Type::Food, ItemDef::Rarity::Rare,
      "Nobody has touched the recipe in fifty years. It still comes out.",
@@ -1601,11 +1624,15 @@ const ItemDef kItems[] = {
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 25}, {IE::Kind::Happy, 25}}},
 
+    // EPIC — the pet's max Health IS its buffer, and this is the drink that writes past
+    // the end of it. The Fragmentation it adds is the cost of taking the extra room.
     {"buffer_overfloat", "Buffer Overfloat", ItemDef::Type::Food,
-     ItemDef::Rarity::Rare,
-     "They kept pouring after the glass was full. It went everywhere.",
+     ItemDef::Rarity::Epic,
+     "They kept pouring after the glass was full. It went everywhere. "
+     "Once per pet: +{maxhp} MAX-HP for life.",
      ItemDef::Context::Anytime,
-     {{IE::Kind::Hunger, 30}, {IE::Kind::Happy, 40}, {IE::Kind::Frag, 15}}},
+     {{IE::Kind::StatPointHealth, 1}, {IE::Kind::Hunger, 30}, {IE::Kind::Happy, 40},
+      {IE::Kind::Frag, 15}}},
 
     {"hard_cidr", "Hard CIDR", ItemDef::Type::Food, ItemDef::Rarity::Uncommon,
      "Comes by the block. You do not get to choose how big a block.",

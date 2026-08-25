@@ -77,10 +77,11 @@ bool Game::buildPvpFighter(PvpFighter* out) const {
             std::strncpy(f.modIds[i], id, kPvpIdCap - 1);
 
     // Level is display-only in a duel (nothing pays XP), but the stat points it bought
-    // are the pet's real strength and must cross.
+    // are the pet's real strength and must cross — including the off-level ones an Epic
+    // dish granted, which the pet fights with at home and would otherwise leave behind.
     f.level = static_cast<uint16_t>(std::min(combatLevel_, 0xFFFF));
     for (int i = 0; i < 4; ++i)
-        f.statPoints[i] = static_cast<uint8_t>(std::min(statPoints_[i], 255));
+        f.statPoints[i] = static_cast<uint8_t>(std::min(totalStatPoint(i), 255));
     *out = f;
     return true;
 }

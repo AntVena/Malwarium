@@ -409,9 +409,9 @@ for. The `ICON_SECTOR_*` half of each family is drawn and live on the EXPL zone 
 - **Rarity-tiered, area-themed foods** — per-area food sets across Citrus Circuit / Pirate Bayou /
   Napstorrent with a rarity ramp, where the **best** food carries an effect that fits the area theme
   (Citrus Circuit might trade levels to revert a care mistake; Pirate Bayou the inverse). A
-  meaningful new `ICON_ITEM_*` batch plus a mechanic. Diff **L**.
-- **Best foods = a once-per-lifetime permanent buff.** Needs a per-pet "lifetime buff consumed" flag
-  + a permanent stat modifier. Mechanic + design, pairs with the above. Diff **M**.
+  meaningful new `ICON_ITEM_*` batch plus a mechanic. The permanent once-per-pet payoff such a
+  set's best rows would hang off already exists — `core/model/pet_upgrades.h`, six Epic dishes
+  today — so what is left here is the per-area rows and their art. Diff **L**.
 - **Locomotion poses to match the resting motion.** Every creature declares how it gets around
   (`CreatureDef::locomotion`) and the habitat already moves it that way — a walker ambles along the
   shelf, a swimmer drifts through the box, a flier holds an altitude, and a `Static` row (every egg

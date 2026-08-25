@@ -1761,7 +1761,7 @@ window.PEDIA_DATA = {
       "id": "tiramisudo",
       "name": "Tiramisudo",
       "type": "FOOD",
-      "rarity": "RARE",
+      "rarity": "EPIC",
       "effect": "Ask the rig nicely and it says no. Ask it again like this and it says of course.",
       "stats": "BW REGEN -1MIN / BANDWIDTH +1 / HAPPY +50 / FRAG -15",
       "icon": "assets/icons/ICON_ITEM_TIRAMISUDO.png"
@@ -2121,9 +2121,9 @@ window.PEDIA_DATA = {
       "id": "racelette",
       "name": "Racelette",
       "type": "FOOD",
-      "rarity": "RARE",
-      "effect": "Two of you scraping at the same pan. Whoever gets there first.",
-      "stats": "HUNGER +50 / HAPPY +25",
+      "rarity": "EPIC",
+      "effect": "Two of you scraping at the same pan. Whoever gets there first. Once per pet: +1 SPEED for life.",
+      "stats": "SPEED +1 / HUNGER +50 / HAPPY +25",
       "icon": "assets/icons/ICON_ITEM_RACELETTE.png"
     },
     {
@@ -2211,9 +2211,9 @@ window.PEDIA_DATA = {
       "id": "spare_ribs",
       "name": "Spare RIBs",
       "type": "FOOD",
-      "rarity": "RARE",
-      "effect": "Keep a copy. You will want to know how you got here.",
-      "stats": "HUNGER +65 / HAPPY +15 / HEAL 30",
+      "rarity": "EPIC",
+      "effect": "Keep a copy. You will want to know how you got here. Once per pet: +1 DEFENSE for life.",
+      "stats": "DEFENSE +1 / HUNGER +65 / HAPPY +15 / HEAL 30",
       "icon": "assets/icons/ICON_ITEM_SPARE_RIBS.png"
     },
     {
@@ -2229,9 +2229,9 @@ window.PEDIA_DATA = {
       "id": "privilege_escalope",
       "name": "Privilege Escalope",
       "type": "FOOD",
-      "rarity": "RARE",
-      "effect": "Ordered the veal. Came back with the run of the kitchen.",
-      "stats": "HUNGER +55 / HAPPY +30",
+      "rarity": "EPIC",
+      "effect": "Ordered the veal. Came back with the run of the kitchen. Once per pet: +1 POWER for life.",
+      "stats": "POWER +1 / HUNGER +55 / HAPPY +30",
       "icon": "assets/icons/ICON_ITEM_PRIVILEGE_ESCALOPE.png"
     },
     {
@@ -2355,9 +2355,9 @@ window.PEDIA_DATA = {
       "id": "profilerole",
       "name": "Profilerole",
       "type": "FOOD",
-      "rarity": "RARE",
-      "effect": "Small, rich, and afterwards you know exactly where the time went.",
-      "stats": "HUNGER +25 / HAPPY +38 / FRAG -10",
+      "rarity": "EPIC",
+      "effect": "Small, rich, and afterwards you know exactly where the time went. Once per pet: +25% XP for life.",
+      "stats": "XP RATE +25% / HUNGER +25 / HAPPY +38 / FRAG -10",
       "icon": "assets/icons/ICON_ITEM_PROFILEROLE.png"
     },
     {
@@ -2499,9 +2499,9 @@ window.PEDIA_DATA = {
       "id": "buffer_overfloat",
       "name": "Buffer Overfloat",
       "type": "FOOD",
-      "rarity": "RARE",
-      "effect": "They kept pouring after the glass was full. It went everywhere.",
-      "stats": "HUNGER +30 / HAPPY +40 / FRAG +15",
+      "rarity": "EPIC",
+      "effect": "They kept pouring after the glass was full. It went everywhere. Once per pet: +1 MAX-HP for life.",
+      "stats": "MAX-HP +1 / HUNGER +30 / HAPPY +40 / FRAG +15",
       "icon": "assets/icons/ICON_ITEM_BUFFER_OVERFLOAT.png"
     },
     {
@@ -6784,16 +6784,16 @@ window.PEDIA_DATA = {
     {
       "key": "COLLECT_RARE",
       "name": "Rare Collector",
-      "trigger": "Get hold of all 46 Rare items.",
+      "trigger": "Get hold of all 40 Rare items.",
       "icon": "assets/icons/ICON_ACH_COLLECT_RARE.png",
-      "goal": 46
+      "goal": 40
     },
     {
       "key": "COLLECT_EPIC",
       "name": "Epic Collector",
-      "trigger": "Get hold of all 7 Epic items.",
+      "trigger": "Get hold of all 13 Epic items.",
       "icon": "assets/icons/ICON_ACH_COLLECT_EPIC.png",
-      "goal": 7
+      "goal": 13
     },
     {
       "key": "RIG_FIRST",

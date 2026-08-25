@@ -351,7 +351,13 @@ constexpr int kSaveTextCap = 28;     // matches EventLog's LogEntry.text
 // was counting, and none of them can be reconstructed from anything else in the blob.
 // A bracket taken leaves no trace once its run is dismissed, a duel pays nothing, and a
 // cooked dish is indistinguishable from a dropped one the moment it is eaten.
-constexpr uint16_t kSaveVersion = 56;
+// v57 appends the rest of the per-pet EPIC-DISH grants, in the shape v50 established for
+// the first of them: the active pet's off-level stat points and XP rate, then a parallel
+// list mapped onto d.rack by index. It is a second tail rather than a widening of v50's
+// because a tail is what a pre-v57 build can stop before; the values are per-pet AND
+// frozen with the pet, since the upgrade belongs to the creature rather than the run.
+// Pre-v57 → 0 for every pet, which is the truth (no dish granted one).
+constexpr uint16_t kSaveVersion = 57;
 
 // The oldest blob deserialize will read. Raising it is how a device stops carrying
 // migration weight for saves nobody can still be holding — and it is the ONLY thing
@@ -476,6 +482,13 @@ struct SaveStoredPet {
     // Frozen with the pet because the upgrade is the creature's, not the rig's — a pet
     // put on the shelf and deployed again keeps what it was fed.
     int32_t bandwidthRegenBonusMin = 0;
+    // v57: the rest of what an Epic dish grants for life — the OFF-LEVEL combat-stat
+    // points (0 power · 1 defense · 2 speed · 3 max-Health) and the XP rate. Frozen with
+    // the pet for the same reason the line above is, and carried in the same parallel
+    // tail. These are deliberately NOT folded into `statPoints`: that array's sum is the
+    // pet's level, and a granted point is not a level.
+    int32_t statBonus[kLevelStatCount] = {0};
+    int32_t xpRateBonusPct = 0;
 };
 
 // The permanent status of an ARCH record: a greyed, read-only entry that
@@ -859,6 +872,14 @@ struct SaveData {
     // values ride on SaveStoredPet::bandwidthRegenBonusMin, a parallel tail. Pre-v50 →
     // 0, which is the truth: nothing granted it before this version.
     int32_t bandwidthRegenBonusMin = 0;
+
+    // --- v57: the ACTIVE pet's other permanent Epic-dish grants --------------
+    // Off-level combat-stat points and the XP rate (core/model/pet_upgrades.h). Same
+    // shape and the same reason as the v50 pair above: per-pet, reset on a new egg, and
+    // frozen with the pet, so the rack's own values ride on SaveStoredPet::statBonus /
+    // ::xpRateBonusPct in a parallel tail. Pre-v57 → 0, which is the truth.
+    int32_t statBonus[kLevelStatCount] = {0};
+    int32_t xpRateBonusPct = 0;
 
     // --- v51: the owned-recipe bitset ----------------------------------------
     // One bit per MergeRecipe::wire (game_internal.h), low bit first within each byte,

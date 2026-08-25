@@ -161,7 +161,7 @@ std::vector<BuffRow> buildBuffRows(const ContentRegistry& reg,
                                     bool startDepthArmed,
                                     bool startDepthUsesBest,
                                     int startDepthValue,
-                                    bool bandwidthRegenUpgraded) {
+                                    const PetUpgrades& upgrades) {
     std::vector<BuffRow> out;
     auto add = [&](const char* itemId, bool armed, bool timed, uint32_t remain) {
         if (!armed) return;
@@ -191,11 +191,20 @@ std::vector<BuffRow> buildBuffRows(const ContentRegistry& reg,
         else
             addByEffect(ItemEffect::Kind::SetDeepWebStartDepth, startDepthValue, false);
     }
-    // Last, because it is the only row that never lapses: the pet's permanent
-    // Bandwidth-regen shave. Found by effect like the dive buffs above rather than by
-    // id, so the dish that grants it can be renamed without touching this file.
-    if (bandwidthRegenUpgraded)
+    // Last, because these are the rows that never lapse: everything an Epic dish has
+    // permanently given this pet. Found by effect like the dive buffs above rather than
+    // by id, so a dish that grants one can be renamed without touching this file — and
+    // in stat order, so a pet carrying several reads as one block rather than in
+    // whichever order it happened to be fed.
+    if (upgrades.bandwidthRegenMin > 0)
         addByEffect(ItemEffect::Kind::BandwidthRegenBonusMin, 0, true);
+    static const ItemEffect::Kind kStatGrants[kLevelStatCount] = {
+        ItemEffect::Kind::StatPointPower, ItemEffect::Kind::StatPointDefense,
+        ItemEffect::Kind::StatPointSpeed, ItemEffect::Kind::StatPointHealth};
+    for (int i = 0; i < kLevelStatCount; ++i)
+        if (upgrades.statBonus[i] > 0) addByEffect(kStatGrants[i], 0, true);
+    if (upgrades.xpRatePct > 0)
+        addByEffect(ItemEffect::Kind::XpRateBonusPct, 0, true);
     return out;
 }
 

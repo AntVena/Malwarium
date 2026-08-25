@@ -17,6 +17,7 @@
 #include "core/content/effect_text.h"
 #include "core/model/event_log.h"
 #include "core/model/pet_model.h"
+#include "core/model/pet_upgrades.h"
 #include "core/ui/prose_page.h"
 
 namespace mal {
@@ -91,10 +92,11 @@ struct BuffRow {
 // startDepthArmed/startDepthUsesBest/startDepthValue: resolved from
 // Game::pendingDeepWebStartDepth_ (armed = != -1; usesBest = the
 // kDeepWebStartDepthUseBest sentinel, in which case startDepthValue is unused).
-// bandwidthRegenUpgraded: Game::bandwidthRegenUpgraded() — the one PERMANENT entry in
-// the list. It arms nothing and never lapses, so it carries no timer and no home-screen
-// icon (the idle status row is for states the operator has to act on); the BUFFS page is
-// where a pet's standing upgrades are readable, which is the only place it belongs.
+// upgrades: Game::petUpgrades() — the PERMANENT entries, one row per grant an Epic dish
+// has made this pet (core/model/pet_upgrades.h). They arm nothing and never lapse, so
+// they carry no timer and no home-screen icon (the idle status row is for states the
+// operator has to act on); the BUFFS page is where a pet's standing upgrades are
+// readable, which is the only place they belong.
 std::vector<BuffRow> buildBuffRows(const ContentRegistry& reg,
                                     bool restorePointArmed,
                                     bool trojanDivertArmed,
@@ -104,7 +106,7 @@ std::vector<BuffRow> buildBuffRows(const ContentRegistry& reg,
                                     bool startDepthArmed,
                                     bool startDepthUsesBest,
                                     int startDepthValue,
-                                    bool bandwidthRegenUpgraded);
+                                    const PetUpgrades& upgrades);
 
 // The BUFFS page's own window, same flow and same reason as loadoutRowsFitting:
 // five buffs can be armed at once and their descriptions run to four lines, which

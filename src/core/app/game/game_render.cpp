@@ -42,7 +42,7 @@ std::vector<BuffRow> Game::statBuffRows() const {
                          backupShieldArmed(), backupRemainMs, deepWebDepthMultiplier_,
                          pendingDeepWebStartDepth_ != -1,
                          pendingDeepWebStartDepth_ == kDeepWebStartDepthUseBest,
-                         pendingDeepWebStartDepth_, bandwidthRegenUpgraded());
+                         pendingDeepWebStartDepth_, upgrades_);
 }
 
 Game::StatScrollSpan Game::statScrollSpan() const {

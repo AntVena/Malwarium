@@ -278,9 +278,12 @@ SaveData Game::captureSave() const {
     // v31: the f Rig Shop Merge Hub unlock, and (v49) the whole owned-recipe mask —
     // both player-level, like itemTabsUnlocked. Recipes own their state outright rather
     // than mirroring rig rows, so the mask is written straight through.
-    // v50: this pet's Bandwidth-regen upgrade. The rack pets' own values ride along on
-    // their SaveStoredPet records, frozen at store time (game_arch.cpp's freezePet).
-    d.bandwidthRegenBonusMin = bandwidthRegenBonusMin_;
+    // v50/v57: this pet's permanent Epic-dish upgrades (core/model/pet_upgrades.h). The
+    // rack pets' own values ride along on their SaveStoredPet records, frozen at store
+    // time (game_arch.cpp's freezePet).
+    d.bandwidthRegenBonusMin = upgrades_.bandwidthRegenMin;
+    for (int i = 0; i < kLevelStatCount; ++i) d.statBonus[i] = upgrades_.statBonus[i];
+    d.xpRateBonusPct = upgrades_.xpRatePct;
 
     d.mergeHubUnlocked = rigLevel_[kRigRowMergeHub] ? 1 : 0;
     // The whole set goes out as the v51 bitset; its first four bytes ALSO go out as the
@@ -718,9 +721,11 @@ void Game::applySave(const SaveData& d) {
     for (size_t i = 0; i < d.recipeOwned.size() && i < kMergeRecipeWireBytes; ++i)
         recipesOwned_[i] = d.recipeOwned[i];
 
-    // v50: the active pet's Bandwidth-regen upgrade (a pre-v50 blob → 0: no dish granted
-    // one). The rack's own values come back with the stored records themselves.
-    bandwidthRegenBonusMin_ = d.bandwidthRegenBonusMin;
+    // v50/v57: the active pet's permanent Epic-dish upgrades (an older blob → 0: no dish
+    // granted one). The rack's own values come back with the stored records themselves.
+    upgrades_.bandwidthRegenMin = d.bandwidthRegenBonusMin;
+    for (int i = 0; i < kLevelStatCount; ++i) upgrades_.statBonus[i] = d.statBonus[i];
+    upgrades_.xpRatePct = d.xpRateBonusPct;
 
     // v32: every rig row from kRigRowExtBase up (a pre-v32 blob carries an empty vector
     // → every such row defaults to 0 — a migrated save has bought none of them).

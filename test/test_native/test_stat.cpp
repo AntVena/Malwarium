@@ -485,23 +485,49 @@ void test_sprite_grayscale_legibility() {
 // Carousel submenus (CFG · ARCH · MODS · TRAIN · EXPL)
 // ===========================================================================
 
-// The permanent upgrade has to be READABLE, or a player has no way to know a pet
-// carries it: nothing else reports it — no home-screen icon (it never lapses and asks
-// nothing of the operator), no shop row, no timer. The BUFFS page is the whole surface.
-void test_buffs_page_lists_the_bandwidth_upgrade() {
+// A permanent upgrade has to be READABLE, or a player has no way to know a pet carries
+// one: nothing else reports them — no home-screen icon (they never lapse and ask nothing
+// of the operator), no shop row, no timer. The BUFFS page is the whole surface, and it
+// has to hold ALL of them, since a well-fed pet can be carrying every grant at once.
+void test_buffs_page_lists_the_permanent_upgrades() {
     ContentRegistry r = ContentRegistry::embedded();
-    // Nothing armed, and not upgraded: the page is empty.
-    CHECK(buildBuffRows(r, false, false, false, 0, 1, false, false, 0, false).empty());
+    // Nothing armed, and nothing granted: the page is empty.
+    CHECK(buildBuffRows(r, false, false, false, 0, 1, false, false, 0, PetUpgrades{})
+              .empty());
 
-    const std::vector<BuffRow> rows =
-        buildBuffRows(r, false, false, false, 0, 1, false, false, 0, true);
-    CHECK(rows.size() == 1);
-    // Named by the DISH that grants it, resolved off the item table rather than a
-    // literal here — renaming the dish must not need a test edit to go with it.
-    const ItemDef* d = nullptr;
-    for (const ItemDef* it : r.allItems())
-        for (const ItemEffect& e : it->effects)
-            if (e.kind == ItemEffect::Kind::BandwidthRegenBonusMin) d = it;
-    CHECK(d && std::strcmp(rows[0].label, d->displayName) == 0);
-    CHECK(!rows[0].hasTimer);        // it never lapses, so it carries no countdown
+    // The DISH that grants an effect, resolved off the item table rather than named by a
+    // literal here — renaming a dish must not need a test edit to go with it.
+    auto dishFor = [&](ItemEffect::Kind k) -> const ItemDef* {
+        for (const ItemDef* it : r.allItems())
+            for (const ItemEffect& e : it->effects)
+                if (e.kind == k) return it;
+        return nullptr;
+    };
+
+    PetUpgrades u;
+    u.bandwidthRegenMin = 1;
+    const std::vector<BuffRow> one =
+        buildBuffRows(r, false, false, false, 0, 1, false, false, 0, u);
+    CHECK(one.size() == 1);
+    const ItemDef* bw = dishFor(ItemEffect::Kind::BandwidthRegenBonusMin);
+    CHECK(bw && std::strcmp(one[0].label, bw->displayName) == 0);
+    CHECK(!one[0].hasTimer);          // it never lapses, so it carries no countdown
+
+    // Everything at once: the regen shave, one row per off-level stat point, the XP rate.
+    for (int& b : u.statBonus) b = 1;
+    u.xpRatePct = 25;
+    const std::vector<BuffRow> all =
+        buildBuffRows(r, false, false, false, 0, 1, false, false, 0, u);
+    CHECK(all.size() == static_cast<size_t>(2 + kLevelStatCount));
+    for (const BuffRow& row : all) CHECK(!row.hasTimer);
+    // Each stat point is named by its own dish, in stat order.
+    const ItemEffect::Kind kStatKinds[kLevelStatCount] = {
+        ItemEffect::Kind::StatPointPower, ItemEffect::Kind::StatPointDefense,
+        ItemEffect::Kind::StatPointSpeed, ItemEffect::Kind::StatPointHealth};
+    for (int i = 0; i < kLevelStatCount; ++i) {
+        const ItemDef* d = dishFor(kStatKinds[i]);
+        CHECK(d && std::strcmp(all[1 + i].label, d->displayName) == 0);
+    }
+    const ItemDef* xp = dishFor(ItemEffect::Kind::XpRateBonusPct);
+    CHECK(xp && std::strcmp(all[1 + kLevelStatCount].label, xp->displayName) == 0);
 }

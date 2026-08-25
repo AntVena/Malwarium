@@ -82,7 +82,14 @@ int g_failures = 0;
     RUN(test_tiramisudo_regen_actually_runs_faster) \
     RUN(test_tiramisudo_upgrade_survives_the_rack) \
     RUN(test_save_v50_bandwidth_regen_upgrade) \
-    RUN(test_buffs_page_lists_the_bandwidth_upgrade) \
+    RUN(test_epic_dish_grants_an_off_level_stat_point) \
+    RUN(test_granted_stat_point_reaches_combat) \
+    RUN(test_rollback_cannot_shed_a_granted_point) \
+    RUN(test_epic_dish_grants_a_permanent_xp_rate) \
+    RUN(test_granted_upgrades_survive_the_rack_and_reset_on_a_new_egg) \
+    RUN(test_save_v57_permanent_grants) \
+    RUN(test_every_permanent_grant_is_one_epic_dish) \
+    RUN(test_buffs_page_lists_the_permanent_upgrades) \
     RUN(test_four_ingredient_recipe_consumes_all_inputs) \
     RUN(test_stacking_food_run_climbs_then_resets_on_decay) \
     RUN(test_loot_pools_resolve_and_carry_weight) \

@@ -369,6 +369,24 @@ struct ItemEffect {
                               // Game::bandwidthMax(). The item-side twin of the Rig
                               // Shop's GrantBandwidth: an ordinary top-up anyone can
                               // eat, as against a level that raises the ceiling.
+        // The four OFF-LEVEL stat points, one Kind per combat stat because the stat IS
+        // the effect — "+1 Power for life" and "+1 Defence for life" are two levers, not
+        // one lever with an argument, and a Kind per stat is what keeps the stat out of
+        // `magnitude` (which stays what it is everywhere else: how much). Each grants
+        // magnitude points into PetUpgrades::statBonus (core/model/pet_upgrades.h) the
+        // FIRST time this pet eats one and latches out after that, exactly as
+        // BandwidthRegenBonusMin does. The points land in combat alongside the earned
+        // ones but count toward neither the level nor the Rollback picker, so a Rollback
+        // can never shed what a dish granted.
+        StatPointPower,
+        StatPointDefense,
+        StatPointSpeed,
+        StatPointHealth,
+        XpRateBonusPct,       // +magnitude PERCENT on every XP award this pet takes
+                              // (PetUpgrades::xpRatePct, Game::addCombatXp), permanently
+                              // and once per pet. The per-pet twin of the Rig Shop's
+                              // player-level Passive XP Farming row: that one pays XP for
+                              // hunger decay, this one raises what every source pays.
         ClearReplicationGhost, // Unlinkguine: clear a Replication Ghost
                               // (PetModel::ghost_), the phantom process a defrag that
                               // failed on a Critical disk leaves behind. Magnitude-free
@@ -516,10 +534,13 @@ struct ItemDef {
     SpoilDef spoil = {};                 // perishable rows only — what it turns into, and how often
 };
 
-// Does this effect cap at ONE use per PET LIFETIME? Three of them do, and they are the
-// only per-pet gates the player cannot get back by any means: a new egg clears them and
-// nothing else does. Named here rather than as a list of item ids so a new item carrying
-// one of these effects is counted without a second table to update.
+// Does this effect cap at ONE use per PET LIFETIME? These are the only per-pet gates the
+// player cannot get back by any means: a new egg clears them and nothing else does. Named
+// here rather than as a list of item ids so a new item carrying one of these effects is
+// counted without a second table to update.
+//
+// The last six are the PERMANENT upgrades an Epic dish grants (core/model/pet_upgrades.h):
+// once the pet has one, later helpings of the same dish are just the food.
 //
 // ForceTrojanDivert is deliberately NOT one of them, close as it looks: it is CONSUMED at
 // the pet's next evolution rather than capped for the life, so a second Ambig-USB after
@@ -527,7 +548,41 @@ struct ItemDef {
 constexpr bool isOncePerPetLifetime(ItemEffect::Kind k) {
     return k == ItemEffect::Kind::RemoveCareMistakeOnce ||
            k == ItemEffect::Kind::ClearMistakeShieldOnce ||
-           k == ItemEffect::Kind::BandwidthRegenBonusMin;
+           k == ItemEffect::Kind::BandwidthRegenBonusMin ||
+           k == ItemEffect::Kind::StatPointPower ||
+           k == ItemEffect::Kind::StatPointDefense ||
+           k == ItemEffect::Kind::StatPointSpeed ||
+           k == ItemEffect::Kind::StatPointHealth ||
+           k == ItemEffect::Kind::XpRateBonusPct;
+}
+
+// The combat-stat index an off-level stat-point effect grants into (0 power · 1 defense ·
+// 2 speed · 3 max-Health — game_internal.h's levelStatName names them), or -1 for any
+// other kind. The one place the four Kinds map back onto the one array they all write, so
+// no applier or readout hand-writes the correspondence.
+constexpr int statPointEffectIndex(ItemEffect::Kind k) {
+    switch (k) {
+        case ItemEffect::Kind::StatPointPower:   return 0;
+        case ItemEffect::Kind::StatPointDefense: return 1;
+        case ItemEffect::Kind::StatPointSpeed:   return 2;
+        case ItemEffect::Kind::StatPointHealth:  return 3;
+        default: return -1;
+    }
+}
+
+// The display WORD for a combat stat on that same axis. It lives here, at the bottom of
+// the stack, because BOTH layers name these: an Epic dish's derived readout
+// (core/content/effect_text.cpp) and the engine's own levelStatName (app/game_internal.h,
+// which delegates to this). One place, so the Rollback picker, the level-up readout and
+// an item's spec grid can never call the same stat two different things.
+constexpr const char* levelStatWord(int i) {
+    switch (i) {
+        case 0: return "POWER";
+        case 1: return "DEFENSE";
+        case 2: return "SPEED";
+        case 3: return "MAX-HP";
+        default: return "?";
+    }
 }
 
 // ...and the same question of a whole row: does using this item spend something this pet

@@ -136,6 +136,14 @@ const char* itemEffectToken(ItemEffect::Kind k) {
         case ItemEffect::Kind::SetDeepWebStartDepthToBest: return "bestDepth";
         case ItemEffect::Kind::BandwidthRegenBonusMin: return "regenMins";
         case ItemEffect::Kind::Bandwidth: return "bandwidth";
+        // The permanent per-pet grants. Each token names the number of points (or the
+        // percent) the row hands over, so an Epic dish's prose can promise the size of
+        // the upgrade without typing the digit.
+        case ItemEffect::Kind::StatPointPower: return "power";
+        case ItemEffect::Kind::StatPointDefense: return "defense";
+        case ItemEffect::Kind::StatPointSpeed: return "speed";
+        case ItemEffect::Kind::StatPointHealth: return "maxhp";
+        case ItemEffect::Kind::XpRateBonusPct: return "xpRate";
         // No token, and deliberately: a token exists so a description can name the
         // field holding its number, and a ghost is a flag rather than a quantity.
         // The row says what it does in words ("Cuts a Replication Ghost loose") and
@@ -271,6 +279,20 @@ SpecRows specRows(const ItemDef& d) {
                 break;
             case ItemEffect::Kind::Bandwidth:
                 s.add("BANDWIDTH", "%+d", e.magnitude);
+                break;
+            // The permanent grants report the bare stat and its size, and leave the
+            // FOR-LIFE half to the row's prose — where the other once-per-lifetime items
+            // already say it. A label carrying it too would push these past the half
+            // column (fitsHalf, ui/widgets.cpp) and cost every Epic dish a grid line it
+            // needs for the sentence that explains the grant.
+            case ItemEffect::Kind::StatPointPower:
+            case ItemEffect::Kind::StatPointDefense:
+            case ItemEffect::Kind::StatPointSpeed:
+            case ItemEffect::Kind::StatPointHealth:
+                s.add(levelStatWord(statPointEffectIndex(e.kind)), "%+d", e.magnitude);
+                break;
+            case ItemEffect::Kind::XpRateBonusPct:
+                s.add("XP RATE", "%+d%%", e.magnitude);
                 break;
             // A flag, not a number — the cure is unconditional when a ghost is
             // there and a no-op when it isn't, so there is nothing to print but

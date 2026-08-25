@@ -371,18 +371,15 @@ const char* const kQuotePrizeLadder[] = {
     "macrol_fry_up",
     "vanilla_java_roast",
     "gnulash",
-    // The second service, and the ladder's real endgame. RISCotto and LANsagne are the
-    // two dishes whose ingredients tell the same joke as their names, so they lead it;
-    // Cacherole wants a dish already cooked, so a player who has come this far has one.
-    // Tiramisudo is last on purpose: it is the only food that permanently upgrades the
-    // pet eating it, and nothing else in the game hands that over at any price.
+    // The second service. RISCotto and LANsagne are the two dishes whose ingredients
+    // tell the same joke as their names, so they lead it; Cacherole wants a dish already
+    // cooked, so a player who has come this far has one.
     "riscotto",
     "ramen",
     "forkaccia",
     "core_dumplings",
     "lansagne",
     "cacherole",
-    "tiramisudo",
     // The third service. Portridge leads it because it is the cheapest method in the
     // kitchen — one Bootmeal, one bowl — and Halloumi, World is the one anybody can
     // cook the moment they own it. The two that want a dish already cooked (Chrootons)
@@ -436,7 +433,6 @@ const char* const kQuotePrizeLadder[] = {
     "ms_dosa",
     "wanton_soup",
     "ravioli_code",
-    "racelette",
     "kafkofta",
     "deflated_souffle",
     "clustard",
@@ -453,20 +449,16 @@ const char* const kQuotePrizeLadder[] = {
     "hard_cidr",
     "shashimi",
     "chownder",
-    "spare_ribs",
-    "privilege_escalope",
     "rested_steak",
     "force_pulled_pork",
     "rubber_duck_confit",
     "packettone",
     "bashlava",
-    "profilerole",
     "optical_mousse",
     "fork_bombe",
     "mint_choc_chip",
     "rainbow_tablet",
     "blockchai",
-    "buffer_overfloat",
     "port_80",
     "serverless_platter",
     // Last of the first-order dishes, and the only one that is a CURE rather than a
@@ -482,6 +474,20 @@ const char* const kQuotePrizeLadder[] = {
     "payloaf",
     "vacuum_sealed_leftovers",
     "disk_platter",
+    // THE EPIC TIER, and the reason the ladder has an end. Each of these six grants the
+    // pet eating it something it keeps for the rest of its life (content_items.cpp's
+    // cooked-dish block, core/model/pet_upgrades.h) — an off-level stat point no
+    // Rollback can shed, a permanent XP rate, a permanently shorter Bandwidth regen.
+    // They are the last methods the board teaches because nothing else in the game hands
+    // a permanent upgrade over at any price, and because an operator who has solved this
+    // far has a kitchen that can actually cook them. Tiramisudo leads, the four stat
+    // points follow in stat order, and the rate is the last thing won.
+    "tiramisudo",
+    "privilege_escalope",
+    "spare_ribs",
+    "racelette",
+    "buffer_overfloat",
+    "profilerole",
 };
 }  // namespace
 

@@ -134,9 +134,10 @@ void Game::layEgg(const EggLineDef* line) {
     yubiConsumed_ = false;
     forceTrojanDivert_ = false;
     backupShieldUntilMs_ = 0;
-    // ...and no Bandwidth-regen upgrade: Tiramisudo roots a PET, so a new egg starts
-    // back at the shared interval however many the last one ate (save v50).
-    bandwidthRegenBonusMin_ = 0;
+    // ...and none of the permanent Epic-dish upgrades: every one of them roots a PET, so
+    // a new egg starts back at the shared regen interval, with no off-level stat points
+    // and no XP rate, however many plates the last one ate.
+    upgrades_ = PetUpgrades{};
     // This pet's own DeepWeb Dive record (save v35) and any armed depth-multiplier/
     // start-depth Pass — a fresh egg has never dived and carries nothing armed.
     bestDeepWebDepth_ = 0;
@@ -618,6 +619,7 @@ void Game::resetToHatch() {
     combatXp_ = 0;
     combatLevel_ = 0;                    // a fresh egg starts at level 0
     defragCount_ = 0;                    // no defrags on a wiped save
+    upgrades_ = PetUpgrades{};           // nothing permanent survives a wipe either
     for (int i = 0; i < kLevelStatCount; ++i) statPoints_[i] = 0;
     lastLevelUpStat_ = -1;
     for (int i = 0; i < kMaxMoveSlots; ++i) slotKinds_[i] = SlotKind::Unset;  // #12

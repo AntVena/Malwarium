@@ -10,9 +10,9 @@
 
 namespace mal {
 
-// Combat-stat labels now live in game_internal.h::levelStatName so the
-// Rollback picker, the post-encounter level-up readout, and the serial trace all
-// name a stat the same way.
+// Combat-stat labels come from game_internal.h::levelStatName, so the Rollback picker,
+// the post-encounter level-up readout, the permanent-grant log line below and the serial
+// trace all name a stat the same way.
 
 // --- ITEMS -----------------------------------------------------------------
 
@@ -157,6 +157,15 @@ bool Game::lifetimeItemSpent(const ItemDef& d) const {
             case ItemEffect::Kind::BandwidthRegenBonusMin:
                 if (bandwidthRegenUpgraded()) return true;
                 break;
+            case ItemEffect::Kind::StatPointPower:
+            case ItemEffect::Kind::StatPointDefense:
+            case ItemEffect::Kind::StatPointSpeed:
+            case ItemEffect::Kind::StatPointHealth:
+                if (statBonusPoint(statPointEffectIndex(e.kind)) > 0) return true;
+                break;
+            case ItemEffect::Kind::XpRateBonusPct:
+                if (xpRateBonusPct() > 0) return true;
+                break;
             default:
                 break;
         }
@@ -233,11 +242,19 @@ bool Game::itemUseIsInert(const ItemDef& d, const char*& why) const {
                 if (model_.hasGhost()) return false;
                 if (!reason) reason = "NO REPLICATION GHOST";
                 break;
-            // Neither of these can achieve nothing. A regen shave already spent is the
-            // ordinary case for the dish that carries it — a pet that is already rooted
-            // eats it for the food and the Bandwidth, which is exactly what the second
-            // helping is meant to be, so refusing the use would be refusing a meal.
+            // None of these can achieve nothing. A permanent grant already spent is the
+            // ordinary case for the Epic dish that carries it — a pet that is already
+            // rooted, pointed or profiled eats the plate for the food, which is exactly
+            // what a second helping is meant to be, so refusing the use would be
+            // refusing a meal. What a spent grant DOES change is the readout: the 'Pedia
+            // and the detail screen say so through itemIsOncePerPetLifetime /
+            // lifetimeItemSpent, which is where that fact belongs.
             case ItemEffect::Kind::BandwidthRegenBonusMin:
+            case ItemEffect::Kind::StatPointPower:
+            case ItemEffect::Kind::StatPointDefense:
+            case ItemEffect::Kind::StatPointSpeed:
+            case ItemEffect::Kind::StatPointHealth:
+            case ItemEffect::Kind::XpRateBonusPct:
             case ItemEffect::Kind::Bandwidth:
                 return false;
         }
@@ -296,6 +313,14 @@ void Game::useItem() {
     log_.push(LogEventType::ItemUsed, buf);
     markSaveDirty();
     if (inventory_.count(d.id) <= 0) nav_ = Nav::Submenu;  // item left the list
+}
+
+void Game::noteLifetimeGrant(const char* what, const char* valueFmt, int magnitude) {
+    char value[12];
+    std::snprintf(value, sizeof(value), valueFmt, magnitude);
+    char buf[28];
+    std::snprintf(buf, sizeof(buf), "%s %s FOR LIFE", what, value);
+    log_.push(LogEventType::ItemUsed, buf);
 }
 
 void Game::applyItemEffects(const ItemDef& d) {
@@ -386,7 +411,35 @@ void Game::applyItemEffects(const ItemDef& d) {
                 // which is what a second helping is actually for. Granting once is the
                 // whole design: the upgrade is per-pet, so the way to have it twice is
                 // to raise a second pet, not to eat a second plate.
-                if (bandwidthRegenBonusMin_ == 0) bandwidthRegenBonusMin_ = e.magnitude;
+                if (upgrades_.bandwidthRegenMin == 0) {
+                    upgrades_.bandwidthRegenMin = e.magnitude;
+                    noteLifetimeGrant("BW REGEN", "-%dMIN", e.magnitude);
+                }
+                break;
+            case ItemEffect::Kind::StatPointPower:
+            case ItemEffect::Kind::StatPointDefense:
+            case ItemEffect::Kind::StatPointSpeed:
+            case ItemEffect::Kind::StatPointHealth: {
+                // An Epic dish's off-level point. Granted once per pet PER STAT — four
+                // dishes, four stats, four upgrades a pet can hold at most — and latched
+                // out after that so the plate keeps feeding without stacking. It lands
+                // outside statPoints_ on purpose: the level stays equal to the sum of
+                // EARNED points, which is the invariant Rollback sheds against, so
+                // nothing here can ever be rolled back off the pet.
+                const int stat = statPointEffectIndex(e.kind);
+                if (stat >= 0 && upgrades_.statBonus[stat] == 0) {
+                    upgrades_.statBonus[stat] = e.magnitude;
+                    noteLifetimeGrant(levelStatWord(stat), "+%d", e.magnitude);
+                }
+                break;
+            }
+            case ItemEffect::Kind::XpRateBonusPct:
+                // Profilerole: raises what every XP source pays this pet, for good.
+                // First helping only, same as the grants above.
+                if (upgrades_.xpRatePct == 0) {
+                    upgrades_.xpRatePct = e.magnitude;
+                    noteLifetimeGrant("XP RATE", "+%d%%", e.magnitude);
+                }
                 break;
             case ItemEffect::Kind::Bandwidth:
                 // A top-up of the live pool, capped at the ceiling the rig has bought —

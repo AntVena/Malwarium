@@ -36,6 +36,7 @@
 #include "core/model/loadout.h"
 #include "core/model/move_loadout.h"
 #include "core/model/pet_model.h"
+#include "core/model/pet_upgrades.h"
 #include "core/model/save.h"
 #include "core/model/chromatophore.h"
 #include "core/model/isolation.h"
@@ -174,14 +175,27 @@ public:
     // interval less whatever this pet has been fed (Tiramisudo), never below the floor.
     // Per-pet, so the same rig regenerates at different speeds under different pets.
     uint32_t bandwidthRegenMinutes() const {
-        const uint32_t bonus = static_cast<uint32_t>(bandwidthRegenBonusMin_);
+        const uint32_t bonus = static_cast<uint32_t>(upgrades_.bandwidthRegenMin);
         return bonus >= kBandwidthRegenMinutesPerPoint - kBandwidthRegenMinutesFloor
                    ? kBandwidthRegenMinutesFloor
                    : kBandwidthRegenMinutesPerPoint - bonus;
     }
     // Has this pet had its permanent regen upgrade? The STAT BUFFS page's own question,
     // and the reason a second Tiramisudo is a top-up rather than a second upgrade.
-    bool bandwidthRegenUpgraded() const { return bandwidthRegenBonusMin_ > 0; }
+    bool bandwidthRegenUpgraded() const { return upgrades_.bandwidthRegenMin > 0; }
+    // Everything an Epic dish has permanently handed this pet, as one value — what STAT's
+    // BUFFS page lists and what the rack freezes (core/model/pet_upgrades.h).
+    const PetUpgrades& petUpgrades() const { return upgrades_; }
+    // OFF-LEVEL points in combat stat `i`, granted by an Epic dish rather than earned.
+    // Sibling to levelStatPoint(): that one is sheddable and counts toward the level,
+    // this one is neither. Out-of-range → 0.
+    int statBonusPoint(int i) const {
+        return (i >= 0 && i < kLevelStatCount) ? upgrades_.statBonus[i] : 0;
+    }
+    // What combat actually fights with: earned + granted. The single answer to "how many
+    // points does this pet have in stat `i`", so no fighter is built from half of it.
+    int totalStatPoint(int i) const { return levelStatPoint(i) + statBonusPoint(i); }
+    int xpRateBonusPct() const { return upgrades_.xpRatePct; }
     // Has THIS pet already spent `d`'s once-per-lifetime effect (defs.h's
     // itemIsOncePerPetLifetime)? The three gates are separate fields because they guard
     // different things; this is the one place that answers the question generically, so
@@ -2237,6 +2251,11 @@ private:
     // Noodles "empty feeling" Happiness pull toward 50%. Applied on consume for
     // both the feeding flow and the buff-use path.
     void applyItemEffects(const ItemDef& d);   // apply an item's on-Use pet levers (effects[])
+    // Write the Hacker-Log line for a permanent grant an Epic dish has just made
+    // (core/model/pet_upgrades.h): "<what> <how much> FOR LIFE". The ordinary "FED <dish>"
+    // line says a plate was eaten and nothing more, and a once-per-pet upgrade is the one
+    // thing a bite can do that the operator will want to be able to find again.
+    void noteLifetimeGrant(const char* what, const char* valueFmt, int magnitude);
     // Open a Sealed Cache: consume the container + draw from its
     // rarity tier's pool, then surface the yield (Nav::CacheYield).
     void openSealedCache(const ItemDef& d);
@@ -2506,13 +2525,13 @@ private:
     bool mistakeShieldActive_ = false;
     bool shieldItemConsumed_ = false;
     bool yubiConsumed_ = false;
-    // Tiramisudo's permanent upgrade (save v50) — MINUTES shaved off this pet's
-    // Bandwidth regen interval (bandwidthRegenMinutes(), read by Game::tick). Per-pet
-    // and granted once: the first helping roots the pet, every one after it is just
-    // food. Unlike the two once-per-lifetime gates above it FREEZES WITH THE PET
-    // (SaveStoredPet), because it is a property of the creature rather than of the run
+    // Everything an Epic dish has permanently given THIS pet (core/model/pet_upgrades.h):
+    // Tiramisudo's Bandwidth-regen shave, the off-level stat points, the XP rate. Each is
+    // granted once — the first helping roots the pet, every one after it is just food.
+    // Unlike the two once-per-lifetime gates above these FREEZE WITH THE PET
+    // (SaveStoredPet), because they are properties of the creature rather than of the run
     // — storing a pet in the rack must not cost it an upgrade it earned.
-    int bandwidthRegenBonusMin_ = 0;
+    PetUpgrades upgrades_;
     // Ambig-USB's armed effect (save v28) — per-pet, reset on a new egg (layEgg).
     // Guarantees the pet's next Process->Script Trojan divert (Game::fireEvolution)
     // instead of leaving it to the kTrojanDivertPct roll; consumed there regardless

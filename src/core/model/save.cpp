@@ -523,6 +523,18 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     w.i32(d.tourneyWins);
     w.i32(d.pvpWins);
     w.i32(d.mergesCooked);
+
+    // v57: the rest of the per-pet Epic-dish grants — the active pet's off-level stat
+    // points and XP rate, then the same pair per rack pet, mapped by index. The v50 tail
+    // above carries the first of these grants and is left exactly as it was, so a build
+    // that stops at v56 still reads every field it knows.
+    for (int32_t v : d.statBonus) w.i32(v);
+    w.i32(d.xpRateBonusPct);
+    w.u16(static_cast<uint16_t>(d.rack.size()));
+    for (const auto& p : d.rack) {
+        for (int32_t v : p.statBonus) w.i32(v);
+        w.i32(p.xpRateBonusPct);
+    }
 }
 
 std::vector<uint8_t> serializeSave(const SaveData& d) {
@@ -1085,6 +1097,25 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
         d.tourneyWins = r.i32();
         d.pvpWins = r.i32();
         d.mergesCooked = r.i32();
+    }
+
+    // v57 tail: the off-level stat points and the XP rate — the active pet's, then a
+    // parallel list mapped back onto the rack pets by index (the v50 shape). Absent in a
+    // v1..v56 blob → 0 for every pet, which is the truth rather than a compromise: no
+    // dish granted one before this version.
+    if (version >= 57) {
+        for (int32_t& v : d.statBonus) v = r.i32();
+        d.xpRateBonusPct = r.i32();
+        const uint16_t nUp = r.u16();
+        for (uint16_t i = 0; i < nUp && r.ok; ++i) {
+            int32_t bonus[kLevelStatCount];
+            for (int32_t& v : bonus) v = r.i32();
+            const int32_t rate = r.i32();
+            if (i < d.rack.size()) {
+                for (int j = 0; j < kLevelStatCount; ++j) d.rack[i].statBonus[j] = bonus[j];
+                d.rack[i].xpRateBonusPct = rate;
+            }
+        }
     }
 
     if (!r.ok) { out = SaveData{}; return false; }  // truncated -> empty

@@ -230,10 +230,14 @@ Combatant Game::buildPlayerCombatant() {
     // finishBossRound (Combatant::itemShieldFired) to clear backupShieldUntilMs_ early.
     if (backupShieldUntilMs_ != 0 && lifetimeUptimeMs() < backupShieldUntilMs_)
         p.itemShield = true;
-    // Per-pet level stat points: additive into the combat maths, stacking with the
-    // branch multipliers and mods. Shared with the duel path's remote-fighter rebuild
-    // (applyLevelStatPoints, core/model/combat.h) so the two can't drift apart.
-    applyLevelStatPoints(p, statPoints_);
+    // Per-pet stat points: additive into the combat maths, stacking with the branch
+    // multipliers and mods. Shared with the duel path's remote-fighter rebuild
+    // (applyLevelStatPoints, core/model/combat.h) so the two can't drift apart. EARNED
+    // and GRANTED points go in as one total — an Epic dish's off-level point is a real
+    // point in a fight, and only the level and the Rollback picker know the difference.
+    int points[kLevelStatCount];
+    for (int i = 0; i < kLevelStatCount; ++i) points[i] = totalStatPoint(i);
+    applyLevelStatPoints(p, points);
     if (allyBuffBattlesLeft_ > 0) {
         p.powerMultPct += kAllyBuffPowerPct;
         --allyBuffBattlesLeft_;
@@ -347,6 +351,11 @@ int Game::xpToNextLevel() const {
 
 void Game::addCombatXp(int xp) {
     if (xp <= 0) return;
+    // Profilerole's permanent rate (PetUpgrades::xpRatePct) is applied HERE, at the one
+    // door every XP source comes through, so a dish that raises what the pet learns
+    // raises it from combat, from a solved board and from passive farming alike. Rounded
+    // down, and never below the award itself — a rate can only ever add.
+    xp += xp * upgrades_.xpRatePct / 100;
     combatXp_ += xp;
     // Spend the XP bucket into as many levels as it covers (a big lump can cross more
     // than one boundary). Each level-up grants +1 to a random combat stat, so

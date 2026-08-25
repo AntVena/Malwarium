@@ -55,11 +55,11 @@ inline void drawScrollbar(Framebuffer& fb, int trackTop, int trackH, int total,
 // Indexed to statPoints_/lastLevelUpStat_: 0 power · 1 defense · 2 speed · 3
 // max-Health. Shared by the Rollback picker + its log line (game_items), the
 // post-encounter level-up readout (game_render), and any other unit that needs to
-// name a levelled stat — so the labels live in exactly one place.
+// name a levelled stat. The words themselves come from content/defs.h's levelStatWord,
+// which the item readouts also draw on — an Epic dish grants a point on this same axis,
+// so the two must agree on what to call it.
 inline const char* levelStatName(int i) {
-    static const char* const kNames[kLevelStatCount] = {
-        "POWER", "DEFENSE", "SPEED", "MAX-HP"};
-    return (i >= 0 && i < kLevelStatCount) ? kNames[i] : "?";
+    return (i >= 0 && i < kLevelStatCount) ? levelStatWord(i) : "?";
 }
 
 // Rig Shop list layout ---------------------------------------

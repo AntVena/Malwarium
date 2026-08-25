@@ -91,14 +91,15 @@ void Game::onArchRecord(const ButtonEvent& ev) {
 // outgoing active during a Deploy swap): vitals, creature-level state
 // (combatLevel/combatXp/statPoints/slotKinds), and the pet's own move + mod
 // loadout (owned/equipped moves, installed mod slots) — a pet's MOVES/MODS state
-// travels with it through the rack, like its level.
+// travels with it through the rack, like its level — plus everything an Epic dish has
+// permanently given it (core/model/pet_upgrades.h).
 static SaveStoredPet freezePet(const CreatureDef* pet, const PetModel& m, int gen,
                                int defragCount, int combatLevel, int combatXp,
                                const int (&statPoints)[kLevelStatCount],
                                const Game::SlotKind (&slotKinds)[kMaxMoveSlots],
                                const MoveLoadout& moveLoadout, const Loadout& loadout,
                                uint32_t timeInStageMs, int bestDeepWebDepth,
-                               uint32_t dyingElapsedMs, int bandwidthRegenBonusMin) {
+                               uint32_t dyingElapsedMs, const PetUpgrades& upgrades) {
     SaveStoredPet p;
     std::strncpy(p.id, pet->id, kSaveIdCap - 1);
     p.hunger = m.hunger();
@@ -125,9 +126,11 @@ static SaveStoredPet freezePet(const CreatureDef* pet, const PetModel& m, int ge
     p.timeInStageMs = timeInStageMs;   // evolution-timer progress survives freeze/thaw
     p.bestDeepWebDepth = bestDeepWebDepth;  // this pet's own DeepWeb record survives freeze/thaw
     p.dyingElapsedMs = dyingElapsedMs;      // a 5/5 pet thaws mid-window, not with a fresh one
-    // Tiramisudo's permanent regen shave belongs to the CREATURE, so the rack keeps it:
-    // storing a pet must never cost it an upgrade it was fed.
-    p.bandwidthRegenBonusMin = bandwidthRegenBonusMin;
+    // The Epic-dish upgrades belong to the CREATURE, so the rack keeps them: storing a
+    // pet must never cost it an upgrade it was fed.
+    p.bandwidthRegenBonusMin = upgrades.bandwidthRegenMin;
+    for (int i = 0; i < kLevelStatCount; ++i) p.statBonus[i] = upgrades.statBonus[i];
+    p.xpRateBonusPct = upgrades.xpRatePct;
     return p;
 }
 
@@ -158,7 +161,7 @@ void Game::archStoreActive() {
     rack_.push_back(freezePet(pet_, model_, generation_, defragCount_, combatLevel_,
                                combatXp_, statPoints_, slotKinds_, moveLoadout_, loadout_,
                                nowMs_ - stageEnteredMs_, bestDeepWebDepth_,
-                               dyingElapsedMs_, bandwidthRegenBonusMin_));
+                               dyingElapsedMs_, upgrades_));
     noteRackDuplicates();   // before startHatch: a line earned HERE belongs on THIS menu
     archConfirm_ = false;
     listRow_ = 0;
@@ -176,7 +179,7 @@ void Game::archDeployStored(int storedIdx) {
     rack_[storedIdx] = freezePet(pet_, model_, generation_, defragCount_, combatLevel_,
                                   combatXp_, statPoints_, slotKinds_, moveLoadout_, loadout_,
                                   nowMs_ - stageEnteredMs_, bestDeepWebDepth_,
-                                  dyingElapsedMs_, bandwidthRegenBonusMin_);
+                                  dyingElapsedMs_, upgrades_);
 
     installPet(next);
     model_ = PetModel();
@@ -194,9 +197,13 @@ void Game::archDeployStored(int storedIdx) {
     // current clock while this accumulator carries the only figure that means anything.
     dyingElapsedMs_ = incoming.dyingElapsedMs;
     dyingArmed_ = false;
-    // ...and the incoming pet's own Bandwidth-regen upgrade, which is why the rig
-    // regenerates at different speeds under different pets.
-    bandwidthRegenBonusMin_ = incoming.bandwidthRegenBonusMin;
+    // ...and the incoming pet's own permanent upgrades, which is why the rig regenerates
+    // at different speeds — and the same rig fights at different strengths — under
+    // different pets.
+    upgrades_.bandwidthRegenMin = incoming.bandwidthRegenBonusMin;
+    for (int i = 0; i < kLevelStatCount; ++i)
+        upgrades_.statBonus[i] = incoming.statBonus[i];
+    upgrades_.xpRatePct = incoming.xpRateBonusPct;
     // v26: thaw the incoming pet's creature-level state. Without it the deployed pet
     // silently inherits the outgoing pet's level.
     combatLevel_ = incoming.combatLevel;
