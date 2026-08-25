@@ -186,6 +186,13 @@ public:
     // Everything an Epic dish has permanently handed this pet, as one value — what STAT's
     // BUFFS page lists and what the rack freezes (core/model/pet_upgrades.h).
     const PetUpgrades& petUpgrades() const { return upgrades_; }
+    // ...and those plus the two arming gates, as the one value anything asking "has this
+    // pet already taken that row's once-per-life grant" needs (lifetimeGrantSpent,
+    // core/model/pet_upgrades.h). The ITEMS list and detail page read it to draw the
+    // once-per-life note beside a row that carries one.
+    PetLifetimeGates petLifetimeGates() const {
+        return {upgrades_, yubiConsumed_, shieldItemConsumed_};
+    }
     // OFF-LEVEL points in combat stat `i`, granted by an Epic dish rather than earned.
     // Sibling to levelStatPoint(): that one is sheddable and counts toward the level,
     // this one is neither. Out-of-range → 0.

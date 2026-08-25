@@ -70,6 +70,27 @@ bool filterMatches(ItemFilter f, const ItemDef& d) {
 constexpr int kPipW = 3, kPipGap = 2, kPipCells = 4;
 constexpr int kPipStripW = kPipCells * (kPipW + kPipGap) - kPipGap;
 
+// The once-per-life pip: a filled block for a grant this pet can still take, a hollow
+// one for a grant already spent. SOLID vs OUTLINE is the channel — the colour is emphasis
+// on top of it, exactly as the rarity ladder beside it works, so the row survives a
+// grayscale screenshot. kPipW-square, so the two marks share a column width.
+constexpr int kLifeMarkW = kPipW + 2;
+
+void drawLifetimeMark(Framebuffer& fb, int x, int y, LifetimeMark m) {
+    if (m == LifetimeMark::None) return;
+    const int w = kLifeMarkW, h = kLifeMarkW;
+    const int top = y + (kFontH - h) / 2;
+    if (m == LifetimeMark::Unspent) {
+        fb.fillRect(x, top, w, h, palColor(Pal::ACCENT));
+        return;
+    }
+    const Rgb565 c = palColor(Pal::INK_DIM);
+    fb.fillRect(x, top, w, 1, c);
+    fb.fillRect(x, top + h - 1, w, 1, c);
+    fb.fillRect(x, top, 1, h, c);
+    fb.fillRect(x + w - 1, top, 1, h, c);
+}
+
 void drawRarityPips(Framebuffer& fb, int x, int y, ItemDef::Rarity r) {
     const int lit = static_cast<int>(r) + 1;
     for (int i = 0; i < kPipCells; ++i) {
@@ -129,6 +150,11 @@ const SpriteData* itemIcon(const ContentRegistry& reg, const char* id) {
     // added without art, which the row will show as a blank — add the PNG rather
     // than patching an exception back in.
     return reg.sprite(name);
+}
+
+LifetimeMark lifetimeMark(const ItemDef& d, const PetLifetimeGates& gates) {
+    if (!itemIsOncePerPetLifetime(d)) return LifetimeMark::None;
+    return lifetimeGrantSpent(d, gates) ? LifetimeMark::Spent : LifetimeMark::Unspent;
 }
 
 // Lockout-resolving items float to the top in Lockout context: any food (the demand
@@ -282,7 +308,8 @@ void drawItemTypePicker(Framebuffer& fb, const std::vector<ItemPickRow>& tiles,
 
 void drawItemsList(Framebuffer& fb, const std::vector<InvRow>& rows, int cursor,
                    bool lockout, int beat, ItemFilter filter,
-                   bool tabsOwned, bool pickerOwned) {
+                   bool tabsOwned, bool pickerOwned,
+                   const PetLifetimeGates* gates) {
     const bool filterHintVisible = tabsOwned || pickerOwned;
     fb.clear(palColor(Pal::PAPER));
 
@@ -354,11 +381,21 @@ void drawItemsList(Framebuffer& fb, const std::vector<InvRow>& rows, int cursor,
         const int pipsX = qtyX - 8 - kPipStripW;
         drawText(fb, qtyX, textY, qty, palColor(Pal::INK));
         drawRarityPips(fb, pipsX, textY, r.def->rarity);
+        // The once-per-life pip, left of the ladder and only on the handful of rows that
+        // carry a grant at all. It takes its column out of the NAME rather than moving
+        // the ladder or the count, so the right end of every row still lines up.
+        const LifetimeMark mark =
+            gates ? lifetimeMark(*r.def, *gates) : LifetimeMark::None;
+        int nameEnd = pipsX - 8;
+        if (mark != LifetimeMark::None) {
+            nameEnd -= kLifeMarkW + 6;
+            drawLifetimeMark(fb, nameEnd + 6, textY, mark);
+        }
         // The ladder and the count own the right end of the row, so the name yields:
         // it scrolls within what is left rather than drawing through them (widgets.h).
         // Only the focused row travels — a list of names all sliding at once is
         // unreadable, and the cursor already says which one the player is asking about.
-        drawTextMarquee(fb, 40, textY, std::max(0, pipsX - 8 - 40), r.label,
+        drawTextMarquee(fb, 40, textY, std::max(0, nameEnd - 40), r.label,
                         palColor(Pal::INK), beat, i == cursor);
     }
 
@@ -377,7 +414,8 @@ int itemDetailPanelLines() {
 }
 
 void drawItemDetail(Framebuffer& fb, const ItemDef& def, const SpriteData* icon,
-                    int qty, bool usable, const char* gateMsg, int beat) {
+                    int qty, bool usable, const char* gateMsg, int beat,
+                    LifetimeMark lifetime) {
     drawHeaderBand(fb, "ITEMS");
 
     // Icon + name + rarity tag. The icon takes the rarity's colour, which is pure
@@ -405,12 +443,28 @@ void drawItemDetail(Framebuffer& fb, const ItemDef& def, const SpriteData* icon,
     // The footer pair, flowed under what the panel actually drew (see the note on
     // kDetailFooterGap). The clamp is what keeps a full panel where it always was.
     const int haveY = std::min(kDetailHaveMaxY, panelEnd + kDetailFooterGap);
-    const int actionY = haveY + kDetailFooterPitch;
+    // The once-per-life note takes a line of its own between the two, and only on a row
+    // that has one — every other item's footer is the pair it always was.
+    const int lifeY = haveY + kDetailFooterPitch;
+    const int actionY =
+        (lifetime == LifetimeMark::None ? haveY : lifeY) + kDetailFooterPitch;
 
     // Quantity.
     char have[16];
     std::snprintf(have, sizeof(have), "HAVE x%d", qty);
     drawText(fb, kMargin, haveY, have, palColor(Pal::INK_DIM));
+
+    // Whether the pet currently in the rig has already taken this row's grant. Both
+    // states are spelled out — a blank line where "already spent" belongs would read as
+    // "not spent" to anyone who has not memorised which rows carry a grant — and the
+    // scope is named, because a new egg gets every one of them back.
+    if (lifetime != LifetimeMark::None) {
+        const bool spent = lifetime == LifetimeMark::Spent;
+        drawLifetimeMark(fb, kMargin, lifeY, lifetime);
+        drawText(fb, kMargin + kLifeMarkW + 6, lifeY,
+                 spent ? "THIS PET: ALREADY SPENT" : "THIS PET: NOT YET SPENT",
+                 palColor(spent ? Pal::INK_DIM : Pal::ACCENT));
+    }
 
     // Action / gate line.
     if (usable) {

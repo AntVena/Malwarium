@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "core/content/defs.h"
+#include "core/model/pet_upgrades.h"  // PetLifetimeGates — the once-per-life note
 #include "core/ui/ui_state.h"  // ItemFilter
 
 namespace mal {
@@ -96,6 +97,14 @@ std::vector<ItemPickRow> buildItemPickerRows(const ContentRegistry& reg,
 void drawItemTypePicker(Framebuffer& fb, const std::vector<ItemPickRow>& tiles,
                         int cursor);
 
+// Whether a row carries a ONCE-PER-PET grant, and whether the active pet has taken it.
+// Three states, not two: an ordinary item has nothing to spend, and "no grant" must never
+// draw the same as "grant already taken". Resolved from the row's own effects plus the
+// pet's gates (lifetimeGrantSpent, core/model/pet_upgrades.h) rather than a list of ids,
+// so a new Epic dish is marked the day its row lands.
+enum class LifetimeMark : uint8_t { None, Unspent, Spent };
+LifetimeMark lifetimeMark(const ItemDef& d, const PetLifetimeGates& gates);
+
 // L2 inventory list. `cursor` is a row index into `rows` (must be selectable).
 // Each item row carries its rarity twice: the icon takes the rarity tint, and a
 // four-cell ladder beside the count lights one cell per tier — so the ordering's
@@ -105,9 +114,14 @@ void drawItemTypePicker(Framebuffer& fb, const std::vector<ItemPickRow>& tiles,
 // and each contributes its own word to the bottom hint band — "HOLD B - FILTER" for
 // the gesture, "C - TYPES" for the walk back to the tiles. With neither owned the
 // list is pixel-identical to a rig that has bought no filter upgrade at all.
+// `gates` (Game::petLifetimeGates) marks the rows carrying a once-per-pet grant with a
+// solid pip for one this pet can still take and a hollow one for a grant already spent —
+// so "which of these still upgrades my pet" is answerable while scrolling, not only after
+// opening each. Null leaves every row unmarked, which is what a caller with no pet wants.
 void drawItemsList(Framebuffer& fb, const std::vector<InvRow>& rows, int cursor,
                    bool lockout, int beat, ItemFilter filter = ItemFilter::All,
-                   bool tabsOwned = false, bool pickerOwned = false);
+                   bool tabsOwned = false, bool pickerOwned = false,
+                   const PetLifetimeGates* gates = nullptr);
 
 // L3 item detail. `usable` gates the Use action; when false `gateMsg` states
 // where the item applies instead.
@@ -117,8 +131,13 @@ void drawItemsList(Framebuffer& fb, const std::vector<InvRow>& rows, int cursor,
 // the first time the band or the line height moves.
 int itemDetailPanelLines();
 
+// `lifetime` adds the once-per-pet line under HAVE, stating in words whether THIS pet
+// has already taken what the row grants — the detail page is where a player goes to ask
+// before spending one, and nothing else on it says so (the row is still perfectly usable
+// once spent: an Epic dish that has paid out is still a very good meal).
 void drawItemDetail(Framebuffer& fb, const ItemDef& def, const SpriteData* icon,
-                    int qty, bool usable, const char* gateMsg, int beat);
+                    int qty, bool usable, const char* gateMsg, int beat,
+                    LifetimeMark lifetime = LifetimeMark::None);
 
 // Cache-yield reveal: what a just-opened Sealed Cache produced. `cache`
 // names the container (+ its rarity, for the tag colour); `bits` is the Bits paid;

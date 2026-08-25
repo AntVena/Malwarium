@@ -143,34 +143,12 @@ bool Game::itemUsable(const ItemDef& d, const char*& gateMsg) const {
 }
 
 bool Game::lifetimeItemSpent(const ItemDef& d) const {
-    // One switch, and the only place the three per-pet gates are read as one question.
-    // itemUseIsInert below asks the same thing move by move to decide whether a USE
-    // would do anything; this asks it about the ITEM, which is what a readout wants.
-    for (const ItemEffect& e : d.effects) {
-        switch (e.kind) {
-            case ItemEffect::Kind::RemoveCareMistakeOnce:
-                if (yubiConsumed_) return true;
-                break;
-            case ItemEffect::Kind::ClearMistakeShieldOnce:
-                if (shieldItemConsumed_) return true;
-                break;
-            case ItemEffect::Kind::BandwidthRegenBonusMin:
-                if (bandwidthRegenUpgraded()) return true;
-                break;
-            case ItemEffect::Kind::StatPointPower:
-            case ItemEffect::Kind::StatPointDefense:
-            case ItemEffect::Kind::StatPointSpeed:
-            case ItemEffect::Kind::StatPointHealth:
-                if (statBonusPoint(statPointEffectIndex(e.kind)) > 0) return true;
-                break;
-            case ItemEffect::Kind::XpRateBonusPct:
-                if (xpRateBonusPct() > 0) return true;
-                break;
-            default:
-                break;
-        }
-    }
-    return false;
+    // One question, one answer: lifetimeGrantSpent (core/model/pet_upgrades.h) reads the
+    // gates off the effect vocabulary, so the ITEMS list, the detail page's once-per-life
+    // note and the 'Pedia's pet page can never disagree about what this pet has taken.
+    // itemUseIsInert below asks the same thing effect by effect, to decide whether a USE
+    // would achieve anything; this asks it about the ITEM, which is what a readout wants.
+    return lifetimeGrantSpent(d, petLifetimeGates());
 }
 
 bool Game::itemUseIsInert(const ItemDef& d, const char*& why) const {

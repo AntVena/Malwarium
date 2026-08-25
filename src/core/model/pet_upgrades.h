@@ -15,6 +15,7 @@
 #pragma once
 
 #include "tunables.h"   // kLevelStatCount — the combat-stat axis statBonus is indexed on
+#include "core/content/defs.h"
 
 namespace mal {
 
@@ -34,5 +35,53 @@ struct PetUpgrades {
     // XP for hunger decay, this one raises what every source pays.
     int xpRatePct = 0;
 };
+
+// Every ONCE-PER-PET gate a content row can be held to, in one value: the permanent
+// grants above, plus the two that arm rather than upgrade (a Yubi-Cookie's care-mistake
+// wipe and a Restore Point's shield — Game holds those as their own flags, because
+// unlike the upgrades they do not travel with the pet through the rack).
+//
+// It exists so ONE function can answer "has this pet already taken what that row grants"
+// for the engine, the ITEMS screens and the 'Pedia alike. Game::petLifetimeGates() fills
+// it; nothing else should need to know which flag belongs to which item.
+struct PetLifetimeGates {
+    PetUpgrades upgrades;
+    bool careMistakeWipeSpent = false;   // ItemEffect::Kind::RemoveCareMistakeOnce
+    bool mistakeShieldSpent = false;     // ItemEffect::Kind::ClearMistakeShieldOnce
+};
+
+// Has this pet already spent what `d` grants once in a life? False for any row carrying
+// no such effect — there is nothing to have spent — which is why a caller that wants to
+// DISPLAY the fact asks itemIsOncePerPetLifetime(d) first: "no grant" and "grant already
+// taken" are different things and must never read the same.
+inline bool lifetimeGrantSpent(const ItemDef& d, const PetLifetimeGates& g) {
+    for (const ItemEffect& e : d.effects) {
+        switch (e.kind) {
+            case ItemEffect::Kind::RemoveCareMistakeOnce:
+                if (g.careMistakeWipeSpent) return true;
+                break;
+            case ItemEffect::Kind::ClearMistakeShieldOnce:
+                if (g.mistakeShieldSpent) return true;
+                break;
+            case ItemEffect::Kind::BandwidthRegenBonusMin:
+                if (g.upgrades.bandwidthRegenMin > 0) return true;
+                break;
+            case ItemEffect::Kind::StatPointPower:
+            case ItemEffect::Kind::StatPointDefense:
+            case ItemEffect::Kind::StatPointSpeed:
+            case ItemEffect::Kind::StatPointHealth: {
+                const int stat = statPointEffectIndex(e.kind);
+                if (stat >= 0 && g.upgrades.statBonus[stat] > 0) return true;
+                break;
+            }
+            case ItemEffect::Kind::XpRateBonusPct:
+                if (g.upgrades.xpRatePct > 0) return true;
+                break;
+            default:
+                break;
+        }
+    }
+    return false;
+}
 
 }  // namespace mal

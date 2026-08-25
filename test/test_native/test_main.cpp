@@ -89,6 +89,7 @@ int g_failures = 0;
     RUN(test_granted_upgrades_survive_the_rack_and_reset_on_a_new_egg) \
     RUN(test_save_v57_permanent_grants) \
     RUN(test_every_permanent_grant_is_one_epic_dish) \
+    RUN(test_lifetime_mark_says_whether_this_pet_has_had_it) \
     RUN(test_buffs_page_lists_the_permanent_upgrades) \
     RUN(test_four_ingredient_recipe_consumes_all_inputs) \
     RUN(test_stacking_food_run_climbs_then_resets_on_decay) \

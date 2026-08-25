@@ -1079,6 +1079,54 @@ void test_every_permanent_grant_is_one_epic_dish() {
     }
 }
 
+// A row that grants something once per pet has to SAY whether this pet has had it —
+// nothing else on the ITEMS screens does. The Epic dishes stay perfectly usable once
+// spent (they are still food), so there is no gate message to read it off, and the BUFFS
+// page only lists what a pet HAS, never what a plate in the bag would still give it.
+// lifetimeMark is the one answer both surfaces draw from, so it is what this holds.
+void test_lifetime_mark_says_whether_this_pet_has_had_it() {
+    Game g{StartMode::Hatched, "paypup"};
+    const ContentRegistry& r = ContentRegistry::embedded();
+
+    // An ordinary food has nothing to spend: NEITHER state, so the row draws no mark at
+    // all. "No grant" reading the same as "grant already taken" is the failure here.
+    const ItemDef* plain = r.item("dyno_nuggets");
+    CHECK(plain);
+    CHECK(lifetimeMark(*plain, g.petLifetimeGates()) == LifetimeMark::None);
+
+    // Every row carrying a once-per-pet grant reads Unspent on a fresh pet, and flips to
+    // Spent for that row alone once it is eaten. Swept over the whole set rather than one
+    // example, because each grant is gated by a different flag.
+    for (const ItemDef* d : r.allItems()) {
+        if (!itemIsOncePerPetLifetime(*d)) continue;
+        Game p{StartMode::Hatched, "paypup"};
+        p.model().addCareMistake(2);          // something for the Yubi-Cookie to shave
+        CHECK(lifetimeMark(*d, p.petLifetimeGates()) == LifetimeMark::Unspent);
+        p.inventory().add(d->id, 1);
+        p.debugUseItem(d->id);
+        CHECK(lifetimeMark(*d, p.petLifetimeGates()) == LifetimeMark::Spent);
+        // ...and only that row: a pet that ate one Epic dish has not spent the others.
+        for (const ItemDef* other : r.allItems()) {
+            if (other == d || !itemIsOncePerPetLifetime(*other)) continue;
+            CHECK(lifetimeMark(*other, p.petLifetimeGates()) == LifetimeMark::Unspent);
+        }
+    }
+
+    // The mark is per-PET, like the grants behind it: a new egg has had none of them.
+    const ItemDef* dish = nullptr;
+    for (const ItemDef* d : r.allItems())
+        for (const ItemEffect& e : d->effects)
+            if (e.kind == ItemEffect::Kind::StatPointPower) dish = d;
+    CHECK(dish);
+    if (!dish) return;
+    g.inventory().add(dish->id, 1);
+    g.debugUseItem(dish->id);
+    CHECK(lifetimeMark(*dish, g.petLifetimeGates()) == LifetimeMark::Spent);
+    g.resetToHatch();
+    pickFirstEggLine(g);
+    CHECK(lifetimeMark(*dish, g.petLifetimeGates()) == LifetimeMark::Unspent);
+}
+
 // v54 — the first ITEM id the rename table ever carried (`renamedIds`, save.cpp).
 // Both id-bearing item fields are swept, and they fail differently if one is missed:
 // `items` is the stack the operator is holding, so a miss there loses the food; and

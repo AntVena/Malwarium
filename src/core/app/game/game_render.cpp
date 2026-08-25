@@ -533,8 +533,9 @@ void Game::drawSubmenu(Framebuffer& fb) const {
             }
             auto rows = buildInventoryRows(registry_, inventory_, lockoutItemsContext_,
                                            itemFilter_);
+            const PetLifetimeGates gates = petLifetimeGates();
             drawItemsList(fb, rows, listRow_, lockoutItemsContext_, beat_, itemFilter_,
-                         itemTabsUnlocked(), itemPickerUnlocked());
+                         itemTabsUnlocked(), itemPickerUnlocked(), &gates);
             break;
         }
         case SubmenuId::Maint:
@@ -600,7 +601,7 @@ void Game::drawDetail(Framebuffer& fb) const {
                 const SpriteData* icon = itemIcon(registry_, detailItem_->id);
                 drawItemDetail(fb, *detailItem_, icon,
                                inventory_.count(detailItem_->id), usable, gate,
-                               beat_);
+                               beat_, lifetimeMark(*detailItem_, petLifetimeGates()));
             }
             break;
         case SubmenuId::Maint:
