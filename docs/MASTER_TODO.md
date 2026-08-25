@@ -406,12 +406,6 @@ for. The `ICON_SECTOR_*` half of each family is drawn and live on the EXPL zone 
   MACHINE` storefront motifs. The keep also fights with the tier-3 wild roster today — it has no
   malbeasts of its own, since a new `SPR_MALBEAST_*` grows `kWildMalbeastCount` and with it the
   'Pedia's seen/defeated masks.
-- **Six achievement glyphs the achievement sweep left owing.** The rows ship and unlock; the web
-  'Pedia is the only surface that draws one, and it currently renders these text-only and warns by
-  name on every `make pedia`. `ICON_ACH_DOCK_FIRST` (worn by all three ROCK THE DOCK ladder rungs),
-  `ICON_ACH_DOCK_UNDERDOG`, `ICON_ACH_DOCK_PUNCHING_UP`, `ICON_ACH_CREW_ENLISTED`,
-  `ICON_ACH_DEEP_LINE_METAMORPHIC`, `ICON_ACH_FULL_LINE_METAMORPHIC`. Every other new row on that
-  sweep reuses a shipped glyph deliberately, so this is the whole art debt it took on. Diff **S**.
 - **Rarity-tiered, area-themed foods** — per-area food sets across Citrus Circuit / Pirate Bayou /
   Napstorrent with a rarity ramp, where the **best** food carries an effect that fits the area theme
   (Citrus Circuit might trade levels to revert a care mistake; Pirate Bayou the inverse). A

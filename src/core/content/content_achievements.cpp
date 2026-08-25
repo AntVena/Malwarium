@@ -18,9 +18,11 @@
 //   Rare Cache · capstone ~400 Bits + a Commendation Cache (the earned-only container,
 //   content_items.cpp). A one-off Event row pays like the rung it feels like.
 //
-// Icons reuse the shipped item/slot/line glyphs — no achievement-specific art exists yet
-// (assets/ASSET_MANIFEST.md), and the 'Pedia is the only surface that draws
-// one, so a reused glyph costs nothing on the device.
+// ICONS: one bespoke ICON_ACH_* per row, never a borrowed one (assets/ASSET_MANIFEST.md
+// §875). The 'Pedia draws these as a GRID, and a grid only reads if a row's rung is
+// visible before its name is — so a ladder is one motif plus a countable tally, and two
+// rows under one picture would cost exactly that. tools/gen_ach_icons.py owns the
+// grammar and emits the PNGs; `--check` is what catches art drifting from this table.
 #include "core/content/content_achievements.h"
 
 #include <cstring>
@@ -291,18 +293,19 @@ const AchievementDef kAchievements[] = {
     // The rungs between "you have eaten a few things" and the whole shelf. The pantry is
     // now the biggest table in the game, so Taste Tester to Full Buffet without these is
     // three foods and then two hundred — a ladder with no middle is a ladder nobody
-    // climbs. Icons are shared with the rungs above and below on purpose: this is one
-    // series getting more steps, not four new kinds of thing to recognise.
+    // climbs. Each rung takes the ladder's own bowl and differs only in its tally, which
+    // is how a reader sees this is one series getting more steps rather than four new
+    // kinds of thing to recognise (tools/gen_ach_icons.py).
     {/*wire=*/82, "CUISINE_25", "Line Cook",
-     "Get hold of {n} different foods.", "ICON_ACH_CUISINE_6",
+     "Get hold of {n} different foods.", "ICON_ACH_CUISINE_25",
      AchSeries::FoodsCollected, /*goal=*/25, nullptr, 0,
      {bits(120), item("sealed_cache_uncommon")}},
     {/*wire=*/83, "CUISINE_60", "Sous Chef",
-     "Get hold of {n} different foods.", "ICON_ACH_CUISINE_6",
+     "Get hold of {n} different foods.", "ICON_ACH_CUISINE_60",
      AchSeries::FoodsCollected, /*goal=*/60, nullptr, 0,
      {bits(200), item("sealed_cache_rare")}},
     {/*wire=*/84, "CUISINE_120", "Head Chef",
-     "Get hold of {n} different foods.", "ICON_ACH_CUISINE_ALL",
+     "Get hold of {n} different foods.", "ICON_ACH_CUISINE_120",
      AchSeries::FoodsCollected, /*goal=*/120, nullptr, 0,
      {bits(300), item("sealed_cache_epic")}},
 
@@ -310,22 +313,22 @@ const AchievementDef kAchievements[] = {
     // is a Decryptogram somebody cracked, since no shop sells a recipe at any price — so
     // this series is the one place the board's whole prize ladder is measured back.
     {/*wire=*/85, "RECIPES_1", "First Method",
-     "Learn your first Merge Hub recipe.", "ICON_ACH_COOK_NOODLES",
+     "Learn your first Merge Hub recipe.", "ICON_ACH_RECIPES_1",
      AchSeries::RecipesKnown, /*goal=*/1, nullptr, 0, {bits(50)}},
     {/*wire=*/86, "RECIPES_10", "Working Kitchen",
-     "Know {n} Merge Hub recipes.", "ICON_ACH_COOK_NOODLES",
+     "Know {n} Merge Hub recipes.", "ICON_ACH_RECIPES_10",
      AchSeries::RecipesKnown, /*goal=*/10, nullptr, 0,
      {bits(150), item("sealed_cache_uncommon")}},
     {/*wire=*/87, "RECIPES_30", "The Book",
-     "Know {n} Merge Hub recipes.", "ICON_ACH_COOK_NACHOS",
+     "Know {n} Merge Hub recipes.", "ICON_ACH_RECIPES_30",
      AchSeries::RecipesKnown, /*goal=*/30, nullptr, 0,
      {bits(300), item("sealed_cache_rare")}},
     {/*wire=*/88, "RECIPES_60", "Brigade",
-     "Know {n} Merge Hub recipes.", "ICON_ACH_COOK_NACHOS",
+     "Know {n} Merge Hub recipes.", "ICON_ACH_RECIPES_60",
      AchSeries::RecipesKnown, /*goal=*/60, nullptr, 0,
      {bits(500), item("sealed_cache_epic")}},
     {/*wire=*/89, "RECIPES_ALL", "Every Method",
-     "Learn all {n} Merge Hub recipes.", "ICON_ACH_CUISINE_ALL",
+     "Learn all {n} Merge Hub recipes.", "ICON_ACH_RECIPES_ALL",
      AchSeries::RecipesKnown, kGoalAll, nullptr, 0,
      {bits(800), item("commend_cache")}},
 
@@ -333,14 +336,14 @@ const AchievementDef kAchievements[] = {
     // plate: Tiramisudo is the only food that permanently upgrades the pet, Portridge is
     // the method that changes nothing, and Recursive Turducken wants three of one bird.
     {/*wire=*/90, "COOK_TIRAMISUDO", "Ask It Nicely",
-     "Cook a Tiramisudo at the Merge Hub.", "ICON_ACH_COOK_NACHOS",
+     "Cook a Tiramisudo at the Merge Hub.", "ICON_ACH_COOK_TIRAMISUDO",
      AchSeries::ItemCollected, /*goal=*/1, "tiramisudo", 0,
      {bits(250), item("sealed_cache_rare")}},
     {/*wire=*/91, "COOK_PORTRIDGE", "Runs Anywhere",
-     "Cook a Portridge, and change absolutely nothing.", "ICON_ACH_COOK_NOODLES",
+     "Cook a Portridge, and change absolutely nothing.", "ICON_ACH_COOK_PORTRIDGE",
      AchSeries::ItemCollected, /*goal=*/1, "portridge", 0, {bits(75)}},
     {/*wire=*/92, "COOK_TURDUCKEN", "Base Case",
-     "Cook a Recursive Turducken at the Merge Hub.", "ICON_ACH_COOK_NACHOS",
+     "Cook a Recursive Turducken at the Merge Hub.", "ICON_ACH_COOK_TURDUCKEN",
      AchSeries::ItemCollected, /*goal=*/1, "recursive_turducken", 0,
      {bits(250), item("sealed_cache_rare")}},
 
@@ -502,16 +505,20 @@ const AchievementDef kAchievements[] = {
     // Priced a rung above the equivalent boss row throughout: an entrant carries a real
     // kit, real mods, a real stat spread and an Exploit it fires on its own trigger, so
     // three of them in a row is not the same afternoon as three bosses.
+    //
+    // The three rungs share the dock MOTIF and differ by their tally, which is the
+    // grammar every ladder on this board follows (tools/gen_ach_icons.py) — one glyph
+    // per row, countable before it is read.
     {/*wire=*/98, "DOCK_FIRST", "Took the Dock",
      "Take {n} ROCK THE DOCK bracket.", "ICON_ACH_DOCK_FIRST",
      AchSeries::TourneyWins, /*goal=*/1, nullptr, 0,
      {bits(150), item("sealed_cache_rare")}},
     {/*wire=*/99, "DOCK_5", "Dock Regular",
-     "Take {n} ROCK THE DOCK brackets.", "ICON_ACH_DOCK_FIRST",
+     "Take {n} ROCK THE DOCK brackets.", "ICON_ACH_DOCK_5",
      AchSeries::TourneyWins, /*goal=*/5, nullptr, 0,
      {bits(250), item("sealed_cache_rare")}},
     {/*wire=*/100, "DOCK_25", "Harbourmaster",
-     "Take {n} ROCK THE DOCK brackets.", "ICON_ACH_DOCK_FIRST",
+     "Take {n} ROCK THE DOCK brackets.", "ICON_ACH_DOCK_25",
      AchSeries::TourneyWins, /*goal=*/25, nullptr, 0,
      {bits(400), item("commend_cache")}},
     {/*wire=*/101, "DOCK_UNDERDOG", "Underdog",
@@ -529,18 +536,19 @@ const AchievementDef kAchievements[] = {
     // --- The LINK duel ------------------------------------------------------------
     // FIRST_DUEL above counts the MEETING and fires when a duel starts; these count the
     // verdict. Two rows over one event on purpose: a duel that desyncs or is walked out
-    // of was still a duel fought, and it still shouldn't count as one won. They share
-    // the duel's icon because they are one subject, not four.
+    // of was still a duel fought, and it still shouldn't count as one won. Their glyph
+    // draws the ENDING (one fighter standing, one toppled) where FIRST_DUEL's draws the
+    // exchange, so the pair read apart at a glance.
     {/*wire=*/103, "DUEL_WIN_1", "Ack",
-     "Win {n} duel over the LINK.", "ICON_ACH_FIRST_DUEL",
+     "Win {n} duel over the LINK.", "ICON_ACH_DUEL_WIN_1",
      AchSeries::PvpWins, /*goal=*/1, nullptr, 0,
      {bits(60), item("sealed_cache_common")}},
     {/*wire=*/104, "DUEL_WIN_10", "Packet Loss",
-     "Win {n} duels over the LINK.", "ICON_ACH_FIRST_DUEL",
+     "Win {n} duels over the LINK.", "ICON_ACH_DUEL_WIN_10",
      AchSeries::PvpWins, /*goal=*/10, nullptr, 0,
      {bits(150), item("sealed_cache_rare")}},
     {/*wire=*/105, "DUEL_WIN_50", "Uplink Dominant",
-     "Win {n} duels over the LINK.", "ICON_ACH_FIRST_DUEL",
+     "Win {n} duels over the LINK.", "ICON_ACH_DUEL_WIN_50",
      AchSeries::PvpWins, /*goal=*/50, nullptr, 0,
      {bits(400), item("commend_cache")}},
 
@@ -550,14 +558,14 @@ const AchievementDef kAchievements[] = {
     // and never happens again; cooking is what the player does with it afterwards, and
     // nothing was counting it.
     {/*wire=*/106, "SERVICE_1", "Mise en Place",
-     "Cook {n} dish at the MERGE HUB.", "ICON_ACH_CUISINE_3",
+     "Cook {n} dish at the MERGE HUB.", "ICON_ACH_SERVICE_1",
      AchSeries::MergesCooked, /*goal=*/1, nullptr, 0, {bits(25)}},
     {/*wire=*/107, "SERVICE_25", "Dinner Service",
-     "Cook {n} dishes at the MERGE HUB.", "ICON_ACH_CUISINE_3",
+     "Cook {n} dishes at the MERGE HUB.", "ICON_ACH_SERVICE_25",
      AchSeries::MergesCooked, /*goal=*/25, nullptr, 0,
      {bits(60), item("sealed_cache_common")}},
     {/*wire=*/108, "SERVICE_100", "The Pass",
-     "Cook {n} dishes at the MERGE HUB.", "ICON_ACH_CUISINE_3",
+     "Cook {n} dishes at the MERGE HUB.", "ICON_ACH_SERVICE_100",
      AchSeries::MergesCooked, /*goal=*/100, nullptr, 0,
      {bits(250), item("sealed_cache_rare")}},
 
@@ -567,43 +575,46 @@ const AchievementDef kAchievements[] = {
     // economy and the arcade's cryptogram cabinet. kGoalAll counts over the shipped
     // quote roster, so the capstone grows with the pool rather than mis-stating it.
     {/*wire=*/109, "QUOTES_1", "First Crack",
-     "Solve {n} Decryptogram.", "ICON_ITEM_DECRYPTOGRAM",
+     "Solve {n} Decryptogram.", "ICON_ACH_QUOTES_1",
      AchSeries::QuotesSolved, /*goal=*/1, nullptr, 0, {bits(25)}},
     {/*wire=*/110, "QUOTES_10", "Cryptanalyst",
-     "Solve {n} Decryptograms.", "ICON_ITEM_DECRYPTOGRAM",
+     "Solve {n} Decryptograms.", "ICON_ACH_QUOTES_10",
      AchSeries::QuotesSolved, /*goal=*/10, nullptr, 0,
      {bits(60), item("sealed_cache_common")}},
     {/*wire=*/111, "QUOTES_50", "Known Plaintext",
-     "Solve {n} Decryptograms.", "ICON_ITEM_DECRYPTOGRAM",
+     "Solve {n} Decryptograms.", "ICON_ACH_QUOTES_50",
      AchSeries::QuotesSolved, /*goal=*/50, nullptr, 0,
      {bits(250), item("sealed_cache_rare")}},
     {/*wire=*/112, "QUOTES_ALL", "Full Disclosure",
-     "Solve all {n} Decryptograms.", "ICON_ITEM_DECRYPTOGRAM",
+     "Solve all {n} Decryptograms.", "ICON_ACH_QUOTES_ALL",
      AchSeries::QuotesSolved, kGoalAll, nullptr, 0,
      {bits(400), item("commend_cache")}},
 
     // --- Titles, crew & the other operators ---------------------------------------
-    // A Title is a cleared area's receipt, so these share the AREA rows' art: same
-    // achievement, read off the shelf it left behind rather than off the fight.
+    // A Title is a cleared area's receipt, so its glyph is the receipt — a medal on its
+    // ribbon — rather than the zone. Drawn apart from the AREA rows on purpose: the two
+    // are earned by one act and would otherwise be one picture under two names.
     {/*wire=*/113, "TITLE_FIRST", "Titled",
-     "Earn {n} zone Title.", "ICON_ACH_AREA_FIRST",
+     "Earn {n} zone Title.", "ICON_ACH_TITLE_FIRST",
      AchSeries::TitlesUnlocked, /*goal=*/1, nullptr, 0, {bits(25)}},
     {/*wire=*/114, "TITLES_ALL", "Fully Decorated",
-     "Earn all {n} zone Titles.", "ICON_ACH_AREAS_ALL",
+     "Earn all {n} zone Titles.", "ICON_ACH_TITLES_ALL",
      AchSeries::TitlesUnlocked, kGoalAll, nullptr, 0,
      {bits(400), item("commend_cache")}},
     // Operators MET over the radio — the peer ledger, which is a different set from the
     // ones duelled: meeting is passive and costs neither side a consent they haven't
-    // already given. Radio art, because that is what earns it.
+    // already given. Its glyph is the PEERS slot's own read (a bus with operators
+    // hanging off it), not the wifi arcs the NETS ladder wears — what is counted here
+    // is who was heard, not what was walked past.
     {/*wire=*/115, "PEERS_1", "Not Alone",
-     "Meet {n} other operator over the radio.", "ICON_ACH_NETS_10",
+     "Meet {n} other operator over the radio.", "ICON_ACH_PEERS_1",
      AchSeries::PeersMet, /*goal=*/1, nullptr, 0, {bits(25)}},
     {/*wire=*/116, "PEERS_10", "Local Traffic",
-     "Meet {n} other operators over the radio.", "ICON_ACH_NETS_10",
+     "Meet {n} other operators over the radio.", "ICON_ACH_PEERS_10",
      AchSeries::PeersMet, /*goal=*/10, nullptr, 0,
      {bits(60), item("sealed_cache_common")}},
     {/*wire=*/117, "PEERS_50", "Peer Reviewed",
-     "Meet {n} other operators over the radio.", "ICON_ACH_NETS_50",
+     "Meet {n} other operators over the radio.", "ICON_ACH_PEERS_50",
      AchSeries::PeersMet, /*goal=*/50, nullptr, 0,
      {bits(400), item("commend_cache")}},
     {/*wire=*/118, "CREW_ENLISTED", "Enlisted",
@@ -617,79 +628,82 @@ const AchievementDef kAchievements[] = {
     // construction: a device can meet far more of the roster than it will ever raise,
     // which is exactly why the capstone here is worth less than FULL_ROSTER below.
     {/*wire=*/119, "SEEN_12", "Field Notes",
-     "Lay eyes on {n} different species.", "ICON_ACH_SPECIES_3",
+     "Lay eyes on {n} different species.", "ICON_ACH_SEEN_12",
      AchSeries::SpeciesSeen, /*goal=*/12, nullptr, 0,
      {bits(60), item("sealed_cache_common")}},
     {/*wire=*/120, "SEEN_ALL", "Full Sightings",
-     "Lay eyes on all {n} species.", "ICON_ACH_SPECIES_12",
+     "Lay eyes on all {n} species.", "ICON_ACH_SEEN_ALL",
      AchSeries::SpeciesSeen, kGoalAll, nullptr, 0,
      {bits(250), item("sealed_cache_rare")}},
     // ...and the raised roster's own capstone, which SPECIES_12 above stopped short of.
     // Priced above SEEN_ALL: raising one is the whole lifecycle, seeing one is a glance.
     {/*wire=*/121, "SPECIES_ALL", "Full Roster",
-     "Raise all {n} species.", "ICON_ACH_SPECIES_12",
+     "Raise all {n} species.", "ICON_ACH_SPECIES_ALL",
      AchSeries::SpeciesRaised, kGoalAll, nullptr, 0,
      {bits(400), item("commend_cache")}},
 
     // --- The ARCH rack and the walk -----------------------------------------------
     // Pets held FROZEN at once. Fixed rungs rather than kGoalAll: the rack's ceiling is
     // a rig upgrade, so it is player state, and achievementSeriesTotal has to stay pure
-    // (game_achievements.h). SECOND_INSTANCE's art, since that is the rack's other row.
+    // (game_achievements.h). Drawn as the rack FILLING, where SECOND_INSTANCE beside it
+    // draws a pair — that row is about two of one thing, this ladder is about how many.
     {/*wire=*/122, "RACK_3", "Cold Storage",
-     "Hold {n} pets in the ARCH rack at once.", "ICON_ACH_SECOND_INSTANCE",
+     "Hold {n} pets in the ARCH rack at once.", "ICON_ACH_RACK_3",
      AchSeries::RackHeld, /*goal=*/3, nullptr, 0,
      {bits(60), item("sealed_cache_common")}},
     {/*wire=*/123, "RACK_6", "Server Room",
-     "Hold {n} pets in the ARCH rack at once.", "ICON_ACH_SECOND_INSTANCE",
+     "Hold {n} pets in the ARCH rack at once.", "ICON_ACH_RACK_6",
      AchSeries::RackHeld, /*goal=*/6, nullptr, 0,
      {bits(250), item("sealed_cache_rare")}},
     // Distance walked, which every other explore row measures a RESULT of (a boss, a
     // sub-area, a network) and none of them measures directly.
     {/*wire=*/124, "STEPS_1K", "Legwork",
-     "Take {n} steps on the 'net.", "ICON_ACH_SUBS_5",
+     "Take {n} steps on the 'net.", "ICON_ACH_STEPS_1K",
      AchSeries::StepsWalked, /*goal=*/1000, nullptr, 0, {bits(25)}},
     {/*wire=*/125, "STEPS_10K", "Long Haul",
-     "Take {n} steps on the 'net.", "ICON_ACH_SUBS_5",
+     "Take {n} steps on the 'net.", "ICON_ACH_STEPS_10K",
      AchSeries::StepsWalked, /*goal=*/10000, nullptr, 0,
      {bits(60), item("sealed_cache_common")}},
     {/*wire=*/126, "STEPS_100K", "Marathon",
-     "Take {n} steps on the 'net.", "ICON_ACH_SUBS_5",
+     "Take {n} steps on the 'net.", "ICON_ACH_STEPS_100K",
      AchSeries::StepsWalked, /*goal=*/100000, nullptr, 0,
      {bits(250), item("sealed_cache_rare")}},
 
     // --- The arcade's remaining cabinets ------------------------------------------
     // ArcadeCabinetWins already existed and already had a tally being written for every
     // cabinet; only DEFRAG STACKER had claimed a row off it (TOWER_OF_FRAGGLE). These
-    // are the other five, priced identically to it, each wearing its own cabinet's
-    // glyph from content_arcade.cpp so the row and the cabinet read as one thing.
+    // are the other five, priced identically to it, each drawn as its own GAME's mark —
+    // the shape TOWER_OF_FRAGGLE already set for a cabinet row, and the reason none of
+    // them is a cabinet silhouette: at 20px the screen would be eight pixels across.
     {/*wire=*/127, "CAB_CLUTCH", "Phish Spotter",
-     "Clear the SPOT THE PHISH cabinet in the GAMES arcade.", "ICON_ARCADE_CLUTCH",
+     "Clear the SPOT THE PHISH cabinet in the GAMES arcade.", "ICON_ACH_CAB_CLUTCH",
      AchSeries::ArcadeCabinetWins, /*goal=*/1, "clutch", 0,
      {bits(60), item("sealed_cache_common")}},
     {/*wire=*/128, "CAB_ISOLATION", "Contained",
-     "Clear the ISOLATION PROTOCOL cabinet in the GAMES arcade.", "ICON_LINE_WORM",
+     "Clear the ISOLATION PROTOCOL cabinet in the GAMES arcade.", "ICON_ACH_CAB_ISOLATION",
      AchSeries::ArcadeCabinetWins, /*goal=*/1, "isolation", 0,
      {bits(60), item("sealed_cache_common")}},
     {/*wire=*/129, "CAB_DECRYPTION", "Key Breaker",
-     "Clear the DISK DECRYPTION cabinet in the GAMES arcade.", "ICON_LINE_RANSOMWARE",
+     "Clear the DISK DECRYPTION cabinet in the GAMES arcade.", "ICON_ACH_CAB_DECRYPTION",
      AchSeries::ArcadeCabinetWins, /*goal=*/1, "decryption", 0,
      {bits(60), item("sealed_cache_common")}},
     {/*wire=*/130, "CAB_CRYPTOGRAM", "Replay Value",
-     "Clear the DECRYPTOGRAM cabinet in the GAMES arcade.", "ICON_ITEM_DECRYPTOGRAM",
+     "Clear the DECRYPTOGRAM cabinet in the GAMES arcade.", "ICON_ACH_CAB_CRYPTOGRAM",
      AchSeries::ArcadeCabinetWins, /*goal=*/1, "cryptogram", 0,
      {bits(60), item("sealed_cache_common")}},
     {/*wire=*/131, "CAB_CHROMA", "Local Colour",
-     "Clear the CHROMATOPHORE cabinet in the GAMES arcade.", "ICON_ARCADE_CHROMA",
+     "Clear the CHROMATOPHORE cabinet in the GAMES arcade.", "ICON_ACH_CAB_CHROMA",
      AchSeries::ArcadeCabinetWins, /*goal=*/1, "chroma", 0,
      {bits(60), item("sealed_cache_common")}},
 
     // --- The two lines the older ladders were written before -----------------------
     // Worm and Metamorphic shipped after the per-line depth and full-line rows were
     // authored, so both families were climbing ladders that had no rung with their name
-    // on it. Same goals and same prices as their three siblings above — these are the
-    // missing rungs of an existing ladder, not a new one.
+    // on it. Same goals, same prices and the same two footers as their three siblings
+    // above — a bar for "raised them all", a chevron for "took one deep" — because these
+    // are the missing rungs of an existing ladder, not a new one.
     {/*wire=*/132, "DEEP_LINE_WORM", "Worm Depths",
-     "Reach depth {n} with a {key} pet.", "ICON_LINE_WORM",
+     "Reach depth {n} with a {key} pet.", "ICON_ACH_DEEP_LINE_WORM",
      AchSeries::DeepWebDepthLine, /*goal=*/256, "worm", 0,
      {bits(250), item("sealed_cache_rare")}},
     {/*wire=*/133, "DEEP_LINE_METAMORPHIC", "Shifting Depths",
@@ -704,7 +718,7 @@ const AchievementDef kAchievements[] = {
 
     // The DEFRAG ladder's capstone, which STACK_50 stopped one rung short of.
     {/*wire=*/135, "STACK_100", "Solid State",
-     "Clear {n} disks by hand in the DEFRAG minigame.", "ICON_ACH_STACK_50",
+     "Clear {n} disks by hand in the DEFRAG minigame.", "ICON_ACH_STACK_100",
      AchSeries::StackerWins, /*goal=*/100, nullptr, 0,
      {bits(400), item("commend_cache")}},
 };

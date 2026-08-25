@@ -133,6 +133,14 @@ if(Python3_Interpreter_FOUND)
     add_test(NAME worm_art_recipes
              COMMAND ${Python3_EXECUTABLE}
                      ${CMAKE_SOURCE_DIR}/tools/gen_worm_art.py --check)
+    # The achievement glyphs are generated for the same reason the worm sheets are,
+    # plus one of its own: the board's whole readability claim is that a row's RUNG is
+    # visible before its name is (one motif, a countable tally), and that is a property
+    # of the SET. A hand-retouched glyph passes every other gate here and quietly breaks
+    # the grid, so this is what notices.
+    add_test(NAME ach_icons
+             COMMAND ${Python3_EXECUTABLE}
+                     ${CMAKE_SOURCE_DIR}/tools/gen_ach_icons.py --check)
     # Local, because CI cannot check the file that starts CI: an unparseable
     # workflow completes in zero seconds with no jobs and no logs, so the tier
     # simply stops running and nothing says so. Skips itself without PyYAML.

@@ -6708,77 +6708,77 @@ window.PEDIA_DATA = {
       "key": "CUISINE_25",
       "name": "Line Cook",
       "trigger": "Get hold of 25 different foods.",
-      "icon": "assets/icons/ICON_ACH_CUISINE_6.png",
+      "icon": "assets/icons/ICON_ACH_CUISINE_25.png",
       "goal": 25
     },
     {
       "key": "CUISINE_60",
       "name": "Sous Chef",
       "trigger": "Get hold of 60 different foods.",
-      "icon": "assets/icons/ICON_ACH_CUISINE_6.png",
+      "icon": "assets/icons/ICON_ACH_CUISINE_60.png",
       "goal": 60
     },
     {
       "key": "CUISINE_120",
       "name": "Head Chef",
       "trigger": "Get hold of 120 different foods.",
-      "icon": "assets/icons/ICON_ACH_CUISINE_ALL.png",
+      "icon": "assets/icons/ICON_ACH_CUISINE_120.png",
       "goal": 120
     },
     {
       "key": "RECIPES_1",
       "name": "First Method",
       "trigger": "Learn your first Merge Hub recipe.",
-      "icon": "assets/icons/ICON_ACH_COOK_NOODLES.png",
+      "icon": "assets/icons/ICON_ACH_RECIPES_1.png",
       "goal": 1
     },
     {
       "key": "RECIPES_10",
       "name": "Working Kitchen",
       "trigger": "Know 10 Merge Hub recipes.",
-      "icon": "assets/icons/ICON_ACH_COOK_NOODLES.png",
+      "icon": "assets/icons/ICON_ACH_RECIPES_10.png",
       "goal": 10
     },
     {
       "key": "RECIPES_30",
       "name": "The Book",
       "trigger": "Know 30 Merge Hub recipes.",
-      "icon": "assets/icons/ICON_ACH_COOK_NACHOS.png",
+      "icon": "assets/icons/ICON_ACH_RECIPES_30.png",
       "goal": 30
     },
     {
       "key": "RECIPES_60",
       "name": "Brigade",
       "trigger": "Know 60 Merge Hub recipes.",
-      "icon": "assets/icons/ICON_ACH_COOK_NACHOS.png",
+      "icon": "assets/icons/ICON_ACH_RECIPES_60.png",
       "goal": 60
     },
     {
       "key": "RECIPES_ALL",
       "name": "Every Method",
       "trigger": "Learn all 101 Merge Hub recipes.",
-      "icon": "assets/icons/ICON_ACH_CUISINE_ALL.png",
+      "icon": "assets/icons/ICON_ACH_RECIPES_ALL.png",
       "goal": 101
     },
     {
       "key": "COOK_TIRAMISUDO",
       "name": "Ask It Nicely",
       "trigger": "Cook a Tiramisudo at the Merge Hub.",
-      "icon": "assets/icons/ICON_ACH_COOK_NACHOS.png",
+      "icon": "assets/icons/ICON_ACH_COOK_TIRAMISUDO.png",
       "goal": 1
     },
     {
       "key": "COOK_PORTRIDGE",
       "name": "Runs Anywhere",
       "trigger": "Cook a Portridge, and change absolutely nothing.",
-      "icon": "assets/icons/ICON_ACH_COOK_NOODLES.png",
+      "icon": "assets/icons/ICON_ACH_COOK_PORTRIDGE.png",
       "goal": 1
     },
     {
       "key": "COOK_TURDUCKEN",
       "name": "Base Case",
       "trigger": "Cook a Recursive Turducken at the Merge Hub.",
-      "icon": "assets/icons/ICON_ACH_COOK_NACHOS.png",
+      "icon": "assets/icons/ICON_ACH_COOK_TURDUCKEN.png",
       "goal": 1
     },
     {
@@ -6993,263 +6993,263 @@ window.PEDIA_DATA = {
       "key": "DOCK_FIRST",
       "name": "Took the Dock",
       "trigger": "Take 1 ROCK THE DOCK bracket.",
-      "icon": null,
+      "icon": "assets/icons/ICON_ACH_DOCK_FIRST.png",
       "goal": 1
     },
     {
       "key": "DOCK_5",
       "name": "Dock Regular",
       "trigger": "Take 5 ROCK THE DOCK brackets.",
-      "icon": null,
+      "icon": "assets/icons/ICON_ACH_DOCK_5.png",
       "goal": 5
     },
     {
       "key": "DOCK_25",
       "name": "Harbourmaster",
       "trigger": "Take 25 ROCK THE DOCK brackets.",
-      "icon": null,
+      "icon": "assets/icons/ICON_ACH_DOCK_25.png",
       "goal": 25
     },
     {
       "key": "DOCK_UNDERDOG",
       "name": "Underdog",
       "trigger": "Take the bracket against a higher-level operator in the final.",
-      "icon": null
+      "icon": "assets/icons/ICON_ACH_DOCK_UNDERDOG.png"
     },
     {
       "key": "DOCK_PUNCHING_UP",
       "name": "Punching Up",
       "trigger": "Take the bracket with a pet that has not reached Daemon.",
-      "icon": null
+      "icon": "assets/icons/ICON_ACH_DOCK_PUNCHING_UP.png"
     },
     {
       "key": "DUEL_WIN_1",
       "name": "Ack",
       "trigger": "Win 1 duel over the LINK.",
-      "icon": "assets/icons/ICON_ACH_FIRST_DUEL.png",
+      "icon": "assets/icons/ICON_ACH_DUEL_WIN_1.png",
       "goal": 1
     },
     {
       "key": "DUEL_WIN_10",
       "name": "Packet Loss",
       "trigger": "Win 10 duels over the LINK.",
-      "icon": "assets/icons/ICON_ACH_FIRST_DUEL.png",
+      "icon": "assets/icons/ICON_ACH_DUEL_WIN_10.png",
       "goal": 10
     },
     {
       "key": "DUEL_WIN_50",
       "name": "Uplink Dominant",
       "trigger": "Win 50 duels over the LINK.",
-      "icon": "assets/icons/ICON_ACH_FIRST_DUEL.png",
+      "icon": "assets/icons/ICON_ACH_DUEL_WIN_50.png",
       "goal": 50
     },
     {
       "key": "SERVICE_1",
       "name": "Mise en Place",
       "trigger": "Cook 1 dish at the MERGE HUB.",
-      "icon": "assets/icons/ICON_ACH_CUISINE_3.png",
+      "icon": "assets/icons/ICON_ACH_SERVICE_1.png",
       "goal": 1
     },
     {
       "key": "SERVICE_25",
       "name": "Dinner Service",
       "trigger": "Cook 25 dishes at the MERGE HUB.",
-      "icon": "assets/icons/ICON_ACH_CUISINE_3.png",
+      "icon": "assets/icons/ICON_ACH_SERVICE_25.png",
       "goal": 25
     },
     {
       "key": "SERVICE_100",
       "name": "The Pass",
       "trigger": "Cook 100 dishes at the MERGE HUB.",
-      "icon": "assets/icons/ICON_ACH_CUISINE_3.png",
+      "icon": "assets/icons/ICON_ACH_SERVICE_100.png",
       "goal": 100
     },
     {
       "key": "QUOTES_1",
       "name": "First Crack",
       "trigger": "Solve 1 Decryptogram.",
-      "icon": "assets/icons/ICON_ITEM_DECRYPTOGRAM.png",
+      "icon": "assets/icons/ICON_ACH_QUOTES_1.png",
       "goal": 1
     },
     {
       "key": "QUOTES_10",
       "name": "Cryptanalyst",
       "trigger": "Solve 10 Decryptograms.",
-      "icon": "assets/icons/ICON_ITEM_DECRYPTOGRAM.png",
+      "icon": "assets/icons/ICON_ACH_QUOTES_10.png",
       "goal": 10
     },
     {
       "key": "QUOTES_50",
       "name": "Known Plaintext",
       "trigger": "Solve 50 Decryptograms.",
-      "icon": "assets/icons/ICON_ITEM_DECRYPTOGRAM.png",
+      "icon": "assets/icons/ICON_ACH_QUOTES_50.png",
       "goal": 50
     },
     {
       "key": "QUOTES_ALL",
       "name": "Full Disclosure",
       "trigger": "Solve all 222 Decryptograms.",
-      "icon": "assets/icons/ICON_ITEM_DECRYPTOGRAM.png",
+      "icon": "assets/icons/ICON_ACH_QUOTES_ALL.png",
       "goal": 222
     },
     {
       "key": "TITLE_FIRST",
       "name": "Titled",
       "trigger": "Earn 1 zone Title.",
-      "icon": "assets/icons/ICON_ACH_AREA_FIRST.png",
+      "icon": "assets/icons/ICON_ACH_TITLE_FIRST.png",
       "goal": 1
     },
     {
       "key": "TITLES_ALL",
       "name": "Fully Decorated",
       "trigger": "Earn all 5 zone Titles.",
-      "icon": "assets/icons/ICON_ACH_AREAS_ALL.png",
+      "icon": "assets/icons/ICON_ACH_TITLES_ALL.png",
       "goal": 5
     },
     {
       "key": "PEERS_1",
       "name": "Not Alone",
       "trigger": "Meet 1 other operator over the radio.",
-      "icon": "assets/icons/ICON_ACH_NETS_10.png",
+      "icon": "assets/icons/ICON_ACH_PEERS_1.png",
       "goal": 1
     },
     {
       "key": "PEERS_10",
       "name": "Local Traffic",
       "trigger": "Meet 10 other operators over the radio.",
-      "icon": "assets/icons/ICON_ACH_NETS_10.png",
+      "icon": "assets/icons/ICON_ACH_PEERS_10.png",
       "goal": 10
     },
     {
       "key": "PEERS_50",
       "name": "Peer Reviewed",
       "trigger": "Meet 50 other operators over the radio.",
-      "icon": "assets/icons/ICON_ACH_NETS_50.png",
+      "icon": "assets/icons/ICON_ACH_PEERS_50.png",
       "goal": 50
     },
     {
       "key": "CREW_ENLISTED",
       "name": "Enlisted",
       "trigger": "Take a side and enlist in a crew.",
-      "icon": null
+      "icon": "assets/icons/ICON_ACH_CREW_ENLISTED.png"
     },
     {
       "key": "SEEN_12",
       "name": "Field Notes",
       "trigger": "Lay eyes on 12 different species.",
-      "icon": "assets/icons/ICON_ACH_SPECIES_3.png",
+      "icon": "assets/icons/ICON_ACH_SEEN_12.png",
       "goal": 12
     },
     {
       "key": "SEEN_ALL",
       "name": "Full Sightings",
       "trigger": "Lay eyes on all 35 species.",
-      "icon": "assets/icons/ICON_ACH_SPECIES_12.png",
+      "icon": "assets/icons/ICON_ACH_SEEN_ALL.png",
       "goal": 35
     },
     {
       "key": "SPECIES_ALL",
       "name": "Full Roster",
       "trigger": "Raise all 35 species.",
-      "icon": "assets/icons/ICON_ACH_SPECIES_12.png",
+      "icon": "assets/icons/ICON_ACH_SPECIES_ALL.png",
       "goal": 35
     },
     {
       "key": "RACK_3",
       "name": "Cold Storage",
       "trigger": "Hold 3 pets in the ARCH rack at once.",
-      "icon": "assets/icons/ICON_ACH_SECOND_INSTANCE.png",
+      "icon": "assets/icons/ICON_ACH_RACK_3.png",
       "goal": 3
     },
     {
       "key": "RACK_6",
       "name": "Server Room",
       "trigger": "Hold 6 pets in the ARCH rack at once.",
-      "icon": "assets/icons/ICON_ACH_SECOND_INSTANCE.png",
+      "icon": "assets/icons/ICON_ACH_RACK_6.png",
       "goal": 6
     },
     {
       "key": "STEPS_1K",
       "name": "Legwork",
       "trigger": "Take 1000 steps on the 'net.",
-      "icon": "assets/icons/ICON_ACH_SUBS_5.png",
+      "icon": "assets/icons/ICON_ACH_STEPS_1K.png",
       "goal": 1000
     },
     {
       "key": "STEPS_10K",
       "name": "Long Haul",
       "trigger": "Take 10000 steps on the 'net.",
-      "icon": "assets/icons/ICON_ACH_SUBS_5.png",
+      "icon": "assets/icons/ICON_ACH_STEPS_10K.png",
       "goal": 10000
     },
     {
       "key": "STEPS_100K",
       "name": "Marathon",
       "trigger": "Take 100000 steps on the 'net.",
-      "icon": "assets/icons/ICON_ACH_SUBS_5.png",
+      "icon": "assets/icons/ICON_ACH_STEPS_100K.png",
       "goal": 100000
     },
     {
       "key": "CAB_CLUTCH",
       "name": "Phish Spotter",
       "trigger": "Clear the SPOT THE PHISH cabinet in the GAMES arcade.",
-      "icon": "assets/icons/ICON_ARCADE_CLUTCH.png",
+      "icon": "assets/icons/ICON_ACH_CAB_CLUTCH.png",
       "goal": 1
     },
     {
       "key": "CAB_ISOLATION",
       "name": "Contained",
       "trigger": "Clear the ISOLATION PROTOCOL cabinet in the GAMES arcade.",
-      "icon": "assets/icons/ICON_LINE_WORM.png",
+      "icon": "assets/icons/ICON_ACH_CAB_ISOLATION.png",
       "goal": 1
     },
     {
       "key": "CAB_DECRYPTION",
       "name": "Key Breaker",
       "trigger": "Clear the DISK DECRYPTION cabinet in the GAMES arcade.",
-      "icon": "assets/icons/ICON_LINE_RANSOMWARE.png",
+      "icon": "assets/icons/ICON_ACH_CAB_DECRYPTION.png",
       "goal": 1
     },
     {
       "key": "CAB_CRYPTOGRAM",
       "name": "Replay Value",
       "trigger": "Clear the DECRYPTOGRAM cabinet in the GAMES arcade.",
-      "icon": "assets/icons/ICON_ITEM_DECRYPTOGRAM.png",
+      "icon": "assets/icons/ICON_ACH_CAB_CRYPTOGRAM.png",
       "goal": 1
     },
     {
       "key": "CAB_CHROMA",
       "name": "Local Colour",
       "trigger": "Clear the CHROMATOPHORE cabinet in the GAMES arcade.",
-      "icon": "assets/icons/ICON_ARCADE_CHROMA.png",
+      "icon": "assets/icons/ICON_ACH_CAB_CHROMA.png",
       "goal": 1
     },
     {
       "key": "DEEP_LINE_WORM",
       "name": "Worm Depths",
       "trigger": "Reach depth 256 with a worm pet.",
-      "icon": "assets/icons/ICON_LINE_WORM.png",
+      "icon": "assets/icons/ICON_ACH_DEEP_LINE_WORM.png",
       "goal": 256
     },
     {
       "key": "DEEP_LINE_METAMORPHIC",
       "name": "Shifting Depths",
       "trigger": "Reach depth 256 with a metamorphic pet.",
-      "icon": null,
+      "icon": "assets/icons/ICON_ACH_DEEP_LINE_METAMORPHIC.png",
       "goal": 256
     },
     {
       "key": "FULL_LINE_METAMORPHIC",
       "name": "Full 'Pedia: Meta",
       "trigger": "Raise every one of the 5 creatures in the metamorphic line.",
-      "icon": null,
+      "icon": "assets/icons/ICON_ACH_FULL_LINE_METAMORPHIC.png",
       "goal": 5
     },
     {
       "key": "STACK_100",
       "name": "Solid State",
       "trigger": "Clear 100 disks by hand in the DEFRAG minigame.",
-      "icon": "assets/icons/ICON_ACH_STACK_50.png",
+      "icon": "assets/icons/ICON_ACH_STACK_100.png",
       "goal": 100
     }
   ]
