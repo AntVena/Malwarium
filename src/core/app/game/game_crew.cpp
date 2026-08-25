@@ -149,6 +149,10 @@ bool Game::joinCrew(int index) {
     if (!hasHomeNetwork()) return false;   // a crew member is always somebody's defender
     if (crewIndex_ == index) return true;
     crewIndex_ = index;
+    // Taking a side at all, once. Fired on the join rather than counted, because a
+    // player belongs to at most one crew and may switch freely — there is no tally here
+    // that could mean anything, only the first time they stopped being unaffiliated.
+    unlockAchievement(ach::kCrewEnlisted);
     log_.push(LogEventType::ItemGained, kCrews[index].displayName);
     markSaveDirty();
     dirty_ = true;

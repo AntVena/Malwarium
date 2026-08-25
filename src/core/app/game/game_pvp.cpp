@@ -447,8 +447,18 @@ void Game::finishPvpBattle() {
     char line[28];
     std::snprintf(line, sizeof(line), "%s %s", pvpWon_ ? "BEAT" : "LOST TO", pvpPeerTag_);
     log_.push(pvpWon_ ? LogEventType::CombatWon : LogEventType::CombatLost, line);
+    // The lifetime duel-win tally (save v56), and the one thing this function persists.
+    // It is not a payout and does not make the duel one: RECORDING a result costs the
+    // loser nothing and hands the winner nothing they can spend, which is the same
+    // footing FIRST_DUEL already stands on above (it fires at the start of every duel
+    // and marks the save then). What stays true is the line below — no XP, no Bits, no
+    // Fragmentation, no care signal.
+    if (pvpWon_) {
+        ++pvpWins_;
+        markSaveDirty();
+    }
     // No applyCombatResult: a duel pays nothing and costs nothing, so no XP, Bits,
-    // Fragmentation, care signal or save write happens here. The banner is the reward.
+    // Fragmentation or care signal comes of it here. The banner is the reward.
     nav_ = Nav::Submenu;
     dirty_ = true;
 }

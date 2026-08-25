@@ -96,6 +96,11 @@ def sync_assets(repo, data, dest, warnings):
     refs.add(data["meta"]["lockIcon"])
     for group in ("items", "mods", "moves", "achievements"):
         refs |= {e["icon"] for e in data[group]}
+    # A row whose glyph resolved to nothing carries None here, and the caller has ALREADY
+    # warned about it by name (see the achievements block below). Drop it rather than
+    # sorting it against the real paths: a missing icon is a gap in assets/, which is a
+    # warning, and it must not take the whole bundle down with it.
+    refs.discard(None)
     copied = 0
     for rel in sorted(refs):
         src, dst = repo / rel, dest / rel

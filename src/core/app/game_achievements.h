@@ -22,6 +22,7 @@
 #include "core/app/game_rig_shop.h"            // kRigUpgrades — the rig row/level totals
 #include "core/content/areas/area_defs.h"      // kAreaCount / kSubAreasPerArea
 #include "core/content/content_achievements.h"
+#include "core/content/content_quotes.h"       // quoteCount() — the DECRYPTOGRAM roster
 #include "core/content/content_recipes.h"      // kMergeRecipeCount
 #include "core/content/content_tables.h"       // kItems
 #include "core/content/creatures/creature_lines.h"  // kCreatureCount / creatureLine()
@@ -48,11 +49,25 @@ inline int achievementSeriesTotal(AchSeries series, const char* key, int param) 
         case AchSeries::ArcadeWins:
         case AchSeries::ArcadeLosses:
         case AchSeries::ArcadeCabinetWins:
+        case AchSeries::ArcadeCabinetBest:
+        case AchSeries::TourneyWins:
+        case AchSeries::PvpWins:
+        case AchSeries::MergesCooked:
+        case AchSeries::PeersMet:
+        case AchSeries::RackHeld:
+        case AchSeries::StepsWalked:
             return 0;                                   // unbounded — no "all of them"
         case AchSeries::SpeciesAtDepth:
         case AchSeries::SpeciesRaised:
+        case AchSeries::SpeciesSeen:
             return kCreatureCount;
+        case AchSeries::QuotesSolved:
+            return quoteCount();
         case AchSeries::AreasCleared:
+        // One Title per area, which is the same set AreasCleared counts over — a Title
+        // IS a cleared area's receipt, so the two totals are one fact, not two that
+        // happen to agree today.
+        case AchSeries::TitlesUnlocked:
             return kAreaCount;
         case AchSeries::SubAreasCleared:
             return kAreaCount * kSubAreasPerArea;

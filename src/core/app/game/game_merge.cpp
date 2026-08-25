@@ -100,6 +100,7 @@ void Game::craftRecipe(int recipeIndex) {
         if (in.id) inventory_.remove(in.id, in.qty);
     inventory_.add(r.outputId, r.outputQty);
     sweepCollectedItems();   // a crafted dish counts as met right away, not next tick
+    ++mergesCooked_;         // the lifetime stove tally (save v56)
     log_.push(LogEventType::ItemUsed, r.logText);
     markSaveDirty();
     dirty_ = true;

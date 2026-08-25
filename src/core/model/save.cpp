@@ -516,6 +516,13 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     // before this.
     w.u16(static_cast<uint16_t>(d.arcadeBest.size()));
     for (int32_t v : d.arcadeBest) w.i32(v);
+
+    // v56: the three lifetime tallies the achievement board's newest ladders read —
+    // brackets taken, duels won, dishes cooked. Its own tail after v55's, so the two
+    // stay independently skippable by a build that predates either.
+    w.i32(d.tourneyWins);
+    w.i32(d.pvpWins);
+    w.i32(d.mergesCooked);
 }
 
 std::vector<uint8_t> serializeSave(const SaveData& d) {
@@ -1068,6 +1075,16 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
     if (version >= 55) {
         const uint16_t nBest = r.u16();
         for (uint16_t i = 0; i < nBest && r.ok; ++i) d.arcadeBest.push_back(r.i32());
+    }
+
+    // v56 tail: the three lifetime tallies. Absent in a v1..v55 blob → 0 apiece, and
+    // there is deliberately no migration: a dismissed bracket, a finished duel and an
+    // eaten dish all leave nothing behind for an older save to be read back from, so a
+    // seeded number here would be invented rather than recovered.
+    if (version >= 56) {
+        d.tourneyWins = r.i32();
+        d.pvpWins = r.i32();
+        d.mergesCooked = r.i32();
     }
 
     if (!r.ok) { out = SaveData{}; return false; }  // truncated -> empty

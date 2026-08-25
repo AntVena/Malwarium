@@ -252,6 +252,24 @@ int Game::achValue(const AchievementDef& d) const {
             return arcadeWins(arcadeGameIndexById(d.key));
         case AchSeries::ArcadeCabinetBest:
             return arcadeBestById(d.key);
+        case AchSeries::TourneyWins:
+            return tourneyWins_;
+        case AchSeries::PvpWins:
+            return pvpWins_;
+        case AchSeries::MergesCooked:
+            return mergesCooked_;
+        case AchSeries::QuotesSolved:
+            return quotesSolved();
+        case AchSeries::TitlesUnlocked:
+            return titlesUnlockedCount();
+        case AchSeries::PeersMet:
+            return static_cast<int>(peerLedger_.size());
+        case AchSeries::SpeciesSeen:
+            return static_cast<int>(seenCreatures_.size());
+        case AchSeries::RackHeld:
+            return rackCount();
+        case AchSeries::StepsWalked:
+            return static_cast<int>(lifetimeSteps_);
     }
     return 0;
 }

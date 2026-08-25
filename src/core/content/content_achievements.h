@@ -91,6 +91,25 @@ enum class AchSeries : uint8_t {
     // that a run cleared the till's line — this is the series that can ask how far past
     // it they went. Meaningless on a win-or-lose cabinet, which never reports a score.
     ArcadeCabinetBest,
+    // ROCK THE DOCK (content_tournament.h). Brackets TAKEN, not matches won: the arena
+    // is single-elimination, so a run either ends in the title or ends, and the only
+    // number it can honestly report is how many times the whole thing was taken.
+    TourneyWins,
+    PvpWins,            // lifetime LINK duels won (AchSeries::Event's FIRST_DUEL counts the meeting)
+    MergesCooked,       // dishes actually cooked at the MERGE HUB — see RecipesKnown
+    QuotesSolved,       // distinct Decryptograms cracked (total = the whole quote roster)
+    TitlesUnlocked,     // zone-completion Titles earned (total = every area)
+    PeersMet,           // distinct operators this device has ever met over the radio
+    // Distinct species ever LAID EYES ON (total = the roster). The third axis beside
+    // SpeciesRaised and MalbeastsDefeated, and the only one a duel, an arena entrant or
+    // a branch-sibling reveal can move — you can meet far more of the roster than you
+    // will ever raise.
+    SpeciesSeen,
+    // Pets held in the ARCH rack at once. UNBOUNDED on purpose though the rack has a
+    // ceiling: that ceiling is a rig upgrade, so it is player state, and
+    // achievementSeriesTotal must stay pure (game_achievements.h). Fixed rungs instead.
+    RackHeld,
+    StepsWalked,        // lifetime exploration steps
 };
 
 // `goal` sentinel: compare against the series' TOTAL rather than a fixed number, so the
@@ -194,6 +213,20 @@ inline constexpr const char* kShatteredPlatter = "SHATTERED_PLATTER";
 // here — a gated row names the achievement that earns it (EggLineDef::gatedBy,
 // CreatureDef::gatedBy), so this direction of the link is read off the content.
 // kSecondInstance above gates the Worm line the same way.
+// ROCK THE DOCK's two SHAPE rows — what a bracket was taken WITH, which the win tally
+// beside them cannot say. Both fire from Game::awardTourneyPurse, where the final
+// opponent is still seated in tourneyOpponent_ and every entrant's level is still
+// derivable from the run seed, so neither costs the save a byte.
+//
+// Note what is deliberately NOT here: "took a bracket without dropping a match". The
+// arena is single elimination (core/model/tournament.h), so dropping a match ENDS the
+// run — that row and DOCK_FIRST would be the same row wearing two names.
+inline constexpr const char* kDockUnderdog     = "DOCK_UNDERDOG";
+inline constexpr const char* kDockPunchingUp   = "DOCK_PUNCHING_UP";
+// Enlisting in a crew (content_crews.h). An Event rather than a tally because a player
+// belongs to at most one crew at a time and may switch freely — there is no count here
+// that could mean anything, only the moment of first taking a side.
+inline constexpr const char* kCrewEnlisted     = "CREW_ENLISTED";
 inline constexpr const char* kDeepWebDepth8    = "DEEPWEB_DEPTH_8";
 inline constexpr const char* kDeepWebDepth64   = "DEEPWEB_DEPTH_64";
 }  // namespace ach

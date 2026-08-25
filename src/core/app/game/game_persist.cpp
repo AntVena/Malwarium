@@ -224,6 +224,9 @@ SaveData Game::captureSave() const {
     d.achievementNotified.assign(achNotified_, achNotified_ + kAchBytes);
     d.bossWins = bossWins_;
     d.stackerWins = stackerWins_;   // v44
+    d.tourneyWins = tourneyWins_;   // v56
+    d.pvpWins = pvpWins_;           // v56
+    d.mergesCooked = mergesCooked_; // v56
     // v53: ROCK THE DOCK's run in play. Four bytes plus a bitmask, because every entrant is
     // derived from the seed (core/model/tournament.h) rather than written down.
     d.tourneySeed = tourneySeed_;
@@ -619,6 +622,12 @@ void Game::applySave(const SaveData& d) {
     // v44: boards cleared by hand. No pre-v44 seed — see the version note in save.h for
     // why defragCount is not one.
     stackerWins_ = d.stackerWins;
+    // v56's three tallies. No pre-v56 fallback on purpose (save.cpp's tail note): each
+    // counts an event that leaves nothing behind, so an older blob has nothing to seed
+    // them from and a guess would read as a record the operator never set.
+    tourneyWins_ = d.tourneyWins;
+    pvpWins_ = d.pvpWins;
+    mergesCooked_ = d.mergesCooked;
     // v53: the arena run. A blob written before the arena existed reads back a zero
     // seed, which IS "no bracket in play"; a phase byte naming a value this build does
     // not have falls back to Ready, so a stale save resumes a fightable run rather than

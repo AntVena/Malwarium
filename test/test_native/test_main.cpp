@@ -385,6 +385,8 @@ int g_failures = 0;
     RUN(test_tourney_headless_matches_terminate_and_repeat) \
     RUN(test_tourney_rounds_halve_the_field) \
     RUN(test_tourney_run_from_the_expl_row) \
+    RUN(test_dock_ladder_counts_brackets_and_pays) \
+    RUN(test_dock_shape_rows_read_the_final) \
     RUN(test_tourney_screen_grayscale) \
     RUN(test_tourney_screen_copy_fits_its_panel) \
     RUN(test_tourney_screen_outlives_the_menu_idle_timer) \
@@ -695,6 +697,7 @@ int g_failures = 0;
     RUN(test_achievement_banner_waits_for_the_home_screen) \
     RUN(test_achievement_banner_collapses_a_burst) \
     RUN(test_save_v40_achievements_roundtrip) \
+    RUN(test_save_v56_lifetime_tallies_roundtrip) \
     RUN(test_species_dive_records_feed_the_depth_rows) \
     RUN(test_collected_items_survive_being_spent) \
     RUN(test_pedia_state_json_rack_and_record_hatched) \

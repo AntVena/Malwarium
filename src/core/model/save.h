@@ -342,7 +342,16 @@ constexpr int kSaveTextCap = 28;     // matches EventLog's LogEntry.text
 // a `sinceVersion` to retire against. A pre-v54 blob is rewritten as it is read; a
 // v54 blob loaded by a pre-v54 build parses cleanly and simply finds one item id its
 // tables do not answer to, which costs that stack its row until the build catches up.
-constexpr uint16_t kSaveVersion = 55;
+// v56 appends three lifetime tallies as its own tail at the end of the blob, the same
+// shape v55 used and for the same reason: a pre-v56 build reads a v56 save, finds every
+// tail it knows where it expects it, and simply stops before this one. They arrive
+// together because they are one change — the achievement board reaching the three
+// subsystems that were keeping no record at all (ROCK THE DOCK, the LINK duel, the MERGE
+// HUB's stove). Pre-v56 → 0 for all three, which is the honest reading: nothing older
+// was counting, and none of them can be reconstructed from anything else in the blob.
+// A bracket taken leaves no trace once its run is dismissed, a duel pays nothing, and a
+// cooked dish is indistinguishable from a dropped one the moment it is eaten.
+constexpr uint16_t kSaveVersion = 56;
 
 // The oldest blob deserialize will read. Raising it is how a device stops carrying
 // migration weight for saves nobody can still be holding — and it is the ONLY thing
@@ -828,6 +837,14 @@ struct SaveData {
     // Empty (or short) → 0, which is the truth for a device that has only ever played
     // cabinets that had no score to keep.
     std::vector<int32_t> arcadeBest;
+
+    // --- v56: three more lifetime tallies ------------------------------------
+    // Player-level, like bossWins/stackerWins above, and written as one tail at the end
+    // of the blob rather than beside them. Pre-v56 → 0; see the version note in the
+    // banner for why none of the three can be honestly seeded from an older save.
+    int32_t tourneyWins = 0;    // ROCK THE DOCK brackets taken
+    int32_t pvpWins = 0;        // LINK duels won
+    int32_t mergesCooked = 0;   // dishes cooked at the MERGE HUB
 
     // --- v48: the DECRYPTOGRAM board's per-quote state -----------------------
     // Two bits per QuoteDef::wire, low pair first within each byte. Player-level, like

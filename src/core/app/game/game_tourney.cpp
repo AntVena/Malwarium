@@ -223,6 +223,22 @@ void Game::awardTourneyPurse() {
     bits_ += applyCombatBitsBonus(kTourneyWinBits);
     addCombatXp(applyCombatXpBonus(kTourneyWinXp));
     if (const char* id = rollAreaModId(kTourneyAreaIndex)) grantMod(id);
+    ++tourneyWins_;
+    // The two rows that describe what the bracket was taken WITH, which the tally above
+    // cannot say. Both are read HERE, before the caller clears tourneyOpponent_: the
+    // final's opponent is still seated and its level is still the one the seed rolled,
+    // so neither needs a byte of save or a flag carried through the run.
+    //
+    // UNDERDOG — the final was won against an entrant rolled ABOVE the operator's own
+    // level. Strictly above: matching the band is the expected fight, and the arena
+    // draws levels uniformly, so this is a genuine draw of the short straw rather than
+    // a rung that always lands on the third win.
+    if (tourneyOpponent_.spec.level > combatLevel_) unlockAchievement(ach::kDockUnderdog);
+    // PUNCHING UP — the whole bracket taken by a pet that never reached Daemon. The
+    // entrants' stage follows their rolled level (kTourneyScriptLevel /
+    // kTourneyDaemonLevel), so the top of a bracket is Daemon country; arriving there
+    // as a Process or a Script is the operator's kit doing the work, not their stage.
+    if (pet_ && pet_->stage != Stage::Daemon) unlockAchievement(ach::kDockPunchingUp);
     char took[28];
     std::snprintf(took, sizeof(took), "TOOK %s", kTourneyName);
     log_.push(LogEventType::CombatWon, took);

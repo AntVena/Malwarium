@@ -85,15 +85,6 @@ ordering constraint is real and documented — rungs are sorted by EFFECTIVE per
 long-channel move LOWERS a rung's average — and per-creature kit has to keep that ramp intact
 while making the creatures read apart. |
 
-**ROCK THE DOCK earns no achievement, and no other milestone in the game is silent.** Taking an
-eight-operator bracket is the one three-fight run that ends with a banner and nothing else: hatching,
-diving, duelling and clearing an area all write an `AchievementDef` row. A row here wants a `wire`
-index and an icon the web 'Pedia can show, so it is not free — the icon is the whole cost, and
-reusing an existing one would put two rows under one picture. Likely rows are "took a bracket" and
-"took one without dropping a match". |
-`content_achievements.h`; `game_tourney.cpp`'s `awardTourneyPurse`; `tools/gen_pedia_data.py`. | S |
-Sourcing the icon before the code, same as every other 'Pedia-visible row. |
-
 **The combat stage has no camera, so two wide fighters cannot both be shown whole.** Seating is
 static: `combatStage` reserves the clash lane, seats each fighter's drawn band against one edge of
 it, and crops whichever one is over half the room. That is fine until both are — the widest Daemon
@@ -415,6 +406,12 @@ for. The `ICON_SECTOR_*` half of each family is drawn and live on the EXPL zone 
   MACHINE` storefront motifs. The keep also fights with the tier-3 wild roster today — it has no
   malbeasts of its own, since a new `SPR_MALBEAST_*` grows `kWildMalbeastCount` and with it the
   'Pedia's seen/defeated masks.
+- **Six achievement glyphs the achievement sweep left owing.** The rows ship and unlock; the web
+  'Pedia is the only surface that draws one, and it currently renders these text-only and warns by
+  name on every `make pedia`. `ICON_ACH_DOCK_FIRST` (worn by all three ROCK THE DOCK ladder rungs),
+  `ICON_ACH_DOCK_UNDERDOG`, `ICON_ACH_DOCK_PUNCHING_UP`, `ICON_ACH_CREW_ENLISTED`,
+  `ICON_ACH_DEEP_LINE_METAMORPHIC`, `ICON_ACH_FULL_LINE_METAMORPHIC`. Every other new row on that
+  sweep reuses a shipped glyph deliberately, so this is the whole art debt it took on. Diff **S**.
 - **Rarity-tiered, area-themed foods** — per-area food sets across Citrus Circuit / Pirate Bayou /
   Napstorrent with a rarity ramp, where the **best** food carries an effect that fits the area theme
   (Citrus Circuit might trade levels to revert a care mistake; Pirate Bayou the inverse). A

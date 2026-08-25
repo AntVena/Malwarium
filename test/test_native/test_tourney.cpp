@@ -287,6 +287,94 @@ void test_tourney_run_from_the_expl_row() {
 // banners have to survive the dual-coding gate: desaturate the panel and it must still
 // say which entrants are gone and which fight is next. Colour is the emphasis here, and
 // the word is the meaning.
+// --- What the arena is recognised for ----------------------------------------
+// Three claims, and none of them is "a bracket can be won" (that is
+// test_tourney_run_from_the_expl_row's job): that taking one is COUNTED, that the count
+// feeds the ladder, and that the two shape rows read the final rather than the tally.
+
+// Walk the OPEN EXPL list to the arena row and enter it. Split from openBracket below
+// because a dismissed run hands the operator straight back to this list — re-entering
+// the submenu from there would be navigating somewhere it already is.
+static void armBracket(Game& g) {
+    for (int i = 0; i < explRowCount() && g.listRow() != explRowCount() - 1; ++i)
+        g.onButton(press(Button::A));
+    tapB(g);
+    CHECK(g.tourneyRunning());
+}
+
+// Drive a game from the carousel to a bracket, ready to be ended. Shared by the two
+// gates below, which differ only in the pet they bring to it.
+static void openBracket(Game& g) {
+    g.debugSetSectorCleared(0, true);          // reach the Bayou -> the arena opens
+    enterSubmenuId(g, SubmenuId::Expl);
+    armBracket(g);
+}
+
+void test_dock_ladder_counts_brackets_and_pays() {
+    Game g{StartMode::Hatched, "bruinforce"};
+    g.debugAddCombatXp(600000);
+    CHECK(g.tourneyWins() == 0);
+    CHECK(!g.hasAchievement("DOCK_FIRST"));
+
+    const int before = g.bits();
+    uint32_t t = 0;
+    openBracket(g);
+    g.debugEndTourneyRun(/*champion=*/true);
+    CHECK(g.tourneyWins() == 1);
+    // The purse is immediate; the LADDER row is not. DOCK_FIRST is a counted row, so it
+    // is the achievement SWEEP that notices the tally moved — one tick, exactly as the
+    // boss and arcade ladders are earned.
+    CHECK(!g.hasAchievement("DOCK_FIRST"));
+    g.tick(t += kHeartbeatMs);
+    CHECK(g.hasAchievement("DOCK_FIRST"));
+    // The purse AND the achievement's own Bits both landed, so the row is paying on top
+    // of the arena rather than instead of it.
+    CHECK(g.bits() > before + kTourneyWinBits);
+    // ...and the next rung is not handed over with the first.
+    CHECK(!g.hasAchievement("DOCK_5"));
+
+    // An eliminated run is not a bracket taken. This is the whole reason the tally
+    // counts brackets rather than matches. The champion banner has to be DISMISSED
+    // first — a finished run still occupies the seed until the operator reads it.
+    tapB(g);
+    CHECK(!g.tourneyRunning());
+    armBracket(g);                    // the dismissal already parked us on the list
+    g.debugEndTourneyRun(/*champion=*/false);
+    g.tick(t += kHeartbeatMs);
+    CHECK(g.tourneyWins() == 1);
+}
+
+// The two rows that ask what the bracket was taken WITH. Both are read at the purse off
+// the final's own opponent, so what is asserted here is the MAPPING — which condition
+// lights which row — not that any particular seed rolls a particular rival.
+void test_dock_shape_rows_read_the_final() {
+    // A Process-stage pet, low-level enough that the arena's uniform 1..60 draw all but
+    // certainly outranks it. The STAGE is the point: "bruinforce" is a Daemon, so it is
+    // the wrong pet to ask this question with.
+    Game low{StartMode::Hatched, "paypup"};
+    CHECK(low.pet() && low.pet()->stage != Stage::Daemon);
+    openBracket(low);
+    const int oppLevel = low.tourneyOpponent().spec.level;
+    const int ownLevel = low.combatLevel();
+    low.debugEndTourneyRun(/*champion=*/true);
+    // PUNCHING UP is unconditional here: a just-hatched pet has not reached Daemon.
+    CHECK(low.hasAchievement("DOCK_PUNCHING_UP"));
+    // UNDERDOG follows the levels the seed actually rolled, asserted both ways so the
+    // gate reads the condition rather than assuming the draw.
+    CHECK(low.hasAchievement("DOCK_UNDERDOG") == (oppLevel > ownLevel));
+
+    // ...and the other side of PUNCHING UP: a pet that IS a Daemon takes the same
+    // bracket and does not earn the row for arriving underqualified.
+    Game high{StartMode::Hatched, "bruinforce"};
+    high.debugAddCombatXp(600000);
+    if (high.pet() && high.pet()->stage == Stage::Daemon) {
+        openBracket(high);
+        high.debugEndTourneyRun(/*champion=*/true);
+        CHECK(high.tourneyWins() == 1);                     // it still counts as taken
+        CHECK(!high.hasAchievement("DOCK_PUNCHING_UP"));
+    }
+}
+
 void test_tourney_screen_grayscale() {
     auto renderRun = [](bool eliminate, Framebuffer& fb) {
         Game g{StartMode::Hatched, "bruinforce"};

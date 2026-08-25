@@ -1434,6 +1434,10 @@ public:
     // Lifetime DEFRAG minigame boards cleared (save v44). Only the Stacker variant
     // counts — a Quick or Tool defrag is bought, not played.
     int stackerWins() const { return stackerWins_; }
+    // The three v56 lifetime tallies, on the same footing as the two above.
+    int tourneyWins() const { return tourneyWins_; }   // ROCK THE DOCK brackets taken
+    int pvpWins() const { return pvpWins_; }           // LINK duels won
+    int mergesCooked() const { return mergesCooked_; } // dishes cooked at the MERGE HUB
     // Has this item EVER been in the bag? (save v40) — the collection tally behind the
     // cuisine/rarity achievements, and a truer answer than "is it in the bag now" for
     // anything asking what the player has seen. Written by a sweep over the live
@@ -1673,6 +1677,11 @@ public:
         if (!tourneyRunning()) return;
         tourneyPhase_ = champion ? TourneyPhase::Champion : TourneyPhase::Eliminated;
         if (!champion) tourneyAlive_ &= static_cast<uint8_t>(~(1u << tourneySlot()));
+        // A champion run pays, exactly as the real third win does — including the two
+        // shape achievements, which read the final's opponent BEFORE it is cleared
+        // below. A hook that ended a run in the title but skipped the purse would be a
+        // hook the purse could not be tested through.
+        if (champion) awardTourneyPurse();
         tourneyOpponent_ = TourneyFighter{};
         dirty_ = true;
     }
@@ -2879,6 +2888,18 @@ private:
     // active pet's own tally of defrags of every variant: this one is a record of skill
     // and so belongs to the operator, not to whichever pet happened to be on the shelf.
     int stackerWins_ = 0;
+    // --- v56: three more lifetime tallies, all player-level like the two above ------
+    // ROCK THE DOCK brackets TAKEN (Game::awardTourneyPurse). Brackets, not matches:
+    // the arena is single elimination, so the run is the unit — see AchSeries::TourneyWins.
+    int tourneyWins_ = 0;
+    // LINK duels WON (Game::settlePvpBattle). The FIRST_DUEL achievement counts the
+    // meeting and fires at the START of a duel, because a duel that desyncs was still
+    // fought; this counts the verdict, so it only moves on a fight that finished.
+    int pvpWins_ = 0;
+    // Dishes cooked at the MERGE HUB (Game::craftRecipe). Distinct from the recipes
+    // KNOWN mask beside it: knowing a method is a Decryptogram cracked once, cooking is
+    // the thing the player does with it over and over.
+    int mergesCooked_ = 0;
     // The deepest DeepWeb Dive reached BY SPECIES (save v40). A per-species record rather
     // than one device high-water mark, so "take three different species deep" is
     // answerable and a line's own record is the max over its members. Borrowed registry

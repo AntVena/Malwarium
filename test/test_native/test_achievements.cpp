@@ -89,7 +89,9 @@ void test_achievement_table_is_well_formed() {
                            ach::kDevtoolsIntruder, ach::kTrojanUnleashed, ach::kFirstDuel,
                            ach::kBackUpAndDriven, ach::kNeededMoreBackup,
                            ach::kShatteredPlatter, ach::kPerfectDefrag,
-                           ach::kHangingByABit,
+                           ach::kHangingByABit, ach::kStackOverflow,
+                           ach::kNeverSeen, ach::kSecondInstance, ach::kHashCollision,
+                           ach::kDockUnderdog, ach::kDockPunchingUp, ach::kCrewEnlisted,
                            ach::kDeepWebDepth8, ach::kDeepWebDepth64}) {
         if (!achievementById(id)) std::printf("  MISSING ACHIEVEMENT ID: %s\n", id);
         CHECK(achievementById(id) != nullptr);
@@ -293,6 +295,29 @@ void test_save_v40_achievements_roundtrip() {
     CHECK(std::strcmp(out.collectedItems[0].id, "osi_dip") == 0);
     CHECK(out.speciesDiveIds.size() == 1 && out.speciesDiveDepths.size() == 1);
     CHECK(out.speciesDiveDepths[0] == 312);
+}
+
+// v56's three lifetime tallies survive a round trip, and a blob written without them
+// reads back as zero rather than as garbage. The second half is the half that matters:
+// the tail is appended at the very END of the blob, so a truncation there must degrade
+// to "nothing was counted" instead of dragging an earlier field's bytes into these.
+void test_save_v56_lifetime_tallies_roundtrip() {
+    SaveData a; std::strcpy(a.activeId, "paypup"); a.generation = 1;
+    a.tourneyWins = 7;
+    a.pvpWins = 19;
+    a.mergesCooked = 231;
+    SaveData out;
+    CHECK(deserializeSave(serializeSave(a), out));
+    CHECK(out.tourneyWins == 7);
+    CHECK(out.pvpWins == 19);
+    CHECK(out.mergesCooked == 231);
+
+    // A default blob (nothing ever counted) still round-trips as zeros, which is what a
+    // pre-v56 save is read back as.
+    SaveData b; std::strcpy(b.activeId, "paypup"); b.generation = 1;
+    SaveData zeroed;
+    CHECK(deserializeSave(serializeSave(b), zeroed));
+    CHECK(zeroed.tourneyWins == 0 && zeroed.pvpWins == 0 && zeroed.mergesCooked == 0);
 }
 
 // The species dive record outlives the pet that set it, and is what the per-line and
