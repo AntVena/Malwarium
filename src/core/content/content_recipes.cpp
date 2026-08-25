@@ -62,8 +62,13 @@ const MergeRecipe kMergeRecipes[] = {
     {"RAMen",
      {{"null_noodles", 2}, {"regeggs", 1}, {"data_leek", 1}, {"kernel_oil", 1}},
      "ramen", 1, /*wire=*/13, "MERGED RAMEN"},
+    // The first of the six EPIC methods, and every one of them wants a staple off the
+    // scarce shelf (content_items.cpp's kRareStapleWalkWeight): a dish that hands a pet
+    // something for life must be limited by an INGREDIENT rather than by a cooldown,
+    // because the recipe is permanent once won and nothing else throttles it. Honeypot
+    // Yogurt is the mascarpone this was missing.
     {"Tiramisudo",
-     {{"java", 2}, {"syntactic_sugar", 1}, {"breadcrumbs", 2},
+     {{"java", 2}, {"honeypot_yogurt", 1}, {"breadcrumbs", 2},
       {"vanilla_extract", 1}},
      "tiramisudo", 1, /*wire=*/14, "MERGED TIRAMISUDO"},
     {"Core Dumplings",
@@ -201,8 +206,11 @@ const MergeRecipe kMergeRecipes[] = {
     {"Kernel Panini",
      {{"buguette", 1}, {"mozillarella", 2}, {"bytesteak_tomatoes", 1}},
      "kernel_panini", 1, /*wire=*/52, "MERGED KERNEL PANINI"},
+    // EPIC — a second cheese takes the potatoes' slot, which is the joke as well as the
+    // gate: two of them scraping at the same pan. The Kaliflower stays because this is
+    // the only row that cooks one, and the pantry keeps no shelf that is eaten raw only.
     {"Racelette",
-     {{"mozillarella", 2}, {"polltatoes", 1}, {"kaliflower", 1}, {"gherkins", 1}},
+     {{"mozillarella", 2}, {"paramesan", 1}, {"kaliflower", 1}, {"gherkins", 1}},
      "racelette", 1, /*wire=*/53, "MERGED RACELETTE"},
     {"Scrambled RegEggs", {{"regeggs", 3}, {"churned_butter", 1}},
      "scrambled_regeggs", 1, /*wire=*/54, "MERGED SCRAMBLED REGEGGS"},
@@ -229,12 +237,15 @@ const MergeRecipe kMergeRecipes[] = {
     {"SHAshimi", {{"red_herring", 2}, {"romaine", 1}, {"natto", 1}},
      "shashimi", 1, /*wire=*/62, "MERGED SHASHIMI"},
     // The plates.
+    // EPIC — the salt gives up its slot to a rack of Lambda Chops.
     {"Spare RIBs",
-     {{"saasage", 2}, {"imaple_syrup", 1}, {"capsicum", 1}, {"c_salt", 1}},
+     {{"saasage", 2}, {"lambda_chops", 1}, {"imaple_syrup", 1}, {"capsicum", 1}},
      "spare_ribs", 1, /*wire=*/63, "MERGED SPARE RIBS"},
     {"RESTed Steak",
      {{"file_mignon", 2}, {"churned_butter", 1}, {"peppermint", 1}},
      "rested_steak", 1, /*wire=*/64, "MERGED RESTED STEAK"},
+    // EPIC. The only one of the six that needed no new ingredient — File Mignon was
+    // always the premium cut, and it wants TWO, which makes this the dearest of them.
     {"Privilege Escalope",
      {{"file_mignon", 2}, {"breadcrumbs", 2}, {"regeggs", 1}},
      "privilege_escalope", 1, /*wire=*/65, "MERGED PRIVILEGE ESCALOPE"},
@@ -276,8 +287,10 @@ const MergeRecipe kMergeRecipes[] = {
      {{"self_signed_flour", 2}, {"double_precision_cream", 1}, {"cocoa", 1},
       {"regeggs", 1}},
      "declair", 1, /*wire=*/78, "MERGED DECLAIR"},
+    // EPIC — a Silicon Wafer on the side, which is what you measure a thing with.
     {"Profilerole",
-     {{"self_signed_flour", 2}, {"double_precision_cream", 2}, {"cocoa", 1}},
+     {{"self_signed_flour", 2}, {"double_precision_cream", 2}, {"cocoa", 1},
+      {"silicon_wafers", 1}},
      "profilerole", 1, /*wire=*/79, "MERGED PROFILEROLE"},
     {"COBOLer",
      {{"apiricot", 2}, {"self_signed_flour", 2}, {"syntactic_sugar", 1}},
@@ -327,8 +340,11 @@ const MergeRecipe kMergeRecipes[] = {
      {{"double_precision_cream", 2}, {"syntactic_sugar", 1},
       {"honeypot_yogurt", 1}},
      "syn_ack_shake", 1, /*wire=*/94, "MERGED SYN-ACK SHAKE"},
+    // EPIC — a float needs something floating on it, and Marshalled Mallows are what
+    // goes over the top of a glass that was already full.
     {"Buffer Overfloat",
-     {{"r007_b33r", 1}, {"double_precision_cream", 2}, {"syntactic_sugar", 1}},
+     {{"r007_b33r", 1}, {"double_precision_cream", 2}, {"syntactic_sugar", 1},
+      {"marshalled_mallows", 1}},
      "buffer_overfloat", 1, /*wire=*/95, "MERGED BUFFER OVERFLOAT"},
     {"Hard CIDR", {{"applets", 3}, {"syntactic_sugar", 1}},
      "hard_cidr", 1, /*wire=*/96, "MERGED HARD CIDR"},

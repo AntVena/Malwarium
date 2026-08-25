@@ -594,9 +594,9 @@ void test_item_filter_narrows_rows() {
     auto itemCount = [](const std::vector<InvRow>& rows) {
         int n = 0; for (const auto& row : rows) if (!row.header) ++n; return n;
     };
-    CHECK(headerCount(all) == 4 && itemCount(all) == 7);
+    CHECK(headerCount(all) == 4 && itemCount(all) == 6);
     CHECK(headerCount(food) == 2 && itemCount(food) == 2);
-    CHECK(headerCount(buffs) == 1 && itemCount(buffs) == 3);
+    CHECK(headerCount(buffs) == 1 && itemCount(buffs) == 2);
     CHECK(headerCount(quest) == 1 && itemCount(quest) == 2);
     for (const auto& row : food)  if (!row.header) CHECK(row.def->type == ItemDef::Type::Food);
     for (const auto& row : buffs) if (!row.header) CHECK(row.def->type == ItemDef::Type::Buff);
@@ -716,13 +716,13 @@ void test_item_category_filters_split_quest() {
 // all 5 — the tile narrows by filterMatches (unsplit), not by group.
 void test_item_picker_tiles_count_units() {
     ContentRegistry r = ContentRegistry::embedded();
-    Inventory inv = Inventory::starting();      // 5 food + 3 buffs + 2 keys = 10 units
+    Inventory inv = Inventory::starting();      // 5 food + 2 buffs + 2 keys = 9 units
     auto tiles = buildItemPickerRows(r, inv);
     CHECK(tiles.size() == 6);
-    CHECK(tiles[0].filter == ItemFilter::All         && tiles[0].units == 10);
+    CHECK(tiles[0].filter == ItemFilter::All         && tiles[0].units == 9);
     CHECK(tiles[1].filter == ItemFilter::Food        && tiles[1].units == 5);
     CHECK(tiles[2].filter == ItemFilter::Ingredients && tiles[2].units == 2);
-    CHECK(tiles[3].filter == ItemFilter::Buffs       && tiles[3].units == 3);
+    CHECK(tiles[3].filter == ItemFilter::Buffs       && tiles[3].units == 2);
     CHECK(tiles[4].filter == ItemFilter::Keys        && tiles[4].units == 2);
     CHECK(tiles[5].filter == ItemFilter::Tools       && tiles[5].units == 0);
 

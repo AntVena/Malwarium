@@ -371,6 +371,11 @@ const char* const kQuotePrizeLadder[] = {
     "macrol_fry_up",
     "vanilla_java_roast",
     "gnulash",
+    // EPIC, and the first of six spaced roughly fifteen rungs apart down the rest of
+    // this list (the banner in the header says why they are spread rather than stacked
+    // at the end). Tiramisudo leads them because its inputs are the four commonest
+    // staples in the pantry, so it is the one an early kitchen can actually cook.
+    "tiramisudo",
     // The second service. RISCotto and LANsagne are the two dishes whose ingredients
     // tell the same joke as their names, so they lead it; Cacherole wants a dish already
     // cooked, so a player who has come this far has one.
@@ -393,6 +398,9 @@ const char* const kQuotePrizeLadder[] = {
     "emacsaroni",
     "cod_review",
     "spaghetti_code",
+    // EPIC. The XP rate is the grant worth winning EARLY — it pays off over every hour
+    // the pet is raised after it, where a stat point is worth the same whenever it lands.
+    "profilerole",
     "chrootons",
     "quicksortbet",
     "gzipacho",
@@ -411,6 +419,9 @@ const char* const kQuotePrizeLadder[] = {
     "pickle_jar",
     "flash_fried_chips",
     "twisted_pairetzels",
+    // EPIC — the first of the four off-level stat points, and the one whose ingredients
+    // are all first-shelf.
+    "racelette",
     "corrumpets",
     "arpas",
     "idleys",
@@ -425,6 +436,8 @@ const char* const kQuotePrizeLadder[] = {
     "vinaigrette",
     "char_grilled_array",
     "config_rolls",
+    // EPIC — the second stat point.
+    "spare_ribs",
     "current_buns",
     "hot_swapped_buns",
     "firewaffle",
@@ -439,6 +452,9 @@ const char* const kQuotePrizeLadder[] = {
     "declair",
     "candied_yamls",
     "raspberry_pie",
+    // EPIC — the third. It wants an R007_B33R, which is the only input in the six that
+    // is a finished drink rather than a staple.
+    "buffer_overfloat",
     "cherry_picked_tart",
     "coboler",
     "flat_white",
@@ -453,6 +469,9 @@ const char* const kQuotePrizeLadder[] = {
     "force_pulled_pork",
     "rubber_duck_confit",
     "packettone",
+    // EPIC — the last of them, and the one an operator is likeliest to have been
+    // waiting for: Power is the stat every build wants.
+    "privilege_escalope",
     "bashlava",
     "optical_mousse",
     "fork_bombe",
@@ -474,20 +493,6 @@ const char* const kQuotePrizeLadder[] = {
     "payloaf",
     "vacuum_sealed_leftovers",
     "disk_platter",
-    // THE EPIC TIER, and the reason the ladder has an end. Each of these six grants the
-    // pet eating it something it keeps for the rest of its life (content_items.cpp's
-    // cooked-dish block, core/model/pet_upgrades.h) — an off-level stat point no
-    // Rollback can shed, a permanent XP rate, a permanently shorter Bandwidth regen.
-    // They are the last methods the board teaches because nothing else in the game hands
-    // a permanent upgrade over at any price, and because an operator who has solved this
-    // far has a kitchen that can actually cook them. Tiramisudo leads, the four stat
-    // points follow in stat order, and the rate is the last thing won.
-    "tiramisudo",
-    "privilege_escalope",
-    "spare_ribs",
-    "racelette",
-    "buffer_overfloat",
-    "profilerole",
 };
 }  // namespace
 

@@ -76,21 +76,31 @@ const LootEntry kCachePoolUncommon[] = {{"dyno_nuggets"}, {"r007_b33r"},
                                         {"desalinated_c_salt"}, {"papaya"},
                                         {"mozillarella"}, {"imaple_syrup"},
                                         {"double_precision_cream"}, {"cocoa"},
-                                        {"rubber_ducks"}, {"honeypot_yogurt"},
+                                        {"rubber_ducks"},
                                         // The third shelf's uncommon half.
                                         {"epoch_dates"}, {"dotfigs"},
                                         {"apiricot"}, {"raspberry_pis"},
-                                        {"table_grapes"}, {"lambda_chops"},
-                                        {"file_mignon"}, {"minified_beef"},
+                                        {"table_grapes"},
+                                        {"minified_beef"},
                                         {"saasage"}, {"packed_sardines"},
-                                        {"natto"}, {"paramesan"},
+                                        {"natto"},
                                         {"macadamia"}, {"cache_ews"},
-                                        {"squid_ink"}, {"leaf_node_tea"},
-                                        {"silicon_wafers"},
-                                        {"marshalled_mallows"}};
+                                        {"squid_ink"}, {"leaf_node_tea"}};
 const LootEntry kCachePoolRare[]     = {{"backup_drive"}, {"sinkhole_trap"},
                                         {"rollback"}, {"deep_learning_module"},
-                                        {"kernel_bell"}, {"decryptogram"}};
+                                        {"kernel_bell"}, {"decryptogram"},
+                                        // THE SCARCE SHELF — the six staples the EPIC
+                                        // dishes want, one apiece (content_recipes.cpp).
+                                        // They are here rather than on the Uncommon pool
+                                        // because they are the throttle on how many
+                                        // permanent upgrades a player can cook: an Epic
+                                        // dish is only as makeable as its scarcest
+                                        // ingredient, and this pool plus a thinned walk
+                                        // drop is the whole supply.
+                                        {"honeypot_yogurt"}, {"lambda_chops"},
+                                        {"file_mignon"}, {"paramesan"},
+                                        {"silicon_wafers"},
+                                        {"marshalled_mallows"}};
 const LootEntry kCachePoolEpic[]     = {{"rollback"}, {"yubi_cookie"},
                                         {"backup_drive"}, {"restore_point"},
                                         {"deep_learning_core"}, {"zeroday_bell"}};
@@ -109,6 +119,12 @@ constexpr int poolN(const LootEntry (&)[N]) { return N; }
 // staples would crowd those out of the one place they come from, so every pantry row
 // there carries this override instead.
 constexpr int kStapleWalkWeight = 8;
+// ...and the share the six SCARCE staples draw at — the ones the Epic dishes are gated
+// on (kCachePoolRare above). A quarter of an ordinary staple's, so a walk still turns
+// one up now and then and an Epic dish stays cookable without a cache, just slowly.
+// This is the one number that decides how fast a player can hand a pet a permanent
+// upgrade, so it lives beside the weight it is a fraction of rather than in tunables.
+constexpr int kRareStapleWalkWeight = 2;
 }  // namespace
 
 // The walk loot-cache event's own pool (Game::grantLootReward + the Wi-Fi sleeping-
@@ -141,7 +157,7 @@ const LootEntry kLootPool[] = {{"dyno_nuggets"}, {"tortilla_chip"},
     {"mozillarella", kStapleWalkWeight}, {"imaple_syrup", kStapleWalkWeight},
     {"double_precision_cream", kStapleWalkWeight}, {"cocoa", kStapleWalkWeight},
     {"rubber_ducks", kStapleWalkWeight},
-    {"honeypot_yogurt", kStapleWalkWeight},
+    {"honeypot_yogurt", kRareStapleWalkWeight},
     {"parsenips", kStapleWalkWeight}, {"romaine", kStapleWalkWeight},
     {"bitroot", kStapleWalkWeight}, {"swiss_chard", kStapleWalkWeight},
     {"string_beans", kStapleWalkWeight}, {"snap_peas", kStapleWalkWeight},
@@ -160,13 +176,13 @@ const LootEntry kLootPool[] = {{"dyno_nuggets"}, {"tortilla_chip"},
     {"peer_drops", kStapleWalkWeight}, {"epoch_dates", kStapleWalkWeight},
     {"dotfigs", kStapleWalkWeight}, {"apiricot", kStapleWalkWeight},
     {"raspberry_pis", kStapleWalkWeight}, {"table_grapes", kStapleWalkWeight},
-    {"lambda_chops", kStapleWalkWeight}, {"file_mignon", kStapleWalkWeight},
+    {"lambda_chops", kRareStapleWalkWeight}, {"file_mignon", kRareStapleWalkWeight},
     {"minified_beef", kStapleWalkWeight}, {"saasage", kStapleWalkWeight},
     {"packed_sardines", kStapleWalkWeight}, {"natto", kStapleWalkWeight},
-    {"paramesan", kStapleWalkWeight}, {"macadamia", kStapleWalkWeight},
+    {"paramesan", kRareStapleWalkWeight}, {"macadamia", kStapleWalkWeight},
     {"cache_ews", kStapleWalkWeight}, {"squid_ink", kStapleWalkWeight},
-    {"leaf_node_tea", kStapleWalkWeight}, {"silicon_wafers", kStapleWalkWeight},
-    {"marshalled_mallows", kStapleWalkWeight}};
+    {"leaf_node_tea", kStapleWalkWeight}, {"silicon_wafers", kRareStapleWalkWeight},
+    {"marshalled_mallows", kRareStapleWalkWeight}};
 const int kLootPoolCount = poolN(kLootPool);
 
 using IE = ItemEffect;
@@ -646,13 +662,13 @@ const ItemDef kItems[] = {
     // the shelf is what makes that a joke rather than an oversight. Quicksortbet is
     // where it actually gets cooked.
     {"honeypot_yogurt", "Honeypot Yogurt", ItemDef::Type::Food,
-     ItemDef::Rarity::Uncommon,
+     ItemDef::Rarity::Rare,
      "Left out where anyone could take it. That is the point of it.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 5}, {IE::Kind::Happy, 8},
                                  {IE::Kind::Frag, -4}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
-     /*category=*/ItemDef::Category::Derive, /*dropWeight=*/10},
+     /*category=*/ItemDef::Category::Derive, /*dropWeight=*/0},
 
     // The pantry's third shelf: the produce, dry goods, protein and sweets the rest of
     // the kitchen reaches for. Same rule as the shelves above — the tier says how little
@@ -867,19 +883,19 @@ const ItemDef kItems[] = {
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/20},
 
     {"lambda_chops", "Lambda Chops", ItemDef::Type::Food,
-     ItemDef::Rarity::Uncommon,
+     ItemDef::Rarity::Rare,
      "Anonymous. Nobody can say which sheep they came off.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 10}, {IE::Kind::Happy, 3}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
-     /*category=*/ItemDef::Category::Derive, /*dropWeight=*/18},
+     /*category=*/ItemDef::Category::Derive, /*dropWeight=*/0},
 
-    {"file_mignon", "File Mignon", ItemDef::Type::Food, ItemDef::Rarity::Uncommon,
+    {"file_mignon", "File Mignon", ItemDef::Type::Food, ItemDef::Rarity::Rare,
      "Small, tender, and somebody deleted the backup.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 9}, {IE::Kind::Happy, 6}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
-     /*category=*/ItemDef::Category::Derive, /*dropWeight=*/14},
+     /*category=*/ItemDef::Category::Derive, /*dropWeight=*/0},
 
     {"minified_beef", "Minified Beef", ItemDef::Type::Food,
      ItemDef::Rarity::Uncommon,
@@ -913,12 +929,12 @@ const ItemDef kItems[] = {
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/16},
 
-    {"paramesan", "Paramesan", ItemDef::Type::Food, ItemDef::Rarity::Uncommon,
+    {"paramesan", "Paramesan", ItemDef::Type::Food, ItemDef::Rarity::Rare,
      "Grated over the top. Optional, with a sensible default.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 4}, {IE::Kind::Happy, 7}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
-     /*category=*/ItemDef::Category::Derive, /*dropWeight=*/26},
+     /*category=*/ItemDef::Category::Derive, /*dropWeight=*/0},
 
     {"macadamia", "MACadamia", ItemDef::Type::Food, ItemDef::Rarity::Uncommon,
      "Hard shell, unique address, and you can forge it.",
@@ -971,12 +987,12 @@ const ItemDef kItems[] = {
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/42},
 
     {"silicon_wafers", "Silicon Wafers", ItemDef::Type::Food,
-     ItemDef::Rarity::Uncommon,
+     ItemDef::Rarity::Rare,
      "Thin, flat, and worth more than the tin they came in.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 3}, {IE::Kind::Happy, 8}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
-     /*category=*/ItemDef::Category::Derive, /*dropWeight=*/24},
+     /*category=*/ItemDef::Category::Derive, /*dropWeight=*/0},
 
     {"nibbles", "Nibbles", ItemDef::Type::Food, ItemDef::Rarity::Common,
      "Four bits to a go, and two goes make a proper mouthful.",
@@ -986,13 +1002,13 @@ const ItemDef kItems[] = {
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/40},
 
     {"marshalled_mallows", "Marshalled Mallows", ItemDef::Type::Food,
-     ItemDef::Rarity::Uncommon,
+     ItemDef::Rarity::Rare,
      "Flattened into a shape that travels, ready to be sent.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 2}, {IE::Kind::Happy, 11},
                                  {IE::Kind::Frag, 3}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
-     /*category=*/ItemDef::Category::Derive, /*dropWeight=*/20},
+     /*category=*/ItemDef::Category::Derive, /*dropWeight=*/0},
 
     {"humbugs", "Humbugs", ItemDef::Type::Food, ItemDef::Rarity::Common,
      "There is one in every batch, and it is always striped.",
@@ -1696,9 +1712,16 @@ const ItemDef kItems[] = {
     //
     // EPIC ITEMS --------------------------
     //
-     {"yubi_cookie", "Yubi-Cookie", ItemDef::Type::Buff,
+     // The Yubi-Cookie is a COOKIE: it is eaten, it fills the pet up, and the pet is
+    // happier for it every single time. What it does once in a life is forget a care
+    // mistake — the same shape the Epic dishes take, a very good meal with one
+    // permanent thing folded into it, which is why it is filed with the food rather
+    // than with the buffs it arms none of.
+    {"yubi_cookie", "Yubi-Cookie", ItemDef::Type::Food,
      ItemDef::Rarity::Epic, "So delicious it could make the pet forget {mistakes} care mistake. Max 1 per lifecycle.",
-     ItemDef::Context::Anytime, {{IE::Kind::RemoveCareMistakeOnce, 1}}},
+     ItemDef::Context::Anytime,
+     {{IE::Kind::RemoveCareMistakeOnce, 1}, {IE::Kind::Hunger, 20},
+      {IE::Kind::Happy, 40}}},
     
      // Restore Point: a System-Restore shield — Use on a Process/Script pet to
     // arm protection against the NEXT care mistake, once per lifetime. The shield is
@@ -1759,12 +1782,14 @@ const ItemDef kItems[] = {
      /*bits=*/0, /*walkWarp=*/ItemDef::WalkWarp::SafeRest, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Keys},
     
-    // Rollback: a level re-roll BUFF, not a quest item — it doesn't respond to a
-    // strange event, it's a lever the player pulls at will on the stat RNG. Use opens
-    // a stat picker (use=Rollback) to shed one earned combat-stat point (−1 that stat,
-    // −1 level) so the pet re-grinds that level and re-rolls a fresh +1. A reward-pool
-    // drop; inert at level 0 (nothing to shed).
-    {"rollback", "Rollback", ItemDef::Type::Buff,
+    // Rollback: a TOOL. It arms nothing and waits for nothing — Use opens a stat picker
+    // (use=Rollback) and the shed lands the moment it is confirmed, which is the line
+    // between the two tabs: a Buff is a thing the pet is now CARRYING, a Tool is a thing
+    // the operator just DID. Sheds one earned combat-stat point (-1 that stat, -1 level)
+    // so the pet re-grinds that level and re-rolls a fresh +1. A reward-pool drop; inert
+    // at level 0 (nothing to shed), and it can never reach an off-level point an Epic
+    // dish granted (core/model/pet_upgrades.h).
+    {"rollback", "Rollback", ItemDef::Type::Quest,
      ItemDef::Rarity::Rare,
      "Shed one earned stat point (-1 level) to re-roll it.",
      ItemDef::Context::Anytime, /*effects=*/{}, /*combatHeal=*/0, /*preEncounterXp=*/0,

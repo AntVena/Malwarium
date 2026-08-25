@@ -41,7 +41,7 @@ void test_event_log() {
 // Grouped inventory list: section headers per group, cursor skips them, wraps.
 void test_inventory_rows_grouped() {
     ContentRegistry r = ContentRegistry::embedded();
-    Inventory inv = Inventory::starting();           // 7 items across 3 groups
+    Inventory inv = Inventory::starting();           // 6 items across 4 groups
     auto rows = buildInventoryRows(r, inv, false);
 
     int headers = 0, items = 0;
@@ -49,7 +49,7 @@ void test_inventory_rows_grouped() {
     // FOOD/INGREDIENTS/BUFFS/QUEST: tortilla_chip is both a snack and a Nachos
     // ingredient, so it splits the starting shelf's Food stack into its own group
     // alongside dyno_nuggets's.
-    CHECK(items == 7 && headers == 4);
+    CHECK(items == 6 && headers == 4);
     CHECK(rows.front().header && std::strcmp(rows.front().label, "FOOD") == 0);
 
     const int f = firstSelectableRow(rows);
@@ -392,6 +392,7 @@ void test_restore_shield_covers_maint_fail() {
 void test_yubi_cookie_once_per_lifetime() {
     Game g{StartMode::Hatched};
     g.model().addCareMistake(2);                     // two mistakes to shave
+    g.inventory().add("yubi_cookie", 1);
     CHECK(g.inventory().count("yubi_cookie") == 1);
     g.debugUseItem("yubi_cookie");                   // -1 mistake (first use)
     CHECK(g.model().careMistakes() == 1);
@@ -439,14 +440,25 @@ void test_inert_use_keeps_the_item() {
     CHECK(g.backupShieldArmed());
     CHECK(g.inventory().count("backup_drive") == armed - 1);
 
-    // Same rule off a different state: the Yubi-Cookie is once per lifetime, so
-    // the second one is refused instead of vanishing for nothing.
+    // Same rule off a different state: the Restore Point's shield is once per lifetime,
+    // so the second one is refused instead of vanishing for nothing.
+    g.inventory().add("restore_point", 2);
+    g.debugUseItem("restore_point");
+    const int spent = g.inventory().count("restore_point");
+    g.debugUseItem("restore_point");
+    CHECK(g.inventory().count("restore_point") == spent);
+
+    // ...and the line the other way. The Yubi-Cookie carries the same once-per-lifetime
+    // mistake wipe, but it is a FOOD: a spent cookie is still a cookie, so the second one
+    // is EATEN for its Hunger and Happiness rather than refused. Nothing that fills a
+    // vital can ever be inert (Game::itemUseIsInert).
     g.model().setCareMistakes(2);
     g.inventory().add("yubi_cookie", 2);
     g.debugUseItem("yubi_cookie");
-    const int spent = g.inventory().count("yubi_cookie");
+    CHECK(g.model().careMistakes() == 1);            // the once-per-life half fired
     g.debugUseItem("yubi_cookie");
-    CHECK(g.inventory().count("yubi_cookie") == spent);
+    CHECK(g.model().careMistakes() == 1);            // ...once, and only once
+    CHECK(g.inventory().count("yubi_cookie") == 0);  // but both were eaten
 }
 
 // No Bits path reaches a recipe. The SHOP sells the MERGE HUB and nothing that
@@ -1045,7 +1057,23 @@ void test_every_permanent_grant_is_one_epic_dish() {
             CHECK(itemIsOncePerPetLifetime(*d));    // the 'Pedia's pet page reads this
             // Cooked, never bought: the recipe is the payoff, so no shop lists a price.
             CHECK(d->bitsPrice == 0);
-            CHECK(recipeIndexByOutput(d->id) >= 0);
+            const int r = recipeIndexByOutput(d->id);
+            CHECK(r >= 0);
+            if (r < 0) continue;
+            // THE THROTTLE. A recipe is permanent once won and has no cooldown, so the
+            // only thing limiting how many permanent upgrades a player can hand out is
+            // what the dish is made OF. Every Epic method must therefore want at least
+            // one ingredient off the scarce shelf (content_items.cpp's
+            // kRareStapleWalkWeight) — without this a six-Common recipe would make the
+            // whole tier farmable in an afternoon.
+            int scarce = 0;
+            for (const RecipeInput& in : kMergeRecipes[r].inputs) {
+                if (!in.id) continue;
+                const ItemDef* ing = ContentRegistry::embedded().item(in.id);
+                CHECK(ing);
+                if (ing && ing->rarity >= ItemDef::Rarity::Rare) scarce += in.qty;
+            }
+            CHECK(scarce >= 1);
         }
         CHECK(rows == 1);
     }

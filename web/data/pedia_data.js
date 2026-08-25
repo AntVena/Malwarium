@@ -1192,7 +1192,7 @@ window.PEDIA_DATA = {
       "id": "honeypot_yogurt",
       "name": "Honeypot Yogurt",
       "type": "FOOD",
-      "rarity": "UNCOMMON",
+      "rarity": "RARE",
       "effect": "Left out where anyone could take it. That is the point of it.",
       "stats": "HUNGER +5 / HAPPY +8 / FRAG -4",
       "icon": "assets/icons/ICON_ITEM_HONEYPOT_YOGURT.png"
@@ -1462,7 +1462,7 @@ window.PEDIA_DATA = {
       "id": "lambda_chops",
       "name": "Lambda Chops",
       "type": "FOOD",
-      "rarity": "UNCOMMON",
+      "rarity": "RARE",
       "effect": "Anonymous. Nobody can say which sheep they came off.",
       "stats": "HUNGER +10 / HAPPY +3",
       "icon": "assets/icons/ICON_ITEM_LAMBDA_CHOPS.png"
@@ -1471,7 +1471,7 @@ window.PEDIA_DATA = {
       "id": "file_mignon",
       "name": "File Mignon",
       "type": "FOOD",
-      "rarity": "UNCOMMON",
+      "rarity": "RARE",
       "effect": "Small, tender, and somebody deleted the backup.",
       "stats": "HUNGER +9 / HAPPY +6",
       "icon": "assets/icons/ICON_ITEM_FILE_MIGNON.png"
@@ -1516,7 +1516,7 @@ window.PEDIA_DATA = {
       "id": "paramesan",
       "name": "Paramesan",
       "type": "FOOD",
-      "rarity": "UNCOMMON",
+      "rarity": "RARE",
       "effect": "Grated over the top. Optional, with a sensible default.",
       "stats": "HUNGER +4 / HAPPY +7",
       "icon": "assets/icons/ICON_ITEM_PARAMESAN.png"
@@ -1588,7 +1588,7 @@ window.PEDIA_DATA = {
       "id": "silicon_wafers",
       "name": "Silicon Wafers",
       "type": "FOOD",
-      "rarity": "UNCOMMON",
+      "rarity": "RARE",
       "effect": "Thin, flat, and worth more than the tin they came in.",
       "stats": "HUNGER +3 / HAPPY +8",
       "icon": "assets/icons/ICON_ITEM_SILICON_WAFERS.png"
@@ -1606,7 +1606,7 @@ window.PEDIA_DATA = {
       "id": "marshalled_mallows",
       "name": "Marshalled Mallows",
       "type": "FOOD",
-      "rarity": "UNCOMMON",
+      "rarity": "RARE",
       "effect": "Flattened into a shape that travels, ready to be sent.",
       "stats": "HUNGER +2 / HAPPY +11 / FRAG +3",
       "icon": "assets/icons/ICON_ITEM_MARSHALLED_MALLOWS.png"
@@ -2579,10 +2579,10 @@ window.PEDIA_DATA = {
     {
       "id": "yubi_cookie",
       "name": "Yubi-Cookie",
-      "type": "BUFFS",
+      "type": "FOOD",
       "rarity": "EPIC",
       "effect": "So delicious it could make the pet forget 1 care mistake. Max 1 per lifecycle.",
-      "stats": "MISTAKE -1",
+      "stats": "MISTAKE -1 / HUNGER +20 / HAPPY +40",
       "icon": "assets/icons/ICON_ITEM_YUBI_COOKIE.png"
     },
     {
@@ -2633,7 +2633,7 @@ window.PEDIA_DATA = {
     {
       "id": "rollback",
       "name": "Rollback",
-      "type": "BUFFS",
+      "type": "QUEST",
       "rarity": "RARE",
       "effect": "Shed one earned stat point (-1 level) to re-roll it.",
       "stats": "",
@@ -2997,7 +2997,7 @@ window.PEDIA_DATA = {
           "qty": 2
         },
         {
-          "id": "syntactic_sugar",
+          "id": "honeypot_yogurt",
           "qty": 1
         },
         {
@@ -3829,7 +3829,7 @@ window.PEDIA_DATA = {
           "qty": 2
         },
         {
-          "id": "polltatoes",
+          "id": "paramesan",
           "qty": 1
         },
         {
@@ -4033,15 +4033,15 @@ window.PEDIA_DATA = {
           "qty": 2
         },
         {
+          "id": "lambda_chops",
+          "qty": 1
+        },
+        {
           "id": "imaple_syrup",
           "qty": 1
         },
         {
           "id": "capsicum",
-          "qty": 1
-        },
-        {
-          "id": "c_salt",
           "qty": 1
         }
       ],
@@ -4350,6 +4350,10 @@ window.PEDIA_DATA = {
         },
         {
           "id": "cocoa",
+          "qty": 1
+        },
+        {
+          "id": "silicon_wafers",
           "qty": 1
         }
       ],
@@ -4674,6 +4678,10 @@ window.PEDIA_DATA = {
         },
         {
           "id": "syntactic_sugar",
+          "qty": 1
+        },
+        {
+          "id": "marshalled_mallows",
           "qty": 1
         }
       ],
@@ -6686,9 +6694,9 @@ window.PEDIA_DATA = {
     {
       "key": "CUISINE_ALL",
       "name": "Full Buffet",
-      "trigger": "Get hold of all 194 foods, the cooked ones included.",
+      "trigger": "Get hold of all 195 foods, the cooked ones included.",
       "icon": "assets/icons/ICON_ACH_CUISINE_ALL.png",
-      "goal": 194
+      "goal": 195
     },
     {
       "key": "COOK_NOODLES",
@@ -6784,9 +6792,9 @@ window.PEDIA_DATA = {
     {
       "key": "COLLECT_RARE",
       "name": "Rare Collector",
-      "trigger": "Get hold of all 40 Rare items.",
+      "trigger": "Get hold of all 46 Rare items.",
       "icon": "assets/icons/ICON_ACH_COLLECT_RARE.png",
-      "goal": 40
+      "goal": 46
     },
     {
       "key": "COLLECT_EPIC",

@@ -461,6 +461,7 @@ void test_pedia_state_publishes_the_pets_one_shot_items() {
 
     // Spend one, the way a player does, and only that one changes.
     g.model().addCareMistake(1);                 // something for it to shave
+    g.inventory().add("yubi_cookie", 1);
     g.debugUseItem("yubi_cookie");
     {
         const std::string pet = activePetBlock(buildPediaStateJson(g));
