@@ -43,20 +43,6 @@ answered the wrong question. |
 
 **Capture arming costs ~70KB and the AP ~58KB**, against ~126KB free with the radio idle. The device works, and the save no longer needs a big contiguous block, but that was the only thing standing on this — anything else that grows will hit the same wall. Worth a pass at what the capture path actually needs. | `net_capture.h`'s `powerUp` (`esp_wifi_init` + promiscuous + the pcap SD buffers). | M | Measured on device, not estimated: `[ap] down free=126408` → `[cap] armed free=56188`. |
 
-**A bonus that lands on a full cap pays literally nothing, and the row still reads as if it
-paid.** Several stats clamp — `kLevelDmgReduceMaxPct` at 85% is the sharpest, and `defenseMultPct`,
-the level-Defense cap and the Obfuscation siphon ceiling all do the same thing — so a pet that has
-already reached one gets zero from the next mod, move or level point that adds to it, with nothing
-on any screen saying so. The Epics make it easy to hit: Extortion Ledger alone adds 35 points of
-cut to a line that also stacks Cipher. Wants OVERFLOW: what would have been clamped away converts
-into some other benefit (max-Health is the natural sink, being the one pool nothing caps) rather
-than evaporating. One conversion at each clamp site, and the cap stays exactly where it is — this
-is about the discard, not the ceiling. |
-`combat_factory.cpp`'s `applyLevelStatPoints` + the mod switch; `combat.cpp`'s clamp sites. | M |
-Same class of silent-zero as a mod wired to no hook, which is the failure the
-`test_every_mod_reaches_the_fight` gate exists to catch — that one catches a mod that never
-applies, this is a mod that applies into a full bucket. |
-
 **A Packet Wraith and a Cache Ghoul at the same rung are still one fight.** `wildMalbeast` gives
 tiers 1/2/3 `{quick_jab}` / `{quick_jab, packet_storm}` / `{packet_storm, fork_bomb}`, and the
 sub-area ladder in `applyWildSubAreaRamp` overrides with the same handful again — both keyed by

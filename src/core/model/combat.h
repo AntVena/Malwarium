@@ -870,6 +870,32 @@ int levelDefenseBraceRetainPct(int points);
 // deterministic, so it is unit-tested directly rather than through a fight. Shared with
 // the DeepWeb dive's rolled enemies, which are held to the same curve the pet is.
 int levelDefenseCutPct(int points);
+// What that curve's own ceiling REFUSED, in percentage points — the discard
+// kLevelDefenseCapPct makes, and the only place the uncapped curve is visible. Paired
+// with the function above rather than folded into it so the cut stays a pure, total
+// answer to "what is this pet's Defence worth" and nothing downstream has to learn a
+// second output to keep working.
+int levelDefenseCutOverflowPct(int points);
+
+// OVERFLOW: what a bonus the caps refused is worth instead, in max-Health.
+//
+// A clamp is a promise about the CEILING, not about the bonus. A pet already at the
+// never-immune cut, the level-Defence ceiling or the brace cap earns literally nothing
+// from the next Defence point, mod or absorbed move, and no screen says so — the row
+// still reads as if it paid. The Epics make it easy to reach: Extortion Ledger alone
+// adds 35 points of cut to a line that also stacks Cipher. So the discard is paid into
+// max-Health, the one pool nothing caps.
+//
+// At the level table's OWN exchange rate: `perPointPct` is what one stat point bought of
+// the clamped stat and kLevelHealthPerPoint is what the same point buys of max-Health, so
+// what arrives is exactly what that investment was worth spent the other way. There is
+// nothing new to tune, and overflowing can never be worth MORE than not overflowing.
+//
+// This is about the discard, not the ceiling: every cap stays exactly where it is, and
+// the read-side clamps that keep a fighter killable are untouched. It pays a pet's own
+// EARNED bonuses — level points, mods, Polymorph — and not a spec-built enemy, which is
+// described rather than rewarded and whose budget the zone already tunes.
+int capOverflowHealth(int overflowPct, int perPointPct);
 // Build an enemy Combatant from a spec.
 Combatant makeEnemyCombatant(const ContentRegistry& reg, const CombatEnemy& spec);
 

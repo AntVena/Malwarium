@@ -239,12 +239,21 @@ void polymorphPay(Combatant& c, MoveKind kind, int points) {
         c.speed += static_cast<float>(kLevelSpeedPerPoint * points);
     } else {
         c.dmgReducePct += kLevelDefensePctPerPoint * points;
-        if (c.dmgReducePct > kLevelDmgReduceMaxPct) c.dmgReducePct = kLevelDmgReduceMaxPct;
+        int gain = kLevelHealthPerPoint * points;
+        // A payment onto a full wall is the case this line exists for: a Polymorph that
+        // absorbed its way to the never-immune cut would otherwise be handed a Defend
+        // move and paid nothing for it. What the clamp refuses becomes Health instead
+        // (capOverflowHealth, combat.h) — the same exchange the level table runs.
+        if (c.dmgReducePct > kLevelDmgReduceMaxPct) {
+            gain += capOverflowHealth(c.dmgReducePct - kLevelDmgReduceMaxPct,
+                                      kLevelDefensePctPerPoint);
+            c.dmgReducePct = kLevelDmgReduceMaxPct;
+        }
         c.defenseMultPct += kLevelDefenseBracePctPerPoint * points;
         // The ceiling AND the Health standing in it — a pool cannot be raised from under
         // a fighter without giving it the room it just gained.
-        c.maxHealth += kLevelHealthPerPoint * points;
-        c.health += kLevelHealthPerPoint * points;
+        c.maxHealth += gain;
+        c.health += gain;
     }
 }
 

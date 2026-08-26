@@ -157,11 +157,18 @@ Combatant makePlayerCombatant(const ContentRegistry& reg, const CreatureDef& pet
             case ModEffect::ReplicaSpawnPct:   // Replication Bus — read at rollWormSpawn
             case ModEffect::ExtortionLedger:
                 // The STANDING half is a damage cut and lands on the base, under the same
-                // never-immune clamp every other cut answers to. Only the seizure WINDOW
-                // stays live, since it opens and closes mid-fight.
+                // never-immune clamp every other cut answers to — and whatever that clamp
+                // refuses is paid in max-Health rather than dropped, so the row pays what
+                // it prints on a pet that is already at the wall (capOverflowHealth).
+                // Only the seizure WINDOW stays live, since it opens and closes mid-fight.
                 c.dmgReducePct += mag;
-                if (c.dmgReducePct > kLevelDmgReduceMaxPct)
+                if (c.dmgReducePct > kLevelDmgReduceMaxPct) {
+                    const int over = c.dmgReducePct - kLevelDmgReduceMaxPct;
                     c.dmgReducePct = kLevelDmgReduceMaxPct;
+                    const int gain = capOverflowHealth(over, kLevelDefensePctPerPoint);
+                    c.maxHealth += gain;
+                    c.health += gain;      // as ModEffect::MaxHealth does, and for its reason
+                }
                 c.mods.apply(m->effectKind, mag, m->magnitude2);
                 break;
             case ModEffect::ReplicaWorthPct:     // Replication Bus — read at a copy's spawn
@@ -598,7 +605,8 @@ int levelDefenseBraceRetainPct(int points) {
     return points >= kLevelDefenseBraceRetainPoints ? kLevelDefenseBraceRetainPct : 0;
 }
 
-int levelDefenseCutPct(int points) {
+// The curve before its ceiling — the one thing both answers below are cut from.
+int levelDefenseCutRawPct(int points) {
     if (points <= 0) return 0;
     // Full rate up to the soft point, HALF rate after — the diminishing half of a stat
     // that also has a hard ceiling. Integer and exact: the bent stretch is counted in
@@ -606,9 +614,24 @@ int levelDefenseCutPct(int points) {
     // every one of them down to the same place and quietly stall the curve flat).
     const int full = points < kLevelDefenseSoftPoints ? points : kLevelDefenseSoftPoints;
     const int bent = points - full;
-    int cut = full * kLevelDefensePctPerPoint + bent * kLevelDefensePctPerPoint / 2;
-    if (cut > kLevelDefenseCapPct) cut = kLevelDefenseCapPct;
-    return cut;
+    return full * kLevelDefensePctPerPoint + bent * kLevelDefensePctPerPoint / 2;
+}
+
+int levelDefenseCutPct(int points) {
+    const int cut = levelDefenseCutRawPct(points);
+    return cut > kLevelDefenseCapPct ? kLevelDefenseCapPct : cut;
+}
+
+// The pair's other half — see the declaration (combat.h).
+int levelDefenseCutOverflowPct(int points) {
+    const int cut = levelDefenseCutRawPct(points);
+    return cut > kLevelDefenseCapPct ? cut - kLevelDefenseCapPct : 0;
+}
+
+// The exchange and why it is this one are on the declaration (combat.h).
+int capOverflowHealth(int overflowPct, int perPointPct) {
+    if (overflowPct <= 0 || perPointPct <= 0) return 0;
+    return overflowPct * kLevelHealthPerPoint / perPointPct;
 }
 
 void applyLevelStatPoints(Combatant& c, const int statPoints[4]) {
@@ -631,12 +654,27 @@ void applyLevelStatPoints(Combatant& c, const int statPoints[4]) {
     c.dmgReducePct += levelDefenseCutPct(statPoints[1]);
     c.pierceResistPct = levelDefensePierceResistPct(statPoints[1]);
     c.braceRetainPct = kBraceRetainBasePct + levelDefenseBraceRetainPct(statPoints[1]);
-    if (c.dmgReducePct > kLevelDmgReduceMaxPct) c.dmgReducePct = kLevelDmgReduceMaxPct;
+    // Everything the three Defence ceilings refuse, paid into max-Health (capOverflowHealth).
+    // Three separate discards and no double count: the curve's own ceiling refuses part
+    // of the cut this pet EARNED, the never-immune clamp then refuses part of the total it
+    // is added to (mods included — the cut a mod added is already on the stat by now),
+    // and the brace cap refuses its own.
+    int overflow = levelDefenseCutOverflowPct(statPoints[1]);
+    if (c.dmgReducePct > kLevelDmgReduceMaxPct) {
+        overflow += c.dmgReducePct - kLevelDmgReduceMaxPct;
+        c.dmgReducePct = kLevelDmgReduceMaxPct;
+    }
+    int braceOverflow = 0;
     int brace = statPoints[1] * kLevelDefenseBracePctPerPoint;
-    if (brace > kLevelDefenseBraceCapPct) brace = kLevelDefenseBraceCapPct;
+    if (brace > kLevelDefenseBraceCapPct) {
+        braceOverflow = brace - kLevelDefenseBraceCapPct;
+        brace = kLevelDefenseBraceCapPct;
+    }
     c.defenseMultPct += brace;
     c.speed += statPoints[2] * kLevelSpeedPerPoint;
     c.maxHealth += levelHealthBonus(statPoints[3]);
+    c.maxHealth += capOverflowHealth(overflow, kLevelDefensePctPerPoint);
+    c.maxHealth += capOverflowHealth(braceOverflow, kLevelDefenseBracePctPerPoint);
     c.health = c.maxHealth;
 }
 

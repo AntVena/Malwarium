@@ -133,6 +133,59 @@ void test_defense_diminishing_returns() {
     CHECK(levelDefenseCutPct(40) < 40 * kLevelDefensePctPerPoint);
 }
 
+// --- Gate: a bonus the caps refuse is paid, not dropped ---
+//
+// A clamp is a promise about the ceiling. Before this, a pet at the never-immune cut got
+// literally nothing from its next Defence point, mod or absorbed move and no screen said
+// so — the row still read as if it paid. The discard now converts to max-Health at the
+// level table's own exchange (capOverflowHealth), and the caps do not move.
+void test_full_cap_overflows_into_health() {
+    // The curve and its overflow PARTITION the uncapped curve — nothing is counted twice
+    // and nothing goes missing, at every point count either side of the ceiling.
+    for (int p = 0; p <= 400; ++p) {
+        CHECK(levelDefenseCutPct(p) <= kLevelDefenseCapPct);
+        CHECK(levelDefenseCutOverflowPct(p) >= 0);
+        if (levelDefenseCutPct(p) < kLevelDefenseCapPct)
+            CHECK(levelDefenseCutOverflowPct(p) == 0);     // under the cap, nothing spills
+    }
+    CHECK(levelDefenseCutOverflowPct(400) > 0);            // ...and over it, something does
+
+    // The exchange: what the same investment would have bought spent on max-Health, and
+    // never more. Overflowing must not be the better outcome.
+    CHECK(capOverflowHealth(0, kLevelDefensePctPerPoint) == 0);
+    CHECK(capOverflowHealth(-9, kLevelDefensePctPerPoint) == 0);   // not a refund either
+    CHECK(capOverflowHealth(kLevelDefensePctPerPoint, kLevelDefensePctPerPoint) ==
+          kLevelHealthPerPoint);                           // one point's worth, either way
+    CHECK(capOverflowHealth(2 * kLevelDefensePctPerPoint, kLevelDefensePctPerPoint) ==
+          2 * kLevelHealthPerPoint);
+
+    // End to end, on a built fighter. A pet buried in Defence points sits at the same
+    // wall as one merely at it — the caps do not move — and carries the difference as
+    // body instead.
+    auto build = [](int defensePoints) {
+        Combatant c;
+        c.maxHealth = 100;
+        int points[kLevelStatCount] = {0, defensePoints, 0, 0};
+        applyLevelStatPoints(c, points);
+        return c;
+    };
+    const Combatant at = build(40);
+    const Combatant past = build(400);
+    CHECK(at.dmgReducePct == past.dmgReducePct);           // the ceiling is exactly where it was
+    CHECK(at.defenseMultPct <= 100 + kLevelDefenseBraceCapPct);
+    CHECK(past.defenseMultPct == 100 + kLevelDefenseBraceCapPct);
+    CHECK(past.maxHealth > at.maxHealth);                  // the discard arrived as body
+    CHECK(past.health == past.maxHealth);                  // ...and the pet may stand in it
+
+    // A pet UNDER every ceiling is untouched: this pays a discard, and there is no
+    // discard to pay until something is actually refused.
+    Combatant plain;
+    plain.maxHealth = 100;
+    int few[kLevelStatCount] = {0, 1, 0, 0};
+    applyLevelStatPoints(plain, few);
+    CHECK(plain.maxHealth == 100);
+}
+
 // Rollback: opens a stat picker; a confirm sheds one earned point (−1 that
 // stat, −1 level), zeroes the XP bucket (re-grind to re-roll), and consumes the item.
 // Inert at level 0 (nothing to shed).
