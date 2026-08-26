@@ -551,7 +551,8 @@ void test_combat_seats_local_pet_on_the_left() {
     // than written down: a seat is as tall as the tallest cell that can stand on it, and
     // a copied number here goes stale the moment the ground line moves. Nothing but the
     // sprites draws in it while a fight is Ongoing and neither side is winding up.
-    constexpr int kBandY0 = kCombatSpriteShelf - 84, kBandY1 = kCombatSpriteShelf;
+    constexpr int kBandY0 = kCombatSpriteShelf - kCombatMaxBodyH,
+                  kBandY1 = kCombatSpriteShelf;
 
     ContentRegistry reg;
     reg.addSource(embeddedContent());
@@ -631,38 +632,52 @@ void test_combat_stage_seats_never_overlap() {
     CHECK(wide > 0);
 }
 
-// Release gate: the shot is a property of the PAIRING, so it is the same from either
-// seat — which is what makes it the same on both devices in a duel. A stage that framed
-// itself off "my pet" would put the two players in different cameras on one fight.
-void test_combat_stage_shot_is_symmetric() {
+// Release gate: the stage draws AUTHORED PIXELS. It is framed at 1/1 (CombatStage), so
+// every creature lands on the panel as the exact pixels its sheet carries and its seat is
+// its own content width — one panel pixel per authored pixel, no resampling anywhere.
+//
+// Swept over the roster rather than sampled, because the value of one scale is that it
+// holds for ALL of them: it is what keeps a Daemon reading bigger than a Process in
+// every fight instead of in the ones that happen to fit.
+void test_combat_stage_draws_authored_pixels() {
     ContentRegistry reg = ContentRegistry::embedded();
-    std::vector<const SpriteData*> sprites{nullptr};
-    for (const CreatureDef* c : reg.allCreatures())
-        if (const SpriteData* s = reg.creatureSprite(*c)) sprites.push_back(s);
-    for (const SpriteData* l : sprites)
-        for (const SpriteData* r : sprites) {
-            const CombatStage a = combatStage(l, r), b = combatStage(r, l);
-            CHECK(a.num == b.num && a.den == b.den);
-        }
+    int checked = 0;
+    for (const CreatureDef* c : reg.allCreatures()) {
+        const SpriteData* s = reg.creatureSprite(*c);
+        if (!s) continue;
+        const CombatStage st = combatStage(s, s);
+        CHECK(st.num == 1 && st.den == 1);
+        CHECK(st.localW == spriteContentX1(*s) - spriteContentX0(*s));
+        CHECK(st.rivalW == st.localW);
+        ++checked;
+    }
+    CHECK(checked > 8);                                   // the sweep found a roster
 }
 
-// Release gate: the wide shot RESAMPLES NOTHING. 1/1 is the artist's own grid, so a
-// creature framed in it lands on the panel as the exact pixels its sheet carries — that
-// is the whole reason the ladder skips the ratios between (CombatStage). Asked of the
-// widest pairing in the roster, which is the one that takes the wide shot.
-void test_combat_wide_shot_draws_authored_pixels() {
+// Release gate: A CREATURE'S DRAWN SIZE IS ITS OWN. The stage holds one scale, so how
+// big a creature looks says what the creature IS and never who it happened to draw as an
+// opponent — which is the property a camera that changed scale per pairing gave up, and
+// gave up expensively: it drew a Daemon at 73px and a Process at 70.
+//
+// Stated as invariance rather than as "a Daemon is wider than a Process", which the art
+// does not owe and does not keep: a thin Daemon (USBasilisk, Coaxeel) is narrower than a
+// wide Process (Cuttlefork), and that is creature design rather than a layout fault.
+// What the stage is answerable for is not moving either of them.
+void test_combat_stage_size_is_intrinsic() {
     ContentRegistry reg = ContentRegistry::embedded();
-    const SpriteData* wide = nullptr;
+    std::vector<const SpriteData*> sprites;
     for (const CreatureDef* c : reg.allCreatures())
-        if (const SpriteData* s = reg.creatureSprite(*c))
-            if (!wide || spriteContentX1(*s) - spriteContentX0(*s) >
-                             spriteContentX1(*wide) - spriteContentX0(*wide))
-                wide = s;
-    CHECK(wide != nullptr);
-    const CombatStage st = combatStage(wide, wide);
-    CHECK(st.num == 1 && st.den == 1);                    // the pair that pulls back
-    // Its band is its own content width — one panel pixel per authored pixel.
-    CHECK(st.localW == spriteContentX1(*wide) - spriteContentX0(*wide));
+        if (const SpriteData* s = reg.creatureSprite(*c)) sprites.push_back(s);
+    CHECK(sprites.size() > 8);
+
+    for (const SpriteData* s : sprites) {
+        const int own = combatStage(s, s).localW;
+        for (const SpriteData* other : sprites) {
+            // ...in either seat, against every opponent the roster can field.
+            CHECK(combatStage(s, other).localW == own);
+            CHECK(combatStage(other, s).rivalW == own);
+        }
+    }
 }
 
 // Release gate: the strike mark answers WHO IS HITTING WHOM without colour. It lives in
@@ -680,7 +695,7 @@ void test_combat_strike_mark_travels_toward_its_target() {
     auto laneCentroid = [&](const Framebuffer& fb, int& lit) {
         long sum = 0;
         lit = 0;
-        for (int y = kCombatSpriteShelf - 84; y < kCombatSpriteShelf; ++y)
+        for (int y = kCombatSpriteShelf - kCombatMaxBodyH; y < kCombatSpriteShelf; ++y)
             for (int x = st.laneX; x < st.laneX + st.laneW; ++x)
                 if (luminance(fb.get(x, y)) > 0.12f) { sum += x; ++lit; }
         return lit ? static_cast<int>(sum / lit) : -1;
@@ -737,7 +752,7 @@ void test_combat_windup_reads_apart_from_impact() {
     // Total grayscale brightness over one fighter's seat — the flash's own channel.
     auto seatGray = [&](const Framebuffer& fb, int x0, int w) {
         float sum = 0;
-        for (int y = kCombatSpriteShelf - 84; y < kCombatSpriteShelf; ++y)
+        for (int y = kCombatSpriteShelf - kCombatMaxBodyH; y < kCombatSpriteShelf; ++y)
             for (int x = std::max(0, x0); x < std::min(kActiveW, x0 + w); ++x)
                 sum += luminance(fb.get(x, y));
         return sum;
@@ -773,17 +788,24 @@ void test_combat_windup_reads_apart_from_impact() {
     Framebuffer hitEarly(kActiveW, kActiveH), hitLate(kActiveW, kActiveH);
     render(/*channel=*/false, 0, 0, hitEarly);
     render(/*channel=*/false, 0, 3, hitLate);
-    CHECK(seatGray(hitEarly, st.localX, st.localW) >
-          seatGray(hitLate, st.localX, st.localW));       // an impact fades
+    // Widened by the motion budget, because the beat this flash is brightest is also the
+    // beat the fighter is furthest from its seat — a window drawn tight to the seat
+    // measures how far the creature has been shoved out of it, not how bright it is.
+    CHECK(seatGray(hitEarly, st.localX - kCombatMaxMotionPx,
+                   st.localW + 2 * kCombatMaxMotionPx) >
+          seatGray(hitLate, st.localX - kCombatMaxMotionPx,
+                   st.localW + 2 * kCombatMaxMotionPx));  // an impact fades
 
     // The countdown meter: over the charging fighter's head, and over nobody else's.
     // It is the countable channel, and the one that holds when the flash is at its dimmest.
     Framebuffer none(kActiveW, kActiveH);
     render(/*channel=*/false, 0, -1, none);
     const int markX0 = std::max(0, st.localX), markW = st.localW;
-    // The meter rides its owner's head, so the band to look in is above the tallest cell
-    // that can stand on the shelf and below the chrome — derived, not written down.
-    const int meterY0 = kHeaderRule + 8, meterY1 = kCombatSpriteShelf - 84;
+    // The meter rides ITS OWNER'S head, so the band is the strip just above this pet's
+    // own drawn height — not above the tallest cell that could stand there, which for a
+    // short creature is empty stage the meter never reaches.
+    const int headY = kCombatSpriteShelf - ps->h * kCombatStageNum / kCombatStageDen;
+    const int meterY0 = std::max(kHeaderRule + 8, headY - 20), meterY1 = headY;
     CHECK(anyLitGray(windEarly, markX0, meterY0, markX0 + markW, meterY1));
     CHECK(!anyLitGray(none, markX0, meterY0, markX0 + markW, meterY1));
 }

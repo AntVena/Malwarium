@@ -21,6 +21,25 @@ bounding box is **128×64**. Upscaling is whole-number or clean fractional only 
 / `CANVAS_SCALE_DEN` in `include/config.h` express ×1.75 as 7/4 so it stays whole-number safe. The
 8px buffer on the 240×240 target guards against bezel clipping on cheap display modules.
 
+### Sprite scale is per-blit, and the combat stage uses that
+
+The table above is the **canvas** scale, and it does not move. What a given *sprite* is drawn at is
+a separate number: `drawSpriteUpscaled` and its siblings (`core/render/sprite.h`) take their own
+`num`/`den`, and every screen but one hands them the canvas's.
+
+The **combat stage is the one exception, and it draws its two fighters at 1/1** — one panel pixel
+per authored pixel (`CombatStage`, `core/ui/combat_screen.h`). Two content-full Daemon cells want
+336 of the 220px the stage has at ×1.75, so at the canvas scale one of them is cut off at a screen
+edge; at 1/1 the same pair wants 192 and both stand whole, with the room left over spent on the
+clash lane and on the lunge and recoil that carry a blow.
+
+This is **not** downscaling in the sense the rule above forbids. Nothing is resampled: 1/1 is the
+artist's own grid drawn untouched, exactly as ×1.75 is a lossless 2,2,2,1 expansion of it. What it
+does mean is that a creature is drawn **smaller in a fight than in its habitat**, which is a
+deliberate composition choice — the stage holds two creatures and room to move between them, where
+the habitat holds one. The stage's scale is one constant, so a creature's drawn size never depends
+on who it is fighting.
+
 ## Cadence
 
 This is a retro vpet, not a real-time game: a **~4fps animation heartbeat (250ms/frame)** with

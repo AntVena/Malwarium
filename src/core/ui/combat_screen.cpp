@@ -61,26 +61,30 @@ void drawTurnTick(Framebuffer& fb, int y, int h) {
     fb.fillRect(kTurnTickX, y, kTurnTickW, h, palColor(Pal::ACCENT));
 }
 // The outer inset a fighter is seated against before it is allowed to crop, and the
-// bounds on the clash lane: never tighter than the strike mark drawn in it, never so
-// wide that two small creatures read as ignoring each other.
+// cap on the clash lane.
 //
-// The bounds are LOGICAL and scale with the shot, because "so wide they read as ignoring
-// each other" is a statement about the gap RELATIVE TO the bodies either side of it —
-// hold the active-px maximum fixed and the wide shot stands two small creatures the
-// better part of a body apart.
-constexpr int kStageEdge = 2, kLaneMinLogical = 15, kLaneMaxLogical = 33;
+// The lane is where a fight HAPPENS — it holds the strike mark, and it is the ground a
+// lunge closes and a recoil gives up — so it takes the room the two bodies leave rather
+// than a token gap, and the cap is generous because at 1/1 there is room to be generous
+// with. Two Process-stage creatures are 54px of the 220 the stage has; spending the
+// other 166 entirely on outer margin would leave them huddled mid-screen with the whole
+// fight happening in the few pixels between them.
+//
+// What is left over after the cap still goes to the margins, so a pair is centred rather
+// than flung at the screen edges.
+constexpr int kStageEdge = 2, kLaneMax = 84;
 
-// The floor under all of it: the strike mark is drawn at its authored size whatever the
-// shot is, so a lane narrower than the mark has nowhere to travel and the blow stops
-// saying which way it is going. UI art is cut at active resolution and shrinking it
-// would resample the one thing on the stage that is a pure silhouette, so the LANE
-// yields to the mark rather than the other way round.
+// The floor under it: the strike mark is drawn at its authored size, so a lane narrower
+// than the mark has nowhere to travel and the blow stops saying which way it is going.
+// UI art is cut at active resolution and shrinking it would resample the one thing on
+// the stage that is a pure silhouette, so the LANE yields to the mark rather than the
+// other way round. It is also exactly what the two widest creatures in the game leave
+// between them (96 + 96 + 28 = 220), so the floor and the crop meet without overlapping.
 inline int laneFloor() { return ASSET_UI_STRIKE_COMMON.frameW; }
 
-// The two shots the stage can be framed at, as blitter num/den. Why there are exactly
-// two, and why neither resamples, is on CombatStage (combat_screen.h).
-constexpr int kShotNum = kScaleNum, kShotDen = kScaleDen;   // the standing shot, x1.75
-constexpr int kWideNum = 1, kWideDen = 1;                   // the wide shot, 1:1
+// The stage's scale: 1/1, the creature's authored pixels. Why this one and not the
+// device's usual x1.75 is on CombatStage (combat_screen.h).
+constexpr int kStageNum = kCombatStageNum, kStageDen = kCombatStageDen;
 
 // Where a sheet column lands in active px under the creature upscale, as the BLITTER
 // puts it: the first destination column whose source sample has reached `x`. Seating
@@ -147,10 +151,9 @@ CombatStage seatStage(const SpriteData* localSprite, const SpriteData* rivalSpri
     const int wL = seatWidth(localSprite, num, den);
     const int wR = seatWidth(rivalSprite, num, den);
     // The lane takes whatever the two fighters leave, held between its bounds.
-    const int laneMin = std::max(scaleUp(kLaneMinLogical, num, den), laneFloor());
-    const int laneMax = std::max(laneMin, scaleUp(kLaneMaxLogical, num, den));
+    const int laneMin = laneFloor();
     int lane = kActiveW - 2 * kStageEdge - wL - wR;
-    lane = std::max(laneMin, std::min(laneMax, lane));
+    lane = std::max(laneMin, std::min(kLaneMax, lane));
 
     // How much of each fighter stays on canvas. A pair that fits keeps all of both. A
     // pair that doesn't shares the room by HALVES, not evenly: a fighter narrower than
@@ -178,14 +181,6 @@ CombatStage seatStage(const SpriteData* localSprite, const SpriteData* rivalSpri
     return st;
 }
 
-// Does this shot hold BOTH fighters whole? Asked of the seating itself rather than of a
-// width sum, so "fits" means exactly what the draw will do — including the lane's own
-// clamp, which is what decides how much room the two of them are actually sharing.
-bool stageFits(const SpriteData* localSprite, const SpriteData* rivalSprite, int num,
-               int den) {
-    const CombatStage st = seatStage(localSprite, rivalSprite, num, den);
-    return st.localX >= 0 && st.rivalX + st.rivalW <= kActiveW;
-}
 
 // The move a combatant actually cast last, following a wildcard slot through to what it
 // ROLLED — a metamorphic row is a pool, so the slot's own MoveDef says nothing about
@@ -301,17 +296,7 @@ const AnimClip* fightPose(const Combatant& c, bool takingHit, bool swinging) {
 
 // The seating rule and why it is this one are on the declaration (combat_screen.h).
 CombatStage combatStage(const SpriteData* localSprite, const SpriteData* rivalSprite) {
-    // Frame the pair: the standing shot if both fit in it whole, the wide shot if not.
-    // Asked in that order and stopping at the first that fits, so a fight is only ever
-    // pulled back as far as it has to be. See CombatStage (combat_screen.h) for why the
-    // ladder has these two rungs and nothing between them.
-    int num = kShotNum, den = kShotDen;
-    if (!stageFits(localSprite, rivalSprite, num, den) &&
-        stageFits(localSprite, rivalSprite, kWideNum, kWideDen)) {
-        num = kWideNum;
-        den = kWideDen;
-    }
-    return seatStage(localSprite, rivalSprite, num, den);
+    return seatStage(localSprite, rivalSprite, kStageNum, kStageDen);
 }
 
 namespace {
@@ -405,10 +390,15 @@ void drawStrikeMark(Framebuffer& fb, int laneX, int laneW, int dir, int beat, in
 // a string of impacts rather than a silent, motionless damage number.
 constexpr int kImpactPeriod = 4;
 
+// How far a landed hit shoves its target, at the beat it lands. Sized against the LANE
+// rather than picked small: the stage is framed at 1/1 and the gap between two fighters
+// is most of the canvas, so a recoil has somewhere to go. At 8px it was a twitch on a
+// stage with 84px of room in it.
+constexpr int kImpactNudge = 20;
 
 int impactNudgePx(int hitBeat, int dir) {   // dir: -1 (shove left) / +1 (shove right)
     if (hitBeat < 0 || hitBeat >= kImpactPeriod) return 0;
-    return dir * (kImpactPeriod - hitBeat) * 2;   // 8 -> 6 -> 4 -> 2 -> 0 active-px
+    return dir * kImpactNudge * (kImpactPeriod - hitBeat) / kImpactPeriod;
 }
 uint8_t impactFlashAmt(int hitBeat) {
     if (hitBeat < 0 || hitBeat >= kImpactPeriod) return 0;
@@ -440,9 +430,19 @@ int damagePopRise(int hitBeat) {
 // "target away" happen to point the same screen direction for BOTH fighters on a
 // given turn, so one dir/beat pair drives both sprites.
 constexpr int kAttackHopPeriod = 4;
+
+// How far the swinging fighter steps in. Big enough to read as a lunge rather than a
+// shuffle, and it is the lane that makes that affordable — see kImpactNudge above. The
+// pair still never meets: the attacker comes forward by this and its target gives up
+// kImpactNudge in the same direction, so the gap between them opens rather than closes.
+constexpr int kAttackHop = 12;
+static_assert(kAttackHop + kImpactNudge <= kCombatMaxMotionPx,
+              "kCombatMaxMotionPx is what the gates widen their sampling windows by, so "
+              "it has to cover a fighter lunging and being hit on the same beat");
+
 int attackHopPx(int hopBeat, int dir) {
     if (hopBeat < 0 || hopBeat >= kAttackHopPeriod) return 0;
-    return dir * (kAttackHopPeriod - hopBeat);   // 4 -> 3 -> 2 -> 1 -> 0 active-px
+    return dir * kAttackHop * (kAttackHopPeriod - hopBeat) / kAttackHopPeriod;
 }
 
 // --- Worm replicas ------------------------------------------------------------------

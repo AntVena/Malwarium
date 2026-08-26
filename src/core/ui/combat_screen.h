@@ -100,50 +100,47 @@ StrikeMark strikeMark(const Combatant& actor, int strikeSeq);
 // A fight is read across a gap: the lane is what keeps two creatures from merging into
 // one unreadable mass, and it is where the strike mark that says who is hitting whom is
 // drawn. So the lane is reserved FIRST and each fighter is seated against one of its
-// edges. Fixed boxes with the gap left over cannot do this — a Daemon cell is 168 active
-// px against a 104-px box, so the two biggest fighters meet in the middle.
+// edges. Fixed boxes with the gap left over cannot do this — the widest Daemon draws 96
+// px against a 60-px box, so the two biggest fighters would meet in the middle.
 //
 // The bands are the DRAWING's, not the cell's (SpriteData::contentX0), because a cell is
 // routinely much wider than what is drawn in it and seating by the cell stands a
 // well-padded creature a third of its own width back from where it looks like it is.
 //
-// A pair too wide for the canvas — two content-full Daemon cells want 336px of the 224
-// there are — first pulls the CAMERA BACK, and crops only if even the wide shot cannot
-// hold them. The two shots are the stage's whole vocabulary:
+// EVERY fight is framed at 1/1 — the creature's authored pixels, one panel pixel each.
+// That is the stage's whole camera, and it is chosen for two reasons.
 //
-//   7/4  the device's own scale, what every other screen draws a creature at.
-//   1/1  the WIDE SHOT: the creature's authored pixels, one for one.
+// IT RESAMPLES NOTHING. Sprites are authored in logical pixels, so 1/1 is the artist's
+// own grid untouched. The device's usual x1.75 is a lossless expansion of the same grid
+// and would be equally honest, but it cannot hold two big creatures: two content-full
+// Daemon cells want 336 of the 220px the stage has, so one of them is cut off at a
+// screen edge. At 1/1 the same pair wants 192 and both stand whole.
 //
-// TWO RUNGS, and both are lossless — that is the whole reason there are two. Sprites are
-// authored in logical pixels, so 7/4 is the panel's standard 2,2,2,1 expansion of them
-// and 1/1 is the artist's own grid with no resampling at all. Every ratio BETWEEN the
-// two resamples: 3/2 and 5/4 walk uneven run lengths that thin an outline and drop a toe,
-// and they buy that artifact for a shot that mostly still crops (measured over the
-// roster: 3/2 rescues about half of the pairings 7/4 loses, 5/4 nearly all, 1/1 all of
-// them). A rung that costs the art and does not finish the job is not worth having, so
-// the ladder skips to the one that is free.
+// IT IS ONE SCALE, and that is what keeps SIZE meaning STAGE. A camera that pulled back
+// only for the pairings that needed it drew a Daemon at 73px and a Process at 70 —
+// nearly the same size — because each fight picked its own scale. How big a creature
+// looks then depends on who it happens to be fighting instead of on what it is. Held at
+// 1/1 a Process is 27-40px and a Daemon 73-96 in every fight, and the gap between them
+// always reads.
 //
-// The shot is picked ONCE, from the pairing, before the first frame — a fight never
-// changes scale under the operator. That is also what keeps the resampler out of it
-// entirely: there is no zoom to animate, so there are no in-between ratios to filter.
+// The room this buys is spent on MOTION rather than left as margin: the clash lane is
+// wide enough for a strike mark to cross it, and the lunge and recoil that carry a blow
+// are big enough to see (kAttackHop, kImpactNudge in combat_screen.cpp). A stage that is
+// only as big as the two bodies standing on it has nowhere to stage a fight.
 //
-// About a quarter of roster pairings take the wide shot, so it is a regular sight rather
-// than an emergency: two creatures standing whole and small reads as a camera pulled
-// back, where the same two cut off at the screen edges read as a bug.
-//
-// CROPPING survives as the last resort, for a pair too wide even at 1/1 (the cell budget
-// allows 128 logical, and two of those want 256 of the 220 the stage has). It cuts at
-// the outer screen edges, and only whichever fighter is over half the room: a creature
-// that fits in its half keeps every column however big its opponent is.
+// CROPPING survives as a last resort, for a pair too wide even at 1/1 — the cell budget
+// allows 128 logical, and two of those want 256. It cuts at the outer screen edges, and
+// only whichever fighter is over half the room: a creature that fits in its half keeps
+// every column however big its opponent is. No pairing in the roster reaches it.
 struct CombatStage {
     int localX = 0, localW = 0; // the local pet's drawn band (localX may be negative)
     int rivalX = 0, rivalW = 0; // its rival's
     int laneX = 0, laneW = 0;   // the clash lane, always fully on canvas
-    // The shot, as the blitter's own num/den. Everything seated on the stage scales by
-    // it — the fighters, their replicas, the strike mark's height, the wind-up marker —
-    // so the whole picture pulls back together rather than the creatures shrinking
-    // inside chrome that stayed put.
-    int num = 0, den = 1;
+    // The stage's scale, as the blitter's own num/den. Carried on the stage rather than
+    // read from a constant at each draw so everything seated here — the fighters, their
+    // replicas, a worm's slot pitch, the strike mark's height, the wind-up marker — is
+    // guaranteed to be at ONE scale, and so that changing the camera stays one edit.
+    int num = 1, den = 1;
 };
 
 // Seat a fight. Either sprite may be null — a fighter with no art still holds a
@@ -297,10 +294,10 @@ CombatVitals combatVitals(const Combatant& c);
 // enough that the pet's own block below it — status strip, passive strip, gauge and
 // numeric, then the last-move line — is not packed against the hint band.
 //
-// It used to sit 13px lower, which spent the difference on empty stage: an ordinary
-// encounter left a third of the canvas blank above two creatures while four readouts
-// shared 35px underneath them.
-constexpr int kCombatSpriteShelf = 152;
+// The stage is framed at 1/1, so the tallest body standing on it is 64px rather than
+// 112, and the ground line comes up to match. Left where the taller shot needed it, the
+// same fight sat in the bottom third under a third of a canvas of empty sky.
+constexpr int kCombatSpriteShelf = 140;
 
 // The two Health rows, published because they are the screen's CONTRACT and not merely
 // its private arithmetic: the release gates sample these bands to prove a gauge and its
@@ -311,22 +308,35 @@ constexpr int kCombatSpriteShelf = 152;
 // Both rows share one column, so the bars start on one x, run to one width and put their
 // numerics on one right edge. That is what lets an operator read who is ahead by looking
 // rather than by comparing two numbers.
+// The stage's scale, and the two facts a gate needs to know WHERE to look on it. Both
+// are consequences of the camera above, so they are stated here rather than measured
+// again: a gate that sampled a band sized for a different scale would go quiet instead
+// of failing, which is the worst way for a release gate to be wrong.
+constexpr int kCombatStageNum = 1, kCombatStageDen = 1;
+// The tallest creature cell the game may field (CONTRIBUTING: max 128x64 logical), at
+// stage scale — so the seat band runs kCombatMaxBodyH up from the shelf.
+constexpr int kCombatMaxBodyH = 64 * kCombatStageNum / kCombatStageDen;
+// The furthest a fighter is ever displaced from its seat: it may be lunging and taking a
+// hit on the same beat, so a window that must contain a whole fighter has to allow both.
+constexpr int kCombatMaxMotionPx = 32;
+
 constexpr int kCombatGaugeX = kMargin + 5 * kFontAdvance + 12;
 constexpr int kCombatGaugeW = 100;
 constexpr int kCombatGaugeH = 10;
 constexpr int kCombatRivalGaugeY = 18;
 constexpr int kCombatLocalGaugeY = kCombatSpriteShelf + 10;
 constexpr int kCombatPanelTop = 28;
-// Stops at the SHELF — the ground line the fighters stand on, and the top of the local
-// pet's own block. Everything below it stays readable while the panel is open: the pet's
-// status strip, its passive strip, its Health gauge and numeric, and the last-move line.
+// Stops just clear of the local pet's Health gauge, so the two halves of reading a fight
+// both survive an open panel: what your pet has left (the gauge, its numeric) and what
+// just happened to it (the last-move line). A panel that covered either traded one
+// blindness for another, and pitched to clear the last-move line alone its floor fell one
+// row INSIDE the gauge and left a single lit pixel of it showing under the box.
 //
-// Those are the two halves of reading a fight — what your pet has left, and what just
-// happened to it — and a panel that covered either of them traded one blindness for
-// another. Landing on the shelf is also what keeps the box off a WIDGET's edge: pitched
-// to clear the last-move line instead, its floor fell one row inside the Health gauge and
-// left a single lit pixel of it showing under the box.
-constexpr int kCombatPanelBottom = kCombatSpriteShelf + 1;
+// The pet's status and passive strips sit in the few px above the gauge, so only a page
+// running its full depth — the deepest boss kit the ladder fields — reaches over them.
+// That is the right thing to spend last: they are a glance-level readout the VS page can
+// answer in words, where the gauge is the one number a fight is decided by.
+constexpr int kCombatPanelBottom = kCombatLocalGaugeY - 4;
 constexpr int kCombatPanelFirstRow = kCombatPanelTop + 20;   // under the header + its rule
 constexpr int kCombatPanelPitch = 11;
 constexpr int kCombatPanelRows =

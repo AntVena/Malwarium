@@ -7,7 +7,8 @@ how to run the gates.
 ## Hard constraints (non-negotiable)
 
 ST7789 **240×240** RGB565 · active canvas **224×224** (8px bezel, no UI in it) · author at
-**128×128 logical** (rect 128×64) · **×1.75 integer upscale, no downscaling** · ~4fps
+**128×128 logical** (rect 128×64) · **×1.75 integer canvas upscale, no resampling** (a sprite's
+own scale is per-blit; the combat stage draws its fighters at 1/1 — `RENDER_PIPELINE.md`) · ~4fps
 event-driven repaint (redraw on change) · 2-frame loops are the norm · pet cell **56×48
 logical** (max 128×64) · buttons **A=Next · B=Accept · C=Cancel**, with **A+C** the Exploit
 chord (Hacker face, combat override, egg crack).
