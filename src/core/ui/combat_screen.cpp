@@ -276,12 +276,17 @@ StrikeMark strikeMark(const Combatant& actor, int strikeSeq) {
     return {sheet, ((strikeSeq % n) + n) % n};
 }
 
-// The threshold and why it is measured this way are on the declaration
+// The threshold, and why both body cues are measured against it, are on the declaration
+// (combat_screen.h).
+bool heavyHit(const Combatant& target, int damage) {
+    return target.maxHealth > 0 &&
+           damage * 100 >= kHeavyHitPctOfMax * target.maxHealth;
+}
+
+// Why the lock outranks the threshold for the POSE alone is on the declaration
 // (combat_screen.h).
 bool hurtPoseEarned(const Combatant& target, int damage) {
-    if (target.lockedTurnsLeft > 0) return true;
-    return target.maxHealth > 0 &&
-           damage * 100 >= kHurtPosePctOfMax * target.maxHealth;
+    return target.lockedTurnsLeft > 0 || heavyHit(target, damage);
 }
 
 // Pose precedence and its reasoning are on the declaration (combat_screen.h).
@@ -297,6 +302,14 @@ const AnimClip* fightPose(const Combatant& c, bool takingHit, bool swinging) {
 // The seating rule and why it is this one are on the declaration (combat_screen.h).
 CombatStage combatStage(const SpriteData* localSprite, const SpriteData* rivalSprite) {
     return seatStage(localSprite, rivalSprite, kStageNum, kStageDen);
+}
+
+// What is held and what is not are on the declaration (combat_screen.h).
+int heldOnStage(int motion, int bandX, int bandW, int outward) {
+    if (motion * outward <= 0) return motion;             // inward: the lane holds it
+    const int room =
+        std::max(0, outward < 0 ? bandX : kActiveW - (bandX + bandW));
+    return outward < 0 ? std::max(motion, -room) : std::min(motion, room);
 }
 
 namespace {
@@ -383,18 +396,21 @@ void drawStrikeMark(Framebuffer& fb, int laneX, int laneW, int dir, int beat, in
                      spriteMirrorToFace(mark, /*faceRight=*/dir > 0), a);
 }
 
-// Impact "punch" cue (no new art/frames): the side that just took a landed hit
-// recoils a few active-px AWAY from its opponent and flashes white, decaying over
-// kImpactPeriod anim-ticks — an "a hit just happened" tell that reads independently
-// of the breathe-loop frame, so an accelerated feeding-frenzy streak still feels like
-// a string of impacts rather than a silent, motionless damage number.
+// Impact "punch" cue (no new art/frames): the side that just took a hit flashes white,
+// and a HEAVY one (heavyHit, combat_screen.h) also recoils a few active-px AWAY from its
+// opponent, both decaying over kImpactPeriod anim-ticks — an "a hit just happened" tell
+// that reads independently of the breathe-loop frame, so an accelerated feeding-frenzy
+// streak still feels like a string of impacts rather than a silent, motionless damage
+// number.
 constexpr int kImpactPeriod = 4;
 
-// How far a landed hit shoves its target, at the beat it lands. Sized against the LANE
-// rather than picked small: the stage is framed at 1/1 and the gap between two fighters
-// is most of the canvas, so a recoil has somewhere to go. At 8px it was a twitch on a
-// stage with 84px of room in it.
-constexpr int kImpactNudge = 20;
+// How far a heavy hit shoves its target, at the beat it lands: one kAttackHop (below),
+// so the blow reads as DOUBLING the step its target was already taking off the
+// attacker's lunge rather than as a second motion with a size of its own.
+//
+// What the number buys is travel for a fighter that HAS the room — heldOnStage is what
+// decides how much of it any given seat can actually spend.
+constexpr int kImpactNudge = 12;
 
 int impactNudgePx(int hitBeat, int dir) {   // dir: -1 (shove left) / +1 (shove right)
     if (hitBeat < 0 || hitBeat >= kImpactPeriod) return 0;
@@ -432,10 +448,15 @@ int damagePopRise(int hitBeat) {
 constexpr int kAttackHopPeriod = 4;
 
 // How far the swinging fighter steps in. Big enough to read as a lunge rather than a
-// shuffle, and it is the lane that makes that affordable — see kImpactNudge above. The
-// pair still never meets: the attacker comes forward by this and its target gives up
-// kImpactNudge in the same direction, so the gap between them opens rather than closes.
+// shuffle, and it is the lane that makes that affordable — the stage is framed at 1/1
+// and the gap between two fighters is most of the canvas, so the step has somewhere to
+// go. The pair still never meets: the attacker comes forward by this and its target
+// gives up the same distance in the same direction, so the gap between them holds and a
+// heavy hit opens it by kImpactNudge on top.
 constexpr int kAttackHop = 12;
+static_assert(kImpactNudge == kAttackHop,
+              "a heavy hit doubles the step its target already took off the lunge, so "
+              "the two halves of that one motion are one distance");
 static_assert(kAttackHop + kImpactNudge <= kCombatMaxMotionPx,
               "kCombatMaxMotionPx is what the gates widen their sampling windows by, so "
               "it has to cover a fighter lunging and being hit on the same beat");
@@ -933,11 +954,13 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
     const bool hitLanded = combat.lastDamage() > 0 && !combat.lastWasCharge();
     const int rivalHitBeat = (hitLanded && lastByLocal) ? hitBeat : -1;
     const int localHitBeat = (hitLanded && !lastByLocal) ? hitBeat : -1;
-    // Whether the hit that just landed is one the TARGET flinches at — see
-    // hurtPoseEarned. Only the authored pose asks; the flash and the nudge below run off
-    // the hit beats above and fire for every landed hit exactly as before.
+    // Whether the hit that just landed is one the TARGET answers with its body — the
+    // authored pose (hurtPoseEarned) and the knock-back that carries it (heavyHit). The
+    // flash and the damage popup ask neither and fire for every landed hit.
     const bool rivalFlinches = hurtPoseEarned(en, combat.lastDamage());
     const bool localFlinches = hurtPoseEarned(pl, combat.lastDamage());
+    const int rivalShoveBeat = heavyHit(en, combat.lastDamage()) ? rivalHitBeat : -1;
+    const int localShoveBeat = heavyHit(pl, combat.lastDamage()) ? localHitBeat : -1;
     // Wind-up charges toward WARN and impact snaps toward INK: the two cues differ in
     // ramp direction AND in hue, and the pair that is live wins on magnitude alone.
     const uint8_t rivalWindup = windupFlashAmt(en.channelMoveIdx >= 0, animBeat);
@@ -950,6 +973,13 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
     const int hopBeat = struck ? hitBeat : -1;
     const int hopDir = lastByLocal ? +1 : -1;
     const int hop = attackHopPx(hopBeat, hopDir);
+    // Each fighter's whole offset from its seat this beat, held on canvas: the lunge and
+    // the recoil push the same way, and outward is the direction the stage has the least
+    // of (heldOnStage, combat_screen.h).
+    const int rivalMotion = heldOnStage(impactNudgePx(rivalShoveBeat, +1) + hop,
+                                        stage.rivalX, stage.rivalW, /*outward=*/+1);
+    const int localMotion = heldOnStage(impactNudgePx(localShoveBeat, -1) + hop,
+                                        stage.localX, stage.localW, /*outward=*/-1);
     // The swing window is the hop's own, so an authored attack clip runs exactly as long
     // as the lunge that carries it — one motion, not a pose that outlives its nudge.
     const bool swinging = struck && hitBeat >= 0 && hitBeat < kAttackHopPeriod;
@@ -976,7 +1006,7 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
         drawFighter(fb, rivalSprite, stage.rivalX, animBeat,
                     std::max(rivalWindup, rivalImpact),
                     palColor(rivalImpact >= rivalWindup ? Pal::INK : Pal::WARN),
-                    impactNudgePx(rivalHitBeat, +1) + hop, /*faceRight=*/false,
+                    rivalMotion, /*faceRight=*/false,
                     fightPose(en,
                               rivalFlinches && rivalHitBeat >= 0 &&
                                   rivalHitBeat < kImpactPeriod,
@@ -1012,7 +1042,7 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
                 absorbing && outroPhase.flash >= std::max(localWindup, localImpact)
                     ? palColor(Pal::ACCENT)
                     : palColor(localImpact >= localWindup ? Pal::INK : Pal::WARN),
-                impactNudgePx(localHitBeat, -1) + hop, /*faceRight=*/true,
+                localMotion, /*faceRight=*/true,
                 fightPose(pl,
                           localFlinches && localHitBeat >= 0 &&
                               localHitBeat < kImpactPeriod,

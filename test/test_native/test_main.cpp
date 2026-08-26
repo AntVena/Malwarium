@@ -383,6 +383,7 @@ int g_failures = 0;
     RUN(test_pvp_guest_sees_its_own_pet_on_the_bottom_gauge) \
     RUN(test_combat_seats_local_pet_on_the_left) \
     RUN(test_combat_stage_seats_never_overlap) \
+    RUN(test_combat_stage_holds_a_struck_fighter_on_canvas) \
     RUN(test_combat_stage_draws_authored_pixels) \
     RUN(test_combat_stage_size_is_intrinsic) \
     RUN(test_combat_strike_mark_travels_toward_its_target) \

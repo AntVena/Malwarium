@@ -44,25 +44,34 @@ struct AnimClip;
 const AnimClip* fightPose(const Combatant& c, bool takingHit, bool swinging);
 
 // How big a single hit has to be, as a percentage of the TARGET's own maxHealth, before
-// it is worth an authored `hurt` pose.
+// the target answers it with its BODY — the authored `hurt` pose, and the knock-back
+// that carries it.
 //
-// Fighters alternate, so almost every resolved turn lands a hit on somebody: a flinch
+// Fighters alternate, so almost every resolved turn lands a hit on somebody: a reaction
 // that answered any landed damage answered roughly every other beat of the fight, and a
-// creature permanently flinching has no idle left to flinch OUT of. The pose has to be
-// rarer than the thing it reacts to in order to mean anything.
+// creature permanently flinching has no idle left to flinch OUT of. It has to be rarer
+// than the thing it reacts to in order to mean anything.
 //
 // Measured against maxHealth rather than as a flat number so the bar asks the same
 // QUESTION of every fighter — "did that take a real bite out of it" — whether it is a
 // Process form or a Daemon with four times the pool.
-constexpr int kHurtPosePctOfMax = 20;
+constexpr int kHeavyHitPctOfMax = 20;
 
-// Has `target` earned the flinch for a hit of `damage`? A LOCKED fighter always has:
-// there the pose is the state it is stuck in rather than a reaction to one blow, and a
-// creature being hit while it cannot act should look like it.
+// Is a hit of `damage` a heavy one for `target`, by the bar above? Both of the fight's
+// BODY cues ask it — the authored flinch and the knock-back shove that carries it — so
+// the two are one reaction rather than a pose played over a fighter standing still.
 //
-// Only the authored pose asks. The impact flash and the knock-back nudge are the "a hit
-// just happened" tell and still fire for EVERY landed hit, so nothing about the fight
-// becomes harder to read — this reserves the pose, it does not hide the damage.
+// The impact flash and the damage popup do not ask. They fire for EVERY landed hit, so
+// nothing about the fight becomes harder to read: this reserves the REACTION, it does
+// not hide the damage.
+bool heavyHit(const Combatant& target, int damage);
+
+// Has `target` earned the flinch for a hit of `damage`? A heavy hit has, and a LOCKED
+// fighter always has: there the pose is the state it is stuck in rather than a reaction
+// to one blow, and a creature being hit while it cannot act should look like it.
+//
+// The SHOVE does not follow the lock the way the pose does — a fighter that cannot act
+// is not being hit any harder, and it is the pose that says it is stuck.
 bool hurtPoseEarned(const Combatant& target, int damage);
 
 // The strike mark a fighter's last swing draws: which source's sheet, and which half of
@@ -147,6 +156,24 @@ struct CombatStage {
 // standard-cell seat, so the side a missing sprite would have occupied stays empty
 // instead of the other fighter drifting into the middle of the stage.
 CombatStage combatStage(const SpriteData* localSprite, const SpriteData* rivalSprite);
+
+// A fighter's motion this beat, held inside the canvas. `motion` is its total offset
+// from its seat in active px, `bandX`/`bandW` the seat itself, and `outward` the seat's
+// own direction away from the clash lane: -1 for the left seat, +1 for the right.
+//
+// Every cue that moves a struck fighter pushes it OUTWARD — the attacker's lunge steps
+// its target away and the recoil shoves it further the same way — and outward is where
+// the stage has least to give. Seating centres the visible group and spends whatever is
+// left over as margin, so the pairings with the most to sell are exactly the ones
+// standing closest to the screen edge: a fighter shoved a flat distance walks off it at
+// the moment the fight most wants it looked at.
+//
+// So the motion is HELD rather than sized down for the worst pairing. A fighter with
+// room takes the full travel and one without takes what it has, which for the widest
+// pairs on the roster is nothing — and the attacker's own half of the same beat still
+// moves, because INWARD motion is never held: the lane is reserved for it, and the
+// opponent is stepping the same way, so the gap between them opens rather than closes.
+int heldOnStage(int motion, int bandX, int bandW, int outward);
 
 // Which side of a fight the local operator is on, plus what to call the two of them.
 //

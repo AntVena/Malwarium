@@ -632,6 +632,46 @@ void test_combat_stage_seats_never_overlap() {
     CHECK(wide > 0);
 }
 
+// Release gate: A STRUCK FIGHTER STAYS ON THE STAGE. The attacker's lunge steps its
+// target away and a heavy hit's recoil shoves it further the same way, so both of the
+// fight's motion cues push their target toward its OWN screen edge — and the pairings
+// with the most body to move are exactly the ones seated hard against that edge. A flat
+// shove walks a Daemon half out of frame on the beat the fight most wants it looked at;
+// heldOnStage (ui/combat_screen.h) is what spends only the room a seat actually has.
+//
+// Swept over every pairing rather than sampled, for the same reason the seating sweep
+// above is: the pairs that break it are the rare wide ones.
+void test_combat_stage_holds_a_struck_fighter_on_canvas() {
+    ContentRegistry reg = ContentRegistry::embedded();
+    std::vector<const SpriteData*> sprites{nullptr};      // a fighter with no art too
+    for (const CreatureDef* c : reg.allCreatures())
+        if (const SpriteData* s = reg.creatureSprite(*c)) sprites.push_back(s);
+    CHECK(sprites.size() > 8);                            // the sweep found a roster
+
+    // The worst beat there is: lunging and being hit at once, which is what the motion
+    // budget is sized to cover.
+    const int m = kCombatMaxMotionPx;
+    int full = 0;
+    for (const SpriteData* l : sprites) {
+        for (const SpriteData* r : sprites) {
+            const CombatStage st = combatStage(l, r);
+            const int lm = heldOnStage(-m, st.localX, st.localW, /*outward=*/-1);
+            const int rm = heldOnStage(m, st.rivalX, st.rivalW, /*outward=*/+1);
+            CHECK(st.localX + lm >= 0);
+            CHECK(st.rivalX + st.rivalW + rm <= kActiveW);
+            // Toward the lane nothing is held: the attacker's own half of the beat has
+            // to move whatever its opponent can afford, or the widest fights go still.
+            CHECK(heldOnStage(m, st.localX, st.localW, /*outward=*/-1) == m);
+            CHECK(heldOnStage(-m, st.rivalX, st.rivalW, /*outward=*/+1) == -m);
+            if (lm == -m && rm == m) ++full;
+        }
+    }
+    // ...and the hold is a CEILING, not a brake. Most pairings leave room for the whole
+    // travel, and a clamp that quietly took it from all of them would leave a fight that
+    // never moves — which no gate above would notice.
+    CHECK(full > 0);
+}
+
 // Release gate: the stage draws AUTHORED PIXELS. It is framed at 1/1 (CombatStage), so
 // every creature lands on the panel as the exact pixels its sheet carries and its seat is
 // its own content width — one panel pixel per authored pixel, no resampling anywhere.

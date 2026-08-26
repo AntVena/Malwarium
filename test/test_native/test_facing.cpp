@@ -188,19 +188,20 @@ void test_facing_roster_declarations_hold() {
     CHECK(!spriteMirrorToFace(ASSET_SPR_PET_PAYPUP, true));
 }
 
-// --- Gate: the flinch is reserved for hits that earned it ---
+// --- Gate: the body's answer to a hit is reserved for hits that earned it ---
 //
 // The reason this file's other gates matter: a fight the player can read. Fighters
 // alternate, so "was damaged" is true of somebody on nearly every resolved turn — the
-// pose has to answer a narrower question than that or it is on screen permanently.
+// pose, and the shove that goes with it, have to answer a narrower question than that
+// or they are on screen permanently.
 void test_hurt_pose_is_reserved_for_real_hits() {
     Combatant c{};
     c.maxHealth = 100;
 
     // A chip does not move it; a real bite does. The bar is the target's own pool.
     CHECK(!hurtPoseEarned(c, 1));
-    CHECK(!hurtPoseEarned(c, kHurtPosePctOfMax - 1));
-    CHECK(hurtPoseEarned(c, kHurtPosePctOfMax));
+    CHECK(!hurtPoseEarned(c, kHeavyHitPctOfMax - 1));
+    CHECK(hurtPoseEarned(c, kHeavyHitPctOfMax));
     CHECK(hurtPoseEarned(c, 90));
 
     // Same PROPORTION, four times the pool: a Daemon does not flinch at a hit that would
@@ -214,6 +215,12 @@ void test_hurt_pose_is_reserved_for_real_hits() {
     // describes best, whatever the hit was worth.
     c.lockedTurnsLeft = 2;
     CHECK(hurtPoseEarned(c, 1));
+
+    // ...for the POSE only. The knock-back that carries it asks about the BLOW, and a
+    // chip is still a chip whatever state the fighter it lands on is in — otherwise a
+    // locked fighter is shoved across the stage by every tick of the thing holding it.
+    CHECK(!heavyHit(c, 1));
+    CHECK(heavyHit(c, kHeavyHitPctOfMax));
 
     // A fighter with no pool at all (a placeholder, a dummy built without one) never
     // flinches rather than dividing by nothing.
