@@ -85,22 +85,6 @@ ordering constraint is real and documented — rungs are sorted by EFFECTIVE per
 long-channel move LOWERS a rung's average — and per-creature kit has to keep that ramp intact
 while making the creatures read apart. |
 
-**The combat stage has no camera, so two wide fighters cannot both be shown whole.** Seating is
-static: `combatStage` reserves the clash lane, seats each fighter's drawn band against one edge of
-it, and crops whichever one is over half the room. That is fine until both are — the widest Daemon
-art draws 96 logical columns, and at ×1.75 two of those want 336 of the 224 active px there are, so
-each loses its outer end. Since every creature is drawn head-out over a body reading away from it,
-the crop costs the RIGHT-hand fighter its face. **The fix belongs to the stage, not the art** — the
-cell budget is the cell budget, and creature design does not bend to fit a fight. Two approaches,
-neither built: PAN the view so it holds the attacker and the point of impact rather than both seats
-at once, or ZOOM the stage out for a bout that needs it. Panning changes no scale and is the safer
-of the two; zooming runs into the ×1.75 hard constraint in `CONTRIBUTING.md`, so it needs that
-question answered first — which ratios are allowed on the stage, and whether a creature may be
-drawn at a size the rest of the device never shows it at. |
-`combatStage` + `drawFighter` (`combat_screen.cpp`); the widths are `SpriteData::contentX0/X1`. |
-M | A pan needs something to follow, and the fight already publishes it: `lastWasStrike` plus
-`lastByPlayer` say who swung at whom, on the same beat the strike mark reads. |
-
 **A crew cannot be DISCOVERED.** `QuoteReward::Kind` has room for it and it is one of the prizes
 the board was designed to hand over ("you find a crew to join"), but crews are ungated today —
 every row in `content_crews.cpp` is enlistable from the first boot, so there is nothing for a

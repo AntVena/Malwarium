@@ -103,14 +103,42 @@ StrikeMark strikeMark(const Combatant& actor, int strikeSeq);
 // well-padded creature a third of its own width back from where it looks like it is.
 //
 // A pair too wide for the canvas — two content-full Daemon cells want 336px of the 224
-// there are — CROPS at the outer screen edges, and only whichever fighter is over half
-// the room does: a creature that fits in its half keeps every column however big its
-// opponent is. Losing a tail off the side of the frame reads as a camera held tight on
-// the fight; letting the two bodies intersect reads as a bug.
+// there are — first pulls the CAMERA BACK, and crops only if even the wide shot cannot
+// hold them. The two shots are the stage's whole vocabulary:
+//
+//   7/4  the device's own scale, what every other screen draws a creature at.
+//   1/1  the WIDE SHOT: the creature's authored pixels, one for one.
+//
+// TWO RUNGS, and both are lossless — that is the whole reason there are two. Sprites are
+// authored in logical pixels, so 7/4 is the panel's standard 2,2,2,1 expansion of them
+// and 1/1 is the artist's own grid with no resampling at all. Every ratio BETWEEN the
+// two resamples: 3/2 and 5/4 walk uneven run lengths that thin an outline and drop a toe,
+// and they buy that artifact for a shot that mostly still crops (measured over the
+// roster: 3/2 rescues about half of the pairings 7/4 loses, 5/4 nearly all, 1/1 all of
+// them). A rung that costs the art and does not finish the job is not worth having, so
+// the ladder skips to the one that is free.
+//
+// The shot is picked ONCE, from the pairing, before the first frame — a fight never
+// changes scale under the operator. That is also what keeps the resampler out of it
+// entirely: there is no zoom to animate, so there are no in-between ratios to filter.
+//
+// About a quarter of roster pairings take the wide shot, so it is a regular sight rather
+// than an emergency: two creatures standing whole and small reads as a camera pulled
+// back, where the same two cut off at the screen edges read as a bug.
+//
+// CROPPING survives as the last resort, for a pair too wide even at 1/1 (the cell budget
+// allows 128 logical, and two of those want 256 of the 220 the stage has). It cuts at
+// the outer screen edges, and only whichever fighter is over half the room: a creature
+// that fits in its half keeps every column however big its opponent is.
 struct CombatStage {
     int localX = 0, localW = 0; // the local pet's drawn band (localX may be negative)
     int rivalX = 0, rivalW = 0; // its rival's
     int laneX = 0, laneW = 0;   // the clash lane, always fully on canvas
+    // The shot, as the blitter's own num/den. Everything seated on the stage scales by
+    // it — the fighters, their replicas, the strike mark's height, the wind-up marker —
+    // so the whole picture pulls back together rather than the creatures shrinking
+    // inside chrome that stayed put.
+    int num = 0, den = 1;
 };
 
 // Seat a fight. Either sprite may be null — a fighter with no art still holds a

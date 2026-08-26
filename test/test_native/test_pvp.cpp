@@ -587,11 +587,12 @@ void test_combat_seats_local_pet_on_the_left() {
     CHECK(!seatOf(ps, nullptr, true));               // ...so the host's pet is its rival
 }
 
-// Release gate: NO two creatures in the roster may overlap on the combat stage, and the
+// Release gate: NO two creatures in the roster may overlap on the combat stage, the
 // clash lane between them is always on canvas and never narrower than the strike mark
-// drawn in it. Swept over every pairing rather than a sample, because the pairs that
-// break it are exactly the rare ones — two Daemon cells whose art runs to both edges,
-// which together want 336 of the 224 px there are.
+// drawn in it, and — since the stage gained a second SHOT to fall back on — no pairing
+// in the roster is cropped at all. Swept over every pairing rather than a sample,
+// because the pairs that break it are exactly the rare ones: two Daemon cells whose art
+// runs to both edges, which together want 336 of the 224 px there are.
 void test_combat_stage_seats_never_overlap() {
     ContentRegistry reg = ContentRegistry::embedded();
     std::vector<const SpriteData*> sprites{nullptr};      // a fighter with no art too
@@ -599,6 +600,7 @@ void test_combat_stage_seats_never_overlap() {
         if (const SpriteData* s = reg.creatureSprite(*c)) sprites.push_back(s);
     CHECK(sprites.size() > 8);                            // the sweep found a roster
 
+    int wide = 0;
     for (const SpriteData* l : sprites) {
         for (const SpriteData* r : sprites) {
             const CombatStage st = combatStage(l, r);
@@ -606,20 +608,59 @@ void test_combat_stage_seats_never_overlap() {
             CHECK(st.laneX + st.laneW == st.rivalX);      // ...and ends where theirs starts
             CHECK(st.laneW >= 18);                        // room for the strike mark
             CHECK(st.laneX >= 0 && st.laneX + st.laneW <= kActiveW);
-            // A pair too wide to fit crops at the OUTER edges — and only whichever
-            // fighter is over its HALF of the room does. A creature that would fit in
-            // half the stage keeps every column it has, however big its opponent is.
-            const int offL = -std::min(0, st.localX);
-            const int offR = std::max(0, st.rivalX + st.rivalW - kActiveW);
-            const int half = (kActiveW - st.laneW) / 2;
-            if (st.localW <= half) CHECK(offL == 0);
-            if (st.rivalW <= half) CHECK(offR == 0);
-            // ...and neither is cropped past that half, so the loss stops being shared
-            // the moment it stops being fair.
-            CHECK(st.localW - offL >= std::min(st.localW, half - 2));
-            CHECK(st.rivalW - offR >= std::min(st.rivalW, half - 2));
+            // The shot is one of the two rungs and nothing between them, because every
+            // ratio between resamples the art (CombatStage, ui/combat_screen.h).
+            const bool standing = st.num == kScaleNum && st.den == kScaleDen;
+            const bool wideShot = st.num == 1 && st.den == 1;
+            CHECK(standing || wideShot);
+            if (wideShot) ++wide;
+            // No creature in the roster is cut off. This is what the wide shot BUYS, and
+            // stating it as a gate is what stops a future creature from quietly getting
+            // its face cropped again: art too wide for the standing shot is meant to pull
+            // the camera back, and on the day it cannot, this fails rather than the panel
+            // silently losing a head.
+            CHECK(st.localX >= 0);
+            CHECK(st.rivalX + st.rivalW <= kActiveW);
         }
     }
+    // ...and the wide shot is REACHED. A fallback no pairing ever takes has never run,
+    // so the sweep asserts the roster still holds a pair too wide for the standing shot
+    // rather than trusting that it does.
+    CHECK(wide > 0);
+}
+
+// Release gate: the shot is a property of the PAIRING, so it is the same from either
+// seat — which is what makes it the same on both devices in a duel. A stage that framed
+// itself off "my pet" would put the two players in different cameras on one fight.
+void test_combat_stage_shot_is_symmetric() {
+    ContentRegistry reg = ContentRegistry::embedded();
+    std::vector<const SpriteData*> sprites{nullptr};
+    for (const CreatureDef* c : reg.allCreatures())
+        if (const SpriteData* s = reg.creatureSprite(*c)) sprites.push_back(s);
+    for (const SpriteData* l : sprites)
+        for (const SpriteData* r : sprites) {
+            const CombatStage a = combatStage(l, r), b = combatStage(r, l);
+            CHECK(a.num == b.num && a.den == b.den);
+        }
+}
+
+// Release gate: the wide shot RESAMPLES NOTHING. 1/1 is the artist's own grid, so a
+// creature framed in it lands on the panel as the exact pixels its sheet carries — that
+// is the whole reason the ladder skips the ratios between (CombatStage). Asked of the
+// widest pairing in the roster, which is the one that takes the wide shot.
+void test_combat_wide_shot_draws_authored_pixels() {
+    ContentRegistry reg = ContentRegistry::embedded();
+    const SpriteData* wide = nullptr;
+    for (const CreatureDef* c : reg.allCreatures())
+        if (const SpriteData* s = reg.creatureSprite(*c))
+            if (!wide || spriteContentX1(*s) - spriteContentX0(*s) >
+                             spriteContentX1(*wide) - spriteContentX0(*wide))
+                wide = s;
+    CHECK(wide != nullptr);
+    const CombatStage st = combatStage(wide, wide);
+    CHECK(st.num == 1 && st.den == 1);                    // the pair that pulls back
+    // Its band is its own content width — one panel pixel per authored pixel.
+    CHECK(st.localW == spriteContentX1(*wide) - spriteContentX0(*wide));
 }
 
 // Release gate: the strike mark answers WHO IS HITTING WHOM without colour. It lives in

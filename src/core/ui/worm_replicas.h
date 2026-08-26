@@ -30,11 +30,16 @@ constexpr int kReplicaSlotW = 30;
 
 // Seat one glyph. Bottom-anchored on the shelf like the fighters, so the replicas
 // stand on the same ground line the parent does.
+//
+// The scale defaults to the habitat's, which is the only one the idle screen has. The
+// fight passes its own: the combat stage picks a SHOT per pairing (CombatStage,
+// ui/combat_screen.h), and a copy drawn at the habitat's scale on a wide-shot stage
+// would stand taller than the worm that made it.
 inline void drawReplica(Framebuffer& fb, const SpriteData& s, int frame, int cx,
-                        int shelfY) {
-    const int w = s.frameW * kScaleNum / kScaleDen;
-    const int h = s.h * kScaleNum / kScaleDen;
-    drawSpriteUpscaled(fb, s, frame, cx - w / 2, shelfY - h, kScaleNum, kScaleDen);
+                        int shelfY, int num = kScaleNum, int den = kScaleDen) {
+    const int w = s.frameW * num / den;
+    const int h = s.h * num / den;
+    drawSpriteUpscaled(fb, s, frame, cx - w / 2, shelfY - h, num, den);
 }
 
 }  // namespace mal

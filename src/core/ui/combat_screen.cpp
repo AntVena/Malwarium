@@ -45,15 +45,32 @@ constexpr int kSpriteShelf = kCombatSpriteShelf;   // the panel's geometry names
 // The outer inset a fighter is seated against before it is allowed to crop, and the
 // bounds on the clash lane: never tighter than the strike mark drawn in it, never so
 // wide that two small creatures read as ignoring each other.
-constexpr int kStageEdge = 2, kLaneMin = 26, kLaneMax = 58;
+//
+// The bounds are LOGICAL and scale with the shot, because "so wide they read as ignoring
+// each other" is a statement about the gap RELATIVE TO the bodies either side of it —
+// hold the active-px maximum fixed and the wide shot stands two small creatures the
+// better part of a body apart.
+constexpr int kStageEdge = 2, kLaneMinLogical = 15, kLaneMaxLogical = 33;
+
+// The floor under all of it: the strike mark is drawn at its authored size whatever the
+// shot is, so a lane narrower than the mark has nowhere to travel and the blow stops
+// saying which way it is going. UI art is cut at active resolution and shrinking it
+// would resample the one thing on the stage that is a pure silhouette, so the LANE
+// yields to the mark rather than the other way round.
+inline int laneFloor() { return ASSET_UI_STRIKE_COMMON.frameW; }
+
+// The two shots the stage can be framed at, as blitter num/den. Why there are exactly
+// two, and why neither resamples, is on CombatStage (combat_screen.h).
+constexpr int kShotNum = kScaleNum, kShotDen = kScaleDen;   // the standing shot, x1.75
+constexpr int kWideNum = 1, kWideDen = 1;                   // the wide shot, 1:1
 
 // Where a sheet column lands in active px under the creature upscale, as the BLITTER
 // puts it: the first destination column whose source sample has reached `x`. Seating
 // works in these, not in a plain x*num/den, because two independently truncated
 // endpoints can bracket a band one pixel wider than the band itself — and one stray
 // column is enough to put a creature inside the lane that exists to keep it out.
-constexpr int scaleUp(int x) {
-    return (x * kScaleNum + kScaleDen - 1) / kScaleDen;
+constexpr int scaleUp(int x, int num, int den) {
+    return (x * num + den - 1) / den;
 }
 
 // Seat one fighter's drawing so its band starts at `contentX`, bottom-anchored on the
@@ -68,12 +85,12 @@ constexpr int scaleUp(int x) {
 // its cell would otherwise step that padding's width off its seat the moment it turns.
 void drawFighter(Framebuffer& fb, const SpriteData* s, int contentX, int animBeat,
                  uint8_t flashAmt, Rgb565 flashColor, int xNudge, bool faceRight,
-                 const AnimClip* pose, const CamoRamp* camo = nullptr,
+                 const AnimClip* pose, int num, int den, const CamoRamp* camo = nullptr,
                  uint8_t camoAmt = 0, const CamoRamp* camoFrom = nullptr) {
     if (!s) return;
     const bool mirror = spriteMirrorToFace(*s, faceRight);
-    const int x = contentX - scaleUp(spriteContentX0(*s, mirror)) + xNudge;
-    const int y = kSpriteShelf - s->h * kScaleNum / kScaleDen;
+    const int x = contentX - scaleUp(spriteContentX0(*s, mirror), num, den) + xNudge;
+    const int y = kSpriteShelf - s->h * num / den;
     // An authored pose plays its own sheet row in order; without one the breathe
     // heuristic runs on row 0, which is the whole of a single-row sheet.
     const int row = pose ? pose->row : 0;
@@ -84,22 +101,72 @@ void drawFighter(Framebuffer& fb, const SpriteData* s, int contentX, int animBea
     // stripping the disguise off. `camoFrom` carries the palette a swap is leaving, so one
     // borrowed set dissolves into the next instead of detouring through the pet's own.
     if (camo && camoAmt > 0 && !camo->empty())
-        drawSpriteCamo(fb, *s, frame, x, y, kScaleNum, kScaleDen, *camo, camoAmt,
+        drawSpriteCamo(fb, *s, frame, x, y, num, den, *camo, camoAmt,
                        flashColor, flashAmt, row, camoFrom, mirror);
     else if (flashAmt > 0)
-        drawSpriteFlash(fb, *s, frame, x, y, kScaleNum, kScaleDen, flashColor,
+        drawSpriteFlash(fb, *s, frame, x, y, num, den, flashColor,
                         flashAmt, row, mirror);
     else
-        drawSpriteUpscaled(fb, *s, frame, x, y, kScaleNum, kScaleDen, row, mirror);
+        drawSpriteUpscaled(fb, *s, frame, x, y, num, den, row, mirror);
 }
 
 // The seat a fighter with no sprite holds: one standard pet cell (the 56x48 logical
 // creature cell), so the stage keeps its shape rather than collapsing around whichever
 // side has art.
-int seatWidth(const SpriteData* s) {
+int seatWidth(const SpriteData* s, int num, int den) {
     constexpr int kPetCellW = 56;
-    if (!s) return scaleUp(kPetCellW);
-    return scaleUp(spriteContentX1(*s)) - scaleUp(spriteContentX0(*s));
+    if (!s) return scaleUp(kPetCellW, num, den);
+    return scaleUp(spriteContentX1(*s), num, den) -
+           scaleUp(spriteContentX0(*s), num, den);
+}
+
+// Seat both fighters and the lane at one shot's scale. Split out from the shot PICKER
+// (combatStage) so the same seating runs whichever rung is chosen, and so the picker can
+// ask "does this one fit" by seating it rather than from a second copy of the arithmetic
+// that could drift from it.
+CombatStage seatStage(const SpriteData* localSprite, const SpriteData* rivalSprite,
+                      int num, int den) {
+    const int wL = seatWidth(localSprite, num, den);
+    const int wR = seatWidth(rivalSprite, num, den);
+    // The lane takes whatever the two fighters leave, held between its bounds.
+    const int laneMin = std::max(scaleUp(kLaneMinLogical, num, den), laneFloor());
+    const int laneMax = std::max(laneMin, scaleUp(kLaneMaxLogical, num, den));
+    int lane = kActiveW - 2 * kStageEdge - wL - wR;
+    lane = std::max(laneMin, std::min(laneMax, lane));
+
+    // How much of each fighter stays on canvas. A pair that fits keeps all of both. A
+    // pair that doesn't shares the room by HALVES, not evenly: a fighter narrower than
+    // its half is never cropped, and the slack it doesn't want goes to the one that
+    // does. Splitting the deficit evenly instead would shave pixels off a Process-stage
+    // creature for the crime of being matched against a Daemon — the loss belongs to
+    // whichever fighter is over its share, and only to it.
+    const int avail = kActiveW - 2 * kStageEdge - lane;
+    int aL = wL, aR = wR;
+    if (wL + wR > avail) {
+        const int half = avail / 2;
+        if (wL <= half)      { aR = avail - wL; }
+        else if (wR <= half) { aL = avail - wR; }
+        else                 { aL = half; aR = avail - half; }
+    }
+    // The VISIBLE group is what gets centred, so a lopsided pair still sits square on
+    // the stage. Each fighter then keeps its whole band and runs its surplus off its own
+    // outer edge, where the framebuffer drops it.
+    const int x0 = (kActiveW - (aL + lane + aR)) / 2;
+    CombatStage st;
+    st.localW = wL;             st.localX = x0 + aL - wL;
+    st.laneX = x0 + aL;         st.laneW = lane;
+    st.rivalX = st.laneX + lane; st.rivalW = wR;
+    st.num = num;               st.den = den;
+    return st;
+}
+
+// Does this shot hold BOTH fighters whole? Asked of the seating itself rather than of a
+// width sum, so "fits" means exactly what the draw will do — including the lane's own
+// clamp, which is what decides how much room the two of them are actually sharing.
+bool stageFits(const SpriteData* localSprite, const SpriteData* rivalSprite, int num,
+               int den) {
+    const CombatStage st = seatStage(localSprite, rivalSprite, num, den);
+    return st.localX >= 0 && st.rivalX + st.rivalW <= kActiveW;
 }
 
 // The move a combatant actually cast last, following a wildcard slot through to what it
@@ -216,34 +283,17 @@ const AnimClip* fightPose(const Combatant& c, bool takingHit, bool swinging) {
 
 // The seating rule and why it is this one are on the declaration (combat_screen.h).
 CombatStage combatStage(const SpriteData* localSprite, const SpriteData* rivalSprite) {
-    const int wL = seatWidth(localSprite), wR = seatWidth(rivalSprite);
-    // The lane takes whatever the two fighters leave, held between its bounds.
-    int lane = kActiveW - 2 * kStageEdge - wL - wR;
-    lane = std::max(kLaneMin, std::min(kLaneMax, lane));
-
-    // How much of each fighter stays on canvas. A pair that fits keeps all of both. A
-    // pair that doesn't shares the room by HALVES, not evenly: a fighter narrower than
-    // its half is never cropped, and the slack it doesn't want goes to the one that
-    // does. Splitting the deficit evenly instead would shave pixels off a Process-stage
-    // creature for the crime of being matched against a Daemon — the loss belongs to
-    // whichever fighter is over its share, and only to it.
-    const int avail = kActiveW - 2 * kStageEdge - lane;
-    int aL = wL, aR = wR;
-    if (wL + wR > avail) {
-        const int half = avail / 2;
-        if (wL <= half)      { aR = avail - wL; }
-        else if (wR <= half) { aL = avail - wR; }
-        else                 { aL = half; aR = avail - half; }
+    // Frame the pair: the standing shot if both fit in it whole, the wide shot if not.
+    // Asked in that order and stopping at the first that fits, so a fight is only ever
+    // pulled back as far as it has to be. See CombatStage (combat_screen.h) for why the
+    // ladder has these two rungs and nothing between them.
+    int num = kShotNum, den = kShotDen;
+    if (!stageFits(localSprite, rivalSprite, num, den) &&
+        stageFits(localSprite, rivalSprite, kWideNum, kWideDen)) {
+        num = kWideNum;
+        den = kWideDen;
     }
-    // The VISIBLE group is what gets centred, so a lopsided pair still sits square on
-    // the stage. Each fighter then keeps its whole band and runs its surplus off its own
-    // outer edge, where the framebuffer drops it.
-    const int x0 = (kActiveW - (aL + lane + aR)) / 2;
-    CombatStage st;
-    st.localW = wL;             st.localX = x0 + aL - wL;
-    st.laneX = x0 + aL;         st.laneW = lane;
-    st.rivalX = st.laneX + lane; st.rivalW = wR;
-    return st;
+    return seatStage(localSprite, rivalSprite, num, den);
 }
 
 namespace {
@@ -309,18 +359,24 @@ void drawWindupMark(Framebuffer& fb, int midX, int headY, int turnsLeft, int tur
 // are tools/gen_fight_art.py.
 //
 // It cuts across torso height — high enough to cross a short creature's body rather than
-// its feet, low enough to stay under a tall one's head.
-constexpr int kStrikeY = kSpriteShelf - 46;
+// its feet, low enough to stay under a tall one's head. Stated in LOGICAL rows off the
+// shelf and scaled by the shot, so it keeps crossing the same part of the body on a
+// wide-shot stage instead of sailing over the heads of two creatures that just got
+// shorter.
+constexpr int kStrikeLogicalY = 26;
+constexpr int strikeY(int num, int den) {
+    return kSpriteShelf - kStrikeLogicalY * num / den;
+}
 
 void drawStrikeMark(Framebuffer& fb, int laneX, int laneW, int dir, int beat, int period,
-                    const SpriteData& mark, int variant) {   // dir: +1 travels right
+                    const SpriteData& mark, int variant, int num, int den) {
     if (beat < 0 || beat >= period) return;
     const int travel = std::max(0, laneW - mark.frameW);
     const int from = dir > 0 ? laneX : laneX + travel;
     const int x = from + dir * travel * beat / std::max(1, period - 1);
     const uint8_t a = static_cast<uint8_t>(255 * (period - beat) / period);
     drawSpriteTinted(fb, mark, variant % std::max(1, mark.frames), x,
-                     kStrikeY - mark.h / 2, palColor(Pal::INK), /*row=*/0,
+                     strikeY(num, den) - mark.h / 2, palColor(Pal::INK), /*row=*/0,
                      spriteMirrorToFace(mark, /*faceRight=*/dir > 0), a);
 }
 
@@ -381,7 +437,7 @@ constexpr int kReplicaDeathPeriod = 4;
 // board swings together with its parent.
 void drawReplicaRow(Framebuffer& fb, const Combatant& c, bool attacking,
                     const WormKill& kill, int killBeat, int frontX, int stride,
-                    int shelfY, int animBeat) {
+                    int shelfY, int animBeat, int num, int den) {
     const bool dying = kill.happened && killBeat >= 0 && killBeat < kReplicaDeathPeriod;
     const int n = c.wormReplicaCount + (dying ? 1 : 0);
     if (n <= 0) return;
@@ -397,7 +453,7 @@ void drawReplicaRow(Framebuffer& fb, const Combatant& c, bool attacking,
         const SpriteData& s = defender ? ASSET_SPR_WORM_REPLICA_DEFEND
                                        : ASSET_SPR_WORM_REPLICA_ATTACK;
         const int frame = (ghost ? kReplicaDeathFrame : base) + (animBeat & 1);
-        drawReplica(fb, s, frame, cx, shelfY);
+        drawReplica(fb, s, frame, cx, shelfY, num, den);
     }
 }
 
@@ -763,6 +819,10 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
     // band extends upward rather than clipping. Both bands and the lane between them come
     // from combatStage() — see combat_screen.h for why the lane is reserved first.
     const CombatStage stage = combatStage(localSprite, rivalSprite);
+    // The shot this pairing earned. Everything seated on the stage below reads it rather
+    // than kScaleNum/kScaleDen, so the wide shot pulls the whole picture back together
+    // instead of shrinking the creatures inside chrome that stayed where it was.
+    const int shotN = stage.num, shotD = stage.den;
     // A landed, non-charge hit shoves its TARGET (not the actor) away from whoever just
     // hit it, so the recoil direction is fixed by the seat the target is in, not by who
     // attacked.
@@ -816,27 +876,28 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
                     fightPose(en,
                               rivalFlinches && rivalHitBeat >= 0 &&
                                   rivalHitBeat < kImpactPeriod,
-                              swinging && !lastByLocal));
+                              swinging && !lastByLocal),
+                    shotN, shotD);
     } else if (rivalSprite) {
         // Same turn the live draw above takes: a rival that spun round on the beat it
         // died would read as the outro doing it, not as the fight ending.
         const bool rivalMirror = spriteMirrorToFace(*rivalSprite, /*faceRight=*/false);
-        const int rx = stage.rivalX - scaleUp(spriteContentX0(*rivalSprite, rivalMirror));
-        const int ry = kSpriteShelf - rivalSprite->h * kScaleNum / kScaleDen;
+        const int rx = stage.rivalX -
+                       scaleUp(spriteContentX0(*rivalSprite, rivalMirror), shotN, shotD);
+        const int ry = kSpriteShelf - rivalSprite->h * shotN / shotD;
         if (absorbing) {
             // Into the middle of the local pet's DRAWING, so it is eaten by the body
             // rather than by a corner of an empty cell.
             const int px0 = stage.localX;
-            const int py0 = kSpriteShelf - (localSprite ? localSprite->h : 0) *
-                                               kScaleNum / kScaleDen;
-            drawAbsorb(fb, *rivalSprite, 0, rx, ry, kScaleNum, kScaleDen,
+            const int py0 =
+                kSpriteShelf - (localSprite ? localSprite->h : 0) * shotN / shotD;
+            drawAbsorb(fb, *rivalSprite, 0, rx, ry, shotN, shotD,
                        px0 + stage.localW / 2,
-                       py0 + (localSprite ? localSprite->h : 0) * kScaleNum /
-                                 kScaleDen / 2,
+                       py0 + (localSprite ? localSprite->h : 0) * shotN / shotD / 2,
                        palColor(Pal::ACCENT), outroPhase.progress, /*bite=*/255,
                        /*row=*/0, rivalMirror);
         } else {
-            drawShred(fb, *rivalSprite, 0, rx, ry, kScaleNum, kScaleDen,
+            drawShred(fb, *rivalSprite, 0, rx, ry, shotN, shotD,
                       palColor(Pal::INK), outroPhase.progress, /*row=*/0, rivalMirror);
         }
     }
@@ -852,7 +913,7 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
                           localFlinches && localHitBeat >= 0 &&
                               localHitBeat < kImpactPeriod,
                           swinging && lastByLocal),
-                &localCamo, localCamoAmt, localCamoFrom);
+                shotN, shotD, &localCamo, localCamoAmt, localCamoFrom);
 
     // Worm replicas, on the same shelf, standing BETWEEN their parent and its opponent —
     // each row starts at the parent's own drawn edge facing the other fighter and falls
@@ -866,12 +927,16 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
     // local/rival roles the same way everything else on this screen is.
     const WormKill& kill = combat.lastWormKill();
     const bool killOnLocal = kill.onPlayer != flip;
+    // The slot pitch travels with the shot for the same reason the glyphs do: a board
+    // spaced for the standing shot around wide-shot copies reads as a gappy picket fence
+    // rather than as a rank closed up in front of its parent.
+    const int replicaStride = kReplicaSlotW * shotN / shotD;
     drawReplicaRow(fb, en, swinging && !lastByLocal, kill, killOnLocal ? -1 : hitBeat,
-                   /*frontX=*/stage.rivalX, /*stride=*/kReplicaSlotW, kSpriteShelf,
-                   animBeat);
+                   /*frontX=*/stage.rivalX, /*stride=*/replicaStride, kSpriteShelf,
+                   animBeat, shotN, shotD);
     drawReplicaRow(fb, pl, swinging && lastByLocal, kill, killOnLocal ? hitBeat : -1,
-                   /*frontX=*/stage.localX + stage.localW, /*stride=*/-kReplicaSlotW,
-                   kSpriteShelf, animBeat);
+                   /*frontX=*/stage.localX + stage.localW, /*stride=*/-replicaStride,
+                   kSpriteShelf, animBeat, shotN, shotD);
 
     // Each fighter's STATUS STRIP, on the shelf under its feet: every condition it is
     // under, as the same glyph the panel's VS grid names that row with, so the two say
@@ -905,14 +970,14 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
         const StrikeMark mark =
             strikeMark(lastByLocal ? pl : en, combat.strikeCount());
         drawStrikeMark(fb, stage.laneX, stage.laneW, hopDir, hitBeat, kAttackHopPeriod,
-                       *mark.sheet, mark.variant);
+                       *mark.sheet, mark.variant, shotN, shotD);
     }
     // The wind-up countdown, over whichever fighter is charging — the same marker on both
     // sides, so "a hit is being wound up, by that one, N turns out" reads without colour.
     // Seated off each sprite's own height, so it rides the head it belongs to rather than
     // floating on a shared row a short creature never reaches.
-    auto headY = [](const SpriteData* s) {
-        return s ? kSpriteShelf - s->h * kScaleNum / kScaleDen : kSpriteShelf;
+    auto headY = [&](const SpriteData* s) {
+        return s ? kSpriteShelf - s->h * shotN / shotD : kSpriteShelf;
     };
     // The move being charged is what says how LONG the wind-up is; a combatant mid-channel
     // always has one, and a meter with no total falls back to the turns still to run.

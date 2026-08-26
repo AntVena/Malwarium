@@ -70,6 +70,7 @@ SCENES=(
   "shop|shop"                       "encounter|encounter"
   "combat|combat"                   "postencounter|postencounter"
   "combat_stats|combat stats"       "combat_kit|combat kit"
+  "combat_wide|combat pet:baitracuda"
   "lockout|lockout"
   "decryption|decryption"               "decryption_rows|decryption rows"
   "decryption_lost|decryption lost"
