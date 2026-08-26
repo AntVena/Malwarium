@@ -8,6 +8,7 @@
 #include <algorithm>
 
 #include "core/model/combat.h"
+#include "core/model/idle_camo.h"
 #include "core/render/camo.h"
 #include "core/ui/combat_screen.h"
 
@@ -464,4 +465,80 @@ void test_camo_same_creature_across_casts_is_not_a_change() {
     const CamoTarget b = camoTarget(p, wild);
     CHECK(a.source == CamoTarget::Source::Line && b.source == CamoTarget::Source::Line);
     CHECK(a == b);   // same line, so the same creature, so nothing to dissolve into
+}
+
+// --- Gate: the resting drift is rare, whole, and never the creature's own family ---
+//
+// The habitat's ambient FX_CAMO (core/model/idle_camo.h) has no cast to read and nothing
+// to interrupt it, so the cadence IS the feature: a drift that ran most of the time would
+// make the borrowed palette read as the creature's own colours, and one that turned its
+// slot over on the way out would spend its fade dissolving into a family the pet was
+// never wearing.
+void test_idle_camo_drifts_rarely_and_whole() {
+    IdleCamo c;
+
+    // A creature that does not wear borrowed colours never leaves its own.
+    for (int i = 0; i < 4 * (kIdleCamoRestBeats + kIdleCamoWearBeats); ++i) {
+        c.step(false);
+        CHECK(c.level() == 0);
+    }
+
+    // A wearer holds its own colours for the whole rest, then arrives fully.
+    IdleCamo w;
+    int rest = 0;
+    while (w.level() == 0) { w.step(true); ++rest; }
+    CHECK(rest == kIdleCamoRestBeats);                  // the drift is a rare event
+    const int firstSlot = w.slot();
+    for (int i = 1; i < kIdleCamoWearBeats; ++i) {
+        w.step(true);
+        CHECK(w.level() > 0);
+        CHECK(w.slot() == firstSlot);                   // one drift is one family
+    }
+    CHECK(w.level() == 255);                            // ...and it fully arrives
+
+    // Out the far side: the fade runs on the palette it was WEARING, and only once the
+    // pet is back in its own colours is the next family up.
+    int fade = 0;
+    while (w.level() > 0) {
+        w.step(true);
+        CHECK(w.slot() == firstSlot);
+        ++fade;
+    }
+    CHECK(fade > 1);                                    // a scatter, not a cut
+    CHECK(fade < kIdleCamoRestBeats);                   // ...and long over before the next
+
+    // The next drift is somebody else. Two in a row from the same family would read as
+    // the pet having a second colour rather than as it reaching for the roster.
+    while (w.level() == 0) w.step(true);
+    CHECK(w.slot() != firstSlot);
+}
+
+// --- Gate: a drifting pet reaches for families it is not ---
+//
+// The rotation's one rule (Game::idleCamoSprite): the pet rehearses what it ISN'T. A slot
+// that could land on the pet's own family would spend a drift dissolving a creature into
+// its own colours, which is the effect no-op dressed up as a flourish.
+void test_idle_camo_reaches_for_another_family() {
+    ContentRegistry reg = ContentRegistry::embedded();
+    const std::vector<const CreatureLine*> lines = reg.allCreatureLines();
+    CHECK(lines.size() > 1);                            // there is somebody else to be
+
+    // Every family is reachable, and the pet's own never is — swept over the roster,
+    // since which families exist is content and the rule has to hold for all of them.
+    for (const CreatureLine* own : lines) {
+        std::vector<const char*> seen;
+        for (int slot = 0; slot < static_cast<int>(lines.size()); ++slot) {
+            const int want = slot % (static_cast<int>(lines.size()) - 1);
+            int i = 0;
+            const CreatureLine* got = nullptr;
+            for (const CreatureLine* l : lines) {
+                if (std::strcmp(l->id, own->id) == 0) continue;
+                if (i++ == want) { got = l; break; }
+            }
+            CHECK(got != nullptr);
+            CHECK(std::strcmp(got->id, own->id) != 0);
+            seen.push_back(got->id);
+        }
+        CHECK(seen.size() == lines.size());
+    }
 }

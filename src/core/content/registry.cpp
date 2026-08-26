@@ -158,6 +158,21 @@ std::vector<const MoveDef*> ContentRegistry::allMoves() const {
     return out;
 }
 
+std::vector<const CreatureLine*> ContentRegistry::allCreatureLines() const {
+    std::vector<const CreatureLine*> out;
+    for (const ContentSource* src : sources_) {
+        int n = 0;
+        const CreatureLine* lines = src->creatureLines(n);
+        for (int l = 0; l < n; ++l) {
+            bool dup = false;
+            for (const CreatureLine* e : out)
+                if (std::strcmp(e->id, lines[l].id) == 0) { dup = true; break; }
+            if (!dup) out.push_back(&lines[l]);
+        }
+    }
+    return out;
+}
+
 std::vector<const CreatureDef*> ContentRegistry::allCreatures() const {
     std::vector<const CreatureDef*> out;
     for (const ContentSource* src : sources_) {

@@ -54,6 +54,10 @@ public:
     const ModDef* modByWire(int wire) const;
     // Every known move def (the MOVES picker builds off this, same rationale).
     std::vector<const MoveDef*> allMoves() const;
+    // Every known FAMILY, across all sources, in roster order. What a caller asking
+    // about the lines themselves rather than about one line by id needs — the habitat's
+    // ambient colour drift walks it to find the families a pet is not (idleCamoSprite).
+    std::vector<const CreatureLine*> allCreatureLines() const;
     // Every known creature def, across all sources. Roster-wide invariants build
     // off this (e.g. the wild-name / roster-name disjointness gate).
     std::vector<const CreatureDef*> allCreatures() const;

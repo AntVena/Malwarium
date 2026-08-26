@@ -165,6 +165,19 @@ bool Game::tick(uint32_t nowMs) {
             if (i < companions) companionWander_[i].step(pet_->locomotion);
             else companionWander_[i].park();
         }
+        // Resting colour: a line that wears borrowed colours drifts into another
+        // family's palette now and then and comes back (core/model/idle_camo.h). An EGG
+        // is left out — the Metamorphic hatch board is a whole minigame about exactly
+        // this (game_chroma.cpp), and a shell rehearsing it in the background while the
+        // board is what the player is about to be scored on says the trick twice.
+        const CreatureLine* petLine =
+            pet_ ? registry_.creatureLine(pet_->line) : nullptr;
+        petCamo_.step(petLine && petLine->wearsBorrowedColours && !inEggPhase());
+        // The art is resolved once per drift, on the beat the level leaves zero: which
+        // creature answers for a family is a registry walk, and the level moving is not
+        // a change of who is being sampled.
+        if (petCamo_.level() == 0) idleCamoWorn_ = nullptr;
+        else if (!idleCamoWorn_) idleCamoWorn_ = idleCamoSprite(petCamo_.slot());
         // Modal / process timers run on the heartbeat (their own lifecycle).
         if (nav_ == Nav::ModalFeeding) {
             if (++feedBeat_ >= kFeedBeats) endFeeding();
@@ -270,7 +283,8 @@ bool Game::tick(uint32_t nowMs) {
             const Combatant& self = flip ? combat_.enemy() : combat_.player();
             const Combatant& rival = flip ? combat_.player() : combat_.enemy();
             const SpriteData* wear =
-                camoSpriteForTarget(camoTarget(self, rival), rival, self.stage);
+                camoSpriteForTarget(camoTarget(self, rival), rival.spriteName,
+                                    self.stage);
             // Trading one borrowed palette for ANOTHER restarts the scatter with the old
             // one held behind it (drawCombatScreen passes it as camo.h's `from`), so the
             // change reads as one disguise dissolving into the next. Gated on the ART and

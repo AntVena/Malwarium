@@ -192,8 +192,21 @@ void Game::drawHabitat(Framebuffer& fb, int cursor) const {
         // turned-to-the-viewer pose (assets/CREATURE_VISUAL_RULES.md). The habitat has
         // no seat and no opponent, so unlike the combat stage the direction comes off
         // the trip itself.
-        drawSpriteUpscaled(fb, *pet, frame, petX, petY, kScaleNum, kScaleDen, row,
-                           spriteMirrorToFace(*pet, petWander_.headingRight()));
+        const bool mirror = spriteMirrorToFace(*pet, petWander_.headingRight());
+        // Resting colour: a line that wears borrowed colours spends a few seconds now
+        // and then in another family's palette (core/model/idle_camo.h). The level and
+        // the art are the tick's; this ranks that art into the ladder the creature is
+        // repainted through, exactly as the combat screen does. Every other pet, and
+        // this one between drifts, takes the plain blit and pays nothing.
+        const CamoRamp drift =
+            idleCamoWorn_ ? camoRampFrom(*idleCamoWorn_) : CamoRamp{};
+        if (petCamo_.level() > 0 && !drift.empty())
+            drawSpriteCamo(fb, *pet, frame, petX, petY, kScaleNum, kScaleDen, drift,
+                           petCamo_.level(), /*flashColor=*/0, /*flashAmt=*/0, row,
+                           /*from=*/nullptr, mirror);
+        else
+            drawSpriteUpscaled(fb, *pet, frame, petX, petY, kScaleNum, kScaleDen, row,
+                               mirror);
     }
 
     // The Worm line's copies, at home. In a fight the board is Combatant::wormReplicas
@@ -688,13 +701,13 @@ void Game::drawTrain(Framebuffer& fb) const {
 }
 
 // Which art a CamoTarget names — the contract is on the declaration (game.h).
-const SpriteData* Game::camoSpriteForTarget(const CamoTarget& t, const Combatant& rival,
+const SpriteData* Game::camoSpriteForTarget(const CamoTarget& t, const char* rivalSprite,
                                             Stage wearer) const {
     switch (t.source) {
         case CamoTarget::Source::Own:
             return nullptr;
         case CamoTarget::Source::Rival:
-            return registry_.sprite(rival.spriteName);
+            return rivalSprite ? registry_.sprite(rivalSprite) : nullptr;
         case CamoTarget::Source::Line:
             break;
     }
@@ -711,6 +724,28 @@ const SpriteData* Game::camoSpriteForTarget(const CamoTarget& t, const Combatant
         if (pick->stage > wearer || r.stage > pick->stage) pick = &r;
     }
     return registry_.creatureSprite(*pick);
+}
+
+// The rotation rule is on the declaration (game.h).
+const SpriteData* Game::idleCamoSprite(int slot) const {
+    if (!pet_) return nullptr;
+    const std::vector<const CreatureLine*> lines = registry_.allCreatureLines();
+    int others = 0;
+    for (const CreatureLine* l : lines)
+        if (!pet_->line || std::strcmp(l->id, pet_->line) != 0) ++others;
+    if (others <= 0) return nullptr;         // a roster of one family has nobody to be
+    const int want = ((slot % others) + others) % others;
+    int i = 0;
+    for (const CreatureLine* l : lines) {
+        if (pet_->line && std::strcmp(l->id, pet_->line) == 0) continue;
+        if (i++ != want) continue;
+        // Through the same resolver the fight uses, so a drifting pet at home and a
+        // channelling one in a fight reach for the same creature: that family's row at
+        // the drifter's OWN tier, never its hatchling.
+        return camoSpriteForTarget({CamoTarget::Source::Line, l->id},
+                                   /*rivalSprite=*/nullptr, pet_->stage);
+    }
+    return nullptr;
 }
 
 void Game::drawCombatScreen(Framebuffer& fb) const {

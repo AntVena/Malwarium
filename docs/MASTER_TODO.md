@@ -41,20 +41,6 @@ filter in `game_items.cpp`. | M | The row's own comment currently argues the opp
 re-roll BUFF, not a quest item") — that reasoning was about it not being a QUEST item, and it
 answered the wrong question. |
 
-**The Metamorphic line changes colour in a fight and on its hatch board, but never at home.**
-FX_CAMO (`core/render/camo.h`) is a standing level over a `CamoRamp`, and neither half is
-combat-specific. So the idle habitat can run the same effect as an occasional ambient flourish —
-the pet drifts into some other line's colours for a few seconds and comes back — which is where a
-player actually watches their pet, and it costs one more caller rather than a second effect. Wants
-a trigger cadence that reads as the creature doing it rather than as a glitch, plus a rule for
-which colours it reaches for when there is nobody standing opposite to sample. |
-`core/render/camo.h`; `game_render.cpp`'s idle habitat draw. | S | The colour-source seam it
-needed already exists: `camoRampFromTone` builds a value ladder from one PAL_CORE token, which is
-what the CHROMATOPHORE's three skins are made of. So does the two-palette change (`from`), which is
-what a drift from one line's colours into another's wants. What is left here is only the TRIGGER —
-when a resting pet decides to do it, and which token it picks. The same hand-built ramp is what a
-"pet glows purple for a few seconds after a rare food" would use. |
-
 **Capture arming costs ~70KB and the AP ~58KB**, against ~126KB free with the radio idle. The device works, and the save no longer needs a big contiguous block, but that was the only thing standing on this — anything else that grows will hit the same wall. Worth a pass at what the capture path actually needs. | `net_capture.h`'s `powerUp` (`esp_wifi_init` + promiscuous + the pcap SD buffers). | M | Measured on device, not estimated: `[ap] down free=126408` → `[cap] armed free=56188`. |
 
 **A bonus that lands on a full cap pays literally nothing, and the row still reads as if it

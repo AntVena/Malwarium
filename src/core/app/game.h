@@ -31,6 +31,7 @@
 #include "core/model/disk_decryption.h"
 #include "core/model/event_log.h"
 #include "core/model/hacker_rank.h"
+#include "core/model/idle_camo.h"
 #include "core/model/idle_wander.h"
 #include "core/model/inventory.h"
 #include "core/model/loadout.h"
@@ -1800,8 +1801,14 @@ private:
     // own tier rather than like that line's hatchling. Registry lookups only — the tick
     // calls this every beat, and the pixel scan that turns the answer into a ramp waits
     // for the draw.
-    const SpriteData* camoSpriteForTarget(const CamoTarget& t, const Combatant& rival,
+    const SpriteData* camoSpriteForTarget(const CamoTarget& t, const char* rivalSprite,
                                           Stage wearer) const;
+    // The family the resting pet's `slot`-th drift reaches for, as art (core/model/
+    // idle_camo.h). The rule is simply the families the pet IS NOT, in roster order and
+    // wrapping — so a pet rehearses the whole 'net over time and never the same colours
+    // twice running, and a family added to the roster joins the rotation for free.
+    // Resolved once per drift by the tick, never per repaint.
+    const SpriteData* idleCamoSprite(int slot) const;
     void drawEncounterScreen(Framebuffer& fb) const;
     void drawWifiScreen(Framebuffer& fb) const;
     void drawShopScreen(Framebuffer& fb) const;
@@ -2444,6 +2451,12 @@ private:
     // Stepped once per heartbeat off pet_->locomotion and parked when there is no
     // mover, so it never needs a reset hook on hatch, evolution or a loaded save.
     IdleWander petWander_;
+    // The resting pet's ambient FX_CAMO drift: the clock (core/model/idle_camo.h), and
+    // the art it is currently sampling. Same split as the fight's combatCamoWorn_ pair —
+    // the tick holds a level and a sprite, the draw ranks that sprite into a ladder.
+    // Null between drifts, which is also what says nothing is worn.
+    IdleCamo petCamo_;
+    const SpriteData* idleCamoWorn_ = nullptr;
     // ...and where the ambient copies beside it are standing. One per replication
     // slot, of which idleCompanionCount() are live; each is seeded apart in Game's
     // constructor, since identical wanders move identically.

@@ -328,6 +328,8 @@ int g_failures = 0;
     RUN(test_camo_copies_the_rival_before_the_line) \
     RUN(test_camo_ramp_keeps_a_colour_whose_rung_is_taken) \
     RUN(test_camo_same_creature_across_casts_is_not_a_change) \
+    RUN(test_idle_camo_drifts_rarely_and_whole) \
+    RUN(test_idle_camo_reaches_for_another_family) \
     RUN(test_absorb_sweep_endpoints)              \
     RUN(test_absorb_phase_clock)                  \
     RUN(test_combat_outro_kind)                   \

@@ -125,12 +125,14 @@ own beat (`CombatOutro::beat`) — their own, because the strike clock is not th
 
 `FX_CAMO` has **two colour sources and two drivers**, which is the shape an effect takes
 when a second screen wants it. The palette is either sampled off a creature (`camoRampFrom`,
-the fight) or built from one PAL_CORE token (`camoRampFromTone`, a screen that means a
-specific colour and has no creature to sample). The level is either `camoAdvance` eased
-toward the pet's live cast (the fight) or a caller's own settled fraction — the
-CHROMATOPHORE hands it `Chromatophore::wearPct`, so the scatter on the creature is the same
-number the board is about to score. Both remain STATES; neither source or driver is allowed
-to be a beat.
+the fight and the idle habitat) or built from one PAL_CORE token (`camoRampFromTone`, a
+screen that means a specific colour and has no creature to sample). The level is either
+`camoAdvance` eased toward a live predicate (the fight reads the pet's cast; the habitat's
+resting drift reads a long cadence, `core/model/idle_camo.h`) or a caller's own settled
+fraction — the CHROMATOPHORE hands it `Chromatophore::wearPct`, so the scatter on the
+creature is the same number the board is about to score. Both remain STATES; neither source
+or driver is allowed to be a beat, and the habitat's cadence is not an exception: it decides
+WHEN the pet is wearing something, never how far along the scatter is.
 
 WHICH creature the fight samples is `CamoTarget` (`core/ui/combat_screen.h`), ranked so the
 more specific answer wins. A rolled move sitting in the rival's kit — or belonging to the
