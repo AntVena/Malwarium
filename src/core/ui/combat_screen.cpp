@@ -47,10 +47,29 @@ constexpr int kSpriteShelf = kCombatSpriteShelf;   // the panel's geometry names
 // rather than each measuring its own caption, so the bars start on one x, run to one
 // width, and put their numerics on one right edge — which is what lets an operator read
 // who is ahead by looking, instead of by comparing two numbers. The x clears the longest
-// caption either row uses ("ENEMY"/"RIVAL"), and the width leaves the numeric its four
-// digits inside the pip's column.
-constexpr int kGaugeX = kMargin + 5 * kFontAdvance + 6;
-constexpr int kGaugeW = 104;
+// caption either row uses ("ENEMY"/"RIVAL").
+//
+// The gutter between caption and gauge is a full glyph cell wide because the initiative
+// tick lives in it: at the 6px a label needs on its own the mark touched the caption on
+// one side and the gauge's first cell on the other, and read as part of the gauge rather
+// than as a mark about it. The width is a round 10 cells of 10, so no column is left
+// ragged at the end, and it stops where a four-digit numeric still clears the pip.
+constexpr int kGaugeX = kMargin + 5 * kFontAdvance + 12;
+constexpr int kGaugeW = 100;
+
+// The initiative tick: a bar in that gutter, on the side that acts NEXT. Turns resolve
+// on their own and the two fighters do not simply alternate — Speed decides, and a fast
+// pet takes two in a row — so "whose turn is it" was a fact the screen had and never
+// said, on a screen whose one decision is whether to spend the Exploit before the next
+// blow lands.
+//
+// ACCENT because this IS the token's own meaning — which one is up — and because it is
+// free again now that the rival's Health gauge no longer wears it. Presence and position
+// carry it in grayscale; the colour only repeats them.
+constexpr int kTurnTickW = 3, kTurnTickX = kGaugeX - 8;
+void drawTurnTick(Framebuffer& fb, int y, int h) {
+    fb.fillRect(kTurnTickX, y, kTurnTickW, h, palColor(Pal::ACCENT));
+}
 // The outer inset a fighter is seated against before it is allowed to crop, and the
 // bounds on the clash lane: never tighter than the strike mark drawn in it, never so
 // wide that two small creatures read as ignoring each other.
@@ -404,6 +423,20 @@ int impactNudgePx(int hitBeat, int dir) {   // dir: -1 (shove left) / +1 (shove 
 uint8_t impactFlashAmt(int hitBeat) {
     if (hitBeat < 0 || hitBeat >= kImpactPeriod) return 0;
     return static_cast<uint8_t>(200 * (kImpactPeriod - hitBeat) / kImpactPeriod);
+}
+
+// The damage popup's own window, in anim-ticks: one ordinary turn
+// (kCombatBeatsPerTurn heartbeats at kCombatAnimMs each), so the number is still up when
+// the fight asks what just happened and gone before the next blow lands. A feeding-frenzy
+// streak that resolves faster simply cuts it short with the next hit, which is right —
+// the newest number is the one being read.
+constexpr int kDamagePopPeriod = 6;
+constexpr int kDamagePopRise = 10;         // active px it climbs over that window
+
+// How far a popup has floated, or -1 once it is spent.
+int damagePopRise(int hitBeat) {
+    if (hitBeat < 0 || hitBeat >= kDamagePopPeriod) return -1;
+    return kDamagePopRise * hitBeat / (kDamagePopPeriod - 1);
 }
 
 // Attack "hop" cue (no new art/frames, no change to either fighter's resting stage
@@ -789,6 +822,11 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
     // "did the LOCAL combatant land the last hit" — the local frame of reference for
     // the damage popup and the impact nudge, both of which follow the target.
     const bool lastByLocal = combat.lastByPlayer() != flip;
+    // ...and who acts next, rebound the same way. Only meaningful while the fight is
+    // running: a settled fight has no next turn, and a tick still pointing at somebody
+    // would read as one more exchange coming.
+    const bool ongoing = combat.outcome() == Combat::Outcome::Ongoing;
+    const bool localTurnNext = combat.playerTurnNext() != flip;
 
     // --- Enemy header: name + level + override pip ----------------------------
     // Difficulty pips already showed once, on the pre-fight encounter intro
@@ -854,6 +892,7 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
     const int ehPct = en.maxHealth > 0 ? en.health * 100 / en.maxHealth : 0;
     drawGauge(fb, kGaugeX, 18, kGaugeW, 10, ehPct, Zone::Ok, false, false, beat,
               &neutral);
+    if (ongoing && !localTurnNext) drawTurnTick(fb, 18, 10);
     // Its numeric, on the same right edge as the pet's. A bar alone cannot tell 3 left
     // from 30, and the rival's exact Health is not a secret the screen was keeping — the
     // panel's VS and KIT pages both print it, one keypress away.
@@ -998,16 +1037,32 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
     // local/rival roles the same way everything else on this screen is.
     const WormKill& kill = combat.lastWormKill();
     const bool killOnLocal = kill.onPlayer != flip;
-    // The slot pitch travels with the shot for the same reason the glyphs do: a board
-    // spaced for the standing shot around wide-shot copies reads as a gappy picket fence
-    // rather than as a rank closed up in front of its parent.
-    const int replicaStride = kReplicaSlotW * shotN / shotD;
+    // The slot pitch is cut from the PARENT'S OWN WIDTH, so a full board occupies the
+    // ground its parent stands on instead of sprawling off the back of it.
+    //
+    // A fixed pitch could not do this at any camera. kReplicaSlotW is 30 active px and
+    // three copies step 90 back from the parent's front edge, against a worm whose
+    // drawing is 56 — so the last rank stood entirely behind its parent's tail, in empty
+    // stage, and the middle one sat over its body. Scaling the pitch with the shot does
+    // not help either: the parent scales by the same factor, so the ratio that causes it
+    // is invariant under the camera. It is the pitch that is wrong, not the size.
+    //
+    // Derived from the seat rather than the sprite because the seat is what the fighter
+    // visibly occupies. Floored so a very small parent still spreads its copies far
+    // enough to be counted, and the back-to-front draw order below already covers the
+    // case where that floor makes two ranks touch.
+    auto replicaSpan = [&](int bandW) {
+        const int fitted = bandW / (kWormReplicaSlots + 1);
+        const int floorPx = kReplicaSlotW * shotN / shotD / 2;
+        return fitted > floorPx ? fitted : floorPx;
+    };
     drawReplicaRow(fb, en, swinging && !lastByLocal, kill, killOnLocal ? -1 : hitBeat,
-                   /*frontX=*/stage.rivalX, /*stride=*/replicaStride, kSpriteShelf,
-                   animBeat, shotN, shotD);
-    drawReplicaRow(fb, pl, swinging && lastByLocal, kill, killOnLocal ? hitBeat : -1,
-                   /*frontX=*/stage.localX + stage.localW, /*stride=*/-replicaStride,
+                   /*frontX=*/stage.rivalX, /*stride=*/replicaSpan(stage.rivalW),
                    kSpriteShelf, animBeat, shotN, shotD);
+    drawReplicaRow(fb, pl, swinging && lastByLocal, kill, killOnLocal ? hitBeat : -1,
+                   /*frontX=*/stage.localX + stage.localW,
+                   /*stride=*/-replicaSpan(stage.localW), kSpriteShelf, animBeat, shotN,
+                   shotD);
 
     // Each fighter's STATUS STRIP, on the shelf under its feet: every condition it is
     // under, as the same glyph the panel's VS grid names that row with, so the two say
@@ -1064,6 +1119,35 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
         drawWindupMark(fb, stage.localX + stage.localW / 2, headY(localSprite),
                        pl.channelLeft, channelTurns(pl));
 
+    // --- The damage popup, over whoever just took it -----------------------
+    // WHERE it appears is the point. Right-aligned on the last-move line, the number sat
+    // in the same corner whoever had been hit, so the one cue that says which side is
+    // losing carried no answer to it — the reader had to parse the sentence beside it to
+    // find out. Floating it off the target's own head says it in the channel a glance
+    // uses, on the same hit beat as the flash and the knock-back, so the three cues are
+    // one event.
+    //
+    // A ransomed hit landed in full but moved no Health (combat.h ransomPool), so it gets
+    // the word HELD and the pool's green rather than the red of damage actually taken —
+    // the tag, not the colour, is what makes the two readable apart in grayscale.
+    const int popRise = damagePopRise(hitLanded ? hitBeat : -1);
+    if (popRise >= 0) {
+        const bool onRival = lastByLocal;         // the target is whoever did NOT swing
+        const SpriteData* hitSprite = onRival ? rivalSprite : localSprite;
+        const int bandX = onRival ? stage.rivalX : stage.localX;
+        const int bandW = onRival ? stage.rivalW : stage.localW;
+        const bool held = combat.lastRansomed();
+        char dmg[16];
+        std::snprintf(dmg, sizeof(dmg), held ? "HELD %d" : "-%d", combat.lastDamage());
+        const int w = textWidth(dmg);
+        // Held inside the canvas, and clear of the chrome above: a cropping fighter's
+        // midpoint can sit past a screen edge, and a tall one's head reaches the header.
+        const int x = std::max(kMargin,
+                               std::min(kActiveW - kMargin - w, bandX + bandW / 2 - w / 2));
+        const int y = std::max(kCombatPanelTop + 2, headY(hitSprite) - 6 - popRise);
+        drawText(fb, x, y, dmg, palColor(held ? Pal::CALM : Pal::HOT));
+    }
+
     // --- Player Health: zoned gauge + numeric ------------------------------
     const int phY = kSpriteShelf + 10;
     drawText(fb, kMargin, phY, sides.localLabel, palColor(Pal::INK));
@@ -1076,6 +1160,7 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
     const Zone hz = healthZone(pl.health, pl.maxHealth);
     const bool pulseOn = (beat & 1) == 0;
     drawGauge(fb, phX, phY, phW, 10, phPct, hz, false, pulseOn);
+    if (ongoing && localTurnNext) drawTurnTick(fb, phY, 10);
     char hp[16];
     std::snprintf(hp, sizeof(hp), "%d", pl.health);
     drawText(fb, phX + phW + 6, phY, hp, palColor(Pal::INK));
@@ -1090,17 +1175,6 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
         else
             std::snprintf(line, sizeof(line), "%s: %s", who, combat.lastMoveName());
         drawText(fb, kMargin, logY, line, palColor(Pal::INK_DIM));
-        if (combat.lastDamage() > 0) {
-            // A ransomed hit landed in full but moved no Health (combat.h ransomPool), so
-            // it gets the word HELD and the pool's green rather than the red of damage
-            // actually taken — the tag, not the colour, is what makes the two readable
-            // apart in grayscale.
-            const bool held = combat.lastRansomed();
-            char dmg[16];
-            std::snprintf(dmg, sizeof(dmg), held ? "HELD %d" : "-%d", combat.lastDamage());
-            drawText(fb, kActiveW - kMargin - textWidth(dmg), logY, dmg,
-                     palColor(held ? Pal::CALM : Pal::HOT));
-        }
     }
 
 
@@ -1171,7 +1245,20 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
             const Rgb565 nameC = sel ? palColor(Pal::ACCENT) : palColor(Pal::INK);
             if (i < moveN) {                              // a move row
                 const MoveDef* m = combat.player().moves[i];
-                pickerRow(y, m->displayName, nameC, moveKindTag(m->kind), sel);
+                // The kind AND the power. What an operator is deciding here is which
+                // move to spend the turn on, and the two questions that answers are what
+                // KIND of thing it is and how hard it hits — the second of which the row
+                // did not carry, so the choice was made blind on the only axis that
+                // separates one attack from another. A wildcard becomes whatever it
+                // rolls and so has no power to print; it takes the same dash the KIT page
+                // uses for a quantity not in play.
+                char tag[12];
+                if (moveIsWildcard(*m))
+                    std::snprintf(tag, sizeof(tag), "%s -", moveKindTag(m->kind));
+                else
+                    std::snprintf(tag, sizeof(tag), "%s %d", moveKindTag(m->kind),
+                                  m->power);
+                pickerRow(y, m->displayName, nameC, tag, sel);
             } else if (i < moveN + itemN) {               // a USE-ITEM row
                 const OverrideItem& it = items[i - moveN];
                 char tag[10];
