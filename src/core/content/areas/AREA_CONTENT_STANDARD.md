@@ -120,7 +120,9 @@ tunable, not a per-row duplicate. Boss Health/speed scaling
 `applyWildSubAreaRamp`) all read the SAME formula for every area, keyed only by that area's
 own `tier`/index — they live in `tunables.h`/`combat.cpp` and are not duplicated per area.
 The wild-malbeast tier roster (`combat.cpp`'s `wildMalbeast`) is similarly TIER-keyed, not
-per-area, and stays central.
+per-area, and stays central — including each creature's own signature move, which rides every
+rung in every area. An area states WHERE a fight is happening through its own wild pair; what
+the creature is stays the roster's to say.
 
 An area's difficulty tier is **not on the row at all** — `areaTier(idx)` derives it from
 ladder position (`area_defs.h`), and `combat.cpp`'s boss composition and the EXPL list both

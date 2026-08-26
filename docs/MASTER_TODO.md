@@ -43,6 +43,19 @@ answered the wrong question. |
 
 **Capture arming costs ~70KB and the AP ~58KB**, against ~126KB free with the radio idle. The device works, and the save no longer needs a big contiguous block, but that was the only thing standing on this — anything else that grows will hit the same wall. Worth a pass at what the capture path actually needs. | `net_capture.h`'s `powerUp` (`esp_wifi_init` + promiscuous + the pcap SD buffers). | M | Measured on device, not estimated: `[ap] down free=126408` → `[cap] armed free=56188`. |
 
+**Polymorph pays past a ceiling the level table enforces.** `polymorphPay` (`combat.cpp`)
+spends an absorbed move as one stat point in `applyLevelStatPoints`' own vocabulary, and every
+clamp that vocabulary answers to is applied there — except the brace cap: `defenseMultPct` is
+added raw, where `kLevelDefenseBraceCapPct` holds a levelled pet at +200. So a Metamorphic pet
+that absorbs Defend rows long enough reaches a brace multiplier no amount of levelling can buy,
+which is the failure `kLevelDefenseBraceCapPct` exists to prevent ("a turtle with unbounded
+absorb takes a whole turn to become unkillable for the next one, forever"). The fix is the cap
+plus the overflow every other clamp site already pays (`capOverflowHealth`), so the payment
+still lands. |
+`combat.cpp`'s `polymorphPay`; `kLevelDefenseBraceCapPct` in `tunables.h`. | S | The absorb
+side is bounded (`kPolymorphAbsorbCap`), so this is a slow climb rather than an exploit — but
+it is a ceiling that means one thing for a levelled pet and nothing for an absorbing one. |
+
 **A crew cannot be DISCOVERED.** `QuoteReward::Kind` has room for it and it is one of the prizes
 the board was designed to hand over ("you find a crew to join"), but crews are ungated today —
 every row in `content_crews.cpp` is enlistable from the first boot, so there is nothing for a
@@ -326,9 +339,10 @@ high→low value:
 - **Optional polish:** `UI_RANK_BADGE`, `ICON_EVENT_WIFI`, `UI_DIFFICULTY_PIPS`, a boss-tell marker
   on the charge bar, a `UI_TITLE_TAG` badge, richer per-sub-area `BG_SECTOR_*` backdrops, a
   `SPR_PET_*` attack-pose frame.
-- **Two of the four lines have no `ICON_LINE_*`.** Ransomware and Worm are drawn; Phishing and
-  Trojan are not, so their 'Pedia sections render text-only where the other two carry a glyph
-  (`gen_pedia_data.py` warns per missing line). One 20×20 each, same slot as the two that exist.
+- **Three of the five lines have no `ICON_LINE_*`.** Ransomware and Worm are drawn; Phishing,
+  Trojan and Metamorphic are not, so their 'Pedia sections render text-only where the other two
+  carry a glyph (`gen_pedia_data.py` warns per missing line). One 20×20 each, same slot as the
+  two that exist.
 - **Six archetype icons** (`ICON_ARCHETYPE_*`) — cosmetic accompaniment to §1i; parked in `_attic/`.
 
 ### 2c. New art implied by unbuilt features
