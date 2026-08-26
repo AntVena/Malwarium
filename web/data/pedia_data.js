@@ -6790,6 +6790,41 @@ window.PEDIA_DATA = {
       "goal": 1
     },
     {
+      "key": "COOK_ESCALOPE",
+      "name": "Run of the Kitchen",
+      "trigger": "Cook a Privilege Escalope at the Merge Hub.",
+      "icon": "assets/icons/ICON_ACH_COOK_ESCALOPE.png",
+      "goal": 1
+    },
+    {
+      "key": "COOK_SPARE_RIBS",
+      "name": "Redundant Array",
+      "trigger": "Cook a rack of Spare RIBs at the Merge Hub.",
+      "icon": "assets/icons/ICON_ACH_COOK_SPARE_RIBS.png",
+      "goal": 1
+    },
+    {
+      "key": "COOK_RACELETTE",
+      "name": "First to the Pan",
+      "trigger": "Cook a Racelette at the Merge Hub.",
+      "icon": "assets/icons/ICON_ACH_COOK_RACELETTE.png",
+      "goal": 1
+    },
+    {
+      "key": "COOK_OVERFLOAT",
+      "name": "Off By One Glass",
+      "trigger": "Cook a Buffer Overfloat at the Merge Hub.",
+      "icon": "assets/icons/ICON_ACH_COOK_OVERFLOAT.png",
+      "goal": 1
+    },
+    {
+      "key": "COOK_PROFILEROLE",
+      "name": "Where It Went",
+      "trigger": "Cook a Profilerole at the Merge Hub.",
+      "icon": "assets/icons/ICON_ACH_COOK_PROFILEROLE.png",
+      "goal": 1
+    },
+    {
       "key": "COLLECT_RARE",
       "name": "Rare Collector",
       "trigger": "Get hold of all 46 Rare items.",

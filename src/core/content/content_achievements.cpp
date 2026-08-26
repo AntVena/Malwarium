@@ -346,6 +346,32 @@ const AchievementDef kAchievements[] = {
      "Cook a Recursive Turducken at the Merge Hub.", "ICON_ACH_COOK_TURDUCKEN",
      AchSeries::ItemCollected, /*goal=*/1, "recursive_turducken", 0,
      {bits(250), item("sealed_cache_rare")}},
+    // The rest of the EPIC tier, one row per dish. They pay what Tiramisudo's row pays
+    // because they are the same achievement — you got a permanent upgrade onto a pet —
+    // and a set that pays unevenly reads as a ranking of the stats, which these are not.
+    // Their glyphs are the DISHES, read straight off the ITEMS icons rather than redrawn
+    // (tools/gen_ach_icons.py's from_item): a plate you have already learned to
+    // recognise in the bag is the fastest thing to recognise on the board.
+    {/*wire=*/136, "COOK_ESCALOPE", "Run of the Kitchen",
+     "Cook a Privilege Escalope at the Merge Hub.", "ICON_ACH_COOK_ESCALOPE",
+     AchSeries::ItemCollected, /*goal=*/1, "privilege_escalope", 0,
+     {bits(250), item("sealed_cache_rare")}},
+    {/*wire=*/137, "COOK_SPARE_RIBS", "Redundant Array",
+     "Cook a rack of Spare RIBs at the Merge Hub.", "ICON_ACH_COOK_SPARE_RIBS",
+     AchSeries::ItemCollected, /*goal=*/1, "spare_ribs", 0,
+     {bits(250), item("sealed_cache_rare")}},
+    {/*wire=*/138, "COOK_RACELETTE", "First to the Pan",
+     "Cook a Racelette at the Merge Hub.", "ICON_ACH_COOK_RACELETTE",
+     AchSeries::ItemCollected, /*goal=*/1, "racelette", 0,
+     {bits(250), item("sealed_cache_rare")}},
+    {/*wire=*/139, "COOK_OVERFLOAT", "Off By One Glass",
+     "Cook a Buffer Overfloat at the Merge Hub.", "ICON_ACH_COOK_OVERFLOAT",
+     AchSeries::ItemCollected, /*goal=*/1, "buffer_overfloat", 0,
+     {bits(250), item("sealed_cache_rare")}},
+    {/*wire=*/140, "COOK_PROFILEROLE", "Where It Went",
+     "Cook a Profilerole at the Merge Hub.", "ICON_ACH_COOK_PROFILEROLE",
+     AchSeries::ItemCollected, /*goal=*/1, "profilerole", 0,
+     {bits(250), item("sealed_cache_rare")}},
 
     // Rarity as a whole: the standout for the item collection.
     {/*wire=*/45, "COLLECT_RARE", "Rare Collector",
