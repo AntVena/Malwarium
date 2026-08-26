@@ -110,25 +110,24 @@ def inherit(icon_name):
     return ("@inherit", icon_name)
 
 
-def from_item(item_id, drop_rows=()):
+def from_item(item_id):
     """A dish's own inventory glyph (ICON_ITEM_<ID>), centred in the motif band.
 
     A "cook this one dish" row is about a specific plate, and the player already knows
     that plate by sight off the ITEMS list — so the honest picture is the one they have
     been looking at, read here rather than redrawn. Same reason inherit() exists: two
-    hand-drawn pictures of one thing drift, and a copy that is taken at render time
-    cannot.
+    hand-drawn pictures of one thing drift, and a copy taken at render time cannot.
 
-    The only work is the fit. Item glyphs are composed in a 20x20 cell; a motif gets
-    rows 0..13, so the content box is centred VERTICALLY in the band and x is left
-    exactly as the item drew it (the item is already composed across the full width,
-    and re-centring an odd-width glyph would knock a symmetric one off its axis).
+    Item glyphs are composed in a 20x20 cell and a motif gets rows 0..13, so the content
+    box is centred VERTICALLY in the band. x is left exactly as the item drew it: the
+    item is already composed across the full width, and re-centring an odd-width glyph
+    would knock a symmetric one off its axis.
 
-    A dish taller than the band names the SOURCE rows to drop. Always a REPEAT — one
-    more rib, one more inch of stem — never a feature, because a shortened rack still
-    reads as a rack and a rack missing its top does not.
+    A dish whose ink is taller than the band is simply not one this takes — cropping a
+    20-row composition into 14 loses a feature or thins a stroke, and both are worse than
+    a motif drawn for the band. Author that one in MOTIFS like every other.
     """
-    return ("@item", item_id, tuple(drop_rows))
+    return ("@item", item_id)
 
 
 # --- The motifs --------------------------------------------------------------
@@ -530,6 +529,45 @@ MOTIFS["tiramisudo"] = """
 ....................
 """
 
+# SPARE RIBS — a rack: the trimmed end, then two ribs. The ITEMS glyph is the same rack
+# running off the bottom of its cell, which is what a rack does on a counter; here it is
+# the whole thing, because a motif that stops at the band edge reads as cut off.
+MOTIFS["spare_ribs"] = """
+......#######.......
+...###########......
+.###############....
+.################...
+.#################..
+.######...########..
+......############..
+...###############..
+.###############....
+.################...
+.#################..
+.######...########..
+......############..
+...###############..
+"""
+
+# BUFFER OVERFLOAT — the glass, stem and foot. The ITEMS glyph stands a row taller on a
+# longer stem; the drink is the bowl and the base, so the stem is what gives here.
+MOTIFS["buffer_overfloat"] = """
+.....###########....
+.....###########....
+......#......##.....
+......#......##.....
+......#......##.....
+.......#######......
+.......#######......
+........#####.......
+.........##.........
+.........##.........
+.........##.........
+.........##.........
+......########......
+......########......
+"""
+
 # PORTRIDGE — a bowl, steaming, and nothing else. The method that changes nothing, so
 # the glyph is deliberately the plainest thing in the pantry.
 MOTIFS["portridge"] = """
@@ -654,14 +692,11 @@ GLYPHS = [
     ("ICON_ACH_COOK_PORTRIDGE", "portridge", plain()),
     ("ICON_ACH_COOK_TURDUCKEN", "turducken", plain()),
 
-    # The rest of the EPIC tier. These take the DISH itself off the ITEMS list rather
-    # than getting a motif of their own — see from_item. Two are a row or three taller
-    # than the band, and both are stacks of a repeated element, so the repeat is what
-    # gives way: one rib off the bottom of the rack, one inch off the glass's stem.
+    # The rest of the EPIC tier — one row per dish, each wearing the dish.
     ("ICON_ACH_COOK_ESCALOPE", from_item("privilege_escalope"), plain()),
-    ("ICON_ACH_COOK_SPARE_RIBS", from_item("spare_ribs", (17, 18, 19)), plain()),
+    ("ICON_ACH_COOK_SPARE_RIBS", "spare_ribs", plain()),
     ("ICON_ACH_COOK_RACELETTE", from_item("racelette"), plain()),
-    ("ICON_ACH_COOK_OVERFLOAT", from_item("buffer_overfloat", (15,)), plain()),
+    ("ICON_ACH_COOK_OVERFLOAT", "buffer_overfloat", plain()),
     ("ICON_ACH_COOK_PROFILEROLE", from_item("profilerole"), plain()),
 ]
 
@@ -684,19 +719,17 @@ def motif_rows(motif_name):
                           "inherit('%s')" % motif_name[1])
         return rows[:MOTIF_ROWS]
     if isinstance(motif_name, tuple) and motif_name[0] == "@item":
-        _, item_id, drop = motif_name
+        item_id = motif_name[1]
         what = "from_item('%s')" % item_id
         rows = _read_rows(os.path.join(ICONS, "ICON_ITEM_%s.png" % item_id.upper()),
                           what)
-        kept = [r for y, r in enumerate(rows) if y not in drop]
-        ink = [y for y, r in enumerate(kept) if "#" in r]
+        ink = [y for y, r in enumerate(rows) if "#" in r]
         if not ink:
-            raise ValueError("%s: nothing left to centre" % what)
-        body = kept[ink[0]:ink[-1] + 1]
+            raise ValueError("%s: nothing to centre" % what)
+        body = rows[ink[0]:ink[-1] + 1]
         if len(body) > MOTIF_ROWS:
-            raise ValueError("%s: %d rows of ink, band holds %d — name %d more "
-                             "drop_rows (a repeat, not a feature)"
-                             % (what, len(body), MOTIF_ROWS, len(body) - MOTIF_ROWS))
+            raise ValueError("%s: %d rows of ink, the band holds %d — draw this one a "
+                             "motif instead" % (what, len(body), MOTIF_ROWS))
         top = (MOTIF_ROWS - len(body)) // 2
         blank = "." * SIZE
         return [blank] * top + body + [blank] * (MOTIF_ROWS - top - len(body))

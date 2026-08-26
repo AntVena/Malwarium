@@ -349,9 +349,8 @@ const AchievementDef kAchievements[] = {
     // The rest of the EPIC tier, one row per dish. They pay what Tiramisudo's row pays
     // because they are the same achievement — you got a permanent upgrade onto a pet —
     // and a set that pays unevenly reads as a ranking of the stats, which these are not.
-    // Their glyphs are the DISHES, read straight off the ITEMS icons rather than redrawn
-    // (tools/gen_ach_icons.py's from_item): a plate you have already learned to
-    // recognise in the bag is the fastest thing to recognise on the board.
+    // Each wears its own dish (tools/gen_ach_icons.py): a plate the operator has already
+    // learned to recognise in the bag is the fastest thing to recognise on the board.
     {/*wire=*/136, "COOK_ESCALOPE", "Run of the Kitchen",
      "Cook a Privilege Escalope at the Merge Hub.", "ICON_ACH_COOK_ESCALOPE",
      AchSeries::ItemCollected, /*goal=*/1, "privilege_escalope", 0,
