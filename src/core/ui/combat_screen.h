@@ -1,10 +1,14 @@
 // combat_screen.h — the combat activity screen, shared by every fight the device runs
 // (wild encounter, Sim-Battle, linked duel). Full 224 canvas, its own chrome (no
-// carousel/submenu header): rival row (name + override pip), rival Health (neutral) +
-// channel wind-up, both combatant sprites (reused SPR_PET_* idle frames) seated LOCAL
-// LEFT / RIVAL RIGHT, local zoned Health + numeric, the last-move line + damage popup,
-// and the MANDATORY hint band (A+C live, C reassigned). The A+C override picker overlays
-// when open. All grayscale-legible.
+// carousel/submenu header): rival row (name + level + override pip), rival Health
+// (neutral) + numeric + channel wind-up, both combatant sprites (reused SPR_PET_* idle
+// frames) seated LOCAL LEFT / RIVAL RIGHT, local zoned Health + numeric, the last-move
+// line, and the MANDATORY hint band (A+C live, C reassigned). The damage number floats
+// off the head of whoever took it, and an initiative tick marks the side that acts next.
+// The A+C override picker overlays when open. All grayscale-legible.
+//
+// The two Health rows share one gauge column (kCombatGaugeX/W below), so a reader can
+// see who is ahead by looking rather than by comparing two numbers.
 //
 // A duel is not a second screen: it varies only by the CombatSides below, so the two
 // modes cannot drift apart in layout or in what a gauge means.
@@ -15,6 +19,7 @@
 
 #include "core/render/camo.h"   // CamoRamp — the palette CombatCamo carries
 #include "core/render/font.h"
+#include "core/ui/layout.h"   // kMargin — the gauge column is stated against the grid
 
 namespace mal {
 
@@ -287,7 +292,30 @@ CombatVitals combatVitals(const Combatant& c);
 // and an area that grows one a boss teaches must fail a gate rather than quietly lose the
 // rows a player opened the page for. A row declines to draw unless its full glyph height
 // clears the bottom, so the capacity is a floor division and not an estimate.
-constexpr int kCombatSpriteShelf = 165;                 // where the fighters' feet sit
+// Where the fighters' feet sit. High enough that the tallest cell the game can field
+// (64 logical, 112 active at the standing shot) still clears the chrome above, and low
+// enough that the pet's own block below it — status strip, passive strip, gauge and
+// numeric, then the last-move line — is not packed against the hint band.
+//
+// It used to sit 13px lower, which spent the difference on empty stage: an ordinary
+// encounter left a third of the canvas blank above two creatures while four readouts
+// shared 35px underneath them.
+constexpr int kCombatSpriteShelf = 152;
+
+// The two Health rows, published because they are the screen's CONTRACT and not merely
+// its private arithmetic: the release gates sample these bands to prove a gauge and its
+// blips still read in grayscale, and a gate that restated the numbers instead was a
+// second copy free to fall out of step with the draw — which is how one of them came to
+// be sampling a column the gauge had already moved out of.
+//
+// Both rows share one column, so the bars start on one x, run to one width and put their
+// numerics on one right edge. That is what lets an operator read who is ahead by looking
+// rather than by comparing two numbers.
+constexpr int kCombatGaugeX = kMargin + 5 * kFontAdvance + 12;
+constexpr int kCombatGaugeW = 100;
+constexpr int kCombatGaugeH = 10;
+constexpr int kCombatRivalGaugeY = 18;
+constexpr int kCombatLocalGaugeY = kCombatSpriteShelf + 10;
 constexpr int kCombatPanelTop = 28;
 // Stops at the SHELF — the ground line the fighters stand on, and the top of the local
 // pet's own block. Everything below it stays readable while the panel is open: the pet's

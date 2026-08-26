@@ -547,9 +547,11 @@ void test_pvp_guest_sees_its_own_pet_on_the_bottom_gauge() {
 // the left. Rendering with ONE sprite supplied at a time pins each seat to a role:
 // whichever combatant is the local one lights the left box and leaves the right dark.
 void test_combat_seats_local_pet_on_the_left() {
-    // The band the two seats are bottom-anchored in (combat_screen.cpp). Nothing but the
-    // sprites draws here while a fight is Ongoing and neither side is winding up.
-    constexpr int kBandY0 = 81, kBandY1 = 165;
+    // The band the two seats are bottom-anchored in, off the screen's own shelf rather
+    // than written down: a seat is as tall as the tallest cell that can stand on it, and
+    // a copied number here goes stale the moment the ground line moves. Nothing but the
+    // sprites draws in it while a fight is Ongoing and neither side is winding up.
+    constexpr int kBandY0 = kCombatSpriteShelf - 84, kBandY1 = kCombatSpriteShelf;
 
     ContentRegistry reg;
     reg.addSource(embeddedContent());
@@ -678,7 +680,7 @@ void test_combat_strike_mark_travels_toward_its_target() {
     auto laneCentroid = [&](const Framebuffer& fb, int& lit) {
         long sum = 0;
         lit = 0;
-        for (int y = 81; y < 165; ++y)
+        for (int y = kCombatSpriteShelf - 84; y < kCombatSpriteShelf; ++y)
             for (int x = st.laneX; x < st.laneX + st.laneW; ++x)
                 if (luminance(fb.get(x, y)) > 0.12f) { sum += x; ++lit; }
         return lit ? static_cast<int>(sum / lit) : -1;
@@ -735,7 +737,7 @@ void test_combat_windup_reads_apart_from_impact() {
     // Total grayscale brightness over one fighter's seat — the flash's own channel.
     auto seatGray = [&](const Framebuffer& fb, int x0, int w) {
         float sum = 0;
-        for (int y = 81; y < 165; ++y)
+        for (int y = kCombatSpriteShelf - 84; y < kCombatSpriteShelf; ++y)
             for (int x = std::max(0, x0); x < std::min(kActiveW, x0 + w); ++x)
                 sum += luminance(fb.get(x, y));
         return sum;
@@ -779,8 +781,11 @@ void test_combat_windup_reads_apart_from_impact() {
     Framebuffer none(kActiveW, kActiveH);
     render(/*channel=*/false, 0, -1, none);
     const int markX0 = std::max(0, st.localX), markW = st.localW;
-    CHECK(anyLitGray(windEarly, markX0, 30, markX0 + markW, 78));
-    CHECK(!anyLitGray(none, markX0, 30, markX0 + markW, 78));
+    // The meter rides its owner's head, so the band to look in is above the tallest cell
+    // that can stand on the shelf and below the chrome — derived, not written down.
+    const int meterY0 = kHeaderRule + 8, meterY1 = kCombatSpriteShelf - 84;
+    CHECK(anyLitGray(windEarly, markX0, meterY0, markX0 + markW, meterY1));
+    CHECK(!anyLitGray(none, markX0, meterY0, markX0 + markW, meterY1));
 }
 
 // Release gate: the ransom pool (combat.h ransomPool) must stay readable in grayscale.
@@ -792,8 +797,8 @@ void test_combat_ransom_pool_grayscale() {
 
     // The pool row sits directly above the local Health gauge (combat_screen.cpp): the
     // gauge spans phX..phX+phW at phY-7, the kRansomHoldTurns blips the strip to its right.
-    const int phX = 8 + textWidth("YOU") + 6, phW = 110;
-    const int rowY = 175 - 7, rowH = 5;
+    const int phX = kCombatGaugeX, phW = kCombatGaugeW;
+    const int rowY = kCombatLocalGaugeY - 7, rowH = 5;
     const int blipX = phX + phW + 6, blipW = kRansomHoldTurns * 7;
     // Summed LUMINANCE, not a lit-pixel count: the blips code their state as calm-green
     // (0.67) against ink-dim (0.47), both of which read as "lit" — brightness is the

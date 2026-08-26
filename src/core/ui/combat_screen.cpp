@@ -43,19 +43,9 @@ Zone healthZone(int health, int maxHealth) {
 // is packed tight against the hint band instead of leaving it mid-screen.
 constexpr int kSpriteShelf = kCombatSpriteShelf;   // the panel's geometry names it too
 
-// The two Health gauges' shared column. Both fighters' rows are laid out against these
-// rather than each measuring its own caption, so the bars start on one x, run to one
-// width, and put their numerics on one right edge — which is what lets an operator read
-// who is ahead by looking, instead of by comparing two numbers. The x clears the longest
-// caption either row uses ("ENEMY"/"RIVAL").
-//
-// The gutter between caption and gauge is a full glyph cell wide because the initiative
-// tick lives in it: at the 6px a label needs on its own the mark touched the caption on
-// one side and the gauge's first cell on the other, and read as part of the gauge rather
-// than as a mark about it. The width is a round 10 cells of 10, so no column is left
-// ragged at the end, and it stops where a four-digit numeric still clears the pip.
-constexpr int kGaugeX = kMargin + 5 * kFontAdvance + 12;
-constexpr int kGaugeW = 100;
+// The shared gauge column, published on combat_screen.h so the release gates sample the
+// screen's own geometry rather than restating it.
+constexpr int kGaugeX = kCombatGaugeX, kGaugeW = kCombatGaugeW;
 
 // The initiative tick: a bar in that gutter, on the side that acts NEXT. Turns resolve
 // on their own and the two fighters do not simply alternate — Speed decides, and a fast
@@ -887,24 +877,28 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
     // VISUAL_LANGUAGE 1.3 does not allow it — the picker's cursor is ACCENT, and on a
     // frame with the picker open the rival's Health bar was wearing the selection
     // colour.
-    drawText(fb, kMargin, 19, sides.rivalLabel, palColor(Pal::INK_DIM));
+    drawText(fb, kMargin, kCombatRivalGaugeY + 1, sides.rivalLabel,
+             palColor(Pal::INK_DIM));
     const Rgb565 neutral = palColor(Pal::INK);
     const int ehPct = en.maxHealth > 0 ? en.health * 100 / en.maxHealth : 0;
-    drawGauge(fb, kGaugeX, 18, kGaugeW, 10, ehPct, Zone::Ok, false, false, beat,
-              &neutral);
-    if (ongoing && !localTurnNext) drawTurnTick(fb, 18, 10);
+    drawGauge(fb, kGaugeX, kCombatRivalGaugeY, kGaugeW, kCombatGaugeH, ehPct, Zone::Ok,
+              false, false, beat, &neutral);
+    if (ongoing && !localTurnNext)
+        drawTurnTick(fb, kCombatRivalGaugeY, kCombatGaugeH);
     // Its numeric, on the same right edge as the pet's. A bar alone cannot tell 3 left
     // from 30, and the rival's exact Health is not a secret the screen was keeping — the
     // panel's VS and KIT pages both print it, one keypress away.
     char ehp[16];
     std::snprintf(ehp, sizeof(ehp), "%d", en.health > 0 ? en.health : 0);
-    drawText(fb, kGaugeX + kGaugeW + 6, 19, ehp, palColor(Pal::INK));
+    drawText(fb, kGaugeX + kGaugeW + 6, kCombatRivalGaugeY + 1, ehp,
+             palColor(Pal::INK));
     const int ehX = kGaugeX, ehW = kGaugeW;   // the passive strip rides the same band
     // The rival's passive strip, shrunk, tucked under its Health bar — the same visual
     // language as the pet's own, at less weight. Its line passive decides the fight just
     // as much as yours does, and until now it only ever showed on the device of whoever
     // owned it, which in a duel is the opponent's screen.
-    drawPassiveStrip(fb, en, ehX, 30, ehW, 3, /*pipW=*/4, /*pipH=*/3, beat);
+    drawPassiveStrip(fb, en, ehX, kCombatRivalGaugeY + kCombatGaugeH + 2, ehW, 3,
+                     /*pipW=*/4, /*pipH=*/3, beat);
     // UI_MOVE_CHANNEL cue — read off the RIVAL rather than Combat's enemy accessor, so
     // the wind-up warning still describes the pet you're looking at when the roles are
     // swapped.
@@ -1149,7 +1143,7 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
     }
 
     // --- Player Health: zoned gauge + numeric ------------------------------
-    const int phY = kSpriteShelf + 10;
+    const int phY = kCombatLocalGaugeY;
     drawText(fb, kMargin, phY, sides.localLabel, palColor(Pal::INK));
     const int phX = kGaugeX, phW = kGaugeW;   // the rival's column, shared
 
@@ -1159,8 +1153,8 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
     const int phPct = pl.maxHealth > 0 ? pl.health * 100 / pl.maxHealth : 0;
     const Zone hz = healthZone(pl.health, pl.maxHealth);
     const bool pulseOn = (beat & 1) == 0;
-    drawGauge(fb, phX, phY, phW, 10, phPct, hz, false, pulseOn);
-    if (ongoing && localTurnNext) drawTurnTick(fb, phY, 10);
+    drawGauge(fb, phX, phY, phW, kCombatGaugeH, phPct, hz, false, pulseOn);
+    if (ongoing && localTurnNext) drawTurnTick(fb, phY, kCombatGaugeH);
     char hp[16];
     std::snprintf(hp, sizeof(hp), "%d", pl.health);
     drawText(fb, phX + phW + 6, phY, hp, palColor(Pal::INK));
