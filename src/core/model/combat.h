@@ -569,6 +569,16 @@ struct CombatEnemy {
     std::vector<const char*> moveIds;   // resolved against the registry
     bool isWild = false;                // EXPL wild malbeast → the challenge buff
                                         // (kWildEnemy*Pct) applies; bosses/Sim don't
+    // The one move that is THIS creature's, whatever depth it was met at. Carried beside
+    // moveIds rather than in it because the depth ladder REPLACES that list
+    // (applyWildSubAreaRamp): a kit written into the row survives only the shallowest
+    // sub-area, which is why six wild bodies read as three tiers and nothing else.
+    //
+    // It is what makes one malbeast worth farming over another. A win teaches out of the
+    // beaten enemy's whole kit (rollEnemyMoveDrop, game_explore.cpp), so a signature is a
+    // legible reason to hunt a particular creature — and being generic (MoveDef::line
+    // null) it drops to whatever the player hatched.
+    const char* signatureMoveId = nullptr;
     int level = 0;                      // depth level (global sub-area rung);
                                         // set by applyWildSubAreaRamp, drives the
                                         // level-difference XP scaling (wildWinXp). 0 =

@@ -237,30 +237,38 @@ CombatEnemy wildMalbeast(int sectorTier, uint32_t variantRoll) {
     // Base stats are the design values; the wild challenge buff (kWildEnemy*Pct)
     // is applied uniformly in makeEnemyCombatant off the isWild flag, so the
     // tables stay readable and bosses/Sim (which reuse the shape) are unaffected.
+    //
+    // The last field is the creature's own SIGNATURE (CombatEnemy::signatureMoveId): the
+    // one move that is ITS, carried past the depth ladder that overwrites everything else
+    // in the row. The moveIds beside it are the tier's baseline and survive only at the
+    // shallowest sub-area; the signature is what a body says about itself at every depth,
+    // and what makes beating this one worth more than beating the other one at the same
+    // rung. The rows are in content_moves.cpp under "Wild SIGNATURES".
     if (sectorTier <= 1) {
         static const CombatEnemy kTier1[] = {
-            {"GlitchHog", "SPR_MALBEAST_GLITCHHOG", 1, 35, 9, {"quick_jab"}, true},
+            {"GlitchHog", "SPR_MALBEAST_GLITCHHOG", 1, 35, 9, {"quick_jab"}, true,
+             "screen_tear"},
             {"Segfault Pup", "SPR_MALBEAST_SEGFAULT_PUP", 1, 30, 10,
-             {"quick_jab"}, true},
+             {"quick_jab"}, true, "wild_pointer"},
         };
         return kTier1[variantRoll % 2];
     }
     if (sectorTier == 2) {
         static const CombatEnemy kTier2[] = {
             {"Packet Wraith", "SPR_MALBEAST_PACKET_WRAITH", 2, 55, 12,
-             {"quick_jab", "packet_storm"}, true},
+             {"quick_jab", "packet_storm"}, true, "dropped_packet"},
             {"Cache Ghoul", "SPR_MALBEAST_CACHE_GHOUL", 2, 50, 13,
-             {"quick_jab", "packet_storm"}, true},
+             {"quick_jab", "packet_storm"}, true, "stale_read"},
         };
         return kTier2[variantRoll % 2];
     }
     static const CombatEnemy kTier3[] = {
         {"Buffer Wyrm", "SPR_MALBEAST_BUFFER_WYRM", 3, 80, 14,
-         {"packet_storm", "fork_bomb"}, true},
+         {"packet_storm", "fork_bomb"}, true, "coil_overrun"},
         // The apex gets a bigger 64x56 cell than the 56x48 the rest of the roster
         // uses — drawn from its own frame size, so nothing else has to know.
         {"Kernel Leviathan", "SPR_MALBEAST_KERNEL_LEVIATHAN", 3, 85, 13,
-         {"packet_storm", "fork_bomb"}, true},
+         {"packet_storm", "fork_bomb"}, true, "ring_zero"},
     };
     return kTier3[variantRoll % 2];
 }
@@ -352,6 +360,18 @@ void applyWildSubAreaRamp(CombatEnemy& e, int areaIdx, int sub) {
     if (a.wildAttackMoveId) e.moveIds.push_back(a.wildAttackMoveId);
     if (a.wildDefendMoveId && sub >= kWildAreaDefendSub)
         e.moveIds.push_back(a.wildDefendMoveId);
+
+    // ...and the CREATURE's own, the third lever, riding every rung at every depth. The
+    // ladder says how hard this rung swings and the area pair says where the player is;
+    // without this the body itself says nothing, and two malbeasts sharing a tier are one
+    // fight wearing two sprites. Appended for the same reason the pair is: it composes
+    // with the rung rather than replacing it, so the depth ramp the ladder builds is
+    // still there underneath.
+    //
+    // Signatures are authored small (content_moves.cpp) precisely so that adding one
+    // cannot reorder the rungs — the ladder is sorted by EFFECTIVE per-turn damage, and a
+    // constant appended to every rung alike moves them all the same way.
+    if (e.signatureMoveId) e.moveIds.push_back(e.signatureMoveId);
 }
 
 std::vector<const char*> deepWebMoveIds(int depth, uint32_t roll) {

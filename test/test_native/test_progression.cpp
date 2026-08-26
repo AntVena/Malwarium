@@ -485,6 +485,75 @@ static bool holdsMove(const CombatEnemy& e, const char* id) {
     return false;
 }
 
+// --- Gate: a malbeast is its own creature at every depth ---
+//
+// Two bodies sharing a tier used to carry identical kits, so no two wilds were worth
+// farming differently — a win teaches out of the beaten enemy's own kit
+// (rollEnemyMoveDrop), and there was nothing on one that was not on the other. The
+// signature is what a creature says about itself; this holds it to the three things that
+// makes true.
+void test_wild_signature_is_the_creatures_own() {
+    ContentRegistry r = ContentRegistry::embedded();
+
+    // ONE EACH, ALL DIFFERENT, ALL LEARNABLE. A line-exclusive signature would be a prize
+    // half the roster could never field (moveIsTeachable), and a stun in an enemy kit
+    // spends the PLAYER's turns doing nothing (fork_bomb's row says why).
+    std::vector<const char*> sigs;
+    for (int tier = 1; tier <= 3; ++tier)
+        for (uint32_t v = 0; v < 2; ++v) {
+            const CombatEnemy e = wildMalbeast(tier, v);
+            CHECK(e.signatureMoveId != nullptr);
+            const MoveDef* m = r.move(e.signatureMoveId);
+            CHECK(m != nullptr);
+            CHECK(m->line == nullptr);
+            CHECK(m->lockTurns == 0);
+            for (const char* prev : sigs)
+                CHECK(std::strcmp(prev, e.signatureMoveId) != 0);
+            sigs.push_back(e.signatureMoveId);
+        }
+    CHECK(static_cast<int>(sigs.size()) == kWildMalbeastCount);
+
+    // IT SURVIVES THE DEPTH LADDER, which replaces moveIds outright — the whole reason it
+    // is carried beside that list rather than in it. Every creature, every area, every
+    // rung: a signature that died at sub 1 would leave the identity where it started.
+    for (int tier = 1; tier <= 3; ++tier)
+        for (uint32_t v = 0; v < 2; ++v)
+            for (int a = 0; a < kExplSectors; ++a)
+                for (int sub = 0; sub < kSubAreasPerArea; ++sub) {
+                    CombatEnemy w = wildMalbeast(tier, v);
+                    applyWildSubAreaRamp(w, a, sub);
+                    CHECK(holdsMove(w, w.signatureMoveId));
+                }
+
+    // ...AND THE RUNG ORDER IS INTACT. The ladder is sorted by EFFECTIVE per-turn damage,
+    // and a rider appended to every rung alike cannot reorder them — this is what says so
+    // for every creature in every area rather than for the one pairing checked by hand.
+    // Attacks only, and a channelled move at its per-turn rate: a brace mitigates rather
+    // than swings, and a wind-up spreads its printed power over the turns it costs.
+    auto swing = [&](const CombatEnemy& e) {
+        int total = 0, n = 0;
+        for (const char* id : e.moveIds)
+            if (const MoveDef* m = r.move(id))
+                if (m->kind == MoveDef::Kind::Attack) {
+                    total += m->power / (m->channelTurns > 0 ? m->channelTurns : 1);
+                    ++n;
+                }
+        return n > 0 ? total * 100 / n : 0;
+    };
+    for (int tier = 1; tier <= 3; ++tier)
+        for (uint32_t v = 0; v < 2; ++v)
+            for (int a = 0; a < kExplSectors; ++a) {
+                int prev = -1;
+                for (int sub = 1; sub < kSubAreasPerArea; ++sub) {
+                    CombatEnemy w = wildMalbeast(tier, v);
+                    applyWildSubAreaRamp(w, a, sub);
+                    const int avg = swing(w);
+                    CHECK(avg > prev);                  // each rung swings harder
+                    prev = avg;
+                }
+            }
+}
+
 void test_explore_subarea_ramp() {
     ContentRegistry r = ContentRegistry::embedded();
     // (1) Shape: sub 0 keeps the roster moves; each later sub swaps in a distinct,
@@ -496,7 +565,8 @@ void test_explore_subarea_ramp() {
     CombatEnemy s0 = base; applyWildSubAreaRamp(s0, 0, 0);
     std::vector<const char*> baseline = base.moveIds;
     baseline.push_back(area(0).wildAttackMoveId);
-    CHECK(s0.moveIds == baseline);                     // sub 0 == baseline + the Attack
+    baseline.push_back(base.signatureMoveId);          // ...and the creature's own
+    CHECK(s0.moveIds == baseline);                     // sub 0 == baseline + both riders
     CHECK(!holdsMove(s0, area(0).wildDefendMoveId));   // ...and not yet the Defend
     CombatEnemy s2 = base; applyWildSubAreaRamp(s2, 0, kWildAreaDefendSub);
     CHECK(holdsMove(s2, area(0).wildDefendMoveId));    // which the deeper rungs do field

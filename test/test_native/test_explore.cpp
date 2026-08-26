@@ -803,10 +803,11 @@ void test_every_generic_move_is_carried() {
     // the unramped base kit alone would call them orphans.
     //
     // The same walk is where a wild's KIT SIZE is held to the budget, since it builds
-    // every one there is. Two moves ride on top of the ladder's own rung, and both the
-    // ceiling and the single brace matter for the same reason a boss is capped at
-    // kMaxBossTeaches: Combat::chooseMove is uniform, so each extra move is a share of
-    // the turns, and a second brace would be a wild spending half the fight holding.
+    // every one there is. THREE riders sit on top of the ladder's own rung — the area's
+    // pair and the creature's signature — and both the ceiling (kWildKitMax) and the
+    // single brace matter for the same reason a boss is capped at kMaxBossTeaches:
+    // Combat::chooseMove is uniform, so each extra move is a share of the turns, and a
+    // second brace would be a wild spending half the fight holding.
     auto sweepWild = [&](const CombatEnemy& e) {
         int braces = 0;
         for (const char* m : e.moveIds) {
@@ -815,7 +816,7 @@ void test_every_generic_move_is_carried() {
                 if (d->kind == MoveDef::Kind::Defend) ++braces;
         }
         CHECK(braces <= 1);
-        CHECK(static_cast<int>(e.moveIds.size()) <= kMaxMoveSlots);
+        CHECK(static_cast<int>(e.moveIds.size()) <= kWildKitMax);
     };
     for (int tier = 1; tier <= 3; ++tier)
         for (uint32_t v = 0; v < 2; ++v)

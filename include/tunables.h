@@ -660,11 +660,27 @@ constexpr int kWildSubAreaHealthStep = 6;   // +Health per sub-area index in the
 //
 // This rung and not a shallower one for two reasons that agree. The ladder's own kit
 // THINS as it deepens (its last two rungs are two moves where the middle one is three),
-// so the pair lands where there is room for it and no wild ever fights with more than
-// kMaxMoveSlots moves — the count a fully-evolved pet itself holds, which is the honest
-// ceiling for "an enemy is a peer". And an area's brace is a thing a player wants, so
-// putting it on the two meanest rungs makes the wall worth walking to.
+// so the pair lands where there is room for it. And an area's brace is a thing a player
+// wants, so putting it on the two meanest rungs makes the wall worth walking to.
 constexpr int kWildAreaDefendSub = 3;
+// The most moves a wild ever fights with — its depth RUNG plus the three riders that say
+// everything else about it: the area's Attack, the area's Defend at the rung above, and
+// the creature's own signature (CombatEnemy::signatureMoveId).
+//
+// One more than a fully-evolved pet holds, and deliberately so. The pet's slot count is a
+// budget the player SPENDS; this is a count of how many things one encounter has to say,
+// and a wild already answers to its own rules either side of this one (kWildEnemyHealthPct
+// and kWildEnemyDamagePct make it no peer in the first place). The third lever could only
+// have fitted inside four by taking a slot off the depth ladder, and the ladder's rungs
+// are ordered by EFFECTIVE per-turn damage — thinning the deep ones is what inverts that
+// order, while APPENDING the same rider to every rung alike cannot.
+//
+// The dilution it costs runs the safe way. Combat::chooseMove is uniform, so a fifth move
+// takes each of the others from a quarter of the turns to a fifth — the apex's hardest
+// hitter included, which makes the deepest rung marginally gentler rather than meaner.
+// The sharp rule is unaffected and stays where it was: at most ONE brace in a kit, or a
+// wild spends half the fight holding.
+constexpr int kWildKitMax = kMaxMoveSlots + 1;
 constexpr int kWildItemDropPct = 35;   // chance a wild win also drops an item
 constexpr int kWildMoveDropPct = 20;   // chance a wild win teaches a move off the
                                         // DEFEATED ENEMY'S kit — independent roll,

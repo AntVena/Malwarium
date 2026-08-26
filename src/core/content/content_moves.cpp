@@ -51,6 +51,48 @@ const MoveDef kMoves[] = {
              "Reroutes the next hit to nowhere - gives back {refund}% of the wait.",
              Stage::Process, /*speedRefundPct=*/55),
 
+    // --- Wild SIGNATURES — one per malbeast --------------------------------------
+    // Generic on purpose (line == nullptr), because these are what a wild TEACHES: a win
+    // drops out of the beaten enemy's own kit (rollEnemyMoveDrop, game_explore.cpp), and
+    // a line-exclusive row would be a prize half the roster could never field. Which
+    // creature carries which is the roster itself (CombatEnemy::signatureMoveId,
+    // wildMalbeast in combat_factory.cpp); this file only says what each one DOES.
+    //
+    // Six creatures, six different RIDERS, and that is the whole design: two malbeasts
+    // that differ only in power are still one fight, so each signature is a distinct
+    // verb — a bleed, a way through armour, two drains, a wind-up and a ramp.
+    //
+    // POWER is small deliberately. A wild's kit is the depth rung it was met at plus its
+    // area's pair plus this, and the rungs are ordered by EFFECTIVE per-turn damage
+    // (applyWildSubAreaRamp) — a signature that out-hit the rung would flatten the ramp
+    // the ladder exists to build. What a signature adds is character, never a tier.
+    //
+    // minStage climbs with the tier that carries it, so what a creature is worth learning
+    // out of matches how deep you had to go to meet it — the same ladder buffer_overflow
+    // and rootkit_strike sit on. No lockTurns anywhere here, for the reason fork_bomb's
+    // row gives: a stun in an enemy kit spends the PLAYER's turns doing nothing.
+    {"screen_tear", "Screen Tear", MoveDef::Kind::Attack, 5, 1,
+     "Rips the frame open - the seam leaks {dot} a turn for {dotTurns}.",
+     Stage::BootSector, nullptr, 0, 0, 0, 0, /*armorPiercePct=*/0, /*lockTurns=*/0,
+     /*dotDamage=*/2, /*dotTurns=*/2},
+    {"wild_pointer", "Wild Pointer", MoveDef::Kind::Attack, 6, 1,
+     "Blunders into memory nobody was guarding - ignores {pierce}% armor.",
+     Stage::BootSector, nullptr, 0, 0, 0, 0, /*armorPiercePct=*/40},
+    {"dropped_packet", "Dropped Packet", MoveDef::Kind::Attack, 8, 1,
+     "Some of what you send never arrives - takes {stealPower}% of the target's Power.",
+     Stage::Process, nullptr, 0, 0, 0, 0, /*armorPiercePct=*/0, /*lockTurns=*/0,
+     /*dotDamage=*/0, /*dotTurns=*/0, /*stealPowerPct=*/12},
+    {"stale_read", "Stale Read", MoveDef::Kind::Attack, 7, 1,
+     "Eats what you left cached - takes {stealDef}% of the target's armor.",
+     Stage::Process, nullptr, 0, 0, 0, 0, /*armorPiercePct=*/0, /*lockTurns=*/0,
+     /*dotDamage=*/0, /*dotTurns=*/0, /*stealPowerPct=*/0, /*stealDefensePct=*/12},
+    {"coil_overrun", "Coil Overrun", MoveDef::Kind::Attack, 22, 2,
+     "Coils for {turns} turns, then spills past the end of the buffer.", Stage::Script},
+    {"ring_zero", "Ring Zero", MoveDef::Kind::Attack, 10, 1,
+     "Surfaces in ring zero and settles in - +{stackPower}% Power a hit, "
+     "up to {stackPowerCap}%.",
+     Stage::Script, nullptr, /*stackPowerPct=*/8, /*stackPowerCap=*/24},
+
     // --- Metamorphic LINE moves -------------------------------------------------
     // line = "metamorphic". None of these casts itself: each rolls a move out of the
     // generic roster of its own KIND plus the two lines it names (Combat::resolveTurn via

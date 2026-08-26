@@ -219,6 +219,7 @@ int g_failures = 0;
     RUN(test_combat_length_in_band)         \
     RUN(test_wild_encounter_challenge_buff) \
     RUN(test_explore_subarea_ramp)          \
+    RUN(test_wild_signature_is_the_creatures_own) \
     RUN(test_line_move_gating)              \
     RUN(test_ransomware_stacking)           \
     RUN(test_ransom_note)                   \

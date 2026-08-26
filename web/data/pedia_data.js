@@ -602,7 +602,8 @@ window.PEDIA_DATA = {
       "hp": 35,
       "pow": 9,
       "moves": [
-        "quick_jab"
+        "quick_jab",
+        "screen_tear"
       ],
       "sprite": "assets/sprites/SPR_MALBEAST_GLITCHHOG.png",
       "cellW": 56,
@@ -618,7 +619,8 @@ window.PEDIA_DATA = {
       "hp": 30,
       "pow": 10,
       "moves": [
-        "quick_jab"
+        "quick_jab",
+        "wild_pointer"
       ],
       "sprite": "assets/sprites/SPR_MALBEAST_SEGFAULT_PUP.png",
       "cellW": 56,
@@ -635,7 +637,8 @@ window.PEDIA_DATA = {
       "pow": 12,
       "moves": [
         "quick_jab",
-        "packet_storm"
+        "packet_storm",
+        "dropped_packet"
       ],
       "sprite": "assets/sprites/SPR_MALBEAST_PACKET_WRAITH.png",
       "cellW": 56,
@@ -652,7 +655,8 @@ window.PEDIA_DATA = {
       "pow": 13,
       "moves": [
         "quick_jab",
-        "packet_storm"
+        "packet_storm",
+        "stale_read"
       ],
       "sprite": "assets/sprites/SPR_MALBEAST_CACHE_GHOUL.png",
       "cellW": 56,
@@ -669,7 +673,8 @@ window.PEDIA_DATA = {
       "pow": 14,
       "moves": [
         "packet_storm",
-        "fork_bomb"
+        "fork_bomb",
+        "coil_overrun"
       ],
       "sprite": "assets/sprites/SPR_MALBEAST_BUFFER_WYRM.png",
       "cellW": 56,
@@ -686,7 +691,8 @@ window.PEDIA_DATA = {
       "pow": 13,
       "moves": [
         "packet_storm",
-        "fork_bomb"
+        "fork_bomb",
+        "ring_zero"
       ],
       "sprite": "assets/sprites/SPR_MALBEAST_KERNEL_LEVIATHAN.png",
       "cellW": 64,
@@ -5410,6 +5416,78 @@ window.PEDIA_DATA = {
       "minStage": "Process",
       "desc": "Reroutes the next hit to nowhere - gives back 55% of the wait.",
       "stats": "DEF 18 / TEMPO 55%",
+      "group": "core",
+      "icon": "assets/icons/ICON_MOVE_SLOT.png"
+    },
+    {
+      "id": "screen_tear",
+      "name": "Screen Tear",
+      "kind": "ATK",
+      "power": 5,
+      "turns": 1,
+      "minStage": "Boot Sector",
+      "desc": "Rips the frame open - the seam leaks 2 a turn for 2.",
+      "stats": "ATK 5 / DOT 2x2",
+      "group": "core",
+      "icon": "assets/icons/ICON_MOVE_SLOT.png"
+    },
+    {
+      "id": "wild_pointer",
+      "name": "Wild Pointer",
+      "kind": "ATK",
+      "power": 6,
+      "turns": 1,
+      "minStage": "Boot Sector",
+      "desc": "Blunders into memory nobody was guarding - ignores 40% armor.",
+      "stats": "ATK 6 / PIERCE 40%",
+      "group": "core",
+      "icon": "assets/icons/ICON_MOVE_SLOT.png"
+    },
+    {
+      "id": "dropped_packet",
+      "name": "Dropped Packet",
+      "kind": "ATK",
+      "power": 8,
+      "turns": 1,
+      "minStage": "Process",
+      "desc": "Some of what you send never arrives - takes 12% of the target's Power.",
+      "stats": "ATK 8 / SIPHON PWR 12%",
+      "group": "core",
+      "icon": "assets/icons/ICON_MOVE_SLOT.png"
+    },
+    {
+      "id": "stale_read",
+      "name": "Stale Read",
+      "kind": "ATK",
+      "power": 7,
+      "turns": 1,
+      "minStage": "Process",
+      "desc": "Eats what you left cached - takes 12% of the target's armor.",
+      "stats": "ATK 7 / SIPHON DEF 12%",
+      "group": "core",
+      "icon": "assets/icons/ICON_MOVE_SLOT.png"
+    },
+    {
+      "id": "coil_overrun",
+      "name": "Coil Overrun",
+      "kind": "ATK",
+      "power": 22,
+      "turns": 2,
+      "minStage": "Script",
+      "desc": "Coils for 2 turns, then spills past the end of the buffer.",
+      "stats": "ATK 22 / CHANNEL 2",
+      "group": "core",
+      "icon": "assets/icons/ICON_MOVE_SLOT.png"
+    },
+    {
+      "id": "ring_zero",
+      "name": "Ring Zero",
+      "kind": "ATK",
+      "power": 10,
+      "turns": 1,
+      "minStage": "Script",
+      "desc": "Surfaces in ring zero and settles in - +8% Power a hit, up to 24%.",
+      "stats": "ATK 10 / POWER +8% / UP TO +24%",
       "group": "core",
       "icon": "assets/icons/ICON_MOVE_SLOT.png"
     },

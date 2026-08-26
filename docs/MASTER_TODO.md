@@ -43,20 +43,6 @@ answered the wrong question. |
 
 **Capture arming costs ~70KB and the AP ~58KB**, against ~126KB free with the radio idle. The device works, and the save no longer needs a big contiguous block, but that was the only thing standing on this — anything else that grows will hit the same wall. Worth a pass at what the capture path actually needs. | `net_capture.h`'s `powerUp` (`esp_wifi_init` + promiscuous + the pcap SD buffers). | M | Measured on device, not estimated: `[ap] down free=126408` → `[cap] armed free=56188`. |
 
-**A Packet Wraith and a Cache Ghoul at the same rung are still one fight.** `wildMalbeast` gives
-tiers 1/2/3 `{quick_jab}` / `{quick_jab, packet_storm}` / `{packet_storm, fork_bomb}`, and the
-sub-area ladder in `applyWildSubAreaRamp` overrides with the same handful again — both keyed by
-DEPTH. The zone's own pair (`AreaDef::wildAttackMoveId`/`wildDefendMoveId`, and the dive's in
-`deepweb_dive/area.h`) is what makes an encounter read as the PLACE it happened in, but the
-creature itself still says nothing: the two bodies sharing a tier carry identical kits, so no two
-malbeasts are worth farming differently. Wants distinctive kit per creature, which has nowhere to
-live today — `wildMalbeast` is the only place a malbeast's identity exists and it is keyed by tier,
-so six bodies share three kits. |
-`combat_factory.cpp`'s `wildMalbeast` + `kLadder`; `content_moves.cpp`. | L | The ladder's
-ordering constraint is real and documented — rungs are sorted by EFFECTIVE per-turn damage, so a
-long-channel move LOWERS a rung's average — and per-creature kit has to keep that ramp intact
-while making the creatures read apart. |
-
 **A crew cannot be DISCOVERED.** `QuoteReward::Kind` has room for it and it is one of the prizes
 the board was designed to hand over ("you find a crew to join"), but crews are ungated today —
 every row in `content_crews.cpp` is enlistable from the first boot, so there is nothing for a

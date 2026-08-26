@@ -347,7 +347,15 @@ def main():
                  f"point this at its new home.")
     fn = combat[combat.index(marker):]
     fn = fn[: fn.index("\n}") + 2]
-    rows = list(re.finditer(r'\{"([^"]+)",\s*"([^"]+)",\s*(\d+),\s*(\d+),\s*(\d+),\s*\{([^}]*)\}', fn))
+    # The trailing pair is the isWild flag and the creature's SIGNATURE
+    # (CombatEnemy::signatureMoveId) — the one move it carries at every depth, where the
+    # baseline kit before it survives only the shallowest rung. Optional in the pattern so
+    # a row without one still parses, and folded into the kit below because it is the kit:
+    # what a wild is worth farming is what it can teach, and this is the part of that
+    # answer belonging to the creature rather than to the depth it was met at.
+    rows = list(re.finditer(
+        r'\{"([^"]+)",\s*"([^"]+)",\s*(\d+),\s*(\d+),\s*(\d+),\s*\{([^}]*)\}'
+        r'(?:\s*,\s*(?:true|false)\s*,\s*"([^"]+)")?', fn))
     # The wild roster is TIER-keyed and stops SHORT of the ladder's depth — wildMalbeast
     # clamps, so its top tier is what every deeper area fights too. Naming only the rung
     # that tier's number happens to match would read as though the castle had wilds of its
@@ -357,6 +365,8 @@ def main():
     for m in rows:
         name, _sprite, tier, hp, pow_ = m.group(1), m.group(2), int(m.group(3)), int(m.group(4)), int(m.group(5))
         mv = [x.strip().strip('"') for x in m.group(6).split(",") if x.strip()]
+        if m.group(7) and m.group(7) not in mv:
+            mv.append(m.group(7))
         bid = re.sub(r"[^a-z0-9]+", "_", name.lower()).strip("_")
         sector = ladder_names.get(tier, "?")
         if tier == deepest_wild and deepest_wild < max(ladder_names, default=0):
