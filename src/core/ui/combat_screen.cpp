@@ -1024,8 +1024,6 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
     // back from there, so a copy is always in the way of the thing it is there to catch.
     // Drawn AFTER both fighters so they read in front of the worm that made them. Nothing
     // is drawn for any other line — wormReplicaCount is 0 and the row returns.
-    // (A worm's own sprite is meant to be small enough to leave this room; the stand-in
-    // frame the line ships with is not, so the back ranks currently sit over its body.)
     //
     // WormKill names its side in Combat's player_/enemy_ terms, so it is rebound to the
     // local/rival roles the same way everything else on this screen is.
