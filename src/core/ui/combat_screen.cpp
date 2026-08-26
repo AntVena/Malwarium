@@ -42,6 +42,15 @@ Zone healthZone(int health, int maxHealth) {
 // reaches the rival's Health row, at the cost of the player block below it — that block
 // is packed tight against the hint band instead of leaving it mid-screen.
 constexpr int kSpriteShelf = kCombatSpriteShelf;   // the panel's geometry names it too
+
+// The two Health gauges' shared column. Both fighters' rows are laid out against these
+// rather than each measuring its own caption, so the bars start on one x, run to one
+// width, and put their numerics on one right edge — which is what lets an operator read
+// who is ahead by looking, instead of by comparing two numbers. The x clears the longest
+// caption either row uses ("ENEMY"/"RIVAL"), and the width leaves the numeric its four
+// digits inside the pip's column.
+constexpr int kGaugeX = kMargin + 5 * kFontAdvance + 6;
+constexpr int kGaugeW = 104;
 // The outer inset a fighter is seated against before it is allowed to crop, and the
 // bounds on the clash lane: never tighter than the strike mark drawn in it, never so
 // wide that two small creatures read as ignoring each other.
@@ -457,6 +466,34 @@ void drawReplicaRow(Framebuffer& fb, const Combatant& c, bool attacking,
     }
 }
 
+// How many rows each panel page will actually draw. Asked BEFORE the box is filled, so
+// the floor can be cut to the content instead of to the worst case — see the panel block
+// in drawCombat for why the top is the anchored edge and the floor is the one that moves.
+//
+// These count what the draw below emits, and the two have to stay in step: a page that
+// drew a row this did not count would run past its own floor and be clipped by it. They
+// are kept immediately beside each other for that reason, and each names the rows it is
+// counting in the order the draw emits them.
+int vsPageRows(const Combatant& local, const Combatant& rival) {
+    const CombatVsGrid g = combatVsGrid(local, rival, /*localGuard=*/true);
+    int n = 1 + g.n;                     // the YOU/RIVAL column header, then the grid
+    if (local.crewExploit.live() || rival.crewExploit.live()) {
+        ++n;                             // the separator costs about a row of height
+        if (local.crewExploit.live()) ++n;
+        if (rival.crewExploit.live()) ++n;
+    }
+    return n;
+}
+
+int kitPageRows(const Combatant& rival, const RivalPrizes& prizes) {
+    int n = 1;                           // the rival's name-and-Health row
+    for (const MoveDef* m : rival.moves)
+        if (m) ++n;
+    if (rival.autoExploit.label && !rival.autoExploitFired) ++n;
+    if (prizes.mask) ++n;                // the "+ WIN TO LEARN" legend under the list
+    return n;
+}
+
 // The passive strip — one combatant's live line-passive state as a bar plus a pip row,
 // drawn immediately outside its Health gauge. Both fighters get one: a passive changes who
 // wins, so hiding the opponent's would leave the player watching a fight decided by
@@ -753,12 +790,11 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
     // the damage popup and the impact nudge, both of which follow the target.
     const bool lastByLocal = combat.lastByPlayer() != flip;
 
-    // --- Enemy header: name + override pip -----------------------------------
+    // --- Enemy header: name + level + override pip ----------------------------
     // Difficulty pips already showed once, on the pre-fight encounter intro
     // (drawEncounterIntro, expl_screen.cpp) — repeating them here just ate a
     // full header row for no new information, so this HUD skips them.
-    drawText(fb, kMargin, kTitleY, en.name, palColor(Pal::INK));
-
+    //
     // Override pip (UI_OVERRIDE_PIP): bright ready / greyed spent. With more
     // than one Exploit use a small "xN" count of the remaining uses rides
     // alongside so the extra allowance reads without colour.
@@ -773,23 +809,58 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
         hintX -= 3 + textWidth(cnt);
         drawText(fb, hintX, 6, cnt, palColor(Pal::INK));
     }
-    drawText(fb, hintX - 4 - textWidth("A+C"), 6, "A+C", palColor(Pal::INK_DIM));
+    const int chordX = hintX - 4 - textWidth("A+C");
+    drawText(fb, chordX, 6, "A+C", palColor(Pal::INK_DIM));
 
-    // --- Enemy Health (neutral — emptying is good) + level + channel wind-up ---
-    // This row reuses the y-band the encounter-intro header gives its difficulty pips.
-    drawText(fb, kMargin, 19, sides.rivalLabel, palColor(Pal::INK_DIM));
-    const int ehX = kMargin + textWidth(sides.rivalLabel) + 6;
-    const int ehW = 96;
-    const float ef = en.maxHealth > 0
-                         ? static_cast<float>(en.health) / en.maxHealth : 0.0f;
-    drawProgressBar(fb, ehX, 18, ehW, 10, ef, palColor(Pal::ACCENT));
-    // level readout: "???" for Sim dummies/bosses (never level-tagged) so
-    // the gap reads as "unranked", never as a misleading "Lv 0". Rides at the end
-    // of the health row now that the pips row above it is gone.
+    // Level readout: "???" for Sim dummies/bosses (never level-tagged) so the gap reads
+    // as "unranked", never as a misleading "Lv 0".
+    //
+    // It rides the NAME's row because that is the row it belongs to — what a rival IS,
+    // as against what it currently has left — and because the row below it is now two
+    // gauges wide. The pip hangs a full 16px cell into that lower row, so a readout
+    // parked at the end of it was drawn straight through by the pip's disc.
     char lvBuf[8];
     if (en.hasLevel) std::snprintf(lvBuf, sizeof(lvBuf), "Lv %d", en.level);
     else std::snprintf(lvBuf, sizeof(lvBuf), "Lv ???");
-    drawText(fb, ehX + ehW + 8, 19, lvBuf, palColor(Pal::INK_DIM));
+    // A full cell of air off the chord hint: both are dim, so a tighter gap ran the two
+    // together into one unreadable "LV ??? A+C".
+    const int lvX = chordX - kFontAdvance - textWidth(lvBuf);
+    drawText(fb, lvX, kTitleY, lvBuf, palColor(Pal::INK_DIM));
+    // The name takes what the level leaves, and travels when it cannot fit — a boss's
+    // name is the longest thing this row ever carries and the level behind it is fixed.
+    drawTextMarquee(fb, kMargin, kTitleY, lvX - 6 - kMargin, en.name,
+                    palColor(Pal::INK), beat, /*scroll=*/true);
+
+    // --- Enemy Health (neutral — emptying is good) + channel wind-up ----------
+    // This row reuses the y-band the encounter-intro header gives its difficulty pips.
+    //
+    // THE SAME WIDGET AS THE PET'S OWN, at the same x and the same width, so the two
+    // read as one comparison rather than as two unrelated instruments. They used to be
+    // a solid progress bar up here against a segmented gauge down there, at different
+    // widths and different origins — the same quantity in two grammars, which asks a
+    // reader to learn both and still leaves them unable to see at a glance who is
+    // ahead. Position says whose a gauge is; the shared shape is what makes them
+    // comparable.
+    //
+    // What stays different is the one thing that IS different: the pet's carries the
+    // danger ramp and its Critical pulse, and the rival's is drawn in a neutral ink,
+    // because the same amount of rival Health is good news or bad depending on which
+    // side you read it from. That also gets ACCENT off a status quantity, where
+    // VISUAL_LANGUAGE 1.3 does not allow it — the picker's cursor is ACCENT, and on a
+    // frame with the picker open the rival's Health bar was wearing the selection
+    // colour.
+    drawText(fb, kMargin, 19, sides.rivalLabel, palColor(Pal::INK_DIM));
+    const Rgb565 neutral = palColor(Pal::INK);
+    const int ehPct = en.maxHealth > 0 ? en.health * 100 / en.maxHealth : 0;
+    drawGauge(fb, kGaugeX, 18, kGaugeW, 10, ehPct, Zone::Ok, false, false, beat,
+              &neutral);
+    // Its numeric, on the same right edge as the pet's. A bar alone cannot tell 3 left
+    // from 30, and the rival's exact Health is not a secret the screen was keeping — the
+    // panel's VS and KIT pages both print it, one keypress away.
+    char ehp[16];
+    std::snprintf(ehp, sizeof(ehp), "%d", en.health > 0 ? en.health : 0);
+    drawText(fb, kGaugeX + kGaugeW + 6, 19, ehp, palColor(Pal::INK));
+    const int ehX = kGaugeX, ehW = kGaugeW;   // the passive strip rides the same band
     // The rival's passive strip, shrunk, tucked under its Health bar — the same visual
     // language as the pet's own, at less weight. Its line passive decides the fight just
     // as much as yours does, and until now it only ever showed on the device of whoever
@@ -996,8 +1067,7 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
     // --- Player Health: zoned gauge + numeric ------------------------------
     const int phY = kSpriteShelf + 10;
     drawText(fb, kMargin, phY, sides.localLabel, palColor(Pal::INK));
-    const int phX = kMargin + textWidth(sides.localLabel) + 6;
-    const int phW = 110;
+    const int phX = kGaugeX, phW = kGaugeW;   // the rival's column, shared
 
     // The local pet's passive strip, full size, riding directly above its Health gauge.
     drawPassiveStrip(fb, pl, phX, phY - 7, phW, 5, /*pipW=*/5, /*pipH=*/5, beat);
@@ -1140,16 +1210,25 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
     // either page can reach: the deepest boss kit the ladder fields, which
     // test_combat_kit_page_holds_the_widest_boss is what holds.
     if (statPage > 0 && !combat.overrideOpen()) {
-        // The box stops short of the last-move line (logY) rather than running to the
-        // foot: what a fighter just DID is the other half of reading a fight, and a
-        // panel that covered it would trade one blindness for another.
-        // The box is a FIXED rectangle rather than one sized to its contents. A panel
-        // that grew and shrank as tokens came and went would redraw at a different size
-        // every turn, and a frame of chrome that moves under a reader is worse than one
-        // that is sometimes half empty.
-        const int boxY = kCombatPanelTop, boxBottom = kCombatPanelBottom,
-                  pitch = kCombatPanelPitch;
+        // The box hangs from a FIXED TOP and its floor is cut to what the page has to
+        // say, capped at kCombatPanelBottom (the shelf).
+        //
+        // Anchoring the top is what stops the box from moving under a reader: the
+        // heading, the rule and every row it has already drawn sit exactly where they
+        // sat last turn, and a status arriving mid-fight extends the FLOOR downward —
+        // which is where the new row was going to appear anyway. Sizing the whole
+        // rectangle to the worst case instead held all of that still by never letting go
+        // of the fight: an ordinary encounter is four vitals and nothing else, and the
+        // box drawn for a loaded boss buried both fighters to show them.
+        //
+        // The cap is still the capacity a gate holds
+        // (test_combat_kit_page_holds_the_widest_boss): what changes is that a page
+        // shorter than the cap stops there rather than drawing air over the stage.
+        const int boxY = kCombatPanelTop, pitch = kCombatPanelPitch;
         const int textX = 16, textR = kActiveW - 16;
+        const int rows = statPage == 1 ? vsPageRows(pl, en) : kitPageRows(en, prizes);
+        const int wanted = kCombatPanelFirstRow + rows * pitch - (pitch - kFontH) + 3;
+        const int boxBottom = std::min(kCombatPanelBottom, wanted);
         fb.fillRect(8, boxY, kActiveW - 16, boxBottom - boxY, palColor(Pal::TRACK));
         char head[16];
         std::snprintf(head, sizeof(head), "%s %d/%d",

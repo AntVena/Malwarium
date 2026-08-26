@@ -104,8 +104,15 @@ void drawSubGrid(Framebuffer& fb, int x, int y, int w, int h, const bool lit[9],
 // roll can bleed backward into the previous solid cell as a few dark holes —
 // Fragmentation's glitchy, garbled edge instead of a hard stop. Ignored when
 // fragRamp is false.
+// `fill`, when given, replaces the zone's colour for the lit cells — for a gauge whose
+// quantity carries no danger meaning of its own and so has no zone to take one from.
+// The combat screen's rival Health is the case: the same amount of it is good news or
+// bad depending on which side of the fight you are reading it from, so it is drawn in a
+// neutral ink while the pet's own gauge beneath keeps the danger ramp. The SHAPE channel
+// is untouched either way, which is what keeps both readable in grayscale.
 void drawGauge(Framebuffer& fb, int x, int y, int w, int h, int value,
-               Zone zone, bool fragRamp, bool pulseOn, int beat = 0);
+               Zone zone, bool fragRamp, bool pulseOn, int beat = 0,
+               const Rgb565* fill = nullptr);
 
 // Care-mistake budget: 2 Good pips, a gate divider, 3 Bad pips. `mistakes` 0..5.
 void drawCarePips(Framebuffer& fb, int x, int y, int mistakes, bool pulseOn);

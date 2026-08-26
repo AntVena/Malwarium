@@ -111,7 +111,7 @@ void drawSubGrid(Framebuffer& fb, int x, int y, int w, int h, const bool lit[9],
 }
 
 void drawGauge(Framebuffer& fb, int x, int y, int w, int h, int value,
-               Zone zone, bool fragRamp, bool pulseOn, int beat) {
+               Zone zone, bool fragRamp, bool pulseOn, int beat, const Rgb565* fill) {
     const int cells = 10;
     const int full = value / 10;           // floor: 10 solid cells = 10% each
     const int cellW = w / cells;
@@ -148,7 +148,8 @@ void drawGauge(Framebuffer& fb, int x, int y, int w, int h, int value,
         const int cx = x + i * cellW;
         const int iw = cellW - 1;          // 1px gap keeps cells crisp upscaled
         Rgb565 c = fragRamp ? mal::fragRamp(static_cast<float>(i) / (cells - 1))
-                            : zoneColor(zone);
+                   : fill ? *fill
+                          : zoneColor(zone);
         if (pulseDown) c = dim(c, 45);
 
         if (hasBleed && i == full - 1) {

@@ -289,10 +289,16 @@ CombatVitals combatVitals(const Combatant& c);
 // clears the bottom, so the capacity is a floor division and not an estimate.
 constexpr int kCombatSpriteShelf = 165;                 // where the fighters' feet sit
 constexpr int kCombatPanelTop = 28;
-// Stops short of the last-move line (the shelf + the local gauge + its own offset): what
-// a fighter just DID is the other half of reading a fight, and a panel that covered it
-// would trade one blindness for another.
-constexpr int kCombatPanelBottom = kCombatSpriteShelf + 10 + 15 - 6;
+// Stops at the SHELF — the ground line the fighters stand on, and the top of the local
+// pet's own block. Everything below it stays readable while the panel is open: the pet's
+// status strip, its passive strip, its Health gauge and numeric, and the last-move line.
+//
+// Those are the two halves of reading a fight — what your pet has left, and what just
+// happened to it — and a panel that covered either of them traded one blindness for
+// another. Landing on the shelf is also what keeps the box off a WIDGET's edge: pitched
+// to clear the last-move line instead, its floor fell one row inside the Health gauge and
+// left a single lit pixel of it showing under the box.
+constexpr int kCombatPanelBottom = kCombatSpriteShelf + 1;
 constexpr int kCombatPanelFirstRow = kCombatPanelTop + 20;   // under the header + its rule
 constexpr int kCombatPanelPitch = 11;
 constexpr int kCombatPanelRows =
