@@ -41,13 +41,12 @@ tells the rungs apart.
 
 import argparse
 import os
+import struct
 import sys
+import zlib
 
-try:
-    from PIL import Image
-except ImportError:
-    sys.stderr.write("gen_ach_icons.py needs Pillow: pip install pillow\n")
-    raise SystemExit(2)
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from gen_assets import decode_png_rgba  # noqa: E402  — the atlas's own reader
 
 SIZE = 20
 MOTIF_ROWS = 14          # rows 0..13; 14..19 are the footer's
@@ -705,11 +704,11 @@ def _read_rows(path, what):
     """A shipped PNG as SIZE rows of ASCII — the tool's one way of reading art back."""
     if not os.path.exists(path):
         raise ValueError("%s: no such glyph to take a motif from" % what)
-    im = Image.open(path).convert("RGBA")
-    if im.size != (SIZE, SIZE):
-        raise ValueError("%s is %dx%d, want %dx%d" % ((what,) + im.size + (SIZE, SIZE)))
-    return ["".join("#" if im.getpixel((x, y))[3] > 127 else "."
-                    for x in range(SIZE)) for y in range(SIZE)]
+    w, h, px = decode_png_rgba(path)
+    if (w, h) != (SIZE, SIZE):
+        raise ValueError("%s is %dx%d, want %dx%d" % (what, w, h, SIZE, SIZE))
+    return ["".join("#" if px[(y * w + x) * 4 + 3] > 127 else "."
+                    for x in range(w)) for y in range(h)]
 
 
 def motif_rows(motif_name):
@@ -756,14 +755,35 @@ def build(motif_name, footer):
     return grid
 
 
-def to_image(grid):
-    im = Image.new("RGBA", (SIZE, SIZE), BARE)
-    px = im.load()
+def to_rgba(grid):
+    """The glyph as a flat RGBA buffer — what both the writer and --check compare."""
+    px = bytearray()
+    for row in grid:
+        for on in row:
+            px += bytes(INK if on else BARE)
+    return px
+
+
+def to_png(px):
+    """A 20x20 RGBA buffer as PNG bytes, with the standard library and nothing else.
+
+    Hand-rolled for the same reason gen_worm_art.py's writer is: --check runs in the
+    gates, so a fresh clone with a stock Python 3 has to be able to run this tool, and
+    a third-party imaging library is exactly the dependency that rules out.
+    """
+    raw = bytearray()
     for y in range(SIZE):
-        for x in range(SIZE):
-            if grid[y][x]:
-                px[x, y] = INK
-    return im
+        raw.append(0)                       # filter: none
+        raw += px[y * SIZE * 4:(y + 1) * SIZE * 4]
+
+    def chunk(tag, data):
+        return (struct.pack(">I", len(data)) + tag + data
+                + struct.pack(">I", zlib.crc32(tag + data) & 0xFFFFFFFF))
+
+    return (b"\x89PNG\r\n\x1a\n"
+            + chunk(b"IHDR", struct.pack(">IIBBBBB", SIZE, SIZE, 8, 6, 0, 0, 0))
+            + chunk(b"IDAT", zlib.compress(bytes(raw), 9))
+            + chunk(b"IEND", b""))
 
 
 def ascii_art(grid):
@@ -790,16 +810,20 @@ def main():
 
     stale = []
     for name, motif, footer in GLYPHS:
-        im = to_image(build(motif, footer))
+        px = to_rgba(build(motif, footer))
         path = os.path.join(ICONS, name + ".png")
         if args.check:
             if not os.path.exists(path):
                 stale.append(name + " (missing)")
                 continue
-            if list(Image.open(path).convert("RGBA").getdata()) != list(im.getdata()):
+            w, h, have = decode_png_rgba(path)
+            # PIXELS, not bytes: two encoders can write the same glyph differently and
+            # what this gate is about is whether the drawing changed.
+            if (w, h) != (SIZE, SIZE) or bytes(have) != bytes(px):
                 stale.append(name + " (differs)")
             continue
-        im.save(path)
+        with open(path, "wb") as f:
+            f.write(to_png(px))
         print("wrote assets/icons/%s.png" % name)
 
     if args.check:
