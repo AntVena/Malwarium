@@ -392,6 +392,11 @@ int g_failures = 0;
     RUN(test_combat_stage_size_is_intrinsic) \
     RUN(test_combat_strike_mark_travels_toward_its_target) \
     RUN(test_combat_windup_reads_apart_from_impact) \
+    /* Engine-drawn backdrops — the places, and the ground they compose against */ \
+    RUN(test_scene_composes_at_both_floors) \
+    RUN(test_scene_keeps_ink_legible) \
+    RUN(test_scene_tint_refuses_interface_colours) \
+    RUN(test_every_area_names_a_real_scene) \
     /* ROCK THE DOCK — the operator bracket in The Pirate Bayou */ \
     RUN(test_tourney_handles_fit_an_operator_tag) \
     RUN(test_tourney_entrants_are_derived_from_the_seed) \

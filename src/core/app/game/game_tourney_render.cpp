@@ -9,6 +9,7 @@
 #include "core/render/canvas.h"
 #include "core/render/font.h"
 #include "core/render/palette.h"
+#include "core/render/scenes.h"
 #include "core/render/sprite.h"
 #include "core/ui/layout.h"
 #include "core/ui/prose_page.h"
@@ -64,7 +65,7 @@ void Game::drawTourney(Framebuffer& fb) const {
 void Game::drawTourneyBracket(Framebuffer& fb) const {
     // The harbour is this screen's BACKGROUND pass (core/render/RENDER_PIPELINE.md),
     // so it goes down first and the band composes onto it instead of clearing it away.
-    drawDockScene(fb, beat_);
+    drawScene(fb, SceneId::PirateBayou, beat_, kDockGround);
     // Which round it is rides the band's right label. It is a NUMBER the operator
     // reads rather than a colour, so the header survives grayscale — and the two
     // verdicts take the same slot, because "CHAMPION" is also just where you are.

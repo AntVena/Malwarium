@@ -27,6 +27,7 @@
 #pragma once
 
 #include "core/content/defs.h"  // LootEntry — an area's wild-win drop table
+#include "core/render/scene_id.h"  // SceneId — an area names its backdrop the way it names its glyph
 
 namespace mal {
 
@@ -152,6 +153,14 @@ struct AreaDef {
     // still resolving. Naming it here is also what keeps the art compiled —
     // tools/check_orphan_assets.py counts a row that names an asset as its consumer.
     const char* icon;
+    // This area's engine-drawn BACKDROP, named the same way and for the same reason the
+    // glyph above is: keyed off identity, so splicing an area into the middle of
+    // kAreaList cannot silently re-point a place at its neighbour's picture. It is an
+    // enum rather than an asset name because a scene is CODE — a table and a handful of
+    // primitive calls under core/render/scenes/ — so a name that does not resolve
+    // should be a build failure and not a blank screen. SceneId::None is a real answer:
+    // an area whose place is not authored yet keeps the plain `paper` field.
+    SceneId scene;
     const char* subAreas[kSubAreasPerArea];      // 5 named stretches
     SubBossDef subBosses[kSubAreasPerArea];      // 5 sub-area bosses (sub 4 = signature)
     const char* areaBossName;                    // the area gauntlet's overall banner

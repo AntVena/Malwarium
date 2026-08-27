@@ -53,6 +53,7 @@ const AreaDef kAreaPirateBayou = {
     "THE PIRATE BAYOU",
     "LEECH LORD",
     "ICON_SECTOR_PIRATE_BAYOU",
+    SceneId::PirateBayou,
     {"LEECH LANDING", "TORRENT SWAMP", "THE CRACKED KEYS", "WAREZ MARSH",
      "BOOTY CACHE"},
     // The cracking area, so ARMOR PIERCE is the family its bosses teach — 25%, 50%, and

@@ -3,6 +3,11 @@
 // PPM of the full 240 panel:
 //   ./dump_frame [beats] [out.ppm] [flags...]
 // flags: hungry · crit · stat · log · carousel · bottom · iconsonly · textonly
+//        scene:<name> [floor:<row>] (a BACKDROP on its own, with no screen over it —
+//             the names are core/render/scenes.h's, e.g. scene:pirate_bayou. `floor`
+//             is the row the ground puts under it, which is the whole reason to look:
+//             140 is where fighters stand and 184 where a resting pet does, and a
+//             scene has to compose at both. Defaults to 184.)
 //        items [picker [ingredients|keys|tools]] [row:<n>] [detail|feed] (row:<n> walks the list
 //             cursor first, so a detail other than the first row is renderable)
 //        feed:<item_id> (eat one named food through the real Use path and hold the
@@ -115,6 +120,7 @@
 #include "core/render/canvas.h"
 #include "core/render/framebuffer.h"
 #include "core/render/palette.h"
+#include "core/render/scenes.h"
 #include "core/ui/carousel.h"
 #include "core/ui/cfg_screen.h"
 #include "core/ui/expl_screen.h"
@@ -134,9 +140,49 @@ static bool hasFlag(int argc, char** argv, const char* f) {
     return false;
 }
 
+// The active canvas composed into the full panel and written out as binary PPM — the
+// one exit both the screen path and the bare-backdrop path below take.
+static int writePanel(const Framebuffer& fb, const char* out, int beats) {
+    std::vector<Rgb565> panel(static_cast<size_t>(kPanelW) * kPanelH,
+                              palColor(Pal::PAPER));
+    for (int y = 0; y < kActiveH; ++y)
+        for (int x = 0; x < kActiveW; ++x)
+            panel[static_cast<size_t>(y + kBezel) * kPanelW + (x + kBezel)] =
+                fb.get(x, y);
+
+    FILE* f = std::fopen(out, "wb");
+    if (!f) { std::perror("fopen"); return 1; }
+    std::fprintf(f, "P6\n%d %d\n255\n", kPanelW, kPanelH);
+    for (Rgb565 c : panel) {
+        unsigned char rgb[3] = {r8(c), g8(c), b8(c)};
+        std::fwrite(rgb, 1, 3, f);
+    }
+    std::fclose(f);
+    std::printf("wrote %s (beat %d)\n", out, beats);
+    return 0;
+}
+
 int main(int argc, char** argv) {
     int beats = (argc > 1) ? std::atoi(argv[1]) : 0;
     const char* out = (argc > 2) ? argv[2] : "frame.ppm";
+
+    // A backdrop on its own, with no screen composed over it. Nothing about a scene
+    // needs a Game, and the whole question a look at one answers — does it still read
+    // with its floor somewhere else — is a question about the ground it is handed.
+    for (int i = 3; i < argc; ++i) {
+        if (std::strncmp(argv[i], "scene:", 6) != 0) continue;
+        const SceneId id = sceneByName(argv[i] + 6);
+        if (id == SceneId::None) {
+            std::fprintf(stderr, "no scene named '%s'\n", argv[i] + 6);
+            return 2;
+        }
+        int floorY = kLivingBottom;
+        for (int j = 3; j < argc; ++j)
+            if (std::strncmp(argv[j], "floor:", 6) == 0) floorY = std::atoi(argv[j] + 6);
+        Framebuffer fb(kActiveW, kActiveH);
+        drawScene(fb, id, beats, sceneGround(floorY));
+        return writePanel(fb, out, beats);
+    }
 
     // Default to an already-hatched pet so the existing nav flags work; the
     // "hatch" flag starts from an empty save instead. "evolve" starts
@@ -1307,21 +1353,5 @@ int main(int argc, char** argv) {
     Framebuffer fb(kActiveW, kActiveH);   // active canvas is the compositor
     game.render(fb);
 
-    std::vector<Rgb565> panel(static_cast<size_t>(kPanelW) * kPanelH,
-                              palColor(Pal::PAPER));
-    for (int y = 0; y < kActiveH; ++y)
-        for (int x = 0; x < kActiveW; ++x)
-            panel[static_cast<size_t>(y + kBezel) * kPanelW + (x + kBezel)] =
-                fb.get(x, y);
-
-    FILE* f = std::fopen(out, "wb");
-    if (!f) { std::perror("fopen"); return 1; }
-    std::fprintf(f, "P6\n%d %d\n255\n", kPanelW, kPanelH);
-    for (Rgb565 c : panel) {
-        unsigned char rgb[3] = {r8(c), g8(c), b8(c)};
-        std::fwrite(rgb, 1, 3, f);
-    }
-    std::fclose(f);
-    std::printf("wrote %s (beat %d)\n", out, beats);
-    return 0;
+    return writePanel(fb, out, beats);
 }

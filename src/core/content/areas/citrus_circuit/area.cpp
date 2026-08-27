@@ -48,6 +48,7 @@ const AreaDef kAreaCitrusCircuit = {
     "CITRUS CIRCUIT",
     "CERTIFIED DOWNLOADER",
     "ICON_SECTOR_CITRUS_CIRCUIT",
+    SceneId::CitrusCircuit,
     {"FAKE FILE FLATS", "BUFFERING BLUFFS", "99% CACHE", "THE SHARED FOLDER",
      "DIAL-UP DRAW"},
     // The fake-file boss teaches the fake AND the checksum that catches it — which is why

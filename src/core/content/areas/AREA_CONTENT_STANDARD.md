@@ -20,7 +20,9 @@ src/core/content/areas/
 ```
 
 An `AreaDef` row owns, in one place: the area's name/Title, the name of its sector glyph
-(`icon` — keyed by area id, so art follows identity rather than rung), its 5 sub-area names, its
+(`icon` — keyed by area id, so art follows identity rather than rung), its engine-drawn
+backdrop (`scene` — a `SceneId`, keyed the same way and for the same reason; `SceneId::None`
+means the place is not authored yet), its 5 sub-area names, its
 5 sub-area bosses (`SubBossDef` — a banner, plus the rounds it is fought as) + area-boss
 banner, its signature boss's threat-move rider
 (`apexThreatMoveId`), its storefront (`AreaShopDef` — name, stocked item(s), restock
@@ -81,9 +83,13 @@ per-area layout — don't pre-split ahead of actual growth.
    `kModPowerTiers`, the area's difficulty (`areaTier`), and every fixed-size save-flag
    array in `game.h` (`sectorCleared_`, `subCleared_`, …) all follow automatically — there
    is no second count anywhere to remember to bump.
-4. Add art (`ICON_SECTOR_<AREA_ID>`/`BG_SECTOR_<AREA_ID>`, `assets/ASSET_MANIFEST.md` §J),
-   name the glyph in the row's `icon` field, and check the naming rules before claiming a
-   brand: `AREA_NAMING.md`.
+4. Add art (`ICON_SECTOR_<AREA_ID>`, `assets/ASSET_MANIFEST.md` §J), name the glyph in the
+   row's `icon` field, and check the naming rules before claiming a brand: `AREA_NAMING.md`.
+5. Author the backdrop as a `SceneId` and a file under `src/core/render/scenes/` — not a
+   sheet. A place is ~60 lines of palette-anchored tables against a `SceneGround`, so it
+   costs no flash, reskins with a theme, and cannot out-shout the text drawn over it
+   (`src/core/render/RENDER_PIPELINE.md`). Name it in the row's `scene` field. Leaving it
+   `SceneId::None` is a legitimate half-step: the area simply keeps the plain `paper` field.
 
 ### If it lands anywhere but the END of the list
 
@@ -102,9 +108,10 @@ ladder POSITION rather than by area id, and both go wrong silently:
   catches this — it checks each mod's rank against the shallowest pool that drops it —
   but it is an edit to make, not something that follows.
 
-The sector ART family is not affected: `ICON_SECTOR_*`/`BG_SECTOR_*` are keyed by the
-area's own `id` and named on its row (`AreaDef::icon`), so a splice moves an area's rung
-without moving its picture. See the note under `ASSET_MANIFEST.md` §J.
+The sector ART family is not affected: `ICON_SECTOR_*` is keyed by the area's own `id` and
+named on its row (`AreaDef::icon`), and the backdrop is an enum named on `AreaDef::scene`,
+so a splice moves an area's rung without moving its picture. See the note under
+`ASSET_MANIFEST.md` §J.
 
 There is deliberately no separate "area count" constant to hand-maintain anywhere else:
 `kAreaCount` is `sizeof(kAreaList)/sizeof(kAreaList[0])`, so an area that isn't in the list

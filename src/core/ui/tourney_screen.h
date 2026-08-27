@@ -33,6 +33,7 @@
 #include "core/content/content_tournament.h"
 #include "core/render/canvas.h"   // kActiveW / kActiveH — the foot is pinned to them
 #include "core/render/font.h"
+#include "core/render/scene.h"   // SceneGround — the arena hands its backdrop a floor
 #include "core/ui/layout.h"
 #include "core/ui/widgets.h"   // kHintBandH — the foot the layout is pinned to
 
@@ -205,15 +206,13 @@ constexpr int kDockScoutTop = kDockPortraitFootY + 12;
 
 // --- The harbour --------------------------------------------------------------
 
-// The backdrop: night over the Bayou, the far shore, the water, and the dock the
-// bracket is fought on. Clears the canvas — this is the screen's BACKGROUND pass
-// (core/render/RENDER_PIPELINE.md), so it runs before the band and everything else
-// composes onto it.
-//
-// Composed out of core/render/scene.h's primitives against a SceneGround whose FLOOR is
-// this header's own kDockDeckY — the screen knows where a fighter's feet go, and the
-// scene is told. That header carries the rest of the reasoning, including why a
-// backdrop behind text is drawn from palette tokens rather than shipped as a sheet.
-void drawDockScene(Framebuffer& fb, int beat);
+// The ground the arena's backdrop is composed against: the Bayou drawn with its floor
+// on the plank a fighter stands on. The screen supplies this and the scene obeys it,
+// which is the contract in core/render/scene.h — the screen is the thing that knows
+// where feet go and where its copy stops. Which PLACE is drawn on it is
+// SceneId::PirateBayou, painted through core/render/scenes.h like any other.
+constexpr SceneGround kDockGround = sceneGround(kDockDeckY);
+static_assert(kDockGround.horizonY > kDockCardBottom,
+              "the waterline has to start below the copy that sits on the sky");
 
 }  // namespace mal

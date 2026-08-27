@@ -69,10 +69,27 @@ DMA-blitted to the panel.
 A BACKGROUND is drawn rather than blitted, and `scene.h` is both the primitives and the
 reason: a backdrop that sits behind text cannot hold a colour opinion, because `PAL_CORE`
 is the one palette and a theme moves the interface by moving tokens. So a scene is painted
-from one ramp between `paper` and `ink-dim` — dark by construction, unable to out-shout
-`ink`, and free of flash. It is composed against a **SceneGround**: a horizon and a floor,
-both supplied by the SCREEN, since the screen is what knows where its text stops and where
-its sprite's feet go. ROCK THE DOCK's harbour (`core/ui/tourney_screen.h`) is the first one.
+from one ramp between `paper` and a named token — dark by construction, unable to out-shout
+`ink`, and free of flash. `sceneTone` is that ramp on `ink-dim`, which is what a place
+reading in pure value uses; `sceneTint` is the same ramp anchored elsewhere, and it refuses
+`accent` and the status hues outright, since a backdrop wearing a colour that already means
+something is lying about the screen.
+
+It is composed against a **SceneGround**: a horizon and a floor, both supplied by the
+SCREEN, since the screen is what knows where its text stops and where its sprite's feet go.
+The floors in play are 44 rows apart — `kCombatSpriteShelf` and `kLivingBottom` — so
+**nothing in a scene is an absolute row**. Below the horizon a figure is an offset in rows;
+above it, a fraction of whatever sky the ground leaves (`sceneSkyY`), because that is the
+band whose size actually changes between screens.
+
+A PLACE is one file under `render/scenes/` — art-direction tables and a handful of
+primitive calls — named by a `SceneId` (`render/scene_id.h`) and reached through the
+catalogue in `render/scenes.h`. An area names its own on `AreaDef::scene`, exactly as it
+names its sector glyph; a prize background names one from wherever prizes are held, which
+is why the id cannot hang off `AreaDef` alone. `tools/dump_frame.cpp`'s `scene:<name>
+floor:<row>` renders one on its own at either floor, which is the only way to see whether
+a place actually reads — the native gate can hold portability, contrast and the anchor
+rail, and nothing can hold composition.
 
 SPRITE_MODS straddles SPRITE_BASE because a pet-effect's side of the creature is part of
 what it means: a Replication Ghost is a copy standing in front, and a block streaming into

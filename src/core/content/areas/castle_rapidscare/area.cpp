@@ -56,6 +56,7 @@ const AreaDef kAreaCastleRapidscare = {
     "CASTLE RAPIDSCARE",
     "KING OF THE KEEP",
     "ICON_SECTOR_CASTLE_RAPIDSCARE",
+    SceneId::CastleRapidscare,
     {"404 DRAWBRIDGE", "MIRROR MAZE", "OPT-OUT OBSCURA", "DECOY DUNGEON",
      "COMMENT CATACOMBS"},
     // Two of the court are fought as gauntlets rather than as one malbeast: the pawns come
