@@ -614,6 +614,17 @@ blank — that is the prompt to draw one, and `check_orphan_assets.py` catches t
 | ~~`ICON_EXPL_PACKET`~~ | ~~Packet Capture row glyph~~ | — | **REMOVED** — Packet Capture minigame scrapped; "packet sniffing" is now the Wi-Fi explore event | ⊘ | — |
 | `ICON_SECTOR_<AREA_ID>` | Per-area row glyph, EXPL zone picker | 20×20 | one per area, named on that area's own `AreaDef::icon`; the DeepWeb Dive has no AreaDef and names `ICON_SECTOR_DEEPWEB_DIVE` from `areas/deepweb_dive/area.cpp` instead | ☑ | `/assets/icons/ICON_SECTOR_*.png` |
 | `BG_SECTOR_<AREA_ID>` | Per-area walk backdrop | 128×128 | optional; flat colour OK v1 | ⌫ | placeholders `/assets/_attic/BG_SECTOR_CITRUS_CIRCUIT.png` + `BG_SECTOR_PIRATE_BAYOU.png` |
+| `UI_DOCK_SCENE` | ROCK THE DOCK's harbour backdrop | 224×224 | night, a treeline, the waterline and the deck the bracket is fought on; the opponent's own creature cell stands on it at 1/1 (`ui/tourney_screen.h`) | ☑ | engine-drawn |
+
+> **`UI_DOCK_SCENE` is engine-drawn on purpose, and it is the answer for chrome behind
+> text generally.** It is painted out of tones interpolated between `paper` and `ink-dim`
+> rather than out of pixels, which buys two things a PNG cannot. A themed palette moves
+> the whole harbour with the two tokens it is built from — a backdrop with authored hues
+> is a colour no theme can reach, and this one sits under eight rows of list text, which
+> is exactly where a frozen hue would cost contrast. And it costs no flash on a screen
+> that already spends a full creature cell. The rule generalises: a `BG_*` PNG is for a
+> backdrop the player LOOKS at (`BG_EGG_CLUTCH` is a raft you pick eggs off), and chrome
+> that text has to stay readable on top of is drawn from tokens.
 
 > An area's identity (name/icon/backdrop) is swappable data; its difficulty is its rung.
 > **Naming direction:** real-world malware-encounter places, punned (LimeWire → "Citrus

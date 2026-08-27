@@ -27,8 +27,8 @@ namespace mal {
 
 namespace {
 // Where the RULES page's prose starts, under drawHeaderBand's title + rule — the same
-// offset ROCK THE DOCK's own BRIEFING opens its reader at (kTourneyReaderTop,
-// game_tourney.cpp), since both sit under the identical band.
+// offset ROCK THE DOCK's own BRIEFING opens its reader at (kDockBriefTop,
+// ui/tourney_screen.h), since both sit under the identical band.
 constexpr int kGameBriefReaderTop = 46;
 }  // namespace
 

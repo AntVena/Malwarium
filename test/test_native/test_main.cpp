@@ -404,6 +404,8 @@ int g_failures = 0;
     RUN(test_dock_shape_rows_read_the_final) \
     RUN(test_tourney_screen_grayscale) \
     RUN(test_tourney_screen_copy_fits_its_panel) \
+    RUN(test_dock_field_always_leaves_room_for_the_opponent) \
+    RUN(test_dock_ties_land_inside_the_field) \
     RUN(test_tourney_screen_outlives_the_menu_idle_timer) \
     RUN(test_tourney_brief_fits_its_page) \
     RUN(test_tourney_scout_shows_the_rivals_whole_kit) \

@@ -69,10 +69,11 @@
 //        "bossready" for that block with its gauntlet unlocked, "rerun" for it already
 //        beaten, "endgame" for the every-area-cleared picker) ·
 //        explore (armed → the idle explore badge)
-// dock [fight|scout|brief] (ROCK THE DOCK's arena screen — the eight-operator bracket;
-//        "fight" plays the operator's own first bout out so the frame shows a settled
-//        round, "scout" holds B into the focused entrant's kit sheet, "brief" chords
-//        into the paged explainer)
+// dock [fight|deep|scout|brief] (ROCK THE DOCK's arena screen — the eight-operator
+//        bracket; "fight" plays the operator's own first bout out so the frame shows a
+//        settled round, "deep" plays the bracket as far forward as the pet can carry it
+//        so the field has collapsed and the tree has narrowed, "scout" holds B into the
+//        focused entrant's kit sheet, "brief" chords into the paged explainer)
 // explorectl [auto] (the A+C control overlay; "auto" arms AUTO-PROGRESS with the
 //        second chord) · explore auto (the armed habitat with it running — the EXPL
 //        globe spins, so pass a `beats` count to land on a frame) · encounter [sinkhole] ·
@@ -720,7 +721,19 @@ int main(int argc, char** argv) {
             game.onButton({Button::B, true, false});
             game.onButton({Button::B, false, false});
         };
-        if (hasFlag(argc, argv, "fight")) {
+        if (hasFlag(argc, argv, "deep")) {
+            // Play the bracket forward as far as the pet can take it, so the frame
+            // lands on a field that has already collapsed — which is the only way to
+            // LOOK at the later rounds' tree and at the room they open up.
+            for (int r = 0; r < kTourneyRounds &&
+                            game.tourneyPhase() == Game::TourneyPhase::Ready; ++r) {
+                tapB();
+                for (int i = 1; i <= 4000 &&
+                                game.combat().outcome() == Combat::Outcome::Ongoing; ++i)
+                    game.tick(static_cast<uint32_t>(beats + i) * kHeartbeatMs);
+                if (game.nav() != Game::Nav::Tourney) tapB();   // dismiss the verdict
+            }
+        } else if (hasFlag(argc, argv, "fight")) {
             tapB();
             for (int i = 1; i <= 4000 &&
                             game.combat().outcome() == Combat::Outcome::Ongoing; ++i)

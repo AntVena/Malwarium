@@ -12,6 +12,11 @@ namespace mal {
 void drawHeaderBand(Framebuffer& fb, const char* title, const char* right,
                     Rgb565 rightColor, Rgb565 titleColor) {
     fb.clear(palColor(Pal::PAPER));
+    drawHeaderBandOver(fb, title, right, rightColor, titleColor);
+}
+
+void drawHeaderBandOver(Framebuffer& fb, const char* title, const char* right,
+                        Rgb565 rightColor, Rgb565 titleColor) {
     // The band's title is the one piece of copy that says where you are, so it
     // carries the bold cut and nothing else on the screen does. Same cell and
     // advance as the regular face (font_glyphs.h), so the band does not move.

@@ -12,6 +12,8 @@
 #include "core/model/tournament.h"
 #include "core/ui/layout.h"
 #include "core/ui/prose_page.h"
+#include "core/ui/tourney_screen.h"
+#include "core/render/sprite.h"
 
 using namespace mal;
 
@@ -397,26 +399,90 @@ void test_tourney_screen_grayscale() {
     CHECK(diff > 0);
 }
 
-// The bracket screen's fixed copy has to fit the panel it is drawn on. Everything
-// variable (a species name beside its Exploit tag) goes through drawLabelValue and
-// yields; these lines do not, so a rewrite that overflows would simply be cut, and the
-// cut is invisible to every other gate.
+// The bracket screen's fixed copy has to fit the column it is drawn in, and that
+// column is NOT the panel: the opponent's drawing takes the right of the foot, so the
+// card gets whatever is left beside the widest creature the arena can field. Everything
+// variable (a species name) travels rather than fits; these lines do not, so a rewrite
+// that overflowed would simply be cut, and the cut is invisible to every other gate.
 void test_tourney_screen_copy_fits_its_panel() {
-    const int budget = kActiveW - kMargin * 2;
+    int narrowest = kActiveW - 2 * kMargin;
+    for (const CreatureDef* c : reg().allCreatures()) {
+        const SpriteData* s = reg().creatureSprite(*c);
+        if (!s) continue;
+        for (bool mirror : {false, true}) {
+            const int w = dockCardW(s, mirror);
+            if (w < narrowest) narrowest = w;
+        }
+    }
     char purse[40];
-    std::snprintf(purse, sizeof(purse), "+%d BITS +%d XP +1 MOD", kTourneyWinBits,
-                  kTourneyWinXp);
-    const char* lines[] = {"THE FIELD IS YOURS", purse, "KNOCKED OUT OF THE DRAW",
-                           "THE BRACKET GOES ON", "A READ   B FIGHT   C BACK"};
-    for (const char* l : lines) CHECK(textWidth(l) <= budget);
+    std::snprintf(purse, sizeof(purse), "+%d XP", kTourneyWinXp);
+    char bits[40];
+    std::snprintf(bits, sizeof(bits), "+%d BITS", kTourneyWinBits);
+    // The Exploit tell, at the earliest trigger the roll can hand out — the longest of
+    // the four, since the other three are shorter numbers in the same sentence.
+    char tell[40];
+    int lowest = 100;
+    for (int i = 0; i < kTourneyTriggerCount; ++i)
+        if (kTourneyTriggerPcts[i] < lowest) lowest = kTourneyTriggerPcts[i];
+    std::snprintf(tell, sizeof(tell), "AT %d%% HEALTH", lowest);
+    const char* beside[] = {"TITLE TAKEN", bits, purse, "+1 MOD", "FROM TURN 1", tell};
+    for (const char* l : beside) CHECK(textWidth(l) <= narrowest);
+    // An operator handle is the card's first line as well as a field row, so it has to
+    // clear the same column.
+    for (int i = 0; i < kTourneyHandleCount; ++i)
+        CHECK(textWidth(tourneyHandleName(i)) <= narrowest);
+    // The two verdicts draw with nobody on the dock, so they get the whole width.
+    const char* full[] = {"KNOCKED OUT OF THE DRAW", "THE BRACKET GOES ON",
+                          "A NEXT   B BOUT   C BACK", "HOLD B SCOUT  A+C BRIEF"};
+    for (const char* l : full) CHECK(textWidth(l) <= kActiveW - 2 * kMargin);
     // A field row is a handle, then the fixed level + status columns on the right. The
     // longest handle in the pool must clear the widest thing those two ever hold.
     int widest = 0;
     for (int i = 0; i < kTourneyHandleCount; ++i)
         if (textWidth(tourneyHandleName(i)) > widest)
             widest = textWidth(tourneyHandleName(i));
-    CHECK(kMargin + 10 + widest < kActiveW - kMargin - textWidth("NEXT") -
-                                      textWidth("L60") - 6);
+    CHECK(kDockTextX + widest < kActiveW - kMargin - textWidth("NEXT") -
+                                    textWidth("L60") - 6);
+}
+
+// The field COLLAPSES so that the opponent can have a face, and that trade is only
+// worth making if it always pays: a run reaches the bracket screen with at most five
+// entrants standing (the three pairings the operator is not in resolve the moment a
+// round opens), so every state a player can actually be looking at has to leave room
+// for a fighter — including the tallest cell that may ship, and including the cursor
+// parked on a struck-out row, which stands that row back up.
+void test_dock_field_always_leaves_room_for_the_opponent() {
+    for (int mask = 0; mask < (1 << kTourneySlots); ++mask) {
+        if (tourneyAliveCount(static_cast<uint8_t>(mask)) > 5) continue;
+        CHECK(dockFaceoffFits(static_cast<uint8_t>(mask)));
+    }
+    // And the fallback is real rather than theoretical: a field nobody has gone out of
+    // has no room, and must still clear the text card it falls back to.
+    CHECK(!dockFaceoffFits(0xFF));
+    CHECK(dockFieldBottomMax(0xFF) + 6 <= kDockTextCardTop);
+}
+
+// Every bracket tie has to attach INSIDE the field it describes. The anchors are
+// derived from row positions that move as rows collapse and as the cursor stands one
+// back up, so this is the one property of the drawn tree that cannot be read off the
+// source — an arm that landed under the last row would point at the harbour.
+void test_dock_ties_land_inside_the_field() {
+    for (int mask = 0; mask < (1 << kTourneySlots); ++mask) {
+        const uint8_t alive = static_cast<uint8_t>(mask);
+        for (int cursor = -1; cursor < kTourneySlots; ++cursor) {
+            const int bottom = dockFieldBottom(alive, cursor);
+            for (int round = 0; round < kTourneyRounds; ++round) {
+                const int n = tourneyBlockSize(round);
+                for (int start = 0; start < kTourneySlots; start += n) {
+                    const int a = dockBlockAnchorY(alive, start, n / 2, cursor);
+                    const int b = dockBlockAnchorY(alive, start + n / 2, n / 2, cursor);
+                    CHECK(a >= kDockSlotTop && a < bottom);
+                    CHECK(b >= kDockSlotTop && b < bottom);
+                    CHECK(a < b);        // the tree never draws a tie upside down
+                }
+            }
+        }
+    }
 }
 
 // The bracket is a screen you STUDY — the field, the levels, and what the next

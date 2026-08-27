@@ -3199,8 +3199,11 @@ private:
     // in play, else resumes the one that is.
     void openTourney();
     void onTourney(const ButtonEvent& ev);         // A read · B bout · C back · A+C brief
+    // The three views (game_tourney_render.cpp — the arena's own screen unit, laid
+    // out against ui/tourney_screen.h).
     void drawTourney(Framebuffer& fb) const;
     void drawTourneyBracket(Framebuffer& fb) const;
+    void drawTourneyFoot(Framebuffer& fb) const;   // the match card under the field
     void drawTourneyScout(Framebuffer& fb) const;
     void drawTourneyBrief(Framebuffer& fb) const;
     void openTourneyScout();                       // hold-B on the bracket

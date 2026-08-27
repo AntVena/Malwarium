@@ -134,7 +134,16 @@ Nav with three reads — the BRACKET (the field, who is left, who is next), a **
 hold-B showing any entrant's whole kit, and a paged **BRIEFING** on the A+C chord, which is the
 only thing that tells an operator what an arena bout even is. Both readers flow through the shared
 name-plus-prose page (`core/ui/prose_page.h`), and the scout sheet is literally STAT's LOADOUT page
-pointed at somebody else's pet, so a rival's moves are described in the move's own words.
+pointed at somebody else's pet, so a rival's moves are described in the move's own words — with
+that pet's own drawing beside the caption, since an opponent you can only read is one you have to
+imagine.
+
+The bracket is drawn as a **tree that empties**: the ties run in a gutter beside the names, a
+round to a column, and a knocked-out entrant collapses from a row to a struck stub. The height
+that frees up is what stands the next opponent — a real creature cell at 1/1, on a drawn harbour —
+at the foot of the field, beside what it is, what Exploit it carries and the health it fires that
+Exploit at. So the screen tightens as the draw does, and the layout is
+`core/ui/tourney_screen.h`.
 
 The arena is the one place the pet fights **petware** rather than malbeasts: each entrant is a creature off the
 hatchable roster at a level up to the arena's cap, carrying a rolled move kit (line-exclusive

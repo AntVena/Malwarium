@@ -23,8 +23,10 @@ class Framebuffer;
 //
 // It clears the canvas to PAPER first, because opening a screen with this band IS
 // what every list and viewer does, and thirty copies of the same clear is how the
-// per-screen header helpers drifted apart. A screen that wants a backdrop under
-// its band is the growth point that splits the clear back out.
+// per-screen header helpers drifted apart. drawHeaderBandOver below is the band
+// WITHOUT that clear, for the screen that has already painted something under it —
+// ROCK THE DOCK's dock scene (ui/tourney_screen.h) is the one, and the two share a
+// body so the title can never sit at a different height on a screen with a backdrop.
 //
 // Both colours are the caller's because what a label MEANS varies — ARCH's slot
 // count is secondary information (INK_DIM), SHOP's Bits wallet is the thing the
@@ -35,6 +37,13 @@ void drawHeaderBand(Framebuffer& fb, const char* title,
                     const char* right = nullptr,
                     Rgb565 rightColor = palColor(Pal::INK_DIM),
                     Rgb565 titleColor = palColor(Pal::INK));
+
+// The same band drawn ONTO whatever is already on the canvas. Same title, same
+// right label, same rule, same grid — only the clear is missing.
+void drawHeaderBandOver(Framebuffer& fb, const char* title,
+                        const char* right = nullptr,
+                        Rgb565 rightColor = palColor(Pal::INK_DIM),
+                        Rgb565 titleColor = palColor(Pal::INK));
 
 // Text in a column narrower than it needs. Draws `s` at (x,y) clipped to `w`; if
 // it fits, this is exactly drawText and costs nothing extra.
