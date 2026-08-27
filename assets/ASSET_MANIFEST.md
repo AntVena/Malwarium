@@ -613,18 +613,19 @@ blank — that is the prompt to draw one, and `check_orphan_assets.py` catches t
 | `UI_DIFFICULTY_PIPS` | Sector difficulty tier (filled/empty diamonds) | ~30×10 | e.g. `◆◇◇` | ⌫ | placeholder `/assets/_attic/UI_DIFFICULTY_PIPS.png` |
 | ~~`ICON_EXPL_PACKET`~~ | ~~Packet Capture row glyph~~ | — | **REMOVED** — Packet Capture minigame scrapped; "packet sniffing" is now the Wi-Fi explore event | ⊘ | — |
 | `ICON_SECTOR_<AREA_ID>` | Per-area row glyph, EXPL zone picker | 20×20 | one per area, named on that area's own `AreaDef::icon`; the DeepWeb Dive has no AreaDef and names `ICON_SECTOR_DEEPWEB_DIVE` from `areas/deepweb_dive/area.cpp` instead | ☑ | `/assets/icons/ICON_SECTOR_*.png` |
-| `BG_SECTOR_<AREA_ID>` | Per-area walk backdrop | 128×128 | optional; flat colour OK v1 | ⌫ | placeholders `/assets/_attic/BG_SECTOR_CITRUS_CIRCUIT.png` + `BG_SECTOR_PIRATE_BAYOU.png` |
-| `UI_DOCK_SCENE` | ROCK THE DOCK's harbour backdrop | 224×224 | night, a treeline, the waterline and the deck the bracket is fought on; the opponent's own creature cell stands on it at 1/1 (`ui/tourney_screen.h`) | ☑ | engine-drawn |
+| ~~`BG_SECTOR_<AREA_ID>`~~ | ~~Per-area walk backdrop~~ | — | **NOT A SHEET** — an area's backdrop is engine-drawn, named on that area's own `AreaDef::scene` and authored as one file under `src/core/render/scenes/` | ⊘ | `SceneId`, `src/core/render/RENDER_PIPELINE.md` |
+| A SCENE | Any engine-drawn place: an area backdrop, ROCK THE DOCK's harbour, a prize background | 224×224 | palette-anchored tables composed against a `SceneGround` the SCREEN supplies; a creature cell stands on it at 1/1 | ☑ | engine-drawn, `src/core/render/scenes/` |
 
-> **`UI_DOCK_SCENE` is engine-drawn on purpose, and it is the answer for chrome behind
-> text generally.** It is painted out of tones interpolated between `paper` and `ink-dim`
-> rather than out of pixels, which buys two things a PNG cannot. A themed palette moves
-> the whole harbour with the two tokens it is built from — a backdrop with authored hues
-> is a colour no theme can reach, and this one sits under eight rows of list text, which
-> is exactly where a frozen hue would cost contrast. And it costs no flash on a screen
-> that already spends a full creature cell. The rule generalises: a `BG_*` PNG is for a
-> backdrop the player LOOKS at (`BG_EGG_CLUTCH` is a raft you pick eggs off), and chrome
-> that text has to stay readable on top of is drawn from tokens.
+> **A backdrop is engine-drawn, and that is the answer for chrome behind text generally.**
+> A scene is painted out of tones interpolated between `paper` and a named token rather
+> than out of pixels, which buys two things a PNG cannot. A themed palette moves the whole
+> place with the token it is anchored to — a backdrop with authored hues is a colour no
+> theme can reach, and these sit under rows of list text, which is exactly where a frozen
+> hue would cost contrast. And it costs no flash on screens that already spend a full
+> creature cell: a dozen places is a few hundred bytes each against ~48KB for one 128×128
+> sheet, which is the whole reason a background is a plausible PRIZE. The rule generalises:
+> a `BG_*` PNG is for a backdrop the player LOOKS at (`BG_EGG_CLUTCH` is a raft you pick
+> eggs off), and chrome that text has to stay readable on top of is drawn from tokens.
 
 > An area's identity (name/icon/backdrop) is swappable data; its difficulty is its rung.
 > **Naming direction:** real-world malware-encounter places, punned (LimeWire → "Citrus
@@ -635,8 +636,10 @@ blank — that is the prompt to draw one, and `check_orphan_assets.py` catches t
 > (areas/area_defs.h) renumbers every area above it, and an index-keyed file would keep
 > resolving while pointing at its neighbour's picture. The id doesn't move, so the art
 > can't. Each area names its glyph on its own row (`AreaDef::icon`), which is also what
-> keeps it out of `check_orphan_assets.py`'s KEEP list. Areas wanting art:
-> Pirate Bayou · Net-Sea Crossing · Napstorrent Moors · Castle Rapidscare.
+> keeps it out of `check_orphan_assets.py`'s KEEP list. Its backdrop is named the same way
+> on `AreaDef::scene`, and being code rather than a file it needs no orphan check at all —
+> an id with no drawing is a build failure. Areas still owing a scene:
+> Net-Sea Crossing · Napstorrent Moors.
 > Only the first area is open at start; rest progression-gated. Packet Capture minigame + wild-
 > encounter combat art are deferred. Walk reuses pet idle frames — no walk frame.
 

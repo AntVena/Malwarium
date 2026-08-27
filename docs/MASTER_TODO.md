@@ -337,8 +337,7 @@ high→low value:
 - **Process alternates:** `SPR_PET_PHISHLET`, `SPR_PET_CIPHADPOLE`, `SPR_PET_PINGCUB`; **Boot L2:**
   `SPR_PET_RINGWYRM`.
 - **Optional polish:** `UI_RANK_BADGE`, `ICON_EVENT_WIFI`, `UI_DIFFICULTY_PIPS`, a boss-tell marker
-  on the charge bar, a `UI_TITLE_TAG` badge, richer per-sub-area `BG_SECTOR_*` backdrops, a
-  `SPR_PET_*` attack-pose frame.
+  on the charge bar, a `UI_TITLE_TAG` badge, a `SPR_PET_*` attack-pose frame.
 - **Three of the five lines have no `ICON_LINE_*`.** Ransomware and Worm are drawn; Phishing,
   Trojan and Metamorphic are not, so their 'Pedia sections render text-only where the other two
   carry a glyph (`gen_pedia_data.py` warns per missing line). One 20×20 each, same slot as the
@@ -347,33 +346,44 @@ high→low value:
 
 ### 2c. New art implied by unbuilt features
 
-These come with the features above rather than ahead of them. Every "backdrop" below means
-`BG_SECTOR_<AREA_ID>` — the area's own id, upper-cased, which is the name its row already asks
-for. The `ICON_SECTOR_*` half of each family is drawn and live on the EXPL zone picker.
+These come with the features above rather than ahead of them. The `ICON_SECTOR_*` glyph family is
+drawn and live on the EXPL zone picker.
 
-**Decide first whether a backdrop is a sheet at all.** ROCK THE DOCK's harbour is engine-drawn
-(`core/render/scene.h` — a ramp between `paper` and `ink-dim`, composed against a horizon and a
-floor the screen supplies), and the argument for that generalises to every row below: a `BG_*`
-sheet freezes hues no theme can reach, on exactly the surface a reader needs contrast on, and
-costs flash on screens that already spend a creature cell. A place authored as a silhouette table
-plus a handful of primitive calls is ~25 lines and reskins with the palette. What is undecided is
-how an area NAMES one: `AreaDef` already carries `icon`, so the shape is the same, but a function
-pointer on a content row is a different thing from an asset id and wants deciding once rather than
-per area. The other consumer waiting on the same answer is the **duelling stage** — a PVP bout is
-the one fight with no place at all, and the combat screen's `kSpriteShelf` is already the floor
-half of a SceneGround. Settling this reframes the three backdrop rows below. Diff **M**.
+**A backdrop is not a sheet.** A place is engine-drawn — one file under `core/render/scenes/`,
+palette-anchored tables composed against a `SceneGround` the screen supplies — named by a
+`SceneId` and reached through `core/render/scenes.h`. An area names its own on `AreaDef::scene`
+beside the glyph it already names; a prize background names one from wherever prizes are held,
+which is why the id could never hang off `AreaDef` alone. The whole contract is in
+`core/render/RENDER_PIPELINE.md`, and `tools/dump_frame.cpp`'s `scene:<name> floor:<row>` is how
+you look at one.
 
-- **Net-Sea Crossing area art** (shipped mechanically, art pending): the backdrop
-  (open water, shipping lanes, landfall at Sandbox Beach) and the `FLOATING POINT` / `THE HARDENED
-  SHELL` storefront motifs. Its nine mods are drawn — the whole `ICON_MOD_*` family is, so no area
-  owes one. Like the keep, it fights with the shared tier roster and has no malbeasts of its own.
-- **Napstorrent Moors area art** (shipped mechanically, art pending): the backdrop
-  (marshy → castle progression), the `MOOR-TO-MOOR` storefront motif.
-- **Castle Rapidscare art** (shipped mechanically, art pending): the backdrop,
-  castle-themed malbeasts + a `COUNT CONFICKER` apex, and the `SPAM & SCRAM` / `THE GHOST IN THE
-  MACHINE` storefront motifs. The keep also fights with the tier-3 wild roster today — it has no
-  malbeasts of its own, since a new `SPR_MALBEAST_*` grows `kWildMalbeastCount` and with it the
-  'Pedia's seen/defeated masks.
+- **The seven places still unauthored.** Three for the ladder — Net-Sea Crossing (open water and
+  shipping lanes, landfall at Sandbox Beach), Napstorrent Moors (marsh into castle country), and
+  DeepWeb Dive (no horizon, no floor, no silhouette — relay rings receding to a vanishing point,
+  which is the scene that proves the primitives are optional) — and four prizes: Sunset Colonnade,
+  CRT Bench, Trace City, Ground Station. Each is ~60 lines against the primitives that already
+  exist; Ground Station and Trace City want a part-width silhouette, which `SceneSpan` supplies.
+  Built so far: Citrus Circuit, The Pirate Bayou, Castle Rapidscare, Grid Horizon, Mainframe Row.
+  Diff **S** each.
+- **Wire the stage and the pet face to the area's scene.** The seam exists and the scenes compose
+  at both floors; what is left is the two screens choosing to draw one. The combat stage is the
+  interesting one — `kCombatSpriteShelf` is already the floor half of a SceneGround, and a
+  **duelling stage** is the one fight with no place at all, so PVP is what decides whether the
+  fallback is a named neutral scene or `SceneId::None`. Wants a look at a real fight over each
+  backdrop before it lands, not a flag flip. Diff **M**.
+- **The backdrop prize economy.** Owning one, awarding one, and a picker to equip it. Ownership is
+  a save-format change, which `/release` requires confirming before it ships — the reason it is
+  not folded into the scenes themselves. Diff **M**.
+- **Net-Sea Crossing area art** (shipped mechanically, art pending): the `FLOATING POINT` / `THE
+  HARDENED SHELL` storefront motifs. Its nine mods are drawn — the whole `ICON_MOD_*` family is, so
+  no area owes one. Like the keep, it fights with the shared tier roster and has no malbeasts of
+  its own.
+- **Napstorrent Moors area art** (shipped mechanically, art pending): the `MOOR-TO-MOOR`
+  storefront motif.
+- **Castle Rapidscare art** (shipped mechanically, art pending): castle-themed malbeasts + a
+  `COUNT CONFICKER` apex, and the `SPAM & SCRAM` / `THE GHOST IN THE MACHINE` storefront motifs.
+  The keep also fights with the tier-3 wild roster today — it has no malbeasts of its own, since a
+  new `SPR_MALBEAST_*` grows `kWildMalbeastCount` and with it the 'Pedia's seen/defeated masks.
 - **Rarity-tiered, area-themed foods** — per-area food sets across Citrus Circuit / Pirate Bayou /
   Napstorrent with a rarity ramp, where the **best** food carries an effect that fits the area theme
   (Citrus Circuit might trade levels to revert a care mistake; Pirate Bayou the inverse). A
