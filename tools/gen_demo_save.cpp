@@ -44,6 +44,12 @@ private:
     std::vector<uint8_t> blob_;
 };
 
+// Which creature the visitor is handed. Cuttlefork is the Metamorphic line's first
+// hatched stage and the most fully drawn process on the roster — four sculpts rather
+// than a pose over one drawing (content/creatures/metamorphic/line.h) — so a demo that
+// opens on it shows the habitat at its best rather than at its plainest.
+constexpr const char* kSeedPetId = "cuttlefork";
+
 // What the visitor starts holding. Enough of each kind that every screen the demo
 // opens has something in it: food to feed with, buffs to read, and the Quest stack
 // that is the DECRYPTOGRAM's ticket at the Hacker VAULT.
@@ -119,7 +125,7 @@ int main(int argc, char** argv) {
     // StartMode::Hatched is the engine's own skip-the-egg seam: it installs the pet,
     // stamps its move slots and enforces the slot-kind invariant, so the seed starts
     // from a correctly-built pet rather than a hand-assembled one.
-    Game game(StartMode::Hatched, "paypup", &store);
+    Game game(StartMode::Hatched, kSeedPetId, &store);
 
     for (const SeedStack& s : kSeedItems) game.inventory().add(s.id, s.qty);
 
@@ -151,9 +157,9 @@ int main(int argc, char** argv) {
         // The pet install grants its own starting stacks, so the expected count is
         // whatever the seeded game actually holds, not the length of kSeedItems.
         const size_t seededStacks = game.inventory().stacks().size();
-        Game restored(StartMode::FreshHatch, "paypup", &store);
+        Game restored(StartMode::FreshHatch, kSeedPetId, &store);
         const bool ok =
-            restored.pet() && std::strcmp(restored.pet()->id, "paypup") == 0 &&
+            restored.pet() && std::strcmp(restored.pet()->id, kSeedPetId) == 0 &&
             restored.combatLevel() == kSeedLevels &&
             restored.bits() == kSeedBits &&
             restored.quotesSolved() >= kSeedSolvedQuotes &&

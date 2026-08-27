@@ -155,7 +155,7 @@ int main(int, char**) {
     // FreshHatch is a fallback the store never reaches: load() returns either the
     // visitor's own save or the baked seed, and a non-empty blob boots the pet it
     // names regardless of the mode passed here.
-    g.game = new Game(StartMode::FreshHatch, "paypup", g.store);
+    g.game = new Game(StartMode::FreshHatch, "cuttlefork", g.store);
     g.fb = new Framebuffer(kActiveW, kActiveH);
     g.rgba.assign(static_cast<size_t>(kPanelW) * kPanelH * 4, 0xff);
     g.lastSaveMs = nowMs();
