@@ -351,6 +351,18 @@ These come with the features above rather than ahead of them. Every "backdrop" b
 `BG_SECTOR_<AREA_ID>` — the area's own id, upper-cased, which is the name its row already asks
 for. The `ICON_SECTOR_*` half of each family is drawn and live on the EXPL zone picker.
 
+**Decide first whether a backdrop is a sheet at all.** ROCK THE DOCK's harbour is engine-drawn
+(`core/render/scene.h` — a ramp between `paper` and `ink-dim`, composed against a horizon and a
+floor the screen supplies), and the argument for that generalises to every row below: a `BG_*`
+sheet freezes hues no theme can reach, on exactly the surface a reader needs contrast on, and
+costs flash on screens that already spend a creature cell. A place authored as a silhouette table
+plus a handful of primitive calls is ~25 lines and reskins with the palette. What is undecided is
+how an area NAMES one: `AreaDef` already carries `icon`, so the shape is the same, but a function
+pointer on a content row is a different thing from an asset id and wants deciding once rather than
+per area. The other consumer waiting on the same answer is the **duelling stage** — a PVP bout is
+the one fight with no place at all, and the combat screen's `kSpriteShelf` is already the floor
+half of a SceneGround. Settling this reframes the three backdrop rows below. Diff **M**.
+
 - **Net-Sea Crossing area art** (shipped mechanically, art pending): the backdrop
   (open water, shipping lanes, landfall at Sandbox Beach) and the `FLOATING POINT` / `THE HARDENED
   SHELL` storefront motifs. Its nine mods are drawn — the whole `ICON_MOD_*` family is, so no area

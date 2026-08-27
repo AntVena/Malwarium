@@ -32,7 +32,6 @@
 
 #include "core/content/content_tournament.h"
 #include "core/render/canvas.h"   // kActiveW / kActiveH — the foot is pinned to them
-#include "core/render/color.h"
 #include "core/render/font.h"
 #include "core/ui/layout.h"
 #include "core/ui/widgets.h"   // kHintBandH — the foot the layout is pinned to
@@ -211,14 +210,10 @@ constexpr int kDockScoutTop = kDockPortraitFootY + 12;
 // (core/render/RENDER_PIPELINE.md), so it runs before the band and everything else
 // composes onto it.
 //
-// Painted entirely out of tones interpolated between PAL_CORE's `paper` and `ink-dim`
-// (dockTone below) rather than out of hues of its own. Two reasons, and both are
-// rules rather than taste: a themed palette has to be able to move the whole scene
-// with the two tokens it is built from, and eight rows of list text sit on the sky, so
-// the sky is not allowed an opinion that could cost them contrast.
+// Composed out of core/render/scene.h's primitives against a SceneGround whose FLOOR is
+// this header's own kDockDeckY — the screen knows where a fighter's feet go, and the
+// scene is told. That header carries the rest of the reasoning, including why a
+// backdrop behind text is drawn from palette tokens rather than shipped as a sheet.
 void drawDockScene(Framebuffer& fb, int beat);
-
-// One step of the scene's ramp: 0 is `paper`, 255 is `ink-dim`.
-Rgb565 dockTone(uint8_t t);
 
 }  // namespace mal

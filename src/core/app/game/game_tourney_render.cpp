@@ -144,29 +144,28 @@ void Game::drawTourneyBracket(Framebuffer& fb) const {
 void Game::drawTourneyFoot(Framebuffer& fb) const {
     const int opp = tourneyOpponentSlot();
     const bool ready = tourneyPhase_ == TourneyPhase::Ready;
-    const bool room = dockFaceoffFits(tourneyAlive_);
-
     // WHOSE drawing stands on the dock. Waiting on a bout it is the OPPONENT, not the
     // pair: the operator's own pet is on every other screen the device has, and the
     // one thing the arena has to show is the stranger — which is also the only way a
     // 96-wide Daemon and a column of copy fit on one 224px screen. Taking the bracket
     // is the exception, and it is the pet's: a title is a picture of your own pet
-    // alone on a dock everybody else has gone home from.
+    // alone on a dock everybody else has gone home from. Being knocked out draws
+    // nobody, and an empty dock is the right picture for that.
     const bool mine = tourneyPhase_ == TourneyPhase::Champion;
     const CreatureDef* c =
         ready && opp >= 0 ? registry_.creature(tourneyOpponent_.spec.creatureId) : nullptr;
-    const SpriteData* s = mine ? (pet_ ? registry_.creatureSprite(*pet_) : nullptr)
-                        : c    ? registry_.sprite(c->spriteName)
-                               : nullptr;
-    if (!room) s = nullptr;
-
-    bool mirror = false;
-    if (s) {
-        // The opponent faces the copy that describes it; a champion faces out.
-        mirror = spriteMirrorToFace(*s, /*faceRight=*/mine);
+    // A field too full to seat anyone takes the same exit as a verdict: no drawing, and
+    // the copy moves to the foot and takes the whole width.
+    const SpriteData* s =
+        !dockFaceoffFits(tourneyAlive_) ? nullptr
+        : mine ? (pet_ ? registry_.creatureSprite(*pet_) : nullptr)
+        : c    ? registry_.sprite(c->spriteName)
+               : nullptr;
+    // The opponent faces the copy that describes it; a champion faces out.
+    const bool mirror = s && spriteMirrorToFace(*s, /*faceRight=*/mine);
+    if (s)
         drawSpriteUpscaled(fb, *s, idleFrame(*s, beat_), dockSeatX(*s, mirror),
                            dockSeatY(*s), 1, 1, /*row=*/0, mirror);
-    }
     const int w = dockCardW(s, mirror);
     const int top = s ? kDockCardTop : kDockTextCardTop;
 
@@ -174,7 +173,7 @@ void Game::drawTourneyFoot(Framebuffer& fb) const {
     // it carrying, and when will it use that. The last one is the tell the briefing
     // promises the operator they can learn, stated up front because the arena is the
     // one place where knowing it early costs the run nothing.
-    char line[4][32] = {{0}, {0}, {0}, {0}};
+    char line[kDockCardLines][32] = {};
     if (tourneyPhase_ == TourneyPhase::Champion) {
         // A receipt, one item to a line. The purse lands in one lump and is the only
         // thing the arena ever pays, so it is itemised rather than summarised — and

@@ -55,7 +55,7 @@ DMA-blitted to the panel.
 ## Canonical pass order
 
 ```
-1. BACKGROUND   clear / room backdrop
+1. BACKGROUND   clear / room backdrop (engine-drawn: `scene.h`)
 2. SPRITE_MODS  pet-effects that sit UNDER the creature: FX_ABSORB's incoming blocks,
                 FX_SHRED's sliding scanlines
 3. SPRITE_BASE  current pet animation frame, in whatever colours it is currently wearing:
@@ -65,6 +65,14 @@ DMA-blitted to the panel.
 6. SCREEN_FX    full-screen overlays: evolution flash, Lockout band, critical-failure crash, fades
    (then UPSCALE + DMA blit to panel)
 ```
+
+A BACKGROUND is drawn rather than blitted, and `scene.h` is both the primitives and the
+reason: a backdrop that sits behind text cannot hold a colour opinion, because `PAL_CORE`
+is the one palette and a theme moves the interface by moving tokens. So a scene is painted
+from one ramp between `paper` and `ink-dim` — dark by construction, unable to out-shout
+`ink`, and free of flash. It is composed against a **SceneGround**: a horizon and a floor,
+both supplied by the SCREEN, since the screen is what knows where its text stops and where
+its sprite's feet go. ROCK THE DOCK's harbour (`core/ui/tourney_screen.h`) is the first one.
 
 SPRITE_MODS straddles SPRITE_BASE because a pet-effect's side of the creature is part of
 what it means: a Replication Ghost is a copy standing in front, and a block streaming into
