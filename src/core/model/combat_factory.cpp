@@ -162,6 +162,7 @@ Combatant makePlayerCombatant(const ContentRegistry& reg, const CreatureDef& pet
             case ModEffect::LoadBalance:
             case ModEffect::WatchdogClamp:
             case ModEffect::FaradayCut:
+            case ModEffect::ArmorPiercePct:    // DRM Stripper — read at applyEffect
             case ModEffect::RegenPerTurn:      // Trickle Charger — read at resolveTurn
             case ModEffect::FirstStrikeRankMult:
             case ModEffect::FirstHitCutPct:

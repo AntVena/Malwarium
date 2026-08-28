@@ -332,6 +332,7 @@ SpecRows specRows(const ModDef& d) {
             break;
         case ModEffect::FaradayCut: s.add("DOT", "-%d%%", d.magnitude); break;
         case ModEffect::RegenPerTurn: s.add("REGEN", "%+d/TURN", d.magnitude); break;
+        case ModEffect::ArmorPiercePct: s.add("PIERCE", "%d%%", d.magnitude); break;
         case ModEffect::FirstStrikeRankMult: s.flag("1ST HIT x ATK RANK"); break;
         case ModEffect::AttackCountPowerPct:
             s.add("POWER/ATK", "%+d%%", d.magnitude);

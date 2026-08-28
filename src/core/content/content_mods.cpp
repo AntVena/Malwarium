@@ -444,6 +444,34 @@ const ModDef kMods[] = {
     {/*wire=*/59, "kernel_panic", "Kernel Panic", "COMEBACK",
      "Nothing left to protect: below {mag}% Health, attack power rises {mag2}%.", false,
      ItemDef::Rarity::Rare, 5, 59, ModEffect::LowHealthPowerPct, 35, 55, nullptr, 0},
+    // ==== ARMOUR PIERCE ===========================================================
+    // The answer to why raw attack power was never worth a slot. Power raises a number a
+    // defensive wall then deletes — at the 85% clamp a hit arrives at 15% of itself — so
+    // the fix was never a bigger number (a half-again pass on the whole family moved
+    // nothing). It is a SECOND slot: power to make the hit big, pierce to make it land.
+    // Two of three slots, and the third still has to cover everything else, which is what
+    // makes it a real choice rather than a free upgrade.
+    //
+    // The shape is deliberately a COUNTER-PICK and not a stat. Against a pet that spent
+    // nothing on defence it does nothing at all; against the wall it is worth multiples,
+    // and the wall can spend Defence points on pierce RESIST to blunt it right back
+    // (kLevelDefensePierceResist*). One rung per band from the Bayou on, so the pairing is
+    // available at whatever depth a player first decides to build for damage.
+    {/*wire=*/62, "drm_stripper", "DRM Stripper", "PIERCE",
+     "Protection was never the product: your hits ignore {mag}% of enemy defence.", false,
+     ItemDef::Rarity::Rare, 2, 21, ModEffect::ArmorPiercePct, 12, 0, nullptr, 0},
+    {/*wire=*/63, "hull_auger", "Hull Auger", "PIERCE",
+     "Goes in below the waterline: your hits ignore {mag}% of enemy defence.", false,
+     ItemDef::Rarity::Rare, 3, 33, ModEffect::ArmorPiercePct, 18, 0, nullptr, 0},
+    {/*wire=*/64, "rowhammer", "Rowhammer", "PIERCE",
+     "Hits the neighbouring row until something flips: your hits ignore {mag}% of "
+     "enemy defence.", false,
+     ItemDef::Rarity::Rare, 4, 41, ModEffect::ArmorPiercePct, 24, 0, nullptr, 0},
+    {/*wire=*/65, "dma_breach", "DMA Breach", "PIERCE",
+     "Straight to the memory, past every gate the keep has: your hits ignore {mag}% of "
+     "enemy defence.", false,
+     ItemDef::Rarity::Epic, 5, 56, ModEffect::ArmorPiercePct, 30, 0, nullptr, 0},
+
     // The DoT family's top rung, and the row that puts the deepest band back on top. Rot is
     // the damage nothing else in the mitigation stack can touch, so whoever owns the answer
     // to it owns the ladder — and that was tier FOUR, on a threat-adjacency placement that

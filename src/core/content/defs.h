@@ -631,6 +631,16 @@ enum class ModEffect : uint8_t {
                      // process). magnitude 1 = you never lose more than one turn to a lock.
     FaradayCut,      // Faraday Cage — incoming DoT (MoveDef::dot*) on the pet is cut by
                      // magnitude% (100 = immune — the cage shields against the corruption).
+    ArmorPiercePct,  // DRM Stripper / Hull Auger / Rowhammer / DMA Breach — every hit this
+                     // pet lands ignores magnitude% of the target's damage cut AND of its
+                     // one-shot brace, exactly as MoveDef::armorPiercePct does, and blunted
+                     // by the same defender-side pierceResistPct. It is the ANSWER to the
+                     // thing that made raw attack power not worth a slot: power raises a
+                     // number that a defensive wall then deletes, so the two rows are a
+                     // PAIR — two of three slots spent to make elevated damage actually
+                     // arrive. Composed multiplicatively with a move's own pierce (each
+                     // cuts what the last one left), so no stack of pierces ever reaches
+                     // "the defender has no defence".
     RegenPerTurn,    // Trickle Charger / Shadow Copy — restore magnitude Health at the start
                      // of each of the pet's own turns, clamped to max Health. The one
                      // RECOVERY axis in a combat that otherwise only ever subtracts, which

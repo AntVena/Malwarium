@@ -27,7 +27,10 @@ const char* const kModPool[] = {"tpm_chip", "solid_state_cache", "firewall_patch
                                  // pool is where a pet's LINE first starts to pay
                                  // (content_mods.cpp explains why they land together).
                                  "spoof_header", "escrow_buffer", "dropper_payload",
-                                 "fork_spur", "junk_padding"};
+                                 "fork_spur", "junk_padding",
+                                 // The pierce family opens here, one band after the
+                                 // first flat power mod — the pair is the point.
+                                 "drm_stripper"};
 
 // PIER-TO-PEER — the item storefront: this area's own stock/price per item, same
 // pattern as the mod storefront below.

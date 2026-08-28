@@ -569,11 +569,17 @@ void test_tourney_scout_shows_the_rivals_whole_kit() {
     // The Exploit it holds, by name. Its TRIGGER is deliberately absent: which moment a
     // rival commits to is the read the arena exists to teach.
     CHECK(f.exploit.label && namesRow(f.exploit.label));
-    for (const auto& r : rows) {
-        char pct[8];
-        std::snprintf(pct, sizeof(pct), "%d%%", f.exploitAtHealthPct);
-        CHECK(std::strstr(r.body.c_str(), pct) == nullptr);
-    }
+    // ...and the trigger is absent from the row that could state it. Checked on the
+    // EXPLOIT row alone, which is the only one that ever could: every other row is a move
+    // or mod describing itself out of its own content, and those legitimately quote their
+    // own percentages ("ignores 40% of enemy defence"). Scanning all of them made this
+    // assertion a collision test against the roster — it passed until a mod happened to be
+    // authored at the same number as a seed's trigger, which is not what it is here to catch.
+    char pct[8];
+    std::snprintf(pct, sizeof(pct), "%d%%", f.exploitAtHealthPct);
+    for (const auto& r : rows)
+        if (r.label && f.exploit.label && std::strcmp(r.label, f.exploit.label) == 0)
+            CHECK(std::strstr(r.body.c_str(), pct) == nullptr);
     // C returns to the bracket, and the run is untouched by having been read.
     tapC(g);
     CHECK(g.tourneyView() == Game::TourneyView::Bracket && g.tourneyRunning());

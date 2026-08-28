@@ -28,6 +28,11 @@ constexpr ModRule kModRules[] = {
     // two slots buy a heal per turn large enough to outrun the damage a fight deals in
     // one, and a fight nobody can end is worse than a fight either side can lose.
     {ModEffect::RegenPerTurn,         ModCombine::HighestMag,  0,   false},
+    // The STRONGEST pierce wins rather than the sum, and that is the rule that keeps the
+    // intended build honest: the pair this row exists for is power + pierce, not pierce +
+    // pierce. Summing would let two slots buy a bypass no third slot could answer, which
+    // is the one thing a defender must always be able to spend points against.
+    {ModEffect::ArmorPiercePct,       ModCombine::HighestMag,  0,   false},
     {ModEffect::FirstStrikeRankMult,  ModCombine::Arm,         0,   true},
     {ModEffect::FirstHitCutPct,       ModCombine::HighestMag,  0,   true},
     {ModEffect::LowHealthPowerPct,    ModCombine::HighestMag,  0,   false},

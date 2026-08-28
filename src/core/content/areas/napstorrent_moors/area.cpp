@@ -27,7 +27,8 @@ const char* const kModPool[] = {"overclock_chip", "heat_sink", "honeytoken",
                                  // The bulk rung the ladder had been missing since the
                                  // crossing, the opening-probe cut's third, and the
                                  // trickle that gives the first of those a use.
-                                 "seedbox_array", "decoy_peer", "trickle_charger"};
+                                 "seedbox_array", "decoy_peer", "trickle_charger",
+                                 "rowhammer"};
 
 // MOOR-TO-MOOR — the item storefront: this area's own stock/price per item, same
 // pattern as the mod storefront below.

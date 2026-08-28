@@ -556,16 +556,24 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
             // Cipher-track Defense it stacked, under the never-immune clamp.
             // MBR Wipe's armorPiercePct then ignores a slice of BOTH the % cut and the
             // one-shot brace (a wiped boot sector doesn't care how hard the disk is).
+            // Both pierces — the MOVE's own and whatever a mod slot adds — go through one
+            // place, applied one after the other so each cuts what the last one left. That
+            // composition is the reason there is no clamp here and no sum to cap: two 50%
+            // pierces are 75%, never 100, so however many are stacked the defender still
+            // has a defence. Defence tier 1: a committed wall cuts each pierce back before
+            // it lands (levelDefensePierceResistPct) — applied to the PIERCE and not to the
+            // cut, because what the tier buys is that the cut it already earned stops being
+            // routed around.
+            const auto pierced = [&](int value, int piercePct) {
+                if (piercePct <= 0 || value <= 0) return value;
+                const int p = piercePct * (100 - target.pierceResistPct) / 100;
+                return p > 0 ? value * (100 - p) / 100 : value;
+            };
+            const int modPierce = actor.mods.mag(ModEffect::ArmorPiercePct);
             int reduce = target.dmgReducePct + target.stackDefenseBonus;
             if (reduce > kLevelDmgReduceMaxPct) reduce = kLevelDmgReduceMaxPct;
-            if (mv->armorPiercePct > 0) {
-                // Defence tier 1: pierce exists to make a wall irrelevant, so a committed
-                // wall cuts the pierce back before it lands (levelDefensePierceResistPct).
-                // Applied to the PIERCE and not to the cut, because what the tier buys is
-                // that the cut it already earned stops being routed around.
-                int pierce = mv->armorPiercePct * (100 - target.pierceResistPct) / 100;
-                if (pierce > 0) reduce = reduce * (100 - pierce) / 100;
-            }
+            reduce = pierced(reduce, mv->armorPiercePct);
+            reduce = pierced(reduce, modPierce);
             if (reduce > 0) dmg = dmg * (100 - reduce) / 100;
             // Canary Trap (mod): an EXTRA cut on the first hit this pet takes, stacked
             // on top of the normal reduce above (outside the 85% clamp, and not armor-
@@ -579,12 +587,11 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
                 --canary->pending;
             }
             if (target.guard > 0) {                   // a defend brace (one-shot)
-                int brace = target.guard;
-                if (mv->armorPiercePct > 0) {
-                    const int pierce =
-                        mv->armorPiercePct * (100 - target.pierceResistPct) / 100;
-                    brace = brace * (100 - pierce) / 100;
-                }
+                // The brace is pierced by the same pair, in the same order — the mod's
+                // definition is the move field's, so a row that ignores a wall ignores a
+                // brace too (defs.h).
+                int brace = pierced(target.guard, mv->armorPiercePct);
+                brace = pierced(brace, modPierce);
                 const int unspent = brace > dmg ? brace - dmg : 0;
                 dmg = dmg > brace ? dmg - brace : 0;
                 // Defence tier 2: the remainder an over-sized brace did not need CARRIES

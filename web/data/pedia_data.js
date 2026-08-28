@@ -5445,6 +5445,50 @@ window.PEDIA_DATA = {
       "icon": "assets/icons/ICON_MOD_KERNEL_PANIC.png"
     },
     {
+      "id": "drm_stripper",
+      "name": "DRM Stripper",
+      "tag": "PIERCE",
+      "rarity": "RARE",
+      "tier": 2,
+      "equipLevel": 21,
+      "effect": "Protection was never the product: your hits ignore 12% of enemy defence.",
+      "stats": "PIERCE 12%",
+      "icon": "assets/icons/ICON_MOD_DRM_STRIPPER.png"
+    },
+    {
+      "id": "hull_auger",
+      "name": "Hull Auger",
+      "tag": "PIERCE",
+      "rarity": "RARE",
+      "tier": 3,
+      "equipLevel": 33,
+      "effect": "Goes in below the waterline: your hits ignore 18% of enemy defence.",
+      "stats": "PIERCE 18%",
+      "icon": "assets/icons/ICON_MOD_HULL_AUGER.png"
+    },
+    {
+      "id": "rowhammer",
+      "name": "Rowhammer",
+      "tag": "PIERCE",
+      "rarity": "RARE",
+      "tier": 4,
+      "equipLevel": 41,
+      "effect": "Hits the neighbouring row until something flips: your hits ignore 24% of enemy defence.",
+      "stats": "PIERCE 24%",
+      "icon": "assets/icons/ICON_MOD_ROWHAMMER.png"
+    },
+    {
+      "id": "dma_breach",
+      "name": "DMA Breach",
+      "tag": "PIERCE",
+      "rarity": "EPIC",
+      "tier": 5,
+      "equipLevel": 56,
+      "effect": "Straight to the memory, past every gate the keep has: your hits ignore 30% of enemy defence.",
+      "stats": "PIERCE 30%",
+      "icon": "assets/icons/ICON_MOD_DMA_BREACH.png"
+    },
+    {
       "id": "clean_room",
       "name": "Clean Room",
       "tag": "SHIELD",

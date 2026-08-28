@@ -34,7 +34,8 @@ const char* const kModPool[] = {"hardened_shell", "bundle_stripper", "ballast_ca
                                 // Second rungs: the snare the Bayou opened, and the
                                 // COUNT pair, which stays a pair here for the reason it
                                 // arrived as one (content_mods.cpp).
-                                "depth_charge_rack", "convoy_escort", "broadside_array"};
+                                "depth_charge_rack", "convoy_escort", "broadside_array",
+                                "hull_auger"};
 
 // FLOATING POINT — the item storefront, tied up where the water is calm enough to
 // trade. Restore Point is the joke and the stock in one: the only thing worth buying
