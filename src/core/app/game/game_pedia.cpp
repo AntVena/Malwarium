@@ -17,6 +17,7 @@
 // counter behind) are fired by hand from wherever they happen: hatch/evolution →
 // game_lifecycle.cpp, Lockout resolve → game_lifecycle.cpp, a duel → game_pvp.cpp, the
 // DevTools honeytoken → ap_server.h.
+#include "core/content/content_backgrounds.h"  // the places an achievement pays out
 #include "core/content/content_homes.h"   // sceneForCreature — a raised creature brings its place
 #include "core/app/game.h"
 
@@ -127,6 +128,14 @@ void Game::unlockAchievement(const char* id) {
     char line[kSaveTextCap];
     std::snprintf(line, sizeof(line), "* %s", d->displayName);
     log_.push(LogEventType::ItemGained, line);
+    // ...and whatever PLACE this row pays out, if any. Cheaper than the ask-before /
+    // ask-after the other three grants have to do: the early return above already
+    // established the bit was clear, so a background keyed on this id was unowned a
+    // line ago and is owned now, with no second question to get wrong.
+    for (const BackgroundDef& b : kBackgrounds)
+        if (b.source == BackgroundSource::Achieve && b.earnedById &&
+            std::strcmp(b.earnedById, id) == 0)
+            announceBackground(b.scene);
     markSaveDirty();
     // The banner is raised by tickAchievementBanner() rather than here: an unlock lands
     // mid-combat or mid-walk as often as not, and the announcement belongs on the home

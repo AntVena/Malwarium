@@ -357,17 +357,22 @@ which is why the id could never hang off `AreaDef` alone. The whole contract is 
 `core/render/RENDER_PIPELINE.md`, and `tools/dump_frame.cpp`'s `scene:<name> floor:<row>` is how
 you look at one.
 
-- **The seven places still unauthored.** Three for the ladder — Net-Sea Crossing (open water and
+- **The four places still unauthored.** Three for the ladder — Net-Sea Crossing (open water and
   shipping lanes, landfall at Sandbox Beach), Napstorrent Moors (marsh into castle country), and
   DeepWeb Dive (no horizon, no floor, no silhouette — relay rings receding to a vanishing point,
-  which is the scene that proves the primitives are optional) — and four prizes: Sunset Colonnade,
-  CRT Bench, Trace City, Ground Station. Each is ~60 lines against the primitives that already
-  exist; Ground Station and Trace City want a part-width silhouette, which `SceneSpan` supplies.
-  Built so far: Citrus Circuit, The Pirate Bayou, Castle Rapidscare, Grid Horizon, Mainframe Row —
-  beside the six a CREATURE is at home in (`content/content_homes.h`), which are not on the
+  which is the scene that proves the primitives are optional) — and one prize, Sunset Colonnade,
+  which has no earner picked out yet and should not be authored until it does. Each is ~60 lines
+  against the primitives that already exist. Built so far: Citrus Circuit, The Pirate Bayou,
+  Castle Rapidscare, Grid Horizon, Mainframe Row, The Line, The CRT Bench, Ground Station, Trace
+  City — beside the six a CREATURE is at home in (`content/content_homes.h`), which are not on the
   authoring list because they belong to a line or a locomotion rather than to the ladder.
-  Every one of the eleven is an ownable background (`content/content_backgrounds.h`), so a new
+  Every one of the fifteen is an ownable background (`content/content_backgrounds.h`), so a new
   place arrives with a row there and something that earns it. Diff **S** each.
+- **More achievement-paid places.** `BackgroundSource::Achieve` makes a prize backdrop one content
+  row over an achievement id, and four families now pay one out (recipes, the rig, the spectrum,
+  the steps). The ones still paying only Bits and a cache are the ARCADE cabinets, the DeepWeb
+  depth ladder, the Decryptograms, the bestiary and the LINK peers — each an obvious room. The
+  cost is the scene, not the plumbing; the picker's mask is 32 rows wide. Diff **S** each.
 - **A glyph for the BACKGROUND row.** It borrows `ICON_CFG`, the generic gear, because the CFG
   family has no picture for "the place your pet stands". One 20x20 beside the other
   `ICON_CFG_*`. Cosmetic; the row reads by its label today. Diff **S**.

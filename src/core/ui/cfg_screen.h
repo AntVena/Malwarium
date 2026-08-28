@@ -84,13 +84,16 @@ void drawCfgDevice(Framebuffer& fb, int cursor, UiMode uiMode, int brightness,
 // Row 0 is AUTO — the pet's own home, which is what the habitat drew before there was
 // anything to choose — and rows 1..kBackgroundCount are content_backgrounds.h's table in
 // its own order. `ownedMask` bit (row-1) is whether that row has been earned; a row that
-// has not is greyed and refuses B, the way a locked Title does.
+// has not is greyed and refuses B, the way a locked Title does. It is 32 bits wide
+// because kBackgrounds is a table that grows — every ladder on the device is a candidate
+// to pay one out — and a mask narrower than the table it indexes fails by silently
+// locking the rows past its end rather than by not compiling.
 //
 // A steps over EVERY row rather than only the owned ones, which is the difference
 // between this and the Titles picker: the line under the header says what the focused
 // row is earned by, so walking the locked ones is how an operator finds out what is out
 // there. `pick` is the focused row and `equipped` the applied one.
-void drawBackgrounds(Framebuffer& fb, int pick, uint16_t ownedMask, int equipped,
+void drawBackgrounds(Framebuffer& fb, int pick, uint32_t ownedMask, int equipped,
                      int beat);
 
 // L3 TRAVEL MODE confirm. The device is about to go dark indefinitely, so the copy

@@ -243,14 +243,14 @@ void drawCfgDevice(Framebuffer& fb, int cursor, UiMode uiMode, int brightness,
     drawHintBand(fb, "A NEXT  B OPEN  C BACK");
 }
 
-void drawBackgrounds(Framebuffer& fb, int pick, uint16_t ownedMask, int equipped,
+void drawBackgrounds(Framebuffer& fb, int pick, uint32_t ownedMask, int equipped,
                      int beat) {
     drawHeaderBand(fb, "BACKGROUND");
 
     // One line of copy, and it belongs to whichever row is FOCUSED — which is what lets
-    // the list carry twelve rows without twelve hints in it, and what makes walking the
-    // locked ones worth doing. AUTO's line says what AUTO does; every other row's is
-    // its own `earnedBy`.
+    // the list carry a table's worth of rows without a hint per row, and what makes
+    // walking the locked ones worth doing. AUTO's line says what AUTO does; every other
+    // row's is its own `earnedBy`.
     const char* why = "MATCHES YOUR PET";
     if (pick > 0 && pick <= kBackgroundCount) why = kBackgrounds[pick - 1].earnedBy;
     drawText(fb, kMargin, 30, why, palColor(Pal::INK_DIM));

@@ -94,8 +94,8 @@ hang off `AreaDef` alone:
   written down;
 - the **operator**, who owns some of them and picks one (`content/content_backgrounds.h`,
   CFG → DEVICE → BACKGROUND). Ownership is derived from what the save already records —
-  a creature raised, an area cleared, brackets taken at the arena — so nothing about it
-  is written down twice.
+  a creature raised, an area cleared, brackets taken at the arena, an achievement earned
+  — so nothing about it is written down twice.
 
 Two screens ask. `Game::habitatScene()` is where the pet lives: the operator's pick, or
 their pet's own home when the pick is AUTO. `Game::stageScene()` is where a fight is

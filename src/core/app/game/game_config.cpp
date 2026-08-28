@@ -365,10 +365,10 @@ void Game::drawCfg(Framebuffer& fb) const {
         case CfgScreen::Background: {
             // Ownership is derived, so the mask is built here for the draw rather than
             // held anywhere: one bit per row, in the table's own order.
-            uint16_t owned = 0;
+            uint32_t owned = 0;
             for (int i = 0; i < kBackgroundCount; ++i)
                 if (backgroundOwned(kBackgrounds[i].scene))
-                    owned |= static_cast<uint16_t>(1u << i);
+                    owned |= 1u << i;
             int equipped = 0;
             if (const BackgroundDef* b = backgroundFor(backgroundPick_))
                 for (int i = 0; i < kBackgroundCount; ++i)
@@ -481,6 +481,11 @@ bool Game::backgroundOwned(SceneId s) const {
             return false;
         case BackgroundSource::Bracket:
             return tourneyWins_ >= b->rung;
+        case BackgroundSource::Achieve:
+            // The achievement bitset is already on the save, so this is the same
+            // derivation the other three are — one more question asked of state that
+            // was written down for its own reasons.
+            return b->earnedById && hasAchievement(b->earnedById);
     }
     return false;
 }

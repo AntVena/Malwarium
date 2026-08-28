@@ -17,6 +17,7 @@
 #include "test_gates.h"
 
 #include "core/content/areas/area_defs.h"
+#include "core/content/content_achievements.h"
 #include "core/content/content_backgrounds.h"
 #include "core/content/content_homes.h"
 #include "core/content/creatures/creature_lines.h"
@@ -195,7 +196,7 @@ void test_backgrounds_start_with_two() {
     CHECK(g.backgroundPick() == SceneId::None);   // AUTO until somebody chooses
 }
 
-// The three ways one is come by, each driven through the state it is derived from.
+// The four ways one is come by, each driven through the state it is derived from.
 // Ownership is not written down anywhere, so what these check is the derivation.
 void test_backgrounds_are_earned_by_playing() {
     Game g{StartMode::Hatched};
@@ -222,6 +223,15 @@ void test_backgrounds_are_earned_by_playing() {
     CHECK(!g.backgroundOwned(SceneId::MainframeRow));
     g.debugAddTourneyWin();
     CHECK(g.backgroundOwned(SceneId::MainframeRow));
+
+    // ACHIEVE — the source that scales, since every ladder on the device is a candidate
+    // to pay one out. Driven through the unlock rather than through the bit, so what is
+    // checked is the derivation and not the storage; and the row next to it stays shut,
+    // which is what says a row is keyed on ITS achievement rather than on any of them.
+    CHECK(!g.backgroundOwned(SceneId::CrtBench));
+    g.unlockAchievement("RIG_ALL");
+    CHECK(g.backgroundOwned(SceneId::CrtBench));
+    CHECK(!g.backgroundOwned(SceneId::TheLine));
 }
 
 // A pick is refused rather than clamped, and it is what the habitat draws once taken.
@@ -302,7 +312,21 @@ void test_background_rows_are_well_formed() {
         CHECK(backgroundFor(b.scene) == &b);
         CHECK(b.name[0] != '\0' && b.earnedBy[0] != '\0');
         for (int j = 0; j < i; ++j) CHECK(kBackgrounds[j].wire != b.wire);
+        // An Achieve row names a real achievement, and nothing else names one at all.
+        // The first half is what stops a renamed row leaving a background nobody can
+        // ever earn — there is no other way to find out, since the picker would go on
+        // drawing it as LOCKED forever.
+        if (b.source == BackgroundSource::Achieve) {
+            CHECK(b.earnedById != nullptr);
+            CHECK(achievementById(b.earnedById) != nullptr);
+        } else {
+            CHECK(b.earnedById == nullptr);
+        }
     }
+    // The picker's ownership mask is one bit per row (ui/cfg_screen.h). A table that
+    // outgrew it would fail by drawing its last rows permanently locked rather than by
+    // not building, so the width is asserted here where the table is.
+    CHECK(kBackgroundCount <= 32);
     CHECK(backgroundFor(SceneId::None) == nullptr);
     CHECK(backgroundByWire(0) == nullptr);
 }

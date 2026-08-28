@@ -32,6 +32,13 @@ enum class SceneId : uint8_t {
     // an id cannot hang off AreaDef.
     GridHorizon,
     MainframeRow,
+    // ...and the four an ACHIEVEMENT pays out, each one the room its own family of rows
+    // is about: the kitchen the recipes are cooked in, the bench the rig is built on,
+    // the mast the spectrum is mapped from, the city the steps add up to.
+    TheLine,
+    CrtBench,
+    GroundStation,
+    TraceCity,
     // Where a CREATURE is at home, derived from its line and how it gets around
     // (content/content_homes.h). What the habitat stands its pet on, and what a fight
     // with no place of its own falls back to.

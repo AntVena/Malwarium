@@ -480,14 +480,18 @@ int main(int argc, char** argv) {
         else if (hasFlag(argc, argv, "brightness")) openTarget(CfgScreen::Brightness);
         else if (hasFlag(argc, argv, "background")) {
             // The picker is mostly LOCKED rows on a fresh save, which is the state it
-            // ships in and the one worth looking at. "earned" plays the three grants
-            // instead — a species raised, an area cleared, a bracket taken — so the
-            // other half of the list can be seen without walking a whole ladder.
+            // ships in and the one worth looking at. "earned" plays the four grants
+            // instead — a species raised, an area cleared, a bracket taken, a ladder
+            // climbed — so the other half of the list can be seen without walking one.
             if (hasFlag(argc, argv, "earned")) {
                 game.markCreatureRaised("cuttlefork");   // a swimmer's place
                 game.markCreatureRaised("tadpoll");      // the Phishing line's
                 game.debugClearSector(0);                // an area pays out itself
                 game.debugAddTourneyWin();               // ...and the arena its first
+                game.unlockAchievement("RECIPES_10");    // ...and one from each of the
+                game.unlockAchievement("RIG_ALL");       //    four achievement families
+                game.unlockAchievement("NETS_100");      //    that pay out a place
+                game.unlockAchievement("STEPS_100K");
             }
             openTarget(CfgScreen::Background);
             // "row:<n>" walks the focus down, which is how to see that the line under
