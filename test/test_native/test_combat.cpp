@@ -27,7 +27,7 @@ void test_arch_list_and_record() {
     CHECK(g.nav() == Game::Nav::Cursor);
 }
 
-// MODS data model (D3): mods are PERMANENT — consumed from the spare pool
+// MODS data model: mods are PERMANENT — consumed from the spare pool
 // when equipped, never unequipped, only overwritten (the old one discarded, not
 // returned). The seed installs two mods and holds two spares.
 void test_loadout_permanent_mods() {
@@ -62,7 +62,7 @@ void test_move_loadout() {
     MoveLoadout l = MoveLoadout::starting();
     CHECK(std::strcmp(l.defaultMove(), "quick_jab") == 0);
     CHECK(l.slotOf("packet_storm") == 0);
-    CHECK(l.equipped(1) == nullptr);                // slot 1 = Quick Jab per-slot fallback (#11)
+    CHECK(l.equipped(1) == nullptr);                // slot 1 = Quick Jab per-slot fallback
     // fork_bomb + checksum_guard start OWNED but unequipped (the Attack/Defend spares).
     CHECK(l.owns("fork_bomb") && l.slotOf("fork_bomb") < 0);
     CHECK(l.owns("checksum_guard") && l.slotOf("checksum_guard") < 0);
@@ -586,7 +586,7 @@ void test_combat_builders_and_flee() {
 
 // MODS equip flow: open an empty slot's picker, choose a spare, inspect its detail
 // then equip it (no confirm for an empty slot). The mod is CONSUMED out of
-// the spare pool (D3) — equipping is permanent.
+// the spare pool — equipping is permanent.
 void test_mods_equip_flow() {
     Game g{StartMode::Hatched};
     enterLoadoutTab(g, 0);
@@ -618,7 +618,7 @@ void test_mods_equip_flow() {
     CHECK(!g.loadout().owns(installed));            // consumed out of the pool (permanent)
 }
 
-// MODS overwrite confirm (D3): equipping over a slot that already holds a
+// MODS overwrite confirm: equipping over a slot that already holds a
 // different mod opens the inline Cancel/Confirm "discards {current} — permanent"
 // warning. Confirm installs the new mod and DISCARDS the old one; Cancel leaves the
 // slot unchanged and the spare un-consumed.

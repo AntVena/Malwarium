@@ -194,7 +194,7 @@ SaveData Game::captureSave() const {
     d.itemTabsUnlocked = rigLevel_[kRigRowItemTabs] ? 1 : 0;
     d.bulkOpenUnlocked = rigLevel_[kRigRowBulkOpen] ? 1 : 0;
 
-    // v24: the move-slot rework's per-pet Attack/Defend slot typing (#12).
+    // v24: the move-slot rework's per-pet Attack/Defend slot typing.
     d.slotKinds.reserve(kMaxMoveSlots);
     for (int i = 0; i < kMaxMoveSlots; ++i)
         d.slotKinds.push_back(static_cast<uint8_t>(slotKinds_[i]));

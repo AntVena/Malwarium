@@ -363,7 +363,7 @@ int g_failures = 0;
     RUN(test_null_noodles_effects)                \
     RUN(test_null_noodles_happy_pull_from_below)  \
     RUN(test_r007_b33r_effects)                   \
-    /* Hacker Rank — XP model (S60) + device-scan dedup (J.21b) */ \
+    /* Hacker Rank — the XP model, and device-scan dedup */ \
     RUN(test_hacker_rank_xp_model)                \
     RUN(test_register_network_queue_dedup)         \
     RUN(test_peer_hello_round_trip)               \

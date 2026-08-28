@@ -36,7 +36,7 @@ int loadoutSelectableCount(Stage stage);
 
 // MOVES slot list. `cursor` is the selectable-row index — an unlocked slot.
 // `stage` gates which slots are unlocked.
-// `slotKinds` (#12) is a kMaxMoveSlots array of each slot's stamped required kind
+// `slotKinds` is a kMaxMoveSlots array of each slot's stamped required kind
 // (only entries < the unlocked count are drawn) — each unlocked slot row shows its
 // ATK/DEF tag alongside the slot number.
 void drawLoadout(Framebuffer& fb, const ContentRegistry& reg,

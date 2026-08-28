@@ -38,7 +38,7 @@ const SpriteData* moveIcon(const ContentRegistry& reg, const char* id) {
 }
 
 // One equipped-move row: glyph, name, and the move's own kind tag at the right edge.
-// The tag is enforced to match the slot (#12), so it is the fact the row cannot lose —
+// The tag is enforced to match the slot, so it is the fact the row cannot lose —
 // the name yields to it and scrolls when `focused` (widgets.h).
 void moveRowText(Framebuffer& fb, const ContentRegistry& reg, const char* id,
                  int x, int y, Rgb565 nameCol, int beat, bool focused) {
@@ -128,7 +128,7 @@ void drawLoadout(Framebuffer& fb, const ContentRegistry& reg,
             drawText(fb, kSlotTextX, y, lk, palColor(Pal::INK_DIM));
         } else if (const char* id = load.equipped(i)) {
             // The equipped move's own kind tag (moveRowText, right edge) already
-            // reads as this slot's type — it's enforced to match (#12).
+            // reads as this slot's type — it's enforced to match.
             moveRowText(fb, reg, id, kSlotGlyphX, y, palColor(Pal::INK), beat,
                         i == cursor);
         } else {
@@ -141,7 +141,7 @@ void drawLoadout(Framebuffer& fb, const ContentRegistry& reg,
             const MoveDef* def = reg.move(load.defaultMove());
             drawText(fb, kSlotTextX, y, def ? def->displayName : "QUICK JAB",
                      palColor(Pal::INK_DIM));
-            // Keep the slot's accepted-kind tag at the right edge (#12) — tells the
+            // Keep the slot's accepted-kind tag at the right edge — tells the
             // player what they can equip to replace the fallback.
             const char* tag = moveKindTag(slotKinds[i]);
             drawText(fb, kActiveW - kMargin - textWidth(tag), y, tag,

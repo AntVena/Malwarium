@@ -724,7 +724,7 @@ enum class ModEffect : uint8_t {
                           // rather than the shared roster it mostly hits.
 };
 
-// Slot-based hardware equip (MODS). Mods are PERMANENT (D3):
+// Slot-based hardware equip (MODS). Mods are PERMANENT:
 // consumed on equip, no unequip, overwrite discards the old one. THREE independent
 // axes drive earn + power: `rarity` is the DROP WEIGHT within an area's
 // loot table; `powerTier` (1..N) is the ladder DEPTH, which decides which area a mod

@@ -153,7 +153,7 @@ void test_refarm_diminishing_rewards() {
     }
 }
 
-// (D2) — Bandwidth is a per-fight FRAGMENTATION SHIELD:
+// — Bandwidth is a per-fight FRAGMENTATION SHIELD:
 // ANY resolved exploration fight (first-clear, re-farm, or DeepWeb) spends 1 charge to
 // skip the corruption tax; when the pool is dry the tax bites. Contracts:
 //   (1) a cleared-sub farm win SPENDS 1 charge, keeps loot full, and FREEZES the

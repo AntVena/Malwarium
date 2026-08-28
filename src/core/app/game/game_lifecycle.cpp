@@ -432,7 +432,7 @@ void Game::debugTriggerEvolution() {
     if (nav_ == Nav::Idle && id && registry_.creature(id)) fireEvolution();
 }
 
-// --- Move-slot rework (#12): per-pet Attack/Defend slot typing -------------
+// --- Move-slot rework: per-pet Attack/Defend slot typing -------------
 
 void Game::stampSlotKinds() {
     if (!pet_) return;

@@ -139,8 +139,7 @@ constexpr int kIsolationStepMs = 220;
 //     The economy is one identity, the Isolation Protocol's: kChromaRounds passes at
 //     kChromaPassMs is the WHOLE of kBootHatchMs. So a clean run hatches the egg on the
 //     spot and is worth playing perfectly, while a run that falls over at pass seven has
-//     still bought most of the wait — which is the difference between this and the
-//     all-or-nothing Clutch Pick the line used to borrow.
+//     still bought most of the wait.
 constexpr int kChromaRounds = 10;                    // passes in a full run
 constexpr uint32_t kChromaPassMs = 180u * 1000u;     // -3 min of incubation per pass
 // The opening window, and what each later round sheds off it — the difficulty ramp,
@@ -172,27 +171,23 @@ constexpr inline int brightnessPercent(int level) {
     return (level + 1) * (100 / kBrightnessLevels);
 }
 
-// Evolution boundary — a per-stage time-in-stage gate (plus the care budget
-//     out of Dying; 5/5 routes to Critical System Failure, not evolution). The
-//     clock counts real elapsed time (screen-sleep included — the device keeps
-//     ticking), so a short pocket nap must NOT tip a stage over. Each stage asks
-//     for a longer, more attentive raise than the last: Process->Script clears
-//     the Egg->Process hatch (kBootHatchMs) by a wide margin, and Script->Daemon
-//     is a further step up again — the long haul to the final form. The modal
-//     is a beat-paced cinematic: hold the current sprite, white-out flash, then
-//     reveal. Dev/test forces the boundary via debugTriggerEvolution.
-constexpr uint32_t kEvolveProcessToScriptMs = 16u * 60u * 60u * 1000u;   // Process's min dwell (8 h)
-constexpr uint32_t kEvolveScriptToDaemonMs  = 32u * 60u * 60u * 1000u;  // Script's min dwell (32 h)
+// Evolution boundary — a per-stage time-in-stage gate, plus the care budget out of Dying
+// (5/5 routes to Critical System Failure, not evolution). The clock counts real elapsed
+// time, screen-sleep included, so a short pocket nap must NOT tip a stage over. Each stage
+// asks a longer raise than the last: Process->Script clears the Egg->Process hatch
+// (kBootHatchMs) by a wide margin, and Script->Daemon steps up again. The modal is a
+// beat-paced cinematic — hold the current sprite, white-out flash, reveal. Dev/test forces
+// the boundary via debugTriggerEvolution.
+constexpr uint32_t kEvolveProcessToScriptMs = 16u * 60u * 60u * 1000u;   // min dwell, 16 h
+constexpr uint32_t kEvolveScriptToDaemonMs  = 32u * 60u * 60u * 1000u;   // min dwell, 32 h
 constexpr int kEvoHoldBeats = 4;    // hold on the current sprite before the flash
 constexpr int kEvoFlashBeats = 2;   // FX_EVO_FLASH white-out, then the reveal
 
-// Evolution branch. At the Script->Daemon hop the care budget
-// splits the line: 0-2 mistakes -> Good (durable), 3-4 -> Bad (glass
-// cannon); 5/5 never evolves (routes to Critical System Failure). The engine
-//     reads the branch as two combat multipliers off the successor CreatureDef
-// ("two stat multipliers off the branch"): attack-power lean + loss-Frag.
-//     Slot COUNT is identical at Daemon (both at the kMaxMoveSlots cap), so the
-//     aggressive-vs-durable lean is carried by these multipliers. Neutral = 100. --
+// Evolution branch. At the Script->Daemon hop the care budget splits the line: 0-2 mistakes
+// -> Good (durable), 3-4 -> Bad (glass cannon), 5/5 never evolves. The engine reads the
+// branch as two combat multipliers off the successor CreatureDef — attack-power lean and
+// loss-Frag. Slot COUNT is identical at Daemon (both at the kMaxMoveSlots cap), so the
+// aggressive-vs-durable lean is carried entirely by these. Neutral = 100.
 constexpr int kBranchGoodPowerPct = 80;    // Good: lower attack power (durable)
 constexpr int kBranchGoodFragPct = 70;     // Good: takes less loss-Frag
 constexpr int kBranchBadPowerPct = 135;    // Bad: higher attack power (glass cannon)
@@ -309,31 +304,24 @@ constexpr int kSimXpReward = 5;
 constexpr int kSimHappyReward = 4;
 constexpr int kWildLossFrag = 18;          // +Frag on a wild (live-stakes) loss
 
-// --- MODS into combat. Mods are the PERMANENT hardware-
-//     passive layer (D3); this is the earn + power model that finally lets them enter
-//     play. Three independent axes on ModDef (defs.h): `rarity` = DROP WEIGHT within an
-//     area's loot table; `powerTier` (1..kModPowerTiers) = the ladder DEPTH, which picks
-//     the area a mod lives in; `equipLevel` = the pet level it needs, authored on the row.
-//     ONE level per mod, shared by every copy: the picker lists mods by TYPE and has
-//     never had a way to show one copy over another, so a per-copy roll was a number
-//     no player could see, act on, or choose between. ----------
-//     The DEPTH count is not here: it is kModPowerTiers (areas/area_defs.h), which is
-//     the ladder's own length, so adding an area opens a rank rather than overflowing
-//     a fixed table.
-// Gates are authored per row (ModDef::equipLevel) against this ceiling, NOT derived from
-// the tier. The number of areas is the wrong bound on how finely mods can be spread
-// across a raise: deriving the gate gives one gate per area, so every mod in an area
-// unlocks on the same level and the whole stretch between two areas has nothing new to
-// slot. Authoring against a ceiling lets a band hold as many rungs as it has mods.
+// --- MODS, the permanent hardware-passive layer, and how one enters play -----------
+// Three independent axes on ModDef (defs.h): `rarity` = DROP WEIGHT within an area's loot
+// table; `powerTier` (1..kModPowerTiers) = ladder DEPTH, which picks the area a mod lives
+// in; `equipLevel` = the pet level it needs, authored on the row. ONE level per mod, shared
+// by every copy — the picker lists mods by TYPE, so a per-copy roll is a number no player
+// could see or choose between. The depth count is kModPowerTiers (areas/area_defs.h), the
+// ladder's own length, so adding an area opens a rank rather than overflowing a table.
+//
+// Gates are authored per row against this ceiling, NOT derived from the tier: deriving
+// gives one gate per area, so every mod in an area unlocks on the same level and the
+// stretch between two areas has nothing new to slot.
 //
 // 100 is the ceiling, NOT the reachable top. The XP curve is geometric at
-// kLevelXpGrowthPct, so cumulative cost roughly triples every ten levels: level 60 is
-// ~301k XP (a long dive), level 100 is ~13.8M. The shipped roster therefore fills
-// 0..60 — deep enough that a SIXTH area extends the ladder rather than forcing a re-band
-// of every row already on it — and leaves the rest as authoring headroom for whatever the
-// curve is when that area lands. A row gated above where a pet can actually reach is a
-// content mistake this bound cannot catch, which is what
-// test_mod_equip_ladder_is_ordered_and_dense is for.
+// kLevelXpGrowthPct, so cumulative cost roughly triples every ten levels — level 60 is
+// ~301k XP, level 100 ~13.8M. The shipped roster fills 0..60, deep enough that a sixth area
+// extends the ladder rather than forcing a re-band, and leaves the rest as headroom. A row
+// gated above where a pet can reach is a content mistake this bound cannot catch, which is
+// what test_mod_equip_ladder_is_ordered_and_dense is for.
 constexpr int kModEquipLevelMax = 100;
 // How many spare copies of ONE mod the pool will hold. A cap exists because the pool
 // had none: mods drop from milestones and the only sink is equipping one, so copies
@@ -481,21 +469,18 @@ constexpr int kTrojanDivertPct     = 10;
 //     "quiet" rolls). Network Ping (A+C -> A) forces the next step now, bypassing the
 //     timer. --------------------------------------------------------------------
 constexpr int kWalkAutoStepBeats = 12;  // heartbeats between auto-steps (~3s @ ~4fps)
-// Bandwidth is the per-fight
-// FRAGMENTATION SHIELD for exploration. ANY resolved wild fight (win OR loss — first
-// clear, cleared-sub re-farm, or DeepWeb dive; bosses/Sim excluded) spends 1 Bandwidth
-// to SKIP the battle-fatigue frag (corruption) tax entirely. So a stocked pool
-// lets the pet farm/explore longer with less risk, and Bits sunk into the Hacker SHOP's
-// "Increase Bandwidth" upgrade buy real safety. Once the pool hits 0 the tax bites again
-// (the "defrag or come home" signal). It never hard-stops stepping, and Bits+XP always
-// stay full. The loot decay still gates on RE-FARMING a cleared sub, but now
-// keys on "was this fight shielded" (full loot + frozen decay count while a charge
-// covered it; diminishing loot once the pool is dry). Regenerates over real elapsed
-// time. NOT persisted across a reboot (a power-cycle refills it — a v1 call).
-// The BASE pool, not the cap: what an unupgraded rig starts with. Every read of the
-// live ceiling goes through Game::bandwidthMax(), which adds the "Increase Bandwidth"
-// upgrades on top — so this constant is the floor that ramp is measured from
-// (game_rig_shop.h anchors the curve to it), and there is no third thing to delete.
+// Bandwidth is the per-fight FRAGMENTATION SHIELD for exploration. Any resolved wild fight
+// — win or loss, first clear, re-farm or dive; bosses and Sim excluded — spends 1 Bandwidth
+// to SKIP the battle-fatigue frag tax entirely, so a stocked pool lets the pet explore
+// longer with less risk and the Hacker SHOP's "Increase Bandwidth" upgrade buys real
+// safety. At 0 the tax bites again — the "defrag or come home" signal. It never hard-stops
+// stepping, and Bits and XP always stay full. Loot decay still gates on RE-FARMING a
+// cleared sub, keyed on whether the fight was shielded. Regenerates over real elapsed time,
+// and is not persisted across a reboot.
+//
+// The BASE pool, not the cap: what an unupgraded rig starts with. Every read of the live
+// ceiling goes through Game::bandwidthMax(), which adds the upgrades, so this is the floor
+// that ramp is measured from (game_rig_shop.h anchors its curve to it).
 constexpr int kBandwidthMax = 10;       // shielded fights before fragmentation resumes
 constexpr uint32_t kBandwidthRegenMinutesPerPoint = 2;  // regen +1 / 3 min real time
 // The floor that interval can be shaved to. A pet that has eaten a Tiramisudo carries a
@@ -532,26 +517,20 @@ constexpr uint32_t kBulkOpenHoldMs = 800;     // Hacker VAULT: bulk-opens the fo
 // row you meant. Ticks on its own cadence (Game::tick), not the 4fps heartbeat.
 constexpr uint32_t kListRepeatDelayMs = 400;
 constexpr uint32_t kListRepeatMs = 110;
-// C keeps its tap everywhere — Cancel is the one button whose meaning never bends — so
-// a LIST puts its step BACKWARD on the hold instead: hold C and the cursor walks back
-// up the rows at the same cadence A walks down them, which is how an overshoot is
-// undone without a full lap. The threshold it starts at is kListRepeatDelayMs, the same
-// dwell that starts A's repeat, so the two directions feel like one gesture. A press
-// that never reaches it is an ordinary tap and cancels on release; a press that does
-// has stepped, and its release cancels nothing.
-// THE DECRYPTOGRAM's cursor repeat — the fastest of the two repeats, because it is the
-// only place a cursor has thirty-odd stops to walk and each one is a single letter.
-// Holding A or C past the delay steps every interval until it is released. The delay is
-// long enough that an ordinary tap never triggers it, and the interval is set so a full
-// lap of the longest quote takes a couple of seconds rather than the ten a 4fps
-// heartbeat would cost — which is why this ticks on its own cadence
-// (Game::tick) the way combat's sprites and the Stacker's slide do.
+// C keeps its tap everywhere — Cancel is the one button whose meaning never bends — so a
+// LIST puts its step BACKWARD on the hold: hold C and the cursor walks back up the rows at
+// the same cadence A walks down them. It starts at kListRepeatDelayMs, the dwell that
+// starts A's repeat, so the two directions feel like one gesture. A press that never
+// reaches it is an ordinary tap and cancels on release; one that does has stepped, and its
+// release cancels nothing.
 //
-// The interval sits just inside kStackerStepMs, which is the fastest repaint the panel
-// is known to sustain. It could go faster on paper — a repeat is a two-second burst,
-// not a whole run like the Stacker's — but there is no reason to find the ceiling here:
-// with the cursor running both ways the worst case is HALF a lap, so this is already
-// about a second and a half to reach any gap on the board.
+// THE DECRYPTOGRAM's cursor repeat is the faster of the two, this being the only place a
+// cursor has thirty-odd stops to walk, each a single letter. Sized so a full lap of the
+// longest quote takes a couple of seconds rather than the ten a 4fps heartbeat would cost,
+// which is why it ticks on its own cadence (Game::tick) like combat's sprites and the
+// Stacker's slide. The interval sits just inside kStackerStepMs, the fastest repaint the
+// panel is known to sustain; with the cursor running both ways the worst case is half a
+// lap, so there is no reason to push it further.
 constexpr uint32_t kCryptogramRepeatDelayMs = 350;
 constexpr uint32_t kCryptogramRepeatMs = 80;
 // The Reduce-Explore-Frag-TRIGGER Rig Shop upgrade's effective chance per tier (tier
@@ -663,23 +642,21 @@ constexpr int kWildSubAreaHealthStep = 6;   // +Health per sub-area index in the
 // so the pair lands where there is room for it. And an area's brace is a thing a player
 // wants, so putting it on the two meanest rungs makes the wall worth walking to.
 constexpr int kWildAreaDefendSub = 3;
-// The most moves a wild ever fights with — its depth RUNG plus the three riders that say
-// everything else about it: the area's Attack, the area's Defend at the rung above, and
-// the creature's own signature (CombatEnemy::signatureMoveId).
+// The most moves a wild ever fights with — its depth RUNG plus three riders: the area's
+// Attack, the area's Defend at the rung above, and the creature's own signature
+// (CombatEnemy::signatureMoveId).
 //
-// One more than a fully-evolved pet holds, and deliberately so. The pet's slot count is a
-// budget the player SPENDS; this is a count of how many things one encounter has to say,
-// and a wild already answers to its own rules either side of this one (kWildEnemyHealthPct
-// and kWildEnemyDamagePct make it no peer in the first place). The third lever could only
-// have fitted inside four by taking a slot off the depth ladder, and the ladder's rungs
-// are ordered by EFFECTIVE per-turn damage — thinning the deep ones is what inverts that
-// order, while APPENDING the same rider to every rung alike cannot.
+// One more than a fully-evolved pet holds, deliberately. The pet's slot count is a budget
+// the player SPENDS; this is how many things one encounter has to say, and a wild already
+// answers to kWildEnemyHealthPct/kWildEnemyDamagePct either side of it. Fitting the third
+// rider inside four would mean taking a slot off the depth ladder, whose rungs are ordered
+// by effective per-turn damage — thinning the deep ones inverts that order, where appending
+// the same rider to every rung alike cannot.
 //
-// The dilution it costs runs the safe way. Combat::chooseMove is uniform, so a fifth move
-// takes each of the others from a quarter of the turns to a fifth — the apex's hardest
-// hitter included, which makes the deepest rung marginally gentler rather than meaner.
-// The sharp rule is unaffected and stays where it was: at most ONE brace in a kit, or a
-// wild spends half the fight holding.
+// The dilution runs the safe way: Combat::chooseMove is uniform, so a fifth move takes each
+// of the others from a quarter of the turns to a fifth, the apex's hardest hitter included.
+// The sharp rule is unchanged — at most ONE brace in a kit, or a wild spends half the fight
+// holding.
 constexpr int kWildKitMax = kMaxMoveSlots + 1;
 constexpr int kWildItemDropPct = 35;   // chance a wild win also drops an item
 constexpr int kWildMoveDropPct = 20;   // chance a wild win teaches a move off the
@@ -714,16 +691,13 @@ constexpr int kRefarmCountCap      = 999; // saturate the persisted per-sub win 
 constexpr int kSimDummyHealthPerLevel = 8;   // +Health per pet level
 constexpr int kSimDummySpeedPerNLevels = 8;  // +1 speed every N pet levels (gentler)
 
-// Sub-area + area bosses. The
-//     unit of progress is the SUB-AREA: a 10-win streak (kExploreStreakToBoss)
-//     unlocks that sub-area's boss (a durable per-sub flag), a MANUAL FIGHT BOSS
-// from the EXPL row launches it (a single strong malbeast), and beating it
-//     marks the sub-area CLEARED. Clearing ALL 5 sub-areas unlocks the AREA boss =
-// a 5-stage gauntlet of the sub-area bosses (carried Health, no heal);
-//     beating that sets sectorCleared[] (area cleared → next area unlocks) + grants
-// the Title. Sub-boss stats scale with the area tier + the sub index (sub 5 =
-// the signature/curated apex); FIRST-CUT balance, generic frame (no new
-//     art). ---------------------------------------------------------------------------
+// --- Sub-area + area bosses -------------------------------------------------------
+//     The unit of progress is the SUB-AREA: a 10-win streak (kExploreStreakToBoss) unlocks
+//     that sub-area's boss as a durable per-sub flag, a MANUAL FIGHT BOSS from the EXPL row
+//     launches it, and beating it marks the sub-area CLEARED. Clearing all five unlocks the
+//     AREA boss — a 5-stage gauntlet of those sub-bosses with carried Health — and beating
+//     that sets sectorCleared[] and grants the Title. Sub-boss stats scale with the area
+//     tier plus the sub index, sub 5 being the signature apex.
 // A sub-area boss's Health = base(area tier) + sub*step, so sub 1 opens easy and the
 // signature sub 5 is the wall. The area gauntlet then fights those five back-to-back.
 constexpr int kSubBossHealthBase = 40;   // + areaTier*8 → area 0 (t1)=48, area 1 (t2)=56
@@ -773,18 +747,15 @@ constexpr int kNetVisibleCap = 48;                     // in-range snapshot size
                                                         // snapshot evicts its STALEST entry
 constexpr uint32_t kNetVisibleFreshMs = 90u * 1000u;   // a sighting counts as in-range for
                                                         // this long after it was last heard
-// The in-range snapshot of OTHER MALWARIUM DEVICES (game_peers.cpp:
-// Game::registerPeer -> livePeers_), the pet-to-pet twin of the network snapshot
-// above. Same job, different subject: "which operators can I hear right now",
-// which is what separates a LIVE row on the PEERS screen from a remembered one in
-// the SD-backed PeerLedger.
+// The in-range snapshot of OTHER MALWARIUM DEVICES (Game::registerPeer -> livePeers_), the
+// pet-to-pet twin of the network snapshot above: which operators can I hear right now,
+// which is what separates a LIVE row on the PEERS screen from a remembered one in the
+// SD-backed PeerLedger.
 //
-// The cap is small on purpose — this counts people in one room, not access points,
-// and a full snapshot evicts its stalest entry. The freshness window must stay
-// comfortably above the beacon cadence (PEER_BEACON_INTERVAL_MS, config.h) so a
-// single dropped frame doesn't blink someone out of the room; it doubles as the
-// meeting boundary, since a peer aging out and coming back is what counts as
-// meeting them again.
+// The cap is small on purpose — this counts people in one room, not access points — and a
+// full snapshot evicts its stalest entry. The freshness window must stay comfortably above
+// the beacon cadence (PEER_BEACON_INTERVAL_MS, config.h) so a dropped frame doesn't blink
+// someone out of the room, and it doubles as the meeting boundary.
 constexpr int kPeerVisibleCap = 12;
 constexpr uint32_t kPeerVisibleFreshMs = 20u * 1000u;
 
@@ -837,7 +808,7 @@ constexpr int kHackerRankXpPerRank    = 100;  // XP needed to climb one rank
 constexpr int kHackerRankUpBitsReward = 128;   // flat Bits per rank gained
 
 // Audit-mode handshake capture (AUTHORIZED USE, PASSIVE only).
-//     Distinct from the AUDIT SCAN discovery toggle (J.21b): this is the WPA
+//     Distinct from the AUDIT SCAN discovery toggle: this is the WPA
 //     4-way-handshake -> .pcap-on-SD capture path (net_capture.h device tier), gated
 //     by the audit_capture.h policy SM. After a fresh capture the device is "hot &
 //     broadcasting" for kAuditHotBroadcastMs (~2 min); turning the toggle off — or
@@ -850,11 +821,10 @@ constexpr int kHackerRankUpBitsReward = 128;   // flat Bits per rank gained
 constexpr uint32_t kAuditHotBroadcastMs   = 2u * 60u * 1000u;   // "hot" broadcast window
 constexpr uint32_t kAuditRearmCooldownMs  = 15u * 1000u;        // seal -> re-arm cooldown 
 
-// Audit capture RF power budget (RF half). The radio is the
-//     dominant draw: promiscuous RX + channel hopping keeps it hot continuously
-//     (unlike the passive scan's periodic bursts), so every one of these bounds
-//     exists to STOP it draining the pack. All first-cut — retune from measured
-// current draw on the RF bench (armed-idle vs hot vs scan), per
+// Audit capture RF power budget. The radio is the dominant draw — promiscuous RX plus
+//     channel hopping keeps it hot continuously, unlike the passive scan's periodic bursts
+//     — so every bound here exists to stop it draining the pack. Retune them from measured
+//     current draw on the RF bench (armed-idle vs hot vs scan).
 //   • Arm window: Armed-but-never-captures would otherwise keep the radio hot
 //     forever. After kAuditArmWindowMs of listening with NO handshake the SM
 //     self-seals down the normal seal->cooldown path (toggle intent stays on, so

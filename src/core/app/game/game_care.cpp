@@ -341,7 +341,7 @@ void Game::onModDetail(const ButtonEvent& ev) {
 // Shared equip-or-confirm for the detail's inspected mod (modDetailId_). An empty
 // slot consumes + installs straight away; a slot already holding a DIFFERENT mod
 // hands off to the picker's inline overwrite confirm — the "discards {current} —
-// permanent" warning (D3), since the overwrite is irreversible. A slot that
+// permanent" warning, since the overwrite is irreversible. A slot that
 // already holds this exact mod is a no-op (don't burn a spare for no change).
 void Game::commitModEquip() {
     const char* id = modDetailId_;

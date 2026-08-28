@@ -1,7 +1,6 @@
-// loadout.h — the player's equipped mods (MODS). Mods are PERMANENT
-// (D3): a mod is CONSUMED from the available inventory when equipped and
-// lives permanently in its slot — it cannot be unequipped, only OVERWRITTEN by
-// another mod, and the overwritten one is DISCARDED (never returned to inventory).
+// loadout.h — the player's equipped mods (MODS). A mod is PERMANENT: CONSUMED from the
+// available inventory when equipped, and never unequipped — only OVERWRITTEN by another
+// mod, with the overwritten one DISCARDED rather than returned to inventory.
 // Runtime state: which mod id sits in each of the kModSlots slots, plus the pool of
 // still-available (un-equipped) mods. `owned_` is a multiset — a rare earn source
 // may hand you a duplicate spare of a mod you've already installed. Ids are stable
@@ -45,9 +44,9 @@ public:
     // STORAGE allowance (modCopyCap, tunables); a cap below 1 grants nothing.
     bool grant(const char* id, int cap);
 
-    // CONSUME one available copy of `id` and install it permanently into `slot` (D3).
-    // Copies are interchangeable, so which one goes is not a question. The mod previously in `slot` is
-    // DISCARDED — not returned to the pool. Inert if no copy is available, or if
+    // CONSUME one available copy of `id` and install it permanently into `slot`.
+    // Copies are interchangeable, so which one goes is not a question. Whatever was in
+    // `slot` is DISCARDED — not returned to the pool. Inert if no copy is available, or if
     // `id` already occupies a DIFFERENT slot (a mod holds one slot per pet — no
     // stacking the same passive twice). No unequip. The equip-LEVEL gate is
     // enforced by the caller (Game, which knows the pet level).

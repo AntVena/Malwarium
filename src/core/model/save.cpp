@@ -347,7 +347,7 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     w.u8(d.itemTabsUnlocked);
     w.u8(d.bulkOpenUnlocked);
 
-    // v24: the move-slot rework's per-pet Attack/Defend slot typing (#12),
+    // v24: the move-slot rework's per-pet Attack/Defend slot typing,
     // length-prefixed like statPoints. Appended, so a v23 reader ignores it.
     w.u16(static_cast<uint16_t>(d.slotKinds.size()));
     for (uint8_t k : d.slotKinds) w.u8(k);
@@ -773,7 +773,7 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
         }
     }
 
-    // v17: no wire tail — the version alone flags the permanent-mod semantics (D3), so
+    // v17: no wire tail — the version alone flags the permanent-mod semantics, so
     // the loader knows `ownedMods` already excludes the equipped mods (no migration).
     if (version >= 17) d.hasPermanentModData = true;
 
@@ -815,7 +815,7 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
         d.bulkOpenUnlocked = r.u8();
     }
 
-    // v24 tail: the move-slot rework's per-pet Attack/Defend slot typing (#12).
+    // v24 tail: the move-slot rework's per-pet Attack/Defend slot typing.
     // Absent in a v1..v23 blob — slotKinds stays empty and hasSlotKindData false,
     // so the loader leaves every slot Unset and Game::stampSlotKinds() re-derives
     // it from the loaded pet's CreatureDef::slotKinds (a deterministic migration).

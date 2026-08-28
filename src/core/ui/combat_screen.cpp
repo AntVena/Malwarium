@@ -48,31 +48,21 @@ constexpr int kSpriteShelf = kCombatSpriteShelf;   // the panel's geometry names
 // screen's own geometry rather than restating it.
 constexpr int kGaugeX = kCombatGaugeX, kGaugeW = kCombatGaugeW;
 
-// The initiative tick: a bar in that gutter, on the side that acts NEXT. Turns resolve
-// on their own and the two fighters do not simply alternate — Speed decides, and a fast
-// pet takes two in a row — so "whose turn is it" was a fact the screen had and never
-// said, on a screen whose one decision is whether to spend the Exploit before the next
-// blow lands.
-//
-// ACCENT because this IS the token's own meaning — which one is up — and because it is
-// free again now that the rival's Health gauge no longer wears it. Presence and position
-// carry it in grayscale; the colour only repeats them.
+// The initiative tick: a bar in that gutter, on the side that acts NEXT. The fighters do
+// not simply alternate — Speed decides, and a fast pet takes two in a row — on a screen
+// whose one decision is whether to spend the Exploit before the next blow lands. ACCENT,
+// because which one is up IS the token's meaning; presence and position carry it in
+// grayscale and the colour only repeats them.
 constexpr int kTurnTickW = 3, kTurnTickX = kGaugeX - 8;
 void drawTurnTick(Framebuffer& fb, int y, int h) {
     fb.fillRect(kTurnTickX, y, kTurnTickW, h, palColor(Pal::ACCENT));
 }
-// The outer inset a fighter is seated against before it is allowed to crop, and the
-// cap on the clash lane.
-//
-// The lane is where a fight HAPPENS — it holds the strike mark, and it is the ground a
-// lunge closes and a recoil gives up — so it takes the room the two bodies leave rather
-// than a token gap, and the cap is generous because at 1/1 there is room to be generous
-// with. Two Process-stage creatures are 54px of the 220 the stage has; spending the
-// other 166 entirely on outer margin would leave them huddled mid-screen with the whole
-// fight happening in the few pixels between them.
-//
-// What is left over after the cap still goes to the margins, so a pair is centred rather
-// than flung at the screen edges.
+// The outer inset a fighter is seated against before it is allowed to crop, and the cap on
+// the clash lane. The lane is where a fight HAPPENS — the strike mark, the ground a lunge
+// closes and a recoil gives up — so it takes the room the two bodies leave rather than a
+// token gap, and the cap is generous because at 1/1 there is room to be. Two Process-stage
+// creatures are 54px of the stage's 220; spending the other 166 on margin would huddle them
+// mid-screen. What is left after the cap goes to the margins, so a pair is centred.
 constexpr int kStageEdge = 2, kLaneMax = 84;
 
 // The floor under it: the strike mark is drawn at its authored size, so a lane narrower
@@ -97,15 +87,14 @@ constexpr int scaleUp(int x, int num, int den) {
 }
 
 // Seat one fighter's drawing so its band starts at `contentX`, bottom-anchored on the
-// shelf. The FRAME is placed from there — a sprite padded inside its cell hangs its
-// padding outside the band, which is the whole point of seating by content.
+// shelf. The FRAME is placed from there, so a sprite padded inside its cell hangs its
+// padding outside the band.
 //
-// `faceRight` is the direction this SEAT wants its occupant to look, and the sheet's own
-// declared Facing (core/render/sprite.h) decides whether that costs a mirror. A sheet
-// with no declared facing — the three-quarter standing pose most of the roster is drawn
-// in — is never turned, so this is a no-op for it. Seating reads the MIRRORED content
-// band for the same reason it reads the band at all: a creature padded to one side of
-// its cell would otherwise step that padding's width off its seat the moment it turns.
+// `faceRight` is the direction this SEAT wants its occupant to look; the sheet's declared
+// Facing (core/render/sprite.h) decides whether that costs a mirror. A sheet with no
+// declared facing — the three-quarter pose most of the roster is drawn in — is never
+// turned. Seating reads the MIRRORED content band, or a creature padded to one side of its
+// cell would step that padding's width off its seat the moment it turns.
 void drawFighter(Framebuffer& fb, const SpriteData* s, int contentX, int animBeat,
                  uint8_t flashAmt, Rgb565 flashColor, int xNudge, bool faceRight,
                  const AnimClip* pose, int num, int den, const CamoRamp* camo = nullptr,
@@ -299,15 +288,10 @@ int heldOnStage(int motion, int bandX, int bandW, int outward) {
 namespace {
 
 // Wind-up cue: a channelling combatant's silhouette CHARGES toward warn-bright over
-// kWindupFlashPeriod anim-ticks and drops back, repeating for as long as the wind-up
-// lasts.
-//
-// The ramp climbs rather than decaying, and that direction is the whole cue. An impact
-// (impactFlashAmt below) snaps to its peak and fades, because that is what being hit
-// looks like; a wind-up that did the same read as a hit landing on the charging fighter,
-// or as a buff it had just cast on itself. Building light is accumulation, and pairs
-// with drawWindupMark's countdown over the same fighter — the countable half, and the
-// one that survives grayscale.
+// kWindupFlashPeriod anim-ticks and drops back, repeating for the wind-up's length. The
+// ramp CLIMBS, where an impact (impactFlashAmt) snaps to its peak and fades — a wind-up
+// that decayed would read as a hit landing on the charging fighter. Pairs with
+// drawWindupMark's countdown, the countable half that survives grayscale.
 constexpr int kWindupFlashPeriod = 8;
 uint8_t windupFlashAmt(bool channeling, int animBeat) {
     if (!channeling) return 0;
@@ -315,17 +299,12 @@ uint8_t windupFlashAmt(bool channeling, int animBeat) {
     return static_cast<uint8_t>(180 * (t + 1) / kWindupFlashPeriod);
 }
 
-// The wind-up's countable half: a segment meter riding directly over the head of the
-// fighter that is charging, with a caret under it pointing at its owner. One cell per
-// turn of the move's whole wind-up (MoveDef::channelTurns), lit down to the turns still
-// to run — so the meter says how long the charge IS as well as how much is left, and a
-// single-turn remainder still reads as a countdown rather than as a lone blob.
-//
-// Both fighters get one, from the same code: a cue that only ever appeared over the
-// opponent would teach the operator nothing about its own pet's charge, which is the
-// half it CHOSE. Over the head rather than at the feet because the shelf there is
-// already spoken for (a Worm's replica board stands on it), and because a fighter's
-// outer flank moves off-canvas for an oversized cell that crops.
+// The wind-up's countable half: a segment meter over the head of the charging fighter,
+// with a caret under it pointing at its owner. One cell per turn of the move's whole
+// wind-up (MoveDef::channelTurns), lit down to the turns still to run, so the meter says
+// how long the charge IS as well as how much is left. Both fighters get one, from the same
+// code. Over the head rather than at the feet because the shelf is already spoken for (a
+// Worm's replica board stands on it) and an oversized cell's outer flank can crop.
 constexpr int kWindupSeg = 7, kWindupSegH = 8, kWindupCaret = 4;
 void drawWindupMark(Framebuffer& fb, int midX, int headY, int turnsLeft, int turnsTotal) {
     const int n = std::max(turnsLeft, std::max(1, turnsTotal));
@@ -344,25 +323,16 @@ void drawWindupMark(Framebuffer& fb, int midX, int headY, int turnsLeft, int tur
                     2 * (kWindupCaret - i) - 1, 1, palColor(Pal::WARN));
 }
 
-// The strike mark: WHO is hitting WHOM, WITH WHAT, drawn in the clash lane for the
-// swing window.
-//
-// It TRAVELS in the direction of the blow, crossing the lane from the attacker's edge to
-// its target's over the window and fading as it goes. Motion carries the direction, and
-// the sheet is drawn as though the blow travels right and mirrored for one going left
-// (SpriteData::facing), so a frozen frame answers "which way" as well as play does.
+// The strike mark: WHO is hitting WHOM, WITH WHAT, drawn in the clash lane for the swing
+// window. It TRAVELS in the direction of the blow, fading as it goes, and is mirrored for
+// a blow going left (SpriteData::facing) so a frozen frame answers "which way" too.
 //
 // WHAT is the source of the cast — its line, or the common pool — and each source owns a
-// PAIR, walked on the fight's own swing count so no two blows in a row draw the same
-// frame (strikeMark, combat_screen.h). One mark per source read as wallpaper within a few
-// turns; two make each swing its own event. The art and the reasoning behind each shape
-// are tools/gen_fight_art.py.
+// PAIR, walked on the fight's swing count (strikeMark, combat_screen.h): one mark per
+// source reads as wallpaper within a few turns. The art is tools/gen_fight_art.py.
 //
-// It cuts across torso height — high enough to cross a short creature's body rather than
-// its feet, low enough to stay under a tall one's head. Stated in LOGICAL rows off the
-// shelf and scaled by the shot, so it keeps crossing the same part of the body on a
-// wide-shot stage instead of sailing over the heads of two creatures that just got
-// shorter.
+// It cuts across torso height. Stated in LOGICAL rows off the shelf and scaled by the
+// shot, so it keeps crossing the same part of the body at any camera.
 constexpr int kStrikeLogicalY = 26;
 constexpr int strikeY(int num, int den) {
     return kSpriteShelf - kStrikeLogicalY * num / den;
@@ -419,16 +389,13 @@ int damagePopRise(int hitBeat) {
     return kDamagePopRise * hitBeat / (kDamagePopPeriod - 1);
 }
 
-// Attack "hop" cue (no new art/frames, no change to either fighter's resting stage
-// position): the combatant that just acted steps a couple of active-px TOWARD its
-// target and the target steps the same distance AWAY, decaying over
-// kAttackHopPeriod anim-ticks. Unlike the impact punch above — which needs a landed
-// hit — this fires on every resolved STRIKE (combat.h lastWasStrike), so a fully
-// shielded swing still reads as "who just attacked" instead of standing still, while a
-// defend, an item or a ransom bill coming due moves nobody.
-// Because the local seat sits left of the rival seat, "attacker forward" and
-// "target away" happen to point the same screen direction for BOTH fighters on a
-// given turn, so one dir/beat pair drives both sprites.
+// Attack "hop" cue: the combatant that just acted steps a couple of active-px TOWARD its
+// target and the target the same distance AWAY, decaying over kAttackHopPeriod anim-ticks.
+// Unlike the impact punch above it fires on every resolved STRIKE (combat.h lastWasStrike),
+// so a fully shielded swing still reads as "who just attacked" while a defend, an item or a
+// ransom bill moves nobody. The local seat sits left of the rival seat, so "attacker
+// forward" and "target away" point the same screen direction on a given turn and one
+// dir/beat pair drives both sprites.
 constexpr int kAttackHopPeriod = 4;
 
 // How far the swinging fighter steps in. Big enough to read as a lunge rather than a
@@ -462,16 +429,12 @@ constexpr int kReplicaDeathPeriod = 4;
 
 // One side's replicas, plus the dissolve of a copy this turn destroyed (kill.happened).
 //
-// The board stands BETWEEN its parent and the enemy — that is what a copy is for, so it
-// is where it stands. `frontX` is the parent's seat edge facing the opponent and
-// `stride` steps AWAY from that edge (negative for the left seat, positive for the
-// right), so slot 0 is always the front rank nearest the enemy and later copies fall in
-// behind it. Anchoring at the front rather than distributing across the seat is what
-// keeps the line stable: gaining or losing a copy adds or removes one at the BACK
-// instead of sliding every copy sideways.
-//
-// `attacking` plays the chomp pair — true for the side that just acted, so the whole
-// board swings together with its parent.
+// The board stands BETWEEN its parent and the enemy, which is what a copy is for. `frontX`
+// is the parent's seat edge facing the opponent and `stride` steps AWAY from it, so slot 0
+// is the front rank and later copies fall in behind. Anchoring at the front keeps the line
+// stable: gaining or losing a copy changes the BACK rather than sliding every copy
+// sideways. `attacking` plays the chomp pair for the side that just acted, so the whole
+// board swings with its parent.
 void drawReplicaRow(Framebuffer& fb, const Combatant& c, bool attacking,
                     const WormKill& kill, int killBeat, int frontX, int stride,
                     int shelfY, int animBeat, int num, int den) {
@@ -522,16 +485,13 @@ int kitPageRows(const Combatant& rival, const RivalPrizes& prizes) {
     return n;
 }
 
-// The passive strip — one combatant's live line-passive state as a bar plus a pip row,
-// drawn immediately outside its Health gauge. Both fighters get one: a passive changes who
-// wins, so hiding the opponent's would leave the player watching a fight decided by
-// something they can't see (in a duel, by the pet they're fighting). The rival's is drawn
-// smaller, which is the whole reason this takes its sizes as parameters — same language,
-// less weight, because the pet you're steering is the one you act on.
+// One combatant's live line-passive state as a bar plus a pip row, drawn immediately
+// outside its Health gauge. Both fighters get one — a passive changes who wins, so hiding
+// the opponent's would leave the player watching a fight decided by something they cannot
+// see. The rival's is drawn smaller, which is why this takes its sizes as parameters.
 //
-// A pet has exactly ONE line, so the states below are mutually exclusive in practice and
-// share the strip rather than stacking rows: a Phishing shield, a Worm replication board,
-// a Trojan trap stack and a Ransomware pool never co-occur on the same combatant.
+// A pet has exactly ONE line, so these states are mutually exclusive and share the strip
+// rather than stacking rows.
 void drawPassiveStrip(Framebuffer& fb, const Combatant& c, int x, int y, int w, int barH,
                       int pipW, int pipH, int beat) {
     const int gap = 2;
@@ -869,23 +829,17 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
                     palColor(Pal::INK), beat, /*scroll=*/true);
 
     // --- Enemy Health (neutral — emptying is good) + channel wind-up ----------
-    // This row reuses the y-band the encounter-intro header gives its difficulty pips.
+    // Reuses the y-band the encounter-intro header gives its difficulty pips.
     //
-    // THE SAME WIDGET AS THE PET'S OWN, at the same x and the same width, so the two
-    // read as one comparison rather than as two unrelated instruments. They used to be
-    // a solid progress bar up here against a segmented gauge down there, at different
-    // widths and different origins — the same quantity in two grammars, which asks a
-    // reader to learn both and still leaves them unable to see at a glance who is
-    // ahead. Position says whose a gauge is; the shared shape is what makes them
-    // comparable.
+    // THE SAME WIDGET AS THE PET'S OWN, at the same x and width, so the two read as one
+    // comparison rather than two unrelated instruments — position says whose a gauge is,
+    // and the shared shape is what makes them comparable.
     //
-    // What stays different is the one thing that IS different: the pet's carries the
-    // danger ramp and its Critical pulse, and the rival's is drawn in a neutral ink,
-    // because the same amount of rival Health is good news or bad depending on which
-    // side you read it from. That also gets ACCENT off a status quantity, where
-    // VISUAL_LANGUAGE 1.3 does not allow it — the picker's cursor is ACCENT, and on a
-    // frame with the picker open the rival's Health bar was wearing the selection
-    // colour.
+    // What stays different is the one thing that IS different: the pet's carries the danger
+    // ramp and its Critical pulse, and the rival's is a neutral ink, because the same
+    // amount of rival Health is good or bad news depending on which side you read it from.
+    // That also keeps ACCENT off a status quantity (VISUAL_LANGUAGE 1.3) — the picker's
+    // cursor is ACCENT, and a rival Health bar wearing it would read as the selection.
     drawText(fb, kMargin, kCombatRivalGaugeY + 1, sides.rivalLabel,
              palColor(Pal::INK_DIM));
     const Rgb565 neutral = palColor(Pal::INK);
@@ -894,9 +848,8 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
               false, false, beat, &neutral);
     if (ongoing && !localTurnNext)
         drawTurnTick(fb, kCombatRivalGaugeY, kCombatGaugeH);
-    // Its numeric, on the same right edge as the pet's. A bar alone cannot tell 3 left
-    // from 30, and the rival's exact Health is not a secret the screen was keeping — the
-    // panel's VS and KIT pages both print it, one keypress away.
+    // Its numeric, on the same right edge as the pet's: a bar alone cannot tell 3 left from
+    // 30, and the panel's VS and KIT pages print it anyway.
     char ehp[16];
     std::snprintf(ehp, sizeof(ehp), "%d", en.health > 0 ? en.health : 0);
     drawText(fb, kGaugeX + kGaugeW + 6, kCombatRivalGaugeY + 1, ehp,
@@ -922,15 +875,13 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
     }
 
     // --- Both combatant sprites (reused SPR_PET_* idle frames) --------------
-    // Stage seating: the LOCAL pet holds the LEFT seat and its rival the RIGHT one, so a
-    // fight reads left-to-right as "mine, then theirs". A seat also states which way its
-    // occupant LOOKS — left seat rightward, right seat leftward — and a sheet drawn the
-    // other way round is mirrored into it (drawFighter), so neither fighter is ever shown
-    // the back of the thing it is fighting. The seat follows the local/rival ROLE (`flip`),
-    // never Combat's player_/enemy_ slot, so a duel guest sees its own pet on the left
-    // exactly like the host does. Bottom-anchored on the shelf; a sprite taller than the
-    // band extends upward rather than clipping. Both bands and the lane between them come
-    // from combatStage() — see combat_screen.h for why the lane is reserved first.
+    // The LOCAL pet holds the LEFT seat and its rival the RIGHT, so a fight reads
+    // left-to-right as "mine, then theirs". A seat also states which way its occupant
+    // LOOKS, and a sheet drawn the other way is mirrored into it (drawFighter). The seat
+    // follows the local/rival ROLE (`flip`), never Combat's player_/enemy_ slot, so a duel
+    // guest sees its own pet on the left like the host does. Bottom-anchored on the shelf;
+    // a taller sprite extends upward rather than clipping. Bands and lane come from
+    // combatStage() — combat_screen.h has why the lane is reserved first.
     const CombatStage stage = combatStage(localSprite, rivalSprite);
     // The shot this pairing earned. Everything seated on the stage below reads it rather
     // than kScaleNum/kScaleDen, so the wide shot pulls the whole picture back together
@@ -1048,19 +999,13 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
     const WormKill& kill = combat.lastWormKill();
     const bool killOnLocal = kill.onPlayer != flip;
     // The slot pitch is cut from the PARENT'S OWN WIDTH, so a full board occupies the
-    // ground its parent stands on instead of sprawling off the back of it.
+    // ground its parent stands on instead of sprawling off the back of it. A fixed pitch
+    // cannot do this at any camera — the ratio is invariant under the shot, so three copies
+    // at kReplicaSlotW step 90px back from a worm whose drawing is 56.
     //
-    // A fixed pitch could not do this at any camera. kReplicaSlotW is 30 active px and
-    // three copies step 90 back from the parent's front edge, against a worm whose
-    // drawing is 56 — so the last rank stood entirely behind its parent's tail, in empty
-    // stage, and the middle one sat over its body. Scaling the pitch with the shot does
-    // not help either: the parent scales by the same factor, so the ratio that causes it
-    // is invariant under the camera. It is the pitch that is wrong, not the size.
-    //
-    // Derived from the seat rather than the sprite because the seat is what the fighter
-    // visibly occupies. Floored so a very small parent still spreads its copies far
-    // enough to be counted, and the back-to-front draw order below already covers the
-    // case where that floor makes two ranks touch.
+    // Derived from the seat rather than the sprite, the seat being what the fighter visibly
+    // occupies. Floored so a very small parent still spreads its copies far enough to be
+    // counted; the back-to-front draw order below covers two ranks touching at that floor.
     auto replicaSpan = [&](int bandW) {
         const int fitted = bandW / (kWormReplicaSlots + 1);
         const int floorPx = kReplicaSlotW * shotN / shotD / 2;
@@ -1130,16 +1075,14 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
                        pl.channelLeft, channelTurns(pl));
 
     // --- The damage popup, over whoever just took it -----------------------
-    // WHERE it appears is the point. Right-aligned on the last-move line, the number sat
-    // in the same corner whoever had been hit, so the one cue that says which side is
-    // losing carried no answer to it — the reader had to parse the sentence beside it to
-    // find out. Floating it off the target's own head says it in the channel a glance
-    // uses, on the same hit beat as the flash and the knock-back, so the three cues are
-    // one event.
+    // Floated off the TARGET's own head, on the same hit beat as the flash and the
+    // knock-back, so the three cues are one event and a glance answers which side is
+    // losing. A number right-aligned on the last-move line sits in the same corner whoever
+    // was hit, and carries no answer to that.
     //
     // A ransomed hit landed in full but moved no Health (combat.h ransomPool), so it gets
-    // the word HELD and the pool's green rather than the red of damage actually taken —
-    // the tag, not the colour, is what makes the two readable apart in grayscale.
+    // the word HELD and the pool's green rather than damage red — the tag, not the colour,
+    // is what makes the two readable apart in grayscale.
     const int popRise = damagePopRise(hitLanded ? hitBeat : -1);
     if (popRise >= 0) {
         const bool onRival = lastByLocal;         // the target is whoever did NOT swing
@@ -1272,9 +1215,8 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
             if (sel) drawRowCursor(fb, 14, y, palColor(Pal::ACCENT));
             const Rgb565 nameC = sel ? palColor(Pal::ACCENT) : palColor(Pal::INK);
             if (bands) {                                  // level 1: a band row
-                // The tag is the band's DEPTH, uniformly — how many presses lie behind
-                // it. Giving the crew band its Exploit's own tag instead would put two
-                // kinds of fact in one column, and the row below it says that anyway.
+                // The tag is the band's DEPTH, uniformly. Giving the crew band its
+                // Exploit's tag instead would put two kinds of fact in one column.
                 const OverrideBand b = combat.overrideBandAt(row);
                 char tag[8];
                 std::snprintf(tag, sizeof(tag), "x%d", combat.overrideBandRows(b));
@@ -1320,36 +1262,26 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
 
     // --- Stat panel (B cycles: closed -> VS -> KIT -> closed) ------------
     // A live readout, boxed over the sprites so the always-on chrome stays clean. Hidden
-    // while the override picker owns the same space. What each page is FOR, and why the
-    // split falls where it does, is on kCombatStatPages in the header.
+    // while the override picker owns the same space. What each page is FOR is on
+    // kCombatStatPages in the header.
     //
-    // THE PANEL IS 24 CHARACTERS WIDE, and everything below is laid out against that
-    // number rather than against a generous snprintf buffer. A row that outgrows it does
-    // not fail loudly — the marquee scrolls it and the panel still looks drawn — so the
-    // budget is held by gates over the content that reaches these rows rather than by
-    // eye. The token half WRAPS onto as many lines as it needs; the rest is columns.
+    // THE PANEL IS 24 CHARACTERS WIDE, and everything below is laid out against that number
+    // rather than a generous snprintf buffer. A row that outgrows it does not fail loudly —
+    // the marquee scrolls it — so the budget is held by gates over the content that reaches
+    // these rows. The token half WRAPS; the rest is columns.
     //
-    // THE BOX IS A FIXED RECTANGLE, sized once (kCombatPanelRows) rather than to its
-    // contents. A panel that grew and shrank as tokens came and went would redraw at a
-    // different size every turn, and a frame of chrome that moves under a reader is worse
-    // than one that is sometimes half empty. The size it is fixed AT is the worst case
-    // either page can reach: the deepest boss kit the ladder fields, which
-    // test_combat_kit_page_holds_the_widest_boss is what holds.
+    // The box is a FIXED rectangle (kCombatPanelRows), sized to the worst case either page
+    // can reach — the deepest boss kit the ladder fields, held by
+    // test_combat_kit_page_holds_the_widest_boss. Chrome that resized every turn would move
+    // under the reader.
     if (statPage > 0 && !combat.overrideOpen()) {
-        // The box hangs from a FIXED TOP and its floor is cut to what the page has to
-        // say, capped at kCombatPanelBottom (the shelf).
-        //
-        // Anchoring the top is what stops the box from moving under a reader: the
-        // heading, the rule and every row it has already drawn sit exactly where they
-        // sat last turn, and a status arriving mid-fight extends the FLOOR downward —
-        // which is where the new row was going to appear anyway. Sizing the whole
-        // rectangle to the worst case instead held all of that still by never letting go
-        // of the fight: an ordinary encounter is four vitals and nothing else, and the
-        // box drawn for a loaded boss buried both fighters to show them.
-        //
-        // The cap is still the capacity a gate holds
-        // (test_combat_kit_page_holds_the_widest_boss): what changes is that a page
-        // shorter than the cap stops there rather than drawing air over the stage.
+        // The box hangs from a FIXED TOP and its floor is cut to what the page has to say,
+        // capped at kCombatPanelBottom. Anchoring the top stops the box moving under a
+        // reader — the heading, the rule and every row already drawn stay put, and a status
+        // arriving mid-fight extends the FLOOR downward, where the new row was going
+        // anyway. The cap is the capacity a gate holds
+        // (test_combat_kit_page_holds_the_widest_boss); a shorter page stops there rather
+        // than drawing air over the stage.
         const int boxY = kCombatPanelTop, pitch = kCombatPanelPitch;
         const int textX = 16, textR = kActiveW - 16;
         const int rows = statPage == 1 ? vsPageRows(pl, en) : kitPageRows(en, prizes);

@@ -11,14 +11,17 @@ Only the unambiguous half of that doc's strip-on-sight list is mechanised here:
 
   * MASTER_TODO / Next-phase / Feedback #N   — the board, by name.
   * FB-<ID> row ids, Phase N milestone tags  — cards, by number.
+  * (D3), (J.21b), (#12)                     — row ids in their PARENTHESISED form.
   * (PO), "PO asked/noted/said", "cowork decided" — attribution.
   * ISO dates                                — time provenance; git log is the changelog.
 
 Change narration ("used to", "no longer", "now lives on") and bare § refs are equally
 against the standard but are ordinary English besides, so they stay a human read —
-a checker that cries wolf gets switched off. Same reason the doc's `M#`/`S#`/`D#` row
-ids are absent: they collide head-on with its own keep-anyway list (EAPOL M1-M4, the
-SDIO pins D0-D3, board names).
+a checker that cries wolf gets switched off. That is also why only the
+parenthesised form of a row id is caught, and only for the prefixes that carry no
+domain meaning. Bare, they collide head-on with the doc's own keep-anyway list; even
+parenthesised, `S` is the S3 board, `C` is C5, `M` is an EAPOL handshake message and
+`L` is a menu depth (L2/L3), so only `D`, `J` and `#` are safe to fail on.
 
 Only comment text is scanned. A date inside a JSON fixture and a *capture* session in
 a field name are both legitimate, and both look exactly like a violation in raw grep.
@@ -39,6 +42,7 @@ EXTS = (".cpp", ".h", ".hpp", ".c", ".ino")
 PATTERNS = [
     (re.compile(r"MASTER_TODO|Next-phase|Feedback #\d"), "names the planning board"),
     (re.compile(r"\bFB-[A-Z]+\d|\bPhase \d"), "cites a planning card / milestone id"),
+    (re.compile(r"\((?:[DJ]\.?\d+[a-z]?|#\d+)\)"), "cites a planning row id"),
     (re.compile(r"\(PO\)|\bPO (?:asked|noted|said)|cowork decided"), "attributes a decision"),
     (re.compile(r"\b20\d\d-\d\d-\d\d\b"), "dates the code (git log is the changelog)"),
 ]

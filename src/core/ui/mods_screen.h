@@ -59,7 +59,7 @@ void drawModsList(Framebuffer& fb, const ContentRegistry& reg,
                   const Loadout& load, int cursor, int beat);
 
 // L3 mod picker for `slot`: the available (un-equipped) mods, the focused mod's
-// effect text below, and an inline overwrite confirm (D3) when the slot
+// effect text below, and an inline overwrite confirm when the slot
 // already holds a different mod — the "discards {current} — permanent" warning,
 // since mods are permanent (no unequip; equipping consumes the mod). `pick` is the
 // focused picker row (0-based into the available mods). The list is windowed —

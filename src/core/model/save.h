@@ -21,387 +21,251 @@ namespace mal {
 // "clock_speed_boost" = 17). Bump with a version if an id ever needs more.
 constexpr int kSaveIdCap = 24;
 constexpr int kSaveTextCap = 28;     // matches EventLog's LogEntry.text
-// v2 appends the move loadout + combat XP/level; v3 appends the ARCH
-// records (RETIRED/CORRUPTED, from Critical System Failure); v4 appends the
-// Hacker Rank progression (lifetime networks-seen + its dedup pool + the
-// derived rank); v5 appends the Audit-mode passive-scan runtime
-// toggle (— the authorized-use opt-in, replaces the compile-time
-// NET_SNIFF_ENABLED default); v6 appends the Audit-CAPTURE runtime toggle (
-// the passive WPA-handshake ->.pcap opt-in, a sibling of the scan toggle);
-// v7 appends the real-radio Audit dedup ledgers (the seen-BSSID sets behind NETS +
-// the lifetime handshake count behind SHAKES) so a reboot never re-credits a
-// network/handshake already counted ("leave the house and come home"); v8 appends
-// the EXPL sector-clear flags (— one byte per sector, so linear
-// complete-to-advance gating survives a reboot); v9 appends the Boot-Sector
-// incubation timer (the freshly hatched egg's remaining decrypt clock, so an
-// unhatched egg survives a reboot mid-incubation, redesign); v10 appends the
-// zone-completion Titles (— the unlocked-Title bitmask + the equipped
-// Title index, player-level so they persist across pets, like the sector-clear flags);
-// v11 appends the creature-level stat points (— the per-pet earned combat-stat
-// points behind the XP level; combatXp/combatLevel move to the 0-based geometric model
-// and a pre-v11 blob's vestigial linear level is dropped, migrating the pet to a fresh
-// level 0); v12 appends the EXPL per-sector boss-unlock flags (— a 10-win
-// streak unlocks a sector's manual boss trigger; one byte per sector, player-level
-// like sectorCleared[]). A pre-v12 blob has none stored, so the loader migrates
-// bossUnlocked[i] = sectorCleared[i] (a cleared sector's boss was obviously beaten).
-// v13 reworks EXPL into nested sub-areas: the unit of progress moves from the
-// sector to the SUB-AREA, so it appends per-area 5-bit bitmasks for sub-area CLEARED
-// and sub-area BOSS-UNLOCK state (one byte per area). A pre-v13 blob has none stored,
-// so the loader migrates a CLEARED area → all 5 sub-areas cleared + all 5 sub-bosses
-// unlocked (the honest default: a beaten area had every piece beaten). The pre-v13
-// per-sector bossUnlocked byte is no longer used at runtime (superseded by the
-// per-sub flags) but is still serialized so the stream stays version-layered.
-// v14 appends the CFG screen-brightness level (— a 0-based backlight index,
-// kBrightnessLevels steps). A pre-v14 blob has none stored, so the loader defaults it
-// to kBrightnessDefault (brightest — no surprise dimming on a migrated save).
-// v15 appends the EXPL per-sub-area RE-FARM win counts — a flat row-major
-// list (area*kExplSubAreas+sub) of how many wild wins have been farmed in each sub-area
-// AFTER it was cleared, which decays its non-Bits drop chances. A pre-v15 blob has none
-// stored, so the loader defaults every count to 0 (a migrated save's cleared areas
-// start un-depleted — full drops until re-farmed).
-// v16 appends the per-pet DEFRAG COUNT: the ACTIVE pet's successful-defrag
-// tally, then a parallel list of the RACK pets' tallies (same order as the rack), so
-// the count stays consistent through ARCH freeze/thaw. Appended (not folded into the
-// mid-stream rack records) to keep the rack byte-compatible. A pre-v16 blob has none
-// stored → every tally defaults to 0.
-// v17 does NOT add wire fields — it REINTERPRETS the existing mod collections for the
-// permanent-mod model (D3). Pre-v17, mods were swappable and `ownedMods`
-// listed EVERY owned mod, equipped ones included. From v17, a mod is consumed when
-// equipped, so `ownedMods` holds only the un-equipped SPARES and `equipped` holds the
-// permanently-installed mods. The version alone is the marker (hasPermanentModData);
-// the loader migrates a pre-v17 blob by dropping any owned id that also sits in a slot
-// (otherwise a migrated save would gift a duplicate spare of each installed mod).
-// v18 appends the PER-SPARE mod equip-level gates (— mods into combat). Each
-// un-equipped spare in `ownedMods` now carries a rolled required pet-level (a mod's
-// power tier sets a nominal band; each dropped copy rolls its own gate within it). To
-// stay byte-compatible with the v17 `ownedMods` cells, the levels ride a PARALLEL tail
-// (`ownedModReqLevels`, one i32 per owned spare, same order) — the same pattern v16's
-// defrag tallies used. A pre-v18 blob has none stored → every spare defaults to req 0
-// (freely equippable: a mod earned under the old model isn't retroactively gated).
-// v21 appends a trailing block: the per-pet care-mistake SHIELD state
-// (mistakeShieldActive — a Restore-Point buff blocks the next positive care
-// mistake; shieldItemConsumed — the once-per-lifetime gate on the Restore Point;
-// yubiConsumed — the once-per-lifetime gate on the Yubi-Cookie −1 removal), and
-// two player-level fields: fragAmountTier (PRE-ALLOCATED for a later shop task,
-// left 0) and — widening an existing field, not appending — networkSeenMask grows
-// from uint8_t to uint64_t so the deduped Wi-Fi pool can reach the top Hacker-Rank
-// tier (kNetworkDedupPoolSize raised to 40). A pre-v21 blob has no v21 tail → the
-// per-pet flags default to 0 (no shield, neither once-per-lifetime item consumed)
-// and fragAmountTier to 0; the legacy 8-bit networkSeenMask migrates into the low
-// 8 bits of the widened field. The per-pet flags reset on a new egg (startHatch);
-// networkSeenMask + fragAmountTier are player-level (survive lifecycles).
-// v23 appends the d/e Hacker-SHOP one-time account unlocks: itemTabsUnlocked
-// (arms the ITEMS hold-B FOOD/BUFFS/QUEST filter cycle) and bulkOpenUnlocked (arms
-// the VAULT hold-B "open every cache of this rarity" gesture) — player-level booleans,
-// no tiers, siblings of fragAmountTier/fragTriggerTier. A pre-v23 blob has no tail →
-// both default to false (a migrated save has bought neither).
-// v24 appends the move-slot rework's (#12) per-pet Attack/Defend SLOT TYPING: the
-// stamped SlotKind (0 Unset · 1 Attack · 2 Defend) for each of the kMaxMoveSlots move
-// slots on the ACTIVE pet, length-prefixed like statPoints. Per-pet (reset on a new
-// egg alongside statPoints/combatLevel — the single new-egg chokepoint, Game::
-// startHatch); NOT reset on an ARCH Deploy swap (mirrors the pre-existing gap that
-// moveLoadout_/statPoints_ aren't per-stored-pet either). A pre-v24 blob has no tail
-// → hasSlotKindData stays false and every slot loads Unset, so Game::stampSlotKinds()
-// deterministically re-derives it from the loaded pet's CreatureDef::slotKinds — a
-// clean migration, not a guess.
-// v25 appends the web-'Pedia reveal-state bookkeeping: three
-// tails, all player-level (survive a pet reset, like titlesUnlocked). `seenCreatures`
-// is a length-prefixed vector of creature ids the player has FACED IN COMBAT without
-// ever raising (today: a duel opponent's species, Game::markCreatureSeen) — "hatched"
-// still wins over "seen" in the 'Pedia's pets{} map. `malbeastSeen`/
-// `malbeastDefeated` are bitmasks over the fixed 6-entry wild-malbeast roster
-// (combat.h kWildMalbeastIds; bit i = that roster index), set the moment a wild
-// encounter rolls that malbeast (seen) or a live wild fight against it is WON
-// (defeated) — sub/area bosses and Sim dummies never touch these bits.
-// `achievementsMask` is one bit per Game::Achievement (10 ids today, matching
-// web/data/pedia_data.js). A pre-v25 blob has no tail →
-// seenCreatures stays empty and both masks default to 0 (nothing glimpsed, nothing
-// achieved — the honest default for a save that predates this system).
-// v26 appends the per-STORED-PET creature-level state: a rack pet's
-// combatLevel/combatXp/statPoints/slotKinds were never captured on Store and never
-// restored on Deploy — only the currently-active pet's level lived anywhere, so
-// swapping a pet through the rack silently dropped its level (or worse, the newly
-// active pet inherited whatever level state the previously-active pet happened to
-// have, since those fields are plain Game members that Deploy never touched). This
-// closes the gap: SaveStoredPet gains combatLevel/combatXp/statPoints/slotKinds,
-// serialized in a PARALLEL tail (mirrors defragCount's v16 pattern) so the mid-stream
-// rack records stay byte-compatible. A pre-v26 blob has no tail → every already-stored
-// pet migrates to level 0 / all-Unset slots (no level history was ever recorded for a
-// stored pet before this version — nothing worse than the pre-fix behaviour).
-// v27 appends the Hacker-SHOP rig-upgrade levels: rackSlotUpgradeCount (ARCH
-// rack capacity = kRackSlots + this), scrapingClusterLevel (+combat-Bits % per level),
-// and dataMiningLevel (+cache-Bits % per level). Player-level, persist across pets like
-// bwUpgradeCount. A pre-v27 blob has no tail → all three default to 0 (a migrated save
-// has bought none).
-// v28 appends forceTrojanDivert — the Ambig-USB's armed effect (guarantees the pet's
-// next Process->Script Trojan divert, replacing the kTrojanDivertPct roll). Per-pet,
-// like mistakeShieldActive; resets on a new egg. A pre-v28 blob has no tail → stays
-// false (no divert armed).
-// v29 appends the per-STORED-PET move + mod loadout — a pet's MOVES/MODS state
-// has-a home on the pet, not on the player. SaveStoredPet gains `ownedMoves` (this
-// pet's earned move pool, length-prefixed) + `equippedMoves` (kMaxMoveSlots) +
-// `equippedMods` (kModSlots), serialized in a parallel tail (mirrors v26) so
-// mid-stream rack records stay byte-compatible. The mod SPARE pool stays
-// player-level (SaveData::ownedMods) — mods are found like items; only the
-// installed slots belong to a specific pet. A pre-v29 stored pet has an empty
-// tail: Game::archDeployStored reads an empty `ownedMoves` as unset and seeds the
-// pet's line-starting kit, and its mod slots load empty.
-// v30 appends backupShieldUntilMs — the Backup Drive buff's armed-until deadline
-// (Game::lifetimeUptimeMs(), 0 = inactive). Per-pet, like mistakeShieldActive; resets
-// on a new egg. A pre-v30 blob has no tail → stays 0 (no shield armed).
-// v31 appends the f Hacker-SHOP Merge Hub unlock (mergeHubUnlocked — makes the MRG
-// carousel slot accessible) and recipesUnlocked, a bitmask over game_internal.h's
-// kMergeRecipes table (bit = MergeRecipe::wire, see v49 for the widening). Both
-// player-level, survive lifecycles like itemTabsUnlocked. A pre-v31 blob has no tail →
-// both default to 0 (has neither the Hub nor any recipe).
-// v32 appends rigLevelsExt — a forward-compatible tail for every Rig Shop row from
-// kRigRowExtBase up (game_rig_shop.h's kRigUpgrades), so a new row persists without
-// another named field + version bump: index i in the vector = rig row
-// (kRigRowExtBase + i), value = its purchased level. Player-level, survives lifecycles. A pre-v32 blob (or one
-// short of a later-added row) has no tail/entry → that row defaults to level 0
-// (never bought). Rows 0-10 keep using their own named fields above (unchanged).
-// v33 REMOVES the v4/v21 networkSeenMask byte+u64 and the v7 seenBssids vector —
-// real-network dedup + history moved off the save blob entirely, onto the SD-backed
-// NetworkLedger (core/net/network_ledger.h); the EXPL Wi-Fi event is now the only
-// place a real network is credited (Game::resolveNetworkDiscovery), never the
-// background scan. `networksSeen`/`hackerRank` (the small derived counters) are
-// unaffected and keep serializing exactly as before. A v4..v32 blob still carries
-// those bytes on the wire — the reader keeps consuming them (version-gated `< 33`)
-// so every later field stays byte-aligned, it just no longer stores them anywhere;
-// a v33+ writer never emits them. seenHandshakeBssids/handshakesSeen (the unrelated
-// SHAKES audit-capture ledger) are untouched.
-// v34: per-stored-pet evolution-timer elapsed-in-stage, parallel to d.rack (mirrors
-// defragCount's v16 pattern) so a rack pet's evolution progress survives an ARCH
-// Store/Deploy cycle instead of being reset on Deploy.
-// v35: bestDeepWebDepth — this pet's own highest-ever DeepWeb Dive depth
-// (exploreStreak_ while inDeepWebDive()), read back by the Zero-Day Bell
-// (SetDeepWebStartDepthToBest) to warp a fresh dive to THIS pet's frontier, never a
-// device-wide max. Per-pet, reset on a new egg; the active pet's value plus a
-// parallel list mapped onto d.rack by index (mirrors defragCount's v16 pattern) so
-// it survives an ARCH Store/Deploy cycle. A pre-v35 blob has no tail → every pet
-// reads back as 0 (never dived).
-// v36 appends the Hacker-face CREW state: `crewId` (the enlisted crew's content id,
-// "" = unaffiliated) plus the HOME NETWORK the membership hangs off — `homeNetworkKey`
-// (a packed 48-bit BSSID, 0 = none designated) and `homeNetworkName` (its cached
-// label, so the UI reads right even on a boot with no SD-backed ledger). All three are
-// player-level and survive a pet reset, like the HackerTag. The crew is stored by ID,
-// not row index, so content_crews.h's table can be reordered. A pre-v36 blob has no
-// tail → no crew, no home network (the honest default for a save predating the system).
-// v37 appends `linkEnabled` — the pet-to-pet LINK opt-in (default OFF), a player-level
-// CFG toggle alongside netScanEnabled/apEnabled. Kept SEPARATE from the audit-scan bit
-// on purpose: that one consents to listening, this one consents to broadcasting the
-// operator's identity to anyone in range. A pre-v37 blob has no tail → LINK off, which
-// is both the default and the only safe reading of a save that predates the choice.
-// v38 appends `netReserved` — RESERVED, always written 0 and ignored on load.
-// It carried a standing internet/STA opt-in, and no longer does: reaching the 'net is
-// no longer something the device can be left permitted to do. An update job raises the
-// association it needs and drops it when it ends (Game::netConnectWanted), so the
-// permission and the job have exactly one lifetime between them and nothing about it
-// survives a reboot. The byte stays because v39..v42 were appended behind it and the
-// tail is read positionally — dropping it would misalign every later field. A save
-// written when the bit still meant something reads back as reserved, which lands that
-// device off the 'net: the safe direction, and the only honest one.
-// v39 appends `raisedCreatures` — the device's running tally of every species the
-// operator has RAISED, as opposed to the ones they happen to hold right now. Without
-// it the only record a creature ever existed is that something still points at it
-// (the active pet, an ARCH rack slot, an ARCH record), so a species is forgotten the
-// instant its successor stamps over it at evolution: walk a line to Daemon and every
-// rung behind it goes back to unknown. It cannot be derived after the fact either —
-// a Script has several possible Process ancestors, so working backwards from what is
-// held would credit species that were never owned. Player-level, like `seenCreatures`
-// next to it: it survives a pet's death, a new egg, and a Factory-Reset-free rebuild
-// of the rack. A pre-v39 blob has no tail → it reads back empty, and Game::applySave
-// unions in the active pet + rack + records, which is the most that can honestly be
-// recovered from a record that never kept this (anything evolved past left no trace
-// in the old format at all).
-// v40 supersedes the v25 `achievementsMask` u32 with a length-prefixed BITSET (the u32
-// stays on the wire, written as 0 — it is mid-stream, and this format never removes a
-// mid-stream field) and adds the counters the expanded achievement catalogue is measured
-// against. The mask had to go because 32 rows is not many; the bitset is indexed by
-// AchievementDef::wire (a number
-// assigned per row and never reused — content_achievements.h), NOT by table position, so
-// the catalogue can be reordered or regrouped without a migration. The legacy 14 rows
-// hold wire numbers 0-13 in their original enum order, so a v25..v39 blob's mask migrates
-// bit-for-bit into the first four bytes. `achievementNotified` is the parallel
-// "has its banner been shown" set — a pre-v40 blob has none, which is deliberate: an
-// upgraded device announces everything it has ever earned, including the rows this
-// version retro-awards on first boot. Also appended: `bossWins` (lifetime boss rounds
-// won, seeded on migration from the cleared sub-areas/areas — an honest lower bound, the
-// most a save that never counted them can say), `collectedItems` (every item id ever
-// held, behind the cuisine/rarity rows; seeded from what the bag holds at load), and
-// `speciesDives` (deepest DeepWeb Dive per species — a record that outlives the pet,
-// where v35's bestDeepWebDepth is the pet's own; seeded from the active pet's).
-// v41 adds no bytes. It marks the point after which every creature id on the wire is
-// the id the content tables actually use: a blob written before it is run through
-// the rename table below, which rewrites retired ids across every creature-id-bearing
-// field (active pet, rack, records, seen/raised, species dives). The version is what
-// lets that pass be SKIPPED for anything newer, and what lets a rename row retire —
-// without it the alias would have to live forever in the content tables, where a stale
-// id would read as a second name for a creature rather than as a wire-format concern.
-// v42 appends `dyingElapsedMs` — how much of the 5/5 recovery window the pet has
-// already burned. The single deliberate exception to the "reboot resets the clock"
-// rule (core/net/audit_capture.h states it for the penalty windows): Lockout and the
-// audit cooldown are punishments, so refunding them on reboot only costs a little
-// cheese, but this window is the last step before PERMANENT loss — refunding it makes
-// the game's only death path opt-out for anyone who notices the pulse and power-cycles.
-// It still needs no RTC, because it is time AWAKE at 5/5, not wall time: a device that
-// is off is not counting, so being switched off neither kills the pet nor buys it a
-// reprieve. The active pet's value, then a parallel list mapped onto d.rack by index
-// (mirrors defragCount's v16 pattern) — a rack pet's `mistakes` already survives
-// freeze/thaw, so without the tail an ARCH Store/Deploy would restart the window and
-// simply move the cheese. Pre-v42 → 0, reading a migrating save as entering fresh.
-// deserialize accepts every version from kOldestAcceptedVersion up: an older blob
-// loads with the newer fields defaulted (forward-compat is the contract). Health is
-// transient and never serialized.
-// v43 adds no bytes. It marks the splice of NET-SEA CROSSING into the middle of the EXPL
-// ladder (rung 2, between The Pirate Bayou and Napstorrent Moors). Every persisted EXPL
-// field is positional, so a v42-or-older blob has its flags from rung 2 on describing the
-// area one rung to their left; the version is what lets `ladderInserts` (below) open a
-// blank rung in exactly those saves and skip the pass for anything newer.
-// v44 appends `stackerWins` — how many DEFRAG minigame boards the operator has cleared by
-// hand. Player-level, and the counter behind the played-defrag ladder: it cannot ride on
-// `defragCount` (v16), which is the ACTIVE PET's tally of defrags of every variant and
-// resets with the pet, where this is a record of the operator's own skill. Nothing else in
-// a save can stand in for it either — a bought or rolled defrag leaves the same trace a
-// played one does — so a pre-v44 blob reads back 0 and starts the ladder fresh rather than
-// being seeded from a number that would over-credit every Quick defrag ever run.
-// v45 replaces the owned-mod spare pool. It was a flat list — one 24-byte id cell per
-// COPY held, plus the v18 parallel i32 of that copy's rolled equip level — and it had no
-// cap, because mods drop from milestones and the only sink is equipping one. On a
-// measured device it had grown to 424 copies of 24 mods (132 of them the same mod):
-// 11,876 bytes, 64% of the entire save, growing 28 bytes a drop forever.
+// THE VERSION LOG. Every entry says what a version put on the wire and what a blob written
+// before it reads back as. deserialize accepts every version from kOldestAcceptedVersion
+// up, an older blob loading with the newer fields defaulted — forward-compat is the
+// contract. Health is transient and never serialized.
 //
-// It is now a COUNT PER MOD, a nibble each over ModDef::wire (ownedModCounts,
-// saveModCount) — 17 bytes at the current roster, and flat: it grows with the SIZE of
-// the mod table, never with play. The rolled per-copy level went with it. That roll was
-// never visible: the picker lists mods by type and shows one gate, so a copy could never
-// be chosen over another, and the level is now the mod's own (modEquipLevel, authored on
-// the row). Copies are bounded by kModCopyCapBase, raised by the Rig Shop's MOD
-// STORAGE row.
+// Three shapes recur, and an entry names which it used:
+//   APPEND          — new fields at the end of the stream; a pre-vN blob simply stops short.
+//   PARALLEL TAIL   — a per-stored-pet field written as a list mapped onto d.rack by index,
+//                     so the mid-stream rack records stay byte-compatible (first used by v16).
+//   NO BYTES        — a marker version: the format is unchanged and the number exists only
+//                     to gate a migration pass (a rename, a ladder splice) for older blobs.
 //
-// A v44-or-older blob migrates by tallying `ownedMods` per id and clamping to the base
-// cap; the surplus and the rolled levels are dropped. Nothing player-visible is lost —
-// no screen has ever shown a copy, only a type and a count.
-// v46 adds no bytes. It marks the Worm line collapsing its two Script placeholders into
-// one designed Script row (Rootgrub) and moving the care branch down to the Daemon, the
-// shape every other line already had. Both retired ids are in the rename table below, so
-// a pre-v46 blob holding either arrives on Rootgrub; the version is what lets that pass
-// be skipped for anything newer, and what will let those two rows retire.
-// v47 appends the GAMES arcade's per-cabinet tallies — how many runs each cabinet has
-// seen and how many were won — as parallel id/plays/wins runs, the shape speciesDive
-// already uses. Keyed by the cabinet's content id rather than by roster position, so
-// the GAMES list can be reordered or extended without a migration. Pre-v47 → empty,
-// which is the truth: nobody has played a cabinet that did not exist.
-// v48 appends the DECRYPTOGRAM board's per-quote state — a 2-BIT field per
-// QuoteDef::wire (content_quotes.h), four to a byte, length-prefixed like the v40
-// achievement bitsets and for the same reason: the pool is expected to reach the
-// hundreds, and a save should only be as long as the quotes that device has actually
-// met. The four states are the whole record a quote needs, because the loss ratchet and
-// the win are one axis: 0 never played (and so HARD), 1 lost once (MEDIUM), 2 lost twice
-// or more (EASY, the floor), 3 SOLVED. A pre-v48 blob has no tail → every quote reads
-// back as never played, which is the honest default for a device that had no board.
-// v50 appends the per-pet BANDWIDTH-REGEN upgrade — minutes shaved off this pet's
-// Bandwidth regen interval by a Tiramisudo (ItemEffect::BandwidthRegenBonusMin), as the
-// active pet's value then a parallel list mapped onto d.rack by index. The same shape
-// as v42's dying window, and for the same reason: it is per-pet state that must ALSO
-// survive an ARCH freeze, since the upgrade belongs to the creature rather than the run.
-// A pre-v50 blob has no tail → 0 for every pet, which is the truth (no dish that grants
-// it existed).
-// v49 adds no bytes. It marks COOKING moving off the Rig Shop: a MERGE HUB recipe is
-// won off a solved Decryptogram, never bought, so the four rows that used to sell one
-// are gone from kRigUpgrades and every recipe now lives in the v31 `recipesUnlocked`
-// mask outright (bit = MergeRecipe::wire). Two things move on the wire without changing
-// its shape, both handled by `migrateRecipeRows` below:
-//   * the mask widens from the 2 bits that mirrored rows 9/10 to one per recipe, and
-//   * `rigLevelsExt` is positional, so deleting the two mid-table Browns recipe rows
-//     shifts every row after them — an older blob's entries are remapped by hand.
-// A v49+ blob needs neither pass. This is also the version to raise
-// kOldestAcceptedVersion past once every device is current, which retires that function.
-// v52 widens kQuoteWireCap (content_quotes.h) from 256 to 512, which doubles the
-// quoteStates array. The wire format does not change: the array has been length-
-// prefixed since v48, so a longer one loads into a shorter build's view as "the
-// quotes it knows" and a shorter one reads back as "never played". The version moves
-// anyway, because the header that owns the cap asks for a note when it does.
-// v53 appends ROCK THE DOCK's run state — the arena bracket held in The Pirate Bayou
-// (core/model/tournament.h). Five bytes for a whole eight-operator tournament, because
-// every entrant is DERIVED from the run seed rather than stored: the seed, the
-// survivor bitmask, the round, and the verdict a finished run is still showing. A
-// pre-v53 blob has no tail → a zero seed, which reads as "no run", which is the truth
-// for a device whose ladder had no arena on it.
-// v55 appends the arcade's per-cabinet HIGH SCORE — a fourth run parallel to the v47
-// id/plays/wins trio, but written as its own tail at the END of the blob rather than
-// beside them, which is what lets a pre-v55 build read a v55 save and simply not see it.
-// It arrives with the two ENDLESS cabinets (the CHROMATOPHORE and the Isolation buffer):
-// a run with no finish line has a score and nothing else to be proud of, so the number
-// has to survive the run that set it. Pre-v55 → 0 for every cabinet, which is honest —
-// nothing before it was recording a best.
-// v54 renames one ITEM id (`airgap_snack` -> `dyno_nuggets`, see `renamedIds`) — the
-// first rename that is not a creature's, which is why `renameRetiredIds` now sweeps
-// the inventory and the ever-collected set as well. The BYTE LAYOUT is unchanged and
-// nothing is appended: the version moves only to date the rename row, so the row has
-// a `sinceVersion` to retire against. A pre-v54 blob is rewritten as it is read; a
-// v54 blob loaded by a pre-v54 build parses cleanly and simply finds one item id its
-// tables do not answer to, which costs that stack its row until the build catches up.
-// v56 appends three lifetime tallies as its own tail at the end of the blob, the same
-// shape v55 used and for the same reason: a pre-v56 build reads a v56 save, finds every
-// tail it knows where it expects it, and simply stops before this one. They arrive
-// together because they are one change — the achievement board reaching the three
-// subsystems that were keeping no record at all (ROCK THE DOCK, the LINK duel, the MERGE
-// HUB's stove). Pre-v56 → 0 for all three, which is the honest reading: nothing older
-// was counting, and none of them can be reconstructed from anything else in the blob.
-// A bracket taken leaves no trace once its run is dismissed, a duel pays nothing, and a
-// cooked dish is indistinguishable from a dropped one the moment it is eaten.
-// v57 appends the rest of the per-pet EPIC-DISH grants, in the shape v50 established for
-// the first of them: the active pet's off-level stat points and XP rate, then a parallel
-// list mapped onto d.rack by index. It is a second tail rather than a widening of v50's
-// because a tail is what a pre-v57 build can stop before; the values are per-pet AND
-// frozen with the pet, since the upgrade belongs to the creature rather than the run.
-// Pre-v57 → 0 for every pet, which is the truth (no dish granted one).
-// v58 appends ONE BYTE — which background the operator has chosen to stand their pet in
-// (content/content_backgrounds.h), as that row's `wire` number, or 0 for AUTO. Its own
-// tail after v57's, the shape every tail since v55 has used, so a build that stops at
-// v57 reads every field it knows and simply stops before this one.
+// A mid-stream field is NEVER removed. One that stopped meaning anything keeps being read
+// and discarded (v33, v38, v40), because every later field is positioned behind it.
 //
-// Only the CHOICE is here. Which backgrounds are OWNED is not stored at all: each is
-// earned by something the blob already records — a creature raised, an area cleared,
-// brackets taken at the arena — so Game::backgroundOwned derives it, and there is no
-// second copy of those facts to fall out of step with the first. That is also why this
-// tail needs no migration: a pre-v58 blob reads back 0, which is AUTO, which is exactly
-// what every device did before a background could be chosen.
+// v2  APPEND move loadout + combat XP/level.
+// v3  APPEND the ARCH records (RETIRED/CORRUPTED, from Critical System Failure).
+// v4  APPEND Hacker Rank: lifetime networks-seen, its dedup pool, the derived rank.
+// v5  APPEND the Audit passive-scan runtime toggle (the authorized-use opt-in).
+// v6  APPEND the Audit-CAPTURE runtime toggle (passive WPA handshake -> .pcap).
+// v7  APPEND the real-radio Audit dedup ledgers — the seen-BSSID sets behind NETS and the
+//     lifetime handshake count behind SHAKES — so a reboot never re-credits one already
+//     counted.
+// v8  APPEND the EXPL sector-clear flags, one byte per sector.
+// v9  APPEND the Boot-Sector incubation timer, so an unhatched egg survives a reboot
+//     mid-incubation.
+// v10 APPEND the zone-completion Titles: the unlocked bitmask + the equipped index.
+//     Player-level, so they persist across pets.
+// v11 APPEND the per-pet earned combat-stat points. combatXp/combatLevel move to the
+//     0-based geometric model, and a pre-v11 blob's vestigial linear level is dropped —
+//     migrating the pet to a fresh level 0.
+// v12 APPEND per-sector boss-unlock flags. Pre-v12 migrates bossUnlocked[i] =
+//     sectorCleared[i]: a cleared sector's boss was obviously beaten. Superseded at
+//     runtime by v13's per-sub flags, but still serialized so the stream stays layered.
+// v13 APPEND per-area 5-bit bitmasks for sub-area CLEARED and sub-area BOSS-UNLOCK — the
+//     unit of progress moves from the sector to the SUB-AREA. Pre-v13 migrates a cleared
+//     area to all five subs cleared and all five sub-bosses unlocked.
+// v14 APPEND the CFG screen-brightness level. Pre-v14 defaults to kBrightnessDefault, so
+//     a migrated save is never surprise-dimmed.
+// v15 APPEND per-sub-area RE-FARM win counts, row-major (area*kExplSubAreas+sub) — wins
+//     farmed AFTER a sub was cleared, which decay its non-Bits drop chances. Pre-v15 → 0,
+//     so a migrated save's cleared areas start un-depleted.
+// v16 PARALLEL TAIL, the pattern every later per-stored-pet field follows: the active
+//     pet's successful-defrag tally, then the rack pets' in rack order, so the count stays
+//     consistent through ARCH freeze/thaw. Pre-v16 → 0.
+// v17 NO BYTES. Reinterprets the mod collections for the permanent-mod model: a mod is
+//     consumed when equipped, so `ownedMods` holds only un-equipped SPARES and `equipped`
+//     the permanently-installed ones. The version alone is the marker
+//     (hasPermanentModData); the loader drops any owned id that also sits in a slot, or a
+//     migrated save would gift a duplicate spare of everything installed.
+// v18 PARALLEL TAIL of per-spare equip-level gates (`ownedModReqLevels`, one i32 per owned
+//     spare), keeping the v17 `ownedMods` cells byte-compatible. Pre-v18 → req 0. Removed
+//     again by v45.
+// v21 APPEND per-pet care-mistake SHIELD state (mistakeShieldActive; shieldItemConsumed
+//     and yubiConsumed, the once-per-lifetime gates on the Restore Point and the
+//     Yubi-Cookie) plus player-level fragAmountTier. Also WIDENS networkSeenMask from
+//     uint8_t to uint64_t so the dedup pool can reach the top Hacker-Rank tier; the legacy
+//     8 bits migrate into the low 8. The per-pet flags reset on a new egg.
+// v23 APPEND the Hacker-SHOP account unlocks itemTabsUnlocked (arms the ITEMS hold-B
+//     filter cycle) and bulkOpenUnlocked (arms the VAULT hold-B bulk open). Player-level.
+//     Pre-v23 → false.
+// v24 APPEND the per-pet SlotKind stamp for each move slot (0 Unset · 1 Attack · 2
+//     Defend), length-prefixed. Per-pet, reset on a new egg; NOT reset on an ARCH Deploy,
+//     mirroring moveLoadout_/statPoints_. Pre-v24 loads every slot Unset, and
+//     Game::stampSlotKinds re-derives them from CreatureDef::slotKinds.
+// v25 APPEND the web-'Pedia reveal state, all player-level: `seenCreatures` (species faced
+//     in combat but never raised — "hatched" still wins over "seen"), and the
+//     `malbeastSeen`/`malbeastDefeated` bitmasks over the fixed 6-entry wild roster
+//     (combat.h kWildMalbeastIds). Bosses and Sim dummies never touch those bits. Also
+//     `achievementsMask`, superseded by v40.
+// v26 PARALLEL TAIL of per-stored-pet combatLevel/combatXp/statPoints/slotKinds. Before
+//     it, only the active pet's level lived anywhere, so a rack swap dropped it — or the
+//     newly active pet inherited the previous one's. Pre-v26 → level 0, all-Unset.
+// v27 APPEND the Rig Shop levels rackSlotUpgradeCount (rack capacity = kRackSlots + this),
+//     scrapingClusterLevel (+combat-Bits %) and dataMiningLevel (+cache-Bits %).
+//     Player-level. Pre-v27 → 0.
+// v28 APPEND forceTrojanDivert, the Ambig-USB's armed effect: guarantees the next
+//     Process->Script Trojan divert instead of rolling kTrojanDivertPct. Per-pet, resets
+//     on a new egg. Pre-v28 → false.
+// v29 PARALLEL TAIL of the per-stored-pet move + mod loadout: `ownedMoves`,
+//     `equippedMoves`, `equippedMods`. A pet's MOVES/MODS belong to the pet. The mod SPARE
+//     pool stays player-level — mods are found like items, and only the installed slots
+//     belong to a creature. A pre-v29 stored pet has an empty tail, which
+//     Game::archDeployStored reads as unset and seeds with the line-starting kit.
+// v30 APPEND backupShieldUntilMs, the Backup Drive buff's deadline against
+//     Game::lifetimeUptimeMs (0 = inactive). Per-pet, resets on a new egg. Pre-v30 → 0.
+// v31 APPEND mergeHubUnlocked (makes the MRG carousel slot accessible) and
+//     recipesUnlocked, a bitmask over game_internal.h's kMergeRecipes by
+//     MergeRecipe::wire. Player-level. Pre-v31 → 0. Widened by v49.
+// v32 APPEND rigLevelsExt, a forward-compatible tail covering every Rig Shop row from
+//     kRigRowExtBase up (game_rig_shop.h): index i = row (kRigRowExtBase + i), value = its
+//     purchased level, so a new row persists without another named field. Rows 0-10 keep
+//     their own named fields. A missing tail or entry → level 0.
+// v33 REMOVES the v4/v21 networkSeenMask and the v7 seenBssids vector: real-network dedup
+//     and history moved onto the SD-backed NetworkLedger (core/net/network_ledger.h), and
+//     the EXPL Wi-Fi event became the only place a network is credited
+//     (Game::resolveNetworkDiscovery). A v4..v32 blob still carries those bytes and the
+//     reader still consumes them (version-gated `< 33`) so later fields stay aligned; a
+//     v33+ writer never emits them. The derived `networksSeen`/`hackerRank` counters and
+//     the unrelated SHAKES ledger are untouched.
+// v34 PARALLEL TAIL of per-stored-pet evolution elapsed-in-stage, so a rack pet's progress
+//     survives an ARCH Store/Deploy instead of resetting on Deploy.
+// v35 PARALLEL TAIL of bestDeepWebDepth, this pet's own highest dive depth. Read by the
+//     Zero-Day Bell (SetDeepWebStartDepthToBest) to warp a fresh dive to THIS pet's
+//     frontier, never a device-wide max. Per-pet, reset on a new egg. Pre-v35 → 0.
+// v36 APPEND the Hacker-face CREW state: `crewId` ("" = unaffiliated) plus the home network
+//     the membership hangs off — `homeNetworkKey` (packed 48-bit BSSID, 0 = none) and
+//     `homeNetworkName` (its cached label, so the UI reads right with no SD ledger).
+//     Player-level. Stored by crew ID, so content_crews.h can be reordered. Pre-v36 → none.
+// v37 APPEND `linkEnabled`, the pet-to-pet LINK opt-in. Kept SEPARATE from the audit-scan
+//     bit on purpose: that consents to listening, this to broadcasting the operator's
+//     identity to anyone in range. Pre-v37 → off, the only safe reading of a save that
+//     predates the choice.
+// v38 APPEND `netReserved` — RESERVED, always written 0 and ignored on load. It carried a
+//     standing STA opt-in, and no longer does: an update job raises the association it
+//     needs and drops it when it ends (Game::netConnectWanted), so nothing about that
+//     permission survives a reboot. The byte stays because v39+ were appended behind it
+//     and the tail is read positionally.
+// v39 APPEND `raisedCreatures`, the running tally of every species RAISED as opposed to
+//     currently held. Without it, a species is forgotten the instant its successor stamps
+//     over it at evolution, and it cannot be derived after the fact — a Script has several
+//     possible Process ancestors, so working backwards would credit species never owned.
+//     Player-level. Pre-v39 → empty, and Game::applySave unions in the active pet, rack and
+//     records, which is the most that can honestly be recovered.
+// v40 SUPERSEDES the v25 `achievementsMask` u32 with a length-prefixed BITSET (the u32
+//     stays on the wire, written 0, being mid-stream). Indexed by AchievementDef::wire — a
+//     number assigned per row and never reused (content_achievements.h) — NOT by table
+//     position, so the catalogue can be reordered without a migration. The legacy 14 rows
+//     hold wires 0-13 in their original enum order, so a v25..v39 mask migrates bit-for-bit
+//     into the first four bytes. Also APPEND `achievementNotified` (the parallel
+//     banner-shown set; pre-v40 has none, so an upgraded device announces everything it has
+//     ever earned), `bossWins` (seeded on migration from cleared subs/areas, an honest
+//     lower bound), `collectedItems` (seeded from what the bag holds), and `speciesDives`
+//     (deepest dive per species, where v35 is the pet's own; seeded from the active pet).
+// v41 NO BYTES. Marks the point after which every creature id on the wire is one the
+//     content tables use: an older blob is run through the rename table below, across
+//     every creature-id-bearing field. The version is what lets that pass be skipped for
+//     anything newer, and what lets a rename row eventually retire.
+// v42 PARALLEL TAIL of `dyingElapsedMs` — how much of the 5/5 recovery window the pet has
+//     burned. The one deliberate exception to "a reboot resets the clock": Lockout and the
+//     audit cooldown are punishments, but this window is the last step before PERMANENT
+//     loss, and refunding it would make the only death path opt-out for anyone who
+//     power-cycles. It needs no RTC because it is time AWAKE at 5/5, so a device that is
+//     off neither kills the pet nor buys it a reprieve. Pre-v42 → 0.
+// v43 NO BYTES. Marks the splice of NET-SEA CROSSING into EXPL rung 2. Every persisted EXPL
+//     field is positional, so an older blob's flags from rung 2 on describe the area one
+//     rung to their left; `ladderInserts` below opens a blank rung in exactly those saves.
+// v44 APPEND `stackerWins`, DEFRAG boards cleared BY HAND. Player-level. It cannot ride on
+//     v16's `defragCount`, which is the active pet's tally of defrags of every variant, and
+//     nothing else in a save can stand in for it — a bought or rolled defrag leaves the same
+//     trace a played one does. Pre-v44 → 0 rather than a number that would over-credit.
+// v45 REPLACES the owned-mod spare pool. It was one 24-byte id cell per COPY held plus
+//     v18's parallel i32, uncapped, because mods drop from milestones and the only sink is
+//     equipping one: on a measured device it reached 424 copies of 24 mods — 11,876 bytes,
+//     64% of the save, growing 28 bytes a drop forever. It is now a COUNT PER MOD, a nibble
+//     each over ModDef::wire (ownedModCounts, saveModCount): 17 bytes at the current
+//     roster, and flat — it grows with the SIZE of the mod table, never with play.
+//
+//     The rolled per-copy level went with it and was never visible: the picker lists mods
+//     by type and shows one gate, so a copy could never be chosen over another. The level
+//     is now the mod's own (modEquipLevel, authored on the row), and copies are bounded by
+//     kModCopyCapBase, raised by the Rig Shop's MOD STORAGE row. A v44-or-older blob
+//     migrates by tallying `ownedMods` per id and clamping to the base cap; the surplus and
+//     the rolled levels are dropped.
+// v46 NO BYTES. Marks the Worm line collapsing its two Script placeholders into Rootgrub
+//     and moving the care branch down to the Daemon. Both retired ids are in the rename
+//     table below, so an older blob holding either arrives on Rootgrub.
+// v47 APPEND the GAMES arcade's per-cabinet tallies as parallel id/plays/wins runs, the
+//     shape speciesDives uses. Keyed by cabinet content id rather than roster position, so
+//     the list can be reordered. Pre-v47 → empty.
+// v48 APPEND the DECRYPTOGRAM board's per-quote state: a 2-BIT field per QuoteDef::wire
+//     (content_quotes.h), four to a byte, length-prefixed like v40's bitsets — the pool is
+//     expected to reach the hundreds, and a save should only be as long as the quotes that
+//     device has met. The loss ratchet and the win are one axis: 0 never played (HARD), 1
+//     lost once (MEDIUM), 2 lost twice or more (EASY, the floor), 3 SOLVED. Pre-v48 → never
+//     played.
+// v49 NO BYTES. Marks COOKING moving off the Rig Shop: a MERGE HUB recipe is won off a
+//     solved Decryptogram, never bought, so the four rows that sold one are gone from
+//     kRigUpgrades and every recipe lives in v31's `recipesUnlocked` outright. Two things
+//     move without changing the wire's shape, both handled by `migrateRecipeRows` below:
+//     the mask widens from the 2 bits mirroring rows 9/10 to one per recipe, and
+//     `rigLevelsExt` is positional, so deleting the two mid-table Browns rows shifts every
+//     row after them. This is the version to raise kOldestAcceptedVersion past once every
+//     device is current, which retires that function.
+// v50 PARALLEL TAIL of the per-pet BANDWIDTH-REGEN upgrade — minutes shaved off this pet's
+//     regen interval by a Tiramisudo (ItemEffect::BandwidthRegenBonusMin). Per-pet and
+//     frozen with the pet, the upgrade belonging to the creature rather than the run.
+//     Pre-v50 → 0.
+// v52 WIDENS kQuoteWireCap (content_quotes.h) from 256 to 512, doubling the quoteStates
+//     array. The wire format does not change — the array has been length-prefixed since
+//     v48, so a longer one loads into a shorter build's view as "the quotes it knows". The
+//     version moves because the header that owns the cap asks for a note when it does.
+// v53 APPEND ROCK THE DOCK's run state (core/model/tournament.h). Five bytes for a whole
+//     eight-operator bracket, every entrant being DERIVED from the run seed rather than
+//     stored: the seed, the survivor bitmask, the round, and a finished run's verdict.
+//     Pre-v53 → a zero seed, which reads as "no run".
+// v54 NO BYTES. Renames one ITEM id (`airgap_snack` -> `dyno_nuggets`, see `renamedIds`) —
+//     the first rename that is not a creature's, which is why `renameRetiredIds` now sweeps
+//     the inventory and the ever-collected set too. The version exists so the rename row has
+//     a `sinceVersion` to retire against.
+// v55 APPEND the arcade's per-cabinet HIGH SCORE — a fourth run, written as its own tail at
+//     the END of the blob rather than beside v47's trio, which is what lets a pre-v55 build
+//     read a v55 save and simply not see it. It arrives with the two ENDLESS cabinets (the
+//     CHROMATOPHORE and the Isolation buffer), where a run with no finish line has a score
+//     and nothing else. Pre-v55 → 0.
+// v56 APPEND three lifetime tallies as their own tail, the shape v55 used. They arrive
+//     together because they are one change — the achievement board reaching the three
+//     subsystems that kept no record at all (ROCK THE DOCK, the LINK duel, the MERGE HUB's
+//     stove). None can be reconstructed from anything else in the blob: a bracket leaves no
+//     trace once its run is dismissed, a duel pays nothing, and a cooked dish is
+//     indistinguishable from a dropped one the moment it is eaten. Pre-v56 → 0.
+// v57 APPEND the rest of the per-pet EPIC-DISH grants in v50's shape — the active pet's
+//     off-level stat points and XP rate, then a parallel list onto d.rack. A second tail
+//     rather than a widening of v50's, because a tail is what a pre-v57 build can stop
+//     before. Pre-v57 → 0.
+// v58 APPEND ONE BYTE: which background the operator has chosen (content_backgrounds.h) as
+//     that row's `wire`, or 0 for AUTO. Its own tail after v57's. Only the CHOICE is here —
+//     which backgrounds are OWNED is derived by Game::backgroundOwned from facts the blob
+//     already records (a creature raised, an area cleared, brackets taken), so there is no
+//     second copy to fall out of step. Pre-v58 → 0, which is AUTO.
 constexpr uint16_t kSaveVersion = 58;
 
-// The oldest blob deserialize will read. Raising it is how a device stops carrying
-// migration weight for saves nobody can still be holding — and it is the ONLY thing
-// that retires a rename row (see `renamedIds`). Raising it strands every save older
-// than it, so it moves on a deliberate compatibility call, never as a side effect.
-//
-// Raised to 53 (the version v0.25.0 already wrote) once every live device had been
-// confirmed on v0.25.0 or later — a device on that firmware or newer has autosaved at
-// v53 at least once, so nothing still holds a save older than the floor. That retired
-// both rows in `renamedIds` (sinceVersion 41 and 46) and the one in `ladderInserts`
-// (sinceVersion 43), and `migrateRecipeRows` (v49) along with them — see save.cpp.
+// The oldest blob deserialize will read, and the ONLY thing that retires a rename row
+// (see `renamedIds`). Raising it is how a device stops carrying migration weight for saves
+// nobody can still hold — and it strands every save older than it, so it moves on a
+// deliberate compatibility call about what firmware is in the field, never as a side
+// effect of a version bump.
 constexpr uint16_t kOldestAcceptedVersion = 53;
 
-// Content ids a blob may still carry under a name the tables no longer answer to.
-// A content id is a wire value, so a rename is a FORMAT concern and is handled here
-// rather than as a permanent alias in the content tables — an alias there would read
-// as a second legitimate name for a creature, and would never be safe to remove.
+// Content ids a blob may still carry under a name the tables no longer answer to. A
+// content id is a wire value, so a rename is a FORMAT concern and lives here rather than
+// as a permanent alias in the content tables, where it would read as a second legitimate
+// name and never be safe to remove.
 //
-// `sinceVersion` is the first kSaveVersion whose blobs never write `from`, so a row
-// applies only to a blob older than it.
+// `sinceVersion` is the first kSaveVersion whose blobs never write `from`, so a row applies
+// only to an older blob. Two rules keep the table finite:
 //
-// Two rules keep the table finite and mechanical:
-//
-//   RETIREMENT — a row may be deleted exactly when
-//   `kOldestAcceptedVersion > sinceVersion`: at that point no blob the codec will
-//   even open can still carry the old id. Nothing else justifies dropping one, and
-//   a row that HAS become droppable must be dropped — the native gate fails on a
-//   dead row, so raising the floor tells you which rows to delete.
+//   RETIREMENT — a row may be deleted exactly when `kOldestAcceptedVersion > sinceVersion`,
+//   at which point no blob the codec will open can carry the old id. A row that HAS become
+//   droppable must be dropped: the native gate fails on a dead row.
 //
 //   FLATTENING — every `from` is distinct and no `to` is ever also a `from`, so one
-//   substitution per id is always enough. Renaming something that is already a `to`
-//   means editing that row's `to` in place (its `sinceVersion` stays: an ancient blob
-//   still lands on the current name) AND adding a row for the newly-retired name.
+//   substitution per id is always enough. Renaming something already a `to` means editing
+//   that row's `to` in place (its `sinceVersion` stays) AND adding a row for the
+//   newly-retired name.
 struct RenamedId {
     const char* from;
     const char* to;
@@ -411,27 +275,20 @@ const RenamedId* renamedIds(int& count);
 
 // An area SPLICED INTO THE MIDDLE of the EXPL ladder (kAreaList, areas/area_defs.h).
 //
-// Every persisted EXPL field is POSITIONAL — indexed by ladder rung, never by area id —
-// so a blob written before the splice describes, from `atIndex` on, the area now one rung
-// to its LEFT. Read verbatim it would hand the player the new area already cleared and
-// silently take the deepest one back. That makes a mid-ladder insert a FORMAT concern, so
-// like a renamed content id it is handled here rather than in the game layer: the codec
-// opens a blank rung in each positional field and everything downstream reads a save that
-// looks exactly like one written after the splice. Appending to the END of the ladder
-// needs no row — nothing shifts, and the new rung defaults to uncleared on its own.
+// Every persisted EXPL field is POSITIONAL — indexed by ladder rung, never by area id — so
+// a blob written before the splice describes, from `atIndex` on, the area now one rung to
+// its LEFT. Read verbatim it would hand the player the new area already cleared and take
+// the deepest one back, which makes a mid-ladder insert a FORMAT concern: the codec opens a
+// blank rung in each positional field and everything downstream reads a save that looks
+// like one written after the splice. Appending to the END of the ladder needs no row.
 //
-// The fields this has to move are every ladder-indexed one in SaveData: `sectorCleared`,
-// `bossUnlocked`, `subCleared`, `subBossUnlocked`, `subRefarm` (row-major, one row per
-// area), the `titlesUnlocked` bitmask, and the `equippedTitle` index.
+// The ladder-indexed fields are `sectorCleared`, `bossUnlocked`, `subCleared`,
+// `subBossUnlocked`, `subRefarm` (row-major), the `titlesUnlocked` bitmask and the
+// `equippedTitle` index.
 //
-// `atIndex` is the rung the area landed on, in the ladder AS IT WAS at that moment. Rows
-// apply oldest-first, so each one reads against the ladder its predecessors already built
-// and no row has to be restated when a later insert lands ahead of it.
-//
-// `sinceVersion` is the first kSaveVersion whose blobs already carry the slot, so a row
-// applies only to a blob older than it — the same contract as `renamedIds`, and the same
-// RETIREMENT rule: a row may be deleted exactly when `kOldestAcceptedVersion >
-// sinceVersion`, at which point no blob the codec will open still predates the splice.
+// `atIndex` is the rung the area landed on in the ladder AS IT WAS then. Rows apply
+// oldest-first, so each reads against the ladder its predecessors built. `sinceVersion` and
+// the RETIREMENT rule are `renamedIds`' contract exactly.
 struct LadderInsert {
     int atIndex;
     uint16_t sinceVersion;
@@ -661,7 +518,7 @@ struct SaveData {
     // SaveStoredPet::defragCount (serialized in a parallel v16 tail). Pre-v16 → 0.
     int32_t defragCount = 0;
 
-    // v17: permanent-mod semantics (D3) ----------------------
+    // v17: permanent-mod semantics ----------------------
     // Set by deserialize: true when the blob is v17+, i.e. `ownedMods` already excludes
     // the equipped mods (the permanent-mod model). A pre-v17 blob leaves this false so
     // the loader migrates by dropping owned ids that also appear in `equipped` (the old
@@ -724,7 +581,7 @@ struct SaveData {
     uint8_t itemTabsUnlocked = 0;
     uint8_t bulkOpenUnlocked = 0;
 
-    // --- v24: move-slot rework — per-pet Attack/Defend slot typing (#12) -----------
+    // --- v24: move-slot rework — per-pet Attack/Defend slot typing -----------
     // The stamped Game::SlotKind (0 Unset · 1 Attack · 2 Defend) for each of the
     // kMaxMoveSlots move slots, length-prefixed (mirrors statPoints). Per-pet, reset
     // on a new egg. Pre-v24 → slotKinds stays empty and hasSlotKindData false, so the
@@ -771,10 +628,9 @@ struct SaveData {
     // Hub, no recipes). Pre-v49 the mask only carried its first two bits and the rest
     // of cooking rode the rig rows — see migrateRecipeRows.
     //
-    // SUPERSEDED as of v51 by `recipeOwned` below, which holds the whole set. This u32
-    // stays on the wire at its v31 position carrying wires 0-31, because a v31..v50
-    // reader is still entitled to the recipes it can name — an OTA that rolls back must
-    // not cost a player the kitchen it understands.
+    // The whole set lives in `recipeOwned` below (v51). This u32 stays on the wire at its
+    // v31 position carrying wires 0-31, so a v31..v50 reader still gets the recipes it can
+    // name — an OTA rollback must not cost a player the kitchen it understands.
     uint8_t mergeHubUnlocked = 0;
     uint32_t recipesUnlocked = 0;
 

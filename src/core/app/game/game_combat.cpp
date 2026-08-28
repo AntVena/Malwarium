@@ -471,7 +471,7 @@ void Game::applyCombatResult() {
     // a resolved WILD (live, non-boss) fight fatigues the pet — a per-fight
     // frag (corruption) tax, win or lose (boss rounds never reach here; safe Sim is
     // exempt). A flee (Fled) isn't a fought battle, so it's excluded.
-    // (D2): Bandwidth is a per-fight FRAGMENTATION SHIELD for
+    // Bandwidth is a per-fight FRAGMENTATION SHIELD for
     // exploration. ANY resolved wild fight (win OR loss) spends 1 charge to skip the
     // battle-fatigue frag tax entirely — so a stocked pool lets the pet farm longer with
     // less risk, and Bits sunk into the Hacker SHOP's Bandwidth upgrade buy real safety.

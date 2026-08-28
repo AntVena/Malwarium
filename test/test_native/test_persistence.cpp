@@ -111,7 +111,7 @@ void test_save_roundtrip() {
           b.items[0].qty == 3);
     CHECK(b.ownedMods.size() == 1 && b.equipped.size() == 2);
     CHECK(std::strcmp(b.equipped[0].id, "firewall_patch") == 0 && b.equipped[1].id[0] == '\0');
-    CHECK(b.hasPermanentModData);   // v17: the permanent-mod semantics marker (D3)
+    CHECK(b.hasPermanentModData);   // v17: the permanent-mod semantics marker
     CHECK(b.log.size() == 1 && std::strcmp(b.log[0].text, "USED YUBI-COOKIE") == 0);
     CHECK(b.rack.size() == 1 && std::strcmp(b.rack[0].id, "cryptoshell") == 0 &&
           b.rack[0].generation == 2);

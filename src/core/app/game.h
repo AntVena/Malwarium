@@ -165,7 +165,7 @@ public:
     // polish; STAT's LVL n is the shipped feedback). Used by tests to confirm a level-up.
     int lastLevelUpStat() const { return lastLevelUpStat_; }
     int bits() const { return bits_; }
-    int bandwidth() const { return bandwidth_; }   // farming resource (D2) — see below
+    int bandwidth() const { return bandwidth_; }   // farming resource — see below
     // The farming-pool CAP: the base plus every "Increase Bandwidth" upgrade bought on
     // the Rig Shop (a). Replaces the raw kBandwidthMax everywhere the cap is
     // read (regen ceiling, the badge/PROFILE denominator, the debug clamp).
@@ -454,22 +454,19 @@ public:
     // microSD presence pushed from the platform tier at boot (device mounts the
     // card + round-trips it; host leaves it absent). Surfaced on the CFG "SD" line
     // so it reflects the real card instead of a hardcoded "ABSENT".
-    // The largest single allocation the platform could satisfy right now, pushed in
-    // each loop like the SD and power readings. Runtime-only, and 0 means "nobody
-    // told us" — a host build never pushes one, so it never blocks a save there.
+    // The largest single allocation the platform could satisfy right now. 0 means
+    // "nobody told us" — a host build never sets one, so it never blocks a save there.
     //
-    // This exists because a save is the biggest allocation the engine makes (~16KB
-    // in one piece) and it fires off a timer, so it lands at moments nothing chose:
-    // on device the audit capture claims ~70KB as it arms and keeps taking more for
-    // seconds afterwards, and a save landing in that window found no block big
-    // enough. The Arduino build has exceptions off, so that is not a failed save —
-    // operator new's bad_alloc goes to std::terminate and RESETS THE DEVICE, losing
-    // the very state the save was trying to keep. It cannot be caught, only avoided.
-    // A PROBE, not a pushed reading, because the thing it guards allocates in two
-    // stages: building the SaveData, then reserving the blob. A value sampled once a
-    // loop is already stale by the second stage — the first one spent it — so the
-    // engine has to be able to ask again mid-flight. Captureless, so the platform's
-    // lambda decays to a plain function pointer and core/ stays free of <functional>.
+    // A save is the biggest allocation the engine makes (~16KB in one piece) and it
+    // fires off a timer, so it lands at moments nothing chose — the audit capture
+    // claims ~70KB as it arms, and a save in that window finds no block big enough.
+    // The Arduino build has exceptions off, so that is not a failed save: bad_alloc
+    // goes to std::terminate and RESETS THE DEVICE. It can only be avoided.
+    //
+    // A PROBE rather than a pushed reading, because the save allocates in two stages
+    // (build the SaveData, then reserve the blob) and a once-a-loop sample is already
+    // stale by the second. Captureless, so it decays to a plain function pointer and
+    // core/ stays free of <functional>.
     using HeapProbe = uint32_t (*)();
     void setHeapProbe(HeapProbe p) { heapProbe_ = p; }
     uint32_t heapHeadroom() const { return heapProbe_ ? heapProbe_() : 0; }
@@ -554,24 +551,21 @@ public:
     bool sdRecheckRequested() const { return sdRecheckRequested_; }
     void clearSdRecheck() { sdRecheckRequested_ = false; }
 
-    // Travel-mode seam (CFG → DEVICE → TRAVEL MODE), a deliberate indefinite pause
-    // for an operator who is going away and does not want to babysit a pet. Set
-    // here, acted on by the device tier: it powers the radio down, lands a save, and
-    // deep-sleeps the SoC until the wake chord.
+    // Travel-mode seam (CFG → DEVICE → TRAVEL MODE): a deliberate indefinite pause.
+    // Set here, acted on by the device tier, which powers the radio down, lands a save
+    // and deep-sleeps the SoC until the wake chord.
     //
-    // There is deliberately NO clock to freeze on this side. A deep sleep on this
-    // board is a reset, so a wake re-enters through the save, and every engine clock
-    // is already reboot-safe by one of three routes: rebased against nowMs_ on load
-    // (stageEnteredMs_, lastModelMs_), stored as a REMAINING count rather than a
-    // deadline (bootHatchRemainMs_), or anchored on lifetimeUptimeMs(), which is
-    // awake time and does not advance while the device is off (backupShieldUntilMs_,
-    // dyingElapsedMs_). Nothing observes wall time, because the board carries no RTC
-    // (config.h HAS_HARDWARE_RTC) — so the sleep gap is uncreditable by construction
-    // rather than by bookkeeping.
+    // No clock to freeze on this side. A deep sleep on this board is a reset, so a wake
+    // re-enters through the save, and every engine clock is already reboot-safe by one
+    // of three routes: rebased against nowMs_ on load (stageEnteredMs_, lastModelMs_),
+    // stored as a REMAINING count rather than a deadline (bootHatchRemainMs_), or
+    // anchored on lifetimeUptimeMs(), which is awake time (backupShieldUntilMs_,
+    // dyingElapsedMs_). Nothing observes wall time — the board carries no RTC — so the
+    // sleep gap is uncreditable by construction.
     //
-    // Latched, not a pulse: the device tier may have to hold it for a moment (an OTA
-    // image still on trial must commit before a reset is safe), so it stays set until
-    // clearTravelSleep(). The host tier clears it without sleeping.
+    // Latched rather than pulsed: the device tier may have to hold it for a moment (an
+    // OTA image on trial must commit before a reset is safe). The host tier clears it
+    // without sleeping.
     void requestTravelSleep() { travelSleepRequested_ = true; dirty_ = true; }
     bool travelSleepRequested() const { return travelSleepRequested_; }
     void clearTravelSleep() { travelSleepRequested_ = false; dirty_ = true; }
@@ -688,18 +682,12 @@ public:
     }
     bool netProvisioned() const { return netProvisioned_; }
 
-    // What platform/esp32/net_sta.h asks each loop, and what the arbiter reads to
-    // pick the Update owner.
-    //
-    // ONE ASKER. This device joins a network for exactly as long as a job the
-    // operator started needs it to, and not one loop longer — there is no standing
-    // permission that survives the job, and none that survives a reboot. Pressing
-    // CHECK NOW (or confirming an install) IS the directive to go online; the job
-    // runs to a terminal outcome and releases the radio itself, which is why it is
-    // latched rather than nav-derived — a fetch that died the moment the menu
-    // collapsed could never finish. When it lets go, the arbiter re-resolves and the
-    // radio falls back to whichever toggle was already on, so an update puts the
-    // radio back the way it found it without anyone bookkeeping that.
+    // What platform/esp32/net_sta.h asks each loop, and what the arbiter reads to pick
+    // the Update owner. ONE ASKER: the device joins a network for exactly as long as an
+    // operator-started job needs it, with no standing permission surviving the job or a
+    // reboot. Latched rather than nav-derived, because a fetch that died the moment the
+    // menu collapsed could never finish. When it lets go the arbiter re-resolves and the
+    // radio falls back to whichever toggle was already on.
     bool netConnectWanted() const { return netProvisioned_ && updateJobLive(); }
     // The association outcome, pushed back by the device tier and reported by the
     // UPDATES screen as the first step of a job (CONNECTING → CHECKING → the verdict).
@@ -1024,21 +1012,17 @@ public:
     }
     void setAuditMode(AuditMode m);
     // Note a network observed by the device-tier passive scan (net_sniff.h calls this
-    // once per heard AP on every sweep, dups included). It feeds TWO independent
-    // structures, and the split is the point:
-    //   * visibleNetworks_ — the in-range snapshot, refreshed on every sighting. This
-    //     is what the CREW home-network picker reads, so "which networks can I see
-    //     right now" is answered by the radio, never by a backlog.
-    //   * pendingNetworks_ — the reward queue the EXPL Wi-Fi event drains one sighting
-    //     at a time. NOT credited here: uniqueness-checking against the SD-backed
-    //     ledger, XP, and rewards all happen when resolveNetworkDiscovery() pops it.
-    // A network arriving in range (new to the snapshot, not merely re-heard) nudges
-    // the egg-hatch clock immediately (accelerateEggHatch) — an incubating egg can
-    // never explore, so this is its only hatch accelerator, deliberately decoupled
-    // from Hacker Rank credit. Returns true if the sighting was newly QUEUED for
-    // reward; false if it was already pending — the snapshot is updated either way.
-    // `bssid` is 6 bytes; `ssid` may be empty (hidden network) — a BSSID-derived
-    // fallback label is used instead. PASSIVE discovery only — no capture/injection.
+    // once per heard AP per sweep, dups included). Feeds two independent structures:
+    // visibleNetworks_, the in-range snapshot the CREW picker reads, and
+    // pendingNetworks_, the reward queue the EXPL Wi-Fi event drains one at a time.
+    // Nothing is credited here — uniqueness against the ledger, XP and rewards all
+    // happen when resolveNetworkDiscovery() pops it.
+    //
+    // A network newly ARRIVING in range nudges the egg-hatch clock
+    // (accelerateEggHatch); an incubating egg cannot explore, so this is its only
+    // accelerator. Returns true if the sighting was newly queued, false if it was
+    // already pending — the snapshot updates either way. `bssid` is 6 bytes; an empty
+    // `ssid` (hidden network) falls back to a BSSID-derived label.
     bool registerNetwork(const uint8_t* bssid, const char* ssid);
     // How many networks the radio can currently hear (snapshot entries still inside
     // kNetVisibleFreshMs). 0 on host and whenever the scan isn't running.
@@ -1373,17 +1357,16 @@ public:
     int crewNetworkRows(CrewNetRow* rows, int max) const;
 
     // Achievements (save v40) --------------------------------------------------
-    // Player-level (survive a pet reset, like the Titles above). The catalogue is data —
-    // content_achievements.cpp — and MOST rows need no code here at all: a sweep compares
-    // each row's `series` progress (achValue) against its goal every tick. Only the rows
-    // whose event leaves no counter behind (AchSeries::Event) are fired by hand, from the
-    // site where they happen, by id: see the `ach::` id constants in
-    // content_achievements.h so a typo is a compile error rather than a silent no-op.
+    // Player-level, surviving a pet reset like the Titles above. The catalogue is data
+    // (content_achievements.cpp) and most rows need no code here: a per-tick sweep
+    // compares each row's `series` progress (achValue) against its goal. Only
+    // AchSeries::Event rows, whose event leaves no counter behind, are fired by hand
+    // from the site where they happen — by the `ach::` id constants, so a typo is a
+    // compile error rather than a silent no-op.
     //
-    // Idempotent: setting an already-earned row does nothing, so a trigger site (and the
-    // per-tick sweep) can call freely. Unlocking pays the row's `rewards` and queues the
-    // home-screen banner (achBanner below) — the only way an unlock reaches the player,
-    // since the device has no achievement browser.
+    // Idempotent, so a trigger site and the sweep can both call freely. Unlocking pays
+    // the row's `rewards` and queues the home-screen banner, which is the only way an
+    // unlock reaches the player.
     void unlockAchievement(const char* id);
     // The MIRROR: the pet facing its own species. Called from every seam that can seat a
     // real species opposite the player — the LINK duel and the arena — so the rule for
@@ -1862,18 +1845,12 @@ private:
     void enterSubmenu();
     void dropCursor();
     SubmenuId enteredId() const;                   // the slot table's id for cursor_
-    // Whether a pet-face carousel slot is inert, for either reason a slot can be:
-    //
-    //   * Boot-Sector egg: while the pet is still an unhatched egg the care/combat
-    //     slots (GAMES/EXPL/MAINT/MODS) are inert — there's nothing to equip,
-    //     explore, maintain, or play with on an egg (the egg's own hatch minigame is
-    //     not the arcade's). STAT + ITEMS stay live (ITEMS gates non-quest items
-    //     separately, see itemUsable).
-    //   * Demo build: CFG configures a device the web demo does not have
-    //     (include/demo_config.h).
-    //
+    // Whether a pet-face carousel slot is inert, for either reason a slot can be: a
+    // Boot-Sector egg (GAMES/EXPL/MAINT/MODS have nothing to act on; STAT and ITEMS
+    // stay live, ITEMS gating non-quest items separately via itemUsable), or a demo
+    // build, where CFG configures a device the web demo does not have (demo_config.h).
     // Drives both the greyed carousel and the blocked submenu entry, so the two can
-    // never disagree about what a slot does.
+    // never disagree.
     bool slotLocked(SubmenuId id) const;
 
     // --- List navigation (game_listnav.cpp) ---------------------------------
@@ -2783,20 +2760,16 @@ private:
     int combatAnimBeat_ = 0;
     uint32_t lastCombatAnimMs_ = 0;
     int combatHitBeat_ = 0;
-    // Whose colours the pet is wearing (FX_CAMO), as the ART being sampled plus a LEVEL —
-    // neither is a beat. The tick reads the pet's live cast (camoTarget), resolves it to
-    // the sprite that answers it (camoSpriteForTarget) and eases the level toward it
-    // (camoAdvance), so the colours hold while the pet holds the move and no other cue on
-    // the combat screen can move them.
+    // Whose colours the pet is wearing (FX_CAMO): the ART being sampled plus a LEVEL,
+    // neither of which is a beat. The tick reads the pet's live cast (camoTarget),
+    // resolves it to a sprite (camoSpriteForTarget) and eases the level toward it
+    // (camoAdvance), so the colours hold while the pet holds the move.
     //
-    // The SPRITE is what is held, rather than the target that named it, because it is the
-    // sprite that decides whether the palette is actually changing: a cast that starts
-    // copying the fighter opposite when the pet is already wearing that fighter's line —
-    // and it is the same creature either way — must sit on the colour it has rather than
-    // dissolve into itself. Turning one into tones is a scan of its pixels, so that waits
-    // for the draw. `combatCamoLeaving_` is the art a swap is coming off, held until the
-    // dissolve between two palettes finishes. All three are cleared on leaving the fight,
-    // the one place a disguise stops meaning anything.
+    // The SPRITE is what is held rather than the target that named it, because the
+    // sprite decides whether the palette is actually changing — a cast onto a fighter
+    // whose line the pet already wears must sit still rather than dissolve into itself.
+    // `combatCamoLeaving_` is the art a swap is coming off, held until the dissolve
+    // finishes. All three clear on leaving the fight.
     const SpriteData* combatCamoWorn_ = nullptr;
     const SpriteData* combatCamoLeaving_ = nullptr;
     uint8_t combatCamoLevel_ = 0;
@@ -2817,20 +2790,18 @@ private:
     int lastLevelUpStat_ = -1;
     int rollbackRow_ = 0;       // Rollback picker cursor (RollbackPicker nav state)
 
-    // Explore-mode. Exploration is a background mode on the IDLE habitat:
-    // exploreActive_ arms it, exploreSector_ is the armed sector, exploreStreak_ the
-    // current win-streak, exploreSteps_ a run step counter (tests/telemetry),
-    // exploreStepBeat_ the auto-step pacer (heartbeats since the last step). The mode
-    // is RUNTIME-ONLY (a reboot stops it; the streak resets — default). The
-    // wild-encounter intro / event screens are their own Nav states, beyond the
-    // 3-deep menu budget, suspending the global auto-defocus (analogy).
-    // combatCaller_ tells finishCombat() which caller to return to: the LOADOUT hub
-    // (Sim-Battle) or the explore habitat (a wild encounter, — never the carousel).
-    // (D2): Bandwidth is the FARMING resource — spent 1/re-farm win to keep
-    // cleared-sub loot full (freezing the decay); when empty, the decay curve
-    // applies until it regenerates on the heartbeat over real time (tick()). Device/
-    // session-level (NOT per-pet — it's the player's exploration stamina); not persisted
-    // (a reboot refills). bandwidthAccumMs_ carries the sub-step regen remainder.
+    // Explore-mode, a background mode on the IDLE habitat: exploreActive_ arms it,
+    // exploreSector_ is the armed sector, exploreStreak_ the win-streak, exploreSteps_
+    // a run step counter, exploreStepBeat_ the auto-step pacer. Runtime-only — a reboot
+    // stops it and resets the streak. The wild-encounter intro / event screens are
+    // their own Nav states, past the 3-deep menu budget, and suspend the global
+    // auto-defocus. combatCaller_ tells finishCombat() where to return: the LOADOUT hub
+    // (Sim-Battle) or the explore habitat (a wild encounter), never the carousel.
+    //
+    // Bandwidth is the FARMING resource — spent 1 per re-farm win to keep cleared-sub
+    // loot full; when empty the decay curve applies until it regenerates on the
+    // heartbeat over real time. Session-level, not per-pet, and not persisted.
+    // bandwidthAccumMs_ carries the sub-step regen remainder.
     int bandwidth_ = kBandwidthMax;
     uint32_t bandwidthAccumMs_ = 0;
     bool exploreActive_ = false;
@@ -3022,26 +2993,21 @@ private:
     PowerStatus power_;  // last reading from the platform tier (CFG "BATT" line)
     int allyBuffBattlesLeft_ = 0;
 
-    // Real-network discovery (game_net.cpp: registerNetwork/resolveNetworkDiscovery,
-    // core/net/network_ledger.h). Three structures, three different questions:
+    // Real-network discovery (game_net.cpp, core/net/network_ledger.h). Three
+    // structures answering three questions:
     //
-    //   visibleNetworks_ — "what can the radio hear right now": a RAM-only snapshot
-    //     (cap kNetVisibleCap) refreshed by every sighting and aged out by
-    //     kNetVisibleFreshMs. Feeds the CREW picker (crewNetworkRows) and nothing
-    //     else, so no reward bookkeeping can ever shape what the picker offers.
-    //   pendingNetworks_ — "what still owes the player a reward": a RAM-only FIFO
-    //     (cap kPendingNetworkQueueCap) drained one entry per EXPL Wi-Fi event. Full
-    //     evicts oldest-first rather than refusing new sightings, so an unwalked
-    //     backlog goes stale instead of going deaf. Not persisted — a reboot losing
-    //     a few unresolved sightings is fine, they'll be re-scanned.
-    //   networkLedger_ — "what has this pet actually walked past": the SD-backed
-    //     history (per-BSSID display name + sighting count) that decides
-    //     new-vs-familiar-vs-home-turf, and supplies the picker's tally column.
+    //   visibleNetworks_ — what the radio can hear right now: a RAM-only snapshot
+    //     (kNetVisibleCap) aged out by kNetVisibleFreshMs. Feeds the CREW picker and
+    //     nothing else, so no reward bookkeeping can shape what the picker offers.
+    //   pendingNetworks_ — what still owes the player a reward: a RAM-only FIFO
+    //     (kPendingNetworkQueueCap) drained one entry per EXPL Wi-Fi event. Evicts
+    //     oldest-first when full, so an unwalked backlog goes stale rather than deaf.
+    //   networkLedger_ — what this pet has actually walked past: the SD-backed
+    //     per-BSSID history deciding new-vs-familiar-vs-home-turf.
     //
-    // netDiscoveryFlavor_ is the on-screen line resolveNetworkDiscovery() sets, drawn
-    // alongside wifiFlavor_ (drawWifiEvent). emptyQueueStreak_ throttles the
-    // empty-queue Happiness penalty (see kNetDiscoveryEmptyCooldownStrikes) — reset
-    // whenever a sighting IS found, and on a fresh startExplore().
+    // netDiscoveryFlavor_ is the line resolveNetworkDiscovery() sets, drawn alongside
+    // wifiFlavor_. emptyQueueStreak_ throttles the empty-queue Happiness penalty
+    // (kNetDiscoveryEmptyCooldownStrikes) and resets whenever a sighting IS found.
     struct PendingNetwork {
         uint64_t key = 0;
         char name[33] = {0};
@@ -3069,19 +3035,13 @@ private:
     NetDiscovery netDiscovery_ = NetDiscovery::None;
     int emptyQueueStreak_ = 0;
 
-    // Pet-to-pet discovery (game_peers.cpp, core/net/peer_link.h). The same
-    // snapshot-vs-history split as the networks above, for the same reason:
-    //
-    //   livePeers_ — "who can I hear right now": a RAM-only snapshot (cap
-    //     kPeerVisibleCap) refreshed by every beacon and aged out by
-    //     kPeerVisibleFreshMs. Holds the FULL last HELLO, so a live row shows what
-    //     someone is raising this second rather than what they were last time.
-    //   peerLedger_ — "who have I ever met": the SD-backed roster, updated only on
-    //     the arrival edge, which is what makes timesMet a count of meetings rather
-    //     than of frames.
-    //
-    // A peer aging out of the snapshot and returning is therefore a new meeting —
-    // the freshness window IS the boundary between one encounter and the next.
+    // Pet-to-pet discovery (game_peers.cpp, core/net/peer_link.h) — the same
+    // snapshot-vs-history split as the networks above. livePeers_ is a RAM-only
+    // snapshot (kPeerVisibleCap) aged out by kPeerVisibleFreshMs, holding the FULL last
+    // HELLO so a row shows what someone is raising this second. peerLedger_ is the
+    // SD-backed roster, updated only on the ARRIVAL edge, which makes timesMet a count
+    // of meetings rather than of frames — so the freshness window is the boundary
+    // between one encounter and the next.
     struct LivePeer {
         uint64_t key = 0;
         PeerHello hello;
@@ -3431,18 +3391,15 @@ private:
     QuoteReward cryptogramPrize_ = {};  // ...and the unlock beside it (None = replay)
     uint8_t quoteStates_[kQuoteStateBytes] = {0};
 
-    // GAMES / the arcade (game_arcade.cpp). arcadeRow_ is the cabinet list's cursor and
-    // arcadeGame_ the roster index of whatever is RUNNING — the two part company as
-    // soon as a run starts, since the list stays where the player left it. arcadeRun_
-    // is what a minigame reads to know it is being played for fun: it redirects the
-    // payout and scales the pacing, and it is cleared by finishArcadeRun and by every
-    // reset that could strand a run (a wipe, a fresh egg).
-    //
-    // The result block is the finished run frozen for the payout screen, because the
-    // minigame's own state is free to be reset the instant the next one starts.
-    //
-    // Only the two TALLIES persist (save v47), keyed on the wire by each row's id so
-    // the roster can be reordered.
+    // GAMES / the arcade (game_arcade.cpp). arcadeRow_ is the cabinet list's cursor,
+    // arcadeGame_ the roster index of what is RUNNING — they part company as soon as a
+    // run starts, the list staying where the player left it. arcadeRun_ is what a
+    // minigame reads to know it is being played for fun: it redirects the payout and
+    // scales the pacing, and is cleared by finishArcadeRun and by every reset that could
+    // strand a run. The result block freezes the finished run for the payout screen,
+    // since the minigame's own state resets the instant the next one starts. Only the
+    // two tallies persist (save v47), keyed on the wire by row id so the roster can be
+    // reordered.
     int arcadeRow_ = 0;
     int arcadeGame_ = 0;
     bool arcadeRun_ = false;

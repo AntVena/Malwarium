@@ -188,7 +188,7 @@ void drawModPicker(Framebuffer& fb, const ContentRegistry& reg,
         drawText(fb, kActiveW - kMargin - textWidth(nt), 6, nt, palColor(Pal::INK_DIM));
     }
 
-    // List the available (un-equipped) mods — mods are permanent (D3), so there is
+    // List the available (un-equipped) mods — mods are permanent, so there is
     // no unequip option; equipping consumes the mod into the slot. Compact rows so
     // the effect text fits. A mod the pet is too low-level to field shows
     // its required level ("L n") in place of the effect tag and dims — a number channel
@@ -288,7 +288,7 @@ void drawModPicker(Framebuffer& fb, const ContentRegistry& reg,
                                                                : palColor(Pal::INK_DIM));
     }
 
-    // Inline overwrite confirm (D3): shown only when the slot already holds a
+    // Inline overwrite confirm: shown only when the slot already holds a
     // DIFFERENT mod. The overwrite is IRREVERSIBLE — it discards the current mod for
     // good — so the warning names it and stamps PERMANENT (a grayscale-safe word,
     // not a colour). Default focus is Cancel.
