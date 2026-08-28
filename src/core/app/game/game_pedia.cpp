@@ -17,6 +17,7 @@
 // counter behind) are fired by hand from wherever they happen: hatch/evolution →
 // game_lifecycle.cpp, Lockout resolve → game_lifecycle.cpp, a duel → game_pvp.cpp, the
 // DevTools honeytoken → ap_server.h.
+#include "core/content/content_homes.h"   // sceneForCreature — a raised creature brings its place
 #include "core/app/game.h"
 
 #include <cstring>
@@ -31,7 +32,13 @@ void Game::markCreatureRaised(const char* id) {
     for (const CreatureDef* c : raisedCreatures_)
         if (std::strcmp(c->id, id) == 0) return;    // already tallied — idempotent
     if (const CreatureDef* def = registry_.creature(id)) {
+        // Raising a creature is also how its HOME becomes a background the operator may
+        // choose (content/content_backgrounds.h). Ownership is derived from this very
+        // list, so whether it is new has to be asked before the push.
+        const SceneId home = sceneForCreature(*def);
+        const bool had = backgroundOwned(home);
         raisedCreatures_.push_back(def);
+        if (!had) announceBackground(home);
         markSaveDirty();
     }
 }

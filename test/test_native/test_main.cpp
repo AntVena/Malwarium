@@ -399,6 +399,12 @@ int g_failures = 0;
     RUN(test_every_area_names_a_real_scene) \
     RUN(test_every_creature_has_a_home) \
     RUN(test_screens_choose_a_place) \
+    RUN(test_backgrounds_start_with_two) \
+    RUN(test_backgrounds_are_earned_by_playing) \
+    RUN(test_background_pick_drives_the_habitat) \
+    RUN(test_background_pick_survives_a_reboot) \
+    RUN(test_background_absent_from_an_older_save_reads_as_auto) \
+    RUN(test_background_rows_are_well_formed) \
     /* ROCK THE DOCK — the operator bracket in The Pirate Bayou */ \
     RUN(test_tourney_handles_fit_an_operator_tag) \
     RUN(test_tourney_entrants_are_derived_from_the_seed) \

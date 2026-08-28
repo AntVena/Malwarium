@@ -4,6 +4,7 @@
 #include <cstring>
 
 #include "tunables.h"
+#include "core/content/content_backgrounds.h"
 #include "core/content/content_tournament.h"
 
 namespace mal {
@@ -227,6 +228,9 @@ SaveData Game::captureSave() const {
     d.tourneyWins = tourneyWins_;   // v56
     d.pvpWins = pvpWins_;           // v56
     d.mergesCooked = mergesCooked_; // v56
+    // v58 — the chosen background, by wire. AUTO writes 0, which is also what a pick
+    // this build somehow has no row for writes, since AUTO is the safe reading.
+    if (const BackgroundDef* b = backgroundFor(backgroundPick_)) d.backgroundPick = b->wire;
     // v53: ROCK THE DOCK's run in play. Four bytes plus a bitmask, because every entrant is
     // derived from the seed (core/model/tournament.h) rather than written down.
     d.tourneySeed = tourneySeed_;
@@ -760,6 +764,20 @@ void Game::applySave(const SaveData& d) {
         stampSlotKinds();
         enforceSlotKindInvariant();
     }
+    // v58 — the chosen background, validated rather than trusted: a background the
+    // operator does not own is not a state this game should be able to boot into, and a
+    // wire from a NEWER build has no row here at all. Both land on AUTO.
+    //
+    // LAST, and that ordering is load-bearing: ownership is derived from the raised
+    // species, the cleared areas and the bracket tally, and the first of those is
+    // rebuilt from the rack and the records well below where the tail is read. Asked any
+    // earlier, every earned background would read as unowned and the pick would be
+    // quietly thrown away.
+    {
+        const BackgroundDef* b = backgroundByWire(d.backgroundPick);
+        backgroundPick_ = (b && backgroundOwned(b->scene)) ? b->scene : SceneId::None;
+    }
+
     lastSaveMs_ = nowMs_;
     saveDirty_ = false;
 }

@@ -366,10 +366,11 @@ you look at one.
   Built so far: Citrus Circuit, The Pirate Bayou, Castle Rapidscare, Grid Horizon, Mainframe Row —
   beside the six a CREATURE is at home in (`content/content_homes.h`), which are not on the
   authoring list because they belong to a line or a locomotion rather than to the ladder.
-  Diff **S** each.
-- **The backdrop prize economy.** Owning one, awarding one, and a picker to equip it. Ownership is
-  a save-format change, which `/release` requires confirming before it ships — the reason it is
-  not folded into the scenes themselves. Diff **M**.
+  Every one of the eleven is an ownable background (`content/content_backgrounds.h`), so a new
+  place arrives with a row there and something that earns it. Diff **S** each.
+- **A glyph for the BACKGROUND row.** It borrows `ICON_CFG`, the generic gear, because the CFG
+  family has no picture for "the place your pet stands". One 20x20 beside the other
+  `ICON_CFG_*`. Cosmetic; the row reads by its label today. Diff **S**.
 - **Net-Sea Crossing area art** (shipped mechanically, art pending): the `FLOATING POINT` / `THE
   HARDENED SHELL` storefront motifs. Its nine mods are drawn — the whole `ICON_MOD_*` family is, so
   no area owes one. Like the keep, it fights with the shared tier roster and has no malbeasts of

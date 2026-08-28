@@ -1730,6 +1730,17 @@ public:
     // XP and fires any level-ups (+1 random stat each), so the level/stat/curve logic
     // can be exercised without grinding real fights. Not a real reward source.
     void debugAddCombatXp(int xp) { addCombatXp(xp); }
+    // The two grants a BACKGROUND can come from that a gate should not have to play out
+    // in full: clearing an area's gauntlet, and taking a bracket at the arena. Both move
+    // exactly the state ownership is derived from and nothing else, so what they exercise
+    // is the derivation rather than a flag written past it. The real paths are the area
+    // boss's final win (game_explore.cpp) and awardTourneyPurse.
+    void debugClearSector(int area) {
+        if (area < 0 || area >= kAreaCount) return;
+        sectorCleared_[area] = true;
+        markSaveDirty();
+    }
+    void debugAddTourneyWin() { ++tourneyWins_; markSaveDirty(); }
     // MODS earn path (tests): roll an id from an area's mod loot table, and
     // grant a mod through the real earn path (rolls its per-instance equip-level gate).
     // Real path: boss clears / DeepWeb wins / Epic caches — same helpers, gated there.
@@ -1795,9 +1806,28 @@ public:
     SceneId habitatScene() const;
     SceneId stageScene() const;
 
+    // THE BACKGROUND AN OPERATOR OWNS AND CHOOSES. The rows are content
+    // (content/content_backgrounds.h); what is here is the rule that decides whether one
+    // is theirs yet, and it is DERIVED rather than stored — every background is earned by
+    // something the save already records, so a parallel bitmask would be a second copy of
+    // facts already on the blob and the failure mode of a second copy is disagreement.
+    bool backgroundOwned(SceneId s) const;
+    // AUTO is SceneId::None: the pet decides, which is what the habitat did before any
+    // of this could be chosen. A pick the operator does not own is refused rather than
+    // clamped — nothing should be able to put them somewhere they have not been.
+    SceneId backgroundPick() const { return backgroundPick_; }
+    bool setBackgroundPick(SceneId s);
+    // How many of the arena's backgrounds the brackets taken so far have paid out. The
+    // picker's own rung check and the announcement both read this, so "which win pays
+    // what" is stated once.
+    int backgroundBracketsTaken() const { return tourneyWins_; }
+
 private:
     // Rendering.
     void drawHabitat(Framebuffer& fb, int cursor) const;
+    // Say that a background has just been come into. The three moments that can grant
+    // one call it after the state that grants it has moved.
+    void announceBackground(SceneId s);
     // The unlock announcement over the habitat — a no-op unless a banner is up.
     void drawAchievementBanner(Framebuffer& fb) const;
     void drawSubmenu(Framebuffer& fb) const;
@@ -2633,6 +2663,10 @@ private:
     int cfgLinkPick_ = 0;     // pet-to-pet LINK toggle focus (0 = OFF, 1 = ON)
     int pediaQrPage_ = 0;     // PEDIA QR step (see pediaQrPage())
     int cfgTitlePick_ = 0;    // Titles picker focus (0 = NONE, else 1+sector index)
+    // BACKGROUND picker focus: 0 = AUTO, else 1 + the row's index in kBackgrounds.
+    // A row index rather than a SceneId, because the picker walks LOCKED rows too and a
+    // locked row is a position in a list rather than a place the operator has.
+    int cfgBgPick_ = 0;
     int factoryScope_ = 0;
     // Every screen-level hold on the device is a held B: the CFG Factory Reset, the
     // Hacker VAULT's bulk-open, the ITEMS type-filter cycle and the MOVES picker's
@@ -2944,6 +2978,10 @@ private:
     // ROCK THE DOCK brackets TAKEN (Game::awardTourneyPurse). Brackets, not matches:
     // the arena is single elimination, so the run is the unit — see AchSeries::TourneyWins.
     int tourneyWins_ = 0;
+    // The operator's chosen background, or SceneId::None for AUTO — the only part of
+    // this feature a save carries, and it carries it as a wire number
+    // (content/content_backgrounds.h) rather than as an ordinal.
+    SceneId backgroundPick_ = SceneId::None;
     // LINK duels WON (Game::settlePvpBattle). The FIRST_DUEL achievement counts the
     // meeting and fires at the START of a duel, because a duel that desyncs was still
     // fought; this counts the verdict, so it only moves on a fight that finished.

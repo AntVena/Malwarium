@@ -17,6 +17,7 @@
 #include "test_gates.h"
 
 #include "core/content/areas/area_defs.h"
+#include "core/content/content_backgrounds.h"
 #include "core/content/content_homes.h"
 #include "core/content/creatures/creature_lines.h"
 #include "core/render/scene.h"
@@ -179,4 +180,129 @@ void test_screens_choose_a_place() {
     // A row of the living band that no chrome and no creature reaches: the far left,
     // just under the top track, is backdrop and nothing else.
     CHECK(!regionDiffers(fb, bare, 0, kLivingTop + 2, 6, kLivingTop + 18));
+}
+
+// A fresh device owns the two it is handed and nothing else. This is the shape of the
+// whole economy in one assertion: everything but the starting pair is something to go
+// and get, and the picker is what says so.
+void test_backgrounds_start_with_two() {
+    Game g{StartMode::Hatched};
+    for (const BackgroundDef& b : kBackgrounds)
+        CHECK(g.backgroundOwned(b.scene) == (b.source == BackgroundSource::Start));
+    // ...and the one every operator's first pet actually stands in is one of them, which
+    // is what stops the starting grant being an arbitrary pair.
+    CHECK(g.backgroundOwned(g.habitatScene()));
+    CHECK(g.backgroundPick() == SceneId::None);   // AUTO until somebody chooses
+}
+
+// The three ways one is come by, each driven through the state it is derived from.
+// Ownership is not written down anywhere, so what these check is the derivation.
+void test_backgrounds_are_earned_by_playing() {
+    Game g{StartMode::Hatched};
+
+    // RAISE — a creature that lives there. Phishing's own place answers to the line;
+    // the swimmers' answers to how they move, and both come off the same list.
+    CHECK(!g.backgroundOwned(SceneId::BaitShallows));
+    g.markCreatureRaised("tadpoll");
+    CHECK(g.backgroundOwned(SceneId::BaitShallows));
+    CHECK(!g.backgroundOwned(SceneId::KelpDrift));
+    g.markCreatureRaised("cuttlefork");
+    CHECK(g.backgroundOwned(SceneId::KelpDrift));
+
+    // CLEAR — the area itself, and only the one cleared.
+    CHECK(!g.backgroundOwned(area(0).scene));
+    g.debugClearSector(0);
+    CHECK(g.backgroundOwned(area(0).scene));
+    CHECK(!g.backgroundOwned(SceneId::CastleRapidscare));
+
+    // BRACKET — one per rung, so a second win is worth something the first was not.
+    CHECK(!g.backgroundOwned(SceneId::GridHorizon));
+    g.debugAddTourneyWin();
+    CHECK(g.backgroundOwned(SceneId::GridHorizon));
+    CHECK(!g.backgroundOwned(SceneId::MainframeRow));
+    g.debugAddTourneyWin();
+    CHECK(g.backgroundOwned(SceneId::MainframeRow));
+}
+
+// A pick is refused rather than clamped, and it is what the habitat draws once taken.
+// The stage is deliberately NOT the same question: an area is a fact about where the
+// walk is, so it outranks an opinion about home.
+void test_background_pick_drives_the_habitat() {
+    Game g{StartMode::Hatched};
+    CHECK(!g.setBackgroundPick(SceneId::GridHorizon));   // not earned: refused
+    CHECK(g.backgroundPick() == SceneId::None);
+
+    CHECK(g.setBackgroundPick(SceneId::ServerYard));     // owned from the start
+    CHECK(g.habitatScene() == SceneId::ServerYard);
+    CHECK(g.stageScene() == SceneId::ServerYard);        // no walk armed: home wins
+
+    CHECK(g.setBackgroundPick(SceneId::None));           // AUTO hands it back to the pet
+    CHECK(g.habitatScene() == sceneForCreature(*g.pet()));
+}
+
+// The one byte this feature costs a save, and the two ways it can arrive wrong.
+void test_background_pick_survives_a_reboot() {
+    MemSaveStore store;
+    {
+        Game g{StartMode::Hatched, "paypup", &store};
+        CHECK(g.setBackgroundPick(SceneId::ServerYard));
+        CHECK(g.saveNow());
+    }
+    {
+        Game g{StartMode::FreshHatch, "paypup", &store};
+        CHECK(g.backgroundPick() == SceneId::ServerYard);
+    }
+    // A pick is VALIDATED on the way in, not trusted. Ownership is derived from the rest
+    // of the blob, so a save naming a background this device has not earned — an edited
+    // blob, or one from a device that had — lands on AUTO rather than somewhere its
+    // owner has never been.
+    {
+        SaveData d;
+        CHECK(deserializeSave(store.bytes(), d));
+        d.backgroundPick = 10;                      // GRID HORIZON: an arena prize
+        store.save(serializeSave(d));
+        Game g{StartMode::FreshHatch, "paypup", &store};
+        CHECK(g.backgroundPick() == SceneId::None);
+        // ...and once the brackets that pay it have actually been taken, the same blob
+        // loads as what it says. Ownership catching up is the whole point of deriving it.
+        d.tourneyWins = 1;
+        store.save(serializeSave(d));
+        Game g2{StartMode::FreshHatch, "paypup", &store};
+        CHECK(g2.backgroundPick() == SceneId::GridHorizon);
+    }
+}
+
+// A pre-v58 blob has no tail to read, which is AUTO — what every device did before
+// there was a choice. Checked by loading a blob written as the older version rather
+// than by reasoning about it.
+void test_background_absent_from_an_older_save_reads_as_auto() {
+    SaveData d;
+    std::snprintf(d.activeId, sizeof(d.activeId), "paypup");
+    d.backgroundPick = 4;
+    std::vector<uint8_t> blob = serializeSave(d);
+    // Rewrite the version stamp in place — it sits behind the 4-byte magic. The tail is
+    // still on the end and simply will not be read, which is exactly what a v57 build
+    // does with a v58 blob, and the direction the codec's banner says matters most: an
+    // OTA boots on trial, so the previous firmware can find itself under a save the
+    // newer one already rewrote.
+    blob[4] = 57; blob[5] = 0;
+    SaveData back;
+    CHECK(deserializeSave(blob, back));
+    CHECK(back.backgroundPick == 0);
+}
+
+// Every row names a place that exists, and every wire is its own. A duplicate wire is
+// the one mistake in this table that would silently hand somebody another background.
+void test_background_rows_are_well_formed() {
+    for (int i = 0; i < kBackgroundCount; ++i) {
+        const BackgroundDef& b = kBackgrounds[i];
+        CHECK(sceneFor(b.scene) != nullptr);
+        CHECK(b.wire != 0);                        // 0 is AUTO's, and belongs to nobody
+        CHECK(backgroundByWire(b.wire) == &b);
+        CHECK(backgroundFor(b.scene) == &b);
+        CHECK(b.name[0] != '\0' && b.earnedBy[0] != '\0');
+        for (int j = 0; j < i; ++j) CHECK(kBackgrounds[j].wire != b.wire);
+    }
+    CHECK(backgroundFor(SceneId::None) == nullptr);
+    CHECK(backgroundByWire(0) == nullptr);
 }

@@ -47,7 +47,7 @@ enum class UiMode { IconsLabel, IconsOnly, TextOnly };
 // immediate action, no L3 screen). FactoryReset is reached only via the hidden
 // hold-B gesture, never a list row.
 enum class CfgScreen { SysInfo, HackerTag, Titles,
-                       Device, UiMode, Brightness, Travel,
+                       Device, UiMode, Brightness, Background, Travel,
                        Radio, Audit, Link, PediaAp, PediaQr,
                        Update, UpdateQr, ResetHatch, FactoryReset };
 

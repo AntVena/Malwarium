@@ -1,3 +1,6 @@
+#include "core/content/areas/area_defs.h"       // area() — a cleared area pays out its place
+#include "core/content/content_backgrounds.h"   // the places an operator owns and picks between
+#include "core/content/content_homes.h"         // sceneForCreature — a raised creature brings its own
 #include "core/app/game.h"
 
 #include <cstdio>
@@ -25,6 +28,13 @@ void Game::enterCfgScreen(CfgScreen target) {
         case CfgScreen::UiMode: cfgUiPick_ = static_cast<int>(uiMode_); break;
         case CfgScreen::Brightness: cfgBrightPick_ = brightness_; break;   // the applied level
         case CfgScreen::Titles: cfgTitlePick_ = equippedTitle_; break;     // the equipped one
+        case CfgScreen::Background: {                                      // ...likewise
+            const BackgroundDef* b = backgroundFor(backgroundPick_);
+            cfgBgPick_ = 0;
+            for (int i = 0; i < kBackgroundCount; ++i)
+                if (b && kBackgrounds[i].wire == b->wire) cfgBgPick_ = i + 1;
+            break;
+        }
         case CfgScreen::Audit: cfgAuditPick_ = static_cast<int>(auditMode()); break;
         case CfgScreen::PediaAp: cfgApPick_ = apEnabled_ ? 1 : 0; break;
         case CfgScreen::Link: cfgLinkPick_ = linkEnabled_ ? 1 : 0; break;
@@ -161,6 +171,20 @@ void Game::onCfgDetail(const ButtonEvent& ev) {
                 equippedTitle_ = cfgTitlePick_;       // -1 (NONE) or an unlocked sector
                 markSaveDirty();
                 leaveCfgScreen();
+            } else if (ev.button == Button::C) leaveCfgScreen();  // no change
+            break;
+        case CfgScreen::Background:
+            // A walks EVERY row, locked ones included — the line under the header names
+            // what the focused row is earned by, so walking the ones you have not got is
+            // the whole way the economy is taught. B uses the focused row and backs out;
+            // on a locked row setBackgroundPick refuses and the screen simply stays,
+            // which is the row's own LOCKED tag answering rather than a second modal.
+            if (ev.button == Button::A)
+                cfgBgPick_ = (cfgBgPick_ + 1) % (kBackgroundCount + 1);
+            else if (ev.button == Button::B) {
+                const SceneId want = cfgBgPick_ == 0 ? SceneId::None
+                                                     : kBackgrounds[cfgBgPick_ - 1].scene;
+                if (setBackgroundPick(want)) leaveCfgScreen();
             } else if (ev.button == Button::C) leaveCfgScreen();  // no change
             break;
         case CfgScreen::Audit:
@@ -317,7 +341,13 @@ void Game::drawCfg(Framebuffer& fb) const {
             break;
         }
         case CfgScreen::Device:
-            drawCfgDevice(fb, cfgGroupRow_, uiMode_, brightness_); break;
+            // The row previews the CHOICE, not the place being drawn: AUTO stays AUTO
+            // however the pet moves, which is the whole difference between the two.
+            drawCfgDevice(fb, cfgGroupRow_, uiMode_, brightness_,
+                          backgroundPick_ == SceneId::None
+                              ? "AUTO"
+                              : backgroundFor(backgroundPick_)->name);
+            break;
         case CfgScreen::Travel:
             // Two faces, like the UPDATES screen: the question, then the notice that
             // replaces it for as long as the device is still on its way down.
@@ -332,6 +362,20 @@ void Game::drawCfg(Framebuffer& fb) const {
         case CfgScreen::HackerTag: drawHackerTag(fb, editTag_, editCaret_); break;
         case CfgScreen::Titles:
             drawTitles(fb, cfgTitlePick_, titlesUnlocked_, equippedTitle_, beat_); break;
+        case CfgScreen::Background: {
+            // Ownership is derived, so the mask is built here for the draw rather than
+            // held anywhere: one bit per row, in the table's own order.
+            uint16_t owned = 0;
+            for (int i = 0; i < kBackgroundCount; ++i)
+                if (backgroundOwned(kBackgrounds[i].scene))
+                    owned |= static_cast<uint16_t>(1u << i);
+            int equipped = 0;
+            if (const BackgroundDef* b = backgroundFor(backgroundPick_))
+                for (int i = 0; i < kBackgroundCount; ++i)
+                    if (kBackgrounds[i].wire == b->wire) equipped = i + 1;
+            drawBackgrounds(fb, cfgBgPick_, owned, equipped, beat_);
+            break;
+        }
         case CfgScreen::UiMode: drawUiModeToggle(fb, cfgUiPick_, uiMode_); break;
         case CfgScreen::Brightness: drawBrightness(fb, cfgBrightPick_, brightness_); break;
         case CfgScreen::Audit:
@@ -416,5 +460,52 @@ bool Game::setHackerTag(const char* s) {
     return true;
 }
 
+
+bool Game::backgroundOwned(SceneId s) const {
+    const BackgroundDef* b = backgroundFor(s);
+    if (!b) return false;
+    switch (b->source) {
+        case BackgroundSource::Start:
+            return true;
+        case BackgroundSource::Raise:
+            // Owned once a creature that actually LIVES here has been raised. Asked of
+            // the roster rather than recorded on the way past, so the answer keeps up
+            // with the homes table: move a line's place and every operator who raised
+            // that line already owns the new one.
+            for (const CreatureDef* c : raisedCreatures_)
+                if (sceneForCreature(*c) == s) return true;
+            return false;
+        case BackgroundSource::Clear:
+            for (int a = 0; a < kAreaCount; ++a)
+                if (area(a).scene == s) return sectorCleared_[a];
+            return false;
+        case BackgroundSource::Bracket:
+            return tourneyWins_ >= b->rung;
+    }
+    return false;
+}
+
+bool Game::setBackgroundPick(SceneId s) {
+    // AUTO always takes, and nothing else does unless it has been earned. A pick is
+    // refused rather than clamped: quietly landing on a neighbouring background would
+    // be the screen deciding where the operator lives.
+    if (s != SceneId::None && !backgroundOwned(s)) return false;
+    backgroundPick_ = s;
+    markSaveDirty();
+    dirty_ = true;
+    return true;
+}
+
+void Game::announceBackground(SceneId s) {
+    // Ownership is DERIVED, so "just earned" is not a state anything holds — it is only
+    // knowable by asking before the thing that grants it moves and again after. Each of
+    // the three callers does that; this is only the saying-so.
+    const BackgroundDef* b = backgroundFor(s);
+    if (!b) return;
+    char line[28];
+    std::snprintf(line, sizeof(line), "BG: %s", b->name);
+    log_.push(LogEventType::ItemGained, line);
+    dirty_ = true;
+}
 
 }  // namespace mal

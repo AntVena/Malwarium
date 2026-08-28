@@ -76,7 +76,22 @@ void drawCfgList(Framebuffer& fb, int cursor, const char* hackerTag,
 // value preview — the other two are settings that are always at some level, and it
 // is an action with no state to report, which the empty value column says without a
 // word of copy.
-void drawCfgDevice(Framebuffer& fb, int cursor, UiMode uiMode, int brightness);
+void drawCfgDevice(Framebuffer& fb, int cursor, UiMode uiMode, int brightness,
+                   const char* background);
+
+// L3 BACKGROUND picker: the place the pet stands in (core/render/scenes.h).
+//
+// Row 0 is AUTO — the pet's own home, which is what the habitat drew before there was
+// anything to choose — and rows 1..kBackgroundCount are content_backgrounds.h's table in
+// its own order. `ownedMask` bit (row-1) is whether that row has been earned; a row that
+// has not is greyed and refuses B, the way a locked Title does.
+//
+// A steps over EVERY row rather than only the owned ones, which is the difference
+// between this and the Titles picker: the line under the header says what the focused
+// row is earned by, so walking the locked ones is how an operator finds out what is out
+// there. `pick` is the focused row and `equipped` the applied one.
+void drawBackgrounds(Framebuffer& fb, int pick, uint16_t ownedMask, int equipped,
+                     int beat);
 
 // L3 TRAVEL MODE confirm. The device is about to go dark indefinitely, so the copy
 // leads with what stops (nothing ages) and ends with the one thing a dark device

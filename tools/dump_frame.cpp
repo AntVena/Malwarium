@@ -55,7 +55,7 @@
 //             flashqr] (the UPDATES screen; without "ready" it shows which setup step
 //             is missing, and "flashqr" walks onto the last row and opens the USB
 //             flasher's code)
-//        cfg [sysinfo|tag|titles|device|uimode|brightness|travel [sleeping]|
+//        cfg [sysinfo|tag|titles|device|uimode|brightness|background [earned]|travel [sleeping]|
 //             radio [idle|all]|audit|
 //             link|pediaap|qr|factory] (the settings tree; device/radio are the two
 //             group screens, and radio is seeded with a live arbiter owner —
@@ -132,6 +132,13 @@ using namespace mal;
 static ButtonEvent chromaPress(int skin) {
     const Button b = skin == 0 ? Button::A : skin == 1 ? Button::B : Button::C;
     return {b, true, false};
+}
+
+// A complete C press — a list reads C as a tap/hold pair, so the press edge alone
+// settles nothing (CONTRIBUTING.md's button contract).
+static void tapC(mal::Game& g) {
+    g.onButton({mal::Button::C, true, false});
+    g.onButton({mal::Button::C, false, false});
 }
 
 static bool hasFlag(int argc, char** argv, const char* f) {
@@ -471,6 +478,32 @@ int main(int argc, char** argv) {
         }
         else if (hasFlag(argc, argv, "uimode")) openTarget(CfgScreen::UiMode);
         else if (hasFlag(argc, argv, "brightness")) openTarget(CfgScreen::Brightness);
+        else if (hasFlag(argc, argv, "background")) {
+            // The picker is mostly LOCKED rows on a fresh save, which is the state it
+            // ships in and the one worth looking at. "earned" plays the three grants
+            // instead — a species raised, an area cleared, a bracket taken — so the
+            // other half of the list can be seen without walking a whole ladder.
+            if (hasFlag(argc, argv, "earned")) {
+                game.markCreatureRaised("cuttlefork");   // a swimmer's place
+                game.markCreatureRaised("tadpoll");      // the Phishing line's
+                game.debugClearSector(0);                // an area pays out itself
+                game.debugAddTourneyWin();               // ...and the arena its first
+            }
+            openTarget(CfgScreen::Background);
+            // "row:<n>" walks the focus down, which is how to see that the line under
+            // the header is the FOCUSED row's and not a fixed caption.
+            for (int i = 3; i < argc; ++i)
+                if (std::strncmp(argv[i], "row:", 4) == 0)
+                    for (int k = std::atoi(argv[i] + 4); k > 0; --k)
+                        game.onButton({Button::A, true, false});
+            // "use" applies the focused row and walks back out to the habitat, which is
+            // the only place the choice can actually be looked at.
+            if (hasFlag(argc, argv, "use")) {
+                game.onButton({Button::B, true, false});
+                game.onButton({Button::B, false, false});
+                for (int k = 0; k < 3; ++k) tapC(game);
+            }
+        }
         else if (hasFlag(argc, argv, "audit")) openTarget(CfgScreen::Audit);
         else if (hasFlag(argc, argv, "link")) openTarget(CfgScreen::Link);
         else if (hasFlag(argc, argv, "pediaap")) openTarget(CfgScreen::PediaAp);

@@ -3,6 +3,7 @@
 // The UPDATES screens and the QR pages are the same CFG surface but a different
 // kind of screen — they run a job rather than read and write local state — and
 // live in update_screen.cpp. Both units are declared by cfg_screen.h.
+#include "core/content/content_backgrounds.h"   // the rows the picker lists
 #include "core/ui/cfg_screen.h"
 
 #include <algorithm>
@@ -135,6 +136,10 @@ int cfgGroupRows(CfgScreen group, const CfgRow*& out) {
     static const CfgRow kDevice[] = {
         {"UI MODE", &ASSET_ICON_CFG_UIMODE, CfgScreen::UiMode},
         {"BRIGHTNESS", &ASSET_ICON_CFG_UIMODE, CfgScreen::Brightness},
+        // BACKGROUND belongs beside them and not on the top-level list: the release list
+        // is exactly six rows so it never scrolls, and this is a presentation setting
+        // like the two above it — what the device shows, not what it does.
+        {"BACKGROUND", &ASSET_ICON_CFG, CfgScreen::Background},
         {"TRAVEL MODE", &ASSET_ICON_CFG_TRAVEL, CfgScreen::Travel},
     };
     // The three radio TOGGLES, listed in the arbiter's own priority order, highest
@@ -170,6 +175,7 @@ CfgScreen cfgParentGroup(CfgScreen s) {
     switch (s) {
         case CfgScreen::UiMode:
         case CfgScreen::Brightness:
+        case CfgScreen::Background:
         case CfgScreen::Travel:
             return CfgScreen::Device;
         case CfgScreen::Audit:
@@ -218,7 +224,8 @@ void drawCfgList(Framebuffer& fb, int cursor, const char* hackerTag,
     drawHintBand(fb, "A CYCLE  B OPEN  C BACK");
 }
 
-void drawCfgDevice(Framebuffer& fb, int cursor, UiMode uiMode, int brightness) {
+void drawCfgDevice(Framebuffer& fb, int cursor, UiMode uiMode, int brightness,
+                   const char* background) {
     drawHeaderBand(fb, "DEVICE");
     const CfgRow* rows = nullptr;
     const int n = cfgGroupRows(CfgScreen::Device, rows);
@@ -229,10 +236,56 @@ void drawCfgDevice(Framebuffer& fb, int cursor, UiMode uiMode, int brightness) {
         const char* val = nullptr;   // TRAVEL MODE is an action: no value to preview
         if (rows[i].target == CfgScreen::UiMode) val = uiModeName(uiMode);
         else if (rows[i].target == CfgScreen::Brightness) val = brightBuf;
+        else if (rows[i].target == CfgScreen::Background) val = background;
         settingsRow(fb, kRowTop + i * kRowH, rows[i], i == cursor, val,
                     palColor(Pal::INK_DIM));
     }
     drawHintBand(fb, "A NEXT  B OPEN  C BACK");
+}
+
+void drawBackgrounds(Framebuffer& fb, int pick, uint16_t ownedMask, int equipped,
+                     int beat) {
+    drawHeaderBand(fb, "BACKGROUND");
+
+    // One line of copy, and it belongs to whichever row is FOCUSED — which is what lets
+    // the list carry twelve rows without twelve hints in it, and what makes walking the
+    // locked ones worth doing. AUTO's line says what AUTO does; every other row's is
+    // its own `earnedBy`.
+    const char* why = "MATCHES YOUR PET";
+    if (pick > 0 && pick <= kBackgroundCount) why = kBackgrounds[pick - 1].earnedBy;
+    drawText(fb, kMargin, 30, why, palColor(Pal::INK_DIM));
+
+    const int rows = kBackgroundCount + 1;              // AUTO, then the table
+    const int scrollTop = listScrollTop(pick, rows, kVisibleRows);
+    for (int v = 0; v < kVisibleRows && scrollTop + v < rows; ++v) {
+        const int r = scrollTop + v;
+        const int y = 46 + v * 22;
+        const bool locked = r > 0 && (ownedMask & (1u << (r - 1))) == 0;
+        const bool isPick = r == pick;
+        const bool isOn = r == equipped;
+        if (isPick) {
+            fb.fillRect(4, y - 2, kActiveW - 8, 20, palColor(Pal::TRACK));
+            drawRowCursor(fb, 8, y + 4, palColor(Pal::ACCENT));
+        }
+        const char* name = r == 0 ? "AUTO" : kBackgrounds[r - 1].name;
+        const Rgb565 c = locked ? palColor(Pal::INK_DIM)
+                       : isOn   ? palColor(Pal::ACCENT)
+                                : palColor(Pal::INK);
+        const char* tag = locked ? "LOCKED" : isOn ? "ACTIVE" : "";
+        drawLabelValue(fb, 24, y + 4, name, c, tag,
+                       locked ? palColor(Pal::INK_DIM) : palColor(Pal::ACCENT), beat,
+                       isPick);
+    }
+
+    if (rows > kVisibleRows) {   // the slim scrollbar every long list here carries
+        const int barX = kActiveW - 3;
+        const int trackH = kVisibleRows * 22;
+        fb.fillRect(barX, 44, 2, trackH, palColor(Pal::TRACK));
+        const int thumbH = trackH * kVisibleRows / rows;
+        fb.fillRect(barX, 44 + trackH * scrollTop / rows, 2,
+                    thumbH < 8 ? 8 : thumbH, palColor(Pal::INK_DIM));
+    }
+    drawHintBand(fb, "A NEXT  B USE  C BACK");
 }
 
 void drawTravelConfirm(Framebuffer& fb, int pick) {

@@ -92,12 +92,18 @@ hang off `AreaDef` alone:
   place of its own overrides how its creatures move, and how they move is the floor, so
   every creature is somewhere and an evolution walks into a new place with nothing
   written down;
-- a **prize background**, from wherever prizes are held.
+- the **operator**, who owns some of them and picks one (`content/content_backgrounds.h`,
+  CFG → DEVICE → BACKGROUND). Ownership is derived from what the save already records —
+  a creature raised, an area cleared, brackets taken at the arena — so nothing about it
+  is written down twice.
 
-Two screens ask. `Game::habitatScene()` is where the pet lives and `Game::stageScene()` is
-where a fight is happening — the area being walked, or the pet's own home when the fight
-belongs to no area (a duel, an arcade bout, the endless dive). Both may answer
-`SceneId::None`, which draws nothing and leaves the plain `paper` field.
+Two screens ask. `Game::habitatScene()` is where the pet lives: the operator's pick, or
+their pet's own home when the pick is AUTO. `Game::stageScene()` is where a fight is
+happening — the area being walked, or the habitat when the fight belongs to no area (a
+duel, an arcade bout, the endless dive). **The area outranks the pick on purpose:** a
+background is an opinion about home, an area is a fact about where the walk is, and a
+screen that let a prize overwrite it could no longer tell you where you are. Both may
+answer `SceneId::None`, which draws nothing and leaves the plain `paper` field.
 
 One consequence for GATES: a screen is never blank now, so a check that asserted a region
 was `paper` in order to say "no icon here" has to be made against a frame differing only

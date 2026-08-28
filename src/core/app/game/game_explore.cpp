@@ -1,3 +1,4 @@
+#include "core/content/content_backgrounds.h"   // a cleared area pays out its own place
 #include "core/app/game.h"
 #include "core/app/game_internal.h"
 
@@ -707,8 +708,13 @@ void Game::finishBossRound() {
             }
         } else {
             const bool firstClear = !sectorCleared_[bossSector_];
+            const SceneId placeWon = area(bossSector_).scene;
+            const bool hadPlace = backgroundOwned(placeWon);
             sectorCleared_[bossSector_] = true;
             unlockTitle(bossSector_);       // clearing the area grants its Title
+            // ...and the AREA ITSELF, as a background the operator may stand their pet
+            // in. The Title says where they have been; this is a piece of it to keep.
+            if (!hadPlace) announceBackground(placeWon);
             log_.push(LogEventType::CombatWon, "AREA CLEARED");
             // the AREA boss's first clear GUARANTEES a mod from the area table —
             // the marquee reward for beating the 5-stage gauntlet. A re-run is not a

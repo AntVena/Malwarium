@@ -159,9 +159,12 @@ void Game::drawLineSelect(Framebuffer& fb) const {
 }
 
 SceneId Game::habitatScene() const {
-    // Derived from the creature rather than stored: which place a pet belongs in
-    // follows from its line and how it gets around (content/content_homes.h), so an
-    // evolution walks into a new one without anything being written down.
+    // The operator's own choice first — this is their pet's home and they are allowed an
+    // opinion about it. AUTO (SceneId::None) hands the question back to the creature:
+    // which place a pet belongs in follows from its line and how it gets around
+    // (content/content_homes.h), so an evolution walks into a new one with nothing
+    // written down.
+    if (backgroundPick_ != SceneId::None) return backgroundPick_;
     return pet_ ? sceneForCreature(*pet_) : SceneId::None;
 }
 
@@ -174,8 +177,12 @@ SceneId Game::stageScene() const {
         if (s != SceneId::None) return s;
     }
     // Everything else — a duel, an arcade bout, the endless dive, an area whose place
-    // is not authored yet — is fought where the pet lives. A fight always has a floor
-    // and it may as well have a horizon.
+    // is not authored yet — is fought where the pet lives, chosen background and all. A
+    // fight always has a floor and it may as well have a horizon.
+    //
+    // The area WINS over the operator's pick on purpose. A background is an opinion
+    // about home; an area is a fact about where the walk is, and a screen that let a
+    // prize overwrite it would be one that could no longer tell you where you are.
     return habitatScene();
 }
 

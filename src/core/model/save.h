@@ -357,7 +357,18 @@ constexpr int kSaveTextCap = 28;     // matches EventLog's LogEntry.text
 // because a tail is what a pre-v57 build can stop before; the values are per-pet AND
 // frozen with the pet, since the upgrade belongs to the creature rather than the run.
 // Pre-v57 → 0 for every pet, which is the truth (no dish granted one).
-constexpr uint16_t kSaveVersion = 57;
+// v58 appends ONE BYTE — which background the operator has chosen to stand their pet in
+// (content/content_backgrounds.h), as that row's `wire` number, or 0 for AUTO. Its own
+// tail after v57's, the shape every tail since v55 has used, so a build that stops at
+// v57 reads every field it knows and simply stops before this one.
+//
+// Only the CHOICE is here. Which backgrounds are OWNED is not stored at all: each is
+// earned by something the blob already records — a creature raised, an area cleared,
+// brackets taken at the arena — so Game::backgroundOwned derives it, and there is no
+// second copy of those facts to fall out of step with the first. That is also why this
+// tail needs no migration: a pre-v58 blob reads back 0, which is AUTO, which is exactly
+// what every device did before a background could be chosen.
+constexpr uint16_t kSaveVersion = 58;
 
 // The oldest blob deserialize will read. Raising it is how a device stops carrying
 // migration weight for saves nobody can still be holding — and it is the ONLY thing
@@ -858,6 +869,9 @@ struct SaveData {
     int32_t tourneyWins = 0;    // ROCK THE DOCK brackets taken
     int32_t pvpWins = 0;        // LINK duels won
     int32_t mergesCooked = 0;   // dishes cooked at the MERGE HUB
+    // The chosen background's BackgroundDef::wire, or 0 for AUTO (the pet decides).
+    // A wire this build has no row for reads back as AUTO — see backgroundByWire.
+    uint8_t backgroundPick = 0;
 
     // --- v48: the DECRYPTOGRAM board's per-quote state -----------------------
     // Two bits per QuoteDef::wire, low pair first within each byte. Player-level, like

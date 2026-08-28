@@ -535,6 +535,11 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
         for (int32_t v : p.statBonus) w.i32(v);
         w.i32(p.xpRateBonusPct);
     }
+
+    // v58: the chosen background, as its own wire number. One byte, and its own tail —
+    // which backgrounds are OWNED is derived from the rest of this blob rather than
+    // written beside it.
+    w.u8(d.backgroundPick);
 }
 
 std::vector<uint8_t> serializeSave(const SaveData& d) {
@@ -1117,6 +1122,10 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
             }
         }
     }
+
+    // v58 tail: the chosen background. Absent in a v1..v57 blob → 0, which is AUTO —
+    // the pet decides, which is what every device did before there was a choice to make.
+    if (version >= 58) d.backgroundPick = r.u8();
 
     if (!r.ok) { out = SaveData{}; return false; }  // truncated -> empty
     if (version < newestRenameVersion()) renameRetiredIds(d, version);
