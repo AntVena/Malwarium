@@ -95,6 +95,13 @@ CI on every push (`.github/workflows/gates.yml`).
 `src/generated/` is compiled from `assets/` by `tools/gen_assets.py` and is not committed — the
 gates regenerate it, so a fresh clone needs no extra step.
 
+**Editor diagnostics.** The two tiers build on two toolchains, and clangd can infer neither, so
+each pins its own compile database: `.clangd` at the root points at `build/` (what the gates
+configure) and `src/platform/esp32/.clangd` at `build-device/`. `./tools/compiledb.sh`
+regenerates both — run it after a fresh clone, and again whenever the include set moves. With
+them in place a clangd error is a real error on either tier; there is no "device code always
+looks broken" to read past.
+
 Neither tier can see two things drawn on top of each other, or a panel cutting its own
 copy. `./tools/screens.sh` renders the screen catalogue to one contact sheet for that —
 a looking tool, not a gate. Run it after touching the layout grid, the font, or a shared

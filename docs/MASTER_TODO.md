@@ -410,26 +410,22 @@ you look at one.
 ## 3. Size / reviewability watch
 
 Same rule as the `game_*.cpp` units: split *at* ~600 lines, not before, and split by concern
-rather than by line count. `save.cpp` (1097), `combat.cpp` (1100), `expl_screen.cpp` (750) and
-`cfg_screen.cpp` (660) are each past the number and each still ONE concern at UNIT level —
-save.cpp is long because the format is flat, which is not a second responsibility, and combat.cpp
-is the turn engine alone, with the factories in `combat_factory.cpp` (400) beside it.
+rather than by line count. `save.cpp` (1139), `combat.cpp` (1564), `expl_screen.cpp` (829),
+`combat_factory.cpp` (749) and `cfg_screen.cpp` (722) are each past the number and each still
+ONE concern at UNIT level — save.cpp is long because the format is flat, which is not a second
+responsibility, and combat.cpp is the turn engine alone.
 
 **The unit rule is holding; the mass has moved inside individual functions, where it does not
-look.** Two are past the point a reviewer can hold one in their head, and the "it is a
-dispatcher, its length follows from the number of cases" defence covers neither:
+look.** One is still past the point a reviewer can hold it in their head, and the "it is a
+dispatcher, its length follows from the number of cases" defence does not cover it:
 
-- **`Combat::applyEffect` (433 lines, `combat.cpp:141`)** — the sharp one. It has **zero `case`
-  labels**: it is a sequential if-chain over effect mechanics, not a dispatch table, so length
-  here follows from accumulated special cases rather than from a vocabulary. The likeliest seam
-  is per-effect-family helpers, matching the structured effect vocabulary the content standard
-  already asks rows to be written in. | S per family, L in total. | Worth doing incrementally —
-  one family lifted per pass, not a rewrite. |
-- **`Game::tick` (434 lines, `game_core.cpp:76`)** — 24 labelled sections in a flat sequence
-  (achievements sweep · duel upkeep · decay · capture policy · combat anim · cursor repeat ·
-  autosave · evolution · lockout · idle collapse · …), 18 top-level control blocks, almost no
-  interleaving between them. The comments already name the split. | M | Each section is a
-  candidate `tickX()` private method; the ordering between them is the only real constraint. |
+- **`Combat::applyEffect` (404 lines, `combat.cpp:337`)** — **zero `case` labels**: a sequential
+  if-chain over effect mechanics, not a dispatch table, so its length follows from accumulated
+  special cases rather than from a vocabulary. The steal track is lifted
+  (`Combat::applyStealTrack`); what remains is the mitigation chain, which genuinely needs the
+  locals it accumulates, plus the Trojan trap, the ransom/seizure pair, the two thorns and the
+  three crew Exploits hanging off a landed hit. | S per family, M in total. | One family lifted
+  per pass, not a rewrite — take the ones the chain's locals do not reach. |
 
 ---
 

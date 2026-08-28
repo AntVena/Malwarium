@@ -168,6 +168,19 @@ void applyBrightness() {
 // it is the only way a cable plugged in DURING a sleep can ever be noticed.
 uint32_t lastSleepWakeMs = 0;
 
+// Track the clock so a no-op switch costs nothing; setCpuFrequencyMhz reconfigures the
+// PLL and re-derives every peripheral divider, which is not something to do per loop.
+int cpuFreqMhz = CPU_ACTIVE_FREQ_MHZ;
+
+// Throttle while the panel is dark, restore the moment it is not (config.h has why both
+// values stay PLL-sourced). Called every loop, and inert when the two are equal.
+void applyCpuFreq(int mhz) {
+    if (mhz == cpuFreqMhz) return;
+    cpuFreqMhz = mhz;
+    setCpuFrequencyMhz(static_cast<uint32_t>(mhz));
+    Serial.printf("[cpu] %dMHz\n", mhz);
+}
+
 void enterIdleLightSleep() {
     for (auto& b : buttons) {
         if (b.pin < 0) continue;
@@ -565,6 +578,11 @@ void loop() {
         screenAsleep = true;
         Serial.println("[screen] sleep");
     }
+    // The clock follows the panel. A dark screen is drawing no frames, so the only thing
+    // still asking for cycles is whatever radio consumer is keeping the loop out of light
+    // sleep — which needs 80MHz, not 240 (config.h). Asked here rather than at the two
+    // transitions so a wake that never went through display.sleep() still restores it.
+    applyCpuFreq(screenAsleep ? CPU_IDLE_FREQ_MHZ : CPU_ACTIVE_FREQ_MHZ);
 #endif
 
     // Runtime microSD re-check (CFG "SD RECHECK" -> Game::requestSdRecheck). The

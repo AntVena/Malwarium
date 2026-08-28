@@ -2,6 +2,7 @@
 /build/
 /build-native/
 /build-web/
+/build-device/
 /.pio/
 
 # The web demo's compiled engine (tools/build_web.sh writes it into the page it is

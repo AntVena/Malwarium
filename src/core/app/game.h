@@ -2349,6 +2349,22 @@ private:
     // decay, so Game::tick() and debugTickHunger() (tests) can't drift apart.
     void tickHungerAndAwardXp(uint32_t elapsedMs);
 
+    // --- The six halves of Game::tick, in the order it runs them ------------------
+    // Each returns whether it changed anything the screen would show, and tick() runs
+    // all six unconditionally — the order between them is load-bearing, so none of
+    // them may be skipped on an early answer. They are separate because they run on
+    // separate CLOCKS, not because tick() was long: the heartbeat, four independent
+    // sub-cadences, real-ms deadlines and held-button dwells all land in one function
+    // and are otherwise only told apart by which timestamp each `if` happens to read.
+    //
+    // Every one of them is called from tick() and nowhere else.
+    bool tickModelClocks(uint32_t nowMs);    // decay, bandwidth, the egg clock, sweeps
+    bool tickHeartbeat(uint32_t nowMs);      // the shared ~4fps beat and what rides it
+    bool tickAnimClocks(uint32_t nowMs);     // the faster per-screen cadences
+    bool tickLifecycle(uint32_t nowMs);      // CSF, evolution, Lockout, the autosave
+    bool tickHeldGestures(uint32_t nowMs);   // every hold-B second action, and A/C repeat
+    bool tickIdleDefocus(uint32_t nowMs);    // the menu tree collapsing back to Idle
+
     // Lockout lifecycle.
     void fireLockout();
     void expireLockout();

@@ -1,0 +1,22 @@
+# The device tier is built by PlatformIO, not by the CMake host build, so clangd cannot
+# learn its include paths or its -D flags from the native compile database. Without this
+# every file here reads as broken: Arduino.h "not found", and every Arduino/ESP-IDF symbol
+# undeclared. Those are not false positives to be lived with — they are clangd being
+# pointed at the wrong build, and they hide the real diagnostics behind them.
+#
+# Regenerate the database with `./tools/compiledb.sh` (a fresh clone has no build dir, so
+# clangd falls back to its old guesswork until that has been run once).
+CompileFlags:
+  CompilationDatabase: ../../../build-device
+  # Xtensa GCC flags clang does not accept. clangd stops at the first unknown argument, so
+  # one of these left in is the same as having no database at all.
+  Remove:
+    - -mlongcalls
+    - -mtext-section-literals
+    - -mdisable-hardware-atomics
+    - -fstrict-volatile-bitfields
+    - -fno-tree-switch-conversion
+    - -fno-shrink-wrap
+    - -freorder-blocks
+    - -fno-jump-tables
+    - -fstack-protector

@@ -661,6 +661,11 @@ private:
     // Prowlware to rank that move's Attack power (attackPowerRank).
     void applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
                      bool byPlayer, int moveIdx);
+    // The steal track's whole family, called by applyEffect once it has decided a hit
+    // landed. One effect family per helper is the shape applyEffect is being taken apart
+    // in — the mitigation chain above the call is a different question from the payout
+    // below it, and only the chain needs the locals it accumulates.
+    void applyStealTrack(Combatant& actor, Combatant& target, const MoveDef& mv);
     // Hand a seized move back and restore what it displaced (RansomSeizure). Called the
     // turn the ransom settles, and inert on a fighter holding nothing — so every path that
     // ends a ransom can call it without first asking whether there was a seizure.

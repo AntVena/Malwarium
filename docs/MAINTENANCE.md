@@ -18,7 +18,7 @@ overdue cleanup.
 
 ## The pile
 
-### Docs cleanup / decision-history sweep — Last run: 2026-08-15
+### Docs cleanup / decision-history sweep — Last run: 2026-08-29
 Two surfaces, two rules.
 
 **Docs (`docs/`, and the standards beside the code):** cull dated historical narration (session logs, "shipped on <date>",
@@ -34,7 +34,7 @@ its keep-anyway exceptions (other-code refs, living how-to standards, `vNN` save
 tests, and the domain terms that only look like refs: EAPOL `M1`–`M4`, `S3`/`C5`, `D0`–`D3`, world
 `Area 0`–`3`). Cross-check any claim against the actual code before trusting it.
 
-### Self-architecture review — Last run: 2026-08-15
+### Self-architecture review — Last run: 2026-08-29
 Check the `game_*.cpp` module split for size creep past ~600 lines. Look for cross-file duplication, dead code, and orphaned helpers
 that should have moved to `game_internal.h` or been deleted. Verify actual file sizes, don't trust
 what a doc says they are. Sources are globbed (`CMakeLists.txt`, `build_src_filter`), so a new
@@ -91,7 +91,7 @@ is just empty canvas.
 Grep for links/citations across the docs — file paths, line numbers, `D#`/`S#`/`C#`/`FB-*` row
 IDs — and verify they still resolve to something real. Fix or remove dangling references.
 
-### Test/gate health check — Last run: 2026-08-15
+### Test/gate health check — Last run: 2026-08-29
 Run the gates. Confirm native gates and the S3 build are actually green, not assumed green from
 a doc. Look for test debt — tests asserting behaviour that no longer occurs in
 real play.
@@ -138,7 +138,9 @@ exactly why the build is the gate and the scan is only the finder.
 
 Method: trust the clangd `unused-includes` diagnostics as the finder, **verify a real host build
 still compiles after each removal**, and note that the native gate is authoritative — don't
-remove a device-only header while building host-only, or vice-versa. Removable is not the same as
+remove a device-only header while building host-only, or vice-versa. The device tier has its own
+compile database now (`tools/compiledb.sh`, `src/platform/esp32/.clangd`), so its diagnostics are
+worth the same trust as the host's; a file lighting up whole means the database is stale. Removable is not the same as
 wrong: an include a unit uses DIRECTLY stays even when some other header happens to supply it, and
 the trap in a mechanical scan is a symbol that only appears in a comment.
 

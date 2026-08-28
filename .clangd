@@ -1,0 +1,7 @@
+# Which build a file is checked against. Two tiers compile the same src/core, so leaving
+# clangd to search for a database is leaving it to pick one at random — it will take
+# whichever build directory it finds first, and a stale one is indistinguishable from the
+# live one. `build` is what tools/gates.sh configures, so it is the answer for everything
+# except the device tier, which pins its own in src/platform/esp32/.clangd.
+CompileFlags:
+  CompilationDatabase: build

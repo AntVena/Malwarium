@@ -164,7 +164,11 @@ constexpr uint32_t kSdIconRevealMs = 4000;   // SD-present icon dwell after a mo
 //     NOTE: real PWM dimming is device-tier + needs on-device verification — the
 //     shipped backlight stays plain on/off until HAS_BACKLIGHT_PWM is validated. ----
 constexpr int kBrightnessLevels  = 5;                       // 20/40/60/80/100 %
-constexpr int kBrightnessDefault = kBrightnessLevels - 1;   // top level (100%)
+// One notch down from the top. The backlight is the largest single draw on a lit panel
+// and its current is roughly linear in duty, so this is a fifth of it back for a step
+// nobody reads as dim indoors — where the top level is what a fresh device would
+// otherwise burn by default. A stored level always wins; only a fresh save takes this.
+constexpr int kBrightnessDefault = kBrightnessLevels - 2;   // 80%
 constexpr inline int brightnessPercent(int level) {
     if (level < 0) level = 0;
     if (level >= kBrightnessLevels) level = kBrightnessLevels - 1;

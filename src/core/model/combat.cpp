@@ -601,102 +601,7 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
                 actor.health -= condThorns;
             }
         }
-        // Steal track (per-field detail in defs.h): every non-zero steal* field fires on a
-        // landed hit, independently — a move setting more than one steals more than one.
-        // stealPowerPct/stealDefensePct are unconditional; stealSpeedPct/stealCurrentHpPct
-        // also need the caster's Obfuscation bubble up, so going aggressive with the
-        // volatile pair costs bubble uptime.
-        //
-        // Every branch is a TRANSFER, so a floored target (Net Neutrality) pays the thief
-        // nothing. Checked per-branch, not around the block, because stealCurrentHpPct is
-        // in here and Health is not one of the floored leans.
-        if (dmg > 0) {
-            const bool floored = statsFloored(target);
-            bool powerSiphoned = false;
-            if (mv->stealPowerPct > 0 && !floored) {
-                const int stolen = target.powerMultPct * mv->stealPowerPct / 100;
-                if (stolen > 0) {
-                    actor.powerMultPct += stolen;
-                    target.powerMultPct -= stolen;
-                    if (target.powerMultPct < kStealPowerFloorPct)
-                        target.powerMultPct = kStealPowerFloorPct;
-                    powerSiphoned = true;
-                }
-            }
-            if (mv->stealDefensePct > 0 && !floored) {
-                const int stolen = target.dmgReducePct * mv->stealDefensePct / 100;
-                if (stolen > 0) {
-                    actor.dmgReducePct += stolen;
-                    target.dmgReducePct -= stolen;
-                    if (target.dmgReducePct < 0) target.dmgReducePct = 0;
-                }
-            }
-            // Perfect Bite: rolled once per hit, only when the move carries a bubble-gated
-            // field and the bubble is up, so a fight without the track draws no rng(). A
-            // move setting both gated fields takes a second roll for which one doubles.
-            const bool bubbleUp = actor.shieldHp > 0;
-            const bool bubbleGatedMove = mv->stealSpeedPct > 0 || mv->stealCurrentHpPct > 0;
-            bool bite = false, biteHitsSpeed = mv->stealSpeedPct > 0;
-            if (bubbleUp && bubbleGatedMove) {
-                bite = bubbleBiteRolls(actor.stage);
-                if (bite && mv->stealSpeedPct > 0 && mv->stealCurrentHpPct > 0)
-                    biteHitsSpeed = (rng() % 2 == 0);
-            }
-            // The pool bonus applies to whichever gated steal fires, on top of the base and
-            // any Perfect-Bite doubling — the bubble both permits these two and sizes them.
-            const int poolBonus = phishPoolSiphonBonusPct(actor);
-            if (bubbleUp && mv->stealSpeedPct > 0 && !floored) {
-                int pct = mv->stealSpeedPct;
-                // The Phishing Rod only ever scales the BITE half — it amplifies the
-                // bonus, not the move's own base siphon.
-                if (bite && biteHitsSpeed)
-                    pct += mv->stealSpeedPct *
-                           (100 + actor.mods.mag(ModEffect::StealAmplifyPct)) / 100;
-                // FLOAT: a percentage of the target's already-siphoned speed truncates to 0
-                // in int arithmetic once speed nears the floor, killing repeat steals.
-                pct += mv->stealSpeedPct * poolBonus / 100;
-                const float stolen = target.speed * pct / 100.0f;
-                if (stolen > 0.0f) {
-                    actor.speed += stolen;
-                    target.speed -= stolen;
-                    if (target.speed < kStealSpeedFloor) target.speed = kStealSpeedFloor;
-                }
-            }
-            if (bubbleUp && mv->stealCurrentHpPct > 0) {
-                int pct = mv->stealCurrentHpPct;
-                if (bite && !biteHitsSpeed)
-                    pct += mv->stealCurrentHpPct *
-                           (100 + actor.mods.mag(ModEffect::StealAmplifyPct)) / 100;
-                pct += mv->stealCurrentHpPct * poolBonus / 100;
-                const int stolen = target.health * pct / 100;   // lifesteal: target's
-                if (stolen > 0) {                               // CURRENT health drains
-                    target.health -= stolen;                    // straight to the caster
-                    actor.health += stolen;
-                    if (actor.health > actor.maxHealth) actor.health = actor.maxHealth;
-                }
-            }
-            if (mv->stealMaxHpPct > 0 && !floored) {
-                const int stolen = target.maxHealth * mv->stealMaxHpPct / 100;
-                if (stolen > 0 && target.maxHealth - stolen >= 1) {
-                    target.maxHealth -= stolen;                 // permanent for the fight
-                    if (target.health > target.maxHealth) target.health = target.maxHealth;
-                    // The pool MOVES — ceiling and the Health inside it both cross. Combat
-                    // has no heal to climb into a raised ceiling, so a bare maxHealth gain
-                    // would read as a pure debuff on the victim and nothing for the caster.
-                    actor.maxHealth += stolen;
-                    actor.health += stolen;
-                }
-            }
-            // Feed-frenzy: a landed POWER siphon from inside an Obfuscation bubble
-            // devours a sliver of the shield as healing (0.75% of its HP, at least 1),
-            // so a stacked shield both tanks and sustains. No shield up -> no heal.
-            if (powerSiphoned && actor.shieldHp > 0) {
-                int heal = actor.shieldHp * kFrenzyHealPermille / 1000;
-                if (heal < 1) heal = 1;
-                actor.health += heal;
-                if (actor.health > actor.maxHealth) actor.health = actor.maxHealth;
-            }
-        }
+        if (dmg > 0) applyStealTrack(actor, target, *mv);
         // Deadman Switch (mod): a hit that KO'd the pet deals a parting blast. A mutual KO
         // resolves as a Win (enemy-death priority, checkOutcome). One shot per fight.
         if (ModState* dead = target.mods.find(ModEffect::DeathBlast);
@@ -828,6 +733,108 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
         setLast(mv->displayName, 0, byPlayer, false);
     }
 }
+
+// The steal track, and the frenzy heal that hangs off it. Lifted whole out of
+// applyEffect so the mitigation chain there reads as one thing: every branch below is
+// a landed hit paying out, and the caller has already decided that a hit landed.
+// Draws rng() only through Perfect Bite, at the point applyEffect always drew it.
+void Combat::applyStealTrack(Combatant& actor, Combatant& target, const MoveDef& mv) {
+    // Every non-zero steal* field fires, independently — a move setting more than one
+    // steals more than one. stealPowerPct/stealDefensePct are unconditional;
+    // stealSpeedPct/stealCurrentHpPct also need the caster's Obfuscation bubble up, so
+    // going aggressive with the volatile pair costs bubble uptime. Per-field detail is on
+    // MoveDef (defs.h).
+    //
+    // Every branch is a TRANSFER, so a floored target (Net Neutrality) pays the thief
+    // nothing. Checked per-branch, not around the block, because stealCurrentHpPct is in
+    // here and Health is not one of the floored leans.
+    const bool floored = statsFloored(target);
+    bool powerSiphoned = false;
+    if (mv.stealPowerPct > 0 && !floored) {
+        const int stolen = target.powerMultPct * mv.stealPowerPct / 100;
+        if (stolen > 0) {
+            actor.powerMultPct += stolen;
+            target.powerMultPct -= stolen;
+            if (target.powerMultPct < kStealPowerFloorPct)
+                target.powerMultPct = kStealPowerFloorPct;
+            powerSiphoned = true;
+        }
+    }
+    if (mv.stealDefensePct > 0 && !floored) {
+        const int stolen = target.dmgReducePct * mv.stealDefensePct / 100;
+        if (stolen > 0) {
+            actor.dmgReducePct += stolen;
+            target.dmgReducePct -= stolen;
+            if (target.dmgReducePct < 0) target.dmgReducePct = 0;
+        }
+    }
+    // Perfect Bite: rolled once per hit, only when the move carries a bubble-gated
+    // field and the bubble is up, so a fight without the track draws no rng(). A
+    // move setting both gated fields takes a second roll for which one doubles.
+    const bool bubbleUp = actor.shieldHp > 0;
+    const bool bubbleGatedMove = mv.stealSpeedPct > 0 || mv.stealCurrentHpPct > 0;
+    bool bite = false, biteHitsSpeed = mv.stealSpeedPct > 0;
+    if (bubbleUp && bubbleGatedMove) {
+        bite = bubbleBiteRolls(actor.stage);
+        if (bite && mv.stealSpeedPct > 0 && mv.stealCurrentHpPct > 0)
+            biteHitsSpeed = (rng() % 2 == 0);
+    }
+    // The pool bonus applies to whichever gated steal fires, on top of the base and
+    // any Perfect-Bite doubling — the bubble both permits these two and sizes them.
+    const int poolBonus = phishPoolSiphonBonusPct(actor);
+    if (bubbleUp && mv.stealSpeedPct > 0 && !floored) {
+        int pct = mv.stealSpeedPct;
+        // The Phishing Rod only ever scales the BITE half — it amplifies the
+        // bonus, not the move's own base siphon.
+        if (bite && biteHitsSpeed)
+            pct += mv.stealSpeedPct *
+                   (100 + actor.mods.mag(ModEffect::StealAmplifyPct)) / 100;
+        // FLOAT: a percentage of the target's already-siphoned speed truncates to 0
+        // in int arithmetic once speed nears the floor, killing repeat steals.
+        pct += mv.stealSpeedPct * poolBonus / 100;
+        const float stolen = target.speed * pct / 100.0f;
+        if (stolen > 0.0f) {
+            actor.speed += stolen;
+            target.speed -= stolen;
+            if (target.speed < kStealSpeedFloor) target.speed = kStealSpeedFloor;
+        }
+    }
+    if (bubbleUp && mv.stealCurrentHpPct > 0) {
+        int pct = mv.stealCurrentHpPct;
+        if (bite && !biteHitsSpeed)
+            pct += mv.stealCurrentHpPct *
+                   (100 + actor.mods.mag(ModEffect::StealAmplifyPct)) / 100;
+        pct += mv.stealCurrentHpPct * poolBonus / 100;
+        const int stolen = target.health * pct / 100;   // lifesteal: target's
+        if (stolen > 0) {                               // CURRENT health drains
+            target.health -= stolen;                    // straight to the caster
+            actor.health += stolen;
+            if (actor.health > actor.maxHealth) actor.health = actor.maxHealth;
+        }
+    }
+    if (mv.stealMaxHpPct > 0 && !floored) {
+        const int stolen = target.maxHealth * mv.stealMaxHpPct / 100;
+        if (stolen > 0 && target.maxHealth - stolen >= 1) {
+            target.maxHealth -= stolen;                 // permanent for the fight
+            if (target.health > target.maxHealth) target.health = target.maxHealth;
+            // The pool MOVES — ceiling and the Health inside it both cross. Combat
+            // has no heal to climb into a raised ceiling, so a bare maxHealth gain
+            // would read as a pure debuff on the victim and nothing for the caster.
+            actor.maxHealth += stolen;
+            actor.health += stolen;
+        }
+    }
+    // Feed-frenzy: a landed POWER siphon from inside an Obfuscation bubble
+    // devours a sliver of the shield as healing (0.75% of its HP, at least 1),
+    // so a stacked shield both tanks and sustains. No shield up -> no heal.
+    if (powerSiphoned && actor.shieldHp > 0) {
+        int heal = actor.shieldHp * kFrenzyHealPermille / 1000;
+        if (heal < 1) heal = 1;
+        actor.health += heal;
+        if (actor.health > actor.maxHealth) actor.health = actor.maxHealth;
+    }
+}
+
 
 bool Combat::ransomArmRolls(const Combatant& c) {
     // Scaled by the ransomer's stage. The passive check short-circuits before any rng()

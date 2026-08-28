@@ -165,6 +165,23 @@
 //  timers are anchor-based against real elapsed ms, not per-loop counters),
 //  so nothing else needs to know sleep happened.
 #define IDLE_SLEEP_FALLBACK_MS  120000  // 2 min
+//  CPU clock, and the one window it is throttled in. The loop light-sleeps only when
+//  the radio ALSO has no owner, so the state this covers is the dark screen with a
+//  consumer running — an armed audit capture, a live 'Pedia AP — which is exactly the
+//  "arm it and pocket the device" use, and which otherwise spins at the full clock for
+//  as long as the session lasts.
+//
+//  Both values stay PLL-sourced (80/160/240), which is what makes this safe to do
+//  under a running peripheral: on the S3 the APB stays at 80MHz for any of the three,
+//  so the LCD's SPI divider, the backlight's LEDC timer and the UART baud are all
+//  untouched by the switch. Wi-Fi needs >= 80MHz, so a capture keeps running. Set the
+//  two equal to disable the throttle.
+//
+//  The panel is asleep whenever this applies, so nothing on screen can stutter for it.
+//  Sized as a first cut alongside the audit RF bounds in tunables.h, and wants the
+//  same bench pass: measure armed-idle draw at both clocks before moving either.
+#define CPU_ACTIVE_FREQ_MHZ     240
+#define CPU_IDLE_FREQ_MHZ       80
 //  Travel mode (CFG -> DEVICE -> TRAVEL MODE): a deliberate indefinite pause, and
 //  a DEEP sleep rather than the idle light sleep above — the digital core goes down
 //  and comes back through a reset, which is what makes the pause a real one. The
@@ -419,6 +436,12 @@
 #endif
 #ifndef USB_KEEPS_AWAKE
 #  define USB_KEEPS_AWAKE        0    // default: no USB-presence signal on this board
+#endif
+#ifndef CPU_ACTIVE_FREQ_MHZ
+#  define CPU_ACTIVE_FREQ_MHZ    240
+#endif
+#ifndef CPU_IDLE_FREQ_MHZ
+#  define CPU_IDLE_FREQ_MHZ      CPU_ACTIVE_FREQ_MHZ   // default: no throttle
 #endif
 #ifndef USB_SETTLE_MS
 #  define USB_SETTLE_MS          400
