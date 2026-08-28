@@ -602,6 +602,9 @@ int g_failures = 0;
     RUN(test_save_v27_roundtrip)                        \
     RUN(test_save_v32_roundtrip)                        \
     RUN(test_crew_exploit_negates_next_hits)            \
+    RUN(test_crew_rake_returns_a_cut_of_every_hit)      \
+    RUN(test_crew_failover_repeats_the_cast_not_the_turn) \
+    RUN(test_crew_failover_survives_a_turn_with_no_cast) \
     RUN(test_crew_roster_exploits_are_well_formed)      \
     RUN(test_crew_escalation_banks_damage_as_power)     \
     RUN(test_crew_net_neutrality_resets_then_floors_the_leans) \

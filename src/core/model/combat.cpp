@@ -884,6 +884,20 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
             actor.stackPowerBonus += dmg;
             --actor.crewExploit.charges;
         }
+        // Protection Racket (crew Exploit): while the arrangement holds, every hit that
+        // LANDS hands kCrewRakePct of its own final damage straight back as Health. Read
+        // off the same `dmg` Escalation banks — after every mitigation, and including a
+        // hit the ransom pool merely held — so the cut is of what the swing was actually
+        // worth rather than of what it set out to be.
+        //
+        // Spends no counter here: it is turn-metered, and the clock is the holder's own
+        // turns (tickCrewExploitClock). A turn that lands nothing pays nothing and still
+        // costs a turn, which is what makes arming it early a decision.
+        if (dmg > 0 && actor.crewExploit.ticking(CrewExploitKind::LeechOnHit)) {
+            const int rake = dmg * kCrewRakePct / 100;
+            actor.health += rake > 0 ? rake : 1;   // a hit that landed always pays something
+            if (actor.health > actor.maxHealth) actor.health = actor.maxHealth;
+        }
         // Lockout track: landing the hit stacks the caster's Power for the rest
         // of the fight — additive, never reset, capped per move.
         if (mv->stackPowerPct > 0 && actor.stackPowerBonus < mv->stackPowerCap) {
@@ -1356,6 +1370,31 @@ void Combat::resolveTurn(Combatant& actor, Combatant& target, bool byPlayer) {
     // nobody. Guarded on the field AND the line, so no other line draws rng here.
     if (mv->replicaSpawnPct > 0 && replicates(actor)) rollWormSpawn(actor, mv);
     actor.lastMoveIdx = moveIdx;
+
+    // FAILOVER (crew Exploit): the spare takes the same job. One charge runs THIS cast a
+    // second time against the same target, on the spot.
+    //
+    // The CAST and not the TURN, which is the whole of why it sits here rather than
+    // around resolveTurn's caller: the turn-start ticks (a deferred debt, a DoT, a
+    // trickle), the tempo refund and the chain hand-off are all things the turn buys
+    // once, and a fighter that paid its DoT twice for holding a spare would be worse off
+    // for carrying one. What repeats is the swing and the roll that hangs off it —
+    // rollWormSpawn included, so a Worm's spare spawns a second copy the way a Trojan's
+    // arms a second trap, without this ever asking which line it is standing in.
+    //
+    // Placed after `lastMoveIdx` so the repeat is the move the fight already recorded,
+    // and reached only by a turn that actually cast: every early return above — stunned,
+    // mid-channel, hijacked by an Execution-Override — leaves the charge unspent, because
+    // there was no cast for a spare to stand in for.
+    //
+    // A single extra pass, never a loop: one charge is one duplicated cast, so a spare
+    // cannot chain into another spare and the repeat below spends nothing of its own.
+    if (actor.crewExploit.armed(CrewExploitKind::SpareFailover) && target.health > 0 &&
+        outcome_ == Outcome::Ongoing) {
+        --actor.crewExploit.charges;
+        applyEffect(actor, target, mv, byPlayer, moveIdx);
+        if (mv->replicaSpawnPct > 0 && replicates(actor)) rollWormSpawn(actor, mv);
+    }
 }
 
 void Combat::checkOutcome() {
@@ -1447,9 +1486,11 @@ bool Combat::step() {
         else resolveTurn(enemy_, player_, /*byPlayer=*/false);
     }
     checkOutcome();
-    // The side that did NOT act is the one a death-save is standing over, so it is the
-    // one whose clock this turn came off.
-    tickCrewExploitClock(playerActed ? enemy_ : player_);
+    // Both sides are offered the turn: a death-save is standing over the fighter that did
+    // NOT act, a rake rode the swing of the one that did, and each kind takes only the
+    // clock it answers to.
+    tickCrewExploitClock(playerActed ? player_ : enemy_, /*actedThisTurn=*/true);
+    tickCrewExploitClock(playerActed ? enemy_ : player_, /*actedThisTurn=*/false);
     playerTurn_ = pickNextActor();   // schedule the next actor by relative speed
     return true;
 }
@@ -1468,7 +1509,10 @@ bool Combat::fireAutoExploit(Combatant& actor, bool byPlayer) {
     return true;
 }
 
-void Combat::tickCrewExploitClock(Combatant& guarded) {
+void Combat::tickCrewExploitClock(Combatant& c, bool actedThisTurn) {
+    // TWO turn-metered kinds, and they run off opposite clocks, because they sell
+    // different things. A fighter carries one Exploit, so at most one arm below fires.
+    //
     // Backup Plan B is a death-save, so its clock is the INCOMING turns it covers
     // rather than the guarded fighter's own — the three turns it promises are the next
     // three its opponent gets, which is the only count that describes what was bought.
@@ -1476,11 +1520,18 @@ void Combat::tickCrewExploitClock(Combatant& guarded) {
     // its victim's turns instead, because those are things the victim is living
     // THROUGH rather than a guard standing over it.)
     //
-    // A turn the opponent spent stunned, rotting or paying its own ransom still counts:
-    // it was a turn, and the caller ticks after the whole turn has resolved, so every
-    // early return inside resolveTurn is counted the same as a swing.
-    if (guarded.crewExploit.ticking(CrewExploitKind::DeathSaveRally))
-        --guarded.crewExploit.turns;
+    // Protection Racket is the other shape: it rides the holder's OWN swings, so it
+    // burns a turn when the holder acts. Metered any other way it would be a different
+    // ability — three of the malbeast's turns is a promise about a stretch of fight,
+    // three of yours is a promise about a number of swings.
+    //
+    // A turn spent stunned, rotting or paying a ransom still counts on either clock: it
+    // was a turn, and the caller ticks after the whole turn has resolved, so every early
+    // return inside resolveTurn is counted the same as a swing.
+    if (!actedThisTurn && c.crewExploit.ticking(CrewExploitKind::DeathSaveRally))
+        --c.crewExploit.turns;
+    if (actedThisTurn && c.crewExploit.ticking(CrewExploitKind::LeechOnHit))
+        --c.crewExploit.turns;
 }
 
 int Combat::overrideMoveCount() const {
@@ -1621,9 +1672,11 @@ void Combat::armCrewExploit(Combatant& self, const CrewExploit& x, bool byPlayer
     switch (x.kind) {
         case CrewExploitKind::NegateNextHits:
         case CrewExploitKind::PowerByDamageDealt:
+        case CrewExploitKind::SpareFailover:
             self.crewExploit.charges += x.magnitude;
             break;
         case CrewExploitKind::DeathSaveRally:
+        case CrewExploitKind::LeechOnHit:
             self.crewExploit.turns += x.magnitude;
             break;
         case CrewExploitKind::ResetStatsAndFloor:
@@ -1719,9 +1772,11 @@ void Combat::flee() {
     } else {
         resolveTurn(enemy_, player_, /*byPlayer=*/false);
         checkOutcome();
-        // The free turn is a turn, and costs the player's clock one — a flee is only
-        // ever the player retreating, so the guarded side is never in doubt here.
-        tickCrewExploitClock(player_);
+        // The free turn is a turn, and both clocks read it the same way they read one in
+        // step() — a flee is only ever the player retreating, so which side acted is
+        // never in doubt here.
+        tickCrewExploitClock(enemy_, /*actedThisTurn=*/true);
+        tickCrewExploitClock(player_, /*actedThisTurn=*/false);
     }
 }
 

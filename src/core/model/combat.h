@@ -797,12 +797,13 @@ private:
     // Health trigger has come, arm it and report true, which SPENDS the turn. False
     // (the common case) leaves the turn to a move.
     bool fireAutoExploit(Combatant& actor, bool byPlayer);
-    // Burn one turn off `guarded`'s turn-metered crew Exploit clock (DeathSaveRally).
-    // Called with the side that did NOT just act, from the two places a turn resolves —
-    // step() and a failed flee — and always AFTER checkOutcome, so the turn that
-    // actually needed the save is paid out at the count it was armed with rather than
-    // one short.
-    void tickCrewExploitClock(Combatant& guarded);
+    // Offer `c` the turn that just resolved, so whichever turn-metered crew Exploit it
+    // holds can burn one off its own clock — `actedThisTurn` says which side of the turn
+    // `c` was on, because the two kinds count opposite clocks (see the definition).
+    // Called for BOTH fighters from the two places a turn resolves — step() and a failed
+    // flee — and always AFTER checkOutcome, so the turn that actually needed a death-save
+    // is paid out at the count it was armed with rather than one short.
+    void tickCrewExploitClock(Combatant& c, bool actedThisTurn);
     // `moveIdx` is the actor's slot index for `mv` (into actor.moves) — needed by
     // Prowlware to rank that move's Attack power (attackPowerRank).
     void applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,

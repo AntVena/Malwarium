@@ -48,6 +48,20 @@ const CrewDef kCrews[] = {
      {"BACKUP PLAN B", CrewExploitKind::DeathSaveRally, 3,
       "For {mag} of the malbeast's turns, a killing blow instead leaves you on half "
       "Health and pays the overkill back as Power."}},
+    // Blue, and the crew that turned up with a spare in the bag: the next casts run
+    // twice, so whatever the pet's line does off a cast simply happens again.
+    {"hot_spares", "HOT SPARES", "we brought two",
+     CrewTeam::Blue,
+     {"FAILOVER", CrewExploitKind::SpareFailover, 2,
+      "Your next {mag} casts each resolve a second time, on the spot - traps, copies "
+      "and re-rolls included."}},
+    // Red, charging rent on every exchange: each hit that lands hands part of itself
+    // straight back, for as long as the arrangement holds.
+    {"shakedown_artists", "SHAKEDOWN ARTISTS", "nice uptime you've got there",
+     CrewTeam::Red,
+     {"PROTECTION RACKET", CrewExploitKind::LeechOnHit, 3,
+      "For {mag} of your turns, every hit you land takes a cut of its own damage back "
+      "as Health."}},
 };
 const int kCrewCount = static_cast<int>(sizeof(kCrews) / sizeof(kCrews[0]));
 
@@ -83,6 +97,10 @@ const char* crewExploitTag(CrewExploitKind kind) {
         // screen would be worse than a longer tag.
         case CrewExploitKind::MirrorEnemyBuffs:   return "BUFF COPY";
         case CrewExploitKind::DeathSaveRally:     return "RALLY";
+        // A TAKING word, not a paying one: the tag names what the holder does, and the
+        // house rakes a share of every pot the way this rakes a share of every hit.
+        case CrewExploitKind::LeechOnHit:         return "RAKE";
+        case CrewExploitKind::SpareFailover:      return "SPARE";
         case CrewExploitKind::None:               break;
     }
     return "";
@@ -96,6 +114,8 @@ bool crewExploitIsSticky(CrewExploitKind kind) {
         case CrewExploitKind::NegateNextHits:
         case CrewExploitKind::PowerByDamageDealt:
         case CrewExploitKind::DeathSaveRally:
+        case CrewExploitKind::LeechOnHit:
+        case CrewExploitKind::SpareFailover:
         case CrewExploitKind::None:
             break;
     }

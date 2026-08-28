@@ -64,6 +64,7 @@ SCENES=(
   "hacker_vault|hacker vault"       "hacker_crew|hacker crew joined"
   "hacker_crew_unset|hacker crew unset"
   "hacker_crew_side|hacker crew joined blue"
+  "hacker_crew_scroll|hacker crew joined blue row:3"
   "hacker_crew_detail|hacker crew red row:1 detail"
   "hacker_crew_netpick|hacker crew netpick"
   "hacker_merge|hacker merge recipes stock"

@@ -754,3 +754,121 @@ void test_peers_screen_outlives_the_menu_idle_timer() {
     CHECK(!g.linkWanted());
     CHECK(!g.radioScreenOpen());                          // panel sleep resumes too
 }
+
+// PROTECTION RACKET (Shakedown Artists): while it is ticking, every hit the holder LANDS
+// hands kCrewRakePct of its own final damage straight back as Health — and the clock is
+// the holder's OWN turns, not the opponent's, which is what separates it from the
+// death-save sharing the same counter.
+void test_crew_rake_returns_a_cut_of_every_hit() {
+    ContentRegistry r = ContentRegistry::embedded();
+    // The player swings often and the enemy is a wall, so the turns that pass are the
+    // player's own and the fight cannot end underneath the measurement.
+    Combatant p = mkCombatant(r, "P", 100, 100, {"quick_jab"});
+    Combatant e = mkCombatant(r, "E", 5000, 1, {"quick_jab"});
+    Combat cb;
+    cb.begin(p, e, Combat::Stakes::Safe, 42, /*forceEnemyFirst=*/false,
+             /*carryPlayerHealth=*/40, /*exploitUses=*/1);
+    CHECK(cb.player().health == 40);
+
+    cb.openOverride({}, CrewExploit{"PROTECTION RACKET", CrewExploitKind::LeechOnHit, 3});
+    while (cb.overrideBandAt(cb.overrideBandPick()) != OverrideBand::Crew)
+        cb.cycleOverride();
+    cb.enterOverrideBand();
+    cb.commitOverride();
+    CHECK(cb.player().crewExploit.turns == 3);       // turn-metered, not charge-metered
+    CHECK(cb.player().crewExploit.count() == 3);     // ...so the readout counts turns
+
+    // One swing: the cut is of the damage that actually landed, so the two move together
+    // rather than by a flat number.
+    const int hp0 = cb.player().health;
+    int guard = 0;
+    while (cb.lastDamage() <= 0 && guard++ < 200) cb.step();
+    const int dealt = cb.lastDamage();
+    CHECK(dealt > 0);
+    const int expected = dealt * kCrewRakePct / 100;
+    CHECK(cb.player().health == hp0 + (expected > 0 ? expected : 1));
+
+    // The clock burns on the HOLDER's turns. Three of them and the arrangement is over,
+    // whatever the opponent was doing in between.
+    while (cb.player().crewExploit.turns > 0 && guard++ < 400) cb.step();
+    CHECK(!cb.player().crewExploit.ticking(CrewExploitKind::LeechOnHit));
+    const int hpEnd = cb.player().health;
+    for (int i = 0; i < 6 && guard++ < 600; ++i) cb.step();
+    CHECK(cb.player().health <= hpEnd);              // spent: no hit pays again
+
+    // The cut never overheals.
+    cb.begin(p, e, Combat::Stakes::Safe, 42, false, /*carryPlayerHealth=*/-1, 1);
+    cb.openOverride({}, CrewExploit{"PROTECTION RACKET", CrewExploitKind::LeechOnHit, 3});
+    while (cb.overrideBandAt(cb.overrideBandPick()) != OverrideBand::Crew)
+        cb.cycleOverride();
+    cb.enterOverrideBand();
+    cb.commitOverride();
+    guard = 0;
+    while (cb.player().crewExploit.turns > 0 && guard++ < 400) cb.step();
+    CHECK(cb.player().health <= cb.player().maxHealth);
+}
+
+// FAILOVER (Hot Spares): a charge runs the CAST a second time, not the turn. The swing
+// and the rolls hanging off it repeat; the turn-start ticks the turn already paid for do
+// not, so holding a spare never costs the holder its own DoT twice.
+void test_crew_failover_repeats_the_cast_not_the_turn() {
+    ContentRegistry r = ContentRegistry::embedded();
+    Combatant p = mkCombatant(r, "P", 100, 100, {"quick_jab"});
+    Combatant e = mkCombatant(r, "E", 5000, 1, {"quick_jab"});
+
+    // The same fight and seed, run twice: once plain, once holding a spare. The second
+    // run's first turn must take exactly two casts' worth out of the enemy.
+    Combat plain;
+    plain.begin(p, e, Combat::Stakes::Safe, 42, false, -1, 1);
+    int guard = 0;
+    while (plain.lastDamage() <= 0 && guard++ < 200) plain.step();
+    const int oneCast = plain.enemy().maxHealth - plain.enemy().health;
+    CHECK(oneCast > 0);
+
+    Combat spared;
+    spared.begin(p, e, Combat::Stakes::Safe, 42, false, -1, 1);
+    spared.openOverride({}, CrewExploit{"FAILOVER", CrewExploitKind::SpareFailover, 2});
+    while (spared.overrideBandAt(spared.overrideBandPick()) != OverrideBand::Crew)
+        spared.cycleOverride();
+    spared.enterOverrideBand();
+    spared.commitOverride();
+    CHECK(spared.player().crewExploit.charges == 2);   // charge-metered: two spares
+    guard = 0;
+    while (spared.lastDamage() <= 0 && guard++ < 200) spared.step();
+    CHECK(spared.enemy().maxHealth - spared.enemy().health == oneCast * 2);
+    CHECK(spared.player().crewExploit.charges == 1);   // one cast, one charge
+
+    // The second spare goes on the next cast, and then the crew is out.
+    guard = 0;
+    while (spared.player().crewExploit.charges > 0 && guard++ < 400) spared.step();
+    CHECK(spared.player().crewExploit.charges == 0);
+    const int spentAt = spared.enemy().health;
+    guard = 0;
+    while (spared.lastDamage() <= 0 && guard++ < 200) spared.step();
+    // Past the charges the turn is worth one cast again, so the fight resumes the plain
+    // fight's arithmetic rather than staying doubled.
+    CHECK(spentAt - spared.enemy().health <= oneCast);
+}
+
+// A turn that never CAST leaves the spare unspent: there was no swing for it to stand in
+// for. A stun is the reachable version of that, and the charge must still be there when
+// the fighter comes round.
+void test_crew_failover_survives_a_turn_with_no_cast() {
+    ContentRegistry r = ContentRegistry::embedded();
+    Combatant p = mkCombatant(r, "P", 100, 100, {"quick_jab"});
+    p.lockedTurnsLeft = 1;                       // stunned before it can swing
+    Combatant e = mkCombatant(r, "E", 5000, 1, {"quick_jab"});
+    Combat cb;
+    cb.begin(p, e, Combat::Stakes::Safe, 42, false, -1, 1);
+    cb.openOverride({}, CrewExploit{"FAILOVER", CrewExploitKind::SpareFailover, 2});
+    while (cb.overrideBandAt(cb.overrideBandPick()) != OverrideBand::Crew)
+        cb.cycleOverride();
+    cb.enterOverrideBand();
+    cb.commitOverride();
+    CHECK(cb.player().crewExploit.charges == 2);
+    // The stun burns the turn and resolveTurn returns before any cast. Nothing was
+    // duplicated, so nothing was spent — the spare is still in the bag afterwards.
+    cb.step();
+    CHECK(cb.player().lockedTurnsLeft == 0);     // the turn was spent on the lock
+    CHECK(cb.player().crewExploit.charges == 2);
+}

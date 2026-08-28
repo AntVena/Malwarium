@@ -82,7 +82,30 @@ enum class CrewExploitKind : uint8_t {
     // under 0 instead leaves it at half of max Health and pays the overkill back as
     // Power, scaled by the turns still on the clock. Firing consumes it outright.
     DeathSaveRally,
+    // TURN-metered: while it has turns left, every attack this fighter LANDS takes
+    // kCrewRakePct of its own final damage back as Health. Metered on the holder's own
+    // turns rather than its opponent's (Combat::tickCrewExploitClock), because what is
+    // sold is a stretch of the holder's OWN swings — a turn that lands nothing simply
+    // pays nothing and the clock runs anyway.
+    LeechOnHit,
+    // CHARGE-metered: each of the next `magnitude` casts resolves a SECOND time, against
+    // the same target, immediately (Combat::resolveTurn's tail). One charge is one
+    // duplicated cast, not one duplicated turn: the turn-start ticks, the tempo refund
+    // and the chain hand-off all belong to the turn and happen once.
+    //
+    // Line-agnostic on purpose, and it is what makes the ability reach further than it
+    // reads. A cast is where every LinePassive actually fires (defs.h), so a second cast
+    // arms a second Trojan trap, rolls a second Worm replica and re-rolls a Metamorphic
+    // wildcard — without the turn engine ever asking which line it is standing in front
+    // of, which is the rule that set names its own hook.
+    SpareFailover,
 };
+
+// The share of a landed hit's final damage that LeechOnHit takes back as Health. A
+// property of the KIND and not of any crew — every crew fielding a rake takes the same
+// cut — so it lives beside the vocabulary rather than on a crew's row, which carries
+// only that crew's own number (the turn count).
+constexpr int kCrewRakePct = 40;
 
 // The short mechanic word for a kind, used everywhere the effect is surfaced (the
 // picker row's tag, the commit popup, the mid-combat stat panel) so all three can never
