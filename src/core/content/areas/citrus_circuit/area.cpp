@@ -26,7 +26,12 @@ const LootEntry kWildLoot[] = {
 const char* const kModPool[] = {"clock_speed_boost", "packet_sniffer",
                                  "crypto_coprocessor", "canary_trap",
                                  "scratch_disk_buffer", "spare_ram_stick",
-                                 "capacitor_bank"};
+                                 "capacitor_bank",
+                                 // The two families the starter band was missing: the
+                                 // fatigue tax a pet with no Bits cannot buy its way
+                                 // out of, and attack power behind a threshold, which
+                                 // is the only shape of it worth a slot this shallow.
+                                 "thermal_paste", "brownout_boost"};
 
 // BYTE TO EAT — the item storefront: this area's own stock/price per item, same
 // pattern as the mod storefront below.

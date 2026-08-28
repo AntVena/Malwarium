@@ -1140,6 +1140,21 @@ void Combat::resolveTurn(Combatant& actor, Combatant& target, bool byPlayer) {
         // Survived the tick: fall through (folds into this turn, like the deferred tick).
     }
 
+    // Regen (mod): the trickle comes in LAST of the three turn-start ticks, and only on a
+    // fighter that survived the other two. That order is the whole design of the kind — a
+    // heal that ran first would cancel the rot before it bit, which is exactly Faraday
+    // Cage's job and nothing else's (MITIGATION REACH pins rot as the damage the stack
+    // cannot reach). Coming last, it recovers from the FIGHT and never from the tick that
+    // is currently killing you. Clamped to the ceiling, so a trickle can bank nothing
+    // against a hit that has not landed yet.
+    // No popup of its own: whatever this turn goes on to do — a move, or the stun-lock
+    // marker — overwrites the last-move slot before anything draws it, exactly as the two
+    // ticks above find. The Health bar climbing IS the feedback.
+    if (const int regen = actor.mods.mag(ModEffect::RegenPerTurn); regen > 0 && actor.health > 0) {
+        actor.health += regen;
+        if (actor.health > actor.maxHealth) actor.health = actor.maxHealth;
+    }
+
     // Ransom Note (Ransomware passive), the WINDOW half: one roll, here, decides whether
     // this side is holding a ransom window open. Rolling per TURN rather than per incoming
     // hit is what keeps a linked duel in step — the window is fixed by the seed before the

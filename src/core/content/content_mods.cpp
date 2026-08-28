@@ -327,6 +327,113 @@ const ModDef kMods[] = {
      "Metamorphic only.", false,
      ItemDef::Rarity::Epic, 5, 57, ModEffect::PolymorphEffectPct, 6, 0, nullptr, 0,
      /*requiresLine=*/"metamorphic"},
+
+    // ==== FAMILY LADDERS ==========================================================
+    // The rows below extend FAMILIES rather than open new ones: the previous pass filled
+    // the shallow bands, and what it left behind were families that debut early and then
+    // stop — a raising pet meeting the same +HP mod at level 25 that it will still be
+    // carrying at 60. So the question each row answers is "where does this family's next
+    // rung go", and a family that already tops out at the bottom of the ladder gets no
+    // row here. The one exception is stated at its own row (RegenPerTurn), because a new
+    // KIND needs the reason it is not a rung on an existing one.
+    //
+    // Two families are deliberately NOT laddered further, and both for the same measured
+    // reason: flat PowerPct (Crypto Coprocessor / Dropper Payload / Harpoon Mount) and the
+    // post-battle currencies read as the weakest rows in the game at every depth sampled,
+    // and a bigger number does not move either. Power wants a CONDITION on it to be worth
+    // a slot at all — which is what Meltdown Core and the comeback rung below are — and a
+    // Bits row is buying something a combat slot cannot pay it back for.
+
+    // --- CITRUS CIRCUIT (tier 1) — the two families the starter band still lacked ---
+    // Fatigue is what a starter pet actually loses to: it has no Disk Scrubber stock and
+    // no Bits to buy one with, so shaving the tax is worth more here than the same shave
+    // is worth in the Moors. This is the family's first rung — 15 -> 35 -> 60 -> 100 is
+    // the whole ladder, and it now starts where the problem does.
+    {/*wire=*/49, "thermal_paste", "Thermal Paste", "-FRAG",
+     "Runs cool enough to skip the mess: cuts battle-fatigue Frag by {mag}%.", false,
+     ItemDef::Rarity::Common, 1, 3, ModEffect::FatigueFragCut, 15, 0, nullptr, 0},
+    // The comeback family's first rung, and the only shape of attack power the starter
+    // band is allowed: a flat lean measured worthless at every depth, while the same
+    // points hung behind a Health threshold are what carried Meltdown Core.
+    {/*wire=*/50, "brownout_boost", "Brownout Boost", "COMEBACK",
+     "Sags, then surges: below {mag}% Health, attack power rises {mag2}%.", false,
+     ItemDef::Rarity::Uncommon, 1, 9, ModEffect::LowHealthPowerPct, 25, 20, nullptr, 0},
+
+    // --- NET-SEA CROSSING (tier 3) — three second rungs -------------------------
+    // The last-ditch snare's second rung. Tripwire opens the family in the Bayou at 10
+    // below 40%; this widens the window as well as the bite, which is the pair the
+    // HighestMag2 combine rule keeps together (mod_state.cpp).
+    {/*wire=*/51, "depth_charge_rack", "Depth-Charge Rack", "THORNS",
+     "Below {mag2}% Health, reflects {mag} damage to any attacker.", false,
+     ItemDef::Rarity::Rare, 3, 29, ModEffect::ConditionalThorns, 12, 42, nullptr, 0},
+    // The two COUNT mods ladder as a pair, because the Bayou introduced them as one: they
+    // are the only rows that pay for how a pet's MOVE slots are spent, so a crossing that
+    // rewarded stacking attacks but not defends would quietly pick the build for you.
+    {/*wire=*/52, "convoy_escort", "Convoy Escort", "+DEF/DEF",
+     "Damage cut rises {mag}% per equipped Defend move.", false,
+     ItemDef::Rarity::Uncommon, 3, 32, ModEffect::DefendCountCutPct, 9, 0, nullptr, 0},
+    {/*wire=*/53, "broadside_array", "Broadside Array", "+POW/ATK",
+     "Attack power rises {mag}% per equipped Attack move.", false,
+     ItemDef::Rarity::Uncommon, 3, 34, ModEffect::AttackCountPowerPct, 9, 0, nullptr, 0},
+
+    // --- NAPSTORRENT MOORS (tier 4) — the three families that died at tier 3 -----
+    // Max Health stopped dead at the crossing's Ballast Cache, so the deepest named area
+    // before the keep had no bulk row at all: 8 -> 12/14/20 -> 30 -> 45 is the ladder that
+    // restores, and the last rung is what the regen rows below finally give a use for.
+    {/*wire=*/54, "seedbox_array", "Seedbox Array", "+HP",
+     "Always seeding, never asleep: raises max Health by {mag}.", false,
+     ItemDef::Rarity::Uncommon, 4, 38, ModEffect::MaxHealth, 45, 0, nullptr, 0},
+    // The opening-probe cut's third rung (50 -> 60 -> 70). A decoy peer is what a torrent
+    // swarm answers a first contact with, so the moors are where the family belongs; the
+    // step is small on purpose, because this is the family that measures strongest per
+    // point of magnitude and it already debuts in the starter band.
+    {/*wire=*/55, "decoy_peer", "Decoy Peer", "1ST-CUT",
+     "Something else answers first: cuts the fight's first hit an extra {mag}%.", false,
+     ItemDef::Rarity::Rare, 4, 44, ModEffect::FirstHitCutPct, 70, 0, nullptr, 0},
+    // The NEW kind, and the one row here that is not a rung on an existing family. Combat
+    // only ever subtracts: every defensive mod buys a smaller subtraction, which is why
+    // they all read as the same idea at different sizes, and why a raised max-Health
+    // ceiling is mostly a number (the ceiling nobody climbs back into). A trickle is the
+    // one axis that answers a LONG fight rather than a big hit, and it is the reason to
+    // want Seedbox Array above it. Small on purpose: a fight runs tens of turns, so the
+    // per-turn number is multiplied by more than any other magnitude on this table.
+    {/*wire=*/56, "trickle_charger", "Trickle Charger", "REGEN",
+     "Tops itself back up: restores {mag} Health at the start of each of your turns.",
+     false, ItemDef::Rarity::Rare, 4, 46, ModEffect::RegenPerTurn, 3, 0, nullptr, 0},
+
+    // --- CASTLE RAPIDSCARE (tier 5) — the keep's own set ------------------------
+    // The keep stocked six mods and owned exactly one of them: the rest were the DeepWeb's
+    // Epics and the two counters it re-stocks for a player whose earlier rolls missed. So
+    // the LAST named area — the one a player reaches after the whole walk — had nothing of
+    // its own to hand over, while the endless zone behind it had ten. These four are the
+    // deep rungs of the four workhorse families, which is what the end of a ladder should
+    // be: not new ideas, but the versions of the ordinary ones worth crossing a map for.
+    //
+    // Bastion Host is also the row that fixes an inversion. The biggest flat damage cut in
+    // the game was Firewall Patch's 40%, in the BAYOU, at level 22 — so every cut mod
+    // found afterwards was a downgrade, and a family whose best rung sits two tiers from
+    // the bottom is not a ladder. This is where the top of it goes.
+    {/*wire=*/57, "bastion_host", "Bastion Host", "+DEF",
+     "One hardened way in, and it is watching: cuts incoming damage by {mag}%.", false,
+     ItemDef::Rarity::Epic, 5, 53, ModEffect::DamageCutPct, 45, 0, nullptr, 0},
+    // Thorns' top rung. A tarpit answers a scan by holding it open rather than by
+    // refusing it, which is what the whole family does to an attacker.
+    {/*wire=*/58, "tarpit_array", "Tarpit Array", "THORNS",
+     "Every way in is slow and sticky: chips any attacker that hits you for {mag}.", false,
+     ItemDef::Rarity::Rare, 5, 55, ModEffect::Thorns, 7, 0, nullptr, 0},
+    // The comeback family's top rung, and the deepest threshold on it: the ladder widens
+    // the window as it goes (25% -> 30% -> 35% of Health) so a deeper row is not only a
+    // bigger surge but an earlier one.
+    {/*wire=*/59, "kernel_panic", "Kernel Panic", "COMEBACK",
+     "Nothing left to protect: below {mag}% Health, attack power rises {mag2}%.", false,
+     ItemDef::Rarity::Rare, 5, 59, ModEffect::LowHealthPowerPct, 35, 55, nullptr, 0},
+    // Regen's deep rung. A shadow copy is the thing ransomware deletes FIRST, which is the
+    // joke and the mechanic in one: what the keep sells is the restore point that cannot
+    // be taken away, permanently installed rather than carried as a consumable.
+    {/*wire=*/60, "shadow_copy", "Shadow Copy", "REGEN",
+     "Keeps a copy nobody can delete: restores {mag} Health at the start of each of "
+     "your turns.", false,
+     ItemDef::Rarity::Epic, 5, 60, ModEffect::RegenPerTurn, 6, 0, nullptr, 0},
 };
 const int kModsCount = sizeof(kMods) / sizeof(kMods[0]);
 

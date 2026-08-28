@@ -23,7 +23,11 @@ const LootEntry kWildLoot[] = {
 // area's own signature boss rider (data_rot, below).
 const char* const kModPool[] = {"overclock_chip", "heat_sink", "honeytoken",
                                  "cipher_asic", "faraday_cage", "prowlware",
-                                 "meltdown_core", "zero_day_exploit"};
+                                 "meltdown_core", "zero_day_exploit",
+                                 // The bulk rung the ladder had been missing since the
+                                 // crossing, the opening-probe cut's third, and the
+                                 // trickle that gives the first of those a use.
+                                 "seedbox_array", "decoy_peer", "trickle_charger"};
 
 // MOOR-TO-MOOR — the item storefront: this area's own stock/price per item, same
 // pattern as the mod storefront below.

@@ -30,7 +30,11 @@ const LootEntry kWildLoot[] = {
 const char* const kModPool[] = {"hardened_shell", "bundle_stripper", "ballast_cache",
                                 "sonar_ping",     "salvage_rig",     "watchdog_timer",
                                 "bilge_pump",     "barnacle_plating",
-                                "harpoon_mount",  "distress_beacon"};
+                                "harpoon_mount",  "distress_beacon",
+                                // Second rungs: the snare the Bayou opened, and the
+                                // COUNT pair, which stays a pair here for the reason it
+                                // arrived as one (content_mods.cpp).
+                                "depth_charge_rack", "convoy_escort", "broadside_array"};
 
 // FLOATING POINT — the item storefront, tied up where the water is calm enough to
 // trade. Restore Point is the joke and the stock in one: the only thing worth buying

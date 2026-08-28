@@ -23,6 +23,11 @@ constexpr ModRule kModRules[] = {
     {ModEffect::LoadBalance,          ModCombine::LowestMag,   0,   false},
     {ModEffect::WatchdogClamp,        ModCombine::LowestMag,   0,   false},
     {ModEffect::FaradayCut,           ModCombine::HighestMag,  100, false},
+    // Regen takes the STRONGEST trickle rather than the sum, which is the rule every
+    // other standing mitigation here follows. Summing would be the one shape that lets
+    // two slots buy a heal per turn large enough to outrun the damage a fight deals in
+    // one, and a fight nobody can end is worse than a fight either side can lose.
+    {ModEffect::RegenPerTurn,         ModCombine::HighestMag,  0,   false},
     {ModEffect::FirstStrikeRankMult,  ModCombine::Arm,         0,   true},
     {ModEffect::FirstHitCutPct,       ModCombine::HighestMag,  0,   true},
     {ModEffect::LowHealthPowerPct,    ModCombine::HighestMag,  0,   false},

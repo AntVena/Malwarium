@@ -5240,8 +5240,7 @@ window.PEDIA_DATA = {
       "equipLevel": 16,
       "effect": "Padded until nothing matches: cuts damage 9% (13% for Metamorphic).",
       "stats": "DMG CUT 9% / ON LINE +4",
-      "icon": "assets/icons/ICON_MODS_SLOT.png",
-      "iconFallback": true,
+      "icon": "assets/icons/ICON_MOD_JUNK_PADDING.png",
       "line": "metamorphic"
     },
     {
@@ -5321,9 +5320,140 @@ window.PEDIA_DATA = {
       "equipLevel": 57,
       "effect": "Every different effect you land is worth 6 moves learned. Metamorphic only.",
       "stats": "PER EFFECT +6",
-      "icon": "assets/icons/ICON_MODS_SLOT.png",
-      "iconFallback": true,
+      "icon": "assets/icons/ICON_MOD_MUTATION_ENGINE.png",
       "requiresLine": "metamorphic"
+    },
+    {
+      "id": "thermal_paste",
+      "name": "Thermal Paste",
+      "tag": "-FRAG",
+      "rarity": "COMMON",
+      "tier": 1,
+      "equipLevel": 3,
+      "effect": "Runs cool enough to skip the mess: cuts battle-fatigue Frag by 15%.",
+      "stats": "FATIGUE FRAG -15%",
+      "icon": "assets/icons/ICON_MOD_THERMAL_PASTE.png"
+    },
+    {
+      "id": "brownout_boost",
+      "name": "Brownout Boost",
+      "tag": "COMEBACK",
+      "rarity": "UNCOMMON",
+      "tier": 1,
+      "equipLevel": 9,
+      "effect": "Sags, then surges: below 25% Health, attack power rises 20%.",
+      "stats": "BELOW 25%HP / POWER +20%",
+      "icon": "assets/icons/ICON_MOD_BROWNOUT_BOOST.png"
+    },
+    {
+      "id": "depth_charge_rack",
+      "name": "Depth-Charge Rack",
+      "tag": "THORNS",
+      "rarity": "RARE",
+      "tier": 3,
+      "equipLevel": 29,
+      "effect": "Below 45% Health, reflects 16 damage to any attacker.",
+      "stats": "BELOW 45%HP / THORNS 16",
+      "icon": "assets/icons/ICON_MOD_DEPTH_CHARGE_RACK.png"
+    },
+    {
+      "id": "convoy_escort",
+      "name": "Convoy Escort",
+      "tag": "+DEF/DEF",
+      "rarity": "UNCOMMON",
+      "tier": 3,
+      "equipLevel": 32,
+      "effect": "Damage cut rises 9% per equipped Defend move.",
+      "stats": "DMG CUT/DEF +9%",
+      "icon": "assets/icons/ICON_MOD_CONVOY_ESCORT.png"
+    },
+    {
+      "id": "broadside_array",
+      "name": "Broadside Array",
+      "tag": "+POW/ATK",
+      "rarity": "UNCOMMON",
+      "tier": 3,
+      "equipLevel": 34,
+      "effect": "Attack power rises 9% per equipped Attack move.",
+      "stats": "POWER/ATK +9%",
+      "icon": "assets/icons/ICON_MOD_BROADSIDE_ARRAY.png"
+    },
+    {
+      "id": "seedbox_array",
+      "name": "Seedbox Array",
+      "tag": "+HP",
+      "rarity": "UNCOMMON",
+      "tier": 4,
+      "equipLevel": 38,
+      "effect": "Always seeding, never asleep: raises max Health by 45.",
+      "stats": "MAX HP +45",
+      "icon": "assets/icons/ICON_MOD_SEEDBOX_ARRAY.png"
+    },
+    {
+      "id": "decoy_peer",
+      "name": "Decoy Peer",
+      "tag": "1ST-CUT",
+      "rarity": "RARE",
+      "tier": 4,
+      "equipLevel": 44,
+      "effect": "Something else answers first: cuts the fight's first hit an extra 70%.",
+      "stats": "1ST HIT CUT 70%",
+      "icon": "assets/icons/ICON_MOD_DECOY_PEER.png"
+    },
+    {
+      "id": "trickle_charger",
+      "name": "Trickle Charger",
+      "tag": "REGEN",
+      "rarity": "RARE",
+      "tier": 4,
+      "equipLevel": 46,
+      "effect": "Tops itself back up: restores 3 Health at the start of each of your turns.",
+      "stats": "REGEN +3/TURN",
+      "icon": "assets/icons/ICON_MOD_TRICKLE_CHARGER.png"
+    },
+    {
+      "id": "bastion_host",
+      "name": "Bastion Host",
+      "tag": "+DEF",
+      "rarity": "EPIC",
+      "tier": 5,
+      "equipLevel": 53,
+      "effect": "One hardened way in, and it is watching: cuts incoming damage by 45%.",
+      "stats": "DMG CUT 45%",
+      "icon": "assets/icons/ICON_MOD_BASTION_HOST.png"
+    },
+    {
+      "id": "tarpit_array",
+      "name": "Tarpit Array",
+      "tag": "THORNS",
+      "rarity": "RARE",
+      "tier": 5,
+      "equipLevel": 55,
+      "effect": "Every way in is slow and sticky: chips any attacker that hits you for 7.",
+      "stats": "THORNS 7",
+      "icon": "assets/icons/ICON_MOD_TARPIT_ARRAY.png"
+    },
+    {
+      "id": "kernel_panic",
+      "name": "Kernel Panic",
+      "tag": "COMEBACK",
+      "rarity": "RARE",
+      "tier": 5,
+      "equipLevel": 59,
+      "effect": "Nothing left to protect: below 35% Health, attack power rises 55%.",
+      "stats": "BELOW 35%HP / POWER +55%",
+      "icon": "assets/icons/ICON_MOD_KERNEL_PANIC.png"
+    },
+    {
+      "id": "shadow_copy",
+      "name": "Shadow Copy",
+      "tag": "REGEN",
+      "rarity": "EPIC",
+      "tier": 5,
+      "equipLevel": 60,
+      "effect": "Keeps a copy nobody can delete: restores 7 Health at the start of each of your turns.",
+      "stats": "REGEN +7/TURN",
+      "icon": "assets/icons/ICON_MOD_SHADOW_COPY.png"
     }
   ],
   "modTiers": {

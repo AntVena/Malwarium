@@ -631,6 +631,16 @@ enum class ModEffect : uint8_t {
                      // process). magnitude 1 = you never lose more than one turn to a lock.
     FaradayCut,      // Faraday Cage — incoming DoT (MoveDef::dot*) on the pet is cut by
                      // magnitude% (100 = immune — the cage shields against the corruption).
+    RegenPerTurn,    // Trickle Charger / Shadow Copy — restore magnitude Health at the start
+                     // of each of the pet's own turns, clamped to max Health. The one
+                     // RECOVERY axis in a combat that otherwise only ever subtracts, which
+                     // is also what finally gives a raised max-Health ceiling somewhere to
+                     // climb back into. It ticks AFTER the turn's Load Balancer debt and DoT
+                     // rot and only if the pet survived them, on purpose: rot is pinned as
+                     // the damage the mitigation stack cannot reach, and a heal that
+                     // pre-empted the tick would quietly become a second Faraday Cage
+                     // instead of a different thing. So it recovers from the fight, never
+                     // from the tick that is currently killing you.
 
     // --- Niche-flavour build-around mods, one per idea --------------------------
     FirstStrikeRankMult,  // Prowlware — rank the pet's equipped Attack moves by power

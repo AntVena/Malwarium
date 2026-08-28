@@ -21,13 +21,18 @@ const LootEntry kWildLoot[] = {
     {"dyno_nuggets"}, {"tortilla_chip"}, {"backup_drive"}, {"disk_scrubber"},
 };
 
-// The endgame pool: this area's own Ghost Process, the classic tier-4 Epics, and a
-// SECOND source of Watchdog Timer + Faraday Cage. Earlier areas debut one threat each
-// and pay out its counter in the same loot table; the keep's apex wields BOTH riders at
-// once (nag_screen, below), so it re-stocks both counters for a player whose Bayou/Moors
-// rolls never turned one up.
+// The endgame pool: the keep's own set, the DeepWeb's classic Epics, and a SECOND source
+// of Watchdog Timer + Faraday Cage. Earlier areas debut one threat each and pay out its
+// counter in the same loot table; the keep's apex wields BOTH riders at once (nag_screen,
+// below), so it re-stocks both counters for a player whose Bayou/Moors rolls never turned
+// one up.
 const char* const kModPool[] = {"ghost_process",  "deadman_switch", "raid_mirror",
-                                "backup_uplink",  "watchdog_timer", "faraday_cage"};
+                                "backup_uplink",  "watchdog_timer", "faraday_cage",
+                                // The keep's OWN set: the deep rungs of the four
+                                // workhorse families, which is what the last named area
+                                // owed a player who walked the whole map to reach it.
+                                "bastion_host",   "tarpit_array",   "kernel_panic",
+                                "shadow_copy"};
 
 // SPAM & SCRAM — the item storefront: the free tier's endless lunch, and the two ways
 // out of a fight you didn't want (skip it, or patch through the middle of it). The

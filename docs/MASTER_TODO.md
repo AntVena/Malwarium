@@ -377,8 +377,8 @@ you look at one.
   family has no picture for "the place your pet stands". One 20x20 beside the other
   `ICON_CFG_*`. Cosmetic; the row reads by its label today. Diff **S**.
 - **Net-Sea Crossing area art** (shipped mechanically, art pending): the `FLOATING POINT` / `THE
-  HARDENED SHELL` storefront motifs. Its nine mods are drawn — the whole `ICON_MOD_*` family is, so
-  no area owes one. Like the keep, it fights with the shared tier roster and has no malbeasts of
+  HARDENED SHELL` storefront motifs. Its twelve mods are drawn — the whole `ICON_MOD_*` family is,
+  so no area owes one. Like the keep, it fights with the shared tier roster and has no malbeasts of
   its own.
 - **Napstorrent Moors area art** (shipped mechanically, art pending): the `MOOR-TO-MOOR`
   storefront motif.
