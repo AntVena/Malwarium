@@ -126,7 +126,7 @@ void Game::onMoveDetail(const ButtonEvent& ev) {
 void Game::onMovePicker(const ButtonEvent& ev) {
     // Mirrors the MODS picker: owned moves + an unequip option; a move lives
     // in one slot (equipping it elsewhere moves it); overwriting a DIFFERENT move
-    // opens the inline confirm. The innate default can't be slotted. #12: the
+    // opens the inline confirm. The innate default can't be slotted. The
     // slot is type-locked, so the candidate list is already kind-filtered — there's
     // nothing left to reject on kind by the time B is pressed. The default (non-
     // showAll) list also drops anything else the pet can't equip here right now

@@ -6,9 +6,9 @@
 
 namespace mal {
 
-// Mods roster. A mod's combat effect is a structured effectKind + magnitude
-// (magnitude on the row — docs/CONTENT_STANDARD.md), applied data-driven in
-// combat.cpp/game_combat. THREE independent axes drive earn + power:
+// Mods roster. A mod's combat effect is a structured effectKind + magnitude (magnitude on
+// the row — docs/CONTENT_STANDARD.md), applied data-driven in combat.cpp/game_combat.
+// THREE independent axes drive earn + power:
 //
 //   `rarity`     — DROP WEIGHT within an area's loot table. How common, not how good.
 //   `powerTier`  — ladder DEPTH (1..kModPowerTiers). Picks WHICH AREA's pool drops it,
@@ -24,17 +24,14 @@ namespace mal {
 //
 // The gate is authored, not derived, and that is what makes the ladder DENSE: within a
 // tier's band the gates step, so a raising pet gains something new every level or two
-// rather than everything in an area at once and then nothing until the next one. What the
-// tier guarantees is ORDER — a deeper tier never gates lower than a shallower one — which
-// is the property test_mod_equip_ladder_is_ordered_and_dense pins, along with the absence
-// of dead bands.
+// rather than everything in an area at once and nothing until the next. The tier
+// guarantees ORDER — a deeper tier never gates lower than a shallower one — which
+// test_mod_equip_ladder_is_ordered_and_dense pins along with the absence of dead bands.
 //
-// Bands are TWELVE levels wide, by tier: 0-11 · 12-23 · 24-35 · 36-47 · 48-60. Twelve
-// rather than ten because the roster is sized to fill 0-60, which is where a SIXTH area
-// would begin rather than where the fifth ends — a ladder that already runs that deep
-// takes a new rung by extending past 60 into the headroom, instead of having to re-band
-// every row that shipped. The ceiling itself is kModEquipLevelMax (tunables.h, 100),
-// which explains why it sits so far above the roster.
+// Bands are TWELVE levels wide, by tier: 0-11 · 12-23 · 24-35 · 36-47 · 48-60. The roster
+// is sized to fill 0-60, which is where a SIXTH area would begin rather than where the
+// fifth ends, so a new rung extends past 60 into the headroom instead of re-banding every
+// row that shipped. The ceiling is kModEquipLevelMax (tunables.h, 100).
 //
 // LINE mods come in two shapes, and the shape follows the EFFECT:
 //   • soft affinity (`line` + `affinityBonus`) sits on a GENERIC effect kind — anyone can
@@ -333,33 +330,18 @@ const ModDef kMods[] = {
      /*requiresLine=*/"metamorphic"},
 
     // ==== FAMILY LADDERS ==========================================================
-    // The rows below extend FAMILIES rather than open new ones: the previous pass filled
-    // the shallow bands, and what it left behind were families that debut early and then
-    // stop — a raising pet meeting the same +HP mod at level 25 that it will still be
-    // carrying at 60. So the question each row answers is "where does this family's next
-    // rung go", and a family that already tops out at the bottom of the ladder gets no
-    // row here. The one exception is stated at its own row (RegenPerTurn), because a new
-    // KIND needs the reason it is not a rung on an existing one.
+    // These rows extend FAMILIES rather than open new ones: each answers "where does this
+    // family's next rung go", so a family that already tops out at the bottom of the ladder
+    // gets no row here. A new KIND states its own reason for not being a rung on an
+    // existing family (RegenPerTurn does). The post-battle currencies get no further rungs
+    // at all — a Bits row buys something a combat slot cannot pay back, whatever the
+    // magnitude.
     //
-    // The post-battle currencies get no further rungs: a Bits row is buying something a
-    // combat slot cannot pay it back for, and no magnitude changes that.
-    //
-    // FLAT ATTACK POWER and FLAT MAX HEALTH were once read the same way — the weakest rows
-    // in the game at every depth sampled — and they turned out to be two different problems
-    // wearing one symptom.
-    //
-    // Health was simply UNDERSIZED: the rows measured negative up to ~20 and positive from
-    // ~30, which is a threshold, not a shape that does not work. So the family is carried
-    // half again past where it fell away, uniformly — the one way to move it without
-    // inverting a ladder that was already in order.
-    //
-    // Power was not undersized at all, and a half-again pass on it moved nothing, which is
-    // what said so. ModEffect::PowerPct was a flat ADD onto a base kStagePowerScalePct has
-    // already inflated 100 -> 230, so "+18% attack power" was 18% to a Process pet and 7.8%
-    // to a Daemon — the row decayed across exactly the stretch a player spends earning it.
-    // The magnitudes here are therefore the ones the rows always carried; what changed is
-    // that combat_factory.cpp now applies them MULTIPLICATIVELY, which is the same fix
-    // applyLevelStatPoints already made for the level bonus and for the same reason.
+    // ModEffect::PowerPct applies MULTIPLICATIVELY (combat_factory.cpp), the same shape
+    // applyLevelStatPoints uses for the level bonus. A flat add would decay across the
+    // raise: it lands on a base kStagePowerScalePct has already inflated 100 -> 230, so the
+    // same row is worth 18% to a Process pet and 7.8% to a Daemon — weakest over exactly
+    // the stretch a player spends earning it.
 
     // --- CITRUS CIRCUIT (tier 1) — the two families the starter band still lacked ---
     // Fatigue is what a starter pet actually loses to: it has no Disk Scrubber stock and

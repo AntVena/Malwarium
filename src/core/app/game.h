@@ -112,7 +112,7 @@ public:
     // interrogate the pool without playing a board.
     enum class QuotePick : uint8_t { Unsolved, SolvedOnly, Any };
 
-    // Move-slot rework #12: the per-pet, per-slot Attack/Defend STAMP. Unset until
+    // The per-pet, per-slot Attack/Defend STAMP. Unset until
     // the slot first unlocks for this pet (stampSlotKinds), then locked forever —
     // see slotKinds_'s declaration for the full contract. Public so tests/render
     // can read it without reaching into private state.
@@ -132,7 +132,7 @@ public:
     int combatStatsPage() const { return combatStatsPage_; }
     const Loadout& loadout() const { return loadout_; }
     const MoveLoadout& moveLoadout() const { return moveLoadout_; }
-    // Move-slot rework #12: the stamped kind for `slot`, or Unset if it hasn't
+    // The stamped kind for `slot`, or Unset if it hasn't
     // unlocked for this pet yet (out-of-range also reads Unset).
     SlotKind slotKind(int slot) const {
         return (slot >= 0 && slot < kMaxMoveSlots) ? slotKinds_[slot] : SlotKind::Unset;
@@ -2455,7 +2455,7 @@ private:
     void fireEvolution();          // enter the modal toward the successor
     void completeEvolution();      // commit the swap, restart the in-stage clock, idle
 
-    // Move-slot rework #12: stamp the Attack/Defend kind of every UNLOCKED slot
+    // Stamp the Attack/Defend kind of every UNLOCKED slot
     // that's still Unset from the CURRENT pet_'s CreatureDef::slotKinds, then never
     // touch that slot again — so which creature occupies the evolution path at the
     // moment a slot unlocks decides that slot's kind for the rest of the raise.
@@ -2738,7 +2738,7 @@ private:
     // battle; combatBeat_ paces the auto-resolution; Health lives in combat_ and is
     // NEVER persisted (transient). combatXp_/combatLevel_ persist (save v2).
     MoveLoadout moveLoadout_;
-    // Move-slot rework #12: the per-pet stamped Attack/Defend kind for each move
+    // The per-pet stamped Attack/Defend kind for each move
     // slot (Unset until stampSlotKinds() first fills it, then locked). Reset to
     // all-Unset on every new egg (Game::startHatch, the single new-egg chokepoint
     // that also resets statPoints_/combatLevel_/moveLoadout_); restored verbatim on

@@ -110,7 +110,7 @@ void Game::layEgg(const EggLineDef* line) {
     combatLevel_ = 0;
     for (int i = 0; i < kLevelStatCount; ++i) statPoints_[i] = 0;
     lastLevelUpStat_ = -1;
-    // Move-slot rework #12: the stamped Attack/Defend layout is per-pet too — a
+    // The stamped Attack/Defend layout is per-pet too — a
     // fresh egg starts every slot Unset so its own raise re-derives the layout
     // from scratch (same new-egg chokepoint as the level reset above).
     for (int i = 0; i < kMaxMoveSlots; ++i) slotKinds_[i] = SlotKind::Unset;
@@ -238,7 +238,7 @@ void Game::completeHatch() {
     model_ = PetModel();          // fresh Process vitals (unfreeze the raising loop)
     for (int& t : signalTally_) t = 0;  // Process-stage dominant signal starts fresh
     defragCount_ = 0;             // a brand-new pet has never been defragged
-    stampSlotKinds();             // #12: lock this pet's newly-unlocked slot(s)
+    stampSlotKinds();             // lock this pet's newly-unlocked slot(s)
     // The Game constructor pre-equips slot 1 with a Defend move (MoveLoadout::
     // starting()) before any creature has stamped a kind onto it — this is the
     // first stamp slot 1 ever gets, so validate now rather than carry a possible
@@ -420,7 +420,7 @@ void Game::completeEvolution() {
     evolveTo_ = nullptr;
     stageEnteredMs_ = nowMs_;          // restart the in-stage clock for the next boundary
     for (int& t : signalTally_) t = 0; // next stage's dominant signal starts fresh
-    stampSlotKinds();                  // #12: lock this pet's newly-unlocked slot(s)
+    stampSlotKinds();                  // lock this pet's newly-unlocked slot(s)
     nav_ = Nav::Idle;
     dirty_ = true;
     persistSave();                     // a structural change — persist immediately
@@ -622,7 +622,7 @@ void Game::resetToHatch() {
     upgrades_ = PetUpgrades{};           // nothing permanent survives a wipe either
     for (int i = 0; i < kLevelStatCount; ++i) statPoints_[i] = 0;
     lastLevelUpStat_ = -1;
-    for (int i = 0; i < kMaxMoveSlots; ++i) slotKinds_[i] = SlotKind::Unset;  // #12
+    for (int i = 0; i < kMaxMoveSlots; ++i) slotKinds_[i] = SlotKind::Unset;
     generation_ = 0;
     petsRaised_ = 0;
     uptimeBase_ = 0;

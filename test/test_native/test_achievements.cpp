@@ -381,7 +381,7 @@ void test_pedia_state_json_rack_and_record_hatched() {
     CHECK(json.find("\"archive\":[{") != std::string::npos);
 }
 
-// End-to-end trigger #1: a cracked DISK DECRYPTION board flips FIRST_BRUTE_FORCE
+// End-to-end trigger, the first: a cracked DISK DECRYPTION board flips FIRST_BRUTE_FORCE
 // (Game::finishDecryption). Waiting an egg out does NOT — the achievement is named for
 // breaking a key, and an egg that hatched on its own clock never had one to break.
 void test_pedia_first_brute_force_achievement() {
@@ -401,7 +401,7 @@ void test_pedia_first_brute_force_achievement() {
       CHECK(!g.hasAchievement(ach::kFirstBruteForce)); }
 }
 
-// End-to-end trigger #2: a real Good-branch and a real Bad-branch Daemon
+// End-to-end trigger, the second: a real Good-branch and a real Bad-branch Daemon
 // evolution (Game::completeEvolution) — FLAWLESS_RUN/GONE_ROGUE fire on the correct
 // branch only, and the sibling NOT taken stays LOCKED. Seeing is a fight; an
 // evolution cinematic is not one, so the branch it reveals is not a reveal.

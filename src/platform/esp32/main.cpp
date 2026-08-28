@@ -150,22 +150,18 @@ void applyBrightness() {
     display.setBacklight(static_cast<uint8_t>(duty < 0 ? 0 : duty > 255 ? 255 : duty));
 }
 
-// Real hardware light sleep for the screen-asleep + radio-quiet window: parks
-// the whole SoC (µA range, well below the "awake at 240MHz between polls"
-// baseline) instead of just skipping loop iterations. Every button pin is
-// armed as a wake source (active-low: wake on the LOW level), plus a timer
-// wakeup as a safety net in case a GPIO edge is ever missed. Nothing about the
-// game's own timers needs to change for this: they're all anchor-based against
-// real elapsed ms (see evolveRemainMs/dyingEnteredMs/etc.), and light sleep
-// keeps the system clock running and correctly adjusted across the gap — so
-// there's no clock-freeze/pause bookkeeping to add here. That freeze (stopping
-// the game clock so travel time isn't credited to hunger/decay/growth) is a
-// distinct, not-yet-built feature from this always-on idle sleep.
-// Only called with the radio fully powered down (Owner::None already forces
-// WiFi.mode(WIFI_OFF) on every consumer), so there's no Wi-Fi/light-sleep
-// coexistence concern to handle here.
-// When the last light sleep ended. Read by the USB_SETTLE_MS grace window below:
-// it is the only way a cable plugged in DURING a sleep can ever be noticed.
+// Real hardware light sleep for the screen-asleep + radio-quiet window: parks the whole
+// SoC (µA range) instead of skipping loop iterations. Every button pin is armed as a wake
+// source (active-low), plus a timer wakeup in case a GPIO edge is ever missed. The game's
+// timers need no bookkeeping across it — they are anchor-based against real elapsed ms and
+// light sleep keeps the system clock running. Stopping the game clock outright is travel
+// mode's job, and travel mode deep-sleeps instead (travelDeepSleep below).
+//
+// Only reached with the radio fully powered down (Owner::None forces WiFi.mode(WIFI_OFF)
+// on every consumer), so there is no Wi-Fi/light-sleep coexistence concern here.
+
+// When the last light sleep ended. Read by the USB_SETTLE_MS grace window below: it is the
+// only way a cable plugged in DURING a sleep can ever be noticed.
 uint32_t lastSleepWakeMs = 0;
 
 // Track the clock so a no-op switch costs nothing; setCpuFrequencyMhz reconfigures the
@@ -297,16 +293,13 @@ bool usbHostAttached() {
 // a brick means a USB cable, which the person this update path was built for does
 // not have.
 //
-// The Arduino core would commit the image inside initArduino(), before setup()
-// runs, which makes the test "did the C runtime start" — it catches an image too
-// broken to boot and nothing else. verifyRollbackLater() below defers that
-// decision to us so the test can be the one that matters: the device reached the
-// main loop, put a frame on the panel, and stayed up. A build that panics in
-// setup(), wedges bringing up the display, or crash-loops in its first seconds
-// never commits, so the next power cycle silently puts the old firmware back.
-//
-// The window is deliberately survivable rather than long. A user who yanks power
-// inside it gets a rollback they didn't need — annoying, and the safe direction.
+// The Arduino core would commit inside initArduino(), before setup() runs, which makes the
+// test "did the C runtime start". verifyRollbackLater() below defers the decision so the
+// test can be the one that matters: the device reached the main loop, put a frame on the
+// panel, and stayed up. A build that panics in setup(), wedges the display or crash-loops
+// never commits, and the next power cycle silently restores the old firmware. The window is
+// survivable rather than long — power yanked inside it costs a rollback nobody needed,
+// which is the safe direction.
 uint32_t otaCommitAtMs = 0;   // 0 once committed or when nothing is pending
 
 void armOtaCommitIfPending() {
@@ -538,37 +531,20 @@ void loop() {
     // (DEV_CFG_RESET_ROW, dev_config.h) is the single dev reset path.
 
 #ifndef BRINGUP_PINSCAN
-    // Idle screen sleep: blank the panel after SCREEN_SLEEP_MS of no input. The
-    // engine keeps ticking (model decay etc.); we just stop presenting.
-    // Disabled during bring-up so the panel stays on while we debug.
+    // Idle screen sleep: blank the panel after SCREEN_SLEEP_MS of no input. The engine
+    // keeps ticking; we just stop presenting. Disabled during bring-up.
     //
-    // Auto-explore keeps the panel AWAKE: the run is hands-off and the
-    // player is watching it, so we treat every explore frame as fresh activity —
-    // this holds the sleep timer off WITHOUT a separate "is exploring" gate on the
-    // sleep test below. When the mode ends by ANY route (a lost fight, a cleared
-    // gauntlet, a manual Cancel, a new egg, or a crisis modal that preempts it) the
-    // frames simply stop counting as activity and the normal timeout resumes,
-    // counting from the last explore frame. Because it's a per-frame refresh and
-    // not a one-shot transition edge, sleep re-enables cleanly on every exit path —
-    // there is no edge to miss and no "still exploring" flag left stuck on.
-    // Auto-explore, the PEDIA QR page and the RADIO SCREENS all hold the panel
-    // awake: the first is a hands-off run the player watches, the second needs to
-    // stay lit long enough to scan + join the AP, and the radio screens (CREW's
-    // home-network picker, PEERS) are read hands-off while they fill in — the
-    // operator walks toward the network they mean to claim, or holds the device
-    // beside someone else's, which takes far longer than SCREEN_SLEEP_MS (their own
-    // idle budget is kRadioScreenDefocusMs).
-    //
-    // Letting the panel sleep on those two would be worse than an inconvenience:
-    // holding the screen open is what arms their radio, so a dark screen is also a
-    // dead radio, and the operator would be staring at a device that has quietly
-    // stopped looking. All of these are a per-frame refresh — no sticky flag — so
-    // the normal timeout resumes cleanly the moment the state ends (explore stops,
-    // or the player exits the QR / CREW / PEERS screen with C).
-    //
-    // A tethered USB host holds it awake for the same per-frame reason, but a
-    // different one of its own: the sleeps exist to save battery, and a tethered
-    // device isn't on battery. Unplugging simply lets the normal timeout resume.
+    // Four states hold the panel awake, each by stamping every frame as fresh activity
+    // rather than by a sticky flag — so the normal timeout resumes cleanly the moment the
+    // state ends, with no transition edge to miss:
+    //   auto-explore   — a hands-off run the player is watching.
+    //   the PEDIA QR   — has to stay lit long enough to scan and join the AP.
+    //   a RADIO screen — CREW's network picker and PEERS are read hands-off while they
+    //                    fill in, which takes far longer than SCREEN_SLEEP_MS (their own
+    //                    budget is kRadioScreenDefocusMs). Holding one open is also what
+    //                    ARMS their radio, so a dark screen there is a dead radio.
+    //   a USB host     — the sleeps exist to save battery and a tethered device isn't on
+    //                    battery. Unplugging lets the normal timeout resume.
     if (game->exploreActive() || game->qrScreenActive() || game->radioScreenOpen() ||
         usbHostAttached())
         lastActivityMs = millis();
@@ -718,24 +694,20 @@ void loop() {
                       game->model().hunger(), static_cast<int>(game->nav()));
     }
 #endif
-    // Poll cadence: while the screen is asleep and the radio has no owner (no
-    // Audit Scan/Capture, no 'Pedia AP), nothing external can touch game state
-    // — a button press is the only thing worth watching for, so light-sleep
-    // the SoC instead of just spinning the loop. Any other state (screen lit,
-    // or a radio consumer running) keeps the normal responsive poll cadence.
-    // Bring-up pin scanning wants continuous digitalRead polling, not sleep.
+    // Poll cadence. With the screen asleep AND the radio unowned, nothing external can
+    // touch game state and a button press is the only thing worth watching for, so the SoC
+    // light-sleeps rather than spinning the loop. Any other state keeps the responsive
+    // cadence, and bring-up pin scanning wants continuous polling instead.
     //
-    // A USB host blocks the light sleep outright: light sleep gates the clocks the
-    // USB-Serial-JTAG link runs on, so sleeping mid-session drops the device out of
-    // a serial monitor.
+    // A USB host blocks the light sleep outright: it gates the clocks the USB-Serial-JTAG
+    // link runs on, so sleeping mid-session drops the device out of a serial monitor.
     //
-    // The settle window is what makes a cable plugged in DURING a sleep detectable
-    // at all. There is no USB wake source on this SDK, so the fallback timer wake is
-    // the only chance to notice — and at that instant usbHostAttached() is still
-    // stale, because the tick hook that maintains it was stopped and the link is
-    // re-enumerating. Staying up briefly after every wake gives that a chance to
-    // land. It costs ~0.3% duty against a 2-minute fallback, and without it the
-    // device would sleep again before ever seeing the cable.
+    // The settle window is what makes a cable plugged in DURING a sleep detectable at all.
+    // There is no USB wake source on this SDK, so the fallback timer wake is the only
+    // chance to notice — and at that instant usbHostAttached() is still stale, the tick
+    // hook that maintains it having been stopped while the link re-enumerates. Staying up
+    // briefly after every wake gives that a chance to land, at ~0.3% duty against a
+    // 2-minute fallback.
     // A frame has been on the panel by now, so this is the full health test.
     commitOtaWhenProven(millis());
 

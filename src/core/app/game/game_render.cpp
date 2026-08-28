@@ -600,7 +600,7 @@ void Game::drawSubmenu(Framebuffer& fb) const {
             if (loadoutTab_ == LoadoutTab::Mods) {
                 drawModsList(fb, registry_, loadout_, listRow_, beat_);
             } else if (loadoutTab_ == LoadoutTab::Moves) {
-                // #12: each slot's stamped required kind, for the row tags.
+                // Each slot's stamped required kind, for the row tags.
                 MoveDef::Kind sk[kMaxMoveSlots];
                 for (int i = 0; i < kMaxMoveSlots; ++i) sk[i] = slotRequiredKind(i);
                 drawLoadout(fb, registry_, moveLoadout_, st, trainRow_, sk, beat_);

@@ -11,7 +11,8 @@ Only the unambiguous half of that doc's strip-on-sight list is mechanised here:
 
   * MASTER_TODO / Next-phase / Feedback #N   — the board, by name.
   * FB-<ID> row ids, Phase N milestone tags  — cards, by number.
-  * (D3), (J.21b), (#12)                     — row ids in their PARENTHESISED form.
+  * (D3), (J.21b)                            — row ids in their PARENTHESISED form.
+  * #12, "Move-slot rework #11"              — bare card numbers (hex colours survive).
   * (PO), "PO asked/noted/said", "cowork decided" — attribution.
   * ISO dates                                — time provenance; git log is the changelog.
 
@@ -42,7 +43,12 @@ EXTS = (".cpp", ".h", ".hpp", ".c", ".ino")
 PATTERNS = [
     (re.compile(r"MASTER_TODO|Next-phase|Feedback #\d"), "names the planning board"),
     (re.compile(r"\bFB-[A-Z]+\d|\bPhase \d"), "cites a planning card / milestone id"),
-    (re.compile(r"\((?:[DJ]\.?\d+[a-z]?|#\d+)\)"), "cites a planning row id"),
+    (re.compile(r"\([DJ]\.?\d+[a-z]?\)"), "cites a planning row id"),
+    # A bare #N card number. The one thing in this repo that legitimately carries a '#'
+    # inside a comment is a hex colour (`#14171c`), so the lookahead excludes any six-hex
+    # run before the digits are read — including an all-numeric one, which is the case a
+    # "not followed by a hex char" test would have let through.
+    (re.compile(r"#(?![0-9a-fA-F]{6})\d{1,3}\b"), "cites a planning card number"),
     (re.compile(r"\(PO\)|\bPO (?:asked|noted|said)|cowork decided"), "attributes a decision"),
     (re.compile(r"\b20\d\d-\d\d-\d\d\b"), "dates the code (git log is the changelog)"),
 ]

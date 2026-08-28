@@ -354,16 +354,17 @@ const MoveDef kMoves[] = {
     // is what makes it findable at all: drops come from the defeated enemy's kit, so a move
     // no boss carries cannot be earned. test_every_generic_move_is_carried holds that line.
     //
-    // These are NICHE-first, not ladder-first. The rows deliberately do not sort by power,
-    // because what they are for is giving a build something it could not do before — and
-    // two engine facts make the extremes real rather than decorative:
+    // These are NICHE-first, not ladder-first: the rows do not sort by power, because what
+    // they are for is giving a build something it could not do before. Two engine facts
+    // make the extremes real rather than decorative:
     //
     //   * The STUN and DoT riders fire on any landed cast, damage or not (combat.cpp's
     //     applyEffect) — only the steal track is gated on dmg > 0. So a ~0-power move with
     //     a big rider is a working move, not a wasted turn: pure control, no impact.
-    //   * A hit whose PRE-mitigation damage was non-zero is floored at 1 (combat.cpp:347).
-    //     So a low-power shred lands through any wall, however braced the target is — the
-    //     shred is the payload and the damage is the delivery.
+    //   * A hit whose PRE-mitigation damage was non-zero is floored at 1 (the minimum
+    //     penetration rule in Combat::applyEffect). So a low-power shred lands through any
+    //     wall however braced the target is — the shred is the payload, the damage the
+    //     delivery.
     //
     // Nothing here goes below power 3: `power * powerMultPct / 100` is what the floor tests,
     // and a Good-branch pet's softer multiplier truncates 1 and 2 to zero, which would take
@@ -511,19 +512,16 @@ const MoveDef kMoves[] = {
     // applyWildSubAreaRamp/applyDeepWebScale hand it to every malbeast met there.
     //
     // So this pool answers a different question from the one above it. A boss move is a
-    // prize for beating the wall at the end of a stretch; a wild move is what that
-    // stretch itself is MADE of — the thing you meet over and over while walking, and
-    // therefore the thing that makes an area read as itself in a fight rather than as a
-    // difficulty tier. Each pair is a weaker echo of the family its zone's bosses teach,
-    // which is what lets a player recognise the boss's move as the full-strength version
-    // of one they have already been hit by.
+    // prize for beating the wall at the end of a stretch; a wild move is what the stretch
+    // is MADE of, and so what makes an area read as itself in a fight rather than as a
+    // difficulty tier. Each pair is a weaker echo of the family its zone's bosses teach, so
+    // the boss's move reads as the full-strength version of one already met.
     //
-    // The ATTACK carries its zone's family rider (the Bayou pierces, the Moors just
-    // swings, the crossing freezes) and the DEFEND is a plain brace, because a brace IS
-    // its power: every rider fires on the Attack branch only (Combat::applyEffect), and
-    // the interesting defensive tracks — shieldPool, trapArm, replica* — each belong to a
-    // LINE. So the six braces are a ladder of one number, deepest zone highest, and a
-    // player who wants a bigger wall than the one they own knows exactly where to walk.
+    // The ATTACK carries its zone's family rider (the Bayou pierces, the Moors just swings,
+    // the crossing freezes) and the DEFEND is a plain brace, because a brace IS its power:
+    // every rider fires on the Attack branch only (Combat::applyEffect), and the defensive
+    // tracks — shieldPool, trapArm, replica* — each belong to a LINE. So the six braces are
+    // a ladder of one number, deepest zone highest.
     //
     // Same field discipline as the boss pool: stack*/shieldPool/trap*/replica* and
     // stealPowerPct stay ZERO on every row here.

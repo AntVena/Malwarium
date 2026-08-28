@@ -58,13 +58,11 @@
 #define PIN_LCD_BL             46    // VERIFIED (demo) — plain GPIO, drive HIGH = on (no PWM)
 
 // Backlight brightness PWM ------------------------------------
-//  The CFG "BRIGHTNESS" setting is fully wired engine-side (persisted, save v14):
-//  Game::setBrightness persists the level and main.cpp's applyBrightness() maps
-//  it to a 0..255 duty. With HAS_BACKLIGHT_PWM 0 that duty only degraded to plain
-//  on/off GPIO (digitalWrite HIGH for any non-zero duty) — every level rendered
-//  full brightness, no dimming. The LEDC PWM path in display_esp32.h (init,
-//  setBacklight, sleep, wake) is consistent and lgfx_config.h doesn't manage the
-//  backlight pin, so there's no conflict — flipped on as the shipped default.
+//  The CFG "BRIGHTNESS" level is persisted engine-side (save v14) and mapped to a 0..255
+//  duty by main.cpp's applyBrightness(). With this at 0 the duty degrades to plain on/off
+//  GPIO, so every level renders full brightness — which also makes the backlight, the
+//  largest single draw on a lit panel, unmanageable. The LEDC path is in display_esp32.h,
+//  and lgfx_config.h leaves PIN_LCD_BL alone, so nothing contends for the pin.
 #define HAS_BACKLIGHT_PWM       1    // 1 = LEDC dimming (shipped) · 0 = on/off GPIO fallback
 #define BACKLIGHT_LEDC_CHANNEL  7    // an LEDC channel unlikely to collide with audio PWM
 #define BACKLIGHT_LEDC_FREQ_HZ  5000
@@ -272,13 +270,11 @@
 // Pet-to-pet LINK (ESP-NOW) ---------------------------
 //  Broadcast discovery of other Malwarium devices: each device announces itself
 //  (core/net/peer_link.h) and remembers whoever answers (core/net/peer_ledger.h).
-//  Connectionless — no pairing, no association, no peer-table entry for the people
-//  we merely hear, so the met-list is bounded by storage rather than by ESP-NOW's
-//  20-peer limit (that limit only ever binds a UNICAST conversation).
-//  LINK_ENABLED is a BOARD-CAPABILITY gate — "is a Wi-Fi radio present / compile
-//  the pet-to-pet path in." The runtime on/off is Game::linkWanted(): the player's
-//  persisted CFG "LINK" toggle (Game::linkEnabled(), save v37, default OFF), plus
-//  the stretch the PEERS screen raises it itself. OFF ⇒ nothing is transmitted.
+//  Connectionless — no pairing, no association, no peer-table entry for anyone merely
+//  heard, so the met-list is bounded by storage rather than by ESP-NOW's 20-peer limit,
+//  which only binds a UNICAST conversation. LINK_ENABLED is the BOARD-CAPABILITY gate;
+//  the runtime on/off is Game::linkWanted() — the persisted CFG "LINK" toggle (save v37,
+//  default OFF) plus the stretch the PEERS screen raises it itself. OFF => nothing is sent.
 //
 //  ANNOUNCING IS ITS OWN CONSENT. This transmits the operator's HackerTag, pet and
 //  crew to anyone in range, which is a different act from the audit scan's passive
@@ -342,17 +338,15 @@
 //  without anyone typing a URL into it — which is the whole point for an operator
 //  who was handed a device rather than building one.
 //
-//  A stored NVS override still WINS over this (platform/esp32/update_source.h reads
-//  the override first, this second). That ordering is what keeps the default from
-//  being a trap: a firmware image can only be replaced through the mechanism this
-//  URL points at, so a device whose publish host moved would otherwise have no way
-//  to be told where the new one is. The override is the way out of that circle, and
-//  it is reachable from the device's own setup page.
+//  A stored NVS override WINS over this (platform/esp32/update_source.h reads the override
+//  first). That ordering is what keeps the default from being a trap: firmware can only be
+//  replaced through the mechanism this URL points at, so a device whose publish host moved
+//  would otherwise have no way to be told where the new one is. The override is the way out
+//  of that circle, and it is reachable from the device's own setup page.
 //
-//  A FORK SHOULD CHANGE THIS. It names where *this* project publishes; a fork that
-//  leaves it pointed here hands its devices somebody else's firmware. Empty is a
-//  legitimate value — it means "no source compiled in", and the UPDATES screen says
-//  so honestly rather than failing against a placeholder.
+//  A FORK SHOULD CHANGE THIS — a fork that leaves it pointed here hands its devices somebody
+//  else's firmware. Empty is legitimate: it means "no source compiled in", and the UPDATES
+//  screen says so rather than failing against a placeholder.
 //
 //  Overridable from the build system, the same way version.h takes its numbers, so
 //  pointing a board at a laptop serving `make manifest` needs no edit here (the

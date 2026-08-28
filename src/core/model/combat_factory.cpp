@@ -91,7 +91,7 @@ Combatant makePlayerCombatant(const ContentRegistry& reg, const CreatureDef& pet
     // target). The two compose: branch% × stage% / 100.
     c.powerMultPct = pet.powerMultPct * kStagePowerScalePct[stageIndex(pet.stage)] / 100;
     c.fragMultPct = pet.fragMultPct;                // branch loss-Frag multiplier
-    // Move-slot rework #11: the default (Quick Jab) is a PER-SLOT fallback now, not
+    // The default (Quick Jab) is a PER-SLOT fallback, not
     // an always-additive extra. One pool entry per UNLOCKED slot — that slot's
     // equipped move if it's present and unlocked at this stage, else the default
     // filling the gap ('s evolution gate reuses this same fallback: an

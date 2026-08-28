@@ -412,7 +412,7 @@ void Game::applySave(const SaveData& d) {
         for (int i = 0; i < kLevelStatCount; ++i) statPoints_[i] = 0;
     }
 
-    // Move-slot rework — per-pet Attack/Defend slot typing (v24, #12). A v24+ blob
+    // Per-pet Attack/Defend slot typing (v24). A v24+ blob
     // restores the stamped SlotKind verbatim; a pre-v24 blob leaves every slot
     // Unset (hasSlotKindData false), and the block below (after the active pet is
     // resolved) deterministically re-derives it via stampSlotKinds().
@@ -757,7 +757,7 @@ void Game::applySave(const SaveData& d) {
         model_.setGhost(d.ghost != 0);
         stageEnteredMs_ = nowMs_ - d.timeInStageMs;   // reconstruct the in-stage clock
         lastModelMs_ = nowMs_;
-        // #12: backfill any slot the v24 tail didn't cover (a pre-v24 blob leaves
+        // Backfill any slot the v24 tail didn't cover (a pre-v24 blob leaves
         // ALL of them Unset here), then drop any restored equip that no longer
         // matches its slot's stamped kind — pre-release, so enforcing the
         // invariant cleanly on load beats grandfathering a wrong-typed equip.

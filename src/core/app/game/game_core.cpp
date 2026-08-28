@@ -47,7 +47,7 @@ Game::Game(StartMode mode, const char* hatchedCreature, ISaveStore* store)
         generation_ = 1;       // the seam pet is the first generation
         petsRaised_ = 1;
         moveLoadout_ = MoveLoadout::startingForLine(registry_, pet_ ? pet_->line : nullptr);
-        stampSlotKinds();      // #12: this is a pet install too — lock its slots
+        stampSlotKinds();      // this is a pet install too — lock its slots
         // startingForLine's auto-equip may not match THIS creature's stamped slot 0
         // kind — drop it if it no longer fits (e.g. a Defend-first line vs. an
         // Attack-first slotKinds row; see embedded_content).

@@ -903,9 +903,9 @@ void test_move_evolution_gating() {
     CHECK(g.moveLoadout().equipped(0) == nullptr);
 }
 
-// --- Move-slot rework (#11/#12) ---------------------------------------------
+// --- Move slots: the per-slot pool, and the Attack/Defend type-lock --------
 
-// #11 — the combat pool is exactly one entry per UNLOCKED slot: that slot's
+// The combat pool is exactly one entry per UNLOCKED slot: that slot's
 // equipped move if present, else the innate default FILLING that slot — not an
 // always-additive extra. Unequipped -> default x N; one equipped -> [move] +
 // default x (N-1); fully equipped -> zero default entries in the pool.
@@ -947,7 +947,7 @@ void test_move_pool_per_slot_fallback() {
     }
 }
 
-// #12 — type-lock: each move slot is permanently typed Attack/Defend (stamped by
+// Type-lock: each move slot is permanently typed Attack/Defend (stamped by
 // Game::stampSlotKinds from CreatureDef::slotKinds); ownedMoveList — exactly what
 // onMovePicker/drawMovePicker read — is filtered to that kind, so a mismatched
 // move is structurally UNREACHABLE through the UI (not merely dimmed), while a
@@ -1005,7 +1005,7 @@ static Game::SlotKind seedKind(const ContentRegistry& r, const char* id, int slo
                                                         : Game::SlotKind::Defend;
 }
 
-// #12 — stamping: a slot's kind is fixed the instant it first unlocks, from
+// Stamping: a slot's kind is fixed the instant it first unlocks, from
 // whichever creature is installed at that moment, and never changes again —
 // evolving further never rewrites an already-stamped slot.
 //
@@ -1164,7 +1164,7 @@ void test_combat_screen_grayscale() {
 // TRAIN picker, autosave, and confirm a fresh Game over the store restores it.
 // Uses malbear (Script) rather than Paypup (Process): a pet now owns its whole
 // line's kit from hatch AND auto-fills every unlocked slot with the strongest
-// owned+unlocked move it can hold (#12 backfill) — both Attack slots are already
+// owned+unlocked move it can hold (the backfill) — both Attack slots are already
 // spoken for (payload_drop/double_extortion) the instant the pet is installed, so
 // slot 2 (Defend) is the one with a real second option to switch to: it opens on
 // aes_lockbox (Process-tier, unlocked before the slot itself existed) and Script

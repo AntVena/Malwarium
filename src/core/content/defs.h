@@ -17,35 +17,29 @@ namespace mal {
 // The four-stage lifecycle.
 enum class Stage { BootSector, Process, Script, Daemon };
 
-// Attack/Defend move typing (move-slot rework #12). Free-standing rather than
+// Attack/Defend move typing. Free-standing rather than
 // nested in MoveDef (below) because CreatureDef, declared next, needs it for its
 // per-slot layout — MoveDef itself aliases this as MoveDef::Kind so every
 // existing `MoveDef::Kind::Attack`-style call site keeps compiling unchanged.
 enum class MoveKind { Attack, Defend };
 
-// How a creature gets around under its own power, which is what the idle habitat's
-// resting motion reads (core/model/idle_wander.h). MOVEMENT only — which sprite row a
-// mover animates on is the sheet's business.
-//
-// It decides two things at once: the
-// wander's pace (idle_wander.cpp's kPaces) and whether the pose takes the shelf BOB —
-// the 2px lift on alternate beats that is the only motion a single-frame sprite has.
-// The two floor-dwellers differ ONLY in that lift, which is why they are named for it:
+// How a creature gets around under its own power, which is what the idle habitat's resting
+// motion reads (core/model/idle_wander.h). MOVEMENT only — which sprite row a mover
+// animates on is the sheet's business. It sets both the wander's pace (idle_wander.cpp's
+// kPaces) and whether the pose takes the shelf BOB, the 2px lift on alternate beats that is
+// the only motion a single-frame sprite has:
 //   Walk   — on the floor, and LIFTS. The bob is its breathing.
-//   Ground — on the floor and STAYS there, no lift at all. For anything whose read
-//            depends on never breaking contact (the worm line), and for anything
-//            carrying an authored idle of its own, where a second rise on top of the
-//            drawn one lands on a different beat and reads as a bounce.
+//   Ground — on the floor and STAYS there. For anything whose read depends on never
+//            breaking contact (the worm line), and for anything with an authored idle,
+//            where a second rise on a different beat reads as a bounce.
 //   Fly    — holds an altitude clear of the shelf.
-//   Swim   — drifts on both axes; no bob, since a lift over a drift reads as jitter.
-//   Static — goes NOWHERE. Not a floor-dweller that happens to be resting: a thing
-//            with no locomotion at all, which is what an egg is. It still lifts, since
-//            the bob is the breath rather than the travel, and a shell that neither
+//   Swim   — drifts on both axes; no bob, a lift over a drift reading as jitter.
+//   Static — goes NOWHERE, having no locomotion at all, which is what an egg is. It still
+//            lifts: the bob is the breath rather than the travel, and a shell that neither
 //            moves nor breathes reads as scenery.
 //
-// An egg declares one of these like anything else, and the habitat honours it (see
-// Game::update's wander step): most eggs are Static, and one that is genuinely adrift
-// in water says Swim and drifts.
+// An egg declares one like anything else and the habitat honours it — most are Static, and
+// one genuinely adrift in water says Swim.
 enum class Locomotion : uint8_t { Walk, Fly, Swim, Ground, Static };
 
 inline const char* stageName(Stage s) {
@@ -139,20 +133,17 @@ struct CreatureDef {
     // the generator. nullptr = none (a bare enemy frame with no lore).
     const char* hint = nullptr;
     const char* context = nullptr;
-    // Per-slot Attack/Defend typing (move-slot rework #12). Each of the
-    // kMaxMoveSlots move slots on THIS creature is permanently locked to one
-    // MoveKind. Game::stampSlotKinds() reads slotKinds[i] the INSTANT slot i first
-    // unlocks for a pet and never rewrites it afterward — so the creature actually
-    // occupying the pet's evolution path at the moment each slot unlocks decides
-    // that slot's kind for the rest of the raise (evolving Good vs Bad at the
-    // Daemon hop can therefore leave slot 3 typed differently per branch). The
-    // type-agnostic default move (Quick Jab) ignores this — it fills ANY empty
-    // slot regardless of kind, and is never itself equippable.
-    // PLACEHOLDER layout (balance TBD, not a design-reviewed roster pass) — seeded
-    // only so the mechanism is live: Process pets lean slot0/1 Attack (Paypup varies
-    // at slot1 for flavour), Script adds a Defend at slot2,
-    // and the Daemon branch splits at slot3 to mirror the power/Frag lean —
-    // Good (durable) -> Defend, Bad (glass cannon) -> Attack.
+    // Per-slot Attack/Defend typing: each of THIS creature's kMaxMoveSlots slots is locked
+    // to one MoveKind. Game::stampSlotKinds() reads slotKinds[i] the instant slot i first
+    // unlocks for a pet and never rewrites it, so whichever creature occupies the evolution
+    // path at that moment decides the slot for the rest of the raise — evolving Good vs Bad
+    // at the Daemon hop can leave slot 3 typed differently per branch. The type-agnostic
+    // default move (Quick Jab) ignores this: it fills any empty slot and is never itself
+    // equippable.
+    //
+    // The layout: Process pets lean slot 0/1 Attack (Paypup varies at slot 1 for flavour),
+    // Script adds a Defend at slot 2, and the Daemon branch splits at slot 3 to mirror the
+    // power/Frag lean — Good (durable) -> Defend, Bad (glass cannon) -> Attack.
     MoveKind slotKinds[kMaxMoveSlots] = {MoveKind::Attack, MoveKind::Attack,
                                          MoveKind::Attack, MoveKind::Attack};
     // Cross-line Trojan infiltration hook. When a pet with this set evolves, a
@@ -423,19 +414,15 @@ struct LootEntry {
 };
 
 // A perishable item's decay: what it turns into, and how likely that is each time the
-// pantry is disturbed. Spoilage deliberately has NO clock of its own — it rides a beat
-// that is already happening (a bite of food), the way ItemEffect::Kind::HungerStacking
-// rides the Hunger tick. Per-stack expiry would mean an Inventory stack stopped being a
-// count and became a list of objects each carrying its own timestamp, which is the one
-// shape this must not take.
+// pantry is disturbed. Spoilage has NO clock of its own — it rides a beat already
+// happening (a bite of food), the way ItemEffect::Kind::HungerStacking rides the Hunger
+// tick. Per-stack expiry would make an Inventory stack a list of timestamped objects
+// rather than a count, which is the one shape this must not take.
 //
-// Only read when `into` is set; every other row leaves it inert. Consumer:
-// Game::rollPantrySpoilage (game_items.cpp), which rolls once per held stack and
-// converts a single unit — so a full larder decays at the same rate as a single item,
-// and nothing turns while the player isn't playing.
-//
-// Chains are allowed but pointless: give the `into` row its own SpoilDef only if the
-// second stage should also rot.
+// Only read when `into` is set. Game::rollPantrySpoilage (game_items.cpp) rolls once per
+// held stack and converts a single unit, so a full larder decays at the same rate as one
+// item and nothing turns while the player isn't playing. Give the `into` row its own
+// SpoilDef only if the second stage should also rot.
 struct SpoilDef {
     const char* into = nullptr;  // item id this becomes (nullptr = imperishable)
     int pct = 0;                 // percent chance per disturbance, per held stack
@@ -932,23 +919,20 @@ struct MoveDef {
     int poolRetaliateTurns = 0;
 
     // --- Metamorphic wildcard rows ------------------------------------------------
-    // A row that does not cast ITSELF. It rolls one of the moves its pet could have been
-    // — the generic roster of this row's own `kind`, plus the two lines named here — and
+    // A row that does not cast ITSELF: it rolls one of the moves its pet could have been —
+    // the generic roster of this row's own `kind`, plus the two lines named here — and
     // casts that instead (Combat::resolveTurn). Naming two of the four other lines rather
-    // than all of them is what keeps a wildcard a CHOICE: which pair a row reaches is the
-    // only thing an operator tailors about it, so the rows are worth owning separately.
+    // than all of them is what keeps a wildcard a CHOICE, since which pair a row reaches is
+    // the only thing an operator tailors about it.
     //
-    // Both null = an ordinary move, which is every row but the metamorphic track. Set
-    // `drawLineA` alone for a row that reaches one line. The ids are resolved against the
-    // registry once, when the Combatant is built (buildWildPools) — never mid-fight, the
-    // same rule `chainNextId` answers to.
+    // Both null = an ordinary move, which is every row but the metamorphic track. The ids
+    // resolve against the registry once, when the Combatant is built (buildWildPools),
+    // never mid-fight — the rule `chainNextId` answers to as well. A wildcard row still
+    // needs a real `power`, `kind` and `effect`: the kind decides which half of the roster
+    // it draws from, and the rest is what the loadout and picker read off it.
     //
-    // A wildcard row still needs a real `power`, `kind` and `effect`: the kind decides
-    // which half of the roster it draws from, and the rest is what the loadout and picker
-    // read off it.
-    //
-    // Appended at the END of the struct, like every field before it: the rows are positional
-    // initializers, so a field inserted mid-struct silently re-aims every magnitude after it.
+    // Appended at the END of the struct, like every field before it — the rows are
+    // positional initializers, so a field inserted mid-struct re-aims every magnitude after it.
     const char* drawLineA = nullptr;
     const char* drawLineB = nullptr;
 };

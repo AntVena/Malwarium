@@ -16,7 +16,7 @@ class ContentRegistry;
 class MoveLoadout;
 
 // Owned moves of `requiredKind` in registry order (excludes the innate default —
-// it isn't slottable). Move-slot rework #12: every slot is type-locked to one
+// it isn't slottable). Every slot is type-locked to one
 // MoveDef::Kind, so the picker/pool never even lists a wrong-kind move. Unless
 // `showAll`, this also drops every move the pet can't actually equip into `slot`
 // right now: not yet unlocked at `petStage`, wrong-line (defensive — owned() is

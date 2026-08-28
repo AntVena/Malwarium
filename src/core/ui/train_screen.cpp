@@ -66,7 +66,7 @@ std::vector<const MoveDef*> ownedMoveList(const ContentRegistry& reg,
     for (const MoveDef* m : reg.allMoves()) {
         // The innate is owned but not slottable (MoveLoadout::isInnate) — offering it
         // would be offering to spend a slot on what an empty slot already falls back to.
-        // #12: wrong-kind moves never list here.
+        // Wrong-kind moves never list here.
         if (!load.owns(m->id) || load.isInnate(m->id) || m->kind != requiredKind) continue;
         if (!showAll) {
             if (!moveUnlockedAtStage(*m, petStage)) continue;
@@ -155,7 +155,7 @@ void drawMovePicker(Framebuffer& fb, const ContentRegistry& reg,
                     int confirmChoice, const char* pendingId, Stage petStage,
                     const char* petLine, MoveDef::Kind requiredKind, bool showAll,
                     int beat) {
-    // #12: the slot's type-lock is right in the header — "SLOT 2 - DEF" — so the
+    // The slot's type-lock is right in the header — "SLOT 2 - DEF" — so the
     // player knows why the list only shows one kind before they even scroll it.
     // showAll (hold B) appends " ALL" — the word is the channel, grayscale-safe.
     char title[20];

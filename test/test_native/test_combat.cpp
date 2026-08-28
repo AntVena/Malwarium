@@ -567,7 +567,7 @@ void test_combat_builders_and_flee() {
     Loadout mods = Loadout::starting();                   // Firewall + Clock-Speed equipped
     Combatant pc = makePlayerCombatant(r, *pet, ml, mods);
     CHECK(pc.maxHealth == kMaxHealthByStage[stageIndex(Stage::Process)]);
-    // #11: one pool entry per unlocked slot — slot 0's equipped packet_storm, and
+    // One pool entry per unlocked slot — slot 0's equipped packet_storm, and
     // slot 1 falls back to the Quick Jab default (the starter leaves it unequipped).
     CHECK(pc.moves.size() == 2);
     CHECK(std::strcmp(pc.moves[0]->id, "packet_storm") == 0);

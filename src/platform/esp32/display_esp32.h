@@ -26,8 +26,7 @@ public:
         // opposite byte order, so swap to render true colours.
         lcd_.setSwapBytes(true);
 #if HAS_BACKLIGHT_PWM
-        // LEDC-driven dimmable backlight. UNVERIFIED on hardware — gated
-        // behind HAS_BACKLIGHT_PWM so it only runs once bench-checked (config.h).
+        // LEDC-driven dimmable backlight — the shipped path on this board (config.h).
         ledcSetup(BACKLIGHT_LEDC_CHANNEL, BACKLIGHT_LEDC_FREQ_HZ, BACKLIGHT_LEDC_BITS);
         ledcAttachPin(PIN_LCD_BL, BACKLIGHT_LEDC_CHANNEL);
         ledcWrite(BACKLIGHT_LEDC_CHANNEL, duty_);

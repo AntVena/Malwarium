@@ -79,8 +79,8 @@ Rgb565 dim(Rgb565 c, int pct) {
                   static_cast<uint8_t>(b8(c) * pct / 100));
 }
 
-// Small inline LCG (matches this codebase's established one-liner-per-site
-// convention, e.g. core/model/combat.cpp:15) for the frontier-cell dither.
+// Small inline LCG for the frontier-cell dither — the same one-liner-per-site
+// convention Combat::rng uses (core/model/combat.cpp).
 uint32_t lcgNext(uint32_t& s) {
     s = s * 1664525u + 1013904223u;
     return s;

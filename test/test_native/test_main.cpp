@@ -226,7 +226,7 @@ int g_failures = 0;
     RUN(test_ransom_note_shows_up_in_pve)   \
     RUN(test_wild_subarea_level_and_xp_scaling) \
     RUN(test_move_evolution_gating)         \
-    /* Move-slot rework #11/#12 */          \
+    /* Move slots: the per-slot pool, and the Attack/Defend type-lock */ \
     RUN(test_move_pool_per_slot_fallback)   \
     RUN(test_move_slot_type_lock)           \
     RUN(test_move_slot_stamping_locks_at_unlock) \
