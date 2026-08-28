@@ -5352,8 +5352,8 @@ window.PEDIA_DATA = {
       "rarity": "RARE",
       "tier": 3,
       "equipLevel": 29,
-      "effect": "Below 45% Health, reflects 16 damage to any attacker.",
-      "stats": "BELOW 45%HP / THORNS 16",
+      "effect": "Below 42% Health, reflects 12 damage to any attacker.",
+      "stats": "BELOW 42%HP / THORNS 12",
       "icon": "assets/icons/ICON_MOD_DEPTH_CHARGE_RACK.png"
     },
     {
@@ -5451,8 +5451,8 @@ window.PEDIA_DATA = {
       "rarity": "EPIC",
       "tier": 5,
       "equipLevel": 60,
-      "effect": "Keeps a copy nobody can delete: restores 7 Health at the start of each of your turns.",
-      "stats": "REGEN +7/TURN",
+      "effect": "Keeps a copy nobody can delete: restores 6 Health at the start of each of your turns.",
+      "stats": "REGEN +6/TURN",
       "icon": "assets/icons/ICON_MOD_SHADOW_COPY.png"
     }
   ],
