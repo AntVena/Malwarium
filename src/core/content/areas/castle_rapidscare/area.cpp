@@ -32,7 +32,11 @@ const char* const kModPool[] = {"ghost_process",  "deadman_switch", "raid_mirror
                                 // workhorse families, which is what the last named area
                                 // owed a player who walked the whole map to reach it.
                                 "bastion_host",   "tarpit_array",   "kernel_panic",
-                                "shadow_copy"};
+                                "shadow_copy",
+                                // ...and the deep rung of the counter it already re-stocks
+                                // one tier down: the Moors hand over a Faraday, the keep
+                                // hands over the rest of it (content_mods.cpp).
+                                "clean_room"};
 
 // SPAM & SCRAM — the item storefront: the free tier's endless lunch, and the two ways
 // out of a fight you didn't want (skip it, or patch through the middle of it). The

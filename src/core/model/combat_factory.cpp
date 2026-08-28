@@ -122,7 +122,22 @@ Combatant makePlayerCombatant(const ContentRegistry& reg, const CreatureDef& pet
         int mag = m->magnitude;
         if (m->line && c.line && std::strcmp(m->line, c.line) == 0) mag += m->affinityBonus;
         switch (m->effectKind) {
-            case ModEffect::PowerPct:     c.powerMultPct += mag; break;
+            // MULTIPLICATIVE, for the reason applyLevelStatPoints (below) spells out at
+            // length about the level bonus: a flat add lands on a base kStagePowerScalePct
+            // has already inflated 100 -> 230, so the same row was worth 18% of output on a
+            // Process pet and 7.8% on a Daemon — it decayed across exactly the stretch a
+            // player spends earning the mod. The prose says "raises attack power by {mag}%"
+            // and this is what makes that true at every stage. Identical arithmetic at
+            // scale 100, so nothing early moves; only the late decay goes away.
+            //
+            // The CONDITIONAL power rows (Meltdown Core, Zero-Day, the Ledger's owed half)
+            // still add into `mult` at the damage calc and are left that way on purpose:
+            // they measure healthy, their magnitudes were picked against that base, and
+            // they are read at a different point in the pipeline. Move them only with a
+            // sweep in hand — the units are not interchangeable.
+            case ModEffect::PowerPct:
+                c.powerMultPct = c.powerMultPct * (100 + mag) / 100;
+                break;
             case ModEffect::DamageCutPct: c.dmgReducePct += mag; break;
             case ModEffect::MaxHealth:
                 c.maxHealth += mag; c.health += mag;
@@ -180,7 +195,7 @@ Combatant makePlayerCombatant(const ContentRegistry& reg, const CreatureDef& pet
                 int atk = 0;
                 for (const MoveDef* cm : c.moves)
                     if (cm->kind == MoveDef::Kind::Attack) ++atk;
-                c.powerMultPct += mag * atk;
+                c.powerMultPct = c.powerMultPct * (100 + mag * atk) / 100;  // as PowerPct
                 break;
             }
             case ModEffect::DefendCountCutPct: {  // Air-Gap Ward — +mag% cut PER Defend move

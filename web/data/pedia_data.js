@@ -4834,8 +4834,8 @@ window.PEDIA_DATA = {
       "rarity": "UNCOMMON",
       "tier": 2,
       "equipLevel": 12,
-      "effect": "Raises max Health by 12.",
-      "stats": "MAX HP +12",
+      "effect": "Raises max Health by 18.",
+      "stats": "MAX HP +18",
       "icon": "assets/icons/ICON_MOD_SOLID_STATE_CACHE.png"
     },
     {
@@ -4957,8 +4957,8 @@ window.PEDIA_DATA = {
       "rarity": "EPIC",
       "tier": 4,
       "equipLevel": 47,
-      "effect": "Cuts corruption damage-over-time by 100%.",
-      "stats": "DOT -100%",
+      "effect": "Cuts corruption damage-over-time by 60%.",
+      "stats": "DOT -60%",
       "icon": "assets/icons/ICON_MOD_FARADAY_CAGE.png"
     },
     {
@@ -5023,8 +5023,8 @@ window.PEDIA_DATA = {
       "rarity": "UNCOMMON",
       "tier": 2,
       "equipLevel": 20,
-      "effect": "Raises max Health by 20; costs 2 initiative.",
-      "stats": "MAX HP +20 / SPEED -2",
+      "effect": "Raises max Health by 30; costs 2 initiative.",
+      "stats": "MAX HP +30 / SPEED -2",
       "icon": "assets/icons/ICON_MOD_COLD_STORAGE.png"
     },
     {
@@ -5056,8 +5056,8 @@ window.PEDIA_DATA = {
       "rarity": "UNCOMMON",
       "tier": 3,
       "equipLevel": 25,
-      "effect": "Raises max Health by 30.",
-      "stats": "MAX HP +30",
+      "effect": "Raises max Health by 45.",
+      "stats": "MAX HP +45",
       "icon": "assets/icons/ICON_MOD_BALLAST_CACHE.png"
     },
     {
@@ -5168,8 +5168,8 @@ window.PEDIA_DATA = {
       "rarity": "COMMON",
       "tier": 1,
       "equipLevel": 4,
-      "effect": "Raises max Health by 8.",
-      "stats": "MAX HP +8",
+      "effect": "Raises max Health by 12.",
+      "stats": "MAX HP +12",
       "icon": "assets/icons/ICON_MOD_SPARE_RAM_STICK.png"
     },
     {
@@ -5202,8 +5202,8 @@ window.PEDIA_DATA = {
       "rarity": "UNCOMMON",
       "tier": 2,
       "equipLevel": 15,
-      "effect": "Raises max Health by 14 (20 for Ransomware).",
-      "stats": "MAX HP +14 / ON LINE +6",
+      "effect": "Raises max Health by 21 (30 for Ransomware).",
+      "stats": "MAX HP +21 / ON LINE +9",
       "icon": "assets/icons/ICON_MOD_ESCROW_BUFFER.png",
       "line": "ransomware"
     },
@@ -5385,8 +5385,8 @@ window.PEDIA_DATA = {
       "rarity": "UNCOMMON",
       "tier": 4,
       "equipLevel": 38,
-      "effect": "Always seeding, never asleep: raises max Health by 45.",
-      "stats": "MAX HP +45",
+      "effect": "Always seeding, never asleep: raises max Health by 68.",
+      "stats": "MAX HP +68",
       "icon": "assets/icons/ICON_MOD_SEEDBOX_ARRAY.png"
     },
     {
@@ -5443,6 +5443,17 @@ window.PEDIA_DATA = {
       "effect": "Nothing left to protect: below 35% Health, attack power rises 55%.",
       "stats": "BELOW 35%HP / POWER +55%",
       "icon": "assets/icons/ICON_MOD_KERNEL_PANIC.png"
+    },
+    {
+      "id": "clean_room",
+      "name": "Clean Room",
+      "tag": "SHIELD",
+      "rarity": "EPIC",
+      "tier": 5,
+      "equipLevel": 54,
+      "effect": "Nothing gets in that was not invited: cuts corruption damage-over-time by 100%.",
+      "stats": "DOT -100%",
+      "icon": "assets/icons/ICON_MOD_CLEAN_ROOM.png"
     },
     {
       "id": "shadow_copy",

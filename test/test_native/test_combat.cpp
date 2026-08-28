@@ -704,9 +704,14 @@ void test_mod_effects_data_driven() {
         Loadout l; l.grant(mod, kModCopyCapBase); l.equip(0, mod);
         return makePlayerCombatant(r, *pet, ml, l);
     };
-    CHECK(build("crypto_coprocessor").powerMultPct == base.powerMultPct + 10);
-    CHECK(build("tpm_chip").dmgReducePct == base.dmgReducePct + 15);
-    CHECK(build("solid_state_cache").maxHealth == base.maxHealth + 12);
+    // Magnitudes come off the ROW, not from a number restated here: what these pin is
+    // that the row reaches the combatant, and a balance pass must not be able to fail it.
+    auto mag = [&](const char* id) { return r.mod(id)->magnitude; };
+    // PowerPct is a MULTIPLIER on the pet's own output, not a flat add (combat_factory.cpp).
+    CHECK(build("crypto_coprocessor").powerMultPct ==
+          base.powerMultPct * (100 + mag("crypto_coprocessor")) / 100);
+    CHECK(build("tpm_chip").dmgReducePct == base.dmgReducePct + mag("tpm_chip"));
+    CHECK(build("solid_state_cache").maxHealth == base.maxHealth + mag("solid_state_cache"));
     Combatant oc = build("overclock_chip");
     CHECK(oc.speed == base.speed + 5);                                  // +speed
     CHECK(oc.powerMultPct == base.powerMultPct * (100 - 8) / 100);      // ...at a power cost
@@ -1023,7 +1028,8 @@ void test_mod_faraday_cage() {
     d.step();  CHECK(d.player().health == 0);                             // 3 - 5 → KO
     CHECK(d.outcome() == Combat::Outcome::Lose);
     CHECK(std::strcmp(d.lastMoveName(), "CORRUPTED") == 0);
-    // Data-driven wiring: equipping faraday_cage sets the cut to its magnitude (100 = immune).
+    // Data-driven wiring: equipping faraday_cage sets the cut to its own magnitude — read
+    // off the row, since where that number sits on the DoT ladder is a balance question.
     const CreatureDef* pet = r.creature("paypup");
     MoveLoadout ml = MoveLoadout::starting();
     Loadout empty;
@@ -1031,7 +1037,7 @@ void test_mod_faraday_cage() {
     CHECK(base.mods.mag(ModEffect::FaradayCut) == 0);
     Loadout l; l.grant("faraday_cage", kModCopyCapBase); l.equip(0, "faraday_cage");
     Combatant f = makePlayerCombatant(r, *pet, ml, l);
-    CHECK(f.mods.mag(ModEffect::FaradayCut) == 100);
+    CHECK(f.mods.mag(ModEffect::FaradayCut) == r.mod("faraday_cage")->magnitude);
 }
 
 // content calibration: each mod carries the right rarity, its power tier agrees with
@@ -1262,7 +1268,7 @@ void test_mod_niche_flavour_data_driven() {
     CHECK(tw.mods.mag(ModEffect::ConditionalThorns) == 10 &&
           tw.mods.mag2(ModEffect::ConditionalThorns) == 40);
     Combatant cs = build("cold_storage");
-    CHECK(cs.maxHealth == base.maxHealth + 20);
+    CHECK(cs.maxHealth == base.maxHealth + r.mod("cold_storage")->magnitude);
     CHECK(cs.speed == base.speed - 2);
     CHECK(build("scratch_disk_buffer").dmgReducePct == base.dmgReducePct + 8);
     CHECK(build("phishing_rod").mods.mag(ModEffect::StealAmplifyPct) == 75);
@@ -1311,7 +1317,11 @@ void test_mod_botnet_swarm_and_airgap_ward() {
 
     Loadout withSwarm; withSwarm.grant("botnet_swarm", kModCopyCapBase); withSwarm.equip(0, "botnet_swarm");
     Combatant sw = makePlayerCombatant(r, *pet, ml, withSwarm);
-    CHECK(sw.powerMultPct == base.powerMultPct + 6 * 2);    // +6% per Attack move (2)
+    // Multiplicative, as ModEffect::PowerPct is and for the same reason: it scales the
+    // pet's own output rather than adding onto a stage-inflated base. Its sibling below
+    // stays additive — dmgReducePct is percentage POINTS under a clamp, not a multiplier.
+    const int swarm = r.mod("botnet_swarm")->magnitude;
+    CHECK(sw.powerMultPct == base.powerMultPct * (100 + swarm * 2) / 100);  // 2 Attack moves
 
     Loadout withWard; withWard.grant("airgap_ward", kModCopyCapBase); withWard.equip(0, "airgap_ward");
     Combatant wd = makePlayerCombatant(r, *pet, ml, withWard);

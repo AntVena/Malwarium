@@ -72,7 +72,7 @@ const ModDef kMods[] = {
      ItemDef::Rarity::Uncommon, 2, 13, ModEffect::DamageCutPct, 15, 0, nullptr, 0},
     {/*wire=*/5, "solid_state_cache", "Solid-State Cache", "+HP",
      "Raises max Health by {mag}.", false,
-     ItemDef::Rarity::Uncommon, 2, 12, ModEffect::MaxHealth, 12, 0, nullptr, 0},
+     ItemDef::Rarity::Uncommon, 2, 12, ModEffect::MaxHealth, 18, 0, nullptr, 0},
     {/*wire=*/6, "firewall_patch", "Firewall Patch", "+DEF",
      "Cuts incoming damage by {mag}%.", false,
      ItemDef::Rarity::Rare, 2, 22, ModEffect::DamageCutPct, 40, 0, nullptr, 0},
@@ -135,16 +135,20 @@ const ModDef kMods[] = {
     //    signature boss wields system_hang (the stun, AreaDef::apexThreatMoveId). The
     //    Net-Sea Crossing RE-stocks it, because its own apex wields the same rider a turn
     //    longer (decoy_download) — the same restock the keep does, for the same reason.
-    //  • Faraday (magnitude = % of incoming DoT cut; 100 = fully immune): earned in
-    //    Napstorrent Moors' own mod pool (areas/napstorrent_moors/area.cpp), whose
-    //    signature boss wields data_rot.
+    //  • Faraday (magnitude = % of incoming DoT cut): earned in Napstorrent Moors' own mod
+    //    pool (areas/napstorrent_moors/area.cpp), whose signature boss wields data_rot.
+    //    It cuts rather than negates, because rot is the one damage no other mod reaches
+    //    (combat.cpp plants it under the whole mitigation stack) and a row that erased all
+    //    of it was worth more than anything a deeper tier could offer — which is how a
+    //    tier-4 band came to out-measure tier 5. Full immunity is Clean Room's, at the
+    //    bottom of the ladder, and this is the rung that gets you most of the way there.
     // Both stay Epic (rarest drop weight) — a rare hard-counter find in a mid area.
     {/*wire=*/15, "watchdog_timer", "Watchdog Timer", "UNLOCK",
      "Never frozen more than {mag} turn.", false,
      ItemDef::Rarity::Epic, 2, 23, ModEffect::WatchdogClamp, 1, 0, nullptr, 0},
     {/*wire=*/16, "faraday_cage", "Faraday Cage", "SHIELD",
      "Cuts corruption damage-over-time by {mag}%.", false,
-     ItemDef::Rarity::Epic, 4, 47, ModEffect::FaradayCut, 100, 0, nullptr, 0},
+     ItemDef::Rarity::Epic, 4, 47, ModEffect::FaradayCut, 60, 0, nullptr, 0},
 
 
     // --- CITRUS CIRCUIT (tier 1) ---
@@ -167,7 +171,7 @@ const ModDef kMods[] = {
      ItemDef::Rarity::Rare, 2, 21, ModEffect::ConditionalThorns, 10, 40, nullptr, 0},
     {/*wire=*/22, "cold_storage", "Cold Storage", "+HP/-SPD",
      "Raises max Health by {mag}; costs {mag2} initiative.", false,
-     ItemDef::Rarity::Uncommon, 2, 20, ModEffect::MaxHealth, 20, 2, nullptr, 0},
+     ItemDef::Rarity::Uncommon, 2, 20, ModEffect::MaxHealth, 30, 2, nullptr, 0},
 
     // --- NET-SEA CROSSING (tier 3) — the open-water pool -------------------
     // The crossing's own mods are the seamanship ones: keep the hull intact, see what
@@ -180,7 +184,7 @@ const ModDef kMods[] = {
      ItemDef::Rarity::Rare, 3, 35, ModEffect::FirstHitCutPct, 60, 0, nullptr, 0},
     {/*wire=*/25, "ballast_cache", "Ballast Cache", "+HP",
      "Raises max Health by {mag}.", false,
-     ItemDef::Rarity::Uncommon, 3, 25, ModEffect::MaxHealth, 30, 0, nullptr, 0},
+     ItemDef::Rarity::Uncommon, 3, 25, ModEffect::MaxHealth, 45, 0, nullptr, 0},
     {/*wire=*/26, "sonar_ping", "Sonar Ping", "+SPD",
      "Raises battle initiative speed by {mag}.", false,
      ItemDef::Rarity::Uncommon, 3, 26, ModEffect::Speed, 7, 0, nullptr, 0},
@@ -244,7 +248,7 @@ const ModDef kMods[] = {
     // ladder — this is the first taste of it, not a rival to it).
     {/*wire=*/35, "spare_ram_stick", "Spare RAM Stick", "+HP",
      "Raises max Health by {mag}.", false,
-     ItemDef::Rarity::Common, 1, 4, ModEffect::MaxHealth, 8, 0, nullptr, 0},
+     ItemDef::Rarity::Common, 1, 4, ModEffect::MaxHealth, 12, 0, nullptr, 0},
     {/*wire=*/36, "capacitor_bank", "Capacitor Bank", "THORNS",
      "Holds a charge: chips any attacker that hits you for {mag}.", false,
      ItemDef::Rarity::Uncommon, 1, 8, ModEffect::Thorns, 1, 0, nullptr, 0},
@@ -262,7 +266,7 @@ const ModDef kMods[] = {
      ItemDef::Rarity::Uncommon, 2, 14, ModEffect::Speed, 4, 0, "phishing", 3},
     {/*wire=*/38, "escrow_buffer", "Escrow Buffer", "+HP",
      "Raises max Health by {mag} ({magBonus} for Ransomware).", false,
-     ItemDef::Rarity::Uncommon, 2, 15, ModEffect::MaxHealth, 14, 0, "ransomware", 6},
+     ItemDef::Rarity::Uncommon, 2, 15, ModEffect::MaxHealth, 21, 0, "ransomware", 9},
     {/*wire=*/39, "dropper_payload", "Dropper Payload", "+POW",
      "Raises attack power by {mag}% ({magBonus}% for Trojan).", false,
      ItemDef::Rarity::Uncommon, 2, 18, ModEffect::PowerPct, 13, 0, "trojan", 5},
@@ -337,12 +341,25 @@ const ModDef kMods[] = {
     // row here. The one exception is stated at its own row (RegenPerTurn), because a new
     // KIND needs the reason it is not a rung on an existing one.
     //
-    // Two families are deliberately NOT laddered further, and both for the same measured
-    // reason: flat PowerPct (Crypto Coprocessor / Dropper Payload / Harpoon Mount) and the
-    // post-battle currencies read as the weakest rows in the game at every depth sampled,
-    // and a bigger number does not move either. Power wants a CONDITION on it to be worth
-    // a slot at all — which is what Meltdown Core and the comeback rung below are — and a
-    // Bits row is buying something a combat slot cannot pay it back for.
+    // The post-battle currencies get no further rungs: a Bits row is buying something a
+    // combat slot cannot pay it back for, and no magnitude changes that.
+    //
+    // FLAT ATTACK POWER and FLAT MAX HEALTH were once read the same way — the weakest rows
+    // in the game at every depth sampled — and they turned out to be two different problems
+    // wearing one symptom.
+    //
+    // Health was simply UNDERSIZED: the rows measured negative up to ~20 and positive from
+    // ~30, which is a threshold, not a shape that does not work. So the family is carried
+    // half again past where it fell away, uniformly — the one way to move it without
+    // inverting a ladder that was already in order.
+    //
+    // Power was not undersized at all, and a half-again pass on it moved nothing, which is
+    // what said so. ModEffect::PowerPct was a flat ADD onto a base kStagePowerScalePct has
+    // already inflated 100 -> 230, so "+18% attack power" was 18% to a Process pet and 7.8%
+    // to a Daemon — the row decayed across exactly the stretch a player spends earning it.
+    // The magnitudes here are therefore the ones the rows always carried; what changed is
+    // that combat_factory.cpp now applies them MULTIPLICATIVELY, which is the same fix
+    // applyLevelStatPoints already made for the level bonus and for the same reason.
 
     // --- CITRUS CIRCUIT (tier 1) — the two families the starter band still lacked ---
     // Fatigue is what a starter pet actually loses to: it has no Disk Scrubber stock and
@@ -382,7 +399,7 @@ const ModDef kMods[] = {
     // restores, and the last rung is what the regen rows below finally give a use for.
     {/*wire=*/54, "seedbox_array", "Seedbox Array", "+HP",
      "Always seeding, never asleep: raises max Health by {mag}.", false,
-     ItemDef::Rarity::Uncommon, 4, 38, ModEffect::MaxHealth, 45, 0, nullptr, 0},
+     ItemDef::Rarity::Uncommon, 4, 38, ModEffect::MaxHealth, 68, 0, nullptr, 0},
     // The opening-probe cut's third rung (50 -> 60 -> 70). A decoy peer is what a torrent
     // swarm answers a first contact with, so the moors are where the family belongs; the
     // step is small on purpose, because this is the family that measures strongest per
@@ -427,6 +444,15 @@ const ModDef kMods[] = {
     {/*wire=*/59, "kernel_panic", "Kernel Panic", "COMEBACK",
      "Nothing left to protect: below {mag}% Health, attack power rises {mag2}%.", false,
      ItemDef::Rarity::Rare, 5, 59, ModEffect::LowHealthPowerPct, 35, 55, nullptr, 0},
+    // The DoT family's top rung, and the row that puts the deepest band back on top. Rot is
+    // the damage nothing else in the mitigation stack can touch, so whoever owns the answer
+    // to it owns the ladder — and that was tier FOUR, on a threat-adjacency placement that
+    // is right about WHERE the counter debuts and was never a claim about how much of the
+    // answer one area should hand over. The Moors still pay out a Faraday; the keep is
+    // where the last 40% of it lives.
+    {/*wire=*/61, "clean_room", "Clean Room", "SHIELD",
+     "Nothing gets in that was not invited: cuts corruption damage-over-time by {mag}%.",
+     false, ItemDef::Rarity::Epic, 5, 54, ModEffect::FaradayCut, 100, 0, nullptr, 0},
     // Regen's deep rung. A shadow copy is the thing ransomware deletes FIRST, which is the
     // joke and the mechanic in one: what the keep sells is the restore point that cannot
     // be taken away, permanently installed rather than carried as a consumable.
