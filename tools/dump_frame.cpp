@@ -17,6 +17,8 @@
 //             takes B n times, which walks the row window of the two pages that flow
 //             prose — pair it with "fullkit" and a Daemon for the longest lists)
 //        fullkit (every unlocked move slot and every mod slot equipped)
+//        pantry (one of EVERY item in the bag — the whole icon set in a list, and the
+//             deepest the combat picker's ITEMS band gets)
 //        maint [detail] [stacker [slide|drop|stop ...]] · lockout · evolve
 //        cryptogram [open:<n>] [take] [win|lose] (THE DECRYPTOGRAM's quote board, cashed
 //             at the VAULT; "open:<n>" places n letters correctly so the frame shows a
@@ -64,7 +66,7 @@
 //        arch [stored] [rackfull] [row:<n>] [detail] [confirm] (rackfull buys slots
 //             and fills them, so the list overflows kVisibleRows and scrolls;
 //             row:<n> walks the cursor down it)
-//        train [trainpicker] · combat [override] [stats] [kit] (the raw dev hook;
+//        train [trainpicker] · combat [override [band:<n>]] [stats] [kit] (the raw dev hook;
 //             stats opens the panel's STATE page, kit its second) ·
 //        simbattle [fight [stats]] (the REAL entry — buffs carried in from outside,
 //             e.g. armbuffs simbattle fight stats) · malbear
@@ -293,6 +295,11 @@ int main(int argc, char** argv) {
     // "fullkit" equips every unlocked move slot and every mod slot — pair it with a
     // Daemon (pet:wire_heir) for the deepest LOADOUT page the game can produce.
     if (hasFlag(argc, argv, "fullkit")) game.debugFillLoadout();
+    // "pantry" puts one of EVERY item in the bag: the whole ICON_ITEM_* set in ITEMS
+    // list context, and the deepest the combat Exploit picker's ITEMS band can get.
+    if (hasFlag(argc, argv, "pantry"))
+        for (const ItemDef* d : game.content().allItems())
+            game.inventory().add(d->id, 1);
 
     // A COMPLETE press — down and up. Four screens read B as a tap/hold pair and every
     // LIST reads C as one (Game::listBackStep), so on those a press edge alone only
@@ -367,12 +374,6 @@ int main(int argc, char** argv) {
         game.inventory().add(id, 1);
         game.debugUseItem(id);
     } else if (hasFlag(argc, argv, "items")) {
-        // "pantry" puts one of EVERY item in the bag, which is the only way to see
-        // the whole ICON_ITEM_* set in list context — the seeded inventory carries
-        // four. "row:<n>" then walks down it.
-        if (hasFlag(argc, argv, "pantry"))
-            for (const ItemDef* d : game.content().allItems())
-                game.inventory().add(d->id, 1);
         // "picker" buys the ITEMS Type-Picker first, so ITEMS opens on the category
         // tiles; without it ITEMS opens straight on the list, as an unowned rig does.
         if (hasFlag(argc, argv, "picker")) {
@@ -712,8 +713,17 @@ int main(int argc, char** argv) {
         game.debugStartCombat(/*live=*/false);
         for (int i = 1; i <= 4; ++i)                 // advance a few action beats
             game.tick(static_cast<uint32_t>(beats + i) * kHeartbeatMs);
-        if (hasFlag(argc, argv, "override"))         // open the A+C override picker
+        if (hasFlag(argc, argv, "override")) {       // open the A+C override picker
             game.onButton({Button::A, true, true});
+            // The picker is two levels: it opens on the bands this fight has, and
+            // "band:<n>" walks A to the n-th of them and B into its rows.
+            for (int i = 3; i < argc; ++i)
+                if (std::strncmp(argv[i], "band:", 5) == 0) {
+                    for (int k = std::atoi(argv[i] + 5); k > 0; --k)
+                        game.onButton({Button::A, true, false});
+                    game.onButton({Button::B, true, false});
+                }
+        }
         // B CYCLES the mid-combat panel (closed -> VS -> KIT -> closed), so "stats"
         // lands on page 1 and "kit" presses through to page 2.
         if (hasFlag(argc, argv, "stats") || hasFlag(argc, argv, "kit"))

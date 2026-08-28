@@ -70,6 +70,8 @@ SCENES=(
   "shop|shop"                       "encounter|encounter"
   "combat|combat"                   "postencounter|postencounter"
   "combat_stats|combat stats"       "combat_kit|combat kit"
+  "combat_bands|combat override crew pantry"
+  "combat_band_rows|combat override crew pantry band:1"
   "combat_wide|combat pet:baitracuda"
   "lockout|lockout"
   "decryption|decryption"               "decryption_rows|decryption rows"

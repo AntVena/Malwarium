@@ -607,6 +607,21 @@ struct OverrideItem {
     int heal;            // transient combat Health restored on use
 };
 
+// The BANDS of the Exploit picker, in the order their rows sit in the flat list, so a
+// band's rows are always one contiguous run and every flat index the commit path reads
+// (Combat::commitOverride) falls inside exactly one of them.
+//
+// They exist as a NAVIGATION level because only one of them is bounded by design: a
+// fighter has at most kMaxMoveSlots moves and a crew Exploit is one row, but the item
+// band is every combat-usable stack in the bag and the lock band is every wildcard slot
+// that has fired. Walked as one flat list those bury the short bands behind a lap of
+// the long one, on a screen with room for ten rows.
+enum class OverrideBand : uint8_t { Move, Item, Lock, Crew };
+constexpr int kOverrideBands = 4;
+
+// The band's own name — the level-1 row, and the header over its rows at level 2.
+const char* overrideBandName(OverrideBand b);
+
 // A Worm replica destroyed by the turn that just resolved. Replicas are packed out of
 // Combatant::wormReplicas the instant they die, so by the time anything looks at the
 // board the copy is simply gone — and a death that leaves no trace is the one moment of
@@ -642,10 +657,15 @@ public:
     bool step();
 
     // The A+C Exploit override — N uses per battle --------
-    // The picker is a flat list: the player's moves first, then any combat-usable
-    // items the Game supplied, then the crew Exploit row (if any). A pick < moveCount
-    // forces that move; a pick inside the item band uses that item; the last row fires
-    // the crew Exploit. Committing any of them spends one Exploit use.
+    // The rows are one flat list in band order (OverrideBand): the player's moves
+    // first, then any combat-usable items the Game supplied, then the metamorphic LOCK
+    // rows, then the crew Exploit row (if any). A pick < moveCount forces that move; a
+    // pick inside the item band uses that item; a lock row freezes its slot; the last
+    // row fires the crew Exploit. Committing any of them spends one Exploit use.
+    //
+    // The flat index is what a commit reads, but it is NOT how the cursor walks — the
+    // picker is two levels (overrideAtBands below), and `overridePick` names the row
+    // under the cursor at both of them.
     bool overrideReady() const { return overrideUsesLeft_ > 0; }
     int overrideUsesLeft() const { return overrideUsesLeft_; }
     int overrideUsesTotal() const { return overrideUsesTotal_; }
@@ -674,6 +694,28 @@ public:
     int overrideLockSlot(int i) const;
     // The move that row would commit to (its slot's last roll), or nullptr.
     const MoveDef* overrideLockMove(int i) const;
+    // --- The picker's two levels ---------------------------------------------
+    // LEVEL 1 is the bands this fight actually has — never more than four rows,
+    // whatever the bag holds. LEVEL 2 is the rows inside the chosen band, and the only
+    // level whose length is unbounded, which is why the screen windows it.
+    //
+    // A picker with ONE band opens straight at level 2: there is nothing to choose
+    // between, so an early-game pet with no items, no fired wildcard and no crew walks
+    // the same single list it always has. leaveOverrideBand answers false there, which
+    // is how the caller knows C means cancel rather than back.
+    bool overrideAtBands() const { return overrideAtBands_; }
+    int overrideBandCount() const;                    // bands holding at least one row
+    OverrideBand overrideBandAt(int i) const;         // the i-th band that is present
+    int overrideBandPick() const { return overrideBandPick_; }
+    int overrideBandRows(OverrideBand b) const;       // rows that band contributes
+    int overrideBandFirst(OverrideBand b) const;      // its first flat index
+    OverrideBand overrideBandOf(int flatPick) const;  // the band a flat row sits in
+    // B at level 1 → descend onto that band's rows. False when already at level 2, so
+    // the caller falls through to commitOverride and B keeps one meaning per level.
+    bool enterOverrideBand();
+    // C at level 2 → back to the band list, landing on the band just left. False when
+    // there is no level 1 to return to, so the caller cancels the picker instead.
+    bool leaveOverrideBand();
     void commitOverride();      // B → force the chosen move / use the item / fire the crew
                                  // Exploit; spends one use either way
     void cancelOverride();      // C → close the picker, no spend
@@ -813,6 +855,8 @@ private:
     int overrideUsesLeft_ = 1;      // Exploit uses remaining this fight
     int overrideUsesTotal_ = 1;     // allowance at fight start (for the pip readout)
     bool overrideOpen_ = false;
+    bool overrideAtBands_ = false;              // cursor on the band list, not on rows
+    int overrideBandPick_ = 0;                  // index into the PRESENT bands
     int overridePick_ = 0;          // index into [moves..., items...]
     int forcedMoveIdx_ = -1;        // committed override → the player's next move
     std::vector<OverrideItem> overrideItems_;   // combat-usable items this picker

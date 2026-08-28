@@ -444,7 +444,9 @@ void test_combat_override_item_use() {
     CHECK(cb.player().health == 50);
     cb.openOverride({{"dyno_nuggets", "Dyno Nuggets", 30}});
     CHECK(cb.overrideOpen() && cb.overrideMoveCount() == 2);
-    while (cb.overridePick() != cb.overrideMoveCount()) cb.cycleOverride();
+    while (cb.overrideBandAt(cb.overrideBandPick()) != OverrideBand::Item)
+        cb.cycleOverride();
+    cb.enterOverrideBand();
     cb.commitOverride();
     CHECK(cb.player().health == 80);             // +30 patch
     CHECK(!cb.overrideReady());                  // the single use is spent
@@ -455,7 +457,9 @@ void test_combat_override_item_use() {
     // The patch clamps to max Health (no overheal).
     cb.begin(p, e, Combat::Stakes::Safe, 42, false, /*carryPlayerHealth=*/90, 1);
     cb.openOverride({{"dyno_nuggets", "Dyno Nuggets", 30}});
-    while (cb.overridePick() != cb.overrideMoveCount()) cb.cycleOverride();
+    while (cb.overrideBandAt(cb.overrideBandPick()) != OverrideBand::Item)
+        cb.cycleOverride();
+    cb.enterOverrideBand();
     cb.commitOverride();
     CHECK(cb.player().health == 100);
 }
@@ -489,9 +493,10 @@ void test_combat_item_in_game() {
     CHECK(snacks0 > 0);
     g.onButton({Button::A, true, true});           // A+C -> open picker
     CHECK(g.combat().overrideOpen());
-    const int moveN = g.combat().overrideMoveCount();
-    while (g.combat().overridePick() != moveN)      // cursor onto the item row
-        g.onButton(press(Button::A));
+    while (g.combat().overrideBandAt(g.combat().overrideBandPick()) != OverrideBand::Item)
+        g.onButton(press(Button::A));              // walk the bands to ITEMS
+    g.onButton(press(Button::B));                  // open the band
+    CHECK(!g.combat().overrideAtBands());
     g.onButton(press(Button::B));                  // commit -> use item
     CHECK(g.inventory().count("dyno_nuggets") == snacks0 - 1);
     CHECK(!g.combat().overrideReady());            // single use spent
@@ -2555,43 +2560,63 @@ void test_metamorphic_content_builds_a_real_pool() {
     }
 }
 
+// The Exploit picker's two levels. The bands present in the fight are the top level, so
+// the box is at most four rows however deep the bag is, and the rows of one band are the
+// second. One band means no choice, so the picker opens straight on its rows and C there
+// cancels outright — the walk an early-game pet has always had.
+void test_override_bands_are_the_top_level() {
+    ContentRegistry r = ContentRegistry::embedded();
+    Combatant p = mkCombatant(r, "P", 100, 10, {"quick_jab", "packet_storm"});
+    Combatant e = mkCombatant(r, "E", 300, 5, {"quick_jab"});
+    Combat cb;
+
+    // Moves only: one band, so there is no band level to stand on and nothing to back
+    // out to. The cursor is on a row from the first frame.
+    cb.begin(p, e, Combat::Stakes::Safe, 42);
+    cb.openOverride();
+    CHECK(cb.overrideBandCount() == 1 && !cb.overrideAtBands());
+    CHECK(!cb.enterOverrideBand() && !cb.leaveOverrideBand());
+    cb.cycleOverride();
+    CHECK(cb.overridePick() == 1);                 // walks the moves, as it always did
+
+    // Add an item and a crew Exploit and there are three bands to choose between, so the
+    // picker opens on THEM and a commit is inert until one is entered.
+    cb.begin(p, e, Combat::Stakes::Safe, 42);
+    cb.openOverride({{"dyno_nuggets", "Dyno Nuggets", 30}},
+                    CrewExploit{"DENIAL OF SERVICE", CrewExploitKind::NegateNextHits, 3});
+    CHECK(cb.overrideBandCount() == 3 && cb.overrideAtBands());
+    CHECK(cb.overrideBandAt(0) == OverrideBand::Move &&
+          cb.overrideBandAt(1) == OverrideBand::Item &&
+          cb.overrideBandAt(2) == OverrideBand::Crew);
+    cb.commitOverride();
+    CHECK(cb.overrideOpen() && cb.overrideReady());  // nothing spent at the band level
+
+    // The band cursor carries the flat cursor with it, so descending never has to invent
+    // a row: two steps reach CREW, which is the last flat row.
+    cb.cycleOverride(); cb.cycleOverride();
+    const int crewRow = cb.overrideBandFirst(OverrideBand::Crew);
+    CHECK(cb.overridePick() == crewRow);
+    CHECK(cb.enterOverrideBand() && !cb.overrideAtBands());
+
+    // Inside a band the walk wraps WITHIN it — a one-row band is a fixed point, and the
+    // header naming it never stops being true.
+    cb.cycleOverride();
+    CHECK(cb.overridePick() == crewRow);
+    CHECK(cb.leaveOverrideBand() && cb.overrideAtBands());
+    CHECK(cb.overrideBandPick() == 2);             // back onto the band just left
+
+    // The move band wraps across its own rows and no further.
+    cb.cycleOverride();                            // CREW → MOVES, wrapping the bands
+    CHECK(cb.overrideBandPick() == 0);
+    cb.enterOverrideBand();
+    for (int i = 0; i < cb.overrideMoveCount(); ++i) cb.cycleOverride();
+    CHECK(cb.overridePick() == 0);                 // a full lap of MOVES, not into ITEMS
+}
+
 // The LOCK: an operator spends their one Exploit to stop a wildcard slot rolling and keep
 // what it last threw. The slot becomes ORDINARY — it casts that move and nothing else —
 // and the trade is that a locked slot stops feeding Polymorph, because only unlearned
 // casts pay.
-// The Exploit picker's header must name the bands that are IN the box and no others.
-//
-// It used to be one of three fixed phrases, which cannot describe four bands: a
-// metamorphic pet in a crew showed a CREW row under a header that never mentioned it, and
-// a pet carrying no usable item was promised an ITEM band that was not there. Asserted on
-// the string rather than through a render, because the string IS the contract.
-void test_override_header_names_the_bands_present() {
-    char h[48];
-    const int room = (kActiveW - 8) - 16;          // what the picker box actually gives it
-
-    overridePickerHeader(h, sizeof(h), /*items=*/false, /*lock=*/false, /*crew=*/false, room);
-    CHECK(std::strstr(h, "MOVE") != nullptr);      // a fighter always has moves
-    CHECK(std::strstr(h, "ITEM") == nullptr);      // ...and nothing else is promised
-    CHECK(std::strstr(h, "LOCK") == nullptr);
-    CHECK(std::strstr(h, "CREW") == nullptr);
-
-    overridePickerHeader(h, sizeof(h), true, false, true, room);
-    CHECK(std::strstr(h, "ITEM") && std::strstr(h, "CREW"));
-    CHECK(std::strstr(h, "LOCK") == nullptr);      // no wildcard has rolled: no lock band
-
-    // All four at once — the case the fixed phrasing could not say. Every band survives,
-    // and it is the TITLE that yields to make room rather than any of them.
-    overridePickerHeader(h, sizeof(h), true, true, true, room);
-    for (const char* b : {"MOVE", "ITEM", "LOCK", "CREW"}) CHECK(std::strstr(h, b));
-    CHECK(textWidth(h) <= room);                   // and it fits the box it labels
-
-    // Whenever the titled form does fit, it is the one used — the fallback is a last
-    // resort, not the default.
-    overridePickerHeader(h, sizeof(h), true, true, false, room);
-    CHECK(std::strstr(h, "EXPLOIT") != nullptr);
-    CHECK(textWidth(h) <= room);
-}
-
 void test_wildcard_lock_freezes_a_slot() {
     static const MoveDef q1{"q1", "Pool One", MoveDef::Kind::Attack, 6, 1, "", Stage::BootSector};
     static const MoveDef q2{"q2", "Pool Two", MoveDef::Kind::Attack, 7, 1, "", Stage::BootSector};
@@ -2629,7 +2654,8 @@ void test_wildcard_lock_freezes_a_slot() {
     // Commit it: the picker's LOCK band sits after the moves and items, before the crew.
     c.openOverride();
     CHECK(c.overrideMoveCount() == 1);
-    while (c.overridePick() != 1) c.cycleOverride();   // 0 = the move row, 1 = the lock
+    while (c.overrideBandAt(c.overrideBandPick()) != OverrideBand::Lock) c.cycleOverride();
+    c.enterOverrideBand();                             // onto the band's one row
     c.commitOverride();
     CHECK(!c.overrideReady());                  // it cost the one Exploit use
 

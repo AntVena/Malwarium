@@ -26,7 +26,10 @@ void test_crew_exploit_negates_next_hits() {
                                     CrewExploitKind::NegateNextHits, 3});
     CHECK(cb.overrideCrewRows() == 1);
     const int crewRow = cb.overrideMoveCount();          // no items in this picker
-    while (cb.overridePick() != crewRow) cb.cycleOverride();
+    while (cb.overrideBandAt(cb.overrideBandPick()) != OverrideBand::Crew)
+        cb.cycleOverride();
+    cb.enterOverrideBand();
+    CHECK(cb.overridePick() == crewRow);
     cb.commitOverride();
     CHECK(cb.player().crewExploit.charges == 3);
     CHECK(!cb.overrideReady());                          // firing it spends a use
@@ -78,7 +81,9 @@ void test_crew_escalation_banks_damage_as_power() {
 
     cb.openOverride({}, CrewExploit{"ESCALATION",
                                     CrewExploitKind::PowerByDamageDealt, 3});
-    while (cb.overridePick() != cb.overrideMoveCount()) cb.cycleOverride();
+    while (cb.overrideBandAt(cb.overrideBandPick()) != OverrideBand::Crew)
+        cb.cycleOverride();
+    cb.enterOverrideBand();
     cb.commitOverride();
     CHECK(cb.player().crewExploit.charges == 3);
     CHECK(cb.player().stackPowerBonus == 0);   // arming alone banks nothing
@@ -115,7 +120,9 @@ void test_crew_net_neutrality_resets_then_floors_the_leans() {
 
     cb.openOverride({}, CrewExploit{"NET NEUTRALITY",
                                     CrewExploitKind::ResetStatsAndFloor, 0});
-    while (cb.overridePick() != cb.overrideMoveCount()) cb.cycleOverride();
+    while (cb.overrideBandAt(cb.overrideBandPick()) != OverrideBand::Crew)
+        cb.cycleOverride();
+    cb.enterOverrideBand();
     cb.commitOverride();
     CHECK(cb.player().powerMultPct == pow0);     // snapped back to the fight-start lean
     CHECK(cb.player().speed == spd0);
@@ -143,7 +150,9 @@ void test_crew_mitm_copies_enemy_buffs() {
 
     cb.openOverride({}, CrewExploit{"MALBEAST IN THE MIDDLE",
                                     CrewExploitKind::MirrorEnemyBuffs, 0});
-    while (cb.overridePick() != cb.overrideMoveCount()) cb.cycleOverride();
+    while (cb.overrideBandAt(cb.overrideBandPick()) != OverrideBand::Crew)
+        cb.cycleOverride();
+    cb.enterOverrideBand();
     cb.commitOverride();
     CHECK(cb.player().guard == 0);               // firing copies nothing already cast
 
@@ -165,7 +174,9 @@ void test_crew_backup_plan_b_saves_and_rallies() {
              /*carryPlayerHealth=*/10);
     cb.openOverride({}, CrewExploit{"BACKUP PLAN B",
                                     CrewExploitKind::DeathSaveRally, 3});
-    while (cb.overridePick() != cb.overrideMoveCount()) cb.cycleOverride();
+    while (cb.overrideBandAt(cb.overrideBandPick()) != OverrideBand::Crew)
+        cb.cycleOverride();
+    cb.enterOverrideBand();
     cb.commitOverride();
     CHECK(cb.player().crewExploit.turns == 3);
 
@@ -187,7 +198,9 @@ void test_crew_backup_plan_b_clock_runs_out() {
     cb.begin(p, e, Combat::Stakes::Safe, 3, /*forceEnemyFirst=*/true);
     cb.openOverride({}, CrewExploit{"BACKUP PLAN B",
                                     CrewExploitKind::DeathSaveRally, 3});
-    while (cb.overridePick() != cb.overrideMoveCount()) cb.cycleOverride();
+    while (cb.overrideBandAt(cb.overrideBandPick()) != OverrideBand::Crew)
+        cb.cycleOverride();
+    cb.enterOverrideBand();
     cb.commitOverride();
 
     cb.step();

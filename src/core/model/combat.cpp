@@ -1508,20 +1508,106 @@ const MoveDef* Combat::overrideLockMove(int i) const {
     return slot < 0 ? nullptr : player_.wildPools[slot].lastRolled;
 }
 
+const char* overrideBandName(OverrideBand b) {
+    switch (b) {
+        case OverrideBand::Move: return "MOVES";
+        case OverrideBand::Item: return "ITEMS";
+        case OverrideBand::Lock: return "LOCK";
+        case OverrideBand::Crew: return "CREW";
+    }
+    return "";
+}
+
+int Combat::overrideBandRows(OverrideBand b) const {
+    switch (b) {
+        case OverrideBand::Move: return overrideMoveCount();
+        case OverrideBand::Item: return static_cast<int>(overrideItems_.size());
+        case OverrideBand::Lock: return overrideLockCount();
+        case OverrideBand::Crew: return overrideCrewRows();
+    }
+    return 0;
+}
+
+int Combat::overrideBandFirst(OverrideBand b) const {
+    int first = 0;
+    for (int i = 0; i < static_cast<int>(b); ++i)
+        first += overrideBandRows(static_cast<OverrideBand>(i));
+    return first;
+}
+
+int Combat::overrideBandCount() const {
+    int n = 0;
+    for (int b = 0; b < kOverrideBands; ++b)
+        if (overrideBandRows(static_cast<OverrideBand>(b)) > 0) ++n;
+    return n;
+}
+
+OverrideBand Combat::overrideBandAt(int i) const {
+    for (int b = 0; b < kOverrideBands; ++b) {
+        const OverrideBand band = static_cast<OverrideBand>(b);
+        if (overrideBandRows(band) <= 0) continue;
+        if (i-- == 0) return band;
+    }
+    return OverrideBand::Move;
+}
+
+OverrideBand Combat::overrideBandOf(int flatPick) const {
+    int end = 0;
+    for (int b = 0; b < kOverrideBands; ++b) {
+        end += overrideBandRows(static_cast<OverrideBand>(b));
+        if (flatPick < end) return static_cast<OverrideBand>(b);
+    }
+    return OverrideBand::Move;
+}
+
 void Combat::openOverride(std::vector<OverrideItem> items, CrewExploit crew) {
     if (overrideUsesLeft_ <= 0 || outcome_ != Outcome::Ongoing) return;
     overrideItems_ = std::move(items);
     crewExploit_ = crew;
     overrideOpen_ = true;
-    overridePick_ = 0;
+    overrideBandPick_ = 0;
+    // One band is not a choice. Opening on the band list there would cost a press to
+    // say so, which is the opposite of what the level is for.
+    overrideAtBands_ = overrideBandCount() > 1;
+    overridePick_ = overrideBandFirst(overrideBandAt(0));
 }
 
 void Combat::cycleOverride() {
     if (!overrideOpen_) return;
-    const int n = overrideMoveCount() + static_cast<int>(overrideItems_.size()) +
-                  overrideLockCount() + overrideCrewRows();
-    if (n <= 0) return;
-    overridePick_ = (overridePick_ + 1) % n;
+    if (overrideAtBands_) {
+        const int n = overrideBandCount();
+        if (n <= 0) return;
+        overrideBandPick_ = (overrideBandPick_ + 1) % n;
+        // The flat cursor follows the highlighted band, so the row a commit would land
+        // on is defined at BOTH levels and descending never has to invent one.
+        overridePick_ = overrideBandFirst(overrideBandAt(overrideBandPick_));
+        return;
+    }
+    // Inside a band the walk wraps WITHIN it. Crossing into the neighbour is what the
+    // band level is for, and a cursor that slid out from under the header naming its
+    // band would make that header a lie.
+    const OverrideBand band = overrideBandOf(overridePick_);
+    const int first = overrideBandFirst(band);
+    const int rows = overrideBandRows(band);
+    if (rows <= 0) return;
+    overridePick_ = first + (overridePick_ - first + 1) % rows;
+}
+
+bool Combat::enterOverrideBand() {
+    if (!overrideOpen_ || !overrideAtBands_) return false;
+    overrideAtBands_ = false;
+    overridePick_ = overrideBandFirst(overrideBandAt(overrideBandPick_));
+    return true;
+}
+
+bool Combat::leaveOverrideBand() {
+    if (!overrideOpen_ || overrideAtBands_ || overrideBandCount() <= 1) return false;
+    const OverrideBand band = overrideBandOf(overridePick_);
+    overrideAtBands_ = true;
+    overrideBandPick_ = 0;
+    for (int i = 0; i < overrideBandCount(); ++i)
+        if (overrideBandAt(i) == band) { overrideBandPick_ = i; break; }
+    return true;
 }
 
 void Combat::applyCrewExploit() { armCrewExploit(player_, crewExploit_, /*byPlayer=*/true); }
@@ -1570,7 +1656,9 @@ void Combat::armCrewExploit(Combatant& self, const CrewExploit& x, bool byPlayer
 }
 
 void Combat::commitOverride() {
-    if (!overrideOpen_) return;
+    // Inert at the band level: nothing there is a row to spend a use on, and B's
+    // meaning at that level is enterOverrideBand.
+    if (!overrideOpen_ || overrideAtBands_) return;
     const int moves = overrideMoveCount();
     const int items = static_cast<int>(overrideItems_.size());
     const int locks = overrideLockCount();

@@ -444,23 +444,15 @@ struct CombatCamo {
 // (buildWildPools) — and what every fighter outside the metamorphic line ever gets.
 CamoTarget camoTarget(const Combatant& c, const Combatant& rival);
 
-// The A+C Exploit picker's header, as TEXT rather than as a phrase chosen from a list.
+// How many rows the A+C Exploit picker can show at once.
 //
-// The box holds up to four bands — the pet's moves, combat-usable items, the metamorphic
-// LOCK rows, and the crew Exploit — and which of them are present varies per fight, so no
-// fixed wording is honest: a metamorphic pet in a crew shows all four, and a pet carrying
-// no usable item shows two. Naming a band that is not in the box, or leaving one out while
-// naming its neighbours, is the same class of lie as a hint offering a key that does
-// nothing (CombatSides::canRun).
-//
-// MOVE is unconditional — a fighter always has moves. If the titled form will not fit
-// `roomPx`, the TITLE is what yields and the band list survives: what the operator is
-// about to scroll through outranks the label on the box.
-//
-// Pure and separate from the draw for the same reason combatVsGrid is, so a gate can
-// assert what reaches the operator instead of reading it back out of pixels.
-void overridePickerHeader(char* out, size_t cap, bool items, bool lock, bool crew,
-                          int roomPx);
+// A HARD ceiling, not a preference: the box opens at a fixed y and grows downward by a
+// row pitch, and the hint band owns the bottom kHintBandH of the canvas, so the eleventh
+// row prints over the band and the twelfth leaves the screen. Only one of the picker's
+// bands is bounded by its own content (a fighter has at most kMaxMoveSlots moves) — the
+// item band is every combat-usable stack in the bag — so the list is windowed against
+// this and the header carries the position.
+constexpr int kOverridePickerRows = 10;
 
 // Which of the RIVAL's moves the KIT page marks as a PRIZE — one this pet does not
 // have and that beating this rival could teach it. The outro answers the same question

@@ -289,11 +289,19 @@ void Game::onCombat(const ButtonEvent& ev) {
     if (combat_.overrideOpen()) {                 // standard A/B/C inside the picker
         if (ev.button == Button::A) combat_.cycleOverride();
         else if (ev.button == Button::B) {
+            // B descends at the band level and commits inside a band — one meaning per
+            // level rather than two meanings on one screen. A picker holding a single
+            // band never has a level to descend, so B commits there as it always did.
+            if (combat_.enterOverrideBand()) return;
             combat_.commitOverride();
             // If a USE-ITEM was committed, Combat has already patched Health; the
             // Game now consumes the stack + applies the item's out-of-combat effect.
             if (const char* id = combat_.takeCommittedItem()) consumeCombatItem(id);
-        } else if (ev.button == Button::C) combat_.cancelOverride();
+        } else if (ev.button == Button::C) {
+            // C is Cancel at both levels; what it cancels is the band you opened,
+            // and then the picker.
+            if (!combat_.leaveOverrideBand()) combat_.cancelOverride();
+        }
         return;
     }
     // B CYCLES the stat panel — closed -> VS -> KIT -> closed (combat_screen.h). A

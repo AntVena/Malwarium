@@ -1101,13 +1101,19 @@ void test_save_v24_slot_kinds_roundtrip() {
 }
 
 // The A+C override is live in combat (the one pet-side place): the chord opens the
-// picker (without spending); committing spends the once-per-battle pip.
+// picker (without spending); committing spends the once-per-battle pip. A starting bag
+// holds a combat item, so the picker opens on its BAND list and B descends once before
+// it commits — neither press spends until the second one lands on a row.
 void test_combat_override_in_game() {
     Game g{StartMode::Hatched, "paypup"};
     g.debugStartCombat(/*live=*/false);
     CHECK(g.nav() == Game::Nav::Combat && g.combat().overrideReady());
     g.onButton({Button::A, true, true});           // A+C chord -> open picker
     CHECK(g.combat().overrideOpen() && g.combat().overrideReady());  // open != spend
+    CHECK(g.combat().overrideAtBands());
+    g.onButton(press(Button::B));                  // open MOVES
+    CHECK(g.combat().overrideOpen() && g.combat().overrideReady());  // nor does opening
+    CHECK(!g.combat().overrideAtBands());
     g.onButton(press(Button::B));                  // commit -> spends
     CHECK(!g.combat().overrideOpen() && !g.combat().overrideReady());
     // Outside combat the chord stays an inert no-op (early-out not bypassed).

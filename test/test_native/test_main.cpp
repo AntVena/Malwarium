@@ -159,7 +159,7 @@ int g_failures = 0;
     RUN(test_mutation_engine_counts_effects_not_moves) \
     RUN(test_metamorphic_content_builds_a_real_pool) \
     RUN(test_wildcard_lock_freezes_a_slot)  \
-    RUN(test_override_header_names_the_bands_present) \
+    RUN(test_override_bands_are_the_top_level) \
     RUN(test_every_mod_reaches_the_fight)   \
     RUN(test_ledger_grudge_scales_with_the_pool) \
     RUN(test_combat_no_consecutive)         \

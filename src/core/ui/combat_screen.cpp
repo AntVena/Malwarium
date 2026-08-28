@@ -243,23 +243,6 @@ CamoTarget camoTarget(const Combatant& c, const Combatant& rival) {
     return {};
 }
 
-// What this builds and why it is built rather than chosen are on the declaration
-// (combat_screen.h).
-void overridePickerHeader(char* out, size_t cap, bool items, bool lock, bool crew,
-                          int roomPx) {
-    char bands[32];
-    int n = std::snprintf(bands, sizeof(bands), "MOVE");
-    auto add = [&](const char* b) {
-        n += std::snprintf(bands + n, sizeof(bands) - n, "/%s", b);
-    };
-    if (items) add("ITEM");
-    if (lock) add("LOCK");
-    if (crew) add("CREW");
-    char titled[48];
-    std::snprintf(titled, sizeof(titled), "EXPLOIT: %s", bands);
-    std::snprintf(out, cap, "%s", textWidth(titled) <= roomPx ? titled : bands);
-}
-
 // What this answers and why it is answered off the MOVE are on the declaration
 // (combat_screen.h).
 StrikeMark strikeMark(const Combatant& actor, int strikeSeq) {
@@ -1233,25 +1216,42 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
     }
 
     // Override picker overlay ----------------------------
-    // A flat list in three bands: the pet's moves, then any combat-usable items, then
-    // the crew Exploit (only while the player belongs to a crew). The cursor
-    // (overridePick) runs across the whole list.
+    // TWO LEVELS (Combat::overrideAtBands). Level 1 lists the bands this fight has —
+    // moves, combat-usable items, the metamorphic LOCK rows, the crew Exploit — and is
+    // never more than four rows. Level 2 lists one band's rows, windowed to
+    // kOverridePickerRows so the box cannot reach the hint band however deep the bag is.
+    // The cursor is `overridePick` (a flat row index) inside a band and
+    // `overrideBandPick` on the band list.
     if (combat.overrideOpen()) {
         const int moveN = combat.overrideMoveCount();
         const auto& items = combat.overrideItems();
         const int itemN = static_cast<int>(items.size());
         const int lockN = combat.overrideLockCount();
-        const int crewN = combat.overrideCrewRows();
-        const int n = moveN + itemN + lockN + crewN;
-        const int boxH = 22 + n * 14;
+        const bool bands = combat.overrideAtBands();
+        // What the box is listing right now, and where in it the cursor sits. At level 2
+        // the rows are one band's contiguous run, so `first` shifts every index below
+        // into the flat list the commit path reads.
+        const OverrideBand band = combat.overrideBandOf(combat.overridePick());
+        const int first = bands ? 0 : combat.overrideBandFirst(band);
+        const int n = bands ? combat.overrideBandCount() : combat.overrideBandRows(band);
+        const int pick = bands ? combat.overrideBandPick() : combat.overridePick() - first;
+        const int visible = n < kOverridePickerRows ? n : kOverridePickerRows;
+        const int scrollTop = listScrollTop(pick, n, kOverridePickerRows);
+        const int boxH = 22 + visible * 14;
         const int boxY = 40;
         fb.fillRect(8, boxY, kActiveW - 16, boxH, palColor(Pal::TRACK));
-        // Named from what is actually in the box (overridePickerHeader), against the room
-        // between the text inset and the box's own right edge.
-        char head[48];
-        overridePickerHeader(head, sizeof(head), itemN > 0, lockN > 0, crewN > 0,
-                             (kActiveW - 8) - 16);
-        drawText(fb, 16, boxY + 4, head, palColor(Pal::INK));
+        // The title names the LEVEL: the picker itself over the band list, the band
+        // itself over its rows. A band whose rows outrun the window carries the cursor's
+        // place in it, the same readout the MODS and MOVE pickers put there — without it
+        // a windowed list gives no sign there is more of it.
+        drawText(fb, 16, boxY + 4, bands ? "EXPLOIT" : overrideBandName(band),
+                 palColor(Pal::INK));
+        if (n > visible) {
+            char nt[12];
+            std::snprintf(nt, sizeof(nt), "%d/%d", pick + 1, n);
+            drawText(fb, kActiveW - 16 - textWidth(nt), boxY + 4, nt,
+                     palColor(Pal::INK_DIM));
+        }
         // Every row here is the same shape: a NAME from content, and a short fixed TAG
         // right-aligned inside the box. So the name yields to the tag — travelling
         // inside what's left of the row while it's the focused one, clipped when it
@@ -1265,11 +1265,23 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
             const int room = tagX - kMargin - 24;
             if (room > 0) drawTextMarquee(fb, 24, y, room, name, nameCol, beat, sel);
         };
-        for (int i = 0; i < n; ++i) {
-            const int y = boxY + 18 + i * 14;
-            const bool sel = i == combat.overridePick();
+        for (int v = 0; v < visible && scrollTop + v < n; ++v) {
+            const int row = scrollTop + v;                // index within what is listed
+            const int y = boxY + 18 + v * 14;
+            const bool sel = row == pick;
             if (sel) drawRowCursor(fb, 14, y, palColor(Pal::ACCENT));
             const Rgb565 nameC = sel ? palColor(Pal::ACCENT) : palColor(Pal::INK);
+            if (bands) {                                  // level 1: a band row
+                // The tag is the band's DEPTH, uniformly — how many presses lie behind
+                // it. Giving the crew band its Exploit's own tag instead would put two
+                // kinds of fact in one column, and the row below it says that anyway.
+                const OverrideBand b = combat.overrideBandAt(row);
+                char tag[8];
+                std::snprintf(tag, sizeof(tag), "x%d", combat.overrideBandRows(b));
+                pickerRow(y, overrideBandName(b), nameC, tag, sel);
+                continue;
+            }
+            const int i = first + row;                    // back into the flat list
             if (i < moveN) {                              // a move row
                 const MoveDef* m = combat.player().moves[i];
                 // The kind AND the power. What an operator is deciding here is which
@@ -1522,9 +1534,16 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
     }
 
     // Mandatory hint band: A+C live, C reassigned -----------------
+    // The picker's three states are three different keyboards, and the band level's B
+    // OPENS rather than commits — a hint that said COMMIT there would be offering a key
+    // that does nothing, which is the one thing this band must never do.
+    const char* pickerHint = combat.overrideAtBands()  ? "A CYCLE B OPEN C CANCEL"
+                             : combat.overrideBandCount() > 1
+                                 ? "A CYCLE B COMMIT C BACK"
+                                 : "A CYCLE B COMMIT C CANCEL";
     const char* hint = combat.outcome() != Combat::Outcome::Ongoing
                            ? "B CONTINUE"
-                       : combat.overrideOpen() ? "A CYCLE B COMMIT C CANCEL"
+                       : combat.overrideOpen() ? pickerHint
                        : sides.canRun          ? "A+C CMD B STAT C RUN A SKIP"
                                                : "A+C CMD  B STAT  A SKIP";
     drawHintBand(fb, hint);

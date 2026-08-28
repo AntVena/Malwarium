@@ -961,10 +961,12 @@ void test_crew_exploit_in_combat_picker() {
     CHECK(g.joinCrew(0));
     g.onButton({Button::A, true, true});
     CHECK(g.combat().overrideCrewRows() == 1);
-    const int crewRow = g.combat().overrideMoveCount() +
-                        static_cast<int>(g.combat().overrideItems().size());
-    while (g.combat().overridePick() != crewRow) g.onButton(press(Button::A));
-    g.onButton(press(Button::B));
+    const int crewRow = g.combat().overrideBandFirst(OverrideBand::Crew);
+    while (g.combat().overrideBandAt(g.combat().overrideBandPick()) != OverrideBand::Crew)
+        g.onButton(press(Button::A));              // walk the bands to CREW
+    g.onButton(press(Button::B));                  // open the band
+    CHECK(g.combat().overridePick() == crewRow);
+    g.onButton(press(Button::B));                  // fire it
     CHECK(g.combat().player().crewExploit.charges == kCrews[0].exploit.magnitude);
 }
 
