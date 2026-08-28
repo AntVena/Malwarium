@@ -397,6 +397,8 @@ int g_failures = 0;
     RUN(test_scene_keeps_ink_legible) \
     RUN(test_scene_tint_refuses_interface_colours) \
     RUN(test_every_area_names_a_real_scene) \
+    RUN(test_every_creature_has_a_home) \
+    RUN(test_screens_choose_a_place) \
     /* ROCK THE DOCK — the operator bracket in The Pirate Bayou */ \
     RUN(test_tourney_handles_fit_an_operator_tag) \
     RUN(test_tourney_entrants_are_derived_from_the_seed) \

@@ -24,6 +24,12 @@ constexpr SceneRow kScenes[] = {
     {"castle_rapidscare", &drawCastleRapidscareScene},
     {"grid_horizon", &drawGridHorizonScene},
     {"mainframe_row", &drawMainframeRowScene},
+    {"kelp_drift", &drawKelpDriftScene},
+    {"bait_shallows", &drawBaitShallowsScene},
+    {"cirrus_deck", &drawCirrusDeckScene},
+    {"strata_burrow", &drawStrataBurrowScene},
+    {"server_yard", &drawServerYardScene},
+    {"ransom_lot", &drawRansomLotScene},
 };
 static_assert(sizeof(kScenes) / sizeof(kScenes[0]) == static_cast<int>(SceneId::Count),
               "every SceneId needs a catalogue row, and only its own");

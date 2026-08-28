@@ -94,8 +94,11 @@ void test_hunger_alert_gated() {
     Framebuffer calm(kActiveW, kActiveH), hungry(kActiveW, kActiveH);
     renderIdleAtBeat(calm, 0, false);
     renderIdleAtBeat(hungry, 0, true);   // beat 0 is an "on" blink phase
-    CHECK(!anyNonPaper(calm, x0, y0, kActiveW, y1));
-    CHECK(anyNonPaper(hungry, x0, y0, kActiveW, y1));
+    // The two frames differ only in the hunger state, and the backdrop behind them is
+    // the same place at the same beat — so a difference in this slot IS the alert. An
+    // alert drawn unconditionally would leave the slot identical and fail here.
+    CHECK(regionDiffers(calm, hungry, x0, y0, kActiveW, y1));
+    CHECK(anyLitGray(hungry, x0, y0, kActiveW, y1));
 }
 
 // --- T1: the idle loop animates (frames differ across the heartbeat) -------
@@ -198,8 +201,9 @@ void test_idle_status_icons_grayscale() {
     // capture badge stays — positions don't collide.
     Framebuffer noSd(kActiveW, kActiveH);
     renderIdleStatus(noSd, true, /*sd=*/false, /*hot=*/true);
-    CHECK(!anyNonPaper(noSd, sx0, sy0, sx1, sy1));      // SD slot empty
-    CHECK(anyLitGray(noSd, bx0, by0, bx1, by1));        // badge still shown
+    CHECK(regionDiffers(all, noSd, sx0, sy0, sx1, sy1));   // the flash slot follows the card
+    CHECK(!regionDiffers(all, noSd, bx0, by0, bx1, by1));  // ...and the badge slot does not
+    CHECK(anyLitGray(noSd, bx0, by0, bx1, by1));           // badge still shown
 }
 
 // Runtime SD re-check engine seam (mirrors the netScan one-shot). CFG sets it;

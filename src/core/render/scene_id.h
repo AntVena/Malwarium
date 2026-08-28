@@ -24,13 +24,23 @@ namespace mal {
 
 enum class SceneId : uint8_t {
     None = 0,
-    // The explore ladder, in ladder order.
+    // The explore ladder, in ladder order. Named by AreaDef::scene.
     CitrusCircuit,
     PirateBayou,
     CastleRapidscare,
-    // Prize backdrops, which no area names.
+    // Prize backdrops, which no area names — the half of the roster that is the reason
+    // an id cannot hang off AreaDef.
     GridHorizon,
     MainframeRow,
+    // Where a CREATURE is at home, derived from its line and how it gets around
+    // (content/content_homes.h). What the habitat stands its pet on, and what a fight
+    // with no place of its own falls back to.
+    KelpDrift,
+    BaitShallows,
+    CirrusDeck,
+    StrataBurrow,
+    ServerYard,
+    RansomLot,
     Count
 };
 

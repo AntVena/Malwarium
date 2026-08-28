@@ -24,5 +24,11 @@ void drawPirateBayouScene(Framebuffer& fb, int beat, const SceneGround& g);
 void drawCastleRapidscareScene(Framebuffer& fb, int beat, const SceneGround& g);
 void drawGridHorizonScene(Framebuffer& fb, int beat, const SceneGround& g);
 void drawMainframeRowScene(Framebuffer& fb, int beat, const SceneGround& g);
+void drawKelpDriftScene(Framebuffer& fb, int beat, const SceneGround& g);
+void drawBaitShallowsScene(Framebuffer& fb, int beat, const SceneGround& g);
+void drawCirrusDeckScene(Framebuffer& fb, int beat, const SceneGround& g);
+void drawStrataBurrowScene(Framebuffer& fb, int beat, const SceneGround& g);
+void drawServerYardScene(Framebuffer& fb, int beat, const SceneGround& g);
+void drawRansomLotScene(Framebuffer& fb, int beat, const SceneGround& g);
 
 }  // namespace mal

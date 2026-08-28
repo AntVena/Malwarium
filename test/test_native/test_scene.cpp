@@ -17,6 +17,8 @@
 #include "test_gates.h"
 
 #include "core/content/areas/area_defs.h"
+#include "core/content/content_homes.h"
+#include "core/content/creatures/creature_lines.h"
 #include "core/render/scene.h"
 #include "core/render/scenes.h"
 
@@ -136,4 +138,45 @@ void test_every_area_names_a_real_scene() {
     // The ladder's first area is the one every operator walks, so it is the one place
     // where "not authored yet" would actually be noticed.
     CHECK(area(0).scene != SceneId::None);
+}
+
+// Every creature on the roster is somewhere. The chain in content/content_homes.h ends
+// in a locomotion, and every Locomotion answers — so this is a total function and the
+// gate is what says it stayed one when a line or a mover was added.
+void test_every_creature_has_a_home() {
+    int homed = 0;
+    for (const CreatureLine& l : kCreatureLines)
+        for (int i = 0; i < l.count; ++i) {
+            const SceneId s = sceneForCreature(l.rows[i]);
+            CHECK(s != SceneId::None);
+            CHECK(sceneFor(s) != nullptr);
+            ++homed;
+        }
+    CHECK(homed > 0);
+    // The two facts the chain is built on, stated directly: a line with a place of its
+    // own overrides how its creatures move, and a line without one falls through to it.
+    // Phishing walks and swims in equal measure, which is exactly why it is the override
+    // that earns its keep.
+    for (const LineHome& h : kLineHomes) CHECK(sceneFor(h.scene) != nullptr);
+    CHECK(sceneForLocomotion(Locomotion::Swim) != sceneForLocomotion(Locomotion::Fly));
+    CHECK(sceneForLocomotion(Locomotion::Ground) != sceneForLocomotion(Locomotion::Walk));
+}
+
+// A screen's own choice of place: the habitat stands the pet where it lives, and a
+// fight with no area behind it is fought in the same spot. Both are what makes the
+// backdrop reachable at all — a catalogue nothing draws from is a catalogue.
+void test_screens_choose_a_place() {
+    Game g{StartMode::Hatched, "cuttlefork"};
+    CHECK(g.habitatScene() == sceneForCreature(*g.pet()));
+    CHECK(g.stageScene() == g.habitatScene());   // no walk armed: fought where it lives
+
+    // ...and the habitat actually paints it, rather than the plain field it used to.
+    Framebuffer fb(kActiveW, kActiveH);
+    g.tick(0);
+    g.render(fb);
+    Framebuffer bare(kActiveW, kActiveH);
+    drawScene(bare, g.habitatScene(), 0, sceneGround(kLivingBottom));
+    // A row of the living band that no chrome and no creature reaches: the far left,
+    // just under the top track, is backdrop and nothing else.
+    CHECK(!regionDiffers(fb, bare, 0, kLivingTop + 2, 6, kLivingTop + 18));
 }

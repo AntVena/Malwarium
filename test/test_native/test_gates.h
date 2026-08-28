@@ -178,6 +178,21 @@ inline bool anyLitGray(const Framebuffer& fb, int x0, int y0, int x1, int y1) {
     return false;
 }
 
+// True if any pixel in [x0,x1)×[y0,y1) differs between two framebuffers.
+//
+// This is what "the slot is clear" has to mean now that a screen stands in a PLACE
+// (Game::habitatScene). A gate asserting a region was `paper` was really asserting that
+// no ICON was drawn there, and the panel behind it is no longer blank — so the claim is
+// made against a frame that differs only in the thing under test, which says it about
+// the icon rather than about the whole screen.
+inline bool regionDiffers(const Framebuffer& a, const Framebuffer& b,
+                          int x0, int y0, int x1, int y1) {
+    for (int y = y0; y < y1; ++y)
+        for (int x = x0; x < x1; ++x)
+            if (a.get(x, y) != b.get(x, y)) return true;
+    return false;
+}
+
 inline bool anyNonPaper(const Framebuffer& fb, int x0, int y0, int x1, int y1) {
     const Rgb565 paper = palColor(Pal::PAPER);
     for (int y = y0; y < y1; ++y)
@@ -292,15 +307,6 @@ inline void enterCfgTarget(Game& g, CfgScreen target) {
     CHECK(sub >= 0);
     for (int i = 0; i < sub; ++i) g.onButton(press(Button::A));
     g.onButton(press(Button::B));                 // open the setting inside the group
-}
-
-// True if any pixel in [x0,x1)×[y0,y1) differs between two framebuffers.
-inline bool regionDiffers(const Framebuffer& a, const Framebuffer& b,
-                          int x0, int y0, int x1, int y1) {
-    for (int y = y0; y < y1; ++y)
-        for (int x = x0; x < x1; ++x)
-            if (a.get(x, y) != b.get(x, y)) return true;
-    return false;
 }
 
 inline bool fbEqual(const Framebuffer& a, const Framebuffer& b) {

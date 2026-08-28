@@ -13,6 +13,7 @@ a magnitude only one entity reads lives **on that row**, never in `tunables.h`.
 | Add or edit an EXPL area | [areas/README.md](areas/README.md) — the folder shape and the naming tiers |
 | Add a wild malbeast, or change what one fights with | `wildMalbeast` in `../model/combat_factory.cpp` — the roster is a body, a tier, and the creature's own signature move; the signature's ROW is here, under "Wild SIGNATURES" in [content_moves.cpp](content_moves.cpp) |
 | Add an entrant handle to ROCK THE DOCK, or retune the arena | [content_tournament.h](content_tournament.h) — the bracket's shape, the level band and stage rungs an entrant is rolled at, the Exploit triggers, and the purse. `test_tourney_handles_fit_an_operator_tag` is the gate on the handle pool. |
+| Say where a creature is at HOME — which engine-drawn backdrop stands behind it | [content_homes.h](content_homes.h) — a line with a place of its own overrides how its creatures move, and how they move is the floor. Not a field on `CreatureDef`: thirty-five rows would each be restating their line's answer. `test_every_creature_has_a_home` is the gate. |
 | Add a DECRYPTOGRAM quote | [content_quotes.h](content_quotes.h) — the two rules a row must pass (it WRAPS into the grid; ASCII only), the wire-number discipline, and where a per-quote prize would go. `test_cryptogram_quotes_fit_the_panel` is the gate: write the row, run it. |
 
 **Renaming an id is free** — rewrite the row and add a rename row to the save codec

@@ -15,6 +15,7 @@
 #include "core/render/font.h"
 #include "core/render/framebuffer.h"
 #include "core/render/palette.h"
+#include "core/render/scenes.h"
 #include "core/render/sprite.h"
 #include "core/ui/layout.h"
 #include "core/ui/widgets.h"
@@ -816,8 +817,12 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
                 const SpriteData* playerSprite, const SpriteData* enemySprite,
                 int beat, int animBeat, int hitBeat, int statPage,
                 const CombatSides& sides, const CombatOutro& outro,
-                const RivalPrizes& prizes, const CombatCamo& camo) {
-    fb.clear(palColor(Pal::PAPER));
+                const RivalPrizes& prizes, const CombatCamo& camo, SceneId scene) {
+    // The BACKGROUND pass. The stage's floor is kSpriteShelf — the row the fighters
+    // actually stand on — so the place is composed against that rather than against the
+    // canvas, and the same place drawn on the habitat sits 44 rows lower.
+    if (!drawScene(fb, scene, beat, sceneGround(kSpriteShelf)))
+        fb.clear(palColor(Pal::PAPER));
     // LOCAL and RIVAL are ROLES, not Combat's player/enemy slots. Everything the screen
     // says and seats is bound to the role: the local pet gets the bottom, zoned Health
     // gauge with its Critical pulse (the "my pet is in trouble" read) and the left-hand

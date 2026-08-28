@@ -47,6 +47,7 @@
 #include "core/net/network_ledger.h"
 #include "core/net/peer_ledger.h"
 #include "core/net/pvp_link.h"
+#include "core/render/scene_id.h"
 #include "core/render/camo.h"          // CamoTarget — the FX_CAMO state the tick keeps
 #include "core/render/framebuffer.h"
 // ui_state.h ONLY, never a core/ui/*_screen.h: Game holds the ids below as members
@@ -1781,6 +1782,18 @@ public:
     // post-clear wild wins — 100 decaying to a floor. Pure/static so it's unit-tested
     // directly and reused wherever a re-farm reward is rolled.
     static int refarmDropScalePct(int refarmCount);
+
+    // WHERE THE PET IS. Two questions, because the two screens that ask are asking
+    // different things — the habitat asks where its occupant lives, and the stage asks
+    // where this particular fight is happening. Both answer with a SceneId
+    // (core/render/scenes.h), and SceneId::None is a real answer: a plain `paper` field,
+    // which is what every one of these screens showed before any place existed.
+    //
+    // Public because they are the honest way for anything else to ask what a screen is
+    // standing on — a gate checking that an icon slot is CLEAR now has to compare it
+    // against the backdrop rather than against an empty panel.
+    SceneId habitatScene() const;
+    SceneId stageScene() const;
 
 private:
     // Rendering.

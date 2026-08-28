@@ -84,9 +84,24 @@ band whose size actually changes between screens.
 
 A PLACE is one file under `render/scenes/` — art-direction tables and a handful of
 primitive calls — named by a `SceneId` (`render/scene_id.h`) and reached through the
-catalogue in `render/scenes.h`. An area names its own on `AreaDef::scene`, exactly as it
-names its sector glyph; a prize background names one from wherever prizes are held, which
-is why the id cannot hang off `AreaDef` alone. `tools/dump_frame.cpp`'s `scene:<name>
+catalogue in `render/scenes.h`. Three kinds of owner name one, which is why the id cannot
+hang off `AreaDef` alone:
+
+- an **area**, on `AreaDef::scene`, exactly as it names its sector glyph;
+- a **creature**, DERIVED rather than stored (`content/content_homes.h`) — a line with a
+  place of its own overrides how its creatures move, and how they move is the floor, so
+  every creature is somewhere and an evolution walks into a new place with nothing
+  written down;
+- a **prize background**, from wherever prizes are held.
+
+Two screens ask. `Game::habitatScene()` is where the pet lives and `Game::stageScene()` is
+where a fight is happening — the area being walked, or the pet's own home when the fight
+belongs to no area (a duel, an arcade bout, the endless dive). Both may answer
+`SceneId::None`, which draws nothing and leaves the plain `paper` field.
+
+One consequence for GATES: a screen is never blank now, so a check that asserted a region
+was `paper` in order to say "no icon here" has to be made against a frame differing only
+in the thing under test (`regionDiffers`, `test/test_native/test_gates.h`). `tools/dump_frame.cpp`'s `scene:<name>
 floor:<row>` renders one on its own at either floor, which is the only way to see whether
 a place actually reads — the native gate can hold portability, contrast and the anchor
 rail, and nothing can hold composition.

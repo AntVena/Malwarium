@@ -6,11 +6,14 @@
 
 #include "core/app/game_internal.h"   // levelStatName()
 #include "tunables.h"
+#include "core/content/areas/area_defs.h"   // area() — the place a walk is happening in
+#include "core/content/content_homes.h"     // sceneForCreature — where a pet lives
 #include "core/content/content_tables.h"
 #include "core/render/camo.h"
 #include "core/render/canvas.h"
 #include "core/render/font.h"
 #include "core/render/palette.h"
+#include "core/render/scenes.h"
 #include "core/render/sprite.h"
 #include "core/ui/arch_screen.h"
 #include "core/ui/carousel.h"
@@ -155,8 +158,33 @@ void Game::drawLineSelect(Framebuffer& fb) const {
              palColor(Pal::INK_DIM));
 }
 
+SceneId Game::habitatScene() const {
+    // Derived from the creature rather than stored: which place a pet belongs in
+    // follows from its line and how it gets around (content/content_homes.h), so an
+    // evolution walks into a new one without anything being written down.
+    return pet_ ? sceneForCreature(*pet_) : SceneId::None;
+}
+
+SceneId Game::stageScene() const {
+    // A fight inside an area happens THERE — the walk is the reason the operator is
+    // looking at that place at all, and the stage agreeing with the EXPL row above it
+    // is most of what makes an area feel like somewhere rather than a difficulty.
+    if (exploreActive_ && exploreSector_ >= 0 && exploreSector_ < kAreaCount) {
+        const SceneId s = area(exploreSector_).scene;
+        if (s != SceneId::None) return s;
+    }
+    // Everything else — a duel, an arcade bout, the endless dive, an area whose place
+    // is not authored yet — is fought where the pet lives. A fight always has a floor
+    // and it may as well have a horizon.
+    return habitatScene();
+}
+
 void Game::drawHabitat(Framebuffer& fb, int cursor) const {
-    fb.clear(palColor(Pal::PAPER));
+    // The BACKGROUND pass. Composed against the shelf a resting pet's feet sit on, which
+    // the bottom carousel track then covers — so a habitat backdrop's identity has to
+    // live in its horizon band and its silhouette, and never in its floor.
+    if (!drawScene(fb, habitatScene(), beat_, sceneGround(kLivingBottom)))
+        fb.clear(palColor(Pal::PAPER));
 
     const SpriteData* pet = pet_ ? registry_.creatureSprite(*pet_) : nullptr;
     if (pet) {
@@ -793,7 +821,7 @@ void Game::drawCombatScreen(Framebuffer& fb) const {
     camo.ramp = combatCamoWorn_ ? camoRampFrom(*combatCamoWorn_) : CamoRamp{};
     camo.leaving = combatCamoLeaving_ ? camoRampFrom(*combatCamoLeaving_) : CamoRamp{};
     drawCombat(fb, combat_, ps, es, beat_, combatAnimBeat_, combatHitBeat_,
-               combatStatsPage_, sides, outro, prizes, camo);
+               combatStatsPage_, sides, outro, prizes, camo, stageScene());
 }
 
 void Game::drawEncounterScreen(Framebuffer& fb) const {

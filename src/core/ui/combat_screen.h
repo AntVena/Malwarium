@@ -19,6 +19,7 @@
 
 #include "core/render/camo.h"   // CamoRamp — the palette CombatCamo carries
 #include "core/render/font.h"
+#include "core/render/scene_id.h"   // SceneId — the stage is told where it is
 #include "core/ui/layout.h"   // kMargin — the gauge column is stated against the grid
 
 namespace mal {
@@ -482,10 +483,15 @@ struct RivalPrizes {
     }
 };
 
+// `scene` is WHERE the fight is happening — the area being walked, or wherever the pet
+// lives when the fight belongs to no area (core/render/scenes.h). It is this screen's
+// BACKGROUND pass, so it goes down before anything else composes onto it, and
+// SceneId::None is a real answer: the stage falls back to the plain `paper` field.
 void drawCombat(Framebuffer& fb, const Combat& combat,
                 const SpriteData* playerSprite, const SpriteData* enemySprite,
                 int beat, int animBeat, int hitBeat, int statPage = 0,
                 const CombatSides& sides = {}, const CombatOutro& outro = {},
-                const RivalPrizes& prizes = {}, const CombatCamo& camo = {});
+                const RivalPrizes& prizes = {}, const CombatCamo& camo = {},
+                SceneId scene = SceneId::None);
 
 } // namespace mal

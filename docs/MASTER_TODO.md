@@ -363,14 +363,10 @@ you look at one.
   which is the scene that proves the primitives are optional) — and four prizes: Sunset Colonnade,
   CRT Bench, Trace City, Ground Station. Each is ~60 lines against the primitives that already
   exist; Ground Station and Trace City want a part-width silhouette, which `SceneSpan` supplies.
-  Built so far: Citrus Circuit, The Pirate Bayou, Castle Rapidscare, Grid Horizon, Mainframe Row.
+  Built so far: Citrus Circuit, The Pirate Bayou, Castle Rapidscare, Grid Horizon, Mainframe Row —
+  beside the six a CREATURE is at home in (`content/content_homes.h`), which are not on the
+  authoring list because they belong to a line or a locomotion rather than to the ladder.
   Diff **S** each.
-- **Wire the stage and the pet face to the area's scene.** The seam exists and the scenes compose
-  at both floors; what is left is the two screens choosing to draw one. The combat stage is the
-  interesting one — `kCombatSpriteShelf` is already the floor half of a SceneGround, and a
-  **duelling stage** is the one fight with no place at all, so PVP is what decides whether the
-  fallback is a named neutral scene or `SceneId::None`. Wants a look at a real fight over each
-  backdrop before it lands, not a flag flip. Diff **M**.
 - **The backdrop prize economy.** Owning one, awarding one, and a picker to equip it. Ownership is
   a save-format change, which `/release` requires confirming before it ships — the reason it is
   not folded into the scenes themselves. Diff **M**.
