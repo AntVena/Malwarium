@@ -566,40 +566,50 @@ void Game::drawHackerSubmenu(Framebuffer& fb) const {
     std::snprintf(tag, sizeof(tag), "// %s //", hackerTag_);
     drawText(fb, kMargin, 28, tag, palColor(Pal::INK));
 
-    // Crew + Title identity row (unaffiliated → greyed).
+    // Crew, then Title — a line each, not a pair sharing one (unaffiliated → greyed).
+    // Both are content that grows to 20 characters against a 26-character line, so
+    // side by side the widest pair leaves the crew a five-character window to scroll
+    // through, which is no way to read the one word that says who you run with.
     const CrewDef* c = activeCrew();
-    drawText(fb, kMargin, 44, c ? c->displayName : "NO CREW",
-             c ? palColor(Pal::INK) : palColor(Pal::INK_DIM));
-    if (equippedTitle_ >= 0) {
-        char t[24];
-        std::snprintf(t, sizeof(t), "* %s", equippedTitleName());
-        drawText(fb, kActiveW - kMargin - textWidth(t), 44, t, palColor(Pal::ACCENT));
-    }
-    fb.fillRect(0, 60, kActiveW, 1, palColor(Pal::TRACK));
+    drawTextMarquee(fb, kMargin, 44, kActiveW - 2 * kMargin,
+                    c ? c->displayName : "NO CREW",
+                    c ? palColor(Pal::INK) : palColor(Pal::INK_DIM), beat_, true);
+    char titleTag[24];
+    std::snprintf(titleTag, sizeof(titleTag), "* %s",
+                  equippedTitle_ >= 0 ? equippedTitleName() : "NO TITLE");
+    drawTextMarquee(fb, kMargin, 58, kActiveW - 2 * kMargin, titleTag,
+                    palColor(equippedTitle_ >= 0 ? Pal::ACCENT : Pal::INK_DIM), beat_,
+                    true);
+    fb.fillRect(0, 68, kActiveW, 1, palColor(Pal::TRACK));
 
     // The operator's own standing, on one 18px row pitch: rank · nets · shakes ·
-    // species · queued · bandwidth, then the defended network last.
+    // species · queued · bandwidth, then the defended network last. Same shape as the
+    // identity row above: the value owns the right end and the label yields to it, so
+    // the widest rank title on the ladder cannot land on top of its own label.
     auto statRow = [&](int ry, const char* label, const char* value, Rgb565 vc) {
-        drawText(fb, kMargin, ry, label, palColor(Pal::INK_DIM));
-        drawText(fb, kActiveW - kMargin - textWidth(value), ry, value, vc);
+        drawLabelValue(fb, kMargin, ry, label, palColor(Pal::INK_DIM), value, vc,
+                       beat_, true);
     };
+    // "RANK", not "HACKER RANK": the label shares its line with a title of up to 16
+    // characters, and the short form is what leaves room for the longest of them. It
+    // is also what SYSTEM INFO calls the same readout.
     char rankVal[24];
     std::snprintf(rankVal, sizeof(rankVal), "R%d %s", hackerRank_,
                   hackerRankTitle(hackerRank_));
-    statRow(70, "HACKER RANK", rankVal, palColor(Pal::ACCENT));
+    statRow(76, "RANK", rankVal, palColor(Pal::ACCENT));
     char nets[12];
     std::snprintf(nets, sizeof(nets), "%d", networksSeen_);
-    statRow(88, "NETS", nets, palColor(Pal::INK));
+    statRow(94, "NETS", nets, palColor(Pal::INK));
     char shakes[12];
     std::snprintf(shakes, sizeof(shakes), "%d", handshakesSeen_);
-    statRow(106, "SHAKES", shakes, palColor(Pal::INK));
+    statRow(112, "SHAKES", shakes, palColor(Pal::INK));
 
     // SPECIES — distinct creatures this device has ever raised (Game::speciesRaised,
     // save v39). A collection stat rather than a radio one, but it belongs on the
     // operator face for the same reason the others do: it outlives every pet.
     char species[12];
     std::snprintf(species, sizeof(species), "%d", speciesRaised());
-    statRow(124, "SPECIES", species, palColor(Pal::INK));
+    statRow(130, "SPECIES", species, palColor(Pal::INK));
 
     // QUEUED — sightings waiting in RAM for a walk (EXPL Wi-Fi event) to flush
     // them into the SD-backed ledger; nears kPendingNetworkQueueCap = new
@@ -610,21 +620,21 @@ void Game::drawHackerSubmenu(Framebuffer& fb) const {
     const Rgb565 queuedColor = pendingNetworks() >= kPendingNetworkQueueCap
                                     ? palColor(Pal::WARN)
                                     : palColor(Pal::INK);
-    statRow(142, "QUEUED", queued, queuedColor);
+    statRow(148, "QUEUED", queued, queuedColor);
 
     // BANDWIDTH — the farming pool, shown n/N with its fill bar so the player
     // reads their farm budget on the operator face. The bar level is the grayscale channel.
     char bw[16];
     std::snprintf(bw, sizeof(bw), "%d/%d", bandwidth_, bandwidthMax());
-    statRow(160, "BANDWIDTH", bw, palColor(Pal::INK));
+    statRow(166, "BANDWIDTH", bw, palColor(Pal::INK));
     const float t = bandwidthMax() > 0
                         ? static_cast<float>(bandwidth_) / bandwidthMax() : 0.f;
-    drawProgressBar(fb, kMargin, 174, kActiveW - 2 * kMargin, 7, t,
+    drawProgressBar(fb, kMargin, 180, kActiveW - 2 * kMargin, 7, t,
                     palColor(Pal::ACCENT));
 
     // HOME NET — the network this operator defends (set in CREW). Sits with the
     // identity stats because it's a property of the player, not the pet.
-    statRow(194, "HOME NET", hasHomeNetwork() ? homeNetworkName_ : "NOT SET",
+    statRow(200, "HOME NET", hasHomeNetwork() ? homeNetworkName_ : "NOT SET",
             hasHomeNetwork() ? palColor(Pal::INK) : palColor(Pal::INK_DIM));
 }
 

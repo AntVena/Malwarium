@@ -531,3 +531,42 @@ void test_buffs_page_lists_the_permanent_upgrades() {
     const ItemDef* xp = dishFor(ItemEffect::Kind::XpRateBonusPct);
     CHECK(xp && std::strcmp(all[1 + kLevelStatCount].label, xp->displayName) == 0);
 }
+
+// STAT's landing page and its SPECIES page each open with a header that packs a
+// creature's NAME against fixed chrome on the right — GEN + stage on one, the line tag
+// on the other. Both halves are content: a twelve-letter creature beside METAMORPHIC
+// LINE fills the line exactly, and one letter more prints through it.
+//
+// Both rows now lay the right-hand chrome out first and give the name what is left, so
+// a name that outgrows its column scrolls instead of overprinting. That is the safety
+// net; this is the budget. A name held to the room its own worst chrome leaves is one a
+// player reads at a glance instead of waiting out a marquee for.
+//
+// Measured through the same arithmetic the two rows use, so it cannot drift from them:
+//   * SPECIES is a drawLabelValue pair at kMargin — name + tag <= kActiveW - 3*kMargin.
+//   * STAT lays out stage, then GEN beside it with a 6px gap, and the name takes the
+//     rest between the margins.
+void test_creature_name_headers_pack() {
+    const ContentRegistry reg = ContentRegistry::embedded();
+    constexpr int kPairRoom = kActiveW - 3 * kMargin;
+
+    for (const CreatureDef* c : reg.allCreatures()) {
+        // SPECIES: the widest tag any line can put beside this name is its own.
+        char tag[24];
+        std::snprintf(tag, sizeof(tag), "%s", c->line ? c->line : "");
+        for (char* p = tag; *p; ++p)
+            *p = static_cast<char>(std::toupper(static_cast<unsigned char>(*p)));
+        CHECK(textWidth(c->displayName) + textWidth(tag) <= kPairRoom);
+
+        // STAT: name against GEN alone, since the stage moved down to the indicator.
+        // GEN runs to two digits before a player is likely to see a third.
+        const int genX = kActiveW - kMargin - textWidth("GEN 99");
+        CHECK(textWidth(c->displayName) <= genX - 2 * kMargin);
+
+        // The stage word the indicator now carries, under the leftmost node — the
+        // widest of the four starting from the furthest-left x.
+        for (int s = 0; s <= static_cast<int>(Stage::Daemon); ++s)
+            CHECK(kMargin + textWidth(stageName(static_cast<Stage>(s))) <=
+                  kActiveW - kMargin);
+    }
+}

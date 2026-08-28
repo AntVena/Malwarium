@@ -39,6 +39,7 @@ int g_failures = 0;
     RUN(test_loadout_rows_model)            \
     RUN(test_effect_text_templates_resolve) \
     RUN(test_effect_text_fits_its_screen_budget) \
+    RUN(test_creature_name_headers_pack) \
     RUN(test_stat_loadout_b_scroll)         \
     RUN(test_stat_prose_windows_tile_the_list) \
     /* Carousel */                          \
@@ -606,6 +607,7 @@ int g_failures = 0;
     RUN(test_crew_rake_returns_a_cut_of_every_hit)      \
     RUN(test_crew_failover_repeats_the_cast_not_the_turn) \
     RUN(test_crew_failover_survives_a_turn_with_no_cast) \
+    RUN(test_operator_profile_rows_pack) \
     RUN(test_crew_roster_exploits_are_well_formed)      \
     RUN(test_crew_escalation_banks_damage_as_power)     \
     RUN(test_crew_net_neutrality_resets_then_floors_the_leans) \
@@ -711,6 +713,7 @@ int g_failures = 0;
     RUN(test_arcade_high_score_tail_is_rollback_safe) \
     RUN(test_new_egg_line_banner_holds_until_a_press) \
     RUN(test_ordinary_banner_still_retires_on_its_own) \
+    RUN(test_achievement_banner_lines_fit) \
     RUN(test_rolled_defrag_takes_its_fixed_bite) \
     RUN(test_replication_ghost_is_raised_by_a_failed_defrag_on_a_critical_disk) \
     RUN(test_replication_ghost_never_raised_off_the_worm_line) \

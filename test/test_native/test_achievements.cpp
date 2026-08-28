@@ -487,3 +487,57 @@ void test_ordinary_banner_still_retires_on_its_own() {
     g.tick(t += kAchBannerMs);
     CHECK(g.achBanner() == nullptr);
 }
+
+// The unlock banner is three centred lines on a 38px plate over the habitat, and all
+// three are content: an achievement name, an egg-line name, and a reward that names an
+// item. Centred text that outgrows the canvas is cut at BOTH ends, which reads as a
+// rendering fault rather than as long copy — so the banner centres only while a line
+// fits and scrolls it in the margins otherwise (game_render.cpp).
+//
+// Scrolling is the safety net, not the plan: a banner that retires on its own timer
+// gives a marquee no time to finish, so every line the TABLE can produce has to fit
+// outright. That is what this measures, through the same composition the screen does.
+void test_achievement_banner_lines_fit() {
+    // The plate is full-bleed, so the room is the canvas — that is the width its own
+    // held instruction ("LAY ONE NEXT HATCH - ANY KEY") already occupies exactly.
+    constexpr int kRoom = kActiveW;
+    const ContentRegistry reg = ContentRegistry::embedded();
+
+    CHECK(textWidth("ACHIEVEMENT") <= kRoom);
+    CHECK(textWidth("NEW EGG LINE") <= kRoom);
+    CHECK(textWidth("LAY ONE NEXT HATCH - ANY KEY") <= kRoom);   // the held plate
+
+    char line[40];
+    for (int i = 0; i < kAchievementCount; ++i) {
+        const AchievementDef* d = achievementAt(i);
+        CHECK(d != nullptr);
+
+        // The name, alone and in the collapsed-burst form that appends to it.
+        CHECK(textWidth(d->displayName) <= kRoom);
+        std::snprintf(line, sizeof(line), "%s +MORE", d->displayName);
+        CHECK(textWidth(line) <= kRoom);
+
+        // The reward line, composed exactly as the banner composes it: bits and item
+        // are summed across the row's rewards, and the pair falls back to the shop's
+        // "B" for Bits when spelling the word out would not fit.
+        int bits = 0;
+        const char* item = nullptr;
+        for (const AchievementReward& r : d->rewards) {
+            if (r.kind == AchievementReward::Kind::Bits) bits += r.magnitude;
+            else if (r.kind == AchievementReward::Kind::Item && r.id)
+                if (const ItemDef* it = reg.item(r.id)) item = it->displayName;
+        }
+        if (item && bits > 0) {
+            std::snprintf(line, sizeof(line), "+%d BITS + %s", bits, item);
+            if (textWidth(line) > kRoom)
+                std::snprintf(line, sizeof(line), "+%d B + %s", bits, item);
+        } else if (item) {
+            std::snprintf(line, sizeof(line), "+%s", item);
+        } else if (bits > 0) {
+            std::snprintf(line, sizeof(line), "+%d BITS", bits);
+        } else {
+            line[0] = '\0';
+        }
+        CHECK(textWidth(line) <= kRoom);
+    }
+}

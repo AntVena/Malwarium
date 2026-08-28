@@ -25,11 +25,15 @@ namespace mal {
 
 namespace {
 
-// A simple key/value info line for the read-only viewers.
+// A simple key/value info line for the read-only viewers. The value starts at a fixed
+// column so the whole page reads as one grid, and is held to what is left of the line:
+// RANK's title and the Hacker Rank number it carries both grow without a ceiling, and
+// an unclipped value would walk off the margin rather than stop at it.
 void infoLine(Framebuffer& fb, int y, const char* key, const char* val,
               Rgb565 valColor) {
+    constexpr int kValX = kMargin + 48;
     drawText(fb, kMargin, y, key, palColor(Pal::INK_DIM));
-    drawText(fb, kMargin + 48, y, val, valColor);
+    drawTextMarquee(fb, kValX, y, kActiveW - kMargin - kValX, val, valColor, 0, false);
 }
 
 // One settings row — icon, label, and an optional right-aligned value preview.

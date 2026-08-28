@@ -281,7 +281,10 @@ void drawUpdateConfirm(Framebuffer& fb, UpdateTarget target, const char* fromVer
         drawText(fb, 24, y + 3, kOpts[i],
                  palColor(i == 1 ? Pal::WARN : Pal::INK));
     }
-    drawHintBand(fb, "A CHOOSE  B CONFIRM  C CANCEL");
+    // "C BACK", the same word the other confirm band uses (cfg_screen's TRAVEL): the
+    // spelled-out "C CANCEL" made this the one hint on the device wider than the
+    // canvas, and a centred band that overruns loses a leading button letter.
+    drawHintBand(fb, "A CHOOSE  B CONFIRM  C BACK");
 }
 
 void drawUpdateProgress(Framebuffer& fb, const InstallStatus& install,

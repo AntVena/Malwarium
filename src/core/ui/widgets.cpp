@@ -1,5 +1,8 @@
 #include "core/ui/widgets.h"
 
+#include <cctype>
+#include <cstdio>
+
 #include "tunables.h"
 #include "core/render/canvas.h"
 #include "core/render/font.h"
@@ -249,12 +252,20 @@ void drawRowCursor(Framebuffer& fb, int x, int y, Rgb565 c) {
 
 void drawHintBand(Framebuffer& fb, const char* hint) {
     fb.fillRect(0, kActiveH - kHintBandH, kActiveW, kHintBandH, palColor(Pal::TRACK));
-    drawText(fb, (kActiveW - textWidth(hint)) / 2, kActiveH - kHintBandH + 4, hint,
-             palColor(Pal::INK));
+    // Centred, but never started left of the canvas: a hint wider than 224px would
+    // otherwise be cut at BOTH ends, and the leading character is a button letter —
+    // the one part of the line a player cannot infer. Clamping trades that for a lost
+    // tail. tools/check_hint_bands.py is what keeps it from coming up.
+    const int x = (kActiveW - textWidth(hint)) / 2;
+    drawText(fb, x < 0 ? 0 : x, kActiveH - kHintBandH + 4, hint, palColor(Pal::INK));
 }
 
 void drawStageIndicator(Framebuffer& fb, int x, int y, int w, Stage current) {
-    const char* labels[4] = {"BOOT", "PROC", "SCR", "DMN"};
+    // The current node's label is the stage SPELLED OUT, in the accent — this is where
+    // STAT names the stage, so the header row above it doesn't have to and the pet's
+    // own name gets that column back. Only the current node is labelled, so the four
+    // words never have to fit side by side; the widest of them ("BOOT SECTOR", under
+    // the leftmost node) clears the row on its own.
     const int cur = stageIndex(current);
     const int node = 7;
     const int step = w / 4;
@@ -267,7 +278,11 @@ void drawStageIndicator(Framebuffer& fb, int x, int y, int w, Stage current) {
         if (i == cur) {  // current: accent box + label
             fb.fillRect(nx - 1, y - 1, node + 2, node + 2, palColor(Pal::ACCENT));
             fb.fillRect(nx, y, node, node, c);
-            drawText(fb, nx, y + node + 2, labels[i], palColor(Pal::INK));
+            char label[16];
+            std::snprintf(label, sizeof(label), "%s", stageName(current));
+            for (char* q = label; *q; ++q)
+                *q = static_cast<char>(std::toupper(static_cast<unsigned char>(*q)));
+            drawText(fb, nx, y + node + 2, label, palColor(Pal::ACCENT));
         } else {
             fb.fillRect(nx, y, node, node, c);
         }

@@ -99,8 +99,9 @@
 //        frame lands inside the beaten rival's dissolve — pass a `beats` count to walk
 //        it. Bare "outro" shows whichever the pet's kit earns; "known" grants the
 //        rival's moves first, which turns the absorb back into a shred)
-// hacker (A+C → the Hacker face home) · hacker profile (the PROFILE
-// viewer) · hacker shop [hub] [row:<n>] [buy] (the SHOP; "hub" buys the MERGE HUB
+// hacker (A+C → the Hacker face home) · hacker profile [decorated] (the PROFILE
+// viewer; "decorated" seeds the widest identity it can hold — the longest crew
+// name, a Title equipped, and the rank that unlocks the longest rank title) · hacker shop [hub] [row:<n>] [buy] (the SHOP; "hub" buys the MERGE HUB
 //        first, which is what reveals its two recipe rows, and row:<n> A-cycles
 //        down the list to reach them) ·
 // hacker merge [recipes] [stock] (the MERGE HUB craft list — the slot is itself a
@@ -118,8 +119,11 @@
 #include "tunables.h"
 #include "core/app/game.h"
 #include "core/content/content_arcade.h"
+#include "core/content/content_crews.h"   // kCrews — the widest name the PROFILE holds
 #include "core/app/game_internal.h"   // kMergeRecipeCount — the MERGE HUB dump wins them all
+#include "core/model/hacker_rank.h"   // the rank ladder, for the widest title on it
 #include "core/render/canvas.h"
+#include "core/render/font.h"         // textWidth — picking the widest of a table
 #include "core/render/framebuffer.h"
 #include "core/render/palette.h"
 #include "core/render/scenes.h"
@@ -854,6 +858,29 @@ int main(int argc, char** argv) {
         for (int i = 0; i < 3; ++i) {               // a few SHAKES
             uint8_t bssid[6] = {0x02, 0, 0, 0, 0, static_cast<uint8_t>(i)};
             game.registerHandshake(bssid);
+        }
+        if (hasFlag(argc, argv, "decorated")) {
+            // The widest identity the operator screens can hold, all at once: the
+            // longest crew name on the roster, a zone Title equipped, and the rank the
+            // longest title on the ladder unlocks at. The default seed is a rank-2
+            // operator with no crew and no Title, which is exactly the state in which
+            // none of these lines have to share a row with anything.
+            int widest = 0;
+            for (int i = 1; i < kCrewCount; ++i)
+                if (textWidth(kCrews[i].displayName) >
+                    textWidth(kCrews[widest].displayName)) widest = i;
+            // Enlisting is gated on a home network, and the HOME NET row is one of the
+            // lines being looked at — so seed a long SSID rather than the shortest one
+            // that would let joinCrew through.
+            game.setHomeNetwork(0x001122334455ull, "THE_PROMISED_LAN");
+            game.joinCrew(widest);
+            game.debugUnlockTitle(0);
+            int longest = 0;
+            for (int i = 1; i < hackerRankTierCount(); ++i)
+                if (textWidth(hackerRankTitle(hackerRankTierUnlock(i))) >
+                    textWidth(hackerRankTitle(hackerRankTierUnlock(longest)))) longest = i;
+            game.debugSetNetworksSeen(hackerRankTierUnlock(longest) *
+                                      (kHackerRankXpPerRank / kHackerRankXpPerNetwork));
         }
         game.onButton({Button::A, true, true});     // A+C chord → hacker home (idle)
         auto enterHackerSlot = [&](HackerSlotId id) {

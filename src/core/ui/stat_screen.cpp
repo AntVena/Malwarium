@@ -249,17 +249,25 @@ void drawBuffsScreen(Framebuffer& fb, const std::vector<BuffRow>& rows, int scro
 }
 
 void drawSpeciesScreen(Framebuffer& fb, const char* name, const char* line,
-                       const char* hint, const char* context, int /*beat*/) {
+                       const char* hint, const char* context, int beat) {
     statHeader(fb, "SPECIES", 3);
 
-    drawText(fb, kMargin, 30, name ? name : "", palColor(Pal::INK));
+    // Name and line tag are both content, and the widest pair of them wants more than
+    // the line has: a twelve-letter creature beside METAMORPHIC LINE fills it exactly.
+    // The tag owns the right end — it is the fact this header adds that the rest of the
+    // page doesn't — and the name yields to it and scrolls.
+    char tag[24];
+    tag[0] = '\0';
     if (line && line[0]) {
-        char tag[24];
-        std::snprintf(tag, sizeof(tag), "%s LINE", line);
+        // The line, not "<line> LINE": on a page headed SPECIES the word adds nothing
+        // and cost 40px that several creatures need — a twelve-letter name beside
+        // "METAMORPHIC LINE" overran the row, and the name is what the page is about.
+        std::snprintf(tag, sizeof(tag), "%s", line);
         for (char* p = tag; *p; ++p)
             *p = static_cast<char>(std::toupper(static_cast<unsigned char>(*p)));
-        drawText(fb, kActiveW - kMargin - textWidth(tag), 30, tag, palColor(Pal::INK_DIM));
     }
+    drawLabelValue(fb, kMargin, 30, name ? name : "", palColor(Pal::INK), tag,
+                   palColor(Pal::INK_DIM), beat, true);
 
     // Tighter than the grid's kLineH: SPECIES stacks two wrapped prose blocks in one
     // screen, and the leading is what has to give.
@@ -303,14 +311,17 @@ void drawStatScreen(Framebuffer& fb, const PetModel& m, const char* name,
     const bool pulseOn = ((beat / 2) & 1) == 0;   // ~1Hz
     statHeader(fb, "STAT", 0);
 
-    // Name · generation · stage.
-    drawText(fb, kMargin, kRowTop, name, palColor(Pal::INK));
-    const char* st = stageName(stage);
-    const int stX = kActiveW - kMargin - textWidth(st);
-    drawText(fb, stX, kRowTop, st, palColor(Pal::ACCENT));
+    // Name · generation. The stage is NOT here: it is spelled out under its own node on
+    // the indicator below, which is where the reader is already looking to see how far
+    // along the pet is. Naming it twice cost the header 94px, and a pet's name is
+    // eleven or twelve characters often enough that the row was cutting it — the first
+    // Ransomware egg hatches as CryptoShell, into exactly that.
     char gen[12];
     std::snprintf(gen, sizeof(gen), "GEN %d", generation);
-    drawText(fb, stX - 6 - textWidth(gen), kRowTop, gen, palColor(Pal::INK_DIM));
+    const int genX = kActiveW - kMargin - textWidth(gen);
+    drawText(fb, genX, kRowTop, gen, palColor(Pal::INK_DIM));
+    drawTextMarquee(fb, kMargin, kRowTop, genX - kMargin - kMargin, name,
+                    palColor(Pal::INK), beat, true);
 
     drawStageIndicator(fb, kMargin, 40, 130, stage);
     // Creature level: LVL n beside the stage bar — text-only, grayscale-safe.

@@ -26,6 +26,7 @@
 #include "core/ui/mods_screen.h"
 #include "core/ui/stat_screen.h"
 #include "core/ui/train_screen.h"
+#include "core/ui/widgets.h"
 #include "core/ui/worm_replicas.h"
 #include "generated/assets.h"
 
@@ -481,8 +482,22 @@ void Game::drawAchievementBanner(Framebuffer& fb) const {
     fb.fillRect(0, bandY, kActiveW, 1, quiet);
     fb.fillRect(0, bandY + bandH - 1, kActiveW, 1, quiet);
 
+    // Every line on this plate is content — an achievement name, an egg line, an item
+    // — so none of them can be centred and left to run: a name that outgrows the canvas
+    // would be cut at BOTH ends, which is the one failure that reads as a rendering
+    // fault rather than as long copy. Centred while it fits, scrolled in the margins
+    // once it doesn't.
+    // The plate is full-bleed, so a centred line may use the whole canvas — the held
+    // plate's own instruction already spans it. Only what does not fit gets pulled in
+    // to the margins to scroll.
+    auto plateLine = [&](int ly, const char* s, Rgb565 col) {
+        const int w = textWidth(s);
+        if (w <= kActiveW) { drawText(fb, (kActiveW - w) / 2, ly, s, col); return; }
+        drawTextMarquee(fb, kMargin, ly, kActiveW - 2 * kMargin, s, col, beat_, true);
+    };
+
     const char* kicker = held ? "NEW EGG LINE" : "ACHIEVEMENT";
-    drawText(fb, (kActiveW - textWidth(kicker)) / 2, bandY + 5, kicker, quiet);
+    plateLine(bandY + 5, kicker, quiet);
 
     // A burst says how many first and names one of them, so a long back-catalogue drop
     // still tells the player something specific about what they got.
@@ -496,7 +511,7 @@ void Game::drawAchievementBanner(Framebuffer& fb) const {
         std::snprintf(line, sizeof(line), "%s", eggLine->displayName);
     else
         std::snprintf(line, sizeof(line), "%s", d->displayName);
-    drawText(fb, (kActiveW - textWidth(line)) / 2, bandY + 15, line, body);
+    plateLine(bandY + 15, line, body);
 
     // The third line is the reward, because that is the part with a consequence — a
     // Commendation Cache is sitting in the VAULT now and the player needs to know to
@@ -515,15 +530,20 @@ void Game::drawAchievementBanner(Framebuffer& fb) const {
         std::snprintf(reward, sizeof(reward), "LAY ONE NEXT HATCH - ANY KEY");
     else if (achBannerCount_ > 1)
         std::snprintf(reward, sizeof(reward), "%s +MORE", d->displayName);
-    else if (rewardItem && rewardBits > 0)
+    else if (rewardItem && rewardBits > 0) {
+        // Two rewards on one line is the only combination that outgrows the plate —
+        // "+400 BITS + COMMENDATION CACHE" is 30 characters against a 28-character
+        // canvas. The currency abbreviates to the B the shop prices already use, which
+        // buys back the three characters the pair needs.
         std::snprintf(reward, sizeof(reward), "+%d BITS + %s", rewardBits, rewardItem);
-    else if (rewardItem)
+        if (textWidth(reward) > kActiveW)
+            std::snprintf(reward, sizeof(reward), "+%d B + %s", rewardBits, rewardItem);
+    } else if (rewardItem)
         std::snprintf(reward, sizeof(reward), "+%s", rewardItem);
     else if (rewardBits > 0)
         std::snprintf(reward, sizeof(reward), "+%d BITS", rewardBits);
     if (reward[0])
-        drawText(fb, (kActiveW - textWidth(reward)) / 2, bandY + 25, reward,
-                 held ? body : palColor(Pal::CALM));
+        plateLine(bandY + 25, reward, held ? body : palColor(Pal::CALM));
 }
 
 bool Game::captureBadge(char* out, unsigned n) const {

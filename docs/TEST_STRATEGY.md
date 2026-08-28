@@ -60,6 +60,28 @@ For creature sprites, add the sprite gates from `assets/CREATURE_VISUAL_RULES.md
 **grayscale** (distinct value steps, not one flat blob), **cover-the-eyes** (body still reads as
 a solid object), **silhouette** (one clear idea at a glance).
 
+### Text has to fit, and that half IS automated
+
+The third thing a screen can fail is the cheapest to check and the easiest to miss in review: a
+line of copy wider than the room it was given. The font is monospaced at a fixed 8px advance
+(`core/render/font.h`), so every width is arithmetic and no renderer is needed to measure one.
+
+Two shapes, two homes:
+
+- **A pair on one line** — a label with a right-aligned value — goes through
+  `drawLabelValue`/`drawTextMarquee` (`core/ui/widgets.h`), which reserves the gap and clips
+  rather than letting the two print through each other. Drawn as two independent `drawText`
+  calls it fails the same way every time, and the frame still renders. Native gates hold the
+  content itself to the room: `test_operator_profile_rows_pack`,
+  `test_creature_name_headers_pack`, `test_effect_text_fits_its_screen_budget`,
+  `test_achievement_banner_lines_fit`.
+- **A centred footer hint** has no widget to clip it and is cut at BOTH ends when it overruns —
+  including the leading button letter. `tools/check_hint_bands.py` (the `hint_bands` ctest) reads
+  the literals where they are written and measures every one.
+
+What none of that sees is two things drawn on the same line by different code. That is what
+`./tools/screens.sh` is for — render the catalogue and look at it.
+
 ---
 
 ## Notes / limits

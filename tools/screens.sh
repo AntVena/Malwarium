@@ -61,6 +61,7 @@ SCENES=(
   "cfg_audit|cfg audit"             "cfg_updates|cfg updates ready found"
   "cfg_confirm|cfg updates ready confirm"
   "hacker_profile|hacker profile"   "hacker_shop|hacker shop hub"
+  "hacker_profile_wide|hacker profile decorated"
   "hacker_vault|hacker vault"       "hacker_crew|hacker crew joined"
   "hacker_crew_unset|hacker crew unset"
   "hacker_crew_side|hacker crew joined blue"

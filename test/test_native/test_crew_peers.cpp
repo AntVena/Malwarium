@@ -872,3 +872,68 @@ void test_crew_failover_survives_a_turn_with_no_cast() {
     CHECK(cb.player().lockedTurnsLeft == 0);     // the turn was spent on the lock
     CHECK(cb.player().crewExploit.charges == 2);
 }
+
+// --- The operator PROFILE's own layout budget ----------------------------------
+
+// PROFILE is the read-only operator viewer, and every line on it is content that grows:
+// a crew name, a zone Title, and a Hacker Rank title off a ladder that is meant to be
+// appended to. The screen draws each of them through the shared pair widget or a
+// full-width marquee, so nothing can print through anything else — but a value that
+// needs more room than the line has still costs the LABEL its letters, and that is a
+// loss no frame reports. This is the budget stated as an arithmetic fact.
+//
+// Two shapes, both taken from the screen rather than assumed:
+//   * a label/value ROW (drawLabelValue at kMargin) leaves the label
+//     kActiveW - 3*kMargin - valueWidth, one margin of gap included;
+//   * an identity LINE runs the full width between the margins.
+void test_operator_profile_rows_pack() {
+    constexpr int kPairRoom = kActiveW - 3 * kMargin;   // label + value, gap included
+    constexpr int kLineRoom = kActiveW - 2 * kMargin;   // one line, margin to margin
+    auto pairFits = [&](const char* label, const char* value) {
+        return textWidth(label) + textWidth(value) <= kPairRoom;
+    };
+
+    // RANK carries the widest value on the screen: "R{n} {title}". Swept over every
+    // named tier, over the ranks between them, and past the end of the ladder — the
+    // rank is unbounded and the title caps, so the worst case is somewhere in the
+    // middle rather than at either end.
+    char rankVal[24];
+    auto rankRow = [&](int rank) {
+        std::snprintf(rankVal, sizeof(rankVal), "R%d %s", rank, hackerRankTitle(rank));
+        return pairFits("RANK", rankVal);
+    };
+    for (int rank = 0; rank <= 200; ++rank) CHECK(rankRow(rank));
+    for (int t = 0; t < hackerRankTierCount(); ++t) CHECK(rankRow(hackerRankTierUnlock(t)));
+    CHECK(rankRow(9999));
+
+    // The same row on SYSTEM INFO, which packs differently: the value starts at a fixed
+    // column instead of yielding, so its room is what is left of the line from there.
+    constexpr int kInfoValX = kMargin + 48;             // cfg_screen's infoLine
+    for (int t = 0; t < hackerRankTierCount(); ++t) {
+        std::snprintf(rankVal, sizeof(rankVal), "R%d %s", hackerRankTierUnlock(t),
+                      hackerRankTitle(hackerRankTierUnlock(t)));
+        CHECK(textWidth(rankVal) <= kActiveW - kMargin - kInfoValX);
+    }
+
+    // The counted rows. Their values are numbers, so the ceiling is how many digits a
+    // lifetime tally can reach rather than any string in a table.
+    CHECK(pairFits("NETS", "999999"));
+    CHECK(pairFits("SHAKES", "999999"));
+    CHECK(pairFits("SPECIES", "999"));
+    CHECK(pairFits("QUEUED", "999/999"));
+    CHECK(pairFits("BANDWIDTH", "999/999"));
+
+    // HOME NET's value is an SSID off the air, which arrives at whatever width it
+    // likes — the row is gated on the LABEL still having room for its own letters.
+    CHECK(textWidth("HOME NET") <= kPairRoom / 2);
+
+    // The identity lines: crew and Title each own a line, because the widest pair of
+    // them does not share one. Each still has to fit the line it was given.
+    char titleTag[24];
+    for (int i = 0; i < kCrewCount; ++i) CHECK(textWidth(kCrews[i].displayName) <= kLineRoom);
+    for (int s = 0; s < kExplSectors; ++s) {
+        std::snprintf(titleTag, sizeof(titleTag), "* %s", sectorTitle(s));
+        CHECK(textWidth(titleTag) <= kLineRoom);
+    }
+    CHECK(textWidth("* NO TITLE") <= kLineRoom);
+}

@@ -121,6 +121,13 @@ if(Python3_Interpreter_FOUND)
     add_test(NAME comment_standard
              COMMAND ${Python3_EXECUTABLE}
                      ${CMAKE_SOURCE_DIR}/tools/check_comment_standard.py)
+    # The footer hint is centred across the whole canvas, so one character too many
+    # is cut at BOTH ends — including the leading button letter. Source-level for the
+    # same reason the two above are: the hints are literals spread over every screen,
+    # and a native test would have to keep a second copy of the list.
+    add_test(NAME hint_bands
+             COMMAND ${Python3_EXECUTABLE}
+                     ${CMAKE_SOURCE_DIR}/tools/check_hint_bands.py)
     # A gate written but never added to the roster doesn't run, and a green suite
     # says nothing about it. The compiler catches the other direction on its own.
     add_test(NAME test_roster
