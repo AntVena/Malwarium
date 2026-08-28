@@ -17,6 +17,9 @@ constexpr int kIcon = 28;                       // ASSET_ICON_* are 28x28
 constexpr int kIconInset = (kSlotW - kIcon) / 2; // 14 — centre in the 56px column
 constexpr int kIconTop = (kTrackH - kIcon) / 2;  // 6  — centre in the 40px track
 constexpr int kBoxPad = 3;                       // UI_CURSOR_BOX padding round icon
+constexpr int kLabelBoxPad = 2;                  // ...and round a WORD, which needs the
+                                                  // 2px back to fit the column (see
+                                                  // kCarouselLabelMaxChars in carousel.h)
 constexpr int kBoxThick = 2;
 constexpr uint8_t kDimAlpha = 140;               // ~50% wash over unfocused icons
 
@@ -40,6 +43,33 @@ void drawTextCentered(Framebuffer& fb, int x0, int w, int y, const char* s,
                       Rgb565 c, int scale = 1) {
     int tw = textWidth(s, scale);
     drawText(fb, x0 + (w - tw) / 2, y, s, c, scale);
+}
+
+// A slot rendered as its WORD instead of its icon, centred in the slot's column.
+// Both faces draw it through here so the two rosters cannot drift apart on where a
+// label sits — which is how one of them came to be measured against a box the other
+// had already outgrown.
+void drawSlotLabel(Framebuffer& fb, int cursor, const char* label, Rgb565 c) {
+    drawTextCentered(fb, slotCol(cursor) * kSlotW, kSlotW,
+                     slotTrackTop(cursor) + (kTrackH - kFontH) / 2, label, c);
+}
+
+// The focus box, and the one thing it must always do: FIT WHAT IT MARKS. Around an
+// icon that is the icon's own 28px cell; around a WORD it is the word, because a box
+// sized to the icon is narrower than any label past four characters and its side
+// strokes land on top of the glyphs (kCarouselLabelMaxChars, carousel.h, is the budget
+// that keeps a label inside the column at all).
+void drawSlotFocusBox(Framebuffer& fb, int cursor, bool asText, const char* label,
+                      Rgb565 c) {
+    if (asText) {
+        const int bw = textWidth(label) + 2 * kLabelBoxPad + 2 * kBoxThick;
+        const int bh = kFontH + 2 * kLabelBoxPad + 2 * kBoxThick;
+        strokeRect(fb, slotCol(cursor) * kSlotW + (kSlotW - bw) / 2,
+                   slotTrackTop(cursor) + (kTrackH - bh) / 2, bw, bh, c);
+        return;
+    }
+    strokeRect(fb, slotIconX(cursor) - kBoxPad, slotIconY(cursor) - kBoxPad,
+               kIcon + 2 * kBoxPad, kIcon + 2 * kBoxPad, c);
 }
 
 } // namespace
@@ -75,7 +105,7 @@ const HackerCarouselSlot* hackerCarouselSlots() {
     // rather than an empty grid, and a purchase visibly unlocks a slot instead of a
     // new one appearing from nowhere.
     static const HackerCarouselSlot kSlots[kCarouselSlots] = {
-        {"PROFILE", &ASSET_ICON_PROFILE, true,  HackerSlotId::Profile},
+        {"RANK",    &ASSET_ICON_PROFILE, true,  HackerSlotId::Profile},
         {"CREW",    &ASSET_ICON_CREW,    true,  HackerSlotId::Crew},
         {"SHOP",    &ASSET_ICON_SHOP,    true,  HackerSlotId::Shop},
         {"VAULT",   &ASSET_ICON_VAULT,   true,  HackerSlotId::Vault},
@@ -112,9 +142,7 @@ void drawHackerCarousel(Framebuffer& fb, int cursor, UiMode mode, int /*beat*/,
         if (asText) {
             const Rgb565 tc = (focused && accessible) ? palColor(Pal::ACCENT)
                                                       : palColor(Pal::INK_DIM);
-            const int col = slotCol(i) * kSlotW;
-            drawTextCentered(fb, col, kSlotW, slotTrackTop(i) + (kTrackH - kFontH) / 2,
-                             slots[i].label, tc);
+            drawSlotLabel(fb, i, slots[i].label, tc);
         } else {
             if (slots[i].icon) {
                 drawSprite(fb, *slots[i].icon, 0, ix, iy);
@@ -138,9 +166,8 @@ void drawHackerCarousel(Framebuffer& fb, int cursor, UiMode mode, int /*beat*/,
         }
 
         if (i == cursor)
-            strokeRect(fb, ix - kBoxPad, iy - kBoxPad, kIcon + 2 * kBoxPad,
-                       kIcon + 2 * kBoxPad,
-                       accessible ? palColor(Pal::ACCENT) : palColor(Pal::INK_DIM));
+            drawSlotFocusBox(fb, i, asText, slots[i].label,
+                             accessible ? palColor(Pal::ACCENT) : palColor(Pal::INK_DIM));
     }
 }
 
@@ -174,9 +201,7 @@ void drawCarousel(Framebuffer& fb, int cursor, UiMode mode, int beat,
             // Terse word in place of the icon: focused ACCENT, the rest (and any
             // locked slot) dimmed.
             const Rgb565 tc = focused ? palColor(Pal::ACCENT) : palColor(Pal::INK_DIM);
-            const int col = slotCol(i) * kSlotW;
-            drawTextCentered(fb, col, kSlotW, slotTrackTop(i) + (kTrackH - kFontH) / 2,
-                             slots[i].label, tc);
+            drawSlotLabel(fb, i, slots[i].label, tc);
         } else {
             // A spinning slot cycles its own frames off the shared beat; every other
             // slot rests on frame 0. Sprite frames are the whole animation state, so a
@@ -206,9 +231,8 @@ void drawCarousel(Framebuffer& fb, int cursor, UiMode mode, int beat,
         // locked slot still draws a box so the cursor is visible, but muted
         // (INK_DIM, not ACCENT) so the slot reads unavailable.
         if (i == cursor)
-            strokeRect(fb, ix - kBoxPad, iy - kBoxPad, kIcon + 2 * kBoxPad,
-                       kIcon + 2 * kBoxPad,
-                       locked ? palColor(Pal::INK_DIM) : palColor(Pal::ACCENT));
+            drawSlotFocusBox(fb, i, asText, slots[i].label,
+                             locked ? palColor(Pal::INK_DIM) : palColor(Pal::ACCENT));
     }
 }
 

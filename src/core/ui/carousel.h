@@ -25,6 +25,17 @@ struct CarouselSlot {
 
 constexpr int kCarouselSlots = 8;
 
+// The longest a slot LABEL may be, on either face. In IconsLabel (the default) and
+// TextOnly the focused slot draws its word where its icon was, inside a focus box that
+// is sized to the word — so the budget is what leaves room for that box inside one
+// 56px column: 6 glyphs at kFontAdvance, plus the box's padding and stroke.
+//
+// It is a hard bound rather than a guideline, because overrunning it fails silently:
+// the label simply draws through the box's side strokes and on into the neighbouring
+// column, on the screen every player sees first. test_carousel_labels_fit_their_box
+// holds both rosters to it.
+constexpr int kCarouselLabelMaxChars = 6;
+
 // The 8 slots in cursor order (== slot assignment 1..8).
 const CarouselSlot* carouselSlots();
 

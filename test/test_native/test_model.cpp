@@ -111,11 +111,18 @@ void test_carousel_focus_grayscale() {
     g.onButton(press(Button::A));   // carousel @ slot 0 (top-left)
     Framebuffer fb(kActiveW, kActiveH);
     g.render(fb);
-    // Box top-edge pixel of the focused slot (accent) vs the same point at the
-    // unfocused neighbour (bare track band) — separable without colour.
-    float lit = luminance(fb.get(12, 3));   // focused box border
-    float dim = luminance(fb.get(68, 3));   // slot-1 track margin, no box
-    CHECK(lit - dim > 0.3f);
+    // The focused slot's box stroke against the SAME pixel with nothing focused —
+    // separable without colour. Found by scanning rather than by a fixed coordinate:
+    // the box sits where the thing it marks sits, so an icon box and a label box are
+    // at different heights and a hardcoded sample only ever checks one of them.
+    Framebuffer rest(kActiveW, kActiveH);
+    drawCarousel(rest, /*cursor=*/-1, UiMode::IconsLabel, 0);
+    int boxX = -1, boxY = -1;
+    for (int y = 0; y < kTrackH && boxY < 0; ++y)
+        for (int x = 0; x < kSlotW; ++x)
+            if (fb.get(x, y) == palColor(Pal::ACCENT)) { boxX = x; boxY = y; break; }
+    CHECK(boxX >= 0);
+    CHECK(luminance(fb.get(boxX, boxY)) - luminance(rest.get(boxX, boxY)) > 0.3f);
 
     // The focused slot (slot 0, x in [0, kSlotW)) should render identically to
     // TextOnly there (both show text) and differently from IconsOnly (which
@@ -199,6 +206,71 @@ void test_carousel_autodefocus() {
     CHECK(r.nav() == Game::Nav::Cursor);
     r.tick(4000 + kAutoDefocusMs + 1);     // past the budget since reset -> idle
     CHECK(r.nav() == Game::Nav::Idle);
+}
+
+// Every carousel label fits INSIDE the focus box that marks it, on both faces.
+//
+// The box is the focus cue's shape channel, so a label wider than it does not merely
+// look tight — the box's side strokes draw straight through the glyphs, and a label
+// wider than the 56px column runs into its neighbour. This is the first screen a player
+// sees, in the default UI mode, so it is a gate rather than a looking-tool finding.
+//
+// Rendered rather than measured from the string, because the property is about the BOX:
+// a padding change could bust it with every label the same length it always was. Both
+// rosters go through the same two helpers (drawSlotLabel / drawSlotFocusBox), and this
+// is what holds them to it.
+void test_carousel_labels_fit_their_box() {
+    const Rgb565 accent = palColor(Pal::ACCENT);
+
+    // The budget itself, stated directly: a label past it cannot fit any box.
+    for (int i = 0; i < kCarouselSlots; ++i) {
+        CHECK(std::strlen(carouselSlots()[i].label) <= size_t(kCarouselLabelMaxChars));
+        CHECK(std::strlen(hackerCarouselSlots()[i].label) <= size_t(kCarouselLabelMaxChars));
+    }
+
+    // ...and the drawn proof. Focus each slot in turn and confirm that every accent
+    // pixel in that slot's own column — box stroke and glyph alike — sits within the
+    // horizontal span of the box's top stroke. A label poking out of the box, or over
+    // the column edge, puts an accent pixel outside that span.
+    for (int face = 0; face < 2; ++face) {
+        for (int slot = 0; slot < kCarouselSlots; ++slot) {
+            Framebuffer fb(kActiveW, kActiveH);
+            // An inaccessible slot still draws a box so the cursor stays visible, but
+            // in INK_DIM — so the ink to look for is whichever colour this slot wears.
+            bool live = true;
+            if (face == 0) {
+                drawCarousel(fb, slot, UiMode::IconsLabel, 0);
+            } else {
+                const HackerCarouselSlot& hs = hackerCarouselSlots()[slot];
+                live = hs.accessible || hs.id == HackerSlotId::Merge;
+                drawHackerCarousel(fb, slot, UiMode::IconsLabel, 0,
+                                   /*mergeUnlocked=*/true);
+            }
+            const Rgb565 ink = live ? accent : palColor(Pal::INK_DIM);
+            const int col = (slot % kSlotCols) * kSlotW;
+            const int top = slot < kSlotCols ? 0 : kLivingBottom;
+
+            int firstRow = -1, lo = kSlotW, hi = -1;
+            for (int y = top; y < top + kTrackH; ++y)
+                for (int x = col; x < col + kSlotW; ++x)
+                    if (fb.get(x, y) == ink) {
+                        if (firstRow < 0) firstRow = y;
+                        if (x - col < lo) lo = x - col;
+                        if (x - col > hi) hi = x - col;
+                    }
+            CHECK(firstRow >= 0);            // a focused slot always draws its box
+
+            // The box's top stroke: the contiguous accent run on the topmost lit row.
+            int boxLo = -1, boxHi = -1;
+            for (int x = col; x < col + kSlotW; ++x) {
+                if (fb.get(x, firstRow) != ink) { if (boxLo >= 0) break; continue; }
+                if (boxLo < 0) boxLo = x - col;
+                boxHi = x - col;
+            }
+            CHECK(boxLo >= 0 && boxHi > boxLo);
+            CHECK(lo >= boxLo && hi <= boxHi);   // nothing sticks out of the box
+        }
+    }
 }
 
 // Each UI Mode renders; none float text into the living area, and IconsLabel
