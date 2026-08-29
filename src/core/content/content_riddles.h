@@ -8,7 +8,16 @@
 //
 // ADDING ONE IS ONE ROW, and that is the design goal:
 //
-//     {"I WAIT FOREVER FOR ONE WHO WAITS FOR ME.", {"DEADLOCK", "TIMEOUT", "RACE"}},
+//     {"TWO MEN SAID THE SAME WORD, AND I MADE THEM STRANGERS.",
+//      {"A SALT", "A CIPHER", "A NONCE"}},
+//
+// WHAT MAKES A ROW A RIDDLE AND NOT A QUIZ. A riddle misdirects — the imagery points at
+// a person, a place, an animal, and every line turns out to have been literally true of
+// the answer only once you have it. A row that merely DEFINES its answer is trivia in a
+// riddle's clothes: it can be answered by anyone who knows the term and by nobody else,
+// which makes reading the Cant worth nothing. If a row can be answered without
+// re-reading it, it is not finished. The decoys carry the other half of that — each is a
+// real term the imagery could plausibly have pointed at, so a fluent pet still thinks.
 //
 // THE FIRST REPLY IS THE TRUE ONE, always. The three are SHUFFLED when the riddle is
 // asked (Game::startShibboleth), so authoring position carries no information and an
