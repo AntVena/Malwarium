@@ -8,16 +8,24 @@
 //
 // ADDING ONE IS ONE ROW, and that is the design goal:
 //
-//     {"TWO MEN SAID THE SAME WORD, AND I MADE THEM STRANGERS.",
-//      {"A SALT", "A CIPHER", "A NONCE"}},
+//     {"I AM THE ONLY PART OF A WALL THAT AGREES WITH YOU.",
+//      {"A DOOR", "A WINDOW", "A CRACK"}},
 //
-// WHAT MAKES A ROW A RIDDLE AND NOT A QUIZ. A riddle misdirects — the imagery points at
+// A ROW MUST BE A RIDDLE, NOT A DEFINITION. A riddle misdirects — the imagery points at
 // a person, a place, an animal, and every line turns out to have been literally true of
-// the answer only once you have it. A row that merely DEFINES its answer is trivia in a
-// riddle's clothes: it can be answered by anyone who knows the term and by nobody else,
-// which makes reading the Cant worth nothing. If a row can be answered without
-// re-reading it, it is not finished. The decoys carry the other half of that — each is a
-// real term the imagery could plausibly have pointed at, so a fluent pet still thinks.
+// the answer only once you have it. A row that describes its answer in its answer's own
+// terms is trivia in a riddle's clothes. If a row can be answered without re-reading it,
+// it is not finished.
+//
+// AND ITS ANSWER MUST BE A WORD ANYONE KNOWS — a door, an echo, a name, nothing. Never a
+// nonce, an off-by-one, a passive scan. Someone who solves the riddle and still cannot
+// answer it has been beaten by vocabulary rather than by the puzzle, which defeats the
+// entire screen: the point of learning the CANT is that READING the question is what
+// wins it. The machine belongs in the guardian's voice, never in the word it wants back
+// — a stale record is a ghost that still answers to a name, and anyone can answer that.
+//
+// The decoys carry the rest: each is a plain word the imagery could honestly have been
+// pointing at, so a fluent pet still has to choose and a blind pick stays a real gamble.
 //
 // THE FIRST REPLY IS THE TRUE ONE, always. The three are SHUFFLED when the riddle is
 // asked (Game::startShibboleth), so authoring position carries no information and an

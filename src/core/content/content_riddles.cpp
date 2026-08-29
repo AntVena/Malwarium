@@ -8,96 +8,113 @@ namespace mal {
 
 namespace {
 
-// A guardian is a thing that watches a network and has done so for a very long time, so
-// what it asks about is the machinery it lives inside. But it does not ask the way a
-// manual would. It asks the way the old riddles do — a doorway, a fence, a gift, a
-// letter home — and the answer turns out to be a computer, which the guardian does not
-// know it is talking about.
+// A guardian is a thing that watches a network and has done so for a very long time. It
+// asks the way the old riddles ask — a door, a mirror, a shadow, a candle burning down —
+// and it does not know it is a program.
 //
-// THE FORM, and it is the whole difference between this pool and a quiz. A riddle
-// MISDIRECTS: the imagery points at a person, a place, an animal, and every line is
-// literally true of the answer only once you have it. "I sat in your room all evening
-// and touched nothing" is a houseguest until it is a passive scan. A row that merely
-// DEFINES its answer ("I hold what you give me and return it backwards") is trivia
-// wearing a riddle's clothes — it is answerable only by someone who already knows the
-// word, which makes reading the Cant worth nothing. If a row can be answered without
-// re-reading it, it is not finished.
+// TWO RULES, AND THE SECOND IS THE ONE THAT KEEPS GETTING BROKEN.
 //
-// THE DECOYS carry the other half. Each is a real term that the imagery could plausibly
-// have been pointing at — a collision for a race, a fork for a worm, reflection for
-// recursion — so a fluent pet still has to think, and a blind pick stays a real gamble.
+// 1. IT MUST BE A RIDDLE, not a definition. A riddle MISDIRECTS: the imagery points at a
+//    person, a place, an animal, and every line turns out to have been literally true
+//    only once you hold the answer. A row that describes its answer in its answer's own
+//    terms is trivia in a riddle's clothes. If a row can be answered without re-reading
+//    it, it is not finished.
+//
+// 2. THE ANSWER MUST BE A WORD ANYONE KNOWS. A door, an echo, a name, nothing. NOT a
+//    nonce, an off-by-one, a passive scan. A player who solves the riddle and still
+//    cannot answer it has been beaten by vocabulary rather than by the puzzle, and that
+//    is the worst outcome this screen has: the whole point of learning the CANT is that
+//    reading the question is what wins it. The strangeness belongs in the guardian's
+//    VOICE, never in the word it wants back.
+//
+// So the machine shows up as flavour and not as jargon. A stale record is a ghost that
+// still answers to a name; the 'net is a web of nothing but lines and gaps. Anyone can
+// answer those, and they still sound like something a watching thing would ask.
+//
+// THE DECOYS carry the rest. Each is a plain word the imagery could honestly have been
+// pointing at, so a fluent pet still has to choose, and a blind pick stays a real gamble.
 const RiddleDef kRiddles[] = {
-    // --- Things that wait, and things that go wrong ------------------------
-    {"TWO OF US STAND IN A DOORWAY, EACH WAITING FOR THE OTHER TO PASS. WE ARE PATIENT.",
-     {"A DEADLOCK", "A TIMEOUT", "A STALL"}},
-    {"I AM THE MOMENT YOU STOP BELIEVING AN ANSWER IS COMING.",
-     {"A TIMEOUT", "A DEADLOCK", "A DROP"}},
-    {"WE ARRIVED TOGETHER AND BOTH SWEAR WE WERE FIRST. ASK AGAIN, THE STORY CHANGES.",
-     {"A RACE", "A COLLISION", "A FAULT"}},
-    {"I WAS TOLD TO WALK UNTIL I GREW TIRED. I HAVE NO LEGS.",
-     {"AN INFINITE LOOP", "A DEADLOCK", "A STALL"}},
-    {"I BUILT A FENCE A HUNDRED PACES LONG, A POST AT EVERY PACE. I AM ONE SHORT.",
-     {"AN OFF BY ONE", "AN OVERFLOW", "A ROUNDING"}},
-    {"KEEP POURING. THE CUP DOES NOT COMPLAIN. THE TABLE IS WHERE THE WINE WILL BE.",
-     {"AN OVERRUN", "A LEAK", "A FLUSH"}},
-    {"I WALKED EAST UNTIL I CAME HOME FROM THE WEST. I NEVER ONCE TURNED ROUND.",
-     {"AN OVERFLOW", "A LOOP", "A ROUTE"}},
-    {"I TAKE A LITTLE OF THE ROOM EACH TIME WE SPEAK, AND NEVER GIVE IT BACK.",
-     {"A LEAK", "A LOOP", "A CACHE"}},
-    {"EVERY HAND THAT REACHES FOR ME FALLS THROUGH. I AM NOT EMPTY. I AM NOT THERE.",
-     {"A NULL", "A VOID", "A GAP"}},
+    // --- Things that copy you ----------------------------------------------
+    {"I COPY YOU EXACTLY AND I HAVE LEARNED NOTHING. LOOK AWAY AND I FORGET YOU.",
+     {"A MIRROR", "A SHADOW", "A WINDOW"}},
+    {"I SPEAK ONLY IN YOUR VOICE, AND ONLY ONCE YOU HAVE FINISHED. I HAVE NO IDEAS.",
+     {"AN ECHO", "A PARROT", "A MIRROR"}},
+    {"I FOLLOW YOU EVERYWHERE AND HAVE NEVER TOUCHED YOU. LIGHT MAKES ME AND UNMAKES ME.",
+     {"A SHADOW", "A GHOST", "A FOOTPRINT"}},
+    {"THERE ARE TWO OF US AND ONLY ONE WAS BORN. NEITHER OF US WILL SAY WHICH.",
+     {"A TWIN", "A REFLECTION", "A RUMOUR"}},
+    {"I AM THE SHAPE OF SOMEONE NO LONGER HERE, AND I STILL ANSWER TO THEIR NAME.",
+     {"A GHOST", "A MEMORY", "A STATUE"}},
 
-    // --- Things that pretend -----------------------------------------------
-    {"I WROTE TO YOUR MOTHER IN YOUR OWN HAND, AND SHE WROTE BACK TO ME.",
-     {"A SPOOF", "A PROXY", "A RELAY"}},
-    {"I WAS A GIFT. YOU CARRIED ME IN YOURSELF.",
-     {"A TROJAN", "A WORM", "A ROOTKIT"}},
-    {"I AM THE ONLY DOOR LEFT STANDING OPEN. WALK IN. YOU ARE EXPECTED.",
-     {"A HONEYPOT", "A BACKDOOR", "A GATEWAY"}},
-    {"THE BUILDER CUT ME FOR HIMSELF AND TOLD NO ONE. I HAVE NO LOCK.",
-     {"A BACKDOOR", "A HONEYPOT", "A GATEWAY"}},
-    {"THE DOOR HAS STOOD OPEN SINCE THE HOUSE WAS BUILT. TODAY IS THE FIRST DAY.",
-     {"A ZERO DAY", "A BACKDOOR", "AN EXPLOIT"}},
-    {"EVERYTHING YOU OWN IS STILL HERE. I HAVE PUT IT OUT OF REACH. I SELL LADDERS.",
-     {"A RANSOM", "A LOCKOUT", "A PAYWALL"}},
-    {"I AM TEN THOUSAND STRANGERS WHO AGREED ON ONE THING WITHOUT BEING ASKED.",
-     {"A BOTNET", "A SWARM", "A QUORUM"}},
+    // --- Things that let you in, or do not ---------------------------------
+    {"I AM THE ONLY PART OF A WALL THAT AGREES WITH YOU.",
+     {"A DOOR", "A WINDOW", "A CRACK"}},
+    {"I HAVE NO OPINION AND I REFUSE EVERYONE EQUALLY.",
+     {"A WALL", "A GUARD", "A LOCK"}},
+    {"I AM SMALL AND CUT WITH TEETH, AND I HAVE NEVER EATEN. I OPEN A HOUSE I DO NOT LIVE IN.",
+     {"A KEY", "A TOOTH", "A THIEF"}},
+    {"EVERYONE WHO WANTS IN MUST MAKE ME AN OFFER, AND I ACCEPT ONLY ONE.",
+     {"A LOCK", "A DOOR", "A TOLL"}},
+    {"I LET IN THE WORLD AND KEEP OUT THE WEATHER. BREAK ME AND I DO NEITHER.",
+     {"A WINDOW", "A DOOR", "A ROOF"}},
+    {"I AM USELESS LYING DOWN.",
+     {"A LADDER", "A BRIDGE", "A DOOR"}},
+    {"I AM A HOUSE WITH NO DOOR. WHOEVER IS INSIDE MUST BREAK THE WALLS TO LEAVE.",
+     {"AN EGG", "A TOMB", "A CAGE"}},
 
-    // --- Things that remember ----------------------------------------------
-    {"I HAVE SEEN YOUR FACE AND KEPT NO PICTURE OF IT, YET I WOULD KNOW YOU ANYWHERE.",
-     {"A HASH", "A CIPHER", "A KEY"}},
-    {"TWO MEN SAID THE SAME WORD, AND I MADE THEM STRANGERS.",
-     {"A SALT", "A CIPHER", "A NONCE"}},
-    {"YOU MADE ME FROM YOUR DOG AND THE YEAR YOU WERE BORN. SO DID NINE THOUSAND MORE.",
-     {"A PASSWORD", "A NONCE", "A SALT"}},
-    {"SPEND ME ONCE AND I AM GOLD. SPEND ME TWICE AND I AM NOTHING.",
-     {"A NONCE", "A TOKEN", "A COOKIE"}},
-    {"I HAVE A TWIN. WHAT I SHUT, ONLY THEY MAY OPEN. WE HAVE NEVER MET.",
-     {"A KEY PAIR", "A PASSPHRASE", "A HANDSHAKE"}},
-    {"I TURN YOUR LETTER INTO A FIELD OF STONES. YOUR FRIEND STILL SEES THE LETTER.",
-     {"A CIPHER", "A HASH", "A DIGEST"}},
-    {"NOBODY SPEAKS TO ME FOR YEARS. THEN I AM THE MOST IMPORTANT THING IN THE HOUSE.",
-     {"A BACKUP", "A LOG", "A CACHE"}},
-    {"I REMEMBER EVERY PROMISE YOU BROKE, AND MENTION IT ONLY AFTER THE FIRE.",
-     {"A LOG", "A BACKUP", "A CACHE"}},
-    {"I ANSWER FASTER THAN THE ONE WHO KNOWS. SOMETIMES FOR A HOUSE THAT BURNED DOWN.",
-     {"A CACHE", "A PROXY", "A MIRROR"}},
+    // --- Things that are not there -----------------------------------------
+    {"SAY MY NAME AND I AM GONE.",
+     {"SILENCE", "A SECRET", "THE DARK"}},
+    {"THE MORE YOU TAKE FROM ME, THE LARGER I BECOME.",
+     {"A HOLE", "A DEBT", "A WOUND"}},
+    {"THE POOR HAVE ME. THE RICH NEED ME. EAT ME AND YOU WILL DIE.",
+     {"NOTHING", "DUST", "A SECRET"}},
+    {"I AM IN EVERY ROOM BEFORE YOU ARRIVE, AND I LEAVE THE MOMENT YOU LOOK.",
+     {"THE DARK", "DUST", "SILENCE"}},
+    {"I AM ALWAYS COMING AND I NEVER ARRIVE.",
+     {"TOMORROW", "A PROMISE", "THE HORIZON"}},
 
-    // --- Things that count, and things that carry --------------------------
-    {"I STAND BETWEEN TWO MIRRORS AND COUNT WHAT I SEE, ONE FEWER EACH TIME, THEN STOP.",
-     {"RECURSION", "REFLECTION", "ITERATION"}},
-    {"I ASKED ONE FRIEND FOR HELP. HE ASKED TWO. BY MORNING THE TOWN WAS IN MY KITCHEN.",
-     {"A DEPENDENCY", "A BOTNET", "A BROADCAST"}},
-    {"I SAT IN YOUR ROOM ALL EVENING AND TOUCHED NOTHING. I KNOW EVERY NAME THAT SPOKE.",
-     {"A PASSIVE SCAN", "A BROADCAST", "A PROBE"}},
-    {"I HAVE NOTHING TO SAY AND I SAY IT EVERY SECOND. WHEN I STOP, THEY COME LOOKING.",
-     {"A HEARTBEAT", "A HANDSHAKE", "A CHECKSUM"}},
-    {"I LET NOBODY IN AND EVERYBODY OUT, AND I AM PROUD OF HALF OF THAT.",
-     {"A FIREWALL", "A GATEWAY", "A ROUTER"}},
-    {"CUT ME IN TWO AND YOU HAVE DOUBLED ME.",
-     {"A WORM", "A FORK", "A TROJAN"}},
+    // --- Things that carry, and things that hold ---------------------------
+    {"I AM MADE OF NOTHING BUT LINES AND GAPS, AND STILL I HOLD THINGS.",
+     {"A WEB", "A CAGE", "A BASKET"}},
+    {"PULL BOTH MY ENDS AND I ONLY TIGHTEN. BE GENTLE AND I COME APART.",
+     {"A KNOT", "A ROPE", "A TRAP"}},
+    {"I AM ONLY AS STRONG AS MY WORST PART, AND EVERYONE KNOWS WHICH ONE THAT IS.",
+     {"A CHAIN", "A ROPE", "A BRIDGE"}},
+    {"EVERYONE WALKS ON ME ON THEIR WAY SOMEWHERE, AND I AM GOING NOWHERE AT ALL.",
+     {"A BRIDGE", "A ROAD", "A STAIR"}},
+    {"I GO EVERYWHERE AND I HAVE NEVER MOVED.",
+     {"A ROAD", "A RIVER", "A MAP"}},
+    {"I HOLD CITIES WITH NO PEOPLE IN THEM AND RIVERS WITH NO WATER.",
+     {"A MAP", "A DREAM", "A RUIN"}},
+
+    // --- Things that pass between people -----------------------------------
+    {"I BELONG TO YOU, AND EVERYONE ELSE USES ME MORE THAN YOU DO.",
+     {"A NAME", "A VOICE", "A SHADOW"}},
+    {"I TRAVEL FURTHER THAN THE TRUTH AND I ALWAYS GET THERE FIRST.",
+     {"A LIE", "A RUMOUR", "AN ECHO"}},
+    {"TELL ME TO ONE PERSON AND I AM HALF GONE. TELL TWO AND I AM NO LONGER YOURS.",
+     {"A SECRET", "A RUMOUR", "A PROMISE"}},
+    {"I AM MADE OF BREATH AND NOTHING ELSE, AND MEN HAVE DIED STILL HOLDING ME.",
+     {"A PROMISE", "A NAME", "A SONG"}},
+    {"I VISIT EVERYONE AND I AM NEVER REMEMBERED CORRECTLY.",
+     {"A DREAM", "A GHOST", "A RUMOUR"}},
+    {"I AM MANY AND I AM SPOKEN OF AS ONE. TAKE ONE AWAY AND I DO NOT NOTICE.",
+     {"A CROWD", "AN ARMY", "A SWARM"}},
+
+    // --- Things that run out -----------------------------------------------
+    {"THE LONGER I STAND, THE SHORTER I GROW.",
+     {"A CANDLE", "A SHADOW", "A DAY"}},
+    {"THE MORE OF ME YOU TAKE, THE MORE OF ME YOU LEAVE BEHIND.",
+     {"FOOTSTEPS", "A TRAIL", "A SHADOW"}},
+    {"I WAS A MOUNTAIN ONCE. I AM IN YOUR LUNGS NOW.",
+     {"DUST", "ASH", "SAND"}},
+    {"I HAVE A FACE AND TWO HANDS, AND I HAVE NEVER ONCE WAVED.",
+     {"A CLOCK", "A STATUE", "A MIRROR"}},
+    {"I HAVE A MOUTH AND NEVER SPEAK, A BED AND I NEVER SLEEP.",
+     {"A RIVER", "A CAVE", "A VALLEY"}},
     {"I DIE AT THE MOMENT I AM UNDERSTOOD.",
-     {"A RIDDLE", "A RUMOUR", "A WARNING"}},
+     {"A RIDDLE", "A SECRET", "A WARNING"}},
 };
 
 }  // namespace
