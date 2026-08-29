@@ -98,7 +98,14 @@ inline constexpr CreatureDef kMetamorphicCreatures[] = {
      "Eight arms folded into the shape of a person. It holds the pose well at a distance, and not at all once it decides it no longer needs to.",
      "Malware cloning / entry-point obscuring",
      {MoveKind::Attack, MoveKind::Defend, MoveKind::Attack, MoveKind::Attack},
-     /*evolvesToTrojanId=*/nullptr, /*evolvesToTrojanBadId=*/nullptr, Locomotion::Swim},
+     /*evolvesToTrojanId=*/nullptr, /*evolvesToTrojanBadId=*/nullptr, Locomotion::Swim,
+     // One row of eight 64x64 cells. The Daemon cell is 64 tall, which is the box's
+     // ceiling, so the pose has no room to rise and falls: the crown is pinned and the
+     // whole idle lives in the arms — the chest curtain swaying and the side arms
+     // breathing. gen_assets cuts this sheet only because FRAME_W_OVERRIDES names it;
+     // 512 does not divide by 56, and 64 does not divide by the 48 a row is measured in,
+     // so the height buys one row rather than more.
+     /*clips=*/{{"idle", /*row=*/0, /*frames=*/8, /*holdBeats=*/2}}},
 };
 inline constexpr int kMetamorphicCreatureCount =
     sizeof(kMetamorphicCreatures) / sizeof(kMetamorphicCreatures[0]);

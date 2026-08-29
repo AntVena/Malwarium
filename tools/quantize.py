@@ -11,11 +11,15 @@ a sheet that is already on-palette.
 
 WHY EACH PASS EXISTS — every one of these is a bug that shipped or nearly did:
 
-  SHARPEN BEFORE THE RESIZE (--height). Generated source arrives two to four times the
-  size of the cell it has to live in. A plain area-average at 4:1 melts adjacent forms
-  into one flat mass — two tentacles side by side become a paddle. An unsharp pass on the
-  SOURCE first keeps the seam that tells them apart. Order matters: sharpening after the
-  resize just amplifies what the average already threw away.
+  SHARPEN BEFORE THE RESIZE (--height), AT A STRENGTH THAT FOLLOWS THE RATIO. Generated
+  source arrives two to four times the size of the cell it has to live in. A plain
+  area-average at 4:1 melts adjacent forms into one flat mass — two tentacles side by
+  side become a paddle. An unsharp pass on the SOURCE first keeps the seam that tells
+  them apart. Order matters: sharpening after the resize just amplifies what the average
+  already threw away. But the pass only rescues a steep trip: on a gentle one it is the
+  thing doing the damage, driving every edge to the palette's extremes so ink and
+  highlight both grow while the mid tones between them vanish. So it runs at full
+  strength from 2:1 and ramps to nothing at 1:1.
 
   AREA-AVERAGE, NOT NEAREST. Nearest-neighbour deletes whole rows and columns, and thin
   detail sits on exactly those lines: one measured egg lost 3,983 one-pixel features that
@@ -183,7 +187,19 @@ def main():
     mask = accent_mask(im, accents) if accents else None
     if a.height:
         w = round(im.width * a.height / im.height)
-        lit = im.filter(ImageFilter.UnsharpMask(radius=3, percent=180, threshold=2))
+        # The sharpen's strength FOLLOWS THE RATIO, because the pass is a rescue for a
+        # steep trip down and damage on a gentle one. Full strength from 2:1 — the
+        # regime it was written for and measured in — then ramped to nothing at 1:1.
+        # Radius 3 at 180% on an image barely being resized does not preserve a seam,
+        # it drives every edge to the palette's extremes: measured on a Metamorphic
+        # Daemon strip at 1.11:1, the fixed pass took the deep tones from 37% of the
+        # drawing to 18%, grew the ink from 21% to 33%, and invented a 19% highlight
+        # where the source had none. At the ramped strength the same trip reproduces
+        # the source's value structure to within a point.
+        ratio = im.height / a.height
+        percent = 180 if ratio >= 2 else max(0, round(180 * (ratio - 1)))
+        lit = (im.filter(ImageFilter.UnsharpMask(radius=3, percent=percent, threshold=2))
+               if percent else im)
         im = lit.resize((w, a.height), Image.BOX)
         if mask is not None:
             mask = mask.resize((w, a.height), Image.BOX)

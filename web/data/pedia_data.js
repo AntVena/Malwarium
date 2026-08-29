@@ -589,7 +589,7 @@ window.PEDIA_DATA = {
       "sprite": "assets/sprites/SPR_PET_TENTACLONE.png",
       "cellW": 64,
       "cellH": 64,
-      "sheetW": 64,
+      "sheetW": 512,
       "sheetH": 64
     }
   ],

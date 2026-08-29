@@ -323,6 +323,37 @@ which is why gameplay ships first and the drawing follows.
   two per frame into the silhouette edge. Both are repaired by snapping the sheet back to the line's
   hexes before packing, and neither shows up by eye — the sheet looks right and measures wrong, so
   measure the palette rather than trusting it.
+- **The round trip REDRAWS, so the source decides what survives it, not the prompt.** Three faults
+  come back on every attempt and none of them answers to wording, however specific the negative
+  prompt. **The silhouette inflates** — a Metamorphic Daemon asked for a near-motionless idle grew
+  its hood from 64 to 71 logical px across the loop, past the ceiling `kCombatMaxBodyH`
+  (`core/ui/combat_screen.h`) sizes the seat band to. **Small accents desaturate**: this line's eyes
+  come back cream whatever size they are drawn, and taking them from 17 to 24 accent px changed
+  nothing. **Overlapping limbs tangle**, because the redraw has to resolve the overlap afresh in
+  every frame and the resolutions disagree. What DOES work is fixing the drawing first — separating
+  the limbs that cross, and enlarging what has to read — and then asking for small in-place motion.
+  Asking instead for a new SCULPT (a hovering octopus told to become a streamlined travelling one)
+  returns a different creature with a limb grown over its head, so a second sculpt is a second
+  drawing, never a second prompt. Asking for framing headroom does not work either: "leave a tenth
+  of the canvas empty above it" returned full-bleed twice, the same overshoot the framing note below
+  records.
+- **Snapping a Metamorphic sheet takes NEITHER `--accent` NOR the eye accent in its palette.** Both
+  are consequences of the band arithmetic in `CREATURE_VISUAL_RULES.md §4`. `quantize.py --accent`
+  floods this line — 839 px stamped on one strip — because its "bright, and not red-dominant" rule
+  catches the round trip's drifted peach; and `#e9ff8f` sitting one luminance off `#ffe6cc` means a
+  luminance-weighted snap cannot tell the eye accent from the top highlight, so any area-average
+  tips blended pixels at random and streaks the coral arms yellow-green. Snap the BODY against the
+  tones that are not the accent, then put the accent back. `SPR_PET_TENTACLONE` restamps its eyes
+  from a fixed two-box mask rather than by shape: seating pins the head, so the eye pixels land on
+  identical coordinates in every frame and the mask is exact where a shape heuristic mistook stripe
+  fragments for eyes.
+- **`quantize.py --height` is safe at a gentle ratio only since its sharpen learned to follow one.**
+  The unsharp pass is a rescue for the 2:1..4:1 trip it was written for and damage below that; at
+  1.11:1 the fixed strength halved a sheet's deep tones and invented a 19% highlight where the
+  source had none. It now ramps to nothing at 1:1, which is what makes a small trip down — the one
+  an inflated silhouette needs to fit its cell — reproduce the source's value structure instead of
+  polarising it. Measure the deep-tone share before and after regardless; it is the number that
+  catches this, and the sheet looks plausible either way.
 - **An egg line ships ONE egg file, not two.** `SPR_PET_EGG_PHISH_HATCH` and
   `SPR_PET_EGG_WORM_HATCH` are each an 8-frame `56×48` sheet that is both the idle loop (frames
   0–1) and the hatch one-shot (0–7, walked by `Game::hatchCrackFrame`). A separately-drawn

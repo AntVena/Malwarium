@@ -154,6 +154,24 @@ two violets share that one rung on purpose — it gains a shade in its own colou
 a second camouflage slot. Keep sprite violet desaturated and clear of `PAL_CORE`'s fragmentation
 pair (frag-lo `#7a3df0`, frag-hi `#ff5cb8`); the vocabularies must not collide.
 
+**"Owns a rung" is arithmetic, so a new tone on this line has to be placed rather than picked.**
+`camoRampFrom` bins by luminance into `kCamoRampMax` bands of 32, so the tell's two violets (144
+and 158) are both band 4, 128-159. Any tone added to a Metamorphic sheet that lands in that band
+puts body mass on the rings' rung and the disguise stops giving them back — which is the one
+failure the paragraph above exists to prevent. So compute the luminance before choosing the hue.
+Two tones landing in the SAME band is the other half of the same arithmetic and costs something
+different: `#ffe6cc` (234) and `#e9ff8f` (235) are both band 7, one apart, which is why the eye
+accent and the top highlight are indistinguishable to a luminance-weighted snap — see the round
+trip notes in [ASSET_MANIFEST.md](ASSET_MANIFEST.md) §C for what that does to a resampled sheet.
+
+**Tentaclone carries teal bioluminescence, and it is a BRANCH mark rather than the line's.**
+`#3cd6c8` at luminance 166 is band 5, clear of the tell's band and clear of both the eye's
+yellow-green and the rings' violet, so the creature's three signals stay separable: rings on the
+hood, eyes on the face, a glowing stripe down the centre of every hanging arm with coral showing
+along both its edges. It sits on top of the mother colour the way the Ransomware cat branch's
+second head does, so it says Bad branch and not Metamorphic. Whether Syncaelia answers it with a
+mark of its own is open, and is a question for whenever that sheet is next drawn.
+
 **A Trojan wears the colour of the line it diverted from**, since it is pretending to be one —
 right hue, one small "wrong" tell. That makes a Trojan's brief a re-skin of its origin line rather
 than a new silhouette, and it follows from the rule above rather than being a separate one.

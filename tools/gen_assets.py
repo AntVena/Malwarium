@@ -165,6 +165,9 @@ FRAME_W_OVERRIDES = {
     # SPR_PET_ sheet on 56px only when the width divides by it, and 768 does not, so
     # without this the whole strip reads as one very wide single frame.
     "SPR_PET_WIRE_HEIR": 96,
+    # 512x64 = eight 64x64 frames, the same case one cell narrower. 64 does not divide
+    # by 56 either, so the Metamorphic Daemon needs the row here to animate at all.
+    "SPR_PET_TENTACLONE": 64,
 }
 
 
