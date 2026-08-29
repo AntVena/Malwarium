@@ -74,7 +74,13 @@ const AreaDef kAreaNapstorrentMoors = {
     /*wildDefendMoveId=*/"private_tracker",
     // Who watches the Moors: the keeper of the listing. Everything out here exists
     // because it is written down, and it is the one doing the writing.
-    {"THE INDEX KEEPER", {"delisted"}},
+    {"THE INDEX KEEPER",
+     {"delisted"},
+     // Keeper of the listing. Everything out here exists because it is written down, and
+     // it is the one doing the writing — so a pet is a clerical matter until it answers.
+     {{"YOU ARE NOT YET WRITTEN DOWN.", "IT LOOKS FOR YOUR NAME."},
+      {"ANSWER, AND I WILL ADD YOU.", "IT HOLDS A PLACE OPEN."},
+      {"WHAT IS NOT LISTED IS NOT HERE.", "YOU ARE A FILING MATTER."}}},
     {"MOOR-TO-MOOR", kShopListings, arrLen(kShopListings)},
     {"MOOR TO MODS", kModShopListings, arrLen(kModShopListings)},
     kModPool,

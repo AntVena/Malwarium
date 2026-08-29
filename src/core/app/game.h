@@ -1072,6 +1072,12 @@ public:
     int shibbolethRow() const { return shibRow_; }
     const char* guardianName() const;
     void shibbolethRiddleText(char* out, int cap) const;
+    // The two halves of what the guardian is doing. `shibbolethGreeting` is what it SAYS,
+    // already drawn in the Cant like the riddle; `guardianDemeanour` is what the pet can
+    // SEE, always plain — the pair is the whole reason a pet with no sigils still comes
+    // away with something (GuardianLine, area_defs.h).
+    void shibbolethGreeting(char* out, int cap) const;
+    const char* guardianDemeanour() const;
     void shibbolethReplyText(int row, char* out, int cap) const;
     // Which shown row carries the true reply. Exposed for the gates — the screen never
     // asks, and neither does anything on the press path.
@@ -3119,6 +3125,10 @@ private:
     // rather than in the pool is what keeps "add a riddle" a one-line edit.
     uint8_t shibOrder_[kRiddleReplies] = {0, 1, 2};
     int shibRow_ = 0;           // the cursor
+    // Which of the guardian's greeting/demeanour pairs this meeting used
+    // (GuardianLine, area_defs.h). Rolled per encounter, so a guardian met twice is not
+    // word-for-word the same meeting.
+    int shibLine_ = 0;
     char shibFlavor_[40] = "";  // what the guardian's answer was, for the walk's line
 
     // Real-network discovery (game_net.cpp, core/net/network_ledger.h). Three

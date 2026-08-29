@@ -85,7 +85,13 @@ const AreaDef kAreaCastleRapidscare = {
     /*wildDefendMoveId=*/"captcha_gate",
     // Who watches the Castle: the last thing asked before a name becomes an address.
     // It can answer that a thing does not exist, and be believed.
-    {"THE LAST RESOLVER", {"no_such_name"}},
+    {"THE LAST RESOLVER",
+     {"no_such_name"},
+     // The last thing asked before a name becomes an address. It can answer that a thing
+     // does not exist and be believed, and there is nobody above it to ask instead.
+     {{"GIVE ME A NAME. I WILL DECIDE.", "IT WAITS AS A JUDGE DOES."},
+      {"I CAN SAY YOU DO NOT EXIST.", "IT IS ENTIRELY UNHURRIED."},
+      {"THERE IS NO ONE AFTER ME.", "THERE IS NO APPEAL HERE."}}},
     {"SPAM & SCRAM", kShopListings, arrLen(kShopListings)},
     {"THE GHOST IN THE MACHINE", kModShopListings, arrLen(kModShopListings)},
     kModPool,

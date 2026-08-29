@@ -323,6 +323,9 @@ int g_failures = 0;
     RUN(test_a_complete_cant_earns_boons)         \
     RUN(test_guardian_outclasses_the_rung_it_is_met_on) \
     RUN(test_every_area_has_a_guardian_with_its_own_move) \
+    RUN(test_every_guardian_speaks_and_fits_the_panel) \
+    RUN(test_guardian_greeting_rides_the_riddles_cipher) \
+    RUN(test_a_fluent_pet_hears_the_guardian_plainly) \
     RUN(test_cant_persists_across_a_reboot)       \
     RUN(test_facing_mirror_reverses_the_draw)     \
     RUN(test_facing_mirror_reaches_every_creature_blit) \

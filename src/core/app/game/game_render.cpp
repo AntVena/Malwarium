@@ -926,8 +926,11 @@ void Game::drawShibbolethScreen(Framebuffer& fb) const {
         shibbolethReplyText(i, reply[i], sizeof(reply[i]));
         rows[i] = reply[i];
     }
+    char greeting[kRiddleBodyCols * 2 + 8];
+    shibbolethGreeting(greeting, sizeof(greeting));
     const float held = static_cast<float>(exploreEventBeat_) / kShibbolethReplyHoldBeats;
-    drawShibboleth(fb, guardianName(), riddle, rows, shibRow_, cantSigils_, held);
+    drawShibboleth(fb, guardianName(), guardianDemeanour(), greeting, riddle, rows,
+                   shibRow_, cantSigils_, held);
 }
 
 void Game::drawShopScreen(Framebuffer& fb) const {

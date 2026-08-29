@@ -24,15 +24,26 @@ class Framebuffer;
 
 // The SHIBBOLETH board.
 //
-// `guardian` names who is asking (the header). `riddle` is the enciphered question,
-// flowed across kRiddleBodyLines. `replies` are the kRiddleReplies enciphered choices in
-// the order they are shown, `cursor` is the focused row. `sigils` is the learned-letter
-// bitmask (bit i = 'A'+i reads plain) that the foot strip draws.
+// `guardian` names who is asking (the header). `demeanour` is what the pet can SEE the
+// guardian doing — always plain words, drawn dim above everything else as the stage
+// direction it is. `greeting` is what the guardian SAYS, and `riddle` is what it then
+// asks; both arrive already enciphered, so both are gibberish to a pet with no sigils
+// and plain speech to a fluent one.
+//
+// That split is the screen's whole argument. A player who cannot read a word of the Cant
+// is not staring at nothing: they can see the thing is waiting, or blocking the way, or
+// listening — and as sigils come in the words arrive underneath a gesture they already
+// understood, which is how anyone picks up a language nobody sat them down to teach.
+//
+// `replies` are the kRiddleReplies enciphered choices in the order they are shown,
+// `cursor` is the focused row. `sigils` is the learned-letter bitmask (bit i = 'A'+i
+// reads plain) that the foot strip draws.
 //
 // `holdFrac` is how much of the answer clock has run, 0..1 — drawn as a bar, because a
 // guardian that will take silence for an answer has to SHOW that it is running out of
 // patience. It is the only thing on this screen that moves.
-void drawShibboleth(Framebuffer& fb, const char* guardian, const char* riddle,
+void drawShibboleth(Framebuffer& fb, const char* guardian, const char* demeanour,
+                    const char* greeting, const char* riddle,
                     const char* const replies[kRiddleReplies], int cursor,
                     uint32_t sigils, float holdFrac);
 

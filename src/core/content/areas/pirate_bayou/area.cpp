@@ -77,7 +77,13 @@ const AreaDef kAreaPirateBayou = {
     /*wildDefendMoveId=*/"rar_password",
     // Who watches the Bayou: the thing that decides which door opens, and has never
     // once explained the sequence.
-    {"THE PORT WARDEN", {"port_knock"}},
+    {"THE PORT WARDEN",
+     {"port_knock"},
+     // Decides which door opens and has never once explained the sequence. Officious
+     // rather than cruel: there IS a right answer, and it is simply not posted.
+     {{"STATE YOUR BUSINESS. CORRECTLY.", "IT BLOCKS THE WAY."},
+      {"THE SEQUENCE IS NOT POSTED.", "IT WANTS SOMETHING EXACT."},
+      {"MANY KNOCK. FEW ARE ADMITTED.", "IT COUNTS YOU."}}},
     {"PIER-TO-PEER", kShopListings, arrLen(kShopListings)},
     {"PHISHY CHIPS", kModShopListings, arrLen(kModShopListings)},
     kModPool,

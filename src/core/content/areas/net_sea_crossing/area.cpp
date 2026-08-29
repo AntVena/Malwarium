@@ -80,7 +80,13 @@ const AreaDef kAreaNetSeaCrossing = {
     /*wildDefendMoveId=*/"eula_wall",
     // Who watches the crossing: something far down the cable that has heard every
     // packet that ever went over it and has never sent one of its own.
-    {"THE DEEP LISTENER", {"deep_listen"}},
+    {"THE DEEP LISTENER",
+     {"deep_listen"},
+     // Far down the cable, and has heard every packet that ever crossed it without
+     // sending one of its own. Speaking at all is an event for it.
+     {{"I HAVE HEARD YOU BEFORE.", "IT DOES NOT MOVE AT ALL."},
+      {"SAY IT AGAIN. I AM CERTAIN NOW.", "IT LEANS WITHOUT MOVING."},
+      {"I SPEAK SO RARELY. FORGIVE ME.", "SOMETHING OLD IS AWAKE."}}},
     {"FLOATING POINT", kShopListings, arrLen(kShopListings)},
     {"THE HARDENED SHELL", kModShopListings, arrLen(kModShopListings)},
     kModPool,

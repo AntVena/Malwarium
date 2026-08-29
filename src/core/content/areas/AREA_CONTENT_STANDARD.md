@@ -83,11 +83,32 @@ the SHIBBOLETH: it speaks the Cant, and grades its welcome on how much of that t
 (`game_shibboleth.cpp`, `core/model/cant.h`). So a guardian has no sub-area, no clear flag, and
 no place in the EXPL list.
 
-The row carries **only what is that guardian's own** — its banner, and what beating it teaches:
+The row carries **only what is that guardian's own** — its banner, what beating it teaches, and
+its VOICE:
 
 ```
-{"THE LONG SEEDER", {"ratio_debt"}},
+{"THE LONG SEEDER",
+ {"ratio_debt"},
+ {{"YOU ARE LATE. THEY WERE ALL LATE.", "IT HAS WAITED SO LONG."},
+  {"I STILL HAVE EVERY FILE. ASK ME.",  "IT HOLDS OUT NOTHING."},
+  {"STAY. THE OTHERS DID NOT STAY.",    "IT HOPES YOU WILL STAY."}}},
 ```
+
+**Each `GuardianLine` is one moment said twice**, and the pair is the whole mechanism. `cant` is
+what it SAYS, enciphered with the same mapping as the riddle — gibberish to a pet with no sigils,
+plain speech to a fluent one. `seen` is what the pet OBSERVES, always in plain words, because you
+can read a body without sharing a language.
+
+So a player who cannot read a word of the Cant is not staring at nothing: they can see the thing
+is waiting, or blocking the way, or offering something that is not there. As sigils come in the
+words arrive underneath a gesture they already understood, which is how anyone picks up a language
+nobody sat them down to teach.
+
+Budget, held by `test_every_guardian_speaks_and_fits_the_panel`: `seen` is **one** panel line and
+`cant` is at most **two**. A stage direction that runs long stops being a glance and starts
+competing with the riddle, which is the thing the player is meant to be reading. No line may be
+shared between two guardians — the five sounding like five different things is the point of
+authoring them at all.
 
 How far it out-classes the area is the SAME step for every area (`kGuardianHealthBonusPct` and
 friends, `tunables.h`) and stays cross-cutting for the reason the section below gives. It is

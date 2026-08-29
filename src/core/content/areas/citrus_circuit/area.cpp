@@ -75,7 +75,13 @@ const AreaDef kAreaCitrusCircuit = {
     // Who watches the Circuit: a seeder that never went offline, still serving a
     // swarm that dispersed years ago. It asks before it acts, which nothing else here
     // does.
-    {"THE LONG SEEDER", {"ratio_debt"}},
+    {"THE LONG SEEDER",
+     {"ratio_debt"},
+     // Still serving a swarm that dispersed years ago, and has not been told. Everything
+     // it says is an offer nobody has accepted in a very long time.
+     {{"YOU ARE LATE. THEY WERE ALL LATE.", "IT HAS WAITED SO LONG."},
+      {"I STILL HAVE EVERY FILE. ASK ME.", "IT HOLDS OUT NOTHING."},
+      {"STAY. THE OTHERS DID NOT STAY.", "IT HOPES YOU WILL STAY."}}},
     {"BYTE TO EAT", kShopListings, arrLen(kShopListings)},
     {"CHIP SHOP", kModShopListings, arrLen(kModShopListings)},
     kModPool,

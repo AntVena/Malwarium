@@ -155,9 +155,38 @@ struct SubBossDef {
 // `teaches` is bounded by kMaxBossTeaches for the reason that constant gives: a kit is
 // turns spent, not bytes stored. It is also the only thing that makes those moves
 // findable at all, exactly as on SubBossDef.
+// How many greeting/demeanour pairs one guardian carries. Three, because the pool has to
+// be big enough that a guardian is not one-note across a save and small enough that
+// giving one a VOICE is an afternoon's writing rather than a project.
+constexpr int kGuardianLines = 3;
+
+// One thing a guardian does when it meets a pet, said twice.
+//
+// `cant` is what it SAYS, in its own language — enciphered with the same mapping as the
+// riddle (Game::shibbolethGreeting), so it is gibberish to a pet with no sigils and
+// plain speech to a fluent one. `seen` is what the pet OBSERVES, always in plain words,
+// because you can read a body without sharing a language.
+//
+// The two describe the SAME moment, and that is the whole mechanism: at zero sigils the
+// demeanour is all a player has, and as the Cant comes in they watch the words arrive
+// underneath a gesture they already understood. So the pair teaches — a player who has
+// seen "IT HOLDS OUT NOTHING" a dozen times has a standing guess at what the words above
+// it mean, which is how anyone learns a language they were not taught.
+//
+// `seen` is ONE panel line (kRiddleBodyCols) and `cant` is at most two. A stage
+// direction that runs long stops being a glance and starts competing with the riddle,
+// which is the thing the player is actually supposed to be reading.
+struct GuardianLine {
+    const char* cant;
+    const char* seen;
+};
+
 struct GuardianDef {
     const char* name;
     const char* teaches[kMaxBossTeaches] = {};
+    // What it says and what it looks like saying it — see GuardianLine. One is drawn per
+    // encounter, rolled, so a guardian met twice is not word-for-word the same meeting.
+    GuardianLine lines[kGuardianLines] = {};
 };
 
 struct AreaDef {

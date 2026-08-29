@@ -51,6 +51,19 @@ uint32_t cipherSeed(uint32_t rng, int area, int steps) {
 }
 }  // namespace
 
+namespace {
+// The guardian's line pair for this meeting, bounds-safe. A row that authored fewer than
+// kGuardianLines leaves null cells, and a null `cant`/`seen` would be a blank line rather
+// than a crash — but the content gate rejects an under-filled row, so this is the
+// defensive floor and not a supported shape.
+const GuardianLine& guardianLine(const AreaDef& a, int i) {
+    static const GuardianLine kNone{"", ""};
+    if (i < 0 || i >= kGuardianLines) return kNone;
+    const GuardianLine& l = a.guardian.lines[i];
+    return (l.cant && l.seen) ? l : kNone;
+}
+}  // namespace
+
 const char* Game::guardianName() const {
     // The guardian of wherever the pet is standing. The DeepWeb has no AreaDef and so no
     // guardian of its own; nothing routes a dive here, and the clamp is what makes that
@@ -88,6 +101,10 @@ void Game::startShibboleth() {
     shibWelcome_ = ShibbolethWelcome::Riddle;
     shibReply_ = ShibbolethReply::Pending;
     shibRow_ = 0;
+
+    // Which of this guardian's greeting/demeanour pairs it meets the pet with.
+    rng_ = rng_ * 1664525u + 1013904223u;
+    shibLine_ = static_cast<int>((rng_ >> 16) % kGuardianLines);
 
     const int n = riddleCount();
     if (n <= 0) { startGuardianCombat(); return; }   // empty pool — nothing to ask
@@ -225,6 +242,21 @@ void Game::shibbolethRiddleText(char* out, int cap) const {
     out[0] = '\0';
     if (shibRiddle_ < 0 || shibRiddle_ >= riddleCount()) return;
     shibCipher_.applyTo(riddles()[shibRiddle_].text, out, cap);
+}
+
+void Game::shibbolethGreeting(char* out, int cap) const {
+    if (!out || cap <= 0) return;
+    out[0] = '\0';
+    const int a = (exploreSector_ >= 0 && exploreSector_ < kAreaCount) ? exploreSector_ : 0;
+    // The SAME cipher the riddle is drawn in, deliberately: a letter the pet cannot read
+    // has to be unreadable everywhere on the screen, or the greeting would quietly leak
+    // the mapping the riddle is asking it to work without.
+    shibCipher_.applyTo(guardianLine(area(a), shibLine_).cant, out, cap);
+}
+
+const char* Game::guardianDemeanour() const {
+    const int a = (exploreSector_ >= 0 && exploreSector_ < kAreaCount) ? exploreSector_ : 0;
+    return guardianLine(area(a), shibLine_).seen;
 }
 
 void Game::shibbolethReplyText(int row, char* out, int cap) const {

@@ -358,6 +358,73 @@ void test_every_area_has_a_guardian_with_its_own_move() {
     }
 }
 
+// Every guardian has a VOICE, and it fits the panel: a full set of greeting/demeanour
+// pairs, each `seen` one line and each `cant` at most two (shibboleth_screen.cpp's
+// budget). The `seen` line is the one a pet with no sigils is reading, so a row that
+// overran it would clip exactly the text the whole pairing exists to deliver.
+void test_every_guardian_speaks_and_fits_the_panel() {
+    const int bodyW = kRiddleBodyCols * kFontAdvance;
+    std::set<std::string> said;
+    for (int a = 0; a < kAreaCount; ++a) {
+        for (const GuardianLine& l : area(a).guardian.lines) {
+            CHECK(l.cant != nullptr && l.cant[0] != '\0');   // no half-filled row
+            CHECK(l.seen != nullptr && l.seen[0] != '\0');
+            if (!l.cant || !l.seen) continue;
+            CHECK(textWidth(l.seen) <= bodyW);               // the demeanour: ONE line
+            CHECK(textWrapLines(l.cant, bodyW) <= 2);        // what it says: at most two
+            for (const char* p = l.cant; *p; ++p) CHECK(*p >= 32 && *p <= 126);
+            for (const char* p = l.seen; *p; ++p) CHECK(*p >= 32 && *p <= 126);
+            // A line reused between two guardians would flatten the one thing these rows
+            // exist for, which is that the five sound like five different things.
+            CHECK(said.insert(l.cant).second);
+            CHECK(said.insert(l.seen).second);
+        }
+    }
+}
+
+// The greeting is drawn in the SAME cipher as the riddle. Enciphering it any other way —
+// or not at all — would leak the mapping the riddle is asking the player to work without,
+// and a pet with no sigils would be reading the guardian's speech but not its question.
+void test_guardian_greeting_rides_the_riddles_cipher() {
+    Game g{StartMode::Hatched};
+    enterWalk(g);
+    CHECK(reachRiddle(g));
+    char greet[80];
+    g.shibbolethGreeting(greet, sizeof(greet));
+    CHECK(greet[0] != '\0');
+    // At zero sigils NOTHING it says reads plainly: every letter is drawn as another, so
+    // the enciphered greeting cannot equal any authored one.
+    CHECK(g.sigilsKnown() == 0);
+    for (int a = 0; a < kAreaCount; ++a)
+        for (const GuardianLine& l : area(a).guardian.lines)
+            if (l.cant) CHECK(std::strcmp(greet, l.cant) != 0);
+    // The demeanour is the other half and is NEVER enciphered — it is what the pet sees,
+    // and it has to be readable from the very first meeting or the pair teaches nothing.
+    const char* seen = g.guardianDemeanour();
+    CHECK(seen != nullptr && seen[0] != '\0');
+    bool authored = false;
+    for (int a = 0; a < kAreaCount; ++a)
+        for (const GuardianLine& l : area(a).guardian.lines)
+            if (l.seen && std::strcmp(seen, l.seen) == 0) authored = true;
+    CHECK(authored);
+}
+
+// A FLUENT pet hears the guardian plainly — the payoff the whole ladder climbs to. With
+// the Cant complete the cipher is the identity, so what it says arrives verbatim.
+void test_a_fluent_pet_hears_the_guardian_plainly() {
+    Game g{StartMode::Hatched};
+    enterWalk(g);
+    g.debugLearnSigils(kCantSigils);
+    CHECK(reachRiddle(g));
+    char greet[80];
+    g.shibbolethGreeting(greet, sizeof(greet));
+    bool authored = false;
+    for (int a = 0; a < kAreaCount; ++a)
+        for (const GuardianLine& l : area(a).guardian.lines)
+            if (l.cant && std::strcmp(greet, l.cant) == 0) authored = true;
+    CHECK(authored);
+}
+
 // --- Persistence -----------------------------------------------------------
 
 // The Cant and the purse survive a reboot (save v59). A device that learned a language
