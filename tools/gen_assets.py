@@ -2,8 +2,10 @@
 """
 gen_assets.py  —  Malwarium build-time asset + palette codegen.
 
-Converts the shippable PNGs in assets/ into RGB565 + alpha C++ arrays, and
-PAL_CORE.json into a role-token palette table, written to src/generated/.
+Converts the shippable PNGs in assets/ into C++ sprite arrays, and PAL_CORE.json
+into a role-token palette table, written to src/generated/. A sheet is stored in
+whichever of SpriteData's three forms it fits (core/render/sprite.h): a 1-bit mask,
+`bpp`-bit indices into a derived palette, or full RGB565 + alpha.
 
 Design notes
 ------------
@@ -18,6 +20,8 @@ Design notes
   56xN-frame strip) rather than one tall frame — see PET_ROW_H below.
 
 Run from the repo root:  python3 tools/gen_assets.py
+`--palettes` prints what each sheet's derived palette holds instead of generating, which
+is the survey behind a tools/snap_palette.py pass.
 """
 
 import os
@@ -347,12 +351,16 @@ def gen_sprites():
             cx0, cx1 = 0, fw
         decls.append(f"extern const SpriteData {sym};")
         ink = mask_ink(rgb_vals, a_vals)
-        if ink is None:
-            defs.append(_emit_sprite(sym, w, cell_h, fw, rows, cx0, cx1,
-                                     facing(name), rgb_vals, a_vals))
-        else:
+        pal = None if ink is not None else sheet_palette(rgb_vals, a_vals)
+        if ink is not None:
             defs.append(_emit_mask(sym, w, h, cell_h, fw, rows, cx0, cx1, facing(name),
                                    a_vals, ink))
+        elif pal is not None:
+            defs.append(_emit_indexed(sym, w, h, cell_h, fw, rows, cx0, cx1,
+                                      facing(name), rgb_vals, a_vals, pal))
+        else:
+            defs.append(_emit_sprite(sym, w, cell_h, fw, rows, cx0, cx1,
+                                     facing(name), rgb_vals, a_vals))
         table.append((name, sym, w, h, fw, w // fw, rows))
     return decls, defs, table
 
@@ -381,6 +389,37 @@ def mask_ink(rgb_vals, a_vals):
         elif rgb != ink:
             return None                  # more than one colour
     return ink                           # None for a fully transparent image: no ink
+
+
+def sheet_palette(rgb_vals, a_vals):
+    """This sheet's distinct (colour, coverage) pairs, most-used first, or None.
+
+    The palette is DERIVED, never declared: whatever pairs the pixels actually hold are
+    the palette, so a repainted or extended sheet needs no table kept in step with it and
+    a new colour costs one more entry — and, only when the count crosses a power of two,
+    one more bit per pixel. Ordering by frequency is what makes that cheap to look at: the
+    tail of a creature's palette is where stray anti-aliasing and off-model pixels collect,
+    and `--palettes` prints it.
+
+    Every fully transparent pixel collapses to one entry regardless of the RGB under it, so
+    a sheet's own background never widens the palette. None means more than 256 entries —
+    an image an 8-bit index cannot address, which keeps full storage.
+    """
+    counts = {}
+    for rgb, a in zip(rgb_vals, a_vals):
+        key = (0, 0) if a == 0 else (rgb, a)
+        counts[key] = counts.get(key, 0) + 1
+    if len(counts) > 256:
+        return None
+    return [k for k, _ in sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))]
+
+
+def index_bpp(n):
+    """Bits needed to address `n` palette entries."""
+    b = 1
+    while (1 << b) < n:
+        b += 1
+    return b
 
 
 def _emit_sprite(sym, w, cell_h, fw, rows, cx0, cx1, face, rgb_vals, a_vals):
@@ -412,6 +451,40 @@ def _emit_mask(sym, w, h, cell_h, fw, rows, cx0, cx1, face, a_vals, ink):
         f"static const uint8_t {sym}_bits[] = {{{bits_arr}}};\n"
         f"const SpriteData {sym} = {{ {w}, {cell_h}, {fw}, {w // fw}, {rows}, "
         f"{cx0}, {cx1}, {face}, nullptr, nullptr, {sym}_bits, 0x{ink:04x} }};\n"
+    )
+
+
+def _emit_indexed(sym, w, h, cell_h, fw, rows, cx0, cx1, face, rgb_vals, a_vals, pal):
+    """Pack the sheet as `bpp`-bit palette indices, row-major, MSB first.
+
+    Rows are padded to a whole byte like the mask form, for the same reason — a row starts
+    on a byte boundary, so the reader's index math needs no carry between rows. Within a
+    row an index may straddle a byte, which is why one pad byte follows the array: it is
+    what makes the two-byte window spriteIndexAt reads in-bounds on the last pixel.
+    """
+    bpp = index_bpp(len(pal))
+    lut = {key: i for i, key in enumerate(pal)}
+    stride = (w * bpp + 7) // 8
+    packed = bytearray(stride * h + 1)
+    for y in range(h):
+        base = y * stride * 8
+        for x in range(w):
+            i = y * w + x
+            idx = lut[(0, 0) if a_vals[i] == 0 else (rgb_vals[i], a_vals[i])]
+            bit = base + x * bpp
+            for k in range(bpp):
+                if idx & (1 << (bpp - 1 - k)):
+                    packed[(bit + k) >> 3] |= 0x80 >> ((bit + k) & 7)
+    bits_arr = ", ".join(str(b) for b in packed)
+    pal_arr = ", ".join(f"0x{c:04x}" for c, _ in pal)
+    palA_arr = ", ".join(str(a) for _, a in pal)
+    return (
+        f"static const uint8_t {sym}_bits[] = {{{bits_arr}}};\n"
+        f"static const uint16_t {sym}_pal[] = {{{pal_arr}}};\n"
+        f"static const uint8_t {sym}_palA[] = {{{palA_arr}}};\n"
+        f"const SpriteData {sym} = {{ {w}, {cell_h}, {fw}, {w // fw}, {rows}, "
+        f"{cx0}, {cx1}, {face}, nullptr, nullptr, {sym}_bits, 0, "
+        f"{sym}_pal, {sym}_palA, {bpp} }};\n"
     )
 
 
@@ -544,7 +617,38 @@ def emit_assets_source(defs):
     return "\n".join(lines)
 
 
+def report_palettes():
+    """Print every sheet's derived palette, biggest first — the survey behind a fold.
+
+    A sheet's cost is `ceil(log2(entries))` bits per pixel, so what matters is not the
+    palette's size but which side of a power of two it sits on, and that is decided by a
+    tail of one- and two-pixel entries rather than by the colours the art is drawn in.
+    The `drift` column is how many entries are worn by fewer than 50 pixels: fold them
+    and the sheet may drop a bit. tools/snap_palette.py is what does the folding.
+    """
+    for name, rel in sorted(asset_paths().items()):
+        w, h, rgba = decode_png_rgba(os.path.join(REPO, rel))
+        rgb_vals = [rgb565(rgba[i], rgba[i + 1], rgba[i + 2]) for i in range(0, len(rgba), 4)]
+        a_vals = [rgba[i + 3] for i in range(0, len(rgba), 4)]
+        if mask_ink(rgb_vals, a_vals) is not None:
+            continue                              # a mask has one colour and no tail
+        counts = {}
+        for rgb, a in zip(rgb_vals, a_vals):
+            key = (0, 0) if a == 0 else (rgb, a)
+            counts[key] = counts.get(key, 0) + 1
+        n = len(counts)
+        bpp = index_bpp(n) if n <= 256 else 24
+        drift = sum(1 for c in counts.values() if c < 50)
+        floor = index_bpp(max(1, n - drift)) if n <= 256 else 24
+        print(f"{name:34} {w}x{h:<4} {n:4} entries  {bpp} bpp  "
+              f"drift {drift:3}  -> {floor} bpp")
+        for (c, a), cnt in sorted(counts.items(), key=lambda kv: -kv[1]):
+            print(f"    0x{c:04x} a={a:<3} {cnt:6}")
+
+
 def main():
+    if "--palettes" in sys.argv[1:]:
+        return report_palettes()
     os.makedirs(OUT_DIR, exist_ok=True)
     decls, defs, table = gen_sprites()
     tokens, themes = gen_palette()

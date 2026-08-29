@@ -78,10 +78,10 @@ void drawAbsorb(Framebuffer& fb, const SpriteData& s, int frame,
             // Each per-block quantity below is a slice of this one scatter, so a block
             // keeps its own departure time, fan and shiver for the whole sweep.
             const uint32_t h = dissolveHash(px, py);
-            // A flat ICON_* mask has no colour of its own and takes the tint; a
-            // full-colour sprite keeps its pixels, so a creature comes apart into its
+            // A flat ICON_* mask has no colour of its own and takes the tint; a sprite
+            // that stores colours keeps its pixels, so a creature comes apart into its
             // own blocks rather than into a silhouette of itself.
-            const Rgb565 col = s.bits ? tint : spriteColorAt(s, sx, row * cellH + py);
+            const Rgb565 col = spriteIsMask(s) ? tint : spriteColorAt(s, sx, row * cellH + py);
 
             // Departure time: how far down the pull this block sits, blended with its
             // own scatter, then compressed into kDepartSpan.

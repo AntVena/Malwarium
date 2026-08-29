@@ -55,7 +55,7 @@ CamoRamp camoRampFrom(const SpriteData& s, int frame, int row) {
     // A 1-bit mask has exactly one colour by construction, so there is nothing to rank:
     // its ink is both the main colour and the whole palette, and the ladder derived from
     // it is what turns a pet camouflaged as a Worm GREYSCALE rather than flat white.
-    if (s.bits) return camoRampFromTone(s.ink, kCamoRampMax);
+    if (spriteIsMask(s)) return camoRampFromTone(s.ink, kCamoRampMax);
 
     // Tally the frame's colours in a fixed table — no allocation, and a sprite that
     // overflows it is one whose rarest tones we can afford to miss. Kept deliberately

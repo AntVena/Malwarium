@@ -34,25 +34,35 @@ enum class Facing : uint8_t { None = 0, Right, Left };
 // pass `row` are unaffected. `rows` defaults to 1 so a zero-initialized
 // SpriteData (tests, placeholders) still addresses row 0 validly.
 //
-// TWO STORAGE FORMS, distinguished by `bits`:
+// THREE STORAGE FORMS, distinguished by `bits` and `pal`:
 //
-//   FULL COLOUR (`bits == nullptr`) — `rgb` + `a`, one entry each per pixel. What a
-//   creature sheet needs, and the only form that can hold more than one colour or a
-//   partial-alpha edge.
+//   FULL COLOUR (`bits == nullptr`) — `rgb` + `a`, one entry each per pixel. The floor,
+//   and the only form that can hold more distinct pixel values than an 8-bit index
+//   addresses.
 //
-//   1-BIT MASK (`bits != nullptr`) — a packed bitmap plus the one colour `ink` that
-//   every set bit takes; `rgb`/`a` are null. Most of the ICON_*/UI_* family is a single
-//   flat fill on transparent with no partial-alpha pixel anywhere, because dim/bright is
-//   engine brightness and colour is applied at draw time (drawSpriteTinted). Stored as
-//   RGB565 + alpha, such a glyph spends 24 bytes per pixel-bit of real information; as a
-//   mask it is exactly its own shape. The generator DETECTS this rather than keying off
-//   the name — an asset qualifies iff every alpha is 0 or 255 and every opaque pixel
-//   shares one colour — so the output is pixel-identical either way, and an icon that is
-//   ever drawn with a gradient simply stays full colour.
+//   1-BIT MASK (`bits != nullptr`, `pal == nullptr`) — a packed bitmap plus the one
+//   colour `ink` that every set bit takes; `rgb`/`a` are null. Most of the ICON_*/UI_*
+//   family is a single flat fill on transparent with no partial-alpha pixel anywhere,
+//   because dim/bright is engine brightness and colour is applied at draw time
+//   (drawSpriteTinted). Stored as RGB565 + alpha, such a glyph spends 24 bits per
+//   pixel-bit of real information; as a mask it is exactly its own shape. This form
+//   also states "this drawing has no colour of its own", which is what lets camo/shred/
+//   absorb substitute a tint for it — ask spriteIsMask(), never `bits`.
 //
-// Packing: row-major over the SHEET, MSB first, each sheet row padded to a whole byte
-// (so a row starts on a byte boundary and the index math needs no carry). Read it
-// through spriteAlphaAt/spriteColorAt below rather than by hand.
+//   INDEXED (`bits != nullptr`, `pal != nullptr`) — `bpp` bits per pixel into a palette
+//   of RGB565 + coverage pairs (`pal`/`palA`). What a creature sheet needs: a sheet's
+//   distinct (colour, alpha) pairs number in the single or low double digits against
+//   43,008 pixels, so the pixels cost 3-6 bits each instead of 24 and the separate alpha
+//   plane stops being stored at all — transparent is simply an entry. Lossless: the
+//   palette is DERIVED from the sheet's own pixels, so nothing is quantised and a sheet
+//   that gains a colour widens its palette (and, at a power of two, its `bpp`) by
+//   itself. A sheet needing more than 256 entries falls back to full colour.
+//
+// Packing, both bitmap forms: row-major over the SHEET, MSB first, each sheet row padded
+// to a whole byte, so a row starts on a byte boundary and the index math needs no carry
+// between rows. An indexed sheet's array carries one trailing pad byte so the two-byte
+// window spriteIndexAt reads is always in bounds. Read it through spriteAlphaAt/
+// spriteColorAt below rather than by hand.
 // `contentX0`/`contentX1` are the horizontal band the DRAWING actually occupies inside
 // one frame cell — the union across every frame and row, so it is a fixed property of
 // the sheet and a pose can never shift it. A cell is usually wider than what is drawn
@@ -72,12 +82,32 @@ struct SpriteData {
     Facing facing = Facing::None;    // which way the drawing is turned; see above
     const uint16_t* rgb = nullptr;
     const uint8_t* a = nullptr;
-    const uint8_t* bits = nullptr;   // non-null = 1-bit mask; rgb/a are then null
+    const uint8_t* bits = nullptr;   // non-null = packed bitmap; rgb/a are then null
     uint16_t ink = 0;                // mask only: the colour a set bit takes
+    const uint16_t* pal = nullptr;   // indexed only: RGB565 per entry
+    const uint8_t* palA = nullptr;   // indexed only: coverage per entry, 0..255
+    uint8_t bpp = 0;                 // indexed only: bits per pixel index, 1..8
 };
 
-// Bytes per sheet row in the 1-bit form.
+// Which bitmap form `bits` holds. A mask is the one that carries no colour of its own, so
+// a pass that substitutes a tint for the stored colour (camo, shred, absorb) keys off
+// this rather than off `bits` — an indexed sheet has a palette and must keep it.
+inline bool spriteIsMask(const SpriteData& s) { return s.bits && !s.pal; }
+
+// Bytes per sheet row, in the 1-bit and the indexed form.
 inline int spriteMaskStride(const SpriteData& s) { return (s.sheetW + 7) >> 3; }
+inline int spriteIndexStride(const SpriteData& s) { return (s.sheetW * s.bpp + 7) >> 3; }
+
+// One pixel's palette index, at sheet coordinates. `bpp` is any width 1..8, so an index
+// can straddle a byte boundary; reading a two-byte window and shifting covers every case
+// without a branch, and the trailing pad byte on the array is what makes the second read
+// safe on the last pixel of the last row.
+inline uint8_t spriteIndexAt(const SpriteData& s, int px, int py) {
+    const int bit = px * s.bpp;
+    const uint8_t* row = s.bits + py * spriteIndexStride(s) + (bit >> 3);
+    const uint16_t win = static_cast<uint16_t>((row[0] << 8) | row[1]);
+    return static_cast<uint8_t>((win >> (16 - s.bpp - (bit & 7))) & ((1u << s.bpp) - 1));
+}
 
 // The drawn band inside one frame cell (SpriteData::contentX0/contentX1), as a half-open
 // [x0, x1) column range. A sheet that never had the span measured — a zero-initialized
@@ -115,15 +145,18 @@ inline int spriteSrcX(const SpriteData& s, int frame, int col, bool mirror) {
     return frame * s.frameW + (mirror ? s.frameW - 1 - col : col);
 }
 
-// One source pixel's coverage and colour, at sheet coordinates. A mask has no partial
-// coverage and no per-pixel colour by construction, so it answers the same two values
-// the full-colour form would have stored — which is why the saving costs nothing.
+// One source pixel's coverage and colour, at sheet coordinates. Every form answers the
+// same two values the full-colour form would have stored — a mask has no partial coverage
+// and no per-pixel colour by construction, and an indexed palette is derived from the
+// pixels themselves — which is why neither saving costs anything at the caller.
 inline uint8_t spriteAlphaAt(const SpriteData& s, int px, int py) {
+    if (s.pal) return s.palA[spriteIndexAt(s, px, py)];
     if (!s.bits) return s.a[py * s.sheetW + px];
     const uint8_t byte = s.bits[py * spriteMaskStride(s) + (px >> 3)];
     return (byte >> (7 - (px & 7))) & 1 ? 255 : 0;
 }
 inline Rgb565 spriteColorAt(const SpriteData& s, int px, int py) {
+    if (s.pal) return s.pal[spriteIndexAt(s, px, py)];
     return s.bits ? s.ink : s.rgb[py * s.sheetW + px];
 }
 

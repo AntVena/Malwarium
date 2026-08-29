@@ -30,6 +30,41 @@ void test_sprite_roundtrip() {
     CHECK(opaqueChecked > 0);  // sanity: the sprite isn't fully transparent
 }
 
+// --- Gate: indexed storage decodes at every bit width ----------------------
+// The generated round-trip above reads the sheet through the same accessors it blits
+// with, so a packing error would agree with itself. This plants bytes worked out by hand
+// against widths that straddle byte boundaries — 3 bits over a 5px row, 5 bits over a
+// 3px one — which is the case the shift math exists for, and the one a power-of-two-only
+// packer would never reach.
+void test_indexed_sprite_decodes_across_byte_boundaries() {
+    static const uint16_t pal[] = {0x0000, 0x1111, 0x2222, 0x3333, 0x4444, 0x5555};
+    static const uint8_t palA[] = {0, 255, 255, 128, 255, 64};
+    // Rows 1,2,3,4,5 then 5,4,3,2,1 at 3bpp: 15 bits a row, padded to 2 bytes, plus the
+    // one trailing byte the two-byte read window needs on the last pixel.
+    static const uint8_t bits3[] = {0x29, 0xCA, 0xB1, 0xA2, 0x00};
+    SpriteData s{};
+    s.sheetW = 5; s.h = 2; s.frameW = 5; s.frames = 1; s.rows = 1;
+    s.bits = bits3; s.pal = pal; s.palA = palA; s.bpp = 3;
+
+    CHECK(!spriteIsMask(s));                     // a palette means it keeps its colours
+    CHECK(spriteIndexStride(s) == 2);
+    for (int x = 0; x < 5; ++x) {
+        CHECK(spriteIndexAt(s, x, 0) == x + 1);
+        CHECK(spriteIndexAt(s, x, 1) == 5 - x);
+        CHECK(spriteColorAt(s, x, 0) == pal[x + 1]);
+        CHECK(spriteAlphaAt(s, x, 0) == palA[x + 1]);
+    }
+
+    // 5bpp: indices 1, 17, 31 over three pixels, so the middle one spans two bytes.
+    static const uint8_t bits5[] = {0x0C, 0x7E, 0x00};
+    SpriteData w{};
+    w.sheetW = 3; w.h = 1; w.frameW = 3; w.frames = 1; w.rows = 1;
+    w.bits = bits5; w.pal = pal; w.palA = palA; w.bpp = 5;
+    CHECK(spriteIndexAt(w, 0, 0) == 1);
+    CHECK(spriteIndexAt(w, 1, 0) == 17);
+    CHECK(spriteIndexAt(w, 2, 0) == 31);
+}
+
 // --- Gate: x1.75 upscale has clean logical-pixel boundaries ----------------
 void test_upscale_boundaries() {
     Framebuffer fb(kLogicalW, kLogicalH);

@@ -53,6 +53,29 @@ channel. The ITEMS row tints its icon by rarity *and* prints the rarity word bes
 Cache tiers are countable chevrons before they are colours. Both survive desaturation, which is the
 test. `drawSpriteTinted` is exact on these masters because they're a single flat fill.
 
+## A sheet costs what its palette count crosses
+
+`tools/gen_assets.py` derives each sheet's palette from its own pixels and spends
+`ceil(log2(entries))` bits per pixel — an entry being one distinct (RGB565, coverage) pair, with
+every transparent pixel collapsing to one. So a colour is free until the count crosses a power of
+two, and then the whole sheet pays a bit. Nothing is declared and nothing is quantised: repaint a
+sheet, add a colour, and the palette follows on the next build.
+
+What that punishes is **drift** — the tail of one- and two-pixel entries a paint tool leaves
+behind, a half-transparent edge here and an off-by-one shade there. Twenty-nine such pixels held
+Cuttlefork at six bits where its drawing needs four, which was 10.8 KB. Two tools sit either side
+of that:
+
+```bash
+python3 tools/gen_assets.py --palettes           # what each sheet's palette holds, and its tail
+python3 tools/snap_palette.py <png> [--dry-run]  # fold the tail into the colours it is drawn in
+```
+
+The snapper repaints only the pixels whose colour nobody else wears and squares off partial alpha;
+a surviving pixel keeps its own 8-bit value, so the PNG stays the art. Look at the pixel count it
+reports before committing — a sheet where the fold moves a visible fraction is one whose shading
+the fold is eating, not one with drift.
+
 Author at 128×128 logical (rect 128×64); a pet sprite's max box is 128×64, the standard cell 56×48.
 Prefixes, and the folder each files into: `ICON_*` menu/slot → `icons/` · `SPR_*` sprites →
 `sprites/` · `UI_*` chrome and `BG_*` backdrops → `ui/` · `CAP_*` caption styles · `FX_*` procedural

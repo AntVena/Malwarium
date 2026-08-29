@@ -105,54 +105,6 @@ information about what it has to carry. Consumer surface is small — `evolution
 registry accessor, one `ContentSource` virtual, one test. No save concern; routing is not persisted.
 Diff **M**.
 
-### 1d. Sprite storage — indexed colour - Break-Glass-Flash-Memory-Saving Lever
-
-The 1-bit mask half is done: `gen_assets.py` detects an asset that carries nothing a bitmap
-would lose (every alpha 0 or 255, every opaque pixel one colour) and emits a packed mask +
-its `ink` instead of RGB565 + alpha. 169 of 195 assets qualified — the whole `ICON_*`/`UI_*`
-family and more besides — for **202 KB of flash**. Every creature and malbeast sheet is
-multi-colour and correctly stayed full storage.
-
-What's left is those sheets, which are where the bytes actually are — and they are far cheaper
-to index than "8-bit, ~3×" suggests, because two facts compound. **The palettes are already
-tiny:** measured across the 42 shipped sheets, 40 need **4 bits or fewer** and 20 need 3 or
-fewer, so the per-sprite colour reduction 4-bit was thought to require is a no-op for all but
-two. **And the alpha plane disappears rather than shrinking:** 39 of 42 sheets are binary
-alpha, so transparent is just an entry in the palette, and the separate `a` byte — a third of
-current storage — stops being stored at all.
-
-Together that is **6.6×, not 3×**: every sheet on the device goes 1,750,296 B → 265,024 B
-(262,916 B of packed indices + 2,108 B of palettes). Per-sheet palettes are what to build; a
-single shared table per LINE was measured and is worse, because a family's union is bigger than
-any member (phishing 26 colours against a 12-colour worst sheet, so 5-bit; ransomware 260) while
-the overhead it saves is the 2 KB above. A shared table only becomes attractive if the art is
-first snapped to a canonical per-line palette — phishing's 26 is drift, not intent — and its
-real prize would be enforcing the mother-colour rule mechanically rather than saving flash.
-
-Two sheets fall back to 8-bit (`SPR_PET_KALICO` 133 colours, `SPR_PET_BRUINFORCE` 71) and three
-carry partial alpha (`_BRUINFORCE`, `_KEYLOGGERHEAD`, `_TADPOLL`), so those either keep an alpha
-plane or get thresholded. Both Kalico and Bruinforce are wanted for a hand pass anyway
-(`ASSET_MANIFEST.md` §C.1).
-
-Diff **M**, not L: `SpriteData` already carries TWO storage forms behind a discriminator, the
-generator already DETECTS the 1-bit case rather than keying off names, and `spriteColorAt` /
-`spriteAlphaAt` are the only code in the tree that touches `rgb`/`a` at all. A third form is
-those two accessors plus an emit path. The draw-time cost — one palette indirection per pixel,
-against today's direct read — is the part that is not yet measured.
-
-**What decides when this gets pulled is the ANIMATION standard, not the roster size.** Measured
-off the ELF: the image is 33% of the 0x790000 app slot, assets are 47% of the image, and pet
-sheets are 92% of the assets — every other family together (icons, UI, backdrops, malbeasts)
-is under 8%, because the 1-bit pass above already took them. Storage is 3 B per logical px, so
-one 8-frame `448×48` row costs 64,512 B and a creature's cost is decided entirely by how many
-rows it keeps. Taking all 28 creatures to Malbear's one-row shape lands the image at 41% and
-needs nothing here. Taking them to `SPR_PET_KALICO`'s four rows needs 7.2 MB of pet art alone
-and **overflows the slot by 762 KB** — and an OTA has to fit the same-sized second slot, so
-that ceiling is hard and the partition table cannot move it (`partitions_malwarium.csv`).
-Indexed storage is what buys the four-row standard: it puts that same roster at 49%. So the
-order is *decide the per-creature row budget first*; this row is only urgent if the answer is
-"more than one".
-
 ### 1g. Test-infrastructure gaps
 
 - **No serial test-hook / no automated on-device gameplay verification.** Every device check to date

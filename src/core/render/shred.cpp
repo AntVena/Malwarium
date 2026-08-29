@@ -74,7 +74,7 @@ void drawShred(Framebuffer& fb, const SpriteData& s, int frame,
             // apart along its length rather than dimming as a bar.
             if (fraying && (dissolveHash(px, py) & 1u)) continue;
 
-            const Rgb565 col = s.bits ? tint : spriteColorAt(s, sx, row * cellH + py);
+            const Rgb565 col = spriteIsMask(s) ? tint : spriteColorAt(s, sx, row * cellH + py);
             const int restX = srcX + px * num / den;
             const int y = srcY + py * num / den;
 

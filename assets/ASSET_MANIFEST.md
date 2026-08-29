@@ -221,18 +221,21 @@ which is why gameplay ships first and the drawing follows.
   Malbear puts `idle` and `attack` both on row 0 — 3 columns for the rest, all 8 for the swing — so
   its whole clip set costs one 448×48 row. `SPR_PET_KALICO` spends a row per clip instead, four of
   them, because its clips are genuinely different drawings rather than ranges of one motion. That is
-  a real choice and not a free one: at RGB565 + alpha every row is 63 KB of flash (measured, not
-  computed — `SPR_PET_PAYPUP` is 42 KB of `_rgb` plus 21 KB of `_a` in the linked image, and nothing
-  compresses on the way in), so Kalico's sheet is 252 KB against Malbear's 63 KB. All four of
-  Kalico's rows play: `idle`/`walk` split the habitat on whether the wander is moving the anchor, and
-  `attack`/`hurt` pose the fight. Prefer Malbear's shape unless the art genuinely differs — a row
-  nothing looks up pays the same rent as one that plays.
+  a real choice, though indexed storage (`src/core/render/sprite.h`) has made it a cheap one: a
+  448×48 row costs 8 KB at three bits per pixel and 11 KB at four, so Kalico's four rows are 74 KB
+  against Malbear's 11 KB (measured in the linked image, not computed). Taking all 28 creatures to
+  Kalico's four-row shape would put the whole firmware at 36% of the `0x790000` app slot, so the
+  budget is no longer what decides the animation standard. All four of Kalico's rows play:
+  `idle`/`walk` split the habitat on whether the wander is moving the anchor, and `attack`/`hurt`
+  pose the fight. Prefer Malbear's shape where the art does not genuinely differ, on the grounds
+  that a row nothing looks up is a row nobody has to draw.
 - **`SPR_PET_KALICO` is `▨` — the drawing is final, the resampling is not.** The source frames were
   60×60 and the cell is 56×48, so the sheet was decimated 4:5 onto the cell: one row and column in
   five deleted. The art is true 1:1 pixel work, so that lands on roughly a fifth of its
   single-pixel features — the outline survives, the finer interior detail does not, and it wants a
-  hand pass or a re-source at cell scale. It also carries 133 colours where the line's other sheets
-  carry 7–8; that costs nothing in flash, since sprites are stored per-pixel and never palettised,
+  hand pass or a re-source at cell scale. It also carries over a hundred colours where the line's
+  other sheets carry seven or eight, and under indexed storage that is no longer free: it is what
+  holds the sheet at seven bits per pixel where its cousins sit at three or four,
   but it is why the cat does not yet sit next to Paypup as obviously one family.
 - **Generated art reaches cell scale by FRAMING, not by asking for a size.** A generator's width and
   height are a hint — `generate_game_art` reports `size_behavior: "hint"` and returns a canvas of
