@@ -1387,3 +1387,61 @@ void test_sinkhole_xp_persists_immediately() {
 // Met-Pets Roster) and a lifetime networks-seen counter (dedup'd, —
 // the seed for Hacker Rank, not yet consumed this milestone).
 // ===========================================================================
+
+// The explore-mode flavor line is the walk's only running commentary — what the last
+// step gave you and, when that matters, where it went. It sits in a fixed column in the
+// idle habitat's top-left corner (game_render.cpp's kExploreStatusW), and it is the one
+// piece of copy on the device composed from an ITEM NAME at runtime: "Uncommon Cache"
+// is four characters wider than "Rare Cache", and that was the difference between a
+// line that fit and a line whose tail — the half naming the screen to go to — was gone.
+//
+// It wraps to two lines now, so the ceiling is two, not one. Held here rather than left
+// to the renderer because the third line would run into the achievement plate, and the
+// buffer would truncate before the wrap ever saw the string.
+void test_explore_flavor_lines_fit() {
+    // game_render.cpp's own column, and the buffer the resolvers compose into.
+    constexpr int kCol = kActiveW - 16;
+    constexpr int kMaxLines = 2;
+    constexpr size_t kBuf = 48;      // Game::exploreFlavor_
+    const ContentRegistry reg = ContentRegistry::embedded();
+
+    char line[kBuf];
+    auto fits = [&]() {
+        // A composed line that filled the buffer was cut before it was ever measured.
+        return std::strlen(line) < kBuf - 1 && textWrapLines(line, kCol) <= kMaxLines;
+    };
+
+    // The two resolvers that name an item: a Sealed Cache find and a warp-key find.
+    // Swept over every row that can actually drop, so a new cache or key is measured
+    // by adding the row rather than by remembering to come back here.
+    for (const ItemDef* d : reg.allItems()) {
+        if (d->use == ItemDef::Use::OpenContainer && d->cache.findWeight > 0) {
+            std::snprintf(line, sizeof(line), "%s - DECRYPT IN VAULT", d->displayName);
+            CHECK(fits());
+        }
+        if (d->walkWarp != ItemDef::WalkWarp::None) {
+            std::snprintf(line, sizeof(line), "%s - WARP KEY (A+C)", d->displayName);
+            CHECK(fits());
+        }
+    }
+
+    // The rest are format strings over numbers. Each is given the widest number it can
+    // carry rather than a typical one — a three-digit Frag shed or Bits payout is the
+    // case that overruns, and the one nobody reproduces by hand.
+    std::snprintf(line, sizeof(line), "SAFE MODE - RESTED (-%d FRAG)", 100);
+    CHECK(fits());
+    std::snprintf(line, sizeof(line), "+%d BITS + ITEM", 99999);
+    CHECK(fits());
+    std::snprintf(line, sizeof(line), "+%d BITS", 99999);
+    CHECK(fits());
+    std::snprintf(line, sizeof(line), "RANK UP R%d +%dB", 999, 99999);
+    CHECK(fits());
+    std::snprintf(line, sizeof(line), "ALLY BUFF X%d", 99);
+    CHECK(fits());
+    std::snprintf(line, sizeof(line), "SINKHOLE +%d XP", 99999);
+    CHECK(fits());
+    for (const char* s : {"GOT AWAY", "LEFT THE SHOP", "TOO FRAGMENTED - DEFRAG"}) {
+        std::snprintf(line, sizeof(line), "%s", s);
+        CHECK(fits());
+    }
+}

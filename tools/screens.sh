@@ -60,6 +60,7 @@ SCENES=(
   "cfg_titles|cfg titles"           "cfg_radio|cfg radio all"
   "cfg_audit|cfg audit"             "cfg_updates|cfg updates ready found"
   "cfg_confirm|cfg updates ready confirm"
+  "explore_cachefind|explore cachefind"
   "hacker_profile|hacker profile"   "hacker_shop|hacker shop hub"
   "hacker_profile_wide|hacker profile decorated"
   "hacker_vault|hacker vault"       "hacker_crew|hacker crew joined"

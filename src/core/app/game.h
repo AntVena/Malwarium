@@ -537,10 +537,11 @@ public:
     // tick when there is one. The corner is shared with the SD flash and the
     // armed-buff row, which start below the block this measures, so the two
     // consumers in game_render.cpp stay in step instead of each guessing a height.
-    int exploreStatusLines() const {
-        if (!exploreActive_) return 0;
-        return exploreFlavor_[0] ? 3 : 2;
-    }
+    //
+    // Not a fixed three: a flavor line names an item it found, and the longest of
+    // those needs a second line. Defined in game_render.cpp, beside the column width
+    // it measures against and the call that draws the line to the same width.
+    int exploreStatusLines() const;
 
     // Runtime microSD re-check seam (mirrors the netScan opt-in pattern). The
     // device mounts the card once in setup(); a card inserted later is invisible
@@ -1492,6 +1493,11 @@ public:
     // Rank silently — scaffolding to reach a rank/sector-unlock state without
     // grinding real Wi-Fi events, NOT a real rank-up (no celebration/reward).
     void debugSetNetworksSeen(int n);
+    // Compose the explore-mode flavor line directly (tests / dump_frame). The real path
+    // is a walk event resolving one, and which event a step rolls is not something a
+    // scene can ask for — so a frame that wants to LOOK at the longest line the walk can
+    // produce sets it. Explore mode still has to be armed for anything to draw.
+    void debugSetExploreFlavor(const char* s);
     // Credit boss rounds without fighting them (tests / headless runs) — reaching the
     // deeper boss rungs honestly would mean walking a whole gauntlet ladder per rung.
     void debugAddBossWins(int n) { bossWins_ += n; markSaveDirty(); }
@@ -2840,7 +2846,10 @@ private:
     // on A would be a second helping that never happened.
     int fxBeat_ = 0;
     uint32_t lastFxMs_ = 0;
-    char exploreFlavor_[32] = "";
+    // Wide enough for the longest line any resolver composes — "<item> - DECRYPT IN
+    // VAULT" with the widest cache name in it. Transient (never saved), so the size is
+    // a rendering question only. Wrapped to two lines on screen (exploreStatusLines).
+    char exploreFlavor_[48] = "";
     CombatEnemy encounterEnemy_;
     int encounterChoice_ = 0;
     bool encounterSinkhole_ = false;

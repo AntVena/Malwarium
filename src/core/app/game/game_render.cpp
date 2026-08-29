@@ -187,6 +187,32 @@ SceneId Game::stageScene() const {
     return habitatScene();
 }
 
+namespace {
+
+// The explore status stack's text column: the left inset every line in it shares, and
+// the width the flavor line wraps inside. One pair of numbers, because the height the
+// stack reports (exploreStatusLines) and the width it is drawn to have to be the same
+// answer — a line measured against one width and drawn to another is a block whose
+// reported height is wrong.
+constexpr int kExploreStatusX = 8;
+constexpr int kExploreStatusW = kActiveW - 2 * kExploreStatusX;
+
+// A flavor line gets two lines at most. A third would run into the achievement plate,
+// which starts at kLivingTop + 42 (drawAchievementBanner) — and every line the
+// resolvers compose fits two, which test_explore_flavor_lines_fit holds them to.
+constexpr int kExploreFlavorLines = 2;
+
+}  // namespace
+
+int Game::exploreStatusLines() const {
+    if (!exploreActive_) return 0;
+    if (!exploreFlavor_[0]) return 2;             // the badge + the Bandwidth readout
+    const int wrapped = textWrapLines(exploreFlavor_, kExploreStatusW);
+    return 2 + (wrapped < 1 ? 1
+                            : (wrapped > kExploreFlavorLines ? kExploreFlavorLines
+                                                             : wrapped));
+}
+
 void Game::drawHabitat(Framebuffer& fb, int cursor) const {
     // The BACKGROUND pass. Composed against the shelf a resting pet's feet sit on, which
     // the bottom carousel track then covers — so a habitat backdrop's identity has to
@@ -418,14 +444,19 @@ void Game::drawHabitat(Framebuffer& fb, int cursor) const {
             const int bwLineY = kLivingTop + 4 + kFontH + 2;
             if (bandwidth_ > 0) {
                 std::snprintf(bw, sizeof(bw), "BW %d/%d", bandwidth_, bandwidthMax());
-                drawText(fb, 8, bwLineY, bw, palColor(Pal::CALM));
+                drawText(fb, kExploreStatusX, bwLineY, bw, palColor(Pal::CALM));
             } else {
                 std::snprintf(bw, sizeof(bw), "BW 0/%d LOW", bandwidthMax());
-                drawText(fb, 8, bwLineY, bw, palColor(Pal::WARN));
+                drawText(fb, kExploreStatusX, bwLineY, bw, palColor(Pal::WARN));
             }
+            // Wrapped, not clipped: a flavor line names the item it found, and the
+            // longest of those is wider than the column. Drawn with plain text it lost
+            // its tail with no ellipsis — including the half that says where the thing
+            // it just gave you has gone.
             if (exploreFlavor_[0])
-                drawText(fb, 8, bwLineY + kFontH + 2, exploreFlavor_,
-                         palColor(Pal::INK_DIM));
+                drawTextWrapped(fb, kExploreStatusX, bwLineY + kFontH + 2,
+                                kExploreStatusW, exploreFlavor_, palColor(Pal::INK_DIM),
+                                kFontH + 2, kExploreFlavorLines);
         }
     }
 

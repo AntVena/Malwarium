@@ -279,6 +279,7 @@ int g_failures = 0;
     RUN(test_expl_sector_linear_gating)           \
     RUN(test_hint_bands_fit_the_canvas)            \
     RUN(test_expl_names_stay_scrollable)           \
+    RUN(test_explore_flavor_lines_fit)          \
     RUN(test_expl_level_scoped_rows)              \
     RUN(test_combat_carry_health)                 \
     RUN(test_bits_reward_bounds)                   \
