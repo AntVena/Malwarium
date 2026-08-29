@@ -61,13 +61,19 @@ every transparent pixel collapsing to one. So a colour is free until the count c
 two, and then the whole sheet pays a bit. Nothing is declared and nothing is quantised: repaint a
 sheet, add a colour, and the palette follows on the next build.
 
-**Per sheet, not per line** — a shared table for a whole family costs more, not less, and the
-measurement is not close: a line's union is always wider than any one member's palette, so every
-sheet in it pays the union's bit width, while all a shared table saves is three bytes per entry.
-The Worm line is the extreme case, where six one-colour sheets would go from one bit to three.
-A mother colour is an authoring rule (see [CREATURE_VISUAL_RULES.md](CREATURE_VISUAL_RULES.md)
-§4), and its dividend here is indirect and real: sheets drawn in one disciplined set of tones
-land under a power of two on their own.
+**Per sheet, not per line.** One table shared by a family is genuinely the smaller table — the
+union of five palettes is smaller than five palettes — but the table is not where the bytes are.
+Across the whole tree the palettes come to 1.6 KB against 248 KB of packed indices, and what a
+wider union buys is a wider index, paid once per pixel. Metamorphic is the shape of it: sharing
+saves 114 B of table and costs 2,688 B of pixels, because the union needs four bits where
+`SPR_PET_EGG_META_HATCH` needs three.
+
+Sharing therefore wins exactly when the union does NOT widen anyone's index, which is the Worm
+line — five sheets of one colour each, a union of one colour, and a 4-byte saving. That is the
+ceiling of the idea, and it is why a mother colour is an authoring rule
+([CREATURE_VISUAL_RULES.md](CREATURE_VISUAL_RULES.md) §4) rather than a storage one. Its dividend
+here is indirect and real: sheets drawn in one disciplined set of tones land under a power of two
+on their own, which is worth thousands of bytes where a shared table is worth tens.
 
 What that punishes is **drift** — the tail of one- and two-pixel entries a paint tool leaves
 behind, a half-transparent edge here and an off-by-one shade there. Twenty-nine such pixels held
