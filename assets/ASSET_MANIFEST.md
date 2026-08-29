@@ -221,11 +221,13 @@ which is why gameplay ships first and the drawing follows.
   Malbear puts `idle` and `attack` both on row 0 — 3 columns for the rest, all 8 for the swing — so
   its whole clip set costs one 448×48 row. `SPR_PET_KALICO` spends a row per clip instead, four of
   them, because its clips are genuinely different drawings rather than ranges of one motion. That is
-  a real choice, though indexed storage (`src/core/render/sprite.h`) has made it a cheap one: a
-  448×48 row costs 8 KB at three bits per pixel and 11 KB at four, so Kalico's four rows are 74 KB
-  against Malbear's 11 KB (measured in the linked image, not computed). Taking all 28 creatures to
-  Kalico's four-row shape would put the whole firmware at 36% of the `0x790000` app slot, so the
-  budget is no longer what decides the animation standard. All four of Kalico's rows play:
+  a real choice, though tiled storage (`src/core/render/sprite.h`) has made it a cheap one, and
+  cheapest exactly where a row is worth adding: identical tiles are stored once, so a row that
+  re-poses a mostly-static body costs a fraction of its pixels. Measured in the linked image,
+  Malbear's one 448×48 row is 6.2 KB, Kalico's four are 34 KB, and `SPR_PET_KEYLOGGERHEAD`'s two
+  are 2.4 KB. Taking all 28 creatures to Kalico's four-row shape — the worst-compressing sheet in
+  the tree — would put the whole firmware at 33% of the `0x790000` app slot, so the budget is no
+  longer what decides the animation standard. All four of Kalico's rows play:
   `idle`/`walk` split the habitat on whether the wander is moving the anchor, and `attack`/`hurt`
   pose the fight. Prefer Malbear's shape where the art does not genuinely differ, on the grounds
   that a row nothing looks up is a row nobody has to draw.

@@ -4,8 +4,9 @@ gen_assets.py  —  Malwarium build-time asset + palette codegen.
 
 Converts the shippable PNGs in assets/ into C++ sprite arrays, and PAL_CORE.json
 into a role-token palette table, written to src/generated/. A sheet is stored in
-whichever of SpriteData's three forms it fits (core/render/sprite.h): a 1-bit mask,
-`bpp`-bit indices into a derived palette, or full RGB565 + alpha.
+whichever of SpriteData's four forms is smallest (core/render/sprite.h): a 1-bit mask,
+a deduplicated tile grid over a derived palette, flat `bpp`-bit indices into one, or
+full RGB565 + alpha.
 
 Design notes
 ------------
@@ -352,12 +353,19 @@ def gen_sprites():
         decls.append(f"extern const SpriteData {sym};")
         ink = mask_ink(rgb_vals, a_vals)
         pal = None if ink is not None else sheet_palette(rgb_vals, a_vals)
+        head = (sym, w, h, cell_h, fw, rows, cx0, cx1, facing(name))
         if ink is not None:
             defs.append(_emit_mask(sym, w, h, cell_h, fw, rows, cx0, cx1, facing(name),
                                    a_vals, ink))
         elif pal is not None:
-            defs.append(_emit_indexed(sym, w, h, cell_h, fw, rows, cx0, cx1,
-                                      facing(name), rgb_vals, a_vals, pal))
+            # Both palette forms cost the same pixels; take whichever stores them smaller.
+            idx = pixel_indices(rgb_vals, a_vals, pal)
+            tiled = best_tiling(w, h, idx, len(pal))
+            flat_cost = ((w * index_bpp(len(pal)) + 7) // 8) * h
+            if tiled and tiled[0] < flat_cost:
+                defs.append(_emit_tiled(*head, pal, tiled))
+            else:
+                defs.append(_emit_indexed(*head, pal, idx))
         else:
             defs.append(_emit_sprite(sym, w, cell_h, fw, rows, cx0, cx1,
                                      facing(name), rgb_vals, a_vals))
@@ -422,6 +430,69 @@ def index_bpp(n):
     return b
 
 
+def pixel_indices(rgb_vals, a_vals, pal):
+    """The sheet as palette indices, row-major — what both palette forms actually store."""
+    lut = {key: i for i, key in enumerate(pal)}
+    return [lut[(0, 0) if a == 0 else (rgb, a)]
+            for rgb, a in zip(rgb_vals, a_vals)]
+
+
+def pack_bits(values, width, count):
+    """`count` fields of `width` bits, MSB first, packed into whole bytes."""
+    out = bytearray((count * width + 7) // 8)
+    for i, v in enumerate(values):
+        base = i * width
+        for k in range(width):
+            if v & (1 << (width - 1 - k)):
+                out[(base + k) >> 3] |= 0x80 >> ((base + k) & 7)
+    return out
+
+
+def build_tiling(w, h, idx, edge):
+    """-> (blob, tmap) for a grid of `edge`-square tiles, identical tiles stored once.
+
+    A tile's first byte is the width IT needs, which is what lets the empty margin around
+    a drawing — one palette entry all through — cost a byte however large it is. `tmap`
+    holds byte offsets rather than tile ids, so two positions sharing pixels share an
+    offset and there is no second table to walk.
+    """
+    cols, rows_ = (w + edge - 1) // edge, (h + edge - 1) // edge
+    blob, tmap, seen = bytearray(), [], {}
+    for ty in range(rows_):
+        for tx in range(cols):
+            cell = tuple(idx[y * w + x] if (x < w and y < h) else 0
+                         for y in range(ty * edge, ty * edge + edge)
+                         for x in range(tx * edge, tx * edge + edge))
+            at = seen.get(cell)
+            if at is None:
+                at = seen[cell] = len(blob)
+                tb = index_bpp(max(cell) + 1) if max(cell) else 0
+                blob.append(tb)
+                if tb:
+                    blob += pack_bits(cell, tb, edge * edge)
+            tmap.append(at)
+    blob.append(0)                       # pad: spriteTileIndexAt reads a two-byte window
+    return blob, tmap
+
+
+def best_tiling(w, h, idx, entries):
+    """-> (pixel bytes, edge, blob, tmap) for the cheapest tile size, or None.
+
+    Tile size is a real per-sheet choice rather than one constant: resampled art with
+    little repetition prefers a 4px tile, where the grid is fine enough to still find
+    matches, while cleanly drawn animation prefers 8px, where each match is worth more.
+    """
+    best = None
+    for edge in (4, 8, 16):
+        blob, tmap = build_tiling(w, h, idx, edge)
+        if len(blob) > 0xFFFF:           # a tmap entry is a uint16 byte offset
+            continue
+        cost = len(blob) + len(tmap) * 2
+        if best is None or cost < best[0]:
+            best = (cost, edge, blob, tmap)
+    return best
+
+
 def _emit_sprite(sym, w, cell_h, fw, rows, cx0, cx1, face, rgb_vals, a_vals):
     rgb_arr = ", ".join(f"0x{v:04x}" for v in rgb_vals)
     a_arr = ", ".join(str(v) for v in a_vals)
@@ -454,7 +525,14 @@ def _emit_mask(sym, w, h, cell_h, fw, rows, cx0, cx1, face, a_vals, ink):
     )
 
 
-def _emit_indexed(sym, w, h, cell_h, fw, rows, cx0, cx1, face, rgb_vals, a_vals, pal):
+def _palette_arrays(sym, pal):
+    return (f"static const uint16_t {sym}_pal[] = "
+            f"{{{', '.join(f'0x{c:04x}' for c, _ in pal)}}};\n"
+            f"static const uint8_t {sym}_palA[] = "
+            f"{{{', '.join(str(a) for _, a in pal)}}};\n")
+
+
+def _emit_indexed(sym, w, h, cell_h, fw, rows, cx0, cx1, face, pal, idx):
     """Pack the sheet as `bpp`-bit palette indices, row-major, MSB first.
 
     Rows are padded to a whole byte like the mask form, for the same reason — a row starts
@@ -463,28 +541,34 @@ def _emit_indexed(sym, w, h, cell_h, fw, rows, cx0, cx1, face, rgb_vals, a_vals,
     what makes the two-byte window spriteIndexAt reads in-bounds on the last pixel.
     """
     bpp = index_bpp(len(pal))
-    lut = {key: i for i, key in enumerate(pal)}
     stride = (w * bpp + 7) // 8
-    packed = bytearray(stride * h + 1)
+    packed = bytearray()
     for y in range(h):
-        base = y * stride * 8
-        for x in range(w):
-            i = y * w + x
-            idx = lut[(0, 0) if a_vals[i] == 0 else (rgb_vals[i], a_vals[i])]
-            bit = base + x * bpp
-            for k in range(bpp):
-                if idx & (1 << (bpp - 1 - k)):
-                    packed[(bit + k) >> 3] |= 0x80 >> ((bit + k) & 7)
-    bits_arr = ", ".join(str(b) for b in packed)
-    pal_arr = ", ".join(f"0x{c:04x}" for c, _ in pal)
-    palA_arr = ", ".join(str(a) for _, a in pal)
+        packed += pack_bits(idx[y * w:(y + 1) * w], bpp, w)
+    packed.append(0)
     return (
-        f"static const uint8_t {sym}_bits[] = {{{bits_arr}}};\n"
-        f"static const uint16_t {sym}_pal[] = {{{pal_arr}}};\n"
-        f"static const uint8_t {sym}_palA[] = {{{palA_arr}}};\n"
+        f"static const uint8_t {sym}_bits[] = "
+        f"{{{', '.join(str(b) for b in packed)}}};\n"
+        + _palette_arrays(sym, pal) +
         f"const SpriteData {sym} = {{ {w}, {cell_h}, {fw}, {w // fw}, {rows}, "
         f"{cx0}, {cx1}, {face}, nullptr, nullptr, {sym}_bits, 0, "
         f"{sym}_pal, {sym}_palA, {bpp} }};\n"
+    )
+
+
+def _emit_tiled(sym, w, h, cell_h, fw, rows, cx0, cx1, face, pal, tiled):
+    """Emit the tile blob and the grid's offset map. See build_tiling for the layout."""
+    _cost, edge, blob, tmap = tiled
+    shift = edge.bit_length() - 1
+    return (
+        f"static const uint8_t {sym}_tiles[] = "
+        f"{{{', '.join(str(b) for b in blob)}}};\n"
+        f"static const uint16_t {sym}_tmap[] = "
+        f"{{{', '.join(str(o) for o in tmap)}}};\n"
+        + _palette_arrays(sym, pal) +
+        f"const SpriteData {sym} = {{ {w}, {cell_h}, {fw}, {w // fw}, {rows}, "
+        f"{cx0}, {cx1}, {face}, nullptr, nullptr, nullptr, 0, "
+        f"{sym}_pal, {sym}_palA, 0, {sym}_tiles, {sym}_tmap, {shift} }};\n"
     )
 
 

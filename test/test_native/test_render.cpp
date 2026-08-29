@@ -65,6 +65,33 @@ void test_indexed_sprite_decodes_across_byte_boundaries() {
     CHECK(spriteIndexAt(w, 2, 0) == 31);
 }
 
+// --- Gate: tiled storage resolves a pixel through the grid ------------------
+// Hand-built: a 2x1 grid of 4px tiles where BOTH positions point at the same tile, which
+// is the whole of what dedup is, plus a zero-width tile standing for the empty margin.
+// A sheet-wide packer error would show up as the two halves disagreeing.
+void test_tiled_sprite_shares_one_tile_between_positions() {
+    static const uint16_t pal[] = {0x0000, 0x1111, 0x2222, 0x3333};
+    static const uint8_t palA[] = {0, 255, 255, 128};
+    // Tile at offset 0: width 2, sixteen 2-bit fields reading 0,1,2,3 across each row.
+    // Tile at offset 5: width 0 — one palette entry all through, so it stores no body.
+    static const uint8_t tiles[] = {2, 0x1B, 0x1B, 0x1B, 0x1B, 0, 0};
+    static const uint16_t tmap[] = {0, 0, 5, 0};   // row 0: the drawing twice; row 1: empty, drawing
+    SpriteData s{};
+    s.sheetW = 8; s.h = 8; s.frameW = 4; s.frames = 2; s.rows = 1;
+    s.pal = pal; s.palA = palA; s.tiles = tiles; s.tmap = tmap; s.tileShift = 2;
+
+    CHECK(!spriteIsMask(s));
+    for (int y = 0; y < 4; ++y)
+        for (int x = 0; x < 4; ++x) {
+            CHECK(spriteTileIndexAt(s, x, y) == x);          // left copy
+            CHECK(spriteTileIndexAt(s, x + 4, y) == x);      // right copy, same bytes
+            CHECK(spriteTileIndexAt(s, x, y + 4) == 0);      // the zero-width tile
+        }
+    CHECK(spriteColorAt(s, 3, 0) == pal[3]);
+    CHECK(spriteAlphaAt(s, 3, 0) == 128);
+    CHECK(spriteAlphaAt(s, 0, 0) == 0);                      // entry 0 is transparent
+}
+
 // --- Gate: x1.75 upscale has clean logical-pixel boundaries ----------------
 void test_upscale_boundaries() {
     Framebuffer fb(kLogicalW, kLogicalH);

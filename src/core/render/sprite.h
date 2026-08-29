@@ -49,6 +49,18 @@ enum class Facing : uint8_t { None = 0, Right, Left };
 //   also states "this drawing has no colour of its own", which is what lets camo/shred/
 //   absorb substitute a tint for it — ask spriteIsMask(), never `bits`.
 //
+//   TILED (`tiles != nullptr`) — the same palette, but the sheet is cut into a grid of
+//   square tiles whose edge is `1 << tileShift`, identical tiles are stored once, and each
+//   tile carries its OWN bit width. Two redundancies the flat forms cannot see: an
+//   animation row redraws most of its body every frame (`SPR_PET_KEYLOGGERHEAD` is 40
+//   distinct tiles across 672 positions), and the empty margin around a drawing collapses
+//   to a single one-byte tile however much of the cell it covers. A tile of one colour
+//   costs its width byte and nothing else. `tmap` holds each grid position's byte offset
+//   into `tiles`, so sharing and addressing are the same act — two positions with the same
+//   pixels simply hold the same offset — and a lookup stays O(1), which is what every
+//   blitter needs: they walk DESTINATION pixels and source through spriteSrcX, so nothing
+//   reads a sheet in storage order.
+//
 //   INDEXED (`bits != nullptr`, `pal != nullptr`) — `bpp` bits per pixel into a palette
 //   of RGB565 + coverage pairs (`pal`/`palA`). What a creature sheet needs: a sheet's
 //   distinct (colour, alpha) pairs number in the single or low double digits against
@@ -56,7 +68,9 @@ enum class Facing : uint8_t { None = 0, Right, Left };
 //   plane stops being stored at all — transparent is simply an entry. Lossless: the
 //   palette is DERIVED from the sheet's own pixels, so nothing is quantised and a sheet
 //   that gains a colour widens its palette (and, at a power of two, its `bpp`) by
-//   itself. A sheet needing more than 256 entries falls back to full colour.
+//   itself. A sheet needing more than 256 entries falls back to full colour. This is what
+//   a sheet with little repetition in it keeps, TILED being the better buy only where
+//   there is redundancy to collect; the generator costs both and takes the smaller.
 //
 // Packing, both bitmap forms: row-major over the SHEET, MSB first, each sheet row padded
 // to a whole byte, so a row starts on a byte boundary and the index math needs no carry
@@ -84,9 +98,12 @@ struct SpriteData {
     const uint8_t* a = nullptr;
     const uint8_t* bits = nullptr;   // non-null = packed bitmap; rgb/a are then null
     uint16_t ink = 0;                // mask only: the colour a set bit takes
-    const uint16_t* pal = nullptr;   // indexed only: RGB565 per entry
-    const uint8_t* palA = nullptr;   // indexed only: coverage per entry, 0..255
+    const uint16_t* pal = nullptr;   // indexed and tiled: RGB565 per entry
+    const uint8_t* palA = nullptr;   // indexed and tiled: coverage per entry, 0..255
     uint8_t bpp = 0;                 // indexed only: bits per pixel index, 1..8
+    const uint8_t* tiles = nullptr;  // non-null = tiled; `bits` is then null
+    const uint16_t* tmap = nullptr;  // tiled only: each grid position's offset into `tiles`
+    uint8_t tileShift = 0;           // tiled only: log2 of the tile edge (2, 3 or 4)
 };
 
 // Which bitmap form `bits` holds. A mask is the one that carries no colour of its own, so
@@ -107,6 +124,21 @@ inline uint8_t spriteIndexAt(const SpriteData& s, int px, int py) {
     const uint8_t* row = s.bits + py * spriteIndexStride(s) + (bit >> 3);
     const uint16_t win = static_cast<uint16_t>((row[0] << 8) | row[1]);
     return static_cast<uint8_t>((win >> (16 - s.bpp - (bit & 7))) & ((1u << s.bpp) - 1));
+}
+
+// The same, through the tile grid: find the tile, read the width it stored for itself,
+// then the pixel's field inside it. A width of zero is a tile that is one palette entry
+// all through — the empty margin, a flat backdrop — and stores no body at all.
+inline uint8_t spriteTileIndexAt(const SpriteData& s, int px, int py) {
+    const int edge = 1 << s.tileShift;
+    const int cols = (s.sheetW + edge - 1) >> s.tileShift;
+    const uint8_t* t =
+        s.tiles + s.tmap[(py >> s.tileShift) * cols + (px >> s.tileShift)];
+    const int tb = *t++;
+    if (!tb) return 0;
+    const int bit = (((py & (edge - 1)) << s.tileShift) | (px & (edge - 1))) * tb;
+    const uint16_t win = static_cast<uint16_t>((t[bit >> 3] << 8) | t[(bit >> 3) + 1]);
+    return static_cast<uint8_t>((win >> (16 - tb - (bit & 7))) & ((1u << tb) - 1));
 }
 
 // The drawn band inside one frame cell (SpriteData::contentX0/contentX1), as a half-open
@@ -150,12 +182,14 @@ inline int spriteSrcX(const SpriteData& s, int frame, int col, bool mirror) {
 // and no per-pixel colour by construction, and an indexed palette is derived from the
 // pixels themselves — which is why neither saving costs anything at the caller.
 inline uint8_t spriteAlphaAt(const SpriteData& s, int px, int py) {
+    if (s.tiles) return s.palA[spriteTileIndexAt(s, px, py)];
     if (s.pal) return s.palA[spriteIndexAt(s, px, py)];
     if (!s.bits) return s.a[py * s.sheetW + px];
     const uint8_t byte = s.bits[py * spriteMaskStride(s) + (px >> 3)];
     return (byte >> (7 - (px & 7))) & 1 ? 255 : 0;
 }
 inline Rgb565 spriteColorAt(const SpriteData& s, int px, int py) {
+    if (s.tiles) return s.pal[spriteTileIndexAt(s, px, py)];
     if (s.pal) return s.pal[spriteIndexAt(s, px, py)];
     return s.bits ? s.ink : s.rgb[py * s.sheetW + px];
 }

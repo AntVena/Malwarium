@@ -22,6 +22,7 @@ int g_failures = 0;
     /* T0–T2 — pipeline + idle + STAT */    \
     RUN(test_sprite_roundtrip)              \
     RUN(test_indexed_sprite_decodes_across_byte_boundaries) \
+    RUN(test_tiled_sprite_shares_one_tile_between_positions) \
     RUN(test_upscale_boundaries)            \
     RUN(test_palette_luminance_ordered)     \
     RUN(test_idle_habitat)                  \

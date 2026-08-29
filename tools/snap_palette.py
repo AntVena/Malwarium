@@ -2,21 +2,19 @@
 """
 snap_palette.py — fold a sprite sheet's stray colours into the ones it is drawn in.
 
-A sheet's flash cost is decided by how many distinct (colour, coverage) pairs its pixels
-hold: `tools/gen_assets.py` derives a palette from them and spends
-`ceil(log2(entries))` bits per pixel, so the count only matters where it crosses a power
-of two. Sheets exported from a paint tool routinely carry a tail of pairs that are one or
-two pixels each — a half-transparent edge pixel, an off-by-one shade left by a
-resample — and that tail is what pushes a sheet over the line. Cuttlefork holds 11
-colours a reader could name and 24 more that account for 29 pixels between them, which
-is what makes it 6-bit instead of 4-bit and costs 10.8 KB.
+Art hygiene, not a flash saving. Sheets exported from a paint tool routinely carry a tail
+of (colour, coverage) pairs that are one or two pixels each — a half-transparent edge
+pixel, an off-by-one shade left by a resample — and none of them is a tone anybody chose.
+`tools/gen_assets.py` stores each tile at the width that tile alone needs, so such a pixel
+is charged only where it lands: folding 24 of them out of Cuttlefork is worth 208 B. What
+it is worth is a palette a reader can name, and a sheet whose shading is the shading law's
+(assets/CREATURE_VISUAL_RULES.md §3) rather than a gradient's.
 
 This rewrites the PNG so the tail is gone:
 
   * every pixel below `--alpha` coverage becomes fully transparent, and every pixel at or
     above it becomes fully opaque — a soft edge is information at photographic scale and
-    noise at 56x48, where the shading law (assets/CREATURE_VISUAL_RULES.md §3) asks for
-    named tones rather than a gradient;
+    noise at 56x48;
   * every colour worn by fewer than `--floor` pixels is repainted with the nearest
     surviving colour, by squared distance in the 8-bit RGB the art carries.
 
@@ -24,15 +22,13 @@ Nothing here picks colours for the art. What survives is what the sheet was alre
 mostly drawn in, which is why the result is visually identical and why the tool is safe
 to re-run: a sheet already free of drift is rewritten byte-identically and reports zero.
 
-Run it on a sheet, look at the reported pixel count and the byte saving, and commit the
-PNG if both read right:
+Run it on a sheet, look at the reported pixel count, and commit the PNG if it reads right:
 
     python3 tools/snap_palette.py assets/sprites/SPR_PET_CUTTLEFORK.png
     python3 tools/snap_palette.py assets/sprites/*.png --dry-run
 
-`--dry-run` reports without writing, which is how to survey the whole tree for the sheets
-worth spending a pass on. `tools/gen_assets.py --palettes` prints the palette a sheet
-currently holds, in the order this tool ranks it.
+`--dry-run` reports without writing. `tools/gen_assets.py --palettes` prints the palette a
+sheet currently holds, in the order this tool ranks it.
 """
 
 import argparse
@@ -120,15 +116,6 @@ def entries(rgba):
     return len(seen)
 
 
-def sheet_bytes(w, h, n):
-    bpp = 1
-    while (1 << bpp) < n:
-        bpp += 1
-    if bpp > 8:
-        return w * h * 3
-    return ((w * bpp + 7) // 8) * h + n * 3 + 1
-
-
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -148,18 +135,17 @@ def main():
         before = entries(rgba)
         out, changed = snap(rgba, args.alpha, args.floor)
         after = entries(out)
-        saved = sheet_bytes(w, h, before) - sheet_bytes(w, h, after)
-        total += saved
+        total += before - after
         name = os.path.basename(path)
         if before == after:
             print(f"{name}: {before} entries, already clean")
             continue
         print(f"{name}: {before} -> {after} entries, {changed} px repainted "
-              f"({changed * 100.0 / (w * h):.3f}%), {saved} B")
+              f"({changed * 100.0 / (w * h):.3f}%)")
         if not args.dry_run:
             write_png_rgba(path, w, h, out)
     if len(args.png) > 1:
-        print(f"total: {total} B")
+        print(f"total: {total} entries folded")
 
 
 if __name__ == "__main__":
