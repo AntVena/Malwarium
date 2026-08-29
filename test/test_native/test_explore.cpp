@@ -796,6 +796,12 @@ void test_every_generic_move_is_carried() {
     for (int a = 0; a < kExplSectors; ++a) {
         for (int s = 0; s < kExplSubAreas; ++s) swallow(subAreaBoss(a, s));
         swallow(areaBoss(a));
+        // ...and the area's GUARDIAN, which is the only carrier of its own move
+        // (content_moves.cpp's guardian pool). It is met on the WALK rather than the
+        // ladder, so nothing above would ever build it — and a guardian move left out of
+        // this sweep would read as an orphan when it is the most reliably reachable
+        // family there is.
+        for (const char* m : guardianEnemy(a, 0).moveIds) kits.push_back(m);
     }
     // The wild pool, both variants — and at every RUNG, because applyWildSubAreaRamp
     // REPLACES a wild's kit with the depth ladder rather than adding to it. Two moves

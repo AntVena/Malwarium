@@ -78,6 +78,9 @@ const AreaDef kAreaNetSeaCrossing = {
     // brace is the licence screen the whole area is really made of.
     /*wildAttackMoveId=*/"install_wizard",
     /*wildDefendMoveId=*/"eula_wall",
+    // Who watches the crossing: something far down the cable that has heard every
+    // packet that ever went over it and has never sent one of its own.
+    {"THE DEEP LISTENER", {"deep_listen"}},
     {"FLOATING POINT", kShopListings, arrLen(kShopListings)},
     {"THE HARDENED SHELL", kModShopListings, arrLen(kModShopListings)},
     kModPool,

@@ -241,7 +241,16 @@ constexpr int kSaveTextCap = 28;     // matches EventLog's LogEntry.text
 //     which backgrounds are OWNED is derived by Game::backgroundOwned from facts the blob
 //     already records (a creature raised, an area cleared, brackets taken), so there is no
 //     second copy to fall out of step. Pre-v58 → 0, which is AUTO.
-constexpr uint16_t kSaveVersion = 58;
+//
+// v59: the CANT — which sigils of the guardians' language this device has learned, and
+//     how many SHAKES have been paid out for them (core/model/cant.h,
+//     game_shibboleth.cpp). Two fields and its own tail: `cantSigils` is a 26-bit mask
+//     (bit i = the letter 'A'+i reads plain) and `shakesSpent` is the purse's other
+//     half — the lifetime handshake count is already here from v7, and what is SPENDABLE
+//     is that minus this, so there is no third number to keep in step. Pre-v59 → 0 and
+//     0: a save from before the Cant existed has learned none of it and spent nothing,
+//     which leaves every shake it ever captured available.
+constexpr uint16_t kSaveVersion = 59;
 
 // The oldest blob deserialize will read, and the ONLY thing that retires a rename row
 // (see `renamedIds`). Raising it is how a device stops carrying migration weight for saves
@@ -778,6 +787,13 @@ struct SaveData {
     // (a parallel tail, mirrors defragCount's v16 pattern). Pre-v35 → 0 (never
     // dived).
     int32_t bestDeepWebDepth = 0;
+
+    // --- v59: the CANT -------------------------------------------------------
+    // Player-level, not per-pet: the operator's device learned this language, and it
+    // outlives a pet the way the HackerTag, the Titles and the network ledger do. See
+    // the version note above for why SPENT rather than UNSPENT is the field.
+    uint32_t cantSigils = 0;
+    int32_t shakesSpent = 0;
 };
 
 // Read/write one mod's spare count in the v45 packed pool (SaveData::ownedModCounts) by

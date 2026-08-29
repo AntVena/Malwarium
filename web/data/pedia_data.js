@@ -6481,6 +6481,66 @@ window.PEDIA_DATA = {
       "icon": "assets/icons/ICON_MOVE_SLOT.png"
     },
     {
+      "id": "ratio_debt",
+      "name": "Ratio Debt",
+      "kind": "ATK",
+      "power": 4,
+      "turns": 1,
+      "minStage": "Boot Sector",
+      "desc": "It has been keeping count the whole time - 4 damage/turn for 4 turns.",
+      "stats": "ATK 4 / DOT 4x4",
+      "group": "core",
+      "icon": "assets/icons/ICON_MOVE_SLOT.png"
+    },
+    {
+      "id": "port_knock",
+      "name": "Port Knock",
+      "kind": "ATK",
+      "power": 5,
+      "turns": 1,
+      "minStage": "Process",
+      "desc": "The right sequence, or none - ignores 20% armor and freezes 1 turn.",
+      "stats": "ATK 5 / PIERCE 20% / FREEZE 1",
+      "group": "core",
+      "icon": "assets/icons/ICON_MOVE_SLOT.png"
+    },
+    {
+      "id": "deep_listen",
+      "name": "Deep Listen",
+      "kind": "ATK",
+      "power": 6,
+      "turns": 1,
+      "minStage": "Process",
+      "desc": "It has heard where you leave off - strips 30% of the target's armor.",
+      "stats": "ATK 6 / SIPHON DEF 30%",
+      "group": "core",
+      "icon": "assets/icons/ICON_MOVE_SLOT.png"
+    },
+    {
+      "id": "delisted",
+      "name": "Delisted",
+      "kind": "ATK",
+      "power": 7,
+      "turns": 1,
+      "minStage": "Script",
+      "desc": "Delisted, not deleted - freezes 1 turn and takes 6% of max Health.",
+      "stats": "ATK 7 / FREEZE 1 / MAX HP 6%",
+      "group": "core",
+      "icon": "assets/icons/ICON_MOVE_SLOT.png"
+    },
+    {
+      "id": "no_such_name",
+      "name": "No Such Name",
+      "kind": "ATK",
+      "power": 9,
+      "turns": 1,
+      "minStage": "Daemon",
+      "desc": "The wall is not there because you are not - ignores 45% of armor.",
+      "stats": "ATK 9 / PIERCE 45%",
+      "group": "core",
+      "icon": "assets/icons/ICON_MOVE_SLOT.png"
+    },
+    {
       "id": "partial_download",
       "name": "Partial Download",
       "kind": "ATK",

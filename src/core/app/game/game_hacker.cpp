@@ -582,10 +582,14 @@ void Game::drawHackerSubmenu(Framebuffer& fb) const {
                     true);
     fb.fillRect(0, 68, kActiveW, 1, palColor(Pal::TRACK));
 
-    // The operator's own standing, on one 18px row pitch: rank · nets · shakes ·
-    // species · queued · bandwidth, then the defended network last. Same shape as the
-    // identity row above: the value owns the right end and the label yields to it, so
-    // the widest rank title on the ladder cannot land on top of its own label.
+    // The operator's own standing, on one 16px row pitch: rank · nets · shakes ·
+    // sigils · species · queued · bandwidth, then the defended network last. Same shape
+    // as the identity row above: the value owns the right end and the label yields to
+    // it, so the widest rank title on the ladder cannot land on top of its own label.
+    //
+    // The pitch is 16 rather than the 18 the block used to run at, which is what buys
+    // the eighth row without pushing HOME NET off the foot: the face is 8px, so 16 still
+    // leaves a full cell of air between rows and the block reads as the same list.
     auto statRow = [&](int ry, const char* label, const char* value, Rgb565 vc) {
         drawLabelValue(fb, kMargin, ry, label, palColor(Pal::INK_DIM), value, vc,
                        beat_, true);
@@ -599,17 +603,29 @@ void Game::drawHackerSubmenu(Framebuffer& fb) const {
     statRow(76, "RANK", rankVal, palColor(Pal::ACCENT));
     char nets[12];
     std::snprintf(nets, sizeof(nets), "%d", networksSeen_);
-    statRow(94, "NETS", nets, palColor(Pal::INK));
-    char shakes[12];
-    std::snprintf(shakes, sizeof(shakes), "%d", handshakesSeen_);
-    statRow(112, "SHAKES", shakes, palColor(Pal::INK));
+    statRow(92, "NETS", nets, palColor(Pal::INK));
+    // SHAKES is UNSPENT/LIFETIME, the same n/N shape QUEUED uses below. A shake is what
+    // buys a sigil of the Cant (game_shibboleth.cpp), so the number that matters when
+    // standing in front of a guardian is what is left to spend — and the lifetime tally
+    // is still the brag it always was, right beside it.
+    char shakes[16];
+    std::snprintf(shakes, sizeof(shakes), "%d/%d", shakesUnspent(), handshakesSeen_);
+    statRow(108, "SHAKES", shakes, palColor(Pal::INK));
+    // SIGILS — how much of the guardians' language this device can read. Dim at zero,
+    // because none of it is a real state rather than a missing one, and ACCENT once the
+    // whole Cant is known: at that point no guardian will ever refuse the pet again.
+    char sigils[16];
+    std::snprintf(sigils, sizeof(sigils), "%d/%d", sigilsKnown(), kCantSigils);
+    statRow(124, "SIGILS", sigils,
+            palColor(sigilsKnown() == 0 ? Pal::INK_DIM
+                     : sigilsKnown() >= kCantSigils ? Pal::ACCENT : Pal::INK));
 
     // SPECIES — distinct creatures this device has ever raised (Game::speciesRaised,
     // save v39). A collection stat rather than a radio one, but it belongs on the
     // operator face for the same reason the others do: it outlives every pet.
     char species[12];
     std::snprintf(species, sizeof(species), "%d", speciesRaised());
-    statRow(130, "SPECIES", species, palColor(Pal::INK));
+    statRow(140, "SPECIES", species, palColor(Pal::INK));
 
     // QUEUED — sightings waiting in RAM for a walk (EXPL Wi-Fi event) to flush
     // them into the SD-backed ledger; nears kPendingNetworkQueueCap = new
@@ -620,21 +636,21 @@ void Game::drawHackerSubmenu(Framebuffer& fb) const {
     const Rgb565 queuedColor = pendingNetworks() >= kPendingNetworkQueueCap
                                     ? palColor(Pal::WARN)
                                     : palColor(Pal::INK);
-    statRow(148, "QUEUED", queued, queuedColor);
+    statRow(156, "QUEUED", queued, queuedColor);
 
     // BANDWIDTH — the farming pool, shown n/N with its fill bar so the player
     // reads their farm budget on the operator face. The bar level is the grayscale channel.
     char bw[16];
     std::snprintf(bw, sizeof(bw), "%d/%d", bandwidth_, bandwidthMax());
-    statRow(166, "BANDWIDTH", bw, palColor(Pal::INK));
+    statRow(172, "BANDWIDTH", bw, palColor(Pal::INK));
     const float t = bandwidthMax() > 0
                         ? static_cast<float>(bandwidth_) / bandwidthMax() : 0.f;
-    drawProgressBar(fb, kMargin, 180, kActiveW - 2 * kMargin, 7, t,
+    drawProgressBar(fb, kMargin, 186, kActiveW - 2 * kMargin, 7, t,
                     palColor(Pal::ACCENT));
 
     // HOME NET — the network this operator defends (set in CREW). Sits with the
     // identity stats because it's a property of the player, not the pet.
-    statRow(200, "HOME NET", hasHomeNetwork() ? homeNetworkName_ : "NOT SET",
+    statRow(202, "HOME NET", hasHomeNetwork() ? homeNetworkName_ : "NOT SET",
             hasHomeNetwork() ? palColor(Pal::INK) : palColor(Pal::INK_DIM));
 }
 

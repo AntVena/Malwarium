@@ -49,10 +49,27 @@ void formatDisplayName(const uint8_t* bssid, const char* ssid, char* out, size_t
 // Wi-Fi network event ------------------------------------------
 
 void Game::startWifiEvent() {
-    // Real-network discovery resolves first (own flavor line, netDiscoveryFlavor_),
-    // independent of the guardian/cache/friendly roll below (own flavor line,
-    // wifiFlavor_) — two unrelated beats on one screen, see game.h's comment.
+    // Real-network discovery resolves FIRST, and what it found is what ROUTES the rest
+    // of this event. The two halves of this screen used to be independent rolls, which
+    // is how it could announce a new network, say the pet wanted one, and then have a
+    // friend stop by — three sentences about three different things. Now the sighting
+    // queue decides: something to resolve makes this the discovery beat, and an empty
+    // queue is what puts the area's GUARDIAN in front of the pet instead.
     resolveNetworkDiscovery();
+
+    // A dry queue on the cadence beat: the guardian is standing there
+    // (game_shibboleth.cpp). Every Nth dry event, and NOT the first — arming a walk
+    // resets the streak (game_explore.cpp's startExplore), so summoning on the first
+    // miss would put a guardian at the head of every fresh walk and let re-arming farm
+    // them. Counting to N first also means a walk has to actually BE somewhere dry for
+    // a while before anything comes out to look at it, which is the fiction. The dry
+    // events between fall through to the ordinary sub-outcome below, so the walk's event
+    // density is the same either way.
+    if (netDiscovery_ == NetDiscovery::None &&
+        emptyQueueStreak_ % kNetDiscoveryEmptyGuardianStrikes == 0) {
+        startShibboleth();
+        return;
+    }
 
     rng_ = rng_ * 1664525u + 1013904223u;
     const int roll = static_cast<int>((rng_ >> 16) % 100);
@@ -276,15 +293,11 @@ void Game::resolveNetworkDiscovery() {
         ++emptyQueueStreak_;
         netDiscoveryFlavor_[0] = '\0';
         netDiscovery_ = NetDiscovery::None;
-        // Only sting on the 1st miss, then every Nth after — a long unmonitored
-        // dead-zone walk tapers off instead of grinding Happiness to 0.
-        const bool strikes = emptyQueueStreak_ == 1 ||
-            (emptyQueueStreak_ - 1) % kNetDiscoveryEmptyCooldownStrikes == 0;
-        if (strikes) {
-            model_.setHappiness(model_.happiness() - kNetDiscoveryNoneHappyPenalty);
-            std::snprintf(netDiscoveryFlavor_, sizeof(netDiscoveryFlavor_),
-                         "WANTS NEW NETWORKS...");
-        }
+        // No penalty. A dry queue costs the pet nothing at all now — walking somewhere
+        // with no new networks is a fact about the PLACE, and taxing Happiness for it
+        // ground a long unmonitored walk down with nothing offered in exchange. The
+        // streak is still counted, because startWifiEvent reads it to decide when the
+        // guardian appears: the beat that used to sting is the beat that summons.
         return;
     }
 

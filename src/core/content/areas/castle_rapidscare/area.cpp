@@ -83,6 +83,9 @@ const AreaDef kAreaCastleRapidscare = {
     // less, and the brace is the gate every free download in this castle sits behind.
     /*wildAttackMoveId=*/"bandwidth_cap",
     /*wildDefendMoveId=*/"captcha_gate",
+    // Who watches the Castle: the last thing asked before a name becomes an address.
+    // It can answer that a thing does not exist, and be believed.
+    {"THE LAST RESOLVER", {"no_such_name"}},
     {"SPAM & SCRAM", kShopListings, arrLen(kShopListings)},
     {"THE GHOST IN THE MACHINE", kModShopListings, arrLen(kModShopListings)},
     kModPool,

@@ -394,57 +394,63 @@ void test_network_discovery_repeat_familiar_vs_home_turf() {
     resolveWifiEventToIdle(g);
 }
 
-// The empty-queue Happiness penalty only actually applies on the 1st miss, then
-// every kNetDiscoveryEmptyCooldownStrikes-th miss after (streak 1, 4, 7…) — a
-// long unmonitored walk through a dead zone (nothing ever queued) tapers off
-// instead of grinding Happiness to 0.
-void test_network_discovery_empty_queue_penalty_throttles() {
+// A dry sighting queue costs the pet NOTHING, and on the cadence beat it summons the
+// area's guardian instead (game_net.cpp routes it, game_shibboleth.cpp runs it).
+//
+// This is the inverse of what this seam used to do. Walking a dead zone used to take
+// kNetDiscoveryNoneHappyPenalty off Happiness on the 1st miss and every Nth after, which
+// on a ~37s Wi-Fi cadence ground a ten-minute unmonitored walk down by ~30 for the crime
+// of being somewhere with no new networks. The streak is still counted on exactly the
+// same rhythm — it is what paces the guardian — so the beat that used to sting is the
+// beat that puts something in front of the pet.
+void test_network_discovery_empty_queue_costs_nothing_and_summons_a_guardian() {
     Game g{StartMode::Hatched};
-    g.model().setHappiness(80);   // headroom so repeated -kNetDiscoveryNoneHappyPenalty
-                                   // hits never clamp at 0 and mask a missed/extra strike
+    g.model().setHappiness(80);   // headroom: a penalty would be visible rather than
+                                   // clamped, so its ABSENCE is a real observation
     g.inventory().add("sinkhole_trap", 20);   // bypass any Wild roll along the way, free
-    enterWalk(g);   // ONCE — walkToWifiEvent re-enters via enterWalk on every call,
-                     // which re-arms the sub-area and resets emptyQueueStreak_
+    enterWalk(g);   // ONCE — walkToWifiEvent re-enters via enterWalk on every call, which
+                     // re-arms the sub-area and resets emptyQueueStreak_
                      // (game_explore.cpp's startExplore), defeating the whole point of
-                     // this test (observing the streak persist/throttle ACROSS misses).
+                     // this test (observing the streak persist ACROSS misses).
                      // Step with pingExplore instead, staying in the same session.
-    int strikes = 0;
-    for (int i = 0; i < 6; ++i) {
-        const int before = g.model().happiness();
-        for (int tries = 0; tries < 400 && g.nav() != Game::Nav::Wifi; ++tries) {
-            if (g.nav() == Game::Nav::Encounter) {
-                g.onButton(press(Button::A));   // Fight -> Flee
-                g.onButton(press(Button::A));   // Flee -> Sinkhole
-                g.onButton(press(Button::B));   // confirm -> back to idle
-            } else if (g.nav() == Game::Nav::Shop || g.nav() == Game::Nav::ModShop) {
-                tapC(g);   // leave the shop -> back to idle
-            } else if (g.nav() == Game::Nav::Combat) {
-                uint32_t t = 0;
-                for (int j = 0; j < 800 &&
-                                g.combat().outcome() == Combat::Outcome::Ongoing; ++j)
-                    g.tick(t += kHeartbeatMs);
-                g.onButton(press(Button::B));
-            } else if (g.nav() == Game::Nav::PostEncounter) {
-                g.onButton(press(Button::B));
-            } else if (g.nav() == Game::Nav::Idle) {
-                pingExplore(g);
-            }
-        }
-        if (g.nav() != Game::Nav::Wifi) break;   // search exhausted — stop, don't fail
-        const int after = g.model().happiness();
-        if (after < before) ++strikes;
-        else CHECK(after == before);
-        g.onButton(press(Button::B));
-        if (g.nav() == Game::Nav::Combat) {
+    bool sawGuardian = false;
+    int happyDrops = 0;
+    const int before = g.model().happiness();
+    for (int i = 0; i < 400; ++i) {
+        if (g.nav() == Game::Nav::Shibboleth) {
+            // The guardian, standing there because nothing was queued. Answer it and
+            // move on — which of the three replies is right is not this test's business.
+            sawGuardian = true;
+            g.onButton(press(Button::B));
+        } else if (g.nav() == Game::Nav::Wifi) {
+            // A dry Wi-Fi beat BETWEEN guardians. Its sub-outcome still pays out, so the
+            // only thing asserted here is that nothing was taken for the empty queue.
+            if (g.model().happiness() < before) ++happyDrops;
+            g.onButton(press(Button::B));
+        } else if (g.nav() == Game::Nav::Encounter) {
+            g.onButton(press(Button::A));   // Fight -> Flee
+            g.onButton(press(Button::A));   // Flee -> Sinkhole
+            g.onButton(press(Button::B));   // confirm -> back to idle
+        } else if (g.nav() == Game::Nav::Shop || g.nav() == Game::Nav::ModShop) {
+            tapC(g);   // leave the shop -> back to idle
+        } else if (g.nav() == Game::Nav::Combat) {
             uint32_t t = 0;
-            for (int j = 0; j < 400 && g.combat().outcome() == Combat::Outcome::Ongoing; ++j)
+            for (int j = 0; j < 800 &&
+                            g.combat().outcome() == Combat::Outcome::Ongoing; ++j)
                 g.tick(t += kHeartbeatMs);
             g.onButton(press(Button::B));
+        } else if (g.nav() == Game::Nav::PostEncounter) {
+            g.onButton(press(Button::B));
+        } else if (g.nav() == Game::Nav::Idle) {
+            if (!g.exploreActive()) break;   // a lost fight ended the walk — done looking
+            pingExplore(g);
+        } else {
+            g.onButton(press(Button::B));
         }
+        if (sawGuardian) break;
     }
-    // Trigger 1 always strikes; trigger 4 strikes if reached within 6 tries;
-    // 2/3/5/6 never do — so at most 2 of the 6 tries actually cost Happiness.
-    CHECK(strikes >= 1 && strikes <= 2);
+    CHECK(sawGuardian);        // a dry queue DOES reach the Cant
+    CHECK(happyDrops == 0);    // ...and never charged the pet for the drought
 }
 
 // The runtime Audit-scan toggle persists across a reboot (save

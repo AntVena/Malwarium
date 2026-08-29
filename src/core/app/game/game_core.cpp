@@ -256,6 +256,14 @@ bool Game::tickHeartbeat(uint32_t nowMs) {
             // guardian enters a fight, which then auto-dismisses; the rest resolve to
             // the habitat). Any button press restarts the hold (onWifi resets it).
             if (++exploreEventBeat_ >= kExploreRevealHoldBeats) resolveWifiOutcome();
+        } else if (nav_ == Nav::Shibboleth && exploreActive_) {
+            // Hands-off DECISION, and the one place on the walk where running out of
+            // time is not the same as being left alone: a guardian asked a question, and
+            // silence past kShibbolethReplyHoldBeats is taken for an answer — the wrong
+            // one. Pressing A restarts the hold (onShibboleth resets it), so a player
+            // who is genuinely reading is never timed out mid-sentence.
+            if (++exploreEventBeat_ >= kShibbolethReplyHoldBeats)
+                answerShibboleth(/*answered=*/false);
         } else if ((nav_ == Nav::Shop || nav_ == Nav::ModShop) && exploreActive_) {
             // Hands-off DECISION: a shop (item OR mod) is a real buy/leave choice, so
             // hold ~10s to let a watching player act; if no button is pressed by then,
@@ -646,6 +654,7 @@ bool Game::tickIdleDefocus(uint32_t nowMs) {
                            nav_ == Nav::ModalEvolve || nav_ == Nav::ModalCSF ||
                            nav_ == Nav::Combat || nav_ == Nav::ExploreControl ||
                            nav_ == Nav::Encounter || nav_ == Nav::Wifi ||
+                           nav_ == Nav::Shibboleth ||
                            nav_ == Nav::Shop || nav_ == Nav::ModShop ||
                            nav_ == Nav::CacheYield ||
                            nav_ == Nav::BulkYield || nav_ == Nav::PostEncounter ||

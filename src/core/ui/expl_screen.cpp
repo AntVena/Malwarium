@@ -611,7 +611,7 @@ uint8_t wifiAbsorbBite(WifiAbsorb a) {
 }
 }  // namespace
 
-void drawWifiEvent(Framebuffer& fb, const char* sectorName,
+void drawWifiEvent(Framebuffer& fb, const char* sectorName, const char* banner,
                    const char* outcomeLine, const char* discoveryLine,
                    const SpriteData* pet, WifiAbsorb absorb, int beat, int fxBeat) {
     drawHeaderBand(fb, sectorName);
@@ -627,9 +627,9 @@ void drawWifiEvent(Framebuffer& fb, const char* sectorName,
         drawTextMarquee(fb, kMargin, 32, kActiveW - 2 * kMargin, discoveryLine,
                         palColor(Pal::INK_DIM), beat, true);
 
-    const char* banner = "NEW WI-FI NETWORK";
-    drawText(fb, (kActiveW - textWidth(banner)) / 2, 50, banner,
-             palColor(Pal::ACCENT));
+    if (banner && banner[0])
+        drawText(fb, (kActiveW - textWidth(banner)) / 2, 50, banner,
+                 palColor(Pal::ACCENT));
     if (outcomeLine && outcomeLine[0])
         drawText(fb, (kActiveW - textWidth(outcomeLine)) / 2, 68, outcomeLine,
                  palColor(Pal::INK_DIM));

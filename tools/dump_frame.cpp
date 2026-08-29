@@ -92,6 +92,10 @@
 //        named forms seed the ledger so the discovery beat resolves that way, which is
 //        what picks how far the pet eats the network glyph — pass a `beats` count to
 //        land on a frame of the absorb; bare "wifi" is the empty-queue beat)
+// shibboleth [sigils:<n>] (the guardian's riddle drawn in the CANT. `sigils` is how
+//        many letters the pet has learned to read, 0..26 — at 0 the panel is nonsense
+//        and at 26 it is plain English, with every stage between. Pass a `beats` count
+//        to walk the patience bar down)
 // rank (Hacker Rank rank-up celebration on the idle badge,; crosses
 //        a rank via registerNetwork, then resolves one event to surface it)
 //        postencounter (a wild fight ridden to its own auto-dismiss, landing the
@@ -982,7 +986,7 @@ int main(int argc, char** argv) {
               hasFlag(argc, argv, "wildcombat") || hasFlag(argc, argv, "wifi") ||
               hasFlag(argc, argv, "rank") || hasFlag(argc, argv, "shop") ||
               hasFlag(argc, argv, "warp") || hasFlag(argc, argv, "postencounter") ||
-              hasFlag(argc, argv, "outro")) {
+              hasFlag(argc, argv, "shibboleth") || hasFlag(argc, argv, "outro")) {
         // Explore-mode: arm sector 0 → the game drops back to the IDLE
         // habitat with the explore badge live. There is no walk screen; a step is
         // driven by the A+C control chord's Network Ping (A+C → A), which fires the
@@ -1148,6 +1152,35 @@ int main(int argc, char** argv) {
             // the hands-off hold resolves the event off the screen underneath us.
             for (int i = 1; i <= beats && game.nav() == Game::Nav::Wifi; ++i)
                 game.tick(t += kFxAnimMs);
+        } else if (hasFlag(argc, argv, "shibboleth")) {
+            // The guardian's riddle, drawn in the CANT. `sigils:<n>` is the whole point
+            // of the scene: at 0 the panel is a wall of nonsense, and every sigil turns
+            // one more letter of it into itself — the same riddle, legible in stages.
+            // The reply the cursor is on is never the interesting part, so nothing here
+            // steers it.
+            game.inventory().add("sinkhole_trap", 20);
+            for (int i = 3; i < argc; ++i)
+                if (std::strncmp(argv[i], "sigils:", 7) == 0)
+                    game.debugLearnSigils(std::atoi(argv[i] + 7));
+            // The welcome is ROLLED (game_shibboleth.cpp), so reach a riddle by asking
+            // until one comes up rather than by forcing the band — an affront goes
+            // straight to a fight, which is a screen this scene is not about.
+            for (int i = 0; i < 200 && game.nav() != Game::Nav::Shibboleth; ++i) {
+                game.debugStartShibboleth();
+                if (game.nav() == Game::Nav::Combat) {
+                    for (int j = 0; j < 400 &&
+                            game.combat().outcome() == Combat::Outcome::Ongoing; ++j)
+                        game.tick(t += kHeartbeatMs);
+                    game.onButton({Button::B, true, false});
+                }
+                if (game.nav() == Game::Nav::PostEncounter)
+                    game.onButton({Button::B, true, false});
+                if (!game.exploreActive()) game.debugArmExplore(0, 0);
+            }
+            // `beats` walks the patience bar down, which is the only thing on this
+            // screen that moves — stopping if the hold answers for the pet underneath.
+            for (int i = 1; i <= beats && game.nav() == Game::Nav::Shibboleth; ++i)
+                game.tick(t += kHeartbeatMs);
         } else if (hasFlag(argc, argv, "rank")) {
             game.inventory().add("sinkhole_trap", 20);
             // Rank already crossed (device seam above). Fire steps until the first

@@ -70,6 +70,8 @@ SCENES=(
   "hacker_crew_detail|hacker crew red row:1 detail"
   "hacker_crew_netpick|hacker crew netpick"
   "hacker_merge|hacker merge recipes stock"
+  "shibboleth|shibboleth"           "shibboleth_half|shibboleth sigils:13"
+  "shibboleth_fluent|shibboleth sigils:24"
   "shop|shop"                       "encounter|encounter"
   "combat|combat"                   "postencounter|postencounter"
   "combat_stats|combat stats"       "combat_kit|combat kit"

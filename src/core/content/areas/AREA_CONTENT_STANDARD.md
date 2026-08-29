@@ -25,8 +25,9 @@ backdrop (`scene` — a `SceneId`, keyed the same way and for the same reason; `
 means the place is not authored yet), its 5 sub-area names, its
 5 sub-area bosses (`SubBossDef` — a banner, plus the rounds it is fought as) + area-boss
 banner, its signature boss's threat-move rider
-(`apexThreatMoveId`), its storefront (`AreaShopDef` — name, stocked item(s), restock
-count, and the price charged for each), and its mod-loot pool. `expl_screen.cpp` (the EXPL
+(`apexThreatMoveId`), its GUARDIAN (`GuardianDef` — who watches the place, and the one move
+beating it teaches; see *The guardian* below), its storefront (`AreaShopDef` — name, stocked
+item(s), restock count, and the price charged for each), and its mod-loot pool. `expl_screen.cpp` (the EXPL
 list UI), `combat.cpp` (boss composition), and `game_explore.cpp` (mod-loot rolls + the shop
 event) all read an area through `mal::area(idx)` rather than owning any of this data
 themselves.
@@ -73,10 +74,46 @@ file grows past the point of comfortable skimming (the same ~600-line instinct a
 `pirate_bayou/bosses.cpp`, `pirate_bayou/shop.cpp`) rather than inventing a different
 per-area layout — don't pre-split ahead of actual growth.
 
+## The guardian
+
+Every area names one `GuardianDef`: the thing that has been watching its networks the whole
+time. It is **not a rung of the ladder** — it is met on the WALK, when the radio has no new
+sighting to hand the pet (`game_net.cpp` routes there on a dry queue), and what happens next is
+the SHIBBOLETH: it speaks the Cant, and grades its welcome on how much of that the pet can read
+(`game_shibboleth.cpp`, `core/model/cant.h`). So a guardian has no sub-area, no clear flag, and
+no place in the EXPL list.
+
+The row carries **only what is that guardian's own** — its banner, and what beating it teaches:
+
+```
+{"THE LONG SEEDER", {"ratio_debt"}},
+```
+
+How far it out-classes the area is the SAME step for every area (`kGuardianHealthBonusPct` and
+friends, `tunables.h`) and stays cross-cutting for the reason the section below gives. It is
+built on the shared boss spine at **the rung the pet is standing on**, not the area's deepest
+(`combat_factory.cpp`'s `guardianEnemy`): a guardian met on a first sub-area would otherwise be
+a wall nothing at that depth could have built for, and losing ends the run like any wild.
+
+Two rules the gates hold:
+
+- **It never carries the area's `apexThreatMoveId`.** That rider is the signature boss's tell and
+  the only way to earn it; a second carrier would hand it out on the walk.
+- **Each guardian's taught move is unique to it** — no other boss or wild names it. A guardian
+  move with a second carrier would duplicate another rung's prize.
+  `test_every_area_has_a_guardian_with_its_own_move` is the check.
+
+Guardian moves live in their own family in `content_moves.cpp`, and the family is DENIAL: a
+malbeast hurts you, a guardian *rules against* you. Each spends its budget on the rider — a stun,
+a pierce, a stripped guard — and keeps raw power modest.
+
 ## Adding a new area
 
 1. Make a folder `src/core/content/areas/<id>/` with an `area.cpp` defining
    `const AreaDef kArea<Name> = {...};` (see any existing area.cpp for the field order).
+   That includes its `guardian` row and the one move it teaches — see *The guardian* above; a
+   new move needs a row in `content_moves.cpp`'s guardian family, or the reachability gate
+   fails it.
 2. Declare `extern const AreaDef kArea<Name>;` and add one entry to `kAreaList[]` in
    `area_defs.h`, at the ladder position the new area unlocks at.
 3. That's it for identity/content. `kAreaCount`, `kExplSectors` (expl_screen.h),

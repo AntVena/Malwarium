@@ -502,6 +502,41 @@ const MoveDef kMoves[] = {
      Stage::Daemon, nullptr, 0, 0, 0, 0, 0, 0, /*dotDamage=*/10, /*dotTurns=*/5,
      /*stealPower=*/0, /*stealDefensePct=*/40},
 
+    // === THE GUARDIAN POOL — one move per area guardian, taught nowhere else ========
+    //
+    // Generic (line = nullptr) and reachable exactly as the two pools around it are: a
+    // guardian's kit is what a drop is rolled off, and each of these is named by exactly
+    // one AreaDef::guardian.teaches. A guardian is met on the WALK rather than on the
+    // ladder (game_shibboleth.cpp), so this is the only family in the game whose earn
+    // path does not run through the EXPL list at all.
+    //
+    // The family is DENIAL. A malbeast hurts you; a guardian ARBITRATES — it decides you
+    // may not pass, and the damage is incidental to the ruling. So every row here spends
+    // its budget on the rider (a stun, a pierce, a stripped guard) and keeps its raw
+    // power modest, which also keeps them from out-classing the boss pool they are
+    // fought alongside. Each guardian carries exactly ONE, so no move here has a second
+    // way in and no boss's prize is quietly duplicated.
+    //
+    // Same field discipline as the two pools around it: stack*/shieldPool/trap*/replica*
+    // and stealPowerPct stay ZERO on every row.
+    {"ratio_debt", "Ratio Debt", MoveDef::Kind::Attack, 4, 1,
+     "It has been keeping count the whole time - {dot} damage/turn for {dotTurns} turns.",
+     Stage::BootSector, nullptr, 0, 0, 0, 0, 0, 0, /*dotDamage=*/4, /*dotTurns=*/4},
+    {"port_knock", "Port Knock", MoveDef::Kind::Attack, 5, 1,
+     "The right sequence, or none - ignores {pierce}% armor and freezes {lock} turn.",
+     Stage::Process, nullptr, 0, 0, 0, 0, /*armorPiercePct=*/20, /*lockTurns=*/1},
+    {"deep_listen", "Deep Listen", MoveDef::Kind::Attack, 6, 1,
+     "It has heard where you leave off - strips {stealDef}% of the target's armor.",
+     Stage::Process, nullptr, 0, 0, 0, 0, 0, 0, 0, 0, /*stealPower=*/0,
+     /*stealDefensePct=*/30},
+    {"delisted", "Delisted", MoveDef::Kind::Attack, 7, 1,
+     "Delisted, not deleted - freezes {lock} turn and takes {stealMaxHp}% of max Health.",
+     Stage::Script, nullptr, 0, 0, 0, 0, 0, /*lockTurns=*/1, 0, 0, /*stealPower=*/0,
+     /*stealDef=*/0, /*stealSpeed=*/0, /*stealHp=*/0, /*stealMaxHpPct=*/6},
+    {"no_such_name", "No Such Name", MoveDef::Kind::Attack, 9, 1,
+     "The wall is not there because you are not - ignores {pierce}% of armor.",
+     Stage::Daemon, nullptr, 0, 0, 0, 0, /*armorPiercePct=*/45},
+
     // === THE WILD POOL — one Attack + one Defend per zone, farmed off its own wilds ==
     //
     // Generic (line = nullptr), like the boss pool above and reachable the same way: a

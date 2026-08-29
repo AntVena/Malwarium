@@ -142,6 +142,24 @@ struct SubBossDef {
     }
 };
 
+// One area's GUARDIAN — the thing that has been watching this network the whole time,
+// and the only creature in the game that would rather TALK than fight (the SHIBBOLETH,
+// game_shibboleth.cpp). It is not a rung of the EXPL ladder: it is met on the walk, when
+// the radio has nothing new to hand the pet, so it has no sub-area and no clear flag.
+//
+// The row carries only what is this guardian's OWN — its banner and what beating it
+// teaches. How much it out-classes the area is the SAME step for every area
+// (kGuardian*, tunables.h) and stays central per src/core/content/CONTENT_STANDARD.md
+// rule 2, so a guardian is authored as an identity and never as a stat block.
+//
+// `teaches` is bounded by kMaxBossTeaches for the reason that constant gives: a kit is
+// turns spent, not bytes stored. It is also the only thing that makes those moves
+// findable at all, exactly as on SubBossDef.
+struct GuardianDef {
+    const char* name;
+    const char* teaches[kMaxBossTeaches] = {};
+};
+
 struct AreaDef {
     const char* id;    // stable id, e.g. "citrus_circuit" (matches the folder name)
     const char* name;  // display name, e.g. "CITRUS CIRCUIT"
@@ -186,6 +204,9 @@ struct AreaDef {
     // area's wilds add nothing of their own to the ramp's kit.
     const char* wildAttackMoveId;
     const char* wildDefendMoveId;
+    // Who watches this network. Met on the walk rather than on the ladder — see
+    // GuardianDef above.
+    GuardianDef guardian;
     AreaStorefrontDef shop;     // item storefront — listings resolve via ContentRegistry::item
     AreaStorefrontDef modShop;  // mod storefront — listings resolve via ContentRegistry::mod
     const char* const* modPoolIds;  // this area's mod-loot table (drop weighted by rarity)

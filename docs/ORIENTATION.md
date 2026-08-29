@@ -293,6 +293,22 @@ when its BSSID is **co-visible to both devices live**, which is what proves a sh
 context; a fresh capture is hot and broadcasting briefly, then goes quiet, and toggling audit off
 seals it and starts a re-arm cooldown.
 
+**What the radio finds turns into the walk, and what it FAILS to find does too.** A sighting is
+queued, not credited, and an EXPL Wi-Fi event drains one — that resolution is what ROUTES the whole
+event, so the headline, the sweep and the flavor lines all state the same fact. An empty queue is
+not a penalty: every third dry event summons the area's **GUARDIAN** instead, and a guardian puts a
+**SHIBBOLETH** to the pet — a riddle drawn in the **CANT**, the guardians' language, with three
+replies drawn the same way (`src/core/app/game/game_shibboleth.cpp`).
+
+**The Cant is legibility as a progression.** A letter the pet has learned — a **SIGIL** — is drawn
+as itself; every other is drawn as some other, under a substitution rerolled per encounter. So the
+same riddle clarifies in place as sigils come in, and because a substitution preserves width, a
+riddle that fits the panel at zero sigils fits at twenty-six. Answering correctly always pays
+Happiness and sheds Fragmentation. Learning a sigil is **separate and costs one unspent SHAKE** — a
+captured handshake is the only thing a guardian trades its own language for. That split is the two
+consents held apart on purpose: the AUDIT dial paces how fast the Cant is learned, and gates none
+of the walk's rewards behind itself.
+
 **Discovery is deliberately unauthenticated** — the worst a spoofed beacon achieves is a fake name
 in a met-list. Heard peers never enter the ESP-NOW peer table, so the roster is bounded by storage
 rather than by the 20-peer limit.

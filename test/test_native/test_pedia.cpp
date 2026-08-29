@@ -80,10 +80,17 @@ void test_wild_win_can_drop_a_move() {
     Game deep{StartMode::Hatched};
     enterWalk(deep);
     CHECK(farmForAMove(deep, 0, 2, 40));
-    CHECK(learnedOnlyFrom(deep, {"Packet Storm", "Buffer Overflow", "Partial Download"}));
+    // Ratio Debt is in the set because the WALK can also put Citrus Circuit's guardian
+    // in front of the pet (game_shibboleth.cpp) and a guardian is beaten the same way
+    // anything else is. It is not part of the rung's ladder — it is the one enemy on the
+    // walk that is not drawn from it — which is exactly why naming it here rather than
+    // filtering it out keeps this a claim about the ENEMY's kit.
+    CHECK(learnedOnlyFrom(deep, {"Packet Storm", "Buffer Overflow", "Partial Download",
+                                 "Ratio Debt"}));
     CHECK(deep.moveLoadout().owns("packet_storm") ||
           deep.moveLoadout().owns("buffer_overflow") ||
-          deep.moveLoadout().owns("partial_download"));
+          deep.moveLoadout().owns("partial_download") ||
+          deep.moveLoadout().owns("ratio_debt"));
     CHECK(!learnedMoveNamed(deep, "Quick Jab"));        // innate, never a reward
 
     // Sub 0 is the shallowest rung in the game and it still teaches, because an area's

@@ -464,6 +464,13 @@ inline void walkToWifiEvent(Game& g) {
             g.onButton(press(Button::B));
         } else if (g.nav() == Game::Nav::PostEncounter) {
             g.onButton(press(Button::B));   // that fight's status readout -> dismiss
+        } else if (g.nav() == Game::Nav::Shibboleth) {
+            // A guardian, which is what a DRY sighting queue routes to on its cadence
+            // beat (game_net.cpp) — and a native run's queue is always dry, so every
+            // walk helper meets one. B commits the focused reply; whichever way that
+            // lands (back to Idle, or into the guardian's fight) the loop above already
+            // handles the next screen.
+            g.onButton(press(Button::B));
         } else if (g.nav() == Game::Nav::Idle) {
             if (g.exploreActive()) pingExplore(g); else enterWalk(g);
         }
@@ -525,6 +532,8 @@ inline void walkToAnyCombat(Game& g) {
             tapC(g);   // leave the shop -> back to idle
         } else if (g.nav() == Game::Nav::PostEncounter) {
             g.onButton(press(Button::B));   // a prior fight's status readout -> dismiss
+        } else if (g.nav() == Game::Nav::Shibboleth) {
+            g.onButton(press(Button::B));   // answer the guardian; see walkToWifiEvent
         }
     }
 }

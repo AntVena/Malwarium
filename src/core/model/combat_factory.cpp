@@ -498,10 +498,23 @@ namespace {
 // round (SubBossRound::rung) is the same fight drawn a rung shallower, and expressing that
 // as "run the whole formula at sub-1" is what keeps an escort automatically consistent with
 // the boss it guards — there is no second stat curve to keep in step with this one.
+// The depth spine every authored boss is drawn on: Health and speed as a function of the
+// area's tier and the rung within it. Named rather than inlined because the GUARDIAN
+// (guardianEnemy, below) stands off the ladder but is still this area's, and has to read
+// off exactly this curve — a copy of the formula there would be the second stat block
+// AREA_CONTENT_STANDARD.md keeps warning about.
+struct BossSpine { int health; int speed; };
+
+BossSpine bossSpine(int tier, int sub) {
+    return {kSubBossHealthBase + tier * 8 + sub * kSubBossHealthStep,
+            kSubBossSpeedBase + tier + (sub >= kSubAreasPerArea - 1 ? 2 : 0)};
+}
+
 CombatEnemy subBossEnemy(const AreaDef& a, int tier, int sub, const char* name,
                          const SubBossDef* teacher, const char* extraMoveId = nullptr) {
-    const int health = kSubBossHealthBase + tier * 8 + sub * kSubBossHealthStep;
-    const int speed = kSubBossSpeedBase + tier + (sub >= kSubAreasPerArea - 1 ? 2 : 0);
+    const BossSpine spine = bossSpine(tier, sub);
+    const int health = spine.health;
+    const int speed = spine.speed;
     std::vector<const char*> moves = {"quick_jab"};
     if (sub >= 2) moves.push_back("packet_storm");
     if (sub >= kSubAreasPerArea - 1) {
@@ -582,6 +595,51 @@ BossGauntlet areaBoss(int areaIdx) {
                                         finale ? a.areaBossMoveId : nullptr));
     }
     return g;
+}
+
+CombatEnemy guardianEnemy(int areaIdx, int sub) {
+    // The area's guardian, as a fight. It is drawn on the SAME spine every boss is, at
+    // the rung the pet is actually standing on, and then stepped up by the shared
+    // kGuardian* margin — so it is always a step above the stretch it was met in.
+    //
+    // `sub` and not the area's deepest rung, which is the obvious reading and the wrong
+    // one: a guardian is met on the WALK and the walk can be armed anywhere, so pinning
+    // it to the gauntlet's last stage would put a wall in front of a pet on its first
+    // sub-area that it cannot have built for yet — and losing here ends the run, the
+    // same as any wild. Meeting the pet where it stands is also the truer reading of
+    // what the thing is: it watches this stretch, and it is above whatever the stretch
+    // is fielding.
+    //
+    // Two deliberate omissions. It does NOT carry the area's apexThreatMoveId: that
+    // rider is the signature boss's tell and the only way to earn it, and a second
+    // carrier would quietly hand it out on the walk. And it does NOT set isWild, so the
+    // wild challenge buff never applies — a guardian is not something you stumbled onto.
+    //
+    // Its "stronger mods" are the stat leans, because an enemy fields leans rather than a
+    // mod rack (CombatEnemy has no loadout): powerMultPct and dmgReducePct are the same
+    // two numbers a mod would have moved, applied directly.
+    if (areaIdx < 0) areaIdx = 0;
+    if (areaIdx >= kAreaCount) areaIdx = kAreaCount - 1;
+    if (sub < 0) sub = 0;
+    if (sub >= kSubAreasPerArea) sub = kSubAreasPerArea - 1;
+    const AreaDef& a = area(areaIdx);
+    const int tier = areaTier(areaIdx);
+    const BossSpine spine = bossSpine(tier, sub);
+
+    // The generic boss frame, like every authored boss — a guardian costs no new art.
+    CombatEnemy e{a.guardian.name,
+                  "SPR_PET_CACHEMUTT",
+                  tier + 1,
+                  spine.health * (100 + kGuardianHealthBonusPct) / 100,
+                  spine.speed + kGuardianSpeedBonus,
+                  {"quick_jab", "packet_storm", "fork_bomb"}};
+    // ...and what beating it TEACHES, which is the only place these moves are carried
+    // (content_moves.cpp's guardian pool).
+    for (const char* id : a.guardian.teaches)
+        if (id) e.moveIds.push_back(id);
+    e.powerMultPct = kGuardianPowerMultPct;
+    e.dmgReducePct = kGuardianDmgReducePct;
+    return e;
 }
 
 // Bits payout. randInt(R, R²) — one uniform draw in the inclusive range.

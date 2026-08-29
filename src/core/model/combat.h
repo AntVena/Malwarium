@@ -886,6 +886,18 @@ BossGauntlet subAreaBoss(int area, int sub);
 // that boss may have in its own fight.
 BossGauntlet areaBoss(int area);
 
+// The area's GUARDIAN, as a single enemy. Met on the WALK rather than the ladder — an
+// EXPL Wi-Fi event whose sighting queue came up empty is what summons it
+// (game_shibboleth.cpp) — so it is one enemy and not a gauntlet, and there is no clear
+// flag it can set.
+//
+// Drawn on the same depth spine every boss is, at the rung `sub` the pet is standing on,
+// then stepped up by the shared kGuardian* margin (tunables.h) — always a step above the
+// stretch it was met in, never a fixed wall at the area's deepest. It deliberately does
+// NOT carry that area's apexThreatMoveId, so the signature boss stays the only way to
+// earn it.
+CombatEnemy guardianEnemy(int area, int sub);
+
 // Combat Bits payout, keyed to the opponent's stage-rank R. A NORMAL opponent pays a random
 // integer in [R, R²]; a BOSS rolls that range R times and sums, a gauntlet accruing one
 // roll per round and paying the lump at the end. `rng` is caller-owned and advanced in place.

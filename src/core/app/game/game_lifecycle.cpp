@@ -543,6 +543,8 @@ void Game::wipeDeviceProgress() {
     networksSeen_ = 0;
     handshakesSeen_ = 0;
     seenHandshakeBssids_.clear();
+    cantSigils_ = 0;      // the Cant is unlearned again, and the purse it was bought
+    shakesSpent_ = 0;     // with is empty — both follow the handshakes they came from
     titlesUnlocked_ = 0;
     equippedTitle_ = -1;
     for (int a = 0; a < kAreaCount; ++a) {

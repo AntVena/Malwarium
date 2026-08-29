@@ -23,9 +23,11 @@
 #include "core/content/content_arcade.h"    // kArcadeMaxCabinets sizes the arcade tallies
 #include "core/content/content_passives.h"  // kWormReplicaSlots sizes companionWander_
 #include "core/content/content_quotes.h"    // kQuoteStateBytes sizes the per-quote states
+#include "core/content/content_riddles.h"   // kRiddleReplies sizes the shown reply order
 #include "core/content/defs.h"
 #include "core/content/effect_text.h"
 #include "core/content/registry.h"
+#include "core/model/cant.h"                // SigilSet / CantCipher — the guardian's tongue
 #include "core/model/combat.h"
 #include "core/model/cryptogram.h"
 #include "core/model/disk_decryption.h"
@@ -87,7 +89,7 @@ public:
     //   Detail      — L3 (item detail · MAINT action).
     //   Process     — a running MAINT process (non-interruptible).
     //   ModalFeeding / ModalLockout — event overlays.
-    enum class Nav { Idle, Cursor, Submenu, Detail, Process, ModalFeeding, ModalLockout, ModalLineSelect, ModalEggPick, ModalHatchReveal, ModalEvolve, ModalCSF, Combat, ExploreControl, Encounter, Wifi, Shop, ModShop, WarpPicker, RollbackPicker, CacheYield, BulkYield, PostEncounter, Stacker, Isolation, Chroma, Decryption, Cryptogram, ArcadeResult, Tourney };
+    enum class Nav { Idle, Cursor, Submenu, Detail, Process, ModalFeeding, ModalLockout, ModalLineSelect, ModalEggPick, ModalHatchReveal, ModalEvolve, ModalCSF, Combat, ExploreControl, Encounter, Wifi, Shop, ModShop, WarpPicker, RollbackPicker, CacheYield, BulkYield, PostEncounter, Stacker, Isolation, Chroma, Decryption, Cryptogram, ArcadeResult, Tourney, Shibboleth };
 
     // Which L2 screen the ITEMS submenu is showing. Picker (the category tile
     // screen) only ever appears when itemPickerUnlocked(); every other path — no
@@ -105,6 +107,20 @@ public:
     // words: a new network is eaten whole, one it is merely fond of is nibbled, its
     // own home turf is left standing, and an empty queue has nothing to show at all.
     enum class NetDiscovery : uint8_t { None, New, Fond, HomeTurf };
+
+    // How a guardian receives the pet, graded on how much of the CANT it can read
+    // (cantFluencyPct, core/model/cant.h). Public so a test can steer/inspect the band a
+    // fluency landed in without playing a walk out.
+    //
+    //   Affront — it will not hear an illiterate pet out, and attacks.
+    //   Riddle  — the SHIBBOLETH proper: a riddle drawn in the Cant, three replies.
+    //   Boon    — fluent enough that the two simply talk; no riddle at all.
+    enum class ShibbolethWelcome : uint8_t { Affront, Riddle, Boon };
+
+    // How a riddle ENDED. Answered is the only one that can buy a sigil; the other two
+    // both hand the pet to the guardian's fight, and are distinguished only so the
+    // flavor line can tell the truth about which happened.
+    enum class ShibbolethReply : uint8_t { Pending, Answered, Wrong, Unanswered };
 
     // Which slice of the DECRYPTOGRAM pool a roll is allowed to land in. The VAULT
     // wants an unsolved quote (a prize to win) or, once there are none, a solved one to
@@ -1036,6 +1052,30 @@ public:
     // Lifetime count of distinct WPA handshakes captured (SHAKES on CFG). Deduped
     // by BSSID so a repeat capture of a known network never re-credits.
     int handshakesSeen() const { return handshakesSeen_; }
+    // SHAKES not yet spent on a sigil of the CANT. A captured handshake is what buys
+    // a guardian's answer (game_shibboleth.cpp), so the lifetime tally above is the
+    // brag and this is the purse — the two are shown together as "unspent/lifetime".
+    // Never negative: spending is the only thing that moves it, and it checks first.
+    int shakesUnspent() const {
+        const int n = handshakesSeen_ - shakesSpent_;
+        return n > 0 ? n : 0;
+    }
+    // The letters of the Cant this device can read (core/model/cant.h). The one
+    // durable half of the whole guardian system.
+    SigilSet cantSigils() const { return cantSigils_; }
+    int sigilsKnown() const { return sigilCount(cantSigils_); }
+    // The guardian encounter's live state, for the screen and for tests: which band the
+    // fluency roll landed in, how the riddle ended, and the riddle itself already drawn
+    // in the Cant. `shibbolethReplyText` fills `out` with the reply on shown row `row`.
+    ShibbolethWelcome shibbolethWelcome() const { return shibWelcome_; }
+    ShibbolethReply shibbolethReply() const { return shibReply_; }
+    int shibbolethRow() const { return shibRow_; }
+    const char* guardianName() const;
+    void shibbolethRiddleText(char* out, int cap) const;
+    void shibbolethReplyText(int row, char* out, int cap) const;
+    // Which shown row carries the true reply. Exposed for the gates — the screen never
+    // asks, and neither does anything on the press path.
+    int shibbolethTrueRow() const;
     // Register a handshake the device-tier promiscuous capture just observed +
     // wrote to the .pcap. Always drives the AuditCapture SM hot (a capture DID
     // happen), but only counts + persists once per distinct BSSID. Returns true if
@@ -1498,6 +1538,26 @@ public:
     // scene can ask for — so a frame that wants to LOOK at the longest line the walk can
     // produce sets it. Explore mode still has to be armed for anything to draw.
     void debugSetExploreFlavor(const char* s);
+    // Put a guardian in front of the pet NOW (tests / dump_frame), skipping the walk
+    // that would eventually route to one. The welcome is still ROLLED — this is the
+    // encounter's real entry point, not a way to force a band — so a caller that wants a
+    // riddle specifically seeds the RNG rather than asking for one. Explore mode has to
+    // be armed, exactly as it does for the walk path.
+    void debugStartShibboleth() { startShibboleth(); }
+    // Credit captured handshakes without a radio (tests / headless runs). SHAKES is what
+    // buys a sigil of the Cant, and the honest path to one is a real WPA capture on real
+    // hardware with capture armed — which no native run has.
+    void debugAddHandshakes(int n) {
+        handshakesSeen_ += n;
+        markSaveDirty();
+    }
+    // Learn `n` sigils outright, so a test can stand at a fluency rather than winning its
+    // way there. Follows the same fixed reveal order the real path does (learnSigil), so
+    // "four sigils" means the same four letters here as in play.
+    void debugLearnSigils(int n) {
+        for (int i = 0; i < n; ++i) cantSigils_ = learnSigil(cantSigils_);
+        markSaveDirty();
+    }
     // Credit boss rounds without fighting them (tests / headless runs) — reaching the
     // deeper boss rungs honestly would mean walking a whole gauntlet ladder per rung.
     void debugAddBossWins(int n) { bossWins_ += n; markSaveDirty(); }
@@ -1843,6 +1903,7 @@ private:
     const SpriteData* idleCamoSprite(int slot) const;
     void drawEncounterScreen(Framebuffer& fb) const;
     void drawWifiScreen(Framebuffer& fb) const;
+    void drawShibbolethScreen(Framebuffer& fb) const;
     void drawShopScreen(Framebuffer& fb) const;
     void drawPostEncounterScreen(Framebuffer& fb) const;
 
@@ -2116,6 +2177,25 @@ private:
     void startAreaBoss(int area);
     void startBossRound(int carryHealth);
     void finishBossRound();
+
+    // THE SHIBBOLETH (game_shibboleth.cpp). startShibboleth() is reached from the Wi-Fi
+    // event when the sighting queue came up empty and the dry-streak cadence is due
+    // (game_net.cpp) — it grades the pet's fluency, and either resolves in place (an
+    // AFFRONT into the guardian's fight, a BOON straight back to the walk) or opens
+    // Nav::Shibboleth with a riddle to answer. onShibboleth() is the press path;
+    // answerShibboleth() commits the focused reply and is also what the ~15s hold calls
+    // with nothing focused, since silence is an answer here. startGuardianCombat() is
+    // the shared way into the fight, from an affront and from a failed riddle alike.
+    void startShibboleth();
+    void onShibboleth(const ButtonEvent& ev);
+    void answerShibboleth(bool answered);
+    void grantBoon();
+    void startGuardianCombat();
+    // Pay one unspent SHAKE for the next sigil of the Cant. Returns whether it bought
+    // one — false when the purse is empty (the riddle's other rewards are paid anyway,
+    // which is the whole point of the gate sitting HERE and not on the win) or when the
+    // Cant is already complete.
+    bool buySigil();
 
     // Wi-Fi network event: a self-contained typed event. First resolves real-
     // network discovery (resolveNetworkDiscovery — pops the pending sighting
@@ -3017,6 +3097,29 @@ private:
     int networksSeen_ = 0;
     PowerStatus power_;  // last reading from the platform tier (CFG "BATT" line)
     int allyBuffBattlesLeft_ = 0;
+
+    // THE SHIBBOLETH — the guardian encounter (game_shibboleth.cpp, core/model/cant.h).
+    //
+    // Only ONE of these is durable. `cantSigils_` is the set of letters of the Cant this
+    // device has learned to read (save v59), and `shakesSpent_` is how many of its SHAKES
+    // have been paid out for them — a sigil costs a captured handshake, so the two
+    // together are the whole of what the ladder remembers. Everything below them
+    // describes ONE encounter and is rebuilt every time a guardian speaks, which is why
+    // the cipher in particular is not persisted: a mapping that survived a reboot would
+    // be a mapping worth memorising instead of learning.
+    SigilSet cantSigils_ = 0;
+    int shakesSpent_ = 0;
+
+    ShibbolethWelcome shibWelcome_ = ShibbolethWelcome::Riddle;
+    ShibbolethReply shibReply_ = ShibbolethReply::Pending;
+    CantCipher shibCipher_;
+    int shibRiddle_ = 0;        // index into riddles() (content_riddles.h)
+    // Which authored reply sits on each shown row. The pool authors the TRUE reply first
+    // (content_riddles.h), so the order shown has to be shuffled somewhere; doing it here
+    // rather than in the pool is what keeps "add a riddle" a one-line edit.
+    uint8_t shibOrder_[kRiddleReplies] = {0, 1, 2};
+    int shibRow_ = 0;           // the cursor
+    char shibFlavor_[40] = "";  // what the guardian's answer was, for the walk's line
 
     // Real-network discovery (game_net.cpp, core/net/network_ledger.h). Three
     // structures answering three questions:

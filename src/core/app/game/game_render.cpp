@@ -20,6 +20,7 @@
 #include "core/ui/cfg_screen.h"
 #include "core/ui/combat_screen.h"
 #include "core/ui/expl_screen.h"
+#include "core/ui/shibboleth_screen.h"
 #include "core/ui/items_screen.h"
 #include "core/ui/maint_screen.h"
 #include "core/ui/modals.h"
@@ -93,6 +94,7 @@ void Game::render(Framebuffer& fb) const {
             break;
         case Nav::Encounter: drawEncounterScreen(fb); break;
         case Nav::Wifi: drawWifiScreen(fb); break;
+        case Nav::Shibboleth: drawShibbolethScreen(fb); break;
         case Nav::Shop: drawShopScreen(fb); break;
         case Nav::ModShop: drawShopScreen(fb); break;
         case Nav::WarpPicker: drawWarpPickerScreen(fb); break;
@@ -893,16 +895,39 @@ void Game::drawWifiScreen(Framebuffer& fb) const {
     // The discovery beat's reward, as the thing the pet does to the network glyph.
     // Untouched is not "nothing happened" — it is the pet declining its own home turf,
     // which is what the TIRED OF line says.
+    //
+    // The BANNER is the same fact stated in words, which is why it is derived here from
+    // netDiscovery_ rather than being a constant in the screen: a fixed "NEW WI-FI
+    // NETWORK" over a repeat sighting — or over a dry queue with nothing found at all —
+    // is the screen contradicting its own two flavor lines.
     WifiAbsorb absorb = WifiAbsorb::None;
+    const char* banner = "QUIET AIR";
     switch (netDiscovery_) {
-        case NetDiscovery::New: absorb = WifiAbsorb::Whole; break;
-        case NetDiscovery::Fond: absorb = WifiAbsorb::Nibble; break;
-        case NetDiscovery::HomeTurf: absorb = WifiAbsorb::Untouched; break;
+        case NetDiscovery::New:
+            absorb = WifiAbsorb::Whole; banner = "NEW WI-FI NETWORK"; break;
+        case NetDiscovery::Fond:
+            absorb = WifiAbsorb::Nibble; banner = "A KNOWN NETWORK"; break;
+        case NetDiscovery::HomeTurf:
+            absorb = WifiAbsorb::Untouched; banner = "HOME TURF"; break;
         case NetDiscovery::None: break;
     }
-    drawWifiEvent(fb, explSectorName(exploreSector_), wifiFlavor_, netDiscoveryFlavor_,
+    drawWifiEvent(fb, explSectorName(exploreSector_), banner, wifiFlavor_,
+                  netDiscoveryFlavor_,
                   pet_ ? registry_.creatureSprite(*pet_) : nullptr, absorb,
                   beat_, fxBeat_);
+}
+
+void Game::drawShibbolethScreen(Framebuffer& fb) const {
+    char riddle[kRiddleBodyLines * kRiddleBodyCols + 16];
+    shibbolethRiddleText(riddle, sizeof(riddle));
+    char reply[kRiddleReplies][40];
+    const char* rows[kRiddleReplies];
+    for (int i = 0; i < kRiddleReplies; ++i) {
+        shibbolethReplyText(i, reply[i], sizeof(reply[i]));
+        rows[i] = reply[i];
+    }
+    const float held = static_cast<float>(exploreEventBeat_) / kShibbolethReplyHoldBeats;
+    drawShibboleth(fb, guardianName(), riddle, rows, shibRow_, cantSigils_, held);
 }
 
 void Game::drawShopScreen(Framebuffer& fb) const {

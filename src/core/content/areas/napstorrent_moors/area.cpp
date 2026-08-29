@@ -72,6 +72,9 @@ const AreaDef kAreaNapstorrentMoors = {
     // riders is its own niche.
     /*wildAttackMoveId=*/"chain_letter",
     /*wildDefendMoveId=*/"private_tracker",
+    // Who watches the Moors: the keeper of the listing. Everything out here exists
+    // because it is written down, and it is the one doing the writing.
+    {"THE INDEX KEEPER", {"delisted"}},
     {"MOOR-TO-MOOR", kShopListings, arrLen(kShopListings)},
     {"MOOR TO MODS", kModShopListings, arrLen(kModShopListings)},
     kModPool,

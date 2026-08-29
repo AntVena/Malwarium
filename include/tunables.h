@@ -716,17 +716,87 @@ constexpr int kSubBossSpeedBase  = 8;    // + areaTier (+2 for the signature sub
 //     that area's own file, not a change here. --------
 constexpr int kShopStock = 5;              // default units in stock per storefront visit
 
-// Wi-Fi network explore event (placeholder weights). A
-//     self-contained event: rolls one of 4 sub-outcomes and plays it out in
-//     place (no sub-activity/stepping). Friendly-visit is a v1 substitute for
-// the doc-07 Met-Pets Roster (out of pet-side scope) — a generic
-//     ally-buff rather than a named remembered pet. ---------------------------
+// Wi-Fi network explore event. The event is ROUTED by what the radio actually
+//     queued rather than rolled independently of it: a sighting to resolve makes this
+//     the discovery beat (the pet takes the network in), and an EMPTY queue is what
+//     summons the area's guardian instead. So the two halves of the screen can never
+//     contradict each other, and a walk through a dead zone reaches new content rather
+//     than only a Happiness tax. game_net.cpp routes it; game_shibboleth.cpp owns the
+//     guardian half. --------------------------------------------------------------
+//
+// The weights below are the SIGHTING branch only — what a resolved network turns out to
+// have been standing next to. Friendly-visit is a v1 substitute for the doc-07 Met-Pets
+// Roster (out of pet-side scope) — a generic ally-buff rather than a named remembered
+// pet.
 constexpr int kWifiSleepingPct = 30;    // sleeping guardian -> free loot
 constexpr int kWifiAwakenedPct = 25;    // awakened guardian -> wild combat
 constexpr int kWifiOpenCachePct = 25;   // open cache -> straight loot
                                          // (remainder = friendly visit -> ally buff)
 constexpr int kAllyBuffBattles = 3;     // friendly-visit buff duration
 constexpr int kAllyBuffPowerPct = 20;   // +power for the buffed battles
+
+// THE SHIBBOLETH — the guardian encounter an empty sighting queue routes to
+//     (game_shibboleth.cpp, core/model/cant.h). A guardian grades its welcome on how
+//     much of the CANT the pet can read, so these three bands are read against
+//     cantFluencyPct: below the first it is turned away outright, above the second it is
+//     simply received, and the stretch between is where it is TESTED. ------------------
+// The bands are a LIKELIHOOD ladder and deliberately not a threshold one. Thresholds
+// deadlock: a pet is refused until it is fluent, and the only way to become fluent is to
+// be asked, so the whole system would be unreachable from a fresh save. As chances, every
+// fluency can reach every band — what climbing the Cant buys is that the good one gets
+// commoner and the bad one gets rarer, which is also what "the more they know, the more
+// likely a quiet word" actually means.
+constexpr int kShibbolethAffrontBasePct = 25;  // AFFRONT chance at ZERO fluency: a
+                                              // guardian turns an illiterate pet away a
+                                              // quarter of the time and hears it out the
+                                              // rest. Scaled DOWN by fluency, to nothing
+                                              // at a complete Cant
+constexpr int kShibbolethBoonMaxPct = 60;     // BOON chance at a COMPLETE Cant — no
+                                              // riddle at all, the two simply talk.
+                                              // Scaled UP from nothing at zero fluency.
+                                              // Under 100 on purpose: a guardian that
+                                              // never asked again would retire the
+                                              // riddles the moment they stopped being
+                                              // needed, and the pool is the content
+constexpr int kShibbolethReplyHoldBeats = 60; // ~15s to answer, then the guardian takes
+                                              // the silence as an answer and the reply
+                                              // resolves as a wrong one. Longer than the
+                                              // shop's kExploreDecisionHoldBeats because
+                                              // there is genuinely something to READ here
+                                              // before there is anything to decide
+constexpr int kShibbolethWinHappy = 6;        // Happiness for answering correctly — paid
+                                              // whether or not a shake was there to buy
+                                              // the sigil with
+constexpr int kShibbolethWinFragCut = 4;      // ...and Fragmentation shed with it
+constexpr int kShibbolethLoseHappy = 4;       // Happiness lost on a wrong or unanswered
+                                              // reply. Deliberately under the win, since
+                                              // the fight that follows carries the rest
+                                              // of the cost
+constexpr int kShibbolethLoseFrag = 5;        // ...and Fragmentation taken with it
+constexpr int kShibbolethBoonHappy = 10;      // a BOON's Happiness — the largest single
+                                              // lump the walk pays, and the reason to
+                                              // learn the Cant at all
+constexpr int kShibbolethBoonFragCut = 12;    // ...and the Fragmentation it clears, which
+                                              // is a free defrag in all but name
+constexpr int kShibbolethBoonEscortPct = 34;  // ...and how often it instead sends the pet
+                                              // on with an escort (the friendly-visit
+                                              // ally buff, at kShibbolethEscortBattles)
+constexpr int kShibbolethEscortBattles = 5;   // a guardian's escort outlasts a friendly
+                                              // visit's — it is owed to a pet that can
+                                              // ASK, not one that happened to be passed
+
+// The GUARDIAN itself, as a fight. Built off the same depth spine every boss uses
+//     (combat_factory.cpp's guardianEnemy) at its area's deepest rung, then stepped up —
+//     it is the thing that has been watching the whole area, so it out-classes the
+//     gauntlet's last stage rather than matching it. Shared, not per-area, per
+//     src/core/content/CONTENT_STANDARD.md rule 2: every area's guardian is its own
+//     ladder plus the SAME step.
+constexpr int kGuardianHealthBonusPct = 25;   // Health over the area's deepest sub-boss
+constexpr int kGuardianPowerMultPct = 125;    // attack lean — what "stronger mods
+                                              // equipped" actually is on an enemy, which
+                                              // fields stat leans rather than a mod rack
+constexpr int kGuardianDmgReducePct = 15;     // ...and the damage cut on the other side
+constexpr int kGuardianSpeedBonus = 2;        // and it moves first more often than not
 
 // Real-network discovery (game_net.cpp: Game::registerNetwork / resolveNetworkDiscovery,
 // core/net/network_ledger.h). The device-tier passive scan only QUEUES a sighting
@@ -791,13 +861,21 @@ constexpr int kNetDiscoveryFoundHappyBonus = 1;    // small Happiness bump whene
 constexpr int kNetDiscoveryFondXpAmount = 8; // pet combat-XP lump for an outside-top-8
                                               // repeat sighting (Game::addCombatXp) —
                                               // authored by feel, unmeasured against play
-constexpr int kNetDiscoveryNoneHappyPenalty = 5;      // Happiness hit when the queue is
-                                              // empty and the cooldown below allows it
-constexpr int kNetDiscoveryEmptyCooldownStrikes = 3;  // the penalty only actually applies
-                                              // on the 1st empty-queue miss, then every
-                                              // Nth miss after (streak 1,4,7,10…) — so a
-                                              // long unmonitored dead-zone walk tapers off
-                                              // instead of grinding Happiness to 0
+constexpr int kNetDiscoveryEmptyGuardianStrikes = 3;  // an empty queue summons the area's
+                                              // GUARDIAN every Nth miss (streak 3,6,9…),
+                                              // never the 1st: arming a walk resets the
+                                              // streak, so a 1st-miss trigger would head
+                                              // every fresh walk with a guardian and make
+                                              // re-arming a way to farm them. The beat
+                                              // that used to sting a dry walk for
+                                              // Happiness is now the beat that puts
+                                              // something in front of the pet — walking
+                                              // somewhere with no new networks costs
+                                              // nothing and leads to the Cant instead
+                                              // (game_shibboleth.cpp). The dry events
+                                              // BETWEEN still resolve their ordinary
+                                              // sub-outcome, so the walk's event density
+                                              // is unchanged either way
 
 // Audit-mode handshake capture's SHAKES dedup set (seenHandshakeBssids_,
 // game_net.cpp registerHandshake) — a real-radio, session-scoped RAM cap sized so a

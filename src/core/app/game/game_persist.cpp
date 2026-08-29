@@ -228,6 +228,10 @@ SaveData Game::captureSave() const {
     d.tourneyWins = tourneyWins_;   // v56
     d.pvpWins = pvpWins_;           // v56
     d.mergesCooked = mergesCooked_; // v56
+    // v59 — the CANT. The learned mask and what was paid for it; how many shakes are
+    // still SPENDABLE is derived from this and the v7 lifetime count, never stored.
+    d.cantSigils = cantSigils_;
+    d.shakesSpent = shakesSpent_;
     // v58 — the chosen background, by wire. AUTO writes 0, which is also what a pick
     // this build somehow has no row for writes, since AUTO is the safe reading.
     if (const BackgroundDef* b = backgroundFor(backgroundPick_)) d.backgroundPick = b->wire;
@@ -777,6 +781,14 @@ void Game::applySave(const SaveData& d) {
         const BackgroundDef* b = backgroundByWire(d.backgroundPick);
         backgroundPick_ = (b && backgroundOwned(b->scene)) ? b->scene : SceneId::None;
     }
+
+    // v59: the CANT. `shakesSpent` is clamped to the lifetime handshake count restored
+    // above, so a blob that somehow claims more spent than were ever captured reads back
+    // as an empty purse rather than a negative one — shakesUnspent() would floor it
+    // anyway, and clamping here means the next save writes the corrected figure.
+    cantSigils_ = d.cantSigils;
+    shakesSpent_ = d.shakesSpent < 0 ? 0
+                 : (d.shakesSpent > handshakesSeen_ ? handshakesSeen_ : d.shakesSpent);
 
     lastSaveMs_ = nowMs_;
     saveDirty_ = false;

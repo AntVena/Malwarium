@@ -220,7 +220,10 @@ enum class WifiAbsorb { None, Whole, Nibble, Untouched };
 // reads — and an untouched glyph is as much a statement as an eaten one.
 // `beat` is the heartbeat (the marquee's own pace); `fxBeat` is the faster dissolve
 // clock (Game::fxBeat_) the absorb is paced on.
-void drawWifiEvent(Framebuffer& fb, const char* sectorName,
+// `banner` is what the radio actually FOUND, in words — the caller derives it from the
+// same discovery state `absorb` is derived from (Game::drawWifiScreen), so the headline,
+// the sweep and the two lines below can never disagree about whether anything was found.
+void drawWifiEvent(Framebuffer& fb, const char* sectorName, const char* banner,
                    const char* outcomeLine, const char* discoveryLine,
                    const SpriteData* pet, WifiAbsorb absorb, int beat, int fxBeat);
 

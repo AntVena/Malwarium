@@ -540,6 +540,11 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     // which backgrounds are OWNED is derived from the rest of this blob rather than
     // written beside it.
     w.u8(d.backgroundPick);
+
+    // v59: the CANT — the learned-sigil mask and the shakes paid for it. Its own tail
+    // after v58's, so a build that stops at either still reads every field it knows.
+    w.u32(d.cantSigils);
+    w.i32(d.shakesSpent);
 }
 
 std::vector<uint8_t> serializeSave(const SaveData& d) {
@@ -1126,6 +1131,14 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
     // v58 tail: the chosen background. Absent in a v1..v57 blob → 0, which is AUTO —
     // the pet decides, which is what every device did before there was a choice to make.
     if (version >= 58) d.backgroundPick = r.u8();
+
+    // v59 tail: the CANT. Absent in a v1..v58 blob → no sigils learned and nothing
+    // spent, which is the truth and not a compromise — every shake such a save
+    // captured is still in the purse, waiting for the first guardian.
+    if (version >= 59) {
+        d.cantSigils = r.u32();
+        d.shakesSpent = r.i32();
+    }
 
     if (!r.ok) { out = SaveData{}; return false; }  // truncated -> empty
     if (version < newestRenameVersion()) renameRetiredIds(d, version);
