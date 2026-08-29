@@ -168,6 +168,10 @@ FRAME_W_OVERRIDES = {
     # 512x64 = eight 64x64 frames, the same case one cell narrower. 64 does not divide
     # by 56 either, so the Metamorphic Daemon needs the row here to animate at all.
     "SPR_PET_TENTACLONE": 64,
+    # 528x48 = eight 66x48 frames. The Script cell here is wider than the standard 56
+    # because the creature is an eight-armed splay that reads across, and 66 does not
+    # divide by 56, so the strip needs naming the same way the two above do.
+    "SPR_PET_MORPHOPUS": 66,
 }
 
 

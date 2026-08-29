@@ -556,10 +556,10 @@ window.PEDIA_DATA = {
       "hint": "Eight arms, countless forms. Whatever you were about to do, it has already been something that beats it.",
       "context": "Mimicry / instruction substitution",
       "sprite": "assets/sprites/SPR_PET_MORPHOPUS.png",
-      "cellW": 63,
+      "cellW": 66,
       "cellH": 48,
-      "sheetW": 63,
-      "sheetH": 96,
+      "sheetW": 528,
+      "sheetH": 48,
       "branchSplit": true
     },
     {
