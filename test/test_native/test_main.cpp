@@ -21,6 +21,7 @@ int g_failures = 0;
 #define MAL_RUN_ALL_GATES(RUN)              \
     /* T0–T2 — pipeline + idle + STAT */    \
     RUN(test_sprite_roundtrip)              \
+    RUN(test_oversized_cell_holds_a_row_stack) \
     RUN(test_indexed_sprite_decodes_across_byte_boundaries) \
     RUN(test_tiled_sprite_shares_one_tile_between_positions) \
     RUN(test_upscale_boundaries)            \

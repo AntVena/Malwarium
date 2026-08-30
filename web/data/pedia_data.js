@@ -574,8 +574,8 @@ window.PEDIA_DATA = {
       "sprite": "assets/sprites/SPR_PET_SYNCAELIA.png",
       "cellW": 71,
       "cellH": 64,
-      "sheetW": 71,
-      "sheetH": 64
+      "sheetW": 568,
+      "sheetH": 128
     },
     {
       "id": "tentaclone",

@@ -30,6 +30,29 @@ void test_sprite_roundtrip() {
     CHECK(opaqueChecked > 0);  // sanity: the sprite isn't fully transparent
 }
 
+// --- Gate: an oversized cell can still hold a row STACK --------------------
+//
+// Both halves of a sheet's grid come from override tables in tools/gen_assets.py, so
+// both are one table away from being silently dropped — and dropping the HEIGHT half is
+// the invisible one. `frame_rows()` falls back to a single row, so the sheet still
+// decodes, still blits, and still plays its idle; the only symptom is that every clip
+// naming row 1 quietly draws nothing. This is the roster's one sheet whose cell is
+// taller than PET_ROW_H and carries a second row, which makes it the case that proves
+// ROW_H_OVERRIDES is still being read.
+void test_oversized_cell_holds_a_row_stack() {
+    const SpriteData& s = ASSET_SPR_PET_SYNCAELIA;
+    CHECK(s.frameW == 71);   // FRAME_W_OVERRIDES: 568 does not divide by 56
+    CHECK(s.frames == 8);
+    CHECK(s.h == 64);        // ONE row's height, not the sheet's
+    CHECK(s.rows == 2);      // ROW_H_OVERRIDES: 128 would otherwise be one 128-tall row
+
+    // Taller than gen_assets' PET_ROW_H of 48, which is the whole reason the override
+    // has to exist — if this ever stops being true the table is dead weight. The 48 is
+    // a literal because it is the TOOL's constant: nothing in the firmware measures a
+    // row, it is told the answer.
+    CHECK(s.h > 48);
+}
+
 // --- Gate: indexed storage decodes at every bit width ----------------------
 // The generated round-trip above reads the sheet through the same accessors it blits
 // with, so a packing error would agree with itself. This plants bytes worked out by hand

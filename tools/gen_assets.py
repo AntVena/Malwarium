@@ -172,6 +172,26 @@ FRAME_W_OVERRIDES = {
     # because the creature is an eight-armed splay that reads across, and 66 does not
     # divide by 56, so the strip needs naming the same way the two above do.
     "SPR_PET_MORPHOPUS": 66,
+    # 568x64 = eight 71x64 frames, the widest Daemon cell on the line. The frame was
+    # already 71 while the sheet was a single drawing — the cell is sized to the
+    # creature (MASTER_TODO 2a-iii) — so animating it changed the width and nothing
+    # else, and the row here is what stops the eight cells reading as one wide frame.
+    "SPR_PET_SYNCAELIA": 71,
+}
+
+# The HEIGHT half of the table above, keyed the same way: asset name -> one row's height.
+# See frame_rows(), which reads this exactly as frame_width() reads FRAME_W_OVERRIDES.
+#
+# It exists because the two halves of the grid are not symmetric by default. A sheet whose
+# width is not a multiple of PET_FRAME_W falls back to ONE WIDE FRAME, which is the right
+# guess for an oversized Daemon cell; a sheet whose height is not a multiple of PET_ROW_H
+# falls back to ONE ROW, which is the right guess for exactly the same reason — and that is
+# the problem, because a Daemon cell taller than 48 can then never hold a second row
+# however many are drawn. So a Daemon is capped at one clip until it names its row height
+# here, and `attack` or `hurt` on any of them starts with a row in this table.
+ROW_H_OVERRIDES = {
+    # 568x128 = two rows of eight 71x64 cells: the idle hover, and the strike.
+    "SPR_PET_SYNCAELIA": 64,
 }
 
 
@@ -302,6 +322,20 @@ def frame_width(name, img_w):
 
 
 def frame_rows(name, img_h):
+    # An explicit override wins, for the reason frame_width's does: it is the only way
+    # to declare a row STACK on a sheet whose cell is not PET_ROW_H tall, which is every
+    # oversized Daemon cell. Add a row to ROW_H_OVERRIDES when such a sheet grows a
+    # second clip.
+    if name in ROW_H_OVERRIDES:
+        row_h = ROW_H_OVERRIDES[name]
+        # Checked rather than floor-divided in silence: a stack that does not divide
+        # evenly drops its last row, and a dropped row is invisible — every other row
+        # still renders, and only the clip that named the missing one draws nothing.
+        if img_h % row_h:
+            raise SystemExit(
+                f"{name}: height {img_h} is not whole rows of "
+                f"{row_h} (ROW_H_OVERRIDES)")
+        return img_h // row_h
     # A pet sheet's height that's a clean multiple of PET_ROW_H is a vertical
     # stack of that many rows; which row plays which named loop is declared on the
     # creature's own content row (CreatureDef::clips, core/content/defs.h);

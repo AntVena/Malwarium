@@ -89,19 +89,55 @@ inline constexpr CreatureDef kMetamorphicCreatures[] = {
      // worse than the idle drawHabitat falls back to.
      /*clips=*/{{"idle", /*row=*/0, /*frames=*/8, /*holdBeats=*/2}}},
     
-    // ONE oversized 71x64 frame, not a 56x48 cell: gen_assets cuts a SPR_PET_ sheet into
-    // 56px frames only when the width divides by 56, so a width that does not is the
-    // larger Daemon box. It declares no clip, so drawHabitat falls back to sprite.h's
-    // breathe/blink heuristic on row 0 — which is what a single frame wants. Becoming a
-    // strip takes a FRAME_W_OVERRIDES entry naming 71, the way SPR_PET_TENTACLONE has
-    // one naming 64; a SECOND row is not reachable at this cell at all, because
-    // frame_rows() measures rows in PET_ROW_H and 64 does not divide by 48.
     {"syncaelia", "Syncaelia", Stage::Daemon, "SPR_PET_SYNCAELIA",
      nullptr, nullptr, nullptr, kBranchGoodPowerPct, kBranchGoodFragPct, "metamorphic",
      "It can hold a very convincing surface-level conversation for a creature that's never bothered to learn what words actually mean. Don't let yourself get pulled in too deep. It can hold a conversationalist too.",
      "Behavioural mimicry / signature synchronisation",
      {MoveKind::Attack, MoveKind::Defend, MoveKind::Attack, MoveKind::Defend},
-     /*evolvesToTrojanId=*/nullptr, /*evolvesToTrojanBadId=*/nullptr, Locomotion::Swim},
+     /*evolvesToTrojanId=*/nullptr, /*evolvesToTrojanBadId=*/nullptr, Locomotion::Swim,
+     // One row of eight 71x64 cells — the widest cell on the line, because the frame is
+     // sized to the creature rather than the creature trimmed to a frame. Its sibling's
+     // constraint applies here too: 64 is the Daemon box's ceiling, so the head cannot
+     // rise and the idle lives below it — the arm tips curling and uncurling, the two
+     // raised shoulder arms swaying in and back out, and a pulse travelling along the
+     // disguise lights.
+     //
+     // WHAT THE ROW IS ACTUALLY HOLDING STILL IS THE FACE. This creature's whole claim
+     // is that it holds a convincing surface, and a surface that re-resolves its own
+     // eyes every column stops being one — so the eye box occupies identical
+     // coordinates in all eight cells and only its LIT AREA breathes, which reads as a
+     // slow narrowing rather than as a face being redrawn. The bead collar and the
+     // swept-back horn arms beside it are pinned for the same reason: the face is where
+     // this line keeps its signature (assets/CREATURE_VISUAL_RULES.md §2), so it is the
+     // one region an eight-column loop may not spend.
+     //
+     // holdBeats=2 matches its Script parent above rather than its sibling below, and
+     // that is the branch read: the pulse is a travelling wave and wants the slower
+     // clock, where Tentaclone's pinned crown wants the faster one.
+     //
+     // ROW 1 IS A TORQUE, AND THE TORQUE IS WHAT MAKES IT LEGAL. 64 is the Daemon box's
+     // ceiling and the drawing already reaches it, so a strike that gains reach has
+     // nowhere to go; what the row spends instead is the pair of small arms rising off
+     // the torso, slashing forward as the body twists — one leading as the twist goes
+     // one way, the other as it comes back. The mantle surges about 2 logical px with
+     // it, which is why two of the four columns carry the crest flush to the cell's top
+     // row rather than at the drawing's usual 2px inset.
+     //
+     // A twist is CYCLIC where a swing is PHASED, and that is the whole reason to draw
+     // the attack this way. frameAt() indexes off the global beat and nothing restarts a
+     // clip when a swing begins, so the window can open on any column — a row drawn as
+     // wind-up-then-strike shows its wind-up last as often as first. A row where every
+     // column is mid-twist has no wind-up to show: each one already has an arm swung
+     // out, and they differ in WHICH arm and how far, never in how ready the creature
+     // is. holdBeats=1 against kAttackHopPeriod=4 (core/ui/combat_screen.cpp) walks all
+     // four across the window exactly once.
+     //
+     // Columns 4-7 are deliberately empty rather than holding the frames that were cut.
+     // Two were dropped for surging past the cell and two for being the calm ends of the
+     // twist, and a calm column is exactly what must not be reachable by raising
+     // `frames` later.
+     /*clips=*/{{"idle", /*row=*/0, /*frames=*/8, /*holdBeats=*/2},
+                {"attack", /*row=*/1, /*frames=*/4, /*holdBeats=*/1}}},
     
     {"tentaclone", "Tentaclone", Stage::Daemon, "SPR_PET_TENTACLONE",
      nullptr, nullptr, nullptr, kBranchBadPowerPct, kBranchBadFragPct, "metamorphic",
