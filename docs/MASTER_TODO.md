@@ -237,6 +237,30 @@ MALBEAR is the case that shows why it's wanted: its 8-column sheet declares `idl
 and `attack` as all 8 of the same row, because the sheet arrived with no row plan saying which
 columns were which. A template makes that a drawing instruction rather than a guess. Diff **S**.
 
+### 2a-iv. A Daemon sheet cannot hold a grid — `frame_rows` only measures 48
+
+**IMPORTANT.** `gen_assets.frame_rows()` finds rows only when a sheet's height divides by
+`PET_ROW_H` (48), so a Daemon cell 64 logical px tall reads as ONE row however many are drawn.
+The width half of the same problem is already solved — `FRAME_W_OVERRIDES` names a sheet whose
+frame width is not 56 — so this is the missing symmetric half: a `ROW_H_OVERRIDES` beside it,
+read by `frame_rows` exactly the way the width table is read by `frame_width`.
+
+What it costs today is that **the Metamorphic Daemons are capped at one clip each.**
+`SPR_PET_TENTACLONE` and `SPR_PET_SYNCAELIA` are single rows of eight 64-tall cells and declare
+`idle` only, while their own Process parent Cuttlefork spends four rows on idle/walk/attack/hurt.
+A clip names a row and a frame COUNT and always starts at column 0 (`AnimClip`,
+`core/content/defs.h`), so column ranges cannot substitute: Malbear's idle-is-a-prefix-of-attack
+shape works only where the clips are ranges of ONE motion, and this line's whole argument is that
+its clips are different SCULPTS. So `attack` and `hurt` for either Daemon are blocked on this,
+not on art.
+
+It is also what the Worm note in `assets/ASSET_MANIFEST.md` §C.1 is describing when it says a
+multi-row sheet at the oversized cell "cannot be cut by `gen_assets.py` at all" — true today,
+and a tool limit rather than a law. | `tools/gen_assets.py` (`frame_rows` + a table beside
+`FRAME_W_OVERRIDES`); `gen_pedia_data.py` follows for free since it already asks gen_assets for
+the grid. | S | Do it before the next Daemon animation pass. The change is small and local; what
+makes it important is that every Daemon clip beyond `idle` waits on it. |
+
 ### 2a-iii. Every limb must end inside its own frame
 
 **A limb cut off by the frame edge reads as a rendering bug on the device, not as a crop.** At

@@ -89,9 +89,13 @@ inline constexpr CreatureDef kMetamorphicCreatures[] = {
      // worse than the idle drawHabitat falls back to.
      /*clips=*/{{"idle", /*row=*/0, /*frames=*/8, /*holdBeats=*/2}}},
     
-    // Its sheet is 71x64, which is ONE oversized frame rather than a 56x48 cell: gen_assets
-    // cuts a SPR_PET_ sheet into 56px frames only when the width divides by 56, so a width
-    // that does not is the larger Daemon box (up to 128x64). This may need addressing to allow animation to work. 
+    // ONE oversized 71x64 frame, not a 56x48 cell: gen_assets cuts a SPR_PET_ sheet into
+    // 56px frames only when the width divides by 56, so a width that does not is the
+    // larger Daemon box. It declares no clip, so drawHabitat falls back to sprite.h's
+    // breathe/blink heuristic on row 0 — which is what a single frame wants. Becoming a
+    // strip takes a FRAME_W_OVERRIDES entry naming 71, the way SPR_PET_TENTACLONE has
+    // one naming 64; a SECOND row is not reachable at this cell at all, because
+    // frame_rows() measures rows in PET_ROW_H and 64 does not divide by 48.
     {"syncaelia", "Syncaelia", Stage::Daemon, "SPR_PET_SYNCAELIA",
      nullptr, nullptr, nullptr, kBranchGoodPowerPct, kBranchGoodFragPct, "metamorphic",
      "It can hold a very convincing surface-level conversation for a creature that's never bothered to learn what words actually mean. Don't let yourself get pulled in too deep. It can hold a conversationalist too.",
@@ -111,7 +115,7 @@ inline constexpr CreatureDef kMetamorphicCreatures[] = {
      // breathing. gen_assets cuts this sheet only because FRAME_W_OVERRIDES names it;
      // 512 does not divide by 56, and 64 does not divide by the 48 a row is measured in,
      // so the height buys one row rather than more.
-     /*clips=*/{{"idle", /*row=*/0, /*frames=*/8, /*holdBeats=*/2}}},
+     /*clips=*/{{"idle", /*row=*/0, /*frames=*/5, /*holdBeats=*/1}}},
 };
 inline constexpr int kMetamorphicCreatureCount =
     sizeof(kMetamorphicCreatures) / sizeof(kMetamorphicCreatures[0]);
