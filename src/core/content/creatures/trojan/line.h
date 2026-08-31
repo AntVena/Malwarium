@@ -73,7 +73,7 @@ inline constexpr CreatureDef kTrojanCreatures[] = {
                 {"weak", /*row=*/3, /*frames=*/2, /*holdBeats=*/3}}},
     {"usbasilisk", "USBasilisk", Stage::Daemon, "SPR_PET_USBASILISK",
      nullptr, nullptr, nullptr, kBranchBadPowerPct, kBranchBadFragPct, "trojan",
-     "It rears up, spreads a hood it has no business having, and holds perfectly still - because the front of it is a plug, and a plug only has to be picked up once.",
+     "It rears up, raises a crown it has no business having, and holds perfectly still - because the front of it is a plug, and a plug only has to be picked up once.",
      "BadUSB / a peripheral that enumerates as something it is not",
      {MoveKind::Attack, MoveKind::Defend, MoveKind::Attack, MoveKind::Attack},
      /*evolvesToTrojanId=*/nullptr, /*evolvesToTrojanBadId=*/nullptr, Locomotion::Ground,

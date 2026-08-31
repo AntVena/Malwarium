@@ -58,17 +58,24 @@ The five rules the vocabulary encodes
 2.  OUTLINE, NOT SILHOUETTE. Forms go into `Cell.body`, and only their 4-connectivity
     boundary is ever drawn. At worm scale a filled shape reads as a blob and an outline
     reads as an organism, because the interior is where the detail goes.
-3.  SEGMENT CHORDS. Perpendicular rungs across a body at fixed spine parameters. This
-    is the single strongest tell: without them an outlined tube reads as *tube*, and
-    with them it reads as *worm*.
+3.  SEGMENT CHORDS. Rungs across a body at fixed spine parameters, perpendicular to the
+    spine. This is the single strongest tell: without them an outlined tube reads as
+    *tube*, and with them it reads as *worm*. `Cell.chords` will also LEAN a rung off
+    perpendicular, which is the one dialect the vocabulary allows and the one Coaxeel
+    speaks: a perpendicular rung is a segment boundary and a leaning one is a lay, so a
+    run of them is a braid and not a body. Nothing else here leans.
 4.  EXACTLY ONE SOLID MASS. The only filled pixels in the cell, so it is what the
     viewer's eye lands on first — which makes WHERE a recipe spends it the strongest
     single statement it makes about the creature. Most rows spend it on an eye
     (`Cell.eye`); Rootgrub spends it on the throat at the back of its maw, and that one
     choice is most of why it reads as something that eats rather than something that
     looks. The two Trojan rows spend it on a CONTACT — the tongue inside USBasilisk's
-    plug, the conductor on the end of Coaxeel's tail — which is the whole of how a
-    creature drawn in this style reads as not belonging to the line that owns it.
+    plug, the bare conductor past Coaxeel's cut — which is one of the two ways a creature
+    drawn in this style reads as not belonging to the line that owns it. The other is
+    that a Trojan here carries a piece of GEOMETRY a grown thing cannot: the USB glyph
+    that is USBasilisk's whole head, the leaning braid and the square-cut jacket on
+    Coaxeel. Everything the Worm line proper is made of is round and organic, so a right
+    angle or a straight repeated lay is the tell before the solid mass is even found.
     `Cell.solid` refuses a second, because "the one solid thing" stops being true the
     first time a recipe adds another.
 5.  SQUARED, NOT ROUND. `superellipse` at exponent ~2.4 by default. At these sizes a
@@ -544,19 +551,27 @@ class Cell:
                 return self.solid(x, y, size, size)
         raise ValueError("no interior seat for the eye — the head is too small")
 
-    def chords(self, path, ts, radius_at, overhang=0.9):
-        """Rule 3: perpendicular rungs across the body at fixed spine parameters.
+    def chords(self, path, ts, radius_at, overhang=0.9, lean=0.0):
+        """Rule 3: rungs across the body at fixed spine parameters.
 
         Drawn a touch PAST the body wall on both sides (`overhang`) so each rung meets
         the outline rather than stopping a pixel short of it — a chord that floats free
         inside the body reads as noise, and one that lands on the wall reads as a
         segment boundary.
+
+        `lean` tilts the rung off perpendicular, in radians, and lengthens it to still
+        reach both walls. A perpendicular rung is a SEGMENT — the boundary between one
+        body ring and the next — and that is what rule 3 is for. A leaning one is a LAY:
+        two sets of them at opposite leans are a weave, which is what the outside of a
+        shielded cable is and what no grown body has. It is the whole of how Coaxeel
+        wears this family's strongest tell while saying something the family cannot.
         """
+        ca, sa = math.cos(lean), math.sin(lean)
         for t in ts:
             cx, cy = path(t)
             tx, ty = tangent(path, t)
-            nx, ny = -ty, tx
-            r = radius_at(t) + overhang
+            nx, ny = -ty * ca + tx * sa, tx * ca + ty * sa
+            r = (radius_at(t) + overhang) / max(0.3, ca)
             line(self.ink, (cx - nx * r, cy - ny * r), (cx + nx * r, cy + ny * r))
         return self
 
@@ -1465,53 +1480,94 @@ def threadbore():
 # this line is; anything more would be a disguise that gives itself away.
 
 
-def _usbasilisk_cell(head, c0, c1, hood=1.0, rear=1.0):
-    """One USBasilisk frame: a reared serpent whose head is a type-A plug.
+def _usb_spine(rear, lean, sway=0.0):
+    """The reared column, from a tail laid along the shelf.
 
-    The Bad-care divert. It keeps the reared posture Rootgrub taught the line and the
-    hood is `superellipse` doing what it is for — a flat wide plate behind the head,
-    axis-aligned because the neck under it is vertical in every pose on this sheet.
-
-    The head is a RECTANGLE, and it is the only right angle on the creature. Everything
-    else in this vocabulary is round, so a squared shell reads as manufactured before the
-    viewer has worked out what it is a picture of — and it does not deform on any frame,
-    while the body under it waves. A connector that flexed with the animation would be a
-    connector made of the same stuff as the snake; holding it rigid is what says the
-    creature has a piece of hardware on the front of it rather than a hardware-shaped
-    head. `frame` draws the cavity inside the shell and `Cell.solid` the tongue in the
-    cavity, which is a type-A plug seen down its own axis and nothing else.
+    Three numbers instead of a hand-placed spine per frame: how high it is REARED, how
+    far the top LEANS forward, and how far the middle is SWAYED. On a creature whose
+    whole idle is "the head holds still while the body works", a body placed point by
+    point four times stops being the same length by the fourth frame — the same reason
+    Coaxeel's coil is four numbers rather than eleven points.
     """
-    tail = (16.0, GROUND - 2.0)
-    r_tail, r_neck = 3.0, 4.2
+    bx, by = 19.0, GROUND - 2.6
+    return [(bx + 2.0, by), (bx + 0.2 + sway * 0.4, by - rear * 0.28),
+            (bx - 1.6 + sway, by - rear * 0.56),
+            (bx + lean * 0.4 + sway * 0.6, by - rear * 0.80),
+            (bx + lean, by - rear)]
+
+
+def _usbasilisk_cell(pts, crown=1.0, lift=6.0):
+    """One USBasilisk frame: a reared serpent whose head is the USB trident.
+
+    The Bad-care divert, and the mirror of its sibling: this one rears off the shelf with
+    the hardware at the FRONT, where Coaxeel lies flat with the hardware at the back — a
+    thing that is plugged in against a thing that is plugged in from. The pair is the
+    branch, so the two poses have to disagree at a glance, and a vertical column against a
+    coil is the largest disagreement two silhouettes in this vocabulary can have.
+
+    The head is the USB glyph drawn as a skull: a bulb where the neck ends, a shaft, and a
+    three-way fork whose terminals are a square, a circle and — instead of the logo's
+    arrow — an actual type-A plug. That is the one liberty taken with the symbol, and it
+    is what keeps the head from being a badge stuck on a snake: the terminal that LEADS is
+    the connector itself, so the glyph and the anatomy are the same drawing.
+
+    The fork is also the CROWN a basilisk is named for, which is why there is no separate
+    plate on the neck. A cobra hood spread behind the head unions with the neck into one
+    amoeba at this size — two round forms overlapping leave no step in the silhouette to
+    read as a flare — and it costs the creature a body, a hood, a crest and a connector,
+    which is the parts-list §1 bans. Scaling `crown` opens and folds the two horn
+    terminals instead, so the thing that spreads is a thing the creature already had.
+
+    Nothing in the head deforms on any frame. Everything else in this vocabulary is round
+    and grown, so a right angle reads as manufactured before the viewer has worked out
+    what it is a picture of — and a connector that flexed with the animation would be a
+    connector made of the same stuff as the snake. `frame` draws the cavity inside the
+    shell and `Cell.solid` the tongue in the cavity, which is a type-A plug seen down its
+    own axis and nothing else.
+    """
+    r_tail, r_body = 3.6, 3.0
     cell = Cell(CW, CH)
-    spine = bezier(tail, c0, c1, head)
+    spine = catmull(pts)
 
-    tube(cell.body, spine, r_tail, r_neck)
+    tube(cell.body, spine, r_tail, r_body)
 
-    # The hood, behind and below the shell. Rooted off the spine rather than off the head
-    # so it stays on the NECK as the body sways — a hood that travels with the head is a
-    # collar, and a collar is jewellery rather than anatomy.
-    if hood > 0:
-        hx, hy = spine(0.70)
-        superellipse(cell.body, hx + 1.0, hy, 11.5 * hood, 5.0 * hood, n=3.0)
-
-    # Four rungs, on a body between Shenloop's seven and Rootgrub's three. It is a snake
+    # Three rungs, on a body between Shenloop's seven and Rootgrub's three. It is a snake
     # rather than a ribbon or a grub, and the segmentation says so before the pose does.
-    # They stop below the hood: a chord run across a spread hood is a rung crossing a
-    # plate it has nothing to do with, and at this size it reads as hatching.
-    cell.chords(spine, (0.14, 0.28, 0.42, 0.56),
-                lambda t: r_tail + (r_neck - r_tail) * t, overhang=0.35)
+    cell.chords(spine, (0.16, 0.34, 0.52, 0.70),
+                lambda t: r_tail + (r_body - r_tail) * t, overhang=0.35)
 
-    # The shell. Deliberately NOT rotated to the spine's tangent — see the docstring.
-    sw, sh = 6.0, 4.5
-    hx, hy = head
-    rect(cell.body, hx - sw, hy - sh, hx + sw, hy + sh)
-    frame(cell.ink, hx - sw + 2, hy - sh + 2, hx + sw - 2, hy + sh - 2)
-    # The tongue, high in the cavity and offset off centre, which is the asymmetry that
+    # --- the head: the USB glyph, held rigid and axis-aligned ----------------------
+    tx, ty = spine(1.0)
+    hx, hy = tx + 2.4, ty - lift
+    disc(cell.body, hx, hy, 2.2)
+    stroke(cell.body, (tx, ty), (hx, hy), r=1.5)     # the glyph stands off the neck
+    fx = hx + 3.2
+    stroke(cell.body, (hx, hy), (fx, hy), r=1.4)
+
+    # The two horn terminals, and the creature's crown. Square above and round below is
+    # the pair the logo is recognised by, and it is the only place in this vocabulary
+    # where two forms are drawn the same size for the sole purpose of being told apart.
+    up, out = 6.4 * crown, 3.8 * crown
+    stroke(cell.body, (fx, hy), (fx + out, hy - up), r=1.1)
+    rect(cell.body, fx + out - 1.4, hy - up - 2.6, fx + out + 1.6, hy - up + 0.4)
+    stroke(cell.body, (fx, hy), (fx + out, hy + up), r=1.1)
+    disc(cell.body, fx + out + 0.6, hy + up + 1.4, 2.6)
+
+    # The leading terminal: the plug. Deliberately NOT rotated to anything.
+    stroke(cell.body, (fx, hy), (fx + 4.6, hy), r=1.4)
+    sw, sh = 5.0, 3.5
+    cx, cy = fx + 8.4, hy
+    rect(cell.body, cx - sw, cy - sh, cx + sw, cy + sh)
+    frame(cell.ink, cx - 3.0, cy - 1.5, cx + 3.0, cy + 1.5)
+    # The tongue, low in the cavity and offset off centre, which is the asymmetry that
     # makes a type-A plug a type-A plug rather than a hole in a box.
-    cell.solid(int(round(hx - sw + 3)), int(round(hy - sh + 3)), int(round(sw)), 2)
+    cell.solid(int(round(cx - 2.5)), int(round(cy - 0.5)), 4, 2)
 
-    line(cell.ink, (tail[0] - 4, GROUND), (tail[0] + 5, GROUND))
+    # The shelf mark sits under the COLUMN, not along the laid tail. Drawn at the tail's
+    # own height it merges into that outline and the base reads as the sole of a boot; a
+    # pixel clear of it and under the weight, it reads as the contact every other
+    # crawling row of the line makes.
+    line(cell.ink, (pts[0][0] - 6, GROUND + 1), (pts[0][0] + 3, GROUND + 1))
     return cell
 
 
@@ -1520,41 +1576,43 @@ def usbasilisk():
 
     Four rows of four 56x48 frames, the clip set every drawn row of this vocabulary uses:
 
-      0  idle    4 frames — reared, hood spread, the shell holding dead still while the
-                            body works under it. The stillness is the whole idle.
-      1  attack  4 frames — it does not bite. It rears, lines the shell up, and DRIVES it
-                            forward, because a plug's attack is being inserted.
-      2  droop   2 frames — down off the rear, hood half folded.
-      3  weak    2 frames — flat, hood shut, the shell resting on the shelf.
+      0  idle    4 frames — reared, crown raised, the glyph holding dead still while the
+                            body sways under it. The stillness is the whole idle.
+      1  attack  4 frames — it does not bite. It rears higher, lines the plug up, and
+                            DRIVES it forward, because a plug's attack is being inserted.
+      2  droop   2 frames — down off the rear, crown half folded.
+      3  weak    2 frames — barely off the shelf, crown folded, the glyph carried low.
     """
     sheet = Sheet(4, 4, CW, CH)
 
+    # Idle. `rear` and `lean` hold, `sway` carries the whole motion — so the head keeps
+    # station to within a pixel and only the column under it works, which is the contract
+    # every resting row in this file keeps.
     for i in range(4):
         a = 2 * math.pi * i / 4
-        # The head holds station to within a pixel and the SPINE carries the wave, the
-        # same contract `wave` states for the ribbon rows. On this creature it earns its
-        # keep twice, because the thing holding still is the part that is pretending to
-        # be an object.
-        head = (34.0, 15.0 + 0.6 * math.sin(a))
-        c0 = (17.0, 36.0)
-        c1 = (27.0 + 1.6 * math.sin(a), 24.0)
-        sheet.place(i, 0, _usbasilisk_cell(head, c0, c1, hood=1.0))
+        sheet.place(i, 0, _usbasilisk_cell(_usb_spine(23.0, 6.0, 1.4 * math.sin(a)), lift=5.5))
 
-    for i, (hd, c0, c1, hood) in enumerate([
-        ((32.0, 13.0), (17.0, 36.0), (25.0, 22.0), 1.15),
-        ((31.0, 12.0), (17.0, 35.0), (24.0, 20.0), 1.20),
-        ((40.0, 20.0), (18.0, 37.0), (32.0, 27.0), 0.70),
-        ((42.0, 24.0), (18.0, 38.0), (35.0, 31.0), 0.55),
+    # Attack. The column loads back, then straightens and throws the whole reared length
+    # forward: the plug travels about eight pixels and nothing is added to the drawing.
+    for i, (rear, lean, sway, crown) in enumerate([
+        (24.0, 3.0, -1.6, 1.15),
+        (25.0, 1.0, -2.4, 1.25),
+        (21.0, 11.0, 1.6, 0.80),
+        (19.0, 13.0, 2.2, 0.60),
     ]):
-        sheet.place(i, 1, _usbasilisk_cell(hd, c0, c1, hood=hood))
+        sheet.place(i, 1, _usbasilisk_cell(_usb_spine(rear, lean, sway), crown=crown,
+                                           lift=5.5))
 
+    # Droop. Half the rear gone and the crown folding, which on a creature whose stage
+    # read IS how high it holds itself is the cheapest way to say it has stopped.
     for i in range(2):
         sheet.place(i, 2, _usbasilisk_cell(
-            (38.0, 27.0 + 1.2 * i), (18.0, 40.0), (30.0, 33.0 + i), hood=0.62))
+            _usb_spine(18.0 - i, 8.0 + i, 0.6), crown=0.62, lift=5.0))
 
+    # Weak. Barely reared at all, the glyph carried nearly level with the shelf.
     for i in range(2):
         sheet.place(i, 3, _usbasilisk_cell(
-            (39.0, 34.0 + 0.6 * i), (19.0, 43.0), (32.0, 39.0 + i), hood=0.34))
+            _usb_spine(13.0 - i, 9.0 + i, 0.3), crown=0.30, lift=3.6))
 
     return sheet
 
@@ -1563,9 +1621,9 @@ def _coaxeel_cell(pts, gape=0.4, strip=1.0):
     """One Coaxeel frame: a COILED length of coax with a head on one end.
 
     The Good-care divert, and the mirror of its sibling in every way that matters. That
-    one rears and the shell is at the front; this one lies on the floor and the hardware
-    is at the back — a thing that is plugged IN against a thing that is plugged in FROM.
-    The pair is the branch, so the two poses have to disagree at a glance.
+    one rears and the connector is at the front; this one lies on the floor and the
+    hardware is at the back — a thing that is plugged IN against a thing that is plugged
+    in FROM. The pair is the branch, so the two poses have to disagree at a glance.
 
     It is coiled because of the §5 silhouette test, and coiled specifically rather than
     merely posed differently. Drawn as a low wave — which is what it was first — this row
@@ -1582,16 +1640,17 @@ def _coaxeel_cell(pts, gape=0.4, strip=1.0):
     something wound up.
 
     Its one solid mass is at the wrong end of the creature, which no other row in this
-    vocabulary has ever done: the centre conductor, standing proud of a stripped end that
-    steps down from jacket to braid to dielectric in three `stroke` capsules. Every other
-    worm here is read head-first because the solid mass is up there; this one drags the
-    eye down the whole length of the body to a plug, which is exactly the order the joke
-    wants to be read in.
+    vocabulary has ever done: the centre conductor, standing proud of a jacket that has
+    been cut clean off. Every other worm here is read head-first because the solid mass is
+    up there; this one drags the eye down the whole length of the body to a stripped end,
+    which is exactly the order the joke wants to be read in.
 
     The head is left with a jaw and no eye. `Cell.gape` is ink only, so the profile mouth
     costs nothing against rule 4 — and a blank-faced eel that ends in a connector is a
     better statement of what the creature is than the same drawing with an eye competing
-    for the read.
+    for the read. It is drawn SQUARED rather than round, which is the difference between
+    this row's head and Nodeatode's: a bulb with a face on it is what every worm in the
+    family has, and a blunt block that is simply where the cable stops is not.
     """
     r = 3.0
     cell = Cell(CW, CH)
@@ -1599,37 +1658,662 @@ def _coaxeel_cell(pts, gape=0.4, strip=1.0):
 
     tube(cell.body, spine, r, r, steps=320)
     head = pts[-1]
-    head_r = 4.2 + 1.0 * gape
-    disc(cell.body, head[0], head[1], head_r)
+    head_r = 4.6 + 0.9 * gape
+    superellipse(cell.body, head[0], head[1], head_r * 1.15, head_r * 0.82, n=3.2)
 
-    # Eight rungs, the densest in the vocabulary. On the other rows the chords are
-    # segments; here they are the BRAID, and a shield weave is the one thing that gets
-    # tighter the more of it there is. It is also why this creature can be as long as
-    # Shenloop and not read as the same animal.
-    cell.chords(spine, (0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80),
-                lambda t: r, overhang=0.35)
+    # The BRAID. Every other row in this file spends rule 3's rungs on segments, drawn
+    # perpendicular; these lean, in two opposite sets interleaved, which is a weave and
+    # not a body. It is also the densest rung count in the vocabulary — a shield weave is
+    # the one thing that gets tighter the more of it there is — and it is why this
+    # creature can be as long as Shenloop and not read as the same animal.
+    cell.chords(spine, (0.26, 0.34, 0.42, 0.50, 0.58, 0.66, 0.74, 0.82),
+                lambda t: r, overhang=-0.6, lean=0.62)
 
-    # The stripped end. `tangent` at t=0 points INTO the body, so the cut runs back along
-    # its negation — which keeps the whole assembly aligned with the tail however the
-    # ribbon is waved, instead of being four hand-placed points per frame.
+    # The cut end. `tangent` at t=0 points INTO the body, so the assembly runs back along
+    # its negation — which keeps the whole thing aligned with the tail however the coil is
+    # wound, instead of being a dozen hand-placed points per frame.
     tx, ty = tangent(spine, 0.0)
     back = (-tx, -ty)
-    tail = pts[0]
-    steps = ((2.0, 2.8), (1.2, 2.6))
-    at = tail
-    for rr, ln in steps:
-        nxt = (at[0] + back[0] * ln * strip, at[1] + back[1] * ln * strip)
-        stroke(cell.body, at, nxt, r=rr)
+    nx, ny = -back[1], back[0]
+    cut = pts[0]
+
+    # The cut itself, and the heaviest ink on the creature: a 2px band drawn across the
+    # FULL width of the jacket. A tail that merely gets thinner is what a tail does
+    # anyway, and three graded steps down read as a taper however squarely they are
+    # drawn, which on a curled body is a shrimp's rostrum rather than a cut. One
+    # hard band with nothing but a thin rod past it is what says the jacket was taken
+    # OFF, and it is the same trick `Cell.maw`'s lip plays: a boundary drawn inside the
+    # silhouette, thicker than every other line in the cell.
+    stroke(cell.ink, (cut[0] - nx * (r + 0.5), cut[1] - ny * (r + 0.5)),
+           (cut[0] + nx * (r + 0.5), cut[1] + ny * (r + 0.5)), r=0.9)
+
+    # Dielectric, then the bare conductor. The drop from 3px of jacket to 1px of core is
+    # deliberately the largest change of width anywhere in this vocabulary.
+    diel = (cut[0] + back[0] * 3.0 * strip, cut[1] + back[1] * 3.0 * strip)
+    stroke(cell.body, cut, diel, r=1.25)
+    # The conductor: a 1px rod out of the dielectric with the solid mass on its tip, so
+    # the mass is ATTACHED. A 2x2 block floating two pixels off the end of a tail is a
+    # speck of dirt, and at this size the eye will not join it up on its own.
+    pin = (diel[0] + back[0] * 2.8 * strip, diel[1] + back[1] * 2.8 * strip)
+    line(cell.ink, diel, pin)
+    cell.solid(int(round(pin[0])) - 1, int(round(pin[1])) - 1, 2, 2)
+
+    # The head is LEVELLED off the neck instead of pointing wherever the spine happens to
+    # arrive, and that one rotation is most of the creature's stage read. §2 of
+    # CREATURE_VISUAL_RULES is explicit that the levers are posture rather than parts —
+    # a head carried along its own neck reads as a body going somewhere, and the same
+    # head held level on a rising neck reads as one that arrived and is now waiting,
+    # which is exactly what the row's flavour says it does. It has to be resolved BEFORE
+    # the head is drawn now, because the muzzle and the mane are both laid out along it.
+    tx, ty = tangent(spine, 1.0)
+    a = math.atan2(ty, tx) * (1.0 - level)
+    facing = (math.cos(a), math.sin(a))
+    # The head's own upper side — the perpendicular to facing, signed so it points away
+    # from the neck. Every feature on this head is placed against it, because the head
+    # rotates with `level` and screen-up stops being head-up the moment it does.
+    up = (facing[1], -facing[0])
+
+    # Skull, then muzzle. `stroke` is a capsule between two points, so handing it the
+    # skull centre and a point out along the facing axis gives an oriented snout for free
+    # — which `superellipse` cannot do at all, being axis-aligned, and `poly` could only
+    # do as four corners recomputed every frame.
+    disc(cell.body, head[0], head[1], skull_r)
+    muzzle = (head[0] + facing[0] * head_len, head[1] + facing[1] * head_len)
+    stroke(cell.body, head, muzzle, r=muzzle_r)
+
+    # Horns: two backswept spikes off the crown, into `body` so they belong to the
+    # silhouette rather than sitting inside it as ink — §5's silhouette and grayscale
+    # tests are the ones this feature exists to pass, and a crest that only existed in
+    # the interior would pass neither.
+    #
+    # A three-panel MANE was the first attempt and it is the more faithful reference, but
+    # it needs about twelve pixels of clear crown to resolve and this head has five: the
+    # panels landed on the neck, and what they added to the silhouette read as a notch
+    # taken out of the creature rather than as anything growing on it. Two `stroke`
+    # capsules are the same idea at the size actually available — and being STRAIGHT is
+    # the point, since a straight backswept pair is what the eye separates from a body
+    # made entirely of curves.
+    if whisker > 0:
+        back = a + math.pi
+        # On the CROWN and thrown back over it. The neck arrives from below on every pose
+        # in this sheet, so a horn rooted on the underside lands inside the body and the
+        # whole feature disappears — which is what the first cut of it did.
+        root = (head[0] - facing[0] * skull_r * 0.15 + up[0] * skull_r * 0.60,
+                head[1] - facing[1] * skull_r * 0.15 + up[1] * skull_r * 0.60)
+        # Blended from `back` and `up` rather than given as an angle off `back`, because
+        # the neck arrives from behind-and-below and a horn swept straight back runs down
+        # it. UP has to dominate: what clears the neck is height, and a spike that clears
+        # it by a pixel is a spike the silhouette swallows on the next frame of the wave.
+        for kb, ku, ln, rr in ((0.55, 0.95, 7.2, 1.2), (1.05, 0.55, 5.0, 1.0)):
+            dx, dy = -facing[0] * kb + up[0] * ku, -facing[1] * kb + up[1] * ku
+            d = math.hypot(dx, dy) or 1.0
+            stroke(cell.body, root,
+                   (root[0] + dx / d * ln * whisker,
+                    root[1] + dy / d * ln * whisker), r=rr)
+
+    # Seven rungs where Rootgrub has three, and that inversion is the whole argument
+    # between the two Daemons. Rungs close together subdivide a body and make it read as
+    # articulated and therefore LIGHT; this creature wants to be read as light, so it
+    # takes the segmentation the fat branch gave up.
+    cell.chords(spine, (0.14, 0.26, 0.38, 0.50, 0.62, 0.73, 0.84),
+                lambda t: r_tail + (r_neck - r_tail) * t, overhang=0.35)
+
+    # The eye sits in the SKULL, not in the head as a whole — the muzzle is in front of
+    # it now, and an eye placed off the combined form's centre walks out along the snout.
+    cell.eye(head, facing, skull_r, along=0.26, across=0.30)
+
+    # Barbels — the other half of the eastern-dragon tell, streaming FORWARD off the
+    # snout the way the reference does rather than trailing back off it. Two `line` runs
+    # each rather than a form: nothing else in the line has whiskers, and a primitive that
+    # one creature uses is a primitive that has not earned its name yet.
+    if whisker > 0:
+        a0 = math.atan2(facing[1], facing[0])
+        # Rooted on the SIDES of the muzzle rather than both at its tip. Two runs leaving
+        # one point pass through the snout's own outline on the way out and resolve into
+        # a single X sitting on the end of the head — which the drawing spent a version
+        # doing, and which reads as crossed sticks rather than as anything growing.
+        # Deliberately UNEQUAL as well: the upper barbel runs longer and flatter than the
+        # lower one, because a symmetric fork is a pair of insect antennae.
+        for side, angle, length, along in ((1.0, -0.30, 9.0, 0.75),
+                                          (-1.0, 0.55, 5.0, 0.85)):
+            root = (head[0] + facing[0] * head_len * along + up[0] * side * (muzzle_r + 0.8),
+                    head[1] + facing[1] * head_len * along + up[1] * side * (muzzle_r + 0.8))
+            aa = a0 + angle
+            line(cell.ink, root,
+                 (root[0] + math.cos(aa) * length * whisker,
+                  root[1] + math.sin(aa) * length * whisker))
+
+    # No ground plant, and nothing near the bottom of the cell. Every crawling row of the
+    # line ends with a bar on the shelf; this one is a swimmer (Locomotion::Swim, on its
+    # content row) and the habitat drifts it on both axes, so a contact mark would be a
+    # floor it is demonstrably not on.
+    return cell
+
+
+def shenloop():
+    """SPR_PET_SHENLOOP — the Worm line's good Daemon, and the branch that grew UP.
+
+    Four rows of four 56x48 frames, the same clip set as the two rows below it:
+
+      0  idle    4 frames — the loop breathing under a head that holds station. What
+                            moves is how tightly the body is gathered, not where it is.
+      1  attack  4 frames — the loop OPENS OUT and the head is thrown along it. It has no
+                            mouth to strike with, so the body is the strike.
+      2  droop   2 frames — the loop sags wide and the head comes down onto it.
+      3  weak    2 frames — barely a loop left, head sunk almost onto the coil.
+
+    Every pose in all four rows is the same four numbers — where the loop is centred, how
+    big it is, how much of it is missing, and where the head is carried — so there are no
+    hand-placed spines here at all. That is not tidiness: a body of thirteen points placed
+    by hand four times stops being the same animal by the fourth frame, and this
+    creature's whole read is that there is a great deal of ONE continuous thing in the
+    cell.
+    """
+    sheet = Sheet(4, 4, CW, CH)
+
+    # There is nothing hand-placed on this sheet. The whole body is `wave` run along a
+    # straight tail-to-head axis, and the number that decides what the creature IS is the
+    # PERIOD.
+    #
+    # An eastern dragon does not have one bend in it. Every reference has at least an S
+    # and usually a W — three humps, the body crossing its own axis four times — and that
+    # count is not decoration, it is the read: one bend is a snake that happens to be
+    # curved, and three is a body long enough that it has to be put somewhere. The two
+    # versions this row shipped before both got that wrong in the same way while arguing
+    # about different things. A travelling wave at period 6 over nine knots is one lazy
+    # fold; a closed coil is one turn. Period 5.0 over twelve is 2.2 cycles, and 2.2
+    # cycles lands three humps in the cell.
+    #
+    # The axis runs DIAGONALLY corner to corner, because humps need length and 51px of
+    # diagonal is the most this cell has. That length is also the whole budget: at 4px of
+    # body at the tail and 7px at the shoulder, two limbs of the wave closer than about
+    # nine pixels merge into a knot, and the read goes from "long" to "tangled" with no
+    # way back. Half a wavelength here is 11px, which is the entire margin — the earlier
+    # attempt at a genuine three-cycle W had 6px of half-wavelength and drew a tangle.
+    # That is the real reason `wave` grew a taper: the amplitude a W wants at the whip end
+    # is more than the shoulder end can survive, so it has to be two numbers.
+    TAIL, HEAD = (4.0, 44.0), (38.0, 13.0)
+
+    def serpent(amp, phase, period=5.0, gather=1.0, drop=0.0, straight=0.0,
+                taper=0.55, n=12):
+        """The W, breathed by `amp`/`phase` and reshaped by the other three.
+
+        `gather` scales the axis toward the HEAD, so a pose that pulls in keeps its head
+        where it was and draws its length in behind it — which is the way round that
+        matters, because the head is what the player is looking at. `drop` sinks it, and
+        `straight` is spent by raising `period` and dropping `amp` at the call site, since
+        on a wave-built body those two ARE how much shape is left in it.
+        """
+        hx, hy = HEAD
+        axis = [(hx + (TAIL[0] + (hx - TAIL[0]) * i / (n - 1.0) - hx) * gather,
+                 hy + (TAIL[1] + (hy - TAIL[1]) * i / (n - 1.0) - hy) * gather + drop)
+                for i in range(n)]
+        if straight > 0:
+            t0, t1 = axis[0], axis[-1]
+            axis = [(x + (t0[0] + (t1[0] - t0[0]) * i / (n - 1.0) - x) * straight,
+                     y + (t0[1] + (t1[1] - t0[1]) * i / (n - 1.0) - y) * straight)
+                    for i, (x, y) in enumerate(axis)]
+        return wave(axis, amp, phase, period=period, taper=taper)
+
+    # Idle. A wave travels the S while both ends hold station, per `wave`'s contract, so
+    # what moves is the length of the body while the head keeps looking at one thing. For
+    # a creature with no limbs and no ground contact that is not one idle option among
+    # several; it is the only motion available at all.
+    for i in range(4):
+        sheet.place(i, 0, _shenloop_cell(serpent(6.5, 2 * math.pi * i / 4)))
+
+    # Attack. A serpent strikes by SPENDING its shape: the S flattens toward the straight
+    # run between its own two ends, and the length that was doubled back is the length
+    # that reaches. Nothing is added to the drawing to make it lunge.
+    #
+    # `level` is the other half of it. The head is carried level at rest and gives that up
+    # on the way out, so the strike is the one moment the creature commits to a direction
+    # — and the recovery frame takes the level back, which is what makes the whole clip
+    # read as returning to the pose above rather than ending somewhere new.
+    for i, (amp, per, gather, lv, wk) in enumerate([
+        (7.6, 4.7, 0.92, 1.00, 1.0),
+        (8.4, 4.5, 0.86, 1.00, 1.0),
+        (3.2, 6.4, 1.02, 0.35, 0.8),
+        (2.0, 7.4, 1.05, 0.55, 0.6),
+    ]):
+        sheet.place(i, 1, _shenloop_cell(
+            serpent(amp, 0.6 * i, period=per, gather=gather), whisker=wk, level=lv))
+
+    # Droop. The S sags open and the whole body sinks: the same shape with the gathering
+    # taken out of it, which on a creature whose posture IS its stage is the cheapest
+    # possible way to say it is not holding itself well.
+    for i in range(2):
+        sheet.place(i, 2, _shenloop_cell(
+            serpent(4.6 - 0.4 * i, 0.9 + i * math.pi, period=5.6, gather=0.94,
+                    drop=3.0 + i),
+            level=0.85))
+
+    # Weak. Almost none of the S left and the body flat in the cell. For a creature whose
+    # whole read is a great deal of length held in a shape, having no shape left is the
+    # strongest thing this sheet can say about how badly it is doing.
+    for i in range(2):
+        sheet.place(i, 3, _shenloop_cell(
+            serpent(2.6 - 0.4 * i, 0.4 + i * 0.8, period=6.4, gather=0.90,
+                    drop=5.0 + i),
+            whisker=0.55, level=0.45))
+
+    return sheet
+
+
+def _threadbore_cell(head, c0, c1, mouth, flap, teeth=8, phase=0.0):
+    """One Threadbore frame: Rootgrub with everything that was not mouth spent on mouth.
+
+    The bad Daemon, and the only row here that is a straight continuation rather than an
+    argument — `_rootgrub_cell` with its numbers pushed until they stop being sensible,
+    which is the joke the creature is. The taper runs 7.6 to 10.2 where the Script row
+    runs 6.2 to 8.4, on a spine SHORTER than that row's, so the body ends up wider than
+    it is long and the flavour text on its content row is a literal description.
+
+    TWO chords where Rootgrub has three and Nodeatode four. That progression is the
+    line's whole statement about mass: rungs close together subdivide a body and make it
+    read as articulated and therefore light, so each stage of the fat branch removes one
+    and lets the unbroken panel of flank between them carry more. Two is the floor —
+    at one there is no segmentation left and rule 3 stops being satisfied at all.
+
+    It keeps the THROAT as its one solid mass, where Shenloop went back to an eye. That
+    is the fork stated in the place it costs the most to state: both Daemons inherit
+    exactly one thing from Rootgrub, and which one they inherit is the entire branch.
+    """
+    tail = (16.0, 34.0)
+    r_tail, r_neck = 7.6, 10.2
+    head_r = 12.0 + 1.6 * mouth
+    cell = Cell(CW, CH)
+    spine = bezier(tail, c0, c1, head)
+
+    tube(cell.body, spine, r_tail, r_neck)
+    # A SLAB of a head — wider than it is tall and squared off at n=3.2, where the Script
+    # row's is a round bell flaring off the neck. That contrast is deliberate and it is
+    # the §5 silhouette test, not decoration: both rows are the same tube with the same
+    # maw drawn inside it, so filled in black they were the same kidney bean and the only
+    # thing telling the Script from the Daemon was a pair of wings. The two heads now
+    # disagree in the outline — a trumpet against a slab — which is where "wider than it
+    # is long, and almost all of that is jaw" was supposed to be legible all along.
+    superellipse(cell.body, head[0], head[1], head_r * 1.02, head_r * 0.74, n=3.2)
+
+    # The wings. A wing is a LIMB carrying a membrane, and drawing it as one shape rooted
+    # on the back was the version that failed: a triangle hinged flush to a body this fat
+    # has most of itself buried inside the silhouette, and the sliver left above the back
+    # reads as a fin or a crest. What fixes it is the bare arm — the membrane starts a
+    # long way out from the body, so the gap between limb and flank is what says the thing
+    # is a wing rather than something growing off it.
+    #
+    # The fan is where `vane` earns being general instead of being a wing function. Each
+    # entry below is one finger panel: a vane from the wrist out to its own tip, with the
+    # NEXT panel's tip as its heel, so consecutive panels share an edge and the union's
+    # outer boundary steps from tip to tip. Falling radii make that boundary a scalloped
+    # trailing edge, which is the thing a viewer actually names as a bat wing — and it is
+    # the same primitive four times over rather than a hand-placed polygon per frame.
+    fan = ((-0.20, 1.00), (-0.62, 0.88), (-1.05, 0.74), (-1.50, 0.58), (-1.95, 0.42))
+    # Near wing, then the far one — shorter, held more upright and rooted closer to the
+    # head so it clears the near wing's silhouette instead of tangling with it. A 1-bit
+    # outline has no other way to say there are two of something behind each other, and
+    # two identical wings simply collapse into one shape.
+    for t, scale, tilt, armr in ((0.62, 1.00, 0.00, 1.0), (0.72, 0.70, -0.22, 0.9)):
+        bx, by = spine(t)
+        rr = r_tail + (r_neck - r_tail) * t
+        shoulder = (bx, by - rr * 0.55)
+        # `flap` is the one number the recipe varies per frame: the arm swings and the
+        # whole wing foreshortens with it, which is what a wing seen side-on does. Neither
+        # `vane` nor `stroke` knows a beat exists — see `vane`'s docstring.
+        a = -math.pi / 2 - 0.45 - tilt + 0.38 * flap
+        k = scale * (0.88 + 0.12 * math.cos(flap * 1.1))
+        wrist = (shoulder[0] + math.cos(a) * 14.5 * k,
+                 shoulder[1] + math.sin(a) * 14.5 * k)
+        stroke(cell.body, shoulder, wrist, r=armr)
+        tips = [(a + da, 15.5 * k * f) for da, f in fan]
+        for (a0, l0), (a1, l1) in zip(tips, tips[1:]):
+            vane(cell.body, wrist, l0, a0, a1 - a0, taper=l1 / l0)
+        # The fingers, into `ink`. Without them the membrane is a blank shape and reads as
+        # a sail; these are what say it is stretched over something, and they are the
+        # wing's answer to the segment chords the body carries. Only the interior ones —
+        # the outer two are already the membrane's own boundary.
+        for a1, l1 in tips[1:-1]:
+            line(cell.ink, wrist,
+                 (wrist[0] + math.cos(a1) * l1, wrist[1] + math.sin(a1) * l1))
+
+    cell.chords(spine, (0.26, 0.56),
+                lambda t: r_tail + (r_neck - r_tail) * t, overhang=0.3)
+
+    facing = tangent(spine, 1.0)
+    # Deeper teeth than the Script row's, on a wider head. Rootgrub's maw already IS its
+    # face, so "bigger" here cannot mean a bigger share of the silhouette — it has to be
+    # reach into the hole, or the promotion is a scale-up and nothing else.
+    #
+    # The mouth is SET FORWARD on the head and lipped, rather than filling it and using
+    # the silhouette as its rim. Two things went wrong with the concentric version and
+    # the same move fixes both. A ring drawn a pixel inside the outline stops being a lip
+    # and becomes a second wall — the head reads as a tyre — so the mouth has to be small
+    # enough to leave real face around it. And a mouth centred in a round head is
+    # symmetric, which is the last property an eye has that a mouth does not: pushed
+    # forward there is cheek behind it and brow in front, and the head has a direction it
+    # did not have before. Both are `Cell.maw`'s `lip` doing its job; neither works
+    # without the offset.
+    mouth_c = (head[0] + facing[0] * head_r * 0.30,
+               head[1] + facing[1] * head_r * 0.30)
+    mouth_r = head_r * 0.68
+    # Teeth that reach most of the way to the throat. Short spokes off a heavy rim are
+    # the spokes of a wheel however the rim is drawn; teeth long enough to nearly close
+    # on the solid mass make the same ink read as a gullet with something at the end
+    # of it, which is what this creature is.
+    cell.maw(mouth_c, mouth_r, teeth=teeth, depth=mouth_r * (0.52 + 0.20 * mouth),
+             phase=phase, lip=2.0)
+    # The throat, at the back of the mouth rather than at the centre of the head — it
+    # follows the opening it sits in, or it is a mass parked on the cheek.
+    throat = 4 + (1 if mouth > 0.7 else 0)
+    cell.solid(int(round(mouth_c[0] - (throat - 1) / 2.0)),
+               int(round(mouth_c[1] - (throat - 1) / 2.0)), throat, throat)
+
+    # No ground plant, and the body is held clear of the bottom of the cell. Every
+    # crawling row of the line ends with a bar on the shelf; this one FLIES
+    # (Locomotion::Fly, on its content row) and the habitat holds it at an altitude, so
+    # ink anywhere near y = CH-1 would read as crawling no matter what the engine does
+    # with the anchor.
+    return cell
+
+
+def threadbore():
+    """SPR_PET_THREADBORE — the Worm line's bad Daemon, and the branch that grew OUT.
+
+    Four rows of four 56x48 frames, the same clip set as every drawn row of the line:
+
+      0  idle    4 frames — a hover. The wings beat through the loop and the body hangs
+                            under them barely moving, which is what too little wing
+                            working too hard looks like.
+      1  attack  4 frames — a downbeat, a gape, and it arrives on top of the target.
+      2  droop   2 frames — sagging between beats, maw slack, wings half folded.
+      3  weak    2 frames — barely airborne, wings almost shut, mouth nearly closed.
+    """
+    sheet = Sheet(4, 4, CW, CH)
+
+    # Idle. The wings run a full beat over the four frames while the body moves about a
+    # pixel — deliberately the wrong way round for a flier this heavy, because the reason
+    # to draw wings this small is to be caught working. The maw chews on the same loop,
+    # which it inherits from the Script row along with the throat.
+    for i in range(4):
+        a = 2 * math.pi * i / 4
+        head = (37.0 + 0.8 * math.sin(a), 30.0 - 0.7 * math.cos(a))
+        sheet.place(i, 0, _threadbore_cell(
+            head, (18.0, 33.0), (25.0, 32.0 + 0.5 * math.sin(a)),
+            0.44 + 0.18 * math.sin(a), flap=math.sin(a), phase=a * 0.25))
+
+    # Attack. It does not lunge and it does not rear — it gets ABOVE and comes down, and
+    # the wings are what put it there. The gape is widest on the way down rather than at
+    # the end, so the mouth arrives already open.
+    for i, (hd, c0, c1, mouth, flap) in enumerate([
+        ((36.0, 26.0), (18.0, 30.0), (25.0, 28.0), 0.32, -0.9),
+        ((36.0, 23.0), (18.0, 28.0), (25.0, 25.0), 1.00, -1.5),
+        ((38.0, 31.0), (18.5, 33.0), (27.0, 32.0), 1.00, 1.2),
+        ((38.0, 33.0), (19.0, 35.0), (28.0, 34.0), 0.36, 0.4),
+    ]):
+        sheet.place(i, 1, _threadbore_cell(hd, c0, c1, mouth, flap, phase=i * 0.22))
+
+    # Droop. Sagging between beats with the wings half folded and nothing behind the
+    # mouth. It cannot sink far — a flier that settles onto the shelf has stopped being
+    # one — so the mood is carried by the wings and the slack jaw rather than by height.
+    for i in range(2):
+        sheet.place(i, 2, _threadbore_cell(
+            (37.0, 31.5 + 1.0 * i), (19.0, 35.0), (27.0, 34.0 + i),
+            0.28, flap=1.0 + 0.15 * i, teeth=8))
+
+    # Weak. Wings nearly shut and the maw almost closed — which on this creature is the
+    # strongest statement the sheet can make, exactly as it is on the row below it.
+    for i in range(2):
+        sheet.place(i, 3, _threadbore_cell(
+            (36.0, 32.5 + 0.5 * i), (19.0, 36.0), (27.0, 35.0 + i),
+            0.12, flap=1.7, teeth=6))
+
+    return sheet
+
+
+# ---------------------------------------------------------------------------
+#  The Trojan pair — drawn here, and not on the Trojan line's own terms
+# ---------------------------------------------------------------------------
+# USBasilisk and Coaxeel are `line = "trojan"` rows, but they are drawn in this file and
+# in this vocabulary because of where they are REACHED from: both are what Rootgrub
+# becomes when its Script->Daemon hop diverts (creatures/worm/line.h). A Trojan wears the
+# line it came out of — CREATURE_VISUAL_RULES §4 — and the line these two came out of
+# spends a style instead of a hue, so wearing it means being drawn 1-bit, small, outlined
+# and segmented, exactly like the two Daemons they were substituted for. There is nothing
+# to re-ink: the disguise IS the ink.
+#
+# What separates them from the real Worm Daemons is where the one solid mass goes.
+# Nodeatode and Shenloop spend it on an eye and Rootgrub and Threadbore on a throat —
+# either way, on a FACE. These two spend it on a CONTACT: the tongue inside USBasilisk's
+# plug, the centre conductor at the end of Coaxeel's tail. That is the tell, and it is
+# the only one they get. A worm-shaped thing whose one solid feature is a piece of
+# hardware is a creature pretending to be a peripheral, which is what a Trojan out of
+# this line is; anything more would be a disguise that gives itself away.
+
+
+def _usb_spine(rear, lean, sway=0.0):
+    """The reared column, from a tail laid along the shelf.
+
+    Three numbers instead of a hand-placed spine per frame: how high it is REARED, how
+    far the top LEANS forward, and how far the middle is SWAYED. On a creature whose
+    whole idle is "the head holds still while the body works", a body placed point by
+    point four times stops being the same length by the fourth frame — the same reason
+    Coaxeel's coil is four numbers rather than eleven points.
+    """
+    bx, by = 19.0, GROUND - 2.6
+    return [(bx + 2.0, by), (bx + 0.2 + sway * 0.4, by - rear * 0.28),
+            (bx - 1.6 + sway, by - rear * 0.56),
+            (bx + lean * 0.4 + sway * 0.6, by - rear * 0.80),
+            (bx + lean, by - rear)]
+
+
+def _usbasilisk_cell(pts, hood=1.0, lift=6.0):
+    """One USBasilisk frame: a reared serpent whose head is the USB trident.
+
+    The Bad-care divert, and the mirror of its sibling: this one rears off the shelf with
+    the hardware at the FRONT, where Coaxeel lies flat with the hardware at the back — a
+    thing that is plugged in against a thing that is plugged in from. The pair is the
+    branch, so the two poses have to disagree at a glance, and a vertical column against a
+    coil is the largest disagreement two silhouettes in this vocabulary can have.
+
+    The head is the USB glyph drawn as a skull: a bulb where the neck ends, a shaft, and a
+    three-way fork whose terminals are a square, a circle and — instead of the logo's
+    arrow — an actual type-A plug. That is the one liberty taken with the symbol, and it
+    is what keeps the head from being a badge stuck on a snake: the terminal that LEADS is
+    the connector itself, so the glyph and the anatomy are the same drawing.
+
+    The fork is also the HOOD, which is why there is no separate plate on the neck. A
+    superellipse spread behind the head unions with the neck into one amoeba at this size
+    — two round forms overlapping have no step in the silhouette to read as a flare — and
+    it left the creature carrying a body, a hood, a crest and a connector, which is the
+    parts-list §1 bans. Scaling `hood` opens and folds the two horn terminals instead, so
+    the thing that spreads is a thing the creature already had.
+
+    Nothing in the head deforms on any frame. Everything else in this vocabulary is round
+    and grown, so a right angle reads as manufactured before the viewer has worked out
+    what it is a picture of — and a connector that flexed with the animation would be a
+    connector made of the same stuff as the snake. `frame` draws the cavity inside the
+    shell and `Cell.solid` the tongue in the cavity, which is a type-A plug seen down its
+    own axis and nothing else.
+    """
+    r_tail, r_body = 3.6, 3.0
+    cell = Cell(CW, CH)
+    spine = catmull(pts)
+
+    tube(cell.body, spine, r_tail, r_body)
+
+    # Three rungs, on a body between Shenloop's seven and Rootgrub's three. It is a snake
+    # rather than a ribbon or a grub, and the segmentation says so before the pose does.
+    cell.chords(spine, (0.16, 0.34, 0.52, 0.70),
+                lambda t: r_tail + (r_body - r_tail) * t, overhang=0.35)
+
+    # --- the head: the USB glyph, held rigid and axis-aligned ----------------------
+    tx, ty = spine(1.0)
+    hx, hy = tx + 2.4, ty - lift
+    disc(cell.body, hx, hy, 2.2)
+    stroke(cell.body, (tx, ty), (hx, hy), r=1.5)     # the glyph stands off the neck
+    fx = hx + 3.2
+    stroke(cell.body, (hx, hy), (fx, hy), r=1.4)
+
+    # The two horn terminals, and the creature's hood. Square above and round below is
+    # the pair the logo is recognised by, and it is the only place in this vocabulary
+    # where two forms are drawn the same size for the sole purpose of being told apart.
+    up, out = 6.4 * hood, 3.8 * hood
+    stroke(cell.body, (fx, hy), (fx + out, hy - up), r=1.1)
+    rect(cell.body, fx + out - 1.4, hy - up - 2.6, fx + out + 1.6, hy - up + 0.4)
+    stroke(cell.body, (fx, hy), (fx + out, hy + up), r=1.1)
+    disc(cell.body, fx + out + 0.6, hy + up + 1.4, 2.6)
+
+    # The leading terminal: the plug. Deliberately NOT rotated to anything.
+    stroke(cell.body, (fx, hy), (fx + 4.6, hy), r=1.4)
+    sw, sh = 5.0, 3.5
+    cx, cy = fx + 8.4, hy
+    rect(cell.body, cx - sw, cy - sh, cx + sw, cy + sh)
+    frame(cell.ink, cx - 3.0, cy - 1.5, cx + 3.0, cy + 1.5)
+    # The tongue, low in the cavity and offset off centre, which is the asymmetry that
+    # makes a type-A plug a type-A plug rather than a hole in a box.
+    cell.solid(int(round(cx - 2.5)), int(round(cy - 0.5)), 4, 2)
+
+    # The shelf mark sits under the COLUMN, not along the laid tail. Drawn at the tail's
+    # own height it merges into that outline and the base reads as the sole of a boot; a
+    # pixel clear of it and under the weight, it reads as the contact every other
+    # crawling row of the line makes.
+    line(cell.ink, (pts[0][0] - 6, GROUND + 1), (pts[0][0] + 3, GROUND + 1))
+    return cell
+
+
+def usbasilisk():
+    """SPR_PET_USBASILISK — the Trojan a Rootgrub raised BADLY becomes.
+
+    Four rows of four 56x48 frames, the clip set every drawn row of this vocabulary uses:
+
+      0  idle    4 frames — reared, hood spread, the glyph holding dead still while the
+                            body sways under it. The stillness is the whole idle.
+      1  attack  4 frames — it does not bite. It rears higher, lines the plug up, and
+                            DRIVES it forward, because a plug's attack is being inserted.
+      2  droop   2 frames — down off the rear, hood half folded.
+      3  weak    2 frames — barely off the shelf, hood shut, the glyph carried low.
+    """
+    sheet = Sheet(4, 4, CW, CH)
+
+    # Idle. `rear` and `lean` hold, `sway` carries the whole motion — so the head keeps
+    # station to within a pixel and only the column under it works, which is the contract
+    # every resting row in this file keeps.
+    for i in range(4):
+        a = 2 * math.pi * i / 4
+        sheet.place(i, 0, _usbasilisk_cell(_usb_spine(23.0, 6.0, 1.4 * math.sin(a)), lift=5.5))
+
+    # Attack. The column loads back, then straightens and throws the whole reared length
+    # forward: the plug travels about eight pixels and nothing is added to the drawing.
+    for i, (rear, lean, sway, hood) in enumerate([
+        (24.0, 3.0, -1.6, 1.15),
+        (25.0, 1.0, -2.4, 1.25),
+        (21.0, 11.0, 1.6, 0.80),
+        (19.0, 13.0, 2.2, 0.60),
+    ]):
+        sheet.place(i, 1, _usbasilisk_cell(_usb_spine(rear, lean, sway), hood=hood,
+                                           lift=5.5))
+
+    # Droop. Half the rear gone and the hood folding, which on a creature whose stage
+    # read IS how high it holds itself is the cheapest way to say it has stopped.
+    for i in range(2):
+        sheet.place(i, 2, _usbasilisk_cell(
+            _usb_spine(18.0 - i, 8.0 + i, 0.6), hood=0.62, lift=5.0))
+
+    # Weak. Barely reared at all, the glyph carried nearly level with the shelf.
+    for i in range(2):
+        sheet.place(i, 3, _usbasilisk_cell(
+            _usb_spine(13.0 - i, 9.0 + i, 0.3), hood=0.30, lift=3.6))
+
+    return sheet
+
+
+def _coaxeel_cell(pts, gape=0.4, strip=1.0):
+    """One Coaxeel frame: a COILED length of coax with a head on one end.
+
+    The Good-care divert, and the mirror of its sibling in every way that matters. That
+    one rears and the connector is at the front; this one lies on the floor and the
+    hardware is at the back — a thing that is plugged IN against a thing that is plugged
+    in FROM. The pair is the branch, so the two poses have to disagree at a glance.
+
+    It is coiled because of the §5 silhouette test, and coiled specifically rather than
+    merely posed differently. Drawn as a low wave — which is what it was first — this row
+    filled in black is a thin squiggle, and so is Nodeatode: two creatures three stages
+    apart sharing an envelope, told apart only by interior detail that a silhouette by
+    definition throws away. A coil is the one shape in this vocabulary with a HOLE in it,
+    and enclosed-versus-not is the largest difference two silhouettes can have. It is also
+    the only shape that says *cable* before it says *animal*, which for this creature is
+    the right order to be read in.
+
+    The turn stops short of closing, so the body never crosses itself. Two runs of a 3px
+    outlined body laid over each other merge into a knot at this size — the same reason
+    Shenloop folds instead of coiling — and a coil that touches is a doughnut rather than
+    something wound up.
+
+    Its one solid mass is at the wrong end of the creature, which no other row in this
+    vocabulary has ever done: the centre conductor, standing proud of a jacket that has
+    been cut clean off. Every other worm here is read head-first because the solid mass is
+    up there; this one drags the eye down the whole length of the body to a stripped end,
+    which is exactly the order the joke wants to be read in.
+
+    The head is left with a jaw and no eye. `Cell.gape` is ink only, so the profile mouth
+    costs nothing against rule 4 — and a blank-faced eel that ends in a connector is a
+    better statement of what the creature is than the same drawing with an eye competing
+    for the read. It is drawn SQUARED rather than round, which is the difference between
+    this row's head and Nodeatode's: a bulb with a face on it is what every worm in the
+    family has, and a blunt block that is simply where the cable stops is not.
+    """
+    r = 3.0
+    cell = Cell(CW, CH)
+    spine = catmull(pts)
+
+    tube(cell.body, spine, r, r, steps=320)
+    head = pts[-1]
+    head_r = 4.6 + 0.9 * gape
+    superellipse(cell.body, head[0], head[1], head_r * 1.15, head_r * 0.82, n=3.2)
+
+    # The BRAID. Every other row in this file spends rule 3's rungs on segments, drawn
+    # perpendicular; these lean, in two opposite sets interleaved, which is a weave and
+    # not a body. It is also the densest rung count in the vocabulary — a shield weave is
+    # the one thing that gets tighter the more of it there is — and it is why this
+    # creature can be as long as Shenloop and not read as the same animal.
+    cell.chords(spine, (0.26, 0.34, 0.42, 0.50, 0.58, 0.66, 0.74, 0.82),
+                lambda t: r, overhang=-0.6, lean=0.62)
+
+    # The cut end. `tangent` at t=0 points INTO the body, so the assembly runs back along
+    # its negation — which keeps the whole thing aligned with the tail however the coil is
+    # wound, instead of being a dozen hand-placed points per frame.
+    tx, ty = tangent(spine, 0.0)
+    back = (-tx, -ty)
+    nx, ny = -back[1], back[0]
+    at = pts[0]
+
+    def step(length, half, square=False):
+        """One section of the cut, and where the next one starts."""
+        nonlocal at
+        nxt = (at[0] + back[0] * length * strip, at[1] + back[1] * length * strip)
+        if square:
+            poly(cell.body, [(at[0] + nx * half, at[1] + ny * half),
+                             (nxt[0] + nx * half, nxt[1] + ny * half),
+                             (nxt[0] - nx * half, nxt[1] - ny * half),
+                             (at[0] - nx * half, at[1] - ny * half)])
+        else:
+            stroke(cell.body, at, nxt, r=half)
         # A band at every step-down. Without them the taper is a tail coming to a point,
         # which is what a tail does anyway; the bands are what make it a CUT.
-        nx, ny = -back[1], back[0]
-        stroke(cell.ink, (at[0] - nx * (rr + 1.2), at[1] - ny * (rr + 1.2)),
-               (at[0] + nx * (rr + 1.2), at[1] + ny * (rr + 1.2)), r=0.6)
+        stroke(cell.ink, (at[0] - nx * (half - 0.4), at[1] - ny * (half - 0.4)),
+               (at[0] + nx * (half - 0.4), at[1] + ny * (half - 0.4)), r=0.6)
         at = nxt
+
+    # Ferrule, braid, dielectric. The first is the only form on either Trojan row that a
+    # rotated rectangle can say and a capsule cannot: a crimp has FLAT sides and square
+    # shoulders, and at this size the shoulders are the entire difference between a
+    # fitting swaged onto a cable and the cable simply getting thinner.
+    step(3.6, 3.4, square=True)
+    step(2.6, 1.3, square=True)
     # The conductor: a 1px rod out of the last step with the solid mass on its tip, so
     # the mass is ATTACHED. A 2x2 block floating two pixels off the end of a tail is a
     # speck of dirt, and at this size the eye will not join it up on its own.
-    pin = (at[0] + back[0] * 2.6 * strip, at[1] + back[1] * 2.6 * strip)
+    pin = (at[0] + back[0] * 3.4 * strip, at[1] + back[1] * 3.4 * strip)
     line(cell.ink, at, pin)
     cell.solid(int(round(pin[0])) - 1, int(round(pin[1])) - 1, 2, 2)
 
@@ -1640,7 +2324,7 @@ def _coaxeel_cell(pts, gape=0.4, strip=1.0):
     tx, ty = tangent(spine, 1.0)
     fa = math.atan2(ty, tx) * 0.25
     facing = (math.cos(fa), math.sin(fa))
-    cell.gape(head, head_r, facing, gape, teeth=2, spread=0.9)
+    cell.gape(head, head_r * 1.05, facing, gape, teeth=2, spread=0.9)
 
     # The shelf mark sits under the lowest point of the COIL. On every other crawling row
     # it goes under the tail, because the tail is what is on the floor; here the tail is
@@ -1673,19 +2357,27 @@ def coaxeel():
     """
     sheet = Sheet(4, 4, CW, CH)
 
-    def coil(cx, cy, r_out, r_in, a0, span, n=11):
+    def coil(cx, cy, r_out, r_in, a0, span, n=11, lead=5.5):
         """Points along an opening spiral: head at the last point, cut end at the first.
 
         The radius falls from `r_out` to `r_in` along the way, which is what keeps the
         turn from closing on itself — a constant-radius arc of more than a full turn would
         lay its own end across its own start, and at a 3px body that is a knot. It also
         gives the coil a direction to be read in, the way a spring does.
+
+        `lead` is a short straight run OUT of the coil before the cut, carried along the
+        radius at `a0`. Without it the cut assembly is laid on the spiral's own tangent,
+        which at the outer end runs alongside the next turn — so the connector merges into
+        the body and the end of the creature reads as a knot. Led out radially, the cable
+        leaves the coil first and the hardware is the only thing at that end.
         """
-        return [(cx + math.cos(a0 + span * i / (n - 1.0))
-                 * (r_out + (r_in - r_out) * i / (n - 1.0)),
-                 cy + math.sin(a0 + span * i / (n - 1.0))
-                 * (r_out + (r_in - r_out) * i / (n - 1.0)))
-                for i in range(n)]
+        pts = [(cx + math.cos(a0 + span * i / (n - 1.0))
+                * (r_out + (r_in - r_out) * i / (n - 1.0)),
+                cy + math.sin(a0 + span * i / (n - 1.0))
+                * (r_out + (r_in - r_out) * i / (n - 1.0)))
+               for i in range(n)]
+        return [(pts[0][0] + math.cos(a0) * lead,
+                 pts[0][1] + math.sin(a0) * lead)] + pts
 
     # Idle. The turn tightens and loosens by about a pixel of radius over the loop, and
     # the head stays put — the same "the ends hold station and the body moves" contract
@@ -1693,31 +2385,31 @@ def coaxeel():
     for i in range(4):
         a = 2 * math.pi * i / 4
         sheet.place(i, 0, _coaxeel_cell(
-            coil(27.0, 25.0, 15.0 + 0.7 * math.sin(a), 9.0, -0.55, -4.9),
+            coil(23.5, 27.0, 13.6 + 0.7 * math.sin(a), 8.2, -0.62, -4.9),
             gape=0.34 + 0.14 * math.sin(a)))
 
     # Attack. The loop is spent: `span` collapses from most of a turn to almost none and
     # the radius runs out with it, so the same length of cable that was wound up is the
     # length that reaches. Nothing is added to the drawing to make it lunge.
     for i, (rout, rin, a0, span, g) in enumerate([
-        (15.6, 8.4, -0.50, -5.3, 0.20),
-        (16.2, 8.0, -0.42, -5.6, 0.85),
-        (13.0, 11.5, -1.05, -2.6, 1.00),
-        (12.0, 11.0, -1.25, -1.9, 0.40),
+        (14.2, 7.6, -0.56, -5.3, 0.20),
+        (14.8, 7.2, -0.48, -5.6, 0.85),
+        (11.8, 10.4, -1.10, -2.6, 1.00),
+        (10.8, 10.0, -1.30, -1.9, 0.40),
     ]):
-        sheet.place(i, 1, _coaxeel_cell(coil(27.0, 25.0, rout, rin, a0, span), gape=g))
+        sheet.place(i, 1, _coaxeel_cell(coil(23.5, 27.0, rout, rin, a0, span), gape=g))
 
     # Droop. The loop sags open — a wider, shallower turn sitting lower in the cell, which
     # on a creature whose stage read IS how tightly it is wound is the cheapest way to say
     # it has stopped holding itself.
     for i in range(2):
         sheet.place(i, 2, _coaxeel_cell(
-            coil(27.0, 29.0 + i, 14.0, 11.0 - 0.4 * i, -0.75, -4.1), gape=0.26))
+            coil(23.5, 30.0 + i, 12.6, 10.0 - 0.4 * i, -0.82, -4.1), gape=0.26))
 
     # Weak. Barely a turn left in it and the cut end dragging on the shelf.
     for i in range(2):
         sheet.place(i, 3, _coaxeel_cell(
-            coil(27.0, 33.0 + i, 12.5, 11.5, -0.95, -3.1), gape=0.10, strip=0.85))
+            coil(23.5, 33.5 + i, 11.4, 10.4, -1.00, -3.1), gape=0.10, strip=0.85))
 
     return sheet
 

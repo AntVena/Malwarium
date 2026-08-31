@@ -181,8 +181,17 @@ own: USBasilisk and Coaxeel diverted out of the line that spends a STYLE, so the
 1-bit, outlined, segmented, drawn by `tools/gen_worm_art.py` alongside the two Daemons they were
 substituted for. Their "wrong" tell is where the one solid mass goes. Every Worm row spends it on a
 face (an eye, or Rootgrub's throat); these two spend it on a **contact** — the tongue inside a
-type-A plug, the centre conductor on a stripped cable end — which is the only thing on either
-drawing that a worm would not have.
+type-A plug, the bare conductor past a cut jacket.
+
+**A tell that small is not enough on its own, and the second half of it is GEOMETRY.** The solid
+mass is two pixels; a player deciding at a glance whether the thing on the shelf is the Daemon they
+were raising never gets to it. What separates these two at that glance is that a Trojan out of this
+line carries a shape no grown body has — USBasilisk's whole head is the USB trident, square terminal
+above and round below and a type-A plug where the logo puts its arrow, held rigid and axis-aligned
+while the body under it sways; Coaxeel's rungs LEAN, in one repeated lay rather than perpendicular,
+which is a braid and not a segmentation, and its jacket ends in a square cut with the core standing
+out of it. Right angles and repeated straight lays are the disguise slipping. The rest of the line
+is round, organic and jointed, and that contrast is the read the two pixels only confirm.
 
 **A BRANCH may carry a signature of its own on top of the line's.** Ransomware's cat branch —
 Conkittenate, Kalico, and the Pwnther/Breecheetah pair — is **two-headed**, every row of it, because
@@ -298,6 +307,16 @@ perfectly good reason to drop the rule entirely.
   sibling takes the opposite lever — width, a bigger maw, and one fewer segment chord than the row
   below it, because widely spaced rungs leave unbroken panels of flank and the panels are what
   carry mass.
+  The two Trojan rows are held to the same vocabulary and then made to disagree with it. Each is
+  built on ONE manufactured idea rather than a body plus an ornament: USBasilisk is a reared column
+  whose head IS the USB glyph — the fork's two horn terminals double as the crown a basilisk is named
+  for, so there is no separate plate on the neck, and a cobra hood spread behind the head was tried
+  and cut for unioning with the neck into one amoeba with no step in the silhouette to read as a
+  flare.
+  Coaxeel is a coil with a helical lay instead of segments and a square-cut jacket at the far end;
+  a graded three-step taper down to the conductor was tried and cut for reading as a shrimp's
+  rostrum, since on a curled body anything that narrows toward a point is a tail. One hard band at
+  full jacket width, then nothing but a thin rod, is what says the jacket came OFF.
   **Two reads had to be bought back after the fact, and both were the same mistake.** Rootgrub and
   Threadbore's maw is spokes around a solid mass, which is also the diagram of an EYE, and at this
   size the eye wins — both shipped reading as a fuzzy eyeball. The fix is a *lip*: a two-pixel

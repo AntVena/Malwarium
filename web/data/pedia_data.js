@@ -418,7 +418,7 @@ window.PEDIA_DATA = {
       "stageName": "Daemon",
       "line": "trojan",
       "evolvesTo": [],
-      "hint": "It rears up, spreads a hood it has no business having, and holds perfectly still - because the front of it is a plug, and a plug only has to be picked up once.",
+      "hint": "It rears up, raises a crown it has no business having, and holds perfectly still - because the front of it is a plug, and a plug only has to be picked up once.",
       "context": "BadUSB / a peripheral that enumerates as something it is not",
       "sprite": "assets/sprites/SPR_PET_USBASILISK.png",
       "cellW": 56,

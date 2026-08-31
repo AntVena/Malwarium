@@ -160,8 +160,9 @@ which is why gameplay ships first and the drawing follows.
   body-plan agnostic on purpose, since the line's later rows are not all literally worms; what they
   share is the finishing pass, and a recipe cannot opt out of it. `SPR_PET_NODEATODE`,
   `SPR_PET_ROOTGRUB`, `SPR_PET_SHENLOOP` and `SPR_PET_THREADBORE` are generated today — every
-  drawn row of the line — and the `worm_art_recipes` ctest fails if a committed sheet and its
-  recipe ever disagree. The Vermicell shell and the replica glyphs are still hand-drawn and
+  drawn row of the line — along with `SPR_PET_USBASILISK` and `SPR_PET_COAXEEL`, which are
+  `line = "trojan"` rows drawn here because a Trojan wears the line it diverted from. The
+  `worm_art_recipes` ctest fails if a committed sheet and its recipe ever disagree. The Vermicell shell and the replica glyphs are still hand-drawn and
   become recipes when next touched — their pixels are approved and shipped, so there is nothing
   to gain from moving them now.
 - **Every worm-line sheet is 56×48, including the two Daemons.** A grid at the oversized 96×64
