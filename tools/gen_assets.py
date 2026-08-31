@@ -168,10 +168,8 @@ FRAME_W_OVERRIDES = {
     # 512x64 = eight 64x64 frames, the same case one cell narrower. 64 does not divide
     # by 56 either, so the Metamorphic Daemon needs the row here to animate at all.
     "SPR_PET_TENTACLONE": 64,
-    # 528x48 = eight 66x48 frames. The Script cell here is wider than the standard 56
-    # because the creature is an eight-armed splay that reads across, and 66 does not
-    # divide by 56, so the strip needs naming the same way the two above do.
-    "SPR_PET_MORPHOPUS": 66,
+    # 300x256 = four rows of three 100x64 frames.
+    "SPR_PET_MORPHOPUS": 100,
     # 568x64 = eight 71x64 frames, the widest Daemon cell on the line. The frame was
     # already 71 while the sheet was a single drawing — the cell is sized to the
     # creature (MASTER_TODO 2a-iii) — so animating it changed the width and nothing
@@ -192,6 +190,8 @@ FRAME_W_OVERRIDES = {
 ROW_H_OVERRIDES = {
     # 568x128 = two rows of eight 71x64 cells: the idle hover, and the strike.
     "SPR_PET_SYNCAELIA": 64,
+    # 300x256 = four rows of 100x64 cells: idle, attack, walk, hurt.
+    "SPR_PET_MORPHOPUS": 64,
 }
 
 

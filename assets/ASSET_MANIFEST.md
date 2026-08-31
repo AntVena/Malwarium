@@ -366,6 +366,23 @@ which is why gameplay ships first and the drawing follows.
   of the creature is not wearing. They are a speckle with no per-dot identity, so each connected run
   is recoloured whole, deterministically off its own anchor, at the ratio the drawing carries. Whole
   blobs keep the scatter organic where a per-pixel rule leaves a checkerboard.
+- **A creature whose underside is SHADED must not be snapped with `--outline`.** The flag forces
+  every silhouette-boundary pixel to one ink, which is right for a sprite that is drawn with an
+  outline and destructive for one that is not: Morphopus seats its body on a shadowed underside
+  that reaches the silhouette edge, and forcing that edge to ink flattens the shadow into a black
+  border and takes the depth with it. The roster does not agree on outlines at all (2a-ii), so the
+  flag is a per-sheet judgement, never a default pass — and the way to tell is to look at what
+  touches the boundary before reaching for it.
+- **The animation round trip charges a fixed toll in DARK, so a shadow-seated creature may not be
+  able to afford it.** Measured against its own source on the same drawing, the trip returned 19%
+  less of the deepest tone, all of it at the silhouette edge where the background-removal pass
+  runs; packing the frames afterwards cost 0%, which is what isolates the trip as the culprit. It
+  also merges tones when its palette is capped: asking for 8 colours on an 8-colour source
+  collapsed this line's two coral tones (145 px + 205 px) into one of exactly 350 px, emptying a
+  camo rung — so ask for a generous palette and let `quantize.py` do the collapse, since it is the
+  one that weights luminance. Where the toll is too high, the answer is not a better prompt: it is
+  **two drawn cells instead of an animated row**. `SPR_PET_MORPHOPUS` is the worked example, and
+  the pair costs less than the row it replaced.
 - **`quantize.py --height` is safe at a gentle ratio only since its sharpen learned to follow one.**
   The unsharp pass is a rescue for the 2:1..4:1 trip it was written for and damage below that; at
   1.11:1 the fixed strength halved a sheet's deep tones and invented a 19% highlight where the

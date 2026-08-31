@@ -250,12 +250,16 @@ release valve that makes the rule always satisfiable.
 The bottom edge is exempt and only the bottom edge: that one is the FLOOR, and a creature
 standing on the shelf belongs on it.
 
-Measured over the roster, counting opaque pixels on a frame's left, right and top edges: **25
-sheets are clean, 14 are not**, led by `SPR_PET_MORPHOPUS` (42 px) and `SPR_PET_BRUINFORCE`
-(30). `SPR_PET_GOLIAUTH` (once 109 left, 109 right) and `SPR_PET_CROAKEN` (33/33/34) are the
-pattern for the fix: neither was cropped, both were re-composed inside a cell chosen to fit
-them, which is why Goliauth sits in the 96x64 Daemon box rather than the 56px cell it was
-overflowing.
+Measured over the roster, counting opaque pixels on a frame's left, right and top edges: **26
+sheets are clean, 13 are not**, led by `SPR_PET_BRUINFORCE` (30 px) and a tie between
+`SPR_PET_EGG_WORM_HATCH` and `SPR_PET_CUTTLEFORK` (18). `SPR_PET_GOLIAUTH` (once 109 left, 109
+right) and `SPR_PET_CROAKEN` (33/33/34) are the pattern for the fix: neither was cropped, both
+were re-composed inside a cell chosen to fit them, which is why Goliauth sits in the 96x64
+Daemon box rather than the 56px cell it was overflowing. `SPR_PET_MORPHOPUS` was the worst row
+here at 42 px and is now clean, by the same move at a smaller scale — its cell grew from 66x48
+to 66x52 so the drawing kept every pixel it had. The attempt that shrank the creature to 46
+rows instead cost 12% of its opaque mass, which is the measurement that says which way round
+this rule runs.
 
 **Animating a sheet is what puts a clean row back on this list**, and it is the reason the
 count keeps moving: a redraw resolves the silhouette afresh every frame, so a creature drawn

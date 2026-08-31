@@ -80,14 +80,10 @@ inline constexpr CreatureDef kMetamorphicCreatures[] = {
      "Mimicry / instruction substitution",
      {MoveKind::Attack, MoveKind::Defend, MoveKind::Attack, MoveKind::Defend},
      /*evolvesToTrojanId=*/nullptr, /*evolvesToTrojanBadId=*/nullptr, Locomotion::Swim,
-     // One row of eight 66x48 cells, all of it idle. The row is the eight arms stirring
-     // while the mantle holds — the whole creature is arms, so that is where a hover
-     // has to live, and the drawing was untangled before it was animated because the
-     // round trip resolves an overlap afresh every frame and the resolutions disagree
-     // (assets/ASSET_MANIFEST.md §C). It declares no "walk": the second row it used to
-     // carry was the same drawing with its arms knotted, and a clip nobody wants is
-     // worse than the idle drawHabitat falls back to.
-     /*clips=*/{{"idle", /*row=*/0, /*frames=*/8, /*holdBeats=*/2}}},
+     /*clips=*/{{"idle", /*row=*/0, /*frames=*/2, /*holdBeats=*/2},
+                {"attack", /*row=*/1, /*frames=*/3, /*holdBeats=*/2},
+                {"walk", /*row=*/2, /*frames=*/2, /*holdBeats=*/2},
+                {"hurt", /*row=*/3, /*frames=*/1}}},
     
     {"syncaelia", "Syncaelia", Stage::Daemon, "SPR_PET_SYNCAELIA",
      nullptr, nullptr, nullptr, kBranchGoodPowerPct, kBranchGoodFragPct, "metamorphic",
