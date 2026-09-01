@@ -91,8 +91,9 @@ inline constexpr CreatureDef kMetamorphicCreatures[] = {
      "Behavioural mimicry / signature synchronisation",
      {MoveKind::Attack, MoveKind::Defend, MoveKind::Attack, MoveKind::Defend},
      /*evolvesToTrojanId=*/nullptr, /*evolvesToTrojanBadId=*/nullptr, Locomotion::Walk,
-     // One row of eight 71x64 cells — the widest cell on the line, because the frame is
-     // sized to the creature rather than the creature trimmed to a frame. Its sibling's
+     // Three rows of eight 78x64 cells — the widest cell on the line, because the frame
+     // is sized to the creature rather than the creature trimmed to a frame, and the
+     // walk row below spreads the arm skirt to 74 across. Its sibling's
      // constraint applies here too: 64 is the Daemon box's ceiling, so the head cannot
      // rise and the idle lives below it — the arm tips curling and uncurling, the two
      // raised shoulder arms swaying in and back out, and a pulse travelling along the
@@ -132,8 +133,25 @@ inline constexpr CreatureDef kMetamorphicCreatures[] = {
      // Two were dropped for surging past the cell and two for being the calm ends of the
      // twist, and a calm column is exactly what must not be reachable by raising
      // `frames` later.
+     //
+     // ROW 2 IS A WALK FOR A CREATURE WITH NO LEGS. What steps is the arm skirt: it
+     // gathers under the body, spreads wide as the weight goes onto the outer arms, and
+     // comes back — so the cycle reads across the SILHOUETTE's width rather than up and
+     // down a pair of limbs. The four columns sample that loop evenly, and holdBeats=1
+     // walks them at the beat the habitat moves the anchor on, so the spread and the
+     // drift are one motion.
+     //
+     // THE CROWN ON THIS ROW IS STAMPED, NOT DRAWN. A small feature on a thin neck reads
+     // to a redraw as a stem and gets extended, and this one comes back as a stalk that
+     // grows past the cell on every frame. What fixes it is registration rather than
+     // wording: everything below the crest returns on the source's own seat, so the
+     // drawn crown goes back at an offset measured from the eye box IN each frame, in a
+     // column narrow enough that an arm raised across the head is not taken off with the
+     // stalk (assets/ASSET_MANIFEST.md §C). The eyes are stamped back for the same
+     // reason the sibling below stamps its own — a snap to the line's hexes loses them.
      /*clips=*/{{"idle", /*row=*/0, /*frames=*/8, /*holdBeats=*/2},
-                {"attack", /*row=*/1, /*frames=*/4, /*holdBeats=*/1}}},
+                {"attack", /*row=*/1, /*frames=*/4, /*holdBeats=*/1},
+                {"walk", /*row=*/2, /*frames=*/4, /*holdBeats=*/1}}},
     
     {"tentaclone", "Tentaclone", Stage::Daemon, "SPR_PET_TENTACLONE",
      nullptr, nullptr, nullptr, kBranchBadPowerPct, kBranchBadFragPct, "metamorphic",
@@ -141,13 +159,73 @@ inline constexpr CreatureDef kMetamorphicCreatures[] = {
      "Malware cloning / entry-point obscuring",
      {MoveKind::Attack, MoveKind::Defend, MoveKind::Attack, MoveKind::Attack},
      /*evolvesToTrojanId=*/nullptr, /*evolvesToTrojanBadId=*/nullptr, Locomotion::Walk,
-     // One row of eight 64x64 cells. The Daemon cell is 64 tall, which is the box's
-     // ceiling, so the pose has no room to rise and falls: the crown is pinned and the
-     // whole idle lives in the arms — the chest curtain swaying and the side arms
-     // breathing. gen_assets cuts this sheet only because FRAME_W_OVERRIDES names it;
-     // 512 does not divide by 56, and 64 does not divide by the 48 a row is measured in,
-     // so the height buys one row rather than more.
-     /*clips=*/{{"idle", /*row=*/0, /*frames=*/5, /*holdBeats=*/1}}},
+     // Four rows of 72x64 cells: the idle, the step cycle, the strike, the flinch. The
+     // Daemon cell is 64 TALL, which is the box's ceiling, so the standing pose has no
+     // room to rise and falls: the crown is pinned and the whole idle lives in the arms —
+     // the chest curtain swaying and the side arms breathing. The cell is 72 WIDE rather
+     // than 64 only because row 2 reaches; the standing pose is 57 across and an arm
+     // thrown clear of the body is 65, and a limb that stopped on the cell edge would
+     // read as a blitter fault rather than as a crop. gen_assets cuts the sheet at all
+     // because FRAME_W_OVERRIDES names the 72
+     // (56 divides neither) and reaches the rows below the first because ROW_H_OVERRIDES
+     // names the 64 a Daemon row is measured in rather than the 48 a pet row defaults to.
+     //
+     // EVERY ROW STANDS ON ONE SPOT. Each frame is seated by its FEET — their centre and
+     // the floor row — rather than by its drawing's bounding box, because a clip swap is
+     // not a move: the habitat changes rows the beat a wander starts travelling and the
+     // fight changes them mid-swing, and a body that jumped sideways on the swap would
+     // read as a teleport rather than as the same creature doing something else.
+     //
+     // ROW 1 IS DRAWN AGAINST THE HABITAT'S BOB RATHER THAN AROUND IT. A walker is
+     // lifted 2px on the even beats (IdleWander::bobs, core/model/idle_wander.h) and
+     // frameAt() indexes off that same beat, so at holdBeats=1 the parity is fixed:
+     // columns 0 and 2 always land on the lifted beat, 1 and 3 always on the flat one.
+     // The even columns are therefore the PASS — one foot swung clear, the standing leg
+     // at full extension to the cell floor — and the odd ones the CONTACT, both feet
+     // down and both legs drawn ONE row shorter, which is the row count that most
+     // nearly cancels the lift: the bob is 2 px of the panel while a cell row is 1.75 of
+     // them (kScaleNum/kScaleDen, core/render/canvas.h), so one row spends 1.75 against
+     // the 2 and two rows would overshoot and pull the standing foot UP as the weight
+     // lands. What is left of the bob after that lands on the head: up as a leg swings,
+     // down as the weight settles, instead of the whole creature hovering off the shelf
+     // twice a second the way row 0 does. That is also why the cycle is FOUR columns and
+     // not five — an odd count would walk the phases off the parity and hand the standing
+     // foot to the beat the whole creature is already rising on.
+     //
+     // The step is front-on because the sheet has no facing (gen_assets' FACING table)
+     // and so is never mirrored — the legs alternate in place rather than reaching in a
+     // direction, and the reach the gait would have spent goes into the 1px rock toward
+     // whichever leg is standing. That rock carries the face rather than redrawing it,
+     // which is the one thing this line's signature region cannot survive
+     // (assets/CREATURE_VISUAL_RULES.md §2).
+     //
+     // ROW 2 IS THE POSE COMING APART, which is this creature's whole flavour line: the
+     // arms that were folded into a person leave the body and lash. Every column is a
+     // COMPLETE strike, and that is a requirement rather than a preference — frameAt()
+     // indexes off the global beat and nothing restarts a clip when a swing begins, so
+     // the kAttackHopPeriod window (core/ui/combat_screen.cpp) can open on any column,
+     // and a column drawn as wind-up would show the wind-up last as often as first. So
+     // the four differ in WHICH arms are out and how far, never in how ready the
+     // creature is; holdBeats=1 against that period of 4 walks all four across the
+     // window exactly once. Column 1 spends the box's full 64 rows and puts 2 px on the
+     // cell's top edge, which is the one place on this sheet a limb meets an edge on
+     // purpose: it is the column with an arm at full reach, and on a cell whose height
+     // IS the ceiling, full reach and the ceiling are the same row.
+     //
+     // ROW 3 IS THE BLOW ARRIVING, and it is composed out of row 0 rather than drawn
+     // again: the mass is shoved off its stand — full displacement at the crown, none at
+     // the hem, so the feet hold the spot the seating rule above pins them to — and the
+     // eyes narrow to slits. It keeps the accent while doing it, which is the point of
+     // narrowing them rather than shutting them: the eyes are the smallest bright thing
+     // on the sheet and the first thing any pass over the pixels loses (a snap to the
+     // line's hexes averages a small accent into the body around it and they vanish
+     // silently, assets/ASSET_MANIFEST.md §C), so a flinch that spent them would be a
+     // flinch nobody could read. Row 2's eyes are stamped back from row 0's own two for
+     // exactly that reason.
+     /*clips=*/{{"idle", /*row=*/0, /*frames=*/5, /*holdBeats=*/1},
+                {"walk", /*row=*/1, /*frames=*/4, /*holdBeats=*/1},
+                {"attack", /*row=*/2, /*frames=*/4, /*holdBeats=*/1},
+                {"hurt", /*row=*/3, /*frames=*/1}}},
 };
 inline constexpr int kMetamorphicCreatureCount =
     sizeof(kMetamorphicCreatures) / sizeof(kMetamorphicCreatures[0]);

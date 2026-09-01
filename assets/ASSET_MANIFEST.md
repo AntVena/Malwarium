@@ -345,9 +345,11 @@ which is why gameplay ships first and the drawing follows.
   luminance-weighted snap cannot tell the eye accent from the top highlight, so any area-average
   tips blended pixels at random and streaks the coral arms yellow-green. Snap the BODY against the
   tones that are not the accent, then put the accent back. `SPR_PET_TENTACLONE` restamps its eyes
-  from a fixed two-box mask rather than by shape: seating pins the head, so the eye pixels land on
-  identical coordinates in every frame and the mask is exact where a shape heuristic mistook stripe
-  fragments for eyes.
+  from the idle's own two, anchored on the accent CLUSTERS the trip returns rather than on a fixed
+  box: the drifted accent survives the trip as one distinct colour and is easy to find before the
+  snap eats it, and anchoring per frame is what lets a row whose head moves — a strike, a flinch —
+  take the same stamp as a row whose head does not. Discard clusters below a couple of pixels; the
+  drift leaves single specks elsewhere on the body that are not eyes.
 - **STAMP THE FRAGILE FEATURE BACK; DO NOT PROMPT FOR IT.** The restamp above generalises, and it
   is the repair that makes an animation round trip usable on a sheet the trip keeps spoiling in one
   place. A small isolated feature on a thin neck reads to the redraw as a STEM and gets extended:
@@ -359,7 +361,26 @@ which is why gameplay ships first and the drawing follows.
   box) rather than a constant, because the body may surge between frames even when the trip is
   otherwise faithful. Two things bound the repair: the stamp must be a narrow column, or a limb
   crossing over it is cut; and a frame whose surge no longer leaves room for the stamped feature
-  does not fit the cell and has to be dropped rather than scaled.
+  does not fit the cell and has to be dropped rather than scaled. Applied to that sheet's walk row
+  it takes all eight returned frames from 58-72 rows tall back under the cell's 64.
+- **A short prompt plus a negative one is what steers a MOTION; a long prompt steers a drawing.**
+  `animate_game_art` reads the source for the creature, so the useful prompt for a clip row is the
+  clip's own name — `Attack`, `Hurt`, `Walk` — with the failure named in `negative_prompt` rather
+  than the pose spelled out in the positive one. Naming the gait's alternative there (`swimming,
+  floating, hovering, drifting, water`) is what keeps an eight-armed walker striding instead of
+  swimming. The frames come back at the source's own pixel scale, so they crop into the cell with
+  no resampling — but they come back FRAMED wider and taller than they went in, and a row is
+  usable only as far as the cell can hold what the trip added.
+- **Not every returned frame is a clip frame.** An eight-frame return is a loop through one motion,
+  so its ends sit near the rest pose and only its middle is the thing asked for: a strike row is
+  the columns where the arms are already out, and the two or three that read as gathering are
+  wind-up, which `frameAt` cannot show in order (`src/core/content/defs.h`). Pick for the phase,
+  then order the picks so the row still closes into a cycle. Anything the pick leaves behind is a
+  frame the row is better without, not a column to be filled later.
+- **Fragments are a fault by definition on a single-mass creature.** The redraw resolves
+  overlapping limbs afresh in every frame, and where it loses a join it leaves a tip behind as a
+  floating chip of a few pixels. Nothing on these sheets is detached, so dropping every connected
+  component but the largest, per cell, is safe and mechanical.
 - **A merged tone is split per connected BLOB, never dithered.** The trip collapses this line's two
   violets — the arm suckers on band 3 and the ring tell on band 4 — into one, and the band
   arithmetic in `CREATURE_VISUAL_RULES.md §4` means neither "map it all to one" answer is free: the

@@ -165,16 +165,19 @@ FRAME_W_OVERRIDES = {
     # SPR_PET_ sheet on 56px only when the width divides by it, and 768 does not, so
     # without this the whole strip reads as one very wide single frame.
     "SPR_PET_WIRE_HEIR": 96,
-    # 512x64 = eight 64x64 frames, the same case one cell narrower. 64 does not divide
-    # by 56 either, so the Metamorphic Daemon needs the row here to animate at all.
-    "SPR_PET_TENTACLONE": 64,
+    # 576x192 = eight 72x64 frames. The cell is 72 rather than 64 because the strike row
+    # reaches: an arm thrown clear of the body is 65 px across where the standing pose is
+    # 57, and MASTER_TODO 2a-iii sizes the FRAME to the creature rather than trimming the
+    # creature to the frame. 72 does not divide 56 either, so the row is still what makes
+    # the sheet animate at all.
+    "SPR_PET_TENTACLONE": 72,
     # 300x256 = four rows of three 100x64 frames.
     "SPR_PET_MORPHOPUS": 100,
-    # 568x64 = eight 71x64 frames, the widest Daemon cell on the line. The frame was
-    # already 71 while the sheet was a single drawing — the cell is sized to the
-    # creature (MASTER_TODO 2a-iii) — so animating it changed the width and nothing
-    # else, and the row here is what stops the eight cells reading as one wide frame.
-    "SPR_PET_SYNCAELIA": 71,
+    # 624x192 = eight 78x64 frames. The cell is sized to the creature rather than the
+    # creature to the cell, so it has grown twice: to 71 when the standing drawing was
+    # measured, and to 78 when the walk row spread the arm skirt to 74 across. Without
+    # the row here the eight cells read as one very wide frame.
+    "SPR_PET_SYNCAELIA": 78,
 }
 
 # The HEIGHT half of the table above, keyed the same way: asset name -> one row's height.
@@ -188,10 +191,12 @@ FRAME_W_OVERRIDES = {
 # however many are drawn. So a Daemon is capped at one clip until it names its row height
 # here, and `attack` or `hurt` on any of them starts with a row in this table.
 ROW_H_OVERRIDES = {
-    # 568x128 = two rows of eight 71x64 cells: the idle hover, and the strike.
+    # 624x192 = three rows of eight 78x64 cells: the idle, the strike, the walk.
     "SPR_PET_SYNCAELIA": 64,
     # 300x256 = four rows of 100x64 cells: idle, attack, walk, hurt.
     "SPR_PET_MORPHOPUS": 64,
+    # 576x256 = four rows of 72x64 cells: the idle, the step cycle, the strike, the flinch.
+    "SPR_PET_TENTACLONE": 64,
 }
 
 

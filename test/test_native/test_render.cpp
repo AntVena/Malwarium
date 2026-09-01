@@ -36,15 +36,15 @@ void test_sprite_roundtrip() {
 // both are one table away from being silently dropped — and dropping the HEIGHT half is
 // the invisible one. `frame_rows()` falls back to a single row, so the sheet still
 // decodes, still blits, and still plays its idle; the only symptom is that every clip
-// naming row 1 quietly draws nothing. This is the roster's one sheet whose cell is
-// taller than PET_ROW_H and carries a second row, which makes it the case that proves
+// naming a row past the first quietly draws nothing. This sheet stacks the most rows
+// on a cell taller than PET_ROW_H, which makes it the case that proves
 // ROW_H_OVERRIDES is still being read.
 void test_oversized_cell_holds_a_row_stack() {
     const SpriteData& s = ASSET_SPR_PET_SYNCAELIA;
-    CHECK(s.frameW == 71);   // FRAME_W_OVERRIDES: 568 does not divide by 56
+    CHECK(s.frameW == 78);   // FRAME_W_OVERRIDES: 624 does not divide by 56
     CHECK(s.frames == 8);
     CHECK(s.h == 64);        // ONE row's height, not the sheet's
-    CHECK(s.rows == 2);      // ROW_H_OVERRIDES: 128 would otherwise be one 128-tall row
+    CHECK(s.rows == 3);      // ROW_H_OVERRIDES: 192 would otherwise be one 192-tall row
 
     // Taller than gen_assets' PET_ROW_H of 48, which is the whole reason the override
     // has to exist — if this ever stops being true the table is dead weight. The 48 is
