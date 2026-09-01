@@ -572,10 +572,10 @@ window.PEDIA_DATA = {
       "hint": "It can hold a very convincing surface-level conversation for a creature that's never bothered to learn what words actually mean. Don't let yourself get pulled in too deep. It can hold a conversationalist too.",
       "context": "Behavioural mimicry / signature synchronisation",
       "sprite": "assets/sprites/SPR_PET_SYNCAELIA.png",
-      "cellW": 71,
+      "cellW": 78,
       "cellH": 64,
-      "sheetW": 568,
-      "sheetH": 128
+      "sheetW": 624,
+      "sheetH": 192
     },
     {
       "id": "tentaclone",
@@ -587,10 +587,10 @@ window.PEDIA_DATA = {
       "hint": "Eight arms folded into the shape of a person. It holds the pose well at a distance, and not at all once it decides it no longer needs to.",
       "context": "Malware cloning / entry-point obscuring",
       "sprite": "assets/sprites/SPR_PET_TENTACLONE.png",
-      "cellW": 64,
+      "cellW": 72,
       "cellH": 64,
-      "sheetW": 512,
-      "sheetH": 64
+      "sheetW": 576,
+      "sheetH": 256
     }
   ],
   "malbeasts": [
