@@ -90,7 +90,7 @@ inline constexpr CreatureDef kMetamorphicCreatures[] = {
      "It can hold a very convincing surface-level conversation for a creature that's never bothered to learn what words actually mean. Don't let yourself get pulled in too deep. It can hold a conversationalist too.",
      "Behavioural mimicry / signature synchronisation",
      {MoveKind::Attack, MoveKind::Defend, MoveKind::Attack, MoveKind::Defend},
-     /*evolvesToTrojanId=*/nullptr, /*evolvesToTrojanBadId=*/nullptr, Locomotion::Swim,
+     /*evolvesToTrojanId=*/nullptr, /*evolvesToTrojanBadId=*/nullptr, Locomotion::Walk,
      // One row of eight 71x64 cells — the widest cell on the line, because the frame is
      // sized to the creature rather than the creature trimmed to a frame. Its sibling's
      // constraint applies here too: 64 is the Daemon box's ceiling, so the head cannot
@@ -140,7 +140,7 @@ inline constexpr CreatureDef kMetamorphicCreatures[] = {
      "Eight arms folded into the shape of a person. It holds the pose well at a distance, and not at all once it decides it no longer needs to.",
      "Malware cloning / entry-point obscuring",
      {MoveKind::Attack, MoveKind::Defend, MoveKind::Attack, MoveKind::Attack},
-     /*evolvesToTrojanId=*/nullptr, /*evolvesToTrojanBadId=*/nullptr, Locomotion::Swim,
+     /*evolvesToTrojanId=*/nullptr, /*evolvesToTrojanBadId=*/nullptr, Locomotion::Walk,
      // One row of eight 64x64 cells. The Daemon cell is 64 tall, which is the box's
      // ceiling, so the pose has no room to rise and falls: the crown is pinned and the
      // whole idle lives in the arms — the chest curtain swaying and the side arms
