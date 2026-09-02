@@ -279,10 +279,12 @@ SaveData Game::captureSave() const {
     // v28: the Ambig-USB armed Trojan-divert flag (per-pet, reset on a new egg).
     d.forceTrojanDivert = forceTrojanDivert_ ? 1 : 0;
 
-    // v60: the rest of the USB port — the Bad-USB/Signed-USB branch override and the
-    // Sandbox/Hypervisor-USB soak factor (both per-pet, reset on a new egg).
+    // v60: the rest of the USB port — the Bad-USB/Signed-USB branch override, the
+    // Sandbox/Hypervisor-USB soak factor and the Halt-USB's hold (all per-pet, all reset
+    // on a new egg).
     d.evolveBranchOverride = static_cast<uint8_t>(evolveBranchOverride_);
     d.evolveSoakFactor = static_cast<uint8_t>(evolveSoakFactor_);
+    d.evolveHold = evolveHold_ ? 1 : 0;
 
     // v30: the Backup Drive combat-shield buff's armed-until deadline (per-pet,
     // reset on a new egg).
@@ -725,6 +727,7 @@ void Game::applySave(const SaveData& d) {
                             : d.evolveBranchOverride == 2 ? BranchOverride::Bad
                                                           : BranchOverride::None;
     evolveSoakFactor_ = d.evolveSoakFactor < 1 ? 1 : d.evolveSoakFactor;
+    evolveHold_ = d.evolveHold != 0;
 
     // v30: the Backup Drive combat-shield buff's armed-until deadline (per-pet; a
     // pre-v30 blob defaults it to 0 — no shield armed).

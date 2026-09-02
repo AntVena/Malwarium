@@ -2687,10 +2687,28 @@ window.PEDIA_DATA = {
       "name": "Hypervisor-USB",
       "type": "BUFFS",
       "rarity": "EPIC",
-      "effect": "Process-use: stretches this stage's evolve clock x4 and pays x4 XP.",
+      "effect": "Process/Script: x4 XP for x4 the evolve clock, x2 that on a Script.",
       "stats": "SOAK x4",
       "icon": "assets/icons/ICON_ITEM_HYPERVISOR_USB.png",
       "bits": 2048
+    },
+    {
+      "id": "halt_usb",
+      "name": "Halt-USB",
+      "type": "BUFFS",
+      "rarity": "RARE",
+      "effect": "Stops the pet evolving at all, until an Eject-USB pulls it.",
+      "stats": "EVOLVE HELD",
+      "icon": "assets/icons/ICON_ITEM_HALT_USB.png"
+    },
+    {
+      "id": "eject_usb",
+      "name": "Eject-USB",
+      "type": "BUFFS",
+      "rarity": "RARE",
+      "effect": "Pulls whatever USB is armed and drops its effect.",
+      "stats": "CLEARS USB",
+      "icon": "assets/icons/ICON_ITEM_EJECT_USB.png"
     },
     {
       "id": "zeroday_bell",
@@ -7187,9 +7205,9 @@ window.PEDIA_DATA = {
     {
       "key": "COLLECT_RARE",
       "name": "Rare Collector",
-      "trigger": "Get hold of all 47 Rare items.",
+      "trigger": "Get hold of all 49 Rare items.",
       "icon": "assets/icons/ICON_ACH_COLLECT_RARE.png",
-      "goal": 47
+      "goal": 49
     },
     {
       "key": "COLLECT_EPIC",

@@ -101,7 +101,7 @@ const int kAreaModsDeepWebCount = arrLen(kAreaModsDeepWeb);
 // dive's own exclusive Merge Hub ingredient — the terminal zone is no AreaDef, so its
 // pool is named here for the same reason its glyph and scaling constants are.
 //
-// The three unbuyable USBs (content_items.cpp) hang off the end of it as bare rows, so
+// The five unbuyable USBs (content_items.cpp) hang off the end of it as bare rows, so
 // each draws at its own ItemDef::dropWeight — which is where the ladder between them is
 // written, because they are scarcer than their tiers EVERYWHERE and not just here. This
 // is the ONLY place any of them drops, and that is the point: no counter sells the
@@ -110,7 +110,7 @@ const int kAreaModsDeepWebCount = arrLen(kAreaModsDeepWeb);
 const LootEntry kWildLootDeepWeb[] = {
     {"dyno_nuggets"}, {"tortilla_chip"}, {"backup_drive"}, {"disk_scrubber"},
     {"pwnzu_sauce"},
-    {"sandbox_usb"}, {"bad_usb"}, {"signed_usb"},
+    {"sandbox_usb"}, {"bad_usb"}, {"signed_usb"}, {"halt_usb"}, {"eject_usb"},
 };
 const int kWildLootDeepWebCount = arrLen(kWildLootDeepWeb);
 

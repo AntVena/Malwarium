@@ -340,13 +340,29 @@ struct ItemEffect {
         // evolution they steer. Neither rescues a DYING pet: 5/5 is a death, not a branch.
         ForceEvolveBranchGood,
         ForceEvolveBranchBad,
-        ArmEvolveSoak,        // Sandbox/Hypervisor-USB: soak this stage. While armed, the
-                              // stage's evolution dwell runs magnitude times LONGER and
-                              // every XP award pays magnitude times MORE, so the trade is
-                              // the same pet arriving later and further along. Plugged in
-                              // at Process only, consumed at the evolution it stretched,
-                              // and it holds the port shut while it runs — no other USB
-                              // item is usable until it is spent (itemIsUsb below).
+        // The SOAK pair. While armed, the stage's evolution dwell runs magnitude times
+        // LONGER and every XP award pays magnitude times MORE, so the trade is the same
+        // pet arriving later and further along. Consumed at the evolution it stretched.
+        //
+        // Two Kinds because the REACH is the effect and the magnitude is already spoken
+        // for by the factor — the same reason the branch pair above is two Kinds. The
+        // plain soak plugs in at PROCESS only; the late one also plugs in at SCRIPT,
+        // where the clock costs DOUBLE the factor it pays XP at (Game::evolveDwellMs).
+        // A Script boundary is the branch a whole raise was aimed at, so stretching it
+        // is the more expensive thing to do and the row says which devices may.
+        ArmEvolveSoak,
+        ArmEvolveSoakLate,
+        ArmEvolveHold,        // Halt-USB: stop the pet evolving at all. No magnitude — a
+                              // hold is a state, not a size. Unlike everything else in
+                              // the family it is NOT consumed at a boundary, because no
+                              // boundary arrives while it is in: it stays until an
+                              // Eject-USB pulls it, the pet goes back on the rack, or a
+                              // new egg is laid. What parks a pet at a stage on purpose.
+        ClearUsbPort,         // Eject-USB: pull whatever is in the port and drop its
+                              // effect — the armed divert, the forced branch, the soak,
+                              // the hold. Magnitude-free, and the ONE device that goes in
+                              // while a locking one is already there (isLockingUsbEffect
+                              // below), since undoing a commitment is its whole job.
         ArmCombatShieldBuff,  // arm a timed combat shield for magnitude MINUTES
                               // (Backup Drive, save v30): while armed, the next incoming
                               // hit in combat is negated (like the RAID Mirror mod) and
@@ -570,7 +586,21 @@ constexpr bool isUsbEffect(ItemEffect::Kind k) {
     return k == ItemEffect::Kind::ForceTrojanDivert ||
            k == ItemEffect::Kind::ForceEvolveBranchGood ||
            k == ItemEffect::Kind::ForceEvolveBranchBad ||
-           k == ItemEffect::Kind::ArmEvolveSoak;
+           k == ItemEffect::Kind::ArmEvolveSoak ||
+           k == ItemEffect::Kind::ArmEvolveSoakLate ||
+           k == ItemEffect::Kind::ArmEvolveHold ||
+           k == ItemEffect::Kind::ClearUsbPort;
+}
+
+// ...and is it one of the LOCKING ones? A soak and a hold each own the boundary outright
+// — one stretches it, the other refuses to arrive at it — so while either is armed the
+// port takes nothing else. The swappable half of the family (the divert, the branch
+// overrides) is deliberately not here: those go in and out freely, which is what makes
+// "the most recently plugged in wins" a rule the player can use rather than a trap.
+constexpr bool isLockingUsbEffect(ItemEffect::Kind k) {
+    return k == ItemEffect::Kind::ArmEvolveSoak ||
+           k == ItemEffect::Kind::ArmEvolveSoakLate ||
+           k == ItemEffect::Kind::ArmEvolveHold;
 }
 
 // Does this ROW carry any USB effect (see isUsbEffect)? The item-level question every
@@ -583,10 +613,30 @@ constexpr bool itemIsUsb(const ItemDef& d) {
 
 // The magnitude of this row's evolve-soak, or 0 if it carries none — what the ITEMS gate
 // reads to know a row is one of the soak USBs without re-walking its effects by hand.
+// Both soak Kinds answer here: the factor means the same thing on either, and only the
+// STAGE REACH differs (itemSoakReachesScript below).
 constexpr int itemEvolveSoakFactor(const ItemDef& d) {
     for (const ItemEffect& e : d.effects)
-        if (e.kind == ItemEffect::Kind::ArmEvolveSoak) return e.magnitude;
+        if (e.kind == ItemEffect::Kind::ArmEvolveSoak ||
+            e.kind == ItemEffect::Kind::ArmEvolveSoakLate)
+            return e.magnitude;
     return 0;
+}
+
+// Does this row's soak reach the SCRIPT stage as well as Process? The late Kind is the
+// whole answer — nothing else on the row says it, which is why it is a Kind.
+constexpr bool itemSoakReachesScript(const ItemDef& d) {
+    for (const ItemEffect& e : d.effects)
+        if (e.kind == ItemEffect::Kind::ArmEvolveSoakLate) return true;
+    return false;
+}
+
+// Is this the port's EJECT — the one device that goes in while a locking one is already
+// there, because pulling that one is what it does?
+constexpr bool itemEjectsUsbPort(const ItemDef& d) {
+    for (const ItemEffect& e : d.effects)
+        if (e.kind == ItemEffect::Kind::ClearUsbPort) return true;
+    return false;
 }
 
 // The combat-stat index an off-level stat-point effect grants into (0 power · 1 defense ·

@@ -1853,15 +1853,45 @@ const ItemDef kItems[] = {
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/3},
 
     // Hypervisor-USB: the Sandbox-USB's Epic upgrade — one layer further down, so the
-    // soak is twice as deep. The only USB anyone sells (Moor-to-Moor, Napstorrent Moors),
-    // and it is priced in its own family: four Sandbox-USBs plus Bits, so the deep end of
-    // the ladder is reached by diving for the rare one four times over rather than by
-    // having a full wallet.
+    // soak is twice as deep AND it reaches a stage the Sandbox cannot. On a Script it
+    // still pays x{soak} XP but the clock costs DOUBLE that, because a Script's boundary
+    // is the branch the whole raise was aimed at: stretching the last stage before an
+    // ending is worth more than stretching a middle one, so it is priced to match.
+    // The only USB anyone sells (Moor-to-Moor, Napstorrent Moors), and it is priced in
+    // its own family: four Sandbox-USBs plus Bits, so the deep end of the ladder is
+    // reached by diving for the rare one four times over rather than by having a wallet.
     {"hypervisor_usb", "Hypervisor-USB", ItemDef::Type::Buff,
      ItemDef::Rarity::Epic,
-     "Process-use: stretches this stage's evolve clock x{soak} and pays x{soak} XP.",
-     ItemDef::Context::Anytime, {{IE::Kind::ArmEvolveSoak, 4}},
+     "Process/Script: x{soak} XP for x{soak} the evolve clock, x2 that on a Script.",
+     ItemDef::Context::Anytime, {{IE::Kind::ArmEvolveSoakLate, 4}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/2048},
+
+    // Halt-USB: the pet stops evolving. Not a stretch of the clock — a refusal to reach
+    // the boundary at all, and the only device in the family that is never consumed,
+    // because no boundary arrives to consume it. It comes out when an Eject-USB pulls it,
+    // when the pet goes back on the ARCH rack, or never. What it is FOR is parking a pet
+    // at a stage you want it at: the roster has thirty-five species and only sixteen of
+    // them are endings, so keeping one of each means keeping the middle of the chains.
+    {"halt_usb", "Halt-USB", ItemDef::Type::Buff,
+     ItemDef::Rarity::Rare,
+     "Stops the pet evolving at all, until an Eject-USB pulls it.",
+     ItemDef::Context::Anytime, {{IE::Kind::ArmEvolveHold, 0}},
+     /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
+     /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
+     /*category=*/ItemDef::Category::Derive, /*dropWeight=*/6},
+
+    // Eject-USB: pull whatever is in the port and drop its effect, whichever device it
+    // was. The family's undo, and the one thing that goes in while a soak or a hold is
+    // already there — a port that could only be emptied by the boundary it was refusing
+    // to reach would be a trap rather than a decision. Drawn commoner than the devices it
+    // undoes (dropWeight), for the same reason.
+    {"eject_usb", "Eject-USB", ItemDef::Type::Buff,
+     ItemDef::Rarity::Rare,
+     "Pulls whatever USB is armed and drops its effect.",
+     ItemDef::Context::Anytime, {{IE::Kind::ClearUsbPort, 0}},
+     /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
+     /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
+     /*category=*/ItemDef::Category::Derive, /*dropWeight=*/8},
 
     // Zero-Day Bell: the Backdoor Bell's ultimate cousin — instead of a fixed depth,
     // it warps the next DeepWeb Dive straight to THIS PET's own best-ever depth

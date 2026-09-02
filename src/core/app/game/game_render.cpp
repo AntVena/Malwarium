@@ -48,7 +48,7 @@ std::vector<BuffRow> Game::statBuffRows() const {
                          pendingDeepWebStartDepth_ != -1,
                          pendingDeepWebStartDepth_ == kDeepWebStartDepthUseBest,
                          pendingDeepWebStartDepth_, evolveBranchOverride_,
-                         evolveSoakFactor_, upgrades_);
+                         evolveSoakFactor_, evolveHold_, upgrades_);
 }
 
 Game::StatScrollSpan Game::statScrollSpan() const {
@@ -391,6 +391,9 @@ void Game::drawHabitat(Framebuffer& fb, int cursor) const {
         if (evolveBranchOverride_ == BranchOverride::Bad) marker("bad_usb", "[BAD]");
         else if (evolveBranchOverride_ == BranchOverride::Good) marker("signed_usb", "[SGND]");
         if (evolveSoakFactor_ > 1) marker("sandbox_usb", "[SOAK]");
+        // The hold gets a badge over any of them: it is why STAT's EVOLVE row reads MAX
+        // on a pet that plainly has a successor, so the habitat has to say it is there.
+        if (evolveHold_) marker("halt_usb", "[HELD]");
         if (backupShieldArmed()) marker("backup_drive", "[BKUP]");
         // The two DeepWeb Dive depth buffs record only that they are armed, not
         // which of the several items did it, so both show the shared Buff-item

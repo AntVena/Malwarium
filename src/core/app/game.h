@@ -1849,6 +1849,30 @@ public:
     // in. Both are per-pet and both are spent at the evolution they steer.
     BranchOverride evolveBranchOverride() const { return evolveBranchOverride_; }
     int evolveSoakFactor() const { return evolveSoakFactor_; }
+    bool evolveHoldArmed() const { return evolveHold_; }
+
+    // Is a LOCKING device in the port (defs.h's isLockingUsbEffect)? A soak owns the
+    // boundary by stretching it and a hold owns it by refusing to reach it, so while
+    // either is armed the port takes nothing but an Eject-USB. The swappable half of the
+    // family — the divert and the branch overrides — never locks anything.
+    bool usbPortLocked() const { return evolveSoakFactor_ > 1 || evolveHold_; }
+
+    // Is ANYTHING in the port? What the Eject-USB asks before spending itself, so it is
+    // refused on an empty port rather than thrown away on one.
+    bool usbPortOccupied() const {
+        return usbPortLocked() || forceTrojanDivert_ ||
+               evolveBranchOverride_ != BranchOverride::None;
+    }
+
+    // Pull everything out of the port and drop its effect — the Eject-USB's whole job,
+    // and the one place every slot is listed together, so a device added to the family
+    // is undone by naming it here rather than by a second table somewhere else.
+    void clearUsbPort() {
+        forceTrojanDivert_ = false;
+        evolveBranchOverride_ = BranchOverride::None;
+        evolveSoakFactor_ = 1;
+        evolveHold_ = false;
+    }
 
     // The care branch the pet's next BRANCHING evolution actually reads — the care
     // budget, unless a Bad-USB or Signed-USB is in the port to overrule it. The one
@@ -2725,6 +2749,11 @@ private:
     // rack swap can neither carry a soak into a stage its gate forbids nor hand the
     // incoming pet an ending the outgoing one paid for.
     int evolveSoakFactor_ = 1;
+    // The Halt-USB's hold (save v60) — per-pet, and the one device in the family that is
+    // NEVER consumed at a boundary, because no boundary arrives while it is in: it makes
+    // evolveEligible() false outright. It comes out through an Eject-USB, a rack swap
+    // (archDeployStored) or a new egg (layEgg), and nothing else.
+    bool evolveHold_ = false;
     // Backup Drive's timed death-save (save v30) — per-pet, reset on a new egg.
     // The lifetimeUptimeMs() deadline the save is armed until; 0 = inactive.
     // Game::buildPlayerCombatant() arms Combatant::itemShield while lifetimeUptimeMs()

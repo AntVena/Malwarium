@@ -85,6 +85,9 @@ int g_failures = 0;
     RUN(test_soak_usb_locks_the_port_until_the_boundary) \
     RUN(test_soak_usb_is_process_stage_only) \
     RUN(test_usb_port_empties_on_a_rack_swap) \
+    RUN(test_late_soak_reaches_script_at_double_the_clock) \
+    RUN(test_halt_usb_stops_evolution_outright) \
+    RUN(test_eject_usb_pulls_whatever_is_armed) \
     RUN(test_save_v60_usb_port_roundtrip) \
     RUN(test_recipes_are_not_for_sale_at_any_price) \
     RUN(test_recipes_wait_on_the_merge_hub) \

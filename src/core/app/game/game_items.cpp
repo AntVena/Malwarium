@@ -124,18 +124,27 @@ bool Game::itemUsable(const ItemDef& d, const char*& gateMsg) const {
     if (d.use == ItemDef::Use::PlayCryptogram) {
         gateMsg = "CASH IN AT VAULT"; return false;
     }
-    // A soak USB (Sandbox/Hypervisor) holds the port shut while it runs: no other device
-    // in the family is usable until it is spent at the boundary it stretched, and neither
-    // is a second soak. Checked ahead of the inert test below so the refusal names the
-    // port rather than the state of whatever was being plugged in.
-    if (evolveSoakFactor_ > 1 && itemIsUsb(d)) {
+    // A LOCKING device (a soak, a hold) owns the boundary while it is in, so nothing else
+    // in the family goes in beside it — not a divert, not a branch override, not a second
+    // soak. The Eject-USB is the one exception, because pulling that device is its job: a
+    // port that could only be emptied by the boundary it was refusing to reach would be a
+    // trap rather than a decision. Checked ahead of the inert test below so the refusal
+    // names the port rather than the state of whatever was being plugged in.
+    if (usbPortLocked() && itemIsUsb(d) && !itemEjectsUsbPort(d)) {
         gateMsg = "USB PORT IN USE"; return false;
     }
-    // ...and a soak only goes in at PROCESS. It is a decision about the stage the pet is
-    // standing in — a Boot egg has no evolution clock to stretch, and a Script's boundary
-    // is the branch itself, which is what the other two USBs are for.
-    if (itemEvolveSoakFactor(d) > 0 && (inEggPhase() || !pet_ || pet_->stage != Stage::Process)) {
-        gateMsg = "PROCESS STAGE ONLY"; return false;
+    // ...and a soak only goes in at a stage its own row reaches: PROCESS for both, plus
+    // SCRIPT for the late one (itemSoakReachesScript). A Boot egg has no evolution clock
+    // to stretch and a Daemon has no boundary left, so neither is ever a soak's stage.
+    if (const int soak = itemEvolveSoakFactor(d); soak > 0) {
+        const bool ok = pet_ && !inEggPhase() &&
+                        (pet_->stage == Stage::Process ||
+                         (pet_->stage == Stage::Script && itemSoakReachesScript(d)));
+        if (!ok) {
+            gateMsg = itemSoakReachesScript(d) ? "PROCESS OR SCRIPT ONLY"
+                                               : "PROCESS STAGE ONLY";
+            return false;
+        }
     }
     // Nothing left for this one to do — say so and keep the item, rather than
     // spending it on a state it already holds.
@@ -214,14 +223,29 @@ bool Game::itemUseIsInert(const ItemDef& d, const char*& why) const {
                 if (evolveBranchOverride_ != BranchOverride::Bad) return false;
                 if (!reason) reason = "BAD BRANCH ARMED";
                 break;
+            // The two locking devices. Both are unreachable while the port gate above
+            // stands (it refuses every USB but the Eject whenever either is armed) — kept
+            // as the effect-side statement of the same fact, so the vocabulary answers for
+            // itself rather than depending on the order of two gates.
             case ItemEffect::Kind::ArmEvolveSoak:
-                // Unreachable while the port gate above stands (it refuses every USB
-                // item, this one included, whenever a soak is armed) — kept as the
-                // effect-side statement of the same fact, so the vocabulary answers for
-                // itself rather than depending on the order of two gates.
+            case ItemEffect::Kind::ArmEvolveSoakLate:
                 ++armingEffects;
-                if (evolveSoakFactor_ <= 1) return false;
+                if (!usbPortLocked()) return false;
                 if (!reason) reason = "USB PORT IN USE";
+                break;
+            case ItemEffect::Kind::ArmEvolveHold:
+                ++armingEffects;
+                if (!usbPortLocked()) return false;
+                if (!reason) reason = "USB PORT IN USE";
+                break;
+            case ItemEffect::Kind::ClearUsbPort:
+                // The undo is the one device whose inert case a player will actually meet:
+                // it goes in over a locked port on purpose, so the only time it achieves
+                // nothing is on an EMPTY one — and then it is refused and kept rather
+                // than spent on a port that is already the way it would leave it.
+                ++armingEffects;
+                if (usbPortOccupied()) return false;
+                if (!reason) reason = "USB PORT EMPTY";
                 break;
             case ItemEffect::Kind::ArmCombatShieldBuff:
                 // Re-arming only ever REPLACES the deadline, so a second one over
@@ -415,14 +439,31 @@ void Game::applyItemEffects(const ItemDef& d) {
                                             : BranchOverride::Good;
                 break;
             case ItemEffect::Kind::ArmEvolveSoak:
+            case ItemEffect::Kind::ArmEvolveSoakLate:
                 // Sandbox/Hypervisor-USB (save v60): stretch this stage's evolution dwell
                 // by the factor and pay the same factor on every XP award while it runs
-                // (Game::evolveDwellMs, Game::addCombatXp). It cannot overwrite another
-                // soak — itemUsable refuses every USB item while one is armed — so this
-                // only ever writes into an empty port. Floored at 1 the way the codec
-                // floors it: the factor multiplies a clock AND an XP award, so a row
-                // authored at 0 would stall a pet rather than do nothing.
+                // (Game::evolveDwellMs, Game::addCombatXp). Which of the two Kinds it is
+                // decides only WHERE it may go in (itemUsable) — the arming is identical,
+                // and the doubled Script clock is read off the pet's stage, not off here.
+                // It cannot overwrite another soak: itemUsable refuses every USB but the
+                // Eject while one is armed, so this only ever writes into an empty port.
+                // Floored at 1 the way the codec floors it — the factor multiplies a clock
+                // AND an XP award, so a row authored at 0 would stall a pet.
                 evolveSoakFactor_ = e.magnitude > 1 ? e.magnitude : 1;
+                break;
+            case ItemEffect::Kind::ArmEvolveHold:
+                // Halt-USB (save v60): stop the pet reaching a boundary at all
+                // (Game::evolveEligible). Never consumed by an evolution, because none
+                // arrives while it is in — an Eject-USB, a rack swap or a new egg are the
+                // only ways out, which is what makes parking a pet a real commitment.
+                evolveHold_ = true;
+                break;
+            case ItemEffect::Kind::ClearUsbPort:
+                // Eject-USB: pull whatever is in the port and drop its effect. One call
+                // rather than a list here, so a device added to the family is undone by
+                // naming it in Game::clearUsbPort and nowhere else.
+                clearUsbPort();
+                log_.push(LogEventType::ItemUsed, "USB PORT CLEARED");
                 break;
             case ItemEffect::Kind::ArmCombatShieldBuff:
                 // Backup Drive (save v30): arm the timed combat shield, magnitude

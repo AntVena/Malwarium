@@ -582,6 +582,17 @@ def usb(g, mark="slot", pips=0):
         spots = [(6, 11), (11, 11), (6, 14), (11, 14)] if pips == 4 else [(6, 12), (11, 12)]
         for (x, y) in spots[:pips]:
             g.rect(x, y, x + 2, y + 1, 0)
+    # The last two borrow the transport-control alphabet, which is the one iconography a
+    # player already reads without being taught: a STOP square for the device that stops
+    # the pet evolving, and the EJECT triangle-over-bar for the device that pulls whatever
+    # is in the port. Both are one big void rather than a fine mark, so neither can be
+    # mistaken for the pip counts above at a glance.
+    elif mark == "stop":
+        g.rect(7, 11, 12, 15, 0)
+    elif mark == "eject":
+        for i, y in enumerate(range(10, 14)):     # the triangle, apex up
+            g.rect(9 - i, y, 10 + i, y, 0)
+        g.rect(6, 15, 13, 15, 0)                  # ...over its bar
 
 
 # --- The recipes ------------------------------------------------------------
@@ -771,6 +782,8 @@ RECIPES = {
     "signed_usb":              (usb,    dict(mark="tick")),
     "sandbox_usb":             (usb,    dict(mark="pips", pips=2)),
     "hypervisor_usb":          (usb,    dict(mark="pips", pips=4)),
+    "halt_usb":                (usb,    dict(mark="stop")),
+    "eject_usb":               (usb,    dict(mark="eject")),
 }
 
 

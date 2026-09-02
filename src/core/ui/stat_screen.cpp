@@ -163,6 +163,7 @@ std::vector<BuffRow> buildBuffRows(const ContentRegistry& reg,
                                     int startDepthValue,
                                     BranchOverride branchOverride,
                                     int evolveSoakFactor,
+                                    bool evolveHoldArmed,
                                     const PetUpgrades& upgrades) {
     std::vector<BuffRow> out;
     auto add = [&](const char* itemId, bool armed, bool timed, uint32_t remain) {
@@ -202,8 +203,16 @@ std::vector<BuffRow> buildBuffRows(const ContentRegistry& reg,
         addByEffect(ItemEffect::Kind::ForceEvolveBranchGood, 0, true);
     else if (branchOverride == BranchOverride::Bad)
         addByEffect(ItemEffect::Kind::ForceEvolveBranchBad, 0, true);
-    if (evolveSoakFactor > 1)
+    if (evolveSoakFactor > 1) {
+        // Either soak Kind can be the one armed and Game keeps only the factor, so ask
+        // for the plain one first and fall back to the late one — the magnitude is what
+        // tells a Sandbox-USB from a Hypervisor-USB, and only one row carries each.
+        const std::size_t before = out.size();
         addByEffect(ItemEffect::Kind::ArmEvolveSoak, evolveSoakFactor, false);
+        if (out.size() == before)
+            addByEffect(ItemEffect::Kind::ArmEvolveSoakLate, evolveSoakFactor, false);
+    }
+    if (evolveHoldArmed) addByEffect(ItemEffect::Kind::ArmEvolveHold, 0, true);
     // Last, because these are the rows that never lapse: everything an Epic dish has
     // permanently given this pet. Found by effect like the dive buffs above rather than
     // by id, so a dish that grants one can be renamed without touching this file — and

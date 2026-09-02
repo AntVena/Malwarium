@@ -596,6 +596,114 @@ void test_soak_usb_locks_the_port_until_the_boundary() {
     CHECK(g.evolveBranchOverride() == BranchOverride::Bad);
 }
 
+// The Epic soak reaches one stage further than the Rare one, and pays for the reach at
+// the till rather than in the benefit: on a Script the XP is the same x4 the row promises
+// and the clock is DOUBLE that. A Script's boundary is the branch a whole raise was aimed
+// at, so stretching the last stage before an ending is the expensive thing to do.
+void test_late_soak_reaches_script_at_double_the_clock() {
+    // The Rare one does not reach it at all.
+    { Game g{StartMode::Hatched, "malbear"};              // a Script pet
+      CHECK(g.pet()->stage == Stage::Script);
+      g.inventory().add("sandbox_usb", 1);
+      g.debugUseItem("sandbox_usb");
+      CHECK(g.inventory().count("sandbox_usb") == 1);     // refused, kept
+      CHECK(g.evolveSoakFactor() == 1); }
+
+    // On a PROCESS pet the Epic one is an ordinary x4: clock and XP move together.
+    { Game g{StartMode::Hatched, "paypup"};
+      g.inventory().add("hypervisor_usb", 2);
+      g.debugUseItem("hypervisor_usb");
+      CHECK(g.evolveSoakFactor() == 4);
+      CHECK(g.evolveRemainMs() == kEvolveProcessToScriptMs * 4);
+      const int xp0 = g.combatXp();
+      g.debugAddCombatXp(10);
+      CHECK(g.combatXp() - xp0 == 40); }
+
+    // On a SCRIPT pet it goes in, pays the same x4 XP, and charges x8 on the clock.
+    { Game g{StartMode::Hatched, "malbear"};
+      CHECK(g.evolveRemainMs() == kEvolveScriptToDaemonMs);
+      g.inventory().add("hypervisor_usb", 2);
+      g.debugUseItem("hypervisor_usb");
+      CHECK(g.evolveSoakFactor() == 4);
+      CHECK(g.evolveRemainMs() == kEvolveScriptToDaemonMs * 8);
+      const int xp0 = g.combatXp();
+      g.debugAddCombatXp(10);
+      CHECK(g.combatXp() - xp0 == 40); }   // the BENEFIT is unchanged — only the wait grew
+}
+
+// The Halt-USB stops the pet evolving outright: not a longer wait but no arrival, which
+// is what parks a pet at a stage on purpose. It is the one device a boundary never
+// consumes, because none comes while it is in.
+void test_halt_usb_stops_evolution_outright() {
+    Game g{StartMode::Hatched, "paypup"};
+    g.inventory().add("halt_usb", 2);
+    g.debugUseItem("halt_usb");
+    CHECK(g.evolveHoldArmed());
+    // STAT's own EVOLVE readout says MAX, the same thing it says at a terminus and true
+    // in the same sense — the BUFFS page and the habitat badge carry the WHY.
+    CHECK(!g.hasNextEvolution());
+    CHECK(g.evolveRemainMs() == 0);
+
+    // Wait out the whole dwell and then some: the boundary never fires and the pet is
+    // still the Process it was parked as. Vitals are topped up along the way, since five
+    // days of unattended decay would end the run in a Lockout rather than at the boundary
+    // this gate is about.
+    uint32_t t = 0;
+    for (int i = 0; i < 40; ++i) {
+        g.model().setHunger(90);
+        g.model().setHappiness(90);
+        g.model().setCareMistakes(0);
+        g.tick(t += kEvolveProcessToScriptMs / 8);
+    }
+    CHECK(g.nav() == Game::Nav::Idle);
+    CHECK(g.pet() && std::strcmp(g.pet()->id, "paypup") == 0);
+    CHECK(g.evolveHoldArmed());          // ...and nothing consumed it
+
+    // Pull it, and the boundary that was waiting all along fires on the next beat.
+    g.inventory().add("eject_usb", 2);
+    g.debugUseItem("eject_usb");
+    CHECK(!g.evolveHoldArmed());
+    CHECK(g.hasNextEvolution());
+    g.tick(t += kHeartbeatMs);
+    CHECK(g.nav() == Game::Nav::ModalEvolve);
+}
+
+// The Eject-USB is the family's undo: it goes in over a LOCKED port (which nothing else
+// does) and drops whatever was armed, whichever device armed it. On an EMPTY port it
+// achieves nothing, so it is refused and kept rather than spent.
+void test_eject_usb_pulls_whatever_is_armed() {
+    Game g{StartMode::Hatched, "paypup"};
+    g.inventory().add("eject_usb", 4);
+
+    // Empty port: refused, kept.
+    CHECK(!g.usbPortOccupied());
+    g.debugUseItem("eject_usb");
+    CHECK(g.inventory().count("eject_usb") == 4);
+
+    // Over a swappable device (a branch override).
+    g.inventory().add("bad_usb", 2);
+    g.debugUseItem("bad_usb");
+    CHECK(g.usbPortOccupied() && !g.usbPortLocked());
+    g.debugUseItem("eject_usb");
+    CHECK(g.evolveBranchOverride() == BranchOverride::None);
+    CHECK(g.inventory().count("eject_usb") == 3);
+
+    // Over a LOCKING device — the case that makes it more than a convenience, since a
+    // soak refuses every other USB in the family while it runs.
+    g.inventory().add("sandbox_usb", 2);
+    g.debugUseItem("sandbox_usb");
+    CHECK(g.usbPortLocked());
+    g.debugUseItem("bad_usb");                       // still refused...
+    CHECK(g.evolveBranchOverride() == BranchOverride::None);
+    g.debugUseItem("eject_usb");                     // ...but the eject is not
+    CHECK(g.evolveSoakFactor() == 1);
+    CHECK(!g.usbPortOccupied());
+    CHECK(g.evolveRemainMs() == kEvolveProcessToScriptMs);
+    // ...and now the port takes anything again.
+    g.debugUseItem("bad_usb");
+    CHECK(g.evolveBranchOverride() == BranchOverride::Bad);
+}
+
 // A device is plugged into the RIG, not frozen into the creature — so a rack swap empties
 // the port rather than handing the incoming pet an ending the outgoing one paid for, or
 // carrying a Process-only soak into a stage its own gate forbids.

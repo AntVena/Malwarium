@@ -251,15 +251,17 @@ constexpr int kSaveTextCap = 28;     // matches EventLog's LogEntry.text
 //     0: a save from before the Cant existed has learned none of it and spent nothing,
 //     which leaves every shake it ever captured available.
 //
-// v60 APPEND the USB port's two per-pet slots, its own tail after v59's:
+// v60 APPEND the USB port's three per-pet slots, its own tail after v59's:
 //     `evolveBranchOverride` (core/model/pet_model.h's BranchOverride as its wire number —
-//     0 none, 1 Good, 2 Bad — the Signed-USB/Bad-USB slot) and `evolveSoakFactor` (the
+//     0 none, 1 Good, 2 Bad — the Signed-USB/Bad-USB slot), `evolveSoakFactor` (the
 //     Sandbox/Hypervisor-USB's armed multiplier on this stage's evolution dwell and on
-//     every XP award; 1 = nothing plugged in). Per-pet, reset on a new egg, spent at the
-//     evolution they steer. Pre-v60 -> 0 and 1: an empty port, which is what every save
-//     written before these devices existed describes. A blob carrying a factor below 1 is
-//     read as 1 for the same reason — the field is a MULTIPLIER, and there is no such
-//     thing as a pet whose XP is scaled to nothing.
+//     every XP award; 1 = nothing plugged in) and `evolveHold` (the Halt-USB's refusal to
+//     reach a boundary at all). Per-pet and reset on a new egg; the first two are spent at
+//     the evolution they steer, the hold at an Eject-USB or a rack swap, since no
+//     evolution ever arrives to spend it. Pre-v60 -> 0, 1 and 0: an empty port, which is
+//     what every save written before these devices existed describes. A blob carrying a
+//     factor below 1 is read as 1 for the same reason — the field is a MULTIPLIER, and
+//     there is no such thing as a pet whose XP is scaled to nothing.
 constexpr uint16_t kSaveVersion = 60;
 
 // The oldest blob deserialize will read, and the ONLY thing that retires a rename row
@@ -809,6 +811,7 @@ struct SaveData {
     // untouched SaveData describes an empty port, not a pet earning no XP.
     uint8_t evolveBranchOverride = 0;
     uint8_t evolveSoakFactor = 1;
+    uint8_t evolveHold = 0;
 };
 
 // Read/write one mod's spare count in the v45 packed pool (SaveData::ownedModCounts) by

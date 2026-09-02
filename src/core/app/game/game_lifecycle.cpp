@@ -133,10 +133,12 @@ void Game::layEgg(const EggLineDef* line) {
     shieldItemConsumed_ = false;
     yubiConsumed_ = false;
     forceTrojanDivert_ = false;
-    // ...and nothing in the USB port: a fresh egg carries neither a forced branch nor a
-    // soak, however many devices the last pet was raised on.
+    // ...and nothing in the USB port: a fresh egg carries neither a forced branch, a soak
+    // nor a hold, however many devices the last pet was raised on. forceTrojanDivert_ is
+    // cleared just above, so this is the same emptying the Eject-USB does.
     evolveBranchOverride_ = BranchOverride::None;
     evolveSoakFactor_ = 1;
+    evolveHold_ = false;
     backupShieldUntilMs_ = 0;
     // ...and none of the permanent Epic-dish upgrades: every one of them roots a PET, so
     // a new egg starts back at the shared regen interval, with no off-level stat points
@@ -327,11 +329,20 @@ uint32_t evolveStageDurationMs(Stage current) {
 
 uint32_t Game::evolveDwellMs() const {
     // The soak multiplies the WAIT, which is the half of the trade the player feels;
-    // addCombatXp multiplies the other half. Nothing can overflow here: the longest
-    // stage is 32h and the deepest soak x4, which is 128h in ms — well inside u32.
-    const uint32_t base = evolveStageDurationMs(pet_ ? pet_->stage : Stage::Process);
+    // addCombatXp multiplies the other half. On a SCRIPT the wait costs double what the
+    // XP pays: only the late soak (Hypervisor-USB) plugs in there at all, and a Script's
+    // boundary is the branch the whole raise was aimed at, so stretching the last stage
+    // before an ending is deliberately the more expensive thing to do. The stage is read
+    // live rather than remembered from arm-time, which is safe because a soak is spent at
+    // the boundary it stretched — the stage it goes in at is the stage it comes out at.
+    //
+    // Nothing overflows: the longest stage is 32h, the deepest soak x4, doubled = x8, so
+    // 256h in ms — an eighth of what a u32 holds.
+    const Stage stage = pet_ ? pet_->stage : Stage::Process;
+    const uint32_t base = evolveStageDurationMs(stage);
     const int factor = evolveSoakFactor_ < 1 ? 1 : evolveSoakFactor_;
-    return base * static_cast<uint32_t>(factor);
+    const int scale = (factor > 1 && stage == Stage::Script) ? 2 * factor : factor;
+    return base * static_cast<uint32_t>(scale);
 }
 
 bool Game::evolveEligible() const {
@@ -343,6 +354,10 @@ bool Game::evolveEligible() const {
     // Decryption Hatch IS that transition now (redesign), so completeHatch
     // owns it; the egg-at-idle incubation clock, not time-in-stage, gates it.
     if (inEggPhase()) return false;
+    // A Halt-USB in the port refuses the boundary outright — not a longer wait but no
+    // arrival at all, which is what parks a pet at a stage on purpose. Checked before the
+    // clock, because a held pet's clock is not the reason it isn't evolving.
+    if (evolveHold_) return false;
     const char* next = evolutionTargetId();
     if (!next || !registry_.creature(next)) return false;      // terminus / unknown
     if (model_.careMistakes() >= kCareDying) return false;
@@ -351,6 +366,11 @@ bool Game::evolveEligible() const {
 
 bool Game::hasNextEvolution() const {
     if (inEggPhase()) return true;                    // the hatch is the next boundary
+    // A held pet has no next boundary for as long as the hold is in, so STAT's EVOLVE
+    // row reads MAX — the same thing it reads at a terminus, and true in the same sense.
+    // WHY it reads MAX is on the BUFFS page and on the habitat's armed-buff strip, which
+    // is where every other armed state already explains itself.
+    if (evolveHold_) return false;
     const char* next = evolutionTargetId();
     return next && registry_.creature(next);          // false at a Daemon terminus
 }
@@ -458,6 +478,8 @@ void Game::completeEvolution() {
     // XP. Both are per-pet state and clear again on a new egg (layEgg).
     evolveBranchOverride_ = BranchOverride::None;
     evolveSoakFactor_ = 1;
+    // The hold is deliberately NOT cleared here: it is the one device a boundary never
+    // reaches, so reaching one means it was never in.
     stageEnteredMs_ = nowMs_;          // restart the in-stage clock for the next boundary
     for (int& t : signalTally_) t = 0; // next stage's dominant signal starts fresh
     stampSlotKinds();                  // lock this pet's newly-unlocked slot(s)

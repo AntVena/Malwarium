@@ -546,11 +546,12 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     w.u32(d.cantSigils);
     w.i32(d.shakesSpent);
 
-    // v60: the USB port's two per-pet slots — the forced evolution branch and the armed
-    // soak factor. Its own tail after v59's, so a build that stops at either still reads
-    // every field it knows.
+    // v60: the USB port's three per-pet slots — the forced evolution branch, the armed
+    // soak factor and the evolution hold. Its own tail after v59's, so a build that stops
+    // at either still reads every field it knows.
     w.u8(d.evolveBranchOverride);
     w.u8(d.evolveSoakFactor);
+    w.u8(d.evolveHold);
 }
 
 std::vector<uint8_t> serializeSave(const SaveData& d) {
@@ -1154,6 +1155,7 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
         d.evolveBranchOverride = r.u8();
         d.evolveSoakFactor = r.u8();
         if (d.evolveSoakFactor < 1) d.evolveSoakFactor = 1;
+        d.evolveHold = r.u8();
     }
 
     if (!r.ok) { out = SaveData{}; return false; }  // truncated -> empty

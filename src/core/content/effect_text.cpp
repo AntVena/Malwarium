@@ -133,7 +133,8 @@ const char* itemEffectToken(ItemEffect::Kind k) {
         // The soak's factor is ONE number that is both halves of the trade — the clock
         // it stretches and the XP it pays — which is why one token serves a sentence
         // that names it twice. The branch-override pair is below with the other flags.
-        case ItemEffect::Kind::ArmEvolveSoak: return "soak";
+        case ItemEffect::Kind::ArmEvolveSoak:
+        case ItemEffect::Kind::ArmEvolveSoakLate: return "soak";
         case ItemEffect::Kind::ArmCombatShieldBuff: return "shieldMins";
         case ItemEffect::Kind::ArmDeepWebDepthMultiplier: return "depthStep";
         case ItemEffect::Kind::SetDeepWebStartDepth: return "depth";
@@ -158,6 +159,10 @@ const char* itemEffectToken(ItemEffect::Kind k) {
         // they point in words, and the grid carries each as a flag.
         case ItemEffect::Kind::ForceEvolveBranchGood:
         case ItemEffect::Kind::ForceEvolveBranchBad: return nullptr;
+        // And the port's two states, for the third time: a hold is a state and an eject
+        // is an action. Neither has a size, so neither has a token.
+        case ItemEffect::Kind::ArmEvolveHold:
+        case ItemEffect::Kind::ClearUsbPort: return nullptr;
     }
     return nullptr;
 }
@@ -278,6 +283,15 @@ SpecRows specRows(const ItemDef& d) {
             case ItemEffect::Kind::ArmEvolveSoak:
                 s.add("SOAK", "x%d", e.magnitude);
                 break;
+            // The late soak reports the same factor, because that IS what it pays and
+            // what it costs at Process. The doubled Script clock is a property of WHERE
+            // it is used rather than of the row, so the row's prose carries it and the
+            // grid keeps the number that is true wherever it goes in.
+            case ItemEffect::Kind::ArmEvolveSoakLate:
+                s.add("SOAK", "x%d", e.magnitude);
+                break;
+            case ItemEffect::Kind::ArmEvolveHold: s.flag("EVOLVE HELD"); break;
+            case ItemEffect::Kind::ClearUsbPort: s.flag("CLEARS USB"); break;
             case ItemEffect::Kind::ArmCombatShieldBuff:
                 s.add("DEATH SAVE", "%dMIN", e.magnitude);
                 break;

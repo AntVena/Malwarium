@@ -196,9 +196,9 @@ void Game::archDeployStored(int storedIdx) {
     // pet is standing at a different distance from, and a soak is Process-only by gate
     // (Game::itemUsable), which a swap would otherwise walk straight around. Emptying is
     // the honest reading of both: what was plugged in was plugged in for the pet that has
-    // just gone into the rack.
-    evolveBranchOverride_ = BranchOverride::None;
-    evolveSoakFactor_ = 1;
+    // just gone into the rack — the hold included, which is also the way out of a pet
+    // parked at a stage by a player who has no Eject-USB to hand.
+    clearUsbPort();
     bestDeepWebDepth_ = incoming.bestDeepWebDepth;  // thaw this pet's own DeepWeb record
     // Thaw the incoming pet's dying window mid-flight. dyingArmed_ is deliberately NOT
     // restored: it anchors against nowMs_, so the next tick re-arms it against the
