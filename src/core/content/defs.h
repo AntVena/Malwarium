@@ -329,6 +329,24 @@ struct ItemEffect {
                               // Process->Script evolution, replacing the normal
                               // kTrojanDivertPct roll (Ambig-USB, save v28). A no-op at
                               // evolution time if the pet has no evolvesToTrojanId.
+        // The BRANCH OVERRIDE pair (Signed-USB / Bad-USB, save v60): point the pet's next
+        // BRANCHING evolution at the Good or the Bad successor whatever its care record
+        // says, instead of reading the branch off the care budget (Game::effectiveCareBranch).
+        // A Kind per direction rather than one Kind with a magnitude, for the same reason
+        // the four stat points below are four Kinds: the DIRECTION is the effect, and a
+        // magnitude that secretly means an enum is the shape this vocabulary exists to
+        // avoid. They share ONE slot on the pet — arming either replaces the other, so the
+        // most recently plugged in is the one that fires — and are consumed at the
+        // evolution they steer. Neither rescues a DYING pet: 5/5 is a death, not a branch.
+        ForceEvolveBranchGood,
+        ForceEvolveBranchBad,
+        ArmEvolveSoak,        // Sandbox/Hypervisor-USB: soak this stage. While armed, the
+                              // stage's evolution dwell runs magnitude times LONGER and
+                              // every XP award pays magnitude times MORE, so the trade is
+                              // the same pet arriving later and further along. Plugged in
+                              // at Process only, consumed at the evolution it stretched,
+                              // and it holds the port shut while it runs — no other USB
+                              // item is usable until it is spent (itemIsUsb below).
         ArmCombatShieldBuff,  // arm a timed combat shield for magnitude MINUTES
                               // (Backup Drive, save v30): while armed, the next incoming
                               // hit in combat is negated (like the RAID Mirror mod) and
@@ -541,6 +559,34 @@ constexpr bool isOncePerPetLifetime(ItemEffect::Kind k) {
            k == ItemEffect::Kind::StatPointSpeed ||
            k == ItemEffect::Kind::StatPointHealth ||
            k == ItemEffect::Kind::XpRateBonusPct;
+}
+
+// Is this effect a USB one — something the pet's port HOLDS rather than something the pet
+// eats? Every USB item steers the same boundary (the next evolution), which is why the
+// soak pair can lock the port against the rest of the family: a stage cannot be both
+// stretched and diverted by two devices at once. Named off the effect vocabulary rather
+// than as a list of ids, so a future USB is one row in content_items.cpp and nothing else.
+constexpr bool isUsbEffect(ItemEffect::Kind k) {
+    return k == ItemEffect::Kind::ForceTrojanDivert ||
+           k == ItemEffect::Kind::ForceEvolveBranchGood ||
+           k == ItemEffect::Kind::ForceEvolveBranchBad ||
+           k == ItemEffect::Kind::ArmEvolveSoak;
+}
+
+// Does this ROW carry any USB effect (see isUsbEffect)? The item-level question every
+// gate actually asks.
+constexpr bool itemIsUsb(const ItemDef& d) {
+    for (const ItemEffect& e : d.effects)
+        if (isUsbEffect(e.kind)) return true;
+    return false;
+}
+
+// The magnitude of this row's evolve-soak, or 0 if it carries none — what the ITEMS gate
+// reads to know a row is one of the soak USBs without re-walking its effects by hand.
+constexpr int itemEvolveSoakFactor(const ItemDef& d) {
+    for (const ItemEffect& e : d.effects)
+        if (e.kind == ItemEffect::Kind::ArmEvolveSoak) return e.magnitude;
+    return 0;
 }
 
 // The combat-stat index an off-level stat-point effect grants into (0 power · 1 defense ·

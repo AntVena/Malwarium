@@ -130,6 +130,10 @@ const char* itemEffectToken(ItemEffect::Kind k) {
         case ItemEffect::Kind::RemoveCareMistakeOnce: return "mistakes";
         case ItemEffect::Kind::ClearMistakeShieldOnce: return "shields";
         case ItemEffect::Kind::ForceTrojanDivert: return "divert";
+        // The soak's factor is ONE number that is both halves of the trade — the clock
+        // it stretches and the XP it pays — which is why one token serves a sentence
+        // that names it twice. The branch-override pair is below with the other flags.
+        case ItemEffect::Kind::ArmEvolveSoak: return "soak";
         case ItemEffect::Kind::ArmCombatShieldBuff: return "shieldMins";
         case ItemEffect::Kind::ArmDeepWebDepthMultiplier: return "depthStep";
         case ItemEffect::Kind::SetDeepWebStartDepth: return "depth";
@@ -149,6 +153,11 @@ const char* itemEffectToken(ItemEffect::Kind k) {
         // The row says what it does in words ("Cuts a Replication Ghost loose") and
         // the spec grid carries it as a flag; neither has a magnitude to interpolate.
         case ItemEffect::Kind::ClearReplicationGhost: return nullptr;
+        // Same rule, same reason: a forced branch is a DIRECTION, and the direction is
+        // in the Kind rather than in a magnitude. Bad-USB and Signed-USB say which way
+        // they point in words, and the grid carries each as a flag.
+        case ItemEffect::Kind::ForceEvolveBranchGood:
+        case ItemEffect::Kind::ForceEvolveBranchBad: return nullptr;
     }
     return nullptr;
 }
@@ -262,6 +271,13 @@ SpecRows specRows(const ItemDef& d) {
                 s.flag("MISTAKE SHIELD");
                 break;
             case ItemEffect::Kind::ForceTrojanDivert: s.flag("TROJAN DIVERT"); break;
+            // A direction, not a magnitude — the grid says which way the branch is
+            // forced and leaves the "whatever the care record says" half to the row.
+            case ItemEffect::Kind::ForceEvolveBranchGood: s.flag("FORCE GOOD"); break;
+            case ItemEffect::Kind::ForceEvolveBranchBad: s.flag("FORCE BAD"); break;
+            case ItemEffect::Kind::ArmEvolveSoak:
+                s.add("SOAK", "x%d", e.magnitude);
+                break;
             case ItemEffect::Kind::ArmCombatShieldBuff:
                 s.add("DEATH SAVE", "%dMIN", e.magnitude);
                 break;

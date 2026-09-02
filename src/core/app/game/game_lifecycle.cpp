@@ -133,6 +133,10 @@ void Game::layEgg(const EggLineDef* line) {
     shieldItemConsumed_ = false;
     yubiConsumed_ = false;
     forceTrojanDivert_ = false;
+    // ...and nothing in the USB port: a fresh egg carries neither a forced branch nor a
+    // soak, however many devices the last pet was raised on.
+    evolveBranchOverride_ = BranchOverride::None;
+    evolveSoakFactor_ = 1;
     backupShieldUntilMs_ = 0;
     // ...and none of the permanent Epic-dish upgrades: every one of them roots a PET, so
     // a new egg starts back at the shared regen interval, with no off-level stat points
@@ -279,13 +283,29 @@ void Game::noteCareSignal(DominantSignal s) {
     signalTally_[static_cast<int>(s)]++;
 }
 
+CareBranch Game::effectiveCareBranch() const {
+    // A Dying pet is not on a branch — 5/5 is Critical System Failure, which no USB
+    // reaches around. Everything else answers to whatever is in the override slot.
+    const CareBranch earned = model_.careBranch();
+    if (earned == CareBranch::Dying) return earned;
+    switch (evolveBranchOverride_) {
+        case BranchOverride::Good: return CareBranch::Good;
+        case BranchOverride::Bad:  return CareBranch::Bad;
+        case BranchOverride::None: break;
+    }
+    return earned;
+}
+
 const char* Game::evolutionTargetId() const {
     if (!pet_) return nullptr;
     // Script->Daemon: a weighted pool for this care-branch, when the Script has one.
     // 0-2 mistakes -> Good, 3-4 -> Bad; 5/5 (Dying) never reaches here (evolveEligible
     // gates it out -> Critical System Failure). Single-entry pools today, so the pick
     // is deterministic (entries[0]); the weighted draw lands with the real roster.
-    const bool bad = model_.careBranch() == CareBranch::Bad;
+    // The branch is read through effectiveCareBranch(), so a Bad-USB/Signed-USB in the
+    // port decides it instead — including on this pool, which is the branch a player
+    // spent the whole stage earning and therefore the one an override has to reach.
+    const bool bad = effectiveCareBranch() == CareBranch::Bad;
     if (const DaemonPoolDef* pool = registry_.daemonPool(pet_->id, bad)) {
         if (pool->count > 0) return pool->entries[0].daemonId;
     }
@@ -305,6 +325,15 @@ uint32_t evolveStageDurationMs(Stage current) {
 }
 }  // namespace
 
+uint32_t Game::evolveDwellMs() const {
+    // The soak multiplies the WAIT, which is the half of the trade the player feels;
+    // addCombatXp multiplies the other half. Nothing can overflow here: the longest
+    // stage is 32h and the deepest soak x4, which is 128h in ms — well inside u32.
+    const uint32_t base = evolveStageDurationMs(pet_ ? pet_->stage : Stage::Process);
+    const int factor = evolveSoakFactor_ < 1 ? 1 : evolveSoakFactor_;
+    return base * static_cast<uint32_t>(factor);
+}
+
 bool Game::evolveEligible() const {
     // Walk the chain on time-in-stage + not-Dying + a real successor. Boot->Script
     // are linear; Script->Daemon branches (evolutionTargetId picks Good/Bad from the
@@ -317,7 +346,7 @@ bool Game::evolveEligible() const {
     const char* next = evolutionTargetId();
     if (!next || !registry_.creature(next)) return false;      // terminus / unknown
     if (model_.careMistakes() >= kCareDying) return false;
-    return nowMs_ - stageEnteredMs_ >= evolveStageDurationMs(pet_->stage);  // time-in-stage gate
+    return nowMs_ - stageEnteredMs_ >= evolveDwellMs();          // time-in-stage gate
 }
 
 bool Game::hasNextEvolution() const {
@@ -329,7 +358,7 @@ bool Game::hasNextEvolution() const {
 uint32_t Game::evolveRemainMs() const {
     if (inEggPhase()) return bootHatchRemainMs_;       // egg -> hatch countdown
     if (!hasNextEvolution()) return 0;                 // terminus: nothing left
-    const uint32_t duration = evolveStageDurationMs(pet_->stage);
+    const uint32_t duration = evolveDwellMs();
     const uint32_t elapsed = nowMs_ - stageEnteredMs_;
     return elapsed >= duration ? 0 : duration - elapsed;
 }
@@ -370,7 +399,7 @@ void Game::fireEvolution() {
                 // divert takes the pet's line away from it; it does not also take away
                 // the one thing the player spent the whole stage deciding.
                 const char* to = pet_->evolvesToTrojanId;
-                if (pet_->evolvesToTrojanBadId && model_.careBranch() == CareBranch::Bad)
+                if (pet_->evolvesToTrojanBadId && effectiveCareBranch() == CareBranch::Bad)
                     to = pet_->evolvesToTrojanBadId;
                 if (const CreatureDef* t = registry_.creature(to))
                     next = t;
@@ -390,9 +419,13 @@ void Game::completeEvolution() {
         // NOT marked seen — seeing means having FACED a species in combat
         // (Game::markCreatureSeen), and a sibling revealed by the evolution cinematic
         // was never fought.
+        // Flawless is about the RAISE, so it stays on the raw mistake count — no device
+        // makes a run flawless. Gone Rogue is about the DAEMON that came out, so it reads
+        // effectiveCareBranch(): a pet that ended up on the bad line went rogue whether a
+        // Bad-USB steered it there or five months of neglect did.
         if (evolveTo_->stage == Stage::Daemon) {
             if (model_.careMistakes() == 0) unlockAchievement(ach::kFlawlessRun);
-            if (model_.careBranch() == CareBranch::Bad)
+            if (effectiveCareBranch() == CareBranch::Bad)
                 unlockAchievement(ach::kGoneRogue);
         }
         // A cross-line divert (or any line change) makes the pet a member of a NEW line:
@@ -418,6 +451,13 @@ void Game::completeEvolution() {
         }
     }
     evolveTo_ = nullptr;
+    // The USB port empties at the boundary it was steering. The branch override is
+    // consumed HERE rather than in fireEvolution (where the Ambig-USB's divert flag goes)
+    // because the achievements above still had to see which branch fired; the soak is
+    // consumed here too, so the next stage counts down at its own pace and pays its own
+    // XP. Both are per-pet state and clear again on a new egg (layEgg).
+    evolveBranchOverride_ = BranchOverride::None;
+    evolveSoakFactor_ = 1;
     stageEnteredMs_ = nowMs_;          // restart the in-stage clock for the next boundary
     for (int& t : signalTally_) t = 0; // next stage's dominant signal starts fresh
     stampSlotKinds();                  // lock this pet's newly-unlocked slot(s)

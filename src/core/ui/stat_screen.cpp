@@ -161,6 +161,8 @@ std::vector<BuffRow> buildBuffRows(const ContentRegistry& reg,
                                     bool startDepthArmed,
                                     bool startDepthUsesBest,
                                     int startDepthValue,
+                                    BranchOverride branchOverride,
+                                    int evolveSoakFactor,
                                     const PetUpgrades& upgrades) {
     std::vector<BuffRow> out;
     auto add = [&](const char* itemId, bool armed, bool timed, uint32_t remain) {
@@ -191,6 +193,17 @@ std::vector<BuffRow> buildBuffRows(const ContentRegistry& reg,
         else
             addByEffect(ItemEffect::Kind::SetDeepWebStartDepth, startDepthValue, false);
     }
+    // The rest of the USB port, found the same way and for the same reason: Game keeps
+    // the forced DIRECTION and the raw soak FACTOR, not which device wrote them, so the
+    // row names whichever item carries that effect. The soak matches on its magnitude
+    // (which is what tells a Sandbox-USB from a Hypervisor-USB); a forced branch has no
+    // magnitude at all, so it matches on the Kind alone.
+    if (branchOverride == BranchOverride::Good)
+        addByEffect(ItemEffect::Kind::ForceEvolveBranchGood, 0, true);
+    else if (branchOverride == BranchOverride::Bad)
+        addByEffect(ItemEffect::Kind::ForceEvolveBranchBad, 0, true);
+    if (evolveSoakFactor > 1)
+        addByEffect(ItemEffect::Kind::ArmEvolveSoak, evolveSoakFactor, false);
     // Last, because these are the rows that never lapse: everything an Epic dish has
     // permanently given this pet. Found by effect like the dive buffs above rather than
     // by id, so a dish that grants one can be renamed without touching this file — and

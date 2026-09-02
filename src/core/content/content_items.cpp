@@ -1803,6 +1803,66 @@ const ItemDef kItems[] = {
      ItemDef::Context::Anytime, {{IE::Kind::ForceTrojanDivert, 1}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/1024},
 
+    // --- The rest of the USB family ------------------------------------------------
+    // Four devices that all steer the SAME boundary the Ambig-USB does — the pet's next
+    // evolution — which is what makes them one family and why the soak pair below can
+    // lock the port against the other three (defs.h's isUsbEffect). All but the
+    // Hypervisor are DeepWeb Dive drops (areas/deepweb_dive/area.cpp): no counter sells
+    // the ability to overrule how a pet was raised, so the only way to hold one is to go
+    // down and take it.
+
+    // Bad-USB: the firmware attack the name comes from, and the item that does to a pet
+    // what it does to a host — the branch is decided by the DEVICE, not by the record.
+    // Forces the BAD successor at the next branching evolution however clean the care
+    // budget was. Deliberately scarcer than its Epic tier-mates (dropWeight): a run's
+    // ending is the one thing the care loop is FOR, so buying your way past it should
+    // cost a real trip down.
+    {"bad_usb", "Bad-USB", ItemDef::Type::Buff,
+     ItemDef::Rarity::Epic,
+     "Forces the next branching evolution down the BAD line, whatever the care record.",
+     ItemDef::Context::Anytime, {{IE::Kind::ForceEvolveBranchBad, 1}},
+     /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
+     /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
+     /*category=*/ItemDef::Category::Derive, /*dropWeight=*/1},
+
+    // Signed-USB: the same device with a vendor signature on its firmware, and the exact
+    // inverse item — the GOOD successor whatever the record says, which is the half that
+    // rescues a badly-raised pet rather than the half that ruins a well-raised one. Same
+    // one slot as the Bad-USB: plugging either in replaces the other.
+    {"signed_usb", "Signed-USB", ItemDef::Type::Buff,
+     ItemDef::Rarity::Epic,
+     "Forces the next branching evolution down the GOOD line, whatever the care record.",
+     ItemDef::Context::Anytime, {{IE::Kind::ForceEvolveBranchGood, 1}},
+     /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
+     /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
+     /*category=*/ItemDef::Category::Derive, /*dropWeight=*/1},
+
+    // Sandbox-USB: hold the process under observation instead of letting it run to term.
+    // A Process-stage-only plug that stretches THIS stage's evolution dwell by {soak} and
+    // pays {soak} times the XP for everything the pet does while it is stretched — the
+    // same pet, arriving later and further along, which is the whole trade. It holds the
+    // port shut while it runs (defs.h's isUsbEffect), so a soak is a decision about the
+    // stage rather than one buff among several: no divert, no branch override, not even a
+    // second soak, until this one is spent at the boundary it stretched.
+    {"sandbox_usb", "Sandbox-USB", ItemDef::Type::Buff,
+     ItemDef::Rarity::Rare,
+     "Process-use: stretches this stage's evolve clock x{soak} and pays x{soak} XP.",
+     ItemDef::Context::Anytime, {{IE::Kind::ArmEvolveSoak, 2}},
+     /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
+     /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
+     /*category=*/ItemDef::Category::Derive, /*dropWeight=*/3},
+
+    // Hypervisor-USB: the Sandbox-USB's Epic upgrade — one layer further down, so the
+    // soak is twice as deep. The only USB anyone sells (Moor-to-Moor, Napstorrent Moors),
+    // and it is priced in its own family: four Sandbox-USBs plus Bits, so the deep end of
+    // the ladder is reached by diving for the rare one four times over rather than by
+    // having a full wallet.
+    {"hypervisor_usb", "Hypervisor-USB", ItemDef::Type::Buff,
+     ItemDef::Rarity::Epic,
+     "Process-use: stretches this stage's evolve clock x{soak} and pays x{soak} XP.",
+     ItemDef::Context::Anytime, {{IE::Kind::ArmEvolveSoak, 4}},
+     /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/2048},
+
     // Zero-Day Bell: the Backdoor Bell's ultimate cousin — instead of a fixed depth,
     // it warps the next DeepWeb Dive straight to THIS PET's own best-ever depth
     // (SetDeepWebStartDepthToBest reads bestDeepWebDepth_ at dive-start), never any

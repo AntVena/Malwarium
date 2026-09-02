@@ -2,6 +2,12 @@
 """
 gen_item_icons.py — the pantry's 1-bit icon vocabulary, and the glyphs built from it.
 
+It owns one non-food family too: the USB devices (§ "the USB port" below). They earn a
+place here for exactly the reason the pantry did — five drawings that have to read as one
+set and differ only in the mark cut into a shared body, which is what a recipe table is
+for and what hand work drifts away from. Nothing else outside the pantry belongs here
+unless it has the same shape of problem.
+
 This is an AUTHORING step, not a build step, and it owns the PNGs it emits: the
 committed files under assets/icons/ are what the atlas compiles, and this is what
 they are regenerated FROM. Run it by hand when a recipe changes:
@@ -530,6 +536,54 @@ def spiral(g, turns=3):
         g.sellipse(9.5, 10, r - 1, r - 1, 3.2, 1)
 
 
+# --- The USB port -----------------------------------------------------------
+#
+# One body, five marks. Every USB item steers the same boundary (the pet's next
+# evolution), and the shelf has to say so at a glance: same silhouette, and the ONE
+# difference between two of them is what has been cut into the body. So the mark is the
+# whole recipe, and the two that carry a factor say it by how many holes they have —
+# countable in grayscale, which a difference of shading would not be.
+#
+# The body reproduces the hand-drawn Ambig-USB exactly (that glyph shipped before this
+# form existed); bringing it under the recipe is what makes the other four its siblings
+# rather than four drawings that resemble it.
+
+def _cut(g, pts, w=2):
+    """Cut a stroke out of the USB BODY only — never the connector or the outline.
+
+    Drawn on a scratch grid and applied through the body window, so a mark can be
+    authored at its natural length without eating the 2px wall that holds the shape
+    together. The window is the body's interior: rows 10..15, columns 5..14.
+    """
+    m = G()
+    m.stroke(pts, w, 1)
+    for y in range(10, 16):
+        for x in range(5, 15):
+            if m.g[y][x]:
+                g.px(x, y, 0)
+
+
+def usb(g, mark="slot", pips=0):
+    """A USB stick seen face-on: hollow connector, shouldered body, one mark cut in."""
+    g.rect(6, 1, 13, 6)          # connector...
+    g.rect(8, 3, 11, 5, 0)       # ...hollowed, so it reads as contacts rather than a tab
+    g.rect(4, 7, 15, 8)          # the shoulder where it widens into the body
+    g.rect(3, 9, 16, 15)
+    g.rect(4, 16, 15, 16)        # ...tucked at the bottom, matching the shoulder
+    if mark == "slot":
+        g.rect(5, 12, 14, 12, 0)         # the plain seam: an ordinary stick
+    elif mark == "cross":
+        _cut(g, [(6, 11), (13, 15)])     # struck through — the branch is forced BAD
+        _cut(g, [(13, 11), (6, 15)])
+    elif mark == "tick":
+        _cut(g, [(7, 12), (9, 14), (13, 10)])   # signed off — the branch is forced GOOD
+    elif mark == "pips":
+        # The soak pair, and the pip COUNT is the factor: two holes for x2, four for x4.
+        spots = [(6, 11), (11, 11), (6, 14), (11, 14)] if pips == 4 else [(6, 12), (11, 12)]
+        for (x, y) in spots[:pips]:
+            g.rect(x, y, x + 2, y + 1, 0)
+
+
 # --- The recipes ------------------------------------------------------------
 #
 # One row per item id. The FORM carries the read; the arguments are what keeps two
@@ -707,6 +761,16 @@ RECIPES = {
     "port_80":                 (glass,  dict(stem=1, fill=0)),
     "fizzbuzz":                (tin,    dict(ring_pull=1)),
     "punchcard_punch":         (card,   dict(holes=4)),
+
+    # --- the USB port -----------------------------------------------------
+    # One body, one mark each. The two branch overrides are a PAIR and read as one:
+    # struck through vs. signed off, same stick. The soak pair counts its factor in
+    # holes, so x2 and x4 are told apart by counting rather than by reading.
+    "ambig_usb":               (usb,    dict(mark="slot")),
+    "bad_usb":                 (usb,    dict(mark="cross")),
+    "signed_usb":              (usb,    dict(mark="tick")),
+    "sandbox_usb":             (usb,    dict(mark="pips", pips=2)),
+    "hypervisor_usb":          (usb,    dict(mark="pips", pips=4)),
 }
 
 

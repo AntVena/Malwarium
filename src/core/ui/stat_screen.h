@@ -88,6 +88,9 @@ struct BuffRow {
 // resolved by scanning the registry for the item whose effect matches the raw
 // state, so the display and the item's own 'Pedia/detail text never drift
 // apart even if the item roster is renamed or rebalanced later.
+// branchOverride/evolveSoakFactor: the USB port — Game::evolveBranchOverride() (None =
+// nothing forced) and Game::evolveSoakFactor() (1 = no soak armed). Resolved to a row the
+// same way the depth buffs are, by finding the item whose effect matches the state.
 // depthMultiplier: Game::deepWebDepthMultiplier_ (1 = none armed).
 // startDepthArmed/startDepthUsesBest/startDepthValue: resolved from
 // Game::pendingDeepWebStartDepth_ (armed = != -1; usesBest = the
@@ -106,6 +109,8 @@ std::vector<BuffRow> buildBuffRows(const ContentRegistry& reg,
                                     bool startDepthArmed,
                                     bool startDepthUsesBest,
                                     int startDepthValue,
+                                    BranchOverride branchOverride,
+                                    int evolveSoakFactor,
                                     const PetUpgrades& upgrades);
 
 // The BUFFS page's own window, same flow and same reason as loadoutRowsFitting:

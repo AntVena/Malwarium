@@ -279,6 +279,11 @@ SaveData Game::captureSave() const {
     // v28: the Ambig-USB armed Trojan-divert flag (per-pet, reset on a new egg).
     d.forceTrojanDivert = forceTrojanDivert_ ? 1 : 0;
 
+    // v60: the rest of the USB port — the Bad-USB/Signed-USB branch override and the
+    // Sandbox/Hypervisor-USB soak factor (both per-pet, reset on a new egg).
+    d.evolveBranchOverride = static_cast<uint8_t>(evolveBranchOverride_);
+    d.evolveSoakFactor = static_cast<uint8_t>(evolveSoakFactor_);
+
     // v30: the Backup Drive combat-shield buff's armed-until deadline (per-pet,
     // reset on a new egg).
     d.backupShieldUntilMs = backupShieldUntilMs_;
@@ -711,6 +716,15 @@ void Game::applySave(const SaveData& d) {
     // v28: the Ambig-USB armed Trojan-divert flag (per-pet; a pre-v28 blob defaults
     // it to false — no divert armed).
     forceTrojanDivert_ = d.forceTrojanDivert != 0;
+
+    // v60: the branch override and the soak (per-pet; a pre-v60 blob defaults to an empty
+    // port). Both are clamped rather than trusted: an unknown override number reads as no
+    // override, and the factor is floored at 1 the way the codec floors it, so nothing a
+    // blob can say makes the pet un-evolvable or its XP worthless.
+    evolveBranchOverride_ = d.evolveBranchOverride == 1   ? BranchOverride::Good
+                            : d.evolveBranchOverride == 2 ? BranchOverride::Bad
+                                                          : BranchOverride::None;
+    evolveSoakFactor_ = d.evolveSoakFactor < 1 ? 1 : d.evolveSoakFactor;
 
     // v30: the Backup Drive combat-shield buff's armed-until deadline (per-pet; a
     // pre-v30 blob defaults it to 0 — no shield armed).

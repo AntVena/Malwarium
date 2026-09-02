@@ -492,7 +492,8 @@ void test_sprite_grayscale_legibility() {
 void test_buffs_page_lists_the_permanent_upgrades() {
     ContentRegistry r = ContentRegistry::embedded();
     // Nothing armed, and nothing granted: the page is empty.
-    CHECK(buildBuffRows(r, false, false, false, 0, 1, false, false, 0, PetUpgrades{})
+    CHECK(buildBuffRows(r, false, false, false, 0, 1, false, false, 0,
+                        BranchOverride::None, 1, PetUpgrades{})
               .empty());
 
     // The DISH that grants an effect, resolved off the item table rather than named by a
@@ -507,7 +508,8 @@ void test_buffs_page_lists_the_permanent_upgrades() {
     PetUpgrades u;
     u.bandwidthRegenMin = 1;
     const std::vector<BuffRow> one =
-        buildBuffRows(r, false, false, false, 0, 1, false, false, 0, u);
+        buildBuffRows(r, false, false, false, 0, 1, false, false, 0,
+                      BranchOverride::None, 1, u);
     CHECK(one.size() == 1);
     const ItemDef* bw = dishFor(ItemEffect::Kind::BandwidthRegenBonusMin);
     CHECK(bw && std::strcmp(one[0].label, bw->displayName) == 0);
@@ -517,7 +519,8 @@ void test_buffs_page_lists_the_permanent_upgrades() {
     for (int& b : u.statBonus) b = 1;
     u.xpRatePct = 25;
     const std::vector<BuffRow> all =
-        buildBuffRows(r, false, false, false, 0, 1, false, false, 0, u);
+        buildBuffRows(r, false, false, false, 0, 1, false, false, 0,
+                      BranchOverride::None, 1, u);
     CHECK(all.size() == static_cast<size_t>(2 + kLevelStatCount));
     for (const BuffRow& row : all) CHECK(!row.hasTimer);
     // Each stat point is named by its own dish, in stat order.

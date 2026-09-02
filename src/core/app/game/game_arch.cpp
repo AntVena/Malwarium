@@ -191,6 +191,14 @@ void Game::archDeployStored(int storedIdx) {
     model_.setGhost(incoming.ghost != 0);
     generation_ = incoming.generation;
     defragCount_ = incoming.defragCount;            // thaw the defrag tally
+    // The USB port empties on a pet swap. It is NOT frozen with either pet — a device is
+    // plugged into the rig, not into the creature — but it steers a boundary the incoming
+    // pet is standing at a different distance from, and a soak is Process-only by gate
+    // (Game::itemUsable), which a swap would otherwise walk straight around. Emptying is
+    // the honest reading of both: what was plugged in was plugged in for the pet that has
+    // just gone into the rack.
+    evolveBranchOverride_ = BranchOverride::None;
+    evolveSoakFactor_ = 1;
     bestDeepWebDepth_ = incoming.bestDeepWebDepth;  // thaw this pet's own DeepWeb record
     // Thaw the incoming pet's dying window mid-flight. dyingArmed_ is deliberately NOT
     // restored: it anchors against nowMs_, so the next tick re-arms it against the

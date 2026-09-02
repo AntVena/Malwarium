@@ -359,6 +359,12 @@ int Game::xpToNextLevel() const {
 
 void Game::addCombatXp(int xp) {
     if (xp <= 0) return;
+    // The armed Sandbox/Hypervisor-USB soak is the OTHER half of the trade it makes: the
+    // stage's evolution dwell runs this many times longer (Game::evolveDwellMs) and every
+    // XP award pays this many times more. Applied first, as a multiplier on the raw
+    // award, so the Profilerole rate below still reads as a percentage of what the source
+    // actually paid rather than of a number one item already scaled.
+    if (evolveSoakFactor_ > 1) xp *= evolveSoakFactor_;
     // Profilerole's permanent rate (PetUpgrades::xpRatePct) is applied HERE, at the one
     // door every XP source comes through, so a dish that raises what the pet learns
     // raises it from combat, from a solved board and from passive farming alike. Rounded

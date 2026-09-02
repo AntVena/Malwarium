@@ -2656,6 +2656,43 @@ window.PEDIA_DATA = {
       "bits": 1024
     },
     {
+      "id": "bad_usb",
+      "name": "Bad-USB",
+      "type": "BUFFS",
+      "rarity": "EPIC",
+      "effect": "Forces the next branching evolution down the BAD line, whatever the care record.",
+      "stats": "FORCE BAD",
+      "icon": "assets/icons/ICON_ITEM_BAD_USB.png"
+    },
+    {
+      "id": "signed_usb",
+      "name": "Signed-USB",
+      "type": "BUFFS",
+      "rarity": "EPIC",
+      "effect": "Forces the next branching evolution down the GOOD line, whatever the care record.",
+      "stats": "FORCE GOOD",
+      "icon": "assets/icons/ICON_ITEM_SIGNED_USB.png"
+    },
+    {
+      "id": "sandbox_usb",
+      "name": "Sandbox-USB",
+      "type": "BUFFS",
+      "rarity": "RARE",
+      "effect": "Process-use: stretches this stage's evolve clock x2 and pays x2 XP.",
+      "stats": "SOAK x2",
+      "icon": "assets/icons/ICON_ITEM_SANDBOX_USB.png"
+    },
+    {
+      "id": "hypervisor_usb",
+      "name": "Hypervisor-USB",
+      "type": "BUFFS",
+      "rarity": "EPIC",
+      "effect": "Process-use: stretches this stage's evolve clock x4 and pays x4 XP.",
+      "stats": "SOAK x4",
+      "icon": "assets/icons/ICON_ITEM_HYPERVISOR_USB.png",
+      "bits": 2048
+    },
+    {
       "id": "zeroday_bell",
       "name": "Zero-Day Bell",
       "type": "BUFFS",
@@ -7150,16 +7187,16 @@ window.PEDIA_DATA = {
     {
       "key": "COLLECT_RARE",
       "name": "Rare Collector",
-      "trigger": "Get hold of all 46 Rare items.",
+      "trigger": "Get hold of all 47 Rare items.",
       "icon": "assets/icons/ICON_ACH_COLLECT_RARE.png",
-      "goal": 46
+      "goal": 47
     },
     {
       "key": "COLLECT_EPIC",
       "name": "Epic Collector",
-      "trigger": "Get hold of all 13 Epic items.",
+      "trigger": "Get hold of all 16 Epic items.",
       "icon": "assets/icons/ICON_ACH_COLLECT_EPIC.png",
-      "goal": 13
+      "goal": 16
     },
     {
       "key": "RIG_FIRST",

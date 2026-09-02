@@ -560,7 +560,9 @@ void test_cache_common_pool_single_drop() {
 // Earn-path coverage: EVERY understood item must be obtainable in play, not just
 // listed in the registry. An item is earnable if it is on the one-time starting
 // shelf, in some container's reward pool (ItemDef::cache.pool), in the walk loot-cache
-// pool (kLootPool), shop-buyable (bitsPrice), a container the walk can FIND
+// pool (kLootPool), in some AREA's own wild-win drop table (areaWildLootTable — the
+// ladder's rows plus the DeepWeb Dive's standalone pool, which is the only source of the
+// three unbuyable USBs), shop-buyable (bitsPrice), a container the walk can FIND
 // (cache.findWeight > 0) or a warp key, the OUTPUT of a Hacker MERGE HUB recipe
 // (game_internal.h kMergeRecipes — its two INPUT ingredients still need their own
 // earn path, same as any other item), or handed over by an ACHIEVEMENT reward.
@@ -589,6 +591,17 @@ void test_item_earn_coverage() {
             if (std::strcmp(kLootPool[i].id, id) == 0) return true;
         return false;
     };
+    // Every area's wild-win table, the DeepWeb Dive's included — asked through
+    // areaWildLootTable so the ladder's rows and the dive's standalone pool answer the
+    // same question, which is the job that helper exists to do.
+    auto inWildLootPool = [](const char* id) {
+        for (int idx = 0; idx <= kDeepWebSector; ++idx) {
+            const AreaLootTable t = areaWildLootTable(idx);
+            for (int i = 0; i < t.count; ++i)
+                if (std::strcmp(t.rows[i].id, id) == 0) return true;
+        }
+        return false;
+    };
     auto isAchievementReward = [](const char* id) {
         for (int i = 0; i < kAchievementCount; ++i)
             for (const AchievementReward& rw : kAchievements[i].rewards)
@@ -606,6 +619,7 @@ void test_item_earn_coverage() {
             starting.count(it->id) > 0 ||                        // starting shelf
             inCachePool(it->id) ||                               // a container's pool
             inLootPool(it->id) ||                                // walk loot-cache pool
+            inWildLootPool(it->id) ||                            // an area's wild-win table
             it->bitsPrice > 0 ||                                 // shop-buyable
             it->cache.findWeight > 0 ||                          // a container the walk drops
             it->walkWarp != ItemDef::WalkWarp::None ||           // warp key found on the walk
@@ -618,6 +632,17 @@ void test_item_earn_coverage() {
     CHECK(inCachePool("decrypt_key"));
     CHECK(inCachePool("restore_point"));
     CHECK(isAchievementReward("commend_cache"));
+    // The three unbuyable USBs live at the bottom of the DeepWeb Dive and nowhere else:
+    // no cache pays them out, no walk cache rolls them, and no counter sells them. Only
+    // their Epic upgrade is for sale (Moor-to-Moor), and it is priced in four of the rare
+    // one — so every route to the family still runs through the dive.
+    for (const char* usb : {"bad_usb", "signed_usb", "sandbox_usb"}) {
+        CHECK(inWildLootPool(usb));
+        CHECK(!inLootPool(usb));
+        CHECK(!inCachePool(usb));
+        CHECK(r.item(usb)->bitsPrice == 0);
+    }
+    CHECK(r.item("hypervisor_usb")->bitsPrice > 0);
     // The untiered legacy cache is deliberately unfindable now, and so is the earned-only
     // Commendation Cache — the walk must never roll either.
     CHECK(r.item("sealed_cache")->cache.findWeight == 0);

@@ -47,7 +47,8 @@ std::vector<BuffRow> Game::statBuffRows() const {
                          backupShieldArmed(), backupRemainMs, deepWebDepthMultiplier_,
                          pendingDeepWebStartDepth_ != -1,
                          pendingDeepWebStartDepth_ == kDeepWebStartDepthUseBest,
-                         pendingDeepWebStartDepth_, upgrades_);
+                         pendingDeepWebStartDepth_, evolveBranchOverride_,
+                         evolveSoakFactor_, upgrades_);
 }
 
 Game::StatScrollSpan Game::statScrollSpan() const {
@@ -384,6 +385,12 @@ void Game::drawHabitat(Framebuffer& fb, int cursor) const {
         };
         if (mistakeShieldActive_) marker("restore_point", "[SHLD]");
         if (forceTrojanDivert_) marker("ambig_usb", "[USB]");
+        // The rest of the USB port. The branch override is ONE slot, so it draws one
+        // marker either way; the soak names the weaker of its two devices, since which
+        // one armed it isn't tracked (the factor is) and both share the family glyph.
+        if (evolveBranchOverride_ == BranchOverride::Bad) marker("bad_usb", "[BAD]");
+        else if (evolveBranchOverride_ == BranchOverride::Good) marker("signed_usb", "[SGND]");
+        if (evolveSoakFactor_ > 1) marker("sandbox_usb", "[SOAK]");
         if (backupShieldArmed()) marker("backup_drive", "[BKUP]");
         // The two DeepWeb Dive depth buffs record only that they are armed, not
         // which of the several items did it, so both show the shared Buff-item

@@ -124,6 +124,19 @@ bool Game::itemUsable(const ItemDef& d, const char*& gateMsg) const {
     if (d.use == ItemDef::Use::PlayCryptogram) {
         gateMsg = "CASH IN AT VAULT"; return false;
     }
+    // A soak USB (Sandbox/Hypervisor) holds the port shut while it runs: no other device
+    // in the family is usable until it is spent at the boundary it stretched, and neither
+    // is a second soak. Checked ahead of the inert test below so the refusal names the
+    // port rather than the state of whatever was being plugged in.
+    if (evolveSoakFactor_ > 1 && itemIsUsb(d)) {
+        gateMsg = "USB PORT IN USE"; return false;
+    }
+    // ...and a soak only goes in at PROCESS. It is a decision about the stage the pet is
+    // standing in — a Boot egg has no evolution clock to stretch, and a Script's boundary
+    // is the branch itself, which is what the other two USBs are for.
+    if (itemEvolveSoakFactor(d) > 0 && (inEggPhase() || !pet_ || pet_->stage != Stage::Process)) {
+        gateMsg = "PROCESS STAGE ONLY"; return false;
+    }
     // Nothing left for this one to do — say so and keep the item, rather than
     // spending it on a state it already holds.
     if (itemUseIsInert(d, gateMsg)) return false;
@@ -185,6 +198,30 @@ bool Game::itemUseIsInert(const ItemDef& d, const char*& why) const {
                 ++armingEffects;
                 if (!forceTrojanDivert_) return false;
                 if (!reason) reason = "DIVERT ALREADY ARMED";
+                break;
+            // The branch-override pair shares ONE slot, so a second device pointing the
+            // way the slot already points would buy nothing. Pointing it the OTHER way
+            // always does something — that is what "most recently plugged in wins" means
+            // — and so does arming it over a care record that happens to agree today,
+            // since the record can still change and the override cannot.
+            case ItemEffect::Kind::ForceEvolveBranchGood:
+                ++armingEffects;
+                if (evolveBranchOverride_ != BranchOverride::Good) return false;
+                if (!reason) reason = "GOOD BRANCH ARMED";
+                break;
+            case ItemEffect::Kind::ForceEvolveBranchBad:
+                ++armingEffects;
+                if (evolveBranchOverride_ != BranchOverride::Bad) return false;
+                if (!reason) reason = "BAD BRANCH ARMED";
+                break;
+            case ItemEffect::Kind::ArmEvolveSoak:
+                // Unreachable while the port gate above stands (it refuses every USB
+                // item, this one included, whenever a soak is armed) — kept as the
+                // effect-side statement of the same fact, so the vocabulary answers for
+                // itself rather than depending on the order of two gates.
+                ++armingEffects;
+                if (evolveSoakFactor_ <= 1) return false;
+                if (!reason) reason = "USB PORT IN USE";
                 break;
             case ItemEffect::Kind::ArmCombatShieldBuff:
                 // Re-arming only ever REPLACES the deadline, so a second one over
@@ -365,6 +402,27 @@ void Game::applyItemEffects(const ItemDef& d) {
                 // kTrojanDivertPct roll. Re-armable (unlike the once-per-lifetime
                 // shields above) — buying another does no harm.
                 forceTrojanDivert_ = true;
+                break;
+            case ItemEffect::Kind::ForceEvolveBranchGood:
+            case ItemEffect::Kind::ForceEvolveBranchBad:
+                // Signed-USB / Bad-USB (save v60): point the next branching evolution at
+                // the Good or the Bad successor whatever the care budget says. ONE slot,
+                // so this overwrites rather than stacks — plugging the opposite device in
+                // is how a player changes their mind, and the last one in is the one that
+                // fires. Consumed at the evolution it steers (Game::completeEvolution).
+                evolveBranchOverride_ = e.kind == ItemEffect::Kind::ForceEvolveBranchBad
+                                            ? BranchOverride::Bad
+                                            : BranchOverride::Good;
+                break;
+            case ItemEffect::Kind::ArmEvolveSoak:
+                // Sandbox/Hypervisor-USB (save v60): stretch this stage's evolution dwell
+                // by the factor and pay the same factor on every XP award while it runs
+                // (Game::evolveDwellMs, Game::addCombatXp). It cannot overwrite another
+                // soak — itemUsable refuses every USB item while one is armed — so this
+                // only ever writes into an empty port. Floored at 1 the way the codec
+                // floors it: the factor multiplies a clock AND an XP award, so a row
+                // authored at 0 would stall a pet rather than do nothing.
+                evolveSoakFactor_ = e.magnitude > 1 ? e.magnitude : 1;
                 break;
             case ItemEffect::Kind::ArmCombatShieldBuff:
                 // Backup Drive (save v30): arm the timed combat shield, magnitude

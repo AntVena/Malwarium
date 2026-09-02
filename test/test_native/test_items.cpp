@@ -461,6 +461,230 @@ void test_inert_use_keeps_the_item() {
     CHECK(g.inventory().count("yubi_cookie") == 0);  // but both were eaten
 }
 
+// --- The USB port: the branch overrides and the soak pair ---------------------
+//
+// Four devices that all steer the pet's next evolution, and the rules they share are
+// what these gates hold: ONE branch at a time, most recently plugged in wins, and a soak
+// locks the port against the whole family until the boundary it stretched arrives.
+
+// Bad-USB overrules a spotless care record; Signed-USB overrules a ruined one. The
+// branch is what the item says, not what the raise earned — which is the whole item.
+void test_branch_override_usbs_overrule_the_care_record() {
+    // Perfect care, Bad-USB in the port -> the BAD daemon.
+    { Game g{StartMode::Hatched, "malbear"};
+      CHECK(g.model().careBranch() == CareBranch::Good);
+      // Two, so that spending one leaves the ITEMS list standing and the pet at idle —
+      // debugUseItem drives the real Use path, which walks back out of an emptied row.
+      g.inventory().add("bad_usb", 2);
+      g.debugUseItem("bad_usb");
+      CHECK(g.inventory().count("bad_usb") == 1);              // consumed on Use
+      CHECK(g.evolveBranchOverride() == BranchOverride::Bad);
+      CHECK(g.effectiveCareBranch() == CareBranch::Bad);       // ...whatever the record says
+      CHECK(g.model().careBranch() == CareBranch::Good);       // which is untouched
+      g.debugTriggerEvolution();
+      uint32_t t = 0; advanceToReveal(g, t);
+      g.onButton(press(Button::B));
+      CHECK(g.pet() && std::strcmp(g.pet()->id, "berserkernel") == 0);
+      // Spent at the boundary it steered: the next stage reads the care budget again.
+      CHECK(g.evolveBranchOverride() == BranchOverride::None); }
+
+    // ...and the inverse, off a care record that had already lost the good branch.
+    { Game g{StartMode::Hatched, "malbear"};
+      g.model().setCareMistakes(kCareGoodMax + 1);
+      CHECK(g.model().careBranch() == CareBranch::Bad);
+      g.inventory().add("signed_usb", 2);
+      g.debugUseItem("signed_usb");
+      CHECK(g.effectiveCareBranch() == CareBranch::Good);
+      g.debugTriggerEvolution();
+      uint32_t t = 0; advanceToReveal(g, t);
+      g.onButton(press(Button::B));
+      CHECK(g.pet() && std::strcmp(g.pet()->id, "bruinforce") == 0); }
+
+    // Neither reaches around a DYING pet: 5/5 is Critical System Failure, not a branch,
+    // so an armed override answers Dying like everything else and the pet is still on
+    // its way to the failure the neglect earned.
+    { Game g{StartMode::Hatched, "malbear"};
+      g.inventory().add("signed_usb", 1);
+      g.debugUseItem("signed_usb");
+      CHECK(g.evolveBranchOverride() == BranchOverride::Good);
+      g.model().setCareMistakes(kCareDying);
+      CHECK(g.effectiveCareBranch() == CareBranch::Dying); }
+}
+
+// ONE slot. Plugging the opposite device in replaces what was there — the most recently
+// used is the one that fires — and plugging in the SAME direction twice buys nothing, so
+// the second is refused and stays in the bag (Game::itemUseIsInert).
+void test_branch_override_holds_one_device_at_a_time() {
+    Game g{StartMode::Hatched, "malbear"};
+    g.inventory().add("bad_usb", 2);
+    g.inventory().add("signed_usb", 1);
+
+    g.debugUseItem("bad_usb");
+    CHECK(g.evolveBranchOverride() == BranchOverride::Bad);
+    // A second Bad-USB over a slot already pointing Bad: nothing to achieve, kept.
+    g.debugUseItem("bad_usb");
+    CHECK(g.inventory().count("bad_usb") == 1);
+    // The opposite device always does something — it takes the slot.
+    g.debugUseItem("signed_usb");
+    CHECK(g.evolveBranchOverride() == BranchOverride::Good);
+    CHECK(g.inventory().count("signed_usb") == 0);
+    // ...and now the Bad-USB has work to do again, so it spends.
+    g.debugUseItem("bad_usb");
+    CHECK(g.evolveBranchOverride() == BranchOverride::Bad);
+    CHECK(g.inventory().count("bad_usb") == 0);
+}
+
+// The soak's two halves are ONE number: the stage's evolution dwell runs x{soak} longer
+// and every XP award pays x{soak} more. Same pet, arriving later and further along.
+void test_soak_usb_stretches_the_clock_and_pays_the_xp() {
+    Game g{StartMode::Hatched, "paypup"};             // a Process pet
+    CHECK(g.pet() && g.pet()->stage == Stage::Process);
+    const uint32_t plain = g.evolveRemainMs();
+    CHECK(plain == kEvolveProcessToScriptMs);
+
+    g.inventory().add("sandbox_usb", 1);
+    g.debugUseItem("sandbox_usb");
+    CHECK(g.evolveSoakFactor() == 2);
+    CHECK(g.evolveRemainMs() == plain * 2);           // the wait...
+
+    const int lvl0 = g.combatLevel(), xp0 = g.combatXp();
+    g.debugAddCombatXp(10);
+    const int soaked = g.combatXp() - xp0;
+    CHECK(lvl0 == g.combatLevel());                   // no level crossed, so the bank is the award
+    CHECK(soaked == 20);                              // ...and the pay, by the same factor
+
+    // The Epic device is the same mechanic twice as deep, and the ladder is asserted off
+    // the ROWS rather than off two names here: whatever carries a soak is a USB, and the
+    // deepest one on the shelf is twice the shallowest.
+    int shallow = 0, deep = 0;
+    for (const ItemDef* d : ContentRegistry::embedded().allItems()) {
+        const int f = itemEvolveSoakFactor(*d);
+        if (f <= 0) continue;
+        CHECK(itemIsUsb(*d));
+        if (!shallow || f < shallow) shallow = f;
+        if (f > deep) deep = f;
+    }
+    CHECK(shallow == 2 && deep == 2 * shallow);
+}
+
+// A soak holds the port SHUT. Nothing else in the family goes in until it is spent at
+// the boundary it stretched — not a divert, not a branch override, not a second soak.
+void test_soak_usb_locks_the_port_until_the_boundary() {
+    Game g{StartMode::Hatched, "paypup"};
+    g.inventory().add("sandbox_usb", 2);   // two, so the ITEMS list survives the spend
+    for (const char* id : {"hypervisor_usb", "ambig_usb", "bad_usb", "signed_usb"})
+        g.inventory().add(id, 1);
+    g.debugUseItem("sandbox_usb");
+    CHECK(g.evolveSoakFactor() == 2);
+
+    // Every other USB is refused and KEPT — including the deeper soak, which is what
+    // makes the choice of factor a decision about the stage rather than a shopping list.
+    for (const char* id : {"hypervisor_usb", "ambig_usb", "bad_usb", "signed_usb"}) {
+        g.debugUseItem(id);
+        CHECK(g.inventory().count(id) == 1);
+    }
+    CHECK(g.evolveSoakFactor() == 2);
+    CHECK(g.evolveBranchOverride() == BranchOverride::None);
+
+    // The boundary empties the port: the next stage counts down at its own pace, and
+    // the family is usable again.
+    g.debugTriggerEvolution();
+    uint32_t t = 0; advanceToReveal(g, t);
+    g.onButton(press(Button::B));
+    CHECK(g.evolveSoakFactor() == 1);
+    g.debugUseItem("bad_usb");
+    CHECK(g.evolveBranchOverride() == BranchOverride::Bad);
+}
+
+// A device is plugged into the RIG, not frozen into the creature — so a rack swap empties
+// the port rather than handing the incoming pet an ending the outgoing one paid for, or
+// carrying a Process-only soak into a stage its own gate forbids.
+void test_usb_port_empties_on_a_rack_swap() {
+    Game g{StartMode::Hatched, "paypup"};
+    g.inventory().add("sandbox_usb", 2);
+    g.debugUseItem("sandbox_usb");
+    CHECK(g.evolveSoakFactor() == 2);
+
+    // Store the soaked Paypup (a fresh egg lands), then deploy it straight back out —
+    // driven through ARCH the way a player would, since that is the seam being tested.
+    enterSubmenuId(g, SubmenuId::Arch);
+    g.onButton(press(Button::B));                          // open active record (Store)
+    g.onButton(press(Button::B));                          // Store -> confirm (default Cancel)
+    g.onButton(press(Button::A));                          // Cancel -> Confirm
+    g.onButton(press(Button::B));                          // commit Store
+    pickFirstEggLine(g);
+    CHECK(g.rackCount() == 1 && g.inEggPhase());
+    enterSubmenuId(g, SubmenuId::Arch);
+    g.onButton(press(Button::A));                          // focus the stored row
+    g.onButton(press(Button::B));                          // open stored record (Deploy)
+    g.onButton(press(Button::B));                          // Deploy -> confirm
+    g.onButton(press(Button::A));                          // -> Confirm
+    g.onButton(press(Button::B));                          // commit Deploy
+    CHECK(g.pet() && std::strcmp(g.pet()->id, "paypup") == 0);
+    CHECK(g.evolveSoakFactor() == 1);
+    CHECK(g.evolveBranchOverride() == BranchOverride::None);
+    CHECK(g.evolveRemainMs() == kEvolveProcessToScriptMs);
+}
+
+// A soak is a decision about the PROCESS stage, so it only goes in there — an egg has no
+// evolution clock to stretch, and a Script's next boundary is the branch itself.
+void test_soak_usb_is_process_stage_only() {
+    { Game g{StartMode::Hatched, "malbear"};          // a Script pet
+      CHECK(g.pet() && g.pet()->stage == Stage::Script);
+      g.inventory().add("sandbox_usb", 1);
+      g.debugUseItem("sandbox_usb");
+      CHECK(g.inventory().count("sandbox_usb") == 1);  // refused, kept
+      CHECK(g.evolveSoakFactor() == 1); }
+
+    // The branch overrides are NOT stage-gated: arming one on a Process pet is how a
+    // player commits to an ending a stage before the branch is reached.
+    { Game g{StartMode::Hatched, "paypup"};
+      g.inventory().add("bad_usb", 1);
+      g.debugUseItem("bad_usb");
+      CHECK(g.evolveBranchOverride() == BranchOverride::Bad); }
+}
+
+// Both slots are per-pet state that rides the save, and both come back clamped: an
+// unknown branch number reads as no override, and the factor is floored at 1 — it
+// multiplies the evolution clock AND every XP award, so a 0 on the wire would otherwise
+// hand back a pet that can neither evolve nor learn.
+void test_save_v60_usb_port_roundtrip() {
+    SaveData a;
+    std::strcpy(a.activeId, "paypup");
+    a.generation = 1;
+    a.evolveBranchOverride = static_cast<uint8_t>(BranchOverride::Bad);
+    a.evolveSoakFactor = 4;
+    SaveData out;
+    CHECK(deserializeSave(serializeSave(a), out));
+    CHECK(out.evolveBranchOverride == static_cast<uint8_t>(BranchOverride::Bad));
+    CHECK(out.evolveSoakFactor == 4);
+
+    // A blob that never carried the tail describes an empty port, not a stalled pet.
+    SaveData fresh;
+    CHECK(fresh.evolveBranchOverride == 0);
+    CHECK(fresh.evolveSoakFactor == 1);
+
+    // ...and the round trip through the live game, over a real store: an armed port
+    // survives a power cycle, because a soak the player is halfway through paying for
+    // must not be handed back by a reboot.
+    MemSaveStore store;
+    {
+        Game g{StartMode::Hatched, "paypup", &store};
+        g.inventory().add("hypervisor_usb", 1);
+        g.inventory().add("bad_usb", 1);
+        g.debugUseItem("hypervisor_usb");
+        g.debugUseItem("bad_usb");                                 // refused: the port is shut
+        CHECK(g.evolveSoakFactor() == 4);
+        CHECK(g.evolveBranchOverride() == BranchOverride::None);
+        g.tick(kSaveAutosaveMs + kHeartbeatMs);
+    }
+    {
+        Game g{StartMode::Hatched, "paypup", &store};
+        CHECK(g.evolveSoakFactor() == 4);
+        CHECK(g.inventory().count("bad_usb") == 1);   // refused, so still in the bag
+    }
+}
+
 // No Bits path reaches a recipe. The SHOP sells the MERGE HUB and nothing that
 // happens inside it — a recipe is won off a Decryptogram, so the only thing a full
 // wallet can do about cooking is buy the kitchen.

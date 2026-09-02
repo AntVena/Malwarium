@@ -1844,6 +1844,27 @@ public:
         return backupShieldUntilMs_ != 0 && lifetimeUptimeMs() < backupShieldUntilMs_;
     }
 
+    // The USB family's two armed states, read by the STAT BUFFS page, the idle-habitat
+    // buff badges (game_render.cpp) and the gates that decide what else may be plugged
+    // in. Both are per-pet and both are spent at the evolution they steer.
+    BranchOverride evolveBranchOverride() const { return evolveBranchOverride_; }
+    int evolveSoakFactor() const { return evolveSoakFactor_; }
+
+    // The care branch the pet's next BRANCHING evolution actually reads — the care
+    // budget, unless a Bad-USB or Signed-USB is in the port to overrule it. The one
+    // place the override is applied, so evolutionTargetId, the Trojan divert's own
+    // Good/Bad pick and the post-evolution achievements can never disagree about which
+    // branch fired. A DYING pet is returned unchanged: 5/5 routes to Critical System
+    // Failure rather than to a successor, and no device on the shelf sells a way out
+    // of having starved a pet.
+    CareBranch effectiveCareBranch() const;
+
+    // The dwell the CURRENT stage's evolution gate is waiting on: the stage's own
+    // duration, stretched by an armed Sandbox/Hypervisor-USB soak. Every read of the
+    // gate goes through here (evolveEligible, evolveRemainMs), so the clock the screen
+    // counts down is always the clock the boundary is actually checking.
+    uint32_t evolveDwellMs() const;
+
     // the non-Bits drop-chance scale (%) for a sub-area with `refarmCount`
     // post-clear wild wins — 100 decaying to a floor. Pure/static so it's unit-tested
     // directly and reused wherever a re-farm reward is rolled.
@@ -2685,6 +2706,25 @@ private:
     // instead of leaving it to the kTrojanDivertPct roll; consumed there regardless
     // of whether the pet actually has a Trojan divert target.
     bool forceTrojanDivert_ = false;
+    // The branch-override slot (save v60) — per-pet, reset on a new egg like the flag
+    // above. Bad-USB and Signed-USB write the SAME field, so the port holds one
+    // direction at a time and the most recently plugged in is the one that fires; it is
+    // read through effectiveCareBranch() everywhere the care budget would have decided a
+    // branch, and consumed at the evolution it steered (completeEvolution, which is a
+    // beat later than the Ambig-USB's own consumption so the 'Pedia achievements can
+    // still see which branch actually fired).
+    BranchOverride evolveBranchOverride_ = BranchOverride::None;
+    // The Sandbox/Hypervisor-USB's armed soak (save v60) — per-pet, reset on a new egg.
+    // 1 = nothing plugged in; 2 or 4 = this stage's evolution dwell runs that many times
+    // longer (evolveDwellMs) and every XP award pays that many times more (addCombatXp).
+    // Armable at Process only, spent at the evolution it stretched, and while it is
+    // above 1 no USB item at all is usable (itemUsable) — the port is full.
+    // Neither slot is frozen with the pet on an ARCH Store (SaveStoredPet carries the
+    // pet's own properties — its upgrades, its level, its dive record — and a plugged-in
+    // device is not one). Both are emptied on a DEPLOY instead (archDeployStored), so a
+    // rack swap can neither carry a soak into a stage its gate forbids nor hand the
+    // incoming pet an ending the outgoing one paid for.
+    int evolveSoakFactor_ = 1;
     // Backup Drive's timed death-save (save v30) — per-pet, reset on a new egg.
     // The lifetimeUptimeMs() deadline the save is armed until; 0 = inactive.
     // Game::buildPlayerCombatant() arms Combatant::itemShield while lifetimeUptimeMs()

@@ -13,6 +13,15 @@ enum class Zone { Ok, Caution, Critical };
 // Care-budget branch derived from the mistake count.
 enum class CareBranch { Good, Bad, Dying };
 
+// Which way a plugged-in branch-override USB (Signed-USB / Bad-USB) points the pet's next
+// BRANCHING evolution, ignoring the care budget CareBranch above would have read
+// (Game::effectiveCareBranch). ONE slot: arming either replaces whatever was in it, so the
+// most recently plugged in is the one that fires. `None` is the ordinary state and the
+// value a save written before the pair existed comes back as, so the wire numbers are
+// pinned rather than positional. It lives beside CareBranch because it is an OVERRIDE OF
+// CareBranch and nothing else — not a fourth branch, which is why it is not one of them.
+enum class BranchOverride : uint8_t { None = 0, Good = 1, Bad = 2 };
+
 class PetModel {
 public:
     PetModel();

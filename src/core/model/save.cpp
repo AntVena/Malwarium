@@ -545,6 +545,12 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     // after v58's, so a build that stops at either still reads every field it knows.
     w.u32(d.cantSigils);
     w.i32(d.shakesSpent);
+
+    // v60: the USB port's two per-pet slots — the forced evolution branch and the armed
+    // soak factor. Its own tail after v59's, so a build that stops at either still reads
+    // every field it knows.
+    w.u8(d.evolveBranchOverride);
+    w.u8(d.evolveSoakFactor);
 }
 
 std::vector<uint8_t> serializeSave(const SaveData& d) {
@@ -1138,6 +1144,16 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
     if (version >= 59) {
         d.cantSigils = r.u32();
         d.shakesSpent = r.i32();
+    }
+
+    // v60 tail: the USB port. Absent in a v1..v59 blob → the struct's own defaults, an
+    // empty port. The factor is floored at 1 on the way in: it is a MULTIPLIER on both
+    // the evolution dwell and every XP award, so a 0 on the wire (from a truncated or
+    // hand-edited blob) would otherwise stop the pet learning anything at all.
+    if (version >= 60) {
+        d.evolveBranchOverride = r.u8();
+        d.evolveSoakFactor = r.u8();
+        if (d.evolveSoakFactor < 1) d.evolveSoakFactor = 1;
     }
 
     if (!r.ok) { out = SaveData{}; return false; }  // truncated -> empty

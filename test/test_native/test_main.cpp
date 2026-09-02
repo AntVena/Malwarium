@@ -78,6 +78,14 @@ int g_failures = 0;
     RUN(test_lockout_expire_mistakes)       \
     RUN(test_backup_drive_arms_and_lapses)  \
     RUN(test_inert_use_keeps_the_item)      \
+    /* The USB port: branch overrides, the soak pair, and the one-slot rule */ \
+    RUN(test_branch_override_usbs_overrule_the_care_record) \
+    RUN(test_branch_override_holds_one_device_at_a_time) \
+    RUN(test_soak_usb_stretches_the_clock_and_pays_the_xp) \
+    RUN(test_soak_usb_locks_the_port_until_the_boundary) \
+    RUN(test_soak_usb_is_process_stage_only) \
+    RUN(test_usb_port_empties_on_a_rack_swap) \
+    RUN(test_save_v60_usb_port_roundtrip) \
     RUN(test_recipes_are_not_for_sale_at_any_price) \
     RUN(test_recipes_wait_on_the_merge_hub) \
     RUN(test_browns_recipes_wait_on_meeting_both_dishes) \

@@ -36,9 +36,16 @@ const char* const kModPool[] = {"overclock_chip", "heat_sink", "honeytoken",
 // Decryptogram asks for before its prize ladder will teach the recipe for it
 // (game_internal.h's MergeRecipe::requiresItems), so this counter is the front door to
 // cooking them.
+//
+// The Hypervisor-USB is the one device in its family anyone sells, and it is priced in
+// its own family rather than in Bits alone: four Sandbox-USBs, which drop nowhere but the
+// DeepWeb Dive. So the deep end of the soak ladder is reached by diving for the rare one
+// four times over — the counter is where the four are ASSEMBLED, not where the ladder is
+// skipped. Stocked one per visit for the same reason.
 const ShopListingDef kShopListings[] = {
     {"disk_scrubber", 8, 14},
     {"ambig_usb", 2, 1024},
+    {"hypervisor_usb", 1, 2048, {{"sandbox_usb", 4}}},
     {"hashed_browns", 4, 512},
     {"salted_hashed_browns", 4, 512},
 };

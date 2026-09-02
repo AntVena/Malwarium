@@ -250,7 +250,17 @@ constexpr int kSaveTextCap = 28;     // matches EventLog's LogEntry.text
 //     is that minus this, so there is no third number to keep in step. Pre-v59 → 0 and
 //     0: a save from before the Cant existed has learned none of it and spent nothing,
 //     which leaves every shake it ever captured available.
-constexpr uint16_t kSaveVersion = 59;
+//
+// v60 APPEND the USB port's two per-pet slots, its own tail after v59's:
+//     `evolveBranchOverride` (core/model/pet_model.h's BranchOverride as its wire number —
+//     0 none, 1 Good, 2 Bad — the Signed-USB/Bad-USB slot) and `evolveSoakFactor` (the
+//     Sandbox/Hypervisor-USB's armed multiplier on this stage's evolution dwell and on
+//     every XP award; 1 = nothing plugged in). Per-pet, reset on a new egg, spent at the
+//     evolution they steer. Pre-v60 -> 0 and 1: an empty port, which is what every save
+//     written before these devices existed describes. A blob carrying a factor below 1 is
+//     read as 1 for the same reason — the field is a MULTIPLIER, and there is no such
+//     thing as a pet whose XP is scaled to nothing.
+constexpr uint16_t kSaveVersion = 60;
 
 // The oldest blob deserialize will read, and the ONLY thing that retires a rename row
 // (see `renamedIds`). Raising it is how a device stops carrying migration weight for saves
@@ -794,6 +804,11 @@ struct SaveData {
     // the version note above for why SPENT rather than UNSPENT is the field.
     uint32_t cantSigils = 0;
     int32_t shakesSpent = 0;
+    // v60: the USB port. `evolveBranchOverride` is BranchOverride's wire number and
+    // `evolveSoakFactor` defaults to 1 rather than 0 because it is a multiplier — an
+    // untouched SaveData describes an empty port, not a pet earning no XP.
+    uint8_t evolveBranchOverride = 0;
+    uint8_t evolveSoakFactor = 1;
 };
 
 // Read/write one mod's spare count in the v45 packed pool (SaveData::ownedModCounts) by
