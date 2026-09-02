@@ -184,7 +184,10 @@ void Game::onButton(const ButtonEvent& ev) {
                     break;
                 case SubmenuId::Maint: onMaintList(ev); break;
                 case SubmenuId::Cfg: onCfgList(ev); break;
-                case SubmenuId::Arch: onArchList(ev); break;
+                case SubmenuId::Arch:
+                    if (archScreen_ == ArchScreen::Picker) onArchPicker(ev);
+                    else onArchList(ev);
+                    break;
                 // MODS is the LOADOUT hub: the same L2 fronts three pages, and which
                 // one is open is loadoutTab_ (PRACTISE never rests here — it opens
                 // straight into its L3).
@@ -244,15 +247,21 @@ void Game::onButton(const ButtonEvent& ev) {
             if (ev.button == Button::B || ev.button == Button::C) endFeeding();
             break;
         case Nav::ModalLineSelect: {
-            // Line-select: A cycles the highlighted line, B lays that line's
-            // egg (-> idle), C is DISABLED — an empty save has no pet to return to, so
-            // the choice can't be cancelled (mirrors the hatch's no-cancel rule). The
-            // A+C chord is the reserved no-op stub, already filtered above.
+            // Line-select: A cycles the highlighted line, B lays that line's egg
+            // (-> idle). The A+C chord is the reserved no-op stub, already filtered above.
+            //
+            // C BACKS OUT TO ARCH — but only with something on the rack. The rule was
+            // never "the hatch can't be cancelled", it was "an empty save has no pet to
+            // return to", and reaching this modal from an ARCH Store makes that false:
+            // the pet is right there on the shelf, frozen, one Deploy away. Cancelling
+            // into a habitat with nothing living in it is still not offered, so a device
+            // with an empty rack keeps the old no-cancel behaviour exactly.
             const auto lines = availableEggLines();   // only UNLOCKED lines (matches the modal)
             if (lines.empty()) break;
             const int n = static_cast<int>(lines.size());
             if (ev.button == Button::A) lineSelectRow_ = (lineSelectRow_ + 1) % n;
             else if (ev.button == Button::B) layEgg(lines[lineSelectRow_ % n]);
+            else if (ev.button == Button::C && !rack_.empty()) archReturnFromLineSelect();
             break;
         }
         case Nav::Decryption: onDecryption(ev); break;
@@ -330,7 +339,11 @@ void Game::enterSubmenu() {
         }
         case SubmenuId::Maint: listRow_ = 0; break;
         case SubmenuId::Cfg: listRow_ = 0; bHeld_ = false; break;
+        // ARCH always opens on its group picker: a 64-slot shelf plus a record tail is
+        // not one list, and the picker is where NEW EGG lives.
         case SubmenuId::Arch:
+            archScreen_ = ArchScreen::Picker; archPickRow_ = 0;
+            archGroup_ = ArchGroup{};
             listRow_ = 0; archAction_ = ArchAction::Store; archConfirm_ = false; break;
         // MODS always opens on the hub, whichever of its three pages was last used.
         case SubmenuId::Mods:

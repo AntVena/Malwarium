@@ -276,17 +276,13 @@ void test_defrag_count_freeze_thaw() {
     tapC(g);                      // carousel -> idle habitat
 
     g.debugSeedRack("cryptoshell");                    // a stored pet at rack row 1
-    auto deployRow1 = [](Game& gg) {                   // Deploy the rack-row-1 pet
-        enterSlot(gg, SubmenuId::Arch);
-        gg.onButton(press(Button::A));                 // row 0 (active) -> row 1 (stored)
-        gg.onButton(press(Button::B));                 // open record (Deploy default)
-        gg.onButton(press(Button::B));                 // Deploy -> confirm
-        gg.onButton(press(Button::A));                 // Cancel -> Confirm
-        gg.onButton(press(Button::B));                 // commit
-    };
-    deployRow1(g);                                     // cryptoshell in, Paypup frozen
+    // Deploy by SPECIES, not by row: which family shelf a pet is on is what the ARCH
+    // picker groups by now, so a row number would name a different pet per line.
+    enterArchStoredPet(g, "cryptoshell");
+    archConfirmAction(g);                              // cryptoshell in, Paypup frozen
     CHECK(g.defragCount() == 0);                       // cryptoshell's own (fresh) tally
-    deployRow1(g);                                     // Paypup back out of the rack
+    enterArchStoredPet(g, "paypup");
+    archConfirmAction(g);                              // Paypup back out of the rack
     CHECK(g.defragCount() == 1);                       // thawed Paypup's tally intact
 }
 
@@ -296,14 +292,10 @@ void test_arch_release_stored_frees_slot() {
     Game g{StartMode::Hatched};
     g.debugSeedRack("cryptoshell");                    // a stored pet at rack row 1
     CHECK(g.rackCount() == 1);
-    enterSlot(g, SubmenuId::Arch);
-    g.onButton(press(Button::A));                      // row 0 (active) -> row 1 (stored)
-    g.onButton(press(Button::B));                      // open record (Deploy default)
+    enterArchStoredPet(g, "cryptoshell");              // its record, Deploy focused
     g.onButton(press(Button::A));                      // Deploy -> Sell
     g.onButton(press(Button::A));                      // Sell   -> Release
-    g.onButton(press(Button::B));                      // Release -> confirm
-    g.onButton(press(Button::A));                      // Cancel -> Confirm
-    g.onButton(press(Button::B));                      // commit the release
+    archConfirmAction(g);                              // Release -> confirm -> commit
     CHECK(g.rackCount() == 0);                          // slot freed, no record left
     CHECK(g.nav() == Game::Nav::Submenu);              // back to the (empty) rack list
 }
@@ -715,19 +707,11 @@ void test_usb_port_empties_on_a_rack_swap() {
 
     // Store the soaked Paypup (a fresh egg lands), then deploy it straight back out —
     // driven through ARCH the way a player would, since that is the seam being tested.
-    enterSubmenuId(g, SubmenuId::Arch);
-    g.onButton(press(Button::B));                          // open active record (Store)
-    g.onButton(press(Button::B));                          // Store -> confirm (default Cancel)
-    g.onButton(press(Button::A));                          // Cancel -> Confirm
-    g.onButton(press(Button::B));                          // commit Store
+    enterArchNewEgg(g);                                    // ARCH's NEW EGG row
     pickFirstEggLine(g);
     CHECK(g.rackCount() == 1 && g.inEggPhase());
-    enterSubmenuId(g, SubmenuId::Arch);
-    g.onButton(press(Button::A));                          // focus the stored row
-    g.onButton(press(Button::B));                          // open stored record (Deploy)
-    g.onButton(press(Button::B));                          // Deploy -> confirm
-    g.onButton(press(Button::A));                          // -> Confirm
-    g.onButton(press(Button::B));                          // commit Deploy
+    enterArchStoredPet(g, "paypup");
+    archConfirmAction(g);                                  // Deploy -> confirm -> commit
     CHECK(g.pet() && std::strcmp(g.pet()->id, "paypup") == 0);
     CHECK(g.evolveSoakFactor() == 1);
     CHECK(g.evolveBranchOverride() == BranchOverride::None);
@@ -1115,22 +1099,14 @@ void test_tiramisudo_upgrade_survives_the_rack() {
         tapC(g);
 
     g.debugSeedRack("cryptoshell");
-    enterSubmenuId(g, SubmenuId::Arch);
-    g.onButton(press(Button::A));      // focus the stored pet
-    g.onButton(press(Button::B));      // open its record (Deploy)
-    g.onButton(press(Button::B));      // -> confirm
-    g.onButton(press(Button::A));      // -> Confirm
-    g.onButton(press(Button::B));      // commit: CryptoShell in, Paypup frozen
+    enterArchStoredPet(g, "cryptoshell");
+    archConfirmAction(g);                        // CryptoShell in, Paypup frozen
     CHECK(g.pet() && std::strcmp(g.pet()->id, "cryptoshell") == 0);
     CHECK(!g.bandwidthRegenUpgraded());          // the incoming pet was never fed one
 
     // Swap back: Paypup returns with what it ate.
-    enterSubmenuId(g, SubmenuId::Arch);
-    g.onButton(press(Button::A));
-    g.onButton(press(Button::B));
-    g.onButton(press(Button::B));
-    g.onButton(press(Button::A));
-    g.onButton(press(Button::B));
+    enterArchStoredPet(g, "paypup");
+    archConfirmAction(g);
     CHECK(g.pet() && std::strcmp(g.pet()->id, "paypup") == 0);
     CHECK(g.bandwidthRegenUpgraded());
 }
@@ -1321,18 +1297,12 @@ void test_granted_upgrades_survive_the_rack_and_reset_on_a_new_egg() {
     CHECK(g.statBonusPoint(0) == 1 && g.xpRateBonusPct() > 0);
 
     g.debugSeedRack("cryptoshell");
-    auto deployFirstStored = [&] {
-        enterSubmenuId(g, SubmenuId::Arch);
-        g.onButton(press(Button::A));
-        g.onButton(press(Button::B));
-        g.onButton(press(Button::B));
-        g.onButton(press(Button::A));
-        g.onButton(press(Button::B));
-    };
-    deployFirstStored();
+    enterArchStoredPet(g, "cryptoshell");
+    archConfirmAction(g);
     CHECK(g.pet() && std::strcmp(g.pet()->id, "cryptoshell") == 0);
     CHECK(g.statBonusPoint(0) == 0 && g.xpRateBonusPct() == 0);  // never fed either
-    deployFirstStored();
+    enterArchStoredPet(g, "paypup");
+    archConfirmAction(g);
     CHECK(g.pet() && std::strcmp(g.pet()->id, "paypup") == 0);
     CHECK(g.statBonusPoint(0) == 1 && g.xpRateBonusPct() > 0);   // came back with them
 

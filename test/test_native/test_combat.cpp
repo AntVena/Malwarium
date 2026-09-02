@@ -11,18 +11,22 @@ void test_arch_list_and_record() {
     Game g{StartMode::Hatched};
     enterSubmenuId(g, SubmenuId::Arch);
     CHECK(g.nav() == Game::Nav::Submenu);
+    CHECK(g.archScreen() == Game::ArchScreen::Picker);  // ARCH opens on its groups
     Framebuffer fb(kActiveW, kActiveH);
     g.render(fb);
-    CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));   // list reads in grayscale
+    CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));   // picker reads in grayscale
 
-    g.onButton(press(Button::B));                       // open the pet record (L3)
+    enterArchActivePet(g);                              // ACTIVE group -> the pet record
     CHECK(g.nav() == Game::Nav::Detail);
     g.render(fb);
     CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));    // record reads in grayscale
     g.onButton(press(Button::A));                       // cycle Store -> Sell (inert)
     CHECK(g.nav() == Game::Nav::Detail);                // still on the record
-    tapC(g);                       // back to the rack
+    tapC(g);                       // back to the group's list
     CHECK(g.nav() == Game::Nav::Submenu);
+    CHECK(g.archScreen() == Game::ArchScreen::List);
+    tapC(g);                       // back to the picker
+    CHECK(g.archScreen() == Game::ArchScreen::Picker);
     tapC(g);                       // back to the carousel
     CHECK(g.nav() == Game::Nav::Cursor);
 }

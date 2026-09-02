@@ -656,7 +656,19 @@ void Game::drawSubmenu(Framebuffer& fb) const {
             drawCfgList(fb, listRow_, hackerTag_, equippedTitleName(), radioOwner_);
             break;
         case SubmenuId::Arch:
-            drawArchList(fb, registry_, pet_, rack_, records_, listRow_, rackSlots());
+            if (archScreen_ == ArchScreen::Picker) {
+                drawArchPicker(fb, buildArchPickerRows(registry_, pet_, rack_, records_),
+                               archPickRow_, static_cast<int>(rack_.size()), rackSlots());
+            } else {
+                // The group's own name is the list's title, which is the whole reason
+                // the picker exists: the header says which shelf this is.
+                const auto tiles = buildArchPickerRows(registry_, pet_, rack_, records_);
+                const char* title = "ARCH";
+                for (const ArchPickRow& t : tiles)
+                    if (t.group == archGroup_) { title = t.label; break; }
+                drawArchList(fb, archRows(), title, listRow_,
+                             static_cast<int>(rack_.size()), rackSlots());
+            }
             break;
         case SubmenuId::Mods: {
             const Stage st = pet_ ? pet_->stage : Stage::BootSector;
@@ -725,26 +737,24 @@ void Game::drawDetail(Framebuffer& fb) const {
             drawCfg(fb);
             break;
         case SubmenuId::Arch: {
-            if (archRowIsRecord()) {
-                const int ri = listRow_ - 1 - static_cast<int>(rack_.size());
-                if (ri >= 0 && ri < static_cast<int>(records_.size()))
-                    drawArchRecordDetail(fb, registry_, records_[ri]);
+            const bool rackFull = static_cast<int>(rack_.size()) >= rackSlots();
+            // NEW EGG is an action rather than a row, so its L3 is its own screen: the
+            // one place that says what laying an egg costs before it is laid.
+            if (archOnNewEgg()) {
+                drawArchNewEgg(fb, pet_, pet_ && rackFull, archConfirm_,
+                               archConfirmChoice_);
                 break;
             }
-            const bool active = archRowIsActive();
-            const CreatureDef* recPet = pet_;
-            int recGen = generation_;
-            if (!active) {
-                const int idx = listRow_ - 1;
-                if (idx >= 0 && idx < static_cast<int>(rack_.size())) {
-                    recPet = registry_.creature(rack_[idx].id);
-                    recGen = rack_[idx].generation;
-                }
+            const ArchRow row = archFocusedRow();
+            if (row.kind == ArchRow::Kind::Record) {
+                if (row.index >= 0 && row.index < static_cast<int>(records_.size()))
+                    drawArchRecordDetail(fb, registry_, records_[row.index]);
+                break;
             }
-            const bool sellEnabled = recPet && recPet->stage == Stage::Daemon;
-            const bool rackFull = static_cast<int>(rack_.size()) >= rackSlots();
-            drawArchRecord(fb, recPet, active, recGen, archAction_, sellEnabled,
-                           rackFull, archConfirm_, archConfirmChoice_);
+            const bool sellEnabled = row.def && row.def->stage == Stage::Daemon;
+            drawArchRecord(fb, row.def, row.kind == ArchRow::Kind::Active, row.generation,
+                           archAction_, sellEnabled, rackFull, archConfirm_,
+                           archConfirmChoice_);
             break;
         }
         case SubmenuId::Mods:

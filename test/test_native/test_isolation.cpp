@@ -173,11 +173,7 @@ void test_isolation_cycle_run_finishes_clean() {
 
 // Enter ARCH and freeze the active pet into the rack, leaving a fresh egg behind.
 static void archStore(Game& g) {
-    enterSubmenuId(g, SubmenuId::Arch);
-    g.onButton(press(Button::B));      // open the active record (Store)
-    g.onButton(press(Button::B));      // Store -> confirm (defaults to Cancel)
-    g.onButton(press(Button::A));      // Cancel -> Confirm
-    g.onButton(press(Button::B));      // commit
+    enterArchNewEgg(g);                // ARCH's NEW EGG row: store the active, then hatch
 }
 
 // The Worm line is not on the menu until the rack has held two of one species at once —

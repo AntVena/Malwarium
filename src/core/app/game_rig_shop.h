@@ -125,10 +125,19 @@ inline constexpr int kShopBulkOpenCost = 2048;
 inline constexpr int kShopItemPickerCost = 2048;
 
 // --- Containment Rack Slot -----------------------------------------------------
-// +1 permanent ARCH rack slot per purchase (rackSlots() = kRackSlots + level). Cost
-// doubles every purchase — a real Bits sink.
+// +1 permanent ARCH rack slot per purchase (rackSlots() = kRackSlots + level), to a
+// ceiling of kRackSlots + this — 64 slots, which is what the ARCH is SIZED for: the
+// roster is 35 species, so a full shelf holds one of every one of them with room over
+// for duplicates, both halves of a care branch, and whatever families ship later.
+//
+// Log-stepped rather than doubling, sibling to Enhanced DataMining below. The doubling
+// ladder this replaces priced the sixteenth slot at 16.7 MILLION Bits and the whole
+// ladder at 33.5M, which is not a Bits sink but a wall: past the first handful the rows
+// were unbuyable, so the capacity above them was decoration. The log-step prices a
+// 32-slot shelf at ~75K cumulative — a real mid-to-late goal beside the 50K Bits
+// achievement — and the full 64 at ~325K, which is a long project rather than a joke.
 inline constexpr int kRackSlotUpgradeStart = 512;
-inline constexpr int kRackSlotUpgradeMax = 16;
+inline constexpr int kRackSlotUpgradeMax = 60;
 
 // --- Scraping Cluster Expansion --------------------------------------------------
 // +1% Bits earned from COMBAT per level (applied at every combat Bits payout via
@@ -174,8 +183,8 @@ inline constexpr int kRigContinuousBackupCost = 8192;
 // LOWERS the trigger threshold (catches Fragmentation earlier) and RAISES the
 // per-run Bits cost (a multiple of the normal defragCost()) — tighter upkeep costs
 // more, which is the point: it buys more safety margin for an older, stronger (and
-// so more heavily-explored) pet. Doubling purchase-price ladder, sibling to Rack
-// Slot's shape. (Future: defragCost() itself may later scale with defragCount() —
+// so more heavily-explored) pet. Doubling purchase-price ladder — the shape Rack Slot
+// used to share, before its ceiling rose past what a doubling ladder can price. (Future: defragCost() itself may later scale with defragCount() —
 // out of scope here, but this table doesn't hardcode around that.)
 inline constexpr int kDiskMaintenanceMaxTier = 4;
 inline constexpr int kDiskMaintenanceBuyStart = 4096;
@@ -195,7 +204,7 @@ inline constexpr int kHungerXpRateMax = 20;
 // --- k: XP Farming Window ---------------------------------------------------------
 // Widens row j's qualifying hunger range: each level lowers the threshold Hunger
 // must stay above by kHungerXpWindowStepPct, from kHungerXpBaseThreshold down
-// (Game::hungerXpThreshold). Doubling price, sibling shape to Rack Slot.
+// (Game::hungerXpThreshold). Doubling price, sibling shape to Disk Maintenance.
 inline constexpr int kHungerXpWindowStart = 1024;
 inline constexpr int kHungerXpWindowMaxTier = 8;
 inline constexpr int kHungerXpBaseThreshold = 90;
@@ -329,7 +338,7 @@ inline const RigUpgradeDef kRigUpgrades[] = {
     {"bulk_open", "VAULT BULK-OPEN", 1, RigCostCurve::kFixed, kShopBulkOpenCost, 0,
      RigEffectKind::None, 0, "BOUGHT BULK OPEN", {{"HOLD B: OPEN ALL"}}},
 
-    {"rack_slot", "CONTAINMENT RACK SLOT", kRackSlotUpgradeMax, RigCostCurve::kDoubling,
+    {"rack_slot", "CONTAINMENT RACK SLOT", kRackSlotUpgradeMax, RigCostCurve::kLogStepHalf,
      kRackSlotUpgradeStart, 0, RigEffectKind::None, 0, "BOUGHT +RACK SLOT",
      {{"SLOTS", RigValueCurve::Ramp, kRackSlots, 1}}},
 

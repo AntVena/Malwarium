@@ -7247,9 +7247,9 @@ window.PEDIA_DATA = {
     {
       "key": "RIG_MAXED",
       "name": "Maxed Out",
-      "trigger": "Buy all 478 capped rig upgrade levels there are.",
+      "trigger": "Buy all 522 capped rig upgrade levels there are.",
       "icon": "assets/icons/ICON_ACH_RIG_MAXED.png",
-      "goal": 478
+      "goal": 522
     },
     {
       "key": "NETS_10",

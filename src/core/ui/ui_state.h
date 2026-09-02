@@ -17,6 +17,8 @@
 // header whose signatures name one of these.
 #pragma once
 
+#include <cstdint>
+
 namespace mal {
 
 // Which submenu an L1 carousel slot routes to on B. The engine dispatches on this
@@ -64,6 +66,27 @@ enum class MaintKind { Defrag, Av };
 // pet: active → Store + Sell; stored → Deploy + Sell. Sell stays Daemon-only
 // (deferred until the Daemon stage exists).
 enum class ArchAction { Store, Deploy, Sell, Release };
+
+// Which GROUP of ARCH rows the rack list is showing. The archive outgrew one flat list
+// the moment its ceiling went to 64 slots: walking to the last shelf past a record tail
+// that only ever grows is not navigation, it is a chore. So ARCH opens on a picker, the
+// same shape ITEMS already uses for its type tabs, and the rack is grouped by CREATURE
+// LINE — which is how a player who keeps one of everything thinks about the shelf.
+//
+// NewEgg is a row on that picker rather than an action buried in the active pet's
+// record: laying an egg is the thing people came to ARCH to do and could not find.
+struct ArchGroup {
+    enum class Kind : uint8_t { NewEgg, Active, Line, Records };
+    Kind kind = Kind::Active;
+    // Kind::Line only — an index into kCreatureLines (creatures/creature_lines.h).
+    // -1 everywhere else. An INDEX rather than the line id, because the picker's rows
+    // are built from that table in its order and nothing else needs to name a family.
+    int lineIndex = -1;
+
+    bool operator==(const ArchGroup& o) const {
+        return kind == o.kind && lineIndex == o.lineIndex;
+    }
+};
 
 // The pet's vitals as they stood BEFORE the food was applied. The feeding modal
 // reports the change that actually happened, which is the only way a pull TOWARD

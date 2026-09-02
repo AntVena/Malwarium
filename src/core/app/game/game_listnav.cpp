@@ -73,7 +73,14 @@ Game::ListFocus Game::listFocus() const {
             case SubmenuId::Items:
                 return itemsScreen_ == ItemsScreen::Picker ? ListFocus::ItemsPicker
                                                            : ListFocus::ItemsList;
-            case SubmenuId::Arch: return ListFocus::Arch;
+            // ARCH is two L2 screens now, the same shape ITEMS is above: the group
+            // picker and the rows behind one group. Both are row lists and both want
+            // the hold-repeat, so both take the contract — separately, because C's tap
+            // means a different thing on each (out to the carousel vs back to the
+            // picker) and leaveFocusedList replays exactly that.
+            case SubmenuId::Arch:
+                return archScreen_ == ArchScreen::Picker ? ListFocus::ArchPicker
+                                                         : ListFocus::ArchList;
             case SubmenuId::Cfg: return ListFocus::CfgList;
             case SubmenuId::Maint: return ListFocus::Maint;
             case SubmenuId::Expl: return ListFocus::Expl;
@@ -128,10 +135,14 @@ void Game::stepFocusedList(int dir) {
             if (!rows.empty()) listRow_ = stepSelectableRow(rows, listRow_, dir);
             break;
         }
-        case ListFocus::Arch: {
-            const int n = 1 + static_cast<int>(rack_.size()) +
-                          static_cast<int>(records_.size());
-            listRow_ = ((listRow_ + dir) % n + n) % n;
+        case ListFocus::ArchPicker: {
+            const int n = archPickRowCount();
+            if (n > 0) archPickRow_ = ((archPickRow_ + dir) % n + n) % n;
+            break;
+        }
+        case ListFocus::ArchList: {
+            const int n = archRowCount();
+            if (n > 0) listRow_ = ((listRow_ + dir) % n + n) % n;
             break;
         }
         case ListFocus::CfgList: {
@@ -282,7 +293,8 @@ void Game::leaveFocusedList() {
     switch (focus) {
         case ListFocus::ItemsPicker: onItemsPicker(back); break;
         case ListFocus::ItemsList: onItemsList(back); break;
-        case ListFocus::Arch: onArchList(back); break;
+        case ListFocus::ArchPicker: onArchPicker(back); break;
+        case ListFocus::ArchList: onArchList(back); break;
         case ListFocus::CfgList: onCfgList(back); break;
         case ListFocus::CfgGroup: onCfgGroup(back); break;
         case ListFocus::ModSlots: onModsList(back); break;

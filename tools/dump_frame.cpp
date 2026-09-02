@@ -63,7 +63,10 @@
 //             group screens, and radio is seeded with a live arbiter owner —
 //             "idle" seeds nothing on air, "all" seeds every toggle on under a
 //             running update job)
-//        arch [stored] [rackfull] [row:<n>] [detail] [confirm] (rackfull buys slots
+//        arch [stored] [rackfull] [group:<n>] [row:<n>] [detail] [confirm] (ARCH opens
+//             on its GROUP PICKER — NEW EGG · ACTIVE · one row per creature family ·
+//             RECORDS — so "group:<n>" is what opens a shelf and "row:<n>" then walks
+//             it; rackfull buys slots
 //             and fills them, so the list overflows kVisibleRows and scrolls;
 //             row:<n> walks the cursor down it)
 //        train [trainpicker] · combat [override [band:<n>]] [stats] [kit] (the raw dev hook;
@@ -600,11 +603,18 @@ int main(int argc, char** argv) {
             game.tick(kFactoryRevealMs + kHeartbeatMs); // hold elapses -> reveal
         }
     } else if (hasFlag(argc, argv, "arch")) {
+        // ARCH opens on its GROUP PICKER now — NEW EGG, ACTIVE, one row per creature
+        // family, RECORDS. "group:<n>" opens the nth of those, so a family shelf can be
+        // looked at; without it the frame is the picker itself.
         enterSlot(SubmenuId::Arch);
-        if (hasFlag(argc, argv, "stored"))           // focus the stored pet row
-            game.onButton({Button::A, true, false});
-        // "row:<n>" walks the cursor down the rack, which is how a windowed list is
-        // looked at: the rows on screen only change once the cursor leaves the window.
+        for (int i = 3; i < argc; ++i)
+            if (std::strncmp(argv[i], "group:", 6) == 0) {
+                for (int k = std::atoi(argv[i] + 6); k > 0; --k)
+                    game.onButton({Button::A, true, false});
+                game.onButton({Button::B, true, false});
+            }
+        // "row:<n>" walks the cursor down the open group, which is how a windowed list
+        // is looked at: the rows on screen only change once the cursor leaves the window.
         for (int i = 3; i < argc; ++i)
             if (std::strncmp(argv[i], "row:", 4) == 0)
                 for (int k = std::atoi(argv[i] + 4); k > 0; --k)

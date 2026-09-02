@@ -55,6 +55,7 @@
 // ui_state.h ONLY, never a core/ui/*_screen.h: Game holds the ids below as members
 // but draws nothing itself, and this header is included by every TU in the engine.
 // A screen header belongs in the game_*.cpp unit that calls its draw functions.
+#include "core/ui/arch_screen.h"   // ArchRow — the ARCH list's row model
 #include "core/ui/ui_state.h"
 #include "platform/platform.h"
 
@@ -95,6 +96,10 @@ public:
     // screen) only ever appears when itemPickerUnlocked(); every other path — no
     // upgrade, and the Lockout Open-Items entry — lands straight on List.
     enum class ItemsScreen : uint8_t { Picker, List };
+    // ARCH's two L2 screens, the same shape ITEMS uses: the group picker, then the rows
+    // behind whichever group was opened. Unlike ITEMS' the picker is not a purchasable
+    // upgrade — a 64-slot shelf is not navigable without it.
+    enum class ArchScreen : uint8_t { Picker, List };
 
     // Wi-Fi network event sub-outcomes. Public so tests/dev tools can
     // steer/inspect which outcome the step-roll landed on.
@@ -1347,6 +1352,24 @@ public:
     bool setHackerTag(const char* s);
     const std::vector<SaveStoredPet>& rack() const { return rack_; }
     int rackCount() const { return static_cast<int>(rack_.size()); }
+    // Where the ARCH cursor is, for the screens that draw it and the gates that drive
+    // it. The same read-only surface ITEMS and GAMES already expose (itemsScreen,
+    // arcadeRow) — enough to say WHICH shelf is open and WHAT is focused on it,
+    // without handing out the rack.
+    ArchScreen archScreen() const { return archScreen_; }
+    ArchGroup archGroup() const { return archGroup_; }
+    int archPickRow() const { return archPickRow_; }
+    int archPickRowCount() const {
+        return static_cast<int>(
+            buildArchPickerRows(registry_, pet_, rack_, records_).size());
+    }
+    int archRowCount() const { return static_cast<int>(archRows().size()); }
+    // The species id under the ARCH cursor, or nullptr on an empty group, a record with
+    // an id the tables no longer answer to, or the NEW EGG row (which names no pet).
+    const char* archFocusedPetId() const {
+        const ArchRow r = archFocusedRow();
+        return r.def ? r.def->id : nullptr;
+    }
 
     // Zone-completion Titles --------------------------------
     // Player-level, persisted (survive a pet reset, like the sector-clear flags).
@@ -1982,7 +2005,8 @@ private:
     // A/B/C contract untouched: an inline confirm, a detail page, a modal and a
     // minigame all answer None, so C stays the instant tap-to-cancel there.
     enum class ListFocus {
-        None, ItemsPicker, ItemsList, Arch, CfgList, CfgGroup, ModSlots, LoadoutHub,
+        None, ItemsPicker, ItemsList, ArchPicker, ArchList, CfgList, CfgGroup,
+        ModSlots, LoadoutHub,
         ModPicker, MovePicker, Expl, Maint, Arcade, HackerShop, HackerVault,
         HackerPeers, CrewHub, CrewTeam, CrewPicker,
     };
@@ -2037,9 +2061,25 @@ private:
     void archDeployStored(int storedIdx);          // stored pet → active (slot-neutral)
     void archReleaseStored(int storedIdx);         // stored pet → gone (frees a slot, no reward)
     void noteRackDuplicates();                     // two of one species on the shelf → SECOND_INSTANCE
-    bool archRowIsActive() const { return listRow_ == 0; }
-    // Records (RETIRED/CORRUPTED) trail the active + rack rows and have no slot.
-    bool archRowIsRecord() const { return listRow_ > static_cast<int>(rack_.size()); }
+    void onArchPicker(const ButtonEvent& ev);       // L2 group picker
+    // The rows behind the open group, and the focused one. Rebuilt on demand rather
+    // than cached: the rack changes under this screen (a Store, a Deploy, a Release) and
+    // a cached row list is exactly the thing that would then be describing a shelf that
+    // no longer exists.
+    std::vector<ArchRow> archRows() const;
+    // The focused row, or a default-constructed one (kind Active, index -1, no def) when
+    // the group is empty — every caller checks `def` before using it, so an empty group
+    // reads as "nothing to act on" without a second null check at each site.
+    ArchRow archFocusedRow() const;
+    bool archRowIsActive() const { return archFocusedRow().kind == ArchRow::Kind::Active; }
+    bool archRowIsRecord() const { return archFocusedRow().kind == ArchRow::Kind::Record; }
+    // Is the ARCH detail screen the NEW EGG confirm rather than a pet's record?
+    bool archOnNewEgg() const { return archGroup_.kind == ArchGroup::Kind::NewEgg; }
+    // Commit the NEW EGG row: set the active pet aside (if there is one) and hatch.
+    void archHatchNewEgg();
+    // Leave the line-select modal for the ARCH picker, without laying an egg. Only ever
+    // reachable with something on the rack to go back TO — see the modal's own comment.
+    void archReturnFromLineSelect();
     // GAMES: the cabinet list (L2) -> one cabinet (L3) -> a real minigame -> payout.
     void onArcadeList(const ButtonEvent& ev);
     void onArcadeCabinet(const ButtonEvent& ev);
@@ -2866,6 +2906,12 @@ private:
     std::vector<SaveStoredPet> rack_;
     bool archConfirm_ = false;
     int archConfirmChoice_ = 0;          // 0 Cancel · 1 Confirm
+    // Which of ARCH's two L2 screens is showing, which group the list is showing, and
+    // the picker's own cursor. archGroup_ also survives into L3: the detail screen asks
+    // it whether it is drawing the NEW EGG confirm or a pet's record.
+    ArchScreen archScreen_ = ArchScreen::Picker;
+    ArchGroup archGroup_;
+    int archPickRow_ = 0;
 
     // MODS submenu. loadout_ is the equip state; modSlot_ is the slot
     // whose picker is open; modPick_ the picker row (0 = unequip). The inline

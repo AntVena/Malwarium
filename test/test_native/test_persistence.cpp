@@ -350,27 +350,128 @@ void test_arch_store_and_deploy() {
     Game g{StartMode::Hatched, "paypup"};                  // active = Paypup, gen 1
     CHECK(g.rackCount() == 0 && g.generation() == 1);
 
-    enterSubmenuId(g, SubmenuId::Arch);
-    g.onButton(press(Button::B));                          // open active record (Store)
-    g.onButton(press(Button::B));                          // Store -> confirm (default Cancel)
-    g.onButton(press(Button::A));                          // Cancel -> Confirm
-    g.onButton(press(Button::B));                          // commit Store
+    enterArchNewEgg(g);                                    // ARCH's NEW EGG row
     pickFirstEggLine(g);                                   // vacated -> line-select; pick Ransomware
     CHECK(g.nav() == Game::Nav::Idle);                     // active vacated -> new egg at idle
     CHECK(g.rackCount() == 1 && g.pet() && g.inEggPhase());
     CHECK(std::strcmp(g.pet()->id, "cryptoshell") == 0);
     CHECK(g.generation() == 2);                            // lifetime ordinal advanced
 
-    enterSubmenuId(g, SubmenuId::Arch);
-    g.onButton(press(Button::A));                          // focus the stored row (Paypup)
-    g.onButton(press(Button::B));                          // open stored record (Deploy)
-    g.onButton(press(Button::B));                          // Deploy -> confirm
-    g.onButton(press(Button::A));                          // -> Confirm
-    g.onButton(press(Button::B));                          // commit Deploy
+    enterArchStoredPet(g, "paypup");
+    archConfirmAction(g);                                  // Deploy -> confirm -> commit
     CHECK(g.nav() == Game::Nav::Idle);
     CHECK(g.pet() && std::strcmp(g.pet()->id, "paypup") == 0);   // Paypup is active again
     CHECK(g.generation() == 1);                            // its own generation rode along
     CHECK(g.rackCount() == 1);                             // slot-neutral: CryptoShell stored
+}
+
+// ARCH is a PICKER over groups, not one flat list: NEW EGG first, then ACTIVE, then one
+// row per creature family, then RECORDS. The shelf holds 64 now, so which family a pet is
+// on is the axis a player who keeps one of everything actually navigates by.
+void test_arch_picker_groups_the_rack_by_line() {
+    Game g{StartMode::Hatched, "paypup"};        // ransomware
+    g.debugSeedRack("tadpoll");                  // phishing
+    g.debugSeedRack("cryptoshell");              // ransomware
+
+    enterSubmenuId(g, SubmenuId::Arch);
+    CHECK(g.archScreen() == Game::ArchScreen::Picker);
+    const auto tiles = buildArchPickerRows(ContentRegistry::embedded(), g.pet(),
+                                           g.rack(), g.records());
+    // NEW EGG leads, ACTIVE follows, RECORDS trails — the families sit between them.
+    CHECK(tiles.size() == static_cast<size_t>(3 + kCreatureLineCount));
+    CHECK(tiles.front().group.kind == ArchGroup::Kind::NewEgg);
+    CHECK(tiles[1].group.kind == ArchGroup::Kind::Active && tiles[1].count == 1);
+    CHECK(tiles.back().group.kind == ArchGroup::Kind::Records);
+    // Two ransomware pets are on the shelf but only ONE of them is stored — the active
+    // one belongs to ACTIVE, which is the split the whole picker is for.
+    int ransom = 0, phish = 0;
+    for (const ArchPickRow& t : tiles) {
+        if (t.group.kind != ArchGroup::Kind::Line) continue;
+        if (std::strcmp(t.label, "RANSOMWARE") == 0) ransom = t.count;
+        if (std::strcmp(t.label, "PHISHING") == 0) phish = t.count;
+    }
+    CHECK(ransom == 1 && phish == 1);
+
+    // And the rows behind a family are that family's, resolved to real creatures.
+    enterArchStoredPet(g, "tadpoll");
+    CHECK(g.nav() == Game::Nav::Detail);
+    CHECK(g.archFocusedPetId() && std::strcmp(g.archFocusedPetId(), "tadpoll") == 0);
+    CHECK(g.archGroup().kind == ArchGroup::Kind::Line);
+}
+
+// NEW EGG is a ROW on the picker, not an action buried in the active pet's record. It
+// still costs the same thing it always did — the pet you are raising goes to the rack —
+// which is what its own L3 says before anything is committed.
+void test_arch_new_egg_row_stores_then_hatches() {
+    Game g{StartMode::Hatched, "paypup"};
+    CHECK(g.rackCount() == 0);
+    enterSubmenuId(g, SubmenuId::Arch);
+    CHECK(g.archPickRow() == 0);                  // it opens ON the row
+    g.onButton(press(Button::B));                 // -> the NEW EGG confirm screen
+    CHECK(g.nav() == Game::Nav::Detail);
+    CHECK(g.archGroup().kind == ArchGroup::Kind::NewEgg);
+    Framebuffer fb(kActiveW, kActiveH);
+    g.render(fb);
+    CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));   // it reads in grayscale
+
+    // Cancel keeps the pet exactly where it was — a confirm that defaults to Cancel is
+    // the whole reason this is a screen and not a button.
+    g.onButton(press(Button::B));                 // -> confirm prompt (default Cancel)
+    g.onButton(press(Button::B));                 // commit Cancel
+    CHECK(g.rackCount() == 0 && g.pet() && !g.inEggPhase());
+
+    g.onButton(press(Button::B));                 // -> confirm again
+    g.onButton(press(Button::A));                 // Cancel -> Confirm
+    g.onButton(press(Button::B));                 // commit
+    pickFirstEggLine(g);
+    CHECK(g.rackCount() == 1 && g.inEggPhase());
+    CHECK(std::strcmp(g.rack()[0].id, "paypup") == 0);   // set aside, not lost
+}
+
+// Laying an egg used to LOCK YOU IN: line-select disabled C because "an empty save has no
+// pet to return to". Reaching it from an ARCH Store makes that false — the pet is on the
+// shelf — so C now backs out to ARCH, where deploying it back is one confirm away.
+void test_line_select_backs_out_to_arch_when_the_rack_has_a_pet() {
+    Game g{StartMode::Hatched, "paypup"};
+    // Two unlocked lines, so the hatch actually STOPS on the choice — with one line
+    // startHatch skips the modal outright and there is nothing to cancel out of.
+    g.unlockAchievement(ach::kDeepWebDepth8);     // unlocks Phishing
+    enterArchNewEgg(g);
+    CHECK(g.inLineSelect() && g.rackCount() == 1 && !g.pet());
+
+    tapC(g);                                      // back out — no egg laid
+    CHECK(!g.inLineSelect());
+    CHECK(g.nav() == Game::Nav::Submenu && g.archScreen() == Game::ArchScreen::Picker);
+    CHECK(g.rackCount() == 1 && !g.pet());        // still parked between the two rooms
+
+    // C from the picker returns to the choice rather than dropping the player into a
+    // habitat with nothing living in it — the two rooms are the only two rooms.
+    tapC(g);
+    CHECK(g.inLineSelect());
+    tapC(g);
+    CHECK(g.nav() == Game::Nav::Submenu);
+
+    // Deploying with no active pet is a plain thaw: the pet comes back and the slot is
+    // freed, rather than the swap a Deploy normally is. Walked from the picker the gate
+    // is already standing on — backing out to the carousel is exactly what this state
+    // does not offer.
+    archOpenStoredPet(g, "paypup");
+    archConfirmAction(g);
+    CHECK(g.pet() && std::strcmp(g.pet()->id, "paypup") == 0);
+    CHECK(g.rackCount() == 0);                    // freed, not left holding a copy
+}
+
+// ...and with an EMPTY rack the old rule stands exactly as it was: there is nowhere to go
+// back to, so the choice can't be cancelled.
+void test_line_select_cannot_be_cancelled_with_an_empty_rack() {
+    Game g;                                       // fresh save
+    g.unlockAchievement(ach::kDeepWebDepth8);     // a real choice to be stuck on
+    g.resetToHatch();
+    CHECK(g.inLineSelect() && g.rackCount() == 0);
+    tapC(g);
+    CHECK(g.inLineSelect());                      // C is still inert here
+    pickFirstEggLine(g);
+    CHECK(g.pet() != nullptr);
 }
 
 // STAT surfaces the persisted generation + the lifetime footer.
@@ -393,9 +494,8 @@ void test_arch_rack_grayscale() {
     g.debugSeedRack("cryptoshell");
     enterSubmenuId(g, SubmenuId::Arch);
     Framebuffer fb(kActiveW, kActiveH);
-    g.render(fb); CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));   // list w/ stored row
-    g.onButton(press(Button::A));                          // focus the stored pet
-    g.onButton(press(Button::B));                          // open its record (Deploy)
+    g.render(fb); CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));   // the group picker
+    enterArchStoredPet(g, "cryptoshell");                  // its record (Deploy)
     g.render(fb); CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));
     g.onButton(press(Button::B));                          // Deploy -> confirm overlay
     g.render(fb); CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));

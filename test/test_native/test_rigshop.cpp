@@ -344,21 +344,38 @@ void test_rig_cost_curve_formulas() {
     CHECK(rigUpgradeCost(128, 3, RigCostCurve::kLogStepHalf) == 256);
 }
 
-// Containment Rack Slot: broke → inert, an affordable buy raises rackSlots
-// by 1 and gates ARCH Store at the new capacity, cost doubles per purchase, buy-to-cap
-// MAXES out (inert past kRackSlotUpgradeMax).
+// Containment Rack Slot: broke → inert, an affordable buy raises rackSlots by 1 and
+// gates ARCH Store at the new capacity, the price climbs on the log-stepped ladder, and
+// buy-to-cap MAXES out (inert past kRackSlotUpgradeMax).
+//
+// The ladder is LOG-STEPPED, not doubling. That matters enough to assert: the shelf now
+// reaches 64 slots — one of every species on the roster, with room over — and a doubling
+// ladder over that many rows prices the last one past a trillion Bits, which is a wall
+// rather than a sink. Prices are read off rigUpgradeCost rather than restated, so a
+// retune of the curve or the sticker is a one-line edit there and not a test rewrite.
 void test_hacker_shop_rack_slot_upgrade() {
     Game g{StartMode::Hatched};
     const int base = g.rackSlots();
-    CHECK(g.rackSlotUpgradeCost() == kRackSlotUpgradeStart);
+    const int first = rigUpgradeCost(kRackSlotUpgradeStart, 0, RigCostCurve::kLogStepHalf);
+    CHECK(g.rackSlotUpgradeCost() == first);
     g.debugSetBits(0);
     g.debugBuyRackSlotUpgrade();
     CHECK(g.rackSlots() == base && g.bits() == 0);          // broke → inert
 
-    g.debugSetBits(kRackSlotUpgradeStart + 5);
+    g.debugSetBits(first + 5);
     g.debugBuyRackSlotUpgrade();
     CHECK(g.rackSlots() == base + 1 && g.bits() == 5);      // +1 slot, Bits deducted
-    CHECK(g.rackSlotUpgradeCost() == kRackSlotUpgradeStart * 2);  // doubles
+    CHECK(g.rackSlotUpgradeCost() ==
+          rigUpgradeCost(kRackSlotUpgradeStart, 1, RigCostCurve::kLogStepHalf));
+
+    // The shelf a full ladder buys is what the ARCH is SIZED for, and the cumulative
+    // price of it is the thing a wall would hide: assert both, so raising the ceiling
+    // without repricing the rows can't pass.
+    int cumulative = 0;
+    for (int n = 0; n < kRackSlotUpgradeMax; ++n)
+        cumulative += rigUpgradeCost(kRackSlotUpgradeStart, n, RigCostCurve::kLogStepHalf);
+    CHECK(base + kRackSlotUpgradeMax == 64);
+    CHECK(cumulative < 400000);      // a long project, not an unreachable one
 
     g.debugSetBits(100000000);
     for (int i = 0; i < kRackSlotUpgradeMax + 2; ++i) g.debugBuyRackSlotUpgrade();

@@ -287,6 +287,87 @@ inline void enterSubmenuId(Game& g, SubmenuId id) {
     g.onButton(press(Button::B));                 // enter the submenu
 }
 
+// Walk ARCH to a STORED pet's record, whichever family shelf it happens to be on.
+// The picker's groups and the rows inside them are SCANNED rather than counted: which
+// shelf a pet sits on is a property of its line, and both the family order
+// (kCreatureLines) and the rack's contents are content that moves. Leaves the game in
+// that pet's L3 record with its action set open.
+// Back out of wherever the menu was left, so an ARCH walk always starts from the
+// carousel — the same guard enterArcadeCabinet keeps, and for the same reason: these
+// helpers are called in sequence and each one's commit lands somewhere different.
+inline void archBackToIdle(Game& g) {
+    for (int i = 0; i < 4 && (g.nav() == Game::Nav::Detail ||
+                              g.nav() == Game::Nav::Submenu ||
+                              g.nav() == Game::Nav::Cursor); ++i)
+        tapC(g);
+}
+
+// Walk the ARCH picker — ALREADY OPEN — to a stored pet's record. Split from the entry
+// walk below because the two-room state (a pet on the rack and none active) cannot be
+// backed out of to the carousel: C from the picker returns to line-select there, so a
+// gate already standing on ARCH has to stay on it.
+inline void archOpenStoredPet(Game& g, const char* creatureId) {
+    const int groups = g.archPickRowCount();
+    // From row 1, past NEW EGG: that row is an ACTION, and B on it opens a hatch
+    // confirm rather than a shelf — walking it by accident would lay an egg.
+    for (int i = 1; i < groups; ++i) {
+        // Bounded, never `while`: a helper that walks the UI must fail its gate when the
+        // UI stops agreeing with it, not spin forever with no output.
+        for (int k = 0; k < groups && g.archPickRow() != i; ++k)
+            g.onButton(press(Button::A));
+        CHECK(g.archPickRow() == i);
+        g.onButton(press(Button::B));                 // open the group
+        const int rows = g.archRowCount();
+        for (int j = 0; j < rows; ++j) {
+            if (g.archFocusedPetId() &&
+                std::strcmp(g.archFocusedPetId(), creatureId) == 0) {
+                g.onButton(press(Button::B));         // open its record
+                return;
+            }
+            g.onButton(press(Button::A));
+        }
+        tapC(g);                                      // back to the picker (C is a tap/hold)
+    }
+}
+
+inline void enterArchStoredPet(Game& g, const char* creatureId) {
+    archBackToIdle(g);
+    enterSubmenuId(g, SubmenuId::Arch);
+    archOpenStoredPet(g, creatureId);
+}
+
+// Walk ARCH to the ACTIVE pet's record — the Store/Sell action set.
+inline void enterArchActivePet(Game& g) {
+    archBackToIdle(g);
+    enterSubmenuId(g, SubmenuId::Arch);
+    for (int k = 0; k < g.archPickRowCount() && g.archPickRow() != 1; ++k)
+        g.onButton(press(Button::A));                            // NEW EGG, then ACTIVE
+    CHECK(g.archPickRow() == 1);
+    g.onButton(press(Button::B));                                // open the group
+    g.onButton(press(Button::B));                                // open the pet's record
+}
+
+// Commit ARCH's NEW EGG row: the top row of the picker, its confirm, and Confirm.
+// Leaves the game wherever the hatch put it — line-select, or straight at a laid egg.
+inline void enterArchNewEgg(Game& g) {
+    archBackToIdle(g);
+    enterSubmenuId(g, SubmenuId::Arch);
+    for (int k = 0; k < g.archPickRowCount() && g.archPickRow() != 0; ++k)
+        g.onButton(press(Button::A));
+    CHECK(g.archPickRow() == 0);
+    g.onButton(press(Button::B));                 // NEW EGG -> its confirm screen
+    g.onButton(press(Button::B));                 // -> confirm prompt (default Cancel)
+    g.onButton(press(Button::A));                 // Cancel -> Confirm
+    g.onButton(press(Button::B));                 // commit
+}
+
+// Confirm the action already focused in an ARCH pet record (Store / Deploy / Release).
+inline void archConfirmAction(Game& g) {
+    g.onButton(press(Button::B));                 // action -> confirm (default Cancel)
+    g.onButton(press(Button::A));                 // Cancel -> Confirm
+    g.onButton(press(Button::B));                 // commit
+}
+
 // Walk from the carousel to a CFG L3 screen by TARGET, descending through a group
 // screen (DEVICE / RADIO) when the target lives in one. Scanning the tables rather
 // than counting presses keeps every CFG gate independent of the row order.

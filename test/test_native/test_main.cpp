@@ -208,6 +208,11 @@ int g_failures = 0;
     RUN(test_persistence_reset_clears_store)\
     RUN(test_hackertag_editor)              \
     RUN(test_arch_store_and_deploy)         \
+    /* ARCH's group picker, its NEW EGG row, and the cancellable hatch */ \
+    RUN(test_arch_picker_groups_the_rack_by_line) \
+    RUN(test_arch_new_egg_row_stores_then_hatches) \
+    RUN(test_line_select_backs_out_to_arch_when_the_rack_has_a_pet) \
+    RUN(test_line_select_cannot_be_cancelled_with_an_empty_rack) \
     RUN(test_stat_footer_and_generation)    \
     RUN(test_arch_rack_grayscale)           \
     /* Single-frame creatures */            \

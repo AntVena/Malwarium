@@ -273,24 +273,18 @@ void test_arch_store_deploy_preserves_creature_level() {
     int pts[kLevelStatCount];
     for (int i = 0; i < kLevelStatCount; ++i) pts[i] = g.levelStatPoint(i);
 
-    // Store the leveled Paypup into the rack; a fresh egg becomes active.
-    enterSubmenuId(g, SubmenuId::Arch);
-    g.onButton(press(Button::B));                          // open active record (Store)
-    g.onButton(press(Button::B));                          // Store -> confirm (default Cancel)
-    g.onButton(press(Button::A));                          // Cancel -> Confirm
-    g.onButton(press(Button::B));                          // commit Store
+    // Store the leveled Paypup into the rack; a fresh egg becomes active. Driven off
+    // ARCH's NEW EGG row, which is what a player reaches for and what the Store on the
+    // active pet's record has always actually been.
+    enterArchNewEgg(g);
     pickFirstEggLine(g);                                   // vacated -> line-select; pick Ransomware
     CHECK(g.rackCount() == 1 && g.inEggPhase());
     // The new egg's own (fresh) level state must not bleed into the stored pet.
     CHECK(g.combatLevel() == 0 && g.combatXp() == 0);
 
     // Deploy the leveled Paypup back out of the rack.
-    enterSubmenuId(g, SubmenuId::Arch);
-    g.onButton(press(Button::A));                          // focus the stored row (Paypup)
-    g.onButton(press(Button::B));                          // open stored record (Deploy)
-    g.onButton(press(Button::B));                          // Deploy -> confirm
-    g.onButton(press(Button::A));                          // -> Confirm
-    g.onButton(press(Button::B));                          // commit Deploy
+    enterArchStoredPet(g, "paypup");
+    archConfirmAction(g);                                  // Deploy -> confirm -> commit
     CHECK(g.nav() == Game::Nav::Idle);
     CHECK(g.pet() && std::strcmp(g.pet()->id, "paypup") == 0);
 
@@ -313,12 +307,8 @@ void test_arch_deploy_loadout_is_per_pet() {
     g.debugSeedRack("tadpoll");             // phishing line
     CHECK(g.rackCount() == 1);
 
-    enterSubmenuId(g, SubmenuId::Arch);
-    g.onButton(press(Button::A));           // focus the stored row (Tadpoll)
-    g.onButton(press(Button::B));           // open stored record (Deploy)
-    g.onButton(press(Button::B));           // Deploy -> confirm
-    g.onButton(press(Button::A));           // -> Confirm
-    g.onButton(press(Button::B));           // commit Deploy
+    enterArchStoredPet(g, "tadpoll");
+    archConfirmAction(g);                   // Deploy -> confirm -> commit
     CHECK(g.pet() && std::strcmp(g.pet()->id, "tadpoll") == 0);
 
     for (int i = 0; i < kMaxMoveSlots; ++i) {
@@ -327,12 +317,8 @@ void test_arch_deploy_loadout_is_per_pet() {
     }
     for (int i = 0; i < kModSlots; ++i) CHECK(g.loadout().equipped(i) == nullptr);
 
-    enterSubmenuId(g, SubmenuId::Arch);
-    g.onButton(press(Button::A));           // focus the stored row (Paypup)
-    g.onButton(press(Button::B));           // open stored record (Deploy)
-    g.onButton(press(Button::B));           // Deploy -> confirm
-    g.onButton(press(Button::A));           // -> Confirm
-    g.onButton(press(Button::B));           // commit Deploy
+    enterArchStoredPet(g, "paypup");
+    archConfirmAction(g);                   // Deploy -> confirm -> commit
     CHECK(g.pet() && std::strcmp(g.pet()->id, "paypup") == 0);
     CHECK(std::strcmp(g.moveLoadout().equipped(0), paypupMove) == 0);
     CHECK(std::strcmp(g.loadout().equipped(0), "firewall_patch") == 0);
@@ -1446,7 +1432,12 @@ void test_arch_record_readonly() {
 
     enterSubmenuId(g, SubmenuId::Arch);
     CHECK(g.nav() == Game::Nav::Submenu);
-    g.onButton(press(Button::A));                     // active row 0 -> record row
+    // RECORDS is its own group on the picker now — the last row, after the families.
+    for (int k = 0; k < g.archPickRowCount() &&
+                    g.archPickRow() != g.archPickRowCount() - 1; ++k)
+        g.onButton(press(Button::A));
+    g.onButton(press(Button::B));                     // open the RECORDS group
+    CHECK(g.archGroup().kind == ArchGroup::Kind::Records);
     g.onButton(press(Button::B));                     // open the record (read-only)
     CHECK(g.nav() == Game::Nav::Detail);
     Framebuffer fb(kActiveW, kActiveH);
