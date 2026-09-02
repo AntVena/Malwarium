@@ -67,8 +67,17 @@ void drawProseRows(Framebuffer& fb, const std::vector<ProseRow>& rows, int scrol
     for (int v = 0; v < shown; ++v) {
         const ProseRow& r = rows[top + v];
         if (r.header) {
-            drawText(fb, kMargin, y + headerLead(top + v), r.label,
-                     palColor(Pal::INK_DIM));
+            // A heading may carry a tag of its own — a running total for the group under
+            // it (STAT's TIERS page). Paired with the label rather than placed
+            // independently for the same reason the entry rows are: whichever of the two
+            // grows, they yield to each other instead of overlapping. Both dim, because a
+            // heading is a fence and must not out-shout the rows it fences.
+            const int hy = y + headerLead(top + v);
+            if (r.tag[0])
+                drawLabelValue(fb, kMargin, hy, r.label, palColor(Pal::INK_DIM), r.tag,
+                               palColor(Pal::INK_DIM), beat, /*scroll=*/false);
+            else
+                drawText(fb, kMargin, hy, r.label, palColor(Pal::INK_DIM));
         } else {
             // Name and tag as a PAIR (drawLabelValue), so a long name yields to the tag
             // instead of running underneath it — the failure two independent drawText

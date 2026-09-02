@@ -35,6 +35,15 @@ namespace mal {
 
 // --- STAT's flowed prose pages ---------------------------------------------
 
+std::vector<ProseRow> Game::statTierRows() const {
+    // TOTAL points, not earned ones: an Epic dish's off-level grant counts toward a rung
+    // exactly as an earned point does (applyLevelStatPoints resolves the tiers from the
+    // same sum), so the page has to read the stat the way the fight does.
+    int points[kLevelStatCount];
+    for (int i = 0; i < kLevelStatCount; ++i) points[i] = totalStatPoint(i);
+    return buildTierRows(points);
+}
+
 std::vector<ProseRow> Game::statLoadoutRows() const {
     return buildLoadoutRows(registry_, moveLoadout_, loadout_,
                             pet_ ? pet_->stage : Stage::BootSector, inEggPhase());
@@ -54,10 +63,14 @@ std::vector<BuffRow> Game::statBuffRows() const {
 Game::StatScrollSpan Game::statScrollSpan() const {
     if (!pet_) return {0, 0};
     if (statPage_ == 1) {
+        const std::vector<ProseRow> rows = statTierRows();
+        return {tierRowsFitting(rows, statScroll_), static_cast<int>(rows.size())};
+    }
+    if (statPage_ == 2) {
         const std::vector<ProseRow> rows = statLoadoutRows();
         return {loadoutRowsFitting(rows, statScroll_), static_cast<int>(rows.size())};
     }
-    if (statPage_ == 2) {
+    if (statPage_ == 3) {
         const std::vector<BuffRow> rows = statBuffRows();
         return {buffRowsFitting(rows, statScroll_), static_cast<int>(rows.size())};
     }
@@ -616,20 +629,23 @@ void Game::drawSubmenu(Framebuffer& fb) const {
     switch (enteredId()) {
         case SubmenuId::Stat:
             if (pet_) {
-                // 5 pages: 0 pet vitals (the landing) · 1 the equipped loadout
-                // (moves + mods, WITH their effect text) · 2 currently-armed item
-                // buffs · 3 the pet's own species lore · 4 audit log. A cycles;
-                // C backs out.
+                // 6 pages: 0 pet vitals (the landing) · 1 the investment ladder —
+                // which stat tiers this pet holds and what the next costs · 2 the
+                // equipped loadout (moves + mods, WITH their effect text) ·
+                // 3 currently-armed item buffs · 4 the pet's own species lore ·
+                // 5 audit log. A cycles; C backs out.
                 if (statPage_ == 0)
                     drawStatScreen(fb, model_, pet_->displayName, pet_->stage,
                                    generation_, combatLevel_, combatXp_,
                                    xpToNextLevel(), beat_, hasNextEvolution(),
                                    evolveRemainMs());
                 else if (statPage_ == 1)
-                    drawLoadoutScreen(fb, statLoadoutRows(), statScroll_, beat_);
+                    drawTiersScreen(fb, statTierRows(), statScroll_, beat_);
                 else if (statPage_ == 2)
-                    drawBuffsScreen(fb, statBuffRows(), statScroll_, beat_);
+                    drawLoadoutScreen(fb, statLoadoutRows(), statScroll_, beat_);
                 else if (statPage_ == 3)
+                    drawBuffsScreen(fb, statBuffRows(), statScroll_, beat_);
+                else if (statPage_ == 4)
                     drawSpeciesScreen(fb, pet_->displayName, pet_->line, pet_->hint,
                                       pet_->context, beat_);
                 else

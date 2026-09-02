@@ -382,18 +382,48 @@ constexpr int kBattleFatigueAutoPauseFrag = 80; // hands-off auto-explore pauses
 constexpr int kLevelXpBase = 100;          // XP to reach level 1 (round(100*1.1^0))
 constexpr int kLevelXpGrowthPct = 110;     // each level costs 1.1x the previous
 constexpr int kLevelStatCount = 4;         // power / defense / speed / max-Health
+
+// --- The investment LADDER: one set of rungs, the same on all four stats -------------
+// Every stat pays out continuously per point AND unlocks three discrete TIERS, and the
+// tiers sit at the same three point counts whatever stat they are on. That uniformity is
+// the whole feature: before it, Defence's two thresholds were at 12 and 18 and nothing
+// else had any, so "how far am I from the next thing" was a question only the source code
+// could answer. One ladder means the STAT screen can draw one grid, and a player who has
+// learned where Speed's rungs are has learned where every stat's are.
+//
+// 8 / 16 / 32 rather than 10 / 20 / 30 — the doubling reads as a real commitment curve
+// (T2 costs what T1 did, T3 costs what both did together) and lands on the binary counts
+// the rest of the device is written in. The ladder is also what the continuous curves
+// bend at: T1 opens Power's and max-Health's accelerating band and starts Defence's
+// diminishing one, so a rung is one fact rather than two coincidences.
+//
+// The top rung is deliberately past what a random raise hands out — the level-up grant
+// picks its stat at random and the ladder runs to level 60, so ~15 points in a stat is
+// the unremarkable outcome. T3 is for a pet that was BUILT, by luck, a Rollback or an
+// Epic dish's off-level points (PetUpgrades::statBonus, which count here — a point is a
+// point). Defence's cut ceiling lands exactly on T3: 8 full-rate points + 24 bent ones is
+// 60%, kLevelDefenseCapPct, so the stat stops buying % on the same rung it starts buying
+// something else. That coincidence is load-bearing and a native gate asserts it.
+constexpr int kStatTierCount = 3;
+constexpr int kStatTier1Points = 8;
+constexpr int kStatTier2Points = 16;
+constexpr int kStatTier3Points = 32;
 constexpr int kLevelPowerPctPerPoint = 4;      // +4% attack power per power point
 constexpr int kLevelDefensePctPerPoint = 3;    // +3% incoming-damage cut per defense
 // ...at FULL rate only for the first kLevelDefenseSoftPoints; past that a point buys
 // half as much (levelDefenseCutPct, combat.h). Defense is the one stat with a hard
 // ceiling, so without a bend the last points before the cap were the most valuable
 // purchase in the game and the wall was simply a matter of spending enough. The curve
-// leaves early Defense untouched — the soft point sits above where a mid-game pet lands —
-// and only taxes the stretch that was heading for immunity.
-constexpr int kLevelDefenseSoftPoints = 10;    // full-rate points before the bend
+// leaves early Defense untouched and only taxes the stretch that was heading for immunity.
+// The bend sits on the ladder's first rung, so the point where the % stops paying full
+// rate is the same point where the stat starts paying in pierce resist instead — one
+// threshold the player can be told about, not two they have to discover separately.
+constexpr int kLevelDefenseSoftPoints = kStatTier1Points;  // full-rate points before the bend
 constexpr int kLevelDefenseCapPct = 60;        // ...level defense contribution cap
 constexpr int kLevelDmgReduceMaxPct = 85;      // ...total dmg-cut clamp (never immune)
 constexpr int kLevelSpeedPerPoint = 1;         // +1 initiative per speed point
+                                               // (kLevelSpeedUnderdogPerPoint replaces this
+                                               // rate outright while Speed T2 is paying)
 constexpr int kLevelHealthPerPoint = 3;        // +3 max-Health per max-Health point
 // Defense stat ALSO scales DEFEND-move brace magnitude.
 // Symmetric to Power→attack. +3% brace per Defense point via
@@ -417,10 +447,10 @@ constexpr int kLevelDefenseBraceCapPct = 200;
 // to a stat is what pays and a pet that got lucky in one column has something to show for
 // it. Capped, because the ladder runs to level 60 and an unbounded accelerating curve
 // stops being a build and becomes the only build.
-constexpr int kLevelPowerSpecPoints = 6;         // points before the accelerating band
+constexpr int kLevelPowerSpecPoints = kStatTier1Points;  // points before the accelerating band
 constexpr int kLevelPowerPctPerSpecPoint = 10;   // ...and the rate past it (base is 4)
 constexpr int kLevelPowerSpecCapPct = 300;       // total level-Power contribution ceiling
-constexpr int kLevelHealthSpecPoints = 6;
+constexpr int kLevelHealthSpecPoints = kStatTier1Points;
 constexpr int kLevelHealthPerSpecPoint = 8;      // ...vs kLevelHealthPerPoint's 3
 constexpr int kLevelHealthSpecCap = 400;         // total level-Health contribution ceiling
 
@@ -433,10 +463,21 @@ constexpr int kLevelHealthSpecCap = 400;         // total level-Health contribut
 //   brace retain  — a one-shot `guard` discards whatever the hit it ate did not need, so
 //                   an over-sized brace pays for absorption nobody asked for. Past this
 //                   threshold the unspent remainder CARRIES to the next hit instead.
-constexpr int kLevelDefensePierceResistPoints = 12;
+//   backscatter   — and the last rung, which lands on exactly the point count where the %
+//                   cut stops growing (see the ladder above): a wall that can no longer be
+//                   made thicker starts paying OUT. A share of what it absorbed this hit is
+//                   dealt back to whoever swung, so the turtle finally has a win condition
+//                   that is not "outlast everything". Deliberately small, and deliberately a
+//                   fraction of damage ALREADY eaten rather than of the attack: it can only
+//                   pay when something actually hit the wall, which is what keeps it from
+//                   competing with Ransomware's line (kRansomSeizedWallPct), whose whole
+//                   identity is converting a wall into offence on purpose.
+constexpr int kLevelDefensePierceResistPoints = kStatTier1Points;
 constexpr int kLevelDefensePierceResistPct = 40;   // cuts an attack's effective pierce
-constexpr int kLevelDefenseBraceRetainPoints = 18;
+constexpr int kLevelDefenseBraceRetainPoints = kStatTier2Points;
 constexpr int kLevelDefenseBraceRetainPct = 25;    // ...ADDED to the baseline below
+constexpr int kLevelDefenseBackscatterPoints = kStatTier3Points;
+constexpr int kLevelDefenseBackscatterPct = 20;    // % of absorbed damage dealt back
 
 // The share of an unspent one-shot brace that carries to the next hit for ANY fighter,
 // before Defence investment adds to it. A baseline exists because over-sizing is the
@@ -446,6 +487,43 @@ constexpr int kLevelDefenseBraceRetainPct = 25;    // ...ADDED to the baseline b
 // makes a brace better without making it bigger — and brace magnitude is worth almost
 // nothing per point, so bigger was never available.
 constexpr int kBraceRetainBasePct = 25;
+
+// --- The other three stats' tiers (Defence's two are above, with the curve they bend) ---
+// Each rung answers a way its stat was being ROUTED AROUND rather than out-scaled, which
+// is why none of them is simply "more of the same number". Power and max-Health already
+// buy a bigger number per point and their T1 is that acceleration turning on; T2 and T3
+// have to be a different kind of thing or the rung is invisible.
+//
+// POWER. Its whole output is deleted by a wall — at the 85% clamp a hit arrives at 15% of
+// itself — so committed Power buys the two things that get PAST a wall rather than over
+// it. T2 is innate pierce, the same currency the PIERCE mod family deals in and the same
+// currency Defence's own T1 blunts: a Power build and a Defence build now argue with each
+// other on one axis instead of talking past each other. T3 is the brace's turn: a
+// one-shot `guard` is the other half of what a defender spends a turn on, and pierce
+// alone left it untouched.
+constexpr int kLevelPowerPiercePct = 20;       // T2: hits ignore this much of a wall...
+constexpr int kLevelPowerGuardSmashPct = 50;   // T3: ...and this much of a brace
+
+// SPEED. The one stat that was flat in both directions and had nothing but initiative to
+// sell, which made it the stat a raise was disappointed to land on. Its three rungs are
+// all TEMPO rather than magnitude, and each is worth something in a different fight.
+// T1 pays for winning the opening roll — a fast pet already acted first and got nothing
+// extra for it. T2 is the catch-up rung, and deliberately the odd one out: it pays only
+// while this fighter's Speed points TRAIL the opponent's, so a pet that invested and
+// still got out-sped is not simply beaten on the axis it bought. T3 pays as the fight
+// goes badly, which is the one stretch initiative is worth most and the pet has least.
+constexpr int kLevelSpeedFirstStrikeMult = 2;      // T1: the fight's first landed hit, doubled
+constexpr int kLevelSpeedUnderdogPerPoint = 2;     // T2: initiative/pt while behind (base 1)
+constexpr int kLevelSpeedAdrenalineStepPct = 10;   // T3: per this much max Health missing...
+constexpr int kLevelSpeedAdrenalinePerStep = 1;    // ...this much initiative, live
+
+// MAX-HEALTH. A pool is only ever worth the damage it outlasts, so past its accelerating
+// band it stops buying pool and starts buying ways to SPEND the pool twice: T2 recovers
+// from the fight (never from the tick currently killing you — it rides the same turn-start
+// ordering the Regen mod does), T3 is a free death-save, ahead of a Backup Drive so a pet
+// carrying both spends the tier and keeps the item.
+constexpr int kLevelHealthScrubPct = 3;        // T2: % of max Health healed each turn
+                                               // T3 (failover) is a flag, not a magnitude
 
 // What a SEIZED move hits for in Ransomware hands, as a % of the wall the pet is standing
 // behind (Combatant::stackDefenseBonus, RansomSeizure). This is the whole reason the seizure

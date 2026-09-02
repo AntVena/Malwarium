@@ -8,6 +8,7 @@
 #include "core/content/registry.h"
 #include "core/model/loadout.h"
 #include "core/model/move_loadout.h"
+#include "core/model/stat_tiers.h"
 #include "core/render/canvas.h"
 #include "core/render/font.h"
 #include "core/render/framebuffer.h"
@@ -27,7 +28,7 @@ constexpr int kGaugeX = 70;
 constexpr int kGaugeW = 110;
 constexpr int kGaugeH = 10;
 constexpr int kNumX = 188;
-constexpr int kPageCount = 5;
+constexpr int kPageCount = 6;
 
 // STAT header: title at left, a dot pager at right (one dot per page, kPageCount
 // of them) with the active page filled. The pager is the non-colour channel for
@@ -57,6 +58,7 @@ void vitalsRow(Framebuffer& fb, int y, const char* label, int value, Zone zone,
 // opponent sheet are one page wearing three headers.
 constexpr int kLoadoutRowTop = 26;
 constexpr int kBuffRowTop = 28;
+constexpr int kTierRowTop = 26;   // TIERS opens on a section heading, same as LOADOUT
 
 // BUFFS keeps its own heights because a buff row is a name plus a COUNTDOWN rather
 // than a name plus a tag — the timer is live state, re-read every repaint, where a
@@ -142,13 +144,59 @@ std::vector<ProseRow> buildLoadoutRows(const ContentRegistry& reg,
     return out;
 }
 
+std::vector<ProseRow> buildTierRows(const int statPoints[kLevelStatCount]) {
+    std::vector<ProseRow> out;
+    if (!statPoints) return out;
+    // Stat order, then rung order — the same order the shared table is written in, and
+    // the same order every other stat-indexed readout on the device uses (0 power ·
+    // 1 defense · 2 speed · 3 max-Health).
+    static const char* kStatNames[kLevelStatCount] = {"POWER", "DEFENSE", "SPEED",
+                                                      "MAX HEALTH"};
+    for (int i = 0; i < kLevelStatCount; ++i) {
+        const int points = statPoints[i];
+        const int reached = statTiersReached(points);
+        ProseRow head{};
+        head.header = true;
+        head.label = kStatNames[i];
+        // The stat's own point total rides its heading — it is the one number on the page
+        // that is about the STAT rather than about a rung, and every "N TO GO" below is
+        // measured from it, so the two have to be readable together.
+        setProseTag(head, "%d PTS", points);
+        out.push_back(head);
+        for (int t = 0; t < kStatTierCount; ++t) {
+            const StatTierDef& def = statTier(static_cast<LevelStat>(i), t);
+            ProseRow row{};
+            row.label = def.name;
+            row.body = statTierText(static_cast<LevelStat>(i), t);
+            // Through the shared helper, not `def.points - points`: "how far to the next
+            // rung" is the engine's answer to give, and a page that computes its own is
+            // how a screen starts disagreeing with the thing it reports on.
+            if (t < reached) setProseTag(row, "HELD");
+            else if (t == reached) setProseTag(row, "%d TO GO", statTierPointsToNext(points));
+            else setProseTag(row, "AT %d", def.points);
+            out.push_back(row);
+        }
+    }
+    return out;
+}
+
+int tierRowsFitting(const std::vector<ProseRow>& rows, int top) {
+    return proseRowsFitting(rows, top, kTierRowTop);
+}
+
+void drawTiersScreen(Framebuffer& fb, const std::vector<ProseRow>& rows, int scrollTop,
+                     int beat) {
+    statHeader(fb, "TIERS", 1);
+    drawProseRows(fb, rows, scrollTop, kTierRowTop, beat);
+}
+
 int loadoutRowsFitting(const std::vector<ProseRow>& rows, int top) {
     return proseRowsFitting(rows, top, kLoadoutRowTop);
 }
 
 void drawLoadoutScreen(Framebuffer& fb, const std::vector<ProseRow>& rows,
                        int scrollTop, int beat) {
-    statHeader(fb, "LOADOUT", 1);
+    statHeader(fb, "LOADOUT", 2);
     drawProseRows(fb, rows, scrollTop, kLoadoutRowTop, beat);
 }
 
@@ -236,7 +284,7 @@ int buffRowsFitting(const std::vector<BuffRow>& rows, int top) {
 
 void drawBuffsScreen(Framebuffer& fb, const std::vector<BuffRow>& rows, int scrollTop,
                      int /*beat*/) {
-    statHeader(fb, "BUFFS", 2);
+    statHeader(fb, "BUFFS", 3);
 
     if (rows.empty()) {
         drawText(fb, kMargin, 60, "- NO ACTIVE BUFFS -", palColor(Pal::INK_DIM));
@@ -272,7 +320,7 @@ void drawBuffsScreen(Framebuffer& fb, const std::vector<BuffRow>& rows, int scro
 
 void drawSpeciesScreen(Framebuffer& fb, const char* name, const char* line,
                        const char* hint, const char* context, int beat) {
-    statHeader(fb, "SPECIES", 3);
+    statHeader(fb, "SPECIES", 4);
 
     // Name and line tag are both content, and the widest pair of them wants more than
     // the line has: a twelve-letter creature beside METAMORPHIC LINE fills it exactly.
@@ -407,7 +455,7 @@ const SpriteData* logGlyph(LogEventType t) {
 } // namespace
 
 void drawAuditLog(Framebuffer& fb, const EventLog& log, int /*beat*/) {
-    statHeader(fb, "AUDIT LOG", 4);
+    statHeader(fb, "AUDIT LOG", 5);
 
     // A full page to itself, so it shows a real slice rather than a teaser: the last
     // 6 events, newest-first (the ring keeps 8).

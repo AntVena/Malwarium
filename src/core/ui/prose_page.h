@@ -36,7 +36,9 @@ class Framebuffer;
 // `label` is BORROWED — every producer names either a content row's displayName
 // (which outlives any frame) or a string literal, so nothing here owns a copy.
 // `tag` is the short right-aligned value beside the name ("DEFAULT", "ATK 18"); it is
-// stored rather than borrowed because most producers FORMAT it. Empty = no tag.
+// stored rather than borrowed because most producers FORMAT it. Empty = no tag. A HEADER
+// row may carry one too — a running total for the group it opens — and draws it dim
+// alongside the heading.
 // `body` is the prose, already templated (effect_text.h). Empty on a header row.
 struct ProseRow {
     bool header = false;        // a section heading (MOVES/MODS) — dim, no prose

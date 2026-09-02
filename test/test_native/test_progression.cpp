@@ -4,6 +4,7 @@
 // test_main.cpp for the roster that runs these. A save-vNN gate sits with the
 // feature whose field it migrates, not in a migrations pile of its own.
 #include <array>
+#include <cstring>
 
 #include "test_gates.h"
 
@@ -1447,6 +1448,253 @@ void test_arch_record_readonly() {
     CHECK(g.nav() == Game::Nav::Detail);
     tapC(g);                     // C backs to the list
     CHECK(g.nav() == Game::Nav::Submenu);
+}
+
+// ===========================================================================
+// THE INVESTMENT LADDER — the tiers every combat stat unlocks, and the rungs
+// they sit on. The point of the feature is that the rungs are the SAME on all
+// four stats, so most of what is gated here is that uniformity rather than any
+// one magnitude: a table that drifted would still compile, still fight and
+// still draw, and the only symptom would be a STAT page quietly lying.
+// ===========================================================================
+
+// One ladder, four stats. Every column carries the identical thresholds, in ascending
+// order, and statTierPoints() reads them off column 0 on exactly that assumption — so
+// this is the gate that keeps that shortcut honest rather than a restatement of it.
+void test_stat_tier_ladder_is_uniform() {
+    for (int t = 0; t < kStatTierCount; ++t) {
+        const int rung = statTierPoints(t);
+        for (int i = 0; i < kLevelStatCount; ++i)
+            CHECK(statTier(static_cast<LevelStat>(i), t).points == rung);
+        if (t > 0) CHECK(rung > statTierPoints(t - 1));   // strictly ascending
+        // Every rung is named and explained. A blank row would draw as an empty line
+        // on the STAT page and there is no other place the omission would show.
+        for (int i = 0; i < kLevelStatCount; ++i) {
+            const StatTierDef& d = statTier(static_cast<LevelStat>(i), t);
+            CHECK(d.name != nullptr && d.name[0] != '\0');
+            CHECK(d.effect != nullptr && d.effect[0] != '\0');
+            // ...and its prose renders with the numbers filled in. A leftover brace is
+            // a token this table does not carry, which reaches the player verbatim.
+            const EffectText text = statTierText(static_cast<LevelStat>(i), t);
+            CHECK(!text.empty());
+            CHECK(!text.atCap());                    // authored past the buffer = a cut sentence
+            CHECK(std::strchr(text.c_str(), '{') == nullptr);
+        }
+    }
+    CHECK(statTierPoints(0) == kStatTier1Points);
+    CHECK(statTierPoints(1) == kStatTier2Points);
+    CHECK(statTierPoints(2) == kStatTier3Points);
+}
+
+// The two questions the STAT page asks of a point count, over the whole range including
+// the edges nobody plays at. "Reached" and "to go" are one fact seen from two sides and
+// must never disagree — a page reading "HELD" beside "3 TO GO" is the failure.
+void test_stat_tier_progress_readout() {
+    CHECK(statTiersReached(0) == 0);
+    CHECK(statTiersReached(-5) == 0);                       // negatives are not a rung
+    CHECK(statTierPointsToNext(0) == kStatTier1Points);
+    // The boundary belongs to the rung: reaching the threshold IS holding it.
+    CHECK(statTiersReached(kStatTier1Points - 1) == 0);
+    CHECK(statTiersReached(kStatTier1Points) == 1);
+    CHECK(statTiersReached(kStatTier2Points) == 2);
+    CHECK(statTiersReached(kStatTier3Points) == 3);
+    CHECK(statTiersReached(9999) == kStatTierCount);        // and it stops there
+    CHECK(statTierPointsToNext(kStatTier3Points) == 0);     // topped out owes nothing
+    CHECK(statTierPointsToNext(9999) == 0);
+    int prev = 0;
+    for (int p = 0; p <= 200; ++p) {
+        const int reached = statTiersReached(p);
+        CHECK(reached >= prev);                             // monotonic: a point never un-earns
+        CHECK(reached <= kStatTierCount);
+        prev = reached;
+        const int owed = statTierPointsToNext(p);
+        CHECK(owed >= 0);
+        // The two agree: owing nothing means topped out, and owing something means the
+        // next rung is exactly that many points away.
+        if (reached < kStatTierCount) CHECK(p + owed == statTierPoints(reached));
+        else CHECK(owed == 0);
+    }
+}
+
+// Defence's cut ceiling lands EXACTLY on the top rung — 8 full-rate points plus 24 bent
+// ones is 60%. tunables.h calls that coincidence load-bearing, because it is what makes
+// "the stat stops buying % on the same rung it starts buying something else" true rather
+// than approximately true, and moving any one of four numbers would break it silently.
+void test_defense_cap_lands_on_the_top_rung() {
+    CHECK(levelDefenseCutPct(kStatTier3Points) == kLevelDefenseCapPct);
+    CHECK(levelDefenseCutPct(kStatTier3Points - 1) < kLevelDefenseCapPct);
+    CHECK(levelDefenseCutOverflowPct(kStatTier3Points) == 0);   // reached, not overshot
+    // The bend and the first rung are the same point, which is the other half of that
+    // claim: one threshold the player can be told about, not two.
+    CHECK(kLevelDefenseSoftPoints == kStatTier1Points);
+}
+
+// Every rung's applier: inert below the threshold, its magnitude at and above it. Pure
+// functions of a point count, so they are checked directly rather than sampled through a
+// fight that would only ever reach a few of them.
+void test_stat_tier_appliers_gate_on_their_rung() {
+    const int t1 = kStatTier1Points, t2 = kStatTier2Points, t3 = kStatTier3Points;
+
+    // POWER: T1 is the accelerating band (levelPowerPct's own bend), T2 and T3 discrete.
+    CHECK(levelPowerPct(t1) == t1 * kLevelPowerPctPerPoint);          // still flat AT the rung
+    CHECK(levelPowerPct(t1 + 1) ==
+          t1 * kLevelPowerPctPerPoint + kLevelPowerPctPerSpecPoint);  // accelerating past it
+    CHECK(levelPowerPiercePct(t2 - 1) == 0);
+    CHECK(levelPowerPiercePct(t2) == kLevelPowerPiercePct);
+    CHECK(levelPowerGuardSmashPct(t3 - 1) == 0);
+    CHECK(levelPowerGuardSmashPct(t3) == kLevelPowerGuardSmashPct);
+
+    // DEFENSE: all three are discrete, on top of the curve gated above.
+    CHECK(levelDefensePierceResistPct(t1 - 1) == 0);
+    CHECK(levelDefensePierceResistPct(t1) == kLevelDefensePierceResistPct);
+    CHECK(levelDefenseBraceRetainPct(t2 - 1) == 0);
+    CHECK(levelDefenseBraceRetainPct(t2) == kLevelDefenseBraceRetainPct);
+    CHECK(levelDefenseBackscatterPct(t3 - 1) == 0);
+    CHECK(levelDefenseBackscatterPct(t3) == kLevelDefenseBackscatterPct);
+
+    // SPEED. T1's inert value is 1, not 0 — it is a MULTIPLIER, and a fighter without
+    // the rung has to leave the hit alone rather than delete it.
+    CHECK(levelSpeedFirstStrikeMult(t1 - 1) == 1);
+    CHECK(levelSpeedFirstStrikeMult(t1) == kLevelSpeedFirstStrikeMult);
+    CHECK(levelSpeedAdrenalinePerStep(t3 - 1) == 0);
+    CHECK(levelSpeedAdrenalinePerStep(t3) == kLevelSpeedAdrenalinePerStep);
+    // T2 is the conditional one: earned at its rung, paying only while BEHIND, and
+    // clamped so the catch-up reaches parity rather than overshooting it.
+    CHECK(levelSpeedUnderdogBonus(t2 - 1, 100) == 0);                // not earned yet
+    CHECK(levelSpeedUnderdogBonus(t2, t2) == 0);                     // matched is not behind
+    CHECK(levelSpeedUnderdogBonus(100, t2) == 0);                    // ahead pays nothing
+    // Far behind: the full doubled rate, and still short of the fighter in front.
+    CHECK(levelSpeedUnderdogBonus(t2, 100) ==
+          t2 * (kLevelSpeedUnderdogPerPoint - kLevelSpeedPerPoint));
+    CHECK(t2 * kLevelSpeedPerPoint + levelSpeedUnderdogBonus(t2, 100) <
+          100 * kLevelSpeedPerPoint);
+    // Just behind: clamped to the gap, so the pet that invested MORE is never out-run by
+    // the rung meant to console the one that invested less.
+    for (int enemy = t2 + 1; enemy <= t2 + 40; ++enemy) {
+        const int mine = t2 * kLevelSpeedPerPoint + levelSpeedUnderdogBonus(t2, enemy);
+        CHECK(mine <= enemy * kLevelSpeedPerPoint);
+    }
+
+    // MAX-HEALTH: T1 is its accelerating band, T2 a rate, T3 a flag.
+    CHECK(levelHealthBonus(t1) == t1 * kLevelHealthPerPoint);
+    CHECK(levelHealthBonus(t1 + 1) == t1 * kLevelHealthPerPoint + kLevelHealthPerSpecPoint);
+    CHECK(levelHealthScrubPct(t2 - 1) == 0);
+    CHECK(levelHealthScrubPct(t2) == kLevelHealthScrubPct);
+    CHECK(!levelHealthFailoverEarned(t3 - 1));
+    CHECK(levelHealthFailoverEarned(t3));
+}
+
+// ...and that the applier actually stamps them onto a fighter. One pet with nothing
+// invested and one holding every rung, both through the single seam the engine uses
+// (applyLevelStatPoints), so a tier resolved but never wired to its field is caught here
+// rather than as a mechanic that silently does nothing in a fight.
+void test_stat_tiers_reach_the_combatant() {
+    const int none[kLevelStatCount] = {0, 0, 0, 0};
+    Combatant bare;
+    bare.maxHealth = 100;
+    applyLevelStatPoints(bare, none);
+    CHECK(bare.piercePct == 0);
+    CHECK(bare.guardSmashPct == 0);
+    CHECK(bare.backscatterPct == 0);
+    CHECK(bare.firstStrikeMult == 1);
+    CHECK(bare.adrenalinePerStep == 0);
+    CHECK(bare.scrubPct == 0);
+    CHECK(!bare.failoverArmed);
+    // The baseline every fighter carries, tier or no tier.
+    CHECK(bare.braceRetainPct == kBraceRetainBasePct);
+
+    const int maxed[kLevelStatCount] = {kStatTier3Points, kStatTier3Points,
+                                        kStatTier3Points, kStatTier3Points};
+    Combatant built;
+    built.maxHealth = 100;
+    applyLevelStatPoints(built, maxed);
+    CHECK(built.piercePct == kLevelPowerPiercePct);
+    CHECK(built.guardSmashPct == kLevelPowerGuardSmashPct);
+    CHECK(built.pierceResistPct == kLevelDefensePierceResistPct);
+    CHECK(built.braceRetainPct == kBraceRetainBasePct + kLevelDefenseBraceRetainPct);
+    CHECK(built.backscatterPct == kLevelDefenseBackscatterPct);
+    CHECK(built.firstStrikeMult == kLevelSpeedFirstStrikeMult);
+    CHECK(built.adrenalinePerStep == kLevelSpeedAdrenalinePerStep);
+    CHECK(built.scrubPct == kLevelHealthScrubPct);
+    CHECK(built.failoverArmed);
+    // Speed T2 is banked as its INPUT here — whether it pays needs an opponent, and
+    // there isn't one until applySpeedRivalry.
+    CHECK(bare.speedPoints == 0);
+    CHECK(built.speedPoints == kStatTier3Points);
+}
+
+// Speed T2 (the catch-up rung) is the one tier that reads BOTH fighters, so it is the one
+// that cannot be resolved while a Combatant is built alone. applySpeedRivalry is where it
+// lands: it pays the fighter that is behind, pays nothing to a matched pair, and is a
+// no-op — an exactly zero delta — for anyone who has not earned it.
+void test_speed_underdog_rung_needs_both_fighters() {
+    auto build = [](int speedPoints) {
+        const int pts[kLevelStatCount] = {0, 0, speedPoints, 0};
+        Combatant c;
+        c.maxHealth = 100;
+        c.health = 100;
+        c.speed = 10;
+        applyLevelStatPoints(c, pts);
+        return c;
+    };
+    // The rung earned, and behind: the underdog is paid, the fighter in front is not.
+    {
+        Combatant slow = build(kStatTier2Points), fast = build(kStatTier3Points);
+        const float slowBefore = slow.speed, fastBefore = fast.speed;
+        applySpeedRivalry(slow, fast);
+        CHECK(slow.speed > slowBefore);
+        CHECK(fast.speed == fastBefore);          // the one in front is paid nothing
+        CHECK(slow.speed <= fast.speed);          // ...and it is catch-up, not a leapfrog
+    }
+    // The leapfrog the clamp exists to prevent, at every gap it could open at: investing
+    // FURTHER in Speed must never hand the rival the faster fighter.
+    for (int enemy = kStatTier2Points + 1; enemy <= kStatTier2Points + 40; ++enemy) {
+        Combatant slow = build(kStatTier2Points), fast = build(enemy);
+        applySpeedRivalry(slow, fast);
+        CHECK(slow.speed <= fast.speed);
+    }
+    // Matched: neither is behind, so neither is paid, however deep both invested.
+    {
+        Combatant a = build(kStatTier3Points), b = build(kStatTier3Points);
+        const float aBefore = a.speed, bBefore = b.speed;
+        applySpeedRivalry(a, b);
+        CHECK(a.speed == aBefore);
+        CHECK(b.speed == bBefore);
+    }
+    // Behind but short of the rung: being slower is not itself the qualification.
+    {
+        Combatant a = build(kStatTier2Points - 1), b = build(kStatTier3Points);
+        const float aBefore = a.speed;
+        applySpeedRivalry(a, b);
+        CHECK(a.speed == aBefore);
+    }
+}
+
+// Speed T3 is read LIVE rather than banked, because it is a function of Health the fight
+// keeps changing. effectiveSpeed is that reading, and the scheduler goes through it.
+void test_adrenaline_tracks_live_health() {
+    const int pts[kLevelStatCount] = {0, 0, kStatTier3Points, 0};
+    Combatant c;
+    c.maxHealth = 100;
+    c.health = 100;
+    c.speed = 10;
+    applyLevelStatPoints(c, pts);
+    const float full = effectiveSpeed(c);
+    CHECK(full == c.speed);                       // untouched pays nothing
+    c.health = 50;                                // half gone = five 10% steps
+    CHECK(effectiveSpeed(c) == c.speed + 5 * kLevelSpeedAdrenalinePerStep);
+    c.health = 1;
+    CHECK(effectiveSpeed(c) == c.speed + 9 * kLevelSpeedAdrenalinePerStep);
+    // Health is left UNCLAMPED between a hit and checkOutcome's floor, so a fighter
+    // buried past 0 must read as 100% missing rather than as more than all of it.
+    c.health = -400;
+    CHECK(effectiveSpeed(c) == c.speed + 10 * kLevelSpeedAdrenalinePerStep);
+    // ...and a fighter without the rung reads its own speed at every Health.
+    Combatant plain;
+    plain.maxHealth = 100;
+    plain.health = 1;
+    plain.speed = 10;
+    CHECK(effectiveSpeed(plain) == plain.speed);
 }
 
 // ===========================================================================

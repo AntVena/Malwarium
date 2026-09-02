@@ -2764,3 +2764,196 @@ void test_ledger_grudge_scales_with_the_pool() {
     other.stage = Stage::Process;
     CHECK(ledgerGrudgePct(other) == 0);
 }
+
+// ===========================================================================
+// THE INVESTMENT LADDER, INSIDE A FIGHT. The tier resolvers are gated as pure
+// functions in test_progression.cpp; these are the other half — that the field
+// each one sets actually changes what happens at the table. Every gate here is
+// an A/B on ONE field of an otherwise identical fight: the seed, the kit and
+// the speeds are held fixed so the RNG stream and the turn order cannot move,
+// and the only difference between the two runs is the rung under test.
+// ===========================================================================
+
+// Speed T1 (first strike): the fight's opening blow, doubled for whoever lands it —
+// once, and once only. Also the thing that is easy to get wrong: the multiplier belongs
+// to the FIGHT's first hit, not to each fighter's own, so a defender who ate the opening
+// must not still be holding one.
+void test_first_strike_doubles_only_the_opening_hit() {
+    ContentRegistry r = ContentRegistry::embedded();
+    auto play = [&r](int mult, std::vector<int>* hits) {
+        // Fast player, slow fat enemy: the player opens and lands a run of hits, so the
+        // first and the second are both observable in one run.
+        Combatant p = mkCombatant(r, "P", 400, 40, {"quick_jab"});
+        Combatant e = mkCombatant(r, "E", 4000, 1, {"quick_jab"});
+        p.firstStrikeMult = mult;
+        Combat cb;
+        cb.begin(p, e, Combat::Stakes::Safe, 90210);
+        for (int i = 0; i < 12 && cb.outcome() == Combat::Outcome::Ongoing &&
+                        static_cast<int>(hits->size()) < 3; ++i) {
+            const bool pturn = cb.playerTurnNext();
+            cb.step();
+            if (pturn && cb.lastDamage() > 0) hits->push_back(cb.lastDamage());
+        }
+    };
+    std::vector<int> plain, struck;
+    play(1, &plain);
+    play(kLevelSpeedFirstStrikeMult, &struck);
+    CHECK(plain.size() >= 2 && struck.size() == plain.size());
+    CHECK(plain[0] > 0);
+    // The opening is multiplied...
+    CHECK(struck[0] == plain[0] * kLevelSpeedFirstStrikeMult);
+    // ...and nothing after it is. The rung is spent by the fight, not by the turn.
+    for (std::size_t i = 1; i < plain.size(); ++i) CHECK(struck[i] == plain[i]);
+}
+
+// Defence T3 (backscatter): a share of what the WALL absorbed is dealt back. Measured on
+// the attacker's Health, and only paid out of damage that was actually mitigated — which
+// is what separates it from a flat thorns.
+void test_backscatter_pays_out_of_what_the_wall_absorbed() {
+    ContentRegistry r = ContentRegistry::embedded();
+    auto play = [&r](int backscatterPct, int cutPct) {
+        Combatant p = mkCombatant(r, "P", 4000, 1, {"quick_jab"});
+        Combatant e = mkCombatant(r, "E", 4000, 40, {"quick_jab"});
+        // A HEAVY swing on purpose. Every rung on the ladder is a percentage of a
+        // percentage, and the engine's arithmetic is integer throughout — at Quick Jab's
+        // own 6-point hit a 40% cut and a 40% cut with 20% pierce through it both floor to
+        // the same number, and the gate would read as "the tier does nothing". The lean is
+        // the standard combat magnitude knob (powerMultPct), so this is a bigger fighter
+        // rather than a special case.
+        e.powerMultPct = 2000;
+        p.dmgReducePct = cutPct;              // the wall the enemy's hits land on
+        p.backscatterPct = backscatterPct;
+        Combat cb;
+        cb.begin(p, e, Combat::Stakes::Safe, 5150);
+        for (int i = 0; i < 6 && cb.outcome() == Combat::Outcome::Ongoing; ++i) {
+            const bool pturn = cb.playerTurnNext();
+            cb.step();
+            if (!pturn && cb.lastDamage() > 0) break;   // one enemy hit resolved
+        }
+        return cb.enemy().health;
+    };
+    const int cut = 40;
+    const int plain = play(0, cut);
+    const int reflected = play(kLevelDefenseBackscatterPct, cut);
+    CHECK(reflected < plain);                  // the attacker took something back
+    // ...and it came out of the ABSORBED half, not out of the attack: with no wall to
+    // absorb into, the same rung pays nothing at all.
+    CHECK(play(kLevelDefenseBackscatterPct, 0) == play(0, 0));
+}
+
+// Health T2 (scrubbing) heals a share of max Health at this fighter's turn start, and
+// Health T3 (failover) turns the killing blow into a 1-Health stand — once. Gated
+// together because both are about surviving a turn that would otherwise end, and the
+// second is only observable through a fight that reaches a fatal hit.
+void test_health_tiers_scrub_and_failover() {
+    ContentRegistry r = ContentRegistry::embedded();
+    // SCRUBBING. A fighter taking chip damage from a weak attacker: with the rung it
+    // ends a run of turns healthier than without it, same seed and same turn order.
+    auto scrubbed = [&r](int scrubPct) {
+        Combatant p = mkCombatant(r, "P", 400, 20, {"quick_jab"});
+        Combatant e = mkCombatant(r, "E", 4000, 20, {"quick_jab"});
+        p.scrubPct = scrubPct;
+        Combat cb;
+        cb.begin(p, e, Combat::Stakes::Safe, 1234);
+        for (int i = 0; i < 20 && cb.outcome() == Combat::Outcome::Ongoing; ++i) cb.step();
+        return cb.player().health;
+    };
+    CHECK(scrubbed(kLevelHealthScrubPct) > scrubbed(0));
+
+    // FAILOVER. A one-Health pet against an attacker that cannot fail to kill it: without
+    // the rung the fight is lost, with it the pet is still standing on exactly 1.
+    auto lastStand = [&r](bool armed) {
+        Combatant p = mkCombatant(r, "P", 1, 1, {"quick_jab"});
+        Combatant e = mkCombatant(r, "E", 4000, 60, {"quick_jab"});
+        p.health = 1;
+        p.failoverArmed = armed;
+        Combat cb;
+        cb.begin(p, e, Combat::Stakes::Safe, 777, /*forceEnemyFirst=*/true);
+        cb.step();
+        return cb;
+    };
+    {
+        Combat lost = lastStand(false);
+        CHECK(lost.outcome() == Combat::Outcome::Lose);
+    }
+    {
+        Combat saved = lastStand(true);
+        CHECK(saved.outcome() == Combat::Outcome::Ongoing);
+        CHECK(saved.player().health == 1);
+        CHECK(!saved.player().failoverArmed);    // spent — and it is the fight's only one
+        // Play on: the save does not renew, so the next fatal hit ends it.
+        for (int i = 0; i < 20 && saved.outcome() == Combat::Outcome::Ongoing; ++i)
+            saved.step();
+        CHECK(saved.outcome() == Combat::Outcome::Lose);
+    }
+}
+
+// Power T2 (ring zero) and T3 (guard smash): the two ways committed Power gets PAST a
+// defence rather than over it. One lands on the % cut, the other on a one-shot brace, and
+// each is checked against the thing it is supposed to move.
+void test_power_tiers_get_past_a_defence() {
+    ContentRegistry r = ContentRegistry::embedded();
+    // RING ZERO, against a wall. Innate pierce is dealt into the same chain as a move's
+    // and a mod's, so a walled target takes more from the same swing.
+    auto throughWall = [&r](int piercePct) {
+        Combatant p = mkCombatant(r, "P", 400, 40, {"quick_jab"});
+        Combatant e = mkCombatant(r, "E", 40000, 1, {"quick_jab"});
+        p.powerMultPct = 2000;                // heavy enough for integer maths to show it
+        p.piercePct = piercePct;
+        e.dmgReducePct = 50;
+        Combat cb;
+        cb.begin(p, e, Combat::Stakes::Safe, 24680);
+        for (int i = 0; i < 8 && cb.outcome() == Combat::Outcome::Ongoing; ++i) {
+            const bool pturn = cb.playerTurnNext();
+            cb.step();
+            if (pturn && cb.lastDamage() > 0) return cb.lastDamage();
+        }
+        return 0;
+    };
+    const int blunt = throughWall(0);
+    CHECK(blunt > 0);
+    CHECK(throughWall(kLevelPowerPiercePct) > blunt);
+    // ...and Defence T1 is the answer to it: the same pierce against a hardened target
+    // buys less than against a bare one.
+    auto throughHardenedWall = [&r](int piercePct, int resistPct) {
+        Combatant p = mkCombatant(r, "P", 400, 40, {"quick_jab"});
+        Combatant e = mkCombatant(r, "E", 40000, 1, {"quick_jab"});
+        p.powerMultPct = 2000;                // heavy enough for integer maths to show it
+        p.piercePct = piercePct;
+        e.dmgReducePct = 50;
+        e.pierceResistPct = resistPct;
+        Combat cb;
+        cb.begin(p, e, Combat::Stakes::Safe, 24680);
+        for (int i = 0; i < 8 && cb.outcome() == Combat::Outcome::Ongoing; ++i) {
+            const bool pturn = cb.playerTurnNext();
+            cb.step();
+            if (pturn && cb.lastDamage() > 0) return cb.lastDamage();
+        }
+        return 0;
+    };
+    CHECK(throughHardenedWall(kLevelPowerPiercePct, kLevelDefensePierceResistPct) <
+          throughHardenedWall(kLevelPowerPiercePct, 0));
+
+    // GUARD SMASH, against a real brace. The enemy's kit is brace-ONLY, so it puts a
+    // guard up on every turn it gets whatever its Health is doing — which is what makes
+    // the two runs comparable without steering either of them.
+    auto throughBrace = [&r](int smashPct) {
+        Combatant p = mkCombatant(r, "P", 400, 40, {"quick_jab"});
+        Combatant e = mkCombatant(r, "E", 40000, 10, {"checksum_guard"});
+        p.powerMultPct = 2000;                // ...and heavy enough to outweigh the brace
+        p.guardSmashPct = smashPct;
+        Combat cb;
+        cb.begin(p, e, Combat::Stakes::Safe, 13579);
+        for (int i = 0; i < 40 && cb.outcome() == Combat::Outcome::Ongoing; ++i) {
+            const bool pturn = cb.playerTurnNext();
+            const bool braced = cb.enemy().guard > 0;
+            cb.step();
+            // The first player swing that actually met a standing brace.
+            if (pturn && braced && cb.lastDamage() > 0) return cb.lastDamage();
+        }
+        return 0;
+    };
+    const int intoBrace = throughBrace(0);
+    CHECK(intoBrace > 0);                       // the fight really did reach a braced swing
+    CHECK(throughBrace(kLevelPowerGuardSmashPct) > intoBrace);
+}

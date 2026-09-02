@@ -13,9 +13,11 @@
 //        feed:<item_id> (eat one named food through the real Use path and hold the
 //             feeding modal — how to eyeball that its gauges follow that item's own
 //             effects, e.g. feed:tortilla_chip, feed:null_noodles)
-//        stat [loadout|buffs|species|log] [scroll:<n>] (the 5 STAT pages; "scroll:<n>"
-//             takes B n times, which walks the row window of the two pages that flow
-//             prose — pair it with "fullkit" and a Daemon for the longest lists)
+//        stat [tiers|loadout|buffs|species|log] [scroll:<n>] (the 6 STAT pages;
+//             "scroll:<n>" takes B n times, which walks the row window of the three pages
+//             that flow prose — pair it with "fullkit" and a Daemon for the longest lists.
+//             TIERS is the investment ladder, and the pet the preset levels has real
+//             points in it, so the page shows held rungs and not just locked ones)
 //        fullkit (every unlocked move slot and every mod slot equipped)
 //        pantry (one of EVERY item in the bag — the whole icon set in a list, and the
 //             deepest the combat picker's ITEMS band gets)
@@ -237,6 +239,11 @@ int main(int argc, char** argv) {
     // (and the Rollback picker) render populated.
     if (hasFlag(argc, argv, "level") || hasFlag(argc, argv, "rollback"))
         game.debugAddCombatXp(1200);
+    // ...and a much deeper grind for the TIERS page, which is about the far end of that
+    // curve: at ~level 8 every rung on it reads "TO GO" and the page cannot show what a
+    // held one looks like. The grant picks its stat at random, so a level in the forties
+    // is what reliably puts SOME stat past the first rung and usually a second.
+    if (hasFlag(argc, argv, "tiers")) game.debugAddCombatXp(400000);
     if (hasFlag(argc, argv, "maint")) {
         game.model().setFragmentation(31);   // something to defragment
         game.model().setGhost(true);         // AV has work to do
@@ -357,21 +364,22 @@ int main(int argc, char** argv) {
         game.inventory().add("rollback", 1);
         game.debugUseItem("rollback");
     } else if (hasFlag(argc, argv, "stat")) {
-        // STAT is 5 paged screens: 0 vitals (landing) · 1 loadout · 2 buffs ·
-        // 3 species · 4 audit log. "stat" alone shows vitals; "loadout"/
-        // "buffs"/"species"/"log" step to pages 1-4.
+        // STAT is 6 paged screens: 0 vitals (landing) · 1 tiers · 2 loadout ·
+        // 3 buffs · 4 species · 5 audit log. "stat" alone shows vitals; "tiers"/
+        // "loadout"/"buffs"/"species"/"log" step to pages 1-5.
         game.debugSetBits(1450);
         game.debugSetNetworksSeen(27);       // R2, partway to R3
         enterSlot(SubmenuId::Stat);
-        int steps = hasFlag(argc, argv, "loadout") ? 1
-                  : hasFlag(argc, argv, "buffs")    ? 2
-                  : hasFlag(argc, argv, "species")  ? 3
-                  : hasFlag(argc, argv, "log")      ? 4
+        int steps = hasFlag(argc, argv, "tiers")   ? 1
+                  : hasFlag(argc, argv, "loadout") ? 2
+                  : hasFlag(argc, argv, "buffs")    ? 3
+                  : hasFlag(argc, argv, "species")  ? 4
+                  : hasFlag(argc, argv, "log")      ? 5
                                                      : 0;
         while (steps-- > 0) game.onButton({Button::A, true, false});
-        // "scroll:<n>" then takes B n times, which on the two flowed pages
-        // (LOADOUT/BUFFS) advances the row window — the way to see the rows past the
-        // first screenful, and that the last window lands clear of the hint band.
+        // "scroll:<n>" then takes B n times, which on the three flowed pages
+        // (TIERS/LOADOUT/BUFFS) advances the row window — the way to see the rows past
+        // the first screenful, and that the last window lands clear of the hint band.
         for (int i = 3; i < argc; ++i)
             if (std::strncmp(argv[i], "scroll:", 7) == 0)
                 for (int n = std::atoi(argv[i] + 7); n > 0; --n)

@@ -160,13 +160,13 @@ void Game::onButton(const ButtonEvent& ev) {
             switch (enteredId()) {
                 case SubmenuId::Stat:
                     if (ev.button == Button::A) {
-                        statPage_ = (statPage_ + 1) % 5;
+                        statPage_ = (statPage_ + 1) % 6;
                         statScroll_ = 0;         // fresh page -> scroll to the top
                     } else if (ev.button == Button::C) {
                         nav_ = Nav::Cursor; statPage_ = 0; statScroll_ = 0;
                     } else if (ev.button == Button::B) {
-                        // B scrolls the two pages that flow prose rows (LOADOUT and
-                        // BUFFS) and is a no-op everywhere else — statScrollSpan
+                        // B scrolls the three pages that flow prose rows (TIERS,
+                        // LOADOUT and BUFFS) and is a no-op everywhere else — statScrollSpan
                         // reports {0, 0} for a page with nothing to scroll, and for
                         // one whose rows all fit. It advances by the window the page
                         // actually drew (rows are sized to their own text, so that

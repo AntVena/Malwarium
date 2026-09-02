@@ -177,12 +177,38 @@ struct Combatant {
     // for the fight — caps, thresholds, one-shots.
     ModStateSet mods;
 
-    // Transient defend state. The two Defence investment tiers are resolved once by
+    // Transient defend state. The Defence investment tiers are resolved once by
     // applyLevelStatPoints, and are 0 for any fighter that has not committed to the stat.
-    int pierceResistPct = 0;    // cuts an incoming attack's own armorPiercePct
+    int pierceResistPct = 0;    // Defence T1: cuts an incoming attack's own armorPiercePct
     // % of an unspent brace that carries to the next hit. Every fighter starts on the
-    // baseline (enemies included, hence the default); Defence investment adds to it.
+    // baseline (enemies included, hence the default); Defence T2 adds to it.
     int braceRetainPct = kBraceRetainBasePct;
+    int backscatterPct = 0;     // Defence T3: % of what this wall absorbs, dealt back
+
+    // --- The other three stats' investment tiers -------------------------------
+    // Same shape and the same single applier (applyLevelStatPoints): every one of these
+    // is 0/false on a fighter that has not reached the rung, so the fight code reads them
+    // unconditionally and a pet with nothing invested pays nothing to check. Resolved off
+    // TOTAL points — the earned ones plus an Epic dish's off-level grant — because a
+    // point is a point (core/model/stat_tiers.h).
+    int piercePct = 0;          // Power T2: innate armour pierce, in the mods' currency
+    int guardSmashPct = 0;      // Power T3: % of a target's brace this fighter's hits skip
+    // Speed T1. Armed at build and spent on the FIRST landed hit of the whole fight, by
+    // whoever lands it — Combat owns that "first" (there is exactly one per fight, not one
+    // per fighter), so the flag here only says this side is holding the multiplier.
+    int firstStrikeMult = 1;
+    // Speed T2, the catch-up rung, banked as its INPUT rather than its answer: whether it
+    // pays depends on the OPPONENT's Speed points, so it cannot be resolved while a
+    // Combatant is being built alone. applySpeedRivalry reads this off both sides once
+    // they stand together. The rung's own threshold is not mirrored here — that check
+    // lives in levelSpeedUnderdogBonus, and a second copy of it is a second answer.
+    int speedPoints = 0;
+    // Speed T3, read live rather than folded into `speed`: it is a function of CURRENT
+    // Health and has to be re-asked every time the scheduler deals an action
+    // (effectiveSpeed). 0 = not earned.
+    int adrenalinePerStep = 0;
+    int scrubPct = 0;           // Health T2: % of max Health healed at this fighter's turn start
+    bool failoverArmed = false; // Health T3: one free death-save, spent in checkOutcome
     int dmgReducePct = 0;       // Firewall Patch / TPM Chip — % incoming damage cut
     int baseDmgReducePct = 0;   // dmgReducePct at fight start; the third live stat LEAN,
                                 // with basePowerMultPct and baseSpeed
@@ -706,6 +732,10 @@ private:
     uint32_t rng_ = 1;
     float plGauge_ = 0;         // speed-accumulator scheduler (see pickNextActor):
     float enGauge_ = 0;         // each side's gauge, filled by its speed, spent per action
+    // Speed T1's "first". There is exactly ONE opening hit per fight, not one per
+    // fighter, so the flag belongs to the fight rather than to either side — a defender
+    // who eats the first blow must not then be holding an unspent first strike of its own.
+    bool firstHitLanded_ = false;
     int streakCount_ = 0;       // see streakCount() above
     bool streakIsPlayer_ = true;
 
@@ -772,6 +802,36 @@ int levelHealthBonus(int points);
 // every pet that has not committed — such a pet still keeps the baseline.
 int levelDefensePierceResistPct(int points);
 int levelDefenseBraceRetainPct(int points);
+int levelDefenseBackscatterPct(int points);
+
+// Power's and max-Health's own tiers, the same shape: a total function of the earned
+// points, 0 below the rung. (Their T1 is not here — it is the accelerating band, which
+// levelPowerPct/levelHealthBonus already carry.)
+int levelPowerPiercePct(int points);
+int levelPowerGuardSmashPct(int points);
+int levelHealthScrubPct(int points);
+bool levelHealthFailoverEarned(int points);
+
+// Speed's three. T1 and T3 are totals like the rest; T2 is the exception the type says
+// out loud — the underdog bonus can only be judged against an OPPONENT, so it takes both
+// sides' point counts and applySpeedRivalry is what calls it once both exist. It returns
+// the EXTRA initiative, already clamped so the catch-up can reach parity and never pass
+// it (a rung that let 16 points out-run 20 would invert the stat it is attached to).
+int levelSpeedFirstStrikeMult(int points);
+int levelSpeedAdrenalinePerStep(int points);
+int levelSpeedUnderdogBonus(int points, int enemyPoints);
+
+// Speed T2, applied. Re-derives BOTH sides' initiative from their Speed points now that
+// each can see the other, and is a no-op unless one of them has earned the rung and is
+// behind. Called once per fight, at the point the two combatants first stand together
+// (Combat::begin) — a Combatant built alone cannot answer "am I the slower one".
+void applySpeedRivalry(Combatant& a, Combatant& b);
+
+// Speed T3, read live: this fighter's initiative INCLUDING what its missing Health is
+// currently paying. Every scheduling decision goes through this rather than `speed`, so
+// the bonus tracks damage as it lands; `speed` itself stays the fighter's own stat, which
+// is what the siphons move and the combat screen diffs against baseSpeed.
+float effectiveSpeed(const Combatant& c);
 
 // The Defence stat's % incoming-damage cut, for `points` earned Defence points. Full rate
 // up to kLevelDefenseSoftPoints, half rate past it, hard-capped at kLevelDefenseCapPct.

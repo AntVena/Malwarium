@@ -56,6 +56,11 @@ void Combat::begin(const Combatant& player, const Combatant& enemy, Stakes stake
     // so only genuine mid-fight movement reads as a delta.
     player_.basePowerMultPct = player_.powerMultPct;
     enemy_.basePowerMultPct = enemy_.powerMultPct;
+    // Speed T2 (the underdog rate), the one tier that needs BOTH fighters to resolve.
+    // Ahead of syncWormSpeed so a Worm copying its opponent's speed copies the settled
+    // number, and ahead of the baseSpeed capture below so the rate reads as this
+    // fighter's stat rather than as mid-fight movement the screen should flag.
+    applySpeedRivalry(player_, enemy_);
     syncWormSpeed();
     player_.baseSpeed = player_.speed;
     enemy_.baseSpeed = enemy_.speed;
@@ -65,6 +70,7 @@ void Combat::begin(const Combatant& player, const Combatant& enemy, Stakes stake
     // pre-fight flee) overrides that once; speed scheduling resumes after.
     plGauge_ = 0;
     enGauge_ = 0;
+    firstHitLanded_ = false;    // Speed T1 is waiting for the fight's opening blow
     streakCount_ = 0;
     streakIsPlayer_ = true;
     playerTurn_ = forceEnemyFirst ? false : pickNextActor();
@@ -199,6 +205,12 @@ void polymorphPay(Combatant& c, MoveKind kind, int points) {
     if (points <= 0) return;
     // One stat point's worth each, in applyLevelStatPoints' vocabulary. The KIND picks
     // which pair is paid, so a varied kit shapes what the pet becomes.
+    //
+    // MAGNITUDES ONLY — this never advances the investment LADDER, and that is deliberate
+    // rather than an omission. A rung is bought with points a pet earned or was granted
+    // and carries between fights; this is a transient payment for a move absorbed mid-
+    // fight, and a Metamorphic that could climb to BACKSCATTER by eating enough Defend
+    // rows would be buying a permanent-feeling mechanic with something nobody invested.
     if (kind == MoveKind::Attack) {
         c.powerMultPct += kLevelPowerPctPerPoint * points;
         c.speed += static_cast<float>(kLevelSpeedPerPoint * points);
@@ -398,6 +410,15 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
         // Wild-encounter challenge buff. enemyDamageMultPct is 100 for the player, bosses
         // and Sim dummies, so this is a no-op off the wild path.
         if (!byPlayer) dmg = dmg * actor.enemyDamageMultPct / 100;
+        // Speed T1 (first strike): the fight's opening blow, multiplied for whoever lands
+        // it. Claimed here — before mitigation, before the replica branch — so it is the
+        // ATTACK that is doubled and not the remainder some wall left of it, and so a hit
+        // a replica eats still counts as the fight's first. `firstHitLanded_` is set
+        // whether or not this side had the tier: the opening is spent by happening.
+        if (dmg > 0 && !firstHitLanded_) {
+            firstHitLanded_ = true;
+            dmg *= actor.firstStrikeMult;
+        }
         // Worm replication (target side): the hit picks a victim among the parent and every
         // live replica, weighted so a defender draws hardest (wormTargetPick). A replica
         // eats it WHOLE — no mitigation, no riders, no overflow — and dies if overrun.
@@ -425,6 +446,12 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
             }
         }
         const int baseDmg = dmg;    // pre-mitigation, for the min-1 penetration floor
+        // What this target's WALL swallowed — the % cut and the brace, and nothing else.
+        // Defence T3 pays out of it, so it is measured on the mitigation branch alone: a
+        // hit a RAID Mirror or a crew charge deleted outright was not absorbed by any
+        // wall, and a shield pool or a Trojan trap further down the chain belongs to the
+        // thing that owns it rather than to the Defence stat.
+        int wallAbsorbed = 0;
         const bool crewNegates =
             target.crewExploit.armed(CrewExploitKind::NegateNextHits);
         const bool mirrorArmed = target.mods.armed(ModEffect::RaidMirror);
@@ -443,7 +470,7 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
             // Effective cut = passive Defense + stacked Cipher-track Defense, under the
             // never-immune clamp. Pierce (the move's own, then the mod's) is applied
             // multiplicatively rather than summed, so however many stack the defender keeps
-            // a defence — two 50% pierces are 75%, never 100. Defence tier 1 cuts each
+            // a defence — two 50% pierces are 75%, never 100. Defence T1 cuts each
             // pierce back before it lands, so the cut already earned stops being routed
             // around (levelDefensePierceResistPct).
             const auto pierced = [&](int value, int piercePct) {
@@ -456,6 +483,12 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
             if (reduce > kLevelDmgReduceMaxPct) reduce = kLevelDmgReduceMaxPct;
             reduce = pierced(reduce, mv->armorPiercePct);
             reduce = pierced(reduce, modPierce);
+            // Power T2 (ring zero): innate pierce, dealt into the same chain and in the
+            // same currency as a move's and a mod's — so it compounds multiplicatively
+            // with them (three 50% pierces still leave a defence) and Defence T1 blunts
+            // it exactly as it blunts the other two. A stat tier that stacked ADDITIVELY
+            // here would be the one pierce the wall could not argue with.
+            reduce = pierced(reduce, actor.piercePct);
             if (reduce > 0) dmg = dmg * (100 - reduce) / 100;
             // Canary Trap (mod): an extra cut on the first hit, outside the 85% clamp and
             // never pierced. Consumed only when a hit actually lands (dmg > 0).
@@ -470,9 +503,17 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
                 // ignores a brace too (defs.h).
                 int brace = pierced(target.guard, mv->armorPiercePct);
                 brace = pierced(brace, modPierce);
+                brace = pierced(brace, actor.piercePct);
+                // Power T3 (guard smash): the brace's own rung. Pierce resist does NOT
+                // blunt this one — it is not pierce, it is the hit arriving too heavy for
+                // the guard to spend itself on, and Defence answers it by bracing again
+                // rather than by having hardened. Applied after the pierces so a fighter
+                // holding both does not get the same reduction charged twice.
+                if (actor.guardSmashPct > 0)
+                    brace = brace * (100 - actor.guardSmashPct) / 100;
                 const int unspent = brace > dmg ? brace - dmg : 0;
                 dmg = dmg > brace ? dmg - brace : 0;
-                // Defence tier 2: an over-sized brace's remainder carries instead of being
+                // Defence T2: an over-sized brace's remainder carries instead of being
                 // binned (levelDefenseBraceRetainPct) — the wall buys efficiency, not a
                 // bigger number, since the % cut's ceiling rules that out. Measured against
                 // the pre-pierce remainder, so pierce-resist and retention pay once, not twice.
@@ -483,6 +524,7 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
             // to this branch so RAID Mirror's deliberate negation still zeroes a hit; the
             // shield pool below still absorbs this 1, being a consumable pool not a wall.
             if (baseDmg > 0 && dmg < 1) dmg = 1;
+            wallAbsorbed = baseDmg - dmg > 0 ? baseDmg - dmg : 0;
         }
         if (dmg < 0) dmg = 0;
         // Prowlware (mod): the first landed damaging hit is multiplied by the move's
@@ -586,6 +628,15 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
         // Combat::checkOutcome owns the floor, because how far past 0 a hit buried the pet
         // is what the Backup Drive's death-save weighs before that floor erases it.
         target.health -= dmg - ransomed;
+        // Defence T3 (backscatter): a share of what the wall just ate is dealt back to
+        // whoever swung. Out of `wallAbsorbed` rather than out of the attack, so the rung
+        // pays for absorbing and cannot pay a fighter nothing reached — and ahead of the
+        // mod thorns below, which reflect a flat number for landing a hit at all. The two
+        // are different questions and a fighter carrying both is answered twice on purpose.
+        if (wallAbsorbed > 0 && target.backscatterPct > 0) {
+            const int back = wallAbsorbed * target.backscatterPct / 100;
+            if (back > 0) actor.health -= back;
+        }
         // Honeytoken (mod): a landed hit chips the attacker back. Mods are player-side, so
         // it only ever reflects onto an enemy that hit the pet.
         const int thorns = target.mods.mag(ModEffect::Thorns);
@@ -954,6 +1005,19 @@ void Combat::resolveTurn(Combatant& actor, Combatant& target, bool byPlayer) {
         if (actor.health > actor.maxHealth) actor.health = actor.maxHealth;
     }
 
+    // Health T2 (scrubbing): the stat's own regen, on the same footing and in the same
+    // slot as the mod above — last of the turn-start ticks, and only on a fighter that
+    // survived the other two, so it recovers from the fight and never from the tick
+    // currently killing you. A PERCENTAGE rather than a flat number, because it is bought
+    // by the pool it heals: a bigger pet should not also take proportionally longer to
+    // scrub. Always at least 1 on a fighter that earned it — a rung that rounds to nothing
+    // on a small pet reads as a rung that does not work.
+    if (actor.scrubPct > 0 && actor.health > 0) {
+        const int heal = actor.maxHealth * actor.scrubPct / 100;
+        actor.health += heal > 0 ? heal : 1;
+        if (actor.health > actor.maxHealth) actor.health = actor.maxHealth;
+    }
+
     // Ransom Note, the WINDOW half. Rolled per TURN rather than per incoming hit, so a
     // linked duel stays in step: the window is fixed by the seed before the turn plays out
     // and can't depend on how the opponent's speed deals actions inside it. An armed window
@@ -1146,6 +1210,19 @@ void Combat::checkOutcome() {
     };
     rallySave(player_);
     rallySave(enemy_);
+    // Health T3 (failover): a free death-save, and the reason it sits HERE — after the
+    // crew rally, before the Backup Drive. The rally is a use the player spent and gets
+    // first look; the drive is a consumable buff, and a pet carrying both should spend the
+    // tier it earned permanently and keep the item for the next hole. One shot per fight
+    // (the flag is armed at build time and cleared here), asked of both sides, since a
+    // rolled enemy is held to the same ladder the pet is.
+    auto failoverSave = [](Combatant& c) {
+        if (c.health > 0 || !c.failoverArmed) return;
+        c.failoverArmed = false;
+        c.health = 1;
+    };
+    failoverSave(player_);
+    failoverSave(enemy_);
     if (player_.health <= 0) player_.restoreFromBackup();
     // ...and the floor, after the save has had its look at how deep the hole is.
     if (player_.health < 0) player_.health = 0;
@@ -1162,8 +1239,13 @@ bool Combat::pickNextActor() {
     // loop terminates) until one reaches the threshold; that side acts and spends one
     // threshold's worth, leaving the other's carry to build. Ties go to the player.
     // Actions are therefore dealt in proportion to relative speed.
-    const float ps = player_.speed < 1 ? 1 : player_.speed;
-    const float es = enemy_.speed < 1 ? 1 : enemy_.speed;
+    // effectiveSpeed, not `speed`: Speed T3 pays on Health already lost, so the bonus has
+    // to be re-asked at every scheduling tick rather than banked once — which is the same
+    // reason this whole function re-matches instead of dealing a fixed order at the bell.
+    const float pls = effectiveSpeed(player_);
+    const float ens = effectiveSpeed(enemy_);
+    const float ps = pls < 1 ? 1 : pls;
+    const float es = ens < 1 ? 1 : ens;
     for (int i = 0; i <= kSpeedActionThreshold; ++i) {
         plGauge_ += ps;
         enGauge_ += es;

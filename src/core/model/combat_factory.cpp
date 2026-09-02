@@ -700,6 +700,79 @@ int levelDefenseBraceRetainPct(int points) {
     return points >= kLevelDefenseBraceRetainPoints ? kLevelDefenseBraceRetainPct : 0;
 }
 
+int levelDefenseBackscatterPct(int points) {
+    return points >= kLevelDefenseBackscatterPoints ? kLevelDefenseBackscatterPct : 0;
+}
+
+// The rest of the ladder, all cut to the same pattern: one threshold, one magnitude, a
+// total function of the point count and 0 below the rung. Written out one per tier rather
+// than folded into a table lookup because each names the tunable it pays in, and a table
+// of (threshold, magnitude) pairs would hide exactly the thing a reader came here for.
+int levelPowerPiercePct(int points) {
+    return points >= kStatTier2Points ? kLevelPowerPiercePct : 0;
+}
+
+int levelPowerGuardSmashPct(int points) {
+    return points >= kStatTier3Points ? kLevelPowerGuardSmashPct : 0;
+}
+
+int levelHealthScrubPct(int points) {
+    return points >= kStatTier2Points ? kLevelHealthScrubPct : 0;
+}
+
+bool levelHealthFailoverEarned(int points) { return points >= kStatTier3Points; }
+
+int levelSpeedFirstStrikeMult(int points) {
+    return points >= kStatTier1Points ? kLevelSpeedFirstStrikeMult : 1;
+}
+
+int levelSpeedAdrenalinePerStep(int points) {
+    return points >= kStatTier3Points ? kLevelSpeedAdrenalinePerStep : 0;
+}
+
+// Speed T2, as the extra initiative it actually hands over. The rung is earned at
+// kStatTier2Points but only PAYS while this fighter's Speed points trail the opponent's —
+// strictly, so two pets that invested identically are matched and neither gets a catch-up.
+//
+// CLAMPED AT PARITY, which is the whole difference between a catch-up rung and a broken
+// stat. At the raw doubled rate a pet with 16 points out-runs one with 20, and investing
+// FURTHER in Speed would have made a pet slower against that rival — the stat inverting on
+// exactly the axis it is sold on. So the bonus stops the moment the two are level: the
+// rung is worth up to double, and never worth passing them. Against an opponent far
+// ahead it still falls short (16 points close to 32, not to 100), so committing to Speed
+// is not made pointless by the rung that exists to forgive not committing to it.
+int levelSpeedUnderdogBonus(int points, int enemyPoints) {
+    if (points < kStatTier2Points || points >= enemyPoints) return 0;
+    const int doubled = points * (kLevelSpeedUnderdogPerPoint - kLevelSpeedPerPoint);
+    const int toParity = (enemyPoints - points) * kLevelSpeedPerPoint;
+    return doubled < toParity ? doubled : toParity;
+}
+
+void applySpeedRivalry(Combatant& a, Combatant& b) {
+    // Both sides asked, and each judged against the OTHER'S un-adjusted point count — the
+    // rung is about what was invested, not about what this function is in the middle of
+    // paying out, so the two answers cannot depend on which side is handled first. Adding
+    // a bonus on top of what applyLevelStatPoints already banked, rather than deferring
+    // the whole contribution, keeps a Combatant built alone (a Sim dummy, an arena scout
+    // sheet) carrying its real speed and makes this exactly a no-op for everyone else.
+    const int aBonus = levelSpeedUnderdogBonus(a.speedPoints, b.speedPoints);
+    const int bBonus = levelSpeedUnderdogBonus(b.speedPoints, a.speedPoints);
+    a.speed += static_cast<float>(aBonus);
+    b.speed += static_cast<float>(bBonus);
+}
+
+float effectiveSpeed(const Combatant& c) {
+    if (c.adrenalinePerStep <= 0 || c.maxHealth <= 0) return c.speed;
+    // Health is left unclamped between a hit and checkOutcome's floor, so a fighter buried
+    // past 0 would otherwise read as more than 100% missing and be handed initiative it
+    // will never spend. Clamped here rather than there: that floor is deliberately late
+    // (the Backup Drive weighs the hole before it is erased).
+    const int health = c.health > 0 ? c.health : 0;
+    const int missingPct = (c.maxHealth - health) * 100 / c.maxHealth;
+    const int steps = missingPct / kLevelSpeedAdrenalineStepPct;
+    return c.speed + static_cast<float>(steps * c.adrenalinePerStep);
+}
+
 // The curve before its ceiling — the one thing both answers below are cut from.
 int levelDefenseCutRawPct(int points) {
     if (points <= 0) return 0;
@@ -734,9 +807,12 @@ void applyLevelStatPoints(Combatant& c, const int statPoints[4]) {
     // power → +% attack lean, ACCELERATING past its specialisation point (levelPowerPct);
     // defense → +% incoming-damage cut (diminishing past the soft point, its own cap, then
     // the total cut is clamped so defense can never null a hit) AND +% defend-move brace
-    // magnitude AND, past their thresholds, the two investment TIERS the % cut cannot be
-    // paid in (pierce resist, brace retain); speed → +initiative, the one stat whose value
-    // is flat in both directions; max-Health → +HP, accelerating like power.
+    // magnitude AND, past their thresholds, the three investment TIERS the % cut cannot be
+    // paid in (pierce resist, brace retain, backscatter); speed → +initiative, plus the
+    // three tempo tiers (first strike, the underdog rate, adrenaline); max-Health → +HP,
+    // accelerating like power, plus its turn-start scrub and its one free death-save.
+    // The per-point half and the tier half of every stat are applied HERE together: they
+    // are one investment and reading them apart is what let the thresholds drift.
     // MULTIPLICATIVE, not additive — and this is not stage scaling by the back door. A
     // level bonus added into powerMultPct lands on a base the stage multiplier has already
     // inflated (kStagePowerScalePct runs 100 -> 230), so the same earned point was worth
@@ -749,6 +825,20 @@ void applyLevelStatPoints(Combatant& c, const int statPoints[4]) {
     c.dmgReducePct += levelDefenseCutPct(statPoints[1]);
     c.pierceResistPct = levelDefensePierceResistPct(statPoints[1]);
     c.braceRetainPct = kBraceRetainBasePct + levelDefenseBraceRetainPct(statPoints[1]);
+    c.backscatterPct = levelDefenseBackscatterPct(statPoints[1]);
+    // The rest of the ladder. Every rung this fighter has NOT reached resolves to its
+    // inert value, so this block is unconditional and a pet with nothing invested carries
+    // the same fields as one that built for a stat — the fight never asks "does this
+    // fighter have tiers", only "what is this field".
+    c.piercePct = levelPowerPiercePct(statPoints[0]);
+    c.guardSmashPct = levelPowerGuardSmashPct(statPoints[0]);
+    c.firstStrikeMult = levelSpeedFirstStrikeMult(statPoints[2]);
+    c.adrenalinePerStep = levelSpeedAdrenalinePerStep(statPoints[2]);
+    // Speed T2 is banked as its INPUTS, not its answer: the rate depends on the opponent,
+    // and there isn't one yet (applySpeedRivalry, called once both fighters exist).
+    c.speedPoints = statPoints[2];
+    c.scrubPct = levelHealthScrubPct(statPoints[3]);
+    c.failoverArmed = levelHealthFailoverEarned(statPoints[3]);
     // Everything the three Defence ceilings refuse, paid into max-Health (capOverflowHealth).
     // Three separate discards and no double count: the curve's own ceiling refuses part
     // of the cut this pet EARNED, the never-immune clamp then refuses part of the total it

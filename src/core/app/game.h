@@ -2825,16 +2825,18 @@ private:
     // the player their stack is a forgiving default rather than a save field.
     int stackingFoodRun_ = 0;
 
-    int statPage_ = 0;   // STAT: 0 vitals · 1 loadout · 2 buffs · 3 species · 4 audit log
-    // Row-window scroll offset for whichever of STAT's two flowed prose pages is
-    // open (LOADOUT and BUFFS) — B advances it, wrapping, when that page's rows
-    // outrun one screen. ONE offset serves both because a page change resets it
+    // STAT: 0 vitals · 1 tiers · 2 loadout · 3 buffs · 4 species · 5 audit log
+    int statPage_ = 0;
+    // Row-window scroll offset for whichever of STAT's three flowed prose pages is
+    // open (TIERS, LOADOUT and BUFFS) — B advances it, wrapping, when that page's rows
+    // outrun one screen. ONE offset serves all three because a page change resets it
     // anyway, alongside C backing out and every other statPage_ reset site.
     int statScroll_ = 0;
-    // The rows those two pages show. Game owns the state they report, stat_screen.h
+    // The rows those pages show. Game owns the state they report, stat_screen.h
     // owns the shape, and these are the marshalling between the two — shared by the
     // page draw (game_render.cpp) and the B-scroll, which has to advance by the same
     // window the page drew or it skips and repeats rows.
+    std::vector<ProseRow> statTierRows() const;
     std::vector<ProseRow> statLoadoutRows() const;
     std::vector<BuffRow> statBuffRows() const;
     // {rows on screen starting at statScroll_, rows in total} for the open STAT page;

@@ -232,6 +232,19 @@ int g_failures = 0;
     RUN(test_creature_level_feeds_combat)   \
     RUN(test_defense_diminishing_returns)   \
     RUN(test_full_cap_overflows_into_health) \
+    RUN(test_stat_tier_ladder_is_uniform)   \
+    RUN(test_stat_tier_progress_readout)    \
+    RUN(test_defense_cap_lands_on_the_top_rung) \
+    RUN(test_stat_tier_appliers_gate_on_their_rung) \
+    RUN(test_stat_tiers_reach_the_combatant) \
+    RUN(test_speed_underdog_rung_needs_both_fighters) \
+    RUN(test_adrenaline_tracks_live_health) \
+    RUN(test_first_strike_doubles_only_the_opening_hit) \
+    RUN(test_backscatter_pays_out_of_what_the_wall_absorbed) \
+    RUN(test_health_tiers_scrub_and_failover) \
+    RUN(test_power_tiers_get_past_a_defence) \
+    RUN(test_tier_rows_report_where_the_pet_stands) \
+    RUN(test_tier_page_counts_off_level_points) \
     RUN(test_rollback_item)                 \
     RUN(test_creature_level_persist_evolution_reset_egg) \
     RUN(test_arch_store_deploy_preserves_creature_level) \

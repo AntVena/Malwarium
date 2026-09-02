@@ -5,9 +5,10 @@
 // feature whose field it migrates, not in a migrations pile of its own.
 #include "test_gates.h"
 
-// STAT is 5 paged screens — 0 pet VITALS (the landing, + an XP bar), 1 LOADOUT
-// (the equipped moves + mods, WITH their effect text), 2 BUFFS (armed item
-// buffs), 3 SPECIES (the pet's own lore), 4 AUDIT LOG — cycled by A, and C
+// STAT is 6 paged screens — 0 pet VITALS (the landing, + an XP bar), 1 TIERS (the
+// investment ladder: which stat tiers this pet holds and what the next costs),
+// 2 LOADOUT (the equipped moves + mods, WITH their effect text), 3 BUFFS (armed
+// item buffs), 4 SPECIES (the pet's own lore), 5 AUDIT LOG — cycled by A, and C
 // backs out. (Device/account stats live on the Hacker PROFILE slot.)
 void test_stat_paging_loadout_xp() {
     Game g{StartMode::Hatched};
@@ -26,20 +27,24 @@ void test_stat_paging_loadout_xp() {
     g3.render(p0xp);
     CHECK(regionDiffers(p0, p0xp, 31, 60, 120, 66));  // XP bar fill differs
 
-    // A -> page 1 = LOADOUT (a distinct page).
+    // A -> page 1 = TIERS (a distinct page).
     g.onButton(press(Button::A));
     Framebuffer p1(kActiveW, kActiveH);
     g.render(p1);
     CHECK(!fbEqual(p0, p1));
 
-    // A -> page 2 = BUFFS (distinct), then page 3 = SPECIES, page 4 = audit
-    // log, A -> wraps back to page 0 = VITALS.
+    // A -> page 2 = LOADOUT (distinct again), then BUFFS, SPECIES, audit log,
+    // A -> wraps back to page 0 = VITALS.
     g.onButton(press(Button::A));
     Framebuffer p2(kActiveW, kActiveH);
     g.render(p2);
     CHECK(!fbEqual(p1, p2));
-    g.onButton(press(Button::A));   // -> page 3 SPECIES
-    g.onButton(press(Button::A));   // -> page 4 AUDIT LOG
+    g.onButton(press(Button::A));   // -> page 3 BUFFS
+    Framebuffer p3(kActiveW, kActiveH);
+    g.render(p3);
+    CHECK(!fbEqual(p2, p3));
+    g.onButton(press(Button::A));   // -> page 4 SPECIES
+    g.onButton(press(Button::A));   // -> page 5 AUDIT LOG
     g.onButton(press(Button::A));   // -> wraps to page 0 VITALS
     Framebuffer wrap(kActiveW, kActiveH);
     g.render(wrap);
@@ -304,8 +309,10 @@ void test_stat_loadout_b_scroll() {
     Framebuffer v0b(kActiveW, kActiveH); g.render(v0b);
     CHECK(fbEqual(v0, v0b));
 
-    // A -> page 1 (LOADOUT). Confirm the starting loadout really does overflow
-    // the visible window (the precondition this test needs).
+    // A twice -> page 2 (LOADOUT); page 1 (TIERS) flows rows of its own and is
+    // walked by its own gate below. Confirm the starting loadout really does
+    // overflow the visible window (the precondition this test needs).
+    g.onButton(press(Button::A));
     g.onButton(press(Button::A));
     auto rows = buildLoadoutRows(g.content(), g.moveLoadout(), g.loadout(),
                                  g.pet()->stage, g.inEggPhase());
@@ -329,28 +336,113 @@ void test_stat_loadout_b_scroll() {
     CHECK(wrapped);
 
     // C -> back to the carousel (resets statPage_/statScroll_); B re-enters
-    // the submenu (cursor is still parked on STAT's slot); A -> page 1 confirms
-    // the scroll reset (renders identically to the very first page-1 view, l0).
+    // the submenu (cursor is still parked on STAT's slot); A twice -> page 2
+    // confirms the scroll reset (renders identically to the first page-2 view, l0).
     tapC(g);
     g.onButton(press(Button::B));
+    g.onButton(press(Button::A));
     g.onButton(press(Button::A));
     Framebuffer l3(kActiveW, kActiveH); g.render(l3);
     CHECK(fbEqual(l0, l3));
 
-    // Page 2 (BUFFS) flows rows too, but with nothing armed it has none to scroll,
-    // so B is inert there; page 4 (AUDIT LOG) never scrolls at all.
-    g.onButton(press(Button::A));                // page 1 -> page 2
+    // Page 3 (BUFFS) flows rows too, but with nothing armed it has none to scroll,
+    // so B is inert there; page 5 (AUDIT LOG) never scrolls at all.
+    g.onButton(press(Button::A));                // page 2 -> page 3
     Framebuffer b0(kActiveW, kActiveH); g.render(b0);
     g.onButton(press(Button::B));
     Framebuffer b0b(kActiveW, kActiveH); g.render(b0b);
     CHECK(fbEqual(b0, b0b));
 
-    g.onButton(press(Button::A));                // -> page 3 (SPECIES)
-    g.onButton(press(Button::A));                // -> page 4 (AUDIT LOG)
+    g.onButton(press(Button::A));                // -> page 4 (SPECIES)
+    g.onButton(press(Button::A));                // -> page 5 (AUDIT LOG)
     Framebuffer a0(kActiveW, kActiveH); g.render(a0);
     g.onButton(press(Button::B));
     Framebuffer a0b(kActiveW, kActiveH); g.render(a0b);
     CHECK(fbEqual(a0, a0b));
+}
+
+// buildTierRows(): the TIERS page's row model — the investment ladder, read back as the
+// player sees it. One heading per stat carrying that stat's point total, then one row per
+// rung. The TAG is the whole page: it is the only channel reporting state (the pages have
+// to stay legible in grayscale) and the only thing that answers "how far to the next one",
+// so it is what this gate reads rather than the pixels.
+void test_tier_rows_report_where_the_pet_stands() {
+    // A pet with one stat on each side of every interesting boundary: nothing invested,
+    // one point short of the first rung, exactly on it, and past the second.
+    const int points[kLevelStatCount] = {0, kStatTier1Points - 1, kStatTier1Points,
+                                         kStatTier2Points};
+    const auto rows = buildTierRows(points);
+    // One heading plus one row per rung, per stat — the page draws whatever the shared
+    // table holds, so the count is a statement about the table and not about the page.
+    CHECK(static_cast<int>(rows.size()) == kLevelStatCount * (1 + kStatTierCount));
+
+    for (int i = 0; i < kLevelStatCount; ++i) {
+        const int base = i * (1 + kStatTierCount);
+        const ProseRow& head = rows[base];
+        CHECK(head.header);
+        CHECK(head.body.empty());                    // a heading explains nothing itself
+        char expect[16];
+        std::snprintf(expect, sizeof(expect), "%d PTS", points[i]);
+        CHECK(std::strcmp(head.tag, expect) == 0);   // the stat's own count rides its heading
+
+        const int reached = statTiersReached(points[i]);
+        for (int t = 0; t < kStatTierCount; ++t) {
+            const ProseRow& row = rows[base + 1 + t];
+            CHECK(!row.header);
+            CHECK(!row.body.empty());                // every rung says what it does
+            CHECK(std::strcmp(row.label, statTier(static_cast<LevelStat>(i), t).name) == 0);
+            if (t < reached) {
+                CHECK(std::strcmp(row.tag, "HELD") == 0);
+            } else if (t == reached) {
+                // The rung being climbed names the distance, and it is the SAME distance
+                // the shared progress helper reports — a page that did its own arithmetic
+                // here is exactly how a screen starts lying about the engine.
+                std::snprintf(expect, sizeof(expect), "%d TO GO",
+                              statTierPointsToNext(points[i]));
+                CHECK(std::strcmp(row.tag, expect) == 0);
+            } else {
+                std::snprintf(expect, sizeof(expect), "AT %d", statTierPoints(t));
+                CHECK(std::strcmp(row.tag, expect) == 0);
+            }
+            CHECK(row.tag[0] != '\0');               // no rung is left unlabelled
+        }
+    }
+
+    // The boundary belongs to the rung, read off the page: one point short reads as
+    // climbing, exactly on it reads as held.
+    CHECK(std::strcmp(rows[1 * (1 + kStatTierCount) + 1].tag, "1 TO GO") == 0);
+    CHECK(std::strcmp(rows[2 * (1 + kStatTierCount) + 1].tag, "HELD") == 0);
+
+    // A null point array is not a crash — the page is drawn from whatever Game hands it,
+    // and an empty list draws as an empty page rather than reading off nothing.
+    CHECK(buildTierRows(nullptr).empty());
+}
+
+// The TIERS page reads the stat the way the FIGHT does: total points, an Epic dish's
+// off-level grant included. A page counting only earned points would promise a rung the
+// engine had already granted, or withhold one it had — and the off-level points are
+// precisely the ones that carry a committed pet to the top of the ladder.
+void test_tier_page_counts_off_level_points() {
+    Game g{StartMode::Hatched};
+    g.debugAddCombatXp(1200);                        // some earned points, spread at random
+    const int earned = g.levelStatPoint(0);
+    const auto before = buildTierRows(nullptr);      // (the null case, again cheaply)
+    CHECK(before.empty());
+
+    int points[kLevelStatCount];
+    for (int i = 0; i < kLevelStatCount; ++i) points[i] = g.totalStatPoint(i);
+    CHECK(points[0] == earned + g.statBonusPoint(0));
+    // What the page would draw for POWER's heading is that total, not the earned half.
+    const auto rows = buildTierRows(points);
+    char expect[16];
+    std::snprintf(expect, sizeof(expect), "%d PTS", points[0]);
+    CHECK(std::strcmp(rows[0].tag, expect) == 0);
+    // ...and the rung it reports is the one the engine would resolve from the same count.
+    Combatant c;
+    c.maxHealth = 100;
+    applyLevelStatPoints(c, points);
+    const bool pageSaysHeld = std::strcmp(rows[2].tag, "HELD") == 0;   // POWER's T2 row
+    CHECK(pageSaysHeld == (c.piercePct > 0));
 }
 
 // The flowed pages TILE their rows: consecutive windows skip nothing and repeat

@@ -30,6 +30,7 @@
 #include "core/model/pet_model.h"
 #include "core/model/save.h"
 #include "core/model/stacker.h"
+#include "core/model/stat_tiers.h"
 #include "core/net/audit_capture.h"
 #include "core/net/eapol.h"
 #include "core/net/network_ledger.h"
