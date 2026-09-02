@@ -7667,6 +7667,117 @@ window.PEDIA_DATA = {
       "goal": 5
     },
     {
+      "key": "RACK_12",
+      "name": "Data Centre",
+      "trigger": "Hold 12 pets in the ARCH rack at once.",
+      "icon": "assets/icons/ICON_ACH_RACK_12.png",
+      "goal": 12
+    },
+    {
+      "key": "RACK_24",
+      "name": "Colocation",
+      "trigger": "Hold 24 pets in the ARCH rack at once.",
+      "icon": "assets/icons/ICON_ACH_RACK_24.png",
+      "goal": 24
+    },
+    {
+      "key": "RACK_64",
+      "name": "Hyperscaler",
+      "trigger": "Hold 64 pets in the ARCH rack at once.",
+      "icon": "assets/icons/ICON_ACH_RACK_64.png",
+      "goal": 64
+    },
+    {
+      "key": "NO_VACANCY",
+      "name": "No Vacancy",
+      "trigger": "Freeze a pet into the last free slot in the ARCH rack.",
+      "icon": "assets/icons/ICON_ACH_NO_VACANCY.png"
+    },
+    {
+      "key": "ZOO_5",
+      "name": "Petting Zoo",
+      "trigger": "Keep 5 different species in the ARCH rack at once.",
+      "icon": "assets/icons/ICON_ACH_ZOO_5.png",
+      "goal": 5
+    },
+    {
+      "key": "ZOO_12",
+      "name": "Safari Park",
+      "trigger": "Keep 12 different species in the ARCH rack at once.",
+      "icon": "assets/icons/ICON_ACH_ZOO_12.png",
+      "goal": 12
+    },
+    {
+      "key": "ZOO_24",
+      "name": "Wildlife Reserve",
+      "trigger": "Keep 24 different species in the ARCH rack at once.",
+      "icon": "assets/icons/ICON_ACH_ZOO_24.png",
+      "goal": 24
+    },
+    {
+      "key": "ZOO_ALL",
+      "name": "Living Bestiary",
+      "trigger": "Keep all 35 species in the ARCH rack at once.",
+      "icon": "assets/icons/ICON_ACH_ZOO_ALL.png",
+      "goal": 35
+    },
+    {
+      "key": "ZOO_FAMILIES",
+      "name": "One of Each",
+      "trigger": "Keep a pet from all 5 creature families in the ARCH rack at once.",
+      "icon": "assets/icons/ICON_ACH_ZOO_FAMILIES.png",
+      "goal": 5
+    },
+    {
+      "key": "WING_RANSOMWARE",
+      "name": "Ransom Wing",
+      "trigger": "Keep all 13 creatures of the ransomware line in the ARCH rack at once.",
+      "icon": "assets/icons/ICON_ACH_WING_RANSOMWARE.png",
+      "goal": 13
+    },
+    {
+      "key": "WING_PHISHING",
+      "name": "Phish Wing",
+      "trigger": "Keep all 8 creatures of the phishing line in the ARCH rack at once.",
+      "icon": "assets/icons/ICON_ACH_WING_PHISHING.png",
+      "goal": 8
+    },
+    {
+      "key": "WING_TROJAN",
+      "name": "Trojan Wing",
+      "trigger": "Keep all 4 creatures of the trojan line in the ARCH rack at once.",
+      "icon": "assets/icons/ICON_ACH_WING_TROJAN.png",
+      "goal": 4
+    },
+    {
+      "key": "WING_WORM",
+      "name": "Worm Wing",
+      "trigger": "Keep all 5 creatures of the worm line in the ARCH rack at once.",
+      "icon": "assets/icons/ICON_ACH_WING_WORM.png",
+      "goal": 5
+    },
+    {
+      "key": "WING_METAMORPHIC",
+      "name": "Meta Wing",
+      "trigger": "Keep all 5 creatures of the metamorphic line in the ARCH rack at once.",
+      "icon": "assets/icons/ICON_ACH_WING_METAMORPHIC.png",
+      "goal": 5
+    },
+    {
+      "key": "TWINS_3",
+      "name": "Replica Set",
+      "trigger": "Keep 3 copies of one species in the ARCH rack at once.",
+      "icon": "assets/icons/ICON_ACH_TWINS_3.png",
+      "goal": 3
+    },
+    {
+      "key": "TWINS_8",
+      "name": "Clone Army",
+      "trigger": "Keep 8 copies of one species in the ARCH rack at once.",
+      "icon": "assets/icons/ICON_ACH_TWINS_8.png",
+      "goal": 8
+    },
+    {
       "key": "STACK_100",
       "name": "Solid State",
       "trigger": "Clear 100 disks by hand in the DEFRAG minigame.",

@@ -266,6 +266,11 @@ void Game::archStoreActive() {
                                nowMs_ - stageEnteredMs_, bestDeepWebDepth_,
                                dyingElapsedMs_, upgrades_));
     noteRackDuplicates();   // before startHatch: a line earned HERE belongs on THIS menu
+    // ...and the shelf with nothing free left on it. Fired at the freeze rather than
+    // swept off a count, because "full" is a comparison against rackSlots() — a ceiling
+    // the player buys — so there is no fixed rung to hold it to, and a slot bought
+    // afterwards must not read as the row having come undone.
+    if (static_cast<int>(rack_.size()) >= rackSlots()) unlockAchievement(ach::kNoVacancy);
     archConfirm_ = false;
     listRow_ = 0;
     startHatch();        // pet_ = nullptr -> line-select, then a fresh egg

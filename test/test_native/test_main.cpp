@@ -768,6 +768,9 @@ int g_failures = 0;
     RUN(test_recipes_known_counts_methods_not_dishes) \
     RUN(test_backup_drive_achievement_mapping) \
     RUN(test_achievement_goal_all_tracks_the_set_size) \
+    RUN(test_achievement_rack_zoology_counts_species_not_heads) \
+    RUN(test_achievement_rack_wing_holds_a_whole_line_at_once) \
+    RUN(test_achievement_no_vacancy_fires_on_the_last_free_slot) \
     RUN(test_achievement_banner_announces_on_the_home_screen) \
     RUN(test_achievement_banner_waits_for_the_home_screen) \
     RUN(test_achievement_banner_collapses_a_burst) \

@@ -284,6 +284,60 @@ int Game::achValue(const AchievementDef& d) const {
             return static_cast<int>(seenCreatures_.size());
         case AchSeries::RackHeld:
             return rackCount();
+        // The four COLLECTION reads of the same shelf. All of them walk the rack rather
+        // than a tally, because every one is a live "at once" fact — a released pet has
+        // to take its contribution with it. The walks are O(n^2) in the rack, which is a
+        // container that tops out at 64 entries and is only read on the achievement
+        // sweep; a set worth allocating would cost more than it saves.
+        case AchSeries::RackSpecies: {
+            int n = 0;
+            for (size_t i = 0; i < rack_.size(); ++i) {
+                bool dupe = false;
+                for (size_t j = 0; j < i && !dupe; ++j)
+                    dupe = std::strcmp(rack_[i].id, rack_[j].id) == 0;
+                if (!dupe) ++n;
+            }
+            return n;
+        }
+        case AchSeries::RackLines: {
+            // Counted over the SHIPPED line list, not over the ids on the shelf, so this
+            // measures the same set achievementSeriesTotal does (kCreatureLineCount).
+            int n = 0;
+            for (int i = 0; i < kCreatureLineCount; ++i) {
+                for (const SaveStoredPet& p : rack_) {
+                    const CreatureDef* c = registry_.creature(p.id);
+                    if (c && c->line && std::strcmp(c->line, kCreatureLines[i].id) == 0) {
+                        ++n;
+                        break;
+                    }
+                }
+            }
+            return n;
+        }
+        case AchSeries::RackLineHeld: {
+            // DISTINCT creatures of one line: a shelf of five Pingcubs is one of the
+            // Ransomware line's thirteen, not five of them.
+            int n = 0;
+            for (size_t i = 0; i < rack_.size(); ++i) {
+                const CreatureDef* c = registry_.creature(rack_[i].id);
+                if (!c || !c->line || !d.key || std::strcmp(c->line, d.key) != 0) continue;
+                bool dupe = false;
+                for (size_t j = 0; j < i && !dupe; ++j)
+                    dupe = std::strcmp(rack_[i].id, rack_[j].id) == 0;
+                if (!dupe) ++n;
+            }
+            return n;
+        }
+        case AchSeries::RackTwins: {
+            int best = 0;
+            for (size_t i = 0; i < rack_.size(); ++i) {
+                int n = 0;
+                for (size_t j = 0; j < rack_.size(); ++j)
+                    if (std::strcmp(rack_[i].id, rack_[j].id) == 0) ++n;
+                if (n > best) best = n;
+            }
+            return best;
+        }
         case AchSeries::StepsWalked:
             return static_cast<int>(lifetimeSteps_);
     }

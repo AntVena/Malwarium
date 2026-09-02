@@ -25,13 +25,17 @@ So the grammar lives here as code rather than as a convention people remember:
   * strokes are 2px, for the same reason the pantry's are — a 1px line disappears.
   * the MOTIF occupies rows 0..13. Rows 14..19 belong to the footer, and a motif that
     reaches into them is what makes a tally stop reading as a count.
-  * the FOOTER is one of three, and it is what the row's own kind decides:
+  * the FOOTER is one of four, and it is what the row's own kind decides:
       tally(n)  a ladder rung — n marks, 2px wide, pitch 4, centred (start x = 11-2n)
       bar()     "all of them" — a full-width rule under the motif
       chevron() "took one deep" — a narrowing wedge
-    Those three are measured off the shipped art (BOSS_FIRST..BOSS_100 for the tally,
-    FULL_LINE_TROJAN for the bar, DEEP_LINE_TROJAN for the chevron), so a glyph made
-    here lands in the same grid as one drawn before this file existed.
+      shelf()   "all of them, alive, AT ONCE" — the bar with two uprights
+    The first three are measured off the shipped art (BOSS_FIRST..BOSS_100 for the
+    tally, FULL_LINE_TROJAN for the bar, DEEP_LINE_TROJAN for the chevron), so a glyph
+    made here lands in the same grid as one drawn before this file existed. The fourth
+    is built ON the bar for the same reason: the ARCH collection rows say the same
+    "every one of them" the bar does, plus the part the bar cannot — that they were all
+    on the rack together — so it is that rule inside a bracket, not a new shape.
 
 A MOTIF is authored as ASCII below, which is the only honest way to hand-place pixels
 at this size: what you read in the source is what the device draws. A motif is shared
@@ -89,6 +93,20 @@ def chevron():
         lo, hi = 2 + i, 15 - i
         rows[y] = "".join("#" if lo <= x <= hi else " " for x in range(SIZE))
     return rows
+
+
+def shelf():
+    """"All of them, alive, at once": the bar under two uprights. Rows 15..17.
+
+    The ARCH collection rows (a whole line, the whole roster, one of every family) are
+    the only ones whose claim is about a MOMENT rather than a lifetime, and bar() cannot
+    carry that distinction on its own — FULL_LINE_WORM ("raised them all") and WING_WORM
+    ("all five on the shelf together") would otherwise be the same picture. The uprights
+    are what makes the rule a shelf: the same full-width bar, bracketed.
+    """
+    posts = "".join("#" if x in (2, 3, 16, 17) else " " for x in range(SIZE))
+    return {15: posts, 16: posts,
+            17: "".join("#" if 2 <= x <= 17 else " " for x in range(SIZE))}
 
 
 def plain():
@@ -605,6 +623,90 @@ MOTIFS["turducken"] = """
 ....................
 """
 
+# --- The ARCH shelf's own three ----------------------------------------------
+
+# A SPECIMEN JAR with something alive in it. The zoology ladder's mark: the rack motif
+# beside it is about how full the shelf is, and this one is about what is ON it — a
+# kept creature, not a parked one. Drawn INSET from x=4: shelf() puts its uprights at
+# x=2..3 and 16..17, and a jar whose walls landed on them would read as one tall
+# container rather than as a jar standing on a shelf.
+MOTIFS["jar"] = """
+.......######.......
+.......######.......
+.........##.........
+.....##########.....
+....##........##....
+....##........##....
+....##..####..##....
+....##.######.##....
+....##.######.##....
+....##..####..##....
+....##........##....
+....##........##....
+....############....
+....................
+"""
+
+# ONE OF EACH — a clade: specimens on their own branches off one trunk. Three tips
+# rather than five, for the same reason the tally tops out at five marks: past that the
+# strokes merge. What the row counts is in its prose; what the glyph says is FAMILIES.
+MOTIFS["clade"] = """
+..####..####..####..
+..####..####..####..
+...##....##....##...
+...##....##....##...
+...##############...
+.........##.........
+.........##.........
+.........##.........
+.........##.........
+......########......
+......########......
+....................
+....................
+....................
+"""
+
+# THE RACK WITH NOTHING FREE — the same frame as the "rack" motif above, with every bay
+# packed instead of shelved. The pair is deliberate: one glyph is a shelf you are still
+# filling, the other is the moment it stopped having room.
+MOTIFS["rack_full"] = """
+....................
+..################..
+..##............##..
+..##.##########.##..
+..##.##########.##..
+..##............##..
+..##.##########.##..
+..##.##########.##..
+..##............##..
+..##.##########.##..
+..##.##########.##..
+..################..
+....................
+....................
+"""
+
+# COPIES — identical cards cascading off one another. Not the two towers
+# SECOND_INSTANCE draws (that glyph is about a PAIR meeting, and it gates a line);
+# this is a ladder about how deep the stack of one species goes.
+MOTIFS["clones"] = """
+....................
+......##########....
+......##########....
+......##########....
+....................
+....##########......
+....##########......
+....##########......
+....................
+..##########........
+..##########........
+..##########........
+....................
+....................
+"""
+
 # --- The roster --------------------------------------------------------------
 # One row per glyph: the achievement id it is drawn for, its motif, and its footer.
 # A ladder is N entries over ONE motif — which is the whole reason the motifs above
@@ -697,6 +799,39 @@ GLYPHS = [
     ("ICON_ACH_COOK_RACELETTE", from_item("racelette"), plain()),
     ("ICON_ACH_COOK_OVERFLOAT", "buffer_overfloat", plain()),
     ("ICON_ACH_COOK_PROFILEROLE", from_item("profilerole"), plain()),
+
+    # --- The ARCH shelf: how full it is, and what is on it -------------------
+    # The headcount ladder's upper rungs, INHERITING the rack the first two wear.
+    ("ICON_ACH_RACK_12", inherit("ICON_ACH_RACK_3"), tally(3)),
+    ("ICON_ACH_RACK_24", inherit("ICON_ACH_RACK_3"), tally(4)),
+    ("ICON_ACH_RACK_64", inherit("ICON_ACH_RACK_3"), tally(5)),
+    # ...and the moment it ran out of room, which is not a rung on that ladder: the
+    # ceiling it is measured against is one the player bought.
+    ("ICON_ACH_NO_VACANCY", "rack_full", plain()),
+
+    # The zoology ladder — different species KEPT, three rungs and a capstone. The
+    # capstone takes the shelf rather than the bar: what it claims is "all of them at
+    # once", which is the distinction shelf() exists to draw.
+    ("ICON_ACH_ZOO_5", "jar", tally(1)),
+    ("ICON_ACH_ZOO_12", "jar", tally(2)),
+    ("ICON_ACH_ZOO_24", "jar", tally(3)),
+    ("ICON_ACH_ZOO_ALL", "jar", shelf()),
+    ("ICON_ACH_ZOO_FAMILIES", "clade", shelf()),
+
+    # The five WINGS: each family's own mark — the same one its FULL_LINE row wears,
+    # inherited rather than redrawn — under the shelf. Read beside those rows the pair
+    # is legible on sight: a bar for a 'Pedia filled in over a hundred lifecycles, a
+    # shelf for every one of them kept alive at the same time.
+    ("ICON_ACH_WING_RANSOMWARE", inherit("ICON_ACH_FULL_PEDIA_L1"), shelf()),
+    ("ICON_ACH_WING_PHISHING", inherit("ICON_ACH_FULL_LINE_PHISHING"), shelf()),
+    ("ICON_ACH_WING_TROJAN", inherit("ICON_ACH_FULL_LINE_TROJAN"), shelf()),
+    ("ICON_ACH_WING_WORM", inherit("ICON_ACH_FULL_LINE_WORM"), shelf()),
+    # The bell is authored here rather than shipped as art first, so it is named, not
+    # inherited — the same way FULL_LINE_METAMORPHIC takes it.
+    ("ICON_ACH_WING_METAMORPHIC", "bell", shelf()),
+
+    ("ICON_ACH_TWINS_3", "clones", tally(1)),
+    ("ICON_ACH_TWINS_8", "clones", tally(2)),
 ]
 
 

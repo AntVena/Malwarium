@@ -69,7 +69,7 @@ void test_achievement_table_is_well_formed() {
         }
         // A series that takes a subject must have been given one.
         if (d.series == AchSeries::LineRaised || d.series == AchSeries::ItemCollected ||
-            d.series == AchSeries::DeepWebDepthLine)
+            d.series == AchSeries::DeepWebDepthLine || d.series == AchSeries::RackLineHeld)
             CHECK(d.key && d.key[0]);
         // Reward ids must name real items — a typo here is a reward that never arrives.
         ContentRegistry r = ContentRegistry::embedded();
@@ -92,6 +92,7 @@ void test_achievement_table_is_well_formed() {
                            ach::kHangingByABit, ach::kStackOverflow,
                            ach::kNeverSeen, ach::kSecondInstance, ach::kHashCollision,
                            ach::kDockUnderdog, ach::kDockPunchingUp, ach::kCrewEnlisted,
+                           ach::kNoVacancy,
                            ach::kDeepWebDepth8, ach::kDeepWebDepth64}) {
         if (!achievementById(id)) std::printf("  MISSING ACHIEVEMENT ID: %s\n", id);
         CHECK(achievementById(id) != nullptr);
@@ -207,6 +208,95 @@ void test_achievement_goal_all_tracks_the_set_size() {
     char want[64];
     std::snprintf(want, sizeof(want), "%d", achievementGoal(*subsAll));
     CHECK(std::strstr(achievementTrigger(*subsAll).c_str(), want) != nullptr);
+}
+
+// --- The ARCH shelf as a collection ---------------------------------------------
+
+// The rack is read by two ladders at once and they must not be able to stand in for one
+// another: RACK_* counts HEADS, ZOO_* counts SPECIES, and TWINS_* counts the deepest
+// stack of ONE species. A shelf of four identical pets is a full-ish rack, a collection
+// of one, and a respectable pile of clones — all three at the same time.
+void test_achievement_rack_zoology_counts_species_not_heads() {
+    Game g{StartMode::Hatched};
+    uint32_t t = 0;
+    g.tick(t += kHeartbeatMs);
+    g.debugSetBits(100000000);
+    for (int i = 0; i < 12; ++i) g.debugBuyRackSlotUpgrade();   // room for a collection
+    CHECK(g.rackSlots() >= 16);
+
+    for (int i = 0; i < 4; ++i) g.debugSeedRack("cryptoshell");
+    g.tick(t += kAchSweepIntervalMs);
+    const AchievementDef* zoo5 = achievementById("ZOO_5");
+    CHECK(zoo5 != nullptr);
+    CHECK(g.hasAchievement("RACK_3"));            // four heads
+    CHECK(g.hasAchievement("TWINS_3"));           // ...three of them the same species
+    CHECK(!g.hasAchievement("ZOO_5"));            // ...but one species between them
+    CHECK(g.achValue(*zoo5) == 1);
+
+    // Five more, one of them from each of the four families the shelf is missing: the
+    // zoology rung and the one-of-every-family row land together.
+    for (const char* id : {"paypup", "tadpoll", "vermicell", "keyloggerhead", "polystaria"})
+        g.debugSeedRack(id);
+    g.tick(t += kAchSweepIntervalMs);
+    CHECK(g.achValue(*zoo5) == 6);                // six species over nine slots
+    CHECK(g.hasAchievement("ZOO_5"));
+    CHECK(g.hasAchievement("ZOO_FAMILIES"));
+    CHECK(!g.hasAchievement("ZOO_12"));           // the next rung is still open
+    CHECK(!g.hasAchievement("TWINS_8"));          // ...and so is the deeper stack
+}
+
+// A WING is one family's whole roster, alive at the same time — kGoalAll over that
+// line's own count, so the rung moves when the line does. And "at once" cuts both ways:
+// the VALUE falls the moment a pet leaves the shelf, while the earned bit does not,
+// because an achievement records a moment reached rather than a state maintained.
+void test_achievement_rack_wing_holds_a_whole_line_at_once() {
+    Game g{StartMode::Hatched};
+    uint32_t t = 0;
+    g.tick(t += kHeartbeatMs);
+    g.debugSetBits(100000000);
+    for (int i = 0; i < 8; ++i) g.debugBuyRackSlotUpgrade();
+
+    const AchievementDef* wing = achievementById("WING_TROJAN");
+    const CreatureLine* line = creatureLine("trojan");
+    CHECK(wing && line && achievementGoal(*wing) == line->count);
+
+    for (const char* id : {"keyloggerhead", "placeholder_daemon", "coaxeel"})
+        g.debugSeedRack(id);
+    g.tick(t += kAchSweepIntervalMs);
+    CHECK(!g.hasAchievement("WING_TROJAN"));      // three quarters of a family is none
+    CHECK(!g.hasAchievement("WING_WORM"));        // ...and a wing is per-line, not per-shelf
+    g.debugSeedRack("usbasilisk");
+    g.tick(t += kAchSweepIntervalMs);
+    CHECK(g.hasAchievement("WING_TROJAN"));
+    CHECK(g.achValue(*wing) == line->count);
+
+    // Release one — Deploy -> Sell -> Release on the stored pet's record — and the count
+    // drops back while the row stays earned.
+    enterArchStoredPet(g, "coaxeel");
+    g.onButton(press(Button::A));
+    g.onButton(press(Button::A));
+    archConfirmAction(g);
+    CHECK(g.rackCount() == line->count - 1);
+    CHECK(g.achValue(*wing) == line->count - 1);
+    CHECK(g.hasAchievement("WING_TROJAN"));
+}
+
+// NO_VACANCY is the one rack row that cannot be a rung: "full" is measured against a
+// ceiling the player buys, so it is fired at the freeze that takes the last free slot
+// (Game::archStoreActive) rather than swept off a count.
+void test_achievement_no_vacancy_fires_on_the_last_free_slot() {
+    Game g{StartMode::Hatched};
+    uint32_t t = 0;
+    g.tick(t += kHeartbeatMs);
+    CHECK(g.rackSlots() == kRackSlots);           // the default shelf, unupgraded
+    for (int i = 0; i < kRackSlots - 1; ++i) g.debugSeedRack("cryptoshell");
+    g.tick(t += kAchSweepIntervalMs);
+    CHECK(!g.hasAchievement(ach::kNoVacancy));    // one slot still free
+
+    // ARCH's NEW EGG row IS the Store, so this is the freeze a player actually performs.
+    enterArchNewEgg(g);
+    CHECK(g.rackCount() == g.rackSlots());
+    CHECK(g.hasAchievement(ach::kNoVacancy));
 }
 
 // The banner is the only way an unlock reaches the player, so the rules around it matter:

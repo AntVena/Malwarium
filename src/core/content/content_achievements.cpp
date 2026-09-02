@@ -741,6 +741,114 @@ const AchievementDef kAchievements[] = {
      AchSeries::LineRaised, kGoalAll, "metamorphic", 0,
      {bits(400), item("commend_cache")}},
 
+    // --- The ARCH shelf as a COLLECTION -------------------------------------------
+    // The rack ladder above (RACK_3/RACK_6) counts HEADS. Everything here counts what
+    // those heads ARE, which is what the 64-slot shelf was sized for: the roster is 35
+    // species, so a full rack holds one of every one of them with room to spare
+    // (game_rig_shop.h). A shelf kept that way is a zoo, and these are its rows.
+    //
+    // Every one is an "at once" fact, so it can be UNDONE — deploy a pet and the count
+    // drops. That costs nothing: the earned bit is what the player did, and none of
+    // these rows re-opens once it lands. It does mean a rung is a moment to reach
+    // deliberately rather than a total that creeps up on its own, which is exactly the
+    // difference between this group and SpeciesRaised beside it.
+    //
+    // The rungs go where the RACK ladder left off, because a collection needs somewhere
+    // to sit before it needs anything else.
+    {/*wire=*/141, "RACK_12", "Data Centre",
+     "Hold {n} pets in the ARCH rack at once.", "ICON_ACH_RACK_12",
+     AchSeries::RackHeld, /*goal=*/12, nullptr, 0,
+     {bits(150), item("sealed_cache_rare")}},
+    {/*wire=*/142, "RACK_24", "Colocation",
+     "Hold {n} pets in the ARCH rack at once.", "ICON_ACH_RACK_24",
+     AchSeries::RackHeld, /*goal=*/24, nullptr, 0,
+     {bits(250), item("sealed_cache_rare")}},
+    // The shelf at the size the ARCH is drawn for, which is also the Containment Rack
+    // row bought out to its ceiling and then filled — a long project by design.
+    {/*wire=*/143, "RACK_64", "Hyperscaler",
+     "Hold {n} pets in the ARCH rack at once.", "ICON_ACH_RACK_64",
+     AchSeries::RackHeld, /*goal=*/64, nullptr, 0,
+     {bits(999), item("commend_cache")}},
+    // Not a rung on that ladder: "full" is measured against the capacity the player
+    // themself bought, so it lands at four slots or at sixty-four. Fired from
+    // Game::archStoreActive (content_achievements.h's ach::kNoVacancy).
+    {/*wire=*/144, "NO_VACANCY", "No Vacancy",
+     "Freeze a pet into the last free slot in the ARCH rack.", "ICON_ACH_NO_VACANCY",
+     AchSeries::Event, /*goal=*/0, nullptr, 0, {bits(60), item("sealed_cache_common")}},
+
+    // The zoology ladder proper: how many DIFFERENT species are on the shelf at once.
+    // Distinct from SPECIES_3/6/12 (raised, ever) in the way a collection is distinct
+    // from a diary — one of these asks what you have kept, the other what you have done.
+    {/*wire=*/145, "ZOO_5", "Petting Zoo",
+     "Keep {n} different species in the ARCH rack at once.", "ICON_ACH_ZOO_5",
+     AchSeries::RackSpecies, /*goal=*/5, nullptr, 0,
+     {bits(60), item("sealed_cache_common")}},
+    {/*wire=*/146, "ZOO_12", "Safari Park",
+     "Keep {n} different species in the ARCH rack at once.", "ICON_ACH_ZOO_12",
+     AchSeries::RackSpecies, /*goal=*/12, nullptr, 0,
+     {bits(150), item("sealed_cache_rare")}},
+    {/*wire=*/147, "ZOO_24", "Wildlife Reserve",
+     "Keep {n} different species in the ARCH rack at once.", "ICON_ACH_ZOO_24",
+     AchSeries::RackSpecies, /*goal=*/24, nullptr, 0,
+     {bits(400), item("commend_cache")}},
+    // The capstone the whole shelf exists for: a live copy of every species in the
+    // build, all cold, all at the same time. kGoalAll, so it re-opens when the roster
+    // grows rather than freezing at today's thirty-five.
+    {/*wire=*/148, "ZOO_ALL", "Living Bestiary",
+     "Keep all {n} species in the ARCH rack at once.", "ICON_ACH_ZOO_ALL",
+     AchSeries::RackSpecies, kGoalAll, nullptr, 0,
+     {bits(999), item("commend_cache")}},
+    // The same idea one axis wider and far earlier: one pet from each FAMILY, which is
+    // five slots and a lot of raising rather than a rig project.
+    {/*wire=*/149, "ZOO_FAMILIES", "One of Each",
+     "Keep a pet from all {n} creature families in the ARCH rack at once.",
+     "ICON_ACH_ZOO_FAMILIES",
+     AchSeries::RackLines, kGoalAll, nullptr, 0,
+     {bits(250), item("sealed_cache_rare")}},
+
+    // The WINGS: one family's whole roster, alive on the shelf together. The exhibit
+    // half of the FULL_LINE_* rows above — those are a 'Pedia filled in over a hundred
+    // lifecycles, these are every one of those creatures kept, at the same time, which
+    // costs both the raising and the slots. Priced by the size of the family, since
+    // that is what the row actually asks for.
+    {/*wire=*/150, "WING_RANSOMWARE", "Ransom Wing",
+     "Keep all {n} creatures of the {key} line in the ARCH rack at once.",
+     "ICON_ACH_WING_RANSOMWARE",
+     AchSeries::RackLineHeld, kGoalAll, "ransomware", 0,
+     {bits(999), item("commend_cache")}},
+    {/*wire=*/151, "WING_PHISHING", "Phish Wing",
+     "Keep all {n} creatures of the {key} line in the ARCH rack at once.",
+     "ICON_ACH_WING_PHISHING",
+     AchSeries::RackLineHeld, kGoalAll, "phishing", 0,
+     {bits(400), item("commend_cache")}},
+    {/*wire=*/152, "WING_TROJAN", "Trojan Wing",
+     "Keep all {n} creatures of the {key} line in the ARCH rack at once.",
+     "ICON_ACH_WING_TROJAN",
+     AchSeries::RackLineHeld, kGoalAll, "trojan", 0,
+     {bits(250), item("sealed_cache_rare")}},
+    {/*wire=*/153, "WING_WORM", "Worm Wing",
+     "Keep all {n} creatures of the {key} line in the ARCH rack at once.",
+     "ICON_ACH_WING_WORM",
+     AchSeries::RackLineHeld, kGoalAll, "worm", 0,
+     {bits(250), item("sealed_cache_rare")}},
+    {/*wire=*/154, "WING_METAMORPHIC", "Meta Wing",
+     "Keep all {n} creatures of the {key} line in the ARCH rack at once.",
+     "ICON_ACH_WING_METAMORPHIC",
+     AchSeries::RackLineHeld, kGoalAll, "metamorphic", 0,
+     {bits(250), item("sealed_cache_rare")}},
+
+    // The other direction: not one of everything, but everything of one. SECOND_INSTANCE
+    // is this ladder's first rung under an older name — it gates the Worm egg line, so it
+    // fires at the pair rather than on a sweep (content_achievements.h).
+    {/*wire=*/155, "TWINS_3", "Replica Set",
+     "Keep {n} copies of one species in the ARCH rack at once.", "ICON_ACH_TWINS_3",
+     AchSeries::RackTwins, /*goal=*/3, nullptr, 0,
+     {bits(60), item("sealed_cache_common")}},
+    {/*wire=*/156, "TWINS_8", "Clone Army",
+     "Keep {n} copies of one species in the ARCH rack at once.", "ICON_ACH_TWINS_8",
+     AchSeries::RackTwins, /*goal=*/8, nullptr, 0,
+     {bits(250), item("sealed_cache_rare")}},
+
     // The DEFRAG ladder's capstone, which STACK_50 stopped one rung short of.
     {/*wire=*/135, "STACK_100", "Solid State",
      "Clear {n} disks by hand in the DEFRAG minigame.", "ICON_ACH_STACK_100",

@@ -55,12 +55,20 @@ inline int achievementSeriesTotal(AchSeries series, const char* key, int param) 
         case AchSeries::MergesCooked:
         case AchSeries::PeersMet:
         case AchSeries::RackHeld:
+        // Bounded by the rack, but the rack's ceiling is a rig upgrade — player state,
+        // which this must not read. Fixed rungs instead, same as RackHeld above.
+        case AchSeries::RackTwins:
         case AchSeries::StepsWalked:
             return 0;                                   // unbounded — no "all of them"
         case AchSeries::SpeciesAtDepth:
         case AchSeries::SpeciesRaised:
         case AchSeries::SpeciesSeen:
+        // "One of everything, alive, at once" — the same roster the three above count
+        // over, asked of the shelf rather than of a lifetime.
+        case AchSeries::RackSpecies:
             return kCreatureCount;
+        case AchSeries::RackLines:
+            return kCreatureLineCount;
         case AchSeries::QuotesSolved:
             return quoteCount();
         case AchSeries::AreasCleared:
@@ -73,6 +81,9 @@ inline int achievementSeriesTotal(AchSeries series, const char* key, int param) 
             return kAreaCount * kSubAreasPerArea;
         case AchSeries::MalbeastsDefeated:
             return kWildMalbeastCount;
+        // Both ask "how many creatures are on line `key`" — one of what was ever raised,
+        // one of what is on the shelf right now — so they share the family's own count.
+        case AchSeries::RackLineHeld:
         case AchSeries::LineRaised: {
             // A line IS a family, so "how many creatures are on it" is the family's
             // own count — no roster scan, and no way to miscount a row whose `line`

@@ -109,6 +109,19 @@ enum class AchSeries : uint8_t {
     // ceiling: that ceiling is a rig upgrade, so it is player state, and
     // achievementSeriesTotal must stay pure (game_achievements.h). Fixed rungs instead.
     RackHeld,
+    // The rack read as a COLLECTION rather than as a headcount — which is what the
+    // 64-slot shelf is FOR (game_rig_shop.h): room to keep a live copy of one of
+    // everything, not just somewhere to park spares. All of these are "at once", so a
+    // value FALLS when a pet is deployed or released; the earned bit never does, because
+    // an achievement records something the player did, not something still true.
+    RackSpecies,        // distinct species on the shelf at once (total = the roster)
+    RackLines,          // distinct families represented on it (total = every line)
+    RackLineHeld,       // creatures of line `key` on it at once (total = that line)
+    // The biggest stack of ONE species on the shelf. AchSeries::Event's SECOND_INSTANCE
+    // is the first rung of this ladder in all but name, and stays an Event because it
+    // GATES the Worm egg line: a gate has to fire the moment the pair meets rather than
+    // on the next sweep.
+    RackTwins,
     StepsWalked,        // lifetime exploration steps
 };
 
@@ -227,6 +240,10 @@ inline constexpr const char* kDockPunchingUp   = "DOCK_PUNCHING_UP";
 // belongs to at most one crew at a time and may switch freely — there is no count here
 // that could mean anything, only the moment of first taking a side.
 inline constexpr const char* kCrewEnlisted     = "CREW_ENLISTED";
+// The ARCH rack left with no free slot, fired from Game::archStoreActive. The one rack
+// row that cannot be a counted rung: "full" is a comparison against a ceiling the player
+// bought themself (Game::rackSlots), so there is no fixed number to hold it to.
+inline constexpr const char* kNoVacancy        = "NO_VACANCY";
 inline constexpr const char* kDeepWebDepth8    = "DEEPWEB_DEPTH_8";
 inline constexpr const char* kDeepWebDepth64   = "DEEPWEB_DEPTH_64";
 }  // namespace ach
