@@ -678,15 +678,27 @@ int shopDescLines(int visibleRows) {
     return std::max(1, (kShopStatusY - top) / (kFontH + 3));
 }
 
-// One storefront row: name, full price (Bits + any item costs), and remaining
+// One storefront row: name, the full price (Bits + any item costs), and remaining
 // stock as a count (so it reads in grayscale — sold out shows STOCK 0, not just a
 // greyed row). `selected` draws the row cursor.
+//
+// A CAPPED row (a mod, bounded by MOD STORAGE) also carries "HAVE n/cap" opposite the
+// name, above STOCK: the two counts share a right-hand column, what is on the shelf
+// under what is already in the pool. It is the same fraction the mod detail panel
+// prints (mods_screen.h) and the number STORAGE FULL is read off, and it turns WARN at
+// the ceiling. An UNCAPPED row (an item — an inventory stack has no ceiling) leaves the
+// column empty and keeps the full row width for its name, which is the half a shopper
+// cannot lose.
 void drawShopRow(Framebuffer& fb, int rowY, const ShopRowView& row, bool selected,
                  int beat) {
     fb.fillRect(4, rowY - 2, kActiveW - 8, kShopRowPitch - 6, palColor(Pal::TRACK));
     if (selected) drawRowCursor(fb, 10, rowY + 4, palColor(Pal::ACCENT));
-    drawTextMarquee(fb, 24, rowY + 2, kActiveW - kMargin - 24, row.name,
-                    palColor(Pal::INK), beat, selected);
+    char haveStr[16] = {0};
+    const bool full = row.heldCap > 0 && row.held >= row.heldCap;
+    if (row.heldCap > 0)
+        std::snprintf(haveStr, sizeof(haveStr), "HAVE %d/%d", row.held, row.heldCap);
+    drawLabelValue(fb, 24, rowY + 2, row.name, palColor(Pal::INK), haveStr,
+                   full ? palColor(Pal::WARN) : palColor(Pal::INK_DIM), beat, selected);
 
     // The price line carries the item costs too, so it is the half that grows; STOCK
     // is the fact a shopper cannot lose, so the price yields to it.

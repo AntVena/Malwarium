@@ -262,14 +262,19 @@ bool Game::itemUseIsInert(const ItemDef& d, const char*& why) const {
                 if (e.magnitude > deepWebDepthMultiplier_) return false;
                 if (!reason) reason = "STRONGER ONE ARMED";
                 break;
+            // Both bells are measured against the depth a dive would actually start at
+            // (armedDeepWebStartDepth), never the raw pending field: a live Zero-Day
+            // arming is a negative SENTINEL there, so comparing against it would let any
+            // bell — including a second Zero-Day, which can only re-arm what is already
+            // armed — spend itself over a deeper start.
             case ItemEffect::Kind::SetDeepWebStartDepth:
                 ++armingEffects;
-                if (e.magnitude > pendingDeepWebStartDepth_) return false;
+                if (e.magnitude > armedDeepWebStartDepth()) return false;
                 if (!reason) reason = "DEEPER START ARMED";
                 break;
             case ItemEffect::Kind::SetDeepWebStartDepthToBest:
                 ++armingEffects;
-                if (bestDeepWebDepth_ > pendingDeepWebStartDepth_) return false;
+                if (bestDeepWebDepth_ > armedDeepWebStartDepth()) return false;
                 if (!reason) reason = "DEEPER START ARMED";
                 break;
             case ItemEffect::Kind::ClearReplicationGhost:

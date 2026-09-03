@@ -21,6 +21,10 @@
 //        fullkit (every unlocked move slot and every mod slot equipped)
 //        pantry (one of EVERY item in the bag — the whole icon set in a list, and the
 //             deepest the combat picker's ITEMS band gets)
+//        shop | modshop [full] (an area's two storefronts — the ITEM shop and the MOD
+//             shop, one screen either way. "full" tops the mod pool up to
+//             modStorageCap() first, which is the state the row's HAVE n/cap column and
+//             the STORAGE FULL buy reason exist for)
 //        maint [detail] [stacker [slide|drop|stop ...]] · lockout · evolve
 //        cryptogram [open:<n>] [take] [win|lose] (THE DECRYPTOGRAM's quote board, cashed
 //             at the VAULT; "open:<n>" places n letters correctly so the frame shows a
@@ -1019,6 +1023,7 @@ int main(int argc, char** argv) {
               hasFlag(argc, argv, "walk") || hasFlag(argc, argv, "encounter") ||
               hasFlag(argc, argv, "wildcombat") || hasFlag(argc, argv, "wifi") ||
               hasFlag(argc, argv, "rank") || hasFlag(argc, argv, "shop") ||
+              hasFlag(argc, argv, "modshop") ||
               hasFlag(argc, argv, "warp") || hasFlag(argc, argv, "postencounter") ||
               hasFlag(argc, argv, "shibboleth") || hasFlag(argc, argv, "outro")) {
         // Explore-mode: arm sector 0 → the game drops back to the IDLE
@@ -1284,15 +1289,24 @@ int main(int argc, char** argv) {
                 case Game::Nav::Shop: game.onButton({Button::C, true, false}); break;
                 default: break;
             }
-        } else if (hasFlag(argc, argv, "shop")) {
+        } else if (hasFlag(argc, argv, "shop") || hasFlag(argc, argv, "modshop")) {
+            // The two storefronts share one screen, so the walk stops at whichever
+            // this scene asked for and LEAVES the other kind (C) to keep stepping.
+            // "full" fills the mod pool to modStorageCap() before the visit, which is
+            // the state the HAVE n/cap column and the STORAGE FULL buy reason exist for.
+            const bool wantMods = hasFlag(argc, argv, "modshop");
+            const Game::Nav stopAt = wantMods ? Game::Nav::ModShop : Game::Nav::Shop;
             game.inventory().add("sinkhole_trap", 20);
-            for (int i = 0; i < 400 && game.nav() != Game::Nav::Shop; ++i) {
+            for (int i = 0; i < 400 && game.nav() != stopAt; ++i) {
                 if (game.nav() == Game::Nav::Encounter) {
                     game.onButton({Button::A, true, false});
                     game.onButton({Button::A, true, false});
                     game.onButton({Button::B, true, false});
                 } else if (game.nav() == Game::Nav::Wifi) {
                     game.onButton({Button::B, true, false});
+                } else if (game.nav() == Game::Nav::Shop ||
+                           game.nav() == Game::Nav::ModShop) {
+                    game.onButton({Button::C, true, false});   // the other storefront
                 } else if (game.nav() == Game::Nav::Combat) {
                     for (int j = 0; j < 800 &&
                             game.combat().outcome() == Combat::Outcome::Ongoing; ++j)
@@ -1300,6 +1314,10 @@ int main(int argc, char** argv) {
                     game.onButton({Button::B, true, false});
                 } else ping();
             }
+            if (wantMods && hasFlag(argc, argv, "full"))
+                for (int i = 0; i < game.shopListingCount(); ++i)
+                    for (int k = 0; k < game.modStorageCap(); ++k)
+                        game.debugGrantMod(game.shopListingId(i));
         } else if (hasFlag(argc, argv, "outro")) {
             // Ride a wild fight to a WIN and hold ON the combat screen for `beats`, so
             // the frame lands inside the beaten rival's dissolve rather than past it.

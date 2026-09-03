@@ -116,25 +116,56 @@ int Game::shopListingCostHave(int i, int k) const {
                : 0;
 }
 
-const char* Game::shopStatusLine() const {
-    // Spelled out so the buy-availability reason survives grayscale (dual-coding).
-    if (!shopRowInRange(shopFront_, shopCursor_)) return "";
-    const ShopListingDef& def = shopFront_->listings[shopCursor_];
-    if (shopStockLeft_[shopCursor_] <= 0) return "SOLD OUT";
+int Game::shopListingHeld(int i) const {
+    if (!shopRowInRange(shopFront_, i)) return 0;
+    const char* id = shopFront_->listings[i].id;
+    // The MOD count is the un-equipped SPARE pool, the same number the cap bounds
+    // (Loadout::grant) — an installed mod was consumed and left the pool, so it is
+    // neither held nor in the way of holding another.
+    return shopIsModShop_ ? loadout_.countOf(id) : inventory_.count(id);
+}
+
+int Game::shopListingHeldCap(int i) const {
+    if (!shopRowInRange(shopFront_, i)) return 0;
+    // Only mods have a ceiling: the MOD STORAGE rig row's allowance, the same one every
+    // other grant site measures against. An inventory stack has none, so an item row
+    // reports 0 — the screen reads that as "no HAVE column", and the buy gate as
+    // "nothing to be full of".
+    return shopIsModShop_ ? modStorageCap() : 0;
+}
+
+const char* Game::shopRowRefusal(int i) const {
+    if (!shopRowInRange(shopFront_, i)) return "";
+    const ShopListingDef& def = shopFront_->listings[i];
+    if (shopStockLeft_[i] <= 0) return "SOLD OUT";
+    // Storage before the wallet: a full mod pool is the one refusal Bits cannot answer,
+    // so naming a price the player could meet would send them off to earn Bits that
+    // still would not buy this. The buy is refused OUTRIGHT rather than taken and
+    // dropped — Loadout::grant would return false and the Bits would be gone for a mod
+    // that never arrived.
+    const int cap = shopListingHeldCap(i);
+    if (cap > 0 && shopListingHeld(i) >= cap) return "STORAGE FULL";
     if (bits_ < def.bitsPrice) return "NOT ENOUGH BITS";
     for (const auto& c : def.costs)
         if (c.itemId && inventory_.count(c.itemId) < c.qty) return "NOT ENOUGH ITEMS";
-    return "B TO BUY";
+    return nullptr;
+}
+
+bool Game::shopRowBuyable(int i) const {
+    return shopRowInRange(shopFront_, i) && shopRowRefusal(i) == nullptr;
+}
+
+const char* Game::shopStatusLine() const {
+    // Spelled out so the buy-availability reason survives grayscale (dual-coding).
+    if (!shopRowInRange(shopFront_, shopCursor_)) return "";
+    const char* why = shopRowRefusal(shopCursor_);
+    return why ? why : "B TO BUY";
 }
 
 void Game::buyShopItem() {
-    if (!shopRowInRange(shopFront_, shopCursor_)) return;
+    if (!shopRowBuyable(shopCursor_)) return;   // inert — the sign says which reason
     const int i = shopCursor_;
-    if (shopStockLeft_[i] <= 0) return;
     const ShopListingDef& def = shopFront_->listings[i];
-    if (bits_ < def.bitsPrice) return;
-    for (const auto& c : def.costs)
-        if (c.itemId && inventory_.count(c.itemId) < c.qty) return;  // inert — a cost is short
 
     bits_ -= def.bitsPrice;
     for (const auto& c : def.costs) if (c.itemId) inventory_.remove(c.itemId, c.qty);
@@ -143,8 +174,8 @@ void Game::buyShopItem() {
     char buf[28];
     if (shopIsModShop_) {
         // A shop buy runs through the same storage cap a drop does — the row is
-        // affordability-gated at the till (shopRowBuyable), so reaching here means
-        // there was room for it.
+        // storage-gated at the till (shopRowRefusal's STORAGE FULL), so reaching here
+        // means there was room for it.
         const ModDef* m = registry_.mod(def.id);
         loadout_.grant(def.id, modStorageCap());
         std::snprintf(buf, sizeof(buf), "BOUGHT %s", m ? m->displayName : def.id);

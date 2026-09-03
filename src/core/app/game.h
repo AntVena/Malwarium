@@ -465,6 +465,23 @@ public:
     const char* shopListingCostName(int i, int k) const;        // display name of cost item k
     int shopListingCostQty(int i, int k) const;
     int shopListingCostHave(int i, int k) const;                // held count, for the buy gate
+    // How many of the row's own goods the player already holds, and the ceiling that
+    // count is measured against (0 = no ceiling). A MOD row reads the un-equipped spare
+    // pool against modStorageCap(); an ITEM row reads the inventory stack, which has no
+    // cap at all. A capped row shows the pair as "HAVE n/cap", so a storefront answers
+    // "have I got this already, and can I take another" before the Bits are gone rather
+    // than after — and STORAGE FULL is that same pair as a buy reason.
+    int shopListingHeld(int i) const;
+    int shopListingHeldCap(int i) const;
+    // Is this row's buy available right now? The single answer the till (buyShopItem)
+    // and the sign (shopStatusLine) both defer to, so a shop can never refuse a
+    // purchase it drew as available, or take Bits for one it drew as refused.
+    bool shopRowBuyable(int i) const;
+    // ...and the same answer in WORDS for the SELECTED row — "SOLD OUT" /
+    // "STORAGE FULL" / "NOT ENOUGH BITS" / "NOT ENOUGH ITEMS" / "B TO BUY". Spelled
+    // out rather than coloured so the buy reason survives grayscale (the dual-coding
+    // rule); the shop screen prints it verbatim.
+    const char* shopStatusLine() const;
     // EXPL sector-clear flags: has sector `idx`'s boss/gauntlet
     // been cleared? Drives the linear unlock (sector N+1 opens when N clears).
     bool sectorCleared(int idx) const {
@@ -1801,6 +1818,15 @@ public:
     // reader outside the engine — the habitat draws it via game_render.cpp — so tests
     // read it here to assert the buff survives the dive it was armed for.
     int debugDepthMultiplier() const { return deepWebDepthMultiplier_; }
+    // The depth the next dive would START at (-1 = no bell armed), with the Zero-Day
+    // sentinel already resolved — armedDeepWebStartDepth(), which is what the bells'
+    // own inert check compares against, so a gate asserts the number the engine acts on
+    // rather than the raw field's sentinel.
+    int debugArmedStartDepth() const { return armedDeepWebStartDepth(); }
+    // Set this pet's best-ever dive depth, the frontier a Zero-Day Bell targets. Real
+    // path: winning at that depth (game_combat.cpp) — a gate that needs a pet with a
+    // record behind it says so directly instead of playing a dive out.
+    void debugSetBestDeepWebDepth(int depth) { bestDeepWebDepth_ = depth < 0 ? 0 : depth; }
     // Arm explore-mode on a SPECIFIC sub-area directly (tests): once cleared sub-areas
     // are re-farmable the EXPL "first-selectable" row is ambiguous, so a test
     // that needs a particular frontier arms it here instead of A-cycling. Real path:
@@ -2359,7 +2385,11 @@ private:
     void startModShopEvent();
     void onShop(const ButtonEvent& ev);
     void buyShopItem();
-    const char* shopStatusLine() const;
+    // Why row `i` cannot be bought, as the spelled-out WORDS the sign shows, or nullptr
+    // when it can. One function so the till and the sign are the same answer rather than
+    // two lists of conditions that have to be kept in step — shopRowBuyable() is this
+    // asked as a yes/no, and shopStatusLine() is it asked about the selected row.
+    const char* shopRowRefusal(int i) const;
 
     // Key warp items. A "Key-item find" walk event drops a
     // random warp key into the inventory (non-interrupting, like the Sealed Cache);
@@ -2859,6 +2889,16 @@ private:
     int pendingDeepWebStartDepth_ = -1;
     static constexpr int kDeepWebStartDepthUseBest = -2;  // pendingDeepWebStartDepth_
                                                           // sentinel for the Zero-Day Bell
+    // The depth a dive would actually START at right now (-1 = nothing armed), with the
+    // Zero-Day sentinel resolved through bestDeepWebDepth_ exactly as startDeepWebDive()
+    // resolves it. Anything COMPARING bells reads this rather than the raw field: the
+    // sentinel is a negative number, so a raw compare sorts a live Zero-Day arming below
+    // "nothing armed" and lets a shallower bell overwrite it — the downgrade paid for
+    // with an item that the inert check (itemUseIsInert) exists to refuse.
+    int armedDeepWebStartDepth() const {
+        if (pendingDeepWebStartDepth_ == kDeepWebStartDepthUseBest) return bestDeepWebDepth_;
+        return pendingDeepWebStartDepth_;
+    }
     // How many stacking foods (ItemEffect::Kind::HungerStacking — Polltatoes) the pet
     // has eaten since it last lost a Hunger point to decay. Session-volatile like the
     // dive knobs above: the run it measures is a sitting at the bag, and the next

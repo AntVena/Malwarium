@@ -86,6 +86,7 @@ SCENES=(
   # the rival seat that used to be a borrowed pet sheet.
   "guardian_fight|shibboleth refused fight beats:60"
   "shop|shop"                       "encounter|encounter"
+  "modshop|modshop"                 "modshop_full|modshop full"
   "combat|combat"                   "postencounter|postencounter"
   "combat_stats|combat stats"       "combat_kit|combat kit"
   "combat_bands|combat override crew pantry"

@@ -247,6 +247,15 @@ struct ShopRowView {
     int costCount = 0;                                 // 0..kMaxShopCostItems
     const char* costName[kMaxShopCostItems] = {};
     int costQty[kMaxShopCostItems] = {};
+    // What the SHOPPER already has of this row's goods, and the ceiling on it
+    // (0 = uncapped). A mod row is the un-equipped spare pool against MOD STORAGE
+    // (Game::shopListingHeld / shopListingHeldCap), drawn as the "HAVE n/cap" the mod
+    // detail panel uses (mods_screen.h) — and a full pool is what the STORAGE FULL buy
+    // reason names, so the row carries the number that reason is derived from. An
+    // uncapped row (an item stack) draws no HAVE column at all: with no ceiling to
+    // measure against it would only cost the name the width it reads in.
+    int held = 0;
+    int heldCap = 0;
 };
 
 // The tightest description budget on any screen: a storefront squeezes the selected

@@ -1040,6 +1040,8 @@ void Game::drawShopScreen(Framebuffer& fb) const {
             rows[i].costName[k] = shopListingCostName(i, k);
             rows[i].costQty[k] = shopListingCostQty(i, k);
         }
+        rows[i].held = shopListingHeld(i);
+        rows[i].heldCap = shopListingHeldCap(i);
     }
     drawShop(fb, shopStoreName(), bits_, rows, n, shopCursor_,
              shopListingDescription(shopCursor_).c_str(), shopStatusLine(), beat_);

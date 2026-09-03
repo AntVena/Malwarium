@@ -78,6 +78,7 @@ int g_failures = 0;
     RUN(test_lockout_expire_mistakes)       \
     RUN(test_backup_drive_arms_and_lapses)  \
     RUN(test_inert_use_keeps_the_item)      \
+    RUN(test_diving_bells_refuse_a_shallower_start) \
     /* The USB port: branch overrides, the soak pair, and the one-slot rule */ \
     RUN(test_branch_override_usbs_overrule_the_care_record) \
     RUN(test_branch_override_holds_one_device_at_a_time) \
@@ -414,6 +415,8 @@ int g_failures = 0;
     RUN(test_shop_cursor_cycles_all_listings)     \
     RUN(test_mod_shop_buy_grants_mod)             \
     RUN(test_mod_shop_buy_gated_by_item_cost)     \
+    RUN(test_mod_shop_buy_gated_when_storage_full) \
+    RUN(test_shop_rows_report_what_is_already_held) \
     RUN(test_shop_grayscale)                      \
     RUN(test_shop_auto_leaves_after_hold)         \
     RUN(test_sealed_cache_walk_find)              \

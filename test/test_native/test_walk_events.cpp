@@ -362,6 +362,75 @@ void test_mod_shop_buy_gated_by_item_cost() {
     CHECK(g.loadout().owns(id) == ownedBefore);
 }
 
+// A mod's STORAGE CAP is a buy gate, not just a drop gate: a pool already holding
+// modStorageCap() copies of the listed mod refuses the purchase outright instead of
+// taking the Bits and the item costs for a mod Loadout::grant would then drop on the
+// floor. The row says so before the press (HAVE n/cap + STORAGE FULL), and raising the
+// cap through the Rig Shop's MOD STORAGE row re-opens the same buy.
+void test_mod_shop_buy_gated_when_storage_full() {
+    Game g{StartMode::Hatched};
+    walkToModShop(g);
+    CHECK(g.nav() == Game::Nav::ModShop);
+    const int row = g.shopCursor();
+    const char* id = g.shopListingId(row);
+    const int cap = g.modStorageCap();
+    CHECK(g.shopListingHeldCap(row) == cap);          // a mod row carries the ceiling
+    CHECK(g.shopListingHeld(row) == g.loadout().countOf(id));
+
+    // Fill the pool for THIS listing's mod, then stand at the till with everything else
+    // the row asks for: only storage is short.
+    for (int i = 0; i < cap; ++i) g.debugGrantMod(id);
+    CHECK(g.shopListingHeld(row) == cap);
+    for (int k = 0; k < g.shopListingCostCount(row); ++k)
+        g.inventory().add(g.shopListingCostId(row, k), g.shopListingCostQty(row, k));
+    g.debugSetBits(g.shopListingBitsPrice(row) * 4);
+
+    const int bits0 = g.bits();
+    const int stock0 = g.shopListingStock(row);
+    CHECK(!g.shopRowBuyable(row));
+    CHECK(std::strcmp(g.shopStatusLine(), "STORAGE FULL") == 0);
+    g.onButton(press(Button::B));                     // inert — nothing changes hands
+    CHECK(g.bits() == bits0);
+    CHECK(g.shopListingStock(row) == stock0);
+    CHECK(g.loadout().countOf(id) == cap);
+    for (int k = 0; k < g.shopListingCostCount(row); ++k)
+        CHECK(g.shopListingCostHave(row, k) == g.shopListingCostQty(row, k));
+
+    // Room is what was missing: buying a MOD STORAGE tier makes the same row buyable.
+    g.debugSetBits(bits0 + kModStorageStart);
+    g.debugBuyModStorage();
+    CHECK(g.modStorageCap() > cap);
+    CHECK(g.shopListingHeldCap(row) == g.modStorageCap());
+    CHECK(g.shopRowBuyable(row));
+    CHECK(std::strcmp(g.shopStatusLine(), "B TO BUY") == 0);
+    g.onButton(press(Button::B));
+    CHECK(g.loadout().countOf(id) == cap + 1);
+    CHECK(g.shopListingStock(row) == stock0 - 1);
+}
+
+// The storefront reports what the shopper already HOLDS of a row, so "do I need this"
+// is answerable at the shelf. An ITEM row reads the inventory stack and is uncapped
+// (heldCap 0 — the screen prints a bare count); a MOD row reads the un-equipped spare
+// pool, which is what modStorageCap() bounds.
+void test_shop_rows_report_what_is_already_held() {
+    Game g{StartMode::Hatched};
+    walkToShop(g);
+    CHECK(g.nav() == Game::Nav::Shop);
+    const int row = g.shopCursor();
+    const char* id = g.shopListingId(row);
+    CHECK(g.shopListingHeldCap(row) == 0);            // an item stack has no ceiling
+    const int held0 = g.shopListingHeld(row);
+    CHECK(held0 == g.inventory().count(id));
+    g.inventory().add(id, 3);
+    CHECK(g.shopListingHeld(row) == held0 + 3);
+    // ...and a buy moves the same number, so the row and the bag never disagree.
+    g.debugSetBits(g.shopListingBitsPrice(row));
+    for (int k = 0; k < g.shopListingCostCount(row); ++k)
+        g.inventory().add(g.shopListingCostId(row, k), g.shopListingCostQty(row, k));
+    g.onButton(press(Button::B));
+    CHECK(g.shopListingHeld(row) == held0 + 4);
+}
+
 // Dual-coding gate: the shop screen reads in grayscale (the release rule).
 void test_shop_grayscale() {
     Game g{StartMode::Hatched};

@@ -453,6 +453,52 @@ void test_inert_use_keeps_the_item() {
     CHECK(g.inventory().count("yubi_cookie") == 0);  // but both were eaten
 }
 
+// The diving bells arm ONE start depth for the next dive, and the deeper arming always
+// wins — a shallower bell over it would be a downgrade paid for with an item, which is
+// what the inert gate refuses. The Zero-Day Bell is the case that has to be read
+// carefully: it arms "wherever this pet's record is" as a SENTINEL rather than a number,
+// so every comparison goes through the depth a dive would actually start at
+// (Game::armedDeepWebStartDepth) instead of the raw field.
+void test_diving_bells_refuse_a_shallower_start() {
+    Game g{StartMode::Hatched};
+    CHECK(g.debugArmedStartDepth() == -1);            // nothing armed
+
+    // A record deeper than any fixed bell reaches, so "best" is unambiguously the
+    // deepest start available.
+    g.debugSetBestDeepWebDepth(80);
+    g.inventory().add("zeroday_bell", 2);
+    g.debugUseItem("zeroday_bell");
+    CHECK(g.debugArmedStartDepth() == 80);            // the sentinel resolves to the record
+    CHECK(g.inventory().count("zeroday_bell") == 1);
+
+    // A second one can only re-arm what is already armed -> refused and kept.
+    g.debugUseItem("zeroday_bell");
+    CHECK(g.inventory().count("zeroday_bell") == 1);
+    CHECK(g.debugArmedStartDepth() == 80);
+
+    // ...and neither does a fixed bell that starts SHALLOWER than the live arming.
+    g.inventory().add("backdoor_bell", 1);            // depth 16
+    g.debugUseItem("backdoor_bell");
+    CHECK(g.inventory().count("backdoor_bell") == 1); // kept — 16 is not deeper than 80
+    CHECK(g.debugArmedStartDepth() == 80);
+
+    // A genuinely deeper arming still lands: the rule is "deeper wins", not "first wins".
+    Game h{StartMode::Hatched};
+    h.debugSetBestDeepWebDepth(8);
+    h.inventory().add("zeroday_bell", 1);
+    h.debugUseItem("zeroday_bell");
+    CHECK(h.debugArmedStartDepth() == 8);
+    h.inventory().add("kernel_bell", 1);              // depth 64
+    h.debugUseItem("kernel_bell");
+    CHECK(h.inventory().count("kernel_bell") == 0);   // spent — 64 beats a record of 8
+    CHECK(h.debugArmedStartDepth() == 64);
+    // ...and now the Zero-Day is the shallower of the two, so it is the one refused.
+    h.inventory().add("zeroday_bell", 1);
+    h.debugUseItem("zeroday_bell");
+    CHECK(h.inventory().count("zeroday_bell") == 1);
+    CHECK(h.debugArmedStartDepth() == 64);
+}
+
 // --- The USB port: the branch overrides and the soak pair ---------------------
 //
 // Four devices that all steer the pet's next evolution, and the rules they share are
