@@ -47,6 +47,27 @@ constexpr int kStripH = 9;
 // The answer clock's bar, immediately over the strip.
 constexpr int kClockY = kStripY - 6;
 
+// The HAIL and the VERDICT share one shape, because they are the same beat twice: a
+// banner naming what is happening, the guardian's gesture, the guardian's words, a rule,
+// and then two plain lines saying what it means to the pet. Fixed tops for the same
+// reason the riddle board's are — a player who has met a guardian before should find
+// every part of the next meeting where they left it.
+constexpr int kMeetBannerY = 32;
+constexpr int kMeetSeenY = 52;      // the gesture: plain, dim, up to two lines
+constexpr int kMeetSaidY = 82;      // what it says: the Cant, up to two lines
+constexpr int kMeetLines = 2;
+// The fence between the MEETING and what the meeting did to the pet. Everything above it
+// is the guardian; everything below it is the ledger, in plain words the pet's owner can
+// always read.
+constexpr int kMeetRuleY = 124;
+constexpr int kMeetNoteY = 138;
+constexpr int kMeetNote2Y = 158;
+
+void drawCentered(Framebuffer& fb, int y, const char* s, Rgb565 color) {
+    if (!s || !s[0]) return;
+    drawText(fb, (kActiveW - textWidth(s)) / 2, y, s, color);
+}
+
 void drawCantStrip(Framebuffer& fb, uint32_t sigils) {
     for (int i = 0; i < kCantSigils; ++i) {
         const int x = kStripX + i * kStripCellW;
@@ -126,6 +147,110 @@ void drawShibboleth(Framebuffer& fb, const char* guardian, const char* demeanour
     // asked you a question is an answer, and the wrong one. Saying "BACK" would be a lie
     // about what the button does.
     drawHintBand(fb, "A SWITCH  B SPEAK  C REFUSE");
+}
+
+namespace {
+
+// The chrome both bracketing screens wear: the guardian's name over its sigil count, the
+// banner, the gesture, the speech, and the rule under them. Drawn once here so the hail
+// and the verdict cannot drift apart — they are the two halves of one conversation, and
+// a player reading the second should recognise the first.
+void drawMeetingChrome(Framebuffer& fb, const char* guardian, const char* banner,
+                       Rgb565 bannerColor, const char* demeanour, const char* speech,
+                       uint32_t sigils) {
+    char count[12];
+    std::snprintf(count, sizeof(count), "%d/%d", sigilCount(sigils), kCantSigils);
+    drawHeaderBand(fb, guardian ? guardian : "", count, palColor(Pal::INK_DIM),
+                   palColor(Pal::ACCENT));
+
+    drawCentered(fb, kMeetBannerY, banner, bannerColor);
+
+    // What the pet can SEE, and the only plain-language thing above the rule. Dim and
+    // unquoted, so it never reads as speech — it is what the guardian is doing.
+    if (demeanour && demeanour[0])
+        drawTextWrapped(fb, kMargin, kMeetSeenY, kRiddleBodyW, demeanour,
+                        palColor(Pal::INK_DIM), kRiddleLineH, kMeetLines);
+
+    // What it SAYS, in the Cant. Gibberish at no sigils and plain speech at a full set,
+    // which is the whole ladder stated on the screen a player sees most often.
+    if (speech && speech[0])
+        drawTextWrapped(fb, kMargin, kMeetSaidY, kRiddleBodyW, speech,
+                        palColor(Pal::INK), kRiddleLineH, kMeetLines);
+
+    fb.fillRect(kMargin, kMeetRuleY, kActiveW - 2 * kMargin, 1, palColor(Pal::TRACK));
+}
+
+// The banner word per outcome. A WORD and not a colour, because the colour is the second
+// channel here and not the first: a grayscale shot still has to say whether the pet was
+// believed, and "IT IS SATISFIED" against "IT IS DISPLEASED" is what says it.
+const char* verdictBanner(ShibbolethVerdictKind kind) {
+    switch (kind) {
+        case ShibbolethVerdictKind::Pleased:    return "IT IS SATISFIED";
+        case ShibbolethVerdictKind::Displeased: return "IT IS DISPLEASED";
+        case ShibbolethVerdictKind::Refused:    return "IT REFUSES TO ASK";
+        case ShibbolethVerdictKind::Boon:       return "IT SPEAKS FREELY";
+    }
+    return "";
+}
+
+}  // namespace
+
+void drawShibbolethHail(Framebuffer& fb, const char* guardian, const char* demeanour,
+                        const char* greeting, uint32_t sigils, int shakes) {
+    // The banner states the one fact the whole system rests on and nothing else on the
+    // device says out loud: this thing is talking, and it is not talking the 'net's
+    // alphabet. Everything the player is about to fail to read follows from that.
+    drawMeetingChrome(fb, guardian, "IT SPEAKS THE CANT", palColor(Pal::ACCENT),
+                      demeanour, greeting, sigils);
+
+    // Below the rule: how much of that the pet can read, and what buying more costs. The
+    // count is the strip in words — the same fact in the screen's other channel — and the
+    // purse line is the only place the shake-for-a-sigil trade is ever explained.
+    // Sized for the widest either line can format rather than for the values that
+    // actually reach it: the purse is a device-lifetime count, and a buffer picked from
+    // today's plausible one is how a readout ends up cut in half on somebody's save.
+    char line[48];
+    std::snprintf(line, sizeof(line), "YOU READ %d OF %d SIGILS", sigilCount(sigils),
+                  kCantSigils);
+    drawCentered(fb, kMeetNoteY, line, palColor(Pal::INK));
+
+    if (sigilCount(sigils) >= kCantSigils) {
+        drawCentered(fb, kMeetNote2Y, "NOTHING LEFT TO LEARN", palColor(Pal::INK_DIM));
+    } else if (shakes > 0) {
+        std::snprintf(line, sizeof(line), "SHAKES %d - ONE PER SIGIL", shakes);
+        drawCentered(fb, kMeetNote2Y, line, palColor(Pal::ACCENT));
+    } else {
+        // Says what is missing rather than merely that something is: a shake is captured
+        // on the walk, so this is the one line here a player can go and act on.
+        drawCentered(fb, kMeetNote2Y, "NO SHAKE TO TRADE", palColor(Pal::INK_DIM));
+    }
+
+    drawCantStrip(fb, sigils);
+    drawHintBand(fb, "B LISTEN");
+}
+
+void drawShibbolethVerdict(Framebuffer& fb, const char* guardian,
+                           ShibbolethVerdictKind kind, const char* demeanour,
+                           const char* speech, const char* ledger, const char* flavor,
+                           uint32_t sigils, bool nextIsFight) {
+    const bool bad = kind == ShibbolethVerdictKind::Displeased ||
+                     kind == ShibbolethVerdictKind::Refused;
+    drawMeetingChrome(fb, guardian, verdictBanner(kind),
+                      palColor(bad ? Pal::WARN : Pal::ACCENT), demeanour, speech, sigils);
+
+    // Below the rule: what it cost or paid, then what that leaves the pet with. The
+    // ledger is the numbers and the flavor is the sentence — kept apart because a player
+    // who only reads one of the two should still come away with the outcome.
+    drawCentered(fb, kMeetNoteY, ledger, palColor(bad ? Pal::WARN : Pal::ACCENT));
+    drawCentered(fb, kMeetNote2Y, flavor, palColor(Pal::INK));
+
+    // The strip last, because a sigil bought by this answer is lit in it — the payout and
+    // the picture of the payout on the same screen.
+    drawCantStrip(fb, sigils);
+
+    // Named for what the button actually does. A displeased guardian answers for itself,
+    // and "B CONTINUE" over a boss would be a lie about where the press leads.
+    drawHintBand(fb, nextIsFight ? "B FACE IT" : "B CONTINUE");
 }
 
 }  // namespace mal

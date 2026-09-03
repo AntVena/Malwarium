@@ -86,7 +86,13 @@ const AreaDef kAreaNetSeaCrossing = {
      // sending one of its own. Speaking at all is an event for it.
      {{"I HAVE HEARD YOU BEFORE.", "IT DOES NOT MOVE AT ALL."},
       {"SAY IT AGAIN. I AM CERTAIN NOW.", "IT LEANS WITHOUT MOVING."},
-      {"I SPEAK SO RARELY. FORGIVE ME.", "SOMETHING OLD IS AWAKE."}}},
+      {"I SPEAK SO RARELY. FORGIVE ME.", "SOMETHING OLD IS AWAKE."}},
+     // How it takes the answer — pleased, displeased, affront, boon. It has spent its
+     // whole existence telling signal from noise, so that is the judgement it passes.
+     {{"I HEARD THAT CLEARLY.", "SOMETHING FAR OFF AGREES."},
+      {"THAT IS NOISE. I KNOW NOISE.", "THE WATER GOES COLD."},
+      {"I WILL NOT WASTE A WORD.", "IT SINKS BACK TO SILENCE."},
+      {"STAY. THE CABLE IS QUIET.", "IT LISTENS WITH YOU."}}},
     {"FLOATING POINT", kShopListings, arrLen(kShopListings)},
     {"THE HARDENED SHELL", kModShopListings, arrLen(kModShopListings)},
     kModPool,

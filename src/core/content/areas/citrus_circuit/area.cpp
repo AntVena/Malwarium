@@ -81,7 +81,13 @@ const AreaDef kAreaCitrusCircuit = {
      // it says is an offer nobody has accepted in a very long time.
      {{"YOU ARE LATE. THEY WERE ALL LATE.", "IT HAS WAITED SO LONG."},
       {"I STILL HAVE EVERY FILE. ASK ME.", "IT HOLDS OUT NOTHING."},
-      {"STAY. THE OTHERS DID NOT STAY.", "IT HOPES YOU WILL STAY."}}},
+      {"STAY. THE OTHERS DID NOT STAY.", "IT HOPES YOU WILL STAY."}},
+     // How it takes the answer — pleased, displeased, affront, boon. A seeder measures
+     // everything as a ratio, so what a pet gives back is the only thing it is grading.
+     {{"THEN THE SWARM IS NOT DEAD.", "IT SEEDS TO YOU AT LAST."},
+      {"YOU LEECH LIKE ALL OF THEM.", "YOUR RATIO IS NOTED."},
+      {"I DO NOT SEED TO STRANGERS.", "IT CHOKES THE STREAM OFF."},
+      {"SIT. THE TRANSFER IS SLOW.", "IT SHARES WHAT IT KEPT."}}},
     {"BYTE TO EAT", kShopListings, arrLen(kShopListings)},
     {"CHIP SHOP", kModShopListings, arrLen(kModShopListings)},
     kModPool,

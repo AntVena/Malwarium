@@ -836,6 +836,19 @@ constexpr int kShibbolethBoonMaxPct = 60;     // BOON chance at a COMPLETE Cant 
                                               // never asked again would retire the
                                               // riddles the moment they stopped being
                                               // needed, and the pool is the content
+constexpr int kShibbolethHailHoldBeats = 20;  // ~5s on the guardian's HAIL — the beat
+                                              // before the question, where the thing
+                                              // that stopped the walk gets to be a
+                                              // character instead of a puzzle prompt. A
+                                              // REVEAL rather than a decision, so it is
+                                              // the short hold the Wi-Fi event uses and
+                                              // not the shop's
+constexpr int kShibbolethVerdictHoldBeats = 24; // ~6s on the VERDICT: what the guardian
+                                              // made of the answer, and the only place
+                                              // a wrong reply is ever explained before
+                                              // the fight it causes. Longer than the
+                                              // hail because it carries the ledger of
+                                              // what the meeting cost or paid
 constexpr int kShibbolethReplyHoldBeats = 60; // ~15s to answer, then the guardian takes
                                               // the silence as an answer and the reply
                                               // resolves as a wrong one. Longer than the

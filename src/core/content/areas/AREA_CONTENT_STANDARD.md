@@ -89,9 +89,15 @@ its VOICE:
 ```
 {"THE LONG SEEDER",
  {"ratio_debt"},
+ // lines[] — how it MEETS a pet, one rolled per encounter
  {{"YOU ARE LATE. THEY WERE ALL LATE.", "IT HAS WAITED SO LONG."},
   {"I STILL HAVE EVERY FILE. ASK ME.",  "IT HOLDS OUT NOTHING."},
-  {"STAY. THE OTHERS DID NOT STAY.",    "IT HOPES YOU WILL STAY."}}},
+  {"STAY. THE OTHERS DID NOT STAY.",    "IT HOPES YOU WILL STAY."}},
+ // outcomes[] — how it TAKES what the pet did: pleased, displeased, affront, boon
+ {{"THEN THE SWARM IS NOT DEAD.", "IT SEEDS TO YOU AT LAST."},
+  {"YOU LEECH LIKE ALL OF THEM.", "YOUR RATIO IS NOTED."},
+  {"I DO NOT SEED TO STRANGERS.", "IT CHOKES THE STREAM OFF."},
+  {"SIT. THE TRANSFER IS SLOW.",  "IT SHARES WHAT IT KEPT."}}},
 ```
 
 **Each `GuardianLine` is one moment said twice**, and the pair is the whole mechanism. `cant` is
@@ -104,11 +110,21 @@ is waiting, or blocking the way, or offering something that is not there. As sig
 words arrive underneath a gesture they already understood, which is how anyone picks up a language
 nobody sat them down to teach.
 
+**`outcomes` is the same pair for how the meeting ENDED**, one per `GuardianOutcome` and in that
+order: **pleased** (the riddle was answered), **displeased** (answered wrong, or not at all),
+**affront** (it would not ask an illiterate pet in the first place), **boon** (fluent enough that
+the two simply talked). It is drawn on the VERDICT screen that closes every meeting, and it is
+what makes a lost riddle legible: the fight that follows is something the guardian *did* about the
+answer, and without a row here it arrives as a boss with no stated cause. Write all four in the
+guardian's own register — a guardian that grades everything as a ratio should be grading a ratio
+in all four.
+
 Budget, held by `test_every_guardian_speaks_and_fits_the_panel`: `seen` is **one** panel line and
 `cant` is at most **two**. A stage direction that runs long stops being a glance and starts
 competing with the riddle, which is the thing the player is meant to be reading. No line may be
-shared between two guardians — the five sounding like five different things is the point of
-authoring them at all.
+shared between two guardians, or between a guardian's `lines` and its `outcomes` — the five
+sounding like five different things is the point of authoring them at all. Both arrays are held to
+the same budget, since the hail and the verdict draw the pair in the same places.
 
 How far it out-classes the area is the SAME step for every area (`kGuardianHealthBonusPct` and
 friends, `tunables.h`) and stays cross-cutting for the reason the section below gives. It is

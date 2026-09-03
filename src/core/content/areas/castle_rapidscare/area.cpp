@@ -91,7 +91,13 @@ const AreaDef kAreaCastleRapidscare = {
      // does not exist and be believed, and there is nobody above it to ask instead.
      {{"GIVE ME A NAME. I WILL DECIDE.", "IT WAITS AS A JUDGE DOES."},
       {"I CAN SAY YOU DO NOT EXIST.", "IT IS ENTIRELY UNHURRIED."},
-      {"THERE IS NO ONE AFTER ME.", "THERE IS NO APPEAL HERE."}}},
+      {"THERE IS NO ONE AFTER ME.", "THERE IS NO APPEAL HERE."}},
+     // How it takes the answer — pleased, displeased, affront, boon. It deals only in
+     // whether a name resolves, so every verdict it passes is that same one answer.
+     {{"THEN YOU RESOLVE. GO ON.", "A NAME BECOMES AN ADDRESS."},
+      {"I FIND NO SUCH NAME.", "IT UNMAKES YOUR NAME."},
+      {"I DECIDE WHO MAY BE ASKED.", "IT RULES ON YOU UNASKED."},
+      {"YOU EXIST. I HAVE SAID SO.", "IT SETTLES THE MATTER."}}},
     {"SPAM & SCRAM", kShopListings, arrLen(kShopListings)},
     {"THE GHOST IN THE MACHINE", kModShopListings, arrLen(kModShopListings)},
     kModPool,

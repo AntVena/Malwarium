@@ -97,10 +97,15 @@
 //        named forms seed the ledger so the discovery beat resolves that way, which is
 //        what picks how far the pet eats the network glyph — pass a `beats` count to
 //        land on a frame of the absorb; bare "wifi" is the empty-queue beat)
-// shibboleth [sigils:<n>] (the guardian's riddle drawn in the CANT. `sigils` is how
+// shibboleth [hail|verdict [wrong]|refused] [sigils:<n>] (the guardian encounter's three
+//        screens. Bare "shibboleth" is the RIDDLE drawn in the CANT; "hail" is the beat
+//        before it and "verdict" the one after — what the guardian made of the answer,
+//        with "wrong" picking a reply it will not take. "refused"
+//        searches for the AFFRONT band instead, whose verdict is the one that never
+//        asked anything. `sigils` is how
 //        many letters the pet has learned to read, 0..26 — at 0 the panel is nonsense
 //        and at 26 it is plain English, with every stage between. Pass a `beats` count
-//        to walk the patience bar down)
+//        to walk the riddle's patience bar down)
 // rank (Hacker Rank rank-up celebration on the idle badge,; crosses
 //        a rank via registerNetwork, then resolves one event to surface it)
 //        postencounter (a wild fight ridden to its own auto-dismiss, landing the
@@ -1180,11 +1185,27 @@ int main(int argc, char** argv) {
             for (int i = 3; i < argc; ++i)
                 if (std::strncmp(argv[i], "sigils:", 7) == 0)
                     game.debugLearnSigils(std::atoi(argv[i] + 7));
-            // The welcome is ROLLED (game_shibboleth.cpp), so reach a riddle by asking
-            // until one comes up rather than by forcing the band — an affront goes
-            // straight to a fight, which is a screen this scene is not about.
+            // The HAIL is where every band opens, so a scene that only wants that one
+            // stops as soon as a guardian is summoned.
+            const bool wantHail = hasFlag(argc, argv, "hail");
+            const bool wantVerdict = hasFlag(argc, argv, "verdict");
+            const bool wantRefused = hasFlag(argc, argv, "refused");
+            // The welcome is ROLLED (game_shibboleth.cpp), so a band is reached by asking
+            // until it comes up rather than by forcing it.
             for (int i = 0; i < 200 && game.nav() != Game::Nav::Shibboleth; ++i) {
                 game.debugStartShibboleth();
+                if (wantHail) break;                      // the hail IS the scene
+                if (wantRefused) {
+                    // The refusal's own verdict: the one band that never asks anything,
+                    // and the screen that has to make a boss out of nowhere legible.
+                    if (game.shibbolethWelcome() != Game::ShibbolethWelcome::Affront)
+                        continue;
+                    game.onButton({Button::B, true, false});
+                    break;
+                }
+                game.onButton({Button::B, true, false});   // hail -> the band's screen
+                if (game.nav() == Game::Nav::ShibbolethVerdict)
+                    game.onButton({Button::B, true, false});
                 if (game.nav() == Game::Nav::Combat) {
                     for (int j = 0; j < 400 &&
                             game.combat().outcome() == Combat::Outcome::Ongoing; ++j)
@@ -1195,9 +1216,22 @@ int main(int argc, char** argv) {
                     game.onButton({Button::B, true, false});
                 if (!game.exploreActive()) game.debugArmExplore(0, 0);
             }
-            // `beats` walks the patience bar down, which is the only thing on this
-            // screen that moves — stopping if the hold answers for the pet underneath.
-            for (int i = 1; i <= beats && game.nav() == Game::Nav::Shibboleth; ++i)
+            // The VERDICT is what the focused reply earns. "wrong" steps the cursor OFF
+            // the true row first, which is the half of the pair worth looking at hardest:
+            // a displeased guardian is drawn in WARN and leads to a fight, so it is the
+            // screen the dual-coding gate has to hold.
+            if (wantVerdict && game.nav() == Game::Nav::Shibboleth) {
+                if (hasFlag(argc, argv, "wrong"))
+                    for (int i = 0; i < kRiddleReplies &&
+                            game.shibbolethRow() == game.shibbolethTrueRow(); ++i)
+                        game.onButton({Button::A, true, false});
+                game.onButton({Button::B, true, false});
+            }
+            // `beats` walks the patience bar down, which is the only thing on the riddle
+            // board that moves — stopping if a hold resolves the screen underneath.
+            for (int i = 1; i <= beats && (game.nav() == Game::Nav::Shibboleth ||
+                                           game.nav() == Game::Nav::ShibbolethHail ||
+                                           game.nav() == Game::Nav::ShibbolethVerdict); ++i)
                 game.tick(t += kHeartbeatMs);
         } else if (hasFlag(argc, argv, "rank")) {
             game.inventory().add("sinkhole_trap", 20);

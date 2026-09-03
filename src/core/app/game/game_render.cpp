@@ -108,7 +108,9 @@ void Game::render(Framebuffer& fb) const {
             break;
         case Nav::Encounter: drawEncounterScreen(fb); break;
         case Nav::Wifi: drawWifiScreen(fb); break;
+        case Nav::ShibbolethHail: drawShibbolethHailScreen(fb); break;
         case Nav::Shibboleth: drawShibbolethScreen(fb); break;
+        case Nav::ShibbolethVerdict: drawShibbolethVerdictScreen(fb); break;
         case Nav::Shop: drawShopScreen(fb); break;
         case Nav::ModShop: drawShopScreen(fb); break;
         case Nav::WarpPicker: drawWarpPickerScreen(fb); break;
@@ -967,6 +969,31 @@ void Game::drawShibbolethScreen(Framebuffer& fb) const {
     const float held = static_cast<float>(exploreEventBeat_) / kShibbolethReplyHoldBeats;
     drawShibboleth(fb, guardianName(), guardianDemeanour(), greeting, riddle, rows,
                    shibRow_, cantSigils_, held);
+}
+
+void Game::drawShibbolethHailScreen(Framebuffer& fb) const {
+    char greeting[kRiddleBodyCols * 2 + 8];
+    shibbolethGreeting(greeting, sizeof(greeting));
+    drawShibbolethHail(fb, guardianName(), guardianDemeanour(), greeting, cantSigils_,
+                       shakesUnspent());
+}
+
+void Game::drawShibbolethVerdictScreen(Framebuffer& fb) const {
+    // The content layer's outcome mapped onto the screen's own four. The two enums are
+    // kept apart on purpose — an area row is authored against GuardianOutcome, and the
+    // renderer only ever needs the banner word and whether it is bad news.
+    ShibbolethVerdictKind kind = ShibbolethVerdictKind::Pleased;
+    switch (shibbolethOutcome()) {
+        case GuardianOutcome::Pleased:    kind = ShibbolethVerdictKind::Pleased; break;
+        case GuardianOutcome::Displeased: kind = ShibbolethVerdictKind::Displeased; break;
+        case GuardianOutcome::Affront:    kind = ShibbolethVerdictKind::Refused; break;
+        case GuardianOutcome::Boon:       kind = ShibbolethVerdictKind::Boon; break;
+    }
+    char speech[kRiddleBodyCols * 2 + 8];
+    shibbolethOutcomeSpeech(speech, sizeof(speech));
+    drawShibbolethVerdict(fb, guardianName(), kind, shibbolethOutcomeSeen(), speech,
+                          shibbolethVerdictLine(), shibbolethFlavor(), cantSigils_,
+                          shibbolethVerdictFights());
 }
 
 void Game::drawShopScreen(Framebuffer& fb) const {

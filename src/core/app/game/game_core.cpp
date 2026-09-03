@@ -256,6 +256,17 @@ bool Game::tickHeartbeat(uint32_t nowMs) {
             // guardian enters a fight, which then auto-dismisses; the rest resolve to
             // the habitat). Any button press restarts the hold (onWifi resets it).
             if (++exploreEventBeat_ >= kExploreRevealHoldBeats) resolveWifiOutcome();
+        } else if (nav_ == Nav::ShibbolethHail && exploreActive_) {
+            // Hands-off REVEAL: the guardian arriving and speaking is something to WATCH,
+            // not a decision, so hold ~5s and then let the meeting go on to whatever the
+            // fluency roll already decided (openShibbolethWelcome). Any press restarts
+            // the hold, so a player reading the greeting is never hurried past it.
+            if (++exploreEventBeat_ >= kShibbolethHailHoldBeats) openShibbolethWelcome();
+        } else if (nav_ == Nav::ShibbolethVerdict && exploreActive_) {
+            // Hands-off REVEAL again: what the guardian made of the answer, held ~6s and
+            // then played out (finishShibboleth — its fight, or back to the walk). The
+            // consequence is already paid; this hold only decides how long it is read for.
+            if (++exploreEventBeat_ >= kShibbolethVerdictHoldBeats) finishShibboleth();
         } else if (nav_ == Nav::Shibboleth && exploreActive_) {
             // Hands-off DECISION, and the one place on the walk where running out of
             // time is not the same as being left alone: a guardian asked a question, and
@@ -654,7 +665,9 @@ bool Game::tickIdleDefocus(uint32_t nowMs) {
                            nav_ == Nav::ModalEvolve || nav_ == Nav::ModalCSF ||
                            nav_ == Nav::Combat || nav_ == Nav::ExploreControl ||
                            nav_ == Nav::Encounter || nav_ == Nav::Wifi ||
+                           nav_ == Nav::ShibbolethHail ||
                            nav_ == Nav::Shibboleth ||
+                           nav_ == Nav::ShibbolethVerdict ||
                            nav_ == Nav::Shop || nav_ == Nav::ModShop ||
                            nav_ == Nav::CacheYield ||
                            nav_ == Nav::BulkYield || nav_ == Nav::PostEncounter ||

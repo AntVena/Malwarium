@@ -300,11 +300,21 @@ not a penalty: every third dry event summons the area's **GUARDIAN** instead, an
 **SHIBBOLETH** to the pet — a riddle drawn in the **CANT**, the guardians' language, with three
 replies drawn the same way (`src/core/app/game/game_shibboleth.cpp`).
 
+**A meeting is three screens, and the riddle is the middle one.** It opens on the **HAIL** — the
+thing arrives, does something the pet can see, speaks, and the foot states how much of that the pet
+reads and what a sigil costs — and it closes on the **VERDICT**: what the guardian made of the
+answer, what that paid or cost, and which button leads where. Every fluency band passes through
+both, so a refusal is a refusal the player watched rather than a boss that appeared, and a lost
+riddle is something the guardian *did* rather than a fight with no stated cause. Each area authors
+its guardian's reaction per outcome (`GuardianDef::outcomes`,
+`src/core/content/areas/area_defs.h`) in the same said-twice pair its greetings use.
+
 **The Cant is legibility as a progression.** A letter the pet has learned — a **SIGIL** — is drawn
 as itself; every other is drawn as some other, under a substitution rerolled per encounter. So the
 same riddle clarifies in place as sigils come in, and because a substitution preserves width, a
 riddle that fits the panel at zero sigils fits at twenty-six. Everything the guardian SAYS rides
-that cipher; what the pet can SEE it doing is always plain, and the two are authored as one moment
+that cipher — its greeting, its question and its verdict alike; what the pet can SEE it doing is
+always plain, and the two are authored as one moment
 said twice — so a pet that reads nothing still comes away with the gesture, and the words arrive
 later underneath something it already understood. Answering correctly always pays
 Happiness and sheds Fragmentation. Learning a sigil is **separate and costs one unspent SHAKE** — a

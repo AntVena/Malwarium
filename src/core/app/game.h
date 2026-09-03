@@ -90,7 +90,7 @@ public:
     //   Detail      — L3 (item detail · MAINT action).
     //   Process     — a running MAINT process (non-interruptible).
     //   ModalFeeding / ModalLockout — event overlays.
-    enum class Nav { Idle, Cursor, Submenu, Detail, Process, ModalFeeding, ModalLockout, ModalLineSelect, ModalEggPick, ModalHatchReveal, ModalEvolve, ModalCSF, Combat, ExploreControl, Encounter, Wifi, Shop, ModShop, WarpPicker, RollbackPicker, CacheYield, BulkYield, PostEncounter, Stacker, Isolation, Chroma, Decryption, Cryptogram, ArcadeResult, Tourney, Shibboleth };
+    enum class Nav { Idle, Cursor, Submenu, Detail, Process, ModalFeeding, ModalLockout, ModalLineSelect, ModalEggPick, ModalHatchReveal, ModalEvolve, ModalCSF, Combat, ExploreControl, Encounter, Wifi, Shop, ModShop, WarpPicker, RollbackPicker, CacheYield, BulkYield, PostEncounter, Stacker, Isolation, Chroma, Decryption, Cryptogram, ArcadeResult, Tourney, ShibbolethHail, Shibboleth, ShibbolethVerdict };
 
     // Which L2 screen the ITEMS submenu is showing. Picker (the category tile
     // screen) only ever appears when itemPickerUnlocked(); every other path — no
@@ -345,6 +345,9 @@ public:
     int exploreStreak() const { return exploreStreak_; }    // current win-streak
     int exploreSector() const { return exploreSector_; }    // armed area (or last)
     int exploreSub() const { return exploreSub_; }          // armed sub-area
+    // The line under the walk's badge — what the last resolved event left behind
+    // (drawExploreScreen). Empty between events.
+    const char* exploreFlavor() const { return exploreFlavor_; }
     bool autoProgress() const { return autoProgress_; }     // hands-off ladder stepping
     // the endless DeepWeb Dive (terminal zone) is armed. It's an explore mode
     // on the virtual kDeepWebSector — no sub-area/boss, enemies scale to the pet.
@@ -1084,6 +1087,27 @@ public:
     void shibbolethGreeting(char* out, int cap) const;
     const char* guardianDemeanour() const;
     void shibbolethReplyText(int row, char* out, int cap) const;
+    // The two beats that BRACKET the riddle (Nav::ShibbolethHail, Nav::ShibbolethVerdict).
+    // A guardian is not a puzzle prompt: it arrives, it is met, and it makes something of
+    // what the pet said — so the riddle sits between a hail and a verdict rather than
+    // being the whole encounter.
+    //
+    // `shibbolethOutcome` is how this meeting came out, folded from the fluency band and
+    // the reply into the one axis the content is authored against (GuardianOutcome,
+    // area_defs.h). `shibbolethOutcomeSpeech` fills `out` with what the guardian SAYS
+    // about it, in the same cipher as the riddle; `shibbolethOutcomeSeen` is what the pet
+    // can see it doing, always plain. `shibbolethVerdictLine` is the engine's own plain
+    // ledger of what the meeting paid or cost ("+6 HAPPY  -4 FRAG"), and
+    // `shibbolethFlavor` is the consequence in words ("LEARNED A SIGIL - 3/26").
+    GuardianOutcome shibbolethOutcome() const;
+    void shibbolethOutcomeSpeech(char* out, int cap) const;
+    const char* shibbolethOutcomeSeen() const;
+    const char* shibbolethVerdictLine() const { return shibVerdictLine_; }
+    const char* shibbolethFlavor() const { return shibFlavor_; }
+    // Whether the verdict hands the pet to the guardian's fight rather than back to the
+    // walk. The screen names the button with it, so "B CONTINUE" never turns out to have
+    // meant a boss.
+    bool shibbolethVerdictFights() const;
     // Which shown row carries the true reply. Exposed for the gates — the screen never
     // asks, and neither does anything on the press path.
     int shibbolethTrueRow() const;
@@ -1977,7 +2001,9 @@ private:
     const SpriteData* idleCamoSprite(int slot) const;
     void drawEncounterScreen(Framebuffer& fb) const;
     void drawWifiScreen(Framebuffer& fb) const;
+    void drawShibbolethHailScreen(Framebuffer& fb) const;
     void drawShibbolethScreen(Framebuffer& fb) const;
+    void drawShibbolethVerdictScreen(Framebuffer& fb) const;
     void drawShopScreen(Framebuffer& fb) const;
     void drawPostEncounterScreen(Framebuffer& fb) const;
 
@@ -2278,8 +2304,13 @@ private:
     // with nothing focused, since silence is an answer here. startGuardianCombat() is
     // the shared way into the fight, from an affront and from a failed riddle alike.
     void startShibboleth();
+    void onShibbolethHail(const ButtonEvent& ev);
+    void openShibbolethWelcome();
     void onShibboleth(const ButtonEvent& ev);
     void answerShibboleth(bool answered);
+    void enterShibbolethVerdict();
+    void onShibbolethVerdict(const ButtonEvent& ev);
+    void finishShibboleth();
     void grantBoon();
     void startGuardianCombat();
     // Pay one unspent SHAKE for the next sigil of the Cant. Returns whether it bought
@@ -3246,7 +3277,12 @@ private:
     // (GuardianLine, area_defs.h). Rolled per encounter, so a guardian met twice is not
     // word-for-word the same meeting.
     int shibLine_ = 0;
-    char shibFlavor_[40] = "";  // what the guardian's answer was, for the walk's line
+    // What the meeting came to, in words, for the VERDICT screen and for the walk's line
+    // after it. `shibFlavor_` is the consequence ("LEARNED A SIGIL - 3/26", "IS NOT
+    // ANSWERED"); `shibVerdictLine_` is the stat ledger beside it ("+6 HAPPY  -4 FRAG").
+    // Both are written where the payout happens, so the screen only ever reads them.
+    char shibFlavor_[40] = "";
+    char shibVerdictLine_[40] = "";
 
     // Real-network discovery (game_net.cpp, core/net/network_ledger.h). Three
     // structures answering three questions:

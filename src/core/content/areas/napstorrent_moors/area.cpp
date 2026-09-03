@@ -87,7 +87,13 @@ const AreaDef kAreaNapstorrentMoors = {
      // it is the one doing the writing — so a pet is a clerical matter until it answers.
      {{"YOU ARE NOT YET WRITTEN DOWN.", "IT LOOKS FOR YOUR NAME."},
       {"ANSWER, AND I WILL ADD YOU.", "IT HOLDS A PLACE OPEN."},
-      {"WHAT IS NOT LISTED IS NOT HERE.", "YOU ARE A FILING MATTER."}}},
+      {"WHAT IS NOT LISTED IS NOT HERE.", "YOU ARE A FILING MATTER."}},
+     // How it takes the answer — pleased, displeased, affront, boon. A clerk to the
+     // last: nothing it does to a pet is worse than what it does to the listing.
+     {{"YOU ARE WRITTEN DOWN NOW.", "A LINE IS ADDED FOR YOU."},
+      {"I AM STRIKING YOU OUT.", "YOUR ENTRY IS SCRATCHED."},
+      {"UNLISTED THINGS ARE NOT ASKED.", "IT SHUTS THE LEDGER."},
+      {"YOUR PAGE IS ALREADY OPEN.", "IT READS YOU YOUR ENTRY."}}},
     {"MOOR-TO-MOOR", kShopListings, arrLen(kShopListings)},
     {"MOOR TO MODS", kModShopListings, arrLen(kModShopListings)},
     kModPool,

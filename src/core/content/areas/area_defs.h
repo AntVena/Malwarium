@@ -26,6 +26,8 @@
 // areas/deepweb_dive/area.cpp.
 #pragma once
 
+#include <cstdint>
+
 #include "core/content/defs.h"  // LootEntry — an area's wild-win drop table
 #include "core/render/scene_id.h"  // SceneId — an area names its backdrop the way it names its glyph
 
@@ -181,12 +183,32 @@ struct GuardianLine {
     const char* seen;
 };
 
+// How a meeting ENDS. A guardian is met on the walk and the walk does not stop there:
+// something happens because of what the pet said, and this is the row that says WHAT.
+// Indexes GuardianDef::outcomes, in this order.
+//
+// Pleased and Displeased are the two ways a riddle lands. Affront and Boon are the two
+// bands that never ask one at all (Game::startShibboleth's fluency roll) — a guardian
+// that will not hear an illiterate pet out still has to say so, and one that simply
+// talks to a fluent pet is the payoff the whole ladder climbs to.
+enum class GuardianOutcome : uint8_t { Pleased, Displeased, Affront, Boon };
+constexpr int kGuardianOutcomes = 4;
+
 struct GuardianDef {
     const char* name;
     const char* teaches[kMaxBossTeaches] = {};
     // What it says and what it looks like saying it — see GuardianLine. One is drawn per
     // encounter, rolled, so a guardian met twice is not word-for-word the same meeting.
     GuardianLine lines[kGuardianLines] = {};
+    // How it TAKES what the pet did — one GuardianLine per GuardianOutcome, in that
+    // order, and the same two channels for the same reason: a pet that reads nothing of
+    // the Cant still has to come away knowing whether it was believed.
+    //
+    // This is the half that makes a lost riddle legible. The fight that follows a wrong
+    // reply is the guardian's answer, and without a row here it arrives as a boss with
+    // no stated cause — so `displeased` is what turns "a fight started" into "it did not
+    // believe you". Written as ONE moment said twice, exactly like `lines` above.
+    GuardianLine outcomes[kGuardianOutcomes] = {};
 };
 
 struct AreaDef {

@@ -358,6 +358,9 @@ int g_failures = 0;
     RUN(test_every_guardian_speaks_and_fits_the_panel) \
     RUN(test_guardian_greeting_rides_the_riddles_cipher) \
     RUN(test_a_fluent_pet_hears_the_guardian_plainly) \
+    RUN(test_every_welcome_band_is_met_on_the_hail) \
+    RUN(test_the_bracketing_screens_auto_play_out) \
+    RUN(test_the_verdict_speaks_the_cant_and_shows_the_sigil_earned) \
     RUN(test_cant_persists_across_a_reboot)       \
     RUN(test_facing_mirror_reverses_the_draw)     \
     RUN(test_facing_mirror_reaches_every_creature_blit) \

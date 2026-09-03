@@ -83,7 +83,13 @@ const AreaDef kAreaPirateBayou = {
      // rather than cruel: there IS a right answer, and it is simply not posted.
      {{"STATE YOUR BUSINESS. CORRECTLY.", "IT BLOCKS THE WAY."},
       {"THE SEQUENCE IS NOT POSTED.", "IT WANTS SOMETHING EXACT."},
-      {"MANY KNOCK. FEW ARE ADMITTED.", "IT COUNTS YOU."}}},
+      {"MANY KNOCK. FEW ARE ADMITTED.", "IT COUNTS YOU."}},
+     // How it takes the answer — pleased, displeased, affront, boon. Officious to the
+     // end: every outcome is a door doing something, because that is all it controls.
+     {{"THE SEQUENCE WAS CORRECT.", "A DOOR COMES UNLOCKED."},
+      {"THAT KNOCK WAS NOT MINE.", "EVERY PORT SHUTS AT ONCE."},
+      {"YOU DID NOT KNOCK AT ALL.", "IT NEVER OPENED ITS BOOK."},
+      {"COME THROUGH. I KNOW YOU.", "IT STANDS ASIDE FOR YOU."}}},
     {"PIER-TO-PEER", kShopListings, arrLen(kShopListings)},
     {"PHISHY CHIPS", kModShopListings, arrLen(kModShopListings)},
     kModPool,

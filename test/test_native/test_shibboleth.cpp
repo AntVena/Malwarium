@@ -145,24 +145,43 @@ void test_riddle_pool_fits_the_panel() {
 // --- The encounter ---------------------------------------------------------
 
 namespace {
+// Ride out whatever a meeting turned into: the guardian's fight, its readout, and a walk
+// the loss ended. Leaves the pet on a live walk with nothing on screen.
+inline void clearGuardianAftermath(Game& g) {
+    if (g.nav() == Game::Nav::Combat) {
+        uint32_t t = 0;
+        for (int j = 0; j < 400 && g.combat().outcome() == Combat::Outcome::Ongoing; ++j)
+            g.tick(t += kHeartbeatMs);
+        g.onButton(press(Button::B));
+    }
+    if (g.nav() == Game::Nav::PostEncounter) g.onButton(press(Button::B));
+    if (!g.exploreActive()) enterWalk(g);
+}
+
 // Put a guardian in front of the pet and keep rolling until the welcome lands on a
 // RIDDLE. The welcome is a roll (tunables.h), so a gate about the riddle has to search
 // for one rather than assume it; returns false if the search ran out.
+//
+// Every band opens on the HAIL, so this steps past it before it can tell which band it
+// got — which is exactly what the player does.
 inline bool reachRiddle(Game& g) {
     for (int i = 0; i < 200; ++i) {
         g.debugStartShibboleth();
+        if (g.nav() != Game::Nav::ShibbolethHail) break;    // nothing was summoned
+        g.onButton(press(Button::B));                       // hail -> the band's screen
         if (g.nav() == Game::Nav::Shibboleth) return true;
-        // An affront went straight to the fight; ride it out and try again.
-        if (g.nav() == Game::Nav::Combat) {
-            uint32_t t = 0;
-            for (int j = 0; j < 400 && g.combat().outcome() == Combat::Outcome::Ongoing; ++j)
-                g.tick(t += kHeartbeatMs);
-            g.onButton(press(Button::B));
-            if (!g.exploreActive()) enterWalk(g);      // the fight ended the walk
-        }
-        if (g.nav() == Game::Nav::PostEncounter) g.onButton(press(Button::B));
+        // An affront or a boon resolved on its verdict instead; play it out and retry.
+        if (g.nav() == Game::Nav::ShibbolethVerdict) g.onButton(press(Button::B));
+        clearGuardianAftermath(g);
     }
     return false;
+}
+
+// Commit whatever the cursor is on and step through the verdict the reply earns, leaving
+// the pet wherever the meeting actually ends — the walk, or the guardian's fight.
+inline void speakAndDismiss(Game& g) {
+    g.onButton(press(Button::B));                           // the reply
+    if (g.nav() == Game::Nav::ShibbolethVerdict) g.onButton(press(Button::B));
 }
 // Step the cursor onto the row carrying the true reply.
 inline void focusTrueReply(Game& g) {
@@ -206,6 +225,13 @@ void test_shibboleth_win_pays_without_a_shake_but_buys_no_sigil() {
     CHECK(g.model().happiness() == happy0 + kShibbolethWinHappy);
     CHECK(g.model().fragmentation() == frag0 - kShibbolethWinFragCut);
     CHECK(g.sigilsKnown() == 0);                 // nothing to trade — no sigil
+    // The reply lands on the VERDICT, which is where a player finds out the answer was
+    // taken and — here — what the empty purse cost them. Only then back to the walk.
+    CHECK(g.nav() == Game::Nav::ShibbolethVerdict);
+    CHECK(g.shibbolethOutcome() == GuardianOutcome::Pleased);
+    CHECK(!g.shibbolethVerdictFights());
+    CHECK(std::strstr(g.shibbolethFlavor(), "SHAKE") != nullptr);
+    g.onButton(press(Button::B));
     CHECK(g.nav() == Game::Nav::Idle);           // and back to the walk, not a fight
 }
 
@@ -218,7 +244,7 @@ void test_shibboleth_win_spends_one_shake_for_one_sigil() {
     CHECK(g.shakesUnspent() == 3);
     CHECK(reachRiddle(g));
     focusTrueReply(g);
-    g.onButton(press(Button::B));
+    speakAndDismiss(g);
     CHECK(g.sigilsKnown() == 1);
     CHECK(g.shakesUnspent() == 2);
     CHECK(g.handshakesSeen() == 3);              // the lifetime tally never moves
@@ -253,6 +279,15 @@ void test_shibboleth_wrong_and_silent_both_cost_and_fight() {
                                              : Game::ShibbolethReply::Wrong));
         CHECK(g.model().happiness() == happy0 - kShibbolethLoseHappy);
         CHECK(g.model().fragmentation() == frag0 + kShibbolethLoseFrag);
+        // THE point of the verdict: the fight is something the guardian DID about the
+        // answer, and the player is told so — with the button named for where it leads —
+        // before the boss is on screen.
+        CHECK(g.nav() == Game::Nav::ShibbolethVerdict);
+        CHECK(g.shibbolethOutcome() == GuardianOutcome::Displeased);
+        CHECK(g.shibbolethVerdictFights());
+        CHECK(g.shibbolethFlavor()[0] != '\0');
+        CHECK(g.shibbolethVerdictLine()[0] != '\0');
+        g.onButton(press(Button::B));
         CHECK(g.nav() == Game::Nav::Combat);
         CHECK(g.combat().stakes() == Combat::Stakes::Live);
     }
@@ -273,8 +308,8 @@ void test_shibboleth_stepping_the_cursor_restarts_the_clock() {
 }
 
 // A fluent pet is received rather than tested: at a complete Cant the BOON band is
-// reachable, and a boon never opens a screen or a fight — it hands straight back to the
-// walk having paid something.
+// reachable, and a boon never opens a riddle or a fight — it pays as the hail is stepped
+// past, says so on its verdict, and hands back to the walk.
 void test_a_complete_cant_earns_boons() {
     Game g{StartMode::Hatched};
     enterWalk(g);
@@ -287,23 +322,22 @@ void test_a_complete_cant_earns_boons() {
         const int happy0 = g.model().happiness();
         const int ally0 = g.allyBuffBattlesLeft();
         g.debugStartShibboleth();
-        if (g.nav() == Game::Nav::Idle &&
+        if (g.nav() != Game::Nav::ShibbolethHail) break;
+        g.onButton(press(Button::B));             // the hail -> whichever band it was
+        if (g.nav() == Game::Nav::ShibbolethVerdict &&
             g.shibbolethWelcome() == Game::ShibbolethWelcome::Boon) {
             sawBoon = true;
             // A boon is one of two shapes and always pays ONE of them.
             CHECK(g.model().happiness() > happy0 ||
                   g.allyBuffBattlesLeft() > ally0);
+            CHECK(g.shibbolethOutcome() == GuardianOutcome::Boon);
+            CHECK(!g.shibbolethVerdictFights());  // a quiet word is never a fight
+            CHECK(g.shibbolethFlavor()[0] != '\0');
         } else if (g.nav() == Game::Nav::Shibboleth) {
             g.onButton(press(Button::B));         // a riddle — answer and keep looking
         }
-        if (g.nav() == Game::Nav::Combat) {
-            uint32_t t = 0;
-            for (int j = 0; j < 400 && g.combat().outcome() == Combat::Outcome::Ongoing; ++j)
-                g.tick(t += kHeartbeatMs);
-            g.onButton(press(Button::B));
-        }
-        if (g.nav() == Game::Nav::PostEncounter) g.onButton(press(Button::B));
-        if (!g.exploreActive()) enterWalk(g);
+        if (g.nav() == Game::Nav::ShibbolethVerdict) g.onButton(press(Button::B));
+        clearGuardianAftermath(g);
     }
     CHECK(sawBoon);
     // An AFFRONT is impossible at full fluency — the refusal chance scales to nothing —
@@ -379,6 +413,22 @@ void test_every_guardian_speaks_and_fits_the_panel() {
             CHECK(said.insert(l.cant).second);
             CHECK(said.insert(l.seen).second);
         }
+        // ...and it has something to say about how the meeting WENT, for every way it
+        // can go (GuardianOutcome). A missing row here is the failure this whole bracket
+        // exists to remove: a fight that starts with the guardian saying nothing about
+        // why. Held to the same one-line/two-line budget, since the verdict screen draws
+        // the pair in the same places the hail does.
+        for (const GuardianLine& l : area(a).guardian.outcomes) {
+            CHECK(l.cant != nullptr && l.cant[0] != '\0');
+            CHECK(l.seen != nullptr && l.seen[0] != '\0');
+            if (!l.cant || !l.seen) continue;
+            CHECK(textWidth(l.seen) <= bodyW);
+            CHECK(textWrapLines(l.cant, bodyW) <= 2);
+            for (const char* p = l.cant; *p; ++p) CHECK(*p >= 32 && *p <= 126);
+            for (const char* p = l.seen; *p; ++p) CHECK(*p >= 32 && *p <= 126);
+            CHECK(said.insert(l.cant).second);
+            CHECK(said.insert(l.seen).second);
+        }
     }
 }
 
@@ -423,6 +473,113 @@ void test_a_fluent_pet_hears_the_guardian_plainly() {
         for (const GuardianLine& l : area(a).guardian.lines)
             if (l.cant && std::strcmp(greet, l.cant) == 0) authored = true;
     CHECK(authored);
+}
+
+// --- The bracketing screens ------------------------------------------------
+
+// EVERY band opens on the HAIL, and none of them resolves underneath it. This is the
+// regression the bracket exists to prevent: an affront used to put a boss on screen with
+// no stated cause, and a boon used to pay silently — in both cases the pet met something
+// and the player never saw it. The hail is the one screen all three bands share.
+void test_every_welcome_band_is_met_on_the_hail() {
+    Game g{StartMode::Hatched};
+    enterWalk(g);
+    bool sawAffront = false, sawRiddle = false;
+    for (int i = 0; i < 400 && !(sawAffront && sawRiddle); ++i) {
+        g.debugStartShibboleth();
+        CHECK(g.nav() == Game::Nav::ShibbolethHail);
+        // The hail draws before the band is known, and it draws SOMETHING — the header,
+        // the guardian's gesture and the Cant strip are on it whatever comes next.
+        Framebuffer fb(kActiveW, kActiveH);
+        g.render(fb);
+        CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));
+        CHECK(g.guardianDemeanour()[0] != '\0');
+
+        const Game::ShibbolethWelcome band = g.shibbolethWelcome();
+        g.onButton(press(Button::B));
+        if (band == Game::ShibbolethWelcome::Affront) {
+            sawAffront = true;
+            // A refusal is a VERDICT, not a fight: the guardian says it will not ask, and
+            // the button says where pressing it goes.
+            CHECK(g.nav() == Game::Nav::ShibbolethVerdict);
+            CHECK(g.shibbolethOutcome() == GuardianOutcome::Affront);
+            CHECK(g.shibbolethVerdictFights());
+            g.render(fb);
+            CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));
+            g.onButton(press(Button::B));
+            CHECK(g.nav() == Game::Nav::Combat);   // ...and only THEN the fight
+        } else if (band == Game::ShibbolethWelcome::Riddle) {
+            sawRiddle = true;
+            CHECK(g.nav() == Game::Nav::Shibboleth);
+            g.onButton(press(Button::B));          // answer it however it lands
+        }
+        if (g.nav() == Game::Nav::ShibbolethVerdict) g.onButton(press(Button::B));
+        clearGuardianAftermath(g);
+    }
+    CHECK(sawAffront);   // both edge bands are reachable at zero fluency...
+    CHECK(sawRiddle);    // ...and the middle one is the common case
+}
+
+// Hands-off: a walk nobody is watching still plays the whole meeting out. Both bracketing
+// screens are REVEALS with their own holds (kShibbolethHailHoldBeats /
+// kShibbolethVerdictHoldBeats), so an unattended pet is never parked on one — and the
+// riddle's own clock still answers for it in between.
+void test_the_bracketing_screens_auto_play_out() {
+    Game g{StartMode::Hatched};
+    enterWalk(g);
+    g.debugStartShibboleth();
+    CHECK(g.nav() == Game::Nav::ShibbolethHail);
+    uint32_t t = 0;
+    for (int i = 0; i <= kShibbolethHailHoldBeats && g.nav() == Game::Nav::ShibbolethHail; ++i)
+        g.tick(t += kHeartbeatMs);
+    CHECK(g.nav() != Game::Nav::ShibbolethHail);        // the hold moved it on
+
+    // Whatever it moved on TO, run the clocks out until the meeting is over. Nothing here
+    // presses a button, and nothing is allowed to stall.
+    for (int i = 0; i < 400 && (g.nav() == Game::Nav::Shibboleth ||
+                                g.nav() == Game::Nav::ShibbolethVerdict); ++i)
+        g.tick(t += kHeartbeatMs);
+    CHECK(g.nav() != Game::Nav::Shibboleth);
+    CHECK(g.nav() != Game::Nav::ShibbolethVerdict);
+}
+
+// The verdict speaks in the SAME cipher as the riddle it followed, and shows the pet what
+// it just paid for: a sigil bought by the answer is lit in the strip on the very screen
+// that announces the answer was taken.
+void test_the_verdict_speaks_the_cant_and_shows_the_sigil_earned() {
+    Game g{StartMode::Hatched};
+    enterWalk(g);
+    g.debugAddHandshakes(1);
+    CHECK(reachRiddle(g));
+    focusTrueReply(g);
+    g.onButton(press(Button::B));
+    CHECK(g.nav() == Game::Nav::ShibbolethVerdict);
+    CHECK(g.sigilsKnown() == 1);                        // the shake bought it...
+
+    char speech[80];
+    g.shibbolethOutcomeSpeech(speech, sizeof(speech));
+    CHECK(speech[0] != '\0');
+    // One sigil is not fluency: what it says about the answer is still drawn in the Cant,
+    // so no authored outcome line comes back verbatim.
+    bool plain = false;
+    for (int a = 0; a < kAreaCount; ++a)
+        for (const GuardianLine& l : area(a).guardian.outcomes)
+            if (l.cant && std::strcmp(speech, l.cant) == 0) plain = true;
+    CHECK(!plain);
+    // The gesture beside it is never enciphered, for the same reason the greeting's is
+    // not: a pet that reads nothing still has to come away knowing it was believed.
+    bool authored = false;
+    for (int a = 0; a < kAreaCount; ++a)
+        for (const GuardianLine& l : area(a).guardian.outcomes)
+            if (l.seen && std::strcmp(g.shibbolethOutcomeSeen(), l.seen) == 0)
+                authored = true;
+    CHECK(authored);
+
+    // ...and the walk carries the consequence away with it, so the meeting is still
+    // legible one screen later.
+    g.onButton(press(Button::B));
+    CHECK(g.nav() == Game::Nav::Idle);
+    CHECK(std::strstr(g.exploreFlavor(), "SIGIL") != nullptr);
 }
 
 // --- Persistence -----------------------------------------------------------
