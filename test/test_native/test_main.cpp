@@ -371,6 +371,10 @@ int g_failures = 0;
     RUN(test_a_degenerate_flock_is_harmless)      \
     RUN(test_the_swarm_draws_only_inside_its_cell) \
     RUN(test_the_swarm_is_visible_in_every_mood)  \
+    RUN(test_a_guardian_fights_as_a_swarm_and_nothing_else_does) \
+    RUN(test_the_guardians_body_moves_into_the_fighters_seat) \
+    RUN(test_a_guardians_body_reads_its_own_health) \
+    RUN(test_the_stage_draws_a_sheetless_guardian) \
     RUN(test_facing_mirror_reverses_the_draw)     \
     RUN(test_facing_mirror_reaches_every_creature_blit) \
     RUN(test_facing_content_span_follows_the_mirror) \

@@ -29,6 +29,12 @@ namespace {
 //         spacing. It is on the row rather than shared because how much space a thing
 //         takes up IS a disposition — something withdrawn draws into a knot and something
 //         at ease spreads out, and that is the same creature both times.
+// SCATTERING is the row with no cohesion and no lure at all, and it is the exception the
+// others prove: with nothing pulling it together the flock stops being a body and leaves,
+// which is what a swarm does instead of dying. It is the only row that does not settle,
+// so it belongs to a screen that is about to end (a beaten guardian's outro) and to no
+// other.
+//
 //   churn a random shove on every mark every step, in 1/16 px. THE reason the swarm looks
 //         alive rather than manufactured: separation and alignment together have a stable
 //         solution — an evenly spaced lattice all pointing one way — and a flock that
@@ -53,8 +59,9 @@ constexpr MoodRow kMoods[] = {
     /* Agitated  */ {44,  4,  6, 11, 82, 110, 16, 14},
     /* Withdrawn */ {20, 11, 22, 16, 36,  22,  8,  9},
     /* Open      */ {34,  8,  5,  4, 28, 120, 18, 10},
+    /* Scattering*/ {56,  0,  0,  0, 96,   0, 26, 20},
 };
-static_assert(static_cast<int>(FlockMood::Open) + 1 ==
+static_assert(static_cast<int>(FlockMood::Scattering) + 1 ==
                   static_cast<int>(sizeof(kMoods) / sizeof(kMoods[0])),
               "one MoodRow per FlockMood");
 

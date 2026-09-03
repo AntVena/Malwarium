@@ -97,17 +97,18 @@
 //        named forms seed the ledger so the discovery beat resolves that way, which is
 //        what picks how far the pet eats the network glyph — pass a `beats` count to
 //        land on a frame of the absorb; bare "wifi" is the empty-queue beat)
-// shibboleth [hail|verdict [wrong]|refused] [sigils:<n>] (the guardian encounter's three
-//        screens. Bare "shibboleth" is the RIDDLE drawn in the CANT; "hail" is the beat
-//        before it and "verdict" the one after — what the guardian made of the answer,
-//        with "wrong" picking a reply it will not take. "refused" and "boon" search for
-//        the two bands that never ask anything at all — the refusal and the quiet word —
-//        and land on the verdict each of those resolves onto ("boon" wants a high
-//        `sigils:` to be reachable). `beats` steps the guardian's SWARM on the FX clock;
-//        `sigils` is how
-//        many letters the pet has learned to read, 0..26 — at 0 the panel is nonsense
-//        and at 26 it is plain English, with every stage between. Pass a `beats` count
-//        to walk the riddle's patience bar down)
+// shibboleth [hail|verdict [wrong]|refused|boon] [fight] [sigils:<n>] (the guardian
+//        encounter's screens. Bare "shibboleth" is the RIDDLE drawn in the CANT; "hail" is
+//        the beat before it and "verdict" the one after — what the guardian made of the
+//        answer, with "wrong" picking a reply it will not take. "refused" and "boon"
+//        search for the two bands that never ask anything at all — the refusal and the
+//        quiet word — and land on the verdict each resolves onto ("boon" wants a high
+//        `sigils:` to be reachable). "fight" carries on into the guardian's own COMBAT,
+//        where its SWARM holds the rival seat.
+//        `sigils` is how many letters the pet has learned to read, 0..26 — at 0 the panel
+//        is nonsense and at 26 it is plain English, with every stage between. `beats`
+//        steps the swarm — on the FX clock on the meeting screens, on the stage's own
+//        clock in a fight — and walks the riddle board's patience bar down)
 // beats:<n> (any scene: override the positional beat count, for a scene whose subject has
 //        to be animated into its shape before the frame is worth taking)
 // rank (Hacker Rank rank-up celebration on the idle badge,; crosses
@@ -1241,6 +1242,16 @@ int main(int argc, char** argv) {
                             game.shibbolethRow() == game.shibbolethTrueRow(); ++i)
                         game.onButton({Button::A, true, false});
                 game.onButton({Button::B, true, false});
+            }
+            // "fight" carries on into the guardian's own COMBAT, the other screen its
+            // swarm is drawn on and the one where it used to appear as a borrowed pet
+            // sheet. The stage runs on kCombatAnimMs, which is also the clock the swarm
+            // steps on there — so the same `beats` count means the same thing.
+            if (hasFlag(argc, argv, "fight")) {
+                for (int i = 0; i < 8 && game.nav() != Game::Nav::Combat; ++i)
+                    game.onButton({Button::B, true, false});
+                for (int i = 1; i <= beats && game.nav() == Game::Nav::Combat; ++i)
+                    game.tick(t += kCombatAnimMs);
             }
             // `beats` steps the guardian's SWARM, which is what actually moves on the
             // hail and the verdict — so this ticks the FX clock (kFxAnimMs) rather than

@@ -67,8 +67,13 @@ public:
 
     // Resolve a creature's sprite via the AssetSource (art may ship with content).
     const SpriteData* creatureSprite(const CreatureDef& c) const;
+    // A null NAME is a real answer and not a caller's mistake: a row may legitimately
+    // have no sheet — an area guardian is drawn as a flock instead (CombatEnemy::isSwarm,
+    // core/render/swarm.h) — and every draw path already treats a null sheet as an empty
+    // standard seat. The guard is here rather than at those callers because the lookup
+    // below is a strcmp against the asset table, which a null would walk straight into.
     const SpriteData* sprite(const char* name) const {
-        return assets_ ? assets_->sprite(name) : nullptr;
+        return (assets_ && name) ? assets_->sprite(name) : nullptr;
     }
 
     // Build the registry (embedded content + assets).

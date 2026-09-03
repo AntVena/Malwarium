@@ -876,6 +876,14 @@ constexpr int kShibbolethEscortBattles = 5;   // a guardian's escort outlasts a 
                                               // visit's — it is owed to a pet that can
                                               // ASK, not one that happened to be passed
 
+// A guardian's SWARM in a fight (FX_SWARM, core/render/swarm.h): the two Health bands its
+//     body reads off, as percentages of its own maximum. The flock's mood is the second
+//     channel on the rival's Health gauge — the creature is visibly holding together while
+//     it is winning and visibly coming apart when it is not — so these are stated here
+//     beside the rest of the guardian's fight rather than inside the renderer.
+constexpr int kGuardianSwarmPressedPct = 60;  // ...below this it stops appraising and fights
+constexpr int kGuardianSwarmFailingPct = 25;  // ...and below this it draws into a knot
+
 // The GUARDIAN itself, as a fight. Built off the same depth spine every boss uses
 //     (combat_factory.cpp's guardianEnemy) at its area's deepest rung, then stepped up —
 //     it is the thing that has been watching the whole area, so it out-classes the

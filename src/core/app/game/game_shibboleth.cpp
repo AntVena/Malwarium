@@ -7,7 +7,8 @@
 #include "core/content/areas/area_defs.h"
 #include "core/content/content_riddles.h"
 #include "core/model/cant.h"
-#include "core/ui/shibboleth_screen.h"   // the swarm cell the guardian's flock is reset into
+#include "core/ui/combat_screen.h"       // kSwarmSeatW/H — the flock's cell in a fight
+#include "core/ui/shibboleth_screen.h"   // ...and the one it takes on the meeting screens
 
 // game_shibboleth.cpp — THE SHIBBOLETH, the guardian encounter.
 //
@@ -171,6 +172,26 @@ FlockMood Game::guardianFlockMood() const {
     // state and not an effect running out.
     if (nav_ == Nav::ShibbolethHail) return FlockMood::Watching;
     if (nav_ == Nav::Shibboleth) return FlockMood::Attending;
+    if (nav_ == Nav::Combat) {
+        // THE FIGHT, where the mood is the one readout the screen does not otherwise
+        // have: a guardian has a Health gauge like any rival, and the swarm says the same
+        // thing in the body. Beaten, it comes apart. Still standing, it is read off how
+        // much of it is left — appraising while it is barely touched, fighting through
+        // the middle, and drawn into a knot when it is nearly gone.
+        //
+        // A HEALTH BAND and not the hit clock, deliberately: hitBeat names the most
+        // recent blow by EITHER fighter (RENDER_PIPELINE.md says what that did to
+        // FX_CAMO), so a mood keyed to it would flicker with the exchange instead of
+        // describing the creature. This holds until the fight actually changes it.
+        if (combat_.outcome() != Combat::Outcome::Ongoing)
+            return combat_.outcome() == Combat::Outcome::Win ? FlockMood::Scattering
+                                                             : FlockMood::Watching;
+        const int max = combat_.enemy().maxHealth;
+        const int pct = max > 0 ? combat_.enemy().health * 100 / max : 100;
+        if (pct <= kGuardianSwarmFailingPct) return FlockMood::Withdrawn;
+        if (pct <= kGuardianSwarmPressedPct) return FlockMood::Agitated;
+        return FlockMood::Watching;
+    }
     switch (shibbolethOutcome()) {
         case GuardianOutcome::Pleased:    return FlockMood::Pleased;
         case GuardianOutcome::Displeased: return FlockMood::Agitated;
@@ -393,6 +414,12 @@ void Game::grantBoon() {
 }
 
 void Game::startGuardianCombat() {
+    // Re-home the body into the FIGHTER seat before the stage is drawn. Same flock and
+    // same seed — it is the creature the pet was just talking to — but the stage's seat is
+    // a different box from the meeting screens' (kSwarmSeatW/H, core/ui/combat_screen.h),
+    // and a flock only ever knows how big its box is.
+    guardianFlock_.reset(kGuardianSwarmMarks, kSwarmSeatW, kSwarmSeatH);
+
     // The guardian's fight, on the ordinary wild path — so a loss ends the walk exactly
     // as any other loss does, and the post-encounter readout, the streak and the loot
     // rolls all behave as they always have. What makes it a guardian is the enemy

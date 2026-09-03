@@ -82,6 +82,9 @@ SCENES=(
   "shibboleth_refused|shibboleth refused beats:70"
   "shibboleth_boon|shibboleth boon sigils:26 beats:70"
   "shibboleth_verdict_wrong|shibboleth verdict wrong sigils:13 beats:70"
+  # ...and the other screen its body is on: the guardian's own fight, where the swarm holds
+  # the rival seat that used to be a borrowed pet sheet.
+  "guardian_fight|shibboleth refused fight beats:60"
   "shop|shop"                       "encounter|encounter"
   "combat|combat"                   "postencounter|postencounter"
   "combat_stats|combat stats"       "combat_kit|combat kit"

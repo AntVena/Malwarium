@@ -126,8 +126,10 @@ void drawFighter(Framebuffer& fb, const SpriteData* s, int contentX, int animBea
 // creature cell), so the stage keeps its shape rather than collapsing around whichever
 // side has art.
 int seatWidth(const SpriteData* s, int num, int den) {
-    constexpr int kPetCellW = 56;
-    if (!s) return scaleUp(kPetCellW, num, den);
+    // The sheetless seat is kSwarmSeatW (combat_screen.h) rather than a constant of its
+    // own, because a guardian's flock is reset into exactly this box: two numbers here
+    // would be a swarm drawn at a width the stage never reserved.
+    if (!s) return scaleUp(kSwarmSeatW, num, den);
     return scaleUp(spriteContentX1(*s), num, den) -
            scaleUp(spriteContentX0(*s), num, den);
 }
@@ -760,7 +762,8 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
                 const SpriteData* playerSprite, const SpriteData* enemySprite,
                 int beat, int animBeat, int hitBeat, int statPage,
                 const CombatSides& sides, const CombatOutro& outro,
-                const RivalPrizes& prizes, const CombatCamo& camo, SceneId scene) {
+                const RivalPrizes& prizes, const CombatCamo& camo, SceneId scene,
+                const SwarmView* rivalSwarm) {
     // The BACKGROUND pass. The stage's floor is kSpriteShelf — the row the fighters
     // actually stand on — so the place is composed against that rather than against the
     // canvas, and the same place drawn on the habitat sits 44 rows lower.
@@ -941,7 +944,23 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
     // Rival first: where two Daemon cells run right to their band edges, the local pet
     // reads on top of its opponent — and an absorbed rival must pass BEHIND the pet
     // eating it, which is the same ordering.
-    if (outro.kind == CombatOutro::Kind::None) {
+    if (rivalSwarm && !rivalSprite) {
+        // A rival with NO SHEET that is nonetheless a creature: an area guardian, drawn as
+        // its flock into the seat the stage already reserved for it (FX_SWARM,
+        // core/render/swarm.h). It takes the same outward nudge every struck fighter does,
+        // so a blow moves the whole body — a creature that cannot be knocked back reads as
+        // scenery rather than as the thing you are fighting.
+        //
+        // No sprite branch below can run for it, and none has to: the flock's own MOOD is
+        // what a hit and a defeat look like here (Game::guardianFlockMood), which is why
+        // there is nothing for the outro's dissolve to take apart.
+        const uint8_t flash = std::max(rivalWindup, rivalImpact);
+        drawSwarm(fb, *rivalSwarm, stage.rivalX + rivalMotion,
+                  kSpriteShelf - kSwarmSeatH, kSwarmSeatW, kSwarmSeatH,
+                  flash > 0 ? palColor(rivalImpact >= rivalWindup ? Pal::INK : Pal::WARN)
+                            : palColor(Pal::ACCENT),
+                  palColor(Pal::INK_DIM));
+    } else if (outro.kind == CombatOutro::Kind::None) {
         drawFighter(fb, rivalSprite, stage.rivalX, animBeat,
                     std::max(rivalWindup, rivalImpact),
                     palColor(rivalImpact >= rivalWindup ? Pal::INK : Pal::WARN),

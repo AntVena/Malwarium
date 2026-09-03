@@ -300,6 +300,16 @@ not a penalty: every third dry event summons the area's **GUARDIAN** instead, an
 **SHIBBOLETH** to the pet — a riddle drawn in the **CANT**, the guardians' language, with three
 replies drawn the same way (`src/core/app/game/game_shibboleth.cpp`).
 
+**A guardian has no sprite: it is a SWARM.** Its body is a boids flock (`core/model/flock.h`)
+drawn as `FX_SWARM` (`core/render/swarm.h`) — a couple of dozen marks threaded to their near
+neighbours, dense in the middle and granular at the fringe, so the thing across from the pet is
+visibly not the same kind of thing the pet is. It holds the rival seat in the guardian's own
+fight as well as the meeting screens, so one creature has one appearance throughout. What the
+flock is doing is a `FlockMood` — a standing disposition and never a beat: where the meeting has
+got to, how it came out, and in a fight how much of the guardian is left. The mood reads as a
+SHAPE before it is a colour, so a refusal is a knot, a wrong answer a wide scatter, and a beaten
+guardian comes apart rather than dying.
+
 **A meeting is three screens, and the riddle is the middle one.** It opens on the **HAIL** — the
 thing arrives, does something the pet can see, speaks, and the foot states how much of that the pet
 reads and what a sigil costs — and it closes on the **VERDICT**: what the guardian made of the

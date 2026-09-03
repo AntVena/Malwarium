@@ -222,3 +222,145 @@ void test_the_swarm_is_visible_in_every_mood() {
         CHECK(lit > mal::kGuardianSwarmMarks * 4);
     }
 }
+
+// --- The guardian as a fighter ---------------------------------------------
+
+namespace {
+
+// Put the pet in front of a guardian and refuse its way into the fight. The AFFRONT band
+// is the one that reaches combat without answering anything, so it is the shortest road
+// to the screen these gates are about; the welcome is a roll, so this searches for it.
+inline bool reachGuardianFight(Game& g) {
+    for (int i = 0; i < 300; ++i) {
+        g.debugStartShibboleth();
+        if (g.nav() != Game::Nav::ShibbolethHail) return false;
+        const bool affront =
+            g.shibbolethWelcome() == Game::ShibbolethWelcome::Affront;
+        g.onButton(press(Button::B));                 // the hail -> the band's screen
+        if (affront) {
+            g.onButton(press(Button::B));             // the verdict -> its fight
+            return g.nav() == Game::Nav::Combat;
+        }
+        if (g.nav() == Game::Nav::Shibboleth) g.onButton(press(Button::B));
+        if (g.nav() == Game::Nav::ShibbolethVerdict) g.onButton(press(Button::B));
+        if (g.nav() == Game::Nav::Combat) return true;   // a wrong answer got there too
+        if (!g.exploreActive()) enterWalk(g);
+    }
+    return false;
+}
+
+}  // namespace
+
+// A guardian brings NO SHEET to its own fight, and says so. Before this it borrowed
+// SPR_PET_CACHEMUTT, so the thing that had just been speaking the Cant to the pet turned
+// up in the rival seat as somebody's dog — the swarm is only reachable because the row
+// stopped naming a sprite, and isSwarm is what keeps that from reading as missing art.
+void test_a_guardian_fights_as_a_swarm_and_nothing_else_does() {
+    for (int a = 0; a < kExplSectors; ++a)
+        for (int s = 0; s < kExplSubAreas; ++s) {
+            const CombatEnemy guard = guardianEnemy(a, s);
+            CHECK(guard.isSwarm);
+            CHECK(guard.spriteName == nullptr);
+            // ...and resolving that null is a null sheet rather than a crash, which is
+            // the whole reason ContentRegistry::sprite guards its name.
+            CHECK(ContentRegistry::embedded().sprite(guard.spriteName) == nullptr);
+        }
+
+    // Nothing else in the game is a swarm. A wild or a boss that picked the flag up would
+    // lose its art entirely, since the stage draws the seat and not the sheet for one.
+    for (int tier = 1; tier <= 3; ++tier)
+        for (uint32_t v = 0; v < 2; ++v) {
+            const CombatEnemy w = wildMalbeast(tier, v);
+            CHECK(!w.isSwarm);
+            CHECK(w.spriteName != nullptr);
+        }
+    for (int a = 0; a < kExplSectors; ++a)
+        for (int s = 0; s < kExplSubAreas; ++s) {
+            const BossGauntlet rung = subAreaBoss(a, s);
+            for (const CombatEnemy& e : rung.rounds) CHECK(!e.isSwarm);
+        }
+}
+
+// The body carries over into the fight, re-homed into the FIGHTER's seat. Two cells are in
+// play — the meeting screens' and the stage's — and a flock only ever knows how big its box
+// is, so a fight that forgot to re-home it would draw a guardian sized for a screen it is
+// no longer on, spilling over the pet standing opposite.
+void test_the_guardians_body_moves_into_the_fighters_seat() {
+    Game g{StartMode::Hatched};
+    enterWalk(g);
+    CHECK(reachGuardianFight(g));
+    CHECK(g.combat().enemy().isSwarm);
+
+    // Run the stage's own clock, which is what steps a swarm in a fight.
+    uint32_t t = 0;
+    for (int i = 0; i < 60 && g.nav() == Game::Nav::Combat; ++i)
+        g.tick(t += kCombatAnimMs);
+    const Flock& f = g.guardianFlock();
+    CHECK(f.count() == kGuardianSwarmMarks);
+    for (int i = 0; i < f.count(); ++i) {
+        CHECK(f.x(i) >= 0 && f.x(i) <= kSwarmSeatW);
+        CHECK(f.y(i) >= 0 && f.y(i) <= kSwarmSeatH);
+    }
+}
+
+// The mood is the rival Health gauge said in the body: a guardian holding its own appraises
+// the pet, a pressed one fights, and a failing one draws into a knot. Read off the HEALTH
+// BAND and not the hit clock, so it describes the creature rather than flickering with the
+// exchange — the mistake RENDER_PIPELINE.md records FX_CAMO making.
+void test_a_guardians_body_reads_its_own_health() {
+    Game g{StartMode::Hatched};
+    enterWalk(g);
+    CHECK(reachGuardianFight(g));
+    const int max = g.combat().enemy().maxHealth;
+    CHECK(max > 0);
+
+    // Watch a real fight go down rather than posing the rival at a health: the mapping is
+    // only worth anything if the bands are actually REACHED in order as a guardian loses,
+    // and a gate that set the number itself would never have found out.
+    bool sawWhole = false, sawPressed = false, sawFailing = false;
+    uint32_t t = 0;
+    for (int i = 0; i < 1200 && g.nav() == Game::Nav::Combat &&
+                    g.combat().outcome() == Combat::Outcome::Ongoing; ++i) {
+        const int pct = g.combat().enemy().health * 100 / max;
+        const FlockMood mood = g.guardianFlockMood();
+        if (pct > kGuardianSwarmPressedPct) {
+            CHECK(mood == FlockMood::Watching);        // holding its own: appraising
+            sawWhole = true;
+        } else if (pct > kGuardianSwarmFailingPct) {
+            CHECK(mood == FlockMood::Agitated);        // pressed: fighting
+            sawPressed = true;
+        } else {
+            CHECK(mood == FlockMood::Withdrawn);       // failing: drawn into a knot
+            sawFailing = true;
+        }
+        g.tick(t += kCombatAnimMs);
+    }
+    CHECK(sawWhole);      // every band a losing guardian passes through is reachable...
+    CHECK(sawPressed);
+    CHECK(sawFailing);
+
+    // ...and a beaten one SCATTERS, which is what a swarm does instead of dying: there is
+    // no sheet for the combat outro's dissolve to take apart, so the coming-apart is the
+    // flock's own and the mood is where it lives.
+    if (g.combat().outcome() == Combat::Outcome::Win)
+        CHECK(g.guardianFlockMood() == FlockMood::Scattering);
+}
+
+// The stage still draws, and draws the guardian. A rival seat holding a creature with no
+// sheet is the case every sprite path on that screen has to survive — and the failure that
+// matters is the quiet one, where it survives by drawing nothing at all.
+void test_the_stage_draws_a_sheetless_guardian() {
+    Game g{StartMode::Hatched};
+    enterWalk(g);
+    CHECK(reachGuardianFight(g));
+    uint32_t t = 0;
+    for (int i = 0; i < 40 && g.nav() == Game::Nav::Combat; ++i)
+        g.tick(t += kCombatAnimMs);
+    CHECK(g.nav() == Game::Nav::Combat);
+
+    Framebuffer fb(kActiveW, kActiveH);
+    g.render(fb);
+    // The rival seat is the right-hand half of the stage, above the local pet's gauge
+    // block. Something is in it.
+    CHECK(hasDarkInk(fb, kActiveW / 2, 40, kActiveW, kCombatSpriteShelf));
+}

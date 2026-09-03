@@ -874,6 +874,27 @@ const SpriteData* Game::idleCamoSprite(int slot) const {
     return nullptr;
 }
 
+namespace {
+// The flock as the DRAW sees it (SwarmView, core/render/swarm.h). The copy is the layering
+// rule rather than an oversight: core/render never reaches into core/model, so a renderer
+// is handed a value that owns its marks — the same call CamoRamp makes. It is a couple of
+// hundred bytes on a repaint that is already composing a whole panel.
+SwarmView swarmViewOf(const Flock& f) {
+    SwarmView v;
+    v.n = f.count() < kSwarmMarksMax ? f.count() : kSwarmMarksMax;
+    for (int i = 0; i < v.n; ++i) {
+        v.marks[i].x = static_cast<int16_t>(f.x(i));
+        v.marks[i].y = static_cast<int16_t>(f.y(i));
+        v.marks[i].vx = static_cast<int16_t>(f.vx(i));
+        v.marks[i].vy = static_cast<int16_t>(f.vy(i));
+    }
+    v.cx = f.centreX();
+    v.cy = f.centreY();
+    v.spread = f.spread();
+    return v;
+}
+}  // namespace
+
 void Game::drawCombatScreen(Framebuffer& fb) const {
     // In a duel BOTH combatants are remote-describable pets, so the player-side sprite
     // comes from the fight rather than from the local pet — on a guest's screen the
@@ -918,8 +939,15 @@ void Game::drawCombatScreen(Framebuffer& fb) const {
     camo.level = combatCamoLevel_;
     camo.ramp = combatCamoWorn_ ? camoRampFrom(*combatCamoWorn_) : CamoRamp{};
     camo.leaving = combatCamoLeaving_ ? camoRampFrom(*combatCamoLeaving_) : CamoRamp{};
+    // A rival with no sheet that is nonetheless a creature: the area guardian, drawn as
+    // its flock into the seat the stage reserved (FX_SWARM). The same body the pet was
+    // talking to on the hail — re-homed into the fighter's cell when the fight opened.
+    SwarmView rivalSwarm;
+    const bool swarmRival = combat_.enemy().isSwarm && !sides.localIsEnemySide;
+    if (swarmRival) rivalSwarm = swarmViewOf(guardianFlock_);
     drawCombat(fb, combat_, ps, es, beat_, combatAnimBeat_, combatHitBeat_,
-               combatStatsPage_, sides, outro, prizes, camo, stageScene());
+               combatStatsPage_, sides, outro, prizes, camo, stageScene(),
+               swarmRival ? &rivalSwarm : nullptr);
 }
 
 void Game::drawEncounterScreen(Framebuffer& fb) const {
@@ -970,27 +998,6 @@ void Game::drawShibbolethScreen(Framebuffer& fb) const {
     drawShibboleth(fb, guardianName(), guardianDemeanour(), greeting, riddle, rows,
                    shibRow_, cantSigils_, held);
 }
-
-namespace {
-// The flock as the DRAW sees it (SwarmView, core/render/swarm.h). The copy is the layering
-// rule rather than an oversight: core/render never reaches into core/model, so a renderer
-// is handed a value that owns its marks — the same call CamoRamp makes. It is a couple of
-// hundred bytes on a repaint that is already composing a whole panel.
-SwarmView swarmViewOf(const Flock& f) {
-    SwarmView v;
-    v.n = f.count() < kSwarmMarksMax ? f.count() : kSwarmMarksMax;
-    for (int i = 0; i < v.n; ++i) {
-        v.marks[i].x = static_cast<int16_t>(f.x(i));
-        v.marks[i].y = static_cast<int16_t>(f.y(i));
-        v.marks[i].vx = static_cast<int16_t>(f.vx(i));
-        v.marks[i].vy = static_cast<int16_t>(f.vy(i));
-    }
-    v.cx = f.centreX();
-    v.cy = f.centreY();
-    v.spread = f.spread();
-    return v;
-}
-}  // namespace
 
 void Game::drawShibbolethHailScreen(Framebuffer& fb) const {
     char greeting[kRiddleBodyCols * 2 + 8];

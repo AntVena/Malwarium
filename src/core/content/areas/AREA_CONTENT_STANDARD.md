@@ -126,6 +126,11 @@ shared between two guardians, or between a guardian's `lines` and its `outcomes`
 sounding like five different things is the point of authoring them at all. Both arrays are held to
 the same budget, since the hail and the verdict draw the pair in the same places.
 
+**A guardian has no sprite row, and never will.** It is drawn as a flock (`FX_SWARM`,
+`core/render/swarm.h`) on the meeting screens and in its own fight alike, so authoring one costs
+the lines above and no art at all — what tells five guardians apart is their voice, not five
+sheets. `GuardianDef` therefore names no asset, and adding an area does not add a drawing.
+
 How far it out-classes the area is the SAME step for every area (`kGuardianHealthBonusPct` and
 friends, `tunables.h`) and stays cross-cutting for the reason the section below gives. It is
 built on the shared boss spine at **the rung the pet is standing on**, not the area's deepest

@@ -18,6 +18,7 @@
 #include <cstdint>
 
 #include "core/render/camo.h"   // CamoRamp — the palette CombatCamo carries
+#include "core/render/swarm.h"  // SwarmView — a rival with no sheet is drawn as a flock
 #include "core/render/font.h"
 #include "core/render/scene_id.h"   // SceneId — the stage is told where it is
 #include "core/ui/layout.h"   // kMargin — the gauge column is stated against the grid
@@ -105,6 +106,18 @@ struct CombatStage {
     // worm's slot pitch, the strike mark, the wind-up marker — is at ONE scale.
     int num = 1, den = 1;
 };
+
+// The seat a fighter with NO SHEET holds, in active px at the stage's 1/1 scale: one
+// standard creature cell. Two things take it, and `isSwarm` (CombatEnemy,
+// core/model/combat.h) is the difference — a fighter whose art is genuinely missing, which
+// draws nothing, and an area GUARDIAN, which has no sheet by design and draws its flock
+// into exactly this box (FX_SWARM, core/render/swarm.h).
+//
+// Published because the ENGINE resets that flock into the cell (Game::startGuardianCombat)
+// and a flock is told how big its box is and never where it is — so this is the one number
+// the model and the stage have to agree on.
+constexpr int kSwarmSeatW = 56;
+constexpr int kSwarmSeatH = 56;
 
 // Seat a fight. Either sprite may be null — a fighter with no art still holds a
 // standard-cell seat, so the side a missing sprite would have occupied stays empty
@@ -372,6 +385,7 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
                 int beat, int animBeat, int hitBeat, int statPage = 0,
                 const CombatSides& sides = {}, const CombatOutro& outro = {},
                 const RivalPrizes& prizes = {}, const CombatCamo& camo = {},
-                SceneId scene = SceneId::None);
+                SceneId scene = SceneId::None,
+                const SwarmView* rivalSwarm = nullptr);
 
 } // namespace mal

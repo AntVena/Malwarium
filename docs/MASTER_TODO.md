@@ -341,16 +341,6 @@ you look at one.
 - **A glyph for the BACKGROUND row.** It borrows `ICON_CFG`, the generic gear, because the CFG
   family has no picture for "the place your pet stands". One 20x20 beside the other
   `ICON_CFG_*`. Cosmetic; the row reads by its label today. Diff **S**.
-- **The five GUARDIANS have no faces.** Each area names one (`AreaDef::guardian`) and all five
-  fight in `SPR_PET_CACHEMUTT`, the generic boss frame every authored boss borrows — which reads
-  as a malbeast, and a guardian is explicitly not one: it is the thing that has been watching the
-  place, and it would rather talk. The SHIBBOLETH screen shows no creature at all today, so the
-  only place a face would land is the fight. Wants a family that reads as *watching* rather than
-  as *prowling*, and the same family across all five with the area's own motif on it, since what
-  differs between them is jurisdiction and not species. Diff **M** — five sheets, or one sheet
-  with five palettes. |
-  `content/areas/*/area.cpp`'s `guardian` row names the banner; the sprite is named in
-  `combat_factory.cpp`'s `guardianEnemy`. |
 - **Net-Sea Crossing area art** (shipped mechanically, art pending): the `FLOATING POINT` / `THE
   HARDENED SHELL` storefront motifs. Its twelve mods are drawn — the whole `ICON_MOD_*` family is,
   so no area owes one. Like the keep, it fights with the shared tier roster and has no malbeasts of

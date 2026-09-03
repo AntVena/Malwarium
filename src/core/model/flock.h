@@ -60,6 +60,7 @@ enum class FlockMood : uint8_t {
     Agitated,    // it did not like that: fast, flying apart and snapping back
     Withdrawn,   // it is not interested: pulled away, tight and receding
     Open,        // fluent enough to be spoken with: wide, slow, unguarded
+    Scattering,  // beaten: it comes apart, which is what a swarm does instead of dying
 };
 
 // One swarm.

@@ -626,9 +626,12 @@ CombatEnemy guardianEnemy(int areaIdx, int sub) {
     const int tier = areaTier(areaIdx);
     const BossSpine spine = bossSpine(tier, sub);
 
-    // The generic boss frame, like every authored boss — a guardian costs no new art.
+    // NO FRAME, and that is the row's whole point: a guardian is drawn as the flock it is
+    // (FX_SWARM, core/render/swarm.h) rather than as a borrowed pet sheet, so it still
+    // costs no art and no longer costs the fiction. isSwarm is what tells the stage that
+    // this empty seat is a creature and not a fighter whose art is missing.
     CombatEnemy e{a.guardian.name,
-                  "SPR_PET_CACHEMUTT",
+                  nullptr,
                   tier + 1,
                   spine.health * (100 + kGuardianHealthBonusPct) / 100,
                   spine.speed + kGuardianSpeedBonus,
@@ -639,6 +642,7 @@ CombatEnemy guardianEnemy(int areaIdx, int sub) {
         if (id) e.moveIds.push_back(id);
     e.powerMultPct = kGuardianPowerMultPct;
     e.dmgReducePct = kGuardianDmgReducePct;
+    e.isSwarm = true;
     return e;
 }
 
@@ -867,6 +871,7 @@ Combatant makeEnemyCombatant(const ContentRegistry& reg, const CombatEnemy& spec
     Combatant c;
     c.name = spec.name;
     c.spriteName = spec.spriteName;
+    c.isSwarm = spec.isSwarm;
     c.diffPips = spec.diffPips;
     c.level = spec.level;
     c.hasLevel = spec.hasLevel;

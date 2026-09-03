@@ -321,6 +321,12 @@ bool Game::tickAnimClocks(uint32_t nowMs) {
             lastCombatAnimMs_ = nowMs;
             combatAnimBeat_++;
             combatHitBeat_++;
+            // A guardian's SWARM is a fighter, so it moves on the clock the fighters move
+            // on rather than on the dissolve's: the stage is an ~8fps screen, and a body
+            // stepping four times faster than the creature beside it would read as two
+            // screens composited together. The mood is a health band
+            // (Game::guardianFlockMood), so the flock visibly comes apart as it loses.
+            if (combat_.enemy().isSwarm) guardianFlock_.step(guardianFlockMood());
             // FX_CAMO. Whose colours the pet is in is read fresh every tick rather than
             // latched at the swing: a borrowed move is still the pet's last cast while
             // the rival takes its turn, so the colours hold until the pet itself casts

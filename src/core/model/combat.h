@@ -129,6 +129,7 @@ struct WildPool {
 struct Combatant {
     const char* name = "";
     const char* spriteName = "";  // SPR_PET_* idle frame reused for the combatant
+    bool isSwarm = false;         // no sheet: drawn as a flock (CombatEnemy::isSwarm)
     int diffPips = 0;            // UI_DIFFICULTY_PIPS (enemy); 0 = player row
     int level = 0;                // depth level, carried from CombatEnemy
                                    // (0 unless hasLevel — wild encounters only)
@@ -498,7 +499,20 @@ struct CombatEnemy {
                                         // has stamped `level`; Sim dummies + bosses never set
                                         // this, so the combat screen renders "???" for them
                                         // instead of a misleading "Lv 0".
+    // This fighter has NO SHEET and is drawn as a flock instead (FX_SWARM,
+    // core/render/swarm.h). An area GUARDIAN is the only thing that sets it: it is not
+    // shaped like the creatures the pet has met, and borrowing a pet's frame for it made
+    // the thing that has been watching a network for years appear as somebody's dog.
+    // `spriteName` is null on such a row, and every draw path already treats a null sheet
+    // as an empty standard seat — so this says which of those empties is a creature.
+    bool isSwarm = false;
 };
+
+// A NEW FIELD GOES AT THE END OF THAT STRUCT, always. The malbeast rows are authored as
+// POSITIONAL aggregate initialisers (combat_factory.cpp's kTier1/kTier2/... tables, which
+// run out to `signatureMoveId`), so a field spliced into the middle silently re-points
+// every value after it at the wrong member — and a `const char*` landing on a `bool` is a
+// legal conversion, so the compiler has nothing to say about it.
 
 // An item offered in the Exploit picker's USE-ITEM section.
 // The Game builds these from the live inventory (items with combatHeal>0) when the
