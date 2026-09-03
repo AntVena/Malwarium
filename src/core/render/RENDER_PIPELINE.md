@@ -59,7 +59,9 @@ DMA-blitted to the panel.
 2. SPRITE_MODS  pet-effects that sit UNDER the creature: FX_ABSORB's incoming blocks,
                 FX_SHRED's sliding scanlines
 3. SPRITE_BASE  current pet animation frame, in whatever colours it is currently wearing:
-                FX_CAMO's borrowed palette, with the hit flash composed over it
+                FX_CAMO's borrowed palette, with the hit flash composed over it. A subject
+                with no sheet is drawn here too rather than in a pass of its own —
+                FX_SWARM is an area guardian's whole body (`render/swarm.h`)
 4. SPRITE_MODS  overlay pet-effects (e.g. the Worm line's Replication Ghost)
 5. CORRUPTION   frag-driven: channel-shift -> scanline-tear -> dropped-px -> glitch-blocks
 6. SCREEN_FX    full-screen overlays: evolution flash, Lockout band, critical-failure crash, fades
@@ -168,6 +170,21 @@ back — was stripped off the pet by the commonest thing that can happen next. I
 level (`CombatCamo`, `camoAdvance`) eased toward a live reading of the pet's own last cast,
 with no clock in it anywhere. `FX_ABSORB`/`FX_SHRED` are genuinely moments and keep their
 own beat (`CombatOutro::beat`) — their own, because the strike clock is not theirs either.
+
+`FX_SWARM` is the one effect that is a SUBJECT rather than something applied to one, and it
+answers the moment-or-state question the same way `FX_CAMO` does: it is a **state**. What it
+is a function of is a guardian's DISPOSITION — `FlockMood` (`core/model/flock.h`), set from
+where the SHIBBOLETH has got to and how it came out — and it holds until the meeting moves
+on. There is no beat in it anywhere.
+
+Its motion is not derived, which makes it the exception to the rule the other passes keep,
+and the exception is deliberate: a flock's frame is the last frame steered, and that
+integration is the whole of why it reads as alive rather than as a field of sine waves. So
+the flock is a MODEL (`core/model/flock.h`, beside `IdleWander`) advanced one step at a
+time by the tick, and only the DRAW is a pure function — of the `SwarmView` handed to it,
+which is what still lets a frame gate dump any step by stepping the model to it first. It
+runs on the fast FX clock (`kFxAnimMs`) for the reason a dissolve does: at 4fps a mark
+moving a pixel a step reads as a blink rather than as flight.
 
 `FX_CAMO` has **two colour sources and two drivers**, which is the shape an effect takes
 when a second screen wants it. The palette is either sampled off a creature (`camoRampFrom`,

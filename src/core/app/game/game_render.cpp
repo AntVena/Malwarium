@@ -971,11 +971,32 @@ void Game::drawShibbolethScreen(Framebuffer& fb) const {
                    shibRow_, cantSigils_, held);
 }
 
+namespace {
+// The flock as the DRAW sees it (SwarmView, core/render/swarm.h). The copy is the layering
+// rule rather than an oversight: core/render never reaches into core/model, so a renderer
+// is handed a value that owns its marks — the same call CamoRamp makes. It is a couple of
+// hundred bytes on a repaint that is already composing a whole panel.
+SwarmView swarmViewOf(const Flock& f) {
+    SwarmView v;
+    v.n = f.count() < kSwarmMarksMax ? f.count() : kSwarmMarksMax;
+    for (int i = 0; i < v.n; ++i) {
+        v.marks[i].x = static_cast<int16_t>(f.x(i));
+        v.marks[i].y = static_cast<int16_t>(f.y(i));
+        v.marks[i].vx = static_cast<int16_t>(f.vx(i));
+        v.marks[i].vy = static_cast<int16_t>(f.vy(i));
+    }
+    v.cx = f.centreX();
+    v.cy = f.centreY();
+    v.spread = f.spread();
+    return v;
+}
+}  // namespace
+
 void Game::drawShibbolethHailScreen(Framebuffer& fb) const {
     char greeting[kRiddleBodyCols * 2 + 8];
     shibbolethGreeting(greeting, sizeof(greeting));
-    drawShibbolethHail(fb, guardianName(), guardianDemeanour(), greeting, cantSigils_,
-                       shakesUnspent());
+    drawShibbolethHail(fb, guardianName(), guardianDemeanour(), greeting,
+                       swarmViewOf(guardianFlock_), cantSigils_, shakesUnspent());
 }
 
 void Game::drawShibbolethVerdictScreen(Framebuffer& fb) const {
@@ -992,8 +1013,8 @@ void Game::drawShibbolethVerdictScreen(Framebuffer& fb) const {
     char speech[kRiddleBodyCols * 2 + 8];
     shibbolethOutcomeSpeech(speech, sizeof(speech));
     drawShibbolethVerdict(fb, guardianName(), kind, shibbolethOutcomeSeen(), speech,
-                          shibbolethVerdictLine(), shibbolethFlavor(), cantSigils_,
-                          shibbolethVerdictFights());
+                          swarmViewOf(guardianFlock_), shibbolethVerdictLine(),
+                          shibbolethFlavor(), cantSigils_, shibbolethVerdictFights());
 }
 
 void Game::drawShopScreen(Framebuffer& fb) const {

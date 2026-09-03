@@ -32,6 +32,7 @@
 #include "core/model/cryptogram.h"
 #include "core/model/disk_decryption.h"
 #include "core/model/event_log.h"
+#include "core/model/flock.h"          // the guardian's body — a boids swarm, not a sheet
 #include "core/model/hacker_rank.h"
 #include "core/model/idle_camo.h"
 #include "core/model/idle_wander.h"
@@ -1108,6 +1109,15 @@ public:
     // walk. The screen names the button with it, so "B CONTINUE" never turns out to have
     // meant a boss.
     bool shibbolethVerdictFights() const;
+    // THE GUARDIAN'S BODY (FX_SWARM, core/render/swarm.h). It has no sprite — it is a
+    // flock, and this is the live one: reset when a guardian speaks and stepped on the
+    // fast FX clock for as long as the pet is looking at it (game_core.cpp).
+    //
+    // `guardianFlockMood` is what it is DOING, folded from where the meeting has got to
+    // and how it came out — a standing disposition and never a beat, which is what
+    // RENDER_PIPELINE.md requires of an effect that describes a state.
+    const Flock& guardianFlock() const { return guardianFlock_; }
+    FlockMood guardianFlockMood() const;
     // Which shown row carries the true reply. Exposed for the gates — the screen never
     // asks, and neither does anything on the press path.
     int shibbolethTrueRow() const;
@@ -3283,6 +3293,10 @@ private:
     // Both are written where the payout happens, so the screen only ever reads them.
     char shibFlavor_[40] = "";
     char shibVerdictLine_[40] = "";
+    // The swarm the guardian IS. Volatile like everything else about one meeting: a flock
+    // is reset per encounter, so nothing about the body a player watched is persisted —
+    // it is the same creature next time and never the same shape.
+    Flock guardianFlock_;
 
     // Real-network discovery (game_net.cpp, core/net/network_ledger.h). Three
     // structures answering three questions:

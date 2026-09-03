@@ -100,12 +100,16 @@
 // shibboleth [hail|verdict [wrong]|refused] [sigils:<n>] (the guardian encounter's three
 //        screens. Bare "shibboleth" is the RIDDLE drawn in the CANT; "hail" is the beat
 //        before it and "verdict" the one after — what the guardian made of the answer,
-//        with "wrong" picking a reply it will not take. "refused"
-//        searches for the AFFRONT band instead, whose verdict is the one that never
-//        asked anything. `sigils` is how
+//        with "wrong" picking a reply it will not take. "refused" and "boon" search for
+//        the two bands that never ask anything at all — the refusal and the quiet word —
+//        and land on the verdict each of those resolves onto ("boon" wants a high
+//        `sigils:` to be reachable). `beats` steps the guardian's SWARM on the FX clock;
+//        `sigils` is how
 //        many letters the pet has learned to read, 0..26 — at 0 the panel is nonsense
 //        and at 26 it is plain English, with every stage between. Pass a `beats` count
 //        to walk the riddle's patience bar down)
+// beats:<n> (any scene: override the positional beat count, for a scene whose subject has
+//        to be animated into its shape before the frame is worth taking)
 // rank (Hacker Rank rank-up celebration on the idle badge,; crosses
 //        a rank via registerNetwork, then resolves one event to surface it)
 //        postencounter (a wild fight ridden to its own auto-dismiss, landing the
@@ -193,6 +197,12 @@ static int writePanel(const Framebuffer& fb, const char* out, int beats) {
 int main(int argc, char** argv) {
     int beats = (argc > 1) ? std::atoi(argv[1]) : 0;
     const char* out = (argc > 2) ? argv[2] : "frame.ppm";
+    // A SCENE may name its own beat count, which the positional one cannot express: the
+    // contact sheet runs every screen at the same beat (tools/screens.sh), and a scene
+    // whose subject has to be animated INTO its shape — a guardian's swarm settling out
+    // of the scatter it was reset from — is otherwise stuck being dumped mid-arrival.
+    for (int i = 3; i < argc; ++i)
+        if (std::strncmp(argv[i], "beats:", 6) == 0) beats = std::atoi(argv[i] + 6);
 
     // A backdrop on its own, with no screen composed over it. Nothing about a scene
     // needs a Game, and the whole question a look at one answers — does it still read
@@ -1190,16 +1200,21 @@ int main(int argc, char** argv) {
             const bool wantHail = hasFlag(argc, argv, "hail");
             const bool wantVerdict = hasFlag(argc, argv, "verdict");
             const bool wantRefused = hasFlag(argc, argv, "refused");
+            const bool wantBoon = hasFlag(argc, argv, "boon");
             // The welcome is ROLLED (game_shibboleth.cpp), so a band is reached by asking
             // until it comes up rather than by forcing it.
             for (int i = 0; i < 200 && game.nav() != Game::Nav::Shibboleth; ++i) {
                 game.debugStartShibboleth();
                 if (wantHail) break;                      // the hail IS the scene
-                if (wantRefused) {
-                    // The refusal's own verdict: the one band that never asks anything,
-                    // and the screen that has to make a boss out of nowhere legible.
-                    if (game.shibbolethWelcome() != Game::ShibbolethWelcome::Affront)
-                        continue;
+                if (wantRefused || wantBoon) {
+                    // One of the two bands that never asks anything: the refusal's
+                    // verdict, which has to make a boss out of nowhere legible, and the
+                    // boon's, which is what fluency is FOR. Both are searched for rather
+                    // than forced, since the welcome is a roll — pair `boon` with a high
+                    // `sigils:` or the search will not find one.
+                    const auto want = wantRefused ? Game::ShibbolethWelcome::Affront
+                                                  : Game::ShibbolethWelcome::Boon;
+                    if (game.shibbolethWelcome() != want) continue;
                     game.onButton({Button::B, true, false});
                     break;
                 }
@@ -1227,12 +1242,15 @@ int main(int argc, char** argv) {
                         game.onButton({Button::A, true, false});
                 game.onButton({Button::B, true, false});
             }
-            // `beats` walks the patience bar down, which is the only thing on the riddle
-            // board that moves — stopping if a hold resolves the screen underneath.
+            // `beats` steps the guardian's SWARM, which is what actually moves on the
+            // hail and the verdict — so this ticks the FX clock (kFxAnimMs) rather than
+            // the heartbeat, exactly as the Wi-Fi dissolve's scene does. Four of these
+            // per heartbeat also means a scene can run the flock well into its shape
+            // before the screen's own hands-off hold resolves out from under it.
             for (int i = 1; i <= beats && (game.nav() == Game::Nav::Shibboleth ||
                                            game.nav() == Game::Nav::ShibbolethHail ||
                                            game.nav() == Game::Nav::ShibbolethVerdict); ++i)
-                game.tick(t += kHeartbeatMs);
+                game.tick(t += kFxAnimMs);
         } else if (hasFlag(argc, argv, "rank")) {
             game.inventory().add("sinkhole_trap", 20);
             // Rank already crossed (device seam above). Fire steps until the first

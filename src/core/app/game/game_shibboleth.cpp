@@ -7,6 +7,7 @@
 #include "core/content/areas/area_defs.h"
 #include "core/content/content_riddles.h"
 #include "core/model/cant.h"
+#include "core/ui/shibboleth_screen.h"   // the swarm cell the guardian's flock is reset into
 
 // game_shibboleth.cpp — THE SHIBBOLETH, the guardian encounter.
 //
@@ -148,10 +149,35 @@ void Game::startShibboleth() {
     // for every band and not just the asking one: a refusal is still spoken in the Cant.
     shibCipher_.build(cantSigils_, cipherSeed(rng_, exploreSector_, exploreSteps_));
 
+    // The BODY. Reset per meeting and seeded off the same walk position the cipher is,
+    // so a guardian re-renders identically for as long as it is on screen and is a
+    // different shape the next time it is met — which is the whole of what a swarm has
+    // instead of a sheet. The cell is the screen's (shibboleth_screen.h): a flock knows
+    // how big the box is and nothing about where the box is.
+    guardianFlock_.seed(cipherSeed(rng_, exploreSector_, exploreSteps_) | 1u);
+    guardianFlock_.reset(kGuardianSwarmMarks, kGuardianCellW, kGuardianCellH);
+
     exploreEventBeat_ = 0;   // start the hail's hold (game_core.cpp's tick)
     fxBeat_ = 0;
     nav_ = Nav::ShibbolethHail;
     dirty_ = true;
+}
+
+FlockMood Game::guardianFlockMood() const {
+    // What the swarm is doing, which is the same question as what the guardian is doing.
+    // Read off the NAV rather than off a timer: the hail is a thing deciding, the riddle
+    // board is a thing waiting on an answer, and the verdict is a thing that has made up
+    // its mind — and each holds until the meeting moves on, which is what makes this a
+    // state and not an effect running out.
+    if (nav_ == Nav::ShibbolethHail) return FlockMood::Watching;
+    if (nav_ == Nav::Shibboleth) return FlockMood::Attending;
+    switch (shibbolethOutcome()) {
+        case GuardianOutcome::Pleased:    return FlockMood::Pleased;
+        case GuardianOutcome::Displeased: return FlockMood::Agitated;
+        case GuardianOutcome::Affront:    return FlockMood::Withdrawn;
+        case GuardianOutcome::Boon:       return FlockMood::Open;
+    }
+    return FlockMood::Watching;
 }
 
 void Game::onShibbolethHail(const ButtonEvent& ev) {

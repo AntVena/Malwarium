@@ -48,20 +48,29 @@ constexpr int kStripH = 9;
 constexpr int kClockY = kStripY - 6;
 
 // The HAIL and the VERDICT share one shape, because they are the same beat twice: a
-// banner naming what is happening, the guardian's gesture, the guardian's words, a rule,
-// and then two plain lines saying what it means to the pet. Fixed tops for the same
-// reason the riddle board's are — a player who has met a guardian before should find
+// banner naming what is happening, the guardian ITSELF, then its gesture, its words, a
+// rule, and two plain lines saying what all that means to the pet. Fixed tops for the
+// same reason the riddle board's are — a player who has met a guardian before should find
 // every part of the next meeting where they left it.
-constexpr int kMeetBannerY = 32;
-constexpr int kMeetSeenY = 52;      // the gesture: plain, dim, up to two lines
-constexpr int kMeetSaidY = 82;      // what it says: the Cant, up to two lines
+//
+// The body gets the top of the panel and the widest single band on it, which is the whole
+// argument for these two screens existing: the riddle board has no room for a creature,
+// so before these there was nothing anywhere in the game that showed what a guardian
+// looks like.
+constexpr int kMeetBannerY = 28;
+constexpr int kMeetCellY = 42;      // the swarm, kGuardianCellW x kGuardianCellH
+constexpr int kMeetCellX = (kActiveW - kGuardianCellW) / 2;
+constexpr int kMeetSeenY = 104;     // the gesture: plain, dim, one line
+constexpr int kMeetSaidY = 116;     // what it says: the Cant, up to two lines
 constexpr int kMeetLines = 2;
 // The fence between the MEETING and what the meeting did to the pet. Everything above it
 // is the guardian; everything below it is the ledger, in plain words the pet's owner can
 // always read.
-constexpr int kMeetRuleY = 124;
-constexpr int kMeetNoteY = 138;
-constexpr int kMeetNote2Y = 158;
+constexpr int kMeetRuleY = 144;
+constexpr int kMeetNoteY = 152;
+constexpr int kMeetNote2Y = 170;
+static_assert(kMeetCellY + kGuardianCellH < kMeetSeenY,
+              "the swarm's cell must clear the gesture line under it");
 
 void drawCentered(Framebuffer& fb, int y, const char* s, Rgb565 color) {
     if (!s || !s[0]) return;
@@ -157,13 +166,20 @@ namespace {
 // a player reading the second should recognise the first.
 void drawMeetingChrome(Framebuffer& fb, const char* guardian, const char* banner,
                        Rgb565 bannerColor, const char* demeanour, const char* speech,
-                       uint32_t sigils) {
+                       const SwarmView& swarm, Rgb565 swarmCore, uint32_t sigils) {
     char count[12];
     std::snprintf(count, sizeof(count), "%d/%d", sigilCount(sigils), kCantSigils);
     drawHeaderBand(fb, guardian ? guardian : "", count, palColor(Pal::INK_DIM),
                    palColor(Pal::ACCENT));
 
     drawCentered(fb, kMeetBannerY, banner, bannerColor);
+
+    // THE GUARDIAN. Not a sprite and never going to be one — a flock of marks steering by
+    // boids rules (core/render/swarm.h), so the thing across from the pet is visibly not
+    // the same kind of thing the pet is. It is drawn before the words because it is what
+    // the words are coming out of.
+    drawSwarm(fb, swarm, kMeetCellX, kMeetCellY, kGuardianCellW, kGuardianCellH,
+              swarmCore, palColor(Pal::INK_DIM));
 
     // What the pet can SEE, and the only plain-language thing above the rule. Dim and
     // unquoted, so it never reads as speech — it is what the guardian is doing.
@@ -196,12 +212,13 @@ const char* verdictBanner(ShibbolethVerdictKind kind) {
 }  // namespace
 
 void drawShibbolethHail(Framebuffer& fb, const char* guardian, const char* demeanour,
-                        const char* greeting, uint32_t sigils, int shakes) {
+                        const char* greeting, const SwarmView& swarm, uint32_t sigils,
+                        int shakes) {
     // The banner states the one fact the whole system rests on and nothing else on the
     // device says out loud: this thing is talking, and it is not talking the 'net's
     // alphabet. Everything the player is about to fail to read follows from that.
     drawMeetingChrome(fb, guardian, "IT SPEAKS THE CANT", palColor(Pal::ACCENT),
-                      demeanour, greeting, sigils);
+                      demeanour, greeting, swarm, palColor(Pal::ACCENT), sigils);
 
     // Below the rule: how much of that the pet can read, and what buying more costs. The
     // count is the strip in words — the same fact in the screen's other channel — and the
@@ -231,12 +248,16 @@ void drawShibbolethHail(Framebuffer& fb, const char* guardian, const char* demea
 
 void drawShibbolethVerdict(Framebuffer& fb, const char* guardian,
                            ShibbolethVerdictKind kind, const char* demeanour,
-                           const char* speech, const char* ledger, const char* flavor,
-                           uint32_t sigils, bool nextIsFight) {
+                           const char* speech, const SwarmView& swarm, const char* ledger,
+                           const char* flavor, uint32_t sigils, bool nextIsFight) {
     const bool bad = kind == ShibbolethVerdictKind::Displeased ||
                      kind == ShibbolethVerdictKind::Refused;
+    // The body takes the verdict's colour too. A guardian that did not like the answer is
+    // flying apart in WARN, which is honest rather than decorative — it IS an alarm now,
+    // and the fight is one button away. The scatter says it in grayscale either way.
     drawMeetingChrome(fb, guardian, verdictBanner(kind),
-                      palColor(bad ? Pal::WARN : Pal::ACCENT), demeanour, speech, sigils);
+                      palColor(bad ? Pal::WARN : Pal::ACCENT), demeanour, speech, swarm,
+                      palColor(bad ? Pal::WARN : Pal::ACCENT), sigils);
 
     // Below the rule: what it cost or paid, then what that leaves the pet with. The
     // ledger is the numbers and the flavor is the sentence — kept apart because a player

@@ -370,13 +370,24 @@ bool Game::tickAnimClocks(uint32_t nowMs) {
     // takes and costs nothing the rest of the time. Three hosts, one counter — only one
     // dissolve is ever up. Each reset its own start (startFeeding / startWifiEvent /
     // the fight's own combatBeat_ reset), so this only has to decide when to ADVANCE.
+    //
+    // The guardian's SWARM rides the same clock, and is the one thing on it that is not a
+    // dissolve: a flock is redrawn every frame it is up for the reason a sweep is, and at
+    // 4fps a boid moving a pixel a step reads as a blink rather than as flight. It runs
+    // on the two screens that DRAW the body (game_render.cpp) and not on the riddle board
+    // between them — that board is a reading screen whose patience bar is the only thing
+    // on it that moves, and paying a 16fps repaint for fifteen seconds of somebody
+    // reading would buy nothing.
+    const bool swarmLive =
+        nav_ == Nav::ShibbolethHail || nav_ == Nav::ShibbolethVerdict;
     const bool fxSweeping =
-        nav_ == Nav::ModalFeeding || nav_ == Nav::Wifi ||
+        nav_ == Nav::ModalFeeding || nav_ == Nav::Wifi || swarmLive ||
         (nav_ == Nav::Combat && combat_.outcome() != Combat::Outcome::Ongoing);
     if (fxSweeping) {
         if (nowMs - lastFxMs_ >= static_cast<uint32_t>(kFxAnimMs)) {
             lastFxMs_ = nowMs;
             fxBeat_++;
+            if (swarmLive) guardianFlock_.step(guardianFlockMood());
             changed = true;
         }
     } else {

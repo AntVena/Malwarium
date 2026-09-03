@@ -27,10 +27,28 @@
 #include <cstdint>
 
 #include "core/content/content_riddles.h"   // kRiddleReplies — the row count is content's
+#include "core/render/swarm.h"              // SwarmView — the guardian's body is a flock
 
 namespace mal {
 
 class Framebuffer;
+
+// THE GUARDIAN'S CELL: the box its swarm occupies on the two screens that draw the body,
+// in active px. Public because the ENGINE resets the flock into it (Game::startShibboleth)
+// — a flock is told how big its box is and never where it is, so this is the one number
+// the two layers have to agree on, and it is stated here because the screen is what owns
+// a layout.
+//
+// Creature-sized rather than panel-wide on purpose: a swarm spread over the full canvas
+// has no density anywhere and reads as static, and density is the only thing making these
+// marks a body (core/render/swarm.h).
+constexpr int kGuardianCellW = 132;
+constexpr int kGuardianCellH = 58;
+
+// How many marks one guardian is made of. Under kSwarmMarksMax, which is the ceiling the
+// O(n^2) step can afford — this is the number that fills the cell above at a density that
+// still has a middle, and a bigger flock in the same box is a blob.
+constexpr int kGuardianSwarmMarks = 26;
 
 // The SHIBBOLETH board.
 //
@@ -69,8 +87,11 @@ void drawShibboleth(Framebuffer& fb, const char* guardian, const char* demeanour
 // The Cant strip is drawn here too, and that is deliberate: the first thing a new player
 // should learn is that the nonsense is FINITE and that the lit cells are the way out of
 // it.
+// `swarm` is the guardian itself, drawn in the cell above the text — the one thing on
+// either of these screens that moves, and the whole reason the hail is worth stopping on.
 void drawShibbolethHail(Framebuffer& fb, const char* guardian, const char* demeanour,
-                        const char* greeting, uint32_t sigils, int shakes);
+                        const char* greeting, const SwarmView& swarm, uint32_t sigils,
+                        int shakes);
 
 // How a meeting came out, as the verdict screen announces it. The engine folds the
 // fluency band and the reply onto this (Game::shibbolethOutcome); the screen needs only
@@ -90,11 +111,15 @@ enum class ShibbolethVerdictKind { Pleased, Displeased, Refused, Boon };
 // empty. `sigils` draws the strip once more, which is where a sigil just earned lights
 // its own cell — the payout and the picture of it on the same screen.
 //
+// `swarm` is the guardian reacting: the same body from the hail, still on screen, now
+// flying under the mood the answer put it in — which is what turns "it was displeased"
+// from a line of text into something the player watched happen.
+//
 // `nextIsFight` names the button honestly: a displeased guardian answers for itself, and
 // a player is never told "B CONTINUE" and handed a boss.
 void drawShibbolethVerdict(Framebuffer& fb, const char* guardian,
                            ShibbolethVerdictKind kind, const char* demeanour,
-                           const char* speech, const char* ledger, const char* flavor,
-                           uint32_t sigils, bool nextIsFight);
+                           const char* speech, const SwarmView& swarm, const char* ledger,
+                           const char* flavor, uint32_t sigils, bool nextIsFight);
 
 }  // namespace mal

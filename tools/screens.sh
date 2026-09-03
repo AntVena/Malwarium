@@ -72,11 +72,16 @@ SCENES=(
   "hacker_merge|hacker merge recipes stock"
   "shibboleth|shibboleth"           "shibboleth_half|shibboleth sigils:13"
   "shibboleth_fluent|shibboleth sigils:24"
-  "shibboleth_hail|shibboleth hail"  "shibboleth_hail_half|shibboleth hail sigils:13"
-  "shibboleth_verdict|shibboleth verdict"
-  "shibboleth_verdict_fluent|shibboleth verdict sigils:24"
-  "shibboleth_refused|shibboleth refused"
-  "shibboleth_verdict_wrong|shibboleth verdict wrong sigils:13"
+  # FX_SWARM: the guardian's body, one scene per FlockMood — a swarm is judged on whether
+  # the moods read as different creatures, and that is a looking question, not a gate one.
+  # The `beats` count runs the flock to its shape before the frame is taken.
+  "shibboleth_hail|shibboleth hail beats:70"
+  "shibboleth_hail_half|shibboleth hail sigils:13 beats:70"
+  "shibboleth_verdict|shibboleth verdict beats:70"
+  "shibboleth_verdict_fluent|shibboleth verdict sigils:24 beats:70"
+  "shibboleth_refused|shibboleth refused beats:70"
+  "shibboleth_boon|shibboleth boon sigils:26 beats:70"
+  "shibboleth_verdict_wrong|shibboleth verdict wrong sigils:13 beats:70"
   "shop|shop"                       "encounter|encounter"
   "combat|combat"                   "postencounter|postencounter"
   "combat_stats|combat stats"       "combat_kit|combat kit"

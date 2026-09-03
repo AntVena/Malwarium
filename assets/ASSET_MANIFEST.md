@@ -554,6 +554,7 @@ Listed so Design **skips** them; they're implemented per `src/core/render/RENDER
 | `FX_ABSORB` | a glyph breaking into blocks that stream behind the pet, + the pet's swallow flash | SPRITE_MODS (under) | feeding a food · the Wi-Fi event's network discovery · a beaten rival that fielded a move the pet lacks | ⊘ |
 | `FX_SHRED` | a sprite shearing into sliding, streaking scanlines that fray out where they stood | SPRITE_MODS (under) | a beaten rival that fielded nothing new | ⊘ |
 | `FX_CAMO` | the pet repainted tone-for-tone in the palette worn by the fighter opposite; the change arrives and leaves as a scatter behind a bright burn edge, and holds in between | SPRITE_BASE (in place) | a metamorphic pet whose live cast was rolled out of another line's pool | ⊘ |
+| `FX_SWARM` | an area GUARDIAN, drawn as the flock it is: a couple of dozen marks steering by boids rules, threaded to their near neighbours so the body has an interior, dense in the middle and granular at the fringe | SPRITE_BASE (in place of a sheet) | the guardian's disposition — where the SHIBBOLETH has got to, and how it came out | ⊘ |
 
 > `FX_CAMO` shares the other two's scatter (`core/render/dissolve.h`) so a screen that can
 > play more than one of them never looks like it swapped renderers mid-fight. What it does
@@ -562,6 +563,18 @@ Listed so Design **skips** them; they're implemented per `src/core/render/RENDER
 > when the pet's cast changes and not otherwise. It samples its palette off the opponent
 > rather than from any table, so a line's colours need no entry here and a lineless
 > malbeast still answers with whatever is on it.
+
+> `FX_SWARM` is the one row here that is a CREATURE rather than something done to one, and
+> that is the point of it: a guardian is the only thing in the game that is not shaped like
+> the things the pet has met, and drawing it as authored pixels would have made it another
+> animal. So there is no sheet to draw and there is not going to be one — Design skips this
+> the way it skips the rest of the section, and what a guardian looks like is decided by
+> `core/model/flock.cpp`'s mood table instead of by a sprite.
+>
+> It is dual-coded by SHAPE, like the pair below: the flock's SPREAD is what a mood looks
+> like — a refused pet gets a knot barely twenty px across, an answered one a settled body,
+> a wrong answer a wide scatter full of streaks — so the reading survives a grayscale
+> screenshot and does not depend on the WARN it also wears when the news is bad.
 
 > `FX_ABSORB` and `FX_SHRED` are a PAIR, and the combat outro is where the pairing does
 > work: one converges on the pet, the other flies apart, so which one closes a fight says

@@ -362,6 +362,15 @@ int g_failures = 0;
     RUN(test_the_bracketing_screens_auto_play_out) \
     RUN(test_the_verdict_speaks_the_cant_and_shows_the_sigil_earned) \
     RUN(test_cant_persists_across_a_reboot)       \
+    /* FX_SWARM — the guardian's body, as boids */ \
+    RUN(test_flock_never_leaves_its_cell)         \
+    RUN(test_flock_holds_together_without_collapsing) \
+    RUN(test_flock_moods_read_as_different_shapes) \
+    RUN(test_flock_settles_quickly_enough_to_be_seen) \
+    RUN(test_two_seeds_are_two_creatures)         \
+    RUN(test_a_degenerate_flock_is_harmless)      \
+    RUN(test_the_swarm_draws_only_inside_its_cell) \
+    RUN(test_the_swarm_is_visible_in_every_mood)  \
     RUN(test_facing_mirror_reverses_the_draw)     \
     RUN(test_facing_mirror_reaches_every_creature_blit) \
     RUN(test_facing_content_span_follows_the_mirror) \
