@@ -77,6 +77,7 @@ enum RigRow {
     kRigRowCombatXpWindow = 15,
     kRigRowItemPicker = 16,
     kRigRowModStorage = 17,
+    kRigRowElasticBandwidth = 18,
 };
 
 // The first row that persists positionally in SaveData::rigLevelsExt rather than
@@ -226,6 +227,22 @@ inline constexpr int kCombatXpWindowStart = 1024;
 inline constexpr int kCombatXpWindowMaxTier = 8;
 inline constexpr int kCombatXpBaseThreshold = 90;
 inline constexpr int kCombatXpWindowStepPct = 5;
+
+// --- n: Elastic Bandwidth -----------------------------------------------------
+// A one-time unlock that changes the SHAPE of Bandwidth regen: a regen tick restores
+// kElasticBandwidthPct%% of the SPENT pool (bandwidthMax() - bandwidth(), floored at
+// the flat 1 an unbought rig gets) instead of that flat +1 — Game::bandwidthRegenAmount, read
+// by the regen loop in Game::tick. The interval itself is untouched; this is how much
+// each tick is worth, not how often one lands.
+//
+// It is deliberately worthless below a 100-point pool: 1%% of anything under 100 spent
+// floors back to the +1 every rig already gets. What it is FOR is the player who has
+// bought "INCREASE BANDWIDTH" hundreds of times — a pool that deep refills at a
+// hundredth of its own hole rather than one point at a time, so the row's value is
+// bought entirely with row a's purchases. Priced to match: this is the most expensive
+// thing in the storefront, and still a fraction of what the pool it rescues cost.
+inline constexpr int kElasticBandwidthPct = 1;      // the row's readout spells this out
+inline constexpr int kElasticBandwidthCost = 131072;
 
 struct RigUpgradeDef;  // fwd decl for the table below
 
@@ -402,6 +419,12 @@ inline const RigUpgradeDef kRigUpgrades[] = {
      kModStorageStart, 0, RigEffectKind::None, 0, "BOUGHT +MOD STORAGE",
      {{"PER MOD", RigValueCurve::Tiers, kModCopyCapBase, 0, kModStorageCapByTier,
        kModStorageMaxTier, "x%d"}}},
+
+    // Regen SHAPE, not pool size: the flag says what a tick becomes, since level 0's
+    // flat +1 and level 1's percentage are not two values on one axis.
+    {"elastic_bandwidth", "ELASTIC BANDWIDTH", 1, RigCostCurve::kFixed,
+     kElasticBandwidthCost, 0, RigEffectKind::None, 0, "BOUGHT ELASTIC BW",
+     {{"REGEN 1% OF SPENT"}}},
 
 };
 inline constexpr int kRigUpgradeCount =

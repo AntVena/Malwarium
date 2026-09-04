@@ -307,6 +307,50 @@ void test_hacker_shop_bandwidth_upgrade() {
     CHECK(g.bwUpgradeCount() == 1 && g.bandwidthMax() == cap1 && g.bits() == 10);
 }
 
+// Elastic Bandwidth (Rig Shop n): a regen tick pays a percentage of the SPENT pool
+// instead of a flat point. Nothing changes for a rig whose hole is under 100 (the
+// percentage floors back to the +1 every rig gets); a deeply-upgraded pool climbs out
+// in proportion to how empty it is.
+void test_rig_elastic_bandwidth_regen() {
+    Game g{StartMode::Hatched};
+    // The row's whole audience: a pool bought up 240 times, which is what makes 1% of
+    // the hole worth more than the flat point.
+    g.debugSetBits(4000000);
+    for (int i = 0; i < 240; ++i) g.debugBuyBandwidthUpgrade();
+    const int cap = g.bandwidthMax();
+    CHECK(cap == kBandwidthMax + 240 * kBandwidthUpgradeStep);
+
+    const uint32_t tick = g.bandwidthRegenMinutes() * 60u * 1000u;
+    uint32_t now = 0;
+
+    // Unbought, even that pool trickles back one point a tick.
+    g.debugSetBandwidth(cap - 200);
+    CHECK(g.bandwidthRegenAmount() == 1);
+    g.tick(now += tick);
+    CHECK(g.bandwidth() == cap - 199);
+
+    // Bought: 200 spent pays 2 a tick, and the row is a one-time unlock.
+    g.debugSetBits(kElasticBandwidthCost + 7);
+    g.debugBuyElasticBandwidth();
+    CHECK(g.elasticBandwidthUnlocked());
+    CHECK(g.bits() == 7);                                    // Bits deducted
+    CHECK(!g.shopRowOffered(kRigRowElasticBandwidth));       // ...and nothing left to buy
+    g.debugSetBandwidth(cap - 200);
+    CHECK(g.bandwidthRegenAmount() == 2);
+    g.tick(now += tick);
+    CHECK(g.bandwidth() == cap - 198);
+
+    // The slice is measured per tick, so it decays as the hole closes: a 50-point hole
+    // is back to the flat +1 floor, and the pool still never overfills.
+    g.debugSetBandwidth(cap - 50);
+    CHECK(g.bandwidthRegenAmount() == 1);
+    g.tick(now += tick);
+    CHECK(g.bandwidth() == cap - 49);
+    g.debugSetBandwidth(cap - 1);
+    g.tick(now += tick * 4);
+    CHECK(g.bandwidth() == cap);
+}
+
 // the shared rigUpgradeCost curve engine (tunables.h). Pure-function
 // check of all six named curves at their defining boundary points, so the balance
 // knobs (start price) can be retuned without re-deriving the shape by hand.

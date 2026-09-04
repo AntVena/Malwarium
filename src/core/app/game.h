@@ -207,6 +207,24 @@ public:
     // Has this pet had its permanent regen upgrade? The STAT BUFFS page's own question,
     // and the reason a second Tiramisudo is a top-up rather than a second upgrade.
     bool bandwidthRegenUpgraded() const { return upgrades_.bandwidthRegenMin > 0; }
+    // n (Rig Shop): Elastic Bandwidth, the one-time unlock that makes a regen tick pay a
+    // PERCENTAGE of the hole instead of a flat point (bandwidthRegenAmount).
+    bool elasticBandwidthUnlocked() const {
+        return rigLevel_[kRigRowElasticBandwidth] > 0;
+    }
+    // How much ONE regen tick restores — the amount half of regen, where
+    // bandwidthRegenMinutes() is the interval half. Flat +1 by default; with Elastic
+    // Bandwidth owned, kElasticBandwidthPct% of what is currently SPENT
+    // (bandwidthMax() - bandwidth()), never below that same +1. So a small pool
+    // regenerates exactly as it always did and a deep one climbs out of its hole in
+    // proportion to the hole — recomputed per tick, so the refill decelerates as the
+    // pool fills rather than paying the whole way back at the empty-pool rate.
+    int bandwidthRegenAmount() const {
+        if (!elasticBandwidthUnlocked()) return 1;
+        const int spent = bandwidthMax() - bandwidth_;
+        const int pct = spent * kElasticBandwidthPct / 100;
+        return pct > 1 ? pct : 1;
+    }
     // Everything an Epic dish has permanently handed this pet, as one value — what STAT's
     // BUFFS page lists and what the rack freezes (core/model/pet_upgrades.h).
     const PetUpgrades& petUpgrades() const { return upgrades_; }
@@ -1700,6 +1718,9 @@ public:
     // Buy the next MOD STORAGE tier via the real buy path (tests) — what raises how many
     // spare copies of one mod the pool will hold (modStorageCap).
     void debugBuyModStorage() { buyRigUpgrade(kRigRowModStorage); }
+    // Buy ELASTIC BANDWIDTH via the real buy path (tests) — the row that turns a regen
+    // tick from a flat +1 into a percentage of the spent pool.
+    void debugBuyElasticBandwidth() { buyRigUpgrade(kRigRowElasticBandwidth); }
     // Hand back to the idle habitat exactly as a resolved explore event does (tests) —
     // the Continuous Auto-Backup / auto-defrag seam, without driving a whole random
     // event to reach it.

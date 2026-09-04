@@ -294,6 +294,7 @@ int g_failures = 0;
     RUN(test_bandwidth_farming_resource)          \
     RUN(test_hacker_face_toggle)                  \
     RUN(test_hacker_shop_bandwidth_upgrade)       \
+    RUN(test_rig_elastic_bandwidth_regen)         \
     RUN(test_rig_cost_curve_formulas)              \
     RUN(test_hacker_shop_rack_slot_upgrade)       \
     RUN(test_hacker_shop_scraping_and_datamining_bonus) \

@@ -7240,16 +7240,16 @@ window.PEDIA_DATA = {
     {
       "key": "RIG_ALL",
       "name": "Full Rig",
-      "trigger": "Own at least one level of all 18 rig upgrades.",
+      "trigger": "Own at least one level of all 19 rig upgrades.",
       "icon": "assets/icons/ICON_ACH_RIG_ALL.png",
-      "goal": 18
+      "goal": 19
     },
     {
       "key": "RIG_MAXED",
       "name": "Maxed Out",
-      "trigger": "Buy all 522 capped rig upgrade levels there are.",
+      "trigger": "Buy all 523 capped rig upgrade levels there are.",
       "icon": "assets/icons/ICON_ACH_RIG_MAXED.png",
-      "goal": 522
+      "goal": 523
     },
     {
       "key": "NETS_10",
