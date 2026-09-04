@@ -40,10 +40,19 @@ constexpr int kCareDying = 5;     // 5/5 dying (hot, pulses)
 constexpr int kDefragReduction = 20;   // -20 Fragmentation on a successful Defrag
 constexpr int kAvReduction = 10;       // -10 Fragmentation on a successful AV scan
 constexpr int kMaintFailPenalty = 15;  // +15 Fragmentation on a failed run
-// A Defrag costs Bits, scaled by the pet's evolution stage.
-// Indexed by Stage (BootSector/Process/Script/Daemon). Boot is 0 —
-// Charged per attempt regardless of pass/fail.
-constexpr int kDefragCostByStage[4] = {0, 5, 15, 30};
+// A Defrag costs Bits, and the price is THIS PET'S HISTORY with the tool rather than
+// its stage: cost(n) = start * 2^floor(log2(n)) over Game::defragCount(), which is
+// rigUpgradeCost's kLogStep — the softest ladder anything on the device is priced on.
+// Flat for the first two runs, then a doubling each time the tally passes a power of
+// two: the 8th defrag of a creature costs 64, the 100th 512, the 1000th 4096. Charged
+// per attempt regardless of pass/fail.
+//
+// The shape is the point. Cleaning up after a young pet is pocket change, and keeping
+// a long-serving favourite spotless is a bill that grows with how long you have kept
+// it — including the Rig Shop's auto-defrag, whose upkeep is a multiple of this and
+// whose runs count toward the same tally. A Boot-Sector egg pays nothing: there is
+// nothing in it to defragment yet.
+constexpr int kDefragCostStart = 8;
 // Three defrag variants share the stage-scaled Bits cost above, differing only in what
 // ELSE they ask for: QUICK is Bits-only with the normal success roll (luck), TOOL
 // additionally spends one Defrag Tool item (kDefragToolId, content_items.cpp) for a

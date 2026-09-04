@@ -552,6 +552,10 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     w.u8(d.evolveBranchOverride);
     w.u8(d.evolveSoakFactor);
     w.u8(d.evolveHold);
+
+    // v61: which owned SERVICE rows are stopped, as one bit per rig row. Its own tail
+    // after v60's, so a build that stops at either still reads every field it knows.
+    w.u32(d.rigServicesOff);
 }
 
 std::vector<uint8_t> serializeSave(const SaveData& d) {
@@ -1157,6 +1161,10 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
         if (d.evolveSoakFactor < 1) d.evolveSoakFactor = 1;
         d.evolveHold = r.u8();
     }
+
+    // v61 tail: the stopped SERVICES mask. Absent in a v1..v60 blob → 0, which is every
+    // service the save has bought running — what a device did before the switchboard.
+    if (version >= 61) d.rigServicesOff = r.u32();
 
     if (!r.ok) { out = SaveData{}; return false; }  // truncated -> empty
     if (version < newestRenameVersion()) renameRetiredIds(d, version);

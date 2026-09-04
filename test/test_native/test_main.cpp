@@ -65,7 +65,7 @@ int g_failures = 0;
     RUN(test_feeding_flow)                  \
     RUN(test_item_context_gate)             \
     RUN(test_maint_flow)                    \
-    RUN(test_defrag_costs_stage_bits)       \
+    RUN(test_defrag_costs_scale_with_the_tally)       \
     RUN(test_defrag_gated_when_broke)       \
     RUN(test_defrag_variants)               \
     RUN(test_defrag_tool_gated_in_items)    \
@@ -294,7 +294,9 @@ int g_failures = 0;
     RUN(test_bandwidth_farming_resource)          \
     RUN(test_hacker_face_toggle)                  \
     RUN(test_hacker_shop_bandwidth_upgrade)       \
-    RUN(test_rig_elastic_bandwidth_regen)         \
+    RUN(test_rig_link_aggregator_regen)         \
+    RUN(test_rig_services_switchboard)            \
+    RUN(test_rig_disk_maintenance_thresholds)     \
     RUN(test_rig_cost_curve_formulas)              \
     RUN(test_hacker_shop_rack_slot_upgrade)       \
     RUN(test_hacker_shop_scraping_and_datamining_bonus) \

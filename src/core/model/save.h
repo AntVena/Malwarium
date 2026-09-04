@@ -262,7 +262,12 @@ constexpr int kSaveTextCap = 28;     // matches EventLog's LogEntry.text
 //     what every save written before these devices existed describes. A blob carrying a
 //     factor below 1 is read as 1 for the same reason — the field is a MULTIPLIER, and
 //     there is no such thing as a pet whose XP is scaled to nothing.
-constexpr uint16_t kSaveVersion = 60;
+// v61 APPEND `rigServicesOff`, one bit per Rig Shop row (game_rig_shop.h) marking an
+//     owned SERVICE the player has STOPPED on the SHOP's SERVICES screen — the two
+//     backup auto-arms and Disk Maintenance's auto-defrag. Player-level, its own tail
+//     after v60's. The OFF half is what is stored, so pre-v61 → 0 reads as what a save
+//     written before the switchboard existed means: every service bought is running.
+constexpr uint16_t kSaveVersion = 61;
 
 // The oldest blob deserialize will read, and the ONLY thing that retires a rename row
 // (see `renamedIds`). Raising it is how a device stops carrying migration weight for saves
@@ -660,6 +665,10 @@ struct SaveData {
     // (kRigRowExtBase + i), value = its purchased level. Pre-v32 → empty (every such
     // row defaults to 0 — a migrated save has bought none of them).
     std::vector<uint16_t> rigLevelsExt;
+
+    // v61: which owned SERVICE rows are switched OFF — one bit per rig row, set = off
+    // (Game::rigFeatureActive). Player-level. Pre-v61 → 0, everything running.
+    uint32_t rigServicesOff = 0;
 
     // v36: Hacker CREW allegiance + the home network it hangs off -------------
     // Player-level (survive lifecycles, like hackerTag). `crewId` is a content id

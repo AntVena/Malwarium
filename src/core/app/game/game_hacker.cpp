@@ -39,24 +39,14 @@ namespace mal {
 
 namespace {
 
-// The indices of every offered row, in table order — the SHOP list only ever
-// shows rows with something to do.
-int visibleShopRows(const Game& g, int* out, int max) {
+// Every slot the SHOP list shows, in list order: the SERVICES head slot (once the
+// player owns a service to switch), then every row with something left to buy.
+int shopSlots(const Game& g, int* out, int max) {
     int n = 0;
+    if (g.rigServicesOffered() && n < max) out[n++] = kRigSlotServices;
     for (int i = 0; i < kRigUpgradeCount && n < max; ++i)
         if (g.shopRowOffered(i)) out[n++] = i;
     return n;
-}
-
-// Step `row` forward through raw table order to the next offered row, wrapping;
-// leaves `row` unchanged if nothing is on sale.
-int nextVisibleShopRow(const Game& g, int row) {
-    int next = row;
-    for (int step = 0; step < kRigUpgradeCount; ++step) {
-        next = (next + 1) % kRigUpgradeCount;
-        if (g.shopRowOffered(next)) return next;
-    }
-    return row;
 }
 }  // namespace
 
@@ -119,7 +109,9 @@ void Game::enterHackerSubmenu() {
     // B on an inaccessible slot is inert (the slot exists but isn't usable yet).
     if (!hackerSlotAccessible(cursor_)) return;
     nav_ = Nav::Submenu;
-    hackerShopRow_ = 0;
+    hackerShopRow_ = 0;      // the first PURCHASABLE row; SERVICES sits above it
+    shopView_ = ShopView::Rows;
+    rigServiceRow_ = 0;
     hackerVaultRow_ = 0;
     hackerMergeRow_ = 0;
     crewView_ = CrewView::Hub;   // every entry opens at the top of the CREW screen
@@ -161,18 +153,70 @@ void Game::onHackerSubmenu(const ButtonEvent& ev) {
     }
 }
 
+int Game::nextShopSlot(int cur, int dir) const {
+    // One index space for both kinds of slot: index 0 is the SERVICES head
+    // (kRigSlotServices, -1) and index i+1 is row i, so `slot + 1` is the index of any
+    // slot and the walk is the same arithmetic for both. A cursor sitting on a slot
+    // that has just left the list still steps from where it was, so a bought-out row
+    // hands the cursor to its neighbour rather than to the top.
+    const int total = kRigUpgradeCount + 1;
+    for (int step = 1; step <= total; ++step) {
+        const int idx = (((cur + 1) + dir * step) % total + total) % total;
+        const int slot = idx - 1;
+        if (slot == kRigSlotServices ? rigServicesOffered() : shopRowOffered(slot))
+            return slot;
+    }
+    return cur;
+}
+
 void Game::onHackerShop(const ButtonEvent& ev) {
+    // The SHOP is two screens behind one slot; SERVICES owns the buttons while it is up.
+    if (shopView_ == ShopView::Services) { onRigServices(ev); return; }
     if (ev.button == Button::A) {
-        hackerShopRow_ = nextVisibleShopRow(*this, hackerShopRow_);  // skip unoffered
+        hackerShopRow_ = nextShopSlot(hackerShopRow_, +1);   // skip unoffered
     } else if (ev.button == Button::B) {
+        if (hackerShopRow_ == kRigSlotServices) {
+            shopView_ = ShopView::Services;   // the head slot is a door, not a purchase
+            rigServiceRow_ = 0;
+            dirty_ = true;
+            return;
+        }
         buyRigUpgrade(hackerShopRow_);
         // That purchase may have just taken the focused row out of the list — hop
         // to the next offered one so the cursor never rests on a row nobody drew.
         if (!shopRowOffered(hackerShopRow_))
-            hackerShopRow_ = nextVisibleShopRow(*this, hackerShopRow_);
+            hackerShopRow_ = nextShopSlot(hackerShopRow_, +1);
     } else if (ev.button == Button::C) {
         nav_ = Nav::Cursor;
     }
+}
+
+void Game::onRigServices(const ButtonEvent& ev) {
+    int rows[kRigUpgradeCount];
+    const int n = rigServiceRows(rows, kRigUpgradeCount);
+    // C backs up ONE view, to the storefront that opened this — the same stack CREW's
+    // views walk. An empty board (nothing owned any more) leaves the same way.
+    if (ev.button == Button::C || n == 0) {
+        shopView_ = ShopView::Rows;
+        dirty_ = true;
+        return;
+    }
+    if (rigServiceRow_ >= n) rigServiceRow_ = 0;
+    if (ev.button == Button::A) {
+        rigServiceRow_ = (rigServiceRow_ + 1) % n;
+        dirty_ = true;
+    } else if (ev.button == Button::B) {
+        toggleRigService(rows[rigServiceRow_]);
+    }
+}
+
+void Game::toggleRigService(int row) {
+    if (!rigServiceOwned(row)) return;   // nothing bought here has a switch
+    rigServicesOff_ ^= (1u << static_cast<unsigned>(row));
+    log_.push(LogEventType::ItemUsed,
+              rigFeatureActive(row) ? "SERVICE STARTED" : "SERVICE STOPPED");
+    dirty_ = true;
+    markSaveDirty();
 }
 
 namespace {
@@ -371,6 +415,58 @@ void Game::drawHackerHome(Framebuffer& fb, int cursor) const {
 }
 
 void Game::drawHackerSubmenu(Framebuffer& fb) const {
+    if (enteredHackerId() == HackerSlotId::Shop && shopView_ == ShopView::Services) {
+        // SHOP > SERVICES — the switchboard behind the list's head slot. One row per
+        // OWNED service (rigServiceRows), each reading ON or OFF; A cycles, B flips the
+        // focused one, C returns to the storefront. Nothing here is bought, so the
+        // header carries no wallet: a switch costs nothing to throw.
+        drawHeaderBand(fb, "SERVICES");
+
+        int rows[kRigUpgradeCount];
+        const int n = rigServiceRows(rows, kRigUpgradeCount);
+        if (n == 0) {
+            drawText(fb, kMargin, 40, "NO SERVICES OWNED", palColor(Pal::INK_DIM));
+            return;
+        }
+        int sel = rigServiceRow_;
+        if (sel >= n) sel = 0;
+
+        // Windowed on the VAULT's metrics — the same one-line-per-row list shape.
+        constexpr int kSvcTop = 34, kSvcRowH = 22, kSvcVisibleRows = 7;
+        int scrollTop = 0;
+        if (n > kSvcVisibleRows) {
+            if (sel >= scrollTop + kSvcVisibleRows) scrollTop = sel - kSvcVisibleRows + 1;
+            scrollTop = std::max(0, std::min(scrollTop, n - kSvcVisibleRows));
+        }
+        for (int v = 0; v < kSvcVisibleRows && scrollTop + v < n; ++v) {
+            const int i = scrollTop + v;
+            const int row = rows[i];
+            const int rowY = kSvcTop + v * kSvcRowH;
+            const bool cur = i == sel;
+            if (cur) drawRowCursor(fb, 2, rowY + 1, palColor(Pal::ACCENT));
+            // A stopped service is stated twice — the word OFF and the dim ink — so the
+            // list reads right in grayscale, where the colour alone says nothing.
+            const bool on = rigFeatureActive(row);
+            drawLabelValue(fb, kMargin, rowY, kRigUpgrades[row].displayName,
+                           cur ? palColor(Pal::INK) : palColor(Pal::INK_DIM),
+                           on ? "ON" : "OFF",
+                           on ? palColor(Pal::ACCENT) : palColor(Pal::INK_DIM),
+                           beat_, true);
+        }
+        if (n > kSvcVisibleRows) {   // UI_SCROLLBAR
+            const int barX = kActiveW - 3;
+            const int trackH = kSvcVisibleRows * kSvcRowH;
+            fb.fillRect(barX, kSvcTop, 2, trackH, palColor(Pal::TRACK));
+            const int thumbH = std::max(8, trackH * kSvcVisibleRows / n);
+            const int thumbY = kSvcTop + trackH * scrollTop / n;
+            fb.fillRect(barX, thumbY, 2, thumbH, palColor(Pal::INK_DIM));
+        }
+        fb.fillRect(0, kActiveH - 26, kActiveW, 1, palColor(Pal::TRACK));
+        drawText(fb, kMargin, kActiveH - 20,
+                 rigFeatureActive(rows[sel]) ? "B STOP" : "B START", palColor(Pal::ACCENT));
+        return;
+    }
+
     if (enteredHackerId() == HackerSlotId::Shop) {
         // SHOP — the Rig Shop (game_rig_shop.h). Header carries the Bits wallet (the
         // storefront grammar). The list iterates kRigUpgrades generically, windowed to
@@ -379,10 +475,11 @@ void Game::drawHackerSubmenu(Framebuffer& fb) const {
         std::snprintf(bitsStr, sizeof(bitsStr), "%d BITS", bits_);
         drawHeaderBand(fb, "SHOP", bitsStr, palColor(Pal::ACCENT));
 
-        // Maxed/owned rows have nothing left to buy — filter them out entirely so
-        // the list only ever shows purchasable rows (visRows is in table order).
-        int visRows[kRigUpgradeCount];
-        const int visN = visibleShopRows(*this, visRows, kRigUpgradeCount);
+        // Maxed/owned rows have nothing left to buy — filter them out entirely so the
+        // list only ever shows purchasable rows, behind the SERVICES head slot that
+        // owning a service adds (shopSlots is in list order).
+        int visRows[kRigUpgradeCount + 1];
+        const int visN = shopSlots(*this, visRows, kRigUpgradeCount + 1);
 
         if (visN == 0) {
             drawText(fb, kMargin, 34, "ALL UPGRADES OWNED", palColor(Pal::INK_DIM));
@@ -414,6 +511,30 @@ void Game::drawHackerSubmenu(Framebuffer& fb) const {
             const int rowY = 34 + v * kRigRowPitch;
             const bool sel = hackerShopRow_ == row;
             if (sel) drawRowCursor(fb, 2, rowY + 1, palColor(Pal::ACCENT));
+
+            if (row == kRigSlotServices) {
+                // The head slot: a door onto the switchboard, priced in nothing. Its
+                // value column counts what is RUNNING out of what is owned, which is
+                // the one number a player wants before deciding to open it.
+                int svcRows[kRigUpgradeCount];
+                const int svcN = rigServiceRows(svcRows, kRigUpgradeCount);
+                char svc[16];
+                std::snprintf(svc, sizeof(svc), "%d/%d ON", rigServicesRunning(), svcN);
+                drawLabelValue(fb, kMargin, rowY, "SERVICES",
+                               sel ? palColor(Pal::INK) : palColor(Pal::INK_DIM), svc,
+                               palColor(Pal::INK), beat_, true);
+                SpecBuilder head;
+                head.flag("SWITCH AUTOMATION");
+                drawSpecGrid(fb, kMargin, rowY + kFontH + 5, kActiveW - 2 * kMargin,
+                             head.out.rows, head.out.count, kFontH + 3,
+                             palColor(Pal::INK_DIM), palColor(Pal::ACCENT));
+                if (sel) {
+                    const int sy = 34 + visibleRows * kRigRowPitch;
+                    fb.fillRect(0, sy - 6, kActiveW, 1, palColor(Pal::TRACK));
+                    drawText(fb, kMargin, sy, "B TO OPEN", palColor(Pal::ACCENT));
+                }
+                continue;
+            }
 
             const RigUpgradeDef& def = kRigUpgrades[row];
             const int level = rigLevel_[row];

@@ -315,6 +315,10 @@ SaveData Game::captureSave() const {
     d.rigLevelsExt.reserve(kRigUpgradeCount - kRigRowExtBase);
     for (int i = kRigRowExtBase; i < kRigUpgradeCount; ++i)
         d.rigLevelsExt.push_back(static_cast<uint16_t>(rigLevel_[i]));
+
+    // v61: which owned services are stopped. Its own field rather than a level, because
+    // a switch is not a purchase — the level says what was bought, this says what runs.
+    d.rigServicesOff = rigServicesOff_;
     return d;
 }
 
@@ -758,6 +762,9 @@ void Game::applySave(const SaveData& d) {
         const size_t idx = static_cast<size_t>(i - kRigRowExtBase);
         rigLevel_[i] = idx < d.rigLevelsExt.size() ? d.rigLevelsExt[idx] : 0;
     }
+
+    // v61: the stopped-service mask (pre-v61 → 0, everything the save bought running).
+    rigServicesOff_ = d.rigServicesOff;
 
     // Active pet (may be empty for a Store-vacated save).
     installPet(registry_.creature(d.activeId));

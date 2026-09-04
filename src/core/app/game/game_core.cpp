@@ -129,7 +129,7 @@ bool Game::tickModelClocks(uint32_t nowMs) {
             const uint32_t step = bandwidthRegenMinutes() * 60u * 1000u;
             while (bandwidthAccumMs_ >= step && bandwidth_ < bandwidthMax()) {
                 bandwidthAccumMs_ -= step;
-                // Per-TICK amount: a flat point, or the Elastic Bandwidth row's slice of
+                // Per-TICK amount: a flat point, or the Link Aggregator's slice of
                 // the spent pool (bandwidthRegenAmount). Read inside the loop because
                 // the slice shrinks as the pool it is measured against fills.
                 bandwidth_ += bandwidthRegenAmount();

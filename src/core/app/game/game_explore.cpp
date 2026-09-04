@@ -308,7 +308,7 @@ int Game::nextOpenArea(int area) const {
 }
 
 void Game::autoArmBackupShield(int gateRow) {
-    if (rigLevel_[gateRow] <= 0) return;      // upgrade not owned
+    if (!rigFeatureActive(gateRow)) return;   // not owned, or stopped on SHOP > SERVICES
     if (backupShieldArmed()) return;          // already live — never doubles up
     // applyItemEffects, not useItem: the upgrade grants the effect outright and never
     // reaches into the Vault, so owning it doesn't quietly eat the player's drives.

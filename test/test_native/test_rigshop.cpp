@@ -307,11 +307,11 @@ void test_hacker_shop_bandwidth_upgrade() {
     CHECK(g.bwUpgradeCount() == 1 && g.bandwidthMax() == cap1 && g.bits() == 10);
 }
 
-// Elastic Bandwidth (Rig Shop n): a regen tick pays a percentage of the SPENT pool
-// instead of a flat point. Nothing changes for a rig whose hole is under 100 (the
-// percentage floors back to the +1 every rig gets); a deeply-upgraded pool climbs out
-// in proportion to how empty it is.
-void test_rig_elastic_bandwidth_regen() {
+// The Link Aggregator (Rig Shop n): a regen tick pays a percentage of the SPENT pool
+// instead of a flat point, rounded UP to whole Bandwidth. Nothing changes for a rig
+// whose hole is under 100 (the slice rounds to the +1 every rig gets); a deeply-
+// upgraded pool climbs out in proportion to how empty it is.
+void test_rig_link_aggregator_regen() {
     Game g{StartMode::Hatched};
     // The row's whole audience: a pool bought up 240 times, which is what makes 1% of
     // the hole worth more than the flat point.
@@ -330,15 +330,21 @@ void test_rig_elastic_bandwidth_regen() {
     CHECK(g.bandwidth() == cap - 199);
 
     // Bought: 200 spent pays 2 a tick, and the row is a one-time unlock.
-    g.debugSetBits(kElasticBandwidthCost + 7);
-    g.debugBuyElasticBandwidth();
-    CHECK(g.elasticBandwidthUnlocked());
+    g.debugSetBits(kLinkAggregatorCost + 7);
+    g.debugBuyLinkAggregator();
+    CHECK(g.linkAggregatorUnlocked());
     CHECK(g.bits() == 7);                                    // Bits deducted
-    CHECK(!g.shopRowOffered(kRigRowElasticBandwidth));       // ...and nothing left to buy
+    CHECK(!g.shopRowOffered(kRigRowLinkAggregator));         // ...and nothing left to buy
     g.debugSetBandwidth(cap - 200);
     CHECK(g.bandwidthRegenAmount() == 2);
     g.tick(now += tick);
     CHECK(g.bandwidth() == cap - 198);
+
+    // Whole points, so a part-slice rounds UP rather than away: 150 spent pays 2, and
+    // the price of the row is a power of two like every other sticker in the shop.
+    g.debugSetBandwidth(cap - 150);
+    CHECK(g.bandwidthRegenAmount() == 2);
+    CHECK((kLinkAggregatorCost & (kLinkAggregatorCost - 1)) == 0);
 
     // The slice is measured per tick, so it decays as the hole closes: a 50-point hole
     // is back to the flat +1 floor, and the pool still never overfills.
@@ -349,6 +355,143 @@ void test_rig_elastic_bandwidth_regen() {
     g.debugSetBandwidth(cap - 1);
     g.tick(now += tick * 4);
     CHECK(g.bandwidth() == cap);
+}
+
+namespace {
+// The Hacker face owns the carousel and a running walk owns the A+C chord, so anything
+// that wants the PET face back has to put both down first. Private to this unit — the
+// SERVICES gate is the only one that crosses between the two mid-test.
+void backToPetFace(Game& g) {
+    if (g.exploreActive() && g.nav() == Game::Nav::Idle) stopExplore(g);
+    // C backs out of a submenu, but on a CAROUSEL it only steps the cursor — so the
+    // way off the Hacker face is the same A+C chord that reached it, which lands on
+    // the pet face at idle.
+    while (g.nav() != Game::Nav::Idle && g.nav() != Game::Nav::Cursor) tapC(g);
+    if (g.face() == Game::Face::Hacker) g.onButton(chordAC());
+}
+
+// Open SHOP > SERVICES from wherever the test is, landing on its first row.
+void openServices(Game& g) {
+    backToPetFace(g);
+    enterHackerSlot(g, HackerSlotId::Shop);
+    for (int i = 0; i <= kRigUpgradeCount && g.shopSlot() != kRigSlotServices; ++i)
+        g.onButton(press(Button::A));
+    CHECK(g.shopSlot() == kRigSlotServices);
+    tapB(g);
+    CHECK(g.shopView() == Game::ShopView::Services);
+}
+}  // namespace
+
+// SHOP > SERVICES (the list's head slot): the switchboard for the rows that act on
+// their own. It appears only once one is owned, B on it opens the board, B on a row
+// stops and starts that service, and a stopped one does nothing until it is started
+// again. The mask persists — a service the player switched off stays off across a boot.
+void test_rig_services_switchboard() {
+    MemSaveStore store;
+    {
+        Game g{StartMode::Hatched, "paypup", &store};
+        // Nothing that runs by itself is owned, so the list carries no head slot: a lap
+        // of the whole storefront never lands on one.
+        CHECK(!g.rigServicesOffered());
+        enterHackerSlot(g, HackerSlotId::Shop);
+        CHECK(g.nav() == Game::Nav::Submenu && g.shopView() == Game::ShopView::Rows);
+        for (int i = 0; i <= kRigUpgradeCount; ++i) {
+            CHECK(g.shopSlot() != kRigSlotServices);
+            g.onButton(press(Button::A));
+        }
+
+        // Buy the two services this gate drives. Both leave the storefront list the
+        // moment they are bought and show up on the switchboard instead.
+        g.debugSetBits(kRigAutoBackupCost + kDiskMaintenanceBuyStart);
+        g.debugBuyAutoBackup();
+        g.debugBuyRigRow(kRigRowDiskMaintenance);
+        CHECK(g.rigServicesOffered() && g.rigServicesRunning() == 2);
+
+        // The head slot now draws at the top of the storefront, and the board behind it
+        // draws too — both are new screens, so both are rendered at least once here.
+        Framebuffer fb(kActiveW, kActiveH);
+        g.render(fb);
+        CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));
+
+        // Row 0 is AUTO BACKUP (table order). B stops it: owned, but no longer running,
+        // and explore-mode arms nothing for free any more.
+        openServices(g);
+        g.render(fb);
+        CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));
+        int rows[kRigUpgradeCount];
+        CHECK(g.rigServiceRows(rows, kRigUpgradeCount) == 2);
+        CHECK(rows[0] == kRigRowAutoBackup && rows[1] == kRigRowDiskMaintenance);
+        tapB(g);
+        CHECK(!g.rigFeatureActive(kRigRowAutoBackup));
+        CHECK(g.autoBackupUnlocked());              // still bought — a switch isn't a refund
+        CHECK(g.rigServicesRunning() == 1);
+        backToPetFace(g);
+        enterWalk(g);
+        CHECK(!g.backupShieldArmed());
+
+        // Started again, the same walk arms the free save.
+        openServices(g);
+        tapB(g);
+        CHECK(g.rigFeatureActive(kRigRowAutoBackup));
+        backToPetFace(g);
+        enterWalk(g);
+        CHECK(g.backupShieldArmed());
+
+        // Stop the auto-defrag instead: a pet well past the tier-1 threshold is left
+        // dirty, and the wallet is untouched, because a stopped service spends nothing.
+        openServices(g);
+        g.onButton(press(Button::A));               // cursor -> DISK MAINTENANCE
+        CHECK(g.rigServiceRow() == 1);
+        tapB(g);
+        CHECK(!g.rigFeatureActive(kRigRowDiskMaintenance));
+        tapC(g);                                    // C backs to the storefront, not out
+        CHECK(g.shopView() == Game::ShopView::Rows && g.nav() == Game::Nav::Submenu);
+
+        g.debugSetBits(9999);
+        g.model().setFragmentation(100);
+        const int bits0 = g.bits();
+        g.debugReturnToExplore();
+        CHECK(g.model().fragmentation() == 100 && g.bits() == bits0);
+        g.tick(kSaveAutosaveMs + kHeartbeatMs);     // autosave the mask
+    }
+    // The switch survives the reboot, and the service it stopped is still stopped.
+    Game g2(StartMode::Hatched, "paypup", &store);
+    CHECK(g2.diskMaintenanceLevel() == 1);
+    CHECK(!g2.rigFeatureActive(kRigRowDiskMaintenance));
+    CHECK(g2.rigFeatureActive(kRigRowAutoBackup));
+}
+
+// Disk Maintenance is an emergency backstop, not a maid: every tier sits inside the
+// CRITICAL Fragmentation band, and a run bills a multiple of the pet's own defrag price.
+void test_rig_disk_maintenance_thresholds() {
+    // The whole ladder is above the Critical line — a rig with the deepest tier still
+    // explores the entire Caution band on its own.
+    for (int t = 0; t < kDiskMaintenanceMaxTier; ++t)
+        CHECK(kDiskMaintenanceThreshold[t] >= kFragCriticalMin);
+
+    Game g{StartMode::Hatched};
+    g.debugSetBits(kDiskMaintenanceBuyStart);
+    g.debugBuyRigRow(kRigRowDiskMaintenance);
+    CHECK(g.diskMaintenanceLevel() == 1);
+
+    // One under the tier's threshold: nothing runs, nothing is charged.
+    g.debugSetBits(9999);
+    g.model().setFragmentation(kDiskMaintenanceThreshold[0] - 1);
+    int bits0 = g.bits();
+    g.debugReturnToExplore();
+    CHECK(g.model().fragmentation() == kDiskMaintenanceThreshold[0] - 1);
+    CHECK(g.bits() == bits0);
+
+    // At it, the auto-defrag runs — guaranteed clean, billed at the tier's multiple of
+    // this pet's own defrag price, and counted on the same tally that price climbs with.
+    g.model().setFragmentation(kDiskMaintenanceThreshold[0]);
+    const int runCost = g.defragCost() * kDiskMaintenanceCostMult[0];
+    bits0 = g.bits();
+    const int defrags0 = g.defragCount();
+    g.debugReturnToExplore();
+    CHECK(g.model().fragmentation() == kDiskMaintenanceThreshold[0] - kDefragReduction);
+    CHECK(g.bits() == bits0 - runCost);
+    CHECK(g.defragCount() == defrags0 + 1);
 }
 
 // the shared rigUpgradeCost curve engine (tunables.h). Pure-function

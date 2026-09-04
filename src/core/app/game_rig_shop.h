@@ -77,8 +77,13 @@ enum RigRow {
     kRigRowCombatXpWindow = 15,
     kRigRowItemPicker = 16,
     kRigRowModStorage = 17,
-    kRigRowElasticBandwidth = 18,
+    kRigRowLinkAggregator = 18,
 };
+
+// The SHOP list's head slot. SERVICES is not a purchase and so has no row in the
+// table, but it IS the first thing in the list — negative so it shares the list's
+// cursor space (Game::hackerShopRow_) with a row index without colliding with one.
+inline constexpr int kRigSlotServices = -1;
 
 // The first row that persists positionally in SaveData::rigLevelsExt rather than
 // through a named field of its own (save.h v32). Every row below it predates that tail
@@ -184,13 +189,23 @@ inline constexpr int kRigContinuousBackupCost = 8192;
 // LOWERS the trigger threshold (catches Fragmentation earlier) and RAISES the
 // per-run Bits cost (a multiple of the normal defragCost()) — tighter upkeep costs
 // more, which is the point: it buys more safety margin for an older, stronger (and
-// so more heavily-explored) pet. Doubling purchase-price ladder — the shape Rack Slot
-// used to share, before its ceiling rose past what a doubling ladder can price. (Future: defragCost() itself may later scale with defragCount() —
-// out of scope here, but this table doesn't hardcode around that.)
+// so more heavily-explored) pet. Doubling purchase-price ladder. (Future: defragCost()
+// itself may later scale with defragCount() — out of scope here, but this table
+// doesn't hardcode around that.)
+//
+// The whole ladder lives inside the CRITICAL Fragmentation band (kFragCautionMin 40 /
+// kFragCriticalMin 75, tunables.h), and that placement is the balance: a rig with the
+// deepest tier owned still explores through the entire Caution band on its own and is
+// only caught at 80, near the top. Fragmentation is meant to be a pressure the player
+// answers — with a MAINT run, a Disk Scrubber, a Stacker board — so what this row buys
+// is an emergency backstop against the cliff, not a pet that is never dirty. The upkeep
+// multiples are steep for the same reason: a tier that fires often should be felt in
+// the wallet every time it does, which is what makes switching it off (the SHOP's
+// SERVICES screen) a real decision rather than a formality.
 inline constexpr int kDiskMaintenanceMaxTier = 4;
-inline constexpr int kDiskMaintenanceBuyStart = 4096;
-inline constexpr int kDiskMaintenanceThreshold[kDiskMaintenanceMaxTier] = {80, 60, 40, 20};
-inline constexpr int kDiskMaintenanceCostMult[kDiskMaintenanceMaxTier] = {2, 4, 8, 16};
+inline constexpr int kDiskMaintenanceBuyStart = 8192;
+inline constexpr int kDiskMaintenanceThreshold[kDiskMaintenanceMaxTier] = {95, 90, 85, 80};
+inline constexpr int kDiskMaintenanceCostMult[kDiskMaintenanceMaxTier] = {4, 8, 16, 32};
 
 // --- j: Passive XP Farming ------------------------------------------------------
 // +1 combat XP per hunger point the pet loses to passive decay per level, but only
@@ -228,21 +243,24 @@ inline constexpr int kCombatXpWindowMaxTier = 8;
 inline constexpr int kCombatXpBaseThreshold = 90;
 inline constexpr int kCombatXpWindowStepPct = 5;
 
-// --- n: Elastic Bandwidth -----------------------------------------------------
-// A one-time unlock that changes the SHAPE of Bandwidth regen: a regen tick restores
-// kElasticBandwidthPct%% of the SPENT pool (bandwidthMax() - bandwidth(), floored at
-// the flat 1 an unbought rig gets) instead of that flat +1 — Game::bandwidthRegenAmount, read
-// by the regen loop in Game::tick. The interval itself is untouched; this is how much
-// each tick is worth, not how often one lands.
+// --- n: Link Aggregator -------------------------------------------------------
+// The bonded-uplink card: instead of the pool trickling back one point at a time, every
+// channel the rig has bought pulls its share, so the refill is measured against the
+// pipe's own size. A one-time unlock that changes the SHAPE of Bandwidth regen — a
+// regen tick restores kLinkAggregatorPct%% of the SPENT pool (bandwidthMax() -
+// bandwidth(), floored at the flat 1 an unbought rig gets) instead of that flat +1
+// (Game::bandwidthRegenAmount, read by the regen loop in Game::tick). The interval
+// itself is untouched; this is how much each tick is worth, not how often one lands.
 //
-// It is deliberately worthless below a 100-point pool: 1%% of anything under 100 spent
-// floors back to the +1 every rig already gets. What it is FOR is the player who has
+// It is deliberately worthless below a 100-point pool: rounded up, 1%% of anything up
+// to 100 spent is the +1 every rig already gets. What it is FOR is the player who has
 // bought "INCREASE BANDWIDTH" hundreds of times — a pool that deep refills at a
 // hundredth of its own hole rather than one point at a time, so the row's value is
-// bought entirely with row a's purchases. Priced to match: this is the most expensive
-// thing in the storefront, and still a fraction of what the pool it rescues cost.
-inline constexpr int kElasticBandwidthPct = 1;      // the row's readout spells this out
-inline constexpr int kElasticBandwidthCost = 131072;
+// bought entirely with row a's purchases. Priced to match: 2^17, the top of the
+// storefront's power-of-two ladder, and still a fraction of what the pool it rescues
+// cost to buy.
+inline constexpr int kLinkAggregatorPct = 1;      // the row's readout spells this out
+inline constexpr int kLinkAggregatorCost = 131072;
 
 struct RigUpgradeDef;  // fwd decl for the table below
 
@@ -291,6 +309,13 @@ struct RigUpgradeDef {
     int effectMagnitude;
     const char* logText;            // Hacker-Log line on purchase
     RigReadout readouts[kMaxRigReadouts];
+    // Does this row run as a SERVICE — something that acts on its own, between events,
+    // without the player asking — and so belongs on the SHOP's SERVICES screen, where an
+    // owned one can be switched off and back on (Game::rigFeatureActive)? True for the
+    // rows that spend something or take a decision out of the player's hands; false for
+    // a row that only ever raises a number or arms a gesture the player still performs,
+    // which has nothing to switch off. Trailing, so a row that isn't one says nothing.
+    bool service = false;
 };
 
 // This readout's value at purchase level `lvl`.
@@ -373,11 +398,12 @@ inline const RigUpgradeDef kRigUpgrades[] = {
      RigEffectKind::None, 0, "BOUGHT MERGE HUB", {{"COMBINE ITEMS"}}},
 
     {"auto_backup", "AUTO BACKUP", 1, RigCostCurve::kFixed, kRigAutoBackupCost, 0,
-     RigEffectKind::None, 0, "BOUGHT AUTO BACKUP", {{"DEATH SAVE ON EXPLORE"}}},
+     RigEffectKind::None, 0, "BOUGHT AUTO BACKUP", {{"DEATH SAVE ON EXPLORE"}},
+     /*service=*/true},
 
     {"continuous_backup", "CONTINUOUS AUTO-BACKUP", 1, RigCostCurve::kFixed,
      kRigContinuousBackupCost, 0, RigEffectKind::None, 0, "BOUGHT CONT. BACKUP",
-     {{"RE-ARM SAVE MID-RUN"}}},
+     {{"RE-ARM SAVE MID-RUN"}}, /*service=*/true},
 
     // Two readouts: buying a tier both lowers the Fragmentation it steps in at and
     // raises the per-run upkeep. Before tier 1 the trigger reads OFF and the upkeep
@@ -387,7 +413,8 @@ inline const RigUpgradeDef kRigUpgrades[] = {
      {{"FRAG AT", RigValueCurve::Tiers, 0, 0, kDiskMaintenanceThreshold,
        kDiskMaintenanceMaxTier, "%d+", "OFF"},
       {"UPKEEP", RigValueCurve::Tiers, 0, 0, kDiskMaintenanceCostMult,
-       kDiskMaintenanceMaxTier, "x%d"}}},
+       kDiskMaintenanceMaxTier, "x%d"}},
+     /*service=*/true},
 
     {"hunger_xp_rate", "PASSIVE XP FARMING", kHungerXpRateMax, RigCostCurve::kLogStep,
      kHungerXpRateStart, 0, RigEffectKind::None, 0, "BOUGHT XP FARMING LVL",
@@ -422,8 +449,8 @@ inline const RigUpgradeDef kRigUpgrades[] = {
 
     // Regen SHAPE, not pool size: the flag says what a tick becomes, since level 0's
     // flat +1 and level 1's percentage are not two values on one axis.
-    {"elastic_bandwidth", "ELASTIC BANDWIDTH", 1, RigCostCurve::kFixed,
-     kElasticBandwidthCost, 0, RigEffectKind::None, 0, "BOUGHT ELASTIC BW",
+    {"link_aggregator", "LINK AGGREGATOR", 1, RigCostCurve::kFixed,
+     kLinkAggregatorCost, 0, RigEffectKind::None, 0, "BOUGHT AGGREGATOR",
      {{"REGEN 1% OF SPENT"}}},
 
 };

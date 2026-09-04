@@ -207,23 +207,26 @@ public:
     // Has this pet had its permanent regen upgrade? The STAT BUFFS page's own question,
     // and the reason a second Tiramisudo is a top-up rather than a second upgrade.
     bool bandwidthRegenUpgraded() const { return upgrades_.bandwidthRegenMin > 0; }
-    // n (Rig Shop): Elastic Bandwidth, the one-time unlock that makes a regen tick pay a
-    // PERCENTAGE of the hole instead of a flat point (bandwidthRegenAmount).
-    bool elasticBandwidthUnlocked() const {
-        return rigLevel_[kRigRowElasticBandwidth] > 0;
+    // n (Rig Shop): the Link Aggregator, the one-time unlock that makes a regen tick
+    // pay a PERCENTAGE of the hole instead of a flat point (bandwidthRegenAmount).
+    bool linkAggregatorUnlocked() const {
+        return rigLevel_[kRigRowLinkAggregator] > 0;
     }
     // How much ONE regen tick restores — the amount half of regen, where
-    // bandwidthRegenMinutes() is the interval half. Flat +1 by default; with Elastic
-    // Bandwidth owned, kElasticBandwidthPct% of what is currently SPENT
+    // bandwidthRegenMinutes() is the interval half. Flat +1 by default; with
+    // the Link Aggregator owned, kLinkAggregatorPct% of what is currently SPENT
     // (bandwidthMax() - bandwidth()), never below that same +1. So a small pool
     // regenerates exactly as it always did and a deep one climbs out of its hole in
     // proportion to the hole — recomputed per tick, so the refill decelerates as the
     // pool fills rather than paying the whole way back at the empty-pool rate.
+    //
+    // Bandwidth is whole points, so the slice ROUNDS UP: a 150-point hole pays 2, and
+    // the +1 floor is then only ever reached by a hole small enough to deserve it.
     int bandwidthRegenAmount() const {
-        if (!elasticBandwidthUnlocked()) return 1;
+        if (!linkAggregatorUnlocked()) return 1;
         const int spent = bandwidthMax() - bandwidth_;
-        const int pct = spent * kElasticBandwidthPct / 100;
-        return pct > 1 ? pct : 1;
+        const int slice = (spent * kLinkAggregatorPct + 99) / 100;
+        return slice > 1 ? slice : 1;
     }
     // Everything an Epic dish has permanently handed this pet, as one value — what STAT's
     // BUFFS page lists and what the rack freezes (core/model/pet_upgrades.h).
@@ -284,6 +287,60 @@ public:
     // multiplier live on kDiskMaintenanceThreshold/kDiskMaintenanceCostMult
     // (game_rig_shop.h), read by Game::maybeAutoDefrag.
     int diskMaintenanceLevel() const { return rigLevel_[kRigRowDiskMaintenance]; }
+
+    // --- SERVICES: the owned rows that run on their own, and their switches ---------
+    // A SERVICE is a row that acts between events without being asked (the two backup
+    // auto-arms, Disk Maintenance's auto-defrag). Owning one is a purchase; RUNNING it
+    // is a switch, because a service spends the player's Bits or a decision they might
+    // want back — so every effect site asks rigFeatureActive, never the level.
+    //
+    // Is `row` a service this player owns, and so a line on the SERVICES screen?
+    bool rigServiceOwned(int row) const {
+        return row >= 0 && row < kRigUpgradeCount && kRigUpgrades[row].service &&
+               rigLevel_[row] > 0;
+    }
+    // Is `row`'s effect live right now — owned, and not switched off? The one question
+    // an effect site asks. A row that is not a service has no switch, so owning it is
+    // the whole answer.
+    bool rigFeatureActive(int row) const {
+        if (row < 0 || row >= kRigUpgradeCount || rigLevel_[row] <= 0) return false;
+        if (!kRigUpgrades[row].service) return true;
+        return (rigServicesOff_ & (1u << row)) == 0;
+    }
+    // The owned services in table order — what the SERVICES screen lists. Returns how
+    // many were written.
+    int rigServiceRows(int* out, int max) const {
+        int n = 0;
+        for (int i = 0; i < kRigUpgradeCount && n < max; ++i)
+            if (rigServiceOwned(i)) out[n++] = i;
+        return n;
+    }
+    // Does the SHOP list carry its SERVICES head slot? Only once there is a service to
+    // switch — a storefront shouldn't advertise a door onto an empty room.
+    bool rigServicesOffered() const {
+        for (int i = 0; i < kRigUpgradeCount; ++i)
+            if (rigServiceOwned(i)) return true;
+        return false;
+    }
+    // How many owned services are running, of how many owned — the SHOP head slot's
+    // readout ("2/3 ON").
+    int rigServicesRunning() const {
+        int n = 0;
+        for (int i = 0; i < kRigUpgradeCount; ++i)
+            if (rigServiceOwned(i) && rigFeatureActive(i)) ++n;
+        return n;
+    }
+    // Flip one owned service. A row that isn't an owned service has no switch to throw,
+    // so this is inert on it rather than storing a bit nothing reads.
+    void toggleRigService(int row);
+    // The SHOP is two screens behind one slot, the shape CREW's views take: the
+    // storefront list, and the SERVICES switchboard the head slot opens.
+    enum class ShopView : uint8_t { Rows, Services };
+    ShopView shopView() const { return shopView_; }
+    // The SHOP list's cursor: a RigRow, or kRigSlotServices on the head slot. A slot,
+    // not a row POSITION — the two differ by every row the list is filtering out.
+    int shopSlot() const { return hackerShopRow_; }
+    int rigServiceRow() const { return rigServiceRow_; }   // cursor within SERVICES
     // Mod Storage tier -> how many spare copies of ONE mod the pool will hold
     // (modCopyCap, tunables). Every grant runs through it, so a player who wants a
     // bench of a favourite mod buys the room for it rather than accumulating copies
@@ -1213,7 +1270,9 @@ public:
     int cacheYieldBits() const { return cacheYieldBits_; }
     // Bits cost of a Defrag at the pet's current stage (0 on the egg).
     int defragCost() const {
-        return pet_ ? kDefragCostByStage[static_cast<int>(pet_->stage)] : 0;
+        // An egg has nothing to defragment, so it is never charged for one.
+        if (!pet_ || pet_->stage == Stage::BootSector) return 0;
+        return rigUpgradeCost(kDefragCostStart, defragCount_, RigCostCurve::kLogStep);
     }
     const CreatureDef* pet() const { return pet_; }   // null while the save is empty (Hatch)
     // Where the habitat is currently standing its occupant, in logical px off the
@@ -1718,9 +1777,9 @@ public:
     // Buy the next MOD STORAGE tier via the real buy path (tests) — what raises how many
     // spare copies of one mod the pool will hold (modStorageCap).
     void debugBuyModStorage() { buyRigUpgrade(kRigRowModStorage); }
-    // Buy ELASTIC BANDWIDTH via the real buy path (tests) — the row that turns a regen
-    // tick from a flat +1 into a percentage of the spent pool.
-    void debugBuyElasticBandwidth() { buyRigUpgrade(kRigRowElasticBandwidth); }
+    // Buy the LINK AGGREGATOR via the real buy path (tests) — the row that turns a
+    // regen tick from a flat +1 into a percentage of the spent pool.
+    void debugBuyLinkAggregator() { buyRigUpgrade(kRigRowLinkAggregator); }
     // Hand back to the idle habitat exactly as a resolved explore event does (tests) —
     // the Continuous Auto-Backup / auto-defrag seam, without driving a whole random
     // event to reach it.
@@ -2090,8 +2149,8 @@ private:
     enum class ListFocus {
         None, ItemsPicker, ItemsList, ArchPicker, ArchList, CfgList, CfgGroup,
         ModSlots, LoadoutHub,
-        ModPicker, MovePicker, Expl, Maint, Arcade, HackerShop, HackerVault,
-        HackerPeers, CrewHub, CrewTeam, CrewPicker,
+        ModPicker, MovePicker, Expl, Maint, Arcade, HackerShop, HackerServices,
+        HackerVault, HackerPeers, CrewHub, CrewTeam, CrewPicker,
     };
     ListFocus listFocus() const;
     // Move the focused list's cursor by `dir` (+1/-1), wrapping, skipping whatever
@@ -2454,6 +2513,13 @@ private:
     void enterHackerSubmenu();                      // Cursor B → the focused hacker slot's L2
     void onHackerSubmenu(const ButtonEvent& ev);   // L2 dispatch (PROFILE viewer / SHOP / VAULT)
     void onHackerShop(const ButtonEvent& ev);      // SHOP list: A cycle · B buy · C back
+    // SHOP > SERVICES: A cycles the owned services, B flips the focused one, C returns
+    // to the storefront list. Reached from the list's head slot (kRigSlotServices).
+    void onRigServices(const ButtonEvent& ev);
+    // Step the SHOP list's cursor `dir` slots, wrapping over the head SERVICES slot and
+    // every offered row. The one walk the A-cycle, the hold-repeat and the post-buy
+    // re-aim all share, so no two of them can disagree about what is on the list.
+    int nextShopSlot(int cur, int dir) const;
     void onHackerVault(const ButtonEvent& ev);     // VAULT list: A cycle · B decrypt · C back
     // Generic Rig Shop buy: looks up `row`'s RigUpgradeDef (game_rig_shop.h), checks
     // offered/afford, deducts Bits, bumps rigLevel_[row], applies the row's
@@ -3628,7 +3694,9 @@ private:
     // Idle), so the hacker carousel reuses the same cursor cycling. hackerShopRow_ is the
     // SHOP list cursor.
     Face face_ = Face::Pet;
-    int hackerShopRow_ = 0;   // SHOP list cursor
+    int hackerShopRow_ = 0;   // SHOP list cursor: a RigRow, or kRigSlotServices
+    ShopView shopView_ = ShopView::Rows;   // which of the SHOP's two screens is up
+    int rigServiceRow_ = 0;                // cursor within the SERVICES list
     int hackerVaultRow_ = 0;  // VAULT list cursor — owned sealed-cache row
     int hackerMergeRow_ = 0;  // MERGE HUB list cursor — recipe row
     // CREW screen state. The screen is four views and `crewView_` IS the navigation:
@@ -3651,6 +3719,12 @@ private:
     // there up into the forward-compatible `rigLevelsExt` vector (save v32) — so a new
     // row never needs a save.h edit.
     int rigLevel_[kMaxRigUpgrades] = {};
+    // Which owned SERVICE rows are switched OFF — one bit per RigRow, set = off
+    // (rigFeatureActive). Player-level and persisted (save v61). Stored as the OFF
+    // half rather than the on half so that zero means what a save written before the
+    // screen existed means: every service a player has bought is running.
+    static_assert(kMaxRigUpgrades <= 32, "rigServicesOff_ is one bit per rig row");
+    uint32_t rigServicesOff_ = 0;
 
     // Which MERGE HUB recipes are known — one bit per MergeRecipe::wire
     // (game_internal.h), read and written only through recipeOwned/grantRecipe.

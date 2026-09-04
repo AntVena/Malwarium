@@ -187,12 +187,13 @@ void test_maint_flow() {
     CHECK(g.nav() == Game::Nav::Detail);
 }
 
-// a Defrag costs stage-scaled Bits (free to spam before). A Process pet
-// (default Paypup) pays kDefragCostByStage[Process]; the wallet is debited on RUN.
-void test_defrag_costs_stage_bits() {
+// a Defrag costs Bits priced off THIS PET'S tally of them (kDefragCostStart on the
+// kLogStep ladder), and the wallet is debited on RUN. A pet that has never been
+// defragged pays the start price; the ladder itself is asserted below.
+void test_defrag_costs_scale_with_the_tally() {
     Game g{StartMode::Hatched};                       // Paypup = Process stage
-    const int cost = kDefragCostByStage[static_cast<int>(Stage::Process)];
-    CHECK(g.defragCost() == cost);
+    const int cost = g.defragCost();
+    CHECK(cost == kDefragCostStart);                   // first run = the start price
     CHECK(cost > 0);                                   // defrag costs Bits
     g.model().setFragmentation(50);
     g.debugSetBits(cost + 3);
@@ -201,6 +202,15 @@ void test_defrag_costs_stage_bits() {
     g.onButton(press(Button::B));                      // RUN
     CHECK(g.nav() == Game::Nav::Process);              // launched
     CHECK(g.bits() == 3);                              // charged exactly `cost`
+
+    // The ladder a long-kept favourite climbs: flat for the first two runs, then a
+    // doubling every time the tally passes a power of two. Read off the shared curve
+    // rather than restated, so repricing is a one-line edit at kDefragCostStart.
+    CHECK(rigUpgradeCost(kDefragCostStart, 0, RigCostCurve::kLogStep) == kDefragCostStart);
+    CHECK(rigUpgradeCost(kDefragCostStart, 1, RigCostCurve::kLogStep) == kDefragCostStart);
+    CHECK(rigUpgradeCost(kDefragCostStart, 2, RigCostCurve::kLogStep) == kDefragCostStart * 2);
+    CHECK(rigUpgradeCost(kDefragCostStart, 8, RigCostCurve::kLogStep) == kDefragCostStart * 8);
+    CHECK(rigUpgradeCost(kDefragCostStart, 128, RigCostCurve::kLogStep) == kDefragCostStart * 128);
 }
 
 // an empty (or too-thin) wallet makes Defrag inert — RUN doesn't launch
@@ -236,6 +246,9 @@ void test_defrag_variants() {
     CHECK(g.bits() == bits0);                          // no charge when inert
     CHECK(g.defragCount() == 0);
     // Hold two tools, run the TOOL defrag -> guaranteed clean, one tool spent, tally++.
+    // The price is read BEFORE the run: a successful defrag advances the tally the
+    // next one is priced off (kDefragCostStart's ladder).
+    const int runCost = g.defragCost();
     g.inventory().add("disk_scrubber", 2);
     g.onButton(press(Button::B));                     // RUN (TOOL variant) -> process
     CHECK(g.nav() == Game::Nav::Process);
@@ -243,7 +256,7 @@ void test_defrag_variants() {
     for (int i = 1; i <= kProcessBeats + 1; ++i) g.tick(t += kHeartbeatMs);
     CHECK(g.model().fragmentation() == 60 - kDefragReduction);  // guaranteed success
     CHECK(g.inventory().count("disk_scrubber") == 1);           // exactly one consumed
-    CHECK(g.bits() == bits0 - g.defragCost());                  // Bits still charged
+    CHECK(g.bits() == bits0 - runCost);                         // Bits still charged
     CHECK(g.defragCount() == 1);                                // the tally advanced
 }
 

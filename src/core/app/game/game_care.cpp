@@ -193,6 +193,9 @@ void Game::maybeAutoDefrag() {
     // pet that explores enough to make a hands-off defrag worth paying for.
     const int lvl = rigLevel_[kRigRowDiskMaintenance];
     if (lvl <= 0 || !pet_) return;
+    // Owned is not the same as RUNNING: a service the player has stopped on the SHOP's
+    // SERVICES screen spends nothing and defrags nothing until it is started again.
+    if (!rigFeatureActive(kRigRowDiskMaintenance)) return;
     if (model_.fragmentation() < kDiskMaintenanceThreshold[lvl - 1]) return;
     const int cost = defragCost() * kDiskMaintenanceCostMult[lvl - 1];
     if (bits_ < cost) return;                    // can't afford this run — skip silently

@@ -51,7 +51,11 @@ Game::ListFocus Game::listFocus() const {
     if (face_ == Face::Hacker) {
         if (nav_ != Nav::Submenu) return ListFocus::None;
         switch (enteredHackerId()) {
-            case HackerSlotId::Shop: return ListFocus::HackerShop;
+            case HackerSlotId::Shop:
+                // Two screens behind one slot, the shape CREW's views take: the
+                // storefront list, and the SERVICES switchboard its head slot opens.
+                return shopView_ == ShopView::Services ? ListFocus::HackerServices
+                                                       : ListFocus::HackerShop;
             case HackerSlotId::Vault: return ListFocus::HackerVault;
             case HackerSlotId::Peers: return ListFocus::HackerPeers;
             case HackerSlotId::Crew:
@@ -193,9 +197,16 @@ void Game::stepFocusedList(int dir) {
                                       [this](int r) { return arcadeCabinetOffered(r); });
             break;
         case ListFocus::HackerShop:
-            hackerShopRow_ = stepWrapping(hackerShopRow_, kRigUpgradeCount, dir,
-                                          [this](int r) { return shopRowOffered(r); });
+            // Not stepWrapping: the SHOP's cursor space carries a head slot that is not
+            // a row, so the walk over it lives with the list that owns it.
+            hackerShopRow_ = nextShopSlot(hackerShopRow_, dir);
             break;
+        case ListFocus::HackerServices: {
+            int rows[kRigUpgradeCount];
+            const int n = rigServiceRows(rows, kRigUpgradeCount);
+            if (n > 0) rigServiceRow_ = ((rigServiceRow_ + dir) % n + n) % n;
+            break;
+        }
         case ListFocus::HackerVault: {
             const ItemDef* rows[16];
             const int n = vaultOwnedRows(rows, 16);
@@ -304,7 +315,8 @@ void Game::leaveFocusedList() {
         case ListFocus::Expl: onExplList(back); break;
         case ListFocus::Maint: onMaintList(back); break;
         case ListFocus::Arcade: onArcadeList(back); break;
-        case ListFocus::HackerShop: onHackerShop(back); break;
+        case ListFocus::HackerShop:
+        case ListFocus::HackerServices: onHackerShop(back); break;
         case ListFocus::HackerVault: onHackerVault(back); break;
         case ListFocus::HackerPeers: onHackerPeers(back); break;
         case ListFocus::CrewHub:
