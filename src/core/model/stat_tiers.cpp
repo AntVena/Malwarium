@@ -13,45 +13,43 @@ namespace {
 // Every threshold reads kStatTier*Points rather than a literal: the ladder being uniform
 // is the feature, and a row that could name its own number is a row that could break it.
 const StatTierDef kTiers[kLevelStatCount][kStatTierCount] = {
-    // POWER — the accelerating band, then the two ways past a wall.
+    // POWER — the accelerating band, then the two ways past a defence.
     {{"OVERCLOCK", kStatTier1Points, kLevelPowerPctPerSpecPoint, kLevelPowerPctPerPoint,
-      "Every Power point past this one leans your attack {mag}% instead of {mag2}%."},
+      "Every Power point past this one raises your attack {mag}% instead of {mag2}%."},
      {"RING ZERO", kStatTier2Points, kLevelPowerPiercePct, 0,
-      "Your hits run under the wall: they ignore {mag}% of the target's damage cut."},
+      "Your hits ignore {mag}% of the target's damage cut."},
      {"GUARD SMASH", kStatTier3Points, kLevelPowerGuardSmashPct, 0,
-      "A braced target absorbs {mag}% less of your hit. Its turn spent, your problem gone."}},
+      "A braced target absorbs {mag}% less of your hit."}},
 
     // DEFENSE — the % cut bends here, so each rung is paid in something else.
     {{"HARDENING", kStatTier1Points, kLevelDefensePierceResistPct, 0,
-      "Armour-piercing loses {mag}% of its bite before it reaches you. The cut you earned "
-      "stops being routed around."},
+      "Hits that pierce armour lose {mag}% of that piercing against you, so more of "
+      "your damage cut still applies."},
      {"WRITE-BACK", kStatTier2Points, kLevelDefenseBraceRetainPct, 0,
-      "An over-sized brace stops being wasted: {mag}% more of what it did not need carries "
-      "to the next hit."},
+      "When a brace absorbs less than it could have, {mag}% more of the unused part "
+      "carries over to the next hit."},
      {"BACKSCATTER", kStatTier3Points, kLevelDefenseBackscatterPct, 0,
-      "Your wall pays out. {mag}% of the damage it absorbs is dealt back to whoever swung."}},
+      "{mag}% of the damage your brace absorbs is dealt back to the attacker."}},
 
     // SPEED — three kinds of tempo, each worth something in a different fight.
     {{"FIRST STRIKE", kStatTier1Points, kLevelSpeedFirstStrikeMult, 0,
-      "Win the opening and make it count: if yours is the fight's first landed hit, it "
-      "lands {mag}x."},
+      "If yours is the first hit landed in the fight, it deals {mag}x damage."},
      {"PRIORITY BOOST", kStatTier2Points, kLevelSpeedUnderdogPerPoint, kLevelSpeedPerPoint,
-      "While your Speed points trail the enemy's, each is worth up to {mag} initiative "
-      "instead of {mag2} — enough to draw level with them, never to pass them."},
+      "While you hold fewer Speed points than the enemy, each is worth up to {mag} "
+      "initiative instead of {mag2}. Enough to draw level, never to pass."},
      {"ADRENALINE", kStatTier3Points, kLevelSpeedAdrenalinePerStep,
       kLevelSpeedAdrenalineStepPct,
-      "+{mag} initiative for every {mag2}% of your max Health already gone. The worse it "
-      "goes, the faster you act."}},
+      "+{mag} initiative for every {mag2}% of your max Health already lost."}},
 
     // MAX-HEALTH — the accelerating band, then two ways to spend the pool twice.
     {{"EXPANSION", kStatTier1Points, kLevelHealthPerSpecPoint, kLevelHealthPerPoint,
       "Every max-Health point past this one is worth {mag} Health instead of {mag2}."},
      {"SCRUBBING", kStatTier2Points, kLevelHealthScrubPct, 0,
-      "You heal {mag}% of max Health at the start of each of your turns — after the rot "
-      "bites, never before it."},
+      "You heal {mag}% of max Health at the start of each of your turns, after any "
+      "damage-over-time has landed."},
      {"FAILOVER", kStatTier3Points, 0, 0,
-      "Once per fight, the hit that would end you leaves you standing on 1 Health. Spent "
-      "before a Backup Drive, so the drive keeps its charge."}},
+      "Once per fight, a hit that would knock you out leaves you on 1 Health instead. "
+      "Used before a Backup Drive, so the drive keeps its charge."}},
 };
 
 // Substitute this table's two tokens. Deliberately NOT effect_text.cpp's expander: that

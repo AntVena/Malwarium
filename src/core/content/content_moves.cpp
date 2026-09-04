@@ -41,14 +41,15 @@ const MoveDef kMoves[] = {
      /*shieldPool=*/0, /*trapArm=*/0, 0, 0, 0, 0, /*replicaSpawnPct=*/0, 0, 0,
      /*chainNextId=*/"process_flood"},
     braceRow("checksum_guard", "Checksum Guard", 14,
-             "Braces {power}, and gives back {refund}% of the wait.",
+             "Braces {power}; your next move waits {refund}% less.",
              Stage::BootSector, /*speedRefundPct=*/60),
     {"buffer_overflow", "Buffer Overflow", MoveDef::Kind::Attack, 20, 1,
      "Overwrites the stack for a solid hit.", Stage::Script},
     {"rootkit_strike", "Rootkit Strike", MoveDef::Kind::Attack, 24, 1,
      "A stealthy hit that lands hard.", Stage::Daemon},
     braceRow("null_route", "Null Route", 18,
-             "Reroutes the next hit to nowhere - gives back {refund}% of the wait.",
+             "Reroutes the next hit to nowhere - braces {power}; your next move waits "
+             "{refund}% less.",
              Stage::Process, /*speedRefundPct=*/55),
 
     // --- Wild SIGNATURES — one per malbeast --------------------------------------
@@ -218,21 +219,21 @@ const MoveDef kMoves[] = {
     // pair (speed + current Health) stays bubble-gated as it always was — a separate
     // bargain from the chain, and one that still asks for the shield first.
     {"smish_hook", "Smish-Hook", MoveDef::Kind::Attack, 6, 1,
-     "Sprays a lure - takes {stealMaxHp}% of the catch's size, siphons {stealPower}% "
+     "Sprays a lure - takes {stealMaxHp}% of the target's max Health, siphons "
      "power, and mid-bite drains {stealHp}% Health and {stealSpeed}% speed.",
      Stage::Process, "phishing", 0, 0, 0, 0, 0, 0, 0, 0, /*stealPowerPct=*/8,
      /*stealDefensePct=*/0, /*stealSpeedPct=*/6, /*stealCurrentHpPct=*/6,
      /*stealMaxHpPct=*/6, /*shieldPool=*/0, /*trapArm=*/0, 0, 0, 0, 0,
      /*replicaSpawnPct=*/0, 0, 0, /*chainNextId=*/"smish_strike"},
     {"spear_strike", "Spear-Strike", MoveDef::Kind::Attack, 8, 1,
-     "Picks one mark - takes {stealMaxHp}% of its size, siphons {stealPower}% power, "
+     "Picks one mark - takes {stealMaxHp}% of its max Health, siphons {stealPower}% "
      "and mid-bite drains {stealHp}% Health and {stealSpeed}% speed.",
      Stage::Script, "phishing", 0, 0, 0, 0, 0, 0, 0, 0, /*stealPowerPct=*/16,
      /*stealDefensePct=*/0, /*stealSpeedPct=*/8, /*stealCurrentHpPct=*/4,
      /*stealMaxHpPct=*/10, /*shieldPool=*/0, /*trapArm=*/0, 0, 0, 0, 0,
      /*replicaSpawnPct=*/0, 0, 0, /*chainNextId=*/"spear_run"},
     {"whaling_harpoon", "Whaling-Harpoon", MoveDef::Kind::Attack, 10, 1,
-     "Sets into the biggest catch - takes {stealMaxHp}% of its size, siphons "
+     "Sets into the biggest catch - takes {stealMaxHp}% of its max Health, siphons "
      "{stealPower}% power, and mid-bite drains {stealHp}% Health and {stealSpeed}% speed.",
      Stage::Daemon, "phishing", 0, 0, 0, 0, 0, 0, 0, 0, /*stealPowerPct=*/32,
      /*stealDefensePct=*/0, /*stealSpeedPct=*/16, /*stealCurrentHpPct=*/8,
@@ -253,7 +254,7 @@ const MoveDef kMoves[] = {
      "Strikes from inside - ignores {pierce}% of armor.", Stage::Process,
      "trojan", 0, 0, 0, 0, /*armorPiercePct=*/100},
     {"payload_puncture", "Payload-Puncture", MoveDef::Kind::Attack, 20, 1,
-     "Detonates past every wall - ignores {pierce}% of armor.", Stage::Script,
+     "Detonates past every defence - ignores {pierce}% of armor.", Stage::Script,
      "trojan", 0, 0, 0, 0, /*armorPiercePct=*/100},
     {"rootkit_rupture", "Rootkit-Rupture", MoveDef::Kind::Attack, 28, 1,
      "Ruptures from ring 0 - ignores {pierce}% of armor.", Stage::Daemon,
@@ -437,7 +438,8 @@ const MoveDef kMoves[] = {
      "They keep opening - {dot} damage/turn for {dotTurns} turns.", Stage::Script,
      nullptr, 0, 0, 0, 0, 0, 0, /*dotDamage=*/9, /*dotTurns=*/5},
     braceRow("cert_spoof", "Cert Spoof", 26,
-             "Wears a certificate that isn't its own - braces {power}, {refund}% back.",
+             "Wears a certificate that isn't its own - braces {power}; your next move "
+             "waits {refund}% less.",
              Stage::Script, /*speedRefundPct=*/45),
     {"fake_codec", "Fake Codec", MoveDef::Kind::Attack, 8, 1,
      "The video was never a video - frozen for {lock} turns.", Stage::Process,
@@ -465,7 +467,7 @@ const MoveDef kMoves[] = {
      "A copy that describes how to copy it - {dot} damage/turn for {dotTurns} turns.",
      Stage::Script, nullptr, 0, 0, 0, 0, 0, 0, /*dotDamage=*/8, /*dotTurns=*/4},
     braceRow("evade_trace", "Evade Trace", 32,
-             "Catch it if you can - braces {power}, {refund}% of the wait back.",
+             "Catch it if you can - braces {power}; your next move waits {refund}% less.",
              Stage::Script, /*speedRefundPct=*/40),
     {"attachment_bait", "Attachment Bait", MoveDef::Kind::Attack, 16, 1,
      "You opened it - frozen {lock} turns, then {dot}/turn for {dotTurns}.", Stage::Script,
@@ -494,7 +496,8 @@ const MoveDef kMoves[] = {
      Stage::Daemon, nullptr, 0, 0, 0, 0, /*armorPiercePct=*/60, /*lockTurns=*/1,
      /*dotDamage=*/5, /*dotTurns=*/3},
     braceRow("premium_wait", "Premium Wait", 44,
-             "Your download will begin shortly - braces {power}, {refund}% back.",
+             "Your download will begin shortly - braces {power}; your next move "
+             "waits {refund}% less.",
              Stage::Daemon, /*speedRefundPct=*/30),
     {"domain_flux", "Domain Flux", MoveDef::Kind::Attack, 18, 1,
      "A new address every day - {dot}/turn for {dotTurns} turns, and strips {stealDef}% "
@@ -566,15 +569,17 @@ const MoveDef kMoves[] = {
      "Stops at ninety-nine and stays there - {dot} damage/turn for {dotTurns} turns.",
      Stage::BootSector, nullptr, 0, 0, 0, 0, 0, 0, /*dotDamage=*/2, /*dotTurns=*/3},
     braceRow("cache_miss", "Cache Miss", 10,
-             "The file was never really there - braces {power}, {refund}% back.",
+             "The file was never really there - braces {power}; your next move "
+             "waits {refund}% less.",
              Stage::BootSector, /*speedRefundPct=*/60),
 
     // --- The Pirate Bayou — the cracking water, so its wilds pierce too -------------
     {"keygen_hum", "Keygen Hum", MoveDef::Kind::Attack, 8, 1,
-     "The chiptune plays while the wall opens - ignores {pierce}% of armor.",
+     "The chiptune plays while the lock opens - ignores {pierce}% of armor.",
      Stage::Process, nullptr, 0, 0, 0, 0, /*armorPiercePct=*/15},
     braceRow("rar_password", "RAR Password", 16,
-             "The archive wants a password nobody posted - braces {power}, {refund}% back.",
+             "The archive wants a password nobody posted - braces {power}; your next move "
+             "waits {refund}% less.",
              Stage::Process, /*speedRefundPct=*/55),
 
     // --- Net-Sea Crossing — it takes the turn, not the Health ----------------------
@@ -582,14 +587,16 @@ const MoveDef kMoves[] = {
      "Next, next, next, finish - frozen for {lock} turn.", Stage::Process,
      nullptr, 0, 0, 0, 0, 0, /*lockTurns=*/1},
     braceRow("eula_wall", "EULA Wall", 22,
-             "Forty pages nobody has ever read - braces {power}, {refund}% back.",
+             "Forty pages nobody has ever read - braces {power}; your next move "
+             "waits {refund}% less.",
              Stage::Process, /*speedRefundPct=*/50),
 
     // --- Napstorrent Moors — the mail area, and mail is just the swing --------------
     {"chain_letter", "Chain Letter", MoveDef::Kind::Attack, 18, 1,
      "Forward it to ten more. No rider, no wind-up - just the swing.", Stage::Script},
     braceRow("private_tracker", "Private Tracker", 30,
-             "Invite only, and you weren't invited - braces {power}, {refund}% back.",
+             "Invite only, and you weren't invited - braces {power}; your next move "
+             "waits {refund}% less.",
              Stage::Script, /*speedRefundPct=*/45),
 
     // --- Castle Rapidscare — the keep charges for everything ------------------------
@@ -599,7 +606,8 @@ const MoveDef kMoves[] = {
      Stage::Script, nullptr, 0, 0, 0, 0, 0, 0, 0, 0, /*stealPower=*/0, /*stealDef=*/0,
      /*stealSpeed=*/0, /*stealHp=*/0, /*stealMaxHpPct=*/10},
     braceRow("captcha_gate", "Captcha Gate", 38,
-             "Prove you are not a robot - braces {power}, {refund}% back.",
+             "Prove you are not a robot - braces {power}; your next move "
+             "waits {refund}% less.",
              Stage::Script, /*speedRefundPct=*/35),
 
     // --- DeepWeb Dive — the deepest pair there is ------------------------------------
@@ -608,7 +616,8 @@ const MoveDef kMoves[] = {
      Stage::Daemon, nullptr, 0, 0, 0, 0, 0, 0, 0, 0, /*stealPower=*/0,
      /*stealDefensePct=*/35},
     braceRow("onion_layer", "Onion Layer", 48,
-             "One more hop, one more layer - braces {power}, {refund}% back.",
+             "One more hop, one more layer - braces {power}; your next move "
+             "waits {refund}% less.",
              Stage::Daemon, /*speedRefundPct=*/30),
 };
 const int kMovesCount = sizeof(kMoves) / sizeof(kMoves[0]);

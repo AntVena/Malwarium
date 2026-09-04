@@ -5144,7 +5144,7 @@ window.PEDIA_DATA = {
       "rarity": "RARE",
       "tier": 4,
       "equipLevel": 45,
-      "effect": "First damaging hit multiplies by your Attack-move power rank.",
+      "effect": "Your first damaging hit multiplies by its move's power rank in your kit; weakest is 1x.",
       "stats": "1ST HIT x ATK RANK",
       "icon": "assets/icons/ICON_MOD_PROWLWARE.png"
     },
@@ -5177,7 +5177,7 @@ window.PEDIA_DATA = {
       "rarity": "EPIC",
       "tier": 5,
       "equipLevel": 56,
-      "effect": "Waiting for that perfect bite: while your bubble's up, amplifies the bonus siphon by 75%.",
+      "effect": "While a decoy shield is up, your bites drain 75% more Health and speed.",
       "stats": "SIPHON+ +75%",
       "icon": "assets/icons/ICON_MOD_PHISHING_ROD.png",
       "requiresLine": "phishing"
@@ -5373,7 +5373,7 @@ window.PEDIA_DATA = {
       "rarity": "EPIC",
       "tier": 5,
       "equipLevel": 57,
-      "effect": "Every different effect you land is worth 6 moves learned. Metamorphic only.",
+      "effect": "Each new KIND of effect you land pays 6 stat points. Metamorphic only.",
       "stats": "PER EFFECT +6",
       "icon": "assets/icons/ICON_MOD_MUTATION_ENGINE.png",
       "requiresLine": "metamorphic"
@@ -5618,7 +5618,7 @@ window.PEDIA_DATA = {
       "power": 14,
       "turns": 1,
       "minStage": "Boot Sector",
-      "desc": "Braces 14, and gives back 60% of the wait.",
+      "desc": "Braces 14; your next move waits 60% less.",
       "stats": "DEF 14 / TEMPO 60%",
       "group": "core",
       "icon": "assets/icons/ICON_MOVE_CHECKSUM_GUARD.png"
@@ -5654,7 +5654,7 @@ window.PEDIA_DATA = {
       "power": 18,
       "turns": 1,
       "minStage": "Process",
-      "desc": "Reroutes the next hit to nowhere - gives back 55% of the wait.",
+      "desc": "Reroutes the next hit to nowhere - braces 18; your next move waits 55% less.",
       "stats": "DEF 18 / TEMPO 55%",
       "group": "core",
       "icon": "assets/icons/ICON_MOVE_SLOT.png"
@@ -5954,7 +5954,7 @@ window.PEDIA_DATA = {
       "power": 6,
       "turns": 1,
       "minStage": "Process",
-      "desc": "Sprays a lure - takes 6% of the catch's size, siphons 8% power, and mid-bite drains 6% Health and 6% speed.",
+      "desc": "Sprays a lure - takes 6% of the target's max Health, siphons power, and mid-bite drains 6% Health and 6% speed.",
       "stats": "ATK 6 / MAX HP 6% / SIPHON PWR 8% / BITE SPD 6% / BITE DRAIN 6%",
       "group": "phishing",
       "icon": "assets/icons/ICON_MOVE_SLOT_LOCKED.png"
@@ -5966,7 +5966,7 @@ window.PEDIA_DATA = {
       "power": 8,
       "turns": 1,
       "minStage": "Script",
-      "desc": "Picks one mark - takes 10% of its size, siphons 16% power, and mid-bite drains 4% Health and 8% speed.",
+      "desc": "Picks one mark - takes 10% of its max Health, siphons 16% and mid-bite drains 4% Health and 8% speed.",
       "stats": "ATK 8 / MAX HP 10% / SIPHON PWR 16% / BITE SPD 8% / BITE DRAIN 4%",
       "group": "phishing",
       "icon": "assets/icons/ICON_MOVE_SLOT_LOCKED.png"
@@ -5978,7 +5978,7 @@ window.PEDIA_DATA = {
       "power": 10,
       "turns": 1,
       "minStage": "Daemon",
-      "desc": "Sets into the biggest catch - takes 14% of its size, siphons 32% power, and mid-bite drains 8% Health and 16% speed.",
+      "desc": "Sets into the biggest catch - takes 14% of its max Health, siphons 32% power, and mid-bite drains 8% Health and 16% speed.",
       "stats": "ATK 10 / MAX HP 14% / SIPHON PWR 32% / BITE SPD 16% / BITE DRAIN 8%",
       "group": "phishing",
       "icon": "assets/icons/ICON_MOVE_SLOT_LOCKED.png"
@@ -6002,7 +6002,7 @@ window.PEDIA_DATA = {
       "power": 20,
       "turns": 1,
       "minStage": "Script",
-      "desc": "Detonates past every wall - ignores 100% of armor.",
+      "desc": "Detonates past every defence - ignores 100% of armor.",
       "stats": "ATK 20 / PIERCE 100%",
       "group": "trojan",
       "icon": "assets/icons/ICON_MOVE_SLOT.png"
@@ -6350,7 +6350,7 @@ window.PEDIA_DATA = {
       "power": 26,
       "turns": 1,
       "minStage": "Script",
-      "desc": "Wears a certificate that isn't its own - braces 26, 45% back.",
+      "desc": "Wears a certificate that isn't its own - braces 26; your next move waits 45% less.",
       "stats": "DEF 26 / TEMPO 45%",
       "group": "core",
       "icon": "assets/icons/ICON_MOVE_SLOT.png"
@@ -6434,7 +6434,7 @@ window.PEDIA_DATA = {
       "power": 32,
       "turns": 1,
       "minStage": "Script",
-      "desc": "Catch it if you can - braces 32, 40% of the wait back.",
+      "desc": "Catch it if you can - braces 32; your next move waits 40% less.",
       "stats": "DEF 32 / TEMPO 40%",
       "group": "core",
       "icon": "assets/icons/ICON_MOVE_SLOT.png"
@@ -6518,7 +6518,7 @@ window.PEDIA_DATA = {
       "power": 44,
       "turns": 1,
       "minStage": "Daemon",
-      "desc": "Your download will begin shortly - braces 44, 30% back.",
+      "desc": "Your download will begin shortly - braces 44; your next move waits 30% less.",
       "stats": "DEF 44 / TEMPO 30%",
       "group": "core",
       "icon": "assets/icons/ICON_MOVE_SLOT.png"
@@ -6614,7 +6614,7 @@ window.PEDIA_DATA = {
       "power": 10,
       "turns": 1,
       "minStage": "Boot Sector",
-      "desc": "The file was never really there - braces 10, 60% back.",
+      "desc": "The file was never really there - braces 10; your next move waits 60% less.",
       "stats": "DEF 10 / TEMPO 60%",
       "group": "core",
       "icon": "assets/icons/ICON_MOVE_SLOT.png"
@@ -6626,7 +6626,7 @@ window.PEDIA_DATA = {
       "power": 8,
       "turns": 1,
       "minStage": "Process",
-      "desc": "The chiptune plays while the wall opens - ignores 15% of armor.",
+      "desc": "The chiptune plays while the lock opens - ignores 15% of armor.",
       "stats": "ATK 8 / PIERCE 15%",
       "group": "core",
       "icon": "assets/icons/ICON_MOVE_SLOT.png"
@@ -6638,7 +6638,7 @@ window.PEDIA_DATA = {
       "power": 16,
       "turns": 1,
       "minStage": "Process",
-      "desc": "The archive wants a password nobody posted - braces 16, 55% back.",
+      "desc": "The archive wants a password nobody posted - braces 16; your next move waits 55% less.",
       "stats": "DEF 16 / TEMPO 55%",
       "group": "core",
       "icon": "assets/icons/ICON_MOVE_SLOT.png"
@@ -6662,7 +6662,7 @@ window.PEDIA_DATA = {
       "power": 22,
       "turns": 1,
       "minStage": "Process",
-      "desc": "Forty pages nobody has ever read - braces 22, 50% back.",
+      "desc": "Forty pages nobody has ever read - braces 22; your next move waits 50% less.",
       "stats": "DEF 22 / TEMPO 50%",
       "group": "core",
       "icon": "assets/icons/ICON_MOVE_SLOT.png"
@@ -6686,7 +6686,7 @@ window.PEDIA_DATA = {
       "power": 30,
       "turns": 1,
       "minStage": "Script",
-      "desc": "Invite only, and you weren't invited - braces 30, 45% back.",
+      "desc": "Invite only, and you weren't invited - braces 30; your next move waits 45% less.",
       "stats": "DEF 30 / TEMPO 45%",
       "group": "core",
       "icon": "assets/icons/ICON_MOVE_SLOT.png"
@@ -6710,7 +6710,7 @@ window.PEDIA_DATA = {
       "power": 38,
       "turns": 1,
       "minStage": "Script",
-      "desc": "Prove you are not a robot - braces 38, 35% back.",
+      "desc": "Prove you are not a robot - braces 38; your next move waits 35% less.",
       "stats": "DEF 38 / TEMPO 35%",
       "group": "core",
       "icon": "assets/icons/ICON_MOVE_SLOT.png"
@@ -6734,7 +6734,7 @@ window.PEDIA_DATA = {
       "power": 48,
       "turns": 1,
       "minStage": "Daemon",
-      "desc": "One more hop, one more layer - braces 48, 30% back.",
+      "desc": "One more hop, one more layer - braces 48; your next move waits 30% less.",
       "stats": "DEF 48 / TEMPO 30%",
       "group": "core",
       "icon": "assets/icons/ICON_MOVE_SLOT.png"

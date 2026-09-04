@@ -191,7 +191,8 @@ const ModDef kMods[] = {
 
     // --- NAPSTORRENT MOORS (tier 4) ---
     {/*wire=*/28, "prowlware", "Prowlware", "1ST HIT",
-     "First damaging hit multiplies by your Attack-move power rank.", false,
+     "Your first damaging hit multiplies by its move's power rank in your kit; "
+     "weakest is 1x.", false,
      ItemDef::Rarity::Rare, 4, 45, ModEffect::FirstStrikeRankMult, 0, 0, nullptr, 0},
     {/*wire=*/29, "meltdown_core", "Meltdown Core", "COMEBACK",
      "Below {mag}% Health, attack power rises {mag2}%.", false,
@@ -202,8 +203,8 @@ const ModDef kMods[] = {
 
     // --- DeepWeb Dive (tier 5) — the endgame mods, incl. the two hard-gated signatures --
     {/*wire=*/31, "phishing_rod", "Phishing Rod", "SIPHON+",
-     "Waiting for that perfect bite: while your bubble's up, amplifies the bonus "
-     "siphon by {mag}%.", false,
+     "While a decoy shield is up, your bites drain {mag}% more Health and speed.",
+     false,
      ItemDef::Rarity::Epic, 5, 56, ModEffect::StealAmplifyPct, 75, 0, nullptr, 0,
      /*requiresLine=*/"phishing"},
     // Both halves state the same thing about the family: BRUTE FORCE with one gimmick,
@@ -324,8 +325,8 @@ const ModDef kMods[] = {
     // row draws from rather than the shared roster it mostly lands on. `magnitude` is stat
     // points per new kind, spent in the casting move's own currency (polymorphPay).
     {/*wire=*/48, "mutation_engine", "Mutation Engine", "MUTATE+",
-     "Every different effect you land is worth {mag} moves learned. "
-     "Metamorphic only.", false,
+     "Each new KIND of effect you land pays {mag} stat points. Metamorphic only.",
+     false,
      ItemDef::Rarity::Epic, 5, 57, ModEffect::PolymorphEffectPct, 6, 0, nullptr, 0,
      /*requiresLine=*/"metamorphic"},
 

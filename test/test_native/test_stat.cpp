@@ -181,6 +181,15 @@ void test_effect_text_templates_resolve() {
     for (int i = 0; i < kItemsCount; ++i) CHECK(ascii(kItems[i].effect));
     for (int i = 0; i < kModsCount; ++i) CHECK(ascii(kMods[i].effect));
     for (int i = 0; i < kMovesCount; ++i) CHECK(ascii(kMoves[i].effect));
+    // The stat-tier ladder is drawn with the same font on the same page as the loadout
+    // it sits beside (STAT's TIERS), so it lives under the same rule even though it is
+    // a core/model table rather than a content one.
+    for (int i = 0; i < kLevelStatCount; ++i)
+        for (int t = 0; t < kStatTierCount; ++t) {
+            const StatTierDef& d = statTier(static_cast<LevelStat>(i), t);
+            CHECK(ascii(d.name));
+            CHECK(ascii(d.effect));
+        }
 
     // {|token|} renders the magnitude unsigned, for prose that carries the sign.
     ItemDef probe = kItems[0];
