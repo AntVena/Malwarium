@@ -17,6 +17,14 @@
 // proseRowsFitting is exported: the engine advancing the window and the renderer
 // drawing it must agree about where the next one begins, and the alternative is two
 // answers to that question, which reads as skipped or repeated rows.
+//
+// A SECTION HEADING ALSO ENDS A WINDOW. A page that flows groups (STAT's TIERS, one
+// heading per combat stat; LOADOUT's MOVES/MODS) is read a group at a time, so the fit
+// stops at the next heading rather than filling the last few pixels of a window with
+// the first rows of the group after it. That makes each press of the scroll key land
+// on the next GROUP wherever one fits — the reader steps between the things the page is
+// about instead of between arbitrary pixel boundaries — and it is what lets the STAT
+// index anchor a jump at the same landmarks (stat_screen.h's StatIndexRow).
 #pragma once
 
 #include <vector>
@@ -67,15 +75,24 @@ constexpr int kProseHeaderH = kFontH + kProseHeaderTail;
 // drawn, so a page can never discover it after a row is already using the space.
 constexpr int kProseBottom = kActiveH - kHintBandH;
 
-// The measured height of one row's block. The lead above a header is part of that
-// header's HEIGHT rather than a gap the draw loop adds, so the fit maths and the
-// reader see the same page.
-std::vector<int> proseRowHeights(const std::vector<ProseRow>& rows);
+// The measured height of every row's block, for the window that starts at `top`. The
+// lead above a header is part of that header's HEIGHT rather than a gap the draw loop
+// adds, so the fit maths and the reader see the same page — and it depends on `top`
+// because the heading that OPENS a window takes no lead-in.
+std::vector<int> proseRowHeights(const std::vector<ProseRow>& rows, int top);
 
-// How many rows starting at `top` fit between `rowTop` and the foot. Always at least
-// one: a row taller than the whole body still draws (clipped) rather than stalling the
-// scroll on a window of zero rows, which would never reach the end and wrap.
+// How many rows starting at `top` fit between `rowTop` and the foot, stopping early at
+// the next section heading (see the note above). Always at least one: a row taller than
+// the whole body still draws (clipped) rather than stalling the scroll on a window of
+// zero rows, which would never reach the end and wrap.
 int proseRowsFitting(const std::vector<ProseRow>& rows, int top, int rowTop);
+
+// How many windows the page takes end to end, and which of them `scrollTop` opens
+// (0-based). The pair is what lets a page say "3/5" in its hint band: a scrollbar thumb
+// says roughly how far down a reader is, and a COUNT says how much is left — which is
+// the question a reader deciding whether to keep pressing is actually asking.
+int proseWindowCount(const std::vector<ProseRow>& rows, int rowTop);
+int proseWindowIndex(const std::vector<ProseRow>& rows, int scrollTop, int rowTop);
 
 // Draw the window of `rows` starting at `scrollTop`, from `rowTop` down. When the list
 // outruns one screen this also draws the right-edge scrollbar and `hint` in the hint

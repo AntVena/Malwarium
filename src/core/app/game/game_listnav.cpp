@@ -22,6 +22,7 @@
 #include "core/ui/expl_screen.h"
 #include "core/ui/items_screen.h"
 #include "core/ui/mods_screen.h"
+#include "core/ui/stat_screen.h"
 #include "core/ui/train_screen.h"
 
 namespace mal {
@@ -77,6 +78,12 @@ Game::ListFocus Game::listFocus() const {
 
     if (nav_ == Nav::Submenu) {
         switch (enteredId()) {
+            // Only the INDEX is a list. The six pages behind it are READERS — nothing
+            // on them is selected, their A is "next page" rather than a row step, and
+            // their C is the tap-to-leave it is on every other reader.
+            case SubmenuId::Stat:
+                return statScreen_ == StatScreen::Index ? ListFocus::StatIndex
+                                                        : ListFocus::None;
             case SubmenuId::Items:
                 return itemsScreen_ == ItemsScreen::Picker ? ListFocus::ItemsPicker
                                                            : ListFocus::ItemsList;
@@ -128,6 +135,12 @@ void Game::stepFocusedList(int dir) {
     switch (listFocus()) {
         case ListFocus::None:
             return;
+
+        case ListFocus::StatIndex: {
+            const int n = static_cast<int>(statIndexRows().size());
+            if (n > 0) statIndexRow_ = ((statIndexRow_ + dir) % n + n) % n;
+            break;
+        }
 
         case ListFocus::ItemsPicker: {
             const int n = static_cast<int>(buildItemPickerRows(registry_, inventory_).size());
@@ -305,6 +318,7 @@ void Game::leaveFocusedList() {
     if (focus == ListFocus::None) return;
     const ButtonEvent back{Button::C, true, false};
     switch (focus) {
+        case ListFocus::StatIndex: onStatIndex(back); break;
         case ListFocus::ItemsPicker: onItemsPicker(back); break;
         case ListFocus::ItemsList: onItemsList(back); break;
         case ListFocus::ArchPicker: onArchPicker(back); break;

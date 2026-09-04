@@ -44,6 +44,8 @@ int g_failures = 0;
     RUN(test_effect_text_fits_its_screen_budget) \
     RUN(test_creature_name_headers_pack) \
     RUN(test_stat_loadout_b_scroll)         \
+    RUN(test_stat_index_jumps_to_a_page_and_a_section) \
+    RUN(test_prose_windows_break_on_sections) \
     RUN(test_stat_prose_windows_tile_the_list) \
     /* Carousel */                          \
     RUN(test_carousel_summon)               \

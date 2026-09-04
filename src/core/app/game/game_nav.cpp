@@ -19,12 +19,13 @@
 namespace mal {
 
 void Game::onButton(const ButtonEvent& ev) {
-    // A released B resolves whichever tap/hold gesture was armed. All four live on B and
-    // all four are guarded to their own screen, so each release asks them in turn and at
+    // A released B resolves whichever tap/hold gesture was armed. All of them live on B
+    // and all are guarded to their own screen, so each release asks them in turn and at
     // most one claims it: the CFG hidden Factory Reset (releasing early aborts the
     // reveal/commit), the VAULT bulk-open (releasing before kBulkOpenHoldMs resolves as
-    // the ordinary single-open), the ITEMS filter (a tap opens the focused item), and
-    // the MOVES picker's show-all (a tap unequips or drills into the focused move).
+    // the ordinary single-open), the ITEMS filter (a tap opens the focused item), the
+    // MOVES picker's show-all (a tap unequips or drills into the focused move), and
+    // STAT's index (a tap advances the open page's window instead).
     // C on a list is the same shape and settles here too (listBackRelease). Only A never
     // needs a release action: its hold REPEATS the step its press already made rather
     // than replacing it, so letting go only has to stop the clock tickListNav reads.
@@ -37,6 +38,7 @@ void Game::onButton(const ButtonEvent& ev) {
                 itemFilterReleaseB();
                 moveFilterReleaseB();
                 tourneyReleaseB();
+                statIndexReleaseB();
             }
             bHeld_ = false;
         } else if (ev.button == Button::A) {
@@ -159,25 +161,11 @@ void Game::onButton(const ButtonEvent& ev) {
             // Hacker face reuses the L2 state but its own slot roster/dispatch.
             if (face_ == Face::Hacker) { onHackerSubmenu(ev); break; }
             switch (enteredId()) {
+                // STAT is two screens behind one slot (game_stat.cpp): the paged
+                // reader, and the INDEX that jumps between its pages and sections.
                 case SubmenuId::Stat:
-                    if (ev.button == Button::A) {
-                        statPage_ = (statPage_ + 1) % 6;
-                        statScroll_ = 0;         // fresh page -> scroll to the top
-                    } else if (ev.button == Button::C) {
-                        nav_ = Nav::Cursor; statPage_ = 0; statScroll_ = 0;
-                    } else if (ev.button == Button::B) {
-                        // B scrolls the three pages that flow prose rows (TIERS,
-                        // LOADOUT and BUFFS) and is a no-op everywhere else — statScrollSpan
-                        // reports {0, 0} for a page with nothing to scroll, and for
-                        // one whose rows all fit. It advances by the window the page
-                        // actually drew (rows are sized to their own text, so that
-                        // count varies), and wraps back to the top past the end.
-                        const StatScrollSpan span = statScrollSpan();
-                        if (span.shown > 0 && span.shown < span.total) {
-                            statScroll_ += span.shown;
-                            if (statScroll_ >= span.total) statScroll_ = 0;
-                        }
-                    }
+                    if (statScreen_ == StatScreen::Index) onStatIndex(ev);
+                    else onStatPage(ev);
                     break;
                 case SubmenuId::Items:
                     if (itemsScreen_ == ItemsScreen::Picker) onItemsPicker(ev);
@@ -357,7 +345,10 @@ void Game::enterSubmenu() {
             moveConfirm_ = false; movePendingId_ = nullptr; break;
         case SubmenuId::Games: arcadeRow_ = 0; break;
         case SubmenuId::Expl: openExplList(); break;
-        case SubmenuId::Stat: statPage_ = 0; statScroll_ = 0; break;
+        // Entering STAT always lands on VITALS, never on the index or on the page last
+        // read: the slot is entered to check on the pet, and where the last visit
+        // happened to end is not that.
+        case SubmenuId::Stat: resetStatReader(); break;
         default: break;
     }
 }
@@ -366,8 +357,7 @@ void Game::dropCursor() {
     nav_ = Nav::Idle;
     listRow_ = 0;
     detailItem_ = nullptr;
-    statPage_ = 0;
-    statScroll_ = 0;
+    resetStatReader();
 }
 
 bool Game::slotLocked(SubmenuId id) const {

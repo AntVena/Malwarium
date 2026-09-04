@@ -53,8 +53,7 @@ void Game::expireLockout() {
     lockoutItemsContext_ = false;
     nav_ = Nav::Idle;
     detailItem_ = nullptr;
-    statPage_ = 0;
-    statScroll_ = 0;
+    resetStatReader();
     markSaveDirty();
 }
 
@@ -69,8 +68,7 @@ void Game::resolveLockout() {
     nav_ = Nav::Idle;
     listRow_ = 0;
     detailItem_ = nullptr;
-    statPage_ = 0;
-    statScroll_ = 0;
+    resetStatReader();
     markSaveDirty();
 }
 
@@ -636,8 +634,7 @@ void Game::resetToHatch() {
     cursor_ = 0;
     listRow_ = 0;
     detailItem_ = nullptr;
-    statPage_ = 0;
-    statScroll_ = 0;
+    resetStatReader();
     maintKind_ = MaintKind::Defrag;
     processResolved_ = false;
     feedItem_ = nullptr;

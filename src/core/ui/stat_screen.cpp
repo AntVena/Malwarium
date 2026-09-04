@@ -2,7 +2,9 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cstdarg>
 #include <cstdio>
+#include <cstring>
 
 #include "core/content/effect_text.h"
 #include "core/content/registry.h"
@@ -28,15 +30,14 @@ constexpr int kGaugeX = 70;
 constexpr int kGaugeW = 110;
 constexpr int kGaugeH = 10;
 constexpr int kNumX = 188;
-constexpr int kPageCount = 6;
 
-// STAT header: title at left, a dot pager at right (one dot per page, kPageCount
+// STAT header: title at left, a dot pager at right (one dot per page, kStatPages
 // of them) with the active page filled. The pager is the non-colour channel for
 // "which page" (dot position), so the status pages stay distinguishable in grayscale.
 void statHeader(Framebuffer& fb, const char* title, int page) {
     drawHeaderBand(fb, title);
-    for (int i = 0; i < kPageCount; ++i) {
-        const int x = kActiveW - 8 - (kPageCount - i) * 8;
+    for (int i = 0; i < kStatPages; ++i) {
+        const int x = kActiveW - 8 - (kStatPages - i) * 8;
         fb.fillRect(x, 8, 4, 4,
                     i == page ? palColor(Pal::INK) : palColor(Pal::INK_DIM));
     }
@@ -60,31 +61,85 @@ constexpr int kLoadoutRowTop = 26;
 constexpr int kBuffRowTop = 28;
 constexpr int kTierRowTop = 26;   // TIERS opens on a section heading, same as LOADOUT
 
+// --- The INDEX's own grid ---------------------------------------------------
+//
+// Tighter than the list grid's kRowH, and set by the roster rather than chosen: the
+// index is worth opening only if the whole of it is on one screen, so the pitch is
+// what the tallest possible roster needs. The static_assert below is what keeps that
+// true when a page or a section is added — a seventh page silently pushed off the
+// bottom would be a destination with no route to it.
+constexpr int kIndexRowTop = kRowTop;
+constexpr int kIndexRowH = 15;
+constexpr int kIndexLabelX = 20;   // clear of the cursor marker at the left margin
+constexpr int kIndexSubX = 32;     // a section INSIDE a page, indented under it
+// VITALS · TIERS + one per stat · LOADOUT + MOVES + MODS · BUFFS · SPECIES · AUDIT LOG.
+constexpr int kIndexMaxRows = 1 + (1 + kLevelStatCount) + (1 + 2) + 1 + 1 + 1;
+static_assert(kIndexMaxRows * kIndexRowH <= kProseBottom - kIndexRowTop,
+              "the STAT index must fit one screen: it is the page that exists to save "
+              "the reader a walk, and a walk is what a scrolling one would cost");
+
 // BUFFS keeps its own heights because a buff row is a name plus a COUNTDOWN rather
 // than a name plus a tag — the timer is live state, re-read every repaint, where a
-// ProseRow's tag is set once when the row is built.
-std::vector<int> buffRowHeights(const std::vector<BuffRow>& rows) {
+// ProseRow's tag is set once when the row is built. Its headings are measured the same
+// way the shared flow measures its own (prose_page.cpp): the lead-in above one is part
+// of its height, and the heading that opens a window takes none.
+std::vector<int> buffRowHeights(const std::vector<BuffRow>& rows, int top) {
     std::vector<int> h;
     h.reserve(rows.size());
-    for (const BuffRow& r : rows)
+    for (int i = 0; i < static_cast<int>(rows.size()); ++i) {
+        const BuffRow& r = rows[i];
+        if (r.header) {
+            h.push_back((i == top ? 0 : kProseGroupLead) + kProseHeaderH);
+            continue;
+        }
         h.push_back(kFontH + (r.effect.empty()
                                   ? 0
                                   : kProseNameGap +
                                         textWrapLines(r.effect.c_str(), kProseW) *
                                             kProseLineH) +
                     kProseRowGap);
+    }
     return h;
 }
 
 // BUFFS' own fit count, over its own heights — the shared proseRowsFitting takes
-// ProseRows, and this page's rows are not those.
-int buffFitCount(const std::vector<int>& heights, int top) {
+// ProseRows, and this page's rows are not those. Same section rule as the shared flow,
+// including the half-full threshold that keeps a section break from spending a whole
+// screen on a one-row tail.
+int buffFitCount(const std::vector<BuffRow>& rows, int top) {
+    const std::vector<int> heights = buffRowHeights(rows, top);
     int y = kBuffRowTop;
     int n = 0;
     for (int i = top; i < static_cast<int>(heights.size()); ++i) {
+        if (n > 0 && rows[i].header &&
+            y - kBuffRowTop >= (kProseBottom - kBuffRowTop) / 2)
+            break;
         if (n > 0 && y + heights[i] > kProseBottom) break;
         y += heights[i];
         ++n;
+    }
+    return n;
+}
+
+// BUFFS' own window count / position, the same pair the shared flow exports
+// (proseWindowCount / proseWindowIndex) and for the same hint band.
+int buffWindowCount(const std::vector<BuffRow>& rows) {
+    int n = 0;
+    for (int top = 0; top < static_cast<int>(rows.size()); ++n) {
+        const int shown = buffFitCount(rows, top);
+        if (shown <= 0) break;
+        top += shown;
+    }
+    return n;
+}
+
+int buffWindowIndex(const std::vector<BuffRow>& rows, int scrollTop) {
+    int n = 0;
+    for (int top = 0; top < static_cast<int>(rows.size()); ++n) {
+        if (top >= scrollTop) return n;
+        const int shown = buffFitCount(rows, top);
+        if (shown <= 0) break;
+        top += shown;
     }
     return n;
 }
@@ -96,7 +151,31 @@ void drawBuffScrollbar(Framebuffer& fb, int top, int shown, int total) {
     const int thumbH = std::max(8, trackH * shown / total);
     fb.fillRect(barX, kBuffRowTop + trackH * top / total, 2, thumbH,
                 palColor(Pal::INK_DIM));
-    drawHintBand(fb, "B SCROLL");
+}
+
+// The band every STAT page ends with. Two things belong on it and they are not the
+// same kind of fact: what the key under the reader's thumb does right now, and that
+// the INDEX exists at all. The second is the whole reason the band is drawn even on a
+// page with nothing to scroll — a hold gesture nothing names is a gesture nobody finds.
+//
+// `windows`/`window` are the page's own window count and which one is open, 1-based
+// for the reader: a scrollbar thumb says roughly how far down the page a reader is,
+// and "2/5" says how much of it is left, which is the question they are actually
+// asking before deciding to keep pressing.
+void statHint(Framebuffer& fb, int window, int windows) {
+    char hint[32];
+    if (windows > 1)
+        std::snprintf(hint, sizeof(hint), "B MORE %d/%d  HOLD B INDEX", window, windows);
+    else
+        std::snprintf(hint, sizeof(hint), "A PAGE  HOLD B INDEX");
+    drawHintBand(fb, hint);
+}
+
+// The same band for a flowed page, off the page's own rows.
+void statProseHint(Framebuffer& fb, const std::vector<ProseRow>& rows, int scrollTop,
+                   int rowTop) {
+    statHint(fb, proseWindowIndex(rows, scrollTop, rowTop) + 1,
+             proseWindowCount(rows, rowTop));
 }
 
 } // namespace
@@ -187,7 +266,10 @@ int tierRowsFitting(const std::vector<ProseRow>& rows, int top) {
 void drawTiersScreen(Framebuffer& fb, const std::vector<ProseRow>& rows, int scrollTop,
                      int beat) {
     statHeader(fb, "TIERS", 1);
-    drawProseRows(fb, rows, scrollTop, kTierRowTop, beat);
+    // The flow draws no band of its own here (nullptr): every STAT page ends with the
+    // same one, and it says more than the flow can know to say.
+    drawProseRows(fb, rows, scrollTop, kTierRowTop, beat, nullptr);
+    statProseHint(fb, rows, scrollTop, kTierRowTop);
 }
 
 int loadoutRowsFitting(const std::vector<ProseRow>& rows, int top) {
@@ -197,7 +279,8 @@ int loadoutRowsFitting(const std::vector<ProseRow>& rows, int top) {
 void drawLoadoutScreen(Framebuffer& fb, const std::vector<ProseRow>& rows,
                        int scrollTop, int beat) {
     statHeader(fb, "LOADOUT", 2);
-    drawProseRows(fb, rows, scrollTop, kLoadoutRowTop, beat);
+    drawProseRows(fb, rows, scrollTop, kLoadoutRowTop, beat, nullptr);
+    statProseHint(fb, rows, scrollTop, kLoadoutRowTop);
 }
 
 std::vector<BuffRow> buildBuffRows(const ContentRegistry& reg,
@@ -214,11 +297,23 @@ std::vector<BuffRow> buildBuffRows(const ContentRegistry& reg,
                                     bool evolveHoldArmed,
                                     const PetUpgrades& upgrades) {
     std::vector<BuffRow> out;
+    // The two headings are emitted LAZILY, by the first row that belongs under each:
+    // an empty section is not a section, and a page that says PERMANENT over nothing
+    // has told the reader something false about the pet.
+    auto section = [&](const char* label) {
+        for (const BuffRow& r : out)
+            if (r.header && std::strcmp(r.label, label) == 0) return;
+        BuffRow head{};
+        head.label = label;
+        head.header = true;
+        out.push_back(head);
+    };
     auto add = [&](const char* itemId, bool armed, bool timed, uint32_t remain) {
         if (!armed) return;
         const ItemDef* d = reg.item(itemId);
+        section("ARMED");
         out.push_back({d ? d->displayName : itemId, d ? effectText(*d) : EffectText{},
-                       timed, remain});
+                       timed, remain, false});
     };
     add("restore_point", restorePointArmed, false, 0);
     add("ambig_usb", trojanDivertArmed, false, 0);
@@ -226,11 +321,15 @@ std::vector<BuffRow> buildBuffRows(const ContentRegistry& reg,
     // The two DeepWeb Dive depth buffs: which ITEM armed them isn't tracked
     // directly (Game only keeps the raw multiplier/depth), so find the item whose
     // effect matches the current state instead of hardcoding an id here.
-    auto addByEffect = [&](ItemEffect::Kind kind, int magnitude, bool matchAnyMagnitude) {
+    // `heading` is which section the found row lands under — every arming lands under
+    // ARMED, and an Epic dish's standing grant under PERMANENT.
+    auto addByEffect = [&](ItemEffect::Kind kind, int magnitude, bool matchAnyMagnitude,
+                           const char* heading = "ARMED") {
         for (const ItemDef* d : reg.allItems())
             for (const ItemEffect& e : d->effects)
                 if (e.kind == kind && (matchAnyMagnitude || e.magnitude == magnitude)) {
-                    out.push_back({d->displayName, effectText(*d), false, 0});
+                    section(heading);
+                    out.push_back({d->displayName, effectText(*d), false, 0, false});
                     return;
                 }
     };
@@ -267,19 +366,19 @@ std::vector<BuffRow> buildBuffRows(const ContentRegistry& reg,
     // in stat order, so a pet carrying several reads as one block rather than in
     // whichever order it happened to be fed.
     if (upgrades.bandwidthRegenMin > 0)
-        addByEffect(ItemEffect::Kind::BandwidthRegenBonusMin, 0, true);
+        addByEffect(ItemEffect::Kind::BandwidthRegenBonusMin, 0, true, "PERMANENT");
     static const ItemEffect::Kind kStatGrants[kLevelStatCount] = {
         ItemEffect::Kind::StatPointPower, ItemEffect::Kind::StatPointDefense,
         ItemEffect::Kind::StatPointSpeed, ItemEffect::Kind::StatPointHealth};
     for (int i = 0; i < kLevelStatCount; ++i)
-        if (upgrades.statBonus[i] > 0) addByEffect(kStatGrants[i], 0, true);
+        if (upgrades.statBonus[i] > 0) addByEffect(kStatGrants[i], 0, true, "PERMANENT");
     if (upgrades.xpRatePct > 0)
-        addByEffect(ItemEffect::Kind::XpRateBonusPct, 0, true);
+        addByEffect(ItemEffect::Kind::XpRateBonusPct, 0, true, "PERMANENT");
     return out;
 }
 
 int buffRowsFitting(const std::vector<BuffRow>& rows, int top) {
-    return buffFitCount(buffRowHeights(rows), top);
+    return buffFitCount(rows, top);
 }
 
 void drawBuffsScreen(Framebuffer& fb, const std::vector<BuffRow>& rows, int scrollTop,
@@ -288,18 +387,26 @@ void drawBuffsScreen(Framebuffer& fb, const std::vector<BuffRow>& rows, int scro
 
     if (rows.empty()) {
         drawText(fb, kMargin, 60, "- NO ACTIVE BUFFS -", palColor(Pal::INK_DIM));
+        statHint(fb, 1, 1);
         return;
     }
 
-    const std::vector<int> heights = buffRowHeights(rows);
     const int total = static_cast<int>(rows.size());
-    const bool overflow = buffFitCount(heights, 0) < total;
+    const bool overflow = buffFitCount(rows, 0) < total;
     const int top = overflow ? std::max(0, std::min(scrollTop, total - 1)) : 0;
-    const int shown = buffFitCount(heights, top);
+    const std::vector<int> heights = buffRowHeights(rows, top);
+    const int shown = buffFitCount(rows, top);
 
     int y = kBuffRowTop;
     for (int v = 0; v < shown; ++v) {
         const BuffRow& r = rows[top + v];
+        if (r.header) {
+            // Dim, like the flow's own headings: a fence, not a row.
+            drawText(fb, kMargin, y + (top + v == top ? 0 : kProseGroupLead), r.label,
+                     palColor(Pal::INK_DIM));
+            y += heights[top + v];
+            continue;
+        }
         const int nx = drawText(fb, kMargin, y, r.label, palColor(Pal::INK));
         if (r.hasTimer) {
             char t[16];
@@ -316,6 +423,7 @@ void drawBuffsScreen(Framebuffer& fb, const std::vector<BuffRow>& rows, int scro
     }
 
     if (overflow) drawBuffScrollbar(fb, top, shown, total);
+    statHint(fb, buffWindowIndex(rows, top) + 1, buffWindowCount(rows));
 }
 
 void drawSpeciesScreen(Framebuffer& fb, const char* name, const char* line,
@@ -356,7 +464,7 @@ void drawSpeciesScreen(Framebuffer& fb, const char* name, const char* line,
     // back, and the read takes the rest. Still capped by what remains, but the cap
     // is the screen's own edge rather than a number set ahead of the content.
     const int ctxLines = (context && context[0]) ? textWrapLines(context, kProseW) : 0;
-    const int hintRoom = kActiveH - kMargin - kSpeciesTop - kBlockGap -
+    const int hintRoom = kProseBottom - kSpeciesTop - kBlockGap -
                          ctxLines * kSpeciesLineH;
     const int hintMax = std::max(1, hintRoom / kSpeciesLineH);
 
@@ -373,6 +481,8 @@ void drawSpeciesScreen(Framebuffer& fb, const char* name, const char* line,
     if (ctxLines > 0)
         drawTextWrapped(fb, kMargin, y, kProseW, context, palColor(Pal::INK_DIM),
                           kSpeciesLineH, ctxLines);
+
+    statHint(fb, 1, 1);
 }
 
 void drawStatScreen(Framebuffer& fb, const PetModel& m, const char* name,
@@ -438,6 +548,8 @@ void drawStatScreen(Framebuffer& fb, const PetModel& m, const char* name,
         std::snprintf(evo, sizeof(evo), "MAX");
     }
     drawText(fb, kActiveW - kMargin - textWidth(evo), 168, evo, palColor(Pal::INK));
+
+    statHint(fb, 1, 1);
 }
 
 namespace {
@@ -457,10 +569,11 @@ const SpriteData* logGlyph(LogEventType t) {
 void drawAuditLog(Framebuffer& fb, const EventLog& log, int /*beat*/) {
     statHeader(fb, "AUDIT LOG", 5);
 
-    // A full page to itself, so it shows a real slice rather than a teaser: the last
-    // 6 events, newest-first (the ring keeps 8).
-    constexpr int kShown = 6;
-    const int shown = log.size() < kShown ? log.size() : kShown;
+    // A full page to itself, so it shows the WHOLE ring newest-first rather than a
+    // slice of it: the log holds eight and eight is what a page of this pitch fits, so
+    // nothing the device remembered is off the bottom of the one screen that reports it.
+    constexpr int kLogRowH = 22;
+    const int shown = log.size() < EventLog::kCapacity ? log.size() : EventLog::kCapacity;
     if (shown == 0) {
         // A full page's worth of empty space read as an unfinished screen rather
         // than an empty list — every other empty-state in the app ("- NO PETS -",
@@ -472,14 +585,132 @@ void drawAuditLog(Framebuffer& fb, const EventLog& log, int /*beat*/) {
         drawText(fb, kMargin, kCenterY, "- NO EVENTS YET -", palColor(Pal::INK_DIM));
         drawText(fb, kMargin, kCenterY + 16, "FILLS IN AS YOU PLAY.",
                  palColor(Pal::INK_DIM));
+        statHint(fb, 1, 1);
         return;
     }
     for (int i = 0; i < shown; ++i) {            // newest first
         const LogEntry& e = log.at(i);
-        const int y = 30 + i * 24;
+        const int y = 30 + i * kLogRowH;
         drawSprite(fb, *logGlyph(e.type), 0, kMargin, y);
         drawText(fb, kMargin + 16, y + 2, e.text, palColor(Pal::INK));
     }
+    statHint(fb, 1, 1);
+}
+
+// --- The INDEX ---------------------------------------------------------------
+
+namespace {
+
+// One row, formatted. `label` is borrowed; the readout is not.
+StatIndexRow indexRow(const char* label, bool sub, int page, int anchor,
+                      const char* fmt, ...) {
+    StatIndexRow r{};
+    r.label = label;
+    r.sub = sub;
+    r.page = page;
+    r.anchor = anchor;
+    va_list ap;
+    va_start(ap, fmt);
+    std::vsnprintf(r.value, sizeof(r.value), fmt, ap);
+    va_end(ap);
+    return r;
+}
+
+// Rungs held in `rows[from..to)` — the TIERS page's own HELD tag counted back, so the
+// index reports exactly what the page under it shows and cannot drift from it.
+int rungsHeld(const std::vector<ProseRow>& rows, int from, int to) {
+    int n = 0;
+    for (int i = from; i < to && i < static_cast<int>(rows.size()); ++i)
+        if (!rows[i].header && std::strcmp(rows[i].tag, "HELD") == 0) ++n;
+    return n;
+}
+
+// Where the section opened by the header at `from` ends (the next header, or the end).
+int sectionEnd(const std::vector<ProseRow>& rows, int from) {
+    for (int i = from + 1; i < static_cast<int>(rows.size()); ++i)
+        if (rows[i].header) return i;
+    return static_cast<int>(rows.size());
+}
+
+}  // namespace
+
+std::vector<StatIndexRow> buildStatIndexRows(const std::vector<ProseRow>& tierRows,
+                                             const std::vector<ProseRow>& loadoutRows,
+                                             int level, int movesOn, int moveSlots,
+                                             int modsOn, int modSlots, int buffs,
+                                             const char* line, int logEvents) {
+    std::vector<StatIndexRow> out;
+
+    out.push_back(indexRow("VITALS", false, 0, 0, "LVL %d", level));
+
+    int rungTotal = 0;
+    for (const ProseRow& r : tierRows)
+        if (!r.header) ++rungTotal;
+    out.push_back(indexRow("TIERS", false, 1, 0, "%d/%d",
+                           rungsHeld(tierRows, 0, static_cast<int>(tierRows.size())),
+                           rungTotal));
+    // One sub-row per stat, anchored at that stat's own heading: choosing MAX HEALTH
+    // opens TIERS with MAX HEALTH's rungs already on screen, which on a levelled pet is
+    // several scroll steps saved and the reason this page exists.
+    for (int i = 0; i < static_cast<int>(tierRows.size()); ++i) {
+        if (!tierRows[i].header) continue;
+        const int end = sectionEnd(tierRows, i);
+        out.push_back(indexRow(tierRows[i].label, true, 1, i, "%d/%d",
+                               rungsHeld(tierRows, i, end), end - i - 1));
+    }
+
+    out.push_back(indexRow("LOADOUT", false, 2, 0, "%d/%d", movesOn + modsOn,
+                           moveSlots + modSlots));
+    // The loadout's sections come off its own rows too, so an egg — whose page
+    // collapses to a single row and carries no headings — offers none of them.
+    for (int i = 0; i < static_cast<int>(loadoutRows.size()); ++i) {
+        if (!loadoutRows[i].header) continue;
+        const bool moves = std::strcmp(loadoutRows[i].label, "MOVES") == 0;
+        out.push_back(indexRow(loadoutRows[i].label, true, 2, i, "%d/%d",
+                               moves ? movesOn : modsOn,
+                               moves ? moveSlots : modSlots));
+    }
+
+    out.push_back(buffs > 0 ? indexRow("BUFFS", false, 3, 0, "%d", buffs)
+                            : indexRow("BUFFS", false, 3, 0, "NONE"));
+
+    // The line, upper-cased — the same tag the SPECIES page heads itself with.
+    char tag[14] = "";
+    if (line && line[0]) {
+        std::snprintf(tag, sizeof(tag), "%s", line);
+        for (char* c = tag; *c; ++c)
+            *c = static_cast<char>(std::toupper(static_cast<unsigned char>(*c)));
+    }
+    out.push_back(indexRow("SPECIES", false, 4, 0, "%s", tag));
+
+    out.push_back(logEvents > 0 ? indexRow("AUDIT LOG", false, 5, 0, "%d", logEvents)
+                                : indexRow("AUDIT LOG", false, 5, 0, "EMPTY"));
+
+    return out;
+}
+
+void drawStatIndex(Framebuffer& fb, const std::vector<StatIndexRow>& rows, int cursor,
+                   int beat) {
+    drawHeaderBand(fb, "STAT", "INDEX");
+
+    const int n = static_cast<int>(rows.size());
+    for (int i = 0; i < n; ++i) {
+        const StatIndexRow& r = rows[i];
+        const int y = kIndexRowTop + i * kIndexRowH;
+        if (i == cursor) {
+            fb.fillRect(4, y - 2, kActiveW - 8, kIndexRowH - 1, palColor(Pal::TRACK));
+            drawRowCursor(fb, 6, y, palColor(Pal::ACCENT));
+        }
+        // A section reads as part of the page above it: dimmer, and indented under it.
+        // The indent is the grayscale channel for that nesting — the dimming alone
+        // would not survive the gate.
+        const Rgb565 ink = r.sub ? palColor(Pal::INK_DIM) : palColor(Pal::INK);
+        const int x = r.sub ? kIndexSubX : kIndexLabelX;
+        drawLabelValue(fb, x, y, r.label, ink, r.value, palColor(Pal::INK_DIM), beat,
+                       i == cursor);
+    }
+
+    drawHintBand(fb, "A NEXT  B OPEN  C BACK");
 }
 
 } // namespace mal

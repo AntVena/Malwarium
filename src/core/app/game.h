@@ -63,11 +63,12 @@
 namespace mal {
 
 struct SpriteData;
-// STAT's two flowed prose pages (core/ui/stat_screen.h). Named here only as the
-// return type of the row builders below — the screen header itself stays in
-// game_render.cpp, per the include note above.
+// STAT's two flowed prose pages and the index over them (core/ui/stat_screen.h).
+// Named here only as the return type of the row builders below — the screen header
+// itself stays in game_stat.cpp, per the include note above.
 struct ProseRow;
 struct BuffRow;
+struct StatIndexRow;
 
 // How a Game starts. FreshHatch = empty save -> Decryption Hatch (the real
 // first boot). Hatched = skip straight to a raised pet (the test/dev
@@ -1803,6 +1804,19 @@ public:
     // filtering without driving the tap/hold timing.
     void debugSetItemFilter(ItemFilter f) { itemFilter_ = f; dirty_ = true; }
     ItemFilter itemFilter() const { return itemFilter_; }
+    // Where the STAT reader stands: which of the six pages, which row of it the window
+    // opens on, whether the INDEX is up, and its cursor. Read by the gates — the page a
+    // jump landed on and the row it anchored to are assertions about state, which a
+    // rendered frame states least directly.
+    int statPage() const { return statPage_; }
+    int statScroll() const { return statScroll_; }
+    StatScreen statScreen() const { return statScreen_; }
+    int statIndexRow() const { return statIndexRow_; }
+    // The INDEX's rows, marshalled from the two flowed pages' own rows plus the counts
+    // the LOADOUT hub already counts — so a readout on the index and the page it opens
+    // are one answer, not two. Public because the gates read the roster to find the row
+    // a jump should land on, the same way they read the pages' own row models.
+    std::vector<StatIndexRow> statIndexRows() const;
     // Which ITEMS L2 screen is showing, and the picker's tile cursor (tests / render).
     ItemsScreen itemsScreen() const { return itemsScreen_; }
     int itemPickRow() const { return itemPickRow_; }
@@ -2150,7 +2164,7 @@ private:
     // A/B/C contract untouched: an inline confirm, a detail page, a modal and a
     // minigame all answer None, so C stays the instant tap-to-cancel there.
     enum class ListFocus {
-        None, ItemsPicker, ItemsList, ArchPicker, ArchList, CfgList, CfgGroup,
+        None, StatIndex, ItemsPicker, ItemsList, ArchPicker, ArchList, CfgList, CfgGroup,
         ModSlots, LoadoutHub,
         ModPicker, MovePicker, Expl, Maint, Arcade, HackerShop, HackerServices,
         HackerVault, HackerPeers, CrewHub, CrewTeam, CrewPicker,
@@ -2174,6 +2188,22 @@ private:
     void leaveFocusedList();
 
     // Per-state input handlers.
+    // STAT's two screens (game_stat.cpp). On a page: A cycles the six, B advances the
+    // flowed ones by a window, C leaves. On the INDEX: A steps a row, B opens it at its
+    // anchor, C returns to the page it was opened from.
+    void onStatPage(const ButtonEvent& ev);
+    // Back to the reader's front door: VITALS, unscrolled, no index open. Every route
+    // that puts the player somewhere else — entering the slot, the tree collapsing, a
+    // Lockout resolving out from under the screen — goes through this, so "where STAT
+    // opens" is one answer rather than one per caller.
+    void resetStatReader();
+    void onStatIndex(const ButtonEvent& ev);
+    // Open the INDEX with the cursor already on whatever the reader is looking at, so
+    // the jump list opens as a map of where they ARE rather than at its own first row.
+    void openStatIndex();
+    // Resolves STAT's hold-B gesture's SHORT-press half, the twin of itemFilterReleaseB:
+    // a B that never reached kStatIndexHoldMs is the ordinary window advance.
+    void statIndexReleaseB();
     // The ITEMS type-picker (ItemsScreen::Picker): A steps the tile, B commits that
     // tile's filter and drills into the list, C leaves ITEMS entirely.
     void onItemsPicker(const ButtonEvent& ev);
@@ -3014,6 +3044,12 @@ private:
 
     // STAT: 0 vitals · 1 tiers · 2 loadout · 3 buffs · 4 species · 5 audit log
     int statPage_ = 0;
+    // Which STAT screen is on: one of those six, or the INDEX over them. STAT still
+    // OPENS on the page (VITALS), never on the index — hunger and frag are what the
+    // slot is entered for, and a menu in front of them would be a press charged to
+    // every visit to pay for the occasional long jump.
+    StatScreen statScreen_ = StatScreen::Page;
+    int statIndexRow_ = 0;
     // Row-window scroll offset for whichever of STAT's three flowed prose pages is
     // open (TIERS, LOADOUT and BUFFS) — B advances it, wrapping, when that page's rows
     // outrun one screen. ONE offset serves all three because a page change resets it
@@ -3026,6 +3062,8 @@ private:
     std::vector<ProseRow> statTierRows() const;
     std::vector<ProseRow> statLoadoutRows() const;
     std::vector<BuffRow> statBuffRows() const;
+    // The STAT screens' draws (game_stat.cpp), reached from drawSubmenu.
+    void drawStat(Framebuffer& fb) const;
     // {rows on screen starting at statScroll_, rows in total} for the open STAT page;
     // {0, 0} for a page that doesn't flow rows and so doesn't scroll.
     struct StatScrollSpan { int shown; int total; };

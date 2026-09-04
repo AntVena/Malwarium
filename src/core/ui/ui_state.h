@@ -33,6 +33,12 @@ enum class SubmenuId { Stat, Items, Games, Expl, Maint, Mods, Arch, Cfg };
 // so `Hub` is where C from any of the three returns to.
 enum class LoadoutTab { Hub, Mods, Moves, Practise };
 
+// Which STAT screen is open. The six paged readouts are one destination as far as the
+// engine is concerned (statPage_ picks between them); the INDEX is the other — the jump
+// list that fronts them, opened by holding B on any page and backed out of onto the page
+// it was opened from.
+enum class StatScreen { Page, Index };
+
 // Hacker-face slot ids. CREW/PROFILE/SHOP/VAULT/MERGE/PEERS are the designed slots;
 // SCAN/LINK render the inaccessible marker until designed. PROFILE, CREW, SHOP,
 // VAULT, and PEERS are live from the static table; MERGE starts statically

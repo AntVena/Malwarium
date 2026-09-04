@@ -33,50 +33,6 @@
 
 namespace mal {
 
-// --- STAT's flowed prose pages ---------------------------------------------
-
-std::vector<ProseRow> Game::statTierRows() const {
-    // TOTAL points, not earned ones: an Epic dish's off-level grant counts toward a rung
-    // exactly as an earned point does (applyLevelStatPoints resolves the tiers from the
-    // same sum), so the page has to read the stat the way the fight does.
-    int points[kLevelStatCount];
-    for (int i = 0; i < kLevelStatCount; ++i) points[i] = totalStatPoint(i);
-    return buildTierRows(points);
-}
-
-std::vector<ProseRow> Game::statLoadoutRows() const {
-    return buildLoadoutRows(registry_, moveLoadout_, loadout_,
-                            pet_ ? pet_->stage : Stage::BootSector, inEggPhase());
-}
-
-std::vector<BuffRow> Game::statBuffRows() const {
-    const uint32_t backupRemainMs =
-        backupShieldArmed() ? (backupShieldUntilMs_ - lifetimeUptimeMs()) : 0;
-    return buildBuffRows(registry_, mistakeShieldActive_, forceTrojanDivert_,
-                         backupShieldArmed(), backupRemainMs, deepWebDepthMultiplier_,
-                         pendingDeepWebStartDepth_ != -1,
-                         pendingDeepWebStartDepth_ == kDeepWebStartDepthUseBest,
-                         pendingDeepWebStartDepth_, evolveBranchOverride_,
-                         evolveSoakFactor_, evolveHold_, upgrades_);
-}
-
-Game::StatScrollSpan Game::statScrollSpan() const {
-    if (!pet_) return {0, 0};
-    if (statPage_ == 1) {
-        const std::vector<ProseRow> rows = statTierRows();
-        return {tierRowsFitting(rows, statScroll_), static_cast<int>(rows.size())};
-    }
-    if (statPage_ == 2) {
-        const std::vector<ProseRow> rows = statLoadoutRows();
-        return {loadoutRowsFitting(rows, statScroll_), static_cast<int>(rows.size())};
-    }
-    if (statPage_ == 3) {
-        const std::vector<BuffRow> rows = statBuffRows();
-        return {buffRowsFitting(rows, statScroll_), static_cast<int>(rows.size())};
-    }
-    return {0, 0};
-}
-
 // --- Render ----------------------------------------------------------------
 
 void Game::render(Framebuffer& fb) const {
@@ -629,31 +585,8 @@ bool Game::captureBadge(char* out, unsigned n) const {
 
 void Game::drawSubmenu(Framebuffer& fb) const {
     switch (enteredId()) {
-        case SubmenuId::Stat:
-            if (pet_) {
-                // 6 pages: 0 pet vitals (the landing) · 1 the investment ladder —
-                // which stat tiers this pet holds and what the next costs · 2 the
-                // equipped loadout (moves + mods, WITH their effect text) ·
-                // 3 currently-armed item buffs · 4 the pet's own species lore ·
-                // 5 audit log. A cycles; C backs out.
-                if (statPage_ == 0)
-                    drawStatScreen(fb, model_, pet_->displayName, pet_->stage,
-                                   generation_, combatLevel_, combatXp_,
-                                   xpToNextLevel(), beat_, hasNextEvolution(),
-                                   evolveRemainMs());
-                else if (statPage_ == 1)
-                    drawTiersScreen(fb, statTierRows(), statScroll_, beat_);
-                else if (statPage_ == 2)
-                    drawLoadoutScreen(fb, statLoadoutRows(), statScroll_, beat_);
-                else if (statPage_ == 3)
-                    drawBuffsScreen(fb, statBuffRows(), statScroll_, beat_);
-                else if (statPage_ == 4)
-                    drawSpeciesScreen(fb, pet_->displayName, pet_->line, pet_->hint,
-                                      pet_->context, beat_);
-                else
-                    drawAuditLog(fb, log_, beat_);
-            }
-            break;
+        // STAT's own two screens and the six pages behind them are game_stat.cpp's.
+        case SubmenuId::Stat: drawStat(fb); break;
         case SubmenuId::Items: {
             if (itemsScreen_ == ItemsScreen::Picker) {
                 drawItemTypePicker(fb, buildItemPickerRows(registry_, inventory_),

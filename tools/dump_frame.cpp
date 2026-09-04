@@ -387,7 +387,8 @@ int main(int argc, char** argv) {
     } else if (hasFlag(argc, argv, "stat")) {
         // STAT is 6 paged screens: 0 vitals (landing) · 1 tiers · 2 loadout ·
         // 3 buffs · 4 species · 5 audit log. "stat" alone shows vitals; "tiers"/
-        // "loadout"/"buffs"/"species"/"log" step to pages 1-5.
+        // "loadout"/"buffs"/"species"/"log" step to pages 1-5; "index" then holds B to
+        // open the jump list over them.
         game.debugSetBits(1450);
         game.debugSetNetworksSeen(27);       // R2, partway to R3
         enterSlot(SubmenuId::Stat);
@@ -401,10 +402,21 @@ int main(int argc, char** argv) {
         // "scroll:<n>" then takes B n times, which on the three flowed pages
         // (TIERS/LOADOUT/BUFFS) advances the row window — the way to see the rows past
         // the first screenful, and that the last window lands clear of the hint band.
+        // A COMPLETE press: B is a tap/hold pair on these pages and the advance settles
+        // on the release.
         for (int i = 3; i < argc; ++i)
             if (std::strncmp(argv[i], "scroll:", 7) == 0)
-                for (int n = std::atoi(argv[i] + 7); n > 0; --n)
+                for (int n = std::atoi(argv[i] + 7); n > 0; --n) {
                     game.onButton({Button::B, true, false});
+                    game.onButton({Button::B, false, false});
+                }
+        // ...and "index" holds B past the dwell instead, which opens the INDEX over
+        // whichever page the flags above landed on.
+        if (hasFlag(argc, argv, "index")) {
+            game.onButton({Button::B, true, false});
+            uint32_t t = static_cast<uint32_t>(beats) * kHeartbeatMs;
+            game.tick(t + kStatIndexHoldMs + kHeartbeatMs);
+        }
     } else if (hasFlag(argc, argv, "cache")) {
         // Cache yield reveal: open a rarity-tiered cache and land on the
         // Nav::CacheYield screen naming what came out. `epic` = the 2-item tier.

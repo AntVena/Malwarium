@@ -559,9 +559,9 @@ bool Game::tickLifecycle(uint32_t nowMs) {
 }
 
 // Every held-button gesture, resolved on the DWELL rather than on an edge: A's list
-// repeat and C's step-back (tickListNav, game_listnav.cpp), and the five hold-B second
-// actions — the CFG factory reset, the ITEMS type filter, the MOVES show-all, ROCK THE
-// DOCK's scout sheet and the VAULT bulk open. They share bHeld_/bDownMs_, so each is
+// repeat and C's step-back (tickListNav, game_listnav.cpp), and the hold-B second
+// actions — the CFG factory reset, the ITEMS type filter, STAT's index, the MOVES
+// show-all, ROCK THE DOCK's scout sheet and the VAULT bulk open. They share bHeld_/bDownMs_, so each is
 // scoped tightly enough that no two can be in flight at once, and each clears bHeld_ as
 // it fires so the release resolves as nothing rather than as the tap underneath it.
 bool Game::tickHeldGestures(uint32_t nowMs) {
@@ -606,6 +606,21 @@ bool Game::tickHeldGestures(uint32_t nowMs) {
         listRow_ = firstSelectableRow(rows);
         if (listRow_ < 0) listRow_ = 0;
         lastInputMs_ = nowMs_;   // the cycle counts as activity (no defocus race)
+        changed = true;
+    }
+
+    // STAT's hold-B gesture, the same shape as the ITEMS one above: crossing
+    // kStatIndexHoldMs on any of the reader's six pages opens the INDEX over them, with
+    // the cursor already on the page being read (openStatIndex). A release before it
+    // fires resolves as the ordinary tap instead — advance this page's window
+    // (statIndexReleaseB) — which is what keeps the hold related to the tap under it:
+    // both are "show me a different part of this", at two ranges.
+    if (bHeld_ && nav_ == Nav::Submenu && face_ == Face::Pet &&
+        enteredId() == SubmenuId::Stat && statScreen_ == StatScreen::Page &&
+        nowMs_ - bDownMs_ >= kStatIndexHoldMs) {
+        bHeld_ = false;
+        openStatIndex();
+        lastInputMs_ = nowMs_;
         changed = true;
     }
 

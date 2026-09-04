@@ -603,6 +603,11 @@ constexpr uint32_t kTourneyScoutHoldMs = 800;
 constexpr uint32_t kServiceInfoHoldMs = 800;
 constexpr uint32_t kBulkOpenHoldMs = 800;     // Hacker VAULT: bulk-opens the focused
                                               // row's rarity (the Rig Shop's Bulk-Open unlock gates this)
+// STAT: holding B past this opens the INDEX — the jump list over the reader's six pages
+// and their sections — instead of advancing the open page by a window. Same 800ms, and
+// the same relationship to its tap as the rest: the tap moves you through what is on
+// screen, the hold moves you anywhere.
+constexpr uint32_t kStatIndexHoldMs = 800;
 // The list step's repeat. A is "next" on every list on the device, and a list long
 // enough to scroll is a list you should not have to tap thirty times to cross — so
 // holding A past the delay keeps stepping until it is released, on every list whose A

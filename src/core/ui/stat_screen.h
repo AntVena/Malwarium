@@ -1,4 +1,5 @@
-// stat_screen.h — STAT: a 6-page status viewer (read-only).
+// stat_screen.h — STAT: a 6-page status viewer (read-only) and the INDEX that jumps
+// between the pages.
 //   page 0  VITALS    the pet: gauges + care + level/XP + time-to-evolve (the landing)
 //   page 1  TIERS     the investment ladder: each combat stat's points, the rungs it
 //                     has reached and what the next one costs
@@ -7,7 +8,8 @@
 //                     Drive), each with its effect text and remaining time if timed
 //   page 4  SPECIES   the pet's own lore — line, one-line snarky hint, infosec ref
 //   page 5  AUDIT LOG the rolling event history
-// A cycles the pages; C backs out. Each page dual-codes (grayscale-legible).
+// A cycles the pages, B scrolls the flowed ones, HOLD B opens the INDEX and C backs
+// out. Each page dual-codes (grayscale-legible).
 // STAT is pet-only. The device/account stats (Hacker Rank, Bits, lifetime breadth)
 // live on the Hacker PROFILE slot (game_hacker.cpp), not here.
 #pragma once
@@ -28,6 +30,10 @@ class Framebuffer;
 class ContentRegistry;
 class MoveLoadout;
 class Loadout;
+
+// The pages A cycles, and the dots the header's pager draws — one number, so a page
+// added to the roster can never leave the pager short.
+inline constexpr int kStatPages = 6;
 
 // Build the LOADOUT page's rows (ProseRow, core/ui/prose_page.h — the shared
 // name+prose flow this page, BUFFS, and ROCK THE DOCK's opponent sheet all use): a
@@ -105,6 +111,12 @@ struct BuffRow {
     EffectText effect;     // the item's description, its magnitudes substituted in
     bool hasTimer;         // true only for a time-limited buff (Backup Drive)
     uint32_t remainingMs;  // valid only when hasTimer
+    // A section heading (ARMED / PERMANENT) rather than a buff: no effect text, no
+    // timer, and it opens a window of its own the way a ProseRow header does
+    // (prose_page.h). The two kinds answer different questions — what is running out,
+    // and what this pet simply has now — and the page is unreadable as one flat list
+    // that mixes them.
+    bool header = false;
 };
 
 // Build the BUFFS page's rows from the armed-buff state Game tracks as plain
@@ -170,7 +182,59 @@ void drawSpeciesScreen(Framebuffer& fb, const char* name, const char* line,
 
 // STAT page 5 — AUDIT LOG: the rolling event history newest-first, each
 // a type glyph + terse text. The lifetime/uptime footer lives on the Hacker
-// PROFILE slot, so this page is the log alone and shows more rows.
+// PROFILE slot, so this page is the log alone and shows the whole ring.
 void drawAuditLog(Framebuffer& fb, const EventLog& log, int beat);
+
+// --- The INDEX -------------------------------------------------------------
+//
+// One row per destination in STAT, with the readout that destination is about beside
+// it. It is the random-access half of the section: the A-cycle walks the six pages in
+// their fixed order, which is a lap of the whole reader to reach the last of them, and
+// on a levelled pet each flowed page is several screens deep on top of that.
+//
+// The readouts are the other half of the point. A row that says "TIERS 7/12" has
+// answered the question that would otherwise cost the page open plus a scroll, so the
+// index is a status screen the way the LOADOUT hub (mods_screen.h) is — you enter a
+// page when the summary is not enough, not to find out whether it is.
+
+// One index destination: a page, and the row of that page to open it AT.
+//
+// `anchor` is what makes a section reachable in one selection rather than in a page
+// open plus n scroll steps: it is an index into the flowed page's own rows
+// (buildTierRows / buildLoadoutRows), so choosing MAX HEALTH opens TIERS with MAX
+// HEALTH's heading at the top of the window. 0 on the pages that do not flow rows.
+// `sub` rows are the sections INSIDE a page (a stat's rungs, the MOVES half of a
+// loadout) and draw indented under the row that names their page.
+// `label` is borrowed — every producer names a string literal or a row label that
+// outlives the frame — and `value` is formatted, so it is stored.
+struct StatIndexRow {
+    const char* label = "";
+    char value[14] = {0};
+    bool sub = false;
+    int page = 0;
+    int anchor = 0;
+};
+
+// Build the INDEX from what the pages themselves report, so the two can never
+// disagree: the TIERS rows carry the rungs held, the LOADOUT rows carry the sections,
+// and the counts beside MOVES/MODS are the ones the LOADOUT hub already counts
+// (`movesOn`/`moveSlots`, `modsOn`/`modSlots`). `line` is the raw line id, upper-cased
+// for the SPECIES row; `buffs` and `logEvents` are the two roster sizes.
+//
+// The sub-rows are derived from the header rows of the two flowed pages rather than
+// listed here, which is what keeps an egg's collapsed LOADOUT (one "- NO LOADOUT -"
+// row, no headers) from offering sections it does not have.
+std::vector<StatIndexRow> buildStatIndexRows(const std::vector<ProseRow>& tierRows,
+                                             const std::vector<ProseRow>& loadoutRows,
+                                             int level, int movesOn, int moveSlots,
+                                             int modsOn, int modSlots, int buffs,
+                                             const char* line, int logEvents);
+
+// The INDEX: `rows` from top to bottom, the focused one banded, each with its readout
+// right-aligned. The roster has a ceiling (six pages, four stats, two loadout halves)
+// and the pitch is set so all of it fits one screen — nothing here scrolls, which is
+// the whole reason it is worth opening.
+void drawStatIndex(Framebuffer& fb, const std::vector<StatIndexRow>& rows, int cursor,
+                   int beat);
 
 } // namespace mal
