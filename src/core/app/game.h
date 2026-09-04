@@ -333,9 +333,12 @@ public:
     // Flip one owned service. A row that isn't an owned service has no switch to throw,
     // so this is inert on it rather than storing a bit nothing reads.
     void toggleRigService(int row);
-    // The SHOP is two screens behind one slot, the shape CREW's views take: the
-    // storefront list, and the SERVICES switchboard the head slot opens.
-    enum class ShopView : uint8_t { Rows, Services };
+    // The SHOP is three screens behind one slot, the shape CREW's views take: the
+    // storefront list, the SERVICES switchboard the head slot opens, and one service's
+    // info page — what it does and what a run of it costs — which a HELD B opens from
+    // the board, since a switch thrown months after the purchase is the one a player
+    // no longer remembers the terms of.
+    enum class ShopView : uint8_t { Rows, Services, ServiceInfo };
     ShopView shopView() const { return shopView_; }
     // The SHOP list's cursor: a RigRow, or kRigSlotServices on the head slot. A slot,
     // not a row POSITION — the two differ by every row the list is filtering out.
@@ -2513,9 +2516,25 @@ private:
     void enterHackerSubmenu();                      // Cursor B → the focused hacker slot's L2
     void onHackerSubmenu(const ButtonEvent& ev);   // L2 dispatch (PROFILE viewer / SHOP / VAULT)
     void onHackerShop(const ButtonEvent& ev);      // SHOP list: A cycle · B buy · C back
-    // SHOP > SERVICES: A cycles the owned services, B flips the focused one, C returns
-    // to the storefront list. Reached from the list's head slot (kRigSlotServices).
+    // SHOP > SERVICES: A cycles the owned services, C returns to the storefront list,
+    // and B is a tap/hold pair — a tap flips the focused service (resolved on the
+    // RELEASE edge, rigServiceReleaseB), a hold past kServiceInfoHoldMs opens its info
+    // page instead (tick()). Reached from the list's head slot (kRigSlotServices).
     void onRigServices(const ButtonEvent& ev);
+    // SHOP > SERVICES > info: A pages the prose when it overflows, B and C both go back
+    // to the board. A reader, not a list — nothing here is selected.
+    void onRigServiceInfo(const ButtonEvent& ev);
+    // B's TAP on the SERVICES board, resolved on the release edge: flip the focused
+    // service. No-op unless bHeld_ is still armed (the hold already opened the info
+    // page and cleared it) and the board is still what's on screen.
+    void rigServiceReleaseB();
+    // The info page's readout: the row's own rigSpec, plus the live per-run price only
+    // the game can state. Shared by the renderer and by A's paging, which has to know
+    // how tall the readout is to know how much room the description has left.
+    SpecRows rigServiceSpec(int row) const;
+    int rigServiceProseLines(int row) const;   // description lines that fit under it
+    // Open the focused service's info page (the hold half of that gesture).
+    void openRigServiceInfo();
     // Step the SHOP list's cursor `dir` slots, wrapping over the head SERVICES slot and
     // every offered row. The one walk the A-cycle, the hold-repeat and the post-buy
     // re-aim all share, so no two of them can disagree about what is on the list.
@@ -3695,8 +3714,9 @@ private:
     // SHOP list cursor.
     Face face_ = Face::Pet;
     int hackerShopRow_ = 0;   // SHOP list cursor: a RigRow, or kRigSlotServices
-    ShopView shopView_ = ShopView::Rows;   // which of the SHOP's two screens is up
+    ShopView shopView_ = ShopView::Rows;   // which of the SHOP's three screens is up
     int rigServiceRow_ = 0;                // cursor within the SERVICES list
+    int rigServiceScroll_ = 0;             // first prose line the info page draws
     int hackerVaultRow_ = 0;  // VAULT list cursor — owned sealed-cache row
     int hackerMergeRow_ = 0;  // MERGE HUB list cursor — recipe row
     // CREW screen state. The screen is four views and `crewView_` IS the navigation:

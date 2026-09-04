@@ -640,6 +640,19 @@ bool Game::tickHeldGestures(uint32_t nowMs) {
         changed = true;
     }
 
+    // The SHOP > SERVICES hold-B gesture: crossing kServiceInfoHoldMs opens the focused
+    // service's info page — what it does, and what a run of it costs — instead of
+    // switching it. Clearing bHeld_ here is what makes the release resolve as the
+    // ordinary tap (rigServiceReleaseB, the flip) only when the hold never landed.
+    if (bHeld_ && face_ == Face::Hacker && nav_ == Nav::Submenu &&
+        enteredHackerId() == HackerSlotId::Shop && shopView_ == ShopView::Services &&
+        nowMs_ - bDownMs_ >= kServiceInfoHoldMs) {
+        bHeld_ = false;
+        openRigServiceInfo();
+        lastInputMs_ = nowMs_;
+        changed = true;
+    }
+
     // e: the Hacker VAULT hold-B gesture (reuses bHeld_/bDownMs_ — VAULT
     // doesn't otherwise hold-B). Once owned, crossing kBulkOpenHoldMs bulk-opens
     // every owned cache sharing the focused row's rarity in one action; a release

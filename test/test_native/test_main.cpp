@@ -296,6 +296,7 @@ int g_failures = 0;
     RUN(test_hacker_shop_bandwidth_upgrade)       \
     RUN(test_rig_link_aggregator_regen)         \
     RUN(test_rig_services_switchboard)            \
+    RUN(test_rig_service_info_on_hold_b)          \
     RUN(test_rig_disk_maintenance_thresholds)     \
     RUN(test_rig_cost_curve_formulas)              \
     RUN(test_hacker_shop_rack_slot_upgrade)       \

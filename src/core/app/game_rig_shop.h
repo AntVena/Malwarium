@@ -316,6 +316,13 @@ struct RigUpgradeDef {
     // a row that only ever raises a number or arms a gesture the player still performs,
     // which has nothing to switch off. Trailing, so a row that isn't one says nothing.
     bool service = false;
+    // What that service does and what RUNNING it costs, in prose — the description
+    // half of the info page a held B opens on the SERVICES board (drawSpecSheet's
+    // authored text, under the row's own readout). It is written for a player deciding
+    // whether to switch something back on months after buying it, so it says the price
+    // of a run and not only the effect. Only a service carries one: a row still on sale
+    // explains itself with its readout and the price on its tag.
+    const char* serviceInfo = nullptr;
 };
 
 // This readout's value at purchase level `lvl`.
@@ -399,11 +406,17 @@ inline const RigUpgradeDef kRigUpgrades[] = {
 
     {"auto_backup", "AUTO BACKUP", 1, RigCostCurve::kFixed, kRigAutoBackupCost, 0,
      RigEffectKind::None, 0, "BOUGHT AUTO BACKUP", {{"DEATH SAVE ON EXPLORE"}},
-     /*service=*/true},
+     /*service=*/true,
+     "Arms the Backup Drive death-save when a walk starts, without spending a drive "
+     "from the VAULT. Free to run: one fatal hit a run is survived. Idle while a save "
+     "is already up."},
 
     {"continuous_backup", "CONTINUOUS AUTO-BACKUP", 1, RigCostCurve::kFixed,
      kRigContinuousBackupCost, 0, RigEffectKind::None, 0, "BOUGHT CONT. BACKUP",
-     {{"RE-ARM SAVE MID-RUN"}}, /*service=*/true},
+     {{"RE-ARM SAVE MID-RUN"}}, /*service=*/true,
+     "Puts that save back up at every resolved explore event, so a whole walk is "
+     "covered and not just its first fight. Also free to run, and never doubles up on "
+     "a save still standing."},
 
     // Two readouts: buying a tier both lowers the Fragmentation it steps in at and
     // raises the per-run upkeep. Before tier 1 the trigger reads OFF and the upkeep
@@ -414,7 +427,10 @@ inline const RigUpgradeDef kRigUpgrades[] = {
        kDiskMaintenanceMaxTier, "%d+", "OFF"},
       {"UPKEEP", RigValueCurve::Tiers, 0, 0, kDiskMaintenanceCostMult,
        kDiskMaintenanceMaxTier, "x%d"}},
-     /*service=*/true},
+     /*service=*/true,
+     "Defrags the pet between explore events once Fragmentation reaches this tier's "
+     "mark. Bills the upkeep multiple above times this pet's own defrag price, which "
+     "climbs with every defrag it has had. Skipped when the wallet is short."},
 
     {"hunger_xp_rate", "PASSIVE XP FARMING", kHungerXpRateMax, RigCostCurve::kLogStep,
      kHungerXpRateStart, 0, RigEffectKind::None, 0, "BOUGHT XP FARMING LVL",

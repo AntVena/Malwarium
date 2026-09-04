@@ -14,6 +14,7 @@
 #include "core/ui/carousel.h"
 #include "core/ui/items_screen.h"
 #include "core/ui/layout.h"
+#include "core/ui/spec_sheet.h"
 #include "core/ui/theme.h"
 #include "core/ui/widgets.h"
 
@@ -41,6 +42,23 @@ namespace {
 
 // Every slot the SHOP list shows, in list order: the SERVICES head slot (once the
 // player owns a service to switch), then every row with something left to buy.
+// Append one row to a readout rigSpec has already built. The SERVICES info page says
+// what a run COSTS right now — a live number off the pet's own defrag tally, which a
+// static content table cannot carry — beside the magnitudes the row itself declares.
+void appendSpecRow(SpecRows& s, const char* label, const char* fmt, int v) {
+    const int cap = static_cast<int>(sizeof(s.rows) / sizeof(s.rows[0]));
+    if (s.count >= cap) return;
+    SpecRow& r = s.rows[s.count++];
+    std::snprintf(r.label, sizeof(r.label), "%s", label);
+    std::snprintf(r.value, sizeof(r.value), fmt, v);
+}
+
+// The SERVICES info page's geometry. The description is the elastic half and pages on
+// A, so the renderer and the pager have to agree on how much of it is on screen — these
+// are what they agree through (the shape CREW's detail page uses).
+constexpr int kSvcInfoTop = 30;
+constexpr int kSvcInfoProseBottom = kActiveH - kHintBandH;
+
 int shopSlots(const Game& g, int* out, int max) {
     int n = 0;
     if (g.rigServicesOffered() && n < max) out[n++] = kRigSlotServices;
@@ -112,6 +130,7 @@ void Game::enterHackerSubmenu() {
     hackerShopRow_ = 0;      // the first PURCHASABLE row; SERVICES sits above it
     shopView_ = ShopView::Rows;
     rigServiceRow_ = 0;
+    rigServiceScroll_ = 0;
     hackerVaultRow_ = 0;
     hackerMergeRow_ = 0;
     crewView_ = CrewView::Hub;   // every entry opens at the top of the CREW screen
@@ -170,7 +189,8 @@ int Game::nextShopSlot(int cur, int dir) const {
 }
 
 void Game::onHackerShop(const ButtonEvent& ev) {
-    // The SHOP is two screens behind one slot; SERVICES owns the buttons while it is up.
+    // The SHOP is three screens behind one slot; whichever is up owns the buttons.
+    if (shopView_ == ShopView::ServiceInfo) { onRigServiceInfo(ev); return; }
     if (shopView_ == ShopView::Services) { onRigServices(ev); return; }
     if (ev.button == Button::A) {
         hackerShopRow_ = nextShopSlot(hackerShopRow_, +1);   // skip unoffered
@@ -206,8 +226,75 @@ void Game::onRigServices(const ButtonEvent& ev) {
         rigServiceRow_ = (rigServiceRow_ + 1) % n;
         dirty_ = true;
     } else if (ev.button == Button::B) {
-        toggleRigService(rows[rigServiceRow_]);
+        // B is a tap/hold pair here (the shape the VAULT's bulk-open and the ITEMS
+        // filter take): ARM on the press, and let the release flip the switch or the
+        // hold open the info page. Nothing happens on the press itself, because the
+        // two things B can mean are decided by how long it is held.
+        bHeld_ = true;
+        bDownMs_ = nowMs_;
     }
+}
+
+void Game::rigServiceReleaseB() {
+    if (!(face_ == Face::Hacker && nav_ == Nav::Submenu &&
+          enteredHackerId() == HackerSlotId::Shop && shopView_ == ShopView::Services))
+        return;   // bHeld_ was armed elsewhere (the VAULT / CFG holds) — no-op
+    int rows[kRigUpgradeCount];
+    const int n = rigServiceRows(rows, kRigUpgradeCount);
+    if (n == 0) return;
+    if (rigServiceRow_ >= n) rigServiceRow_ = 0;
+    toggleRigService(rows[rigServiceRow_]);
+}
+
+SpecRows Game::rigServiceSpec(int row) const {
+    SpecRows spec = rigSpec(kRigUpgrades[row], rigLevel_[row]);
+    // Disk Maintenance's UPKEEP multiple is only half of a price: what a run costs is
+    // that multiple of THIS pet's defrag price, which climbs with every defrag the pet
+    // has had. The multiple is on the row; only the game knows the rest.
+    if (row == kRigRowDiskMaintenance && diskMaintenanceLevel() > 0)
+        appendSpecRow(spec, "PER RUN", "%d BITS",
+                      defragCost() * kDiskMaintenanceCostMult[diskMaintenanceLevel() - 1]);
+    return spec;
+}
+
+int Game::rigServiceProseLines(int row) const {
+    const int top = kSvcInfoTop + rigServiceSpec(row).count * kLineH + kSpecBlockGap;
+    const int room = (kSvcInfoProseBottom - top) / kLineH;
+    return room > 0 ? room : 0;
+}
+
+void Game::openRigServiceInfo() {
+    int rows[kRigUpgradeCount];
+    const int n = rigServiceRows(rows, kRigUpgradeCount);
+    if (n == 0) return;
+    if (rigServiceRow_ >= n) rigServiceRow_ = 0;
+    shopView_ = ShopView::ServiceInfo;
+    rigServiceScroll_ = 0;      // a page always opens at the top of its description
+    dirty_ = true;
+}
+
+void Game::onRigServiceInfo(const ButtonEvent& ev) {
+    // A reader: A pages a description too long for the panel and WRAPS at the end, so
+    // one that fits never moves and one that doesn't always comes back to its start.
+    // The bound is the room the renderer will give it (rigServiceProseLines), not a
+    // guess — the two would otherwise disagree about where the last page is.
+    if (ev.button == Button::A) {
+        int rows[kRigUpgradeCount];
+        const int n = rigServiceRows(rows, kRigUpgradeCount);
+        if (n > 0) {
+            const int row = rows[rigServiceRow_ < n ? rigServiceRow_ : 0];
+            const int room = rigServiceProseLines(row);
+            const int lines = proseLineCount(kActiveW - 2 * kMargin,
+                                             kRigUpgrades[row].serviceInfo);
+            if (room > 0 && lines > room)
+                rigServiceScroll_ = (rigServiceScroll_ + 1) % (lines - room + 1);
+        }
+        dirty_ = true;
+        return;
+    }
+    shopView_ = ShopView::Services;
+    rigServiceScroll_ = 0;
+    dirty_ = true;
 }
 
 void Game::toggleRigService(int row) {
@@ -415,6 +502,44 @@ void Game::drawHackerHome(Framebuffer& fb, int cursor) const {
 }
 
 void Game::drawHackerSubmenu(Framebuffer& fb) const {
+    if (enteredHackerId() == HackerSlotId::Shop && shopView_ == ShopView::ServiceInfo) {
+        // SHOP > SERVICES > info — the spec sheet every "what does this do" panel uses
+        // (ui/spec_sheet.h): the row's own readout, bounded and never cut, over the
+        // authored description of what running it costs. Reached by HOLDING B on the
+        // board, so a player about to throw a switch can read the terms first.
+        int rows[kRigUpgradeCount];
+        const int n = rigServiceRows(rows, kRigUpgradeCount);
+        if (n == 0) {
+            drawHeaderBand(fb, "SERVICE");
+            drawText(fb, kMargin, 40, "NO SERVICES OWNED", palColor(Pal::INK_DIM));
+            return;
+        }
+        const int row = rows[rigServiceRow_ < n ? rigServiceRow_ : 0];
+        const RigUpgradeDef& def = kRigUpgrades[row];
+        const bool on = rigFeatureActive(row);
+        // The header names the service and states the switch, so the panel underneath is
+        // all description — the page is opened to READ, and a name line inside it would
+        // cost a line of the thing being read.
+        drawHeaderBand(fb, def.displayName, on ? "ON" : "OFF",
+                       on ? palColor(Pal::ACCENT) : palColor(Pal::INK_DIM));
+
+        const SpecRows spec = rigServiceSpec(row);
+        SpecSheet sheet;
+        sheet.rows = spec.rows;
+        sheet.rowCount = spec.count;
+        sheet.prose = def.serviceInfo;
+        sheet.proseScroll = rigServiceScroll_;
+        drawSpecSheet(fb, kMargin, kSvcInfoTop, kActiveW - 2 * kMargin,
+                      kSvcInfoProseBottom, sheet);
+        // A pages a description that doesn't fit; with nothing more to show, the band
+        // offers only the way out — so the hint never advertises a page that isn't there.
+        const int room = rigServiceProseLines(row);
+        const bool pages =
+            room > 0 && proseLineCount(kActiveW - 2 * kMargin, def.serviceInfo) > room;
+        drawHintBand(fb, pages ? "A PAGE  C BACK" : "C BACK");
+        return;
+    }
+
     if (enteredHackerId() == HackerSlotId::Shop && shopView_ == ShopView::Services) {
         // SHOP > SERVICES — the switchboard behind the list's head slot. One row per
         // OWNED service (rigServiceRows), each reading ON or OFF; A cycles, B flips the
@@ -464,6 +589,10 @@ void Game::drawHackerSubmenu(Framebuffer& fb) const {
         fb.fillRect(0, kActiveH - 26, kActiveW, 1, palColor(Pal::TRACK));
         drawText(fb, kMargin, kActiveH - 20,
                  rigFeatureActive(rows[sel]) ? "B STOP" : "B START", palColor(Pal::ACCENT));
+        // The other half of B, stated where the tap is: a HELD B reads the service out
+        // rather than switching it.
+        drawText(fb, kActiveW - kMargin - textWidth("HOLD - WHAT IT DOES"),
+                 kActiveH - 20, "HOLD - WHAT IT DOES", palColor(Pal::INK_DIM));
         return;
     }
 

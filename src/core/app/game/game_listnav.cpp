@@ -54,6 +54,9 @@ Game::ListFocus Game::listFocus() const {
             case HackerSlotId::Shop:
                 // Two screens behind one slot, the shape CREW's views take: the
                 // storefront list, and the SERVICES switchboard its head slot opens.
+                // The info page is a READER — nothing on it is selected, so it takes
+                // no row contract and C stays the instant tap-to-back it is elsewhere.
+                if (shopView_ == ShopView::ServiceInfo) return ListFocus::None;
                 return shopView_ == ShopView::Services ? ListFocus::HackerServices
                                                        : ListFocus::HackerShop;
             case HackerSlotId::Vault: return ListFocus::HackerVault;

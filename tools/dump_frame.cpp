@@ -145,6 +145,7 @@
 #include "core/content/content_arcade.h"
 #include "core/content/content_crews.h"   // kCrews — the widest name the PROFILE holds
 #include "core/app/game_internal.h"   // kMergeRecipeCount — the MERGE HUB dump wins them all
+#include "core/app/game_rig_shop.h"    // kRigSlotServices — the SHOP's SERVICES head slot
 #include "core/model/hacker_rank.h"   // the rank ladder, for the widest title on it
 #include "core/render/canvas.h"
 #include "core/render/font.h"         // textWidth — picking the widest of a table
@@ -954,7 +955,39 @@ int main(int argc, char** argv) {
             // "hub" buys the MERGE HUB first — the way to see the list with and
             // without it. "row:<n>" then A-cycles down to reach a given row.
             if (hasFlag(argc, argv, "hub")) { game.debugSetBits(99999); game.debugBuyMergeHub(); }
+            // "services" buys the two rows that RUN on their own, which is what puts
+            // the SERVICES head slot on the list; A-cycling onto it and holding B opens
+            // one service's info page ("info"), the third of the SHOP's screens.
+            const bool services = hasFlag(argc, argv, "services");
+            if (services) {
+                game.debugSetBits(999999);
+                game.debugBuyAutoBackup();
+                game.debugBuyRigRow(kRigRowDiskMaintenance);
+            }
             enterHackerSlot(HackerSlotId::Shop);
+            if (services) {
+                for (int k = 0; k <= kRigUpgradeCount &&
+                                game.shopSlot() != kRigSlotServices; ++k)
+                    game.onButton({Button::A, true, false});
+                if (hasFlag(argc, argv, "board") || hasFlag(argc, argv, "info")) {
+                    game.onButton({Button::B, true, false});
+                    game.onButton({Button::B, false, false});
+                }
+                if (hasFlag(argc, argv, "info")) {
+                    // The DISK MAINTENANCE page is the one with something to read: a
+                    // billed service, and the only readout with a live price on it. A
+                    // is LIFTED, not left down — a held A repeats its step (the list
+                    // contract), and the tick that fires the hold below would walk the
+                    // cursor off the row this is trying to reach.
+                    game.onButton({Button::A, true, false});
+                    game.onButton({Button::A, false, false});
+                    uint32_t t = 0;
+                    game.tick(t);
+                    game.onButton({Button::B, true, false});
+                    game.tick(t += kServiceInfoHoldMs + kHeartbeatMs);
+                    game.onButton({Button::B, false, false});
+                }
+            }
             for (int i = 3; i < argc; ++i)
                 if (std::strncmp(argv[i], "row:", 4) == 0)
                     for (int k = std::atoi(argv[i] + 4); k > 0; --k)

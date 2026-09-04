@@ -33,6 +33,7 @@ void Game::onButton(const ButtonEvent& ev) {
             const bool wasHeld = bHeld_;
             if (wasHeld) {
                 vaultBulkReleaseB();
+                rigServiceReleaseB();
                 itemFilterReleaseB();
                 moveFilterReleaseB();
                 tourneyReleaseB();

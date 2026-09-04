@@ -461,6 +461,60 @@ void test_rig_services_switchboard() {
     CHECK(g2.rigFeatureActive(kRigRowAutoBackup));
 }
 
+// SHOP > SERVICES, the other half of B: a HELD B reads the focused service out —
+// what it does and what a run of it costs — instead of switching it, so a switch
+// thrown long after the purchase is thrown knowingly. A tap still switches.
+void test_rig_service_info_on_hold_b() {
+    Game g{StartMode::Hatched};
+    g.debugSetBits(kRigAutoBackupCost + kDiskMaintenanceBuyStart);
+    g.debugBuyAutoBackup();
+    g.debugBuyRigRow(kRigRowDiskMaintenance);
+    openServices(g);
+    uint32_t t = 0;
+    g.tick(t);
+
+    // Held past the threshold: the info page opens and the service is untouched.
+    g.onButton(press(Button::B));                       // arm — nothing flips yet
+    CHECK(g.shopView() == Game::ShopView::Services);
+    g.tick(t += kServiceInfoHoldMs + kHeartbeatMs);
+    CHECK(g.shopView() == Game::ShopView::ServiceInfo);
+    CHECK(g.rigFeatureActive(kRigRowAutoBackup));       // ...still running
+    g.onButton(lift(Button::B));                        // release after the fire: no-op
+    CHECK(g.rigFeatureActive(kRigRowAutoBackup));
+
+    // Every service carries the description that page is for, and it draws.
+    int rows[kRigUpgradeCount];
+    const int n = g.rigServiceRows(rows, kRigUpgradeCount);
+    for (int i = 0; i < n; ++i) CHECK(kRigUpgrades[rows[i]].serviceInfo != nullptr);
+    Framebuffer fb(kActiveW, kActiveH);
+    g.render(fb);
+    CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));
+
+    // C returns to the board, where a short tap of B still flips the switch.
+    tapC(g);
+    CHECK(g.shopView() == Game::ShopView::Services);
+    g.onButton(press(Button::B));
+    g.tick(t += kServiceInfoHoldMs / 2);                // well under the threshold
+    g.onButton(lift(Button::B));
+    CHECK(g.shopView() == Game::ShopView::Services);    // no page opened...
+    CHECK(!g.rigFeatureActive(kRigRowAutoBackup));      // ...the tap switched it off
+
+    // The page reads out the service under the cursor, whichever that is: step to
+    // DISK MAINTENANCE and hold there. Its live per-run price is the one thing the
+    // content table cannot state, so the page is where a player can find it.
+    g.onButton(press(Button::A));
+    CHECK(g.rigServiceRow() == 1);
+    g.onButton(press(Button::B));
+    g.tick(t += kServiceInfoHoldMs + kHeartbeatMs);
+    CHECK(g.shopView() == Game::ShopView::ServiceInfo);
+    g.onButton(lift(Button::B));
+    g.render(fb);
+    CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));
+    tapB(g);                                            // B leaves the reader too
+    CHECK(g.shopView() == Game::ShopView::Services);
+    CHECK(g.rigFeatureActive(kRigRowDiskMaintenance));  // and left the switch alone
+}
+
 // Disk Maintenance is an emergency backstop, not a maid: every tier sits inside the
 // CRITICAL Fragmentation band, and a run bills a multiple of the pet's own defrag price.
 void test_rig_disk_maintenance_thresholds() {

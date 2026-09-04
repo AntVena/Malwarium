@@ -596,6 +596,11 @@ constexpr uint32_t kMoveFilterHoldMs = 800;
 // instead of starting a bout. The same 800ms as its three siblings — a hold that takes
 // a different amount of time per screen is a gesture the hand has to re-learn.
 constexpr uint32_t kTourneyScoutHoldMs = 800;
+// Hacker SHOP > SERVICES: holding B past this opens the focused service's info page
+// (what it does, and what a run of it costs) instead of switching it. Same 800ms as
+// every other hold on the device — a gesture that means "tell me more" should feel
+// like the others, and the tap it shares the button with is the common one.
+constexpr uint32_t kServiceInfoHoldMs = 800;
 constexpr uint32_t kBulkOpenHoldMs = 800;     // Hacker VAULT: bulk-opens the focused
                                               // row's rarity (the Rig Shop's Bulk-Open unlock gates this)
 // The list step's repeat. A is "next" on every list on the device, and a list long

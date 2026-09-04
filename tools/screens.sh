@@ -62,6 +62,8 @@ SCENES=(
   "cfg_confirm|cfg updates ready confirm"
   "explore_cachefind|explore cachefind"
   "hacker_profile|hacker profile"   "hacker_shop|hacker shop hub"
+  "hacker_services|hacker shop services board"
+  "hacker_service_info|hacker shop services info"
   "hacker_profile_wide|hacker profile decorated"
   "hacker_vault|hacker vault"       "hacker_crew|hacker crew joined"
   "hacker_crew_unset|hacker crew unset"
