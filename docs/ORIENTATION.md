@@ -124,7 +124,12 @@ except while explore-mode is running, where the chord opens that walk's control 
 That overlay is a cursor list, like combat's Exploit picker — the chord is the way in, and plain
 A/B/C drive it from there. Its rows are Network Ping · Warp · **auto-progress** · Stop explore.
 Auto-progress steps the area ladder by itself, positionally, so a finished ladder keeps rotating
-instead of stopping at the frontier. The EXPL globe on the carousel turns while it's armed.
+instead of stopping at the frontier. The EXPL globe on the carousel turns while it's armed, and on
+a re-farmed (already cleared) rung the walk badge counts the wins down to the next one — the
+Bandwidth pool that slot otherwise shows is already on the status line under it. The overlay's
+footer carries **XP / WIN**: what a wild win on the armed rung actually pays as a percentage of the
+flat base, level-difference curve and live bonuses folded in, which is what says a rung has been
+outgrown.
 
 The EXPL list is **bracketed by two rows that are not areas**. Above the ladder, the **DeepWeb
 Dive** — the endless terminal zone, unlocked by clearing every area, where enemies scale to the

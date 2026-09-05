@@ -64,6 +64,8 @@ SCENES=(
   "cfg_audit|cfg audit"             "cfg_updates|cfg updates ready found"
   "cfg_confirm|cfg updates ready confirm"
   "explore_cachefind|explore cachefind"
+  "explore_refarm|explore refarm"
+  "explorectl|explorectl"
   "hacker_profile|hacker profile"   "hacker_shop|hacker shop hub"
   "hacker_services|hacker shop services board"
   "hacker_service_info|hacker shop services info"

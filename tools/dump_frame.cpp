@@ -84,8 +84,10 @@
 //        LEVEL per frame: the top-level zone picker, "inside" for area 0's own block,
 //        "bossready" for that block with its gauntlet unlocked, "rerun" for it already
 //        beaten, "endgame" for the every-area-cleared picker) ·
-//        explore [cachefind] (armed → the idle explore badge; "cachefind" states the longest
-//             flavor line the walk composes, so the wrap under the BW readout is visible)
+//        explore [cachefind|refarm] (armed → the idle explore badge; "cachefind" states the
+//             longest flavor line the walk composes, so the wrap under the BW readout is
+//             visible; "refarm" arms an already-cleared sub-area, whose badge counts down
+//             to the rung auto-progress steps to next)
 // dock [fight|deep|scout|brief] (ROCK THE DOCK's arena screen — the eight-operator
 //        bracket; "fight" plays the operator's own first bout out so the frame shows a
 //        settled round, "deep" plays the bracket as far forward as the pet can carry it
@@ -1094,6 +1096,10 @@ int main(int argc, char** argv) {
                 game.registerNetwork(bssid, "TestNet");
             }
         }
+        // "refarm" arms a sub-area that is already CLEARED, which is the badge's other
+        // hands-off read: with auto-progress on there is no boss left to unlock, so the
+        // right field counts down to the rung the walk steps to next.
+        if (hasFlag(argc, argv, "refarm")) game.debugSetSubCleared(0, 0, true);
         // "deep" opens the later sectors and arms one of them: sector 0's wild roster
         // fields nothing but the innate Quick Jab, so anything that depends on the
         // rival's KIT (the combat outro's two dissolves) has nothing to show there.
@@ -1112,6 +1118,8 @@ int main(int argc, char** argv) {
                 game.onButton({Button::A, true, false});   // walk to sector[2]
         game.onButton({Button::B, true, false});     // expand the focused sector
         game.onButton({Button::B, true, false});     // arm sub-area[0] -> idle explore-mode
+        if (hasFlag(argc, argv, "refarm"))
+            game.debugSetExploreStreak(kExploreStreakToBoss - 3);  // mid-countdown
         if (hasFlag(argc, argv, "cachefind")) {
             // AFTER arming, which clears the line the way a fresh walk does.
             // The longest line the walk composes: a Sealed Cache find naming the widest

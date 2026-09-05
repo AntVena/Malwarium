@@ -60,7 +60,7 @@ void Game::render(Framebuffer& fb) const {
             // The A+C control overlay floats over the idle habitat.
             drawHabitat(fb, -1);
             drawExploreControl(fb, exploreCtlRow_, !heldWarpKeys().empty(),
-                               autoProgress_);
+                               autoProgress_, exploreXpEfficiencyPct());
             break;
         case Nav::Encounter: drawEncounterScreen(fb); break;
         case Nav::Wifi: drawWifiScreen(fb); break;
@@ -400,17 +400,23 @@ void Game::drawHabitat(Framebuffer& fb, int cursor) const {
     // name + the 1-based sub number (e.g. "CITRUS 3") — compact + collision-free.
     if (exploreActive_) {
         // Pick the badge's right-field mode: the endless DeepWeb Dive shows DEPTH; a
-        // re-armed CLEARED sub shows FARMING (its boss is done); an unlocked
+        // re-armed CLEARED sub counts down to the next rung while auto-progress is armed
+        // (NEXT IN n) and otherwise shows FARMING (its boss is done); an unlocked
         // sub-boss shows BOSS READY; otherwise WINS n/10 progress.
         ExploreBadgeMode mode;
         if (inDeepWebDive()) mode = ExploreBadgeMode::DeepDive;
-        else if (subCleared(exploreSector_, exploreSub_)) mode = ExploreBadgeMode::Farming;
+        else if (subCleared(exploreSector_, exploreSub_))
+            mode = autoProgress_ ? ExploreBadgeMode::AutoNext : ExploreBadgeMode::Farming;
         else if (subBossUnlocked(exploreSector_, exploreSub_)) mode = ExploreBadgeMode::BossReady;
         else mode = ExploreBadgeMode::Wins;
         char label[20];
         exploreBadgeLabel(label, sizeof(label));
         // the FARMING badge shows Bandwidth (the farming pool), not the streak —
         // "FARM n/max" while it lasts (full loot), "FARM LOW" once depleted (decayed).
+        // AUTO-NEXT takes the same slot when the walk is stepping itself, and takes the
+        // streak instead: the pool is spelled out on the status line right below, and
+        // the question a hands-off run leaves open is when it moves on, not what is left
+        // in a shield the operator is not spending by hand.
         int badgeCount = exploreStreak_, badgeMax = kExploreStreakToBoss;
         if (mode == ExploreBadgeMode::Farming) {
             badgeCount = bandwidth_; badgeMax = bandwidthMax();

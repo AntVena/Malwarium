@@ -430,6 +430,22 @@ public:
     // (drawExploreScreen). Empty between events.
     const char* exploreFlavor() const { return exploreFlavor_; }
     bool autoProgress() const { return autoProgress_; }     // hands-off ladder stepping
+    // How many more wins auto-progress needs before it steps off the armed rung —
+    // kExploreStreakToBoss minus the streak, floored at 0. What the walk badge counts
+    // down while a CLEARED sub-area is being re-farmed (ExploreBadgeMode::AutoNext), and
+    // meaningless with the mode off, since then nothing steps but the player.
+    int winsToNextStage() const {
+        const int left = kExploreStreakToBoss - exploreStreak_;
+        return left > 0 ? left : 0;
+    }
+    // What a WILD WIN on the armed rung pays right now, as a percentage of the flat base
+    // (kWildWinXpReward): 100 = a level-matched fight, under it the pet has outgrown the
+    // rung, over it the walk is punching up or a bonus is live. Everything that scales a
+    // wild win's XP folds in — the level-difference curve (wildWinXp) against the rung's
+    // own depth level, the Well-Fed window (applyCombatXpBonus), an armed evolution soak,
+    // and Profilerole's permanent rate — so it is the whole payout in one number rather
+    // than one term of it. Read by the walk's A+C control overlay (drawExploreControl).
+    int exploreXpEfficiencyPct() const;
     // the endless DeepWeb Dive (terminal zone) is armed. It's an explore mode
     // on the virtual kDeepWebSector — no sub-area/boss, enemies scale to the pet.
     bool inDeepWebDive() const {

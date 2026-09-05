@@ -604,6 +604,126 @@ void test_auto_progress_gauntlet_rolls_to_next_area() {
     CHECK(g.bits() > bits0);                       // the re-run paid its Bits lump
 }
 
+// The walk badge on a CLEARED, re-armed sub-area answers the question the mode it is
+// running under actually raises. With auto-progress armed the walk moves itself on at
+// kExploreStreakToBoss wins, so the badge counts those down ("NEXT IN n") and tracks the
+// STREAK; with the mode off nothing steps but the player, so it falls back to the
+// Bandwidth farming pool and tracks THAT. The pool is spelled out on the status line
+// under the badge either way, which is why the hands-off case can spend the slot on
+// something the screen doesn't already say twice.
+void test_auto_progress_badge_counts_down() {
+    constexpr int kBadgeY0 = kLivingTop + 4, kBadgeY1 = kLivingTop + 4 + kFontH;
+    Framebuffer a(kActiveW, kActiveH), b(kActiveW, kActiveH);
+
+    // ARMED: the badge moves with the streak (the countdown), and not with the pool.
+    { Game g{StartMode::Hatched, "bruinforce"};
+      g.debugSetSubCleared(0, 0, true);
+      g.debugSetAutoProgress(true);
+      g.debugArmExplore(0, 0);
+      g.debugSetBandwidth(g.bandwidthMax());
+      g.debugSetExploreStreak(3); g.render(a);
+      g.debugSetExploreStreak(4); g.render(b);
+      CHECK(regionDiffers(a, b, 0, kBadgeY0, kActiveW, kBadgeY1));
+      g.debugSetExploreStreak(4);
+      g.debugSetBandwidth(g.bandwidthMax() - 1); g.render(a);
+      CHECK(!regionDiffers(a, b, 0, kBadgeY0, kActiveW, kBadgeY1)); }
+
+    // OFF: exactly the reverse — the pool is the readout, the streak is not.
+    { Game g{StartMode::Hatched, "bruinforce"};
+      g.debugSetSubCleared(0, 0, true);
+      g.debugSetAutoProgress(false);
+      g.debugArmExplore(0, 0);
+      g.debugSetBandwidth(g.bandwidthMax());
+      g.debugSetExploreStreak(3); g.render(a);
+      g.debugSetExploreStreak(4); g.render(b);
+      CHECK(!regionDiffers(a, b, 0, kBadgeY0, kActiveW, kBadgeY1));
+      g.debugSetBandwidth(g.bandwidthMax() - 1); g.render(a);
+      CHECK(regionDiffers(a, b, 0, kBadgeY0, kActiveW, kBadgeY1)); }
+
+    // The countdown is the streak's complement, floored — it never reads past the step.
+    { Game g{StartMode::Hatched};
+      g.debugArmExplore(0, 0);
+      g.debugSetExploreStreak(0);
+      CHECK(g.winsToNextStage() == kExploreStreakToBoss);
+      g.debugSetExploreStreak(kExploreStreakToBoss - 1);
+      CHECK(g.winsToNextStage() == 1);
+      g.debugSetExploreStreak(kExploreStreakToBoss + 5);
+      CHECK(g.winsToNextStage() == 0); }
+
+    // The countdown is never what makes the line too long for a label to share it: at
+    // its widest it measures no wider than the numeric fields the badge already draws in
+    // that same slot, so whatever fits beside those fits beside this.
+    { char next[16], wins[16], farm[16];
+      std::snprintf(next, sizeof(next), "NEXT IN %d", kExploreStreakToBoss);
+      std::snprintf(wins, sizeof(wins), "WINS %d/%d", kExploreStreakToBoss,
+                    kExploreStreakToBoss);
+      std::snprintf(farm, sizeof(farm), "FARM %d/%d", kBandwidthMax, kBandwidthMax);
+      const int widest = textWidth(wins) > textWidth(farm) ? textWidth(wins)
+                                                           : textWidth(farm);
+      CHECK(textWidth(next) <= widest); }
+}
+
+// The walk's A+C overlay carries the rung's XP RATE, and the rate is the whole payout —
+// the level-difference curve against the rung's own depth, plus every live multiplier —
+// so an operator deciding whether to let auto-progress keep walking a rung can see what
+// it is paying rather than infer it from the level numbers.
+void test_explore_xp_efficiency_reads_the_rung() {
+    // A fresh pet on the first rung fights at parity: the flat base, 100%.
+    { Game g{StartMode::Hatched};
+      g.debugArmExplore(0, 0);
+      CHECK(g.exploreXpEfficiencyPct() == 100); }
+
+    // Deeper on the same ladder is the same pet punching up — strictly more per win,
+    // and the rung is what moved.
+    { Game g{StartMode::Hatched};
+      g.debugArmExplore(0, 0);
+      const int shallow = g.exploreXpEfficiencyPct();
+      g.debugArmExplore(0, kExplSubAreas - 1);
+      CHECK(g.exploreXpEfficiencyPct() > shallow); }
+
+    // ...and a pet that has outgrown a rung is taxed for farming it — but the tax stops
+    // at the curve's floor, so two pets that have both outgrown it by miles read the
+    // same trickle rather than nothing at all.
+    { Game g{StartMode::Hatched}, far{StartMode::Hatched};
+      g.debugAddCombatXp(600000);
+      far.debugAddCombatXp(6000000);
+      g.debugArmExplore(0, 0);
+      far.debugArmExplore(0, 0);
+      CHECK(far.combatLevel() > g.combatLevel());
+      const int pct = g.exploreXpEfficiencyPct();
+      CHECK(pct > 0 && pct < 100);
+      CHECK(far.exploreXpEfficiencyPct() == pct); }
+
+    // The dive has no rung to read, so its own scale is the answer: parity at depth 0
+    // (the flat base) and rising with the streak, which is what makes the endless zone
+    // the one place a levelled pet is not taxed for being there.
+    { Game g{StartMode::Hatched};
+      for (int a2 = 0; a2 < kExplSectors; ++a2) g.debugSetSectorCleared(a2, true);
+      g.debugStartDeepWebDive();                  // the dive unlocks on a cleared ladder
+      CHECK(g.inDeepWebDive());
+      g.debugSetExploreStreak(0);
+      CHECK(g.exploreXpEfficiencyPct() == 100);
+      g.debugSetExploreStreak(64);
+      CHECK(g.exploreXpEfficiencyPct() > 100); }
+
+    // The overlay draws it, and draws it as a FOOTER: two walks whose rungs pay
+    // differently differ under the rule, and their four action rows are pixel-identical
+    // — the rate is a reading, not a row the cursor can land on.
+    { Framebuffer shallow(kActiveW, kActiveH), deep(kActiveW, kActiveH);
+      auto openOverlay = [](Game& g, int sub, Framebuffer& fb) {
+          g.debugArmExplore(0, sub);
+          g.onButton(chordAC());
+          CHECK(g.nav() == Game::Nav::ExploreControl);
+          g.render(fb);
+      };
+      Game a2{StartMode::Hatched}, b2{StartMode::Hatched};
+      openOverlay(a2, 0, shallow);
+      openOverlay(b2, kExplSubAreas - 1, deep);
+      CHECK(a2.exploreXpEfficiencyPct() != b2.exploreXpEfficiencyPct());
+      CHECK(regionDiffers(shallow, deep, 0, 143, kActiveW, 162));   // the footer moved
+      CHECK(!regionDiffers(shallow, deep, 0, 60, kActiveW, 140)); } // ...and only it
+}
+
 // End-to-end: clear all 5 sub-areas of an area (each = a 10-win streak →
 // FIGHT BOSS), which unlocks the AREA boss = a 5-stage gauntlet of those sub-area
 // bosses; beating that sets sectorCleared[0], unlocks area 1, pays a Bits lump, and

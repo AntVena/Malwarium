@@ -327,6 +327,8 @@ int g_failures = 0;
     RUN(test_explore_streak_unlocks_boss_then_clears) \
     RUN(test_auto_progress_steps_positionally)    \
     RUN(test_auto_progress_gauntlet_rolls_to_next_area) \
+    RUN(test_auto_progress_badge_counts_down)     \
+    RUN(test_explore_xp_efficiency_reads_the_rung) \
     RUN(test_expl_nested_row_helpers)             \
     RUN(test_area_boss_gauntlet_composition)      \
     RUN(test_sub_boss_rounds_and_escorts)         \

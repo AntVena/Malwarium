@@ -458,10 +458,11 @@ void drawExplList(Framebuffer& fb, const ContentRegistry& reg, const ExplListVie
 }
 
 // Explore-mode idle badge: a thin status line under the top track — a
-// pulsing cursor + "EXPL <label>" (the armed sub-area) on the left, "WINS n/N" (a
-// fraction) or "BOSS READY" (a tag) on the right. Dual-coded (glyph + text +
-// fraction), so the running state, which sub-area, and the streak all read in
-// grayscale. Drawn over the idle habitat while explore-mode is active.
+// pulsing cursor + "EXPL <label>" (the armed sub-area) on the left, and on the right the
+// mode's own field: "WINS n/N" or "NEXT IN n" (fractions/counts), "BOSS READY" (a tag).
+// Dual-coded (glyph + text + fraction), so the running state, which sub-area, and the
+// streak all read in grayscale. Drawn over the idle habitat while explore-mode is
+// active.
 void drawExploreBadge(Framebuffer& fb, const char* label, int count, int countMax,
                       ExploreBadgeMode mode) {
     const int y = kLivingTop + 4;
@@ -488,6 +489,18 @@ void drawExploreBadge(Framebuffer& fb, const char* label, int count, int countMa
                 rc = palColor(Pal::WARN);
             }
             break;
+        case ExploreBadgeMode::AutoNext: {
+            // count = the streak, countMax = the target auto-progress steps at, so the
+            // field counts DOWN to the next rung instead of up toward a boss this
+            // cleared sub-area no longer has. Zero is drawn as a word rather than
+            // "NEXT IN 0" — the step happens on the next hand-back to the walk, so the
+            // number is already spent by the time it would read.
+            const int remain = countMax - count;
+            if (remain > 0) std::snprintf(right, sizeof(right), "NEXT IN %d", remain);
+            else            std::snprintf(right, sizeof(right), "NEXT NOW");
+            rc = palColor(Pal::ACCENT);
+            break;
+        }
         case ExploreBadgeMode::DeepDive:
             std::snprintf(right, sizeof(right), "DEPTH %d", count);
             rc = palColor(Pal::ACCENT); break;
@@ -503,8 +516,8 @@ void drawExploreBadge(Framebuffer& fb, const char* label, int count, int countMa
 // held) · C Stop. Standard A/B/C returns, spelled out (grayscale-safe). A bordered
 // PAPER panel (TRACK outline via a 2px inset) centered over the living area.
 void drawExploreControl(Framebuffer& fb, int cursor, bool hasWarpKey,
-                        bool autoProgress) {
-    const int boxW = 184, boxH = 124;
+                        bool autoProgress, int xpEfficiencyPct) {
+    const int boxW = 184, boxH = 142;
     const int bx = (kActiveW - boxW) / 2, by = (kActiveH - boxH) / 2;
     fb.fillRect(bx - 2, by - 2, boxW + 4, boxH + 4, palColor(Pal::TRACK));
     fb.fillRect(bx, by, boxW, boxH, palColor(Pal::PAPER));
@@ -541,6 +554,22 @@ void drawExploreControl(Framebuffer& fb, int cursor, bool hasWarpKey,
         if (right)
             drawText(fb, bx + boxW - 10 - textWidth(right), y, right, rc);
     }
+
+    // FOOTER, under a rule: what this rung is actually paying. Below the rows and
+    // outside the cursor's reach, because it is a reading and not a thing to press —
+    // the same separation the panel's title keeps above them. 100% is the flat base a
+    // level-matched wild pays; under it the pet has outgrown the rung (WARN), over it
+    // the walk is punching up or a bonus is live (CALM). Dual-coded — the percentage is
+    // the channel, colour only the emphasis.
+    const int footY = by + boxH - 32;
+    fb.fillRect(bx + 8, footY - 8, boxW - 16, 1, palColor(Pal::TRACK));
+    drawText(fb, bx + 10, footY, "XP / WIN", palColor(Pal::INK_DIM));
+    char eff[12];
+    std::snprintf(eff, sizeof(eff), "%d%%", xpEfficiencyPct);
+    const Rgb565 ec = xpEfficiencyPct < 100 ? palColor(Pal::WARN)
+                    : xpEfficiencyPct > 100 ? palColor(Pal::CALM)
+                                            : palColor(Pal::INK);
+    drawText(fb, bx + boxW - 10 - textWidth(eff), footY, eff, ec);
 
     const char* hint = "A NEXT  B DO  C BACK";
     drawText(fb, bx + (boxW - textWidth(hint)) / 2, by + boxH - 14, hint,

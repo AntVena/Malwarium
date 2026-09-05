@@ -150,16 +150,23 @@ void drawExplList(Framebuffer& fb, const ContentRegistry& reg, const ExplListVie
 
 // Explore-mode idle badge: a thin status line under the top track, drawn
 // over the idle habitat while explore-mode is active — a pulsing cursor +
-// "EXPL <label>" (the armed sub-area) and, right-anchored, "WINS n/N" or "BOSS
-// READY". Dual-coded (glyph + text + fraction), grayscale-safe.
+// "EXPL <label>" (the armed sub-area) and, right-anchored, the field of whichever
+// mode the walk is in. Dual-coded (glyph + text + fraction), grayscale-safe.
 // The badge's right-field state, dual-coded (a distinct WORD per mode so it reads in
-// grayscale): WINS n/N (progress to the sub-boss) · BOSS READY · FARM n/N | FARM LOW
-// (a re-armed cleared sub — Bandwidth remaining) · DEPTH n (the DeepWeb Dive
-// win count).
-enum class ExploreBadgeMode { Wins, BossReady, Farming, DeepDive };
-// `count`/`countMax` feed the numeric modes: Wins → "WINS count/countMax"; DeepDive →
-// "DEPTH count"; Farming → count is Bandwidth left / countMax the pool.
-// BossReady ignores them.
+// grayscale): WINS n/N (progress to the sub-boss) · BOSS READY · NEXT IN n (wins left
+// before auto-progress steps off this rung) · FARM n/N | FARM LOW (a re-armed cleared
+// sub — Bandwidth remaining) · DEPTH n (the DeepWeb Dive win count).
+//
+// AutoNext is what a CLEARED sub-area reads while auto-progress is armed, and it is the
+// one mode that answers a question about the FUTURE: a re-farm has no boss left to
+// unlock, so the streak is spent entirely on when the walk moves on, and the number the
+// operator wants is how many wins are between them and the next rung. The Bandwidth pool
+// FARM would show in that slot is already spelled out on the status line under the badge
+// (Game::drawHabitat), so this costs nothing and stops the same number being drawn twice.
+enum class ExploreBadgeMode { Wins, BossReady, AutoNext, Farming, DeepDive };
+// `count`/`countMax` feed the numeric modes: Wins → "WINS count/countMax"; AutoNext →
+// countMax-count wins remain ("NEXT IN n", or "NEXT NOW" at zero); DeepDive → "DEPTH
+// count"; Farming → count is Bandwidth left / countMax the pool. BossReady ignores them.
 void drawExploreBadge(Framebuffer& fb, const char* label, int count, int countMax,
                       ExploreBadgeMode mode);
 
@@ -172,9 +179,13 @@ enum class ExploreControlRow { Ping, Warp, AutoProgress, Stop };
 constexpr int kExploreControlRows = 4;
 
 // `hasWarpKey` dims the WARP row (B on it is inert with no key held); `autoProgress` is
-// the mode row's ON/OFF state, dual-coded by the word.
+// the mode row's ON/OFF state, dual-coded by the word. `xpEfficiencyPct` is a FOOTER
+// stat under the rows, not a row — what a wild win on the armed rung actually pays as a
+// percentage of the flat base (Game::exploreXpEfficiencyPct). It belongs on this screen
+// because this is where the two decisions it informs are made: whether to leave a rung
+// the pet has outgrown, and whether to let auto-progress keep walking it.
 void drawExploreControl(Framebuffer& fb, int cursor, bool hasWarpKey,
-                        bool autoProgress);
+                        bool autoProgress, int xpEfficiencyPct);
 
 // Sector accessors ("difficulty-scaled by sector tier") — sector identity
 // is data owned by this file; Game reads it through these rather than duplicating
