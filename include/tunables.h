@@ -722,12 +722,18 @@ constexpr int kLootItemChancePct = 30; // chance a loot cache also drops an item
 constexpr int kWildWinXpReward = 15;   // BASE wild-win XP (scaled by level diff)
 // The wild-win XP base is scaled by the ENEMY-vs-PET level
 // difference (applyWildSubAreaRamp stamps the enemy level; combatLevel_ is the pet's).
-// Per level of difference, XP shifts by kWildXpPerLevelDiffPct%; clamped to the
-// [min,max] band so a way-under farm still trickles and a huge over-level fight caps.
-// At parity (diff 0) → 100% → the flat base. Enemy +4 → 160%; enemy −5 → 25% (floor).
-constexpr int kWildXpPerLevelDiffPct = 16;  // X% XP per level of (enemy − pet)
-constexpr int kWildXpDiffMinPct      = 32;  // floor: farming under-level still trickles
-constexpr int kWildXpDiffMaxPct      = 1024; // ceiling: cap the punching-up bonus
+// The two directions are priced apart, because they answer different questions: a level
+// OVER the pet is the reward for taking a fight it is not comfortable in, a level UNDER
+// is only the tax for grinding a rung it has outgrown. So punching up pays more per level
+// than farming shallow costs, and the tax bottoms out early — a cleared sub-area stays a
+// usable training ground for the next pet instead of decaying into a rounding error, which
+// is the whole point of re-farm (game_combat.cpp).
+// At parity (diff 0) → 100% → the flat base. Enemy +4 → 180%; enemy −4 → 60%; enemy −6 and
+// deeper → the floor. Both ends clamp to [kWildXpDiffMinPct, kWildXpDiffMaxPct].
+constexpr int kWildXpOverLevelPct  = 20;  // X% XP GAINED per level of (enemy − pet) above 0
+constexpr int kWildXpUnderLevelPct = 10;  // X% XP LOST per level below it — the gentler half
+constexpr int kWildXpDiffMinPct    = 40;  // floor: farming under-level still pays a share
+constexpr int kWildXpDiffMaxPct    = 1024; // ceiling: cap the punching-up bonus
 // The stat half of the per-sub-area LEVEL bump (the enemy's "rolled level-up stats",
 // Between-AREA growth already rides the tier roster (wildMalbeast), so this
 // only thickens WITHIN a sector: +Health per sub, +1 speed at the two deepest rungs.

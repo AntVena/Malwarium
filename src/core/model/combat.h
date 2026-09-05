@@ -910,9 +910,10 @@ int wildMalbeastIndex(const char* enemyName);
 void applyWildSubAreaRamp(CombatEnemy& e, int areaIdx, int sub);
 
 // Level-difference XP scaling: a wild win's flat base scaled by how the ENEMY's level
-// compares to the PET's — kWildXpPerLevelDiffPct% per level either way, clamped to
-// [kWildXpDiffMinPct, kWildXpDiffMaxPct]. Rewards punching up, taxes farming shallow
-// sub-areas, and never pays zero. Result is at least 1.
+// compares to the PET's — kWildXpOverLevelPct% per level above it and the gentler
+// kWildXpUnderLevelPct% per level below, clamped to [kWildXpDiffMinPct,
+// kWildXpDiffMaxPct]. Rewards punching up more than it taxes farming a shallow sub-area,
+// and never pays zero. Result is at least 1.
 int wildWinXp(int baseXp, int enemyLevel, int petLevel);
 
 // The DEEPWEB DIVE endless-zone scaler: takes an endgame (tier-3) wild `e` and scales it to

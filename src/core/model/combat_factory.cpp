@@ -668,7 +668,11 @@ int bossBitsReward(int stageRank, uint32_t& rng) {
 // level-difference XP scaling. See combat.h for the contract.
 int wildWinXp(int baseXp, int enemyLevel, int petLevel) {
     const int diff = enemyLevel - petLevel;              // >0 = punching up
-    int pct = 100 + diff * kWildXpPerLevelDiffPct;
+    // The two directions carry their own rate (tunables.h): a level of punching up is
+    // worth more than a level of farming shallow costs, so the same pet reads the ladder
+    // as "go deeper" rather than "the rung you cleared is worthless now".
+    const int rate = diff >= 0 ? kWildXpOverLevelPct : kWildXpUnderLevelPct;
+    int pct = 100 + diff * rate;
     if (pct < kWildXpDiffMinPct) pct = kWildXpDiffMinPct; // floor (never zero)
     if (pct > kWildXpDiffMaxPct) pct = kWildXpDiffMaxPct; // ceiling (cap the bonus)
     int xp = baseXp * pct / 100;

@@ -809,7 +809,8 @@ void test_ransom_note_shows_up_in_pve() {
 //   (1) applyWildSubAreaRamp stamps a global depth level (+1 per sub, +5 per area)
 //       and thickens Health at the deeper subs (the "rolled level-up stats");
 //   (2) wildWinXp scales the flat base by (enemy − pet): parity = base, punching up
-//       pays more, farming under pays a floored trickle, both ends clamped, never <1.
+//       pays more per level than farming under costs, the under side floors early,
+//       both ends clamped, never <1.
 void test_wild_subarea_level_and_xp_scaling() {
     // (1) Level is the global rung; deeper subs carry more Health than sub 0.
     CombatEnemy a0s0 = wildMalbeast(1, 0); applyWildSubAreaRamp(a0s0, 0, 0);
@@ -819,10 +820,22 @@ void test_wild_subarea_level_and_xp_scaling() {
     CHECK(a0s4.level == 4);                             // +1 per sub within a sector
     CHECK(a1s0.level == kSubAreasPerArea);             // +kSubAreasPerArea across areas
     CHECK(a0s4.maxHealth > a0s0.maxHealth);            // deeper sub soaks longer
-    // (2) XP scaling. Parity → the flat base; the diff moves it symmetrically.
+    // (2) XP scaling. Parity → the flat base; the diff moves it either way, at its own
+    //     rate per direction.
     CHECK(wildWinXp(kWildWinXpReward, 3, 3) == kWildWinXpReward);       // diff 0
     CHECK(wildWinXp(kWildWinXpReward, 5, 3) > kWildWinXpReward);        // punching up
     CHECK(wildWinXp(kWildWinXpReward, 1, 5) < kWildWinXpReward);        // farming under
+    // ...and ASYMMETRICALLY: the same distance up is worth more than it costs down, so a
+    // pet that has outgrown a rung still banks a real share of the base while the ladder
+    // pays for depth. Measured in percent (a 3-level swing either side of parity, big
+    // enough that the base's integer division can't be what the gate is reading).
+    CHECK(kWildXpOverLevelPct > kWildXpUnderLevelPct);
+    CHECK(wildWinXp(100, 3, 0) - 100 > 100 - wildWinXp(100, 0, 3));
+    // The under side floors EARLY — deep enough under the rung and every further level
+    // is free, which is what keeps a cleared area a training ground rather than a
+    // rounding error.
+    CHECK(wildWinXp(100, 0, 20) == wildWinXp(100, 0, 40));
+    CHECK(wildWinXp(100, 0, 20) == kWildXpDiffMinPct);
     // Clamps: an absurd over-level caps at the ceiling; an absurd under-level floors
     // at the min; XP is never below 1.
     CHECK(wildWinXp(kWildWinXpReward, 99, 0) ==
