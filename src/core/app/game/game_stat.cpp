@@ -20,6 +20,7 @@
 #include "tunables.h"
 #include "core/model/move_loadout.h"
 #include "core/render/framebuffer.h"
+#include "core/ui/collect_screen.h"
 #include "core/ui/stat_screen.h"
 
 namespace mal {
@@ -71,9 +72,31 @@ std::vector<StatIndexRow> Game::statIndexRows() const {
     for (const BuffRow& b : buffs)
         if (!b.header) ++armed;
 
+    // The two collection scores, counted off the very rows their pages draw so the
+    // index and the page can never report a different number.
+    const std::vector<ProseRow> dex = statMoveDexRows();
+    int movesKnown = 0, movesLearnable = 0;
+    for (const ProseRow& r : dex) {
+        if (r.header) continue;
+        ++movesLearnable;
+        if (r.tag[0]) ++movesKnown;
+    }
+    int foodsTotal = 0;
+    for (const FoodRow& r : statFoodRows()) foodsTotal += r.section ? r.total : 0;
+
     return buildStatIndexRows(statTierRows(), statLoadoutRows(), combatLevel_, movesOn,
                               moveSlots, modsOn, kModSlots, armed,
-                              pet_ ? pet_->line : nullptr, log_.size());
+                              pet_ ? pet_->line : nullptr, log_.size(), movesKnown,
+                              movesLearnable, petFoodsEaten(), foodsTotal);
+}
+
+std::vector<FoodRow> Game::statFoodRows() const {
+    return buildFoodRows(registry_, petFoodsEaten_);
+}
+
+std::vector<ProseRow> Game::statMoveDexRows() const {
+    return buildMoveDexRows(registry_, moveLoadout_, pet_ ? pet_->line : nullptr,
+                            pet_ ? pet_->stage : Stage::BootSector);
 }
 
 Game::StatScrollSpan Game::statScrollSpan() const {
@@ -87,6 +110,14 @@ Game::StatScrollSpan Game::statScrollSpan() const {
         return {loadoutRowsFitting(rows, statScroll_), static_cast<int>(rows.size())};
     }
     if (statPage_ == 3) {
+        const std::vector<ProseRow> rows = statMoveDexRows();
+        return {moveDexRowsFitting(rows, statScroll_), static_cast<int>(rows.size())};
+    }
+    if (statPage_ == 4) {
+        const std::vector<FoodRow> rows = statFoodRows();
+        return {foodRowsFitting(rows, statScroll_), static_cast<int>(rows.size())};
+    }
+    if (statPage_ == 5) {
         const std::vector<BuffRow> rows = statBuffRows();
         return {buffRowsFitting(rows, statScroll_), static_cast<int>(rows.size())};
     }
@@ -179,10 +210,11 @@ void Game::drawStat(Framebuffer& fb) const {
         drawStatIndex(fb, statIndexRows(), statIndexRow_, beat_);
         return;
     }
-    // 6 pages: 0 pet vitals (the landing) · 1 the investment ladder — which stat tiers
+    // 8 pages: 0 pet vitals (the landing) · 1 the investment ladder — which stat tiers
     // this pet holds and what the next costs · 2 the equipped loadout (moves + mods,
-    // WITH their effect text) · 3 currently-armed item buffs · 4 the pet's own species
-    // lore · 5 audit log. A cycles; C backs out.
+    // WITH their effect text) · 3 every move this pet could learn · 4 every dish it
+    // could eat · 5 currently-armed item buffs · 6 the pet's own species lore · 7 audit
+    // log. A cycles; C backs out.
     switch (statPage_) {
         case 0:
             drawStatScreen(fb, model_, pet_->displayName, pet_->stage, generation_,
@@ -191,8 +223,27 @@ void Game::drawStat(Framebuffer& fb) const {
             break;
         case 1: drawTiersScreen(fb, statTierRows(), statScroll_, beat_); break;
         case 2: drawLoadoutScreen(fb, statLoadoutRows(), statScroll_, beat_); break;
-        case 3: drawBuffsScreen(fb, statBuffRows(), statScroll_, beat_); break;
-        case 4:
+        case 3: {
+            const std::vector<ProseRow> rows = statMoveDexRows();
+            int known = 0, total = 0;
+            for (const ProseRow& r : rows) {
+                if (r.header) continue;
+                ++total;
+                if (r.tag[0]) ++known;   // a gap carries no tag (buildMoveDexRows)
+            }
+            drawMoveDexScreen(fb, rows, statScroll_, known, total, beat_);
+            break;
+        }
+        case 4: {
+            const std::vector<FoodRow> rows = statFoodRows();
+            int total = 0;
+            for (const FoodRow& r : rows) total += r.section ? r.total : 0;
+            drawFoodsScreen(fb, registry_, rows, statScroll_, petFoodsEaten(), total,
+                            beat_);
+            break;
+        }
+        case 5: drawBuffsScreen(fb, statBuffRows(), statScroll_, beat_); break;
+        case 6:
             drawSpeciesScreen(fb, pet_->displayName, pet_->line, pet_->hint,
                               pet_->context, beat_);
             break;

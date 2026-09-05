@@ -142,6 +142,10 @@ void Game::layEgg(const EggLineDef* line) {
     // a new egg starts back at the shared regen interval, with no off-level stat points
     // and no XP rate, however many plates the last one ate.
     upgrades_ = PetUpgrades{};
+    // ...and an empty plate. The palate is the pet's, not the operator's — what the
+    // DEVICE has ever held stays in collectedItems_ forever, and this is the set that
+    // starts over, which is what makes STAT's FOODS grid something each pet fills in.
+    petFoodsEaten_.clear();
     // This pet's own DeepWeb Dive record (save v35) and any armed depth-multiplier/
     // start-depth Pass — a fresh egg has never dived and carries nothing armed.
     bestDeepWebDepth_ = 0;
@@ -681,6 +685,7 @@ void Game::resetToHatch() {
     combatLevel_ = 0;                    // a fresh egg starts at level 0
     defragCount_ = 0;                    // no defrags on a wiped save
     upgrades_ = PetUpgrades{};           // nothing permanent survives a wipe either
+    petFoodsEaten_.clear();
     for (int i = 0; i < kLevelStatCount; ++i) statPoints_[i] = 0;
     lastLevelUpStat_ = -1;
     for (int i = 0; i < kMaxMoveSlots; ++i) slotKinds_[i] = SlotKind::Unset;

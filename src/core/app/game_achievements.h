@@ -91,12 +91,20 @@ inline int achievementSeriesTotal(AchSeries series, const char* key, int param) 
             const CreatureLine* line = creatureLine(key);
             return line ? line->count : 0;
         }
-        case AchSeries::FoodsCollected: {
+        case AchSeries::FoodsCollected:
+        // The pet's own plate is measured against the same shelf: every dish that ships
+        // is one a pet could in principle be handed, so "all of them" means the same
+        // number on both rows even though they count different things toward it.
+        case AchSeries::PetFoodsEaten: {
             int n = 0;
             for (int i = 0; i < kItemsCount; ++i)
                 if (kItems[i].type == ItemDef::Type::Food) ++n;
             return n;
         }
+        // The WHOLE move roster, not one line's slice of it — this total is pure over
+        // content and cannot ask which creature is on the shelf, which is exactly why
+        // the rows on this series never take kGoalAll (content_achievements.h).
+        case AchSeries::PetMovesKnown: return kMovesCount;
         case AchSeries::RarityCollected: {
             int n = 0;
             for (int i = 0; i < kItemsCount; ++i)

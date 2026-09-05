@@ -267,7 +267,15 @@ constexpr int kSaveTextCap = 28;     // matches EventLog's LogEntry.text
 //     backup auto-arms and Disk Maintenance's auto-defrag. Player-level, its own tail
 //     after v60's. The OFF half is what is stored, so pre-v61 → 0 reads as what a save
 //     written before the switchboard existed means: every service bought is running.
-constexpr uint16_t kSaveVersion = 61;
+// v62 APPEND `petFoodsEaten`, its own tail after v61's: every distinct Food this PET has
+//     been fed, as a plain SaveId run the way `collectedItems` records the player-level
+//     ever-held set. The two answer different questions and both are worth keeping — the
+//     device has met a dish once, forever; a pet has TASTED it, and a new egg starts that
+//     over. It is what STAT's FOODS grid lights a cell from and what the palate
+//     achievements count. Per-pet, so it clears on a new egg. Pre-v62 -> empty, which
+//     reads as a pet that has eaten nothing: the honest answer for a save written before
+//     anything was watching, and one a few meals corrects.
+constexpr uint16_t kSaveVersion = 62;
 
 // The oldest blob deserialize will read, and the ONLY thing that retires a rename row
 // (see `renamedIds`). Raising it is how a device stops carrying migration weight for saves
@@ -719,6 +727,10 @@ struct SaveData {
     // seeded from the active pet's own record.
     std::vector<SaveId> speciesDiveIds;
     std::vector<int32_t> speciesDiveDepths;
+    // Every distinct Food this pet has been fed (v62). Per-pet, unlike collectedItems
+    // above: what the device has ever HELD is the operator's collection, what this pet
+    // has TASTED is the pet's, and STAT's FOODS grid draws the difference between them.
+    std::vector<SaveId> petFoodsEaten;
 
     // How much of the 5/5 recovery window this pet has already spent, in ms AWAKE at
     // 5/5 — not wall time, which a board with no RTC cannot measure across a boot.

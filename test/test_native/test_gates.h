@@ -64,6 +64,7 @@
 #include "core/ui/items_screen.h"
 #include "core/ui/maint_screen.h"
 #include "core/ui/mods_screen.h"
+#include "core/ui/collect_screen.h"
 #include "core/ui/stat_screen.h"
 #include "generated/assets.h"
 #include "tunables.h"

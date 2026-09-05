@@ -68,6 +68,22 @@ enum class AchSeries : uint8_t {
     // says a Decryptogram taught you to make it, and only the second is a ladder the
     // player climbs deliberately.
     RecipesKnown,
+    // The two PER-PET collections (STAT's FOODS and MOVES pages, core/ui/collect_screen.h).
+    // FoodsCollected above is the operator's shelf — a dish counts the moment it reaches
+    // the bag, forever. These count what ONE creature has actually got through, and a new
+    // egg starts both over, which is what makes them a thing to do again rather than a
+    // number that only ever rises.
+    //
+    // The earned BIT still never falls, the way every row's does: an achievement records
+    // something the player did, and hatching a successor does not undo the pet that
+    // cleared the plate.
+    PetFoodsEaten,      // distinct Foods the active pet has been fed (total = every food)
+    // Distinct moves the active pet holds. Its total is the WHOLE move roster, not the
+    // subset this pet's line can learn — achievementSeriesTotal is pure over content
+    // (game_achievements.h) and cannot ask which creature is on the shelf — so the rungs
+    // here are fixed counts and the series never takes kGoalAll: no pet can learn another
+    // line's moves, and a goal nothing can reach is not a goal.
+    PetMovesKnown,
     RigRowsOwned,       // Rig Shop rows bought at least once (total = every row)
     // Rig Shop levels bought on the CAPPED rows only (total = every one of them maxed).
     // Bandwidth is deliberately excluded: it has no purchase cap, so counting it would

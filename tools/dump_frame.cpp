@@ -385,19 +385,27 @@ int main(int argc, char** argv) {
         game.inventory().add("rollback", 1);
         game.debugUseItem("rollback");
     } else if (hasFlag(argc, argv, "stat")) {
-        // STAT is 6 paged screens: 0 vitals (landing) · 1 tiers · 2 loadout ·
-        // 3 buffs · 4 species · 5 audit log. "stat" alone shows vitals; "tiers"/
-        // "loadout"/"buffs"/"species"/"log" step to pages 1-5; "index" then holds B to
-        // open the jump list over them.
+        // STAT is 8 paged screens: 0 vitals (landing) · 1 tiers · 2 loadout · 3 movedex ·
+        // 4 foods · 5 buffs · 6 species · 7 audit log. "stat" alone shows vitals; the
+        // page names step to theirs; "index" then holds B to open the jump list over
+        // them. "ate:<n>" feeds the pet n dishes first, which is what puts lit cells in
+        // the FOODS grid.
         game.debugSetBits(1450);
         game.debugSetNetworksSeen(27);       // R2, partway to R3
         enterSlot(SubmenuId::Stat);
         int steps = hasFlag(argc, argv, "tiers")   ? 1
                   : hasFlag(argc, argv, "loadout") ? 2
-                  : hasFlag(argc, argv, "buffs")    ? 3
-                  : hasFlag(argc, argv, "species")  ? 4
-                  : hasFlag(argc, argv, "log")      ? 5
+                  : hasFlag(argc, argv, "movedex") ? 3
+                  : hasFlag(argc, argv, "foods")    ? 4
+                  : hasFlag(argc, argv, "buffs")    ? 5
+                  : hasFlag(argc, argv, "species")  ? 6
+                  : hasFlag(argc, argv, "log")      ? 7
                                                      : 0;
+        // "ate:<n>" puts n dishes on the pet's palate before the page draws, which is
+        // the only way to see the FOODS grid half filled rather than wholly dim.
+        for (int i = 3; i < argc; ++i)
+            if (std::strncmp(argv[i], "ate:", 4) == 0)
+                game.debugTasteFoods(std::atoi(argv[i] + 4));
         while (steps-- > 0) game.onButton({Button::A, true, false});
         // "scroll:<n>" then takes B n times, which on the three flowed pages
         // (TIERS/LOADOUT/BUFFS) advances the row window — the way to see the rows past

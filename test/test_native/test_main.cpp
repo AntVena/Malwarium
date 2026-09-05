@@ -46,6 +46,8 @@ int g_failures = 0;
     RUN(test_stat_loadout_b_scroll)         \
     RUN(test_stat_index_jumps_to_a_page_and_a_section) \
     RUN(test_prose_windows_break_on_sections) \
+    RUN(test_palate_is_per_pet_and_counts_meals) \
+    RUN(test_move_dex_lists_only_what_this_pet_could_learn) \
     RUN(test_stat_prose_windows_tile_the_list) \
     /* Carousel */                          \
     RUN(test_carousel_summon)               \

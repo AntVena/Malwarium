@@ -124,6 +124,7 @@ void renameRetiredIds(SaveData& d, uint16_t version) {
     for (SaveId& s : d.speciesDiveIds) renameId(s.id, version);
     for (SaveStack& s : d.items) renameId(s.id, version);
     for (SaveId& s : d.collectedItems) renameId(s.id, version);
+    for (SaveId& s : d.petFoodsEaten) renameId(s.id, version);
 }
 
 // The mid-ladder splice table. Adding and retiring a row: save.h's `ladderInserts`.
@@ -556,6 +557,11 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     // v61: which owned SERVICE rows are stopped, as one bit per rig row. Its own tail
     // after v60's, so a build that stops at either still reads every field it knows.
     w.u32(d.rigServicesOff);
+
+    // v62: the active pet's tasted set, a length-prefixed SaveId run like every other id
+    // list here. Its own tail after v61's.
+    w.u16(static_cast<uint16_t>(d.petFoodsEaten.size()));
+    for (const auto& s : d.petFoodsEaten) writeId(w, s);
 }
 
 std::vector<uint8_t> serializeSave(const SaveData& d) {
@@ -1165,6 +1171,17 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
     // v61 tail: the stopped SERVICES mask. Absent in a v1..v60 blob → 0, which is every
     // service the save has bought running — what a device did before the switchboard.
     if (version >= 61) d.rigServicesOff = r.u32();
+
+    // v62 tail: what this pet has tasted. Absent in an older blob -> empty, a pet with
+    // nothing recorded rather than one that ate nothing — the grid says so honestly and
+    // the next few meals fill it in.
+    if (version >= 62) {
+        const uint16_t n = r.u16();
+        for (uint16_t i = 0; i < n && r.ok; ++i) {
+            SaveId s; r.bytes(s.id, kSaveIdCap); s.id[kSaveIdCap - 1] = '\0';
+            d.petFoodsEaten.push_back(s);
+        }
+    }
 
     if (!r.ok) { out = SaveData{}; return false; }  // truncated -> empty
     if (version < newestRenameVersion()) renameRetiredIds(d, version);

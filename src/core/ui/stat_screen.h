@@ -1,13 +1,15 @@
-// stat_screen.h — STAT: a 6-page status viewer (read-only) and the INDEX that jumps
+// stat_screen.h — STAT: an 8-page status viewer (read-only) and the INDEX that jumps
 // between the pages.
 //   page 0  VITALS    the pet: gauges + care + level/XP + time-to-evolve (the landing)
 //   page 1  TIERS     the investment ladder: each combat stat's points, the rungs it
 //                     has reached and what the next one costs
 //   page 2  LOADOUT   the pet's equipped moves + mods, WITH their effect text
-//   page 3  BUFFS     currently-armed item buffs (Restore Point/Ambig-USB/Backup
+//   page 3  MOVES     every move this pet could learn, and which it has (collect_screen.h)
+//   page 4  FOODS     every dish in the game, and which this pet has eaten (ditto)
+//   page 5  BUFFS     currently-armed item buffs (Restore Point/Ambig-USB/Backup
 //                     Drive), each with its effect text and remaining time if timed
-//   page 4  SPECIES   the pet's own lore — line, one-line snarky hint, infosec ref
-//   page 5  AUDIT LOG the rolling event history
+//   page 6  SPECIES   the pet's own lore — line, one-line snarky hint, infosec ref
+//   page 7  AUDIT LOG the rolling event history
 // A cycles the pages, B scrolls the flowed ones, HOLD B opens the INDEX and C backs
 // out. Each page dual-codes (grayscale-legible).
 // STAT is pet-only. The device/account stats (Hacker Rank, Bits, lifetime breadth)
@@ -33,7 +35,18 @@ class Loadout;
 
 // The pages A cycles, and the dots the header's pager draws — one number, so a page
 // added to the roster can never leave the pager short.
-inline constexpr int kStatPages = 6;
+inline constexpr int kStatPages = 8;
+
+// The band every STAT page ends with. Two facts belong on it and they are not the same
+// kind: what the key under the reader's thumb does right now, and that the INDEX exists
+// at all. The second is why the band is drawn even on a page with nothing to scroll — a
+// hold gesture nothing names is a gesture nobody finds.
+//
+// `window`/`windows` are the page's own window count and which one is open, 1-based for
+// the reader. Exported because STAT's pages are drawn from two units (this one and
+// collect_screen.h) and a reader stepping between them must not find the key legend
+// changing shape.
+void drawStatHintBand(Framebuffer& fb, int window, int windows);
 
 // Build the LOADOUT page's rows (ProseRow, core/ui/prose_page.h — the shared
 // name+prose flow this page, BUFFS, and ROCK THE DOCK's opponent sheet all use): a
@@ -228,7 +241,9 @@ std::vector<StatIndexRow> buildStatIndexRows(const std::vector<ProseRow>& tierRo
                                              const std::vector<ProseRow>& loadoutRows,
                                              int level, int movesOn, int moveSlots,
                                              int modsOn, int modSlots, int buffs,
-                                             const char* line, int logEvents);
+                                             const char* line, int logEvents,
+                                             int movesKnown, int movesLearnable,
+                                             int foodsEaten, int foodsTotal);
 
 // The INDEX: `rows` from top to bottom, the focused one banded, each with its readout
 // right-aligned. The roster has a ceiling (six pages, four stats, two loadout halves)

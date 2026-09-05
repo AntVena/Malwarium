@@ -7112,6 +7112,55 @@ window.PEDIA_DATA = {
       "goal": 120
     },
     {
+      "key": "PALATE_10",
+      "name": "Clean Plate",
+      "trigger": "Feed one pet 10 different dishes.",
+      "icon": "assets/icons/ICON_ACH_PALATE_10.png",
+      "goal": 10
+    },
+    {
+      "key": "PALATE_30",
+      "name": "Big Eater",
+      "trigger": "Feed one pet 30 different dishes.",
+      "icon": "assets/icons/ICON_ACH_PALATE_30.png",
+      "goal": 30
+    },
+    {
+      "key": "PALATE_75",
+      "name": "Connoisseur",
+      "trigger": "Feed one pet 75 different dishes.",
+      "icon": "assets/icons/ICON_ACH_PALATE_75.png",
+      "goal": 75
+    },
+    {
+      "key": "PALATE_ALL",
+      "name": "Nothing Left",
+      "trigger": "Feed one pet every one of the 195 dishes.",
+      "icon": "assets/icons/ICON_ACH_PALATE_ALL.png",
+      "goal": 195
+    },
+    {
+      "key": "REPERTOIRE_10",
+      "name": "Quick Study",
+      "trigger": "Teach one pet 10 different moves.",
+      "icon": "assets/icons/ICON_ACH_REPERTOIRE_10.png",
+      "goal": 10
+    },
+    {
+      "key": "REPERTOIRE_25",
+      "name": "Well Drilled",
+      "trigger": "Teach one pet 25 different moves.",
+      "icon": "assets/icons/ICON_ACH_REPERTOIRE_25.png",
+      "goal": 25
+    },
+    {
+      "key": "REPERTOIRE_50",
+      "name": "Whole Playbook",
+      "trigger": "Teach one pet 50 different moves.",
+      "icon": "assets/icons/ICON_ACH_REPERTOIRE_50.png",
+      "goal": 50
+    },
+    {
       "key": "RECIPES_1",
       "name": "First Method",
       "trigger": "Learn your first Merge Hub recipe.",

@@ -63,20 +63,19 @@ constexpr int kTierRowTop = 26;   // TIERS opens on a section heading, same as L
 
 // --- The INDEX's own grid ---------------------------------------------------
 //
-// Tighter than the list grid's kRowH, and set by the roster rather than chosen: the
-// index is worth opening only if the whole of it is on one screen, so the pitch is
-// what the tallest possible roster needs. The static_assert below is what keeps that
-// true when a page or a section is added — a seventh page silently pushed off the
-// bottom would be a destination with no route to it.
+// Tighter than the list grid's kRowH: the index earns its keep by showing as much of
+// the reader's map at once as it can, and a row here is a name and a number rather than
+// the icon-plus-label a carousel row carries.
+//
+// It still WINDOWS rather than shrinking to fit — the roster grows with the page count
+// and with each page's sections, and a pitch chased down to hold all of it would end up
+// unreadable to buy an ability the list contract already provides (the cursor drives the
+// window, listScrollTop, and A/hold-C walk it).
 constexpr int kIndexRowTop = kRowTop;
 constexpr int kIndexRowH = 15;
 constexpr int kIndexLabelX = 20;   // clear of the cursor marker at the left margin
 constexpr int kIndexSubX = 32;     // a section INSIDE a page, indented under it
-// VITALS · TIERS + one per stat · LOADOUT + MOVES + MODS · BUFFS · SPECIES · AUDIT LOG.
-constexpr int kIndexMaxRows = 1 + (1 + kLevelStatCount) + (1 + 2) + 1 + 1 + 1;
-static_assert(kIndexMaxRows * kIndexRowH <= kProseBottom - kIndexRowTop,
-              "the STAT index must fit one screen: it is the page that exists to save "
-              "the reader a walk, and a walk is what a scrolling one would cost");
+constexpr int kIndexVisible = (kProseBottom - kIndexRowTop) / kIndexRowH;
 
 // BUFFS keeps its own heights because a buff row is a name plus a COUNTDOWN rather
 // than a name plus a tag — the timer is live state, re-read every repaint, where a
@@ -162,7 +161,7 @@ void drawBuffScrollbar(Framebuffer& fb, int top, int shown, int total) {
 // for the reader: a scrollbar thumb says roughly how far down the page a reader is,
 // and "2/5" says how much of it is left, which is the question they are actually
 // asking before deciding to keep pressing.
-void statHint(Framebuffer& fb, int window, int windows) {
+void statHintBand(Framebuffer& fb, int window, int windows) {
     char hint[32];
     if (windows > 1)
         std::snprintf(hint, sizeof(hint), "B MORE %d/%d  HOLD B INDEX", window, windows);
@@ -174,8 +173,8 @@ void statHint(Framebuffer& fb, int window, int windows) {
 // The same band for a flowed page, off the page's own rows.
 void statProseHint(Framebuffer& fb, const std::vector<ProseRow>& rows, int scrollTop,
                    int rowTop) {
-    statHint(fb, proseWindowIndex(rows, scrollTop, rowTop) + 1,
-             proseWindowCount(rows, rowTop));
+    statHintBand(fb, proseWindowIndex(rows, scrollTop, rowTop) + 1,
+                 proseWindowCount(rows, rowTop));
 }
 
 } // namespace
@@ -383,11 +382,11 @@ int buffRowsFitting(const std::vector<BuffRow>& rows, int top) {
 
 void drawBuffsScreen(Framebuffer& fb, const std::vector<BuffRow>& rows, int scrollTop,
                      int /*beat*/) {
-    statHeader(fb, "BUFFS", 3);
+    statHeader(fb, "BUFFS", 5);
 
     if (rows.empty()) {
         drawText(fb, kMargin, 60, "- NO ACTIVE BUFFS -", palColor(Pal::INK_DIM));
-        statHint(fb, 1, 1);
+        statHintBand(fb, 1, 1);
         return;
     }
 
@@ -423,12 +422,12 @@ void drawBuffsScreen(Framebuffer& fb, const std::vector<BuffRow>& rows, int scro
     }
 
     if (overflow) drawBuffScrollbar(fb, top, shown, total);
-    statHint(fb, buffWindowIndex(rows, top) + 1, buffWindowCount(rows));
+    statHintBand(fb, buffWindowIndex(rows, top) + 1, buffWindowCount(rows));
 }
 
 void drawSpeciesScreen(Framebuffer& fb, const char* name, const char* line,
                        const char* hint, const char* context, int beat) {
-    statHeader(fb, "SPECIES", 4);
+    statHeader(fb, "SPECIES", 6);
 
     // Name and line tag are both content, and the widest pair of them wants more than
     // the line has: a twelve-letter creature beside METAMORPHIC LINE fills it exactly.
@@ -482,7 +481,7 @@ void drawSpeciesScreen(Framebuffer& fb, const char* name, const char* line,
         drawTextWrapped(fb, kMargin, y, kProseW, context, palColor(Pal::INK_DIM),
                           kSpeciesLineH, ctxLines);
 
-    statHint(fb, 1, 1);
+    statHintBand(fb, 1, 1);
 }
 
 void drawStatScreen(Framebuffer& fb, const PetModel& m, const char* name,
@@ -549,7 +548,7 @@ void drawStatScreen(Framebuffer& fb, const PetModel& m, const char* name,
     }
     drawText(fb, kActiveW - kMargin - textWidth(evo), 168, evo, palColor(Pal::INK));
 
-    statHint(fb, 1, 1);
+    statHintBand(fb, 1, 1);
 }
 
 namespace {
@@ -567,7 +566,7 @@ const SpriteData* logGlyph(LogEventType t) {
 } // namespace
 
 void drawAuditLog(Framebuffer& fb, const EventLog& log, int /*beat*/) {
-    statHeader(fb, "AUDIT LOG", 5);
+    statHeader(fb, "AUDIT LOG", 7);
 
     // A full page to itself, so it shows the WHOLE ring newest-first rather than a
     // slice of it: the log holds eight and eight is what a page of this pitch fits, so
@@ -585,7 +584,7 @@ void drawAuditLog(Framebuffer& fb, const EventLog& log, int /*beat*/) {
         drawText(fb, kMargin, kCenterY, "- NO EVENTS YET -", palColor(Pal::INK_DIM));
         drawText(fb, kMargin, kCenterY + 16, "FILLS IN AS YOU PLAY.",
                  palColor(Pal::INK_DIM));
-        statHint(fb, 1, 1);
+        statHintBand(fb, 1, 1);
         return;
     }
     for (int i = 0; i < shown; ++i) {            // newest first
@@ -594,7 +593,7 @@ void drawAuditLog(Framebuffer& fb, const EventLog& log, int /*beat*/) {
         drawSprite(fb, *logGlyph(e.type), 0, kMargin, y);
         drawText(fb, kMargin + 16, y + 2, e.text, palColor(Pal::INK));
     }
-    statHint(fb, 1, 1);
+    statHintBand(fb, 1, 1);
 }
 
 // --- The INDEX ---------------------------------------------------------------
@@ -638,7 +637,9 @@ std::vector<StatIndexRow> buildStatIndexRows(const std::vector<ProseRow>& tierRo
                                              const std::vector<ProseRow>& loadoutRows,
                                              int level, int movesOn, int moveSlots,
                                              int modsOn, int modSlots, int buffs,
-                                             const char* line, int logEvents) {
+                                             const char* line, int logEvents,
+                                             int movesKnown, int movesLearnable,
+                                             int foodsEaten, int foodsTotal) {
     std::vector<StatIndexRow> out;
 
     out.push_back(indexRow("VITALS", false, 0, 0, "LVL %d", level));
@@ -671,8 +672,14 @@ std::vector<StatIndexRow> buildStatIndexRows(const std::vector<ProseRow>& tierRo
                                moves ? moveSlots : modSlots));
     }
 
-    out.push_back(buffs > 0 ? indexRow("BUFFS", false, 3, 0, "%d", buffs)
-                            : indexRow("BUFFS", false, 3, 0, "NONE"));
+    // The two COLLECTION pages read as scores, which is the only thing worth saying
+    // about them in a list: a row that says 41/195 has already told the reader whether
+    // opening it is a plan or a formality.
+    out.push_back(indexRow("MOVES", false, 3, 0, "%d/%d", movesKnown, movesLearnable));
+    out.push_back(indexRow("FOODS", false, 4, 0, "%d/%d", foodsEaten, foodsTotal));
+
+    out.push_back(buffs > 0 ? indexRow("BUFFS", false, 5, 0, "%d", buffs)
+                            : indexRow("BUFFS", false, 5, 0, "NONE"));
 
     // The line, upper-cased — the same tag the SPECIES page heads itself with.
     char tag[14] = "";
@@ -681,10 +688,10 @@ std::vector<StatIndexRow> buildStatIndexRows(const std::vector<ProseRow>& tierRo
         for (char* c = tag; *c; ++c)
             *c = static_cast<char>(std::toupper(static_cast<unsigned char>(*c)));
     }
-    out.push_back(indexRow("SPECIES", false, 4, 0, "%s", tag));
+    out.push_back(indexRow("SPECIES", false, 6, 0, "%s", tag));
 
-    out.push_back(logEvents > 0 ? indexRow("AUDIT LOG", false, 5, 0, "%d", logEvents)
-                                : indexRow("AUDIT LOG", false, 5, 0, "EMPTY"));
+    out.push_back(logEvents > 0 ? indexRow("AUDIT LOG", false, 7, 0, "%d", logEvents)
+                                : indexRow("AUDIT LOG", false, 7, 0, "EMPTY"));
 
     return out;
 }
@@ -694,9 +701,14 @@ void drawStatIndex(Framebuffer& fb, const std::vector<StatIndexRow>& rows, int c
     drawHeaderBand(fb, "STAT", "INDEX");
 
     const int n = static_cast<int>(rows.size());
-    for (int i = 0; i < n; ++i) {
+    // One window, derived from the cursor the way every scrolling list on the device
+    // derives its own (layout.h) — so the rows drawn and the thumb below can never
+    // disagree about where the list is.
+    const int top = listScrollTop(cursor, n, kIndexVisible);
+    for (int v = 0; v < kIndexVisible && top + v < n; ++v) {
+        const int i = top + v;
         const StatIndexRow& r = rows[i];
-        const int y = kIndexRowTop + i * kIndexRowH;
+        const int y = kIndexRowTop + v * kIndexRowH;
         if (i == cursor) {
             fb.fillRect(4, y - 2, kActiveW - 8, kIndexRowH - 1, palColor(Pal::TRACK));
             drawRowCursor(fb, 6, y, palColor(Pal::ACCENT));
@@ -710,7 +722,20 @@ void drawStatIndex(Framebuffer& fb, const std::vector<StatIndexRow>& rows, int c
                        i == cursor);
     }
 
+    if (n > kIndexVisible) {
+        const int barX = kActiveW - 3;
+        const int trackH = kIndexVisible * kIndexRowH;
+        fb.fillRect(barX, kIndexRowTop, 2, trackH, palColor(Pal::TRACK));
+        const int thumbH = std::max(8, trackH * kIndexVisible / n);
+        fb.fillRect(barX, kIndexRowTop + trackH * top / n, 2, thumbH,
+                    palColor(Pal::INK_DIM));
+    }
+
     drawHintBand(fb, "A NEXT  B OPEN  C BACK");
+}
+
+void drawStatHintBand(Framebuffer& fb, int window, int windows) {
+    statHintBand(fb, window, windows);
 }
 
 } // namespace mal

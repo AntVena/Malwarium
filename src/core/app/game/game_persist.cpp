@@ -261,6 +261,12 @@ SaveData Game::captureSave() const {
         std::strncpy(id.id, it->id, kSaveIdCap - 1);
         d.collectedItems.push_back(id);
     }
+    d.petFoodsEaten.reserve(petFoodsEaten_.size());
+    for (const ItemDef* it : petFoodsEaten_) {
+        SaveId id;
+        std::strncpy(id.id, it->id, kSaveIdCap - 1);
+        d.petFoodsEaten.push_back(id);
+    }
     d.speciesDiveIds.reserve(speciesDives_.size());
     d.speciesDiveDepths.reserve(speciesDives_.size());
     for (const SpeciesDive& s : speciesDives_) {
@@ -687,6 +693,12 @@ void Game::applySave(const SaveData& d) {
     for (const auto& s : d.collectedItems)
         if (const ItemDef* it = registry_.item(s.id)) collectedItems_.push_back(it);
     sweepCollectedItems();     // fold in whatever the bag holds — seeds a pre-v40 save
+    // The palate is NOT swept from the bag for the same reason it is not written there:
+    // a pre-v62 save has no record of what its pet ate, and inventing one out of what it
+    // happens to be carrying would light cells for meals that never happened.
+    petFoodsEaten_.clear();
+    for (const auto& s : d.petFoodsEaten)
+        if (const ItemDef* it = registry_.item(s.id)) petFoodsEaten_.push_back(it);
     speciesDives_.clear();
     for (size_t i = 0; i < d.speciesDiveIds.size(); ++i) {
         const int depth = i < d.speciesDiveDepths.size() ? d.speciesDiveDepths[i] : 0;

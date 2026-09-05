@@ -309,6 +309,45 @@ const AchievementDef kAchievements[] = {
      AchSeries::FoodsCollected, /*goal=*/120, nullptr, 0,
      {bits(300), item("sealed_cache_epic")}},
 
+    // --- What ONE PET got through -------------------------------------------------
+    // The per-pet halves of the collection, and the rows STAT's FOODS and MOVES pages
+    // exist to steer (core/ui/collect_screen.h). CUISINE above counts dishes the DEVICE
+    // has ever held — a shelf that only grows; these count what the creature in front of
+    // you has actually eaten and learned, and a new egg starts both at nothing. That is
+    // the point of them: the operator's collection is a lifetime, a pet's is a raising.
+    {/*wire=*/157, "PALATE_10", "Clean Plate",
+     "Feed one pet {n} different dishes.", "ICON_ACH_PALATE_10",
+     AchSeries::PetFoodsEaten, /*goal=*/10, nullptr, 0,
+     {bits(80), item("sealed_cache_common")}},
+    {/*wire=*/158, "PALATE_30", "Big Eater",
+     "Feed one pet {n} different dishes.", "ICON_ACH_PALATE_30",
+     AchSeries::PetFoodsEaten, /*goal=*/30, nullptr, 0,
+     {bits(180), item("sealed_cache_uncommon")}},
+    {/*wire=*/159, "PALATE_75", "Connoisseur",
+     "Feed one pet {n} different dishes.", "ICON_ACH_PALATE_75",
+     AchSeries::PetFoodsEaten, /*goal=*/75, nullptr, 0,
+     {bits(320), item("sealed_cache_rare")}},
+    {/*wire=*/160, "PALATE_ALL", "Nothing Left",
+     "Feed one pet every one of the {n} dishes.", "ICON_ACH_PALATE_ALL",
+     AchSeries::PetFoodsEaten, kGoalAll, nullptr, 0,
+     {bits(600), item("commend_cache")}},
+
+    // The move roster's own half. Fixed rungs rather than kGoalAll for the reason its
+    // series states (content_achievements.h): a pet can only ever learn its own line's
+    // moves plus the common pool, so "all of them" is a number no creature can reach.
+    {/*wire=*/161, "REPERTOIRE_10", "Quick Study",
+     "Teach one pet {n} different moves.", "ICON_ACH_REPERTOIRE_10",
+     AchSeries::PetMovesKnown, /*goal=*/10, nullptr, 0,
+     {bits(100), item("sealed_cache_common")}},
+    {/*wire=*/162, "REPERTOIRE_25", "Well Drilled",
+     "Teach one pet {n} different moves.", "ICON_ACH_REPERTOIRE_25",
+     AchSeries::PetMovesKnown, /*goal=*/25, nullptr, 0,
+     {bits(240), item("sealed_cache_rare")}},
+    {/*wire=*/163, "REPERTOIRE_50", "Whole Playbook",
+     "Teach one pet {n} different moves.", "ICON_ACH_REPERTOIRE_50",
+     AchSeries::PetMovesKnown, /*goal=*/50, nullptr, 0,
+     {bits(500), item("sealed_cache_epic")}},
+
     // What a player actually climbs: not dishes HELD but methods KNOWN. Every rung here
     // is a Decryptogram somebody cracked, since no shop sells a recipe at any price — so
     // this series is the one place the board's whole prize ladder is measured back.

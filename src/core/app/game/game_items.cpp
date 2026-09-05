@@ -806,6 +806,7 @@ void Game::startFeeding(const ItemDef& d, bool fromLockout) {
     // a stat that was already capped has none to show.
     feedBefore_ = {model_.hunger(), model_.fragmentation(), model_.happiness()};
     applyItemEffects(d);                        // Hunger/Happy fill + any frag/happy-pull
+    markFoodEaten(d);                          // this pet's palate (STAT's FOODS grid)
     noteCareSignal(DominantSignal::Feeding);   // dominant-signal tally
     // Feeding from the crisis resolves it immediately — disarm the deadline so it
     // can't penalise the pet mid-eat (endFeeding finalises the return to idle).

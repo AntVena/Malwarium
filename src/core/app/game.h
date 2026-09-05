@@ -69,6 +69,7 @@ struct SpriteData;
 struct ProseRow;
 struct BuffRow;
 struct StatIndexRow;
+struct FoodRow;
 
 // How a Game starts. FreshHatch = empty save -> Decryption Hatch (the real
 // first boot). Hatched = skip straight to a raised pet (the test/dev
@@ -1652,6 +1653,12 @@ public:
     // inventory, so every path that grants an item is covered by construction.
     bool itemCollected(const char* id) const;
     int itemsCollected() const { return static_cast<int>(collectedItems_.size()); }
+    // The PET's palate, beside the operator's collection above: has this pet been fed
+    // `id`, and how many distinct dishes has it tasted. Cleared with the pet, so a fresh
+    // egg starts the plate empty however much its predecessor got through — which is
+    // what makes the FOODS grid a thing to fill in rather than a shelf you inherit.
+    bool petAteFood(const char* id) const;
+    int petFoodsEaten() const { return static_cast<int>(petFoodsEaten_.size()); }
     // Has the METHOD for `outputId` been won? (save v31) — the kitchen's other axis:
     // meeting a dish and knowing how to cook it are independent, and a recipe is only
     // ever won off a Decryptogram, never bought. Keyed by the dish because that is the
@@ -1840,6 +1847,11 @@ public:
     // matched to each slot's stamped kind; mods are placed without consuming a spare,
     // since what this stages is the display and not the economy.
     void debugFillLoadout();
+    // Put `n` dishes on the active pet's palate (tests / tools/dump_frame.cpp), in
+    // roster order. The real path is a meal — Game::startFeeding — which needs a bag,
+    // a modal and a tick each; this is the same mark that path makes, so a rendered
+    // FOODS grid shows what a fed pet's would.
+    void debugTasteFoods(int n);
     // Run the e bulk-open path directly on the item `id` (tests): the real
     // trigger is the VAULT hold-B gesture; this exercises openAllCachesOfRarity's
     // aggregation (consume-all-of-rarity + tally + Bits sum) without the hold timing.
@@ -3062,6 +3074,12 @@ private:
     std::vector<ProseRow> statTierRows() const;
     std::vector<ProseRow> statLoadoutRows() const;
     std::vector<BuffRow> statBuffRows() const;
+    // The two COLLECTION pages' rows (core/ui/collect_screen.h): every dish laid out in
+    // rarity groups against this pet's palate, and every move it could learn against
+    // what it has. Marshalled here for the same reason the three above are — Game owns
+    // the state, the screen owns the shape.
+    std::vector<FoodRow> statFoodRows() const;
+    std::vector<ProseRow> statMoveDexRows() const;
     // The STAT screens' draws (game_stat.cpp), reached from drawSubmenu.
     void drawStat(Framebuffer& fb) const;
     // {rows on screen starting at statScroll_, rows in total} for the open STAT page;
@@ -3386,6 +3404,14 @@ private:
     // Every item id that has ever been in the bag (save v40) — borrowed registry
     // pointers, like seenCreatures_. Player-level: spending an item never un-collects it.
     std::vector<const ItemDef*> collectedItems_;
+    // Every distinct FOOD the active pet has been fed (save v62) — the same borrowed
+    // pointers, kept per-pet. Written at the one place a dish is actually eaten
+    // (Game::startFeeding, via markFoodEaten) rather than swept out of the bag, because
+    // holding a dish is not tasting it and the whole point of the set is the difference.
+    std::vector<const ItemDef*> petFoodsEaten_;
+    // Record a dish on the active pet's palate. Idempotent, and a no-op for anything
+    // that is not a Food — a Buff drunk from the bag is not a meal.
+    void markFoodEaten(const ItemDef& d);
     // Fold the live inventory into collectedItems_. Called from the sweep rather than
     // wired into each grant site: every path that adds an item necessarily leaves it in
     // the bag for a tick, so one pass over the stacks catches all of them — including

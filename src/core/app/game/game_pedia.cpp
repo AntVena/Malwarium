@@ -75,6 +75,33 @@ bool Game::itemCollected(const char* id) const {
     return false;
 }
 
+bool Game::petAteFood(const char* id) const {
+    if (!id) return false;
+    for (const ItemDef* d : petFoodsEaten_)
+        if (std::strcmp(d->id, id) == 0) return true;
+    return false;
+}
+
+void Game::markFoodEaten(const ItemDef& d) {
+    // Foods only. The palate is what the pet has EATEN, and the grid it feeds shows the
+    // kitchen — a Backup Drive is used, not tasted, and would read as a gap that can
+    // never be filled by cooking.
+    if (itemCategory(d) != ItemDef::Category::Food) return;
+    if (petAteFood(d.id)) return;
+    petFoodsEaten_.push_back(&d);
+    markSaveDirty();
+}
+
+void Game::debugTasteFoods(int n) {
+    for (const ItemDef* d : registry_.allItems()) {
+        if (n <= 0) break;
+        if (!d || itemCategory(*d) != ItemDef::Category::Food) continue;
+        if (petAteFood(d->id)) continue;
+        markFoodEaten(*d);
+        --n;
+    }
+}
+
 void Game::sweepCollectedItems() {
     for (const auto& s : inventory_.stacks()) {
         if (s.qty <= 0 || itemCollected(s.id)) continue;
@@ -211,6 +238,18 @@ int Game::achValue(const AchievementDef& d) const {
             int n = 0;
             for (const ItemDef* it : collectedItems_)
                 if (it->type == ItemDef::Type::Food) ++n;
+            return n;
+        }
+        // The two per-pet collections. Counted off the very state the pages draw
+        // (petFoodsEaten_ and the pet's own move pool), so a row can never claim a dish
+        // or a move the FOODS/MOVES grid does not light.
+        case AchSeries::PetFoodsEaten:
+            return static_cast<int>(petFoodsEaten_.size());
+        case AchSeries::PetMovesKnown: {
+            int n = static_cast<int>(moveLoadout_.owned().size());
+            // The innate move is owned without being in the pool (MoveLoadout::isInnate),
+            // and the page counts it, so this must too.
+            if (moveLoadout_.defaultMove()) ++n;
             return n;
         }
         case AchSeries::RarityCollected: {

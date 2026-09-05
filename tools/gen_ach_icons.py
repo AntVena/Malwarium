@@ -289,6 +289,48 @@ MOTIFS["stove"] = """
 ....................
 """
 
+# THE PALATE — a plate with a fork laid across it. The kitchen ladder beside it
+# (CUISINE, a bowl) counts dishes the OPERATOR has got hold of; this one counts what one
+# pet has actually eaten, and a cleared plate is the picture of that. Two motifs rather
+# than one shared bowl for exactly that reason: they are different claims, and a reader
+# who cannot tell the rows apart cannot tell the claims apart either.
+MOTIFS["palate"] = """
+....................
+....................
+....##..############
+....##..############
+....##..##........##
+....##..##........##
+....##..##........##
+..######..........##
+....##....##....##..
+....##......####....
+....##..............
+....##..............
+....##..............
+....................
+"""
+
+# THE REPERTOIRE — a stack of move cards, the top one dealt clear of the rest. The moves
+# ladder counts what ONE pet has learned of everything it could, which is a hand being
+# collected rather than a shelf being filled.
+MOTIFS["repertoire"] = """
+....................
+......############..
+......############..
+......##........##..
+....############..##
+....############....
+....##........##....
+..############......
+..############......
+..##........##......
+..##........##......
+..############......
+..############......
+....................
+"""
+
 # THE QUOTE BOARD — a framed grid with cells open and closed, which is what a
 # Decryptogram mid-solve actually looks like.
 MOTIFS["cipher"] = """
@@ -782,6 +824,18 @@ GLYPHS = [
     # picture as CUISINE_25. A capstone is a bar in this grammar anyway — "all of them"
     # is not a count — so the fix and the convention are the same edit.
     ("ICON_ACH_CUISINE_ALL", inherit("ICON_ACH_CUISINE_3"), bar()),
+
+    # --- What ONE PET has got through ----------------------------------------
+    # The per-pet halves of the two collections. They sit apart from CUISINE and from the
+    # move rows above because they measure a creature rather than a device: a new egg
+    # starts both of these over, which is the whole reason they are worth chasing twice.
+    ("ICON_ACH_PALATE_10", "palate", tally(1)),
+    ("ICON_ACH_PALATE_30", "palate", tally(2)),
+    ("ICON_ACH_PALATE_75", "palate", tally(3)),
+    ("ICON_ACH_PALATE_ALL", "palate", bar()),
+    ("ICON_ACH_REPERTOIRE_10", "repertoire", tally(1)),
+    ("ICON_ACH_REPERTOIRE_25", "repertoire", tally(2)),
+    ("ICON_ACH_REPERTOIRE_50", "repertoire", tally(3)),
 
     ("ICON_ACH_RECIPES_1", "recipes", tally(1)),
     ("ICON_ACH_RECIPES_10", "recipes", tally(2)),

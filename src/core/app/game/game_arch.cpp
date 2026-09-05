@@ -316,6 +316,12 @@ void Game::archDeployStored(int storedIdx) {
     // just gone into the rack — the hold included, which is also the way out of a pet
     // parked at a stage by a player who has no Eject-USB to hand.
     clearUsbPort();
+    // The palate empties with the port, and for a plainer reason: the rack record has no
+    // room for one. A stored pet's tasted set would be a list of up to every food on the
+    // shelf, per slot, against a 256KB save — so what a frozen pet carries is everything
+    // BUT that, and a thawed pet's plate reads as unrecorded rather than as its
+    // predecessor's.
+    petFoodsEaten_.clear();
     bestDeepWebDepth_ = incoming.bestDeepWebDepth;  // thaw this pet's own DeepWeb record
     // Thaw the incoming pet's dying window mid-flight. dyingArmed_ is deliberately NOT
     // restored: it anchors against nowMs_, so the next tick re-arms it against the

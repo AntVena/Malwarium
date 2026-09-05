@@ -5,10 +5,11 @@
 // feature whose field it migrates, not in a migrations pile of its own.
 #include "test_gates.h"
 
-// STAT is 6 paged screens — 0 pet VITALS (the landing, + an XP bar), 1 TIERS (the
-// investment ladder: which stat tiers this pet holds and what the next costs),
-// 2 LOADOUT (the equipped moves + mods, WITH their effect text), 3 BUFFS (armed
-// item buffs), 4 SPECIES (the pet's own lore), 5 AUDIT LOG — cycled by A, and C
+// STAT is kStatPages paged screens — 0 pet VITALS (the landing, + an XP bar), 1 TIERS
+// (the investment ladder: which stat tiers this pet holds and what the next costs),
+// 2 LOADOUT (the equipped moves + mods, WITH their effect text), 3 MOVES and 4 FOODS
+// (what this pet has learned and tasted, against everything it could), 5 BUFFS (armed
+// item buffs), 6 SPECIES (the pet's own lore), 7 AUDIT LOG — cycled by A, and C
 // backs out. (Device/account stats live on the Hacker PROFILE slot.)
 void test_stat_paging_loadout_xp() {
     Game g{StartMode::Hatched};
@@ -33,19 +34,19 @@ void test_stat_paging_loadout_xp() {
     g.render(p1);
     CHECK(!fbEqual(p0, p1));
 
-    // A -> page 2 = LOADOUT (distinct again), then BUFFS, SPECIES, audit log,
-    // A -> wraps back to page 0 = VITALS.
+    // A -> page 2 = LOADOUT (distinct again), then MOVES.
     g.onButton(press(Button::A));
     Framebuffer p2(kActiveW, kActiveH);
     g.render(p2);
     CHECK(!fbEqual(p1, p2));
-    g.onButton(press(Button::A));   // -> page 3 BUFFS
+    g.onButton(press(Button::A));   // -> page 3 MOVES
     Framebuffer p3(kActiveW, kActiveH);
     g.render(p3);
     CHECK(!fbEqual(p2, p3));
-    g.onButton(press(Button::A));   // -> page 4 SPECIES
-    g.onButton(press(Button::A));   // -> page 5 AUDIT LOG
-    g.onButton(press(Button::A));   // -> wraps to page 0 VITALS
+    // ...and one lap of the rest puts VITALS back, whatever the roster grows to: the
+    // ring is kStatPages long by construction, so the walk is measured rather than
+    // counted out here.
+    for (int i = 3; i < kStatPages; ++i) g.onButton(press(Button::A));
     Framebuffer wrap(kActiveW, kActiveH);
     g.render(wrap);
     CHECK(fbEqual(p0, wrap));                          // cycle wraps to VITALS
@@ -357,16 +358,15 @@ void test_stat_loadout_b_scroll() {
     Framebuffer l3(kActiveW, kActiveH); g.render(l3);
     CHECK(fbEqual(l0, l3));
 
-    // Page 3 (BUFFS) flows rows too, but with nothing armed it has none to scroll,
-    // so B is inert there; page 5 (AUDIT LOG) never scrolls at all.
-    g.onButton(press(Button::A));                // page 2 -> page 3
+    // BUFFS flows rows too, but with nothing armed it has none to scroll, so B is
+    // inert there; AUDIT LOG never scrolls at all.
+    while (g.statPage() != 5) g.onButton(press(Button::A));
     Framebuffer b0(kActiveW, kActiveH); g.render(b0);
     tapB(g);
     Framebuffer b0b(kActiveW, kActiveH); g.render(b0b);
     CHECK(fbEqual(b0, b0b));
 
-    g.onButton(press(Button::A));                // -> page 4 (SPECIES)
-    g.onButton(press(Button::A));                // -> page 5 (AUDIT LOG)
+    while (g.statPage() != 7) g.onButton(press(Button::A));
     Framebuffer a0(kActiveW, kActiveH); g.render(a0);
     tapB(g);
     Framebuffer a0b(kActiveW, kActiveH); g.render(a0b);
@@ -813,4 +813,86 @@ void test_prose_windows_break_on_sections() {
     CHECK(windows >= kLevelStatCount);
     CHECK(proseWindowCount(rows, 26) == windows);
     CHECK(proseWindowIndex(rows, 0, 26) == 0);
+}
+
+// STAT's two COLLECTION pages are the device's first per-PET progress readout: what this
+// creature has eaten and what it has learned, against everything it could. The 'Pedia has
+// always been able to say what the DEVICE has met; neither of these numbers was on the
+// device at all, and neither is the same claim.
+//
+// What has to hold is that the palate is the PET's. A dish counts when it is fed, not
+// when it is bought; a second helping is not a second dish; and a new egg starts the
+// plate empty however much its predecessor got through.
+void test_palate_is_per_pet_and_counts_meals() {
+    Game g{StartMode::Hatched};
+    const ItemDef* dish = nullptr;
+    for (const ItemDef* d : g.content().allItems())
+        if (d && itemCategory(*d) == ItemDef::Category::Food) { dish = d; break; }
+    CHECK(dish != nullptr);
+    if (!dish) return;
+
+    // Holding is not tasting: the bag fills the operator's collection and leaves the
+    // pet's plate alone.
+    g.inventory().add(dish->id, 2);
+    g.tick(1000);
+    CHECK(g.itemCollected(dish->id));
+    CHECK(!g.petAteFood(dish->id));
+    CHECK(g.petFoodsEaten() == 0);
+
+    // Feeding it is what counts it, and counts it once however many helpings follow.
+    g.debugUseItem(dish->id);
+    CHECK(g.petAteFood(dish->id));
+    CHECK(g.petFoodsEaten() == 1);
+    g.debugUseItem(dish->id);
+    CHECK(g.petFoodsEaten() == 1);
+
+    // The grid reads the same set: exactly one cell is lit, and the sections' totals add
+    // up to the whole shelf rather than to whatever this pet has met.
+    auto rows = buildFoodRows(g.content(), {dish});
+    int lit = 0, total = 0, cells = 0;
+    for (const FoodRow& r : rows) {
+        if (r.section) { total += r.total; continue; }
+        cells += r.count;
+        for (int c = 0; c < r.count; ++c)
+            if (r.eaten[c]) ++lit;
+    }
+    CHECK(lit == 1);
+    CHECK(cells == total);
+    CHECK(total > 1);
+
+    // A new pet is a new plate. The DEVICE's collection is untouched by it — that is the
+    // difference between the two sets, and the reason both are worth keeping.
+    g.resetToHatch();
+    CHECK(g.petFoodsEaten() == 0);
+    CHECK(!g.petAteFood(dish->id));
+    CHECK(g.itemCollected(dish->id));
+}
+
+// The MOVES page's row model: every move this pet could ever learn, its own line first
+// and the common pool after, and NOTHING it could not. A page that listed another line's
+// moves would be inviting the player to chase something the equip gate will never let
+// them hold (moveAllowedForLine).
+void test_move_dex_lists_only_what_this_pet_could_learn() {
+    Game g{StartMode::Hatched};
+    const char* line = g.pet()->line;
+    CHECK(line != nullptr);
+    const auto rows = buildMoveDexRows(g.content(), g.moveLoadout(), line,
+                                       g.pet()->stage);
+
+    int sections = 0, listed = 0, known = 0;
+    for (const ProseRow& r : rows) {
+        if (r.header) { ++sections; continue; }
+        ++listed;
+        if (r.tag[0]) ++known;
+        // Every row names a move this pet is allowed to hold.
+        const MoveDef* m = nullptr;
+        for (const MoveDef* c : g.content().allMoves())
+            if (c && std::strcmp(c->displayName, r.label) == 0) m = c;
+        CHECK(m && moveAllowedForLine(*m, line));
+    }
+    CHECK(sections == 2);                 // the pet's line, and the common pool
+    CHECK(listed < g.content().allMoves().size());   // another line's rows are absent
+    // A freshly hatched pet owns its whole line (MoveLoadout::startingForLine) plus its
+    // innate move, and none of the pool it has not gone and won yet.
+    CHECK(known > 0 && known < listed);
 }
