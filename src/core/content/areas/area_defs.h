@@ -214,6 +214,16 @@ struct GuardianDef {
 struct AreaDef {
     const char* id;    // stable id, e.g. "citrus_circuit" (matches the folder name)
     const char* name;  // display name, e.g. "CITRUS CIRCUIT"
+    // What this area is called where there is no room for its name: the walk badge on the
+    // idle habitat, which draws "EXPL <badge> <sub>" against a right-anchored status field
+    // (Game::exploreBadgeLabel, expl_screen.h's drawExploreBadge). SEVEN characters is what
+    // that line can spare — a native gate measures every shipped area against the widest
+    // right field the badge draws, so a row that overruns fails the suite rather than
+    // overprinting on the device. It is authored rather than derived because no rule cuts
+    // every name well: "CITRUS CIRCUIT" wants its first word, "THE PIRATE BAYOU" its last,
+    // and "NAPSTORRENT MOORS" has no first word that fits at all. nullptr falls back to the
+    // first word of `name`, which is only ever right by luck — write the field.
+    const char* badge;
     const char* title; // zone-completion Title granted on clearing this area's gauntlet
     // The asset NAME (no path, no extension) of this area's sector glyph. Keyed off the
     // area's own id rather than its rung, because the rung is not an identity: splicing

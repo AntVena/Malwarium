@@ -69,6 +69,11 @@ int explSectorTier(int idx) {
 const char* explSectorName(int idx) {
     return (idx >= 0 && idx < kExplSectors) ? area(idx).name : "";
 }
+const char* explSectorBadge(int idx) {
+    if (idx < 0 || idx >= kExplSectors) return "";
+    const AreaDef& a = area(idx);
+    return a.badge ? a.badge : a.name;   // no short name authored: the display name, whole
+}
 const char* sectorTitle(int idx) {
     return (idx >= 0 && idx < kExplSectors) ? area(idx).title : "";
 }

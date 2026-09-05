@@ -63,6 +63,7 @@ const ShopListingDef kModShopListings[] = {
 const AreaDef kAreaCastleRapidscare = {
     "castle_rapidscare",
     "CASTLE RAPIDSCARE",
+    /*badge=*/"CASTLE",
     "KING OF THE KEEP",
     "ICON_SECTOR_CASTLE_RAPIDSCARE",
     SceneId::CastleRapidscare,

@@ -223,12 +223,14 @@ void Game::startDeepWebDive() {
 void Game::exploreBadgeLabel(char* out, size_t n) const {
     if (!out || n == 0) return;
     if (inDeepWebDive()) { std::snprintf(out, n, "DEEPWEB"); return; }
-    // Area's first word (up to the first space) + the 1-based sub number, e.g.
-    // "CITRUS 3" — short enough to never collide with the right-anchored WINS field.
-    const char* name = explSectorName(exploreSector_);
+    // The area's own short name (AreaDef::badge) + the 1-based sub number, e.g.
+    // "CITRUS 3" — sized to clear the right-anchored status field, and measured against it
+    // by a native gate. A row that names none falls back to the first word of its display
+    // name, which fits only by luck; the same gate is what says whether it did.
+    const char* badge = explSectorBadge(exploreSector_);
     char word[12];
     size_t w = 0;
-    for (; name[w] && name[w] != ' ' && w < sizeof(word) - 1; ++w) word[w] = name[w];
+    for (; badge[w] && badge[w] != ' ' && w < sizeof(word) - 1; ++w) word[w] = badge[w];
     word[w] = '\0';
     std::snprintf(out, n, "%s %d", word, exploreSub_ + 1);
 }

@@ -195,6 +195,9 @@ void drawExploreControl(Framebuffer& fb, int cursor, bool hasWarpKey,
 bool explSectorOpen(int idx, const bool* sectorCleared);
 int explSectorTier(int idx);
 const char* explSectorName(int idx);
+// The area's SHORT name for the walk badge (AreaDef::badge) — the display name whole when
+// a row names none, which the badge-fit gate then measures like any other.
+const char* explSectorBadge(int idx);
 const char* explSubAreaName(int sector, int idx);
 
 // Zone-completion Title: clearing sector `idx`'s boss/gauntlet grants

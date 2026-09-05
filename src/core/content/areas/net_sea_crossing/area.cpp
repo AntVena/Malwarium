@@ -57,6 +57,7 @@ const ShopListingDef kModShopListings[] = {
 const AreaDef kAreaNetSeaCrossing = {
     "net_sea_crossing",
     "NET-SEA CROSSING",
+    /*badge=*/"NET-SEA",
     "BUNDLE BREAKER",
     "ICON_SECTOR_NET_SEA_CROSSING",
     SceneId::None,   // the crossing's backdrop is not authored yet

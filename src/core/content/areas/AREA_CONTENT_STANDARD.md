@@ -19,7 +19,10 @@ src/core/content/areas/
   deepweb_dive/area.{h,cpp}   the terminal endless zone — see below, not an AreaDef
 ```
 
-An `AreaDef` row owns, in one place: the area's name/Title, the name of its sector glyph
+An `AreaDef` row owns, in one place: the area's name/Title, its **`badge`** — the same area in
+seven characters, for the walk badge on the idle habitat, which has a status field anchored
+beside it (a native gate measures every row against the widest one, so an overrun fails the
+suite instead of overprinting on the device) — the name of its sector glyph
 (`icon` — keyed by area id, so art follows identity rather than rung), its engine-drawn
 backdrop (`scene` — a `SceneId`, keyed the same way and for the same reason; `SceneId::None`
 means the place is not authored yet), its 5 sub-area names, its
@@ -153,6 +156,9 @@ a pierce, a stripped guard — and keeps raw power modest.
 
 1. Make a folder `src/core/content/areas/<id>/` with an `area.cpp` defining
    `const AreaDef kArea<Name> = {...};` (see any existing area.cpp for the field order).
+   Write the `badge` — no rule cuts every name well, which is why the field is authored:
+   `CITRUS CIRCUIT` keeps its first word, `THE PIRATE BAYOU` its last, and
+   `NAPSTORRENT MOORS` has no first word that fits at all.
    That includes its `guardian` row and the one move it teaches — see *The guardian* above; a
    new move needs a row in `content_moves.cpp`'s guardian family, or the reachability gate
    fails it.

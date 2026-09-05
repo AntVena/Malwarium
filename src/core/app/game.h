@@ -1981,6 +1981,10 @@ public:
     // covered on its own by test_explore_streak_unlocks_boss_then_clears.
     void debugSetAutoProgress(bool v) { autoProgress_ = v; }
     void debugSetExploreStreak(int v) { exploreStreak_ = v < 0 ? 0 : v; }
+    // The composed walk-badge label (tests): the only string on that line whose width is
+    // content-driven, so the gate that measures the badge's two fields against each other
+    // has to read the real one rather than re-derive it and measure its own guess.
+    void debugExploreBadgeLabel(char* out, size_t n) const { exploreBadgeLabel(out, n); }
     // Launch a specific sub-area boss directly (tests): same rationale as
     // debugArmExplore — the EXPL "first-selectable" row is ambiguous once cleared subs
     // are re-farmable, so a test reaching the boss of an as-yet-uncleared sub triggers

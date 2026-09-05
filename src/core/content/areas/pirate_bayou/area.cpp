@@ -54,6 +54,7 @@ const ShopListingDef kModShopListings[] = {
 const AreaDef kAreaPirateBayou = {
     "pirate_bayou",
     "THE PIRATE BAYOU",
+    /*badge=*/"BAYOU",
     "LEECH LORD",
     "ICON_SECTOR_PIRATE_BAYOU",
     SceneId::PirateBayou,

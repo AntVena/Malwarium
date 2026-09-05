@@ -51,6 +51,7 @@ const ShopListingDef kModShopListings[] = {
 const AreaDef kAreaCitrusCircuit = {
     "citrus_circuit",
     "CITRUS CIRCUIT",
+    /*badge=*/"CITRUS",
     "CERTIFIED DOWNLOADER",
     "ICON_SECTOR_CITRUS_CIRCUIT",
     SceneId::CitrusCircuit,

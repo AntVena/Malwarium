@@ -663,6 +663,48 @@ void test_auto_progress_badge_counts_down() {
       CHECK(textWidth(next) <= widest); }
 }
 
+// The walk badge draws two fields on ONE line — the armed rung on the left, the mode's
+// status on the right — and nothing in the drawing measures them against each other, so an
+// area whose short name runs long overprints its own status instead of failing anywhere a
+// build could see it. This is where that is seen: every shipped area, at every rung, against
+// the widest right field the badge can put beside it.
+void test_explore_badge_fields_never_collide() {
+    // The badge's own geometry (drawExploreBadge): the label starts a cursor's width in
+    // from the margin, the right field is anchored to the far margin.
+    constexpr int kLabelX = kMargin + 12;
+    char wins[16], boss[16], next[16], farm[16];
+    std::snprintf(wins, sizeof(wins), "WINS %d/%d", kExploreStreakToBoss,
+                  kExploreStreakToBoss);
+    std::snprintf(boss, sizeof(boss), "BOSS READY");
+    std::snprintf(next, sizeof(next), "NEXT IN %d", kExploreStreakToBoss);
+    std::snprintf(farm, sizeof(farm), "FARM %d/%d", kBandwidthMax, kBandwidthMax);
+    int widest = 0;
+    for (const char* f : {wins, boss, next, farm})
+        if (textWidth(f) > widest) widest = textWidth(f);
+    const int rightEdge = kActiveW - kMargin - widest;
+
+    for (int a2 = 0; a2 < kExplSectors; ++a2) {
+        for (int sub = 0; sub < kExplSubAreas; ++sub) {
+            Game g{StartMode::Hatched};
+            g.debugArmExplore(a2, sub);
+            char label[20] = {}, line[28];
+            g.debugExploreBadgeLabel(label, sizeof(label));
+            std::snprintf(line, sizeof(line), "EXPL %s", label);
+            CHECK(kLabelX + textWidth(line) < rightEdge);
+        }
+    }
+    // ...and the dive, whose label is composed rather than authored, measured against the
+    // one field it can draw at a depth no dive reaches.
+    { Game g{StartMode::Hatched};
+      for (int a2 = 0; a2 < kExplSectors; ++a2) g.debugSetSectorCleared(a2, true);
+      g.debugStartDeepWebDive();
+      char label[20] = {}, line[28], depth[16];
+      g.debugExploreBadgeLabel(label, sizeof(label));
+      std::snprintf(line, sizeof(line), "EXPL %s", label);
+      std::snprintf(depth, sizeof(depth), "DEPTH %d", 9999);
+      CHECK(kLabelX + textWidth(line) < kActiveW - kMargin - textWidth(depth)); }
+}
+
 // The walk's A+C overlay carries the rung's XP RATE, and the rate is the whole payout —
 // the level-difference curve against the rung's own depth, plus every live multiplier —
 // so an operator deciding whether to let auto-progress keep walking a rung can see what
