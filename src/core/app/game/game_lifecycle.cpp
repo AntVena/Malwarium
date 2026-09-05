@@ -338,8 +338,9 @@ uint32_t Game::evolveDwellMs() const {
     // live rather than remembered from arm-time, which is safe because a soak is spent at
     // the boundary it stretched — the stage it goes in at is the stage it comes out at.
     //
-    // Nothing overflows: the longest stage is 32h, the deepest soak x4, doubled = x8, so
-    // 256h in ms — an eighth of what a u32 holds.
+    // Nothing overflows: the longest stage is 32h, the deepest soak x8 (the Hypervisor-USB,
+    // content_items.cpp), doubled on a Script = x16, so 512h in ms — under half of what a
+    // u32 holds.
     const Stage stage = pet_ ? pet_->stage : Stage::Process;
     const uint32_t base = evolveStageDurationMs(stage);
     const int factor = evolveSoakFactor_ < 1 ? 1 : evolveSoakFactor_;

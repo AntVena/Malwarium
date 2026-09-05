@@ -83,7 +83,11 @@ Combatant makePlayerCombatant(const ContentRegistry& reg, const CreatureDef& pet
     c.creature = &pet;                              // authored clips, for the fight's poses
     c.stage = pet.stage;                            // drives the per-line passive
     c.setLine(reg, pet.line);                       // line identity + its passives, read once
-    c.maxHealth = kMaxHealthByStage[stageIndex(pet.stage)];
+    // The stage body, leaned by the care branch (creatureHealthMultPct — neutral 100 for
+    // everything that does not branch). This is the Good branch's half of the trade the
+    // power lean below is the Bad branch's: priced so the two take the same number of
+    // turns to put each other down, in opposite currencies.
+    c.maxHealth = kMaxHealthByStage[stageIndex(pet.stage)] * creatureHealthMultPct(pet) / 100;
     c.health = c.maxHealth;
     c.speed = kCombatBaseSpeed;
     // branch lean, scaled by the per-stage offensive multiplier so an

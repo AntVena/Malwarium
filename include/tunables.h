@@ -198,12 +198,27 @@ constexpr int kEvoFlashBeats = 2;   // FX_EVO_FLASH white-out, then the reveal
 
 // Evolution branch. At the Script->Daemon hop the care budget splits the line: 0-2 mistakes
 // -> Good (durable), 3-4 -> Bad (glass cannon), 5/5 never evolves. The engine reads the
-// branch as two combat multipliers off the successor CreatureDef — attack-power lean and
-// loss-Frag. Slot COUNT is identical at Daemon (both at the kMaxMoveSlots cap), so the
-// aggressive-vs-durable lean is carried entirely by these. Neutral = 100.
+// branch as three combat multipliers off the successor CreatureDef — attack-power lean,
+// max-Health lean and loss-Frag. Slot COUNT is identical at Daemon (both at the
+// kMaxMoveSlots cap), so the aggressive-vs-durable lean is carried entirely by these.
+// Neutral = 100.
+//
+// THE TWO BRANCHES ARE PRICED TO TRADE EVENLY, in opposite currencies. At Daemon the stage
+// scale puts a neutral pet at 230% power and kMaxHealthByStage at a 100 body, so Bad swings
+// 310 against Good's 184 — it deals 1.68x the damage. Good's body is scaled by the same
+// 1.68 (rounded to a whole ten), which is what makes "durable" a real answer to "glass
+// cannon" rather than a label: neither branch wins a mirror, they just take different
+// numbers of turns to get there, and the loss-Frag lean below is what the raise is
+// actually choosing between. The lean rides the pet's OWN body only — the two line
+// mechanics that measure a pool against a body (Combat::ledgerGrudgePct,
+// phishPoolSiphonBonusPct) read the STAGE body deliberately, so a branch cannot move
+// them any more than a levelled Health point can.
 constexpr int kBranchGoodPowerPct = 80;    // Good: lower attack power (durable)
+constexpr int kBranchGoodHealthPct = 170;  // ...and the body that pays for it back
 constexpr int kBranchGoodFragPct = 70;     // Good: takes less loss-Frag
 constexpr int kBranchBadPowerPct = 135;    // Bad: higher attack power (glass cannon)
+constexpr int kBranchBadHealthPct = 100;   // ...on a stage-standard body, so the power IS
+                                           // the whole of what the branch buys
 constexpr int kBranchBadFragPct = 160;     // Bad: takes MORE loss-Frag (fragile after)
 
 // Critical System Failure (the ONLY death path). The 5/5 dying state

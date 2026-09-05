@@ -604,9 +604,10 @@ void test_soak_usb_stretches_the_clock_and_pays_the_xp() {
     CHECK(lvl0 == g.combatLevel());                   // no level crossed, so the bank is the award
     CHECK(soaked == 20);                              // ...and the pay, by the same factor
 
-    // The Epic device is the same mechanic twice as deep, and the ladder is asserted off
-    // the ROWS rather than off two names here: whatever carries a soak is a USB, and the
-    // deepest one on the shelf is twice the shallowest.
+    // The Epic device is the same mechanic deeper, and the ladder is asserted off the ROWS
+    // rather than off two names here: whatever carries a soak is a USB, the shallow rung is
+    // a doubling, and the deep one is a strictly bigger power of two — the shape the family
+    // is authored in, which a retune of either rung has to keep.
     int shallow = 0, deep = 0;
     for (const ItemDef* d : ContentRegistry::embedded().allItems()) {
         const int f = itemEvolveSoakFactor(*d);
@@ -615,7 +616,9 @@ void test_soak_usb_stretches_the_clock_and_pays_the_xp() {
         if (!shallow || f < shallow) shallow = f;
         if (f > deep) deep = f;
     }
-    CHECK(shallow == 2 && deep == 2 * shallow);
+    CHECK(shallow == 2);
+    CHECK(deep > shallow);
+    CHECK((deep & (deep - 1)) == 0);          // a power of two, like the rung below it
 }
 
 // A soak holds the port SHUT. Nothing else in the family goes in until it is spent at
@@ -648,10 +651,21 @@ void test_soak_usb_locks_the_port_until_the_boundary() {
 }
 
 // The Epic soak reaches one stage further than the Rare one, and pays for the reach at
-// the till rather than in the benefit: on a Script the XP is the same x4 the row promises
+// the till rather than in the benefit: on a Script the XP is the factor the row promises
 // and the clock is DOUBLE that. A Script's boundary is the branch a whole raise was aimed
 // at, so stretching the last stage before an ending is the expensive thing to do.
+//
+// Every figure below is read off the ITEM ROW rather than typed, so retuning the soak
+// retunes the gate with it — the contract here is the SHAPE (clock and XP move together
+// on a Process, the clock alone doubles on a Script), which is what a retune must not
+// break, and a hand-typed 4 would fail the moment the magnitude moved.
 void test_late_soak_reaches_script_at_double_the_clock() {
+    const ContentRegistry reg = ContentRegistry::embedded();
+    const ItemDef* hyper = reg.item("hypervisor_usb");
+    CHECK(hyper != nullptr);
+    CHECK(hyper->effects[0].kind == ItemEffect::Kind::ArmEvolveSoakLate);
+    const int soak = hyper->effects[0].magnitude;
+    CHECK(soak > 1);
     // The Rare one does not reach it at all.
     { Game g{StartMode::Hatched, "malbear"};              // a Script pet
       CHECK(g.pet()->stage == Stage::Script);
@@ -660,26 +674,33 @@ void test_late_soak_reaches_script_at_double_the_clock() {
       CHECK(g.inventory().count("sandbox_usb") == 1);     // refused, kept
       CHECK(g.evolveSoakFactor() == 1); }
 
-    // On a PROCESS pet the Epic one is an ordinary x4: clock and XP move together.
+    // On a PROCESS pet the Epic one is an ordinary soak: clock and XP move together.
     { Game g{StartMode::Hatched, "paypup"};
       g.inventory().add("hypervisor_usb", 2);
       g.debugUseItem("hypervisor_usb");
-      CHECK(g.evolveSoakFactor() == 4);
-      CHECK(g.evolveRemainMs() == kEvolveProcessToScriptMs * 4);
+      CHECK(g.evolveSoakFactor() == soak);
+      CHECK(g.evolveRemainMs() == kEvolveProcessToScriptMs * static_cast<uint32_t>(soak));
       const int xp0 = g.combatXp();
       g.debugAddCombatXp(10);
-      CHECK(g.combatXp() - xp0 == 40); }
+      CHECK(g.combatXp() - xp0 == 10 * soak); }
 
-    // On a SCRIPT pet it goes in, pays the same x4 XP, and charges x8 on the clock.
+    // On a SCRIPT pet it goes in, pays the same XP, and charges DOUBLE on the clock.
     { Game g{StartMode::Hatched, "malbear"};
       CHECK(g.evolveRemainMs() == kEvolveScriptToDaemonMs);
       g.inventory().add("hypervisor_usb", 2);
       g.debugUseItem("hypervisor_usb");
-      CHECK(g.evolveSoakFactor() == 4);
-      CHECK(g.evolveRemainMs() == kEvolveScriptToDaemonMs * 8);
+      CHECK(g.evolveSoakFactor() == soak);
+      CHECK(g.evolveRemainMs() == kEvolveScriptToDaemonMs * static_cast<uint32_t>(2 * soak));
       const int xp0 = g.combatXp();
       g.debugAddCombatXp(10);
-      CHECK(g.combatXp() - xp0 == 40); }   // the BENEFIT is unchanged — only the wait grew
+      CHECK(g.combatXp() - xp0 == 10 * soak); }  // the BENEFIT is the row's — only the wait grew
+
+    // The deepest arm still fits the fields that carry it: the soak is persisted in a u8
+    // (SaveData::evolveSoakFactor) and the stretched dwell in a u32 of milliseconds, and
+    // the longest stage doubled by the deepest soak has to clear both with room.
+    CHECK(soak <= 255);
+    CHECK(static_cast<uint64_t>(kEvolveScriptToDaemonMs) * static_cast<uint64_t>(2 * soak) <=
+          static_cast<uint64_t>(UINT32_MAX));
 }
 
 // The Halt-USB stops the pet evolving outright: not a longer wait but no arrival, which
@@ -817,7 +838,11 @@ void test_save_v60_usb_port_roundtrip() {
 
     // ...and the round trip through the live game, over a real store: an armed port
     // survives a power cycle, because a soak the player is halfway through paying for
-    // must not be handed back by a reboot.
+    // must not be handed back by a reboot. The factor is read off the ITEM ROW, unlike
+    // the wire value above — that one is an arbitrary number chosen to prove the field
+    // survives serialisation, this one is whatever the device actually arms.
+    const int deepSoak = itemEvolveSoakFactor(*ContentRegistry::embedded().item("hypervisor_usb"));
+    CHECK(deepSoak > 1);
     MemSaveStore store;
     {
         Game g{StartMode::Hatched, "paypup", &store};
@@ -825,13 +850,13 @@ void test_save_v60_usb_port_roundtrip() {
         g.inventory().add("bad_usb", 1);
         g.debugUseItem("hypervisor_usb");
         g.debugUseItem("bad_usb");                                 // refused: the port is shut
-        CHECK(g.evolveSoakFactor() == 4);
+        CHECK(g.evolveSoakFactor() == deepSoak);
         CHECK(g.evolveBranchOverride() == BranchOverride::None);
         g.tick(kSaveAutosaveMs + kHeartbeatMs);
     }
     {
         Game g{StartMode::Hatched, "paypup", &store};
-        CHECK(g.evolveSoakFactor() == 4);
+        CHECK(g.evolveSoakFactor() == deepSoak);
         CHECK(g.inventory().count("bad_usb") == 1);   // refused, so still in the bag
     }
 }

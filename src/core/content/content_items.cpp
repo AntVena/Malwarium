@@ -1852,18 +1852,27 @@ const ItemDef kItems[] = {
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/3},
 
-    // Hypervisor-USB: the Sandbox-USB's Epic upgrade — one layer further down, so the
-    // soak is twice as deep AND it reaches a stage the Sandbox cannot. On a Script it
-    // still pays x{soak} XP but the clock costs DOUBLE that, because a Script's boundary
-    // is the branch the whole raise was aimed at: stretching the last stage before an
-    // ending is worth more than stretching a middle one, so it is priced to match.
+    // Hypervisor-USB: the Sandbox-USB's Epic upgrade — four times as deep AND it reaches a
+    // stage the Sandbox cannot. On a Script it still pays x{soak} XP but the clock costs
+    // DOUBLE that, because a Script's boundary is the branch the whole raise was aimed at:
+    // stretching the last stage before an ending is worth more than stretching a middle
+    // one, so it is priced to match.
     // The only USB anyone sells (Moor-to-Moor, Napstorrent Moors), and it is priced in
     // its own family: four Sandbox-USBs plus Bits, so the deep end of the ladder is
     // reached by diving for the rare one four times over rather than by having a wallet.
+    //
+    // WHY THE SOAK IS THIS DEEP. What the arm actually costs is a STAGE, and a stage is
+    // the biggest single thing a pet owns: kStagePowerScalePct alone runs 100 -> 230
+    // across the two boundaries this holds shut, on top of a move slot per stage and the
+    // Script-gated half of the move roster. A pet held at Process to farm is giving up
+    // all of that for as long as it is armed, and the four Sandbox-USBs it is built from
+    // are DeepWeb Dive drops — a zone that scales to the pet's own level from depth 0, so
+    // the ingredients are gated behind the one place the hold makes hardest to farm. The
+    // XP has to be worth a stage to be worth arming at all.
     {"hypervisor_usb", "Hypervisor-USB", ItemDef::Type::Buff,
      ItemDef::Rarity::Epic,
      "Process/Script: x{soak} XP for x{soak} the evolve clock, x2 that on a Script.",
-     ItemDef::Context::Anytime, {{IE::Kind::ArmEvolveSoakLate, 4}},
+     ItemDef::Context::Anytime, {{IE::Kind::ArmEvolveSoakLate, 8}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/2048},
 
     // Halt-USB: the pet stops evolving. Not a stretch of the clock — a refusal to reach

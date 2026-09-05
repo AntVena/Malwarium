@@ -2687,8 +2687,8 @@ window.PEDIA_DATA = {
       "name": "Hypervisor-USB",
       "type": "BUFFS",
       "rarity": "EPIC",
-      "effect": "Process/Script: x4 XP for x4 the evolve clock, x2 that on a Script.",
-      "stats": "SOAK x4",
+      "effect": "Process/Script: x8 XP for x8 the evolve clock, x2 that on a Script.",
+      "stats": "SOAK x8",
       "icon": "assets/icons/ICON_ITEM_HYPERVISOR_USB.png",
       "bits": 2048
     },

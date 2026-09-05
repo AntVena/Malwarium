@@ -845,6 +845,52 @@ void test_wild_subarea_level_and_xp_scaling() {
     CHECK(wildWinXp(1, 0, 99) >= 1);                    // floored trickle, never zero
 }
 
+// The care branch is a TRADE, not a winner. Bad leans attack power and Good leans the
+// body, and the two are priced against each other so neither takes the mirror: what the
+// raise is actually choosing between is the loss-Frag lean and the slot typing, not "the
+// strong one or the weak one". Three contracts:
+//   (1) creatureBranch reads the branch off the multiplier pair the row already carries,
+//       and only a DAEMON row branches at all;
+//   (2) a Good Daemon fields a bigger body than a Bad one, off the same stage base;
+//   (3) they trade evenly — the damage ratio Bad wins by is the health ratio Good wins by,
+//       so a mirror comes down to turns rather than to which branch was rolled.
+void test_care_branch_trades_power_for_body() {
+    const ContentRegistry reg = ContentRegistry::embedded();
+    MoveLoadout moves; Loadout mods;
+    // (1) Every shipped Daemon is one branch or the other (or authored neutral), and
+    //     nothing below Daemon claims a branch — walked over the whole roster rather than
+    //     spot-checked, so a new line has to answer this too.
+    const CreatureDef* good = nullptr;
+    const CreatureDef* bad = nullptr;
+    for (const CreatureLine& line : kCreatureLines)
+        for (int i = 0; i < line.count; ++i) {
+            const CreatureDef& d = line.rows[i];
+            const CreatureBranch b = creatureBranch(d);
+            if (d.stage != Stage::Daemon) { CHECK(b == CreatureBranch::None); continue; }
+            if (b == CreatureBranch::Good && !good) good = &d;
+            if (b == CreatureBranch::Bad && !bad) bad = &d;
+        }
+    CHECK(good != nullptr && bad != nullptr);       // the roster ships both sides
+    CHECK(creatureHealthMultPct(*good) == kBranchGoodHealthPct);
+    CHECK(creatureHealthMultPct(*bad) == kBranchBadHealthPct);
+
+    // (2) The body each one actually fields, off the shared Daemon base.
+    Combatant cg = makePlayerCombatant(reg, *good, moves, mods);
+    Combatant cb = makePlayerCombatant(reg, *bad, moves, mods);
+    const int base = kMaxHealthByStage[stageIndex(Stage::Daemon)];
+    CHECK(cg.maxHealth == base * kBranchGoodHealthPct / 100);
+    CHECK(cb.maxHealth == base * kBranchBadHealthPct / 100);
+    CHECK(cg.maxHealth > cb.maxHealth);             // Good is the durable half...
+    CHECK(cb.powerMultPct > cg.powerMultPct);       // ...and Bad the aggressive one
+
+    // (3) The trade. Measured as the two cross-products rather than as a ratio, so no
+    //     integer division sits between the gate and the thing it is claiming; a tenth
+    //     of tolerance either way, since both leans round to whole percents.
+    const long long badReach = 1LL * cb.powerMultPct * cb.maxHealth;
+    const long long goodReach = 1LL * cg.powerMultPct * cg.maxHealth;
+    CHECK(badReach * 10 >= goodReach * 9 && badReach * 9 <= goodReach * 10);
+}
+
 // evolution-gating on MOVES (not just slots). A move opens at its
 // minStage; owning it earlier isn't enough. Three contracts:
 //   (1) the pure gate moveUnlockedAtStage();

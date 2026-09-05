@@ -1121,6 +1121,35 @@ inline bool moveUnlockedAtStage(const MoveDef& m, Stage petStage) {
     return stageIndex(petStage) >= stageIndex(m.minStage);
 }
 
+// Which side of the care branch a DAEMON row was authored as. The multiplier pair the row
+// already carries IS the branch (see CreatureDef's powerMultPct/fragMultPct above and the
+// kBranch* block in tunables.h) — this reads that encoding rather than adding a fourth
+// field restating it, so a row cannot claim one branch and be priced as the other. Only
+// Daemon rows branch: every earlier stage is a linear hop and answers None, as does a
+// Daemon authored neutral. Consumed by makePlayerCombatant, for the max-Health lean that
+// is the Good branch's half of the trade.
+enum class CreatureBranch { None, Good, Bad };
+inline CreatureBranch creatureBranch(const CreatureDef& d) {
+    if (d.stage != Stage::Daemon) return CreatureBranch::None;
+    if (d.powerMultPct == kBranchGoodPowerPct && d.fragMultPct == kBranchGoodFragPct)
+        return CreatureBranch::Good;
+    if (d.powerMultPct == kBranchBadPowerPct && d.fragMultPct == kBranchBadFragPct)
+        return CreatureBranch::Bad;
+    return CreatureBranch::None;
+}
+
+// The max-Health multiplier this row's branch leans by, as a percent of the stage body
+// (kMaxHealthByStage). Neutral 100 for everything that does not branch, so the caller
+// applies it unconditionally.
+inline int creatureHealthMultPct(const CreatureDef& d) {
+    switch (creatureBranch(d)) {
+        case CreatureBranch::Good: return kBranchGoodHealthPct;
+        case CreatureBranch::Bad:  return kBranchBadHealthPct;
+        case CreatureBranch::None: break;
+    }
+    return 100;
+}
+
 // FOOD -> BUFFS -> QUEST: the inventory's fixed use-frequency order.
 inline int itemTypeOrder(ItemDef::Type t) { return static_cast<int>(t); }
 
