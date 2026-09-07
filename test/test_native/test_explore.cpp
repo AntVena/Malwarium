@@ -819,28 +819,38 @@ void test_explore_streak_unlocks_boss_then_clears() {
 // rows are selectable). Boss-ready takes priority over exploring so FIGHT BOSS stays
 // reachable; a cleared area's subs go inert and its header becomes AREA-BOSS ready.
 void test_expl_nested_row_helpers() {
-    // The DeepWeb Dive leads, the ladder follows offset by +1, and the arena trails.
-    CHECK(explRowCount() == 1 + kExplSectors * (1 + kExplSubAreas) + 1);
+    // The two ENDLESS zones lead (the DeepWeb Dive, then the DarkWeb Crawl), the ladder
+    // follows offset by kExplLeadRows, and the arena trails. Written against the constants
+    // rather than against literals, so adding a zone moves the ladder without moving this.
+    CHECK(explRowCount() ==
+          kExplLeadRows + kExplSectors * (1 + kExplSubAreas) + kExplTailRows);
     constexpr int kDwRow = 0;                                    // the DeepWeb Dive row
+    constexpr int kCrawlRow = 1;                                 // the DarkWeb Crawl row
+    const int kFirstArea = kExplLeadRows;                        // area 0's header
     const int kArenaRow = explRowCount() - 1;                    // ROCK THE DOCK's row
-    CHECK(explRowIsDeepWeb(kDwRow) && !explRowIsDeepWeb(1));
+    CHECK(explRowIsDeepWeb(kDwRow) && !explRowIsDeepWeb(kCrawlRow));
+    CHECK(explRowIsDarkWeb(kCrawlRow) && !explRowIsDarkWeb(kDwRow));
     CHECK(explRowIsTourney(kArenaRow) && !explRowIsTourney(kDwRow));
-    CHECK(explRowIsSpecial(kDwRow) && explRowIsSpecial(kArenaRow));
-    CHECK(!explRowIsSpecial(1));                                 // area 0's header
-    CHECK(explRowArea(1) == 0 && explRowSub(1) == -1);           // area 0 header
-    CHECK(explRowArea(2) == 0 && explRowSub(2) == 0);            // area 0, sub-area 1
-    CHECK(explRowArea(7) == 1 && explRowSub(7) == -1);           // area 1 header
-    CHECK(explRowArea(12) == 1 && explRowSub(12) == kExplSubAreas - 1);
+    CHECK(explRowIsSpecial(kDwRow) && explRowIsSpecial(kCrawlRow) &&
+          explRowIsSpecial(kArenaRow));
+    CHECK(!explRowIsSpecial(kFirstArea));                        // area 0's header
+    CHECK(explRowArea(kFirstArea) == 0 && explRowSub(kFirstArea) == -1);
+    CHECK(explRowArea(kFirstArea + 1) == 0 && explRowSub(kFirstArea + 1) == 0);
+    const int kArea1 = kFirstArea + (1 + kExplSubAreas);
+    CHECK(explRowArea(kArea1) == 1 && explRowSub(kArea1) == -1);
+    CHECK(explRowArea(kArea1 + kExplSubAreas) == 1 &&
+          explRowSub(kArea1 + kExplSubAreas) == kExplSubAreas - 1);
 
     constexpr int N = kExplSectors * kExplSubAreas;
     bool cleared[N] = {}, boss[N] = {};
     bool area[kExplSectors] = {};
     // Fresh: area 0 open (all 5 subs OPEN/selectable); area 1 locked (subs LOCKED).
-    CHECK(explRowState(1, area, cleared, boss, -1, -1) == ExplRowState::AreaProgress);
-    for (int r = 2; r <= 1 + kExplSubAreas; ++r)
+    CHECK(explRowState(kFirstArea, area, cleared, boss, -1, -1) ==
+          ExplRowState::AreaProgress);
+    for (int r = kFirstArea + 1; r <= kFirstArea + kExplSubAreas; ++r)
         CHECK(explRowState(r, area, cleared, boss, -1, -1) == ExplRowState::SubOpen);
-    CHECK(explRowState(7, area, cleared, boss, -1, -1) == ExplRowState::AreaLocked);
-    CHECK(explRowState(8, area, cleared, boss, -1, -1) == ExplRowState::SubLocked);
+    CHECK(explRowState(kArea1, area, cleared, boss, -1, -1) == ExplRowState::AreaLocked);
+    CHECK(explRowState(kArea1 + 1, area, cleared, boss, -1, -1) == ExplRowState::SubLocked);
     CHECK(!explRowSelectable(ExplRowState::AreaLocked));
     CHECK(!explRowSelectable(ExplRowState::AreaProgress));
     CHECK(!explRowSelectable(ExplRowState::SubLocked));
@@ -848,32 +858,32 @@ void test_expl_nested_row_helpers() {
 
     // Arm sub-area 1 → EXPLORING; unlock its boss → FIGHT BOSS (priority); clear it →
     // CLEARED but RE-FARMABLE. (row 2 = area 0, sub 0; flat index 0.)
-    CHECK(explRowState(2, area, cleared, boss, 0, 0) == ExplRowState::SubExploring);
+    CHECK(explRowState(kFirstArea + 1, area, cleared, boss, 0, 0) == ExplRowState::SubExploring);
     boss[0] = true;
-    CHECK(explRowState(2, area, cleared, boss, 0, 0) == ExplRowState::SubBossReady);
+    CHECK(explRowState(kFirstArea + 1, area, cleared, boss, 0, 0) == ExplRowState::SubBossReady);
     boss[0] = false; cleared[0] = true;
-    CHECK(explRowState(2, area, cleared, boss, -1, -1) == ExplRowState::SubCleared);
+    CHECK(explRowState(kFirstArea + 1, area, cleared, boss, -1, -1) == ExplRowState::SubCleared);
     CHECK(explRowSelectable(ExplRowState::SubCleared));   // re-armable to FARM
     // A cleared sub that is the ARMED sub reads EXPLORING (which one you're farming),
     // and cleared wins over a still-set boss-unlock flag (no FIGHT BOSS on a done sub).
-    CHECK(explRowState(2, area, cleared, boss, 0, 0) == ExplRowState::SubExploring);
+    CHECK(explRowState(kFirstArea + 1, area, cleared, boss, 0, 0) == ExplRowState::SubExploring);
     boss[0] = true;
-    CHECK(explRowState(2, area, cleared, boss, -1, -1) == ExplRowState::SubCleared);
+    CHECK(explRowState(kFirstArea + 1, area, cleared, boss, -1, -1) == ExplRowState::SubCleared);
     boss[0] = false;
 
     // All 5 sub-areas cleared → area 0 header is AREA-BOSS ready (selectable).
     for (int s = 0; s < kExplSubAreas; ++s) cleared[s] = true;
-    CHECK(explRowState(1, area, cleared, boss, -1, -1) == ExplRowState::AreaBossReady);
+    CHECK(explRowState(kFirstArea, area, cleared, boss, -1, -1) == ExplRowState::AreaBossReady);
     CHECK(explRowSelectable(ExplRowState::AreaBossReady));
     // Clear the area → header CLEARED (inert); area 1 opens (its subs become OPEN).
     // The area-0 sub rows stay CLEARED but SELECTABLE — a fully-cleared area is still a
     // farmable training ground (the whole point of re-farming).
     area[0] = true;
-    CHECK(explRowState(1, area, cleared, boss, -1, -1) == ExplRowState::AreaCleared);
-    CHECK(explRowState(2, area, cleared, boss, -1, -1) == ExplRowState::SubCleared);
-    CHECK(explRowSelectable(explRowState(2, area, cleared, boss, -1, -1)));
-    CHECK(explRowState(7, area, cleared, boss, -1, -1) == ExplRowState::AreaProgress);
-    CHECK(explRowState(8, area, cleared, boss, -1, -1) == ExplRowState::SubOpen);
+    CHECK(explRowState(kFirstArea, area, cleared, boss, -1, -1) == ExplRowState::AreaCleared);
+    CHECK(explRowState(kFirstArea + 1, area, cleared, boss, -1, -1) == ExplRowState::SubCleared);
+    CHECK(explRowSelectable(explRowState(kFirstArea + 1, area, cleared, boss, -1, -1)));
+    CHECK(explRowState(kArea1, area, cleared, boss, -1, -1) == ExplRowState::AreaProgress);
+    CHECK(explRowState(kArea1 + 1, area, cleared, boss, -1, -1) == ExplRowState::SubOpen);
 
     // DeepWeb Dive (row 0): LOCKED until EVERY area is cleared, then OPEN
     // (> DIVE, selectable); DIVING when armed (exploringSector == kDeepWebSector).
@@ -1248,6 +1258,71 @@ void test_expl_nested_list_nav() {
 // the DEEPWEB DIVE endless zone: unlocked only by clearing every area,
 // arms an endless explore mode on kDeepWebSector, and scales the wild enemy to the
 // PET's level (parity → full base XP forever; no boss ladder).
+// THE DARKWEB CRAWL — the terminal endless zone, reached through the portal at THE SILK
+// LODE's ZERO DAY SHRINE. It shares the dive's walk and differs in the two things that
+// make it the end of the map rather than a second farm: a harsher curve, and every fight
+// running with the A+C picker scrambled.
+void test_darkweb_crawl() {
+    // (1) Its curve has NO foothold, which is the whole difference from the dive's at the
+    //     shallow end: the pet that gets here cleared the ladder, and a flat stretch to
+    //     stand on is what a farm gives you.
+    {
+        CombatEnemy d = wildMalbeast(3, 0), c = wildMalbeast(3, 0);
+        applyDeepWebScale(d, 20, kDeepWebRampFreeDepth);
+        applyDarkWebScale(c, 20, kDeepWebRampFreeDepth);
+        CHECK(d.level == 20);                       // still inside the dive's foothold...
+        CHECK(c.level > 20);                        // ...and the crawl never had one
+        CHECK(wildWinXp(kWildWinXpReward, c.level, 20) > kWildWinXpReward);
+    }
+    // (2) Unlock: CLEARING the area whose shrine holds the portal, and not one rung less.
+    //     Keyed by id, so a spliced area cannot slide the gate onto its neighbour.
+    {
+        const int gate = areaIndexById(kDarkWebUnlockAreaId);
+        CHECK(gate > 0);
+        Game g{StartMode::Hatched, "bruinforce"};
+        g.debugStartDarkWebCrawl();
+        CHECK(!g.inDarkWebCrawl());                 // inert on a fresh save
+        // REACHING it is not enough — the portal is behind that area's own boss.
+        g.debugSetSectorCleared(gate - 1, true);
+        g.debugStartDarkWebCrawl();
+        CHECK(!g.inDarkWebCrawl());
+        g.debugSetSectorCleared(gate, true);
+        CHECK(g.darkWebUnlocked());
+        g.debugStartDarkWebCrawl();
+        CHECK(g.inDarkWebCrawl());
+        CHECK(g.exploreActive() && g.exploreSector() == kDarkWebSector);
+        CHECK(!g.inDeepWebDive() && g.inEndlessZone());   // its own zone, not the dive's
+    }
+    // (3) The two virtual sectors are distinct and both sit past every real area, so the
+    //     `0 <= idx < kAreaCount` test that guards every ladder-indexed array still
+    //     excludes them by construction.
+    {
+        CHECK(kDarkWebSector != kDeepWebSector);
+        CHECK(kDeepWebSector >= kAreaCount && kDarkWebSector > kDeepWebSector);
+        const AreaLootTable dw = areaWildLootTable(kDarkWebSector);
+        CHECK(dw.rows && dw.count > 0);
+        // The five unbuyable USBs moved here with the terminal slot and are no longer in
+        // the dive's table — the whole point being that only the end of the map sells the
+        // ability to overrule how a pet was raised.
+        auto holds = [](AreaLootTable t, const char* id) {
+            for (int i = 0; i < t.count; ++i)
+                if (std::strcmp(t.rows[i].id, id) == 0) return true;
+            return false;
+        };
+        CHECK(holds(dw, "sandbox_usb"));
+        CHECK(!holds(areaWildLootTable(kDeepWebSector), "sandbox_usb"));
+    }
+    // (4) Its depth record is its OWN, survives a save round-trip, and does not borrow
+    //     the dive's — one figure covering both would let the easier zone speak for the
+    //     harder one.
+    {
+        Game g{StartMode::Hatched, "bruinforce"};
+        CHECK(g.bestDarkWebDepth() == 0);
+        g.debugSetBestDeepWebDepth(40);
+        CHECK(g.bestDarkWebDepth() == 0);          // the dive's record is not the crawl's
+    }
+}
+
 void test_deepweb_dive() {
     // (1) The pure scaler: enemy level = pet level (parity, so wildWinXp pays the FULL
     //     base forever), and a BUDGET of points spent at random across the same four

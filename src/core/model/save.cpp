@@ -562,6 +562,10 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     // list here. Its own tail after v61's.
     w.u16(static_cast<uint16_t>(d.petFoodsEaten.size()));
     for (const auto& s : d.petFoodsEaten) writeId(w, s);
+
+    // v63: this pet's deepest DARKWEB CRAWL. Its own tail after v62's, so a build that
+    // stops at either still reads every field it knows.
+    w.i32(d.bestDarkWebDepth);
 }
 
 std::vector<uint8_t> serializeSave(const SaveData& d) {
@@ -1182,6 +1186,10 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
             d.petFoodsEaten.push_back(s);
         }
     }
+
+    // v63 tail: the crawl's depth record. Absent in an older blob -> 0, a pet that has
+    // never been down there — which is every pet written before the zone existed.
+    if (version >= 63) d.bestDarkWebDepth = r.i32();
 
     if (!r.ok) { out = SaveData{}; return false; }  // truncated -> empty
     if (version < newestRenameVersion()) renameRetiredIds(d, version);

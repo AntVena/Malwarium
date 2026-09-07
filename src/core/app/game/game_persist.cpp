@@ -162,6 +162,7 @@ SaveData Game::captureSave() const {
     // v35: the active pet's own best-ever DeepWeb Dive depth. The rack pets'
     // values already ride on d.rack, like defragCount above.
     d.bestDeepWebDepth = bestDeepWebDepth_;
+    d.bestDarkWebDepth = bestDarkWebDepth_;
 
     // v42: the 5/5 recovery window already burned. The one timed window that persists —
     // every other one (Lockout, the audit hot/cooldown) resets on reboot by the rule in
@@ -449,6 +450,7 @@ void Game::applySave(const SaveData& d) {
     // Active pet's best-ever DeepWeb Dive depth (v35). A pre-v35 blob carries 0
     // (never dived); the rack pets' values rode in on rack_ above.
     bestDeepWebDepth_ = d.bestDeepWebDepth;
+    bestDarkWebDepth_ = d.bestDarkWebDepth;
 
     // Active pet's spent 5/5 recovery window (v42). A pre-v42 blob carries 0, so the
     // pet gets a full window on its next brush with death; the rack pets' values rode

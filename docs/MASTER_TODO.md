@@ -109,35 +109,14 @@ on `seed_leech`, `toll_charge`, `bundle_wrap` and `false_positive`. Name the res
 its reason instead of gesturing at "the steal track". |
 `content_moves.cpp`'s boss-pool header; `src/core/content/CONTENT_STANDARD.md`. | S | Doc only. |
 
-**The ladder has a sixth rung designed and not built — THE SILK LODE.** Silk Road punned `Road` →
-`Lode`: a seam of silk under every area, reached through the floor of the Castle's `COMMENT
-CATACOMBS`. Badge `SILK`, title `THREADCUTTER`, appended to `kAreaList[]` (so no `ladderInserts`
-row and no mod's `powerTier` moves). Phishing/credential-theft hooks stay unspent for a seventh
-area.
-
-Five stretches, ordered as a descent that turns from built to organic and back — the last is the
-reveal that something down here was built and not by us: `DEADLINK STAIR`, `BOTNET FUNNEL`,
-`BITROT FISSURE`, `ZOMBIE GULLET`, `ZERO DAY SHRINE` (signature; the portal is in it). Bosses are
-hacker groups and botnets: `CULT OF THE DEAD CODE` (2 rounds), `MARIPOSA OF THE WEAVE`,
-`CIH THE UNWRITER`, `NECURS THE RAISER`, `THE 29A COVEN` (3 rounds, signature) under
-`MIRAI THE MANY-LEGGED`. Guardian `THE PATIENT WEAVER` teaching `held_thread`. Shops
-`THE FLY TRAP` and `WHAT THE WEB CAUGHT`.
-
-Its signature threat is the part worth building for its own sake, and is separable from the area:
-**`c2_hijack` shuffles the row ORDER of the A+C Exploit picker and enciphers its labels in the
-Cant, greying out every row the pet cannot read.** Enciphering alone leaves muscle memory intact,
-which is why the order scrambles too; a zero-sigil pet loses the override outright, which is
-survivable because the auto-battle carries on. Needs one `MoveDef` field and a cipher pass over
-the picker. Counter is `crib_sheet`, in the area's own rank-6 pool.
-
-The DARKWEB CRAWL behind the portal is that rider never lifted and reshuffled per encounter, as a
-second endless row (`kExplLeadRows` → 2) running the pre-softening Dive constants — the terminal
-zone the Dive stopped being when it moved to Net-Sea. It pays sigils at milestone depths, which
-is currently the only thing that would let a player with no networks in range advance the Cant at
-all. |
-`areas/area_defs.h`'s `kAreaList[]`; a new `areas/silk_lode/area.cpp`;
-`castle_rapidscare/area.cpp`'s header (its "last in kAreaList … endgame pool" claim stops being
-true); `game_combat.cpp`'s `openOverride`. | M (area) / M (rider) / L (the mode) |
+**THE SILK LODE and the DARKWEB CRAWL have no art.** Both ship naming a glyph that does not
+exist (`ICON_SECTOR_SILK_LODE`, `ICON_SECTOR_DARKWEB_CRAWL`), so their EXPL rows draw the
+empty-frame placeholder `drawIconSlot` falls back to, and the Lode's backdrop is `SceneId::None`.
+The frame reading "art pending" is the intended half-step, not a bug — but it is two rows and a
+place that are still waiting. |
+`assets/ASSET_MANIFEST.md` §J; `silk_lode/area.cpp`'s `scene` field;
+`src/core/render/scenes/`. | S each | The scene is ~60 lines of palette-anchored tables, per
+`RENDER_PIPELINE.md`. |
 
 ### 1b. A separation pass over every screen
 

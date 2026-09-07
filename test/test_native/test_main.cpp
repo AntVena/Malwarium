@@ -339,6 +339,7 @@ int g_failures = 0;
     RUN(test_boss_teaches_its_own_apex_move)      \
     RUN(test_expl_nested_list_nav)                \
     RUN(test_deepweb_dive)                        \
+    RUN(test_darkweb_crawl)                       \
     RUN(test_zone_titles_equip_via_cfg_and_persist) \
     RUN(test_zone_titles_picker_skips_locked)     \
     RUN(test_combat_force_enemy_first)            \

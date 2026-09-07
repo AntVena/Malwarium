@@ -664,7 +664,9 @@ void test_item_earn_coverage() {
     // areaWildLootTable so the ladder's rows and the dive's standalone pool answer the
     // same question, which is the job that helper exists to do.
     auto inWildLootPool = [](const char* id) {
-        for (int idx = 0; idx <= kDeepWebSector; ++idx) {
+        // ...every real area, and BOTH endless zones — kDarkWebSector is the last index
+        // there is, so walking to it is what keeps this honest as zones are added.
+        for (int idx = 0; idx <= kDarkWebSector; ++idx) {
             const AreaLootTable t = areaWildLootTable(idx);
             for (int i = 0; i < t.count; ++i)
                 if (std::strcmp(t.rows[i].id, id) == 0) return true;

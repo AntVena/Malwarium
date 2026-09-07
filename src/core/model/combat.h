@@ -550,6 +550,12 @@ constexpr int kOverrideBands = 4;
 // rather than to a wrong one.
 constexpr int kOverridePickerMaxRows = 32;
 
+// Combatant::scrambleTurns' "for the whole fight" sentinel — what the DARKWEB CRAWL sets,
+// where the scramble is the weather rather than a rider somebody landed. A sentinel and
+// not a large count, because a large count is a guess about how long a fight runs and
+// this is not a guess.
+constexpr int kScrambleWholeFight = -1;
+
 // The band's own name — the level-1 row, and the header over its rows at level 2.
 const char* overrideBandName(OverrideBand b);
 
@@ -602,7 +608,7 @@ public:
     void openOverride(std::vector<OverrideItem> items = {}, CrewExploit crew = {},
                       SigilSet sigils = 0);
     // Is the picker currently scrambled — i.e. is the player wearing the rider?
-    bool overrideScrambled() const { return player_.scrambleTurns > 0; }
+    bool overrideScrambled() const { return player_.scrambleTurns != 0; }
     // The REAL flat row a display position names. Identity unless a scramble holds, in
     // which case rows are permuted WITHIN each band: crossing a band boundary is what the
     // band level is for, so a permutation across one would be lying about the list's
@@ -975,6 +981,13 @@ int wildWinXp(int baseXp, int enemyLevel, int petLevel);
 // `floorLog2(depth+1) * kDeepWebDepthLevelPerLog2` effective levels before those scales —
 // a fast early ramp that flattens, so a deep streak never runs away. Mutates `e`;
 // `petLevel`/`depth` clamp at 0. `roll` is caller-owned (the shared Game LCG).
+// The DARKWEB CRAWL's scaler — the terminal zone's half of what applyDeepWebScale does
+// for the dive, on its own constants (darkweb_crawl/area.h): no foothold, and a full
+// level's worth of stat points. Kept as its own function rather than a flag on the dive's
+// because the two zones are tuned against different players, and one function reading two
+// constant sets by a bool is how they drift into each other.
+void applyDarkWebScale(CombatEnemy& e, int petLevel, int depth = 0, uint32_t roll = 0);
+
 void applyDeepWebScale(CombatEnemy& e, int petLevel, int depth = 0, uint32_t roll = 0);
 
 // What a DIVE enemy knows at `depth` — two distinct ids drawn from that depth's rung

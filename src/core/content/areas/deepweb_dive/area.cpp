@@ -108,19 +108,18 @@ const char* const kAreaModsDeepWeb[] = {
 const int kAreaModsDeepWebCount = arrLen(kAreaModsDeepWeb);
 
 // The dive's WILD-win drop table. Same staple set every area's row carries, plus the
-// dive's own exclusive Merge Hub ingredient — the terminal zone is no AreaDef, so its
-// pool is named here for the same reason its glyph and scaling constants are.
+// dive's own Merge Hub ingredient.
 //
-// The five unbuyable USBs (content_items.cpp) hang off the end of it as bare rows, so
-// each draws at its own ItemDef::dropWeight — which is where the ladder between them is
-// written, because they are scarcer than their tiers EVERYWHERE and not just here. This
-// is the ONLY place any of them drops, and that is the point: no counter sells the
-// ability to overrule how a pet was raised, so the price of one is a trip down here and
-// however deep you can hold on the way back.
+// The five unbuyable USBs used to hang off the end of this list, on the reasoning that no
+// counter sells the ability to overrule how a pet was raised — so the price of one was a
+// trip to the end of the map and however deep you could hold on the way back. They went
+// with that slot when the dive gave it up: the dive now opens at Net-Sea, and a mid-game
+// farm handing out the one item class that rewrites a pet's raising would be selling
+// exactly what that reasoning says nothing may sell. They are the DARKWEB CRAWL's now
+// (darkweb_crawl/area.cpp), which is the end of the map.
 const LootEntry kWildLootDeepWeb[] = {
     {"dyno_nuggets"}, {"tortilla_chip"}, {"backup_drive"}, {"disk_scrubber"},
     {"pwnzu_sauce"},
-    {"sandbox_usb"}, {"bad_usb"}, {"signed_usb"}, {"halt_usb"}, {"eject_usb"},
 };
 const int kWildLootDeepWebCount = arrLen(kWildLootDeepWeb);
 

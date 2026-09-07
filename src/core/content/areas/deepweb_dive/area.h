@@ -39,9 +39,12 @@ extern const int kDeepWebDepthLevelPerLog2;
 //
 //   run length from depth 0        5    10    20    40
 //   Script lv18   before          44%   12%    0%    0%
-//   Script lv18   after           85%   72%   16%    0%
+//   Script lv18   after           85%   74%   19%    0%
 //   Daemon lv60   before          98%   97%   91%   72%
 //   Daemon lv60   after          100%  100%   99%   99%
+//
+// 300 runs a cell (five lines x 60 seeds), so a couple of points either way is sampling
+// noise and not a curve — read the shape, not the third digit.
 //
 // So an arriving pet now clears its first ten fights more often than not, is still
 // finished well before depth 40, and per-fight win rate at pet level 60 still falls to

@@ -120,6 +120,16 @@ ExplRowState explRowState(int row, const bool* areaCleared, const bool* subClear
         if (exploringSector == kDeepWebSector) return ExplRowState::DeepWebDiving;
         return ExplRowState::DeepWebOpen;
     }
+    if (explRowIsDarkWeb(row)) {                          // the terminal zone
+        // Opened by CLEARING the area whose shrine holds the portal, not by reaching it:
+        // the door is behind that area's own boss. Keyed by id for the same reason the
+        // dive's gate is — see kDarkWebUnlockAreaId.
+        const int gate = areaIndexById(kDarkWebUnlockAreaId);
+        if (gate < 0 || !(areaCleared && areaCleared[gate]))
+            return ExplRowState::DarkWebLocked;
+        if (exploringSector == kDarkWebSector) return ExplRowState::DarkWebCrawling;
+        return ExplRowState::DarkWebOpen;
+    }
     const int area = explRowArea(row);
     const int sub = explRowSub(row);
     const bool areaOpen = explSectorOpen(area, areaCleared);
@@ -161,6 +171,8 @@ bool explRowSelectable(ExplRowState s) {
         case ExplRowState::SubCleared:                    // re-arm to FARM
         case ExplRowState::DeepWebOpen:                   // arm the endless dive
         case ExplRowState::DeepWebDiving:                 // re-arm the running dive
+        case ExplRowState::DarkWebOpen:                   // arm the terminal crawl
+        case ExplRowState::DarkWebCrawling:               // re-arm the running crawl
         case ExplRowState::TourneyOpen:                   // draw a fresh bracket
         case ExplRowState::TourneyRunning:                // resume the one in play
             return true;
@@ -187,6 +199,9 @@ RowTag rowTag(ExplRowState s) {
         case ExplRowState::DeepWebLocked:return {"LOCKED",  palColor(Pal::INK_DIM)};
         case ExplRowState::DeepWebOpen:  return {"> DIVE",  palColor(Pal::ACCENT)};
         case ExplRowState::DeepWebDiving:return {"DIVING",  palColor(Pal::ACCENT)};
+        case ExplRowState::DarkWebLocked:return {"LOCKED",  palColor(Pal::INK_DIM)};
+        case ExplRowState::DarkWebOpen:  return {"> CRAWL", palColor(Pal::ACCENT)};
+        case ExplRowState::DarkWebCrawling:return {"CRAWLING", palColor(Pal::ACCENT)};
         case ExplRowState::TourneyLocked:return {"LOCKED",  palColor(Pal::INK_DIM)};
         case ExplRowState::TourneyOpen:  return {"> ENTER", palColor(Pal::ACCENT)};
         case ExplRowState::TourneyRunning:return {"IN PLAY", palColor(Pal::ACCENT)};
@@ -326,11 +341,11 @@ void drawExplList(Framebuffer& fb, const ContentRegistry& reg, const ExplListVie
             else
                 std::snprintf(detail, sizeof(detail), "8 OPERATORS - ONE BRACKET");
         } else if (explRowIsDeepWeb(row)) {
-            // The terminal zone, top of the list. A thin divider BELOW it sets it apart
-            // from the area ladder that follows; its detail line is the pet's own record,
-            // which is the only progress an endless zone has.
+            // Top of the list, and the mid-game farm since its unlock moved to Net-Sea.
+            // No divider under it: the CRAWL below closes the endless block, so the two
+            // read as one pair rather than as two things fenced off from each other. Its
+            // detail line is the pet's own record, the only progress an endless zone has.
             const bool locked = (st == ExplRowState::DeepWebLocked);
-            fb.fillRect(8, y + pitch - 1, kActiveW - 16, 1, palColor(Pal::TRACK));
             if (!locked)
                 drawIconSlot(fb, reg.sprite(kDeepWebIcon), kIconX,
                              y + (pitch - kRowIcon) / 2, palColor(Pal::INK));
@@ -341,6 +356,22 @@ void drawExplList(Framebuffer& fb, const ContentRegistry& reg, const ExplListVie
                               v.bestDeepWebDepth);
             else if (!locked)
                 std::snprintf(detail, sizeof(detail), "ENDLESS - NO DIVE YET");
+        } else if (explRowIsDarkWeb(row)) {
+            // The TERMINAL zone, under the dive. The divider goes below this one rather
+            // than below the dive, so the two endless rows are fenced off from the ladder
+            // as one block instead of each being fenced from the other.
+            const bool locked = (st == ExplRowState::DarkWebLocked);
+            fb.fillRect(8, y + pitch - 1, kActiveW - 16, 1, palColor(Pal::TRACK));
+            if (!locked)
+                drawIconSlot(fb, reg.sprite(kDarkWebIcon), kIconX,
+                             y + (pitch - kRowIcon) / 2, palColor(Pal::INK));
+            title = locked ? "??????" : "DARKWEB CRAWL";
+            titleInk = locked ? palColor(Pal::INK_DIM) : zoneInk;
+            if (!locked && v.bestDarkWebDepth > 0)
+                std::snprintf(detail, sizeof(detail), "NOTHING IS NAMED - BEST %d",
+                              v.bestDarkWebDepth);
+            else if (!locked)
+                std::snprintf(detail, sizeof(detail), "NOTHING DOWN HERE IS NAMED");
         } else if (sub < 0 && v.navArea < 0) {
             // TOP level: the area itself, as a zone to pick. Its tier is the ladder depth
             // (areaTier) — how hard, before you commit — over its clear count.
@@ -451,9 +482,12 @@ void drawExplList(Framebuffer& fb, const ContentRegistry& reg, const ExplListVie
     // out to the zone list.
     const char* hint;
     if (v.navArea < 0) {
-        hint = (focus == ExplRowState::DeepWebOpen ||
-                focus == ExplRowState::DeepWebDiving) ? "A ZONE  B DIVE  C BACK"
-                                                      : "A ZONE  B ENTER  C BACK";
+        if (focus == ExplRowState::DeepWebOpen || focus == ExplRowState::DeepWebDiving)
+            hint = "A ZONE  B DIVE  C BACK";
+        else if (focus == ExplRowState::DarkWebOpen || focus == ExplRowState::DarkWebCrawling)
+            hint = "A ZONE  B CRAWL  C BACK";
+        else
+            hint = "A ZONE  B ENTER  C BACK";
     } else {
         hint = "A NEXT  B EXPLORE  C BACK";
         if (focus == ExplRowState::SubBossReady) hint = "A NEXT  B FIGHT BOSS  C BACK";

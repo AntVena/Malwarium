@@ -4,6 +4,7 @@
 #include <cstring>
 
 #include "tunables.h"
+#include "core/content/areas/darkweb_crawl/area.h"
 #include "core/app/game_internal.h"   // backupDriveAchievement — declared, defined here
 #include "core/ui/combat_screen.h"
 #include "core/ui/expl_screen.h"
@@ -221,6 +222,14 @@ void Game::settleBackupDrive() {
 }
 
 Combatant Game::buildPlayerCombatant() {
+    // In the DARKWEB CRAWL the Silk Lode's apex rider is simply the weather: every fight
+    // runs with the A+C picker reordered and drawn in the Cant, so what the pet can still
+    // use is exactly what the device can still read. -1 is the "for the whole fight"
+    // sentinel (Combatant::scrambleTurns) rather than a big number, because a big number
+    // is an assumption about how long a fight lasts and this is not one.
+    // Crib Sheet still answers it, which is why the ward is checked here and not only in
+    // applyEffect: a mod that refused a three-turn rider but not the zone built out of it
+    // would be selling half of what it says.
     // The friendly-visit ally buff — a transient combat modifier
     // consumed one per battle, applied at every real entry into combat (Sim +
     // wild). debugStartCombat is the dev/test hook and stays raw/deterministic.
@@ -230,6 +239,8 @@ Combatant Game::buildPlayerCombatant() {
     // finishBossRound (Combatant::itemShieldFired) to clear backupShieldUntilMs_ early.
     if (backupShieldUntilMs_ != 0 && lifetimeUptimeMs() < backupShieldUntilMs_)
         p.itemShield = true;
+    if (inDarkWebCrawl() && p.mods.mag(ModEffect::ScrambleWard) <= 0)
+        p.scrambleTurns = kScrambleWholeFight;
     // Per-pet stat points: additive into the combat maths, stacking with the branch
     // multipliers and mods. Shared with the duel path's remote-fighter rebuild
     // (applyLevelStatPoints, core/model/combat.h) so the two can't drift apart. EARNED
@@ -561,10 +572,10 @@ void Game::applyCombatResult() {
                 // roll on a win drops one of its permanent endgame mods (Deadman Switch /
                 // RAID Mirror). The rolled equip-LEVEL gate still applies, so a lucky drop
                 // is held until the pet is deep enough to field it.
-                if (exploreSector_ == kDeepWebSector) {
+                if (exploreSector_ == kDeepWebSector || exploreSector_ == kDarkWebSector) {
                     rng_ = rng_ * 1664525u + 1013904223u;
                     if (static_cast<int>((rng_ >> 16) % 100) < kModDeepWebDropPct)
-                        if (const char* id = rollAreaModId(kDeepWebSector))
+                        if (const char* id = rollAreaModId(exploreSector_))
                             grantMod(id);
                 }
                 log_.push(LogEventType::CombatWon, "WON BATTLE");
@@ -645,12 +656,25 @@ void Game::finishCombat() {
                     if (exploreStreak_ > bestDeepWebDepth_) bestDeepWebDepth_ = exploreStreak_;
                     recordSpeciesDive(pet_, exploreStreak_);
                 }
+                // The crawl keeps its own record and pays the thing it exists to pay: a
+                // SIGIL every kDarkWebSigilEveryN wins. It is credited as a spent shake
+                // rather than as a free letter, so the two doors onto the Cant meet in one
+                // ledger and the aerial's captures are never devalued by the zone.
+                if (inDarkWebCrawl()) {
+                    if (exploreStreak_ > bestDarkWebDepth_) bestDarkWebDepth_ = exploreStreak_;
+                    if (kDarkWebSigilEveryN > 0 && exploreStreak_ > 0 &&
+                        exploreStreak_ % kDarkWebSigilEveryN == 0 &&
+                        sigilsKnown() < kCantSigils) {
+                        cantSigils_ = learnSigil(cantSigils_);
+                        log_.push(LogEventType::ItemGained, "LEARNED A SIGIL");
+                    }
+                }
             }
         } else if (combat_.outcome() == Combat::Outcome::Lose) {
             // A loss ends the run. Same rule as the Stop row: only a DIVE ending spends
             // the depth multiplier, and inDeepWebDive() is derived from exploreActive_,
             // so it has to be read first.
-            if (inDeepWebDive()) deepWebDepthMultiplier_ = 1;
+            if (inEndlessZone()) deepWebDepthMultiplier_ = 1;
             exploreActive_ = false;
             exploreStreak_ = 0;
         }
@@ -789,14 +813,18 @@ void Game::debugFillLoadout() {
 
 void Game::startEncounter() {
     rng_ = rng_ * 1664525u + 1013904223u;                    // roster variant roll
-    if (inDeepWebDive()) {
-        // the endless zone draws the endgame (tier-3) roster and scales it to
-        // the PET's level, ramped by the dive's current win-streak (exploreStreak_) so
-        // diving deeper gradually punches the pet up (more XP, tougher enemy) instead of
-        // sitting at flat parity forever.
+    if (inEndlessZone()) {
+        // Both endless zones draw the endgame (tier-3) roster and scale it to the PET's
+        // level, ramped by the run's current win-streak (exploreStreak_) so pushing deeper
+        // gradually punches the pet up instead of sitting at flat parity forever. Which
+        // curve they ramp on is the difference between the two: the dive has a foothold
+        // and spends a fraction of a level's stat points, the crawl has neither.
         encounterEnemy_ = wildMalbeast(3, rng_ >> 16);
-        rng_ = rng_ * 1664525u + 1013904223u;                // the dive's own stat/kit roll
-        applyDeepWebScale(encounterEnemy_, combatLevel_, exploreStreak_, rng_);
+        rng_ = rng_ * 1664525u + 1013904223u;                // the zone's stat/kit roll
+        if (inDarkWebCrawl())
+            applyDarkWebScale(encounterEnemy_, combatLevel_, exploreStreak_, rng_);
+        else
+            applyDeepWebScale(encounterEnemy_, combatLevel_, exploreStreak_, rng_);
     } else {
         encounterEnemy_ = wildMalbeast(explSectorTier(exploreSector_), rng_ >> 16);
         applyWildSubAreaRamp(encounterEnemy_, exploreSector_, exploreSub_);  // depth ramp

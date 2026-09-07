@@ -348,6 +348,13 @@ extern const LootEntry kWildLootDeepWeb[];   // AreaDef::wildLootPool's stand-in
 extern const int kWildLootDeepWebCount;
 extern const char* const kDeepWebIcon;   // its EXPL row glyph (AreaDef::icon's stand-in)
 
+// The DARKWEB CRAWL's own stand-ins, defined in areas/darkweb_crawl/area.cpp.
+extern const char* const kAreaModsDarkWeb[];
+extern const int kAreaModsDarkWebCount;
+extern const LootEntry kWildLootDarkWeb[];
+extern const int kWildLootDarkWebCount;
+extern const char* const kDarkWebIcon;
+
 // The wild-win drop pool for `areaIdx` (0..kAreaCount-1 or kDeepWebSector), or an
 // empty pool if the index names neither. The one place the dive's standalone pool is
 // reconciled with the ladder's rows, so a caller draws from a pool without knowing
@@ -389,8 +396,21 @@ inline constexpr const char* kDeepWebUnlockAreaId = "net_sea_crossing";
 // sector) outlives any screen — the picker just happens to draw a row for it.
 constexpr int kDeepWebSector = kAreaCount;
 
+// ...and the DARKWEB CRAWL, one past THAT: the terminal zone, reached through the portal
+// at THE SILK LODE's ZERO DAY SHRINE. Two virtual sectors rather than one, because they
+// are different zones and not two depths of the same one — the dive is the mid-game farm
+// and the crawl is the end of the map (darkweb_crawl/area.h). Both sit above kAreaCount
+// so every `0 <= idx < kAreaCount` test still excludes them by construction.
+constexpr int kDarkWebSector = kAreaCount + 1;
+
+// Which area CLEARING opens the crawl, named by id for the reason kDeepWebUnlockAreaId
+// is: a rung is not an identity. Clearing rather than reaching, because the portal is
+// behind the shrine's own boss.
+inline constexpr const char* kDarkWebUnlockAreaId = "silk_lode";
+
 inline AreaLootTable areaWildLootTable(int areaIdx) {
     if (areaIdx == kDeepWebSector) return {kWildLootDeepWeb, kWildLootDeepWebCount};
+    if (areaIdx == kDarkWebSector) return {kWildLootDarkWeb, kWildLootDarkWebCount};
     // Bounds-checked rather than leaning on area()'s clamp-to-0: handing back area 0's
     // drop table for an out-of-range sector would be a silent wrong answer, where an
     // empty pool is a visible one (rollLootEntry returns nullptr and nothing drops).

@@ -5,6 +5,7 @@
 
 #include "tunables.h"
 #include "core/content/areas/area_defs.h"
+#include "core/content/areas/darkweb_crawl/area.h"
 #include "core/content/areas/deepweb_dive/area.h"
 #include "core/content/registry.h"
 #include "core/model/loadout.h"
@@ -423,6 +424,43 @@ std::vector<const char*> deepWebMoveIds(int depth, uint32_t roll) {
     return out;
 }
 
+// Spend a budget of stat points across the same four stats a pet levels, in the same
+// order and at the same per-point rates. Shared by both endless zones: they differ in how
+// big the budget is and in nothing else, and two copies of this arithmetic would be two
+// places for an enemy to stop answering to the player's own curves.
+static void spendStatBudget(CombatEnemy& e, const int (&points)[kLevelStatCount]) {
+    e.powerMultPct += points[0] * kLevelPowerPctPerPoint;
+    // Same diminishing curve and ceiling the pet's Defence answers to — an enemy is not
+    // allowed a wall the player could not have built, and makeEnemyCombatant re-clamps.
+    e.dmgReducePct += levelDefenseCutPct(points[1]);
+    e.speed += points[2] * kLevelSpeedPerPoint;
+    e.maxHealth += points[3] * kDeepWebHealthPerLevel;
+}
+
+void applyDarkWebScale(CombatEnemy& e, int petLevel, int depth, uint32_t roll) {
+    if (petLevel < 0) petLevel = 0;
+    if (depth < 0) depth = 0;
+    // Same shape as the dive's below, on the crawl's own constants. No foothold term at
+    // all: the pet that gets here cleared the whole ladder, and a flat stretch to stand on
+    // is what a farm gives you, not what the end of the map does.
+    const int effLevel = petLevel + kDarkWebDepthLevelPerLog2 * floorLog2(depth + 1);
+    e.level = effLevel + kDarkWebEnemyLevelOffset;
+    e.hasLevel = true;
+    const int budget = effLevel * kDarkWebBudgetPct / 100 + depth / kDarkWebDepthPointsPerN;
+    int points[kLevelStatCount] = {0, 0, 0, 0};
+    for (int i = 0; i < budget; ++i) {
+        roll = roll * 1664525u + 1013904223u;
+        ++points[(roll >> 16) % kLevelStatCount];
+    }
+    spendStatBudget(e, points);
+    // The kit is the dive's deep pool outright — every move the ladder's bosses teach,
+    // handed back. There is no rung ladder here because there is no shallow end: the
+    // crawl's difficulty axis is what the player can READ, not what the enemy knows.
+    e.moveIds.assign(kDeepWebMovesBoss, kDeepWebMovesBoss + kDeepWebMovesBossCount);
+    e.moveIds.push_back(kDeepWebWildAttackMoveId);
+    e.moveIds.push_back(kDeepWebWildDefendMoveId);
+}
+
 void applyDeepWebScale(CombatEnemy& e, int petLevel, int depth, uint32_t roll) {
     if (petLevel < 0) petLevel = 0;
     if (depth < 0) depth = 0;
@@ -476,12 +514,7 @@ void applyDeepWebScale(CombatEnemy& e, int petLevel, int depth, uint32_t roll) {
     e.moveIds.push_back(kDeepWebWildAttackMoveId);
     if (depth >= kDeepWebWildDefendDepth) e.moveIds.push_back(kDeepWebWildDefendMoveId);
 
-    e.powerMultPct += points[0] * kLevelPowerPctPerPoint;
-    // Same diminishing curve and ceiling the pet's Defence answers to — an enemy is not
-    // allowed a wall the player could not have built, and makeEnemyCombatant re-clamps.
-    e.dmgReducePct += levelDefenseCutPct(points[1]);
-    e.speed += points[2] * kLevelSpeedPerPoint;
-    e.maxHealth += points[3] * kDeepWebHealthPerLevel;
+    spendStatBudget(e, points);
 }
 
 int deepWebDepthBitsPct(int depth) {

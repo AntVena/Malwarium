@@ -48,15 +48,20 @@ constexpr int kExplRowsPerArea = 1 + kExplSubAreas;      // header + 5 sub rows
 // on it (Game::openExplList) — the fewest presses to the best grind. The arena trails
 // for the mirror-image reason: it pays nothing until a whole bracket is taken, so it
 // must never be what an operator lands on by default when they came to go exploring.
-constexpr int kExplLeadRows = 1;   // the DeepWeb Dive, above the ladder
+// TWO lead rows now: the Dive keeps row 0 (openExplList parks the cursor there, and it
+// must stay the fewest presses to the best AVAILABLE grind), and the DARKWEB CRAWL sits
+// directly under it. The order is the progression: the dive opens mid-game, the crawl is
+// the end of the map.
+constexpr int kExplLeadRows = 2;   // the DeepWeb Dive, then the DarkWeb Crawl
 constexpr int kExplTailRows = 1;   // ROCK THE DOCK, below it
 inline int explRowCount() {
     return kExplLeadRows + kExplSectors * kExplRowsPerArea + kExplTailRows;
 }
 inline bool explRowIsDeepWeb(int row) { return row == 0; }
+inline bool explRowIsDarkWeb(int row) { return row == 1; }
 inline bool explRowIsTourney(int row) { return row == explRowCount() - 1; }
 inline bool explRowIsSpecial(int row) {
-    return explRowIsDeepWeb(row) || explRowIsTourney(row);
+    return explRowIsDeepWeb(row) || explRowIsDarkWeb(row) || explRowIsTourney(row);
 }
 // Area/sub decode is offset by the leading row. Only meaningful for a LADDER row
 // (callers gate on explRowIsSpecial first); a special row returns a harmless sentinel.
@@ -85,6 +90,9 @@ enum class ExplRowState {
     DeepWebLocked,  // DeepWeb Dive, not all areas cleared → "??????" + LOCKED
     DeepWebOpen,    // every area cleared → "> DIVE" (selectable → arm the endless dive)
     DeepWebDiving,  // the endless dive is armed → DIVING (selectable → re-arm)
+    DarkWebLocked,  // DarkWeb Crawl, the Silk Lode not cleared → "??????" + LOCKED
+    DarkWebOpen,    // the Lode's gauntlet beaten → "> CRAWL" (selectable → arm it)
+    DarkWebCrawling,// the crawl is armed → CRAWLING (selectable → re-arm)
     TourneyLocked,  // the arena, its area not reached yet → "??????" + LOCKED
     TourneyOpen,    // no run in progress → "> ENTER" (selectable → draw a fresh bracket)
     TourneyRunning, // a bracket is part-fought → IN PLAY (selectable → resume it)
@@ -131,6 +139,7 @@ struct ExplListView {
     int streakWins = 0;
     int winsToBoss = 0;
     int bestDeepWebDepth = 0;        // the DeepWeb row's own progress readout (0 = none)
+    int bestDarkWebDepth = 0;        // ...and the Crawl's, the same job for the same reason
     // The arena row's own progress readout: how many entrants are still standing in the
     // run in progress (0 = no run), and which round it is on. Same job bestDeepWebDepth
     // does for the dive — the frontier row answers "where am I up to" where the choice

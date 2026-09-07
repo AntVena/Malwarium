@@ -275,7 +275,14 @@ constexpr int kSaveTextCap = 28;     // matches EventLog's LogEntry.text
 //     achievements count. Per-pet, so it clears on a new egg. Pre-v62 -> empty, which
 //     reads as a pet that has eaten nothing: the honest answer for a save written before
 //     anything was watching, and one a few meals corrects.
-constexpr uint16_t kSaveVersion = 62;
+// v63 PARALLEL TAIL of `bestDarkWebDepth`, this pet's deepest DARKWEB CRAWL. Its own
+//     number rather than a shared "deepest endless zone" one, because the crawl and the
+//     dive are not the same fight — the crawl runs with the A+C picker scrambled and on a
+//     harsher curve, so one figure covering both would let the easier zone speak for the
+//     harder. Per-pet, so a new egg starts it over exactly as v35's dive record does.
+//     Pre-v63 -> 0, which reads as a pet that has never been down there: true of every
+//     save written before the zone existed.
+constexpr uint16_t kSaveVersion = 63;
 
 // The oldest blob deserialize will read, and the ONLY thing that retires a rename row
 // (see `renamedIds`). Raising it is how a device stops carrying migration weight for saves
@@ -375,6 +382,9 @@ struct SaveStoredPet {
     // parallel tail (mirrors defragCount's v16 pattern) — survives an ARCH
     // Store/Deploy cycle instead of resetting on Deploy.
     int32_t bestDeepWebDepth = 0;
+    // v63: and its deepest DARKWEB CRAWL, in that same tail's shape and for its reason —
+    // a record that reset on Deploy would be one the rack quietly eats.
+    int32_t bestDarkWebDepth = 0;
     // v42: the 5/5 recovery window burned at freeze, in a parallel tail. `mistakes`
     // above already freezes and thaws, so a pet stored at 5/5 comes back at 5/5 —
     // without this its window would restart on Deploy, and freezing would be the
@@ -820,6 +830,10 @@ struct SaveData {
     // (a parallel tail, mirrors defragCount's v16 pattern). Pre-v35 → 0 (never
     // dived).
     int32_t bestDeepWebDepth = 0;
+    // v63: the ACTIVE pet's deepest DARKWEB CRAWL, beside the dive's and for the same
+    // reasons — per-pet, reset on a new egg, and a separate number from the dive's
+    // because the two zones are not the same fight.
+    int32_t bestDarkWebDepth = 0;
 
     // --- v59: the CANT -------------------------------------------------------
     // Player-level, not per-pet: the operator's device learned this language, and it

@@ -35,6 +35,7 @@ struct AreaModTable { const char* const* ids; int count; };
 // pool instead, which is wrong here, so this bounds-checks first).
 AreaModTable areaModTable(int areaIdx) {
     if (areaIdx == kDeepWebSector) return {kAreaModsDeepWeb, kAreaModsDeepWebCount};
+    if (areaIdx == kDarkWebSector) return {kAreaModsDarkWeb, kAreaModsDarkWebCount};
     if (areaIdx < 0 || areaIdx >= kAreaCount) return {nullptr, 0};
     const AreaDef& a = area(areaIdx);
     return {a.modPoolIds, a.modPoolCount};
@@ -91,7 +92,10 @@ bool Game::explRowLandable(int row) const {
 }
 
 int Game::areaHeaderRow(int area) const {
-    return 1 + area * kExplRowsPerArea;              // row 0 = DeepWeb; area blocks follow
+    // Past the LEAD rows (the two endless zones), then one block per area. Reads the
+    // constant rather than a literal, so adding a zone above the ladder moves every area
+    // block with it instead of silently pointing this one row short.
+    return kExplLeadRows + area * kExplRowsPerArea;
 }
 
 void Game::openExplList() {
@@ -149,6 +153,8 @@ void Game::onExplList(const ButtonEvent& ev) {
             case ExplRowState::SubBossReady:  startSubAreaBoss(area, sub); break;
             case ExplRowState::DeepWebOpen:                     // endless zone
             case ExplRowState::DeepWebDiving: startDeepWebDive(); break;
+            case ExplRowState::DarkWebOpen:                     // the terminal zone
+            case ExplRowState::DarkWebCrawling: startDarkWebCrawl(); break;
             case ExplRowState::TourneyOpen:                     // the operator bracket
             case ExplRowState::TourneyRunning: openTourney(); break;
             default:                          startExplore(area, sub); break;  // arm/re-arm
@@ -220,9 +226,32 @@ void Game::startDeepWebDive() {
     markSaveDirty();
 }
 
+void Game::startDarkWebCrawl() {
+    // The terminal endless zone, reached through the portal at THE SILK LODE's ZERO DAY
+    // SHRINE. Everything about the walk is startDeepWebDive's — the same idle background,
+    // the same depth-as-streak, the same "a loss ends it" — on its own virtual sector, so
+    // doExploreStep/startEncounter route to the crawl's roll instead of the dive's.
+    //
+    // What it does NOT share is the dive's start-depth items: a Bell buys a head start in
+    // the farm, and the end of the map is not a thing you skip the front of.
+    if (!darkWebUnlocked()) return;
+    exploreActive_ = true;
+    exploreSector_ = kDarkWebSector;
+    exploreSub_ = 0;
+    exploreStreak_ = 0;
+    exploreSteps_ = 0;
+    exploreStepBeat_ = 0;
+    exploreFlavor_[0] = '\0';
+    emptyQueueStreak_ = 0;
+    nav_ = Nav::Idle;
+    autoArmBackupShield(kRigRowAutoBackup);
+    markSaveDirty();
+}
+
 void Game::exploreBadgeLabel(char* out, size_t n) const {
     if (!out || n == 0) return;
     if (inDeepWebDive()) { std::snprintf(out, n, "DEEPWEB"); return; }
+    if (inDarkWebCrawl()) { std::snprintf(out, n, "DARKWEB"); return; }
     // The area's own short name (AreaDef::badge) + the 1-based sub number, e.g.
     // "CITRUS 3" — sized to clear the right-anchored status field, and measured against it
     // by a native gate. A row that names none falls back to the first word of its display
@@ -272,7 +301,7 @@ void Game::autoProgressStep() {
     // has to have met its win target. Below that, nothing (the player is still grinding
     // it), which is why an unrelated hand-back like a resolved shop is harmless.
     if (!autoProgress_ || !exploreActive_) return;
-    if (inDeepWebDive()) return;                    // endless: depth IS the progress
+    if (inEndlessZone()) return;                    // endless: depth IS the progress
     const int a = exploreSector_, s = exploreSub_;
     if (a < 0 || a >= kExplSectors || s < 0 || s >= kExplSubAreas) return;
     if (exploreStreak_ < kExploreStreakToBoss) return;

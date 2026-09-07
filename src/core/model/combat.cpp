@@ -1064,7 +1064,7 @@ void Combat::resolveTurn(Combatant& actor, Combatant& target, bool byPlayer) {
     // The scramble is measured in the victim's OWN turns, like the stun above — but it
     // never skips one, so it is shed here where a turn is actually being taken rather
     // than in the freeze branch that returns early.
-    if (actor.scrambleTurns > 0) actor.scrambleTurns--;
+    if (actor.scrambleTurns > 0) actor.scrambleTurns--;   // the sentinel never counts down
     // Only a turn spent FIGHTING sheds a resist point — one burned to the lock or a ransom
     // bill returned above — so resistance grows through a chain and drains once it breaks.
     if (actor.lockResist > 0) actor.lockResist--;

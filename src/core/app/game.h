@@ -451,6 +451,22 @@ public:
     bool inDeepWebDive() const {
         return exploreActive_ && exploreSector_ == kDeepWebSector;
     }
+    // ...and the DARKWEB CRAWL, the terminal one. Same idle-background walk on its own
+    // virtual sector, but every fight in it runs with the A+C picker scrambled — the
+    // Silk Lode's apex rider never lifted (darkweb_crawl/area.h).
+    bool inDarkWebCrawl() const {
+        return exploreActive_ && exploreSector_ == kDarkWebSector;
+    }
+    // Either endless zone — the two share the walk, the depth streak and the "a loss ends
+    // the run" rule, and differ in what they field and what they take from you. Callers
+    // that mean "no sub-area ladder here" want this rather than one of the two above.
+    bool inEndlessZone() const { return inDeepWebDive() || inDarkWebCrawl(); }
+    // The crawl's unlock: the area whose shrine holds the portal has been CLEARED.
+    bool darkWebUnlocked() const {
+        const int a = areaIndexById(kDarkWebUnlockAreaId);
+        return a >= 0 && a < kAreaCount && sectorCleared_[a];
+    }
+    int bestDarkWebDepth() const { return bestDarkWebDepth_; }
     // The DeepWeb Dive's unlock: has the ladder reached kDeepWebUnlockAreaId? The SAME
     // linear gate every area answers to (explSectorOpen over sectorCleared_), asked of
     // one named rung — so the dive needs no unlock flag of its own, exactly as the arena
@@ -1957,6 +1973,7 @@ public:
     // path: winning at that depth (game_combat.cpp) — a gate that needs a pet with a
     // record behind it says so directly instead of playing a dive out.
     void debugSetBestDeepWebDepth(int depth) { bestDeepWebDepth_ = depth < 0 ? 0 : depth; }
+    void debugStartDarkWebCrawl() { startDarkWebCrawl(); }
     // Arm explore-mode on a SPECIFIC sub-area directly (tests): once cleared sub-areas
     // are re-farmable the EXPL "first-selectable" row is ambiguous, so a test
     // that needs a particular frontier arms it here instead of A-cycling. Real path:
@@ -2416,7 +2433,8 @@ private:
     void autoProgressAdvance(int area, int sub);
     int nextOpenArea(int area) const;
     void startExplore(int sector, int sub);         // arm a sub-area → idle background mode
-    void startDeepWebDive();                         // arm the endless terminal zone
+    void startDeepWebDive();                         // arm the mid-game endless zone
+    void startDarkWebCrawl();                        // ...and the terminal one
     void doExploreStep();                           // one guaranteed-event step
     void returnToExplore();                         // event/fight → back to idle, mode continues
     // Auto Backup / Continuous Auto-Backup (Rig Shop g/h): re-arm the Backup
@@ -3058,6 +3076,11 @@ private:
     // Zero-Day Bell and consumed the next time startDeepWebDive() begins a fresh dive;
     // -1 = none armed (starts at depth 0 as normal).
     int bestDeepWebDepth_ = 0;
+    // The crawl's own record, per-pet exactly as the dive's above is and reset with it on
+    // a new egg. A separate number rather than a shared "deepest endless" one because the
+    // two zones are not the same fight: a depth in the crawl is worth more, and one
+    // figure covering both would let the easier zone speak for the harder.
+    int bestDarkWebDepth_ = 0;
     int deepWebDepthMultiplier_ = 1;
     int pendingDeepWebStartDepth_ = -1;
     static constexpr int kDeepWebStartDepthUseBest = -2;  // pendingDeepWebStartDepth_
