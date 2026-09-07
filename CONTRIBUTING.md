@@ -112,6 +112,14 @@ a restatement of the diff.
 
 ## Releasing
 
-Tagging `v*` publishes to GitHub Pages, which is what devices check. The process, the two
-changes that need more care than a tag can undo, and how to verify what is actually served are
-in [`docs/ORIENTATION.md`](docs/ORIENTATION.md) under *Releasing*.
+**Work lands on `main`, as a release.** No pull request unless one is asked for, and nothing
+parked on a side branch waiting for review: finish it, run the gates (`./tools/gates.sh`), bump
+the versions, cut the release.
+
+Tagging `v*` publishes to GitHub Pages, which is what devices check — and **a release that
+stops at a pushed `main` is not live.** `publish.yml` fires on the tag and on nothing else, so
+an untagged release builds no firmware artifact, writes no manifest, and is offered to no
+device; the only symptom is a version nobody is running. Pushing `main` is half the job.
+
+The process, the two changes that need more care than a tag can undo, and how to verify what is
+actually served are in [`docs/ORIENTATION.md`](docs/ORIENTATION.md) under *Releasing*.
