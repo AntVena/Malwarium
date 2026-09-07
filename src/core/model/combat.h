@@ -23,6 +23,8 @@
                                              // kRansomHoldTurns sizes the ransom countdown;
                                              // kWormReplicaSlots sizes wormReplicas
 #include "core/content/defs.h"
+#include "core/model/cant.h"                // SigilSet / CantCipher — the scramble rider draws
+                                            // the picker in the guardians' tongue
 #include "core/model/mod_state.h"           // ModStateSet — the equipped mods' per-fight state
 
 namespace mal {
@@ -286,6 +288,14 @@ struct Combatant {
     // the pile (Combat::stunLands), so being chain-stunned buys the way out of it.
     int lockResist = 0;
 
+    // SCRAMBLE (a landed hit's scrambleTurns rider) — set ON THE VICTIM, and the only
+    // rider that costs the PLAYER rather than the pet: while it holds, the A+C picker's
+    // rows are reordered and drawn in the Cant, so a row this pet cannot read is a row it
+    // cannot pick (Combat::overrideRowLabel / overrideRowLegible). The fight itself is
+    // untouched — the auto-battle keeps choosing and swinging — so what a scramble takes
+    // is the hand on the wheel, not the turn. Counter is ModEffect::ScrambleWard.
+    int scrambleTurns = 0;
+
     // Ransom Note (Ransomware passive) — all three live on the RANSOMER (the pet that
     // owns the passive), never the attacker. `ransomArmed` is re-rolled at the start of
     // every one of this side's turns (Combat::ransomArmRolls) and holds for the window
@@ -533,6 +543,13 @@ struct OverrideItem {
 enum class OverrideBand : uint8_t { Move, Item, Lock, Crew };
 constexpr int kOverrideBands = 4;
 
+// Hard ceiling on the picker's flat row count, and the size of the scramble's permutation
+// array. Above what any fight builds (kMaxMoveSlots moves + the combat-usable stacks + the
+// metamorphic locks + one crew row), so it bounds the array rather than the list: a picker
+// longer than this simply is not permuted past the ceiling, which degrades to plain order
+// rather than to a wrong one.
+constexpr int kOverridePickerMaxRows = 32;
+
 // The band's own name — the level-1 row, and the header over its rows at level 2.
 const char* overrideBandName(OverrideBand b);
 
@@ -579,7 +596,31 @@ public:
     int overrideUsesTotal() const { return overrideUsesTotal_; }
     bool overrideOpen() const { return overrideOpen_; }
     // open — does NOT spend. `crew` defaults to "no crew" (no extra row).
-    void openOverride(std::vector<OverrideItem> items = {}, CrewExploit crew = {});
+    // `sigils` is what the pet can READ of the Cant (core/model/cant.h) — only consulted
+    // while a scramble holds, and 0 is the honest default for every caller that has no
+    // opinion (tests, the arena's own fighters).
+    void openOverride(std::vector<OverrideItem> items = {}, CrewExploit crew = {},
+                      SigilSet sigils = 0);
+    // Is the picker currently scrambled — i.e. is the player wearing the rider?
+    bool overrideScrambled() const { return player_.scrambleTurns > 0; }
+    // The REAL flat row a display position names. Identity unless a scramble holds, in
+    // which case rows are permuted WITHIN each band: crossing a band boundary is what the
+    // band level is for, so a permutation across one would be lying about the list's
+    // shape rather than hiding its order.
+    int overrideRealRow(int displayRow) const;
+    // The label for a display row, written into `buf`: plain normally, enciphered while a
+    // scramble holds. Combat owns this rather than the screen because the screen would
+    // otherwise have to re-derive which of the four bands a row came from in order to
+    // know what to encipher.
+    const char* overrideRowLabel(int displayRow, char* buf, size_t n) const;
+    // Can the pet READ that row? Always true unscrambled. While scrambled, true only if
+    // every letter of its label is a sigil this device knows — a row it cannot read is a
+    // row the cursor skips and B refuses.
+    bool overrideRowLegible(int displayRow) const;
+    // How many display rows the picker's illegible ones amount to, for the header count.
+    int overrideRowsHeld() const;
+    // Total flat rows across every band — what the permutation is built over.
+    int overrideRowCount() const;
     void cycleOverride();       // A inside the picker → next entry (moves, items, crew)
     int overridePick() const { return overridePick_; }
     int overrideMoveCount() const;                // picker rows that are moves
@@ -756,6 +797,17 @@ private:
     int overrideUsesLeft_ = 1;      // Exploit uses remaining this fight
     int overrideUsesTotal_ = 1;     // allowance at fight start (for the pip readout)
     bool overrideOpen_ = false;
+    // The scramble's two halves, both rebuilt at every openOverride and neither persisted:
+    // the row permutation (display -> real, band-local) and the cipher the labels are
+    // drawn through. Rebuilt per OPEN rather than per turn so one visit to the picker is
+    // a stable thing to reason about, and re-rolled on the next so it cannot be memorised.
+    void buildOverrideOrder();
+    int overrideDisplayRow(int realRow) const;
+    const char* overrideRawLabel(int realRow) const;
+    int firstLegibleIn(OverrideBand band) const;
+    uint8_t overrideOrder_[kOverridePickerMaxRows] = {};
+    CantCipher overrideCipher_;
+    SigilSet overrideSigils_ = 0;
     bool overrideAtBands_ = false;              // cursor on the band list, not on rows
     int overrideBandPick_ = 0;                  // index into the PRESENT bands
     int overridePick_ = 0;          // index into [moves..., items...]

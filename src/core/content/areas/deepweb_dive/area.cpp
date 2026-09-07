@@ -14,6 +14,7 @@ const int kDeepWebDepthBitsPctPerLog2 = 32;
 const int kDeepWebDepthBitsMaxPct = 512;
 const int kDeepWebDepthPointsPerN = 8;
 const int kDeepWebBossMoveDepth = 256;
+const int kDeepWebModTier = 5;
 
 // The dive's move rungs. Each is what an enemy may KNOW from that depth on, drawn from
 // (not added to) the pool — the rung replaces the roster kit rather than extending it, so

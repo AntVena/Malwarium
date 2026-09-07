@@ -283,7 +283,11 @@ void Game::onCombat(const ButtonEvent& ev) {
     // pet's moves, any combat-usable items from the live inventory, and — while the
     // player belongs to one — their crew's signature Exploit (game_crew.cpp).
     if (ev.chordAC) {
-        if (!duel) combat_.openOverride(combatItemOptions(), crewExploitOption());
+        // The pet's Cant goes in with the picker: it is what decides how much of a
+        // SCRAMBLED one it can still read (MoveDef::scrambleTurns), and Combat has no
+        // other way to know — the sigils are the device's, not the fight's.
+        if (!duel)
+            combat_.openOverride(combatItemOptions(), crewExploitOption(), cantSigils_);
         return;
     }
     if (combat_.overrideOpen()) {                 // standard A/B/C inside the picker

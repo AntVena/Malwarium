@@ -505,6 +505,46 @@ const MoveDef kMoves[] = {
      Stage::Daemon, nullptr, 0, 0, 0, 0, 0, 0, /*dotDamage=*/10, /*dotTurns=*/5,
      /*stealPower=*/0, /*stealDefensePct=*/40},
 
+    // --- The Silk Lode — the family is SEVERANCE, so what it takes is your HAND ------
+    // Every other area takes Health, armour or turns. This one takes the player's reach
+    // into the fight: the A+C picker is the one place a hand goes in, and `c2_hijack`
+    // below is what closes it. The rest of the family are the smaller ways a thread
+    // catches something you were about to do.
+    {"dead_link", "Dead Link", MoveDef::Kind::Attack, 6, 1,
+     "What was here is not here - takes {stealMaxHp}% of the target's max Health.",
+     Stage::Script, nullptr, 0, 0, 0, 0, 0, 0, 0, 0, /*stealPower=*/0, /*stealDef=*/0,
+     /*stealSpeed=*/0, /*stealHp=*/0, /*stealMaxHpPct=*/18},
+    {"funnel_web", "Funnel Web", MoveDef::Kind::Attack, 11, 1,
+     "It only goes one way - strips {stealDef}% armor and {dot}/turn for {dotTurns}.",
+     Stage::Script, nullptr, 0, 0, 0, 0, 0, 0, /*dotDamage=*/6, /*dotTurns=*/3,
+     /*stealPower=*/0, /*stealDefensePct=*/35},
+    {"unwrite", "Unwrite", MoveDef::Kind::Attack, 15, 1,
+     "It does not damage the file, it removes the fact of it - ignores {pierce}% armor, "
+     "{dot}/turn for {dotTurns}.",
+     Stage::Script, nullptr, 0, 0, 0, 0, /*armorPiercePct=*/40, 0, /*dotDamage=*/7,
+     /*dotTurns=*/4},
+    {"raise_host", "Raise Host", MoveDef::Kind::Attack, 5, 1,
+     "Something else wakes up every turn you are still here - {dot} damage/turn for "
+     "{dotTurns} turns.",
+     Stage::Script, nullptr, 0, 0, 0, 0, 0, 0, /*dotDamage=*/12, /*dotTurns=*/5},
+    {"polymorph", "Polymorph", MoveDef::Kind::Attack, 17, 1,
+     "It is not the same thing twice - ignores {pierce}% armor and strips {stealDef}%.",
+     Stage::Daemon, nullptr, 0, 0, 0, 0, /*armorPiercePct=*/50, 0, 0, 0,
+     /*stealPower=*/0, /*stealDefensePct=*/45},
+    // The area's THREAT (AreaDef::apexThreatMoveId), answered by Crib Sheet in its own
+    // loot table. Power is modest on purpose: what it costs the player is the picker, and
+    // a rider that also hit hard would be paid for twice.
+    severRow("c2_hijack", "C2 Hijack", 8,
+             "Takes the channel you give orders on - your override reads in a hand you "
+             "did not write for {scramble} turns.",
+             Stage::Daemon, /*scrambleTurns=*/3),
+    // The banner's own, carried by the final round of its gauntlet and nowhere else.
+    // "We are many" was never a metaphor; it was a count.
+    severRow("legion", "Legion", 30,
+             "We are many, and that was always a count - ignores ALL {pierce}% armor, "
+             "freezes {lock} turn, and scrambles for {scramble}.",
+             Stage::Daemon, /*scrambleTurns=*/2, /*armorPiercePct=*/100, /*lockTurns=*/1),
+
     // === THE GUARDIAN POOL — one move per area guardian, taught nowhere else ========
     //
     // Generic (line = nullptr) and reachable exactly as the two pools around it are: a
@@ -539,6 +579,9 @@ const MoveDef kMoves[] = {
     {"no_such_name", "No Such Name", MoveDef::Kind::Attack, 9, 1,
      "The wall is not there because you are not - ignores {pierce}% of armor.",
      Stage::Daemon, nullptr, 0, 0, 0, 0, /*armorPiercePct=*/45},
+    {"held_thread", "Held Thread", MoveDef::Kind::Attack, 6, 1,
+     "You have been standing on it the whole time - freezes {lock} turns.",
+     Stage::Daemon, nullptr, 0, 0, 0, 0, 0, /*lockTurns=*/2},
 
     // === THE WILD POOL — one Attack + one Defend per zone, farmed off its own wilds ==
     //
@@ -605,6 +648,17 @@ const MoveDef kMoves[] = {
      "the fight.",
      Stage::Script, nullptr, 0, 0, 0, 0, 0, 0, 0, 0, /*stealPower=*/0, /*stealDef=*/0,
      /*stealSpeed=*/0, /*stealHp=*/0, /*stealMaxHpPct=*/10},
+    // The Silk Lode's pair — the family's cheap version, farmable at every rung. The
+    // Attack is a thread you walked into rather than one aimed at you; the brace is the
+    // flattest and most patient web there is.
+    {"snag_line", "Snag Line", MoveDef::Kind::Attack, 12, 1,
+     "You brushed something that was already there - strips {stealDef}% of the target's "
+     "armor.",
+     Stage::Script, nullptr, 0, 0, 0, 0, 0, 0, 0, 0, /*stealPower=*/0,
+     /*stealDefensePct=*/35},
+    braceRow("sheet_web", "Sheet Web", 42,
+             "It does not chase - braces {power}; your next move waits {refund}% less.",
+             Stage::Daemon, /*speedRefundPct=*/28),
     braceRow("captcha_gate", "Captcha Gate", 38,
              "Prove you are not a robot - braces {power}; your next move "
              "waits {refund}% less.",

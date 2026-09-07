@@ -194,6 +194,7 @@ Combatant makePlayerCombatant(const ContentRegistry& reg, const CreatureDef& pet
                 break;
             case ModEffect::ReplicaWorthPct:     // Replication Bus — read at a copy's spawn
             case ModEffect::PolymorphEffectPct:  // Mutation Engine — read at the turn engine
+            case ModEffect::ScrambleWard:        // Crib Sheet — read when the picker opens
                 c.mods.apply(m->effectKind, mag, m->magnitude2);
                 break;
             case ModEffect::AttackCountPowerPct: {  // Botnet Swarm — +mag% power PER Attack move

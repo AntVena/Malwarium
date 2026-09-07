@@ -209,6 +209,7 @@ EffectText effectText(const MoveDef& d) {
         {"stackDefCap", d.stackDefenseCap},
         {"pierce", d.armorPiercePct},
         {"lock", d.lockTurns},
+        {"scramble", d.scrambleTurns},
         {"dot", d.dotDamage ? d.dotDamage : d.poolRetaliateDot},
         {"dotTurns", d.dotTurns ? d.dotTurns : d.poolRetaliateTurns},
         {"stealPower", d.stealPowerPct},

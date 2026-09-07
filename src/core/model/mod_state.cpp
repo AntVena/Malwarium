@@ -43,6 +43,9 @@ constexpr ModRule kModRules[] = {
     // Tripwire's threshold is its mag2, so the widest window wins and brings its own
     // reflect magnitude with it.
     {ModEffect::ConditionalThorns,    ModCombine::HighestMag2, 0,   false},
+    // Binary: you either brought the crib or you did not, so a second copy buys nothing
+    // and the highest magnitude is just "one of them is equipped".
+    {ModEffect::ScrambleWard,         ModCombine::HighestMag,  0,   false},
     {ModEffect::StealAmplifyPct,      ModCombine::Sum,         0,   false},
     // Both line build-arounds add percentage POINTS to a passive's own roll, so they sum
     // the way any other bonus to the same roll would, and both cap at 100 — the roll they

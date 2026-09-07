@@ -470,6 +470,36 @@ const ModDef kMods[] = {
     // Regen's deep rung. A shadow copy is the thing ransomware deletes FIRST, which is the
     // joke and the mechanic in one: what the keep sells is the restore point that cannot
     // be taken away, permanently installed rather than carried as a consumable.
+    // ==== THE SILK LODE — rank 6 ==================================================
+    // The counter the area owes for the threat it debuts (MoveDef::scrambleTurns), the
+    // way the Bayou pays out a Watchdog Timer for its own stun. A CRIB is the known
+    // plaintext a cryptanalyst breaks a cipher with, and it is also what you smuggle into
+    // an exam — the one mod whose whole effect is that you can still read your own kit.
+    {/*wire=*/80, "crib_sheet", "Crib Sheet", "LEGIBLE",
+     "Your override picker stays readable, and in its own order.",
+     false, ItemDef::Rarity::Epic, 6, 61, ModEffect::ScrambleWard, 1, 0, nullptr, 0},
+
+    // Every line is owed a row at every rung (test_mod_niche_flavour_data_driven): a band
+    // where four of the five lines find something and the fifth finds nothing reads as the
+    // ladder forgetting one. These are the sixth-rung answers, each a deep rung of what
+    // that line already does rather than a new mechanic — the new mechanic at this depth
+    // is Crib Sheet above, and one per area is the budget.
+    {/*wire=*/81, "vault_door", "Vault Door", "+DEF",
+     "Nothing negotiates with a wall: cuts incoming damage {mag}%.", false,
+     ItemDef::Rarity::Epic, 6, 63, ModEffect::DamageCutPct, 14, 0, "ransomware", 10},
+    {/*wire=*/82, "spoof_relay", "Spoof Relay", "+PWR",
+     "It answers in somebody else's name: attack power +{mag}%.", false,
+     ItemDef::Rarity::Epic, 6, 65, ModEffect::PowerPct, 16, 0, "phishing", 10},
+    {/*wire=*/83, "fork_farm", "Fork Farm", "+HP",
+     "Room for one more of everything: +{mag} max Health.", false,
+     ItemDef::Rarity::Epic, 6, 67, ModEffect::MaxHealth, 34, 0, "worm", 10},
+    {/*wire=*/84, "false_flag", "False Flag", "1-SHOT",
+     "The first hit lands on somebody who was never there: cuts it {mag}%.", false,
+     ItemDef::Rarity::Epic, 6, 69, ModEffect::FirstHitCutPct, 55, 0, "trojan", 10},
+    {/*wire=*/85, "recompiler", "Recompiler", "+SPD",
+     "It rebuilds itself between swings: +{mag} speed.", false,
+     ItemDef::Rarity::Epic, 6, 71, ModEffect::Speed, 5, 0, "metamorphic", 10},
+
     {/*wire=*/60, "shadow_copy", "Shadow Copy", "REGEN",
      "Keeps a copy nobody can delete: restores {mag} Health at the start of each of "
      "your turns.", false,

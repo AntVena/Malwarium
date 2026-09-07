@@ -286,6 +286,7 @@ extern const AreaDef kAreaPirateBayou;
 extern const AreaDef kAreaNetSeaCrossing;
 extern const AreaDef kAreaNapstorrentMoors;
 extern const AreaDef kAreaCastleRapidscare;
+extern const AreaDef kAreaSilkLode;
 
 // The ladder, in unlock order. Adding an area = write its area.cpp (declare +
 // define its AreaDef here-ish) and add one entry below — kAreaCount, kExplSectors,
@@ -299,7 +300,7 @@ extern const AreaDef kAreaCastleRapidscare;
 // (content_mods.cpp).
 inline constexpr const AreaDef* const kAreaList[] = {
     &kAreaCitrusCircuit, &kAreaPirateBayou,        &kAreaNetSeaCrossing,
-    &kAreaNapstorrentMoors, &kAreaCastleRapidscare,
+    &kAreaNapstorrentMoors, &kAreaCastleRapidscare, &kAreaSilkLode,
 };
 constexpr int kAreaCount = sizeof(kAreaList) / sizeof(kAreaList[0]);
 

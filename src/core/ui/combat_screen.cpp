@@ -1242,7 +1242,18 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
                 pickerRow(y, overrideBandName(b), nameC, tag, sel);
                 continue;
             }
-            const int i = first + row;                    // back into the flat list
+            // DISPLAY row -> the real flat row. Identity unless a scramble holds, in
+            // which case the list the operator is looking at is not the list Combat
+            // commits against (Combat::overrideRealRow).
+            const int disp = first + row;
+            const int i = combat.overrideRealRow(disp);
+            // A row the pet cannot read is drawn dim and tagged, not hidden: the shape of
+            // the list is not the secret, which of its rows is which is. Dual-coded, so
+            // the tag says HELD and the colour is only emphasis.
+            const bool held = !combat.overrideRowLegible(disp);
+            char scrambled[32];
+            const char* label = combat.overrideRowLabel(disp, scrambled, sizeof(scrambled));
+            const Rgb565 rowC = held ? palColor(Pal::INK_DIM) : nameC;
             if (i < moveN) {                              // a move row
                 const MoveDef* m = combat.player().moves[i];
                 // The kind AND the power. What an operator is deciding here is which
@@ -1258,23 +1269,23 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
                 else
                     std::snprintf(tag, sizeof(tag), "%s %d", moveKindTag(m->kind),
                                   m->power);
-                pickerRow(y, m->displayName, nameC, tag, sel);
+                pickerRow(y, label, rowC, held ? "HELD" : tag, sel);
             } else if (i < moveN + itemN) {               // a USE-ITEM row
                 const OverrideItem& it = items[i - moveN];
                 char tag[10];
                 std::snprintf(tag, sizeof(tag), "+%d HP", it.heal);
-                pickerRow(y, it.label, nameC, tag, sel);
+                pickerRow(y, label, rowC, held ? "HELD" : tag, sel);
             } else if (i < moveN + itemN + lockN) {       // a LOCK row
                 // The move this slot last rolled, tagged as what committing does rather
                 // than as what the move is — the kind tag is already on its own row above,
                 // and what an operator is deciding here is whether to stop rolling.
                 const MoveDef* lm = combat.overrideLockMove(i - moveN - itemN);
-                pickerRow(y, lm ? lm->displayName : "-", nameC, "LOCK", sel);
+                pickerRow(y, label, rowC, held ? "HELD" : "LOCK", sel);
             } else {                                      // the crew Exploit row
                 const CrewExploit& ce = combat.overrideCrew();
                 char tag[16];
                 crewExploitLabel(tag, sizeof(tag), ce.kind, ce.magnitude);
-                pickerRow(y, ce.label, nameC, tag, sel);
+                pickerRow(y, label, rowC, held ? "HELD" : tag, sel);
             }
         }
     }

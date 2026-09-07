@@ -755,6 +755,10 @@ enum class ModEffect : uint8_t {
                           // while own Health <= magnitude2% of max (a last-ditch snare;
                           // kept separate from Thorns so it never mixes accumulation with
                           // an always-on Thorns mod equipped alongside it).
+    ScrambleWard,         // Crib Sheet — keeps the A+C picker legible and in its own
+                          // order while a scramble rider holds (MoveDef::scrambleTurns).
+                          // The counter The Silk Lode pays out for the threat it debuts,
+                          // the way the Bayou answers its own stun with a Watchdog Timer.
     StealAmplifyPct,      // Phishing Rod — amplifies the Obfuscation-bubble "Perfect
                           // Bite" bonus (Combat::applyEffect) by magnitude% (line-gated
                           // via ModDef::requiresLine); dormant without a live shieldHp
@@ -1031,6 +1035,21 @@ struct MoveDef {
     // positional initializers, so a field inserted mid-struct re-aims every magnitude after it.
     const char* drawLineA = nullptr;
     const char* drawLineB = nullptr;
+
+    // --- Severance (The Silk Lode) -----------------------------------------------
+    // On a landed hit, SCRAMBLE the target's A+C Exploit picker for this many of its
+    // turns: the row order is permuted and every label is drawn in the Cant, so a row
+    // the pet cannot read is a row it cannot pick (Game::overrideScramble).
+    //
+    // What it takes is the player's HAND, not the pet's turn — the auto-battle carries
+    // on regardless, so this is the one rider that costs interventions instead of
+    // actions. A pet with no sigils loses the override outright while it holds, which is
+    // the intended floor and not an oversight: fluency is the counterplay, and
+    // ModEffect::ScrambleWard is the other half of it.
+    //
+    // Appended at the END, like every field before it — the rows are positional
+    // initializers, so a field inserted mid-struct re-aims every magnitude after it.
+    int scrambleTurns = 0;
 };
 
 // Whether `m` rolls its cast out of a pool instead of being one (MoveDef::drawLineA).
@@ -1076,6 +1095,28 @@ constexpr MoveDef poolRow(const char* id, const char* displayName, int power,
     m.shieldPool = 1;
     m.poolRetaliateDot = retaliateDot;
     m.poolRetaliateTurns = retaliateTurns;
+    return m;
+}
+
+// A SEVERANCE row: an ordinary attack whose whole point is the scramble rider, which
+// sits at the very end of the positional tail with thirty-odd fields between it and
+// `power`. Same reason braceRow exists — spelled out positionally the one number that
+// matters would be the hardest one to see, and a miscount would arm a different mechanic
+// in silence.
+constexpr MoveDef severRow(const char* id, const char* displayName, int power,
+                           const char* effect, Stage minStage, int scrambleTurns,
+                           int armorPiercePct = 0, int lockTurns = 0) {
+    MoveDef m{};
+    m.id = id;
+    m.displayName = displayName;
+    m.kind = MoveKind::Attack;
+    m.power = power;
+    m.channelTurns = 1;
+    m.effect = effect;
+    m.minStage = minStage;
+    m.armorPiercePct = armorPiercePct;
+    m.lockTurns = lockTurns;
+    m.scrambleTurns = scrambleTurns;
     return m;
 }
 

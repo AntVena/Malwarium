@@ -99,6 +99,13 @@ extern const int kDeepWebBossMoveDepth;
 // ladder wild does (kMaxMoveSlots) but from its shallowest depth rather than its deepest.
 // That ceiling is the zone keeping its own promise: the dive builds a PEER, and four is
 // what a Daemon pet's own slots hold (kMoveSlotsByStage).
+// The ladder depth the dive's OWN mod pool is authored at (ModDef::powerTier). It used
+// to be read as "the deepest area's tier", which was true only while the dive was the
+// terminal zone and the ladder stopped at the keep — a sixth area moved it, and every
+// dive-only mod would have had to be re-ranked to chase it. It is a fact about the pool,
+// so it is stated here rather than derived from a ladder the pool does not sit on.
+extern const int kDeepWebModTier;
+
 extern const char* const kDeepWebWildAttackMoveId;
 extern const char* const kDeepWebWildDefendMoveId;
 // The depth the Defend joins at — the Attack rides from the first dive, so the pair is

@@ -703,6 +703,17 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
                 target.lockResist += k;
             }
         }
+        // SCRAMBLE rider: a landed hit reorders and enciphers the target's A+C picker for
+        // its next scrambleTurns turns. Refreshes rather than stacks, exactly as the DoT
+        // below does. Crib Sheet (ModEffect::ScrambleWard) is a flat refusal rather than a
+        // clamp — there is no "half a scrambled list", so the counter either holds or it
+        // does not, and a mod that shortened it would be selling a worse version of the
+        // one thing it is for.
+        if (mv->scrambleTurns > 0 && !target.mirrorFired &&
+            target.mods.mag(ModEffect::ScrambleWard) <= 0 &&
+            mv->scrambleTurns > target.scrambleTurns) {
+            target.scrambleTurns = mv->scrambleTurns;
+        }
         // DoT rider (Faraday-pass THREAT): a landed hit plants corruption — dotDamage/turn for
         // dotTurns of the target's upcoming turn-starts. The target's Faraday Cage (mod) cuts
         // the magnitude (100 = immune → nothing planted). Refreshes, not stacks.
@@ -1050,6 +1061,10 @@ void Combat::resolveTurn(Combatant& actor, Combatant& target, bool byPlayer) {
         setLast("STUN LOCK", 0, byPlayer, /*charge=*/true);
         return;
     }
+    // The scramble is measured in the victim's OWN turns, like the stun above — but it
+    // never skips one, so it is shed here where a turn is actually being taken rather
+    // than in the freeze branch that returns early.
+    if (actor.scrambleTurns > 0) actor.scrambleTurns--;
     // Only a turn spent FIGHTING sheds a resist point — one burned to the lock or a ransom
     // bill returned above — so resistance grows through a chain and drains once it breaks.
     if (actor.lockResist > 0) actor.lockResist--;
@@ -1390,15 +1405,114 @@ OverrideBand Combat::overrideBandOf(int flatPick) const {
     return OverrideBand::Move;
 }
 
-void Combat::openOverride(std::vector<OverrideItem> items, CrewExploit crew) {
+void Combat::openOverride(std::vector<OverrideItem> items, CrewExploit crew,
+                          SigilSet sigils) {
     if (overrideUsesLeft_ <= 0 || outcome_ != Outcome::Ongoing) return;
     overrideItems_ = std::move(items);
     crewExploit_ = crew;
     overrideOpen_ = true;
     overrideBandPick_ = 0;
+    overrideSigils_ = sigils;
+    buildOverrideOrder();
     // One band is not a choice, so skip the band list rather than spend a press on it.
     overrideAtBands_ = overrideBandCount() > 1;
     overridePick_ = overrideBandFirst(overrideBandAt(0));
+    // The first row of a band can be one the pet cannot read, and landing the cursor on a
+    // row B will refuse is the one state the picker must never open in.
+    if (!overrideAtBands_) overridePick_ = firstLegibleIn(overrideBandOf(overridePick_));
+}
+
+// Build display -> real for the picker. Identity unless a scramble holds; otherwise a
+// Fisher-Yates shuffle WITHIN each band, off the fight's own stream so a replayed seed
+// replays the same picker (which is what lets a duel and a test agree).
+void Combat::buildOverrideOrder() {
+    const int n = overrideRowCount();
+    for (int i = 0; i < kOverridePickerMaxRows; ++i) overrideOrder_[i] = static_cast<uint8_t>(i);
+    if (!overrideScrambled() || n <= 1) return;
+    overrideCipher_.build(overrideSigils_, rng());
+    for (int b = 0; b < kOverrideBands; ++b) {
+        const OverrideBand band = static_cast<OverrideBand>(b);
+        const int first = overrideBandFirst(band), rows = overrideBandRows(band);
+        if (first + rows > kOverridePickerMaxRows) continue;   // see the ceiling's comment
+        for (int i = rows - 1; i > 0; --i) {
+            const int j = static_cast<int>(rng() % static_cast<uint32_t>(i + 1));
+            std::swap(overrideOrder_[first + i], overrideOrder_[first + j]);
+        }
+    }
+}
+
+int Combat::overrideRowCount() const {
+    int n = 0;
+    for (int b = 0; b < kOverrideBands; ++b) n += overrideBandRows(static_cast<OverrideBand>(b));
+    return n;
+}
+
+int Combat::overrideRealRow(int displayRow) const {
+    if (displayRow < 0 || displayRow >= kOverridePickerMaxRows) return displayRow;
+    return overrideOrder_[displayRow];
+}
+
+int Combat::overrideDisplayRow(int realRow) const {
+    for (int i = 0; i < kOverridePickerMaxRows; ++i)
+        if (overrideOrder_[i] == realRow) return i;
+    return realRow;
+}
+
+// The raw (unenciphered) label of a REAL flat row, from whichever band owns it.
+const char* Combat::overrideRawLabel(int realRow) const {
+    const int moveN = overrideMoveCount();
+    const int itemN = static_cast<int>(overrideItems_.size());
+    const int lockN = overrideLockCount();
+    if (realRow < 0) return "";
+    if (realRow < moveN) {
+        const MoveDef* m = player_.moves[realRow];
+        return m ? m->displayName : "";
+    }
+    if (realRow < moveN + itemN) return overrideItems_[realRow - moveN].label;
+    if (realRow < moveN + itemN + lockN) {
+        const MoveDef* lm = overrideLockMove(realRow - moveN - itemN);
+        return lm ? lm->displayName : "-";
+    }
+    return crewExploit_.label ? crewExploit_.label : "";
+}
+
+const char* Combat::overrideRowLabel(int displayRow, char* buf, size_t n) const {
+    const char* raw = overrideRawLabel(overrideRealRow(displayRow));
+    if (!buf || n == 0) return raw;
+    if (!overrideScrambled()) return raw;
+    size_t i = 0;
+    for (; raw[i] && i + 1 < n; ++i) buf[i] = overrideCipher_.apply(raw[i]);
+    buf[i] = '\0';
+    return buf;
+}
+
+bool Combat::overrideRowLegible(int displayRow) const {
+    if (!overrideScrambled()) return true;
+    const char* raw = overrideRawLabel(overrideRealRow(displayRow));
+    for (const char* p = raw; *p; ++p) {
+        const char c = *p >= 'a' && *p <= 'z' ? static_cast<char>(*p - 'a' + 'A') : *p;
+        if (c < 'A' || c > 'Z') continue;              // shared with the 'net, never hidden
+        if (!(overrideSigils_ & (1u << (c - 'A')))) return false;
+    }
+    return true;
+}
+
+int Combat::overrideRowsHeld() const {
+    if (!overrideScrambled()) return 0;
+    int held = 0;
+    const int n = overrideRowCount();
+    for (int i = 0; i < n; ++i) if (!overrideRowLegible(i)) ++held;
+    return held;
+}
+
+// The first READABLE display row of a band, or its first row when the pet can read none
+// of them — the cursor has to sit somewhere, and a picker that opens on nothing at all
+// would read as a bug rather than as a lockout. B still refuses it.
+int Combat::firstLegibleIn(OverrideBand band) const {
+    const int first = overrideBandFirst(band), rows = overrideBandRows(band);
+    for (int i = 0; i < rows; ++i)
+        if (overrideRowLegible(first + i)) return first + i;
+    return first;
 }
 
 void Combat::cycleOverride() {
@@ -1413,12 +1527,23 @@ void Combat::cycleOverride() {
         return;
     }
     // Inside a band the walk wraps WITHIN it — crossing into the neighbour is what the
-    // band level is for.
+    // band level is for. The step is taken in DISPLAY order, which is the order the
+    // operator can see: under a scramble that is not the flat order, and a cursor that
+    // walked the flat one would appear to jump about at random.
     const OverrideBand band = overrideBandOf(overridePick_);
     const int first = overrideBandFirst(band);
     const int rows = overrideBandRows(band);
     if (rows <= 0) return;
-    overridePick_ = first + (overridePick_ - first + 1) % rows;
+    int at = overrideDisplayRow(overridePick_);
+    // ...and it steps OVER rows the pet cannot read. A scramble that merely greyed them
+    // would still let the cursor rest on one, which is a press that does nothing; at zero
+    // sigils every row is illegible and the walk falls through to leaving the cursor put,
+    // which is the lockout doing exactly what it says.
+    for (int i = 0; i < rows; ++i) {
+        at = first + (at - first + 1) % rows;
+        if (overrideRowLegible(at)) break;
+    }
+    overridePick_ = overrideRealRow(at);
 }
 
 bool Combat::enterOverrideBand() {
@@ -1482,6 +1607,11 @@ void Combat::commitOverride() {
     // Inert at the band level: nothing there is a row to spend a use on, and B's
     // meaning at that level is enterOverrideBand.
     if (!overrideOpen_ || overrideAtBands_) return;
+    // A row the pet cannot READ is a row it cannot pick. The cursor already steps over
+    // these, so this is the case where every row in the band is held and the cursor had
+    // nowhere legible to land — B does nothing and the use is not spent, which is the
+    // scramble's floor: at zero sigils the override is simply gone while it holds.
+    if (!overrideRowLegible(overrideDisplayRow(overridePick_))) return;
     const int moves = overrideMoveCount();
     const int items = static_cast<int>(overrideItems_.size());
     const int locks = overrideLockCount();

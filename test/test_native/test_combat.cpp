@@ -1103,9 +1103,9 @@ void test_mod_content_rarity_tier() {
         for (int a = 0; a < kExplSectors && home < 0; ++a)
             for (int k = 0; k < area(a).modPoolCount; ++k)
                 if (std::strcmp(area(a).modPoolIds[k], m.id) == 0) { home = areaTier(a); break; }
-        if (home < 0)                                  // DeepWeb-only: one past the ladder,
-            for (int k = 0; k < kAreaModsDeepWebCount; ++k)   // sharing the last rung's depth
-                if (std::strcmp(kAreaModsDeepWeb[k], m.id) == 0) { home = areaTier(kAreaCount - 1); break; }
+        if (home < 0)                                  // DeepWeb-only: no ladder rung of
+            for (int k = 0; k < kAreaModsDeepWebCount; ++k)   // its own, so it states one
+                if (std::strcmp(kAreaModsDeepWeb[k], m.id) == 0) { home = kDeepWebModTier; break; }
         CHECK(home > 0);                               // every mod drops SOMEWHERE
         CHECK(m.powerTier == home);
     }
@@ -1180,6 +1180,85 @@ void test_mod_content_rarity_tier() {
 // The equip ladder: gates are authored per row (ModDef::equipLevel) rather than derived
 // from the tier, which buys the density this checks. Ordering is checked in the same
 // place because authoring is exactly what makes it possible to break.
+// The SCRAMBLE rider (MoveDef::scrambleTurns, The Silk Lode's apex threat). What it takes
+// is the A+C picker: the rows are reordered and drawn in the Cant, so how much of it the
+// pet can still use is exactly how much of the Cant it can read. The fight itself is
+// untouched, which is the whole shape of the thing — it costs the player their
+// interventions, never the pet its turns.
+void test_override_scramble_holds_the_picker() {
+    ContentRegistry r = ContentRegistry::embedded();
+    const CreatureDef* pet = r.allCreatures()[0];
+    MoveLoadout ml = MoveLoadout::startingForLine(r, pet->line);
+    Loadout mods;
+    auto openWith = [&](Combat& cb, SigilSet sigils) {
+        cb.openOverride({{"disk_scrubber", "Disk Scrubber", 20}}, {}, sigils);
+    };
+    // (1) Unscrambled the picker is plain: identity order, every row legible, and the
+    //     label that comes back is the row's own displayName.
+    {
+        Combat cb;
+        Combatant p = makePlayerCombatant(r, *pet, ml, mods);
+        Combatant e = makeEnemyCombatant(r, simDummy(0));
+        cb.begin(p, e, Combat::Stakes::Safe, 1);
+        openWith(cb, 0);
+        CHECK(!cb.overrideScrambled());
+        CHECK(cb.overrideRowsHeld() == 0);
+        char buf[32];
+        for (int i = 0; i < cb.overrideRowCount(); ++i) {
+            CHECK(cb.overrideRealRow(i) == i);
+            CHECK(cb.overrideRowLegible(i));
+            CHECK(cb.overrideRowLabel(i, buf, sizeof(buf)) != nullptr);
+        }
+    }
+    // (2) Scrambled with NO sigils: every row is held, so the picker is gone. The cursor
+    //     has to sit somewhere, but B refuses it and the use is not spent — the lockout
+    //     is the mechanic's floor and is asserted rather than avoided.
+    {
+        Combat cb;
+        Combatant p = makePlayerCombatant(r, *pet, ml, mods);
+        p.scrambleTurns = 3;
+        Combatant e = makeEnemyCombatant(r, simDummy(0));
+        cb.begin(p, e, Combat::Stakes::Safe, 7);
+        openWith(cb, 0);
+        CHECK(cb.overrideScrambled());
+        const int n = cb.overrideRowCount();
+        CHECK(n > 0);
+        CHECK(cb.overrideRowsHeld() == n);
+        const int uses = cb.overrideUsesLeft();
+        cb.commitOverride();
+        CHECK(cb.overrideUsesLeft() == uses);     // refused, not spent
+    }
+    // (3) Scrambled with the WHOLE Cant: nothing is held, because every letter reads
+    //     plain. Fluency is the counterplay, and this is that claim as an assertion.
+    {
+        Combat cb;
+        Combatant p = makePlayerCombatant(r, *pet, ml, mods);
+        p.scrambleTurns = 3;
+        Combatant e = makeEnemyCombatant(r, simDummy(0));
+        cb.begin(p, e, Combat::Stakes::Safe, 7);
+        SigilSet all = 0;
+        for (int i = 0; i < kCantSigils; ++i) all = learnSigil(all);
+        openWith(cb, all);
+        CHECK(cb.overrideScrambled());
+        CHECK(cb.overrideRowsHeld() == 0);
+        // ...and a label drawn through a fully-learned cipher is the plain one.
+        char buf[32];
+        const char* lbl = cb.overrideRowLabel(0, buf, sizeof(buf));
+        CHECK(lbl && lbl[0] != '\0');
+    }
+    // (4) Crib Sheet REFUSES the rider outright rather than shortening it, and the rider
+    //     itself refreshes rather than stacks.
+    {
+        const MoveDef* hijack = r.move("c2_hijack");
+        CHECK(hijack && hijack->scrambleTurns > 0);
+        Loadout ward;
+        ward.setEquipped(0, "crib_sheet");
+        Combatant warded = makePlayerCombatant(r, *pet, ml, ward);
+        CHECK(warded.mods.mag(ModEffect::ScrambleWard) > 0);
+        CHECK(makePlayerCombatant(r, *pet, ml, mods).mods.mag(ModEffect::ScrambleWard) == 0);
+    }
+}
+
 void test_mod_equip_ladder_is_ordered_and_dense() {
     ContentRegistry r = ContentRegistry::embedded();
     // Every gate is inside the ceiling, and a deeper TIER never gates shallower than a
@@ -1238,7 +1317,7 @@ void test_mod_earn_tables_and_reqlevel() {
         }
         const char* dw = g.debugRollAreaModId(kDeepWebSector);
         CHECK(dw);
-        CHECK(r.mod(dw)->powerTier == areaTier(kAreaCount - 1));  // DeepWeb: deepest only
+        CHECK(r.mod(dw)->powerTier == kDeepWebModTier);   // the dive's own authored rung
         sampled.insert(dw);
     }
     // Every pooled mod is actually REACHABLE — the tier check above would pass just as
