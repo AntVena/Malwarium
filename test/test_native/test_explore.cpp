@@ -1315,14 +1315,24 @@ void test_deepweb_dive() {
         CHECK(spend(2048) > spend(1024));
         CHECK(spend(1024) > spend(64));
     }
-    // (1b) Depth ramp: a deep win-streak folds in as a logarithmic bonus effective
-    //      level, so the enemy outlevels the pet and wildWinXp pays a bonus.
+    // (1b) Depth ramp: past the FOOTHOLD a deep win-streak folds in as a logarithmic
+    //      bonus effective level, so the enemy outlevels the pet and wildWinXp pays a
+    //      bonus. Inside the foothold the fight stays flat parity however deep it is,
+    //      which is what makes a shallow dive somewhere an arriving pet can stand.
     {
         CombatEnemy e = wildMalbeast(3, 0);
         applyDeepWebScale(e, 10, 0);
         CHECK(e.level == 10);                          // depth=0 -> unchanged parity
+        // Anywhere inside the foothold is the SAME fight as depth 0 — the property the
+        // whole window exists for, so it is asserted at its far edge rather than near it.
+        CombatEnemy eF = wildMalbeast(3, 0);
+        applyDeepWebScale(eF, 10, kDeepWebRampFreeDepth);
+        CHECK(eF.level == 10);
+        CHECK(wildWinXp(kWildWinXpReward, eF.level, 10) == kWildWinXpReward);
+        // ...and one win past it the ramp is running again, on rampDepth rather than on
+        // raw depth: depth = free + 7 means floorLog2(7 - 0 + 1) = 3.
         CombatEnemy e3 = wildMalbeast(3, 0);
-        applyDeepWebScale(e3, 10, 7);                   // floorLog2(8) = 3
+        applyDeepWebScale(e3, 10, kDeepWebRampFreeDepth + 7);
         CHECK(e3.level == 10 + 3 * kDeepWebDepthLevelPerLog2);
         CHECK(wildWinXp(kWildWinXpReward, e3.level, 10) > kWildWinXpReward);  // punches up
         CombatEnemy e4 = wildMalbeast(3, 0);
@@ -1373,17 +1383,44 @@ void test_deepweb_dive() {
         CHECK(deepWebDepthBitsPct(7) == 100 + 3 * kDeepWebDepthBitsPctPerLog2);  // log2(8)=3
         CHECK(deepWebDepthBitsPct(1 << 30) == kDeepWebDepthBitsMaxPct);  // ceiling holds
     }
-    // (2) Unlock gating: locked until EVERY area is cleared; startDeepWebDive is inert.
+    // (2) Unlock gating: the dive opens when the ladder REACHES kDeepWebUnlockAreaId, and
+    //     startDeepWebDive is inert before that. The point of the named rung is that the
+    //     answer does not move when the ladder grows, so the interesting assertions are
+    //     the two boundaries either side of it rather than the "all cleared" end state.
     {
+        const int gate = areaIndexById(kDeepWebUnlockAreaId);
+        CHECK(gate > 0);            // a gate at rung 0 would mean "always open"
         Game g{StartMode::Hatched, "bruinforce"};
-        CHECK(!g.allSectorsCleared());
         g.debugStartDeepWebDive();
-        CHECK(!g.inDeepWebDive());                    // inert while the game isn't beaten
-        for (int a = 0; a < kExplSectors; ++a) g.debugSetSectorCleared(a, true);
-        CHECK(g.allSectorsCleared());
+        CHECK(!g.inDeepWebDive());  // inert on a fresh save
+        // One rung SHORT of the gate: still locked. This is what fails if the gate ever
+        // silently slides — including by an area being spliced in above it.
+        for (int a = 0; a + 2 < gate; ++a) g.debugSetSectorCleared(a, true);
+        g.debugStartDeepWebDive();
+        CHECK(!g.inDeepWebDive());
+        // Clearing the rung BEFORE the gate opens the gate's area, and with it the dive.
+        g.debugSetSectorCleared(gate - 1, true);
+        CHECK(g.deepWebUnlocked());
+        // ...and emphatically without beating the game: the rung past the gate is still
+        // unbeaten, which under the old gate was the whole of what kept the zone shut.
+        CHECK(!g.sectorCleared(kExplSectors - 1));
         g.debugStartDeepWebDive();
         CHECK(g.inDeepWebDive());
         CHECK(g.exploreActive() && g.exploreSector() == kDeepWebSector);
+    }
+    // (2a) ...and it STAYS open as the ladder grows. The old gate walked every rung, so
+    //      each area added re-locked the zone for every save that had it; this is the
+    //      regression test for that, expressed as "a deeper area being unbeaten is not an
+    //      answer to whether the dive is open".
+    {
+        Game g{StartMode::Hatched, "bruinforce"};
+        const int gate = areaIndexById(kDeepWebUnlockAreaId);
+        g.debugSetSectorCleared(gate - 1, true);
+        CHECK(g.deepWebUnlocked());
+        for (int a = gate; a < kExplSectors; ++a) {
+            g.debugSetSectorCleared(a, false);
+            CHECK(g.deepWebUnlocked());
+        }
     }
     // (3) In-game scaling: a dive encounter stamps the enemy at the pet's level (parity),
     //     so a high-level pet still meets a level-matched foe (full-XP endless grind).

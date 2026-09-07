@@ -22,9 +22,40 @@ extern const int kDeepWebSpeedPerNLevels;   // +1 enemy speed every N pet levels
 // level" added on top of the pet's own level before the health/speed/XP scaling
 // above is computed — logarithmic so early wins ramp fast while deep streaks
 // flatten out (an endless zone must not runaway-scale). depth=0 -> +0 (flat
-// parity); depth=7 -> +3*kDeepWebDepthLevelPerLog2; depth=63 ->
+// parity). Depths below are measured from the END of kDeepWebRampFreeDepth's foothold
+// (below), not from the first dive: free+7 -> +3*kDeepWebDepthLevelPerLog2; free+63 ->
 // +6*kDeepWebDepthLevelPerLog2.
 extern const int kDeepWebDepthLevelPerLog2;
+
+// How many wins a dive gets BEFORE the depth ramp above starts biting. The dive opens
+// from NET-SEA CROSSING rather than from a cleared ladder, so an arriving pet is a
+// Script with three move slots rather than a Daemon with a full kit — and the log curve
+// is at its STEEPEST early, which is exactly the wrong shape for that. This is the flat
+// stretch that gives a shallow dive somewhere to stand.
+//
+// Measured with the constant below, over the five lines (60 seeds each, line kits only,
+// no mods) — a RUN from depth 0, since one loss ends a dive and a per-fight rate hides
+// what that compounds to. The arriving pet is the case being fixed:
+//
+//   run length from depth 0        5    10    20    40
+//   Script lv18   before          44%   12%    0%    0%
+//   Script lv18   after           85%   72%   16%    0%
+//   Daemon lv60   before          98%   97%   91%   72%
+//   Daemon lv60   after          100%  100%   99%   99%
+//
+// So an arriving pet now clears its first ten fights more often than not, is still
+// finished well before depth 40, and per-fight win rate at pet level 60 still falls to
+// ~22% by depth 1000 — the zone ends the way it always did. The endgame column going
+// flat is the cost, and it is deliberate: the dive stops being the terminal zone once it
+// opens this early, and being an unthreatening farm is the job it is left with.
+extern const int kDeepWebRampFreeDepth;
+
+// The enemy's random stat spread as a PERCENTAGE of its effective level. A dive enemy
+// already brings a tier-3 body and the wild challenge buff on top of its points, so
+// spending a full level's worth of them made it a peer PLUS two advantages. Under 100 is
+// what makes a shallow dive a fight the arriving pet is favoured in; the depth term
+// beside it is untouched, so the zone still ends the way it always did.
+extern const int kDeepWebBudgetPct;
 
 // Depth ramp, Bits half: wildWinXp already turns the depth-driven level bonus
 // above into more XP (via the level-diff %), but the Bits payout

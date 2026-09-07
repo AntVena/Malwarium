@@ -451,11 +451,16 @@ public:
     bool inDeepWebDive() const {
         return exploreActive_ && exploreSector_ == kDeepWebSector;
     }
-    // Every real area's gauntlet is cleared — the DeepWeb Dive unlock ("beat the
-    // exploration game"). Derived, so it needs no separate persisted flag.
-    bool allSectorsCleared() const {
-        for (int a = 0; a < kAreaCount; ++a) if (!sectorCleared_[a]) return false;
-        return true;
+    // The DeepWeb Dive's unlock: has the ladder reached kDeepWebUnlockAreaId? The SAME
+    // linear gate every area answers to (explSectorOpen over sectorCleared_), asked of
+    // one named rung — so the dive needs no unlock flag of its own, exactly as the arena
+    // does not. An id that resolves to nothing leaves the zone locked rather than opening
+    // it by accident, which is the safe direction for a typo to fail in.
+    bool deepWebUnlocked() const {
+        const int a = areaIndexById(kDeepWebUnlockAreaId);
+        if (a < 0) return false;
+        if (a == 0) return true;
+        return sectorCleared_[a - 1];
     }
     // is hands-off auto-explore paused because the pet is too fragmented
     // (battle fatigue climbed frag into the danger band)? The mode stays armed; a

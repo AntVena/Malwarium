@@ -109,12 +109,14 @@ ExplRowState explRowState(int row, const bool* areaCleared, const bool* subClear
             return ExplRowState::TourneyLocked;
         return tourneyRunning ? ExplRowState::TourneyRunning : ExplRowState::TourneyOpen;
     }
-    if (explRowIsDeepWeb(row)) {                          // the terminal zone
-        // Unlocked only by clearing EVERY real area ("beat the exploration game").
-        bool allCleared = true;
-        for (int a = 0; a < kExplSectors; ++a)
-            if (!(areaCleared && areaCleared[a])) { allCleared = false; break; }
-        if (!allCleared) return ExplRowState::DeepWebLocked;
+    if (explRowIsDeepWeb(row)) {                          // the endless zone
+        // Opened by REACHING one named area (kDeepWebUnlockAreaId) rather than by clearing
+        // the whole ladder, for the reason given there: the old gate walked every rung, so
+        // each area added moved the zone further away and took it back from saves that had
+        // it. Same linear gate the arena above answers to, asked of a different rung.
+        const int gate = areaIndexById(kDeepWebUnlockAreaId);
+        if (gate < 0 || !explSectorOpen(gate, areaCleared))
+            return ExplRowState::DeepWebLocked;
         if (exploringSector == kDeepWebSector) return ExplRowState::DeepWebDiving;
         return ExplRowState::DeepWebOpen;
     }

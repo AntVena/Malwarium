@@ -90,25 +90,11 @@ prize to unlock. Wants a discovery axis on `CrewDef` first, then one `Kind` and 
 `content_crews.h`; `game_crew.cpp`'s roster filter; `QuoteReward::Kind`. | M | The gating axis is
 the real work; the prize is three lines once it exists. |
 
-**The DeepWeb Dive's unlock is a moving target, and every new area makes it worse.** It gates on
-`allSectorsCleared()`, which walks `kAreaCount` — so adding an area silently pushes the best farm
-in the game further away AND re-locks it for every save that had it. Move it to "the first time
-NET-SEA CROSSING opens", keyed by area ID rather than rung (the rung is not an identity — the
-same argument `area_defs.h` already makes for `icon`/`scene`; a hardcoded index would re-point on
-a splice). That unlocks it around level 20, which the current curve would eat alive, so the Dive
-also wants a gentler tuning — and the constants it is using now are worth keeping, because they
-are MEASURED (the win-rate table in `deepweb_dive/area.h`). Re-tuning by eye replaces a measured
-curve with a guessed one, so the softer curve wants the same seeded-fight treatment at the levels
-a Net-Sea player actually has. |
-`game.h`'s `allSectorsCleared` + its one caller in `game_explore.cpp`; `deepweb_dive/area.{h,cpp}`;
-`test_deepweb_dive` asserts the unlock condition. | M | Worth doing on its own, ahead of any new
-area — it is a bug in the shape of a design decision. |
-
 **A LINE move can only be hatched with, never earned.** `MoveLoadout::startingForLine` grants a
 pet every move matching its line, so a line-locked move is owned from birth and
 `moveIsTeachable` refuses it as already-owned — which means there is no such thing as a move only
 one line can learn, and only by going somewhere and beating something for it. That is a whole
-category of reward the content layer cannot express today. One flag on `MoveDef` (`earned`) that
+category of reward the content layer cannot express. One flag on `MoveDef` (`earned`) that
 `startingForLine` skips is the entire fix; `moveIsTeachable`'s line check already does the rest,
 and the engine already line-gates the interesting fields (`combat.cpp`'s `replicates()` tests the
 Worm passive, so `replicaSpawnPct` is inert elsewhere by construction). Note the follow-on doc
@@ -129,21 +115,57 @@ why, rather than gesturing at "the steal track". |
 `content_moves.cpp`'s boss-pool header; `src/core/content/CONTENT_STANDARD.md`. | S | Pure doc
 correction — no mechanic changes. |
 
-**The ladder has a sixth rung designed and not built — THE SILK LODE.** The Castle's own deepest
-stretch (`COMMENT CATACOMBS`) already walks downward, and every word this hobby uses for the 'net
-is arachnid and nobody notices any more. The design pass is done and written up: Silk Road punned
-`Road` → `Lode`, five stretches that descend from a stair through a funnel and a fissure into a
-throat and then into a buried shrine, a court of hacker groups and botnets, and `THE PATIENT
-WEAVER` for a guardian. Its signature threat is the piece worth building for its own sake:
-`c2_hijack` SHUFFLES and enciphers the **A+C Exploit picker** and greys out every row the pet
-cannot read — a hard lock at zero sigils, deliberately, since the pet fights on without you — so
-the CANT finally pays off inside a fight instead of only at a shibboleth. The DARKWEB CRAWL
-behind the portal is that rider never lifted, reshuffled per encounter, running the Dive's old
-(measured) constants as the new terminal zone, and paying sigils at depth. |
-[`AREA_SILK_LODE.md`](AREA_SILK_LODE.md) for the whole pass; `areas/area_defs.h`'s `kAreaList[]`;
-`castle_rapidscare/area.cpp`'s header; `game_combat.cpp`'s `openOverride`. | M (area) / M (rider)
-/ L (the mode) | Depends on the Dive-unlock item above; with it done, this no longer re-locks
-anyone's save. |
+**The DeepWeb Dive is no longer a threat at the top, and nothing has replaced it yet.** Opening it
+at Net-Sea meant softening it (the foothold + budget percentage on `deepweb_dive/area.h`), and the
+measured cost is that a level-60 Daemon now survives a 40-fight run ~99% of the time where it was
+~72%. That is the intended trade — the dive stops being terminal and becomes the mid-game farm —
+but the terminal zone that was supposed to take its place does not exist, so the endgame is
+currently missing its grind. Either build the Crawl (below) or accept a flat top end until it
+lands. |
+`deepweb_dive/area.h`'s two new constants carry the before/after table. | — | Not a bug; a stated
+consequence that should not be discovered by a player first. |
+
+**Dive depth 8 unlocks the Phishing egg line, and that gate just moved a long way earlier.** It
+was reachable only after clearing the whole ladder; it is now reachable shortly after Net-Sea.
+Probably an improvement — a whole creature line sitting behind "beat the game" was a steep ask —
+but it was not the goal of the unlock change and nobody has decided it on purpose. |
+`content_achievements.cpp`'s `AchSeries::DeepWebDepth` goal-8 row. | S | Confirm intended, or move
+the line's unlock to a different achievement. |
+
+**The ladder has a sixth rung designed and not built — THE SILK LODE.** Silk Road punned `Road` →
+`Lode`: a seam of silk running under every area, reached by digging through the floor of the
+Castle's `COMMENT CATACOMBS`. The pitch is that every word this hobby uses for the 'net is already
+arachnid — a web, a crawler, a spider that walks it — and down here the metaphor is not dead.
+Badge `SILK`, title `THREADCUTTER`.
+
+Five stretches, written as a descent that starts architectural, stops being architectural, turns
+briefly anatomical, and then is architectural again — which is the reveal that somebody built
+down here and it was not us: `DEADLINK STAIR`, `BOTNET FUNNEL`, `BITROT FISSURE`, `ZOMBIE GULLET`,
+`ZERO DAY SHRINE` (signature; the portal is in it). Bosses are hacker groups and botnets —
+`CULT OF THE DEAD CODE` (2 rounds), `MARIPOSA OF THE WEAVE`, `CIH THE UNWRITER`,
+`NECURS THE RAISER`, `THE 29A COVEN` (3 rounds, signature; 29A is hex for 666) under
+`MIRAI THE MANY-LEGGED`. Guardian is `THE PATIENT WEAVER`, which has never chased anything in its
+life, teaching `held_thread`; its affront line is `I DO NOT PARLEY WITH FOOD`. Shops
+`THE FLY TRAP` and `WHAT THE WEB CAUGHT`.
+
+The signature threat is the piece worth building for its own sake: **`c2_hijack` shuffles the row
+ORDER of the A+C Exploit picker and enciphers its labels in the Cant, greying out every row the
+pet cannot read.** A botnet's C2 is the channel its operator gives orders on, and the picker is
+the one place a player's hand reaches into a fight that otherwise runs itself — so the rider takes
+the wheel rather than the eyes, and a zero-sigil pet loses the override outright (deliberately; the
+auto-battle carries on, so it costs interventions and not turns). Enciphering alone would leave
+muscle memory intact, which is why the order scrambles too. Counter is `crib_sheet` in the area's
+own rank-6 pool. `CantCipher` is already width-preserving, so labels cannot break a layout.
+
+The DARKWEB CRAWL behind the portal is that rider never lifted and reshuffled per encounter,
+running the pre-softening Dive constants as the new terminal zone, and paying **sigils at
+milestone depths** — today a sigil costs a captured WPA handshake, so a player with no networks in
+range cannot advance the Cant at all. |
+`areas/area_defs.h`'s `kAreaList[]`; a new `areas/silk_lode/area.cpp`;
+`castle_rapidscare/area.cpp`'s header (its "last in kAreaList … endgame pool" comment stops being
+true); `game_combat.cpp`'s `openOverride`. | M (area) / M (rider) / L (the mode) | An append, so
+no `ladderInserts` row and no mod's `powerTier` moves. Phishing/credential-theft hooks are
+deliberately left unspent for a seventh area. |
 
 ### 1b. A separation pass over every screen
 

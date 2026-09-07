@@ -8,6 +8,8 @@ const int kDeepWebEnemyLevelOffset = 0;
 const int kDeepWebHealthPerLevel = 6;
 const int kDeepWebSpeedPerNLevels = 6;
 const int kDeepWebDepthLevelPerLog2 = 2;
+const int kDeepWebRampFreeDepth = 16;
+const int kDeepWebBudgetPct = 75;
 const int kDeepWebDepthBitsPctPerLog2 = 32;
 const int kDeepWebDepthBitsMaxPct = 512;
 const int kDeepWebDepthPointsPerN = 8;
@@ -65,6 +67,13 @@ const char* const* const kDeepWebMoveRungs[] = {
 // Two things that had to be true are: the turtle is the WORST of the three rather than
 // the best, and the loadout is worth roughly twenty times more depth than the stat spread
 // is. Every column ends at zero, which is the zone keeping its promise.
+//
+// NB: those absolutes predate the foothold and the budget percentage (area.h), which
+// moved the shallow end of the curve a long way up and left the deep end roughly where it
+// was — so read the table for the ORDERING it establishes (which is what the rung pacing
+// below is justified by, and is unchanged) and not for the numbers. The re-measurement
+// that came with those two constants is on them, and it measures a different question:
+// whether an arriving pet survives its first dives, rather than which build wins.
 const int kDeepWebMoveRungDepths[] = {0, 12, 40, 100, 180};
 const int kDeepWebMoveRungCounts[] = {
     arrLen(kDeepWebMovesR0), arrLen(kDeepWebMovesR1), arrLen(kDeepWebMovesR2),

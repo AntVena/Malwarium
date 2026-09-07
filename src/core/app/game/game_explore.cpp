@@ -192,7 +192,7 @@ void Game::startDeepWebDive() {
     // Same idle-background model as startExplore, but on the virtual kDeepWebSector —
     // doExploreStep()/startEncounter() special-case it to scale enemies to the pet and
     // never reach the (nonexistent) boss ladder. A loss ends the dive like any wild.
-    if (!allSectorsCleared()) return;
+    if (!deepWebUnlocked()) return;
     exploreActive_ = true;
     exploreSector_ = kDeepWebSector;
     exploreSub_ = 0;

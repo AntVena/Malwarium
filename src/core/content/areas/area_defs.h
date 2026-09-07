@@ -353,6 +353,34 @@ extern const char* const kDeepWebIcon;   // its EXPL row glyph (AreaDef::icon's 
 // which of the two shapes it came from — same job areaModTable does for mods.
 struct AreaLootTable { const LootEntry* rows; int count; };
 
+// The ladder rung of the area with `id`, or -1 if no area answers to it. Identity, not
+// position — the same argument AreaDef::icon and ::scene make for themselves: a rung is
+// not a name, so splicing an area into the middle of kAreaList renumbers every area above
+// it and a hand-typed index would silently come to mean its neighbour. Linear over a list
+// of five, called from unlock gates rather than from a draw loop.
+inline int areaIndexById(const char* id) {
+    if (!id) return -1;
+    for (int i = 0; i < kAreaCount; ++i) {
+        const char* a = kAreaList[i]->id;
+        const char* b = id;
+        while (*a && *a == *b) { ++a; ++b; }
+        if (*a == *b) return i;
+    }
+    return -1;
+}
+
+// Which area OPENING unlocks the DeepWeb Dive. Named by id and resolved through
+// areaIndexById, because the alternative — "every area is cleared" — made the best
+// farming zone in the game a MOVING TARGET: each area ever added pushed it further away
+// and took it back from every save that already had it. Stated once, here, beside the
+// ladder it indexes into.
+//
+// Net-Sea Crossing rather than somewhere deeper because the dive is where a pet goes to
+// grow, and the ladder's own difficulty is what should gate the ladder — a zone that
+// scales to the pet needs no rung of its own to sit behind. Reaching the third area is
+// the point a player has a pet worth diving with.
+inline constexpr const char* kDeepWebUnlockAreaId = "net_sea_crossing";
+
 // The sector index that MEANS DeepWeb: one past the last real area, so any
 // `0 <= idx < kAreaCount` test excludes it by construction and nothing has to know
 // the zone by name to skip it. It sits here with the ladder it indexes past rather

@@ -430,7 +430,12 @@ void applyDeepWebScale(CombatEnemy& e, int petLevel, int depth, uint32_t roll) {
     // but pushing deeper gradually punches the pet up (wildWinXp's diff bonus, since
     // enemyLevel now exceeds petLevel) and thickens Health/speed to match, without an
     // endless zone runaway-scaling (floorLog2 flattens the curve at deep streaks).
-    const int effLevel = petLevel + kDeepWebDepthLevelPerLog2 * floorLog2(depth + 1);
+    // The FOOTHOLD: the first kDeepWebRampFreeDepth wins do not push the enemy up at all,
+    // so a dive opens as a flat parity fight and stays one long enough to be worth
+    // arming. Subtracted from depth before the curve rather than clamped after it, so the
+    // ramp past the foothold is the same shape it always was, just started later.
+    const int rampDepth = depth > kDeepWebRampFreeDepth ? depth - kDeepWebRampFreeDepth : 0;
+    const int effLevel = petLevel + kDeepWebDepthLevelPerLog2 * floorLog2(rampDepth + 1);
     // Moves stay the tier-3 endgame kit (set by wildMalbeast(3)); the isWild challenge
     // buff still applies in makeEnemyCombatant. Bits payout (diffPips-keyed, not
     // level-keyed) doesn't ride this scale — see deepWebDepthBitsPct below.
@@ -452,7 +457,7 @@ void applyDeepWebScale(CombatEnemy& e, int petLevel, int depth, uint32_t roll) {
     // flattens, so on its own it converges to a fair fight that a good build wins forever.
     // The linear term below is what makes the zone endless in the honest sense: dive far
     // enough and the arithmetic beats you. The streak is the score.
-    const int budget = effLevel + depth / kDeepWebDepthPointsPerN;
+    const int budget = effLevel * kDeepWebBudgetPct / 100 + depth / kDeepWebDepthPointsPerN;
     int points[kLevelStatCount] = {0, 0, 0, 0};
     for (int i = 0; i < budget; ++i) {
         roll = roll * 1664525u + 1013904223u;
