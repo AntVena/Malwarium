@@ -90,21 +90,26 @@ prize to unlock. Wants a discovery axis on `CrewDef` first, then one `Kind` and 
 `content_crews.h`; `game_crew.cpp`'s roster filter; `QuoteReward::Kind`. | M | The gating axis is
 the real work; the prize is three lines once it exists. |
 
-**The ladder has a sixth rung designed and not built — ALTAR VISTA.** `AREA_NAMING.md §3.3` has
-been holding the phishing/credential-theft era open for an area that doesn't exist, and the
-Castle's own deepest stretch (`COMMENT CATACOMBS`) already walks downward. The design pass is
-done and written up: the brand, the five stretches, the court, the guardian, a new signature
-threat (`web_inject` — the pet's own move list drawn in the CANT, countered by sigils and by one
-in-area mod), and the DARK WEB mode the portal behind its altar opens onto. Phase 1 (the
-`AreaDef` itself) is an append, so it needs no `ladderInserts` row and moves no mod's
-`powerTier`. Two things do NOT follow automatically: the keep's header comment stops being true
-("last in `kAreaList`... the reason its pool is the endgame one"), and `allSectorsCleared()`
-re-locks the DeepWeb Dive for every save that had cleared all five — a live-save consequence
-with no honest technical fix, so it wants a deliberate call before the row lands. |
-[`AREA_ALTAR_VISTA.md`](AREA_ALTAR_VISTA.md) for the whole pass; `areas/area_defs.h`'s
-`kAreaList[]`; `castle_rapidscare/area.cpp`'s header. | M (the area) / L (the mode) | Ship the
-area alone first — the mode is a different kind of promise and should not ride in the same
-change. |
+**The ladder has a sixth rung designed and not built — THE SILK LODE.** The Castle's own
+deepest stretch (`COMMENT CATACOMBS`) already walks downward, and every word this hobby uses for
+the 'net is arachnid and nobody notices any more — a web, a crawler, a spider that walks it. The
+design pass is done and written up: Silk Road punned `Road` → `Lode` (a vein of silk under the
+whole ladder), five stretches in mining vocabulary, a court of hacker groups and botnets, and
+`THE PATIENT WEAVER` for a guardian. Its signature threat is the piece worth building for its own
+sake: `c2_hijack` enciphers the **A+C Exploit picker** and greys out every row the pet cannot
+read, so the CANT finally pays off inside a fight instead of only at a shibboleth — and the
+DARKWEB CRAWL behind the portal is that same rider applied permanently, plus sigils at milestone
+depths (today a sigil costs a captured handshake, so a player with no networks in range has a
+progression system they cannot advance at all). Phase 1 is an append: no `ladderInserts` row, no
+mod's `powerTier` moves. Three things do NOT follow automatically — the keep's header comment
+stops being true ("last in `kAreaList`... the reason its pool is the endgame one"), the scramble
+needs one new `MoveDef` field, and `allSectorsCleared()` re-locks the DeepWeb Dive for every save
+that had cleared all five, which has no honest technical fix and wants a deliberate call before
+the row lands. |
+[`AREA_SILK_LODE.md`](AREA_SILK_LODE.md) for the whole pass; `areas/area_defs.h`'s `kAreaList[]`;
+`castle_rapidscare/area.cpp`'s header; `game_combat.cpp`'s `openOverride`. | M (the area) / M
+(the rider) / L (the mode) | Ship the area alone first, then the rider — the mode is a different
+kind of promise and should not ride in the same change. |
 
 ### 1b. A separation pass over every screen
 
