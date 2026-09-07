@@ -90,6 +90,22 @@ prize to unlock. Wants a discovery axis on `CrewDef` first, then one `Kind` and 
 `content_crews.h`; `game_crew.cpp`'s roster filter; `QuoteReward::Kind`. | M | The gating axis is
 the real work; the prize is three lines once it exists. |
 
+**The ladder has a sixth rung designed and not built — ALTAR VISTA.** `AREA_NAMING.md §3.3` has
+been holding the phishing/credential-theft era open for an area that doesn't exist, and the
+Castle's own deepest stretch (`COMMENT CATACOMBS`) already walks downward. The design pass is
+done and written up: the brand, the five stretches, the court, the guardian, a new signature
+threat (`web_inject` — the pet's own move list drawn in the CANT, countered by sigils and by one
+in-area mod), and the DARK WEB mode the portal behind its altar opens onto. Phase 1 (the
+`AreaDef` itself) is an append, so it needs no `ladderInserts` row and moves no mod's
+`powerTier`. Two things do NOT follow automatically: the keep's header comment stops being true
+("last in `kAreaList`... the reason its pool is the endgame one"), and `allSectorsCleared()`
+re-locks the DeepWeb Dive for every save that had cleared all five — a live-save consequence
+with no honest technical fix, so it wants a deliberate call before the row lands. |
+[`AREA_ALTAR_VISTA.md`](AREA_ALTAR_VISTA.md) for the whole pass; `areas/area_defs.h`'s
+`kAreaList[]`; `castle_rapidscare/area.cpp`'s header. | M (the area) / L (the mode) | Ship the
+area alone first — the mode is a different kind of promise and should not ride in the same
+change. |
+
 ### 1b. A separation pass over every screen
 
 **There are only three levers for making one thing read apart from another**: put it in a
