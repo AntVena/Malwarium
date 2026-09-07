@@ -28,7 +28,12 @@ const char* const kModPool[] = {"overclock_chip", "heat_sink", "honeytoken",
                                  // crossing, the opening-probe cut's third, and the
                                  // trickle that gives the first of those a use.
                                  "seedbox_array", "decoy_peer", "trickle_charger",
-                                 "rowhammer"};
+                                 "rowhammer",
+                                 // The four lines the Cipher ASIC above left out — the
+                                 // deep end of the soft-affinity pattern is the whole
+                                 // roster's now, not one line's.
+                                 "whale_hook", "logic_bomb", "reseed_loop",
+                                 "signature_churn"};
 
 // MOOR-TO-MOOR — the item storefront: this area's own stock/price per item, same
 // pattern as the mod storefront below.

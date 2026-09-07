@@ -23,9 +23,10 @@ const LootEntry kWildLoot[] = {
 const char* const kModPool[] = {"tpm_chip", "solid_state_cache", "firewall_patch",
                                  "watchdog_timer", "botnet_swarm", "airgap_ward",
                                  "tripwire", "cold_storage",
-                                 // The soft line-affinity mods, one per line — this
-                                 // pool is where a pet's LINE first starts to pay
-                                 // (content_mods.cpp explains why they land together).
+                                 // The soft line-affinity mods, one per line — the
+                                 // band where a pet's LINE goes from a first taste to a
+                                 // real slot (content_mods.cpp explains the pattern, and
+                                 // every other band now carries its own set of these).
                                  "spoof_header", "escrow_buffer", "dropper_payload",
                                  "fork_spur", "junk_padding",
                                  // The pierce family opens here, one band after the

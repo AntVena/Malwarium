@@ -36,7 +36,9 @@ namespace mal {
 // LINE mods come in two shapes, and the shape follows the EFFECT:
 //   • soft affinity (`line` + `affinityBonus`) sits on a GENERIC effect kind — anyone can
 //     slot it and it does something for them; a matching pet just gets more. One per line
-//     in the Bayou band, so a pet's line starts paying at ~level 14 rather than 39.
+//     per BAND, so a pet's line pays at whatever depth the player has reached rather than
+//     at one rung of the ladder — see LINE COVERAGE, BAND BY BAND at the foot of the
+//     table for which kind each line gets and why.
 //   • hard gate (`requiresLine`) sits on a LINE-PASSIVE amplifier — off-line it would be
 //     inert rather than weak, so it is blocked at equip time instead. One per line at the
 //     bottom of the ladder.
@@ -85,8 +87,9 @@ const ModDef kMods[] = {
      "Chips any attacker that hits you for {mag}.", false,
      ItemDef::Rarity::Rare, 4, 37, ModEffect::Thorns, 4, 0, nullptr, 0},
     // Signature LINE-AFFINITY mod (still line-agnostic — anyone can slot it — but a
-    // Ransomware pet gets a bonus, on-identity for its Cipher wall). The DEEP end of the
-    // soft-affinity pattern the Bayou band now opens for all four lines.
+    // Ransomware pet gets a bonus, on-identity for its Cipher wall). The first row of the
+    // deep half of the soft-affinity pattern; the other four lines' are at the foot of
+    // this table, under LINE COVERAGE.
     {/*wire=*/10, "cipher_asic", "Cipher ASIC", "+DEF",
      "Cuts damage {mag}% ({magBonus}% for Ransomware).", false,
      ItemDef::Rarity::Rare, 4, 39, ModEffect::DamageCutPct, 10, 0, "ransomware", 10},
@@ -471,6 +474,122 @@ const ModDef kMods[] = {
      "Keeps a copy nobody can delete: restores {mag} Health at the start of each of "
      "your turns.", false,
      ItemDef::Rarity::Epic, 5, 60, ModEffect::RegenPerTurn, 6, 0, nullptr, 0},
+
+    // ==== LINE COVERAGE, BAND BY BAND =============================================
+    // A pet's LINE paid in two places: the Bayou's soft-affinity set at ~14, and the
+    // dive's hard-gated build-arounds at ~54. Between them sit three whole bands — the
+    // crossing, the moors, the keep's approach — where every row a raising pet was
+    // offered had nothing to say about what that pet IS. These fill the gap the same way
+    // the Bayou set filled its own: one soft-affinity row per line per BAND, so a line
+    // pays at whatever depth the player happens to be, not only at two of them.
+    //
+    // Every row here is SOFT (`line` + `affinityBonus` over a generic kind), for the
+    // reason the header gives: anyone slots one and gets the plain magnitude, a matching
+    // pet gets more. `requiresLine` stays what it is — one build-around per line at the
+    // bottom of the ladder, on an effect that would be inert rather than weak off-line.
+    //
+    // What varies is the KIND, and each is picked for what the line actually does rather
+    // than handing every line the same mod five times:
+    //   * PHISHING has to reach its Obfuscation bubble and keep it standing — the Perfect
+    //     Bite only fires while the pool is live, and a damage cut lands BEFORE the pool
+    //     eats what is left, so a cut buys bite turns. It is also the one line max Health
+    //     is wrong for: the pool siphon measures the bubble against maxHealth
+    //     (content_passives.h), so a raised ceiling shrinks the line's own multiplier.
+    //   * RANSOMWARE is brute force carrying a bill. The Ransom pool DEFERS damage rather
+    //     than deleting it, so the body that outlives the cliff is the whole ask.
+    //   * TROJAN pays for traps HELD (each armed one bumps the Execution-Override chance)
+    //     and for the roll itself, which is why its rows sit on the Defend-count and
+    //     gamble kinds rather than on another point of attack power.
+    //   * WORM cannot buy an action at any price — Shared Resources assigns it the
+    //     opponent's speed at every tick — so a Speed row is inert on it however large the
+    //     number, and its rows answer ATTRITION instead: chip back, and keep the parent
+    //     standing to spawn again.
+    //   * METAMORPHIC is the one line Speed compounds on (Speed buys actions, actions buy
+    //     casts, casts pay Speed back), and the one whose whole kit is a draw — so it gets
+    //     the tempo row and the row that rolls.
+
+    // --- CITRUS CIRCUIT (tier 1) — a line starts paying at the first gate it clears ---
+    {/*wire=*/66, "lure_page", "Lure Page", "1ST-CUT",
+     "They hit the copy first: cuts the fight's first hit {mag}% "
+     "({magBonus}% for Phishing).", false,
+     ItemDef::Rarity::Uncommon, 1, 7, ModEffect::FirstHitCutPct, 25, 0, "phishing", 15},
+    {/*wire=*/67, "locked_sector", "Locked Sector", "+HP",
+     "Nothing leaves until it is paid for: raises max Health by {mag} "
+     "({magBonus} for Ransomware).", false,
+     ItemDef::Rarity::Uncommon, 1, 5, ModEffect::MaxHealth, 9, 0, "ransomware", 5},
+    {/*wire=*/68, "autorun_stub", "Autorun Stub", "GAMBLE",
+     "{mag}% chance ({magBonus}% Trojan) to raise attack power {mag2}% for the "
+     "fight.", false,
+     ItemDef::Rarity::Uncommon, 1, 11, ModEffect::GambleBattlePowerPct, 20, 25,
+     "trojan", 8},
+    {/*wire=*/69, "chain_letter", "Chain Letter", "THORNS",
+     "Everyone who opens it gets a copy back: chips any attacker that hits you for "
+     "{mag} ({magBonus} for Worm).", false,
+     ItemDef::Rarity::Uncommon, 1, 11, ModEffect::Thorns, 1, 0, "worm", 1},
+    {/*wire=*/70, "nop_sled", "NOP Sled", "+SPD",
+     "Land anywhere, keep sliding: {mag} initiative ({magBonus} for Metamorphic).", false,
+     ItemDef::Rarity::Common, 1, 1, ModEffect::Speed, 2, 0, "metamorphic", 2},
+
+    // --- NET-SEA CROSSING (tier 3) — the mid rungs, where a line paid nothing at all ---
+    // The band a pet crosses between its first line mod and its last, and the one that
+    // had no line row of any kind. Each is the middle rung of the family its line's Bayou
+    // row opened, or the first rung of the one that suits the line better at this depth.
+    {/*wire=*/71, "lookalike_cert", "Lookalike Cert", "+DEF",
+     "Close enough that nobody checks twice: cuts incoming damage by {mag}% "
+     "({magBonus}% for Phishing).", false,
+     ItemDef::Rarity::Uncommon, 3, 26, ModEffect::DamageCutPct, 14, 0, "phishing", 8},
+    {/*wire=*/72, "ransom_locker", "Ransom Locker", "+HP",
+     "Room enough for the whole ledger: raises max Health by {mag} "
+     "({magBonus} for Ransomware).", false,
+     ItemDef::Rarity::Uncommon, 3, 29, ModEffect::MaxHealth, 38, 0, "ransomware", 14},
+    // The crossing's COUNT pair goes one to each line with a reason to care how its move
+    // slots are spent: a Trojan's traps ARE its Defend rows, and a Worm's Attack rows are
+    // what put attacker copies on the board. Both sit under the generic rungs beside them
+    // (Convoy Escort 9, Broadside Array 9) and over them for the matching line, which is
+    // the whole shape of a soft affinity.
+    {/*wire=*/73, "signed_driver", "Signed Driver", "+DEF/DEF",
+     "Damage cut rises {mag}% per equipped Defend move "
+     "({magBonus}% for Trojan).", false,
+     ItemDef::Rarity::Uncommon, 3, 31, ModEffect::DefendCountCutPct, 7, 0, "trojan", 4},
+    {/*wire=*/74, "mass_mailer", "Mass Mailer", "+POW/ATK",
+     "Every copy goes out at once: attack power rises {mag}% per equipped Attack move "
+     "({magBonus}% for Worm).", false,
+     ItemDef::Rarity::Uncommon, 3, 30, ModEffect::AttackCountPowerPct, 7, 0, "worm", 4},
+    {/*wire=*/75, "entropy_seed", "Entropy Seed", "GAMBLE",
+     "{mag}% chance ({magBonus}% Metamorphic) to raise attack power {mag2}% for the "
+     "fight.", false,
+     ItemDef::Rarity::Rare, 3, 34, ModEffect::GambleBattlePowerPct, 30, 35,
+     "metamorphic", 10},
+
+    // --- NAPSTORRENT MOORS (tier 4) — the four the Cipher ASIC was waiting for ---
+    // The moors already paid ONE line (Cipher ASIC, above): the deep end of the
+    // soft-affinity pattern, handed to Ransomware alone. These are the other four, so the
+    // band that opens the deep half of the ladder opens it for every line at once.
+
+    // The same family as the Mass Mailer a band up, for the opposite reason: the frenzy
+    // lean re-rolls a stacked bubble's Defend picks into Attack ones (content_passives.h),
+    // so a Phishing pet that banked a wall spends the rest of the fight swinging — and
+    // this is the row that pays it for carrying something to swing with.
+    {/*wire=*/76, "whale_hook", "Whale Hook", "+POW/ATK",
+     "Rigged for the big one: attack power rises {mag}% per equipped Attack move "
+     "({magBonus}% for Phishing).", false,
+     ItemDef::Rarity::Rare, 4, 44, ModEffect::AttackCountPowerPct, 11, 0, "phishing", 4},
+    {/*wire=*/77, "logic_bomb", "Logic Bomb", "ON-KO",
+     "It was always going to run: on your KO, blasts the enemy for {mag} "
+     "({magBonus} for Trojan).", false,
+     ItemDef::Rarity::Rare, 4, 45, ModEffect::DeathBlast, 6, 0, "trojan", 4},
+    {/*wire=*/78, "reseed_loop", "Reseed Loop", "REGEN",
+     "The swarm reseeds you: restores {mag} Health at each of your turn-starts "
+     "({magBonus} for Worm).", false,
+     ItemDef::Rarity::Rare, 4, 46, ModEffect::RegenPerTurn, 2, 0, "worm", 2},
+    // The one Speed row with a price on it besides the Overclock Chip, and the price is
+    // what keeps it from replacing that: a flat trade of power for tempo is worth more to
+    // the line that spends tempo on casts than to anyone paying the same bill for a
+    // slightly earlier swing.
+    {/*wire=*/79, "signature_churn", "Signature Churn", "+SPD",
+     "Never twice the same shape: {mag} initiative ({magBonus} for Metamorphic); "
+     "costs {mag2}% power.", false,
+     ItemDef::Rarity::Rare, 4, 43, ModEffect::Speed, 5, 6, "metamorphic", 3},
 };
 const int kModsCount = sizeof(kMods) / sizeof(kMods[0]);
 

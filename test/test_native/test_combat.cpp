@@ -1158,6 +1158,23 @@ void test_mod_content_rarity_tier() {
         CHECK(soft >= 1);
         CHECK(shallowest < hard);
     }
+    // ...and it pays at EVERY DEPTH, not at two of them. One row per line per power tier,
+    // counting both shapes (the deepest band's is the hard-gated build-around), walked off
+    // kCreatureLines and the tier count rather than a list of ids — so a band that hands
+    // some line nothing fails here rather than shipping a stretch of the ladder over which
+    // a pet's family stops meaning anything.
+    for (const CreatureLine& cl : kCreatureLines)
+        for (int t = 1; t <= kModPowerTiers; ++t) {
+            int rows = 0;
+            for (const ModDef* m : r.allMods()) {
+                if (m->powerTier != t) continue;
+                if ((m->line && std::strcmp(m->line, cl.id) == 0) ||
+                    (m->requiresLine && std::strcmp(m->requiresLine, cl.id) == 0))
+                    ++rows;
+            }
+            if (rows < 1) std::printf("  LINE %s has no mod at tier %d\n", cl.id, t);
+            CHECK(rows >= 1);
+        }
 }
 
 // The equip ladder: gates are authored per row (ModDef::equipLevel) rather than derived

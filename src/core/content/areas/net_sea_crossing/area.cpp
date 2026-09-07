@@ -35,7 +35,12 @@ const char* const kModPool[] = {"hardened_shell", "bundle_stripper", "ballast_ca
                                 // COUNT pair, which stays a pair here for the reason it
                                 // arrived as one (content_mods.cpp).
                                 "depth_charge_rack", "convoy_escort", "broadside_array",
-                                "hull_auger"};
+                                "hull_auger",
+                                // ...and the crossing's own line set: the band a pet
+                                // crosses between its first line mod and its last had
+                                // handed it nothing that spoke to what it is.
+                                "lookalike_cert", "ransom_locker", "signed_driver",
+                                "mass_mailer", "entropy_seed"};
 
 // FLOATING POINT — the item storefront, tied up where the water is calm enough to
 // trade. Restore Point is the joke and the stock in one: the only thing worth buying

@@ -31,7 +31,13 @@ const char* const kModPool[] = {"clock_speed_boost", "packet_sniffer",
                                  // fatigue tax a pet with no Bits cannot buy its way
                                  // out of, and attack power behind a threshold, which
                                  // is the only shape of it worth a slot this shallow.
-                                 "thermal_paste", "brownout_boost"};
+                                 "thermal_paste", "brownout_boost",
+                                 // The line set, at the shallowest gates on the ladder:
+                                 // a pet's own family starts paying in the area it
+                                 // hatches into rather than a band later
+                                 // (content_mods.cpp).
+                                 "lure_page", "locked_sector", "autorun_stub",
+                                 "chain_letter", "nop_sled"};
 
 // BYTE TO EAT — the item storefront: this area's own stock/price per item, same
 // pattern as the mod storefront below.
