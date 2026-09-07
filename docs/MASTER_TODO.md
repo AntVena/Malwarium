@@ -90,26 +90,60 @@ prize to unlock. Wants a discovery axis on `CrewDef` first, then one `Kind` and 
 `content_crews.h`; `game_crew.cpp`'s roster filter; `QuoteReward::Kind`. | M | The gating axis is
 the real work; the prize is three lines once it exists. |
 
-**The ladder has a sixth rung designed and not built — THE SILK LODE.** The Castle's own
-deepest stretch (`COMMENT CATACOMBS`) already walks downward, and every word this hobby uses for
-the 'net is arachnid and nobody notices any more — a web, a crawler, a spider that walks it. The
-design pass is done and written up: Silk Road punned `Road` → `Lode` (a vein of silk under the
-whole ladder), five stretches in mining vocabulary, a court of hacker groups and botnets, and
-`THE PATIENT WEAVER` for a guardian. Its signature threat is the piece worth building for its own
-sake: `c2_hijack` enciphers the **A+C Exploit picker** and greys out every row the pet cannot
-read, so the CANT finally pays off inside a fight instead of only at a shibboleth — and the
-DARKWEB CRAWL behind the portal is that same rider applied permanently, plus sigils at milestone
-depths (today a sigil costs a captured handshake, so a player with no networks in range has a
-progression system they cannot advance at all). Phase 1 is an append: no `ladderInserts` row, no
-mod's `powerTier` moves. Three things do NOT follow automatically — the keep's header comment
-stops being true ("last in `kAreaList`... the reason its pool is the endgame one"), the scramble
-needs one new `MoveDef` field, and `allSectorsCleared()` re-locks the DeepWeb Dive for every save
-that had cleared all five, which has no honest technical fix and wants a deliberate call before
-the row lands. |
+**The DeepWeb Dive's unlock is a moving target, and every new area makes it worse.** It gates on
+`allSectorsCleared()`, which walks `kAreaCount` — so adding an area silently pushes the best farm
+in the game further away AND re-locks it for every save that had it. Move it to "the first time
+NET-SEA CROSSING opens", keyed by area ID rather than rung (the rung is not an identity — the
+same argument `area_defs.h` already makes for `icon`/`scene`; a hardcoded index would re-point on
+a splice). That unlocks it around level 20, which the current curve would eat alive, so the Dive
+also wants a gentler tuning — and the constants it is using now are worth keeping, because they
+are MEASURED (the win-rate table in `deepweb_dive/area.h`). Re-tuning by eye replaces a measured
+curve with a guessed one, so the softer curve wants the same seeded-fight treatment at the levels
+a Net-Sea player actually has. |
+`game.h`'s `allSectorsCleared` + its one caller in `game_explore.cpp`; `deepweb_dive/area.{h,cpp}`;
+`test_deepweb_dive` asserts the unlock condition. | M | Worth doing on its own, ahead of any new
+area — it is a bug in the shape of a design decision. |
+
+**A LINE move can only be hatched with, never earned.** `MoveLoadout::startingForLine` grants a
+pet every move matching its line, so a line-locked move is owned from birth and
+`moveIsTeachable` refuses it as already-owned — which means there is no such thing as a move only
+one line can learn, and only by going somewhere and beating something for it. That is a whole
+category of reward the content layer cannot express today. One flag on `MoveDef` (`earned`) that
+`startingForLine` skips is the entire fix; `moveIsTeachable`'s line check already does the rest,
+and the engine already line-gates the interesting fields (`combat.cpp`'s `replicates()` tests the
+Worm passive, so `replicaSpawnPct` is inert elsewhere by construction). Note the follow-on doc
+edit: `test_every_generic_move_is_carried` exempts line moves *because a hatch owns them*, and an
+earned line move breaks that premise — it is not exempt, and must be carried by something or it
+is unreachable. |
+`defs.h`'s `MoveDef`; `move_loadout.cpp`'s `startingForLine`; the gate's exemption comment in
+`test_explore.cpp`. | S | Additive — no existing row sets it — and it opens the category for every
+line, not just the one that prompted it. |
+
+**`CONTENT_STANDARD.md` conflates two different steal fields and reads as over-restrictive.** The
+rule that generic rows keep `stealPowerPct` at zero is correct and load-bearing (`combat.cpp`'s
+frenzy combo keys on the FIELD, so a generic row would hand Phishing an extra feeder as a
+droppable prize) — but the surrounding prose makes health-stealing in general sound off-limits,
+when `stealMaxHpPct` is already generic and already on four shipped rows across four areas
+(`seed_leech`, `toll_charge`, `bundle_wrap`, `false_positive`). Say which field is reserved and
+why, rather than gesturing at "the steal track". |
+`content_moves.cpp`'s boss-pool header; `src/core/content/CONTENT_STANDARD.md`. | S | Pure doc
+correction — no mechanic changes. |
+
+**The ladder has a sixth rung designed and not built — THE SILK LODE.** The Castle's own deepest
+stretch (`COMMENT CATACOMBS`) already walks downward, and every word this hobby uses for the 'net
+is arachnid and nobody notices any more. The design pass is done and written up: Silk Road punned
+`Road` → `Lode`, five stretches that descend from a stair through a funnel and a fissure into a
+throat and then into a buried shrine, a court of hacker groups and botnets, and `THE PATIENT
+WEAVER` for a guardian. Its signature threat is the piece worth building for its own sake:
+`c2_hijack` SHUFFLES and enciphers the **A+C Exploit picker** and greys out every row the pet
+cannot read — a hard lock at zero sigils, deliberately, since the pet fights on without you — so
+the CANT finally pays off inside a fight instead of only at a shibboleth. The DARKWEB CRAWL
+behind the portal is that rider never lifted, reshuffled per encounter, running the Dive's old
+(measured) constants as the new terminal zone, and paying sigils at depth. |
 [`AREA_SILK_LODE.md`](AREA_SILK_LODE.md) for the whole pass; `areas/area_defs.h`'s `kAreaList[]`;
-`castle_rapidscare/area.cpp`'s header; `game_combat.cpp`'s `openOverride`. | M (the area) / M
-(the rider) / L (the mode) | Ship the area alone first, then the rider — the mode is a different
-kind of promise and should not ride in the same change. |
+`castle_rapidscare/area.cpp`'s header; `game_combat.cpp`'s `openOverride`. | M (area) / M (rider)
+/ L (the mode) | Depends on the Dive-unlock item above; with it done, this no longer re-locks
+anyone's save. |
 
 ### 1b. A separation pass over every screen
 
