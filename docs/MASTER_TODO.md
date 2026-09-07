@@ -91,81 +91,53 @@ prize to unlock. Wants a discovery axis on `CrewDef` first, then one `Kind` and 
 the real work; the prize is three lines once it exists. |
 
 **A LINE move can only be hatched with, never earned.** `MoveLoadout::startingForLine` grants a
-pet every move matching its line, so a line-locked move is owned from birth and
-`moveIsTeachable` refuses it as already-owned — which means there is no such thing as a move only
-one line can learn, and only by going somewhere and beating something for it. That is a whole
-category of reward the content layer cannot express. One flag on `MoveDef` (`earned`) that
-`startingForLine` skips is the entire fix; `moveIsTeachable`'s line check already does the rest,
-and the engine already line-gates the interesting fields (`combat.cpp`'s `replicates()` tests the
-Worm passive, so `replicaSpawnPct` is inert elsewhere by construction). Note the follow-on doc
-edit: `test_every_generic_move_is_carried` exempts line moves *because a hatch owns them*, and an
-earned line move breaks that premise — it is not exempt, and must be carried by something or it
-is unreachable. |
+pet every move matching its line, so a line-locked move is owned from birth and `moveIsTeachable`
+refuses it as already-owned. There is no way to author a move only one line can learn, and only
+by beating something for it. Add a flag on `MoveDef` (`earned`) that `startingForLine` skips —
+`moveIsTeachable`'s line check already does the rest, and the engine already line-gates the
+interesting fields (`replicates()` tests the Worm passive, so `replicaSpawnPct` is inert
+elsewhere). `test_every_generic_move_is_carried` exempts line moves *because a hatch owns them*;
+an earned one breaks that premise and must be carried by something or it is unreachable, so its
+exemption comment needs narrowing in the same commit. |
 `defs.h`'s `MoveDef`; `move_loadout.cpp`'s `startingForLine`; the gate's exemption comment in
-`test_explore.cpp`. | S | Additive — no existing row sets it — and it opens the category for every
-line, not just the one that prompted it. |
+`test_explore.cpp`. | S | Opens the category for every line, not just the one that prompts it. |
 
-**`CONTENT_STANDARD.md` conflates two different steal fields and reads as over-restrictive.** The
-rule that generic rows keep `stealPowerPct` at zero is correct and load-bearing (`combat.cpp`'s
-frenzy combo keys on the FIELD, so a generic row would hand Phishing an extra feeder as a
-droppable prize) — but the surrounding prose makes health-stealing in general sound off-limits,
-when `stealMaxHpPct` is already generic and already on four shipped rows across four areas
-(`seed_leech`, `toll_charge`, `bundle_wrap`, `false_positive`). Say which field is reserved and
-why, rather than gesturing at "the steal track". |
-`content_moves.cpp`'s boss-pool header; `src/core/content/CONTENT_STANDARD.md`. | S | Pure doc
-correction — no mechanic changes. |
-
-**The DeepWeb Dive is no longer a threat at the top, and nothing has replaced it yet.** Opening it
-at Net-Sea meant softening it (the foothold + budget percentage on `deepweb_dive/area.h`), and the
-measured cost is that a level-60 Daemon now survives a 40-fight run ~99% of the time where it was
-~72%. That is the intended trade — the dive stops being terminal and becomes the mid-game farm —
-but the terminal zone that was supposed to take its place does not exist, so the endgame is
-currently missing its grind. Either build the Crawl (below) or accept a flat top end until it
-lands. |
-`deepweb_dive/area.h`'s two new constants carry the before/after table. | — | Not a bug; a stated
-consequence that should not be discovered by a player first. |
-
-**Dive depth 8 unlocks the Phishing egg line, and that gate just moved a long way earlier.** It
-was reachable only after clearing the whole ladder; it is now reachable shortly after Net-Sea.
-Probably an improvement — a whole creature line sitting behind "beat the game" was a steep ask —
-but it was not the goal of the unlock change and nobody has decided it on purpose. |
-`content_achievements.cpp`'s `AchSeries::DeepWebDepth` goal-8 row. | S | Confirm intended, or move
-the line's unlock to a different achievement. |
+**`CONTENT_STANDARD.md` reads as forbidding health-stealing on generic rows, and does not.** The
+reserved field is `stealPowerPct` — the frenzy combo keys on it, so a generic row would hand
+Phishing an extra feeder as a droppable prize — but `stealMaxHpPct` is generic and already ships
+on `seed_leech`, `toll_charge`, `bundle_wrap` and `false_positive`. Name the reserved field and
+its reason instead of gesturing at "the steal track". |
+`content_moves.cpp`'s boss-pool header; `src/core/content/CONTENT_STANDARD.md`. | S | Doc only. |
 
 **The ladder has a sixth rung designed and not built — THE SILK LODE.** Silk Road punned `Road` →
-`Lode`: a seam of silk running under every area, reached by digging through the floor of the
-Castle's `COMMENT CATACOMBS`. The pitch is that every word this hobby uses for the 'net is already
-arachnid — a web, a crawler, a spider that walks it — and down here the metaphor is not dead.
-Badge `SILK`, title `THREADCUTTER`.
+`Lode`: a seam of silk under every area, reached through the floor of the Castle's `COMMENT
+CATACOMBS`. Badge `SILK`, title `THREADCUTTER`, appended to `kAreaList[]` (so no `ladderInserts`
+row and no mod's `powerTier` moves). Phishing/credential-theft hooks stay unspent for a seventh
+area.
 
-Five stretches, written as a descent that starts architectural, stops being architectural, turns
-briefly anatomical, and then is architectural again — which is the reveal that somebody built
-down here and it was not us: `DEADLINK STAIR`, `BOTNET FUNNEL`, `BITROT FISSURE`, `ZOMBIE GULLET`,
-`ZERO DAY SHRINE` (signature; the portal is in it). Bosses are hacker groups and botnets —
-`CULT OF THE DEAD CODE` (2 rounds), `MARIPOSA OF THE WEAVE`, `CIH THE UNWRITER`,
-`NECURS THE RAISER`, `THE 29A COVEN` (3 rounds, signature; 29A is hex for 666) under
-`MIRAI THE MANY-LEGGED`. Guardian is `THE PATIENT WEAVER`, which has never chased anything in its
-life, teaching `held_thread`; its affront line is `I DO NOT PARLEY WITH FOOD`. Shops
+Five stretches, ordered as a descent that turns from built to organic and back — the last is the
+reveal that something down here was built and not by us: `DEADLINK STAIR`, `BOTNET FUNNEL`,
+`BITROT FISSURE`, `ZOMBIE GULLET`, `ZERO DAY SHRINE` (signature; the portal is in it). Bosses are
+hacker groups and botnets: `CULT OF THE DEAD CODE` (2 rounds), `MARIPOSA OF THE WEAVE`,
+`CIH THE UNWRITER`, `NECURS THE RAISER`, `THE 29A COVEN` (3 rounds, signature) under
+`MIRAI THE MANY-LEGGED`. Guardian `THE PATIENT WEAVER` teaching `held_thread`. Shops
 `THE FLY TRAP` and `WHAT THE WEB CAUGHT`.
 
-The signature threat is the piece worth building for its own sake: **`c2_hijack` shuffles the row
-ORDER of the A+C Exploit picker and enciphers its labels in the Cant, greying out every row the
-pet cannot read.** A botnet's C2 is the channel its operator gives orders on, and the picker is
-the one place a player's hand reaches into a fight that otherwise runs itself — so the rider takes
-the wheel rather than the eyes, and a zero-sigil pet loses the override outright (deliberately; the
-auto-battle carries on, so it costs interventions and not turns). Enciphering alone would leave
-muscle memory intact, which is why the order scrambles too. Counter is `crib_sheet` in the area's
-own rank-6 pool. `CantCipher` is already width-preserving, so labels cannot break a layout.
+Its signature threat is the part worth building for its own sake, and is separable from the area:
+**`c2_hijack` shuffles the row ORDER of the A+C Exploit picker and enciphers its labels in the
+Cant, greying out every row the pet cannot read.** Enciphering alone leaves muscle memory intact,
+which is why the order scrambles too; a zero-sigil pet loses the override outright, which is
+survivable because the auto-battle carries on. Needs one `MoveDef` field and a cipher pass over
+the picker. Counter is `crib_sheet`, in the area's own rank-6 pool.
 
-The DARKWEB CRAWL behind the portal is that rider never lifted and reshuffled per encounter,
-running the pre-softening Dive constants as the new terminal zone, and paying **sigils at
-milestone depths** — today a sigil costs a captured WPA handshake, so a player with no networks in
-range cannot advance the Cant at all. |
+The DARKWEB CRAWL behind the portal is that rider never lifted and reshuffled per encounter, as a
+second endless row (`kExplLeadRows` → 2) running the pre-softening Dive constants — the terminal
+zone the Dive stopped being when it moved to Net-Sea. It pays sigils at milestone depths, which
+is currently the only thing that would let a player with no networks in range advance the Cant at
+all. |
 `areas/area_defs.h`'s `kAreaList[]`; a new `areas/silk_lode/area.cpp`;
-`castle_rapidscare/area.cpp`'s header (its "last in kAreaList … endgame pool" comment stops being
-true); `game_combat.cpp`'s `openOverride`. | M (area) / M (rider) / L (the mode) | An append, so
-no `ladderInserts` row and no mod's `powerTier` moves. Phishing/credential-theft hooks are
-deliberately left unspent for a seventh area. |
+`castle_rapidscare/area.cpp`'s header (its "last in kAreaList … endgame pool" claim stops being
+true); `game_combat.cpp`'s `openOverride`. | M (area) / M (rider) / L (the mode) |
 
 ### 1b. A separation pass over every screen
 
