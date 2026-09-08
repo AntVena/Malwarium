@@ -24,11 +24,21 @@ const MoveDef kChainSteps[] = {
     // siphons ride the LURE (it is the half that touches the mark); these are the close.
     // No steals here: a hunt takes once, and pricing the take twice would make the pair
     // the only attack in the game that pays two riders for two turns.
-    {"smish_strike", "Smish-Strike", MoveDef::Kind::Attack, 16, 1,
+    //
+    // A chained pair is compared on its TWO-TURN total against what a slot could have been
+    // doing over the same two turns, and this pair shipped losing that comparison at every
+    // stage: 6+16 against the generic Fork Bomb's 12+20 at Process, 8+22 against a single
+    // Buffer Overflow cast twice (40) at Script, 10+30 against Rootkit Strike twice (48) at
+    // Daemon. The siphons are the line's identity, not a discount it should pay for — a
+    // hunt that takes something and still hits softer than a plain swing is a hunt nobody
+    // equips. The strike halves now bring each pair level with the generic swing it is read
+    // against (28 / 36 / 48), and the siphons ride on top, which is where the line's edge
+    // is supposed to come from.
+    {"smish_strike", "Smish-Strike", MoveDef::Kind::Attack, 22, 1,
      "The lure had a hook in it all along.", Stage::Process, "phishing"},
-    {"spear_run", "Spear-Run", MoveDef::Kind::Attack, 22, 1,
+    {"spear_run", "Spear-Run", MoveDef::Kind::Attack, 28, 1,
      "One mark, chosen, and no second guess.", Stage::Script, "phishing"},
-    {"harpoon_haul", "Harpoon-Haul", MoveDef::Kind::Attack, 30, 1,
+    {"harpoon_haul", "Harpoon-Haul", MoveDef::Kind::Attack, 38, 1,
      "What the harpoon set, the line brings in.", Stage::Daemon, "phishing"},
 
     // --- Generic: the two forks that used to wind up ----------------------------

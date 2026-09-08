@@ -43,6 +43,32 @@ namespace mal {
 //     inert rather than weak, so it is blocked at equip time instead. One per line at the
 //     bottom of the ladder.
 //
+// A SOFT LINE ROW IS PRICED A BAND OR TWO ABOVE ITS OWN, and its two halves are aimed at
+// different depths. The rule exists because the obvious pricing — a line row worth its own
+// band, plus a little — makes the row not worth the slot: NOP Sled handed a Metamorphic pet
+// the +4 initiative Clock-Speed Boost hands EVERYONE one level later, and Vault Door, an
+// Epic at the bottom of the ladder, cut less than a Bayou row found forty levels earlier.
+// A line is not a small bonus on the rung you are standing on; it is the reason to reach
+// the slot early. So:
+//   • the BASE (what anyone gets) sits at or just under its own band's generic rung — an
+//     honest, unremarkable row, which is what keeps the affinity SOFT;
+//   • the BONUSED total lands on what the generic ladder pays one to two bands DEEPER.
+// Both halves are read against the same effect FAMILY, never across families — the ladders
+// have wildly different units (a point of Thorns is not a point of max Health), so the only
+// meaningful question about a row is where it sits among its own kind. The generic rungs
+// each row was measured against are named in its comment, so a retune to one of them says
+// out loud which line rows have to move with it.
+//
+// DamageCutPct is the ONE family the rule cannot be applied to straight, and the reason is
+// worth stating once rather than re-deriving at each of its five line rows. Cuts ADD across
+// slots under a hard ceiling (kLevelDmgReduceMaxPct, 85) and every pet starts with Firewall
+// Patch's 40 already installed (Loadout::starting), so a cut row's real budget is not its
+// band's rung — it is what is left under the clamp once that 40 is spent. A line row priced
+// a full band deeper here would put a two-slot build at the ceiling and make the third slot
+// meaningless, so the cut rows stop a step short of their band target on purpose: Junk
+// Padding 26, Lookalike Cert 33, Cipher ASIC 42, Vault Door 54. Read them as a ladder
+// against each other and against Bastion Host's 45, not against the rule.
+//
 // `wire` is the save identity and is spent forever once used (defs.h). Fields: wire, id,
 // name, tag, effect-text, oneShot, rarity, powerTier, equipLevel, effectKind, magnitude,
 // magnitude2, line, affinityBonus, requiresLine. Per-mod glyph is
@@ -90,9 +116,13 @@ const ModDef kMods[] = {
     // Ransomware pet gets a bonus, on-identity for its Cipher wall). The first row of the
     // deep half of the soft-affinity pattern; the other four lines' are at the foot of
     // this table, under LINE COVERAGE.
+    // Base 24 clears Hardened Shell (20, tier 3) and on-line 42 sits at Bastion Host's 45
+    // one band deeper — a tier-4 Rare that reads as the tier-5 Epic for the line that owns
+    // it. At its shipped 10/20 it was the worst cut row on the ladder that is not a starter
+    // mod: a Rare found at level 39 that a Common at level 0 came within 12 of.
     {/*wire=*/10, "cipher_asic", "Cipher ASIC", "+DEF",
      "Cuts damage {mag}% ({magBonus}% for Ransomware).", false,
-     ItemDef::Rarity::Rare, 4, 39, ModEffect::DamageCutPct, 10, 0, "ransomware", 10},
+     ItemDef::Rarity::Rare, 4, 39, ModEffect::DamageCutPct, 24, 0, "ransomware", 18},
 
     // --- DeepWeb Dive (tier 5) — the endgame mods --------------------------
     {/*wire=*/11, "deadman_switch", "Deadman Switch", "ON-KO",
@@ -261,27 +291,37 @@ const ModDef kMods[] = {
     // Every one sits on a GENERIC effect kind: a Worm can slot the Escrow Buffer and get
     // real Health out of it, a Ransomware pet just gets more. That is what keeps these
     // soft — the hard gates are reserved for the passive amplifiers at the bottom.
+    //
+    // Each base sits at its own band's generic rung and each bonused total a band or two
+    // deeper, per the header: Speed 4 -> 10 against Sonar Ping's 7 (t3); max Health 22 ->
+    // 46 against Ballast Cache's 45 (t3); attack power 14 -> 26 against Harpoon Mount's 18
+    // (t3); Thorns 2 -> 5 between Honeytoken (4, t4) and Tarpit Array (7, t5).
     {/*wire=*/37, "spoof_header", "Spoof Header", "+SPD",
      "Forged and first in the queue: {mag} initiative "
      "({magBonus} for Phishing).", false,
-     ItemDef::Rarity::Uncommon, 2, 14, ModEffect::Speed, 4, 0, "phishing", 3},
+     ItemDef::Rarity::Uncommon, 2, 14, ModEffect::Speed, 4, 0, "phishing", 6},
     {/*wire=*/38, "escrow_buffer", "Escrow Buffer", "+HP",
      "Raises max Health by {mag} ({magBonus} for Ransomware).", false,
-     ItemDef::Rarity::Uncommon, 2, 15, ModEffect::MaxHealth, 21, 0, "ransomware", 9},
+     ItemDef::Rarity::Uncommon, 2, 15, ModEffect::MaxHealth, 22, 0, "ransomware", 24},
     {/*wire=*/39, "dropper_payload", "Dropper Payload", "+POW",
      "Raises attack power by {mag}% ({magBonus}% for Trojan).", false,
-     ItemDef::Rarity::Uncommon, 2, 18, ModEffect::PowerPct, 13, 0, "trojan", 5},
+     ItemDef::Rarity::Uncommon, 2, 18, ModEffect::PowerPct, 14, 0, "trojan", 12},
     {/*wire=*/40, "fork_spur", "Fork Spur", "THORNS",
      "Chips any attacker that hits you for {mag} ({magBonus} for Worm).", false,
-     ItemDef::Rarity::Rare, 2, 19, ModEffect::Thorns, 2, 0, "worm", 2},
+     ItemDef::Rarity::Rare, 2, 19, ModEffect::Thorns, 2, 0, "worm", 3},
     // Junk-code insertion is how a real metamorph changes its signature without changing
     // what it does, and padding is what it reads as here. The line's soft mod buys TIME
     // rather than output on purpose: Polymorph pays for casts, so surviving to take more
     // of them is the shape of an early metamorphic mod.
+    //
+    // Base 14 sits just under TPM Chip's 15 in the same band; on-line 26 clears Hardened
+    // Shell (20, tier 3). It does NOT clear Firewall Patch's 40, and is not meant to — that
+    // row is INSTALLED FROM HATCH (Loadout::starting) rather than earned off the ladder, so
+    // it is the wall every build already has rather than a rung this one competes for.
     {/*wire=*/47, "junk_padding", "Junk Padding", "+DEF",
      "Padded until nothing matches: cuts damage {mag}% "
      "({magBonus}% for Metamorphic).", false,
-     ItemDef::Rarity::Uncommon, 2, 16, ModEffect::DamageCutPct, 9, 0, "metamorphic", 4},
+     ItemDef::Rarity::Uncommon, 2, 16, ModEffect::DamageCutPct, 14, 0, "metamorphic", 12},
 
     // --- NET-SEA CROSSING (tier 3) — the mid rungs the crossing was missing ---
     // The crossing stocked five mods, all of them hull-and-lookout: a pet crossing it had
@@ -381,8 +421,10 @@ const ModDef kMods[] = {
 
     // --- NAPSTORRENT MOORS (tier 4) — the three families that died at tier 3 -----
     // Max Health stopped dead at the crossing's Ballast Cache, so the deepest named area
-    // before the keep had no bulk row at all: 8 -> 12/14/20 -> 30 -> 45 is the ladder that
-    // restores, and the last rung is what the regen rows below finally give a use for.
+    // before the keep had no bulk row at all: 12 -> 18/30 -> 45 -> 68 is the generic ladder
+    // this restores the top of, and that top is what the regen rows below finally give a
+    // use for. (The line rows read against it a band or two deeper — Locked Sector 11/22,
+    // Escrow Buffer 22/44, Ransom Locker 44/72, Fork Farm 60/90.)
     {/*wire=*/54, "seedbox_array", "Seedbox Array", "+HP",
      "Always seeding, never asleep: raises max Health by {mag}.", false,
      ItemDef::Rarity::Uncommon, 4, 38, ModEffect::MaxHealth, 68, 0, nullptr, 0},
@@ -484,21 +526,33 @@ const ModDef kMods[] = {
     // ladder forgetting one. These are the sixth-rung answers, each a deep rung of what
     // that line already does rather than a new mechanic — the new mechanic at this depth
     // is Crib Sheet above, and one per area is the budget.
+    //
+    // These five shipped as the worst offenders against the band-or-two rule, and the
+    // deepest rung is where it costs most: four of them were beaten outright by a generic
+    // rung the player already owned, so the reward for the whole walk was a downgrade.
+    // Vault Door cut 24% where Bastion Host (tier 5) cuts 45; Fork Farm gave 44 max Health
+    // where Seedbox Array (tier 4) gives 68; False Flag cut a first hit 65% where Decoy
+    // Peer (tier 4) cuts 70 — and FirstHitCutPct takes the HIGHEST magnitude, so that one
+    // was not merely worse, it was inert in the same slot. Each base now clears its
+    // family's deepest generic rung and each on-line total clears it again:
+    //   Vault Door 38/54 (Bastion Host 45) · Spoof Relay 26/44 (Harpoon Mount 18) ·
+    //   Fork Farm 60/90 (Seedbox Array 68) · False Flag 72/90 (Decoy Peer 70) ·
+    //   Recompiler 9/18 (Sonar Ping 7).
     {/*wire=*/81, "vault_door", "Vault Door", "+DEF",
      "Nothing negotiates with a wall: cuts incoming damage {mag}%.", false,
-     ItemDef::Rarity::Epic, 6, 63, ModEffect::DamageCutPct, 14, 0, "ransomware", 10},
+     ItemDef::Rarity::Epic, 6, 63, ModEffect::DamageCutPct, 38, 0, "ransomware", 16},
     {/*wire=*/82, "spoof_relay", "Spoof Relay", "+PWR",
      "It answers in somebody else's name: attack power +{mag}%.", false,
-     ItemDef::Rarity::Epic, 6, 65, ModEffect::PowerPct, 16, 0, "phishing", 10},
+     ItemDef::Rarity::Epic, 6, 65, ModEffect::PowerPct, 26, 0, "phishing", 18},
     {/*wire=*/83, "fork_farm", "Fork Farm", "+HP",
      "Room for one more of everything: +{mag} max Health.", false,
-     ItemDef::Rarity::Epic, 6, 67, ModEffect::MaxHealth, 34, 0, "worm", 10},
+     ItemDef::Rarity::Epic, 6, 67, ModEffect::MaxHealth, 60, 0, "worm", 30},
     {/*wire=*/84, "false_flag", "False Flag", "1-SHOT",
      "The first hit lands on somebody who was never there: cuts it {mag}%.", false,
-     ItemDef::Rarity::Epic, 6, 69, ModEffect::FirstHitCutPct, 55, 0, "trojan", 10},
+     ItemDef::Rarity::Epic, 6, 69, ModEffect::FirstHitCutPct, 72, 0, "trojan", 18},
     {/*wire=*/85, "recompiler", "Recompiler", "+SPD",
      "It rebuilds itself between swings: +{mag} speed.", false,
-     ItemDef::Rarity::Epic, 6, 71, ModEffect::Speed, 5, 0, "metamorphic", 10},
+     ItemDef::Rarity::Epic, 6, 71, ModEffect::Speed, 9, 0, "metamorphic", 9},
 
     {/*wire=*/60, "shadow_copy", "Shadow Copy", "REGEN",
      "Keeps a copy nobody can delete: restores {mag} Health at the start of each of "
@@ -539,26 +593,43 @@ const ModDef kMods[] = {
     //     the tempo row and the row that rolls.
 
     // --- CITRUS CIRCUIT (tier 1) — a line starts paying at the first gate it clears ---
+    // FirstHitCutPct combines HighestMag (mod_state.cpp), so a row under the best one a
+    // player owns is not a weaker option, it is an inert one — which is what 25/40 became
+    // the moment Canary Trap's 50 unlocked three levels later. Base 35 stays under that 50;
+    // on-line 60 is Bundle Stripper's number, two bands down.
     {/*wire=*/66, "lure_page", "Lure Page", "1ST-CUT",
      "They hit the copy first: cuts the fight's first hit {mag}% "
      "({magBonus}% for Phishing).", false,
-     ItemDef::Rarity::Uncommon, 1, 7, ModEffect::FirstHitCutPct, 25, 0, "phishing", 15},
+     ItemDef::Rarity::Uncommon, 1, 7, ModEffect::FirstHitCutPct, 35, 0, "phishing", 25},
+    // Base 11 under Spare RAM Stick's 12 (tier 1); on-line 28 clears Solid-State Cache
+    // (18) a band down and stops under Cold Storage's 30, which buys its bulk with 2
+    // initiative — this row asks for nothing back.
     {/*wire=*/67, "locked_sector", "Locked Sector", "+HP",
      "Nothing leaves until it is paid for: raises max Health by {mag} "
      "({magBonus} for Ransomware).", false,
-     ItemDef::Rarity::Uncommon, 1, 5, ModEffect::MaxHealth, 9, 0, "ransomware", 5},
+     ItemDef::Rarity::Uncommon, 1, 5, ModEffect::MaxHealth, 11, 0, "ransomware", 17},
+    // A gamble is compared on EXPECTED value, chance x payout: on-line 38% x 35% = ~13
+    // points of power, against Entropy Seed's ~20 (tier 3) and Zero-Day's 15 (tier 4). Off
+    // the line it is ~9, which no tier-1 row competes with because the family starts here.
     {/*wire=*/68, "autorun_stub", "Autorun Stub", "GAMBLE",
      "{mag}% chance ({magBonus}% Trojan) to raise attack power {mag2}% for the "
      "fight.", false,
-     ItemDef::Rarity::Uncommon, 1, 11, ModEffect::GambleBattlePowerPct, 20, 25,
-     "trojan", 8},
+     ItemDef::Rarity::Uncommon, 1, 11, ModEffect::GambleBattlePowerPct, 25, 35,
+     "trojan", 13},
+    // Thorns SUMS across slots, so a base at Capacitor Bank's 1 costs nobody anything;
+    // on-line 4 is Honeytoken, two bands down.
     {/*wire=*/69, "chain_letter", "Chain Letter", "THORNS",
      "Everyone who opens it gets a copy back: chips any attacker that hits you for "
      "{mag} ({magBonus} for Worm).", false,
-     ItemDef::Rarity::Uncommon, 1, 11, ModEffect::Thorns, 1, 0, "worm", 1},
+     ItemDef::Rarity::Uncommon, 1, 11, ModEffect::Thorns, 1, 0, "worm", 3},
+    // The row the band-or-two rule was written for. At 2/+2 it handed a Metamorphic pet
+    // exactly the +4 Clock-Speed Boost hands everyone at the very next gate — a line row
+    // that was, precisely, nothing. Base 3 stays under that 4 so the generic starter is
+    // still the plain pick; on-line 8 clears Sonar Ping (7, tier 3), where the Speed family
+    // tops out generically.
     {/*wire=*/70, "nop_sled", "NOP Sled", "+SPD",
      "Land anywhere, keep sliding: {mag} initiative ({magBonus} for Metamorphic).", false,
-     ItemDef::Rarity::Common, 1, 1, ModEffect::Speed, 2, 0, "metamorphic", 2},
+     ItemDef::Rarity::Common, 1, 1, ModEffect::Speed, 3, 0, "metamorphic", 5},
 
     // --- NET-SEA CROSSING (tier 3) — the mid rungs, where a line paid nothing at all ---
     // The band a pet crosses between its first line mod and its last, and the one that
@@ -567,29 +638,30 @@ const ModDef kMods[] = {
     {/*wire=*/71, "lookalike_cert", "Lookalike Cert", "+DEF",
      "Close enough that nobody checks twice: cuts incoming damage by {mag}% "
      "({magBonus}% for Phishing).", false,
-     ItemDef::Rarity::Uncommon, 3, 26, ModEffect::DamageCutPct, 14, 0, "phishing", 8},
+     ItemDef::Rarity::Uncommon, 3, 26, ModEffect::DamageCutPct, 19, 0, "phishing", 14},
     {/*wire=*/72, "ransom_locker", "Ransom Locker", "+HP",
      "Room enough for the whole ledger: raises max Health by {mag} "
      "({magBonus} for Ransomware).", false,
-     ItemDef::Rarity::Uncommon, 3, 29, ModEffect::MaxHealth, 38, 0, "ransomware", 14},
+     ItemDef::Rarity::Uncommon, 3, 29, ModEffect::MaxHealth, 44, 0, "ransomware", 28},
     // The crossing's COUNT pair goes one to each line with a reason to care how its move
     // slots are spent: a Trojan's traps ARE its Defend rows, and a Worm's Attack rows are
-    // what put attacker copies on the board. Both sit under the generic rungs beside them
-    // (Convoy Escort 9, Broadside Array 9) and over them for the matching line, which is
-    // the whole shape of a soft affinity.
+    // what put attacker copies on the board. Each base matches the generic rung beside it
+    // (Convoy Escort 9, Broadside Array 9) rather than undercutting it, and clears it half
+    // again on the line — the band-or-two rule in a family whose whole generic ladder is
+    // two rungs wide, so the deeper number has to be invented rather than copied off one.
     {/*wire=*/73, "signed_driver", "Signed Driver", "+DEF/DEF",
      "Damage cut rises {mag}% per equipped Defend move "
      "({magBonus}% for Trojan).", false,
-     ItemDef::Rarity::Uncommon, 3, 31, ModEffect::DefendCountCutPct, 7, 0, "trojan", 4},
+     ItemDef::Rarity::Uncommon, 3, 31, ModEffect::DefendCountCutPct, 9, 0, "trojan", 6},
     {/*wire=*/74, "mass_mailer", "Mass Mailer", "+POW/ATK",
      "Every copy goes out at once: attack power rises {mag}% per equipped Attack move "
      "({magBonus}% for Worm).", false,
-     ItemDef::Rarity::Uncommon, 3, 30, ModEffect::AttackCountPowerPct, 7, 0, "worm", 4},
+     ItemDef::Rarity::Uncommon, 3, 30, ModEffect::AttackCountPowerPct, 8, 0, "worm", 6},
     {/*wire=*/75, "entropy_seed", "Entropy Seed", "GAMBLE",
      "{mag}% chance ({magBonus}% Metamorphic) to raise attack power {mag2}% for the "
      "fight.", false,
-     ItemDef::Rarity::Rare, 3, 34, ModEffect::GambleBattlePowerPct, 30, 35,
-     "metamorphic", 10},
+     ItemDef::Rarity::Rare, 3, 34, ModEffect::GambleBattlePowerPct, 30, 45,
+     "metamorphic", 15},
 
     // --- NAPSTORRENT MOORS (tier 4) — the four the Cipher ASIC was waiting for ---
     // The moors already paid ONE line (Cipher ASIC, above): the deep end of the
@@ -603,23 +675,25 @@ const ModDef kMods[] = {
     {/*wire=*/76, "whale_hook", "Whale Hook", "+POW/ATK",
      "Rigged for the big one: attack power rises {mag}% per equipped Attack move "
      "({magBonus}% for Phishing).", false,
-     ItemDef::Rarity::Rare, 4, 44, ModEffect::AttackCountPowerPct, 11, 0, "phishing", 4},
+     ItemDef::Rarity::Rare, 4, 44, ModEffect::AttackCountPowerPct, 12, 0, "phishing", 7},
     {/*wire=*/77, "logic_bomb", "Logic Bomb", "ON-KO",
      "It was always going to run: on your KO, blasts the enemy for {mag} "
      "({magBonus} for Trojan).", false,
-     ItemDef::Rarity::Rare, 4, 45, ModEffect::DeathBlast, 6, 0, "trojan", 4},
+     ItemDef::Rarity::Rare, 4, 45, ModEffect::DeathBlast, 9, 0, "trojan", 8},
     {/*wire=*/78, "reseed_loop", "Reseed Loop", "REGEN",
      "The swarm reseeds you: restores {mag} Health at each of your turn-starts "
      "({magBonus} for Worm).", false,
-     ItemDef::Rarity::Rare, 4, 46, ModEffect::RegenPerTurn, 2, 0, "worm", 2},
+     ItemDef::Rarity::Rare, 4, 46, ModEffect::RegenPerTurn, 3, 0, "worm", 4},
     // The one Speed row with a price on it besides the Overclock Chip, and the price is
     // what keeps it from replacing that: a flat trade of power for tempo is worth more to
     // the line that spends tempo on casts than to anyone paying the same bill for a
-    // slightly earlier swing.
+    // slightly earlier swing. Base 7 matches Sonar Ping and charges 6% power for it —
+    // honest rather than good; on-line 14 is double what the generic family ever reaches,
+    // which is the point of paying a bill in a currency your line does not spend.
     {/*wire=*/79, "signature_churn", "Signature Churn", "+SPD",
      "Never twice the same shape: {mag} initiative ({magBonus} for Metamorphic); "
      "costs {mag2}% power.", false,
-     ItemDef::Rarity::Rare, 4, 43, ModEffect::Speed, 5, 6, "metamorphic", 3},
+     ItemDef::Rarity::Rare, 4, 43, ModEffect::Speed, 7, 6, "metamorphic", 7},
 };
 const int kModsCount = sizeof(kMods) / sizeof(kMods[0]);
 

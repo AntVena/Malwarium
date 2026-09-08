@@ -139,13 +139,13 @@ void test_crew_net_neutrality_resets_then_floors_the_leans() {
 void test_crew_mitm_copies_enemy_buffs() {
     ContentRegistry r = ContentRegistry::embedded();
     Combatant p = mkCombatant(r, "P", 5000, 1, {"quick_jab"});
-    // RSA Vault: a 20-power brace plus +12% Cipher-track Defense on cast.
+    // RSA Vault: a 28-power brace plus +12% Cipher-track Defense on cast.
     Combatant e = mkCombatant(r, "E", 5000, 20, {"rsa_vault"});
     Combat cb;
     cb.begin(p, e, Combat::Stakes::Safe, 5, /*forceEnemyFirst=*/true);
 
     cb.step();                                   // an enemy cast before the Exploit
-    CHECK(cb.enemy().guard == 20 && cb.enemy().stackDefenseBonus == 12);
+    CHECK(cb.enemy().guard == 28 && cb.enemy().stackDefenseBonus == 12);
     CHECK(cb.player().guard == 0 && cb.player().stackDefenseBonus == 0);
 
     cb.openOverride({}, CrewExploit{"MALBEAST IN THE MIDDLE",
@@ -158,7 +158,7 @@ void test_crew_mitm_copies_enemy_buffs() {
 
     int guard = 0;
     while (cb.player().guard == 0 && guard++ < 400) cb.step();
-    CHECK(cb.player().guard == 20);              // the next brace is copied whole...
+    CHECK(cb.player().guard == 28);              // the next brace is copied whole...
     CHECK(cb.player().stackDefenseBonus == 12);  // ...and so is the stack it carried
 }
 

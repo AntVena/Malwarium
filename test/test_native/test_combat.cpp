@@ -726,8 +726,8 @@ void test_mod_effects_data_driven() {
     CHECK(oc.powerMultPct == base.powerMultPct * (100 - 8) / 100);      // ...at a power cost
     CHECK(build("honeytoken").mods.mag(ModEffect::Thorns) == 4);
     CHECK(build("deadman_switch").mods.mag(ModEffect::DeathBlast) == 12);
-    // Line affinity: Cipher ASIC is +10% cut generic, +10 more for a Ransomware pet (=20).
-    CHECK(build("cipher_asic").dmgReducePct == base.dmgReducePct + 20);
+    // Line affinity: Cipher ASIC is +24% cut generic, +18 more for a Ransomware pet (=42).
+    CHECK(build("cipher_asic").dmgReducePct == base.dmgReducePct + 42);
     // The plain-magnitude originals apply their row value straight through.
     CHECK(build("firewall_patch").dmgReducePct == base.dmgReducePct + r.mod("firewall_patch")->magnitude);
     CHECK(build("clock_speed_boost").speed == base.speed + r.mod("clock_speed_boost")->magnitude);
@@ -1111,7 +1111,7 @@ void test_mod_content_rarity_tier() {
     }
     const ModDef* ca = r.mod("cipher_asic");
     CHECK(ca && ca->line && std::strcmp(ca->line, "ransomware") == 0);
-    CHECK(ca->affinityBonus == 10);
+    CHECK(ca->affinityBonus == 18);
     // Niche-flavour pass: the two hard-gated signatures carry ModDef::requiresLine (a
     // real EQUIP block, distinct from the soft `line`/`affinityBonus` every other mod
     // uses — Cipher ASIC above stays fully line-agnostic).
@@ -1693,12 +1693,12 @@ void test_phishing_bubble_steal() {
     CHECK(c0.enemy().maxHealth == 94 && c0.player().maxHealth == 106);
     // The power siphon then feeds back into BOTH sides' later damage, which is the whole
     // reason the line steals it: quick_jab lands 5 rather than 6 off the enemy's siphoned
-    // 92%, and the strike lands 17 rather than 16 off the pet's 108%.
+    // 92%, and the strike lands 23 rather than 22 off the pet's 108%.
     // player: 100 + 6 (the pool that crossed) - 5 (quick_jab) = 101.
     CHECK(c0.player().health == 101);
-    // enemy: 100 - 6 (lure) - 17 (strike) = 77. Two real casts, which is the point of the
+    // enemy: 100 - 6 (lure) - 23 (strike) = 71. Two real casts, which is the point of the
     // chain — the wind-up this replaced spent the fight's first turn doing nothing.
-    CHECK(c0.enemy().health == 77);
+    CHECK(c0.enemy().health == 71);
 
     // Bubble up: stealSpeedPct/stealCurrentHpPct now fire at their base (6%) amounts on
     // top of the power siphon, and the landed power siphon feeds Feed-Frenzy. The
@@ -1730,8 +1730,8 @@ void test_phishing_bubble_steal() {
     // This pet is at the BootSector default (to keep Perfect Bite at a guaranteed 0%), so
     // its body is 40 and a 50 pool reads as +125% — the authored 6% siphons at 13%.
     CHECK(c1.player().speed == 56.5f && c1.enemy().speed == 43.5f);   // 13% of 50 = 6.5
-    // enemy: 100 - 6 (lure) - 12 (13% of 94, lifesteal) - 17 (siphon-boosted strike) = 65.
-    CHECK(c1.enemy().health == 65);
+    // enemy: 100 - 6 (lure) - 12 (13% of 94, lifesteal) - 23 (siphon-boosted strike) = 59.
+    CHECK(c1.enemy().health == 59);
     // player: the lifesteal lands while the ceiling is still 100 (so it caps there), the
     // crossed pool then lifts both to 106, and the frenzy's +1 caps again. quick_jab is
     // absorbed by the shield and never reaches Health.
@@ -1915,19 +1915,19 @@ void test_phishing_frenzy_lean_ratchets_until_the_bubble_pops() {
 void test_phishing_shield_pool() {
     ContentRegistry r = ContentRegistry::embedded();
     const MoveDef* sb = r.move("spoof_bubble");
-    CHECK(sb && sb->kind == MoveDef::Kind::Defend && sb->shieldPool > 0 && sb->power == 8);
+    CHECK(sb && sb->kind == MoveDef::Kind::Defend && sb->shieldPool > 0 && sb->power == 12);
 
-    // Absorb + overflow: cast the bubble (shieldHp 8), then eat a 20-power hit — the
-    // shield soaks 8 and pops, the remaining 12 carries through to Health.
+    // Absorb + overflow: cast the bubble (shieldHp 12), then eat a 20-power hit — the
+    // shield soaks 12 and pops, the remaining 8 carries through to Health.
     Combatant p = mkCombatant(r, "P", 100, 10, {"spoof_bubble"});
     Combatant e = mkCombatant(r, "E", 100, 10, {"buffer_overflow"});  // 20 power, no rider
     Combat c; c.begin(p, e, Combat::Stakes::Safe, 1);
     c.step();                                            // P casts Spoof-Bubble
-    CHECK(c.player().shieldHp == 8);
+    CHECK(c.player().shieldHp == 12);
     CHECK(c.player().health == 100);                     // nothing spent yet
     c.step();                                            // E hits for 20
     CHECK(c.player().shieldHp == 0);                     // popped
-    CHECK(c.player().health == 88);                      // overflow 12 through to Health
+    CHECK(c.player().health == 92);                      // overflow 8 through to Health
 
     // A non-shield Defend move still sets the one-shot guard, NOT the pool.
     Combatant p2 = mkCombatant(r, "P", 100, 10, {"checksum_guard"});
@@ -1938,16 +1938,16 @@ void test_phishing_shield_pool() {
     CHECK(c2.player().guard == 14);                      // ordinary brace, not pooled
 
     // Additive stacking: with an enemy that only defends (no damage), two player casts
-    // pool to 16 rather than refreshing to 8.
+    // pool to 24 rather than refreshing to 12.
     Combatant p3 = mkCombatant(r, "P", 100, 10, {"spoof_bubble"});
     Combatant e3 = mkCombatant(r, "E", 100, 10, {"checksum_guard"});
     Combat c3; c3.begin(p3, e3, Combat::Stakes::Safe, 1);
     // Stepped until the second cast lands rather than assuming a strict P,E,P order: a
     // brace can hand tempo back (MoveDef::speedRefundPct), so which side acts next is not
-    // this test's business. What is, is that two casts POOL to 16 instead of refreshing
-    // to 8.
-    for (int i = 0; i < 10 && c3.player().shieldHp < 16; ++i) c3.step();
-    CHECK(c3.player().shieldHp == 16);
+    // this test's business. What is, is that two casts POOL to 24 instead of refreshing
+    // to 12.
+    for (int i = 0; i < 10 && c3.player().shieldHp < 24; ++i) c3.step();
+    CHECK(c3.player().shieldHp == 24);
 }
 
 // Speed action economy: relative speed drives how many actions each pet gets. Equal

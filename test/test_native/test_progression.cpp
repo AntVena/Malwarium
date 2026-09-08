@@ -626,7 +626,7 @@ void test_ransomware_stacking() {
             lastHit = cb.lastDamage();
         }
     }
-    CHECK(cb.player().stackPowerBonus == 24);          // +8 ×3, capped at +24%
+    CHECK(cb.player().stackPowerBonus == 30);          // +10 ×3, capped at +30%
     CHECK(lastHit > firstHit);                          // stacked Power hits harder
 
     // Cipher, and the INVERTED ladder that carries it. Where a row's cap sits decides how
@@ -647,12 +647,12 @@ void test_ransomware_stacking() {
     };
     // Deep row: one cast IS the whole bar, which is what makes it the seizure's enabler.
     const auto deep = cipherRun("full_disk_encryption", 12);
-    CHECK(deep[0] == 56);                               // 28 base × 200% defenseMult
+    CHECK(deep[0] == 80);                               // 40 base × 200% defenseMult
     CHECK(deep[1] == r.move("full_disk_encryption")->stackDefenseCap);
     CHECK(deep[2] == deep[1]);                          // nothing left to climb
     // Shallow row: a small step, and a ceiling more than twice the deep row's.
     const auto shallow = cipherRun("aes_lockbox", 12);
-    CHECK(shallow[0] == 28);                            // 14 base × 200% defenseMult
+    CHECK(shallow[0] == 36);                            // 18 base × 200% defenseMult
     CHECK(shallow[1] == r.move("aes_lockbox")->stackDefensePct);   // one small step
     CHECK(shallow[2] == r.move("aes_lockbox")->stackDefenseCap);    // ...eventually full
     CHECK(shallow[2] > deep[2]);                        // the long game builds the bigger wall

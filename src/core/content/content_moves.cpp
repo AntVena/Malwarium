@@ -151,15 +151,23 @@ const MoveDef kMoves[] = {
     // stacks the caster's Defense on cast. Fields after minStage: line, stackPowerPct,
     // stackPowerCap, stackDefensePct, stackDefenseCap, armorPiercePct. The line NEVER
     // heals (a hard identity pillar) — no restore effect appears on any row here.
-    {"payload_drop", "Payload Drop", MoveDef::Kind::Attack, 12, 1,
+    // The track's comparison is the roster's PLAIN swings, since a Lockout row carries no
+    // rider but its own ramp: Packet Storm 12 (BootSector), Buffer Overflow 20 (Script),
+    // Rootkit Strike 24 (Daemon). It shipped tying two of them — a line-exclusive Process
+    // row worth exactly the generic every hatchling can field, and a Script row worth
+    // exactly the generic apex drop — so the ramp was the whole of what the line was paid,
+    // and the ramp is small early. Each row now opens a rung above the generic it is read
+    // against and the caps climb with it, so the ramp is a second reason to equip the row
+    // rather than the only one.
+    {"payload_drop", "Payload Drop", MoveDef::Kind::Attack, 14, 1,
      "Drops a payload. +{stackPower}% Power on landing (stacks to +{stackPowerCap}%).", Stage::Process,
-     "ransomware", 8, 24, 0, 0, 0},
-    {"double_extortion", "Double Extortion", MoveDef::Kind::Attack, 20, 1,
+     "ransomware", 10, 30, 0, 0, 0},
+    {"double_extortion", "Double Extortion", MoveDef::Kind::Attack, 24, 1,
      "Encrypt AND leak. +{stackPower}% Power on landing (stacks to +{stackPowerCap}%).", Stage::Script,
-     "ransomware", 10, 40, 0, 0, 0},
-    {"mbr_wipe", "MBR Wipe", MoveDef::Kind::Attack, 28, 1,
+     "ransomware", 12, 48, 0, 0, 0},
+    {"mbr_wipe", "MBR Wipe", MoveDef::Kind::Attack, 30, 1,
      "Overwrites the boot sector. Ignores {pierce}% armor; +{stackPower}% Power (to +{stackPowerCap}%).",
-     Stage::Daemon, "ransomware", 12, 60, 0, 0, 50},
+     Stage::Daemon, "ransomware", 14, 70, 0, 0, 50},
     // The Cipher ladder runs INVERTED, and the reason is the seizure (RansomSeizure): a
     // full wall is what lets a brace take the attack that hits it, so where a row's CAP
     // sits decides how soon that row can do the line's real job. The deep row therefore
@@ -169,13 +177,21 @@ const MoveDef kMoves[] = {
     // hits for the wall behind it. So the beginner's row is the long game and the
     // endgame's row is the fast one, which is the opposite of how a ladder usually reads
     // and exactly right here.
-    {"aes_lockbox", "AES Lockbox", MoveDef::Kind::Defend, 14, 1,
+    //
+    // A Cipher row's BRACE is read against the generic braces unlocking beside it — Null
+    // Route 18 (Process), Cert Spoof 26 / Captcha Gate 38 (Script), Sheet Web 42 / Onion
+    // Layer 48 (Daemon). It shipped under every one of them AND without the tempo refund
+    // those rows carry (MoveDef::speedRefundPct is 0 on any Defend that also does something
+    // else), so the stack was paying for two disadvantages rather than one. Each row now
+    // braces at the low end of its stage's generic band: still under the biggest wall, and
+    // still refund-free, but a real brace with the line's ratchet on top of it.
+    {"aes_lockbox", "AES Lockbox", MoveDef::Kind::Defend, 18, 1,
      "Encrypts a brace. +{stackDef}% DEF on cast (stacks to +{stackDefCap}%).", Stage::Process,
      "ransomware", 0, 0, 6, 48, 0},
-    {"rsa_vault", "RSA Vault", MoveDef::Kind::Defend, 20, 1,
+    {"rsa_vault", "RSA Vault", MoveDef::Kind::Defend, 28, 1,
      "Seals the AES key. +{stackDef}% DEF on cast (stacks to +{stackDefCap}%).", Stage::Script,
      "ransomware", 0, 0, 12, 36, 0},
-    {"full_disk_encryption", "Full-Disk Encryption", MoveDef::Kind::Defend, 28, 1,
+    {"full_disk_encryption", "Full-Disk Encryption", MoveDef::Kind::Defend, 40, 1,
      "Locks the whole drive. +{stackDef}% DEF on cast (stacks to +{stackDefCap}%).", Stage::Daemon,
      "ransomware", 0, 0, 20, 20, 0},
 
@@ -197,14 +213,20 @@ const MoveDef kMoves[] = {
     // it reads back, which is the line's conversion from defence into damage and the one
     // that sits where a defend-heavy pet will actually hold it; the third does both
     // properly. A retaliation DoT passes no cut, brace, pool or hit cap, so it stays small.
-    poolRow("spoof_bubble", "Spoof-Bubble", 8,
+    // The pool numbers are read against the same-stage generic braces (Null Route 18, Cert
+    // Spoof 26, Onion Layer 48) with one adjustment in the line's favour: a pool STACKS on
+    // recast and carries between turns where a brace is spent on one hit, so it is worth
+    // more per point and belongs under them. The first rung shipped at 8, which a Process
+    // wild's opening swing popped outright — the bubble that gates Perfect Bite and the
+    // frenzy was, at that rung, never actually up on the pet's own turn.
+    poolRow("spoof_bubble", "Spoof-Bubble", 12,
             "A decoy identity that soaks {power} damage before it pops.",
             Stage::Process, /*retaliateDot=*/0, /*retaliateTurns=*/0),
-    poolRow("proxy_shell", "Proxy-Shell", 16,
+    poolRow("proxy_shell", "Proxy-Shell", 20,
             "A thinner false front, salted - {power}-damage pool, and reading it costs "
             "{dot}/turn for {dotTurns}.",
             Stage::Script, /*retaliateDot=*/5, /*retaliateTurns=*/2),
-    poolRow("bathyspoof", "Bathyspoof", 32,
+    poolRow("bathyspoof", "Bathyspoof", 36,
             "The deepest buried identity - a {power}-damage shield, salted at "
             "{dot}/turn for {dotTurns}.",
             Stage::Daemon, /*retaliateDot=*/8, /*retaliateTurns=*/3),
@@ -250,13 +272,22 @@ const MoveDef kMoves[] = {
     // stealPowerPct, stealDefensePct, stealSpeedPct, stealCurrentHpPct, stealMaxHpPct,
     // shieldPool, trapArm, trapEvasionPct, trapReboundPct, trapArmorRot, trapPassiveBonusPct.
     // Magnitudes scale by stage; the line never heals — evasion is its survival tool.
-    {"backdoor_breach", "Backdoor-Breach", MoveDef::Kind::Attack, 12, 1,
+    // Pierce is the one rider the GENERIC roster also sells at full strength, so this track
+    // is the roster's closest comparison and it shipped losing it. Backdoor Knock (generic,
+    // Process) pierces 100% AND freezes a turn for 9 power against Backdoor-Breach's 12;
+    // Crack The Keys (generic, Script) was power 20 at pierce 100 — the same two numbers as
+    // Payload-Puncture, so the line row and the boss drop were the identical move. A row
+    // only the line can field has to be worth more than the row anyone can be taught, so
+    // each now sits a clear step over the generic that matches it (16 / 26 / 34 against
+    // Backdoor Knock 9, Crack The Keys 20, and — at Daemon, where nothing generic pierces
+    // in full outside the banner's own Legion 30 — Wild Card's 22 at pierce 60).
+    {"backdoor_breach", "Backdoor-Breach", MoveDef::Kind::Attack, 16, 1,
      "Strikes from inside - ignores {pierce}% of armor.", Stage::Process,
      "trojan", 0, 0, 0, 0, /*armorPiercePct=*/100},
-    {"payload_puncture", "Payload-Puncture", MoveDef::Kind::Attack, 20, 1,
+    {"payload_puncture", "Payload-Puncture", MoveDef::Kind::Attack, 26, 1,
      "Detonates past every defence - ignores {pierce}% of armor.", Stage::Script,
      "trojan", 0, 0, 0, 0, /*armorPiercePct=*/100},
-    {"rootkit_rupture", "Rootkit-Rupture", MoveDef::Kind::Attack, 28, 1,
+    {"rootkit_rupture", "Rootkit-Rupture", MoveDef::Kind::Attack, 34, 1,
      "Ruptures from ring 0 - ignores {pierce}% of armor.", Stage::Daemon,
      "trojan", 0, 0, 0, 0, /*armorPiercePct=*/100},
     // Held traps also feed the Execution-Override hijack chance, so each names the
@@ -289,32 +320,41 @@ const MoveDef kMoves[] = {
     // swing still lands if the roll misses, so replication is the bonus. A DEFEND is
     // certain, because a defender IS the move; the row keeps a real `power` only so the
     // turn still braces when every replication slot is already full.
-    {"mass_mailer", "Mass-Mailer", MoveDef::Kind::Attack, 6, 1,
+    // The floor moved because it was below the FREE one: Mass-Mailer's 6 was Quick Jab's 6,
+    // the innate default a pet casts out of an empty slot, so the line's own opening attack
+    // was worth equipping only for the roll attached to it. The track stays the lowest on
+    // any line — 8/11/15 against Ransomware's 14/24/30 — because the damage is still meant
+    // to arrive from the board; it just no longer starts under the move you get for nothing.
+    // replicaPowerPct is a share of THIS power, so the copies rise with it.
+    {"mass_mailer", "Mass-Mailer", MoveDef::Kind::Attack, 8, 1,
      "Mails itself everywhere - {replicaChance}% chance to spawn a copy worth "
      "{replicaPower}%, per defender standing.",
      Stage::Process, "worm", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
      /*replicaSpawnPct=*/50, /*replicaPowerPct=*/60},
-    {"subnet_sweep", "Subnet-Sweep", MoveDef::Kind::Attack, 9, 1,
+    {"subnet_sweep", "Subnet-Sweep", MoveDef::Kind::Attack, 11, 1,
      "Sweeps the whole subnet - {replicaChance}% chance to spawn a copy worth "
      "{replicaPower}%, per defender standing.",
      Stage::Script, "worm", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
      /*replicaSpawnPct=*/60, /*replicaPowerPct=*/70},
-    {"slammer_burst", "Slammer-Burst", MoveDef::Kind::Attack, 12, 1,
+    {"slammer_burst", "Slammer-Burst", MoveDef::Kind::Attack, 15, 1,
      "Saturates every link at once - {replicaChance}% chance to spawn a copy worth "
      "{replicaPower}%, per defender standing.",
      Stage::Daemon, "worm", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
      /*replicaSpawnPct=*/70, /*replicaPowerPct=*/80},
-    {"host_squat", "Host-Squat", MoveDef::Kind::Defend, 10, 1,
+    // The Defend rows' own `power` is the full-slots fallback, so it is what the turn is
+    // worth on the one cast that cannot spawn — it is read against the same-stage generic
+    // braces like the Cipher rows are, at the bottom of the band.
+    {"host_squat", "Host-Squat", MoveDef::Kind::Defend, 13, 1,
      "Parks a copy in the way - a body worth {replicaHealth}% Health per copy out. "
      "Braces {power} when the slots are full.",
      Stage::Process, "worm", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
      /*replicaSpawnPct=*/100, /*replicaPowerPct=*/0, /*replicaHealthPct=*/20},
-    {"swarm_wall", "Swarm-Wall", MoveDef::Kind::Defend, 14, 1,
+    {"swarm_wall", "Swarm-Wall", MoveDef::Kind::Defend, 19, 1,
      "Stacks the copies into a wall - {replicaHealth}% Health per copy out; braces "
      "{power} when slots are full.",
      Stage::Script, "worm", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
      /*replicaSpawnPct=*/100, /*replicaPowerPct=*/0, /*replicaHealthPct=*/25},
-    {"botnet_bulwark", "Botnet-Bulwark", MoveDef::Kind::Defend, 18, 1,
+    {"botnet_bulwark", "Botnet-Bulwark", MoveDef::Kind::Defend, 25, 1,
      "The whole swarm takes the hit - {replicaHealth}% Health per copy out; braces "
      "{power} when slots are full.",
      Stage::Daemon, "worm", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
