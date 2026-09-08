@@ -90,25 +90,6 @@ prize to unlock. Wants a discovery axis on `CrewDef` first, then one `Kind` and 
 `content_crews.h`; `game_crew.cpp`'s roster filter; `QuoteReward::Kind`. | M | The gating axis is
 the real work; the prize is three lines once it exists. |
 
-**A LINE move can only be hatched with, never earned.** `MoveLoadout::startingForLine` grants a
-pet every move matching its line, so a line-locked move is owned from birth and `moveIsTeachable`
-refuses it as already-owned. There is no way to author a move only one line can learn, and only
-by beating something for it. Add a flag on `MoveDef` (`earned`) that `startingForLine` skips —
-`moveIsTeachable`'s line check already does the rest, and the engine already line-gates the
-interesting fields (`replicates()` tests the Worm passive, so `replicaSpawnPct` is inert
-elsewhere). `test_every_generic_move_is_carried` exempts line moves *because a hatch owns them*;
-an earned one breaks that premise and must be carried by something or it is unreachable, so its
-exemption comment needs narrowing in the same commit. |
-`defs.h`'s `MoveDef`; `move_loadout.cpp`'s `startingForLine`; the gate's exemption comment in
-`test_explore.cpp`. | S | Opens the category for every line, not just the one that prompts it. |
-
-**`CONTENT_STANDARD.md` reads as forbidding health-stealing on generic rows, and does not.** The
-reserved field is `stealPowerPct` — the frenzy combo keys on it, so a generic row would hand
-Phishing an extra feeder as a droppable prize — but `stealMaxHpPct` is generic and already ships
-on `seed_leech`, `toll_charge`, `bundle_wrap` and `false_positive`. Name the reserved field and
-its reason instead of gesturing at "the steal track". |
-`content_moves.cpp`'s boss-pool header; `src/core/content/CONTENT_STANDARD.md`. | S | Doc only. |
-
 **THE SILK LODE and the DARKWEB CRAWL have no art.** Both ship naming a glyph that does not
 exist (`ICON_SECTOR_SILK_LODE`, `ICON_SECTOR_DARKWEB_CRAWL`), so their EXPL rows draw the
 empty-frame placeholder `drawIconSlot` falls back to, and the Lode's backdrop is `SceneId::None`.

@@ -5555,6 +5555,83 @@ window.PEDIA_DATA = {
       "icon": "assets/icons/ICON_MOD_CLEAN_ROOM.png"
     },
     {
+      "id": "crib_sheet",
+      "name": "Crib Sheet",
+      "tag": "LEGIBLE",
+      "rarity": "EPIC",
+      "tier": 6,
+      "equipLevel": 61,
+      "effect": "Your override picker stays readable, and in its own order.",
+      "stats": "",
+      "icon": "assets/icons/ICON_MODS_SLOT.png",
+      "iconFallback": true
+    },
+    {
+      "id": "vault_door",
+      "name": "Vault Door",
+      "tag": "+DEF",
+      "rarity": "EPIC",
+      "tier": 6,
+      "equipLevel": 63,
+      "effect": "Nothing negotiates with a wall: cuts incoming damage 14%.",
+      "stats": "DMG CUT 14% / ON LINE +10",
+      "icon": "assets/icons/ICON_MODS_SLOT.png",
+      "iconFallback": true,
+      "line": "ransomware"
+    },
+    {
+      "id": "spoof_relay",
+      "name": "Spoof Relay",
+      "tag": "+PWR",
+      "rarity": "EPIC",
+      "tier": 6,
+      "equipLevel": 65,
+      "effect": "It answers in somebody else's name: attack power +16%.",
+      "stats": "POWER +16% / ON LINE +10",
+      "icon": "assets/icons/ICON_MODS_SLOT.png",
+      "iconFallback": true,
+      "line": "phishing"
+    },
+    {
+      "id": "fork_farm",
+      "name": "Fork Farm",
+      "tag": "+HP",
+      "rarity": "EPIC",
+      "tier": 6,
+      "equipLevel": 67,
+      "effect": "Room for one more of everything: +34 max Health.",
+      "stats": "MAX HP +34 / ON LINE +10",
+      "icon": "assets/icons/ICON_MODS_SLOT.png",
+      "iconFallback": true,
+      "line": "worm"
+    },
+    {
+      "id": "false_flag",
+      "name": "False Flag",
+      "tag": "1-SHOT",
+      "rarity": "EPIC",
+      "tier": 6,
+      "equipLevel": 69,
+      "effect": "The first hit lands on somebody who was never there: cuts it 55%.",
+      "stats": "1ST HIT CUT 55% / ON LINE +10",
+      "icon": "assets/icons/ICON_MODS_SLOT.png",
+      "iconFallback": true,
+      "line": "trojan"
+    },
+    {
+      "id": "recompiler",
+      "name": "Recompiler",
+      "tag": "+SPD",
+      "rarity": "EPIC",
+      "tier": 6,
+      "equipLevel": 71,
+      "effect": "It rebuilds itself between swings: +5 speed.",
+      "stats": "SPEED +5 / ON LINE +10",
+      "icon": "assets/icons/ICON_MODS_SLOT.png",
+      "iconFallback": true,
+      "line": "metamorphic"
+    },
+    {
       "id": "shadow_copy",
       "name": "Shadow Copy",
       "tag": "REGEN",
@@ -5739,7 +5816,8 @@ window.PEDIA_DATA = {
     "2": "The Pirate Bayou",
     "3": "Net-Sea Crossing",
     "4": "Napstorrent Moors",
-    "5": "Castle Rapidscare / DeepWeb Dive"
+    "5": "Castle Rapidscare",
+    "6": "The Silk Lode / DeepWeb Dive"
   },
   "moves": [
     {
@@ -6704,6 +6782,90 @@ window.PEDIA_DATA = {
       "icon": "assets/icons/ICON_MOVE_SLOT.png"
     },
     {
+      "id": "dead_link",
+      "name": "Dead Link",
+      "kind": "ATK",
+      "power": 6,
+      "turns": 1,
+      "minStage": "Script",
+      "desc": "What was here is not here - takes 18% of the target's max Health.",
+      "stats": "ATK 6 / MAX HP 18%",
+      "group": "core",
+      "icon": "assets/icons/ICON_MOVE_SLOT.png"
+    },
+    {
+      "id": "funnel_web",
+      "name": "Funnel Web",
+      "kind": "ATK",
+      "power": 11,
+      "turns": 1,
+      "minStage": "Script",
+      "desc": "It only goes one way - strips 35% armor and 6/turn for 3.",
+      "stats": "ATK 11 / DOT 6x3 / SIPHON DEF 35%",
+      "group": "core",
+      "icon": "assets/icons/ICON_MOVE_SLOT.png"
+    },
+    {
+      "id": "unwrite",
+      "name": "Unwrite",
+      "kind": "ATK",
+      "power": 15,
+      "turns": 1,
+      "minStage": "Script",
+      "desc": "It does not damage the file, it removes the fact of it - ignores 40% armor, 7/turn for 4.",
+      "stats": "ATK 15 / PIERCE 40% / DOT 7x4",
+      "group": "core",
+      "icon": "assets/icons/ICON_MOVE_SLOT.png"
+    },
+    {
+      "id": "raise_host",
+      "name": "Raise Host",
+      "kind": "ATK",
+      "power": 5,
+      "turns": 1,
+      "minStage": "Script",
+      "desc": "Something else wakes up every turn you are still here - 12 damage/turn for 5 turns.",
+      "stats": "ATK 5 / DOT 12x5",
+      "group": "core",
+      "icon": "assets/icons/ICON_MOVE_SLOT.png"
+    },
+    {
+      "id": "polymorph",
+      "name": "Polymorph",
+      "kind": "ATK",
+      "power": 17,
+      "turns": 1,
+      "minStage": "Daemon",
+      "desc": "It is not the same thing twice - ignores 50% armor and strips 45%.",
+      "stats": "ATK 17 / PIERCE 50% / SIPHON DEF 45%",
+      "group": "core",
+      "icon": "assets/icons/ICON_MOVE_SLOT.png"
+    },
+    {
+      "id": "c2_hijack",
+      "name": "C2 Hijack",
+      "kind": "ATK",
+      "power": 8,
+      "turns": 1,
+      "minStage": "Daemon",
+      "desc": "Takes the channel you give orders on - your override reads in a hand you did not write for 3 turns.",
+      "stats": "ATK 8",
+      "group": "core",
+      "icon": "assets/icons/ICON_MOVE_SLOT.png"
+    },
+    {
+      "id": "legion",
+      "name": "Legion",
+      "kind": "ATK",
+      "power": 30,
+      "turns": 1,
+      "minStage": "Daemon",
+      "desc": "We are many, and that was always a count - ignores ALL 100% armor, freezes 1 turn, and scrambles for 2.",
+      "stats": "ATK 30 / PIERCE 100% / FREEZE 1",
+      "group": "core",
+      "icon": "assets/icons/ICON_MOVE_SLOT.png"
+    },
+    {
       "id": "ratio_debt",
       "name": "Ratio Debt",
       "kind": "ATK",
@@ -6760,6 +6922,18 @@ window.PEDIA_DATA = {
       "minStage": "Daemon",
       "desc": "The wall is not there because you are not - ignores 45% of armor.",
       "stats": "ATK 9 / PIERCE 45%",
+      "group": "core",
+      "icon": "assets/icons/ICON_MOVE_SLOT.png"
+    },
+    {
+      "id": "held_thread",
+      "name": "Held Thread",
+      "kind": "ATK",
+      "power": 6,
+      "turns": 1,
+      "minStage": "Daemon",
+      "desc": "You have been standing on it the whole time - freezes 2 turns.",
+      "stats": "ATK 6 / FREEZE 2",
       "group": "core",
       "icon": "assets/icons/ICON_MOVE_SLOT.png"
     },
@@ -6868,6 +7042,30 @@ window.PEDIA_DATA = {
       "minStage": "Script",
       "desc": "You have used your quota - takes 10% of the target's max Health for the fight.",
       "stats": "ATK 9 / MAX HP 10%",
+      "group": "core",
+      "icon": "assets/icons/ICON_MOVE_SLOT.png"
+    },
+    {
+      "id": "snag_line",
+      "name": "Snag Line",
+      "kind": "ATK",
+      "power": 12,
+      "turns": 1,
+      "minStage": "Script",
+      "desc": "You brushed something that was already there - strips 35% of the target's armor.",
+      "stats": "ATK 12 / SIPHON DEF 35%",
+      "group": "core",
+      "icon": "assets/icons/ICON_MOVE_SLOT.png"
+    },
+    {
+      "id": "sheet_web",
+      "name": "Sheet Web",
+      "kind": "DEF",
+      "power": 42,
+      "turns": 1,
+      "minStage": "Daemon",
+      "desc": "It does not chase - braces 42; your next move waits 28% less.",
+      "stats": "DEF 42 / TEMPO 28%",
       "group": "core",
       "icon": "assets/icons/ICON_MOVE_SLOT.png"
     },
@@ -7191,9 +7389,9 @@ window.PEDIA_DATA = {
     {
       "key": "SUBS_ALL",
       "name": "Every Last Node",
-      "trigger": "Clear all 25 sub-areas of the 'net.",
+      "trigger": "Clear all 30 sub-areas of the 'net.",
       "icon": "assets/icons/ICON_ACH_SUBS_ALL.png",
-      "goal": 25
+      "goal": 30
     },
     {
       "key": "AREA_FIRST",
@@ -7205,9 +7403,9 @@ window.PEDIA_DATA = {
     {
       "key": "AREAS_ALL",
       "name": "Net Runner",
-      "trigger": "Beat the area boss of all 5 areas.",
+      "trigger": "Beat the area boss of all 6 areas.",
       "icon": "assets/icons/ICON_ACH_AREAS_ALL.png",
-      "goal": 5
+      "goal": 6
     },
     {
       "key": "MALBEAST_3",
@@ -7740,9 +7938,9 @@ window.PEDIA_DATA = {
     {
       "key": "TITLES_ALL",
       "name": "Fully Decorated",
-      "trigger": "Earn all 5 zone Titles.",
+      "trigger": "Earn all 6 zone Titles.",
       "icon": "assets/icons/ICON_ACH_TITLES_ALL.png",
-      "goal": 5
+      "goal": 6
     },
     {
       "key": "PEERS_1",
