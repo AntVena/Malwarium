@@ -408,6 +408,18 @@ constexpr int kDarkWebSector = kAreaCount + 1;
 // behind the shrine's own boss.
 inline constexpr const char* kDarkWebUnlockAreaId = "silk_lode";
 
+// The pet level both endless zones are FRAMED at: the level at which the tier-3 body
+// they roll is a fair fight with no stat points spent on it. Their budgets answer only
+// the pet's surplus over this, which is what makes them level-invariant — a level 45 and
+// a level 60 pet meet the same curve at the same depth, and the streak is the score.
+//
+// Measured rather than picked: a level 18 Script (what the Dive's Net-Sea unlock hands
+// it) wins its first fight against an unspent tier-3 roll about nine times in ten, which
+// is the same footing the ladder's own sub-area 0 puts it on. Spending a full level's
+// points ON TOP of that body is what made the zone unenterable for the pet it was opened
+// for; not spending them past this level is what would make it trivial for a Daemon.
+constexpr int kEndlessParLevel = 18;
+
 inline AreaLootTable areaWildLootTable(int areaIdx) {
     if (areaIdx == kDeepWebSector) return {kWildLootDeepWeb, kWildLootDeepWebCount};
     if (areaIdx == kDarkWebSector) return {kWildLootDarkWeb, kWildLootDarkWebCount};

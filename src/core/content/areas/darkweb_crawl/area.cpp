@@ -4,21 +4,23 @@
 
 namespace mal {
 
-// These are the DeepWeb Dive's own numbers from before it moved to Net-Sea and was
-// softened for the pet that arrives there. They are kept together here rather than
-// re-derived because they are MEASURED: the win-rate-by-build table on
-// deepweb_dive/area.cpp's rung pacing describes this curve, and the Crawl is where that
-// measurement still applies.
+// The level half is the dive's, so a pet meets one curve on both zones; what differs is
+// that there is no foothold and the linear depth term runs twice as fast. Both halves are
+// measured against the crawl's OWN population and its own scramble — see area.h.
 const int kDarkWebEnemyLevelOffset = 0;
 const int kDarkWebDepthLevelPerLog2 = 2;
 const int kDarkWebBudgetPct = 100;
-const int kDarkWebDepthPointsPerN = 8;
+const int kDarkWebDepthPointsPerN = 2;
 const int kDarkWebDepthBitsPctPerLog2 = 48;
 const int kDarkWebDepthBitsMaxPct = 768;
 
-// Every 16 wins deep. Deliberately slower than the radio: a handshake is one capture and
-// this is sixteen fights with no override, so the Crawl never devalues the aerial — it
-// just means a player without one is not locked out of the Cant forever.
+// Every 16 wins deep, which is one past the MEDIAN run: over 2000 measured crawls a
+// ladder-cleared pet reaches depth 14 (mean 18.6, p90 41), so a sigil costs a
+// better-than-median run rather than being handed out for showing up. That works out at
+// 0.73 sigils a run and about 35 runs for the whole 26-letter Cant — a campaign, next to
+// the radio's one capture per handshake, which is the balance this door is meant to keep:
+// a player with no network in range is not locked out of the Cant, and one with an aerial
+// is never made to farm here instead.
 const int kDarkWebSigilEveryN = 16;
 
 const char* const kDarkWebIcon = "ICON_SECTOR_DARKWEB_CRAWL";

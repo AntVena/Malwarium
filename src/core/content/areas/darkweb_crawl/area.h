@@ -1,10 +1,8 @@
 // darkweb_crawl/area.h — the DARKWEB CRAWL's endless-scaling constants.
 //
 // The second endless zone, and the terminal one. It is reached through the portal at THE
-// SILK LODE's ZERO DAY SHRINE, and it is what the DeepWeb Dive used to be: the Dive now
-// opens at Net-Sea Crossing and is tuned as the mid-game farm (deepweb_dive/area.h), so
-// the numbers below are the ones the Dive was measured at before that — no foothold, and
-// a full level's worth of stat points on every enemy.
+// SILK LODE's ZERO DAY SHRINE. The Dive opens at Net-Sea Crossing and is tuned as the
+// mid-game farm (deepweb_dive/area.h); this is where the map ends.
 //
 // You DIVE the deep web, because down is the only direction it has. You CRAWL the dark
 // web, because you are on a thread and a crawler is what walks one.
@@ -29,9 +27,27 @@ extern const int kDarkWebEnemyLevelOffset;
 // the terminal zone, it is a second farm.
 extern const int kDarkWebDepthLevelPerLog2;
 
-// The random stat spread, as a percentage of effective level, and the linear term that
-// eventually ends a run. 100 is the point: a Crawl enemy spends a FULL level's worth of
-// points, on top of its tier-3 body and the wild challenge buff.
+// The random stat spread, as a percentage of the pet's SURPLUS over kEndlessParLevel
+// (area_defs.h, the frame both endless zones roll their tier-3 body against), and the
+// linear depth term that ends a run. The crawl's harshness is not in these — they are the
+// dive's own — it is in having no foothold and in spending the linear term twice as fast.
+//
+// Measured the way the dive's table is, over the five lines with the picker SCRAMBLED and
+// no sigils, which is what the zone actually hands a player:
+//
+//   run length from depth 0        5    10    20    40    60    80
+//   Daemon lv45   even            81%   55%   22%    8%    4%    0%
+//   Daemon lv60   even            82%   61%   31%   11%    3%    0%
+//   Daemon lv60   all-Defence     12%    6%    1%    0%    0%    0%
+//   Daemon lv60   Power-heavy     86%   66%   34%   16%    6%    3%
+//
+// ...against the dive's 100% / 100% / 100% / 96% for the same lv60 pet: the crawl is
+// harsher at every depth and its median run is roughly a third of the dive's reach.
+//
+// WHAT THE SCRAMBLE IS WORTH, since the zone's whole claim is that fluency is power. The
+// same lv60 even build with a READABLE picker runs 89% / 75% / 46% / 10% — so knowing the
+// Cant is worth about half again as much depth, and rather more than that to a build that
+// lives on forcing one big hit (the Power-heavy row goes 34% -> 66% at twenty).
 extern const int kDarkWebBudgetPct;
 extern const int kDarkWebDepthPointsPerN;
 

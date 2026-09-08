@@ -534,6 +534,14 @@ const MoveDef kMoves[] = {
     // The area's THREAT (AreaDef::apexThreatMoveId), answered by Crib Sheet in its own
     // loot table. Power is modest on purpose: what it costs the player is the picker, and
     // a rider that also hit hard would be paid for twice.
+    //
+    // THREE TURNS is the median number of player turns LEFT once it lands. Measured over
+    // 2000 fights against the boss that carries it: the rider connects in 31% of them, on
+    // player turn 2 (p75 turn 3), of a fight that runs 4 player turns (p75 6) — leaving a
+    // median of 3. So it covers the rest of a median fight and no more. Longer and it is
+    // the whole fight, which is what the DARKWEB CRAWL's permanent scramble is for and
+    // should not be a move; shorter and the one Exploit a battle allows is simply spent
+    // after it lifts.
     severRow("c2_hijack", "C2 Hijack", 8,
              "Takes the channel you give orders on - your override reads in a hand you "
              "did not write for {scramble} turns.",

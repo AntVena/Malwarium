@@ -1273,6 +1273,10 @@ void test_darkweb_crawl() {
         CHECK(d.level == 20);                       // still inside the dive's foothold...
         CHECK(c.level > 20);                        // ...and the crawl never had one
         CHECK(wildWinXp(kWildWinXpReward, c.level, 20) > kWildWinXpReward);
+        // ...and its kit is held to the same ceiling every other fighter is: two picks
+        // from the dive's deep pool plus the zone's own pair. An enemy carrying the whole
+        // pool would be answering the Cant with move count, which is not what it costs.
+        CHECK(static_cast<int>(c.moveIds.size()) == kMaxMoveSlots);
     }
     // (2) Unlock: CLEARING the area whose shrine holds the portal, and not one rung less.
     //     Keyed by id, so a spliced area cannot slide the gate onto its neighbour.
@@ -1344,7 +1348,8 @@ void test_deepweb_dive() {
         int sawPower = 0, sawDef = 0, sawSpeed = 0, sawHealth = 0;
         for (uint32_t seed = 1; seed <= 40; ++seed) {
             CombatEnemy e = wildMalbeast(3, 0);
-            applyDeepWebScale(e, 12, 0, seed);        // budget = 12 (depth 0, no linear)
+            // budget = 12: the pet's SURPLUS over kEndlessParLevel, at depth 0.
+            applyDeepWebScale(e, kEndlessParLevel + 12, 0, seed);
             const int pPts = (e.powerMultPct - base.powerMultPct) / kLevelPowerPctPerPoint;
             const int sPts = (e.speed - base.speed) / kLevelSpeedPerPoint;
             const int hPts = (e.maxHealth - base.maxHealth) / kDeepWebHealthPerLevel;
@@ -1360,6 +1365,22 @@ void test_deepweb_dive() {
         // wearing a new shape, and one that never rolls Defence is a claim the dive makes
         // to the player that it doesn't keep.
         CHECK(sawPower > 0 && sawDef > 0 && sawSpeed > 0 && sawHealth > 0);
+    }
+    // (1a2) PAR: the budget answers the pet's surplus over kEndlessParLevel and nothing
+    //       below it, which is what stops the arriving pet meeting an endgame body with a
+    //       full level of points on top of it. At or under par, depth 0 is the bare roll.
+    {
+        const CombatEnemy base = wildMalbeast(3, 0);
+        for (int lv : {0, kEndlessParLevel / 2, kEndlessParLevel}) {
+            CombatEnemy e = wildMalbeast(3, 0);
+            applyDeepWebScale(e, lv, 0, 99u);
+            CHECK(e.maxHealth == base.maxHealth && e.powerMultPct == base.powerMultPct);
+            CHECK(e.speed == base.speed && e.dmgReducePct == base.dmgReducePct);
+        }
+        CombatEnemy over = wildMalbeast(3, 0);
+        applyDeepWebScale(over, kEndlessParLevel + 20, 0, 99u);
+        CHECK(over.maxHealth + over.powerMultPct + over.speed + over.dmgReducePct >
+              base.maxHealth + base.powerMultPct + base.speed + base.dmgReducePct);
     }
     // (1b) Same seed, same enemy — the dive rolls like every other roll in the engine.
     {
@@ -1404,6 +1425,14 @@ void test_deepweb_dive() {
         applyDeepWebScale(eF, 10, kDeepWebRampFreeDepth);
         CHECK(eF.level == 10);
         CHECK(wildWinXp(kWildWinXpReward, eF.level, 10) == kWildWinXpReward);
+        // ...and the same fight in its STATS too, not only in its level: the linear
+        // points term rides rampDepth like everything else, so the foothold covers the
+        // whole ramp rather than quietly spending points inside it.
+        CombatEnemy e0 = wildMalbeast(3, 0), eEdge = wildMalbeast(3, 0);
+        applyDeepWebScale(e0, kEndlessParLevel + 20, 0, 4242u);
+        applyDeepWebScale(eEdge, kEndlessParLevel + 20, kDeepWebRampFreeDepth, 4242u);
+        CHECK(e0.maxHealth == eEdge.maxHealth && e0.powerMultPct == eEdge.powerMultPct);
+        CHECK(e0.speed == eEdge.speed && e0.dmgReducePct == eEdge.dmgReducePct);
         // ...and one win past it the ramp is running again, on rampDepth rather than on
         // raw depth: depth = free + 7 means floorLog2(7 - 0 + 1) = 3.
         CombatEnemy e3 = wildMalbeast(3, 0);

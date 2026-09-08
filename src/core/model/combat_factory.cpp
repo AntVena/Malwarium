@@ -446,17 +446,20 @@ void applyDarkWebScale(CombatEnemy& e, int petLevel, int depth, uint32_t roll) {
     const int effLevel = petLevel + kDarkWebDepthLevelPerLog2 * floorLog2(depth + 1);
     e.level = effLevel + kDarkWebEnemyLevelOffset;
     e.hasLevel = true;
-    const int budget = effLevel * kDarkWebBudgetPct / 100 + depth / kDarkWebDepthPointsPerN;
+    const int surplus = effLevel > kEndlessParLevel ? effLevel - kEndlessParLevel : 0;
+    const int budget = surplus * kDarkWebBudgetPct / 100 + depth / kDarkWebDepthPointsPerN;
     int points[kLevelStatCount] = {0, 0, 0, 0};
     for (int i = 0; i < budget; ++i) {
         roll = roll * 1664525u + 1013904223u;
         ++points[(roll >> 16) % kLevelStatCount];
     }
     spendStatBudget(e, points);
-    // The kit is the dive's deep pool outright — every move the ladder's bosses teach,
-    // handed back. There is no rung ladder here because there is no shallow end: the
-    // crawl's difficulty axis is what the player can READ, not what the enemy knows.
-    e.moveIds.assign(kDeepWebMovesBoss, kDeepWebMovesBoss + kDeepWebMovesBossCount);
+    // The kit is the dive's deep pool, drawn the way the deep dive draws it: TWO picks,
+    // plus the pair, which is kMaxMoveSlots and the same ceiling every other fighter on
+    // the device is built to. There is no rung ladder because there is no shallow end —
+    // the crawl's difficulty axis is what the player can READ, not what the enemy knows,
+    // and an enemy holding the whole pool would be answering that with move count.
+    e.moveIds = deepWebMoveIds(kDeepWebBossMoveDepth, roll);
     e.moveIds.push_back(kDeepWebWildAttackMoveId);
     e.moveIds.push_back(kDeepWebWildDefendMoveId);
 }
@@ -484,19 +487,22 @@ void applyDeepWebScale(CombatEnemy& e, int petLevel, int depth, uint32_t roll) {
     // A BUDGET OF POINTS, SPENT AT RANDOM — the same shape a pet's own growth takes (one
     // point per level into one of four stats, game_combat.cpp's addCombatXp), so a dive
     // enemy is a peer built the way the player was built rather than a second curve to
-    // reason about. Health used to be the only thing depth moved, which is why a deep
-    // enemy was a bigger bag of the same harmless swings: the fix is that Power is now in
-    // the same hat as Health.
+    // reason about. Per-point rather than a fixed split, so a shallow dive throws real
+    // variety — a glass cannon, a wall, a blur — and a deep one evens out as the count
+    // grows.
     //
-    // The spread is per-point rather than a fixed split, so a shallow dive throws real
-    // variety — a glass cannon, a wall, a blur — while a deep one evens out on its own as
-    // the count grows. Nothing has to special-case that; it is just what many rolls do.
-    //
-    // The budget OUTGROWS the pet on purpose. effLevel's depth half is logarithmic and
-    // flattens, so on its own it converges to a fair fight that a good build wins forever.
-    // The linear term below is what makes the zone endless in the honest sense: dive far
-    // enough and the arithmetic beats you. The streak is the score.
-    const int budget = effLevel * kDeepWebBudgetPct / 100 + depth / kDeepWebDepthPointsPerN;
+    // The LEVEL half answers only the pet's surplus over the level the zone is framed at.
+    // Spending against the whole level made the arriving pet fight an endgame body with a
+    // full level of points on top of it AND left the maxed pet fighting that same body
+    // with a budget its own stage growth had long outrun — one number producing both
+    // failures at opposite ends. A peer is whatever the pet has that the frame does not.
+    const int surplus = effLevel > kEndlessParLevel ? effLevel - kEndlessParLevel : 0;
+    // The DEPTH half is what makes the zone endless in the honest sense: effLevel's own
+    // depth term is logarithmic and flattens into a fair fight a good build wins forever,
+    // and this one does not. It rides rampDepth rather than raw depth so the foothold
+    // covers the whole ramp — inside it a dive is the same fight at every depth.
+    const int budget = surplus * kDeepWebBudgetPct / 100 +
+                       rampDepth / kDeepWebDepthPointsPerN;
     int points[kLevelStatCount] = {0, 0, 0, 0};
     for (int i = 0; i < budget; ++i) {
         roll = roll * 1664525u + 1013904223u;

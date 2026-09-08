@@ -6,13 +6,12 @@ namespace mal {
 
 const int kDeepWebEnemyLevelOffset = 0;
 const int kDeepWebHealthPerLevel = 6;
-const int kDeepWebSpeedPerNLevels = 6;
 const int kDeepWebDepthLevelPerLog2 = 2;
 const int kDeepWebRampFreeDepth = 16;
-const int kDeepWebBudgetPct = 75;
+const int kDeepWebBudgetPct = 100;
 const int kDeepWebDepthBitsPctPerLog2 = 32;
 const int kDeepWebDepthBitsMaxPct = 512;
-const int kDeepWebDepthPointsPerN = 8;
+const int kDeepWebDepthPointsPerN = 1;
 const int kDeepWebBossMoveDepth = 256;
 const int kDeepWebModTier = 5;
 
@@ -57,24 +56,24 @@ const char* const* const kDeepWebMoveRungs[] = {
 // The depth each rung opens at. Rung 0 from the first dive; the rest spaced so a run has
 // room to settle into one answer before the next thing it doesn't answer shows up.
 //
-// What this pacing buys, measured at pet level 60 over 80 seeded fights per depth —
-// win rate by build, which is the shape the zone is FOR:
+// What this pacing buys, measured at pet level 60 over 400 seeded fights a cell (five
+// lines, 80 seeds each) — per-fight win rate by build, which is the shape the zone is FOR:
 //
 //            depth      0    32    64   128   256   700  1200  2400
-//   all-Defence        10%    0%    0%    0%    0%    0%    0%    0%
-//   even spread        77%   21%    5%    0%    0%    0%    0%    0%
-//   spread + boss kit 100%  100%   62%   50%   33%   12%    3%    0%
+//   all-Defence        82%   43%   17%   15%   15%   15%   13%   14%
+//   even spread       100%   99%   48%   17%   16%   14%   12%   11%
+//   spread + boss kit 100%  100%   68%   18%    4%    0%    0%    0%
 //
-// Two things that had to be true are: the turtle is the WORST of the three rather than
-// the best, and the loadout is worth roughly twenty times more depth than the stat spread
-// is. Every column ends at zero, which is the zone keeping its promise.
+// Two things that had to be true: the turtle is the WORST of the three rather than the
+// best, and the LOADOUT outweighs the stat spread — which is what the rung pacing below
+// is justified by, since a rung is a thing to answer with a move.
 //
-// NB: those absolutes predate the foothold and the budget percentage (area.h), which
-// moved the shallow end of the curve a long way up and left the deep end roughly where it
-// was — so read the table for the ORDERING it establishes (which is what the rung pacing
-// below is justified by, and is unchanged) and not for the numbers. The re-measurement
-// that came with those two constants is on them, and it measures a different question:
-// whether an arriving pet survives its first dives, rather than which build wins.
+// The floor the first two rows settle on is one line's passive and not the curve: a Worm
+// replica eats a hit WHOLE (Combat's replication branch), so it is a count of hits and not
+// a quantity of mitigation, and an arithmetic ramp cannot outgrow a count. The third row
+// spends its slots on the boss kit instead of the line's own replication moves, which is
+// why only it ends at zero. A RUN still ends everywhere — surviving 160 straight fights at
+// those rates is zero to three digits in every column.
 const int kDeepWebMoveRungDepths[] = {0, 12, 40, 100, 180};
 const int kDeepWebMoveRungCounts[] = {
     arrLen(kDeepWebMovesR0), arrLen(kDeepWebMovesR1), arrLen(kDeepWebMovesR2),

@@ -976,16 +976,18 @@ int wildWinXp(int baseXp, int enemyLevel, int petLevel);
 
 // The DEEPWEB DIVE endless-zone scaler: takes an endgame (tier-3) wild `e` and scales it to
 // the PET's level, stamping `e.level = petLevel + kDeepWebEnemyLevelOffset` (parity at
-// depth 0, so wildWinXp pays full base XP) and thickening Health/speed per pet level so the
-// fight tracks the pet's growth. `depth` is the dive's win-streak, adding
-// `floorLog2(depth+1) * kDeepWebDepthLevelPerLog2` effective levels before those scales —
-// a fast early ramp that flattens, so a deep streak never runs away. Mutates `e`;
-// `petLevel`/`depth` clamp at 0. `roll` is caller-owned (the shared Game LCG).
+// depth 0, so wildWinXp pays full base XP). The stat points it then spends answer only the
+// pet's SURPLUS over kEndlessParLevel, so the same body is a fair fight at the level the
+// zone opens at and a peer past it. `depth` is the dive's win-streak, adding
+// `floorLog2(depth+1) * kDeepWebDepthLevelPerLog2` effective levels — a fast early ramp
+// that flattens, so a deep streak never runs away — plus a linear point term that does not.
+// Both depth halves wait out kDeepWebRampFreeDepth. Mutates `e`; `petLevel`/`depth` clamp
+// at 0. `roll` is caller-owned (the shared Game LCG).
 // The DARKWEB CRAWL's scaler — the terminal zone's half of what applyDeepWebScale does
-// for the dive, on its own constants (darkweb_crawl/area.h): no foothold, and a full
-// level's worth of stat points. Kept as its own function rather than a flag on the dive's
-// because the two zones are tuned against different players, and one function reading two
-// constant sets by a bool is how they drift into each other.
+// for the dive, on its own constants (darkweb_crawl/area.h): no foothold, twice the linear
+// depth term, and the deep pool for a kit. Kept as its own function rather than a flag on
+// the dive's because the two zones are tuned against different players, and one function
+// reading two constant sets by a bool is how they drift into each other.
 void applyDarkWebScale(CombatEnemy& e, int petLevel, int depth = 0, uint32_t roll = 0);
 
 void applyDeepWebScale(CombatEnemy& e, int petLevel, int depth = 0, uint32_t roll = 0);

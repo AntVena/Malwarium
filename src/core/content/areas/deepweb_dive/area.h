@@ -1,21 +1,20 @@
 // deepweb_dive/area.h — the DEEPWEB DIVE's endless-scaling constants.
 //
-// The dive is the always-last EXPL row, unlocked once every real area is cleared:
-// an endless, level-scaling terminal zone built off the tier-3 roster, then
-// thickened per pet level so it never trivialises no matter how strong the pet
-// gets. These constants are isolated here (rather than tunables.h) since nothing
-// outside the dive reads them — the endgame grind rate can be tuned without
-// touching normal explore.
+// The dive is an endless zone built off the tier-3 roster, opened by REACHING Net-Sea
+// Crossing (kDeepWebUnlockAreaId) and tuned as the mid-game farm — the DARKWEB CRAWL is
+// the terminal one. These constants are isolated here rather than in tunables.h since
+// nothing outside the dive reads them.
 #pragma once
 
 namespace mal {
 
-// Enemy level = petLevel + this (0 = parity, so wildWinXp pays full base XP at
-// depth 0). Health/speed then thicken per pet level so the fight tracks the pet's
-// own stat growth instead of trivialising as it levels.
+// Enemy level = petLevel + this (0 = parity, so wildWinXp pays full base XP at depth 0).
+// What thickens the body is the stat budget below, not the level.
 extern const int kDeepWebEnemyLevelOffset;
-extern const int kDeepWebHealthPerLevel;    // +Health per pet level
-extern const int kDeepWebSpeedPerNLevels;   // +1 enemy speed every N pet levels
+// What one Health point of that budget is worth. The other three stats are bought at the
+// pet's own per-point rates (kLevelPowerPctPerPoint and friends), so an endless-zone enemy
+// is a peer built the way the player was built; Health is the one the zone prices itself.
+extern const int kDeepWebHealthPerLevel;
 
 // Depth ramp (the dive's win-streak): without this a dive sits at flat pet-level
 // parity forever. floorLog2(depth+1) turns the streak into a bonus "effective
@@ -27,37 +26,37 @@ extern const int kDeepWebSpeedPerNLevels;   // +1 enemy speed every N pet levels
 // +6*kDeepWebDepthLevelPerLog2.
 extern const int kDeepWebDepthLevelPerLog2;
 
-// How many wins a dive gets BEFORE the depth ramp above starts biting. The dive opens
-// from NET-SEA CROSSING rather than from a cleared ladder, so an arriving pet is a
-// Script with three move slots rather than a Daemon with a full kit — and the log curve
-// is at its STEEPEST early, which is exactly the wrong shape for that. This is the flat
-// stretch that gives a shallow dive somewhere to stand.
-//
-// Measured with the constant below, over the five lines (60 seeds each, line kits only,
-// no mods) — a RUN from depth 0, since one loss ends a dive and a per-fight rate hides
-// what that compounds to. The arriving pet is the case being fixed:
-//
-//   run length from depth 0        5    10    20    40
-//   Script lv18   before          44%   12%    0%    0%
-//   Script lv18   after           85%   74%   19%    0%
-//   Daemon lv60   before          98%   97%   91%   72%
-//   Daemon lv60   after          100%  100%   99%   99%
-//
-// 300 runs a cell (five lines x 60 seeds), so a couple of points either way is sampling
-// noise and not a curve — read the shape, not the third digit.
-//
-// So an arriving pet now clears its first ten fights more often than not, is still
-// finished well before depth 40, and per-fight win rate at pet level 60 still falls to
-// ~22% by depth 1000 — the zone ends the way it always did. The endgame column going
-// flat is the cost, and it is deliberate: the dive stops being the terminal zone once it
-// opens this early, and being an unthreatening farm is the job it is left with.
+// How many wins a dive gets BEFORE the depth ramp starts biting. The dive opens from
+// NET-SEA CROSSING rather than from a cleared ladder, so an arriving pet is a Script with
+// three move slots — and the log curve is at its steepest early, which is the wrong shape
+// for that. This is the flat stretch that gives a shallow dive somewhere to stand. BOTH
+// depth terms wait it out (the log level bonus and the linear points term alike), so
+// inside it every dive is the same fight.
 extern const int kDeepWebRampFreeDepth;
 
-// The enemy's random stat spread as a PERCENTAGE of its effective level. A dive enemy
-// already brings a tier-3 body and the wild challenge buff on top of its points, so
-// spending a full level's worth of them made it a peer PLUS two advantages. Under 100 is
-// what makes a shallow dive a fight the arriving pet is favoured in; the depth term
-// beside it is untouched, so the zone still ends the way it always did.
+// The enemy's random stat spread as a PERCENTAGE of the pet's SURPLUS over
+// kEndlessParLevel (area_defs.h) — not of its whole level. Spending against the whole
+// level is what produced both of the zone's failures at once: the arriving pet met an
+// endgame body with a full level of points on top of it, and the maxed pet met the same
+// body with a budget its own stage growth had long outrun. The surplus is what a peer is.
+//
+// Measured over the five lines, 60 seeds each, line kits only, no mods, the A+C Exploit
+// spent on the pet's best attack. A RUN from depth 0, since one loss ends a dive and a
+// per-fight rate hides what that compounds to:
+//
+//   run length from depth 0        5    10    20    40    60    80
+//   Script lv18   even            92%   84%   31%    0%    0%    0%
+//   Script lv30   even            85%   74%   26%    0%    0%    0%
+//   Daemon lv45   even           100%  100%  100%   87%    5%    1%
+//   Daemon lv60   even           100%  100%  100%   96%   10%    2%
+//   Daemon lv60   all-Defence     59%   45%   30%   17%    3%    0%
+//   Daemon lv60   Power-heavy    100%  100%  100%   94%   12%    3%
+//
+// 300 runs a cell, so read the shape and not the third digit. The three properties this
+// is tuned to hold: an arriving pet clears its first ten dives more often than not and is
+// finished well before depth 40; a maxed pet has a failure point that is deep and
+// REACHABLE rather than theoretical; and past par the curve is level-INVARIANT — lv45 and
+// lv60 meet the same fight at the same depth, which is what makes the streak the score.
 extern const int kDeepWebBudgetPct;
 
 // Depth ramp, Bits half: wildWinXp already turns the depth-driven level bonus
@@ -70,9 +69,11 @@ extern const int kDeepWebDepthBitsPctPerLog2;
 extern const int kDeepWebDepthBitsMaxPct;  // cap the bonus (endless-zone guard)
 
 // Depth ramp, STAT half: one extra stat point in the dive's random spread
-// (applyDeepWebScale) per this many depth. LINEAR, unlike everything above it, and that
-// is the whole job — the logarithmic ramp flattens into a fair fight a good build wins
-// forever, so this is the term that eventually ends a run. Bigger = a gentler dive.
+// (applyDeepWebScale) per this many depth PAST the foothold. LINEAR, unlike everything
+// above it, and that is the whole job — the logarithmic ramp flattens into a fair fight a
+// good build wins forever, so this is the term that ends a run, and the only one that
+// does now that the level half answers the surplus rather than the level. Bigger = a
+// gentler dive.
 extern const int kDeepWebDepthPointsPerN;
 
 // What a dive enemy KNOWS, by depth. The dive is the only zone whose kit is drawn rather
