@@ -28,6 +28,7 @@ enum class SceneId : uint8_t {
     CitrusCircuit,
     PirateBayou,
     CastleRapidscare,
+    SilkLode,
     // Prize backdrops, which no area names — the half of the roster that is the reason
     // an id cannot hang off AreaDef.
     GridHorizon,

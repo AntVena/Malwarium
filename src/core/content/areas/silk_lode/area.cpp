@@ -55,7 +55,7 @@ const AreaDef kAreaSilkLode = {
     /*badge=*/"SILK",
     "THREADCUTTER",
     "ICON_SECTOR_SILK_LODE",
-    SceneId::None,   // the lode's backdrop is not authored yet
+    SceneId::SilkLode,
     {"DEADLINK STAIR", "BOTNET FUNNEL", "BITROT FISSURE", "ZOMBIE GULLET",
      "ZERO DAY SHRINE"},
     // Two of them arrive as more than one malbeast: a cult is a congregation, and a

@@ -86,6 +86,8 @@ inline constexpr BackgroundDef kBackgrounds[] = {
      BackgroundSource::Clear},
     {SceneId::CastleRapidscare, 9, "CASTLE RAPIDSCARE", "CLEAR CASTLE RAPIDSCARE",
      BackgroundSource::Clear},
+    {SceneId::SilkLode, 16, "THE SILK LODE", "CLEAR THE SILK LODE",
+     BackgroundSource::Clear},
 
     // The arena's two, on a rung each: the first bracket taken pays one and the second
     // pays the other, so a second win is worth something the first already gave.
