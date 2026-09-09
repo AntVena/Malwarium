@@ -5,8 +5,9 @@
 //
 // The list is SIX rows, which is exactly the viewport (kVisibleRows), so it never
 // scrolls. Settings that belong to one another are reached through a GROUP screen
-// rather than as list peers: DISPLAY holds UI MODE + BRIGHTNESS, RADIO holds the
-// three radio toggles (AUDIT / LINK / PEDIA AP) plus the one line that says which
+// rather than as list peers: DEVICE holds what the device looks like and whether it
+// is running at all, RADIO holds the three radio toggles (AUDIT / LINK / PEDIA AP)
+// plus the one line that says which
 // of them the arbiter has actually granted the radio. A group is not a fourth nav
 // level — like the UPDATES screen's check/confirm/progress faces, it is another
 // CfgScreen inside the same Nav::Detail, and its children return to it.
@@ -50,9 +51,9 @@ struct CfgRow {
 // the row count and points `out` at the static array.
 int cfgRows(const CfgRow*& out);
 
-// The rows of a group screen — Device (UI MODE, BRIGHTNESS, TRAVEL MODE) or Radio
-// (PEDIA AP, LINK, AUDIT). Any other screen has none, so a caller can ask "is this a
-// group?" by testing the count. Returns the count, points `out` at the static array.
+// The rows of a group screen — Device (UI MODE, BRIGHTNESS, THEME, BACKGROUND, TRAVEL
+// MODE) or Radio (PEDIA AP, LINK, AUDIT). Any other screen has none, so a caller can ask
+// "is this a group?" by testing the count. Returns the count, points `out` at the array.
 int cfgGroupRows(CfgScreen group, const CfgRow*& out);
 
 // The group screen a child returns to on C (or after applying), or the child's
@@ -71,13 +72,31 @@ const char* uiModeName(UiMode m);
 void drawCfgList(Framebuffer& fb, int cursor, const char* hackerTag,
                  const char* equippedTitle, RadioOwner radioOwner);
 
-// L3 DEVICE group: the two presentation settings, each previewing its live value,
-// plus TRAVEL MODE. B opens the focused row, C backs to the list. Travel draws no
-// value preview — the other two are settings that are always at some level, and it
-// is an action with no state to report, which the empty value column says without a
-// word of copy.
+// L3 DEVICE group: the presentation settings, each previewing its live value, plus
+// TRAVEL MODE. B opens the focused row, C backs to the list. Travel draws no value
+// preview — the others are settings that are always at some level, and it is an action
+// with no state to report, which the empty value column says without a word of copy.
 void drawCfgDevice(Framebuffer& fb, int cursor, UiMode uiMode, int brightness,
-                   const char* background);
+                   const char* theme, const char* background);
+
+// L3 THEME picker: which PAL_CORE colour set the whole interface is drawn in. Rows are
+// content_themes.h's table in its own order; `pick` is the focused row, `equipped` the
+// applied one, and `unlockedMask` bit i whether row i has been earned. B applies, C
+// backs out.
+//
+// Each row paints a strip of SWATCHES in the set it is offering — paper, ink, accent and
+// the calm/warn/hot ladder, read out of that theme rather than the live one
+// (palColorIn). A theme is a thing you can only judge by looking at it, and a list of
+// names would make choosing one a matter of applying each in turn. Every row still says
+// its name and tags the applied one ACTIVE (a locked one LOCKED), so the screen reads
+// with the colour taken away — which is the only reason a wall of swatches is allowed
+// on it.
+//
+// A locked row is drawn dim and still drawn IN ITS OWN COLOURS, unlike a locked Title
+// or background: what it is, is what you are being shown, and greying the swatches out
+// would leave the row saying nothing at all. A walks onto it (the line under the header
+// says where it comes from) and B refuses.
+void drawThemePicker(Framebuffer& fb, int pick, int equipped, uint32_t unlockedMask);
 
 // L3 BACKGROUND picker: the place the pet stands in (core/render/scenes.h).
 //

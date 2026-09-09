@@ -62,8 +62,8 @@ struct BackgroundDef {
 };
 
 // Listed in the order an operator is likely to meet them: the two they start with, the
-// four a raised creature brings, the three an area pays out, the arena's two, then the
-// four an achievement does.
+// four a raised creature brings, the four an area pays out, the arena's two, then the
+// seven an achievement does.
 inline constexpr BackgroundDef kBackgrounds[] = {
     {SceneId::ServerYard, 1, "THE YARD", "YOURS FROM THE START",
      BackgroundSource::Start},
@@ -113,6 +113,17 @@ inline constexpr BackgroundDef kBackgrounds[] = {
      BackgroundSource::Achieve, /*rung=*/0, "NETS_100"},
     {SceneId::TraceCity, 15, "TRACE CITY", "WALK A MARATHON",
      BackgroundSource::Achieve, /*rung=*/0, "STEPS_100K"},
+
+    // The synthwave set, on the same footing as the four above: a ladder each, and none
+    // of them behind the radio, which is a consent and not a difficulty.
+    {SceneId::NeonSubnet, 17, "NEON SUBNET", "HAUNT THE ARCADE",
+     BackgroundSource::Achieve, /*rung=*/0, "ARCADE_100"},
+    {SceneId::PaywallRidge, 18, "PAYWALL RIDGE", "ESCALATE YOUR PRIVILEGES",
+     BackgroundSource::Achieve, /*rung=*/0, "BOSS_25"},
+    // The deepest of the four to earn, for the place that is furthest in: the shrine
+    // this draws is where the crawl's portal stands, and getting to it means the map.
+    {SceneId::ZeroDayShrine, 19, "ZERO DAY SHRINE", "RUN THE WHOLE NET",
+     BackgroundSource::Achieve, /*rung=*/0, "AREAS_ALL"},
 };
 inline constexpr int kBackgroundCount =
     sizeof(kBackgrounds) / sizeof(kBackgrounds[0]);

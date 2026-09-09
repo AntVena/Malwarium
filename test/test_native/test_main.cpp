@@ -167,6 +167,16 @@ int g_failures = 0;
     RUN(test_cfg_factory_reset_hold)        \
     RUN(test_cfg_factory_reset_scopes_differ) \
     RUN(test_cfg_screens_grayscale)         \
+    /* PAL_CORE themes (the CFG row + every set the table holds) */ \
+    RUN(test_theme_invariants)              \
+    RUN(test_theme_table_covers_the_palette) \
+    RUN(test_cfg_theme_picker_applies)      \
+    RUN(test_cfg_theme_picker_refuses_a_locked_set) \
+    RUN(test_theme_chip_unlocks_its_set)    \
+    RUN(test_theme_chips_drop_then_leave_the_pool) \
+    RUN(test_theme_persists_by_name)        \
+    RUN(test_theme_load_falls_back_when_locked) \
+    RUN(test_theme_picker_previews_each_set) \
     /* ARCH submenu */                      \
     RUN(test_arch_list_and_record)          \
     /* MODS submenu */                      \

@@ -2,6 +2,7 @@
 
 #include "core/render/canvas.h"
 #include "core/render/framebuffer.h"
+#include "core/render/palette.h"
 
 namespace mal {
 
@@ -79,6 +80,9 @@ constexpr uint8_t kSpeckles[] = {7, 19, 33, 41, 58, 66, 79, 91, 103, 118,
 }  // namespace
 
 void drawStrataBurrowScene(Framebuffer& fb, int beat, const SceneGround& g) {
+    // Cleared first like every other place: a column this leaves unpainted is black,
+    // which is invisible on a dark set and a hole in the picture on a light one.
+    fb.clear(palColor(Pal::PAPER));
     // The layers, stacked down from the top of the frame. Each takes its share of the
     // whole ground column, so the section holds its proportions at either floor.
     const int beds = static_cast<int>(sizeof(kBedding) / sizeof(kBedding[0]));

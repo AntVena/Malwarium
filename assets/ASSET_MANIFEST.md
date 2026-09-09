@@ -664,6 +664,14 @@ blank — that is the prompt to draw one, and `check_orphan_assets.py` catches t
   chevron — because a commendation cache is earned rather than found. It reads as a different KIND
   of container, not a higher tier. (A crowned "major" variant is parked in `_attic/`; `commend_cache`
   is a single item row, so there is no second tier for it to mark yet.)
+- **The palette chips are one body and six marks.** `ICON_ITEM_{PHOSPHOR_TUBE, AMBER_TUBE,
+  SUNSET_ROM, POCKET_LCD, DAYLIGHT_FILTER, REDSHIFT_LENS}` are the same DIP package with a
+  different shape cut into the lid, on the same argument the USB port's set is drawn from: every
+  one of them does the identical thing (carries a colour set — `content_themes.h`), so the shelf
+  has to say "another of those, and not the one you have". The marks are countable or geometric —
+  one bar, two bars, a disc over a horizon, a ring, a split field, a chevron — rather than six
+  attempts at painting a theme in a 8×12 window, which at this size would be six smudges. Recipes
+  live with the pantry's in `tools/gen_item_icons.py`.
 - **The pantry was drawn as one batch.** The staple ingredients (`content_items.cpp`'s STAPLE
   INGREDIENTS block) plus the two dishes cooked from them are one coherent 20×20 food set, so the
   shelf reads as a pantry rather than twenty unrelated glyphs. Three are legible AS PAIRS: Fresh
@@ -803,7 +811,7 @@ own rows from the same `CfgRow` shape and reuses the glyphs below, so grouping n
 |---|---|---|---|---|---|
 | `ICON_CFG_SYSINFO` | System Info row glyph | 20×20 | the RADIO group's AUDIT row names it in `cfgGroupRows`, but nothing draws it — see the note under this table | ☑ | `/assets/icons/ICON_CFG_SYSINFO.png` |
 | `ICON_CFG_TAG` | HackerTag row glyph | 20×20 | | ☑ | `/assets/icons/ICON_CFG_TAG.png` |
-| `ICON_CFG_UIMODE` | UI Mode row glyph | 20×20 | also the DEVICE group row + BRIGHTNESS | ☑ | `/assets/icons/ICON_CFG_UIMODE.png` |
+| `ICON_CFG_UIMODE` | UI Mode row glyph | 20×20 | also the DEVICE group row, BRIGHTNESS + THEME | ☑ | `/assets/icons/ICON_CFG_UIMODE.png` |
 | `ICON_CFG_TITLE` | TITLE row glyph (zone-Title picker) | 20×20 | v1 stopgap home for zone Titles; moves to Hacker HUD later | ☑ | `/assets/icons/ICON_CFG_TITLE.png` |
 | `ICON_CFG_RADIO` | RADIO group row glyph | 20×20 | the four radio consents under one row. A transmitter mast, not the square-wave alternate parked at `/assets/_attic/ICON_SYS_WIFI_ALT.png`: the split it has to carry is "the radio, as hardware" against "a Wi-Fi service", and a squared-off fan is still the fan `ICON_SYS_WIFI` draws on PEDIA AP + INTERNET. A mast also covers both consent axes at once — it is the thing that listens and the thing that transmits | ☑ | `/assets/icons/ICON_CFG_RADIO.png` |
 | `ICON_CFG_UPDATE` | UPDATES row glyph | 20×20 | a refresh cycle — a ring opened at the top and fed an arrowhead. NOT a download arrow, which reads as the row's obvious motif right up until you set it beside `ICON_SECTOR_NAPSTORRENT_MOORS`: the Moors are the torrent area and the arrow-into-a-tray is theirs | ☑ | `/assets/icons/ICON_CFG_UPDATE.png` |

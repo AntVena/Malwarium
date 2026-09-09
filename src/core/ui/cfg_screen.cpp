@@ -3,7 +3,8 @@
 // The UPDATES screens and the QR pages are the same CFG surface but a different
 // kind of screen — they run a job rather than read and write local state — and
 // live in update_screen.cpp. Both units are declared by cfg_screen.h.
-#include "core/content/content_backgrounds.h"   // the rows the picker lists
+#include "core/content/content_backgrounds.h"   // the rows the BACKGROUND picker lists
+#include "core/content/content_themes.h"        // ...and the rows the THEME picker does
 #include "core/ui/cfg_screen.h"
 
 #include <algorithm>
@@ -140,6 +141,10 @@ int cfgGroupRows(CfgScreen group, const CfgRow*& out) {
     static const CfgRow kDevice[] = {
         {"UI MODE", &ASSET_ICON_CFG_UIMODE, CfgScreen::UiMode},
         {"BRIGHTNESS", &ASSET_ICON_CFG_UIMODE, CfgScreen::Brightness},
+        // THEME sits with them for the same reason BACKGROUND does — it is what the
+        // device LOOKS like — and above it, because it is the wider of the two: the
+        // background repaints one band of one screen, a theme repaints all of them.
+        {"THEME", &ASSET_ICON_CFG_UIMODE, CfgScreen::Theme},
         // BACKGROUND belongs beside them and not on the top-level list: the release list
         // is exactly six rows so it never scrolls, and this is a presentation setting
         // like the two above it — what the device shows, not what it does.
@@ -179,6 +184,7 @@ CfgScreen cfgParentGroup(CfgScreen s) {
     switch (s) {
         case CfgScreen::UiMode:
         case CfgScreen::Brightness:
+        case CfgScreen::Theme:
         case CfgScreen::Background:
         case CfgScreen::Travel:
             return CfgScreen::Device;
@@ -229,7 +235,7 @@ void drawCfgList(Framebuffer& fb, int cursor, const char* hackerTag,
 }
 
 void drawCfgDevice(Framebuffer& fb, int cursor, UiMode uiMode, int brightness,
-                   const char* background) {
+                   const char* theme, const char* background) {
     drawHeaderBand(fb, "DEVICE");
     const CfgRow* rows = nullptr;
     const int n = cfgGroupRows(CfgScreen::Device, rows);
@@ -240,11 +246,78 @@ void drawCfgDevice(Framebuffer& fb, int cursor, UiMode uiMode, int brightness,
         const char* val = nullptr;   // TRAVEL MODE is an action: no value to preview
         if (rows[i].target == CfgScreen::UiMode) val = uiModeName(uiMode);
         else if (rows[i].target == CfgScreen::Brightness) val = brightBuf;
+        else if (rows[i].target == CfgScreen::Theme) val = theme;
         else if (rows[i].target == CfgScreen::Background) val = background;
         settingsRow(fb, kRowTop + i * kRowH, rows[i], i == cursor, val,
                     palColor(Pal::INK_DIM));
     }
     drawHintBand(fb, "A NEXT  B OPEN  C BACK");
+}
+
+void drawThemePicker(Framebuffer& fb, int pick, int equipped, uint32_t unlockedMask) {
+    drawHeaderBand(fb, "THEME");
+    if (pick < 0 || pick >= kThemeCount) pick = 0;
+    // One line of copy, belonging to whichever row is FOCUSED — the same shape the
+    // BACKGROUND picker uses, and what makes walking the locked rows worth doing.
+    drawText(fb, kMargin, 30, kThemes[pick].earnedBy, palColor(Pal::INK_DIM));
+
+    // Taller rows than a settings list because each carries two lines: what the set is
+    // called, and what it looks like. Its own pitch and its own visible count, both
+    // named here rather than borrowed from layout.h, since neither is the grid's.
+    constexpr int kThemeRowH = 30;
+    constexpr int kThemeTop = 46;
+    constexpr int kThemeVisible = (kActiveH - kHintBandH - kThemeTop) / kThemeRowH;
+
+    const int scrollTop = listScrollTop(pick, kThemeCount, kThemeVisible);
+    for (int v = 0; v < kThemeVisible && scrollTop + v < kThemeCount; ++v) {
+        const int r = scrollTop + v;
+        const int y = kThemeTop + v * kThemeRowH;
+        const bool locked = (unlockedMask & (1u << r)) == 0;
+        if (r == pick) {
+            fb.fillRect(4, y, kActiveW - 8, kThemeRowH - 4, palColor(Pal::TRACK));
+            drawRowCursor(fb, 8, y + 4, palColor(Pal::ACCENT));
+        }
+        const Rgb565 nameColor = locked      ? palColor(Pal::INK_DIM)
+                               : r == equipped ? palColor(Pal::ACCENT)
+                                               : palColor(Pal::INK);
+        drawText(fb, 22, y + 3, kThemes[r].name, nameColor);
+        const char* tag = locked ? "LOCKED" : r == equipped ? "ACTIVE" : "";
+        if (*tag)
+            drawText(fb, kActiveW - kMargin - textWidth(tag), y + 3, tag, nameColor);
+
+        // The set, painted in itself: its own paper as the plate, then the five values
+        // that decide what a screen looks like on top of it — ink, the focus accent,
+        // and the calm/warn/hot ladder in its order. The plate is ruled in the LIVE
+        // theme's ink-dim so its edge reads even when the row being offered is the one
+        // already applied and its paper matches the screen it is drawn on.
+        constexpr Pal kSwatch[] = {Pal::INK, Pal::ACCENT, Pal::CALM, Pal::WARN, Pal::HOT};
+        constexpr int kSwatchW = 8, kSwatchGap = 2, kPad = 4;
+        constexpr int kSwatches = static_cast<int>(sizeof(kSwatch) / sizeof(kSwatch[0]));
+        constexpr int kPlateW =
+            kSwatches * kSwatchW + (kSwatches - 1) * kSwatchGap + 2 * kPad;
+        const int t = palThemeByName(kThemes[r].palette);
+        const int px = 22, py = y + 15;
+        fb.fillRect(px - 1, py - 1, kPlateW + 2, 12, palColor(Pal::INK_DIM));
+        fb.fillRect(px, py, kPlateW, 10, palColorIn(t, Pal::PAPER));
+        for (int i = 0; i < kSwatches; ++i)
+            fb.fillRect(px + kPad + i * (kSwatchW + kSwatchGap), py + 2, kSwatchW, 6,
+                        palColorIn(t, kSwatch[i]));
+        // A locked row is struck through its own swatches — a shape, not a shade, so a
+        // grayscale screenshot still says which sets are out of reach.
+        if (locked)
+            for (int x = px; x < px + kPlateW; x += 2)
+                fb.fillRect(x, py + 4, 1, 2, palColor(Pal::INK_DIM));
+    }
+
+    if (kThemeCount > kThemeVisible) {   // the slim scrollbar every long list uses
+        const int barX = kActiveW - 3;
+        const int trackH = kThemeVisible * kThemeRowH;
+        fb.fillRect(barX, kThemeTop, 2, trackH, palColor(Pal::TRACK));
+        const int thumbH = std::max(8, trackH * kThemeVisible / kThemeCount);
+        const int thumbY = kThemeTop + trackH * scrollTop / kThemeCount;
+        fb.fillRect(barX, thumbY, 2, thumbH, palColor(Pal::INK_DIM));
+    }
+    drawHintBand(fb, "A NEXT  B APPLY  C BACK");
 }
 
 void drawBackgrounds(Framebuffer& fb, int pick, uint32_t ownedMask, int equipped,

@@ -6,6 +6,7 @@
 
 #include "tunables.h"
 #include "core/content/content_tables.h"
+#include "core/content/content_themes.h"   // themeForChip — a chip is inert here, and loot once
 #include "core/ui/items_screen.h"
 
 namespace mal {
@@ -109,6 +110,11 @@ bool Game::itemUsable(const ItemDef& d, const char*& gateMsg) const {
     if (d.use == ItemDef::Use::DecryptEgg && !inEggPhase()) {
         gateMsg = "USABLE ON EGG ONLY"; return false;
     }
+    // A palette chip is not spent to apply a theme, and applying one is not a thing done
+    // to the pet: holding it EVER is the whole unlock (content_themes.h), and the set is
+    // chosen on the CFG row this points at. So Use is inert here and says where to go,
+    // the way a sealed cache points at the VAULT.
+    if (themeForChip(d.id)) { gateMsg = "SET IN CFG > THEME"; return false; }
     // the Defrag Tool is spent only by a TOOL DEFRAG in MAINT (a guaranteed
     // clean), never from the ITEMS use path — a stray Use would burn it for nothing.
     if (std::strcmp(d.id, kDefragToolId) == 0) {
@@ -565,6 +571,11 @@ const ItemDef* Game::rollLootEntry(const LootEntry* pool, int poolSize) {
     // the shared LCG, so a draw stays deterministic under a fixed seed.
     if (!pool || poolSize <= 0) return nullptr;
     auto weightOf = [this](const LootEntry& e) {
+        // A PALETTE CHIP is a permanent unlock rather than a stack, so a second copy is
+        // worth nothing at all: once its set is in, the chip leaves the pool instead of
+        // costing a draw that could have been a prize (content_themes.h).
+        if (const ThemeDef* t = themeForChip(e.id))
+            if (t->earnedById && hasCollectedItem(t->earnedById)) return 0;
         if (e.weight > 0) return e.weight;
         const ItemDef* d = registry_.item(e.id);
         return d ? itemDropWeight(*d) : 0;

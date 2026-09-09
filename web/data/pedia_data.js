@@ -2619,6 +2619,60 @@ window.PEDIA_DATA = {
       "icon": "assets/icons/ICON_ITEM_COMMEND_CACHE.png"
     },
     {
+      "id": "sunset_rom",
+      "name": "Sunset ROM",
+      "type": "QUEST",
+      "rarity": "EPIC",
+      "effect": "A cabinet's palette ROM. Unlocks the SYNTHWAVE theme in CFG.",
+      "stats": "",
+      "icon": "assets/icons/ICON_ITEM_SUNSET_ROM.png"
+    },
+    {
+      "id": "pocket_lcd",
+      "name": "Pocket LCD",
+      "type": "QUEST",
+      "rarity": "EPIC",
+      "effect": "A scratched handheld panel. Unlocks the DOT MATRIX theme in CFG.",
+      "stats": "",
+      "icon": "assets/icons/ICON_ITEM_POCKET_LCD.png"
+    },
+    {
+      "id": "phosphor_tube",
+      "name": "Phosphor Tube",
+      "type": "QUEST",
+      "rarity": "RARE",
+      "effect": "A green-screen tube. Unlocks the TERMINAL theme in CFG.",
+      "stats": "",
+      "icon": "assets/icons/ICON_ITEM_PHOSPHOR_TUBE.png"
+    },
+    {
+      "id": "amber_tube",
+      "name": "Amber Tube",
+      "type": "QUEST",
+      "rarity": "RARE",
+      "effect": "The green tube's warmer cousin. Unlocks the AMBER theme in CFG.",
+      "stats": "",
+      "icon": "assets/icons/ICON_ITEM_AMBER_TUBE.png"
+    },
+    {
+      "id": "daylight_filter",
+      "name": "Daylight Filter",
+      "type": "QUEST",
+      "rarity": "RARE",
+      "effect": "Ink on paper, for reading outdoors. Unlocks the DAYLIGHT theme in CFG.",
+      "stats": "",
+      "icon": "assets/icons/ICON_ITEM_DAYLIGHT_FILTER.png"
+    },
+    {
+      "id": "redshift_lens",
+      "name": "Redshift Lens",
+      "type": "QUEST",
+      "rarity": "RARE",
+      "effect": "Keeps your dark adaptation. Unlocks the NIGHT VISION theme in CFG.",
+      "stats": "",
+      "icon": "assets/icons/ICON_ITEM_REDSHIFT_LENS.png"
+    },
+    {
       "id": "access_token",
       "name": "Access Token",
       "type": "QUEST",
@@ -7620,16 +7674,16 @@ window.PEDIA_DATA = {
     {
       "key": "COLLECT_RARE",
       "name": "Rare Collector",
-      "trigger": "Get hold of all 49 Rare items.",
+      "trigger": "Get hold of all 53 Rare items.",
       "icon": "assets/icons/ICON_ACH_COLLECT_RARE.png",
-      "goal": 49
+      "goal": 53
     },
     {
       "key": "COLLECT_EPIC",
       "name": "Epic Collector",
-      "trigger": "Get hold of all 16 Epic items.",
+      "trigger": "Get hold of all 18 Epic items.",
       "icon": "assets/icons/ICON_ACH_COLLECT_EPIC.png",
-      "goal": 16
+      "goal": 18
     },
     {
       "key": "RIG_FIRST",

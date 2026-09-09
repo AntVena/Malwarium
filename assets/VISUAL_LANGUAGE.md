@@ -69,6 +69,40 @@ every chrome need across the shipped screens.
 - **Brightness/dim states are engine-derived**, not extra tokens — one master value per token
   (manifest §A), dimmed in engine.
 
+### 1.4 Themes
+
+A **theme** is a whole alternate set of these tokens — a `themes` block in `PAL_CORE.json`
+naming only the tokens it overrides, with everything else falling through to the roles above.
+`CFG › DEVICE › THEME` chooses one and the pick is persisted; because every colour on the
+device is fetched through `palColor()`, the choice restyles the entire interface and no
+drawing call is aware it happened. Sprite art keeps its own baked palette, so a creature
+looks the same in every set. Which sets an operator may *choose* is content, not colour:
+`src/core/content/content_themes.h` names the picker row each one is offered as, and what
+unlocks it.
+
+The rules in §1.3 are not the base set's — they are **every** set's, and a theme that broke
+one would break exactly the screens with no words on them to fall back on. So they are
+asserted for every row of the table by `test_theme_invariants`
+(`test/test_native/test_theme.cpp`): the `calm`/`warn`/`hot` ordering, `ink`-on-`paper`
+contrast, and the two ladders that are the whole non-colour channel of the board they carry —
+the DISK DECRYPTION five and the CHROMATOPHORE three. Authoring a set is a design pass; the
+ladders are the part of it that is not a matter of taste.
+
+**Backdrops have their own two tokens.** `neon-lo` / `neon-hi` are a blue and a green that
+exist only for `sceneTint`'s anchor list (`core/render/scene.cpp`) — deliberately off `accent`'s
+cyan and `calm`'s mint, so an engine-drawn place can be either colour without wearing a focus or
+a state. Nothing in the interface may bind to them. The ramp's far end is also pulled to a fixed
+fraction of the `paper`-to-`ink` span, which is what keeps a backdrop the same distance from the
+text it is read under in every set — including the ones whose ink is dim, and the ones whose
+paper is the bright end.
+
+**Polarity is not one of the rules.** A light theme (`daylight`, `dot-matrix`) runs every
+ladder the other way up: `paper` is the bright end, the status tints are *dark* because they
+are read on white, and the decryption five descend from a rung just off the page instead of
+climbing to one. None of that is a different kind of legibility, so every separation above is
+stated as a distance and never as a direction — which is what makes a light set a block of
+hexes rather than a second drawing path.
+
 ---
 
 ## 2. Typography — `FONT_UI`

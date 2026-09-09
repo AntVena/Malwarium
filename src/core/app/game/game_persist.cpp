@@ -6,6 +6,7 @@
 #include "tunables.h"
 #include "core/content/content_backgrounds.h"
 #include "core/content/content_tournament.h"
+#include "core/render/palette.h"   // palThemeByName — the saved theme is resolved by name
 
 namespace mal {
 
@@ -147,6 +148,11 @@ SaveData Game::captureSave() const {
     // v14: the CFG screen-brightness level — device-level, persists
     // across pets like the other CFG prefs.
     d.brightness = brightness_;
+
+    // v64: the chosen PAL_CORE theme, stored by NAME (see save.h's version note) and
+    // device-level for the same reason brightness is — it is what the device looks
+    // like, not something a pet owns.
+    std::snprintf(d.theme, sizeof(d.theme), "%s", themeName());
 
     // v15: the EXPL per-sub-area re-farm win counts — flat row-major
     // (area*kSubAreasPerArea + sub), so a depleted area stays depleted for future pets.
@@ -566,6 +572,12 @@ void Game::applySave(const SaveData& d) {
     brightness_ = d.brightness;
     if (brightness_ < 0) brightness_ = 0;
     if (brightness_ >= kBrightnessLevels) brightness_ = kBrightnessLevels - 1;
+
+    // The chosen theme (v64), by name. An empty name — every pre-v64 blob — and a name
+    // this build ships no set for both resolve to base, and going through setThemePick
+    // is what APPLIES it: the palette index and this member move together, so the
+    // interface that repaints after a load is drawn in the set the save named.
+    setThemePick(palThemeByName(d.theme));
 
     // Per-sub-area re-farm counts (v15). A v15+ blob restores the flat
     // row-major list; a pre-v15 blob carries an empty vector → every count defaults to

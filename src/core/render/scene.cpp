@@ -1,5 +1,7 @@
 #include "core/render/scene.h"
 
+#include <cmath>
+
 #include "core/render/canvas.h"
 #include "core/render/framebuffer.h"
 #include "core/render/palette.h"
@@ -12,9 +14,12 @@ namespace {
 // a list of what is not. A blacklist decides the question for tokens that exist today
 // and quietly admits every one added afterwards; this way a new PAL_CORE role has to be
 // let in on purpose. `ink-dim` is the value ramp every scene that reads in grey uses,
-// the fragmentation pair is the purple-to-pink no interface state has claimed, and
-// `track` is the chrome grey — dim enough to sit under text by construction.
-constexpr Pal kSceneAnchors[] = {Pal::INK_DIM, Pal::FRAG_LO, Pal::FRAG_HI, Pal::TRACK};
+// the fragmentation pair is the purple-to-pink no interface state has claimed, `track`
+// is the chrome grey — dim enough to sit under text by construction — and the `neon`
+// pair exists for this list alone: a blue and a green kept deliberately off `accent`
+// and `calm` so a backdrop can be either colour without wearing a focus or a state.
+constexpr Pal kSceneAnchors[] = {Pal::INK_DIM, Pal::FRAG_LO, Pal::FRAG_HI, Pal::TRACK,
+                                 Pal::NEON_LO, Pal::NEON_HI};
 
 bool anchorAllowed(Pal p) {
     for (Pal a : kSceneAnchors)
@@ -31,17 +36,51 @@ constexpr int kGridPhaseSteps = 8;   // sub-steps per row, so the creep is smoot
 }  // namespace
 
 Rgb565 sceneCeiling() {
+    // The tint at the ceiling that stands FURTHEST OFF THE PAGE, which is not the same
+    // as the brightest: on a set with a light paper the brightest tint is the one nearest
+    // it, and a ceiling measured that way is no ceiling at all.
+    const float paperL = luminance(palColor(Pal::PAPER));
     Rgb565 top = sceneTint(kSceneWideCeiling, kSceneAnchors[0]);
     for (Pal a : kSceneAnchors) {
         const Rgb565 c = sceneTint(kSceneWideCeiling, a);
-        if (luminance(c) > luminance(top)) top = c;
+        if (std::fabs(luminance(c) - paperL) > std::fabs(luminance(top) - paperL)) top = c;
     }
     return top;
 }
 
+// The anchor a ramp actually ends on, which is not always the token that was asked for.
+//
+// A scene is read UNDER TEXT, so what the ramp may never do is arrive near `ink`. The
+// tones alone cannot promise that: they are fractions of the distance from `paper` to a
+// token, and how far that is depends on the theme. On a set with a dim ink (`amber`'s is
+// 0.80 against base's 0.94) a mid tone lands much closer to the text than the same tone
+// does here, and on a set with a LIGHT paper every anchor sits on the same side as the
+// page, so the ramp barely moves and a backdrop comes out as a bright wash.
+//
+// So the anchor is pulled to at most kSceneAnchorReach of the way from `paper` to `ink`,
+// keeping its hue by scaling its channels. Both faults fall out of the one rule, in both
+// polarities: the far end of every ramp is a known distance from the text, whichever end
+// of the range the page is.
+constexpr int kSceneAnchorReach = 70;   // percent of the paper-to-ink span
+
 Rgb565 sceneTint(uint8_t t, Pal anchor) {
     if (!anchorAllowed(anchor)) anchor = Pal::INK_DIM;
-    return blend(palColor(Pal::PAPER), palColor(anchor), t);
+    const Rgb565 paper = palColor(Pal::PAPER);
+    const Rgb565 raw = palColor(anchor);
+    const float paperL = luminance(paper);
+    const float reach = paperL + (luminance(palColor(Pal::INK)) - paperL) *
+                                     kSceneAnchorReach / 100.0f;
+    const float rawL = luminance(raw);
+    // Only ever pulled TOWARD the page, never pushed away from it: a token already
+    // inside the reach is left exactly as it was authored, which is what keeps a set
+    // whose anchors are all comfortably dim looking the way it always did.
+    const bool tooFar = paperL < reach ? rawL > reach : rawL < reach;
+    if (!tooFar || rawL <= 0.0f) return blend(paper, raw, t);
+    const float k = reach / rawL;
+    const Rgb565 pulled = rgb565(static_cast<uint8_t>(r8(raw) * k),
+                                 static_cast<uint8_t>(g8(raw) * k),
+                                 static_cast<uint8_t>(b8(raw) * k));
+    return blend(paper, pulled, t);
 }
 
 int sceneSkyY(const SceneGround& g, uint8_t up) {

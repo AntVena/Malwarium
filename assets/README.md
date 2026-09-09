@@ -40,7 +40,7 @@ colour that already has a token. That one binding is what makes the rest of this
 | To change… | Edit |
 |---|---|
 | what a role *looks like* (Epic goes orange) | the token's hex in `PAL_CORE.json` |
-| the whole interface at once (a colourblind or high-contrast set) | a `themes` block in `PAL_CORE.json` naming only the tokens it overrides, then the active index |
+| the whole interface at once (a high-contrast set, a synthwave one) | a `themes` block in `PAL_CORE.json` naming only the tokens it overrides, plus a row in `src/core/content/content_themes.h` saying how it is come by — `CFG › DEVICE › THEME` is the picker, and `test_theme_invariants` holds a new set to the same ladders as the base one |
 | what a game concept *means* (a fifth rarity, a new team) | `src/core/ui/theme.h` — the one place a domain value becomes a token |
 
 No screen holds a colour opinion, so none of the three is a sweep. `ctest` enforces it:

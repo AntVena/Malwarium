@@ -566,6 +566,10 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     // v63: this pet's deepest DARKWEB CRAWL. Its own tail after v62's, so a build that
     // stops at either still reads every field it knows.
     w.i32(d.bestDarkWebDepth);
+
+    // v64: the chosen PAL_CORE theme, by NAME, in a fixed kSaveIdCap cell like every
+    // other id here. Its own tail after v63's.
+    w.bytes(d.theme, kSaveIdCap);
 }
 
 std::vector<uint8_t> serializeSave(const SaveData& d) {
@@ -1190,6 +1194,14 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
     // v63 tail: the crawl's depth record. Absent in an older blob -> 0, a pet that has
     // never been down there — which is every pet written before the zone existed.
     if (version >= 63) d.bestDarkWebDepth = r.i32();
+
+    // v64 tail: the chosen theme's name. Absent in an older blob -> empty, which reads
+    // as the base set: what every device drew before there was a second one to choose.
+    // A name this build has no set for lands the same way (Game::load resolves it).
+    if (version >= 64) {
+        r.bytes(d.theme, kSaveIdCap);
+        d.theme[kSaveIdCap - 1] = '\0';
+    }
 
     if (!r.ok) { out = SaveData{}; return false; }  // truncated -> empty
     if (version < newestRenameVersion()) renameRetiredIds(d, version);

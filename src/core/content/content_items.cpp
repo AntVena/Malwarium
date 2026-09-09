@@ -104,13 +104,33 @@ const LootEntry kCachePoolRare[]     = {{"backup_drive"}, {"sinkhole_trap"},
 const LootEntry kCachePoolEpic[]     = {{"rollback"}, {"yubi_cookie"},
                                         {"backup_drive"}, {"restore_point"},
                                         {"deep_learning_core"}, {"zeroday_bell"}};
+// The share of the commendation pool one PALETTE CHIP draws at. Six of them against
+// seven consumables whose own weights sum to ~55, so a first commendation is about as
+// likely to pay a colour set as a prize and a device that has them all is back to the
+// pool it started with. Lives here rather than in tunables.h because it is a fact about
+// this one pool's balance, not a cross-cutting one.
+constexpr int kChipDrawWeight = 6;
+
 // The Commendation Cache's own pool: what an achievement pays out. Deliberately not
 // the Epic pool — a commendation is earned by playing a whole ladder out, so it hands
 // over the scarce per-lifetime shields and the deepest diving bells rather than
 // re-rolling the same walk consumables a found cache already gives.
+// ...plus the PALETTE CHIPS, the one thing in here that is not a consumable: each
+// unlocks a colour set for good (content_themes.h), so a chip is worth a draw exactly
+// once and then stops being loot at all — rollLootEntry drops one whose set is already
+// unlocked to weight 0 rather than letting it cost a commendation a real prize. At
+// kChipDrawWeight they are a bit under half the pool while any remain and none of it
+// once they are all in, which is the shape a finite set of unlocks should have: a
+// reason to open the next one, and never a tax on the twentieth.
 const LootEntry kCachePoolCommend[]  = {{"restore_point"}, {"yubi_cookie"},
                                         {"deep_learning_core"}, {"zeroday_bell"},
-                                        {"kernel_bell"}, {"ambig_usb"}, {"rollback"}};
+                                        {"kernel_bell"}, {"ambig_usb"}, {"rollback"},
+                                        {"sunset_rom", kChipDrawWeight},
+                                        {"phosphor_tube", kChipDrawWeight},
+                                        {"amber_tube", kChipDrawWeight},
+                                        {"daylight_filter", kChipDrawWeight},
+                                        {"pocket_lcd", kChipDrawWeight},
+                                        {"redshift_lens", kChipDrawWeight}};
 template <int N>
 constexpr int poolN(const LootEntry (&)[N]) { return N; }
 // The share of a staple's own dropWeight it draws at in kLootPool below. The pantry
@@ -1759,6 +1779,58 @@ const ItemDef kItems[] = {
      /*dropWeight=*/0, /*cache=*/{/*bits=*/90, /*draws=*/2, /*drawChancePct=*/100,
                 kCachePoolCommend, poolN(kCachePoolCommend), /*findWeight=*/0,
                 /*modChancePct=*/60}},
+
+    // The PALETTE CHIPS. Six objects that do the same thing — hold one and the colour
+    // set it carries is unlocked in CFG for good (content_themes.h) — so they are one
+    // family and written as one block. Each is a Quest/Keys row that is INERT in the bag:
+    // itemUsable answers "SET IN CFG > THEME", because the chip is not spent to apply a
+    // theme and applying one is not a thing done to the pet. Nothing sells them and
+    // nothing but a commendation drops them.
+    //
+    // Rare or Epic by what the set costs to give up on the device it is imitating: the
+    // two that are somebody else's hardware — a sunset arcade cabinet, a pocket LCD —
+    // are Epic; the four that are a filter over the tube you already own are Rare.
+    {"sunset_rom", "Sunset ROM", ItemDef::Type::Quest,
+     ItemDef::Rarity::Epic,
+     "A cabinet's palette ROM. Unlocks the SYNTHWAVE theme in CFG.",
+     ItemDef::Context::Anytime, /*effects=*/{}, /*combatHeal=*/0, /*preEncounterXp=*/0,
+     /*bits=*/0, /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
+     /*category=*/ItemDef::Category::Keys},
+
+    {"pocket_lcd", "Pocket LCD", ItemDef::Type::Quest,
+     ItemDef::Rarity::Epic,
+     "A scratched handheld panel. Unlocks the DOT MATRIX theme in CFG.",
+     ItemDef::Context::Anytime, /*effects=*/{}, /*combatHeal=*/0, /*preEncounterXp=*/0,
+     /*bits=*/0, /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
+     /*category=*/ItemDef::Category::Keys},
+
+    {"phosphor_tube", "Phosphor Tube", ItemDef::Type::Quest,
+     ItemDef::Rarity::Rare,
+     "A green-screen tube. Unlocks the TERMINAL theme in CFG.",
+     ItemDef::Context::Anytime, /*effects=*/{}, /*combatHeal=*/0, /*preEncounterXp=*/0,
+     /*bits=*/0, /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
+     /*category=*/ItemDef::Category::Keys},
+
+    {"amber_tube", "Amber Tube", ItemDef::Type::Quest,
+     ItemDef::Rarity::Rare,
+     "The green tube's warmer cousin. Unlocks the AMBER theme in CFG.",
+     ItemDef::Context::Anytime, /*effects=*/{}, /*combatHeal=*/0, /*preEncounterXp=*/0,
+     /*bits=*/0, /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
+     /*category=*/ItemDef::Category::Keys},
+
+    {"daylight_filter", "Daylight Filter", ItemDef::Type::Quest,
+     ItemDef::Rarity::Rare,
+     "Ink on paper, for reading outdoors. Unlocks the DAYLIGHT theme in CFG.",
+     ItemDef::Context::Anytime, /*effects=*/{}, /*combatHeal=*/0, /*preEncounterXp=*/0,
+     /*bits=*/0, /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
+     /*category=*/ItemDef::Category::Keys},
+
+    {"redshift_lens", "Redshift Lens", ItemDef::Type::Quest,
+     ItemDef::Rarity::Rare,
+     "Keeps your dark adaptation. Unlocks the NIGHT VISION theme in CFG.",
+     ItemDef::Context::Anytime, /*effects=*/{}, /*combatHeal=*/0, /*preEncounterXp=*/0,
+     /*bits=*/0, /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
+     /*category=*/ItemDef::Category::Keys},
 
     // Key warp items: consumables used DURING the
     // walk (the B warp picker) to jump straight to a target event, not eaten/buffed.

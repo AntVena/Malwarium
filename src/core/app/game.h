@@ -1490,6 +1490,28 @@ public:
     // host tier ignores it. setBrightness clamps + persists.
     int brightness() const { return brightness_; }
     void setBrightness(int level);
+    // The PAL_CORE colour set the interface is drawn in — an index into the generated
+    // theme table (0 = base), persisted by NAME (save v64). setThemePick is the ONLY
+    // caller of setPalTheme (core/render/palette.h): the applied theme and the stored
+    // one move together, so a repaint can never be in a set the save does not name.
+    // It refuses a set this device has not unlocked and answers whether it took, the
+    // way setBackgroundPick refuses a locked place.
+    int themePick() const { return themePick_; }
+    const char* themeName() const;
+    bool setThemePick(int index);
+    // Whether row `i` of kThemes (content_themes.h) is unlocked: Start rows always, a
+    // Chip row once this device has EVER held its chip. Derived, never stored — see the
+    // banner on that header.
+    bool themeRowUnlocked(int row) const;
+    // Which kThemes row the applied set is — the picker's ACTIVE tag and its opening
+    // focus. A lookup, not a cast: the table and the palette are ordered separately.
+    int themeRow() const;
+    // One bit per kThemes row, for the picker. Built on demand for the same reason the
+    // backgrounds' mask is: ownership is derived, so a held copy could only ever go stale.
+    uint32_t themesUnlockedMask() const;
+    // Has this DEVICE ever held `id`? The ever-held shelf (collectedItems_), which the
+    // 'Pedia already draws from and a palette chip's unlock is read out of.
+    bool hasCollectedItem(const char* id) const;
     bool inEvolve() const { return nav_ == Nav::ModalEvolve; }
     // STAT readout (all stages): time remaining until the next evolution boundary.
     // For an unhatched egg the "next evolution" IS the hatch, so this returns the
@@ -2950,6 +2972,7 @@ private:
     int cursor_ = 0;            // focused carousel slot (also the entered slot)
     UiMode uiMode_ = UiMode::IconsLabel;
     int brightness_ = kBrightnessDefault;  // backlight level (persisted, v14)
+    int themePick_ = 0;                    // PAL_CORE theme index (persisted, v64)
 
     // L2/L3 state.
     int listRow_ = 0;                      // selected row (ITEMS row idx / MAINT 0..1)
@@ -3136,7 +3159,7 @@ private:
     StatScrollSpan statScrollSpan() const;
 
     // CFG submenu. cfgScreen_ is the entered L3; cfgGroupRow_ the focused row of a
-    // group screen (DISPLAY / RADIO), kept apart from listRow_ so backing out of a
+    // group screen (DEVICE / RADIO), kept apart from listRow_ so backing out of a
     // group lands on the row that opened it; cfgUiPick_ the focused UI Mode option;
     // factoryScope_ the Factory-Reset scope. bHeld_/bDownMs_ track a held B for the
     // hidden hold-to-reveal / hold-to-commit gestures.
@@ -3144,6 +3167,7 @@ private:
     int cfgGroupRow_ = 0;
     int cfgUiPick_ = 0;
     int cfgBrightPick_ = 0;   // Brightness picker focus (0..kBrightnessLevels-1)
+    int cfgThemePick_ = 0;    // Theme picker focus (0..kPalThemeCount-1)
     int cfgAuditPick_ = 0;    // Audit level picker focus (0 OFF, 1 SCAN, 2 SCAN+CAP)
     int cfgTravelPick_ = 0;   // Travel-mode confirm focus (0 = NO, 1 = YES)
     int cfgApPick_ = 0;       // 'Pedia AP toggle focus (0 = OFF, 1 = ON)

@@ -282,7 +282,16 @@ constexpr int kSaveTextCap = 28;     // matches EventLog's LogEntry.text
 //     harder. Per-pet, so a new egg starts it over exactly as v35's dive record does.
 //     Pre-v63 -> 0, which reads as a pet that has never been down there: true of every
 //     save written before the zone existed.
-constexpr uint16_t kSaveVersion = 63;
+// v64 APPEND `theme`, the chosen PAL_CORE colour set (assets/PAL_CORE.json's `themes`
+//     block), its own tail after v63's. Stored as the theme's NAME rather than its index
+//     into the generated table, because that index is the JSON's row order: a set
+//     inserted above another would otherwise silently restyle every device that had
+//     chosen the one below it. A name this build has no set for reads back as the base
+//     set, which is the honest answer — the device says what it can actually draw, and
+//     base is the one every build has. Player-level, like the brightness it sits beside
+//     in CFG. Pre-v64 (and an empty name) -> base, what every device drew before there
+//     was a second set to choose.
+constexpr uint16_t kSaveVersion = 64;
 
 // The oldest blob deserialize will read, and the ONLY thing that retires a rename row
 // (see `renamedIds`). Raising it is how a device stops carrying migration weight for saves
@@ -847,6 +856,11 @@ struct SaveData {
     uint8_t evolveBranchOverride = 0;
     uint8_t evolveSoakFactor = 1;
     uint8_t evolveHold = 0;
+
+    // --- v64: the chosen PAL_CORE theme --------------------------------------
+    // The set's name (kPalThemeNames), empty for the base set. A NAME and not the
+    // generated index — see the version note above. Player-level, like brightness.
+    char theme[kSaveIdCap] = {0};
 };
 
 // Read/write one mod's spare count in the v45 packed pool (SaveData::ownedModCounts) by

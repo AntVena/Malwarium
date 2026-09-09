@@ -63,6 +63,23 @@ SCENES=(
   "cfg_titles|cfg titles"           "cfg_radio|cfg radio all"
   "cfg_audit|cfg audit"             "cfg_updates|cfg updates ready found"
   "cfg_confirm|cfg updates ready confirm"
+  "cfg_device|cfg device"           "cfg_theme|cfg theme"
+  # One screen per THEME, and deliberately not the picker: a set is judged on the
+  # screens it has to carry, and the two hardest are the ones with the least writing
+  # on them. STAT is every gauge and ladder at once; DISK DECRYPTION is a board whose
+  # whole vocabulary is colour, so a theme that flattened its five rungs shows here.
+  "theme_hc_stat|stat theme:high-contrast"
+  "theme_synthwave_stat|stat theme:synthwave"
+  "theme_terminal_stat|stat theme:terminal"
+  "theme_amber_stat|stat theme:amber"
+  "theme_daylight_stat|stat theme:daylight"
+  "theme_dotmatrix_stat|stat theme:dot-matrix"
+  "theme_nightvision_stat|stat theme:night-vision"
+  # ...and the board, in the two sets that run their ladders the other way up. A light
+  # theme is where a hardcoded "bright means lit" would show, and DISK DECRYPTION is the
+  # screen with nothing written on it to fall back on.
+  "theme_daylight_decryption|decryption theme:daylight"
+  "theme_dotmatrix_decryption|decryption theme:dot-matrix"
   "explore_cachefind|explore cachefind"
   "explore_refarm|explore refarm"
   "explorectl|explorectl"

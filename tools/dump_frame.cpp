@@ -63,7 +63,11 @@
 //             flashqr] (the UPDATES screen; without "ready" it shows which setup step
 //             is missing, and "flashqr" walks onto the last row and opens the USB
 //             flasher's code)
-//        cfg [sysinfo|tag|titles|device|uimode|brightness|background [earned]|travel [sleeping]|
+//        theme:<name> (draw WHATEVER this frame is in another PAL_CORE set —
+//             assets/PAL_CORE.json's `themes` block, e.g. theme:terminal. Not a screen
+//             of its own: it composes with every flag here, which is the point, since
+//             a theme is judged on the screens it has to carry and not on a swatch)
+//        cfg [sysinfo|tag|titles|device|uimode|brightness|theme|background [earned]|travel [sleeping]|
 //             radio [idle|all]|audit|
 //             link|pediaap|qr|factory] (the settings tree; device/radio are the two
 //             group screens, and radio is seeded with a live arbiter owner —
@@ -155,6 +159,7 @@
 #include "core/render/palette.h"
 #include "core/render/scenes.h"
 #include "core/ui/carousel.h"
+#include "core/content/content_themes.h"
 #include "core/ui/cfg_screen.h"
 #include "core/ui/expl_screen.h"
 
@@ -215,6 +220,14 @@ int main(int argc, char** argv) {
     // A backdrop on its own, with no screen composed over it. Nothing about a scene
     // needs a Game, and the whole question a look at one answers — does it still read
     // with its floor somewhere else — is a question about the ground it is handed.
+    //
+    // The theme is applied HERE as well as on the Game path below, because a scene is
+    // painted out of palColor and sceneTint like everything else and this branch returns
+    // before a Game is ever built. Unlike that path there is no unlock to play through:
+    // nothing owns a backdrop, so the palette index is set directly.
+    for (int i = 3; i < argc; ++i)
+        if (std::strncmp(argv[i], "theme:", 6) == 0) setPalTheme(palThemeByName(argv[i] + 6));
+
     for (int i = 3; i < argc; ++i) {
         if (std::strncmp(argv[i], "scene:", 6) != 0) continue;
         const SceneId id = sceneByName(argv[i] + 6);
@@ -274,6 +287,26 @@ int main(int argc, char** argv) {
     }
     if (hasFlag(argc, argv, "iconsonly")) game.setUiMode(UiMode::IconsOnly);
     if (hasFlag(argc, argv, "textonly")) game.setUiMode(UiMode::TextOnly);
+    // Any frame, in any theme. Most sets are LOCKED on a fresh save (content_themes.h),
+    // and the engine refuses one that is — so the chip is granted first and the unlock
+    // is played rather than bypassed: what this renders is a frame a real device could
+    // reach. An unknown name lands on the base set (palThemeByName) and says so, because
+    // the frame it would otherwise write looks exactly like a run with no theme flag and
+    // a typo would read as "that theme looks like the default".
+    for (int i = 1; i < argc; ++i) {
+        if (std::strncmp(argv[i], "theme:", 6) != 0) continue;
+        const char* want = argv[i] + 6;
+        const int t = palThemeByName(want);
+        for (const ThemeDef& def : kThemes)
+            if (palThemeByName(def.palette) == t && def.source == ThemeSource::Chip) {
+                game.inventory().add(def.earnedById, 1);
+                game.tick(0);           // the sweep folds the bag into the ever-held shelf
+            }
+        game.setThemePick(t);
+        if (t == 0 && std::strcmp(want, game.themeName()) != 0)
+            std::fprintf(stderr, "dump_frame: no theme '%s' — drawing in %s\n", want,
+                         game.themeName());
+    }
     // ARCH rack: seed a frozen stored pet so the rack list / Deploy record render.
     if (hasFlag(argc, argv, "stored")) game.debugSeedRack("cryptoshell");
     // ...and the overflowing rack: buy past kRackSlots and fill every slot, which is
@@ -491,7 +524,7 @@ int main(int argc, char** argv) {
     } else if (hasFlag(argc, argv, "cfg")) {
         enterSlot(SubmenuId::Cfg);
         // Sub-screens: walk the tables to the target row (descending through the
-        // DISPLAY / RADIO group when the setting lives in one), then B to open it.
+        // DEVICE / RADIO group when the setting lives in one), then B to open it.
         auto openTarget = [&](CfgScreen target) {
             const CfgScreen group = cfgParentGroup(target);
             const CfgRow* rows = nullptr;
@@ -542,6 +575,7 @@ int main(int argc, char** argv) {
         }
         else if (hasFlag(argc, argv, "uimode")) openTarget(CfgScreen::UiMode);
         else if (hasFlag(argc, argv, "brightness")) openTarget(CfgScreen::Brightness);
+        else if (hasFlag(argc, argv, "theme")) openTarget(CfgScreen::Theme);
         else if (hasFlag(argc, argv, "background")) {
             // The picker is mostly LOCKED rows on a fresh save, which is the state it
             // ships in and the one worth looking at. "earned" plays the four grants

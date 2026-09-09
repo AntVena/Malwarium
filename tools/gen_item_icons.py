@@ -595,6 +595,47 @@ def usb(g, mark="slot", pips=0):
         g.rect(6, 15, 13, 15, 0)                  # ...over its bar
 
 
+# --- The palette chips ------------------------------------------------------
+#
+# One body, six marks, on exactly the USB port's argument: every one of these does the
+# same thing (carries a colour set, content_themes.h) and what the shelf has to say is
+# "another one of those, and not the one you already have". So the silhouette is shared
+# — a DIP package seen face-on, legs down both sides — and the whole recipe is what has
+# been cut into its lid.
+#
+# The marks are deliberately not six pictures of six themes: a 12x6 window cannot draw
+# a sunset and a phosphor tube apart, and trying would give six glyphs that all read as
+# "some smudge". They are countable or geometric instead — one bar, two bars, a disc, a
+# ring, a split field, a chevron — so the shelf separates them at a glance and in
+# grayscale, which is the only place the difference has to survive.
+
+def chip(g, mark="bars", bars=1):
+    """A DIP chip seen face-on: a lidded body with four legs down each side."""
+    g.rect(4, 2, 15, 17)             # the package
+    for y in (4, 7, 10, 13):         # the legs, four a side, clear of both ends
+        g.rect(1, y, 3, y + 1)
+        g.rect(16, y, 18, y + 1)
+    g.rect(6, 4, 13, 15, 0)          # ...hollowed to the lid window the mark is cut in
+
+    if mark == "bars":               # a phosphor tube: one bar. Its amber cousin: two.
+        for i in range(bars):
+            g.rect(7, 6 + i * 4, 12, 8 + i * 4)
+    elif mark == "disc":             # a sun over the horizon — the arcade cabinet's ROM
+        g.disc(9.5, 9, 3)
+        g.rect(6, 11, 13, 15, 0)
+        g.rect(7, 12, 12, 13)
+    elif mark == "screen":           # a panel: a ring, which is a screen and not a mass
+        g.rect(7, 6, 12, 13)
+        g.rect(9, 8, 10, 11, 0)
+    elif mark == "split":            # a filter: half the field lit, half of it not.
+        # Edge to edge of the window, unlike the centred bars above — a FIELD that has
+        # been divided, which is a different read from a stripe drawn on one.
+        g.rect(6, 4, 13, 9)
+    elif mark == "chevron":          # a shift downward — the lens that drops the spectrum
+        for i, y in enumerate(range(6, 10)):
+            g.rect(7 + i, y, 12 - i, y + 2)
+
+
 # --- The recipes ------------------------------------------------------------
 #
 # One row per item id. The FORM carries the read; the arguments are what keeps two
@@ -784,6 +825,14 @@ RECIPES = {
     "hypervisor_usb":          (usb,    dict(mark="pips", pips=4)),
     "halt_usb":                (usb,    dict(mark="stop")),
     "eject_usb":               (usb,    dict(mark="eject")),
+
+    # --- the palette chips -------------------------------------------------
+    "phosphor_tube":           (chip,   dict(mark="bars", bars=1)),
+    "amber_tube":              (chip,   dict(mark="bars", bars=2)),
+    "sunset_rom":              (chip,   dict(mark="disc")),
+    "pocket_lcd":              (chip,   dict(mark="screen")),
+    "daylight_filter":         (chip,   dict(mark="split")),
+    "redshift_lens":           (chip,   dict(mark="chevron")),
 }
 
 

@@ -1,6 +1,7 @@
 #include "core/content/areas/area_defs.h"       // area() — a cleared area pays out its place
 #include "core/content/content_backgrounds.h"   // the places an operator owns and picks between
 #include "core/content/content_homes.h"         // sceneForCreature — a raised creature brings its own
+#include "core/content/content_themes.h"        // the colour sets offered, and what unlocks each
 #include "core/app/game.h"
 
 #include <cstdio>
@@ -8,6 +9,7 @@
 
 #include "tunables.h"
 #include "version.h"
+#include "core/render/palette.h"   // setPalTheme — the one place the theme index moves
 #include "core/ui/cfg_screen.h"
 
 namespace mal {
@@ -27,6 +29,7 @@ void Game::enterCfgScreen(CfgScreen target) {
         case CfgScreen::Travel: cfgTravelPick_ = 0; break;   // always opens on NO
         case CfgScreen::UiMode: cfgUiPick_ = static_cast<int>(uiMode_); break;
         case CfgScreen::Brightness: cfgBrightPick_ = brightness_; break;   // the applied level
+        case CfgScreen::Theme: cfgThemePick_ = themeRow(); break;          // ...likewise
         case CfgScreen::Titles: cfgTitlePick_ = equippedTitle_; break;     // the equipped one
         case CfgScreen::Background: {                                      // ...likewise
             const BackgroundDef* b = backgroundFor(backgroundPick_);
@@ -160,6 +163,26 @@ void Game::onCfgDetail(const ButtonEvent& ev) {
             else if (ev.button == Button::B) {        // apply + back out
                 setBrightness(cfgBrightPick_);
                 leaveCfgScreen();
+            } else if (ev.button == Button::C) leaveCfgScreen();  // no change
+            break;
+        case CfgScreen::Theme:
+            // A walks EVERY row, locked ones included — the same rule the BACKGROUND
+            // picker follows and for the same reason: the line under the header says
+            // where the focused set comes from, so walking the ones you have not got is
+            // how an operator finds out there is anything to go and look for. B applies
+            // the focused one and backs out; on a locked row setThemePick refuses and the
+            // screen simply stays, which is the row's own LOCKED tag answering rather
+            // than a second modal.
+            //
+            // Applying is instant and total — every colour on the next repaint comes
+            // from the new set — so the screen the operator lands back on IS the
+            // confirmation, and there is nothing for a second yes to describe that they
+            // cannot already see.
+            if (ev.button == Button::A)
+                cfgThemePick_ = (cfgThemePick_ + 1) % kThemeCount;
+            else if (ev.button == Button::B) {
+                if (setThemePick(palThemeByName(kThemes[cfgThemePick_].palette)))
+                    leaveCfgScreen();
             } else if (ev.button == Button::C) leaveCfgScreen();  // no change
             break;
         case CfgScreen::Titles:
@@ -314,6 +337,60 @@ void Game::cycleUiMode() {
     dirty_ = true;
 }
 
+const char* Game::themeName() const { return kPalThemeNames[themePick_]; }
+
+// Which kThemes ROW the applied set is, for the picker's ACTIVE tag and its opening
+// focus. The table and the palette are separately ordered on purpose (content_themes.h),
+// so this is a lookup and not a cast.
+int Game::themeRow() const {
+    for (int i = 0; i < kThemeCount; ++i)
+        if (palThemeByName(kThemes[i].palette) == themePick_) return i;
+    return 0;
+}
+
+bool Game::themeRowUnlocked(int row) const {
+    if (row < 0 || row >= kThemeCount) return false;
+    const ThemeDef& t = kThemes[row];
+    if (t.source == ThemeSource::Start) return true;
+    // Held at some point — not held NOW. The chip is a ROM that was read, so selling or
+    // losing it cannot take the set back; see content_themes.h.
+    return t.earnedById && hasCollectedItem(t.earnedById);
+}
+
+uint32_t Game::themesUnlockedMask() const {
+    uint32_t m = 0;
+    for (int i = 0; i < kThemeCount; ++i)
+        if (themeRowUnlocked(i)) m |= 1u << i;
+    return m;
+}
+
+bool Game::hasCollectedItem(const char* id) const {
+    if (!id) return false;
+    for (const ItemDef* d : collectedItems_)
+        if (d && std::strcmp(d->id, id) == 0) return true;
+    return false;
+}
+
+bool Game::setThemePick(int index) {
+    if (index < 0 || index >= kPalThemeCount) index = 0;
+    // A set nobody has unlocked is not applied — and index 0 always is, so a save
+    // naming a set this device has not earned (a chip removed from the tables, a blob
+    // from another device) lands on base rather than on nothing.
+    int row = -1;
+    for (int i = 0; i < kThemeCount; ++i)
+        if (palThemeByName(kThemes[i].palette) == index) { row = i; break; }
+    if (row < 0 || !themeRowUnlocked(row)) {
+        if (index == 0) { setPalTheme(0); themePick_ = 0; return true; }
+        return false;
+    }
+    setPalTheme(index);            // even when unchanged: a load applies through here
+    if (index == themePick_) return true;
+    themePick_ = index;
+    dirty_ = true;                 // nothing else changed, but every pixel of it did
+    markSaveDirty();               // a persisted CFG pref (save v64) — survives a reboot
+    return true;
+}
+
 void Game::setBrightness(int level) {
     if (level < 0) level = 0;
     if (level >= kBrightnessLevels) level = kBrightnessLevels - 1;
@@ -343,7 +420,7 @@ void Game::drawCfg(Framebuffer& fb) const {
         case CfgScreen::Device:
             // The row previews the CHOICE, not the place being drawn: AUTO stays AUTO
             // however the pet moves, which is the whole difference between the two.
-            drawCfgDevice(fb, cfgGroupRow_, uiMode_, brightness_,
+            drawCfgDevice(fb, cfgGroupRow_, uiMode_, brightness_, themeName(),
                           backgroundPick_ == SceneId::None
                               ? "AUTO"
                               : backgroundFor(backgroundPick_)->name);
@@ -378,6 +455,9 @@ void Game::drawCfg(Framebuffer& fb) const {
         }
         case CfgScreen::UiMode: drawUiModeToggle(fb, cfgUiPick_, uiMode_); break;
         case CfgScreen::Brightness: drawBrightness(fb, cfgBrightPick_, brightness_); break;
+        case CfgScreen::Theme:
+            drawThemePicker(fb, cfgThemePick_, themeRow(), themesUnlockedMask());
+            break;
         case CfgScreen::Audit:
             drawAuditMode(fb, cfgAuditPick_, static_cast<int>(auditMode())); break;
         case CfgScreen::PediaAp: drawApToggle(fb, cfgApPick_, apEnabled_); break;

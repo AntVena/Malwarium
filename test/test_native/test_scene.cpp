@@ -49,71 +49,96 @@ int sceneCount() { return static_cast<int>(SceneId::Count); }
 }  // namespace
 
 // Every authored place renders at both floors, paints something, and stays under the
-// tone ceiling except for a small budget of accents.
+// tone ceiling except for a small budget of accents — IN EVERY THEME.
+//
+// The theme loop is the half of this that was missing while there was only one set to
+// run in. A backdrop is built out of `paper` and an anchor and read under `ink`, and a
+// theme moves all three: one with a dim ink leaves a mid tone crowding the text, and one
+// with a LIGHT paper puts every anchor on the same side as the page. Neither is visible
+// from the base set, and both were live until sceneTint started pulling its anchor to a
+// fixed reach of the paper-to-ink span (core/render/scene.cpp).
+//
+// Every measure below is therefore a DISTANCE and never a direction, the same way the
+// palette ladders are (test_theme.cpp): the brightest pixel is not the one nearest the
+// text on a light theme, and the brightest tint is not the one furthest off the page.
 void test_scene_composes_at_both_floors() {
-    const float inkLum = luminance(palColor(Pal::INK));
-    const float wideLum = luminance(sceneCeiling());
-    for (int i = 1; i < sceneCount(); ++i) {
-        const SceneId id = static_cast<SceneId>(i);
-        CHECK(sceneFor(id) != nullptr);
-        CHECK(sceneName(id)[0] != '\0');
-        CHECK(sceneByName(sceneName(id)) == id);
-        for (int floorY : kFloors) {
-            Framebuffer fb(kActiveW, kActiveH);
-            CHECK(drawScene(fb, id, /*beat=*/3, sceneGround(floorY)));
+    for (int t = 0; t < kPalThemeCount; ++t) {
+        setPalTheme(t);
+        const float inkLum = luminance(palColor(Pal::INK));
+        const Rgb565 paper = palColor(Pal::PAPER);
+        const float paperLum = luminance(paper);
+        const float ceilReach = std::fabs(luminance(sceneCeiling()) - paperLum);
+        for (int i = 1; i < sceneCount(); ++i) {
+            const SceneId id = static_cast<SceneId>(i);
+            CHECK(sceneFor(id) != nullptr);
+            CHECK(sceneName(id)[0] != '\0');
+            CHECK(sceneByName(sceneName(id)) == id);
+            for (int floorY : kFloors) {
+                Framebuffer fb(kActiveW, kActiveH);
+                CHECK(drawScene(fb, id, /*beat=*/3, sceneGround(floorY)));
 
-            int accents = 0;
-            float brightest = 0.0f;
-            // A scene that composed itself off the top of the canvas is a scene whose
-            // sky band came out empty, so the band above the horizon is counted
-            // separately from the whole.
-            bool skyPainted = false, groundPainted = false;
-            const Rgb565 paper = palColor(Pal::PAPER);
-            const int horizonY = sceneGround(floorY).horizonY;
-            for (int y = 0; y < kActiveH; ++y) {
-                for (int x = 0; x < kActiveW; ++x) {
-                    const Rgb565 c = fb.get(x, y);
-                    if (c != paper) (y < horizonY ? skyPainted : groundPainted) = true;
-                    const float l = luminance(c);
-                    if (l > brightest) brightest = l;
-                    if (l > wideLum) ++accents;
+                int accents = 0;
+                float nearestInk = 99.0f;
+                // A scene that composed itself off the top of the canvas is a scene whose
+                // sky band came out empty, so the band above the horizon is counted
+                // separately from the whole.
+                bool skyPainted = false, groundPainted = false;
+                const int horizonY = sceneGround(floorY).horizonY;
+                for (int y = 0; y < kActiveH; ++y) {
+                    for (int x = 0; x < kActiveW; ++x) {
+                        const Rgb565 c = fb.get(x, y);
+                        if (c != paper) (y < horizonY ? skyPainted : groundPainted) = true;
+                        const float l = luminance(c);
+                        const float toInk = std::fabs(l - inkLum);
+                        if (toInk < nearestInk) nearestInk = toInk;
+                        if (std::fabs(l - paperLum) > ceilReach) ++accents;
+                    }
                 }
+                CHECK(groundPainted);
+                CHECK(skyPainted);
+                CHECK(accents <= kAccentBudget);
+                CHECK(nearestInk >= kInkDelta);
             }
-            CHECK(groundPainted);
-            CHECK(skyPainted);
-            CHECK(accents <= kAccentBudget);
-            CHECK(inkLum - brightest >= kInkDelta);
         }
     }
+    setPalTheme(0);
 }
 
 // `ink` text drawn over a scene's sky keeps its separation. Drawn for real rather than
-// reasoned about, because the question is whether the GLYPHS land brighter than what
-// they land on, and a glyph is a handful of pixels in a row of mostly background.
+// reasoned about, because the question is whether the GLYPHS land apart from what they
+// land on, and a glyph is a handful of pixels in a row of mostly background.
 void test_scene_keeps_ink_legible() {
-    for (int i = 1; i < sceneCount(); ++i) {
-        const SceneId id = static_cast<SceneId>(i);
-        for (int floorY : kFloors) {
-            Framebuffer fb(kActiveW, kActiveH);
-            drawScene(fb, id, /*beat=*/0, sceneGround(floorY));
-            const int rowY = sceneGround(floorY).horizonY / 2;
-            // What the sky under the row is, before anything is written on it.
-            float under = 0.0f;
-            for (int x = 0; x < kActiveW; ++x)
-                for (int y = rowY; y < rowY + kFontH; ++y) {
-                    const float l = luminance(fb.get(x, y));
-                    if (l > under) under = l;
-                }
-            drawText(fb, 8, rowY, "ROUND 3/3  CHAMPION", palColor(Pal::INK));
-            float lit = 0.0f;
-            for (int x = 8; x < kActiveW - 8; ++x)
-                for (int y = rowY; y < rowY + kFontH; ++y) {
-                    const float l = luminance(fb.get(x, y));
-                    if (l > lit) lit = l;
-                }
-            CHECK(lit - under >= kInkDelta);
+    for (int t = 0; t < kPalThemeCount; ++t) {
+        setPalTheme(t);
+        const float inkLum = luminance(palColor(Pal::INK));
+        for (int i = 1; i < sceneCount(); ++i) {
+            const SceneId id = static_cast<SceneId>(i);
+            for (int floorY : kFloors) {
+                Framebuffer fb(kActiveW, kActiveH);
+                drawScene(fb, id, /*beat=*/0, sceneGround(floorY));
+                const int rowY = sceneGround(floorY).horizonY / 2;
+                // The sky under the row, taken as the pixel that comes CLOSEST to the
+                // text it is about to be written under — on a light set that is the
+                // darkest one, not the brightest.
+                float under = 99.0f;
+                for (int x = 0; x < kActiveW; ++x)
+                    for (int y = rowY; y < rowY + kFontH; ++y) {
+                        const float d = std::fabs(luminance(fb.get(x, y)) - inkLum);
+                        if (d < under) under = d;
+                    }
+                CHECK(under >= kInkDelta);
+                // ...and the glyphs really do land, which is what stops this passing on
+                // a scene that painted nothing at all up there.
+                drawText(fb, 8, rowY, "ROUND 3/3  CHAMPION", palColor(Pal::INK));
+                bool lit = false;
+                for (int x = 8; x < kActiveW - 8 && !lit; ++x)
+                    for (int y = rowY; y < rowY + kFontH; ++y)
+                        if (fb.get(x, y) == palColor(Pal::INK)) { lit = true; break; }
+                CHECK(lit);
+            }
         }
     }
+    setPalTheme(0);
 }
 
 // The anchor rail: a scene cannot borrow a colour that already means something. Asking

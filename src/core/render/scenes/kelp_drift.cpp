@@ -2,6 +2,7 @@
 
 #include "core/render/canvas.h"
 #include "core/render/framebuffer.h"
+#include "core/render/palette.h"
 
 namespace mal {
 
@@ -59,6 +60,9 @@ constexpr int kBubbleRise = 46;
 }  // namespace
 
 void drawKelpDriftScene(Framebuffer& fb, int beat, const SceneGround& g) {
+    // Cleared first like every other place: a column this leaves unpainted is black,
+    // which is invisible on a dark set and a hole in the picture on a light one.
+    fb.clear(palColor(Pal::PAPER));
     // The water column, lit at the top and lost at the bed. Filled rather than cleared
     // — there is no `paper` anywhere in this scene, which is what being submerged is.
     // The column runs to the FLOOR, not to the horizon: this is one body of water and

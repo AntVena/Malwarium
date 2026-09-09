@@ -26,6 +26,12 @@ Game::Game(StartMode mode, const char* hatchedCreature, ISaveStore* store)
     loadout_ = Loadout::starting();
     moveLoadout_ = MoveLoadout::startingForLine(registry_, nullptr);  // overwritten below
 
+    // The palette index lives outside this object (core/render/palette.h) — it is the
+    // one piece of interface state a drawing call reads without being handed it — so a
+    // Game states its theme rather than assuming the process is already in it. A save
+    // read below re-states it with whatever the operator chose.
+    setThemePick(themePick_);
+
     // Boot from a persisted save when one exists. A valid blob
     // always restores the lifetime/economy/rack state; if it also names a live
     // active pet, we go straight to idle on it. A blob with an empty active pet

@@ -32,6 +32,10 @@ enum class SceneId : uint8_t {
     // Prize backdrops, which no area names — the half of the roster that is the reason
     // an id cannot hang off AreaDef.
     GridHorizon,
+    NeonSubnet,
+    PaywallRidge,
+    NullPointe,
+    ZeroDayShrine,
     MainframeRow,
     // ...and the four an ACHIEVEMENT pays out, each one the room its own family of rows
     // is about: the kitchen the recipes are cooked in, the bench the rig is built on,

@@ -2,6 +2,7 @@
 
 #include "core/render/canvas.h"
 #include "core/render/framebuffer.h"
+#include "core/render/palette.h"
 
 namespace mal {
 
@@ -59,6 +60,9 @@ constexpr int kLureBob = 3;
 }  // namespace
 
 void drawBaitShallowsScene(Framebuffer& fb, int beat, const SceneGround& g) {
+    // Cleared first like every other place: a column this leaves unpainted is black,
+    // which is invisible on a dark set and a hole in the picture on a light one.
+    fb.clear(palColor(Pal::PAPER));
     // The column runs to the FLOOR, not to the horizon: this is one body of water and
     // the bed is its bottom, so there is no middle band to leave between them. Every
     // horizon scene has one; a submerged one does not, and calling sceneMiddle here
