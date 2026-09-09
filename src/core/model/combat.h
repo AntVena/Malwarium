@@ -753,6 +753,18 @@ private:
     // in — the mitigation chain above the call is a different question from the payout
     // below it, and only the chain needs the locals it accumulates.
     void applyStealTrack(Combatant& actor, Combatant& target, const MoveDef& mv);
+    // The Trojan line's trap, spent on the hit that sprang it: `dmg` in, what still reaches
+    // the target out, with the rebound measured against the pre-mitigation `baseDmg`.
+    // Returns `dmg` unchanged when the target holds no trap.
+    int springTrojanTrap(Combatant& actor, Combatant& target, int dmg, int baseDmg);
+    // The Ransomware pair — the armed window banking a hit, and the full Cipher wall seizing
+    // the move that landed it. Returns what was banked (0 when the window was shut), which
+    // the caller owes back to Health; the hit itself still counts as landed.
+    int bankRansomAndSeize(Combatant& target, const MoveDef& mv, int dmg);
+    // What the TARGET deals back for having been hit — the wall's backscatter out of
+    // `wallAbsorbed`, then the two thorns mods off the landed `dmg`. Called after the hit
+    // is spent on Health, since Tripwire arms off what the hit left behind.
+    void applyRetaliation(Combatant& actor, Combatant& target, int dmg, int wallAbsorbed);
     // Hand a seized move back and restore what it displaced (RansomSeizure). Called the
     // turn the ransom settles, and inert on a fighter holding nothing — so every path that
     // ends a ransom can call it without first asking whether there was a seizure.

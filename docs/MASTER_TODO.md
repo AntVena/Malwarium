@@ -414,8 +414,8 @@ you look at one.
 ## 3. Size / reviewability watch
 
 Same rule as the `game_*.cpp` units: split *at* ~600 lines, not before, and split by concern
-rather than by line count. `save.cpp` (1139), `combat.cpp` (1564), `expl_screen.cpp` (829),
-`combat_factory.cpp` (749) and `cfg_screen.cpp` (722) are each past the number and each still
+rather than by line count. `save.cpp` (1215), `combat.cpp` (1812), `combat_factory.cpp` (955),
+`expl_screen.cpp` (911) and `cfg_screen.cpp` (799) are each past the number and each still
 ONE concern at UNIT level — save.cpp is long because the format is flat, which is not a second
 responsibility, and combat.cpp is the turn engine alone.
 
@@ -423,13 +423,15 @@ responsibility, and combat.cpp is the turn engine alone.
 look.** One is still past the point a reviewer can hold it in their head, and the "it is a
 dispatcher, its length follows from the number of cases" defence does not cover it:
 
-- **`Combat::applyEffect` (404 lines, `combat.cpp:337`)** — **zero `case` labels**: a sequential
+- **`Combat::applyEffect` (380 lines, `combat.cpp:349`)** — **zero `case` labels**: a sequential
   if-chain over effect mechanics, not a dispatch table, so its length follows from accumulated
-  special cases rather than from a vocabulary. The steal track is lifted
-  (`Combat::applyStealTrack`); what remains is the mitigation chain, which genuinely needs the
-  locals it accumulates, plus the Trojan trap, the ransom/seizure pair, the two thorns and the
-  three crew Exploits hanging off a landed hit. | S per family, M in total. | One family lifted
-  per pass, not a rewrite — take the ones the chain's locals do not reach. |
+  special cases rather than from a vocabulary. Four families are lifted — the steal track
+  (`applyStealTrack`), the Trojan trap (`springTrojanTrap`), the ransom/seizure pair
+  (`bankRansomAndSeize`) and the on-hit retaliation (`applyRetaliation`). What remains is the
+  mitigation chain, which genuinely needs the locals it accumulates, plus the stun/scramble/DoT
+  riders and the crew Exploits hanging off a landed hit, and the whole Defend branch under the
+  `else`. | S per family, M in total. | One family lifted per pass, not a rewrite — take the
+  ones the chain's locals do not reach. |
 
 ---
 

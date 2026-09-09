@@ -566,92 +566,23 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
             else { dmg -= target.shieldHp; target.shieldHp = 0; }
             if (target.shieldHp == 0) target.phishShieldPeak = 0;
         }
-        // Trojan trap: an incoming attack springs the top armed trap — delete
-        // trapEvasionPct% of the hit, reflect trapReboundPct% of everything avoided through
-        // the attacker's CURRENT (rotting) defense, then strip trapArmorRot flat % Defense
-        // for the rest of the fight. So rebound grows as the armor rots. Uses no rng().
-        if (baseDmg > 0 && target.trojanTrapCount > 0) {
-            const MoveDef* trap = target.trojanTraps[--target.trojanTrapCount];
-            target.trojanTraps[target.trojanTrapCount] = nullptr;
-            if (trap->trapEvasionPct > 0) dmg = dmg * (100 - trap->trapEvasionPct) / 100;
-            if (dmg < 0) dmg = 0;
-            const int mitigated = baseDmg - dmg;          // total the Trojan avoided
-            if (trap->trapReboundPct > 0 && mitigated > 0) {
-                int rebound = mitigated * trap->trapReboundPct / 100;
-                int r = actor.dmgReducePct;               // through the attacker's defense
-                if (r > kLevelDmgReduceMaxPct) r = kLevelDmgReduceMaxPct;
-                if (r > 0) rebound = rebound * (100 - r) / 100;
-                if (rebound > 0) {
-                    actor.health -= rebound;
-                }
-            }
-            if (trap->trapArmorRot > 0 && !statsFloored(actor)) {   // rot armor for next time
-                actor.dmgReducePct -= trap->trapArmorRot;
-                if (actor.dmgReducePct < 0) actor.dmgReducePct = 0;
-            }
-        }
-        // Ransom Note (Ransomware passive): with the window armed, the damage is banked
-        // into ransomPool instead of taken, and the countdown resets to kRansomHoldTurns.
-        // Last in the chain, so the pool holds exactly what would have reached Health.
-        // Only the NUMBER is deferred — `dmg` below still describes a landed hit, so every
-        // rider fires on impact and a KO check sees Health that hasn't moved.
-        int ransomed = 0;
-        if (dmg > 0 && target.ransomArmed) {
-            ransomed = dmg;
-            target.ransomPool += dmg;
-            target.ransomTurnsLeft = kRansomHoldTurns;
-            target.ransomArmed = false;   // the window closes on the hit it catches
-        }
-        // The SEIZURE (RansomSeizure): a full Cipher wall with a live ransom takes the
-        // attack that hit it and swings it from the brace's own slot until the ransom
-        // settles. Only a landed attack, and never an unresolved WILDCARD row — the
-        // ransomer has no pool to resolve one with, so it would swing an empty slot.
-        if (dmg > 0 && target.ransomSeizure.armed && mv->kind == MoveDef::Kind::Attack &&
-            !moveIsWildcard(*mv)) {
-            RansomSeizure& seize = target.ransomSeizure;
-            const int slot = seize.slot;
-            if (slot >= 0 && slot < static_cast<int>(target.moves.size())) {
-                seize.heldMove = target.moves[slot];
-                seize.heldFollow = slot < static_cast<int>(target.chainFollow.size())
-                                       ? target.chainFollow[slot]
-                                       : nullptr;
-                target.moves[slot] = mv;
-                if (slot < static_cast<int>(target.chainFollow.size()))
-                    target.chainFollow[slot] = nullptr;   // the payload, not the toolkit
-                // The seizure runs the ransom clock, which is also its release: a pet that
-                // keeps diverting hits keeps the move, one that stops hands it back.
-                target.ransomTurnsLeft = kRansomHoldTurns;
-            }
-            seize.armed = false;
-        }
+        // A landed hit springs the Trojan's top armed trap (springTrojanTrap): part of the
+        // hit deleted, part of what was avoided reflected, and the attacker's armor rotted
+        // for the rest of the fight. Inert on a target holding no traps.
+        dmg = springTrojanTrap(actor, target, dmg, baseDmg);
+        // The Ransomware pair, last in the chain so the pool holds exactly what would have
+        // reached Health: the armed window banks the damage instead of taking it, and a
+        // full Cipher wall seizes the move that hit it (bankRansomAndSeize). `ransomed` is
+        // what was banked — owed back to Health below, and nothing else about the hit.
+        const int ransomed = bankRansomAndSeize(target, *mv, dmg);
         // Health is left UNCLAMPED here and at every site below that spends it:
         // Combat::checkOutcome owns the floor, because how far past 0 a hit buried the pet
         // is what the Backup Drive's death-save weighs before that floor erases it.
         target.health -= dmg - ransomed;
-        // Defence T3 (backscatter): a share of what the wall just ate is dealt back to
-        // whoever swung. Out of `wallAbsorbed` rather than out of the attack, so the rung
-        // pays for absorbing and cannot pay a fighter nothing reached — and ahead of the
-        // mod thorns below, which reflect a flat number for landing a hit at all. The two
-        // are different questions and a fighter carrying both is answered twice on purpose.
-        if (wallAbsorbed > 0 && target.backscatterPct > 0) {
-            const int back = wallAbsorbed * target.backscatterPct / 100;
-            if (back > 0) actor.health -= back;
-        }
-        // Honeytoken (mod): a landed hit chips the attacker back. Mods are player-side, so
-        // it only ever reflects onto an enemy that hit the pet.
-        const int thorns = target.mods.mag(ModEffect::Thorns);
-        if (dmg > 0 && thorns > 0) {
-            actor.health -= thorns;
-        }
-        // Tripwire (mod): Honeytoken's shape, but only while the pet is critically low.
-        // Its own ModEffect kind so it never pools with an always-on Thorns alongside it.
-        const int condThorns = target.mods.mag(ModEffect::ConditionalThorns);
-        if (dmg > 0 && condThorns > 0 && target.maxHealth > 0) {
-            const int hpPct = target.health * 100 / target.maxHealth;
-            if (hpPct <= target.mods.mag2(ModEffect::ConditionalThorns)) {
-                actor.health -= condThorns;
-            }
-        }
+        // What the target hits BACK for, now that the hit has been spent on its Health: the
+        // wall's own backscatter, then the two thorns mods (applyRetaliation). Read after
+        // the spend on purpose — Tripwire arms off the Health the hit left behind.
+        applyRetaliation(actor, target, dmg, wallAbsorbed);
         if (dmg > 0) applyStealTrack(actor, target, *mv);
         // Deadman Switch (mod): a hit that KO'd the pet deals a parting blast. A mutual KO
         // resolves as a Win (enemy-death priority, checkOutcome). One shot per fight.
@@ -794,6 +725,108 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
         }
         setLast(mv->displayName, 0, byPlayer, false);
     }
+}
+
+// Everything the TARGET deals back for having been hit, in the order a fighter holding all
+// of it is answered: the wall's backscatter first, then the two thorns mods. Called once the
+// hit has been spent on Health — `dmg` is what landed and `wallAbsorbed` what the mitigation
+// chain's wall ate, the two being different questions that a fighter carrying both is
+// answered for twice on purpose. Every payout chips `actor.health` and nothing else; the
+// Deadman Switch is not here because it fires on the KO rather than on the hit. Uses no rng().
+void Combat::applyRetaliation(Combatant& actor, Combatant& target, int dmg, int wallAbsorbed) {
+    // Defence T3 (backscatter): a share of what the wall just ate is dealt back to whoever
+    // swung. Out of `wallAbsorbed` rather than out of the attack, so the rung pays for
+    // absorbing and cannot pay a fighter nothing reached.
+    if (wallAbsorbed > 0 && target.backscatterPct > 0) {
+        const int back = wallAbsorbed * target.backscatterPct / 100;
+        if (back > 0) actor.health -= back;
+    }
+    if (dmg <= 0) return;
+    // Honeytoken (mod): a landed hit chips the attacker back, a flat number for landing it
+    // at all. Mods are player-side, so it only ever reflects onto an enemy that hit the pet.
+    const int thorns = target.mods.mag(ModEffect::Thorns);
+    if (thorns > 0) {
+        actor.health -= thorns;
+    }
+    // Tripwire (mod): Honeytoken's shape, but only while the pet is critically low. Its own
+    // ModEffect kind so it never pools with an always-on Thorns alongside it.
+    const int condThorns = target.mods.mag(ModEffect::ConditionalThorns);
+    if (condThorns > 0 && target.maxHealth > 0) {
+        const int hpPct = target.health * 100 / target.maxHealth;
+        if (hpPct <= target.mods.mag2(ModEffect::ConditionalThorns)) {
+            actor.health -= condThorns;
+        }
+    }
+}
+
+// A Trojan trap spends itself on an incoming attack: delete trapEvasionPct% of the hit,
+// reflect trapReboundPct% of everything the trap avoided through the attacker's CURRENT
+// (rotting) defense, then strip trapArmorRot flat % Defense for the rest of the fight — so
+// rebound grows as the armor rots. `baseDmg` is the pre-mitigation hit, which is what the
+// rebound is measured against; the return is what still reaches the target. Only the top
+// trap springs, and a target holding none returns `dmg` untouched. Uses no rng().
+int Combat::springTrojanTrap(Combatant& actor, Combatant& target, int dmg, int baseDmg) {
+    if (baseDmg <= 0 || target.trojanTrapCount <= 0) return dmg;
+    const MoveDef* trap = target.trojanTraps[--target.trojanTrapCount];
+    target.trojanTraps[target.trojanTrapCount] = nullptr;
+    if (trap->trapEvasionPct > 0) dmg = dmg * (100 - trap->trapEvasionPct) / 100;
+    if (dmg < 0) dmg = 0;
+    const int mitigated = baseDmg - dmg;          // total the Trojan avoided
+    if (trap->trapReboundPct > 0 && mitigated > 0) {
+        int rebound = mitigated * trap->trapReboundPct / 100;
+        int r = actor.dmgReducePct;               // through the attacker's defense
+        if (r > kLevelDmgReduceMaxPct) r = kLevelDmgReduceMaxPct;
+        if (r > 0) rebound = rebound * (100 - r) / 100;
+        if (rebound > 0) {
+            actor.health -= rebound;
+        }
+    }
+    if (trap->trapArmorRot > 0 && !statsFloored(actor)) {   // rot armor for next time
+        actor.dmgReducePct -= trap->trapArmorRot;
+        if (actor.dmgReducePct < 0) actor.dmgReducePct = 0;
+    }
+    return dmg;
+}
+
+// The Ransomware line's pair, both keyed on a hit that already got through everything else.
+//
+// Ransom Note (the passive): with the window armed, `dmg` is banked into ransomPool instead
+// of taken and the countdown resets to kRansomHoldTurns. The returned number is what was
+// banked, which the caller owes Health back — only the NUMBER is deferred, so every rider
+// still fires on impact and the KO check sees Health that hasn't moved.
+//
+// The SEIZURE: a full Cipher wall with a live ransom takes the attack that hit it and swings
+// it from the brace's own slot until the ransom settles. Only a landed attack, and never an
+// unresolved WILDCARD row — the ransomer has no pool to resolve one with, so it would swing
+// an empty slot. The slot written is the TARGET's — the one its own brace armed — and has
+// nothing to do with the caster's index for `mv`. Uses no rng().
+int Combat::bankRansomAndSeize(Combatant& target, const MoveDef& mv, int dmg) {
+    if (dmg <= 0) return 0;
+    int ransomed = 0;
+    if (target.ransomArmed) {
+        ransomed = dmg;
+        target.ransomPool += dmg;
+        target.ransomTurnsLeft = kRansomHoldTurns;
+        target.ransomArmed = false;   // the window closes on the hit it catches
+    }
+    if (target.ransomSeizure.armed && mv.kind == MoveDef::Kind::Attack && !moveIsWildcard(mv)) {
+        RansomSeizure& seize = target.ransomSeizure;
+        const int slot = seize.slot;
+        if (slot >= 0 && slot < static_cast<int>(target.moves.size())) {
+            seize.heldMove = target.moves[slot];
+            seize.heldFollow = slot < static_cast<int>(target.chainFollow.size())
+                                   ? target.chainFollow[slot]
+                                   : nullptr;
+            target.moves[slot] = &mv;
+            if (slot < static_cast<int>(target.chainFollow.size()))
+                target.chainFollow[slot] = nullptr;   // the payload, not the toolkit
+            // The seizure runs the ransom clock, which is also its release: a pet that
+            // keeps diverting hits keeps the move, one that stops hands it back.
+            target.ransomTurnsLeft = kRansomHoldTurns;
+        }
+        seize.armed = false;
+    }
+    return ransomed;
 }
 
 // The steal track, and the frenzy heal that hangs off it. Lifted whole out of
