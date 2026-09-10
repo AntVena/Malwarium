@@ -215,9 +215,8 @@ Process. It is scaled against its own line, not against the roster. **A worm gro
 HEAVIER, not by getting bigger:** Rootgrub is barely wider in its cell than Nodeatode and reads as
 a whole stage more, because the mass moved — thin and long became short and thick, and a head
 became a mouth. That is the move this line has instead of the extra cell room every other line
-spends on its Script. And it is why the line's
-back-pocket idea (§4) is best spent on something the SWARM reads at a glance rather than on
-detail the shrunken parent cannot carry.
+spends on its Script. And it is why the line's back-pocket idea (§0's Daemon row) is best spent
+on something the SWARM reads at a glance rather than on detail the shrunken parent cannot carry.
 
 **The Worm has no mother colour. Its signature is 1-bit line art plus copies**, which is the same
 exception read from the other end: the line already puts more things on the screen than any other,

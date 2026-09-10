@@ -198,9 +198,9 @@ which is why gameplay ships first and the drawing follows.
 - **`SPR_PET_WIRE_HEIR` is `▨`, and what it owes is COLOUR SEPARATION, not a redraw.** The drawing is
   the one that is wanted — a long low dachshund turned three-quarter to the viewer, its dark eye box
   carried down from Paypup, a plumed helm answering the horizontal body with a vertical, a heraldic
-  device on the surcoat. What it does not yet do is `CREATURE_VISUAL_RULES §2`'s material rule: helm,
-  surcoat and cloak sit in the same green as the animal, so the regalia reads as more creature rather
-  than as cloth and steel over one. That is a recolour of existing pixels — the forms are already
+  device on the surcoat. What it does not yet do is the per-local-colour tone budget in
+  `CREATURE_VISUAL_RULES §3`: helm, surcoat and cloak sit in the same green as the animal, so the
+  regalia reads as more creature rather than as cloth and steel over one. That is a recolour of existing pixels — the forms are already
   separated, only the hues are not — so it is a paint pass on the shipped file rather than another
   generation. `SPR_PET_PWNTHER` is the reference for how far the tones have to move apart.
 - **`SPR_PET_BARKMAIL` is `▨`, and what wants redrawing is the MAIL rather than the dog.** Its
@@ -414,7 +414,7 @@ which is why gameplay ships first and the drawing follows.
   catches this, and the sheet looks plausible either way.
 - **An egg line ships ONE egg file, not two.** `SPR_PET_EGG_PHISH_HATCH` and
   `SPR_PET_EGG_WORM_HATCH` are each an 8-frame `56×48` sheet that is both the idle loop (frames
-  0–1) and the hatch one-shot (0–7, walked by `Game::hatchCrackFrame`). A separately-drawn
+  0–1) and the hatch one-shot (0–7, walked by `Game::hatchRevealFrame`). A separately-drawn
   single-frame egg was byte-identical to frame 0, so shipping it too would only duplicate flash.
 - **`SPR_PET_EGG_WORM_HATCH` is `▨`, and 1-bit for the reason above** — the line's signature, not a
   simplification, and the same masks-on-`ink` economy the replicas run on (§C.4).
@@ -767,8 +767,8 @@ blank — that is the prompt to draw one, and `check_orphan_assets.py` catches t
 |---|---|---|---|---|---|
 | `ICON_MAINT_DEFRAG` | Defragmentation row glyph | 20×20 | | ☑ | `/assets/icons/ICON_MAINT_DEFRAG.png` |
 | `ICON_MAINT_AV` | Antivirus (AV) row glyph | 20×20 | | ☑ | `/assets/icons/ICON_MAINT_AV.png` |
-| `ANIM_DEFRAG` | Defrag block-shuffle process anim | — | OPTIONAL/flavour; modal process visual, NOT a §4 pass; procedural OK | ☐ | |
-| `ANIM_AV_SWEEP` | AV scan-sweep process anim | — | OPTIONAL/flavour; modal process visual, NOT a §4 pass; procedural OK | ☐ | |
+| `ANIM_DEFRAG` | Defrag block-shuffle process anim | — | OPTIONAL/flavour; modal process visual, NOT a §D pass; procedural OK | ☐ | |
+| `ANIM_AV_SWEEP` | AV scan-sweep process anim | — | OPTIONAL/flavour; modal process visual, NOT a §D pass; procedural OK | ☐ | |
 
 > Both processes reuse `UI_PROGRESS_BAR`. Replication Ghost is the existing `FX_GHOST` pass —
 > AV clears it; no new art. Animations are optional polish — progress bar suffices for v1.

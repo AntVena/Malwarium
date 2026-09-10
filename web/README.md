@@ -37,7 +37,8 @@ Open `index.html` from disk and it runs on the sample fixture.
    additive: a site running against an older device simply draws no grids.
 3. Handle the two POSTs (both fail gracefully offline):
    - `POST /api/tag` `{"tag":"A-Z0-9_ ≤12"}` — HackerTag rename (the site's one write).
-   - `POST /api/achievement/DEVTOOLS_INTRUDER` — the honeytoken callback (§03 arch).
+   - `POST /api/achievement/DEVTOOLS_INTRUDER` — the honeytoken callback. Why the DevTools
+     "exploit" it rewards is deliberate: `docs/ORIENTATION.md`, *The 'Pedia and the AP*.
 
 ## Keeping data in sync
 

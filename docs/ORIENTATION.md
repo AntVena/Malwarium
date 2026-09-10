@@ -162,14 +162,15 @@ the whole run persists as **one seed plus a survivor bitmask** — every entrant
 Stakes are Safe and nothing pays until the bracket is taken, at which point the title pays once;
 a loss ends the run, which is the only thing at risk.
 
-Opponents having real loadouts is also what pushed the **mid-combat panel** to two pages. B now
-CYCLES it — closed → STATE → KIT → closed — because it answers two questions and neither fits
-beside the other: what is happening to these two right now (the live leans, absorbs and
-afflictions) and what they can DO (each side's equipped kit, and the Exploit a rival is carrying
-but has not fired). The STATE readout is a token set (`combatStateTokens`) the draw wraps rather
-than one string drawn into a 24-character box, so a fight with a shield, a brace, a ransom bill,
-traps, a rot and a stun all live reports every one of them instead of cutting whatever ran past
-the edge.
+Opponents having real loadouts is also what pushed the **mid-combat panel** to two pages
+(`kCombatStatPages`). B CYCLES it — closed → VS → KIT → closed — because it answers two questions
+and neither fits beside the other: what is happening to these two right now (the live leans,
+absorbs and afflictions) and what they can DO (each side's equipped kit, and the Exploit a rival is
+carrying but has not fired). The VS readout is a GRID rather than two lists (`combatVsGrid`,
+`core/ui/combat_screen.h`) — one row per thing a fight can be decided by, carrying each fighter's
+value for it, and a row appears only when at least one side has it. So a fight with a shield, a
+brace, a ransom bill, traps, a rot and a stun all live reports every one of them inside the panel's
+24 characters, where two lists cost a row each and overran the box.
 
 ---
 
@@ -375,8 +376,9 @@ is not one you own, and the licence is where that is enforceable rather than mer
 
 Two workflows in `.github/workflows/`. **gates** runs the normal cycle on every push and pull
 request: the native suite, then the S3 firmware build, because `src/platform/esp32` compiles
-nowhere else. **publish** fires on a `v*` tag and deploys to **GitHub Pages**, which is the
-publish host because a device needs exactly one thing — stable URLs that return bytes. No API, no
+nowhere else. **publish** deploys to **GitHub Pages**, on a pushed `v*` tag or a manual **Run
+workflow** on `main` (`workflow_dispatch`). Pages is the publish host because a device needs
+exactly one thing — stable URLs that return bytes. No API, no
 rate limit, no cross-host redirect, and the manifest *is* the version pointer, so publishing is
 overwriting one file:
 
@@ -397,6 +399,14 @@ an unbumped publish is one nobody receives, and bumping both means never having 
 one moved. `make manifest` validates its own output with the device's parser before anything is
 served, so CI cannot publish a manifest the device would reject — which from the operator's side
 is indistinguishable from a dead network.
+
+**Either trigger publishes the same bytes**, because `make pages` reads the version from
+`include/version.h` and `web/VERSION` and never from the ref: the tag is the repo's record of a
+release, not the source of its number. So push the tag when the credentials allow it, and dispatch
+the workflow on `main` when they don't — a token without `refs/tags/*` write gets a 403 on the tag
+and nothing else, and a release that is only committed is not live. **Pushing `main` is half the
+job**: until publish runs, nothing is offered to any device, and the only symptom is a version
+nobody is running.
 
 Each deploy replaces the whole site, so only the current artifacts exist and older URLs 404. That
 costs nothing here: rollback is trial-boot to the inactive OTA slot, not a re-download. The web

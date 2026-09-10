@@ -87,9 +87,39 @@ look truncated in a still and scroll on the device. And a band that ends short o
 only a defect if the group BELOW it has nothing separating it; empty canvas under the last group
 is just empty canvas.
 
-### Stale cross-reference sweep — Last run: 2026-08-15
+### Stale cross-reference sweep — Last run: 2026-09-10
 Grep for links/citations across the docs — file paths, line numbers, `D#`/`S#`/`C#`/`FB-*` row
 IDs — and verify they still resolve to something real. Fix or remove dangling references.
+
+**Three kinds of citation, and the yield is NOT in the paths.** A path-shaped scan is almost all
+noise here, because the docs cite by basename and partial path on purpose (`game.h`,
+`core/ui/theme.h`), and because four classes of unresolvable path are correct: generated artifacts
+(`malwarium.wasm`, `manifest.json`, the boot images), the untracked `_attic/`, a hypothetical
+path introduced by *e.g.* (`pirate_bayou/bosses.cpp` — an illustration of a split that has not
+happened), and `diagram.json`, which `sim/README.md` says is deliberately uncommitted. Resolve a
+citation by SUFFIX against the tracked set before believing it dangles.
+
+The two that pay are the ones a mechanical grep for links never reaches:
+
+- **Symbol citations** — a backticked identifier is a claim about code, and code is renamed
+  under docs that are not rebuilt. Extract the constants, *Type::member* pairs, camelCase names
+  and *fn()* calls out of the backticks and check each against the tree. A NEAR-MISS is the
+  signature — a name that reads right and resolves to nothing, one noun off what the code calls
+  it (a *RampFor* where the member is a *SpriteFor*, a *Tokens* where the type is a *Grid*). Note
+  a miss in prose rather than pasting the dead name back in, or this entry becomes the next run's
+  own dangling symbol. When one is wrong, read the
+  surrounding prose too: a citation that stale usually describes the superseded DESIGN as well,
+  not only the old name.
+- **`§N` section refs**, which have to be resolved against the TARGET doc's headings, not the
+  citing one. Two conventions look like breakage and are not: `VISUAL_LANGUAGE §0.4` addresses
+  the fourth numbered item inside §0 rather than a subsection, and a bare `§N` in a sentence
+  naming another doc belongs to that doc. What is real is a number pointing at the wrong section
+  — a lettered manifest still cited as `§4` for what is now `§D`, or `§4` used to mean *stage 4*
+  in a doc where `§` means section.
+
+Also check that a doc which ROUTES to another for a process actually finds it there: the routing
+line and the section it points at are two places one process is described, and only one of them
+gets updated.
 
 ### Test/gate health check — Last run: 2026-08-29
 Run the gates. Confirm native gates and the S3 build are actually green, not assumed green from

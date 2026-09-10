@@ -204,8 +204,8 @@ line the rival has nothing to do with makes the pet that LINE, sampled off the l
 creature at the wearer's stage, which is the answer in every wild encounter: a malbeast
 belongs to no line and fields only generic rows, so a rule that needed the fighter opposite
 to be holding the move would leave the pet bare through the whole single-player game. The
-target is resolved in the tick and turned into tones at the draw (`Game::camoRampForTarget`),
-because ranking a sprite's colours is work the repaint already does once.
+target is resolved in the tick (`Game::camoSpriteForTarget`) and turned into tones at the draw
+(`camoRampFrom`), because ranking a sprite's colours is work the repaint already does once.
 
 The sampled source is really the derived one **with the real colours laid over it**: the
 ladder is built whole from the sprite's main colour first, then its actual tones are

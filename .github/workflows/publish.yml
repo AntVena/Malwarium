@@ -17,10 +17,12 @@
 # and the device fetches what it is told, not what was meant. It is also what
 # UPDATE_MANIFEST_URL (or a stored override) has to point at, with /manifest.json.
 #
-# Cutting a release is `git tag v0.1.9 && git push --tags`. Bump include/version.h
-# (firmware) and/or web/VERSION (bundle) FIRST — a device only installs an
-# artifact whose code beats what it already runs, so an unbumped publish is a
-# publish nobody receives.
+# Cutting a release is `git tag v0.1.9 && git push --tags`, or a manual Run
+# workflow on main where a token cannot write refs/tags/*. Both publish the same
+# bytes: `make pages` reads the version from include/version.h and web/VERSION,
+# never from the ref. Bump include/version.h (firmware) and/or web/VERSION
+# (bundle) FIRST — a device only installs an artifact whose code beats what it
+# already runs, so an unbumped publish is a publish nobody receives.
 name: publish
 
 on:
