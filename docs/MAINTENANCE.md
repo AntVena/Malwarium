@@ -107,9 +107,8 @@ The two that pay are the ones a mechanical grep for links never reaches:
   signature — a name that reads right and resolves to nothing, one noun off what the code calls
   it (a *RampFor* where the member is a *SpriteFor*, a *Tokens* where the type is a *Grid*). Note
   a miss in prose rather than pasting the dead name back in, or this entry becomes the next run's
-  own dangling symbol. When one is wrong, read the
-  surrounding prose too: a citation that stale usually describes the superseded DESIGN as well,
-  not only the old name.
+  own dangling symbol. When one is wrong, read the surrounding prose too: a citation that stale
+  usually describes the superseded DESIGN as well, not only the old name.
 - **`§N` section refs**, which have to be resolved against the TARGET doc's headings, not the
   citing one. Two conventions look like breakage and are not: `VISUAL_LANGUAGE §0.4` addresses
   the fourth numbered item inside §0 rather than a subsection, and a bare `§N` in a sentence
