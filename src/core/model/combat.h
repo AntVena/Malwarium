@@ -748,6 +748,42 @@ private:
     // Prowlware to rank that move's Attack power (attackPowerRank).
     void applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
                      bool byPlayer, int moveIdx);
+    // --- The hit pipeline's phases, in running order ---------------------------------
+    // applyEffect is a SEQUENCE, not a dispatch: one damage value carried through stages
+    // that are each optional on their own. Each phase below names one stage. Only
+    // mitigate() keeps locals, because its pierce/brace/floor negotiation IS those locals.
+    //
+    // The frenzy streak this actor is on, advanced or broken by the attack it just swung.
+    void trackFrenzyStreak(Combatant& actor, const MoveDef& mv);
+    // What the swing is worth before the target has any say: leans, mods, banked pools and
+    // the fight's opening blow. Reads the actor only, which is what makes it phase one.
+    int swingDamage(Combatant& actor, const MoveDef& mv, bool byPlayer, bool swingingSeized);
+    // A worm replica intercepting the hit and eating it whole. True = the turn ended here.
+    bool replicaAte(Combatant& target, const MoveDef& mv, int dmg, bool byPlayer);
+    // The wall: negate, pierce ladder, brace, the never-immune clamp and the min-1 floor.
+    // `wallAbsorbed` comes back out because Defence T3 pays out of the wall's share alone.
+    int mitigate(Combatant& actor, Combatant& target, const MoveDef& mv, int dmg,
+                 int baseDmg, int& wallAbsorbed);
+    // The three post-mitigation ceilings, in the order they compose: rank multiplier, hard
+    // cap, deferred split.
+    int capAndSplit(Combatant& actor, Combatant& target, int dmg, int moveIdx);
+    // The Obfuscation pool taking the hit ahead of Health; only the overflow is returned.
+    int soakShieldPool(Combatant& actor, Combatant& target, int dmg);
+    // Deadman Switch: the parting blast a KO'd pet deals back. One shot per fight.
+    void applyDeathBlast(Combatant& actor, Combatant& target);
+    // What a landed hit pays its own caster — the two crew Exploits that read one.
+    void applyCrewOnHit(Combatant& actor, int dmg);
+    // The Lockout track's per-fight Power stack, capped per move and copied to a MITM holder.
+    void stackLockoutPower(Combatant& actor, Combatant& mirror, const MoveDef& mv,
+                           bool mitmCopy);
+    // Stun, scramble and DoT: the riders a landed hit plants on the target. None reads the
+    // damage, which is what lets them sit at the end rather than inside the chain.
+    void applyOnHitRiders(Combatant& target, const MoveDef& mv);
+    // The Defend branch, whole — brace or pool or worm body, the Cipher track, the seizure
+    // it arms and the Trojan trap it stacks.
+    void applyDefend(Combatant& actor, Combatant& mirror, const MoveDef& mv, bool mitmCopy,
+                     int moveIdx, bool byPlayer);
+
     // The steal track's whole family, called by applyEffect once it has decided a hit
     // landed. One effect family per helper is the shape applyEffect is being taken apart
     // in — the mitigation chain above the call is a different question from the payout

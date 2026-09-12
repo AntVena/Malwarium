@@ -840,6 +840,112 @@ void test_mod_thorns_and_deathblast() {
     CHECK(d2.outcome() == Combat::Outcome::Lose);
 }
 
+// --- THE HIT PIPELINE'S ORDER ---------------------------------------------------------
+//
+// applyEffect carries one damage value through a fixed run of phases (combat.h names them
+// in running order). Several are only CORRECT in their current slot, and nothing about the
+// code says so — reordering two of them still compiles and still passes every gate that
+// only checks a final number. These pin the orderings that would otherwise be prose.
+//
+// Each is one short fight with the phases in question armed, arranged so the two possible
+// orders give DIFFERENT answers. A gate that both orders satisfy would be worthless here.
+
+// FIRST STRIKE is claimed in swingDamage, before anything on the far side has a say — so
+// the opening blow is doubled and then capped, not capped and then doubled.
+void test_pipeline_first_strike_lands_before_the_ceilings() {
+    ContentRegistry r = ContentRegistry::embedded();
+    Combatant pc = mkCombatant(r, "P", 100, 5, {"quick_jab"});
+    pc.mods.arm(ModEffect::MaxHitCapPct, 25);            // ECC, in capAndSplit
+    Combatant e = mkCombatant(r, "E", 100, 5, {"buffer_overflow"});   // 20 power
+    e.firstStrikeMult = 2;                               // Speed T1, in swingDamage
+    Combat c; c.begin(pc, e, Combat::Stakes::Safe, 5, /*forceEnemyFirst=*/true);
+    c.step();
+    // Doubled to 40, then the cap refuses all but 25. Were the cap first it would be inert
+    // against a 20 hit and the double would land 40 — twice as much through a mod bought
+    // to stop exactly that.
+    CHECK(c.player().health == 75);
+}
+
+// The three post-mitigation ceilings compose in one order: ECC caps the hit, THEN the Load
+// Balancer splits what is left. Reversed, the cap measures a hit the split already shrank
+// and stops binding at all.
+void test_pipeline_ecc_caps_before_the_balancer_splits() {
+    ContentRegistry r = ContentRegistry::embedded();
+    Combatant pc = mkCombatant(r, "P", 100, 5, {"quick_jab"});
+    pc.mods.arm(ModEffect::MaxHitCapPct, 10);
+    pc.mods.arm(ModEffect::LoadBalance, 5, 50);          // threshold 5, half deferred
+    Combatant e = mkCombatant(r, "E", 100, 5, {"buffer_overflow"});   // 20 power
+    Combat c; c.begin(pc, e, Combat::Stakes::Safe, 5, /*forceEnemyFirst=*/true);
+    c.step();
+    CHECK(c.player().health == 95);        // 20 -> cap 10 -> split 5 now
+    c.step();                              // the deferred half comes due at turn-start
+    CHECK(c.player().health == 90);        // ...for 10 in total, not the 20 a reorder lands
+}
+
+// The min-1 penetration floor lives INSIDE the mitigation branch, so it cannot resurrect a
+// hit something else deliberately deleted. A floor applied after the whole phase would put
+// a point of chip damage through a RAID Mirror, which is the one thing that mod is for.
+void test_pipeline_floor_does_not_resurrect_a_negated_hit() {
+    ContentRegistry r = ContentRegistry::embedded();
+    Combatant pc = mkCombatant(r, "P", 100, 5, {"quick_jab"});
+    pc.mods.arm(ModEffect::RaidMirror);
+    Combatant e = mkCombatant(r, "E", 100, 5, {"buffer_overflow"});
+    Combat c; c.begin(pc, e, Combat::Stakes::Safe, 5, /*forceEnemyFirst=*/true);
+    c.step();
+    CHECK(c.player().health == 100);                     // zero, not one
+    CHECK(c.player().mirrorFired);
+}
+
+// A MIRRORED hit carries no riders — the negation is of the whole hit, not of its damage
+// half. This is the only suppression the rider phase honours, which is why it reads
+// mirrorFired and nothing else.
+void test_pipeline_a_mirrored_hit_plants_no_riders() {
+    ContentRegistry r = ContentRegistry::embedded();
+    Combatant pc = mkCombatant(r, "P", 100, 5, {"quick_jab"});
+    pc.mods.arm(ModEffect::RaidMirror);
+    Combatant e = mkCombatant(r, "E", 100, 5, {"system_hang"});       // lockTurns 2
+    Combat c; c.begin(pc, e, Combat::Stakes::Safe, 5, /*forceEnemyFirst=*/true);
+    c.step();
+    CHECK(c.player().lockedTurnsLeft == 0);
+}
+
+// ...but a hit fully SOAKED by an Obfuscation pool still plants them. The pool stops the
+// damage, not the hit: only the overflow reaches Health, and the rider phase never reads
+// the damage at all. Pinned because it is the asymmetry with the mirror above, and it is
+// the kind of thing a reader assumes the other way round.
+void test_pipeline_a_soaked_hit_still_plants_its_riders() {
+    ContentRegistry r = ContentRegistry::embedded();
+    Combatant pc = mkCombatant(r, "P", 100, 5, {"quick_jab"});
+    pc.shieldHp = 500;                                   // pool far larger than the hit
+    // ...and a cap under the hit, which is what makes the POOL's slot observable: the
+    // ceilings run first, so the pool is chewed for what the cap let through (4) and not
+    // for the whole swing (10). Soak the pool first and the cap meets nothing to cap.
+    pc.mods.arm(ModEffect::MaxHitCapPct, 4);
+    Combatant e = mkCombatant(r, "E", 100, 5, {"system_hang"});   // 10 power, lockTurns 2
+    Combat c; c.begin(pc, e, Combat::Stakes::Safe, 5, /*forceEnemyFirst=*/true);
+    c.step();
+    CHECK(c.player().health == 100);                     // the pool took all of it
+    CHECK(c.player().shieldHp == 496);                   // ...exactly the capped amount
+    CHECK(c.player().lockedTurnsLeft == 2);              // the rider landed anyway
+}
+
+// Every rider actually fires. Cheap, but it is what stops the rider phase becoming dead
+// code that the ordering gates above would still pass over.
+void test_pipeline_every_rider_fires() {
+    ContentRegistry r = ContentRegistry::embedded();
+    auto hitBy = [&](const char* moveId) {
+        Combatant pc = mkCombatant(r, "P", 400, 5, {"quick_jab"});
+        Combatant e = mkCombatant(r, "E", 400, 5, {moveId});
+        Combat c; c.begin(pc, e, Combat::Stakes::Safe, 5, /*forceEnemyFirst=*/true);
+        c.step();
+        return c.player();
+    };
+    CHECK(hitBy("system_hang").lockedTurnsLeft > 0);     // STUN
+    CHECK(hitBy("data_rot").dotTurnsLeft > 0);           // DoT
+    CHECK(hitBy("data_rot").dotPerTurn > 0);
+    CHECK(hitBy("c2_hijack").scrambleTurns > 0);         // SCRAMBLE
+}
+
 // Deferred-mod pass — ECC Memory: a max single-hit cap. The primitive clamps any ONE
 // incoming hit to the cap (after all mitigation); makePlayerCombatant resolves the
 // mod's magnitude% of max Health into that flat cap.

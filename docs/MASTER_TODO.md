@@ -345,24 +345,21 @@ you look at one.
 ## 3. Size / reviewability watch
 
 Same rule as the `game_*.cpp` units: split *at* ~600 lines, not before, and split by concern
-rather than by line count. `save.cpp` (1215), `combat.cpp` (1812), `combat_factory.cpp` (955),
+rather than by line count. `save.cpp` (1215), `combat.cpp` (1888), `combat_factory.cpp` (955),
 `expl_screen.cpp` (911) and `cfg_screen.cpp` (799) are each past the number and each still
 ONE concern at UNIT level — save.cpp is long because the format is flat, which is not a second
 responsibility, and combat.cpp is the turn engine alone.
 
-**The unit rule is holding; the mass has moved inside individual functions, where it does not
-look.** One is still past the point a reviewer can hold it in their head, and the "it is a
-dispatcher, its length follows from the number of cases" defence does not cover it:
+**The unit rule is holding, and so does the function rule.** Nothing in the tree is past the
+point a reviewer can hold it in their head. What is left is a note rather than a task:
 
-- **`Combat::applyEffect` (380 lines, `combat.cpp:349`)** — **zero `case` labels**: a sequential
-  if-chain over effect mechanics, not a dispatch table, so its length follows from accumulated
-  special cases rather than from a vocabulary. Four families are lifted — the steal track
-  (`applyStealTrack`), the Trojan trap (`springTrojanTrap`), the ransom/seizure pair
-  (`bankRansomAndSeize`) and the on-hit retaliation (`applyRetaliation`). What remains is the
-  mitigation chain, which genuinely needs the locals it accumulates, plus the stun/scramble/DoT
-  riders and the crew Exploits hanging off a landed hit, and the whole Defend branch under the
-  `else`. | S per family, M in total. | One family lifted per pass, not a rewrite — take the
-  ones the chain's locals do not reach. |
+- **`Combat::mitigate` (80 lines) keeps its locals, and should.** The pierce ladder, the brace
+  and the min-1 floor are one negotiation over a single value; splitting them further means
+  handing the pieces a struct of each other. If it grows again the split to reach for is
+  pierce RESOLUTION — a pure `int -> int` over the three pierce sources — rather than another
+  slice off the end. | `combat.cpp`'s `mitigate`. | S, if it is ever needed. | The phase order
+  around it is gated (`test_pipeline_*` in `test_combat.cpp`), so a future split has something
+  to fail against rather than only a comment to contradict. |
 
 ---
 

@@ -591,6 +591,12 @@ int g_failures = 0;
     RUN(test_backup_drive_death_save_covers_a_fatal_dot) \
     RUN(test_backup_drive_death_save_loses_to_overkill) \
     RUN(test_mod_thorns_and_deathblast)           \
+    RUN(test_pipeline_first_strike_lands_before_the_ceilings) \
+    RUN(test_pipeline_ecc_caps_before_the_balancer_splits) \
+    RUN(test_pipeline_floor_does_not_resurrect_a_negated_hit) \
+    RUN(test_pipeline_a_mirrored_hit_plants_no_riders) \
+    RUN(test_pipeline_a_soaked_hit_still_plants_its_riders) \
+    RUN(test_pipeline_every_rider_fires) \
     RUN(test_mod_ecc_memory_hitcap)               \
     RUN(test_mod_load_balancer_split)             \
     RUN(test_mod_watchdog_timer)                  \

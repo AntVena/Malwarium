@@ -356,6 +356,14 @@ static bool replicates(const Combatant& c) {
     return hasLinePassive(c.linePassives, LinePassive::Replication);
 }
 
+// THE HIT PIPELINE. An attack is not a choice between effects, it is ONE damage value
+// carried through a fixed sequence of stages, most of which are individually optional —
+// which is why this is a run of named phases and not a dispatch. Read the attack branch
+// below as the running order; each phase's own contract is on its declaration in combat.h.
+//
+// The ORDER is load-bearing and several phases are only correct in their current slot.
+// Those constraints are gates now (test_combat.cpp's hit-pipeline order block), so the
+// prose here says what a phase is FOR and the gate says where it has to sit.
 void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
                          bool byPlayer, int moveIdx) {
     target.mirrorFired = false;
@@ -367,276 +375,330 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
     // the holder its own stat rather than copy someone else's advantage.
     Combatant& mirror = byPlayer ? enemy_ : player_;
     const bool mitmCopy = mirror.crewExploit.holds(CrewExploitKind::MirrorEnemyBuffs);
-    // Feeding-frenzy combo: this actor's run of steal-attack casts made with the bubble up.
-    // A continuing run permanently banks (run length - 1) flat damage into phishComboBonus,
-    // paid below on every later steal-attack hit this fight; it never decays.
-    //
-    // Advancing keys on the FIELD (stealPowerPct), not the line — which is why the generic
-    // boss pool leaves stealPowerPct at zero and shreds Defense instead. Breaking keys on
-    // ANY attack swung while exposed, so a mixed kit cannot swing generics through the
-    // exposed stretch with its run intact. A Defend cast leaves the run standing.
-    if (mv->kind == MoveDef::Kind::Attack) {
-        if (actor.shieldHp <= 0) {
-            actor.phishStreak = 0;    // caught out with the bubble down
-        } else if (mv->stealPowerPct > 0) {
-            actor.phishStreak++;
-            if (actor.phishStreak > 1) actor.phishComboBonus += actor.phishStreak - 1;
-        }
+
+    if (mv->kind != MoveDef::Kind::Attack) {
+        applyDefend(actor, mirror, *mv, mitmCopy, moveIdx, byPlayer);
+        return;
     }
+
+    trackFrenzyStreak(actor, *mv);
     // A SEIZED move swung by its captor hits for the wall behind it (kRansomSeizedWallPct).
     // Asked before scaling so the bonus rides the same multipliers. The seized move IS
     // that slot while the ransom runs, so `moveIdx` alone identifies it.
-    const bool swingingSeized = mv->kind == MoveDef::Kind::Attack &&
-                                actor.ransomSeizure.holding() && moveIdx >= 0 &&
+    const bool swingingSeized = actor.ransomSeizure.holding() && moveIdx >= 0 &&
                                 moveIdx == actor.ransomSeizure.slot;
-    if (mv->kind == MoveDef::Kind::Attack) {
-        // Base damage scaled by the actor's branch attack-power lean plus any Lockout-track
-        // Power stacked this fight. Meltdown Core (mod) adds a comeback bonus while low.
-        int mult = actor.powerMultPct + actor.stackPowerBonus;
-        // Extortion Ledger (mod), the POWER half — keyed on an unpaid ransom pool rather
-        // than on a seizure, which most fights never reach. Scaled by what is owed, so the
-        // pool is worth carrying rather than merely worth opening.
-        if (actor.ransomPool > 0) {
-            const int owed = actor.mods.mag2(ModEffect::ExtortionLedger);
-            mult += owed * (100 + ledgerGrudgePct(actor)) / 100;
-        }
-        const int meltdownPct = actor.mods.mag(ModEffect::LowHealthPowerPct);
-        if (meltdownPct > 0 && actor.maxHealth > 0) {
-            const int healthPct = actor.health * 100 / actor.maxHealth;
-            if (healthPct <= meltdownPct)
-                mult += actor.mods.mag2(ModEffect::LowHealthPowerPct);
-        }
-        int dmg = mv->power * mult / 100;
-        // Steal-attacks are deliberately low-power and lean on the min-1 penetration floor,
-        // so the banked flat bonus is what makes a sustained frenzy dangerous.
-        if (mv->stealPowerPct > 0) dmg += actor.phishComboBonus;
-        // The wall, spent. Ransomware's one currency it could never cash in.
-        if (swingingSeized && actor.stackDefenseBonus > 0)
-            dmg = dmg * (100 + actor.stackDefenseBonus * kRansomSeizedWallPct / 100) / 100;
-        // Worm attacker replicas pile onto the parent's swing before mitigation, so it goes
-        // through the target's defence like any other damage. The parent's own attacks are
-        // weak, so the line's threat scales with the board rather than the move rolled.
-        dmg += wormReplicaDamage(actor);
-        // Wild-encounter challenge buff. enemyDamageMultPct is 100 for the player, bosses
-        // and Sim dummies, so this is a no-op off the wild path.
-        if (!byPlayer) dmg = dmg * actor.enemyDamageMultPct / 100;
-        // Speed T1 (first strike): the fight's opening blow, multiplied for whoever lands
-        // it. Claimed here — before mitigation, before the replica branch — so it is the
-        // ATTACK that is doubled and not the remainder some wall left of it, and so a hit
-        // a replica eats still counts as the fight's first. `firstHitLanded_` is set
-        // whether or not this side had the tier: the opening is spent by happening.
-        if (dmg > 0 && !firstHitLanded_) {
-            firstHitLanded_ = true;
-            dmg *= actor.firstStrikeMult;
-        }
-        // Worm replication (target side): the hit picks a victim among the parent and every
-        // live replica, weighted so a defender draws hardest (wormTargetPick). A replica
-        // eats it WHOLE — no mitigation, no riders, no overflow — and dies if overrun.
-        // Replication makes the worm harder to be the one hit, not tougher.
-        //
-        // One rng() draw, only when replicas are out, so no other line perturbs the stream.
-        if (target.wormReplicaCount > 0) {
-            const int victim = wormTargetPick(target, rng());
-            if (victim >= 0) {
-                WormReplica& r = target.wormReplicas[victim];
-                const int dealt = dmg < r.health ? dmg : r.health;
-                r.health -= dealt;
-                if (r.health <= 0) {   // packed: the last replica fills the freed slot
-                    // Recorded before the pack erases it — the copy is about to stop
-                    // existing, and the screen needs to know it ever did (WormKill).
-                    lastWormKill_ = {/*happened=*/true, /*onPlayer=*/!byPlayer,
-                                     r.defender};
-                    target.wormReplicas[victim] =
-                        target.wormReplicas[target.wormReplicaCount - 1];
-                    target.wormReplicas[--target.wormReplicaCount] = WormReplica{};
-                }
-                setLast(mv->displayName, dealt, byPlayer, /*charge=*/false,
-                        /*ransomed=*/false, /*strike=*/true);
-                return;
-            }
-        }
-        const int baseDmg = dmg;    // pre-mitigation, for the min-1 penetration floor
-        // What this target's WALL swallowed — the % cut and the brace, and nothing else.
-        // Defence T3 pays out of it, so it is measured on the mitigation branch alone: a
-        // hit a RAID Mirror or a crew charge deleted outright was not absorbed by any
-        // wall, and a shield pool or a Trojan trap further down the chain belongs to the
-        // thing that owns it rather than to the Defence stat.
-        int wallAbsorbed = 0;
-        const bool crewNegates =
-            target.crewExploit.armed(CrewExploitKind::NegateNextHits);
-        const bool mirrorArmed = target.mods.armed(ModEffect::RaidMirror);
-        if (dmg > 0 && (crewNegates || mirrorArmed)) {
-            // A crew Exploit charge or RAID Mirror negates the whole hit, whatever its size.
-            dmg = 0;
-            if (crewNegates) {
-                // Crew charges absorb first — the player spent an Exploit use to arm them,
-                // so the passive one-shot stays held for after they run out.
-                --target.crewExploit.charges;
-            } else {
-                target.mods.spend(ModEffect::RaidMirror);
-            }
-            target.mirrorFired = true;
+
+    int dmg = swingDamage(actor, *mv, byPlayer, swingingSeized);
+    // A replica eats the hit WHOLE and the turn ends there — no mitigation, no riders.
+    if (replicaAte(target, *mv, dmg, byPlayer)) return;
+
+    const int baseDmg = dmg;          // pre-mitigation: the trap rebound and the floor read it
+    int wallAbsorbed = 0;             // what the WALL swallowed; Defence T3 pays out of it
+    dmg = mitigate(actor, target, *mv, dmg, baseDmg, wallAbsorbed);
+    dmg = capAndSplit(actor, target, dmg, moveIdx);
+    dmg = soakShieldPool(actor, target, dmg);
+    dmg = springTrojanTrap(actor, target, dmg, baseDmg);
+    // The Ransomware pair, last in the chain so the pool holds exactly what would have
+    // reached Health: the armed window banks the damage instead of taking it, and a
+    // full Cipher wall seizes the move that hit it. `ransomed` is what was banked — owed
+    // back to Health below, and nothing else about the hit.
+    const int ransomed = bankRansomAndSeize(target, *mv, dmg);
+    // Health is left UNCLAMPED here and at every site below that spends it:
+    // Combat::checkOutcome owns the floor, because how far past 0 a hit buried the pet
+    // is what the Backup Drive's death-save weighs before that floor erases it.
+    target.health -= dmg - ransomed;
+
+    applyRetaliation(actor, target, dmg, wallAbsorbed);
+    if (dmg > 0) applyStealTrack(actor, target, *mv);
+    applyDeathBlast(actor, target);
+    setLast(mv->displayName, dmg, byPlayer, false, ransomed > 0, /*strike=*/true);
+    applyCrewOnHit(actor, dmg);
+    stackLockoutPower(actor, mirror, *mv, mitmCopy);
+    applyOnHitRiders(target, *mv);
+}
+
+// The feeding-frenzy combo: this actor's run of steal-attack casts made with the bubble up.
+// A continuing run permanently banks (run length - 1) flat damage into phishComboBonus,
+// paid on every later steal-attack hit this fight; it never decays.
+//
+// Advancing keys on the FIELD (stealPowerPct), not the line — which is why the generic
+// boss pool leaves stealPowerPct at zero and shreds Defense instead. Breaking keys on
+// ANY attack swung while exposed, so a mixed kit cannot swing generics through the
+// exposed stretch with its run intact. A Defend cast leaves the run standing, which is
+// why this is only reached on the attack branch.
+void Combat::trackFrenzyStreak(Combatant& actor, const MoveDef& mv) {
+    if (actor.shieldHp <= 0) {
+        actor.phishStreak = 0;    // caught out with the bubble down
+    } else if (mv.stealPowerPct > 0) {
+        actor.phishStreak++;
+        if (actor.phishStreak > 1) actor.phishComboBonus += actor.phishStreak - 1;
+    }
+}
+
+// What this swing is worth BEFORE anything on the far side has a say: the actor's leans,
+// its mods, its banked pools and the fight's opening blow. Nothing here reads the target,
+// which is what makes it the first phase rather than part of mitigation.
+int Combat::swingDamage(Combatant& actor, const MoveDef& mv, bool byPlayer,
+                        bool swingingSeized) {
+    // Base damage scaled by the actor's branch attack-power lean plus any Lockout-track
+    // Power stacked this fight. Meltdown Core (mod) adds a comeback bonus while low.
+    int mult = actor.powerMultPct + actor.stackPowerBonus;
+    // Extortion Ledger (mod), the POWER half — keyed on an unpaid ransom pool rather
+    // than on a seizure, which most fights never reach. Scaled by what is owed, so the
+    // pool is worth carrying rather than merely worth opening.
+    if (actor.ransomPool > 0) {
+        const int owed = actor.mods.mag2(ModEffect::ExtortionLedger);
+        mult += owed * (100 + ledgerGrudgePct(actor)) / 100;
+    }
+    const int meltdownPct = actor.mods.mag(ModEffect::LowHealthPowerPct);
+    if (meltdownPct > 0 && actor.maxHealth > 0) {
+        const int healthPct = actor.health * 100 / actor.maxHealth;
+        if (healthPct <= meltdownPct)
+            mult += actor.mods.mag2(ModEffect::LowHealthPowerPct);
+    }
+    int dmg = mv.power * mult / 100;
+    // Steal-attacks are deliberately low-power and lean on the min-1 penetration floor,
+    // so the banked flat bonus is what makes a sustained frenzy dangerous.
+    if (mv.stealPowerPct > 0) dmg += actor.phishComboBonus;
+    // The wall, spent. Ransomware's one currency it could never cash in.
+    if (swingingSeized && actor.stackDefenseBonus > 0)
+        dmg = dmg * (100 + actor.stackDefenseBonus * kRansomSeizedWallPct / 100) / 100;
+    // Worm attacker replicas pile onto the parent's swing before mitigation, so it goes
+    // through the target's defence like any other damage. The parent's own attacks are
+    // weak, so the line's threat scales with the board rather than the move rolled.
+    dmg += wormReplicaDamage(actor);
+    // Wild-encounter challenge buff. enemyDamageMultPct is 100 for the player, bosses
+    // and Sim dummies, so this is a no-op off the wild path.
+    if (!byPlayer) dmg = dmg * actor.enemyDamageMultPct / 100;
+    // Speed T1 (first strike): the fight's opening blow, multiplied for whoever lands
+    // it. Claimed here — before mitigation, before the replica branch — so it is the
+    // ATTACK that is doubled and not the remainder some wall left of it, and so a hit
+    // a replica eats still counts as the fight's first. `firstHitLanded_` is set
+    // whether or not this side had the tier: the opening is spent by happening.
+    if (dmg > 0 && !firstHitLanded_) {
+        firstHitLanded_ = true;
+        dmg *= actor.firstStrikeMult;
+    }
+return dmg;
+}
+
+// Worm replication (target side): the hit picks a victim among the parent and every live
+// replica, weighted so a defender draws hardest (wormTargetPick). A replica eats it WHOLE
+// — no mitigation, no riders, no overflow — and dies if overrun. Replication makes the
+// worm harder to BE the one hit, not tougher. True when a replica took it and the turn is
+// over.
+bool Combat::replicaAte(Combatant& target, const MoveDef& mv, int dmg, bool byPlayer) {
+    if (target.wormReplicaCount <= 0) return false;
+    // One rng() draw, only when replicas are out, so no other line perturbs the stream.
+    const int victim = wormTargetPick(target, rng());
+    if (victim < 0) return false;
+    WormReplica& r = target.wormReplicas[victim];
+    const int dealt = dmg < r.health ? dmg : r.health;
+    r.health -= dealt;
+    if (r.health <= 0) {   // packed: the last replica fills the freed slot
+        // Recorded before the pack erases it — the copy is about to stop existing, and
+        // the screen needs to know it ever did (WormKill).
+        lastWormKill_ = {/*happened=*/true, /*onPlayer=*/!byPlayer, r.defender};
+        target.wormReplicas[victim] = target.wormReplicas[target.wormReplicaCount - 1];
+        target.wormReplicas[--target.wormReplicaCount] = WormReplica{};
+    }
+    setLast(mv.displayName, dealt, byPlayer, /*charge=*/false,
+            /*ransomed=*/false, /*strike=*/true);
+    return true;
+}
+
+// THE MITIGATION CHAIN — the one phase that keeps its locals, because they are the phase:
+// the pierce ladder, the brace and the floor are one negotiation over a single value, and
+// splitting them further would mean handing the pieces a struct of each other. `wallAbsorbed`
+// comes back out because Defence T3 pays out of it and only the wall's own share counts.
+int Combat::mitigate(Combatant& actor, Combatant& target, const MoveDef& mv, int dmg,
+                     int baseDmg, int& wallAbsorbed) {
+    wallAbsorbed = 0;
+    const bool crewNegates =
+        target.crewExploit.armed(CrewExploitKind::NegateNextHits);
+    const bool mirrorArmed = target.mods.armed(ModEffect::RaidMirror);
+    if (dmg > 0 && (crewNegates || mirrorArmed)) {
+        // A crew Exploit charge or RAID Mirror negates the whole hit, whatever its size.
+        dmg = 0;
+        if (crewNegates) {
+            // Crew charges absorb first — the player spent an Exploit use to arm them,
+            // so the passive one-shot stays held for after they run out.
+            --target.crewExploit.charges;
         } else {
-            // Effective cut = passive Defense + stacked Cipher-track Defense, under the
-            // never-immune clamp. Pierce (the move's own, then the mod's) is applied
-            // multiplicatively rather than summed, so however many stack the defender keeps
-            // a defence — two 50% pierces are 75%, never 100. Defence T1 cuts each
-            // pierce back before it lands, so the cut already earned stops being routed
-            // around (levelDefensePierceResistPct).
-            const auto pierced = [&](int value, int piercePct) {
-                if (piercePct <= 0 || value <= 0) return value;
-                const int p = piercePct * (100 - target.pierceResistPct) / 100;
-                return p > 0 ? value * (100 - p) / 100 : value;
-            };
-            const int modPierce = actor.mods.mag(ModEffect::ArmorPiercePct);
-            int reduce = target.dmgReducePct + target.stackDefenseBonus;
-            if (reduce > kLevelDmgReduceMaxPct) reduce = kLevelDmgReduceMaxPct;
-            reduce = pierced(reduce, mv->armorPiercePct);
-            reduce = pierced(reduce, modPierce);
-            // Power T2 (ring zero): innate pierce, dealt into the same chain and in the
-            // same currency as a move's and a mod's — so it compounds multiplicatively
-            // with them (three 50% pierces still leave a defence) and Defence T1 blunts
-            // it exactly as it blunts the other two. A stat tier that stacked ADDITIVELY
-            // here would be the one pierce the wall could not argue with.
-            reduce = pierced(reduce, actor.piercePct);
-            if (reduce > 0) dmg = dmg * (100 - reduce) / 100;
-            // Canary Trap (mod): an extra cut on the first hit, outside the 85% clamp and
-            // never pierced. Consumed only when a hit actually lands (dmg > 0).
-            if (ModState* canary = target.mods.find(ModEffect::FirstHitCutPct);
-                dmg > 0 && canary && canary->mag > 0 && canary->pending > 0) {
-                dmg = dmg * (100 - canary->mag) / 100;
-                if (dmg < 0) dmg = 0;
-                --canary->pending;
-            }
-            if (target.guard > 0) {                   // a defend brace (one-shot)
-                // Pierced by the same pair in the same order: a row that ignores a wall
-                // ignores a brace too (defs.h).
-                int brace = pierced(target.guard, mv->armorPiercePct);
-                brace = pierced(brace, modPierce);
-                brace = pierced(brace, actor.piercePct);
-                // Power T3 (guard smash): the brace's own rung. Pierce resist does NOT
-                // blunt this one — it is not pierce, it is the hit arriving too heavy for
-                // the guard to spend itself on, and Defence answers it by bracing again
-                // rather than by having hardened. Applied after the pierces so a fighter
-                // holding both does not get the same reduction charged twice.
-                if (actor.guardSmashPct > 0)
-                    brace = brace * (100 - actor.guardSmashPct) / 100;
-                const int unspent = brace > dmg ? brace - dmg : 0;
-                dmg = dmg > brace ? dmg - brace : 0;
-                // Defence T2: an over-sized brace's remainder carries instead of being
-                // binned (levelDefenseBraceRetainPct) — the wall buys efficiency, not a
-                // bigger number, since the % cut's ceiling rules that out. Measured against
-                // the pre-pierce remainder, so pierce-resist and retention pay once, not twice.
-                target.guard = unspent * target.braceRetainPct / 100;
-            }
-            // Minimum penetration: an attack always lands at least 1 through pure
-            // mitigation, so no pet becomes a wall a weak attacker can never chip. Scoped
-            // to this branch so RAID Mirror's deliberate negation still zeroes a hit; the
-            // shield pool below still absorbs this 1, being a consumable pool not a wall.
-            if (baseDmg > 0 && dmg < 1) dmg = 1;
-            wallAbsorbed = baseDmg - dmg > 0 ? baseDmg - dmg : 0;
+            target.mods.spend(ModEffect::RaidMirror);
         }
-        if (dmg < 0) dmg = 0;
-        // Prowlware (mod): the first landed damaging hit is multiplied by the move's
-        // attackPowerRank. Consumed after mitigation, so a mirrored hit doesn't burn it.
-        if (dmg > 0 && actor.mods.spend(ModEffect::FirstStrikeRankMult)) {
-            const int rank = attackPowerRank(actor.moves, moveIdx);
-            if (rank > 1) dmg *= rank;
+        target.mirrorFired = true;
+    } else {
+        // Effective cut = passive Defense + stacked Cipher-track Defense, under the
+        // never-immune clamp. Pierce (the move's own, then the mod's) is applied
+        // multiplicatively rather than summed, so however many stack the defender keeps
+        // a defence — two 50% pierces are 75%, never 100. Defence T1 cuts each
+        // pierce back before it lands, so the cut already earned stops being routed
+        // around (levelDefensePierceResistPct).
+        const auto pierced = [&](int value, int piercePct) {
+            if (piercePct <= 0 || value <= 0) return value;
+            const int p = piercePct * (100 - target.pierceResistPct) / 100;
+            return p > 0 ? value * (100 - p) / 100 : value;
+        };
+        const int modPierce = actor.mods.mag(ModEffect::ArmorPiercePct);
+        int reduce = target.dmgReducePct + target.stackDefenseBonus;
+        if (reduce > kLevelDmgReduceMaxPct) reduce = kLevelDmgReduceMaxPct;
+        reduce = pierced(reduce, mv.armorPiercePct);
+        reduce = pierced(reduce, modPierce);
+        // Power T2 (ring zero): innate pierce, dealt into the same chain and in the
+        // same currency as a move's and a mod's — so it compounds multiplicatively
+        // with them (three 50% pierces still leave a defence) and Defence T1 blunts
+        // it exactly as it blunts the other two. A stat tier that stacked ADDITIVELY
+        // here would be the one pierce the wall could not argue with.
+        reduce = pierced(reduce, actor.piercePct);
+        if (reduce > 0) dmg = dmg * (100 - reduce) / 100;
+        // Canary Trap (mod): an extra cut on the first hit, outside the 85% clamp and
+        // never pierced. Consumed only when a hit actually lands (dmg > 0).
+        if (ModState* canary = target.mods.find(ModEffect::FirstHitCutPct);
+            dmg > 0 && canary && canary->mag > 0 && canary->pending > 0) {
+            dmg = dmg * (100 - canary->mag) / 100;
+            if (dmg < 0) dmg = 0;
+            --canary->pending;
         }
-        // ECC Memory (mod): a last-resort ceiling on any single hit, after all mitigation.
-        // Thorns/Deadman below read the capped value.
-        const int hitCap = target.mods.mag(ModEffect::MaxHitCapPct);
-        if (hitCap > 0 && dmg > hitCap) dmg = hitCap;
-        // Load Balancer (mod): a hit at or over the threshold is split — splitPct% deferred
-        // to the victim's next turn-start (resolveTurn), the rest lands now. It spreads
-        // damage rather than reducing it, buying a turn to heal or land a KO. After the ECC
-        // cap so the two compose. Thorns/Deadman read only the immediate portion.
-        if (ModState* lb = target.mods.find(ModEffect::LoadBalance);
-            lb && lb->mag > 0 && dmg >= lb->mag && lb->mag2 > 0) {
-            const int deferred = dmg * lb->mag2 / 100;
-            if (deferred > 0) {
-                lb->pending += deferred;       // comes due at the victim's next turn-start
-                dmg -= deferred;
-            }
+        if (target.guard > 0) {                   // a defend brace (one-shot)
+            // Pierced by the same pair in the same order: a row that ignores a wall
+            // ignores a brace too (defs.h).
+            int brace = pierced(target.guard, mv.armorPiercePct);
+            brace = pierced(brace, modPierce);
+            brace = pierced(brace, actor.piercePct);
+            // Power T3 (guard smash): the brace's own rung. Pierce resist does NOT
+            // blunt this one — it is not pierce, it is the hit arriving too heavy for
+            // the guard to spend itself on, and Defence answers it by bracing again
+            // rather than by having hardened. Applied after the pierces so a fighter
+            // holding both does not get the same reduction charged twice.
+            if (actor.guardSmashPct > 0)
+                brace = brace * (100 - actor.guardSmashPct) / 100;
+            const int unspent = brace > dmg ? brace - dmg : 0;
+            dmg = dmg > brace ? dmg - brace : 0;
+            // Defence T2: an over-sized brace's remainder carries instead of being
+            // binned (levelDefenseBraceRetainPct) — the wall buys efficiency, not a
+            // bigger number, since the % cut's ceiling rules that out. Measured against
+            // the pre-pierce remainder, so pierce-resist and retention pay once, not twice.
+            target.guard = unspent * target.braceRetainPct / 100;
         }
-        // Obfuscation shield pool (Phishing): a second health bar, last in the mitigation
-        // chain. Only the overflow reaches Health, and a hit fully soaked triggers no
-        // on-hit rider below. Popping it (not merely chewing it down) releases the frenzy
-        // ratchet, so the way out of a frenzy is "break the bubble", not "wait".
-        if (dmg > 0 && target.shieldHp > 0) {
-            // Poisoned data (MoveDef::poolRetaliateDot): planted on the attacker before the
-            // pool is chewed, so a hit that pops the bubble still poisons. Refreshes rather
-            // than stacks, like every other DoT.
-            if (target.poolDotDamage > 0 && target.poolDotTurns > 0) {
-                const int cut = actor.mods.mag(ModEffect::FaradayCut);
-                const int per = target.poolDotDamage * (100 - cut) / 100;
-                if (per > 0) { actor.dotPerTurn = per; actor.dotTurnsLeft = target.poolDotTurns; }
-            }
-            if (target.shieldHp >= dmg) { target.shieldHp -= dmg; dmg = 0; }
-            else { dmg -= target.shieldHp; target.shieldHp = 0; }
-            if (target.shieldHp == 0) target.phishShieldPeak = 0;
+        // Minimum penetration: an attack always lands at least 1 through pure
+        // mitigation, so no pet becomes a wall a weak attacker can never chip. Scoped
+        // to this branch so RAID Mirror's deliberate negation still zeroes a hit; the
+        // shield pool below still absorbs this 1, being a consumable pool not a wall.
+        if (baseDmg > 0 && dmg < 1) dmg = 1;
+        wallAbsorbed = baseDmg - dmg > 0 ? baseDmg - dmg : 0;
+    }
+if (dmg < 0) dmg = 0;
+return dmg;
+}
+
+// The three ceilings that act on a hit AFTER mitigation has had its say, in the order they
+// compose: a rank multiplier, then a hard cap, then a split that defers part of what is
+// left. Each is a mod, and each is inert on a fighter not carrying it.
+int Combat::capAndSplit(Combatant& actor, Combatant& target, int dmg, int moveIdx) {
+    // Prowlware (mod): the first landed damaging hit is multiplied by the move's
+    // attackPowerRank. Consumed after mitigation, so a mirrored hit doesn't burn it.
+    if (dmg > 0 && actor.mods.spend(ModEffect::FirstStrikeRankMult)) {
+        const int rank = attackPowerRank(actor.moves, moveIdx);
+        if (rank > 1) dmg *= rank;
+    }
+    // ECC Memory (mod): a last-resort ceiling on any single hit, after all mitigation.
+    // Thorns/Deadman below read the capped value.
+    const int hitCap = target.mods.mag(ModEffect::MaxHitCapPct);
+    if (hitCap > 0 && dmg > hitCap) dmg = hitCap;
+    // Load Balancer (mod): a hit at or over the threshold is split — splitPct% deferred
+    // to the victim's next turn-start (resolveTurn), the rest lands now. It spreads
+    // damage rather than reducing it, buying a turn to heal or land a KO. After the ECC
+    // cap so the two compose. Thorns/Deadman read only the immediate portion.
+    if (ModState* lb = target.mods.find(ModEffect::LoadBalance);
+        lb && lb->mag > 0 && dmg >= lb->mag && lb->mag2 > 0) {
+        const int deferred = dmg * lb->mag2 / 100;
+        if (deferred > 0) {
+            lb->pending += deferred;       // comes due at the victim's next turn-start
+            dmg -= deferred;
         }
-        // A landed hit springs the Trojan's top armed trap (springTrojanTrap): part of the
-        // hit deleted, part of what was avoided reflected, and the attacker's armor rotted
-        // for the rest of the fight. Inert on a target holding no traps.
-        dmg = springTrojanTrap(actor, target, dmg, baseDmg);
-        // The Ransomware pair, last in the chain so the pool holds exactly what would have
-        // reached Health: the armed window banks the damage instead of taking it, and a
-        // full Cipher wall seizes the move that hit it (bankRansomAndSeize). `ransomed` is
-        // what was banked — owed back to Health below, and nothing else about the hit.
-        const int ransomed = bankRansomAndSeize(target, *mv, dmg);
-        // Health is left UNCLAMPED here and at every site below that spends it:
-        // Combat::checkOutcome owns the floor, because how far past 0 a hit buried the pet
-        // is what the Backup Drive's death-save weighs before that floor erases it.
-        target.health -= dmg - ransomed;
-        // What the target hits BACK for, now that the hit has been spent on its Health: the
-        // wall's own backscatter, then the two thorns mods (applyRetaliation). Read after
-        // the spend on purpose — Tripwire arms off the Health the hit left behind.
-        applyRetaliation(actor, target, dmg, wallAbsorbed);
-        if (dmg > 0) applyStealTrack(actor, target, *mv);
-        // Deadman Switch (mod): a hit that KO'd the pet deals a parting blast. A mutual KO
-        // resolves as a Win (enemy-death priority, checkOutcome). One shot per fight.
-        if (ModState* dead = target.mods.find(ModEffect::DeathBlast);
-            target.health <= 0 && dead && dead->mag > 0 && dead->pending > 0) {
-            actor.health -= dead->mag;
-            --dead->pending;
-        }
-        setLast(mv->displayName, dmg, byPlayer, false, ransomed > 0, /*strike=*/true);
-        // Escalation (crew Exploit): each of the next few landed attacks banks its own
-        // final damage as Power for the rest of the fight. Charge-metered, so it spends on
-        // hits that connected rather than turns that happened, and uncapped unlike the
-        // Lockout track below — each charge pays for the bigger swing the next one banks.
-        if (dmg > 0 && actor.crewExploit.armed(CrewExploitKind::PowerByDamageDealt)) {
-            actor.stackPowerBonus += dmg;
-            --actor.crewExploit.charges;
-        }
-        // Protection Racket (crew Exploit): a landed hit hands kCrewRakePct of its final
-        // damage back as Health. Turn-metered rather than charge-metered — the clock is the
-        // holder's own turns (tickCrewExploitClock), so a turn that lands nothing still
-        // costs one, which is what makes arming it early a decision.
-        if (dmg > 0 && actor.crewExploit.ticking(CrewExploitKind::LeechOnHit)) {
-            const int rake = dmg * kCrewRakePct / 100;
-            actor.health += rake > 0 ? rake : 1;   // a hit that landed always pays something
-            if (actor.health > actor.maxHealth) actor.health = actor.maxHealth;
-        }
-        // Lockout track: landing the hit stacks the caster's Power for the rest
-        // of the fight — additive, never reset, capped per move.
-        if (mv->stackPowerPct > 0 && actor.stackPowerBonus < mv->stackPowerCap) {
-            int gain = mv->stackPowerPct;
-            if (actor.stackPowerBonus + gain > mv->stackPowerCap)
-                gain = mv->stackPowerCap - actor.stackPowerBonus;
-            actor.stackPowerBonus += gain;
-            // The cap is measured against the caster's own pile, so it bounds what there is
-            // to copy rather than what the MITM holder may hold.
-            if (mitmCopy) mirror.stackPowerBonus += gain;
-        }
-        // STUN rider: a landed hit freezes the target's next lockTurns turns. The target's
-        // Watchdog Timer (mod) clamps it. Doesn't stack onto a live stun, and a fully
-        // mirrored hit carries no rider. A repeat stun must beat the target's accumulated
-        // lock resistance (stunLands); resistance banks the CLAMPED turns, so a Watchdog
-        // pet trades some of the pile for the shorter lock.
-        if (mv->lockTurns > 0 && !target.mirrorFired && target.lockedTurnsLeft == 0) {
-            int k = mv->lockTurns;
+    }
+    // Obfuscation shield pool (Phishing): a second health bar, last in the mitigation
+    // chain. Only the overflow reaches Health, and a hit fully soaked triggers no
+return dmg;
+}
+
+// The Obfuscation shield pool (Phishing): a second health bar, last in the mitigation
+// chain. Only the overflow reaches Health — but the hit still LANDED, so its riders are
+// planted all the same (applyOnHitRiders reads mirrorFired and nothing else). The pool
+// stops the damage, not the hit; a mirror is the only thing that stops the hit, and the
+// asymmetry is pinned by test_pipeline_a_soaked_hit_still_plants_its_riders. Popping the
+// pool (not merely chewing it down) releases the frenzy ratchet, so the way out of a
+// frenzy is "break the bubble", not "wait".
+int Combat::soakShieldPool(Combatant& actor, Combatant& target, int dmg) {
+    if (dmg <= 0 || target.shieldHp <= 0) return dmg;
+    // Poisoned data (MoveDef::poolRetaliateDot): planted on the attacker before the pool is
+    // chewed, so a hit that POPS the bubble still poisons. Refreshes rather than stacks,
+    // like every other DoT.
+    if (target.poolDotDamage > 0 && target.poolDotTurns > 0) {
+        const int cut = actor.mods.mag(ModEffect::FaradayCut);
+        const int per = target.poolDotDamage * (100 - cut) / 100;
+        if (per > 0) { actor.dotPerTurn = per; actor.dotTurnsLeft = target.poolDotTurns; }
+    }
+    if (target.shieldHp >= dmg) { target.shieldHp -= dmg; dmg = 0; }
+    else { dmg -= target.shieldHp; target.shieldHp = 0; }
+    if (target.shieldHp == 0) target.phishShieldPeak = 0;
+    return dmg;
+}
+
+// Deadman Switch (mod): a hit that KO'd the pet deals a parting blast. A mutual KO resolves
+// as a Win (enemy-death priority, checkOutcome). One shot per fight.
+void Combat::applyDeathBlast(Combatant& actor, Combatant& target) {
+    if (ModState* dead = target.mods.find(ModEffect::DeathBlast);
+        target.health <= 0 && dead && dead->mag > 0 && dead->pending > 0) {
+        actor.health -= dead->mag;
+        --dead->pending;
+    }
+}
+
+// What a LANDED hit pays its own caster, from the two crew Exploits that read one:
+// Escalation banks the hit's final damage as Power for the rest of the fight, and
+// Protection Racket rakes part of it back as Health.
+void Combat::applyCrewOnHit(Combatant& actor, int dmg) {
+    if (dmg <= 0) return;
+    // Escalation: charge-metered, so it spends on hits that connected rather than turns
+    // that happened, and uncapped unlike the Lockout track — each charge pays for the
+    // bigger swing the next one banks.
+    if (actor.crewExploit.armed(CrewExploitKind::PowerByDamageDealt)) {
+        actor.stackPowerBonus += dmg;
+        --actor.crewExploit.charges;
+    }
+    // Protection Racket: turn-metered rather than charge-metered — the clock is the
+    // holder's own turns (tickCrewExploitClock), so a turn that lands nothing still costs
+    // one, which is what makes arming it early a decision.
+    if (actor.crewExploit.ticking(CrewExploitKind::LeechOnHit)) {
+        const int rake = dmg * kCrewRakePct / 100;
+        actor.health += rake > 0 ? rake : 1;   // a hit that landed always pays something
+        if (actor.health > actor.maxHealth) actor.health = actor.maxHealth;
+    }
+}
+
+// Lockout track: landing the hit stacks the caster's Power for the rest of the fight —
+// additive, never reset, capped per move.
+void Combat::stackLockoutPower(Combatant& actor, Combatant& mirror, const MoveDef& mv,
+                               bool mitmCopy) {
+    if (mv.stackPowerPct <= 0 || actor.stackPowerBonus >= mv.stackPowerCap) return;
+    int gain = mv.stackPowerPct;
+    if (actor.stackPowerBonus + gain > mv.stackPowerCap)
+        gain = mv.stackPowerCap - actor.stackPowerBonus;
+    actor.stackPowerBonus += gain;
+    // The cap is measured against the caster's own pile, so it bounds what there is to
+    // copy rather than what the MITM holder may hold.
+    if (mitmCopy) mirror.stackPowerBonus += gain;
+}
+
+// The three riders a landed hit plants on its TARGET. None reads the damage — they ask
+// only what the move carries and what the target can refuse — which is what lets them sit
+// at the end of the pipeline rather than inside it. A fully mirrored hit carries none.
+void Combat::applyOnHitRiders(Combatant& target, const MoveDef& mv) {
+    if (target.mirrorFired) return;
+        if (mv.lockTurns > 0 && target.lockedTurnsLeft == 0) {
+            int k = mv.lockTurns;
             const int watchdog = target.mods.mag(ModEffect::WatchdogClamp);
             if (watchdog > 0 && k > watchdog) k = watchdog;
             if (k > 0 && stunLands(target)) {
@@ -650,91 +712,95 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
         // clamp — there is no "half a scrambled list", so the counter either holds or it
         // does not, and a mod that shortened it would be selling a worse version of the
         // one thing it is for.
-        if (mv->scrambleTurns > 0 && !target.mirrorFired &&
-            target.mods.mag(ModEffect::ScrambleWard) <= 0 &&
-            mv->scrambleTurns > target.scrambleTurns) {
-            target.scrambleTurns = mv->scrambleTurns;
+    if (mv.scrambleTurns > 0 && target.mods.mag(ModEffect::ScrambleWard) <= 0 &&
+        mv.scrambleTurns > target.scrambleTurns) {
+            target.scrambleTurns = mv.scrambleTurns;
         }
         // DoT rider (Faraday-pass THREAT): a landed hit plants corruption — dotDamage/turn for
         // dotTurns of the target's upcoming turn-starts. The target's Faraday Cage (mod) cuts
         // the magnitude (100 = immune → nothing planted). Refreshes, not stacks.
-        if (mv->dotDamage > 0 && mv->dotTurns > 0 && !target.mirrorFired) {
-            int per = mv->dotDamage;
+    if (mv.dotDamage > 0 && mv.dotTurns > 0) {
+            int per = mv.dotDamage;
             const int faradayCut = target.mods.mag(ModEffect::FaradayCut);
             if (faradayCut > 0) per = per * (100 - faradayCut) / 100;
-            if (per > 0) { target.dotPerTurn = per; target.dotTurnsLeft = mv->dotTurns; }
+            if (per > 0) { target.dotPerTurn = per; target.dotTurnsLeft = mv.dotTurns; }
         }
+}
+
+// The DEFEND branch, whole. It shares nothing with the attack pipeline above except the
+// MITM mirror and the slot a seizure would claim, which is why it is one call up there
+// rather than an `else` wrapped round three hundred lines.
+void Combat::applyDefend(Combatant& actor, Combatant& mirror, const MoveDef& mv,
+                         bool mitmCopy, int moveIdx, bool byPlayer) {
+    // Defend: brace against the next hit, scaled by the caster's Defense stat
+    // (defenseMultPct), symmetric to Power→attack. An Obfuscation row
+    // (MoveDef::shieldPool) pools additively into shieldHp instead — a second health
+    // bar that recasting stacks. Each gain is also handed to Malbeast In The Middle
+    // (mitmCopy), additively on whatever the holder already had.
+    const int braced = mv.power * actor.defenseMultPct / 100;
+    // Asked before the brace even though the spawn happens after this resolves. A
+    // Defend's replicaSpawnPct is 100 on every row that has one, so a free slot is the
+    // whole of the question.
+    const bool spawnsDefender = mv.replicaSpawnPct > 0 && replicates(actor) &&
+                                actor.wormReplicaCount < kWormReplicaSlots;
+    if (mv.shieldPool > 0) {
+        actor.shieldHp += braced;
+        // Poisoned data: a pool row may arm a retaliation against whoever strikes the
+        // bubble (the attack path above). Rides the pool rather than the brace, so a
+        // defend-heavy pet can hold it without spending its one attack slot.
+        if (mv.poolRetaliateDot > 0 && mv.poolRetaliateTurns > 0) {
+            actor.poolDotDamage = mv.poolRetaliateDot;
+            actor.poolDotTurns = mv.poolRetaliateTurns;
+        }
+        // Ratchet the frenzy high-water mark (chooseMove reads it), so re-casting onto
+        // a live pool is how a pet holds a frenzy open past the hits that would pop it.
+        if (actor.shieldHp > actor.phishShieldPeak)
+            actor.phishShieldPeak = actor.shieldHp;
+        if (mitmCopy) {
+            mirror.shieldHp += braced;
+            if (mirror.shieldHp > mirror.phishShieldPeak)
+                mirror.phishShieldPeak = mirror.shieldHp;
+        }
+    } else if (spawnsDefender) {
+        // A Worm's defend does not brace: the body it puts on the board (rollWormSpawn,
+        // after this resolves) IS the move. The row's `power` exists only so the turn
+        // still does something when every replication slot is full.
     } else {
-        // Defend: brace against the next hit, scaled by the caster's Defense stat
-        // (defenseMultPct), symmetric to Power→attack. An Obfuscation row
-        // (MoveDef::shieldPool) pools additively into shieldHp instead — a second health
-        // bar that recasting stacks. Each gain is also handed to Malbeast In The Middle
-        // (mitmCopy), additively on whatever the holder already had.
-        const int braced = mv->power * actor.defenseMultPct / 100;
-        // Asked before the brace even though the spawn happens after this resolves. A
-        // Defend's replicaSpawnPct is 100 on every row that has one, so a free slot is the
-        // whole of the question.
-        const bool spawnsDefender = mv->replicaSpawnPct > 0 && replicates(actor) &&
-                                    actor.wormReplicaCount < kWormReplicaSlots;
-        if (mv->shieldPool > 0) {
-            actor.shieldHp += braced;
-            // Poisoned data: a pool row may arm a retaliation against whoever strikes the
-            // bubble (the attack path above). Rides the pool rather than the brace, so a
-            // defend-heavy pet can hold it without spending its one attack slot.
-            if (mv->poolRetaliateDot > 0 && mv->poolRetaliateTurns > 0) {
-                actor.poolDotDamage = mv->poolRetaliateDot;
-                actor.poolDotTurns = mv->poolRetaliateTurns;
-            }
-            // Ratchet the frenzy high-water mark (chooseMove reads it), so re-casting onto
-            // a live pool is how a pet holds a frenzy open past the hits that would pop it.
-            if (actor.shieldHp > actor.phishShieldPeak)
-                actor.phishShieldPeak = actor.shieldHp;
-            if (mitmCopy) {
-                mirror.shieldHp += braced;
-                if (mirror.shieldHp > mirror.phishShieldPeak)
-                    mirror.phishShieldPeak = mirror.shieldHp;
-            }
-        } else if (spawnsDefender) {
-            // A Worm's defend does not brace: the body it puts on the board (rollWormSpawn,
-            // after this resolves) IS the move. The row's `power` exists only so the turn
-            // still does something when every replication slot is full.
-        } else {
-            actor.guard += braced;
-            if (mitmCopy) mirror.guard += braced;
-        }
-        // Cipher track: the cast stacks the caster's Defense (% cut) for the
-        // fight, capped per move; the attack path clamps the total to 85% (never immune).
-        if (mv->stackDefensePct > 0 && actor.stackDefenseBonus < mv->stackDefenseCap) {
-            int gain = mv->stackDefensePct;
-            if (actor.stackDefenseBonus + gain > mv->stackDefenseCap)
-                gain = mv->stackDefenseCap - actor.stackDefenseBonus;
-            actor.stackDefenseBonus += gain;
-            if (mitmCopy) mirror.stackDefenseBonus += gain;
-        }
-        // Once that wall is FULL, the next thing to hit it is seized rather than absorbed
-        // (RansomSeizure). The full wall is the whole condition — the seizure starts the
-        // ransom clock itself rather than requiring one to already be running, which would
-        // need two independent things to coincide. Asked after the stack above so the cast
-        // that fills the cap is the one that arms. `moveIdx < 0` is a hijacked cast
-        // (Execution-Override), which owns no slot to seize into.
-        if (mv->stackDefensePct > 0 && moveIdx >= 0 &&
-            actor.stackDefenseBonus >= mv->stackDefenseCap && !actor.ransomSeizure.holding()) {
-            actor.ransomSeizure.armed = true;
-            actor.ransomSeizure.slot = moveIdx;
-        }
-        // Trojan trap (Trojan line): a trap move ARMS a trap (its power is 0, so the guard
-        // line above is a no-op) that stacks up to kTrojanTrapCap and springs on the enemy's
-        // next hit (attack path above). When the pile is full the oldest trap drops.
-        if (mv->trapArm > 0) {
-            if (actor.trojanTrapCount >= kTrojanTrapCap) {
-                for (int i = 1; i < kTrojanTrapCap; ++i)
-                    actor.trojanTraps[i - 1] = actor.trojanTraps[i];
-                actor.trojanTrapCount = kTrojanTrapCap - 1;
-            }
-            actor.trojanTraps[actor.trojanTrapCount++] = mv;
-        }
-        setLast(mv->displayName, 0, byPlayer, false);
+        actor.guard += braced;
+        if (mitmCopy) mirror.guard += braced;
     }
+    // Cipher track: the cast stacks the caster's Defense (% cut) for the
+    // fight, capped per move; the attack path clamps the total to 85% (never immune).
+    if (mv.stackDefensePct > 0 && actor.stackDefenseBonus < mv.stackDefenseCap) {
+        int gain = mv.stackDefensePct;
+        if (actor.stackDefenseBonus + gain > mv.stackDefenseCap)
+            gain = mv.stackDefenseCap - actor.stackDefenseBonus;
+        actor.stackDefenseBonus += gain;
+        if (mitmCopy) mirror.stackDefenseBonus += gain;
+    }
+    // Once that wall is FULL, the next thing to hit it is seized rather than absorbed
+    // (RansomSeizure). The full wall is the whole condition — the seizure starts the
+    // ransom clock itself rather than requiring one to already be running, which would
+    // need two independent things to coincide. Asked after the stack above so the cast
+    // that fills the cap is the one that arms. `moveIdx < 0` is a hijacked cast
+    // (Execution-Override), which owns no slot to seize into.
+    if (mv.stackDefensePct > 0 && moveIdx >= 0 &&
+        actor.stackDefenseBonus >= mv.stackDefenseCap && !actor.ransomSeizure.holding()) {
+        actor.ransomSeizure.armed = true;
+        actor.ransomSeizure.slot = moveIdx;
+    }
+    // Trojan trap (Trojan line): a trap move ARMS a trap (its power is 0, so the guard
+    // line above is a no-op) that stacks up to kTrojanTrapCap and springs on the enemy's
+    // next hit (attack path above). When the pile is full the oldest trap drops.
+    if (mv.trapArm > 0) {
+        if (actor.trojanTrapCount >= kTrojanTrapCap) {
+            for (int i = 1; i < kTrojanTrapCap; ++i)
+                actor.trojanTraps[i - 1] = actor.trojanTraps[i];
+            actor.trojanTrapCount = kTrojanTrapCap - 1;
+        }
+        actor.trojanTraps[actor.trojanTrapCount++] = &mv;
+    }
+    setLast(mv.displayName, 0, byPlayer, false);
 }
 
 // Everything the TARGET deals back for having been hit, in the order a fighter holding all
