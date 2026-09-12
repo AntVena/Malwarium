@@ -909,24 +909,65 @@ void test_pipeline_a_mirrored_hit_plants_no_riders() {
     CHECK(c.player().lockedTurnsLeft == 0);
 }
 
-// ...but a hit fully SOAKED by an Obfuscation pool still plants them. The pool stops the
-// damage, not the hit: only the overflow reaches Health, and the rider phase never reads
-// the damage at all. Pinned because it is the asymmetry with the mirror above, and it is
-// the kind of thing a reader assumes the other way round.
-void test_pipeline_a_soaked_hit_still_plants_its_riders() {
+// ...and a hit an Obfuscation pool swallows WHOLE lands no concussive rider either. The
+// bubble is between the strike and the pet, so nothing arrives to stun or scramble it.
+void test_pipeline_a_soaked_hit_lands_no_concussive_rider() {
     ContentRegistry r = ContentRegistry::embedded();
-    Combatant pc = mkCombatant(r, "P", 100, 5, {"quick_jab"});
-    pc.shieldHp = 500;                                   // pool far larger than the hit
-    // ...and a cap under the hit, which is what makes the POOL's slot observable: the
-    // ceilings run first, so the pool is chewed for what the cap let through (4) and not
-    // for the whole swing (10). Soak the pool first and the cap meets nothing to cap.
-    pc.mods.arm(ModEffect::MaxHitCapPct, 4);
-    Combatant e = mkCombatant(r, "E", 100, 5, {"system_hang"});   // 10 power, lockTurns 2
+    auto hit = [&](const char* moveId, int pool) {
+        Combatant pc = mkCombatant(r, "P", 100, 5, {"quick_jab"});
+        pc.shieldHp = pool;
+        Combatant e = mkCombatant(r, "E", 100, 5, {moveId});
+        Combat c; c.begin(pc, e, Combat::Stakes::Safe, 5, /*forceEnemyFirst=*/true);
+        c.step();
+        return c.player();
+    };
+    // system_hang is 10 power, lockTurns 2. c2_hijack scrambles for 3.
+    CHECK(hit("system_hang", 40).lockedTurnsLeft == 0);   // covered whole: no stun
+    CHECK(hit("system_hang", 40).health == 100);          // ...and nothing reached Health
+    CHECK(hit("c2_hijack", 40).scrambleTurns == 0);       // no scramble either
+
+    // A pool that only PARTLY covers the hit stops neither: some of it landed, and a rider
+    // is not a thing you take a share of.
+    CHECK(hit("system_hang", 4).lockedTurnsLeft == 2);
+    CHECK(hit("system_hang", 4).health < 100);
+    CHECK(hit("system_hang", 0).lockedTurnsLeft == 2);    // no pool at all
+}
+
+// THE POOL'S COUNTER. A DoT plants straight through an intact bubble, and its ticks then
+// bypass the pool for the pet's own Health — so corruption is the answer to attrition
+// behind a bubble, and the only one that does not first require breaking it. This is the
+// deliberate exception to the rule above, and the pair is the whole design: the pool stops
+// IMPACT, and a poison is not impact.
+void test_pipeline_a_dot_plants_through_an_intact_pool() {
+    ContentRegistry r = ContentRegistry::embedded();
+    Combatant pc = mkCombatant(r, "P", 100, 5, {"spoof_bubble"});
+    pc.shieldHp = 40;                                     // far more than the hit
+    Combatant e = mkCombatant(r, "E", 100, 5, {"data_rot"});   // 6 power, 5/turn x3
     Combat c; c.begin(pc, e, Combat::Stakes::Safe, 5, /*forceEnemyFirst=*/true);
     c.step();
-    CHECK(c.player().health == 100);                     // the pool took all of it
-    CHECK(c.player().shieldHp == 496);                   // ...exactly the capped amount
-    CHECK(c.player().lockedTurnsLeft == 2);              // the rider landed anyway
+    CHECK(c.player().health == 100);                      // the pool took the impact
+    CHECK(c.player().shieldHp < 40);                      // ...and was chewed for it
+    CHECK(c.player().dotTurnsLeft == 3);                  // the corruption planted anyway
+    CHECK(c.player().dotPerTurn == 5);
+
+    // ...and the ticks come off HEALTH, not off the pool, however big the pool gets.
+    const int poolBefore = c.player().shieldHp;
+    for (int i = 0; i < 6; ++i) c.step();
+    CHECK(c.player().health < 100);                       // the poison is landing
+    CHECK(c.player().shieldHp >= poolBefore);             // ...while the bubble holds or grows
+}
+
+// A move carrying BOTH resolves each half on its own terms against a full pool: the stun is
+// stopped, the corruption is not. Nothing about a rider set is all-or-nothing.
+void test_pipeline_a_mixed_rider_move_splits_against_a_pool() {
+    ContentRegistry r = ContentRegistry::embedded();
+    Combatant pc = mkCombatant(r, "P", 100, 5, {"quick_jab"});
+    pc.shieldHp = 40;
+    Combatant e = mkCombatant(r, "E", 100, 5, {"nag_screen"});   // lockTurns 1 + DoT 6x3
+    Combat c; c.begin(pc, e, Combat::Stakes::Safe, 5, /*forceEnemyFirst=*/true);
+    c.step();
+    CHECK(c.player().lockedTurnsLeft == 0);               // impact stopped
+    CHECK(c.player().dotTurnsLeft == 3);                  // corruption through
 }
 
 // Every rider actually fires. Cheap, but it is what stops the rider phase becoming dead

@@ -595,7 +595,9 @@ int g_failures = 0;
     RUN(test_pipeline_ecc_caps_before_the_balancer_splits) \
     RUN(test_pipeline_floor_does_not_resurrect_a_negated_hit) \
     RUN(test_pipeline_a_mirrored_hit_plants_no_riders) \
-    RUN(test_pipeline_a_soaked_hit_still_plants_its_riders) \
+    RUN(test_pipeline_a_soaked_hit_lands_no_concussive_rider) \
+    RUN(test_pipeline_a_dot_plants_through_an_intact_pool) \
+    RUN(test_pipeline_a_mixed_rider_move_splits_against_a_pool) \
     RUN(test_pipeline_every_rider_fires) \
     RUN(test_mod_ecc_memory_hitcap)               \
     RUN(test_mod_load_balancer_split)             \

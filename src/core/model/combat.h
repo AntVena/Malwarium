@@ -216,7 +216,15 @@ struct Combatant {
     int baseDmgReducePct = 0;   // dmgReducePct at fight start; the third live stat LEAN,
                                 // with basePowerMultPct and baseSpeed
     bool mirrorFired = false;   // set the turn a hit is fully negated (a brief flash);
-                                 // also suppresses that attack's stun/DoT riders
+                                 // also suppresses every one of that attack's riders
+    bool poolAbsorbedHit = false;  // set the turn an Obfuscation pool swallowed a hit WHOLE.
+                                 // Suppresses the CONCUSSIVE riders (stun, scramble) — the
+                                 // bubble stopped the impact — but never the DoT, which is
+                                 // corruption rather than impact and is the answer to a
+                                 // bubble nobody can break (its ticks bypass the pool too,
+                                 // resolveTurn). Distinct from mirrorFired: that one means
+                                 // the hit did not happen, this one means it did and the
+                                 // pool paid for it.
     bool itemShield = false;    // Backup Drive's timed buff — a DEATH-SAVE, not a hit
                                  // negator: every hit lands in full and the drive is read
                                  // only once the pet is down (restoreFromBackup). Armed by

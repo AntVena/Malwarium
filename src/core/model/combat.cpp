@@ -367,6 +367,7 @@ static bool replicates(const Combatant& c) {
 void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
                          bool byPlayer, int moveIdx) {
     target.mirrorFired = false;
+    target.poolAbsorbedHit = false;
     // Malbeast In The Middle (crew Exploit): while it holds, every SELF-BUFF the OPPOSITE
     // side casts is copied onto the holder as it lands. `byPlayer` names who is CASTING
     // (the Trojan hijack passes the flipped flag), so `mirror` is always the watching side.
@@ -624,12 +625,12 @@ return dmg;
 }
 
 // The Obfuscation shield pool (Phishing): a second health bar, last in the mitigation
-// chain. Only the overflow reaches Health — but the hit still LANDED, so its riders are
-// planted all the same (applyOnHitRiders reads mirrorFired and nothing else). The pool
-// stops the damage, not the hit; a mirror is the only thing that stops the hit, and the
-// asymmetry is pinned by test_pipeline_a_soaked_hit_still_plants_its_riders. Popping the
-// pool (not merely chewing it down) releases the frenzy ratchet, so the way out of a
-// frenzy is "break the bubble", not "wait".
+// chain. Only the overflow reaches Health, and a hit the pool covers ENTIRELY also lands
+// no stun and no scramble — it never reached the pet to concuss it (poolAbsorbedHit, read
+// by applyOnHitRiders). A DoT still plants through it, which is the pool's designed
+// counter: corruption is not impact, and its ticks bypass the pool for Health itself.
+// Popping the pool (not merely chewing it down) releases the frenzy ratchet, so the way
+// out of a frenzy is "break the bubble", not "wait".
 int Combat::soakShieldPool(Combatant& actor, Combatant& target, int dmg) {
     if (dmg <= 0 || target.shieldHp <= 0) return dmg;
     // Poisoned data (MoveDef::poolRetaliateDot): planted on the attacker before the pool is
@@ -640,8 +641,14 @@ int Combat::soakShieldPool(Combatant& actor, Combatant& target, int dmg) {
         const int per = target.poolDotDamage * (100 - cut) / 100;
         if (per > 0) { actor.dotPerTurn = per; actor.dotTurnsLeft = target.poolDotTurns; }
     }
-    if (target.shieldHp >= dmg) { target.shieldHp -= dmg; dmg = 0; }
-    else { dmg -= target.shieldHp; target.shieldHp = 0; }
+    if (target.shieldHp >= dmg) {
+        target.shieldHp -= dmg;
+        dmg = 0;
+        // Nothing reached Health, so the impact was stopped — the concussive riders go
+        // with it (applyOnHitRiders). A pool that only PARTLY covers the hit stops none
+        // of them: some of it landed, and a rider is not a thing you take a share of.
+        target.poolAbsorbedHit = true;
+    } else { dmg -= target.shieldHp; target.shieldHp = 0; }
     if (target.shieldHp == 0) target.phishShieldPeak = 0;
     return dmg;
 }
@@ -696,8 +703,15 @@ void Combat::stackLockoutPower(Combatant& actor, Combatant& mirror, const MoveDe
 // only what the move carries and what the target can refuse — which is what lets them sit
 // at the end of the pipeline rather than inside it. A fully mirrored hit carries none.
 void Combat::applyOnHitRiders(Combatant& target, const MoveDef& mv) {
-    if (target.mirrorFired) return;
-    if (mv.lockTurns > 0 && target.lockedTurnsLeft == 0) {
+    if (target.mirrorFired) return;          // the hit did not happen at all
+    // A hit an Obfuscation pool swallowed WHOLE lands no CONCUSSIVE rider: the bubble is
+    // between the strike and the pet, so nothing arrives to stun or scramble it. Corruption
+    // is the exception and it is deliberate — a DoT is a poison rather than an impact, it
+    // plants through an intact bubble, and its ticks then bypass the pool for the pet's own
+    // Health (resolveTurn). That is what makes a DoT kit the answer to attrition behind a
+    // bubble, and it is the only answer that does not first require breaking one.
+    const bool concussed = !target.poolAbsorbedHit;
+    if (concussed && mv.lockTurns > 0 && target.lockedTurnsLeft == 0) {
         int k = mv.lockTurns;
         const int watchdog = target.mods.mag(ModEffect::WatchdogClamp);
         if (watchdog > 0 && k > watchdog) k = watchdog;
@@ -712,7 +726,8 @@ void Combat::applyOnHitRiders(Combatant& target, const MoveDef& mv) {
     // clamp — there is no "half a scrambled list", so the counter either holds or it
     // does not, and a mod that shortened it would be selling a worse version of the
     // one thing it is for.
-    if (mv.scrambleTurns > 0 && target.mods.mag(ModEffect::ScrambleWard) <= 0 &&
+    if (concussed && mv.scrambleTurns > 0 &&
+        target.mods.mag(ModEffect::ScrambleWard) <= 0 &&
         mv.scrambleTurns > target.scrambleTurns) {
         target.scrambleTurns = mv.scrambleTurns;
     }

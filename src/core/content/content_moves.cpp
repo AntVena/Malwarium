@@ -208,6 +208,14 @@ const MoveDef kMoves[] = {
     // Obfuscation bubble up (shieldHp > 0, cast via spoof_bubble/proxy_shell/
     // bathyspoof) — the "Perfect Bite" passive (content_passives.h, Combat::
     // applyEffect) then has a stage-scaled chance to double whichever of the two lands.
+    // WHAT A POOL IS WORTH BEYOND THE NUMBER: a hit the pool covers ENTIRELY lands no stun
+    // and no scramble either, because nothing reached the pet to concuss it (Combat::
+    // applyOnHitRiders). That is not on the effect line — the budget will not carry it —
+    // so it is a thing a player finds out, and it is most of why a deep pool beats a brace
+    // of the same size against a rider kit. The counter is corruption: a DoT plants through
+    // an intact pool and its ticks come off Health, which is the one pressure a bubble
+    // cannot answer by being bigger.
+    //
     // The Obfuscation ladder is a decoy that learns to bite. The first rung is pure
     // padding; the second trades depth for POISONED DATA — read the decoy and something in
     // it reads back, which is the line's conversion from defence into damage and the one
