@@ -64,6 +64,65 @@ void test_inventory_rows_grouped() {
     CHECK(cur == f);                                 // full wrap returns to start
 }
 
+// The BUFF band holds its rule: a Buff acts on the PET, a Tool is a lever over a
+// system the pet is in (the rule is on ItemDef::Type). Asserted as a property of the
+// table rather than as a row count, because the failure it guards is a new row parked
+// in Buffs for want of somewhere better — which is how the band filled up before.
+//
+// The mechanical proxy for "acts on the pet" is effects[]: a Buff reaches the pet
+// through ItemEffect, which is the vocabulary of things that can be done TO one. A
+// Tool's work happens in the system it steers, so its effects[] name a lever there.
+void test_buff_band_acts_on_the_pet() {
+    ContentRegistry r = ContentRegistry::embedded();
+
+    // Every lever over the EVOLUTION ROUTER or the DIVE LADDER is a Tool. These are the
+    // two systems a row can steer without touching a stat line, and they are what the
+    // band was cut to hold.
+    const ItemEffect::Kind kLevers[] = {
+        ItemEffect::Kind::ForceTrojanDivert,    ItemEffect::Kind::ForceEvolveBranchBad,
+        ItemEffect::Kind::ForceEvolveBranchGood, ItemEffect::Kind::ArmEvolveSoak,
+        ItemEffect::Kind::ArmEvolveSoakLate,     ItemEffect::Kind::ArmEvolveHold,
+        ItemEffect::Kind::ClearUsbPort,
+        ItemEffect::Kind::SetDeepWebStartDepth,  ItemEffect::Kind::SetDeepWebStartDepthToBest,
+        ItemEffect::Kind::ArmDeepWebDepthMultiplier,
+    };
+
+    int tools = 0, buffs = 0;
+    for (const ItemDef* d : r.allItems()) {
+        bool steers = false;
+        for (const ItemEffect& e : d->effects)
+            for (ItemEffect::Kind k : kLevers)
+                if (e.kind == k) steers = true;
+        // Rollback steers the STAT TABLE, and does it through its own Use flow rather
+        // than through effects[] — so the picker is its tell.
+        if (d->use == ItemDef::Use::Rollback) steers = true;
+
+        if (steers) {
+            CHECK(d->type == ItemDef::Type::Tool);   // a lever is never a Buff
+            ++tools;
+        }
+        if (d->type == ItemDef::Type::Buff) {
+            CHECK(!steers);
+            ++buffs;
+        }
+    }
+    // Both bands are non-empty and the cut actually moved the mass: a Buff band that
+    // had quietly re-absorbed the levers would still pass the per-row checks above.
+    CHECK(tools > buffs);
+    CHECK(buffs > 0);
+
+    // And the band reaches the screen: TOOLS groups and filters like any other.
+    CHECK(std::strcmp(itemTypeName(ItemDef::Type::Tool), "TOOLS") == 0);
+    CHECK(itemTypeOrder(ItemDef::Type::Tool) > itemTypeOrder(ItemDef::Type::Buff));
+    CHECK(itemTypeOrder(ItemDef::Type::Tool) < itemTypeOrder(ItemDef::Type::Quest));
+    // The TOOLS filter is the reach-for-it question, so it spans both bands that hold
+    // one — a Type::Tool row and a Quest row that is really a tool.
+    const ItemDef* rollback = r.item("rollback");
+    const ItemDef* defrag = r.item("defrag_tool");
+    CHECK(rollback && itemCategory(*rollback) == ItemDef::Category::Tools);
+    if (defrag) CHECK(itemCategory(*defrag) == ItemDef::Category::Tools);
+}
+
 // Within a group the list reads richest-first, so the top of a block is always the
 // best thing the bag holds of that type.
 void test_inventory_rows_rarity_desc() {

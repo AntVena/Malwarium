@@ -46,9 +46,13 @@ const char* groupLabel(int key) {
 
 // Does an item pass the active filter? All = everything. Food/Buffs/Quest read the
 // TYPE axis; Keys/Tools/Ingredients read the finer CATEGORY axis (Ingredients splits
-// Food the same way Keys/Tools split Quest — itemIsRecipeIngredient, not
-// itemCategory, since the split is derived from the recipe table rather than the
-// row's own category field).
+// Food — itemIsRecipeIngredient, not itemCategory, since that split is derived from
+// the recipe table rather than the row's own category field).
+//
+// TOOLS is the one filter that is not a band: it reads the category axis, so it
+// answers "what can I reach for" across both Type::Tool and the Quest rows that are
+// really tools. That is the question the filter is for — a Defrag Tool and a Rollback
+// belong in one list whatever their group heading says.
 bool filterMatches(ItemFilter f, const ItemDef& d) {
     switch (f) {
         case ItemFilter::All: return true;
@@ -194,8 +198,9 @@ ItemFilter nextItemFilter(ItemFilter f, bool categoryAxis) {
     switch (f) {
         case ItemFilter::All: return ItemFilter::Food;
         case ItemFilter::Food: return ItemFilter::Buffs;
-        case ItemFilter::Buffs: return ItemFilter::Quest;
-        default: return ItemFilter::All;       // Quest, or an off-axis KEYS/TOOLS
+        case ItemFilter::Buffs: return ItemFilter::Tools;
+        case ItemFilter::Tools: return ItemFilter::Quest;
+        default: return ItemFilter::All;       // Quest, or an off-axis KEYS
     }
 }
 

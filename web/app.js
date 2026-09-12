@@ -471,12 +471,24 @@
      food under nine screens of groceries. */
   function vItems() {
     var h = '';
-    var groups = [['BUFFS', 'BUFFS'], ['QUEST', 'QUEST']];
-    groups.forEach(function (g) {
-      var list = D.items.filter(function (i) { return i.type === g[0]; });
+    /* Bands walked off the DATA, for the same reason the mod tiers below are: a literal
+       list silently drops every row in a band it forgets to name, and a band is exactly
+       the thing that gets added on the device without anyone opening this file. The
+       ORDER is stated \u2014 it mirrors the device's own group order \u2014 but membership is
+       not, so a band nobody named here still renders, at the end, rather than not at all. */
+    var ORDER = ['BUFFS', 'TOOLS', 'QUEST'];
+    var rank = function (t) { var i = ORDER.indexOf(t); return i < 0 ? ORDER.length : i; };
+    var bands = [];
+    D.items.forEach(function (i) {
+      if (i.type === 'FOOD') return;                 /* its own tab, see above */
+      if (bands.indexOf(i.type) < 0) bands.push(i.type);
+    });
+    bands.sort(function (a, b) { return rank(a) - rank(b); });
+    bands.forEach(function (band) {
+      var list = D.items.filter(function (i) { return i.type === band; });
       if (!list.length) return;
       var got = list.filter(function (i) { return st('items', i.id) === 'unlocked'; }).length;
-      h += '<h2 class="sect">// ' + g[1] + '<span class="count">' + got + '/' + list.length + '</span></h2>';
+      h += '<h2 class="sect">// ' + band + '<span class="count">' + got + '/' + list.length + '</span></h2>';
       h += list.map(itemRow).join('');
     });
 

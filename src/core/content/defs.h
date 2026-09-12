@@ -487,7 +487,18 @@ struct CacheDef {
 };
 
 struct ItemDef {
-    enum class Type { Food, Buff, Quest };
+    // WHAT A ROW IS, coarsely — the inventory's group order and the ITEMS hold-B
+    // filter both read this, and nothing persists it (the inventory saves ids), so a
+    // row can be re-banded freely.
+    //
+    // The line between Buff and Tool is WHAT THE ROW ACTS ON, not when it lands:
+    //   Buff — acts on the PET. Its Health, its care record, what it survives.
+    //   Tool — a lever over a SYSTEM the pet happens to be in: the evolution router,
+    //          the Dive's depth ladder, the stat table. It never touches a stat line
+    //          directly, and the pet is the same creature after it as before.
+    // Both can be armed and pending; "is the pet carrying it" does not separate them,
+    // because a Buff shield and an armed USB are both carried.
+    enum class Type { Food, Buff, Tool, Quest };
     enum class Rarity { Common, Uncommon, Rare, Epic };
     // Where Use does something. Outside its context the detail screen disables
     // Use and states where the item applies.
@@ -1191,26 +1202,32 @@ inline int creatureHealthMultPct(const CreatureDef& d) {
     return 100;
 }
 
-// FOOD -> BUFFS -> QUEST: the inventory's fixed use-frequency order.
+// FOOD -> BUFFS -> TOOLS -> QUEST: the inventory's fixed use-frequency order. Tools
+// sit under Buffs because a lever is reached for less often than a heal, and above
+// Quest because Quest is the band you are not choosing to open.
 inline int itemTypeOrder(ItemDef::Type t) { return static_cast<int>(t); }
 
 inline const char* itemTypeName(ItemDef::Type t) {
     switch (t) {
         case ItemDef::Type::Food: return "FOOD";
         case ItemDef::Type::Buff: return "BUFFS";
+        case ItemDef::Type::Tool: return "TOOLS";
         case ItemDef::Type::Quest: return "QUEST";
     }
     return "?";
 }
 
 // An item's resolved type-picker category: its own `category` when the row names
-// one, otherwise derived from its type (Food -> Food, Buff -> Buffs, Quest ->
-// Tools). The one place ItemDef::Category::Derive is unfolded.
+// one, otherwise derived from its type (Food -> Food, Buff -> Buffs, Tool and Quest
+// -> Tools). The one place ItemDef::Category::Derive is unfolded. Tool and Quest
+// share a category on purpose: the TOOLS filter answers "what can I reach for", which
+// is a question about the object and not about which band it is grouped under.
 inline ItemDef::Category itemCategory(const ItemDef& d) {
     if (d.category != ItemDef::Category::Derive) return d.category;
     switch (d.type) {
         case ItemDef::Type::Food: return ItemDef::Category::Food;
         case ItemDef::Type::Buff: return ItemDef::Category::Buffs;
+        case ItemDef::Type::Tool: return ItemDef::Category::Tools;
         case ItemDef::Type::Quest: return ItemDef::Category::Tools;
     }
     return ItemDef::Category::Tools;

@@ -70,14 +70,11 @@ void fieldBool(const char* key, bool val, bool comma = true) {
     std::printf(": %s%s", val ? "true" : "false", comma ? ", " : "");
 }
 
-const char* itemTypeKey(ItemDef::Type t) {
-    switch (t) {
-        case ItemDef::Type::Food: return "FOOD";
-        case ItemDef::Type::Buff: return "BUFFS";
-        case ItemDef::Type::Quest: return "QUEST";
-    }
-    return "QUEST";
-}
+// The bundle's `type` is the SCREEN's word for the band, so it comes from the engine's
+// own itemTypeName rather than from a copy here. A second table drifts silently: it
+// still compiles when a band is added, and every row in the new band ships to the web
+// 'Pedia under whatever the fallthrough happened to return.
+const char* itemTypeKey(ItemDef::Type t) { return itemTypeName(t); }
 
 const char* contextKey(ItemDef::Context c) {
     switch (c) {

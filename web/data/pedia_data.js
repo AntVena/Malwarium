@@ -763,7 +763,7 @@ window.PEDIA_DATA = {
     {
       "id": "backdoor_bell",
       "name": "Backdoor Bell",
-      "type": "BUFFS",
+      "type": "TOOLS",
       "rarity": "COMMON",
       "effect": "Starts the next DeepWeb Dive at depth 16.",
       "stats": "DIVE FROM 16",
@@ -855,7 +855,7 @@ window.PEDIA_DATA = {
     {
       "id": "rootkit_bell",
       "name": "Rootkit Bell",
-      "type": "BUFFS",
+      "type": "TOOLS",
       "rarity": "UNCOMMON",
       "effect": "Starts the next DeepWeb Dive at depth 32.",
       "stats": "DIVE FROM 32",
@@ -2567,7 +2567,7 @@ window.PEDIA_DATA = {
     {
       "id": "kernel_bell",
       "name": "Kernel Bell",
-      "type": "BUFFS",
+      "type": "TOOLS",
       "rarity": "RARE",
       "effect": "Starts the next DeepWeb Dive at depth 64.",
       "stats": "DIVE FROM 64",
@@ -2576,7 +2576,7 @@ window.PEDIA_DATA = {
     {
       "id": "deep_learning_module",
       "name": "Deep-Learning Module",
-      "type": "BUFFS",
+      "type": "TOOLS",
       "rarity": "RARE",
       "effect": "Each DeepWeb Dive win advances the depth by 2 instead of 1.",
       "stats": "DIVE STEP x2",
@@ -2693,7 +2693,7 @@ window.PEDIA_DATA = {
     {
       "id": "rollback",
       "name": "Rollback",
-      "type": "QUEST",
+      "type": "TOOLS",
       "rarity": "RARE",
       "effect": "Shed one earned stat point (-1 level) to re-roll it.",
       "stats": "",
@@ -2702,7 +2702,7 @@ window.PEDIA_DATA = {
     {
       "id": "ambig_usb",
       "name": "Ambig-USB",
-      "type": "BUFFS",
+      "type": "TOOLS",
       "rarity": "EPIC",
       "effect": "Guarantees the pet's next evolution diverts into a Trojan.",
       "stats": "TROJAN DIVERT",
@@ -2712,7 +2712,7 @@ window.PEDIA_DATA = {
     {
       "id": "bad_usb",
       "name": "Bad-USB",
-      "type": "BUFFS",
+      "type": "TOOLS",
       "rarity": "EPIC",
       "effect": "Forces the next branching evolution down the BAD line, whatever the care record.",
       "stats": "FORCE BAD",
@@ -2721,7 +2721,7 @@ window.PEDIA_DATA = {
     {
       "id": "signed_usb",
       "name": "Signed-USB",
-      "type": "BUFFS",
+      "type": "TOOLS",
       "rarity": "EPIC",
       "effect": "Forces the next branching evolution down the GOOD line, whatever the care record.",
       "stats": "FORCE GOOD",
@@ -2730,7 +2730,7 @@ window.PEDIA_DATA = {
     {
       "id": "sandbox_usb",
       "name": "Sandbox-USB",
-      "type": "BUFFS",
+      "type": "TOOLS",
       "rarity": "RARE",
       "effect": "Process-use: stretches this stage's evolve clock x2 and pays x2 XP.",
       "stats": "SOAK x2",
@@ -2739,7 +2739,7 @@ window.PEDIA_DATA = {
     {
       "id": "hypervisor_usb",
       "name": "Hypervisor-USB",
-      "type": "BUFFS",
+      "type": "TOOLS",
       "rarity": "EPIC",
       "effect": "Process/Script: x8 XP for x8 the evolve clock, x2 that on a Script.",
       "stats": "SOAK x8",
@@ -2749,7 +2749,7 @@ window.PEDIA_DATA = {
     {
       "id": "halt_usb",
       "name": "Halt-USB",
-      "type": "BUFFS",
+      "type": "TOOLS",
       "rarity": "RARE",
       "effect": "Stops the pet evolving at all, until an Eject-USB pulls it.",
       "stats": "EVOLVE HELD",
@@ -2758,7 +2758,7 @@ window.PEDIA_DATA = {
     {
       "id": "eject_usb",
       "name": "Eject-USB",
-      "type": "BUFFS",
+      "type": "TOOLS",
       "rarity": "RARE",
       "effect": "Pulls whatever USB is armed and drops its effect.",
       "stats": "CLEARS USB",
@@ -2767,7 +2767,7 @@ window.PEDIA_DATA = {
     {
       "id": "zeroday_bell",
       "name": "Zero-Day Bell",
-      "type": "BUFFS",
+      "type": "TOOLS",
       "rarity": "EPIC",
       "effect": "Starts the next DeepWeb Dive at this pet's own deepest depth reached.",
       "stats": "DIVE FROM BEST",
@@ -2776,7 +2776,7 @@ window.PEDIA_DATA = {
     {
       "id": "deep_learning_core",
       "name": "Deep-Learning Core",
-      "type": "BUFFS",
+      "type": "TOOLS",
       "rarity": "EPIC",
       "effect": "Each DeepWeb Dive win advances the depth by 4 instead of 1.",
       "stats": "DIVE STEP x4",

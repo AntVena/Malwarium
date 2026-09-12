@@ -276,7 +276,7 @@ const ItemDef kItems[] = {
     // straight to a given depth (SetDeepWebStartDepth(ToBest)), consumed the moment
     // that dive starts, so a pet re-earns its way back to a genuine struggle
     // without re-walking every shallow depth first.
-    {"backdoor_bell", "Backdoor Bell", ItemDef::Type::Buff,
+    {"backdoor_bell", "Backdoor Bell", ItemDef::Type::Tool,
      ItemDef::Rarity::Common, "Starts the next DeepWeb Dive at depth {depth}.",
      ItemDef::Context::Anytime, {{IE::Kind::SetDeepWebStartDepth, 16}}},
 
@@ -361,7 +361,7 @@ const ItemDef kItems[] = {
                 kCachePoolUncommon, poolN(kCachePoolUncommon), /*findWeight=*/30}},
 
     // Rootkit Bell: the Backdoor Bell's deeper cousin — see its comment above.
-    {"rootkit_bell", "Rootkit Bell", ItemDef::Type::Buff,
+    {"rootkit_bell", "Rootkit Bell", ItemDef::Type::Tool,
      ItemDef::Rarity::Uncommon, "Starts the next DeepWeb Dive at depth {depth}.",
      ItemDef::Context::Anytime, {{IE::Kind::SetDeepWebStartDepth, 32}}},
     //
@@ -1717,7 +1717,7 @@ const ItemDef kItems[] = {
                 kCachePoolRare, poolN(kCachePoolRare), /*findWeight=*/15}},
 
     // Kernel Bell: the Backdoor Bell's deeper cousin still — see its comment above.
-    {"kernel_bell", "Kernel Bell", ItemDef::Type::Buff,
+    {"kernel_bell", "Kernel Bell", ItemDef::Type::Tool,
      ItemDef::Rarity::Rare, "Starts the next DeepWeb Dive at depth {depth}.",
      ItemDef::Context::Anytime, {{IE::Kind::SetDeepWebStartDepth, 64}}},
 
@@ -1726,7 +1726,7 @@ const ItemDef kItems[] = {
     // skips ahead on every win instead of one step at a time. Overwrites, doesn't
     // stack — a fresh Module/Core just replaces whichever multiplier is currently
     // armed. Lets a blitzing endgame pet catch back up to a real fight faster.
-    {"deep_learning_module", "Deep-Learning Module", ItemDef::Type::Buff,
+    {"deep_learning_module", "Deep-Learning Module", ItemDef::Type::Tool,
      ItemDef::Rarity::Rare, "Each DeepWeb Dive win advances the depth by {depthStep} instead of 1.",
      ItemDef::Context::Anytime, {{IE::Kind::ArmDeepWebDepthMultiplier, 2}}},
     //
@@ -1854,14 +1854,14 @@ const ItemDef kItems[] = {
      /*bits=*/0, /*walkWarp=*/ItemDef::WalkWarp::SafeRest, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Keys},
     
-    // Rollback: a TOOL. It arms nothing and waits for nothing — Use opens a stat picker
-    // (use=Rollback) and the shed lands the moment it is confirmed, which is the line
-    // between the two tabs: a Buff is a thing the pet is now CARRYING, a Tool is a thing
-    // the operator just DID. Sheds one earned combat-stat point (-1 that stat, -1 level)
+    // Rollback: a TOOL, and the row the band is shaped around. Use opens a stat picker
+    // (use=Rollback) and hands the operator a lever over the stat TABLE — the pet is the
+    // same creature either side of it, which is what puts it here rather than in Buffs
+    // (the rule is on ItemDef::Type). Sheds one earned combat-stat point (-1 that stat, -1 level)
     // so the pet re-grinds that level and re-rolls a fresh +1. A reward-pool drop; inert
     // at level 0 (nothing to shed), and it can never reach an off-level point an Epic
     // dish granted (core/model/pet_upgrades.h).
-    {"rollback", "Rollback", ItemDef::Type::Quest,
+    {"rollback", "Rollback", ItemDef::Type::Tool,
      ItemDef::Rarity::Rare,
      "Shed one earned stat point (-1 level) to re-roll it.",
      ItemDef::Context::Anytime, /*effects=*/{}, /*combatHeal=*/0, /*preEncounterXp=*/0,
@@ -1869,7 +1869,7 @@ const ItemDef kItems[] = {
     
     // Ambig-USB: Use on a Process pet to guarantee its Trojan divert instead of leaving it to the
     // kTrojanDivertPct roll. Stocked item at Moor-to-Moor (Napstorrent Moors).
-    {"ambig_usb", "Ambig-USB", ItemDef::Type::Buff,
+    {"ambig_usb", "Ambig-USB", ItemDef::Type::Tool,
      ItemDef::Rarity::Epic,
      "Guarantees the pet's next evolution diverts into a Trojan.",
      ItemDef::Context::Anytime, {{IE::Kind::ForceTrojanDivert, 1}},
@@ -1889,7 +1889,7 @@ const ItemDef kItems[] = {
     // budget was. Deliberately scarcer than its Epic tier-mates (dropWeight): a run's
     // ending is the one thing the care loop is FOR, so buying your way past it should
     // cost a real trip down.
-    {"bad_usb", "Bad-USB", ItemDef::Type::Buff,
+    {"bad_usb", "Bad-USB", ItemDef::Type::Tool,
      ItemDef::Rarity::Epic,
      "Forces the next branching evolution down the BAD line, whatever the care record.",
      ItemDef::Context::Anytime, {{IE::Kind::ForceEvolveBranchBad, 1}},
@@ -1901,7 +1901,7 @@ const ItemDef kItems[] = {
     // inverse item — the GOOD successor whatever the record says, which is the half that
     // rescues a badly-raised pet rather than the half that ruins a well-raised one. Same
     // one slot as the Bad-USB: plugging either in replaces the other.
-    {"signed_usb", "Signed-USB", ItemDef::Type::Buff,
+    {"signed_usb", "Signed-USB", ItemDef::Type::Tool,
      ItemDef::Rarity::Epic,
      "Forces the next branching evolution down the GOOD line, whatever the care record.",
      ItemDef::Context::Anytime, {{IE::Kind::ForceEvolveBranchGood, 1}},
@@ -1916,7 +1916,7 @@ const ItemDef kItems[] = {
     // port shut while it runs (defs.h's isUsbEffect), so a soak is a decision about the
     // stage rather than one buff among several: no divert, no branch override, not even a
     // second soak, until this one is spent at the boundary it stretched.
-    {"sandbox_usb", "Sandbox-USB", ItemDef::Type::Buff,
+    {"sandbox_usb", "Sandbox-USB", ItemDef::Type::Tool,
      ItemDef::Rarity::Rare,
      "Process-use: stretches this stage's evolve clock x{soak} and pays x{soak} XP.",
      ItemDef::Context::Anytime, {{IE::Kind::ArmEvolveSoak, 2}},
@@ -1941,7 +1941,7 @@ const ItemDef kItems[] = {
     // are DeepWeb Dive drops — a zone that scales to the pet's own level from depth 0, so
     // the ingredients are gated behind the one place the hold makes hardest to farm. The
     // XP has to be worth a stage to be worth arming at all.
-    {"hypervisor_usb", "Hypervisor-USB", ItemDef::Type::Buff,
+    {"hypervisor_usb", "Hypervisor-USB", ItemDef::Type::Tool,
      ItemDef::Rarity::Epic,
      "Process/Script: x{soak} XP for x{soak} the evolve clock, x2 that on a Script.",
      ItemDef::Context::Anytime, {{IE::Kind::ArmEvolveSoakLate, 8}},
@@ -1953,7 +1953,7 @@ const ItemDef kItems[] = {
     // when the pet goes back on the ARCH rack, or never. What it is FOR is parking a pet
     // at a stage you want it at: the roster has thirty-five species and only sixteen of
     // them are endings, so keeping one of each means keeping the middle of the chains.
-    {"halt_usb", "Halt-USB", ItemDef::Type::Buff,
+    {"halt_usb", "Halt-USB", ItemDef::Type::Tool,
      ItemDef::Rarity::Rare,
      "Stops the pet evolving at all, until an Eject-USB pulls it.",
      ItemDef::Context::Anytime, {{IE::Kind::ArmEvolveHold, 0}},
@@ -1966,7 +1966,7 @@ const ItemDef kItems[] = {
     // already there — a port that could only be emptied by the boundary it was refusing
     // to reach would be a trap rather than a decision. Drawn commoner than the devices it
     // undoes (dropWeight), for the same reason.
-    {"eject_usb", "Eject-USB", ItemDef::Type::Buff,
+    {"eject_usb", "Eject-USB", ItemDef::Type::Tool,
      ItemDef::Rarity::Rare,
      "Pulls whatever USB is armed and drops its effect.",
      ItemDef::Context::Anytime, {{IE::Kind::ClearUsbPort, 0}},
@@ -1978,13 +1978,13 @@ const ItemDef kItems[] = {
     // it warps the next DeepWeb Dive straight to THIS PET's own best-ever depth
     // (SetDeepWebStartDepthToBest reads bestDeepWebDepth_ at dive-start), never any
     // other pet's or the device's frontier.
-    {"zeroday_bell", "Zero-Day Bell", ItemDef::Type::Buff,
+    {"zeroday_bell", "Zero-Day Bell", ItemDef::Type::Tool,
      ItemDef::Rarity::Epic,
      "Starts the next DeepWeb Dive at this pet's own deepest depth reached.",
      ItemDef::Context::Anytime, {{IE::Kind::SetDeepWebStartDepthToBest, 0}}},
 
     // Deep-Learning Core: Deep-Learning Module's Epic upgrade — see its comment above.
-    {"deep_learning_core", "Deep-Learning Core", ItemDef::Type::Buff,
+    {"deep_learning_core", "Deep-Learning Core", ItemDef::Type::Tool,
      ItemDef::Rarity::Epic, "Each DeepWeb Dive win advances the depth by {depthStep} instead of 1.",
      ItemDef::Context::Anytime, {{IE::Kind::ArmDeepWebDepthMultiplier, 4}}},
 };

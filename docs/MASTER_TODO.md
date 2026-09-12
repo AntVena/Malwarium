@@ -55,19 +55,6 @@ reason this wants a deliberate pass rather than a quick field. |
 achievements are unaffected either way — an earned bit never falls — so this is about the page
 telling the truth, not about losing progress. |
 
-**Rollback is filed as a Buff and it is not one.** Every other Buff does something TO the pet
-and is spent doing it; Rollback opens a picker and hands the player a lever over the stat RNG,
-which is a different kind of object and reads wrong sitting in the same band as Pwnzu Sauce.
-`ItemDef::Type` is `{Food, Buff, Quest}`, so this wants a fourth member rather than a re-label —
-and the type is not cosmetic: it drives the inventory's fixed use-frequency order (`itemTypeOrder`)
-and the ITEMS hold-B type filter, so a new band has to earn its place in both. Worth checking what
-else is sitting in Buff for want of somewhere better before deciding whether the band is
-`Tool` alone or a wider re-cut. |
-`content_items.cpp`'s `rollback` row + the `Type` enum in `defs.h`; `itemTypeOrder`; the ITEMS
-filter in `game_items.cpp`. | M | The row's own comment currently argues the opposite ("a level
-re-roll BUFF, not a quest item") — that reasoning was about it not being a QUEST item, and it
-answered the wrong question. |
-
 **Capture arming costs ~70KB and the AP ~58KB**, against ~126KB free with the radio idle. The device works, and the save no longer needs a big contiguous block, but that was the only thing standing on this — anything else that grows will hit the same wall. Worth a pass at what the capture path actually needs. | `net_capture.h`'s `powerUp` (`esp_wifi_init` + promiscuous + the pcap SD buffers). | M | Measured on device, not estimated: `[ap] down free=126408` → `[cap] armed free=56188`. |
 
 **A crew cannot be DISCOVERED.** `QuoteReward::Kind` has room for it and it is one of the prizes

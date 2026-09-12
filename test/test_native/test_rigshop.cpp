@@ -1098,14 +1098,20 @@ void test_item_hold_b_follows_picker_axis() {
         g.tick(t += kItemFilterHoldMs + kHeartbeatMs);
         g.onButton(lift(Button::B));
     };
-    {   // (a) Type-Tabs only: ALL -> FOOD -> BUFFS -> QUEST.
+    {   // (a) Type-Tabs only: ALL -> FOOD -> BUFFS -> TOOLS -> QUEST. TOOLS is a band
+        // on this axis like the others, so the coarse cycle stops at it too — a filter
+        // that skipped it would leave 14 rows reachable only by owning the picker.
         Game g{StartMode::Hatched};
         g.debugSetBits(kShopItemTabsCost);
         g.debugBuyItemTabs();
         enterSubmenuId(g, SubmenuId::Items);
         uint32_t t = 0;
         g.tick(t);
-        holdB(g, t); holdB(g, t); holdB(g, t);
+        holdB(g, t); holdB(g, t);
+        CHECK(g.itemFilter() == ItemFilter::Buffs);
+        holdB(g, t);
+        CHECK(g.itemFilter() == ItemFilter::Tools);
+        holdB(g, t);
         CHECK(g.itemFilter() == ItemFilter::Quest);
     }
     {   // (b) Both owned: ALL -> FOOD -> INGREDIENTS -> BUFFS -> KEYS -> TOOLS -> ALL.
