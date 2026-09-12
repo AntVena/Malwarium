@@ -697,34 +697,34 @@ void Combat::stackLockoutPower(Combatant& actor, Combatant& mirror, const MoveDe
 // at the end of the pipeline rather than inside it. A fully mirrored hit carries none.
 void Combat::applyOnHitRiders(Combatant& target, const MoveDef& mv) {
     if (target.mirrorFired) return;
-        if (mv.lockTurns > 0 && target.lockedTurnsLeft == 0) {
-            int k = mv.lockTurns;
-            const int watchdog = target.mods.mag(ModEffect::WatchdogClamp);
-            if (watchdog > 0 && k > watchdog) k = watchdog;
-            if (k > 0 && stunLands(target)) {
-                target.lockedTurnsLeft = k;
-                target.lockResist += k;
-            }
+    if (mv.lockTurns > 0 && target.lockedTurnsLeft == 0) {
+        int k = mv.lockTurns;
+        const int watchdog = target.mods.mag(ModEffect::WatchdogClamp);
+        if (watchdog > 0 && k > watchdog) k = watchdog;
+        if (k > 0 && stunLands(target)) {
+            target.lockedTurnsLeft = k;
+            target.lockResist += k;
         }
-        // SCRAMBLE rider: a landed hit reorders and enciphers the target's A+C picker for
-        // its next scrambleTurns turns. Refreshes rather than stacks, exactly as the DoT
-        // below does. Crib Sheet (ModEffect::ScrambleWard) is a flat refusal rather than a
-        // clamp — there is no "half a scrambled list", so the counter either holds or it
-        // does not, and a mod that shortened it would be selling a worse version of the
-        // one thing it is for.
+    }
+    // SCRAMBLE rider: a landed hit reorders and enciphers the target's A+C picker for
+    // its next scrambleTurns turns. Refreshes rather than stacks, exactly as the DoT
+    // below does. Crib Sheet (ModEffect::ScrambleWard) is a flat refusal rather than a
+    // clamp — there is no "half a scrambled list", so the counter either holds or it
+    // does not, and a mod that shortened it would be selling a worse version of the
+    // one thing it is for.
     if (mv.scrambleTurns > 0 && target.mods.mag(ModEffect::ScrambleWard) <= 0 &&
         mv.scrambleTurns > target.scrambleTurns) {
-            target.scrambleTurns = mv.scrambleTurns;
-        }
-        // DoT rider (Faraday-pass THREAT): a landed hit plants corruption — dotDamage/turn for
-        // dotTurns of the target's upcoming turn-starts. The target's Faraday Cage (mod) cuts
-        // the magnitude (100 = immune → nothing planted). Refreshes, not stacks.
+        target.scrambleTurns = mv.scrambleTurns;
+    }
+    // DoT rider (Faraday-pass THREAT): a landed hit plants corruption — dotDamage/turn for
+    // dotTurns of the target's upcoming turn-starts. The target's Faraday Cage (mod) cuts
+    // the magnitude (100 = immune → nothing planted). Refreshes, not stacks.
     if (mv.dotDamage > 0 && mv.dotTurns > 0) {
-            int per = mv.dotDamage;
-            const int faradayCut = target.mods.mag(ModEffect::FaradayCut);
-            if (faradayCut > 0) per = per * (100 - faradayCut) / 100;
-            if (per > 0) { target.dotPerTurn = per; target.dotTurnsLeft = mv.dotTurns; }
-        }
+        int per = mv.dotDamage;
+        const int faradayCut = target.mods.mag(ModEffect::FaradayCut);
+        if (faradayCut > 0) per = per * (100 - faradayCut) / 100;
+        if (per > 0) { target.dotPerTurn = per; target.dotTurnsLeft = mv.dotTurns; }
+    }
 }
 
 // The DEFEND branch, whole. It shares nothing with the attack pipeline above except the
