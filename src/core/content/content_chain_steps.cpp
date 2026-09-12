@@ -41,10 +41,10 @@ const MoveDef kChainSteps[] = {
     {"harpoon_haul", "Harpoon-Haul", MoveDef::Kind::Attack, 38, 1,
      "What the harpoon set, the line brings in.", Stage::Daemon, "phishing"},
 
-    // --- Generic: the two forks that used to wind up ----------------------------
+    // --- Generic: the two forks, neither of which winds up ----------------------
     // A fork bomb does not detonate, it EXHAUSTS — so the pair is the fork (which hangs
     // the target while the table fills) and the moment there is nothing left to fork
-    // with. The turn that used to be spent winding up is now the fork itself.
+    // with. Neither spends a turn winding up: the turn IS the fork.
     {"process_flood", "Process-Flood", MoveDef::Kind::Attack, 20, 1,
      "Nothing left to fork with.", Stage::Process},
     // A scene release goes out, and then it gets nuked. Two events, in that order, which

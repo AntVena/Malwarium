@@ -225,6 +225,16 @@ void polymorphPay(Combatant& c, MoveKind kind, int points) {
             c.dmgReducePct = kLevelDmgReduceMaxPct;
         }
         c.defenseMultPct += kLevelDefenseBracePctPerPoint * points;
+        // The brace ceiling, which absorb answers to exactly as levelling does: an
+        // unbounded absorb is the failure kLevelDefenseBraceCapPct was written for. The
+        // cap is the multiplier's BONUS half, so the field's neutral 100 sits under it
+        // (tunables.h), and what it refuses becomes Health like every other clamp here.
+        const int braceCeilPct = 100 + kLevelDefenseBraceCapPct;
+        if (c.defenseMultPct > braceCeilPct) {
+            gain += capOverflowHealth(c.defenseMultPct - braceCeilPct,
+                                      kLevelDefenseBracePctPerPoint);
+            c.defenseMultPct = braceCeilPct;
+        }
         // Ceiling and current together — raising max under a fighter must hand it the room.
         c.maxHealth += gain;
         c.health += gain;

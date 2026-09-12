@@ -50,11 +50,11 @@ void formatDisplayName(const uint8_t* bssid, const char* ssid, char* out, size_t
 
 void Game::startWifiEvent() {
     // Real-network discovery resolves FIRST, and what it found is what ROUTES the rest
-    // of this event. The two halves of this screen used to be independent rolls, which
-    // is how it could announce a new network, say the pet wanted one, and then have a
-    // friend stop by — three sentences about three different things. Now the sighting
-    // queue decides: something to resolve makes this the discovery beat, and an empty
-    // queue is what puts the area's GUARDIAN in front of the pet instead.
+    // of this event. The two halves of this screen are ONE decision, not independent
+    // rolls: rolled apart, the event can announce a new network, say the pet wanted one,
+    // and then have a friend stop by — three sentences about three different things. The
+    // sighting queue decides instead: something to resolve makes this the discovery beat,
+    // and an empty queue is what puts the area's GUARDIAN in front of the pet.
     resolveNetworkDiscovery();
 
     // A dry queue on the cadence beat: the guardian is standing there
@@ -293,11 +293,11 @@ void Game::resolveNetworkDiscovery() {
         ++emptyQueueStreak_;
         netDiscoveryFlavor_[0] = '\0';
         netDiscovery_ = NetDiscovery::None;
-        // No penalty. A dry queue costs the pet nothing at all now — walking somewhere
-        // with no new networks is a fact about the PLACE, and taxing Happiness for it
-        // ground a long unmonitored walk down with nothing offered in exchange. The
-        // streak is still counted, because startWifiEvent reads it to decide when the
-        // guardian appears: the beat that used to sting is the beat that summons.
+        // No penalty. A dry queue costs the pet nothing at all — walking somewhere with
+        // no new networks is a fact about the PLACE, and taxing Happiness for it would
+        // grind a long unmonitored walk down with nothing offered in exchange. The streak
+        // is still counted, because startWifiEvent reads it to decide when the guardian
+        // appears: the beat that costs nothing is the beat that summons.
         return;
     }
 

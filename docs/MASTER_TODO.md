@@ -70,34 +70,12 @@ answered the wrong question. |
 
 **Capture arming costs ~70KB and the AP ~58KB**, against ~126KB free with the radio idle. The device works, and the save no longer needs a big contiguous block, but that was the only thing standing on this — anything else that grows will hit the same wall. Worth a pass at what the capture path actually needs. | `net_capture.h`'s `powerUp` (`esp_wifi_init` + promiscuous + the pcap SD buffers). | M | Measured on device, not estimated: `[ap] down free=126408` → `[cap] armed free=56188`. |
 
-**Polymorph pays past a ceiling the level table enforces.** `polymorphPay` (`combat.cpp`)
-spends an absorbed move as one stat point in `applyLevelStatPoints`' own vocabulary, and every
-clamp that vocabulary answers to is applied there — except the brace cap: `defenseMultPct` is
-added raw, where `kLevelDefenseBraceCapPct` holds a levelled pet at +200. So a Metamorphic pet
-that absorbs Defend rows long enough reaches a brace multiplier no amount of levelling can buy,
-which is the failure `kLevelDefenseBraceCapPct` exists to prevent ("a turtle with unbounded
-absorb takes a whole turn to become unkillable for the next one, forever"). The fix is the cap
-plus the overflow every other clamp site already pays (`capOverflowHealth`), so the payment
-still lands. |
-`combat.cpp`'s `polymorphPay`; `kLevelDefenseBraceCapPct` in `tunables.h`. | S | The absorb
-side is bounded (`kPolymorphAbsorbCap`), so this is a slow climb rather than an exploit — but
-it is a ceiling that means one thing for a levelled pet and nothing for an absorbing one. |
-
 **A crew cannot be DISCOVERED.** `QuoteReward::Kind` has room for it and it is one of the prizes
 the board was designed to hand over ("you find a crew to join"), but crews are ungated today —
 every row in `content_crews.cpp` is enlistable from the first boot, so there is nothing for a
 prize to unlock. Wants a discovery axis on `CrewDef` first, then one `Kind` and one applier case. |
 `content_crews.h`; `game_crew.cpp`'s roster filter; `QuoteReward::Kind`. | M | The gating axis is
 the real work; the prize is three lines once it exists. |
-
-**THE SILK LODE and the DARKWEB CRAWL have no art.** Both ship naming a glyph that does not
-exist (`ICON_SECTOR_SILK_LODE`, `ICON_SECTOR_DARKWEB_CRAWL`), so their EXPL rows draw the
-empty-frame placeholder `drawIconSlot` falls back to, and the Lode's backdrop is `SceneId::None`.
-The frame reading "art pending" is the intended half-step, not a bug — but it is two rows and a
-place that are still waiting. |
-`assets/ASSET_MANIFEST.md` §J; `silk_lode/area.cpp`'s `scene` field;
-`src/core/render/scenes/`. | S each | The scene is ~60 lines of palette-anchored tables, per
-`RENDER_PIPELINE.md`. |
 
 ### 1b. A separation pass over every screen
 
@@ -147,18 +125,6 @@ Diff **M**.
   is "flash, read the boot line, confirm no crash loop" — nobody has walked the buttons through
   EXPL/combat/Wi-Fi/rank-up on the real panel in a long time. Diff **M** (harness design). A
   human bench pass is also owed.
-- **`check_comment_standard.py` gates the mechanical half of the standard and misses the half that
-  actually rots.** It fails on board names, `FB-*`/`Phase N` ids, attributions and dates — all of
-  which stay clean because they are gated — while *change narration* ("the old X", "used to", "now
-  lives on", "this session ships") is unchecked prose, and it is where essentially every finding of
-  a docs-cleanup maintenance pass comes from. A phrase list would catch most of it mechanically and
-  turn a recurring manual sweep into a build failure. | `tools/check_comment_standard.py`; the
-  strip-list in `docs/COMMENT_STANDARD.md` is already the spec. | S | The catch is false positives,
-  and they are concentrated and skippable rather than scattered: `save.cpp`/`save.h`/
-  `game_persist.cpp` describe old wire formats as their actual subject (an explicit standard
-  exception), and present-tense uses ("a row that no longer exists", "used to re-derive") read as
-  hits on a naive substring match. Scope it to past-tense constructions and exempt the migration
-  units, or it will cry wolf and get muted. |
 
 ### 1h. Web 'Pedia
 
@@ -238,25 +204,6 @@ Engine slots for most of these exist (they render via placeholder or text today)
 **drop-in the moment they're drawn**. Sizes are logical px; bind colour to `PAL_CORE` tokens.
 Inventory: `assets/ASSET_MANIFEST.md`.
 
-### 2a. `quantize.py` — rebuilt and promoted ✔
-
-Was missing: it only ever existed in a session scratchpad, which is cleaned between sessions.
-Rewritten from its documented call signature and promoted into `tools/` beside `sheetpack.py`,
-which it splits work with — **`sheetpack.py` owns geometry, `quantize.py` owns colour and
-coverage**, and neither knows about the other, so a sheet can be re-snapped without repacking.
-
-It carries four passes that each exist because of a bug that shipped or nearly did: sharpen
-BEFORE an area-average downscale (a plain average at 4:1 melts adjacent forms together);
-area-average rather than nearest (nearest deletes whole lattice lines — one egg lost 3,983
-one-pixel features that way); a luminance-weighted snap (plain RGB nearest trades away value
-steps); and an **accent channel**, which is the one that actually bit — a small eye averaged
-into the body around it snaps to the body colour and the eyes vanish silently at every scale
-ratio, with nothing about the output looking broken.
-
-`--outline` implements the §2a-ii convention for a single sheet. Verified against
-`SPR_PET_SYNCAELIA`: reproduces it from source and, in doing so, found and removed a stray
-bright pixel a hand-rolled version of the accent rule had promoted out of a dark brown one.
-
 ### 2a-i. Template pet sheet — one row per default animation
 
 No starting point exists for a new creature sheet today. `gen_assets.py` already slices a pet sheet
@@ -327,7 +274,7 @@ line's darkest tone. Worth doing in the same pass as any re-quantise, since both
 pixel of every sheet.
 
 The tool for it already exists: `tools/quantize.py --outline '#hex'` forces the convention on
-one sheet (§2a). What is left is the DECISION and then the sweep across the roster. Diff **M**.
+one sheet. What is left is the DECISION and then the sweep across the roster. Diff **M**.
 
 ### 2b. Placeholder → final art
 
@@ -364,16 +311,18 @@ you look at one.
   which is the scene that proves the primitives are optional) — and one prize, Sunset Colonnade,
   which has no earner picked out yet and should not be authored until it does. Each is ~60 lines
   against the primitives that already exist. Built so far: Citrus Circuit, The Pirate Bayou,
-  Castle Rapidscare, Grid Horizon, Mainframe Row, The Line, The CRT Bench, Ground Station, Trace
-  City — beside the six a CREATURE is at home in (`content/content_homes.h`), which are not on the
-  authoring list because they belong to a line or a locomotion rather than to the ladder.
-  Every one of the fifteen is an ownable background (`content/content_backgrounds.h`), so a new
+  Castle Rapidscare, The Silk Lode, Grid Horizon, Mainframe Row, The Line, The CRT Bench, Ground
+  Station, Trace City, Neon Subnet, Paywall Ridge, Zero Day Shrine — beside the six a CREATURE is
+  at home in (`content/content_homes.h`), which are not on the authoring list because they belong
+  to a line or a locomotion rather than to the ladder.
+  Every one of the nineteen is an ownable background (`content/content_backgrounds.h`), so a new
   place arrives with a row there and something that earns it. Diff **S** each.
 - **More achievement-paid places.** `BackgroundSource::Achieve` makes a prize backdrop one content
-  row over an achievement id, and four families now pay one out (recipes, the rig, the spectrum,
-  the steps). The ones still paying only Bits and a cache are the ARCADE cabinets, the DeepWeb
-  depth ladder, the Decryptograms, the bestiary and the LINK peers — each an obvious room. The
-  cost is the scene, not the plumbing; the picker's mask is 32 rows wide. Diff **S** each.
+  row over an achievement id, and seven families pay one out (recipes, the rig, the spectrum, the
+  steps, the arcade, the boss tally, the whole map). The ones still paying only Bits and a cache
+  are the DeepWeb depth ladder, the Decryptograms, the bestiary and the LINK peers — each an
+  obvious room. The cost is the scene, not the plumbing; the picker's mask is 32 rows wide.
+  Diff **S** each.
 - **A glyph for the BACKGROUND row.** It borrows `ICON_CFG`, the generic gear, because the CFG
   family has no picture for "the place your pet stands". One 20x20 beside the other
   `ICON_CFG_*`. Cosmetic; the row reads by its label today. Diff **S**.

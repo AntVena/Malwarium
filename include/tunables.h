@@ -1006,11 +1006,10 @@ constexpr int kNetDiscoveryEmptyGuardianStrikes = 3;  // an empty queue summons 
                                               // streak, so a 1st-miss trigger would head
                                               // every fresh walk with a guardian and make
                                               // re-arming a way to farm them. The beat
-                                              // that used to sting a dry walk for
-                                              // Happiness is now the beat that puts
-                                              // something in front of the pet — walking
-                                              // somewhere with no new networks costs
-                                              // nothing and leads to the Cant instead
+                                              // puts something in front of the pet rather
+                                              // than taxing it — walking somewhere with
+                                              // no new networks costs no Happiness at all
+                                              // and leads to the Cant instead
                                               // (game_shibboleth.cpp). The dry events
                                               // BETWEEN still resolve their ordinary
                                               // sub-outcome, so the walk's event density
@@ -1199,9 +1198,9 @@ constexpr int kArcadeClutchRoundsHard = 4;
 // growing (finishArcadeRun clamps), because past this point the reward is the high score
 // itself and the achievements hanging off it.
 //
-// Both are set at the length the run used to be, so "a good run" means the same thing it
-// meant when these boards had endings: the worm's is the 30 bytes that once ate a whole
-// incubation clock, and the bell's is the 10 passes that once hatched an egg.
+// Both sit at the length of a COMPLETE board rather than anywhere on the score curve, so
+// "a good run" is a whole sitting a player can feel — the worm's 30 bytes and the bell's
+// 10 passes are each a board's worth of play — and not a number read off a distribution.
 constexpr int kArcadeIsolationWinBytes = 30;
 constexpr int kArcadeChromaWinPasses = kChromaRounds;
 

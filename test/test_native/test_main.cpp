@@ -185,6 +185,7 @@ int g_failures = 0;
     /* Combat engine */                     \
     RUN(test_combat_deterministic)          \
     RUN(test_polymorph_pays_once_per_distinct_move) \
+    RUN(test_polymorph_brace_answers_to_the_cap) \
     RUN(test_wild_pick_weights_its_bands)   \
     RUN(test_wildcard_slot_casts_the_pool_not_itself) \
     RUN(test_mutation_engine_counts_effects_not_moves) \

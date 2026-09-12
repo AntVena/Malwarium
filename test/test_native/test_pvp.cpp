@@ -1036,7 +1036,7 @@ void test_pedia_raised_tally_survives_evolution() {
     uint32_t t = 0; advanceToReveal(g, t);
     g.onButton(press(Button::B));
     CHECK(g.pet() && std::strcmp(g.pet()->id, "malbear") == 0);
-    CHECK(g.creatureRaised("pingcub"));               // the species it USED to be
+    CHECK(g.creatureRaised("pingcub"));               // the species it evolved FROM
     CHECK(g.creatureRaised("malbear"));
     CHECK(g.speciesRaised() == 2);
 

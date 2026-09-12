@@ -64,8 +64,8 @@ const AreaDef kAreaCitrusCircuit = {
     {"FAKE FILE FLATS", "BUFFERING BLUFFS", "99% CACHE", "THE SHARED FOLDER",
      "DIAL-UP DRAW"},
     // The fake-file boss teaches the fake AND the checksum that catches it — which is why
-    // Checksum Guard, one of the two generic braces that used to be unreachable, is here
-    // rather than on whichever boss had a free slot.
+    // Checksum Guard, one of the two generic braces the roster places by hand, is here
+    // rather than on whichever boss has a free slot.
     {{"BENJAMIN THE FALSE", {"fake_seed", "checksum_guard"}},
      {"MORPHEUS THE MIRAGE", {"stall_loop"}},
      {"TURING THE UNHALTED", {"infinite_loop"}},

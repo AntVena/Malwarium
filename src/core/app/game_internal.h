@@ -63,7 +63,7 @@ inline const char* levelStatName(int i) {
 }
 
 // Rig Shop list layout ---------------------------------------
-// Row indices/data now live in game_rig_shop.h (RigRow/kRigUpgrades) — these two are
+// Row indices/data live in game_rig_shop.h (RigRow/kRigUpgrades) — these two are
 // pure render-layout constants for game_hacker.cpp's SHOP list (kept here, not there,
 // since they're presentation, not rig data).
 constexpr int kRigVisibleRows = 3;   // rows on screen at once

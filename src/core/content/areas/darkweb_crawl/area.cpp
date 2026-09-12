@@ -35,9 +35,9 @@ const char* const kAreaModsDarkWeb[] = {
 };
 const int kAreaModsDarkWebCount = arrLen(kAreaModsDarkWeb);
 
-// The staple set, plus the five unbuyable USBs the Dive used to be the only source of.
-// They move here with the terminal slot: the price of overruling how a pet was raised is
-// a trip to the end of the map, and the end of the map is no longer the Dive.
+// The staple set, plus the five unbuyable USBs, which drop here and nowhere else. They
+// ride with the TERMINAL slot on the map rather than with a particular zone: the price of
+// overruling how a pet was raised is a trip to the end of the map, and this is that end.
 const LootEntry kWildLootDarkWeb[] = {
     {"dyno_nuggets"}, {"tortilla_chip"}, {"backup_drive"}, {"disk_scrubber"},
     {"pwnzu_sauce"},

@@ -24,8 +24,12 @@ to a waterfall doc just rots the moment that doc moves, and adds nothing a reade
 
 The unambiguous half of that is a build gate: `tools/check_comment_standard.py` runs as the ctest
 `comment_standard` and fails on a board name, an `FB-*`/`Phase N` id, an attribution or a date in
-any comment under `src/`, `include/` or `test/`. Everything below it can't check — change narration
-especially — is still on you.
+any comment under `src/`, `include/` or `test/`. It also fails on the past-tense half of **change
+narration** — "it used to be", "now lives in", "superseded", "replaces the old", "this session
+ships" — exempting the save-migration units and any comment naming a `vNN` wire version, per the
+exceptions below. The present-tense half ("no longer", "the old X", "was removed") reads identically
+to ordinary current-state prose and is deliberately not gated, so it is still on you; so are bare
+`§` refs.
 
 **Same rule for doc prose itself: forward-facing state, not a changelog.** Cite
 *how/where* (the mechanism, a `file:line`, a sibling symbol) — never *when* (a date, a session, a

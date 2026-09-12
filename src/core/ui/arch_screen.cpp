@@ -70,8 +70,8 @@ std::vector<ArchPickRow> buildArchPickerRows(const ContentRegistry& reg,
                                              const std::vector<SaveStoredPet>& rack,
                                              const std::vector<SaveRecord>& records) {
     std::vector<ArchPickRow> out;
-    // NEW EGG leads, because it is the thing people come to ARCH to do and the thing
-    // that used to be buried two screens down inside the active pet's own record.
+    // NEW EGG leads, because it is the thing people come to ARCH to do — a first row
+    // here, rather than two screens down inside the active pet's own record.
     out.push_back(pickRow({ArchGroup::Kind::NewEgg, -1}, "NEW EGG", 0));
     out.push_back(pickRow({ArchGroup::Kind::Active, -1}, "ACTIVE", active ? 1 : 0));
 

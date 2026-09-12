@@ -397,12 +397,11 @@ void test_network_discovery_repeat_familiar_vs_home_turf() {
 // A dry sighting queue costs the pet NOTHING, and on the cadence beat it summons the
 // area's guardian instead (game_net.cpp routes it, game_shibboleth.cpp runs it).
 //
-// This is the inverse of what this seam used to do. Walking a dead zone used to take
-// kNetDiscoveryNoneHappyPenalty off Happiness on the 1st miss and every Nth after, which
-// on a ~37s Wi-Fi cadence ground a ten-minute unmonitored walk down by ~30 for the crime
-// of being somewhere with no new networks. The streak is still counted on exactly the
-// same rhythm — it is what paces the guardian — so the beat that used to sting is the
-// beat that puts something in front of the pet.
+// Taxing a dead zone would be the inverse of this seam, and is what it exists to avoid:
+// a Happiness penalty on the 1st miss and every Nth after grinds a ten-minute unmonitored
+// walk down by ~30 on a ~37s Wi-Fi cadence, for the crime of being somewhere with no new
+// networks. The streak is counted on exactly that rhythm — it is what paces the guardian
+// — so the beat that could sting is the beat that puts something in front of the pet.
 void test_network_discovery_empty_queue_costs_nothing_and_summons_a_guardian() {
     Game g{StartMode::Hatched};
     g.model().setHappiness(80);   // headroom: a penalty would be visible rather than

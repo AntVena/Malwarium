@@ -265,10 +265,10 @@ void test_a_refused_write_is_not_a_save() {
 // The reported shape of it, end to end. A hatch persists IMMEDIATELY, and that one call
 // is all that stands between a new pet and a reboot: nothing in completeHatch marks the
 // save dirty on its own — installPet doesn't, and the first-hatch achievement has
-// already fired by the second egg — so a write turned away there used to leave the pet
-// in RAM only. It is persistSave itself that now owes the retry, which is what makes
-// this true of every "persist immediately" call site rather than the ones that
-// remembered.
+// already fired by the second egg — so a write turned away there would leave the pet in
+// RAM only if the retry were the caller's to owe. It is persistSave itself that owes it,
+// which is what makes this true of every "persist immediately" call site rather than only
+// the ones that remember.
 void test_a_hatch_the_store_refused_still_reaches_flash() {
     RefusingSaveStore store;
     Game g(StartMode::FreshHatch, "paypup", &store);

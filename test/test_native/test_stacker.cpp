@@ -370,8 +370,8 @@ void test_replication_ghost_never_raised_off_the_worm_line() {
 
 // The cure, and the achievement that marks it. Unlinkguine stays an ordinary dish when
 // there is nothing to cure — which is the common case, and must not unlock anything.
-// Dyno Nuggets, which used to carry this and no longer does, must NOT cure or unlock:
-// that half is the point of the split, not incidental coverage.
+// Dyno Nuggets, the everyday dish beside it, must NOT cure or unlock: that half is the
+// point of the split, not incidental coverage.
 void test_unlinkguine_cures_the_ghost_and_unlocks() {
     Game g{StartMode::Hatched, "vermicell"};
     g.inventory().add("unlinkguine", 2);

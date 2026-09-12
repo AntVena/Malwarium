@@ -399,13 +399,13 @@ void Game::fireEvolution() {
     // once here — fireEvolution runs once per boundary, whereas evolutionTargetId is
     // const and called repeatedly, so the roll can't live there. Same LCG as the hatch draw.
     //
-    // The ROW is the gate, not the stage. This used to test `stage == Process`, from when
-    // the only divert in the roster was Phishlet's and a Trojan was by definition a Script
-    // you got instead of your own. The Worm line diverts one boundary later — Rootgrub
-    // trades its Daemon for one, not its Script — and a stage test here would have made
-    // that a second mechanism rather than the same one used twice. Nothing is lost by
-    // dropping it: a creature with no successor never reaches fireEvolution at all, and a
-    // row that must not divert says so by leaving evolvesToTrojanId null.
+    // The ROW is the gate, not the stage. A `stage == Process` test here would fit only a
+    // roster where every divert is Phishlet's and a Trojan is by definition a Script you
+    // got instead of your own. The Worm line diverts one boundary later — Rootgrub trades
+    // its Daemon for one, not its Script — so a stage test would make that a second
+    // mechanism rather than the same one used twice. Nothing is needed in its place: a
+    // creature with no successor never reaches fireEvolution at all, and a row that must
+    // not divert says so by leaving evolvesToTrojanId null.
     //
     // An armed Ambig-USB (forceTrojanDivert_, save v28) skips the roll and guarantees
     // the divert instead; consumed here either way, even if there's no divert target

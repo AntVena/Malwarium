@@ -70,7 +70,8 @@ const AreaDef kAreaNetSeaCrossing = {
      "SANDBOX BEACH"},
     // Null Route — "reroutes the next hit to nowhere" — rides with the pop-up boss, which
     // is the joke working twice: null-routing the ad domains is how that era actually
-    // killed them. It is the second of the two generic braces nothing used to carry.
+    // killed them. It is the second of the two generic braces the roster places by hand,
+    // the other being Checksum Guard on Citrus Circuit's fake-file boss.
     {{"THE CANDY SIREN", {"bundle_wrap"}},
      {"VUNDO THE UNENDING", {"popup_storm", "null_route"}},
      {"THE SUPERFISH", {"cert_spoof"}},

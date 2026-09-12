@@ -188,7 +188,7 @@ void test_brace_only_defend_is_not_recast() {
     CHECK(!braceOnlyDefend(*r.move("packet_storm")));    // not a Defend at all
 
     // A brace-heavy kit that still owns one attack, against a slow enemy so the player
-    // takes runs of turns — the shape that used to stack brace onto live brace.
+    // takes runs of turns — the shape that stacks brace onto live brace if nothing stops it.
     Combatant p = mkCombatant(r, "P", 200, 30,
                               {"quick_jab", "checksum_guard", "null_route"});
     Combatant e = mkCombatant(r, "E", 200, 4, {"quick_jab"});
@@ -1322,9 +1322,9 @@ void test_mod_earn_tables_and_reqlevel() {
     }
     // Every pooled mod is actually REACHABLE — the tier check above would pass just as
     // happily on a pool whose ids never came up, so assert the sample covers the union of
-    // every table. That subsumes the per-id spot-checks this used to spell out (ECC, Load
-    // Balancer, Watchdog, Faraday, Ghost Process, the niche-flavour ids), and it keeps
-    // covering a new area's pool the day it lands without a line added here.
+    // every table. That subsumes the per-id spot-checks (ECC, Load Balancer, Watchdog,
+    // Faraday, Ghost Process, the niche-flavour ids) without naming one of them, and it
+    // keeps covering a new area's pool the day it lands without a line added here.
     for (int a = 0; a < kExplSectors; ++a)
         for (int k = 0; k < area(a).modPoolCount; ++k)
             CHECK(sampled.count(area(a).modPoolIds[k]) == 1);
@@ -1811,16 +1811,16 @@ void test_phishing_frenzy_survives_the_bubble() {
     cb.begin(pc, e, Combat::Stakes::Safe, 1);
     for (int i = 0; i < 40; ++i) cb.step();
 
-    // Interleaving the brace no longer restarts the run: several bites have banked, so
-    // the streak is past its first cast and the flat bonus is non-zero. Under the old
-    // adjacency rule this kit could never bank anything at all.
+    // Interleaving the brace does not restart the run: several bites have banked, so the
+    // streak is past its first cast and the flat bonus is non-zero. Under an ADJACENCY
+    // rule — break on anything but a bite — this kit could never bank anything at all.
     CHECK(cb.player().phishStreak > 1);
     CHECK(cb.player().phishComboBonus > 0);
 }
 
-// ...and the run DOES break on a bite taken with the bubble down — the fail state that
-// replaces the old "any other move breaks it". Same kit, same seed, no starting pool and
-// no way to raise one (attack-only kit), so every cast is an exposed one.
+// ...and the run DOES break on a bite taken with the bubble down — EXPOSURE is the fail
+// state, not "any other move". Same kit, same seed, no starting pool and no way to raise
+// one (attack-only kit), so every cast is an exposed one.
 void test_phishing_frenzy_breaks_when_exposed() {
     ContentRegistry r = ContentRegistry::embedded();
     Combatant pc = mkCombatant(r, "P", 4000, 50, {"smish_hook"});
@@ -2011,7 +2011,7 @@ void test_min_damage_penetration() {
 // mod always lands it at picker row 2 (registry order, filtered to owned).
 // A mod's equip gate — level a test pet to this and that mod is equippable. Derived from
 // the mod's own rank rather than written as a literal, so shifting the ladder moves these
-// tests' targets with it instead of stranding them under a level that used to be enough.
+// tests' targets with it instead of stranding them under a stale level.
 static int modGateCeiling(const char* id) {
     ContentRegistry r = ContentRegistry::embedded();
     return modEquipLevel(*r.mod(id));
@@ -2462,6 +2462,36 @@ void test_polymorph_pays_once_per_distinct_move() {
     Combatant plain;
     CHECK(!polymorphAbsorb(plain, &atk));
     CHECK(plain.absorbedCount == 0);
+}
+
+// The brace ceiling holds against absorb, not only against levelling: an absorbing pet is
+// the case kLevelDefenseBraceCapPct exists for, and the payment it refuses still lands.
+void test_polymorph_brace_answers_to_the_cap() {
+    Combatant c;
+    c.maxHealth = 40;
+    c.health = 40;
+
+    // Enough Defend-side points to clear the ceiling outright. Called directly rather than
+    // through an absorb: what is under test is the payment, and the absorbed-set bound
+    // (kPolymorphAbsorbCap) is not the thing that keeps the brace in range — a Mutation
+    // Engine multiplier pays many points for one cast.
+    const int points = (kLevelDefenseBraceCapPct / kLevelDefenseBracePctPerPoint) + 10;
+    polymorphPay(c, MoveKind::Defend, points);
+
+    CHECK(c.defenseMultPct == 100 + kLevelDefenseBraceCapPct);   // held at the ceiling
+    CHECK(c.dmgReducePct <= kLevelDmgReduceMaxPct);              // and never immune
+
+    // What the ceiling refused was paid in Health, at the brace's own rate — so the
+    // absorption is still worth something past the cap instead of silently evaporating.
+    const int paid = c.maxHealth - 40;
+    CHECK(paid > kLevelHealthPerPoint * points);
+    CHECK(c.health == c.maxHealth);                              // room under the ceiling
+
+    // A second payment onto a full wall adds no brace and still pays.
+    const int before = c.maxHealth;
+    polymorphPay(c, MoveKind::Defend, 4);
+    CHECK(c.defenseMultPct == 100 + kLevelDefenseBraceCapPct);
+    CHECK(c.maxHealth > before);
 }
 
 // The wildcard roll: every band is reachable, the weighting favours generic, and a band

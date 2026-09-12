@@ -197,7 +197,7 @@ void test_screens_choose_a_place() {
     CHECK(g.habitatScene() == sceneForCreature(*g.pet()));
     CHECK(g.stageScene() == g.habitatScene());   // no walk armed: fought where it lives
 
-    // ...and the habitat actually paints it, rather than the plain field it used to.
+    // ...and the habitat actually paints it, rather than a plain field.
     Framebuffer fb(kActiveW, kActiveH);
     g.tick(0);
     g.render(fb);
