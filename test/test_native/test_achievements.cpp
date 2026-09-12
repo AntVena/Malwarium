@@ -122,6 +122,15 @@ void test_achievement_table_is_well_formed() {
 // raw `==` pass. That held on macOS/ld64 (folds by default) and failed on Linux/GCC's
 // default linker, which doesn't — the same cross-TU hazard achievementById() already
 // avoids by looking up ids with strcmp instead of pointer identity.
+// Retire whatever banner is up by advancing past ITS OWN dwell, which is derived from
+// the copy it carries (Game::achBannerDwellMs) and is only kAchBannerMs for the short
+// names. A test that advanced by the flat constant would pass or fail on how long the
+// achievement it happened to pick is called.
+static void passBanner(Game& g, uint32_t& t) {
+    const uint32_t dwell = g.achBanner() ? g.achBannerDwellMs() : kAchBannerMs;
+    g.tick(t += dwell);
+}
+
 static bool sameAchId(const char* got, const char* want) {
     return got && want && std::strcmp(got, want) == 0;
 }
@@ -307,7 +316,7 @@ void test_achievement_banner_announces_on_the_home_screen() {
     uint32_t t = 0;
     g.tick(t += kHeartbeatMs);
     while (g.achBanner()) {                       // drain anything the start state earned
-        g.tick(t += kAchBannerMs);
+        passBanner(g, t);
         g.tick(t += kHeartbeatMs);
     }
     g.unlockAchievement(ach::kSurvivedLockout);
@@ -320,7 +329,7 @@ void test_achievement_banner_announces_on_the_home_screen() {
     CHECK(g.achBannerCount() == 1);
     CHECK(g.achPendingNotify() == 1);             // still pending until it retires
 
-    g.tick(t += kAchBannerMs);
+    passBanner(g, t);
     CHECK(g.achBanner() == nullptr);
     CHECK(g.achPendingNotify() == 0);             // shown, so now it counts as announced
 }
@@ -331,7 +340,7 @@ void test_achievement_banner_waits_for_the_home_screen() {
     Game g{StartMode::Hatched};
     uint32_t t = 0;
     g.tick(t += kHeartbeatMs);
-    while (g.achBanner()) { g.tick(t += kAchBannerMs); g.tick(t += kHeartbeatMs); }
+    while (g.achBanner()) { passBanner(g, t); g.tick(t += kHeartbeatMs); }
     g.onButton(press(Button::A));                 // summon the carousel — no longer idle
     CHECK(g.nav() != Game::Nav::Idle);
     g.unlockAchievement(ach::kFlawlessRun);
@@ -350,7 +359,7 @@ void test_achievement_banner_collapses_a_burst() {
     Game g{StartMode::Hatched};
     uint32_t t = 0;
     g.tick(t += kHeartbeatMs);
-    while (g.achBanner()) { g.tick(t += kAchBannerMs); g.tick(t += kHeartbeatMs); }
+    while (g.achBanner()) { passBanner(g, t); g.tick(t += kHeartbeatMs); }
     int unlocked = 0;
     for (int i = 0; i < kAchievementCount && unlocked <= kAchBannerBurstMax; ++i) {
         const AchievementDef& d = kAchievements[i];
@@ -361,7 +370,7 @@ void test_achievement_banner_collapses_a_burst() {
     CHECK(g.achPendingNotify() > kAchBannerBurstMax);
     g.tick(t += kHeartbeatMs);
     CHECK(g.achBannerCount() > 1);                // one banner speaking for the lot
-    g.tick(t += kAchBannerMs);
+    passBanner(g, t);
     CHECK(g.achPendingNotify() == 0);             // and it clears the whole backlog
 }
 
@@ -535,7 +544,7 @@ void test_new_egg_line_banner_holds_until_a_press() {
     Game g{StartMode::Hatched};
     uint32_t t = 0;
     g.tick(t += kHeartbeatMs);
-    while (g.achBanner()) { g.tick(t += kAchBannerMs); g.tick(t += kHeartbeatMs); }
+    while (g.achBanner()) { passBanner(g, t); g.tick(t += kHeartbeatMs); }
 
     g.unlockAchievement(ach::kHashCollision);     // the Metamorphic line's gate
     g.tick(t += kHeartbeatMs);
@@ -548,7 +557,7 @@ void test_new_egg_line_banner_holds_until_a_press() {
     CHECK(line && std::strcmp(line->id, "metamorphic") == 0);
 
     // Time alone does nothing to it, however much of it passes.
-    for (int i = 0; i < 20; ++i) g.tick(t += kAchBannerMs);
+    for (int i = 0; i < 20; ++i) passBanner(g, t);
     CHECK(g.achBanner() != nullptr);
     CHECK(g.achPendingNotify() == 1);             // still unannounced, still waiting
 
@@ -565,16 +574,61 @@ void test_new_egg_line_banner_holds_until_a_press() {
 
 // An ordinary unlock is untouched by any of that — it still retires on its own clock,
 // which is what keeps the held plate meaning something on the rare occasions it appears.
+// The dwell is DERIVED, which is the whole of this item: the banner stays up for one
+// full marquee cycle of its longest line, so the time a name gets is a function of the
+// name. Measured against marqueeCycleBeats directly rather than against a copied
+// formula — if the two ever disagree, the banner is the one that is wrong.
+void test_achievement_banner_dwell_follows_its_copy() {
+    const int room = kActiveW - 2 * kMargin;
+
+    // A line that fits is two holds, and that already clears the floor — so every
+    // ordinary banner sits longer than kAchBannerMs rather than exactly on it.
+    const uint32_t fits =
+        static_cast<uint32_t>(marqueeCycleBeats("SHORT", room)) * kHeartbeatMs;
+    CHECK(fits > kAchBannerMs);
+
+    // ...and one that overflows is strictly longer again, by its own travel: the
+    // failure this replaces is a name leaving the screen part-way through its scroll.
+    const char* kLong = "A NAME FAR WIDER THAN THE PLATE IT IS DRAWN ON, BY DESIGN";
+    CHECK(textWidth(kLong) > room);                       // the branch is real
+    const int longBeats = marqueeCycleBeats(kLong, room);
+    CHECK(longBeats > marqueeCycleBeats("SHORT", room));
+    CHECK(static_cast<uint32_t>(longBeats) * kHeartbeatMs > fits);
+
+    // The live banner agrees with the helper. Drained to a quiet home screen first, then
+    // one row armed by name — a fresh save may or may not have something already waiting,
+    // and this gate is about the arithmetic rather than about the starting roster.
+    Game g{StartMode::Hatched};
+    uint32_t t = 0;
+    g.tick(t += kHeartbeatMs);
+    while (g.achBanner()) { passBanner(g, t); g.tick(t += kHeartbeatMs); }
+    g.unlockAchievement(ach::kFlawlessRun);
+    g.tick(t += kHeartbeatMs);
+    CHECK(g.achBanner() != nullptr);                      // something is up to measure
+    const Game::AchBannerCopy c = g.achBannerCopy();
+    int want = marqueeCycleBeats(c.name, room);
+    const int rewardBeats = marqueeCycleBeats(c.reward, room);
+    if (rewardBeats > want) want = rewardBeats;
+    const uint32_t wantMs = static_cast<uint32_t>(want) * kHeartbeatMs;
+    CHECK(g.achBannerDwellMs() == (wantMs > kAchBannerMs ? wantMs : kAchBannerMs));
+
+    // And it is the dwell, not the floor, that the banner actually retires on.
+    g.tick(t += kAchBannerMs);
+    if (g.achBannerDwellMs() > kAchBannerMs) CHECK(g.achBanner() != nullptr);
+    passBanner(g, t);
+    CHECK(g.achBanner() == nullptr);
+}
+
 void test_ordinary_banner_still_retires_on_its_own() {
     Game g{StartMode::Hatched};
     uint32_t t = 0;
     g.tick(t += kHeartbeatMs);
-    while (g.achBanner()) { g.tick(t += kAchBannerMs); g.tick(t += kHeartbeatMs); }
+    while (g.achBanner()) { passBanner(g, t); g.tick(t += kHeartbeatMs); }
     g.unlockAchievement(ach::kFlawlessRun);
     g.tick(t += kHeartbeatMs);
     CHECK(g.achBanner() != nullptr);
     CHECK(!g.achBannerHeld());
-    g.tick(t += kAchBannerMs);
+    passBanner(g, t);
     CHECK(g.achBanner() == nullptr);
 }
 
@@ -584,9 +638,12 @@ void test_ordinary_banner_still_retires_on_its_own() {
 // rendering fault rather than as long copy — so the banner centres only while a line
 // fits and scrolls it in the margins otherwise (game_render.cpp).
 //
-// Scrolling is the safety net, not the plan: a banner that retires on its own timer
-// gives a marquee no time to finish, so every line the TABLE can produce has to fit
-// outright. That is what this measures, through the same composition the screen does.
+// Scrolling is the safety net, not the plan. The timer no longer forces that — a
+// banner's dwell is one full marquee cycle of its own longest line
+// (Game::achBannerDwellMs), so a traveling line does get to finish — but a line the
+// player must READ IN ONE PIECE is better than one they must watch, and a table that
+// keeps every line inside the plate never spends a banner on the difference. So this
+// stays a gate on the CONTENT, through the same composition the screen does.
 void test_achievement_banner_lines_fit() {
     // The plate is full-bleed, so the room is the canvas — that is the width its own
     // held instruction ("LAY ONE NEXT HATCH - ANY KEY") already occupies exactly.

@@ -39,18 +39,25 @@ void drawTextMarquee(Framebuffer& fb, int x, int y, int w, const char* s,
     if (scroll) {
         // Beats, not milliseconds: this rides the same heartbeat as the pet's
         // wander and the carousel's spin, so the whole screen moves on one clock.
-        constexpr int kHoldBeats = 6;    // ~1.5s at each end — time to read it
-        constexpr int kPxPerBeat = 2;    // ~8px/s, about a character every second
-        const int travel = (overflow + kPxPerBeat - 1) / kPxPerBeat;
-        const int phase = beat % (2 * kHoldBeats + travel);
-        if (phase >= kHoldBeats)
-            offset = (phase - kHoldBeats) * kPxPerBeat;
+        // The two rates are in widgets.h, because a caller that must hold a line on
+        // screen until it has finished travelling has to read them (marqueeCycleBeats).
+        const int travel = (overflow + kMarqueePxPerBeat - 1) / kMarqueePxPerBeat;
+        const int phase = beat % (2 * kMarqueeHoldBeats + travel);
+        if (phase >= kMarqueeHoldBeats)
+            offset = (phase - kMarqueeHoldBeats) * kMarqueePxPerBeat;
         if (offset > overflow) offset = overflow;   // the hold at the tail
     }
 
     fb.setClip(x, y, w, kFontH);
     drawText(fb, x - offset, y, s, color, 1, face);
     fb.clearClip();
+}
+
+int marqueeCycleBeats(const char* s, int w) {
+    const int overflow = (s && s[0]) ? textWidth(s) - w : 0;
+    if (overflow <= 0) return 2 * kMarqueeHoldBeats;
+    const int travel = (overflow + kMarqueePxPerBeat - 1) / kMarqueePxPerBeat;
+    return 2 * kMarqueeHoldBeats + travel;
 }
 
 void drawLabelValue(Framebuffer& fb, int x, int y, const char* label, Rgb565 labelCol,

@@ -66,6 +66,19 @@ void drawTextMarquee(Framebuffer& fb, int x, int y, int w, const char* s,
                      Rgb565 color, int beat, bool scroll,
                      FontFace face = FontFace::Regular);
 
+// The marquee's own clock, in heartbeats. Public because anything that has to stay on
+// screen long enough to be READ must derive its dwell from the same numbers the scroll
+// runs on: a constant chosen to suit one string is too short for the next one, and the
+// failure — a name that leaves before it has finished travelling — is invisible to
+// whoever picked the constant, because they were reading a short one.
+constexpr int kMarqueeHoldBeats = 6;    // ~1.5s parked at each end — time to read it
+constexpr int kMarqueePxPerBeat = 2;    // ~8px/s, about a character a second
+
+// Heartbeats for one full pass of `s` through a `w`-wide window: both holds, plus the
+// travel between them when it overflows. A line that FITS still returns the two holds —
+// it is not moving, but it is being read, and the caller is asking how long that takes.
+int marqueeCycleBeats(const char* s, int w);
+
 // A one-line label/value pair: `value` right-aligned against the right margin, `label`
 // running from `x` and yielding to it — scrolling when `scroll`, clipped otherwise.
 //

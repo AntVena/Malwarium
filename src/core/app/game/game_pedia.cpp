@@ -505,7 +505,10 @@ void Game::tickAchievementBanner() {
             }
         }
     }
-    achBannerUntilMs_ = nowMs_ + kAchBannerMs;
+    // Dwell is set AFTER the wire/count above, because what the banner will say is what
+    // decides how long it needs (achBannerDwellMs reads the composed copy).
+    achBannerOpenBeat_ = beat_;
+    achBannerUntilMs_ = nowMs_ + achBannerDwellMs();
     dirty_ = true;
 }
 

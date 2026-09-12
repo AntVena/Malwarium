@@ -1659,6 +1659,21 @@ public:
     // Is the banner on screen one of those, i.e. holding until a button clears it? A
     // timed banner retires itself on the heartbeat; this one cannot, so input has to.
     bool achBannerHeld() const;
+    // The three lines the banner shows, composed once. Both the DRAW and the DWELL need
+    // them — how long an announcement has to stay up is a question about the copy it is
+    // carrying — and a second copy of this composition would be two answers to that.
+    struct AchBannerCopy {
+        const char* kicker = "";
+        bool held = false;
+        char name[40] = {0};
+        char reward[40] = {0};
+    };
+    AchBannerCopy achBannerCopy() const;
+    // How long the banner now being armed must stay up: long enough for its longest
+    // line to finish one marquee pass, floored at kAchBannerMs. Derived rather than
+    // constant, because the failure it prevents — a name that leaves the screen
+    // mid-travel — only ever happens to the long names nobody tests with.
+    uint32_t achBannerDwellMs() const;
     // Clear a held banner (marking it announced). Any button does this on the home
     // screen, and the press is spent doing it.
     void dismissAchievementBanner();
@@ -3472,6 +3487,9 @@ private:
     int achBannerWire_ = -1;        // the row on screen, by wire number; -1 = none
     int achBannerCount_ = 0;        // 1 = named row · >1 = a collapsed burst of N
     uint32_t achBannerUntilMs_ = 0; // when it retires
+    int achBannerOpenBeat_ = 0;     // the beat it arrived on — drives the wipe-open and
+                                    // starts its marquee at the head of the line rather
+                                    // than wherever the free-running beat happens to be
 
     // Every item id that has ever been in the bag (save v40) — borrowed registry
     // pointers, like seenCreatures_. Player-level: spending an item never un-collects it.

@@ -76,8 +76,11 @@ constexpr int kStartBits = 100;             // wallet seed (TBD balance —)
 // Per-achievement thresholds are NOT here — each is the `goal` on its own row in
 // content/content_achievements.cpp, next to the prose that quotes it. What's left is the
 // cross-cutting machinery every row shares.
-// How long one unlock banner holds the home screen. Long enough to read a name at 4fps,
-// short enough that a run of them drains while the player watches.
+// The FLOOR on how long one unlock banner holds the home screen. The banner's actual
+// dwell is derived from the copy it carries (Game::achBannerDwellMs): one full marquee
+// cycle of its longest line, which is 3.0s for a line that fits and more for one that
+// has to travel. This is only the bound under that — short enough that a run of them
+// drains while the player watches, and never the number that decides a long name's fate.
 constexpr uint32_t kAchBannerMs = 2600;
 // Above this many announcements waiting at once, they collapse into one summary banner
 // instead of a parade — the case being a firmware update that retro-awards a back

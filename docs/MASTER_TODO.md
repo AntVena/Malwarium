@@ -140,11 +140,6 @@ roster, and the wild half keeps its own roster-keyed masks).
 - **A solo operator's "seen" tier is empty until they duel.** If the Daemon branch-sibling reveal is
   worth persisting it wants its own tier ("teased") rather than sharing this bit — two meanings on
   one flag is what was deliberately removed. Diff **S** (design, not storage).
-- **The achievement banner doesn't linger long enough.** The home-screen banner is the whole
-  feedback channel, so an achievement whose name outruns the time the banner is up is simply lost.
-  Wants a marquee plus a minimum time on screen derived from the name's length — characters ×
-  marquee speed × a balancing factor — rather than one constant that has to suit every name.
-  Diff **S**.
 - **Unverified:** on-device serving of the SD-hosted bundle + the live endpoints
   (`GET /pedia_state.json`, `POST /api/tag`) on a real board.
 

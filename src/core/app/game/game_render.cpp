@@ -466,18 +466,86 @@ void Game::drawHabitat(Framebuffer& fb, int cursor) const {
     drawCarousel(fb, cursor, uiMode_, beat_, lockMask, spinMask);
 }
 
-void Game::drawAchievementBanner(Framebuffer& fb) const {
-    // The whole feedback channel for an unlock: three centred lines on a filled band,
-    // shown on the home screen for kAchBannerMs. Modelled on the combat verdict banner —
-    // a solid TRACK plate under INK text carries in grayscale on shape alone, no colour
-    // doing any of the work.
+Game::AchBannerCopy Game::achBannerCopy() const {
+    AchBannerCopy c;
     const AchievementDef* d = achBanner();
-    if (!d) return;
+    if (!d) return c;
     // The one announcement that is not just news: an unlock that put a NEW KIND OF EGG
     // in the hatch menu. It gets the held plate — a different colour, its own copy, and
     // no deadline — because it is the only banner with an instruction in it, and a
     // three-second window is no way to deliver one.
     const EggLineDef* eggLine = achBannerCount_ == 1 ? achEggLineUnlocked(*d) : nullptr;
+    c.held = eggLine != nullptr;
+    c.kicker = c.held ? "NEW EGG LINE" : "ACHIEVEMENT";
+
+    // A burst says how many first and names one of them, so a long back-catalogue drop
+    // still tells the player something specific about what they got.
+    if (achBannerCount_ > 1)
+        std::snprintf(c.name, sizeof(c.name), "%d UNLOCKED", achBannerCount_);
+    else if (c.held)
+        // The LINE, not the achievement that earned it: "Hash Collision" is the thing
+        // they just did, and "Metamorphic" is the thing they can now do about it. Only
+        // one of those belongs on a banner whose whole job is to point at the hatch.
+        std::snprintf(c.name, sizeof(c.name), "%s", eggLine->displayName);
+    else
+        std::snprintf(c.name, sizeof(c.name), "%s", d->displayName);
+
+    // The third line is the reward, because that is the part with a consequence — a
+    // Commendation Cache is sitting in the VAULT now and the player needs to know to
+    // go and open it.
+    int rewardBits = 0;
+    const char* rewardItem = nullptr;
+    for (const AchievementReward& r : d->rewards) {
+        if (r.kind == AchievementReward::Kind::Bits) rewardBits += r.magnitude;
+        else if (r.kind == AchievementReward::Kind::Item && r.id)
+            if (const ItemDef* it = registry_.item(r.id)) rewardItem = it->displayName;
+    }
+    if (c.held)
+        // Where to go, and how to make this go away — the two things a held plate has to
+        // say. The rewards are still paid; they are simply not what this banner is for.
+        std::snprintf(c.reward, sizeof(c.reward), "LAY ONE NEXT HATCH - ANY KEY");
+    else if (achBannerCount_ > 1)
+        std::snprintf(c.reward, sizeof(c.reward), "%s +MORE", d->displayName);
+    else if (rewardItem && rewardBits > 0) {
+        // Two rewards on one line is the only combination that outgrows the plate —
+        // "+400 BITS + COMMENDATION CACHE" is 30 characters against a 28-character
+        // canvas. The currency abbreviates to the B the shop prices already use, which
+        // buys back the three characters the pair needs.
+        std::snprintf(c.reward, sizeof(c.reward), "+%d BITS + %s", rewardBits, rewardItem);
+        if (textWidth(c.reward) > kActiveW)
+            std::snprintf(c.reward, sizeof(c.reward), "+%d B + %s", rewardBits, rewardItem);
+    } else if (rewardItem)
+        std::snprintf(c.reward, sizeof(c.reward), "+%s", rewardItem);
+    else if (rewardBits > 0)
+        std::snprintf(c.reward, sizeof(c.reward), "+%d BITS", rewardBits);
+    return c;
+}
+
+uint32_t Game::achBannerDwellMs() const {
+    const AchBannerCopy c = achBannerCopy();
+    // The window the plate actually scrolls in — what plateLine hands the marquee.
+    const int room = kActiveW - 2 * kMargin;
+    int beats = marqueeCycleBeats(c.name, room);
+    const int rewardBeats = marqueeCycleBeats(c.reward, room);
+    if (rewardBeats > beats) beats = rewardBeats;
+    // ONE FULL MARQUEE CYCLE of the longest line, floored at kAchBannerMs. A line that
+    // fits is two holds — read the head, read the tail, the rate the marquee itself is
+    // calibrated at — so the ordinary banner sits 3.0s rather than the 2.6s floor, and
+    // one that travels is those two holds plus the travel between them. That is the
+    // whole point: the time comes from the COPY, so a long name cannot leave mid-word,
+    // and nobody has to guess a constant that suits every name in the table.
+    const uint32_t travelled = static_cast<uint32_t>(beats) * kHeartbeatMs;
+    return travelled > kAchBannerMs ? travelled : kAchBannerMs;
+}
+
+void Game::drawAchievementBanner(Framebuffer& fb) const {
+    // The whole feedback channel for an unlock: three centred lines on a filled band,
+    // shown on the home screen for achBannerDwellMs(). Modelled on the combat verdict
+    // banner — a solid TRACK plate under INK text carries in grayscale on shape alone,
+    // no colour doing any of the work.
+    const AchievementDef* d = achBanner();
+    if (!d) return;
+    const AchBannerCopy copy = achBannerCopy();
     // The band sits in the gap between two things it must not cover: the idle status
     // slots along the top of the living area (SD top-left, hunger top-right, the capture
     // badge under it — reserved out to kLivingTop+40, and gated as such), and the pet
@@ -492,15 +560,28 @@ void Game::drawAchievementBanner(Framebuffer& fb) const {
     // the ordinary banner's dark TRACK with INK text. That is the part that survives
     // desaturation — the two plates differ in VALUE, not only in hue, so a held one is
     // recognisable as a different kind of thing before a word of it is read.
-    const bool held = eggLine != nullptr;
+    const bool held = copy.held;
     const Rgb565 plate = held ? palColor(Pal::NOTICE_HOLD) : palColor(Pal::TRACK);
     const Rgb565 body = held ? palColor(Pal::PAPER) : palColor(Pal::INK);
     const Rgb565 quiet = held ? palColor(Pal::PAPER) : palColor(Pal::INK_DIM);
-    fb.fillRect(0, bandY, kActiveW, bandH, plate);
+
+    // ARRIVAL. The plate opens from its own centre line over the first kOpenBeats, so
+    // the announcement ENTERS rather than replacing a frame of habitat between two
+    // repaints. Shape only, which is the same reason the plate is a plate: a wipe reads
+    // at a glance in grayscale, where a fade is only a value the eye has nothing to
+    // compare against. Held plates open too — the instruction can wait three beats.
+    constexpr int kOpenBeats = 3;
+    const int age = beat_ - achBannerOpenBeat_;
+    const int open = (age >= kOpenBeats || age < 0) ? bandH
+                                                    : bandH * (age + 1) / (kOpenBeats + 1);
+    const int drawH = open < 2 ? 2 : open;            // never thinner than its own rules
+    const int drawY = bandY + (bandH - drawH) / 2;
+    fb.fillRect(0, drawY, kActiveW, drawH, plate);
     // A 1px lid and sill: the band has to read as a plate laid over the habitat rather
     // than a hole in it, and an edge is the only cue that survives desaturation.
-    fb.fillRect(0, bandY, kActiveW, 1, quiet);
-    fb.fillRect(0, bandY + bandH - 1, kActiveW, 1, quiet);
+    fb.fillRect(0, drawY, kActiveW, 1, quiet);
+    fb.fillRect(0, drawY + drawH - 1, kActiveW, 1, quiet);
+    if (drawH < bandH) return;                        // still opening: the plate alone
 
     // Every line on this plate is content — an achievement name, an egg line, an item
     // — so none of them can be centred and left to run: a name that outgrows the canvas
@@ -509,61 +590,24 @@ void Game::drawAchievementBanner(Framebuffer& fb) const {
     // once it doesn't.
     // The plate is full-bleed, so a centred line may use the whole canvas — the held
     // plate's own instruction already spans it. Only what does not fit gets pulled in
-    // to the margins to scroll.
+    // to the margins to scroll. The marquee is driven from the banner's OWN age rather
+    // than the free-running beat, so every announcement starts its travel at the same
+    // place: on the shared clock a long name could arrive already halfway past.
+    const int age0 = age - kOpenBeats;
     auto plateLine = [&](int ly, const char* s, Rgb565 col) {
         const int w = textWidth(s);
         if (w <= kActiveW) { drawText(fb, (kActiveW - w) / 2, ly, s, col); return; }
-        drawTextMarquee(fb, kMargin, ly, kActiveW - 2 * kMargin, s, col, beat_, true);
+        drawTextMarquee(fb, kMargin, ly, kActiveW - 2 * kMargin, s, col, age0, true);
     };
 
-    const char* kicker = held ? "NEW EGG LINE" : "ACHIEVEMENT";
-    plateLine(bandY + 5, kicker, quiet);
-
-    // A burst says how many first and names one of them, so a long back-catalogue drop
-    // still tells the player something specific about what they got.
-    char line[40];
-    if (achBannerCount_ > 1)
-        std::snprintf(line, sizeof(line), "%d UNLOCKED", achBannerCount_);
-    else if (held)
-        // The LINE, not the achievement that earned it: "Hash Collision" is the thing
-        // they just did, and "Metamorphic" is the thing they can now do about it. Only
-        // one of those belongs on a banner whose whole job is to point at the hatch.
-        std::snprintf(line, sizeof(line), "%s", eggLine->displayName);
-    else
-        std::snprintf(line, sizeof(line), "%s", d->displayName);
-    plateLine(bandY + 15, line, body);
-
-    // The third line is the reward, because that is the part with a consequence — a
-    // Commendation Cache is sitting in the VAULT now and the player needs to know to
-    // go and open it.
-    char reward[40] = {0};
-    int rewardBits = 0;
-    const char* rewardItem = nullptr;
-    for (const AchievementReward& r : d->rewards) {
-        if (r.kind == AchievementReward::Kind::Bits) rewardBits += r.magnitude;
-        else if (r.kind == AchievementReward::Kind::Item && r.id)
-            if (const ItemDef* it = registry_.item(r.id)) rewardItem = it->displayName;
-    }
-    if (held)
-        // Where to go, and how to make this go away — the two things a held plate has to
-        // say. The rewards are still paid; they are simply not what this banner is for.
-        std::snprintf(reward, sizeof(reward), "LAY ONE NEXT HATCH - ANY KEY");
-    else if (achBannerCount_ > 1)
-        std::snprintf(reward, sizeof(reward), "%s +MORE", d->displayName);
-    else if (rewardItem && rewardBits > 0) {
-        // Two rewards on one line is the only combination that outgrows the plate —
-        // "+400 BITS + COMMENDATION CACHE" is 30 characters against a 28-character
-        // canvas. The currency abbreviates to the B the shop prices already use, which
-        // buys back the three characters the pair needs.
-        std::snprintf(reward, sizeof(reward), "+%d BITS + %s", rewardBits, rewardItem);
-        if (textWidth(reward) > kActiveW)
-            std::snprintf(reward, sizeof(reward), "+%d B + %s", rewardBits, rewardItem);
-    } else if (rewardItem)
-        std::snprintf(reward, sizeof(reward), "+%s", rewardItem);
-    else if (rewardBits > 0)
-        std::snprintf(reward, sizeof(reward), "+%d BITS", rewardBits);
-    if (reward[0])
-        plateLine(bandY + 25, reward, held ? body : palColor(Pal::CALM));
+    // The kicker pulses between its two inks for the first beats it is up — the one
+    // moving thing on a plate whose whole job is to be noticed, and a VALUE step rather
+    // than a hue one, so it survives the grayscale gate like everything else here.
+    const bool flash = age0 < 4 && ((age0 / 2) % 2 == 0);
+    plateLine(bandY + 5, copy.kicker, flash ? body : quiet);
+    plateLine(bandY + 15, copy.name, body);
+    if (copy.reward[0])
+        plateLine(bandY + 25, copy.reward, held ? body : palColor(Pal::CALM));
 }
 
 bool Game::captureBadge(char* out, unsigned n) const {
