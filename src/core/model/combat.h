@@ -756,6 +756,27 @@ private:
     // Prowlware to rank that move's Attack power (attackPowerRank).
     void applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
                      bool byPlayer, int moveIdx);
+    // THE PURE RIDER RULE — a promise the LOADOUT screen has to be able to make.
+    //
+    //   A cast that deals no damage lands its effect on the enemy pet directly, whatever
+    //   that pet is standing behind.
+    //
+    // Every defence in this file absorbs DAMAGE. A pool eats it, a brace spends itself on
+    // it, a mirror deletes it, a worm replica stands in front of it, a Trojan trap springs
+    // on it. None of them is a defence against a turn spent entirely on an effect, so none
+    // of them stops one — the trade a caster makes is the whole of their turn for the whole
+    // of the effect, and the pet pays it however well defended it is.
+    //
+    // The rule needs no flag and no keyword: every interception in the pipeline is already
+    // guarded on damage (`dmg > 0`, or `baseDmg > 0` for a trap), so a zero-damage cast
+    // reaches the rider phase having met none of them. Keep it that way — a new interceptor
+    // added without a damage guard silently takes this promise back, and the loadout screen
+    // has no way to say so.
+    //
+    // The corollary the same rule states from the other side: a rider RIDES on damage, so a
+    // defence that ate the damage ate the rider too (applyOnHitRiders). The pool counters a
+    // high-economy move precisely because that move bought damage as well.
+    //
     // --- The hit pipeline's phases, in running order ---------------------------------
     // applyEffect is a SEQUENCE, not a dispatch: one damage value carried through stages
     // that are each optional on their own. Each phase below names one stage. Only

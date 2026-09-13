@@ -909,9 +909,9 @@ void test_pipeline_a_mirrored_hit_plants_no_riders() {
     CHECK(c.player().lockedTurnsLeft == 0);
 }
 
-// ...and a hit an Obfuscation pool swallows WHOLE lands no concussive rider either. The
-// bubble is between the strike and the pet, so nothing arrives to stun or scramble it.
-void test_pipeline_a_soaked_hit_lands_no_concussive_rider() {
+// A hit an Obfuscation pool swallows WHOLE lands NO rider — a rider rides on damage, and
+// the pool ate the damage. Economy, not keyword: the pool counters a move that bought both.
+void test_pipeline_a_soaked_hit_lands_no_rider() {
     ContentRegistry r = ContentRegistry::embedded();
     auto hit = [&](const char* moveId, int pool) {
         Combatant pc = mkCombatant(r, "P", 100, 5, {"quick_jab"});
@@ -921,53 +921,87 @@ void test_pipeline_a_soaked_hit_lands_no_concussive_rider() {
         c.step();
         return c.player();
     };
-    // system_hang is 10 power, lockTurns 2. c2_hijack scrambles for 3.
-    CHECK(hit("system_hang", 40).lockedTurnsLeft == 0);   // covered whole: no stun
-    CHECK(hit("system_hang", 40).health == 100);          // ...and nothing reached Health
-    CHECK(hit("c2_hijack", 40).scrambleTurns == 0);       // no scramble either
+    CHECK(hit("system_hang", 40).lockedTurnsLeft == 0);   // 10 power + stun 2
+    CHECK(hit("c2_hijack", 40).scrambleTurns == 0);       //  8 power + scramble 3
+    CHECK(hit("data_rot", 40).dotTurnsLeft == 0);         //  6 power + DoT 5x3
+    CHECK(hit("system_hang", 40).health == 100);          // nothing reached Health either
 
-    // A pool that only PARTLY covers the hit stops neither: some of it landed, and a rider
+    // A pool that only PARTLY covers the hit stops nothing: some of it landed, and a rider
     // is not a thing you take a share of.
     CHECK(hit("system_hang", 4).lockedTurnsLeft == 2);
-    CHECK(hit("system_hang", 4).health < 100);
-    CHECK(hit("system_hang", 0).lockedTurnsLeft == 2);    // no pool at all
+    CHECK(hit("system_hang", 0).lockedTurnsLeft == 2);
 }
 
-// THE POOL'S COUNTER. A DoT plants straight through an intact bubble, and its ticks then
-// bypass the pool for the pet's own Health — so corruption is the answer to attrition
-// behind a bubble, and the only one that does not first require breaking it. This is the
-// deliberate exception to the rule above, and the pair is the whole design: the pool stops
-// IMPACT, and a poison is not impact.
-void test_pipeline_a_dot_plants_through_an_intact_pool() {
+// A PURE RIDER — a cast that deals no damage — reaches the pet through everything, because
+// every defence in the pipeline absorbs damage and there is none to absorb. This is the
+// promise the loadout screen makes, so it is asserted against each interceptor in turn
+// rather than in one fight that happens to meet none of them.
+void test_pure_rider_reaches_the_pet_through_every_defence() {
     ContentRegistry r = ContentRegistry::embedded();
-    Combatant pc = mkCombatant(r, "P", 100, 5, {"spoof_bubble"});
-    pc.shieldHp = 40;                                     // far more than the hit
-    Combatant e = mkCombatant(r, "E", 100, 5, {"data_rot"});   // 6 power, 5/turn x3
-    Combat c; c.begin(pc, e, Combat::Stakes::Safe, 5, /*forceEnemyFirst=*/true);
-    c.step();
-    CHECK(c.player().health == 100);                      // the pool took the impact
-    CHECK(c.player().shieldHp < 40);                      // ...and was chewed for it
-    CHECK(c.player().dotTurnsLeft == 3);                  // the corruption planted anyway
-    CHECK(c.player().dotPerTurn == 5);
-
-    // ...and the ticks come off HEALTH, not off the pool, however big the pool gets.
-    const int poolBefore = c.player().shieldHp;
-    for (int i = 0; i < 6; ++i) c.step();
-    CHECK(c.player().health < 100);                       // the poison is landing
-    CHECK(c.player().shieldHp >= poolBefore);             // ...while the bubble holds or grows
+    // No such move ships yet — the band is a board item — so the gate builds one. That is
+    // the point: the RULE holds before the content does, and the content lands against it.
+    static const MoveDef kPureStun{"t_pure_stun", "Pure Stun", MoveDef::Kind::Attack,
+                                   /*power=*/0, 1, "", Stage::BootSector, nullptr,
+                                   0, 0, 0, 0, /*armorPiercePct=*/0, /*lockTurns=*/2};
+    auto cast = [&](void (*arm)(Combatant&)) {
+        Combatant pc = mkCombatant(r, "P", 200, 5, {"quick_jab"});
+        arm(pc);
+        Combatant e = mkCombatant(r, "E", 200, 5, {"quick_jab"});
+        e.moves.clear();
+        e.moves.push_back(&kPureStun);
+        Combat c; c.begin(pc, e, Combat::Stakes::Safe, 5, /*forceEnemyFirst=*/true);
+        c.step();
+        return c.player();
+    };
+    CHECK(cast([](Combatant&) {}).lockedTurnsLeft == 2);                    // undefended
+    CHECK(cast([](Combatant& p) { p.shieldHp = 500; }).lockedTurnsLeft == 2);   // deep pool
+    CHECK(cast([](Combatant& p) { p.shieldHp = 500; }).shieldHp == 500);        // ...untouched
+    CHECK(cast([](Combatant& p) { p.mods.arm(ModEffect::RaidMirror); })
+              .lockedTurnsLeft == 2);                                        // mirror
+    // ...and the mirror is not SPENT by a cast it never had damage to negate.
+    CHECK(cast([](Combatant& p) { p.mods.arm(ModEffect::RaidMirror); })
+              .mods.armed(ModEffect::RaidMirror));
 }
 
-// A move carrying BOTH resolves each half on its own terms against a full pool: the stun is
-// stopped, the corruption is not. Nothing about a rider set is all-or-nothing.
-void test_pipeline_a_mixed_rider_move_splits_against_a_pool() {
+// The swarm was the one interceptor that took a pure rider, because a replica ate any hit
+// whatever its damage. A body stands in front of damage; it cannot stand in front of a
+// stun, so the cast goes past it to the worm that owns it.
+void test_pure_rider_goes_past_the_swarm_to_the_worm() {
     ContentRegistry r = ContentRegistry::embedded();
-    Combatant pc = mkCombatant(r, "P", 100, 5, {"quick_jab"});
-    pc.shieldHp = 40;
-    Combatant e = mkCombatant(r, "E", 100, 5, {"nag_screen"});   // lockTurns 1 + DoT 6x3
-    Combat c; c.begin(pc, e, Combat::Stakes::Safe, 5, /*forceEnemyFirst=*/true);
-    c.step();
-    CHECK(c.player().lockedTurnsLeft == 0);               // impact stopped
-    CHECK(c.player().dotTurnsLeft == 3);                  // corruption through
+    static const MoveDef kPureStun{"t_pure_stun2", "Pure Stun", MoveDef::Kind::Attack,
+                                   /*power=*/0, 1, "", Stage::BootSector, nullptr,
+                                   0, 0, 0, 0, /*armorPiercePct=*/0, /*lockTurns=*/2};
+    // Every seed, not one: interception is a weighted draw, so a single fight could miss
+    // the replica branch and pass while telling us nothing.
+    for (uint32_t seed = 1; seed <= 40; ++seed) {
+        Combatant pc = mkCombatant(r, "P", 400, 5, {"quick_jab"});
+        pc.wormReplicaCount = 3;
+        for (int i = 0; i < 3; ++i) pc.wormReplicas[i] = WormReplica{true, 30, 30};
+        Combatant e = mkCombatant(r, "E", 400, 5, {"quick_jab"});
+        e.moves.clear();
+        e.moves.push_back(&kPureStun);
+        Combat c; c.begin(pc, e, Combat::Stakes::Safe, seed, /*forceEnemyFirst=*/true);
+        c.step();
+        CHECK(c.player().lockedTurnsLeft == 2);        // the pet, every time
+        CHECK(c.player().wormReplicaCount == 3);       // and no body spent stopping it
+    }
+}
+
+// ...while a DAMAGING hit is still intercepted by the swarm, which is what a swarm is for.
+// Without this the gate above would also pass on a replica system that had stopped working.
+void test_the_swarm_still_eats_a_damaging_hit() {
+    ContentRegistry r = ContentRegistry::embedded();
+    int intercepted = 0;
+    for (uint32_t seed = 1; seed <= 40; ++seed) {
+        Combatant pc = mkCombatant(r, "P", 400, 5, {"quick_jab"});
+        pc.wormReplicaCount = 3;
+        for (int i = 0; i < 3; ++i) pc.wormReplicas[i] = WormReplica{true, 30, 30};
+        Combatant e = mkCombatant(r, "E", 400, 5, {"system_hang"});   // 10 power + stun
+        Combat c; c.begin(pc, e, Combat::Stakes::Safe, seed, /*forceEnemyFirst=*/true);
+        c.step();
+        if (c.player().lockedTurnsLeft == 0) ++intercepted;           // a body took it
+    }
+    CHECK(intercepted > 20);        // the swarm is still doing its job, and by a mile
 }
 
 // Every rider actually fires. Cheap, but it is what stops the rider phase becoming dead

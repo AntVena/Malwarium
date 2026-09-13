@@ -268,8 +268,15 @@ void test_tourney_run_from_the_expl_row() {
     tapC(g);
     CHECK(g.combat().outcome() == Combat::Outcome::Ongoing);   // C did not forfeit
     uint32_t t = 0;
-    for (int i = 0; i < 4000 && g.combat().outcome() == Combat::Outcome::Ongoing; ++i)
+    // A generous budget, because a bracket opponent that stacks an Obfuscation pool turns
+    // the match into a grind: no rider bypasses a full pool (the PURE RIDER rule on
+    // combat.h), so the only way through is to out-damage the pool's growth, and that is a
+    // stat check measured in tens of thousands of beats rather than hundreds. It still
+    // RESOLVES — the assertion below is the difference between slow and stuck, and is why
+    // this is a bound rather than a wait.
+    for (int i = 0; i < 200000 && g.combat().outcome() == Combat::Outcome::Ongoing; ++i)
         g.tick(t += kHeartbeatMs);
+    CHECK(g.combat().outcome() != Combat::Outcome::Ongoing);
     const bool won = g.combat().outcome() == Combat::Outcome::Win;
     tapB(g);                                                   // dismiss the verdict
     CHECK(g.nav() == Game::Nav::Tourney);

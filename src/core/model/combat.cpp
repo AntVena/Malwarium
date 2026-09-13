@@ -490,6 +490,12 @@ return dmg;
 // over.
 bool Combat::replicaAte(Combatant& target, const MoveDef& mv, int dmg, bool byPlayer) {
     if (target.wormReplicaCount <= 0) return false;
+    // A replica is a BODY: it can stand in front of damage, and there is nothing for it to
+    // stand in front of when a cast deals none. A pure rider goes past the swarm to the pet
+    // that owns it — the PURE RIDER rule (combat.h). Without this guard a worm three
+    // defenders deep is ~93% rider-immune, which would make the whole low-economy answer
+    // useless against exactly the line it most needs to reach.
+    if (dmg <= 0) return false;
     // One rng() draw, only when replicas are out, so no other line perturbs the stream.
     const int victim = wormTargetPick(target, rng());
     if (victim < 0) return false;
@@ -704,14 +710,13 @@ void Combat::stackLockoutPower(Combatant& actor, Combatant& mirror, const MoveDe
 // at the end of the pipeline rather than inside it. A fully mirrored hit carries none.
 void Combat::applyOnHitRiders(Combatant& target, const MoveDef& mv) {
     if (target.mirrorFired) return;          // the hit did not happen at all
-    // A hit an Obfuscation pool swallowed WHOLE lands no CONCUSSIVE rider: the bubble is
-    // between the strike and the pet, so nothing arrives to stun or scramble it. Corruption
-    // is the exception and it is deliberate — a DoT is a poison rather than an impact, it
-    // plants through an intact bubble, and its ticks then bypass the pool for the pet's own
-    // Health (resolveTurn). That is what makes a DoT kit the answer to attrition behind a
-    // bubble, and it is the only answer that does not first require breaking one.
-    const bool concussed = !target.poolAbsorbedHit;
-    if (concussed && mv.lockTurns > 0 && target.lockedTurnsLeft == 0) {
+    // ECONOMY, not keyword: a rider rides on DAMAGE, so a defence that ate the damage ate
+    // the rider with it. A hit an Obfuscation pool swallowed whole lands none of the three.
+    // The way through is to spend the whole turn on the effect and deal no damage at all —
+    // see the PURE RIDER rule on combat.h, which such a cast never reaches this guard to
+    // fail, because nothing on the far side ever had damage to absorb.
+    const bool landed = !target.poolAbsorbedHit;
+    if (landed && mv.lockTurns > 0 && target.lockedTurnsLeft == 0) {
         int k = mv.lockTurns;
         const int watchdog = target.mods.mag(ModEffect::WatchdogClamp);
         if (watchdog > 0 && k > watchdog) k = watchdog;
@@ -726,7 +731,7 @@ void Combat::applyOnHitRiders(Combatant& target, const MoveDef& mv) {
     // clamp — there is no "half a scrambled list", so the counter either holds or it
     // does not, and a mod that shortened it would be selling a worse version of the
     // one thing it is for.
-    if (concussed && mv.scrambleTurns > 0 &&
+    if (landed && mv.scrambleTurns > 0 &&
         target.mods.mag(ModEffect::ScrambleWard) <= 0 &&
         mv.scrambleTurns > target.scrambleTurns) {
         target.scrambleTurns = mv.scrambleTurns;
@@ -734,7 +739,7 @@ void Combat::applyOnHitRiders(Combatant& target, const MoveDef& mv) {
     // DoT rider (Faraday-pass THREAT): a landed hit plants corruption — dotDamage/turn for
     // dotTurns of the target's upcoming turn-starts. The target's Faraday Cage (mod) cuts
     // the magnitude (100 = immune → nothing planted). Refreshes, not stacks.
-    if (mv.dotDamage > 0 && mv.dotTurns > 0) {
+    if (landed && mv.dotDamage > 0 && mv.dotTurns > 0) {
         int per = mv.dotDamage;
         const int faradayCut = target.mods.mag(ModEffect::FaradayCut);
         if (faradayCut > 0) per = per * (100 - faradayCut) / 100;
