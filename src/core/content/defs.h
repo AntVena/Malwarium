@@ -1061,6 +1061,23 @@ struct MoveDef {
     // Appended at the END, like every field before it — the rows are positional
     // initializers, so a field inserted mid-struct re-aims every magnitude after it.
     int scrambleTurns = 0;
+
+    // --- Ransom arming (Ransomware Cipher track) -----------------------------------
+    // Casting this row ARMS the caster's ransom window outright, where Ransom Note would
+    // otherwise roll for it at turn start — so a brace is a promise that the next hit is
+    // held, and the pool it feeds is what works the pet up. Inert without the passive.
+    //
+    // Appended at the END, like every field before it — the rows are positional
+    // initializers, so a field inserted mid-struct re-aims every magnitude after it.
+    bool armsRansom = false;
+
+    // --- Cashing the ransom (Ransomware Lockout track) ------------------------------
+    // This swing hits for this % of the caster's live ransom pool on top of its power —
+    // the held grudge, thrown back. Read, never spent: the bill still lands whole.
+    //
+    // Appended at the END, like every field before it — the rows are positional
+    // initializers, so a field inserted mid-struct re-aims every magnitude after it.
+    int ransomCashPct = 0;
 };
 
 // Whether `m` rolls its cast out of a pool instead of being one (MoveDef::drawLineA).
@@ -1128,6 +1145,49 @@ constexpr MoveDef severRow(const char* id, const char* displayName, int power,
     m.armorPiercePct = armorPiercePct;
     m.lockTurns = lockTurns;
     m.scrambleTurns = scrambleTurns;
+    return m;
+}
+
+// A LOCKOUT row (Ransomware): an attack that stacks the caster's Power on landing, and may
+// pierce or cash the ransom pool. The last of those sits at the very end of the positional
+// tail, which is the same reason braceRow exists.
+constexpr MoveDef lockoutRow(const char* id, const char* displayName, int power,
+                             const char* effect, Stage minStage, int stackPowerPct,
+                             int stackPowerCap, int armorPiercePct, int ransomCashPct) {
+    MoveDef m{};
+    m.id = id;
+    m.displayName = displayName;
+    m.kind = MoveKind::Attack;
+    m.power = power;
+    m.channelTurns = 1;
+    m.effect = effect;
+    m.minStage = minStage;
+    m.line = "ransomware";
+    m.stackPowerPct = stackPowerPct;
+    m.stackPowerCap = stackPowerCap;
+    m.armorPiercePct = armorPiercePct;
+    m.ransomCashPct = ransomCashPct;
+    return m;
+}
+
+// A CIPHER row (Ransomware): a brace that stacks the caster's Defense and arms its ransom
+// window. The arming flag sits at the very end of the positional tail, which is the same
+// reason braceRow exists.
+constexpr MoveDef cipherRow(const char* id, const char* displayName, int power,
+                            const char* effect, Stage minStage, int stackDefensePct,
+                            int stackDefenseCap) {
+    MoveDef m{};
+    m.id = id;
+    m.displayName = displayName;
+    m.kind = MoveKind::Defend;
+    m.power = power;
+    m.channelTurns = 1;
+    m.effect = effect;
+    m.minStage = minStage;
+    m.line = "ransomware";
+    m.stackDefensePct = stackDefensePct;
+    m.stackDefenseCap = stackDefenseCap;
+    m.armsRansom = true;
     return m;
 }
 

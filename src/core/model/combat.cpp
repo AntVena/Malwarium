@@ -496,6 +496,7 @@ int Combat::swingDamage(Combatant& actor, const MoveDef& mv, bool byPlayer,
             mult += actor.mods.mag2(ModEffect::LowHealthPowerPct);
     }
     int dmg = mv.power * mult / 100;
+    if (mv.ransomCashPct > 0) dmg += actor.ransomPool * mv.ransomCashPct / 100;
     // Steal-attacks are deliberately low-power and lean on the min-1 penetration floor,
     // so the banked flat bonus is what makes a sustained frenzy dangerous.
     if (mv.stealPowerPct > 0) dmg += actor.phishComboBonus;
@@ -826,6 +827,8 @@ void Combat::applyDefend(Combatant& actor, Combatant& mirror, const MoveDef& mv,
     if (actor.ransomPool > 0)
         actor.powerMultPct +=
             actor.ransomPool * kRansomBracePowerPctByStage[stageIndex(actor.stage)] / 100;
+    if (mv.armsRansom && hasLinePassive(actor.linePassives, LinePassive::RansomNote))
+        actor.ransomArmed = true;
     // Cipher track: the cast stacks the caster's Defense (% cut) for the
     // fight, capped per move; the attack path clamps the total to 85% (never immune).
     if (mv.stackDefensePct > 0 && actor.stackDefenseBonus < mv.stackDefenseCap) {

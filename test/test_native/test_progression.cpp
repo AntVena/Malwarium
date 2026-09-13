@@ -618,7 +618,7 @@ void test_ransomware_stacking() {
     Combatant dummy = mkCombatant(r, "D", 500, 3, {"quick_jab"});
     Combat cb; cb.begin(atk, dummy, Combat::Stakes::Safe, 4242);
     int firstHit = -1, lastHit = 0;
-    for (int i = 0; i < 40 && cb.outcome() == Combat::Outcome::Ongoing; ++i) {
+    for (int i = 0; i < 80 && cb.outcome() == Combat::Outcome::Ongoing; ++i) {
         const bool pturn = cb.playerTurnNext();
         cb.step();
         if (pturn && cb.lastByPlayer() && cb.lastDamage() > 0) {
@@ -626,7 +626,7 @@ void test_ransomware_stacking() {
             lastHit = cb.lastDamage();
         }
     }
-    CHECK(cb.player().stackPowerBonus == 30);          // +10 ×3, capped at +30%
+    CHECK(cb.player().stackPowerBonus == r.move("payload_drop")->stackPowerCap);   // capped
     CHECK(lastHit > firstHit);                          // stacked Power hits harder
 
     // Cipher, and the INVERTED ladder that carries it. Where a row's cap sits decides how

@@ -1819,6 +1819,7 @@ public:
     // whatever eventually grants one, and there is none yet — this is how a scene puts
     // a kit in a known state, e.g. to show the outro a rival with no new move gets.
     void debugGrantMove(const char* id) { moveLoadout_.grant(id); }
+    void debugUnequipMove(int slot) { moveLoadout_.unequip(slot); }
     // Unlock a zone-completion Title without clearing its sector (tests /
     // dump_frame): the real path is a sector clear (unlockTitle). Auto-equips the
     // first Title, exactly like the real grant. No-op for an out-of-range sector.

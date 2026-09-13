@@ -208,6 +208,7 @@ EffectText effectText(const MoveDef& d) {
         {"stackDef", d.stackDefensePct},
         {"stackDefCap", d.stackDefenseCap},
         {"pierce", d.armorPiercePct},
+        {"cash", d.ransomCashPct},
         {"lock", d.lockTurns},
         {"scramble", d.scrambleTurns},
         {"dot", d.dotDamage ? d.dotDamage : d.poolRetaliateDot},
@@ -447,6 +448,8 @@ SpecRows specRows(const MoveDef& d) {
         s.add("DEF", "%+d%%", d.stackDefensePct);
         s.add("UP TO", "%+d%%", d.stackDefenseCap);
     }
+    if (d.armsRansom) s.flag("ARMS RANSOM");
+    if (d.ransomCashPct) s.add("+POOL", "%d%%", d.ransomCashPct);
     if (d.lockTurns) s.add("FREEZE", "%d", d.lockTurns);
     if (d.dotDamage) s.add("DOT", "%dx%d", d.dotDamage, d.dotTurns);
     // Leads the steal block: it is the one steal that outlives its own hit, since the

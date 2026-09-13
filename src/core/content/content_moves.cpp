@@ -159,15 +159,33 @@ const MoveDef kMoves[] = {
     // and the ramp is small early. Each row now opens a rung above the generic it is read
     // against and the caps climb with it, so the ramp is a second reason to equip the row
     // rather than the only one.
-    {"payload_drop", "Payload Drop", MoveDef::Kind::Attack, 14, 1,
-     "Drops a payload. +{stackPower}% Power on landing (stacks to +{stackPowerCap}%).", Stage::Process,
-     "ransomware", 10, 30, 0, 0, 0},
-    {"double_extortion", "Double Extortion", MoveDef::Kind::Attack, 24, 1,
-     "Encrypt AND leak. +{stackPower}% Power on landing (stacks to +{stackPowerCap}%).", Stage::Script,
-     "ransomware", 12, 48, 0, 0, 0},
-    {"mbr_wipe", "MBR Wipe", MoveDef::Kind::Attack, 30, 1,
-     "Overwrites the boot sector. Ignores {pierce}% armor; +{stackPower}% Power (to +{stackPowerCap}%).",
-     Stage::Daemon, "ransomware", 14, 70, 0, 0, 50},
+    //
+    // The Lockout ladder runs INVERTED, like the Cipher one below and for the same kind of
+    // reason: the stack is one pile shared by every row, and a row stops adding once the
+    // pile reaches ITS cap. So the shallow row climbs in small steps to the highest
+    // ceiling and the deep row gets there fast but stops low — the hatchling's move is the
+    // one that keeps a Daemon getting angrier, and a kit carrying both pays for it.
+    //
+    // The shallow rows also CASH the ransom (MoveDef::ransomCashPct): they hit for a share
+    // of the live pool on top of their power, the shallowest for the most. A low row's power
+    // cannot keep up at Daemon on its own, but the pool it cashes grows with whatever is
+    // hitting the pet, so it keeps a job the stage does not take away. MBR Wipe answers
+    // armour instead, and needs no help.
+    lockoutRow("payload_drop", "Payload Drop", 14,
+               "Drops a payload, and the ransom with it - +{cash}% of the held pool; "
+               "+{stackPower}% Power on landing (to +{stackPowerCap}%).",
+               Stage::Process, /*stackPowerPct=*/8, /*stackPowerCap=*/72,
+               /*armorPiercePct=*/0, /*ransomCashPct=*/150),
+    lockoutRow("double_extortion", "Double Extortion", 24,
+               "Encrypt AND leak - +{cash}% of the held pool; +{stackPower}% Power on "
+               "landing (to +{stackPowerCap}%).",
+               Stage::Script, /*stackPowerPct=*/12, /*stackPowerCap=*/48,
+               /*armorPiercePct=*/0, /*ransomCashPct=*/75),
+    lockoutRow("mbr_wipe", "MBR Wipe", 30,
+               "Overwrites the boot sector. Ignores {pierce}% armor; +{stackPower}% Power "
+               "(to +{stackPowerCap}%).",
+               Stage::Daemon, /*stackPowerPct=*/18, /*stackPowerCap=*/36,
+               /*armorPiercePct=*/50, /*ransomCashPct=*/0),
     // The Cipher ladder runs INVERTED, and the reason is the seizure (RansomSeizure): a
     // full wall is what lets a brace take the attack that hits it, so where a row's CAP
     // sits decides how soon that row can do the line's real job. The deep row therefore
@@ -185,15 +203,22 @@ const MoveDef kMoves[] = {
     // else), so the stack was paying for two disadvantages rather than one. Each row now
     // braces at the low end of its stage's generic band: still under the biggest wall, and
     // still refund-free, but a real brace with the line's ratchet on top of it.
-    {"aes_lockbox", "AES Lockbox", MoveDef::Kind::Defend, 18, 1,
-     "Encrypts a brace. +{stackDef}% DEF on cast (stacks to +{stackDefCap}%).", Stage::Process,
-     "ransomware", 0, 0, 6, 48, 0},
-    {"rsa_vault", "RSA Vault", MoveDef::Kind::Defend, 28, 1,
-     "Seals the AES key. +{stackDef}% DEF on cast (stacks to +{stackDefCap}%).", Stage::Script,
-     "ransomware", 0, 0, 12, 36, 0},
-    {"full_disk_encryption", "Full-Disk Encryption", MoveDef::Kind::Defend, 40, 1,
-     "Locks the whole drive. +{stackDef}% DEF on cast (stacks to +{stackDefCap}%).", Stage::Daemon,
-     "ransomware", 0, 0, 20, 20, 0},
+    //
+    // Every Cipher cast also ARMS the ransom (cipherRow): the next hit is held rather than
+    // rolled for. That is the kit's loop — brace, get hit, hold the grudge, and the held
+    // pool works the pet up on every cast after (kRansomBracePowerPctByStage).
+    cipherRow("aes_lockbox", "AES Lockbox", 18,
+              "Encrypts a brace and arms the ransom. +{stackDef}% DEF on cast (stacks to "
+              "+{stackDefCap}%).",
+              Stage::Process, /*stackDefensePct=*/6, /*stackDefenseCap=*/48),
+    cipherRow("rsa_vault", "RSA Vault", 28,
+              "Seals the AES key and arms the ransom. +{stackDef}% DEF on cast (stacks to "
+              "+{stackDefCap}%).",
+              Stage::Script, /*stackDefensePct=*/12, /*stackDefenseCap=*/36),
+    cipherRow("full_disk_encryption", "Full-Disk Encryption", 40,
+              "Locks the whole drive and arms the ransom. +{stackDef}% DEF on cast (stacks "
+              "to +{stackDefCap}%).",
+              Stage::Daemon, /*stackDefensePct=*/20, /*stackDefenseCap=*/20),
 
     // Phishing LINE moves -------------------------
     // line = "phishing" → only Phishing pets can learn/equip these.

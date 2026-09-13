@@ -309,6 +309,9 @@ void test_the_guardians_body_moves_into_the_fighters_seat() {
 // exchange — the mistake RENDER_PIPELINE.md records FX_CAMO making.
 void test_a_guardians_body_reads_its_own_health() {
     Game g{StartMode::Hatched};
+    // The innate jab in every slot: small, even steps, so no single blow can carry the
+    // guardian clean past a band. This gate is about the mapping, not the starter kit.
+    for (int i = 0; i < kMaxMoveSlots; ++i) g.debugUnequipMove(i);
     enterWalk(g);
     CHECK(reachGuardianFight(g));
     const int max = g.combat().enemy().maxHealth;

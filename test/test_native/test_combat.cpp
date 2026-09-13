@@ -374,6 +374,24 @@ void test_ransom_seizes_the_attack_that_hits_a_full_wall() {
     CHECK(cb.player().moves[slot] == cipher);            // given back, same slot
 }
 
+// A Cipher cast ARMS the ransom outright — at Boot, where Ransom Note never rolls, so the
+// only thing that can have armed it is the brace. A pet without the passive arms nothing.
+void test_cipher_cast_arms_the_ransom() {
+    ContentRegistry r = ContentRegistry::embedded();
+    auto armed = [&](const char* line) {
+        Combatant p = mkCombatant(r, "P", 400, 50, {"aes_lockbox"});
+        p.setLine(r, line);
+        p.stage = Stage::BootSector;
+        Combatant e = mkCombatant(r, "E", 400, 5, {"quick_jab"});
+        Combat c; c.begin(p, e, Combat::Stakes::Safe, 5);
+        c.step();
+        return c.player().ransomArmed;
+    };
+    CHECK(r.move("aes_lockbox")->armsRansom);
+    CHECK(armed("ransomware"));
+    CHECK(!armed("phishing"));
+}
+
 // WORKED UP: while the ransom pool holds damage, a brace turns a share of it into Power
 // and a landed attack turns a share into damage cut — and neither spends the pool.
 void test_ransom_pool_works_the_pet_up() {
@@ -1063,7 +1081,7 @@ void test_lockout_stack_pays_when_a_replica_eats_the_hit() {
         Combat c; c.begin(pc, e, Combat::Stakes::Safe, seed, /*forceEnemyFirst=*/true);
         c.step();
         if (c.player().health == 400) ++eaten;
-        CHECK(c.enemy().stackPowerBonus == 10);
+        CHECK(c.enemy().stackPowerBonus == r.move("payload_drop")->stackPowerPct);
     }
     CHECK(eaten > 20);
 }
