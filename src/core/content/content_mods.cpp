@@ -539,19 +539,22 @@ const ModDef kMods[] = {
     //   Fork Farm 60/90 (Seedbox Array 68) · False Flag 72/90 (Decoy Peer 70) ·
     //   Recompiler 9/18 (Sonar Ping 7).
     {/*wire=*/81, "vault_door", "Vault Door", "+DEF",
-     "Nothing negotiates with a wall: cuts incoming damage {mag}%.", false,
+     "Nothing negotiates with a wall: cuts incoming damage {mag}% ({magBonus}% for "
+     "Ransomware).", false,
      ItemDef::Rarity::Epic, 6, 63, ModEffect::DamageCutPct, 38, 0, "ransomware", 16},
     {/*wire=*/82, "spoof_relay", "Spoof Relay", "+PWR",
-     "It answers in somebody else's name: attack power +{mag}%.", false,
+     "It answers in somebody else's name: attack power +{mag}% ({magBonus}% for "
+     "Phishing).", false,
      ItemDef::Rarity::Epic, 6, 65, ModEffect::PowerPct, 26, 0, "phishing", 18},
     {/*wire=*/83, "fork_farm", "Fork Farm", "+HP",
-     "Room for one more of everything: +{mag} max Health.", false,
+     "Room for one more of everything: +{mag} max Health ({magBonus} for Worm).", false,
      ItemDef::Rarity::Epic, 6, 67, ModEffect::MaxHealth, 60, 0, "worm", 30},
     {/*wire=*/84, "false_flag", "False Flag", "1-SHOT",
-     "The first hit lands on somebody who was never there: cuts it {mag}%.", false,
+     "The first hit lands on somebody who was never there: cuts it {mag}% ({magBonus}% "
+     "for Trojan).", false,
      ItemDef::Rarity::Epic, 6, 69, ModEffect::FirstHitCutPct, 72, 0, "trojan", 18},
     {/*wire=*/85, "recompiler", "Recompiler", "+SPD",
-     "It rebuilds itself between swings: +{mag} speed.", false,
+     "It rebuilds itself between swings: +{mag} speed ({magBonus} for Metamorphic).", false,
      ItemDef::Rarity::Epic, 6, 71, ModEffect::Speed, 9, 0, "metamorphic", 9},
 
     {/*wire=*/60, "shadow_copy", "Shadow Copy", "REGEN",

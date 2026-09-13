@@ -1589,6 +1589,19 @@ void test_mod_earn_tables_and_reqlevel() {
 
 // Data-driven wiring: makePlayerCombatant reads each new ModEffect kind and pokes the
 // matching Combatant field, same idiom as test_mod_effects_data_driven above.
+// A soft-affinity mod pays its line more, and the prose is the only place the operator
+// learns WHICH line — the stat line's ON LINE row carries the number but not the name.
+void test_mod_affinity_prose_names_the_bonus() {
+    ContentRegistry r = ContentRegistry::embedded();
+    for (const ModDef* m : r.allMods()) {
+        if (!m->line || !m->affinityBonus) continue;
+        if (!std::strstr(m->effect, "{magBonus}") && !std::strstr(m->effect, "{bonus}")) {
+            std::printf("  %s never states its on-line bonus\n", m->id);
+            CHECK(false);
+        }
+    }
+}
+
 void test_mod_niche_flavour_data_driven() {
     ContentRegistry r = ContentRegistry::embedded();
     const CreatureDef* pet = r.creature("paypup");         // Process, ransomware line

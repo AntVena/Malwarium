@@ -613,6 +613,7 @@ int g_failures = 0;
     RUN(test_override_scramble_holds_the_picker)  \
     RUN(test_mod_equip_ladder_is_ordered_and_dense) \
     RUN(test_mod_niche_flavour_data_driven)       \
+    RUN(test_mod_affinity_prose_names_the_bonus) \
     RUN(test_mod_botnet_swarm_and_airgap_ward)    \
     RUN(test_mod_state_combine_rules)             \
     RUN(test_mod_prowlware_rank_computation)      \
