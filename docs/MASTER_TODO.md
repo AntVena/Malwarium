@@ -136,10 +136,11 @@ roster, and the wild half keeps its own roster-keyed masks).
   Threat/Ghost vs. Guardians: Orchestrator/Watchdog/Dispatcher), the capture broadcast-window
   lifecycle, and target-cooldown + Honeypot/IDS defensive mods have no code. Diff **XL** —
   needs a first design pass reconciling the ability list against everything that's shipped since.
-- **The crew roster is five, both sides, five ability shapes.** Shipped: Deniers of Service
+- **The crew roster is seven, both sides, seven ability shapes.** Shipped: Deniers of Service
   (negate), Shell Smashers (bank damage as Power), Injection Protection (reset + floor the stat
   leans), Syntax Errorist (copy the enemy's self-buffs), The Last Responders (turn-metered death
-  save that rallies on the overkill). Adding another is still a `kCrews[]` row; a new ability shape
+  save that rallies on the overkill), Hot Spares (the next casts resolve twice) and Shakedown Artists (a
+  turn-metered rake of damage dealt back as Health). Adding another is still a `kCrews[]` row; a new ability shape
   is one `CrewExploitKind` entry plus one case in `Combat::applyCrewExploit`. What's missing is the
   *earn* model — every crew is joinable the moment a home network exists. Diff **M**.
 - **What "defender of that network" buys you.** The home network is recorded and shown but has no

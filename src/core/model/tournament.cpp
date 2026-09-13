@@ -171,13 +171,14 @@ TourneyFighter tourneyEntrant(const ContentRegistry& reg, uint32_t seed, int slo
         if (m) std::strncpy(f.spec.modIds[i], m->id, kPvpIdCap - 1);
     }
 
-    // The Exploit, and the moment it commits to using it. Drawn off the same crew
+    // The Exploit, and the moment it commits to using it (exploitTrigger). Drawn off the same crew
     // roster the player enlists in, so the abilities an operator meets in the arena are
     // the abilities they can go and earn.
     if (const CrewDef* c = crew(static_cast<int>(lcg(s) % kCrewCount))) {
         f.exploit = {c->exploit.name, c->exploit.kind, c->exploit.magnitude};
-        f.exploitAtHealthPct =
-            kTourneyTriggerPcts[lcg(s) % static_cast<uint32_t>(kTourneyTriggerCount)];
+        const ExploitTrigger when = exploitTrigger(c->exploit.kind);
+        f.exploitAtHealthPct = when.atHealthPct;
+        f.exploitOnEitherHealth = when.eitherSide;
     }
     return f;
 }

@@ -134,10 +134,8 @@ void test_tourney_entrants_are_legal_petware() {
                     crew(c)->exploit.magnitude == f.exploit.magnitude)
                     known = true;
             CHECK(known);
-            bool trigger = false;
-            for (int t = 0; t < kTourneyTriggerCount; ++t)
-                if (f.exploitAtHealthPct == kTourneyTriggerPcts[t]) trigger = true;
-            CHECK(trigger);
+            CHECK(f.exploitAtHealthPct == exploitTrigger(f.exploit.kind).atHealthPct);
+            CHECK(f.exploitOnEitherHealth == exploitTrigger(f.exploit.kind).eitherSide);
             // The whole point of building it: it has to be a fightable combatant.
             const Combatant c = makeTourneyCombatant(reg(), f);
             CHECK(c.maxHealth > 0 && !c.moves.empty());
@@ -425,14 +423,11 @@ void test_tourney_screen_copy_fits_its_panel() {
     std::snprintf(purse, sizeof(purse), "+%d XP", kTourneyWinXp);
     char bits[40];
     std::snprintf(bits, sizeof(bits), "+%d BITS", kTourneyWinBits);
-    // The Exploit tell, at the earliest trigger the roll can hand out — the longest of
-    // the four, since the other three are shorter numbers in the same sentence.
-    char tell[40];
-    int lowest = 100;
-    for (int i = 0; i < kTourneyTriggerCount; ++i)
-        if (kTourneyTriggerPcts[i] < lowest) lowest = kTourneyTriggerPcts[i];
-    std::snprintf(tell, sizeof(tell), "AT %d%% HEALTH", lowest);
-    const char* beside[] = {"TITLE TAKEN", bits, purse, "+1 MOD", "FROM TURN 1", tell};
+    // Both Exploit tells, at the two-digit thresholds exploitTrigger hands out.
+    char tell[40], either[40];
+    std::snprintf(tell, sizeof(tell), "AT %d%% HEALTH", kExploitLastStandPct);
+    std::snprintf(either, sizeof(either), "ANYONE AT %d%%", kExploitMidFightPct);
+    const char* beside[] = {"TITLE TAKEN", bits, purse, "+1 MOD", "FROM TURN 1", tell, either};
     for (const char* l : beside) CHECK(textWidth(l) <= narrowest);
     // An operator handle is the card's first line as well as a field row, so it has to
     // clear the same column.

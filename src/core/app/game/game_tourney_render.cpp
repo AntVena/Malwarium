@@ -46,8 +46,9 @@ inline int slotTagWidth() { return textWidth("NEXT"); }
 // rather than a mood, because it is a number the operator can check against the health
 // bar during the bout — and the arena is the one place a tell is worth stating up
 // front, since nothing here is a surprise the run can't survive.
-void exploitTell(int atHealthPct, char* buf, int n) {
+void exploitTell(int atHealthPct, bool eitherSide, char* buf, int n) {
     if (atHealthPct >= 100) std::snprintf(buf, n, "FROM TURN 1");
+    else if (eitherSide) std::snprintf(buf, n, "ANYONE AT %d%%", atHealthPct);
     else std::snprintf(buf, n, "AT %d%% HEALTH", atHealthPct);
 }
 
@@ -197,7 +198,8 @@ void Game::drawTourneyFoot(Framebuffer& fb) const {
         // other surface shows it by (crewExploitTag), and the only form that fits.
         std::snprintf(line[2], sizeof(line[2]), "%s",
                       crewExploitTag(tourneyOpponent_.exploit.kind));
-        exploitTell(tourneyOpponent_.exploitAtHealthPct, line[3], sizeof(line[3]));
+        exploitTell(tourneyOpponent_.exploitAtHealthPct, tourneyOpponent_.exploitOnEitherHealth,
+                    line[3], sizeof(line[3]));
     }
     // The first line is the NAME and the rest describe it, which is the same weight
     // split every row of every list on the device already uses.

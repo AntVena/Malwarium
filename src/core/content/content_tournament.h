@@ -19,6 +19,8 @@
 // instead of over a wire. Its entrants are named to match; see kTourneyHandles.
 #pragma once
 
+#include "core/content/content_crews.h"
+
 namespace mal {
 
 // --- The bracket's shape -----------------------------------------------------
@@ -48,14 +50,28 @@ constexpr int kTourneyMaxLevel = 60;
 constexpr int kTourneyScriptLevel = 12;
 constexpr int kTourneyDaemonLevel = 30;
 
-// The Health fractions an entrant's own Exploit waits for, as a % of its max — rolled
-// one per entrant (core/model/tournament.h). 100 is "opens with it": the fighter spends
-// its first turn arming rather than swinging, which is a real cost and a readable tell.
-// The rest are degrees of "waits until it is in trouble", so the same five crew
-// abilities produce opponents that play them at four different moments.
-constexpr int kTourneyTriggerPcts[] = {100, 60, 35, 20};
-constexpr int kTourneyTriggerCount =
-    sizeof(kTourneyTriggerPcts) / sizeof(kTourneyTriggerPcts[0]);
+// When an entrant fires its own Exploit — fixed by WHAT the Exploit is, because each has a
+// moment it is for and an opponent that fired it at any other one would be a weaker
+// opponent than the ability allows. A ramp opens with it; a swing that changes the
+// shape of the fight goes when either side is at half; a save or a sustain waits for its
+// own last stand. 100 opens with it, which spends the first turn arming — a real cost and
+// a readable tell.
+struct ExploitTrigger {
+    int atHealthPct;
+    bool eitherSide;   // the OPPONENT reaching it fires it too
+};
+constexpr int kExploitMidFightPct = 50;
+constexpr int kExploitLastStandPct = 33;
+
+constexpr ExploitTrigger exploitTrigger(CrewExploitKind k) {
+    switch (k) {
+        case CrewExploitKind::PowerByDamageDealt:
+        case CrewExploitKind::MirrorEnemyBuffs: return {100, false};
+        case CrewExploitKind::ResetStatsAndFloor:
+        case CrewExploitKind::SpareFailover: return {kExploitMidFightPct, true};
+        default: return {kExploitLastStandPct, false};
+    }
+}
 
 // How many turns a headless AI-vs-AI match is stepped before it is called on Health
 // (core/model/tournament.h). Two brace-heavy kits can genuinely stalemate, and the
