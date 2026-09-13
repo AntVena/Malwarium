@@ -148,7 +148,7 @@ void drawLoadout(Framebuffer& fb, const ContentRegistry& reg,
                      palColor(Pal::ACCENT));
         }
     }
-    drawHintBand(fb, "A CYCLE  B PICK  HOLD B READ");
+    drawHintBand(fb, "A NEXT  B PICK  HOLD B READ");
 }
 
 void drawMovePicker(Framebuffer& fb, const ContentRegistry& reg,
