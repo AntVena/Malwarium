@@ -362,17 +362,20 @@ const MoveDef kMoves[] = {
     // was worth equipping only for the roll attached to it. The track stays the lowest on
     // any line — 8/11/15 against Ransomware's 14/24/30 — because the damage is still meant
     // to arrive from the board; it just no longer starts under the move you get for nothing.
-    // replicaPowerPct is a share of THIS power, so the copies rise with it.
+    // replicaPowerPct is a share of THIS power, so the copies rise with it — and it runs
+    // INVERTED down the ladder, like the Ransomware tracks: the shallow row's copies are
+    // worth the biggest share of its small hit, so a Daemon's early row still puts a copy on
+    // the board that keeps pace with the deep one's.
     {"mass_mailer", "Mass-Mailer", MoveDef::Kind::Attack, 8, 1,
      "Mails itself everywhere - {replicaChance}% chance to spawn a copy worth "
      "{replicaPower}%, per defender standing.",
      Stage::Process, "worm", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-     /*replicaSpawnPct=*/50, /*replicaPowerPct=*/60},
+     /*replicaSpawnPct=*/50, /*replicaPowerPct=*/150},
     {"subnet_sweep", "Subnet-Sweep", MoveDef::Kind::Attack, 11, 1,
      "Sweeps the whole subnet - {replicaChance}% chance to spawn a copy worth "
      "{replicaPower}%, per defender standing.",
      Stage::Script, "worm", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-     /*replicaSpawnPct=*/60, /*replicaPowerPct=*/70},
+     /*replicaSpawnPct=*/60, /*replicaPowerPct=*/110},
     {"slammer_burst", "Slammer-Burst", MoveDef::Kind::Attack, 15, 1,
      "Saturates every link at once - {replicaChance}% chance to spawn a copy worth "
      "{replicaPower}%, per defender standing.",

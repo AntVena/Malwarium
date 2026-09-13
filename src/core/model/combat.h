@@ -801,8 +801,10 @@ private:
     // What the swing is worth before the target has any say: leans, mods, banked pools and
     // the fight's opening blow. Reads the actor only, which is what makes it phase one.
     int swingDamage(Combatant& actor, const MoveDef& mv, bool byPlayer, bool swingingSeized);
-    // A worm replica intercepting the hit and eating it whole. True = the turn ended here.
-    bool replicaAte(Combatant& target, const MoveDef& mv, int dmg, bool byPlayer);
+    // A worm replica intercepting the hit and eating it whole — a defender biting back at
+    // `actor` as it does. True = the turn ended here.
+    bool replicaAte(Combatant& actor, Combatant& target, const MoveDef& mv, int dmg,
+                    bool byPlayer);
     // The wall: negate, pierce ladder, brace, the never-immune clamp and the min-1 floor.
     // `wallAbsorbed` comes back out because Defence T3 pays out of the wall's share alone.
     int mitigate(Combatant& actor, Combatant& target, const MoveDef& mv, int dmg,

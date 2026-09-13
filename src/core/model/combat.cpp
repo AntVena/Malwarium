@@ -416,7 +416,7 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
     int dmg = swingDamage(actor, *mv, byPlayer, swingingSeized);
     // A replica eats the hit WHOLE and the turn ends there — no mitigation, no riders on
     // the worm. The caster's own payout still stands: it dealt damage, just not to Health.
-    if (replicaAte(target, *mv, dmg, byPlayer)) {
+    if (replicaAte(actor, target, *mv, dmg, byPlayer)) {
         payCaster(actor, target, mirror, *mv, mitmCopy, dmg, /*reachedHealth=*/false);
         return;
     }
@@ -540,7 +540,8 @@ return dmg;
 // — no mitigation, no riders, no overflow — and dies if overrun. Replication makes the
 // worm harder to BE the one hit, not tougher. True when a replica took it and the turn is
 // over.
-bool Combat::replicaAte(Combatant& target, const MoveDef& mv, int dmg, bool byPlayer) {
+bool Combat::replicaAte(Combatant& actor, Combatant& target, const MoveDef& mv, int dmg,
+                        bool byPlayer) {
     if (target.wormReplicaCount <= 0) return false;
     // A replica is a BODY: it can stand in front of damage, and there is nothing for it to
     // stand in front of when a cast deals none. A pure rider goes past the swarm to the pet
@@ -554,6 +555,12 @@ bool Combat::replicaAte(Combatant& target, const MoveDef& mv, int dmg, bool byPl
     WormReplica& r = target.wormReplicas[victim];
     const int dealt = dmg < r.health ? dmg : r.health;
     r.health -= dealt;
+    if (r.defender) {
+        int reduce = actor.dmgReducePct;
+        if (reduce > kLevelDmgReduceMaxPct) reduce = kLevelDmgReduceMaxPct;
+        actor.health -= dealt * kWormDefenderBitePctByStage[stageIndex(target.stage)] / 100 *
+                        (100 - reduce) / 100;
+    }
     if (r.health <= 0) {   // packed: the last replica fills the freed slot
         // Recorded before the pack erases it — the copy is about to stop existing, and
         // the screen needs to know it ever did (WormKill).

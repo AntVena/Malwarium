@@ -6362,8 +6362,8 @@ window.PEDIA_DATA = {
       "power": 8,
       "turns": 1,
       "minStage": "Process",
-      "desc": "Mails itself everywhere - 50% chance to spawn a copy worth 60%, per defender standing.",
-      "stats": "ATK 8 / SPAWN ATK 50% / COPY PWR 60%",
+      "desc": "Mails itself everywhere - 50% chance to spawn a copy worth 150%, per defender standing.",
+      "stats": "ATK 8 / SPAWN ATK 50% / COPY PWR 150%",
       "group": "worm",
       "icon": "assets/icons/ICON_MOVE_SLOT.png"
     },
@@ -6374,8 +6374,8 @@ window.PEDIA_DATA = {
       "power": 11,
       "turns": 1,
       "minStage": "Script",
-      "desc": "Sweeps the whole subnet - 60% chance to spawn a copy worth 70%, per defender standing.",
-      "stats": "ATK 11 / SPAWN ATK 60% / COPY PWR 70%",
+      "desc": "Sweeps the whole subnet - 60% chance to spawn a copy worth 110%, per defender standing.",
+      "stats": "ATK 11 / SPAWN ATK 60% / COPY PWR 110%",
       "group": "worm",
       "icon": "assets/icons/ICON_MOVE_SLOT.png"
     },

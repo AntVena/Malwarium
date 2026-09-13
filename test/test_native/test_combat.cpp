@@ -1126,6 +1126,26 @@ void test_dot_rider_stacks_and_keeps_the_longer_clock() {
     CHECK(after(4, 0).dotPerTurn == 5);       // a spent DoT's leftover number does not stack
 }
 
+// A DEFENDER that eats a hit bites back at whoever swung, by the worm's stage; an ATTACKER
+// copy that eats one does not. Every seed, because which body takes the hit is a draw.
+void test_worm_defender_bites_back() {
+    ContentRegistry r = ContentRegistry::embedded();
+    const int bite = 12 * kWormDefenderBitePctByStage[stageIndex(Stage::Daemon)] / 100;
+    int bitten = 0;
+    for (uint32_t seed = 1; seed <= 40; ++seed) {
+        Combatant pc = mkCombatant(r, "P", 400, 5, {"quick_jab"});
+        pc.stage = Stage::Daemon;
+        pc.wormReplicaCount = 3;
+        for (int i = 0; i < 3; ++i) pc.wormReplicas[i] = WormReplica{true, 300, 300};
+        Combatant e = mkCombatant(r, "E", 400, 5, {"packet_storm"});   // 12 power
+        Combat c; c.begin(pc, e, Combat::Stakes::Safe, seed, /*forceEnemyFirst=*/true);
+        c.step();
+        if (c.player().health < 400) CHECK(c.enemy().health == 400);   // the pet took it
+        else { CHECK(c.enemy().health == 400 - bite); ++bitten; }
+    }
+    CHECK(bite > 0 && bitten > 20);
+}
+
 // Every rider actually fires. Cheap, but it is what stops the rider phase becoming dead
 // code that the ordering gates above would still pass over.
 void test_pipeline_every_rider_fires() {

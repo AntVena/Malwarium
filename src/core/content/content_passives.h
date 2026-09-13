@@ -150,6 +150,14 @@ constexpr int kWormTargetWeightParent   = 1;
 constexpr int kWormTargetWeightAttacker = 2;
 constexpr int kWormTargetWeightDefender = 4;
 
+// A defender that eats a hit bites back: this % of what it ate goes to whoever swung, through
+// their own damage cut (the Trojan trap's rebound shape). A body built mostly of defend slots
+// otherwise spends the opponent's turns taking hits and its own turns making more bodies,
+// and never hurts anything; this is what a swarm in the way costs the thing hitting it.
+// Indexed by the WORM's Stage: faint where a single Host-Squat already carries a Process
+// body, and full where a Daemon swarm has to answer hits that stage has grown.
+constexpr int kWormDefenderBitePctByStage[4] = {0, 20, 35, 60};
+
 // --- Metamorphic — Polymorph + the wildcard roll --------------------------------
 // POLYMORPH. Every move this pet casts that it has not already cast THIS FIGHT is
 // absorbed, and pays one stat point's worth in the vocabulary a level-up already spends:
