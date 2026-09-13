@@ -6182,8 +6182,8 @@ window.PEDIA_DATA = {
       "power": 18,
       "turns": 1,
       "minStage": "Process",
-      "desc": "Encrypts a brace and arms the ransom. +6% DEF on cast (stacks to +48%).",
-      "stats": "DEF 18 / DEF +6% / UP TO +48% / ARMS RANSOM",
+      "desc": "Encrypts a brace, arms the ransom and demands 75% of the held pool. +6% DEF on cast (to +48%).",
+      "stats": "DEF 18 / DEF +6% / UP TO +48% / ARMS RANSOM / DEMAND 75%",
       "group": "ransomware",
       "icon": "assets/icons/ICON_MOVE_SLOT.png"
     },
@@ -6194,8 +6194,8 @@ window.PEDIA_DATA = {
       "power": 28,
       "turns": 1,
       "minStage": "Script",
-      "desc": "Seals the AES key and arms the ransom. +12% DEF on cast (stacks to +36%).",
-      "stats": "DEF 28 / DEF +12% / UP TO +36% / ARMS RANSOM",
+      "desc": "Seals the AES key, arms the ransom and demands 50% of the held pool. +12% DEF on cast (to +36%).",
+      "stats": "DEF 28 / DEF +12% / UP TO +36% / ARMS RANSOM / DEMAND 50%",
       "group": "ransomware",
       "icon": "assets/icons/ICON_MOVE_SLOT.png"
     },
@@ -6206,8 +6206,8 @@ window.PEDIA_DATA = {
       "power": 40,
       "turns": 1,
       "minStage": "Daemon",
-      "desc": "Locks the whole drive and arms the ransom. +20% DEF on cast (stacks to +20%).",
-      "stats": "DEF 40 / DEF +20% / UP TO +20% / ARMS RANSOM",
+      "desc": "Locks the whole drive, arms the ransom and demands 30% of the held pool. +20% DEF on cast (to +20%).",
+      "stats": "DEF 40 / DEF +20% / UP TO +20% / ARMS RANSOM / DEMAND 30%",
       "group": "ransomware",
       "icon": "assets/icons/ICON_MOVE_SLOT.png"
     },
@@ -6434,8 +6434,8 @@ window.PEDIA_DATA = {
       "power": 0,
       "turns": 1,
       "minStage": "Process",
-      "desc": "Encrypts nothing and takes nothing - just locks the screen for 4 turns.",
-      "stats": "ATK 0 / PASSES SHIELDS / FREEZE 4",
+      "desc": "Encrypts nothing and takes nothing - locks the screen for 4 turns, and arms the ransom.",
+      "stats": "ATK 0 / PASSES SHIELDS / ARMS RANSOM / FREEZE 4",
       "group": "ransomware",
       "icon": "assets/icons/ICON_MOVE_SLOT.png"
     },

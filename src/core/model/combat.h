@@ -839,6 +839,8 @@ private:
     // damage dealt in any form, where a status rider needs Health.
     void payCaster(Combatant& actor, Combatant& target, Combatant& mirror, const MoveDef& mv,
                    bool mitmCopy, int dealt, bool reachedHealth);
+    // A turn spent bracing turns the held ransom pool into Power (kRansomBracePowerPctByStage).
+    void workUp(Combatant& actor);
     // The Trojan line's trap, spent on the hit that sprang it: `dmg` in, what still reaches
     // the target out, with the rebound measured against the pre-mitigation `baseDmg`.
     // Returns `dmg` unchanged when the target holds no trap.

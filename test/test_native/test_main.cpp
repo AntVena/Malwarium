@@ -204,6 +204,7 @@ int g_failures = 0;
     RUN(test_ransom_seizes_the_attack_that_hits_a_full_wall) \
     RUN(test_ransom_pool_works_the_pet_up) \
     RUN(test_cipher_cast_arms_the_ransom) \
+    RUN(test_cipher_brace_demands_the_pool) \
     RUN(test_obfuscation_pool_salts_whoever_reads_it) \
     RUN(test_combat_override_breaks_rule)   \
     RUN(test_combat_override_item_use)      \

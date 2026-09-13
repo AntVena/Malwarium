@@ -416,6 +416,26 @@ void test_ransom_pool_works_the_pet_up() {
     const auto hit = cast("packet_storm");
     CHECK(hit.second.dmgReducePct ==
           hit.first.dmgReducePct + 40 * kRansomStrikeDefensePctByStage[si] / 100);
+    // Screen Locker spends its turn the way a brace does, and works the pet up the same.
+    const auto lock = cast("screen_locker");
+    CHECK(lock.second.powerMultPct ==
+          lock.first.powerMultPct + 40 * kRansomBracePowerPctByStage[si] / 100);
+}
+
+// A Cipher brace DEMANDS a share of the held pool straight off the opponent, so a body built
+// of defend slots still does damage on the turns it braces.
+void test_cipher_brace_demands_the_pool() {
+    ContentRegistry r = ContentRegistry::embedded();
+    Combatant p = mkCombatant(r, "P", 400, 50, {"aes_lockbox"});
+    p.setLine(r, "ransomware");
+    p.stage = Stage::Daemon;
+    p.ransomPool = 40;
+    p.ransomTurnsLeft = 3;
+    Combatant e = mkCombatant(r, "E", 400, 5, {"quick_jab"});
+    Combat c; c.begin(p, e, Combat::Stakes::Safe, 5);
+    c.step();
+    CHECK(c.enemy().health == 400 - 40 * r.move("aes_lockbox")->ransomCashPct / 100);
+    CHECK(c.player().ransomPool == 40);
 }
 
 // Poisoned data (MoveDef::poolRetaliateDot): the Obfuscation ladder's second rung trades

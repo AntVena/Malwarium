@@ -206,19 +206,24 @@ const MoveDef kMoves[] = {
     //
     // Every Cipher cast also ARMS the ransom (cipherRow): the next hit is held rather than
     // rolled for. That is the kit's loop — brace, get hit, hold the grudge, and the held
-    // pool works the pet up on every cast after (kRansomBracePowerPctByStage).
+    // pool works the pet up on every cast after (kRansomBracePowerPctByStage). Each cast
+    // also DEMANDS a share of that pool straight off the opponent, the shallow row the
+    // most, so a body built mostly of Cipher slots still hurts on the turns it braces.
     cipherRow("aes_lockbox", "AES Lockbox", 18,
-              "Encrypts a brace and arms the ransom. +{stackDef}% DEF on cast (stacks to "
-              "+{stackDefCap}%).",
-              Stage::Process, /*stackDefensePct=*/6, /*stackDefenseCap=*/48),
+              "Encrypts a brace, arms the ransom and demands {cash}% of the held pool. "
+              "+{stackDef}% DEF on cast (to +{stackDefCap}%).",
+              Stage::Process, /*stackDefensePct=*/6, /*stackDefenseCap=*/48,
+              /*ransomCashPct=*/75),
     cipherRow("rsa_vault", "RSA Vault", 28,
-              "Seals the AES key and arms the ransom. +{stackDef}% DEF on cast (stacks to "
-              "+{stackDefCap}%).",
-              Stage::Script, /*stackDefensePct=*/12, /*stackDefenseCap=*/36),
+              "Seals the AES key, arms the ransom and demands {cash}% of the held pool. "
+              "+{stackDef}% DEF on cast (to +{stackDefCap}%).",
+              Stage::Script, /*stackDefensePct=*/12, /*stackDefenseCap=*/36,
+              /*ransomCashPct=*/50),
     cipherRow("full_disk_encryption", "Full-Disk Encryption", 40,
-              "Locks the whole drive and arms the ransom. +{stackDef}% DEF on cast (stacks "
-              "to +{stackDefCap}%).",
-              Stage::Daemon, /*stackDefensePct=*/20, /*stackDefenseCap=*/20),
+              "Locks the whole drive, arms the ransom and demands {cash}% of the held pool. "
+              "+{stackDef}% DEF on cast (to +{stackDefCap}%).",
+              Stage::Daemon, /*stackDefensePct=*/20, /*stackDefenseCap=*/20,
+              /*ransomCashPct=*/30),
 
     // Phishing LINE moves -------------------------
     // line = "phishing" → only Phishing pets can learn/equip these.
@@ -406,9 +411,14 @@ const MoveDef kMoves[] = {
     // the caster builds over the fight, not one big plant.
     // The Worm's row is only pure on an empty board — attacking copies pile onto every
     // swing (wormReplicaDamage), so with them out it is a hit like any other.
+    // Screen Locker also arms the ransom, so the first swing out of the freeze is held, and
+    // spends its turn working the pet up the way a brace does — the line's pure rider
+    // feeds and reads its pool like the rest of the kit.
     riderRow("screen_locker", "Screen Locker",
-             "Encrypts nothing and takes nothing - just locks the screen for {lock} turns.",
-             Stage::Process, "ransomware", /*lockTurns=*/4, /*dotDamage=*/0, /*dotTurns=*/0),
+             "Encrypts nothing and takes nothing - locks the screen for {lock} turns, and "
+             "arms the ransom.",
+             Stage::Process, "ransomware", /*lockTurns=*/4, /*dotDamage=*/0, /*dotTurns=*/0,
+             /*armsRansom=*/true),
     riderRow("vish_hold", "Vish-Hold",
              "Calls the mark and keeps them on hold - frozen for {lock} turns.",
              Stage::Daemon, "phishing", /*lockTurns=*/3, /*dotDamage=*/0, /*dotTurns=*/0),

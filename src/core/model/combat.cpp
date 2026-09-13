@@ -396,6 +396,11 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
     Combatant& mirror = byPlayer ? enemy_ : player_;
     const bool mitmCopy = mirror.crewExploit.holds(CrewExploitKind::MirrorEnemyBuffs);
 
+    if (mv->armsRansom && hasLinePassive(actor.linePassives, LinePassive::RansomNote)) {
+        actor.ransomArmed = true;
+        // A pure rider spends the turn the way a brace does, and works the pet up the same.
+        if (moveIsPureRider(*mv)) workUp(actor);
+    }
     if (mv->kind != MoveDef::Kind::Attack) {
         applyDefend(actor, mirror, *mv, mitmCopy, moveIdx, byPlayer);
         return;
@@ -438,6 +443,14 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
     applyDeathBlast(actor, target);
     setLast(mv->displayName, dmg, byPlayer, false, ransomed > 0, /*strike=*/true);
     applyOnHitRiders(target, *mv);
+}
+
+// WORKED UP (kRansomBracePowerPctByStage): a turn spent bracing turns the held pool into
+// Power. Read off the pool, never spent from it.
+void Combat::workUp(Combatant& actor) {
+    if (actor.ransomPool <= 0) return;
+    actor.powerMultPct +=
+        actor.ransomPool * kRansomBracePowerPctByStage[stageIndex(actor.stage)] / 100;
 }
 
 // SELF-BUFFS PAY ON DAMAGE IN ANY FORM. A status rider has to reach Health to land
@@ -824,11 +837,8 @@ void Combat::applyDefend(Combatant& actor, Combatant& mirror, const MoveDef& mv,
         actor.guard += braced;
         if (mitmCopy) mirror.guard += braced;
     }
-    if (actor.ransomPool > 0)
-        actor.powerMultPct +=
-            actor.ransomPool * kRansomBracePowerPctByStage[stageIndex(actor.stage)] / 100;
-    if (mv.armsRansom && hasLinePassive(actor.linePassives, LinePassive::RansomNote))
-        actor.ransomArmed = true;
+    workUp(actor);
+    if (mv.ransomCashPct > 0) mirror.health -= actor.ransomPool * mv.ransomCashPct / 100;
     // Cipher track: the cast stacks the caster's Defense (% cut) for the
     // fight, capped per move; the attack path clamps the total to 85% (never immune).
     if (mv.stackDefensePct > 0 && actor.stackDefenseBonus < mv.stackDefenseCap) {

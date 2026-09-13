@@ -43,8 +43,8 @@ constexpr int kRansomHoldTurns = 3;   // also sizes the combat screen's blip row
 // bill still lands whole.
 // Indexed by Stage like the arm chance above. Process keeps it faint: a fresh hatchling's
 // first area apex is meant to stop it, and the line is already level at that stage.
-constexpr int kRansomBracePowerPctByStage[4] = {0, 20, 200, 200};
-constexpr int kRansomStrikeDefensePctByStage[4] = {0, 10, 100, 100};
+constexpr int kRansomBracePowerPctByStage[4] = {0, 20, 300, 300};
+constexpr int kRansomStrikeDefensePctByStage[4] = {0, 10, 50, 50};
 
 // THE GRUDGE (Extortion Ledger's scale). What the pool holds is what the pet has taken and
 // not answered for, so the ledger hits harder the longer that list gets: the mod's power

@@ -1064,16 +1064,19 @@ struct MoveDef {
 
     // --- Ransom arming (Ransomware Cipher track) -----------------------------------
     // Casting this row ARMS the caster's ransom window outright, where Ransom Note would
-    // otherwise roll for it at turn start — so a brace is a promise that the next hit is
-    // held, and the pool it feeds is what works the pet up. Inert without the passive.
+    // otherwise roll for it at turn start — so the next hit is a promise to be held, and
+    // the pool it feeds is what works the pet up. Inert without the passive. Read on both
+    // branches: a Cipher brace and Screen Locker's freeze each carry it.
     //
     // Appended at the END, like every field before it — the rows are positional
     // initializers, so a field inserted mid-struct re-aims every magnitude after it.
     bool armsRansom = false;
 
     // --- Cashing the ransom (Ransomware Lockout track) ------------------------------
-    // This swing hits for this % of the caster's live ransom pool on top of its power —
-    // the held grudge, thrown back. Read, never spent: the bill still lands whole.
+    // This % of the caster's live ransom pool, turned on the opponent. On an Attack it rides
+    // the swing on top of its power; on a Defend it is the DEMAND, dealt straight to the
+    // opponent as the brace goes up — what gives a defend-heavy Ransomware body damage on
+    // the turns it spends bracing. Read, never spent: the bill still lands whole.
     //
     // Appended at the END, like every field before it — the rows are positional
     // initializers, so a field inserted mid-struct re-aims every magnitude after it.
@@ -1175,7 +1178,7 @@ constexpr MoveDef lockoutRow(const char* id, const char* displayName, int power,
 // reason braceRow exists.
 constexpr MoveDef cipherRow(const char* id, const char* displayName, int power,
                             const char* effect, Stage minStage, int stackDefensePct,
-                            int stackDefenseCap) {
+                            int stackDefenseCap, int ransomCashPct) {
     MoveDef m{};
     m.id = id;
     m.displayName = displayName;
@@ -1188,6 +1191,7 @@ constexpr MoveDef cipherRow(const char* id, const char* displayName, int power,
     m.stackDefensePct = stackDefensePct;
     m.stackDefenseCap = stackDefenseCap;
     m.armsRansom = true;
+    m.ransomCashPct = ransomCashPct;
     return m;
 }
 
@@ -1197,7 +1201,7 @@ constexpr MoveDef cipherRow(const char* id, const char* displayName, int power,
 // keys on — a number here would quietly turn the row back into a hit a shield can eat.
 constexpr MoveDef riderRow(const char* id, const char* displayName, const char* effect,
                            Stage minStage, const char* line, int lockTurns, int dotDamage,
-                           int dotTurns) {
+                           int dotTurns, bool armsRansom = false) {
     MoveDef m{};
     m.id = id;
     m.displayName = displayName;
@@ -1210,6 +1214,7 @@ constexpr MoveDef riderRow(const char* id, const char* displayName, const char* 
     m.lockTurns = lockTurns;
     m.dotDamage = dotDamage;
     m.dotTurns = dotTurns;
+    m.armsRansom = armsRansom;
     return m;
 }
 
