@@ -760,7 +760,11 @@ constexpr int kWildXpDiffMaxPct    = 1024; // ceiling: cap the punching-up bonus
 // The stat half of the per-sub-area LEVEL bump (the enemy's "rolled level-up stats",
 // Between-AREA growth already rides the tier roster (wildMalbeast), so this
 // only thickens WITHIN a sector: +Health per sub, +1 speed at the two deepest rungs.
-constexpr int kWildSubAreaHealthStep = 6;   // +Health per sub-area index in the ramp
+// Sized so a fresh starter meets the apex as a GATE (test_explore_subarea_ramp): at 6 a
+// Paypup on its own hatch kit won area 0's apex 84% of the time. Paypup is the sturdiest
+// starter against wilds, so the gate is read across the starters, not pinned on it — at
+// 10 their apex runs from Phishlet's ~40% to Paypup's ~70%.
+constexpr int kWildSubAreaHealthStep = 10;   // +Health per sub-area index in the ramp
 // The sub-area rung from which a wild also fields its AREA's Defend (AreaDef::
 // wildDefendMoveId) on top of its Attack, which it carries at every rung. Cross-cutting
 // because it is the shared SHAPE of the ramp — an area declares which two moves are its
