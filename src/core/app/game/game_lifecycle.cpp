@@ -519,6 +519,7 @@ void Game::stampSlotKinds() {
         const MoveDef::Kind kind = slotRequiredKind(i);
         for (const MoveDef* m : registry_.allMoves()) {
             if (!moveLoadout_.owns(m->id) || m->kind != kind) continue;
+            if (moveLoadout_.isInnate(m->id)) continue;       // not slottable (equip refuses)
             if (!moveUnlockedAtStage(*m, pet_->stage)) continue;
             if (!moveAllowedForLine(*m, pet_->line)) continue;
             if (moveLoadout_.slotOf(m->id) >= 0) continue;    // already filling another slot

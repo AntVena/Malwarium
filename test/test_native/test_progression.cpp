@@ -1000,6 +1000,18 @@ void test_move_swap_readout_versus() {
     CHECK(lostFreeze && lostFlag);
 }
 
+// A hatched pet fills EVERY unlocked slot from its own kit. The innate Quick Jab is the
+// first Attack in the registry and is not slottable, so a fill that tried it and stopped
+// left every second Attack slot empty — Pingcub fought on Quick Jab in the slot its Screen
+// Locker belonged in.
+void test_hatch_fills_every_unlocked_slot() {
+    for (const char* id : {"paypup", "pingcub", "phishlet", "nodeatode", "cuttlefork"}) {
+        Game g{StartMode::Hatched, id};
+        for (int i = 0; i < MoveLoadout::slotsForStage(g.pet()->stage); ++i)
+            CHECK(g.moveLoadout().equipped(i) != nullptr);
+    }
+}
+
 // --- Move slots: the per-slot pool, and the Attack/Defend type-lock --------
 
 // The combat pool is exactly one entry per UNLOCKED slot: that slot's

@@ -283,6 +283,7 @@ int g_failures = 0;
     RUN(test_move_evolution_gating)         \
     RUN(test_move_slot_hold_b_reads_the_equipped_move) \
     RUN(test_move_swap_readout_versus) \
+    RUN(test_hatch_fills_every_unlocked_slot) \
     /* Move slots: the per-slot pool, and the Attack/Defend type-lock */ \
     RUN(test_move_pool_per_slot_fallback)   \
     RUN(test_move_slot_type_lock)           \
