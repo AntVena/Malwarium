@@ -14,5 +14,5 @@
 #
 # `make pedia-sd` stages this file alongside the bundle; an on-device update
 # rewrites it (src/platform/esp32/web_bundle.h). Parser: src/core/net/version_marker.h.
-code=5000
-version=0.5.0
+code=6000
+version=0.6.0
