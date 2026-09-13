@@ -753,9 +753,10 @@ void test_explore_xp_efficiency_reads_the_rung() {
       CHECK(g.exploreXpEfficiencyPct() > 100); }
 
     // ...and the CRAWL is read as its own zone rather than decoded as a ladder rung. It
-    // pays a multiple of the flat base from its very first win (kDarkWebXpPct), which is
-    // what a run a third the length of a dive's costs it, so the terminal zone reads as
-    // the best XP on the device at every depth the two share.
+    // pays a multiple of the flat base from its very first win (kDarkWebXpPct) because the
+    // pet that reaches it has a level bar an order of magnitude longer than the one the
+    // dive opens for, so the terminal zone reads as the best XP on the device by a wide
+    // margin at every depth the two share — not by the sliver a shared base would leave.
     { Game crawl{StartMode::Hatched}, dive{StartMode::Hatched};
       for (int a2 = 0; a2 < kExplSectors; ++a2) {
           crawl.debugSetSectorCleared(a2, true);
@@ -767,7 +768,7 @@ void test_explore_xp_efficiency_reads_the_rung() {
       for (const int depth : {0, 16, 64}) {
           crawl.debugSetExploreStreak(depth);
           dive.debugSetExploreStreak(depth);
-          CHECK(crawl.exploreXpEfficiencyPct() > 2 * dive.exploreXpEfficiencyPct());
+          CHECK(crawl.exploreXpEfficiencyPct() > 4 * dive.exploreXpEfficiencyPct());
       }
       crawl.debugSetExploreStreak(0);
       const int shallow = crawl.exploreXpEfficiencyPct();
@@ -1360,8 +1361,11 @@ void test_darkweb_crawl() {
         // (kDarkWebXpPct). Every other sector pays the flat base.
         CHECK(Game::wildWinXpBase(0) == kWildWinXpReward);
         CHECK(Game::wildWinXpBase(kDeepWebSector) == kWildWinXpReward);
-        CHECK(Game::wildWinXpBase(kDarkWebSector) > kWildWinXpReward);
         CHECK(Game::wildWinXpBase(kDarkWebSector) == kWildWinXpReward * kDarkWebXpPct / 100);
+        // The lead is a MULTIPLE and not a nudge — the pet down here is paying a geometric
+        // level cost the dive's arrival never sees, so a crawl win that merely edged a dive
+        // win would be the bug this figure answers.
+        CHECK(Game::wildWinXpBase(kDarkWebSector) > 4 * kWildWinXpReward);
         // ...so the same win at the same depth is worth strictly more down here, at the
         // shallow end where the dive's foothold still holds it at parity and at the deep
         // end where both curves have long since flattened.

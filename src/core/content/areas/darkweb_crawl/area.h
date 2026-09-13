@@ -55,22 +55,31 @@ extern const int kDarkWebDepthPointsPerN;
 // zone pays (kWildWinXpReward). The level-difference curve rides on top of this exactly as
 // it does everywhere else — this is the base that curve scales, not a second curve.
 //
-// The zone needs a figure of its own because a depth curve alone cannot pay it. XP per win
-// is keyed to how far the enemy OUTLEVELS the pet, and depth is what buys that, so what a
-// zone pays per RUN is its depth curve integrated over how deep its runs actually reach —
-// and the crawl's reach is a third of the dive's. Read the two survival tables (the one
-// above, and deepweb_dive/area.h's) against the XP formula at the flat base and a maxed
-// pet banks about 1400 XP per dive over ~49 fights, against ~620 over ~18.5 per crawl: the
-// end of the map paying 2.3x LESS per run than the mid-game farm that opens four areas
-// earlier, to the pet whose next level costs the most it ever will.
+// The zone needs a figure of its own because the gap it has to close is not one of
+// DIFFICULTY, which its own curve already answers, but of what a LEVEL COSTS the pet
+// standing in it. The Dive opens at Net-Sea to a level 18 Script (kEndlessParLevel); the
+// Crawl opens four areas later, behind a cleared ladder and its shrine's boss, to a Daemon
+// around level 45. The XP curve is geometric at kLevelXpGrowthPct, so that pet's next
+// level costs 1.1^27 — THIRTEEN TIMES — what the arriving diver's does. A base shared with
+// the dive hands the same fistful of XP to a bar thirteen times longer.
 //
-// 250 rather than the ~230 that merely draws level, because per-run is not the only ledger
-// and the terminal zone should not be scraping a tie in any of them. A crawl spends a loss
-// every ~18.5 fights against the dive's ~49, and kWildLossFrag is charged per loss, so
-// XP per point of Fragmentation is the rate a player actually farms against. At 250 the
-// crawl leads on all three readings: ~2.9x the dive per fight, ~1.1x per run, ~1.1x per
-// point of frag — decisive where the FIGHT is the unit the player feels, honest where the
-// whole run is.
+// Depth cannot make that up either. What a zone pays per RUN is its depth curve integrated
+// over how deep its runs actually reach, and the crawl's reach is a third of the dive's
+// (the table above, against deepweb_dive/area.h's). Read both survival tables against the
+// XP formula at the flat base: a maxed pet banks ~1400 XP per dive over ~49 fights, and
+// ~620 over ~18.5 per crawl. The flat base has the end of the map paying LESS per run than
+// the mid-game farm, into the longest bar in the game.
+//
+// So the figure is set where each zone moves the pet IT OPENS FOR at the same rate: a dive
+// is worth about half a level to the level 18 Script that walks into it, and at 700 a
+// crawl is worth about half a level to the level 45 Daemon that comes through the shrine.
+// For the maxed pet with both zones open that reads as ~8x the dive per fight and ~3x per
+// run — which also settles the ledger the frag tax comes out of, since a crawl ends a run
+// every ~18.5 fights against the dive's ~49 and kWildLossFrag is charged per loss.
+//
+// It is a ceiling as much as a target. Higher, and the end of the map levels a pet faster
+// than the mid-game farm levels the pet the farm was tuned for, which is not a lead — it
+// is a geometric curve with its late end sanded off.
 extern const int kDarkWebXpPct;
 
 // Bits half of the depth ramp, and its ceiling — the Crawl pays deeper than the Dive on

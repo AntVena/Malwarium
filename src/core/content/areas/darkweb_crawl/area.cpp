@@ -11,7 +11,7 @@ const int kDarkWebEnemyLevelOffset = 0;
 const int kDarkWebDepthLevelPerLog2 = 2;
 const int kDarkWebBudgetPct = 100;
 const int kDarkWebDepthPointsPerN = 2;
-const int kDarkWebXpPct = 250;
+const int kDarkWebXpPct = 700;
 const int kDarkWebDepthBitsPctPerLog2 = 48;
 const int kDarkWebDepthBitsMaxPct = 768;
 
