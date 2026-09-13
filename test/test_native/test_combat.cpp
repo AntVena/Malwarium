@@ -1089,6 +1089,28 @@ void test_siphon_pays_through_a_bubble_and_nets_positive() {
     CHECK(c.enemy().powerMultPct - before > stolen);
 }
 
+// THE LURE: any attack a Phishing pet lands siphons a little Power, whatever row swung it —
+// and a pet off the line siphons nothing with the very same row.
+void test_phishing_lure_siphons_on_any_hit() {
+    ContentRegistry r = ContentRegistry::embedded();
+    auto after = [&](const char* line) {
+        Combatant p = mkCombatant(r, "P", 400, 50, {"packet_storm"});   // no steal field
+        p.setLine(r, line);
+        p.stage = Stage::Daemon;
+        Combatant e = mkCombatant(r, "E", 400, 5, {"quick_jab"});
+        Combat c; c.begin(p, e, Combat::Stakes::Safe, 5);
+        const int before = c.enemy().powerMultPct;
+        c.step();
+        return std::make_pair(before, c.enemy().powerMultPct);
+    };
+    const auto lured = after("phishing");
+    CHECK(lured.second == lured.first - lured.first *
+                                          kPhishLureSiphonPctByStage[stageIndex(Stage::Daemon)] /
+                                          100);
+    const auto plain = after("worm");
+    CHECK(plain.second == plain.first);
+}
+
 // ...and the same for a hit a worm copy ate: the Lockout stack banks whichever body took it.
 void test_lockout_stack_pays_when_a_replica_eats_the_hit() {
     ContentRegistry r = ContentRegistry::embedded();

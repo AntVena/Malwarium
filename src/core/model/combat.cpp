@@ -453,6 +453,18 @@ void Combat::workUp(Combatant& actor) {
         actor.ransomPool * kRansomBracePowerPctByStage[stageIndex(actor.stage)] / 100;
 }
 
+// A power siphon, as a TRANSFER: `pct` of the target's Power leaves it (floored at
+// kStealPowerFloorPct) and the thief gains kStealPowerGainPct of what left. True when
+// anything moved.
+bool Combat::siphonPower(Combatant& actor, Combatant& target, int pct) {
+    const int stolen = target.powerMultPct * pct / 100;
+    if (stolen <= 0) return false;
+    actor.powerMultPct += stolen * kStealPowerGainPct / 100;
+    target.powerMultPct -= stolen;
+    if (target.powerMultPct < kStealPowerFloorPct) target.powerMultPct = kStealPowerFloorPct;
+    return true;
+}
+
 // SELF-BUFFS PAY ON DAMAGE IN ANY FORM. A status rider has to reach Health to land
 // (applyOnHitRiders), but what the swing pays its own caster only asks that it dealt
 // damage to something — Health, a bubble, a worm copy, a trap that bounced it back. So a
@@ -461,6 +473,8 @@ void Combat::workUp(Combatant& actor) {
 void Combat::payCaster(Combatant& actor, Combatant& target, Combatant& mirror,
                        const MoveDef& mv, bool mitmCopy, int dealt, bool reachedHealth) {
     if (dealt <= 0) return;
+    if (hasLinePassive(actor.linePassives, LinePassive::Lure) && !statsFloored(target))
+        siphonPower(actor, target, kPhishLureSiphonPctByStage[stageIndex(actor.stage)]);
     if (actor.ransomPool > 0)
         actor.dmgReducePct +=
             actor.ransomPool * kRansomStrikeDefensePctByStage[stageIndex(actor.stage)] / 100;
@@ -1000,16 +1014,8 @@ void Combat::applyStealTrack(Combatant& actor, Combatant& target, const MoveDef&
     // here and Health is not one of the floored leans.
     const bool floored = statsFloored(target);
     bool powerSiphoned = false;
-    if (mv.stealPowerPct > 0 && !floored) {
-        const int stolen = target.powerMultPct * mv.stealPowerPct / 100;
-        if (stolen > 0) {
-            actor.powerMultPct += stolen * kStealPowerGainPct / 100;
-            target.powerMultPct -= stolen;
-            if (target.powerMultPct < kStealPowerFloorPct)
-                target.powerMultPct = kStealPowerFloorPct;
-            powerSiphoned = true;
-        }
-    }
+    if (mv.stealPowerPct > 0 && !floored)
+        powerSiphoned = siphonPower(actor, target, mv.stealPowerPct);
     if (mv.stealDefensePct > 0 && !floored) {
         const int stolen = target.dmgReducePct * mv.stealDefensePct / 100;
         if (stolen > 0) {

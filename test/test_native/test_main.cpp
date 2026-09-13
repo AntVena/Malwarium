@@ -606,6 +606,7 @@ int g_failures = 0;
     RUN(test_the_swarm_still_eats_a_damaging_hit) \
     RUN(test_worm_defender_bites_back) \
     RUN(test_siphon_pays_through_a_bubble_and_nets_positive) \
+    RUN(test_phishing_lure_siphons_on_any_hit) \
     RUN(test_lockout_stack_pays_when_a_replica_eats_the_hit) \
     RUN(test_dot_rider_stacks_and_keeps_the_longer_clock) \
     RUN(test_pipeline_every_rider_fires) \

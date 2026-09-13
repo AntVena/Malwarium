@@ -843,6 +843,8 @@ private:
                    bool mitmCopy, int dealt, bool reachedHealth);
     // A turn spent bracing turns the held ransom pool into Power (kRansomBracePowerPctByStage).
     void workUp(Combatant& actor);
+    // A power siphon as a transfer (kStealPowerGainPct to the thief). True when any moved.
+    bool siphonPower(Combatant& actor, Combatant& target, int pct);
     // The Trojan line's trap, spent on the hit that sprang it: `dmg` in, what still reaches
     // the target out, with the rebound measured against the pre-mitigation `baseDmg`.
     // Returns `dmg` unchanged when the target holds no trap.

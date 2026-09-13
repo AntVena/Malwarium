@@ -259,11 +259,11 @@ const MoveDef kMoves[] = {
     poolRow("spoof_bubble", "Spoof-Bubble", 12,
             "A decoy identity that soaks {power} damage before it pops.",
             Stage::Process, /*retaliateDot=*/0, /*retaliateTurns=*/0),
-    poolRow("proxy_shell", "Proxy-Shell", 20,
+    poolRow("proxy_shell", "Proxy-Shell", 17,
             "A thinner false front, salted - {power}-damage pool, and reading it costs "
             "{dot}/turn for {dotTurns}.",
             Stage::Script, /*retaliateDot=*/5, /*retaliateTurns=*/2),
-    poolRow("bathyspoof", "Bathyspoof", 36,
+    poolRow("bathyspoof", "Bathyspoof", 32,
             "The deepest buried identity - a {power}-damage shield, salted at "
             "{dot}/turn for {dotTurns}.",
             Stage::Daemon, /*retaliateDot=*/8, /*retaliateTurns=*/3),
@@ -294,7 +294,7 @@ const MoveDef kMoves[] = {
     {"whaling_harpoon", "Whaling-Harpoon", MoveDef::Kind::Attack, 10, 1,
      "Sets into the biggest catch - takes {stealMaxHp}% of its max Health, siphons "
      "{stealPower}% power, and mid-bite drains {stealHp}% Health and {stealSpeed}% speed.",
-     Stage::Daemon, "phishing", 0, 0, 0, 0, 0, 0, 0, 0, /*stealPowerPct=*/32,
+     Stage::Daemon, "phishing", 0, 0, 0, 0, 0, 0, 0, 0, /*stealPowerPct=*/26,
      /*stealDefensePct=*/0, /*stealSpeedPct=*/16, /*stealCurrentHpPct=*/8,
      /*stealMaxHpPct=*/14, /*shieldPool=*/0, /*trapArm=*/0, 0, 0, 0, 0,
      /*replicaSpawnPct=*/0, 0, 0, /*chainNextId=*/"harpoon_haul"},

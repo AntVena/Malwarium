@@ -201,6 +201,7 @@ enum class LinePassive : uint8_t {
     RansomNote   = 1 << 0,  // a stage-scaled roll arms a lock (Combat::ransomArmRolls)
     Replication  = 1 << 1,  // replica spawning + Shared Resources (Combat::syncWormSpeed)
     ExecOverride = 1 << 2,  // armed traps hijack the turn (Combat::execOverrideChance)
+    Lure         = 1 << 3,  // every landed attack siphons a little Power (Combat::payCaster)
 };
 
 // A set of the above, held as the underlying type. Rows build one with linePassives()

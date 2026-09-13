@@ -67,6 +67,13 @@ constexpr int kStealPowerFloorPct = 20;
 // kits ramp each other rather than trading the same Power back and forth forever — the
 // fight's total damage climbs until one of them breaks through the other's bubble.
 constexpr int kStealPowerGainPct = 110;
+
+// THE LURE (LinePassive::Lure). Every attack a Phishing pet lands siphons this % of the
+// target's Power, whatever row swung it — the line's steal, made a property of the pet
+// rather than only of its steal rows. Small, because the rows it rides with are the
+// multiplier: a steal row stacks its own siphon on top, and the bubble scales the bite.
+// Indexed by Stage like every other line passive.
+constexpr int kPhishLureSiphonPctByStage[4] = {0, 1, 3, 5};
 constexpr int kStealSpeedFloor = 1;
 
 // Feed-frenzy: a landed steal-attack while the caster's Obfuscation shield (shieldHp)

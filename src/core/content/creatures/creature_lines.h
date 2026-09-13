@@ -30,7 +30,7 @@ namespace mal {
 inline constexpr CreatureLine kCreatureLines[] = {
     {"ransomware", kRansomwareCreatures, kRansomwareCreatureCount,
      linePassives(LinePassive::RansomNote)},
-    {"phishing", kPhishingCreatures, kPhishingCreatureCount},
+    {"phishing", kPhishingCreatures, kPhishingCreatureCount, linePassives(LinePassive::Lure)},
     // The only line a pet can ARRIVE on mid-raise (the cross-line divert), so it is the
     // only one with an achievement for reaching it.
     {"trojan", kTrojanCreatures, kTrojanCreatureCount,
