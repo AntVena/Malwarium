@@ -16,6 +16,7 @@
 #include "core/app/game.h"
 #include "core/app/game_internal.h"   // kMergeRecipes — item earn-path coverage guard
 #include "core/app/pedia_state.h"
+#include "core/content/areas/darkweb_crawl/area.h"
 #include "core/content/areas/deepweb_dive/area.h"
 #include "core/content/content_passives.h"
 #include "core/content/content_tables.h"

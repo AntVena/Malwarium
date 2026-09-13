@@ -555,13 +555,18 @@ void Game::applyCombatResult() {
                 // fresh one despite the tougher fight.
                 if (inDeepWebDive())
                     bits = bits * deepWebDepthBitsPct(exploreStreak_) / 100;
+                else if (inDarkWebCrawl())
+                    bits = bits * darkWebDepthBitsPct(exploreStreak_) / 100;
                 bits += sumEquippedModMagnitude(registry_, loadout_,
                             ModEffect::PostBattleBits, pet_ ? pet_->line : nullptr);
                 bits_ += applyCombatBitsBonus(bits);   // Scraping Cluster Expansion
-                // scale the XP by how the enemy's depth level compares to
-                // the pet's — punching up pays more, farming shallow pays a trickle.
-                addCombatXp(applyCombatXpBonus(wildWinXp(kWildWinXpReward, encounterEnemy_.level,
-                                      combatLevel_)));  // Well-Fed XP Boost
+                // scale the ZONE's base XP by how the enemy's depth level compares to
+                // the pet's — punching up pays more, farming shallow pays a trickle. The
+                // base is the flat one everywhere but the CRAWL, which pays a multiple of
+                // it because its runs end long before a depth curve is worth anything
+                // (wildWinXpBase → kDarkWebXpPct, darkweb_crawl/area.h).
+                addCombatXp(applyCombatXpBonus(wildWinXp(wildWinXpBase(exploreSector_),
+                                      encounterEnemy_.level, combatLevel_)));  // Well-Fed XP Boost
                 // re-farm loot decay: farming an already-CLEARED sub-area pays
                 // FULL non-Bits loot while the Bandwidth shield covered this fight (the
                 // decay count stays frozen). Once the pool is dry (this fight was NOT

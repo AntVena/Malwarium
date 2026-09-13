@@ -738,15 +738,41 @@ void test_explore_xp_efficiency_reads_the_rung() {
 
     // The dive has no rung to read, so its own scale is the answer: parity at depth 0
     // (the flat base) and rising with the streak, which is what makes the endless zone
-    // the one place a levelled pet is not taxed for being there.
+    // the one place a levelled pet is not taxed for being there. Its FOOTHOLD is part of
+    // that scale — inside it every dive is the same parity fight, so a readout that
+    // ramped there would be advertising a rate the walk is not paying.
     { Game g{StartMode::Hatched};
       for (int a2 = 0; a2 < kExplSectors; ++a2) g.debugSetSectorCleared(a2, true);
       g.debugStartDeepWebDive();                  // the dive unlocks on a cleared ladder
       CHECK(g.inDeepWebDive());
       g.debugSetExploreStreak(0);
       CHECK(g.exploreXpEfficiencyPct() == 100);
+      g.debugSetExploreStreak(kDeepWebRampFreeDepth);
+      CHECK(g.exploreXpEfficiencyPct() == 100);   // still standing on the foothold
       g.debugSetExploreStreak(64);
       CHECK(g.exploreXpEfficiencyPct() > 100); }
+
+    // ...and the CRAWL is read as its own zone rather than decoded as a ladder rung. It
+    // pays a multiple of the flat base from its very first win (kDarkWebXpPct), which is
+    // what a run a third the length of a dive's costs it, so the terminal zone reads as
+    // the best XP on the device at every depth the two share.
+    { Game crawl{StartMode::Hatched}, dive{StartMode::Hatched};
+      for (int a2 = 0; a2 < kExplSectors; ++a2) {
+          crawl.debugSetSectorCleared(a2, true);
+          dive.debugSetSectorCleared(a2, true);
+      }
+      crawl.debugStartDarkWebCrawl();
+      dive.debugStartDeepWebDive();
+      CHECK(crawl.inDarkWebCrawl());
+      for (const int depth : {0, 16, 64}) {
+          crawl.debugSetExploreStreak(depth);
+          dive.debugSetExploreStreak(depth);
+          CHECK(crawl.exploreXpEfficiencyPct() > 2 * dive.exploreXpEfficiencyPct());
+      }
+      crawl.debugSetExploreStreak(0);
+      const int shallow = crawl.exploreXpEfficiencyPct();
+      crawl.debugSetExploreStreak(64);
+      CHECK(crawl.exploreXpEfficiencyPct() > shallow); }   // ...and its depth still pays
 
     // The overlay draws it, and draws it as a FOOTER: two walks whose rungs pay
     // differently differ under the rule, and their four action rows are pixel-identical
@@ -1324,6 +1350,36 @@ void test_darkweb_crawl() {
         CHECK(g.bestDarkWebDepth() == 0);
         g.debugSetBestDeepWebDepth(40);
         CHECK(g.bestDarkWebDepth() == 0);          // the dive's record is not the crawl's
+    }
+    // (5) What it PAYS, which is the other half of being the end of the map. The crawl
+    //     opens four areas past the dive to a pet whose next level costs the most it ever
+    //     will, and its runs are a third as long — so a payout merely EQUAL to the dive's
+    //     is a payout the zone loses on, and neither ledger may be that.
+    {
+        // XP: one shared level-difference curve, and the BASE it scales is the zone's own
+        // (kDarkWebXpPct). Every other sector pays the flat base.
+        CHECK(Game::wildWinXpBase(0) == kWildWinXpReward);
+        CHECK(Game::wildWinXpBase(kDeepWebSector) == kWildWinXpReward);
+        CHECK(Game::wildWinXpBase(kDarkWebSector) > kWildWinXpReward);
+        CHECK(Game::wildWinXpBase(kDarkWebSector) == kWildWinXpReward * kDarkWebXpPct / 100);
+        // ...so the same win at the same depth is worth strictly more down here, at the
+        // shallow end where the dive's foothold still holds it at parity and at the deep
+        // end where both curves have long since flattened.
+        for (const int depth : {0, 8, 64}) {
+            CombatEnemy d = wildMalbeast(3, 0), c = wildMalbeast(3, 0);
+            applyDeepWebScale(d, 45, depth);
+            applyDarkWebScale(c, 45, depth);
+            CHECK(wildWinXp(Game::wildWinXpBase(kDarkWebSector), c.level, 45) >
+                  wildWinXp(Game::wildWinXpBase(kDeepWebSector), d.level, 45));
+        }
+        // Bits: the same curve shape the dive's depth ramp has, on the crawl's own
+        // steeper rate and higher ceiling — and actually applied, which is what a zone
+        // whose constants exist but reach no payout would look identical to.
+        CHECK(darkWebDepthBitsPct(0) == 100);               // a fresh crawl: unchanged
+        CHECK(darkWebDepthBitsPct(-9) == 100);              // clamps at 0
+        CHECK(darkWebDepthBitsPct(7) == 100 + 3 * kDarkWebDepthBitsPctPerLog2);  // log2(8)=3
+        CHECK(darkWebDepthBitsPct(1 << 30) == kDarkWebDepthBitsMaxPct);   // ceiling holds
+        CHECK(darkWebDepthBitsPct(7) > deepWebDepthBitsPct(7));
     }
 }
 

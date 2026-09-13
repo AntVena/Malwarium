@@ -1115,6 +1115,12 @@ std::vector<const char*> deepWebMoveIds(int depth, uint32_t roll);
 // kDeepWebDepthBitsMaxPct. `depth` clamps at 0.
 int deepWebDepthBitsPct(int depth);
 
+// The CRAWL's half of the same job, on its own constants (darkweb_crawl/area.h): the same
+// curve shape, steeper per rung and with a higher ceiling. Its own entry point rather than
+// a flag on the dive's, for the reason applyDarkWebScale is its own function — the two
+// zones are tuned against different players. `depth` clamps at 0.
+int darkWebDepthBitsPct(int depth);
+
 // A boss run. `rounds` is the ordered gauntlet — a single boss is a gauntlet of length 1;
 // a multi-boss run fights them back-to-back with Health carried across. `stageRank` is the
 // opponent's stage-rank R used by the Bits payout (Process 2, Script 3, Daemon 4); `name`

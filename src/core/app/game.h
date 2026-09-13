@@ -446,6 +446,13 @@ public:
     // and Profilerole's permanent rate — so it is the whole payout in one number rather
     // than one term of it. Read by the walk's A+C control overlay (drawExploreControl).
     int exploreXpEfficiencyPct() const;
+    // What ONE wild win in `sector` pays before the level-difference curve scales it: the
+    // flat base on every rung of the ladder and in the dive, and a multiple of it in the
+    // CRAWL, whose runs are too short to ever reach the paying end of a depth curve
+    // (kDarkWebXpPct, darkweb_crawl/area.h). Keyed by the sector rather than by
+    // inDarkWebCrawl() so a walk that has since been stopped still prices as the zone it
+    // was aimed at, the same reason exploreXpEfficiencyPct reads the sector directly.
+    static int wildWinXpBase(int sector);
     // the endless DeepWeb Dive (terminal zone) is armed. It's an explore mode
     // on the virtual kDeepWebSector — no sub-area/boss, enemies scale to the pet.
     bool inDeepWebDive() const {

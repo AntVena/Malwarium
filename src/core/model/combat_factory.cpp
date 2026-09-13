@@ -523,11 +523,22 @@ void applyDeepWebScale(CombatEnemy& e, int petLevel, int depth, uint32_t roll) {
     spendStatBudget(e, points);
 }
 
-int deepWebDepthBitsPct(int depth) {
+// Both endless zones mirror their depth ramp onto Bits with the same curve and differ
+// only in the per-rung rate and the ceiling, so the arithmetic is written once: a second
+// copy is a second place for one zone's ramp to quietly stop being the other's shape.
+// Which constants go in is still each zone's own statement, below.
+static int endlessDepthBitsPct(int depth, int pctPerLog2, int maxPct) {
     if (depth < 0) depth = 0;
-    int pct = 100 + floorLog2(depth + 1) * kDeepWebDepthBitsPctPerLog2;
-    if (pct > kDeepWebDepthBitsMaxPct) pct = kDeepWebDepthBitsMaxPct;
-    return pct;
+    const int pct = 100 + floorLog2(depth + 1) * pctPerLog2;
+    return pct > maxPct ? maxPct : pct;
+}
+
+int deepWebDepthBitsPct(int depth) {
+    return endlessDepthBitsPct(depth, kDeepWebDepthBitsPctPerLog2, kDeepWebDepthBitsMaxPct);
+}
+
+int darkWebDepthBitsPct(int depth) {
+    return endlessDepthBitsPct(depth, kDarkWebDepthBitsPctPerLog2, kDarkWebDepthBitsMaxPct);
 }
 
 void applySimDummyLevelScale(CombatEnemy& e, int petLevel) {

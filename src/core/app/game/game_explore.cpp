@@ -7,6 +7,7 @@
 
 #include "tunables.h"
 #include "core/content/areas/area_defs.h"
+#include "core/content/areas/darkweb_crawl/area.h"
 #include "core/content/areas/deepweb_dive/area.h"
 #include "core/content/content_tables.h"
 #include "core/ui/expl_screen.h"
@@ -328,24 +329,47 @@ void Game::autoProgressAdvance(int area, int sub) {
     startExplore(area, 0);
 }
 
+int Game::wildWinXpBase(int sector) {
+    // The zone's own base, before wildWinXp's level-difference curve — see the contract
+    // in game.h. Everything but the crawl pays the flat one.
+    return sector == kDarkWebSector ? kWildWinXpReward * kDarkWebXpPct / 100
+                                    : kWildWinXpReward;
+}
+
 int Game::exploreXpEfficiencyPct() const {
     // Run the flat base through the SAME chain a wild win pays through
     // (game_combat.cpp's wild-win branch → addCombatXp), rather than restating the
     // arithmetic: a rate that stops matching what the walk actually banks is worse than
     // no readout at all. The one term left out is the depth-keyed Bits bonus, which is
     // not XP.
+    //
+    // The rate is stated as a percentage of the FLAT base every zone is measured against
+    // (kWildWinXpReward) while the payout runs on the armed zone's own base, so a zone
+    // that pays a multiple of the flat one reads as that multiple instead of flattening
+    // back to 100% against itself.
     const int base = kWildWinXpReward;
+    const int zoneBase = wildWinXpBase(exploreSector_);
     // The rung's enemy level. A ladder sub-area's is its GLOBAL depth rung
-    // (applyWildSubAreaRamp); the dive's is the pet's own plus the logarithmic depth
-    // bonus the streak has earned (applyDeepWebScale), which is why a deep dive reads
-    // well over 100% and a shallow re-farm well under it.
+    // (applyWildSubAreaRamp); an endless zone's is the pet's own plus the logarithmic
+    // depth bonus the streak has earned (applyDeepWebScale / applyDarkWebScale), which is
+    // why a deep run reads well over 100% and a shallow re-farm well under it.
     int enemyLevel;
     // Keyed off the armed sector's IDENTITY rather than inDeepWebDive(), so a walk that
     // has since been stopped still reads as the zone it was aimed at instead of decoding
     // the dive's one-past-the-ladder index as a ladder rung.
     if (exploreSector_ == kDeepWebSector) {
+        // The dive's FOOTHOLD is part of its curve: inside it every dive is the same
+        // parity fight, so the readout has to wait it out exactly as applyDeepWebScale
+        // does or it advertises a ramp the walk is not paying yet.
+        const int rampDepth = exploreStreak_ > kDeepWebRampFreeDepth
+                            ? exploreStreak_ - kDeepWebRampFreeDepth : 0;
         enemyLevel = combatLevel_ + kDeepWebEnemyLevelOffset +
-                     kDeepWebDepthLevelPerLog2 * floorLog2(exploreStreak_ + 1);
+                     kDeepWebDepthLevelPerLog2 * floorLog2(rampDepth + 1);
+    } else if (exploreSector_ == kDarkWebSector) {
+        // ...and the crawl's has no foothold to wait out (applyDarkWebScale), so its
+        // streak rides the curve from the first win.
+        enemyLevel = combatLevel_ + kDarkWebEnemyLevelOffset +
+                     kDarkWebDepthLevelPerLog2 * floorLog2(exploreStreak_ + 1);
     } else {
         const int a = exploreSector_ < 0 ? 0
                     : exploreSector_ >= kExplSectors ? kExplSectors - 1 : exploreSector_;
@@ -353,7 +377,7 @@ int Game::exploreXpEfficiencyPct() const {
                       : exploreSub_ >= kExplSubAreas ? kExplSubAreas - 1 : exploreSub_;
         enemyLevel = a * kExplSubAreas + sub;
     }
-    int xp = applyCombatXpBonus(wildWinXp(base, enemyLevel, combatLevel_));
+    int xp = applyCombatXpBonus(wildWinXp(zoneBase, enemyLevel, combatLevel_));
     if (evolveSoakFactor_ > 1) xp *= evolveSoakFactor_;
     xp += xp * upgrades_.xpRatePct / 100;
     return (xp * 100 + base / 2) / base;      // rounded, so a small trim still shows
