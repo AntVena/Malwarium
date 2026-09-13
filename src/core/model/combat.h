@@ -299,6 +299,9 @@ struct Combatant {
     // per turn this fighter gets to act (Combat::resolveTurn). The next stun rolls against
     // the pile (Combat::stunLands), so being chain-stunned buys the way out of it.
     int lockResist = 0;
+    // The resistance this fighter never sheds below — a BOSS stands on it (kBossLockResist),
+    // so a stun on one is a roll from the first cast rather than a free turn to chain.
+    int lockResistFloor = 0;
 
     // SCRAMBLE (a landed hit's scrambleTurns rider) — set ON THE VICTIM, and the only
     // rider that costs the PLAYER rather than the pet: while it holds, the A+C picker's
@@ -528,6 +531,9 @@ struct CombatEnemy {
     // `spriteName` is null on such a row, and every draw path already treats a null sheet
     // as an empty standard seat — so this says which of those empties is a creature.
     bool isSwarm = false;
+    // The lock resistance this fighter starts on and never sheds below
+    // (Combatant::lockResistFloor). Bosses set it; everything else fights at 0.
+    int lockResist = 0;
 };
 
 // A NEW FIELD GOES AT THE END OF THAT STRUCT, always. The malbeast rows are authored as

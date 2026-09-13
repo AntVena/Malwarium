@@ -1168,6 +1168,20 @@ void test_worm_defender_bites_back() {
     CHECK(bite > 0 && bitten > 20);
 }
 
+// A BOSS stands on lock resistance and never sheds below it, so a freeze on one is a roll
+// from the first cast; a wild or a dummy starts at none.
+void test_boss_holds_its_lock_resistance() {
+    ContentRegistry r = ContentRegistry::embedded();
+    Combatant boss = makeEnemyCombatant(r, subAreaBoss(0, 0).rounds[0]);
+    CHECK(boss.lockResist == kBossLockResist && boss.lockResistFloor == kBossLockResist);
+    CHECK(makeEnemyCombatant(r, wildMalbeast(1, 0)).lockResistFloor == 0);
+    boss.lockResist = kBossLockResist + 3;                 // as if just chain-stunned
+    Combatant pc = mkCombatant(r, "P", 400, 5, {"checksum_guard"});
+    Combat c; c.begin(pc, boss, Combat::Stakes::Safe, 5);
+    for (int i = 0; i < 20; ++i) c.step();                 // plenty of boss turns to shed
+    CHECK(c.enemy().lockResist == kBossLockResist);
+}
+
 // Every rider actually fires. Cheap, but it is what stops the rider phase becoming dead
 // code that the ordering gates above would still pass over.
 void test_pipeline_every_rider_fires() {

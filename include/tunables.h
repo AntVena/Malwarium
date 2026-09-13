@@ -288,6 +288,11 @@ constexpr int kExploitUsesPerBattle = 1;
 // the rider real: a pet that has eaten four locks can still be frozen by the fifth.
 constexpr int kLockResistStepPct = 40;   // land chance lost per stacked resist point
 constexpr int kLockResistFloorPct = 15;  // ...and the chance a stun never drops below
+// A BOSS starts every fight on this much lock resistance and never sheds below it
+// (Combatant::lockResistFloor). A boss has no mod to clamp a freeze and no Exploit to buy
+// out of one, so without it a long lock was a free turn to re-cast the moment it lifted —
+// and early-area gauntlets fell to whichever cub carried the longest one.
+constexpr int kBossLockResist = 1;
 // Wild-encounter difficulty (challenge pass). With the flat base stats a wild win
 // was a near-untouched romp — the pet finished at ~80–86% Health, so EXPL fights
 // carried no risk. These buff EXPL malbeasts only (isWild-gated in makeEnemyCombatant;

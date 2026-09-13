@@ -583,7 +583,9 @@ CombatEnemy subBossEnemy(const AreaDef& a, int tier, int sub, const char* name,
         for (const char* id : teacher->teaches)
             if (id) moves.push_back(id);
     if (extraMoveId) moves.push_back(extraMoveId);
-    return {name, "SPR_PET_CACHEMUTT", tier + 1, health, speed, std::move(moves)};
+    CombatEnemy e{name, "SPR_PET_CACHEMUTT", tier + 1, health, speed, std::move(moves)};
+    e.lockResist = kBossLockResist;
+    return e;
 }
 }  // namespace
 
@@ -931,6 +933,7 @@ Combatant makeEnemyCombatant(const ContentRegistry& reg, const CombatEnemy& spec
     c.maxHealth = spec.maxHealth;
     c.health = spec.maxHealth;
     c.speed = spec.speed;
+    c.lockResist = c.lockResistFloor = spec.lockResist;
     c.powerMultPct = spec.powerMultPct;
     // Held to the same never-immune clamp the player's own defence answers to, rather
     // than trusted from the spec: a rolled dive enemy (applyDeepWebScale) can spend an

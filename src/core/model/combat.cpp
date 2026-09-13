@@ -1263,7 +1263,7 @@ void Combat::resolveTurn(Combatant& actor, Combatant& target, bool byPlayer) {
     if (actor.scrambleTurns > 0) actor.scrambleTurns--;   // the sentinel never counts down
     // Only a turn spent FIGHTING sheds a resist point — one burned to the lock or a ransom
     // bill returned above — so resistance grows through a chain and drains once it breaks.
-    if (actor.lockResist > 0) actor.lockResist--;
+    if (actor.lockResist > actor.lockResistFloor) actor.lockResist--;
 
     int moveIdx;
     if (byPlayer && forcedMoveIdx_ >= 0 &&
