@@ -62,11 +62,13 @@ damage lands its effect on the enemy pet directly, whatever it is standing behin
 interceptor in the pipeline already honours it. What does not exist is a single move that
 qualifies: all 33 attack rows carrying a stun, scramble or DoT also carry power, the lowest at
 3. So the rule is a promise the LOADOUT screen cannot yet keep, and the whole low-economy
-answer to a stacked Obfuscation pool is unavailable. It is not cosmetic: with riders no longer
-bypassing a full pool, a bracket opponent that stacks one turns a match from ~190 combat events
-into ~8,900 — the same 98 hits landed, ground out through 26,000 points of pool churn. A DoT was
-silently carrying that matchup and the rule correctly took it away; nothing replaces it until
-this band exists. Constraints, not numbers: `power` must be 0 (that is what the rule keys on,
+answer to a stacked Obfuscation pool is unavailable. The cost is narrow but real, and measured
+on ONE matchup rather than across the roster: a bracket opponent stacking a pool against a pet
+with no pure rider went from ~190 combat events to ~8,900 — the same 98 hits landed on Health,
+ground out through 26,000 points of pool churn instead of ticked past it. Only one side needs
+the bubble for that; the other was stacking the Cipher track, not a pool. A DoT was silently
+carrying that matchup and the rule correctly took it away; nothing replaces it until this band
+exists. Constraints, not numbers: `power` must be 0 (that is what the rule keys on,
 via the computed damage — a worm's replica damage still counts, so a swarm casting one is not
 making a pure rider), one row per line is the shape to aim at, and each has to be worth a whole
 turn spent on a single effect. Magnitudes and stage placement come from a balance run, not from
