@@ -647,6 +647,22 @@ bool Game::tickHeldGestures(uint32_t nowMs) {
         changed = true;
     }
 
+    // The MOVES slot list's hold-B gesture: crossing kMoveFilterHoldMs reads the move
+    // already in the focused slot, where a tap (trainListReleaseB) opens its picker. An
+    // empty slot has nothing to read, so the hold waits for the release instead.
+    if (bHeld_ && nav_ == Nav::Submenu && enteredId() == SubmenuId::Mods &&
+        loadoutTab_ == LoadoutTab::Moves && moveLoadout_.equipped(trainRow_) &&
+        nowMs_ - bDownMs_ >= kMoveFilterHoldMs) {
+        bHeld_ = false;
+        moveSlot_ = trainRow_;
+        moveDetailEquipped_ = true;
+        moveProseScroll_ = 0;
+        trainScreen_ = TrainScreen::MoveDetail;
+        nav_ = Nav::Detail;
+        lastInputMs_ = nowMs_;
+        changed = true;
+    }
+
     // ROCK THE DOCK's hold-B gesture, the same shape as the two above: crossing
     // kTourneyScoutHoldMs on the bracket opens the focused entrant's SCOUT sheet — its
     // full kit, read on the very page the operator reads their own kit on. A release

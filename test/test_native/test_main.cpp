@@ -202,6 +202,7 @@ int g_failures = 0;
     RUN(test_level_stat_curves)             \
     RUN(test_defence_tier_retains_an_unspent_brace) \
     RUN(test_ransom_seizes_the_attack_that_hits_a_full_wall) \
+    RUN(test_ransom_pool_works_the_pet_up) \
     RUN(test_obfuscation_pool_salts_whoever_reads_it) \
     RUN(test_combat_override_breaks_rule)   \
     RUN(test_combat_override_item_use)      \
@@ -278,6 +279,8 @@ int g_failures = 0;
     RUN(test_wild_subarea_level_and_xp_scaling) \
     RUN(test_care_branch_trades_power_for_body) \
     RUN(test_move_evolution_gating)         \
+    RUN(test_move_slot_hold_b_reads_the_equipped_move) \
+    RUN(test_move_swap_readout_versus) \
     /* Move slots: the per-slot pool, and the Attack/Defend type-lock */ \
     RUN(test_move_pool_per_slot_fallback)   \
     RUN(test_move_slot_type_lock)           \

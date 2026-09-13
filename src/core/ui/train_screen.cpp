@@ -148,6 +148,7 @@ void drawLoadout(Framebuffer& fb, const ContentRegistry& reg,
                      palColor(Pal::ACCENT));
         }
     }
+    drawHintBand(fb, "A CYCLE  B PICK  HOLD B READ");
 }
 
 void drawMovePicker(Framebuffer& fb, const ContentRegistry& reg,
@@ -262,7 +263,18 @@ void drawMovePicker(Framebuffer& fb, const ContentRegistry& reg,
             drawText(fb, kMargin, y, buf, palColor(Pal::ACCENT));
             y += 12;
         }
-        const SpecRows spec = specRows(*m);
+        // A move that would replace a different one reads as the SWAP: what it takes out,
+        // and every number that changes as NOW -> NEXT against the move in the slot.
+        const MoveDef* current = equippedHere ? reg.move(equippedHere) : nullptr;
+        const bool swap = current && current != m && !inOtherSlot && !aboveStage;
+        if (swap) {
+            char vs[40];
+            std::snprintf(vs, sizeof(vs), "SWAPS OUT %s", current->displayName);
+            drawText(fb, kMargin, y, vs, palColor(Pal::INK_DIM));
+            y += 12;
+        }
+        const SpecRows spec =
+            swap ? specRowsVersus(specRows(*current), specRows(*m)) : specRows(*m);
         const EffectText prose = effectText(*m);   // outlives the draw below
         SpecSheet sheet;
         sheet.rows = spec.rows;

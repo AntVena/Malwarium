@@ -56,17 +56,31 @@ void Game::onTrainList(const ButtonEvent& ev) {
     if (ev.button == Button::A) {
         trainRow_ = sel > 0 ? (trainRow_ + 1) % sel : 0;
     } else if (ev.button == Button::B) {
+        // Tap/hold, resolved on release (trainListReleaseB) or on the hold crossing
+        // kMoveFilterHoldMs (tick): a tap opens the picker, a hold reads the move in the slot.
         if (sel <= 0) return;
-        trainScreen_ = TrainScreen::MovePicker;
-        moveSlot_ = trainRow_;
-        movePick_ = 0;
-        moveShowAll_ = false;
-        moveConfirm_ = false;
-        movePendingId_ = nullptr;
-        nav_ = Nav::Detail;
+        bHeld_ = true;
+        bDownMs_ = nowMs_;
     } else if (ev.button == Button::C) {
         leaveLoadoutTab();
     }
+}
+
+void Game::trainListReleaseB() {
+    if (!(nav_ == Nav::Submenu && enteredId() == SubmenuId::Mods &&
+          loadoutTab_ == LoadoutTab::Moves))
+        return;
+    if (loadoutSelectableCount(pet_ ? pet_->stage : Stage::BootSector) <= 0) return;
+    trainScreen_ = TrainScreen::MovePicker;
+    moveSlot_ = trainRow_;
+    movePick_ = 0;
+    moveShowAll_ = false;
+    moveConfirm_ = false;
+    moveDetailEquipped_ = false;
+    movePendingId_ = nullptr;
+    nav_ = Nav::Detail;
+    dirty_ = true;
+    lastInputMs_ = nowMs_;
 }
 
 void Game::onTrainDetail(const ButtonEvent& ev) {
@@ -75,6 +89,10 @@ void Game::onTrainDetail(const ButtonEvent& ev) {
 }
 
 const MoveDef* Game::focusedPickerMove() const {
+    if (moveDetailEquipped_) {
+        const char* id = moveLoadout_.equipped(moveSlot_);
+        return id ? registry_.move(id) : nullptr;
+    }
     const auto owned = ownedMoveList(registry_, moveLoadout_, slotRequiredKind(moveSlot_),
                                      pet_ ? pet_->stage : Stage::BootSector,
                                      pet_ ? pet_->line : nullptr, moveSlot_, moveShowAll_);
@@ -87,6 +105,12 @@ void Game::onMoveDetail(const ButtonEvent& ev) {
     // of it than fits (A cycles — reading on is the natural "next" here), B equips, C
     // returns to the picker with the cursor where it was.
     const MoveDef* m = focusedPickerMove();
+    if (moveDetailEquipped_ && (ev.button == Button::C || !m)) {
+        moveDetailEquipped_ = false;
+        trainScreen_ = TrainScreen::MovePicker;
+        nav_ = Nav::Submenu;
+        return;
+    }
     if (ev.button == Button::C || !m) {
         trainScreen_ = TrainScreen::MovePicker;
         return;
@@ -99,7 +123,7 @@ void Game::onMoveDetail(const ButtonEvent& ev) {
         if (moveProseScroll_ >= total) moveProseScroll_ = 0;   // wraps to the top
         return;
     }
-    if (ev.button != Button::B) return;
+    if (ev.button != Button::B || moveDetailEquipped_) return;
     // A move the pet hasn't evolved into yet can't be equipped — the page states the
     // gate, and B is inert so the player stays and reads it.
     if (pet_ && !moveUnlockedAtStage(*m, pet_->stage)) return;

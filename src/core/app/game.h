@@ -2404,6 +2404,7 @@ private:
     // a tap drills into the focused move's detail, and only a hold that never reached
     // kMoveFilterHoldMs gets here. No-op outside the picker.
     void moveFilterReleaseB();
+    void trainListReleaseB();
     void onMoveDetail(const ButtonEvent& ev);      // A pages prose, B equips, C backs
     // The move the picker's cursor is on, or nullptr on the unequip row — shared by
     // the drill-down, its input handler and the MoveDetail render.
@@ -3301,6 +3302,9 @@ private:
     // `moveSlot_` right now. Holding A past kMoveFilterHoldMs toggles the full
     // list (tick()); reset false whenever the picker is (re)entered (onTrainList).
     bool moveShowAll_ = false;
+    // MoveDetail was opened by holding B on the SLOT LIST, so it reads the move already in
+    // `moveSlot_` rather than the picker's cursor, and C returns to the slot list.
+    bool moveDetailEquipped_ = false;
     bool moveConfirm_ = false;
     int moveConfirmChoice_ = 0;          // 0 Cancel · 1 Confirm
     const char* movePendingId_ = nullptr;

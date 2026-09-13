@@ -36,6 +36,16 @@ namespace mal {
 constexpr int kRansomArmPctByStage[4] = {0, 40, 55, 70};
 constexpr int kRansomHoldTurns = 3;   // also sizes the combat screen's blip row
 
+// WORKED UP. The hostage damage is a grudge the pet acts on while it holds: every brace it
+// casts turns this % of the live pool into Power (percentage points), and every attack it
+// lands turns this % into damage cut. Hit it and it gets angrier; let it hit you and it gets
+// harder to answer. Read off the pool, never spent from it — the line does not heal, so the
+// bill still lands whole.
+// Indexed by Stage like the arm chance above. Process keeps it faint: a fresh hatchling's
+// first area apex is meant to stop it, and the line is already level at that stage.
+constexpr int kRansomBracePowerPctByStage[4] = {0, 20, 200, 200};
+constexpr int kRansomStrikeDefensePctByStage[4] = {0, 10, 100, 100};
+
 // THE GRUDGE (Extortion Ledger's scale). What the pool holds is what the pet has taken and
 // not answered for, so the ledger hits harder the longer that list gets: the mod's power
 // bonus is scaled by the pool measured against the pet's own STAGE body — the same

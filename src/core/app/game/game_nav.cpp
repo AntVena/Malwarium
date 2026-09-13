@@ -37,6 +37,7 @@ void Game::onButton(const ButtonEvent& ev) {
                 rigServiceReleaseB();
                 itemFilterReleaseB();
                 moveFilterReleaseB();
+                trainListReleaseB();
                 tourneyReleaseB();
                 statIndexReleaseB();
             }
@@ -342,7 +343,8 @@ void Game::enterSubmenu() {
             listRow_ = 0; modConfirm_ = false; modDetail_ = false;
             modDetailId_ = nullptr;
             trainRow_ = 0; trainScreen_ = TrainScreen::MovePicker;
-            moveConfirm_ = false; movePendingId_ = nullptr; break;
+            moveConfirm_ = false; movePendingId_ = nullptr; moveDetailEquipped_ = false;
+            break;
         case SubmenuId::Games: arcadeRow_ = 0; break;
         case SubmenuId::Expl: openExplList(); break;
         // Entering STAT always lands on VITALS, never on the index or on the page last

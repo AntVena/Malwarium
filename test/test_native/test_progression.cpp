@@ -936,17 +936,63 @@ void test_move_evolution_gating() {
                         g.pet()->line, 0, /*showAll=*/false)
               .empty());
     enterLoadoutTab(g, 1);
-    g.onButton(press(Button::B));                 // open slot 0 picker
+    tapB(g);                                      // open slot 0 picker
     g.onButton(press(Button::A));                 // filtered list is just [unequip]; A stays put
     tapB(g);                                      // B on [unequip] clears the slot -> Submenu
     CHECK(g.moveLoadout().equipped(0) == nullptr);
 
-    g.onButton(press(Button::B));                 // re-open slot 0 picker (resets moveShowAll_)
+    tapB(g);                                      // re-open slot 0 picker (resets moveShowAll_)
     g.debugSetMoveShowAll(true);                  // reveal the locked row for this check
     g.onButton(press(Button::A));                 // pick row 1 = payload_drop (locked at Boot)
     tapB(g);                                      // drill in — the page states the gate
     g.onButton(press(Button::B));                 // attempt equip → blocked (no-op)
     CHECK(g.moveLoadout().equipped(0) == nullptr);
+}
+
+// Holding B on a MOVES slot READS the move already in it — a page with nothing to equip, so
+// B is inert and C goes straight back to the slot list. A tap still opens the picker.
+void test_move_slot_hold_b_reads_the_equipped_move() {
+    Game g{StartMode::Hatched, "malbear"};
+    CHECK(g.moveLoadout().equipped(0) != nullptr);
+    enterLoadoutTab(g, 1);
+    uint32_t t = 1000;
+    g.tick(t);
+    g.onButton(press(Button::B));
+    g.tick(t += kMoveFilterHoldMs + kHeartbeatMs);
+    g.onButton(lift(Button::B));
+    CHECK(g.nav() == Game::Nav::Detail);
+    g.onButton(press(Button::B));                 // nothing to equip from the reader
+    CHECK(g.nav() == Game::Nav::Detail);
+    tapC(g);
+    CHECK(g.nav() == Game::Nav::Submenu);         // the slot list, not the picker
+    tapB(g);
+    CHECK(g.nav() == Game::Nav::Detail);          // a tap is still the picker
+}
+
+// The picker's swap readout: every changed number reads NOW -> NEXT, a matching one is
+// kept as it is, and a row or flag only one side carries says so.
+void test_move_swap_readout_versus() {
+    ContentRegistry r = ContentRegistry::embedded();
+    const SpecRows v = specRowsVersus(specRows(*r.move("system_hang")),     // ATK 10, FREEZE 2
+                                      specRows(*r.move("screen_locker")));  // ATK 0, FREEZE 4, flag
+    auto row = [&](const char* label) -> const SpecRow* {
+        for (int i = 0; i < v.count; ++i)
+            if (std::strcmp(v.rows[i].label, label) == 0) return &v.rows[i];
+        return nullptr;
+    };
+    CHECK(row("ATK") && std::strcmp(row("ATK")->value, "10 -> 0") == 0);
+    CHECK(row("FREEZE") && std::strcmp(row("FREEZE")->value, "2 -> 4") == 0);
+    CHECK(row("PASSES SHIELDS") && std::strcmp(row("PASSES SHIELDS")->value, "NEW") == 0);
+    const SpecRows back = specRowsVersus(specRows(*r.move("screen_locker")),
+                                         specRows(*r.move("packet_storm")));   // ATK 12
+    bool lostFreeze = false, lostFlag = false;
+    for (int i = 0; i < back.count; ++i) {
+        if (std::strcmp(back.rows[i].label, "FREEZE") == 0)
+            lostFreeze = std::strcmp(back.rows[i].value, "4 -> -") == 0;
+        if (std::strcmp(back.rows[i].label, "PASSES SHIELDS") == 0)
+            lostFlag = std::strcmp(back.rows[i].value, "LOST") == 0;
+    }
+    CHECK(lostFreeze && lostFlag);
 }
 
 // --- Move slots: the per-slot pool, and the Attack/Defend type-lock --------
@@ -1034,7 +1080,7 @@ void test_move_slot_type_lock() {
     enterLoadoutTab(g, 1);
     g.onButton(press(Button::A));                    // slot0 -> slot1
     g.onButton(press(Button::A));                    // slot1 -> slot2
-    g.onButton(press(Button::B));                     // open slot 2's picker (row0 = unequip)
+    tapB(g);                                          // open slot 2's picker (row0 = unequip)
     CHECK(g.nav() == Game::Nav::Detail);
     g.onButton(press(Button::A));                     // row0 -> row1 (aes_lockbox)
     tapB(g);                                          // drill into its detail page
@@ -1223,7 +1269,7 @@ void test_move_loadout_persist() {
         enterLoadoutTab(g, 1);
         g.onButton(press(Button::A));              // slot0 -> slot1
         g.onButton(press(Button::A));              // slot1 -> slot2
-        g.onButton(press(Button::B));              // open slot 2 picker
+        tapB(g);                                   // open slot 2 picker
         g.onButton(press(Button::A));              // unequip -> aes_lockbox
         g.onButton(press(Button::A));              // -> rsa_vault (a different move)
         tapB(g);                                   // drill into its detail page

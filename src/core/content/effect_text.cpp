@@ -480,6 +480,39 @@ SpecRows specRows(const MoveDef& d) {
     return s.out;
 }
 
+SpecRows specRowsVersus(const SpecRows& now, const SpecRows& next) {
+    SpecBuilder s;
+    bool used[sizeof(now.rows) / sizeof(now.rows[0])] = {};
+    auto match = [&](const SpecRow& r) {
+        for (int i = 0; i < now.count; ++i)
+            if (!used[i] && std::strcmp(now.rows[i].label, r.label) == 0) {
+                used[i] = true;
+                return i;
+            }
+        return -1;
+    };
+    for (int j = 0; j < next.count; ++j) {
+        const SpecRow& r = next.rows[j];
+        const int i = match(r);
+        if (r.flag()) {
+            if (i >= 0) s.flag(r.label);
+            else s.add(r.label, "NEW");
+        } else if (i < 0 || now.rows[i].flag()) {
+            s.add(r.label, "- -> %s", r.value);
+        } else if (std::strcmp(now.rows[i].value, r.value) == 0) {
+            s.add(r.label, "%s", r.value);
+        } else {
+            s.add(r.label, "%s -> %s", now.rows[i].value, r.value);
+        }
+    }
+    for (int i = 0; i < now.count; ++i) {
+        if (used[i]) continue;
+        if (now.rows[i].flag()) s.add(now.rows[i].label, "LOST");
+        else s.add(now.rows[i].label, "%s -> -", now.rows[i].value);
+    }
+    return s.out;
+}
+
 EffectText statLine(const ItemDef& d) { return joinSpec(specRows(d)); }
 EffectText statLine(const ModDef& d) { return joinSpec(specRows(d)); }
 EffectText statLine(const MoveDef& d) { return joinSpec(specRows(d)); }

@@ -186,6 +186,7 @@ Combatant makeTourneyCombatant(const ContentRegistry& reg, const TourneyFighter&
     Combatant c = makePvpCombatant(reg, f.spec);
     c.autoExploit = f.exploit;
     c.autoExploitAtHealthPct = f.exploitAtHealthPct;
+    c.autoExploitEitherSide = f.exploitOnEitherHealth;
     return c;
 }
 

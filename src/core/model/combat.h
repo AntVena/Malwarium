@@ -256,6 +256,10 @@ struct Combatant {
     // for real trouble. Checked on this side's own turn, so a fighter killed first never
     // gets to spend it.
     int autoExploitAtHealthPct = 100;
+    // When set, the OPPONENT reaching that Health fraction fires it too — "when anyone is at
+    // half", for an Exploit whose moment is the middle of the fight rather than this side's
+    // own trouble.
+    bool autoExploitEitherSide = false;
     bool autoExploitFired = false;
     int guard = 0;              // pending mitigation from a defend move (one-shot)
     // Poisoned data (MoveDef::poolRetaliateDot): what a strike on this pet's live bubble
@@ -577,6 +581,13 @@ struct WormKill {
     bool defender = false;   // which of the two glyphs dissolves
 };
 
+// A ransom seizure that happened on the step just resolved — the screen's cue to play the
+// seizing pet WORKED UP. One-turn lifetime, like WormKill.
+struct Seizure {
+    bool happened = false;
+    bool onPlayer = false;   // whose pet seized (Combat's slot, not the seat)
+};
+
 class Combat {
 public:
     enum class Stakes { Live, Safe };       // live = +Frag on loss; safe = nothing
@@ -721,6 +732,7 @@ public:
     int strikeCount() const { return strikeCount_; }
     // The Worm replica the last resolved turn destroyed, if any (see WormKill).
     const WormKill& lastWormKill() const { return lastWormKill_; }
+    const Seizure& lastSeizure() const { return lastSeizure_; }
     // Consecutive same-actor turns; 0 before the first turn, and reset to 1 the instant the
     // other side acts. Drives the feeding-frenzy render pacing (Game::combatBeatsForTurn)
     // and the steal-attack combo bonus (applyEffect) off the SAME count, so a burst that
@@ -917,6 +929,7 @@ private:
     bool lastWasStrike_ = false;
     int strikeCount_ = 0;
     WormKill lastWormKill_;
+    Seizure lastSeizure_;
 };
 
 // Fill `c.chainFollow` from each equipped move's MoveDef::chainNextId, resolved against

@@ -134,6 +134,30 @@ int seatWidth(const SpriteData* s, int num, int den) {
            scaleUp(spriteContentX0(*s), num, den);
 }
 
+// WORKED UP: a ransomer that has just seized a move goes to silhouette, then flares white
+// and green as it swells to twice its size over one turn. Drawn as a flat outline, so the
+// upscale has no detail to lose. Anchored on its feet at the middle of its own band, and
+// held on canvas as it grows.
+constexpr int kWorkedUpPeriod = 6;
+
+bool workedUp(int beat) { return beat >= 0 && beat < kWorkedUpPeriod; }
+
+void drawWorkedUp(Framebuffer& fb, const SpriteData& s, int bandX, int bandW, int beat,
+                  bool faceRight, int num, int den) {
+    const bool mirror = spriteMirrorToFace(s, faceRight);
+    const int grow = kWorkedUpPeriod - 1;
+    const int n = num * (grow + beat), d = den * grow;
+    const int w = seatWidth(&s, n, d);
+    const int contentX = std::max(kStageEdge, std::min(kActiveW - kStageEdge - w,
+                                                       bandX + bandW / 2 - w / 2));
+    const int x = contentX - scaleUp(spriteContentX0(s, mirror), n, d);
+    const int y = kSpriteShelf - s.h * n / d;
+    const Pal tone = beat == 0       ? Pal::INK_DIM
+                     : (beat % 2 != 0) ? Pal::DECRYPTION_WHITE
+                                       : Pal::DECRYPTION_GREEN;
+    drawSpriteFlash(fb, s, 0, x, y, n, d, palColor(tone), 255, 0, mirror);
+}
+
 // Seat both fighters and the lane at one shot's scale. Split out from the shot PICKER
 // (combatStage) so the same seating runs whichever rung is chosen, and so the picker can
 // ask "does this one fit" by seating it rather than from a second copy of the arithmetic
@@ -940,6 +964,10 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
     const AbsorbPhase outroPhase =
         absorbPhase(outro.beat, kAbsorbLeadBeats, kAbsorbBeats);
     const bool absorbing = outro.kind == CombatOutro::Kind::Absorb;
+    const Seizure& seizure = combat.lastSeizure();
+    const bool seizedByLocal = seizure.happened && seizure.onPlayer != flip;
+    const int rivalWorkedUp = seizure.happened && !seizedByLocal ? hitBeat : -1;
+    const int localWorkedUp = seizedByLocal ? hitBeat : -1;
 
     // Rival first: where two Daemon cells run right to their band edges, the local pet
     // reads on top of its opponent — and an absorbed rival must pass BEHIND the pet
@@ -960,6 +988,10 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
                   flash > 0 ? palColor(rivalImpact >= rivalWindup ? Pal::INK : Pal::WARN)
                             : palColor(Pal::ACCENT),
                   palColor(Pal::INK_DIM));
+    } else if (outro.kind == CombatOutro::Kind::None && rivalSprite &&
+               workedUp(rivalWorkedUp)) {
+        drawWorkedUp(fb, *rivalSprite, stage.rivalX, stage.rivalW, rivalWorkedUp,
+                     /*faceRight=*/false, shotN, shotD);
     } else if (outro.kind == CombatOutro::Kind::None) {
         drawFighter(fb, rivalSprite, stage.rivalX, animBeat,
                     std::max(rivalWindup, rivalImpact),
@@ -993,19 +1025,24 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
                       palColor(Pal::INK), outroPhase.progress, /*row=*/0, rivalMirror);
         }
     }
-    drawFighter(fb, localSprite, stage.localX, animBeat,
-                absorbing ? std::max(outroPhase.flash,
-                                     std::max(localWindup, localImpact))
-                          : std::max(localWindup, localImpact),
-                absorbing && outroPhase.flash >= std::max(localWindup, localImpact)
-                    ? palColor(Pal::ACCENT)
-                    : palColor(localImpact >= localWindup ? Pal::INK : Pal::WARN),
-                localMotion, /*faceRight=*/true,
-                fightPose(pl,
-                          localFlinches && localHitBeat >= 0 &&
-                              localHitBeat < kImpactPeriod,
-                          swinging && lastByLocal),
-                shotN, shotD, &localCamo, localCamoAmt, localCamoFrom);
+    if (localSprite && !absorbing && workedUp(localWorkedUp)) {
+        drawWorkedUp(fb, *localSprite, stage.localX, stage.localW, localWorkedUp,
+                     /*faceRight=*/true, shotN, shotD);
+    } else {
+        drawFighter(fb, localSprite, stage.localX, animBeat,
+                    absorbing ? std::max(outroPhase.flash,
+                                         std::max(localWindup, localImpact))
+                              : std::max(localWindup, localImpact),
+                    absorbing && outroPhase.flash >= std::max(localWindup, localImpact)
+                        ? palColor(Pal::ACCENT)
+                        : palColor(localImpact >= localWindup ? Pal::INK : Pal::WARN),
+                    localMotion, /*faceRight=*/true,
+                    fightPose(pl,
+                              localFlinches && localHitBeat >= 0 &&
+                                  localHitBeat < kImpactPeriod,
+                              swinging && lastByLocal),
+                    shotN, shotD, &localCamo, localCamoAmt, localCamoFrom);
+    }
 
     // Worm replicas, on the same shelf, standing BETWEEN their parent and its opponent —
     // each row starts at the parent's own drawn edge facing the other fighter and falls

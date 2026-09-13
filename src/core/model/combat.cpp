@@ -90,6 +90,7 @@ void Combat::begin(const Combatant& player, const Combatant& enemy, Stakes stake
     lastWasStrike_ = false;
     strikeCount_ = 0;
     lastWormKill_ = {};
+    lastSeizure_ = {};
 }
 
 void Combat::setLast(const char* name, int dmg, bool byPlayer, bool charge,
@@ -447,6 +448,9 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
 void Combat::payCaster(Combatant& actor, Combatant& target, Combatant& mirror,
                        const MoveDef& mv, bool mitmCopy, int dealt, bool reachedHealth) {
     if (dealt <= 0) return;
+    if (actor.ransomPool > 0)
+        actor.dmgReducePct +=
+            actor.ransomPool * kRansomStrikeDefensePctByStage[stageIndex(actor.stage)] / 100;
     applyStealTrack(actor, target, mv, reachedHealth);
     applyCrewOnHit(actor, dealt);
     stackLockoutPower(actor, mirror, mv, mitmCopy);
@@ -819,6 +823,9 @@ void Combat::applyDefend(Combatant& actor, Combatant& mirror, const MoveDef& mv,
         actor.guard += braced;
         if (mitmCopy) mirror.guard += braced;
     }
+    if (actor.ransomPool > 0)
+        actor.powerMultPct +=
+            actor.ransomPool * kRansomBracePowerPctByStage[stageIndex(actor.stage)] / 100;
     // Cipher track: the cast stacks the caster's Defense (% cut) for the
     // fight, capped per move; the attack path clamps the total to 85% (never immune).
     if (mv.stackDefensePct > 0 && actor.stackDefenseBonus < mv.stackDefenseCap) {
@@ -949,6 +956,7 @@ int Combat::bankRansomAndSeize(Combatant& target, const MoveDef& mv, int dmg) {
             // The seizure runs the ransom clock, which is also its release: a pet that
             // keeps diverting hits keeps the move, one that stops hands it back.
             target.ransomTurnsLeft = kRansomHoldTurns;
+            lastSeizure_ = {/*happened=*/true, /*onPlayer=*/&target == &player_};
         }
         seize.armed = false;
     }
@@ -1442,6 +1450,7 @@ bool Combat::step() {
     if (outcome_ != Outcome::Ongoing || overrideOpen_) return false;
     // One-turn lifetime, like lastDamage_ and friends.
     lastWormKill_ = {};
+    lastSeizure_ = {};
     // Feeding-frenzy streak, computed BEFORE resolveTurn so applyEffect's combo bonus sees
     // this hit's own place in the run.
     if (streakCount_ > 0 && playerTurn_ == streakIsPlayer_) ++streakCount_;
@@ -1469,8 +1478,12 @@ bool Combat::fireAutoExploit(Combatant& actor, bool byPlayer) {
         return false;
     // A fraction of this fighter's OWN max, so the wait is the same number of proportional
     // hits whatever its Health pool. A 100% threshold means "open with it".
-    const int maxH = actor.maxHealth > 0 ? actor.maxHealth : 1;
-    if (actor.health * 100 > actor.autoExploitAtHealthPct * maxH) return false;
+    const auto reached = [&](const Combatant& c) {
+        const int maxH = c.maxHealth > 0 ? c.maxHealth : 1;
+        return c.health * 100 <= actor.autoExploitAtHealthPct * maxH;
+    };
+    const Combatant& opponent = byPlayer ? enemy_ : player_;
+    if (!reached(actor) && !(actor.autoExploitEitherSide && reached(opponent))) return false;
     actor.autoExploitFired = true;
     armCrewExploit(actor, actor.autoExploit, byPlayer);
     return true;

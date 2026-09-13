@@ -109,6 +109,13 @@ struct SpecBuilder {
     void flag(const char* label);
 };
 
+// `next`'s readout set against `now`'s, for a swap: a row whose value changed reads
+// "NOW -> NEXT" (the Rig Shop's shape), a row only one side has reads "- -> NEXT" or
+// "NOW -> -", and a flag gained or lost carries NEW or LOST. Rows that match are kept as
+// they are, so the unchanged half of a swap still reads. Repeated labels ("UP TO") pair up
+// in order.
+SpecRows specRowsVersus(const SpecRows& now, const SpecRows& next);
+
 // specRows() joined into one " / "-separated line ("HUNGER +40 / HEAL 30"), for the
 // places that want a string rather than a laid-out grid — the 'Pedia's data feed and
 // the STAT LOADOUT/BUFFS list rows. Empty when a row has no structured effect to

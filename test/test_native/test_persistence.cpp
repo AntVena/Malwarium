@@ -14,7 +14,7 @@ void test_loadout_expl_nav() {
     { Game g{StartMode::Hatched}; enterLoadoutTab(g, 1);
       CHECK(g.nav() == Game::Nav::Submenu);
       g.render(fb); CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));
-      g.onButton(press(Button::B));                  // slot 1 -> move picker
+      tapB(g);                                       // slot 1 -> move picker
       CHECK(g.nav() == Game::Nav::Detail);
       g.render(fb); CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));
       tapC(g);                  // back to the slot list

@@ -44,6 +44,7 @@ struct TourneyFighter {
     PvpFighter spec;
     CrewExploit exploit;              // the Exploit this entrant fires on its own
     int exploitAtHealthPct = 100;     // ...at this % of its max Health (100 = opens with it)
+    bool exploitOnEitherHealth = false;   // ...or when the OPPONENT reaches it
 };
 
 // --- Deriving the bracket ----------------------------------------------------

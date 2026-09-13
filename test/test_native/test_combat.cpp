@@ -359,6 +359,7 @@ void test_ransom_seizes_the_attack_that_hits_a_full_wall() {
     int slot = -1;
     for (int i = 0; i < 60 && !cb.player().ransomSeizure.holding(); ++i) cb.step();
     CHECK(cb.player().ransomSeizure.holding());          // something was taken
+    CHECK(cb.lastSeizure().happened && cb.lastSeizure().onPlayer);   // the screen's cue
     slot = cb.player().ransomSeizure.slot;
     CHECK(slot >= 0);
     // What it took is the attack that hit, and it now occupies the brace's own slot — so
@@ -371,6 +372,32 @@ void test_ransom_seizes_the_attack_that_hits_a_full_wall() {
     for (int i = 0; i < 40 && cb.player().ransomSeizure.holding(); ++i) cb.step();
     CHECK(!cb.player().ransomSeizure.holding());
     CHECK(cb.player().moves[slot] == cipher);            // given back, same slot
+}
+
+// WORKED UP: while the ransom pool holds damage, a brace turns a share of it into Power
+// and a landed attack turns a share into damage cut — and neither spends the pool.
+void test_ransom_pool_works_the_pet_up() {
+    ContentRegistry r = ContentRegistry::embedded();
+    const int si = stageIndex(Stage::Daemon);
+    auto cast = [&](const char* moveId) {
+        Combatant p = mkCombatant(r, "P", 400, 50, {moveId});
+        p.setLine(r, "ransomware");
+        p.stage = Stage::Daemon;
+        p.ransomPool = 40;
+        p.ransomTurnsLeft = 3;
+        Combatant e = mkCombatant(r, "E", 400, 5, {"quick_jab"});
+        Combat c; c.begin(p, e, Combat::Stakes::Safe, 5);
+        const Combatant before = c.player();
+        c.step();
+        CHECK(c.player().ransomPool == 40);
+        return std::make_pair(before, c.player());
+    };
+    const auto brace = cast("null_route");
+    CHECK(brace.second.powerMultPct ==
+          brace.first.powerMultPct + 40 * kRansomBracePowerPctByStage[si] / 100);
+    const auto hit = cast("packet_storm");
+    CHECK(hit.second.dmgReducePct ==
+          hit.first.dmgReducePct + 40 * kRansomStrikeDefensePctByStage[si] / 100);
 }
 
 // Poisoned data (MoveDef::poolRetaliateDot): the Obfuscation ladder's second rung trades
