@@ -773,9 +773,11 @@ private:
     // added without a damage guard silently takes this promise back, and the loadout screen
     // has no way to say so.
     //
-    // The corollary the same rule states from the other side: a rider RIDES on damage, so a
-    // defence that ate the damage ate the rider too (applyOnHitRiders). The pool counters a
-    // high-economy move precisely because that move bought damage as well.
+    // The corollary the same rule states from the other side: a status rider RIDES on
+    // damage, so a defence that ate the damage ate the rider too (applyOnHitRiders). The pool
+    // counters a high-economy move precisely because that move bought damage as well. What a
+    // swing pays its OWN caster is not a rider on the target and needs no Health, only damage
+    // dealt somewhere (payCaster) — which is how a ramping kit eventually out-hits a bubble.
     //
     // --- The hit pipeline's phases, in running order ---------------------------------
     // applyEffect is a SEQUENCE, not a dispatch: one damage value carried through stages
@@ -813,11 +815,18 @@ private:
     void applyDefend(Combatant& actor, Combatant& mirror, const MoveDef& mv, bool mitmCopy,
                      int moveIdx, bool byPlayer);
 
-    // The steal track's whole family, called by applyEffect once it has decided a hit
-    // landed. One effect family per helper is the shape applyEffect is being taken apart
+    // The steal track's whole family, called by payCaster once a swing dealt damage to
+    // anything. One effect family per helper is the shape applyEffect is being taken apart
     // in — the mitigation chain above the call is a different question from the payout
     // below it, and only the chain needs the locals it accumulates.
-    void applyStealTrack(Combatant& actor, Combatant& target, const MoveDef& mv);
+    // `reachedHealth` gates only the current-Health drain; every other steal is paid on
+    // damage dealt to anything (payCaster).
+    void applyStealTrack(Combatant& actor, Combatant& target, const MoveDef& mv,
+                         bool reachedHealth);
+    // What a damaging swing pays its caster — steals, crew on-hit, the Lockout stack — on
+    // damage dealt in any form, where a status rider needs Health.
+    void payCaster(Combatant& actor, Combatant& target, Combatant& mirror, const MoveDef& mv,
+                   bool mitmCopy, int dealt, bool reachedHealth);
     // The Trojan line's trap, spent on the hit that sprang it: `dmg` in, what still reaches
     // the target out, with the rebound measured against the pre-mitigation `baseDmg`.
     // Returns `dmg` unchanged when the target holds no trap.

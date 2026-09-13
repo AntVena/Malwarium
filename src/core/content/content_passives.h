@@ -53,6 +53,10 @@ constexpr int kLedgerGrudgeMaxPct = 100;    // ...and never more than doubling
 // fields): a power siphon can't drag powerMultPct below kStealPowerFloorPct; a speed
 // siphon can't drag speed below kStealSpeedFloor (the target keeps some action tempo).
 constexpr int kStealPowerFloorPct = 20;
+// What a power siphon pays the thief, as a % of what it took. Over 100 so two siphoning
+// kits ramp each other rather than trading the same Power back and forth forever — the
+// fight's total damage climbs until one of them breaks through the other's bubble.
+constexpr int kStealPowerGainPct = 110;
 constexpr int kStealSpeedFloor = 1;
 
 // Feed-frenzy: a landed steal-attack while the caster's Obfuscation shield (shieldHp)

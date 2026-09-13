@@ -961,6 +961,8 @@ void test_pure_rider_reaches_the_pet_through_every_defence() {
     // ...and the mirror is not SPENT by a cast it never had damage to negate.
     CHECK(cast([](Combatant& p) { p.mods.arm(ModEffect::RaidMirror); })
               .mods.armed(ModEffect::RaidMirror));
+    CHECK(cast([](Combatant& p) { p.guard = 30; }).lockedTurnsLeft == 2);          // brace
+    CHECK(cast([](Combatant& p) { p.guard = 30; }).guard == 30);                   // ...intact
 }
 
 // The swarm was the one interceptor that took a pure rider, because a replica ate any hit
@@ -1002,6 +1004,61 @@ void test_the_swarm_still_eats_a_damaging_hit() {
         if (c.player().lockedTurnsLeft == 0) ++intercepted;           // a body took it
     }
     CHECK(intercepted > 20);        // the swarm is still doing its job, and by a mile
+}
+
+// A SELF-BUFF pays on damage dealt to anything. A power siphon swallowed whole by a bubble
+// still takes the Power — and pays the thief more than the victim lost, so two siphoning
+// kits ramp each other instead of trading the same number back and forth.
+void test_siphon_pays_through_a_bubble_and_nets_positive() {
+    ContentRegistry r = ContentRegistry::embedded();
+    Combatant pc = mkCombatant(r, "P", 200, 5, {"quick_jab"});
+    pc.shieldHp = 500;
+    Combatant e = mkCombatant(r, "E", 200, 5, {"dropped_packet"});   // 8 power, siphon 12%
+    Combat c; c.begin(pc, e, Combat::Stakes::Safe, 5, /*forceEnemyFirst=*/true);
+    const int before = c.player().powerMultPct;
+    c.step();
+    const int stolen = before * 12 / 100;
+    CHECK(c.player().health == 200);                                   // nothing reached Health
+    CHECK(c.player().powerMultPct == before - stolen);
+    CHECK(c.enemy().powerMultPct == before + stolen * kStealPowerGainPct / 100);
+    CHECK(c.enemy().powerMultPct - before > stolen);
+}
+
+// ...and the same for a hit a worm copy ate: the Lockout stack banks whichever body took it.
+void test_lockout_stack_pays_when_a_replica_eats_the_hit() {
+    ContentRegistry r = ContentRegistry::embedded();
+    int eaten = 0;
+    for (uint32_t seed = 1; seed <= 40; ++seed) {
+        Combatant pc = mkCombatant(r, "P", 400, 5, {"quick_jab"});
+        pc.wormReplicaCount = 3;
+        for (int i = 0; i < 3; ++i) pc.wormReplicas[i] = WormReplica{true, 300, 300};
+        Combatant e = mkCombatant(r, "E", 400, 5, {"payload_drop"});
+        Combat c; c.begin(pc, e, Combat::Stakes::Safe, seed, /*forceEnemyFirst=*/true);
+        c.step();
+        if (c.player().health == 400) ++eaten;
+        CHECK(c.enemy().stackPowerBonus == 10);
+    }
+    CHECK(eaten > 20);
+}
+
+// A DoT rider STACKS: its per-turn damage adds to what is already ticking, and the clock
+// runs to the longer of the two — so a recast is a ramp, never a wasted turn.
+void test_dot_rider_stacks_and_keeps_the_longer_clock() {
+    ContentRegistry r = ContentRegistry::embedded();
+    auto after = [&](int per, int turns) {                  // data_rot plants 5 x 3
+        Combatant pc = mkCombatant(r, "P", 400, 5, {"quick_jab"});
+        pc.dotPerTurn = per;
+        pc.dotTurnsLeft = turns;
+        Combatant e = mkCombatant(r, "E", 400, 5, {"data_rot"});
+        Combat c; c.begin(pc, e, Combat::Stakes::Safe, 5, /*forceEnemyFirst=*/true);
+        c.step();
+        return c.player();
+    };
+    CHECK(after(4, 10).dotPerTurn == 9);
+    CHECK(after(4, 10).dotTurnsLeft == 10);   // the running clock was longer
+    CHECK(after(2, 2).dotPerTurn == 7);
+    CHECK(after(2, 2).dotTurnsLeft == 3);     // the new one was
+    CHECK(after(4, 0).dotPerTurn == 5);       // a spent DoT's leftover number does not stack
 }
 
 // Every rider actually fires. Cheap, but it is what stops the rider phase becoming dead

@@ -208,13 +208,12 @@ const MoveDef kMoves[] = {
     // Obfuscation bubble up (shieldHp > 0, cast via spoof_bubble/proxy_shell/
     // bathyspoof) — the "Perfect Bite" passive (content_passives.h, Combat::
     // applyEffect) then has a stage-scaled chance to double whichever of the two lands.
-    // WHAT A POOL IS WORTH BEYOND THE NUMBER: a hit the pool covers ENTIRELY lands no stun
-    // and no scramble either, because nothing reached the pet to concuss it (Combat::
-    // applyOnHitRiders). That is not on the effect line — the budget will not carry it —
-    // so it is a thing a player finds out, and it is most of why a deep pool beats a brace
-    // of the same size against a rider kit. The counter is corruption: a DoT plants through
-    // an intact pool and its ticks come off Health, which is the one pressure a bubble
-    // cannot answer by being bigger.
+    // WHAT A POOL IS WORTH BEYOND THE NUMBER: a hit the pool covers ENTIRELY lands none of
+    // its riders either — no stun, no scramble, no DoT — because the rider rode on damage
+    // the pool ate (Combat::applyOnHitRiders). That is not on the effect line — the budget
+    // will not carry it — so it is a thing a player finds out, and it is most of why a deep
+    // pool beats a brace of the same size against a rider kit. The counter is the PURE
+    // RIDER band below: a cast with no damage has nothing for a bubble to eat.
     //
     // The Obfuscation ladder is a decoy that learns to bite. The first rung is pure
     // padding; the second trades depth for POISONED DATA — read the decoy and something in
@@ -367,6 +366,33 @@ const MoveDef kMoves[] = {
      "{power} when slots are full.",
      Stage::Daemon, "worm", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
      /*replicaSpawnPct=*/100, /*replicaPowerPct=*/0, /*replicaHealthPct=*/30},
+
+    // --- The PURE RIDER band — one per line ----------------------------------------
+    // Power 0 on every row (riderRow), which is what lets the effect past a pool, a
+    // mirror, a trap or a swarm (the PURE RIDER rule, combat.h): the caster trades the
+    // whole turn's damage for an effect no defence can stand in front of. They are the
+    // low-economy answer to a stacked defence, and the Metamorphic line reaches all four
+    // through its wildcard pairs rather than owning a fifth.
+    //
+    // A stun's worth is counted in turns, so it keeps its value at every stage and opens
+    // early — except Phishing's, whose Process and Script bodies have one Attack slot, where
+    // a pure rider would be the pet's only way to deal damage at all. A DoT rider STACKS on
+    // recast (stackDot, combat.cpp), so its per-turn number starts low: the row is a ramp
+    // the caster builds over the fight, not one big plant.
+    // The Worm's row is only pure on an empty board — attacking copies pile onto every
+    // swing (wormReplicaDamage), so with them out it is a hit like any other.
+    riderRow("screen_locker", "Screen Locker",
+             "Encrypts nothing and takes nothing - just locks the screen for {lock} turns.",
+             Stage::Process, "ransomware", /*lockTurns=*/4, /*dotDamage=*/0, /*dotTurns=*/0),
+    riderRow("vish_hold", "Vish-Hold",
+             "Calls the mark and keeps them on hold - frozen for {lock} turns.",
+             Stage::Daemon, "phishing", /*lockTurns=*/3, /*dotDamage=*/0, /*dotTurns=*/0),
+    riderRow("sleeper_dropper", "Sleeper-Dropper",
+             "Leaves another payload behind and walks away - +{dot} a turn, for {dotTurns}.",
+             Stage::Script, "trojan", /*lockTurns=*/0, /*dotDamage=*/4, /*dotTurns=*/6),
+    riderRow("cycle_leech", "Cycle-Leech",
+             "Eats more of the host's idle cycles - +{dot} a turn, for {dotTurns}.",
+             Stage::Script, "worm", /*lockTurns=*/0, /*dotDamage=*/3, /*dotTurns=*/6),
 
     // --- The THREAT moves (Watchdog / Faraday counter these) -----------------------
     // Generic ENEMY-flavoured attacks that carry a rider (lockTurns / dot*). Each is an

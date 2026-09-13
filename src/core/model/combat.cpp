@@ -337,6 +337,24 @@ int Combat::chooseMove(Combatant& self) {
     return idx;
 }
 
+// Plants a DoT unless the one already running has more damage left in it. Never stacks,
+// and never downgrades: a weak plant landing on a strong DoT does not wash it out.
+static void plantDot(Combatant& c, int per, int turns) {
+    if (per <= 0 || turns <= 0) return;
+    if (per * turns < c.dotPerTurn * c.dotTurnsLeft) return;
+    c.dotPerTurn = per;
+    c.dotTurnsLeft = turns;
+}
+
+// A DoT RIDER stacks instead: its per-turn damage adds to whatever is already ticking and
+// the clock runs to the longer of the two. An attack slot is scarce, so a DoT move is a
+// ramp the caster builds cast by cast, and a recast is never a wasted turn.
+static void stackDot(Combatant& c, int per, int turns) {
+    if (per <= 0 || turns <= 0) return;
+    c.dotPerTurn = (c.dotTurnsLeft > 0 ? c.dotPerTurn : 0) + per;
+    if (turns > c.dotTurnsLeft) c.dotTurnsLeft = turns;
+}
+
 // Net Neutrality's floor (crew Exploit): whether `c`'s stat LEANS are locked against being
 // lowered. Every site that would reduce power / defence / speed / maxHealth asks this
 // first. Health is not covered — it is the resource the fight is fought over, not a lean.
@@ -390,13 +408,18 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
                                 moveIdx == actor.ransomSeizure.slot;
 
     int dmg = swingDamage(actor, *mv, byPlayer, swingingSeized);
-    // A replica eats the hit WHOLE and the turn ends there — no mitigation, no riders.
-    if (replicaAte(target, *mv, dmg, byPlayer)) return;
+    // A replica eats the hit WHOLE and the turn ends there — no mitigation, no riders on
+    // the worm. The caster's own payout still stands: it dealt damage, just not to Health.
+    if (replicaAte(target, *mv, dmg, byPlayer)) {
+        payCaster(actor, target, mirror, *mv, mitmCopy, dmg, /*reachedHealth=*/false);
+        return;
+    }
 
     const int baseDmg = dmg;          // pre-mitigation: the trap rebound and the floor read it
     int wallAbsorbed = 0;             // what the WALL swallowed; Defence T3 pays out of it
     dmg = mitigate(actor, target, *mv, dmg, baseDmg, wallAbsorbed);
     dmg = capAndSplit(actor, target, dmg, moveIdx);
+    const int dealt = dmg;
     dmg = soakShieldPool(actor, target, dmg);
     dmg = springTrojanTrap(actor, target, dmg, baseDmg);
     // The Ransomware pair, last in the chain so the pool holds exactly what would have
@@ -410,12 +433,23 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
     target.health -= dmg - ransomed;
 
     applyRetaliation(actor, target, dmg, wallAbsorbed);
-    if (dmg > 0) applyStealTrack(actor, target, *mv);
+    payCaster(actor, target, mirror, *mv, mitmCopy, dealt, /*reachedHealth=*/dmg > 0);
     applyDeathBlast(actor, target);
     setLast(mv->displayName, dmg, byPlayer, false, ransomed > 0, /*strike=*/true);
-    applyCrewOnHit(actor, dmg);
-    stackLockoutPower(actor, mirror, *mv, mitmCopy);
     applyOnHitRiders(target, *mv);
+}
+
+// SELF-BUFFS PAY ON DAMAGE IN ANY FORM. A status rider has to reach Health to land
+// (applyOnHitRiders), but what the swing pays its own caster only asks that it dealt
+// damage to something — Health, a bubble, a worm copy, a trap that bounced it back. So a
+// ramping kit keeps ramping into a defence that is eating its hits, and eventually out-hits
+// it. `dealt` is 0 only for a pure rider or a hit a mirror deleted outright.
+void Combat::payCaster(Combatant& actor, Combatant& target, Combatant& mirror,
+                       const MoveDef& mv, bool mitmCopy, int dealt, bool reachedHealth) {
+    if (dealt <= 0) return;
+    applyStealTrack(actor, target, mv, reachedHealth);
+    applyCrewOnHit(actor, dealt);
+    stackLockoutPower(actor, mirror, mv, mitmCopy);
 }
 
 // The feeding-frenzy combo: this actor's run of steal-attack casts made with the bubble up.
@@ -567,7 +601,8 @@ int Combat::mitigate(Combatant& actor, Combatant& target, const MoveDef& mv, int
             if (dmg < 0) dmg = 0;
             --canary->pending;
         }
-        if (target.guard > 0) {                   // a defend brace (one-shot)
+        // A pure rider has no hit for the brace to spend itself on, so it stays up whole.
+        if (target.guard > 0 && baseDmg > 0) {    // a defend brace (one-shot)
             // Pierced by the same pair in the same order: a row that ignores a wall
             // ignores a brace too (defs.h).
             int brace = pierced(target.guard, mv.armorPiercePct);
@@ -632,20 +667,17 @@ return dmg;
 
 // The Obfuscation shield pool (Phishing): a second health bar, last in the mitigation
 // chain. Only the overflow reaches Health, and a hit the pool covers ENTIRELY also lands
-// no stun and no scramble — it never reached the pet to concuss it (poolAbsorbedHit, read
-// by applyOnHitRiders). A DoT still plants through it, which is the pool's designed
-// counter: corruption is not impact, and its ticks bypass the pool for Health itself.
+// none of its riders (poolAbsorbedHit, read by applyOnHitRiders). The designed counter is
+// a pure rider, which never reaches this phase with damage to soak.
 // Popping the pool (not merely chewing it down) releases the frenzy ratchet, so the way
 // out of a frenzy is "break the bubble", not "wait".
 int Combat::soakShieldPool(Combatant& actor, Combatant& target, int dmg) {
     if (dmg <= 0 || target.shieldHp <= 0) return dmg;
     // Poisoned data (MoveDef::poolRetaliateDot): planted on the attacker before the pool is
-    // chewed, so a hit that POPS the bubble still poisons. Refreshes rather than stacks,
-    // like every other DoT.
+    // chewed, so a hit that POPS the bubble still poisons.
     if (target.poolDotDamage > 0 && target.poolDotTurns > 0) {
         const int cut = actor.mods.mag(ModEffect::FaradayCut);
-        const int per = target.poolDotDamage * (100 - cut) / 100;
-        if (per > 0) { actor.dotPerTurn = per; actor.dotTurnsLeft = target.poolDotTurns; }
+        plantDot(actor, target.poolDotDamage * (100 - cut) / 100, target.poolDotTurns);
     }
     if (target.shieldHp >= dmg) {
         target.shieldHp -= dmg;
@@ -726,8 +758,8 @@ void Combat::applyOnHitRiders(Combatant& target, const MoveDef& mv) {
         }
     }
     // SCRAMBLE rider: a landed hit reorders and enciphers the target's A+C picker for
-    // its next scrambleTurns turns. Refreshes rather than stacks, exactly as the DoT
-    // below does. Crib Sheet (ModEffect::ScrambleWard) is a flat refusal rather than a
+    // its next scrambleTurns turns. Refreshes rather than stacks, and never shortens one
+    // already running. Crib Sheet (ModEffect::ScrambleWard) is a flat refusal rather than a
     // clamp — there is no "half a scrambled list", so the counter either holds or it
     // does not, and a mod that shortened it would be selling a worse version of the
     // one thing it is for.
@@ -738,12 +770,10 @@ void Combat::applyOnHitRiders(Combatant& target, const MoveDef& mv) {
     }
     // DoT rider (Faraday-pass THREAT): a landed hit plants corruption — dotDamage/turn for
     // dotTurns of the target's upcoming turn-starts. The target's Faraday Cage (mod) cuts
-    // the magnitude (100 = immune → nothing planted). Refreshes, not stacks.
+    // the magnitude (100 = immune → nothing planted).
     if (landed && mv.dotDamage > 0 && mv.dotTurns > 0) {
-        int per = mv.dotDamage;
         const int faradayCut = target.mods.mag(ModEffect::FaradayCut);
-        if (faradayCut > 0) per = per * (100 - faradayCut) / 100;
-        if (per > 0) { target.dotPerTurn = per; target.dotTurnsLeft = mv.dotTurns; }
+        stackDot(target, mv.dotDamage * (100 - faradayCut) / 100, mv.dotTurns);
     }
 }
 
@@ -929,7 +959,8 @@ int Combat::bankRansomAndSeize(Combatant& target, const MoveDef& mv, int dmg) {
 // applyEffect so the mitigation chain there reads as one thing: every branch below is
 // a landed hit paying out, and the caller has already decided that a hit landed.
 // Draws rng() only through Perfect Bite, at the point applyEffect always drew it.
-void Combat::applyStealTrack(Combatant& actor, Combatant& target, const MoveDef& mv) {
+void Combat::applyStealTrack(Combatant& actor, Combatant& target, const MoveDef& mv,
+                             bool reachedHealth) {
     // Every non-zero steal* field fires, independently — a move setting more than one
     // steals more than one. stealPowerPct/stealDefensePct are unconditional;
     // stealSpeedPct/stealCurrentHpPct also need the caster's Obfuscation bubble up, so
@@ -944,7 +975,7 @@ void Combat::applyStealTrack(Combatant& actor, Combatant& target, const MoveDef&
     if (mv.stealPowerPct > 0 && !floored) {
         const int stolen = target.powerMultPct * mv.stealPowerPct / 100;
         if (stolen > 0) {
-            actor.powerMultPct += stolen;
+            actor.powerMultPct += stolen * kStealPowerGainPct / 100;
             target.powerMultPct -= stolen;
             if (target.powerMultPct < kStealPowerFloorPct)
                 target.powerMultPct = kStealPowerFloorPct;
@@ -990,7 +1021,9 @@ void Combat::applyStealTrack(Combatant& actor, Combatant& target, const MoveDef&
             if (target.speed < kStealSpeedFloor) target.speed = kStealSpeedFloor;
         }
     }
-    if (bubbleUp && mv.stealCurrentHpPct > 0) {
+    // The drain is the one steal that takes the target's HEALTH, so like a status rider it
+    // needs the hit to have reached Health — a bubble it could drain through is no bubble.
+    if (bubbleUp && mv.stealCurrentHpPct > 0 && reachedHealth) {
         int pct = mv.stealCurrentHpPct;
         if (bite && !biteHitsSpeed)
             pct += mv.stealCurrentHpPct *

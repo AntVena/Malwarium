@@ -1131,6 +1131,33 @@ constexpr MoveDef severRow(const char* id, const char* displayName, int power,
     return m;
 }
 
+// A PURE RIDER row: an attack that deals no damage and spends the whole turn on its effect,
+// so no defence has anything to absorb and the effect lands on the pet directly (the PURE
+// RIDER rule, combat.h). `power` is 0 on every one of them because that is what the rule
+// keys on — a number here would quietly turn the row back into a hit a shield can eat.
+constexpr MoveDef riderRow(const char* id, const char* displayName, const char* effect,
+                           Stage minStage, const char* line, int lockTurns, int dotDamage,
+                           int dotTurns) {
+    MoveDef m{};
+    m.id = id;
+    m.displayName = displayName;
+    m.kind = MoveKind::Attack;
+    m.power = 0;
+    m.channelTurns = 1;
+    m.effect = effect;
+    m.minStage = minStage;
+    m.line = line;
+    m.lockTurns = lockTurns;
+    m.dotDamage = dotDamage;
+    m.dotTurns = dotTurns;
+    return m;
+}
+
+inline bool moveIsPureRider(const MoveDef& m) {
+    return m.kind == MoveKind::Attack && m.power == 0 && !moveIsWildcard(m) &&
+           (m.lockTurns > 0 || m.dotDamage > 0);
+}
+
 // A METAMORPHIC WILDCARD row: it casts nothing of its own, so the fields that would carry
 // a mechanic are exactly the ones it leaves empty, and the two that matter (the lines it
 // reaches) sit at the very end of the positional tail. Same reason braceRow and poolRow
