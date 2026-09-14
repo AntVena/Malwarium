@@ -235,6 +235,46 @@ void drawIconSlot(Framebuffer& fb, const SpriteData* icon, int x, int y, Rgb565 
     fb.fillRect(x + 1, y + 1, kRowIcon - 2, kRowIcon - 2, palColor(Pal::PAPER));
 }
 
+// Row-major lookup into one of the view's move-to-learn blocks (any may be null).
+int learnAt(const int* block, int i) { return block ? block[i] : 0; }
+
+// The "+n" LEAD's number for `row`: how many moves the pet could still learn in the zone
+// that row stands for, 0 for a row with nothing to promise.
+//
+// Two states answer 0 whatever their zone holds. A LOCKED row is drawn as "??????", and
+// a count beside that would be spoiling a zone the player cannot reach. The ARENA never
+// teaches at all — a bracket is fought against other operators' pets, which
+// Game::combatCanTeach refuses a drop roll — so a mark there would be the one thing this
+// lead must never be, a promise the roll does not keep.
+int rowMovesToLearn(int row, ExplRowState st, const ExplListView& v) {
+    switch (st) {
+        case ExplRowState::AreaLocked:
+        case ExplRowState::SubLocked:
+        case ExplRowState::DeepWebLocked:
+        case ExplRowState::DarkWebLocked:
+        case ExplRowState::TourneyLocked:
+        case ExplRowState::TourneyOpen:
+        case ExplRowState::TourneyRunning:
+            return 0;
+        default:
+            break;
+    }
+    if (explRowIsDeepWeb(row)) return v.deepWebMovesToLearn;
+    if (explRowIsDarkWeb(row)) return v.darkWebMovesToLearn;
+    const int areaIdx = explRowArea(row);
+    if (areaIdx < 0 || areaIdx >= kExplSectors) return 0;
+    const int sub = explRowSub(row);
+    // A header row is TWO different things by level: the zone itself at the top (what
+    // the whole area still owes this pet) and the AREA GAUNTLET inside it (what those
+    // five boss rounds pay). Reading one block for both would have the gauntlet row
+    // advertising drops that are out on the walk.
+    if (sub < 0)
+        return v.navArea < 0 ? learnAt(v.areaMovesToLearn, areaIdx)
+                             : learnAt(v.gauntletMovesToLearn, areaIdx);
+    if (sub >= kExplSubAreas) return 0;
+    return learnAt(v.subMovesToLearn, areaIdx * kExplSubAreas + sub);
+}
+
 // An area's sector glyph, by the ICON_SECTOR_<AREA_ID> convention (the same
 // name-IS-the-lookup rule as itemIcon, items_screen.cpp) — the id is already on the
 // AreaDef row, so nothing here maps an area to a picture.
@@ -445,12 +485,28 @@ void drawExplList(Framebuffer& fb, const ContentRegistry& reg, const ExplListVie
             }
         }
 
+        // The "+n" LEAD, between the name and the state tag: how many moves this zone can
+        // still teach THIS pet. Same mark and same CALM the combat KIT page marks a prize
+        // move with (RivalPrizes, core/ui/combat_screen.h) — it is the same promise made
+        // about a place instead of about the thing in front of the pet, so it is worth
+        // reading as the same symbol. The number is the non-colour channel: a zone with
+        // nothing left draws no lead at all, which is the state a player is scanning for.
+        char lead[8];
+        lead[0] = '\0';
+        if (const int learn = rowMovesToLearn(row, st, v))
+            std::snprintf(lead, sizeof(lead), "+%d", learn);
+
         // Title and detail are both held to the room their row actually leaves — the
-        // tag's width varies by state, so the budget is computed here rather than
-        // assumed. The focused row scrolls what doesn't fit; the rest clip (widgets.h).
+        // tag's and the lead's widths both vary by state, so the budget is computed here
+        // rather than assumed. The focused row scrolls what doesn't fit; the rest clip
+        // (widgets.h).
         const int tagW = tag.text[0] ? textWidth(tag.text) + kMargin : 0;
-        drawTextMarquee(fb, kTextX, titleY, kActiveW - kMargin - tagW - kTextX, title,
-                        titleInk, v.beat, focused);
+        const int leadW = lead[0] ? textWidth(lead) + kMargin : 0;
+        drawTextMarquee(fb, kTextX, titleY, kActiveW - kMargin - tagW - leadW - kTextX,
+                        title, titleInk, v.beat, focused);
+        if (lead[0])
+            drawText(fb, kActiveW - kMargin - tagW - textWidth(lead), titleY, lead,
+                     palColor(Pal::CALM));
         if (tag.text[0])
             drawText(fb, kActiveW - kMargin - textWidth(tag.text), titleY, tag.text,
                      tag.col);

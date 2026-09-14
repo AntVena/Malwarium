@@ -274,7 +274,7 @@ CombatEnemy wildMalbeast(int sectorTier, uint32_t variantRoll) {
             {"Segfault Pup", "SPR_MALBEAST_SEGFAULT_PUP", 1, 30, 10,
              {"quick_jab"}, true, "wild_pointer"},
         };
-        return kTier1[variantRoll % 2];
+        return kTier1[variantRoll % kWildMalbeastVariants];
     }
     if (sectorTier == 2) {
         static const CombatEnemy kTier2[] = {
@@ -283,7 +283,7 @@ CombatEnemy wildMalbeast(int sectorTier, uint32_t variantRoll) {
             {"Cache Ghoul", "SPR_MALBEAST_CACHE_GHOUL", 2, 50, 13,
              {"quick_jab", "packet_storm"}, true, "stale_read"},
         };
-        return kTier2[variantRoll % 2];
+        return kTier2[variantRoll % kWildMalbeastVariants];
     }
     static const CombatEnemy kTier3[] = {
         {"Buffer Wyrm", "SPR_MALBEAST_BUFFER_WYRM", 3, 80, 14,
@@ -293,7 +293,7 @@ CombatEnemy wildMalbeast(int sectorTier, uint32_t variantRoll) {
         {"Kernel Leviathan", "SPR_MALBEAST_KERNEL_LEVIATHAN", 3, 85, 13,
          {"packet_storm", "fork_bomb"}, true, "ring_zero"},
     };
-    return kTier3[variantRoll % 2];
+    return kTier3[variantRoll % kWildMalbeastVariants];
 }
 
 // The fixed wild-malbeast roster (combat.h) — slugged ids matching the wildMalbeast()
@@ -706,6 +706,132 @@ CombatEnemy guardianEnemy(int areaIdx, int sub) {
     e.dmgReducePct = kGuardianDmgReducePct;
     e.isSwarm = true;
     return e;
+}
+
+// Zone move pools ------------------------------------------------
+//
+// What a PLACE can teach, as opposed to what a fight can. Built out of the very enemy
+// builders above rather than out of a second table, so a kit that changes shape — a rung
+// of the wild ladder, an escort round, a guardian's list — changes what its zone is
+// advertised as teaching in the same edit. A parallel table would be the one thing this
+// must never be: a promise the drop roll does not keep.
+
+namespace {
+void poolAdd(std::vector<const char*>& out, const char* id) {
+    if (!id) return;
+    for (const char* c : out)
+        if (std::strcmp(c, id) == 0) return;
+    out.push_back(id);
+}
+void poolAdd(std::vector<const char*>& out, const std::vector<const char*>& ids) {
+    for (const char* id : ids) poolAdd(out, id);
+}
+void poolAdd(std::vector<const char*>& out, const char* const* ids, int n) {
+    for (int i = 0; i < n; ++i) poolAdd(out, ids[i]);
+}
+void poolAdd(std::vector<const char*>& out, const BossGauntlet& g) {
+    for (const CombatEnemy& e : g.rounds) poolAdd(out, e.moveIds);
+}
+
+std::vector<const char*> buildSubAreaMovePool(int areaIdx, int sub) {
+    std::vector<const char*> out;
+    // The WILDS, both variants of the tier roster: which of the two a walk rolls is a
+    // coin the player does not call, so a rung teaches the union of them.
+    for (uint32_t variant = 0; variant < kWildMalbeastVariants; ++variant) {
+        CombatEnemy e = wildMalbeast(areaTier(areaIdx), variant);
+        applyWildSubAreaRamp(e, areaIdx, sub);        // the rung, the area pair, the signature
+        poolAdd(out, e.moveIds);
+    }
+    poolAdd(out, subAreaBoss(areaIdx, sub));          // ...the boss and any escorts with it
+    poolAdd(out, guardianEnemy(areaIdx, sub).moveIds);  // ...and what watches the walk
+    return out;
+}
+
+std::vector<const char*> buildAreaGauntletMovePool(int areaIdx) {
+    std::vector<const char*> out;
+    poolAdd(out, areaBoss(areaIdx));
+    return out;
+}
+
+std::vector<const char*> buildAreaMovePool(int areaIdx) {
+    std::vector<const char*> out;
+    for (int sub = 0; sub < kSubAreasPerArea; ++sub)
+        poolAdd(out, subAreaMovePool(areaIdx, sub));
+    poolAdd(out, areaGauntletMovePool(areaIdx));
+    return out;
+}
+
+std::vector<const char*> buildDeepWebMovePool() {
+    std::vector<const char*> out;
+    for (int rung = 0; rung < kDeepWebMoveRungTotal; ++rung)
+        poolAdd(out, kDeepWebMoveRungs[rung], kDeepWebMoveRungCounts[rung]);
+    poolAdd(out, kDeepWebMovesBoss, kDeepWebMovesBossCount);
+    poolAdd(out, kDeepWebWildAttackMoveId);
+    poolAdd(out, kDeepWebWildDefendMoveId);
+    return out;
+}
+
+std::vector<const char*> buildDarkWebMovePool() {
+    // applyDarkWebScale draws the DEEP pool at every depth — there is no shallow end to
+    // the crawl — plus the dive's own pair, which it borrows rather than owning.
+    std::vector<const char*> out;
+    poolAdd(out, kDeepWebMovesBoss, kDeepWebMovesBossCount);
+    poolAdd(out, kDeepWebWildAttackMoveId);
+    poolAdd(out, kDeepWebWildDefendMoveId);
+    return out;
+}
+
+// One table per zone shape, filled on first ask and kept. `built` rather than an empty
+// test because a pool may legitimately BE empty (an area whose every kit is the shared
+// spine), and rebuilding that one every repaint is the case this cache exists for.
+struct MovePoolCache {
+    std::vector<const char*> ids;
+    bool built = false;
+};
+MovePoolCache kSubPools[kAreaCount][kSubAreasPerArea];
+MovePoolCache kGauntletPools[kAreaCount];
+MovePoolCache kAreaPools[kAreaCount];
+MovePoolCache kDeepWebPool;
+MovePoolCache kDarkWebPool;
+
+template <typename Build>
+const std::vector<const char*>& poolOf(MovePoolCache& c, Build build) {
+    if (!c.built) {
+        c.ids = build();
+        c.built = true;
+    }
+    return c.ids;
+}
+}  // namespace
+
+const std::vector<const char*>& subAreaMovePool(int areaIdx, int sub) {
+    if (areaIdx < 0) areaIdx = 0;
+    if (areaIdx >= kAreaCount) areaIdx = kAreaCount - 1;
+    if (sub < 0) sub = 0;
+    if (sub >= kSubAreasPerArea) sub = kSubAreasPerArea - 1;
+    return poolOf(kSubPools[areaIdx][sub],
+                  [&] { return buildSubAreaMovePool(areaIdx, sub); });
+}
+
+const std::vector<const char*>& areaGauntletMovePool(int areaIdx) {
+    if (areaIdx < 0) areaIdx = 0;
+    if (areaIdx >= kAreaCount) areaIdx = kAreaCount - 1;
+    return poolOf(kGauntletPools[areaIdx],
+                  [&] { return buildAreaGauntletMovePool(areaIdx); });
+}
+
+const std::vector<const char*>& areaMovePool(int areaIdx) {
+    if (areaIdx < 0) areaIdx = 0;
+    if (areaIdx >= kAreaCount) areaIdx = kAreaCount - 1;
+    return poolOf(kAreaPools[areaIdx], [&] { return buildAreaMovePool(areaIdx); });
+}
+
+const std::vector<const char*>& deepWebMovePool() {
+    return poolOf(kDeepWebPool, [] { return buildDeepWebMovePool(); });
+}
+
+const std::vector<const char*>& darkWebMovePool() {
+    return poolOf(kDarkWebPool, [] { return buildDarkWebMovePool(); });
 }
 
 // Bits payout. randInt(R, R²) — one uniform draw in the inclusive range.

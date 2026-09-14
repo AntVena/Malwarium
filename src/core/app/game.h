@@ -558,6 +558,27 @@ public:
     // not start counting until the effect has cleared the verdict banner's own space.
     bool combatOutroEligible() const;
     bool combatDissolveRunning() const;
+    // The same question the KIT page's prize gutter answers, asked of a PLACE instead of
+    // the thing in front of the pet: how many moves this pet could still learn in a zone
+    // of the EXPL ladder. The content half is the zone's move pool (subAreaMovePool and
+    // friends, core/model/combat.h) and the pet half is moveIsTeachable — the drop roll's
+    // own filter, so a count here can never promise a move the roll would refuse.
+    //
+    // What it buys is the answer to "where do I go next", which nothing on the device
+    // said: a cleared area is still the only place some of its moves are findable, and a
+    // ladder of CLEARED rows gave a player no way to tell that one from the one it has
+    // taught everything it knows. The EXPL list draws each as a "+n" lead on its row
+    // (core/ui/expl_screen.h's ExplListView).
+    //
+    // A zone with no pet (an empty rack) counts nothing — there is nobody to teach.
+    int areaMovesToLearn(int area) const;
+    // The AREA GAUNTLET row's own count, which is not the area's: the gauntlet is five
+    // boss rounds and the area boss's own move, and a player standing on that row is
+    // asking what THAT fight pays, not what the whole zone holds.
+    int areaGauntletMovesToLearn(int area) const;
+    int subAreaMovesToLearn(int area, int sub) const;
+    int deepWebMovesToLearn() const;
+    int darkWebMovesToLearn() const;
     // The on-screen line resolveNetworkDiscovery() set on the last Wi-Fi event
     // (new/familiar/home-turf/empty-queue) — "" if none has resolved yet.
     const char* netDiscoveryFlavor() const { return netDiscoveryFlavor_; }
@@ -2518,6 +2539,10 @@ private:
     // absorb (rivalFieldsUnknownMove) is a PROMISE that the roll has something to give:
     // if the two ever disagreed the screen would advertise a drop that cannot happen.
     bool moveIsTeachable(const MoveDef* m) const;
+    // How many of `pool`'s move ids this pet could still learn — moveIsTeachable counted
+    // over a zone's list. The one body every movesToLearn accessor above shares, so the
+    // ladder cannot start answering the question differently from the dive.
+    int movesToLearnIn(const std::vector<const char*>& pool) const;
     // Is the fight on screen one the WORLD lets a pet learn from at all? A duel and an
     // arena bout are another operator's pet and a Sim dummy is a prop, so none of them
     // rolls a move drop — and nothing on screen may offer one. Read by the outro (which

@@ -703,6 +703,28 @@ void Game::drawSubmenu(Framebuffer& fb) const {
             v.streakWins = exploreStreak_;
             v.winsToBoss = kExploreStreakToBoss;
             v.bestDeepWebDepth = bestDeepWebDepth_;
+            v.bestDarkWebDepth = bestDarkWebDepth_;
+            // THE LEVEL IS THE LIST (explRowInLevel): only the rows this level actually
+            // draws are counted, so the zone picker pays for the area pools and an
+            // opened area pays for its own five rungs — never for the whole ladder on
+            // every repaint. Everything else stays 0, which is what a row nobody is
+            // looking at is worth.
+            int areaLearn[kExplSectors] = {};
+            int gauntletLearn[kExplSectors] = {};
+            int subLearn[kExplSectors * kExplSubAreas] = {};
+            if (explNavArea_ >= 0 && explNavArea_ < kExplSectors) {
+                gauntletLearn[explNavArea_] = areaGauntletMovesToLearn(explNavArea_);
+                for (int sub = 0; sub < kExplSubAreas; ++sub)
+                    subLearn[explNavArea_ * kExplSubAreas + sub] =
+                        subAreaMovesToLearn(explNavArea_, sub);
+            } else {
+                for (int a = 0; a < kExplSectors; ++a) areaLearn[a] = areaMovesToLearn(a);
+                v.deepWebMovesToLearn = deepWebMovesToLearn();
+                v.darkWebMovesToLearn = darkWebMovesToLearn();
+            }
+            v.areaMovesToLearn = areaLearn;
+            v.gauntletMovesToLearn = gauntletLearn;
+            v.subMovesToLearn = subLearn;
             v.tourneyRunning = tourneyRunning();
             v.tourneyAlive = tourneyAliveCount(tourneyAlive_);
             v.tourneyRound = tourneyRound_;

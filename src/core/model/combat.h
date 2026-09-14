@@ -1049,9 +1049,14 @@ CombatEnemy simDummy(int tier);
 // `e`; stamps `level`/`hasLevel` so the combat screen shows a number instead of "???".
 void applySimDummyLevelScale(CombatEnemy& e, int petLevel);
 
+// How many variants each tier of the wild roster rolls among. Named because anything
+// asking what a RUNG can field — rather than what one encounter rolled — has to walk them
+// all (subAreaMovePool), and a bare 2 in that loop is a number nobody can check.
+constexpr uint32_t kWildMalbeastVariants = 2;
+
 // Wild-encounter malbeasts, difficulty-scaled by sector tier (1..3); each tier rolls among
-// 2 variants. `variantRoll` is caller-owned (the shared Game LCG) so the pick is
-// deterministic under a fixed seed; 0 picks the first variant.
+// kWildMalbeastVariants variants. `variantRoll` is caller-owned (the shared Game LCG) so
+// the pick is deterministic under a fixed seed; 0 picks the first variant.
 CombatEnemy wildMalbeast(int sectorTier, uint32_t variantRoll = 0);
 
 // The fixed wild-malbeast roster — index = bit position in Game's
@@ -1156,6 +1161,30 @@ BossGauntlet areaBoss(int area);
 // NOT carry that area's apexThreatMoveId, so the signature boss stays the only way to
 // earn it.
 CombatEnemy guardianEnemy(int area, int sub);
+
+// What a ZONE can teach — every move id carried by anything that can be fought in it,
+// deduplicated. A win teaches out of the beaten enemy's own kit
+// (Game::rollEnemyMoveDrop), so this is that same question asked of a place instead of a
+// fight: the union of the wild roster at that rung, the boss(es) standing there, and the
+// area's guardian, which is met on the walk and so belongs to every stretch of it.
+//
+// Content only — it says nothing about any pet. Which of these a given pet could still
+// LEARN is Game's filter (moveIsTeachable) applied over the returned list, and keeping
+// the two apart is what lets the pools be built once and the answer change per pet.
+//
+// Each returns a reference to a list built on first use and kept: the ladder's kits are
+// fixed data, so re-deriving them per repaint would be the same answer rebuilt at 4fps.
+const std::vector<const char*>& subAreaMovePool(int area, int sub);
+// The AREA GAUNTLET's own pool — the five sub-area bosses at their own rungs plus the
+// area boss's move, which rides the last round and nowhere else (areaBoss).
+const std::vector<const char*>& areaGauntletMovePool(int area);
+// The whole area: every sub-area's pool and the gauntlet's, as one list.
+const std::vector<const char*>& areaMovePool(int area);
+// The two endless zones. The dive's pool spans every depth rung plus the deep pool past
+// kDeepWebBossMoveDepth; the crawl fights at that deep pool from its first step, so it
+// carries the smaller list and not a copy of the dive's.
+const std::vector<const char*>& deepWebMovePool();
+const std::vector<const char*>& darkWebMovePool();
 
 // Combat Bits payout, keyed to the opponent's stage-rank R. A NORMAL opponent pays a random
 // integer in [R, R²]; a BOSS rolls that range R times and sums, a gauntlet accruing one

@@ -121,6 +121,14 @@ inline bool explRowInLevel(int row, int navArea) {
     return explRowArea(row) == navArea;               // that area's header + subs
 }
 
+// The widest the "+n" move-to-learn lead ever draws, as the string a row budget is
+// measured against. Two digits is the ceiling by construction — a zone's pool is the
+// kits of a handful of enemies, not the roster — and the gate that budgets every EXPL
+// name against this asserts no shipped zone outgrows it
+// (test_expl_names_stay_scrollable). Public because the budget has two readers and they
+// must not each guess.
+constexpr const char* kExplLearnLeadMax = "+99";
+
 // Everything drawExplList renders. A view struct rather than a parameter list because
 // the screen reads a dozen unrelated facts and a positional call of that length is
 // unreadable at both ends (same reason as ShopRowView, below).
@@ -147,6 +155,26 @@ struct ExplListView {
     bool tourneyRunning = false;
     int tourneyAlive = 0;
     int tourneyRound = 0;
+    // HOW MANY MOVES ARE LEFT HERE, per row — the count of moves the current pet could
+    // still learn in each zone (Game::areaMovesToLearn and friends). Drawn as a "+n"
+    // lead just left of the state tag, in the same mark and the same CALM the combat KIT
+    // page marks a prize move with (RivalPrizes, core/ui/combat_screen.h), because it is
+    // the same promise: beating what lives there can teach that many things.
+    //
+    // It is the one thing a ladder of CLEARED rows could not say. A cleared area is
+    // still the only place some of its moves are findable, so without this a player
+    // re-farming for a kit has no way to tell the zone that still owes them something
+    // from the one they have learned out.
+    //
+    // Blocks are row-major and may be null (nothing marked, the honest default for a
+    // caller that has no pet to ask about). A LOCKED row is never marked whatever the
+    // block says — it is drawn as "??????", and a count beside that would be spoiling a
+    // zone the player cannot reach.
+    const int* areaMovesToLearn = nullptr;      // [kExplSectors]   — the top-level zone row
+    const int* gauntletMovesToLearn = nullptr;  // [kExplSectors]   — the AREA GAUNTLET row
+    const int* subMovesToLearn = nullptr;       // [kExplSectors * kExplSubAreas]
+    int deepWebMovesToLearn = 0;                // ...and the two endless rows' own
+    int darkWebMovesToLearn = 0;
     // `beat` drives one thing: a focused ZONE title (an area, the area-boss row, the
     // DeepWeb row) pulses, so a heading-shaped row still reads as the armed selection.
     int beat = 0;

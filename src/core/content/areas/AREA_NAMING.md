@@ -94,9 +94,11 @@ instinct from Area naming, where reuse is forbidden.
 
 ### 2.2 The Behavior + Landscape Pattern
 
-A Sub-area name also has a hard **18-character** ceiling: the EXPL list draws it beside a
-right-aligned state tag, and a longer name overdraws the tag. `test_expl_names_fit_their_rows`
-enforces it, so a too-long candidate fails the build rather than shipping a broken row.
+A Sub-area name also has a hard **18-character** ceiling. The EXPL list draws it beside two
+right-aligned things — the `+n` count of moves the zone can still teach, then the state tag —
+and a name past that ceiling takes longer to scroll past them than anyone will watch it for.
+`test_expl_names_stay_scrollable` enforces it, so a too-long candidate fails the build rather
+than shipping a row nobody can read.
 
 | Behavior/artifact | + Landscape word | = Sub-area |
 |---|---|---|

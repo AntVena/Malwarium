@@ -671,6 +671,28 @@ bool Game::moveIsTeachable(const MoveDef* m) const {
     return true;
 }
 
+int Game::movesToLearnIn(const std::vector<const char*>& pool) const {
+    // No pet, nothing to teach: an empty rack must not advertise a zone as holding
+    // anything, and moveIsTeachable already refuses a line-exclusive move without one.
+    if (!pet_) return 0;
+    int n = 0;
+    for (const char* id : pool)
+        if (moveIsTeachable(registry_.move(id))) ++n;
+    return n;
+}
+
+int Game::areaMovesToLearn(int area) const {
+    return movesToLearnIn(areaMovePool(area));
+}
+int Game::areaGauntletMovesToLearn(int area) const {
+    return movesToLearnIn(areaGauntletMovePool(area));
+}
+int Game::subAreaMovesToLearn(int area, int sub) const {
+    return movesToLearnIn(subAreaMovePool(area, sub));
+}
+int Game::deepWebMovesToLearn() const { return movesToLearnIn(deepWebMovePool()); }
+int Game::darkWebMovesToLearn() const { return movesToLearnIn(darkWebMovePool()); }
+
 bool Game::rollEnemyMoveDrop(const Combatant& from, int dropPct) {
     // You learn a move by BEATING something that knows it. The pool is the defeated
     // enemy's whole KIT — every move it could have used, not the ones it happened to

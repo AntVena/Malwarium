@@ -374,14 +374,17 @@ void test_hint_bands_fit_the_canvas() {
 }
 
 void test_expl_names_stay_scrollable() {
-    // Every EXPL row is a TITLE line — name at kTextX, state tag right-aligned against
-    // the 8px margin with a margin's gap — over a DETAIL line running the full width
-    // from the same x. Each name is budgeted against the widest tag ITS OWN row pairs
-    // with, then allowed twice that before it counts as unscrollable.
+    // Every EXPL row is a TITLE line — name at kTextX, then the "+n" move-to-learn lead
+    // and the state tag right-aligned against the 8px margin with a margin's gap each —
+    // over a DETAIL line running the full width from the same x. Each name is budgeted
+    // against the widest tag ITS OWN row pairs with, plus the widest lead ANY row can
+    // draw (the lead rides every unlocked row, so no row gets to skip it), then allowed
+    // twice that before it counts as unscrollable.
     const int titleX = 8 + 20 + 2, margin = 8;      // expl_screen's kTextX
-    const int subNameW  = kActiveW - margin - (textWidth("EXPLORING") + margin) - titleX;
-    const int areaNameW = kActiveW - margin - (textWidth("LOCKED") + margin) - titleX;
-    const int bossNameW = kActiveW - margin - (textWidth("> BOSS") + margin) - titleX;
+    const int leadW = textWidth(kExplLearnLeadMax) + margin;
+    const int subNameW  = kActiveW - margin - (textWidth("EXPLORING") + margin) - leadW - titleX;
+    const int areaNameW = kActiveW - margin - (textWidth("LOCKED") + margin) - leadW - titleX;
+    const int bossNameW = kActiveW - margin - (textWidth("> BOSS") + margin) - leadW - titleX;
     const int detailW   = kActiveW - margin - titleX;
     // The breadcrumb header inside an area: "EXPL", the cursor triangle, then the area
     // name at a fixed offset past both.
@@ -1155,6 +1158,80 @@ void test_boss_teaches_its_own_apex_move() {
         }
     }
     CHECK(g.moveLoadout().owns(rider));                // ...and now it is a reward
+}
+
+// The EXPL list's "+n" LEAD: how many moves the pet in front of you could still learn in
+// each zone. It is the same promise the combat KIT page's prize gutter makes about one
+// rival (Game::rivalTeachableMoveMask), made about a place — so it has to come out of the
+// same filter. A lead counting something the drop roll would refuse is the screen
+// advertising a reward the game cannot pay, which is the one way this can be wrong.
+void test_expl_move_leads_count_what_a_zone_can_teach() {
+    // The POOLS are content: what can be fought in a zone, kits and all. Every one has to
+    // fit the two digits the row budget reserves for the lead (kExplLearnLeadMax), and
+    // every zone has to be a subset of the area row that stands for it — an area row
+    // promising less than one of its own rungs would send a player past the thing they
+    // came for.
+    auto within = [](const std::vector<const char*>& inner,
+                     const std::vector<const char*>& outer) {
+        for (const char* id : inner) {
+            bool found = false;
+            for (const char* o : outer)
+                if (std::strcmp(o, id) == 0) { found = true; break; }
+            if (!found) return false;
+        }
+        return true;
+    };
+    for (int a = 0; a < kExplSectors; ++a) {
+        CHECK(static_cast<int>(areaMovePool(a).size()) <= 99);
+        CHECK(within(areaGauntletMovePool(a), areaMovePool(a)));
+        for (int sub = 0; sub < kExplSubAreas; ++sub)
+            CHECK(within(subAreaMovePool(a, sub), areaMovePool(a)));
+    }
+    CHECK(static_cast<int>(deepWebMovePool().size()) <= 99);
+    CHECK(within(darkWebMovePool(), deepWebMovePool()));   // the crawl fights the deep pool
+
+    Game g{StartMode::Hatched};
+    // A fresh pet owns its own line's kit and none of the generic pool, so the first area
+    // — whose wilds, bosses and guardian all carry generic rows — has something to teach
+    // from the shallowest rung up.
+    CHECK(g.subAreaMovesToLearn(0, 0) > 0);
+    CHECK(g.areaMovesToLearn(0) >= g.subAreaMovesToLearn(0, 0));
+    CHECK(g.areaMovesToLearn(0) >= g.areaGauntletMovesToLearn(0));
+
+    // Learn a rung out and its lead goes: that is the state this exists to show, since a
+    // CLEARED tag says nothing about whether the rung still owes the pet a move.
+    for (const char* id : subAreaMovePool(0, 0)) g.debugGrantMove(id);
+    CHECK(g.subAreaMovesToLearn(0, 0) == 0);
+    // ...and only that rung's. The deep end of the same area keeps its own kits, which is
+    // what stops the lead collapsing into one number per area.
+    CHECK(g.subAreaMovesToLearn(0, kExplSubAreas - 1) > 0);
+    CHECK(g.areaMovesToLearn(0) > 0);
+
+    // The AREA GAUNTLET is its own fight and not the area: the banner's move rides the
+    // final round and nowhere else (areaBoss), so a player who has learned every rung of
+    // the area out on the walk is still owed that one by the gauntlet row.
+    if (area(0).areaBossMoveId) {
+        Game h{StartMode::Hatched};
+        for (int sub = 0; sub < kExplSubAreas; ++sub)
+            for (const char* id : subAreaMovePool(0, sub)) h.debugGrantMove(id);
+        CHECK(h.subAreaMovesToLearn(0, kExplSubAreas - 1) == 0);
+        CHECK(h.areaGauntletMovesToLearn(0) > 0);
+        CHECK(h.areaMovesToLearn(0) > 0);              // the area still owes it too
+    }
+
+    // Learn the lot and every lead in the game goes out — nothing keeps counting a move
+    // the pet already has.
+    for (int a = 0; a < kExplSectors; ++a)
+        for (const char* id : areaMovePool(a)) g.debugGrantMove(id);
+    for (const char* id : deepWebMovePool()) g.debugGrantMove(id);
+    for (int a = 0; a < kExplSectors; ++a) {
+        CHECK(g.areaMovesToLearn(a) == 0);
+        CHECK(g.areaGauntletMovesToLearn(a) == 0);
+        for (int sub = 0; sub < kExplSubAreas; ++sub)
+            CHECK(g.subAreaMovesToLearn(a, sub) == 0);
+    }
+    CHECK(g.deepWebMovesToLearn() == 0);
+    CHECK(g.darkWebMovesToLearn() == 0);
 }
 
 // Two-level nested-list nav: the TOP level lands on the DeepWeb

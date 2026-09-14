@@ -355,6 +355,7 @@ int g_failures = 0;
     RUN(test_every_generic_move_is_carried)       \
     RUN(test_boss_threat_moves_area_adjacent)     \
     RUN(test_boss_teaches_its_own_apex_move)      \
+    RUN(test_expl_move_leads_count_what_a_zone_can_teach) \
     RUN(test_expl_nested_list_nav)                \
     RUN(test_deepweb_dive)                        \
     RUN(test_darkweb_crawl)                       \
