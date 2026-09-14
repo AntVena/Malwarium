@@ -1234,6 +1234,37 @@ void test_expl_move_leads_count_what_a_zone_can_teach() {
     CHECK(g.darkWebMovesToLearn() == 0);
 }
 
+// A beaten zone is DONE only when it has nothing left to teach the pet standing in front
+// of it; while it still holds something it is BEAT, which claims the fight and nothing
+// more. The screen must never call a place finished while it is still holding a move:
+// the tag is the loudest word on the row, so a player reads it instead of the count.
+void test_expl_beaten_is_not_done_until_learned_out() {
+    auto word = [](ExplRowState s, int learn) { return explRowTagWord(s, learn); };
+    for (ExplRowState s : {ExplRowState::AreaCleared, ExplRowState::SubCleared}) {
+        CHECK(std::strcmp(word(s, 1), "BEAT") == 0);
+        CHECK(std::strcmp(word(s, 12), "BEAT") == 0);
+        CHECK(std::strcmp(word(s, 0), "DONE") == 0);
+    }
+    // No other state is moved by the count — an OPEN rung with moves in it is still OPEN,
+    // and the lead beside it is what says there is something there.
+    CHECK(std::strcmp(word(ExplRowState::SubOpen, 9), "OPEN") == 0);
+    CHECK(std::strcmp(word(ExplRowState::SubOpen, 0), "OPEN") == 0);
+    CHECK(std::strcmp(word(ExplRowState::SubLocked, 9), "LOCKED") == 0);
+    // ...and BEAT is drawn in the same column DONE was, so the rule costs no row width.
+    CHECK(textWidth("BEAT") == textWidth("DONE"));
+
+    // The rule against the real ladder: clear area 0's first rung on a pet that has
+    // learned none of it, and the row reads BEAT; teach it out and the same row reads
+    // DONE without anything about the save changing.
+    Game g{StartMode::Hatched};
+    const int learn = g.subAreaMovesToLearn(0, 0);
+    CHECK(learn > 0);
+    CHECK(std::strcmp(word(ExplRowState::SubCleared, learn), "BEAT") == 0);
+    for (const char* id : subAreaMovePool(0, 0)) g.debugGrantMove(id);
+    CHECK(std::strcmp(word(ExplRowState::SubCleared, g.subAreaMovesToLearn(0, 0)),
+                      "DONE") == 0);
+}
+
 // Two-level nested-list nav: the TOP level lands on the DeepWeb
 // row + area HEADERS; B on an area DRILLS in; INSIDE, A cycles that area's subs (+ the
 // boss-ready header) and B acts (arm / FIGHT BOSS / AREA BOSS); C pops back to the area

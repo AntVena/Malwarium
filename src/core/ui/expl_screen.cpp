@@ -185,16 +185,28 @@ namespace {
 // The right-anchored tag + its emphasis colour for a row state (the WORD carries the
 // meaning; colour is only emphasis, so a grayscale screenshot stays readable).
 struct RowTag { const char* text; Rgb565 col; };
-RowTag rowTag(ExplRowState s) {
+// `learn` is the row's "?n" count — 0 when this zone has nothing left to teach THIS pet.
+// A BEATEN zone is only DONE when that holds. Putting the boss down is BEAT, which
+// claims the fight and nothing else; DONE is reserved for the row that owes the pet
+// nothing at all, which is the only reading under which the word is true and the only
+// one that makes it worth chasing. The tag therefore moves with the PET rather than with
+// the save, on purpose: a fresh hatch walks back into a ladder of BEAT rows, and that is
+// the honest answer to where to take it.
+//
+// BEAT is dim and DONE is CALM for the same reason — on a beaten row the bright thing
+// should be the "?n" still standing beside it, not the fight that is already over.
+RowTag rowTag(ExplRowState s, int learn) {
     switch (s) {
         case ExplRowState::AreaLocked:   return {"LOCKED",  palColor(Pal::INK_DIM)};
-        case ExplRowState::AreaCleared:  return {"DONE",    palColor(Pal::CALM)};
+        case ExplRowState::AreaCleared:  return learn ? RowTag{"BEAT", palColor(Pal::INK_DIM)}
+                                                     : RowTag{"DONE", palColor(Pal::CALM)};
         case ExplRowState::AreaBossReady:return {"> BOSS",  palColor(Pal::ACCENT)};
         case ExplRowState::AreaProgress: return {"",        palColor(Pal::INK_DIM)};
         case ExplRowState::SubLocked:    return {"LOCKED",  palColor(Pal::INK_DIM)};
         case ExplRowState::SubExploring: return {"EXPLORING", palColor(Pal::ACCENT)};
         case ExplRowState::SubBossReady: return {"> BOSS",  palColor(Pal::ACCENT)};
-        case ExplRowState::SubCleared:   return {"DONE",    palColor(Pal::CALM)};
+        case ExplRowState::SubCleared:   return learn ? RowTag{"BEAT", palColor(Pal::INK_DIM)}
+                                                     : RowTag{"DONE", palColor(Pal::CALM)};
         case ExplRowState::SubOpen:      return {"OPEN",    palColor(Pal::CALM)};
         case ExplRowState::DeepWebLocked:return {"LOCKED",  palColor(Pal::INK_DIM)};
         case ExplRowState::DeepWebOpen:  return {"> DIVE",  palColor(Pal::ACCENT)};
@@ -288,6 +300,12 @@ const SpriteData* sectorIcon(const ContentRegistry& reg, int areaIdx) {
 }
 } // namespace
 
+// The gate-facing half of the row tag: its words, without the emphasis. One body with
+// the drawn tag, so a state can never say one thing on the panel and another in a test.
+const char* explRowTagWord(ExplRowState s, int movesToLearn) {
+    return rowTag(s, movesToLearn).text;
+}
+
 void drawExplList(Framebuffer& fb, const ContentRegistry& reg, const ExplListView& v) {
     // Breadcrumb header — the nav level, spelled out on the band's title. Inside an
     // area the area's NAME is the crumb, which is why the row beneath it is the area's
@@ -358,7 +376,11 @@ void drawExplList(Framebuffer& fb, const ContentRegistry& reg, const ExplListVie
         detail[0] = '\0';
         const char* title = "";
         Rgb565 titleInk = palColor(Pal::INK);
-        RowTag tag = rowTag(st);
+        // What this zone can still teach comes FIRST: it decides the lead drawn below and
+        // whether a beaten row has earned the word DONE, so the tag cannot be settled
+        // without it.
+        const int learn = rowMovesToLearn(row, st, v);
+        RowTag tag = rowTag(st, learn);
 
         if (explRowIsTourney(row)) {
             // The arena, under the ladder. It borrows its water's sector glyph rather
@@ -496,8 +518,7 @@ void drawExplList(Framebuffer& fb, const ContentRegistry& reg, const ExplListVie
         // the state a player is scanning for.
         char lead[8];
         lead[0] = '\0';
-        if (const int learn = rowMovesToLearn(row, st, v))
-            std::snprintf(lead, sizeof(lead), "?%d", learn);
+        if (learn) std::snprintf(lead, sizeof(lead), "?%d", learn);
 
         // Title and detail are both held to the room their row actually leaves — the
         // tag's and the lead's widths both vary by state, so the budget is computed here

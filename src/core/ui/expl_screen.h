@@ -78,15 +78,19 @@ enum class ExplRowState {
     AreaLocked,     // area's predecessor not cleared → "??????" + LOCKED
     AreaProgress,   // area open, boss not yet reachable → "n/5" cleared-sub count
     AreaBossReady,  // all 5 sub-areas cleared, area not → "> AREA BOSS" (selectable)
-    AreaCleared,    // area's gauntlet beaten → CLEARED
+    AreaCleared,    // area's gauntlet beaten → BEAT, or DONE once the area has nothing
+                    // left to teach this pet (the tag is settled with the "?n" count —
+                    // see ExplListView's move-to-learn blocks)
     SubLocked,      // its AREA is locked → "??????" + LOCKED (open areas' subs never lock)
     SubOpen,        // armable, not yet won → OPEN (selectable → arm explore)
     SubExploring,   // the armed/running sub, boss not yet unlocked → EXPLORING (selectable)
     SubBossReady,   // 10-win streak unlocked its boss → "> FIGHT BOSS" (selectable;
                     // takes priority over EXPLORING so the action stays reachable)
-    SubCleared,     // its boss beaten → CLEARED, but still RE-FARMABLE:
-                    // selectable to re-arm explore for full XP+Bits + diminishing loot,
-                    // so a done area stays a training ground (esp. for a fresh pet).
+    SubCleared,     // its boss beaten → BEAT (DONE once learned out, as above), but
+                    // still RE-FARMABLE: selectable to re-arm explore for full XP+Bits +
+                    // diminishing loot, so a beaten rung stays a training ground — which
+                    // is exactly what a fresh pet, walking a ladder of BEAT rows it has
+                    // learned none of, is being pointed at.
     DeepWebLocked,  // DeepWeb Dive, not all areas cleared → "??????" + LOCKED
     DeepWebOpen,    // every area cleared → "> DIVE" (selectable → arm the endless dive)
     DeepWebDiving,  // the endless dive is armed → DIVING (selectable → re-arm)
@@ -106,6 +110,12 @@ ExplRowState explRowState(int row, const bool* areaCleared, const bool* subClear
 // A-cycle lands / B acts only on selectable rows (skips headers-that-aren't-boss and
 // locked rows). Pure function of the state.
 bool explRowSelectable(ExplRowState s);
+
+// The WORD a row's right-anchored state tag carries — the meaning channel, since colour
+// on this screen is only emphasis. `movesToLearn` is that row's "?n" count (see
+// ExplListView), which is the whole of what separates BEAT from DONE on a beaten row.
+// Public so a gate can assert what a row SAYS rather than read it out of pixels.
+const char* explRowTagWord(ExplRowState s, int movesToLearn);
 
 // THE LEVEL IS THE LIST: which rows are drawn at nav level `navArea` (-1 = top).
 // The top level is a ZONE PICKER — the DeepWeb row plus one row per area, and none of
@@ -167,6 +177,10 @@ struct ExplListView {
     // still the only place some of its moves are findable, so without this a player
     // re-farming for a kit has no way to tell the zone that still owes them something
     // from the one they have learned out.
+    //
+    // These also settle the STATE TAG on a beaten row: a zone with a count left reads
+    // BEAT and one with none reads DONE, so the screen never claims a place is finished
+    // while it is still holding something (ExplRowState::AreaCleared/SubCleared).
     //
     // Blocks are row-major and may be null (nothing marked, the honest default for a
     // caller that has no pet to ask about). A LOCKED row is never marked whatever the
