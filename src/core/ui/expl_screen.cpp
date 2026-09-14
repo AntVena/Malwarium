@@ -238,7 +238,7 @@ void drawIconSlot(Framebuffer& fb, const SpriteData* icon, int x, int y, Rgb565 
 // Row-major lookup into one of the view's move-to-learn blocks (any may be null).
 int learnAt(const int* block, int i) { return block ? block[i] : 0; }
 
-// The "+n" LEAD's number for `row`: how many moves the pet could still learn in the zone
+// The "?n" LEAD's number for `row`: how many moves the pet could still learn in the zone
 // that row stands for, 0 for a row with nothing to promise.
 //
 // Two states answer 0 whatever their zone holds. A LOCKED row is drawn as "??????", and
@@ -485,16 +485,19 @@ void drawExplList(Framebuffer& fb, const ContentRegistry& reg, const ExplListVie
             }
         }
 
-        // The "+n" LEAD, between the name and the state tag: how many moves this zone can
-        // still teach THIS pet. Same mark and same CALM the combat KIT page marks a prize
-        // move with (RivalPrizes, core/ui/combat_screen.h) — it is the same promise made
-        // about a place instead of about the thing in front of the pet, so it is worth
-        // reading as the same symbol. The number is the non-colour channel: a zone with
-        // nothing left draws no lead at all, which is the state a player is scanning for.
+        // The "?n" LEAD, between the name and the state tag: how many moves this zone can
+        // still teach THIS pet — n things down there it has not seen. The QUESTION MARK
+        // is the list's own word for that, since "??????" is what it draws a zone the
+        // player has not reached as; a plus would read as a modifier, which is what a
+        // signed number means everywhere else on the device. CALM is only emphasis — it
+        // says the unknown is a prize rather than a lock, the way the combat KIT page's
+        // prize gutter does (RivalPrizes, core/ui/combat_screen.h). The number is the
+        // non-colour channel: a zone with nothing left draws no lead at all, which is
+        // the state a player is scanning for.
         char lead[8];
         lead[0] = '\0';
         if (const int learn = rowMovesToLearn(row, st, v))
-            std::snprintf(lead, sizeof(lead), "+%d", learn);
+            std::snprintf(lead, sizeof(lead), "?%d", learn);
 
         // Title and detail are both held to the room their row actually leaves — the
         // tag's and the lead's widths both vary by state, so the budget is computed here

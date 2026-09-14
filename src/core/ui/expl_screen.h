@@ -121,13 +121,13 @@ inline bool explRowInLevel(int row, int navArea) {
     return explRowArea(row) == navArea;               // that area's header + subs
 }
 
-// The widest the "+n" move-to-learn lead ever draws, as the string a row budget is
+// The widest the "?n" move-to-learn lead ever draws, as the string a row budget is
 // measured against. Two digits is the ceiling by construction — a zone's pool is the
 // kits of a handful of enemies, not the roster — and the gate that budgets every EXPL
 // name against this asserts no shipped zone outgrows it
 // (test_expl_names_stay_scrollable). Public because the budget has two readers and they
 // must not each guess.
-constexpr const char* kExplLearnLeadMax = "+99";
+constexpr const char* kExplLearnLeadMax = "?99";
 
 // Everything drawExplList renders. A view struct rather than a parameter list because
 // the screen reads a dozen unrelated facts and a positional call of that length is
@@ -156,10 +156,12 @@ struct ExplListView {
     int tourneyAlive = 0;
     int tourneyRound = 0;
     // HOW MANY MOVES ARE LEFT HERE, per row — the count of moves the current pet could
-    // still learn in each zone (Game::areaMovesToLearn and friends). Drawn as a "+n"
-    // lead just left of the state tag, in the same mark and the same CALM the combat KIT
-    // page marks a prize move with (RivalPrizes, core/ui/combat_screen.h), because it is
-    // the same promise: beating what lives there can teach that many things.
+    // still learn in each zone (Game::areaMovesToLearn and friends). Drawn as a "?n"
+    // lead just left of the state tag: n things in this place the pet does not know yet.
+    // A QUESTION MARK is this screen's own word for that — it is what a locked row is
+    // drawn as ("??????"), so the glyph already means "you have not seen what is here"
+    // everywhere else on the list. A plus would read as a modifier, which is what it is
+    // on every other number the device draws.
     //
     // It is the one thing a ladder of CLEARED rows could not say. A cleared area is
     // still the only place some of its moves are findable, so without this a player
