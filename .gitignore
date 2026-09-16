@@ -38,8 +38,16 @@ compile_commands.json
 # carried that describes the PROJECT lives in tracked docs instead: CONTRIBUTING.md
 # (constraints, module rule, standards routing), the per-folder README.md files, and
 # tools/gates.sh (the build/test cycle, previously a snippet to copy by hand).
+#
+# The SessionStart hook and the settings file that registers it are the exception,
+# tracked for the same reason tools/gates.sh is: they are ENVIRONMENT SETUP, not a
+# prompt. A Claude Code on the web container is built from the checkout, so a hook
+# nobody can clone is a hook that never runs. Everything else under .claude/ — local
+# overrides, agent definitions, session state — stays out.
 CLAUDE.md
-.claude/
+.claude/*
+!.claude/hooks/
+!.claude/settings.json
 
 # Python tooling
 .venv/

@@ -102,6 +102,16 @@ regenerates both — run it after a fresh clone, and again whenever the include 
 them in place a clangd error is a real error on either tier; there is no "device code always
 looks broken" to read past.
 
+**From a Claude Code on the web session.** `.claude/hooks/session-start.sh` installs what
+`tools/` imports and runs the codegen, so a fresh container can build and test on arrival.
+Run `./tools/gates.sh --native` there: the sandbox network policy refuses the PlatformIO
+registry, so the S3 tier cannot fetch its toolchain and cannot run at all. CI covers it —
+gates runs both tiers on pushes to `claude/**` as well as `main`, so a remote session's
+push is checked without opening a pull request. Two things a session cannot do for itself:
+it has no write on `refs/tags/*`, so **cutting a release needs a human to push the tag**,
+and Pages deploys are held to `main`, so **publish only runs once the work has landed
+there** — dispatching `publish.yml` on a branch fails with an empty, logless deploy job.
+
 Neither tier can see two things drawn on top of each other, or a panel cutting its own
 copy. `./tools/screens.sh` renders the screen catalogue to one contact sheet for that —
 a looking tool, not a gate. Run it after touching the layout grid, the font, or a shared

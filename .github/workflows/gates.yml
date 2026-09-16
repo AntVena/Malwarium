@@ -4,9 +4,15 @@
 # green native run says nothing about whether the firmware still links.
 name: gates
 
+# claude/** rides alongside main because a Claude Code on the web session works on
+# one of those branches and opens no pull request, so without it a remote session
+# pushes into silence — and it is the tier it cannot run itself that goes unchecked:
+# the sandbox network policy refuses the PlatformIO registry, so the S3 build exists
+# nowhere but here. workflow_dispatch stays for running either tier against any ref
+# on demand.
 on:
   push:
-    branches: [main]
+    branches: [main, 'claude/**']
   pull_request:
   workflow_dispatch:
 
