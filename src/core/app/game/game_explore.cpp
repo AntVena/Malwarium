@@ -163,7 +163,7 @@ void Game::onExplCategories(const ButtonEvent& ev) {
         const ExplCat c = explCatAt(listRow_);
         if (!explCatHasRows(c)) {
             if (c == ExplCat::Arena) openTourney();
-            else openStoryArchive();
+            else if (c == ExplCat::Chapters) openStoryArchive();
             return;
         }
         explCat_ = c;
