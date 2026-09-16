@@ -29,6 +29,7 @@
 #include <cstdint>
 
 #include "core/content/defs.h"  // LootEntry — an area's wild-win drop table
+#include "core/content/story.h"  // AreaStoryDef — an area also owns what it MEANS
 #include "core/render/scene_id.h"  // SceneId — an area names its backdrop the way it names its glyph
 
 namespace mal {
@@ -279,6 +280,12 @@ struct AreaDef {
     // and then differ in one entry, which is exactly the difference this makes visible.
     const LootEntry* wildLootPool;
     int wildLootPoolCount;
+    // What this place MEANS — the chapters read out at the beats the walk reaches here
+    // (content/story.h). Last on the row because it is the only field with nothing
+    // mechanical behind it: everything above decides what an area DOES, and this is the
+    // part that says why the operator came. An area that has not been written yet
+    // leaves it zeroed, which reads as four unauthored beats and fires nothing.
+    AreaStoryDef story;
 };
 
 extern const AreaDef kAreaCitrusCircuit;
@@ -347,6 +354,14 @@ extern const int kAreaModsDeepWebCount;
 extern const LootEntry kWildLootDeepWeb[];   // AreaDef::wildLootPool's stand-in
 extern const int kWildLootDeepWebCount;
 extern const char* const kDeepWebIcon;   // its EXPL row glyph (AreaDef::icon's stand-in)
+// ...and the two names an area reads off its own row: the EXPL row's title and the SHORT
+// one the walk badge and the story archive carry (AreaDef::name / ::badge's stand-ins).
+// Named here rather than spelled out at each of those three call sites for the reason
+// every other stand-in on this list exists: a zone with no row still has ONE place its
+// identity is stated.
+extern const char* const kDeepWebName;
+extern const char* const kDeepWebBadge;
+extern const AreaStoryDef kStoryDeepWeb;   // AreaDef::story's stand-in
 
 // The DARKWEB CRAWL's own stand-ins, defined in areas/darkweb_crawl/area.cpp.
 extern const char* const kAreaModsDarkWeb[];
@@ -354,6 +369,9 @@ extern const int kAreaModsDarkWebCount;
 extern const LootEntry kWildLootDarkWeb[];
 extern const int kWildLootDarkWebCount;
 extern const char* const kDarkWebIcon;
+extern const char* const kDarkWebName;
+extern const char* const kDarkWebBadge;
+extern const AreaStoryDef kStoryDarkWeb;
 
 // The wild-win drop pool for `areaIdx` (0..kAreaCount-1 or kDeepWebSector), or an
 // empty pool if the index names neither. The one place the dive's standalone pool is

@@ -25,6 +25,12 @@ const int kDarkWebDepthBitsMaxPct = 768;
 const int kDarkWebSigilEveryN = 16;
 
 const char* const kDarkWebIcon = "ICON_SECTOR_DARKWEB_CRAWL";
+const char* const kDarkWebName = "DARKWEB CRAWL";
+const char* const kDarkWebBadge = "DARKWEB";
+
+// The Crawl's chapters — UNAUTHORED, exactly as the Dive's are and for the same reason
+// (deepweb_dive/area.cpp).
+const AreaStoryDef kStoryDarkWeb = {};
 
 // The terminal zone's shelf: the Lode's own rank-6 set, plus the Dive's hard-gated line
 // build-arounds. Reaching it opens the deep end of every line at once, which is what the

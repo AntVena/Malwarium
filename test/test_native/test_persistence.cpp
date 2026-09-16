@@ -37,13 +37,15 @@ void test_loadout_expl_nav() {
 
     // EXPL: the NESTED area/sub-area list. Areas are LINEAR complete-to-
     // advance; every sub-area of an OPEN area is reachable (explore any, one at a time).
-    // Two-level nav: entering parks on the area-0 header (TOP level); B
-    // DRILLS into the area, then B arms its first open sub-area 1 → the IDLE habitat (09
-    // ). Re-open and A cycles to sub-area 2. Area 1's subs stay LOCKED until area 0
-    // clears (its header still isn't enterable-to-arm — a locked area is inert).
+    // Three-level nav: entering parks on the ACTIVITY PICKER's STORY row; B opens it
+    // onto the area-0 header, B DRILLS into the area, then B arms its first open
+    // sub-area 1 → the IDLE habitat. Re-open and A cycles to sub-area 2. Area 1's subs
+    // stay LOCKED until area 0 clears (its header still isn't enterable-to-arm — a
+    // locked area is inert).
     { Game g{StartMode::Hatched}; enterSubmenuId(g, SubmenuId::Expl);
       CHECK(g.nav() == Game::Nav::Submenu);
       g.render(fb); CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));
+      g.onButton(press(Button::B));                  // STORY -> the area list
       g.onButton(press(Button::B));                  // drill into area 0
       g.onButton(press(Button::B));                  // arm sub-area 1 (index 0)
       CHECK(g.nav() == Game::Nav::Idle);

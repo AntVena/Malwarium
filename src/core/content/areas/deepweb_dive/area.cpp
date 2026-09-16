@@ -93,6 +93,13 @@ const int kDeepWebWildDefendDepth = 12;
 // art here rather than inheriting the ICON_SECTOR_<AREA_ID> convention off a row it
 // doesn't have — same reason its pool and scaling constants live here.
 const char* const kDeepWebIcon = "ICON_SECTOR_DEEPWEB_DIVE";
+const char* const kDeepWebName = "DEEPWEB DIVE";
+const char* const kDeepWebBadge = "DEEPWEB";
+
+// The Dive's chapters — UNAUTHORED. Every beat is empty, which core/content/story.h
+// reads as "this zone has nothing to say yet" and fires nothing on the walk. The block
+// exists so the archive already has the Dive's slots and filling them is one edit here.
+const AreaStoryDef kStoryDeepWeb = {};
 
 // The dive's mod pool — earned from milestone wins in the endless zone, the
 // defensive/build-around endgame Epics.

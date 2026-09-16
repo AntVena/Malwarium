@@ -473,9 +473,11 @@ inline void enterSimBattle(Game& g) {
 // Arm explore-mode on the open starter sector: EXPL -> B drops back to the
 // IDLE habitat with explore-mode running (there is no walk screen).
 inline void enterWalk(Game& g) {
-    // Two-level EXPL nav: entering parks on the area-0 header at the TOP
-    // level; B drills into that area, a second B arms its first open sub-area.
+    // THREE-level EXPL nav: entering parks on the ACTIVITY PICKER's first open row
+    // (STORY, which can never be locked); B opens it onto the area-0 header, B again
+    // drills into that area, and a third B arms its first open sub-area.
     enterSubmenuId(g, SubmenuId::Expl);
+    g.onButton(press(Button::B));                    // STORY -> the area list
     g.onButton(press(Button::B));                    // drill into the focused area
     g.onButton(press(Button::B));                    // arm its first open sub-area
     // Auto-progress now defaults ON (production), but this is the shared entry point
@@ -485,6 +487,30 @@ inline void enterWalk(Game& g) {
     // asserting. Tests exercising auto-progress itself opt back in explicitly
     // (debugSetAutoProgress(true)), same as before this default flipped.
     g.debugSetAutoProgress(false);
+    // ...and the same for the STORY chapters the walk fires (game_story.cpp): the first
+    // encounter in an area opens one, which a gate measuring loot, Wi-Fi or a streak
+    // would otherwise have to page through before its walk started. The chapters have
+    // gates of their own, which drive them rather than skipping them.
+    g.debugMarkStoryRead();
+}
+
+// Walk EXPL's ACTIVITY PICKER to `cat`'s row, from wherever the cursor is parked. The
+// picker is EXPL's top level (ui_state.h's ExplCat), so a gate reaching the arena or an
+// endless zone comes through here rather than counting A presses of its own — which row
+// a category sits on is the enum's business, not each gate's.
+inline void explPickCategory(Game& g, ExplCat cat) {
+    const int want = explCatRow(cat);
+    for (int i = 0; i < kExplCatRows && g.listRow() != want; ++i)
+        g.onButton(press(Button::A));
+}
+
+// EXPL -> STORY's area list, the level the ladder gates used to open straight onto.
+// A gate that is about the LADDER should not have to know that the picker is in front
+// of it; one that is about the picker drives it by hand instead.
+inline void enterStoryLadder(Game& g) {
+    enterSubmenuId(g, SubmenuId::Expl);
+    explPickCategory(g, ExplCat::Story);
+    g.onButton(press(Button::B));
 }
 
 // Fire the next GUARANTEED explore step NOW via the A+C control chord's Network Ping

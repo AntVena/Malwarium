@@ -52,6 +52,62 @@ const ShopListingDef kModShopListings[] = {
     {"clock_speed_boost", kShopStock, 32, {{"null_noodles", 20}}},
     {"packet_sniffer", kShopStock, 48, {{"r007_b33r", 10}}},
 };
+
+// --- The Circuit's CHAPTERS (core/content/story.h) ---------------------------
+// Four beats, fired by the walk itself: arriving, opening the gauntlet, taking it, and
+// leaving. Wires 1-4. A wire is the bit this chapter occupies in the save's read-set and
+// is never reused, so the block a zone is given is permanent even if the ladder is
+// reordered under it.
+//
+// The Circuit is the FIRST area, which makes its chapters the ones carrying the premise:
+// there is a surge nobody has explained, the operator is new, and the Crew that should be
+// handling this has not turned up. Nothing here resolves that — the opening area's job is
+// to make it a question the player is holding while they learn the buttons.
+const StoryPanelDef kIntroPanels[] = {
+    {"THE BEEP",
+     "You set out with your new Malwarium to walk the network around Citrus Circuit, "
+     "your usual stomping ground. Two steps in, it beeps. That is odd."},
+    {"WAY MORE",
+     "From the way your petware is bristling there are more viruses out here than usual. "
+     "Way more. Nobody on the boards is saying why."},
+    {"LEND A HAND",
+     "Install some mods. Check your pet's moves. Then lend a hand until a Crew can get "
+     "here. It is a good chance to work on your teamwork."},
+};
+
+const StoryPanelDef kBossIntroPanels[] = {
+    {"THE FRONT DOOR",
+     "Five stretches walked, five keepers beaten, and not one of them was working for "
+     "itself. Every trail out of the Circuit ends at the same purple monkey."},
+    {"BARON BONZI",
+     "He will not fight you. He offers to help. He has been offering to help this network "
+     "since before you owned a device, and nobody has ever got a no to stick."},
+};
+
+const StoryPanelDef kBossOutroPanels[] = {
+    {"UNINSTALLED",
+     "The Baron goes quietly, the way a thing goes when it was only ever a wrapper around "
+     "something else. What is left standing where he was is a forwarding address."},
+    {"THE ADDRESS",
+     "It points at water. South of the Circuit there is a bayou where the files nobody "
+     "will host wash up, and something down there has been paying for the traffic."},
+};
+
+const StoryPanelDef kAreaOutroPanels[] = {
+    {"WHAT IT TAUGHT",
+     "The Circuit never finishes anything. Every file here is ninety-nine percent of a "
+     "file, and everything you beat was waiting on the rest of itself."},
+    {"CERTIFIED",
+     "You are carrying the title now, and a pet that can tell a thing from a copy of it. "
+     "The Crew still has not arrived. Keep walking."},
+};
+
+const AreaStoryDef kStory = {{
+    {/*wire=*/1, "CHAPTER 1: DAY ZERO", kIntroPanels, arrLen(kIntroPanels)},
+    {/*wire=*/2, "CHAPTER 1: THE BARON", kBossIntroPanels, arrLen(kBossIntroPanels)},
+    {/*wire=*/3, "CHAPTER 1: UNINSTALLED", kBossOutroPanels, arrLen(kBossOutroPanels)},
+    {/*wire=*/4, "CHAPTER 1: CERTIFIED", kAreaOutroPanels, arrLen(kAreaOutroPanels)},
+}};
 }  // namespace
 
 const AreaDef kAreaCitrusCircuit = {
@@ -101,6 +157,7 @@ const AreaDef kAreaCitrusCircuit = {
     arrLen(kModPool),
     kWildLoot,
     arrLen(kWildLoot),
+    kStory,
 };
 
 }  // namespace mal

@@ -570,6 +570,11 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     // v64: the chosen PAL_CORE theme, by NAME, in a fixed kSaveIdCap cell like every
     // other id here. Its own tail after v63's.
     w.bytes(d.theme, kSaveIdCap);
+
+    // v65: the STORY chapters already shown, as a length-prefixed bitset over
+    // StoryChapterDef::wire. Its own tail after v64's.
+    w.u16(static_cast<uint16_t>(d.storyRead.size()));
+    for (uint8_t b : d.storyRead) w.u8(b);
 }
 
 std::vector<uint8_t> serializeSave(const SaveData& d) {
@@ -1201,6 +1206,14 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
     if (version >= 64) {
         r.bytes(d.theme, kSaveIdCap);
         d.theme[kSaveIdCap - 1] = '\0';
+    }
+
+    // v65 tail: which STORY chapters this device has been shown. Absent in an older blob
+    // -> empty, a device that has seen none — true of every save written before there
+    // was anything to see, and corrected by the first walk.
+    if (version >= 65) {
+        const uint16_t n = r.u16();
+        for (uint16_t i = 0; i < n && r.ok; ++i) d.storyRead.push_back(r.u8());
     }
 
     if (!r.ok) { out = SaveData{}; return false; }  // truncated -> empty

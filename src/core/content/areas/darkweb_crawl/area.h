@@ -14,6 +14,7 @@
 #pragma once
 
 #include "core/content/defs.h"  // LootEntry — the crawl's wild-win drop table
+#include "core/content/story.h"  // AreaStoryDef — the Crawl owns its chapters too
 
 namespace mal {
 
@@ -95,9 +96,17 @@ extern const int kDarkWebDepthBitsMaxPct;
 // is the zone that teaches it.
 extern const int kDarkWebSigilEveryN;
 
-// Its EXPL row glyph. No AreaDef, so it names its own art (the Dive's kDeepWebIcon does
-// the same, and for the same reason).
+// Its EXPL row glyph, and the two lengths of its name — the EXPL row's title and the
+// short field the walk badge and the story archive carry. No AreaDef, so it names its
+// own art and its own identity (the Dive's stand-ins do the same, and for the same
+// reason).
 extern const char* const kDarkWebIcon;
+extern const char* const kDarkWebName;
+extern const char* const kDarkWebBadge;
+
+// The Crawl's own chapters, AreaDef::story's stand-in (core/content/story.h). Like the
+// Dive it reaches only the AreaIntro beat: the end of the map has no gauntlet to close.
+extern const AreaStoryDef kStoryDarkWeb;
 
 // Its two pools, the stand-ins for AreaDef::modPoolIds and ::wildLootPool.
 extern const char* const kAreaModsDarkWeb[];

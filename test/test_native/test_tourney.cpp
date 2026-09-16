@@ -241,12 +241,12 @@ void test_tourney_run_from_the_expl_row() {
     CHECK(explRowState(arenaRow, areas, cleared, boss, -1, -1, true) ==
           ExplRowState::TourneyRunning);
 
-    // Walk to the row and enter. It is the LAST row, so C-holding backward from the
-    // parked area header is the short way there; A round-trips just as well.
+    // Walk to it and enter. The arena is a CATEGORY on EXPL's activity picker, not a
+    // row at the foot of the ladder, so it is two presses from the submenu however many
+    // areas the ladder grows to.
     enterSubmenuId(g, SubmenuId::Expl);
-    for (int i = 0; i < explRowCount() && g.listRow() != arenaRow; ++i)
-        g.onButton(press(Button::A));
-    CHECK(g.listRow() == arenaRow);
+    explPickCategory(g, ExplCat::Arena);
+    CHECK(g.listRow() == explCatRow(ExplCat::Arena));
     g.onButton(press(Button::B));
     CHECK(g.nav() == Game::Nav::Tourney);
     CHECK(g.tourneyRunning());
@@ -303,8 +303,7 @@ void test_tourney_run_from_the_expl_row() {
 // because a dismissed run hands the operator straight back to this list — re-entering
 // the submenu from there would be navigating somewhere it already is.
 static void armBracket(Game& g) {
-    for (int i = 0; i < explRowCount() && g.listRow() != explRowCount() - 1; ++i)
-        g.onButton(press(Button::A));
+    explPickCategory(g, ExplCat::Arena);
     tapB(g);
     CHECK(g.tourneyRunning());
 }
@@ -388,8 +387,7 @@ void test_tourney_screen_grayscale() {
         g.debugAddCombatXp(600000);
         g.debugSetSectorCleared(0, true);          // reach the Bayou → the arena opens
         enterSubmenuId(g, SubmenuId::Expl);
-        for (int i = 0; i < explRowCount() && g.listRow() != explRowCount() - 1; ++i)
-            g.onButton(press(Button::A));
+        explPickCategory(g, ExplCat::Arena);
         tapB(g);              // draw a bracket
         if (eliminate) g.debugEndTourneyRun(/*champion=*/false);
         g.render(fb);
@@ -494,8 +492,7 @@ void test_tourney_screen_outlives_the_menu_idle_timer() {
     Game g{StartMode::Hatched, "bruinforce"};
     g.debugSetSectorCleared(0, true);
     enterSubmenuId(g, SubmenuId::Expl);
-    for (int i = 0; i < explRowCount() && g.listRow() != explRowCount() - 1; ++i)
-        g.onButton(press(Button::A));
+    explPickCategory(g, ExplCat::Arena);
     g.onButton(press(Button::B));
     CHECK(g.nav() == Game::Nav::Tourney);
     uint32_t t = 0;
@@ -537,8 +534,7 @@ void test_tourney_scout_shows_the_rivals_whole_kit() {
     Game g{StartMode::Hatched, "bruinforce"};
     g.debugSetSectorCleared(0, true);
     enterSubmenuId(g, SubmenuId::Expl);
-    for (int i = 0; i < explRowCount() && g.listRow() != explRowCount() - 1; ++i)
-        g.onButton(press(Button::A));
+    explPickCategory(g, ExplCat::Arena);
     g.onButton(press(Button::B));
     CHECK(g.nav() == Game::Nav::Tourney);
 

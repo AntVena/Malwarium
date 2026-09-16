@@ -152,6 +152,45 @@ Guardian moves live in their own family in `content_moves.cpp`, and the family i
 malbeast hurts you, a guardian *rules against* you. Each spends its budget on the rider — a stun,
 a pierce, a stripped guard — and keeps raw power modest.
 
+## The story
+
+An area also owns **what it MEANS** — its `story` row (`AreaStoryDef`,
+`src/core/content/story.h`), four chapters fired by the walk at the four beats it reaches in
+a zone:
+
+| Beat | Fires | What it is for |
+|---|---|---|
+| `AreaIntro` | the FIRST wild encounter in this zone | arriving somewhere — what the pet is looking at, and why it is here |
+| `BossIntro` | the area GAUNTLET, opened and not yet fought | the confrontation named |
+| `BossOutro` | that gauntlet won | the fight's own aftermath |
+| `AreaOutro` | straight after `BossOutro` | ...and the place closing behind the pet |
+
+The last two are two chapters rather than one because they are two subjects: what was just
+beaten, and what the operator takes away from this water. They are read back to back as one
+sitting, so an area that only wants one simply leaves the other unauthored.
+
+**A chapter is a run of PANELS, and a panel is a heading and its prose** — the same
+`ProseRow` shape every flowed page on the device is built from (`core/ui/prose_page.h`), so
+the flow decides where the screen breaks fall and an author writes paragraphs rather than
+pixels. Each panel's text is held to `EffectText::kMaxProse` like every other authored string
+here, and `test_story_chapters_fit_their_page` fails a panel that reaches the cap instead of
+letting its tail disappear.
+
+**Every chapter carries a `wire`** — a small number, 1-based, unique across the game and never
+reused. It is the bit that chapter occupies in the persisted read-set (`save.h` v65), which is
+what makes a chapter fire ONCE per device and what lets the ladder be reordered or spliced
+without a migration. Give a new zone the next free block; the same gate fails a duplicate.
+
+**Unauthored is a legitimate state.** A zeroed `AreaStoryDef` — or a zeroed chapter inside one
+— reads as "this zone has nothing to say yet" and fires nothing, which is what lets the
+areas be written one at a time without a half-finished one interrupting a walk. The two
+endless zones (`deepweb_dive`, `darkweb_crawl`) carry their own `kStory*` blocks for the same
+reason everything else about them is declared by hand: they have no `AreaDef` row.
+
+Whatever fires lands in the **CHAPTERS archive** (EXPL's own category), which lists what has
+been shown and nothing else — so it can spoil nothing, and a chapter an auto-progress walk
+paged through while nobody was watching is still there to read.
+
 ## Adding a new area
 
 1. Make a folder `src/core/content/areas/<id>/` with an `area.cpp` defining
@@ -170,7 +209,10 @@ a pierce, a stripped guard — and keeps raw power modest.
    is no second count anywhere to remember to bump.
 4. Add art (`ICON_SECTOR_<AREA_ID>`, `assets/ASSET_MANIFEST.md` §J), name the glyph in the
    row's `icon` field, and check the naming rules before claiming a brand: `AREA_NAMING.md`.
-5. Author the backdrop as a `SceneId` and a file under `src/core/render/scenes/` — not a
+5. Author its four `story` chapters (see *The story* above), or leave the row zeroed and
+   come back to it — an unauthored zone simply fires nothing. A written one needs its own
+   block of `wire` numbers, which the native gate checks are unique.
+6. Author the backdrop as a `SceneId` and a file under `src/core/render/scenes/` — not a
    sheet. A place is ~60 lines of palette-anchored tables against a `SceneGround`, so it
    costs no flash, reskins with a theme, and cannot out-shout the text drawn over it
    (`src/core/render/RENDER_PIPELINE.md`). Name it in the row's `scene` field. Leaving it

@@ -491,6 +491,18 @@ bool Game::tickLifecycle(uint32_t nowMs) {
         changed = true;
     }
 
+    // A STORY panel turning itself over (kStoryPanelMs, the same real-ms shape as the
+    // readout above). It is what lets a chapter fire on a HANDS-OFF walk: auto-progress
+    // runs the ladder with nobody watching, so a reader that waited for a thumb would
+    // stop an unattended device dead at the first area it reached. Every press re-arms
+    // the clock (Game::armStoryPanel), so it only ever overtakes a page nobody is
+    // reading — and the countdown rule above the hint band is what says so before it
+    // happens.
+    if (nav_ == Nav::Story && nowMs_ >= storyPanelDeadlineMs_) {
+        advanceStoryPanel();
+        changed = true;
+    }
+
     // Critical System Failure — the ONLY death path, and the HIGHEST modal
     // priority (CSF > Lockout > Evolution). The 5/5 dying state is
     // recoverable by dropping below 5 (Backup Drive / Yubi-Cookie) within the
@@ -750,6 +762,14 @@ bool Game::tickIdleDefocus(uint32_t nowMs) {
                            // the operator onto the habitat mid-decision with a run
                            // still in play, which reads as the screen crashing.
                            nav_ == Nav::Tourney ||
+                           // A STORY chapter and the CHAPTERS list are both READING
+                           // screens, for the reason the bracket above is: fifteen
+                           // seconds is shorter than a page of prose, and a reader
+                           // dropped onto the habitat mid-sentence reads as a crash.
+                           // The chapter has a deadline of its own that ends it
+                           // properly (kStoryPanelMs), and the archive is a menu the
+                           // operator opened on purpose.
+                           nav_ == Nav::Story || nav_ == Nav::StoryArchive ||
                            inCfgScreen ||
                            // A held B is one of the four hold gestures mid-flight and
                            // must not be collapsed under. A held A is only the list

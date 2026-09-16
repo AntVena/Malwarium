@@ -128,6 +128,13 @@ Game::ListFocus Game::listFocus() const {
             default: return ListFocus::None;
         }
     }
+
+    // The CHAPTERS archive is a row list wearing a Nav of its own — it grows with the
+    // ladder, so it takes the shared cursor rather than leaving a long list to be
+    // tapped across. The chapter READER beside it does not: nothing on that page is
+    // selected, its B is "next window" rather than a row step, and its C is the
+    // tap-to-leave every other reader's is.
+    if (nav_ == Nav::StoryArchive) return ListFocus::StoryArchive;
     return ListFocus::None;
 }
 
@@ -202,9 +209,22 @@ void Game::stepFocusedList(int dir) {
             break;
         }
         case ListFocus::Expl:
-            listRow_ = stepWrapping(listRow_, explRowCount(), dir,
-                                    [this](int r) { return explRowLandable(r); });
+            // TWO cursor spaces behind one focus (see game.h's explCat_): the ACTIVITY
+            // PICKER's four rows at EXPL's own top level, and the ladder's row space
+            // inside an open category. Both walk the same way; what differs is how long
+            // the list is and which rows the cursor stops on.
+            if (explCat_ == ExplCat::None)
+                listRow_ = stepWrapping(listRow_, kExplCatRows, dir,
+                                        [this](int r) { return explCatLandable(r); });
+            else
+                listRow_ = stepWrapping(listRow_, explRowCount(), dir,
+                                        [this](int r) { return explRowLandable(r); });
             break;
+        case ListFocus::StoryArchive: {
+            const int n = static_cast<int>(storyArchiveEntries().size());
+            if (n > 0) storyArchiveRow_ = ((storyArchiveRow_ + dir) % n + n) % n;
+            break;
+        }
         case ListFocus::Maint:
             listRow_ ^= 1;            // two rows: either direction is the same toggle
             break;
@@ -330,6 +350,7 @@ void Game::leaveFocusedList() {
         case ListFocus::ModPicker: onModPicker(back); break;
         case ListFocus::MovePicker: onMovePicker(back); break;
         case ListFocus::Expl: onExplList(back); break;
+        case ListFocus::StoryArchive: onStoryArchive(back); break;
         case ListFocus::Maint: onMaintList(back); break;
         case ListFocus::Arcade: onArcadeList(back); break;
         case ListFocus::HackerShop:

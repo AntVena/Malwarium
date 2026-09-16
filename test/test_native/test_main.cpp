@@ -358,6 +358,13 @@ int g_failures = 0;
     RUN(test_expl_move_leads_count_what_a_zone_can_teach) \
     RUN(test_expl_beaten_is_not_done_until_learned_out) \
     RUN(test_expl_nested_list_nav)                \
+    RUN(test_expl_categories_are_the_top_level)   \
+    /* The STORY — what the walk stops to say */  \
+    RUN(test_story_chapters_fit_their_page)       \
+    RUN(test_story_arrival_fires_once_and_hands_back) \
+    RUN(test_story_panel_turns_on_its_own_clock)  \
+    RUN(test_story_skip_still_runs_what_it_interrupted) \
+    RUN(test_story_archive_collects_what_the_walk_fired) \
     RUN(test_deepweb_dive)                        \
     RUN(test_darkweb_crawl)                       \
     RUN(test_zone_titles_equip_via_cfg_and_persist) \

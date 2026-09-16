@@ -26,6 +26,28 @@ namespace mal {
 // The slot table that maps cursor position to one of these is carousel.h's.
 enum class SubmenuId { Stat, Items, Games, Expl, Maint, Mods, Arch, Cfg };
 
+// WHAT KIND OF THING EXPL IS OFFERING. The EXPL submenu opens on a picker of these
+// rather than on the ladder, because EXPL is not one activity: a story ladder you walk
+// once, two endless zones you farm forever, an eight-operator bracket, and the chapters
+// the walk has written so far are four different reasons to be there. A single flat
+// list of all of it puts the arena as many presses from the entry as the list is long,
+// and the list only grows. A category costs one press and never moves, so every
+// activity stays two presses from EXPL however many areas the ladder gains.
+//
+// None is the picker ITSELF — the level where no category is open yet.
+enum class ExplCat : uint8_t { None, Story, Endless, Arena, Chapters };
+// The picker's rows, in order. None is not one of them, which is why the mapping is an
+// offset rather than a cast: the enum's first value is a state, not a row.
+constexpr int kExplCatRows = 4;
+inline ExplCat explCatAt(int row) { return static_cast<ExplCat>(row + 1); }
+inline int explCatRow(ExplCat c) { return static_cast<int>(c) - 1; }
+// ARENA and CHAPTERS act on B rather than opening a level of rows — there is exactly
+// one thing behind each, so a list of one would be a press spent saying nothing. STORY
+// and ENDLESS have levels; this is what says which.
+inline bool explCatHasRows(ExplCat c) {
+    return c == ExplCat::Story || c == ExplCat::Endless;
+}
+
 // Which page of the MODS submenu is open. MODS is the pet's whole combat LOADOUT:
 // the hub (L2) is a three-row menu, and each row hands the same L2/L3 pair to a
 // different half of it — the mod slot list, the move slot list, or the Sim-Battle

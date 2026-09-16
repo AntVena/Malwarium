@@ -230,6 +230,9 @@ SaveData Game::captureSave() const {
     // into spare capacity needs no save change at all.
     d.achievementEarned.assign(achEarned_, achEarned_ + kAchBytes);
     d.achievementNotified.assign(achNotified_, achNotified_ + kAchBytes);
+    // v65: the STORY read-set, the same shape and for the same reason — a bitset over
+    // wire numbers, written at its full in-memory width.
+    d.storyRead.assign(storyRead_, storyRead_ + sizeof(storyRead_));
     d.bossWins = bossWins_;
     d.stackerWins = stackerWins_;   // v44
     d.tourneyWins = tourneyWins_;   // v56
@@ -635,6 +638,12 @@ void Game::applySave(const SaveData& d) {
         achEarned_[i] = d.achievementEarned[i];
     for (size_t i = 0; i < d.achievementNotified.size() && i < kAchBytes; ++i)
         achNotified_[i] = d.achievementNotified[i];
+    // v65: the STORY read-set, loaded the same way and clamped the same way — a blob
+    // from a build with more chapters than this one keeps the bits this build can hold
+    // and drops the rest, which is exactly "the chapters it knows about".
+    for (uint8_t& b : storyRead_) b = 0;
+    for (size_t i = 0; i < d.storyRead.size() && i < sizeof(storyRead_); ++i)
+        storyRead_[i] = d.storyRead[i];
     if (d.achievementEarned.empty() && d.achievementsMask != 0) {
         // Pre-v40: the legacy u32 mask, whose bit i IS wire number i (the original 14
         // rows kept their enum order as their wire numbers, precisely so this is a copy

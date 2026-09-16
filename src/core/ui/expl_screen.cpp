@@ -306,27 +306,196 @@ const char* explRowTagWord(ExplRowState s, int movesToLearn) {
     return rowTag(s, movesToLearn).text;
 }
 
-void drawExplList(Framebuffer& fb, const ContentRegistry& reg, const ExplListView& v) {
-    // Breadcrumb header — the nav level, spelled out on the band's title. Inside an
-    // area the area's NAME is the crumb, which is why the row beneath it is the area's
-    // boss and not its name again. The 5x7 font has no '>', so the row cursor's
-    // triangle is the separator.
-    drawHeaderBand(fb, "EXPL");
-    if (v.navArea >= 0) {
-        drawRowCursor(fb, kMargin + textWidth("EXPL") + 6, kTitleY,
-                      palColor(Pal::INK_DIM));
-        drawText(fb, kMargin + textWidth("EXPL") + 16, kTitleY,
-                 explSectorName(v.navArea), palColor(Pal::ACCENT));
+const char* explCatName(ExplCat c) {
+    switch (c) {
+        case ExplCat::Story:    return "STORY";
+        case ExplCat::Endless:  return "ENDLESS";
+        case ExplCat::Arena:    return kTourneyName;
+        case ExplCat::Chapters: return "CHAPTERS";
+        case ExplCat::None:     break;
     }
+    return "";
+}
 
-    // THE LEVEL IS THE LIST (explRowInLevel): the top level draws the DeepWeb row plus
-    // one row per AREA, and drilling into an area swaps the whole screen for that area's
-    // own block. So the drawn list is ~6 rows instead of the full ladder, and the pitch
-    // below can afford the second line each row carries.
+const char* explCatBlurb(ExplCat c) {
+    // What the category IS, in one line under its name — the answer to "why would I go
+    // in here" for a player who has never pressed it. Static, unlike the detail line
+    // beside it, because what an activity is does not change with how far into it you
+    // are.
+    switch (c) {
+        case ExplCat::Story:    return "THE AREA LADDER";
+        case ExplCat::Endless:  return "NO END - JUST DEPTH";
+        case ExplCat::Arena:    return "ONE EIGHT-SLOT BRACKET";
+        case ExplCat::Chapters: return "THE JOURNEY SO FAR";
+        case ExplCat::None:     break;
+    }
+    return "";
+}
+
+namespace {
+// A category row's state, read off the same flag blocks a zone row's is. Split out
+// because the picker asks it twice — once to decide whether the cursor stops here, and
+// once to decide whether to draw the name or the "??????".
+ExplRowState catZoneState(int row, const ExplListView& v) {
+    return explRowState(row, v.areaCleared, v.subCleared, v.subBossUnlocked,
+                        v.exploringSector, v.exploringSub, v.tourneyRunning);
+}
+}  // namespace
+
+bool explCatOpen(ExplCat c, const ExplListView& v) {
+    switch (c) {
+        // Area 0 is always open, so the ladder always is. The one category that can
+        // never be a "??????" — a device with nothing unlocked still has somewhere to go.
+        case ExplCat::Story: return true;
+        // Open the moment EITHER endless zone is: the Dive opens mid-game and the Crawl
+        // at the end of the map, and a category locked until both were would hide the
+        // Dive behind the Crawl's gate.
+        case ExplCat::Endless:
+            return catZoneState(0, v) != ExplRowState::DeepWebLocked ||
+                   catZoneState(1, v) != ExplRowState::DarkWebLocked;
+        case ExplCat::Arena:
+            return catZoneState(explRowCount() - 1, v) != ExplRowState::TourneyLocked;
+        // An archive with nothing in it is not a place to go. It opens itself the first
+        // time the walk writes a chapter, which is the first encounter of the first area.
+        case ExplCat::Chapters: return v.storyChapters > 0;
+        case ExplCat::None: break;
+    }
+    return false;
+}
+
+namespace {
+
+// The glyph a category row carries. STORY shows the DEEPEST OPEN area, which is a
+// picture of where the operator is on the ladder rather than of the ladder's first
+// rung — it moves as they do, and it says the same thing the "n/N CLEARED" beside it
+// says in numbers. ENDLESS borrows the Dive's, ARENA its water's. CHAPTERS has no art
+// yet and draws the empty frame, which on this screen means exactly that.
+const SpriteData* catIcon(const ContentRegistry& reg, ExplCat c, const ExplListView& v) {
+    switch (c) {
+        case ExplCat::Story: {
+            int deepest = 0;
+            for (int a = kExplSectors - 1; a > 0; --a)
+                if (explSectorOpen(a, v.areaCleared)) { deepest = a; break; }
+            return sectorIcon(reg, deepest);
+        }
+        case ExplCat::Endless:  return reg.sprite(kDeepWebIcon);
+        case ExplCat::Arena:    return sectorIcon(reg, kTourneyAreaIndex);
+        default:                return nullptr;
+    }
+}
+
+// The category row's second line: where the operator is up to in THIS activity. The
+// counterpart to explCatBlurb — that says what the thing is, this says how far in they
+// are, and a locked category gets neither.
+void catDetail(char* out, size_t n, ExplCat c, const ExplListView& v) {
+    out[0] = '\0';
+    switch (c) {
+        case ExplCat::Story: {
+            int done = 0;
+            for (int a = 0; a < kExplSectors; ++a)
+                if (v.areaCleared && v.areaCleared[a]) ++done;
+            std::snprintf(out, n, "%d/%d AREAS CLEARED", done, kExplSectors);
+            break;
+        }
+        case ExplCat::Endless: {
+            const int best = std::max(v.bestDeepWebDepth, v.bestDarkWebDepth);
+            if (best > 0) std::snprintf(out, n, "BEST DEPTH %d", best);
+            else std::snprintf(out, n, "NO RUN YET");
+            break;
+        }
+        case ExplCat::Arena:
+            if (v.tourneyRunning)
+                std::snprintf(out, n, "ROUND %d - %d LEFT", v.tourneyRound + 1,
+                              v.tourneyAlive);
+            else std::snprintf(out, n, "NO RUN IN PLAY");
+            break;
+        case ExplCat::Chapters:
+            std::snprintf(out, n, "%d UNLOCKED", v.storyChapters);
+            break;
+        case ExplCat::None: break;
+    }
+}
+
+// The ACTIVITY PICKER — EXPL's own top level. Four fixed rows at the two-line pitch the
+// zone list uses, so a category reads like the zones behind it rather than like a
+// different screen. Nothing scrolls: the list is four rows by construction and the
+// whole point of it is that every activity is one press from here.
+void drawExplCategories(Framebuffer& fb, const ContentRegistry& reg,
+                        const ExplListView& v) {
+    drawHeaderBand(fb, "EXPL");
+    const int pitch = (kListBottom - kListTop) / kExplCatRows;
+    for (int row = 0; row < kExplCatRows; ++row) {
+        const ExplCat c = explCatAt(row);
+        const bool open = explCatOpen(c, v);
+        const bool focused = (row == v.cursor);
+        const int y = kListTop + row * pitch;
+        // An OPEN row has lines under its name and hangs them off the top; a LOCKED one
+        // has nothing to say and centres, so the picker never reads as a list of
+        // top-aligned names with holes under them.
+        const int titleY = open ? y + 5 : y + (pitch - kFontH) / 2;
+        if (focused) {
+            fb.fillRect(2, y, kActiveW - 4, pitch - 2, palColor(Pal::TRACK));
+            drawRowCursor(fb, 3, y + (pitch - 7) / 2, palColor(Pal::ACCENT));
+        }
+        if (open)
+            drawIconSlot(fb, catIcon(reg, c, v), kIconX, y + (pitch - kRowIcon) / 2,
+                         palColor(Pal::INK));
+        // A focused category title pulses INK <-> ACCENT on the care-pip cadence, the
+        // same way a focused ZONE title does: both are headings you can press, and the
+        // steady cursor caret is still the non-colour channel.
+        const Rgb565 ink = !open ? palColor(Pal::INK_DIM)
+                         : (focused && ((v.beat / 2) & 1) == 0) ? palColor(Pal::ACCENT)
+                                                                : palColor(Pal::INK);
+        const char* tagText = open ? "" : "LOCKED";
+        const int tagW = tagText[0] ? textWidth(tagText) + kMargin : 0;
+        drawTextMarquee(fb, kTextX, titleY, kActiveW - kMargin - tagW - kTextX,
+                        open ? explCatName(c) : "??????", ink, v.beat, focused);
+        if (tagText[0])
+            drawText(fb, kActiveW - kMargin - textWidth(tagText), titleY, tagText,
+                     palColor(Pal::INK_DIM));
+        if (!open) continue;
+        // Two dim lines under the name where the pitch allows: what it is, then how far
+        // in. The FOCUSED row gets both; an unfocused one gets the progress line only,
+        // since that is the half that differs row to row and the half a player scanning
+        // the picker is comparing.
+        char detail[40];
+        catDetail(detail, sizeof(detail), c, v);
+        int dy = y + 18;
+        if (focused && dy + 2 * (kFontH + 2) <= y + pitch) {
+            drawTextMarquee(fb, kTextX, dy, kActiveW - kMargin - kTextX, explCatBlurb(c),
+                            palColor(Pal::INK_DIM), v.beat, true);
+            dy += kFontH + 2;
+        }
+        if (detail[0] && dy + kFontH <= y + pitch)
+            drawText(fb, kTextX, dy, detail, palColor(Pal::INK_DIM));
+    }
+    drawHintBand(fb, "A NEXT  B OPEN  C BACK");
+}
+
+}  // namespace
+
+void drawExplList(Framebuffer& fb, const ContentRegistry& reg, const ExplListView& v) {
+    // No category open -> EXPL's own top level is the ACTIVITY PICKER, and `v.cursor`
+    // indexes its four rows rather than the ladder's row space.
+    if (v.cat == ExplCat::None) { drawExplCategories(fb, reg, v); return; }
+
+    // Breadcrumb header — the nav level, spelled out on the band's title. ONE crumb,
+    // always: the open category, or, once inside an area, that area's NAME (which is
+    // why the row beneath it is the area's boss and not its name again). The font has
+    // no '>', so the row cursor's triangle is the separator.
+    drawHeaderBand(fb, "EXPL");
+    const char* crumb = v.navArea >= 0 ? explSectorName(v.navArea) : explCatName(v.cat);
+    drawRowCursor(fb, kMargin + textWidth("EXPL") + 6, kTitleY, palColor(Pal::INK_DIM));
+    drawText(fb, kMargin + textWidth("EXPL") + 16, kTitleY, crumb, palColor(Pal::ACCENT));
+
+    // THE LEVEL IS THE LIST (explRowInLevel): ENDLESS draws its two zones, STORY one row
+    // per AREA, and drilling into an area swaps the whole screen for that area's own
+    // block. So the drawn list is a handful of rows instead of the full ladder, and the
+    // pitch below can afford the second line each row carries.
     int rowOf[kLevelRowsMax];
     int rows = 0, cursorSlot = 0;
     for (int r = 0, total = explRowCount(); r < total && rows < kLevelRowsMax; ++r) {
-        if (!explRowInLevel(r, v.navArea)) continue;
+        if (!explRowInLevel(r, v.cat, v.navArea)) continue;
         if (r == v.cursor) cursorSlot = rows;
         rowOf[rows++] = r;
     }
@@ -382,36 +551,16 @@ void drawExplList(Framebuffer& fb, const ContentRegistry& reg, const ExplListVie
         const int learn = rowMovesToLearn(row, st, v);
         RowTag tag = rowTag(st, learn);
 
-        if (explRowIsTourney(row)) {
-            // The arena, under the ladder. It borrows its water's sector glyph rather
-            // than carrying one of its own — the arena IS held in The Pirate Bayou, so
-            // the picture is the true one and no asset exists only to label a menu row.
-            // The divider goes ABOVE this row (the dive's goes below its own), so each
-            // special row is fenced off from the ladder it sits beside.
-            const bool locked = (st == ExplRowState::TourneyLocked);
-            fb.fillRect(8, y, kActiveW - 16, 1, palColor(Pal::TRACK));
-            if (!locked)
-                drawIconSlot(fb, sectorIcon(reg, kTourneyAreaIndex), kIconX,
-                             y + (pitch - kRowIcon) / 2, palColor(Pal::INK));
-            title = locked ? "??????" : kTourneyName;
-            titleInk = locked ? palColor(Pal::INK_DIM) : zoneInk;
-            if (locked)
-                ;                                    // nothing to promise but the row
-            else if (v.tourneyRunning)
-                std::snprintf(detail, sizeof(detail), "ROUND %d - %d LEFT",
-                              v.tourneyRound + 1, v.tourneyAlive);
-            else
-                std::snprintf(detail, sizeof(detail), "8 OPERATORS - ONE BRACKET");
-        } else if (explRowIsDeepWeb(row)) {
-            // Top of the list, and the mid-game farm since its unlock moved to Net-Sea.
-            // No divider under it: the CRAWL below closes the endless block, so the two
-            // read as one pair rather than as two things fenced off from each other. Its
-            // detail line is the pet's own record, the only progress an endless zone has.
+        if (explRowIsDeepWeb(row)) {
+            // The mid-game farm, and the first of ENDLESS's two rows. No divider under
+            // it: the CRAWL below closes the category, so the two read as one pair
+            // rather than as two things fenced off from each other. Its detail line is
+            // the pet's own record, the only progress an endless zone has.
             const bool locked = (st == ExplRowState::DeepWebLocked);
             if (!locked)
                 drawIconSlot(fb, reg.sprite(kDeepWebIcon), kIconX,
                              y + (pitch - kRowIcon) / 2, palColor(Pal::INK));
-            title = locked ? "??????" : "DEEPWEB DIVE";
+            title = locked ? "??????" : kDeepWebName;
             titleInk = locked ? palColor(Pal::INK_DIM) : zoneInk;
             if (!locked && v.bestDeepWebDepth > 0)
                 std::snprintf(detail, sizeof(detail), "ENDLESS - BEST DEPTH %d",
@@ -419,15 +568,13 @@ void drawExplList(Framebuffer& fb, const ContentRegistry& reg, const ExplListVie
             else if (!locked)
                 std::snprintf(detail, sizeof(detail), "ENDLESS - NO DIVE YET");
         } else if (explRowIsDarkWeb(row)) {
-            // The TERMINAL zone, under the dive. The divider goes below this one rather
-            // than below the dive, so the two endless rows are fenced off from the ladder
-            // as one block instead of each being fenced from the other.
+            // The TERMINAL zone, under the dive — the second and last of ENDLESS's rows,
+            // so nothing is fenced off from anything and it needs no divider of its own.
             const bool locked = (st == ExplRowState::DarkWebLocked);
-            fb.fillRect(8, y + pitch - 1, kActiveW - 16, 1, palColor(Pal::TRACK));
             if (!locked)
                 drawIconSlot(fb, reg.sprite(kDarkWebIcon), kIconX,
                              y + (pitch - kRowIcon) / 2, palColor(Pal::INK));
-            title = locked ? "??????" : "DARKWEB CRAWL";
+            title = locked ? "??????" : kDarkWebName;
             titleInk = locked ? palColor(Pal::INK_DIM) : zoneInk;
             if (!locked && v.bestDarkWebDepth > 0)
                 std::snprintf(detail, sizeof(detail), "NOTHING IS NAMED - BEST %d",
@@ -557,9 +704,10 @@ void drawExplList(Framebuffer& fb, const ContentRegistry& reg, const ExplListVie
             ? explRowState(v.cursor, v.areaCleared, v.subCleared, v.subBossUnlocked,
                            v.exploringSector, v.exploringSub)
             : ExplRowState::AreaProgress;
-    // Two-level footer. TOP level: A cycles the zones; B DIVEs the DeepWeb row or ENTERs
-    // an area's sub-areas. INSIDE an area: B acts on the focused sub/boss; C pops back
-    // out to the zone list.
+    // The footer names what B does HERE. A category's own level: A cycles the zones; B
+    // DIVEs/CRAWLs an endless row or ENTERs an area's sub-areas, and C pops back to the
+    // activity picker. INSIDE an area: B acts on the focused sub/boss and C pops back
+    // out to the area list.
     const char* hint;
     if (v.navArea < 0) {
         if (focus == ExplRowState::DeepWebOpen || focus == ExplRowState::DeepWebDiving)

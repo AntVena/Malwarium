@@ -291,7 +291,19 @@ constexpr int kSaveTextCap = 28;     // matches EventLog's LogEntry.text
 //     base is the one every build has. Player-level, like the brightness it sits beside
 //     in CFG. Pre-v64 (and an empty name) -> base, what every device drew before there
 //     was a second set to choose.
-constexpr uint16_t kSaveVersion = 64;
+// v65 APPEND `storyRead`, the STORY chapters this device has been shown
+//     (src/core/content/story.h), as a length-prefixed BITSET indexed by
+//     StoryChapterDef::wire — the shape v40's achievement sets and v48's quote states
+//     use, and for their reason: a wire is assigned per chapter and never reused, so
+//     the catalogue can be reordered, an area spliced into the middle of the ladder, or
+//     a zone's chapters written years later, without a migration. Its own tail after
+//     v64's, so a pre-v65 build reads a v65 save and simply stops before it.
+//
+//     PLAYER-LEVEL, not per-pet: a chapter is the operator's journey, and hatching a
+//     new egg is not grounds for being told the game's premise again. Pre-v65 -> empty,
+//     which reads as a device that has been shown nothing — true of every save written
+//     before there was anything to show, and self-correcting after one walk.
+constexpr uint16_t kSaveVersion = 65;
 
 // The oldest blob deserialize will read, and the ONLY thing that retires a rename row
 // (see `renamedIds`). Raising it is how a device stops carrying migration weight for saves
@@ -861,6 +873,12 @@ struct SaveData {
     // The set's name (kPalThemeNames), empty for the base set. A NAME and not the
     // generated index — see the version note above. Player-level, like brightness.
     char theme[kSaveIdCap] = {0};
+
+    // --- v65: the STORY chapters this device has been shown -------------------
+    // One bit per StoryChapterDef::wire (core/content/story.h), length-prefixed so the
+    // catalogue can outgrow any fixed width: a longer set loads into a shorter build
+    // harmlessly, and a shorter one reads back as "not shown yet". Player-level.
+    std::vector<uint8_t> storyRead;
 };
 
 // Read/write one mod's spare count in the v45 packed pool (SaveData::ownedModCounts) by

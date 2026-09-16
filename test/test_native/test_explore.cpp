@@ -415,29 +415,43 @@ void test_expl_names_stay_scrollable() {
     }
 }
 
-// THE LEVEL IS THE LIST (explRowInLevel): the TOP level draws the two special rows
-// (the DeepWeb Dive above the ladder, ROCK THE DOCK below it) plus one row per AREA and
-// none of the sub-areas; inside an area it draws that area's own block and nothing
-// else. That is what keeps the drawn list ~7 rows however long the ladder grows,
-// instead of a 13-row window over the whole thing.
+// THE LEVEL IS THE LIST (explRowInLevel): STORY's own level draws one row per AREA and
+// none of the sub-areas, an opened area draws that area's block and nothing else, and
+// ENDLESS draws its two zones. That is what keeps any drawn list a handful of rows
+// however long the ladder grows, instead of a window over the whole thing.
+//
+// And the ARENA row is in NO level: the bracket is a category, one press off the
+// picker, so its row address exists only to hold its unlock state (explRowState).
 void test_expl_level_scoped_rows() {
     int top = 0;
     for (int r = 0; r < explRowCount(); ++r) {
-        if (!explRowInLevel(r, -1)) continue;
+        if (!explRowInLevel(r, ExplCat::Story, -1)) continue;
         ++top;
-        CHECK(explRowIsSpecial(r) || explRowSub(r) < 0);   // zones only, no sub-areas
+        CHECK(!explRowIsSpecial(r) && explRowSub(r) < 0);   // area headers only
     }
-    CHECK(top == kExplLeadRows + kExplSectors + kExplTailRows);
+    CHECK(top == kExplSectors);
     for (int a = 0; a < kExplSectors; ++a) {
         int inside = 0;
         for (int r = 0; r < explRowCount(); ++r) {
-            if (!explRowInLevel(r, a)) continue;
+            if (!explRowInLevel(r, ExplCat::Story, a)) continue;
             ++inside;
-            // Its own block only — not a neighbour's rows, and neither special row.
+            // Its own block only — not a neighbour's rows, and no special row.
             CHECK(!explRowIsSpecial(r) && explRowArea(r) == a);
         }
         CHECK(inside == 1 + kExplSubAreas);                 // boss row + its sub-areas
     }
+    int endless = 0;
+    for (int r = 0; r < explRowCount(); ++r) {
+        if (!explRowInLevel(r, ExplCat::Endless, -1)) continue;
+        ++endless;
+        CHECK(explRowIsDeepWeb(r) || explRowIsDarkWeb(r));
+    }
+    CHECK(endless == kExplLeadRows);
+    // The arena's row is drawn by nothing, at either level of either category.
+    const int arena = explRowCount() - 1;
+    CHECK(!explRowInLevel(arena, ExplCat::Story, -1));
+    CHECK(!explRowInLevel(arena, ExplCat::Endless, -1));
+    CHECK(!explRowInLevel(arena, ExplCat::None, -1));
 }
 
 // Combat::begin's carry-health (the gauntlet no-heal contract): a round that
@@ -804,6 +818,7 @@ void test_explore_xp_efficiency_reads_the_rung() {
 void test_explore_streak_unlocks_boss_then_clears() {
     Game g{StartMode::Hatched, "bruinforce"};
     g.debugAddCombatXp(600000);                    // level hard: enough stat points to clear
+    g.debugMarkStoryRead();                        // the gauntlet's chapters have their own gate
     CHECK(!g.sectorCleared(0));
     for (int s = 0; s < kExplSubAreas; ++s) CHECK(!g.subBossUnlocked(0, s));
     { bool fl[kExplSectors] = {g.sectorCleared(0), g.sectorCleared(1)};
@@ -822,7 +837,7 @@ void test_explore_streak_unlocks_boss_then_clears() {
     // leaves explore-mode armed on the last sub, so EXPL resumes INSIDE area 0 on that
     // row; A wraps within the area to the boss-ready header and B launches the AREA BOSS.
     uint32_t t = 0;
-    enterSubmenuId(g, SubmenuId::Expl);
+    enterSubmenuId(g, SubmenuId::Expl);            // a running walk resumes INSIDE area 0
     g.onButton(press(Button::A));                  // armed sub -> boss-ready header
     g.onButton(press(Button::B));                  // AREA BOSS (boss-ready header)
     CHECK(g.nav() == Game::Nav::Combat);
@@ -1275,7 +1290,7 @@ void test_expl_nested_list_nav() {
     { Game g{StartMode::Hatched, "bruinforce"};
       g.debugSetSubCleared(0, 0, true);
       g.debugSetSubBossUnlocked(0, 1, true);
-      enterSubmenuId(g, SubmenuId::Expl);
+      enterStoryLadder(g);
       g.onButton(press(Button::B));                 // drill into area 0 (cursor -> sub 0)
       g.onButton(press(Button::A));                 // farm sub 0 → boss-ready sub 1
       g.onButton(press(Button::A));                 // sub 1 → OPEN sub 2
@@ -1287,7 +1302,7 @@ void test_expl_nested_list_nav() {
     // lands on the boss-ready header; A steps to cleared sub 0, B arms it to FARM.
     { Game g{StartMode::Hatched, "bruinforce"};
       for (int s = 0; s < kExplSubAreas; ++s) g.debugSetSubCleared(0, s, true);
-      enterSubmenuId(g, SubmenuId::Expl);
+      enterStoryLadder(g);
       g.onButton(press(Button::B));                 // drill in (cursor -> boss-ready header)
       g.onButton(press(Button::A));                 // AREA BOSS header → cleared sub 0
       g.onButton(press(Button::B));                 // arm explore to FARM sub 0
@@ -1297,16 +1312,17 @@ void test_expl_nested_list_nav() {
     // B on a boss-ready frontier launches the SUB-AREA boss (Combat, not arm-explore).
     { Game g{StartMode::Hatched, "bruinforce"};
       g.debugSetSubBossUnlocked(0, 0, true);
-      enterSubmenuId(g, SubmenuId::Expl);
+      enterStoryLadder(g);
       g.onButton(press(Button::B));                 // drill into area 0 (cursor -> sub 0)
       g.onButton(press(Button::B));                 // FIGHT BOSS (sub 0)
       CHECK(g.nav() == Game::Nav::Combat); }
 
     // All 5 sub-areas cleared → drilling in lands on the boss-ready header; B launches it.
     { Game g{StartMode::Hatched, "bruinforce"};
+      g.debugMarkStoryRead();                       // the gauntlet's own chapter, skipped
       for (int s = 0; s < kExplSubAreas; ++s) g.debugSetSubCleared(0, s, true);
       CHECK(g.areaBossReady(0));
-      enterSubmenuId(g, SubmenuId::Expl);
+      enterStoryLadder(g);
       g.onButton(press(Button::B));                 // drill into area 0
       g.onButton(press(Button::B));                 // AREA BOSS
       CHECK(g.nav() == Game::Nav::Combat); }
@@ -1316,20 +1332,24 @@ void test_expl_nested_list_nav() {
     // area 1 — proving A skipped area 0's five sub-rows.
     { Game g{StartMode::Hatched, "bruinforce"};
       g.debugSetSectorCleared(0, true);             // area 0 cleared → area 1 now open
-      enterSubmenuId(g, SubmenuId::Expl);
-      g.onButton(press(Button::A));                 // TOP: area-0 header → area-1 header
+      enterStoryLadder(g);
+      g.onButton(press(Button::A));                 // STORY: area-0 header → area-1 header
       g.onButton(press(Button::B));                 // drill into area 1
       g.onButton(press(Button::B));                 // arm area 1's first sub
       CHECK(g.exploreActive() && g.exploreSector() == 1 && g.exploreSub() == 0); }
 
-    // C is two-level: inside an area it pops back to the area list (still in EXPL); a
-    // second C at the top level leaves EXPL for the carousel.
+    // C walks back out ONE LEVEL at a time, and there are three: inside an area it pops
+    // to STORY's area list, then to the ACTIVITY PICKER, and only then out of EXPL. It
+    // lands back on the category it left, so the way out is the way in reversed.
     { Game g{StartMode::Hatched, "bruinforce"};
-      enterSubmenuId(g, SubmenuId::Expl);
+      enterStoryLadder(g);
       g.onButton(press(Button::B));                 // drill into area 0
-      tapC(g);                 // C → back to the TOP area list
+      tapC(g);                 // C → back to STORY's area list
       CHECK(g.nav() == Game::Nav::Submenu);         // still in EXPL, not the carousel
-      tapC(g);                 // C at TOP → leave EXPL
+      tapC(g);                 // C → the activity picker, parked on STORY
+      CHECK(g.nav() == Game::Nav::Submenu);
+      CHECK(g.listRow() == explCatRow(ExplCat::Story));
+      tapC(g);                 // C at the picker → leave EXPL
       CHECK(g.nav() == Game::Nav::Cursor); }
 
     // Opening EXPL while explore-mode is RUNNING RESUMES where the pet is — already
@@ -1346,9 +1366,10 @@ void test_expl_nested_list_nav() {
     // A CLEARED area's gauntlet stays re-runnable, the way a cleared sub-area stays
     // re-farmable: inside the area, B on its boss row starts the 5-round gauntlet again.
     { Game g{StartMode::Hatched, "bruinforce"};
+      g.debugMarkStoryRead();
       for (int s = 0; s < kExplSubAreas; ++s) g.debugSetSubCleared(0, s, true);
       g.debugSetSectorCleared(0, true);
-      enterSubmenuId(g, SubmenuId::Expl);
+      enterStoryLadder(g);
       g.onButton(press(Button::B));                 // drill into the cleared area 0
       g.onButton(press(Button::B));                 // B on its boss row → RERUN
       CHECK(g.nav() == Game::Nav::Combat); }
@@ -1379,8 +1400,9 @@ void test_expl_nested_list_nav() {
       stopExplore(g);
       CHECK(!g.exploreActive() && g.nav() == Game::Nav::Idle); }
 
-    // The DeepWeb dive resumes at the TOP level instead — its row lives there, not
-    // inside any area — so one B re-arms the dive.
+    // The DeepWeb dive resumes inside ENDLESS instead — its row lives in that category,
+    // not in any area — so a running dive opens straight onto its own row and one B
+    // re-arms it.
     { Game g{StartMode::Hatched, "bruinforce"};
       for (int a = 0; a < kExplSectors; ++a) g.debugSetSectorCleared(a, true);
       g.debugStartDeepWebDive();

@@ -841,6 +841,14 @@ void Game::debugFillLoadout() {
 
 
 void Game::startEncounter() {
+    // THE FIRST ENCOUNTER IN A ZONE IS WHERE ITS CHAPTER FIRES (game_story.cpp). Before
+    // the roll, not after, because the chapter is about ARRIVING somewhere — it has to
+    // land in front of the first malbeast rather than behind it. fireStory answers false
+    // for a zone with nothing authored or a chapter already read, in which case this is
+    // an ordinary encounter and nothing here knows a story exists; when it answers true
+    // the reader has the screen and calls back into this function once it is done, by
+    // which time the chapter is marked read and the gate falls straight through.
+    if (fireStory(exploreSector_, StoryBeat::AreaIntro, StoryThen::Encounter)) return;
     rng_ = rng_ * 1664525u + 1013904223u;                    // roster variant roll
     if (inEndlessZone()) {
         // Both endless zones draw the endgame (tier-3) roster and scale it to the PET's

@@ -10,6 +10,9 @@
 #pragma once
 
 #include "core/content/areas/area_defs.h"
+#include "core/render/canvas.h"   // kActiveW — the category row's own text budget
+#include "core/ui/layout.h"     // kMargin / kRowIcon — ...and its two insets
+#include "core/ui/ui_state.h"   // ExplCat — the activity the list is showing
 
 namespace mal {
 
@@ -36,24 +39,26 @@ constexpr int kExplSubAreas = kSubAreasPerArea;
 //   subBossUnlocked  — [kExplSectors * kExplSubAreas]    (10-win streak unlocked its boss)
 // Any block may be null (treated as all-false). Row-major index = area*kExplSubAreas+sub.
 constexpr int kExplRowsPerArea = 1 + kExplSubAreas;      // header + 5 sub rows
-// The ladder is BRACKETED by two SPECIAL rows, neither of them an AreaDef: the DEEPWEB
-// DIVE above it (which draws as kDeepWebSector, area_defs.h — one past the real ladder,
-// so it stays the terminal zone even as the ladder grows) and ROCK THE DOCK below it, the
-// operator bracket held in The Pirate Bayou (content_tournament.h). Each is a single
-// row with no sub-areas, and while locked each is an inert "??????" teaser — which is
-// what makes both read as a promise rather than as rows that appear from nowhere.
+// The ladder is BRACKETED by three SPECIAL rows, none of them an AreaDef: the DEEPWEB
+// DIVE and the DARKWEB CRAWL above it (which draw as kDeepWebSector / kDarkWebSector,
+// area_defs.h — one and two past the real ladder, so they stay terminal even as the
+// ladder grows) and ROCK THE DOCK below it, the operator bracket held in The Pirate
+// Bayou (content_tournament.h). Each is a single row with no sub-areas, and while
+// locked each is an inert "??????" teaser — which is what makes them read as promises
+// rather than as rows that appear from nowhere.
 //
-// The POSITIONS say what each is for. DeepWeb leads because it is the most-rewarding
-// farming zone once unlocked, so an entry with nothing else to resume parks the cursor
-// on it (Game::openExplList) — the fewest presses to the best grind. The arena trails
-// for the mirror-image reason: it pays nothing until a whole bracket is taken, so it
-// must never be what an operator lands on by default when they came to go exploring.
-// TWO lead rows now: the Dive keeps row 0 (openExplList parks the cursor there, and it
-// must stay the fewest presses to the best AVAILABLE grind), and the DARKWEB CRAWL sits
-// directly under it. The order is the progression: the dive opens mid-game, the crawl is
-// the end of the map.
+// THEIR POSITIONS IN THIS SPACE ARE NOT WHAT THE PLAYER SEES. The row space is the
+// flat address every state lookup and every save flag is keyed by, and the screen is
+// the ACTIVITY PICKER over it (ExplCat, below) — so the two endless rows are reached
+// through ENDLESS, the ladder through STORY, and the arena row is never drawn as a row
+// at all: its state is what the ARENA category is drawn FROM. What stays fixed here is
+// the addressing, which is why adding a category costs no row and moving one costs no
+// migration.
 constexpr int kExplLeadRows = 2;   // the DeepWeb Dive, then the DarkWeb Crawl
-constexpr int kExplTailRows = 1;   // ROCK THE DOCK, below it
+// ROCK THE DOCK's row. It has no place in any drawn level — the arena is one press off
+// the category picker — but it keeps its address so explRowState stays the ONE place
+// every zone's unlock is decided, the arena's included.
+constexpr int kExplTailRows = 1;
 inline int explRowCount() {
     return kExplLeadRows + kExplSectors * kExplRowsPerArea + kExplTailRows;
 }
@@ -117,16 +122,32 @@ bool explRowSelectable(ExplRowState s);
 // Public so a gate can assert what a row SAYS rather than read it out of pixels.
 const char* explRowTagWord(ExplRowState s, int movesToLearn);
 
-// THE LEVEL IS THE LIST: which rows are drawn at nav level `navArea` (-1 = top).
-// The top level is a ZONE PICKER — the DeepWeb row plus one row per area, and none of
-// the sub-areas; inside area N it is N's own block — the area-boss row plus N's
-// sub-areas. So the drawn list is 1+kExplSectors rows or 1+kExplSubAreas rows, never
-// the whole explRowCount() ladder, and the screen a player reads is the level they are
-// navigating. `explRowLandable` (Game) is the further "does the cursor stop here"
-// filter on top of this — every landable row is in-level, but not the reverse (a
-// locked area is shown as "??????" and skipped by the cursor).
-inline bool explRowInLevel(int row, int navArea) {
-    if (explRowIsSpecial(row)) return navArea < 0;
+// The width a category row's own two dim lines are held to — the gap from the glyph
+// column to the right margin. Public because the blurb below is AUTHORED copy and a
+// native gate measures it against this: a line that overruns travels (drawTextMarquee)
+// rather than being cut, which costs the reader a still line for nothing.
+constexpr int kExplCatTextW = kActiveW - kMargin - (kMargin + kRowIcon + 2);
+
+// What each category is CALLED and what it is FOR, in the two lines its row draws. The
+// id itself is ui_state.h's (Game holds it as a member); these are the words this
+// screen puts on it. Public so a gate can assert what the picker says rather than read
+// it out of pixels.
+const char* explCatName(ExplCat c);
+const char* explCatBlurb(ExplCat c);
+
+// THE LEVEL IS THE LIST: which rows are drawn inside category `cat` at nav level
+// `navArea` (-1 = the category's own top). ENDLESS is its two zone rows; STORY is one
+// row per AREA at its top and that area's own block (the area-boss row + its
+// sub-areas) inside one. So the drawn list is never longer than kExplSectors or
+// 1+kExplSubAreas rows, whatever explRowCount() grows to.
+//
+// `explRowLandable` (Game) is the further "does the cursor stop here" filter on top of
+// this — every landable row is in-level, but not the reverse (a locked area is shown as
+// "??????" and skipped by the cursor).
+inline bool explRowInLevel(int row, ExplCat cat, int navArea) {
+    if (cat == ExplCat::Endless)
+        return explRowIsDeepWeb(row) || explRowIsDarkWeb(row);
+    if (cat != ExplCat::Story || explRowIsSpecial(row)) return false;
     if (navArea < 0) return explRowSub(row) < 0;      // area headers only
     return explRowArea(row) == navArea;               // that area's header + subs
 }
@@ -150,7 +171,11 @@ struct ExplListView {
     const bool* subBossUnlocked = nullptr;
     int exploringSector = -1;        // the armed/running sub-area (or -1) → EXPLORING
     int exploringSub = -1;
+    ExplCat cat = ExplCat::None;     // which activity is open — None draws the picker
     int navArea = -1;                // the nav level — see explRowInLevel above
+    // How many STORY chapters the walk has written so far — the CHAPTERS row's own
+    // readout, and what locks it: an archive with nothing in it is not a place to go.
+    int storyChapters = 0;
     // The armed sub-area's win streak and the count that unlocks its boss, so the
     // frontier row answers "how close am I" where the choice is made, instead of only
     // on the habitat badge (drawExploreBadge).
@@ -196,10 +221,19 @@ struct ExplListView {
     int beat = 0;
 };
 
-// L2 nested area/sub-area list, drawn one LEVEL at a time (explRowInLevel). Areas
-// carry their own sector glyph (ICON_SECTOR_<AREA_ID>, resolved through `reg` — a
-// missing one draws as an empty frame rather than shifting the row).
+// EXPL's list, at whichever of its three levels `v` describes: the ACTIVITY PICKER
+// when v.cat is None, else the open category's rows one LEVEL at a time
+// (explRowInLevel). Areas carry their own sector glyph (ICON_SECTOR_<AREA_ID>,
+// resolved through `reg` — a missing one draws as an empty frame rather than shifting
+// the row).
 void drawExplList(Framebuffer& fb, const ContentRegistry& reg, const ExplListView& v);
+
+// Is category `c` reachable at all? LOCKED categories still draw (as a "??????" row,
+// the same promise a locked zone makes) but the cursor skips them. STORY is never
+// locked — area 0 is always open — and CHAPTERS opens the moment the walk has written
+// its first chapter. Derived from the same flag blocks a row state is, so the picker
+// and the level behind it can never disagree about whether there is anything there.
+bool explCatOpen(ExplCat c, const ExplListView& v);
 
 // Explore-mode idle badge: a thin status line under the top track, drawn
 // over the idle habitat while explore-mode is active — a pulsing cursor +

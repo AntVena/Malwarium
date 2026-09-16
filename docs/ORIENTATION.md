@@ -131,9 +131,34 @@ footer carries **XP / WIN**: what a wild win on the armed rung actually pays as 
 flat base, level-difference curve and live bonuses folded in, which is what says a rung has been
 outgrown.
 
-The EXPL list is **bracketed by two rows that are not areas**. Above the ladder, the **DeepWeb
-Dive** — the endless terminal zone, unlocked by clearing every area, where enemies scale to the
-pet and the win streak *is* the depth. Below it, **ROCK THE DOCK**, an eight-operator single-
+**EXPL opens on an ACTIVITY PICKER, not on the ladder** (`ExplCat`, `core/ui/ui_state.h`).
+There are four kinds of thing to do behind that slot and a single flat list of them puts the
+last one as many presses from the entry as the list is long — which only grows. So the top
+level is four rows, each one press deep:
+
+| Row | Behind it |
+|---|---|
+| **STORY** | the area ladder — one row per area, then that area's gauntlet and its five sub-areas |
+| **ENDLESS** | the **DeepWeb Dive** (the mid-game farm, opened at Net-Sea Crossing) and the **DARKWEB CRAWL** (the end of the map), where enemies scale to the pet and the win streak *is* the depth |
+| **ARENA** | **ROCK THE DOCK**, the bracket — no list of its own, so B draws one outright |
+| **CHAPTERS** | the STORY archive: every chapter the walk has fired, to reread |
+
+A locked category is a `??????` the cursor skips, exactly as a locked zone row is, and
+**a running walk still resumes where it left off** — opening EXPL mid-walk lands on the armed
+sub-area or the armed endless zone, so the picker costs the common case nothing.
+
+**The STORY is the journey the ladder alone cannot state.** Each zone owns four chapters
+(`AreaStoryDef`, `src/core/content/story.h`, authored in that area's own `area.cpp`) fired by
+the walk itself: arriving in a zone, opening its gauntlet, taking it, and leaving. A chapter
+is a run of heading-plus-prose PANELS flowed through the same page STAT and the arena briefing
+use; **B turns the page and C skips the chapter**, and a panel the reader leaves alone turns
+itself over after `kStoryPanelMs` — which is what lets a chapter fire on a hands-off
+auto-progress walk without stopping an unattended device. A thin rule above the hint band is
+the countdown, so a page that is about to move says so. A chapter is spent once per DEVICE
+(a persisted bitset over `StoryChapterDef::wire`, save v65) and everything spent lands in
+CHAPTERS, which is how a chapter an auto-progress walk paged through is read afterwards.
+
+ROCK THE DOCK is an eight-operator single-
 elimination bracket held in The Pirate Bayou and opened by reaching that water. Its screen is one
 Nav with three reads — the BRACKET (the field, who is left, who is next), a **SCOUT** sheet on
 hold-B showing any entrant's whole kit, and a paged **BRIEFING** on the A+C chord, which is the

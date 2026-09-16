@@ -25,6 +25,10 @@
 //             shop, one screen either way. "full" tops the mod pool up to
 //             modStorageCap() first, which is the state the row's HAVE n/cap column and
 //             the STORAGE FULL buy reason exist for)
+//        story [area:<n>] [beat:<n>] [scroll:<n>] | story archive (a STORY chapter in the
+//             reader, and the CHAPTERS list it lands in afterwards. "beat" is StoryBeat
+//             order — 0 arrival, 1 gauntlet, 2 cleared, 3 departure; "scroll" takes B n
+//             times, which is how to see a later window clear the countdown rule)
 //        maint [detail] [stacker [slide|drop|stop ...]] · lockout · evolve
 //        cryptogram [open:<n>] [take] [win|lose] (THE DECRYPTOGRAM's quote board, cashed
 //             at the VAULT; "open:<n>" places n letters correctly so the frame shows a
@@ -161,6 +165,7 @@
 #include "core/ui/carousel.h"
 #include "core/content/content_themes.h"
 #include "core/ui/cfg_screen.h"
+#include "core/content/story.h"
 #include "core/ui/expl_screen.h"
 
 using namespace mal;
@@ -391,6 +396,16 @@ int main(int argc, char** argv) {
     auto enterSlot = [&](SubmenuId id) {           // A to walk the cursor, then B
         game.onButton({Button::A, true, false});   // idle A → carousel @ slot 1
         while (carouselSlots()[game.cursor()].id != id)
+            game.onButton({Button::A, true, false});
+        game.onButton({Button::B, true, false});
+    };
+    // EXPL opens on its ACTIVITY PICKER (ui_state.h's ExplCat), so a scene that wants a
+    // category's own rows walks to that row and opens it. A scene that wants the picker
+    // itself just calls enterSlot and stops.
+    auto enterExplCat = [&](ExplCat cat) {
+        enterSlot(SubmenuId::Expl);
+        const int want = explCatRow(cat);
+        for (int i = 0; i < kExplCatRows && game.listRow() != want; ++i)
             game.onButton({Button::A, true, false});
         game.onButton({Button::B, true, false});
     };
@@ -850,9 +865,9 @@ int main(int argc, char** argv) {
             for (int s = 0; s < kExplSubAreas; ++s) game.debugSetSubCleared(a, s, true);
         }
         if (hasFlag(argc, argv, "list")) {
-            // DeepWeb is row 0 and, once unlocked, first-selectable — entering EXPL parks
-            // the cursor directly on it (no cycling needed).
-            enterSlot(SubmenuId::Expl);
+            // The dive is ENDLESS's first row, so opening that category parks the cursor
+            // directly on it (no cycling needed).
+            enterExplCat(ExplCat::Endless);
         } else {
             game.debugStartDeepWebDive();
         }
@@ -862,19 +877,20 @@ int main(int argc, char** argv) {
         // (no misleading WINS/BOSS progress toward an already-beaten boss).
         for (int s = 0; s < kExplSubAreas; ++s) game.debugSetSubCleared(0, s, true);
         if (hasFlag(argc, argv, "list"))
-            enterSlot(SubmenuId::Expl);                  // the all-CLEARED farmable list
+            enterExplCat(ExplCat::Story);                // the all-CLEARED farmable list
         else
             game.debugArmExplore(0, 2);                  // idle badge: EXPL ... FARMING
     } else if (hasFlag(argc, argv, "expl")) {
         // Seed a mid-ladder nested state so the EXPL list shows every tag at
         // once: area 0 has subs 1-2 CLEARED, sub 3 BOSS-READY (> FIGHT BOSS), subs 4-5
         // OPEN; area 1 stays LOCKED (its subs "??????"). Grayscale-safe row tags.
-        // The list draws one nav LEVEL at a time, so the two levels are two frames:
-        // without a flag it's the TOP-level zone picker, "inside" drills into area 0
-        // for that area's own block (its gauntlet row + the five sub-areas).
-        // "endgame" is the other end of the same screen: every area CLEARED, so the
-        // DeepWeb row is a live "> DIVE" and each zone shows its own glyph (or the
-        // pending-art frame) — the densest the top level ever gets. "bossready" clears
+        // The list draws one nav LEVEL at a time, so the levels are separate frames:
+        // without a flag it's STORY's zone list, "inside" drills into area 0 for that
+        // area's own block (its gauntlet row + the five sub-areas), and "cats" stops on
+        // EXPL's own ACTIVITY PICKER in front of both.
+        // "endgame" is the other end of the same screen: every area CLEARED, so every
+        // zone shows its own glyph (or the pending-art frame) and every category is
+        // open — the densest the screen ever gets. "bossready" clears
         // area 0's five sub-areas WITHOUT clearing the area, which is the one state that
         // names the area gauntlet's boss on its row.
         const bool rerun = hasFlag(argc, argv, "rerun");
@@ -894,11 +910,39 @@ int main(int argc, char** argv) {
             game.debugSetSubCleared(0, 1, true);
             game.debugSetSubBossUnlocked(0, 2, true);
         }
-        enterSlot(SubmenuId::Expl);
-        // B drills into the focused ZONE — area 0 here, except in "endgame", where the
-        // cursor rightly parks on the DeepWeb row and B arms the dive instead.
-        if (bossReady || hasFlag(argc, argv, "inside"))
-            game.onButton({Button::B, true, false});
+        if (hasFlag(argc, argv, "cats")) {
+            enterSlot(SubmenuId::Expl);                  // the activity picker itself
+        } else {
+            enterExplCat(ExplCat::Story);
+            // ...and B once more drills into the focused AREA, for the level below it.
+            if (bossReady || hasFlag(argc, argv, "inside"))
+                game.onButton({Button::B, true, false});
+        }
+    } else if (hasFlag(argc, argv, "story")) {
+        // A STORY chapter in the reader (game_story.cpp). Opened directly rather than
+        // walked to: what the page looks like does not depend on which milestone handed
+        // the chapter over, and walking a gauntlet to its end is a long way round to a
+        // screen. "beat:<n>" picks which of the zone's four (StoryBeat order), "area:<n>"
+        // which zone, and "scroll:<n>" takes B n times to reach a later window — which
+        // is how to see that the last one lands clear of the countdown rule and the
+        // hint band. "archive" opens the CHAPTERS list instead, with every chapter this
+        // build ships already read, which is the fullest that list ever gets.
+        if (hasFlag(argc, argv, "archive")) {
+            game.debugMarkStoryRead();
+            enterExplCat(ExplCat::Chapters);
+        } else {
+            int areaIdx = 0, beatIdx = 0;
+            for (int i = 3; i < argc; ++i) {
+                if (std::strncmp(argv[i], "area:", 5) == 0) areaIdx = std::atoi(argv[i] + 5);
+                if (std::strncmp(argv[i], "beat:", 5) == 0) beatIdx = std::atoi(argv[i] + 5);
+            }
+            game.debugOpenStory(
+                storyChapter(areaIdx, static_cast<StoryBeat>(beatIdx)));
+            for (int i = 3; i < argc; ++i)
+                if (std::strncmp(argv[i], "scroll:", 7) == 0)
+                    for (int n = std::atoi(argv[i] + 7); n > 0; --n)
+                        game.onButton({Button::B, true, false});
+        }
     } else if (hasFlag(argc, argv, "dock")) {
         // ROCK THE DOCK — the operator bracket (game_tourney.cpp). Clearing area 0 is what
         // reaches The Pirate Bayou and so opens the arena's EXPL row, which is the LAST
@@ -908,10 +952,7 @@ int main(int argc, char** argv) {
         // banner without playing a whole tournament for it.
         game.debugSetSectorCleared(0, true);
         game.debugAddCombatXp(600000);               // a pet that can win a match
-        enterSlot(SubmenuId::Expl);
-        for (int i = 0; i < explRowCount() && game.listRow() != explRowCount() - 1; ++i)
-            game.onButton({Button::A, true, false});
-        game.onButton({Button::B, true, false});
+        enterExplCat(ExplCat::Arena);                // the picker's ARENA row draws it
         // B on the bracket is a TAP/HOLD pair (tap = start the bout, hold = the scout
         // sheet), so every press from here has to send both edges.
         auto tapB = [&] {
@@ -1143,7 +1184,7 @@ int main(int argc, char** argv) {
                 game.debugSetSectorCleared(a, true);
                 for (int s = 0; s < kExplSubAreas; ++s) game.debugSetSubCleared(a, s, true);
             }
-        enterSlot(SubmenuId::Expl);
+        enterExplCat(ExplCat::Story);
         // The ladder is nested: the first B expands the focused sector, the second arms
         // the sub-area the cursor lands on — and arming is what drops the game back to
         // the IDLE habitat with the explore badge live.

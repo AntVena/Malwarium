@@ -210,6 +210,8 @@ void Game::onButton(const ButtonEvent& ev) {
         case Nav::Combat: onCombat(ev); break;
         case Nav::ExploreControl: onExploreControl(ev); break;
         case Nav::Tourney: onTourney(ev); break;
+        case Nav::Story: onStory(ev); break;
+        case Nav::StoryArchive: onStoryArchive(ev); break;
         case Nav::Encounter: onEncounter(ev); break;
         case Nav::Wifi: onWifi(ev); break;
         case Nav::ShibbolethHail: onShibbolethHail(ev); break;

@@ -28,6 +28,19 @@ building it up organically.
 
 ### 1a. Ready to build
 
+**Five areas have no STORY.** The chapter machinery ships whole — four beats per zone, fired by
+the walk, archived in EXPL's CHAPTERS list — and only CITRUS CIRCUIT is written
+(`src/core/content/areas/citrus_circuit/area.cpp`'s `story` row). Every other area, and both
+endless zones, carry a zeroed `AreaStoryDef`, which reads as "nothing to say yet" and fires
+nothing. What is left is the WRITING, one area at a time: arrival, gauntlet, cleared,
+departure, each a run of heading-plus-prose panels held to `EffectText::kMaxProse`, each with
+its own `wire` number. The premise Citrus Circuit sets up — a surge nobody has explained, a
+Crew that has not turned up — is the thread the rest of the ladder has to pay off, so the arc
+wants deciding before the middle areas are written rather than after. |
+*The story* in [`AREA_CONTENT_STANDARD.md`](../src/core/content/areas/AREA_CONTENT_STANDARD.md);
+`test_story_chapters_fit_their_page` is the gate. | M each | The two endless zones only ever
+reach the ARRIVAL beat — there is no gauntlet down there to open or close. |
+
 **A pet has no FAVOURITE FOOD, and the collection pages now make room for one.** STAT's FOODS
 grid gives every pet a plate to fill in and the PALATE achievements pay for filling it, which
 turns the pantry into something a player reads rather than uses — and the obvious thing missing

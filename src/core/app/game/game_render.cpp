@@ -56,6 +56,8 @@ void Game::render(Framebuffer& fb) const {
         case Nav::ArcadeResult: drawArcadeOutcome(fb); break;
         case Nav::Combat: drawCombatScreen(fb); break;
         case Nav::Tourney: drawTourney(fb); break;
+        case Nav::Story: drawStoryScreen(fb); break;
+        case Nav::StoryArchive: drawStoryArchiveScreen(fb); break;
         case Nav::ExploreControl:
             // The A+C control overlay floats over the idle habitat.
             drawHabitat(fb, -1);
@@ -692,42 +694,40 @@ void Game::drawSubmenu(Framebuffer& fb) const {
             bool cleared[kExplSectors * kExplSubAreas];
             bool boss[kExplSectors * kExplSubAreas];
             flattenSubFlags(cleared, boss);
-            ExplListView v;
+            // The shared half — everything the NAV also reads, so the cursor and the
+            // drawing can never disagree about what is open (Game::explView).
+            ExplListView v = explView();
             v.cursor = listRow_;
-            v.areaCleared = sectorCleared_;
             v.subCleared = cleared;
             v.subBossUnlocked = boss;
-            v.exploringSector = exploreActive_ ? exploreSector_ : -1;
-            v.exploringSub = exploreActive_ ? exploreSub_ : -1;
+            v.cat = explCat_;
             v.navArea = explNavArea_;
             v.streakWins = exploreStreak_;
             v.winsToBoss = kExploreStreakToBoss;
-            v.bestDeepWebDepth = bestDeepWebDepth_;
-            v.bestDarkWebDepth = bestDarkWebDepth_;
             // THE LEVEL IS THE LIST (explRowInLevel): only the rows this level actually
-            // draws are counted, so the zone picker pays for the area pools and an
-            // opened area pays for its own five rungs — never for the whole ladder on
-            // every repaint. Everything else stays 0, which is what a row nobody is
-            // looking at is worth.
+            // draws are counted, so STORY's zone list pays for the area pools, an opened
+            // area pays for its own five rungs, and ENDLESS pays for its two — never for
+            // the whole ladder on every repaint, and the ACTIVITY PICKER (which draws no
+            // zone rows at all) for none of it. Everything else stays 0, which is what a
+            // row nobody is looking at is worth.
             int areaLearn[kExplSectors] = {};
             int gauntletLearn[kExplSectors] = {};
             int subLearn[kExplSectors * kExplSubAreas] = {};
-            if (explNavArea_ >= 0 && explNavArea_ < kExplSectors) {
+            if (explCat_ == ExplCat::Story && explNavArea_ >= 0 &&
+                explNavArea_ < kExplSectors) {
                 gauntletLearn[explNavArea_] = areaGauntletMovesToLearn(explNavArea_);
                 for (int sub = 0; sub < kExplSubAreas; ++sub)
                     subLearn[explNavArea_ * kExplSubAreas + sub] =
                         subAreaMovesToLearn(explNavArea_, sub);
-            } else {
+            } else if (explCat_ == ExplCat::Story) {
                 for (int a = 0; a < kExplSectors; ++a) areaLearn[a] = areaMovesToLearn(a);
+            } else if (explCat_ == ExplCat::Endless) {
                 v.deepWebMovesToLearn = deepWebMovesToLearn();
                 v.darkWebMovesToLearn = darkWebMovesToLearn();
             }
             v.areaMovesToLearn = areaLearn;
             v.gauntletMovesToLearn = gauntletLearn;
             v.subMovesToLearn = subLearn;
-            v.tourneyRunning = tourneyRunning();
-            v.tourneyAlive = tourneyAliveCount(tourneyAlive_);
-            v.tourneyRound = tourneyRound_;
             v.beat = beat_;
             drawExplList(fb, registry_, v);
             break;

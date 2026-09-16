@@ -29,7 +29,10 @@ rm -f "$OUT"/*.ppm
 "$DUMP" 3 "$OUT/_idle.ppm" >/dev/null
 
 SCENES=(
-  "expl|expl"                       "expl_inside|expl inside"
+  "expl_cats|expl cats"             "expl|expl"
+  "expl_inside|expl inside"
+  "story|story"                     "story_scrolled|story scroll:1"
+  "story_boss|story beat:1"         "story_archive|story archive"
   "dock|dock"                       "dock_round2|dock fight"
   "dock_scout|dock scout"           "dock_brief|dock brief"
   "stat|stat"                       "stat_index|stat index"

@@ -68,6 +68,10 @@ struct SpriteData;
 // itself stays in game_stat.cpp, per the include note above.
 struct ProseRow;
 struct BuffRow;
+// EXPL's list view (core/ui/expl_screen.h). Named here only as explView()'s return
+// type, per the include note above — the screen header stays in the game_*.cpp units
+// that draw and navigate with it.
+struct ExplListView;
 struct StatIndexRow;
 struct FoodRow;
 
@@ -93,7 +97,7 @@ public:
     //   Detail      — L3 (item detail · MAINT action).
     //   Process     — a running MAINT process (non-interruptible).
     //   ModalFeeding / ModalLockout — event overlays.
-    enum class Nav { Idle, Cursor, Submenu, Detail, Process, ModalFeeding, ModalLockout, ModalLineSelect, ModalEggPick, ModalHatchReveal, ModalEvolve, ModalCSF, Combat, ExploreControl, Encounter, Wifi, Shop, ModShop, WarpPicker, RollbackPicker, CacheYield, BulkYield, PostEncounter, Stacker, Isolation, Chroma, Decryption, Cryptogram, ArcadeResult, Tourney, ShibbolethHail, Shibboleth, ShibbolethVerdict };
+    enum class Nav { Idle, Cursor, Submenu, Detail, Process, ModalFeeding, ModalLockout, ModalLineSelect, ModalEggPick, ModalHatchReveal, ModalEvolve, ModalCSF, Combat, ExploreControl, Encounter, Wifi, Shop, ModShop, WarpPicker, RollbackPicker, CacheYield, BulkYield, PostEncounter, Stacker, Isolation, Chroma, Decryption, Cryptogram, ArcadeResult, Tourney, ShibbolethHail, Shibboleth, ShibbolethVerdict, Story, StoryArchive };
 
     // Which L2 screen the ITEMS submenu is showing. Picker (the category tile
     // screen) only ever appears when itemPickerUnlocked(); every other path — no
@@ -518,6 +522,19 @@ public:
     //   Scout    the focused entrant's full kit, on the LOADOUT page's own flow
     //   Brief    the arena explaining itself (content_tournament.h's kTourneyBrief)
     enum class TourneyView : uint8_t { Bracket, Scout, Brief };
+
+    // What the STORY reader hands back to when the chapter it is showing runs out
+    // (game_story.cpp). A chapter fires IN FRONT OF something — the encounter that
+    // triggered it, the gauntlet it introduces — so the reader has to remember what it
+    // interrupted rather than guessing from the nav state it will be leaving.
+    //
+    //   Walk      — back to the idle habitat, explore-mode still running. What every
+    //               OUTRO hands back to, since the thing it followed is already over.
+    //   Encounter — the wild encounter whose first-in-this-zone roll opened the chapter.
+    //   AreaBoss  — the area gauntlet the chapter was the threshold of (storyThenArea_).
+    //   Archive   — nothing happened on the walk at all: this chapter was opened from
+    //               the CHAPTERS list, and C goes back to it.
+    enum class StoryThen : uint8_t { Walk, Encounter, AreaBoss, Archive };
     // A bracket is in play. The seed IS the run (core/model/tournament.h), so a zero
     // seed means "no run" and nothing else has to be checked.
     bool tourneyRunning() const { return tourneySeed_ != 0; }
@@ -541,6 +558,29 @@ public:
     // Public so a gate can assert what a sheet SAYS instead of reading it out of pixels.
     std::vector<ProseRow> tourneyScoutRows() const;
     std::vector<ProseRow> tourneyBriefRows() const;
+
+    // --- STORY (game_story.cpp) ---------------------------------------------
+    // The chapter the reader is showing (nullptr = none), and where it is up to. The
+    // window pair is what the page's "2/4" is drawn from and what a gate asserts a
+    // skip against; the reader's own flow decides both (core/ui/prose_page.h).
+    // Named for the state and not for the type, so it does not collide with the
+    // content layer's own storyChapter(sector, beat) lookup (core/content/story.h) —
+    // the two answer different questions and reading one as the other is a bug a
+    // compiler would never catch.
+    const StoryChapterDef* currentStoryChapter() const { return storyChapter_; }
+    int storyWindow() const;
+    int storyWindows() const;
+    // Has this device read `chapter`? The read-set is player-level and persisted, so a
+    // chapter fires once per DEVICE and not once per pet — the journey is the
+    // operator's, and a new egg is not a reason to be told the premise again.
+    bool storyRead(const StoryChapterDef* chapter) const;
+    // How many chapters the walk has written so far — the CHAPTERS row's readout, and
+    // what decides whether that category is a place to go at all.
+    int storyChapterCount() const;
+    // The chapter flowed as prose rows, built on demand like every other reader's
+    // model. Public so a gate can assert what a page SAYS rather than read it out of
+    // pixels.
+    std::vector<ProseRow> storyRows() const;
     WifiOutcome wifiOutcome() const { return wifiOutcome_; }   // rolled sub-outcome
     // WHICH of the rival's moves beating it could teach this pet — one bit per index
     // into its kit, and the single answer to that question anywhere on the screen. The
@@ -2068,6 +2108,24 @@ public:
     // STEP rule shouldn't have to grind the streak that triggers it — that grind is
     // covered on its own by test_explore_streak_unlocks_boss_then_clears.
     void debugSetAutoProgress(bool v) { autoProgress_ = v; }
+    // TEST/DEV: mark every STORY chapter already read, so a gate driving the walk is
+    // never interrupted by one (game_story.cpp). The same standing the auto-progress
+    // hook above has: a chapter firing mid-walk is real behaviour with gates of its own,
+    // and a gate about loot tables or Wi-Fi rolls should not have to page through the
+    // premise to get to what it is measuring.
+    // TEST/DEV: open a chapter in the reader directly, without walking to the beat that
+    // fires it. What the reader DOES with a chapter is independent of which milestone
+    // handed it over, and driving a gauntlet to its end to look at a page is a long way
+    // round to a screen.
+    void debugOpenStory(const StoryChapterDef* chapter) {
+        storyNext_ = nullptr;
+        storyThenArea_ = -1;
+        openStoryChapter(chapter, StoryThen::Walk);
+    }
+    void debugMarkStoryRead() {
+        for (int i = 0, n = storyEntryCount(); i < n; ++i)
+            markStoryRead(storyEntryAt(i).chapter);
+    }
     void debugSetExploreStreak(int v) { exploreStreak_ = v < 0 ? 0 : v; }
     // The composed walk-badge label (tests): the only string on that line whose width is
     // content-driven, so the gate that measures the badge's two fields against each other
@@ -2286,8 +2344,8 @@ private:
     enum class ListFocus {
         None, StatIndex, ItemsPicker, ItemsList, ArchPicker, ArchList, CfgList, CfgGroup,
         ModSlots, LoadoutHub,
-        ModPicker, MovePicker, Expl, Maint, Arcade, HackerShop, HackerServices,
-        HackerVault, HackerPeers, CrewHub, CrewTeam, CrewPicker,
+        ModPicker, MovePicker, Expl, StoryArchive, Maint, Arcade, HackerShop,
+        HackerServices, HackerVault, HackerPeers, CrewHub, CrewTeam, CrewPicker,
     };
     ListFocus listFocus() const;
     // Move the focused list's cursor by `dir` (+1/-1), wrapping, skipping whatever
@@ -2476,6 +2534,10 @@ private:
     // the sector's boss. onExploreControl drives the A+C control overlay
     // (Nav::ExploreControl → A ping / B warp / C stop).
     void onExplList(const ButtonEvent& ev);
+    // ...and the ACTIVITY PICKER it opens on (ui_state.h's ExplCat), which walks its own
+    // four rows rather than the ladder's row space. Split out rather than folded into a
+    // branch of onExplList because the two levels share no state but `listRow_`.
+    void onExplCategories(const ButtonEvent& ev);
     // Flatten the durable per-sub flag blocks to the row-major layout the shared
     // expl_screen row helpers read ([area*kSubAreasPerArea+sub]).
     void flattenSubFlags(bool (&cleared)[kAreaCount * kSubAreasPerArea],
@@ -2483,10 +2545,18 @@ private:
     // Open EXPL: pick the nav level + cursor row to enter on (resuming a running
     // explore-mode where it left off, else the top level's first landable row).
     void openExplList();
-    // Two-level EXPL nav is `row` a stop at the CURRENT level
-    // (explNavArea_)? Top level → DeepWeb + open area headers; inside an area → that
-    // area's own selectable rows. `areaHeaderRow` is an area's header row index.
+    // THREE-level EXPL nav: is `row` a stop at the CURRENT level (explCat_ +
+    // explNavArea_)? A category's own level → its zone rows / open area headers; inside
+    // an area → that area's own selectable rows. `explCatLandable` is the same question
+    // asked of the picker's four rows, and `areaHeaderRow` is an area's header row
+    // index.
     bool explRowLandable(int row) const;
+    bool explCatLandable(int catRow) const;
+    // The EXPL list's view struct, filled from this Game's own state. The NAV reads it
+    // (which categories the cursor stops on) and the RENDERER draws from it, so a
+    // category that is skipped and a category drawn as "??????" can never be two
+    // different sets. The renderer fills in the per-row blocks it also needs.
+    ExplListView explView() const;
     int areaHeaderRow(int area) const;
     // Compose the idle badge label — the armed area's short (first-word) name + the
     // 1-based sub number, e.g. "CITRUS 3". Compact + collision-free.
@@ -2569,6 +2639,32 @@ private:
     void startAreaBoss(int area);
     void startBossRound(int carryHealth);
     void finishBossRound();
+
+    // THE STORY (game_story.cpp). A chapter fires ONCE, on the walk's own milestone,
+    // and is readable forever after from EXPL's CHAPTERS list.
+    //
+    // fireStory/fireStoryPair are the gate every beat goes through: they answer false
+    // when the beat is unauthored or already read — in which case the caller carries
+    // straight on as though no story existed — and true when they have taken the
+    // screen, in which case the caller returns and `then` is what happens once the
+    // reader is done. That is what lets a fire point be one line at the top of the
+    // thing it interrupts.
+    bool fireStory(int sector, StoryBeat beat, StoryThen then, int thenArea = -1);
+    bool fireStoryPair(int sector, StoryBeat first, StoryBeat second, StoryThen then);
+    void openStoryChapter(const StoryChapterDef* chapter, StoryThen then);
+    void markStoryRead(const StoryChapterDef* chapter);
+    void onStory(const ButtonEvent& ev);
+    void advanceStoryPanel();      // B on a page, and what the panel deadline calls
+    void finishStoryChapter();     // the queued second chapter, or hand back to `then`
+    void armStoryPanel();          // restart the auto-advance clock for this window
+    void drawStoryScreen(Framebuffer& fb) const;
+    // The CHAPTERS list. `storyArchiveRows` resolves the unlocked chapters into the row
+    // models the screen draws and is the ONE place the archive's order and membership
+    // are decided — the list, its cursor and the B that opens a row all read it.
+    void openStoryArchive();
+    void onStoryArchive(const ButtonEvent& ev);
+    void drawStoryArchiveScreen(Framebuffer& fb) const;
+    std::vector<StoryEntry> storyArchiveEntries() const;
 
     // THE SHIBBOLETH (game_shibboleth.cpp). startShibboleth() is reached from the Wi-Fi
     // event when the sighting queue came up empty and the dry-streak cadence is due
@@ -3025,9 +3121,13 @@ private:
 
     // L2/L3 state.
     int listRow_ = 0;                      // selected row (ITEMS row idx / MAINT 0..1)
-    // EXPL two-level nav cursor level: -1 = top level (area headers +
-    // DeepWeb), >= 0 = inside that area (its sub-areas). Runtime-only; reset to -1 each
-    // time the EXPL submenu is opened.
+    // EXPL's THREE-level nav. `explCat_` is the activity (ExplCat::None = the picker
+    // itself, EXPL's own top level); `explNavArea_` is the level INSIDE one: -1 = the
+    // category's own rows, >= 0 = inside that area (its sub-areas). `listRow_` indexes
+    // the picker's four rows while explCat_ is None and the ladder's row space
+    // otherwise — the same field either way, because only one of the two levels is ever
+    // on screen. Runtime-only; openExplList re-derives both every time EXPL is opened.
+    ExplCat explCat_ = ExplCat::None;
     int explNavArea_ = -1;
     // AUTO-PROGRESS: the walk steps the ladder by itself (autoProgressStep). Toggled
     // with the A+C chord from inside the explore-control overlay, which is only
@@ -3805,6 +3905,29 @@ private:
     int tourneyCursor_ = 0;
     TourneyFighter tourneyOpponent_;
     TourneyView tourneyView_ = TourneyView::Bracket;
+
+    // --- THE STORY (game_story.cpp) -----------------------------------------
+    // The read-set: one bit per StoryChapterDef::wire (core/content/story.h), so a
+    // chapter fires exactly once on this device however many pets walk past its beat.
+    // PLAYER-LEVEL and persisted (save v65) for that reason — the journey belongs to
+    // the operator, and a new egg is not grounds for being told the premise again.
+    uint8_t storyRead_[kStoryWireCap / 8] = {};
+    // What the reader is showing, and the chapter queued behind it. Two, because a
+    // cleared area fires its two outros back to back (fireStoryPair) and nothing else
+    // ever queues more than that — a deeper queue would be a story the walk is telling
+    // instead of one it is punctuating.
+    const StoryChapterDef* storyChapter_ = nullptr;
+    const StoryChapterDef* storyNext_ = nullptr;
+    // Which window of the chapter is on screen, as the prose row it opens on — the
+    // reader steps by "however many rows were shown", exactly as STAT's pages do, so
+    // this is a row index and not a panel number (core/ui/prose_page.h).
+    int storyScroll_ = 0;
+    // When this window turns itself over (against nowMs_). Re-armed by every press, so
+    // a reader who is reading is never overtaken by the clock.
+    uint32_t storyPanelDeadlineMs_ = 0;
+    StoryThen storyThen_ = StoryThen::Walk;
+    int storyThenArea_ = -1;                 // StoryThen::AreaBoss's gauntlet
+    int storyArchiveRow_ = 0;                // the CHAPTERS list's cursor
     // The scroll position of whichever reader is open — one field, because only one
     // ever is, and a per-view scroll would have to be reset on every switch anyway.
     int tourneyScroll_ = 0;

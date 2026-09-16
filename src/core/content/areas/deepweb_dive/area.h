@@ -6,6 +6,8 @@
 // nothing outside the dive reads them.
 #pragma once
 
+#include "core/content/story.h"  // AreaStoryDef — the Dive owns its chapters too
+
 namespace mal {
 
 // Enemy level = petLevel + this (0 = parity, so wildWinXp pays full base XP at depth 0).
@@ -117,6 +119,18 @@ extern const char* const kDeepWebWildDefendMoveId;
 // derived: it happens to match rung 1's threshold today, and should be free to stop
 // matching it without dragging the rung pacing along.
 extern const int kDeepWebWildDefendDepth;
+
+// What the Dive is CALLED, in the two lengths every zone needs: the EXPL row's title
+// and the short field the walk badge and the story archive carry. Stated here because
+// the Dive has no AreaDef to carry AreaDef::name / ::badge for it, and three call sites
+// each spelling its own copy is three places for it to be renamed in.
+extern const char* const kDeepWebName;
+extern const char* const kDeepWebBadge;
+
+// ...and what it MEANS: the Dive's own chapters, AreaDef::story's stand-in
+// (core/content/story.h). The endless zones reach only the AreaIntro beat — there is no
+// gauntlet down here to open or close — so the other three slots stay unauthored.
+extern const AreaStoryDef kStoryDeepWeb;
 
 extern const char* const* const kDeepWebMoveRungs[];  // rung -> that rung's id list
 extern const int kDeepWebMoveRungCounts[];            // ...and its length
