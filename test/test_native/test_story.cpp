@@ -34,9 +34,15 @@ bool walkToStory(Game& g) {
     return g.nav() == Game::Nav::Story;
 }
 
-// Page a chapter to its end with B, however many windows it turns out to hold.
+// Page ONE chapter to its end with B, however many windows it turns out to hold. It
+// stops when the chapter under the reader changes, because a paired beat opens its
+// second half in place — so "read this one out" and "read everything queued" have to be
+// two different things for a gate to tell them apart.
 void readChapterOut(Game& g) {
-    for (int i = 0; i < 32 && g.nav() == Game::Nav::Story; ++i)
+    const StoryChapterDef* c = g.currentStoryChapter();
+    for (int i = 0; i < 32 && g.nav() == Game::Nav::Story &&
+                    g.currentStoryChapter() == c;
+         ++i)
         g.onButton(press(Button::B));
 }
 
@@ -242,6 +248,50 @@ void test_story_archive_collects_what_the_walk_fired() {
     Game g2{StartMode::Hatched, "bruinforce", &store};
     CHECK(g2.storyRead(storyChapter(0, StoryBeat::AreaIntro)));
     CHECK(g2.storyChapterCount() == 1);
+}
+
+// THE GAUNTLET'S OWN BEATS, end to end on a real fight: the threshold chapter stands in
+// front of the area boss and hands it back, and the win fires the PAIR — what was just
+// beaten, then the place closing behind the pet — read back to back as one sitting
+// before the walk gets its habitat back.
+void test_story_brackets_the_area_gauntlet() {
+    Game g{StartMode::Hatched, "bruinforce"};
+    g.debugAddCombatXp(600000);                      // a pet that can take the gauntlet
+    for (int s = 0; s < kExplSubAreas; ++s) g.debugSetSubCleared(0, s, true);
+    CHECK(g.areaBossReady(0));
+
+    // Opening the gauntlet opens its chapter instead — and reading that out starts the
+    // fight the chapter was the threshold of.
+    enterStoryLadder(g);
+    g.onButton(press(Button::B));                    // drill into area 0
+    g.onButton(press(Button::B));                    // AREA BOSS -> its chapter
+    CHECK(g.nav() == Game::Nav::Story);
+    CHECK(g.currentStoryChapter() == storyChapter(0, StoryBeat::BossIntro));
+    readChapterOut(g);
+    CHECK(g.nav() == Game::Nav::Combat);
+
+    // Ride the five rounds out. The clear fires BossOutro, and finishing that opens
+    // AreaOutro in place rather than handing back and firing again.
+    uint32_t t = 0;
+    for (int i = 0; i < 80000 && g.nav() == Game::Nav::Combat; ++i) {
+        for (int j = 0; j < 800 && g.combat().outcome() == Combat::Outcome::Ongoing; ++j)
+            g.tick(t += kHeartbeatMs);
+        g.onButton(press(Button::B));                // advance the round / dismiss
+    }
+    CHECK(g.sectorCleared(0));
+    CHECK(g.nav() == Game::Nav::Story);
+    CHECK(g.currentStoryChapter() == storyChapter(0, StoryBeat::BossOutro));
+    readChapterOut(g);
+    CHECK(g.nav() == Game::Nav::Story);              // the second half, in place
+    CHECK(g.currentStoryChapter() == storyChapter(0, StoryBeat::AreaOutro));
+    readChapterOut(g);
+    CHECK(g.nav() == Game::Nav::Idle);               // ...and only then the habitat
+
+    // Three of the zone's four beats are spent and archived — the ARRIVAL one is not,
+    // because this gate never walked the area, it went straight to its gauntlet. The
+    // read-set follows what actually happened, not how far into the zone the player is.
+    CHECK(g.storyChapterCount() == kStoryBeats - 1);
+    CHECK(!g.storyRead(storyChapter(0, StoryBeat::AreaIntro)));
 }
 
 // EXPL's ACTIVITY PICKER: four rows, one per kind of thing to do, with STORY the one

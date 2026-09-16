@@ -364,6 +364,7 @@ int g_failures = 0;
     RUN(test_story_arrival_fires_once_and_hands_back) \
     RUN(test_story_panel_turns_on_its_own_clock)  \
     RUN(test_story_skip_still_runs_what_it_interrupted) \
+    RUN(test_story_brackets_the_area_gauntlet)    \
     RUN(test_story_archive_collects_what_the_walk_fired) \
     RUN(test_deepweb_dive)                        \
     RUN(test_darkweb_crawl)                       \
