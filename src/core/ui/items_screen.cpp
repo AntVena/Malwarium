@@ -474,12 +474,13 @@ void drawItemDetail(Framebuffer& fb, const ItemDef& def, const SpriteData* icon,
     // Action / gate line.
     if (usable) {
         drawRowCursor(fb, kMargin, actionY, palColor(Pal::ACCENT));
-        // A re-roll reads ROLLBACK; the egg accelerator reads DECRYPT
-        // everything else USE. (Sealed caches decrypt from the Hacker VAULT,
-        // so no OPEN verb appears here.)
-        const char* verb = def.use == ItemDef::Use::DecryptEgg ? "DECRYPT"
-                         : def.use == ItemDef::Use::Rollback   ? "ROLLBACK"
-                                                               : "USE";
+        // A re-roll reads ROLLBACK and a point move reads MOVE POINT; the egg
+        // accelerator reads DECRYPT; everything else USE. (Sealed caches decrypt from
+        // the Hacker VAULT, so no OPEN verb appears here.)
+        const char* verb = def.use == ItemDef::Use::DecryptEgg   ? "DECRYPT"
+                         : def.use == ItemDef::Use::Rollback     ? "ROLLBACK"
+                         : def.use == ItemDef::Use::Repartition  ? "MOVE POINT"
+                                                                 : "USE";
         drawText(fb, kMargin + 10, actionY, verb, palColor(Pal::ACCENT));
     } else {
         drawText(fb, kMargin, actionY, gateMsg ? gateMsg : "- UNUSABLE HERE -",
@@ -584,7 +585,6 @@ void drawBulkYield(Framebuffer& fb, const ItemDef& cache, int cachesOpened, int 
 }
 
 void drawRollbackPicker(Framebuffer& fb, const int points[4], int cursor) {
-    static const char* const kStatLabel[4] = {"POWER", "DEFENSE", "SPEED", "MAX-HP"};
     listHeader(fb, "ROLLBACK", 0, 0);
     // Purpose line (dual-coded: the whole action is spelled out in text).
     drawText(fb, kMargin, 30, "SHED 1 STAT (-1 LVL) TO", palColor(Pal::INK_DIM));
@@ -596,7 +596,7 @@ void drawRollbackPicker(Framebuffer& fb, const int points[4], int cursor) {
         const bool sel = (i == cursor);
         const Rgb565 c = eligible ? palColor(Pal::INK) : palColor(Pal::INK_DIM);
         if (sel && eligible) drawRowCursor(fb, kMargin, y, palColor(Pal::ACCENT));
-        drawText(fb, kMargin + 12, y, kStatLabel[i], c);
+        drawText(fb, kMargin + 12, y, levelStatWord(i), c);
         if (eligible) {
             char pts[8];
             std::snprintf(pts, sizeof(pts), "+%d", points[i]);
@@ -609,6 +609,54 @@ void drawRollbackPicker(Framebuffer& fb, const int points[4], int cursor) {
     }
 
     drawHintBand(fb, "A CYCLE  B SHED  C CANCEL");
+}
+
+void drawRepartitionPicker(Framebuffer& fb, const int points[4], int cursor, int from) {
+    const bool picking = from < 0;            // step one: which stat gives the point up
+    listHeader(fb, "REPARTITION", 0, 0);
+    // Purpose lines, same job as the Rollback picker's: the whole action spelled out in
+    // text rather than implied by the cursor. They also carry the STEP, which is the one
+    // thing a two-step picker has to say and a four-row list cannot show on its own.
+    char head[32];
+    const char* title = "MOVE 1 EARNED POINT";
+    if (!picking) {
+        std::snprintf(head, sizeof(head), "FROM %s -1", levelStatWord(from));
+        title = head;
+    }
+    drawText(fb, kMargin, 30, title, palColor(Pal::INK_DIM));
+    drawText(fb, kMargin, 42, picking ? "PICK WHAT PAYS FOR IT" : "PICK WHERE IT GOES",
+             palColor(Pal::INK_DIM));
+
+    for (int i = 0; i < 4; ++i) {
+        const int y = 66 + i * 22;
+        // What counts as a legal row changes with the step. Taking a point needs one to
+        // take (the Rollback rule); RECEIVING one has no such bar — a stat sitting at
+        // zero is exactly the one an operator reaches for this item to fill.
+        const bool eligible = picking ? points[i] > 0 : i != from;
+        const bool sel = (i == cursor);
+        const Rgb565 c = eligible ? palColor(Pal::INK) : palColor(Pal::INK_DIM);
+        if (sel && eligible) drawRowCursor(fb, kMargin, y, palColor(Pal::ACCENT));
+        drawText(fb, kMargin + 12, y, levelStatWord(i), c);
+
+        // The right column is the readout, and at the TO step it shows the TRADE rather
+        // than a state: the two rows the commit would change each read `now>after`, so
+        // the cost and the gain are both on screen before B is pressed.
+        char val[12];
+        const char* readout = val;
+        if (!picking && i == from) {
+            std::snprintf(val, sizeof(val), "%d>%d", points[i], points[i] - 1);
+        } else if (!picking && sel) {
+            std::snprintf(val, sizeof(val), "%d>%d", points[i], points[i] + 1);
+        } else if (eligible) {
+            std::snprintf(val, sizeof(val), "+%d", points[i]);
+        } else {
+            readout = "NONE TO MOVE";   // FROM step only: nothing on this stat to pick up
+        }
+        drawText(fb, kActiveW - kMargin - textWidth(readout), y, readout, c);
+    }
+
+    const char* hint = picking ? "A CYCLE  B FROM  C CANCEL" : "A CYCLE  B MOVE  C BACK";
+    drawHintBand(fb, hint);
 }
 
 }  // namespace mal

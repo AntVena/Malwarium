@@ -583,19 +583,20 @@ void test_sealed_cache_item_shape() {
 
 // opening a tiered cache pays that tier's Bits and drops item(s) from the
 // tier's rarity-specific pool. The epic tier is the multi-item drop (2 items), and
-// its pool is scarce-utility only (rollback / yubi_cookie / backup_drive) — none of
-// the common consumables. Grayscale-independent: assertions are on ids + counts.
+// its pool is scarce-utility only — none of the common consumables. Grayscale-
+// independent: assertions are on ids + counts.
 void test_cache_epic_pool_and_multidrop() {
     Game g{StartMode::Hatched};
     g.inventory().add("sealed_cache_epic", 1);
     const int bits0 = g.bits();
-    // Count the WHOLE epic pool (rollback / yubi_cookie / backup_drive / restore_point /
-    // deep_learning_core / zeroday_bell) so the delta is robust to which two members the
-    // seeded draw picks.
+    // Counted over the cache's OWN pool rather than a hand-listed set of ids (the same
+    // rule the common-tier gate below follows), so adding a row to the epic pool can't
+    // quietly turn this into a test of six specific items the draw is now allowed to miss.
+    const CacheDef& epic = ContentRegistry::embedded().item("sealed_cache_epic")->cache;
     auto epicPool = [&] {
-        return g.inventory().count("rollback") + g.inventory().count("yubi_cookie") +
-               g.inventory().count("backup_drive") + g.inventory().count("restore_point") +
-               g.inventory().count("deep_learning_core") + g.inventory().count("zeroday_bell");
+        int n = 0;
+        for (int i = 0; i < epic.poolSize; ++i) n += g.inventory().count(epic.pool[i].id);
+        return n;
     };
     const int items0 = epicPool();
     g.debugOpenCache("sealed_cache_epic");           // decrypt (VAULT path)

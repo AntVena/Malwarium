@@ -106,6 +106,11 @@ bool Game::itemUsable(const ItemDef& d, const char*& gateMsg) const {
     if (d.use == ItemDef::Use::Rollback && combatLevel_ <= 0) {
         gateMsg = "NO LEVELS TO ROLL"; return false;
     }
+    // Repartition wants a point to MOVE, which is the same demand — level == the count
+    // of earned points, so a level-0 pet has nothing on the table to pick up.
+    if (d.use == ItemDef::Use::Repartition && combatLevel_ <= 0) {
+        gateMsg = "NO POINTS TO MOVE"; return false;
+    }
     // The Boot Accelerator only shortens an egg's incubation — nothing to do once hatched.
     if (d.use == ItemDef::Use::DecryptEgg && !inEggPhase()) {
         gateMsg = "USABLE ON EGG ONLY"; return false;
@@ -335,6 +340,11 @@ void Game::useItem() {
     // item is only consumed when a shed is confirmed (onRollbackPicker B) — cancelling
     // (C) leaves it in the bag. detailItem_ stays set so the shed path can consume it.
     if (d.use == ItemDef::Use::Rollback) { openRollbackPicker(); return; }
+
+    // Repartition: the same hand-off, to the two-step picker that moves a point instead
+    // of shedding one. Consumed only on the commit (onRepartitionPicker B at the TO
+    // step) — backing out of either step leaves it in the bag.
+    if (d.use == ItemDef::Use::Repartition) { openRepartitionPicker(); return; }
 
     // Boot Accelerator: Use shortens the egg's incubation instead of feeding.
     if (d.use == ItemDef::Use::DecryptEgg) { useBootAccelerator(d); return; }
@@ -760,12 +770,21 @@ void Game::onRollbackPicker(const ButtonEvent& ev) {
         if (nxt >= 0) rollbackRow_ = nxt;
     } else if (ev.button == Button::B) {
         // Shed one point of the chosen stat: −1 that stat, −1 level (level == total
-        // points), and re-zero the XP bucket so the pet RE-GRINDS that level to
-        // re-roll it (the grind is the real cost). Consume the Rollback item + log.
+        // points). The bill is ONE level and nothing more, so the XP banked toward the
+        // next one is carried down rather than binned: a pet 90% of the way up its rung
+        // lands 90% of the way up the rung below, and re-grinds exactly the level it
+        // shed. Carried as the FRACTION, not the raw number, because the rung below is
+        // shorter — banking the raw count would leave a pet over the lower rung's need
+        // and hand the level straight back on the next award. The floor division also
+        // keeps it strictly under that need (it was strictly under the taller one), so
+        // the shed can never undo itself. Consume the Rollback item + log.
         if (rollbackEligible(rollbackRow_) && detailItem_) {
             --statPoints_[rollbackRow_];
+            const int wasNeed = xpToNextLevel();
             --combatLevel_;
-            combatXp_ = 0;
+            if (wasNeed > 0)
+                combatXp_ = static_cast<int>(static_cast<long long>(combatXp_) *
+                                             xpToNextLevel() / wasNeed);
             inventory_.remove(detailItem_->id, 1);
             char buf[28];
             // Surface the shed explicitly — which stat and by how much (
@@ -779,6 +798,79 @@ void Game::onRollbackPicker(const ButtonEvent& ev) {
         nav_ = Nav::Submenu;   // back to the ITEMS list (the item may have run out)
     } else if (ev.button == Button::C) {
         nav_ = Nav::Detail;    // cancel — item untouched, back to its detail
+    }
+    dirty_ = true;
+}
+
+int Game::nextRepartitionTarget(int cur) const {
+    // The next stat (wrapping) that is not the source. Every stat but that one is a
+    // legal destination — a stat sitting at zero earned points is exactly the stat an
+    // operator reaches for this item to fill, so unlike the shed picker there is no
+    // eligibility to test beyond "not where the point already is".
+    for (int step = 1; step <= kLevelStatCount; ++step) {
+        const int i = (cur + step) % kLevelStatCount;
+        if (i != repartitionFrom_) return i;
+    }
+    return cur;
+}
+
+void Game::openRepartitionPicker() {
+    // Step one: park on the first stat with a point to give up. itemUsable already
+    // guaranteed one exists (level > 0 == at least one earned point), so the scan
+    // always lands. detailItem_ (the Repartition item) stays set for the commit.
+    int first = -1;
+    for (int i = 0; i < kLevelStatCount; ++i)
+        if (rollbackEligible(i)) { first = i; break; }
+    repartitionFrom_ = -1;
+    repartitionRow_ = first < 0 ? 0 : first;
+    nav_ = Nav::RepartitionPicker;
+    dirty_ = true;
+}
+
+void Game::onRepartitionPicker(const ButtonEvent& ev) {
+    const bool picking = repartitionFrom_ < 0;   // step one: which stat gives the point
+    if (ev.button == Button::A) {
+        const int nxt = picking ? nextEligibleStat(repartitionRow_)
+                                : nextRepartitionTarget(repartitionRow_);
+        if (nxt >= 0) repartitionRow_ = nxt;
+    } else if (ev.button == Button::B) {
+        if (picking) {
+            // Lock the source in and hand the cursor to the destination step, parked on
+            // a stat that is not the source (so B can never be a no-op move onto itself).
+            if (rollbackEligible(repartitionRow_)) {
+                repartitionFrom_ = repartitionRow_;
+                repartitionRow_ = nextRepartitionTarget(repartitionRow_);
+            }
+        } else if (rollbackEligible(repartitionFrom_) &&
+                   repartitionRow_ != repartitionFrom_ && detailItem_) {
+            // The move: one point off the source, one onto the target. The LEVEL and the
+            // XP bucket are untouched on purpose — nothing was un-earned, so there is no
+            // grind to re-pay; what the item sells is the SHAPE of the table, and the
+            // invariant (level == the sum of the earned points) holds because the sum
+            // did not change. Consume the item + log.
+            --statPoints_[repartitionFrom_];
+            ++statPoints_[repartitionRow_];
+            inventory_.remove(detailItem_->id, 1);
+            char buf[28];
+            // Both ends, in words: which stat paid and which one grew. The stat WORDS
+            // are the non-colour channel, so the line reads in a grayscale log.
+            std::snprintf(buf, sizeof(buf), "MOVED %s>%s",
+                          levelStatName(repartitionFrom_), levelStatName(repartitionRow_));
+            log_.push(LogEventType::ItemUsed, buf);
+            markSaveDirty();
+            repartitionFrom_ = -1;
+            nav_ = Nav::Submenu;   // back to the ITEMS list (the item may have run out)
+        }
+    } else if (ev.button == Button::C) {
+        // C walks back one step rather than straight out: from the destination step it
+        // re-opens the source question (cursor back on the source, so the mis-pick is
+        // visible), and from the source step it leaves. Nothing has been spent either way.
+        if (picking) {
+            nav_ = Nav::Detail;    // cancel — item untouched, back to its detail
+        } else {
+            repartitionRow_ = repartitionFrom_;
+            repartitionFrom_ = -1;
+        }
     }
     dirty_ = true;
 }

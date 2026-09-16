@@ -2700,6 +2700,15 @@ window.PEDIA_DATA = {
       "icon": "assets/icons/ICON_ITEM_ROLLBACK.png"
     },
     {
+      "id": "repartition",
+      "name": "Repartition",
+      "type": "TOOLS",
+      "rarity": "EPIC",
+      "effect": "Move one earned stat point onto a stat of your choosing.",
+      "stats": "",
+      "icon": "assets/icons/ICON_ITEM_REPARTITION.png"
+    },
+    {
       "id": "ambig_usb",
       "name": "Ambig-USB",
       "type": "TOOLS",
@@ -7729,9 +7738,9 @@ window.PEDIA_DATA = {
     {
       "key": "COLLECT_EPIC",
       "name": "Epic Collector",
-      "trigger": "Get hold of all 18 Epic items.",
+      "trigger": "Get hold of all 19 Epic items.",
       "icon": "assets/icons/ICON_ACH_COLLECT_EPIC.png",
-      "goal": 18
+      "goal": 19
     },
     {
       "key": "RIG_FIRST",

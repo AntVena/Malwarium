@@ -93,7 +93,7 @@ public:
     //   Detail      — L3 (item detail · MAINT action).
     //   Process     — a running MAINT process (non-interruptible).
     //   ModalFeeding / ModalLockout — event overlays.
-    enum class Nav { Idle, Cursor, Submenu, Detail, Process, ModalFeeding, ModalLockout, ModalLineSelect, ModalEggPick, ModalHatchReveal, ModalEvolve, ModalCSF, Combat, ExploreControl, Encounter, Wifi, Shop, ModShop, WarpPicker, RollbackPicker, CacheYield, BulkYield, PostEncounter, Stacker, Isolation, Chroma, Decryption, Cryptogram, ArcadeResult, Tourney, ShibbolethHail, Shibboleth, ShibbolethVerdict };
+    enum class Nav { Idle, Cursor, Submenu, Detail, Process, ModalFeeding, ModalLockout, ModalLineSelect, ModalEggPick, ModalHatchReveal, ModalEvolve, ModalCSF, Combat, ExploreControl, Encounter, Wifi, Shop, ModShop, WarpPicker, RollbackPicker, RepartitionPicker, CacheYield, BulkYield, PostEncounter, Stacker, Isolation, Chroma, Decryption, Cryptogram, ArcadeResult, Tourney, ShibbolethHail, Shibboleth, ShibbolethVerdict };
 
     // Which L2 screen the ITEMS submenu is showing. Picker (the category tile
     // screen) only ever appears when itemPickerUnlocked(); every other path — no
@@ -179,6 +179,10 @@ public:
     // XP needed to climb from the current level to the next — the geometric curve
     // round(kLevelXpBase * (kLevelXpGrowthPct/100)^combatLevel_).
     int xpToNextLevel() const;
+    // The same curve asked about an ARBITRARY level rather than the one the pet is on.
+    // Rollback needs it: shedding a level moves the pet onto a SHORTER rung, and the
+    // banked XP has to be re-expressed against that rung rather than thrown away.
+    int xpForLevel(int level) const;
     // Earned points in combat stat `i` (0 power · 1 defense · 2 speed · 3 max-Health);
     // sum == combatLevel_ (the level == total earned points invariant). Out-of-range → 0.
     int levelStatPoint(int i) const {
@@ -2840,6 +2844,20 @@ private:
     }
     int nextEligibleStat(int cur) const;            // A-cycle target (skips 0-point stats)
     void drawRollbackPickerScreen(Framebuffer& fb) const;
+    // Repartition: the same stat table, moved rather than shed. One nav state
+    // (Nav::RepartitionPicker) over TWO steps, because the two questions are the same
+    // question asked twice and a second Nav row would only make the A/B/C contract
+    // harder to read: repartitionFrom_ < 0 is step one (pick the stat to take FROM,
+    // rollbackEligible again — a point can only be moved off a stat that has one), and
+    // once it is set the cursor is picking the stat to move it TO. B advances the step
+    // then commits; C walks it back one step rather than straight out, so a mis-picked
+    // source costs one press. Nothing is spent until the commit.
+    void openRepartitionPicker();
+    void onRepartitionPicker(const ButtonEvent& ev);
+    // The TO step's A-cycle target: any stat but the source (a move onto the stat the
+    // point is already on is a no-op, and the picker should never offer one).
+    int nextRepartitionTarget(int cur) const;
+    void drawRepartitionPickerScreen(Framebuffer& fb) const;
     void startMaint();
     void startStackerDefrag();
     void beginStackerBoard();   // reset the board + enter it, whoever is paying for it
@@ -3373,7 +3391,8 @@ private:
     int combatXp_ = 0;          // XP banked toward the NEXT level (0-based model)
     int combatLevel_ = 0;       // creature level (== sum of statPoints_, the invariant)
     // Per-pet earned combat-stat points: 0 power · 1 defense · 2 speed · 3
-    // max-Health. A level-up bumps one at random; Rollback sheds one. Applied into
+    // max-Health. A level-up bumps one at random; Rollback sheds one and Repartition
+    // moves one between two of them. Applied into
     // the player Combatant in buildPlayerCombatant. Persists across evolution; a new
     // egg resets to all-0 (save v11).
     int statPoints_[kLevelStatCount] = {0};
@@ -3381,6 +3400,10 @@ private:
     // "which stat grew" tell (STAT's LVL n is the shipped feedback surface).
     int lastLevelUpStat_ = -1;
     int rollbackRow_ = 0;       // Rollback picker cursor (RollbackPicker nav state)
+    // Repartition picker (RepartitionPicker nav state): the row the cursor is on, and
+    // the stat the point is being taken from — -1 while that is still the question.
+    int repartitionRow_ = 0;
+    int repartitionFrom_ = -1;
 
     // Explore-mode, a background mode on the IDLE habitat: exploreActive_ arms it,
     // exploreSector_ is the armed sector, exploreStreak_ the win-streak, exploreSteps_

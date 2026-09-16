@@ -219,6 +219,7 @@ void Game::onButton(const ButtonEvent& ev) {
         case Nav::ModShop: onShop(ev); break;
         case Nav::WarpPicker: onWarpPicker(ev); break;
         case Nav::RollbackPicker: onRollbackPicker(ev); break;
+        case Nav::RepartitionPicker: onRepartitionPicker(ev); break;
         case Nav::CacheYield: onCacheYield(ev); break;
         case Nav::BulkYield: onBulkYield(ev); break;
         // Post-encounter status readout: informational only — ANY

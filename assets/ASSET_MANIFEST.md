@@ -699,11 +699,14 @@ blank — that is the prompt to draw one, and `check_orphan_assets.py` catches t
   apart on purpose: bowl/pan, pot/bake, layers/dimples.
 - **`ICON_ITEM_FULLY_STACKED_NACHOS` is `▨`** — it reuses `ICON_ITEM_TORTILLA_CHIP` rather than
   being bespoke. The only item icon that is a stand-in.
-- **`ICON_ITEM_BOOT_ACCELERATOR` and `ICON_ITEM_ROLLBACK` are the set's two BARE symbols** — no
-  object body, just the mark. That is deliberate and it is a pairing: one skips a clock forward
-  (a double fast-forward chevron, tips cut flat at 2px because a 1px apex is noise at this size),
-  the other winds a level back (a curved rewind arrow). Everything else in the family is a thing
-  you could hold. The egg accelerator and the Decryptogram are two items now, and the ticket kept
+- **`ICON_ITEM_BOOT_ACCELERATOR`, `ICON_ITEM_ROLLBACK` and `ICON_ITEM_REPARTITION` are the set's
+  BARE symbols** — no object body, just the mark. That is deliberate and they are a set: one skips
+  a clock forward (a double fast-forward chevron, tips cut flat at 2px because a 1px apex is noise
+  at this size), one winds a level back (a curved rewind arrow), and the third moves a stat point
+  sideways (two opposed arrows, `⇄`, heads cut flat at 2px for the same reason the chevrons are).
+  Everything else in the family is a thing you could hold. The Rollback and the Repartition are
+  the pair to read together: they are the two items that argue with the stat table, so one is a
+  RETURN and the other is an EXCHANGE, and neither borrows the other's curve. The egg accelerator and the Decryptogram are two items now, and the ticket kept
   `ICON_ITEM_DECRYPTOGRAM` — a sealed document, which is what a cryptogram is.
 
 ---

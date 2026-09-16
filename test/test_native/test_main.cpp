@@ -266,6 +266,8 @@ int g_failures = 0;
     RUN(test_tier_rows_report_where_the_pet_stands) \
     RUN(test_tier_page_counts_off_level_points) \
     RUN(test_rollback_item)                 \
+    RUN(test_rollback_carries_level_progress_down) \
+    RUN(test_repartition_item)              \
     RUN(test_creature_level_persist_evolution_reset_egg) \
     RUN(test_arch_store_deploy_preserves_creature_level) \
     RUN(test_arch_deploy_loadout_is_per_pet) \

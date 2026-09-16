@@ -71,6 +71,7 @@ void Game::render(Framebuffer& fb) const {
         case Nav::ModShop: drawShopScreen(fb); break;
         case Nav::WarpPicker: drawWarpPickerScreen(fb); break;
         case Nav::RollbackPicker: drawRollbackPickerScreen(fb); break;
+        case Nav::RepartitionPicker: drawRepartitionPickerScreen(fb); break;
         case Nav::CacheYield: drawCacheYieldScreen(fb); break;
         case Nav::BulkYield: drawBulkYieldScreen(fb); break;
         case Nav::PostEncounter: drawPostEncounterScreen(fb); break;
@@ -1100,6 +1101,12 @@ void Game::drawRollbackPickerScreen(Framebuffer& fb) const {
     const int points[4] = {statPoints_[0], statPoints_[1], statPoints_[2],
                            statPoints_[3]};
     drawRollbackPicker(fb, points, rollbackRow_);
+}
+
+void Game::drawRepartitionPickerScreen(Framebuffer& fb) const {
+    const int points[4] = {statPoints_[0], statPoints_[1], statPoints_[2],
+                           statPoints_[3]};
+    drawRepartitionPicker(fb, points, repartitionRow_, repartitionFrom_);
 }
 
 void Game::drawCacheYieldScreen(Framebuffer& fb) const {

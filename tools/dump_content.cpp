@@ -90,6 +90,7 @@ const char* useKey(ItemDef::Use u) {
         case ItemDef::Use::Consume: return "Consume";
         case ItemDef::Use::OpenContainer: return "OpenContainer";
         case ItemDef::Use::Rollback: return "Rollback";
+        case ItemDef::Use::Repartition: return "Repartition";
         case ItemDef::Use::DecryptEgg: return "DecryptEgg";
         case ItemDef::Use::PlayCryptogram: return "PlayCryptogram";
     }

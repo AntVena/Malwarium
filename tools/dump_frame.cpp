@@ -273,7 +273,8 @@ int main(int argc, char** argv) {
     if (hasFlag(argc, argv, "sinkhole")) game.inventory().add("sinkhole_trap", 1);
     // Creature levels: grind XP to ~level 8 so STAT's LVL n + the stat points
     // (and the Rollback picker) render populated.
-    if (hasFlag(argc, argv, "level") || hasFlag(argc, argv, "rollback"))
+    if (hasFlag(argc, argv, "level") || hasFlag(argc, argv, "rollback") ||
+        hasFlag(argc, argv, "repartition"))
         game.debugAddCombatXp(1200);
     // ...and a much deeper grind for the TIERS page, which is about the far end of that
     // curve: at ~level 8 every rung on it reads "TO GO" and the page cannot show what a
@@ -419,6 +420,13 @@ int main(int argc, char** argv) {
         // open the picker directly through the real Use path.
         game.inventory().add("rollback", 1);
         game.debugUseItem("rollback");
+    } else if (hasFlag(argc, argv, "repartition")) {
+        // Repartition's two-step stat picker, on the same leveled pet. "to" advances it
+        // past the FROM step, which is the only way to see the trade readout — the two
+        // steps share a Nav state and differ only in what has been picked.
+        game.inventory().add("repartition", 1);
+        game.debugUseItem("repartition");
+        if (hasFlag(argc, argv, "to")) game.onButton({Button::B, true, false});
     } else if (hasFlag(argc, argv, "stat")) {
         // STAT is 8 paged screens: 0 vitals (landing) · 1 tiers · 2 loadout · 3 movedex ·
         // 4 foods · 5 buffs · 6 species · 7 audit log. "stat" alone shows vitals; the
