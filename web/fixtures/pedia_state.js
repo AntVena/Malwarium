@@ -63,6 +63,7 @@ window.PEDIA_STATE_FIXTURE = {
     "access_token": "unlocked",
     "safe_mode_key": "locked",
     "rollback": "locked",
+    "repartition": "locked",
     "decryptogram": "unlocked",
 
     // The pantry sample. "unlocked" here is EVER HELD, not held right now

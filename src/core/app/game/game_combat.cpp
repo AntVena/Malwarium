@@ -385,16 +385,18 @@ void Game::advanceCombatTurn() {
     // does not touch them at all.
 }
 
-int Game::xpToNextLevel() const {
+int Game::xpForLevel(int level) const {
     // Geometric curve: round(kLevelXpBase * (kLevelXpGrowthPct/100)^level).
     // Integer accumulate so it matches on host + device (no float): each level scales
     // the running need by the growth% with round-to-nearest. level 0→100, 1→110,
     // 2→121, 3→133, 4→146…
     long long need = kLevelXpBase;
-    for (int i = 0; i < combatLevel_; ++i)
+    for (int i = 0; i < level; ++i)
         need = (need * kLevelXpGrowthPct + 50) / 100;
     return static_cast<int>(need);
 }
+
+int Game::xpToNextLevel() const { return xpForLevel(combatLevel_); }
 
 void Game::addCombatXp(int xp) {
     if (xp <= 0) return;

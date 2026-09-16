@@ -93,9 +93,10 @@ void test_buff_band_acts_on_the_pet() {
         for (const ItemEffect& e : d->effects)
             for (ItemEffect::Kind k : kLevers)
                 if (e.kind == k) steers = true;
-        // Rollback steers the STAT TABLE, and does it through its own Use flow rather
-        // than through effects[] — so the picker is its tell.
-        if (d->use == ItemDef::Use::Rollback) steers = true;
+        // Rollback and Repartition steer the STAT TABLE, and do it through their own Use
+        // flows rather than through effects[] — so the picker is their tell.
+        if (d->use == ItemDef::Use::Rollback ||
+            d->use == ItemDef::Use::Repartition) steers = true;
 
         if (steers) {
             CHECK(d->type == ItemDef::Type::Tool);   // a lever is never a Buff
@@ -118,8 +119,10 @@ void test_buff_band_acts_on_the_pet() {
     // The TOOLS filter is the reach-for-it question, so it spans both bands that hold
     // one — a Type::Tool row and a Quest row that is really a tool.
     const ItemDef* rollback = r.item("rollback");
+    const ItemDef* repartition = r.item("repartition");
     const ItemDef* defrag = r.item("defrag_tool");
     CHECK(rollback && itemCategory(*rollback) == ItemDef::Category::Tools);
+    CHECK(repartition && itemCategory(*repartition) == ItemDef::Category::Tools);
     if (defrag) CHECK(itemCategory(*defrag) == ItemDef::Category::Tools);
 }
 

@@ -172,4 +172,14 @@ void drawBulkYield(Framebuffer& fb, const ItemDef& cache, int cachesOpened, int 
 // (cursor + `+n` / `can't reduce` text), grayscale-safe.
 void drawRollbackPicker(Framebuffer& fb, const int points[4], int cursor);
 
+// Repartition stat picker: move one earned combat-stat point onto a stat of the
+// operator's choosing (same level, same total, a different shape). One screen over the
+// picker's TWO steps, told apart by `from`: -1 is the FROM step and draws exactly like
+// the Rollback picker above (0-point rows read "can't reduce" and are ineligible),
+// while a set `from` is the TO step — the source row is marked with its pending -1, and
+// every other row is a legal destination however few points it has. `cursor` is the
+// focused row. Dual-coded (cursor + the signed +1/-1 marks + the step's own purpose
+// line and hint band), grayscale-safe.
+void drawRepartitionPicker(Framebuffer& fb, const int points[4], int cursor, int from);
+
 } // namespace mal

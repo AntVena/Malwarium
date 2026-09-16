@@ -402,8 +402,8 @@ struct ItemEffect {
         // magnitude points into PetUpgrades::statBonus (core/model/pet_upgrades.h) the
         // FIRST time this pet eats one and latches out after that, exactly as
         // BandwidthRegenBonusMin does. The points land in combat alongside the earned
-        // ones but count toward neither the level nor the Rollback picker, so a Rollback
-        // can never shed what a dish granted.
+        // ones but count toward neither the level nor the stat-table pickers, so neither
+        // a Rollback nor a Repartition can reach what a dish granted.
         StatPointPower,
         StatPointDefense,
         StatPointSpeed,
@@ -513,10 +513,14 @@ struct ItemDef {
     // openable/rollback/decryptEgg bool trio into one mutually-exclusive choice so an
     // item can never be two Use-actions at once. Consume = the normal feed/buff/quest
     // path (drives ItemEffect application); the others hand off to their own flow.
+    // Rollback and Repartition are the two that steer the STAT TABLE — one sheds an
+    // earned point, the other moves one across — and each names the row it was cut for
+    // rather than a mechanic a second row could share.
     enum class Use {
         Consume,        // feed / buff / lockout-resolve — the default path
         OpenContainer,  // Sealed Cache: decrypt for a reward draw (VAULT)
         Rollback,       // open the stat picker to shed a level
+        Repartition,    // open the two-step stat picker to MOVE an earned point
         DecryptEgg,     // cut a flat bite off a Boot-Sector egg's incubation (Boot Accelerator)
         PlayCryptogram, // cash in for a DECRYPTOGRAM board (VAULT, game_cryptogram.cpp)
     };

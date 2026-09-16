@@ -101,7 +101,7 @@ const LootEntry kCachePoolRare[]     = {{"backup_drive"}, {"sinkhole_trap"},
                                         {"file_mignon"}, {"paramesan"},
                                         {"silicon_wafers"},
                                         {"marshalled_mallows"}};
-const LootEntry kCachePoolEpic[]     = {{"rollback"}, {"yubi_cookie"},
+const LootEntry kCachePoolEpic[]     = {{"rollback"}, {"repartition"}, {"yubi_cookie"},
                                         {"backup_drive"}, {"restore_point"},
                                         {"deep_learning_core"}, {"zeroday_bell"}};
 // The share of the commendation pool one PALETTE CHIP draws at. Six of them against
@@ -125,6 +125,7 @@ constexpr int kChipDrawWeight = 6;
 const LootEntry kCachePoolCommend[]  = {{"restore_point"}, {"yubi_cookie"},
                                         {"deep_learning_core"}, {"zeroday_bell"},
                                         {"kernel_bell"}, {"ambig_usb"}, {"rollback"},
+                                        {"repartition"},
                                         {"sunset_rom", kChipDrawWeight},
                                         {"phosphor_tube", kChipDrawWeight},
                                         {"amber_tube", kChipDrawWeight},
@@ -152,7 +153,7 @@ constexpr int kRareStapleWalkWeight = 2;
 // DeepWeb Dive's depth items ride here too — earned from any area's walk loot, not
 // gated to the dive itself (they're only USEFUL there).
 const LootEntry kLootPool[] = {{"dyno_nuggets"}, {"tortilla_chip"},
-    {"pwnzu_sauce"}, {"backup_drive"}, {"rollback"}, {"osi_dip"},
+    {"pwnzu_sauce"}, {"backup_drive"}, {"rollback"}, {"repartition"}, {"osi_dip"},
     {"deep_learning_module"}, {"deep_learning_core"}, {"backdoor_bell"},
     {"rootkit_bell"}, {"kernel_bell"}, {"zeroday_bell"}, {"decryptogram"},
     // The pantry, thinned to kStapleWalkWeight apiece — see the note on that constant.
@@ -1866,6 +1867,23 @@ const ItemDef kItems[] = {
      "Shed one earned stat point (-1 level) to re-roll it.",
      ItemDef::Context::Anytime, /*effects=*/{}, /*combatHeal=*/0, /*preEncounterXp=*/0,
      /*bits=*/0, /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Rollback},
+
+    // Repartition: Rollback's sibling, and the OTHER way to argue with the stat table.
+    // Where a Rollback hands a point back to the dice and charges a level's grind for
+    // the re-roll, this one moves a point the pet already has onto a stat the operator
+    // names — same level, same total, a different shape. So it is a lever over the same
+    // system (a TOOL, like its sibling), and its whole cost is the item: there is no
+    // grind to pay because nothing was un-earned, which is what puts it an entire tier
+    // above the Rollback. Use opens the two-step picker (use=Repartition): a FROM stat
+    // with a point to spare, then a TO stat that isn't it. Inert at level 0, for the
+    // same reason a Rollback is — nothing earned, nothing to move — and it cannot reach
+    // an off-level point an Epic dish granted (core/model/pet_upgrades.h), because those
+    // are not on the earned table at all.
+    {"repartition", "Repartition", ItemDef::Type::Tool,
+     ItemDef::Rarity::Epic,
+     "Move one earned stat point onto a stat of your choosing.",
+     ItemDef::Context::Anytime, /*effects=*/{}, /*combatHeal=*/0, /*preEncounterXp=*/0,
+     /*bits=*/0, /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Repartition},
     
     // Ambig-USB: Use on a Process pet to guarantee its Trojan divert instead of leaving it to the
     // kTrojanDivertPct roll. Stocked item at Moor-to-Moor (Napstorrent Moors).

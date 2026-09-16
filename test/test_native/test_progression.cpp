@@ -188,8 +188,8 @@ void test_full_cap_overflows_into_health() {
 }
 
 // Rollback: opens a stat picker; a confirm sheds one earned point (−1 that
-// stat, −1 level), zeroes the XP bucket (re-grind to re-roll), and consumes the item.
-// Inert at level 0 (nothing to shed).
+// stat, −1 level), carries the banked XP down onto the shorter rung, and consumes the
+// item. Inert at level 0 (nothing to shed).
 void test_rollback_item() {
     // Level-0 gate: Rollback is inert with no earned points — no picker, item kept.
     { Game g{StartMode::Hatched, "paypup"};
@@ -210,7 +210,7 @@ void test_rollback_item() {
       g.onButton(press(Button::B));                     // shed the (only) eligible stat
       CHECK(g.combatLevel() == 0);                      // −1 level
       CHECK(g.levelStatPoint(shed) == 0);               // −1 that stat
-      CHECK(g.combatXp() == 0);                         // XP re-zeroed (re-grind)
+      CHECK(g.combatXp() == 0);                         // nothing was banked to carry
       CHECK(g.inventory().count("rollback") == 0);      // item consumed
       CHECK(g.nav() == Game::Nav::Submenu); }
 
@@ -223,6 +223,94 @@ void test_rollback_item() {
       tapC(g);
       CHECK(g.combatLevel() == 1);
       CHECK(g.inventory().count("rollback") == 1); }
+}
+
+// The bill for a Rollback is ONE level, and the XP banked toward the next one is not
+// part of it: a pet most of the way up its rung lands the same fraction up the rung
+// below rather than back at zero, so the shed costs exactly the level it sheds. Carried
+// as the fraction because the lower rung is SHORTER — banking the raw count could leave
+// the pet over that rung's need and hand the level straight back.
+void test_rollback_carries_level_progress_down() {
+    Game g{StartMode::Hatched, "paypup"};
+    g.debugAddCombatXp(g.xpToNextLevel());              // -> level 1, bucket empty
+    g.debugAddCombatXp(g.xpToNextLevel());              // -> level 2, bucket empty
+    CHECK(g.combatLevel() == 2);
+    CHECK(g.combatXp() == 0);
+
+    // Most of the way up the third rung, but not over it.
+    const int need = g.xpToNextLevel();
+    const int banked = need * 4 / 5;
+    g.debugAddCombatXp(banked);
+    CHECK(g.combatLevel() == 2);
+    CHECK(g.combatXp() == banked);
+
+    g.inventory().add("rollback", 1);
+    g.debugUseItem("rollback");
+    CHECK(g.nav() == Game::Nav::RollbackPicker);
+    g.onButton(press(Button::B));                       // shed whichever stat it parked on
+
+    CHECK(g.combatLevel() == 1);
+    const int lowerNeed = g.xpToNextLevel();
+    CHECK(lowerNeed < need);                            // the rung below really is shorter
+    // The same fraction of the way up, floored — and strictly under the new need, so
+    // the next XP award cannot instantly undo the shed.
+    CHECK(g.combatXp() ==
+          static_cast<int>(static_cast<long long>(banked) * lowerNeed / need));
+    CHECK(g.combatXp() > 0);
+    CHECK(g.combatXp() < lowerNeed);
+}
+
+// Repartition: Rollback's sibling. Opens a TWO-step picker (which stat pays, then which
+// stat grows); a confirm moves one earned point across and consumes the item. The level,
+// the total points and the XP bucket are all untouched — nothing was un-earned, so there
+// is no grind to re-pay. Inert at level 0 (no earned point to move).
+void test_repartition_item() {
+    // Level-0 gate: nothing earned, so no picker and the item is kept.
+    { Game g{StartMode::Hatched, "paypup"};
+      g.inventory().add("repartition", 1);
+      g.debugUseItem("repartition");
+      CHECK(g.nav() != Game::Nav::RepartitionPicker);
+      CHECK(g.inventory().count("repartition") == 1); }
+
+    // One level -> exactly one stat can pay, so the FROM step parks on it. B locks it in
+    // and the cursor lands on a stat that is NOT it; A walks one further on; B commits.
+    { Game g{StartMode::Hatched, "paypup"};
+      g.debugAddCombatXp(kLevelXpBase);
+      CHECK(g.combatLevel() == 1);
+      g.debugAddCombatXp(g.xpToNextLevel() / 2);        // ...and part-way up the next rung
+      const int from = g.lastLevelUpStat();
+      const int to = (from + 2) % kLevelStatCount;
+      const int xp0 = g.combatXp();
+      CHECK(xp0 > 0);                                   // so "untouched" means something
+      g.inventory().add("repartition", 1);
+      g.debugUseItem("repartition");
+      CHECK(g.nav() == Game::Nav::RepartitionPicker);
+      g.onButton(press(Button::B));                     // FROM = the only eligible stat
+      CHECK(g.nav() == Game::Nav::RepartitionPicker);   // still here — the TO step
+      g.onButton(press(Button::A));                     // (from+1) -> (from+2), skipping from
+      g.onButton(press(Button::B));                     // commit the move
+      CHECK(g.levelStatPoint(from) == 0);               // the point left...
+      CHECK(g.levelStatPoint(to) == 1);                 // ...and landed where it was sent
+      CHECK(g.combatLevel() == 1);                      // same level: nothing was un-earned
+      CHECK(g.combatXp() == xp0);                       // ...and no grind to re-pay
+      CHECK(g.inventory().count("repartition") == 0);   // item consumed
+      CHECK(g.nav() == Game::Nav::Submenu); }
+
+    // C walks back ONE step rather than straight out, so a mis-picked source costs one
+    // press: first C returns to the FROM step, the second leaves. Nothing is spent.
+    { Game g{StartMode::Hatched, "paypup"};
+      g.debugAddCombatXp(kLevelXpBase);
+      const int from = g.lastLevelUpStat();
+      g.inventory().add("repartition", 1);
+      g.debugUseItem("repartition");
+      g.onButton(press(Button::B));                     // -> the TO step
+      tapC(g);
+      CHECK(g.nav() == Game::Nav::RepartitionPicker);   // back at the FROM step
+      tapC(g);
+      CHECK(g.nav() != Game::Nav::RepartitionPicker);   // ...and out
+      CHECK(g.levelStatPoint(from) == 1);               // the table is untouched
+      CHECK(g.combatLevel() == 1);
+      CHECK(g.inventory().count("repartition") == 1); } // item kept
 }
 
 // Levels are PER-PET: they persist through an evolution (same creature) but
