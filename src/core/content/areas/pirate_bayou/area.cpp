@@ -50,6 +50,83 @@ const ShopListingDef kModShopListings[] = {
     {"tpm_chip", kShopStock, 64, {{"backup_drive", 20}}},
     {"firewall_patch", kShopStock, 256, {{"backup_drive", 40}}},
 };
+
+// The Bayou's CHAPTERS (core/content/story.h), wires 5-8.
+// One panel here and one in the Circuit's outro end on a line the speaker should not
+// know, and quote nothing: the quotes wait on CantCipher (core/model/cant.h).
+const StoryPanelDef kIntroPanels[] = {
+    {"LEECH LANDING",
+     "The shop is the last building on Leech Landing, half of it out over the water. The "
+     "clerk looks at you, then at his screen, and asks which of the eleven you have come "
+     "to collect."},
+    {"NOTHING WAS ORDERED",
+     "You have never been in this shop. Neither had the four before you, and he shipped "
+     "their crates too. He is out the cost of every one, and the Crew that handles this "
+     "is months away."},
+    {"HIGHER SYNC",
+     "So he goes in the back and fits you a neural link. It runs above the sync a "
+     "civilian rig is certified for. He will not take Bits. He wants this stopped before "
+     "he goes under."},
+    {"EVERY BAD NETWORK",
+     "Outside you feel every bad network on the Landing, and every sealed cache you have "
+     "carried since the Circuit reads open. Then the Malwarium beeps at the water. "
+     "Something here is phishy."},
+};
+
+const StoryPanelDef kBossIntroPanels[] = {
+    {"THE CABLE",
+     "The link puts the cable under the boards in front of you, glitching where nothing "
+     "should, malbeast sign the whole length. You follow it up past Torrent Swamp to the "
+     "dock stacks."},
+    {"THE JUNCTION",
+     "The Bayou's lines drop away here and join the undersea trunks. Every crate billed "
+     "to your card went out through this junction, and none of it went to the people who "
+     "paid."},
+    {"THEY ALL CARRY KEYS",
+     "Nothing in the Keys bothers with a lock. They all carry a key instead. Your pet's "
+     "armour buys it one round against that and then stops counting for anything."},
+    {"CAP'N CRACKER",
+     "Cracker is not big. He works a password list, answers as whoever is on it, and "
+     "ships what they never ordered. He moved onto your water the week the Circuit "
+     "locked down."},
+};
+
+const StoryPanelDef kBossOutroPanels[] = {
+    {"THE LEDGER",
+     "Cracker goes down next to an open ledger. He did not put the list together. He "
+     "bought it outright for eight thousand Bits, more than this stretch of water turns "
+     "over in a year."},
+    // Nothing later chases the ape. The implication is the whole of it.
+    {"A PURPLE APE",
+     "The entry says who sold it to him. Not a name. A description: a purple ape, four "
+     "weeks ago, cash up front. Every card locked down in the Circuit was on the "
+     "manifest."},
+    {"A FIRM HANDSHAKE",
+     "He only got onto your water, he says, on a firm handshake. Then he says something "
+     "else, and it is not in a language a Bayou operator has any business knowing."},
+};
+
+const StoryPanelDef kAreaOutroPanels[] = {
+    {"THE BACK ROOM",
+     "The clerk has started hearing people talk about you. He opens the back of the shop, "
+     "where the stock that never reaches the boards is kept, and tells you all of it is "
+     "for sale to you now."},
+    {"THE BOUNTY",
+     "There is a bounty up. Not for Cracker - nobody is paying for Cracker. It is for "
+     "whatever started all of this, and every Crew on the 'net is short enough to sign "
+     "anyone who can help."},
+    {"OUT OR DOWN",
+     "Two ways off the Landing. Out across the Net-Sea, which sends more of Cracker's "
+     "sort than anyone counts, and which is where the Crews are looking. Or straight "
+     "down, off the edge of the map."},
+};
+
+const AreaStoryDef kStory = {{
+    {/*wire=*/5, "CHAPTER 2: THE LINK", kIntroPanels, arrLen(kIntroPanels)},
+    {/*wire=*/6, "CHAPTER 2: THE CRACKER", kBossIntroPanels, arrLen(kBossIntroPanels)},
+    {/*wire=*/7, "CHAPTER 2: THE LIST", kBossOutroPanels, arrLen(kBossOutroPanels)},
+    {/*wire=*/8, "CHAPTER 2: THE ACCOUNT", kAreaOutroPanels, arrLen(kAreaOutroPanels)},
+}};
 }  // namespace
 
 const AreaDef kAreaPirateBayou = {
@@ -98,6 +175,7 @@ const AreaDef kAreaPirateBayou = {
     arrLen(kModPool),
     kWildLoot,
     arrLen(kWildLoot),
+    kStory,
 };
 
 }  // namespace mal

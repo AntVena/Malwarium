@@ -58,6 +58,15 @@ const ShopListingDef kModShopListings[] = {
     {"ghost_process", kShopStock, 1024, {{"sinkhole_trap", 12}}},
     {"raid_mirror", kShopStock, 1536, {{"backup_drive", 24}}},
 };
+
+// CHAPTERS (core/content/story.h), wires 17-20. Titles only: a row with no
+// panels is unauthored, so nothing fires and nothing lists until the prose lands.
+const AreaStoryDef kStory = {{
+    {/*wire=*/17, "CHAPTER 5: ARRIVAL"},
+    {/*wire=*/18, "CHAPTER 5: GAUNTLET"},
+    {/*wire=*/19, "CHAPTER 5: CLEARED"},
+    {/*wire=*/20, "CHAPTER 5: DEPARTURE"},
+}};
 }  // namespace
 
 const AreaDef kAreaCastleRapidscare = {
@@ -105,6 +114,7 @@ const AreaDef kAreaCastleRapidscare = {
     arrLen(kModPool),
     kWildLoot,
     arrLen(kWildLoot),
+    kStory,
 };
 
 }  // namespace mal

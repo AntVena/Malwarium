@@ -57,6 +57,79 @@ const ShopListingDef kModShopListings[] = {
     {"hardened_shell", kShopStock, 384, {{"backup_drive", 28}}},
     {"ballast_cache", kShopStock, 448, {{"backup_drive", 32}}},
 };
+
+// The Crossing's CHAPTERS (core/content/story.h), wires 9-12.
+const StoryPanelDef kIntroPanels[] = {
+    {"OVER THE TRUNK",
+     "The trunk you followed out of the Bayou runs along the sea floor and does not "
+     "surface for a week. The only way to follow it is the sea-net, laid across the top "
+     "of the water."},
+    {"WATCH THIS FIRST",
+     "Every private network on the route carries you for free, after an advert. Or an "
+     "app. Or a toolbar you did not ask for. None of it is new; most of it stopped "
+     "working properly years ago."},
+    {"THE SLOW LIFE",
+     "Nothing out here takes your pet's Health. It takes its turns. A licence screen is "
+     "one. The worst thing on the reef holds it for three, and then asks whether you "
+     "accept."},
+    {"BLUE TEAM",
+     "A blue team crew has been clearing this route for months and is barely ahead of "
+     "it. They are glad of the help, and hand you a rig for diving the trunk, where the "
+     "work never ends either."},
+};
+
+const StoryPanelDef kBossIntroPanels[] = {
+    {"THE FAR JUNCTION",
+     "A week of that and the cable comes up at a junction on the far shore. The glitch "
+     "you have been following is worse here than it was at Leech Landing, not better."},
+    {"CONVOYS",
+     "Nothing crosses the sea-net on its own. It goes in convoys, and every convoy "
+     "carries bundles it was not asked to carry. Cracker's list came over on one of "
+     "these."},
+    {"RED TEAM",
+     "The bundles carry red team marks. The blue crew leaves them alone: red is inside "
+     "the outfit doing the distributing, and pulling them out now would cost more than "
+     "the bundles do."},
+    {"ADMIRAL CONDUIT",
+     "Conduit is what grew on the traffic. It runs the convoys now, and it does not "
+     "damage anything - it holds you, three turns at a time, until whatever it is "
+     "carrying has gone past."},
+};
+
+const StoryPanelDef kBossOutroPanels[] = {
+    {"STILL TALKING",
+     "Conduit comes apart slowly, the way everything out here does anything. What it "
+     "says on the way down is not aimed at you, and you have heard the shape of it twice "
+     "before."},
+    {"FURTHER DOWN",
+     "There is something a long way down the trunk that talks like that as well. It has "
+     "been on this cable longer than the cable has been carrying anything, and it has "
+     "never once sent."},
+    {"NOT A PLOT",
+     "The convoy log is no help. The bundles came aboard from forty networks and none of "
+     "them know each other. Whatever is doing this is not organising it. It is already "
+     "in the networks."},
+};
+
+const StoryPanelDef kAreaOutroPanels[] = {
+    {"THE SPLIT",
+     "The blue crew keeps the water. You get the shore and whatever the cable does after "
+     "it, which is the first time anybody has handed you a share instead of a favour."},
+    {"NOBODY ELSE IS GOING",
+     "Nobody else is following the cable. The blue crew has a sea to clear and the red "
+     "team has a job to keep. The bounty is still up, and it is still for the thing "
+     "nobody has found."},
+    {"OLD COUNTRY",
+     "The cable comes ashore and runs inland into the Napstorrent Moors, which nobody "
+     "has maintained in thirty years and nobody has been through in ten."},
+};
+
+const AreaStoryDef kStory = {{
+    {/*wire=*/9, "CHAPTER 3: THE SEA-NET", kIntroPanels, arrLen(kIntroPanels)},
+    {/*wire=*/10, "CHAPTER 3: THE CONVOYS", kBossIntroPanels, arrLen(kBossIntroPanels)},
+    {/*wire=*/11, "CHAPTER 3: THE LISTENER", kBossOutroPanels, arrLen(kBossOutroPanels)},
+    {/*wire=*/12, "CHAPTER 3: THE SHORE", kAreaOutroPanels, arrLen(kAreaOutroPanels)},
+}};
 }  // namespace
 
 const AreaDef kAreaNetSeaCrossing = {
@@ -106,6 +179,7 @@ const AreaDef kAreaNetSeaCrossing = {
     arrLen(kModPool),
     kWildLoot,
     arrLen(kWildLoot),
+    kStory,
 };
 
 }  // namespace mal

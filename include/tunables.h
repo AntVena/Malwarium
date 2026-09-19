@@ -332,20 +332,8 @@ constexpr int kExploreDecisionHoldBeats = 40;   // ~10s
 // dismisses early.
 constexpr uint32_t kPostEncounterMs = 2000;   // ~2s auto-dismiss window
 
-// STORY chapters (src/core/content/story.h). How long one PANEL — one screenful of a
-// chapter — stays up before the reader turns it by itself. A real-ms deadline like
-// kPostEncounterMs above, restarted by every press, and the reason the page can be left
-// alone at all: a chapter fires on the walk, and the walk runs hands-off under
-// auto-progress, so a reader that waited forever for a thumb would stop an unattended
-// device dead on the first area it reached.
-//
-// THIRTY SECONDS is set against READING SPEED, not against patience. A window holds at
-// most about twenty 26-character lines (core/ui/prose_page.h's flow against the 8px
-// font), which is roughly 90 words; 30s is comfortable for that and roughly double what
-// a fast reader needs, and B turns the page the moment they are done either way. Much
-// shorter and an unattended walk becomes a slideshow nobody could have read; much
-// longer and a player who stepped away comes back to a device that has been sitting on
-// page two of chapter one for ten minutes.
+// The STORY reader's auto-advance, so a hands-off walk is never parked on a page. A full
+// window is ~90 words (prose_page.h's flow at the 8px font); 30s reads it twice over.
 constexpr uint32_t kStoryPanelMs = 30000;
 
 // Sim-Battle reward. A fixed small FLAT payout — a few Bits

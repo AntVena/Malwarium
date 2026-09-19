@@ -1,23 +1,8 @@
-// game_story.cpp — WHEN a chapter fires, and the reader that shows it.
+// game_story.cpp — the read-set, the fire points, and the reader's clock.
 //
-// The EXPL ladder is a sequence of places with nothing between them. A chapter is what
-// goes between: the walk hits one of four milestones in a zone (arriving, opening the
-// gauntlet, taking it, leaving), and the device stops and says what just happened.
-// What a chapter IS lives in the content layer beside the area it is about
-// (core/content/story.h); what it LOOKS like is core/ui/story_screen.h. This unit is
-// the join — the read-set, the fire points, and the page's own clock.
-//
-// A FIRE POINT IS ONE LINE. fireStory answers false for a beat that is unauthored or
-// already read, and the caller carries on as though no story existed; it answers true
-// once it has taken the screen, and the caller returns. That is what lets a beat be
-// added to a milestone without the milestone learning anything about stories — see
-// startEncounter and startAreaBoss in game_explore.cpp.
-//
-// AND IT FIRES ONCE, PER DEVICE. The read-set is player-level, not per-pet: the journey
-// is the operator's, and hatching a new egg is not grounds for being told the premise
-// again. What a player who has walked past a chapter under auto-progress gets instead
-// is the ARCHIVE — EXPL's CHAPTERS category, which lists everything the walk has
-// already fired and nothing it has not.
+// fireStory returns false (carry on) or true (it took the screen, return), so a
+// milestone gains a beat without knowing stories exist. The read-set is player-level: a
+// new egg is not retold the premise.
 #include "core/app/game.h"
 
 #include <algorithm>
@@ -67,10 +52,6 @@ bool Game::fireStory(int sector, StoryBeat beat, StoryThen then, int thenArea) {
 
 bool Game::fireStoryPair(int sector, StoryBeat first, StoryBeat second,
                          StoryThen then) {
-    // Two chapters, read back to back as one sitting. Either half may be unauthored or
-    // already read, so the pair collapses to whichever halves are actually left — which
-    // is what lets an area author only its departure, or a re-cleared gauntlet fire
-    // nothing at all, without the caller testing for any of it.
     const StoryChapterDef* a = storyChapter(sector, first);
     const StoryChapterDef* b = storyChapter(sector, second);
     if (a && storyRead(a)) a = nullptr;
@@ -89,11 +70,7 @@ void Game::openStoryChapter(const StoryChapterDef* chapter, StoryThen then) {
     storyChapter_ = chapter;
     storyThen_ = then;
     storyScroll_ = 0;
-    // Marked read on OPEN rather than on finish, and that is deliberate: a chapter the
-    // player skipped on the first press has still had its turn, and re-firing it at the
-    // next encounter would make skipping impossible. The archive is where a skipped
-    // chapter is recovered from, which is exactly what it is for. A chapter opened FROM
-    // the archive is already read and this is a no-op.
+    // Read on OPEN: re-firing a skipped chapter would make skipping impossible.
     markStoryRead(chapter);
     armStoryPanel();
     nav_ = Nav::Story;
@@ -173,13 +150,7 @@ void Game::finishStoryChapter() {
 }
 
 void Game::onStory(const ButtonEvent& ev) {
-    // B is the page key on every reader on this device, and here it is the only one
-    // that moves forward: a tap turns the window, and on the last window it closes the
-    // chapter. C SKIPS — the whole chapter, and anything queued behind it — because a
-    // chapter is not a menu and "cancel" on a thing you are being told is "I am done
-    // being told". A is deliberately inert: there is nothing on this page to step
-    // between, and a key that does nothing is better than a second key that does what
-    // B already does.
+    // A is inert: a second key doing B's job is worse than a key doing nothing.
     if (ev.button == Button::B) {
         advanceStoryPanel();
     } else if (ev.button == Button::C) {
@@ -191,10 +162,7 @@ void Game::onStory(const ButtonEvent& ev) {
 
 void Game::drawStoryScreen(Framebuffer& fb) const {
     if (!storyChapter_) return;
-    // Built ONCE per repaint and then asked all three questions — which window this is,
-    // how many there are, and what to draw. The accessors above each build their own
-    // (they are called from gates, one question at a time); a repaint asking them
-    // separately would flow the same chapter three times a frame.
+    // Built once: the accessors each build their own, so a repaint would flow it thrice.
     const std::vector<ProseRow> rows = storyRows();
     StoryPageView v;
     v.title = storyChapter_->title;

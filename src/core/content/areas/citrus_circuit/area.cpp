@@ -53,60 +53,73 @@ const ShopListingDef kModShopListings[] = {
     {"packet_sniffer", kShopStock, 48, {{"r007_b33r", 10}}},
 };
 
-// --- The Circuit's CHAPTERS (core/content/story.h) ---------------------------
-// Four beats, fired by the walk itself: arriving, opening the gauntlet, taking it, and
-// leaving. Wires 1-4. A wire is the bit this chapter occupies in the save's read-set and
-// is never reused, so the block a zone is given is permanent even if the ladder is
-// reordered under it.
-//
-// The Circuit is the FIRST area, which makes its chapters the ones carrying the premise:
-// there is a surge nobody has explained, the operator is new, and the Crew that should be
-// handling this has not turned up. Nothing here resolves that — the opening area's job is
-// to make it a question the player is holding while they learn the buttons.
+// The Circuit's CHAPTERS (core/content/story.h), wires 1-4.
+// No chapter names the Title: `title` is retunable, and the device grants the real one
+// on the departure beat anyway.
 const StoryPanelDef kIntroPanels[] = {
     {"THE BEEP",
      "You set out with your new Malwarium to walk the network around Citrus Circuit, "
      "your usual stomping ground. Two steps in, it beeps. That is odd."},
-    {"WAY MORE",
-     "From the way your petware is bristling there are more viruses out here than usual. "
-     "Way more. Nobody on the boards is saying why."},
+    {"THE COUNT",
+     "It does not stop beeping. The count climbs the whole way down the street. There "
+     "are more malbeasts in the Circuit today than you have seen here in a year, and "
+     "none of them are leaving."},
+    {"NOT BROKEN",
+     "The doors are shut too. Not broken - locked, by something that had the keys. "
+     "Every screen on the block shows the same grinning purple ape, and it wants paying "
+     "before anything opens."},
     {"LEND A HAND",
      "Install some mods. Check your pet's moves. Then lend a hand until a Crew can get "
      "here. It is a good chance to work on your teamwork."},
 };
 
 const StoryPanelDef kBossIntroPanels[] = {
-    {"THE FRONT DOOR",
-     "Five stretches walked, five keepers beaten, and not one of them was working for "
-     "itself. Every trail out of the Circuit ends at the same purple monkey."},
+    {"DOWNHILL",
+     "You cleared five stretches of the Circuit. Every keeper you beat broke off and ran "
+     "the same way, downhill, the way the Draw runs. Whatever they answer to is waiting "
+     "down there."},
     {"BARON BONZI",
-     "He will not fight you. He offers to help. He has been offering to help this network "
-     "since before you owned a device, and nobody has ever got a no to stick."},
+     "A ransomware cartel holds the Circuit's locks. The ape on the screens is what it "
+     "puts in front, and what it tells the whole block is: pay, and it will kindly put "
+     "everything back."},
+    {"THE OPENING",
+     "Five of them, back to back, no rest between. Your Malwarium can force an opening "
+     "when your petware is cornered, but firing one costs a turn, and you do not get "
+     "many."},
 };
 
 const StoryPanelDef kBossOutroPanels[] = {
     {"UNINSTALLED",
-     "The Baron goes quietly, the way a thing goes when it was only ever a wrapper around "
-     "something else. What is left standing where he was is a forwarding address."},
-    {"THE ADDRESS",
-     "It points at water. South of the Circuit there is a bayou where the files nobody "
-     "will host wash up, and something down there has been paying for the traffic."},
+     "The ape comes apart mid-sentence. What it was saying was not aimed at you, and not "
+     "in any language the Circuit speaks."},
+    {"ON THE WAY OUT",
+     "Every lock on the block lets go. Doors open the length of the Flats and people come "
+     "out to look. You check your Bits on the way past. Nobody hired you, and it still "
+     "paid."},
+    {"TWO STREETS OVER",
+     "Your Malwarium does not stop counting. Two streets over the screens are still lit, "
+     "still the same ape, still asking to be paid. Whatever installed it here installed "
+     "it there too."},
 };
 
 const StoryPanelDef kAreaOutroPanels[] = {
-    {"WHAT IT TAUGHT",
-     "The Circuit never finishes anything. Every file here is ninety-nine percent of a "
-     "file, and everything you beat was waiting on the rest of itself."},
-    {"CERTIFIED",
-     "You are carrying the title now, and a pet that can tell a thing from a copy of it. "
-     "The Crew still has not arrived. Keep walking."},
+    {"WORD GETS ROUND",
+     "Nobody knows your name. By the end of the week the block has one for you anyway. "
+     "You did not pick it, and it has already travelled further than you have."},
+    {"WHAT DO YOU CHARGE?",
+     "People start asking what you charge. You have not been charging anything. Your rig "
+     "is half configured and your bag is full of sealed caches you have no way to open."},
+    {"THE PIER",
+     "Dial-Up Draw runs downhill out of the Circuit and comes out on water. There is a "
+     "Malwarium shop on the pier at the bottom. You start walking, and the Crew still "
+     "has not arrived."},
 };
 
 const AreaStoryDef kStory = {{
     {/*wire=*/1, "CHAPTER 1: DAY ZERO", kIntroPanels, arrLen(kIntroPanels)},
     {/*wire=*/2, "CHAPTER 1: THE BARON", kBossIntroPanels, arrLen(kBossIntroPanels)},
     {/*wire=*/3, "CHAPTER 1: UNINSTALLED", kBossOutroPanels, arrLen(kBossOutroPanels)},
-    {/*wire=*/4, "CHAPTER 1: CERTIFIED", kAreaOutroPanels, arrLen(kAreaOutroPanels)},
+    {/*wire=*/4, "CHAPTER 1: THE PIER", kAreaOutroPanels, arrLen(kAreaOutroPanels)},
 }};
 }  // namespace
 

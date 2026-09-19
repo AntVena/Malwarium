@@ -47,6 +47,15 @@ const ShopListingDef kShopListings[] = {
 const ShopListingDef kModShopListings[] = {
     {"crib_sheet", kShopStock, 1280, {{"sinkhole_trap", 10}}},
 };
+
+// CHAPTERS (core/content/story.h), wires 21-24. Titles only: a row with no
+// panels is unauthored, so nothing fires and nothing lists until the prose lands.
+const AreaStoryDef kStory = {{
+    {/*wire=*/21, "CHAPTER 6: ARRIVAL"},
+    {/*wire=*/22, "CHAPTER 6: GAUNTLET"},
+    {/*wire=*/23, "CHAPTER 6: CLEARED"},
+    {/*wire=*/24, "CHAPTER 6: DEPARTURE"},
+}};
 }  // namespace
 
 const AreaDef kAreaSilkLode = {
@@ -101,6 +110,7 @@ const AreaDef kAreaSilkLode = {
     arrLen(kModPool),
     kWildLoot,
     arrLen(kWildLoot),
+    kStory,
 };
 
 }  // namespace mal
