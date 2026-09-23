@@ -1,6 +1,4 @@
-#include "core/content/content_backgrounds.h"   // a cleared area pays out its own place
 #include "core/app/game.h"
-#include "core/app/game_internal.h"
 
 #include <cstdio>
 #include <cstring>

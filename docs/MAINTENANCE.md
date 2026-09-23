@@ -132,7 +132,7 @@ scalar-field sprawl or `if (id == "...")` branches), one-file-per-type under
 `tunables.h`. Sweep: `grep -nE 'constexpr .* k\w+ *=' include/tunables.h` and flag any whose
 comment names ONE item/mod/move/creature — inline it onto that row. Verify claims against code.
 
-### Unused-include sweep — Last run: 2026-08-15
+### Unused-include sweep — Last run: 2026-09-23
 The clangd "included header X is not used directly" warnings are noise we burn tokens reading
 past, and the `game_*.cpp` units are the worst offenders: they all carry the same broad render
 header block copied from `game_render.cpp`, most of which a given unit doesn't use.
@@ -164,6 +164,14 @@ Method note earned the hard way: **grep the header's CONSTANTS, not just its fun
 types.** A symbol scan built from function names alone cleared `canvas.h` out of `game_core.cpp`,
 which uses it only for `kHeartbeatMs`/`kCombatAnimMs` — the native build caught it, which is
 exactly why the build is the gate and the scan is only the finder.
+
+The finder doesn't need clangd. `clang-tidy -p build -checks='-*,misc-include-cleaner'` over
+the `src/` entries of `build/compile_commands.json` runs the same analysis, which is what a
+session without clangd (a remote one) reaches for. Its blind spot is the one `game.h` creates:
+a type `game.h` only forward-declares, used through a `Game` member that returns it by value
+(`statIndexRows()`'s vector of `StatIndexRow`), is instantiated in the calling unit without the
+unit ever naming it, so the scan calls the header unused and the build disagrees. Put the
+reason on the include line when the build says keep, or the next run strips it again.
 
 Method: trust the clangd `unused-includes` diagnostics as the finder, **verify a real host build
 still compiles after each removal**, and note that the native gate is authoritative — don't

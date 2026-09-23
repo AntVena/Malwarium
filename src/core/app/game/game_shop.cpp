@@ -17,9 +17,7 @@
 #include <cstdio>
 #include <cstring>
 
-#include "tunables.h"
 #include "core/content/areas/area_defs.h"
-#include "core/content/content_tables.h"
 
 namespace mal {
 

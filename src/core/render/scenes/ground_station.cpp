@@ -1,6 +1,5 @@
 #include "core/render/scenes/draws.h"
 
-#include "core/render/canvas.h"
 #include "core/render/framebuffer.h"
 #include "core/render/palette.h"
 

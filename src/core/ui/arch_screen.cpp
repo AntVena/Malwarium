@@ -5,7 +5,6 @@
 #include <cstdio>
 #include <cstring>
 
-#include "core/content/creatures/creature_lines.h"
 #include "core/content/registry.h"
 #include "core/render/canvas.h"
 #include "core/render/font.h"

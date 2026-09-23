@@ -1,7 +1,6 @@
 // spec_sheet.cpp — the shared name / readout / prose panel (see spec_sheet.h).
 #include "core/ui/spec_sheet.h"
 
-#include "core/render/canvas.h"
 #include "core/render/font.h"
 #include "core/render/framebuffer.h"
 #include "core/render/palette.h"

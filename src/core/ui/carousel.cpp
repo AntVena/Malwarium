@@ -5,7 +5,6 @@
 #include "core/render/framebuffer.h"
 #include "core/render/palette.h"
 #include "core/render/sprite.h"
-#include "core/ui/layout.h"
 #include "core/ui/widgets.h"
 #include "generated/assets.h"
 

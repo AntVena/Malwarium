@@ -17,12 +17,11 @@
 #include "core/app/game_internal.h"
 
 #include "tunables.h"
-#include "core/model/loadout.h"
 #include "core/ui/cfg_screen.h"
 #include "core/ui/expl_screen.h"
 #include "core/ui/items_screen.h"
 #include "core/ui/mods_screen.h"
-#include "core/ui/stat_screen.h"
+#include "core/ui/stat_screen.h"   // StatIndexRow — statIndexRows() returns a vector of it, and game.h only forward-declares it
 #include "core/ui/train_screen.h"
 
 namespace mal {

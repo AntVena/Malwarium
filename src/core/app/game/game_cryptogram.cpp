@@ -1,7 +1,7 @@
 #include "core/app/game.h"
 
-#include "core/app/game_internal.h"   // kMergeRecipes — the prize ladder names a recipe
 #include "core/content/content_quotes.h"
+#include "core/content/content_recipes.h"   // kMergeRecipes — the prize ladder names a recipe
 #include "core/ui/cryptogram_screen.h"
 
 // game_cryptogram.cpp — THE DECRYPTOGRAM, the quote board.

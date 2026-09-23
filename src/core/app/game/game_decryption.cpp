@@ -1,6 +1,5 @@
 #include "core/app/game.h"
 
-#include "tunables.h"
 #include "core/ui/decryption_screen.h"
 
 // game_decryption.cpp — DISK DECRYPTION, the Ransomware line's hatch minigame.

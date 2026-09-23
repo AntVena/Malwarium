@@ -24,7 +24,6 @@
 #include <cstring>
 
 #include "core/app/game_achievements.h"
-#include "core/app/game_internal.h"
 
 namespace mal {
 

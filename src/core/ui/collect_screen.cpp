@@ -14,7 +14,6 @@
 #include "core/ui/layout.h"
 #include "core/ui/stat_screen.h"   // drawStatHintBand — STAT's pages end alike
 #include "core/ui/widgets.h"
-#include "tunables.h"
 
 namespace mal {
 
