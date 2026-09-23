@@ -87,6 +87,8 @@ SCENES=(
   "explore_refarm|explore refarm"
   "explorectl|explorectl"
   "hacker_profile|hacker profile"   "hacker_shop|hacker shop hub"
+  "hacker_batt_low|hacker batt:8"   "hacker_batt_full|hacker batt:96"
+  "hacker_batt_charging|hacker batt:47 charging"
   "hacker_services|hacker shop services board"
   "hacker_service_info|hacker shop services info"
   "hacker_profile_wide|hacker profile decorated"

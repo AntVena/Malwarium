@@ -511,7 +511,8 @@ void drawSysInfo(Framebuffer& fb, uint32_t uptimeMs, UiMode uiMode,
             battColor = palColor(Pal::INK);
         } else {
             std::snprintf(batt, sizeof(batt), "%d%%", power.percent);
-            battColor = power.percent <= 15 ? palColor(Pal::HOT) : palColor(Pal::INK);
+            battColor = power.percent <= kBatteryLowPct ? palColor(Pal::HOT)
+                                                          : palColor(Pal::INK);
         }
         battVal = batt;
     }

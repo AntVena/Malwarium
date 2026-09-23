@@ -32,6 +32,7 @@ int g_failures = 0;
     RUN(test_sd_icon_reveal_window)         \
     RUN(test_capture_badge_phases)          \
     RUN(test_idle_status_icons_grayscale)   \
+    RUN(test_hacker_face_battery_readout)   \
     RUN(test_sd_recheck_request_seam)       \
     RUN(test_pet_model_zones)               \
     RUN(test_care_branch_and_clamp)         \
@@ -721,6 +722,8 @@ int g_failures = 0;
     RUN(test_frog_line_move_access)               \
     RUN(test_dominant_signal_from_care)           \
     RUN(test_battery_percent_from_mv)           \
+    RUN(test_battery_level_bands)               \
+    RUN(test_battery_percent_smoothing)         \
     RUN(test_firmware_version_ordering)         \
     /*Web 'Pedia slice — HackerTag rename + the state JSON builder */ \
     RUN(test_set_hacker_tag_validates)            \

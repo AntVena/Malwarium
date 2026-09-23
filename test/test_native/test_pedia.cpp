@@ -194,6 +194,70 @@ void test_battery_percent_from_mv() {
     }
 }
 
+// The battery GLYPH's fill level: which of ICON_SYS_BATTERY's five frames a reading
+// draws as, and the hysteresis that stops a reading resting on a band edge from
+// alternating fills every sample.
+void test_battery_level_bands() {
+    // Each band's floor reads as its own level, and the one below it does not.
+    for (int lvl = 1; lvl < kBatteryLevels; ++lvl) {
+        CHECK(batteryLevel(kBatteryLevelFloorPct[lvl]) == lvl);
+        CHECK(batteryLevel(kBatteryLevelFloorPct[lvl] - 1) == lvl - 1);
+    }
+    CHECK(batteryLevel(0) == 0);                       // flat = the empty shell
+    CHECK(batteryLevel(100) == kBatteryLevels - 1);    // full = every bar
+
+    // Monotonic: a battery that only falls can never draw MORE bars than it did.
+    int prev = kBatteryLevels;
+    for (int pct = 100; pct >= 0; --pct) {
+        const int lvl = batteryLevel(pct);
+        CHECK(lvl <= prev);
+        prev = lvl;
+    }
+
+    // With nothing on screen yet (-1) a reading lands at its true level.
+    CHECK(batteryLevelStable(100, -1) == kBatteryLevels - 1);
+    CHECK(batteryLevelStable(0, -1) == 0);
+
+    // Sitting ON a band edge holds whichever fill is already drawn — that is the
+    // whole point, and it holds from either side.
+    const int edge = kBatteryLevelFloorPct[2];
+    CHECK(batteryLevel(edge) == 2);
+    CHECK(batteryLevelStable(edge, 1) == 1);           // drawn low: stays low
+    CHECK(batteryLevelStable(edge, 2) == 2);           // drawn high: stays high
+
+    // Clearing the edge by the margin is what moves it, in both directions.
+    CHECK(batteryLevelStable(edge + kBatteryLevelHysteresisPct, 1) == 2);
+    CHECK(batteryLevelStable(edge - kBatteryLevelHysteresisPct - 1, 2) == 1);
+}
+
+// Smoothing: one noisy sample must not swing the readout, and a real change must
+// still arrive — including the last point of it, which a plain integer EMA cannot
+// close because the division truncates back to where it started.
+void test_battery_percent_smoothing() {
+    CHECK(smoothBatteryPercent(-1, 73) == 73);         // no history: land as-is
+
+    // A lone spike moves the reading a little, not all the way.
+    const int nudged = smoothBatteryPercent(80, 40);
+    CHECK(nudged < 80 && nudged > 40);
+
+    // A sustained change converges, and lands exactly rather than stalling short.
+    int p = 80;
+    for (int i = 0; i < 40; ++i) p = smoothBatteryPercent(p, 40);
+    CHECK(p == 40);
+
+    // The one-point gap both ways — the case the rounding guard exists for.
+    CHECK(smoothBatteryPercent(50, 51) == 51);
+    CHECK(smoothBatteryPercent(50, 49) == 49);
+    CHECK(smoothBatteryPercent(50, 50) == 50);         // no drift when nothing moved
+
+    // Smoothing never leaves the range a percentage is allowed to be in.
+    for (int prev = 0; prev <= 100; prev += 7)
+        for (int s = 0; s <= 100; s += 7) {
+            const int out = smoothBatteryPercent(prev, s);
+            CHECK(out >= 0 && out <= 100);
+        }
+}
+
 // Web 'Pedia slice -----------------------------------
 
 // Game::setHackerTag: the one safe write the web 'Pedia is allowed. Validates

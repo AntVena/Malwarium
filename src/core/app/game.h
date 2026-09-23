@@ -674,9 +674,35 @@ public:
     }
 
     // Power/battery status pushed from the platform tier (device reads the ADC +
-    // CHG_STAT; host leaves it absent). Surfaced on the CFG "BATT" line.
-    void setPowerStatus(const PowerStatus& p) { power_ = p; }
+    // CHG_STAT; host leaves it absent). Surfaced on the CFG "BATT" line and as the
+    // Hacker face's battery glyph.
+    //
+    // The percentage is smoothed and the glyph's fill level resolved HERE rather than
+    // by each screen, so the two readouts can never disagree about the same battery,
+    // and a platform that samples more often than a screen repaints pays for it once.
+    // A repaint is requested only when something a screen would actually DRAW moved —
+    // a sample that lands on the same number is not a frame (the redraw is ~4fps and
+    // event-driven, so a free-running sampler must not be able to drive it).
+    void setPowerStatus(const PowerStatus& p) {
+        PowerStatus next = p;
+        const bool readable = p.present && p.percent >= 0;
+        if (readable) {
+            next.percent = smoothBatteryPercent(
+                power_.present && power_.percent >= 0 ? power_.percent : -1, p.percent);
+        }
+        const int level =
+            readable ? batteryLevelStable(next.percent, batteryLevel_) : -1;
+        if (next.present != power_.present || next.charging != power_.charging ||
+            next.percent != power_.percent || level != batteryLevel_) {
+            dirty_ = true;
+        }
+        power_ = next;
+        batteryLevel_ = level;
+    }
     const PowerStatus& powerStatus() const { return power_; }
+    // Which ICON_SYS_BATTERY frame the current reading draws as, or -1 when there is
+    // no reading to draw (host builds, or a board with the monitor disabled).
+    int batteryLevel() const { return batteryLevel_; }
 
     // microSD presence pushed from the platform tier at boot (device mounts the
     // card + round-trips it; host leaves it absent). Surfaced on the CFG "SD" line
@@ -3696,7 +3722,11 @@ private:
     WifiOutcome wifiOutcome_ = WifiOutcome::SleepingGuardian;
     char wifiFlavor_[40] = "";
     int networksSeen_ = 0;
-    PowerStatus power_;  // last reading from the platform tier (CFG "BATT" line)
+    PowerStatus power_;  // last SMOOTHED reading from the platform tier
+    // The battery fill currently on screen, which is the state batteryLevelStable
+    // needs to hold a glyph steady across a reading that sits on a band edge. -1 =
+    // nothing drawn yet, so the next reading lands without hysteresis.
+    int batteryLevel_ = -1;
     int allyBuffBattlesLeft_ = 0;
 
     // THE SHIBBOLETH — the guardian encounter (game_shibboleth.cpp, core/model/cant.h).

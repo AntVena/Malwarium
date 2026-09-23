@@ -133,7 +133,10 @@
 //        frame lands inside the beaten rival's dissolve — pass a `beats` count to walk
 //        it. Bare "outro" shows whichever the pet's kit earns; "known" grants the
 //        rival's moves first, which turns the absorb back into a shred)
-// hacker (A+C → the Hacker face home) · hacker profile [decorated] (the PROFILE
+// hacker [batt:<pct>] (A+C → the Hacker face home; "batt:<pct>" feeds a battery
+//        reading in, which is the only way the face's glyph appears on the host —
+//        there is no ADC here, and an absent reading deliberately draws nothing) ·
+//        hacker profile [decorated] (the PROFILE
 // viewer; "decorated" seeds the widest identity it can hold — the longest crew
 // name, a Title equipped, and the rank that unlocks the longest rank title) · hacker shop [hub] [row:<n>] [buy] (the SHOP; "hub" buys the MERGE HUB
 //        first, which is what reveals its two recipe rows, and row:<n> A-cycles
@@ -1022,6 +1025,16 @@ int main(int argc, char** argv) {
                     textWidth(hackerRankTitle(hackerRankTierUnlock(longest)))) longest = i;
             game.debugSetNetworksSeen(hackerRankTierUnlock(longest) *
                                       (kHackerRankXpPerRank / kHackerRankXpPerNetwork));
+        }
+        // A battery reading, so the face's glyph can be LOOKED at — the native tier
+        // can prove the fill level is right but not that it clears the text beside it.
+        for (int i = 3; i < argc; ++i) {
+            if (std::strncmp(argv[i], "batt:", 5) != 0) continue;
+            PowerStatus p;
+            p.present = true;
+            p.percent = std::atoi(argv[i] + 5);
+            p.charging = hasFlag(argc, argv, "charging");
+            game.setPowerStatus(p);
         }
         game.onButton({Button::A, true, true});     // A+C chord → hacker home (idle)
         auto enterHackerSlot = [&](HackerSlotId id) {

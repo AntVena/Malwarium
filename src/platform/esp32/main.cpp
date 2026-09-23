@@ -621,18 +621,37 @@ void loop() {
     if (restartAtMs != 0 && millis() >= restartAtMs) ESP.restart();
 #endif
 
-    // Battery/charge status: event-driven, not polled. SoC answers "do I need
-    // to charge soon?", which only flips over *hours* — a free-running timer
-    // sampling every ~2s (~1800x/hour) was pure waste. The only consumer is the
-    // CFG "BATT" line, so we only need a fresh reading (a) right as the screen
-    // wakes (the reading may be stale from a long sleep) and (b) right as the
-    // player lands on CFG SysInfo (the one screen that displays it).
-    if (wasAsleep && !screenAsleep) game->setPowerStatus(readPowerStatus());
+    // Battery/charge status. Two consumers now draw it — the CFG "BATT" line and
+    // the Hacker face's glyph — and the face is a screen a player SITS on, so a
+    // reading taken only on arrival would freeze there for as long as they stayed.
+    // Hence a slow sample on top of the arrival ones, at BATTERY_SAMPLE_MS: SoC
+    // moves over hours, so a minute paces the display generously and still costs
+    // ~60 reads an hour rather than the ~1800 a 2s timer would.
+    //
+    // The arrival reads stay, and are not redundant with the timer: landing on a
+    // readout should show the battery NOW, not up to a minute ago. Waking is the
+    // same case at a larger scale — the last reading can be a whole sleep old.
+    //
+    // Nothing here repaints on its own. setPowerStatus smooths the sample in and
+    // dirties the frame only when the drawn value moves, which is what keeps a
+    // free-running sampler off the ~4fps event-driven redraw.
     const bool onSysInfo = game->nav() == Game::Nav::Detail &&
                            game->cfgScreen() == CfgScreen::SysInfo;
+    const bool onHackerFace = game->face() == Game::Face::Hacker;
     static bool wasOnSysInfo = false;
-    if (onSysInfo && !wasOnSysInfo) game->setPowerStatus(readPowerStatus());
+    static bool wasOnHackerFace = false;
+    static uint32_t lastBatteryMs = 0;
+    const bool arrived = (onSysInfo && !wasOnSysInfo) ||
+                         (onHackerFace && !wasOnHackerFace) ||
+                         (wasAsleep && !screenAsleep);
+    const bool showing = onSysInfo || onHackerFace;
+    if (arrived ||
+        (showing && !screenAsleep && millis() - lastBatteryMs >= BATTERY_SAMPLE_MS)) {
+        game->setPowerStatus(readPowerStatus());
+        lastBatteryMs = millis();
+    }
     wasOnSysInfo = onSysInfo;
+    wasOnHackerFace = onHackerFace;
 
 #if HEAP_TRACE_ENABLED
     // A baseline to read the transition figures against: a LEAK shows as a monotonic

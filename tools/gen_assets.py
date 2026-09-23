@@ -142,6 +142,10 @@ FACING = {
 FRAME_W_OVERRIDES = {
     "SPR_EGG_PHISH_MICRO": 14,   # 28x14 = the clutch tile's 2-frame swim loop
     "ICON_EXPL": 28,             # 168x28 = the globe's 6-frame rotation
+    # 80x16 = the battery shell at five fill levels, frame index == level (empty
+    # shell .. four bars). Not an animation: the engine picks the frame from the
+    # reading (core/app/power_status.h), so the strip is a lookup, not a loop.
+    "ICON_SYS_BATTERY": 16,
     # 96x8 = the Worm replicas' six 16x8 frames, in idle/attack/death pairs. Not
     # SPR_PET_ sheets: a replica is one glyph shared by the whole line rather than a
     # creature with a 56x48 cell, so it needs the override to be a strip at all.

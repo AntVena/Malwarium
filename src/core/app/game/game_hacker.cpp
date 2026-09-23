@@ -17,6 +17,7 @@
 #include "core/ui/spec_sheet.h"
 #include "core/ui/theme.h"
 #include "core/ui/widgets.h"
+#include "generated/assets.h"
 
 // game_hacker.cpp — the Hacker face (07, /HACK2/SHOP1).
 //
@@ -488,6 +489,33 @@ void Game::drawHackerHome(Framebuffer& fb, int cursor) const {
                                     : palColor(Pal::INK_DIM);
     drawText(fb, kMargin, y, queued, queuedColor);
     y += kFontH + 6;
+
+    // Battery — the operator's own power budget, the one readout here that is about
+    // the DEVICE rather than the operator, which is why it sits under the stats with
+    // a line to itself instead of pairing off with one of them. It gets the line
+    // because the glyph is a 16px cell against an 8px face: sharing a row would either
+    // crop it or prise the stat rows apart.
+    //
+    // Dual-coded three times over — countable bars, the emptying shell, and the
+    // printed number — so the HOT a flat pack takes is the only channel a grayscale
+    // shot loses, which is what the tinting rule asks. Absent on the host and on a
+    // board with the monitor off: an empty shell there would report a flat battery
+    // rather than no battery, and silence is the honest reading.
+    if (batteryLevel_ >= 0) {
+        char pct[12];
+        std::snprintf(pct, sizeof(pct), power_.charging ? "CHG %d%%" : "%d%%",
+                      power_.percent);
+        const Rgb565 battColor = !power_.charging && power_.percent <= kBatteryLowPct
+                                     ? palColor(Pal::HOT)
+                                     : palColor(Pal::INK);
+        const SpriteData& glyph = ASSET_ICON_SYS_BATTERY;
+        drawSpriteTinted(fb, glyph, batteryLevel_, kMargin, y, battColor);
+        // Centred against the glyph rather than sitting on its top edge, so the two
+        // read as one readout: an 8px face inside a 16px cell.
+        drawText(fb, kMargin + glyph.frameW + 4, y + (glyph.h - kFontH) / 2, pct,
+                 battColor);
+        y += glyph.h + 6;
+    }
 
     // Blinking console cursor — the "idle terminal" motion.
     const bool on = ((beat_ / 2) & 1) == 0;

@@ -301,3 +301,71 @@ void test_sd_recheck_request_seam() {
     g.clearSdRecheck();
     CHECK(!g.sdRecheckRequested());
 }
+
+// --- Gate: the Hacker face's battery readout -------------------------------
+//
+// The glyph is the one part of the readout that has to survive desaturation on its
+// own, so this counts LIT pixels rather than looking at colour: a fuller battery
+// lights more of the shell than a flatter one, which is the dual-coding rule's
+// non-colour channel for this widget.
+//
+// Measured over a column strip the width of the glyph, across the whole living area,
+// rather than at a fixed row — every other line on the face is identical between the
+// two renders, so whatever differs in that strip IS the battery. That keeps the gate
+// about the readout instead of about where the layout happens to put it today.
+static int litInStrip(const Framebuffer& fb) {
+    const int x0 = kMargin, x1 = kMargin + ASSET_ICON_SYS_BATTERY.frameW;
+    int n = 0;
+    for (int y = kLivingTop; y < kLivingBottom; ++y)
+        for (int x = x0; x < x1; ++x)
+            if (luminance(fb.get(x, y)) > 0.12f) ++n;
+    return n;
+}
+
+// Build the Hacker face carrying `pct`, or carrying no reading at all when `present`
+// is false. A fresh Game each time because setPowerStatus SMOOTHS — feeding one game
+// 100 then 5 lands at neither, which is the point of the smoothing and the wrong tool
+// for asking what a given reading draws.
+static void renderHackerFaceAt(Framebuffer& fb, bool present, int pct) {
+    Game g{StartMode::Hatched};
+    g.onButton({Button::A, true, true});        // A+C -> the Hacker face
+    CHECK(g.face() == Game::Face::Hacker);
+    if (present) {
+        PowerStatus p;
+        p.present = true;
+        p.percent = pct;
+        g.setPowerStatus(p);
+        CHECK(g.batteryLevel() == batteryLevel(pct));   // first reading lands as-is
+    } else {
+        CHECK(g.batteryLevel() == -1);                  // host default: nothing to draw
+    }
+    g.render(fb);
+}
+
+void test_hacker_face_battery_readout() {
+    Framebuffer absent(kActiveW, kActiveH), flat(kActiveW, kActiveH),
+                full(kActiveW, kActiveH);
+    renderHackerFaceAt(absent, false, 0);
+    renderHackerFaceAt(flat, true, 2);          // below the bottom band: bare shell
+    renderHackerFaceAt(full, true, 100);        // every bar
+
+    // A reading puts something in the strip that no reading does not.
+    CHECK(litInStrip(absent) < litInStrip(flat));
+    // ...and a fuller pack fills more of it, with no colour involved.
+    CHECK(litInStrip(flat) < litInStrip(full));
+
+    // The shell is drawn even at the empty level, so "flat" reads as a battery with
+    // nothing in it rather than as a missing readout.
+    CHECK(regionDiffers(absent, flat, kMargin, kLivingTop,
+                        kMargin + ASSET_ICON_SYS_BATTERY.frameW, kLivingBottom));
+
+    // Every band draws a distinct fill, which is what makes the glyph countable.
+    int prev = -1;
+    for (int lvl = 0; lvl < kBatteryLevels; ++lvl) {
+        Framebuffer fb(kActiveW, kActiveH);
+        renderHackerFaceAt(fb, true, kBatteryLevelFloorPct[lvl]);
+        const int lit = litInStrip(fb);
+        CHECK(lit > prev);
+        prev = lit;
+    }
+}

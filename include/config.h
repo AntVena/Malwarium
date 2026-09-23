@@ -143,6 +143,12 @@
 #define PIN_CHARGE_STAT         3    // CHG_STAT (GPIO3) — ETA6098 charge status
 //  Voltage = (3.3 / 4096) * 3.0 * raw_adc   (R27 200K / R32 100K = 3:1 divider)
 #define BATTERY_ADC_DIVIDER     3.0f
+//  How often the loop takes a fresh reading while the panel is awake. SoC moves
+//  over HOURS, so this paces the DISPLAY rather than the battery: a minute is far
+//  finer than the thing being measured and still only ~60 samples an hour. The
+//  engine smooths each one in and repaints only when the drawn value actually
+//  moves (Game::setPowerStatus), so a sample that changes nothing costs no frame.
+#define BATTERY_SAMPLE_MS       60000
 
 // --- Real-time clock -------------------------------------------------------
 #define HAS_HARDWARE_RTC        0    // none on board; clock pauses while powered off
