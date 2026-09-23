@@ -27,11 +27,14 @@ final art still wanted) · `☑` DELIVERED · `⌫` PARKED (drawn, but nothing c
 > basename is the one legal shadow — it is the superseded drawing, kept for reference and
 > never compiled — so read a File cell as the live path, not as the only file of that name.
 >
-> **`⌫` rows are parked in `assets/_attic/`** — untracked, never compiled, costing nothing. Art
+> **`⌫` rows are parked in `assets/_attic/`**, which is never compiled and costs nothing. Art
 > lands there when it has no consumer: content comes first (a row in `content_*.cpp` wired to a
 > `SPR_PET_GENERIC_*` stand-in or a generic icon fallback), and art replaces the stand-in after.
 > A drawing with no content row can't reach the screen, so it waits in the attic rather than
-> occupying flash. `assets/_attic/README.md` says how to bring one back.
+> occupying flash. The folder is **gitignored**, so a `⌫` File cell names where the drawing
+> was parked, not a file a fresh clone holds. Only what was force-added travels with the repo
+> (`git ls-files assets/_attic`). `assets/_attic/README.md` says how to keep one and how to
+> bring one back.
 >
 > **This table is prose and can drift; the check can't.** `python3 tools/check_orphan_assets.py`
 > fails if any compiled asset has no consumer — run it rather than trusting a `☑` here.

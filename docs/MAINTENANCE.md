@@ -173,13 +173,16 @@ worth the same trust as the host's; a file lighting up whole means the database 
 wrong: an include a unit uses DIRECTLY stays even when some other header happens to supply it, and
 the trap in a mechanical scan is a symbol that only appears in a comment.
 
-### Asset manifest accuracy audit — Last run: 2026-08-15
+### Asset manifest accuracy audit — Last run: 2026-09-23
 Cross-check `assets/ASSET_MANIFEST.md` status markers (☑/▨/☐) against what's actually in
 `assets/` and wired into `embedded_content.cpp`. Flag mismatches in either direction
 (claimed-delivered-but-missing, or shipped-but-still-marked-TODO). Audit the **File** column
 too, not just the marker — every concrete path had gone stale against the `icons/`/`sprites/`/
-`ui/` split, which no status marker would have caught. Watch for the two basenames that exist
-in both a live folder and `_attic/`: a naive stem→path map resolves them to the parked copy.
+`ui/` split, which no status marker would have caught. An `_attic/` file may share a basename
+with a live one (the superseded drawing), and a naive stem→path map resolves it to the parked
+copy. The attic is gitignored, so a `⌫` path is checkable only against `git ls-files
+assets/_attic`: a missing one means the drawing never left the machine that parked it, which
+is not something a manifest edit can fix.
 
 **Three ways a marker check cries wolf**, all of which look like "claimed ☑, not compiled":
 `engine-drawn` rows (`UI_GAUGE`, `UI_SCROLLBAR`, `UI_HEALTH_BAR` …) are delivered as code and are
