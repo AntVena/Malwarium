@@ -814,7 +814,7 @@ own rows from the same `CfgRow` shape and reuses the glyphs below, so grouping n
 |---|---|---|---|---|---|
 | `ICON_CFG_SYSINFO` | System Info row glyph | 20×20 | the RADIO group's AUDIT row names it in `cfgGroupRows`, but nothing draws it — see the note under this table | ☑ | `/assets/icons/ICON_CFG_SYSINFO.png` |
 | `ICON_CFG_TAG` | HackerTag row glyph | 20×20 | | ☑ | `/assets/icons/ICON_CFG_TAG.png` |
-| `ICON_CFG_UIMODE` | UI Mode row glyph | 20×20 | also the DEVICE group row, BRIGHTNESS + THEME | ☑ | `/assets/icons/ICON_CFG_UIMODE.png` |
+| `ICON_CFG_UIMODE` | UI Mode row glyph | 20×20 | also the DEVICE group row, BRIGHTNESS, THEME + BACKGROUND (BACKGROUND wants a glyph of its own) | ☑ | `/assets/icons/ICON_CFG_UIMODE.png` |
 | `ICON_CFG_TITLE` | TITLE row glyph (zone-Title picker) | 20×20 | v1 stopgap home for zone Titles; moves to Hacker HUD later | ☑ | `/assets/icons/ICON_CFG_TITLE.png` |
 | `ICON_CFG_RADIO` | RADIO group row glyph | 20×20 | the four radio consents under one row. A transmitter mast, not the square-wave alternate parked at `/assets/_attic/ICON_SYS_WIFI_ALT.png`: the split it has to carry is "the radio, as hardware" against "a Wi-Fi service", and a squared-off fan is still the fan `ICON_SYS_WIFI` draws on PEDIA AP + INTERNET. A mast also covers both consent axes at once — it is the thing that listens and the thing that transmits | ☑ | `/assets/icons/ICON_CFG_RADIO.png` |
 | `ICON_CFG_UPDATE` | UPDATES row glyph | 20×20 | a refresh cycle — a ring opened at the top and fed an arrowhead. NOT a download arrow, which reads as the row's obvious motif right up until you set it beside `ICON_SECTOR_NAPSTORRENT_MOORS`: the Moors are the torrent area and the arrow-into-a-tray is theirs | ☑ | `/assets/icons/ICON_CFG_UPDATE.png` |

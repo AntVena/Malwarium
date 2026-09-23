@@ -124,10 +124,28 @@ void drawUpdateCheck(Framebuffer& fb, bool ready, bool provisioned,
     // it has to be legible here.
     drawText(fb, kActiveW - kMargin - textWidth("FROM"), 28, "FROM",
              palColor(Pal::INK_DIM));
+    //
+    // The version is the one that never gives way: it is what the verdict below is
+    // measured against, and a clipped "V0.81" reads as a real, older version rather
+    // than as a cut. So it draws whole and the host takes what is left, right-aligned
+    // when it fits and cut from its tail when it doesn't — the head of a host is the
+    // part that says which server. drawLabelValue has the opposite priority (its
+    // value is whole, its label gives way), which is why this row doesn't use it.
     char host[24];
     urlHost(manifestUrl, host, sizeof(host));
-    drawLabelValue(fb, kMargin, 40, firmwareVersion, palColor(Pal::INK), host,
-                   sourceKnown ? palColor(Pal::INK) : palColor(Pal::INK_DIM), 0, false);
+    drawText(fb, kMargin, 40, firmwareVersion, palColor(Pal::INK));
+    const int hostX = kMargin + textWidth(firmwareVersion) + kMargin;
+    const int hostRoom = kActiveW - kMargin - hostX;
+    if (hostRoom > 0) {
+        // A port loses whole or not at all: cut mid-way, ":8000" reads as ":80", a
+        // real and different port. The name before it is what says which server.
+        if (textWidth(host) > hostRoom)
+            if (char* colon = std::strchr(host, ':')) *colon = '\0';
+        const int w = textWidth(host) < hostRoom ? textWidth(host) : hostRoom;
+        drawTextMarquee(fb, kActiveW - kMargin - w, 40, w, host,
+                        sourceKnown ? palColor(Pal::INK) : palColor(Pal::INK_DIM), 0,
+                        false);
+    }
 
     // Row 0 is always the check, the last is always the flasher, and between them
     // sit what the check found. An install row names the artifact AND the version

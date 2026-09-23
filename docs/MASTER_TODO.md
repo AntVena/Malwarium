@@ -94,6 +94,14 @@ dim-means-READOUT split is the detail pages' free lever and the one that survive
 the STAT LOADOUT group seams are space spent deliberately, on the page with the least of it.
 Diff **M**, taste before code.
 
+- **MODS detail pins its footer to the floor.** `kDetailSlotY` (`mods_screen.cpp`) puts SLOT /
+  HAVE, the REQUIRES gates and the action line at a fixed y whatever the prose above ran to,
+  so a short description leaves a dead band mid-screen while the footer stacks four rows
+  tight against the hint band (the ONE-SHOT caveat sits in the band, alone). The footer is
+  the group a reader must not lose, and it gets no air; the empty band separates nothing.
+  Flowing it up under the prose, as the ITEMS detail's HAVE / USE block already does, moves
+  the space to the seam it belongs at. Diff **S**.
+
 ### 1c. Evolution routing — one weighted edge list per creature
 
 `CreatureDef` carries five optional successor pointers (`evolvesToId`, `evolvesToGoodId`,

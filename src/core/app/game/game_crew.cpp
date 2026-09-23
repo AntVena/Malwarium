@@ -85,8 +85,9 @@ constexpr int kSideH = 38;
 // Four line-heights per row — name, up to two wrapped tagline lines, then the
 // Exploit tag — plus real gap to the next row. Fixed, not measured per-row: the
 // tagline's slot is reserved at its worst case (2 lines) whether a given crew's
-// motto needs it or not, so a short motto leaves a little air and a long one
-// never competes with the row below for the same pixels.
+// motto needs it or not, so a long one never competes with the row below for the
+// same pixels. The Exploit tag rides up under a short motto, which puts the air it
+// leaves between crews rather than inside one.
 constexpr int kTeamRowH = 60;
 constexpr int kTeamVisibleRows = 3;
 
@@ -520,17 +521,22 @@ void Game::drawCrewTeam(Framebuffer& fb) const {
         // an unselected crew with a long motto (e.g. "fail to plan; plan to fail")
         // was silently cut mid-word with no indication there was more. Wrapping
         // shows the whole thing on every row, focused or not.
-        drawTextWrapped(fb, tx, y + kLineH, w, c.tagline, palColor(Pal::INK_DIM),
-                        kLineH, 2);
+        const int mottoEnd = drawTextWrapped(fb, tx, y + kLineH, w, c.tagline,
+                                             palColor(Pal::INK_DIM), kLineH, 2);
         // 3 — the Exploit's mechanic word, and where you already belong. The tag is the
         // comparable thing here: a column of NEGATE / STAT LOCK / RALLY is what makes a
         // side a choice you can read down rather than three pages to visit in turn.
+        // It follows the motto's LAST line rather than the reserved slot's, so a
+        // one-line motto's spare line falls at the seam to the next crew. Parked at the
+        // slot's bottom, the tag sat as far from its own crew as from the next one and
+        // read as a crew of its own.
+        const int tagY = std::max(mottoEnd, y + kLineH * 2);
         char tag[16];
         crewExploitLabel(tag, sizeof(tag), c.exploit.kind, c.exploit.magnitude);
-        drawText(fb, tx, y + kLineH * 3, tag, palColor(Pal::INK));
+        drawText(fb, tx, tagY, tag, palColor(Pal::INK));
         if (joined)
-            drawText(fb, kActiveW - kMargin - textWidth("JOINED"), y + kLineH * 3,
-                     "JOINED", palColor(Pal::ACCENT));
+            drawText(fb, kActiveW - kMargin - textWidth("JOINED"), tagY, "JOINED",
+                     palColor(Pal::ACCENT));
     }
     if (n > kTeamVisibleRows)
         drawScrollbar(fb, kRowTop, kTeamVisibleRows * kTeamRowH, n, scrollTop,

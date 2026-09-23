@@ -147,8 +147,10 @@ int cfgGroupRows(CfgScreen group, const CfgRow*& out) {
         {"THEME", &ASSET_ICON_CFG_UIMODE, CfgScreen::Theme},
         // BACKGROUND belongs beside them and not on the top-level list: the release list
         // is exactly six rows so it never scrolls, and this is a presentation setting
-        // like the two above it — what the device shows, not what it does.
-        {"BACKGROUND", &ASSET_ICON_CFG, CfgScreen::Background},
+        // like the two above it — what the device shows, not what it does. Its glyph
+        // is theirs too until it gets its own: a row glyph is the 20px tier, and the
+        // 28px carousel ICON_CFG it once borrowed overprinted the label beside it.
+        {"BACKGROUND", &ASSET_ICON_CFG_UIMODE, CfgScreen::Background},
         {"TRAVEL MODE", &ASSET_ICON_CFG_TRAVEL, CfgScreen::Travel},
     };
     // The three radio TOGGLES, listed in the arbiter's own priority order, highest

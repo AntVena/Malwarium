@@ -399,14 +399,16 @@ void drawModDetail(Framebuffer& fb, const ContentRegistry& reg, const Loadout& l
     }
 
     // Action line: EQUIPPED (dim, already here) / LOCKED (level, line, or already
-    // installed elsewhere on this pet) / EQUIP + cursor.
+    // installed elsewhere on this pet) / EQUIP + cursor. A level or line lock says
+    // only LOCKED: the gate row directly above has already turned HOT and named the
+    // number, and restating it stacked the same fact twice in red. Only the
+    // other-slot lock has no row of its own, so only it carries its reason here.
     if (equippedHere) {
         drawText(fb, kMargin, y, "EQUIPPED HERE", palColor(Pal::INK_DIM));
     } else if (locked) {
         char lk[28];
         if (inOtherSlot) std::snprintf(lk, sizeof(lk), "LOCKED - IN SLOT %d", elsewhere + 1);
-        else if (wrongLine) std::snprintf(lk, sizeof(lk), "LOCKED - WRONG LINE");
-        else std::snprintf(lk, sizeof(lk), "LOCKED - NEEDS LVL %d", reqLevel);
+        else std::snprintf(lk, sizeof(lk), "LOCKED");
         drawText(fb, kMargin, y, lk, palColor(Pal::HOT));
     } else {
         drawRowCursor(fb, kMargin, y, palColor(Pal::ACCENT));

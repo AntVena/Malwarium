@@ -131,15 +131,23 @@ void drawArchPicker(Framebuffer& fb, const std::vector<ArchPickRow>& tiles, int 
     std::snprintf(slots, sizeof(slots), "SLOTS %d/%d", used, maxSlots);
     drawHeaderBand(fb, "ARCH", slots);
 
-    // Pitch is set by the tile COUNT against the footer, the same arithmetic the ITEMS
-    // type-picker does: the picker never scrolls, so every row has to fit between
-    // kRowTop and the rule. Eight rows (NEW EGG + ACTIVE + five families + RECORDS) at
-    // 22 is 26 + 8*22 = 202, which clears the rule at kActiveH-16.
-    constexpr int kPickRowH = 22;
+    // Pitch is set by the tile COUNT against the hint band, the same arithmetic the
+    // ITEMS type-picker does: the picker never scrolls, so every row has to fit between
+    // kRowTop and the band. The rows are three groups — this pet (NEW EGG, ACTIVE), the
+    // shelf (one per family) and RECORDS — and a gap opens where the KIND changes, so
+    // RECORDS doesn't read as a sixth family and the shelf doesn't read as ACTIVE's
+    // children, which is what indenting it would say. Eight rows at 20 plus two 8px
+    // gaps is 26 + 160 + 16 = 202, clear of the band at kActiveH - kHintBandH.
+    constexpr int kPickRowH = 20;
+    constexpr int kGroupGap = 8;
     const int n = static_cast<int>(tiles.size());
+    int y = kRowTop - kPickRowH;
     for (int i = 0; i < n; ++i) {
         const ArchPickRow& t = tiles[i];
-        const int y = kRowTop + i * kPickRowH;
+        y += kPickRowH;
+        const bool firstShelf = t.group.kind == ArchGroup::Kind::Line &&
+                                (i == 0 || tiles[i - 1].group.kind != ArchGroup::Kind::Line);
+        if (firstShelf || t.group.kind == ArchGroup::Kind::Records) y += kGroupGap;
         if (i == cursor) {
             fb.fillRect(4, y + 2, kActiveW - 8, kPickRowH - 4, palColor(Pal::TRACK));
             drawRowCursor(fb, 8, y + (kPickRowH - 7) / 2, palColor(Pal::ACCENT));
@@ -158,8 +166,7 @@ void drawArchPicker(Framebuffer& fb, const std::vector<ArchPickRow>& tiles, int 
         }
     }
 
-    fb.fillRect(0, kActiveH - 16, kActiveW, 1, palColor(Pal::TRACK));
-    drawText(fb, kMargin, kActiveH - 12, "B - OPEN  C - BACK", palColor(Pal::INK_DIM));
+    drawHintBand(fb, "A NEXT  B OPEN  C BACK");
 }
 
 void drawArchList(Framebuffer& fb, const std::vector<ArchRow>& rows, const char* title,
