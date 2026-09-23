@@ -335,6 +335,14 @@ void Game::doExploreStep() {
     // The boss is NOT on this table — it's a manual trigger. No "quiet" rolls.
     exploreStepBeat_ = 0;
     ++exploreSteps_;
+    // The lifetime tally the STEPS ladder is measured against (AchSeries::StepsWalked)
+    // and the PROFILE row reads. exploreSteps_ is this RUN and resets with every walk;
+    // this one outlives the pet, so it is the save's counter rather than the screen's.
+    // Dirtying per step is safe: the debounce is measured from the last WRITE, not the
+    // last change, so a long walk still lands one write every kSaveDebounceMs rather
+    // than pushing the write out ahead of itself.
+    ++lifetimeSteps_;
+    markSaveDirty();
     rng_ = rng_ * 1664525u + 1013904223u;
     const int roll = static_cast<int>((rng_ >> 16) % 100);
     int t = kExploreLootPct;

@@ -451,7 +451,7 @@ struct SaveData {
     int32_t bits = 0;
     char hackerTag[kHackerTagMax + 1] = {0};
     uint32_t lifetimeUptimeMs = 0;
-    uint32_t lifetimeSteps = 0;       // exploration — tracked, 0 for now
+    uint32_t lifetimeSteps = 0;       // explore steps walked, all pets, all runs
     int32_t petsRaised = 0;
 
     // Collections.

@@ -1944,3 +1944,75 @@ void test_explore_flavor_lines_fit() {
         CHECK(fits());
     }
 }
+
+// Back to the idle habitat from whatever full-screen event a step landed on, the same
+// way test_explore_every_step_is_an_event clears one. BOUNDED: a gate that cannot get
+// back to Idle must fail saying so, not spin.
+static void clearExploreEvent(Game& g, uint32_t& t) {
+    for (int i = 0; i < 200 && g.nav() != Game::Nav::Idle; ++i) {
+        switch (g.nav()) {
+            case Game::Nav::Encounter: tapC(g); break;   // flee
+            case Game::Nav::Shop:      tapC(g); break;
+            case Game::Nav::ModShop:   tapC(g); break;
+            case Game::Nav::Combat:
+                for (int j = 0; j < 400 &&
+                        g.combat().outcome() == Combat::Outcome::Ongoing; ++j)
+                    g.tick(t += kHeartbeatMs);
+                g.onButton(press(Button::B));
+                break;
+            default: g.onButton(press(Button::B)); break;
+        }
+    }
+}
+
+// Steps are tallied for the LIFETIME of the device as well as for the run. The two
+// counters answer different questions — exploreSteps() is "how far into this walk",
+// lifetimeSteps() is what the STEPS ladder is scored against — so the run counter
+// resetting at the top of a walk must not take the lifetime one with it.
+void test_lifetime_steps_accumulate() {
+    Game g{StartMode::Hatched};
+    enterWalk(g);
+    const uint32_t start = g.lifetimeSteps();
+    uint32_t t = 0;
+    int stepped = 0;
+    for (int i = 0; i < 12; ++i) {
+        clearExploreEvent(g, t);
+        CHECK(g.nav() == Game::Nav::Idle);
+        const uint32_t before = g.lifetimeSteps();
+        pingExplore(g);
+        ++stepped;
+        CHECK(g.lifetimeSteps() == before + 1);          // one step, one tally
+    }
+    CHECK(g.lifetimeSteps() == start + static_cast<uint32_t>(stepped));
+
+    // Arming a fresh sub-area zeroes the RUN counter and leaves the lifetime tally
+    // where it was — the whole reason the two are separate fields.
+    clearExploreEvent(g, t);
+    CHECK(g.nav() == Game::Nav::Idle);
+    const uint32_t lifetime = g.lifetimeSteps();
+    CHECK(g.exploreSteps() > 0);
+    enterWalk(g);
+    CHECK(g.exploreSteps() == 0);
+    CHECK(g.lifetimeSteps() == lifetime);
+}
+
+// The STEPS ladder reads that lifetime tally (AchSeries::StepsWalked), which is what
+// makes its rungs reachable at all and what the 'Pedia's progress rail draws.
+void test_steps_achievement_tracks_the_walk() {
+    Game g{StartMode::Hatched};
+    const AchievementDef* legwork = achievementById("STEPS_1K");
+    CHECK(legwork != nullptr);
+    CHECK(legwork->goal == 1000);
+    CHECK(g.achValue(*legwork) == 0);                    // nothing walked yet
+
+    enterWalk(g);
+    uint32_t t = 0;
+    for (int i = 0; i < 12; ++i) {
+        clearExploreEvent(g, t);
+        if (g.nav() != Game::Nav::Idle) break;
+        pingExplore(g);
+    }
+    // The series reads the counter directly, so the rail a player sees is the walk.
+    CHECK(g.achValue(*legwork) > 0);
+    CHECK(g.achValue(*legwork) == static_cast<int>(g.lifetimeSteps()));
+}

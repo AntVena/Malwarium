@@ -312,6 +312,8 @@ int g_failures = 0;
     RUN(test_walk_event_roll_reaches_encounter)   \
     RUN(test_explore_autosteps_hands_free)        \
     RUN(test_explore_every_step_is_an_event)      \
+    RUN(test_lifetime_steps_accumulate)           \
+    RUN(test_steps_achievement_tracks_the_walk)   \
     RUN(test_encounter_fight_live_combat_win)     \
     RUN(test_refarm_diminishing_rewards)          \
     RUN(test_bandwidth_farming_resource)          \
