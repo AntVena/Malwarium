@@ -19,6 +19,12 @@ const char* const kTourneyName = "ROCK THE DOCK";
 // so a section that runs past half the panel leaves the rest of the screen empty
 // rather than seating a second one. Four short sections read as a briefing; two long
 // ones read as a wall with a scrollbar.
+// Two of these sections quote the bracket's own numbers in words. Prose can't take a
+// {token} the way a content row's effect text does, so the asserts are what make a
+// retune of either one stop the build here instead of shipping a briefing that lies.
+static_assert(kTourneySlots == 8, "THE DOCK says \"Eight operators\" — reword it");
+static_assert(kTourneyMaxLevel == 60, "THE FIELD says \"any level up to 60\" — reword it");
+
 const TourneyBriefDef kTourneyBrief[] = {
     {"THE DOCK",
      "The Bayou's cracked-key harbour runs a season. Eight operators, one bracket, "

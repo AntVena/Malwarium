@@ -32,8 +32,7 @@ constexpr int kHappyCautionMin = 30;    // OK >= 30
 constexpr int kHappyCriticalMax = 9;    // Critical < 10
 
 // --- Care-mistake budget (5-step) ------------------------------------------
-constexpr int kCareGoodMax = 2;   // 0..2 Good (calm)
-constexpr int kCareBadMax = 4;    // 3..4 Bad (hot)
+constexpr int kCareGoodMax = 2;   // 0..2 Good (calm); everything above it is Bad (hot)
 constexpr int kCareDying = 5;     // 5/5 dying (hot, pulses)
 
 // Maintenance (MAINT) -------------------------------
@@ -103,13 +102,13 @@ constexpr uint32_t kBootAcceleratorCutMs = 10u * 60u * 1000u;   // -10 min off t
 //     line's hatch minigame is played the instant it is laid, and its prize is spent
 //     against this clock; the clock reaching 0 hatches straight to Process on its own.
 //     The player can rush that window by carrying the egg
-//     around: each explore STEP shaves kBootHatchStepAccelMs and each newly-seen
-//     NETWORK shaves kBootHatchNetworkAccelMs off the incubation clock (an egg has
-//     no reason to walk/eat, but letting it interact is the point — it gives the
-//     otherwise-inert Boot stage something to do). Vitals are FROZEN while an egg.
+//     around: each newly-seen NETWORK shaves kBootHatchNetworkAccelMs off the
+//     incubation clock. An incubating egg cannot explore, so that — beside the
+//     hatch minigame's prize — is its only accelerator (Game::registerNetwork);
+//     it gives the otherwise-inert Boot stage something to do. Vitals are FROZEN
+//     while an egg.
 // First-cut durations (balance TBD). Timer is game-ms, persisted (v9).
 constexpr uint32_t kBootHatchMs           = 30u * 60u * 1000u;  // full incubation (~30 min)
-constexpr uint32_t kBootHatchStepAccelMs  = 1u * 1000u;        // -1 s per explore step
 constexpr uint32_t kBootHatchNetworkAccelMs = 60u * 1000u;     // -1 min per new network
 
 // --- Hatch reveal. The home stretch of ANY incubation: with this
@@ -272,7 +271,6 @@ constexpr int kCombatBaseSpeed = 10;       // a pet's base initiative speed
 // (equal speed alternates strictly). Sized so base-speed pets act every few gauge ticks
 // and a per-point speed edge shifts the action share smoothly.
 constexpr int kSpeedActionThreshold = 100;
-constexpr int kCombatBeats = 2;            // result-beat hold before B/C dismiss
 constexpr int kFleeChancePct = 50;         // wild flee success (Sim quits free)
 // The A+C Exploit override allowance per fight. One use
 // per battle in v1; a rare reward item (shipped later) raises it — the knob is
@@ -560,16 +558,6 @@ constexpr int kLevelSpeedAdrenalinePerStep = 1;    // ...this much initiative, l
 // carrying both spends the tier and keeps the item.
 constexpr int kLevelHealthScrubPct = 3;        // T2: % of max Health healed each turn
                                                // T3 (failover) is a flag, not a magnitude
-
-// What a SEIZED move hits for in Ransomware hands, as a % of the wall the pet is standing
-// behind (Combatant::stackDefenseBonus, RansomSeizure). This is the whole reason the seizure
-// is worth having: taking an attack for three turns is a small thing on its own, and
-// measured that way it moved nothing at all. What the line needed was a way to SPEND its
-// wall, because Cipher accumulates a damage cut and has nothing else to do with it — the
-// four one-attack-slot Daemons rank almost exactly by how far their line converts defence
-// into damage, and Ransomware was last with no conversion at all. The seized move is the
-// conversion: the ransom note is written in the pet's own encryption.
-constexpr int kRansomSeizedWallPct = 100;   // 100 = the full stacked cut, as bonus damage
 
 // Per-line combat PASSIVE constants (Ransom Lock, the Phishing steal-track floors +
 // Feed-Frenzy + Perfect Bite, Execution-Override + the Trojan trap cap) live beside
@@ -1100,6 +1088,13 @@ constexpr int kNetDiscoveryCacheUncommonPct   = 30;  //              30% uncommo
 constexpr int kHandshakeCaptureCacheUncommonPct = 50; // new handshake: 50% uncommon
 constexpr int kHandshakeCaptureCacheRarePct     = 30; //                30% rare
 constexpr int kHandshakeCaptureCacheEpicPct     = 20; //                20% epic
+// game_net.cpp rolls the LAST share of each set as the fall-through, so nothing reads
+// it — these asserts are what keep retuning one number from silently moving another.
+static_assert(kNetDiscoveryCacheCommonPct + kNetDiscoveryCacheUncommonPct == 100,
+              "new-network cache weights must sum to 100");
+static_assert(kHandshakeCaptureCacheUncommonPct + kHandshakeCaptureCacheRarePct +
+                  kHandshakeCaptureCacheEpicPct == 100,
+              "new-handshake cache weights must sum to 100");
 
 // Persistence (the save survives a reboot). Saves are
 //     debounced after a meaningful change and capped by a periodic autosave so
