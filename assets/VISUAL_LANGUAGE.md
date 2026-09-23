@@ -147,9 +147,20 @@ generator, each scanline smeared a column right, so the two share `kFontW` / `kF
 sourced bold arrives with its own advance, and every constant in `src/core/ui/layout.h` is
 built on this one. Switching face moves nothing and costs a layout nothing.
 
-**Reserve Bold for the one thing on a screen that outranks the rest.** Today that is the
-header band's title and nothing else — emphasis stops meaning anything the moment two things
-claim it. Position and `Pal::INK` vs `INK_DIM` still carry the rest.
+**Reserve Bold for the one thing on a screen that outranks the rest.** Emphasis stops meaning
+anything the moment two things claim it; position and `Pal::INK` vs `INK_DIM` carry the rest.
+The header band's title (`drawHeaderBand`) is the claim every screen makes. Two places make a
+second claim, each deliberately and with its reason at the call site, and neither is settled:
+
+- **The CREW screens** (`game_crew.cpp`) set the side, crew and Exploit names at "title
+  weight". On the CREW home that is four Bold lines, and the coloured names outweigh the
+  header they sit under. On the side roster Bold is what separates a crew's name from its
+  Exploit tag, both `INK`, which is the job every other roster gives to `INK` vs `INK_DIM`.
+- **The Decryptogram status line** (`cryptogram_screen.cpp`), the one line that says what the
+  buttons want.
+
+Whether either keeps it is an open call (`docs/MASTER_TODO.md` §1b). Until it is made, a new
+screen should not cite them as precedent.
 
 The smear is not free on the 7 cells that already span the box (`% @ M W _ m w`); they
 thicken into their own counters, and `_` loses its rightmost column. The generated table names
@@ -239,9 +250,10 @@ carries it in grayscale; the colour is emphasis on top.
 
 **One action line, last.** The verdict — the cursor plus a verb, or the reason there is no
 verb — is the last line of the page. Last in READING ORDER, not pinned to the panel's
-floor: `item_detail` flows its HAVE/action pair under whatever the readout and prose
-actually drew (`drawSpecSheet` reports it), clamped at the reserve so a full panel lands
-where it always did. A short description would otherwise leave most of the screen standing
+floor: `item_detail` flows its HAVE/action pair, and `mod_detail` its SLOT/gates/action
+group, under whatever the readout and prose actually drew (`drawSpecSheet` reports it; a
+ONE-SHOT caveat hangs off the prose and counts as part of it), clamped at the reserve so a
+full panel lands where it always did. A short description would otherwise leave most of the screen standing
 open between the block and its own verdict, which reads as two islands rather than one
 page. The pair's y therefore varies by row; the gap above it does not. **Stated exception:**
 `maint_detail` has a second
@@ -249,6 +261,24 @@ action zone above it, the QUICK/TOOL/STACKER picker, because it is the one detai
 whose action takes a parameter. The picker is fenced off by pitch (22px above its first row
 and 28px below its last, against the 18px its rows keep between themselves); the bottom
 line still holds the verdict.
+
+### 4.2 Hint lines
+
+The line naming what the buttons do is drawn one of two ways, one per face:
+
+- **Pet face: `drawHintBand`.** A filled `track` strip across the bottom 16px
+  (`kHintBandH`), the copy centred in `ink`, words run together without dashes
+  (`A NEXT  B OPEN  C BACK`). `tools/check_hint_bands.py` measures every band's copy
+  against the canvas.
+- **Hacker face: a rule at `kActiveH - 26` and the verbs at `kActiveH - 20`.** No fill; the
+  secondary verbs `ink-dim` at the left, the one verb the screen exists for right-aligned in
+  `accent` (dimmed when it can't fire right now). It is drawn inline in each `game_*.cpp`
+  unit rather than through a widget.
+
+**The exception rule.** A gesture that an upgrade grants is advertised only once the upgrade
+is owned, so an unowned player's screen is pixel-identical to one where the upgrade never
+existed. The ITEMS list (filter/type hints) and VAULT (bulk open) apply it; a screen whose
+only gestures are an upgrade's therefore has no hint line at all until then.
 
 ---
 

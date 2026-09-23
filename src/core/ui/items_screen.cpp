@@ -307,8 +307,7 @@ void drawItemTypePicker(Framebuffer& fb, const std::vector<ItemPickRow>& tiles,
                  y + (kPickRowH - kFontH) / 2, qty, ink);
     }
 
-    fb.fillRect(0, kActiveH - 16, kActiveW, 1, palColor(Pal::TRACK));
-    drawText(fb, kMargin, kActiveH - 12, "B - OPEN  C - BACK", palColor(Pal::INK_DIM));
+    drawHintBand(fb, "A NEXT  B OPEN  C BACK");
 }
 
 void drawItemsList(Framebuffer& fb, const std::vector<InvRow>& rows, int cursor,
@@ -336,18 +335,15 @@ void drawItemsList(Framebuffer& fb, const std::vector<InvRow>& rows, int cursor,
         listHeader(fb, base, sel, total);
     }
 
-    // The bottom hint band (exception rule) — each owned upgrade contributes its own
+    // The bottom hint band (exception rule, VISUAL_LANGUAGE §4.2) — each owned upgrade contributes its own
     // word, so an unowned player's ITEMS list carries no band at all. The Lockout
-    // context never routes through the picker, so it never offers "C - TYPES".
+    // context never routes through the picker, so it never offers "C TYPES".
     char hint[32] = "";
-    if (tabsOwned) std::snprintf(hint, sizeof(hint), "HOLD B - FILTER");
+    if (tabsOwned) std::snprintf(hint, sizeof(hint), "HOLD B FILTER");
     if (pickerOwned && !lockout)
         std::snprintf(hint + std::strlen(hint), sizeof(hint) - std::strlen(hint),
-                      "%sC - TYPES", tabsOwned ? "  " : "");
-    if (hint[0]) {
-        fb.fillRect(0, kActiveH - 16, kActiveW, 1, palColor(Pal::TRACK));
-        drawText(fb, kMargin, kActiveH - 12, hint, palColor(Pal::INK_DIM));
-    }
+                      "%sC TYPES", tabsOwned ? "  " : "");
+    if (hint[0]) drawHintBand(fb, hint);
 
     if (rows.empty()) {
         const char* msg = filter != ItemFilter::All ? "- NO MATCHING ITEMS -"

@@ -50,7 +50,7 @@ exception is the one to apply honestly: **count the `case` labels before grantin
 `switch` over a vocabulary is fine; a long if-chain is accumulated special cases wearing the same
 length, and the two are indistinguishable by line count alone.
 
-### Design consistency pass — Last run: 2026-08-15
+### Design consistency pass — Last run: 2026-09-23
 Spot-check shipped screens against the system they're authored to (`assets/VISUAL_LANGUAGE.md`,
 `assets/CREATURE_VISUAL_RULES.md`) and against each other — a screen that solves a problem its
 siblings solve differently is the drift worth catching. Fix the standard to match reality, or if

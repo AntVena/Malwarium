@@ -89,18 +89,12 @@ decision that caused it, which is why it wants a pass rather than a fix.
 
 The pass: walk every screen, name which lever each distinction is currently using, and check
 that the page's most important separation is not the one paying in space. Where the levers
-stand today — `drawHeaderBand` is the only thing claiming Bold; VISUAL_LANGUAGE §4.1's
+stand today — `drawHeaderBand` claims Bold everywhere, and the CREW screens and the
+Decryptogram status line claim it a second time (VISUAL_LANGUAGE §2.3 names them; whether
+they keep it is the open call here); VISUAL_LANGUAGE §4.1's
 dim-means-READOUT split is the detail pages' free lever and the one that survives grayscale;
 the STAT LOADOUT group seams are space spent deliberately, on the page with the least of it.
 Diff **M**, taste before code.
-
-- **MODS detail pins its footer to the floor.** `kDetailSlotY` (`mods_screen.cpp`) puts SLOT /
-  HAVE, the REQUIRES gates and the action line at a fixed y whatever the prose above ran to,
-  so a short description leaves a dead band mid-screen while the footer stacks four rows
-  tight against the hint band (the ONE-SHOT caveat sits in the band, alone). The footer is
-  the group a reader must not lose, and it gets no air; the empty band separates nothing.
-  Flowing it up under the prose, as the ITEMS detail's HAVE / USE block already does, moves
-  the space to the seam it belongs at. Diff **S**.
 
 ### 1c. Evolution routing — one weighted edge list per creature
 

@@ -63,11 +63,16 @@ constexpr int kDetailProseLines = 5;
 // tighter than the prose pitch above them, with the panel's unfilled reserve as the gap
 // that fences the group off. Spacing them unevenly is what made the dim SLOT/HAVE row
 // read as a tail of the block above rather than the head of this one. Same footer pitch
-// drawItemDetail stacks its HAVE/action pair on, so the two detail pages agree. The page
-// has no hint band, so the group takes what it needs off the bottom.
+// drawItemDetail stacks its HAVE/action pair on, so the two detail pages agree.
+//
+// And the same flow (VISUAL_LANGUAGE §4.1): the group follows what the panel actually
+// drew by kDetailFooterGap, clamped at kDetailSlotY, so a full panel lands where it
+// always did and a short description no longer leaves a dead band between the block
+// and its own verdict. The clamp also keeps a line-gated mod's fourth footer row clear
+// of the C BACK band.
 constexpr int kDetailFooterPitch = kFontH + 4;
+constexpr int kDetailFooterGap = 14;
 constexpr int kDetailSlotY = 160;
-constexpr int kDetailGateY = kDetailSlotY + kDetailFooterPitch;
 
 } // namespace
 
@@ -354,12 +359,16 @@ void drawModDetail(Framebuffer& fb, const ContentRegistry& reg, const Loadout& l
         drawSpecSheet(fb, kMargin, 56, kActiveW - 2 * kMargin, proseFloor, sheet).endY;
 
     // ONE-SHOT flag — a consumed-on-trigger mod carries a distinct, grayscale-safe
-    // caveat line (the word itself is the channel; HOT tints it too). It sits at a
-    // fixed y so short descriptions all agree on where to look, but a long one
-    // pushes it down rather than being written over.
-    if (mod.oneShot)
-        drawText(fb, kMargin, std::max(138, afterStats + 4),
-                 "ONE-SHOT: CONSUMED ON USE", palColor(Pal::HOT));
+    // caveat line (the word itself is the channel; HOT tints it too). It is a caveat ON
+    // the description, so it hangs directly under it rather than at a fixed y of its
+    // own, and the footer below measures from it.
+    int contentEnd = afterStats;
+    if (mod.oneShot) {
+        drawText(fb, kMargin, afterStats + 4, "ONE-SHOT: CONSUMED ON USE",
+                 palColor(Pal::HOT));
+        contentEnd = afterStats + 4 + kFontH;
+    }
+    const int slotY = std::min(kDetailSlotY, contentEnd + kDetailFooterGap);
 
     // Target slot readout + the rolled equip-LEVEL gate + the hard line gate
     // (niche-flavour pass, ModDef::requiresLine) + the one-slot-per-pet gate
@@ -374,7 +383,7 @@ void drawModDetail(Framebuffer& fb, const ContentRegistry& reg, const Loadout& l
     const bool locked = levelLocked || wrongLine || inOtherSlot;
     char slotLbl[16];
     std::snprintf(slotLbl, sizeof(slotLbl), "SLOT %d", slot + 1);
-    drawText(fb, kMargin, kDetailSlotY, slotLbl, palColor(Pal::INK_DIM));
+    drawText(fb, kMargin, slotY, slotLbl, palColor(Pal::INK_DIM));
     // Held spares against the cap that bounds them. ITEMS says "HAVE xN" because an
     // inventory stack has no ceiling; a mod pool does, and a player at it needs to see
     // that the number stopped climbing on purpose — that is the MOD STORAGE row's whole
@@ -382,11 +391,11 @@ void drawModDetail(Framebuffer& fb, const ContentRegistry& reg, const Loadout& l
     char have[16];
     const int held = load.countOf(mod.id);
     std::snprintf(have, sizeof(have), "HAVE %d/%d", held, storageCap);
-    drawText(fb, kActiveW - kMargin - textWidth(have), kDetailSlotY, have,
+    drawText(fb, kActiveW - kMargin - textWidth(have), slotY, have,
              held >= storageCap ? palColor(Pal::WARN) : palColor(Pal::INK_DIM));
     char req[24];
     std::snprintf(req, sizeof(req), "REQUIRES LVL %d", reqLevel);
-    int y = kDetailGateY;
+    int y = slotY + kDetailFooterPitch;
     drawText(fb, kMargin, y, req, levelLocked ? palColor(Pal::HOT) : palColor(Pal::INK_DIM));
     y += kDetailFooterPitch;
     if (mod.requiresLine) {

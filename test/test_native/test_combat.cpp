@@ -724,8 +724,10 @@ void test_mods_overwrite_confirm() {
 }
 
 // the mod detail spells out the effect + flags a ONE-SHOT. The one-shot
-// caveat line (y~130) is drawn for a consumed-on-trigger mod and absent otherwise —
-// the grayscale-safe channel that distinguishes the two mod kinds.
+// caveat line is drawn for a consumed-on-trigger mod and absent otherwise —
+// the grayscale-safe channel that distinguishes the two mod kinds. It hangs off the
+// prose, so its y follows the description; what identifies it is that it is the only
+// HOT text on a page where no gate is failing (level 0 against a level-0 pet).
 void test_mod_detail_oneshot() {
     ContentRegistry r = ContentRegistry::embedded();
     const ModDef* oneShot = r.mod("raid_mirror");        // oneShot == true
@@ -742,10 +744,16 @@ void test_mod_detail_oneshot() {
                   /*reqLevel=*/0, /*petLevel=*/0, /*petLine=*/nullptr,
                   /*storageCap=*/kModCopyCapBase, /*beat=*/0);
     CHECK(anyNonPaper(os, 0, 0, kActiveW, kActiveH));     // renders
-    // The ONE-SHOT line sits alone at y~130; present (non-paper ink) for the one-shot,
-    // blank (all paper) for the reusable mod (whose effect text ends well above it).
-    CHECK(anyNonPaper(os, 0, 128, kActiveW, 140));
-    CHECK(!anyNonPaper(ru, 0, 128, kActiveW, 140));
+    // Below the icon/name row, so a sprite's own colours can't stand in for the text.
+    const auto anyHot = [](const Framebuffer& fb) {
+        const Rgb565 hot = palColor(Pal::HOT);
+        for (int y = 56; y < kActiveH; ++y)
+            for (int x = 0; x < kActiveW; ++x)
+                if (fb.get(x, y) == hot) return true;
+        return false;
+    };
+    CHECK(anyHot(os));
+    CHECK(!anyHot(ru));
 }
 
 // A mod holds at most one slot per pet: equip() refuses to install an id already

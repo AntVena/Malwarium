@@ -111,8 +111,8 @@ LifetimeMark lifetimeMark(const ItemDef& d, const PetLifetimeGates& gates);
 // "best first" claim is checkable on the row, in grayscale.
 // `tabsOwned`/`pickerOwned` are the two Rig Shop filter rows: EITHER puts the
 // active-tab chip in the header (you always know which category you're looking at),
-// and each contributes its own word to the bottom hint band — "HOLD B - FILTER" for
-// the gesture, "C - TYPES" for the walk back to the tiles. With neither owned the
+// and each contributes its own word to the bottom hint band — "HOLD B FILTER" for
+// the gesture, "C TYPES" for the walk back to the tiles. With neither owned the
 // list is pixel-identical to a rig that has bought no filter upgrade at all.
 // `gates` (Game::petLifetimeGates) marks the rows carrying a once-per-pet grant with a
 // solid pip for one this pet can still take and a hollow one for a grant already spent —

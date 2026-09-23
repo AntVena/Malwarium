@@ -789,8 +789,8 @@ void Game::drawHackerSubmenu(Framebuffer& fb) const {
         const bool ticket = rows[sel]->use == ItemDef::Use::PlayCryptogram;
         drawText(fb, kMargin, kActiveH - 20, ticket ? "B PLAY" : "B DECRYPT",
                  palColor(Pal::ACCENT));
-        // e hint (exception rule) — only once owned, so an unowned
-        // player's VAULT is pixel-identical to before this upgrade existed. Never on a
+        // The bulk-open hint (exception rule, VISUAL_LANGUAGE §4.2) — only once owned,
+        // so an unowned player's VAULT is pixel-identical to before this upgrade existed. Never on a
         // ticket row, which has no bulk gesture to advertise.
         if (bulkOpenUnlocked() && !ticket)
             drawText(fb, kActiveW - kMargin - textWidth("HOLD - OPEN ALL"),
