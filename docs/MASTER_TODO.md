@@ -89,9 +89,9 @@ decision that caused it, which is why it wants a pass rather than a fix.
 
 The pass: walk every screen, name which lever each distinction is currently using, and check
 that the page's most important separation is not the one paying in space. Where the levers
-stand today — `drawHeaderBand` claims Bold everywhere, and the CREW screens and the
-Decryptogram status line claim it a second time (VISUAL_LANGUAGE §2.3 names them; whether
-they keep it is the open call here); VISUAL_LANGUAGE §4.1's
+stand today — `drawHeaderBand` claims Bold everywhere, and a second claim is allowed only
+where grayscale fails without it (VISUAL_LANGUAGE §2.3 states the test and the three places
+that pass it); VISUAL_LANGUAGE §4.1's
 dim-means-READOUT split is the detail pages' free lever and the one that survives grayscale;
 the STAT LOADOUT group seams are space spent deliberately, on the page with the least of it.
 Diff **M**, taste before code.

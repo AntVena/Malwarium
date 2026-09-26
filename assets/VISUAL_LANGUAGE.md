@@ -149,18 +149,22 @@ built on this one. Switching face moves nothing and costs a layout nothing.
 
 **Reserve Bold for the one thing on a screen that outranks the rest.** Emphasis stops meaning
 anything the moment two things claim it; position and `Pal::INK` vs `INK_DIM` carry the rest.
-The header band's title (`drawHeaderBand`) is the claim every screen makes. Two places make a
-second claim, each deliberately and with its reason at the call site, and neither is settled:
+The header band's title (`drawHeaderBand`) is the claim every screen makes. A second claim
+has to earn its place the same way: **Bold is allowed where the grayscale test (§1.3) fails
+without it**, i.e. where the line that should lead is drawn in a colour that desaturates to
+the level of the text it heads. Three places pass that test today, each with its reason at
+the call site:
 
-- **The CREW screens** (`game_crew.cpp`) set the side, crew and Exploit names at "title
-  weight". On the CREW home that is four Bold lines, and the coloured names outweigh the
-  header they sit under. On the side roster Bold is what separates a crew's name from its
-  Exploit tag, both `INK`, which is the job every other roster gives to `INK` vs `INK_DIM`.
+- **The CREW side roster** (`drawCrewTeam`): the focused crew's name is side-coloured, and
+  in grayscale Blue lands at the motto's `ink-dim` level.
+- **The CREW detail's Exploit name** (`drawCrewDetail`): `accent` over `ink` prose, which in
+  grayscale sits between the prose and the dim readout above it.
 - **The Decryptogram status line** (`cryptogram_screen.cpp`), the one line that says what the
   buttons want.
 
-Whether either keeps it is an open call (`docs/MASTER_TODO.md` §1b). Until it is made, a new
-screen should not cite them as precedent.
+Where colour and position already separate the lines, Bold is not the lever: the CREW home
+names its crew and its two sides in Regular for that reason. "Another screen uses Bold" is
+never the reason on its own.
 
 The smear is not free on the 7 cells that already span the box (`% @ M W _ m w`); they
 thicken into their own counters, and `_` loses its rightmost column. The generated table names

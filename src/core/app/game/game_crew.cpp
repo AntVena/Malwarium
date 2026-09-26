@@ -349,10 +349,11 @@ void Game::drawCrewHub(Framebuffer& fb) const {
         drawSpriteTinted(fb, red ? ASSET_ICON_TEAM_RED : ASSET_ICON_TEAM_BLUE, 0, cx,
                          kCardTextTop - 2, side);
         const int tx = cx + kGlyph + 6;
-        // The name at title weight, in the side's colour, with the whole card to run
-        // in — the one line on this screen that is purely who you are.
+        // The name in the side's colour, with the whole card to run in — the one line
+        // on this screen that is purely who you are. Regular weight: colour and the
+        // card's top line already carry it, and Bold here only outranked the header.
         drawTextMarquee(fb, tx, kCardTextTop, cRight - tx, mine->displayName, side,
-                        beat_, /*scroll=*/true, FontFace::Bold);
+                        beat_, /*scroll=*/true);
         // The side spelled out beside its glyph (never the tint alone), against what
         // the Exploit meters.
         char tag[16];
@@ -367,8 +368,7 @@ void Game::drawCrewHub(Framebuffer& fb) const {
         // The same three lines, so the two side rows never move under the cursor when
         // membership changes — and the empty state says what to do about it, in the
         // order it has to be done.
-        drawText(fb, cx, kCardTextTop, "UNAFFILIATED", palColor(Pal::INK_DIM), 1,
-                 FontFace::Bold);
+        drawText(fb, cx, kCardTextTop, "UNAFFILIATED", palColor(Pal::INK_DIM));
         drawText(fb, cx, kCardTextTop + kLineH, "no crew, no exploit",
                  palColor(Pal::INK_DIM));
         drawText(fb, cx, kCardTextTop + kLineH * 2,
@@ -389,9 +389,9 @@ void Game::drawCrewHub(Framebuffer& fb) const {
         drawSpriteTinted(fb, red ? ASSET_ICON_TEAM_RED : ASSET_ICON_TEAM_BLUE, 0,
                          kMargin + 8, y, side);
         const int nameX = kMargin + 8 + kGlyph + 8;
-        // Title weight for the side, because on this screen the side IS the heading —
-        // the row under it is the caption.
-        drawText(fb, nameX, y + 2, crewTeamName(team), side, 1, FontFace::Bold);
+        // The side is the row's heading and the line under it the caption: bright in
+        // the side's colour over INK_DIM, the split every other roster uses.
+        drawText(fb, nameX, y + 2, crewTeamName(team), side);
         char sub[32];
         const int n = crewTeamCount(team);
         std::snprintf(sub, sizeof(sub), "%s - %d CREW%s", crewTeamDoctrine(team), n,
@@ -513,7 +513,10 @@ void Game::drawCrewTeam(Framebuffer& fb) const {
         // clipping.
         const int tx = kMargin + 10;
         const int w = kActiveW - kMargin - tx;
-        // 1 — the name, at title weight and in the side's colour while focused.
+        // 1 — the name, at title weight and in the side's colour while focused. Bold is
+        // earned here (VISUAL_LANGUAGE §2.3): the focused name is side-coloured, and in
+        // grayscale that colour sits at the motto's dim level — weight is what keeps it
+        // the row's heading.
         drawTextMarquee(fb, tx, y, w, c.displayName, s ? side : palColor(Pal::INK),
                         beat_, s, FontFace::Bold);
         // 2 — the motto, which is the crew's whole character and the reason to read
@@ -573,6 +576,8 @@ void Game::drawCrewDetail(Framebuffer& fb) const {
     crewExploitLabel(tag, sizeof(tag), c->exploit.kind, c->exploit.magnitude);
     drawLabelValue(fb, kMargin, kDetailExploitY, "EXPLOIT", palColor(Pal::INK_DIM), tag,
                    palColor(Pal::INK), beat_, /*scroll=*/false);
+    // Bold earned (VISUAL_LANGUAGE §2.3): the name heads the prose under it, and in
+    // grayscale its accent lands between that prose and the dim readout above.
     drawTextMarquee(fb, kMargin, kDetailExploitY + kLineH, kActiveW - 2 * kMargin,
                     c->exploit.name, palColor(Pal::ACCENT), beat_, /*scroll=*/true,
                     FontFace::Bold);
