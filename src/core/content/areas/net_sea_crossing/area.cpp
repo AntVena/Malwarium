@@ -63,9 +63,9 @@ const ShopListingDef kModShopListings[] = {
 // the stack (damage over time, armour, max Health), and its panel says so.
 const StoryPanelDef kIntroPanels[] = {
     {"THE NET-SEA",
-     "The Net-Sea is open water, a week across by ferry. You take the slow boat out of the "
-     "Bayou, because the cable you are following runs along the sea floor right under its "
-     "route."},
+     "The Net-Sea is open water, a week across by ferry. You board the ferry out of "
+     "the Bayou, because the cable you are following runs along the sea floor right "
+     "under its route."},
     {"THE SEA-NET",
      "Out here the only connection is the sea-net: a chain of relay buoys, each run by "
      "whichever company put it there. Using one is free, as long as you accept whatever "
@@ -82,32 +82,36 @@ const StoryPanelDef kIntroPanels[] = {
 
 const StoryPanelDef kBossIntroPanels[] = {
     {"THE FAR SHORE",
-     "A week later the ferry reaches the far shore, where the cable comes up into a relay "
-     "station. The glitch in it is worse here than it was at the Bayou."},
+     "A week later the ferry reaches the far shore, where the cable comes up into a "
+     "relay station. Every convoy that crosses the sea-net passes through it, Cracker's "
+     "orders included."},
     {"THE BLUE CREW",
-     "A blue Crew, the kind that defends networks for a living, has been clearing junk off "
-     "the sea-net for months and is barely keeping up. They are glad of the help."},
+     "A blue Crew, the kind that defends networks for a living, runs the station. They "
+     "have spent months pulling junk off the convoys and cannot keep up, because "
+     "something keeps loading more on."},
     {"ADMIRAL CONDUIT",
-     "Everything on the sea-net travels in convoys, and the one running them is Admiral "
-     "Conduit, adware grown fat on years of traffic. Cracker's stolen orders crossed on "
-     "its convoys."},
+     "That something is Admiral Conduit, adware grown fat on years of traffic, which "
+     "now decides what every convoy carries. The Crew cannot get near it. With your "
+     "pet, you can."},
     {"NEVER ALONE",
-     "Nothing on the sea-net arrives alone, and neither do Conduit's attacks. Each one "
-     "drops a stack of junk on your pet that hurts for a few turns, weakens its armour "
-     "and cuts its max Health."},
+     "Nothing on the sea-net arrives alone, and Conduit's worst attack is no "
+     "different: a whole stack of junk that hurts your pet for a few turns, weakens "
+     "its armour and cuts its max Health."},
 };
 
 const StoryPanelDef kBossOutroPanels[] = {
-    {"THE SAME LANGUAGE",
-     "Conduit comes apart slowly. As it goes, it is sending to something else on the "
-     "network, in the same language the Baron and Cracker used."},
+    {"THE THIRD TIME",
+     "As Conduit comes apart it sends a message in the language the Baron and Cracker "
+     "used. That is three different malbeasts now, in three different places, and none "
+     "of them were talking to you."},
     {"THE CONVOY LOG",
-     "Its convoy log shows where the junk came from: forty different networks with no "
-     "link to each other, and every one of them carrying the same kind of malbeast."},
+     "The convoy log shows where Conduit's junk came from: forty networks with no link "
+     "to each other. Every one of them had a malbeast aboard that talks in that same "
+     "language."},
     {"NOBODY IN CHARGE",
-     "Nobody is organising this. Malbeasts all over the 'net are turning bad on their "
-     "own, in places that have never been in touch. The one thing they share is who they "
-     "talk to."},
+     "So nobody is organising the surge. It is breaking out in forty places at once, "
+     "with no one passing orders between them. What those malbeasts share is who they "
+     "are talking to."},
 };
 
 const StoryPanelDef kAreaOutroPanels[] = {
