@@ -1109,8 +1109,9 @@ bool Combat::bubbleBiteRolls(Stage stage) {
 
 int stunLandPct(const Combatant& c) {
     if (c.lockResist <= 0) return 100;
-    const int pct = 100 - c.lockResist * kLockResistStepPct;
-    return pct < kLockResistFloorPct ? kLockResistFloorPct : pct;
+    // The curve never reaches zero; the clamp only stops rounding from getting there.
+    const int pct = defendedDamage(100, c.lockResist * kLockResistRatingPerPoint);
+    return pct < 1 ? 1 : pct;
 }
 
 bool Combat::stunLands(const Combatant& target) {

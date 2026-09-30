@@ -1328,13 +1328,20 @@ void test_mod_watchdog_timer() {
 // so a chain-stunned fighter is never locked out of its own fight with no way back.
 void test_stun_chain_resistance() {
     ContentRegistry r = ContentRegistry::embedded();
-    // The odds themselves, off the combatant: full chance with a clean pile, falling per
-    // banked point and floored so a stun never becomes impossible to land.
+    // The odds themselves, off the combatant: full chance with a clean pile, then the
+    // Defence curve — every banked point still pays, and none makes a stun impossible.
     Combatant c = mkCombatant(r, "P", 100, 12, {"quick_jab"});
     CHECK(stunLandPct(c) == 100);
-    c.lockResist = 1;  CHECK(stunLandPct(c) == 100 - kLockResistStepPct);
-    c.lockResist = 2;  CHECK(stunLandPct(c) == 100 - 2 * kLockResistStepPct);
-    c.lockResist = 9;  CHECK(stunLandPct(c) == kLockResistFloorPct);
+    c.lockResist = 1;  CHECK(stunLandPct(c) == defendedDamage(100, kLockResistRatingPerPoint));
+    c.lockResist = 2;  CHECK(stunLandPct(c) == defendedDamage(100, 2 * kLockResistRatingPerPoint));
+    int prev = 100;
+    for (int k = 1; k <= 60; ++k) {
+        c.lockResist = k;
+        CHECK(stunLandPct(c) <= prev);
+        CHECK(stunLandPct(c) >= 1);
+        prev = stunLandPct(c);
+    }
+    c.lockResist = 1000; CHECK(stunLandPct(c) == 1);
     // Ratchet: a landed 2-turn stun banks 2 points on the VICTIM...
     Combatant p = mkCombatant(r, "P", 100, 5, {"quick_jab"});             // slow → stunned
     Combatant e = mkCombatant(r, "E", 100, 12, {"system_hang"});          // lockTurns 2, first
@@ -1342,13 +1349,20 @@ void test_stun_chain_resistance() {
     cb.step();                                                            // enemy stuns the pet
     CHECK(cb.player().lockedTurnsLeft == 2);
     CHECK(cb.player().lockResist == 2);
-    // ...which the two BURNED turns leave alone, and the first turn the pet actually
-    // spends fighting pays one back.
+    // ...which the two BURNED turns leave alone...
     int guard = 0;
     while (cb.player().lockedTurnsLeft > 0 && guard++ < 20) cb.step();
     CHECK(cb.player().lockResist == 2);                                   // burnt turns pay nothing
-    while (cb.player().lockResist == 2 && guard++ < 20) cb.step();
-    CHECK(cb.player().lockResist == 1);
+    // ...and the first turn the pet actually spends fighting pays one back. Against an
+    // enemy that cannot re-stun, so no seed can land a second lock over the shed.
+    {
+        Combatant sp = mkCombatant(r, "P", 100, 12, {"quick_jab"});       // faster → acts first
+        sp.lockResist = 2;
+        Combatant se = mkCombatant(r, "E", 100, 5, {"quick_jab"});
+        Combat sc; sc.begin(sp, se, Combat::Stakes::Safe, 5);
+        sc.step();
+        CHECK(sc.player().lockResist == 1);
+    }
     // The roll itself: against a pet already carrying resistance the same stun sometimes
     // lands and sometimes doesn't — and the hit that fails to freeze still does its damage.
     int landed = 0, missed = 0;

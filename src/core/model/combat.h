@@ -404,8 +404,8 @@ int wormReplicaCount(const Combatant& c, bool defenders);
 bool braceOnlyDefend(const MoveDef& m);
 
 // The odds a stun rider aimed at `c` right now would freeze it: 100 while it holds no lock
-// resistance, falling kLockResistStepPct per banked point and never past
-// kLockResistFloorPct. The combat screen reads out what Combat::stunLands rolls against.
+// resistance, then the Defence curve at kLockResistRatingPerPoint per banked point — never
+// below 1. The combat screen reads out what Combat::stunLands rolls against.
 int stunLandPct(const Combatant& c);
 
 // The Phishing pool siphon, 0..kPhishPoolSiphonMaxPct: what the LIVE Obfuscation pool adds

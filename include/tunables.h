@@ -280,12 +280,14 @@ constexpr int kExploitUsesPerBattle = 1;
 // STUN chaining (Combat::stunLands). A landed stun (MoveDef::lockTurns) ratchets the
 // victim's lock resistance by the turns it actually froze, and every turn the victim
 // spends acting sheds one of them back; the next stun rolls against what is left. So the
-// first lock is free, the one that comes straight back onto it is a maybe, and the one
-// after that mostly just a hit — a chain-stunned fighter always fights its way out,
-// without a stun ever becoming a thing an attacker cannot land. The floor is what keeps
-// the rider real: a pet that has eaten four locks can still be frozen by the fifth.
-constexpr int kLockResistStepPct = 40;   // land chance lost per stacked resist point
-constexpr int kLockResistFloorPct = 15;  // ...and the chance a stun never drops below
+// first lock is free, the one that comes straight back onto it is a coin flip, and the
+// ones after that mostly just hits — a chain-stunned fighter always fights its way out.
+//
+// The odds run on the DEFENCE CURVE (defendedDamage), each banked point worth this much
+// rating: 1 point lands half of stuns, 2 a third, 3 a quarter. That curve approaches zero
+// and never reaches it, so a stun never becomes a thing an attacker cannot land — no floor
+// is needed to promise that, and every further point still pays instead of hitting one.
+constexpr int kLockResistRatingPerPoint = 100;  // Defence-curve rating per resist point
 // A BOSS starts every fight on this much lock resistance and never sheds below it
 // (Combatant::lockResistFloor). A boss has no mod to clamp a freeze and no Exploit to buy
 // out of one, so without it a long lock was a free turn to re-cast the moment it lifted —
