@@ -66,26 +66,32 @@ const ShopListingDef kModShopListings[] = {
 // The Moors says outright what the ape, Cracker and Conduit were talking to: the host
 // Morris counted that no one built. Nothing later has to decode it.
 const StoryPanelDef kIntroPanels[] = {
-    {"SEEDER SHALLOWS",
-     "The cable comes ashore in the Napstorrent Moors, the old file-sharing country. The "
-     "shares out here are still running, seeding files to people who stopped downloading "
-     "years ago."},
-    {"YOU HAVE MAIL",
-     "Your Malwarium starts filling up with chain letters the moment you arrive. The Moors "
-     "is worm country, and every worm out here spreads the same way: by mail, one copy "
-     "per contact."},
+    {"OFF THE GRID",
+     "The Napstorrent Moors are wet, empty country: a few farms and villages, and no "
+     "proper network. Nobody ever ran a line out here, so every device just talks to "
+     "whichever neighbour is in range."},
+    {"PEER TO PEER",
+     "Files get passed along the same way, house to house and farm to farm, each copy "
+     "made from the last. Through your implant you can see it: thin threads of traffic "
+     "strung across the bog."},
+    {"WORM COUNTRY",
+     "That is perfect ground for worms. A worm copies itself into every file it touches, "
+     "so one bad file reaches the whole moor in a day. Soon your Malwarium is full of "
+     "infected chain letters."},
     {"INFECTIONS",
-     "Worms do not hit hard. They infect. A bite here keeps doing damage for a few turns "
-     "after it lands, so even a fight you are winning can wear your pet down."},
-    {"FOLLOW THE CABLE",
-     "The cable crosses the whole marsh to Castle Rapidscare. Every worm on the way is a "
-     "copy of an older one, and the oldest of them all sits right on top of the line."},
+     "Most malbeasts here carry a worm, so a bite is never just a bite. It leaves an "
+     "infection that keeps hurting your pet for a few turns after the hit, even when the "
+     "fight is going your way."},
 };
 
 const StoryPanelDef kBossIntroPanels[] = {
+    {"THE CAUSEWAY",
+     "The cable you have been following crosses the moor on an old causeway. Every worm "
+     "you beat out here fled along it, back to the one worm they were all copied from."},
     {"MORRIS THE WYRM",
-     "Morris the Wyrm is the first worm the 'net ever had. Every keeper you beat out here "
-     "was one of its copies, and they all ran back to it at Castle Causeway."},
+     "Morris the Wyrm is the oldest worm there is, older than most of the 'net. The moor's "
+     "patchwork network never had anything to clear it out, so it has lived here ever "
+     "since."},
     {"WHAT IT WAS FOR",
      "Morris was built to count the machines on the network. It did that by copying "
      "itself into each one, so fast that it crashed most of them. It is still counting."},
@@ -96,26 +102,28 @@ const StoryPanelDef kBossIntroPanels[] = {
 
 const StoryPanelDef kBossOutroPanels[] = {
     {"THE COUNT",
-     "Morris goes down and its count spills out: every machine it ever reached, all the "
-     "way back to the first network. Your Malwarium reads the whole list."},
+     "With Morris down, its count spills out, and your implant lets you read it: every "
+     "machine it ever got into, back to the first computers anyone ever networked."},
     {"ONE TOO MANY",
-     "The first network had a few thousand machines. Morris counted one more. The extra "
-     "machine has no address, and it was on the network before Morris existed."},
+     "The first network had a few thousand machines on it. Morris counted one more. That "
+     "one has no address, and it was already connected before Morris was written."},
     {"THE SOURCE",
-     "That machine is what the ape, Cracker and Conduit were all talking to. It never "
-     "spread through the 'net. It has been part of it from the very start."},
+     "That extra machine is what the ape, Cracker and Conduit were all talking to. It did "
+     "not get into the 'net from outside. It has been part of it from the very start."},
 };
 
 const StoryPanelDef kAreaOutroPanels[] = {
-    {"A REAL LETTER",
-     "When Morris goes, the chain letters stop. One real letter arrives after them, from "
-     "a Crew that has been following your progress since the Circuit."},
+    {"CLEAN FILES",
+     "With Morris gone the chain letters stop, and people on the moor start getting their "
+     "files back clean. One real letter arrives, from a Crew that has followed you since "
+     "the Circuit."},
     {"THE OFFER",
      "They cannot reach the Moors themselves, but they back operators who can. They are "
      "offering you a place with them, whenever you want to take it."},
     {"THE KEEP",
-     "The cable runs up Castle Causeway and into Castle Rapidscare, a file-locker keep "
-     "that never went offline. Whatever sent the ape is further down that line."},
+     "Past the causeway stands Castle Rapidscare, a huge old vault that stored other "
+     "people's files for a fee. It never shut down, and the cable runs straight in under "
+     "its gate."},
 };
 
 const AreaStoryDef kStory = {{
