@@ -1299,6 +1299,13 @@ inline int creatureHealthMultPct(const CreatureDef& d) {
     return 100;
 }
 
+// The standing DEF rating this row's branch carries. Good only: the durable branch pays
+// part of its survival in armour rather than body, so shred and pierce have something
+// to argue with. 0 for everything else, so the caller applies it unconditionally.
+inline int creatureBranchDefense(const CreatureDef& d) {
+    return creatureBranch(d) == CreatureBranch::Good ? kBranchGoodDefense : 0;
+}
+
 // FOOD -> BUFFS -> TOOLS -> QUEST: the inventory's fixed use-frequency order. Tools
 // sit under Buffs because a lever is reached for less often than a heal, and above
 // Quest because Quest is the band you are not choosing to open.

@@ -91,6 +91,7 @@ Combatant makePlayerCombatant(const ContentRegistry& reg, const CreatureDef& pet
     c.maxHealth = kMaxHealthByStage[stageIndex(pet.stage)] * creatureHealthMultPct(pet) / 100;
     c.health = c.maxHealth;
     c.bodyHealth = c.maxHealth;                     // the pet's own base, before any mod
+    c.defense += creatureBranchDefense(pet);        // the Good branch's armour half
     c.speed = kCombatBaseSpeed;
     // branch lean, scaled by the per-stage offensive multiplier so an
     // evolved pet's output keeps pace with tier-scaled enemy Health (4–8-exchange

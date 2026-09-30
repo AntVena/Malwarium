@@ -217,6 +217,7 @@ constexpr int kEvoFlashBeats = 2;   // FX_EVO_FLASH white-out, then the reveal
 // them any more than a levelled Health point can.
 constexpr int kBranchGoodPowerPct = 80;    // Good: lower attack power (durable)
 constexpr int kBranchGoodHealthPct = 170;  // ...and the body that pays for it back
+constexpr int kBranchGoodDefense = 0;      // ...plus standing DEF rating (Good only)
 constexpr int kBranchGoodFragPct = 70;     // Good: takes less loss-Frag
 constexpr int kBranchBadPowerPct = 135;    // Bad: higher attack power (glass cannon)
 constexpr int kBranchBadHealthPct = 100;   // ...on a stage-standard body, so the power IS
