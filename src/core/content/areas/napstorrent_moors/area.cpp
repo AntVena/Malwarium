@@ -97,9 +97,9 @@ const StoryPanelDef kBossIntroPanels[] = {
      "counts by copying itself onto each one, and it never learnt when to stop, so it is "
      "still going round the moor."},
     {"THE LONG WAY ROUND",
-     "Morris never comes straight at you. It works its way through every device nearby "
-     "first, which takes it a few turns, but by the time it reaches your pet it is in so "
-     "deep the damage drags on."},
+     "Morris never comes straight at you. It spends a few turns spreading through every "
+     "device around you, and does nothing else meanwhile. Then it lands all at once, "
+     "and the infection lingers."},
 };
 
 const StoryPanelDef kBossOutroPanels[] = {

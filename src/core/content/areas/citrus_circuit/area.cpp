@@ -58,61 +58,61 @@ const ShopListingDef kModShopListings[] = {
 // on the departure beat anyway.
 const StoryPanelDef kIntroPanels[] = {
     {"THE BEEP",
-     "You set out with your new Malwarium to walk the network around Citrus Circuit, "
-     "your usual stomping ground. Two steps in, it beeps. That is odd."},
+     "Citrus Circuit is an ordinary part of town: shops, flats, a tram line, and a "
+     "network nobody thinks about. You take your new Malwarium out for a walk round it, "
+     "and two steps in, it beeps."},
     {"THE COUNT",
-     "It does not stop beeping. The count climbs the whole way down the street. There "
-     "are more malbeasts in the Circuit today than you have seen here in a year, and "
-     "none of them are leaving."},
-    {"NOT BROKEN",
-     "The doors are shut too. Not broken - locked, by something that had the keys. "
-     "Every screen on the block shows the same grinning purple ape, and it wants paying "
-     "before anything opens."},
+     "The Malwarium shows you what the network is carrying, and today that is malbeasts: "
+     "more of them on your street than you would see here in a year, and the count keeps "
+     "climbing."},
+    {"LOCKED OUT",
+     "Shops and flats are locked out of their own systems. Every screen on the block shows "
+     "the same grinning purple ape, promising to put everything back once it has been "
+     "paid."},
     {"LEND A HAND",
-     "Install some mods. Check your pet's moves. Then lend a hand until a Crew can get "
-     "here. It is a good chance to work on your teamwork."},
+     "Someone has called in a Crew, the hackers people hire when a network goes bad, but "
+     "they are days away. Until then, you and your pet are the only help the block has "
+     "got."},
 };
 
 const StoryPanelDef kBossIntroPanels[] = {
     {"DOWNHILL",
-     "You cleared five stretches of the Circuit. Every keeper you beat broke off and ran "
-     "the same way, downhill, the way the Draw runs. Whatever they answer to is waiting "
-     "down there."},
+     "Every keeper you beat on the Circuit ran the same way, downhill along Dial-Up Draw. "
+     "Whatever they answer to is waiting at the bottom."},
     {"BARON BONZI",
-     "A ransomware cartel holds the Circuit's locks. The ape on the screens is what it "
-     "puts in front, and what it tells the whole block is: pay, and it will kindly put "
-     "everything back."},
+     "The ape has a name: Baron Bonzi, the face of the ransomware gang holding the "
+     "Circuit's locks. It started out as a cheerful desktop helper, and it still talks "
+     "like one while it robs you."},
     {"THE OPENING",
-     "Five of them, back to back, no rest between. Your Malwarium can force an opening "
-     "when your petware is cornered, but firing one costs a turn, and you do not get "
-     "many."},
+     "The gang comes at you five in a row, with no rest in between. Your Malwarium can "
+     "force an opening when your pet is cornered, but that costs a turn, and you only get "
+     "a few."},
 };
 
 const StoryPanelDef kBossOutroPanels[] = {
     {"UNINSTALLED",
-     "The ape comes apart mid-sentence. What it was saying was not aimed at you, and not "
-     "in any language the Circuit speaks."},
+     "As the Baron comes apart it is talking, but not to you. It is sending to something "
+     "else on the network, in a language your Malwarium cannot make out."},
     {"ON THE WAY OUT",
-     "Every lock on the block lets go. Doors open the length of the Flats and people come "
-     "out to look. You check your Bits on the way past. Nobody hired you, and it still "
-     "paid."},
+     "Every lock on the block lets go. Doors open along the street and people come out to "
+     "look. You check your Bits on the way home: nobody hired you, and it still paid."},
     {"TWO STREETS OVER",
-     "Your Malwarium does not stop counting. Two streets over the screens are still lit, "
-     "still the same ape, still asking to be paid. Whatever installed it here installed "
-     "it there too."},
+     "Your Malwarium keeps counting. Two streets over the screens are still lit, still "
+     "showing the same ape, still asking to be paid. Whatever put it here put it there "
+     "too."},
 };
 
 const StoryPanelDef kAreaOutroPanels[] = {
     {"WORD GETS ROUND",
-     "Nobody knows your name. By the end of the week the block has one for you anyway. "
-     "You did not pick it, and it has already travelled further than you have."},
+     "By the end of the week the block has a name for you. You did not pick it, and it "
+     "has already travelled further than you have."},
     {"WHAT DO YOU CHARGE?",
      "People start asking what you charge. You have not been charging anything. Your rig "
-     "is half configured and your bag is full of sealed caches you have no way to open."},
+     "is half set up, and your bag is full of sealed caches you cannot open yet."},
     {"THE PIER",
-     "Dial-Up Draw runs downhill out of the Circuit and comes out on water. There is a "
-     "Malwarium shop on the pier at the bottom. You start walking, and the Crew still "
-     "has not arrived."},
+     "The Crew still has not arrived, and the ape is still on screens further out. "
+     "Dial-Up Draw runs downhill to the water, and there is a Malwarium shop on the pier "
+     "at the bottom."},
 };
 
 const AreaStoryDef kStory = {{
