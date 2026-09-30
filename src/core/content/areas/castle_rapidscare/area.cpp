@@ -68,40 +68,43 @@ const StoryPanelDef kIntroPanels[] = {
      "keep their files on someone else's machines. The company went under years ago, but "
      "nobody switched it off."},
     {"THE LOADING BAY",
-     "The front gate is a loading bay with its shutter half up. Inside, every floor is "
-     "still lit and humming, and every screen still asks you to wait, to pay, or to prove "
-     "you are not a robot."},
+     "Locals call it the castle for its walls and its towers of cooling stacks. The "
+     "gate is a loading bay, shutter half up, and every screen inside asks you to "
+     "wait, pay, or prove you are human."},
     {"ON A QUOTA",
      "The vault always rationed what it handed out, and the malbeasts in it picked up the "
      "habit. Their main attack puts your pet on a quota, cutting its max Health for the "
      "rest of the fight."},
     {"UNDER THE GATE",
-     "The cable you have followed since the Bayou runs in under the gate. Somewhere in "
-     "this building is where the Baron, Cracker and Conduit were sending their messages."},
+     "The cable you have followed since the Bayou runs in under the gate. Wherever the "
+     "Baron, Cracker and Conduit were sending their messages, the messages came "
+     "through here first."},
 };
 
 const StoryPanelDef kBossIntroPanels[] = {
     {"THE COURT",
-     "The keepers here dress up as a royal court: pawns on the gate, a queen, a knave, a "
-     "joker and a king. Every one of them answers to whoever took the vault over years "
-     "ago."},
+     "The keepers here are laid out like a royal court: pawns on the gate, a queen, a "
+     "knave, a joker and a king. Every one of them answers to whoever took the vault "
+     "over years ago."},
     {"COUNT CONFICKER",
-     "That is Count Conficker, a botnet. It got into millions of machines, the vault's "
-     "among them, and then never seemed to do anything with them. Nobody ever worked out "
-     "what it was for."},
+     "That is Count Conficker, a botnet that got into millions of machines, the "
+     "vault's too, and never seemed to use them. The cable runs through those "
+     "machines, so it runs through Conficker."},
     {"A NEW ADDRESS",
-     "Conficker survived every attempt to shut it down by moving to a new address every "
-     "day. Its worst attack works the same way: it keeps hitting for five turns and wears "
-     "down armour."},
+     "Conficker survived every shutdown by moving to a new address each day. In a "
+     "fight you cannot pin it down either: its worst attack hits from somewhere new "
+     "for five turns, wearing down armour."},
 };
 
 const StoryPanelDef kBossOutroPanels[] = {
     {"WHAT IT WAS FOR",
-     "With Conficker down you can see what its millions of machines were doing all along. "
-     "They were never idle. They were passing messages on, quietly, all the time."},
+     "With Conficker down, the link shows you what its millions of machines were doing "
+     "all along. They were never idle. They were passing messages on, quietly, the "
+     "whole time."},
     {"THE RELAY",
-     "Every message the Baron, Cracker and Conduit sent came through here. Conficker's "
-     "machines relayed each one down the cable, to the machine Morris counted."},
+     "The machine Morris counted has no address, so nothing can be sent to it "
+     "directly. Conficker's machines passed every message from the Baron, Cracker and "
+     "Conduit down the cable instead."},
     {"NOT IN THE VAULT",
      "That machine is not in the vault. The cable runs down through the basement floor, "
      "and every one of those messages went down with it."},
@@ -109,8 +112,9 @@ const StoryPanelDef kBossOutroPanels[] = {
 
 const StoryPanelDef kAreaOutroPanels[] = {
     {"LIGHTS OUT",
-     "With the botnet gone, the vault's floors shut down one at a time. All over the 'net, "
-     "people find their old machines running faster, and never learn why."},
+     "With the botnet gone the vault's floors shut down one at a time, and nothing "
+     "goes down the cable any more. Millions of machines around the 'net run a little "
+     "faster, and nobody knows why."},
     {"THE CREW ARRIVES",
      "The Crew that wrote to you on the moor finally turns up at the gate, a week after "
      "they were needed. They take charge of the vault, and their offer of a place still "
