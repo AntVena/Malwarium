@@ -155,8 +155,8 @@ void Game::finishTourneyMatch() {
     char line[28];
     if (!won) {
         // A loss — or walking out of the fight, which is the same thing here: there is
-        // no fleeing a bracket, only forfeiting it — or a draw, since a bracket needs a
-        // winner and a level fight did not produce one. The run ends and the banner waits.
+        // no fleeing a bracket, only forfeiting it — or a draw, which is a loss. The run
+        // ends and the banner waits.
         tourneyPhase_ = TourneyPhase::Eliminated;
         if (opp >= 0) tourneyAlive_ &= static_cast<uint8_t>(~(1u << tourneySlot()));
         std::snprintf(line, sizeof(line), "OUT TO %s",

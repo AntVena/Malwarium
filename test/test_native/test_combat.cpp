@@ -3482,6 +3482,8 @@ void test_combat_turn_limit_calls_the_fight() {
         while (cb.outcome() == Combat::Outcome::Ongoing && steps < kCombatTurnCap * 2)
             if (cb.step()) ++steps;
         CHECK(steps == kCombatTurnCap);                  // called exactly on the limit
+        // Whatever it was called, only a Win is not a loss.
+        CHECK(cb.lostOrDrawn() == (cb.outcome() != Combat::Outcome::Win));
         return cb.outcome();
     };
     CHECK(stalemate(-1, 0) == Combat::Outcome::Draw);    // both untouched: dead level

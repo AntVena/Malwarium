@@ -609,6 +609,8 @@ public:
     enum class Stakes { Live, Safe };       // live = +Frag on loss; safe = nothing
     // Draw: the turn limit (kCombatTurnCap) called the fight with both sides on exactly
     // the same share of their own max Health. Every other called fight is a Win or Lose.
+    // Recorded as its own result, but every consequence reads it as a LOSS (lostOrDrawn):
+    // nobody earns a win by surviving to the clock.
     enum class Outcome { Ongoing, Win, Lose, Fled, Draw };
 
     // Build a battle. The enemy always resets to full Health, and so does the player
@@ -720,6 +722,9 @@ public:
     const Combatant& player() const { return player_; }
     const Combatant& enemy() const { return enemy_; }
     Outcome outcome() const { return outcome_; }
+    // The player side did not win a fight it fought to the end: a Lose, or a Draw, which
+    // every result path treats as one. False while Ongoing and on a flee.
+    bool lostOrDrawn() const { return outcome_ == Outcome::Lose || outcome_ == Outcome::Draw; }
     // Execution-Override (Trojan passive): the % chance `trojan` hijacks an enemy move.
     // 0 for a non-Trojan side (checked before any rng() draw at the call site); else
     // kExecOverrideBasePct + the armed traps' bonuses. Public so it's directly assertable.

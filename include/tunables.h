@@ -277,7 +277,8 @@ constexpr int kCombatBaseSpeed = 10;       // a pet's base initiative speed
 constexpr int kSpeedActionThreshold = 100;
 // THE TURN LIMIT. A fight still going after this many turns (one actor's action each) is
 // CALLED: the fighter holding the larger share of its own max Health wins, and an exact
-// tie is a Draw. Walls are allowed to be walls — two sides that cannot out-damage each
+// tie is a Draw — which every result path counts as a LOSS (Combat::lostOrDrawn), so
+// nobody earns a win by surviving to the clock. Walls are allowed to be walls — two sides that cannot out-damage each
 // other's sustain end on the clock instead of never. A few hundred turns is several
 // times a long fight, so only a genuine stalemate ever reaches it.
 constexpr int kCombatTurnCap = 300;
