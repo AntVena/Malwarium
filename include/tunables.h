@@ -454,7 +454,11 @@ constexpr int kLevelPowerPctPerPoint = 4;      // +4% attack power per power poi
 // scale with what is there and stop at zero. It is the counter to a wall that stacked
 // Health and Defence into quadratic effective Health: shred subtracts from the rating,
 // so it keeps paying however much was invested.
-constexpr int kLevelDefensePerPoint = 5;       // +5 DEF per defense point
+//
+// 7, because below it a point past the first rung is worth less than spreading it into
+// the other three stats, which makes Defence the stat a raise is disappointed to land on.
+// 32 points is 224 DEF: a 69% cut from levels alone.
+constexpr int kLevelDefensePerPoint = 7;       // +7 DEF per defense point
 constexpr int kLevelSpeedPerPoint = 1;         // +1 initiative per speed point
                                                // (kLevelSpeedUnderdogPerPoint replaces this
                                                // rate outright while Speed T2 is paying)
@@ -499,7 +503,9 @@ constexpr int kLevelHealthSpecCap = 400;         // total level-Health contribut
 //   backscatter   — and the last rung: a wall that has committed this far starts paying
 //                   OUT. A share of what it absorbed this hit is
 //                   dealt back to whoever swung, so the turtle finally has a win condition
-//                   that is not "outlast everything". Deliberately small, and deliberately a
+//                   that is not "outlast everything". Deliberately small — the share a
+//                   wall absorbs has no ceiling, so this approaches its full % of EVERY
+//                   hit as the rating climbs, and it is priced for that — and deliberately a
 //                   fraction of damage ALREADY eaten rather than of the attack: it can only
 //                   pay when something actually hit the wall, which is what keeps it from
 //                   competing with Ransomware's line (kRansomSeizedWallPct), whose whole
@@ -509,7 +515,7 @@ constexpr int kLevelDefensePierceResistPct = 40;   // cuts an attack's effective
 constexpr int kLevelDefenseBraceRetainPoints = kStatTier2Points;
 constexpr int kLevelDefenseBraceRetainPct = 25;    // ...ADDED to the baseline below
 constexpr int kLevelDefenseBackscatterPoints = kStatTier3Points;
-constexpr int kLevelDefenseBackscatterPct = 20;    // % of absorbed damage dealt back
+constexpr int kLevelDefenseBackscatterPct = 8;     // % of absorbed damage dealt back
 
 // The share of an unspent one-shot brace that carries to the next hit for ANY fighter,
 // before Defence investment adds to it. A baseline exists because over-sizing is the
@@ -533,7 +539,10 @@ constexpr int kBraceRetainBasePct = 25;
 // other on one axis instead of talking past each other. T3 is the brace's turn: a
 // one-shot `guard` is the other half of what a defender spends a turn on, and pierce
 // alone left it untouched.
-constexpr int kLevelPowerPiercePct = 20;       // T2: hits ignore this much of a wall...
+// Pierce shaves a RATING, and on the Defence curve a rating's last points are worth the
+// least — so a pierce % buys roughly half the damage it would off a flat % cut. 40 is what
+// keeps this rung level with the other stats' second rungs.
+constexpr int kLevelPowerPiercePct = 40;       // T2: hits ignore this much of a wall...
 constexpr int kLevelPowerGuardSmashPct = 50;   // T3: ...and this much of a brace
 
 // SPEED. The one stat that was flat in both directions and had nothing but initiative to
