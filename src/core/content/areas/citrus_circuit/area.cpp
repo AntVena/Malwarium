@@ -61,10 +61,10 @@ const StoryPanelDef kIntroPanels[] = {
      "Citrus Circuit is an ordinary part of town: shops, flats, a tram line, and a "
      "network nobody thinks about. You take your new Malwarium out for a walk round it, "
      "and two steps in, it beeps."},
-    {"THE COUNT",
-     "The Malwarium shows you what the network is carrying, and today that is malbeasts: "
-     "more of them on your street than you would see here in a year, and the count keeps "
-     "climbing."},
+    {"EVERY STEP",
+     "A Malwarium beeps when there is a malbeast nearby, and on an ordinary street that "
+     "happens a few times a day. Yours beeps at every step, and the number on its screen "
+     "only goes up."},
     {"LOCKED OUT",
      "Shops and flats are locked out of their own systems. Every screen on the block shows "
      "the same grinning purple ape, promising to put everything back once it has been "
