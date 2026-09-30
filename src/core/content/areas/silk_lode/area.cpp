@@ -82,9 +82,9 @@ const StoryPanelDef kBossIntroPanels[] = {
      "devices, cameras, doorbells and fridges, that nobody gave a proper password. It "
      "lets nothing near the mainframe."},
     {"ONE MORE DEVICE",
-     "To Mirai your Malwarium is one more device to take over. When it hits, it reaches "
-     "past your pet's armour and into the Malwarium itself, scrambling your override "
-     "options into that language."},
+     "To Mirai your Malwarium is one more device to take over. When it hits, it "
+     "reaches past your pet's armour and into the Malwarium itself, scrambling your "
+     "Exploits into that language."},
 };
 
 const StoryPanelDef kBossOutroPanels[] = {
@@ -113,8 +113,8 @@ const StoryPanelDef kAreaOutroPanels[] = {
      "screen."},
     {"CONNECTED",
      "You plug in. The machine room goes dark. When the link settles you are standing "
-     "in the lab again, except the lights are on, the terminals are running, and the "
-     "kettle is warm."},
+     "in it again, except the lights are on, every terminal is running, and there is a "
+     "warm kettle on the desk."},
 };
 
 const AreaStoryDef kStory = {{

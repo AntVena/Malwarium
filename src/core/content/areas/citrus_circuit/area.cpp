@@ -77,16 +77,17 @@ const StoryPanelDef kIntroPanels[] = {
 
 const StoryPanelDef kBossIntroPanels[] = {
     {"DOWNHILL",
-     "Every keeper you beat on the Circuit ran the same way, downhill along Dial-Up Draw. "
-     "Whatever they answer to is waiting at the bottom."},
+     "Each stretch of the Circuit is held by a bigger malbeast, a keeper. Every keeper "
+     "you beat ran the same way, downhill along Dial-Up Draw. Whatever they answer to "
+     "is waiting at the bottom."},
     {"BARON BONZI",
      "The ape has a name: Baron Bonzi, the face of the ransomware gang holding the "
      "Circuit's locks. It started out as a cheerful desktop helper, and it still talks "
      "like one while it robs you."},
     {"THE OPENING",
-     "The gang comes at you five in a row, with no rest in between. Your Malwarium can "
-     "force an opening when your pet is cornered, but that costs a turn, and you only get "
-     "a few."},
+     "The gang comes at you five in a row, with no rest in between. When your pet is "
+     "cornered your Malwarium can fire an Exploit to force an opening, but that costs "
+     "a turn, and you only get a few."},
 };
 
 const StoryPanelDef kBossOutroPanels[] = {
@@ -110,9 +111,9 @@ const StoryPanelDef kAreaOutroPanels[] = {
      "People start asking what you charge. You have not been charging anything. Your rig "
      "is half set up, and your bag is full of sealed caches you cannot open yet."},
     {"THE PIER",
-     "The Crew still has not arrived, and the ape is still on screens further out. "
-     "Dial-Up Draw runs downhill to the water, and there is a Malwarium shop on the pier "
-     "at the bottom."},
+     "The Crew still has not come: the same surge is hitting towns all over the 'net. "
+     "Dial-Up Draw runs downhill to the water, and there is a Malwarium shop on the "
+     "pier at the bottom."},
 };
 
 const AreaStoryDef kStory = {{

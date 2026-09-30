@@ -63,8 +63,8 @@ const ShopListingDef kModShopListings[] = {
 };
 
 // The Moors' CHAPTERS (core/content/story.h), wires 13-16.
-// The Moors says outright what the ape, Cracker and Conduit were talking to: the host
-// Morris counted that no one built. Nothing later has to decode it.
+// The Moors says outright WHERE the Baron, Cracker and Conduit were talking to: the one
+// host Morris counted with no address, at the end of the cable. The Lode says what it is.
 const StoryPanelDef kIntroPanels[] = {
     {"OFF THE GRID",
      "The Napstorrent Moors are wet, empty country: a few farms and villages, and no "
@@ -72,7 +72,7 @@ const StoryPanelDef kIntroPanels[] = {
      "whichever neighbour is in range."},
     {"PEER TO PEER",
      "Files get passed along the same way, house to house and farm to farm, each copy "
-     "made from the last. Through your implant you can see it: thin threads of traffic "
+     "made from the last. Through the link you can see it: thin threads of traffic "
      "strung across the bog."},
     {"WORM COUNTRY",
      "That is perfect ground for worms. A worm copies itself into every file it touches, "
@@ -104,14 +104,14 @@ const StoryPanelDef kBossIntroPanels[] = {
 
 const StoryPanelDef kBossOutroPanels[] = {
     {"THE COUNT",
-     "With Morris down, its count spills out, and your implant lets you read it: every "
+     "With Morris down, its count spills out, and the link lets you read it: every "
      "machine it ever got into, back to the first computers anyone ever networked."},
     {"ONE TOO MANY",
      "The first network had a few thousand machines on it. Morris counted one more. That "
      "one has no address, and it was already connected before Morris was written."},
     {"THE SOURCE",
-     "That extra machine is what the ape, Cracker and Conduit were all talking to. It did "
-     "not get into the 'net from outside. It has been part of it from the very start."},
+     "That extra machine is what the Baron, Cracker and Conduit were all talking to. "
+     "The cable you have followed since the Bayou leads to it."},
 };
 
 const StoryPanelDef kAreaOutroPanels[] = {
@@ -123,9 +123,8 @@ const StoryPanelDef kAreaOutroPanels[] = {
      "They cannot reach the Moors themselves, but they back operators who can. They are "
      "offering you a place with them, whenever you want to take it."},
     {"THE KEEP",
-     "Past the causeway stands Castle Rapidscare, a huge old vault that stored other "
-     "people's files for a fee. It never shut down, and the cable runs straight in under "
-     "its gate."},
+     "Past the causeway, on a hill of its own, stands Castle Rapidscare. The cable "
+     "runs straight in under its gate."},
 };
 
 const AreaStoryDef kStory = {{

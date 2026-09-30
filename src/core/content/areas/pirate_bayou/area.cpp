@@ -58,8 +58,8 @@ const ShopListingDef kModShopListings[] = {
 const StoryPanelDef kIntroPanels[] = {
     {"THE BAYOU",
      "The Pirate Bayou is a swampy harbour town where half the stalls sell cracked "
-     "software and nobody asks where it came from. The shop at the end of Leech Landing "
-     "sells Malwarium gear."},
+     "software and nobody asks where it came from. The Malwarium shop sits at the end "
+     "of its pier, Leech Landing."},
     {"IN YOUR NAME",
      "The shopkeeper knows your name already. Someone has been ordering his stock with "
      "card details stolen in the Circuit, yours included. He shipped every order and "
@@ -105,8 +105,9 @@ const StoryPanelDef kBossOutroPanels[] = {
      "Circuit: they copied every card on it while they were inside, then sold the list "
      "on."},
     {"THE SAME LANGUAGE",
-     "As he goes, Cracker starts talking, but not to you. He is sending to something else "
-     "on the network, in the same language the Baron used."},
+     "As he goes, Cracker sends a message in the same language the Baron used. The "
+     "link follows it out along the cable, under the docks, and away towards the open "
+     "sea."},
 };
 
 const StoryPanelDef kAreaOutroPanels[] = {

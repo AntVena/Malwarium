@@ -123,8 +123,8 @@ const StoryPanelDef kAreaOutroPanels[] = {
      "They cannot spare anyone to follow the cable further. It runs inland from here, and "
      "if you want to know what is at the end of it, you will have to walk."},
     {"INLAND",
-     "Inland lie the Napstorrent Moors, a stretch of bog and farmland that nobody on the "
-     "coast has much reason to visit. The cable heads straight into them."},
+     "Inland lie the Napstorrent Moors, which nobody on the coast has much reason to "
+     "visit. The cable heads straight into them."},
 };
 
 const AreaStoryDef kStory = {{
