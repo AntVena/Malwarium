@@ -1,8 +1,9 @@
 // cant.h — the CANT: the guardians' language, its sigils, and the ciphers it is
 // spoken in. No rendering and no Game, the way stacker.h and cryptogram.h are kept.
 //
-// A guardian does not speak the 'net's alphabet. What it puts to a pet is a
-// SHIBBOLETH — a riddle drawn in the Cant — and the pet answers by picking one of
+// A guardian does not speak the 'net's alphabet. Every guardian is a node of the
+// SHIBOLEET — the swarm the Silk Lode's chapters reveal — and what it puts to a pet is
+// that swarm asking: a riddle drawn in the Cant, which the pet answers by picking one of
 // three replies drawn the same way. Understanding is not required to answer: three
 // replies means a blind pick is one in three, which is the deal offered from the very
 // first encounter.
@@ -55,7 +56,7 @@ SigilSet learnSigil(SigilSet learned);
 int sigilCount(SigilSet learned);
 
 // Fluency as a percentage, 0..100 — the roll the guardian's welcome is graded against
-// (Game::startShibboleth). Derived rather than stored: fluency IS the sigil count, and
+// (Game::startShiboleet). Derived rather than stored: fluency IS the sigil count, and
 // a second field would be the same fact written twice.
 int cantFluencyPct(SigilSet learned);
 

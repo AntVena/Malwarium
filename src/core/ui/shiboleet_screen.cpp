@@ -1,4 +1,4 @@
-#include "core/ui/shibboleth_screen.h"
+#include "core/ui/shiboleet_screen.h"
 
 #include "core/model/cant.h"
 #include "core/render/canvas.h"
@@ -99,7 +99,7 @@ void drawCantStrip(Framebuffer& fb, uint32_t sigils) {
 
 }  // namespace
 
-void drawShibboleth(Framebuffer& fb, const char* guardian, const char* demeanour,
+void drawShiboleet(Framebuffer& fb, const char* guardian, const char* demeanour,
                     const char* greeting, const char* riddle,
                     const char* const replies[kRiddleReplies], int cursor,
                     uint32_t sigils, float holdFrac) {
@@ -199,19 +199,19 @@ void drawMeetingChrome(Framebuffer& fb, const char* guardian, const char* banner
 // The banner word per outcome. A WORD and not a colour, because the colour is the second
 // channel here and not the first: a grayscale shot still has to say whether the pet was
 // believed, and "IT IS SATISFIED" against "IT IS DISPLEASED" is what says it.
-const char* verdictBanner(ShibbolethVerdictKind kind) {
+const char* verdictBanner(ShiboleetVerdictKind kind) {
     switch (kind) {
-        case ShibbolethVerdictKind::Pleased:    return "IT IS SATISFIED";
-        case ShibbolethVerdictKind::Displeased: return "IT IS DISPLEASED";
-        case ShibbolethVerdictKind::Refused:    return "IT REFUSES TO ASK";
-        case ShibbolethVerdictKind::Boon:       return "IT SPEAKS FREELY";
+        case ShiboleetVerdictKind::Pleased:    return "IT IS SATISFIED";
+        case ShiboleetVerdictKind::Displeased: return "IT IS DISPLEASED";
+        case ShiboleetVerdictKind::Refused:    return "IT REFUSES TO ASK";
+        case ShiboleetVerdictKind::Boon:       return "IT SPEAKS FREELY";
     }
     return "";
 }
 
 }  // namespace
 
-void drawShibbolethHail(Framebuffer& fb, const char* guardian, const char* demeanour,
+void drawShiboleetHail(Framebuffer& fb, const char* guardian, const char* demeanour,
                         const char* greeting, const SwarmView& swarm, uint32_t sigils,
                         int shakes) {
     // The banner states the one fact the whole system rests on and nothing else on the
@@ -246,12 +246,12 @@ void drawShibbolethHail(Framebuffer& fb, const char* guardian, const char* demea
     drawHintBand(fb, "B LISTEN");
 }
 
-void drawShibbolethVerdict(Framebuffer& fb, const char* guardian,
-                           ShibbolethVerdictKind kind, const char* demeanour,
+void drawShiboleetVerdict(Framebuffer& fb, const char* guardian,
+                           ShiboleetVerdictKind kind, const char* demeanour,
                            const char* speech, const SwarmView& swarm, const char* ledger,
                            const char* flavor, uint32_t sigils, bool nextIsFight) {
-    const bool bad = kind == ShibbolethVerdictKind::Displeased ||
-                     kind == ShibbolethVerdictKind::Refused;
+    const bool bad = kind == ShiboleetVerdictKind::Displeased ||
+                     kind == ShiboleetVerdictKind::Refused;
     // The body takes the verdict's colour too. A guardian that did not like the answer is
     // flying apart in WARN, which is honest rather than decorative — it IS an alarm now,
     // and the fight is one button away. The scatter says it in grayscale either way.

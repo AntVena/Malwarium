@@ -328,8 +328,8 @@ seals it and starts a re-arm cooldown.
 queued, not credited, and an EXPL Wi-Fi event drains one — that resolution is what ROUTES the whole
 event, so the headline, the sweep and the flavor lines all state the same fact. An empty queue is
 not a penalty: every third dry event summons the area's **GUARDIAN** instead, and a guardian puts a
-**SHIBBOLETH** to the pet — a riddle drawn in the **CANT**, the guardians' language, with three
-replies drawn the same way (`src/core/app/game/game_shibboleth.cpp`).
+**SHIBOLEET** to the pet — a riddle drawn in the **CANT**, the guardians' language, with three
+replies drawn the same way (`src/core/app/game/game_shiboleet.cpp`).
 
 **A guardian has no sprite: it is a SWARM.** Its body is a boids flock (`core/model/flock.h`)
 drawn as `FX_SWARM` (`core/render/swarm.h`) — a couple of dozen marks threaded to their near

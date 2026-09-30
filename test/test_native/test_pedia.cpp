@@ -81,7 +81,7 @@ void test_wild_win_can_drop_a_move() {
     enterWalk(deep);
     CHECK(farmForAMove(deep, 0, 2, 40));
     // Ratio Debt is in the set because the WALK can also put Citrus Circuit's guardian
-    // in front of the pet (game_shibboleth.cpp) and a guardian is beaten the same way
+    // in front of the pet (game_shiboleet.cpp) and a guardian is beaten the same way
     // anything else is. It is not part of the rung's ladder — it is the one enemy on the
     // walk that is not drawn from it — which is exactly why naming it here rather than
     // filtering it out keeps this a claim about the ENEMY's kit.

@@ -574,12 +574,12 @@ inline void walkToWifiEvent(Game& g) {
             g.onButton(press(Button::B));
         } else if (g.nav() == Game::Nav::PostEncounter) {
             g.onButton(press(Button::B));   // that fight's status readout -> dismiss
-        } else if (g.nav() == Game::Nav::ShibbolethHail ||
-                   g.nav() == Game::Nav::Shibboleth ||
-                   g.nav() == Game::Nav::ShibbolethVerdict) {
+        } else if (g.nav() == Game::Nav::ShiboleetHail ||
+                   g.nav() == Game::Nav::Shiboleet ||
+                   g.nav() == Game::Nav::ShiboleetVerdict) {
             // A guardian, which is what a DRY sighting queue routes to on its cadence
             // beat (game_net.cpp) — and a native run's queue is always dry, so every
-            // walk helper meets one. It is THREE screens (game_shibboleth.cpp): the hail,
+            // walk helper meets one. It is THREE screens (game_shiboleet.cpp): the hail,
             // the riddle, then the verdict. B steps each of them, and whichever way the
             // last one lands (back to Idle, or into the guardian's fight) the loop above
             // already handles the next screen.
@@ -645,9 +645,9 @@ inline void walkToAnyCombat(Game& g) {
             tapC(g);   // leave the shop -> back to idle
         } else if (g.nav() == Game::Nav::PostEncounter) {
             g.onButton(press(Button::B));   // a prior fight's status readout -> dismiss
-        } else if (g.nav() == Game::Nav::ShibbolethHail ||
-                   g.nav() == Game::Nav::Shibboleth ||
-                   g.nav() == Game::Nav::ShibbolethVerdict) {
+        } else if (g.nav() == Game::Nav::ShiboleetHail ||
+                   g.nav() == Game::Nav::Shiboleet ||
+                   g.nav() == Game::Nav::ShiboleetVerdict) {
             g.onButton(press(Button::B));   // step the guardian; see walkToWifiEvent
         }
     }

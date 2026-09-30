@@ -388,17 +388,17 @@ int g_failures = 0;
     RUN(test_wifi_friendly_visit_grants_ally_buff) \
     RUN(test_wifi_auto_plays_out_after_hold)      \
     RUN(test_wifi_discovery_kind)                 \
-    /* THE SHIBBOLETH — the Cant, the guardian, the riddle pool */ \
+    /* THE SHIBOLEET — the Cant, the guardian, the riddle pool */ \
     RUN(test_cant_reveal_order_is_the_whole_alphabet) \
     RUN(test_cant_cipher_is_width_preserving)     \
     RUN(test_cant_sigils_read_plain_and_nothing_else_does) \
     RUN(test_cant_cipher_is_a_permutation)        \
     RUN(test_riddle_pool_fits_the_panel)          \
-    RUN(test_shibboleth_is_reachable_from_zero_sigils) \
-    RUN(test_shibboleth_win_pays_without_a_shake_but_buys_no_sigil) \
-    RUN(test_shibboleth_win_spends_one_shake_for_one_sigil) \
-    RUN(test_shibboleth_wrong_and_silent_both_cost_and_fight) \
-    RUN(test_shibboleth_stepping_the_cursor_restarts_the_clock) \
+    RUN(test_shiboleet_is_reachable_from_zero_sigils) \
+    RUN(test_shiboleet_win_pays_without_a_shake_but_buys_no_sigil) \
+    RUN(test_shiboleet_win_spends_one_shake_for_one_sigil) \
+    RUN(test_shiboleet_wrong_and_silent_both_cost_and_fight) \
+    RUN(test_shiboleet_stepping_the_cursor_restarts_the_clock) \
     RUN(test_a_complete_cant_earns_boons)         \
     RUN(test_guardian_outclasses_the_rung_it_is_met_on) \
     RUN(test_every_area_has_a_guardian_with_its_own_move) \

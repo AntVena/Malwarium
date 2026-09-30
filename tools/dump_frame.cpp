@@ -111,8 +111,8 @@
 //        named forms seed the ledger so the discovery beat resolves that way, which is
 //        what picks how far the pet eats the network glyph — pass a `beats` count to
 //        land on a frame of the absorb; bare "wifi" is the empty-queue beat)
-// shibboleth [hail|verdict [wrong]|refused|boon] [fight] [sigils:<n>] (the guardian
-//        encounter's screens. Bare "shibboleth" is the RIDDLE drawn in the CANT; "hail" is
+// shiboleet [hail|verdict [wrong]|refused|boon] [fight] [sigils:<n>] (the guardian
+//        encounter's screens. Bare "shiboleet" is the RIDDLE drawn in the CANT; "hail" is
 //        the beat before it and "verdict" the one after — what the guardian made of the
 //        answer, with "wrong" picking a reply it will not take. "refused" and "boon"
 //        search for the two bands that never ask anything at all — the refusal and the
@@ -1176,7 +1176,7 @@ int main(int argc, char** argv) {
               hasFlag(argc, argv, "rank") || hasFlag(argc, argv, "shop") ||
               hasFlag(argc, argv, "modshop") ||
               hasFlag(argc, argv, "warp") || hasFlag(argc, argv, "postencounter") ||
-              hasFlag(argc, argv, "shibboleth") || hasFlag(argc, argv, "outro")) {
+              hasFlag(argc, argv, "shiboleet") || hasFlag(argc, argv, "outro")) {
         // Explore-mode: arm sector 0 → the game drops back to the IDLE
         // habitat with the explore badge live. There is no walk screen; a step is
         // driven by the A+C control chord's Network Ping (A+C → A), which fires the
@@ -1348,7 +1348,7 @@ int main(int argc, char** argv) {
             // the hands-off hold resolves the event off the screen underneath us.
             for (int i = 1; i <= beats && game.nav() == Game::Nav::Wifi; ++i)
                 game.tick(t += kFxAnimMs);
-        } else if (hasFlag(argc, argv, "shibboleth")) {
+        } else if (hasFlag(argc, argv, "shiboleet")) {
             // The guardian's riddle, drawn in the CANT. `sigils:<n>` is the whole point
             // of the scene: at 0 the panel is a wall of nonsense, and every sigil turns
             // one more letter of it into itself — the same riddle, legible in stages.
@@ -1364,10 +1364,10 @@ int main(int argc, char** argv) {
             const bool wantVerdict = hasFlag(argc, argv, "verdict");
             const bool wantRefused = hasFlag(argc, argv, "refused");
             const bool wantBoon = hasFlag(argc, argv, "boon");
-            // The welcome is ROLLED (game_shibboleth.cpp), so a band is reached by asking
+            // The welcome is ROLLED (game_shiboleet.cpp), so a band is reached by asking
             // until it comes up rather than by forcing it.
-            for (int i = 0; i < 200 && game.nav() != Game::Nav::Shibboleth; ++i) {
-                game.debugStartShibboleth();
+            for (int i = 0; i < 200 && game.nav() != Game::Nav::Shiboleet; ++i) {
+                game.debugStartShiboleet();
                 if (wantHail) break;                      // the hail IS the scene
                 if (wantRefused || wantBoon) {
                     // One of the two bands that never asks anything: the refusal's
@@ -1375,14 +1375,14 @@ int main(int argc, char** argv) {
                     // boon's, which is what fluency is FOR. Both are searched for rather
                     // than forced, since the welcome is a roll — pair `boon` with a high
                     // `sigils:` or the search will not find one.
-                    const auto want = wantRefused ? Game::ShibbolethWelcome::Affront
-                                                  : Game::ShibbolethWelcome::Boon;
-                    if (game.shibbolethWelcome() != want) continue;
+                    const auto want = wantRefused ? Game::ShiboleetWelcome::Affront
+                                                  : Game::ShiboleetWelcome::Boon;
+                    if (game.shiboleetWelcome() != want) continue;
                     game.onButton({Button::B, true, false});
                     break;
                 }
                 game.onButton({Button::B, true, false});   // hail -> the band's screen
-                if (game.nav() == Game::Nav::ShibbolethVerdict)
+                if (game.nav() == Game::Nav::ShiboleetVerdict)
                     game.onButton({Button::B, true, false});
                 if (game.nav() == Game::Nav::Combat) {
                     for (int j = 0; j < 400 &&
@@ -1398,10 +1398,10 @@ int main(int argc, char** argv) {
             // the true row first, which is the half of the pair worth looking at hardest:
             // a displeased guardian is drawn in WARN and leads to a fight, so it is the
             // screen the dual-coding gate has to hold.
-            if (wantVerdict && game.nav() == Game::Nav::Shibboleth) {
+            if (wantVerdict && game.nav() == Game::Nav::Shiboleet) {
                 if (hasFlag(argc, argv, "wrong"))
                     for (int i = 0; i < kRiddleReplies &&
-                            game.shibbolethRow() == game.shibbolethTrueRow(); ++i)
+                            game.shiboleetRow() == game.shiboleetTrueRow(); ++i)
                         game.onButton({Button::A, true, false});
                 game.onButton({Button::B, true, false});
             }
@@ -1420,9 +1420,9 @@ int main(int argc, char** argv) {
             // the heartbeat, exactly as the Wi-Fi dissolve's scene does. Four of these
             // per heartbeat also means a scene can run the flock well into its shape
             // before the screen's own hands-off hold resolves out from under it.
-            for (int i = 1; i <= beats && (game.nav() == Game::Nav::Shibboleth ||
-                                           game.nav() == Game::Nav::ShibbolethHail ||
-                                           game.nav() == Game::Nav::ShibbolethVerdict); ++i)
+            for (int i = 1; i <= beats && (game.nav() == Game::Nav::Shiboleet ||
+                                           game.nav() == Game::Nav::ShiboleetHail ||
+                                           game.nav() == Game::Nav::ShiboleetVerdict); ++i)
                 game.tick(t += kFxAnimMs);
         } else if (hasFlag(argc, argv, "rank")) {
             game.inventory().add("sinkhole_trap", 20);

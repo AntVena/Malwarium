@@ -1,6 +1,6 @@
 // test_flock.cpp — the guardians' bodies: the boids model and the swarm that draws it.
 //
-// Two subjects, one file, for the reason test_shibboleth.cpp gives about its three: the
+// Two subjects, one file, for the reason test_shiboleet.cpp gives about its three: the
 // model is only interesting because of what the draw makes of it. What the gates here can
 // actually hold is the part a screenshot cannot — that the sim stays inside its cell, that
 // it never collapses or blows up, and that the moods are DIFFERENT ENOUGH to read. How it
@@ -9,12 +9,12 @@
 
 #include "core/model/flock.h"
 #include "core/render/swarm.h"
-#include "core/ui/shibboleth_screen.h"
+#include "core/ui/shiboleet_screen.h"
 
 namespace {
 
 // The cell every gate here works in — the screen's own, so a bound that holds in a test
-// holds on the panel (shibboleth_screen.h).
+// holds on the panel (shiboleet_screen.h).
 constexpr int kW = mal::kGuardianCellW;
 constexpr int kH = mal::kGuardianCellH;
 
@@ -120,12 +120,12 @@ void test_flock_moods_read_as_different_shapes() {
     CHECK(agitated > pleased * 3 / 2);
 }
 
-// It arrives in time to be SEEN. A guardian's hail holds for kShibbolethHailHoldBeats
+// It arrives in time to be SEEN. A guardian's hail holds for kShiboleetHailHoldBeats
 // heartbeats and the flock steps four times per heartbeat (the FX clock, kFxAnimMs), so a
 // sim that took longer than that to find its shape would spend every meeting mid-arrival
 // and the moods above would never reach a player at all.
 void test_flock_settles_quickly_enough_to_be_seen() {
-    const int stepsOnScreen = kShibbolethHailHoldBeats * (kHeartbeatMs / kFxAnimMs);
+    const int stepsOnScreen = kShiboleetHailHoldBeats * (kHeartbeatMs / kFxAnimMs);
     for (mal::FlockMood mood : kAllMoods) {
         const int early = settled(mood, 7, stepsOnScreen / 2).spread();
         const int late = settled(mood, 7, 400).spread();
@@ -138,7 +138,7 @@ void test_flock_settles_quickly_enough_to_be_seen() {
 
 // Two guardians are not the same guardian. The seed is the whole of what tells two flocks
 // apart — the same rule IdleWander::seed keeps — and a meeting seeds off the walk position
-// (Game::startShibboleth), so a swarm that ignored its seed would be the identical animation
+// (Game::startShiboleet), so a swarm that ignored its seed would be the identical animation
 // every time anyone met anything.
 void test_two_seeds_are_two_creatures() {
     const mal::Flock a = settled(mal::FlockMood::Watching, 11);
@@ -232,17 +232,17 @@ namespace {
 // to the screen these gates are about; the welcome is a roll, so this searches for it.
 inline bool reachGuardianFight(Game& g) {
     for (int i = 0; i < 300; ++i) {
-        g.debugStartShibboleth();
-        if (g.nav() != Game::Nav::ShibbolethHail) return false;
+        g.debugStartShiboleet();
+        if (g.nav() != Game::Nav::ShiboleetHail) return false;
         const bool affront =
-            g.shibbolethWelcome() == Game::ShibbolethWelcome::Affront;
+            g.shiboleetWelcome() == Game::ShiboleetWelcome::Affront;
         g.onButton(press(Button::B));                 // the hail -> the band's screen
         if (affront) {
             g.onButton(press(Button::B));             // the verdict -> its fight
             return g.nav() == Game::Nav::Combat;
         }
-        if (g.nav() == Game::Nav::Shibboleth) g.onButton(press(Button::B));
-        if (g.nav() == Game::Nav::ShibbolethVerdict) g.onButton(press(Button::B));
+        if (g.nav() == Game::Nav::Shiboleet) g.onButton(press(Button::B));
+        if (g.nav() == Game::Nav::ShiboleetVerdict) g.onButton(press(Button::B));
         if (g.nav() == Game::Nav::Combat) return true;   // a wrong answer got there too
         if (!g.exploreActive()) enterWalk(g);
     }

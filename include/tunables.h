@@ -843,7 +843,7 @@ constexpr int kShopStock = 5;              // default units in stock per storefr
 //     the discovery beat (the pet takes the network in), and an EMPTY queue is what
 //     summons the area's guardian instead. So the two halves of the screen can never
 //     contradict each other, and a walk through a dead zone reaches new content rather
-//     than only a Happiness tax. game_net.cpp routes it; game_shibboleth.cpp owns the
+//     than only a Happiness tax. game_net.cpp routes it; game_shiboleet.cpp owns the
 //     guardian half. --------------------------------------------------------------
 //
 // The weights below are the SIGHTING branch only — what a resolved network turns out to
@@ -857,8 +857,8 @@ constexpr int kWifiOpenCachePct = 25;   // open cache -> straight loot
 constexpr int kAllyBuffBattles = 3;     // friendly-visit buff duration
 constexpr int kAllyBuffPowerPct = 20;   // +power for the buffed battles
 
-// THE SHIBBOLETH — the guardian encounter an empty sighting queue routes to
-//     (game_shibboleth.cpp, core/model/cant.h). A guardian grades its welcome on how
+// THE SHIBOLEET — the guardian encounter an empty sighting queue routes to
+//     (game_shiboleet.cpp, core/model/cant.h). A guardian grades its welcome on how
 //     much of the CANT the pet can read, so these three bands are read against
 //     cantFluencyPct: below the first it is turned away outright, above the second it is
 //     simply received, and the stretch between is where it is TESTED. ------------------
@@ -868,55 +868,55 @@ constexpr int kAllyBuffPowerPct = 20;   // +power for the buffed battles
 // fluency can reach every band — what climbing the Cant buys is that the good one gets
 // commoner and the bad one gets rarer, which is also what "the more they know, the more
 // likely a quiet word" actually means.
-constexpr int kShibbolethAffrontBasePct = 25;  // AFFRONT chance at ZERO fluency: a
+constexpr int kShiboleetAffrontBasePct = 25;  // AFFRONT chance at ZERO fluency: a
                                               // guardian turns an illiterate pet away a
                                               // quarter of the time and hears it out the
                                               // rest. Scaled DOWN by fluency, to nothing
                                               // at a complete Cant
-constexpr int kShibbolethBoonMaxPct = 60;     // BOON chance at a COMPLETE Cant — no
+constexpr int kShiboleetBoonMaxPct = 60;     // BOON chance at a COMPLETE Cant — no
                                               // riddle at all, the two simply talk.
                                               // Scaled UP from nothing at zero fluency.
                                               // Under 100 on purpose: a guardian that
                                               // never asked again would retire the
                                               // riddles the moment they stopped being
                                               // needed, and the pool is the content
-constexpr int kShibbolethHailHoldBeats = 20;  // ~5s on the guardian's HAIL — the beat
+constexpr int kShiboleetHailHoldBeats = 20;  // ~5s on the guardian's HAIL — the beat
                                               // before the question, where the thing
                                               // that stopped the walk gets to be a
                                               // character instead of a puzzle prompt. A
                                               // REVEAL rather than a decision, so it is
                                               // the short hold the Wi-Fi event uses and
                                               // not the shop's
-constexpr int kShibbolethVerdictHoldBeats = 24; // ~6s on the VERDICT: what the guardian
+constexpr int kShiboleetVerdictHoldBeats = 24; // ~6s on the VERDICT: what the guardian
                                               // made of the answer, and the only place
                                               // a wrong reply is ever explained before
                                               // the fight it causes. Longer than the
                                               // hail because it carries the ledger of
                                               // what the meeting cost or paid
-constexpr int kShibbolethReplyHoldBeats = 60; // ~15s to answer, then the guardian takes
+constexpr int kShiboleetReplyHoldBeats = 60; // ~15s to answer, then the guardian takes
                                               // the silence as an answer and the reply
                                               // resolves as a wrong one. Longer than the
                                               // shop's kExploreDecisionHoldBeats because
                                               // there is genuinely something to READ here
                                               // before there is anything to decide
-constexpr int kShibbolethWinHappy = 6;        // Happiness for answering correctly — paid
+constexpr int kShiboleetWinHappy = 6;        // Happiness for answering correctly — paid
                                               // whether or not a shake was there to buy
                                               // the sigil with
-constexpr int kShibbolethWinFragCut = 4;      // ...and Fragmentation shed with it
-constexpr int kShibbolethLoseHappy = 4;       // Happiness lost on a wrong or unanswered
+constexpr int kShiboleetWinFragCut = 4;      // ...and Fragmentation shed with it
+constexpr int kShiboleetLoseHappy = 4;       // Happiness lost on a wrong or unanswered
                                               // reply. Deliberately under the win, since
                                               // the fight that follows carries the rest
                                               // of the cost
-constexpr int kShibbolethLoseFrag = 5;        // ...and Fragmentation taken with it
-constexpr int kShibbolethBoonHappy = 10;      // a BOON's Happiness — the largest single
+constexpr int kShiboleetLoseFrag = 5;        // ...and Fragmentation taken with it
+constexpr int kShiboleetBoonHappy = 10;      // a BOON's Happiness — the largest single
                                               // lump the walk pays, and the reason to
                                               // learn the Cant at all
-constexpr int kShibbolethBoonFragCut = 12;    // ...and the Fragmentation it clears, which
+constexpr int kShiboleetBoonFragCut = 12;    // ...and the Fragmentation it clears, which
                                               // is a free defrag in all but name
-constexpr int kShibbolethBoonEscortPct = 34;  // ...and how often it instead sends the pet
+constexpr int kShiboleetBoonEscortPct = 34;  // ...and how often it instead sends the pet
                                               // on with an escort (the friendly-visit
-                                              // ally buff, at kShibbolethEscortBattles)
-constexpr int kShibbolethEscortBattles = 5;   // a guardian's escort outlasts a friendly
+                                              // ally buff, at kShiboleetEscortBattles)
+constexpr int kShiboleetEscortBattles = 5;   // a guardian's escort outlasts a friendly
                                               // visit's — it is owed to a pet that can
                                               // ASK, not one that happened to be passed
 
@@ -1014,7 +1014,7 @@ constexpr int kNetDiscoveryEmptyGuardianStrikes = 3;  // an empty queue summons 
                                               // than taxing it — walking somewhere with
                                               // no new networks costs no Happiness at all
                                               // and leads to the Cant instead
-                                              // (game_shibboleth.cpp). The dry events
+                                              // (game_shiboleet.cpp). The dry events
                                               // BETWEEN still resolve their ordinary
                                               // sub-outcome, so the walk's event density
                                               // is unchanged either way

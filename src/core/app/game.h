@@ -97,7 +97,7 @@ public:
     //   Detail      — L3 (item detail · MAINT action).
     //   Process     — a running MAINT process (non-interruptible).
     //   ModalFeeding / ModalLockout — event overlays.
-    enum class Nav { Idle, Cursor, Submenu, Detail, Process, ModalFeeding, ModalLockout, ModalLineSelect, ModalEggPick, ModalHatchReveal, ModalEvolve, ModalCSF, Combat, ExploreControl, Encounter, Wifi, Shop, ModShop, WarpPicker, RollbackPicker, RepartitionPicker, CacheYield, BulkYield, PostEncounter, Stacker, Isolation, Chroma, Decryption, Cryptogram, ArcadeResult, Tourney, ShibbolethHail, Shibboleth, ShibbolethVerdict, Story, StoryArchive };
+    enum class Nav { Idle, Cursor, Submenu, Detail, Process, ModalFeeding, ModalLockout, ModalLineSelect, ModalEggPick, ModalHatchReveal, ModalEvolve, ModalCSF, Combat, ExploreControl, Encounter, Wifi, Shop, ModShop, WarpPicker, RollbackPicker, RepartitionPicker, CacheYield, BulkYield, PostEncounter, Stacker, Isolation, Chroma, Decryption, Cryptogram, ArcadeResult, Tourney, ShiboleetHail, Shiboleet, ShiboleetVerdict, Story, StoryArchive };
 
     // Which L2 screen the ITEMS submenu is showing. Picker (the category tile
     // screen) only ever appears when itemPickerUnlocked(); every other path — no
@@ -125,14 +125,14 @@ public:
     // fluency landed in without playing a walk out.
     //
     //   Affront — it will not hear an illiterate pet out, and attacks.
-    //   Riddle  — the SHIBBOLETH proper: a riddle drawn in the Cant, three replies.
+    //   Riddle  — the SHIBOLEET proper: a riddle drawn in the Cant, three replies.
     //   Boon    — fluent enough that the two simply talk; no riddle at all.
-    enum class ShibbolethWelcome : uint8_t { Affront, Riddle, Boon };
+    enum class ShiboleetWelcome : uint8_t { Affront, Riddle, Boon };
 
     // How a riddle ENDED. Answered is the only one that can buy a sigil; the other two
     // both hand the pet to the guardian's fight, and are distinguished only so the
     // flavor line can tell the truth about which happened.
-    enum class ShibbolethReply : uint8_t { Pending, Answered, Wrong, Unanswered };
+    enum class ShiboleetReply : uint8_t { Pending, Answered, Wrong, Unanswered };
 
     // Which slice of the DECRYPTOGRAM pool a roll is allowed to land in. The VAULT
     // wants an unsolved quote (a prize to win) or, once there are none, a solved one to
@@ -1294,7 +1294,7 @@ public:
     // by BSSID so a repeat capture of a known network never re-credits.
     int handshakesSeen() const { return handshakesSeen_; }
     // SHAKES not yet spent on a sigil of the CANT. A captured handshake is what buys
-    // a guardian's answer (game_shibboleth.cpp), so the lifetime tally above is the
+    // a guardian's answer (game_shiboleet.cpp), so the lifetime tally above is the
     // brag and this is the purse — the two are shown together as "unspent/lifetime".
     // Never negative: spending is the only thing that moves it, and it checks first.
     int shakesUnspent() const {
@@ -1307,40 +1307,40 @@ public:
     int sigilsKnown() const { return sigilCount(cantSigils_); }
     // The guardian encounter's live state, for the screen and for tests: which band the
     // fluency roll landed in, how the riddle ended, and the riddle itself already drawn
-    // in the Cant. `shibbolethReplyText` fills `out` with the reply on shown row `row`.
-    ShibbolethWelcome shibbolethWelcome() const { return shibWelcome_; }
-    ShibbolethReply shibbolethReply() const { return shibReply_; }
-    int shibbolethRow() const { return shibRow_; }
+    // in the Cant. `shiboleetReplyText` fills `out` with the reply on shown row `row`.
+    ShiboleetWelcome shiboleetWelcome() const { return shibWelcome_; }
+    ShiboleetReply shiboleetReply() const { return shibReply_; }
+    int shiboleetRow() const { return shibRow_; }
     const char* guardianName() const;
-    void shibbolethRiddleText(char* out, int cap) const;
-    // The two halves of what the guardian is doing. `shibbolethGreeting` is what it SAYS,
+    void shiboleetRiddleText(char* out, int cap) const;
+    // The two halves of what the guardian is doing. `shiboleetGreeting` is what it SAYS,
     // already drawn in the Cant like the riddle; `guardianDemeanour` is what the pet can
     // SEE, always plain — the pair is the whole reason a pet with no sigils still comes
     // away with something (GuardianLine, area_defs.h).
-    void shibbolethGreeting(char* out, int cap) const;
+    void shiboleetGreeting(char* out, int cap) const;
     const char* guardianDemeanour() const;
-    void shibbolethReplyText(int row, char* out, int cap) const;
-    // The two beats that BRACKET the riddle (Nav::ShibbolethHail, Nav::ShibbolethVerdict).
+    void shiboleetReplyText(int row, char* out, int cap) const;
+    // The two beats that BRACKET the riddle (Nav::ShiboleetHail, Nav::ShiboleetVerdict).
     // A guardian is not a puzzle prompt: it arrives, it is met, and it makes something of
     // what the pet said — so the riddle sits between a hail and a verdict rather than
     // being the whole encounter.
     //
-    // `shibbolethOutcome` is how this meeting came out, folded from the fluency band and
+    // `shiboleetOutcome` is how this meeting came out, folded from the fluency band and
     // the reply into the one axis the content is authored against (GuardianOutcome,
-    // area_defs.h). `shibbolethOutcomeSpeech` fills `out` with what the guardian SAYS
-    // about it, in the same cipher as the riddle; `shibbolethOutcomeSeen` is what the pet
-    // can see it doing, always plain. `shibbolethVerdictLine` is the engine's own plain
+    // area_defs.h). `shiboleetOutcomeSpeech` fills `out` with what the guardian SAYS
+    // about it, in the same cipher as the riddle; `shiboleetOutcomeSeen` is what the pet
+    // can see it doing, always plain. `shiboleetVerdictLine` is the engine's own plain
     // ledger of what the meeting paid or cost ("+6 HAPPY  -4 FRAG"), and
-    // `shibbolethFlavor` is the consequence in words ("LEARNED A SIGIL - 3/26").
-    GuardianOutcome shibbolethOutcome() const;
-    void shibbolethOutcomeSpeech(char* out, int cap) const;
-    const char* shibbolethOutcomeSeen() const;
-    const char* shibbolethVerdictLine() const { return shibVerdictLine_; }
-    const char* shibbolethFlavor() const { return shibFlavor_; }
+    // `shiboleetFlavor` is the consequence in words ("LEARNED A SIGIL - 3/26").
+    GuardianOutcome shiboleetOutcome() const;
+    void shiboleetOutcomeSpeech(char* out, int cap) const;
+    const char* shiboleetOutcomeSeen() const;
+    const char* shiboleetVerdictLine() const { return shibVerdictLine_; }
+    const char* shiboleetFlavor() const { return shibFlavor_; }
     // Whether the verdict hands the pet to the guardian's fight rather than back to the
     // walk. The screen names the button with it, so "B CONTINUE" never turns out to have
     // meant a boss.
-    bool shibbolethVerdictFights() const;
+    bool shiboleetVerdictFights() const;
     // THE GUARDIAN'S BODY (FX_SWARM, core/render/swarm.h). It has no sprite — it is a
     // flock, and this is the live one: reset when a guardian speaks and stepped on the
     // fast FX clock for as long as the pet is looking at it (game_core.cpp).
@@ -1352,7 +1352,7 @@ public:
     FlockMood guardianFlockMood() const;
     // Which shown row carries the true reply. Exposed for the gates — the screen never
     // asks, and neither does anything on the press path.
-    int shibbolethTrueRow() const;
+    int shiboleetTrueRow() const;
     // Register a handshake the device-tier promiscuous capture just observed +
     // wrote to the .pcap. Always drives the AuditCapture SM hot (a capture DID
     // happen), but only counts + persists once per distinct BSSID. Returns true if
@@ -1883,7 +1883,7 @@ public:
     // encounter's real entry point, not a way to force a band — so a caller that wants a
     // riddle specifically seeds the RNG rather than asking for one. Explore mode has to
     // be armed, exactly as it does for the walk path.
-    void debugStartShibboleth() { startShibboleth(); }
+    void debugStartShiboleet() { startShiboleet(); }
     // Credit captured handshakes without a radio (tests / headless runs). SHAKES is what
     // buys a sigil of the Cant, and the honest path to one is a real WPA capture on real
     // hardware with capture armed — which no native run has.
@@ -2342,9 +2342,9 @@ private:
     const SpriteData* idleCamoSprite(int slot) const;
     void drawEncounterScreen(Framebuffer& fb) const;
     void drawWifiScreen(Framebuffer& fb) const;
-    void drawShibbolethHailScreen(Framebuffer& fb) const;
-    void drawShibbolethScreen(Framebuffer& fb) const;
-    void drawShibbolethVerdictScreen(Framebuffer& fb) const;
+    void drawShiboleetHailScreen(Framebuffer& fb) const;
+    void drawShiboleetScreen(Framebuffer& fb) const;
+    void drawShiboleetVerdictScreen(Framebuffer& fb) const;
     void drawShopScreen(Framebuffer& fb) const;
     void drawPostEncounterScreen(Framebuffer& fb) const;
 
@@ -2696,22 +2696,22 @@ private:
     void drawStoryArchiveScreen(Framebuffer& fb) const;
     std::vector<StoryEntry> storyArchiveEntries() const;
 
-    // THE SHIBBOLETH (game_shibboleth.cpp). startShibboleth() is reached from the Wi-Fi
+    // THE SHIBOLEET (game_shiboleet.cpp). startShiboleet() is reached from the Wi-Fi
     // event when the sighting queue came up empty and the dry-streak cadence is due
     // (game_net.cpp) — it grades the pet's fluency, and either resolves in place (an
     // AFFRONT into the guardian's fight, a BOON straight back to the walk) or opens
-    // Nav::Shibboleth with a riddle to answer. onShibboleth() is the press path;
-    // answerShibboleth() commits the focused reply and is also what the ~15s hold calls
+    // Nav::Shiboleet with a riddle to answer. onShiboleet() is the press path;
+    // answerShiboleet() commits the focused reply and is also what the ~15s hold calls
     // with nothing focused, since silence is an answer here. startGuardianCombat() is
     // the shared way into the fight, from an affront and from a failed riddle alike.
-    void startShibboleth();
-    void onShibbolethHail(const ButtonEvent& ev);
-    void openShibbolethWelcome();
-    void onShibboleth(const ButtonEvent& ev);
-    void answerShibboleth(bool answered);
-    void enterShibbolethVerdict();
-    void onShibbolethVerdict(const ButtonEvent& ev);
-    void finishShibboleth();
+    void startShiboleet();
+    void onShiboleetHail(const ButtonEvent& ev);
+    void openShiboleetWelcome();
+    void onShiboleet(const ButtonEvent& ev);
+    void answerShiboleet(bool answered);
+    void enterShiboleetVerdict();
+    void onShiboleetVerdict(const ButtonEvent& ev);
+    void finishShiboleet();
     void grantBoon();
     void startGuardianCombat();
     // Pay one unspent SHAKE for the next sigil of the Cant. Returns whether it bought
@@ -3752,7 +3752,7 @@ private:
     int batteryLevel_ = -1;
     int allyBuffBattlesLeft_ = 0;
 
-    // THE SHIBBOLETH — the guardian encounter (game_shibboleth.cpp, core/model/cant.h).
+    // THE SHIBOLEET — the guardian encounter (game_shiboleet.cpp, core/model/cant.h).
     //
     // Only ONE of these is durable. `cantSigils_` is the set of letters of the Cant this
     // device has learned to read (save v59), and `shakesSpent_` is how many of its SHAKES
@@ -3764,8 +3764,8 @@ private:
     SigilSet cantSigils_ = 0;
     int shakesSpent_ = 0;
 
-    ShibbolethWelcome shibWelcome_ = ShibbolethWelcome::Riddle;
-    ShibbolethReply shibReply_ = ShibbolethReply::Pending;
+    ShiboleetWelcome shibWelcome_ = ShiboleetWelcome::Riddle;
+    ShiboleetReply shibReply_ = ShiboleetReply::Pending;
     CantCipher shibCipher_;
     int shibRiddle_ = 0;        // index into riddles() (content_riddles.h)
     // Which authored reply sits on each shown row. The pool authors the TRUE reply first

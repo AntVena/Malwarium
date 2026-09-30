@@ -1,4 +1,4 @@
-// content_riddles.cpp — the SHIBBOLETH pool. One row per riddle; see
+// content_riddles.cpp — the SHIBOLEET pool. One row per riddle; see
 // content_riddles.h for the field schema, the two rules a row must pass, and why the
 // first reply is always the true one.
 

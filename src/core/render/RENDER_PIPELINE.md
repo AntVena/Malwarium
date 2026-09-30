@@ -174,7 +174,7 @@ own beat (`CombatOutro::beat`) — their own, because the strike clock is not th
 `FX_SWARM` is the one effect that is a SUBJECT rather than something applied to one, and it
 answers the moment-or-state question the same way `FX_CAMO` does: it is a **state**. What it
 is a function of is a guardian's DISPOSITION — `FlockMood` (`core/model/flock.h`), set from
-where the SHIBBOLETH has got to and how it came out — and it holds until the meeting moves
+where the SHIBOLEET has got to and how it came out — and it holds until the meeting moves
 on. There is no beat in it anywhere.
 
 Its motion is not derived, which makes it the exception to the rule the other passes keep,

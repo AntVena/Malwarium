@@ -1,18 +1,18 @@
-// shibboleth_screen.h — the guardian encounter, in three screens.
+// shiboleet_screen.h — the guardian encounter, in three screens.
 //
 // A meeting is a HAIL, then (in the middle band) the RIDDLE, then a VERDICT — the same
 // three beats a conversation has, and the reason the riddle is not the whole encounter:
 // something has to arrive before it can ask, and it has to make something of the answer
 // afterwards or a lost riddle is just a boss that appeared out of nothing.
 //
-//   drawShibbolethHail    — the thing is here, this is what it looks like, this is what
+//   drawShiboleetHail    — the thing is here, this is what it looks like, this is what
 //                           it says, and this is how much of that the pet can read.
-//   drawShibboleth        — what it asked and the three replies to pick between.
-//   drawShibbolethVerdict — what it made of the answer, and what that paid or cost.
+//   drawShiboleet        — what it asked and the three replies to pick between.
+//   drawShiboleetVerdict — what it made of the answer, and what that paid or cost.
 //
 // All three share a header band, the Cant strip along the foot, and the rule that
-// everything SPOKEN arrives already enciphered (Game::shibbolethGreeting /
-// shibbolethRiddleText / shibbolethReplyText / shibbolethOutcomeSpeech) while everything
+// everything SPOKEN arrives already enciphered (Game::shiboleetGreeting /
+// shiboleetRiddleText / shiboleetReplyText / shiboleetOutcomeSpeech) while everything
 // SEEN is plain. Nothing here knows about the cipher, which is what keeps the model
 // testable without a framebuffer.
 //
@@ -34,7 +34,7 @@ namespace mal {
 class Framebuffer;
 
 // THE GUARDIAN'S CELL: the box its swarm occupies on the two screens that draw the body,
-// in active px. Public because the ENGINE resets the flock into it (Game::startShibboleth)
+// in active px. Public because the ENGINE resets the flock into it (Game::startShiboleet)
 // — a flock is told how big its box is and never where it is, so this is the one number
 // the two layers have to agree on, and it is stated here because the screen is what owns
 // a layout.
@@ -50,7 +50,7 @@ constexpr int kGuardianCellH = 58;
 // still has a middle, and a bigger flock in the same box is a blob.
 constexpr int kGuardianSwarmMarks = 26;
 
-// The SHIBBOLETH board.
+// The SHIBOLEET board.
 //
 // `guardian` names who is asking (the header). `demeanour` is what the pet can SEE the
 // guardian doing — always plain words, drawn dim above everything else as the stage
@@ -70,7 +70,7 @@ constexpr int kGuardianSwarmMarks = 26;
 // `holdFrac` is how much of the answer clock has run, 0..1 — drawn as a bar, because a
 // guardian that will take silence for an answer has to SHOW that it is running out of
 // patience. It is the only thing on this screen that moves.
-void drawShibboleth(Framebuffer& fb, const char* guardian, const char* demeanour,
+void drawShiboleet(Framebuffer& fb, const char* guardian, const char* demeanour,
                     const char* greeting, const char* riddle,
                     const char* const replies[kRiddleReplies], int cursor,
                     uint32_t sigils, float holdFrac);
@@ -89,15 +89,15 @@ void drawShibboleth(Framebuffer& fb, const char* guardian, const char* demeanour
 // it.
 // `swarm` is the guardian itself, drawn in the cell above the text — the one thing on
 // either of these screens that moves, and the whole reason the hail is worth stopping on.
-void drawShibbolethHail(Framebuffer& fb, const char* guardian, const char* demeanour,
+void drawShiboleetHail(Framebuffer& fb, const char* guardian, const char* demeanour,
                         const char* greeting, const SwarmView& swarm, uint32_t sigils,
                         int shakes);
 
 // How a meeting came out, as the verdict screen announces it. The engine folds the
-// fluency band and the reply onto this (Game::shibbolethOutcome); the screen needs only
+// fluency band and the reply onto this (Game::shiboleetOutcome); the screen needs only
 // the WORD to put at the top and whether it is good news, so it keeps its own four rather
 // than reaching into the content layer's area rows for them.
-enum class ShibbolethVerdictKind { Pleased, Displeased, Refused, Boon };
+enum class ShiboleetVerdictKind { Pleased, Displeased, Refused, Boon };
 
 // The VERDICT — what the guardian made of it.
 //
@@ -117,8 +117,8 @@ enum class ShibbolethVerdictKind { Pleased, Displeased, Refused, Boon };
 //
 // `nextIsFight` names the button honestly: a displeased guardian answers for itself, and
 // a player is never told "B CONTINUE" and handed a boss.
-void drawShibbolethVerdict(Framebuffer& fb, const char* guardian,
-                           ShibbolethVerdictKind kind, const char* demeanour,
+void drawShiboleetVerdict(Framebuffer& fb, const char* guardian,
+                           ShiboleetVerdictKind kind, const char* demeanour,
                            const char* speech, const SwarmView& swarm, const char* ledger,
                            const char* flavor, uint32_t sigils, bool nextIsFight);
 

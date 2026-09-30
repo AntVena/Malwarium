@@ -214,9 +214,9 @@ void Game::onButton(const ButtonEvent& ev) {
         case Nav::StoryArchive: onStoryArchive(ev); break;
         case Nav::Encounter: onEncounter(ev); break;
         case Nav::Wifi: onWifi(ev); break;
-        case Nav::ShibbolethHail: onShibbolethHail(ev); break;
-        case Nav::Shibboleth: onShibboleth(ev); break;
-        case Nav::ShibbolethVerdict: onShibbolethVerdict(ev); break;
+        case Nav::ShiboleetHail: onShiboleetHail(ev); break;
+        case Nav::Shiboleet: onShiboleet(ev); break;
+        case Nav::ShiboleetVerdict: onShiboleetVerdict(ev); break;
         case Nav::Shop: onShop(ev); break;
         case Nav::ModShop: onShop(ev); break;
         case Nav::WarpPicker: onWarpPicker(ev); break;

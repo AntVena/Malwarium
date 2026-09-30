@@ -8,9 +8,10 @@
 #include "core/content/content_riddles.h"
 #include "core/model/cant.h"
 #include "core/ui/combat_screen.h"       // kSwarmSeatW/H — the flock's cell in a fight
-#include "core/ui/shibboleth_screen.h"   // ...and the one it takes on the meeting screens
+#include "core/ui/shiboleet_screen.h"   // ...and the one it takes on the meeting screens
 
-// game_shibboleth.cpp — THE SHIBBOLETH, the guardian encounter.
+// game_shiboleet.cpp — THE SHIBOLEET, the guardian encounter. Named for what is asking:
+// every guardian is a node of the Shiboleet, the swarm the Silk Lode's chapters reveal.
 //
 // Something has been watching every network in the area for a very long time, and when
 // the radio has nothing new to hand the pet, it is what the walk finds instead
@@ -20,18 +21,18 @@
 // What it does next is graded on how much of that tongue the pet can read
 // (cantFluencyPct, core/model/cant.h), in three bands:
 //
-//   AFFRONT — under kShibbolethAffrontBelowPct. It will not hear an illiterate pet out,
+//   AFFRONT — under kShiboleetAffrontBelowPct. It will not hear an illiterate pet out,
 //             and its fight follows from the refusal.
 //   RIDDLE  — the middle, and where nearly all of the game lives. A riddle drawn in the
 //             Cant with three replies drawn the same way. Answer it and the guardian is
-//             satisfied; answer wrong, or say nothing for kShibbolethReplyHoldBeats, and
+//             satisfied; answer wrong, or say nothing for kShiboleetReplyHoldBeats, and
 //             it takes the silence for an answer and the fight starts.
-//   BOON    — over kShibbolethBoonAbovePct. Fluent enough that the two simply talk. No
+//   BOON    — over kShiboleetBoonAbovePct. Fluent enough that the two simply talk. No
 //             riddle, no fight; the pet comes away rested, or with an escort.
 //
 // THREE SCREENS, AND THE RIDDLE IS THE MIDDLE ONE. A meeting is a HAIL
-// (Nav::ShibbolethHail) — the thing arrives, does something the pet can see, and speaks —
-// then whatever the band calls for, then a VERDICT (Nav::ShibbolethVerdict): what the
+// (Nav::ShiboleetHail) — the thing arrives, does something the pet can see, and speaks —
+// then whatever the band calls for, then a VERDICT (Nav::ShiboleetVerdict): what the
 // guardian made of it, what that paid or cost, and what happens next. Every band passes
 // through both, so an affront is a refusal the player watched rather than a boss that
 // appeared, and a lost riddle is something the guardian DID rather than a fight with no
@@ -50,14 +51,14 @@
 // Three files, the usual split: the rules of the tongue are core/model/cant.h (no Game,
 // no framebuffer), the pool is core/content/content_riddles.h (no rules), and this file
 // is the lifecycle, the fluency roll and the payout. The screen is
-// core/ui/shibboleth_screen.cpp.
+// core/ui/shiboleet_screen.cpp.
 
 namespace mal {
 
 namespace {
 // A guardian's own seed. Mixed from the walk's position rather than the clock so the
 // same encounter re-renders identically for as long as it is on screen — the cipher is
-// built once, in startShibboleth, and everything after reads it.
+// built once, in startShiboleet, and everything after reads it.
 uint32_t cipherSeed(uint32_t rng, int area, int steps) {
     return rng ^ (static_cast<uint32_t>(area) << 24) ^ static_cast<uint32_t>(steps);
 }
@@ -95,7 +96,7 @@ const char* Game::guardianName() const {
     return area(a).guardian.name;
 }
 
-void Game::startShibboleth() {
+void Game::startShiboleet() {
     // Grade the welcome first. All three bands then meet the pet the SAME way — a hail —
     // because the pet cannot tell which one it landed in until the thing in front of it
     // decides to ask, refuse, or talk.
@@ -105,14 +106,14 @@ void Game::startShibboleth() {
     // word thickens — so a pet with no sigils at all is still mostly ASKED, which is the
     // only reason the ladder has a first rung. See tunables.h.
     const int fluency = cantFluencyPct(cantSigils_);
-    const int affront = kShibbolethAffrontBasePct * (100 - fluency) / 100;
-    const int boon = kShibbolethBoonMaxPct * fluency / 100;
+    const int affront = kShiboleetAffrontBasePct * (100 - fluency) / 100;
+    const int boon = kShiboleetBoonMaxPct * fluency / 100;
     rng_ = rng_ * 1664525u + 1013904223u;
     const int welcome = static_cast<int>((rng_ >> 16) % 100);
-    shibWelcome_ = (welcome < affront)          ? ShibbolethWelcome::Affront
-                 : (welcome >= 100 - boon)      ? ShibbolethWelcome::Boon
-                                                : ShibbolethWelcome::Riddle;
-    shibReply_ = ShibbolethReply::Pending;
+    shibWelcome_ = (welcome < affront)          ? ShiboleetWelcome::Affront
+                 : (welcome >= 100 - boon)      ? ShiboleetWelcome::Boon
+                                                : ShiboleetWelcome::Riddle;
+    shibReply_ = ShiboleetReply::Pending;
     shibRow_ = 0;
     shibFlavor_[0] = '\0';
     shibVerdictLine_[0] = '\0';
@@ -121,12 +122,12 @@ void Game::startShibboleth() {
     rng_ = rng_ * 1664525u + 1013904223u;
     shibLine_ = static_cast<int>((rng_ >> 16) % kGuardianLines);
 
-    if (shibWelcome_ == ShibbolethWelcome::Riddle) {
+    if (shibWelcome_ == ShiboleetWelcome::Riddle) {
         const int n = riddleCount();
         if (n <= 0) {
             // An empty pool has nothing to ask, so the meeting is a refusal instead —
             // which is the one band that needs no content beyond the guardian itself.
-            shibWelcome_ = ShibbolethWelcome::Affront;
+            shibWelcome_ = ShiboleetWelcome::Affront;
         } else {
             rng_ = rng_ * 1664525u + 1013904223u;
             shibRiddle_ = static_cast<int>((rng_ >> 16) % static_cast<unsigned>(n));
@@ -153,14 +154,14 @@ void Game::startShibboleth() {
     // The BODY. Reset per meeting and seeded off the same walk position the cipher is,
     // so a guardian re-renders identically for as long as it is on screen and is a
     // different shape the next time it is met — which is the whole of what a swarm has
-    // instead of a sheet. The cell is the screen's (shibboleth_screen.h): a flock knows
+    // instead of a sheet. The cell is the screen's (shiboleet_screen.h): a flock knows
     // how big the box is and nothing about where the box is.
     guardianFlock_.seed(cipherSeed(rng_, exploreSector_, exploreSteps_) | 1u);
     guardianFlock_.reset(kGuardianSwarmMarks, kGuardianCellW, kGuardianCellH);
 
     exploreEventBeat_ = 0;   // start the hail's hold (game_core.cpp's tick)
     fxBeat_ = 0;
-    nav_ = Nav::ShibbolethHail;
+    nav_ = Nav::ShiboleetHail;
     dirty_ = true;
 }
 
@@ -170,8 +171,8 @@ FlockMood Game::guardianFlockMood() const {
     // board is a thing waiting on an answer, and the verdict is a thing that has made up
     // its mind — and each holds until the meeting moves on, which is what makes this a
     // state and not an effect running out.
-    if (nav_ == Nav::ShibbolethHail) return FlockMood::Watching;
-    if (nav_ == Nav::Shibboleth) return FlockMood::Attending;
+    if (nav_ == Nav::ShiboleetHail) return FlockMood::Watching;
+    if (nav_ == Nav::Shiboleet) return FlockMood::Attending;
     if (nav_ == Nav::Combat) {
         // THE FIGHT, where the mood is the one readout the screen does not otherwise
         // have: a guardian has a Health gauge like any rival, and the swarm says the same
@@ -192,7 +193,7 @@ FlockMood Game::guardianFlockMood() const {
         if (pct <= kGuardianSwarmPressedPct) return FlockMood::Agitated;
         return FlockMood::Watching;
     }
-    switch (shibbolethOutcome()) {
+    switch (shiboleetOutcome()) {
         case GuardianOutcome::Pleased:    return FlockMood::Pleased;
         case GuardianOutcome::Displeased: return FlockMood::Agitated;
         case GuardianOutcome::Affront:    return FlockMood::Withdrawn;
@@ -201,21 +202,21 @@ FlockMood Game::guardianFlockMood() const {
     return FlockMood::Watching;
 }
 
-void Game::onShibbolethHail(const ButtonEvent& ev) {
+void Game::onShiboleetHail(const ButtonEvent& ev) {
     // A REVEAL, like the Wi-Fi event's: B plays it forward, and any press restarts the
     // hold so a player still reading a guardian's greeting is not hurried past it. There
     // is nothing to cancel — the meeting has already happened.
     exploreEventBeat_ = 0;
     dirty_ = true;
-    if (ev.button == Button::B) openShibbolethWelcome();
+    if (ev.button == Button::B) openShiboleetWelcome();
 }
 
-void Game::openShibbolethWelcome() {
+void Game::openShiboleetWelcome() {
     // What the hail was the front of. Two of the three bands were decided by the fluency
     // roll before the pet ever saw the screen, so they resolve straight into their
     // verdict; only the middle one has a question in it.
     switch (shibWelcome_) {
-        case ShibbolethWelcome::Affront:
+        case ShiboleetWelcome::Affront:
             // A refusal costs nothing and pays nothing, so the ledger slot carries the
             // REASON instead: the affront chance is fluency scaled down, and a pet that
             // reads none of the Cant is the pet this happens to. The line under it says
@@ -223,72 +224,72 @@ void Game::openShibbolethWelcome() {
             std::snprintf(shibVerdictLine_, sizeof(shibVerdictLine_),
                           "YOU READ %d OF %d SIGILS", sigilsKnown(), kCantSigils);
             std::snprintf(shibFlavor_, sizeof(shibFlavor_), "IT SETTLES THIS ITSELF");
-            enterShibbolethVerdict();
+            enterShiboleetVerdict();
             return;
-        case ShibbolethWelcome::Boon:
+        case ShiboleetWelcome::Boon:
             grantBoon();
-            enterShibbolethVerdict();
+            enterShiboleetVerdict();
             return;
-        case ShibbolethWelcome::Riddle:
+        case ShiboleetWelcome::Riddle:
             shibRow_ = 0;
             exploreEventBeat_ = 0;   // start the ~15s answer clock (game_core.cpp's tick)
             fxBeat_ = 0;
-            nav_ = Nav::Shibboleth;
+            nav_ = Nav::Shiboleet;
             dirty_ = true;
             return;
     }
 }
 
-void Game::onShibboleth(const ButtonEvent& ev) {
+void Game::onShiboleet(const ButtonEvent& ev) {
     // A cursor list, the same contract every other picker keeps: A steps the row, B
     // commits it, C backs out. C is NOT a way out of the encounter — backing away from
     // something that asked you a question is its own answer, and it is the wrong one —
     // so it resolves as an unanswered riddle rather than returning to the walk.
-    if (shibReply_ != ShibbolethReply::Pending) return;
+    if (shibReply_ != ShiboleetReply::Pending) return;
     if (ev.button == Button::A) {
         shibRow_ = (shibRow_ + 1) % kRiddleReplies;
         exploreEventBeat_ = 0;   // a player who is reading is not being rushed
         dirty_ = true;
         return;
     }
-    if (ev.button == Button::B) { answerShibboleth(/*answered=*/true); return; }
-    if (ev.button == Button::C) { answerShibboleth(/*answered=*/false); return; }
+    if (ev.button == Button::B) { answerShiboleet(/*answered=*/true); return; }
+    if (ev.button == Button::C) { answerShiboleet(/*answered=*/false); return; }
 }
 
-int Game::shibbolethTrueRow() const {
+int Game::shiboleetTrueRow() const {
     // replies[0] is the true one; find where the shuffle put it.
     for (int i = 0; i < kRiddleReplies; ++i)
         if (shibOrder_[i] == 0) return i;
     return 0;
 }
 
-void Game::answerShibboleth(bool answered) {
-    if (shibReply_ != ShibbolethReply::Pending) return;
-    const bool right = answered && shibRow_ == shibbolethTrueRow();
+void Game::answerShiboleet(bool answered) {
+    if (shibReply_ != ShiboleetReply::Pending) return;
+    const bool right = answered && shibRow_ == shiboleetTrueRow();
     if (!right) {
-        shibReply_ = answered ? ShibbolethReply::Wrong : ShibbolethReply::Unanswered;
+        shibReply_ = answered ? ShiboleetReply::Wrong : ShiboleetReply::Unanswered;
         // The cost of getting it wrong, which is the same cost as not trying: a guardian
         // does not distinguish between an insult and a silence. The fight that follows
         // carries the rest of it, and the verdict screen is where the two are joined up.
-        model_.setHappiness(model_.happiness() - kShibbolethLoseHappy);
-        model_.setFragmentation(model_.fragmentation() + kShibbolethLoseFrag);
+        model_.setHappiness(model_.happiness() - kShiboleetLoseHappy);
+        model_.setFragmentation(model_.fragmentation() + kShiboleetLoseFrag);
         // Names WHICH silence this was. The guardian's own reaction is the same either
         // way (GuardianOutcome::Displeased) — this line is the engine saying what the pet
         // actually did, which is the half a player can act on next time.
         std::snprintf(shibFlavor_, sizeof(shibFlavor_), "%s",
                       answered ? "YOU ANSWERED WRONG" : "YOU SAID NOTHING");
         std::snprintf(shibVerdictLine_, sizeof(shibVerdictLine_), "-%d HAPPY  +%d FRAG",
-                      kShibbolethLoseHappy, kShibbolethLoseFrag);
+                      kShiboleetLoseHappy, kShiboleetLoseFrag);
         markSaveDirty();
-        enterShibbolethVerdict();
+        enterShiboleetVerdict();
         return;
     }
 
-    shibReply_ = ShibbolethReply::Answered;
+    shibReply_ = ShiboleetReply::Answered;
     const int happyBefore = model_.happiness();
-    model_.setHappiness(happyBefore + kShibbolethWinHappy);
+    model_.setHappiness(happyBefore + kShiboleetWinHappy);
     const int fragBefore = model_.fragmentation();
-    model_.setFragmentation(fragBefore - kShibbolethWinFragCut);
+    model_.setFragmentation(fragBefore - kShiboleetWinFragCut);
     // Reports what the pet ACTUALLY moved rather than the tunables, so a pet already at
     // full Happiness or already clean is never told it gained what it had no room for —
     // the same honesty grantBoon's line keeps.
@@ -309,61 +310,61 @@ void Game::answerShibboleth(bool answered) {
         std::snprintf(shibFlavor_, sizeof(shibFlavor_), "ANSWERED - NEEDS A SHAKE");
     }
     markSaveDirty();
-    enterShibbolethVerdict();
+    enterShiboleetVerdict();
 }
 
-GuardianOutcome Game::shibbolethOutcome() const {
+GuardianOutcome Game::shiboleetOutcome() const {
     // The fluency band and the reply folded onto the ONE axis the content is authored
     // against. A riddle that was never reached keeps its band's outcome, which is what
     // makes an affront and a boon expressible as things the guardian DID.
-    if (shibWelcome_ == ShibbolethWelcome::Affront) return GuardianOutcome::Affront;
-    if (shibWelcome_ == ShibbolethWelcome::Boon) return GuardianOutcome::Boon;
-    return shibReply_ == ShibbolethReply::Answered ? GuardianOutcome::Pleased
+    if (shibWelcome_ == ShiboleetWelcome::Affront) return GuardianOutcome::Affront;
+    if (shibWelcome_ == ShiboleetWelcome::Boon) return GuardianOutcome::Boon;
+    return shibReply_ == ShiboleetReply::Answered ? GuardianOutcome::Pleased
                                                    : GuardianOutcome::Displeased;
 }
 
-bool Game::shibbolethVerdictFights() const {
+bool Game::shiboleetVerdictFights() const {
     // The two outcomes the guardian answers itself. Read by the screen to name the
     // button, so a player is never told "B CONTINUE" and handed a boss.
-    const GuardianOutcome o = shibbolethOutcome();
+    const GuardianOutcome o = shiboleetOutcome();
     return o == GuardianOutcome::Displeased || o == GuardianOutcome::Affront;
 }
 
-void Game::shibbolethOutcomeSpeech(char* out, int cap) const {
+void Game::shiboleetOutcomeSpeech(char* out, int cap) const {
     if (!out || cap <= 0) return;
     out[0] = '\0';
     const int a = (exploreSector_ >= 0 && exploreSector_ < kAreaCount) ? exploreSector_ : 0;
     // The SAME cipher as the greeting and the riddle. A guardian does not switch to the
     // 'net's alphabet because the conversation is over — what it makes of the answer is
     // as legible as the question was, which is what makes a fluent pet's verdict land.
-    shibCipher_.applyTo(guardianOutcomeLine(area(a), shibbolethOutcome()).cant, out, cap);
+    shibCipher_.applyTo(guardianOutcomeLine(area(a), shiboleetOutcome()).cant, out, cap);
 }
 
-const char* Game::shibbolethOutcomeSeen() const {
+const char* Game::shiboleetOutcomeSeen() const {
     const int a = (exploreSector_ >= 0 && exploreSector_ < kAreaCount) ? exploreSector_ : 0;
-    return guardianOutcomeLine(area(a), shibbolethOutcome()).seen;
+    return guardianOutcomeLine(area(a), shiboleetOutcome()).seen;
 }
 
-void Game::enterShibbolethVerdict() {
+void Game::enterShiboleetVerdict() {
     exploreEventBeat_ = 0;   // start the verdict's hold (game_core.cpp's tick)
     fxBeat_ = 0;
-    nav_ = Nav::ShibbolethVerdict;
+    nav_ = Nav::ShiboleetVerdict;
     dirty_ = true;
 }
 
-void Game::onShibbolethVerdict(const ButtonEvent& ev) {
+void Game::onShiboleetVerdict(const ButtonEvent& ev) {
     // A REVEAL again: B plays out what the guardian decided, any press restarts the hold.
     // Nothing here is a choice — the choice was the reply, and this is its consequence.
     exploreEventBeat_ = 0;
     dirty_ = true;
-    if (ev.button == Button::B) finishShibboleth();
+    if (ev.button == Button::B) finishShiboleet();
 }
 
-void Game::finishShibboleth() {
+void Game::finishShiboleet() {
     // Where a meeting actually ends, and the only place it does. A displeased or refusing
     // guardian answers for itself; anything else hands back to the walk carrying the
     // consequence on the flavor line, so the encounter is still legible one screen later.
-    if (shibbolethVerdictFights()) { startGuardianCombat(); return; }
+    if (shiboleetVerdictFights()) { startGuardianCombat(); return; }
     if (shibFlavor_[0]) {
         std::strncpy(exploreFlavor_, shibFlavor_, sizeof(exploreFlavor_) - 1);
         exploreFlavor_[sizeof(exploreFlavor_) - 1] = '\0';
@@ -386,21 +387,21 @@ void Game::grantBoon() {
     // same lump would stop being a character: most of the time it simply sits with the
     // pet a while, and sometimes it sends something along with it.
     //
-    // Pays here and hands back nowhere — finishShibboleth is the one exit, so the pet
+    // Pays here and hands back nowhere — finishShiboleet is the one exit, so the pet
     // reads what it was given on the verdict before the walk resumes.
     rng_ = rng_ * 1664525u + 1013904223u;
-    const bool escort = static_cast<int>((rng_ >> 16) % 100) < kShibbolethBoonEscortPct;
+    const bool escort = static_cast<int>((rng_ >> 16) % 100) < kShiboleetBoonEscortPct;
     if (escort) {
-        allyBuffBattlesLeft_ = kShibbolethEscortBattles;
+        allyBuffBattlesLeft_ = kShiboleetEscortBattles;
         std::snprintf(shibFlavor_, sizeof(shibFlavor_), "ESCORTED X%d",
-                      kShibbolethEscortBattles);
+                      kShiboleetEscortBattles);
         std::snprintf(shibVerdictLine_, sizeof(shibVerdictLine_), "%d BATTLES AT YOUR SIDE",
-                      kShibbolethEscortBattles);
+                      kShiboleetEscortBattles);
     } else {
         const int happyBefore = model_.happiness();
-        model_.setHappiness(happyBefore + kShibbolethBoonHappy);
+        model_.setHappiness(happyBefore + kShiboleetBoonHappy);
         const int fragBefore = model_.fragmentation();
-        model_.setFragmentation(fragBefore - kShibbolethBoonFragCut);
+        model_.setFragmentation(fragBefore - kShiboleetBoonFragCut);
         // Reports the Happiness and Fragmentation actually moved rather than the
         // tunables, so a pet already near clean is never told it lost more than it had —
         // the same honesty resolveSafeRestEvent's line keeps.
@@ -428,14 +429,14 @@ void Game::startGuardianCombat() {
     startWildCombat(/*forceEnemyFirst=*/false);
 }
 
-void Game::shibbolethRiddleText(char* out, int cap) const {
+void Game::shiboleetRiddleText(char* out, int cap) const {
     if (!out || cap <= 0) return;
     out[0] = '\0';
     if (shibRiddle_ < 0 || shibRiddle_ >= riddleCount()) return;
     shibCipher_.applyTo(riddles()[shibRiddle_].text, out, cap);
 }
 
-void Game::shibbolethGreeting(char* out, int cap) const {
+void Game::shiboleetGreeting(char* out, int cap) const {
     if (!out || cap <= 0) return;
     out[0] = '\0';
     const int a = (exploreSector_ >= 0 && exploreSector_ < kAreaCount) ? exploreSector_ : 0;
@@ -450,7 +451,7 @@ const char* Game::guardianDemeanour() const {
     return guardianLine(area(a), shibLine_).seen;
 }
 
-void Game::shibbolethReplyText(int row, char* out, int cap) const {
+void Game::shiboleetReplyText(int row, char* out, int cap) const {
     if (!out || cap <= 0) return;
     out[0] = '\0';
     if (row < 0 || row >= kRiddleReplies) return;

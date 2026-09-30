@@ -557,7 +557,7 @@ Listed so Design **skips** them; they're implemented per `src/core/render/RENDER
 | `FX_ABSORB` | a glyph breaking into blocks that stream behind the pet, + the pet's swallow flash | SPRITE_MODS (under) | feeding a food · the Wi-Fi event's network discovery · a beaten rival that fielded a move the pet lacks | ⊘ |
 | `FX_SHRED` | a sprite shearing into sliding, streaking scanlines that fray out where they stood | SPRITE_MODS (under) | a beaten rival that fielded nothing new | ⊘ |
 | `FX_CAMO` | the pet repainted tone-for-tone in the palette worn by the fighter opposite; the change arrives and leaves as a scatter behind a bright burn edge, and holds in between | SPRITE_BASE (in place) | a metamorphic pet whose live cast was rolled out of another line's pool | ⊘ |
-| `FX_SWARM` | an area GUARDIAN, drawn as the flock it is: a couple of dozen marks steering by boids rules, threaded to their near neighbours so the body has an interior, dense in the middle and granular at the fringe | SPRITE_BASE (in place of a sheet) | the guardian's disposition — where the SHIBBOLETH has got to, and how it came out | ⊘ |
+| `FX_SWARM` | an area GUARDIAN, drawn as the flock it is: a couple of dozen marks steering by boids rules, threaded to their near neighbours so the body has an interior, dense in the middle and granular at the fringe | SPRITE_BASE (in place of a sheet) | the guardian's disposition — where the SHIBOLEET has got to, and how it came out | ⊘ |
 
 > `FX_CAMO` shares the other two's scatter (`core/render/dissolve.h`) so a screen that can
 > play more than one of them never looks like it swapped renderers mid-fight. What it does

@@ -58,7 +58,7 @@ void Game::startWifiEvent() {
     resolveNetworkDiscovery();
 
     // A dry queue on the cadence beat: the guardian is standing there
-    // (game_shibboleth.cpp). Every Nth dry event, and NOT the first — arming a walk
+    // (game_shiboleet.cpp). Every Nth dry event, and NOT the first — arming a walk
     // resets the streak (game_explore.cpp's startExplore), so summoning on the first
     // miss would put a guardian at the head of every fresh walk and let re-arming farm
     // them. Counting to N first also means a walk has to actually BE somewhere dry for
@@ -67,7 +67,7 @@ void Game::startWifiEvent() {
     // density is the same either way.
     if (netDiscovery_ == NetDiscovery::None &&
         emptyQueueStreak_ % kNetDiscoveryEmptyGuardianStrikes == 0) {
-        startShibboleth();
+        startShiboleet();
         return;
     }
 

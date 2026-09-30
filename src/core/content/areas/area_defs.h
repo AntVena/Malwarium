@@ -146,8 +146,8 @@ struct SubBossDef {
 };
 
 // One area's GUARDIAN — the thing that has been watching this network the whole time,
-// and the only creature in the game that would rather TALK than fight (the SHIBBOLETH,
-// game_shibboleth.cpp). It is not a rung of the EXPL ladder: it is met on the walk, when
+// and the only creature in the game that would rather TALK than fight (the SHIBOLEET,
+// game_shiboleet.cpp). It is not a rung of the EXPL ladder: it is met on the walk, when
 // the radio has nothing new to hand the pet, so it has no sub-area and no clear flag.
 //
 // The row carries only what is this guardian's OWN — its banner and what beating it
@@ -166,7 +166,7 @@ constexpr int kGuardianLines = 3;
 // One thing a guardian does when it meets a pet, said twice.
 //
 // `cant` is what it SAYS, in its own language — enciphered with the same mapping as the
-// riddle (Game::shibbolethGreeting), so it is gibberish to a pet with no sigils and
+// riddle (Game::shiboleetGreeting), so it is gibberish to a pet with no sigils and
 // plain speech to a fluent one. `seen` is what the pet OBSERVES, always in plain words,
 // because you can read a body without sharing a language.
 //
@@ -189,7 +189,7 @@ struct GuardianLine {
 // Indexes GuardianDef::outcomes, in this order.
 //
 // Pleased and Displeased are the two ways a riddle lands. Affront and Boon are the two
-// bands that never ask one at all (Game::startShibboleth's fluency roll) — a guardian
+// bands that never ask one at all (Game::startShiboleet's fluency roll) — a guardian
 // that will not hear an illiterate pet out still has to say so, and one that simply
 // talks to a fluent pet is the payoff the whole ladder climbs to.
 enum class GuardianOutcome : uint8_t { Pleased, Displeased, Affront, Boon };

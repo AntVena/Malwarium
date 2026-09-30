@@ -670,7 +670,7 @@ const MoveDef kMoves[] = {
     // Generic (line = nullptr) and reachable exactly as the two pools around it are: a
     // guardian's kit is what a drop is rolled off, and each of these is named by exactly
     // one AreaDef::guardian.teaches. A guardian is met on the WALK rather than on the
-    // ladder (game_shibboleth.cpp), so this is the only family in the game whose earn
+    // ladder (game_shiboleet.cpp), so this is the only family in the game whose earn
     // path does not run through the EXPL list at all.
     //
     // The family is DENIAL. A malbeast hurts you; a guardian ARBITRATES — it decides you

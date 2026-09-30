@@ -1152,7 +1152,7 @@ BossGauntlet areaBoss(int area);
 
 // The area's GUARDIAN, as a single enemy. Met on the WALK rather than the ladder — an
 // EXPL Wi-Fi event whose sighting queue came up empty is what summons it
-// (game_shibboleth.cpp) — so it is one enemy and not a gauntlet, and there is no clear
+// (game_shiboleet.cpp) — so it is one enemy and not a gauntlet, and there is no clear
 // flag it can set.
 //
 // Drawn on the same depth spine every boss is, at the rung `sub` the pet is standing on,

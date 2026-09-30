@@ -1,4 +1,4 @@
-// content_riddles.h — the SHIBBOLETH pool: what a guardian can put to a pet.
+// content_riddles.h — the SHIBOLEET pool: what a guardian can put to a pet.
 //
 // A row is a riddle and three replies. The guardian draws all four in the CANT
 // (core/model/cant.h), so what the player actually sees is legible only as far as their
@@ -28,12 +28,12 @@
 // pointing at, so a fluent pet still has to choose and a blind pick stays a real gamble.
 //
 // THE FIRST REPLY IS THE TRUE ONE, always. The three are SHUFFLED when the riddle is
-// asked (Game::startShibboleth), so authoring position carries no information and an
+// asked (Game::startShiboleet), so authoring position carries no information and an
 // author cannot accidentally teach the pool a habit — "it's usually the second one" is
 // not a thing a player can learn here.
 //
 // TWO RULES A NEW ROW MUST PASS, both checked by the native content gate rather than by
-// eye (test/test_native/test_shibboleth.cpp):
+// eye (test/test_native/test_shiboleet.cpp):
 //   * The riddle WRAPS into kRiddleBodyLines lines at kRiddleBodyW, and every reply fits
 //     kRiddleReplyW on one line. A character count is the wrong check — wrapping wastes
 //     the tail of most lines — so write it and run the gate.

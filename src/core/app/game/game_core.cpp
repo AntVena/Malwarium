@@ -266,25 +266,25 @@ bool Game::tickHeartbeat(uint32_t nowMs) {
             // guardian enters a fight, which then auto-dismisses; the rest resolve to
             // the habitat). Any button press restarts the hold (onWifi resets it).
             if (++exploreEventBeat_ >= kExploreRevealHoldBeats) resolveWifiOutcome();
-        } else if (nav_ == Nav::ShibbolethHail && exploreActive_) {
+        } else if (nav_ == Nav::ShiboleetHail && exploreActive_) {
             // Hands-off REVEAL: the guardian arriving and speaking is something to WATCH,
             // not a decision, so hold ~5s and then let the meeting go on to whatever the
-            // fluency roll already decided (openShibbolethWelcome). Any press restarts
+            // fluency roll already decided (openShiboleetWelcome). Any press restarts
             // the hold, so a player reading the greeting is never hurried past it.
-            if (++exploreEventBeat_ >= kShibbolethHailHoldBeats) openShibbolethWelcome();
-        } else if (nav_ == Nav::ShibbolethVerdict && exploreActive_) {
+            if (++exploreEventBeat_ >= kShiboleetHailHoldBeats) openShiboleetWelcome();
+        } else if (nav_ == Nav::ShiboleetVerdict && exploreActive_) {
             // Hands-off REVEAL again: what the guardian made of the answer, held ~6s and
-            // then played out (finishShibboleth — its fight, or back to the walk). The
+            // then played out (finishShiboleet — its fight, or back to the walk). The
             // consequence is already paid; this hold only decides how long it is read for.
-            if (++exploreEventBeat_ >= kShibbolethVerdictHoldBeats) finishShibboleth();
-        } else if (nav_ == Nav::Shibboleth && exploreActive_) {
+            if (++exploreEventBeat_ >= kShiboleetVerdictHoldBeats) finishShiboleet();
+        } else if (nav_ == Nav::Shiboleet && exploreActive_) {
             // Hands-off DECISION, and the one place on the walk where running out of
             // time is not the same as being left alone: a guardian asked a question, and
-            // silence past kShibbolethReplyHoldBeats is taken for an answer — the wrong
-            // one. Pressing A restarts the hold (onShibboleth resets it), so a player
+            // silence past kShiboleetReplyHoldBeats is taken for an answer — the wrong
+            // one. Pressing A restarts the hold (onShiboleet resets it), so a player
             // who is genuinely reading is never timed out mid-sentence.
-            if (++exploreEventBeat_ >= kShibbolethReplyHoldBeats)
-                answerShibboleth(/*answered=*/false);
+            if (++exploreEventBeat_ >= kShiboleetReplyHoldBeats)
+                answerShiboleet(/*answered=*/false);
         } else if ((nav_ == Nav::Shop || nav_ == Nav::ModShop) && exploreActive_) {
             // Hands-off DECISION: a shop (item OR mod) is a real buy/leave choice, so
             // hold ~10s to let a watching player act; if no button is pressed by then,
@@ -395,7 +395,7 @@ bool Game::tickAnimClocks(uint32_t nowMs) {
     // on it that moves, and paying a 16fps repaint for fifteen seconds of somebody
     // reading would buy nothing.
     const bool swarmLive =
-        nav_ == Nav::ShibbolethHail || nav_ == Nav::ShibbolethVerdict;
+        nav_ == Nav::ShiboleetHail || nav_ == Nav::ShiboleetVerdict;
     const bool fxSweeping =
         nav_ == Nav::ModalFeeding || nav_ == Nav::Wifi || swarmLive ||
         (nav_ == Nav::Combat && combat_.outcome() != Combat::Outcome::Ongoing);
@@ -748,9 +748,9 @@ bool Game::tickIdleDefocus(uint32_t nowMs) {
                            nav_ == Nav::ModalEvolve || nav_ == Nav::ModalCSF ||
                            nav_ == Nav::Combat || nav_ == Nav::ExploreControl ||
                            nav_ == Nav::Encounter || nav_ == Nav::Wifi ||
-                           nav_ == Nav::ShibbolethHail ||
-                           nav_ == Nav::Shibboleth ||
-                           nav_ == Nav::ShibbolethVerdict ||
+                           nav_ == Nav::ShiboleetHail ||
+                           nav_ == Nav::Shiboleet ||
+                           nav_ == Nav::ShiboleetVerdict ||
                            nav_ == Nav::Shop || nav_ == Nav::ModShop ||
                            nav_ == Nav::CacheYield ||
                            nav_ == Nav::BulkYield || nav_ == Nav::PostEncounter ||

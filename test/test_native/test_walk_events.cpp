@@ -853,9 +853,9 @@ void test_warp_key_walk_find() {
             case Game::Nav::PostEncounter:
                 g.onButton(press(Button::B));   // that fight's status readout -> dismiss
                 break;
-            case Game::Nav::ShibbolethHail:
-            case Game::Nav::Shibboleth:
-            case Game::Nav::ShibbolethVerdict:
+            case Game::Nav::ShiboleetHail:
+            case Game::Nav::Shiboleet:
+            case Game::Nav::ShiboleetVerdict:
                 // The area guardian a dry sighting queue routes to (game_net.cpp), in its
                 // three screens. Step through and move on — it is not what this gate is
                 // hunting, but a screen this loop does not press is a screen it spins on

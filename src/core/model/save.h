@@ -244,7 +244,7 @@ constexpr int kSaveTextCap = 28;     // matches EventLog's LogEntry.text
 //
 // v59: the CANT — which sigils of the guardians' language this device has learned, and
 //     how many SHAKES have been paid out for them (core/model/cant.h,
-//     game_shibboleth.cpp). Two fields and its own tail: `cantSigils` is a 26-bit mask
+//     game_shiboleet.cpp). Two fields and its own tail: `cantSigils` is a 26-bit mask
 //     (bit i = the letter 'A'+i reads plain) and `shakesSpent` is the purse's other
 //     half — the lifetime handshake count is already here from v7, and what is SPENDABLE
 //     is that minus this, so there is no third number to keep in step. Pre-v59 → 0 and

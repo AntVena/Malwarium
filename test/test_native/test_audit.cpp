@@ -395,7 +395,7 @@ void test_network_discovery_repeat_familiar_vs_home_turf() {
 }
 
 // A dry sighting queue costs the pet NOTHING, and on the cadence beat it summons the
-// area's guardian instead (game_net.cpp routes it, game_shibboleth.cpp runs it).
+// area's guardian instead (game_net.cpp routes it, game_shiboleet.cpp runs it).
 //
 // Taxing a dead zone would be the inverse of this seam, and is what it exists to avoid:
 // a Happiness penalty on the 1st miss and every Nth after grinds a ten-minute unmonitored
@@ -416,7 +416,7 @@ void test_network_discovery_empty_queue_costs_nothing_and_summons_a_guardian() {
     int happyDrops = 0;
     const int before = g.model().happiness();
     for (int i = 0; i < 400; ++i) {
-        if (g.nav() == Game::Nav::Shibboleth) {
+        if (g.nav() == Game::Nav::Shiboleet) {
             // The guardian, standing there because nothing was queued. Answer it and
             // move on — which of the three replies is right is not this test's business.
             sawGuardian = true;

@@ -99,21 +99,21 @@ SCENES=(
   "hacker_crew_detail|hacker crew red row:1 detail"
   "hacker_crew_netpick|hacker crew netpick"
   "hacker_merge|hacker merge recipes stock"
-  "shibboleth|shibboleth"           "shibboleth_half|shibboleth sigils:13"
-  "shibboleth_fluent|shibboleth sigils:24"
+  "shiboleet|shiboleet"           "shiboleet_half|shiboleet sigils:13"
+  "shiboleet_fluent|shiboleet sigils:24"
   # FX_SWARM: the guardian's body, one scene per FlockMood — a swarm is judged on whether
   # the moods read as different creatures, and that is a looking question, not a gate one.
   # The `beats` count runs the flock to its shape before the frame is taken.
-  "shibboleth_hail|shibboleth hail beats:70"
-  "shibboleth_hail_half|shibboleth hail sigils:13 beats:70"
-  "shibboleth_verdict|shibboleth verdict beats:70"
-  "shibboleth_verdict_fluent|shibboleth verdict sigils:24 beats:70"
-  "shibboleth_refused|shibboleth refused beats:70"
-  "shibboleth_boon|shibboleth boon sigils:26 beats:70"
-  "shibboleth_verdict_wrong|shibboleth verdict wrong sigils:13 beats:70"
+  "shiboleet_hail|shiboleet hail beats:70"
+  "shiboleet_hail_half|shiboleet hail sigils:13 beats:70"
+  "shiboleet_verdict|shiboleet verdict beats:70"
+  "shiboleet_verdict_fluent|shiboleet verdict sigils:24 beats:70"
+  "shiboleet_refused|shiboleet refused beats:70"
+  "shiboleet_boon|shiboleet boon sigils:26 beats:70"
+  "shiboleet_verdict_wrong|shiboleet verdict wrong sigils:13 beats:70"
   # ...and the other screen its body is on: the guardian's own fight, where the swarm holds
   # the rival seat that used to be a borrowed pet sheet.
-  "guardian_fight|shibboleth refused fight beats:60"
+  "guardian_fight|shiboleet refused fight beats:60"
   "shop|shop"                       "encounter|encounter"
   "modshop|modshop"                 "modshop_full|modshop full"
   "combat|combat"                   "postencounter|postencounter"

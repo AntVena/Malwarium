@@ -885,7 +885,7 @@ void Game::drawHackerSubmenu(Framebuffer& fb) const {
     std::snprintf(nets, sizeof(nets), "%d", networksSeen_);
     statRow(92, "NETS", nets, palColor(Pal::INK));
     // SHAKES is UNSPENT/LIFETIME, the same n/N shape QUEUED uses below. A shake is what
-    // buys a sigil of the Cant (game_shibboleth.cpp), so the number that matters when
+    // buys a sigil of the Cant (game_shiboleet.cpp), so the number that matters when
     // standing in front of a guardian is what is left to spend — and the lifetime tally
     // is still the brag it always was, right beside it.
     char shakes[16];

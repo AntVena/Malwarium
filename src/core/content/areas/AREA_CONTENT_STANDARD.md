@@ -82,8 +82,8 @@ per-area layout — don't pre-split ahead of actual growth.
 Every area names one `GuardianDef`: the thing that has been watching its networks the whole
 time. It is **not a rung of the ladder** — it is met on the WALK, when the radio has no new
 sighting to hand the pet (`game_net.cpp` routes there on a dry queue), and what happens next is
-the SHIBBOLETH: it speaks the Cant, and grades its welcome on how much of that the pet can read
-(`game_shibboleth.cpp`, `core/model/cant.h`). So a guardian has no sub-area, no clear flag, and
+the SHIBOLEET: it speaks the Cant, and grades its welcome on how much of that the pet can read
+(`game_shiboleet.cpp`, `core/model/cant.h`). So a guardian has no sub-area, no clear flag, and
 no place in the EXPL list.
 
 The row carries **only what is that guardian's own** — its banner, what beating it teaches, and

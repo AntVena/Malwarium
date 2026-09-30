@@ -20,7 +20,7 @@
 #include "core/ui/cfg_screen.h"
 #include "core/ui/combat_screen.h"
 #include "core/ui/expl_screen.h"
-#include "core/ui/shibboleth_screen.h"
+#include "core/ui/shiboleet_screen.h"
 #include "core/ui/items_screen.h"
 #include "core/ui/maint_screen.h"
 #include "core/ui/modals.h"
@@ -66,9 +66,9 @@ void Game::render(Framebuffer& fb) const {
             break;
         case Nav::Encounter: drawEncounterScreen(fb); break;
         case Nav::Wifi: drawWifiScreen(fb); break;
-        case Nav::ShibbolethHail: drawShibbolethHailScreen(fb); break;
-        case Nav::Shibboleth: drawShibbolethScreen(fb); break;
-        case Nav::ShibbolethVerdict: drawShibbolethVerdictScreen(fb); break;
+        case Nav::ShiboleetHail: drawShiboleetHailScreen(fb); break;
+        case Nav::Shiboleet: drawShiboleetScreen(fb); break;
+        case Nav::ShiboleetVerdict: drawShiboleetVerdictScreen(fb); break;
         case Nav::Shop: drawShopScreen(fb); break;
         case Nav::ModShop: drawShopScreen(fb); break;
         case Nav::WarpPicker: drawWarpPickerScreen(fb); break;
@@ -989,45 +989,45 @@ void Game::drawWifiScreen(Framebuffer& fb) const {
                   beat_, fxBeat_);
 }
 
-void Game::drawShibbolethScreen(Framebuffer& fb) const {
+void Game::drawShiboleetScreen(Framebuffer& fb) const {
     char riddle[kRiddleBodyLines * kRiddleBodyCols + 16];
-    shibbolethRiddleText(riddle, sizeof(riddle));
+    shiboleetRiddleText(riddle, sizeof(riddle));
     char reply[kRiddleReplies][40];
     const char* rows[kRiddleReplies];
     for (int i = 0; i < kRiddleReplies; ++i) {
-        shibbolethReplyText(i, reply[i], sizeof(reply[i]));
+        shiboleetReplyText(i, reply[i], sizeof(reply[i]));
         rows[i] = reply[i];
     }
     char greeting[kRiddleBodyCols * 2 + 8];
-    shibbolethGreeting(greeting, sizeof(greeting));
-    const float held = static_cast<float>(exploreEventBeat_) / kShibbolethReplyHoldBeats;
-    drawShibboleth(fb, guardianName(), guardianDemeanour(), greeting, riddle, rows,
+    shiboleetGreeting(greeting, sizeof(greeting));
+    const float held = static_cast<float>(exploreEventBeat_) / kShiboleetReplyHoldBeats;
+    drawShiboleet(fb, guardianName(), guardianDemeanour(), greeting, riddle, rows,
                    shibRow_, cantSigils_, held);
 }
 
-void Game::drawShibbolethHailScreen(Framebuffer& fb) const {
+void Game::drawShiboleetHailScreen(Framebuffer& fb) const {
     char greeting[kRiddleBodyCols * 2 + 8];
-    shibbolethGreeting(greeting, sizeof(greeting));
-    drawShibbolethHail(fb, guardianName(), guardianDemeanour(), greeting,
+    shiboleetGreeting(greeting, sizeof(greeting));
+    drawShiboleetHail(fb, guardianName(), guardianDemeanour(), greeting,
                        swarmViewOf(guardianFlock_), cantSigils_, shakesUnspent());
 }
 
-void Game::drawShibbolethVerdictScreen(Framebuffer& fb) const {
+void Game::drawShiboleetVerdictScreen(Framebuffer& fb) const {
     // The content layer's outcome mapped onto the screen's own four. The two enums are
     // kept apart on purpose — an area row is authored against GuardianOutcome, and the
     // renderer only ever needs the banner word and whether it is bad news.
-    ShibbolethVerdictKind kind = ShibbolethVerdictKind::Pleased;
-    switch (shibbolethOutcome()) {
-        case GuardianOutcome::Pleased:    kind = ShibbolethVerdictKind::Pleased; break;
-        case GuardianOutcome::Displeased: kind = ShibbolethVerdictKind::Displeased; break;
-        case GuardianOutcome::Affront:    kind = ShibbolethVerdictKind::Refused; break;
-        case GuardianOutcome::Boon:       kind = ShibbolethVerdictKind::Boon; break;
+    ShiboleetVerdictKind kind = ShiboleetVerdictKind::Pleased;
+    switch (shiboleetOutcome()) {
+        case GuardianOutcome::Pleased:    kind = ShiboleetVerdictKind::Pleased; break;
+        case GuardianOutcome::Displeased: kind = ShiboleetVerdictKind::Displeased; break;
+        case GuardianOutcome::Affront:    kind = ShiboleetVerdictKind::Refused; break;
+        case GuardianOutcome::Boon:       kind = ShiboleetVerdictKind::Boon; break;
     }
     char speech[kRiddleBodyCols * 2 + 8];
-    shibbolethOutcomeSpeech(speech, sizeof(speech));
-    drawShibbolethVerdict(fb, guardianName(), kind, shibbolethOutcomeSeen(), speech,
-                          swarmViewOf(guardianFlock_), shibbolethVerdictLine(),
-                          shibbolethFlavor(), cantSigils_, shibbolethVerdictFights());
+    shiboleetOutcomeSpeech(speech, sizeof(speech));
+    drawShiboleetVerdict(fb, guardianName(), kind, shiboleetOutcomeSeen(), speech,
+                          swarmViewOf(guardianFlock_), shiboleetVerdictLine(),
+                          shiboleetFlavor(), cantSigils_, shiboleetVerdictFights());
 }
 
 void Game::drawShopScreen(Framebuffer& fb) const {

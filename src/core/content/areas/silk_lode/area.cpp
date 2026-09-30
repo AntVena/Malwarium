@@ -51,7 +51,7 @@ const ShopListingDef kModShopListings[] = {
 // The Lode's CHAPTERS (core/content/story.h), wires 21-24.
 // Where the arc lands. The machine Morris counted is the first node of a mind that began
 // as a program reading the first network, and every guardian is part of it: the
-// Shibboleths are it asking. It wants to know, not to harm, and never weighed who stood
+// Shiboleets are it asking. It wants to know, not to harm, and never weighed who stood
 // behind the locks its malbeasts broke.
 const StoryPanelDef kIntroPanels[] = {
     {"THE SILK LODE",
