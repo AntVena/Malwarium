@@ -47,7 +47,7 @@ namespace mal {
 // different depths. The rule exists because the obvious pricing — a line row worth its own
 // band, plus a little — makes the row not worth the slot: NOP Sled handed a Metamorphic pet
 // the +4 initiative Clock-Speed Boost hands EVERYONE one level later, and Vault Door, an
-// Epic at the bottom of the ladder, cut less than a Bayou row found forty levels earlier.
+// Epic at the bottom of the ladder, defended less than a Bayou row found forty levels earlier.
 // A line is not a small bonus on the rung you are standing on; it is the reason to reach
 // the slot early. So:
 //   • the BASE (what anyone gets) sits at or just under its own band's generic rung — an
@@ -59,15 +59,16 @@ namespace mal {
 // each row was measured against are named in its comment, so a retune to one of them says
 // out loud which line rows have to move with it.
 //
-// DamageCutPct is the ONE family the rule cannot be applied to straight, and the reason is
-// worth stating once rather than re-deriving at each of its five line rows. Cuts ADD across
-// slots under a hard ceiling (kLevelDmgReduceMaxPct, 85) and every pet starts with Firewall
-// Patch's 40 already installed (Loadout::starting), so a cut row's real budget is not its
-// band's rung — it is what is left under the clamp once that 40 is spent. A line row priced
-// a full band deeper here would put a two-slot build at the ceiling and make the third slot
-// meaningless, so the cut rows stop a step short of their band target on purpose: Junk
-// Padding 26, Lookalike Cert 33, Cipher ASIC 42, Vault Door 54. Read them as a ladder
-// against each other and against Bastion Host's 45, not against the rule.
+// Defense is the ONE family the rule cannot be applied to straight, and the reason is
+// worth stating once rather than re-deriving at each of its five line rows. DEF ratings ADD
+// across slots, but what they are worth DIMINISHES in the share of a hit they remove (the
+// Defence curve, defendedDamage), and every pet starts with Firewall Patch's 67 already
+// installed (Loadout::starting) — so a DEF row's real budget is not its band's rung, it is
+// what one more slot of rating is still worth on top of that 67. A line row priced a full
+// band deeper here would make the second DEF slot the whole build, so the DEF rows stop a
+// step short of their band target on purpose: Junk Padding 35, Lookalike Cert 49, Cipher
+// ASIC 72, Vault Door 117. Read them as a ladder against each other and against Bastion
+// Host's 82, not against the rule.
 //
 // `wire` is the save identity and is spent forever once used (defs.h). Fields: wire, id,
 // name, tag, effect-text, oneShot, rarity, powerTier, equipLevel, effectKind, magnitude,
@@ -93,14 +94,14 @@ const ModDef kMods[] = {
 
     // --- THE PIRATE BAYOU (tier 2) -----------------------------------------
     {/*wire=*/4, "tpm_chip", "TPM Chip", "+DEF",
-     "Cuts incoming damage by {mag}%.", false,
-     ItemDef::Rarity::Uncommon, 2, 13, ModEffect::DamageCutPct, 15, 0, nullptr, 0},
+     "Raises DEF by {mag}.", false,
+     ItemDef::Rarity::Uncommon, 2, 13, ModEffect::Defense, 18, 0, nullptr, 0},
     {/*wire=*/5, "solid_state_cache", "Solid-State Cache", "+HP",
      "Raises max Health by {mag}.", false,
      ItemDef::Rarity::Uncommon, 2, 12, ModEffect::MaxHealth, 18, 0, nullptr, 0},
     {/*wire=*/6, "firewall_patch", "Firewall Patch", "+DEF",
-     "Cuts incoming damage by {mag}%.", false,
-     ItemDef::Rarity::Rare, 2, 22, ModEffect::DamageCutPct, 40, 0, nullptr, 0},
+     "Raises DEF by {mag}.", false,
+     ItemDef::Rarity::Rare, 2, 22, ModEffect::Defense, 67, 0, nullptr, 0},
 
     // --- NAPSTORRENT MOORS (tier 4) ----------------------------------------
     {/*wire=*/7, "overclock_chip", "Overclock Chip", "+SPD",
@@ -116,13 +117,13 @@ const ModDef kMods[] = {
     // Ransomware pet gets a bonus, on-identity for its Cipher wall). The first row of the
     // deep half of the soft-affinity pattern; the other four lines' are at the foot of
     // this table, under LINE COVERAGE.
-    // Base 24 clears Hardened Shell (20, tier 3) and on-line 42 sits at Bastion Host's 45
-    // one band deeper — a tier-4 Rare that reads as the tier-5 Epic for the line that owns
+    // Base 32 clears Hardened Shell (25, tier 3) and on-line 72 sits under Bastion Host's
+    // 82 one band deeper — a tier-4 Rare that reads as the tier-5 Epic for the line that owns
     // it. At its shipped 10/20 it was the worst cut row on the ladder that is not a starter
     // mod: a Rare found at level 39 that a Common at level 0 came within 12 of.
     {/*wire=*/10, "cipher_asic", "Cipher ASIC", "+DEF",
-     "Cuts damage {mag}% ({magBonus}% for Ransomware).", false,
-     ItemDef::Rarity::Rare, 4, 39, ModEffect::DamageCutPct, 24, 0, "ransomware", 18},
+     "Raises DEF by {mag} ({magBonus} for Ransomware).", false,
+     ItemDef::Rarity::Rare, 4, 39, ModEffect::Defense, 32, 0, "ransomware", 40},
 
     // --- DeepWeb Dive (tier 5) — the endgame mods --------------------------
     {/*wire=*/11, "deadman_switch", "Deadman Switch", "ON-KO",
@@ -186,16 +187,16 @@ const ModDef kMods[] = {
      "First hit taken each fight is cut an extra {mag}%.", false,
      ItemDef::Rarity::Rare, 1, 10, ModEffect::FirstHitCutPct, 50, 0, nullptr, 0},
     {/*wire=*/18, "scratch_disk_buffer", "Scratch Disk Buffer", "+DEF",
-     "Cuts incoming damage by {mag}%.", false,
-     ItemDef::Rarity::Common, 1, 0, ModEffect::DamageCutPct, 8, 0, nullptr, 0},
+     "Raises DEF by {mag}.", false,
+     ItemDef::Rarity::Common, 1, 0, ModEffect::Defense, 9, 0, nullptr, 0},
 
     // --- THE PIRATE BAYOU (tier 2) ---
     {/*wire=*/19, "botnet_swarm", "Botnet Swarm", "+POW/ATK",
      "Attack power rises {mag}% per equipped Attack move.", false,
      ItemDef::Rarity::Uncommon, 2, 16, ModEffect::AttackCountPowerPct, 6, 0, nullptr, 0},
     {/*wire=*/20, "airgap_ward", "Air-Gap Ward", "+DEF/DEF",
-     "Damage cut rises {mag}% per equipped Defend move.", false,
-     ItemDef::Rarity::Uncommon, 2, 17, ModEffect::DefendCountCutPct, 6, 0, nullptr, 0},
+     "DEF rises {mag} per equipped Defend move.", false,
+     ItemDef::Rarity::Uncommon, 2, 17, ModEffect::DefendCountDefense, 7, 0, nullptr, 0},
     {/*wire=*/21, "tripwire", "Tripwire", "THORNS",
      "Below {mag2}% Health, reflects {mag} damage to any attacker.", false,
      ItemDef::Rarity::Rare, 2, 21, ModEffect::ConditionalThorns, 10, 40, nullptr, 0},
@@ -207,8 +208,8 @@ const ModDef kMods[] = {
     // The crossing's own mods are the seamanship ones: keep the hull intact, see what
     // is coming, and strip the junk off whatever you hauled aboard.
     {/*wire=*/23, "hardened_shell", "Hardened Shell", "+DEF",
-     "Cuts incoming damage by {mag}%.", false,
-     ItemDef::Rarity::Uncommon, 3, 27, ModEffect::DamageCutPct, 20, 0, nullptr, 0},
+     "Raises DEF by {mag}.", false,
+     ItemDef::Rarity::Uncommon, 3, 27, ModEffect::Defense, 25, 0, nullptr, 0},
     {/*wire=*/24, "bundle_stripper", "Bundle Stripper", "1ST-CUT",
      "First hit taken each fight is cut an extra {mag}%.", false,
      ItemDef::Rarity::Rare, 3, 35, ModEffect::FirstHitCutPct, 60, 0, nullptr, 0},
@@ -241,7 +242,7 @@ const ModDef kMods[] = {
      ItemDef::Rarity::Epic, 5, 56, ModEffect::StealAmplifyPct, 75, 0, nullptr, 0,
      /*requiresLine=*/"phishing"},
     // Both halves state the same thing about the family: BRUTE FORCE with one gimmick,
-    // strong from the first turn rather than ramping into it. The cut is the brute half and
+    // strong from the first turn rather than ramping into it. The DEF is the brute half and
     // needs no setup at all; the pool is the gimmick, and it pays for exactly as long as
     // the pet is carrying damage it has not answered for.
     //
@@ -250,9 +251,9 @@ const ModDef kMods[] = {
     // hung there averages to nothing however large it is, while a pool holding something is
     // the ordinary state of the line doing its job.
     {/*wire=*/32, "extortion_ledger", "Extortion Ledger", "+DEF",
-     "Cuts damage {mag}%; an unpaid ransom adds {mag2}%+ power, more the "
+     "Raises DEF by {mag}; an unpaid ransom adds {mag2}%+ power, more the "
      "deeper it runs.", false,
-     ItemDef::Rarity::Epic, 5, 58, ModEffect::ExtortionLedger, 35, 90, nullptr, 0,
+     ItemDef::Rarity::Epic, 5, 58, ModEffect::ExtortionLedger, 54, 90, nullptr, 0,
      /*requiresLine=*/"ransomware"},
     {/*wire=*/33, "backup_uplink", "Backup Uplink", "+BITS",
      "Earns {mag} extra Bits from a won fight.", false,
@@ -314,14 +315,14 @@ const ModDef kMods[] = {
     // rather than output on purpose: Polymorph pays for casts, so surviving to take more
     // of them is the shape of an early metamorphic mod.
     //
-    // Base 14 sits just under TPM Chip's 15 in the same band; on-line 26 clears Hardened
-    // Shell (20, tier 3). It does NOT clear Firewall Patch's 40, and is not meant to — that
+    // Base 16 sits just under TPM Chip's 18 in the same band; on-line 35 clears Hardened
+    // Shell (25, tier 3). It does NOT clear Firewall Patch's 67, and is not meant to — that
     // row is INSTALLED FROM HATCH (Loadout::starting) rather than earned off the ladder, so
     // it is the wall every build already has rather than a rung this one competes for.
     {/*wire=*/47, "junk_padding", "Junk Padding", "+DEF",
-     "Padded until nothing matches: cuts damage {mag}% "
-     "({magBonus}% for Metamorphic).", false,
-     ItemDef::Rarity::Uncommon, 2, 16, ModEffect::DamageCutPct, 14, 0, "metamorphic", 12},
+     "Padded until nothing matches: raises DEF by {mag} "
+     "({magBonus} for Metamorphic).", false,
+     ItemDef::Rarity::Uncommon, 2, 16, ModEffect::Defense, 16, 0, "metamorphic", 19},
 
     // --- NET-SEA CROSSING (tier 3) — the mid rungs the crossing was missing ---
     // The crossing stocked five mods, all of them hull-and-lookout: a pet crossing it had
@@ -413,8 +414,8 @@ const ModDef kMods[] = {
     // are the only rows that pay for how a pet's MOVE slots are spent, so a crossing that
     // rewarded stacking attacks but not defends would quietly pick the build for you.
     {/*wire=*/52, "convoy_escort", "Convoy Escort", "+DEF/DEF",
-     "Damage cut rises {mag}% per equipped Defend move.", false,
-     ItemDef::Rarity::Uncommon, 3, 32, ModEffect::DefendCountCutPct, 9, 0, nullptr, 0},
+     "DEF rises {mag} per equipped Defend move.", false,
+     ItemDef::Rarity::Uncommon, 3, 32, ModEffect::DefendCountDefense, 11, 0, nullptr, 0},
     {/*wire=*/53, "broadside_array", "Broadside Array", "+POW/ATK",
      "Attack power rises {mag}% per equipped Attack move.", false,
      ItemDef::Rarity::Uncommon, 3, 34, ModEffect::AttackCountPowerPct, 9, 0, nullptr, 0},
@@ -454,13 +455,13 @@ const ModDef kMods[] = {
     // deep rungs of the four workhorse families, which is what the end of a ladder should
     // be: not new ideas, but the versions of the ordinary ones worth crossing a map for.
     //
-    // Bastion Host is also the row that fixes an inversion. The biggest flat damage cut in
-    // the game was Firewall Patch's 40%, in the BAYOU, at level 22 — so every cut mod
+    // Bastion Host is also the row that fixes an inversion. The biggest DEF row in the
+    // game was Firewall Patch's 67, in the BAYOU, at level 22 — so every DEF mod
     // found afterwards was a downgrade, and a family whose best rung sits two tiers from
     // the bottom is not a ladder. This is where the top of it goes.
     {/*wire=*/57, "bastion_host", "Bastion Host", "+DEF",
-     "One hardened way in, and it is watching: cuts incoming damage by {mag}%.", false,
-     ItemDef::Rarity::Epic, 5, 53, ModEffect::DamageCutPct, 45, 0, nullptr, 0},
+     "One hardened way in, and it is watching: raises DEF by {mag}.", false,
+     ItemDef::Rarity::Epic, 5, 53, ModEffect::Defense, 82, 0, nullptr, 0},
     // Thorns' top rung. A tarpit answers a scan by holding it open rather than by
     // refusing it, which is what the whole family does to an attacker.
     {/*wire=*/58, "tarpit_array", "Tarpit Array", "THORNS",
@@ -474,7 +475,7 @@ const ModDef kMods[] = {
      ItemDef::Rarity::Rare, 5, 59, ModEffect::LowHealthPowerPct, 35, 55, nullptr, 0},
     // ==== ARMOUR PIERCE ===========================================================
     // The answer to why raw attack power was never worth a slot. Power raises a number a
-    // defensive wall then deletes — at the 85% clamp a hit arrives at 15% of itself — so
+    // defensive wall then deletes — at 300 DEF a hit arrives at a quarter of itself — so
     // the fix was never a bigger number (a half-again pass on the whole family moved
     // nothing). It is a SECOND slot: power to make the hit big, pierce to make it land.
     // Two of three slots, and the third still has to cover everything else, which is what
@@ -530,18 +531,18 @@ const ModDef kMods[] = {
     // These five shipped as the worst offenders against the band-or-two rule, and the
     // deepest rung is where it costs most: four of them were beaten outright by a generic
     // rung the player already owned, so the reward for the whole walk was a downgrade.
-    // Vault Door cut 24% where Bastion Host (tier 5) cuts 45; Fork Farm gave 44 max Health
+    // Vault Door gave 32 DEF where Bastion Host (tier 5) gives 82; Fork Farm gave 44 max Health
     // where Seedbox Array (tier 4) gives 68; False Flag cut a first hit 65% where Decoy
     // Peer (tier 4) cuts 70 — and FirstHitCutPct takes the HIGHEST magnitude, so that one
     // was not merely worse, it was inert in the same slot. Each base now clears its
     // family's deepest generic rung and each on-line total clears it again:
-    //   Vault Door 38/54 (Bastion Host 45) · Spoof Relay 26/44 (Harpoon Mount 18) ·
+    //   Vault Door 61/117 (Bastion Host 82) · Spoof Relay 26/44 (Harpoon Mount 18) ·
     //   Fork Farm 60/90 (Seedbox Array 68) · False Flag 72/90 (Decoy Peer 70) ·
     //   Recompiler 9/18 (Sonar Ping 7).
     {/*wire=*/81, "vault_door", "Vault Door", "+DEF",
-     "Nothing negotiates with a wall: cuts incoming damage {mag}% ({magBonus}% for "
+     "Nothing negotiates with a wall: raises DEF by {mag} ({magBonus} for "
      "Ransomware).", false,
-     ItemDef::Rarity::Epic, 6, 63, ModEffect::DamageCutPct, 38, 0, "ransomware", 16},
+     ItemDef::Rarity::Epic, 6, 63, ModEffect::Defense, 61, 0, "ransomware", 56},
     {/*wire=*/82, "spoof_relay", "Spoof Relay", "+PWR",
      "It answers in somebody else's name: attack power +{mag}% ({magBonus}% for "
      "Phishing).", false,
@@ -639,9 +640,9 @@ const ModDef kMods[] = {
     // had no line row of any kind. Each is the middle rung of the family its line's Bayou
     // row opened, or the first rung of the one that suits the line better at this depth.
     {/*wire=*/71, "lookalike_cert", "Lookalike Cert", "+DEF",
-     "Close enough that nobody checks twice: cuts incoming damage by {mag}% "
-     "({magBonus}% for Phishing).", false,
-     ItemDef::Rarity::Uncommon, 3, 26, ModEffect::DamageCutPct, 19, 0, "phishing", 14},
+     "Close enough that nobody checks twice: raises DEF by {mag} "
+     "({magBonus} for Phishing).", false,
+     ItemDef::Rarity::Uncommon, 3, 26, ModEffect::Defense, 23, 0, "phishing", 26},
     {/*wire=*/72, "ransom_locker", "Ransom Locker", "+HP",
      "Room enough for the whole ledger: raises max Health by {mag} "
      "({magBonus} for Ransomware).", false,
@@ -649,13 +650,13 @@ const ModDef kMods[] = {
     // The crossing's COUNT pair goes one to each line with a reason to care how its move
     // slots are spent: a Trojan's traps ARE its Defend rows, and a Worm's Attack rows are
     // what put attacker copies on the board. Each base matches the generic rung beside it
-    // (Convoy Escort 9, Broadside Array 9) rather than undercutting it, and clears it half
+    // (Convoy Escort 11, Broadside Array 9) rather than undercutting it, and clears it half
     // again on the line — the band-or-two rule in a family whose whole generic ladder is
     // two rungs wide, so the deeper number has to be invented rather than copied off one.
     {/*wire=*/73, "signed_driver", "Signed Driver", "+DEF/DEF",
-     "Damage cut rises {mag}% per equipped Defend move "
-     "({magBonus}% for Trojan).", false,
-     ItemDef::Rarity::Uncommon, 3, 31, ModEffect::DefendCountCutPct, 9, 0, "trojan", 6},
+     "DEF rises {mag} per equipped Defend move "
+     "({magBonus} for Trojan).", false,
+     ItemDef::Rarity::Uncommon, 3, 31, ModEffect::DefendCountDefense, 11, 0, "trojan", 10},
     {/*wire=*/74, "mass_mailer", "Mass Mailer", "+POW/ATK",
      "Every copy goes out at once: attack power rises {mag}% per equipped Attack move "
      "({magBonus}% for Worm).", false,

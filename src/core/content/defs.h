@@ -708,7 +708,7 @@ inline int itemDropWeight(const ItemDef& d) {
 enum class ModEffect : uint8_t {
     None = 0,        // legacy / inert (no structured effect)
     PowerPct,        // +magnitude% to the pet's attack-power lean (powerMultPct)
-    DamageCutPct,    // +magnitude% incoming-damage cut (dmgReducePct, under the 85% clamp)
+    Defense,         // +magnitude DEF rating (Combatant::defense, the Defence curve)
     MaxHealth,       // +magnitude flat max-Health (and starting Health)
     Speed,           // +magnitude initiative; magnitude2 = % attack-power COST (Overclock)
     PostBattleBits,  // +magnitude Bits after a won encounter (Packet Sniffer)
@@ -731,7 +731,7 @@ enum class ModEffect : uint8_t {
     FaradayCut,      // Faraday Cage — incoming DoT (MoveDef::dot*) on the pet is cut by
                      // magnitude% (100 = immune — the cage shields against the corruption).
     ArmorPiercePct,  // DRM Stripper / Hull Auger / Rowhammer / DMA Breach — every hit this
-                     // pet lands ignores magnitude% of the target's damage cut AND of its
+                     // pet lands ignores magnitude% of the target's DEF rating AND of its
                      // one-shot brace, exactly as MoveDef::armorPiercePct does, and blunted
                      // by the same defender-side pierceResistPct. It is the ANSWER to the
                      // thing that made raw attack power not worth a slot: power raises a
@@ -759,8 +759,8 @@ enum class ModEffect : uint8_t {
                           // and leading with the strongest.
     AttackCountPowerPct,  // Botnet Swarm — +magnitude% attack power PER equipped Attack
                           // move (a glass-cannon build-around: stack attack slots).
-    DefendCountCutPct,    // Air-Gap Ward — +magnitude% incoming-damage cut PER equipped
-                          // Defend move (the defensive mirror of Botnet Swarm).
+    DefendCountDefense,   // Air-Gap Ward — +magnitude DEF rating PER equipped Defend
+                          // move (the defensive mirror of Botnet Swarm).
     FirstHitCutPct,       // Canary Trap — the FIRST hit the pet takes each fight is cut
                           // an extra magnitude% (a decoy absorbs the opening probe).
     LowHealthPowerPct,    // Meltdown Core — while own Health <= magnitude% of max, attack
@@ -794,7 +794,7 @@ enum class ModEffect : uint8_t {
                           // MoveDef::replicaSpawnPct). Raises the RATE, never the CAP:
                           // kWormReplicaSlots still bounds the board, so this fills the
                           // slots sooner rather than making more of them.
-    ExtortionLedger,      // Extortion Ledger — `magnitude`% incoming-damage cut standing,
+    ExtortionLedger,      // Extortion Ledger — `magnitude` DEF rating standing,
                           // and `magnitude2`% ATTACK POWER on top while the pet is holding
                           // an unsettled ransom pool (Combatant::ransomPool).
                           //
@@ -915,10 +915,10 @@ struct MoveDef {
     const char* line = nullptr;   // nullptr = generic; else exclusive line id
     int stackPowerPct = 0;        // Lockout track: +% to the CASTER's Power on landing
     int stackPowerCap = 0;        //   this hit, accumulating up to this total (0 = off)
-    int stackDefensePct = 0;      // Cipher track: +% incoming-damage cut to the CASTER
+    int stackDefensePct = 0;      // Cipher track: +DEF rating to the CASTER
     int stackDefenseCap = 0;      //   on casting this brace, up to this total (0 = off)
     int armorPiercePct = 0;       // this hit ignores this % of the target's guard +
-                                  //   dmgReducePct (MBR Wipe — the wall doesn't matter)
+                                  //   DEF rating (MBR Wipe — the wall doesn't matter)
 
     // --- Deferred-mod pass · the two THREATS the last two mods counter ------------
     // Both ride on a landed Attack (a rider on the hit, not a standalone move kind), so
@@ -939,7 +939,7 @@ struct MoveDef {
     // (shieldHp > 0) — see the "Perfect Bite" bonus in Combat::applyEffect and
     // content_passives.h's Phishing section.
     int stealPowerPct = 0;       // target's powerMultPct (floored, kStealPowerFloorPct)
-    int stealDefensePct = 0;     // target's dmgReducePct (floored at 0)
+    int stealDefensePct = 0;     // target's DEF rating (only a positive one gives)
     int stealSpeedPct = 0;       // target's CURRENT speed (floored, kStealSpeedFloor);
                                   // bubble-gated (see above)
     int stealCurrentHpPct = 0;   // target's CURRENT health, a lifesteal-style drain;
@@ -961,15 +961,15 @@ struct MoveDef {
     // caster's trap pile (cap kTrojanTrapCap) where it stays until an incoming enemy
     // attack TRIGGERS one — which deletes trapEvasionPct% of that hit's final damage,
     // reflects trapReboundPct% of the damage the trap mitigated back through the
-    // attacker's (now-rotting) defense, and strips trapArmorRot flat % Defense off the
-    // attacker for the rest of the fight. Armed traps also feed the Execution-Override
+    // attacker's (now-rotting) defense, and strips trapArmorRot flat DEF off the
+    // attacker for the rest of the fight — unfloored, so it drives a rating negative. Armed traps also feed the Execution-Override
     // passive: each contributes trapPassiveBonusPct to its trigger chance, so holding
     // all three traps makes the hijack likely (Combat::execOverrideChance). trapArm=1
     // marks the row a trap (like shieldPool=1 marks a pool); 0 = every non-Trojan Defend.
     int trapArm = 0;
     int trapEvasionPct = 0;       // % of the triggering hit's final damage deleted
     int trapReboundPct = 0;       // % of the mitigated damage reflected at the attacker
-    int trapArmorRot = 0;         // flat % Defense stripped from the attacker (permanent)
+    int trapArmorRot = 0;         // flat DEF stripped from the attacker (permanent)
     int trapPassiveBonusPct = 0;  // this armed trap's bump to the Execution-Override chance
 
     // --- Worm replication track (Worm line) --------------------------------------

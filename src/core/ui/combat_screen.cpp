@@ -6,7 +6,6 @@
 #include <cstdio>
 #include <cstring>
 
-#include "tunables.h"        // kLevelDmgReduceMaxPct — the never-immune defence clamp
 #include "core/model/combat.h"
 #include "core/render/absorb.h"
 #include "core/render/camo.h"
@@ -655,10 +654,9 @@ CombatVitals combatVitals(const Combatant& c) {
     // applyEffect). Reading only one of them makes a stacked pet look like it is purely
     // losing ground to a drain it is in fact out-earning.
     v.power = c.powerMultPct + c.stackPowerBonus;
-    // The incoming-damage cut under the never-immune clamp the attack path applies, plus
-    // the Cipher track feeding it.
-    v.defense = c.dmgReducePct + c.stackDefenseBonus;
-    if (v.defense > kLevelDmgReduceMaxPct) v.defense = kLevelDmgReduceMaxPct;
+    // The DEF rating the attack path mitigates with: the fighter's own plus the Cipher
+    // track feeding it. Uncapped, and negative once armour rot has shredded it.
+    v.defense = c.defense + c.stackDefenseBonus;
     // Speed is float (a Phishing siphon steals fractional amounts); round to the nearest
     // whole tick — a decimal point would break the tabular-digit convention every other
     // numeric on the device follows.

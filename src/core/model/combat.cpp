@@ -64,8 +64,8 @@ void Combat::begin(const Combatant& player, const Combatant& enemy, Stakes stake
     syncWormSpeed();
     player_.baseSpeed = player_.speed;
     enemy_.baseSpeed = enemy_.speed;
-    player_.baseDmgReducePct = player_.dmgReducePct;
-    enemy_.baseDmgReducePct = enemy_.dmgReducePct;
+    player_.baseDefense = player_.defense;
+    enemy_.baseDefense = enemy_.defense;
     // Empty gauges, then pick the opening actor by speed. forceEnemyFirst (a failed
     // pre-fight flee) overrides that once; speed scheduling resumes after.
     plGauge_ = 0;
@@ -216,20 +216,13 @@ void polymorphPay(Combatant& c, MoveKind kind, int points) {
         c.powerMultPct += kLevelPowerPctPerPoint * points;
         c.speed += static_cast<float>(kLevelSpeedPerPoint * points);
     } else {
-        c.dmgReducePct += kLevelDefensePctPerPoint * points;
+        c.defense += kLevelDefensePerPoint * points;
         int gain = kLevelHealthPerPoint * points;
-        // A payment onto a full wall would otherwise be worth nothing; what the clamp
-        // refuses becomes Health instead (capOverflowHealth, combat.h), as at level-up.
-        if (c.dmgReducePct > kLevelDmgReduceMaxPct) {
-            gain += capOverflowHealth(c.dmgReducePct - kLevelDmgReduceMaxPct,
-                                      kLevelDefensePctPerPoint);
-            c.dmgReducePct = kLevelDmgReduceMaxPct;
-        }
         c.defenseMultPct += kLevelDefenseBracePctPerPoint * points;
         // The brace ceiling, which absorb answers to exactly as levelling does: an
         // unbounded absorb is the failure kLevelDefenseBraceCapPct was written for. The
         // cap is the multiplier's BONUS half, so the field's neutral 100 sits under it
-        // (tunables.h), and what it refuses becomes Health like every other clamp here.
+        // (tunables.h), and what it refuses becomes Health (capOverflowHealth, combat.h).
         const int braceCeilPct = 100 + kLevelDefenseBraceCapPct;
         if (c.defenseMultPct > braceCeilPct) {
             gain += capOverflowHealth(c.defenseMultPct - braceCeilPct,
@@ -476,7 +469,7 @@ void Combat::payCaster(Combatant& actor, Combatant& target, Combatant& mirror,
     if (hasLinePassive(actor.linePassives, LinePassive::Lure) && !statsFloored(target))
         siphonPower(actor, target, kPhishLureSiphonPctByStage[stageIndex(actor.stage)]);
     if (actor.ransomPool > 0)
-        actor.dmgReducePct +=
+        actor.defense +=
             actor.ransomPool * kRansomStrikeDefensePctByStage[stageIndex(actor.stage)] / 100;
     applyStealTrack(actor, target, mv, reachedHealth);
     applyCrewOnHit(actor, dealt);
@@ -527,9 +520,11 @@ int Combat::swingDamage(Combatant& actor, const MoveDef& mv, bool byPlayer,
     // Steal-attacks are deliberately low-power and lean on the min-1 penetration floor,
     // so the banked flat bonus is what makes a sustained frenzy dangerous.
     if (mv.stealPowerPct > 0) dmg += actor.phishComboBonus;
-    // The wall, spent. Ransomware's one currency it could never cash in.
+    // The wall, spent. Ransomware's one currency it could never cash in. Paid as the cut
+    // the stack alone would make, so the bonus reads in the same % the swing is scaled by.
     if (swingingSeized && actor.stackDefenseBonus > 0)
-        dmg = dmg * (100 + actor.stackDefenseBonus * kRansomSeizedWallPct / 100) / 100;
+        dmg = dmg * (100 + defenseCutPct(actor.stackDefenseBonus) * kRansomSeizedWallPct /
+                               100) / 100;
     // Worm attacker replicas pile onto the parent's swing before mitigation, so it goes
     // through the target's defence like any other damage. The parent's own attacks are
     // weak, so the line's threat scales with the board rather than the move rolled.
@@ -570,10 +565,9 @@ bool Combat::replicaAte(Combatant& actor, Combatant& target, const MoveDef& mv, 
     const int dealt = dmg < r.health ? dmg : r.health;
     r.health -= dealt;
     if (r.defender) {
-        int reduce = actor.dmgReducePct;
-        if (reduce > kLevelDmgReduceMaxPct) reduce = kLevelDmgReduceMaxPct;
-        actor.health -= dealt * kWormDefenderBitePctByStage[stageIndex(target.stage)] / 100 *
-                        (100 - reduce) / 100;
+        actor.health -= defendedDamage(
+            dealt * kWormDefenderBitePctByStage[stageIndex(target.stage)] / 100,
+            actor.defense);
     }
     if (r.health <= 0) {   // packed: the last replica fills the freed slot
         // Recorded before the pack erases it — the copy is about to stop existing, and
@@ -609,20 +603,21 @@ int Combat::mitigate(Combatant& actor, Combatant& target, const MoveDef& mv, int
         }
         target.mirrorFired = true;
     } else {
-        // Effective cut = passive Defense + stacked Cipher-track Defense, under the
-        // never-immune clamp. Pierce (the move's own, then the mod's) is applied
-        // multiplicatively rather than summed, so however many stack the defender keeps
-        // a defence — two 50% pierces are 75%, never 100. Defence T1 cuts each
-        // pierce back before it lands, so the cut already earned stops being routed
-        // around (levelDefensePierceResistPct).
+        // Effective rating = passive Defense + stacked Cipher-track Defense, put through
+        // the Defence curve (defendedDamage), which never reaches immunity. Pierce (the
+        // move's own, then the mod's) is applied multiplicatively rather than summed, so
+        // however many stack the defender keeps a defence — two 50% pierces are 75%,
+        // never 100. It only ever shaves a POSITIVE rating toward zero: shredded armour
+        // is already below what pierce would ignore. Defence T1 cuts each pierce back
+        // before it lands, so the rating already earned stops being routed around
+        // (levelDefensePierceResistPct).
         const auto pierced = [&](int value, int piercePct) {
             if (piercePct <= 0 || value <= 0) return value;
             const int p = piercePct * (100 - target.pierceResistPct) / 100;
             return p > 0 ? value * (100 - p) / 100 : value;
         };
         const int modPierce = actor.mods.mag(ModEffect::ArmorPiercePct);
-        int reduce = target.dmgReducePct + target.stackDefenseBonus;
-        if (reduce > kLevelDmgReduceMaxPct) reduce = kLevelDmgReduceMaxPct;
+        int reduce = target.defense + target.stackDefenseBonus;
         reduce = pierced(reduce, mv.armorPiercePct);
         reduce = pierced(reduce, modPierce);
         // Power T2 (ring zero): innate pierce, dealt into the same chain and in the
@@ -631,8 +626,8 @@ int Combat::mitigate(Combatant& actor, Combatant& target, const MoveDef& mv, int
         // it exactly as it blunts the other two. A stat tier that stacked ADDITIVELY
         // here would be the one pierce the wall could not argue with.
         reduce = pierced(reduce, actor.piercePct);
-        if (reduce > 0) dmg = dmg * (100 - reduce) / 100;
-        // Canary Trap (mod): an extra cut on the first hit, outside the 85% clamp and
+        dmg = defendedDamage(dmg, reduce);
+        // Canary Trap (mod): an extra cut on the first hit, outside the Defence curve and
         // never pierced. Consumed only when a hit actually lands (dmg > 0).
         if (ModState* canary = target.mods.find(ModEffect::FirstHitCutPct);
             dmg > 0 && canary && canary->mag > 0 && canary->pending > 0) {
@@ -658,8 +653,8 @@ int Combat::mitigate(Combatant& actor, Combatant& target, const MoveDef& mv, int
             dmg = dmg > brace ? dmg - brace : 0;
             // Defence T2: an over-sized brace's remainder carries instead of being
             // binned (levelDefenseBraceRetainPct) — the wall buys efficiency, not a
-            // bigger number, since the % cut's ceiling rules that out. Measured against
-            // the pre-pierce remainder, so pierce-resist and retention pay once, not twice.
+            // bigger number. Measured against the pre-pierce remainder, so pierce-resist
+            // and retention pay once, not twice.
             target.guard = unspent * target.braceRetainPct / 100;
         }
         // Minimum penetration: an attack always lands at least 1 through pure
@@ -860,8 +855,8 @@ void Combat::applyDefend(Combatant& actor, Combatant& mirror, const MoveDef& mv,
     }
     workUp(actor);
     if (mv.ransomCashPct > 0) mirror.health -= actor.ransomPool * mv.ransomCashPct / 100;
-    // Cipher track: the cast stacks the caster's Defense (% cut) for the
-    // fight, capped per move; the attack path clamps the total to 85% (never immune).
+    // Cipher track: the cast stacks the caster's DEF rating for the fight, capped per
+    // move; the Defence curve keeps the total from ever reaching immunity.
     if (mv.stackDefensePct > 0 && actor.stackDefenseBonus < mv.stackDefenseCap) {
         int gain = mv.stackDefensePct;
         if (actor.stackDefenseBonus + gain > mv.stackDefenseCap)
@@ -941,17 +936,15 @@ int Combat::springTrojanTrap(Combatant& actor, Combatant& target, int dmg, int b
     const int mitigated = baseDmg - dmg;          // total the Trojan avoided
     if (trap->trapReboundPct > 0 && mitigated > 0) {
         int rebound = mitigated * trap->trapReboundPct / 100;
-        int r = actor.dmgReducePct;               // through the attacker's defense
-        if (r > kLevelDmgReduceMaxPct) r = kLevelDmgReduceMaxPct;
-        if (r > 0) rebound = rebound * (100 - r) / 100;
+        rebound = defendedDamage(rebound, actor.defense);   // through the attacker's defense
         if (rebound > 0) {
             actor.health -= rebound;
         }
     }
-    if (trap->trapArmorRot > 0 && !statsFloored(actor)) {   // rot armor for next time
-        actor.dmgReducePct -= trap->trapArmorRot;
-        if (actor.dmgReducePct < 0) actor.dmgReducePct = 0;
-    }
+    // Rot armor for next time. FLAT and unfloored, so it is the one thing that drives a
+    // rating below zero — the counter a deep wall cannot out-invest (tunables.h).
+    if (trap->trapArmorRot > 0 && !statsFloored(actor))
+        actor.defense -= trap->trapArmorRot;
     return dmg;
 }
 
@@ -1017,11 +1010,12 @@ void Combat::applyStealTrack(Combatant& actor, Combatant& target, const MoveDef&
     if (mv.stealPowerPct > 0 && !floored)
         powerSiphoned = siphonPower(actor, target, mv.stealPowerPct);
     if (mv.stealDefensePct > 0 && !floored) {
-        const int stolen = target.dmgReducePct * mv.stealDefensePct / 100;
+        // A share of what is THERE: a rating already shredded below zero has nothing to
+        // give, and the siphon never pushes one past it.
+        const int stolen = target.defense * mv.stealDefensePct / 100;
         if (stolen > 0) {
-            actor.dmgReducePct += stolen;
-            target.dmgReducePct -= stolen;
-            if (target.dmgReducePct < 0) target.dmgReducePct = 0;
+            actor.defense += stolen;
+            target.defense -= stolen;
         }
     }
     // Perfect Bite: rolled once per hit, only when the move carries a bubble-gated
@@ -1790,7 +1784,7 @@ void Combat::armCrewExploit(Combatant& self, const CrewExploit& x, bool byPlayer
             // maxHealth already drunk from by a steal is not given back either.
             self.powerMultPct = self.basePowerMultPct;
             self.speed = self.baseSpeed;
-            self.dmgReducePct = self.baseDmgReducePct;
+            self.defense = self.baseDefense;
             break;
         case CrewExploitKind::MirrorEnemyBuffs:
             break;      // sticky: being armed IS the effect (applyEffect's mitmCopy)

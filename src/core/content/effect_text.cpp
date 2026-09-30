@@ -344,7 +344,7 @@ SpecRows specRows(const ModDef& d) {
     switch (d.effectKind) {
         case ModEffect::None: break;
         case ModEffect::PowerPct: s.add("POWER", "%+d%%", d.magnitude); break;
-        case ModEffect::DamageCutPct: s.add("DMG CUT", "%d%%", d.magnitude); break;
+        case ModEffect::Defense: s.add("DEF", "%+d", d.magnitude); break;
         case ModEffect::MaxHealth: s.add("MAX HP", "%+d", d.magnitude); break;
         case ModEffect::Speed: s.add("SPEED", "%+d", d.magnitude); break;
         case ModEffect::PostBattleBits: s.add("WIN BITS", "%+d", d.magnitude); break;
@@ -370,8 +370,8 @@ SpecRows specRows(const ModDef& d) {
         case ModEffect::AttackCountPowerPct:
             s.add("POWER/ATK", "%+d%%", d.magnitude);
             break;
-        case ModEffect::DefendCountCutPct:
-            s.add("DMG CUT/DEF", "%+d%%", d.magnitude);
+        case ModEffect::DefendCountDefense:
+            s.add("DEF/DEFEND", "%+d", d.magnitude);
             break;
         case ModEffect::FirstHitCutPct:
             s.add("1ST HIT CUT", "%d%%", d.magnitude);
@@ -402,7 +402,7 @@ SpecRows specRows(const ModDef& d) {
         // Two-magnitude rows name BOTH halves, the way LowHealthPowerPct does: what the
         // mod does standing, and what the line's own mechanic turns that into.
         case ModEffect::ExtortionLedger:
-            s.add("DMG CUT", "%d%%", d.magnitude);
+            s.add("DEF", "%+d", d.magnitude);
             s.add("OWED POWER", "%+d%%", d.magnitude2);
             break;
         case ModEffect::ReplicaWorthPct:
@@ -445,8 +445,8 @@ SpecRows specRows(const MoveDef& d) {
         s.add("UP TO", "%+d%%", d.stackPowerCap);
     }
     if (d.stackDefensePct) {
-        s.add("DEF", "%+d%%", d.stackDefensePct);
-        s.add("UP TO", "%+d%%", d.stackDefenseCap);
+        s.add("DEF", "%+d", d.stackDefensePct);
+        s.add("UP TO", "%+d", d.stackDefenseCap);
     }
     if (d.armsRansom) s.flag("ARMS RANSOM");
     if (d.ransomCashPct)
@@ -465,7 +465,7 @@ SpecRows specRows(const MoveDef& d) {
     if (d.trapArm) {
         s.add("EVADE", "%d%%", d.trapEvasionPct);
         s.add("REBOUND", "%d%%", d.trapReboundPct);
-        s.add("ARMOR ROT", "%d%%", d.trapArmorRot);
+        s.add("ARMOR ROT", "-%d", d.trapArmorRot);
         // What holding this trap adds to the Execution-Override hijack chance
         // (Combat::execOverrideChance) — otherwise the row's one magnitude that
         // reaches the player nowhere at all.

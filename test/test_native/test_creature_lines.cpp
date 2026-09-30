@@ -265,16 +265,16 @@ void test_trojan_cross_line_divert() {
 void test_trojan_combat() {
     ContentRegistry r = ContentRegistry::embedded();
 
-    // (1) Pierce: backdoor_breach (power 16, pierce 100) vs a 50%-cut enemy lands full 16;
+    // (1) Pierce: backdoor_breach (power 16, pierce 100) vs a 100-DEF enemy lands full 16;
     //     packet_storm (power 12, no pierce) lands 6. Player faster -> acts first.
     {
         Combatant e = mkCombatant(r, "E", 100, 1, {"quick_jab"});
-        e.dmgReducePct = 50;
+        e.defense = 100;                           // half, on the Defence curve
         Combatant pPierce = mkCombatant(r, "P", 100, 20, {"backdoor_breach"});
         Combatant pPlain  = mkCombatant(r, "P", 100, 20, {"packet_storm"});
         Combat a; a.begin(pPierce, e, Combat::Stakes::Safe, 42); a.step();
         Combat b; b.begin(pPlain,  e, Combat::Stakes::Safe, 42); b.step();
-        CHECK(a.enemy().health == 100 - 16);      // pierce ignored the 50% cut
+        CHECK(a.enemy().health == 100 - 16);      // pierce ignored the whole rating
         CHECK(b.enemy().health == 100 - 6);        // plain hit was halved
     }
 

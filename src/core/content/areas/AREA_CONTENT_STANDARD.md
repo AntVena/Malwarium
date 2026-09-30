@@ -303,8 +303,9 @@ exist to protect something outside the dive:
 - **Boss signatures are gated to `kDeepWebBossMoveDepth`.** A boss is meant to be the first
   place its move is ever seen; a zone handing the same move out early would retire the hunt
   the whole roster is built around.
-- **A rolled enemy answers to the player's own curves** — `levelDefenseCutPct` and the
-  never-immune clamp — so the dive can never field a wall the player could not have built.
+- **A rolled enemy answers to the player's own curves** — `levelDefenseRating` and the
+  Defence curve (`defendedDamage`) — so the dive can never field a wall the player could not
+  have built.
 
 Rung pacing is authored per depth rather than derived from the zone's log curve, because
 what a rung does to a fight is not proportional to what a stat point does. That is measured,

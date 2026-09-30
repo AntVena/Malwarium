@@ -1546,9 +1546,10 @@ void test_deepweb_dive() {
             const int hPts = (e.maxHealth - base.maxHealth) / kDeepWebHealthPerLevel;
             CHECK(pPts >= 0 && sPts >= 0 && hPts >= 0);
             CHECK(pPts + sPts + hPts <= 12);          // the rest went to Defence
-            CHECK(e.dmgReducePct <= kLevelDefenseCapPct);
+            CHECK(e.defense - base.defense ==
+                  levelDefenseRating(12 - pPts - sPts - hPts));   // at the pet's own rate
             if (pPts > 0) ++sawPower;
-            if (e.dmgReducePct > 0) ++sawDef;
+            if (e.defense > 0) ++sawDef;
             if (sPts > 0) ++sawSpeed;
             if (hPts > 0) ++sawHealth;
         }
@@ -1566,12 +1567,12 @@ void test_deepweb_dive() {
             CombatEnemy e = wildMalbeast(3, 0);
             applyDeepWebScale(e, lv, 0, 99u);
             CHECK(e.maxHealth == base.maxHealth && e.powerMultPct == base.powerMultPct);
-            CHECK(e.speed == base.speed && e.dmgReducePct == base.dmgReducePct);
+            CHECK(e.speed == base.speed && e.defense == base.defense);
         }
         CombatEnemy over = wildMalbeast(3, 0);
         applyDeepWebScale(over, kEndlessParLevel + 20, 0, 99u);
-        CHECK(over.maxHealth + over.powerMultPct + over.speed + over.dmgReducePct >
-              base.maxHealth + base.powerMultPct + base.speed + base.dmgReducePct);
+        CHECK(over.maxHealth + over.powerMultPct + over.speed + over.defense >
+              base.maxHealth + base.powerMultPct + base.speed + base.defense);
     }
     // (1b) Same seed, same enemy — the dive rolls like every other roll in the engine.
     {
@@ -1579,7 +1580,7 @@ void test_deepweb_dive() {
         applyDeepWebScale(a, 9, 40, 12345u);
         applyDeepWebScale(b, 9, 40, 12345u);
         CHECK(a.powerMultPct == b.powerMultPct && a.maxHealth == b.maxHealth);
-        CHECK(a.speed == b.speed && a.dmgReducePct == b.dmgReducePct);
+        CHECK(a.speed == b.speed && a.defense == b.defense);
         CHECK(a.moveIds.size() == b.moveIds.size());
     }
     // (1c) DEPTH keeps paying after the log ramp flattens. The linear term is the one
@@ -1623,7 +1624,7 @@ void test_deepweb_dive() {
         applyDeepWebScale(e0, kEndlessParLevel + 20, 0, 4242u);
         applyDeepWebScale(eEdge, kEndlessParLevel + 20, kDeepWebRampFreeDepth, 4242u);
         CHECK(e0.maxHealth == eEdge.maxHealth && e0.powerMultPct == eEdge.powerMultPct);
-        CHECK(e0.speed == eEdge.speed && e0.dmgReducePct == eEdge.dmgReducePct);
+        CHECK(e0.speed == eEdge.speed && e0.defense == eEdge.defense);
         // ...and one win past it the ramp is running again, on rampDepth rather than on
         // raw depth: depth = free + 7 means floorLog2(7 - 0 + 1) = 3.
         CombatEnemy e3 = wildMalbeast(3, 0);

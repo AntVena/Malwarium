@@ -359,7 +359,7 @@ void test_guardian_outclasses_the_rung_it_is_met_on() {
             CHECK(!rung.rounds.empty());
             CHECK(guard.maxHealth > rung.rounds[0].maxHealth);
             CHECK(guard.powerMultPct > 100);
-            CHECK(guard.dmgReducePct > 0);
+            CHECK(guard.defense > 0);
             CHECK(!guard.isWild);              // never the wild challenge buff
             CHECK(guard.name != nullptr);
             // It must NOT carry the area's apex threat rider — that move is the

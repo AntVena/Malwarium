@@ -17,14 +17,14 @@ const StatTierDef kTiers[kLevelStatCount][kStatTierCount] = {
     {{"OVERCLOCK", kStatTier1Points, kLevelPowerPctPerSpecPoint, kLevelPowerPctPerPoint,
       "Every Power point past this one raises your attack {mag}% instead of {mag2}%."},
      {"RING ZERO", kStatTier2Points, kLevelPowerPiercePct, 0,
-      "Your hits ignore {mag}% of the target's damage cut."},
+      "Your hits ignore {mag}% of the target's DEF."},
      {"GUARD SMASH", kStatTier3Points, kLevelPowerGuardSmashPct, 0,
       "A braced target absorbs {mag}% less of your hit."}},
 
-    // DEFENSE — the % cut bends here, so each rung is paid in something else.
+    // DEFENSE — the rating keeps paying, and each rung adds something else on top.
     {{"HARDENING", kStatTier1Points, kLevelDefensePierceResistPct, 0,
       "Hits that pierce armour lose {mag}% of that piercing against you, so more of "
-      "your damage cut still applies."},
+      "your DEF still applies."},
      {"WRITE-BACK", kStatTier2Points, kLevelDefenseBraceRetainPct, 0,
       "When a brace absorbs less than it could have, {mag}% more of the unused part "
       "carries over to the next hit."},

@@ -409,8 +409,8 @@ constexpr int kBattleFatigueAutoPauseFrag = 80; // hands-off auto-explore pauses
 //     next is GEOMETRIC — round(kLevelXpBase * (kLevelXpGrowthPct/100)^level) —
 // ~10% dearer each level (base + growth stay tunable). The per-point
 //     magnitudes map an earned point into the combat maths (first-cut balance,
-// ): power = +% attack lean, defense = +% incoming-damage cut (its own cap,
-//     total dmg-cut clamped so defense can't null a hit), speed = +initiative,
+// ): power = +% attack lean, defense = +DEF rating (hits land at 100/(100+DEF),
+//     so no amount of it nulls a hit), speed = +initiative,
 //     max-Health = +HP. Level == the sum of earned points (an invariant Rollback
 //     preserves: −1 point ⇒ −1 level). ------------------------------------------
 constexpr int kLevelXpBase = 100;          // XP to reach level 1 (round(100*1.1^0))
@@ -435,26 +435,26 @@ constexpr int kLevelStatCount = 4;         // power / defense / speed / max-Heal
 // picks its stat at random and the ladder runs to level 60, so ~15 points in a stat is
 // the unremarkable outcome. T3 is for a pet that was BUILT, by luck, a Rollback or an
 // Epic dish's off-level points (PetUpgrades::statBonus, which count here — a point is a
-// point). Defence's cut ceiling lands exactly on T3: 8 full-rate points + 24 bent ones is
-// 60%, kLevelDefenseCapPct, so the stat stops buying % on the same rung it starts buying
-// something else. That coincidence is load-bearing and a native gate asserts it.
+// point).
 constexpr int kStatTierCount = 3;
 constexpr int kStatTier1Points = 8;
 constexpr int kStatTier2Points = 16;
 constexpr int kStatTier3Points = 32;
 constexpr int kLevelPowerPctPerPoint = 4;      // +4% attack power per power point
-constexpr int kLevelDefensePctPerPoint = 3;    // +3% incoming-damage cut per defense
-// ...at FULL rate only for the first kLevelDefenseSoftPoints; past that a point buys
-// half as much (levelDefenseCutPct, combat.h). Defense is the one stat with a hard
-// ceiling, so without a bend the last points before the cap were the most valuable
-// purchase in the game and the wall was simply a matter of spending enough. The curve
-// leaves early Defense untouched and only taxes the stretch that was heading for immunity.
-// The bend sits on the ladder's first rung, so the point where the % stops paying full
-// rate is the same point where the stat starts paying in pierce resist instead — one
-// threshold the player can be told about, not two they have to discover separately.
-constexpr int kLevelDefenseSoftPoints = kStatTier1Points;  // full-rate points before the bend
-constexpr int kLevelDefenseCapPct = 60;        // ...level defense contribution cap
-constexpr int kLevelDmgReduceMaxPct = 85;      // ...total dmg-cut clamp (never immune)
+// DEFENCE is a RATING, not a percentage. A hit lands at dmg * 100 / (100 + DEF) — the
+// whole curve is defendedDamage (combat.h) — so each DEF point is worth +1% effective
+// Health however many came before it, while the share of a hit it removes approaches
+// 100% and never reaches it (100 DEF = half, 300 = a quarter). That asymptote is what
+// makes the stat safe to leave UNCAPPED: there is no ceiling to clamp at, no bend to
+// slow the approach to one, and nothing refused to pay back as Health.
+//
+// Below zero the curve mirrors: a hit lands at dmg * (2 - 100 / (100 - DEF)), so -100
+// DEF takes 1.5x and the multiplier approaches 2x. Negative Defence is reachable only
+// through FLAT reductions (a Trojan trap's armor rot) — percentage pierce and siphons
+// scale with what is there and stop at zero. It is the counter to a wall that stacked
+// Health and Defence into quadratic effective Health: shred subtracts from the rating,
+// so it keeps paying however much was invested.
+constexpr int kLevelDefensePerPoint = 5;       // +5 DEF per defense point
 constexpr int kLevelSpeedPerPoint = 1;         // +1 initiative per speed point
                                                // (kLevelSpeedUnderdogPerPoint replaces this
                                                // rate outright while Speed T2 is paying)
@@ -462,8 +462,8 @@ constexpr int kLevelHealthPerPoint = 3;        // +3 max-Health per max-Health p
 // Defense stat ALSO scales DEFEND-move brace magnitude.
 // Symmetric to Power→attack. +3% brace per Defense point via
 // Combatant::defenseMultPct — leveling Defense visibly thickens the Cipher wall's
-// absorb, on top of the always-on dmgReducePct cut above. Braces are one-shot and
-// cost a turn, so this doesn't touch the 85% immunity clamp (that guards the % cut).
+// absorb, on top of the always-on DEF rating above. Braces are one-shot, cost a turn and
+// are FLAT, so unlike the rating they need the ceiling below.
 constexpr int kLevelDefenseBracePctPerPoint = 3;
 // ...and that brace scaling now has a ceiling of its own. "One-shot and costs a turn" is
 // a real cost in a short fight, but the endless zone is not a short fight: a turtle with
@@ -473,8 +473,8 @@ constexpr int kLevelDefenseBracePctPerPoint = 3;
 constexpr int kLevelDefenseBraceCapPct = 200;
 
 // --- Specialisation: what the SECOND half of an investment is worth ------------------
-// Power and max-Health bend the OPPOSITE way to Defence above. Defence diminishes because
-// it is chasing a ceiling; these two are chasing nothing, and a flat rate on them made a
+// Power and max-Health bend UPWARD, where Defence's rating is linear in effective Health
+// and already diminishing in the share of a hit it removes. A flat rate on these two made a
 // spread of one-point-in-everything the default outcome of a raise — which is also the
 // weakest thing a pet can be, since the level-up grant picks the stat at random and a long
 // raise averages out. Past the specialisation point a point is worth MORE, so committing
@@ -488,18 +488,16 @@ constexpr int kLevelHealthSpecPoints = kStatTier1Points;
 constexpr int kLevelHealthPerSpecPoint = 8;      // ...vs kLevelHealthPerPoint's 3
 constexpr int kLevelHealthSpecCap = 400;         // total level-Health contribution ceiling
 
-// Defence's investment TIERS. The % cut has a ceiling and a bend, so more of it is the one
-// thing Defence cannot be paid in — past a threshold it buys a different KIND of thing
-// instead, and each of these answers a way the stat was being routed around rather than
-// out-scaled:
+// Defence's investment TIERS. More rating is always worth the same +1% effective Health,
+// so past a threshold the stat ALSO buys a different KIND of thing, and each of these
+// answers a way the stat was being routed around rather than out-scaled:
 //   pierce resist — armorPiercePct exists to make a wall irrelevant; a committed wall
 //                   makes the pierce partly irrelevant back.
 //   brace retain  — a one-shot `guard` discards whatever the hit it ate did not need, so
 //                   an over-sized brace pays for absorption nobody asked for. Past this
 //                   threshold the unspent remainder CARRIES to the next hit instead.
-//   backscatter   — and the last rung, which lands on exactly the point count where the %
-//                   cut stops growing (see the ladder above): a wall that can no longer be
-//                   made thicker starts paying OUT. A share of what it absorbed this hit is
+//   backscatter   — and the last rung: a wall that has committed this far starts paying
+//                   OUT. A share of what it absorbed this hit is
 //                   dealt back to whoever swung, so the turtle finally has a win condition
 //                   that is not "outlast everything". Deliberately small, and deliberately a
 //                   fraction of damage ALREADY eaten rather than of the attack: it can only
@@ -528,7 +526,7 @@ constexpr int kBraceRetainBasePct = 25;
 // buy a bigger number per point and their T1 is that acceleration turning on; T2 and T3
 // have to be a different kind of thing or the rung is invisible.
 //
-// POWER. Its whole output is deleted by a wall — at the 85% clamp a hit arrives at 15% of
+// POWER. Its whole output is deleted by a wall — at 300 DEF a hit arrives at a quarter of
 // itself — so committed Power buys the two things that get PAST a wall rather than over
 // it. T2 is innate pierce, the same currency the PIERCE mod family deals in and the same
 // currency Defence's own T1 blunts: a Power build and a Defence build now argue with each
@@ -938,7 +936,7 @@ constexpr int kGuardianHealthBonusPct = 25;   // Health over the area's deepest 
 constexpr int kGuardianPowerMultPct = 125;    // attack lean — what "stronger mods
                                               // equipped" actually is on an enemy, which
                                               // fields stat leans rather than a mod rack
-constexpr int kGuardianDmgReducePct = 15;     // ...and the damage cut on the other side
+constexpr int kGuardianDefense = 18;          // ...and the DEF rating on the other side
 constexpr int kGuardianSpeedBonus = 2;        // and it moves first more often than not
 
 // Real-network discovery (game_net.cpp: Game::registerNetwork / resolveNetworkDiscovery,

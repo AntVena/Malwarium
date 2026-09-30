@@ -143,7 +143,7 @@ Combatant makePlayerCombatant(const ContentRegistry& reg, const CreatureDef& pet
             case ModEffect::PowerPct:
                 c.powerMultPct = c.powerMultPct * (100 + mag) / 100;
                 break;
-            case ModEffect::DamageCutPct: c.dmgReducePct += mag; break;
+            case ModEffect::Defense: c.defense += mag; break;
             case ModEffect::MaxHealth:
                 c.maxHealth += mag; c.health += mag;
                 // Cold Storage: a bulk buffer costs a little boot speed. Safe to fold
@@ -178,19 +178,9 @@ Combatant makePlayerCombatant(const ContentRegistry& reg, const CreatureDef& pet
             case ModEffect::ExecOverridePct:   // Ring-0 Shim — read at execOverrideChance
             case ModEffect::ReplicaSpawnPct:   // Replication Bus — read at rollWormSpawn
             case ModEffect::ExtortionLedger:
-                // The STANDING half is a damage cut and lands on the base, under the same
-                // never-immune clamp every other cut answers to — and whatever that clamp
-                // refuses is paid in max-Health rather than dropped, so the row pays what
-                // it prints on a pet that is already at the wall (capOverflowHealth).
+                // The STANDING half is DEF rating and lands on the base like any other.
                 // Only the seizure WINDOW stays live, since it opens and closes mid-fight.
-                c.dmgReducePct += mag;
-                if (c.dmgReducePct > kLevelDmgReduceMaxPct) {
-                    const int over = c.dmgReducePct - kLevelDmgReduceMaxPct;
-                    c.dmgReducePct = kLevelDmgReduceMaxPct;
-                    const int gain = capOverflowHealth(over, kLevelDefensePctPerPoint);
-                    c.maxHealth += gain;
-                    c.health += gain;      // as ModEffect::MaxHealth does, and for its reason
-                }
+                c.defense += mag;
                 c.mods.apply(m->effectKind, mag, m->magnitude2);
                 break;
             case ModEffect::ReplicaWorthPct:     // Replication Bus — read at a copy's spawn
@@ -205,11 +195,11 @@ Combatant makePlayerCombatant(const ContentRegistry& reg, const CreatureDef& pet
                 c.powerMultPct = c.powerMultPct * (100 + mag * atk) / 100;  // as PowerPct
                 break;
             }
-            case ModEffect::DefendCountCutPct: {  // Air-Gap Ward — +mag% cut PER Defend move
+            case ModEffect::DefendCountDefense: {  // Air-Gap Ward — +mag DEF PER Defend move
                 int def = 0;
                 for (const MoveDef* cm : c.moves)
                     if (cm->kind == MoveDef::Kind::Defend) ++def;
-                c.dmgReducePct += mag * def;
+                c.defense += mag * def;
                 break;
             }
             case ModEffect::PostBattleBits:  // read post-battle by the Game (Packet Sniffer)
@@ -430,9 +420,9 @@ std::vector<const char*> deepWebMoveIds(int depth, uint32_t roll) {
 // places for an enemy to stop answering to the player's own curves.
 static void spendStatBudget(CombatEnemy& e, const int (&points)[kLevelStatCount]) {
     e.powerMultPct += points[0] * kLevelPowerPctPerPoint;
-    // Same diminishing curve and ceiling the pet's Defence answers to — an enemy is not
-    // allowed a wall the player could not have built, and makeEnemyCombatant re-clamps.
-    e.dmgReducePct += levelDefenseCutPct(points[1]);
+    // Same rating per point the pet's Defence earns — an enemy is not allowed a wall the
+    // player could not have built.
+    e.defense += levelDefenseRating(points[1]);
     e.speed += points[2] * kLevelSpeedPerPoint;
     e.maxHealth += points[3] * kDeepWebHealthPerLevel;
 }
@@ -678,7 +668,7 @@ CombatEnemy guardianEnemy(int areaIdx, int sub) {
     // wild challenge buff never applies — a guardian is not something you stumbled onto.
     //
     // Its "stronger mods" are the stat leans, because an enemy fields leans rather than a
-    // mod rack (CombatEnemy has no loadout): powerMultPct and dmgReducePct are the same
+    // mod rack (CombatEnemy has no loadout): powerMultPct and defense are the same
     // two numbers a mod would have moved, applied directly.
     if (areaIdx < 0) areaIdx = 0;
     if (areaIdx >= kAreaCount) areaIdx = kAreaCount - 1;
@@ -703,7 +693,7 @@ CombatEnemy guardianEnemy(int areaIdx, int sub) {
     for (const char* id : a.guardian.teaches)
         if (id) e.moveIds.push_back(id);
     e.powerMultPct = kGuardianPowerMultPct;
-    e.dmgReducePct = kGuardianDmgReducePct;
+    e.defense = kGuardianDefense;
     e.isSwarm = true;
     return e;
 }
@@ -867,9 +857,8 @@ int wildWinXp(int baseXp, int enemyLevel, int petLevel) {
     return xp < 1 ? 1 : xp;                              // always at least a trickle
 }
 
-// The accelerating pair. Counted the same exact way levelDefenseCutPct counts its bent
-// stretch — whole points, one multiply per band — so the two curves are readable against
-// each other and neither rounds a band away.
+// The accelerating pair. Counted in whole points, one multiply per band, so neither
+// rounds a band away.
 int levelPowerPct(int points) {
     if (points <= 0) return 0;
     const int base = points < kLevelPowerSpecPoints ? points : kLevelPowerSpecPoints;
@@ -969,27 +958,32 @@ float effectiveSpeed(const Combatant& c) {
     return c.speed + static_cast<float>(steps * c.adrenalinePerStep);
 }
 
-// The curve before its ceiling — the one thing both answers below are cut from.
-int levelDefenseCutRawPct(int points) {
-    if (points <= 0) return 0;
-    // Full rate up to the soft point, HALF rate after — the diminishing half of a stat
-    // that also has a hard ceiling. Integer and exact: the bent stretch is counted in
-    // whole points and halved once, rather than halving each point (which would round
-    // every one of them down to the same place and quietly stall the curve flat).
-    const int full = points < kLevelDefenseSoftPoints ? points : kLevelDefenseSoftPoints;
-    const int bent = points - full;
-    return full * kLevelDefensePctPerPoint + bent * kLevelDefensePctPerPoint / 2;
+int levelDefenseRating(int points) {
+    return points > 0 ? points * kLevelDefensePerPoint : 0;
 }
 
-int levelDefenseCutPct(int points) {
-    const int cut = levelDefenseCutRawPct(points);
-    return cut > kLevelDefenseCapPct ? kLevelDefenseCapPct : cut;
+// The curve and why it is this one are on the declaration (combat.h). Rounded to the
+// nearest point rather than truncated: the hits here are small, and truncating a curve
+// whose ratings are rarely exact percentages would quietly add a point of cut to most of
+// them. 64-bit in the middle because neither side is bounded: a deep wall and a big hit
+// multiply.
+int defendedDamage(int dmg, int defense) {
+    if (dmg <= 0) return dmg;
+    const int64_t d = dmg;
+    const int64_t neg = defense < 0 ? -int64_t{defense} : 0;
+    const int64_t num = defense >= 0 ? d * 100 : d * (100 + 2 * neg);
+    const int64_t den = defense >= 0 ? 100 + int64_t{defense} : 100 + neg;
+    return static_cast<int>((2 * num + den) / (2 * den));
 }
 
-// The pair's other half — see the declaration (combat.h).
-int levelDefenseCutOverflowPct(int points) {
-    const int cut = levelDefenseCutRawPct(points);
-    return cut > kLevelDefenseCapPct ? cut - kLevelDefenseCapPct : 0;
+// Rounded to the nearest whole percent, away from zero on a half, so a rating that is
+// visibly there never reads as a 0% cut.
+int defenseCutPct(int defense) {
+    const int64_t d = defense;
+    const int64_t den = defense >= 0 ? 100 + d : 100 - d;
+    const int64_t num = 100 * d;
+    return static_cast<int>(num >= 0 ? (2 * num + den) / (2 * den)
+                                     : -((-2 * num + den) / (2 * den)));
 }
 
 // The exchange and why it is this one are on the declaration (combat.h).
@@ -1001,10 +995,9 @@ int capOverflowHealth(int overflowPct, int perPointPct) {
 void applyLevelStatPoints(Combatant& c, const int statPoints[4]) {
     if (!statPoints) return;
     // power → +% attack lean, ACCELERATING past its specialisation point (levelPowerPct);
-    // defense → +% incoming-damage cut (diminishing past the soft point, its own cap, then
-    // the total cut is clamped so defense can never null a hit) AND +% defend-move brace
-    // magnitude AND, past their thresholds, the three investment TIERS the % cut cannot be
-    // paid in (pierce resist, brace retain, backscatter); speed → +initiative, plus the
+    // defense → +DEF rating (linear and uncapped — the curve itself keeps a hit from ever
+    // being nulled) AND +% defend-move brace magnitude AND, past their thresholds, the
+    // three investment TIERS (pierce resist, brace retain, backscatter); speed → +initiative, plus the
     // three tempo tiers (first strike, the underdog rate, adrenaline); max-Health → +HP,
     // accelerating like power, plus its turn-start scrub and its one free death-save.
     // The per-point half and the tier half of every stat are applied HERE together: they
@@ -1018,7 +1011,7 @@ void applyLevelStatPoints(Combatant& c, const int statPoints[4]) {
     // was. It scales whatever that output happens to be, mods included — a power bonus
     // applying to your power is the reading every one of those rows already invites.
     c.powerMultPct = c.powerMultPct * (100 + levelPowerPct(statPoints[0])) / 100;
-    c.dmgReducePct += levelDefenseCutPct(statPoints[1]);
+    c.defense += levelDefenseRating(statPoints[1]);
     c.pierceResistPct = levelDefensePierceResistPct(statPoints[1]);
     c.braceRetainPct = kBraceRetainBasePct + levelDefenseBraceRetainPct(statPoints[1]);
     c.backscatterPct = levelDefenseBackscatterPct(statPoints[1]);
@@ -1035,16 +1028,8 @@ void applyLevelStatPoints(Combatant& c, const int statPoints[4]) {
     c.speedPoints = statPoints[2];
     c.scrubPct = levelHealthScrubPct(statPoints[3]);
     c.failoverArmed = levelHealthFailoverEarned(statPoints[3]);
-    // Everything the three Defence ceilings refuse, paid into max-Health (capOverflowHealth).
-    // Three separate discards and no double count: the curve's own ceiling refuses part
-    // of the cut this pet EARNED, the never-immune clamp then refuses part of the total it
-    // is added to (mods included — the cut a mod added is already on the stat by now),
-    // and the brace cap refuses its own.
-    int overflow = levelDefenseCutOverflowPct(statPoints[1]);
-    if (c.dmgReducePct > kLevelDmgReduceMaxPct) {
-        overflow += c.dmgReducePct - kLevelDmgReduceMaxPct;
-        c.dmgReducePct = kLevelDmgReduceMaxPct;
-    }
+    // What the brace cap refuses, paid into max-Health (capOverflowHealth). The rating
+    // has no ceiling, so it is the only Defence discard left.
     int braceOverflow = 0;
     int brace = statPoints[1] * kLevelDefenseBracePctPerPoint;
     if (brace > kLevelDefenseBraceCapPct) {
@@ -1054,7 +1039,6 @@ void applyLevelStatPoints(Combatant& c, const int statPoints[4]) {
     c.defenseMultPct += brace;
     c.speed += statPoints[2] * kLevelSpeedPerPoint;
     c.maxHealth += levelHealthBonus(statPoints[3]);
-    c.maxHealth += capOverflowHealth(overflow, kLevelDefensePctPerPoint);
     c.maxHealth += capOverflowHealth(braceOverflow, kLevelDefenseBracePctPerPoint);
     c.health = c.maxHealth;
 }
@@ -1072,12 +1056,9 @@ Combatant makeEnemyCombatant(const ContentRegistry& reg, const CombatEnemy& spec
     c.speed = spec.speed;
     c.lockResist = c.lockResistFloor = spec.lockResist;
     c.powerMultPct = spec.powerMultPct;
-    // Held to the same never-immune clamp the player's own defence answers to, rather
-    // than trusted from the spec: a rolled dive enemy (applyDeepWebScale) can spend an
-    // arbitrary pile of points here, and an enemy nobody can hurt is the same broken
-    // fight as a pet nobody can hurt.
-    c.dmgReducePct = spec.dmgReducePct > kLevelDmgReduceMaxPct ? kLevelDmgReduceMaxPct
-                                                               : spec.dmgReducePct;
+    // Taken from the spec as it is: the Defence curve never reaches immunity, so a rolled
+    // dive enemy (applyDeepWebScale) spending a pile of points here is still hurtable.
+    c.defense = spec.defense;
     if (spec.isWild) {                              // wild-encounter challenge buff
         c.maxHealth = c.maxHealth * kWildEnemyHealthPct / 100;
         c.health = c.maxHealth;

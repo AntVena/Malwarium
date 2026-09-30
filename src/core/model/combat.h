@@ -212,8 +212,9 @@ struct Combatant {
     int adrenalinePerStep = 0;
     int scrubPct = 0;           // Health T2: % of max Health healed at this fighter's turn start
     bool failoverArmed = false; // Health T3: one free death-save, spent in checkOutcome
-    int dmgReducePct = 0;       // Firewall Patch / TPM Chip — % incoming damage cut
-    int baseDmgReducePct = 0;   // dmgReducePct at fight start; the third live stat LEAN,
+    int defense = 0;            // DEF rating (Firewall Patch / TPM Chip / levels) — hits
+                                // land at defendedDamage(dmg, defense); may go negative
+    int baseDefense = 0;        // defense at fight start; the third live stat LEAN,
                                 // with basePowerMultPct and baseSpeed
     bool mirrorFired = false;   // set the turn a hit is fully negated (a brief flash);
                                  // also suppresses every one of that attack's riders
@@ -274,7 +275,7 @@ struct Combatant {
 
     // Line-move stacking buffs (transient, wiped each fight). Lockout-track hits
     // grow stackPowerBonus (added to the effective attack mult); Cipher-track casts
-    // grow stackDefenseBonus (added to the effective damage cut, under the 85% clamp).
+    // grow stackDefenseBonus (added to the DEF rating the attack path mitigates with).
     int stackPowerBonus = 0;
     int stackDefenseBonus = 0;
 
@@ -454,7 +455,7 @@ bool polymorphHasAbsorbed(const Combatant& c, const MoveDef* m);
 // Returns true when it actually paid, which the combat screen's popup reads.
 //
 // The payout MUTATES the fighter's live stats rather than being derived on read: begin()
-// captures basePowerMultPct/baseSpeed/baseDmgReducePct and the stat panel draws
+// captures basePowerMultPct/baseSpeed/baseDefense and the stat panel draws
 // live-against-base, so moving the real field is what makes an absorbed stack visible.
 // max-Health could not be derived in any case — a pool being chipped cannot be restated.
 bool polymorphAbsorb(Combatant& c, const MoveDef* m);
@@ -519,7 +520,7 @@ struct CombatEnemy {
     // can hit harder rather than leaning entirely on its move rows. The defaults are the
     // neutral values, which is what every authored Health/speed/moves row wants.
     int powerMultPct = 100;             // attack lean, same units as Combatant's
-    int dmgReducePct = 0;               // % incoming-damage cut, same units + same clamp
+    int defense = 0;                    // DEF rating, same units as Combatant's
     bool hasLevel = false;              // true once applyWildSubAreaRamp / applyDeepWebScale
                                         // has stamped `level`; Sim dummies + bosses never set
                                         // this, so the combat screen renders "???" for them
@@ -811,7 +812,7 @@ private:
     // `actor` as it does. True = the turn ended here.
     bool replicaAte(Combatant& actor, Combatant& target, const MoveDef& mv, int dmg,
                     bool byPlayer);
-    // The wall: negate, pierce ladder, brace, the never-immune clamp and the min-1 floor.
+    // The wall: negate, pierce ladder, brace, the Defence curve and the min-1 floor.
     // `wallAbsorbed` comes back out because Defence T3 pays out of the wall's share alone.
     int mitigate(Combatant& actor, Combatant& target, const MoveDef& mv, int dmg,
                  int baseDmg, int& wallAbsorbed);
@@ -971,13 +972,12 @@ void applyLevelStatPoints(Combatant& c, const int statPoints[4]);
 
 // The level-Power % bonus for `points` earned Power points, and the flat max-Health bonus
 // for `points` earned max-Health points. Both ACCELERATE past their specialisation point
-// (tunables.h) — the mirror image of levelDefenseCutPct's bend below — and both cap.
+// (tunables.h), and both cap.
 int levelPowerPct(int points);
 int levelHealthBonus(int points);
 
-// Defence's two investment tiers, each a total function of the earned Defence points.
-// They exist because the stat's own % cut is bent and capped, so past a point it can only
-// be paid in a different kind of thing (tunables.h explains which and why).
+// Defence's investment tiers, each a total function of the earned Defence points: what
+// the stat buys past a rung besides more rating (tunables.h explains which and why).
 //
 // pierce resist: the % an attack's own armorPiercePct is cut by before it is applied.
 // brace retain: what Defence investment ADDS to the baseline share of an unspent one-shot
@@ -1016,24 +1016,31 @@ void applySpeedRivalry(Combatant& a, Combatant& b);
 // is what the siphons move and the combat screen diffs against baseSpeed.
 float effectiveSpeed(const Combatant& c);
 
-// The Defence stat's % incoming-damage cut, for `points` earned Defence points. Full rate
-// up to kLevelDefenseSoftPoints, half rate past it, hard-capped at kLevelDefenseCapPct.
-// Shared with the DeepWeb dive's rolled enemies, held to the same curve the pet is.
-int levelDefenseCutPct(int points);
-// What that ceiling REFUSED, in percentage points — the only place the uncapped curve is
-// visible. Paired with the function above rather than folded into it, so the cut stays a
-// single total answer to "what is this pet's Defence worth".
-int levelDefenseCutOverflowPct(int points);
+// The Defence stat's DEF rating, for `points` earned Defence points: linear and uncapped
+// (kLevelDefensePerPoint). Shared with the DeepWeb dive's rolled enemies, held to the same
+// curve the pet is.
+int levelDefenseRating(int points);
 
-// OVERFLOW: what a bonus the caps refused is worth instead, in max-Health — the one pool
-// nothing caps. A pet already at the never-immune cut, the level-Defence ceiling or the
-// brace cap earns nothing from the next Defence point, mod or absorbed move, and no screen
-// says so.
+// THE DEFENCE CURVE — what a hit of `dmg` is worth after a DEF rating of `defense`. At or
+// above zero it lands at dmg * 100 / (100 + defense): every point is +1% effective Health
+// and no rating reaches immunity, so nothing needs a cap. Below zero it lands at
+// dmg * (2 - 100 / (100 - defense)), so shredded armour costs up to double and never more.
+// Every site that puts damage through a fighter's Defence calls this, so the curve is one
+// answer rather than one per mechanic.
+int defendedDamage(int dmg, int defense);
+// The same curve read as the share of a hit it removes, in whole percent — negative when
+// the rating is (a hit lands heavier). For prose and panels, and for mechanics authored
+// against "the wall's cut" (kRansomSeizedWallPct); the attack path uses defendedDamage.
+int defenseCutPct(int defense);
+
+// OVERFLOW: what a bonus the brace cap refused is worth instead, in max-Health — the one
+// pool nothing caps. A pet already at the brace cap earns nothing from the next Defence
+// point or absorbed move otherwise, and no screen says so.
 //
 // Paid at the level table's own exchange rate: `perPointPct` is what one stat point bought
 // of the clamped stat, so what arrives is that investment spent the other way. Nothing new
-// to tune, and overflowing is never worth MORE than not overflowing. Every cap stays where
-// it is. Pays a pet's EARNED bonuses only, never a spec-built enemy.
+// to tune, and overflowing is never worth MORE than not overflowing. Pays a pet's EARNED
+// bonuses only, never a spec-built enemy.
 int capOverflowHealth(int overflowPct, int perPointPct);
 // Build an enemy Combatant from a spec.
 Combatant makeEnemyCombatant(const ContentRegistry& reg, const CombatEnemy& spec);

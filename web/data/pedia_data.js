@@ -4941,8 +4941,8 @@ window.PEDIA_DATA = {
       "rarity": "UNCOMMON",
       "tier": 2,
       "equipLevel": 13,
-      "effect": "Cuts incoming damage by 15%.",
-      "stats": "DMG CUT 15%",
+      "effect": "Raises DEF by 18.",
+      "stats": "DEF +18",
       "icon": "assets/icons/ICON_MOD_TPM_CHIP.png"
     },
     {
@@ -4963,8 +4963,8 @@ window.PEDIA_DATA = {
       "rarity": "RARE",
       "tier": 2,
       "equipLevel": 22,
-      "effect": "Cuts incoming damage by 40%.",
-      "stats": "DMG CUT 40%",
+      "effect": "Raises DEF by 67.",
+      "stats": "DEF +67",
       "icon": "assets/icons/ICON_MOD_FIREWALL_PATCH.png"
     },
     {
@@ -5007,8 +5007,8 @@ window.PEDIA_DATA = {
       "rarity": "RARE",
       "tier": 4,
       "equipLevel": 39,
-      "effect": "Cuts damage 24% (42% for Ransomware).",
-      "stats": "DMG CUT 24% / ON LINE +18",
+      "effect": "Raises DEF by 32 (72 for Ransomware).",
+      "stats": "DEF +32 / ON LINE +40",
       "icon": "assets/icons/ICON_MOD_CIPHER_ASIC.png",
       "line": "ransomware"
     },
@@ -5097,8 +5097,8 @@ window.PEDIA_DATA = {
       "rarity": "COMMON",
       "tier": 1,
       "equipLevel": 0,
-      "effect": "Cuts incoming damage by 8%.",
-      "stats": "DMG CUT 8%",
+      "effect": "Raises DEF by 9.",
+      "stats": "DEF +9",
       "icon": "assets/icons/ICON_MOD_SCRATCH_DISK_BUFFER.png"
     },
     {
@@ -5119,8 +5119,8 @@ window.PEDIA_DATA = {
       "rarity": "UNCOMMON",
       "tier": 2,
       "equipLevel": 17,
-      "effect": "Damage cut rises 6% per equipped Defend move.",
-      "stats": "DMG CUT/DEF +6%",
+      "effect": "DEF rises 7 per equipped Defend move.",
+      "stats": "DEF/DEFEND +7",
       "icon": "assets/icons/ICON_MOD_AIRGAP_WARD.png"
     },
     {
@@ -5152,8 +5152,8 @@ window.PEDIA_DATA = {
       "rarity": "UNCOMMON",
       "tier": 3,
       "equipLevel": 27,
-      "effect": "Cuts incoming damage by 20%.",
-      "stats": "DMG CUT 20%",
+      "effect": "Raises DEF by 25.",
+      "stats": "DEF +25",
       "icon": "assets/icons/ICON_MOD_HARDENED_SHELL.png"
     },
     {
@@ -5252,8 +5252,8 @@ window.PEDIA_DATA = {
       "rarity": "EPIC",
       "tier": 5,
       "equipLevel": 58,
-      "effect": "Cuts damage 35%; an unpaid ransom adds 90%+ power, more the deeper it runs.",
-      "stats": "DMG CUT 35% / OWED POWER +90%",
+      "effect": "Raises DEF by 54; an unpaid ransom adds 90%+ power, more the deeper it runs.",
+      "stats": "DEF +54 / OWED POWER +90%",
       "icon": "assets/icons/ICON_MOD_EXTORTION_LEDGER.png",
       "requiresLine": "ransomware"
     },
@@ -5356,8 +5356,8 @@ window.PEDIA_DATA = {
       "rarity": "UNCOMMON",
       "tier": 2,
       "equipLevel": 16,
-      "effect": "Padded until nothing matches: cuts damage 14% (26% for Metamorphic).",
-      "stats": "DMG CUT 14% / ON LINE +12",
+      "effect": "Padded until nothing matches: raises DEF by 16 (35 for Metamorphic).",
+      "stats": "DEF +16 / ON LINE +19",
       "icon": "assets/icons/ICON_MOD_JUNK_PADDING.png",
       "line": "metamorphic"
     },
@@ -5481,8 +5481,8 @@ window.PEDIA_DATA = {
       "rarity": "UNCOMMON",
       "tier": 3,
       "equipLevel": 32,
-      "effect": "Damage cut rises 9% per equipped Defend move.",
-      "stats": "DMG CUT/DEF +9%",
+      "effect": "DEF rises 11 per equipped Defend move.",
+      "stats": "DEF/DEFEND +11",
       "icon": "assets/icons/ICON_MOD_CONVOY_ESCORT.png"
     },
     {
@@ -5536,8 +5536,8 @@ window.PEDIA_DATA = {
       "rarity": "EPIC",
       "tier": 5,
       "equipLevel": 53,
-      "effect": "One hardened way in, and it is watching: cuts incoming damage by 45%.",
-      "stats": "DMG CUT 45%",
+      "effect": "One hardened way in, and it is watching: raises DEF by 82.",
+      "stats": "DEF +82",
       "icon": "assets/icons/ICON_MOD_BASTION_HOST.png"
     },
     {
@@ -5636,8 +5636,8 @@ window.PEDIA_DATA = {
       "rarity": "EPIC",
       "tier": 6,
       "equipLevel": 63,
-      "effect": "Nothing negotiates with a wall: cuts incoming damage 38% (54% for Ransomware).",
-      "stats": "DMG CUT 38% / ON LINE +16",
+      "effect": "Nothing negotiates with a wall: raises DEF by 61 (117 for Ransomware).",
+      "stats": "DEF +61 / ON LINE +56",
       "icon": "assets/icons/ICON_MODS_SLOT.png",
       "iconFallback": true,
       "line": "ransomware"
@@ -5772,8 +5772,8 @@ window.PEDIA_DATA = {
       "rarity": "UNCOMMON",
       "tier": 3,
       "equipLevel": 26,
-      "effect": "Close enough that nobody checks twice: cuts incoming damage by 19% (33% for Phishing).",
-      "stats": "DMG CUT 19% / ON LINE +14",
+      "effect": "Close enough that nobody checks twice: raises DEF by 23 (49 for Phishing).",
+      "stats": "DEF +23 / ON LINE +26",
       "icon": "assets/icons/ICON_MOD_LOOKALIKE_CERT.png",
       "line": "phishing"
     },
@@ -5796,8 +5796,8 @@ window.PEDIA_DATA = {
       "rarity": "UNCOMMON",
       "tier": 3,
       "equipLevel": 31,
-      "effect": "Damage cut rises 9% per equipped Defend move (15% for Trojan).",
-      "stats": "DMG CUT/DEF +9% / ON LINE +6",
+      "effect": "DEF rises 11 per equipped Defend move (21 for Trojan).",
+      "stats": "DEF/DEFEND +11 / ON LINE +10",
       "icon": "assets/icons/ICON_MOD_SIGNED_DRIVER.png",
       "line": "trojan"
     },
@@ -6191,8 +6191,8 @@ window.PEDIA_DATA = {
       "power": 18,
       "turns": 1,
       "minStage": "Process",
-      "desc": "Encrypts a brace, arms the ransom and demands 75% of the held pool. +6% DEF on cast (to +48%).",
-      "stats": "DEF 18 / DEF +6% / UP TO +48% / ARMS RANSOM / DEMAND 75%",
+      "desc": "Encrypts a brace, arms the ransom and demands 75% of the held pool. +12 DEF on cast (to +96).",
+      "stats": "DEF 18 / DEF +12 / UP TO +96 / ARMS RANSOM / DEMAND 75%",
       "group": "ransomware",
       "icon": "assets/icons/ICON_MOVE_SLOT.png"
     },
@@ -6203,8 +6203,8 @@ window.PEDIA_DATA = {
       "power": 28,
       "turns": 1,
       "minStage": "Script",
-      "desc": "Seals the AES key, arms the ransom and demands 50% of the held pool. +12% DEF on cast (to +36%).",
-      "stats": "DEF 28 / DEF +12% / UP TO +36% / ARMS RANSOM / DEMAND 50%",
+      "desc": "Seals the AES key, arms the ransom and demands 50% of the held pool. +18 DEF on cast (to +54).",
+      "stats": "DEF 28 / DEF +18 / UP TO +54 / ARMS RANSOM / DEMAND 50%",
       "group": "ransomware",
       "icon": "assets/icons/ICON_MOVE_SLOT.png"
     },
@@ -6215,8 +6215,8 @@ window.PEDIA_DATA = {
       "power": 40,
       "turns": 1,
       "minStage": "Daemon",
-      "desc": "Locks the whole drive, arms the ransom and demands 30% of the held pool. +20% DEF on cast (to +20%).",
-      "stats": "DEF 40 / DEF +20% / UP TO +20% / ARMS RANSOM / DEMAND 30%",
+      "desc": "Locks the whole drive, arms the ransom and demands 30% of the held pool. +25 DEF on cast (to +25).",
+      "stats": "DEF 40 / DEF +25 / UP TO +25 / ARMS RANSOM / DEMAND 30%",
       "group": "ransomware",
       "icon": "assets/icons/ICON_MOVE_SLOT.png"
     },
@@ -6335,8 +6335,8 @@ window.PEDIA_DATA = {
       "power": 0,
       "turns": 1,
       "minStage": "Process",
-      "desc": "Arms a trap: evades 20%, reflects 40%, rots 5% armor, +10% override chance.",
-      "stats": "EVADE 20% / REBOUND 40% / ARMOR ROT 5% / OVERRIDE +10%",
+      "desc": "Arms a trap: evades 20%, reflects 40%, rots 12 DEF, +10% override chance.",
+      "stats": "EVADE 20% / REBOUND 40% / ARMOR ROT -12 / OVERRIDE +10%",
       "group": "trojan",
       "icon": "assets/icons/ICON_MOVE_SLOT.png"
     },
@@ -6347,8 +6347,8 @@ window.PEDIA_DATA = {
       "power": 0,
       "turns": 1,
       "minStage": "Script",
-      "desc": "A deeper trap: evades 30%, reflects 50%, rots 8% armor, +15% override chance.",
-      "stats": "EVADE 30% / REBOUND 50% / ARMOR ROT 8% / OVERRIDE +15%",
+      "desc": "A deeper trap: evades 30%, reflects 50%, rots 20 DEF, +15% override chance.",
+      "stats": "EVADE 30% / REBOUND 50% / ARMOR ROT -20 / OVERRIDE +15%",
       "group": "trojan",
       "icon": "assets/icons/ICON_MOVE_SLOT.png"
     },
@@ -6359,8 +6359,8 @@ window.PEDIA_DATA = {
       "power": 0,
       "turns": 1,
       "minStage": "Daemon",
-      "desc": "The deadliest trap: evades 45%, reflects 60%, rots 12% armor, +20% override chance.",
-      "stats": "EVADE 45% / REBOUND 60% / ARMOR ROT 12% / OVERRIDE +20%",
+      "desc": "The deadliest trap: evades 45%, reflects 60%, rots 30 DEF, +20% override chance.",
+      "stats": "EVADE 45% / REBOUND 60% / ARMOR ROT -30 / OVERRIDE +20%",
       "group": "trojan",
       "icon": "assets/icons/ICON_MOVE_SLOT.png"
     },

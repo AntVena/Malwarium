@@ -7,7 +7,7 @@
 // read — grouped by line, alongside content_moves.cpp's per-move magnitudes, not in
 // tunables.h: these numbers only ever move together with a line's move balance, and
 // tuning one without the other breaks the passive's math. Cross-cutting engine
-// constants that apply the same way regardless of line (kLevelDmgReduceMaxPct,
+// constants that apply the same way regardless of line (kLevelDefensePerPoint,
 // kSpeedActionThreshold, ...) stay in tunables.h.
 #pragma once
 
@@ -38,7 +38,7 @@ constexpr int kRansomHoldTurns = 3;   // also sizes the combat screen's blip row
 
 // WORKED UP. The hostage damage is a grudge the pet acts on while it holds: every brace it
 // casts turns this % of the live pool into Power (percentage points), and every attack it
-// lands turns this % into damage cut. Hit it and it gets angrier; let it hit you and it gets
+// lands turns this % into DEF rating. Hit it and it gets angrier; let it hit you and it gets
 // harder to answer. Read off the pool, never spent from it — the line does not heal, so the
 // bill still lands whole.
 // Indexed by Stage like the arm chance above. Process keeps it faint: a fresh hatchling's
@@ -58,15 +58,16 @@ constexpr int kRansomStrikeDefensePctByStage[4] = {0, 10, 50, 50};
 constexpr int kLedgerGrudgeFullPct = 100;   // ...at a pool the size of the stage's own body
 constexpr int kLedgerGrudgeMaxPct = 100;    // ...and never more than doubling
 
-// What a SEIZED move hits for in Ransomware hands, as a % of the wall the pet is standing
-// behind (Combatant::stackDefenseBonus, RansomSeizure). This is the whole reason the seizure
+// What a SEIZED move hits for in Ransomware hands, as a % of the cut the wall the pet is
+// standing behind would make on its own (defenseCutPct of Combatant::stackDefenseBonus,
+// RansomSeizure). This is the whole reason the seizure
 // is worth having: taking an attack for three turns is a small thing on its own, and
 // measured that way it moved nothing at all. What the line needed was a way to SPEND its
-// wall, because Cipher accumulates a damage cut and has nothing else to do with it — the
+// wall, because Cipher accumulates DEF rating and has nothing else to do with it — the
 // four one-attack-slot Daemons rank almost exactly by how far their line converts defence
 // into damage, and Ransomware was last with no conversion at all. The seized move is the
 // conversion: the ransom note is written in the pet's own encryption.
-constexpr int kRansomSeizedWallPct = 100;   // 100 = the full stacked cut, as bonus damage
+constexpr int kRansomSeizedWallPct = 100;   // 100 = the stack's full cut, as bonus damage
 
 // --- Phishing — steal track + Obfuscation-bubble passives ---------------------
 // Floors for the generic per-field siphon in Combat::applyEffect (MoveDef's steal*
@@ -168,7 +169,7 @@ constexpr int kWormTargetWeightAttacker = 2;
 constexpr int kWormTargetWeightDefender = 4;
 
 // A defender that eats a hit bites back: this % of what it ate goes to whoever swung, through
-// their own damage cut (the Trojan trap's rebound shape). A body built mostly of defend slots
+// their own Defence (the Trojan trap's rebound shape). A body built mostly of defend slots
 // otherwise spends the opponent's turns taking hits and its own turns making more bodies,
 // and never hurts anything; this is what a swarm in the way costs the thing hitting it.
 // Indexed by the WORM's Stage: faint where a single Host-Squat already carries a Process

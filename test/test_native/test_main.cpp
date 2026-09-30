@@ -251,11 +251,10 @@ int g_failures = 0;
     RUN(test_rig_continuous_backup_rearms_mid_run) \
     RUN(test_creature_level_curve_and_invariant) \
     RUN(test_creature_level_feeds_combat)   \
-    RUN(test_defense_diminishing_returns)   \
-    RUN(test_full_cap_overflows_into_health) \
+    RUN(test_defense_curve_never_caps)      \
+    RUN(test_brace_cap_overflows_into_health) \
     RUN(test_stat_tier_ladder_is_uniform)   \
     RUN(test_stat_tier_progress_readout)    \
-    RUN(test_defense_cap_lands_on_the_top_rung) \
     RUN(test_stat_tier_appliers_gate_on_their_rung) \
     RUN(test_stat_tiers_reach_the_combatant) \
     RUN(test_speed_underdog_rung_needs_both_fighters) \
@@ -657,6 +656,7 @@ int g_failures = 0;
     RUN(test_worm_replication_in_combat)          \
     RUN(test_speed_action_economy)                \
     RUN(test_min_damage_penetration)              \
+    RUN(test_negative_defense_from_armor_rot)     \
     RUN(test_mod_hard_line_gate)                  \
     RUN(test_mod_equip_level_gate)                \
     RUN(test_mod_picker_windows_large_pool)       \

@@ -211,18 +211,18 @@ const MoveDef kMoves[] = {
     // most, so a body built mostly of Cipher slots still hurts on the turns it braces.
     cipherRow("aes_lockbox", "AES Lockbox", 18,
               "Encrypts a brace, arms the ransom and demands {cash}% of the held pool. "
-              "+{stackDef}% DEF on cast (to +{stackDefCap}%).",
-              Stage::Process, /*stackDefensePct=*/6, /*stackDefenseCap=*/48,
+              "+{stackDef} DEF on cast (to +{stackDefCap}).",
+              Stage::Process, /*stackDefensePct=*/12, /*stackDefenseCap=*/96,
               /*ransomCashPct=*/75),
     cipherRow("rsa_vault", "RSA Vault", 28,
               "Seals the AES key, arms the ransom and demands {cash}% of the held pool. "
-              "+{stackDef}% DEF on cast (to +{stackDefCap}%).",
-              Stage::Script, /*stackDefensePct=*/12, /*stackDefenseCap=*/36,
+              "+{stackDef} DEF on cast (to +{stackDefCap}).",
+              Stage::Script, /*stackDefensePct=*/18, /*stackDefenseCap=*/54,
               /*ransomCashPct=*/50),
     cipherRow("full_disk_encryption", "Full-Disk Encryption", 40,
               "Locks the whole drive, arms the ransom and demands {cash}% of the held pool. "
-              "+{stackDef}% DEF on cast (to +{stackDefCap}%).",
-              Stage::Daemon, /*stackDefensePct=*/20, /*stackDefenseCap=*/20,
+              "+{stackDef} DEF on cast (to +{stackDefCap}).",
+              Stage::Daemon, /*stackDefensePct=*/25, /*stackDefenseCap=*/25,
               /*ransomCashPct=*/30),
 
     // Phishing LINE moves -------------------------
@@ -302,7 +302,7 @@ const MoveDef kMoves[] = {
     // --- Trojan LINE moves -------------------------
     // line = "trojan" → only Trojan pets (Keyloggerhead + its Daemon) can learn/equip.
     // Attacks strike from "already inside": armorPiercePct = 100, so they ignore ALL of
-    // the target's defense (% cut + brace). Defends ARM a trap (trapArm=1) that fires on
+    // the target's defense (DEF rating + brace). Defends ARM a trap (trapArm=1) that fires on
     // the enemy's next hit — evasion + rebound + armor-rot — and feeds the
     // Execution-Override passive. Fields after minStage/line: stackPowerPct, stackPowerCap,
     // stackDefensePct, stackDefenseCap, armorPiercePct, lockTurns, dotDamage, dotTurns,
@@ -330,20 +330,20 @@ const MoveDef kMoves[] = {
     // Held traps also feed the Execution-Override hijack chance, so each names the
     // bonus it contributes ({trapBonus}) alongside what it does on its own.
     {"logic_bomb", "Logic-Bomb", MoveDef::Kind::Defend, 0, 1,
-     "Arms a trap: evades {evade}%, reflects {rebound}%, rots {armorRot}% armor, "
+     "Arms a trap: evades {evade}%, reflects {rebound}%, rots {armorRot} DEF, "
      "+{trapBonus}% override chance.", Stage::Process,
      "trojan", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-     /*trapArm=*/1, /*evasion=*/20, /*rebound=*/40, /*armorRot=*/5, /*passiveBonus=*/10},
+     /*trapArm=*/1, /*evasion=*/20, /*rebound=*/40, /*armorRot=*/12, /*passiveBonus=*/10},
     {"sandbox_snare", "Sandbox-Snare", MoveDef::Kind::Defend, 0, 1,
-     "A deeper trap: evades {evade}%, reflects {rebound}%, rots {armorRot}% armor, "
+     "A deeper trap: evades {evade}%, reflects {rebound}%, rots {armorRot} DEF, "
      "+{trapBonus}% override chance.", Stage::Script,
      "trojan", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-     /*trapArm=*/1, /*evasion=*/30, /*rebound=*/50, /*armorRot=*/8, /*passiveBonus=*/15},
+     /*trapArm=*/1, /*evasion=*/30, /*rebound=*/50, /*armorRot=*/20, /*passiveBonus=*/15},
     {"killswitch", "Killswitch", MoveDef::Kind::Defend, 0, 1,
-     "The deadliest trap: evades {evade}%, reflects {rebound}%, rots {armorRot}% "
-     "armor, +{trapBonus}% override chance.", Stage::Daemon,
+     "The deadliest trap: evades {evade}%, reflects {rebound}%, rots {armorRot} "
+     "DEF, +{trapBonus}% override chance.", Stage::Daemon,
      "trojan", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-     /*trapArm=*/1, /*evasion=*/45, /*rebound=*/60, /*armorRot=*/12, /*passiveBonus=*/20},
+     /*trapArm=*/1, /*evasion=*/45, /*rebound=*/60, /*armorRot=*/30, /*passiveBonus=*/20},
 
     // --- Worm LINE moves -------------------------
     // line = "worm" → only Worm pets can learn/equip. The line does not fight with its

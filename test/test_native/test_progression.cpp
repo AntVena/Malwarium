@@ -85,7 +85,7 @@ void test_creature_level_feeds_combat() {
     enterSimBattle(g0);
     const Combatant base = g0.combat().player();
 
-    // Leveled: a modest level so no stat hits the defense cap (≤~8 points each).
+    // Leveled: a modest level, so every stat stays under its specialisation bend.
     Game g1{StartMode::Hatched, "paypup"};
     g1.debugAddCombatXp(1200);
     const int pP = g1.levelStatPoint(0), pD = g1.levelStatPoint(1),
@@ -97,72 +97,79 @@ void test_creature_level_feeds_combat() {
     CHECK(lv.maxHealth == base.maxHealth + pH * kLevelHealthPerPoint);
     CHECK(lv.speed == base.speed + pS * kLevelSpeedPerPoint);
     CHECK(lv.powerMultPct == base.powerMultPct + pP * kLevelPowerPctPerPoint);
-    // Defence goes through its own curve rather than a flat per-point rate, so this
-    // asserts the curve and not a coincidence of the point count staying under the bend.
-    CHECK(lv.dmgReducePct == base.dmgReducePct + levelDefenseCutPct(pD));
+    CHECK(lv.defense == base.defense + levelDefenseRating(pD));
     CHECK(lv.health == lv.maxHealth);         // starts full at the leveled max
 }
 
-// DEFENCE DIMINISHES, and then it stops. Defence is the only stat with a hard ceiling,
-// which without a bend made the last points before that ceiling the best purchase in the
-// game — buy enough and the wall was simply bought. Full rate to the soft point, half rate
-// after, capped: pure and deterministic, so it is checked directly rather than through a
-// fight that would only ever sample a few points of it.
-void test_defense_diminishing_returns() {
-    CHECK(levelDefenseCutPct(0) == 0);
-    CHECK(levelDefenseCutPct(-4) == 0);                    // negatives are not a refund
-    // Below the bend, a point is worth exactly its full rate — early Defence is untouched
-    // by this curve, which is the point of putting the soft point above the mid game.
-    for (int p = 1; p <= kLevelDefenseSoftPoints; ++p)
-        CHECK(levelDefenseCutPct(p) == p * kLevelDefensePctPerPoint);
-    // Past it, each point buys half as much...
-    const int atSoft = levelDefenseCutPct(kLevelDefenseSoftPoints);
-    CHECK(levelDefenseCutPct(kLevelDefenseSoftPoints + 2) ==
-          atSoft + kLevelDefensePctPerPoint);              // 2 bent points = 1 full one
-    // ...strictly monotonic while it climbs (a curve that stalls flat reads as a bug),
-    // and never past the ceiling however many points are poured in.
-    int prev = 0;
-    for (int p = 1; p <= 400; ++p) {
-        const int cut = levelDefenseCutPct(p);
-        CHECK(cut >= prev);
-        CHECK(cut <= kLevelDefenseCapPct);
-        prev = cut;
+// THE DEFENCE CURVE. The rating is uncapped, so the curve is what keeps a wall honest:
+// it must never null a hit however much rating is poured in, must keep paying the same
+// +1% effective Health per point, and below zero must cost more without running away.
+// Pure and deterministic, so it is checked directly rather than sampled through a fight.
+void test_defense_curve_never_caps() {
+    CHECK(defendedDamage(100, 0) == 100);            // no rating, no cut
+    CHECK(defendedDamage(100, 100) == 50);           // 100 DEF = half
+    CHECK(defendedDamage(100, 300) == 25);
+    CHECK(defendedDamage(1000, 900) == 100);
+    // Strictly down as the rating climbs, and never all the way — a hit big enough to
+    // read at this resolution is still arriving at a rating no pet will ever reach.
+    int prev = defendedDamage(1000000, 0);
+    for (int d = 1; d <= 5000; ++d) {
+        const int got = defendedDamage(1000000, d);
+        CHECK(got < prev);
+        CHECK(got > 0);
+        prev = got;
     }
-    CHECK(levelDefenseCutPct(400) == kLevelDefenseCapPct); // the ceiling is reachable
-    // And the ceiling really is lower than the old flat rate would have given: the whole
-    // change is that the stretch heading for immunity now costs double.
-    CHECK(levelDefenseCutPct(40) < 40 * kLevelDefensePctPerPoint);
+    // Effective Health is LINEAR in the rating: what lands, times (100 + DEF), is the hit
+    // itself to within half a rounding step, at every rating. That is what "+1% effective
+    // Health per point, forever" means.
+    for (int d = 0; d <= 1000; d += 50) {
+        const int off = defendedDamage(10000, d) * (100 + d) - 1000000;
+        CHECK(off <= (100 + d) / 2 && off >= -(100 + d) / 2);
+    }
+    // Below zero the curve mirrors: -100 is 1.5x, and nothing reaches double.
+    CHECK(defendedDamage(100, -100) == 150);
+    CHECK(defendedDamage(100000, -1000000) < 200000);
+    prev = defendedDamage(1000, 0);
+    for (int d = -1; d >= -5000; --d) {
+        const int got = defendedDamage(1000, d);
+        CHECK(got >= prev);
+        CHECK(got < 2000);
+        prev = got;
+    }
+    // The same curve read as a cut, for panels and prose.
+    CHECK(defenseCutPct(0) == 0);
+    CHECK(defenseCutPct(1) == 1);                    // visible rating never reads as 0%
+    CHECK(defenseCutPct(67) == 40);                  // Firewall Patch
+    CHECK(defenseCutPct(100) == 50);
+    CHECK(defenseCutPct(300) == 75);
+    CHECK(defenseCutPct(-100) == -50);
+    CHECK(defenseCutPct(10000) == 99);                // approaches 100, never reaches it
+    // And the level rating is linear, with no bend and no ceiling to meet.
+    CHECK(levelDefenseRating(0) == 0);
+    CHECK(levelDefenseRating(-4) == 0);              // negatives are not a refund
+    for (int p = 1; p <= 400; ++p)
+        CHECK(levelDefenseRating(p) == p * kLevelDefensePerPoint);
 }
 
-// --- Gate: a bonus the caps refuse is paid, not dropped ---
+// --- Gate: a bonus the brace cap refuses is paid, not dropped ---
 //
-// A clamp is a promise about the ceiling. Before this, a pet at the never-immune cut got
-// literally nothing from its next Defence point, mod or absorbed move and no screen said
-// so — the row still read as if it paid. The discard now converts to max-Health at the
-// level table's own exchange (capOverflowHealth), and the caps do not move.
-void test_full_cap_overflows_into_health() {
-    // The curve and its overflow PARTITION the uncapped curve — nothing is counted twice
-    // and nothing goes missing, at every point count either side of the ceiling.
-    for (int p = 0; p <= 400; ++p) {
-        CHECK(levelDefenseCutPct(p) <= kLevelDefenseCapPct);
-        CHECK(levelDefenseCutOverflowPct(p) >= 0);
-        if (levelDefenseCutPct(p) < kLevelDefenseCapPct)
-            CHECK(levelDefenseCutOverflowPct(p) == 0);     // under the cap, nothing spills
-    }
-    CHECK(levelDefenseCutOverflowPct(400) > 0);            // ...and over it, something does
-
+// A clamp is a promise about the ceiling. A pet at the brace cap would get nothing from its
+// next Defence point's brace half and no screen would say so — so the discard converts to
+// max-Health at the level table's own exchange (capOverflowHealth), and the cap does not
+// move. The rating itself has no cap, so it never overflows.
+void test_brace_cap_overflows_into_health() {
     // The exchange: what the same investment would have bought spent on max-Health, and
     // never more. Overflowing must not be the better outcome.
-    CHECK(capOverflowHealth(0, kLevelDefensePctPerPoint) == 0);
-    CHECK(capOverflowHealth(-9, kLevelDefensePctPerPoint) == 0);   // not a refund either
-    CHECK(capOverflowHealth(kLevelDefensePctPerPoint, kLevelDefensePctPerPoint) ==
+    CHECK(capOverflowHealth(0, kLevelDefenseBracePctPerPoint) == 0);
+    CHECK(capOverflowHealth(-9, kLevelDefenseBracePctPerPoint) == 0);   // not a refund either
+    CHECK(capOverflowHealth(kLevelDefenseBracePctPerPoint, kLevelDefenseBracePctPerPoint) ==
           kLevelHealthPerPoint);                           // one point's worth, either way
-    CHECK(capOverflowHealth(2 * kLevelDefensePctPerPoint, kLevelDefensePctPerPoint) ==
-          2 * kLevelHealthPerPoint);
+    CHECK(capOverflowHealth(2 * kLevelDefenseBracePctPerPoint,
+                            kLevelDefenseBracePctPerPoint) == 2 * kLevelHealthPerPoint);
 
-    // End to end, on a built fighter. A pet buried in Defence points sits at the same
-    // wall as one merely at it — the caps do not move — and carries the difference as
-    // body instead.
+    // End to end, on a built fighter. A pet buried in Defence points keeps buying rating
+    // — there is no ceiling for it to meet — while its brace sits at the cap and carries
+    // the difference as body instead.
     auto build = [](int defensePoints) {
         Combatant c;
         c.maxHealth = 100;
@@ -170,15 +177,17 @@ void test_full_cap_overflows_into_health() {
         applyLevelStatPoints(c, points);
         return c;
     };
-    const Combatant at = build(40);
+    const Combatant at = build((kLevelDefenseBraceCapPct + kLevelDefenseBracePctPerPoint - 1) /
+                               kLevelDefenseBracePctPerPoint);   // the first point at the cap
     const Combatant past = build(400);
-    CHECK(at.dmgReducePct == past.dmgReducePct);           // the ceiling is exactly where it was
-    CHECK(at.defenseMultPct <= 100 + kLevelDefenseBraceCapPct);
+    CHECK(past.defense > at.defense);                      // the rating never stops
+    CHECK(past.defense == levelDefenseRating(400));
+    CHECK(at.defenseMultPct == 100 + kLevelDefenseBraceCapPct);
     CHECK(past.defenseMultPct == 100 + kLevelDefenseBraceCapPct);
     CHECK(past.maxHealth > at.maxHealth);                  // the discard arrived as body
     CHECK(past.health == past.maxHealth);                  // ...and the pet may stand in it
 
-    // A pet UNDER every ceiling is untouched: this pays a discard, and there is no
+    // A pet UNDER the ceiling is untouched: this pays a discard, and there is no
     // discard to pay until something is actually refused.
     Combatant plain;
     plain.maxHealth = 100;
@@ -1724,19 +1733,6 @@ void test_stat_tier_progress_readout() {
         if (reached < kStatTierCount) CHECK(p + owed == statTierPoints(reached));
         else CHECK(owed == 0);
     }
-}
-
-// Defence's cut ceiling lands EXACTLY on the top rung — 8 full-rate points plus 24 bent
-// ones is 60%. tunables.h calls that coincidence load-bearing, because it is what makes
-// "the stat stops buying % on the same rung it starts buying something else" true rather
-// than approximately true, and moving any one of four numbers would break it silently.
-void test_defense_cap_lands_on_the_top_rung() {
-    CHECK(levelDefenseCutPct(kStatTier3Points) == kLevelDefenseCapPct);
-    CHECK(levelDefenseCutPct(kStatTier3Points - 1) < kLevelDefenseCapPct);
-    CHECK(levelDefenseCutOverflowPct(kStatTier3Points) == 0);   // reached, not overshot
-    // The bend and the first rung are the same point, which is the other half of that
-    // claim: one threshold the player can be told about, not two.
-    CHECK(kLevelDefenseSoftPoints == kStatTier1Points);
 }
 
 // Every rung's applier: inert below the threshold, its magnitude at and above it. Pure

@@ -246,7 +246,7 @@ const SpriteData* combatVsGlyph(CombatVsKind kind);
 struct CombatVitals {
     int health = 0, maxHealth = 0;
     int power = 0;     // powerMultPct + stackPowerBonus, the SUM combat multiplies by
-    int defense = 0;   // incoming-damage cut, under the never-immune clamp
+    int defense = 0;   // DEF rating + the Cipher stack; may be negative
     int speed = 0;     // rounded to whole ticks (a siphon steals fractions)
 };
 CombatVitals combatVitals(const Combatant& c);

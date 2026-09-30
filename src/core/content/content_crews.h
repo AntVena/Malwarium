@@ -72,7 +72,7 @@ enum class CrewExploitKind : uint8_t {
     // damage as Power for the rest of the fight. Uncapped and compounding — the bigger
     // swing one charge buys is what the next charge banks.
     PowerByDamageDealt,
-    // STICKY: snap the live stat LEANS (attack power, speed, damage cut) back to their
+    // STICKY: snap the live stat LEANS (attack power, speed, DEF rating) back to their
     // fight-start baselines, then floor them there — nothing may lower them again.
     ResetStatsAndFloor,
     // STICKY: every self-buff the ENEMY casts (brace, shield pool, Lockout/Cipher

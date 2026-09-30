@@ -295,12 +295,12 @@ void test_level_stat_curves() {
           kLevelHealthSpecPoints * kLevelHealthPerPoint);
     CHECK(levelHealthBonus(1000) == kLevelHealthSpecCap);
 
-    // Defence bends the OTHER way — the two curves are deliberately mirror images.
-    const int defBefore = levelDefenseCutPct(kLevelDefenseSoftPoints) -
-                          levelDefenseCutPct(kLevelDefenseSoftPoints - 1);
-    const int defAfter = levelDefenseCutPct(kLevelDefenseSoftPoints + 2) -
-                         levelDefenseCutPct(kLevelDefenseSoftPoints + 1);
-    CHECK(defAfter < defBefore);
+    // Defence does not bend at all: the rating is linear, and the diminishing half lives
+    // in the curve a hit is put through (defendedDamage), not in the points.
+    CHECK(levelDefenseRating(0) == 0);
+    CHECK(levelDefenseRating(-3) == 0);
+    CHECK(levelDefenseRating(kStatTier3Points) == kStatTier3Points * kLevelDefensePerPoint);
+    CHECK(levelDefenseRating(1000) == 1000 * kLevelDefensePerPoint);   // no ceiling
 
     // Defence's tiers: nothing at all until the threshold, then the whole bonus.
     CHECK(levelDefensePierceResistPct(kLevelDefensePierceResistPoints - 1) == 0);
@@ -414,8 +414,8 @@ void test_ransom_pool_works_the_pet_up() {
     CHECK(brace.second.powerMultPct ==
           brace.first.powerMultPct + 40 * kRansomBracePowerPctByStage[si] / 100);
     const auto hit = cast("packet_storm");
-    CHECK(hit.second.dmgReducePct ==
-          hit.first.dmgReducePct + 40 * kRansomStrikeDefensePctByStage[si] / 100);
+    CHECK(hit.second.defense ==
+          hit.first.defense + 40 * kRansomStrikeDefensePctByStage[si] / 100);
     // Screen Locker spends its turn the way a brace does, and works the pet up the same.
     const auto lock = cast("screen_locker");
     CHECK(lock.second.powerMultPct ==
@@ -598,16 +598,16 @@ void test_combat_mod_passives() {
     ContentRegistry r = ContentRegistry::embedded();
     Combatant enemy = mkCombatant(r, "E", 100, 10, {"packet_storm"});  // 12 dmg, fast
 
-    // Firewall Patch cuts incoming damage by its own magnitude (read off the mod row).
+    // Firewall Patch defends by its own magnitude (read off the mod row).
     const int fwCut = r.mod("firewall_patch")->magnitude;
     Combatant plain = mkCombatant(r, "P", 100, 5, {"quick_jab"});      // slower → enemy first
     Combat a; a.begin(plain, enemy, Combat::Stakes::Safe, 5);
     a.step();
     CHECK(a.player().health == 88);                                    // 12 full
-    Combatant fire = plain; fire.dmgReducePct = fwCut;
+    Combatant fire = plain; fire.defense = fwCut;
     Combat b; b.begin(fire, enemy, Combat::Stakes::Safe, 5);
     b.step();
-    CHECK(b.player().health == 100 - 12 * (100 - fwCut) / 100);        // reduced
+    CHECK(b.player().health == 100 - defendedDamage(12, fwCut));        // reduced
 
     // RAID Mirror negates exactly the first incoming hit, then is consumed.
     Combatant mir = plain; mir.mods.arm(ModEffect::RaidMirror);
@@ -642,7 +642,7 @@ void test_combat_builders_and_flee() {
     CHECK(std::strcmp(pc.moves[0]->id, "packet_storm") == 0);
     CHECK(std::strcmp(pc.moves[1]->id, "quick_jab") == 0);
     CHECK(pc.speed == kCombatBaseSpeed + r.mod("clock_speed_boost")->magnitude);  // Clock-Speed read
-    CHECK(pc.dmgReducePct == r.mod("firewall_patch")->magnitude);                 // Firewall read
+    CHECK(pc.defense == r.mod("firewall_patch")->magnitude);                 // Firewall read
 
     CombatEnemy spec{"Dummy", "SPR_PET_CACHEMUTT", 1, 30, 8, {"quick_jab"}};
     Combatant ec = makeEnemyCombatant(r, spec);
@@ -792,17 +792,17 @@ void test_mod_effects_data_driven() {
     // PowerPct is a MULTIPLIER on the pet's own output, not a flat add (combat_factory.cpp).
     CHECK(build("crypto_coprocessor").powerMultPct ==
           base.powerMultPct * (100 + mag("crypto_coprocessor")) / 100);
-    CHECK(build("tpm_chip").dmgReducePct == base.dmgReducePct + mag("tpm_chip"));
+    CHECK(build("tpm_chip").defense == base.defense + mag("tpm_chip"));
     CHECK(build("solid_state_cache").maxHealth == base.maxHealth + mag("solid_state_cache"));
     Combatant oc = build("overclock_chip");
     CHECK(oc.speed == base.speed + 5);                                  // +speed
     CHECK(oc.powerMultPct == base.powerMultPct * (100 - 8) / 100);      // ...at a power cost
     CHECK(build("honeytoken").mods.mag(ModEffect::Thorns) == 4);
     CHECK(build("deadman_switch").mods.mag(ModEffect::DeathBlast) == 12);
-    // Line affinity: Cipher ASIC is +24% cut generic, +18 more for a Ransomware pet (=42).
-    CHECK(build("cipher_asic").dmgReducePct == base.dmgReducePct + 42);
+    // Line affinity: Cipher ASIC is +32 DEF generic, +40 more for a Ransomware pet (=72).
+    CHECK(build("cipher_asic").defense == base.defense + 72);
     // The plain-magnitude originals apply their row value straight through.
-    CHECK(build("firewall_patch").dmgReducePct == base.dmgReducePct + r.mod("firewall_patch")->magnitude);
+    CHECK(build("firewall_patch").defense == base.defense + r.mod("firewall_patch")->magnitude);
     CHECK(build("clock_speed_boost").speed == base.speed + r.mod("clock_speed_boost")->magnitude);
     CHECK(build("raid_mirror").mods.armed(ModEffect::RaidMirror));
 }
@@ -1478,7 +1478,7 @@ void test_mod_content_rarity_tier() {
     }
     const ModDef* ca = r.mod("cipher_asic");
     CHECK(ca && ca->line && std::strcmp(ca->line, "ransomware") == 0);
-    CHECK(ca->affinityBonus == 18);
+    CHECK(ca->affinityBonus == 40);
     // Niche-flavour pass: the two hard-gated signatures carry ModDef::requiresLine (a
     // real EQUIP block, distinct from the soft `line`/`affinityBonus` every other mod
     // uses — Cipher ASIC above stays fully line-agnostic).
@@ -1755,7 +1755,7 @@ void test_mod_niche_flavour_data_driven() {
     Combatant cs = build("cold_storage");
     CHECK(cs.maxHealth == base.maxHealth + r.mod("cold_storage")->magnitude);
     CHECK(cs.speed == base.speed - 2);
-    CHECK(build("scratch_disk_buffer").dmgReducePct == base.dmgReducePct + 8);
+    CHECK(build("scratch_disk_buffer").defense == base.defense + 9);
     CHECK(build("phishing_rod").mods.mag(ModEffect::StealAmplifyPct) == 75);
     // Extortion Ledger's requiresLine gate is an EQUIP-time UI check (game_care.cpp),
     // not a combat-engine one — makePlayerCombatant applies whatever is already
@@ -1765,11 +1765,11 @@ void test_mod_niche_flavour_data_driven() {
     // It parks its two magnitudes rather than moving powerMultPct at build time: the
     // second one only pays while a seizure is being held, which is a state a fight
     // reaches and loses again, so the damage path reads both live.
-    // The STANDING half is a damage CUT and lands on the base; only the seizure window is
+    // The STANDING half is DEF rating and lands on the base; only the seizure window is
     // parked live, because it opens and closes mid-fight. Power is deliberately not the
     // standing currency — a flat attack bonus measured worth nothing at this tier.
     const Combatant el = build("extortion_ledger");
-    CHECK(el.dmgReducePct == base.dmgReducePct + 35);
+    CHECK(el.defense == base.defense + 54);
     CHECK(el.powerMultPct == base.powerMultPct);
     const ModState* els = el.mods.find(ModEffect::ExtortionLedger);
     CHECK(els && els->mag2 == 90);
@@ -1804,13 +1804,13 @@ void test_mod_botnet_swarm_and_airgap_ward() {
     Combatant sw = makePlayerCombatant(r, *pet, ml, withSwarm);
     // Multiplicative, as ModEffect::PowerPct is and for the same reason: it scales the
     // pet's own output rather than adding onto a stage-inflated base. Its sibling below
-    // stays additive — dmgReducePct is percentage POINTS under a clamp, not a multiplier.
+    // stays additive — defense is a RATING the Defence curve reads, not a multiplier.
     const int swarm = r.mod("botnet_swarm")->magnitude;
     CHECK(sw.powerMultPct == base.powerMultPct * (100 + swarm * 2) / 100);  // 2 Attack moves
 
     Loadout withWard; withWard.grant("airgap_ward", kModCopyCapBase); withWard.equip(0, "airgap_ward");
     Combatant wd = makePlayerCombatant(r, *pet, ml, withWard);
-    CHECK(wd.dmgReducePct == base.dmgReducePct + 6 * 1);    // +6% per Defend move (1)
+    CHECK(wd.defense == base.defense + 7 * 1);    // +7 DEF per Defend move (1)
 }
 
 // The per-kind combine rules (mod_state.cpp) — what happens when two equipped mods
@@ -2362,15 +2362,49 @@ void test_speed_action_economy() {
     }
 }
 
+// NEGATIVE DEFENCE. The rating is uncapped, so the counter to a wall is shred that
+// subtracts from it — and a rating shredded past zero must cost the fighter more, on the
+// mirrored curve, rather than bottoming out at "no defence". Armor rot is the flat shred
+// that gets there; pierce only ever routes around a POSITIVE rating.
+void test_negative_defense_from_armor_rot() {
+    ContentRegistry r = ContentRegistry::embedded();
+    // (1) The engine reads the mirrored curve: -100 DEF takes 1.5x.
+    {
+        Combatant p = mkCombatant(r, "P", 100, 20, {"packet_storm"});   // 12, no pierce
+        Combatant e = mkCombatant(r, "E", 100, 1, {"quick_jab"});
+        e.defense = -100;
+        Combat c; c.begin(p, e, Combat::Stakes::Safe, 42); c.step();
+        CHECK(c.enemy().health == 100 - 18);
+        // Full pierce leaves a shredded rating exactly where it is: there is nothing
+        // positive left for it to ignore.
+        Combatant pp = mkCombatant(r, "P", 100, 20, {"backdoor_breach"}); // 16, pierce 100
+        Combat d; d.begin(pp, e, Combat::Stakes::Safe, 42); d.step();
+        CHECK(d.enemy().health == 100 - 24);
+    }
+    // (2) Rot is flat and unfloored: a sprung trap takes the attacker below zero, and the
+    //     next thing to hit it lands heavier than the same hit on bare armour.
+    {
+        const MoveDef* trap = r.move("killswitch");
+        CHECK(trap && trap->trapArmorRot > 0);
+        Combatant p = mkCombatant(r, "P", 5000, 1, {"packet_storm"});
+        p.trojanTraps[p.trojanTrapCount++] = trap;
+        Combatant e = mkCombatant(r, "E", 5000, 20, {"packet_storm"});    // swings first
+        Combat c; c.begin(p, e, Combat::Stakes::Safe, 42);
+        c.step();                                        // E hits, the trap springs
+        CHECK(c.enemy().defense == -trap->trapArmorRot);
+        CHECK(defendedDamage(12, c.enemy().defense) > 12);
+    }
+}
+
 // Minimum penetration: a real attack always lands >=1 through pure defensive mitigation
-// (% cut + guard), so no pet is an invincible wall — but RAID Mirror's deliberate full
+// (DEF rating + guard), so no pet is an invincible wall — but RAID Mirror's deliberate full
 // negation is still exempt.
 void test_min_damage_penetration() {
     ContentRegistry r = ContentRegistry::embedded();
-    // Quick Jab (6) into a maxed damage-cut would round to 0; the floor lands 1.
+    // Quick Jab (6) into a deep enough wall rounds to 0; the floor lands 1.
     Combatant p = mkCombatant(r, "P", 100, 20, {"quick_jab"});
     Combatant e = mkCombatant(r, "E", 100, 5, {"checksum_guard"});
-    e.dmgReducePct = 95;                                 // clamps high; 6 * ~15% -> 0
+    e.defense = 10000;                              // 6 * 100 / 10100 rounds to 0
     Combat c; c.begin(p, e, Combat::Stakes::Safe, 1);
     c.step();                                            // P jabs the wall
     CHECK(c.enemy().health == 99);                       // 1 penetrated, not 0
@@ -2703,7 +2737,7 @@ void test_combat_panel_reports_every_live_state() {
     c.lockedTurnsLeft = 1;
     c.stackPowerBonus = 8;
     c.stackDefenseBonus = 6;
-    c.dmgReducePct = 20;
+    c.defense = 20;
     c.speed = 14;
     c.baseSpeed = 17;                       // a siphon took three ticks
     c.powerMultPct = 88;
@@ -2715,12 +2749,11 @@ void test_combat_panel_reports_every_live_state() {
     // mid-fight" is the defect either of them can carry — so both are checked here rather
     // than only the one that happens to be a list.
     //
-    // The four VITALS are the VS page's column of digits, effective: after the siphon,
-    // after the stack, under the never-immune clamp.
+    // The four VITALS are the VS page's column of digits, effective: after the siphon
+    // and after the stack.
     const CombatVitals v = combatVitals(c);
     CHECK(v.power == 88 + 8);                // powerMultPct + stackPowerBonus, the SUM
-    CHECK(v.defense == 20 + 6);              // dmgReducePct + the Cipher stack
-    CHECK(v.defense <= kLevelDmgReduceMaxPct);
+    CHECK(v.defense == 20 + 6);              // defense + the Cipher stack
     CHECK(v.speed == 14);
     CHECK(v.maxHealth == c.maxHealth);
 
@@ -2859,7 +2892,7 @@ void test_polymorph_brace_answers_to_the_cap() {
     polymorphPay(c, MoveKind::Defend, points);
 
     CHECK(c.defenseMultPct == 100 + kLevelDefenseBraceCapPct);   // held at the ceiling
-    CHECK(c.dmgReducePct <= kLevelDmgReduceMaxPct);              // and never immune
+    CHECK(c.defense == points * kLevelDefensePerPoint);          // the rating is uncapped
 
     // What the ceiling refused was paid in Health, at the brace's own rate — so the
     // absorption is still worth something past the cap instead of silently evaporating.
@@ -3214,7 +3247,7 @@ void test_every_mod_reaches_the_fight() {
         // Either it moved a base stat at build time, or it parked a live magnitude for a
         // hook to read. A mod that does neither is wired nowhere.
         const bool movedStat = with.powerMultPct != base.powerMultPct ||
-                               with.dmgReducePct != base.dmgReducePct ||
+                               with.defense != base.defense ||
                                with.maxHealth != base.maxHealth ||
                                with.speed != base.speed ||
                                with.defenseMultPct != base.defenseMultPct;
@@ -3327,7 +3360,7 @@ void test_backscatter_pays_out_of_what_the_wall_absorbed() {
         // the standard combat magnitude knob (powerMultPct), so this is a bigger fighter
         // rather than a special case.
         e.powerMultPct = 2000;
-        p.dmgReducePct = cutPct;              // the wall the enemy's hits land on
+        p.defense = cutPct;              // the wall the enemy's hits land on
         p.backscatterPct = backscatterPct;
         Combat cb;
         cb.begin(p, e, Combat::Stakes::Safe, 5150);
@@ -3406,7 +3439,7 @@ void test_power_tiers_get_past_a_defence() {
         Combatant e = mkCombatant(r, "E", 40000, 1, {"quick_jab"});
         p.powerMultPct = 2000;                // heavy enough for integer maths to show it
         p.piercePct = piercePct;
-        e.dmgReducePct = 50;
+        e.defense = 50;
         Combat cb;
         cb.begin(p, e, Combat::Stakes::Safe, 24680);
         for (int i = 0; i < 8 && cb.outcome() == Combat::Outcome::Ongoing; ++i) {
@@ -3426,7 +3459,7 @@ void test_power_tiers_get_past_a_defence() {
         Combatant e = mkCombatant(r, "E", 40000, 1, {"quick_jab"});
         p.powerMultPct = 2000;                // heavy enough for integer maths to show it
         p.piercePct = piercePct;
-        e.dmgReducePct = 50;
+        e.defense = 50;
         e.pierceResistPct = resistPct;
         Combat cb;
         cb.begin(p, e, Combat::Stakes::Safe, 24680);
