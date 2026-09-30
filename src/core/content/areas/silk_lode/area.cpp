@@ -50,9 +50,9 @@ const ShopListingDef kModShopListings[] = {
 
 // The Lode's CHAPTERS (core/content/story.h), wires 21-24.
 // Nobody is down here to explain anything, so the Lode tells its story through what was
-// left behind: a research lab, its logbook, a printer still running. It names nothing
-// and resolves nothing. It ends on the operator plugging the neural link into the
-// mainframe, which is where the next chapter picks up: inside it.
+// left behind: a university team's signs, its logbook, the printed messages. It names
+// nothing and resolves nothing. It ends on the operator plugging the neural link into
+// the mainframe's interface, which is where the next chapter picks up: inside it.
 const StoryPanelDef kIntroPanels[] = {
     {"THE OLD MINE",
      "The stair leads down into an old mine under the hill, dug long before the vault was "
@@ -66,17 +66,17 @@ const StoryPanelDef kIntroPanels[] = {
      "The malbeasts here live on the cables and barely move. They wait where the lines "
      "cross, and a pet that walks into one gets tangled up, losing some of its armour "
      "with every snag."},
-    {"THE LAB",
-     "Halfway down, a side tunnel has been fitted out as a lab: desks, dead terminals, "
-     "a kettle. A sign on the door says it was a university research project, older "
-     "than the vault."},
+    {"SIGNS OF PEOPLE",
+     "Somebody worked down here once. Lights are bolted along the tunnels, there are "
+     "safety notices from a university, and arrows painted on the rock all point "
+     "further down."},
 };
 
 const StoryPanelDef kBossIntroPanels[] = {
     {"THE MACHINE ROOM",
-     "The deepest tunnel opens into a machine room. Every cable in the mine runs into one "
-     "mainframe standing in the middle of it, still humming. It is the machine Morris "
-     "counted."},
+     "The arrows end in a machine room with a desk and one mainframe, still humming. "
+     "Every cable in the mine runs into it, and the link knows it at once: the machine "
+     "Morris counted."},
     {"MIRAI",
      "Coiled round it is Mirai the Many-Legged, a botnet made of millions of cheap "
      "devices, cameras, doorbells and fridges, that nobody gave a proper password. It "
@@ -89,7 +89,7 @@ const StoryPanelDef kBossIntroPanels[] = {
 
 const StoryPanelDef kBossOutroPanels[] = {
     {"THE LOGBOOK",
-     "The lab's logbook is still on the desk. The team was building a program to read "
+     "The team's logbook is still on the desk. They were building a program to read "
      "everything on the first network and learn from it, and they ran it on this "
      "mainframe."},
     {"THE LAST ENTRY",
@@ -97,21 +97,24 @@ const StoryPanelDef kBossOutroPanels[] = {
      "team never connected it to. The last entry says they will shut it down in the "
      "morning. They never did."},
     {"THE PRINTER",
-     "The printer beside the mainframe is still feeding out pages, all in the language "
-     "the Baron, Cracker and Conduit spoke. This is where their messages were going."},
+     "Under the printer is a heap of pages in the language the Baron, Cracker and "
+     "Conduit spoke: their messages, printed as they arrived. The last one came the "
+     "day Conficker fell."},
 };
 
 const StoryPanelDef kAreaOutroPanels[] = {
     {"THE PORT",
-     "On the front of the mainframe is a port no ordinary machine has. It is built for "
-     "exactly the kind of connection the shopkeeper's neural link makes, and nothing "
-     "else."},
-    {"FROM THE OUTSIDE",
-     "Everything so far you have seen from the outside, through a screen or through the "
-     "link. The port would put you inside the mainframe itself."},
+     "Your link reacts before you see why: the mainframe has a port no ordinary "
+     "machine has, and it is reaching for the link. It was built for the same kind of "
+     "connection the link makes."},
+    {"THE INTERFACE",
+     "The logbook calls the port the interface. The team used it to go inside the "
+     "mainframe and work with the program directly, instead of watching it from a "
+     "screen."},
     {"CONNECTED",
-     "You plug in. The machine room goes dark, and when the link settles you are standing "
-     "somewhere that is not the mine."},
+     "You plug in. The machine room goes dark. When the link settles you are standing "
+     "in the lab again, except the lights are on, the terminals are running, and the "
+     "kettle is warm."},
 };
 
 const AreaStoryDef kStory = {{
