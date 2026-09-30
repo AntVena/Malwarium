@@ -52,73 +52,74 @@ const ShopListingDef kModShopListings[] = {
 };
 
 // The Bayou's CHAPTERS (core/content/story.h), wires 5-8.
-// One panel here and one in the Circuit's outro end on a line the speaker should not
-// know, and quote nothing: the quotes wait on CantCipher (core/model/cant.h).
+// Where the operator gets the neural link, so the arrival says what it does. Cracker's
+// last words are the second of three sent to the machine Morris counted (the Moors'
+// chapters), in a language nothing on the device translates.
 const StoryPanelDef kIntroPanels[] = {
-    {"LEECH LANDING",
-     "The shop is the last building on Leech Landing, half of it out over the water. The "
-     "clerk looks at you, then at his screen, and asks which of the eleven you have come "
-     "to collect."},
-    {"NOTHING WAS ORDERED",
-     "You have never been in this shop. Neither had the four before you, and he shipped "
-     "their crates too. He is out the cost of every one, and the Crew that handles this "
-     "is months away."},
-    {"HIGHER SYNC",
-     "So he goes in the back and fits you a neural link. It runs above the sync a "
-     "civilian rig is certified for. He will not take Bits. He wants this stopped before "
-     "he goes under."},
-    {"EVERY BAD NETWORK",
-     "Outside you feel every bad network on the Landing, and every sealed cache you have "
-     "carried since the Circuit reads open. Then the Malwarium beeps at the water. "
-     "Something here is phishy."},
+    {"THE BAYOU",
+     "The Pirate Bayou is a swampy harbour town where half the stalls sell cracked "
+     "software and nobody asks where it came from. The shop at the end of Leech Landing "
+     "sells Malwarium gear."},
+    {"IN YOUR NAME",
+     "The shopkeeper knows your name already. Someone has been ordering his stock with "
+     "card details stolen in the Circuit, yours included. He shipped every order and "
+     "never got paid."},
+    {"THE DEAL",
+     "Every Crew is too busy with the surge to take his case. So he offers you a deal: "
+     "stop whoever is doing it, and he will fit you with a neural link, tuned far past "
+     "the civilian limit."},
+    {"THE LINK",
+     "With it in, you can sense the networks around you without looking at a screen. The "
+     "Bayou's are thick with malbeasts, and the sealed caches in your bag suddenly read "
+     "open."},
+    {"CRACKERS",
+     "Cracked software is the Bayou's trade, so its malbeasts are crackers too: breaking "
+     "through protection is what they do. Your pet's armour stops less of every hit "
+     "here."},
 };
 
 const StoryPanelDef kBossIntroPanels[] = {
     {"THE CABLE",
-     "The link puts the cable under the boards in front of you, glitching where nothing "
-     "should, malbeast sign the whole length. You follow it up past Torrent Swamp to the "
-     "dock stacks."},
+     "Through the link you can see a thick data cable running under the boardwalk, "
+     "glitching and crawling with malbeasts. You follow it past Torrent Swamp to the "
+     "docks."},
     {"THE JUNCTION",
-     "The Bayou's lines drop away here and join the undersea trunks. Every crate billed "
-     "to your card went out through this junction, and none of it went to the people who "
-     "paid."},
-    {"THEY ALL CARRY KEYS",
-     "Nothing in the Keys bothers with a lock. They all carry a key instead. Your pet's "
-     "armour buys it one round against that and then stops counting for anything."},
+     "At the docks the Bayou's lines join the undersea cables. Every order placed on a "
+     "stolen card went out from here, and the thief is sitting right on the junction."},
     {"CAP'N CRACKER",
-     "Cracker is not big. He works a password list, answers as whoever is on it, and "
-     "ships what they never ordered. He moved onto your water the week the Circuit "
-     "locked down."},
+     "Cap'n Cracker works through a list of stolen passwords, logs in as each person on "
+     "it, and orders stock in their name. He set up here the week the Circuit was "
+     "locked."},
+    {"NO LOCK HOLDS",
+     "Cracker has broken into so much that armour means nothing to him. His strongest "
+     "attack goes straight through it, however much your pet is wearing."},
 };
 
 const StoryPanelDef kBossOutroPanels[] = {
     {"THE LEDGER",
-     "Cracker goes down next to an open ledger. He did not put the list together. He "
-     "bought it outright for eight thousand Bits, more than this stretch of water turns "
-     "over in a year."},
-    // Nothing later chases the ape. The implication is the whole of it.
+     "Cracker goes down beside his ledger. He did not steal the password list himself. "
+     "He bought it for eight thousand Bits, more than this whole stretch of water makes "
+     "in a year."},
     {"A PURPLE APE",
-     "The entry says who sold it to him. Not a name. A description: a purple ape, four "
-     "weeks ago, cash up front. Every card locked down in the Circuit was on the "
-     "manifest."},
-    {"A FIRM HANDSHAKE",
-     "He only got onto your water, he says, on a firm handshake. Then he says something "
-     "else, and it is not in a language a Bayou operator has any business knowing."},
+     "The seller is written down as a purple ape. The Baron's gang did not just lock the "
+     "Circuit: they copied every card on it while they were inside, then sold the list "
+     "on."},
+    {"THE SAME LANGUAGE",
+     "As he goes, Cracker starts talking, but not to you. He is sending to something else "
+     "on the network, in the same language the Baron used."},
 };
 
 const StoryPanelDef kAreaOutroPanels[] = {
     {"THE BACK ROOM",
-     "The clerk has started hearing people talk about you. He opens the back of the shop, "
-     "where the stock that never reaches the boards is kept, and tells you all of it is "
-     "for sale to you now."},
+     "The shopkeeper has heard what you did before you get back. He opens the back room, "
+     "where the stock he never puts out is kept, and tells you it is all for sale to you "
+     "now."},
     {"THE BOUNTY",
-     "There is a bounty up. Not for Cracker - nobody is paying for Cracker. It is for "
-     "whatever started all of this, and every Crew on the 'net is short enough to sign "
-     "anyone who can help."},
+     "The Crews have put up a bounty for whoever is behind the surge. Nobody knows who "
+     "that is yet, and every Crew is so short of people they will take help from anyone."},
     {"OUT OR DOWN",
-     "Two ways off the Landing. Out across the Net-Sea, which sends more of Cracker's "
-     "sort than anyone counts, and which is where the Crews are looking. Or straight "
-     "down, off the edge of the map."},
+     "The cable runs out to sea across the Net-Sea, and that is where the Crews are "
+     "looking. The other way is down, into the Deep Web, which nobody has ever mapped."},
 };
 
 const AreaStoryDef kStory = {{
