@@ -62,15 +62,72 @@ const ShopListingDef kModShopListings[] = {
     {"honeytoken", kShopStock, 768, {{"disk_scrubber", 30}}},
 };
 
-// CHAPTERS (core/content/story.h), wires 13-16. Titles only: a row with no
-// panels is unauthored, so nothing fires and nothing lists until the prose lands.
+// The Moors' CHAPTERS (core/content/story.h), wires 13-16.
+// The one keeper on the ladder that does NOT talk like the ape: Morris is older than
+// whatever it is the others have been talking to, and its tally is where that shows.
+const StoryPanelDef kIntroPanels[] = {
+    {"SEEDER SHALLOWS",
+     "The cable comes ashore and goes under the peat. Every share out here is still up, "
+     "still seeding to peers that logged off decades ago. None of them have noticed."},
+    {"YOU HAVE MAIL",
+     "Two steps in, your Malwarium starts taking mail. Chain letters, forwarded from "
+     "addresses nobody has answered at in twenty years, each one asking you to send it on."},
+    {"IT KEEPS LANDING",
+     "Nothing here hits harder than the Crossing did. What lands just keeps landing. A "
+     "bite in the Moors goes on working through your pet for turns after it is over."},
+    {"THE LAST NAME",
+     "The listing at the edge of the fen has one name in it from the last ten years, and "
+     "nothing written after it. The cable runs off the same way they must have gone."},
+};
+
+const StoryPanelDef kBossIntroPanels[] = {
+    {"GOING HOME",
+     "Every keeper out here broke off toward the causeway, and none of them were running. "
+     "Everything in the Moors copies itself, and all of it was copied from one thing."},
+    {"MORRIS THE WYRM",
+     "Morris is the oldest thing on the 'net that still moves. It was only ever meant to "
+     "count the network. It counted by getting into every machine it found, and never "
+     "learnt to stop."},
+    {"THE WIND-UP",
+     "It is slow to start. Morris spends three turns getting back into everything it "
+     "already has, and whatever it takes after that, it goes on taking for four more."},
+};
+
+const StoryPanelDef kBossOutroPanels[] = {
+    {"NOT A WORD",
+     "Morris goes down without a word in any language. It is the first thing since the "
+     "Circuit that has not talked like the ape. It only ever had the one job, and it "
+     "leaves you the tally."},
+    // The extra host is the thing the ape, Cracker and Conduit were talking to. Nothing
+    // here says so; the Crossing already said it was in the networks, not organising them.
+    {"ONE MORE",
+     "The tally is every machine the first network had, in the order Morris got into "
+     "them. The last line is one more. No address, no name, and the time beside it is "
+     "before Morris ever ran."},
+    {"COUNTED, NOT CARRIED",
+     "So Morris never brought it anywhere. Whatever was there to be counted was on the "
+     "first network before anybody switched that network on. Morris only counted it."},
+};
+
+const StoryPanelDef kAreaOutroPanels[] = {
+    {"RETURN ADDRESS",
+     "The chain letters stop when Morris does. One more comes in after, and it is not a "
+     "chain letter. It has a return address, a real one, and a Crew's mark at the bottom."},
+    {"THE DOOR IS OPEN",
+     "They have been reading your walk since the Circuit. They cannot get this far out, "
+     "but they stand behind anyone who can. There is a place for you when you want it."},
+    {"THE KEEP",
+     "The causeway runs out of the fen and up to Castle Rapidscare, which the war over "
+     "what it hoards never took. Every light in it is on. The cable goes in under the "
+     "gate."},
+};
+
 const AreaStoryDef kStory = {{
-    {/*wire=*/13, "CHAPTER 4: ARRIVAL"},
-    {/*wire=*/14, "CHAPTER 4: GAUNTLET"},
-    {/*wire=*/15, "CHAPTER 4: CLEARED"},
-    {/*wire=*/16, "CHAPTER 4: DEPARTURE"},
-}};
-}  // namespace
+    {/*wire=*/13, "CHAPTER 4: THE MOORS", kIntroPanels, arrLen(kIntroPanels)},
+    {/*wire=*/14, "CHAPTER 4: THE WYRM", kBossIntroPanels, arrLen(kBossIntroPanels)},
+    {/*wire=*/15, "CHAPTER 4: THE TALLY", kBossOutroPanels, arrLen(kBossOutroPanels)},
+    {/*wire=*/16, "CHAPTER 4: THE CAUSEWAY", kAreaOutroPanels, arrLen(kAreaOutroPanels)},
+}};}  // namespace
 
 const AreaDef kAreaNapstorrentMoors = {
     "napstorrent_moors",
