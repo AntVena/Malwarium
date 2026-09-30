@@ -1193,6 +1193,9 @@ public:
     // The finished duel's verdict from the LOCAL operator's point of view. Only
     // meaningful in PvpPhase::Result.
     bool pvpLocalWon() const { return pvpWon_; }
+    // ...and whether the turn limit called it level (Combat::Outcome::Draw), in which
+    // case neither side won and pvpLocalWon() is false on both devices.
+    bool pvpDrawn() const { return pvpDrawn_; }
     // Why the last session ended without a fight (empty = it didn't). Rendered by the
     // LINK screen so a refusal never reads as a hang.
     const char* pvpStatusText() const { return pvpStatus_; }
@@ -3939,6 +3942,7 @@ private:
                                           // fighter inside the INVITE and owe no ACCEPT
     bool pvpHost_ = false;               // we hold the player_ slot and pick the seed
     bool pvpWon_ = false;                // the finished duel's verdict, locally framed
+    bool pvpDrawn_ = false;              // ...or the turn limit called it level
     uint32_t pvpSeed_ = 0;
     char pvpStatus_[32] = "";            // why the last session ended (empty = it didn't)
 

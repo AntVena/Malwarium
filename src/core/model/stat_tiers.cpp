@@ -41,16 +41,15 @@ const StatTierDef kTiers[kLevelStatCount][kStatTierCount] = {
       kLevelSpeedAdrenalineStepPct,
       "+{mag} initiative for every {mag2}% of your max Health already lost."}},
 
-    // MAX-HEALTH — the accelerating band, then two ways to spend the pool twice.
+    // MAX-HEALTH — the accelerating band, then the pool spent as damage, then as sustain.
     {{"EXPANSION", kStatTier1Points, kLevelHealthPctPerSpecPoint, kLevelHealthPctPerPoint,
       "Every max-Health point past this one adds {mag}% of your base Health instead of "
       "{mag2}%."},
-     {"FAILOVER", kStatTier2Points, 0, 0,
-      "Once per fight, a hit that would knock you out leaves you on 1 Health instead. "
-      "Used before a Backup Drive, so the drive keeps its charge."},
+     {"MASS", kStatTier2Points, kLevelHealthOwnDamagePct, 0,
+      "Every hit you land adds {mag}% of your max Health as extra damage."},
      {"SCRUBBING", kStatTier3Points, kLevelHealthScrubPct, 0,
-      "You heal {mag}% of max Health at the start of each of your turns, after any "
-      "damage-over-time has landed."}},
+      "You heal {mag}% of your base Health at the start of each of your turns, after "
+      "any damage-over-time has landed."}},
 };
 
 // Substitute this table's two tokens. Deliberately NOT effect_text.cpp's expander: that

@@ -216,8 +216,11 @@ constexpr int kEvoFlashBeats = 2;   // FX_EVO_FLASH white-out, then the reveal
 // phishPoolSiphonBonusPct) read the STAGE body deliberately, so a branch cannot move
 // them any more than a levelled Health point can.
 constexpr int kBranchGoodPowerPct = 80;    // Good: lower attack power (durable)
-constexpr int kBranchGoodHealthPct = 170;  // ...and the body that pays for it back
-constexpr int kBranchGoodDefense = 0;      // ...plus standing DEF rating (Good only)
+constexpr int kBranchGoodHealthPct = 145;  // ...and the body that pays for it back,
+constexpr int kBranchGoodDefense = 30;     // ...half of it as standing DEF rating: at the
+                                           // starting Firewall's 67, 145% x (167+30)/167
+                                           // is the 170% body it replaced, and the armour
+                                           // half is the part pierce and rot can argue with
 constexpr int kBranchGoodFragPct = 70;     // Good: takes less loss-Frag
 constexpr int kBranchBadPowerPct = 135;    // Bad: higher attack power (glass cannon)
 constexpr int kBranchBadHealthPct = 100;   // ...on a stage-standard body, so the power IS
@@ -272,6 +275,12 @@ constexpr int kCombatBaseSpeed = 10;       // a pet's base initiative speed
 // (equal speed alternates strictly). Sized so base-speed pets act every few gauge ticks
 // and a per-point speed edge shifts the action share smoothly.
 constexpr int kSpeedActionThreshold = 100;
+// THE TURN LIMIT. A fight still going after this many turns (one actor's action each) is
+// CALLED: the fighter holding the larger share of its own max Health wins, and an exact
+// tie is a Draw. Walls are allowed to be walls — two sides that cannot out-damage each
+// other's sustain end on the clock instead of never. A few hundred turns is several
+// times a long fight, so only a genuine stalemate ever reaches it.
+constexpr int kCombatTurnCap = 300;
 constexpr int kFleeChancePct = 50;         // wild flee success (Sim quits free)
 // The A+C Exploit override allowance per fight. One use
 // per battle in v1; a rare reward item (shipped later) raises it — the knob is
@@ -566,13 +575,17 @@ constexpr int kLevelSpeedAdrenalineStepPct = 10;   // T3: per this much max Heal
 constexpr int kLevelSpeedAdrenalinePerStep = 1;    // ...this much initiative, live
 
 // MAX-HEALTH. A pool is only ever worth the damage it outlasts, so past its accelerating
-// band it stops buying pool and starts buying ways to SPEND the pool twice: T2 is a free
-// death-save, ahead of a Backup Drive so a pet carrying both spends the tier and keeps the
-// item; T3 recovers from the fight (never from the tick currently killing you — it rides
-// the same turn-start ordering the Regen mod does). The heal is the TOP rung because it
-// scales with the pool it heals: a Good-branch body multiplies it, and at 16 points it
-// was the only Health build worth making.
-constexpr int kLevelHealthScrubPct = 3;        // T3: % of max Health healed each turn
+// band it stops buying pool and starts SPENDING it: T2 turns the pool into damage — every
+// hit adds a share of this fighter's OWN max Health, so a heavy body always has a way
+// through another heavy body's sustain — and T3 recovers from the fight (never from the
+// tick currently killing you — it rides the same turn-start ordering the Regen mod does).
+// The heal is a share of BASE Health, not max, so it does not compound with the points
+// that bought it; the damage is a share of MAX, so it does. Priced together in the duel
+// harness: at 7% / 3% a committed pet clearly out-classes an even spread and no pairing
+// of two such pets stalls. Damage keyed to the TARGET's Health would be an attack stat's
+// answer to tanks, and belongs with Power if it is ever wanted.
+constexpr int kLevelHealthOwnDamagePct = 3;    // T2: % of own max Health added to each hit
+constexpr int kLevelHealthScrubPct = 7;        // T3: % of base Health healed each turn
 // ...and underneath all three rungs, a flat stun-resist rating per max-Health point, on the
 // same curve banked lock resistance rolls against (stunLandPct). A big body shrugs off a
 // freeze a little: 16 points is 48 rating (a stun lands 68%), 32 is 96 (51%) — about one

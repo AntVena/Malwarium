@@ -907,7 +907,9 @@ int levelHealthScrubPct(int points) {
     return points >= kStatTier3Points ? kLevelHealthScrubPct : 0;
 }
 
-bool levelHealthFailoverEarned(int points) { return points >= kStatTier2Points; }
+int levelHealthOwnDamagePct(int points) {
+    return points >= kStatTier2Points ? kLevelHealthOwnDamagePct : 0;
+}
 
 int levelSpeedFirstStrikeMult(int points) {
     return points >= kStatTier1Points ? kLevelSpeedFirstStrikeMult : 1;
@@ -1031,7 +1033,7 @@ void applyLevelStatPoints(Combatant& c, const int statPoints[4]) {
     c.scrubPct = levelHealthScrubPct(statPoints[3]);
     c.stunResistRating =
         statPoints[3] > 0 ? statPoints[3] * kLevelHealthStunResistPerPoint : 0;
-    c.failoverArmed = levelHealthFailoverEarned(statPoints[3]);
+    c.ownHealthDamagePct = levelHealthOwnDamagePct(statPoints[3]);
     // What the brace cap refuses, paid into max-Health (capOverflowHealth). The rating
     // has no ceiling, so it is the only Defence discard left.
     int braceOverflow = 0;

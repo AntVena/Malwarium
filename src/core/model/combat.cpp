@@ -71,6 +71,7 @@ void Combat::begin(const Combatant& player, const Combatant& enemy, Stakes stake
     plGauge_ = 0;
     enGauge_ = 0;
     firstHitLanded_ = false;    // Speed T1 is waiting for the fight's opening blow
+    turnsTaken_ = 0;
     streakCount_ = 0;
     streakIsPlayer_ = true;
     playerTurn_ = forceEnemyFirst ? false : pickNextActor();
@@ -415,6 +416,11 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
         return;
     }
 
+    // Health T2: the pool, spent. A share of this fighter's own max Health rides every
+    // damaging hit into the mitigation chain like the rest of the swing — the heavy body's
+    // way through another heavy body's sustain. A pure rider (power 0) carries none.
+    if (actor.ownHealthDamagePct > 0 && mv->power > 0)
+        dmg += actor.maxHealth * actor.ownHealthDamagePct / 100;
     const int baseDmg = dmg;          // pre-mitigation: the trap rebound and the floor read it
     int wallAbsorbed = 0;             // what the WALL swallowed; Defence T3 pays out of it
     dmg = mitigate(actor, target, *mv, dmg, baseDmg, wallAbsorbed);
@@ -1214,12 +1220,12 @@ void Combat::resolveTurn(Combatant& actor, Combatant& target, bool byPlayer) {
     // Health T3 (scrubbing): the stat's own regen, on the same footing and in the same
     // slot as the mod above — last of the turn-start ticks, and only on a fighter that
     // survived the other two, so it recovers from the fight and never from the tick
-    // currently killing you. A PERCENTAGE rather than a flat number, because it is bought
-    // by the pool it heals: a bigger pet should not also take proportionally longer to
-    // scrub. Always at least 1 on a fighter that earned it — a rung that rounds to nothing
-    // on a small pet reads as a rung that does not work.
+    // currently killing you. A share of BASE Health (healthBody) rather than max: a heal
+    // that grew with every Health point bought it compounded into a pet nothing could
+    // out-damage. Always at least 1 on a fighter that earned it — a rung that rounds to
+    // nothing on a small pet reads as a rung that does not work.
     if (actor.scrubPct > 0 && actor.health > 0) {
-        const int heal = actor.maxHealth * actor.scrubPct / 100;
+        const int heal = healthBody(actor) * actor.scrubPct / 100;
         actor.health += heal > 0 ? heal : 1;
         if (actor.health > actor.maxHealth) actor.health = actor.maxHealth;
     }
@@ -1420,25 +1426,19 @@ void Combat::checkOutcome() {
     };
     rallySave(player_);
     rallySave(enemy_);
-    // Health T2 (failover): a free death-save, and the reason it sits HERE — after the
-    // crew rally, before the Backup Drive. The rally is a use the player spent and gets
-    // first look; the drive is a consumable buff, and a pet carrying both should spend the
-    // tier it earned permanently and keep the item for the next hole. One shot per fight
-    // (the flag is armed at build time and cleared here), asked of both sides, since a
-    // rolled enemy is held to the same ladder the pet is.
-    auto failoverSave = [](Combatant& c) {
-        if (c.health > 0 || !c.failoverArmed) return;
-        c.failoverArmed = false;
-        c.health = 1;
-    };
-    failoverSave(player_);
-    failoverSave(enemy_);
     if (player_.health <= 0) player_.restoreFromBackup();
     // ...and the floor, after the save has had its look at how deep the hole is.
     if (player_.health < 0) player_.health = 0;
     if (enemy_.health < 0) enemy_.health = 0;
     if (enemy_.health <= 0) outcome_ = Outcome::Win;        // win takes priority
     else if (player_.health <= 0) outcome_ = Outcome::Lose;
+    else if (turnsTaken_ >= kCombatTurnCap) {
+        // The turn limit: CALLED on each side's share of its own max Health, cross-
+        // multiplied so no rounding decides it, and a Draw only on an exact tie.
+        const int64_t pl = int64_t{player_.health} * (enemy_.maxHealth > 0 ? enemy_.maxHealth : 1);
+        const int64_t en = int64_t{enemy_.health} * (player_.maxHealth > 0 ? player_.maxHealth : 1);
+        outcome_ = pl > en ? Outcome::Win : en > pl ? Outcome::Lose : Outcome::Draw;
+    }
 }
 
 bool Combat::pickNextActor() {
@@ -1489,6 +1489,7 @@ bool Combat::step() {
         if (playerTurn_) resolveTurn(player_, enemy_, /*byPlayer=*/true);
         else resolveTurn(enemy_, player_, /*byPlayer=*/false);
     }
+    ++turnsTaken_;
     checkOutcome();
     // Both sides are offered the turn; each kind takes only the clock it answers to.
     tickCrewExploitClock(playerActed ? player_ : enemy_, /*actedThisTurn=*/true);

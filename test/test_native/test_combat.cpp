@@ -3409,11 +3409,10 @@ void test_backscatter_pays_out_of_what_the_wall_absorbed() {
     CHECK(play(kLevelDefenseBackscatterPct, 0) == play(0, 0));
 }
 
-// Health T3 (scrubbing) heals a share of max Health at this fighter's turn start, and
-// Health T2 (failover) turns the killing blow into a 1-Health stand — once. Gated
-// together because both are about surviving a turn that would otherwise end, and the
-// second is only observable through a fight that reaches a fatal hit.
-void test_health_tiers_scrub_and_failover() {
+// Health T3 (scrubbing) heals a share of BASE Health at this fighter's turn start, and
+// Health T2 (mass) adds a share of the fighter's own max Health to every damaging hit.
+// Gated together because they are the two ways the stat spends the pool it buys.
+void test_health_tiers_scrub_and_mass() {
     ContentRegistry r = ContentRegistry::embedded();
     // SCRUBBING. A fighter taking chip damage from a weak attacker: with the rung it
     // ends a run of turns healthier than without it, same seed and same turn order.
@@ -3427,33 +3426,67 @@ void test_health_tiers_scrub_and_failover() {
         return cb.player().health;
     };
     CHECK(scrubbed(kLevelHealthScrubPct) > scrubbed(0));
+    // ...and it heals off the BODY, not the pool: two fighters on the same body heal the
+    // same amount whatever their max Health, so Health points never compound the heal.
+    {
+        auto healOf = [&r](int maxHp) {
+            Combatant p = mkCombatant(r, "P", maxHp, 20, {"quick_jab"});
+            p.bodyHealth = 100;
+            p.health = 10;
+            p.scrubPct = kLevelHealthScrubPct;
+            Combatant e = mkCombatant(r, "E", 4000, 1, {"checksum_guard"});
+            Combat cb;
+            cb.begin(p, e, Combat::Stakes::Safe, 5, /*forceEnemyFirst=*/false,
+                     /*carryPlayerHealth=*/10);
+            cb.step();                                   // the player's turn: heal, then act
+            return cb.player().health - 10;
+        };
+        CHECK(healOf(400) == healOf(1000));
+        CHECK(healOf(400) == 100 * kLevelHealthScrubPct / 100);
+    }
 
-    // FAILOVER. A one-Health pet against an attacker that cannot fail to kill it: without
-    // the rung the fight is lost, with it the pet is still standing on exactly 1.
-    auto lastStand = [&r](bool armed) {
-        Combatant p = mkCombatant(r, "P", 1, 1, {"quick_jab"});
-        Combatant e = mkCombatant(r, "E", 4000, 60, {"quick_jab"});
-        p.health = 1;
-        p.failoverArmed = armed;
+    // MASS. The same swing lands harder by exactly the share of the attacker's own max
+    // Health, and a heavier body adds more.
+    auto hit = [&r](int maxHp, int pct) {
+        Combatant p = mkCombatant(r, "P", maxHp, 40, {"packet_storm"});
+        p.ownHealthDamagePct = pct;
+        Combatant e = mkCombatant(r, "E", 40000, 1, {"quick_jab"});
         Combat cb;
-        cb.begin(p, e, Combat::Stakes::Safe, 777, /*forceEnemyFirst=*/true);
+        cb.begin(p, e, Combat::Stakes::Safe, 9);
         cb.step();
-        return cb;
+        return 40000 - cb.enemy().health;
     };
-    {
-        Combat lost = lastStand(false);
-        CHECK(lost.outcome() == Combat::Outcome::Lose);
-    }
-    {
-        Combat saved = lastStand(true);
-        CHECK(saved.outcome() == Combat::Outcome::Ongoing);
-        CHECK(saved.player().health == 1);
-        CHECK(!saved.player().failoverArmed);    // spent — and it is the fight's only one
-        // Play on: the save does not renew, so the next fatal hit ends it.
-        for (int i = 0; i < 20 && saved.outcome() == Combat::Outcome::Ongoing; ++i)
-            saved.step();
-        CHECK(saved.outcome() == Combat::Outcome::Lose);
-    }
+    CHECK(hit(1000, kLevelHealthOwnDamagePct) ==
+          hit(1000, 0) + 1000 * kLevelHealthOwnDamagePct / 100);
+    CHECK(hit(2000, kLevelHealthOwnDamagePct) > hit(1000, kLevelHealthOwnDamagePct));
+    CHECK(levelHealthOwnDamagePct(kStatTier2Points - 1) == 0);
+    CHECK(levelHealthOwnDamagePct(kStatTier2Points) == kLevelHealthOwnDamagePct);
+}
+
+// THE TURN LIMIT. Two fighters that cannot hurt each other do not fight forever: at
+// kCombatTurnCap the fight is called on each side's share of its own max Health, and a
+// dead level is a Draw. A fight that ends on its own before the cap is untouched.
+void test_combat_turn_limit_calls_the_fight() {
+    ContentRegistry r = ContentRegistry::embedded();
+    // Braces only, so nothing ever lands and only the clock can end it. The two knobs
+    // move each side off full: a carried player Health, and one tick of damage-over-time
+    // on the enemy (begin() refills Health but leaves a planted DoT standing).
+    auto stalemate = [&r](int playerHealth, int enemyDot) {
+        Combatant p = mkCombatant(r, "P", 100, 10, {"checksum_guard"});
+        Combatant e = mkCombatant(r, "E", 200, 10, {"checksum_guard"});
+        e.dotPerTurn = enemyDot;
+        e.dotTurnsLeft = enemyDot > 0 ? 1 : 0;
+        Combat cb;
+        cb.begin(p, e, Combat::Stakes::Safe, 3, false, playerHealth);
+        int steps = 0;
+        while (cb.outcome() == Combat::Outcome::Ongoing && steps < kCombatTurnCap * 2)
+            if (cb.step()) ++steps;
+        CHECK(steps == kCombatTurnCap);                  // called exactly on the limit
+        return cb.outcome();
+    };
+    CHECK(stalemate(-1, 0) == Combat::Outcome::Draw);    // both untouched: dead level
+    CHECK(stalemate(-1, 2) == Combat::Outcome::Win);     // 100% vs 99%
+    CHECK(stalemate(50, 0) == Combat::Outcome::Lose);    // 50% vs 100%
 }
 
 // Power T2 (ring zero) and T3 (guard smash): the two ways committed Power gets PAST a

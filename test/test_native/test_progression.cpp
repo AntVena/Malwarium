@@ -987,11 +987,19 @@ void test_care_branch_trades_power_for_body() {
     CHECK(cg.maxHealth > cb.maxHealth);             // Good is the durable half...
     CHECK(cb.powerMultPct > cg.powerMultPct);       // ...and Bad the aggressive one
 
-    // (3) The trade. Measured as the two cross-products rather than as a ratio, so no
-    //     integer division sits between the gate and the thing it is claiming; a tenth
-    //     of tolerance either way, since both leans round to whole percents.
-    const long long badReach = 1LL * cb.powerMultPct * cb.maxHealth;
-    const long long goodReach = 1LL * cg.powerMultPct * cg.maxHealth;
+    // (3) The trade, in EFFECTIVE Health: the Good branch pays part of its survival as
+    //     DEF rating (kBranchGoodDefense), and a rating is worth maxHealth * (100 + DEF)
+    //     / 100 on the Defence curve. Measured as the two cross-products rather than as
+    //     a ratio, so no integer division sits between the gate and the thing it is
+    //     claiming; a tenth of tolerance either way, since the leans round to whole units.
+    //     Priced on the STARTING loadout (Loadout::starting — Firewall Patch installed from
+    //     hatch), because that rating is under every pet the armour half stacks onto.
+    CHECK(cg.defense == cb.defense + kBranchGoodDefense);
+    const Loadout start = Loadout::starting();
+    const Combatant sg = makePlayerCombatant(reg, *good, moves, start);
+    const Combatant sb = makePlayerCombatant(reg, *bad, moves, start);
+    const long long badReach = 1LL * sb.powerMultPct * sb.maxHealth * (100 + sb.defense);
+    const long long goodReach = 1LL * sg.powerMultPct * sg.maxHealth * (100 + sg.defense);
     CHECK(badReach * 10 >= goodReach * 9 && badReach * 9 <= goodReach * 10);
 }
 
@@ -1783,11 +1791,11 @@ void test_stat_tier_appliers_gate_on_their_rung() {
         CHECK(mine <= enemy * kLevelSpeedPerPoint);
     }
 
-    // MAX-HEALTH: T1 is its accelerating band, T2 a flag, T3 a rate.
+    // MAX-HEALTH: T1 is its accelerating band, T2 and T3 rates.
     CHECK(levelHealthPct(t1) == t1 * kLevelHealthPctPerPoint);
     CHECK(levelHealthPct(t1 + 1) == t1 * kLevelHealthPctPerPoint + kLevelHealthPctPerSpecPoint);
-    CHECK(!levelHealthFailoverEarned(t2 - 1));
-    CHECK(levelHealthFailoverEarned(t2));
+    CHECK(levelHealthOwnDamagePct(t2 - 1) == 0);
+    CHECK(levelHealthOwnDamagePct(t2) == kLevelHealthOwnDamagePct);
     CHECK(levelHealthScrubPct(t3 - 1) == 0);
     CHECK(levelHealthScrubPct(t3) == kLevelHealthScrubPct);
 }
@@ -1807,7 +1815,7 @@ void test_stat_tiers_reach_the_combatant() {
     CHECK(bare.firstStrikeMult == 1);
     CHECK(bare.adrenalinePerStep == 0);
     CHECK(bare.scrubPct == 0);
-    CHECK(!bare.failoverArmed);
+    CHECK(bare.ownHealthDamagePct == 0);
     // The baseline every fighter carries, tier or no tier.
     CHECK(bare.braceRetainPct == kBraceRetainBasePct);
 
@@ -1824,7 +1832,7 @@ void test_stat_tiers_reach_the_combatant() {
     CHECK(built.firstStrikeMult == kLevelSpeedFirstStrikeMult);
     CHECK(built.adrenalinePerStep == kLevelSpeedAdrenalinePerStep);
     CHECK(built.scrubPct == kLevelHealthScrubPct);
-    CHECK(built.failoverArmed);
+    CHECK(built.ownHealthDamagePct == kLevelHealthOwnDamagePct);
     // Speed T2 is banked as its INPUT here — whether it pays needs an opponent, and
     // there isn't one until applySpeedRivalry.
     CHECK(bare.speedPoints == 0);

@@ -1196,6 +1196,7 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
         case Combat::Outcome::Win:
         case Combat::Outcome::Lose: result = localLost ? "PET OVERWHELMED" : "TARGET CLEARED"; break;
         case Combat::Outcome::Fled: result = "DISENGAGED"; break;
+        case Combat::Outcome::Draw: result = "STALEMATE"; break;
         case Combat::Outcome::Ongoing: break;
     }
     // The banner sits across the sprite region, which is exactly where a beaten rival

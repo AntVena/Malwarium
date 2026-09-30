@@ -202,7 +202,9 @@ bool tourneyResolveMatch(const ContentRegistry& reg, const TourneyFighter& a,
         c.step();
     if (c.outcome() == Combat::Outcome::Win) return true;
     if (c.outcome() == Combat::Outcome::Lose) return false;
-    return healthPctOf(c.player()) >= healthPctOf(c.enemy());   // called on Health
+    // A Draw (the engine's own turn limit, level on Health) or a match still open at the
+    // bracket's cap is called on Health, and a dead tie goes to `a`.
+    return healthPctOf(c.player()) >= healthPctOf(c.enemy());
 }
 
 int tourneyOpponentSlot(uint8_t alive, int slot, int round) {

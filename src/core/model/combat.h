@@ -214,8 +214,8 @@ struct Combatant {
     // Health and has to be re-asked every time the scheduler deals an action
     // (effectiveSpeed). 0 = not earned.
     int adrenalinePerStep = 0;
-    int scrubPct = 0;           // Health T3: % of max Health healed at this fighter's turn start
-    bool failoverArmed = false; // Health T2: one free death-save, spent in checkOutcome
+    int scrubPct = 0;           // Health T3: % of BASE Health healed at this fighter's turn start
+    int ownHealthDamagePct = 0; // Health T2: % of own max Health added to each damaging hit
     int defense = 0;            // DEF rating (Firewall Patch / TPM Chip / levels) — hits
                                 // land at defendedDamage(dmg, defense); may go negative
     int baseDefense = 0;        // defense at fight start; the third live stat LEAN,
@@ -607,7 +607,9 @@ struct Seizure {
 class Combat {
 public:
     enum class Stakes { Live, Safe };       // live = +Frag on loss; safe = nothing
-    enum class Outcome { Ongoing, Win, Lose, Fled };
+    // Draw: the turn limit (kCombatTurnCap) called the fight with both sides on exactly
+    // the same share of their own max Health. Every other called fight is a Win or Lose.
+    enum class Outcome { Ongoing, Win, Lose, Fled, Draw };
 
     // Build a battle. The enemy always resets to full Health, and so does the player
     // unless `carryPlayerHealth >= 0` — the boss-gauntlet carry, where consecutive rounds
@@ -908,6 +910,7 @@ private:
     Combatant player_, enemy_;
     Stakes stakes_ = Stakes::Safe;
     Outcome outcome_ = Outcome::Ongoing;
+    int turnsTaken_ = 0;        // actions resolved this fight — the kCombatTurnCap clock
     bool playerFirst_ = true;
     bool playerTurn_ = true;
     uint32_t rng_ = 1;
@@ -1006,7 +1009,7 @@ int levelDefenseBackscatterPct(int points);
 int levelPowerPiercePct(int points);
 int levelPowerGuardSmashPct(int points);
 int levelHealthScrubPct(int points);
-bool levelHealthFailoverEarned(int points);
+int levelHealthOwnDamagePct(int points);
 
 // Speed's three. T1 and T3 are totals like the rest; T2 is the exception the type says
 // out loud — the underdog bonus can only be judged against an OPPONENT, so it takes both

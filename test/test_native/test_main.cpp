@@ -261,7 +261,8 @@ int g_failures = 0;
     RUN(test_adrenaline_tracks_live_health) \
     RUN(test_first_strike_doubles_only_the_opening_hit) \
     RUN(test_backscatter_pays_out_of_what_the_wall_absorbed) \
-    RUN(test_health_tiers_scrub_and_failover) \
+    RUN(test_health_tiers_scrub_and_mass) \
+    RUN(test_combat_turn_limit_calls_the_fight) \
     RUN(test_power_tiers_get_past_a_defence) \
     RUN(test_tier_rows_report_where_the_pet_stands) \
     RUN(test_tier_page_counts_off_level_points) \

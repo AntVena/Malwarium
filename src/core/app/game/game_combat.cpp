@@ -230,7 +230,7 @@ const char* backupDriveAchievement(Combatant::BackupUse used, Combat::Outcome ou
     if (used == Combatant::BackupUse::Overwhelmed) return ach::kShatteredPlatter;
     if (outcome == Combat::Outcome::Lose) return ach::kNeededMoreBackup;
     if (outcome == Combat::Outcome::Win) return ach::kBackUpAndDriven;
-    return nullptr;   // Fled: the run isn't over, so neither is the story
+    return nullptr;   // Fled or Draw: the run isn't over, so neither is the story
 }
 
 void Game::settleBackupDrive() {
@@ -497,6 +497,10 @@ void Game::applyCombatResult() {
     const bool safe = combat_.stakes() == Combat::Stakes::Safe;
     const bool won = combat_.outcome() == Combat::Outcome::Win;
     const bool lost = combat_.outcome() == Combat::Outcome::Lose;
+    // A Draw (the turn limit, level on Health) was fought to the clock, so it pays the
+    // fight's costs like a win or a loss — and neither side's result.
+    const bool drawn = combat_.outcome() == Combat::Outcome::Draw;
+    const bool fought = won || lost || drawn;
     // Post-encounter status readout snapshot: the STARTING
     // bandwidth/fragmentation, before anything below moves them. finishCombat()
     // reads the before/after pair (+ postEncShielded_ below) to drive
@@ -525,10 +529,10 @@ void Game::applyCombatResult() {
     // Once the pool hits 0 the tax bites again (the "defrag or come home" signal). This
     // covers first-clear grinding and DeepWeb dives too, not just cleared-sub re-farming.
     // Bosses resolve in finishBossRound() and never reach here.
-    const bool bandwidthShielded = !safe && (won || lost) && bandwidth_ > 0;
+    const bool bandwidthShielded = !safe && fought && bandwidth_ > 0;
     if (bandwidthShielded) --bandwidth_;               // spend one charge for the shield
     postEncShielded_ = bandwidthShielded;
-    if (!safe && (won || lost) && !bandwidthShielded)
+    if (!safe && fought && !bandwidthShielded)
         applyBattleFatigue();                          // no charge left → the pet corrupts
     switch (combat_.outcome()) {
         case Combat::Outcome::Win: {
@@ -622,6 +626,11 @@ void Game::applyCombatResult() {
                 log_.push(LogEventType::CombatLost, "LOST BATTLE");
             }
             break;
+        case Combat::Outcome::Draw:
+            // No reward and no loss penalty — only the fatigue above, which any fought
+            // battle pays.
+            if (!safe) log_.push(LogEventType::CombatLost, "BATTLE DRAWN");
+            break;
         case Combat::Outcome::Fled:
         case Combat::Outcome::Ongoing:
             break;                                 // flee: no reward, no penalty
@@ -709,13 +718,15 @@ void Game::finishCombat() {
             exploreActive_ = false;
             exploreStreak_ = 0;
         }
-        // Post-encounter status readout: a FOUGHT battle (win or
-        // loss) parks on the BANDWIDTH/FRAG readout before the habitat — a flee
+        // Post-encounter status readout: a FOUGHT battle (win, loss or draw)
+        // parks on the BANDWIDTH/FRAG readout before the habitat — a flee
         // never reaches finishCombat() with those stakes touched, so it skips
         // straight back (returnToExplore also surfaces an awakened-guardian
-        // rank-up).
+        // rank-up). A draw leaves the streak exactly where it was: nothing was
+        // won to advance it and nothing lost to end the run.
         if (combat_.outcome() == Combat::Outcome::Win ||
-            combat_.outcome() == Combat::Outcome::Lose) {
+            combat_.outcome() == Combat::Outcome::Lose ||
+            combat_.outcome() == Combat::Outcome::Draw) {
             nav_ = Nav::PostEncounter;
             postEncounterDeadlineMs_ = nowMs_ + kPostEncounterMs;
         } else {

@@ -440,13 +440,17 @@ void Game::startPvpBattle(uint32_t seed) {
 void Game::finishPvpBattle() {
     // Combat's verdict is framed around player_, which is the HOST. A guest reads it
     // inverted — same fight, same winner, opposite pronoun.
+    // A Draw (the turn limit, level on Health) is the same verdict on both devices and
+    // needs no inverting: nobody won.
+    pvpDrawn_ = combat_.outcome() == Combat::Outcome::Draw;
     const bool hostWon = combat_.outcome() == Combat::Outcome::Win;
-    pvpWon_ = pvpHost_ == hostWon;
+    pvpWon_ = !pvpDrawn_ && pvpHost_ == hostWon;
     pvpPhase_ = PvpPhase::Result;
     pvpRetries_ = 0;
 
     char line[28];
-    std::snprintf(line, sizeof(line), "%s %s", pvpWon_ ? "BEAT" : "LOST TO", pvpPeerTag_);
+    std::snprintf(line, sizeof(line), "%s %s",
+                  pvpDrawn_ ? "DREW WITH" : pvpWon_ ? "BEAT" : "LOST TO", pvpPeerTag_);
     log_.push(pvpWon_ ? LogEventType::CombatWon : LogEventType::CombatLost, line);
     // The lifetime duel-win tally (save v56), and the one thing this function persists.
     // It is not a payout and does not make the duel one: RECORDING a result costs the
@@ -549,7 +553,8 @@ void Game::drawHackerLink(Framebuffer& fb) const {
                 break;
             case PvpPhase::Result:
                 // The verdict is a WORD, never a colour — it has to survive grayscale.
-                head = pvpWon_ ? "YOU WON" : "YOU LOST"; sub = ""; hint = "ANY KEY";
+                head = pvpDrawn_ ? "DRAW" : pvpWon_ ? "YOU WON" : "YOU LOST";
+                sub = ""; hint = "ANY KEY";
                 break;
             case PvpPhase::Idle:
                 break;

@@ -932,13 +932,16 @@ void Game::finishBossRound() {
     } else {
         // Any non-win loses the whole gauntlet. A loss takes the standard
         // live-stakes Frag hit once (×Bad-branch multiplier); a flee just
-        // bails (no penalty, same as a wild flee). No sector clear either way. A boss
+        // bails (no penalty, same as a wild flee), and so does a draw — the boss
+        // was not beaten, but the pet was not either. No sector clear either way. A boss
         // loss ALSO cancels explore-mode + resets the streak — but the
         // boss-unlock PERSISTS, so the player re-triggers it rather than re-grinding.
         if (combat_.outcome() == Combat::Outcome::Lose) {
             const int frag = kWildLossFrag * combat_.player().fragMultPct / 100;
             model_.setFragmentation(model_.fragmentation() + frag);
             log_.push(LogEventType::CombatLost, "GAUNTLET FAILED");
+        } else if (combat_.outcome() == Combat::Outcome::Draw) {
+            log_.push(LogEventType::CombatLost, "GAUNTLET DRAWN");
         }
         exploreActive_ = false;
         exploreStreak_ = 0;
