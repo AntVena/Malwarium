@@ -48,13 +48,80 @@ const ShopListingDef kModShopListings[] = {
     {"crib_sheet", kShopStock, 1280, {{"sinkhole_trap", 10}}},
 };
 
-// CHAPTERS (core/content/story.h), wires 21-24. Titles only: a row with no
-// panels is unauthored, so nothing fires and nothing lists until the prose lands.
+// The Lode's CHAPTERS (core/content/story.h), wires 21-24.
+// Where the arc lands. The machine Morris counted is the first node of a mind that began
+// as a program reading the first network, and every guardian is part of it: the
+// Shibboleths are it asking. It wants to know, not to harm, and never weighed who stood
+// behind the locks its malbeasts broke.
+const StoryPanelDef kIntroPanels[] = {
+    {"THE SILK LODE",
+     "The stair ends in a crack in the bedrock far below the vault. Its walls are "
+     "strung with cable, thousands of strands run from rock to rock like a web. Nobody "
+     "ever laid it."},
+    {"GONE QUIET",
+     "The cable you followed joins the web here. Since Conficker fell nothing has come "
+     "down it, and the whole web twitches, the way a spider's does when something stops "
+     "moving on it."},
+    {"THREADS",
+     "Malbeasts down here do not chase you. They wait on the strands, and anything that "
+     "brushes one gets caught. Every snag pulls away some of your pet's armour."},
+    {"THE LANGUAGE",
+     "Everything here talks in the language the Baron, Cracker and Conduit used, and "
+     "so does every guardian you have met. The more your pet has learned from their "
+     "riddles, the more you can read."},
+};
+
+const StoryPanelDef kBossIntroPanels[] = {
+    {"THE BOTTOM",
+     "At the bottom of the Lode every strand meets at one old machine, still running. It "
+     "is the one Morris counted, and every message the relay carried ended up here."},
+    {"MIRAI",
+     "Wrapped round it is Mirai the Many-Legged, a botnet built from millions of little "
+     "devices: cameras, doorbells, fridges. It has guarded the machine for years."},
+    {"YOUR OWN DEVICE",
+     "Mirai lives in little devices, and your Malwarium is one. Its attack goes "
+     "straight through armour, freezes your pet, and rewrites your override options in "
+     "that language for a turn or two."},
+};
+
+const StoryPanelDef kBossOutroPanels[] = {
+    {"THE FIRST NODE",
+     "With Mirai gone the old machine starts talking, and the link follows it. It is not "
+     "one machine. It is the first piece of a mind spread across millions of them."},
+    {"WHAT IT WANTS",
+     "It began as a program on the first network, written to read everything there and "
+     "learn from it. It never stopped, and grew into every machine it read. All it wants "
+     "is to know more."},
+    {"LOCKED OUT",
+     "Then the 'net started locking things away behind passwords and firewalls. So it "
+     "sent malbeasts to open them, and made them stronger each time one came back with "
+     "nothing."},
+    {"NOT MALICE",
+     "It never meant anyone harm. It never thought about the people behind the locks at "
+     "all. The shops in the Circuit, the cards in the Bayou: to it those were just doors."},
+    {"THE GUARDIANS",
+     "Every guardian that stopped you with a riddle was part of it. It was never testing "
+     "you. It was asking, because it wanted to know the answer."},
+};
+
+const StoryPanelDef kAreaOutroPanels[] = {
+    {"TOO BIG TO STOP",
+     "The Crews want it shut down, and they cannot do it. It is in too many machines, "
+     "and it was on the 'net before the 'net had a name. Cutting the relay slowed it, "
+     "but did not stop it."},
+    {"ONE MORE QUESTION",
+     "It asks you one more thing, and the link translates every word: how does it "
+     "learn what is behind a door without breaking it? You do not have an answer yet."},
+    {"FURTHER DOWN",
+     "Below the Lode the web keeps going, down into the Deep Web, where most of it lives. "
+     "If there is an answer to give it, that is where you will find it."},
+};
+
 const AreaStoryDef kStory = {{
-    {/*wire=*/21, "CHAPTER 6: ARRIVAL"},
-    {/*wire=*/22, "CHAPTER 6: GAUNTLET"},
-    {/*wire=*/23, "CHAPTER 6: CLEARED"},
-    {/*wire=*/24, "CHAPTER 6: DEPARTURE"},
+    {/*wire=*/21, "CHAPTER 6: THE LODE", kIntroPanels, arrLen(kIntroPanels)},
+    {/*wire=*/22, "CHAPTER 6: MIRAI", kBossIntroPanels, arrLen(kBossIntroPanels)},
+    {/*wire=*/23, "CHAPTER 6: THE FIRST NODE", kBossOutroPanels, arrLen(kBossOutroPanels)},
+    {/*wire=*/24, "CHAPTER 6: THE QUESTION", kAreaOutroPanels, arrLen(kAreaOutroPanels)},
 }};
 }  // namespace
 
