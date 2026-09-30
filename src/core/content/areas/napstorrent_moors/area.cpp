@@ -92,12 +92,14 @@ const StoryPanelDef kBossIntroPanels[] = {
      "Morris the Wyrm is the oldest worm there is, older than most of the 'net. The moor's "
      "patchwork network never had anything to clear it out, so it has lived here ever "
      "since."},
-    {"WHAT IT WAS FOR",
-     "Morris was built to count the machines on the network. It did that by copying "
-     "itself into each one, so fast that it crashed most of them. It is still counting."},
-    {"THE WIND-UP",
-     "Morris spends three turns reinfecting everything it already has. Then it strikes, "
-     "and that damage keeps coming for four turns more. Hit it hard before it finishes."},
+    {"A HEADCOUNT",
+     "Somebody wrote Morris decades ago to count how many computers were online. It "
+     "counts by copying itself onto each one, and it never learnt when to stop, so it is "
+     "still going round the moor."},
+    {"THE LONG WAY ROUND",
+     "Morris never comes straight at you. It works its way through every device nearby "
+     "first, which takes it a few turns, but by the time it reaches your pet it is in so "
+     "deep the damage drags on."},
 };
 
 const StoryPanelDef kBossOutroPanels[] = {
