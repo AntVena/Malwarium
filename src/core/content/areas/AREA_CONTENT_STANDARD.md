@@ -176,23 +176,6 @@ pixels. Each panel's text is held to `EffectText::kMaxProse` like every other au
 here, and `test_story_chapters_fit_their_page` fails a panel that reaches the cap instead of
 letting its tail disappear.
 
-**How a chapter reads.** The operator lives in an ordinary, slightly futuristic world, and
-sees a little more of its digital side than other people do, through the Malwarium and the
-neural link fitted in the Bayou. So:
-
-- **The place comes first.** Say what the area physically is — a part of town, a harbour, a
-  rural moor — and who lives there, before anything digital about it. An area name that
-  sounds like a region ("file-sharing country") is not a description of one.
-- **Say it plainly.** A panel states its point. No ending on an ominous line that implies a
-  reveal and never delivers one; if a thing is being set up, say what is known about it.
-- **Cause before effect.** Say why fights are different here (the Bayou trades cracked
-  software, so its malbeasts crack armour) before saying what that does to the pet.
-- **A mechanic is motivated, never a tooltip.** Give it an in-world reason, never restate
-  the move's own description, never coach ("hit it hard"), and say whose turns are spent.
-- **Nothing the operator could not know.** Check every comparison against what the player
-  has actually been told — a brand-new device has no year of readings to compare with.
-- **Define before using.** A Crew, a sub-area, a piece of kit: say what it is the first time.
-
 **Every chapter carries a `wire`** — a small number, 1-based, unique across the game and never
 reused. It is the bit that chapter occupies in the persisted read-set (`save.h` v65), which is
 what makes a chapter fire ONCE per device and what lets the ladder be reordered or spliced
