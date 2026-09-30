@@ -59,13 +59,73 @@ const ShopListingDef kModShopListings[] = {
     {"raid_mirror", kShopStock, 1536, {{"backup_drive", 24}}},
 };
 
-// CHAPTERS (core/content/story.h), wires 17-20. Titles only: a row with no
-// panels is unauthored, so nothing fires and nothing lists until the prose lands.
+// The Castle's CHAPTERS (core/content/story.h), wires 17-20.
+// Where the three messages went: Conficker's machines relayed them down the cable, and
+// the departure hands the operator the stair into the Silk Lode below the basement.
+const StoryPanelDef kIntroPanels[] = {
+    {"CASTLE RAPIDSCARE",
+     "Castle Rapidscare is a data vault the size of a hill, built when people paid to "
+     "keep their files on someone else's machines. The company went under years ago, but "
+     "nobody switched it off."},
+    {"THE LOADING BAY",
+     "The front gate is a loading bay with its shutter half up. Inside, every floor is "
+     "still lit and humming, and every screen still asks you to wait, to pay, or to prove "
+     "you are not a robot."},
+    {"ON A QUOTA",
+     "The vault always rationed what it handed out, and the malbeasts in it picked up the "
+     "habit. Their main attack puts your pet on a quota, cutting its max Health for the "
+     "rest of the fight."},
+    {"UNDER THE GATE",
+     "The cable you have followed since the Bayou runs in under the gate. Somewhere in "
+     "this building is where the Baron, Cracker and Conduit were sending their messages."},
+};
+
+const StoryPanelDef kBossIntroPanels[] = {
+    {"THE COURT",
+     "The keepers here dress up as a royal court: pawns on the gate, a queen, a knave, a "
+     "joker and a king. Every one of them answers to whoever took the vault over years "
+     "ago."},
+    {"COUNT CONFICKER",
+     "That is Count Conficker, a botnet. It got into millions of machines, the vault's "
+     "among them, and then never seemed to do anything with them. Nobody ever worked out "
+     "what it was for."},
+    {"A NEW ADDRESS",
+     "Conficker survived every attempt to shut it down by moving to a new address every "
+     "day. Its worst attack works the same way: it keeps hitting for five turns and wears "
+     "down armour."},
+};
+
+const StoryPanelDef kBossOutroPanels[] = {
+    {"WHAT IT WAS FOR",
+     "With Conficker down you can see what its millions of machines were doing all along. "
+     "They were never idle. They were passing messages on, quietly, all the time."},
+    {"THE RELAY",
+     "Every message the Baron, Cracker and Conduit sent came through here. Conficker's "
+     "machines relayed each one down the cable, to the machine Morris counted."},
+    {"NOT IN THE VAULT",
+     "That machine is not in the vault. The cable runs down through the basement floor, "
+     "and every one of those messages went down with it."},
+};
+
+const StoryPanelDef kAreaOutroPanels[] = {
+    {"LIGHTS OUT",
+     "With the botnet gone, the vault's floors shut down one at a time. All over the 'net, "
+     "people find their old machines running faster, and never learn why."},
+    {"THE CREW ARRIVES",
+     "The Crew that wrote to you on the moor finally turns up at the gate, a week after "
+     "they were needed. They take charge of the vault, and their offer of a place still "
+     "stands."},
+    {"THE STAIR",
+     "Under the basement is a stair cut into bare rock, older than the vault and on no "
+     "plan of it. The Crew has the vault to secure, so the cable is yours to follow down "
+     "it."},
+};
+
 const AreaStoryDef kStory = {{
-    {/*wire=*/17, "CHAPTER 5: ARRIVAL"},
-    {/*wire=*/18, "CHAPTER 5: GAUNTLET"},
-    {/*wire=*/19, "CHAPTER 5: CLEARED"},
-    {/*wire=*/20, "CHAPTER 5: DEPARTURE"},
+    {/*wire=*/17, "CHAPTER 5: THE VAULT", kIntroPanels, arrLen(kIntroPanels)},
+    {/*wire=*/18, "CHAPTER 5: THE BOTNET", kBossIntroPanels, arrLen(kBossIntroPanels)},
+    {/*wire=*/19, "CHAPTER 5: THE RELAY", kBossOutroPanels, arrLen(kBossOutroPanels)},
+    {/*wire=*/20, "CHAPTER 5: THE STAIR", kAreaOutroPanels, arrLen(kAreaOutroPanels)},
 }};
 }  // namespace
 
