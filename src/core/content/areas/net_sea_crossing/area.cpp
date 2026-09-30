@@ -59,75 +59,74 @@ const ShopListingDef kModShopListings[] = {
 };
 
 // The Crossing's CHAPTERS (core/content/story.h), wires 9-12.
+// The freeze belongs to the wilds and THE GREEN BUTTON, not to Conduit: Toolbar Convoy is
+// the stack (damage over time, armour, max Health), and its panel says so.
 const StoryPanelDef kIntroPanels[] = {
-    {"OVER THE TRUNK",
-     "The trunk you followed out of the Bayou runs along the sea floor and does not "
-     "surface for a week. The only way to follow it is the sea-net, laid across the top "
-     "of the water."},
-    {"WATCH THIS FIRST",
-     "Every private network on the route carries you for free, after an advert. Or an "
-     "app. Or a toolbar you did not ask for. None of it is new; most of it stopped "
-     "working properly years ago."},
-    {"THE SLOW LIFE",
-     "Nothing out here takes your pet's Health. It takes its turns. A licence screen is "
-     "one. The worst thing on the reef holds it for three, and then asks whether you "
-     "accept."},
-    {"BLUE TEAM",
-     "A blue team crew has been clearing this route for months and is barely ahead of "
-     "it. They are glad of the help, and hand you a rig for diving the trunk, where the "
-     "work never ends either."},
+    {"THE NET-SEA",
+     "The Net-Sea is open water, a week across by ferry. You take the slow boat out of the "
+     "Bayou, because the cable you are following runs along the sea floor right under its "
+     "route."},
+    {"THE SEA-NET",
+     "Out here the only connection is the sea-net: a chain of relay buoys, each run by "
+     "whichever company put it there. Using one is free, as long as you accept whatever "
+     "it installs first."},
+    {"BUNDLES",
+     "Every buoy the ferry passes pushes something onto your Malwarium: an advert, a "
+     "toolbar, an app nobody asked for. Through the link you feel each one land, and most "
+     "of them are malware."},
+    {"LOST TURNS",
+     "The malbeasts out here are made of the same junk and fight the same way: they make "
+     "your pet sit through an install or a licence screen before it can act. They cost it "
+     "turns, not Health."},
 };
 
 const StoryPanelDef kBossIntroPanels[] = {
-    {"THE FAR JUNCTION",
-     "A week of that and the cable comes up at a junction on the far shore. The glitch "
-     "you have been following is worse here than it was at Leech Landing, not better."},
-    {"CONVOYS",
-     "Nothing crosses the sea-net on its own. It goes in convoys, and every convoy "
-     "carries bundles it was not asked to carry. Cracker's list came over on one of "
-     "these."},
-    {"RED TEAM",
-     "The bundles carry red team marks. The blue crew leaves them alone: red is inside "
-     "the outfit doing the distributing, and pulling them out now would cost more than "
-     "the bundles do."},
+    {"THE FAR SHORE",
+     "A week later the ferry reaches the far shore, where the cable comes up into a relay "
+     "station. The glitch in it is worse here than it was at the Bayou."},
+    {"THE BLUE CREW",
+     "A blue Crew, the kind that defends networks for a living, has been clearing junk off "
+     "the sea-net for months and is barely keeping up. They are glad of the help."},
     {"ADMIRAL CONDUIT",
-     "Conduit is what grew on the traffic. It runs the convoys now, and it does not "
-     "damage anything - it holds you, three turns at a time, until whatever it is "
-     "carrying has gone past."},
+     "Everything on the sea-net travels in convoys, and the one running them is Admiral "
+     "Conduit, adware grown fat on years of traffic. Cracker's stolen orders crossed on "
+     "its convoys."},
+    {"NEVER ALONE",
+     "Nothing on the sea-net arrives alone, and neither do Conduit's attacks. Each one "
+     "drops a stack of junk on your pet that hurts for a few turns, weakens its armour "
+     "and cuts its max Health."},
 };
 
 const StoryPanelDef kBossOutroPanels[] = {
-    {"STILL TALKING",
-     "Conduit comes apart slowly, the way everything out here does anything. What it "
-     "says on the way down is not aimed at you, and you have heard the shape of it twice "
-     "before."},
-    {"FURTHER DOWN",
-     "There is something a long way down the trunk that talks like that as well. It has "
-     "been on this cable longer than the cable has been carrying anything, and it has "
-     "never once sent."},
-    {"NOT A PLOT",
-     "The convoy log is no help. The bundles came aboard from forty networks and none of "
-     "them know each other. Whatever is doing this is not organising it. It is already "
-     "in the networks."},
+    {"THE SAME LANGUAGE",
+     "Conduit comes apart slowly. As it goes, it is sending to something else on the "
+     "network, in the same language the Baron and Cracker used."},
+    {"THE CONVOY LOG",
+     "Its convoy log shows where the junk came from: forty different networks with no "
+     "link to each other, and every one of them carrying the same kind of malbeast."},
+    {"NOBODY IN CHARGE",
+     "Nobody is organising this. Malbeasts all over the 'net are turning bad on their "
+     "own, in places that have never been in touch. The one thing they share is who they "
+     "talk to."},
 };
 
 const StoryPanelDef kAreaOutroPanels[] = {
     {"THE SPLIT",
-     "The blue crew keeps the water. You get the shore and whatever the cable does after "
-     "it, which is the first time anybody has handed you a share instead of a favour."},
-    {"NOBODY ELSE IS GOING",
-     "Nobody else is following the cable. The blue crew has a sea to clear and the red "
-     "team has a job to keep. The bounty is still up, and it is still for the thing "
-     "nobody has found."},
-    {"OLD COUNTRY",
-     "The cable comes ashore and runs inland into the Napstorrent Moors, which nobody "
-     "has maintained in thirty years and nobody has been through in ten."},
+     "The blue Crew keeps the sea-net and gives you a share of what they recover. It is "
+     "the first time anyone has paid you as one of their own instead of thanking you for "
+     "a favour."},
+    {"ON FOOT",
+     "They cannot spare anyone to follow the cable further. It runs inland from here, and "
+     "if you want to know what is at the end of it, you will have to walk."},
+    {"INLAND",
+     "Inland lie the Napstorrent Moors, a stretch of bog and farmland that nobody on the "
+     "coast has much reason to visit. The cable heads straight into them."},
 };
 
 const AreaStoryDef kStory = {{
     {/*wire=*/9, "CHAPTER 3: THE SEA-NET", kIntroPanels, arrLen(kIntroPanels)},
     {/*wire=*/10, "CHAPTER 3: THE CONVOYS", kBossIntroPanels, arrLen(kBossIntroPanels)},
-    {/*wire=*/11, "CHAPTER 3: THE LISTENER", kBossOutroPanels, arrLen(kBossOutroPanels)},
+    {/*wire=*/11, "CHAPTER 3: THE CONVOY LOG", kBossOutroPanels, arrLen(kBossOutroPanels)},
     {/*wire=*/12, "CHAPTER 3: THE SHORE", kAreaOutroPanels, arrLen(kAreaOutroPanels)},
 }};
 }  // namespace
