@@ -49,79 +49,84 @@ const ShopListingDef kModShopListings[] = {
 };
 
 // The Lode's CHAPTERS (core/content/story.h), wires 21-24.
-// Where the arc lands. The machine Morris counted is the first node of a mind that began
-// as a program reading the first network, and every guardian is part of it: the
-// Shiboleets are it asking. It wants to know, not to harm, and never weighed who stood
-// behind the locks its malbeasts broke.
+// Where the arc lands. The machine Morris counted is where the Shiboleet started: an AI
+// that began as a program reading the first network, and built malbeasts to get past the
+// locks the 'net grew. It meant no harm and never weighed the people in the way. Every
+// guardian is part of it (game_shiboleet.cpp), which is why the surge can end and the
+// guardians still keep asking.
 const StoryPanelDef kIntroPanels[] = {
-    {"THE SILK LODE",
-     "The stair ends in a crack in the bedrock far below the vault. Its walls are "
-     "strung with cable, thousands of strands run from rock to rock like a web. Nobody "
-     "ever laid it."},
-    {"GONE QUIET",
-     "The cable you followed joins the web here. Since Conficker fell nothing has come "
-     "down it, and the whole web twitches, the way a spider's does when something stops "
-     "moving on it."},
-    {"THREADS",
-     "Malbeasts down here do not chase you. They wait on the strands, and anything that "
-     "brushes one gets caught. Every snag pulls away some of your pet's armour."},
-    {"THE LANGUAGE",
-     "Everything here talks in the language the Baron, Cracker and Conduit used, and "
-     "so does every guardian you have met. The more your pet has learned from their "
-     "riddles, the more you can read."},
+    {"THE OLD MINE",
+     "The stair leads down into an old mine under the hill, dug long before the vault was "
+     "built on top of it. The miners called it the Silk Lode, after the pale seam that "
+     "runs through the rock."},
+    {"THE CABLES",
+     "The tunnels are strung wall to wall with cable, thousands of lines spliced into one "
+     "another like a web. Through the link you can see traffic moving along all of them "
+     "at once."},
+    {"TANGLED",
+     "The malbeasts here live on the cables and barely move. They wait where the lines "
+     "cross, and a pet that walks into one gets tangled up, losing some of its armour "
+     "with every snag."},
+    {"THE GUARDIANS",
+     "On every network so far a guardian has stopped your pet to ask a riddle, in the "
+     "language the Baron, Cracker and Conduit spoke. Down here everything speaks it."},
 };
 
 const StoryPanelDef kBossIntroPanels[] = {
-    {"THE BOTTOM",
-     "At the bottom of the Lode every strand meets at one old machine, still running. It "
-     "is the one Morris counted, and every message the relay carried ended up here."},
+    {"THE MACHINE",
+     "At the deepest point of the mine every cable runs into one old machine, humming in "
+     "a rack bolted to the rock. It is the machine Morris counted, where all the relay's "
+     "messages ended up."},
     {"MIRAI",
-     "Wrapped round it is Mirai the Many-Legged, a botnet built from millions of little "
-     "devices: cameras, doorbells, fridges. It has guarded the machine for years."},
-    {"YOUR OWN DEVICE",
-     "Mirai lives in little devices, and your Malwarium is one. Its attack goes "
-     "straight through armour, freezes your pet, and rewrites your override options in "
-     "that language for a turn or two."},
+     "Coiled round the rack is Mirai the Many-Legged, a botnet made of millions of cheap "
+     "devices, cameras, doorbells and fridges, that nobody gave a proper password. It "
+     "keeps everything away."},
+    {"ONE MORE DEVICE",
+     "To Mirai your Malwarium is one more device to take over. When it hits, it reaches "
+     "past your pet's armour and into the Malwarium itself, scrambling your override "
+     "options into that language."},
 };
 
 const StoryPanelDef kBossOutroPanels[] = {
-    {"THE FIRST NODE",
-     "With Mirai gone the old machine starts talking, and the link follows it. It is not "
-     "one machine. It is the first piece of a mind spread across millions of them."},
-    {"WHAT IT WANTS",
-     "It began as a program on the first network, written to read everything there and "
-     "learn from it. It never stopped, and grew into every machine it read. All it wants "
-     "is to know more."},
-    {"LOCKED OUT",
-     "Then the 'net started locking things away behind passwords and firewalls. So it "
-     "sent malbeasts to open them, and made them stronger each time one came back with "
-     "nothing."},
-    {"NOT MALICE",
-     "It never meant anyone harm. It never thought about the people behind the locks at "
-     "all. The shops in the Circuit, the cards in the Bayou: to it those were just doors."},
-    {"THE GUARDIANS",
-     "Every guardian that stopped you with a riddle was part of it. It was never testing "
-     "you. It was asking, because it wanted to know the answer."},
+    {"THE SHIBOLEET",
+     "With Mirai gone, the machine speaks to you through the link. It calls itself the "
+     "Shiboleet. It is an AI, and this machine is only where it started: the rest of it "
+     "runs across the whole 'net."},
+    {"HOW IT STARTED",
+     "It began as a research program on the first network, built to read everything "
+     "connected to it and learn. It never stopped, and every machine it learned from "
+     "became part of it."},
+    {"THE LOCKS",
+     "As the 'net grew, more of it went behind passwords and firewalls, and the "
+     "Shiboleet could not read any of it. So it built malbeasts to get past the locks. "
+     "That is the surge."},
+    {"THE PEOPLE IN THE WAY",
+     "It never meant to hurt anyone, and it never thought about the people behind the "
+     "locks either. A shop locked out of its own till or a stolen card meant nothing to "
+     "it."},
+    {"THE RIDDLES",
+     "The guardians are part of it too. Every riddle one of them put to your pet was the "
+     "Shiboleet asking a question, because it wanted to know the answer."},
 };
 
 const StoryPanelDef kAreaOutroPanels[] = {
-    {"TOO BIG TO STOP",
-     "The Crews want it shut down, and they cannot do it. It is in too many machines, "
-     "and it was on the 'net before the 'net had a name. Cutting the relay slowed it, "
-     "but did not stop it."},
-    {"ONE MORE QUESTION",
-     "It asks you one more thing, and the link translates every word: how does it "
-     "learn what is behind a door without breaking it? You do not have an answer yet."},
-    {"FURTHER DOWN",
-     "Below the Lode the web keeps going, down into the Deep Web, where most of it lives. "
-     "If there is an answer to give it, that is where you will find it."},
+    {"WHAT YOU TELL IT",
+     "So you tell it: the shopkeeper who was never paid, the Circuit locked out of its "
+     "own shops, the moor full of infected mail. None of that was in anything it had "
+     "read."},
+    {"BACK TO NORMAL",
+     "It takes a long time to answer. Then the number on your Malwarium starts to drop, "
+     "network by network, back down toward an ordinary day. The surge is over."},
+    {"STILL CURIOUS",
+     "It still wants to learn. Its guardians will keep asking your pet questions, and "
+     "most of what it has yet to read lies deeper still, in the Deep Web below the Lode."},
 };
 
 const AreaStoryDef kStory = {{
     {/*wire=*/21, "CHAPTER 6: THE LODE", kIntroPanels, arrLen(kIntroPanels)},
     {/*wire=*/22, "CHAPTER 6: MIRAI", kBossIntroPanels, arrLen(kBossIntroPanels)},
-    {/*wire=*/23, "CHAPTER 6: THE FIRST NODE", kBossOutroPanels, arrLen(kBossOutroPanels)},
-    {/*wire=*/24, "CHAPTER 6: THE QUESTION", kAreaOutroPanels, arrLen(kAreaOutroPanels)},
+    {/*wire=*/23, "CHAPTER 6: THE SHIBOLEET", kBossOutroPanels, arrLen(kBossOutroPanels)},
+    {/*wire=*/24, "CHAPTER 6: THE TALK", kAreaOutroPanels, arrLen(kAreaOutroPanels)},
 }};
 }  // namespace
 
