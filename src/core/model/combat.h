@@ -139,9 +139,9 @@ struct Combatant {
                                    // screen shows "???" instead of a number
     int maxHealth = 0;
     int health = 0;
-    // The stage body this fighter was built on (kMaxHealthByStage, without the care
-    // branch's lean), before mods and levels — what a max-Health point is a percentage OF
-    // (healthBody). 0 on a fighter not built from a pet, whose whole Health stands in.
+    // The pet's own base Health (the stage body, leaned by the care branch), before mods
+    // and levels — what a max-Health point is a percentage OF (healthBody). 0 on a fighter
+    // not built from a pet, whose whole Health stands in.
     int bodyHealth = 0;
     // Initiative (Clock-Speed Boost raises it). FLOAT because a Phishing siphon steals a %
     // of CURRENT speed, which int arithmetic truncates to 0 once speed nears the floor.
@@ -214,8 +214,8 @@ struct Combatant {
     // Health and has to be re-asked every time the scheduler deals an action
     // (effectiveSpeed). 0 = not earned.
     int adrenalinePerStep = 0;
-    int scrubPct = 0;           // Health T2: % of max Health healed at this fighter's turn start
-    bool failoverArmed = false; // Health T3: one free death-save, spent in checkOutcome
+    int scrubPct = 0;           // Health T3: % of max Health healed at this fighter's turn start
+    bool failoverArmed = false; // Health T2: one free death-save, spent in checkOutcome
     int defense = 0;            // DEF rating (Firewall Patch / TPM Chip / levels) — hits
                                 // land at defendedDamage(dmg, defense); may go negative
     int baseDefense = 0;        // defense at fight start; the third live stat LEAN,

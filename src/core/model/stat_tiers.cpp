@@ -45,12 +45,12 @@ const StatTierDef kTiers[kLevelStatCount][kStatTierCount] = {
     {{"EXPANSION", kStatTier1Points, kLevelHealthPctPerSpecPoint, kLevelHealthPctPerPoint,
       "Every max-Health point past this one adds {mag}% of your base Health instead of "
       "{mag2}%."},
-     {"SCRUBBING", kStatTier2Points, kLevelHealthScrubPct, 0,
-      "You heal {mag}% of max Health at the start of each of your turns, after any "
-      "damage-over-time has landed."},
-     {"FAILOVER", kStatTier3Points, 0, 0,
+     {"FAILOVER", kStatTier2Points, 0, 0,
       "Once per fight, a hit that would knock you out leaves you on 1 Health instead. "
-      "Used before a Backup Drive, so the drive keeps its charge."}},
+      "Used before a Backup Drive, so the drive keeps its charge."},
+     {"SCRUBBING", kStatTier3Points, kLevelHealthScrubPct, 0,
+      "You heal {mag}% of max Health at the start of each of your turns, after any "
+      "damage-over-time has landed."}},
 };
 
 // Substitute this table's two tokens. Deliberately NOT effect_text.cpp's expander: that

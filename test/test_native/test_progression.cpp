@@ -1783,13 +1783,13 @@ void test_stat_tier_appliers_gate_on_their_rung() {
         CHECK(mine <= enemy * kLevelSpeedPerPoint);
     }
 
-    // MAX-HEALTH: T1 is its accelerating band, T2 a rate, T3 a flag.
+    // MAX-HEALTH: T1 is its accelerating band, T2 a flag, T3 a rate.
     CHECK(levelHealthPct(t1) == t1 * kLevelHealthPctPerPoint);
     CHECK(levelHealthPct(t1 + 1) == t1 * kLevelHealthPctPerPoint + kLevelHealthPctPerSpecPoint);
-    CHECK(levelHealthScrubPct(t2 - 1) == 0);
-    CHECK(levelHealthScrubPct(t2) == kLevelHealthScrubPct);
-    CHECK(!levelHealthFailoverEarned(t3 - 1));
-    CHECK(levelHealthFailoverEarned(t3));
+    CHECK(!levelHealthFailoverEarned(t2 - 1));
+    CHECK(levelHealthFailoverEarned(t2));
+    CHECK(levelHealthScrubPct(t3 - 1) == 0);
+    CHECK(levelHealthScrubPct(t3) == kLevelHealthScrubPct);
 }
 
 // ...and that the applier actually stamps them onto a fighter. One pet with nothing

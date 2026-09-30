@@ -1211,7 +1211,7 @@ void Combat::resolveTurn(Combatant& actor, Combatant& target, bool byPlayer) {
         if (actor.health > actor.maxHealth) actor.health = actor.maxHealth;
     }
 
-    // Health T2 (scrubbing): the stat's own regen, on the same footing and in the same
+    // Health T3 (scrubbing): the stat's own regen, on the same footing and in the same
     // slot as the mod above — last of the turn-start ticks, and only on a fighter that
     // survived the other two, so it recovers from the fight and never from the tick
     // currently killing you. A PERCENTAGE rather than a flat number, because it is bought
@@ -1420,7 +1420,7 @@ void Combat::checkOutcome() {
     };
     rallySave(player_);
     rallySave(enemy_);
-    // Health T3 (failover): a free death-save, and the reason it sits HERE — after the
+    // Health T2 (failover): a free death-save, and the reason it sits HERE — after the
     // crew rally, before the Backup Drive. The rally is a use the player spent and gets
     // first look; the drive is a consumable buff, and a pet carrying both should spend the
     // tier it earned permanently and keep the item for the next hole. One shot per fight

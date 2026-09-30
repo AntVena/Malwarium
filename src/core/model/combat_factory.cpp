@@ -90,9 +90,7 @@ Combatant makePlayerCombatant(const ContentRegistry& reg, const CreatureDef& pet
     // turns to put each other down, in opposite currencies.
     c.maxHealth = kMaxHealthByStage[stageIndex(pet.stage)] * creatureHealthMultPct(pet) / 100;
     c.health = c.maxHealth;
-    // The STAGE body, without the branch lean: a level point is worth the same share to
-    // both branches, so levelling cannot re-price the trade the lean above settles.
-    c.bodyHealth = kMaxHealthByStage[stageIndex(pet.stage)];
+    c.bodyHealth = c.maxHealth;                     // the pet's own base, before any mod
     c.speed = kCombatBaseSpeed;
     // branch lean, scaled by the per-stage offensive multiplier so an
     // evolved pet's output keeps pace with tier-scaled enemy Health (4–8-exchange
@@ -905,10 +903,10 @@ int levelPowerGuardSmashPct(int points) {
 }
 
 int levelHealthScrubPct(int points) {
-    return points >= kStatTier2Points ? kLevelHealthScrubPct : 0;
+    return points >= kStatTier3Points ? kLevelHealthScrubPct : 0;
 }
 
-bool levelHealthFailoverEarned(int points) { return points >= kStatTier3Points; }
+bool levelHealthFailoverEarned(int points) { return points >= kStatTier2Points; }
 
 int levelSpeedFirstStrikeMult(int points) {
     return points >= kStatTier1Points ? kLevelSpeedFirstStrikeMult : 1;

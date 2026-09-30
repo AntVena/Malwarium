@@ -464,12 +464,10 @@ constexpr int kLevelDefensePerPoint = 7;       // +7 DEF per defense point
 constexpr int kLevelSpeedPerPoint = 1;         // +1 initiative per speed point
                                                // (kLevelSpeedUnderdogPerPoint replaces this
                                                // rate outright while Speed T2 is paying)
-// Max-Health is a PERCENTAGE of the pet's stage body (kMaxHealthByStage — Combatant::
-// bodyHealth), the Health mirror of Power's % of output. A flat add was worth 7.5% of a
-// Process body and 3% of a Daemon's, so the stat decayed across the stretch a player
-// spends earning it, exactly as a flat Power add did. The branch lean is left out of the
-// body on purpose: measured with it in, a Good-branch pet's Health points compounded with
-// its lean and the T2 scrub into the only build worth making.
+// Max-Health is a PERCENTAGE of the pet's own base Health (the stage body leaned by the
+// care branch — Combatant::bodyHealth), the Health mirror of Power's % of output. A flat
+// add was worth 7.5% of a Process body and 3% of a Daemon's, so the stat decayed across
+// the stretch a player spends earning it, exactly as a flat Power add did.
 constexpr int kLevelHealthPctPerPoint = 3;     // +3% of body per max-Health point
 // Defense stat ALSO scales DEFEND-move brace magnitude.
 // Symmetric to Power→attack. +3% brace per Defense point via
@@ -567,11 +565,13 @@ constexpr int kLevelSpeedAdrenalineStepPct = 10;   // T3: per this much max Heal
 constexpr int kLevelSpeedAdrenalinePerStep = 1;    // ...this much initiative, live
 
 // MAX-HEALTH. A pool is only ever worth the damage it outlasts, so past its accelerating
-// band it stops buying pool and starts buying ways to SPEND the pool twice: T2 recovers
-// from the fight (never from the tick currently killing you — it rides the same turn-start
-// ordering the Regen mod does), T3 is a free death-save, ahead of a Backup Drive so a pet
-// carrying both spends the tier and keeps the item.
-constexpr int kLevelHealthScrubPct = 3;        // T2: % of max Health healed each turn
+// band it stops buying pool and starts buying ways to SPEND the pool twice: T2 is a free
+// death-save, ahead of a Backup Drive so a pet carrying both spends the tier and keeps the
+// item; T3 recovers from the fight (never from the tick currently killing you — it rides
+// the same turn-start ordering the Regen mod does). The heal is the TOP rung because it
+// scales with the pool it heals: a Good-branch body multiplies it, and at 16 points it
+// was the only Health build worth making.
+constexpr int kLevelHealthScrubPct = 3;        // T3: % of max Health healed each turn
 // ...and underneath all three rungs, a flat stun-resist rating per max-Health point, on the
 // same curve banked lock resistance rolls against (stunLandPct). A big body shrugs off a
 // freeze a little: 16 points is 48 rating (a stun lands 68%), 32 is 96 (51%) — about one

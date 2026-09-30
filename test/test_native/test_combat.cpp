@@ -3409,8 +3409,8 @@ void test_backscatter_pays_out_of_what_the_wall_absorbed() {
     CHECK(play(kLevelDefenseBackscatterPct, 0) == play(0, 0));
 }
 
-// Health T2 (scrubbing) heals a share of max Health at this fighter's turn start, and
-// Health T3 (failover) turns the killing blow into a 1-Health stand — once. Gated
+// Health T3 (scrubbing) heals a share of max Health at this fighter's turn start, and
+// Health T2 (failover) turns the killing blow into a 1-Health stand — once. Gated
 // together because both are about surviving a turn that would otherwise end, and the
 // second is only observable through a fight that reaches a fatal hit.
 void test_health_tiers_scrub_and_failover() {
