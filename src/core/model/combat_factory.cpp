@@ -863,18 +863,14 @@ int levelPowerPct(int points) {
     if (points <= 0) return 0;
     const int base = points < kLevelPowerSpecPoints ? points : kLevelPowerSpecPoints;
     const int spec = points - base;
-    int pct = base * kLevelPowerPctPerPoint + spec * kLevelPowerPctPerSpecPoint;
-    if (pct > kLevelPowerSpecCapPct) pct = kLevelPowerSpecCapPct;
-    return pct;
+    return base * kLevelPowerPctPerPoint + spec * kLevelPowerPctPerSpecPoint;
 }
 
 int levelHealthBonus(int points) {
     if (points <= 0) return 0;
     const int base = points < kLevelHealthSpecPoints ? points : kLevelHealthSpecPoints;
     const int spec = points - base;
-    int hp = base * kLevelHealthPerPoint + spec * kLevelHealthPerSpecPoint;
-    if (hp > kLevelHealthSpecCap) hp = kLevelHealthSpecCap;
-    return hp;
+    return base * kLevelHealthPerPoint + spec * kLevelHealthPerSpecPoint;
 }
 
 int levelDefensePierceResistPct(int points) {

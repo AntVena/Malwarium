@@ -485,14 +485,14 @@ constexpr int kLevelDefenseBraceCapPct = 200;
 // weakest thing a pet can be, since the level-up grant picks the stat at random and a long
 // raise averages out. Past the specialisation point a point is worth MORE, so committing
 // to a stat is what pays and a pet that got lucky in one column has something to show for
-// it. Capped, because the ladder runs to level 60 and an unbounded accelerating curve
-// stops being a build and becomes the only build.
+// it. UNCAPPED, like the Defence rating they are measured against: past the band both
+// are straight lines, so a point is worth the same forever and nothing runs away. What
+// they buy lands on the far side's curves (a hit through defendedDamage, a pool against
+// the same), which is where the diminishing half of every exchange lives.
 constexpr int kLevelPowerSpecPoints = kStatTier1Points;  // points before the accelerating band
 constexpr int kLevelPowerPctPerSpecPoint = 10;   // ...and the rate past it (base is 4)
-constexpr int kLevelPowerSpecCapPct = 300;       // total level-Power contribution ceiling
 constexpr int kLevelHealthSpecPoints = kStatTier1Points;
 constexpr int kLevelHealthPerSpecPoint = 8;      // ...vs kLevelHealthPerPoint's 3
-constexpr int kLevelHealthSpecCap = 400;         // total level-Health contribution ceiling
 
 // Defence's investment TIERS. More rating is always worth the same +1% effective Health,
 // so past a threshold the stat ALSO buys a different KIND of thing, and each of these

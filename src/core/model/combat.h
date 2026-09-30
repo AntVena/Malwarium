@@ -972,7 +972,7 @@ void applyLevelStatPoints(Combatant& c, const int statPoints[4]);
 
 // The level-Power % bonus for `points` earned Power points, and the flat max-Health bonus
 // for `points` earned max-Health points. Both ACCELERATE past their specialisation point
-// (tunables.h), and both cap.
+// (tunables.h), and neither caps.
 int levelPowerPct(int points);
 int levelHealthBonus(int points);
 

@@ -273,16 +273,17 @@ void test_chained_move_plays_both_halves() {
 }
 
 // The level stats' three curve SHAPES, asserted directly (each is a total function).
-// Power and max-Health ACCELERATE past their specialisation point, Defence's cut bends the
-// other way, and Defence's two tiers are thresholds rather than curves at all.
+// Power and max-Health ACCELERATE past their specialisation point, Defence's rating is a
+// straight line, and Defence's tiers are thresholds rather than curves at all.
 void test_level_stat_curves() {
-    // Power: base rate to the spec point, the higher rate past it, then the cap.
+    // Power: base rate to the spec point, the higher rate past it, and no ceiling.
     CHECK(levelPowerPct(0) == 0);
     CHECK(levelPowerPct(kLevelPowerSpecPoints) ==
           kLevelPowerSpecPoints * kLevelPowerPctPerPoint);
     CHECK(levelPowerPct(kLevelPowerSpecPoints + 2) ==
           kLevelPowerSpecPoints * kLevelPowerPctPerPoint + 2 * kLevelPowerPctPerSpecPoint);
-    CHECK(levelPowerPct(1000) == kLevelPowerSpecCapPct);
+    CHECK(levelPowerPct(1000) == kLevelPowerSpecPoints * kLevelPowerPctPerPoint +
+                                 (1000 - kLevelPowerSpecPoints) * kLevelPowerPctPerSpecPoint);
     // The point of the bend: the point AFTER it is worth more than the one before.
     const int beforeBend = levelPowerPct(kLevelPowerSpecPoints) -
                            levelPowerPct(kLevelPowerSpecPoints - 1);
@@ -293,7 +294,8 @@ void test_level_stat_curves() {
     CHECK(levelHealthBonus(0) == 0);
     CHECK(levelHealthBonus(kLevelHealthSpecPoints) ==
           kLevelHealthSpecPoints * kLevelHealthPerPoint);
-    CHECK(levelHealthBonus(1000) == kLevelHealthSpecCap);
+    CHECK(levelHealthBonus(1000) == kLevelHealthSpecPoints * kLevelHealthPerPoint +
+                                    (1000 - kLevelHealthSpecPoints) * kLevelHealthPerSpecPoint);
 
     // Defence does not bend at all: the rating is linear, and the diminishing half lives
     // in the curve a hit is put through (defendedDamage), not in the points.
