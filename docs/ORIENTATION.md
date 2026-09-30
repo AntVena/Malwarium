@@ -418,20 +418,20 @@ the flasher offers whatever the manifest beside it names, and a site one release
 host would offer a version nobody is holding. `pages/README.md` is that directory's own
 standard; `make pages` is the whole publish, and what CI runs.
 
-Cutting a release is `git tag vX.Y.Z && git push origin vX.Y.Z`. **Bump both versions first** —
+Cutting a release is: land the release commit on `main`, then dispatch `publish.yml` on `main`
+(**Run workflow**, or the Actions API) straight away. **Bump both versions first** —
 `include/version.h` and `web/VERSION`. A device installs only what beats what it already runs, so
 an unbumped publish is one nobody receives, and bumping both means never having to work out which
 one moved. `make manifest` validates its own output with the device's parser before anything is
 served, so CI cannot publish a manifest the device would reject — which from the operator's side
 is indistinguishable from a dead network.
 
-**Either trigger publishes the same bytes**, because `make pages` reads the version from
-`include/version.h` and `web/VERSION` and never from the ref: the tag is the repo's record of a
-release, not the source of its number. So push the tag when the credentials allow it, and dispatch
-the workflow on `main` when they don't — a token without `refs/tags/*` write gets a 403 on the tag
-and nothing else, and a release that is only committed is not live. **Pushing `main` is half the
-job**: until publish runs, nothing is offered to any device, and the only symptom is a version
-nobody is running.
+Tags are not used. `make pages` reads the version from `include/version.h` and `web/VERSION`
+and never from the ref, so the dispatch publishes exactly what a tag would, and the release commit
+is the record of a release. (The workflow still answers a pushed `v*` tag; nothing needs one.)
+**Pushing `main` is half the job**: until publish runs, nothing is offered to any device, and the
+only symptom is a version nobody is running — so the dispatch follows every release commit,
+without waiting to be asked.
 
 Each deploy replaces the whole site, so only the current artifacts exist and older URLs 404. That
 costs nothing here: rollback is trial-boot to the inactive OTA slot, not a re-download. The web

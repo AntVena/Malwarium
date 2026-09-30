@@ -107,10 +107,11 @@ looks broken" to read past.
 Run `./tools/gates.sh --native` there: the sandbox network policy refuses the PlatformIO
 registry, so the S3 tier cannot fetch its toolchain and cannot run at all. CI covers it —
 gates runs both tiers on pushes to `claude/**` as well as `main`, so a remote session's
-push is checked without opening a pull request. Two things a session cannot do for itself:
-it has no write on `refs/tags/*`, so **cutting a release needs a human to push the tag**,
-and Pages deploys are held to `main`, so **publish only runs once the work has landed
-there** — dispatching `publish.yml` on a branch fails with an empty, logless deploy job.
+push is checked without opening a pull request. A session has no write on `refs/tags/*`,
+which costs nothing: releases here are cut by dispatching `publish.yml`, not by tagging
+(see *Releasing*). Pages deploys are held to `main`, so **publish only runs once the work
+has landed there** — dispatching `publish.yml` on a branch fails with an empty, logless
+deploy job.
 
 Neither tier can see two things drawn on top of each other, or a panel cutting its own
 copy. `./tools/screens.sh` renders the screen catalogue to one contact sheet for that —
@@ -128,14 +129,15 @@ the versions, cut the release.
 
 **Pushing `main` is half the job — the publish is a separate act.** `publish.yml` is what
 builds the firmware artifact, writes the manifest a device polls, stages the boot images
-`/flash/` writes and deploys the lot to Pages, and it runs on two things only: a pushed `v*`
-tag, or a manual **Run workflow** on `main`. Do neither and the release is not live: nothing is
+`/flash/` writes and deploys the lot to Pages. Skip it and the release is not live: nothing is
 offered to any device, and the only symptom is a version nobody is running.
 
-Either trigger publishes the same bytes — `make pages` reads the version from
-`include/version.h` and `web/VERSION`, never from the ref — so the tag is the repo's record of
-a release, not the source of its number. Push the tag when you can; dispatch the workflow when
-you can't (a token without `refs/tags/*` write gets a 403 on the tag and nothing else).
+**So dispatch `publish.yml` on `main` as soon as the release commit lands — every time,
+without asking.** Nobody reviews a release before it ships here, so there is nothing to wait
+for. Tags are not used: `make pages` reads the version from `include/version.h` and
+`web/VERSION`, never from the ref, so a dispatch publishes exactly what a tag would, and the
+release commit is the repo's record of it. (The workflow still answers a pushed `v*` tag;
+nothing needs one.)
 
 The process, the two changes that need more care than a tag can undo, and how to verify what is
 actually served are in [`docs/ORIENTATION.md`](docs/ORIENTATION.md) under *Releasing*.
