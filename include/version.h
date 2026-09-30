@@ -41,7 +41,7 @@
 #  define FW_VERSION_MAJOR 0
 #endif
 #ifndef FW_VERSION_MINOR
-#  define FW_VERSION_MINOR 82
+#  define FW_VERSION_MINOR 83
 #endif
 #ifndef FW_VERSION_PATCH
 #  define FW_VERSION_PATCH 0
