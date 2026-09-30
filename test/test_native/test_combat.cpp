@@ -291,11 +291,11 @@ void test_level_stat_curves() {
                           levelPowerPct(kLevelPowerSpecPoints + 1);
     CHECK(afterBend > beforeBend);
 
-    CHECK(levelHealthBonus(0) == 0);
-    CHECK(levelHealthBonus(kLevelHealthSpecPoints) ==
-          kLevelHealthSpecPoints * kLevelHealthPerPoint);
-    CHECK(levelHealthBonus(1000) == kLevelHealthSpecPoints * kLevelHealthPerPoint +
-                                    (1000 - kLevelHealthSpecPoints) * kLevelHealthPerSpecPoint);
+    CHECK(levelHealthPct(0) == 0);
+    CHECK(levelHealthPct(kLevelHealthSpecPoints) ==
+          kLevelHealthSpecPoints * kLevelHealthPctPerPoint);
+    CHECK(levelHealthPct(1000) == kLevelHealthSpecPoints * kLevelHealthPctPerPoint +
+                                  (1000 - kLevelHealthSpecPoints) * kLevelHealthPctPerSpecPoint);
 
     // Defence does not bend at all: the rating is linear, and the diminishing half lives
     // in the curve a hit is put through (defendedDamage), not in the points.
@@ -1344,6 +1344,19 @@ void test_stun_chain_resistance() {
         prev = stunLandPct(c);
     }
     c.lockResist = 1000; CHECK(stunLandPct(c) == 1);
+    // Max-Health points stand on the same curve from the first cast, and add to what a
+    // chain banks rather than replacing it.
+    {
+        Combatant h = mkCombatant(r, "P", 100, 12, {"quick_jab"});
+        int pts[kLevelStatCount] = {0, 0, 0, 32};
+        applyLevelStatPoints(h, pts);
+        CHECK(h.stunResistRating == 32 * kLevelHealthStunResistPerPoint);
+        CHECK(stunLandPct(h) == defendedDamage(100, h.stunResistRating));
+        CHECK(stunLandPct(h) < 100);
+        h.lockResist = 1;
+        CHECK(stunLandPct(h) ==
+              defendedDamage(100, kLockResistRatingPerPoint + h.stunResistRating));
+    }
     // Ratchet: a landed 2-turn stun banks 2 points on the VICTIM...
     Combatant p = mkCombatant(r, "P", 100, 5, {"quick_jab"});             // slow → stunned
     Combatant e = mkCombatant(r, "E", 100, 12, {"system_hang"});          // lockTurns 2, first
@@ -2882,8 +2895,8 @@ void test_polymorph_pays_once_per_distinct_move() {
     // A Defend pays the other pair, and raises the pool it is standing in as well as the
     // ceiling — a fighter must never be left owing Health it was just granted.
     CHECK(polymorphAbsorb(c, &def));
-    CHECK(c.maxHealth == 40 + kLevelHealthPerPoint);
-    CHECK(c.health == 40 + kLevelHealthPerPoint);
+    CHECK(c.maxHealth == 40 + 40 * kLevelHealthPctPerPoint / 100);   // % of its body
+    CHECK(c.health == c.maxHealth);
     CHECK(c.defenseMultPct == 100 + kLevelDefenseBracePctPerPoint);
 
     // A fighter that is not running the passive never absorbs, which is every pet off the
@@ -2913,7 +2926,7 @@ void test_polymorph_brace_answers_to_the_cap() {
     // What the ceiling refused was paid in Health, at the brace's own rate — so the
     // absorption is still worth something past the cap instead of silently evaporating.
     const int paid = c.maxHealth - 40;
-    CHECK(paid > kLevelHealthPerPoint * points);
+    CHECK(paid > 40 * kLevelHealthPctPerPoint * points / 100);
     CHECK(c.health == c.maxHealth);                              // room under the ceiling
 
     // A second payment onto a full wall adds no brace and still pays.

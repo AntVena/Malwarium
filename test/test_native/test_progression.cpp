@@ -94,7 +94,8 @@ void test_creature_level_feeds_combat() {
     enterSimBattle(g1);
     const Combatant lv = g1.combat().player();
 
-    CHECK(lv.maxHealth == base.maxHealth + pH * kLevelHealthPerPoint);
+    CHECK(lv.maxHealth == base.maxHealth + base.bodyHealth * levelHealthPct(pH) / 100);
+    CHECK(lv.stunResistRating == pH * kLevelHealthStunResistPerPoint);
     CHECK(lv.speed == base.speed + pS * kLevelSpeedPerPoint);
     CHECK(lv.powerMultPct == base.powerMultPct + pP * kLevelPowerPctPerPoint);
     CHECK(lv.defense == base.defense + levelDefenseRating(pD));
@@ -160,12 +161,13 @@ void test_defense_curve_never_caps() {
 void test_brace_cap_overflows_into_health() {
     // The exchange: what the same investment would have bought spent on max-Health, and
     // never more. Overflowing must not be the better outcome.
-    CHECK(capOverflowHealth(0, kLevelDefenseBracePctPerPoint) == 0);
-    CHECK(capOverflowHealth(-9, kLevelDefenseBracePctPerPoint) == 0);   // not a refund either
-    CHECK(capOverflowHealth(kLevelDefenseBracePctPerPoint, kLevelDefenseBracePctPerPoint) ==
-          kLevelHealthPerPoint);                           // one point's worth, either way
-    CHECK(capOverflowHealth(2 * kLevelDefenseBracePctPerPoint,
-                            kLevelDefenseBracePctPerPoint) == 2 * kLevelHealthPerPoint);
+    const int body = 100;
+    CHECK(capOverflowHealth(0, kLevelDefenseBracePctPerPoint, body) == 0);
+    CHECK(capOverflowHealth(-9, kLevelDefenseBracePctPerPoint, body) == 0);  // not a refund
+    CHECK(capOverflowHealth(kLevelDefenseBracePctPerPoint, kLevelDefenseBracePctPerPoint,
+                            body) == body * kLevelHealthPctPerPoint / 100);  // one point's worth
+    CHECK(capOverflowHealth(2 * kLevelDefenseBracePctPerPoint, kLevelDefenseBracePctPerPoint,
+                            body) == 2 * body * kLevelHealthPctPerPoint / 100);
 
     // End to end, on a built fighter. A pet buried in Defence points keeps buying rating
     // — there is no ceiling for it to meet — while its brace sits at the cap and carries
@@ -1782,8 +1784,8 @@ void test_stat_tier_appliers_gate_on_their_rung() {
     }
 
     // MAX-HEALTH: T1 is its accelerating band, T2 a rate, T3 a flag.
-    CHECK(levelHealthBonus(t1) == t1 * kLevelHealthPerPoint);
-    CHECK(levelHealthBonus(t1 + 1) == t1 * kLevelHealthPerPoint + kLevelHealthPerSpecPoint);
+    CHECK(levelHealthPct(t1) == t1 * kLevelHealthPctPerPoint);
+    CHECK(levelHealthPct(t1 + 1) == t1 * kLevelHealthPctPerPoint + kLevelHealthPctPerSpecPoint);
     CHECK(levelHealthScrubPct(t2 - 1) == 0);
     CHECK(levelHealthScrubPct(t2) == kLevelHealthScrubPct);
     CHECK(!levelHealthFailoverEarned(t3 - 1));

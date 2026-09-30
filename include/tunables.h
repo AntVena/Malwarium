@@ -413,7 +413,7 @@ constexpr int kBattleFatigueAutoPauseFrag = 80; // hands-off auto-explore pauses
 //     magnitudes map an earned point into the combat maths (first-cut balance,
 // ): power = +% attack lean, defense = +DEF rating (hits land at 100/(100+DEF),
 //     so no amount of it nulls a hit), speed = +initiative,
-//     max-Health = +HP. Level == the sum of earned points (an invariant Rollback
+//     max-Health = +% of the pet's body. Level == the sum of earned points (an invariant Rollback
 //     preserves: −1 point ⇒ −1 level). ------------------------------------------
 constexpr int kLevelXpBase = 100;          // XP to reach level 1 (round(100*1.1^0))
 constexpr int kLevelXpGrowthPct = 110;     // each level costs 1.1x the previous
@@ -464,7 +464,13 @@ constexpr int kLevelDefensePerPoint = 7;       // +7 DEF per defense point
 constexpr int kLevelSpeedPerPoint = 1;         // +1 initiative per speed point
                                                // (kLevelSpeedUnderdogPerPoint replaces this
                                                // rate outright while Speed T2 is paying)
-constexpr int kLevelHealthPerPoint = 3;        // +3 max-Health per max-Health point
+// Max-Health is a PERCENTAGE of the pet's stage body (kMaxHealthByStage — Combatant::
+// bodyHealth), the Health mirror of Power's % of output. A flat add was worth 7.5% of a
+// Process body and 3% of a Daemon's, so the stat decayed across the stretch a player
+// spends earning it, exactly as a flat Power add did. The branch lean is left out of the
+// body on purpose: measured with it in, a Good-branch pet's Health points compounded with
+// its lean and the T2 scrub into the only build worth making.
+constexpr int kLevelHealthPctPerPoint = 3;     // +3% of body per max-Health point
 // Defense stat ALSO scales DEFEND-move brace magnitude.
 // Symmetric to Power→attack. +3% brace per Defense point via
 // Combatant::defenseMultPct — leveling Defense visibly thickens the Cipher wall's
@@ -492,7 +498,7 @@ constexpr int kLevelDefenseBraceCapPct = 200;
 constexpr int kLevelPowerSpecPoints = kStatTier1Points;  // points before the accelerating band
 constexpr int kLevelPowerPctPerSpecPoint = 10;   // ...and the rate past it (base is 4)
 constexpr int kLevelHealthSpecPoints = kStatTier1Points;
-constexpr int kLevelHealthPerSpecPoint = 8;      // ...vs kLevelHealthPerPoint's 3
+constexpr int kLevelHealthPctPerSpecPoint = 10;  // ...vs kLevelHealthPctPerPoint's 3
 
 // Defence's investment TIERS. More rating is always worth the same +1% effective Health,
 // so past a threshold the stat ALSO buys a different KIND of thing, and each of these
@@ -566,6 +572,11 @@ constexpr int kLevelSpeedAdrenalinePerStep = 1;    // ...this much initiative, l
 // ordering the Regen mod does), T3 is a free death-save, ahead of a Backup Drive so a pet
 // carrying both spends the tier and keeps the item.
 constexpr int kLevelHealthScrubPct = 3;        // T2: % of max Health healed each turn
+// ...and underneath all three rungs, a flat stun-resist rating per max-Health point, on the
+// same curve banked lock resistance rolls against (stunLandPct). A big body shrugs off a
+// freeze a little: 16 points is 48 rating (a stun lands 68%), 32 is 96 (51%) — about one
+// banked point's worth, standing from the first cast of the fight.
+constexpr int kLevelHealthStunResistPerPoint = 3;
                                                // T3 (failover) is a flag, not a magnitude
 
 // Per-line combat PASSIVE constants (Ransom Lock, the Phishing steal-track floors +

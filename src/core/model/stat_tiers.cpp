@@ -42,8 +42,9 @@ const StatTierDef kTiers[kLevelStatCount][kStatTierCount] = {
       "+{mag} initiative for every {mag2}% of your max Health already lost."}},
 
     // MAX-HEALTH — the accelerating band, then two ways to spend the pool twice.
-    {{"EXPANSION", kStatTier1Points, kLevelHealthPerSpecPoint, kLevelHealthPerPoint,
-      "Every max-Health point past this one is worth {mag} Health instead of {mag2}."},
+    {{"EXPANSION", kStatTier1Points, kLevelHealthPctPerSpecPoint, kLevelHealthPctPerPoint,
+      "Every max-Health point past this one adds {mag}% of your base Health instead of "
+      "{mag2}%."},
      {"SCRUBBING", kStatTier2Points, kLevelHealthScrubPct, 0,
       "You heal {mag}% of max Health at the start of each of your turns, after any "
       "damage-over-time has landed."},

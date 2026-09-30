@@ -1358,7 +1358,9 @@ void test_granted_stat_point_reaches_combat() {
     g1.debugUseItem(d->id);
     for (int i = 0; i < 4 && g1.nav() != Game::Nav::Idle; ++i) tapC(g1);
     enterSimBattle(g1);
-    CHECK(g1.combat().player().maxHealth == baseHp + kLevelHealthPerPoint);
+    const Combatant& pl = g1.combat().player();
+    CHECK(pl.maxHealth == baseHp + pl.bodyHealth * kLevelHealthPctPerPoint / 100);
+    CHECK(pl.maxHealth > baseHp);                    // the one point is visible
 }
 
 // THE PROTECTION. A Rollback sheds an EARNED point and takes the level down with it;

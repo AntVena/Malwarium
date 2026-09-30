@@ -737,7 +737,7 @@ CombatVsGrid combatVsGrid(const Combatant& local, const Combatant& rival,
     // fighter that has shaken the whole pile off drops out of the row.
     auto stunCell = [](char* out, size_t cap, const Combatant& c) {
         if (c.lockedTurnsLeft > 0) std::snprintf(out, cap, "%d", c.lockedTurnsLeft);
-        else if (c.lockResist > 0) std::snprintf(out, cap, "%d%%", stunLandPct(c));
+        else if (stunLandPct(c) < 100) std::snprintf(out, cap, "%d%%", stunLandPct(c));
         else out[0] = '\0';
     };
     stunCell(a, sizeof(a), local);

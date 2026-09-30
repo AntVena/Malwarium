@@ -139,6 +139,10 @@ struct Combatant {
                                    // screen shows "???" instead of a number
     int maxHealth = 0;
     int health = 0;
+    // The stage body this fighter was built on (kMaxHealthByStage, without the care
+    // branch's lean), before mods and levels — what a max-Health point is a percentage OF
+    // (healthBody). 0 on a fighter not built from a pet, whose whole Health stands in.
+    int bodyHealth = 0;
     // Initiative (Clock-Speed Boost raises it). FLOAT because a Phishing siphon steals a %
     // of CURRENT speed, which int arithmetic truncates to 0 once speed nears the floor.
     float speed = 0;
@@ -303,6 +307,10 @@ struct Combatant {
     // The resistance this fighter never sheds below — a BOSS stands on it (kBossLockResist),
     // so a stun on one is a roll from the first cast rather than a free turn to chain.
     int lockResistFloor = 0;
+    // Standing stun-resist RATING, on the same curve the banked points roll against
+    // (stunLandPct). Paid by max-Health investment (kLevelHealthStunResistPerPoint); never
+    // shed, and read from the first stun of the fight.
+    int stunResistRating = 0;
 
     // SCRAMBLE (a landed hit's scrambleTurns rider) — set ON THE VICTIM, and the only
     // rider that costs the PLAYER rather than the pet: while it holds, the A+C picker's
@@ -404,8 +412,9 @@ int wormReplicaCount(const Combatant& c, bool defenders);
 bool braceOnlyDefend(const MoveDef& m);
 
 // The odds a stun rider aimed at `c` right now would freeze it: 100 while it holds no lock
-// resistance, then the Defence curve at kLockResistRatingPerPoint per banked point — never
-// below 1. The combat screen reads out what Combat::stunLands rolls against.
+// resistance, then the Defence curve over kLockResistRatingPerPoint per banked point plus
+// its standing stunResistRating — never below 1. The combat screen reads out what
+// Combat::stunLands rolls against.
 int stunLandPct(const Combatant& c);
 
 // The Phishing pool siphon, 0..kPhishPoolSiphonMaxPct: what the LIVE Obfuscation pool adds
@@ -970,11 +979,15 @@ Combatant makePlayerCombatant(const ContentRegistry& reg, const CreatureDef& pet
 // while both sides' stats agree exactly, so this arithmetic lives in exactly one place.
 void applyLevelStatPoints(Combatant& c, const int statPoints[4]);
 
-// The level-Power % bonus for `points` earned Power points, and the flat max-Health bonus
-// for `points` earned max-Health points. Both ACCELERATE past their specialisation point
-// (tunables.h), and neither caps.
+// The level-Power % bonus for `points` earned Power points, and the max-Health % bonus (of
+// the pet's body) for `points` earned max-Health points. Both ACCELERATE past their
+// specialisation point (tunables.h), and neither caps.
 int levelPowerPct(int points);
-int levelHealthBonus(int points);
+int levelHealthPct(int points);
+
+// What a max-Health percentage is measured against: the fighter's stage body, or — on one
+// not built from a pet — its whole max Health.
+int healthBody(const Combatant& c);
 
 // Defence's investment tiers, each a total function of the earned Defence points: what
 // the stat buys past a rung besides more rating (tunables.h explains which and why).
@@ -989,7 +1002,7 @@ int levelDefenseBackscatterPct(int points);
 
 // Power's and max-Health's own tiers, the same shape: a total function of the earned
 // points, 0 below the rung. (Their T1 is not here — it is the accelerating band, which
-// levelPowerPct/levelHealthBonus already carry.)
+// levelPowerPct/levelHealthPct already carry.)
 int levelPowerPiercePct(int points);
 int levelPowerGuardSmashPct(int points);
 int levelHealthScrubPct(int points);
@@ -1034,14 +1047,15 @@ int defendedDamage(int dmg, int defense);
 int defenseCutPct(int defense);
 
 // OVERFLOW: what a bonus the brace cap refused is worth instead, in max-Health — the one
-// pool nothing caps. A pet already at the brace cap earns nothing from the next Defence
+// pool nothing caps. `body` is healthBody of the fighter being paid. A pet already at the brace cap earns nothing from the next Defence
 // point or absorbed move otherwise, and no screen says so.
 //
 // Paid at the level table's own exchange rate: `perPointPct` is what one stat point bought
-// of the clamped stat, so what arrives is that investment spent the other way. Nothing new
+// of the clamped stat, so what arrives is that investment spent the other way — one
+// max-Health point's % of `body` per point refused. Nothing new
 // to tune, and overflowing is never worth MORE than not overflowing. Pays a pet's EARNED
 // bonuses only, never a spec-built enemy.
-int capOverflowHealth(int overflowPct, int perPointPct);
+int capOverflowHealth(int overflowPct, int perPointPct, int body);
 // Build an enemy Combatant from a spec.
 Combatant makeEnemyCombatant(const ContentRegistry& reg, const CombatEnemy& spec);
 

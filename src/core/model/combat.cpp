@@ -217,7 +217,8 @@ void polymorphPay(Combatant& c, MoveKind kind, int points) {
         c.speed += static_cast<float>(kLevelSpeedPerPoint * points);
     } else {
         c.defense += kLevelDefensePerPoint * points;
-        int gain = kLevelHealthPerPoint * points;
+        const int body = healthBody(c);
+        int gain = body * kLevelHealthPctPerPoint * points / 100;
         c.defenseMultPct += kLevelDefenseBracePctPerPoint * points;
         // The brace ceiling, which absorb answers to exactly as levelling does: an
         // unbounded absorb is the failure kLevelDefenseBraceCapPct was written for. The
@@ -226,7 +227,7 @@ void polymorphPay(Combatant& c, MoveKind kind, int points) {
         const int braceCeilPct = 100 + kLevelDefenseBraceCapPct;
         if (c.defenseMultPct > braceCeilPct) {
             gain += capOverflowHealth(c.defenseMultPct - braceCeilPct,
-                                      kLevelDefenseBracePctPerPoint);
+                                      kLevelDefenseBracePctPerPoint, body);
             c.defenseMultPct = braceCeilPct;
         }
         // Ceiling and current together — raising max under a fighter must hand it the room.
@@ -1108,17 +1109,20 @@ bool Combat::bubbleBiteRolls(Stage stage) {
 }
 
 int stunLandPct(const Combatant& c) {
-    if (c.lockResist <= 0) return 100;
+    const int rating = (c.lockResist > 0 ? c.lockResist * kLockResistRatingPerPoint : 0) +
+                       c.stunResistRating;
+    if (rating <= 0) return 100;
     // The curve never reaches zero; the clamp only stops rounding from getting there.
-    const int pct = defendedDamage(100, c.lockResist * kLockResistRatingPerPoint);
+    const int pct = defendedDamage(100, rating);
     return pct < 1 ? 1 : pct;
 }
 
 bool Combat::stunLands(const Combatant& target) {
-    // Nothing to beat, no draw: the first stun of a chain always lands, and a fight with
-    // no chain-stunning never draws here.
-    if (target.lockResist <= 0) return true;
-    return static_cast<int>(rng() % 100) < stunLandPct(target);
+    // Nothing to beat, no draw: a target with no resistance of either kind — banked or
+    // standing from max-Health points — is always frozen, and never draws here.
+    const int pct = stunLandPct(target);
+    if (pct >= 100) return true;
+    return static_cast<int>(rng() % 100) < pct;
 }
 
 void Combat::syncWormSpeed() {

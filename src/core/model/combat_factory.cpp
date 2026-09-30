@@ -90,6 +90,9 @@ Combatant makePlayerCombatant(const ContentRegistry& reg, const CreatureDef& pet
     // turns to put each other down, in opposite currencies.
     c.maxHealth = kMaxHealthByStage[stageIndex(pet.stage)] * creatureHealthMultPct(pet) / 100;
     c.health = c.maxHealth;
+    // The STAGE body, without the branch lean: a level point is worth the same share to
+    // both branches, so levelling cannot re-price the trade the lean above settles.
+    c.bodyHealth = kMaxHealthByStage[stageIndex(pet.stage)];
     c.speed = kCombatBaseSpeed;
     // branch lean, scaled by the per-stage offensive multiplier so an
     // evolved pet's output keeps pace with tier-scaled enemy Health (4–8-exchange
@@ -866,11 +869,15 @@ int levelPowerPct(int points) {
     return base * kLevelPowerPctPerPoint + spec * kLevelPowerPctPerSpecPoint;
 }
 
-int levelHealthBonus(int points) {
+int levelHealthPct(int points) {
     if (points <= 0) return 0;
     const int base = points < kLevelHealthSpecPoints ? points : kLevelHealthSpecPoints;
     const int spec = points - base;
-    return base * kLevelHealthPerPoint + spec * kLevelHealthPerSpecPoint;
+    return base * kLevelHealthPctPerPoint + spec * kLevelHealthPctPerSpecPoint;
+}
+
+int healthBody(const Combatant& c) {
+    return c.bodyHealth > 0 ? c.bodyHealth : c.maxHealth;
 }
 
 int levelDefensePierceResistPct(int points) {
@@ -983,9 +990,9 @@ int defenseCutPct(int defense) {
 }
 
 // The exchange and why it is this one are on the declaration (combat.h).
-int capOverflowHealth(int overflowPct, int perPointPct) {
-    if (overflowPct <= 0 || perPointPct <= 0) return 0;
-    return overflowPct * kLevelHealthPerPoint / perPointPct;
+int capOverflowHealth(int overflowPct, int perPointPct, int body) {
+    if (overflowPct <= 0 || perPointPct <= 0 || body <= 0) return 0;
+    return overflowPct * body * kLevelHealthPctPerPoint / (100 * perPointPct);
 }
 
 void applyLevelStatPoints(Combatant& c, const int statPoints[4]) {
@@ -1023,6 +1030,8 @@ void applyLevelStatPoints(Combatant& c, const int statPoints[4]) {
     // and there isn't one yet (applySpeedRivalry, called once both fighters exist).
     c.speedPoints = statPoints[2];
     c.scrubPct = levelHealthScrubPct(statPoints[3]);
+    c.stunResistRating =
+        statPoints[3] > 0 ? statPoints[3] * kLevelHealthStunResistPerPoint : 0;
     c.failoverArmed = levelHealthFailoverEarned(statPoints[3]);
     // What the brace cap refuses, paid into max-Health (capOverflowHealth). The rating
     // has no ceiling, so it is the only Defence discard left.
@@ -1034,8 +1043,11 @@ void applyLevelStatPoints(Combatant& c, const int statPoints[4]) {
     }
     c.defenseMultPct += brace;
     c.speed += statPoints[2] * kLevelSpeedPerPoint;
-    c.maxHealth += levelHealthBonus(statPoints[3]);
-    c.maxHealth += capOverflowHealth(braceOverflow, kLevelDefenseBracePctPerPoint);
+    // Both measured against the body BEFORE either is added, so the order they land in
+    // cannot change what they are worth.
+    const int body = healthBody(c);
+    c.maxHealth += body * levelHealthPct(statPoints[3]) / 100;
+    c.maxHealth += capOverflowHealth(braceOverflow, kLevelDefenseBracePctPerPoint, body);
     c.health = c.maxHealth;
 }
 
