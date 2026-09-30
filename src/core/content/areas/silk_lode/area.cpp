@@ -50,9 +50,10 @@ const ShopListingDef kModShopListings[] = {
 
 // The Lode's CHAPTERS (core/content/story.h), wires 21-24.
 // Nobody is down here to explain anything, so the Lode tells its story through what was
-// left behind: a university team's signs, its logbook, the printed messages. It names
-// nothing and resolves nothing. It ends on the operator plugging the neural link into
-// the mainframe's interface, which is where the next chapter picks up: inside it.
+// left behind: a university team's signs, its logbook, the printed messages. It resolves
+// nothing; the one thing it hands over is a name, from the logbook: the port is the
+// Shiboleet's interface. It ends on the operator plugging the neural link into it, which
+// is where the next chapter picks up: inside the mainframe.
 const StoryPanelDef kIntroPanels[] = {
     {"THE OLD MINE",
      "The stair leads down into an old mine under the hill, dug long before the vault was "
@@ -108,9 +109,9 @@ const StoryPanelDef kAreaOutroPanels[] = {
      "machine has, and it is reaching for the link. It was built for the same kind of "
      "connection the link makes."},
     {"THE INTERFACE",
-     "The logbook calls the port the interface. The team used it to go inside the "
-     "mainframe and work with the program directly, instead of watching it from a "
-     "screen."},
+     "The logbook calls the port the Shiboleet's interface. The team plugged into it "
+     "to go inside the mainframe and work with their program directly, instead of "
+     "watching it from a screen."},
     {"CONNECTED",
      "You plug in. The machine room goes dark. When the link settles you are standing "
      "in it again, except the lights are on, every terminal is running, and there is a "
