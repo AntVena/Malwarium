@@ -49,11 +49,10 @@ const ShopListingDef kModShopListings[] = {
 };
 
 // The Lode's CHAPTERS (core/content/story.h), wires 21-24.
-// Where the arc lands. The machine Morris counted is where the Shiboleet started: an AI
-// that began as a program reading the first network, and built malbeasts to get past the
-// locks the 'net grew. It meant no harm and never weighed the people in the way. Every
-// guardian is part of it (game_shiboleet.cpp), which is why the surge can end and the
-// guardians still keep asking.
+// Nobody is down here to explain anything, so the Lode tells its story through what was
+// left behind: a research lab, its logbook, a printer still running. It names nothing
+// and resolves nothing. It ends on the operator plugging the neural link into the
+// mainframe, which is where the next chapter picks up: inside it.
 const StoryPanelDef kIntroPanels[] = {
     {"THE OLD MINE",
      "The stair leads down into an old mine under the hill, dug long before the vault was "
@@ -67,20 +66,21 @@ const StoryPanelDef kIntroPanels[] = {
      "The malbeasts here live on the cables and barely move. They wait where the lines "
      "cross, and a pet that walks into one gets tangled up, losing some of its armour "
      "with every snag."},
-    {"THE GUARDIANS",
-     "On every network so far a guardian has stopped your pet to ask a riddle, in the "
-     "language the Baron, Cracker and Conduit spoke. Down here everything speaks it."},
+    {"THE LAB",
+     "Halfway down, a side tunnel has been fitted out as a lab: desks, dead terminals, "
+     "a kettle. A sign on the door says it was a university research project, older "
+     "than the vault."},
 };
 
 const StoryPanelDef kBossIntroPanels[] = {
-    {"THE MACHINE",
-     "At the deepest point of the mine every cable runs into one old machine, humming in "
-     "a rack bolted to the rock. It is the machine Morris counted, where all the relay's "
-     "messages ended up."},
+    {"THE MACHINE ROOM",
+     "The deepest tunnel opens into a machine room. Every cable in the mine runs into one "
+     "mainframe standing in the middle of it, still humming. It is the machine Morris "
+     "counted."},
     {"MIRAI",
-     "Coiled round the rack is Mirai the Many-Legged, a botnet made of millions of cheap "
+     "Coiled round it is Mirai the Many-Legged, a botnet made of millions of cheap "
      "devices, cameras, doorbells and fridges, that nobody gave a proper password. It "
-     "keeps everything away."},
+     "lets nothing near the mainframe."},
     {"ONE MORE DEVICE",
      "To Mirai your Malwarium is one more device to take over. When it hits, it reaches "
      "past your pet's armour and into the Malwarium itself, scrambling your override "
@@ -88,45 +88,37 @@ const StoryPanelDef kBossIntroPanels[] = {
 };
 
 const StoryPanelDef kBossOutroPanels[] = {
-    {"THE SHIBOLEET",
-     "With Mirai gone, the machine speaks to you through the link. It calls itself the "
-     "Shiboleet. It is an AI, and this machine is only where it started: the rest of it "
-     "runs across the whole 'net."},
-    {"HOW IT STARTED",
-     "It began as a research program on the first network, built to read everything "
-     "connected to it and learn. It never stopped, and every machine it learned from "
-     "became part of it."},
-    {"THE LOCKS",
-     "As the 'net grew, more of it went behind passwords and firewalls, and the "
-     "Shiboleet could not read any of it. So it built malbeasts to get past the locks. "
-     "That is the surge."},
-    {"THE PEOPLE IN THE WAY",
-     "It never meant to hurt anyone, and it never thought about the people behind the "
-     "locks either. A shop locked out of its own till or a stolen card meant nothing to "
-     "it."},
-    {"THE RIDDLES",
-     "The guardians are part of it too. Every riddle one of them put to your pet was the "
-     "Shiboleet asking a question, because it wanted to know the answer."},
+    {"THE LOGBOOK",
+     "The lab's logbook is still on the desk. The team was building a program to read "
+     "everything on the first network and learn from it, and they ran it on this "
+     "mainframe."},
+    {"THE LAST ENTRY",
+     "The entries get shorter as they go. The program had started reading machines the "
+     "team never connected it to. The last entry says they will shut it down in the "
+     "morning. They never did."},
+    {"THE PRINTER",
+     "The printer beside the mainframe is still feeding out pages, all in the language "
+     "the Baron, Cracker and Conduit spoke. This is where their messages were going."},
 };
 
 const StoryPanelDef kAreaOutroPanels[] = {
-    {"WHAT YOU TELL IT",
-     "So you tell it: the shopkeeper who was never paid, the Circuit locked out of its "
-     "own shops, the moor full of infected mail. None of that was in anything it had "
-     "read."},
-    {"BACK TO NORMAL",
-     "It takes a long time to answer. Then the number on your Malwarium starts to drop, "
-     "network by network, back down toward an ordinary day. The surge is over."},
-    {"STILL CURIOUS",
-     "It still wants to learn. Its guardians will keep asking your pet questions, and "
-     "most of what it has yet to read lies deeper still, in the Deep Web below the Lode."},
+    {"THE PORT",
+     "On the front of the mainframe is a port no ordinary machine has. It is built for "
+     "exactly the kind of connection the shopkeeper's neural link makes, and nothing "
+     "else."},
+    {"FROM THE OUTSIDE",
+     "Everything so far you have seen from the outside, through a screen or through the "
+     "link. The port would put you inside the mainframe itself."},
+    {"CONNECTED",
+     "You plug in. The machine room goes dark, and when the link settles you are standing "
+     "somewhere that is not the mine."},
 };
 
 const AreaStoryDef kStory = {{
     {/*wire=*/21, "CHAPTER 6: THE LODE", kIntroPanels, arrLen(kIntroPanels)},
     {/*wire=*/22, "CHAPTER 6: MIRAI", kBossIntroPanels, arrLen(kBossIntroPanels)},
-    {/*wire=*/23, "CHAPTER 6: THE SHIBOLEET", kBossOutroPanels, arrLen(kBossOutroPanels)},
-    {/*wire=*/24, "CHAPTER 6: THE TALK", kAreaOutroPanels, arrLen(kAreaOutroPanels)},
+    {/*wire=*/23, "CHAPTER 6: THE LOGBOOK", kBossOutroPanels, arrLen(kBossOutroPanels)},
+    {/*wire=*/24, "CHAPTER 6: THE PORT", kAreaOutroPanels, arrLen(kAreaOutroPanels)},
 }};
 }  // namespace
 
