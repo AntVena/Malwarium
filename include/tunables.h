@@ -582,10 +582,12 @@ constexpr int kLevelSpeedAdrenalinePerStep = 1;    // ...this much initiative, l
 // tick currently killing you — it rides the same turn-start ordering the Regen mod does).
 // The heal is a share of BASE Health, not max, so it does not compound with the points
 // that bought it; the damage is a share of MAX, so it does. Priced together in the duel
-// harness: at 7% / 3% a committed pet clearly out-classes an even spread and no pairing
-// of two such pets stalls. Damage keyed to the TARGET's Health would be an attack stat's
+// harness against SPECIALIST builds (24 points in Power, Defence, Speed or Health), not
+// just even spreads, since those are what a Health build actually meets. At 7% / 7% a
+// Good-branch Health build beats Speed and trades with Power, Neutral and Bad Health
+// builds still trail Speed and Power, and no pairing stalls. Damage keyed to the TARGET's Health would be an attack stat's
 // answer to tanks, and belongs with Power if it is ever wanted.
-constexpr int kLevelHealthOwnDamagePct = 3;    // T2: % of own max Health added to each hit
+constexpr int kLevelHealthOwnDamagePct = 7;    // T2: % of own max Health added to each hit
 constexpr int kLevelHealthScrubPct = 7;        // T3: % of base Health healed each turn
 // ...and underneath all three rungs, a flat stun-resist rating per max-Health point, on the
 // same curve banked lock resistance rolls against (stunLandPct). A big body shrugs off a
