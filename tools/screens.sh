@@ -67,6 +67,7 @@ SCENES=(
   "cfg_audit|cfg audit"             "cfg_updates|cfg updates ready found"
   "cfg_confirm|cfg updates ready confirm"
   "cfg_device|cfg device"           "cfg_theme|cfg theme"
+  "cfg_formatsd|cfg formatsd yes"   "cfg_formatsd_done|cfg formatsd done"
   # One screen per THEME, and deliberately not the picker: a set is judged on the
   # screens it has to carry, and the two hardest are the ones with the least writing
   # on them. STAT is every gauge and ladder at once; DISK DECRYPTION is a board whose

@@ -47,8 +47,11 @@
 #if MAL_SD_SDMMC
 #  include <Arduino.h>            // Serial (boot logging)
 #  include <cstdio>              // POSIX file I/O on the mounted VFS
+#  include <cstdlib>             // the format's FatFs work buffer
+#  include "diskio_sdmmc.h"       // ff_diskio_get_pdrv_card — the card's FatFs drive
 #  include "driver/sdmmc_host.h"
 #  include "esp_vfs_fat.h"
+#  include "ff.h"                 // f_fdisk / f_mkfs — what format() writes with
 #  include "sdmmc_cmd.h"
 #endif
 
@@ -60,7 +63,71 @@ public:
     // Mount the card over SDIO with internal pull-ups enabled. Returns true on a
     // successful mount. false = no card / wrong pins / bad card — caller logs and
     // continues (SD is optional for the core game).
-    bool begin() {
+    bool begin() { return mount(/*formatIfUnmountable=*/false); }
+
+    // Erase the card and lay down a fresh FAT32 filesystem: one MBR partition over
+    // the whole card, kFormatAllocUnit clusters — what the boot mount, the 'Pedia
+    // installer and the .pcap writer all expect. Works on a card begin() refused
+    // (exFAT, unformatted, a dead filesystem) as well as a mounted one; the card
+    // only has to answer the SDIO bus. Ends remounted the ordinary way, so a true
+    // return means the same thing begin() returning true does.
+    //
+    // ONLY ON AN OPERATOR'S EXPLICIT ASK (CFG -> DEVICE -> FORMAT SD, or the
+    // browser flasher's checkbox over serial). The caller must guarantee no open
+    // file handle survives, exactly as for recheck(). Blocks for the length of
+    // the write — a few seconds on a large card.
+    bool format() {
+        if (card_) {
+            esp_vfs_fat_sdcard_unmount(kMount, card_);
+            card_ = nullptr;
+            mounted_ = false;
+        }
+        // Mounting with format-if-unmountable is what gets an unreadable card
+        // registered with FatFs at all — the IDF formats it on the way in. A card
+        // that mounted without needing that still holds its old files, so the
+        // explicit pass below runs either way: the same bytes on every card.
+        if (!mount(/*formatIfUnmountable=*/true)) return false;
+
+        // The same two calls, in the same order, the IDF's own format-on-mount
+        // makes (vfs_fat_sdmmc.c) — only the cluster size differs.
+        const BYTE pdrv = ff_diskio_get_pdrv_card(card_);
+        const char drv[3] = {static_cast<char>('0' + pdrv), ':', '\0'};
+        constexpr size_t kWork = 4096;
+        void* work = std::malloc(kWork);
+        FRESULT fr = work ? FR_OK : FR_NOT_ENOUGH_CORE;
+        if (pdrv == 0xFF) fr = FR_INVALID_DRIVE;
+        if (fr == FR_OK) {
+            const DWORD plist[] = {100, 0, 0, 0};   // one partition, the whole card
+            fr = f_fdisk(pdrv, plist, work);
+        }
+        if (fr == FR_OK) {
+            // FAT32 for any card past 2GB; FatFs falls back to FAT16 below that,
+            // where FAT32 at this cluster size would be too few clusters to be legal.
+            const MKFS_PARM opt = {static_cast<BYTE>(FM_FAT | FM_FAT32), 0, 0, 0,
+                                   static_cast<DWORD>(kFormatAllocUnit)};
+            fr = f_mkfs(drv, &opt, work, kWork);
+        }
+        std::free(work);
+        Serial.printf("[sd] format: f_fdisk/f_mkfs -> %d\n", static_cast<int>(fr));
+
+        // f_mkfs invalidated the volume the VFS had open, so drop that mount and
+        // come back through the ordinary path — which also proves the new
+        // filesystem is one begin() accepts.
+        esp_vfs_fat_sdcard_unmount(kMount, card_);
+        card_ = nullptr;
+        mounted_ = false;
+        if (fr != FR_OK) {
+            lastErr_ = ESP_FAIL;
+            return false;
+        }
+        return begin();
+    }
+
+private:
+    // The one mount routine behind begin() and format(). `formatIfUnmountable` is
+    // false on every path but format(): a card that won't mount is reported, never
+    // erased, unless the operator asked for exactly that.
+    bool mount(bool formatIfUnmountable) {
         if (card_) return true;  // already mounted
 
         sdmmc_host_t host = SDMMC_HOST_DEFAULT();
@@ -80,9 +147,9 @@ public:
         slot.flags |= SDMMC_SLOT_FLAG_INTERNAL_PULLUP;
 
         const esp_vfs_fat_mount_config_t mnt = {
-            /*format_if_mount_failed=*/false,  // NEVER format the user's card
+            /*format_if_mount_failed=*/formatIfUnmountable,  // format() only
             /*max_files=*/5,
-            /*allocation_unit_size=*/0,
+            /*allocation_unit_size=*/kFormatAllocUnit,       // read only when formatting
         };
 
         host.flags = SDMMC_HOST_FLAG_4BIT;
@@ -99,6 +166,8 @@ public:
         if (!mounted_) card_ = nullptr;
         return mounted_;
     }
+
+public:
 
     // Runtime re-check: unmount (if mounted) then mount again, so a card inserted
     // AFTER boot is picked up without a reboot (CFG "SD RECHECK" -> Game seam ->
@@ -157,10 +226,15 @@ private:
     bool mounted_ = false;
     esp_err_t lastErr_ = ESP_OK;
     static constexpr const char* kMount = "/sdcard";
+    // Cluster size a format writes. 32KB keeps the FAT small enough to lay down in
+    // seconds even on a 128GB card; the IDF's 0 would mean one 512B sector per
+    // cluster, a FAT hundreds of MB long, and a format measured in minutes.
+    static constexpr size_t kFormatAllocUnit = 32 * 1024;
 #else
     // Inert stub for boards without a 4-bit SDIO card (keeps main.cpp uniform).
     bool begin() { return false; }
     bool recheck() { return false; }
+    bool format() { return false; }
     bool mounted() const { return false; }
     uint32_t sizeMB() const { return 0; }
     bool selfTest(const char* = nullptr) { return false; }

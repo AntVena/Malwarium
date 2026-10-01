@@ -105,6 +105,10 @@ void frame() {
     if (g.game->travelSleepRequested() && g.game->saveNow())
         g.game->clearTravelSleep();
 
+    // No card slot in a browser, so a FORMAT SD yes is answered as the device
+    // answers an empty slot: failed, with the screen saying why.
+    if (g.game->sdFormatRequested()) g.game->finishSdFormat(false);
+
     if (t - g.lastSaveMs >= kWebAutosaveMs) {
         g.lastSaveMs = t;
         g.game->saveNow();

@@ -73,9 +73,10 @@ void drawCfgList(Framebuffer& fb, int cursor, const char* hackerTag,
                  const char* equippedTitle, RadioOwner radioOwner);
 
 // L3 DEVICE group: the presentation settings, each previewing its live value, plus
-// TRAVEL MODE. B opens the focused row, C backs to the list. Travel draws no value
-// preview — the others are settings that are always at some level, and it is an action
-// with no state to report, which the empty value column says without a word of copy.
+// TRAVEL MODE and FORMAT SD. B opens the focused row, C backs to the list. The two
+// actions draw no value preview — the others are settings that are always at some
+// level, and an action has no state to report, which the empty value column says
+// without a word of copy.
 void drawCfgDevice(Framebuffer& fb, int cursor, UiMode uiMode, int brightness,
                    const char* theme, const char* background);
 
@@ -126,6 +127,18 @@ void drawTravelConfirm(Framebuffer& fb, int pick);
 // down. It exists to answer the question a dark device provokes — this is the last
 // thing on screen, so the wake gesture is what it says.
 void drawTravelSleeping(Framebuffer& fb);
+
+// L3 FORMAT SD confirm. Leads with what is lost (everything on the card), names the
+// card it would act on (`sd`: its size, or that it can't be read yet — the usual reason
+// to be here is a card the boot mount refused), and says what to do once it is ready.
+// Starts on NO like every screen that asks a second time. `blocked` is an update job
+// holding the card: the YES row is struck through and the screen says why.
+void drawSdFormatConfirm(Framebuffer& fb, int pick, const SdStatus& sd, bool blocked);
+
+// The FORMAT SD faces after the yes: FORMATTING while the device tier works (no hint
+// band — every button is inert), then OK with the new size and the next step, or
+// FAILED with the likely cause. Any button leaves from either result.
+void drawSdFormatStatus(Framebuffer& fb, SdFormatState state, const SdStatus& sd);
 
 // L3 RADIO group: the three radio toggles, in the arbiter's priority order with the
 // highest first, headed by the one thing no individual toggle screen can report —

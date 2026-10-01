@@ -150,6 +150,9 @@ int main(int, char**) {
             std::puts("[travel] would deep-sleep here; save landed");
             game.clearTravelSleep();
         }
+        // No card slot on the host, so a FORMAT SD yes is answered as the device
+        // answers an empty slot: failed, with the screen saying why.
+        if (game.sdFormatRequested()) game.finishSdFormat(false);
         if (game.tick(nowMs())) dirty = true;
         if (dirty) repaint();
         SDL_Delay(8);  // keep the event loop responsive; repaint stays event-driven

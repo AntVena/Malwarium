@@ -14,6 +14,7 @@
 // print any press to serial. Lets the first flash discover PLUS/PWR while the
 // panel is already rendering, then it's compiled out for the real build.
 #include <Arduino.h>
+#include <cstring>
 #include <driver/gpio.h>
 #include <driver/rtc_io.h>
 #include <esp_ota_ops.h>
@@ -140,6 +141,47 @@ void pollPinScan() {
 void repaint() {
     game->render(*fb);
     display.present(fb->data(), kActiveW, kActiveH);
+}
+
+// --- SD format over serial (the browser flasher's checkbox) ------------------
+// pages/flash/flash.js keeps the USB serial port after flashing and, when the
+// operator ticked FORMAT THE SD CARD, sends one line once the firmware is up:
+//
+//   MALSD FORMAT          host -> device
+//   MALSD BUSY            device -> host: accepted, formatting now
+//   MALSD OK <n>MB        device -> host: formatted, remounted, round-trip passed
+//   MALSD FAIL <why>      device -> host: no card / the write failed
+//   MALSD REFUSED <why>   device -> host: outside the window, or an update is
+//                         writing to the card
+//
+// The window is the consent gesture the cable can carry: the command is honoured
+// only in the first kSerialFormatWindowMs after boot, and only once per boot, so
+// nothing left talking to the port later in a session can wipe the card. The
+// flasher reaches it by flashing (which reboots the board) or by asking for a
+// replug; either way the operator has just plugged the device in on purpose.
+constexpr uint32_t kSerialFormatWindowMs = 120000;
+constexpr const char* kSerialFormatCmd = "MALSD FORMAT";
+
+// Reads whatever is waiting on the serial port; true once a whole MALSD FORMAT
+// line has arrived. Any other line is dropped — this port carries no other input.
+bool pollSerialFormatAsk() {
+    static char line[24];
+    static size_t len = 0;
+    bool asked = false;
+    while (Serial.available() > 0) {
+        const int c = Serial.read();
+        if (c < 0) break;
+        if (c == '\r' || c == '\n') {
+            line[len] = '\0';
+            if (std::strcmp(line, kSerialFormatCmd) == 0) asked = true;
+            len = 0;
+        } else if (len < sizeof(line) - 1) {
+            line[len++] = static_cast<char>(c);
+        } else {
+            len = 0;   // overlong: not a command, start over at the next line
+        }
+    }
+    return asked;
 }
 
 // Push the engine's CFG brightness level to the backlight. Maps the
@@ -591,6 +633,48 @@ void loop() {
                       (unsigned long)sdCard.sizeMB(), rt ? "OK" : "FAILED");
         Serial.flush();
         dirty = true;
+    }
+
+    // FORMAT SD — from CFG -> DEVICE -> FORMAT SD (Game::requestSdFormat) or the
+    // browser flasher over serial (pollSerialFormatAsk). Everything that can hold a
+    // file open on the card stands down first, as for a recheck but wider: the AP
+    // streams 'Pedia files and the capture writes a .pcap, and an erase under either
+    // is a corrupt card. The arbiter re-raises whatever is opted in on its next poll.
+    // An update job is the one writer this does not stop — it is installing the
+    // 'Pedia onto this card — so a format waits for it (CFG) or is refused (serial).
+    // The 'Pedia's version marker went with the card, so the engine is told the
+    // bundle is gone, which is what lets UPDATES offer it straight back.
+    {
+        static bool serialFormatSpent = false;
+        bool serialAsk = pollSerialFormatAsk();
+        if (serialAsk && (serialFormatSpent || millis() > kSerialFormatWindowMs)) {
+            Serial.println("MALSD REFUSED window - replug the device and try again");
+            serialAsk = false;
+        }
+        if (serialAsk && game->updateJobLive()) {
+            Serial.println("MALSD REFUSED update - an update is writing to the card");
+            serialAsk = false;
+        }
+        if ((serialAsk || game->sdFormatRequested()) && !game->updateJobLive()) {
+            if (serialAsk) serialFormatSpent = true;
+            Serial.println("MALSD BUSY");
+            Serial.flush();
+            if (!screenAsleep) repaint();       // the FORMATTING face, before the block
+            radio.standDown(millis());           // seals a capture; closes the .pcap
+            const bool ok = sdCard.format();
+            const bool rt = ok && sdCard.selfTest();
+            game->setSdStatus({rt, sdCard.sizeMB()});
+            game->setWebBundleVersion(nullptr);
+            if (game->sdFormatRequested()) game->finishSdFormat(rt);
+            if (rt) Serial.printf("MALSD OK %luMB\n", (unsigned long)sdCard.sizeMB());
+            else Serial.printf("MALSD FAIL %s\n", ok ? "round-trip" : sdCard.lastError());
+            Serial.flush();
+            // The flasher repeats its command until it hears BUSY, so copies sent
+            // before this one was answered are still queued — drop them unanswered.
+            while (Serial.available() > 0) Serial.read();
+            lastActivityMs = millis();
+            dirty = true;
+        }
     }
 
     // The radio: the arbiter picks the single owner (AP > LINK > CAPTURE > SCAN >

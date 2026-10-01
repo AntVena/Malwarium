@@ -133,8 +133,8 @@ int cfgRows(const CfgRow*& out) {
 }
 
 int cfgGroupRows(CfgScreen group, const CfgRow*& out) {
-    // The device itself, rather than the world in it: how it presents, and whether
-    // it is running at all. None of the three is worth a top-level row, and
+    // The device itself, rather than the world in it: how it presents, whether it
+    // is running at all, and the card in its slot. None of them is worth a top-level row, and
     // BRIGHTNESS reads as neighbour to both — it is the panel's setting and the
     // largest battery lever short of switching the device off, which is the row
     // under it.
@@ -152,6 +152,12 @@ int cfgGroupRows(CfgScreen group, const CfgRow*& out) {
         // 28px carousel ICON_CFG it once borrowed overprinted the label beside it.
         {"BACKGROUND", &ASSET_ICON_CFG_UIMODE, CfgScreen::Background},
         {"TRAVEL MODE", &ASSET_ICON_CFG_TRAVEL, CfgScreen::Travel},
+        // FORMAT SD is the group's other action, and last because it is the one row
+        // here that destroys something. It lives with the device rather than beside
+        // the SD line on System Info because a second action on that screen would be
+        // a second meaning for a button press there, and this one cannot be taken back.
+        // Six rows is exactly kVisibleRows, so the group still never scrolls.
+        {"FORMAT SD", &ASSET_ICON_CFG_UIMODE, CfgScreen::FormatSd},
     };
     // The three radio TOGGLES, listed in the arbiter's own priority order, highest
     // first — so "the one nearest the top wins" is a rule the reader can check
@@ -189,6 +195,7 @@ CfgScreen cfgParentGroup(CfgScreen s) {
         case CfgScreen::Theme:
         case CfgScreen::Background:
         case CfgScreen::Travel:
+        case CfgScreen::FormatSd:
             return CfgScreen::Device;
         case CfgScreen::Audit:
         case CfgScreen::Link:
@@ -245,7 +252,7 @@ void drawCfgDevice(Framebuffer& fb, int cursor, UiMode uiMode, int brightness,
     char brightBuf[8];
     std::snprintf(brightBuf, sizeof(brightBuf), "%d%%", brightnessPercent(brightness));
     for (int i = 0; i < n; ++i) {
-        const char* val = nullptr;   // TRAVEL MODE is an action: no value to preview
+        const char* val = nullptr;   // the two actions have no value to preview
         if (rows[i].target == CfgScreen::UiMode) val = uiModeName(uiMode);
         else if (rows[i].target == CfgScreen::Brightness) val = brightBuf;
         else if (rows[i].target == CfgScreen::Theme) val = theme;
@@ -401,6 +408,66 @@ void drawTravelSleeping(Framebuffer& fb) {
     drawText(fb, kMargin, 80, "GOING TO SLEEP...", palColor(Pal::INK));
     drawText(fb, kMargin, 104, "HOLD B+C TOGETHER", palColor(Pal::ACCENT));
     drawText(fb, kMargin, 116, "TO WAKE ME UP.", palColor(Pal::ACCENT));
+}
+
+void drawSdFormatConfirm(Framebuffer& fb, int pick, const SdStatus& sd, bool blocked) {
+    drawHeaderBand(fb, "FORMAT SD?");
+
+    // What is lost leads, then what is gained, then what to do next — the reason
+    // anyone formats a card here is to get the 'Pedia onto it.
+    drawText(fb, kMargin, 30, "ERASES EVERYTHING ON THE", palColor(Pal::WARN));
+    drawText(fb, kMargin, 42, "CARD AND MAKES IT FAT32.", palColor(Pal::WARN));
+    char card[32];
+    if (sd.present) std::snprintf(card, sizeof(card), "CARD: %luMB", (unsigned long)sd.sizeMB);
+    else std::snprintf(card, sizeof(card), "CARD: NOT READABLE YET");
+    drawText(fb, kMargin, 60, card, palColor(Pal::INK));
+    drawText(fb, kMargin, 78, "THEN CFG > UPDATES CAN", palColor(Pal::INK_DIM));
+    drawText(fb, kMargin, 90, "INSTALL THE 'PEDIA.", palColor(Pal::INK_DIM));
+
+    // An update job writes the 'Pedia onto this card, so a format under it would
+    // wreck the install and the card at once. Said in words, and the YES row is
+    // struck through, so the refusal reads without colour.
+    if (blocked) drawText(fb, kMargin, 106, "WAIT: AN UPDATE IS RUNNING", palColor(Pal::ACCENT));
+
+    static const char* kOpts[2] = {"NO", "YES, ERASE IT"};
+    for (int i = 0; i < 2; ++i) {
+        const int y = 126 + i * 20;
+        if (i == pick) {
+            fb.fillRect(4, y - 2, kActiveW - 8, 18, palColor(Pal::TRACK));
+            drawRowCursor(fb, 8, y + 3, palColor(Pal::ACCENT));
+        }
+        const bool off = i == 1 && blocked;
+        drawText(fb, 24, y + 3, kOpts[i],
+                 palColor(off ? Pal::INK_DIM : i == 1 ? Pal::WARN : Pal::INK));
+        if (off) fb.fillRect(24, y + 6, textWidth(kOpts[i]), 1, palColor(Pal::INK_DIM));
+    }
+    drawHintBand(fb, "A CHOOSE  B CONFIRM  C BACK");
+}
+
+void drawSdFormatStatus(Framebuffer& fb, SdFormatState state, const SdStatus& sd) {
+    drawHeaderBand(fb, "FORMAT SD");
+    switch (state) {
+        case SdFormatState::Working:
+            drawText(fb, kMargin, 80, "FORMATTING...", palColor(Pal::INK));
+            drawText(fb, kMargin, 104, "DON'T REMOVE THE CARD.", palColor(Pal::ACCENT));
+            return;   // no hint band: every button is inert until it lands
+        case SdFormatState::Done: {
+            char line[32];
+            std::snprintf(line, sizeof(line), "OK - %luMB READY", (unsigned long)sd.sizeMB);
+            drawText(fb, kMargin, 70, line, palColor(Pal::INK));
+            drawText(fb, kMargin, 94, "NEXT: CFG > UPDATES >", palColor(Pal::INK_DIM));
+            drawText(fb, kMargin, 106, "CHECK NOW FOR THE 'PEDIA.", palColor(Pal::INK_DIM));
+            break;
+        }
+        case SdFormatState::Failed:
+        case SdFormatState::Idle:
+            drawText(fb, kMargin, 70, "FAILED - CARD NOT", palColor(Pal::WARN));
+            drawText(fb, kMargin, 82, "FORMATTED.", palColor(Pal::WARN));
+            drawText(fb, kMargin, 106, "IS A CARD IN THE SLOT?", palColor(Pal::INK_DIM));
+            drawText(fb, kMargin, 118, "RESEAT IT AND TRY AGAIN.", palColor(Pal::INK_DIM));
+            break;
+    }
+    drawHintBand(fb, "ANY BUTTON  BACK");
 }
 
 void drawCfgRadio(Framebuffer& fb, int cursor, RadioOwner owner, int auditLevel,

@@ -46,6 +46,18 @@ instructions tell the operator to hold **A** while connecting, because A is GPIO
 download-mode strap (`include/config.h`) — and a device held in download mode is reachable even
 when the firmware on it is the reason it isn't.
 
+## The SD card
+
+The ROM protocol can't reach the microSD slot, because the bootloader only sees the SPI
+flash. So when the operator ticks **ALSO FORMAT THE SD CARD**, or presses **FORMAT THE SD
+CARD ONLY**, the page waits for the firmware to boot, reopens the same serial port, and asks
+the firmware to format the card with one `MALSD FORMAT` line. The firmware answers that line
+only in its first two minutes after boot, and only once per boot. The exchange is documented
+beside `pollSerialFormatAsk` in `src/platform/esp32/main.cpp`. The format itself is
+`SdCard::format` (`sd_esp32.h`), the same routine CFG → DEVICE → FORMAT SD runs on the
+device. The page never writes files to the card; the device installs the 'Pedia itself from
+CFG → UPDATES.
+
 ## What it reads
 
 `manifest.json`, the same file the device fetches on CFG → UPDATES. Both pages take the

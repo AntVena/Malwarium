@@ -72,7 +72,7 @@
 //             of its own: it composes with every flag here, which is the point, since
 //             a theme is judged on the screens it has to carry and not on a swatch)
 //        cfg [sysinfo|tag|titles|device|uimode|brightness|theme|background [earned]|travel [sleeping]|
-//             radio [idle|all]|audit|
+//             formatsd [yes|busy|done|failed|blocked]|radio [idle|all]|audit|
 //             link|pediaap|qr|factory] (the settings tree; device/radio are the two
 //             group screens, and radio is seeded with a live arbiter owner —
 //             "idle" seeds nothing on air, "all" seeds every toggle on under a
@@ -576,6 +576,28 @@ int main(int argc, char** argv) {
             // "sleeping" dumps the notice the confirm becomes; the bare flag dumps
             // the question, which is the frame an operator actually has to read.
             if (hasFlag(argc, argv, "sleeping")) game.requestTravelSleep();
+        }
+        else if (hasFlag(argc, argv, "formatsd")) {
+            // The bare flag is the question over an unreadable card (why anyone is
+            // here); "sdcard" names one. "yes" moves onto the erase row, "blocked"
+            // runs an update job under it, and the last three are the faces after
+            // the yes, with the device tier's answer stood in for.
+            if (hasFlag(argc, argv, "blocked")) {
+                game.setNetProvisioned(true);
+                game.setUpdateManifestUrl("http://malwarium.local:8000/dist/manifest.json");
+                game.requestUpdateCheck();
+            }
+            openTarget(CfgScreen::FormatSd);
+            const bool after = hasFlag(argc, argv, "busy") || hasFlag(argc, argv, "done") ||
+                               hasFlag(argc, argv, "failed");
+            if (hasFlag(argc, argv, "yes") || hasFlag(argc, argv, "blocked") || after)
+                game.onButton({Button::A, true, false});
+            if (after) game.onButton({Button::B, true, false});
+            if (hasFlag(argc, argv, "done")) {
+                game.setSdStatus({true, 30436});
+                game.finishSdFormat(true);
+            }
+            if (hasFlag(argc, argv, "failed")) game.finishSdFormat(false);
         }
         else if (hasFlag(argc, argv, "radio")) {     // the radio toggles + who has it
             // Stand in for what the arbiter pushes on a device, since a host build

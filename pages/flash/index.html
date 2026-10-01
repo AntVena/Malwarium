@@ -130,6 +130,14 @@
         it. It also makes the flash take a good deal longer.</span>
       </label>
 
+      <label class="check" for="sdformat">
+        <input type="checkbox" id="sdformat">
+        <span><b>ALSO FORMAT THE SD CARD</b> &mdash; once the new firmware starts, the device
+        erases its microSD card and sets it up the way it needs (FAT32). <b>Everything on the
+        card is deleted.</b> Tick this for a new card, or one the device says it can't read.
+        Then <b>CFG &rarr; UPDATES &rarr; CHECK NOW</b> puts the 'Pedia on it.</span>
+      </label>
+
       <div class="actions">
         <button class="go" id="go" disabled>FLASH MY MALWARIUM</button>
         <button id="unfiltered" hidden>MY DEVICE ISN'T LISTED</button>
@@ -146,6 +154,18 @@
         <span id="err-text"></span>
       </div>
 
+      <div class="note stop" id="sd-err" hidden>
+        <span class="lbl">&#9888; THE SD CARD WASN'T FORMATTED</span>
+        <span id="sd-err-text"></span>
+      </div>
+
+      <div class="note tip" id="sd-ok" hidden>
+        <span class="lbl">&#10003; SD CARD READY<span id="sd-ok-size"></span></span>
+        The card is empty and formatted the way the device wants it, and the device is running.
+        To put the 'Pedia on it, give the device your Wi-Fi if you haven't, then go to
+        <b>CFG &rarr; UPDATES &rarr; CHECK NOW</b>.
+      </div>
+
       <div class="note tip" id="result-ok" hidden>
         <span class="lbl">&#10003; DONE &mdash; UNPLUG IT AND PLUG IT BACK IN</span>
         The board is still sitting in download mode, so its screen is dark. Pull the cable, wait a
@@ -157,6 +177,16 @@
         <summary>SERIAL LOG</summary>
         <pre class="log" id="log"></pre>
       </details>
+
+      <h2 class="sect">JUST THE SD CARD</h2>
+      <p>Already running the firmware and only need the card set up? Plug the device in
+      <b>normally</b> &mdash; no button held, screen on &mdash; and press this within two
+      minutes. The device only accepts it for that long after it starts, so nothing left
+      talking to the cable later can wipe your card. <b>Everything on the card is deleted.</b>
+      The device can also do this by itself from <b>CFG &rarr; DEVICE &rarr; FORMAT SD</b>.</p>
+      <div class="actions">
+        <button id="sdonly">FORMAT THE SD CARD ONLY</button>
+      </div>
 
       <h2 class="sect">IF IT GOES WRONG</h2>
 
@@ -217,10 +247,14 @@
       <details>
         <summary>Where the SD card fits in</summary>
         <div class="card">
-          <p>It doesn't &mdash; not for this. The card holds the 'Pedia website the device serves
-          over its own Wi-Fi, and nothing on this page reads or writes it. If the 'Pedia is what's
-          out of date, the device updates that itself from <b>CFG &rarr; UPDATES</b>, or you can
-          re-stage the card from the repo.</p>
+          <p>The card holds the 'Pedia website the device serves over its own Wi-Fi. This page
+          can't reach the card directly &mdash; the chip's download mode only sees its own flash
+          &mdash; so when you tick <b>ALSO FORMAT THE SD CARD</b> (or press <b>FORMAT THE SD CARD
+          ONLY</b>), the page waits for the firmware to start and asks <i>it</i> to format the card
+          over the same USB cable.</p>
+          <p>The page never copies files onto the card. Once it's formatted, the device downloads
+          the 'Pedia itself from <b>CFG &rarr; UPDATES</b>, or you can load the card from the
+          repo.</p>
         </div>
       </details>
 

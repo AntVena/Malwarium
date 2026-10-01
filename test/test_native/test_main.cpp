@@ -158,6 +158,8 @@ int g_failures = 0;
     /* CFG submenu */                       \
     RUN(test_cfg_uimode_toggle)             \
     RUN(test_cfg_travel_confirm_asks_twice) \
+    RUN(test_cfg_format_sd_confirm)         \
+    RUN(test_cfg_format_sd_refused_during_update) \
     RUN(test_travel_sleep_credits_nothing_to_the_gap) \
     RUN(test_cfg_group_back_resumes_row)    \
     RUN(test_cfg_radio_reports_owner)       \

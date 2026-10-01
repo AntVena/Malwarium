@@ -154,11 +154,14 @@ alone, so your pet is still there when it reboots. (There's an **ERASE** option 
 
 ### Adding the wiki (optional, any time later)
 
-The flasher writes the device's own flash — bootloader, partitions, firmware — and nothing
-else. The in-device wiki lives on the **microSD card**, so if you have one, there's one
-more step. **The device does it for you:**
+The flasher writes the device's own flash — bootloader, partitions, firmware. The in-device
+wiki lives on the **microSD card**, so if you have one, there's one more step. **The device
+does it for you:**
 
-1. Format any card as **FAT32** and slot it in.
+1. Slot the card in and get it formatted. You can tick **ALSO FORMAT THE SD CARD** on the
+   flasher page, or use **CFG → DEVICE → FORMAT SD** on the device. Either one erases the
+   card and sets it up as FAT32, so you don't need a computer's card reader or formatter. A
+   card you've already formatted FAT32 yourself works as it is.
 2. Give the device your Wi-Fi once — turn the AP on, scan the setup QR with your phone, and
    type your password into the page it serves. ([*Updates*](#updates) has the detail.)
 3. **CFG → UPDATES → CHECK NOW.** It'll offer you the 'Pedia site and install it.
@@ -498,13 +501,15 @@ something else — a serial monitor, the Arduino IDE — already has the port op
 Firefox can't talk to USB at all, and no phone can.
 
 **The device screen says the SD card won't mount.** The card must be formatted **FAT32**
-(the newer "exFAT" format that big cards ship with won't work). On Windows, the built-in
-formatter only does FAT32 up to 32GB; for a larger card, format it FAT32 with a free
-third-party tool first.
+(the newer "exFAT" format that big cards ship with won't work). The easiest fix is to let
+the device format it: **CFG → DEVICE → FORMAT SD**, or **FORMAT THE SD CARD ONLY** on the
+flasher page. Both erase the card and work at any size, including cards over 32GB that
+Windows' own formatter won't do as FAT32.
 
 **The wiki is empty, or says the card is absent.** The 'Pedia lives on the SD card, and a
-browser-flashed device starts without it. Slot a FAT32 card in and run **CFG → UPDATES →
-CHECK NOW** — the device downloads the site itself.
+browser-flashed device starts without it. Slot a card in (format it with **CFG → DEVICE →
+FORMAT SD** if the device can't read it) and run **CFG → UPDATES → CHECK NOW** — the device
+downloads the site itself.
 
 **It went dark and won't come back.** Check whether it's in travel mode: that's a deliberate
 deep sleep you can only leave by **holding B and C together** for a second or two. Otherwise

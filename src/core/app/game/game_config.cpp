@@ -27,6 +27,10 @@ void Game::enterCfgScreen(CfgScreen target) {
             cfgGroupRow_ = 0;
             break;
         case CfgScreen::Travel: cfgTravelPick_ = 0; break;   // always opens on NO
+        case CfgScreen::FormatSd:                            // ...likewise, and a
+            cfgSdFormatPick_ = 0;                            // result left on screen
+            if (!sdFormatRequested()) sdFormatState_ = SdFormatState::Idle;  // is spent
+            break;
         case CfgScreen::UiMode: cfgUiPick_ = static_cast<int>(uiMode_); break;
         case CfgScreen::Brightness: cfgBrightPick_ = brightness_; break;   // the applied level
         case CfgScreen::Theme: cfgThemePick_ = themeRow(); break;          // ...likewise
@@ -112,6 +116,26 @@ void Game::onCfgDetail(const ButtonEvent& ev) {
                 if (cfgTravelPick_ == 1) requestTravelSleep();
                 else leaveCfgScreen();
             } else if (ev.button == Button::C) leaveCfgScreen();
+            dirty_ = true;
+            break;
+        case CfgScreen::FormatSd:
+            // Working: every button is inert, as travel's are once latched — the
+            // device tier is mid-format and nothing pressed here could stop it. A
+            // result (Done/Failed) is read, then any button leaves. On the question,
+            // A cycles NO/YES, B commits the focus, C backs out with nothing asked.
+            // YES is refused while an update job runs: it is writing to this card.
+            if (sdFormatRequested()) break;
+            if (sdFormatState_ != SdFormatState::Idle) {
+                sdFormatState_ = SdFormatState::Idle;
+                leaveCfgScreen();
+            } else if (ev.button == Button::A) {
+                cfgSdFormatPick_ ^= 1;
+            } else if (ev.button == Button::B) {
+                if (cfgSdFormatPick_ == 0) leaveCfgScreen();
+                else if (!updateJobLive()) requestSdFormat();
+            } else if (ev.button == Button::C) {
+                leaveCfgScreen();
+            }
             dirty_ = true;
             break;
         case CfgScreen::SysInfo:
@@ -430,6 +454,11 @@ void Game::drawCfg(Framebuffer& fb) const {
             // replaces it for as long as the device is still on its way down.
             if (travelSleepRequested_) drawTravelSleeping(fb);
             else drawTravelConfirm(fb, cfgTravelPick_);
+            break;
+        case CfgScreen::FormatSd:
+            if (sdFormatState_ == SdFormatState::Idle)
+                drawSdFormatConfirm(fb, cfgSdFormatPick_, sdStatus_, updateJobLive());
+            else drawSdFormatStatus(fb, sdFormatState_, sdStatus_);
             break;
         case CfgScreen::Radio:
             drawCfgRadio(fb, cfgGroupRow_, radioOwner_,

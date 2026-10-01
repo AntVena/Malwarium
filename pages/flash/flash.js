@@ -13,7 +13,13 @@
 // 0x10000 — see partitions_malwarium.csv, which explains why the first three
 // partitions are pinned to their stock offsets for exactly this reason.
 //
-// WHAT THIS FILE DOES NOT DO: talk to the chip. `../vendor/esptool-js/bundle.js`
+// It can also format the device's microSD card, which nothing in the ROM
+// protocol can reach — the bootloader only ever sees the SPI flash. So the page
+// asks the FIRMWARE to do it: once the new image is running, it reopens the same
+// USB serial port and sends one line (formatSd below; the device half and the
+// full exchange are in src/platform/esp32/main.cpp, beside pollSerialFormatAsk).
+//
+// WHAT THIS FILE DOES NOT DO: talk to the ROM. `../vendor/esptool-js/bundle.js`
 // is Espressif's own loader and owns every byte of the ROM protocol. This is the
 // operator's half — pick a port, fetch the images, prove they arrived intact,
 // report what is happening, and say something useful when it doesn't work.
@@ -206,8 +212,16 @@ async function downloadAll() {
 
 async function flash(filtered) {
   if (busy) return;
+  const wantSd = $("sdformat").checked;
+  const port = await flashImages(filtered);
+  if (port && wantSd) await formatSd(port, true);
+}
 
-  let port = null, transport = null, loader = null;
+// The flash proper. Returns the port it wrote through on success (formatSd looks
+// for the same device again once it reboots), null on any failure or a dismissed
+// picker — each of which has already said everything it needs to.
+async function flashImages(filtered) {
+  let port = null, transport = null, loader = null, ok = false;
   const eraseAll = $("erase").checked;
 
   try {
@@ -215,10 +229,9 @@ async function flash(filtered) {
     if (!port) return;                     // picker dismissed; say nothing
 
     busy = true;
-    $("go").disabled = true;
+    setButtons(true);
     $("unfiltered").hidden = false;
-    $("result-ok").hidden = true;
-    $("result-err").hidden = true;
+    hideResults();
     $("log-wrap").open = true;
     $("log").textContent = "";
     progress(0, "");
@@ -284,7 +297,8 @@ async function flash(filtered) {
 
     progress(1, `${kib(totalBytes)} written`);
     status("Flashed.", "ok");
-    $("result-ok").hidden = false;
+    if (!$("sdformat").checked) $("result-ok").hidden = false;
+    ok = true;
 
     // Best-effort: the board reboots out of download mode and re-enumerates as a
     // different USB device, so the handle this page holds dies either way. The
@@ -301,9 +315,193 @@ async function flash(filtered) {
     $("result-err").hidden = false;
   } finally {
     busy = false;
-    $("go").disabled = false;
+    setButtons(false);
     try { if (transport) await transport.disconnect(); } catch { /* already gone */ }
   }
+  return ok ? port : null;
+}
+
+function setButtons(disabled) {
+  $("go").disabled = disabled || !app;
+  $("sdonly").disabled = disabled;
+}
+
+function hideResults() {
+  for (const id of ["result-ok", "result-err", "sd-ok", "sd-err"]) $(id).hidden = true;
+}
+
+// --- the SD card ------------------------------------------------------------
+
+// How long to keep looking for a running device to answer. The firmware honours
+// the command only in its first two minutes after boot (kSerialFormatWindowMs),
+// so this outlasts one boot plus the replug the page may have to ask for.
+const kSdDeadlineMs = 180000;
+// How long one open port gets to answer before it is closed and the search goes
+// round again — long enough for a full boot, short enough that a port that will
+// never answer (a board still in download mode) doesn't stall the replug.
+const kSdPerPortMs = 25000;
+const kSdCommand = "MALSD FORMAT\n";
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// The device this page has permission for. A board that reboots re-enumerates,
+// and Chrome hands back a NEW port object for it — so match on what it is, not on
+// the handle that was picked. `like` is the picked port's own USB ids, which also
+// covers a device chosen through MY DEVICE ISN'T LISTED.
+async function findPorts(like) {
+  const ports = await navigator.serial.getPorts();
+  return ports.filter((p) => {
+    const i = p.getInfo();
+    if (i.usbVendorId === kVendorEspressif) return true;
+    return like && i.usbVendorId === like.usbVendorId && i.usbProductId === like.usbProductId;
+  });
+}
+
+// One open port, given kSdPerPortMs to say MALSD something. Echoes everything the
+// device prints into the log, resends the command until the device acknowledges
+// it (the firmware may still be booting when the port comes up), and resolves
+// with the device's verdict — or with null when it never answered.
+async function askPort(port) {
+  try { await port.open({ baudRate: kBaud }); } catch { return null; }
+  // DTR and RTS both low is "run" on the S3's USB serial: no reset, no download
+  // mode. Set once, together, so the chip never sees the reset half alone.
+  try { await port.setSignals({ dataTerminalReady: false, requestToSend: false }); }
+  catch { /* some platforms refuse; the default is harmless here */ }
+
+  const reader = port.readable.getReader();
+  const writer = port.writable.getWriter();
+  const enc = new TextEncoder(), dec = new TextDecoder();
+  let verdict = null, acked = false, inDownload = false, gone = false, buf = "";
+
+  const pump = (async () => {
+    try {
+      for (;;) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        let nl;
+        while ((nl = buf.indexOf("\n")) >= 0) {
+          const line = buf.slice(0, nl).replace(/\r$/, "");
+          buf = buf.slice(nl + 1);
+          if (!line) continue;
+          if (/waiting for download/i.test(line)) inDownload = true;
+          const m = /^MALSD (\w+)\s*(.*)$/.exec(line);
+          if (!m) { log(line); continue; }
+          log(line, m[1] === "OK" ? "lit" : m[1] === "BUSY" ? undefined : "hot");
+          if (m[1] === "BUSY") acked = true;
+          else verdict = { kind: m[1], detail: m[2] };
+        }
+      }
+    } catch { /* the port went away — a reboot or an unplug */ }
+    gone = true;
+  })();
+
+  // Once acknowledged the device is mid-write and is given far longer: a format
+  // is seconds even on a large card, but a slow one is not a reason to give up.
+  const until = Date.now() + kSdPerPortMs;
+  const ackedUntil = Date.now() + kSdDeadlineMs;
+  let lastSend = 0;
+  try {
+    while (!verdict && !gone && !inDownload &&
+           Date.now() < (acked ? ackedUntil : until)) {
+      if (!acked && Date.now() - lastSend >= 1000) {
+        lastSend = Date.now();
+        try { await writer.write(enc.encode(kSdCommand)); } catch { break; }
+      }
+      if (acked) status("Formatting the card — don't unplug it…", "busy");
+      await sleep(200);
+    }
+  } finally {
+    try { await reader.cancel(); } catch { /* gone */ }
+    await pump;
+    try { reader.releaseLock(); } catch { /* gone */ }
+    try { writer.releaseLock(); } catch { /* gone */ }
+    try { await port.close(); } catch { /* gone */ }
+  }
+  if (inDownload && !verdict) return { kind: "DOWNLOAD" };
+  return verdict;
+}
+
+// Find the device, ask it to format its card, report the answer. `afterFlash`
+// says the board was just written: it is rebooting into the new firmware, may
+// need a replug to leave download mode, and the instructions say so. Otherwise
+// the operator plugged it in themselves, and is told to replug only if the
+// device says its window has passed.
+async function formatSd(picked, afterFlash) {
+  if (busy) return;
+  busy = true;
+  setButtons(true);
+  $("progress-card").hidden = false;
+  progress(0, "");
+  const like = picked ? picked.getInfo() : null;
+  const replug = "If the screen stays dark, unplug the device and plug it back in " +
+                 "WITHOUT holding any button — this page will find it.";
+  status("Waiting for the device to start…", "busy");
+  $("detail").textContent = afterFlash ? replug : "";
+  log("— SD card —", "lit");
+
+  const deadline = Date.now() + kSdDeadlineMs;
+  let verdict = null;
+  try {
+    while (!verdict && Date.now() < deadline) {
+      const ports = await findPorts(like);
+      for (const port of ports) {
+        verdict = await askPort(port);
+        if (verdict) break;
+      }
+      if (verdict && verdict.kind === "DOWNLOAD") {
+        log("(the board is still in download mode)");
+        status("The board is still in download mode.", "busy");
+        $("detail").textContent = replug;
+        verdict = null;
+        await sleep(1500);
+        continue;
+      }
+      if (!verdict) await sleep(1000);
+    }
+  } finally {
+    busy = false;
+    setButtons(false);
+  }
+
+  progress(verdict && verdict.kind === "OK" ? 1 : 0, "");
+  if (verdict && verdict.kind === "OK") {
+    status("SD card formatted.", "ok");
+    $("detail").textContent = "";
+    $("sd-ok-size").textContent = verdict.detail ? ` (${verdict.detail})` : "";
+    $("sd-ok").hidden = false;
+    return;
+  }
+  status("The SD card wasn't formatted.", "err");
+  let why = afterFlash ? "The firmware flashed fine — only the card step didn't finish. " : "";
+  if (!verdict)
+    why += "The device never answered. Make sure it's plugged in and showing its screen " +
+          "(not held in download mode), nothing else has the port open, and try FORMAT THE " +
+          "SD CARD ONLY below.";
+  else if (verdict.kind === "REFUSED" && /^window/.test(verdict.detail))
+    why += "The device only accepts this in the first two minutes after it starts. Unplug " +
+          "it, plug it back in, and press FORMAT THE SD CARD ONLY straight away.";
+  else if (verdict.kind === "REFUSED")
+    why += "The device is busy installing an update onto the card. Let it finish, then try again.";
+  else
+    why += `The device couldn't format the card (${verdict.detail || "no reason given"}). ` +
+          "Check a card is pushed all the way into the slot and try again. A card that " +
+          "keeps failing may be worn out or write-locked.";
+  $("sd-err-text").textContent = why;
+  $("sd-err").hidden = false;
+}
+
+async function formatSdOnly(filtered) {
+  if (busy) return;
+  const port = await pickPort(filtered);
+  if (!port) return;
+  hideResults();
+  $("log-wrap").open = true;
+  $("log").textContent = "";
+  // The button sits below the fold; the progress it starts is up beside FLASH.
+  $("progress-card").hidden = false;
+  $("progress-card").scrollIntoView({ behavior: "smooth", block: "center" });
+  await formatSd(port, false);
 }
 
 // The loader's own failures are accurate and unhelpful in equal measure, so the
@@ -333,6 +531,7 @@ if (!window.isSecureContext) {
   $("app").hidden = false;
   $("go").addEventListener("click", () => flash(true));
   $("unfiltered").addEventListener("click", () => flash(false));
+  $("sdonly").addEventListener("click", () => formatSdOnly(true));
   loadManifest().then((fw) => { app = fw; renderParts(); }).catch((e) => {
     $("fw-stamp").textContent = "no manifest";
     $("parts").innerHTML =

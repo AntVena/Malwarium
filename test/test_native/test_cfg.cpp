@@ -58,6 +58,75 @@ void test_cfg_travel_confirm_asks_twice() {
     }
 }
 
+// CFG -> DEVICE -> FORMAT SD opens on NO, needs a deliberate yes, holds every button
+// while the device tier works, and lets any button leave once a result is on screen.
+void test_cfg_format_sd_confirm() {
+    {   // B on the NO it opened on asks for nothing, and backs out to the group.
+        Game g{StartMode::Hatched};
+        enterCfgTarget(g, CfgScreen::FormatSd);
+        CHECK(g.cfgScreen() == CfgScreen::FormatSd);
+        g.onButton(press(Button::B));
+        CHECK(!g.sdFormatRequested());
+        CHECK(g.cfgScreen() == CfgScreen::Device);
+    }
+    {   // C is the other way out, and equally silent.
+        Game g{StartMode::Hatched};
+        enterCfgTarget(g, CfgScreen::FormatSd);
+        tapC(g);
+        CHECK(!g.sdFormatRequested());
+        CHECK(g.cfgScreen() == CfgScreen::Device);
+    }
+    {   // A moves onto YES; only then does B latch the job, which nothing cancels.
+        Game g{StartMode::Hatched};
+        enterCfgTarget(g, CfgScreen::FormatSd);
+        g.onButton(press(Button::A));
+        g.onButton(press(Button::B));
+        CHECK(g.sdFormatRequested());
+        CHECK(g.sdFormatState() == SdFormatState::Working);
+        tapC(g);
+        g.onButton(press(Button::A));
+        CHECK(g.sdFormatRequested());
+        CHECK(g.cfgScreen() == CfgScreen::FormatSd);
+
+        // The device tier's half: a fresh reading, then the outcome.
+        g.setSdStatus({true, 30000});
+        g.finishSdFormat(true);
+        CHECK(!g.sdFormatRequested());
+        CHECK(g.sdFormatState() == SdFormatState::Done);
+        CHECK(g.cfgScreen() == CfgScreen::FormatSd);  // the result stays to be read
+        g.onButton(press(Button::A));                 // any button leaves it
+        CHECK(g.cfgScreen() == CfgScreen::Device);
+        CHECK(g.sdFormatState() == SdFormatState::Idle);
+    }
+    {   // A failure is reported the same way, and re-opening asks the question again.
+        Game g{StartMode::Hatched};
+        enterCfgTarget(g, CfgScreen::FormatSd);
+        g.onButton(press(Button::A));
+        g.onButton(press(Button::B));
+        g.finishSdFormat(false);
+        CHECK(g.sdFormatState() == SdFormatState::Failed);
+        tapC(g);
+        CHECK(g.cfgScreen() == CfgScreen::Device);
+        enterCfgTarget(g, CfgScreen::FormatSd);
+        CHECK(g.sdFormatState() == SdFormatState::Idle);
+    }
+}
+
+// An update job writes the 'Pedia onto the card, so FORMAT SD refuses its yes while
+// one runs rather than erasing the card out from under the install.
+void test_cfg_format_sd_refused_during_update() {
+    Game g{StartMode::Hatched};
+    g.setNetProvisioned(true);
+    g.setUpdateSourceKnown(true);
+    g.requestUpdateCheck();                       // the job outlives any screen
+    CHECK(g.updateJobLive());
+    enterCfgTarget(g, CfgScreen::FormatSd);
+    g.onButton(press(Button::A));
+    g.onButton(press(Button::B));
+    CHECK(!g.sdFormatRequested());
+    CHECK(g.cfgScreen() == CfgScreen::FormatSd);  // stays, saying why
+}
+
 // The travel-sleep contract, and the reason the mode needs no clock-freeze machinery
 // of its own: the device tier lands a save and then DEEP-sleeps, which on this board
 // is a reset, so a wake re-enters through that save. Whatever the gap was, the state

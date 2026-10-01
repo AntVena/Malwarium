@@ -17,4 +17,9 @@ struct SdStatus {
     uint32_t sizeMB = 0;    // capacity in MB, 0 when absent/unknown
 };
 
+// Where a CFG → DEVICE → FORMAT SD job stands. Idle is the confirm question;
+// Working is latched from the operator's yes until the device tier reports back
+// through Game::finishSdFormat, which lands Done or Failed for the screen to say.
+enum class SdFormatState : uint8_t { Idle, Working, Done, Failed };
+
 } // namespace mal

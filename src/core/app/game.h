@@ -809,6 +809,21 @@ public:
     bool sdRecheckRequested() const { return sdRecheckRequested_; }
     void clearSdRecheck() { sdRecheckRequested_ = false; }
 
+    // FORMAT SD seam (CFG → DEVICE → FORMAT SD). The operator's yes latches Working;
+    // the device tier sees sdFormatRequested(), stands down everything with a file
+    // open on the card, formats it FAT32, remounts, pushes a fresh setSdStatus() and
+    // reports through finishSdFormat(), which lands Done or Failed for the screen.
+    // Latched rather than pulsed for the reason travel sleep is: the device tier may
+    // decline a pass (an update job is writing to the card) and be asked again.
+    // Host and browser tiers have no card, so they answer finishSdFormat(false).
+    void requestSdFormat() { sdFormatState_ = SdFormatState::Working; dirty_ = true; }
+    bool sdFormatRequested() const { return sdFormatState_ == SdFormatState::Working; }
+    void finishSdFormat(bool ok) {
+        sdFormatState_ = ok ? SdFormatState::Done : SdFormatState::Failed;
+        dirty_ = true;
+    }
+    SdFormatState sdFormatState() const { return sdFormatState_; }
+
     // Travel-mode seam (CFG → DEVICE → TRAVEL MODE): a deliberate indefinite pause.
     // Set here, acted on by the device tier, which powers the radio down, lands a save
     // and deep-sleeps the SoC until the wake chord.
@@ -3363,6 +3378,7 @@ private:
     int cfgThemePick_ = 0;    // Theme picker focus (0..kPalThemeCount-1)
     int cfgAuditPick_ = 0;    // Audit level picker focus (0 OFF, 1 SCAN, 2 SCAN+CAP)
     int cfgTravelPick_ = 0;   // Travel-mode confirm focus (0 = NO, 1 = YES)
+    int cfgSdFormatPick_ = 0; // FORMAT SD confirm focus (0 = NO, 1 = YES)
     int cfgApPick_ = 0;       // 'Pedia AP toggle focus (0 = OFF, 1 = ON)
     int cfgLinkPick_ = 0;     // pet-to-pet LINK toggle focus (0 = OFF, 1 = ON)
     int pediaQrPage_ = 0;     // PEDIA QR step (see pediaQrPage())
@@ -4161,6 +4177,9 @@ private:
     uint32_t sdIconRevealAtMs_ = 0;
     bool sdIconRevealArmed_ = false;
     bool sdRecheckRequested_ = false;
+    // CFG->device FORMAT SD job (requestSdFormat / finishSdFormat). Runtime-only:
+    // a reboot mid-format leaves the card for the boot mount to report on.
+    SdFormatState sdFormatState_ = SdFormatState::Idle;
 
     // Latched CFG->device request to enter travel sleep. Runtime-only: what it asks
     // for is a reset, and a device that woke from one is not still asking.
