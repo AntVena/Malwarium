@@ -48,10 +48,10 @@
 #  include <Arduino.h>            // Serial (boot logging)
 #  include <cstdio>              // POSIX file I/O on the mounted VFS
 #  include <cstdlib>             // the format's FatFs work buffer
-#  include "diskio_sdmmc.h"       // ff_diskio_get_pdrv_card — the card's FatFs drive
 #  include "driver/sdmmc_host.h"
 #  include "esp_vfs_fat.h"
 #  include "ff.h"                 // f_fdisk / f_mkfs — what format() writes with
+#  include "diskio_sdmmc.h"       // ff_diskio_get_pdrv_card (needs ff.h's BYTE first)
 #  include "sdmmc_cmd.h"
 #endif
 
@@ -103,9 +103,10 @@ public:
         if (fr == FR_OK) {
             // FAT32 for any card past 2GB; FatFs falls back to FAT16 below that,
             // where FAT32 at this cluster size would be too few clusters to be legal.
-            const MKFS_PARM opt = {static_cast<BYTE>(FM_FAT | FM_FAT32), 0, 0, 0,
-                                   static_cast<DWORD>(kFormatAllocUnit)};
-            fr = f_mkfs(drv, &opt, work, kWork);
+            // Arduino core 2.0.x ships FatFs R0.13, whose f_mkfs takes the format and
+            // cluster size as arguments (R0.14 moved them into a MKFS_PARM).
+            fr = f_mkfs(drv, static_cast<BYTE>(FM_FAT | FM_FAT32),
+                        static_cast<DWORD>(kFormatAllocUnit), work, kWork);
         }
         std::free(work);
         Serial.printf("[sd] format: f_fdisk/f_mkfs -> %d\n", static_cast<int>(fr));
