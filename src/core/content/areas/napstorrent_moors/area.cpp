@@ -151,7 +151,7 @@ const AreaDef kAreaNapstorrentMoors = {
     "MORRIS THE WYRM",
     /*areaBossMoveId=*/"runaway_fork",
     /*apexThreatMoveId=*/"data_rot",  // the signature boss's DoT rider
-    // The moors is the mail area, and its wilds carry mail's plainest form: Chain Letter
+    // The moors is the mail area, and its wilds carry mail's plainest form: Reply All
     // is Mail Storm without the size — no rider, no wind-up, which in a pool built out of
     // riders is its own niche.
     /*wildAttackMoveId=*/"chain_letter",

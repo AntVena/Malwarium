@@ -657,7 +657,7 @@ const ModDef kMods[] = {
      "DEF rises {mag} per equipped Defend move "
      "({magBonus} for Trojan).", false,
      ItemDef::Rarity::Uncommon, 3, 31, ModEffect::DefendCountDefense, 11, 0, "trojan", 10},
-    {/*wire=*/74, "mass_mailer", "Mass Mailer", "+POW/ATK",
+    {/*wire=*/74, "mass_mailer", "Mailing List", "+POW/ATK",
      "Every copy goes out at once: attack power rises {mag}% per equipped Attack move "
      "({magBonus}% for Worm).", false,
      ItemDef::Rarity::Uncommon, 3, 30, ModEffect::AttackCountPowerPct, 8, 0, "worm", 6},
@@ -672,7 +672,7 @@ const ModDef kMods[] = {
     // soft-affinity pattern, handed to Ransomware alone. These are the other four, so the
     // band that opens the deep half of the ladder opens it for every line at once.
 
-    // The same family as the Mass Mailer a band up, for the opposite reason: the frenzy
+    // The same family as the Mailing List a band up, for the opposite reason: the frenzy
     // lean re-rolls a stacked bubble's Defend picks into Attack ones (content_passives.h),
     // so a Phishing pet that banked a wall spends the rest of the fight swinging — and
     // this is the row that pays it for carrying something to swing with.
@@ -680,7 +680,7 @@ const ModDef kMods[] = {
      "Rigged for the big one: attack power rises {mag}% per equipped Attack move "
      "({magBonus}% for Phishing).", false,
      ItemDef::Rarity::Rare, 4, 44, ModEffect::AttackCountPowerPct, 12, 0, "phishing", 7},
-    {/*wire=*/77, "logic_bomb", "Logic Bomb", "ON-KO",
+    {/*wire=*/77, "logic_bomb", "Dead Man's Switch", "ON-KO",
      "It was always going to run: on your KO, blasts the enemy for {mag} "
      "({magBonus} for Trojan).", false,
      ItemDef::Rarity::Rare, 4, 45, ModEffect::DeathBlast, 9, 0, "trojan", 8},

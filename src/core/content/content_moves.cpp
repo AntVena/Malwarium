@@ -755,8 +755,8 @@ const MoveDef kMoves[] = {
              Stage::Process, /*speedRefundPct=*/50),
 
     // --- Napstorrent Moors — the mail area, and mail is just the swing --------------
-    {"chain_letter", "Chain Letter", MoveDef::Kind::Attack, 18, 1,
-     "Forward it to ten more. No rider, no wind-up - just the swing.", Stage::Script},
+    {"chain_letter", "Reply All", MoveDef::Kind::Attack, 18, 1,
+     "Forward it to everyone. No rider, no wind-up - just the swing.", Stage::Script},
     braceRow("private_tracker", "Private Tracker", 30,
              "Invite only, and you weren't invited - braces {power}; your next move "
              "waits {refund}% less.",

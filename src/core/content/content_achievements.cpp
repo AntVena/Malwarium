@@ -711,7 +711,7 @@ const AchievementDef kAchievements[] = {
     // a rig upgrade, so it is player state, and achievementSeriesTotal has to stay pure
     // (game_achievements.h). Drawn as the rack FILLING, where SECOND_INSTANCE beside it
     // draws a pair — that row is about two of one thing, this ladder is about how many.
-    {/*wire=*/122, "RACK_3", "Cold Storage",
+    {/*wire=*/122, "RACK_3", "Rack Mounted",
      "Hold {n} pets in the ARCH rack at once.", "ICON_ACH_RACK_3",
      AchSeries::RackHeld, /*goal=*/3, nullptr, 0,
      {bits(60), item("sealed_cache_common")}},

@@ -37,6 +37,37 @@ void test_mod_table_wires_are_unique_and_in_range() {
     CHECK(reg.modByWire(-1) == nullptr);
 }
 
+// A name means one thing. An item, a mod, a move and an achievement are four rows a player
+// meets in four different places, and when two of them share a title the 'Pedia, the loot
+// log and the equip picker all read as if they were the same thing ("Zero-Day" was once a
+// shrine, a bell, a mod and a rank at once). Compared case-blind with hyphens as spaces, so
+// "Logic Bomb" and "Logic-Bomb" collide the way a reader hears them.
+static std::string nameKey(const char* name) {
+    std::string k;
+    for (const char* c = name; *c; ++c)
+        k += (*c == '-') ? ' ' : static_cast<char>(std::tolower(static_cast<unsigned char>(*c)));
+    return k;
+}
+
+void test_display_names_are_unique_across_kinds() {
+    std::vector<std::pair<std::string, std::string>> seen;  // key, "kind:id"
+    auto add = [&](const char* kind, const char* id, const char* name) {
+        const std::string key = nameKey(name);
+        for (const auto& s : seen)
+            if (s.first == key) {
+                std::printf("  SHARED NAME \"%s\": %s / %s:%s\n", name, s.second.c_str(),
+                            kind, id);
+                CHECK(s.first != key);
+            }
+        seen.emplace_back(key, std::string(kind) + ":" + id);
+    };
+    for (int i = 0; i < kItemsCount; ++i) add("item", kItems[i].id, kItems[i].displayName);
+    for (int i = 0; i < kModsCount; ++i) add("mod", kMods[i].id, kMods[i].displayName);
+    for (int i = 0; i < kMovesCount; ++i) add("move", kMoves[i].id, kMoves[i].displayName);
+    for (int i = 0; i < kAchievementCount; ++i)
+        add("achievement", kAchievements[i].id, kAchievements[i].displayName);
+}
+
 // Table integrity. These are the invariants the whole system leans on, and every one of
 // them is the sort of thing a hand-edited table breaks silently: a duplicated wire number
 // would make two rows share a save bit, a renamed id would strand a call site, and a
