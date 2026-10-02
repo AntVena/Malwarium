@@ -151,6 +151,30 @@ void test_first_hatch_grants_a_defrag_tool() {
     CHECK(h.maintFailPct() == 15 + 100 / 4);           // the worst a full disk gets
 }
 
+// The evolution reveal says what changed, not just what the pet looks like now: the
+// care path its errors put it on, and the move slot the new stage opened (pointing at
+// where it is filled). Both lines are drawn under the stage bar, and are absent before
+// the reveal (the hold and flash phases draw neither).
+void test_evolution_reveal_says_what_changed() {
+    Game g{StartMode::Hatched};                       // Paypup, a Process
+    CHECK(MoveLoadout::slotsForStage(Stage::Script) > MoveLoadout::slotsForStage(Stage::Process));
+    Framebuffer bare(kActiveW, kActiveH), told(kActiveW, kActiveH);
+    drawEvolveModal(bare, nullptr, nullptr, "X", Stage::Script, 2, 0);
+    drawEvolveModal(told, nullptr, nullptr, "X", Stage::Script, 2, 0,
+                    "GOOD PATH - 0 ERRORS", "+1 MOVE SLOT - SEE MODS");
+    CHECK(regionDiffers(bare, told, 0, 164, kActiveW, 190));
+    CHECK(textWidth("+1 MOVE SLOT - SEE MODS") <= kActiveW - 2 * kMargin);
+    CHECK(textWidth("GOOD PATH - 4 ERRORS") <= kActiveW - 2 * kMargin);
+
+    uint32_t t = 0;
+    g.debugTriggerEvolution();
+    advanceToReveal(g, t);
+    CHECK(g.nav() == Game::Nav::ModalEvolve);
+    Framebuffer fb(kActiveW, kActiveH);
+    g.render(fb);
+    CHECK(hasDarkInk(fb, 0, 164, kActiveW, 190));     // the two lines are on screen
+}
+
 // A newly-seen NETWORK shaves kBootHatchNetworkAccelMs off the incubation clock.
 // An egg can't explore, so the network seam is the only hatch accelerator.
 void test_hatch_network_accelerates() {

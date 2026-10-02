@@ -16,8 +16,12 @@ struct SpriteData;
 // runs 0 hold (the pre-evolution `from` sprite) -> 1 FX_EVO_FLASH white-out -> 2 reveal
 // (`to` sprite + `toName` + the UI_STAGE_INDICATOR lit to `toStage`). B continues
 // (host side); C is disabled (nothing to cancel). Grayscale-safe.
+// `pathLine` / `slotLine` are what the reveal says CHANGED, under the stage bar: the
+// care path the pet grew up on, and a move slot it opened (null = draw nothing) — a
+// new form alone does not say what it means for the pet.
 void drawEvolveModal(Framebuffer& fb, const SpriteData* from, const SpriteData* to,
-                     const char* toName, Stage toStage, int phase, int beat);
+                     const char* toName, Stage toStage, int phase, int beat,
+                     const char* pathLine = nullptr, const char* slotLine = nullptr);
 
 // Critical System Failure: the terminal death modal. The dying `pet`
 // corrupts out under a FX_CRITICAL_FAIL crash overlay (glitch bands = the

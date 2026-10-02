@@ -1205,8 +1205,27 @@ void Game::drawEvolve(Framebuffer& fb) const {
                     : evolveBeat_ < kEvoHoldBeats + kEvoFlashBeats ? 1 : 2;
     const SpriteData* from = pet_ ? registry_.creatureSprite(*pet_) : nullptr;
     const SpriteData* to = evolveTo_ ? registry_.creatureSprite(*evolveTo_) : nullptr;
+    // What changed, in words: the path the errors so far put it on (the thing that
+    // decides a Daemon's form), and any move slot the new stage opens.
+    char path[28];
+    const int errors = model_.careMistakes();
+    std::snprintf(path, sizeof path, "%s PATH - %d ERROR%s",
+                  effectiveCareBranch() == CareBranch::Bad ? "BAD" : "GOOD", errors,
+                  errors == 1 ? "" : "S");
+    char slot[28];
+    const char* slotLine = nullptr;
+    if (pet_ && evolveTo_) {
+        const int gained = MoveLoadout::slotsForStage(evolveTo_->stage) -
+                           MoveLoadout::slotsForStage(pet_->stage);
+        if (gained > 0) {
+            std::snprintf(slot, sizeof slot, "+%d MOVE SLOT%s - SEE MODS", gained,
+                          gained == 1 ? "" : "S");
+            slotLine = slot;
+        }
+    }
     drawEvolveModal(fb, from, to, evolveTo_ ? evolveTo_->displayName : "",
-                    evolveTo_ ? evolveTo_->stage : Stage::Process, phase, beat_);
+                    evolveTo_ ? evolveTo_->stage : Stage::Process, phase, beat_, path,
+                    slotLine);
 }
 
 void Game::drawCSF(Framebuffer& fb) const {

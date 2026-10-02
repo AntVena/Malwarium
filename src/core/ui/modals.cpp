@@ -81,7 +81,8 @@ int buildFeedGaugeRows(const ItemDef& d, const PetModel& m, const FeedVitals& b,
 }  // namespace
 
 void drawEvolveModal(Framebuffer& fb, const SpriteData* from, const SpriteData* to,
-                     const char* toName, Stage toStage, int phase, int beat) {
+                     const char* toName, Stage toStage, int phase, int beat,
+                     const char* pathLine, const char* slotLine) {
     fb.clear(palColor(Pal::PAPER));
 
     if (phase < 2) {  // hold + flash: title over the current (old) sprite
@@ -100,6 +101,8 @@ void drawEvolveModal(Framebuffer& fb, const SpriteData* from, const SpriteData* 
     drawPetCentered(fb, to, beat, 78);
     drawCenteredText(fb, 126, toName, palColor(Pal::INK));
     drawStageIndicator(fb, (kActiveW - 130) / 2, 146, 130, toStage);
+    if (pathLine) drawCenteredText(fb, 166, pathLine, palColor(Pal::INK_DIM));
+    if (slotLine) drawCenteredText(fb, 180, slotLine, palColor(Pal::ACCENT));
 
     // UI_HINT_BAND — C is disabled here, so the deviation is surfaced.
     drawCenteredText(fb, 200, "B CONTINUE   C DISABLED", palColor(Pal::INK_DIM));

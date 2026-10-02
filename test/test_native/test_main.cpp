@@ -143,6 +143,7 @@ int g_failures = 0;
     RUN(test_decryption_grayscale)            \
     RUN(test_hatch_waits_out)               \
     RUN(test_first_hatch_grants_a_defrag_tool) \
+    RUN(test_evolution_reveal_says_what_changed) \
     RUN(test_hatch_network_accelerates)     \
     RUN(test_hatch_egg_vitals_frozen)       \
     RUN(test_hatch_grayscale)               \
