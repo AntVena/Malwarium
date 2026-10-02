@@ -560,7 +560,8 @@ void Game::applyCombatResult() {
                 // on its own — otherwise a deep dive would pay the same Bits as a
                 // fresh one despite the tougher fight.
                 if (inDeepWebDive())
-                    bits = bits * deepWebDepthBitsPct(exploreStreak_) / 100;
+                    bits = bits * deepWebDepthBitsPct(exploreStreak_) / 100
+                                * (100 + diveRewardBonusPct()) / 100;   // DIVE PAY
                 else if (inDarkWebCrawl())
                     bits = bits * darkWebDepthBitsPct(exploreStreak_) / 100;
                 bits += sumEquippedModMagnitude(registry_, loadout_,
@@ -571,8 +572,13 @@ void Game::applyCombatResult() {
                 // base is the flat one everywhere but the CRAWL, which pays a multiple of
                 // it because its runs end long before a depth curve is worth anything
                 // (wildWinXpBase → kDarkWebXpPct, darkweb_crawl/area.h).
-                addCombatXp(applyCombatXpBonus(wildWinXp(wildWinXpBase(exploreSector_),
-                                      encounterEnemy_.level, combatLevel_)));  // Well-Fed XP Boost
+                // An armed bell or Deep-Learning device adds its DIVE PAY on top (zero
+                // outside a dive): the run it buys is shorter and harder, so each win in
+                // it has to be worth more than the shallow ones it skipped.
+                const int winXp = wildWinXp(wildWinXpBase(exploreSector_),
+                                            encounterEnemy_.level, combatLevel_) *
+                                  (100 + diveRewardBonusPct()) / 100;
+                addCombatXp(applyCombatXpBonus(winXp));  // Well-Fed XP Boost
                 // re-farm loot decay: farming an already-CLEARED sub-area pays
                 // FULL non-Bits loot while the Bandwidth shield covered this fight (the
                 // decay count stays frozen). Once the pool is dry (this fight was NOT
@@ -714,7 +720,7 @@ void Game::finishCombat() {
             // A loss ends the run — a draw is one. Same rule as the Stop row: only a DIVE ending spends
             // the depth multiplier, and inDeepWebDive() is derived from exploreActive_,
             // so it has to be read first.
-            if (inEndlessZone()) deepWebDepthMultiplier_ = 1;
+            if (inEndlessZone()) clearDiveDepthBuffs();
             exploreActive_ = false;
             exploreStreak_ = 0;
         }

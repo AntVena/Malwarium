@@ -276,9 +276,13 @@ inline void crackDecryption(Game& g) {
 // Commit line-select onto the first unlocked line and settle whatever hatch minigame
 // that line opens, leaving the egg incubating at idle. Every line plays one at
 // lay-time now, so getting to "an egg is sitting there" always costs this.
+// ...and answers the Boot Accelerator offer the egg makes at rest (game_offer.cpp)
+// with "not now" up front, so a gate about egg-phase idle starts AT idle. The offer
+// itself is gated on its own (test_items.cpp).
 inline void pickFirstEggLine(Game& g) {
     if (g.inLineSelect()) g.onButton(press(Button::B));
     settleDecryption(g);
+    g.debugDeclineEggOffer();
 }
 
 // Helper: advance the cinematic past hold + flash into the reveal.

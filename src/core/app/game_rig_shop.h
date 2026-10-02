@@ -78,6 +78,7 @@ enum RigRow {
     kRigRowItemPicker = 16,
     kRigRowModStorage = 17,
     kRigRowLinkAggregator = 18,
+    kRigRowAutoDiveGear = 19,
 };
 
 // The SHOP list's head slot. SERVICES is not a purchase and so has no row in the
@@ -262,6 +263,15 @@ inline constexpr int kCombatXpWindowStepPct = 5;
 inline constexpr int kLinkAggregatorPct = 1;      // the row's readout spells this out
 inline constexpr int kLinkAggregatorCost = 131072;
 
+// --- Auto Dive Gear ---------------------------------------------------------
+// A three-way SERVICE (RigUpgradeDef::askable) over what happens to the held bells and
+// Deep-Learning devices when a DeepWeb Dive starts. YES arms the deepest bell and the
+// strongest device on its own (Game::autoUseDiveGear); ASK puts them on the DIVE PREP
+// screen (game_offer.cpp), which is also what a rig without the row does; NO dives with
+// nothing armed and asks nothing. Priced with the backup pair: the dive it serves is
+// itself endgame, unlocked once every area is cleared.
+inline constexpr int kRigAutoDiveGearCost = 8192;
+
 struct RigUpgradeDef;  // fwd decl for the table below
 
 enum class RigEffectKind : uint8_t {
@@ -323,6 +333,12 @@ struct RigUpgradeDef {
     // of a run and not only the effect. Only a service carries one: a row still on sale
     // explains itself with its readout and the price on its tag.
     const char* serviceInfo = nullptr;
+    // Does this service's switch have a THIRD position, ASK, between running and
+    // stopped? For a service that spends items the player may want to choose between:
+    // ASK hands the choice back each time instead of making it for them. The SERVICES
+    // board then reads YES / ASK / NO for the row and B steps through the three
+    // (Game::rigServiceMode). Trailing, so a two-way service says nothing.
+    bool askable = false;
 };
 
 // This readout's value at purchase level `lvl`.
@@ -468,6 +484,14 @@ inline const RigUpgradeDef kRigUpgrades[] = {
     {"link_aggregator", "LINK AGGREGATOR", 1, RigCostCurve::kFixed,
      kLinkAggregatorCost, 0, RigEffectKind::None, 0, "BOUGHT AGGREGATOR",
      {{"REGEN 1% OF SPENT"}}},
+
+    {"auto_dive_gear", "AUTO DIVE GEAR", 1, RigCostCurve::kFixed, kRigAutoDiveGearCost, 0,
+     RigEffectKind::None, 0, "BOUGHT AUTO DIVE GEAR", {{"ARMS BELLS + MODULES"}},
+     /*service=*/true,
+     "YES: every DeepWeb Dive starts with your deepest bell and strongest Deep-Learning "
+     "device used for you. ASK: you get the DIVE PREP list and choose. NO: you dive "
+     "with nothing armed. Spends the items either way it uses them.",
+     /*askable=*/true},
 
 };
 inline constexpr int kRigUpgradeCount =

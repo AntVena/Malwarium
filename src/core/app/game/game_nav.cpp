@@ -234,6 +234,7 @@ void Game::onButton(const ButtonEvent& ev) {
         case Nav::Shop: onShop(ev); break;
         case Nav::ModShop: onShop(ev); break;
         case Nav::WarpPicker: onWarpPicker(ev); break;
+        case Nav::ItemOffer: onItemOffer(ev); break;
         case Nav::RollbackPicker: onRollbackPicker(ev); break;
         case Nav::RepartitionPicker: onRepartitionPicker(ev); break;
         case Nav::CacheYield: onCacheYield(ev); break;

@@ -342,6 +342,7 @@ SaveData Game::captureSave() const {
     // v61: which owned services are stopped. Its own field rather than a level, because
     // a switch is not a purchase — the level says what was bought, this says what runs.
     d.rigServicesOff = rigServicesOff_;
+    d.rigServicesAsk = rigServicesAsk_;   // v69
     return d;
 }
 
@@ -831,6 +832,7 @@ void Game::applySave(const SaveData& d) {
 
     // v61: the stopped-service mask (pre-v61 → 0, everything the save bought running).
     rigServicesOff_ = d.rigServicesOff;
+    rigServicesAsk_ = d.rigServicesAsk;   // v69: pre-v69 -> 0, every askable row at YES
 
     // Active pet (may be empty for a Store-vacated save).
     installPet(registry_.creature(d.activeId));

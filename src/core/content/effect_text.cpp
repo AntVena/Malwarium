@@ -163,6 +163,11 @@ const char* itemEffectToken(ItemEffect::Kind k) {
         // is an action. Neither has a size, so neither has a token.
         case ItemEffect::Kind::ArmEvolveHold:
         case ItemEffect::Kind::ClearUsbPort: return nullptr;
+        case ItemEffect::Kind::CutIncubationMin: return "eggCutMins";
+        // One token for the pair: a sentence says what the dive pays, and which slot
+        // holds the number is the applier's business, not the prose's.
+        case ItemEffect::Kind::DiveStartBonusPct:
+        case ItemEffect::Kind::DiveStepBonusPct: return "diveBonus";
     }
     return nullptr;
 }
@@ -333,6 +338,13 @@ SpecRows specRows(const ItemDef& d) {
             // the fact that the row does it.
             case ItemEffect::Kind::ClearReplicationGhost:
                 s.flag("GHOST CURE");
+                break;
+            case ItemEffect::Kind::CutIncubationMin:
+                s.add("INCUBATION", "-%dMIN", e.magnitude);
+                break;
+            case ItemEffect::Kind::DiveStartBonusPct:
+            case ItemEffect::Kind::DiveStepBonusPct:
+                s.add("DIVE PAY", "%+d%%", e.magnitude);
                 break;
         }
     }

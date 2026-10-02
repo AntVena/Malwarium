@@ -300,7 +300,22 @@ void Game::onRigServiceInfo(const ButtonEvent& ev) {
 
 void Game::toggleRigService(int row) {
     if (!rigServiceOwned(row)) return;   // nothing bought here has a switch
-    rigServicesOff_ ^= (1u << static_cast<unsigned>(row));
+    const uint32_t bit = 1u << static_cast<unsigned>(row);
+    if (kRigUpgrades[row].askable) {
+        // Three positions, stepped in the order the board reads them.
+        switch (rigServiceMode(row)) {
+            case ServiceMode::On:  rigServicesAsk_ |= bit; break;
+            case ServiceMode::Ask: rigServicesAsk_ &= ~bit; rigServicesOff_ |= bit; break;
+            case ServiceMode::Off: rigServicesOff_ &= ~bit; break;
+        }
+        log_.push(LogEventType::ItemUsed, rigServiceMode(row) == ServiceMode::On  ? "SERVICE SET YES"
+                                        : rigServiceMode(row) == ServiceMode::Ask ? "SERVICE SET ASK"
+                                                                                  : "SERVICE SET NO");
+        dirty_ = true;
+        markSaveDirty();
+        return;
+    }
+    rigServicesOff_ ^= bit;
     log_.push(LogEventType::ItemUsed,
               rigFeatureActive(row) ? "SERVICE STARTED" : "SERVICE STOPPED");
     dirty_ = true;
@@ -548,7 +563,7 @@ void Game::drawHackerSubmenu(Framebuffer& fb) const {
         // The header names the service and states the switch, so the panel underneath is
         // all description — the page is opened to READ, and a name line inside it would
         // cost a line of the thing being read.
-        drawHeaderBand(fb, def.displayName, on ? "ON" : "OFF",
+        drawHeaderBand(fb, def.displayName, rigServiceWord(row),
                        on ? palColor(Pal::ACCENT) : palColor(Pal::INK_DIM));
 
         const SpecRows spec = rigServiceSpec(row);
@@ -602,7 +617,7 @@ void Game::drawHackerSubmenu(Framebuffer& fb) const {
             const bool on = rigFeatureActive(row);
             drawLabelValue(fb, kMargin, rowY, kRigUpgrades[row].displayName,
                            cur ? palColor(Pal::INK) : palColor(Pal::INK_DIM),
-                           on ? "ON" : "OFF",
+                           rigServiceWord(row),
                            on ? palColor(Pal::ACCENT) : palColor(Pal::INK_DIM),
                            beat_, true);
         }
@@ -615,8 +630,14 @@ void Game::drawHackerSubmenu(Framebuffer& fb) const {
             fb.fillRect(barX, thumbY, 2, thumbH, palColor(Pal::INK_DIM));
         }
         fb.fillRect(0, kActiveH - 26, kActiveW, 1, palColor(Pal::TRACK));
-        drawText(fb, kMargin, kActiveH - 20,
-                 rigFeatureActive(rows[sel]) ? "B STOP" : "B START", palColor(Pal::ACCENT));
+        // An askable row's B steps to its next position, so the label names that one.
+        const int selRow = rows[sel];
+        const char* bLabel = !kRigUpgrades[selRow].askable
+                                 ? (rigFeatureActive(selRow) ? "B STOP" : "B START")
+                             : rigServiceMode(selRow) == ServiceMode::On  ? "B SET ASK"
+                             : rigServiceMode(selRow) == ServiceMode::Ask ? "B SET NO"
+                                                                          : "B SET YES";
+        drawText(fb, kMargin, kActiveH - 20, bLabel, palColor(Pal::ACCENT));
         // The other half of B, stated where the tap is: a HELD B reads the service out
         // rather than switching it.
         drawText(fb, kActiveW - kMargin - textWidth("HOLD - WHAT IT DOES"),

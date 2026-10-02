@@ -316,7 +316,10 @@ constexpr int kSaveTextCap = 28;     // matches EventLog's LogEntry.text
 //     look like, kept through a pet's death, a reboot and a firmware update. Pre-v67 ->
 //     ICONS+LABEL and ON, which is what every device drew before either was stored.
 // v68 APPEND `soundMode` and `volume`, a byte each. Pre-v68 -> OFF at kVolumeDefault.
-constexpr uint16_t kSaveVersion = 68;
+// v69 APPEND `rigServicesAsk`, one bit per Rig Shop row marking an ASK-able service
+//     (RigUpgradeDef::askable) that is set to ASK rather than YES. Player-level, like
+//     v61's OFF mask, and read only where that mask is clear. Pre-v69 -> 0, YES.
+constexpr uint16_t kSaveVersion = 69;
 
 // The oldest blob deserialize will read, and the ONLY thing that retires a rename row
 // (see `renamedIds`). Raising it is how a device stops carrying migration weight for saves
@@ -906,6 +909,9 @@ struct SaveData {
     // --- v68 ---
     uint8_t soundMode = 2;   // SoundMode::Off
     uint8_t volume = kVolumeDefault;
+
+    // --- v69: which askable SERVICES sit at ASK (Game::rigServiceMode) ---
+    uint32_t rigServicesAsk = 0;
 };
 
 // Read/write one mod's spare count in the v45 packed pool (SaveData::ownedModCounts) by

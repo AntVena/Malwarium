@@ -36,7 +36,7 @@ void Game::fireLockout() {
     // A crisis modal preempts AND cancels explore-mode — the streak resets.
     exploreActive_ = false;
     exploreStreak_ = 0;
-    deepWebDepthMultiplier_ = 1;
+    clearDiveDepthBuffs();
     lockoutActive_ = true;
     lockoutDeadlineMs_ = nowMs_ + kLockoutDurationMs;
     lockoutReminded_ = false;
@@ -156,8 +156,9 @@ void Game::layEgg(const EggLineDef* line) {
     // This pet's own DeepWeb Dive record (save v35) and any armed depth-multiplier/
     // start-depth Pass — a fresh egg has never dived and carries nothing armed.
     bestDeepWebDepth_ = 0;
-    deepWebDepthMultiplier_ = 1;
+    clearDiveDepthBuffs();
     pendingDeepWebStartDepth_ = -1;
+    pendingDiveStartBonusPct_ = 0;
     // the re-farm diminishing-returns curve is PER-PET (not per-device) —
     // a fresh pet finds every cleared area an undepleted training ground again. This
     // is the single new-egg chokepoint, so zeroing here covers fresh boot / Store /
@@ -166,6 +167,7 @@ void Game::layEgg(const EggLineDef* line) {
     exploreActive_ = false;              // an egg can't explore; clear any live mode
     exploreStreak_ = 0;
     bootHatchRemainMs_ = kBootHatchMs;   // the incubation clock (decrypt gate)
+    eggOfferMade_ = false;               // this egg hasn't been offered an accelerator
     lastModelMs_ = nowMs_;
     stageEnteredMs_ = nowMs_;            // Boot-Sector in-stage clock starts now
     ++petsRaised_;                       // lifetime egg count; this pet's generation = its ordinal
@@ -581,7 +583,7 @@ void Game::fireCSF() {
     // including explore-mode.
     exploreActive_ = false;
     exploreStreak_ = 0;
-    deepWebDepthMultiplier_ = 1;
+    clearDiveDepthBuffs();
     lockoutActive_ = false;
     lockoutItemsContext_ = false;
     evolveTo_ = nullptr;

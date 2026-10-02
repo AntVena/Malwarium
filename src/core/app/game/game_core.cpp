@@ -566,6 +566,15 @@ bool Game::tickLifecycle(uint32_t nowMs) {
         changed = true;
     }
 
+    // An incubating egg, back at rest after its hatch game, with a Boot Accelerator in
+    // the bag: offer it now, once per egg (game_offer.cpp). This is the only stretch of
+    // a pet's life the item does anything, so it is asked here rather than left for the
+    // player to go and find in ITEMS.
+    if (nav_ == Nav::Idle && inEggPhase() && !eggOfferMade_) {
+        openItemOffer(OfferFor::Egg);
+        changed = true;
+    }
+
     // Lockout crisis fires when Hunger bottoms out. Never during the Hatch
     // (there's no pet), an Evolution, or a Critical System Failure (priority) — nor
     // over a DECRYPTOGRAM board, which is the one preemption that would DESTROY

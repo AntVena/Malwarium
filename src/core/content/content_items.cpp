@@ -212,7 +212,8 @@ const ItemDef kItems[] = {
     // COMMON ITEMS --------------------------
     //
     {"decrypt_key", "Decryption Key", ItemDef::Type::Quest,
-     ItemDef::Rarity::Common, "Pays a Lockout's Bits demand for you. Only usable during a Lockout.",
+     ItemDef::Rarity::Common, "Locked out? Hand this over and the Lockout's Bits demand is paid. Only "
+     "works during a Lockout.",
      ItemDef::Context::LockoutOnly, /*effects=*/{}, /*combatHeal=*/0,
      /*preEncounterXp=*/0, /*bits=*/0, /*walkWarp=*/ItemDef::WalkWarp::None,
      /*use=*/ItemDef::Use::Consume, /*category=*/ItemDef::Category::Keys},
@@ -222,7 +223,7 @@ const ItemDef kItems[] = {
     // itemUsable); sold at the shop + drops from wild loot so it's obtainable. No new
     // glyph — reuses the MAINT defrag icon (itemIcon fallback).
     {"disk_scrubber", "Defrag Tool", ItemDef::Type::Quest,
-     ItemDef::Rarity::Common, "Spend in MAINT for a guaranteed clean defrag.",
+     ItemDef::Rarity::Common, "Use it on a MAINT defrag and the defrag can't fail.",
      ItemDef::Context::Anytime, /*effects=*/{}, /*combatHeal=*/0,
      /*preEncounterXp=*/0, /*bits=*/14},
 
@@ -230,20 +231,22 @@ const ItemDef kItems[] = {
     // Happiness toward 50%.
     {"null_noodles", "Null Noodles", ItemDef::Type::Food,
      ItemDef::Rarity::Common,
-     "Tastes of nothing. Sheds {|frag|} Fragmentation, costs {|hunger|} FED.",
+     "Tastes of nothing. Sheds {|frag|} Fragmentation, but costs {|hunger|} "
+     "FED.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, -15}, {IE::Kind::Frag, -15}, {IE::Kind::HappyToward50, 20}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/5},
 
-    // Boot Accelerator: the egg accelerator, granted into starting inventory on every
-    // new egg. Use on a Boot-Sector egg takes a flat kBootAcceleratorCutMs off its
+    // Boot Accelerator: the egg accelerator, in the starting kit and stocked at
+    // Pier-to-Peer. Use on a Boot-Sector egg takes its CutIncubationMin off the
     // incubation, floored at the crackable window — every line's hatch minigame is
     // played at lay-time, so there is nothing left for an item to open. Quest-typed
     // (falls through the egg-phase ITEMS gate), no vitals, egg-only.
     {"boot_accelerator", "Boot Accelerator", ItemDef::Type::Quest,
      ItemDef::Rarity::Common,
-     "Use on the egg to cut 10 minutes off its incubation.",
-     ItemDef::Context::Anytime, /*effects=*/{}, /*combatHeal=*/0, /*preEncounterXp=*/0,
+     "Use it on your egg and it hatches {eggCutMins} minutes sooner.",
+     ItemDef::Context::Anytime, {{IE::Kind::CutIncubationMin, 10}},
+     /*combatHeal=*/0, /*preEncounterXp=*/0,
      /*bits=*/0, /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::DecryptEgg,
      /*category=*/ItemDef::Category::Keys},
 
@@ -255,7 +258,8 @@ const ItemDef kItems[] = {
     // the walk hands them over.
     {"decryptogram", "Decryptogram", ItemDef::Type::Quest,
      ItemDef::Rarity::Uncommon,
-     "Cash in at the VAULT to crack a quote for Bits and an upgrade.",
+     "Take this to the VAULT. Crack the quote and you win Bits and an "
+     "upgrade.",
      ItemDef::Context::Anytime, /*effects=*/{}, /*combatHeal=*/0, /*preEncounterXp=*/0,
      /*bits=*/0, /*walkWarp=*/ItemDef::WalkWarp::None,
      /*use=*/ItemDef::Use::PlayCryptogram, /*category=*/ItemDef::Category::Keys},
@@ -265,7 +269,7 @@ const ItemDef kItems[] = {
      // and sum to 100, so a weight reads directly as a percentage.
      {"sealed_cache_common", "Common Cache", ItemDef::Type::Quest,
      ItemDef::Rarity::Common,
-     "A common data cache. Open from the VAULT for a reward draw.",
+     "A common cache. Open it in the VAULT for a random reward.",
      ItemDef::Context::Anytime, /*effects=*/{}, /*combatHeal=*/0, /*preEncounterXp=*/0,
      /*bits=*/0, /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::OpenContainer,
      /*category=*/ItemDef::Category::Derive,
@@ -278,8 +282,9 @@ const ItemDef kItems[] = {
     // that dive starts, so a pet re-earns its way back to a genuine struggle
     // without re-walking every shallow depth first.
     {"backdoor_bell", "Backdoor Bell", ItemDef::Type::Tool,
-     ItemDef::Rarity::Common, "Starts the next DeepWeb Dive at depth {depth}.",
-     ItemDef::Context::Anytime, {{IE::Kind::SetDeepWebStartDepth, 16}}},
+     ItemDef::Rarity::Common, "Use before a DeepWeb Dive to start at depth {depth}. Every win that "
+     "dive pays {diveBonus}% more.",
+     ItemDef::Context::Anytime, {{IE::Kind::SetDeepWebStartDepth, 16}, {IE::Kind::DiveStartBonusPct, 25}}},
 
     //
     // UNCOMMON ITEMS --------------------------
@@ -292,7 +297,8 @@ const ItemDef kItems[] = {
     // It fills and patches and does nothing else; the ghost cure is Unlinkguine's job.
     {"dyno_nuggets", "Dyno Nuggets", ItemDef::Type::Food,
      ItemDef::Rarity::Uncommon,
-     "Everyday ration: fills the pet up and patches {heal} Health mid-fight.",
+     "Your everyday ration. Fills your pet up, and heals {heal} HP "
+     "mid-fight.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 40}}, /*combatHeal=*/30},
 
@@ -305,37 +311,36 @@ const ItemDef kItems[] = {
     // A no-op on a pet with no ghost (any non-Worm pet, always).
     {"unlinkguine", "Unlinkguine", ItemDef::Type::Food,
      ItemDef::Rarity::Uncommon,
-     "Fills the pet up and patches {heal} Health mid-fight. Cuts a Replication "
-     "Ghost loose.",
+     "Fills your pet up and heals {heal} HP mid-fight. Also clears a "
+     "Replication Ghost.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 30}, {IE::Kind::ClearReplicationGhost, 0}}, /*combatHeal=*/20},
 
     // Intended to be combined with Null Noodles to produce a rare food
     {"pwnzu_sauce", "Pwnzu Sauce", ItemDef::Type::Food,
      ItemDef::Rarity::Uncommon,
-     "A bit intense on its own. If only it could go on something with a truly "
-     "neutral flavour.",
+     "Too strong on its own. Pour it on Null Noodles in the MERGE HUB.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 5}, {IE::Kind::Happy, 15}}, /*combatHeal=*/0},
     
     {"tortilla_chip", "Tor-Tilla Chip", ItemDef::Type::Food,
-     ItemDef::Rarity::Uncommon, "A crunchy morsel of onion-routed corn.",
+     ItemDef::Rarity::Uncommon, "A crunchy onion-routed chip. Dip it in OSI Dip in the MERGE HUB.",
      ItemDef::Context::Anytime, {{IE::Kind::Happy, 10}}},
  
     {"osi_dip", "OSI Dip", ItemDef::Type::Food,
-     ItemDef::Rarity::Uncommon, "Seven glorious layers. If only there were something good to eat it on. A "
-     "sort of... eighth layer.",
+     ItemDef::Rarity::Uncommon, "Seven layers of dip. Put a Tor-Tilla Chip on it in the MERGE HUB for "
+     "the eighth.",
      ItemDef::Context::Anytime, {{IE::Kind::Happy, 10}}},
 
      // Sinkhole Trap: bypass the next wild encounter for a flat XP lump (preEncounterXp,
     // applied by game_combat::resolveSinkhole — a hand-off, not an on-Use pet effect).
     {"sinkhole_trap", "Sinkhole Trap", ItemDef::Type::Quest,
-     ItemDef::Rarity::Uncommon, "Auto-skips the next wild fight on a walk, for {xp} XP.",
+     ItemDef::Rarity::Uncommon, "In your bag, it eats the next wild fight on a walk. You get {xp} XP.",
      ItemDef::Context::PreEncounter, /*effects=*/{}, /*combatHeal=*/0,
      /*preEncounterXp=*/40},
     
      {"r007_b33r", "R007_B33R", ItemDef::Type::Food,
      ItemDef::Rarity::Uncommon,
-     "Junk food: {hunger} Hunger and {happy} Happiness, at {frag} Fragmentation.",
+     "Junk food. Cheers your pet up, but adds some Fragmentation.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 15}, {IE::Kind::Happy, 25}, {IE::Kind::Frag, 5}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/5},
@@ -347,7 +352,7 @@ const ItemDef kItems[] = {
     // and it pays out of the shared walk-loot pool at that event's own rate.
     {"sealed_cache", "Sealed Cache", ItemDef::Type::Quest,
      ItemDef::Rarity::Uncommon,
-     "A locked data cache. Open from the VAULT for a reward draw.",
+     "An old locked cache. Open it in the VAULT for a random reward.",
      ItemDef::Context::Anytime, /*effects=*/{}, /*combatHeal=*/0, /*preEncounterXp=*/0,
     /*bits=*/0, /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::OpenContainer,
      /*category=*/ItemDef::Category::Derive,
@@ -356,7 +361,7 @@ const ItemDef kItems[] = {
 
     {"sealed_cache_uncommon", "Uncommon Cache", ItemDef::Type::Quest,
      ItemDef::Rarity::Uncommon,
-     "An uncommon data cache. Open from the VAULT for a reward draw.",
+     "An uncommon cache. Open it in the VAULT for a better reward.",
      ItemDef::Context::Anytime, /*effects=*/{}, /*combatHeal=*/0, /*preEncounterXp=*/0,
      /*bits=*/0, /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::OpenContainer,
      /*category=*/ItemDef::Category::Derive,
@@ -365,8 +370,9 @@ const ItemDef kItems[] = {
 
     // Rootkit Bell: the Backdoor Bell's deeper cousin — see its comment above.
     {"rootkit_bell", "Rootkit Bell", ItemDef::Type::Tool,
-     ItemDef::Rarity::Uncommon, "Starts the next DeepWeb Dive at depth {depth}.",
-     ItemDef::Context::Anytime, {{IE::Kind::SetDeepWebStartDepth, 32}}},
+     ItemDef::Rarity::Uncommon, "Use before a DeepWeb Dive to start at depth {depth}. Every win that "
+     "dive pays {diveBonus}% more.",
+     ItemDef::Context::Anytime, {{IE::Kind::SetDeepWebStartDepth, 32}, {IE::Kind::DiveStartBonusPct, 50}}},
     //
     // STAPLE INGREDIENTS --------------------------
     // The pantry: the raw materials recipes are built out of. Grouped together rather
@@ -378,44 +384,43 @@ const ItemDef kItems[] = {
     // more often than the ones it says you don't (Root Veg, Fresh Macrol).
     //
     {"spam", "Spam", ItemDef::Type::Food, ItemDef::Rarity::Common,
-     "Plentiful. Far too plentiful. Find something to do with it all.",
+     "You'll find tons of this. Barely food raw. Cook it into something.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 2}}, /*combatHeal=*/0,
      /*preEncounterXp=*/0, /*bits=*/0, /*walkWarp=*/ItemDef::WalkWarp::None,
      /*use=*/ItemDef::Use::Consume, /*category=*/ItemDef::Category::Derive,
      /*dropWeight=*/90},
 
     {"breadcrumbs", "Breadcrumbs", ItemDef::Type::Food, ItemDef::Rarity::Common,
-     "There's a reason enough of these to make a trail were left uneaten.",
+     "A trail's worth of crumbs. Next to useless raw. Good for cooking.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 1}}, /*combatHeal=*/0,
      /*preEncounterXp=*/0, /*bits=*/0, /*walkWarp=*/ItemDef::WalkWarp::None,
      /*use=*/ItemDef::Use::Consume, /*category=*/ItemDef::Category::Derive,
      /*dropWeight=*/80},
 
     {"c_salt", "C-Salt", ItemDef::Type::Food, ItemDef::Rarity::Common,
-     "Tastes salty.",
+     "Plain salt. Your pet hates eating it straight. Cook with it.",
      ItemDef::Context::Anytime, {{IE::Kind::Happy, -2}}, /*combatHeal=*/0,
      /*preEncounterXp=*/0, /*bits=*/0, /*walkWarp=*/ItemDef::WalkWarp::None,
      /*use=*/ItemDef::Use::Consume, /*category=*/ItemDef::Category::Derive,
      /*dropWeight=*/70},
 
     {"grepsed_oil", "Grep-sed Oil", ItemDef::Type::Food, ItemDef::Rarity::Common,
-     "This humble staple turns raw ingredients into cuisine. You'll find it in any "
-     "cupboard.",
+     "Cooking oil. Lots of recipes want it. Don't feed it to your pet "
+     "straight.",
      ItemDef::Context::Anytime, {{IE::Kind::Happy, -5}, {IE::Kind::Frag, -5}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/70},
 
     {"spoiled_macrol", "Spoiled Macrol", ItemDef::Type::Food, ItemDef::Rarity::Common,
-     "Smells a bit too phishy to eat. Someone down at the pier could make better use "
-     "of it.",
+     "Gone off. Don't eat it. The trader at the pier will swap salt for it.",
      ItemDef::Context::Anytime, {{IE::Kind::Happy, -15}}, /*combatHeal=*/0,
      /*preEncounterXp=*/0, /*bits=*/0, /*walkWarp=*/ItemDef::WalkWarp::None,
      /*use=*/ItemDef::Use::Consume, /*category=*/ItemDef::Category::Derive,
      /*dropWeight=*/60},
 
     {"cronstarch", "Cronstarch", ItemDef::Type::Food, ItemDef::Rarity::Common,
-     "There's a time to use this, and it is NOT as a snack.",
+     "A thickener. Use it in cooking. Raw, it's a sad snack.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 1}, {IE::Kind::Happy, -1}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
@@ -424,13 +429,14 @@ const ItemDef kItems[] = {
     // Boolean Cubes take no dropWeight — Common's own default is exactly the middle
     // of this shelf, which is where they belong.
     {"boolean_cubes", "Boolean Cubes", ItemDef::Type::Food, ItemDef::Rarity::Common,
-     "You either love them or you don't.",
+     "Stock cubes. True or false, your pet won't like them raw. Cook with "
+     "them.",
      ItemDef::Context::Anytime, {{IE::Kind::Happy, -5}}},
 
     {"vanilla_extract", "Vanilla Extract", ItemDef::Type::Food,
      ItemDef::Rarity::Common,
-     "There's a reason this is a default flavour: nobody's messed with the recipe in "
-     "years.",
+     "The default flavour. Does a tiny bit of everything raw. Better in "
+     "baking.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 1}, {IE::Kind::Happy, 1}, {IE::Kind::Frag, 1}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
@@ -441,22 +447,24 @@ const ItemDef kItems[] = {
     // alone it is a Breadcrumb; eaten in a run it climbs, and the pet's next passive
     // Hunger-decay tick ends the run.
     {"polltatoes", "Polltatoes", ItemDef::Type::Food, ItemDef::Rarity::Common,
-     "Bland alone, but they stack: each one eaten since FED last ticked down adds "
-     "{hungerStack} to what the next one fills.",
+     "Bland alone, but they stack: each one eaten since FED last dropped "
+     "adds {hungerStack} to the next.",
      ItemDef::Context::Anytime, {{IE::Kind::HungerStacking, 1}}, /*combatHeal=*/0,
      /*preEncounterXp=*/0, /*bits=*/0, /*walkWarp=*/ItemDef::WalkWarp::None,
      /*use=*/ItemDef::Use::Consume, /*category=*/ItemDef::Category::Derive,
      /*dropWeight=*/45},
 
     {"regeggs", "RegEggs", ItemDef::Type::Food, ItemDef::Rarity::Common,
-     "You must be yoking.",
+     "Eggs. Decent raw, better cooked. They match whatever pattern you crack "
+     "them into.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 8}}, /*combatHeal=*/0,
      /*preEncounterXp=*/0, /*bits=*/0, /*walkWarp=*/ItemDef::WalkWarp::None,
      /*use=*/ItemDef::Use::Consume, /*category=*/ItemDef::Category::Derive,
      /*dropWeight=*/40},
 
     {"data_leek", "Data Leek", ItemDef::Type::Food, ItemDef::Rarity::Common,
-     "These used to be exclusive. Now everyone has a copy.",
+     "Leaked everywhere, so they're cheap. A little filling, a little "
+     "cleaning.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 3}, {IE::Kind::Happy, 3}, {IE::Kind::Frag, -3}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
@@ -465,15 +473,14 @@ const ItemDef kItems[] = {
 
     {"universal_cereal_box", "Universal Cereal Box", ItemDef::Type::Food,
      ItemDef::Rarity::Common,
-     "One box, every distribution. Nine hundred serving suggestions and no ingredients "
-     "list.",
+     "Cereal for any system. Cheers your pet up. Cooks into a cereal bar.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 5}, {IE::Kind::Happy, 10}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/30},
 
     {"java", "Java", ItemDef::Type::Food, ItemDef::Rarity::Uncommon,
-     "Can't start your morning without it.",
+     "Coffee. Perks your pet up and tidies a little Fragmentation.",
      ItemDef::Context::Anytime, {{IE::Kind::Happy, 5}, {IE::Kind::Frag, -2}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
@@ -481,13 +488,13 @@ const ItemDef kItems[] = {
 
     // Kernel Oil takes Uncommon's own default weight — the middle of its shelf.
     {"kernel_oil", "Kernel Oil", ItemDef::Type::Food, ItemDef::Rarity::Uncommon,
-     "Why would you drink plain oil?",
+     "Low-level oil for cooking. Don't let your pet drink it neat.",
      ItemDef::Context::Anytime, {{IE::Kind::Happy, -5}, {IE::Kind::Frag, -5}}},
 
     {"syntactic_sugar", "Syntactic Sugar", ItemDef::Type::Food,
      ItemDef::Rarity::Uncommon,
-     "It's very clearly labelled: 'Not particularly filling or good for you. Makes you "
-     "happy.'",
+     "Sugar. Makes your pet happy, does nothing else useful. Great in "
+     "desserts.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 1}, {IE::Kind::Happy, 15}, {IE::Kind::Frag, 3}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
@@ -495,7 +502,8 @@ const ItemDef kItems[] = {
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/25},
 
     {"applets", "Applets", ItemDef::Type::Food, ItemDef::Rarity::Uncommon,
-     "Enough of these and you'll forget what a diagnostic report even looks like.",
+     "Little apples. Good for cleaning up Fragmentation. Bake them into "
+     "something.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 3}, {IE::Kind::Happy, 3}, {IE::Kind::Frag, -5}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
@@ -503,14 +511,15 @@ const ItemDef kItems[] = {
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/20},
 
     {"root_veg", "Root Veg", ItemDef::Type::Food, ItemDef::Rarity::Uncommon,
-     "You need special permissions to order a box of these.",
+     "Hard to come by. Filling, and good for Fragmentation.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 6}, {IE::Kind::Frag, -6}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/15},
 
     {"fresh_macrol", "Fresh Macrol", ItemDef::Type::Food, ItemDef::Rarity::Uncommon,
-     "Tastes great, but goes off: each feeding, {spoil}% chance one spoils.",
+     "Tasty fish, but it spoils: each feeding, a {spoil}% chance one goes "
+     "off.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 5}, {IE::Kind::Happy, 5}, {IE::Kind::Frag, -3}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
@@ -525,7 +534,7 @@ const ItemDef kItems[] = {
     // for one (pirate_bayou/area.cpp), which is a far better rate than finding it.
     {"desalinated_c_salt", "Desalinated C-Salt", ItemDef::Type::Food,
      ItemDef::Rarity::Uncommon,
-     "The shaker isn't exactly empty; there's 'nothing' in it.",
+     "Salt with nothing in it. Settles your pet's mood toward the middle.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, -2}, {IE::Kind::Frag, -1}, {IE::Kind::HappyToward50, 2}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
@@ -537,21 +546,21 @@ const ItemDef kItems[] = {
     // of eating one raw, and the dropWeight ladder says how often you trip over it.
     {"self_signed_flour", "Self-Signed Flour", ItemDef::Type::Food,
      ItemDef::Rarity::Common,
-     "It raised itself. Nobody else vouched for it.",
+     "Flour nobody vouched for. Your pet won't eat it raw. Bake with it.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 2}, {IE::Kind::Happy, -3}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/65},
 
     {"shellots", "Shellots", ItemDef::Type::Food, ItemDef::Rarity::Common,
-     "Peel a layer off and there is another prompt underneath.",
+     "Peel one layer, there's another prompt under it. Cooking onion.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 2}, {IE::Kind::Happy, -4}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/60},
 
     {"linkguine", "Linkguine", ItemDef::Type::Food, ItemDef::Rarity::Common,
-     "Long, thin, and every strand joined to the last one.",
+     "Pasta, every strand linked to the next. Fills a little. Cook it.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 4}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
@@ -563,7 +572,7 @@ const ItemDef kItems[] = {
     // ASCII only: the font is 32..126 (font_glyphs.cpp), so an "ñ" would draw as a
     // blank cell and mis-measure textWidth, which counts bytes.
     {"jailapeno", "Jailapeno", ItemDef::Type::Food, ItemDef::Rarity::Common,
-     "Hot enough to keep a process where you put it.",
+     "A hot pepper that keeps processes locked up. Cook it with Linkguine.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 3}, {IE::Kind::Happy, 4}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
@@ -571,7 +580,7 @@ const ItemDef kItems[] = {
 
     {"churned_butter", "Churned Butter", ItemDef::Type::Food,
      ItemDef::Rarity::Common,
-     "Twelve thousand revisions. Same butter.",
+     "Butter, rewritten twelve thousand times. Cooking fat.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 3}, {IE::Kind::Frag, 2}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
@@ -579,21 +588,21 @@ const ItemDef kItems[] = {
 
     {"bytesteak_tomatoes", "Bytesteak Tomatoes", ItemDef::Type::Food,
      ItemDef::Rarity::Common,
-     "They grow in eights. There has never been a ninth.",
+     "They always come in eights. Good for cooking.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 3}, {IE::Kind::Happy, 2}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/50},
 
     {"gherkins", "Gherkins", ItemDef::Type::Food, ItemDef::Rarity::Common,
-     "Given a jar, when you open it, then.",
+     "Given a jar, when you open it, then pickles. Mostly a cooking item.",
      ItemDef::Context::Anytime, {{IE::Kind::Happy, -3}, {IE::Kind::Frag, -2}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/45},
 
     {"cruds", "CRUDs", ItemDef::Type::Food, ItemDef::Rarity::Common,
-     "Create one, read it, update it. Mostly delete it.",
+     "Curds you create, read, update and mostly delete. A cooking cheese.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 4}, {IE::Kind::Happy, -2}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
@@ -604,7 +613,7 @@ const ItemDef kItems[] = {
     // runs. The pair only reads as a joke because these effects and this rarity are
     // literally the ones on that dish's row.
     {"bootmeal", "Bootmeal", ItemDef::Type::Food, ItemDef::Rarity::Common,
-     "Nothing else in the morning starts until this has.",
+     "Breakfast oats. Nothing else starts till this has. Filling, but bland.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 10}, {IE::Kind::Happy, -5}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
@@ -612,14 +621,15 @@ const ItemDef kItems[] = {
 
     {"garlic_escapes", "Garlic Escapes", ItemDef::Type::Food,
      ItemDef::Rarity::Common,
-     "Escape them properly or the whole line breaks.",
+     "Escape them right or the whole recipe breaks. Strong; cook with it.",
      ItemDef::Context::Anytime, {{IE::Kind::Happy, -6}, {IE::Kind::Frag, -4}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/35},
 
     {"grepefruit", "Grepefruit", ItemDef::Type::Food, ItemDef::Rarity::Common,
-     "Bitter. Only the segments that match are worth eating.",
+     "Bitter. Only the matching segments are worth eating. Helps "
+     "Fragmentation.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 3}, {IE::Kind::Happy, -4},
                                  {IE::Kind::Frag, -4}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
@@ -627,14 +637,14 @@ const ItemDef kItems[] = {
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/30},
 
     {"red_herring", "Red Herring", ItemDef::Type::Food, ItemDef::Rarity::Common,
-     "It is a decoy. Eat it anyway.",
+     "A decoy fish. It fills your pet up, but it won't enjoy it.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 5}, {IE::Kind::Happy, -5}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/25},
 
     {"papaya", "PAPaya", ItemDef::Type::Food, ItemDef::Rarity::Uncommon,
-     "Hands over everything the moment anyone asks.",
+     "PAPaya hands over everything the moment you ask. Sweet and filling.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 4}, {IE::Kind::Happy, 6}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
@@ -642,7 +652,7 @@ const ItemDef kItems[] = {
 
     {"mozillarella", "Mozillarella", ItemDef::Type::Food,
      ItemDef::Rarity::Uncommon,
-     "Free to copy, and it stretches further than anything else on the shelf.",
+     "Open-source cheese. Free to copy, stretches far. Filling.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 6}, {IE::Kind::Happy, 4}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
@@ -650,7 +660,8 @@ const ItemDef kItems[] = {
 
     {"imaple_syrup", "IMAPle Syrup", ItemDef::Type::Food,
      ItemDef::Rarity::Uncommon,
-     "Take as much as you like. It all stays on the tree.",
+     "Sweet syrup. Take as much as you want, it stays on the server. Cheers "
+     "your pet up.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 2}, {IE::Kind::Happy, 12},
                                  {IE::Kind::Frag, 2}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
@@ -659,14 +670,14 @@ const ItemDef kItems[] = {
 
     {"double_precision_cream", "Double-Precision Cream", ItemDef::Type::Food,
      ItemDef::Rarity::Uncommon,
-     "Twice the storage of the single. Pours exactly the same.",
+     "Twice the storage of single cream. Pours the same. Filling.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 7}, {IE::Kind::Frag, 3}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/18},
 
     {"cocoa", "Cocoa", ItemDef::Type::Food, ItemDef::Rarity::Uncommon,
-     "Deprecated for years. Still ships in everything.",
+     "Deprecated for years, still in everything. Cheers your pet up.",
      ItemDef::Context::Anytime, {{IE::Kind::Happy, 10}, {IE::Kind::Frag, -3}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
@@ -674,7 +685,8 @@ const ItemDef kItems[] = {
 
     {"rubber_ducks", "Rubber Ducks", ItemDef::Type::Food,
      ItemDef::Rarity::Uncommon,
-     "Explain the recipe to one before you start. It never argues.",
+     "Explain your recipe to one first. It listens. Filling, and your pet "
+     "likes them.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 8}, {IE::Kind::Happy, 5}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
@@ -686,7 +698,8 @@ const ItemDef kItems[] = {
     // where it actually gets cooked.
     {"honeypot_yogurt", "Honeypot Yogurt", ItemDef::Type::Food,
      ItemDef::Rarity::Rare,
-     "Left out where anyone could take it. That is the point of it.",
+     "Left out on purpose to catch whoever takes it. Rare. Save it for "
+     "cooking.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 5}, {IE::Kind::Happy, 8},
                                  {IE::Kind::Frag, -4}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
@@ -698,56 +711,57 @@ const ItemDef kItems[] = {
     // a pet gets out of eating one raw, and every row here is an ingredient in at least
     // one recipe, so no shelf is only ever chewed on.
     {"parsenips", "Parsenips", ItemDef::Type::Food, ItemDef::Rarity::Common,
-     "You have to parse them before they are any use.",
+     "You have to parse them before they're any use. Cooking veg.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 4}, {IE::Kind::Happy, -3}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/62},
 
     {"romaine", "ROMaine", ItemDef::Type::Food, ItemDef::Rarity::Common,
-     "Read only. Nothing you do to it takes.",
+     "Read-only lettuce. Nothing you do to it sticks. Light, and cleans a "
+     "bit.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 2}, {IE::Kind::Frag, -3}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/58},
 
     {"bitroot", "Bitroot", ItemDef::Type::Food, ItemDef::Rarity::Common,
-     "Left in storage a season too long, and it shows.",
+     "Left in storage too long and the bits rotted. Better cooked.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 5}, {IE::Kind::Happy, -4}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/56},
 
     {"swiss_chard", "Swiss Chard", ItemDef::Type::Food, ItemDef::Rarity::Common,
-     "Fixed width, every leaf.",
+     "Fixed-width leaves. Cleans up a bit of Fragmentation.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 3}, {IE::Kind::Frag, -3}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/54},
 
     {"string_beans", "String Beans", ItemDef::Type::Food, ItemDef::Rarity::Common,
-     "An array of them, and the last one is always empty.",
+     "A row of beans, and the last one's always empty. Mildly filling.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 4}, {IE::Kind::Happy, 2}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/52},
 
     {"snap_peas", "Snap Peas", ItemDef::Type::Food, ItemDef::Rarity::Common,
-     "Each pod ships with everything it needs and nothing it shares.",
+     "Each pod packs everything it needs. A decent little snack.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 3}, {IE::Kind::Happy, 3}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/50},
 
     {"squash", "Squash", ItemDef::Type::Food, ItemDef::Rarity::Common,
-     "Seven of them went in. One came out.",
+     "Seven went in, one came out. Squashed and filling.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 7}, {IE::Kind::Happy, -2}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/48},
 
     {"raidicchio", "RAIDicchio", ItemDef::Type::Food, ItemDef::Rarity::Common,
-     "Lose a leaf and lose nothing. There is another copy of it.",
+     "There's a spare of every leaf. Bitter, but good for Fragmentation.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 3}, {IE::Kind::Happy, -5},
                                  {IE::Kind::Frag, -3}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
@@ -755,84 +769,85 @@ const ItemDef kItems[] = {
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/46},
 
     {"awkra", "AWKra", ItemDef::Type::Food, ItemDef::Rarity::Common,
-     "Splits into fields the moment you cut it.",
+     "Splits into fields when you cut it. Better cooked.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 4}, {IE::Kind::Happy, -4}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/44},
 
     {"kaliflower", "Kaliflower", ItemDef::Type::Food, ItemDef::Rarity::Common,
-     "Comes with every tool already installed. Most of them sharp.",
+     "Comes with every tool already installed, mostly sharp ones. Filling.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 5}, {IE::Kind::Frag, -2}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/42},
 
     {"archichoke", "Archichoke", ItemDef::Type::Food, ItemDef::Rarity::Common,
-     "Takes all afternoon to reach the part you can eat.",
+     "Takes ages to reach the bit you can eat. Your pet won't bother raw.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 2}, {IE::Kind::Happy, -6}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/38},
 
     {"flatpak_choi", "Flatpak Choi", ItemDef::Type::Food, ItemDef::Rarity::Common,
-     "Bundles its own everything. Twice the leaf you needed.",
+     "Bundles its own everything, so you get twice the leaf. Filling.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 5}, {IE::Kind::Happy, 2}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/36},
 
     {"capsicum", "CAPsicum", ItemDef::Type::Food, ItemDef::Rarity::Common,
-     "Sweet, crisp, cheap. Pick two.",
+     "Sweet, crisp, cheap: pick two. A nice snack.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 3}, {IE::Kind::Happy, 4}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/34},
 
     {"peppermint", "Peppermint", ItemDef::Type::Food, ItemDef::Rarity::Common,
-     "The one seasoning you are meant to be able to see.",
+     "The one seasoning you're meant to see. Cheers your pet up.",
      ItemDef::Context::Anytime, {{IE::Kind::Happy, 6}, {IE::Kind::Frag, -2}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/32},
 
     {"nixtamal", "Nixtamal", ItemDef::Type::Food, ItemDef::Rarity::Common,
-     "Reproducible. The same corn, every single time.",
+     "The same corn every single time. Filling, plain.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 6}, {IE::Kind::Happy, -3}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/30},
 
     {"pingapple", "Pingapple", ItemDef::Type::Food, ItemDef::Rarity::Common,
-     "Sweet, and it always comes back.",
+     "Sweet, and it always comes back. Your pet likes it.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 4}, {IE::Kind::Happy, 6}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/28},
 
     {"plaintain", "Plaintain", ItemDef::Type::Food, ItemDef::Rarity::Common,
-     "Unencrypted, in the open, right there in the bowl.",
+     "Unencrypted, sitting right there in the bowl. Filling.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 7}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/26},
 
     {"cloudberries", "Cloudberries", ItemDef::Type::Food, ItemDef::Rarity::Common,
-     "Somebody else's berries, on somebody else's bush.",
+     "Someone else's berries on someone else's bush. Your pet loves them.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 2}, {IE::Kind::Happy, 7}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/24},
 
     {"lintils", "Lintils", ItemDef::Type::Food, ItemDef::Rarity::Common,
-     "Thousands of tiny complaints, and every one of them fair.",
+     "Thousands of tiny complaints, all fair. Filling, but your pet won't "
+     "enjoy them.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 6}, {IE::Kind::Happy, -4}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/44},
 
     {"perl_barley", "Perl Barley", ItemDef::Type::Food, ItemDef::Rarity::Common,
-     "Write the pot once. Nobody will read it again.",
+     "Write the pot once, nobody reads it again. Filling grain.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 6}, {IE::Kind::Frag, 2}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
@@ -840,14 +855,14 @@ const ItemDef kItems[] = {
 
     {"basicmati_rice", "BASICmati Rice", ItemDef::Type::Food,
      ItemDef::Rarity::Common,
-     "Ten lines in the pot, and the last one sends you back to the first.",
+     "Rice where the last line goes back to the first. Very filling.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 8}, {IE::Kind::Happy, -2}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/48},
 
     {"vpenne", "VPenne", ItemDef::Type::Food, ItemDef::Rarity::Common,
-     "A tube nobody else can see down.",
+     "Pasta tubes nobody can see down. Filling.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 5}, {IE::Kind::Frag, -2}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
@@ -855,35 +870,35 @@ const ItemDef kItems[] = {
 
     {"unmonitored_oats", "Unmonitored Oats", ItemDef::Type::Food,
      ItemDef::Rarity::Common,
-     "Left them overnight. Nobody was watching, and nobody was paged.",
+     "Left overnight with nobody watching. Filling, but grim.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 6}, {IE::Kind::Happy, -6}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/38},
 
     {"yamls", "YAMLs", ItemDef::Type::Food, ItemDef::Rarity::Common,
-     "How deep you cut them changes what they mean.",
+     "How deep you cut them changes what they mean. Filling, fussy.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 7}, {IE::Kind::Happy, -5}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/36},
 
     {"epoch_dates", "Epoch Dates", ItemDef::Type::Food, ItemDef::Rarity::Uncommon,
-     "Picked the first of January, nineteen seventy. All of them.",
+     "All picked on 1 Jan 1970. Sweet. Your pet likes them.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 5}, {IE::Kind::Happy, 8}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/28},
 
     {"dotfigs", "Dotfigs", ItemDef::Type::Food, ItemDef::Rarity::Uncommon,
-     "Everybody's are different and everybody's are correct.",
+     "Everybody's are different and everybody's are right. Sweet.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 4}, {IE::Kind::Happy, 9}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/26},
 
     {"apiricot", "APIricot", ItemDef::Type::Food, ItemDef::Rarity::Uncommon,
-     "Documented, versioned, and rate-limited to two.",
+     "Documented, versioned, rate-limited to two. Sweet.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 4}, {IE::Kind::Happy, 7}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
@@ -891,7 +906,7 @@ const ItemDef kItems[] = {
 
     {"raspberry_pis", "Raspberry Pis", ItemDef::Type::Food,
      ItemDef::Rarity::Uncommon,
-     "Forty in the drawer. Three of them doing anything.",
+     "Forty in the drawer, three doing anything. Sweet.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 3}, {IE::Kind::Happy, 8}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
@@ -899,7 +914,7 @@ const ItemDef kItems[] = {
 
     {"table_grapes", "Table Grapes", ItemDef::Type::Food,
      ItemDef::Rarity::Uncommon,
-     "Indexed, one row to a bunch.",
+     "Indexed, one row per bunch. Sweet.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 4}, {IE::Kind::Happy, 6}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
@@ -907,14 +922,15 @@ const ItemDef kItems[] = {
 
     {"lambda_chops", "Lambda Chops", ItemDef::Type::Food,
      ItemDef::Rarity::Rare,
-     "Anonymous. Nobody can say which sheep they came off.",
+     "Anonymous lamb. Rare. Save it for cooking.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 10}, {IE::Kind::Happy, 3}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/0},
 
     {"file_mignon", "File Mignon", ItemDef::Type::Food, ItemDef::Rarity::Rare,
-     "Small, tender, and somebody deleted the backup.",
+     "Small, tender, and somebody deleted the backup. Rare. Save it for "
+     "cooking.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 9}, {IE::Kind::Happy, 6}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
@@ -922,14 +938,14 @@ const ItemDef kItems[] = {
 
     {"minified_beef", "Minified Beef", ItemDef::Type::Food,
      ItemDef::Rarity::Uncommon,
-     "Every scrap of whitespace stripped out of it.",
+     "Beef with every scrap of whitespace stripped out. Very filling.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 9}, {IE::Kind::Frag, 2}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/20},
 
     {"saasage", "SaaSage", ItemDef::Type::Food, ItemDef::Rarity::Uncommon,
-     "You never own one. You simply keep paying for it.",
+     "You never own one, you just keep paying for it. Filling.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 8}, {IE::Kind::Happy, 4},
                                  {IE::Kind::Frag, 3}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
@@ -938,14 +954,15 @@ const ItemDef kItems[] = {
 
     {"packed_sardines", "Packed Sardines", ItemDef::Type::Food,
      ItemDef::Rarity::Uncommon,
-     "No padding between them anywhere in the tin.",
+     "No padding between them anywhere. Filling, salty.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 9}, {IE::Kind::Happy, -3}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/24},
 
     {"natto", "NATto", ItemDef::Type::Food, ItemDef::Rarity::Uncommon,
-     "It gets through. Whatever is in the way, it gets through.",
+     "Gets through anything in its way. Filling, smelly, cleans "
+     "Fragmentation.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 7}, {IE::Kind::Happy, -8},
                                  {IE::Kind::Frag, -5}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
@@ -953,42 +970,43 @@ const ItemDef kItems[] = {
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/16},
 
     {"paramesan", "Paramesan", ItemDef::Type::Food, ItemDef::Rarity::Rare,
-     "Grated over the top. Optional, with a sensible default.",
+     "Optional, with a sensible default. Rare. Save it for cooking.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 4}, {IE::Kind::Happy, 7}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/0},
 
     {"macadamia", "MACadamia", ItemDef::Type::Food, ItemDef::Rarity::Uncommon,
-     "Hard shell, unique address, and you can forge it.",
+     "Hard shell, unique address, easy to spoof. Your pet likes them.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 5}, {IE::Kind::Happy, 7}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/18},
 
     {"cache_ews", "Cache-ews", ItemDef::Type::Food, ItemDef::Rarity::Uncommon,
-     "Kept close, because reaching for them again is the slow part.",
+     "Keep them close, fetching more is slow. A good snack.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 5}, {IE::Kind::Happy, 6}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/20},
 
     {"chia_seeds", "Chia Seeds", ItemDef::Type::Food, ItemDef::Rarity::Common,
-     "They farm all night and hand over almost nothing.",
+     "They farm all night and give you almost nothing. Cleans a little.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 2}, {IE::Kind::Frag, -2}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/34},
 
     {"cinnamon", "Cinnamon", ItemDef::Type::Food, ItemDef::Rarity::Common,
-     "Warm, brown, and it themes everything it touches.",
+     "Warm, brown, and it themes everything. Cheers your pet up.",
      ItemDef::Context::Anytime, {{IE::Kind::Happy, 7}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/32},
 
     {"squid_ink", "Squid Ink", ItemDef::Type::Food, ItemDef::Rarity::Uncommon,
-     "Everything goes through it, and it keeps a note of all of it.",
+     "Everything passes through it and it logs the lot. Your pet hates it "
+     "raw.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 3}, {IE::Kind::Happy, -6}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
@@ -996,14 +1014,15 @@ const ItemDef kItems[] = {
 
     {"leaf_node_tea", "Leaf-Node Tea", ItemDef::Type::Food,
      ItemDef::Rarity::Uncommon,
-     "Nothing hangs below it. This is the bottom of the tree.",
+     "Nothing hangs below it: bottom of the tree. Calming, and cleans "
+     "Fragmentation.",
      ItemDef::Context::Anytime, {{IE::Kind::Happy, 9}, {IE::Kind::Frag, -6}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/22},
 
     {"mixins", "Mixins", ItemDef::Type::Food, ItemDef::Rarity::Common,
-     "Whatever you pour it into inherits the fizz.",
+     "Whatever you pour it into inherits the fizz. Cheers your pet up.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 1}, {IE::Kind::Happy, 5}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
@@ -1011,14 +1030,14 @@ const ItemDef kItems[] = {
 
     {"silicon_wafers", "Silicon Wafers", ItemDef::Type::Food,
      ItemDef::Rarity::Rare,
-     "Thin, flat, and worth more than the tin they came in.",
+     "Thin, flat, valuable. Rare. Save them for cooking.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 3}, {IE::Kind::Happy, 8}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/0},
 
     {"nibbles", "Nibbles", ItemDef::Type::Food, ItemDef::Rarity::Common,
-     "Four bits to a go, and two goes make a proper mouthful.",
+     "Four bits a bite. Two bites make a byte. A small snack.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 4}, {IE::Kind::Happy, 4}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
@@ -1026,7 +1045,7 @@ const ItemDef kItems[] = {
 
     {"marshalled_mallows", "Marshalled Mallows", ItemDef::Type::Food,
      ItemDef::Rarity::Rare,
-     "Flattened into a shape that travels, ready to be sent.",
+     "Flattened so they travel well. Rare. Save them for cooking.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 2}, {IE::Kind::Happy, 11},
                                  {IE::Kind::Frag, 3}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
@@ -1034,7 +1053,7 @@ const ItemDef kItems[] = {
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/0},
 
     {"humbugs", "Humbugs", ItemDef::Type::Food, ItemDef::Rarity::Common,
-     "There is one in every batch, and it is always striped.",
+     "There's one in every batch, always striped. Sweet.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 1}, {IE::Kind::Happy, 8},
                                  {IE::Kind::Frag, 2}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
@@ -1042,7 +1061,7 @@ const ItemDef kItems[] = {
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/30},
 
     {"burp_sweets", "Burp Sweets", ItemDef::Type::Food, ItemDef::Rarity::Common,
-     "Intercepts everything on the way down and lets you edit it.",
+     "Catches everything on the way down and lets you edit it. Sweet.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 1}, {IE::Kind::Happy, 9},
                                  {IE::Kind::Frag, 2}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
@@ -1050,7 +1069,7 @@ const ItemDef kItems[] = {
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/28},
 
     {"peer_drops", "Peer Drops", ItemDef::Type::Food, ItemDef::Rarity::Common,
-     "Everyone has a bag. Not all of them arrive.",
+     "Everyone has a bag. Not every drop arrives. Sweet.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 1}, {IE::Kind::Happy, 10}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
@@ -1062,15 +1081,16 @@ const ItemDef kItems[] = {
     // Created when Null_Noodles and Pwn-zu Sauce are combined (Hacker MERGE HUB).
     {"pwnzu_patched_noodles", "Pwnzu-Patched Noodles", ItemDef::Type::Food,
      ItemDef::Rarity::Uncommon,
-     "It tastes like Grandma Yubi's cooking.",
+     "Tastes like Grandma Yubi made it. Maxes out FED and Happiness and "
+     "wipes Fragmentation.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 100}, {IE::Kind::Frag, -100}, {IE::Kind::Happy, 100}}, /*combatHeal=*/0},
 
     // Created when Tor-Tilla Chip and OSI Dip are combined (Hacker MERGE HUB) — the
     // eighth layer OSI Dip was missing. Fills every stat at once.
     {"fully_stacked_nachos", "Fully-Stacked Nachos", ItemDef::Type::Food,
      ItemDef::Rarity::Rare,
-     "We tried every combination. In the end, the secret eighth layer... was always "
-     "you.",
+     "All eight layers at last. Maxes out FED and Happiness and wipes "
+     "Fragmentation.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 100}, {IE::Kind::Frag, -100}, {IE::Kind::Happy, 100}}, /*combatHeal=*/0},
 
     // Hashed Browns + Salted&Hashed Browns: the pantry's first cooked dish and its
@@ -1080,14 +1100,14 @@ const ItemDef kItems[] = {
     // recipe (game_internal.h's MergeRecipe::requiresItems). They are also the only
     // cooked dishes a storefront carries: every other one is the recipe or nothing.
     {"hashed_browns", "Hashed Browns", ItemDef::Type::Food,
-     ItemDef::Rarity::Uncommon, "Crispy!",
+     ItemDef::Rarity::Uncommon, "Crispy shredded potato. A solid meal that cheers your pet up.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 20}, {IE::Kind::Happy, 10}, {IE::Kind::Frag, -5}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/512},
 
     {"salted_hashed_browns", "Salted&Hashed Browns", ItemDef::Type::Food,
      ItemDef::Rarity::Rare,
-     "Extra-salted. Bad for the heart, good for the soul.",
+     "Hashed Browns with extra salt. Your pet loves these.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 20}, {IE::Kind::Happy, 20}, {IE::Kind::Frag, -5}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/512},
@@ -1115,39 +1135,40 @@ const ItemDef kItems[] = {
     // helping of any of them is simply a very good meal.
     {"cracquettes", "Cracquettes", ItemDef::Type::Food,
      ItemDef::Rarity::Uncommon,
-     "Everything the filter caught, fried into one patty. Not classy, but the "
-     "folder is finally empty.",
+     "Everything the spam filter caught, fried into patties. Very filling.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 60}, {IE::Kind::Happy, 5}, {IE::Kind::Frag, 5}}},
 
     {"hackshuka", "Hackshuka", ItemDef::Type::Food,
      ItemDef::Rarity::Uncommon,
-     "Everything that was in the bag, in one pan. Now nobody can tell what leaked.",
+     "Every egg and leak in one pan. Filling, and heals {heal} HP mid-fight.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 35}, {IE::Kind::Happy, 15}}, /*combatHeal=*/40},
 
     {"applet_turnover", "Applet Turnover", ItemDef::Type::Food,
      ItemDef::Rarity::Uncommon,
-     "Sandboxed in pastry. It still runs.",
+     "Apples sandboxed in pastry. Your pet loves it, and it cleans "
+     "Fragmentation.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 20}, {IE::Kind::Happy, 35}, {IE::Kind::Frag, -10}}},
 
     {"serial_bar", "Serial Bar", ItemDef::Type::Food,
      ItemDef::Rarity::Uncommon,
-     "Nine hundred serving suggestions, pressed into one you can carry.",
+     "A cereal bar you can carry. Filling, and a little cleaning.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 30}, {IE::Kind::Happy, 10}, {IE::Kind::Frag, -5}}},
 
     {"macrol_fry_up", "Macrol Fry-Up", ItemDef::Type::Food,
      ItemDef::Rarity::Rare,
-     "Cooked through, so it stops going off. Whatever the pier says, this is the "
-     "right end of a Fresh Macrol's short life.",
+     "Fresh Macrol, cooked before it spoils. Filling; heals {heal} HP "
+     "mid-fight.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 45}, {IE::Kind::Happy, 20}}, /*combatHeal=*/30},
 
     {"vanilla_java_roast", "Vanilla Java Roast", ItemDef::Type::Food,
      ItemDef::Rarity::Rare,
-     "Roasted dark, sweetened hard, and nobody's framework anywhere near it.",
+     "Dark roast, no framework. Your pet loves it, and it clears a lot of "
+     "Fragmentation.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 5}, {IE::Kind::Happy, 45}, {IE::Kind::Frag, -30}}},
 
@@ -1157,20 +1178,21 @@ const ItemDef kItems[] = {
     // exactly the noodles, egg and leek a bowl of it is made of.
     {"riscotto", "RISCotto", ItemDef::Type::Food,
      ItemDef::Rarity::Rare,
-     "Cooked down slowly until there is nothing left in it that didn't need to be. "
-     "Fewer instructions, better executed.",
+     "Risotto cooked down to only what it needs. Filling, and clears "
+     "Fragmentation.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 50}, {IE::Kind::Frag, -40}}},
 
     {"lansagne", "LANsagne", ItemDef::Type::Food,
      ItemDef::Rarity::Rare,
-     "Seven layers, and every one of them talks only to the layer above it.",
+     "Seven layers, each only talks to the one above. Filling; heals {heal} "
+     "HP mid-fight.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 60}, {IE::Kind::Happy, 20}}, /*combatHeal=*/40},
 
     {"ramen", "RAMen", ItemDef::Type::Food,
      ItemDef::Rarity::Uncommon,
-     "Hot, fast and gone the moment the power is. Eat it while it's live.",
+     "Hot, fast, gone when the power is. Filling.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 45}, {IE::Kind::Happy, 15}, {IE::Kind::Frag, -10}}},
 
@@ -1180,21 +1202,21 @@ const ItemDef kItems[] = {
     // its second effect is for.
     {"tiramisudo", "Tiramisudo", ItemDef::Type::Food,
      ItemDef::Rarity::Epic,
-     "Ask nicely: no. Ask like this: yes. Once per pet: Bandwidth regens "
-     "{regenMins} min faster for life.",
+     "Pudding with root access. Once per pet: Bandwidth regens {regenMins} "
+     "min faster for life.",
      ItemDef::Context::Anytime,
      {{IE::Kind::BandwidthRegenBonusMin, 1}, {IE::Kind::Bandwidth, 1},
       {IE::Kind::Happy, 50}, {IE::Kind::Frag, -15}}},
 
     {"core_dumplings", "Core Dumplings", ItemDef::Type::Food,
      ItemDef::Rarity::Uncommon,
-     "Everything that was in memory when it went down, wrapped and steamed.",
+     "Whatever was in memory when it crashed, steamed. Very filling.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 55}, {IE::Kind::Happy, 5}}},
 
     {"forkaccia", "Forkaccia", ItemDef::Type::Food,
      ItemDef::Rarity::Uncommon,
-     "Tear off a piece and it carries on rising on its own.",
+     "Tear a piece off and it keeps rising on its own. Filling.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 40}, {IE::Kind::Happy, 10}}},
 
@@ -1202,16 +1224,16 @@ const ItemDef kItems[] = {
     // dish, not a staple. Which is what a casserole is — yesterday's cooking, kept.
     {"cacherole", "Cacherole", ItemDef::Type::Food,
      ItemDef::Rarity::Rare,
-     "Whatever was still warm from the last cook, held for later and served again "
-     "faster than it was made.",
+     "Last cook's leftovers, served fast. Filling; heals {heal} HP "
+     "mid-fight.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 65}, {IE::Kind::Happy, 15}, {IE::Kind::Frag, -10}},
      /*combatHeal=*/25},
 
     {"gnulash", "GNUlash", ItemDef::Type::Food,
      ItemDef::Rarity::Rare,
-     "Everything in the pot at once, at a rolling boil, no plan whatsoever. Free to "
-     "copy, and somehow it comes out right.",
+     "Free to copy, everything in one pot. Filling; heals {heal} HP "
+     "mid-fight.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 70}, {IE::Kind::Frag, -25}}, /*combatHeal=*/60},
 
@@ -1219,27 +1241,28 @@ const ItemDef kItems[] = {
     // pantry shelf: Portridge is Bootmeal's own row cooked, down to the tier and the
     // magnitudes, and Chrootons want a loaf that was itself a merge.
     {"portridge", "Portridge", ItemDef::Type::Food, ItemDef::Rarity::Common,
-     "Cooked, plated, and identical to what went in. Runs anywhere.",
+     "Bootmeal, ported. Exactly the same, it just runs anywhere.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 10}, {IE::Kind::Happy, -5}}},
 
     {"halloumi_world", "Halloumi, World", ItemDef::Type::Food,
      ItemDef::Rarity::Uncommon,
-     "The first thing anybody cooks. It squeaks, and it works.",
+     "The first thing anyone cooks. It squeaks and it works.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 25}, {IE::Kind::Happy, 15}}},
 
     {"nan_bread", "NaN Bread", ItemDef::Type::Food, ItemDef::Rarity::Uncommon,
-     "No two loaves are equal. Not even to themselves.",
+     "Not even equal to itself. Filling.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 35}, {IE::Kind::Frag, -5}}},
 
     {"chrootons", "Chrootons", ItemDef::Type::Food, ItemDef::Rarity::Uncommon,
-     "Cubed, fried, and unable to reach the rest of the bowl.",
+     "Croutons locked out of the rest of the bowl. A good side.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 20}, {IE::Kind::Happy, 15}, {IE::Kind::Frag, -10}}},
 
     {"gzipacho", "Gzipacho", ItemDef::Type::Food, ItemDef::Rarity::Rare,
-     "Everything that was in the pot, in a quarter of the space. Served cold.",
+     "Cold soup, packed to a quarter the size. Filling; heals {heal} HP "
+     "mid-fight.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 55}, {IE::Kind::Frag, -20}}, /*combatHeal=*/30},
 
@@ -1248,30 +1271,32 @@ const ItemDef kItems[] = {
     // reads as loss rather than as a missing item.
     {"lossy_lassi", "Lossy Lassi", ItemDef::Type::Food,
      ItemDef::Rarity::Uncommon,
-     "Papaya, sugar, a pinch of salt. Whatever else was in it did not arrive.",
+     "Papaya, sugar, salt. Something got lost on the way. Your pet loves it "
+     "anyway.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 20}, {IE::Kind::Happy, 30}, {IE::Kind::Frag, -5}}},
 
     {"cod_review", "Cod Review", ItemDef::Type::Food,
      ItemDef::Rarity::Uncommon,
-     "Somebody else looked at it before it shipped. They said it was fine.",
+     "Somebody checked it before it shipped. Filling; heals {heal} HP "
+     "mid-fight.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 40}, {IE::Kind::Happy, 10}}, /*combatHeal=*/25},
 
     {"recursive_turducken", "Recursive Turducken", ItemDef::Type::Food,
      ItemDef::Rarity::Rare,
-     "A duck, in a duck, in a duck. The innermost one is only a duck.",
+     "A duck in a duck in a duck. Huge; heals {heal} HP mid-fight.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 70}, {IE::Kind::Happy, 10}}, /*combatHeal=*/40},
 
     {"peking_duck_typing", "Peking Duck Typing", ItemDef::Type::Food,
      ItemDef::Rarity::Rare,
-     "If it looks like dinner and quacks like dinner, serve it.",
+     "Looks like dinner, quacks like dinner. Filling, and your pet loves it.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 60}, {IE::Kind::Happy, 25}, {IE::Kind::Frag, -10}}},
 
     {"semaphreddo", "Semaphreddo", ItemDef::Type::Food, ItemDef::Rarity::Rare,
-     "One spoon at a time. Everybody else waits their turn.",
+     "One spoon at a time, everyone waits their turn. Your pet loves it.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 25}, {IE::Kind::Happy, 45}, {IE::Kind::Frag, -20}}},
 
@@ -1279,22 +1304,22 @@ const ItemDef kItems[] = {
     // state nobody can follow, which is what the name promises.
     {"spaghetti_code", "Spaghetti Code", ItemDef::Type::Food,
      ItemDef::Rarity::Uncommon,
-     "It came out as one piece. Nowhere in it does a strand start.",
+     "One tangled lump. Fills your pet up but adds Fragmentation.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 55}, {IE::Kind::Frag, 15}}},
 
     {"emacsaroni", "Emacsaroni", ItemDef::Type::Food, ItemDef::Rarity::Uncommon,
-     "Comes with a mail client, a calendar, and a cheese sauce.",
+     "Mac and cheese with a mail client. Filling.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 45}, {IE::Kind::Happy, 20}}},
 
     {"bisectuits", "Bisectuits", ItemDef::Type::Food, ItemDef::Rarity::Uncommon,
-     "Halve the tin, taste, halve again. The bad one is in there somewhere.",
+     "Halve the tin until you find the bad one. A nice treat.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 25}, {IE::Kind::Happy, 20}}},
 
     {"quicksortbet", "Quicksortbet", ItemDef::Type::Food, ItemDef::Rarity::Rare,
-     "Pick one, split the rest around it, repeat. Served in order.",
+     "Pick one, split the rest, repeat. Your pet loves it, and it cleans up.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 20}, {IE::Kind::Happy, 40}, {IE::Kind::Frag, -15}}},
 
@@ -1303,188 +1328,189 @@ const ItemDef kItems[] = {
     // then the puddings, then what you drink with them.
     {"buguette", "Buguette", ItemDef::Type::Food,
      ItemDef::Rarity::Uncommon,
-     "Long, crusty, and riddled with them from end to end.",
+     "A baguette riddled with bugs. Filling, but your pet won't enjoy it.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 35}, {IE::Kind::Happy, -5}}},
 
     {"chapati", "CHAPati", ItemDef::Type::Food, ItemDef::Rarity::Uncommon,
-     "It asks you something before it lets you have any.",
+     "Asks you a question before you get any. Filling.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 30}, {IE::Kind::Happy, 10}}},
 
     {"corrumpets", "Corrumpets", ItemDef::Type::Food, ItemDef::Rarity::Uncommon,
-     "Holes all the way through, and butter goes straight into them.",
+     "Holes all the way through. Filling, adds a little Fragmentation.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 30}, {IE::Kind::Happy, 10}, {IE::Kind::Frag, 5}}},
 
     {"packettone", "Packettone", ItemDef::Type::Food, ItemDef::Rarity::Rare,
-     "Enormous, sweet, and it arrives in no particular order.",
+     "Huge, sweet, arrives in any order. Very filling.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 60}, {IE::Kind::Happy, 25}}},
 
     {"hot_swapped_buns", "Hot-Swapped Buns", ItemDef::Type::Food,
      ItemDef::Rarity::Uncommon,
-     "Pulled out and replaced without anybody at the table noticing.",
+     "Swapped out mid-meal and nobody noticed. Filling.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 35}, {IE::Kind::Happy, 15}}},
 
     {"current_buns", "Current Buns", ItemDef::Type::Food,
      ItemDef::Rarity::Uncommon,
-     "Draws rather more than the recipe said it would.",
+     "Draws more than the recipe said. Filling, cheerful.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 30}, {IE::Kind::Happy, 18}}},
 
     {"config_rolls", "Config Rolls", ItemDef::Type::Food,
      ItemDef::Rarity::Uncommon,
-     "Two of them on the plate and they disagree about the filling.",
+     "Two on the plate and they disagree. A nice treat.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 25}, {IE::Kind::Happy, 20}}},
 
     {"crostini", "Crostini", ItemDef::Type::Food, ItemDef::Rarity::Uncommon,
-     "A whole little system running on one slice of somebody else's bread.",
+     "A whole little system on someone else's bread. A treat.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 20}, {IE::Kind::Happy, 20}, {IE::Kind::Frag, -5}}},
 
     {"payloaf", "Payloaf", ItemDef::Type::Food, ItemDef::Rarity::Rare,
-     "Something is baked into the middle of it. It is not raisins.",
+     "Something's baked in the middle, and it's not raisins. Heals {heal} HP "
+     "mid-fight, adds Fragmentation.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 65}, {IE::Kind::Frag, 10}}, /*combatHeal=*/35},
 
     {"firewaffle", "Firewaffle", ItemDef::Type::Food, ItemDef::Rarity::Uncommon,
-     "A grid of little closed squares. Syrup gets through anyway.",
+     "A grid of closed squares. Syrup gets through anyway. Filling.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 35}, {IE::Kind::Happy, 20}, {IE::Kind::Frag, -8}}},
 
     // The pans -------------------------------------------------------------
     {"chownder", "Chownder", ItemDef::Type::Food, ItemDef::Rarity::Rare,
-     "Thick, hot, and it belongs to whoever is holding the bowl.",
+     "Thick soup. Whoever holds the bowl owns it. Heals {heal} HP mid-fight.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 60}, {IE::Kind::Happy, 15}}, /*combatHeal=*/35},
 
     {"cronsomme", "Cronsomme", ItemDef::Type::Food, ItemDef::Rarity::Uncommon,
-     "Perfectly clear, and served on the quarter hour whether you came or not.",
+     "Clear soup, served every quarter hour. Clears Fragmentation.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 30}, {IE::Kind::Frag, -18}}},
 
     {"wanton_soup", "WANton Soup", ItemDef::Type::Food,
      ItemDef::Rarity::Uncommon,
-     "Each one wrapped for a long journey, and most of them survive it.",
+     "Dumplings wrapped for a long trip. Heals {heal} HP mid-fight.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 40}, {IE::Kind::Happy, 12}}, /*combatHeal=*/20},
 
     {"piperogi", "Piperogi", ItemDef::Type::Food, ItemDef::Rarity::Uncommon,
-     "Each one feeds straight into the next one along the plate.",
+     "Each one feeds straight into the next. Filling.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 45}, {IE::Kind::Happy, 8}}},
 
     {"queuesadilla", "Queuesadilla", ItemDef::Type::Food,
      ItemDef::Rarity::Uncommon,
-     "First one in is the first one out, and it has gone cold waiting.",
+     "First in, first out, and it's gone cold waiting. Filling.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 40}, {IE::Kind::Happy, 15}}},
 
     {"ravioli_code", "Ravioli Code", ItemDef::Type::Food,
      ItemDef::Rarity::Uncommon,
-     "Every piece sealed, self-contained, and impossible to tell apart.",
+     "Every piece sealed and self-contained. Filling, cleans Fragmentation.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 50}, {IE::Kind::Frag, -12}}},
 
     {"idleys", "Idleys", ItemDef::Type::Food, ItemDef::Rarity::Uncommon,
-     "Doing nothing at all, and using nothing to do it.",
+     "Doing nothing, using nothing. Filling, cleans Fragmentation.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 30}, {IE::Kind::Frag, -15}}},
 
     {"ms_dosa", "MS-Dosa", ItemDef::Type::Food, ItemDef::Rarity::Rare,
-     "Thin, crisp, and older than everybody at the table.",
+     "Thin, crisp, older than everyone at the table. Very filling.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 55}, {IE::Kind::Happy, 15}}},
 
     {"arpas", "ARPas", ItemDef::Type::Food, ItemDef::Rarity::Uncommon,
-     "It goes round the table asking who has what.",
+     "Goes round the table asking who's got what. Filling.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 35}, {IE::Kind::Happy, 10}}},
 
     {"kafkofta", "Kafkofta", ItemDef::Type::Food, ItemDef::Rarity::Rare,
-     "They arrive in order, and you can have the whole lot again.",
+     "They arrive in order, and you can replay the lot. Heals {heal} HP "
+     "mid-fight.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 60}, {IE::Kind::Happy, 10}}, /*combatHeal=*/30},
 
     {"kernel_panini", "Kernel Panini", ItemDef::Type::Food,
      ItemDef::Rarity::Rare,
-     "Everything stopped the moment it was pressed. Nothing since.",
+     "Everything froze the moment it was pressed. Heals {heal} HP mid-fight.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 55}, {IE::Kind::Happy, 20}}, /*combatHeal=*/30},
 
     // EPIC — a race is decided by who gets there first, which is what a Speed point buys.
     {"racelette", "Racelette", ItemDef::Type::Food, ItemDef::Rarity::Epic,
-     "Two of you scraping at the same pan. Whoever gets there first. "
-     "Once per pet: +{speed} SPEED for life.",
+     "First one to the pan wins. Once per pet: +{speed} SPEED for life.",
      ItemDef::Context::Anytime,
      {{IE::Kind::StatPointSpeed, 1}, {IE::Kind::Hunger, 50}, {IE::Kind::Happy, 25}}},
 
     {"scrambled_regeggs", "Scrambled RegEggs", ItemDef::Type::Food,
      ItemDef::Rarity::Uncommon,
-     "Thoroughly scrambled. Nobody is unscrambling that.",
+     "Scrambled beyond unscrambling. Filling.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 35}, {IE::Kind::Happy, 10}}},
 
     {"char_grilled_array", "Char-Grilled Array", ItemDef::Type::Food,
      ItemDef::Rarity::Uncommon,
-     "A skewer of fixed width. The last one on it is always empty.",
+     "Fixed-width skewer, last slot always empty. Filling.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 45}, {IE::Kind::Happy, 8}}},
 
     {"tarballs", "Tarballs", ItemDef::Type::Food, ItemDef::Rarity::Uncommon,
-     "Everything that was on the counter, compressed into one.",
+     "Everything on the counter, packed into balls. Very filling.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 50}, {IE::Kind::Happy, 5}}},
 
     {"bashed_potatoes", "Bashed Potatoes", ItemDef::Type::Food,
      ItemDef::Rarity::Uncommon,
-     "Hit until they did what they were told.",
+     "Hit until they did as they were told. Filling.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 45}, {IE::Kind::Happy, 10}}},
 
     {"onion_rings", "Onion Rings", ItemDef::Type::Food,
      ItemDef::Rarity::Uncommon,
-     "Three layers, and not one of them knows who placed the order.",
+     "Three layers, none knows who ordered. A treat.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 30}, {IE::Kind::Happy, 20}}},
 
     {"flash_fried_chips", "Flash-Fried Chips", ItemDef::Type::Food,
      ItemDef::Rarity::Uncommon,
-     "In and out of the oil so fast the pan never noticed.",
+     "In and out of the oil so fast the pan missed it. A treat.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 35}, {IE::Kind::Happy, 18}}},
 
     {"twisted_pairetzels", "Twisted Pairetzels", ItemDef::Type::Food,
      ItemDef::Rarity::Uncommon,
-     "Wound around each other so tightly that neither picks up the other's noise.",
+     "Twisted so tight neither picks up the other's noise. A treat.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 25}, {IE::Kind::Happy, 18}}},
 
     {"jitter_fritters", "Jitter Fritters", ItemDef::Type::Food,
      ItemDef::Rarity::Uncommon,
-     "They arrive. Just never quite when you expected them to.",
+     "They show up, just never quite when you expect. Filling.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 35}, {IE::Kind::Happy, 12}}},
 
     {"shashimi", "SHAshimi", ItemDef::Type::Food, ItemDef::Rarity::Rare,
-     "Sliced thin, one direction only. Nothing is going back.",
+     "Sliced one way only, no going back. Your pet loves it; cleans "
+     "Fragmentation.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 45}, {IE::Kind::Happy, 25}, {IE::Kind::Frag, -15}}},
 
     // EPIC — a spare in the array is the whole idea of a Defence point: one more thing
     // that has to fail before anything is actually lost.
     {"spare_ribs", "Spare RIBs", ItemDef::Type::Food, ItemDef::Rarity::Epic,
-     "Keep a copy. You will want to know how you got here. "
-     "Once per pet: +{defense} DEFENSE for life.",
+     "Keep a spare. Once per pet: +{defense} DEFENSE for life.",
      ItemDef::Context::Anytime,
      {{IE::Kind::StatPointDefense, 1}, {IE::Kind::Hunger, 65}, {IE::Kind::Happy, 15}},
      /*combatHeal=*/30},
 
     {"rested_steak", "RESTed Steak", ItemDef::Type::Food, ItemDef::Rarity::Rare,
-     "Stateless. Every bite stands entirely on its own.",
+     "Stateless. Every bite stands alone. Heals {heal} HP mid-fight.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 60}, {IE::Kind::Happy, 20}}, /*combatHeal=*/35},
 
@@ -1492,176 +1518,180 @@ const ItemDef kItems[] = {
     // is not a thing you do twice, so the first plate roots it and later ones are veal.
     {"privilege_escalope", "Privilege Escalope", ItemDef::Type::Food,
      ItemDef::Rarity::Epic,
-     "Ordered the veal. Came back with the run of the kitchen. "
-     "Once per pet: +{power} POWER for life.",
+     "Ordered the veal, got the run of the kitchen. Once per pet: +{power} "
+     "POWER for life.",
      ItemDef::Context::Anytime,
      {{IE::Kind::StatPointPower, 1}, {IE::Kind::Hunger, 55}, {IE::Kind::Happy, 30}}},
 
     {"force_pulled_pork", "Force-Pulled Pork", ItemDef::Type::Food,
      ItemDef::Rarity::Rare,
-     "It was not ready. It came apart anyway.",
+     "Wasn't ready, pulled anyway. Huge; heals {heal} HP mid-fight, adds "
+     "Fragmentation.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 70}, {IE::Kind::Frag, 10}}, /*combatHeal=*/40},
 
     {"rubber_duck_confit", "Rubber Duck Confit", ItemDef::Type::Food,
      ItemDef::Rarity::Rare,
-     "You explained the whole problem to it and it said nothing at all.",
+     "You explained it all and it said nothing. Your pet loves it; cleans "
+     "Fragmentation.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 55}, {IE::Kind::Happy, 30}, {IE::Kind::Frag, -20}}},
 
     {"vacuum_sealed_leftovers", "Vacuum-Sealed Leftovers", ItemDef::Type::Food,
      ItemDef::Rarity::Rare,
-     "Sealed up and the space nobody was using handed straight back.",
+     "Sealed tight, wasted space handed back. Filling, clears Fragmentation.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 60}, {IE::Kind::Frag, -25}}},
 
     {"disk_platter", "Disk Platter", ItemDef::Type::Food, ItemDef::Rarity::Rare,
-     "It spins, everybody reaches in, and it is somehow always your turn.",
+     "It spins and it's always your turn. Very filling.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 65}, {IE::Kind::Happy, 20}}},
 
     {"serverless_platter", "Serverless Platter", ItemDef::Type::Food,
      ItemDef::Rarity::Rare,
-     "Nobody brought it out. It is simply there when you want it.",
+     "Nobody brought it out, it's just there. Heals {heal} HP mid-fight.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 55}, {IE::Kind::Happy, 25}}, /*combatHeal=*/25},
 
     {"pickle_jar", "Pickle Jar", ItemDef::Type::Food,
      ItemDef::Rarity::Uncommon,
-     "Whatever went in is what comes out, and you had better hope you packed it.",
+     "What comes out is what you packed. Cleans Fragmentation; a bit sour.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 20}, {IE::Kind::Happy, -5}, {IE::Kind::Frag, -12}}},
 
     // The condiments — small effects, but they are what the big plates are built on.
     {"ai_oli", "AI-oli", ItemDef::Type::Food, ItemDef::Rarity::Uncommon,
-     "It came up with the recipe itself. Mostly garlic. Confidently.",
+     "It wrote the recipe itself. Mostly garlic. Very confident.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 10}, {IE::Kind::Happy, 15}}},
 
     {"vinaigrette", "Vi-naigrette", ItemDef::Type::Food,
      ItemDef::Rarity::Uncommon,
-     "Nobody at this table can work out how to put the lid back on.",
+     "Nobody here knows how to put the lid back on. Cleans a little.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 5}, {IE::Kind::Happy, 12}, {IE::Kind::Frag, -8}}},
 
     {"malwarmalade", "Malwarmalade", ItemDef::Type::Food,
      ItemDef::Rarity::Uncommon,
-     "Spreads. Keep it away from the other jars.",
+     "It spreads. Keep it away from the other jars. Adds Fragmentation.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 12}, {IE::Kind::Happy, 18}, {IE::Kind::Frag, 5}}},
 
     {"signal_jam", "Signal Jam", ItemDef::Type::Food,
      ItemDef::Rarity::Uncommon,
-     "Thick enough that nothing gets through it.",
+     "Thick enough to block anything. Sweet.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 12}, {IE::Kind::Happy, 16}}},
 
     // The puddings --------------------------------------------------------
     {"pop3sicle", "POP3sicle", ItemDef::Type::Food, ItemDef::Rarity::Uncommon,
-     "You get it once. It is not on the tray any more.",
+     "You get it once, then it's off the tray. Your pet loves it.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 15}, {IE::Kind::Happy, 30}}},
 
     {"mergingue", "Mergingue", ItemDef::Type::Food, ItemDef::Rarity::Uncommon,
-     "Two of them folded together with no seam left anywhere.",
+     "Two folded together with no seam. Your pet loves it.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 15}, {IE::Kind::Happy, 32}}},
 
     {"declair", "Declair", ItemDef::Type::Food, ItemDef::Rarity::Uncommon,
-     "Has to be announced before anyone is allowed to use it.",
+     "Has to be declared before anyone can use it. Your pet loves it.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 20}, {IE::Kind::Happy, 30}}},
 
     // EPIC — the one Epic dish that grants no stat at all. A profiler doesn't make the
     // pet stronger, it makes every hour it spends teach it more, which is an XP rate.
     {"profilerole", "Profilerole", ItemDef::Type::Food, ItemDef::Rarity::Epic,
-     "Small, rich, and afterwards you know exactly where the time went. "
-     "Once per pet: +{xpRate}% XP for life.",
+     "Shows exactly where the time went. Once per pet: +{xpRate}% XP for "
+     "life.",
      ItemDef::Context::Anytime,
      {{IE::Kind::XpRateBonusPct, 25}, {IE::Kind::Hunger, 25}, {IE::Kind::Happy, 38},
       {IE::Kind::Frag, -10}}},
 
     {"coboler", "COBOLer", ItemDef::Type::Food, ItemDef::Rarity::Rare,
-     "Nobody has touched the recipe in fifty years. It still comes out.",
+     "Nobody's touched the recipe in fifty years. Still works. Filling.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 50}, {IE::Kind::Happy, 25}}},
 
     {"clustard", "Clustard", ItemDef::Type::Food, ItemDef::Rarity::Uncommon,
-     "Three jugs of it. One goes over and nobody at the table notices.",
+     "Three jugs. One spills, nobody notices. A treat.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 25}, {IE::Kind::Happy, 22}}},
 
     {"bashlava", "Bashlava", ItemDef::Type::Food, ItemDef::Rarity::Rare,
-     "Layer calls layer calls layer, all the way down to the syrup.",
+     "Layer calls layer all the way down. Adds Fragmentation.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 40}, {IE::Kind::Happy, 40}, {IE::Kind::Frag, 8}}},
 
     {"deflated_souffle", "Deflated Souffle", ItemDef::Type::Food,
      ItemDef::Rarity::Uncommon,
-     "It was twice this size before all the air came out of it.",
+     "Twice this size before the air came out. Filling.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 30}, {IE::Kind::Happy, 12}}},
 
     {"fork_bombe", "Fork Bombe", ItemDef::Type::Food, ItemDef::Rarity::Rare,
-     "Cut it and there are two. Cut those and there are four.",
+     "Cut it, two. Cut those, four. Adds Fragmentation.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 45}, {IE::Kind::Happy, 35}, {IE::Kind::Frag, 12}}},
 
     {"optical_mousse", "Optical Mousse", ItemDef::Type::Food,
      ItemDef::Rarity::Rare,
-     "No wires anywhere in it. Stops dead on a shiny plate.",
+     "No wires in it at all. Your pet loves it; cleans Fragmentation.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 25}, {IE::Kind::Happy, 40}, {IE::Kind::Frag, -12}}},
 
     {"cherry_picked_tart", "Cherry-Picked Tart", ItemDef::Type::Food,
      ItemDef::Rarity::Rare,
-     "You took the one you wanted and left the rest of the branch.",
+     "You took the one you wanted off the branch. Your pet loves it.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 30}, {IE::Kind::Happy, 42}}},
 
     {"raspberry_pie", "Raspberry Pie", ItemDef::Type::Food,
      ItemDef::Rarity::Uncommon,
-     "Cheap, tiny, endlessly useful, and there are four more in the drawer.",
+     "Cheap, small, useful, four more in the drawer. A treat.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 35}, {IE::Kind::Happy, 25}}},
 
     {"rainbow_tablet", "Rainbow Tablet", ItemDef::Type::Food,
      ItemDef::Rarity::Rare,
-     "Every answer worked out in advance, set hard, and cut into squares.",
+     "Every answer worked out in advance. Your pet loves it; adds "
+     "Fragmentation.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 20}, {IE::Kind::Happy, 45}, {IE::Kind::Frag, 10}}},
 
     {"mint_choc_chip", "Mint Choc Chip", ItemDef::Type::Food,
      ItemDef::Rarity::Rare,
-     "A perfectly good distribution, with silicon through it.",
+     "A good distro with silicon in it. Your pet loves it.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 25}, {IE::Kind::Happy, 38}, {IE::Kind::Frag, -8}}},
 
     {"candied_yamls", "Candied YAMLs", ItemDef::Type::Food,
      ItemDef::Rarity::Uncommon,
-     "Delicious, and one wrong space in the tray ruins the tray.",
+     "One wrong space ruins the tray. Filling.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 40}, {IE::Kind::Happy, 20}}},
 
     // What you drink with them --------------------------------------------
     {"flat_white", "Flat White", ItemDef::Type::Food, ItemDef::Rarity::Uncommon,
-     "No structure, no schema, one long pour.",
+     "No schema, one long pour. Cheers your pet up, cleans Fragmentation.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 5}, {IE::Kind::Happy, 28}, {IE::Kind::Frag, -12}}},
 
     {"mockachino", "Mockachino", ItemDef::Type::Food, ItemDef::Rarity::Uncommon,
-     "It only pretends to be coffee, and it is convincing enough.",
+     "Only pretends to be coffee. Cheers your pet up.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 8}, {IE::Kind::Happy, 26}, {IE::Kind::Frag, -8}}},
 
     {"blockchai", "Blockchai", ItemDef::Type::Food, ItemDef::Rarity::Rare,
-     "Every cup depends on the one before it, and nobody can pour it again.",
+     "Every cup depends on the last. Cheers your pet up, clears "
+     "Fragmentation.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 10}, {IE::Kind::Happy, 35}, {IE::Kind::Frag, -18}}},
 
     {"syn_ack_shake", "SYN-ACK Shake", ItemDef::Type::Food,
      ItemDef::Rarity::Uncommon,
-     "You offer, it offers back, you agree. Then you drink it.",
+     "You offer, it offers back, you agree, you drink.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 25}, {IE::Kind::Happy, 25}}},
 
@@ -1669,30 +1699,29 @@ const ItemDef kItems[] = {
     // the end of it. The Fragmentation it adds is the cost of taking the extra room.
     {"buffer_overfloat", "Buffer Overfloat", ItemDef::Type::Food,
      ItemDef::Rarity::Epic,
-     "They kept pouring after the glass was full. It went everywhere. "
-     "Once per pet: +{maxhp} MAX-HP for life.",
+     "Kept pouring past full. Once per pet: +{maxhp} MAX-HP for life.",
      ItemDef::Context::Anytime,
      {{IE::Kind::StatPointHealth, 1}, {IE::Kind::Hunger, 30}, {IE::Kind::Happy, 40},
       {IE::Kind::Frag, 15}}},
 
     {"hard_cidr", "Hard CIDR", ItemDef::Type::Food, ItemDef::Rarity::Uncommon,
-     "Comes by the block. You do not get to choose how big a block.",
+     "Comes by the block; you don't choose the size. Adds Fragmentation.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 10}, {IE::Kind::Happy, 28}, {IE::Kind::Frag, 8}}},
 
     {"port_80", "Port 80", ItemDef::Type::Food, ItemDef::Rarity::Rare,
-     "Fortified, and served open to absolutely anyone who asks.",
+     "Fortified wine, open to anyone. Your pet loves it; adds Fragmentation.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 12}, {IE::Kind::Happy, 42}, {IE::Kind::Frag, 10}}},
 
     {"fizzbuzz", "FizzBuzz", ItemDef::Type::Food, ItemDef::Rarity::Uncommon,
-     "Every third sip fizzes, every fifth buzzes. Nobody orders it twice.",
+     "Every third sip fizzes, every fifth buzzes. Cheers your pet up.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 8}, {IE::Kind::Happy, 24}}},
 
     {"punchcard_punch", "Punchcard Punch", ItemDef::Type::Food,
      ItemDef::Rarity::Uncommon,
-     "Drop the tray and you are starting the evening again.",
+     "Drop the tray and you're starting over. Cheers your pet up.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 15}, {IE::Kind::Happy, 26}}},
 
@@ -1708,14 +1737,14 @@ const ItemDef kItems[] = {
     // out unused it just lapses; another Backup Drive re-arms it.
     {"backup_drive", "Backup Drive", ItemDef::Type::Buff,
      ItemDef::Rarity::Rare,
-     "For {shieldMins} minutes, a pet knocked out in a fight gets half its max Health "
-     "added back. One save, and a big enough hit can still beat it.",
+     "For {shieldMins} min, if your pet gets knocked out in a fight, it gets "
+     "half its max HP back. Once.",
      ItemDef::Context::Anytime, {{IE::Kind::ArmCombatShieldBuff, 60}}},
     
     // Rare Cache: Open in the VAULT for a Rare Reward not locked to any area in particular
      {"sealed_cache_rare", "Rare Cache", ItemDef::Type::Quest,
      ItemDef::Rarity::Rare,
-     "A rare data cache. Open from the VAULT for a richer reward draw.",
+     "A rare cache. Open it in the VAULT for a good reward.",
      ItemDef::Context::Anytime, /*effects=*/{}, /*combatHeal=*/0, /*preEncounterXp=*/0,
      /*bits=*/0, /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::OpenContainer,
      /*category=*/ItemDef::Category::Derive,
@@ -1724,8 +1753,9 @@ const ItemDef kItems[] = {
 
     // Kernel Bell: the Backdoor Bell's deeper cousin still — see its comment above.
     {"kernel_bell", "Kernel Bell", ItemDef::Type::Tool,
-     ItemDef::Rarity::Rare, "Starts the next DeepWeb Dive at depth {depth}.",
-     ItemDef::Context::Anytime, {{IE::Kind::SetDeepWebStartDepth, 64}}},
+     ItemDef::Rarity::Rare, "Use before a DeepWeb Dive to start at depth {depth}. Every win that "
+     "dive pays {diveBonus}% more.",
+     ItemDef::Context::Anytime, {{IE::Kind::SetDeepWebStartDepth, 64}, {IE::Kind::DiveStartBonusPct, 100}}},
 
     // Deep-Learning Module: arms the dive's depth-per-win multiplier
     // (ArmDeepWebDepthMultiplier) — the pet "learns" the shallow depths fast so it
@@ -1733,9 +1763,9 @@ const ItemDef kItems[] = {
     // stack — a fresh Module/Core just replaces whichever multiplier is currently
     // armed. Lets a blitzing endgame pet catch back up to a real fight faster.
     {"deep_learning_module", "Deep-Learning Module", ItemDef::Type::Tool,
-     ItemDef::Rarity::Rare, "For the next DeepWeb Dive, each win advances the depth by {depthStep} "
-     "instead of 1.",
-     ItemDef::Context::Anytime, {{IE::Kind::ArmDeepWebDepthMultiplier, 2}}},
+     ItemDef::Rarity::Rare, "Next DeepWeb Dive, each win drops you {depthStep} depths instead of 1, "
+     "and pays {diveBonus}% more.",
+     ItemDef::Context::Anytime, {{IE::Kind::ArmDeepWebDepthMultiplier, 2}, {IE::Kind::DiveStepBonusPct, 50}}},
     //
     // EPIC ITEMS --------------------------
     //
@@ -1745,7 +1775,8 @@ const ItemDef kItems[] = {
     // permanent thing folded into it, which is why it is filed with the food rather
     // than with the buffs it arms none of.
     {"yubi_cookie", "Yubi-Cookie", ItemDef::Type::Food,
-     ItemDef::Rarity::Epic, "So delicious the pet forgets {mistakes} care mistake. Once per pet.",
+     ItemDef::Rarity::Epic, "So good your pet forgets {mistakes} care mistake. Only works once per "
+     "pet.",
      ItemDef::Context::Anytime,
      {{IE::Kind::RemoveCareMistakeOnce, 1}, {IE::Kind::Hunger, 20},
       {IE::Kind::Happy, 40}}},
@@ -1754,7 +1785,7 @@ const ItemDef kItems[] = {
     // arm protection against the NEXT care mistake, once per lifetime. The shield is
     // per-pet, consumed on the next positive mistake.
     {"restore_point", "Restore Point", ItemDef::Type::Buff,
-     ItemDef::Rarity::Epic, "Shields the pet from its next care mistake. Once per pet.",
+     ItemDef::Rarity::Epic, "Your pet's next care mistake doesn't count. Only works once per pet.",
      ItemDef::Context::Anytime, {{IE::Kind::ClearMistakeShieldOnce, 1}}},
     
     // Epic Cache: Open in the VAULT for an Epic Reward not locked to any area in particular
@@ -1764,8 +1795,8 @@ const ItemDef kItems[] = {
     // deep enough). The yield reveal shows the items/Bits; the mod lands in MODS.
     {"sealed_cache_epic", "Epic Cache", ItemDef::Type::Quest,
      ItemDef::Rarity::Epic,
-     "An epic data cache. Open from the VAULT for a deep reward draw and a shot at a "
-     "MOD.",
+     "An epic cache. Open it in the VAULT for the best rewards a walk turns "
+     "up, and a shot at a MOD.",
      ItemDef::Context::Anytime, /*effects=*/{}, /*combatHeal=*/0, /*preEncounterXp=*/0,
      /*bits=*/0, /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::OpenContainer,
      /*category=*/ItemDef::Category::Derive,
@@ -1780,8 +1811,8 @@ const ItemDef kItems[] = {
     // because a ladder takes far longer to finish than a cache takes to find.
     {"commend_cache", "Commendation Cache", ItemDef::Type::Quest,
      ItemDef::Rarity::Epic,
-     "Earned, never found. Open from the VAULT for the richest draw and a shot at a "
-     "MOD.",
+     "You earned this one. Open it in the VAULT for top rewards and a good "
+     "shot at a MOD.",
      ItemDef::Context::Anytime, /*effects=*/{}, /*combatHeal=*/0, /*preEncounterXp=*/0,
      /*bits=*/0, /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::OpenContainer,
      /*category=*/ItemDef::Category::Derive,
@@ -1801,42 +1832,48 @@ const ItemDef kItems[] = {
     // are Epic; the four that are a filter over the tube you already own are Rare.
     {"sunset_rom", "Sunset ROM", ItemDef::Type::Quest,
      ItemDef::Rarity::Epic,
-     "A cabinet's palette ROM. Unlocks the SYNTHWAVE theme in CFG.",
+     "A palette chip from an arcade cabinet. Holding it unlocks the "
+     "SYNTHWAVE theme in CFG.",
      ItemDef::Context::Anytime, /*effects=*/{}, /*combatHeal=*/0, /*preEncounterXp=*/0,
      /*bits=*/0, /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Keys},
 
     {"pocket_lcd", "Pocket LCD", ItemDef::Type::Quest,
      ItemDef::Rarity::Epic,
-     "A scratched handheld panel. Unlocks the DOT MATRIX theme in CFG.",
+     "A palette chip from a handheld. Holding it unlocks the DOT MATRIX "
+     "theme in CFG.",
      ItemDef::Context::Anytime, /*effects=*/{}, /*combatHeal=*/0, /*preEncounterXp=*/0,
      /*bits=*/0, /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Keys},
 
     {"phosphor_tube", "Phosphor Tube", ItemDef::Type::Quest,
      ItemDef::Rarity::Rare,
-     "A green-screen tube. Unlocks the TERMINAL theme in CFG.",
+     "A palette chip from a green screen. Holding it unlocks the TERMINAL "
+     "theme in CFG.",
      ItemDef::Context::Anytime, /*effects=*/{}, /*combatHeal=*/0, /*preEncounterXp=*/0,
      /*bits=*/0, /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Keys},
 
     {"amber_tube", "Amber Tube", ItemDef::Type::Quest,
      ItemDef::Rarity::Rare,
-     "The green tube's warmer cousin. Unlocks the AMBER theme in CFG.",
+     "A palette chip from an amber screen. Holding it unlocks the AMBER "
+     "theme in CFG.",
      ItemDef::Context::Anytime, /*effects=*/{}, /*combatHeal=*/0, /*preEncounterXp=*/0,
      /*bits=*/0, /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Keys},
 
     {"daylight_filter", "Daylight Filter", ItemDef::Type::Quest,
      ItemDef::Rarity::Rare,
-     "Ink on paper, for reading outdoors. Unlocks the DAYLIGHT theme in CFG.",
+     "A palette chip for reading outdoors. Holding it unlocks the DAYLIGHT "
+     "theme in CFG.",
      ItemDef::Context::Anytime, /*effects=*/{}, /*combatHeal=*/0, /*preEncounterXp=*/0,
      /*bits=*/0, /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Keys},
 
     {"redshift_lens", "Redshift Lens", ItemDef::Type::Quest,
      ItemDef::Rarity::Rare,
-     "Keeps your dark adaptation. Unlocks the NIGHT VISION theme in CFG.",
+     "A palette chip for the dark. Holding it unlocks the NIGHT VISION theme "
+     "in CFG.",
      ItemDef::Context::Anytime, /*effects=*/{}, /*combatHeal=*/0, /*preEncounterXp=*/0,
      /*bits=*/0, /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Keys},
@@ -1846,7 +1883,7 @@ const ItemDef kItems[] = {
     // Using one from ITEMS is inert ("USE ON THE WALK", itemUsable).
     {"access_token", "Access Token", ItemDef::Type::Quest,
      ItemDef::Rarity::Uncommon,
-     "Use on a walk: warp straight to the area's shop.",
+     "Use it on a walk to jump straight to this area's shop.",
      ItemDef::Context::Anytime, /*effects=*/{}, /*combatHeal=*/0, /*preEncounterXp=*/0,
      /*bits=*/0, /*walkWarp=*/ItemDef::WalkWarp::Shop, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Keys},
@@ -1857,7 +1894,8 @@ const ItemDef kItems[] = {
     // applyItemEffects every other item goes through.
     {"safe_mode_key", "Safe-Mode Key", ItemDef::Type::Quest,
      ItemDef::Rarity::Uncommon,
-     "Use on a walk: warp straight to a safe rest that sheds {|frag|} Fragmentation.",
+     "Use it on a walk to jump to a safe rest. Your pet sheds {|frag|} "
+     "Fragmentation there.",
      ItemDef::Context::Anytime,
      /*effects=*/{{ItemEffect::Kind::Frag, -20}}, /*combatHeal=*/0, /*preEncounterXp=*/0,
      /*bits=*/0, /*walkWarp=*/ItemDef::WalkWarp::SafeRest, /*use=*/ItemDef::Use::Consume,
@@ -1872,7 +1910,8 @@ const ItemDef kItems[] = {
     // dish granted (core/model/pet_upgrades.h).
     {"rollback", "Rollback", ItemDef::Type::Tool,
      ItemDef::Rarity::Rare,
-     "Shed one earned stat point (-1 level) to re-roll it.",
+     "Pick a stat. Your pet loses one point there and a level, then earns "
+     "the level back and rolls a new point.",
      ItemDef::Context::Anytime, /*effects=*/{}, /*combatHeal=*/0, /*preEncounterXp=*/0,
      /*bits=*/0, /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Rollback},
 
@@ -1889,7 +1928,8 @@ const ItemDef kItems[] = {
     // are not on the earned table at all.
     {"repartition", "Repartition", ItemDef::Type::Tool,
      ItemDef::Rarity::Epic,
-     "Move one earned stat point onto a stat of your choosing.",
+     "Move one of your pet's earned stat points to any other stat. Keeps its "
+     "level.",
      ItemDef::Context::Anytime, /*effects=*/{}, /*combatHeal=*/0, /*preEncounterXp=*/0,
      /*bits=*/0, /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Repartition},
     
@@ -1897,7 +1937,7 @@ const ItemDef kItems[] = {
     // kTrojanDivertPct roll. Stocked item at Moor-to-Moor (Napstorrent Moors).
     {"ambig_usb", "Ambig-USB", ItemDef::Type::Tool,
      ItemDef::Rarity::Epic,
-     "Next evolution diverts to a Trojan, if it can. Spent either way.",
+     "Your pet's next evolution turns Trojan if it can. Used up either way.",
      ItemDef::Context::Anytime, {{IE::Kind::ForceTrojanDivert, 1}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/1024},
 
@@ -1917,7 +1957,8 @@ const ItemDef kItems[] = {
     // cost a real trip down.
     {"bad_usb", "Bad-USB", ItemDef::Type::Tool,
      ItemDef::Rarity::Epic,
-     "Forces the next branching evolution down the BAD line, whatever the care record.",
+     "Forces your pet's next branching evolution onto the BAD line, however "
+     "well you raised it.",
      ItemDef::Context::Anytime, {{IE::Kind::ForceEvolveBranchBad, 1}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
@@ -1929,7 +1970,8 @@ const ItemDef kItems[] = {
     // one slot as the Bad-USB: plugging either in replaces the other.
     {"signed_usb", "Signed-USB", ItemDef::Type::Tool,
      ItemDef::Rarity::Epic,
-     "Forces the next branching evolution down the GOOD line, whatever the care record.",
+     "Forces your pet's next branching evolution onto the GOOD line, however "
+     "badly it went.",
      ItemDef::Context::Anytime, {{IE::Kind::ForceEvolveBranchGood, 1}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
@@ -1944,7 +1986,8 @@ const ItemDef kItems[] = {
     // second soak, until this one is spent at the boundary it stretched.
     {"sandbox_usb", "Sandbox-USB", ItemDef::Type::Tool,
      ItemDef::Rarity::Rare,
-     "Process only: stretches this stage's evolve clock x{soak} and pays x{soak} XP.",
+     "Process only. Your pet takes x{soak} as long to evolve and earns "
+     "x{soak} XP meanwhile.",
      ItemDef::Context::Anytime, {{IE::Kind::ArmEvolveSoak, 2}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
@@ -1969,7 +2012,8 @@ const ItemDef kItems[] = {
     // XP has to be worth a stage to be worth arming at all.
     {"hypervisor_usb", "Hypervisor-USB", ItemDef::Type::Tool,
      ItemDef::Rarity::Epic,
-     "Process/Script: evolve clock x{soak} (doubled on a Script), XP x{soak}.",
+     "Process or Script. x{soak} XP, x{soak} as long to evolve (x2 that on a "
+     "Script).",
      ItemDef::Context::Anytime, {{IE::Kind::ArmEvolveSoakLate, 8}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/2048},
 
@@ -1981,7 +2025,7 @@ const ItemDef kItems[] = {
     // them are endings, so keeping one of each means keeping the middle of the chains.
     {"halt_usb", "Halt-USB", ItemDef::Type::Tool,
      ItemDef::Rarity::Rare,
-     "Stops the pet evolving at all, until an Eject-USB pulls it.",
+     "Your pet stops evolving until you pull this with an Eject-USB.",
      ItemDef::Context::Anytime, {{IE::Kind::ArmEvolveHold, 0}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
@@ -1994,7 +2038,7 @@ const ItemDef kItems[] = {
     // undoes (dropWeight), for the same reason.
     {"eject_usb", "Eject-USB", ItemDef::Type::Tool,
      ItemDef::Rarity::Rare,
-     "Pulls whatever USB is armed and drops its effect.",
+     "Pulls whatever USB is in your pet and cancels what it was doing.",
      ItemDef::Context::Anytime, {{IE::Kind::ClearUsbPort, 0}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
@@ -2006,14 +2050,15 @@ const ItemDef kItems[] = {
     // other pet's or the device's frontier.
     {"zeroday_bell", "Checkpoint Bell", ItemDef::Type::Tool,
      ItemDef::Rarity::Epic,
-     "Starts the next DeepWeb Dive at this pet's own deepest depth reached.",
-     ItemDef::Context::Anytime, {{IE::Kind::SetDeepWebStartDepthToBest, 0}}},
+     "Use before a DeepWeb Dive to start at your pet's deepest depth so far. "
+     "Every win pays {diveBonus}% more.",
+     ItemDef::Context::Anytime, {{IE::Kind::SetDeepWebStartDepthToBest, 0}, {IE::Kind::DiveStartBonusPct, 100}}},
 
     // Deep-Learning Core: Deep-Learning Module's Epic upgrade — see its comment above.
     {"deep_learning_core", "Deep-Learning Core", ItemDef::Type::Tool,
-     ItemDef::Rarity::Epic, "For the next DeepWeb Dive, each win advances the depth by {depthStep} "
-     "instead of 1.",
-     ItemDef::Context::Anytime, {{IE::Kind::ArmDeepWebDepthMultiplier, 4}}},
+     ItemDef::Rarity::Epic, "Next DeepWeb Dive, each win drops you {depthStep} depths instead of 1, "
+     "and pays {diveBonus}% more.",
+     ItemDef::Context::Anytime, {{IE::Kind::ArmDeepWebDepthMultiplier, 4}, {IE::Kind::DiveStepBonusPct, 100}}},
 };
 const int kItemsCount = sizeof(kItems) / sizeof(kItems[0]);
 

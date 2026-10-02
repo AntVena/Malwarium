@@ -110,5 +110,24 @@ None outstanding.
   how common (dropWeight), how common HERE (the pool row) — so don't overload rarity to
   express scarcity.
 - Writing the row's description → put `{token}`s where the numbers go, never digits
-  (rule 3). If nothing in the prose wants a number inline, write pure flavour and let
-  the derived stat line carry the magnitudes.
+  (rule 3), and write it in the description VOICE below.
+
+## Description voice
+
+An item's description is somebody handing you the thing and telling you what it is for,
+in plain words. Write it that way:
+
+- **Second person, direct.** "Use it on your egg and it hatches {eggCutMins} minutes
+  sooner." Not "The wait, shortened." Say "your pet", not "the creature".
+- **Say what to do with it.** Eat it, cook with it, use it before a dive, take it to the
+  VAULT, save it. A staple that is barely food raw says so ("Cook it into something").
+- **The pun is stated, not hinted.** One clause that names the joke outright ("Pasta,
+  every strand linked to the next"), then the use. No riddles, no trailing ellipses, no
+  line that only lands if the reader already knows what the item does.
+- **Name the catch.** If it adds Fragmentation, costs FED, is used up either way, or only
+  works once per pet, the sentence says so. The stat line has the numbers; the prose has
+  the consequence.
+- **FED, not Hunger.** The player-facing gauge is FED (STAT, the readout grid), so the
+  prose uses that word.
+- **Short.** The panel is 26 characters wide; a shop listing gets three lines.
+  `test_effect_text_fits_its_screen_budget` is the gate.

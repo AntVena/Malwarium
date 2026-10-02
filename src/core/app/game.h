@@ -97,7 +97,7 @@ public:
     //   Detail      — L3 (item detail · MAINT action).
     //   Process     — a running MAINT process (non-interruptible).
     //   ModalFeeding / ModalLockout — event overlays.
-    enum class Nav { Idle, Cursor, Submenu, Detail, Process, ModalFeeding, ModalLockout, ModalLineSelect, ModalEggPick, ModalHatchReveal, ModalEvolve, ModalCSF, Combat, ExploreControl, Encounter, Wifi, Shop, ModShop, WarpPicker, RollbackPicker, RepartitionPicker, CacheYield, BulkYield, PostEncounter, Stacker, Isolation, Chroma, Decryption, Cryptogram, ArcadeResult, Tourney, ShiboleetHail, Shiboleet, ShiboleetVerdict, Story, StoryArchive, TipCard, AwayDigest };
+    enum class Nav { Idle, Cursor, Submenu, Detail, Process, ModalFeeding, ModalLockout, ModalLineSelect, ModalEggPick, ModalHatchReveal, ModalEvolve, ModalCSF, Combat, ExploreControl, Encounter, Wifi, Shop, ModShop, WarpPicker, RollbackPicker, RepartitionPicker, CacheYield, BulkYield, PostEncounter, Stacker, Isolation, Chroma, Decryption, Cryptogram, ArcadeResult, Tourney, ShiboleetHail, Shiboleet, ShiboleetVerdict, Story, StoryArchive, TipCard, AwayDigest, ItemOffer };
 
     // Which L2 screen the ITEMS submenu is showing. Picker (the category tile
     // screen) only ever appears when itemPickerUnlocked(); every other path — no
@@ -312,10 +312,28 @@ public:
     // Is `row`'s effect live right now — owned, and not switched off? The one question
     // an effect site asks. A row that is not a service has no switch, so owning it is
     // the whole answer.
+    // An ASK-able service (RigUpgradeDef::askable) set to ASK counts as live here — it
+    // is running, it just hands the decision back; rigServiceMode says which.
     bool rigFeatureActive(int row) const {
         if (row < 0 || row >= kRigUpgradeCount || rigLevel_[row] <= 0) return false;
         if (!kRigUpgrades[row].service) return true;
         return (rigServicesOff_ & (1u << row)) == 0;
+    }
+    // Where an owned service's switch sits. A two-way service is only ever On or Off;
+    // an askable one can also be Ask. Not owned reads Off.
+    enum class ServiceMode : uint8_t { On, Ask, Off };
+    // The word the SERVICES board prints for a row's switch: ON/OFF for a two-way
+    // service, YES/ASK/NO for an askable one, whose question is "use them for me?".
+    const char* rigServiceWord(int row) const {
+        const ServiceMode m = rigServiceMode(row);
+        if (!kRigUpgrades[row].askable) return m == ServiceMode::Off ? "OFF" : "ON";
+        return m == ServiceMode::On ? "YES" : m == ServiceMode::Ask ? "ASK" : "NO";
+    }
+    ServiceMode rigServiceMode(int row) const {
+        if (!rigFeatureActive(row)) return ServiceMode::Off;
+        if (kRigUpgrades[row].askable && (rigServicesAsk_ & (1u << row)) != 0)
+            return ServiceMode::Ask;
+        return ServiceMode::On;
     }
     // The owned services in table order — what the SERVICES screen lists. Returns how
     // many were written.
@@ -340,8 +358,9 @@ public:
             if (rigServiceOwned(i) && rigFeatureActive(i)) ++n;
         return n;
     }
-    // Flip one owned service. A row that isn't an owned service has no switch to throw,
-    // so this is inert on it rather than storing a bit nothing reads.
+    // Flip one owned service — or, on an askable one, step it YES -> ASK -> NO -> YES.
+    // A row that isn't an owned service has no switch to throw, so this is inert on it
+    // rather than storing a bit nothing reads.
     void toggleRigService(int row);
     // The SHOP is three screens behind one slot, the shape CREW's views take: the
     // storefront list, the SERVICES switchboard the head slot opens, and one service's
@@ -2213,6 +2232,9 @@ public:
     // Arm the DeepWeb Dive directly (tests) — keeps its own all-areas-cleared guard.
     // Real path: EXPL → B on the "> DIVE" row.
     void debugStartDeepWebDive() { startDeepWebDive(); }
+    void debugOfferThenDive() { offerThenDive(); }
+    void debugDeclineEggOffer() { eggOfferMade_ = true; }
+    int debugDiveRewardBonusPct() const { return diveRewardBonusPct(); }
     // The armed Deep-Learning Module/Core depth step (1 = none armed). No production
     // reader outside the engine — the habitat draws it via game_render.cpp — so tests
     // read it here to assert the buff survives the dive it was armed for.
@@ -2922,6 +2944,26 @@ private:
     void resolveSafeRestEvent(const ItemDef& d);
     void drawWarpPickerScreen(Framebuffer& fb) const;
 
+    // The ITEM OFFER (game_offer.cpp): items that only matter at one rare moment are put
+    // in front of the player AT that moment, instead of waiting in the bag for someone to
+    // remember them. Starting a DeepWeb Dive offers the held bells and Deep-Learning
+    // devices; an egg that starts incubating offers the Boot Accelerator. Each offer is
+    // a list of the held items that would do something right now (itemUsable), plus a
+    // last row that carries on without them. B on an item uses it and keeps the list
+    // open (a bell and a device both go in before a dive); B on the last row carries on;
+    // C backs out. Nothing is offered when nothing held would help, so the moment
+    // passes exactly as it did before.
+    enum class OfferFor : uint8_t { Dive, Egg };
+    std::vector<const ItemDef*> offerItems() const;
+    bool offerRelevant(const ItemDef& d) const;
+    void offerThenDive();           // the EXPL list's dive row: offer, else dive now
+    void openItemOffer(OfferFor f);
+    void onItemOffer(const ButtonEvent& ev);
+    void finishItemOffer();         // the last row: carry on with what was paused
+    void useOfferedItem(const ItemDef& d);
+    void autoUseDiveGear();         // AUTO DIVE GEAR at YES: arm the best of each kind
+    void drawItemOfferScreen(Framebuffer& fb) const;
+
     // Hacker Rank: re-derives rank from networksSeen_ after
     // every new unique network and arms a pending celebration on a crossing.
     // applyPendingRankUp() surfaces it the next time nav_ lands back on Walk
@@ -3103,7 +3145,7 @@ private:
     // dismisses back to the VAULT list (Nav::Submenu — mirrors onCacheYield).
     void onBulkYield(const ButtonEvent& ev);
     void drawBulkYieldScreen(Framebuffer& fb) const;
-    // Boot Accelerator: consume it + take kBootAcceleratorCutMs off the incubation.
+    // Boot Accelerator: consume it + apply its CutIncubationMin to the incubation.
     void useBootAccelerator(const ItemDef& d);
     // Rollback: open the stat picker (nav_ = RollbackPicker) parked on the
     // first eligible stat; onRollbackPicker drives A cycle / B shed / C cancel;
@@ -3452,6 +3494,25 @@ private:
     int bestDarkWebDepth_ = 0;
     int deepWebDepthMultiplier_ = 1;
     int pendingDeepWebStartDepth_ = -1;
+    // The DIVE PAY bonus (ItemEffect DiveStartBonusPct / DiveStepBonusPct), session-
+    // volatile like the two knobs above and cleared at the same sites. The bell's half
+    // is armed with its start depth and moved into diveStartBonusPct_ when the dive it
+    // starts begins; the device's half lives beside the multiplier it pays for.
+    int pendingDiveStartBonusPct_ = 0;
+    int diveStartBonusPct_ = 0;
+    int diveStepBonusPct_ = 0;
+    // What a DeepWeb Dive win pays on top, in percent: both halves, added. Zero outside
+    // a dive, so a sector walk never collects a bonus armed for the dive after it.
+    int diveRewardBonusPct() const {
+        return inDeepWebDive() ? diveStartBonusPct_ + diveStepBonusPct_ : 0;
+    }
+    // Every site that ends a dive (or a pet) spends both live halves in one call, so the
+    // bonus can't outlive the run it was paid for at one exit and not another.
+    void clearDiveDepthBuffs() {
+        deepWebDepthMultiplier_ = 1;
+        diveStepBonusPct_ = 0;
+        diveStartBonusPct_ = 0;
+    }
     static constexpr int kDeepWebStartDepthUseBest = -2;  // pendingDeepWebStartDepth_
                                                           // sentinel for the Checkpoint Bell
     // The depth a dive would actually START at right now (-1 = nothing armed), with the
@@ -4269,6 +4330,10 @@ private:
     // screen existed means: every service a player has bought is running.
     static_assert(kMaxRigUpgrades <= 32, "rigServicesOff_ is one bit per rig row");
     uint32_t rigServicesOff_ = 0;
+    // ...and which askable ones sit at ASK (rigServiceMode), one bit per row, set = ask
+    // (save v69). Read only while the row's OFF bit is clear. Zero is YES, so a row
+    // bought before the bit existed keeps doing what it did.
+    uint32_t rigServicesAsk_ = 0;
 
     // Which MERGE HUB recipes are known — one bit per MergeRecipe::wire
     // (game_internal.h), read and written only through recipeOwned/grantRecipe.
@@ -4282,6 +4347,14 @@ private:
     // heldWarpKeys() list while nav_ == Nav::WarpPicker; transient run state (the
     // keys themselves persist in the inventory, but the picker cursor does not).
     int warpRow_ = 0;
+
+    // The ITEM OFFER's cursor, what it is offering for, and where C goes back to.
+    // eggOfferMade_ is the once-per-egg latch: declining is an answer, so the egg is not
+    // asked again (cleared by layEgg; session-volatile, so a reboot asks once more).
+    OfferFor offerFor_ = OfferFor::Dive;
+    int offerRow_ = 0;
+    Nav offerBackNav_ = Nav::Idle;
+    bool eggOfferMade_ = false;
 
     // Hacker Rank — a player/device-level tier derived from
     // networksSeen_ (persists across pets, save v4). rankUpPending_/

@@ -422,6 +422,25 @@ struct ItemEffect {
                               // mistake when it does, this is an item that cannot. A
                               // no-op on a pet with no ghost, which is what keeps the
                               // snack an ordinary food the rest of the time.
+        CutIncubationMin,     // Boot Accelerator: take magnitude MINUTES off the egg's
+                              // incubation clock (Game::useBootAccelerator), floored at
+                              // kHatchRevealMs so the last stretch — where the player
+                              // cracks the shell by hand — is never skipped. Egg-only:
+                              // itemUsable gates the row on inEggPhase().
+        // The DIVE PAY pair: +magnitude PERCENT on the XP and Bits every DeepWeb Dive win
+        // pays. A bell starts the dive past its easy depths and a Deep-Learning device
+        // jumps it past them win by win, so either one trades the cheap shallow fights
+        // for a shorter, harder run — and without this a player who skipped would simply
+        // have less to show for it. Each rides on the row it compensates, and lives and
+        // dies with that row's own arming, which is why there are two:
+        //   DiveStartBonusPct — beside a bell's start depth. Armed with it, goes live
+        //     when the dive it starts begins, and lasts until that dive ends.
+        //   DiveStepBonusPct  — beside a depth multiplier. Replaced and cleared exactly
+        //     when the multiplier is (Game::deepWebDepthMultiplier_).
+        // A bell and a device armed together add. Listed AFTER the effect they ride on:
+        // that effect's applier zeroes the slot, so a row without a bonus re-arms none.
+        DiveStartBonusPct,
+        DiveStepBonusPct,
     };
     Kind kind = Kind::None;
     int magnitude = 0;

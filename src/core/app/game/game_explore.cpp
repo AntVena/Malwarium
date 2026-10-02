@@ -212,7 +212,7 @@ void Game::onExplList(const ButtonEvent& ev) {
             case ExplRowState::AreaCleared:   startAreaBoss(area); break;
             case ExplRowState::SubBossReady:  startSubAreaBoss(area, sub); break;
             case ExplRowState::DeepWebOpen:                     // endless zone
-            case ExplRowState::DeepWebDiving: startDeepWebDive(); break;
+            case ExplRowState::DeepWebDiving: offerThenDive(); break;   // bells first
             case ExplRowState::DarkWebOpen:                     // the terminal zone
             case ExplRowState::DarkWebCrawling: startDarkWebCrawl(); break;
             default:                          startExplore(area, sub);  // arm/re-arm
@@ -277,11 +277,16 @@ void Game::startDeepWebDive() {
     // (Game::applyItemEffects); consume it here so a fresh dive begins there instead
     // of at 0. Checkpoint's sentinel resolves to this pet's own best depth NOW (not at
     // Use-time), so it never targets a stale, since-improved record.
+    // The bell's DIVE PAY half goes live with it, for this dive only; a dive started
+    // with no bell armed pays no start bonus, whatever an earlier dive carried.
+    diveStartBonusPct_ = 0;
     if (pendingDeepWebStartDepth_ != -1) {
         exploreStreak_ = pendingDeepWebStartDepth_ == kDeepWebStartDepthUseBest
                               ? bestDeepWebDepth_
                               : pendingDeepWebStartDepth_;
         pendingDeepWebStartDepth_ = -1;
+        diveStartBonusPct_ = pendingDiveStartBonusPct_;
+        pendingDiveStartBonusPct_ = 0;
     }
     exploreSteps_ = 0;
     exploreStepBeat_ = 0;
@@ -513,7 +518,7 @@ void Game::onExploreControl(const ButtonEvent& ev) {
             // Read the dive flag BEFORE clearing exploreActive_ — inDeepWebDive() is
             // derived from it. Only a DIVE ending spends the depth multiplier; stopping
             // a sector walk leaves an armed Module/Core armed for the dive it was for.
-            if (inDeepWebDive()) deepWebDepthMultiplier_ = 1;
+            if (inDeepWebDive()) clearDiveDepthBuffs();
             exploreActive_ = false;
             exploreStreak_ = 0;
             exploreFlavor_[0] = '\0';

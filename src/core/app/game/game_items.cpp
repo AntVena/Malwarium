@@ -288,6 +288,19 @@ bool Game::itemUseIsInert(const ItemDef& d, const char*& why) const {
                 if (bestDeepWebDepth_ > armedDeepWebStartDepth()) return false;
                 if (!reason) reason = "DEEPER START ARMED";
                 break;
+            // The pay bonus rides on the arming beside it, which already decides
+            // whether this use achieves anything — so it neither counts as an arming
+            // nor answers the question on its own.
+            case ItemEffect::Kind::DiveStartBonusPct:
+            case ItemEffect::Kind::DiveStepBonusPct:
+                break;
+            case ItemEffect::Kind::CutIncubationMin:
+                // The clock is already inside the reveal window, which the cut is
+                // floored at — spending one there would take the item and move nothing.
+                ++armingEffects;
+                if (inEggPhase() && bootHatchRemainMs_ > kHatchRevealMs) return false;
+                if (!reason) reason = "SHELL ALREADY CRACKING";
+                break;
             case ItemEffect::Kind::ClearReplicationGhost:
                 // Nothing to cut loose on a pet with no ghost. Only reachable for a row
                 // that carries NOTHING else — Unlinkguine's Hunger fill already
@@ -501,6 +514,7 @@ void Game::applyItemEffects(const ItemDef& d) {
                 // reset: the streak resets at both ends of a run, so following it would
                 // clear the buff on the way INTO the dive it was bought for.
                 deepWebDepthMultiplier_ = e.magnitude;
+                diveStepBonusPct_ = 0;   // the row's own DiveStepBonusPct, if any, follows
                 break;
             case ItemEffect::Kind::BandwidthRegenBonusMin:
                 // Tiramisudo (save v50): the FIRST helping shaves magnitude minutes off
@@ -550,12 +564,14 @@ void Game::applyItemEffects(const ItemDef& d) {
                 // Backdoor/Rootkit/Kernel Bell: arm the NEXT startDeepWebDive() to
                 // begin at this fixed depth instead of 0; consumed there.
                 pendingDeepWebStartDepth_ = e.magnitude;
+                pendingDiveStartBonusPct_ = 0;   // ...and this row's bonus, if any, follows
                 break;
             case ItemEffect::Kind::SetDeepWebStartDepthToBest:
                 // Checkpoint Bell: arm the next dive to start at THIS PET's own
                 // bestDeepWebDepth_, resolved at dive-start (not here) so improving
                 // the record between now and then is never stale.
                 pendingDeepWebStartDepth_ = kDeepWebStartDepthUseBest;
+                pendingDiveStartBonusPct_ = 0;
                 break;
             case ItemEffect::Kind::ClearReplicationGhost:
                 // Unlinkguine: cut the phantom process off from the pet it copied.
@@ -568,6 +584,24 @@ void Game::applyItemEffects(const ItemDef& d) {
                     unlockAchievement(ach::kAirGapped);
                 }
                 break;
+            case ItemEffect::Kind::DiveStartBonusPct:
+                // Armed with the bell's start depth; goes live at startDeepWebDive.
+                pendingDiveStartBonusPct_ = e.magnitude;
+                break;
+            case ItemEffect::Kind::DiveStepBonusPct:
+                diveStepBonusPct_ = e.magnitude;
+                break;
+            case ItemEffect::Kind::CutIncubationMin: {
+                // Boot Accelerator: a flat bite out of the incubation clock, floored at
+                // kHatchRevealMs rather than at zero — the last stretch is where the
+                // player cracks the shell by hand (hatchRevealReady), so a cut that
+                // skipped past it would take that away rather than hand it over.
+                const uint32_t cutMs = static_cast<uint32_t>(e.magnitude) * 60u * 1000u;
+                const uint32_t left = bootHatchRemainMs_ > cutMs ? bootHatchRemainMs_ - cutMs : 0;
+                if (bootHatchRemainMs_ > kHatchRevealMs)
+                    bootHatchRemainMs_ = left > kHatchRevealMs ? left : kHatchRevealMs;
+                break;
+            }
         }
     }
     if (hunger != 0 || happy != 0) model_.feed(hunger, happy);
@@ -723,22 +757,17 @@ void Game::onBulkYield(const ButtonEvent& ev) {
 }
 
 void Game::useBootAccelerator(const ItemDef& d) {
-    // A flat bite out of the incubation clock, and nothing else. Every line's hatch
-    // minigame is played once, at lay-time, so by the time an egg is sitting there
-    // being looked at there is no game left for an item to open — what is left is the
-    // wait, and this shortens it. itemUsable already guaranteed we're in the egg phase.
-    //
-    // Floored at kHatchRevealMs rather than at zero: the last stretch of the clock is
-    // where the player can crack the shell by hand and watch it (hatchRevealReady), so
-    // an item that skipped past it would take that away rather than hand it over.
+    // The wait, shortened, and nothing else. Every line's hatch minigame is played once,
+    // at lay-time, so by the time an egg is sitting there being looked at there is no
+    // game left for an item to open. How much it cuts is the row's own CutIncubationMin
+    // effect, applied by the one applier. Its own path rather than the buff path below
+    // because an egg isn't being played with: no care signal is noted.
+    // itemUsable already guaranteed we're in the egg phase.
     inventory_.remove(d.id, 1);
     char buf[28];
     std::snprintf(buf, sizeof(buf), "USED %s", d.displayName);
     log_.push(LogEventType::ItemUsed, buf);
-    const uint32_t cut = bootHatchRemainMs_ > kBootAcceleratorCutMs
-                             ? bootHatchRemainMs_ - kBootAcceleratorCutMs : 0;
-    if (bootHatchRemainMs_ > kHatchRevealMs)
-        bootHatchRemainMs_ = cut > kHatchRevealMs ? cut : kHatchRevealMs;
+    applyItemEffects(d);
     markSaveDirty();
 }
 

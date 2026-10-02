@@ -74,6 +74,7 @@ void Game::render(Framebuffer& fb) const {
         case Nav::Shop: drawShopScreen(fb); break;
         case Nav::ModShop: drawShopScreen(fb); break;
         case Nav::WarpPicker: drawWarpPickerScreen(fb); break;
+        case Nav::ItemOffer: drawItemOfferScreen(fb); break;
         case Nav::RollbackPicker: drawRollbackPickerScreen(fb); break;
         case Nav::RepartitionPicker: drawRepartitionPickerScreen(fb); break;
         case Nav::CacheYield: drawCacheYieldScreen(fb); break;
