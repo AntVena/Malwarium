@@ -1172,7 +1172,7 @@ void test_lockout_tells_the_truth_when_failing() {
     g.model().setCareMistakes(kCareDying - 1);
     g.model().setHunger(0);
     uint32_t t = 0;
-    g.tick(t += kHeartbeatMs);                        // Lockout fires: "went hungry" is #5
+    g.tick(t += kHeartbeatMs);                        // Lockout fires: "went hungry" is the fifth
     CHECK(g.nav() == Game::Nav::ModalLockout);
     g.tick(t += kHeartbeatMs);                        // ...and the failing window arms
     CHECK(g.model().careBranch() == CareBranch::Dying);
