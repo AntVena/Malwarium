@@ -5803,7 +5803,7 @@ window.PEDIA_DATA = {
     },
     {
       "id": "mass_mailer",
-      "name": "Mass Mailer",
+      "name": "Mailing List",
       "tag": "+POW/ATK",
       "rarity": "UNCOMMON",
       "tier": 3,
@@ -5839,7 +5839,7 @@ window.PEDIA_DATA = {
     },
     {
       "id": "logic_bomb",
-      "name": "Logic Bomb",
+      "name": "Dead Man's Switch",
       "tag": "ON-KO",
       "rarity": "RARE",
       "tier": 4,
@@ -7122,12 +7122,12 @@ window.PEDIA_DATA = {
     },
     {
       "id": "chain_letter",
-      "name": "Chain Letter",
+      "name": "Reply All",
       "kind": "ATK",
       "power": 18,
       "turns": 1,
       "minStage": "Script",
-      "desc": "Forward it to ten more. No rider, no wind-up - just the swing.",
+      "desc": "Forward it to everyone. No rider, no wind-up - just the swing.",
       "stats": "ATK 18",
       "group": "core",
       "icon": "assets/icons/ICON_MOVE_SLOT.png"
@@ -8103,7 +8103,7 @@ window.PEDIA_DATA = {
     },
     {
       "key": "RACK_3",
-      "name": "Cold Storage",
+      "name": "Rack Mounted",
       "trigger": "Hold 3 pets in the ARCH rack at once.",
       "icon": "assets/icons/ICON_ACH_RACK_3.png",
       "goal": 3
