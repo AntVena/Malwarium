@@ -41,21 +41,6 @@ wants deciding before the middle areas are written rather than after. |
 `test_story_chapters_fit_their_page` is the gate. | M each | The two endless zones only ever
 reach the ARRIVAL beat — there is no gauntlet down there to open or close. |
 
-**Device sound wants its first pass on the board.** The engine side ships whole — the cue
-vocabulary (`src/core/audio/sound.h`), CFG → DEVICE → SOUND (OFF by default · ALL · ALERTS
-ONLY) and VOLUME, the save tail, the care alerts with their reminders, and the gates over
-all of it — and so does a driver: ES8311 over I2S with the amp enabled only while a cue
-plays (`src/platform/esp32/audio_esp32.h`). None of the driver has met a codec yet. What
-wants checking with a board in hand: that the init sequence brings the ES8311 up at all
-(the boot line says `[audio] ES8311 ready` or why not), the loudness curve
-(`AUDIO_PEAK_AMPLITUDE`), pops at amp enable/disable, and the battery cost of a cue. Then
-the open design half: quiet hours, which the board cannot tell from day without an RTC, and
-whether a care alert landing in light sleep (up to `IDLE_SLEEP_FALLBACK_MS` late) wants an
-earlier wake. | `include/config.h` (audio pins, amplitude); `src/platform/esp32/main.cpp`
-(boot, alert wake, the light-sleep guard). | M | Only the board can verify it: the host tier
-logs cues, and the browser build plays them through WebAudio, which is the quickest way to
-hear the tunes. |
-
 **A pet has no FAVOURITE FOOD, and the collection pages now make room for one.** STAT's FOODS
 grid gives every pet a plate to fill in and the PALATE achievements pay for filling it, which
 turns the pantry into something a player reads rather than uses — and the obvious thing missing
