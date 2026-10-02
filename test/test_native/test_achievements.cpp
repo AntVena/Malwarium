@@ -645,14 +645,13 @@ void test_ordinary_banner_still_retires_on_its_own() {
 // keeps every line inside the plate never spends a banner on the difference. So this
 // stays a gate on the CONTENT, through the same composition the screen does.
 void test_achievement_banner_lines_fit() {
-    // The plate is full-bleed, so the room is the canvas — that is the width its own
-    // held instruction ("LAY ONE NEXT HATCH - ANY KEY") already occupies exactly.
+    // The plate is full-bleed, so the room is the canvas.
     constexpr int kRoom = kActiveW;
     const ContentRegistry reg = ContentRegistry::embedded();
 
     CHECK(textWidth("ACHIEVEMENT") <= kRoom);
     CHECK(textWidth("NEW EGG LINE") <= kRoom);
-    CHECK(textWidth("LAY ONE NEXT HATCH - ANY KEY") <= kRoom);   // the held plate
+    CHECK(textWidth("ARCH > NEW EGG - ANY KEY") <= kRoom);   // the held plate
 
     char line[40];
     for (int i = 0; i < kAchievementCount; ++i) {

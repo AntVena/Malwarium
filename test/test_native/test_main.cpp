@@ -169,6 +169,7 @@ int g_failures = 0;
     /* CFG submenu */                       \
     RUN(test_cfg_uimode_toggle)             \
     RUN(test_cfg_care_alerts_switch) \
+    RUN(test_cfg_tips_replay) \
     RUN(test_cfg_travel_confirm_asks_twice) \
     RUN(test_cfg_format_sd_confirm)         \
     RUN(test_cfg_format_sd_refused_during_update) \

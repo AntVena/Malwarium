@@ -78,7 +78,7 @@ void drawCfgList(Framebuffer& fb, int cursor, const char* hackerTag,
 // level, and an action has no state to report, which the empty value column says
 // without a word of copy.
 // `careAlerts` is the CARE ALERTS switch's state (Game::careAlerts), previewed ON/OFF;
-// that row flips in place on B rather than opening a screen. Seven rows, so it scrolls.
+// that row flips in place on B rather than opening a screen. Eight rows, so it scrolls.
 void drawCfgDevice(Framebuffer& fb, int cursor, UiMode uiMode, int brightness,
                    const char* theme, const char* background, bool careAlerts);
 

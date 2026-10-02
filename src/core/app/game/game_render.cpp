@@ -546,7 +546,7 @@ Game::AchBannerCopy Game::achBannerCopy() const {
     if (c.held)
         // Where to go, and how to make this go away — the two things a held plate has to
         // say. The rewards are still paid; they are simply not what this banner is for.
-        std::snprintf(c.reward, sizeof(c.reward), "LAY ONE NEXT HATCH - ANY KEY");
+        std::snprintf(c.reward, sizeof(c.reward), "ARCH > NEW EGG - ANY KEY");
     else if (achBannerCount_ > 1)
         std::snprintf(c.reward, sizeof(c.reward), "%s +MORE", d->displayName);
     else if (rewardItem && rewardBits > 0) {

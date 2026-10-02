@@ -435,6 +435,35 @@ void test_cfg_care_alerts_switch() {
     CHECK(SaveData{}.careAlerts == 1 && SaveData{}.uiMode == 0);   // the pre-v67 reading
 }
 
+// CFG > DEVICE > TIPS lists every card this device has shown and reads one again on
+// B, landing back on the list. A card not yet shown is not listed.
+void test_cfg_tips_replay() {
+    Game g{StartMode::Hatched};                        // the seam counts them all as seen
+    enterCfgTarget(g, CfgScreen::Tips);
+    CHECK(g.nav() == Game::Nav::Detail && g.cfgScreen() == CfgScreen::Tips);
+    const std::vector<Game::Tip> tips = g.replayableTips();
+    CHECK(tips.size() == 7);
+    for (Game::Tip t : tips) CHECK(textWidth(Game::tipTitle(t)) <= kActiveW - 30);
+    Framebuffer fb(kActiveW, kActiveH);
+    g.render(fb);
+    CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));
+
+    g.onButton(press(Button::A));                      // second row
+    g.onButton(press(Button::B));
+    CHECK(g.nav() == Game::Nav::TipCard && g.tipCard() == tips[1]);
+    for (int i = 0; i < 8 && g.nav() == Game::Nav::TipCard; ++i)
+        g.onButton(press(Button::B));
+    CHECK(g.nav() == Game::Nav::Detail && g.cfgScreen() == CfgScreen::Tips);
+    g.onButton(press(Button::C));
+    CHECK(g.cfgScreen() == CfgScreen::Device);         // back to its group
+
+    Game fresh{StartMode::Hatched};
+    fresh.debugClearTips();
+    CHECK(fresh.replayableTips().empty());
+    fresh.markTipSeen(Game::Tip::FirstWalk);
+    CHECK(fresh.replayableTips().size() == 1);
+}
+
 // SD RECHECK is the A press on System Info, not a list row — it acts on the SD
 // line that screen already reports through.
 void test_cfg_sysinfo_sd_recheck() {

@@ -154,12 +154,16 @@ int cfgGroupRows(CfgScreen group, const CfgRow*& out) {
         // is theirs too until it gets its own: a row glyph is the 20px tier, and the
         // 28px carousel ICON_CFG it once borrowed overprinted the label beside it.
         {"BACKGROUND", &ASSET_ICON_CFG_UIMODE, CfgScreen::Background},
+        // TIPS: every one-time card the device has shown, to read again. Not a device
+        // setting, but the top-level list is held at six rows, and this is the group
+        // about how the device presents itself — which includes how it explains itself.
+        {"TIPS", &ASSET_ICON_CFG_SYSINFO, CfgScreen::Tips},
         {"TRAVEL MODE", &ASSET_ICON_CFG_TRAVEL, CfgScreen::Travel},
         // FORMAT SD is the group's other action, and last because it is the one row
         // here that destroys something. It lives with the device rather than beside
         // the SD line on System Info because a second action on that screen would be
         // a second meaning for a button press there, and this one cannot be taken back.
-        // Seven rows is one past kVisibleRows, so the group scrolls (drawCfgDevice).
+        // Eight rows, two past kVisibleRows, so the group scrolls (drawCfgDevice).
         {"FORMAT SD", &ASSET_ICON_CFG_UIMODE, CfgScreen::FormatSd},
     };
     // The three radio TOGGLES, listed in the arbiter's own priority order, highest
@@ -198,6 +202,7 @@ CfgScreen cfgParentGroup(CfgScreen s) {
         case CfgScreen::Brightness:
         case CfgScreen::Theme:
         case CfgScreen::Background:
+        case CfgScreen::Tips:
         case CfgScreen::Travel:
         case CfgScreen::FormatSd:
             return CfgScreen::Device;

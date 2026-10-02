@@ -600,6 +600,11 @@ public:
     // shows as prose rows. Public so a gate can assert what a card SAYS.
     Tip tipCard() const { return tipCard_; }
     std::vector<ProseRow> tipCardRows() const;
+    // CFG > DEVICE > TIPS: the cards this device has shown, in a fixed order, to read
+    // again (game_onboard.cpp). A card not yet shown is not listed — it has nothing to
+    // repeat, and listing it would spoil the moment it is written for.
+    std::vector<Tip> replayableTips() const;
+    static const char* tipTitle(Tip t);
     // Dev/test seam: forget every tip, so a gate can meet one on a seam pet.
     void debugClearTips() { for (uint8_t& b : tipsSeen_) b = 0; }
     // The chance, 0..100, that a QUICK defrag or an AV scan fails at the current
@@ -2578,6 +2583,9 @@ private:
     bool openCareTipIfDue();
     void onTipCard(const ButtonEvent& ev);
     void drawTipCard(Framebuffer& fb) const;
+    int cfgTipsRow_ = 0;                     // CFG > TIPS cursor
+    void onTipsList(const ButtonEvent& ev);
+    void drawTipsList(Framebuffer& fb) const;
     // Is the engine on screen being played for an egg's hatch bonus (rather than at a
     // cabinet, or for MAINT)? That is what the briefing's lead panel is about.
     bool hatchGameLive() const;

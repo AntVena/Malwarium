@@ -32,6 +32,7 @@ void Game::enterCfgScreen(CfgScreen target) {
             if (!sdFormatRequested()) sdFormatState_ = SdFormatState::Idle;  // is spent
             break;
         case CfgScreen::UiMode: cfgUiPick_ = static_cast<int>(uiMode_); break;
+        case CfgScreen::Tips: cfgTipsRow_ = 0; break;
         case CfgScreen::Brightness: cfgBrightPick_ = brightness_; break;   // the applied level
         case CfgScreen::Theme: cfgThemePick_ = themeRow(); break;          // ...likewise
         case CfgScreen::Titles: cfgTitlePick_ = equippedTitle_; break;     // the equipped one
@@ -174,6 +175,7 @@ void Game::onCfgDetail(const ButtonEvent& ev) {
             }
             break;
         }
+        case CfgScreen::Tips: onTipsList(ev); break;
         case CfgScreen::UiMode:
             if (ev.button == Button::A) cfgUiPick_ = (cfgUiPick_ + 1) % 3;
             else if (ev.button == Button::B) {        // apply + back out
@@ -500,6 +502,7 @@ void Game::drawCfg(Framebuffer& fb) const {
             break;
         }
         case CfgScreen::UiMode: drawUiModeToggle(fb, cfgUiPick_, uiMode_); break;
+        case CfgScreen::Tips: drawTipsList(fb); break;
         case CfgScreen::Brightness: drawBrightness(fb, cfgBrightPick_, brightness_); break;
         case CfgScreen::Theme:
             drawThemePicker(fb, cfgThemePick_, themeRow(), themesUnlockedMask());
