@@ -707,7 +707,7 @@ window.PEDIA_DATA = {
       "name": "Decryption Key",
       "type": "QUEST",
       "rarity": "COMMON",
-      "effect": "Satisfies the Lockout currency demand for free.",
+      "effect": "Pays a Lockout's Bits demand for you. Only usable during a Lockout.",
       "stats": "",
       "icon": "assets/icons/ICON_ITEM_DECRYPT_KEY.png",
       "use": "LOCKOUT ONLY"
@@ -727,7 +727,7 @@ window.PEDIA_DATA = {
       "name": "Null Noodles",
       "type": "FOOD",
       "rarity": "COMMON",
-      "effect": "Tastes like... nothing. Sheds 15 Fragmentation for 15 Hunger.",
+      "effect": "Tastes of nothing. Sheds 15 Fragmentation, costs 15 FED.",
       "stats": "FED -15 / FRAG -15 / HAPPY>50 20",
       "icon": "assets/icons/ICON_ITEM_NULL_NOODLES.png",
       "bits": 5
@@ -774,7 +774,7 @@ window.PEDIA_DATA = {
       "name": "Dyno Nuggets",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Fills 40 Hunger. Patches 30 Health.",
+      "effect": "Everyday ration: fills the pet up and patches 30 Health mid-fight.",
       "stats": "FED +40 / HEAL 30",
       "icon": "assets/icons/ICON_ITEM_DYNO_NUGGETS.png"
     },
@@ -783,7 +783,7 @@ window.PEDIA_DATA = {
       "name": "Unlinkguine",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Fills 30 Hunger. Patches 20 Health. Cuts a Replication Ghost loose.",
+      "effect": "Fills the pet up and patches 20 Health mid-fight. Cuts a Replication Ghost loose.",
       "stats": "FED +30 / GHOST CURE / HEAL 20",
       "icon": "assets/icons/ICON_ITEM_UNLINKGUINE.png"
     },
@@ -792,7 +792,7 @@ window.PEDIA_DATA = {
       "name": "Pwnzu Sauce",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "A bit intense all by itself. if only it could go on something with a truly neutral flavour.",
+      "effect": "A bit intense on its own. If only it could go on something with a truly neutral flavour.",
       "stats": "FED +5 / HAPPY +15",
       "icon": "assets/icons/ICON_ITEM_PWNZU_SAUCE.png"
     },
@@ -810,7 +810,7 @@ window.PEDIA_DATA = {
       "name": "OSI Dip",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Seven glorious layers. If only there was something good to eat it on. A sort of... eighth layer...",
+      "effect": "Seven glorious layers. If only there were something good to eat it on. A sort of... eighth layer.",
       "stats": "HAPPY +10",
       "icon": "assets/icons/ICON_ITEM_OSI_DIP.png"
     },
@@ -819,7 +819,7 @@ window.PEDIA_DATA = {
       "name": "Sinkhole Trap",
       "type": "QUEST",
       "rarity": "UNCOMMON",
-      "effect": "Bypasses the next wild encounter for 40 XP.",
+      "effect": "Auto-skips the next wild fight on a walk, for 40 XP.",
       "stats": "XP 40",
       "icon": "assets/icons/ICON_ITEM_SINKHOLE_TRAP.png",
       "use": "PRE-ENCOUNTER"
@@ -938,7 +938,7 @@ window.PEDIA_DATA = {
       "name": "Polltatoes",
       "type": "FOOD",
       "rarity": "COMMON",
-      "effect": "Bland on its own. Every Polltatoes eaten since the pet last lost a Hunger point adds another 1 to what the next one fills.",
+      "effect": "Bland alone, but they stack: each one eaten since FED last ticked down adds 1 to what the next one fills.",
       "stats": "FED +1 EA",
       "icon": "assets/icons/ICON_ITEM_POLLTATOES.png"
     },
@@ -1019,7 +1019,7 @@ window.PEDIA_DATA = {
       "name": "Fresh Macrol",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Tastes great, but it goes bad quickly: 5% odds per feeding.",
+      "effect": "Tastes great, but goes off: each feeding, 5% chance one spoils.",
       "stats": "FED +5 / HAPPY +5 / FRAG -3",
       "icon": "assets/icons/ICON_ITEM_FRESH_MACROL.png"
     },
@@ -1649,7 +1649,7 @@ window.PEDIA_DATA = {
       "name": "Pwnzu-Patched Noodles",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "It tastes like Grandma Yubi's Cooking.",
+      "effect": "It tastes like Grandma Yubi's cooking.",
       "stats": "FED +100 / FRAG -100 / HAPPY +100",
       "icon": "assets/icons/ICON_ITEM_PWNZU_PATCHED_NOODLES.png"
     },
@@ -1658,7 +1658,7 @@ window.PEDIA_DATA = {
       "name": "Fully-Stacked Nachos",
       "type": "FOOD",
       "rarity": "RARE",
-      "effect": "We tried every combination. In the end it turns out the secret eighth dippy layer... was always you.",
+      "effect": "We tried every combination. In the end, the secret eighth layer... was always you.",
       "stats": "FED +100 / FRAG -100 / HAPPY +100",
       "icon": "assets/icons/ICON_ITEM_FULLY_STACKED_NACHOS.png"
     },
@@ -1768,7 +1768,7 @@ window.PEDIA_DATA = {
       "name": "Tiramisudo",
       "type": "FOOD",
       "rarity": "EPIC",
-      "effect": "Ask the rig nicely and it says no. Ask it again like this and it says of course.",
+      "effect": "Ask nicely: no. Ask like this: yes. Once per pet: Bandwidth regens 1 min faster for life.",
       "stats": "BW REGEN -1MIN / BANDWIDTH +1 / HAPPY +50 / FRAG -15",
       "icon": "assets/icons/ICON_ITEM_TIRAMISUDO.png"
     },
@@ -2551,7 +2551,7 @@ window.PEDIA_DATA = {
       "name": "Backup Drive",
       "type": "BUFFS",
       "rarity": "RARE",
-      "effect": "For 60 minutes, a pet that goes down is restored with half its max Health. One save.",
+      "effect": "For 60 minutes, a pet knocked out in a fight gets half its max Health added back. One save, and a big enough hit can still beat it.",
       "stats": "DEATH SAVE 60MIN",
       "icon": "assets/icons/ICON_ITEM_BACKUP_DRIVE.png"
     },
@@ -2578,7 +2578,7 @@ window.PEDIA_DATA = {
       "name": "Deep-Learning Module",
       "type": "TOOLS",
       "rarity": "RARE",
-      "effect": "Each DeepWeb Dive win advances the depth by 2 instead of 1.",
+      "effect": "For the next DeepWeb Dive, each win advances the depth by 2 instead of 1.",
       "stats": "DIVE STEP x2",
       "icon": "assets/icons/ICON_ITEM_DEEP_LEARNING_MODULE.png"
     },
@@ -2587,7 +2587,7 @@ window.PEDIA_DATA = {
       "name": "Yubi-Cookie",
       "type": "FOOD",
       "rarity": "EPIC",
-      "effect": "So delicious it could make the pet forget 1 care mistake. Max 1 per lifecycle.",
+      "effect": "So delicious the pet forgets 1 care mistake. Once per pet.",
       "stats": "MISTAKE -1 / FED +20 / HAPPY +40",
       "icon": "assets/icons/ICON_ITEM_YUBI_COOKIE.png"
     },
@@ -2596,7 +2596,7 @@ window.PEDIA_DATA = {
       "name": "Restore Point",
       "type": "BUFFS",
       "rarity": "EPIC",
-      "effect": "Shields against the next care mistake. Max 1 per lifecycle.",
+      "effect": "Shields the pet from its next care mistake. Once per pet.",
       "stats": "MISTAKE SHIELD",
       "icon": "assets/icons/ICON_ITEM_RESTORE_POINT.png"
     },
@@ -2605,7 +2605,7 @@ window.PEDIA_DATA = {
       "name": "Epic Cache",
       "type": "QUEST",
       "rarity": "EPIC",
-      "effect": "An epic data cache. Open from the VAULT for the best reward draw.",
+      "effect": "An epic data cache. Open from the VAULT for a deep reward draw and a shot at a MOD.",
       "stats": "",
       "icon": "assets/icons/ICON_ITEM_SEALED_CACHE_EPIC.png"
     },
@@ -2614,7 +2614,7 @@ window.PEDIA_DATA = {
       "name": "Commendation Cache",
       "type": "QUEST",
       "rarity": "EPIC",
-      "effect": "Earned, never found. Open from the VAULT for a commendation draw.",
+      "effect": "Earned, never found. Open from the VAULT for the richest draw and a shot at a MOD.",
       "stats": "",
       "icon": "assets/icons/ICON_ITEM_COMMEND_CACHE.png"
     },
@@ -2677,7 +2677,7 @@ window.PEDIA_DATA = {
       "name": "Access Token",
       "type": "QUEST",
       "rarity": "UNCOMMON",
-      "effect": "Explore-use: warp straight to the nearest shop.",
+      "effect": "Use on a walk: warp straight to the area's shop.",
       "stats": "",
       "icon": "assets/icons/ICON_ITEM_ACCESS_TOKEN.png"
     },
@@ -2686,7 +2686,7 @@ window.PEDIA_DATA = {
       "name": "Safe-Mode Key",
       "type": "QUEST",
       "rarity": "UNCOMMON",
-      "effect": "Explore-use: warp straight to a safe rest.",
+      "effect": "Use on a walk: warp straight to a safe rest that sheds 20 Fragmentation.",
       "stats": "FRAG -20",
       "icon": "assets/icons/ICON_ITEM_SAFE_MODE_KEY.png"
     },
@@ -2713,7 +2713,7 @@ window.PEDIA_DATA = {
       "name": "Ambig-USB",
       "type": "TOOLS",
       "rarity": "EPIC",
-      "effect": "Guarantees the pet's next evolution diverts into a Trojan.",
+      "effect": "Next evolution diverts to a Trojan, if it can. Spent either way.",
       "stats": "TROJAN DIVERT",
       "icon": "assets/icons/ICON_ITEM_AMBIG_USB.png",
       "bits": 1024
@@ -2741,7 +2741,7 @@ window.PEDIA_DATA = {
       "name": "Sandbox-USB",
       "type": "TOOLS",
       "rarity": "RARE",
-      "effect": "Process-use: stretches this stage's evolve clock x2 and pays x2 XP.",
+      "effect": "Process only: stretches this stage's evolve clock x2 and pays x2 XP.",
       "stats": "SOAK x2",
       "icon": "assets/icons/ICON_ITEM_SANDBOX_USB.png"
     },
@@ -2750,7 +2750,7 @@ window.PEDIA_DATA = {
       "name": "Hypervisor-USB",
       "type": "TOOLS",
       "rarity": "EPIC",
-      "effect": "Process/Script: x8 XP for x8 the evolve clock, x2 that on a Script.",
+      "effect": "Process/Script: evolve clock x8 (doubled on a Script), XP x8.",
       "stats": "SOAK x8",
       "icon": "assets/icons/ICON_ITEM_HYPERVISOR_USB.png",
       "bits": 2048
@@ -2787,7 +2787,7 @@ window.PEDIA_DATA = {
       "name": "Deep-Learning Core",
       "type": "TOOLS",
       "rarity": "EPIC",
-      "effect": "Each DeepWeb Dive win advances the depth by 4 instead of 1.",
+      "effect": "For the next DeepWeb Dive, each win advances the depth by 4 instead of 1.",
       "stats": "DIVE STEP x4",
       "icon": "assets/icons/ICON_ITEM_DEEP_LEARNING_CORE.png"
     }

@@ -212,7 +212,7 @@ const ItemDef kItems[] = {
     // COMMON ITEMS --------------------------
     //
     {"decrypt_key", "Decryption Key", ItemDef::Type::Quest,
-     ItemDef::Rarity::Common, "Satisfies the Lockout currency demand for free.",
+     ItemDef::Rarity::Common, "Pays a Lockout's Bits demand for you. Only usable during a Lockout.",
      ItemDef::Context::LockoutOnly, /*effects=*/{}, /*combatHeal=*/0,
      /*preEncounterXp=*/0, /*bits=*/0, /*walkWarp=*/ItemDef::WalkWarp::None,
      /*use=*/ItemDef::Use::Consume, /*category=*/ItemDef::Category::Keys},
@@ -230,7 +230,7 @@ const ItemDef kItems[] = {
     // Happiness toward 50%.
     {"null_noodles", "Null Noodles", ItemDef::Type::Food,
      ItemDef::Rarity::Common,
-     "Tastes like... nothing. Sheds {|frag|} Fragmentation for {|hunger|} Hunger.",
+     "Tastes of nothing. Sheds {|frag|} Fragmentation, costs {|hunger|} FED.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, -15}, {IE::Kind::Frag, -15}, {IE::Kind::HappyToward50, 20}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/5},
@@ -292,7 +292,7 @@ const ItemDef kItems[] = {
     // It fills and patches and does nothing else; the ghost cure is Unlinkguine's job.
     {"dyno_nuggets", "Dyno Nuggets", ItemDef::Type::Food,
      ItemDef::Rarity::Uncommon,
-     "Fills {hunger} Hunger. Patches {heal} Health.",
+     "Everyday ration: fills the pet up and patches {heal} Health mid-fight.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 40}}, /*combatHeal=*/30},
 
@@ -305,7 +305,7 @@ const ItemDef kItems[] = {
     // A no-op on a pet with no ghost (any non-Worm pet, always).
     {"unlinkguine", "Unlinkguine", ItemDef::Type::Food,
      ItemDef::Rarity::Uncommon,
-     "Fills {hunger} Hunger. Patches {heal} Health. Cuts a Replication "
+     "Fills the pet up and patches {heal} Health mid-fight. Cuts a Replication "
      "Ghost loose.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 30}, {IE::Kind::ClearReplicationGhost, 0}}, /*combatHeal=*/20},
@@ -313,7 +313,8 @@ const ItemDef kItems[] = {
     // Intended to be combined with Null Noodles to produce a rare food
     {"pwnzu_sauce", "Pwnzu Sauce", ItemDef::Type::Food,
      ItemDef::Rarity::Uncommon,
-     "A bit intense all by itself. if only it could go on something with a truly neutral flavour.",
+     "A bit intense on its own. If only it could go on something with a truly "
+     "neutral flavour.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 5}, {IE::Kind::Happy, 15}}, /*combatHeal=*/0},
     
     {"tortilla_chip", "Tor-Tilla Chip", ItemDef::Type::Food,
@@ -321,13 +322,14 @@ const ItemDef kItems[] = {
      ItemDef::Context::Anytime, {{IE::Kind::Happy, 10}}},
  
     {"osi_dip", "OSI Dip", ItemDef::Type::Food,
-     ItemDef::Rarity::Uncommon, "Seven glorious layers. If only there was something good to eat it on. A sort of... eighth layer...",
+     ItemDef::Rarity::Uncommon, "Seven glorious layers. If only there were something good to eat it on. A "
+     "sort of... eighth layer.",
      ItemDef::Context::Anytime, {{IE::Kind::Happy, 10}}},
 
      // Sinkhole Trap: bypass the next wild encounter for a flat XP lump (preEncounterXp,
     // applied by game_combat::resolveSinkhole — a hand-off, not an on-Use pet effect).
     {"sinkhole_trap", "Sinkhole Trap", ItemDef::Type::Quest,
-     ItemDef::Rarity::Uncommon, "Bypasses the next wild encounter for {xp} XP.",
+     ItemDef::Rarity::Uncommon, "Auto-skips the next wild fight on a walk, for {xp} XP.",
      ItemDef::Context::PreEncounter, /*effects=*/{}, /*combatHeal=*/0,
      /*preEncounterXp=*/40},
     
@@ -439,8 +441,8 @@ const ItemDef kItems[] = {
     // alone it is a Breadcrumb; eaten in a run it climbs, and the pet's next passive
     // Hunger-decay tick ends the run.
     {"polltatoes", "Polltatoes", ItemDef::Type::Food, ItemDef::Rarity::Common,
-     "Bland on its own. Every Polltatoes eaten since the pet last lost a Hunger point "
-     "adds another {hungerStack} to what the next one fills.",
+     "Bland alone, but they stack: each one eaten since FED last ticked down adds "
+     "{hungerStack} to what the next one fills.",
      ItemDef::Context::Anytime, {{IE::Kind::HungerStacking, 1}}, /*combatHeal=*/0,
      /*preEncounterXp=*/0, /*bits=*/0, /*walkWarp=*/ItemDef::WalkWarp::None,
      /*use=*/ItemDef::Use::Consume, /*category=*/ItemDef::Category::Derive,
@@ -508,7 +510,7 @@ const ItemDef kItems[] = {
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/15},
 
     {"fresh_macrol", "Fresh Macrol", ItemDef::Type::Food, ItemDef::Rarity::Uncommon,
-     "Tastes great, but it goes bad quickly: {spoil}% odds per feeding.",
+     "Tastes great, but goes off: each feeding, {spoil}% chance one spoils.",
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 5}, {IE::Kind::Happy, 5}, {IE::Kind::Frag, -3}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
@@ -1060,14 +1062,15 @@ const ItemDef kItems[] = {
     // Created when Null_Noodles and Pwn-zu Sauce are combined (Hacker MERGE HUB).
     {"pwnzu_patched_noodles", "Pwnzu-Patched Noodles", ItemDef::Type::Food,
      ItemDef::Rarity::Uncommon,
-     "It tastes like Grandma Yubi's Cooking.",
+     "It tastes like Grandma Yubi's cooking.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 100}, {IE::Kind::Frag, -100}, {IE::Kind::Happy, 100}}, /*combatHeal=*/0},
 
     // Created when Tor-Tilla Chip and OSI Dip are combined (Hacker MERGE HUB) — the
     // eighth layer OSI Dip was missing. Fills every stat at once.
     {"fully_stacked_nachos", "Fully-Stacked Nachos", ItemDef::Type::Food,
      ItemDef::Rarity::Rare,
-     "We tried every combination. In the end it turns out the secret eighth dippy layer... was always you.",
+     "We tried every combination. In the end, the secret eighth layer... was always "
+     "you.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 100}, {IE::Kind::Frag, -100}, {IE::Kind::Happy, 100}}, /*combatHeal=*/0},
 
     // Hashed Browns + Salted&Hashed Browns: the pantry's first cooked dish and its
@@ -1177,7 +1180,8 @@ const ItemDef kItems[] = {
     // its second effect is for.
     {"tiramisudo", "Tiramisudo", ItemDef::Type::Food,
      ItemDef::Rarity::Epic,
-     "Ask the rig nicely and it says no. Ask it again like this and it says of course.",
+     "Ask nicely: no. Ask like this: yes. Once per pet: Bandwidth regens "
+     "{regenMins} min faster for life.",
      ItemDef::Context::Anytime,
      {{IE::Kind::BandwidthRegenBonusMin, 1}, {IE::Kind::Bandwidth, 1},
       {IE::Kind::Happy, 50}, {IE::Kind::Frag, -15}}},
@@ -1704,7 +1708,8 @@ const ItemDef kItems[] = {
     // out unused it just lapses; another Backup Drive re-arms it.
     {"backup_drive", "Backup Drive", ItemDef::Type::Buff,
      ItemDef::Rarity::Rare,
-     "For {shieldMins} minutes, a pet that goes down is restored with half its max Health. One save.",
+     "For {shieldMins} minutes, a pet knocked out in a fight gets half its max Health "
+     "added back. One save, and a big enough hit can still beat it.",
      ItemDef::Context::Anytime, {{IE::Kind::ArmCombatShieldBuff, 60}}},
     
     // Rare Cache: Open in the VAULT for a Rare Reward not locked to any area in particular
@@ -1728,7 +1733,8 @@ const ItemDef kItems[] = {
     // stack — a fresh Module/Core just replaces whichever multiplier is currently
     // armed. Lets a blitzing endgame pet catch back up to a real fight faster.
     {"deep_learning_module", "Deep-Learning Module", ItemDef::Type::Tool,
-     ItemDef::Rarity::Rare, "Each DeepWeb Dive win advances the depth by {depthStep} instead of 1.",
+     ItemDef::Rarity::Rare, "For the next DeepWeb Dive, each win advances the depth by {depthStep} "
+     "instead of 1.",
      ItemDef::Context::Anytime, {{IE::Kind::ArmDeepWebDepthMultiplier, 2}}},
     //
     // EPIC ITEMS --------------------------
@@ -1739,7 +1745,7 @@ const ItemDef kItems[] = {
     // permanent thing folded into it, which is why it is filed with the food rather
     // than with the buffs it arms none of.
     {"yubi_cookie", "Yubi-Cookie", ItemDef::Type::Food,
-     ItemDef::Rarity::Epic, "So delicious it could make the pet forget {mistakes} care mistake. Max 1 per lifecycle.",
+     ItemDef::Rarity::Epic, "So delicious the pet forgets {mistakes} care mistake. Once per pet.",
      ItemDef::Context::Anytime,
      {{IE::Kind::RemoveCareMistakeOnce, 1}, {IE::Kind::Hunger, 20},
       {IE::Kind::Happy, 40}}},
@@ -1748,7 +1754,7 @@ const ItemDef kItems[] = {
     // arm protection against the NEXT care mistake, once per lifetime. The shield is
     // per-pet, consumed on the next positive mistake.
     {"restore_point", "Restore Point", ItemDef::Type::Buff,
-     ItemDef::Rarity::Epic, "Shields against the next care mistake. Max 1 per lifecycle.",
+     ItemDef::Rarity::Epic, "Shields the pet from its next care mistake. Once per pet.",
      ItemDef::Context::Anytime, {{IE::Kind::ClearMistakeShieldOnce, 1}}},
     
     // Epic Cache: Open in the VAULT for an Epic Reward not locked to any area in particular
@@ -1758,7 +1764,8 @@ const ItemDef kItems[] = {
     // deep enough). The yield reveal shows the items/Bits; the mod lands in MODS.
     {"sealed_cache_epic", "Epic Cache", ItemDef::Type::Quest,
      ItemDef::Rarity::Epic,
-     "An epic data cache. Open from the VAULT for the best reward draw.",
+     "An epic data cache. Open from the VAULT for a deep reward draw and a shot at a "
+     "MOD.",
      ItemDef::Context::Anytime, /*effects=*/{}, /*combatHeal=*/0, /*preEncounterXp=*/0,
      /*bits=*/0, /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::OpenContainer,
      /*category=*/ItemDef::Category::Derive,
@@ -1773,7 +1780,8 @@ const ItemDef kItems[] = {
     // because a ladder takes far longer to finish than a cache takes to find.
     {"commend_cache", "Commendation Cache", ItemDef::Type::Quest,
      ItemDef::Rarity::Epic,
-     "Earned, never found. Open from the VAULT for a commendation draw.",
+     "Earned, never found. Open from the VAULT for the richest draw and a shot at a "
+     "MOD.",
      ItemDef::Context::Anytime, /*effects=*/{}, /*combatHeal=*/0, /*preEncounterXp=*/0,
      /*bits=*/0, /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::OpenContainer,
      /*category=*/ItemDef::Category::Derive,
@@ -1838,7 +1846,7 @@ const ItemDef kItems[] = {
     // Using one from ITEMS is inert ("USE ON THE WALK", itemUsable).
     {"access_token", "Access Token", ItemDef::Type::Quest,
      ItemDef::Rarity::Uncommon,
-     "Explore-use: warp straight to the nearest shop.",
+     "Use on a walk: warp straight to the area's shop.",
      ItemDef::Context::Anytime, /*effects=*/{}, /*combatHeal=*/0, /*preEncounterXp=*/0,
      /*bits=*/0, /*walkWarp=*/ItemDef::WalkWarp::Shop, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Keys},
@@ -1849,7 +1857,7 @@ const ItemDef kItems[] = {
     // applyItemEffects every other item goes through.
     {"safe_mode_key", "Safe-Mode Key", ItemDef::Type::Quest,
      ItemDef::Rarity::Uncommon,
-     "Explore-use: warp straight to a safe rest.",
+     "Use on a walk: warp straight to a safe rest that sheds {|frag|} Fragmentation.",
      ItemDef::Context::Anytime,
      /*effects=*/{{ItemEffect::Kind::Frag, -20}}, /*combatHeal=*/0, /*preEncounterXp=*/0,
      /*bits=*/0, /*walkWarp=*/ItemDef::WalkWarp::SafeRest, /*use=*/ItemDef::Use::Consume,
@@ -1889,7 +1897,7 @@ const ItemDef kItems[] = {
     // kTrojanDivertPct roll. Stocked item at Moor-to-Moor (Napstorrent Moors).
     {"ambig_usb", "Ambig-USB", ItemDef::Type::Tool,
      ItemDef::Rarity::Epic,
-     "Guarantees the pet's next evolution diverts into a Trojan.",
+     "Next evolution diverts to a Trojan, if it can. Spent either way.",
      ItemDef::Context::Anytime, {{IE::Kind::ForceTrojanDivert, 1}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/1024},
 
@@ -1936,7 +1944,7 @@ const ItemDef kItems[] = {
     // second soak, until this one is spent at the boundary it stretched.
     {"sandbox_usb", "Sandbox-USB", ItemDef::Type::Tool,
      ItemDef::Rarity::Rare,
-     "Process-use: stretches this stage's evolve clock x{soak} and pays x{soak} XP.",
+     "Process only: stretches this stage's evolve clock x{soak} and pays x{soak} XP.",
      ItemDef::Context::Anytime, {{IE::Kind::ArmEvolveSoak, 2}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/0,
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
@@ -1961,7 +1969,7 @@ const ItemDef kItems[] = {
     // XP has to be worth a stage to be worth arming at all.
     {"hypervisor_usb", "Hypervisor-USB", ItemDef::Type::Tool,
      ItemDef::Rarity::Epic,
-     "Process/Script: x{soak} XP for x{soak} the evolve clock, x2 that on a Script.",
+     "Process/Script: evolve clock x{soak} (doubled on a Script), XP x{soak}.",
      ItemDef::Context::Anytime, {{IE::Kind::ArmEvolveSoakLate, 8}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/2048},
 
@@ -2003,7 +2011,8 @@ const ItemDef kItems[] = {
 
     // Deep-Learning Core: Deep-Learning Module's Epic upgrade — see its comment above.
     {"deep_learning_core", "Deep-Learning Core", ItemDef::Type::Tool,
-     ItemDef::Rarity::Epic, "Each DeepWeb Dive win advances the depth by {depthStep} instead of 1.",
+     ItemDef::Rarity::Epic, "For the next DeepWeb Dive, each win advances the depth by {depthStep} "
+     "instead of 1.",
      ItemDef::Context::Anytime, {{IE::Kind::ArmDeepWebDepthMultiplier, 4}}},
 };
 const int kItemsCount = sizeof(kItems) / sizeof(kItems[0]);

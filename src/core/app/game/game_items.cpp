@@ -426,7 +426,7 @@ void Game::applyItemEffects(const ItemDef& d) {
                 break;
             }
             case ItemEffect::Kind::RemoveCareMistakeOnce:
-                // Yubi-Cookie ("Max 1 per lifecycle"): remove mistakes ONCE, then the
+                // Yubi-Cookie ("Once per pet"): remove mistakes ONCE, then the
                 // per-pet flag latches it — already-spent → no-op.
                 if (!yubiConsumed_) {
                     model_.addCareMistake(-e.magnitude);
