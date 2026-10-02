@@ -7,14 +7,14 @@ first place.
 
 ## The principle
 
-A comment earns its place by answering one of three things:
+A comment earns its place only by saying what the code cannot, concisely:
 
-1. **What is this FOR?**
-2. **What consumes it / what workflow does it enable?** (worth saying when that collaborator lives
-   in *another* file.)
-3. **HOW do I use it?** (e.g. a header comment on the items table showing how to wire a new item.)
+1. **WHY is it this way?** The constraint, the trap, the alternative that fails.
+2. **WHERE else is it used?** The consumer or collaborator, when it lives in *another* file.
 
-That's the whole job: help the person reading this code *right now*.
+It never restates WHAT the code does. A restatement duplicates the code, goes stale when the
+code changes, and then disagrees with it — which reads as a bug. If deleting a comment would not
+leave a reader confused, delete it.
 
 **A comment must never point back at the planning board.** `docs/MASTER_TODO.md` is the planning surface — it
 decide *what* to build, like cards on a Kanban board. You don't write the card number on the code.

@@ -39,10 +39,13 @@ growth, by concern, not ahead of it. Helpers shared by two or more units go in
 
 ## Comments and doc prose
 
-A comment orients a reader *in the moment*: **what** a thing is for, **how** to use it, or
-**what consumes it** (worth saying when that's another file). It never points back at the
-planning board — [`docs/MASTER_TODO.md`](docs/MASTER_TODO.md) decides *what* to build, and the
-card does not go in the code.
+**A comment says only what the code cannot: *why* it is this way, and *where else* it is
+used.** Keep it to a line or two. Never restate what the code does — the code already says
+that, and a restatement goes stale the moment the code changes, leaving a comment that
+disagrees with the code and reads like a bug. If deleting a comment would not leave a reader
+confused, delete it. A comment also never points back at the planning board —
+[`docs/MASTER_TODO.md`](docs/MASTER_TODO.md) decides *what* to build, and the card does not go
+in the code.
 
 So: no planning or milestone IDs, no dates or session tags, no change-narration ("the old X",
 "used to", "now lives on"). Describe the **current** state, and reference other code — files,
