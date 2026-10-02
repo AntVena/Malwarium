@@ -728,7 +728,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "COMMON",
       "effect": "Tastes like... nothing. Sheds 15 Fragmentation for 15 Hunger.",
-      "stats": "HUNGER -15 / FRAG -15 / HAPPY>50 20",
+      "stats": "FED -15 / FRAG -15 / HAPPY>50 20",
       "icon": "assets/icons/ICON_ITEM_NULL_NOODLES.png",
       "bits": 5
     },
@@ -775,7 +775,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "Fills 40 Hunger. Patches 30 Health.",
-      "stats": "HUNGER +40 / HEAL 30",
+      "stats": "FED +40 / HEAL 30",
       "icon": "assets/icons/ICON_ITEM_DYNO_NUGGETS.png"
     },
     {
@@ -784,7 +784,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "Fills 30 Hunger. Patches 20 Health. Cuts a Replication Ghost loose.",
-      "stats": "HUNGER +30 / GHOST CURE / HEAL 20",
+      "stats": "FED +30 / GHOST CURE / HEAL 20",
       "icon": "assets/icons/ICON_ITEM_UNLINKGUINE.png"
     },
     {
@@ -793,7 +793,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "A bit intense all by itself. if only it could go on something with a truly neutral flavour.",
-      "stats": "HUNGER +5 / HAPPY +15",
+      "stats": "FED +5 / HAPPY +15",
       "icon": "assets/icons/ICON_ITEM_PWNZU_SAUCE.png"
     },
     {
@@ -830,7 +830,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "Junk food: 15 Hunger and 25 Happiness, at 5 Fragmentation.",
-      "stats": "HUNGER +15 / HAPPY +25 / FRAG +5",
+      "stats": "FED +15 / HAPPY +25 / FRAG +5",
       "icon": "assets/icons/ICON_ITEM_R007_B33R.png",
       "bits": 5
     },
@@ -867,7 +867,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "COMMON",
       "effect": "Plentiful. Far too plentiful. Find something to do with it all.",
-      "stats": "HUNGER +2",
+      "stats": "FED +2",
       "icon": "assets/icons/ICON_ITEM_SPAM.png"
     },
     {
@@ -876,7 +876,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "COMMON",
       "effect": "There's a reason enough of these to make a trail were left uneaten.",
-      "stats": "HUNGER +1",
+      "stats": "FED +1",
       "icon": "assets/icons/ICON_ITEM_BREADCRUMBS.png"
     },
     {
@@ -912,7 +912,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "COMMON",
       "effect": "There's a time to use this, and it is NOT as a snack.",
-      "stats": "HUNGER +1 / HAPPY -1",
+      "stats": "FED +1 / HAPPY -1",
       "icon": "assets/icons/ICON_ITEM_CRONSTARCH.png"
     },
     {
@@ -930,7 +930,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "COMMON",
       "effect": "There's a reason this is a default flavour: nobody's messed with the recipe in years.",
-      "stats": "HUNGER +1 / HAPPY +1 / FRAG +1",
+      "stats": "FED +1 / HAPPY +1 / FRAG +1",
       "icon": "assets/icons/ICON_ITEM_VANILLA_EXTRACT.png"
     },
     {
@@ -939,7 +939,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "COMMON",
       "effect": "Bland on its own. Every Polltatoes eaten since the pet last lost a Hunger point adds another 1 to what the next one fills.",
-      "stats": "HUNGER +1 EA",
+      "stats": "FED +1 EA",
       "icon": "assets/icons/ICON_ITEM_POLLTATOES.png"
     },
     {
@@ -948,7 +948,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "COMMON",
       "effect": "You must be yoking.",
-      "stats": "HUNGER +8",
+      "stats": "FED +8",
       "icon": "assets/icons/ICON_ITEM_REGEGGS.png"
     },
     {
@@ -957,7 +957,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "COMMON",
       "effect": "These used to be exclusive. Now everyone has a copy.",
-      "stats": "HUNGER +3 / HAPPY +3 / FRAG -3",
+      "stats": "FED +3 / HAPPY +3 / FRAG -3",
       "icon": "assets/icons/ICON_ITEM_DATA_LEEK.png"
     },
     {
@@ -966,7 +966,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "COMMON",
       "effect": "One box, every distribution. Nine hundred serving suggestions and no ingredients list.",
-      "stats": "HUNGER +5 / HAPPY +10",
+      "stats": "FED +5 / HAPPY +10",
       "icon": "assets/icons/ICON_ITEM_UNIVERSAL_CEREAL_BOX.png"
     },
     {
@@ -993,7 +993,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "It's very clearly labelled: 'Not particularly filling or good for you. Makes you happy.'",
-      "stats": "HUNGER +1 / HAPPY +15 / FRAG +3",
+      "stats": "FED +1 / HAPPY +15 / FRAG +3",
       "icon": "assets/icons/ICON_ITEM_SYNTACTIC_SUGAR.png"
     },
     {
@@ -1002,7 +1002,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "Enough of these and you'll forget what a diagnostic report even looks like.",
-      "stats": "HUNGER +3 / HAPPY +3 / FRAG -5",
+      "stats": "FED +3 / HAPPY +3 / FRAG -5",
       "icon": "assets/icons/ICON_ITEM_APPLETS.png"
     },
     {
@@ -1011,7 +1011,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "You need special permissions to order a box of these.",
-      "stats": "HUNGER +6 / FRAG -6",
+      "stats": "FED +6 / FRAG -6",
       "icon": "assets/icons/ICON_ITEM_ROOT_VEG.png"
     },
     {
@@ -1020,7 +1020,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "Tastes great, but it goes bad quickly: 5% odds per feeding.",
-      "stats": "HUNGER +5 / HAPPY +5 / FRAG -3",
+      "stats": "FED +5 / HAPPY +5 / FRAG -3",
       "icon": "assets/icons/ICON_ITEM_FRESH_MACROL.png"
     },
     {
@@ -1029,7 +1029,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "The shaker isn't exactly empty; there's 'nothing' in it.",
-      "stats": "HUNGER -2 / FRAG -1 / HAPPY>50 2",
+      "stats": "FED -2 / FRAG -1 / HAPPY>50 2",
       "icon": "assets/icons/ICON_ITEM_DESALINATED_C_SALT.png"
     },
     {
@@ -1038,7 +1038,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "COMMON",
       "effect": "It raised itself. Nobody else vouched for it.",
-      "stats": "HUNGER +2 / HAPPY -3",
+      "stats": "FED +2 / HAPPY -3",
       "icon": "assets/icons/ICON_ITEM_SELF_SIGNED_FLOUR.png"
     },
     {
@@ -1047,7 +1047,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "COMMON",
       "effect": "Peel a layer off and there is another prompt underneath.",
-      "stats": "HUNGER +2 / HAPPY -4",
+      "stats": "FED +2 / HAPPY -4",
       "icon": "assets/icons/ICON_ITEM_SHELLOTS.png"
     },
     {
@@ -1056,7 +1056,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "COMMON",
       "effect": "Long, thin, and every strand joined to the last one.",
-      "stats": "HUNGER +4",
+      "stats": "FED +4",
       "icon": "assets/icons/ICON_ITEM_LINKGUINE.png"
     },
     {
@@ -1065,7 +1065,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "COMMON",
       "effect": "Hot enough to keep a process where you put it.",
-      "stats": "HUNGER +3 / HAPPY +4",
+      "stats": "FED +3 / HAPPY +4",
       "icon": "assets/icons/ICON_ITEM_JAILAPENO.png"
     },
     {
@@ -1074,7 +1074,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "COMMON",
       "effect": "Twelve thousand revisions. Same butter.",
-      "stats": "HUNGER +3 / FRAG +2",
+      "stats": "FED +3 / FRAG +2",
       "icon": "assets/icons/ICON_ITEM_CHURNED_BUTTER.png"
     },
     {
@@ -1083,7 +1083,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "COMMON",
       "effect": "They grow in eights. There has never been a ninth.",
-      "stats": "HUNGER +3 / HAPPY +2",
+      "stats": "FED +3 / HAPPY +2",
       "icon": "assets/icons/ICON_ITEM_BYTESTEAK_TOMATOES.png"
     },
     {
@@ -1101,7 +1101,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "COMMON",
       "effect": "Create one, read it, update it. Mostly delete it.",
-      "stats": "HUNGER +4 / HAPPY -2",
+      "stats": "FED +4 / HAPPY -2",
       "icon": "assets/icons/ICON_ITEM_CRUDS.png"
     },
     {
@@ -1110,7 +1110,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "COMMON",
       "effect": "Nothing else in the morning starts until this has.",
-      "stats": "HUNGER +10 / HAPPY -5",
+      "stats": "FED +10 / HAPPY -5",
       "icon": "assets/icons/ICON_ITEM_BOOTMEAL.png"
     },
     {
@@ -1128,7 +1128,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "COMMON",
       "effect": "Bitter. Only the segments that match are worth eating.",
-      "stats": "HUNGER +3 / HAPPY -4 / FRAG -4",
+      "stats": "FED +3 / HAPPY -4 / FRAG -4",
       "icon": "assets/icons/ICON_ITEM_GREPEFRUIT.png"
     },
     {
@@ -1137,7 +1137,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "COMMON",
       "effect": "It is a decoy. Eat it anyway.",
-      "stats": "HUNGER +5 / HAPPY -5",
+      "stats": "FED +5 / HAPPY -5",
       "icon": "assets/icons/ICON_ITEM_RED_HERRING.png"
     },
     {
@@ -1146,7 +1146,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "Hands over everything the moment anyone asks.",
-      "stats": "HUNGER +4 / HAPPY +6",
+      "stats": "FED +4 / HAPPY +6",
       "icon": "assets/icons/ICON_ITEM_PAPAYA.png"
     },
     {
@@ -1155,7 +1155,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "Free to copy, and it stretches further than anything else on the shelf.",
-      "stats": "HUNGER +6 / HAPPY +4",
+      "stats": "FED +6 / HAPPY +4",
       "icon": "assets/icons/ICON_ITEM_MOZILLARELLA.png"
     },
     {
@@ -1164,7 +1164,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "Take as much as you like. It all stays on the tree.",
-      "stats": "HUNGER +2 / HAPPY +12 / FRAG +2",
+      "stats": "FED +2 / HAPPY +12 / FRAG +2",
       "icon": "assets/icons/ICON_ITEM_IMAPLE_SYRUP.png"
     },
     {
@@ -1173,7 +1173,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "Twice the storage of the single. Pours exactly the same.",
-      "stats": "HUNGER +7 / FRAG +3",
+      "stats": "FED +7 / FRAG +3",
       "icon": "assets/icons/ICON_ITEM_DOUBLE_PRECISION_CREAM.png"
     },
     {
@@ -1191,7 +1191,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "Explain the recipe to one before you start. It never argues.",
-      "stats": "HUNGER +8 / HAPPY +5",
+      "stats": "FED +8 / HAPPY +5",
       "icon": "assets/icons/ICON_ITEM_RUBBER_DUCKS.png"
     },
     {
@@ -1200,7 +1200,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "RARE",
       "effect": "Left out where anyone could take it. That is the point of it.",
-      "stats": "HUNGER +5 / HAPPY +8 / FRAG -4",
+      "stats": "FED +5 / HAPPY +8 / FRAG -4",
       "icon": "assets/icons/ICON_ITEM_HONEYPOT_YOGURT.png"
     },
     {
@@ -1209,7 +1209,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "COMMON",
       "effect": "You have to parse them before they are any use.",
-      "stats": "HUNGER +4 / HAPPY -3",
+      "stats": "FED +4 / HAPPY -3",
       "icon": "assets/icons/ICON_ITEM_PARSENIPS.png"
     },
     {
@@ -1218,7 +1218,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "COMMON",
       "effect": "Read only. Nothing you do to it takes.",
-      "stats": "HUNGER +2 / FRAG -3",
+      "stats": "FED +2 / FRAG -3",
       "icon": "assets/icons/ICON_ITEM_ROMAINE.png"
     },
     {
@@ -1227,7 +1227,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "COMMON",
       "effect": "Left in storage a season too long, and it shows.",
-      "stats": "HUNGER +5 / HAPPY -4",
+      "stats": "FED +5 / HAPPY -4",
       "icon": "assets/icons/ICON_ITEM_BITROOT.png"
     },
     {
@@ -1236,7 +1236,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "COMMON",
       "effect": "Fixed width, every leaf.",
-      "stats": "HUNGER +3 / FRAG -3",
+      "stats": "FED +3 / FRAG -3",
       "icon": "assets/icons/ICON_ITEM_SWISS_CHARD.png"
     },
     {
@@ -1245,7 +1245,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "COMMON",
       "effect": "An array of them, and the last one is always empty.",
-      "stats": "HUNGER +4 / HAPPY +2",
+      "stats": "FED +4 / HAPPY +2",
       "icon": "assets/icons/ICON_ITEM_STRING_BEANS.png"
     },
     {
@@ -1254,7 +1254,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "COMMON",
       "effect": "Each pod ships with everything it needs and nothing it shares.",
-      "stats": "HUNGER +3 / HAPPY +3",
+      "stats": "FED +3 / HAPPY +3",
       "icon": "assets/icons/ICON_ITEM_SNAP_PEAS.png"
     },
     {
@@ -1263,7 +1263,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "COMMON",
       "effect": "Seven of them went in. One came out.",
-      "stats": "HUNGER +7 / HAPPY -2",
+      "stats": "FED +7 / HAPPY -2",
       "icon": "assets/icons/ICON_ITEM_SQUASH.png"
     },
     {
@@ -1272,7 +1272,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "COMMON",
       "effect": "Lose a leaf and lose nothing. There is another copy of it.",
-      "stats": "HUNGER +3 / HAPPY -5 / FRAG -3",
+      "stats": "FED +3 / HAPPY -5 / FRAG -3",
       "icon": "assets/icons/ICON_ITEM_RAIDICCHIO.png"
     },
     {
@@ -1281,7 +1281,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "COMMON",
       "effect": "Splits into fields the moment you cut it.",
-      "stats": "HUNGER +4 / HAPPY -4",
+      "stats": "FED +4 / HAPPY -4",
       "icon": "assets/icons/ICON_ITEM_AWKRA.png"
     },
     {
@@ -1290,7 +1290,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "COMMON",
       "effect": "Comes with every tool already installed. Most of them sharp.",
-      "stats": "HUNGER +5 / FRAG -2",
+      "stats": "FED +5 / FRAG -2",
       "icon": "assets/icons/ICON_ITEM_KALIFLOWER.png"
     },
     {
@@ -1299,7 +1299,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "COMMON",
       "effect": "Takes all afternoon to reach the part you can eat.",
-      "stats": "HUNGER +2 / HAPPY -6",
+      "stats": "FED +2 / HAPPY -6",
       "icon": "assets/icons/ICON_ITEM_ARCHICHOKE.png"
     },
     {
@@ -1308,7 +1308,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "COMMON",
       "effect": "Bundles its own everything. Twice the leaf you needed.",
-      "stats": "HUNGER +5 / HAPPY +2",
+      "stats": "FED +5 / HAPPY +2",
       "icon": "assets/icons/ICON_ITEM_FLATPAK_CHOI.png"
     },
     {
@@ -1317,7 +1317,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "COMMON",
       "effect": "Sweet, crisp, cheap. Pick two.",
-      "stats": "HUNGER +3 / HAPPY +4",
+      "stats": "FED +3 / HAPPY +4",
       "icon": "assets/icons/ICON_ITEM_CAPSICUM.png"
     },
     {
@@ -1335,7 +1335,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "COMMON",
       "effect": "Reproducible. The same corn, every single time.",
-      "stats": "HUNGER +6 / HAPPY -3",
+      "stats": "FED +6 / HAPPY -3",
       "icon": "assets/icons/ICON_ITEM_NIXTAMAL.png"
     },
     {
@@ -1344,7 +1344,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "COMMON",
       "effect": "Sweet, and it always comes back.",
-      "stats": "HUNGER +4 / HAPPY +6",
+      "stats": "FED +4 / HAPPY +6",
       "icon": "assets/icons/ICON_ITEM_PINGAPPLE.png"
     },
     {
@@ -1353,7 +1353,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "COMMON",
       "effect": "Unencrypted, in the open, right there in the bowl.",
-      "stats": "HUNGER +7",
+      "stats": "FED +7",
       "icon": "assets/icons/ICON_ITEM_PLAINTAIN.png"
     },
     {
@@ -1362,7 +1362,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "COMMON",
       "effect": "Somebody else's berries, on somebody else's bush.",
-      "stats": "HUNGER +2 / HAPPY +7",
+      "stats": "FED +2 / HAPPY +7",
       "icon": "assets/icons/ICON_ITEM_CLOUDBERRIES.png"
     },
     {
@@ -1371,7 +1371,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "COMMON",
       "effect": "Thousands of tiny complaints, and every one of them fair.",
-      "stats": "HUNGER +6 / HAPPY -4",
+      "stats": "FED +6 / HAPPY -4",
       "icon": "assets/icons/ICON_ITEM_LINTILS.png"
     },
     {
@@ -1380,7 +1380,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "COMMON",
       "effect": "Write the pot once. Nobody will read it again.",
-      "stats": "HUNGER +6 / FRAG +2",
+      "stats": "FED +6 / FRAG +2",
       "icon": "assets/icons/ICON_ITEM_PERL_BARLEY.png"
     },
     {
@@ -1389,7 +1389,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "COMMON",
       "effect": "Ten lines in the pot, and the last one sends you back to the first.",
-      "stats": "HUNGER +8 / HAPPY -2",
+      "stats": "FED +8 / HAPPY -2",
       "icon": "assets/icons/ICON_ITEM_BASICMATI_RICE.png"
     },
     {
@@ -1398,7 +1398,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "COMMON",
       "effect": "A tube nobody else can see down.",
-      "stats": "HUNGER +5 / FRAG -2",
+      "stats": "FED +5 / FRAG -2",
       "icon": "assets/icons/ICON_ITEM_VPENNE.png"
     },
     {
@@ -1407,7 +1407,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "COMMON",
       "effect": "Left them overnight. Nobody was watching, and nobody was paged.",
-      "stats": "HUNGER +6 / HAPPY -6",
+      "stats": "FED +6 / HAPPY -6",
       "icon": "assets/icons/ICON_ITEM_UNMONITORED_OATS.png"
     },
     {
@@ -1416,7 +1416,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "COMMON",
       "effect": "How deep you cut them changes what they mean.",
-      "stats": "HUNGER +7 / HAPPY -5",
+      "stats": "FED +7 / HAPPY -5",
       "icon": "assets/icons/ICON_ITEM_YAMLS.png"
     },
     {
@@ -1425,7 +1425,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "Picked the first of January, nineteen seventy. All of them.",
-      "stats": "HUNGER +5 / HAPPY +8",
+      "stats": "FED +5 / HAPPY +8",
       "icon": "assets/icons/ICON_ITEM_EPOCH_DATES.png"
     },
     {
@@ -1434,7 +1434,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "Everybody's are different and everybody's are correct.",
-      "stats": "HUNGER +4 / HAPPY +9",
+      "stats": "FED +4 / HAPPY +9",
       "icon": "assets/icons/ICON_ITEM_DOTFIGS.png"
     },
     {
@@ -1443,7 +1443,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "Documented, versioned, and rate-limited to two.",
-      "stats": "HUNGER +4 / HAPPY +7",
+      "stats": "FED +4 / HAPPY +7",
       "icon": "assets/icons/ICON_ITEM_APIRICOT.png"
     },
     {
@@ -1452,7 +1452,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "Forty in the drawer. Three of them doing anything.",
-      "stats": "HUNGER +3 / HAPPY +8",
+      "stats": "FED +3 / HAPPY +8",
       "icon": "assets/icons/ICON_ITEM_RASPBERRY_PIS.png"
     },
     {
@@ -1461,7 +1461,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "Indexed, one row to a bunch.",
-      "stats": "HUNGER +4 / HAPPY +6",
+      "stats": "FED +4 / HAPPY +6",
       "icon": "assets/icons/ICON_ITEM_TABLE_GRAPES.png"
     },
     {
@@ -1470,7 +1470,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "RARE",
       "effect": "Anonymous. Nobody can say which sheep they came off.",
-      "stats": "HUNGER +10 / HAPPY +3",
+      "stats": "FED +10 / HAPPY +3",
       "icon": "assets/icons/ICON_ITEM_LAMBDA_CHOPS.png"
     },
     {
@@ -1479,7 +1479,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "RARE",
       "effect": "Small, tender, and somebody deleted the backup.",
-      "stats": "HUNGER +9 / HAPPY +6",
+      "stats": "FED +9 / HAPPY +6",
       "icon": "assets/icons/ICON_ITEM_FILE_MIGNON.png"
     },
     {
@@ -1488,7 +1488,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "Every scrap of whitespace stripped out of it.",
-      "stats": "HUNGER +9 / FRAG +2",
+      "stats": "FED +9 / FRAG +2",
       "icon": "assets/icons/ICON_ITEM_MINIFIED_BEEF.png"
     },
     {
@@ -1497,7 +1497,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "You never own one. You simply keep paying for it.",
-      "stats": "HUNGER +8 / HAPPY +4 / FRAG +3",
+      "stats": "FED +8 / HAPPY +4 / FRAG +3",
       "icon": "assets/icons/ICON_ITEM_SAASAGE.png"
     },
     {
@@ -1506,7 +1506,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "No padding between them anywhere in the tin.",
-      "stats": "HUNGER +9 / HAPPY -3",
+      "stats": "FED +9 / HAPPY -3",
       "icon": "assets/icons/ICON_ITEM_PACKED_SARDINES.png"
     },
     {
@@ -1515,7 +1515,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "It gets through. Whatever is in the way, it gets through.",
-      "stats": "HUNGER +7 / HAPPY -8 / FRAG -5",
+      "stats": "FED +7 / HAPPY -8 / FRAG -5",
       "icon": "assets/icons/ICON_ITEM_NATTO.png"
     },
     {
@@ -1524,7 +1524,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "RARE",
       "effect": "Grated over the top. Optional, with a sensible default.",
-      "stats": "HUNGER +4 / HAPPY +7",
+      "stats": "FED +4 / HAPPY +7",
       "icon": "assets/icons/ICON_ITEM_PARAMESAN.png"
     },
     {
@@ -1533,7 +1533,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "Hard shell, unique address, and you can forge it.",
-      "stats": "HUNGER +5 / HAPPY +7",
+      "stats": "FED +5 / HAPPY +7",
       "icon": "assets/icons/ICON_ITEM_MACADAMIA.png"
     },
     {
@@ -1542,7 +1542,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "Kept close, because reaching for them again is the slow part.",
-      "stats": "HUNGER +5 / HAPPY +6",
+      "stats": "FED +5 / HAPPY +6",
       "icon": "assets/icons/ICON_ITEM_CACHE_EWS.png"
     },
     {
@@ -1551,7 +1551,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "COMMON",
       "effect": "They farm all night and hand over almost nothing.",
-      "stats": "HUNGER +2 / FRAG -2",
+      "stats": "FED +2 / FRAG -2",
       "icon": "assets/icons/ICON_ITEM_CHIA_SEEDS.png"
     },
     {
@@ -1569,7 +1569,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "Everything goes through it, and it keeps a note of all of it.",
-      "stats": "HUNGER +3 / HAPPY -6",
+      "stats": "FED +3 / HAPPY -6",
       "icon": "assets/icons/ICON_ITEM_SQUID_INK.png"
     },
     {
@@ -1587,7 +1587,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "COMMON",
       "effect": "Whatever you pour it into inherits the fizz.",
-      "stats": "HUNGER +1 / HAPPY +5",
+      "stats": "FED +1 / HAPPY +5",
       "icon": "assets/icons/ICON_ITEM_MIXINS.png"
     },
     {
@@ -1596,7 +1596,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "RARE",
       "effect": "Thin, flat, and worth more than the tin they came in.",
-      "stats": "HUNGER +3 / HAPPY +8",
+      "stats": "FED +3 / HAPPY +8",
       "icon": "assets/icons/ICON_ITEM_SILICON_WAFERS.png"
     },
     {
@@ -1605,7 +1605,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "COMMON",
       "effect": "Four bits to a go, and two goes make a proper mouthful.",
-      "stats": "HUNGER +4 / HAPPY +4",
+      "stats": "FED +4 / HAPPY +4",
       "icon": "assets/icons/ICON_ITEM_NIBBLES.png"
     },
     {
@@ -1614,7 +1614,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "RARE",
       "effect": "Flattened into a shape that travels, ready to be sent.",
-      "stats": "HUNGER +2 / HAPPY +11 / FRAG +3",
+      "stats": "FED +2 / HAPPY +11 / FRAG +3",
       "icon": "assets/icons/ICON_ITEM_MARSHALLED_MALLOWS.png"
     },
     {
@@ -1623,7 +1623,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "COMMON",
       "effect": "There is one in every batch, and it is always striped.",
-      "stats": "HUNGER +1 / HAPPY +8 / FRAG +2",
+      "stats": "FED +1 / HAPPY +8 / FRAG +2",
       "icon": "assets/icons/ICON_ITEM_HUMBUGS.png"
     },
     {
@@ -1632,7 +1632,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "COMMON",
       "effect": "Intercepts everything on the way down and lets you edit it.",
-      "stats": "HUNGER +1 / HAPPY +9 / FRAG +2",
+      "stats": "FED +1 / HAPPY +9 / FRAG +2",
       "icon": "assets/icons/ICON_ITEM_BURP_SWEETS.png"
     },
     {
@@ -1641,7 +1641,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "COMMON",
       "effect": "Everyone has a bag. Not all of them arrive.",
-      "stats": "HUNGER +1 / HAPPY +10",
+      "stats": "FED +1 / HAPPY +10",
       "icon": "assets/icons/ICON_ITEM_PEER_DROPS.png"
     },
     {
@@ -1650,7 +1650,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "It tastes like Grandma Yubi's Cooking.",
-      "stats": "HUNGER +100 / FRAG -100 / HAPPY +100",
+      "stats": "FED +100 / FRAG -100 / HAPPY +100",
       "icon": "assets/icons/ICON_ITEM_PWNZU_PATCHED_NOODLES.png"
     },
     {
@@ -1659,7 +1659,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "RARE",
       "effect": "We tried every combination. In the end it turns out the secret eighth dippy layer... was always you.",
-      "stats": "HUNGER +100 / FRAG -100 / HAPPY +100",
+      "stats": "FED +100 / FRAG -100 / HAPPY +100",
       "icon": "assets/icons/ICON_ITEM_FULLY_STACKED_NACHOS.png"
     },
     {
@@ -1668,7 +1668,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "Crispy!",
-      "stats": "HUNGER +20 / HAPPY +10 / FRAG -5",
+      "stats": "FED +20 / HAPPY +10 / FRAG -5",
       "icon": "assets/icons/ICON_ITEM_HASHED_BROWNS.png",
       "bits": 512
     },
@@ -1678,7 +1678,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "RARE",
       "effect": "Extra-salted. Bad for the heart, good for the soul.",
-      "stats": "HUNGER +20 / HAPPY +20 / FRAG -5",
+      "stats": "FED +20 / HAPPY +20 / FRAG -5",
       "icon": "assets/icons/ICON_ITEM_SALTED_HASHED_BROWNS.png",
       "bits": 512
     },
@@ -1688,7 +1688,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "Everything the filter caught, fried into one patty. Not classy, but the folder is finally empty.",
-      "stats": "HUNGER +60 / HAPPY +5 / FRAG +5",
+      "stats": "FED +60 / HAPPY +5 / FRAG +5",
       "icon": "assets/icons/ICON_ITEM_CRACQUETTES.png"
     },
     {
@@ -1697,7 +1697,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "Everything that was in the bag, in one pan. Now nobody can tell what leaked.",
-      "stats": "HUNGER +35 / HAPPY +15 / HEAL 40",
+      "stats": "FED +35 / HAPPY +15 / HEAL 40",
       "icon": "assets/icons/ICON_ITEM_HACKSHUKA.png"
     },
     {
@@ -1706,7 +1706,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "Sandboxed in pastry. It still runs.",
-      "stats": "HUNGER +20 / HAPPY +35 / FRAG -10",
+      "stats": "FED +20 / HAPPY +35 / FRAG -10",
       "icon": "assets/icons/ICON_ITEM_APPLET_TURNOVER.png"
     },
     {
@@ -1715,7 +1715,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "Nine hundred serving suggestions, pressed into one you can carry.",
-      "stats": "HUNGER +30 / HAPPY +10 / FRAG -5",
+      "stats": "FED +30 / HAPPY +10 / FRAG -5",
       "icon": "assets/icons/ICON_ITEM_SERIAL_BAR.png"
     },
     {
@@ -1724,7 +1724,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "RARE",
       "effect": "Cooked through, so it stops going off. Whatever the pier says, this is the right end of a Fresh Macrol's short life.",
-      "stats": "HUNGER +45 / HAPPY +20 / HEAL 30",
+      "stats": "FED +45 / HAPPY +20 / HEAL 30",
       "icon": "assets/icons/ICON_ITEM_MACROL_FRY_UP.png"
     },
     {
@@ -1733,7 +1733,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "RARE",
       "effect": "Roasted dark, sweetened hard, and nobody's framework anywhere near it.",
-      "stats": "HUNGER +5 / HAPPY +45 / FRAG -30",
+      "stats": "FED +5 / HAPPY +45 / FRAG -30",
       "icon": "assets/icons/ICON_ITEM_VANILLA_JAVA_ROAST.png"
     },
     {
@@ -1742,7 +1742,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "RARE",
       "effect": "Cooked down slowly until there is nothing left in it that didn't need to be. Fewer instructions, better executed.",
-      "stats": "HUNGER +50 / FRAG -40",
+      "stats": "FED +50 / FRAG -40",
       "icon": "assets/icons/ICON_ITEM_RISCOTTO.png"
     },
     {
@@ -1751,7 +1751,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "RARE",
       "effect": "Seven layers, and every one of them talks only to the layer above it.",
-      "stats": "HUNGER +60 / HAPPY +20 / HEAL 40",
+      "stats": "FED +60 / HAPPY +20 / HEAL 40",
       "icon": "assets/icons/ICON_ITEM_LANSAGNE.png"
     },
     {
@@ -1760,7 +1760,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "Hot, fast and gone the moment the power is. Eat it while it's live.",
-      "stats": "HUNGER +45 / HAPPY +15 / FRAG -10",
+      "stats": "FED +45 / HAPPY +15 / FRAG -10",
       "icon": "assets/icons/ICON_ITEM_RAMEN.png"
     },
     {
@@ -1778,7 +1778,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "Everything that was in memory when it went down, wrapped and steamed.",
-      "stats": "HUNGER +55 / HAPPY +5",
+      "stats": "FED +55 / HAPPY +5",
       "icon": "assets/icons/ICON_ITEM_CORE_DUMPLINGS.png"
     },
     {
@@ -1787,7 +1787,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "Tear off a piece and it carries on rising on its own.",
-      "stats": "HUNGER +40 / HAPPY +10",
+      "stats": "FED +40 / HAPPY +10",
       "icon": "assets/icons/ICON_ITEM_FORKACCIA.png"
     },
     {
@@ -1796,7 +1796,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "RARE",
       "effect": "Whatever was still warm from the last cook, held for later and served again faster than it was made.",
-      "stats": "HUNGER +65 / HAPPY +15 / FRAG -10 / HEAL 25",
+      "stats": "FED +65 / HAPPY +15 / FRAG -10 / HEAL 25",
       "icon": "assets/icons/ICON_ITEM_CACHEROLE.png"
     },
     {
@@ -1805,7 +1805,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "RARE",
       "effect": "Everything in the pot at once, at a rolling boil, no plan whatsoever. Free to copy, and somehow it comes out right.",
-      "stats": "HUNGER +70 / FRAG -25 / HEAL 60",
+      "stats": "FED +70 / FRAG -25 / HEAL 60",
       "icon": "assets/icons/ICON_ITEM_GNULASH.png"
     },
     {
@@ -1814,7 +1814,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "COMMON",
       "effect": "Cooked, plated, and identical to what went in. Runs anywhere.",
-      "stats": "HUNGER +10 / HAPPY -5",
+      "stats": "FED +10 / HAPPY -5",
       "icon": "assets/icons/ICON_ITEM_PORTRIDGE.png"
     },
     {
@@ -1823,7 +1823,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "The first thing anybody cooks. It squeaks, and it works.",
-      "stats": "HUNGER +25 / HAPPY +15",
+      "stats": "FED +25 / HAPPY +15",
       "icon": "assets/icons/ICON_ITEM_HALLOUMI_WORLD.png"
     },
     {
@@ -1832,7 +1832,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "No two loaves are equal. Not even to themselves.",
-      "stats": "HUNGER +35 / FRAG -5",
+      "stats": "FED +35 / FRAG -5",
       "icon": "assets/icons/ICON_ITEM_NAN_BREAD.png"
     },
     {
@@ -1841,7 +1841,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "Cubed, fried, and unable to reach the rest of the bowl.",
-      "stats": "HUNGER +20 / HAPPY +15 / FRAG -10",
+      "stats": "FED +20 / HAPPY +15 / FRAG -10",
       "icon": "assets/icons/ICON_ITEM_CHROOTONS.png"
     },
     {
@@ -1850,7 +1850,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "RARE",
       "effect": "Everything that was in the pot, in a quarter of the space. Served cold.",
-      "stats": "HUNGER +55 / FRAG -20 / HEAL 30",
+      "stats": "FED +55 / FRAG -20 / HEAL 30",
       "icon": "assets/icons/ICON_ITEM_GZIPACHO.png"
     },
     {
@@ -1859,7 +1859,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "Papaya, sugar, a pinch of salt. Whatever else was in it did not arrive.",
-      "stats": "HUNGER +20 / HAPPY +30 / FRAG -5",
+      "stats": "FED +20 / HAPPY +30 / FRAG -5",
       "icon": "assets/icons/ICON_ITEM_LOSSY_LASSI.png"
     },
     {
@@ -1868,7 +1868,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "Somebody else looked at it before it shipped. They said it was fine.",
-      "stats": "HUNGER +40 / HAPPY +10 / HEAL 25",
+      "stats": "FED +40 / HAPPY +10 / HEAL 25",
       "icon": "assets/icons/ICON_ITEM_COD_REVIEW.png"
     },
     {
@@ -1877,7 +1877,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "RARE",
       "effect": "A duck, in a duck, in a duck. The innermost one is only a duck.",
-      "stats": "HUNGER +70 / HAPPY +10 / HEAL 40",
+      "stats": "FED +70 / HAPPY +10 / HEAL 40",
       "icon": "assets/icons/ICON_ITEM_RECURSIVE_TURDUCKEN.png"
     },
     {
@@ -1886,7 +1886,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "RARE",
       "effect": "If it looks like dinner and quacks like dinner, serve it.",
-      "stats": "HUNGER +60 / HAPPY +25 / FRAG -10",
+      "stats": "FED +60 / HAPPY +25 / FRAG -10",
       "icon": "assets/icons/ICON_ITEM_PEKING_DUCK_TYPING.png"
     },
     {
@@ -1895,7 +1895,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "RARE",
       "effect": "One spoon at a time. Everybody else waits their turn.",
-      "stats": "HUNGER +25 / HAPPY +45 / FRAG -20",
+      "stats": "FED +25 / HAPPY +45 / FRAG -20",
       "icon": "assets/icons/ICON_ITEM_SEMAPHREDDO.png"
     },
     {
@@ -1904,7 +1904,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "It came out as one piece. Nowhere in it does a strand start.",
-      "stats": "HUNGER +55 / FRAG +15",
+      "stats": "FED +55 / FRAG +15",
       "icon": "assets/icons/ICON_ITEM_SPAGHETTI_CODE.png"
     },
     {
@@ -1913,7 +1913,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "Comes with a mail client, a calendar, and a cheese sauce.",
-      "stats": "HUNGER +45 / HAPPY +20",
+      "stats": "FED +45 / HAPPY +20",
       "icon": "assets/icons/ICON_ITEM_EMACSARONI.png"
     },
     {
@@ -1922,7 +1922,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "Halve the tin, taste, halve again. The bad one is in there somewhere.",
-      "stats": "HUNGER +25 / HAPPY +20",
+      "stats": "FED +25 / HAPPY +20",
       "icon": "assets/icons/ICON_ITEM_BISECTUITS.png"
     },
     {
@@ -1931,7 +1931,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "RARE",
       "effect": "Pick one, split the rest around it, repeat. Served in order.",
-      "stats": "HUNGER +20 / HAPPY +40 / FRAG -15",
+      "stats": "FED +20 / HAPPY +40 / FRAG -15",
       "icon": "assets/icons/ICON_ITEM_QUICKSORTBET.png"
     },
     {
@@ -1940,7 +1940,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "Long, crusty, and riddled with them from end to end.",
-      "stats": "HUNGER +35 / HAPPY -5",
+      "stats": "FED +35 / HAPPY -5",
       "icon": "assets/icons/ICON_ITEM_BUGUETTE.png"
     },
     {
@@ -1949,7 +1949,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "It asks you something before it lets you have any.",
-      "stats": "HUNGER +30 / HAPPY +10",
+      "stats": "FED +30 / HAPPY +10",
       "icon": "assets/icons/ICON_ITEM_CHAPATI.png"
     },
     {
@@ -1958,7 +1958,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "Holes all the way through, and butter goes straight into them.",
-      "stats": "HUNGER +30 / HAPPY +10 / FRAG +5",
+      "stats": "FED +30 / HAPPY +10 / FRAG +5",
       "icon": "assets/icons/ICON_ITEM_CORRUMPETS.png"
     },
     {
@@ -1967,7 +1967,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "RARE",
       "effect": "Enormous, sweet, and it arrives in no particular order.",
-      "stats": "HUNGER +60 / HAPPY +25",
+      "stats": "FED +60 / HAPPY +25",
       "icon": "assets/icons/ICON_ITEM_PACKETTONE.png"
     },
     {
@@ -1976,7 +1976,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "Pulled out and replaced without anybody at the table noticing.",
-      "stats": "HUNGER +35 / HAPPY +15",
+      "stats": "FED +35 / HAPPY +15",
       "icon": "assets/icons/ICON_ITEM_HOT_SWAPPED_BUNS.png"
     },
     {
@@ -1985,7 +1985,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "Draws rather more than the recipe said it would.",
-      "stats": "HUNGER +30 / HAPPY +18",
+      "stats": "FED +30 / HAPPY +18",
       "icon": "assets/icons/ICON_ITEM_CURRENT_BUNS.png"
     },
     {
@@ -1994,7 +1994,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "Two of them on the plate and they disagree about the filling.",
-      "stats": "HUNGER +25 / HAPPY +20",
+      "stats": "FED +25 / HAPPY +20",
       "icon": "assets/icons/ICON_ITEM_CONFIG_ROLLS.png"
     },
     {
@@ -2003,7 +2003,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "A whole little system running on one slice of somebody else's bread.",
-      "stats": "HUNGER +20 / HAPPY +20 / FRAG -5",
+      "stats": "FED +20 / HAPPY +20 / FRAG -5",
       "icon": "assets/icons/ICON_ITEM_CROSTINI.png"
     },
     {
@@ -2012,7 +2012,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "RARE",
       "effect": "Something is baked into the middle of it. It is not raisins.",
-      "stats": "HUNGER +65 / FRAG +10 / HEAL 35",
+      "stats": "FED +65 / FRAG +10 / HEAL 35",
       "icon": "assets/icons/ICON_ITEM_PAYLOAF.png"
     },
     {
@@ -2021,7 +2021,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "A grid of little closed squares. Syrup gets through anyway.",
-      "stats": "HUNGER +35 / HAPPY +20 / FRAG -8",
+      "stats": "FED +35 / HAPPY +20 / FRAG -8",
       "icon": "assets/icons/ICON_ITEM_FIREWAFFLE.png"
     },
     {
@@ -2030,7 +2030,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "RARE",
       "effect": "Thick, hot, and it belongs to whoever is holding the bowl.",
-      "stats": "HUNGER +60 / HAPPY +15 / HEAL 35",
+      "stats": "FED +60 / HAPPY +15 / HEAL 35",
       "icon": "assets/icons/ICON_ITEM_CHOWNDER.png"
     },
     {
@@ -2039,7 +2039,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "Perfectly clear, and served on the quarter hour whether you came or not.",
-      "stats": "HUNGER +30 / FRAG -18",
+      "stats": "FED +30 / FRAG -18",
       "icon": "assets/icons/ICON_ITEM_CRONSOMME.png"
     },
     {
@@ -2048,7 +2048,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "Each one wrapped for a long journey, and most of them survive it.",
-      "stats": "HUNGER +40 / HAPPY +12 / HEAL 20",
+      "stats": "FED +40 / HAPPY +12 / HEAL 20",
       "icon": "assets/icons/ICON_ITEM_WANTON_SOUP.png"
     },
     {
@@ -2057,7 +2057,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "Each one feeds straight into the next one along the plate.",
-      "stats": "HUNGER +45 / HAPPY +8",
+      "stats": "FED +45 / HAPPY +8",
       "icon": "assets/icons/ICON_ITEM_PIPEROGI.png"
     },
     {
@@ -2066,7 +2066,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "First one in is the first one out, and it has gone cold waiting.",
-      "stats": "HUNGER +40 / HAPPY +15",
+      "stats": "FED +40 / HAPPY +15",
       "icon": "assets/icons/ICON_ITEM_QUEUESADILLA.png"
     },
     {
@@ -2075,7 +2075,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "Every piece sealed, self-contained, and impossible to tell apart.",
-      "stats": "HUNGER +50 / FRAG -12",
+      "stats": "FED +50 / FRAG -12",
       "icon": "assets/icons/ICON_ITEM_RAVIOLI_CODE.png"
     },
     {
@@ -2084,7 +2084,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "Doing nothing at all, and using nothing to do it.",
-      "stats": "HUNGER +30 / FRAG -15",
+      "stats": "FED +30 / FRAG -15",
       "icon": "assets/icons/ICON_ITEM_IDLEYS.png"
     },
     {
@@ -2093,7 +2093,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "RARE",
       "effect": "Thin, crisp, and older than everybody at the table.",
-      "stats": "HUNGER +55 / HAPPY +15",
+      "stats": "FED +55 / HAPPY +15",
       "icon": "assets/icons/ICON_ITEM_MS_DOSA.png"
     },
     {
@@ -2102,7 +2102,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "It goes round the table asking who has what.",
-      "stats": "HUNGER +35 / HAPPY +10",
+      "stats": "FED +35 / HAPPY +10",
       "icon": "assets/icons/ICON_ITEM_ARPAS.png"
     },
     {
@@ -2111,7 +2111,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "RARE",
       "effect": "They arrive in order, and you can have the whole lot again.",
-      "stats": "HUNGER +60 / HAPPY +10 / HEAL 30",
+      "stats": "FED +60 / HAPPY +10 / HEAL 30",
       "icon": "assets/icons/ICON_ITEM_KAFKOFTA.png"
     },
     {
@@ -2120,7 +2120,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "RARE",
       "effect": "Everything stopped the moment it was pressed. Nothing since.",
-      "stats": "HUNGER +55 / HAPPY +20 / HEAL 30",
+      "stats": "FED +55 / HAPPY +20 / HEAL 30",
       "icon": "assets/icons/ICON_ITEM_KERNEL_PANINI.png"
     },
     {
@@ -2129,7 +2129,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "EPIC",
       "effect": "Two of you scraping at the same pan. Whoever gets there first. Once per pet: +1 SPEED for life.",
-      "stats": "SPEED +1 / HUNGER +50 / HAPPY +25",
+      "stats": "SPEED +1 / FED +50 / HAPPY +25",
       "icon": "assets/icons/ICON_ITEM_RACELETTE.png"
     },
     {
@@ -2138,7 +2138,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "Thoroughly scrambled. Nobody is unscrambling that.",
-      "stats": "HUNGER +35 / HAPPY +10",
+      "stats": "FED +35 / HAPPY +10",
       "icon": "assets/icons/ICON_ITEM_SCRAMBLED_REGEGGS.png"
     },
     {
@@ -2147,7 +2147,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "A skewer of fixed width. The last one on it is always empty.",
-      "stats": "HUNGER +45 / HAPPY +8",
+      "stats": "FED +45 / HAPPY +8",
       "icon": "assets/icons/ICON_ITEM_CHAR_GRILLED_ARRAY.png"
     },
     {
@@ -2156,7 +2156,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "Everything that was on the counter, compressed into one.",
-      "stats": "HUNGER +50 / HAPPY +5",
+      "stats": "FED +50 / HAPPY +5",
       "icon": "assets/icons/ICON_ITEM_TARBALLS.png"
     },
     {
@@ -2165,7 +2165,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "Hit until they did what they were told.",
-      "stats": "HUNGER +45 / HAPPY +10",
+      "stats": "FED +45 / HAPPY +10",
       "icon": "assets/icons/ICON_ITEM_BASHED_POTATOES.png"
     },
     {
@@ -2174,7 +2174,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "Three layers, and not one of them knows who placed the order.",
-      "stats": "HUNGER +30 / HAPPY +20",
+      "stats": "FED +30 / HAPPY +20",
       "icon": "assets/icons/ICON_ITEM_ONION_RINGS.png"
     },
     {
@@ -2183,7 +2183,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "In and out of the oil so fast the pan never noticed.",
-      "stats": "HUNGER +35 / HAPPY +18",
+      "stats": "FED +35 / HAPPY +18",
       "icon": "assets/icons/ICON_ITEM_FLASH_FRIED_CHIPS.png"
     },
     {
@@ -2192,7 +2192,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "Wound around each other so tightly that neither picks up the other's noise.",
-      "stats": "HUNGER +25 / HAPPY +18",
+      "stats": "FED +25 / HAPPY +18",
       "icon": "assets/icons/ICON_ITEM_TWISTED_PAIRETZELS.png"
     },
     {
@@ -2201,7 +2201,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "They arrive. Just never quite when you expected them to.",
-      "stats": "HUNGER +35 / HAPPY +12",
+      "stats": "FED +35 / HAPPY +12",
       "icon": "assets/icons/ICON_ITEM_JITTER_FRITTERS.png"
     },
     {
@@ -2210,7 +2210,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "RARE",
       "effect": "Sliced thin, one direction only. Nothing is going back.",
-      "stats": "HUNGER +45 / HAPPY +25 / FRAG -15",
+      "stats": "FED +45 / HAPPY +25 / FRAG -15",
       "icon": "assets/icons/ICON_ITEM_SHASHIMI.png"
     },
     {
@@ -2219,7 +2219,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "EPIC",
       "effect": "Keep a copy. You will want to know how you got here. Once per pet: +1 DEFENSE for life.",
-      "stats": "DEFENSE +1 / HUNGER +65 / HAPPY +15 / HEAL 30",
+      "stats": "DEFENSE +1 / FED +65 / HAPPY +15 / HEAL 30",
       "icon": "assets/icons/ICON_ITEM_SPARE_RIBS.png"
     },
     {
@@ -2228,7 +2228,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "RARE",
       "effect": "Stateless. Every bite stands entirely on its own.",
-      "stats": "HUNGER +60 / HAPPY +20 / HEAL 35",
+      "stats": "FED +60 / HAPPY +20 / HEAL 35",
       "icon": "assets/icons/ICON_ITEM_RESTED_STEAK.png"
     },
     {
@@ -2237,7 +2237,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "EPIC",
       "effect": "Ordered the veal. Came back with the run of the kitchen. Once per pet: +1 POWER for life.",
-      "stats": "POWER +1 / HUNGER +55 / HAPPY +30",
+      "stats": "POWER +1 / FED +55 / HAPPY +30",
       "icon": "assets/icons/ICON_ITEM_PRIVILEGE_ESCALOPE.png"
     },
     {
@@ -2246,7 +2246,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "RARE",
       "effect": "It was not ready. It came apart anyway.",
-      "stats": "HUNGER +70 / FRAG +10 / HEAL 40",
+      "stats": "FED +70 / FRAG +10 / HEAL 40",
       "icon": "assets/icons/ICON_ITEM_FORCE_PULLED_PORK.png"
     },
     {
@@ -2255,7 +2255,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "RARE",
       "effect": "You explained the whole problem to it and it said nothing at all.",
-      "stats": "HUNGER +55 / HAPPY +30 / FRAG -20",
+      "stats": "FED +55 / HAPPY +30 / FRAG -20",
       "icon": "assets/icons/ICON_ITEM_RUBBER_DUCK_CONFIT.png"
     },
     {
@@ -2264,7 +2264,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "RARE",
       "effect": "Sealed up and the space nobody was using handed straight back.",
-      "stats": "HUNGER +60 / FRAG -25",
+      "stats": "FED +60 / FRAG -25",
       "icon": "assets/icons/ICON_ITEM_VACUUM_SEALED_LEFTOVERS.png"
     },
     {
@@ -2273,7 +2273,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "RARE",
       "effect": "It spins, everybody reaches in, and it is somehow always your turn.",
-      "stats": "HUNGER +65 / HAPPY +20",
+      "stats": "FED +65 / HAPPY +20",
       "icon": "assets/icons/ICON_ITEM_DISK_PLATTER.png"
     },
     {
@@ -2282,7 +2282,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "RARE",
       "effect": "Nobody brought it out. It is simply there when you want it.",
-      "stats": "HUNGER +55 / HAPPY +25 / HEAL 25",
+      "stats": "FED +55 / HAPPY +25 / HEAL 25",
       "icon": "assets/icons/ICON_ITEM_SERVERLESS_PLATTER.png"
     },
     {
@@ -2291,7 +2291,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "Whatever went in is what comes out, and you had better hope you packed it.",
-      "stats": "HUNGER +20 / HAPPY -5 / FRAG -12",
+      "stats": "FED +20 / HAPPY -5 / FRAG -12",
       "icon": "assets/icons/ICON_ITEM_PICKLE_JAR.png"
     },
     {
@@ -2300,7 +2300,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "It came up with the recipe itself. Mostly garlic. Confidently.",
-      "stats": "HUNGER +10 / HAPPY +15",
+      "stats": "FED +10 / HAPPY +15",
       "icon": "assets/icons/ICON_ITEM_AI_OLI.png"
     },
     {
@@ -2309,7 +2309,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "Nobody at this table can work out how to put the lid back on.",
-      "stats": "HUNGER +5 / HAPPY +12 / FRAG -8",
+      "stats": "FED +5 / HAPPY +12 / FRAG -8",
       "icon": "assets/icons/ICON_ITEM_VINAIGRETTE.png"
     },
     {
@@ -2318,7 +2318,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "Spreads. Keep it away from the other jars.",
-      "stats": "HUNGER +12 / HAPPY +18 / FRAG +5",
+      "stats": "FED +12 / HAPPY +18 / FRAG +5",
       "icon": "assets/icons/ICON_ITEM_MALWARMALADE.png"
     },
     {
@@ -2327,7 +2327,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "Thick enough that nothing gets through it.",
-      "stats": "HUNGER +12 / HAPPY +16",
+      "stats": "FED +12 / HAPPY +16",
       "icon": "assets/icons/ICON_ITEM_SIGNAL_JAM.png"
     },
     {
@@ -2336,7 +2336,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "You get it once. It is not on the tray any more.",
-      "stats": "HUNGER +15 / HAPPY +30",
+      "stats": "FED +15 / HAPPY +30",
       "icon": "assets/icons/ICON_ITEM_POP3SICLE.png"
     },
     {
@@ -2345,7 +2345,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "Two of them folded together with no seam left anywhere.",
-      "stats": "HUNGER +15 / HAPPY +32",
+      "stats": "FED +15 / HAPPY +32",
       "icon": "assets/icons/ICON_ITEM_MERGINGUE.png"
     },
     {
@@ -2354,7 +2354,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "Has to be announced before anyone is allowed to use it.",
-      "stats": "HUNGER +20 / HAPPY +30",
+      "stats": "FED +20 / HAPPY +30",
       "icon": "assets/icons/ICON_ITEM_DECLAIR.png"
     },
     {
@@ -2363,7 +2363,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "EPIC",
       "effect": "Small, rich, and afterwards you know exactly where the time went. Once per pet: +25% XP for life.",
-      "stats": "XP RATE +25% / HUNGER +25 / HAPPY +38 / FRAG -10",
+      "stats": "XP RATE +25% / FED +25 / HAPPY +38 / FRAG -10",
       "icon": "assets/icons/ICON_ITEM_PROFILEROLE.png"
     },
     {
@@ -2372,7 +2372,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "RARE",
       "effect": "Nobody has touched the recipe in fifty years. It still comes out.",
-      "stats": "HUNGER +50 / HAPPY +25",
+      "stats": "FED +50 / HAPPY +25",
       "icon": "assets/icons/ICON_ITEM_COBOLER.png"
     },
     {
@@ -2381,7 +2381,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "Three jugs of it. One goes over and nobody at the table notices.",
-      "stats": "HUNGER +25 / HAPPY +22",
+      "stats": "FED +25 / HAPPY +22",
       "icon": "assets/icons/ICON_ITEM_CLUSTARD.png"
     },
     {
@@ -2390,7 +2390,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "RARE",
       "effect": "Layer calls layer calls layer, all the way down to the syrup.",
-      "stats": "HUNGER +40 / HAPPY +40 / FRAG +8",
+      "stats": "FED +40 / HAPPY +40 / FRAG +8",
       "icon": "assets/icons/ICON_ITEM_BASHLAVA.png"
     },
     {
@@ -2399,7 +2399,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "It was twice this size before all the air came out of it.",
-      "stats": "HUNGER +30 / HAPPY +12",
+      "stats": "FED +30 / HAPPY +12",
       "icon": "assets/icons/ICON_ITEM_DEFLATED_SOUFFLE.png"
     },
     {
@@ -2408,7 +2408,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "RARE",
       "effect": "Cut it and there are two. Cut those and there are four.",
-      "stats": "HUNGER +45 / HAPPY +35 / FRAG +12",
+      "stats": "FED +45 / HAPPY +35 / FRAG +12",
       "icon": "assets/icons/ICON_ITEM_FORK_BOMBE.png"
     },
     {
@@ -2417,7 +2417,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "RARE",
       "effect": "No wires anywhere in it. Stops dead on a shiny plate.",
-      "stats": "HUNGER +25 / HAPPY +40 / FRAG -12",
+      "stats": "FED +25 / HAPPY +40 / FRAG -12",
       "icon": "assets/icons/ICON_ITEM_OPTICAL_MOUSSE.png"
     },
     {
@@ -2426,7 +2426,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "RARE",
       "effect": "You took the one you wanted and left the rest of the branch.",
-      "stats": "HUNGER +30 / HAPPY +42",
+      "stats": "FED +30 / HAPPY +42",
       "icon": "assets/icons/ICON_ITEM_CHERRY_PICKED_TART.png"
     },
     {
@@ -2435,7 +2435,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "Cheap, tiny, endlessly useful, and there are four more in the drawer.",
-      "stats": "HUNGER +35 / HAPPY +25",
+      "stats": "FED +35 / HAPPY +25",
       "icon": "assets/icons/ICON_ITEM_RASPBERRY_PIE.png"
     },
     {
@@ -2444,7 +2444,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "RARE",
       "effect": "Every answer worked out in advance, set hard, and cut into squares.",
-      "stats": "HUNGER +20 / HAPPY +45 / FRAG +10",
+      "stats": "FED +20 / HAPPY +45 / FRAG +10",
       "icon": "assets/icons/ICON_ITEM_RAINBOW_TABLET.png"
     },
     {
@@ -2453,7 +2453,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "RARE",
       "effect": "A perfectly good distribution, with silicon through it.",
-      "stats": "HUNGER +25 / HAPPY +38 / FRAG -8",
+      "stats": "FED +25 / HAPPY +38 / FRAG -8",
       "icon": "assets/icons/ICON_ITEM_MINT_CHOC_CHIP.png"
     },
     {
@@ -2462,7 +2462,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "Delicious, and one wrong space in the tray ruins the tray.",
-      "stats": "HUNGER +40 / HAPPY +20",
+      "stats": "FED +40 / HAPPY +20",
       "icon": "assets/icons/ICON_ITEM_CANDIED_YAMLS.png"
     },
     {
@@ -2471,7 +2471,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "No structure, no schema, one long pour.",
-      "stats": "HUNGER +5 / HAPPY +28 / FRAG -12",
+      "stats": "FED +5 / HAPPY +28 / FRAG -12",
       "icon": "assets/icons/ICON_ITEM_FLAT_WHITE.png"
     },
     {
@@ -2480,7 +2480,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "It only pretends to be coffee, and it is convincing enough.",
-      "stats": "HUNGER +8 / HAPPY +26 / FRAG -8",
+      "stats": "FED +8 / HAPPY +26 / FRAG -8",
       "icon": "assets/icons/ICON_ITEM_MOCKACHINO.png"
     },
     {
@@ -2489,7 +2489,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "RARE",
       "effect": "Every cup depends on the one before it, and nobody can pour it again.",
-      "stats": "HUNGER +10 / HAPPY +35 / FRAG -18",
+      "stats": "FED +10 / HAPPY +35 / FRAG -18",
       "icon": "assets/icons/ICON_ITEM_BLOCKCHAI.png"
     },
     {
@@ -2498,7 +2498,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "You offer, it offers back, you agree. Then you drink it.",
-      "stats": "HUNGER +25 / HAPPY +25",
+      "stats": "FED +25 / HAPPY +25",
       "icon": "assets/icons/ICON_ITEM_SYN_ACK_SHAKE.png"
     },
     {
@@ -2507,7 +2507,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "EPIC",
       "effect": "They kept pouring after the glass was full. It went everywhere. Once per pet: +1 MAX-HP for life.",
-      "stats": "MAX-HP +1 / HUNGER +30 / HAPPY +40 / FRAG +15",
+      "stats": "MAX-HP +1 / FED +30 / HAPPY +40 / FRAG +15",
       "icon": "assets/icons/ICON_ITEM_BUFFER_OVERFLOAT.png"
     },
     {
@@ -2516,7 +2516,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "Comes by the block. You do not get to choose how big a block.",
-      "stats": "HUNGER +10 / HAPPY +28 / FRAG +8",
+      "stats": "FED +10 / HAPPY +28 / FRAG +8",
       "icon": "assets/icons/ICON_ITEM_HARD_CIDR.png"
     },
     {
@@ -2525,7 +2525,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "RARE",
       "effect": "Fortified, and served open to absolutely anyone who asks.",
-      "stats": "HUNGER +12 / HAPPY +42 / FRAG +10",
+      "stats": "FED +12 / HAPPY +42 / FRAG +10",
       "icon": "assets/icons/ICON_ITEM_PORT_80.png"
     },
     {
@@ -2534,7 +2534,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "Every third sip fizzes, every fifth buzzes. Nobody orders it twice.",
-      "stats": "HUNGER +8 / HAPPY +24",
+      "stats": "FED +8 / HAPPY +24",
       "icon": "assets/icons/ICON_ITEM_FIZZBUZZ.png"
     },
     {
@@ -2543,7 +2543,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "UNCOMMON",
       "effect": "Drop the tray and you are starting the evening again.",
-      "stats": "HUNGER +15 / HAPPY +26",
+      "stats": "FED +15 / HAPPY +26",
       "icon": "assets/icons/ICON_ITEM_PUNCHCARD_PUNCH.png"
     },
     {
@@ -2588,7 +2588,7 @@ window.PEDIA_DATA = {
       "type": "FOOD",
       "rarity": "EPIC",
       "effect": "So delicious it could make the pet forget 1 care mistake. Max 1 per lifecycle.",
-      "stats": "MISTAKE -1 / HUNGER +20 / HAPPY +40",
+      "stats": "MISTAKE -1 / FED +20 / HAPPY +40",
       "icon": "assets/icons/ICON_ITEM_YUBI_COOKIE.png"
     },
     {

@@ -62,7 +62,7 @@ int buildFeedGaugeRows(const ItemDef& d, const PetModel& m, const FeedVitals& b,
     int n = 0;
     if (feedTargets(d, ItemEffect::Kind::Hunger)) {
         const int dv = dir(b.hunger, m.hunger());
-        out[n++] = {"HUNGER", m.hunger(), m.hungerZone(), false, dv, dv > 0};
+        out[n++] = {"FED", m.hunger(), m.hungerZone(), false, dv, dv > 0};   // STAT's label
     }
     if (feedTargets(d, ItemEffect::Kind::Frag)) {
         const int dv = dir(b.frag, m.fragmentation());
@@ -202,7 +202,9 @@ void drawLockoutModal(Framebuffer& fb, const SpriteData* pet, const PetModel& m,
 
     drawPetCentered(fb, pet, beat, 90);
 
-    drawText(fb, kMargin, 132, "RESOLVE BEFORE TIME EXPIRES:", palColor(Pal::INK));
+    // Lockout only ever fires on an empty stomach (Game::tickLifecycle), so the screen
+    // says that, and names the fix, rather than leaving a crisis to be decoded.
+    drawText(fb, kMargin, 132, "STARVING! FEED IT NOW:", palColor(Pal::INK));
 
     // Two-path choice — the focused one carries the row cursor.
     const int yItems = 150, yPay = 166;
@@ -211,17 +213,18 @@ void drawLockoutModal(Framebuffer& fb, const SpriteData* pet, const PetModel& m,
     Rgb565 payCol = canPay ? palColor(Pal::INK) : palColor(Pal::INK_DIM);
     if (!payOption) {
         drawRowCursor(fb, kMargin, yItems, palColor(Pal::ACCENT));
-        drawText(fb, kMargin + 10, yItems, "OPEN ITEMS", palColor(Pal::ACCENT));
+        drawText(fb, kMargin + 10, yItems, "FEED IT", palColor(Pal::ACCENT));
         drawText(fb, kMargin + 10, yPay, payLine, payCol);
     } else {
-        drawText(fb, kMargin + 10, yItems, "OPEN ITEMS", palColor(Pal::INK));
+        drawText(fb, kMargin + 10, yItems, "FEED IT", palColor(Pal::INK));
         drawRowCursor(fb, kMargin, yPay, palColor(Pal::ACCENT));
         drawText(fb, kMargin + 10, yPay, payLine,
                  canPay ? palColor(Pal::ACCENT) : palColor(Pal::INK_DIM));
     }
 
-    // UI_HINT_BAND — C is disabled, so the deviation must be surfaced.
-    drawCenteredText(fb, 200, "B SELECT   C DISABLED", palColor(Pal::INK_DIM));
+    // UI_HINT_BAND — C is disabled, so the deviation must be surfaced; and A is the
+    // only way to the second row, so it is named too.
+    drawCenteredText(fb, 200, "A SWITCH B SELECT C DISABLED", palColor(Pal::INK_DIM));
 }
 
 }  // namespace mal

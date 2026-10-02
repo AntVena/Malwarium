@@ -258,11 +258,13 @@ SpecRows specRows(const ItemDef& d) {
     for (const ItemEffect& e : d.effects) {
         switch (e.kind) {
             case ItemEffect::Kind::None: break;
-            case ItemEffect::Kind::Hunger: s.add("HUNGER", "%+d", e.magnitude); break;
+            // FED is STAT's name for the Hunger gauge (stat_screen.cpp), so a dish's
+            // grid and the gauge it moves agree.
+            case ItemEffect::Kind::Hunger: s.add("FED", "%+d", e.magnitude); break;
             // Per-item-in-the-run, so the grid says so rather than printing a flat
             // number the pet will only score on its first bite.
             case ItemEffect::Kind::HungerStacking:
-                s.add("HUNGER", "%+d EA", e.magnitude);
+                s.add("FED", "%+d EA", e.magnitude);
                 break;
             case ItemEffect::Kind::Happy: s.add("HAPPY", "%+d", e.magnitude); break;
             case ItemEffect::Kind::HappyToward50:

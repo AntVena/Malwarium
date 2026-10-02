@@ -518,19 +518,27 @@ void drawStatScreen(Framebuffer& fb, const PetModel& m, const char* name,
     std::snprintf(xp, sizeof(xp), "%d/%d", combatXp, xpToNext);
     drawText(fb, kActiveW - kMargin - textWidth(xp), 60, xp, palColor(Pal::INK_DIM));
 
-    // Three vitals gauges.
-    vitalsRow(fb, 74, "HUNGER", m.hunger(), m.hungerZone(), false, pulseOn, beat);
+    // Three vitals gauges. The first is the Hunger stat, labelled FED because the
+    // number counts how full the pet is — "HUNGER 80" reads as starving to anyone who
+    // has not been told otherwise, and FED and HAPPY now both read more-is-better.
+    vitalsRow(fb, 74, "FED", m.hunger(), m.hungerZone(), false, pulseOn, beat);
     vitalsRow(fb, 96, "FRAG", m.fragmentation(), m.fragZone(), true, pulseOn, beat);
     vitalsRow(fb, 118, "HAPPY", m.happiness(), m.happyZone(), false, pulseOn, beat);
 
-    // Care mistakes.
-    drawText(fb, kLabelX, 146, "CARE", palColor(Pal::INK));
+    // Care mistakes, labelled ERRORS, with the path they currently lead to spelled
+    // out where the count used to sit: the pips already show how many, and what a
+    // first-time player cannot read off them is what the divider means. The word is
+    // the channel; its colour only grades it.
+    drawText(fb, kLabelX, 146, "ERRORS", palColor(Pal::INK));
     drawCarePips(fb, kGaugeX, 144, m.careMistakes(), pulseOn);
-    char num[8];
-    std::snprintf(num, sizeof(num), "%d", m.careMistakes());
-    Rgb565 nc = (m.careBranch() == CareBranch::Dying) ? palColor(Pal::HOT)
-                                                      : palColor(Pal::INK);
-    drawText(fb, kNumX + 12, 146, num, nc);
+    const CareBranch branch = m.careBranch();
+    const char* path = branch == CareBranch::Dying ? "DYING"
+                     : branch == CareBranch::Bad   ? "BAD"
+                                                   : "GOOD";
+    const Rgb565 pc = branch == CareBranch::Dying ? palColor(Pal::HOT)
+                    : branch == CareBranch::Bad   ? palColor(Pal::WARN)
+                                                  : palColor(Pal::CALM);
+    drawText(fb, kActiveW - kMargin - textWidth(path), 146, path, pc);
 
     // Time-to-next-evolution (all stages). An egg counts down to its HATCH; a
     // mid-chain pet to its next EVOLVE; a Daemon terminus reads MAX (no successor).

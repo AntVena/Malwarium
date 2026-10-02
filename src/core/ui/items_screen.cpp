@@ -471,11 +471,13 @@ void drawItemDetail(Framebuffer& fb, const ItemDef& def, const SpriteData* icon,
     if (usable) {
         drawRowCursor(fb, kMargin, actionY, palColor(Pal::ACCENT));
         // A re-roll reads ROLLBACK and a point move reads MOVE POINT; the egg
-        // accelerator reads DECRYPT; everything else USE. (Sealed caches decrypt from
-        // the Hacker VAULT, so no OPEN verb appears here.)
+        // accelerator reads DECRYPT; food reads FEED, the word for what caring for a
+        // pet asks of you; everything else USE. (Sealed caches decrypt from the Hacker
+        // VAULT, so no OPEN verb appears here.)
         const char* verb = def.use == ItemDef::Use::DecryptEgg   ? "DECRYPT"
                          : def.use == ItemDef::Use::Rollback     ? "ROLLBACK"
                          : def.use == ItemDef::Use::Repartition  ? "MOVE POINT"
+                         : def.type == ItemDef::Type::Food       ? "FEED"
                                                                  : "USE";
         drawText(fb, kMargin + 10, actionY, verb, palColor(Pal::ACCENT));
     } else {
