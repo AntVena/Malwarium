@@ -25,10 +25,12 @@ void drawMaintList(Framebuffer& fb, const PetModel& m, int cursor, int beat);
 // VARIANTS — `variant` 0 = QUICK (Bits, may fail), 1 = TOOL (a Defrag Tool item for a
 // guaranteed clean), 2 = STACKER (the minigame, guaranteed if cleared); `toolCount` is
 // how many tools are held; `defragCount` is this pet's running tally (surfaced, no
-// mechanical effect). All ignored for AV.
+// mechanical effect). `failPct` is the chance a QUICK run (or an AV scan) fails right
+// now (Game::maintFailPct), drawn beside it with what a failure costs. All but `failPct`
+// are ignored for AV.
 void drawMaintAction(Framebuffer& fb, MaintKind kind, const PetModel& m,
                      int cost, int walletBits, int variant, int toolCount,
-                     int defragCount);
+                     int defragCount, int failPct = 0);
 
 // The Stacker board (variant 2). Draws the locked stack, the run currently in hand, and
 // either the controls or the result. `frag` is the disk as it stands: context for what

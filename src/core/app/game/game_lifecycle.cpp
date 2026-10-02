@@ -267,6 +267,14 @@ void Game::completeHatch() {
     // mismatch silently into the raise.
     enforceSlotKindInvariant();
     bootHatchRemainMs_ = 0;       // no longer an egg
+    // The device's first pet hatches into the Caution band (kStartFragmentation), so
+    // MAINT's "!" invites a defrag from its first minute — and a QUICK one can fail into
+    // a care ERROR before the player knows what one is. One Defrag Tool makes that first
+    // defrag a sure thing; MAINT lists it as the GUARANTEED row, one press of A away.
+    if (petsRaised_ == 1) {
+        inventory_.add(kDefragToolId, 1);
+        log_.push(LogEventType::ItemGained, "GOT A DEFRAG TOOL");
+    }
     lastModelMs_ = nowMs_;        // post-hatch decay starts now (no jump)
     stageEnteredMs_ = nowMs_;     // Process in-stage clock starts at hatch
     nav_ = Nav::Idle;

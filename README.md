@@ -394,7 +394,7 @@ holds the fix:
 | Gauge | What it means | How to fix it |
 |---|---|---|
 | **FED** | How full it is. Drops slowly over the day; more is better. | Feed it: **ITEMS**, pick a food, **FEED**. You start with a few meals; more turn up while exploring (**EXPL**), in loot and in area shops. |
-| **FRAG** | Fragmentation, i.e. how glitchy it is. Fights and exploring raise it; less is better. A new pet starts half-fragmented. | Run a **Defrag** (or an AV scan for a ghost) from **MAINT**. Costs a few Bits. |
+| **FRAG** | Fragmentation, i.e. how glitchy it is. Fights and exploring raise it; less is better. A new pet starts half-fragmented. | Run a **Defrag** (or an AV scan for a ghost) from **MAINT**. Costs a few Bits. A QUICK defrag can fail, and the screen tells you the odds; your first pet comes with a **Defrag Tool** for a guaranteed one. |
 | **HAPPY** | Its mood. Drops slowly; more is better. | Play something in **GAMES**. Some foods help too. |
 
 **You don't have to remember any of that.** When a need slips out of the comfortable

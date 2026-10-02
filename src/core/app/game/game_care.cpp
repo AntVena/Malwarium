@@ -215,12 +215,15 @@ void Game::debugResolveDefrag(bool success) {
     resolveMaint();
 }
 
+int Game::maintFailPct() const {
+    const int failPct = 15 + model_.fragmentation() / 4;   // rises with Fragmentation
+    return failPct > 60 ? 60 : failPct;
+}
+
 bool Game::rollMaintSuccess() {
     rng_ = rng_ * 1664525u + 1013904223u;               // LCG (deterministic seed)
     int roll = static_cast<int>((rng_ >> 16) % 100);
-    int failPct = 15 + model_.fragmentation() / 4;      // rises with Fragmentation
-    if (failPct > 60) failPct = 60;
-    return roll >= failPct;
+    return roll >= maintFailPct();
 }
 
 // MODS — the LOADOUT hub ----------------------------------------

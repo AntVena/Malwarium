@@ -66,8 +66,13 @@ void drawMaintList(Framebuffer& fb, const PetModel& m, int cursor, int beat) {
 
 void drawMaintAction(Framebuffer& fb, MaintKind kind, const PetModel& m,
                      int cost, int walletBits, int variant, int toolCount,
-                     int defragCount) {
+                     int defragCount, int failPct) {
     char line[40];
+    // What a failed QUICK defrag or AV scan costs, said where the gamble is taken: the
+    // screen used to say only MAY FAIL, and the price is a care ERROR as well as the
+    // Fragmentation, which is the half a new player would never guess.
+    char failCost[40];
+    std::snprintf(failCost, sizeof(failCost), "FAIL: +%d FRAG, +1 ERROR", kMaintFailPenalty);
     if (kind == MaintKind::Defrag) {
         drawHeaderBand(fb, "DEFRAGMENTATION");
         // The headline effect is the FOCUSED variant's, because the three don't pay the
@@ -123,9 +128,11 @@ void drawMaintAction(Framebuffer& fb, MaintKind kind, const PetModel& m,
             const Rgb565 col = focus ? palColor(Pal::ACCENT) : palColor(Pal::INK);
             const char* tag;
             Rgb565 tagCol = palColor(Pal::INK_DIM);
+            char quickTag[16];
             if (i == 0) {
                 std::snprintf(line, sizeof(line), "QUICK  -%d B", cost);
-                tag = "MAY FAIL";
+                std::snprintf(quickTag, sizeof(quickTag), "%d%% FAIL", failPct);
+                tag = quickTag;
             } else if (i == 1) {
                 std::snprintf(line, sizeof(line), "TOOL  -%d B -1", cost);
                 tag = toolCount > 0 ? "GUARANTEED" : "NO TOOL";
@@ -152,6 +159,10 @@ void drawMaintAction(Framebuffer& fb, MaintKind kind, const PetModel& m,
         } else if (runnable) {
             drawRowCursor(fb, kMargin, 176, palColor(Pal::ACCENT));
             drawText(fb, kMargin + 12, 176, "RUN", palColor(Pal::ACCENT));
+            // The price of the gamble, as a footnote to the action that takes it — only
+            // while QUICK is the armed variant, the one of the three that can fail.
+            if (variant == 0)
+                drawText(fb, kMargin + 12, 190, failCost, palColor(Pal::INK_DIM));
         }
         drawHintBand(fb, runnable ? "A SWITCH  B RUN  C BACK" : "A SWITCH  C BACK");
     } else {
@@ -163,6 +174,11 @@ void drawMaintAction(Framebuffer& fb, MaintKind kind, const PetModel& m,
         avStatus(m, status, sizeof(status));
         std::snprintf(line, sizeof(line), "STATUS: %s", status);
         drawText(fb, kMargin, 84, line, palColor(Pal::INK_DIM));
+        if (!avGated(m)) {
+            std::snprintf(line, sizeof(line), "CHANCE TO FAIL: %d%%", failPct);
+            drawText(fb, kMargin, 100, line, palColor(Pal::INK_DIM));
+            drawText(fb, kMargin, 112, failCost, palColor(Pal::INK_DIM));
+        }
         if (avGated(m)) {
             drawText(fb, kMargin, 170, "- SYSTEM CLEAN -", palColor(Pal::INK_DIM));
         } else {

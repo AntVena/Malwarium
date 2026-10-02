@@ -771,7 +771,7 @@ void Game::drawDetail(Framebuffer& fb) const {
             drawMaintAction(fb, maintKind_, model_,
                             maintKind_ == MaintKind::Defrag ? defragCost() : 0,
                             bits_, defragVariant_,
-                            inventory_.count(kDefragToolId), defragCount_);
+                            inventory_.count(kDefragToolId), defragCount_, maintFailPct());
             break;
         case SubmenuId::Cfg:
             drawCfg(fb);

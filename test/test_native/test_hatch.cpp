@@ -122,6 +122,35 @@ void test_hatch_waits_out() {
     CHECK(!g.inEggPhase());
 }
 
+// The device's first pet hatches half-fragmented, so MAINT's "!" invites a defrag at
+// once: that hatch hands over one Defrag Tool so the first defrag need not be a gamble.
+// Only the FIRST — every later egg is raised by someone who has met MAINT already. And
+// the gamble it replaces is priced where it is taken: maintFailPct is what the roll uses.
+void test_first_hatch_grants_a_defrag_tool() {
+    Game g;
+    pickFirstEggLine(g);
+    const int held0 = g.inventory().count(kDefragToolId);
+    uint32_t t = 0;
+    g.tick(t += 1000);
+    g.tick(t += kBootHatchMs + kHeartbeatMs);
+    CHECK(!g.inEggPhase());
+    CHECK(g.inventory().count(kDefragToolId) == held0 + 1);
+
+    g.resetToHatch();                                  // a wipe is a first hatch again
+    pickFirstEggLine(g);
+    const int held1 = g.inventory().count(kDefragToolId);
+    g.tick(t += kBootHatchMs + kHeartbeatMs);
+    CHECK(g.inventory().count(kDefragToolId) == held1 + 1);
+
+    Game h{StartMode::Hatched};                        // a raised pet: no grant to make
+    h.model().setFragmentation(0);
+    CHECK(h.maintFailPct() == 15);
+    h.model().setFragmentation(50);
+    CHECK(h.maintFailPct() == 15 + 50 / 4);
+    h.model().setFragmentation(100);
+    CHECK(h.maintFailPct() == 15 + 100 / 4);           // the worst a full disk gets
+}
+
 // A newly-seen NETWORK shaves kBootHatchNetworkAccelMs off the incubation clock.
 // An egg can't explore, so the network seam is the only hatch accelerator.
 void test_hatch_network_accelerates() {
