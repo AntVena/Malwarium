@@ -10,6 +10,7 @@
 
 #include <cstdio>
 
+#include "core/ui/carousel.h"
 #include "core/ui/prose_page.h"
 
 namespace mal {
@@ -55,6 +56,28 @@ ProseRow Game::hatchBriefLeadRow() const {
                   "Play badly and it still hatches on its own clock - the egg is never "
                   "at risk. A+C brings these rules back mid-game.");
     return r;
+}
+
+// --- What the pet needs ---------------------------------------------------------
+
+void Game::careAttention(unsigned& attention, unsigned& urgent) const {
+    attention = 0;
+    urgent = 0;
+    if (!pet_ || inEggPhase()) return;
+    // Each vital names the ONE slot that fixes it, so the shelf points at the remedy
+    // rather than at a readout: food is in ITEMS, a defrag or AV scan in MAINT, and the
+    // arcade is the one place Happiness can be bought back on demand.
+    const auto mark = [&](SubmenuId id, Zone zone, bool force) {
+        if (zone == Zone::Ok && !force) return;
+        for (int i = 0; i < kCarouselSlots; ++i) {
+            if (carouselSlots()[i].id != id) continue;
+            attention |= 1u << i;
+            if (zone == Zone::Critical) urgent |= 1u << i;
+        }
+    };
+    mark(SubmenuId::Items, model_.hungerZone(), false);
+    mark(SubmenuId::Maint, model_.fragZone(), model_.hasGhost());
+    mark(SubmenuId::Games, model_.happyZone(), false);
 }
 
 }  // namespace mal

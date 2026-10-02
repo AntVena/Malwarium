@@ -101,6 +101,12 @@ The menu is hidden during idle play; A or C summons it at slot 1, and 5s of inac
 again. A advances the cursor, C reverses it (or exits a submenu). Slots are assigned by
 click-distance, so the most-used categories are the cheapest to reach.
 
+The resting shelf is also the pet's voice: a slot that fixes a vital out of its OK zone —
+ITEMS for Hunger, MAINT for Fragmentation (or a Replication Ghost), GAMES for Happiness —
+stays undimmed with a **"!"** in its gutter, blinking in the Critical band
+(`Game::careAttention`, `src/core/app/game/game_onboard.cpp`). It points at the remedy
+rather than the readout, so a player who has never opened STAT still knows where to go.
+
 ```
 [TOP TRACK]     [1 STAT] [2 ITEMS] [3 GAMES] [4 EXPL]
                      [ VIRTUAL PET CANVAS ]

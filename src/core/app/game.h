@@ -581,6 +581,11 @@ public:
     static constexpr int kTipWireCap = 32;   // bits in the persisted set
     bool tipSeen(Tip t) const;
     void markTipSeen(Tip t);
+    // Which carousel slots the pet needs visited right now, as drawCarousel's masks
+    // (bit i = carouselSlots()[i]): ITEMS while Hunger is out of its OK zone, MAINT
+    // while Fragmentation is (or a Replication Ghost needs scanning out), GAMES while
+    // Happiness is. `urgent` is the subset in the Critical band. An egg needs nothing.
+    void careAttention(unsigned& attention, unsigned& urgent) const;
     // The two readers' row models (core/ui/prose_page.h), built on demand — both walk
     // the content tables, so they are called on a press or a repaint, never held.
     // Public so a gate can assert what a sheet SAYS instead of reading it out of pixels.

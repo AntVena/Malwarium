@@ -466,7 +466,11 @@ void Game::drawHabitat(Framebuffer& fb, int cursor) const {
         if (id == SubmenuId::Expl && autoProgress_ && exploreActive_)
             spinMask |= (1u << i);
     }
-    drawCarousel(fb, cursor, uiMode_, beat_, lockMask, spinMask);
+    // The slots the pet needs visited (game_onboard.cpp) stay lit with a "!" beside
+    // them: the shelf is always up at idle, so it is where a need is seen first.
+    unsigned attention = 0, urgent = 0;
+    careAttention(attention, urgent);
+    drawCarousel(fb, cursor, uiMode_, beat_, lockMask, spinMask, attention, urgent);
 }
 
 Game::AchBannerCopy Game::achBannerCopy() const {

@@ -219,6 +219,73 @@ void test_carousel_autodefocus() {
 // a padding change could bust it with every label the same length it always was. Both
 // rosters go through the same two helpers (drawSlotLabel / drawSlotFocusBox), and this
 // is what holds them to it.
+// The shelf points at the REMEDY for whichever vital has left its OK zone: food is in
+// ITEMS, a defrag or AV scan in MAINT, and Happiness is bought back at GAMES. Nobody is
+// beside a first-time player to say which menu fixes what, so the slot says it.
+void test_carousel_marks_what_the_pet_needs() {
+    const auto bitOf = [](SubmenuId id) {
+        for (int i = 0; i < kCarouselSlots; ++i)
+            if (carouselSlots()[i].id == id) return 1u << i;
+        return 0u;
+    };
+    const unsigned items = bitOf(SubmenuId::Items), maint = bitOf(SubmenuId::Maint),
+                   games = bitOf(SubmenuId::Games);
+    unsigned att = 0, urg = 0;
+
+    Game g{StartMode::Hatched};
+    g.model().setHunger(80);
+    g.model().setFragmentation(10);
+    g.model().setHappiness(70);
+    g.model().setGhost(false);
+    g.careAttention(att, urg);
+    CHECK(att == 0 && urg == 0);                        // a content pet: a quiet shelf
+
+    g.model().setHunger(kHungerCautionMax);
+    g.careAttention(att, urg);
+    CHECK(att == items && urg == 0);
+    g.model().setHunger(kHungerCriticalMax);
+    g.careAttention(att, urg);
+    CHECK(att == items && urg == items);
+    g.model().setHunger(80);
+
+    g.model().setFragmentation(kFragCriticalMin);
+    g.careAttention(att, urg);
+    CHECK(att == maint && urg == maint);
+    g.model().setFragmentation(10);
+    g.model().setGhost(true);                           // a ghost wants the AV scan
+    g.careAttention(att, urg);
+    CHECK(att == maint && urg == 0);
+    g.model().setGhost(false);
+
+    g.model().setHappiness(kHappyCautionMin - 1);
+    g.careAttention(att, urg);
+    CHECK(att == games && urg == 0);
+
+    Game egg;                                           // an egg has no vitals to mind
+    pickFirstEggLine(egg);
+    egg.careAttention(att, urg);
+    CHECK(att == 0 && urg == 0);
+
+    // Drawn, the mark is a SHAPE in the slot's right gutter that clears the track by
+    // more than colour alone — and an urgent one blinks, so it is off on an odd beat.
+    int slot = 0;
+    while (!((maint >> slot) & 1u)) ++slot;
+    const int x0 = (slot % kSlotCols) * kSlotW + kSlotW - 9, x1 = x0 + 9;
+    const int y0 = slot < kSlotCols ? 0 : kLivingBottom, y1 = y0 + kTrackH;
+    Framebuffer calm(kActiveW, kActiveH), on(kActiveW, kActiveH), off(kActiveW, kActiveH);
+    drawCarousel(calm, -1, UiMode::IconsLabel, 0);
+    drawCarousel(on, -1, UiMode::IconsLabel, 0, 0, 0, maint, maint);
+    drawCarousel(off, -1, UiMode::IconsLabel, 1, 0, 0, maint, maint);
+    CHECK(regionDiffers(calm, on, x0, y0, x1, y1));
+    bool clears = false;
+    const float track = luminance(palColor(Pal::TRACK));
+    for (int y = y0; y < y1; ++y)
+        for (int x = x0; x < x1; ++x)
+            if (luminance(on.get(x, y)) > track + 0.15f) clears = true;
+    CHECK(clears);
+    CHECK(!regionDiffers(calm, off, x0, y0, x1, y1));   // the blink's off phase
+}
+
 void test_carousel_labels_fit_their_box() {
     const Rgb565 accent = palColor(Pal::ACCENT);
 

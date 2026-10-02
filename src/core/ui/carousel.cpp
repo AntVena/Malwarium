@@ -21,6 +21,12 @@ constexpr int kLabelBoxPad = 2;                  // ...and round a WORD, which n
                                                   // kCarouselLabelMaxChars in carousel.h)
 constexpr int kBoxThick = 2;
 constexpr uint8_t kDimAlpha = 140;               // ~50% wash over unfocused icons
+// The needs-attention "!" (drawCarousel): 3px wide, 12px tall, its left edge this far
+// in from the column's right edge — inside the 14px gutter beside the icon and past
+// the focus box's outer stroke (kIconInset - kBoxPad - kBoxThick = 9px of clearance).
+constexpr int kAttnMarkW = 3;
+constexpr int kAttnMarkH = 12;
+constexpr int kAttnMarkInset = 7;
 
 // Top track holds cursor 0..3, bottom track 4..7.
 int slotCol(int cursor) { return cursor % kSlotCols; }
@@ -171,7 +177,8 @@ void drawHackerCarousel(Framebuffer& fb, int cursor, UiMode mode, int /*beat*/,
 }
 
 void drawCarousel(Framebuffer& fb, int cursor, UiMode mode, int beat,
-                  unsigned lockedMask, unsigned spinMask) {
+                  unsigned lockedMask, unsigned spinMask,
+                  unsigned attentionMask, unsigned urgentMask) {
     const CarouselSlot* slots = carouselSlots();
     const Rgb565 paper = palColor(Pal::PAPER);
 
@@ -180,12 +187,12 @@ void drawCarousel(Framebuffer& fb, int cursor, UiMode mode, int beat,
     fb.fillRect(0, kLivingBottom, kActiveW, kTrackH, palColor(Pal::TRACK));
 
     // The carousel recedes so the pet holds attention: every slot is dimmed
-    // *unless* it's the focused one. cursor < 0 (resting) focuses nothing, so the
-    // whole shelf reads quiet. (Future per-slot "needs attention" highlighting —
-    // e.g. a low-stat nudge — would brighten a slot here without a cursor.)
+    // *unless* it's the focused one, or one the pet needs visited. cursor < 0
+    // (resting) focuses nothing, so a shelf with nothing to fix reads quiet.
     for (int i = 0; i < kCarouselSlots; ++i) {
         const bool locked = (lockedMask >> i) & 1u;   // inert slot (egg-phase grey)
         const bool focused = (i == cursor) && !locked; // a locked slot can't read active
+        const bool needed = ((attentionMask >> i) & 1u) && !locked;
 
         const int ix = slotIconX(i);
         const int iy = slotIconY(i);
@@ -197,9 +204,12 @@ void drawCarousel(Framebuffer& fb, int cursor, UiMode mode, int beat,
         const bool asText = mode == UiMode::TextOnly ||
             (mode == UiMode::IconsLabel && i == cursor);
         if (asText) {
-            // Terse word in place of the icon: focused ACCENT, the rest (and any
+            // Terse word in place of the icon: focused ACCENT, a slot the pet needs
+            // full INK (the text-mode twin of skipping the wash), the rest (and any
             // locked slot) dimmed.
-            const Rgb565 tc = focused ? palColor(Pal::ACCENT) : palColor(Pal::INK_DIM);
+            const Rgb565 tc = focused ? palColor(Pal::ACCENT)
+                            : needed  ? palColor(Pal::INK)
+                                      : palColor(Pal::INK_DIM);
             drawSlotLabel(fb, i, slots[i].label, tc);
         } else {
             // A spinning slot cycles its own frames off the shared beat; every other
@@ -212,11 +222,24 @@ void drawCarousel(Framebuffer& fb, int cursor, UiMode mode, int beat,
             // Wash the icon toward paper: unfocused = one pass (~50%); a locked slot
             // gets two passes so it reads distinctly greyed-out (disabled) even at
             // rest, when the whole shelf is already receded.
-            const int washes = locked ? 2 : (focused ? 0 : 1);
+            const int washes = locked ? 2 : ((focused || needed) ? 0 : 1);
             for (int pass = 0; pass < washes; ++pass)
                 for (int yy = iy; yy < iy + kIcon; ++yy)
                     for (int xx = ix; xx < ix + kIcon; ++xx)
                         fb.blendPixel(xx, yy, paper, kDimAlpha);
+        }
+
+        // The needs-attention mark: an exclamation drawn as two blocks in the column's
+        // right gutter, clear of the icon and of the focus box around it (and of a
+        // label up to five characters, which every care slot's is). An urgent one
+        // blinks, so the slot asking loudest is the one that moves.
+        if (needed && (!((urgentMask >> i) & 1u) || (beat & 1) == 0)) {
+            const Rgb565 mc = ((urgentMask >> i) & 1u) ? palColor(Pal::HOT)
+                                                       : palColor(Pal::WARN);
+            const int mx = slotCol(i) * kSlotW + kSlotW - kAttnMarkInset;
+            const int my = slotTrackTop(i) + (kTrackH - kAttnMarkH) / 2;
+            fb.fillRect(mx, my, kAttnMarkW, kAttnMarkH - kAttnMarkW - 2, mc);
+            fb.fillRect(mx, my + kAttnMarkH - kAttnMarkW, kAttnMarkW, kAttnMarkW, mc);
         }
 
         // ·soon· marker on any not-yet-built slot, just inside the living-area edge.

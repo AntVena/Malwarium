@@ -64,8 +64,14 @@ const HackerCarouselSlot* hackerCarouselSlots();
 // `beat` instead of resting on frame 0), so a running background mode is legible from
 // the shelf itself: EXPL's globe turns while auto-progress is armed. A slot whose icon
 // is single-frame ignores its bit.
+// `attentionMask` marks the slots the pet needs visited (bit i set = slot i is where a
+// vital that has left its OK zone gets fixed — Game::careAttention): the slot stays
+// undimmed at rest and carries a "!" beside it, so the shelf itself says where to go.
+// `urgentMask` is the subset in the Critical band, whose mark is HOT and blinks off
+// `beat`. The "!" is the shape channel; the colour only grades it.
 void drawCarousel(Framebuffer& fb, int cursor, UiMode mode, int beat,
-                  unsigned lockedMask = 0, unsigned spinMask = 0);
+                  unsigned lockedMask = 0, unsigned spinMask = 0,
+                  unsigned attentionMask = 0, unsigned urgentMask = 0);
 
 // Draw the Hacker-face carousel: the same track/geometry as drawCarousel,
 // but the hacker slot roster + the inaccessible marker over any slot whose
