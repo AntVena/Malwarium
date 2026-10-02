@@ -403,6 +403,10 @@ is tucked away. A blinking red **!** means it's urgent. Rather go without? **CFG
 CARE ALERTS** switches the marks off (and back on). Like UI MODE beside it, the choice is
 remembered through restarts and updates.
 
+The first time something comes up (a need, an error, your first walk, your first cache)
+a short card explains it once. Missed one, or skipped it? **CFG → DEVICE → TIPS** lists
+every card you've been shown, to read again.
+
 Out of food? The bag says so, and the **!** for a hungry pet moves to **EXPL**, because
 the walk is where food comes from. Keep a meal or two in reserve.
 

@@ -252,7 +252,10 @@ while a need's "!" is up opens a **care card** saying why and what fixes it (one
 and the first walk armed from EXPL opens a card on how the walk and its fights work, before
 it runs hands-off. All are one-time **tips**, a player-level persisted set (`Game::Tip`,
 save v66, `src/core/app/game/game_onboard.cpp`), so a new egg does not re-teach them. The
-`Hatched` start seam counts them as seen, as a pre-v66 save does.
+`Hatched` start seam counts them as seen, as a pre-v66 save does. Errors get cards too —
+the first one, and the fourth (one short of failing, when STAT also takes an urgent "!")
+— and the first cache held gets one that teaches the A+C way to the VAULT. Every card a
+device has shown can be read again from **CFG → DEVICE → TIPS**.
 
 Rosters, evolution routing and per-stage flavour are data on `CreatureDef` rows, one folder per
 evolution line under `src/core/content/creatures/` — not a table in a doc.
