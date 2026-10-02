@@ -1,11 +1,7 @@
-// test_sound.cpp — device sound: the cue table, the SOUND mode's tiers, the VOLUME
-// level, the moments that ask for a cue, and the two preferences surviving a reboot.
 #include "test_gates.h"
 
 namespace {
 
-// The gates' speaker: every cue the engine hands the platform, in order, with the
-// volume it was asked at.
 struct RecordingSound : ISoundOut {
     struct Cue {
         Sound sound;
@@ -20,9 +16,8 @@ struct RecordingSound : ISoundOut {
     }
 };
 
-} // namespace
+}
 
-// Every Sound has its row, at its own index, with notes to play and a name to log.
 void test_sound_table_is_indexed() {
     CHECK(soundDef(Sound::None) == nullptr);
     CHECK(soundDef(Sound::Count) == nullptr);
@@ -36,7 +31,6 @@ void test_sound_table_is_indexed() {
         CHECK(d->noteCount > 0);
         CHECK(soundDurationMs(s) > 0);
     }
-    // The three care alerts are the Alert tier, and nothing else is.
     int alerts = 0;
     for (int i = 1; i < static_cast<int>(Sound::Count); ++i)
         alerts += soundTier(static_cast<Sound>(i)) == SoundTier::Alert;
@@ -46,8 +40,6 @@ void test_sound_table_is_indexed() {
     CHECK(soundTier(Sound::PetLost) == SoundTier::Alert);
 }
 
-// ALL plays every tier, ALERTS ONLY keeps the care alerts alone, OFF plays nothing;
-// whatever plays, plays at the VOLUME level's percent.
 void test_sound_mode_filters_tiers() {
     CHECK(soundModeAllows(SoundMode::All, SoundTier::Ui));
     CHECK(soundModeAllows(SoundMode::All, SoundTier::Alert));
@@ -59,7 +51,7 @@ void test_sound_mode_filters_tiers() {
     RecordingSound out;
     Game g{StartMode::Hatched};
     g.setSoundOut(&out);
-    CHECK(g.soundMode() == SoundMode::Off);                  // silent out of the box
+    CHECK(g.soundMode() == SoundMode::Off);
     CHECK(g.volume() == kVolumeDefault);
     g.onButton(press(Button::A));
     g.playSound(Sound::Lockout);
@@ -67,16 +59,16 @@ void test_sound_mode_filters_tiers() {
     g.onButton(lift(Button::A));
 
     g.setSoundMode(SoundMode::All);
-    g.onButton(press(Button::A));                            // a key click
+    g.onButton(press(Button::A));
     CHECK(out.cues.size() == 1 && out.cues[0].sound == Sound::KeyNext);
     CHECK(out.cues[0].volumePercent == volumePercent(kVolumeDefault));
-    g.onButton(lift(Button::A));                             // a release is silent
+    g.onButton(lift(Button::A));
     CHECK(out.cues.size() == 1);
 
     g.setVolume(kVolumeLevels - 1);
     g.playSound(Sound::Achievement);
     CHECK(out.cues.back().sound == Sound::Achievement && out.cues.back().volumePercent == 100);
-    g.setVolume(kVolumeLevels + 3);                          // clamps to the top step
+    g.setVolume(kVolumeLevels + 3);
     CHECK(g.volume() == kVolumeLevels - 1);
 
     g.setSoundMode(SoundMode::AlertsOnly);
@@ -91,14 +83,11 @@ void test_sound_mode_filters_tiers() {
     g.playSound(Sound::Lockout);
     g.onButton(press(Button::B));
     CHECK(out.cues.empty());
-    // ...except the VOLUME sample, which is asked for by name.
     g.previewVolume(0);
     CHECK(out.cues.size() == 1 && out.cues[0].sound == Sound::Preview &&
           out.cues[0].volumePercent == volumePercent(0));
 }
 
-// The Lockout sounds when it opens and once more kLockoutReminderMs before it runs
-// out — and in ALERTS ONLY those are the only two cues the whole crisis makes.
 void test_sound_lockout_alert_and_reminder() {
     RecordingSound out;
     Game g{StartMode::Hatched};
@@ -109,18 +98,14 @@ void test_sound_lockout_alert_and_reminder() {
     g.tick(t);
     CHECK(g.lockoutActive());
     CHECK(out.count(Sound::Lockout) == 1);
-    // Nothing more until the reminder is due...
     while (t + kHeartbeatMs < kHeartbeatMs + kLockoutDurationMs - kLockoutReminderMs)
         g.tick(t += kHeartbeatMs);
     CHECK(out.count(Sound::Lockout) == 1);
-    // ...then exactly one, however long the crisis keeps running.
     while (g.lockoutActive()) g.tick(t += kHeartbeatMs);
     CHECK(out.count(Sound::Lockout) == 2);
     CHECK(out.cues.size() == 2);
 }
 
-// The FAILING window sounds as the pet reaches 5/5, again every kFailingAlertEveryMs of
-// the window, and the loss at its end is the third alert.
 void test_sound_failing_alert_repeats_then_pet_lost() {
     RecordingSound out;
     Game g{StartMode::Hatched};
@@ -130,8 +115,6 @@ void test_sound_failing_alert_repeats_then_pet_lost() {
     uint32_t t = kHeartbeatMs;
     g.tick(t);
     CHECK(out.count(Sound::Failing) == 1);
-    // Step a second at a time with Hunger topped up, so the window is the only clock
-    // running and no Lockout joins in.
     const uint32_t step = 1000;
     while (t < kHeartbeatMs + kFailingAlertEveryMs - step) {
         g.model().setHunger(100);
@@ -151,8 +134,6 @@ void test_sound_failing_alert_repeats_then_pet_lost() {
     CHECK(out.cues.back().sound == Sound::PetLost);
 }
 
-// An evolution boundary firing off the clock calls the owner over with a jingle — an
-// Event, so ALERTS ONLY drops it.
 void test_sound_evolution_jingle() {
     RecordingSound out;
     Game g{StartMode::Hatched, "cryptoshell"};
@@ -171,10 +152,6 @@ void test_sound_evolution_jingle() {
     CHECK(quiet.cues.empty());
 }
 
-// CFG > DEVICE > SOUND and VOLUME. Sound is OFF until chosen; each picker opens on the
-// applied value, A walks it (VOLUME playing each level it lands on), B applies, C leaves
-// it as it was. Both are
-// device preferences: they survive a reboot, and the codec carries them both ways.
 void test_cfg_sound_and_volume_persist() {
     MemSaveStore store;
     {
@@ -184,46 +161,45 @@ void test_cfg_sound_and_volume_persist() {
 
         enterCfgTarget(g, CfgScreen::Sound);
         CHECK(g.cfgScreen() == CfgScreen::Sound);
-        g.onButton(press(Button::A));                        // OFF -> ALL
-        g.onButton(press(Button::C));                        // ...not applied
+        g.onButton(press(Button::A));
+        g.onButton(press(Button::C));
         CHECK(g.soundMode() == SoundMode::Off);
-        CHECK(g.cfgScreen() == CfgScreen::Device);           // the group, on SOUND's row
-        g.onButton(press(Button::B));                        // reopen it
+        CHECK(g.cfgScreen() == CfgScreen::Device);
+        g.onButton(press(Button::B));
         CHECK(g.cfgScreen() == CfgScreen::Sound);
         g.onButton(press(Button::A));
-        g.onButton(press(Button::A));                        // -> ALERTS ONLY
+        g.onButton(press(Button::A));
         g.onButton(press(Button::B));
         CHECK(g.soundMode() == SoundMode::AlertsOnly);
         CHECK(g.cfgScreen() == CfgScreen::Device);
 
         out.cues.clear();
-        g.onButton(press(Button::A));                        // VOLUME is the next row
+        g.onButton(press(Button::A));
         g.onButton(press(Button::B));
         CHECK(g.cfgScreen() == CfgScreen::Volume);
-        CHECK(out.cues.empty());                             // ALERTS ONLY: no key clicks
-        g.onButton(press(Button::A));                        // the level after the default
-        CHECK(out.cues.size() == 1 && out.cues[0].sound == Sound::Preview);   // heard anyway
+        CHECK(out.cues.empty());
+        g.onButton(press(Button::A));
+        CHECK(out.cues.size() == 1 && out.cues[0].sound == Sound::Preview);
         CHECK(out.cues[0].volumePercent == volumePercent(kVolumeDefault + 1));
         g.onButton(press(Button::B));
         CHECK(g.volume() == kVolumeDefault + 1);
         CHECK(g.cfgScreen() == CfgScreen::Device);
 
         Framebuffer fb(kActiveW, kActiveH);
-        g.render(fb);                                        // the rows preview both
+        g.render(fb);
         CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));
-        g.tick(kAutoDefocusMs + 1 + kSaveAutosaveMs + kHeartbeatMs);   // autosave
+        g.tick(kAutoDefocusMs + 1 + kSaveAutosaveMs + kHeartbeatMs);
     }
-    Game again{StartMode::Hatched, "paypup", &store};        // a reboot onto the save
+    Game again{StartMode::Hatched, "paypup", &store};
     CHECK(again.soundMode() == SoundMode::AlertsOnly);
     CHECK(again.volume() == kVolumeDefault + 1);
 
-    SaveData d;                                              // the codec, both ways
+    SaveData d;
     d.soundMode = static_cast<uint8_t>(SoundMode::AlertsOnly);
     d.volume = 4;
     SaveData back;
     CHECK(deserializeSave(serializeSave(d), back));
     CHECK(back.soundMode == static_cast<uint8_t>(SoundMode::AlertsOnly) && back.volume == 4);
-    // The pre-v68 reading, and a blob naming a mode or level this build has none for.
     CHECK(SaveData{}.soundMode == static_cast<uint8_t>(SoundMode::Off) &&
           SaveData{}.volume == kVolumeDefault);
     MemSaveStore odd;

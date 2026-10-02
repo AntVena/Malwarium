@@ -144,9 +144,6 @@ int cfgGroupRows(CfgScreen group, const CfgRow*& out) {
         // styles. It is a switch rather than a screen — B flips it in place (onCfgGroup).
         {"CARE ALERTS", &ASSET_ICON_CFG_UIMODE, CfgScreen::CareAlerts},
         {"BRIGHTNESS", &ASSET_ICON_CFG_UIMODE, CfgScreen::Brightness},
-        // SOUND and VOLUME under it: the other output the operator tunes to the room
-        // they are in, and the other battery lever — the amp only draws while a cue is
-        // playing, so OFF and ALERTS ONLY cost less than a lower volume does.
         {"SOUND", &ASSET_ICON_CFG_UIMODE, CfgScreen::Sound},
         {"VOLUME", &ASSET_ICON_CFG_UIMODE, CfgScreen::Volume},
         // THEME sits with them for the same reason BACKGROUND does — it is what the
@@ -712,11 +709,6 @@ void drawUiModeToggle(Framebuffer& fb, int pick, UiMode current) {
 
 namespace {
 
-// A row of level bars whose FILL HEIGHT encodes the level — grayscale-safe (the focused
-// bar + the percent read carry meaning without colour). The focused level is the tall
-// accent bar; levels at/below it are filled, above it are empty tracks, and the applied
-// level carries a baseline pip so pick and applied both read before B is pressed.
-// BRIGHTNESS and VOLUME are both this screen.
 void drawLevelPicker(Framebuffer& fb, const char* title, int pick, int current,
                      int levels, int percent) {
     drawHeaderBand(fb, title);
@@ -760,8 +752,6 @@ void drawVolume(Framebuffer& fb, int pick, int current) {
 void drawSoundMode(Framebuffer& fb, int pick, SoundMode current) {
     drawHeaderBand(fb, "SOUND");
     if (pick < 0 || pick >= kSoundModeCount) pick = 0;
-    // One line of copy for the FOCUSED mode, the THEME picker's shape: what a mode
-    // keeps is the whole decision, and ALERTS ONLY means nothing until it says which.
     static const char* const kWhat[kSoundModeCount] = {
         "CLICKS, JINGLES, ALERTS.",
         "LOCKOUT + FAILING ONLY.",

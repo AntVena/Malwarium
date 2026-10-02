@@ -31,7 +31,7 @@
 #include "core/app/radio_status.h"
 #include "core/app/sd_status.h"
 #include "core/app/update_status.h"
-#include "core/audio/sound.h"   // SoundMode — the SOUND row and picker
+#include "core/audio/sound.h"
 #include "core/ui/ui_state.h"  // CfgScreen, UiMode
 
 namespace mal {
@@ -79,8 +79,7 @@ void drawCfgList(Framebuffer& fb, int cursor, const char* hackerTag,
 // level, and an action has no state to report, which the empty value column says
 // without a word of copy.
 // `careAlerts` is the CARE ALERTS switch's state (Game::careAlerts), previewed ON/OFF;
-// that row flips in place on B rather than opening a screen. `soundMode` and `volume`
-// preview the SOUND and VOLUME rows. Ten rows, so it scrolls.
+// that row flips in place on B rather than opening a screen. Ten rows, so it scrolls.
 void drawCfgDevice(Framebuffer& fb, int cursor, UiMode uiMode, int brightness,
                    SoundMode soundMode, int volume, const char* theme,
                    const char* background, bool careAlerts);
@@ -198,12 +197,8 @@ void drawUiModeToggle(Framebuffer& fb, int pick, UiMode current);
 // B applies (the device tier then drives the backlight PWM).
 void drawBrightness(Framebuffer& fb, int pick, int current);
 
-// L3 VOLUME picker: the BRIGHTNESS screen's level bars over kVolumeLevels. Each A plays
-// the focused level's sample (Game::previewVolume), so the level is heard as well as read.
 void drawVolume(Framebuffer& fb, int pick, int current);
 
-// L3 SOUND mode picker: ALL / ALERTS ONLY / OFF, with a line saying what the focused
-// mode keeps. `pick` is the focused mode's value (cycles A), `current` the applied one.
 void drawSoundMode(Framebuffer& fb, int pick, SoundMode current);
 
 // L3 Titles picker: equip a zone-completion Title on the HackerTag.

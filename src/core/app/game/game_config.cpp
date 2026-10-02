@@ -204,8 +204,6 @@ void Game::onCfgDetail(const ButtonEvent& ev) {
             } else if (ev.button == Button::C) leaveCfgScreen();  // no change
             break;
         case CfgScreen::Volume:
-            // BRIGHTNESS's shape, plus the sample: each A plays the level it lands on,
-            // because a volume is chosen by ear and the bars only say which step it is.
             if (ev.button == Button::A) {
                 cfgVolumePick_ = (cfgVolumePick_ + 1) % kVolumeLevels;
                 previewVolume(cfgVolumePick_);

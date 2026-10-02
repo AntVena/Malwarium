@@ -56,7 +56,7 @@ NetSta netSta;          // home-network association, raised by an update job onl
 NetUpdate netUpdate;    // update CHECK — rides netSta's association, owns no radio
 RadioArbiter radio;     // single radio owner: STA XOR AP XOR link XOR capture XOR scan XOR off
 SdCard sdCard;          // microSD (SD_MMC 4-bit); inert on card-less / SPI-SD boards
-Esp32Sound sound;       // ES8311 + amp; silent if the codec doesn't answer (config.h)
+Esp32Sound sound;
 
 // --- Buttons ---------------------------------------------------------------
 struct Btn {
@@ -277,8 +277,6 @@ void travelDeepSleep() {
     }
     esp_sleep_enable_ext1_wakeup(kTravelWakeMask, ESP_EXT1_WAKEUP_ANY_LOW);
 
-    // The amp's enable is held LOW through the sleep for the same reason: left to revert,
-    // the pad floats, and a floating enable is an amp that may power up in a bag.
     sound.end();
     gpio_hold_en(static_cast<gpio_num_t>(PIN_AUDIO_PA_CTRL));
     gpio_deep_sleep_hold_en();
@@ -472,8 +470,7 @@ void setup() {
     BOOT_TRACE("[boot] phase=5 Framebuffer(%dx%d) ok; free heap=%lu\n",
                kActiveW, kActiveH, (unsigned long)ESP.getFreeHeap());
 
-    // The speaker, before the first frame so a boot onto a pet already in crisis is
-    // heard. Its pad was held LOW through a travel sleep; release it now it is driven.
+    // Released after begin() drives it: the pad is held LOW through a travel sleep.
     sound.begin();
     gpio_hold_dis(static_cast<gpio_num_t>(PIN_AUDIO_PA_CTRL));
     game->setSoundOut(&sound);
@@ -779,10 +776,6 @@ void loop() {
 #endif
     const bool beat = game->tick(millis());  // always tick (model runs while asleep)
     if (beat) dirty = true;
-    // A care alert wakes the panel, so the Lockout or FAILING the owner just heard is
-    // on screen when they look — and the wake holds off the screen sleep, which keeps
-    // the loop out of light sleep for the 30s a Lockout runs. Unlike a press, nothing
-    // is swallowed: this is the device asking, not the owner.
     if (sound.takeAlertWake()) {
         if (noteActivity()) Serial.println("[screen] wake: care alert");
         dirty = true;
@@ -844,8 +837,6 @@ void loop() {
 
     const bool usbSettling = USB_KEEPS_AWAKE && lastSleepWakeMs != 0 &&
                              millis() - lastSleepWakeMs < USB_SETTLE_MS;
-    // A cue still playing holds it off too: a light sleep freezes the I2S clock with the
-    // amp powered, which is a stuck tone, not a pause.
     const bool idleAndQuiet = screenAsleep && radio.owner() == RadioArbiter::Owner::None &&
                               !usbHostAttached() && !usbSettling && !sound.busy();
 #ifdef BRINGUP_PINSCAN

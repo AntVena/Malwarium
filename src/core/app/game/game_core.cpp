@@ -532,14 +532,11 @@ bool Game::tickLifecycle(uint32_t nowMs) {
             if (!dyingArmed_) {
                 dyingArmed_ = true;
                 dyingEnteredMs_ = nowMs_;
-                failingAlertAtMs_ = dyingElapsedMs_;   // sound now, then on the cadence
+                failingAlertAtMs_ = dyingElapsedMs_;
                 markSaveDirty();   // the moment it starts is worth writing at once
             }
             dyingElapsedMs_ += nowMs_ - dyingEnteredMs_;
             dyingEnteredMs_ = nowMs_;
-            // The FAILING alert: on arming, then every kFailingAlertEveryMs of the window
-            // burned. Counted on the window's own clock, so a reboot mid-window neither
-            // skips a reminder nor doubles one up beyond the one its re-arm sounds.
             if (dyingElapsedMs_ >= failingAlertAtMs_ && dyingElapsedMs_ < kCsfDyingGraceMs) {
                 playSound(Sound::Failing);
                 failingAlertAtMs_ = dyingElapsedMs_ + kFailingAlertEveryMs;
@@ -587,9 +584,7 @@ bool Game::tickLifecycle(uint32_t nowMs) {
         expireLockout();
         changed = true;
     }
-    // ...and its one reminder, kLockoutReminderMs before that deadline, for an owner
-    // who missed the first alert. Not while ITEMS is open from the modal: the owner is
-    // already answering it.
+    // No reminder while ITEMS is open from the modal: the owner is already answering.
     if (lockoutActive_ && !lockoutReminded_ && !lockoutItemsContext_ &&
         lockoutDeadlineMs_ - nowMs_ <= kLockoutReminderMs) {
         lockoutReminded_ = true;

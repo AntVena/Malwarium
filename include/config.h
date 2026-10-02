@@ -98,9 +98,7 @@
 #define PIN_I2S_BCLK            9    // CONFIRMED
 #define PIN_I2S_LRCLK           10   // CONFIRMED  (WS)
 #define PIN_I2S_DOUT            12   // CONFIRMED
-//  The square wave's peak at VOLUME 100%, of int16's 32767. The NS4150B is a ~3W class-D
-//  amp on a small speaker, so full scale is far louder than a pocket device wants; the
-//  CFG levels scale down from here on a squared curve (audio_esp32.h). Tune on the board.
+//  Sample peak (of 32767) at VOLUME 100%.
 #define AUDIO_PEAK_AMPLITUDE    8000
 
 // --- IMU -------------------------------------------------------------------

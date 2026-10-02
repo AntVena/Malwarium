@@ -73,8 +73,6 @@
     if (mod) mod._mal_cycle_ui_mode();
   });
 
-  // SOUND cycles ALL -> ALERTS ONLY -> OFF, the device's CFG > DEVICE > SOUND. The
-  // label names the mode the engine reports, so it can never disagree with it.
   var SOUND_NAMES = ['SOUND: ALL', 'SOUND: ALERTS', 'SOUND: OFF'];
   var soundBtn = document.getElementById('sound');
   function labelSound(mode) { soundBtn.textContent = SOUND_NAMES[mode] || SOUND_NAMES[0]; }

@@ -643,8 +643,6 @@ void Game::applyCombatResult() {
 
 void Game::finishCombat() {
     combatStatsPage_ = 0;       // clear the stat panel so the next fight opens closed
-    // The verdict, for every kind of fight before each hands off to its own result
-    // path below. A flee is neither, and stays silent.
     if (combat_.outcome() == Combat::Outcome::Win) playSound(Sound::BattleWin);
     else if (combat_.lostOrDrawn()) playSound(Sound::BattleLose);
     // A duel has its own result path (a banner on the LINK screen and a log line, and

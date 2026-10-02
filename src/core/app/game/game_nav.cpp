@@ -56,9 +56,6 @@ void Game::onButton(const ButtonEvent& ev) {
     const uint32_t quietMs = nowMs_ - lastInputMs_;
     lastInputMs_ = nowMs_;
     dirty_ = true;
-    // The key click, before anything below can spend the press: every press the engine
-    // is handed is acknowledged, whatever it turns out to do. Press edge only — a hold's
-    // repeat and a release are silent, so holding A down a list is one click, not many.
     playSound(ev.chordAC                ? Sound::KeyChord
               : ev.button == Button::A ? Sound::KeyNext
               : ev.button == Button::B ? Sound::KeyAccept

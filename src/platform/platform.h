@@ -58,11 +58,7 @@ struct ISaveStore {
     virtual void clear() = 0;
 };
 
-// Sound output — the audio boundary. The engine has already applied the SOUND mode by
-// the time a cue reaches here (Game::playSound), so an implementation plays what it is
-// handed, at `volumePercent` (1..100), without blocking the loop: a cue that is still
-// playing may be cut short by the next one. ESP32 = ES8311 over I2S, web = WebAudio,
-// host = a log line, tests = a recorded list. A target with no speaker passes none.
+// The SOUND mode is already applied; play what arrives, without blocking.
 struct ISoundOut {
     virtual ~ISoundOut() = default;
     virtual void play(Sound s, int volumePercent) = 0;

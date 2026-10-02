@@ -12,11 +12,6 @@
 // shell drives presses through the mal_button entry point below and binds the
 // keyboard itself. One input path, not two that can disagree.
 //
-// Sound is WebAudio: the engine names a cue (core/audio/sound.h) and WebSound below
-// plays its notes on one square-wave oscillator, the same tune the board's speaker
-// plays. A browser will not start audio before a gesture, and every cue but the ones
-// the clock raises follows a press, so the context is created lazily inside one.
-//
 // The panel is composed exactly as the device composes it — the 224 active canvas
 // centred in the 240 panel with the 8px bezel — so a visitor sees the screen the
 // hardware would show.
@@ -54,11 +49,7 @@ struct App {
 
 App g;
 
-// Play `count` notes (core/audio/sound.h's SoundNote: two little-endian u16s, hz then
-// ms) at `volumePct`, cutting short whatever cue is still sounding — the device's own
-// rule (platform.h's ISoundOut). Read through HEAPU8, the view malWebPresent already
-// keeps alive, so no other heap view has to survive the optimiser. The curve is the
-// device's too: loudness is heard logarithmically, so the percent is squared.
+// Reads notes through HEAPU8 only, the heap view malWebPresent already keeps alive.
 EM_JS(void, malWebTone, (const uint8_t* notes, int count, int volumePct), {
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return;
@@ -194,9 +185,7 @@ EMSCRIPTEN_KEEPALIVE void mal_cycle_ui_mode() {
     g.dirty = true;
 }
 
-// The SOUND setting is in CFG on the device too, so the shell offers it the same way
-// it offers the display mode. Returns the mode it lands on (SoundMode's value) so the
-// page can label the control without asking twice.
+// Returns the new SoundMode value.
 EMSCRIPTEN_KEEPALIVE int mal_cycle_sound_mode() {
     if (!g.game) return 0;
     const int next = (static_cast<int>(g.game->soundMode()) + 1) % kSoundModeCount;
@@ -205,7 +194,6 @@ EMSCRIPTEN_KEEPALIVE int mal_cycle_sound_mode() {
     return next;
 }
 
-// The mode as it stands, for the control's label at boot.
 EMSCRIPTEN_KEEPALIVE int mal_sound_mode() {
     return g.game ? static_cast<int>(g.game->soundMode()) : 0;
 }

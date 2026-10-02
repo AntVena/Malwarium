@@ -6,9 +6,7 @@
 //   Z = A (NEXT) · X = B (ACCEPT) · C = C (CANCEL)   (A+C chord = Z+C)
 // U cycles the carousel UI Mode; H starves the pet (fires the Lockout crisis);
 // E resets to the Decryption Hatch; V forces the Evolution boundary; P dumps the
-// current panel to a .ppm. Sound is a log line per cue (HostSound) — what plays and
-// when is the part worth checking off-device; how it sounds is the board's business,
-// or the browser build's.
+// current panel to a .ppm. Sound cues are logged to stdout.
 #include <SDL.h>
 
 #include <chrono>

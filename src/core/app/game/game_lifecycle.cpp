@@ -462,8 +462,6 @@ void Game::fireEvolution() {
     evolveBeat_ = 0;
     nav_ = Nav::ModalEvolve;
     dirty_ = true;
-    // At the boundary, not the reveal: this fires off the clock with nobody pressing
-    // anything, so the jingle is what calls the owner over to watch the cinematic.
     playSound(Sound::Evolve);
 }
 
@@ -622,7 +620,7 @@ void Game::wipeDeviceProgress() {
     // radio consent
     // (out of the box, all three are off). resetToHatch() clears the per-pet half;
     // together they are a device with no history. Deliberately NOT cleared: the
-    // device preferences (brightness, UI mode, sound, volume), which are how the operator likes
+    // device preferences (brightness, UI mode, sound), which are how the operator likes
     // their hardware rather than anything they earned, and the SD-backed ledgers
     // (core/net/network_ledger.h, peer_ledger.h), which are files on a card the
     // operator can remove — a save wipe has no business deleting them.
