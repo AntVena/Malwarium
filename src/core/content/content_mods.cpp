@@ -231,7 +231,7 @@ const ModDef kMods[] = {
     {/*wire=*/29, "meltdown_core", "Meltdown Core", "COMEBACK",
      "Below {mag}% Health, attack power rises {mag2}%.", false,
      ItemDef::Rarity::Rare, 4, 40, ModEffect::LowHealthPowerPct, 30, 40, nullptr, 0},
-    {/*wire=*/30, "zero_day_exploit", "Zero-Day Exploit", "GAMBLE",
+    {/*wire=*/30, "zero_day_exploit", "Race Condition", "GAMBLE",
      "{mag}% chance to raise attack power {mag2}% for the whole fight.", false,
      ItemDef::Rarity::Rare, 4, 42, ModEffect::GambleBattlePowerPct, 25, 60, nullptr, 0},
 
@@ -613,7 +613,7 @@ const ModDef kMods[] = {
      "({magBonus} for Ransomware).", false,
      ItemDef::Rarity::Uncommon, 1, 5, ModEffect::MaxHealth, 11, 0, "ransomware", 17},
     // A gamble is compared on EXPECTED value, chance x payout: on-line 38% x 35% = ~13
-    // points of power, against Entropy Seed's ~20 (tier 3) and Zero-Day's 15 (tier 4). Off
+    // points of power, against Entropy Seed's ~20 (tier 3) and Race Condition's 15 (tier 4). Off
     // the line it is ~9, which no tier-1 row competes with because the family starts here.
     {/*wire=*/68, "autorun_stub", "Autorun Stub", "GAMBLE",
      "{mag}% chance ({magBonus}% Trojan) to raise attack power {mag2}% for the "

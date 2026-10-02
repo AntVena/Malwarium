@@ -274,9 +274,9 @@ bool Game::itemUseIsInert(const ItemDef& d, const char*& why) const {
                 if (!reason) reason = "STRONGER ONE ARMED";
                 break;
             // Both bells are measured against the depth a dive would actually start at
-            // (armedDeepWebStartDepth), never the raw pending field: a live Zero-Day
+            // (armedDeepWebStartDepth), never the raw pending field: a live Checkpoint
             // arming is a negative SENTINEL there, so comparing against it would let any
-            // bell — including a second Zero-Day, which can only re-arm what is already
+            // bell — including a second Checkpoint, which can only re-arm what is already
             // armed — spend itself over a deeper start.
             case ItemEffect::Kind::SetDeepWebStartDepth:
                 ++armingEffects;
@@ -552,7 +552,7 @@ void Game::applyItemEffects(const ItemDef& d) {
                 pendingDeepWebStartDepth_ = e.magnitude;
                 break;
             case ItemEffect::Kind::SetDeepWebStartDepthToBest:
-                // Zero-Day Bell: arm the next dive to start at THIS PET's own
+                // Checkpoint Bell: arm the next dive to start at THIS PET's own
                 // bestDeepWebDepth_, resolved at dive-start (not here) so improving
                 // the record between now and then is never stale.
                 pendingDeepWebStartDepth_ = kDeepWebStartDepthUseBest;

@@ -50,7 +50,7 @@ constexpr RankTier kRankTiers[] = {
     {12, "EXPLOIT ADEPT"},
     {13, "KERNEL KNAVE"},
     {14, "PACKET PHANTOM"},
-    {15, "ZERO-DAY DUELIST"},
+    {15, "PAYLOAD PALADIN"},
     {16, "FIREWALL FELLER"},
     {17, "CRYPTO CORSAIR"},
     {18, "ROOT REAVER"},

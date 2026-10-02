@@ -684,7 +684,7 @@ void Game::finishCombat() {
                     !subCleared_[exploreSector_][exploreSub_])
                     subBossUnlocked_[exploreSector_][exploreSub_] = true;
                 // In the endless DeepWeb Dive the streak IS the DEPTH. Two records get
-                // it: this PET's own (read back by the Zero-Day Bell) and its SPECIES'
+                // it: this PET's own (read back by the Checkpoint Bell) and its SPECIES'
                 // (which outlives the pet, and is what the depth achievements — device
                 // best, best per line, and how many species have been taken deep — are
                 // all counted off).

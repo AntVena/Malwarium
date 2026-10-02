@@ -2775,7 +2775,7 @@ window.PEDIA_DATA = {
     },
     {
       "id": "zeroday_bell",
-      "name": "Zero-Day Bell",
+      "name": "Checkpoint Bell",
       "type": "TOOLS",
       "rarity": "EPIC",
       "effect": "Starts the next DeepWeb Dive at this pet's own deepest depth reached.",
@@ -5224,7 +5224,7 @@ window.PEDIA_DATA = {
     },
     {
       "id": "zero_day_exploit",
-      "name": "Zero-Day Exploit",
+      "name": "Race Condition",
       "tag": "GAMBLE",
       "rarity": "RARE",
       "tier": 4,

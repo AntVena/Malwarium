@@ -137,7 +137,7 @@ Combatant makePlayerCombatant(const ContentRegistry& reg, const CreatureDef& pet
             // and this is what makes that true at every stage. Identical arithmetic at
             // scale 100, so nothing early moves; only the late decay goes away.
             //
-            // The CONDITIONAL power rows (Meltdown Core, Zero-Day, the Ledger's owed half)
+            // The CONDITIONAL power rows (Meltdown Core, Race Condition, the Ledger's owed half)
             // still add into `mult` at the damage calc and are left that way on purpose:
             // they measure healthy, their magnitudes were picked against that base, and
             // they are read at a different point in the pipeline. Move them only with a

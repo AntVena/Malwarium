@@ -2209,12 +2209,12 @@ public:
     // reader outside the engine — the habitat draws it via game_render.cpp — so tests
     // read it here to assert the buff survives the dive it was armed for.
     int debugDepthMultiplier() const { return deepWebDepthMultiplier_; }
-    // The depth the next dive would START at (-1 = no bell armed), with the Zero-Day
+    // The depth the next dive would START at (-1 = no bell armed), with the Checkpoint
     // sentinel already resolved — armedDeepWebStartDepth(), which is what the bells'
     // own inert check compares against, so a gate asserts the number the engine acts on
     // rather than the raw field's sentinel.
     int debugArmedStartDepth() const { return armedDeepWebStartDepth(); }
-    // Set this pet's best-ever dive depth, the frontier a Zero-Day Bell targets. Real
+    // Set this pet's best-ever dive depth, the frontier a Checkpoint Bell targets. Real
     // path: winning at that depth (game_combat.cpp) — a gate that needs a pet with a
     // record behind it says so directly instead of playing a dive out.
     void debugSetBestDeepWebDepth(int depth) { bestDeepWebDepth_ = depth < 0 ? 0 : depth; }
@@ -3426,13 +3426,13 @@ private:
     // DeepWeb Dive depth state — see area_defs' area.h for the depth ramp itself.
     // bestDeepWebDepth_ (save v35) is per-pet, reset on a new egg like the fields
     // above: the highest exploreStreak_ this pet has ever reached in the dive,
-    // read back by the Zero-Day Bell (SetDeepWebStartDepthToBest) so it targets
+    // read back by the Checkpoint Bell (SetDeepWebStartDepthToBest) so it targets
     // THIS pet's own frontier, never a device-wide max. deepWebDepthMultiplier_ and
     // pendingDeepWebStartDepth_ are session-volatile like exploreStreak_ itself (not
     // persisted): the multiplier (Deep-Learning Module/Core, x2/x4) is reset to 1 at every
     // site that resets exploreStreak_ to 0, and doesn't stack — arming a new one just
     // overwrites it. pendingDeepWebStartDepth_ is armed by a Backdoor/Rootkit/Kernel/
-    // Zero-Day Bell and consumed the next time startDeepWebDive() begins a fresh dive;
+    // Checkpoint Bell and consumed the next time startDeepWebDive() begins a fresh dive;
     // -1 = none armed (starts at depth 0 as normal).
     int bestDeepWebDepth_ = 0;
     // The crawl's own record, per-pet exactly as the dive's above is and reset with it on
@@ -3443,11 +3443,11 @@ private:
     int deepWebDepthMultiplier_ = 1;
     int pendingDeepWebStartDepth_ = -1;
     static constexpr int kDeepWebStartDepthUseBest = -2;  // pendingDeepWebStartDepth_
-                                                          // sentinel for the Zero-Day Bell
+                                                          // sentinel for the Checkpoint Bell
     // The depth a dive would actually START at right now (-1 = nothing armed), with the
-    // Zero-Day sentinel resolved through bestDeepWebDepth_ exactly as startDeepWebDive()
+    // Checkpoint sentinel resolved through bestDeepWebDepth_ exactly as startDeepWebDive()
     // resolves it. Anything COMPARING bells reads this rather than the raw field: the
-    // sentinel is a negative number, so a raw compare sorts a live Zero-Day arming below
+    // sentinel is a negative number, so a raw compare sorts a live Checkpoint arming below
     // "nothing armed" and lets a shallower bell overwrite it — the downgrade paid for
     // with an item that the inert check (itemUseIsInert) exists to refuse.
     int armedDeepWebStartDepth() const {

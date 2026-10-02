@@ -272,7 +272,7 @@ const ItemDef kItems[] = {
      /*dropWeight=*/0, /*cache=*/{/*bits=*/10, /*draws=*/1, /*drawChancePct=*/100,
                 kCachePoolCommon, poolN(kCachePoolCommon), /*findWeight=*/50}},
 
-    // Backdoor/Rootkit/Kernel/Zero-Day Bell: a diving bell lowers you straight to a
+    // Backdoor/Rootkit/Kernel/Checkpoint Bell: a diving bell lowers you straight to a
     // depth instead of swimming down — these arm the NEXT DeepWeb Dive to skip
     // straight to a given depth (SetDeepWebStartDepth(ToBest)), consumed the moment
     // that dive starts, so a pet re-earns its way back to a genuine struggle
@@ -1992,11 +1992,11 @@ const ItemDef kItems[] = {
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/8},
 
-    // Zero-Day Bell: the Backdoor Bell's ultimate cousin — instead of a fixed depth,
+    // Checkpoint Bell: the Backdoor Bell's ultimate cousin — instead of a fixed depth,
     // it warps the next DeepWeb Dive straight to THIS PET's own best-ever depth
     // (SetDeepWebStartDepthToBest reads bestDeepWebDepth_ at dive-start), never any
     // other pet's or the device's frontier.
-    {"zeroday_bell", "Zero-Day Bell", ItemDef::Type::Tool,
+    {"zeroday_bell", "Checkpoint Bell", ItemDef::Type::Tool,
      ItemDef::Rarity::Epic,
      "Starts the next DeepWeb Dive at this pet's own deepest depth reached.",
      ItemDef::Context::Anytime, {{IE::Kind::SetDeepWebStartDepthToBest, 0}}},
