@@ -60,6 +60,7 @@ int g_failures = 0;
     RUN(test_carousel_ui_modes)             \
     RUN(test_carousel_labels_fit_their_box) \
     RUN(test_carousel_marks_what_the_pet_needs) \
+    RUN(test_idle_menu_nudge_until_first_summon) \
     /* The raising loop */                  \
     RUN(test_inventory)                     \
     RUN(test_event_log)                     \

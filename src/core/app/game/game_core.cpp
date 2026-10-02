@@ -50,6 +50,9 @@ Game::Game(StartMode mode, const char* hatchedCreature, ISaveStore* store)
         // Test/dev seam: skip the egg, start on a raised pet.
         // Creature is a parameter so the start pet is flexible (dev_config.h).
         installPet(registry_.creature(hatchedCreature));
+        // A raised pet's operator has found the menu; set directly rather than through
+        // markTipSeen, so starting on the seam does not itself dirty the save.
+        tipsSeen_[0] |= static_cast<uint8_t>(1u << static_cast<int>(Tip::MenuOpened));
         generation_ = 1;       // the seam pet is the first generation
         petsRaised_ = 1;
         moveLoadout_ = MoveLoadout::startingForLine(registry_, pet_ ? pet_->line : nullptr);

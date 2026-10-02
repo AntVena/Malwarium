@@ -222,6 +222,45 @@ void test_carousel_autodefocus() {
 // The shelf points at the REMEDY for whichever vital has left its OK zone: food is in
 // ITEMS, a defrag or AV scan in MAINT, and Happiness is bought back at GAMES. Nobody is
 // beside a first-time player to say which menu fixes what, so the slot says it.
+// A fresh device says which button opens the menu, on the row a summoned menu's name
+// would take, until the menu has been opened once; then never again on that device. A
+// save from before the tip set existed is a device already in use, and reads as told.
+void test_idle_menu_nudge_until_first_summon() {
+    MemSaveStore store;
+    {
+        Game g{StartMode::FreshHatch, "paypup", &store};
+        Game told;                                     // the same first boot, already told
+        pickFirstEggLine(g);
+        pickFirstEggLine(told);
+        told.markTipSeen(Game::Tip::MenuOpened);
+        CHECK(g.nav() == Game::Nav::Idle);
+        CHECK(!g.tipSeen(Game::Tip::MenuOpened));
+        Framebuffer a(kActiveW, kActiveH), b(kActiveW, kActiveH);
+        g.render(a);
+        told.render(b);
+        const int y0 = kLivingTop + 4, y1 = y0 + kFontH;
+        CHECK(regionDiffers(a, b, 0, y0, kActiveW, y1));          // the nudge row
+        CHECK(!regionDiffers(a, b, 0, y1 + 1, kActiveW, kActiveH)); // and only that
+
+        g.onButton(press(Button::A));                  // summon the carousel
+        CHECK(g.nav() == Game::Nav::Cursor);
+        CHECK(g.tipSeen(Game::Tip::MenuOpened));
+        g.tick(kSaveAutosaveMs + kHeartbeatMs);        // autosave the tip set
+    }
+    Game again{StartMode::FreshHatch, "paypup", &store};
+    CHECK(again.tipSeen(Game::Tip::MenuOpened));       // a reboot does not re-teach it
+
+    Game seam{StartMode::Hatched};                     // a raised pet has found the menu
+    CHECK(seam.tipSeen(Game::Tip::MenuOpened));
+
+    MemSaveStore old;                                  // a save with no tip set at all
+    old.save(serializeSave(SaveData{}));
+    Game upgraded{StartMode::FreshHatch, "paypup", &old};
+    CHECK(upgraded.tipSeen(Game::Tip::MenuOpened));
+    CHECK(upgraded.tipSeen(Game::Tip::HatchDecrypt));  // every device's first egg
+    CHECK(!upgraded.tipSeen(Game::Tip::HatchClutch));  // ...but not a line it never laid
+}
+
 void test_carousel_marks_what_the_pet_needs() {
     const auto bitOf = [](SubmenuId id) {
         for (int i = 0; i < kCarouselSlots; ++i)

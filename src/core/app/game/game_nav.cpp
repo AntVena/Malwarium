@@ -317,7 +317,11 @@ void Game::onButton(const ButtonEvent& ev) {
 // table that maps a cursor position to one.
 SubmenuId Game::enteredId() const { return carouselSlots()[cursor_].id; }
 
-void Game::summonCursor(int slot) { cursor_ = slot; nav_ = Nav::Cursor; }
+void Game::summonCursor(int slot) {
+    cursor_ = slot;
+    nav_ = Nav::Cursor;
+    markTipSeen(Tip::MenuOpened);   // the idle menu nudge has done its job
+}
 
 void Game::enterSubmenu() {
     nav_ = Nav::Submenu;

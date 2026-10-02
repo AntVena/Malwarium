@@ -282,11 +282,12 @@ void Game::drawHabitat(Framebuffer& fb, int cursor) const {
         const int petTop = kLivingBottom - petH;
         const int minY = kLivingTop + 4 + kFontH + 3;   // one line below the caption
         if (eggCrackable()) {
-            // The ⚡ override pip flashes, inviting the A+C Exploit chord to crack the
-            // egg open into the hatch cinematic. A distinct glyph + "A+C" chord label
-            // carry the meaning with no colour channel. It only ever appears in the
-            // home stretch of the clock, so an egg is never advertised a crack it
-            // can't take.
+            // The ⚡ override pip flashes, inviting a crack of the egg into the hatch
+            // cinematic. It names B, the one-button way in (game_nav.cpp's idle case);
+            // the A+C chord does the same and stays the shortcut for those who know
+            // it. A distinct glyph + the label carry the meaning with no colour
+            // channel. It only ever appears in the home stretch of the clock, so an
+            // egg is never advertised a crack it can't take.
             const bool on = ((beat_ / 2) & 1) == 0;   // flash to draw the eye
             if (on) {
                 const SpriteData& glyph = ASSET_ICON_OVERRIDE_PIP;
@@ -294,20 +295,20 @@ void Game::drawHabitat(Framebuffer& fb, int cursor) const {
                 int gy = petTop - 6 - blockH;
                 if (gy < minY) gy = minY;
                 drawSprite(fb, glyph, 0, (kActiveW - glyph.frameW) / 2, gy);
-                const char* hint = "A+C";
+                const char* hint = "B HATCH";
                 drawText(fb, (kActiveW - textWidth(hint)) / 2, gy + glyph.h + 2,
                          hint, palColor(Pal::INK));
             }
         } else {
             // M:SS, counting down. Seconds are the point: a minutes-only readout
             // sits on the same number for a minute at a time, which reads as a
-            // stalled egg rather than a waiting one. The egg sprite directly above
-            // says what is being counted, so the digits carry no label. Repaint
-            // comes free from the heartbeat (game_core.cpp), which marks every beat
-            // dirty regardless of whether the model moved.
-            char prompt[16];
+            // stalled egg rather than a waiting one. The label is for the player who
+            // has never seen an egg: bare digits over one could as well be a timer
+            // running OUT. Repaint comes free from the heartbeat (game_core.cpp),
+            // which marks every beat dirty regardless of whether the model moved.
+            char prompt[24];
             const unsigned totalSecs = bootHatchRemainMs_ / 1000u;
-            std::snprintf(prompt, sizeof prompt, "%u:%02u",
+            std::snprintf(prompt, sizeof prompt, "HATCHES IN %u:%02u",
                           totalSecs / 60u, totalSecs % 60u);
             int py = petTop - 6 - kFontH;
             if (py < minY) py = minY;
@@ -320,6 +321,16 @@ void Game::drawHabitat(Framebuffer& fb, int cursor) const {
             const SpriteData& icon = ASSET_UI_ALERT_HUNGER;
             drawSprite(fb, icon, 0, kActiveW - icon.frameW - 4, kLivingTop + 4);
         }
+    }
+
+    // The one-time menu nudge (game_onboard.cpp): until the carousel has been summoned
+    // once on this device, the habitat says which button does it. It sits on the row a
+    // summoned menu's name would take, which is free at idle by definition, and goes
+    // for good the first time A or C is pressed here.
+    if (nav_ == Nav::Idle && !tipSeen(Tip::MenuOpened)) {
+        const char* nudge = "PRESS A FOR MENU";
+        drawText(fb, (kActiveW - textWidth(nudge)) / 2, kLivingTop + 4, nudge,
+                 palColor(Pal::INK));
     }
 
     // Where the top-LEFT status column starts. Three unrelated things want this
