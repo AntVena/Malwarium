@@ -622,6 +622,66 @@ void test_auto_progress_gauntlet_rolls_to_next_area() {
     CHECK(g.bits() > bits0);                       // the re-run paid its Bits lump
 }
 
+// A boss the player launches STRAIGHT from EXPL steps the rotation on just as one the
+// walk led them to does. The walk's own step waits on its streak, and a boss picked off
+// the list arrives with no streak behind it (no walk armed at all, or one aimed at some
+// other rung) — so the win itself has to be the step.
+void test_auto_progress_steps_on_from_a_boss_picked_off_the_list() {
+    // A sub-area boss, nothing armed: the win aims the walk at the next sub-area.
+    { Game g{StartMode::Hatched, "bruinforce"};
+      g.debugMarkStoryRead();
+      g.debugAddCombatXp(600000);
+      g.debugSetAutoProgress(true);
+      CHECK(!g.exploreActive());
+      g.debugSetSubBossUnlocked(0, 1, true);
+      g.debugFightSubBoss(0, 1);
+      runWalkUntil(g, [&] { return g.subCleared(0, 1) && g.nav() == Game::Nav::Idle; });
+      CHECK(g.subCleared(0, 1));
+      CHECK(g.exploreActive() && g.exploreSector() == 0 && g.exploreSub() == 2); }
+
+    // ...and while a walk elsewhere is running, the rung after the beaten one, not the
+    // rung the walk had been on.
+    { Game g{StartMode::Hatched, "bruinforce"};
+      g.debugMarkStoryRead();
+      g.debugAddCombatXp(600000);
+      g.debugSetAutoProgress(true);
+      g.debugArmExplore(0, 0);
+      g.debugSetSubBossUnlocked(0, 3, true);
+      g.debugFightSubBoss(0, 3);
+      runWalkUntil(g, [&] { return g.subCleared(0, 3) && g.nav() == Game::Nav::Idle; });
+      CHECK(g.exploreActive() && g.exploreSector() == 0 && g.exploreSub() == 4); }
+
+    // The LAST sub-area's boss, with the rest already beaten: the next rung is the
+    // area's own gauntlet, which then rolls on to the next area.
+    { Game g{StartMode::Hatched, "bruinforce"};
+      g.debugMarkStoryRead();
+      g.debugAddCombatXp(600000);
+      g.debugSetAutoProgress(true);
+      const int last = kExplSubAreas - 1;
+      for (int s = 0; s < last; ++s) g.debugSetSubCleared(0, s, true);
+      g.debugSetSubBossUnlocked(0, last, true);
+      g.debugFightSubBoss(0, last);
+      runWalkUntil(g, [&] { return g.sectorCleared(0) && g.nav() == Game::Nav::Idle; });
+      CHECK(g.sectorCleared(0));
+      CHECK(g.exploreActive() && g.exploreSector() == 1 && g.exploreSub() == 0); }
+
+    // With auto-progress OFF a picked boss is just a fight: nothing is armed after it.
+    { Game g{StartMode::Hatched, "bruinforce"};
+      g.debugMarkStoryRead();
+      g.debugAddCombatXp(600000);
+      g.debugSetAutoProgress(false);
+      g.debugSetSubBossUnlocked(0, 1, true);
+      g.debugFightSubBoss(0, 1);
+      uint32_t t = 0;
+      for (int i = 0; i < 400 && g.nav() == Game::Nav::Combat; ++i) {
+          for (int j = 0; j < 800 && g.combat().outcome() == Combat::Outcome::Ongoing; ++j)
+              g.tick(t += kHeartbeatMs);
+          g.onButton(press(Button::B));
+      }
+      CHECK(g.subCleared(0, 1));
+      CHECK(!g.exploreActive()); }
+}
+
 // The walk badge on a CLEARED, re-armed sub-area answers the question the mode it is
 // running under actually raises. With auto-progress armed the walk moves itself on at
 // kExploreStreakToBoss wins, so the badge counts those down ("NEXT IN n") and tracks the

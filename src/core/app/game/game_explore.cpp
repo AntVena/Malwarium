@@ -909,6 +909,16 @@ void Game::finishBossRound() {
                     if (const char* id = rollAreaModId(bossSector_))
                         grantMod(id);
             }
+            // Auto-progress steps on from the rung this boss stood on, however the
+            // player got here. The shared hook (autoProgressStep, via returnToExplore
+            // below) reads the ARMED walk's streak, and a boss picked straight off the
+            // EXPL list has none behind it — no walk armed, or one aimed at another rung
+            // — so it would hand back to nothing. Aiming the walk at the beaten rung with
+            // its target met lets that same hook take the positional step from here.
+            if (autoProgress_) {
+                startExplore(bossSector_, bossSub_);
+                exploreStreak_ = kExploreStreakToBoss;
+            }
         } else {
             clearedArea = true;
             const bool firstClear = !sectorCleared_[bossSector_];
