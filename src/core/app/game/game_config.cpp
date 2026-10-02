@@ -34,6 +34,8 @@ void Game::enterCfgScreen(CfgScreen target) {
         case CfgScreen::UiMode: cfgUiPick_ = static_cast<int>(uiMode_); break;
         case CfgScreen::Tips: cfgTipsRow_ = 0; break;
         case CfgScreen::Brightness: cfgBrightPick_ = brightness_; break;   // the applied level
+        case CfgScreen::Sound: cfgSoundPick_ = static_cast<int>(soundMode_); break;
+        case CfgScreen::Volume: cfgVolumePick_ = volume_; break;          // ...likewise
         case CfgScreen::Theme: cfgThemePick_ = themeRow(); break;          // ...likewise
         case CfgScreen::Titles: cfgTitlePick_ = equippedTitle_; break;     // the equipped one
         case CfgScreen::Background: {                                      // ...likewise
@@ -191,6 +193,24 @@ void Game::onCfgDetail(const ButtonEvent& ev) {
                 cfgBrightPick_ = (cfgBrightPick_ + 1) % kBrightnessLevels;
             else if (ev.button == Button::B) {        // apply + back out
                 setBrightness(cfgBrightPick_);
+                leaveCfgScreen();
+            } else if (ev.button == Button::C) leaveCfgScreen();  // no change
+            break;
+        case CfgScreen::Sound:
+            if (ev.button == Button::A) cfgSoundPick_ = (cfgSoundPick_ + 1) % kSoundModeCount;
+            else if (ev.button == Button::B) {        // apply + back out
+                setSoundMode(static_cast<SoundMode>(cfgSoundPick_));
+                leaveCfgScreen();
+            } else if (ev.button == Button::C) leaveCfgScreen();  // no change
+            break;
+        case CfgScreen::Volume:
+            // BRIGHTNESS's shape, plus the sample: each A plays the level it lands on,
+            // because a volume is chosen by ear and the bars only say which step it is.
+            if (ev.button == Button::A) {
+                cfgVolumePick_ = (cfgVolumePick_ + 1) % kVolumeLevels;
+                previewVolume(cfgVolumePick_);
+            } else if (ev.button == Button::B) {      // apply + back out
+                setVolume(cfgVolumePick_);
                 leaveCfgScreen();
             } else if (ev.button == Button::C) leaveCfgScreen();  // no change
             break;
@@ -462,7 +482,8 @@ void Game::drawCfg(Framebuffer& fb) const {
         case CfgScreen::Device:
             // The row previews the CHOICE, not the place being drawn: AUTO stays AUTO
             // however the pet moves, which is the whole difference between the two.
-            drawCfgDevice(fb, cfgGroupRow_, uiMode_, brightness_, themeName(),
+            drawCfgDevice(fb, cfgGroupRow_, uiMode_, brightness_, soundMode_, volume_,
+                          themeName(),
                           backgroundPick_ == SceneId::None
                               ? "AUTO"
                               : backgroundFor(backgroundPick_)->name,
@@ -504,6 +525,8 @@ void Game::drawCfg(Framebuffer& fb) const {
         case CfgScreen::UiMode: drawUiModeToggle(fb, cfgUiPick_, uiMode_); break;
         case CfgScreen::Tips: drawTipsList(fb); break;
         case CfgScreen::Brightness: drawBrightness(fb, cfgBrightPick_, brightness_); break;
+        case CfgScreen::Sound: drawSoundMode(fb, cfgSoundPick_, soundMode_); break;
+        case CfgScreen::Volume: drawVolume(fb, cfgVolumePick_, volume_); break;
         case CfgScreen::Theme:
             drawThemePicker(fb, cfgThemePick_, themeRow(), themesUnlockedMask());
             break;

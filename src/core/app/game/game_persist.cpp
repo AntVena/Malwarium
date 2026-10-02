@@ -151,6 +151,9 @@ SaveData Game::captureSave() const {
     // v67: UI MODE and CARE ALERTS — device-level, beside brightness and for its reason.
     d.uiMode = static_cast<uint8_t>(uiMode_);
     d.careAlerts = careAlerts_ ? 1 : 0;
+    // v68: SOUND and VOLUME — device-level, likewise.
+    d.soundMode = static_cast<uint8_t>(soundMode_);
+    d.volume = static_cast<uint8_t>(volume_);
 
     // v64: the chosen PAL_CORE theme, stored by NAME (see save.h's version note) and
     // device-level for the same reason brightness is — it is what the device looks
@@ -582,6 +585,11 @@ void Game::applySave(const SaveData& d) {
     uiMode_ = d.uiMode <= static_cast<uint8_t>(UiMode::TextOnly) ? static_cast<UiMode>(d.uiMode)
                                                                  : UiMode::IconsLabel;
     careAlerts_ = d.careAlerts != 0;
+    // v68: SOUND and VOLUME, read the same defensive way: an unknown mode is OFF and a
+    // level past the ladder is its top step, never a cast past the enum or the curve.
+    soundMode_ = d.soundMode < kSoundModeCount ? static_cast<SoundMode>(d.soundMode)
+                                               : SoundMode::Off;
+    volume_ = d.volume < kVolumeLevels ? d.volume : kVolumeLevels - 1;
     if (brightness_ < 0) brightness_ = 0;
     if (brightness_ >= kBrightnessLevels) brightness_ = kBrightnessLevels - 1;
 

@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <vector>
 
+#include "core/audio/sound.h"
 #include "core/render/color.h"
 
 namespace mal {
@@ -55,6 +56,16 @@ struct ISaveStore {
     virtual bool save(const std::vector<uint8_t>& data) = 0;
     // Erase the persisted blob (dev reset / Factory Reset).
     virtual void clear() = 0;
+};
+
+// Sound output — the audio boundary. The engine has already applied the SOUND mode by
+// the time a cue reaches here (Game::playSound), so an implementation plays what it is
+// handed, at `volumePercent` (1..100), without blocking the loop: a cue that is still
+// playing may be cut short by the next one. ESP32 = ES8311 over I2S, web = WebAudio,
+// host = a log line, tests = a recorded list. A target with no speaker passes none.
+struct ISoundOut {
+    virtual ~ISoundOut() = default;
+    virtual void play(Sound s, int volumePercent) = 0;
 };
 
 } // namespace mal

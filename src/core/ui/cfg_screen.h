@@ -31,6 +31,7 @@
 #include "core/app/radio_status.h"
 #include "core/app/sd_status.h"
 #include "core/app/update_status.h"
+#include "core/audio/sound.h"   // SoundMode — the SOUND row and picker
 #include "core/ui/ui_state.h"  // CfgScreen, UiMode
 
 namespace mal {
@@ -51,8 +52,8 @@ struct CfgRow {
 // the row count and points `out` at the static array.
 int cfgRows(const CfgRow*& out);
 
-// The rows of a group screen — Device (UI MODE, BRIGHTNESS, THEME, BACKGROUND, TRAVEL
-// MODE) or Radio (PEDIA AP, LINK, AUDIT). Any other screen has none, so a caller can ask
+// The rows of a group screen — Device (UI MODE, BRIGHTNESS, SOUND, VOLUME, THEME,
+// BACKGROUND, TRAVEL MODE…) or Radio (PEDIA AP, LINK, AUDIT). Any other screen has none, so a caller can ask
 // "is this a group?" by testing the count. Returns the count, points `out` at the array.
 int cfgGroupRows(CfgScreen group, const CfgRow*& out);
 
@@ -78,9 +79,11 @@ void drawCfgList(Framebuffer& fb, int cursor, const char* hackerTag,
 // level, and an action has no state to report, which the empty value column says
 // without a word of copy.
 // `careAlerts` is the CARE ALERTS switch's state (Game::careAlerts), previewed ON/OFF;
-// that row flips in place on B rather than opening a screen. Eight rows, so it scrolls.
+// that row flips in place on B rather than opening a screen. `soundMode` and `volume`
+// preview the SOUND and VOLUME rows. Ten rows, so it scrolls.
 void drawCfgDevice(Framebuffer& fb, int cursor, UiMode uiMode, int brightness,
-                   const char* theme, const char* background, bool careAlerts);
+                   SoundMode soundMode, int volume, const char* theme,
+                   const char* background, bool careAlerts);
 
 // L3 THEME picker: which PAL_CORE colour set the whole interface is drawn in. Rows are
 // content_themes.h's table in its own order; `pick` is the focused row, `equipped` the
@@ -194,6 +197,14 @@ void drawUiModeToggle(Framebuffer& fb, int pick, UiMode current);
 // a level bar + percent so it reads in grayscale (fill height + number, not colour).
 // B applies (the device tier then drives the backlight PWM).
 void drawBrightness(Framebuffer& fb, int pick, int current);
+
+// L3 VOLUME picker: the BRIGHTNESS screen's level bars over kVolumeLevels. Each A plays
+// the focused level's sample (Game::previewVolume), so the level is heard as well as read.
+void drawVolume(Framebuffer& fb, int pick, int current);
+
+// L3 SOUND mode picker: ALL / ALERTS ONLY / OFF, with a line saying what the focused
+// mode keeps. `pick` is the focused mode's value (cycles A), `current` the applied one.
+void drawSoundMode(Framebuffer& fb, int pick, SoundMode current);
 
 // L3 Titles picker: equip a zone-completion Title on the HackerTag.
 // Rows are NONE + one per sector Title; locked Titles show "LOCKED" and are

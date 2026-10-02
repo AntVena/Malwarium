@@ -416,6 +416,7 @@ void Game::addCombatXp(int xp) {
     // Spend the XP bucket into as many levels as it covers (a big lump can cross more
     // than one boundary). Each level-up grants +1 to a random combat stat, so
     // level always equals the sum of earned points (the Rollback invariant).
+    const int levelBefore = combatLevel_;
     while (combatXp_ >= xpToNextLevel()) {
         combatXp_ -= xpToNextLevel();
         ++combatLevel_;
@@ -424,6 +425,7 @@ void Game::addCombatXp(int xp) {
         ++statPoints_[stat];
         lastLevelUpStat_ = stat;                    // most-recent level-up stat (tell)
     }
+    if (combatLevel_ > levelBefore) playSound(Sound::LevelUp);
     markSaveDirty();
 }
 
@@ -641,6 +643,10 @@ void Game::applyCombatResult() {
 
 void Game::finishCombat() {
     combatStatsPage_ = 0;       // clear the stat panel so the next fight opens closed
+    // The verdict, for every kind of fight before each hands off to its own result
+    // path below. A flee is neither, and stays silent.
+    if (combat_.outcome() == Combat::Outcome::Win) playSound(Sound::BattleWin);
+    else if (combat_.lostOrDrawn()) playSound(Sound::BattleLose);
     // A duel has its own result path (a banner on the LINK screen and a log line, and
     // deliberately nothing else — no stakes means no reward and no penalty), so it
     // hands off before applyCombatResult() the same way a boss round does.

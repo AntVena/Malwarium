@@ -171,6 +171,12 @@ int g_failures = 0;
     /* CFG submenu */                       \
     RUN(test_cfg_uimode_toggle)             \
     RUN(test_cfg_care_alerts_switch) \
+    RUN(test_cfg_sound_and_volume_persist) \
+    RUN(test_sound_table_is_indexed) \
+    RUN(test_sound_mode_filters_tiers) \
+    RUN(test_sound_lockout_alert_and_reminder) \
+    RUN(test_sound_failing_alert_repeats_then_pet_lost) \
+    RUN(test_sound_evolution_jingle) \
     RUN(test_cfg_tips_replay) \
     RUN(test_cfg_travel_confirm_asks_twice) \
     RUN(test_cfg_format_sd_confirm)         \

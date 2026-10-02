@@ -41,21 +41,20 @@ wants deciding before the middle areas are written rather than after. |
 `test_story_chapters_fit_their_page` is the gate. | M each | The two endless zones only ever
 reach the ARRIVAL beat — there is no gauntlet down there to open or close. |
 
-**The device is silent.** The board carries an ES8311 codec and an NS4150B amp on I2S, and
-`include/config.h` has the pins confirmed and `AUDIO_ENABLED` on, but nothing in the firmware
-plays a sound: no driver bring-up, no sound vocabulary, no volume. Device sound wants building
-as a whole rather than one cue at a time: the codec's init over the shared I2C bus, I2S tone or
-sample playback, the amp-enable pin; a core-side seam the platform implements (core asks for a
-named sound and the host tier records the request, so the gates can assert what plays and
-when); a small vocabulary across the device (UI feedback, the minigames, hatch and evolve,
-achievements); and a CFG > DEVICE volume/mute row persisted with UI MODE. The care alerts are
-the most pressing consumer: a 30-second Lockout and a half-hour FAILING window both pass
-unheard by an owner in the same room, which no screen can fix. |
-`include/config.h` (audio pins); `src/platform/esp32/` for the driver; the care alerts'
-moments are `Game::fireLockout` and the FAILING banner in `game_render.cpp`. | L | Only the
-board can verify any of it: the host tier has no codec. Mind the battery cost and the
-amp-enable pin when idle, and decide quiet hours before the alerts ship, since there is no
-RTC to tell night from day. |
+**Device sound wants its first pass on the board.** The engine side ships whole — the cue
+vocabulary (`src/core/audio/sound.h`), CFG → DEVICE → SOUND (OFF by default · ALL · ALERTS
+ONLY) and VOLUME, the save tail, the care alerts with their reminders, and the gates over
+all of it — and so does a driver: ES8311 over I2S with the amp enabled only while a cue
+plays (`src/platform/esp32/audio_esp32.h`). None of the driver has met a codec yet. What
+wants checking with a board in hand: that the init sequence brings the ES8311 up at all
+(the boot line says `[audio] ES8311 ready` or why not), the loudness curve
+(`AUDIO_PEAK_AMPLITUDE`), pops at amp enable/disable, and the battery cost of a cue. Then
+the open design half: quiet hours, which the board cannot tell from day without an RTC, and
+whether a care alert landing in light sleep (up to `IDLE_SLEEP_FALLBACK_MS` late) wants an
+earlier wake. | `include/config.h` (audio pins, amplitude); `src/platform/esp32/main.cpp`
+(boot, alert wake, the light-sleep guard). | M | Only the board can verify it: the host tier
+logs cues, and the browser build plays them through WebAudio, which is the quickest way to
+hear the tunes. |
 
 **A pet has no FAVOURITE FOOD, and the collection pages now make room for one.** STAT's FOODS
 grid gives every pet a plate to fill in and the PALATE achievements pay for filling it, which

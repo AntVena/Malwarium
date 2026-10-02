@@ -73,6 +73,15 @@
     if (mod) mod._mal_cycle_ui_mode();
   });
 
+  // SOUND cycles ALL -> ALERTS ONLY -> OFF, the device's CFG > DEVICE > SOUND. The
+  // label names the mode the engine reports, so it can never disagree with it.
+  var SOUND_NAMES = ['SOUND: ALL', 'SOUND: ALERTS', 'SOUND: OFF'];
+  var soundBtn = document.getElementById('sound');
+  function labelSound(mode) { soundBtn.textContent = SOUND_NAMES[mode] || SOUND_NAMES[0]; }
+  soundBtn.addEventListener('click', function () {
+    if (mod) labelSound(mod._mal_cycle_sound_mode());
+  });
+
   document.getElementById('restart').addEventListener('click', function () {
     if (!mod) return;
     if (!window.confirm('Start over? This wipes the pet you have been playing with.')) return;
@@ -94,6 +103,7 @@
   Malwarium()
     .then(function (m) {
       mod = m;
+      labelSound(mod._mal_sound_mode());
       document.getElementById('boot').classList.add('gone');
       stamp.textContent = 'running in this browser';
     })

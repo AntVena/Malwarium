@@ -315,7 +315,11 @@ constexpr int kSaveTextCap = 28;     // matches EventLog's LogEntry.text
 //     after v66's. DEVICE-level like brightness: what the operator likes the hardware to
 //     look like, kept through a pet's death, a reboot and a firmware update. Pre-v67 ->
 //     ICONS+LABEL and ON, which is what every device drew before either was stored.
-constexpr uint16_t kSaveVersion = 67;
+// v68 APPEND `soundMode` (SoundMode's wire number: 0 ALL, 1 ALERTS ONLY, 2 OFF) and
+//     `volume` (the 0-based VOLUME level), CFG > DEVICE's sound preferences, one byte
+//     each, as their own tail after v67's. DEVICE-level like brightness. Pre-v68 -> OFF
+//     at kVolumeDefault: sound is opt-in, so an update never starts a device beeping.
+constexpr uint16_t kSaveVersion = 68;
 
 // The oldest blob deserialize will read, and the ONLY thing that retires a rename row
 // (see `renamedIds`). Raising it is how a device stops carrying migration weight for saves
@@ -901,6 +905,12 @@ struct SaveData {
     // reads back as the default. `careAlerts` is 1 when the "!" marks are drawn.
     uint8_t uiMode = 0;
     uint8_t careAlerts = 1;
+
+    // --- v68: the CFG > DEVICE sound preferences ---------------------------------
+    // `soundMode` is SoundMode's wire number; `volume` the 0-based VOLUME level. Either
+    // out of range reads back as a safe value (Game::applySave clamps).
+    uint8_t soundMode = 2;   // SoundMode::Off — sound is opt-in
+    uint8_t volume = kVolumeDefault;
 };
 
 // Read/write one mod's spare count in the v45 packed pool (SaveData::ownedModCounts) by

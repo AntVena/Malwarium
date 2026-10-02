@@ -6,7 +6,9 @@
 //   Z = A (NEXT) · X = B (ACCEPT) · C = C (CANCEL)   (A+C chord = Z+C)
 // U cycles the carousel UI Mode; H starves the pet (fires the Lockout crisis);
 // E resets to the Decryption Hatch; V forces the Evolution boundary; P dumps the
-// current panel to a .ppm.
+// current panel to a .ppm. Sound is a log line per cue (HostSound) — what plays and
+// when is the part worth checking off-device; how it sounds is the board's business,
+// or the browser build's.
 #include <SDL.h>
 
 #include <chrono>
@@ -25,6 +27,14 @@ using namespace mal;
 namespace {
 
 constexpr int kZoom = 3;  // desktop window magnification of the 240 panel
+
+struct HostSound : ISoundOut {
+    void play(Sound s, int volumePercent) override {
+        std::printf("[sound] %s %d%% %dms\n", soundName(s), volumePercent,
+                    soundDurationMs(s));
+        std::fflush(stdout);
+    }
+};
 
 uint32_t nowMs() {
     using namespace std::chrono;
@@ -84,6 +94,8 @@ int main(int, char**) {
     // is loaded at boot; an empty save falls back to the start mode below).
     FileSaveStore store;
     Game game(StartMode::FreshHatch, "paypup", &store);
+    HostSound sound;
+    game.setSoundOut(&sound);
 #ifdef DEV_EGG_TIMER_MS
     // Fast-forward a freshly laid egg so dev iteration doesn't wait out the real
     // clock; a resumed save is already past the egg and this is a no-op then.

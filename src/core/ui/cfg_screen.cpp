@@ -144,6 +144,11 @@ int cfgGroupRows(CfgScreen group, const CfgRow*& out) {
         // styles. It is a switch rather than a screen — B flips it in place (onCfgGroup).
         {"CARE ALERTS", &ASSET_ICON_CFG_UIMODE, CfgScreen::CareAlerts},
         {"BRIGHTNESS", &ASSET_ICON_CFG_UIMODE, CfgScreen::Brightness},
+        // SOUND and VOLUME under it: the other output the operator tunes to the room
+        // they are in, and the other battery lever — the amp only draws while a cue is
+        // playing, so OFF and ALERTS ONLY cost less than a lower volume does.
+        {"SOUND", &ASSET_ICON_CFG_UIMODE, CfgScreen::Sound},
+        {"VOLUME", &ASSET_ICON_CFG_UIMODE, CfgScreen::Volume},
         // THEME sits with them for the same reason BACKGROUND does — it is what the
         // device LOOKS like — and above it, because it is the wider of the two: the
         // background repaints one band of one screen, a theme repaints all of them.
@@ -163,7 +168,7 @@ int cfgGroupRows(CfgScreen group, const CfgRow*& out) {
         // here that destroys something. It lives with the device rather than beside
         // the SD line on System Info because a second action on that screen would be
         // a second meaning for a button press there, and this one cannot be taken back.
-        // Eight rows, two past kVisibleRows, so the group scrolls (drawCfgDevice).
+        // Ten rows, four past kVisibleRows, so the group scrolls (drawCfgDevice).
         {"FORMAT SD", &ASSET_ICON_CFG_UIMODE, CfgScreen::FormatSd},
     };
     // The three radio TOGGLES, listed in the arbiter's own priority order, highest
@@ -200,6 +205,8 @@ CfgScreen cfgParentGroup(CfgScreen s) {
         case CfgScreen::UiMode:
         case CfgScreen::CareAlerts:
         case CfgScreen::Brightness:
+        case CfgScreen::Sound:
+        case CfgScreen::Volume:
         case CfgScreen::Theme:
         case CfgScreen::Background:
         case CfgScreen::Tips:
@@ -253,13 +260,16 @@ void drawCfgList(Framebuffer& fb, int cursor, const char* hackerTag,
 }
 
 void drawCfgDevice(Framebuffer& fb, int cursor, UiMode uiMode, int brightness,
-                   const char* theme, const char* background, bool careAlerts) {
+                   SoundMode soundMode, int volume, const char* theme,
+                   const char* background, bool careAlerts) {
     drawHeaderBand(fb, "DEVICE");
     const CfgRow* rows = nullptr;
     const int n = cfgGroupRows(CfgScreen::Device, rows);
 
     char brightBuf[8];
     std::snprintf(brightBuf, sizeof(brightBuf), "%d%%", brightnessPercent(brightness));
+    char volumeBuf[8];
+    std::snprintf(volumeBuf, sizeof(volumeBuf), "%d%%", volumePercent(volume));
     const int scrollTop = listScrollTop(cursor, n, kVisibleRows);
     for (int v = 0; v < kVisibleRows && scrollTop + v < n; ++v) {
         const int i = scrollTop + v;
@@ -267,6 +277,8 @@ void drawCfgDevice(Framebuffer& fb, int cursor, UiMode uiMode, int brightness,
         if (rows[i].target == CfgScreen::UiMode) val = uiModeName(uiMode);
         else if (rows[i].target == CfgScreen::CareAlerts) val = careAlerts ? "ON" : "OFF";
         else if (rows[i].target == CfgScreen::Brightness) val = brightBuf;
+        else if (rows[i].target == CfgScreen::Sound) val = soundModeName(soundMode);
+        else if (rows[i].target == CfgScreen::Volume) val = volumeBuf;
         else if (rows[i].target == CfgScreen::Theme) val = theme;
         else if (rows[i].target == CfgScreen::Background) val = background;
         settingsRow(fb, kRowTop + v * kRowH, rows[i], i == cursor, val,
@@ -698,38 +710,79 @@ void drawUiModeToggle(Framebuffer& fb, int pick, UiMode current) {
     drawHintBand(fb, "A CYCLE  B APPLY  C BACK");
 }
 
-void drawBrightness(Framebuffer& fb, int pick, int current) {
-    drawHeaderBand(fb, "BRIGHTNESS");
-    if (pick < 0) pick = 0;
-    if (pick >= kBrightnessLevels) pick = kBrightnessLevels - 1;
+namespace {
 
-    // A row of level bars whose FILL HEIGHT encodes the level — grayscale-safe (the
-    // focused bar + the percent read carry meaning without colour). The focused level
-    // is the tall accent bar; levels at/below it are filled, above it are empty tracks.
-    const int n = kBrightnessLevels;
+// A row of level bars whose FILL HEIGHT encodes the level — grayscale-safe (the focused
+// bar + the percent read carry meaning without colour). The focused level is the tall
+// accent bar; levels at/below it are filled, above it are empty tracks, and the applied
+// level carries a baseline pip so pick and applied both read before B is pressed.
+// BRIGHTNESS and VOLUME are both this screen.
+void drawLevelPicker(Framebuffer& fb, const char* title, int pick, int current,
+                     int levels, int percent) {
+    drawHeaderBand(fb, title);
+    if (pick < 0) pick = 0;
+    if (pick >= levels) pick = levels - 1;
+
     const int barW = 20, gap = 6, maxH = 90;
-    const int gridW = n * barW + (n - 1) * gap;
+    const int gridW = levels * barW + (levels - 1) * gap;
     const int x0 = (kActiveW - gridW) / 2;
     const int baseY = 130;
-    for (int i = 0; i < n; ++i) {
+    for (int i = 0; i < levels; ++i) {
         const int bx = x0 + i * (barW + gap);
-        const int h = maxH * (i + 1) / n;
+        const int h = maxH * (i + 1) / levels;
         const int by = baseY - h;
         // Empty track behind every bar (so the step ladder is visible even unfilled).
         fb.fillRect(bx, baseY - maxH, barW, maxH, palColor(Pal::TRACK));
         if (i <= pick)
             fb.fillRect(bx, by, barW, h,
                         i == pick ? palColor(Pal::ACCENT) : palColor(Pal::INK_DIM));
-        // Mark the currently-APPLIED level with a baseline pip (so pick vs applied
-        // both read before B is pressed).
         if (i == current)
             fb.fillRect(bx, baseY + 3, barW, 3, palColor(Pal::INK));
     }
 
     char pct[12];
-    std::snprintf(pct, sizeof(pct), "%d%%", brightnessPercent(pick));
+    std::snprintf(pct, sizeof(pct), "%d%%", percent);
     drawText(fb, (kActiveW - textWidth(pct)) / 2, 30, pct, palColor(Pal::INK));
     drawHintBand(fb, "A LEVEL  B APPLY  C BACK");
+}
+
+} // namespace
+
+void drawBrightness(Framebuffer& fb, int pick, int current) {
+    drawLevelPicker(fb, "BRIGHTNESS", pick, current, kBrightnessLevels,
+                    brightnessPercent(pick));
+}
+
+void drawVolume(Framebuffer& fb, int pick, int current) {
+    drawLevelPicker(fb, "VOLUME", pick, current, kVolumeLevels, volumePercent(pick));
+}
+
+void drawSoundMode(Framebuffer& fb, int pick, SoundMode current) {
+    drawHeaderBand(fb, "SOUND");
+    if (pick < 0 || pick >= kSoundModeCount) pick = 0;
+    // One line of copy for the FOCUSED mode, the THEME picker's shape: what a mode
+    // keeps is the whole decision, and ALERTS ONLY means nothing until it says which.
+    static const char* const kWhat[kSoundModeCount] = {
+        "CLICKS, JINGLES, ALERTS.",
+        "LOCKOUT + FAILING ONLY.",
+        "SILENT. NO ALERTS EITHER.",
+    };
+    drawText(fb, kMargin, 30, kWhat[pick], palColor(Pal::INK_DIM));
+    for (int i = 0; i < kSoundModeCount; ++i) {
+        const int y = 52 + i * 24;
+        if (i == pick) {
+            fb.fillRect(4, y - 2, kActiveW - 8, 20, palColor(Pal::TRACK));
+            drawRowCursor(fb, 8, y + 4, palColor(Pal::ACCENT));
+        }
+        const SoundMode m = static_cast<SoundMode>(i);
+        const bool isCurrent = m == current;
+        drawText(fb, 24, y + 4, soundModeName(m),
+                 isCurrent ? palColor(Pal::ACCENT) : palColor(Pal::INK));
+        if (isCurrent)
+            drawText(fb, kActiveW - kMargin - textWidth("ACTIVE"), y + 4,
+                     "ACTIVE", palColor(Pal::ACCENT));
+    }
+    drawHintBand(fb, "A CYCLE  B APPLY  C BACK");
 }
 
 void drawTitles(Framebuffer& fb, int focusSector, uint32_t unlockedMask,

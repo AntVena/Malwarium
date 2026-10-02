@@ -12,6 +12,11 @@
 // shell drives presses through the mal_button entry point below and binds the
 // keyboard itself. One input path, not two that can disagree.
 //
+// Sound is WebAudio: the engine names a cue (core/audio/sound.h) and WebSound below
+// plays its notes on one square-wave oscillator, the same tune the board's speaker
+// plays. A browser will not start audio before a gesture, and every cue but the ones
+// the clock raises follows a press, so the context is created lazily inside one.
+//
 // The panel is composed exactly as the device composes it — the 224 active canvas
 // centred in the 240 panel with the 8px bezel — so a visitor sees the screen the
 // hardware would show.
@@ -48,6 +53,55 @@ struct App {
 };
 
 App g;
+
+// Play `count` notes (core/audio/sound.h's SoundNote: two little-endian u16s, hz then
+// ms) at `volumePct`, cutting short whatever cue is still sounding — the device's own
+// rule (platform.h's ISoundOut). Read through HEAPU8, the view malWebPresent already
+// keeps alive, so no other heap view has to survive the optimiser. The curve is the
+// device's too: loudness is heard logarithmically, so the percent is squared.
+EM_JS(void, malWebTone, (const uint8_t* notes, int count, int volumePct), {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    if (!Module.malAudio) Module.malAudio = new AC();
+    const ctx = Module.malAudio;
+    if (ctx.state === 'suspended') ctx.resume();
+    if (Module.malVoice) { try { Module.malVoice.stop(); } catch (e) {} }
+    const gain = ctx.createGain();
+    gain.connect(ctx.destination);
+    const osc = ctx.createOscillator();
+    osc.type = 'square';
+    osc.connect(gain);
+    const peak = 0.2 * Math.pow(volumePct / 100, 2);
+    let t = ctx.currentTime + 0.005;
+    gain.gain.setValueAtTime(0, ctx.currentTime);
+    for (let i = 0; i < count; i++) {
+        const p = notes + i * 4;
+        const hz = HEAPU8[p] | (HEAPU8[p + 1] << 8);
+        const ms = HEAPU8[p + 2] | (HEAPU8[p + 3] << 8);
+        if (hz > 0) {
+            osc.frequency.setValueAtTime(hz, t);
+            gain.gain.setTargetAtTime(peak, t, 0.002);
+        } else {
+            gain.gain.setTargetAtTime(0, t, 0.002);
+        }
+        t += ms / 1000;
+    }
+    gain.gain.setTargetAtTime(0, t, 0.002);
+    osc.start();
+    osc.stop(t + 0.02);
+    Module.malVoice = osc;
+});
+
+struct WebSound : ISoundOut {
+    void play(Sound s, int volumePercent) override {
+        const SoundDef* d = soundDef(s);
+        if (!d) return;
+        static_assert(sizeof(SoundNote) == 4, "malWebTone reads notes as four bytes each");
+        malWebTone(reinterpret_cast<const uint8_t*>(d->notes), d->noteCount, volumePercent);
+    }
+};
+
+WebSound sound;
 
 uint32_t nowMs() { return static_cast<uint32_t>(emscripten_get_now()); }
 
@@ -140,6 +194,22 @@ EMSCRIPTEN_KEEPALIVE void mal_cycle_ui_mode() {
     g.dirty = true;
 }
 
+// The SOUND setting is in CFG on the device too, so the shell offers it the same way
+// it offers the display mode. Returns the mode it lands on (SoundMode's value) so the
+// page can label the control without asking twice.
+EMSCRIPTEN_KEEPALIVE int mal_cycle_sound_mode() {
+    if (!g.game) return 0;
+    const int next = (static_cast<int>(g.game->soundMode()) + 1) % kSoundModeCount;
+    g.game->setSoundMode(static_cast<SoundMode>(next));
+    g.dirty = true;
+    return next;
+}
+
+// The mode as it stands, for the control's label at boot.
+EMSCRIPTEN_KEEPALIVE int mal_sound_mode() {
+    return g.game ? static_cast<int>(g.game->soundMode()) : 0;
+}
+
 // START OVER: drop this visitor's save so the next boot falls back to the baked
 // seed. The page reloads afterwards, which is what re-runs the constructor.
 EMSCRIPTEN_KEEPALIVE void mal_reset_demo() {
@@ -160,6 +230,7 @@ int main(int, char**) {
     // visitor's own save or the baked seed, and a non-empty blob boots the pet it
     // names regardless of the mode passed here.
     g.game = new Game(StartMode::FreshHatch, "cuttlefork", g.store);
+    g.game->setSoundOut(&sound);
     g.fb = new Framebuffer(kActiveW, kActiveH);
     g.rgba.assign(static_cast<size_t>(kPanelW) * kPanelH * 4, 0xff);
     g.lastSaveMs = nowMs();

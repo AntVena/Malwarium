@@ -1697,6 +1697,25 @@ public:
     // host tier ignores it. setBrightness clamps + persists.
     int brightness() const { return brightness_; }
     void setBrightness(int level);
+    // CFG > DEVICE > SOUND (ALL / ALERTS ONLY / OFF, and OFF until the operator turns
+    // it on) and VOLUME (a 0-based level,
+    // 0..kVolumeLevels-1), both persisted (save v68) beside brightness and for its
+    // reason. The mode filters by tier (core/audio/sound.h); the volume rides every cue
+    // to the platform. Setters clamp + persist.
+    SoundMode soundMode() const { return soundMode_; }
+    void setSoundMode(SoundMode m);
+    int volume() const { return volume_; }
+    void setVolume(int level);
+    // The platform's speaker, wired once at boot like setHeapProbe. Null (the default)
+    // is a silent target, which is what every gate that does not ask for sound runs as.
+    void setSoundOut(ISoundOut* out) { soundOut_ = out; }
+    // Ask for a cue. Dropped unless the SOUND mode lets its tier through; otherwise
+    // handed to the platform at the current volume. Every sound the engine makes goes
+    // through here, so this is the one place the setting has to be honoured.
+    void playSound(Sound s);
+    // The VOLUME picker's sample at `level`, played whatever the SOUND mode: asking to
+    // hear a level is the request, and a silent picker would teach nothing.
+    void previewVolume(int level);
     // The PAL_CORE colour set the interface is drawn in — an index into the generated
     // theme table (0 = base), persisted by NAME (save v64). setThemePick is the ONLY
     // caller of setPalTheme (core/render/palette.h): the applied theme and the stored
@@ -3304,6 +3323,8 @@ private:
     UiMode uiMode_ = UiMode::IconsLabel;
     bool careAlerts_ = true;    // the "!" marks on the carousel (save v67)
     int brightness_ = kBrightnessDefault;  // backlight level (persisted, v14)
+    SoundMode soundMode_ = SoundMode::Off; // CFG SOUND, off until chosen (v68)
+    int volume_ = kVolumeDefault;          // CFG VOLUME level (persisted, v68)
     int themePick_ = 0;                    // PAL_CORE theme index (persisted, v64)
 
     // L2/L3 state.
@@ -3503,6 +3524,8 @@ private:
     int cfgGroupRow_ = 0;
     int cfgUiPick_ = 0;
     int cfgBrightPick_ = 0;   // Brightness picker focus (0..kBrightnessLevels-1)
+    int cfgSoundPick_ = 0;    // SOUND mode picker focus (SoundMode's value)
+    int cfgVolumePick_ = 0;   // VOLUME picker focus (0..kVolumeLevels-1)
     int cfgThemePick_ = 0;    // Theme picker focus (0..kPalThemeCount-1)
     int cfgAuditPick_ = 0;    // Audit level picker focus (0 OFF, 1 SCAN, 2 SCAN+CAP)
     int cfgTravelPick_ = 0;   // Travel-mode confirm focus (0 = NO, 1 = YES)
@@ -4010,6 +4033,8 @@ private:
     // (see setHeapProbe). Null = nothing reports, which reads as "no reason to hold
     // back" and is the host build's normal state.
     HeapProbe heapProbe_ = nullptr;
+    // The speaker (setSoundOut). Null = silent, the host-gate default.
+    ISoundOut* soundOut_ = nullptr;
     // The one buffer every save is serialized into. Owning it is what keeps a write off
     // the allocator: it is sized once, behind the higher floor, and reused for good — so
     // a save landing while the radio holds the heap has nothing large left to ask for,
@@ -4334,6 +4359,7 @@ private:
     uint32_t lockoutDeadlineMs_ = 0;
     bool lockoutPayOption_ = false;        // false = Open Items · true = Pay Bits
     bool lockoutItemsContext_ = false;     // ITEMS opened from the Lockout modal
+    bool lockoutReminded_ = false;         // its one reminder alert has sounded
 
     // The egg being incubated: which line laid it, and the Boot-Sector INCUBATION clock
     // (egg-at-idle) counting down while it sits there. The clock is what every hatch
@@ -4451,6 +4477,9 @@ private:
     bool dyingArmed_ = false;
     uint32_t dyingEnteredMs_ = 0;
     uint32_t dyingElapsedMs_ = 0;
+    // The dyingElapsedMs_ reading at which the FAILING alert next sounds. Runtime only:
+    // a boot onto a dying pet arms afresh and sounds at once, which is the point.
+    uint32_t failingAlertAtMs_ = 0;
     int csfBeat_ = 0;
     std::vector<SaveRecord> records_;
 

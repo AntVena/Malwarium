@@ -509,6 +509,7 @@ void Game::tickAchievementBanner() {
     achBannerOpenBeat_ = beat_;
     achBannerUntilMs_ = nowMs_ + achBannerDwellMs();
     dirty_ = true;
+    playSound(Sound::Achievement);   // once per banner, so a collapsed burst is one cue
 }
 
 bool Game::hatchProcessUnlocked(const CreatureDef* proc) const {

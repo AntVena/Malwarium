@@ -39,6 +39,8 @@ void Game::fireLockout() {
     deepWebDepthMultiplier_ = 1;
     lockoutActive_ = true;
     lockoutDeadlineMs_ = nowMs_ + kLockoutDurationMs;
+    lockoutReminded_ = false;
+    playSound(Sound::Lockout);
     // Open on whichever path can actually resolve it: feeding, unless the bag has
     // nothing to feed and the wallet can cover the Bits instead.
     lockoutPayOption_ = !lockoutFoodHeld() && bits_ >= kLockoutBitsCost;
@@ -283,6 +285,7 @@ void Game::completeHatch() {
     away_.hatched = pet_;
     nav_ = Nav::Idle;
     dirty_ = true;
+    playSound(Sound::Hatch);
     persistSave();                // a freshly hatched pet survives an immediate reboot
 }
 
@@ -459,6 +462,9 @@ void Game::fireEvolution() {
     evolveBeat_ = 0;
     nav_ = Nav::ModalEvolve;
     dirty_ = true;
+    // At the boundary, not the reveal: this fires off the clock with nobody pressing
+    // anything, so the jingle is what calls the owner over to watch the cinematic.
+    playSound(Sound::Evolve);
 }
 
 void Game::completeEvolution() {
@@ -586,6 +592,7 @@ void Game::fireCSF() {
     csfBeat_ = 0;
     nav_ = Nav::ModalCSF;
     dirty_ = true;
+    playSound(Sound::PetLost);
 }
 
 void Game::acknowledgeCSF() {
@@ -615,7 +622,7 @@ void Game::wipeDeviceProgress() {
     // radio consent
     // (out of the box, all three are off). resetToHatch() clears the per-pet half;
     // together they are a device with no history. Deliberately NOT cleared: the
-    // screen preferences (brightness / UI mode), which are how the operator likes
+    // device preferences (brightness, UI mode, sound, volume), which are how the operator likes
     // their hardware rather than anything they earned, and the SD-backed ledgers
     // (core/net/network_ledger.h, peer_ledger.h), which are files on a card the
     // operator can remove — a save wipe has no business deleting them.

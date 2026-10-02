@@ -42,7 +42,7 @@ if(EMSCRIPTEN)
         -sALLOW_MEMORY_GROWTH=1
         # The shell page's controls (see main_web.cpp's entry points) plus the
         # runtime helper they are called through.
-        -sEXPORTED_FUNCTIONS=['_main','_mal_button','_mal_cycle_ui_mode','_mal_reset_demo','_mal_flush_save']
+        -sEXPORTED_FUNCTIONS=['_main','_mal_button','_mal_cycle_ui_mode','_mal_cycle_sound_mode','_mal_sound_mode','_mal_reset_demo','_mal_flush_save']
         # UTF8ToString/stringToNewUTF8 are used by the EM_JS bodies in
         # save_store_web.h; naming them here keeps -O3 from eliminating them.
         -sEXPORTED_RUNTIME_METHODS=['ccall','UTF8ToString','stringToNewUTF8']

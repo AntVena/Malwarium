@@ -584,6 +584,10 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     // v67: UI MODE and CARE ALERTS, a byte each. Their own tail after v66's.
     w.u8(d.uiMode);
     w.u8(d.careAlerts);
+
+    // v68: SOUND and VOLUME, a byte each. Their own tail after v67's.
+    w.u8(d.soundMode);
+    w.u8(d.volume);
 }
 
 std::vector<uint8_t> serializeSave(const SaveData& d) {
@@ -1237,6 +1241,13 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
     if (version >= 67) {
         d.uiMode = r.u8();
         d.careAlerts = r.u8();
+    }
+
+    // v68 tail: SOUND and VOLUME. Absent in an older blob -> the SaveData defaults,
+    // OFF at kVolumeDefault.
+    if (version >= 68) {
+        d.soundMode = r.u8();
+        d.volume = r.u8();
     }
 
     if (!r.ok) { out = SaveData{}; return false; }  // truncated -> empty

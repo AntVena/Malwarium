@@ -186,6 +186,25 @@ constexpr inline int brightnessPercent(int level) {
     return (level + 1) * (100 / kBrightnessLevels);
 }
 
+// Sound volume. A CFG-adjustable, persisted (save v68) level as a discrete 0-based
+//     index, the BRIGHTNESS shape: percent(level) = (level+1) * (100/kVolumeLevels).
+//     The device tier maps a percent to sample amplitude on a curve, since loudness is
+//     heard logarithmically (platform/esp32/audio_esp32.h). SOUND itself starts OFF;
+//     the middle step is what the operator hears the moment they turn it on.
+constexpr int kVolumeLevels  = 5;                       // 20/40/60/80/100 %
+constexpr int kVolumeDefault = 2;                       // 60%
+constexpr inline int volumePercent(int level) {
+    if (level < 0) level = 0;
+    if (level >= kVolumeLevels) level = kVolumeLevels - 1;
+    return (level + 1) * (100 / kVolumeLevels);
+}
+// The care alerts repeat while nobody answers them, since one beep is easy to miss
+// across a room. The Lockout gets a single reminder this long before its 30s runs out;
+// the half-hour FAILING window sounds again every kFailingAlertEveryMs of time awake at
+// 5/5 (the same accumulated clock the window itself counts on).
+constexpr uint32_t kLockoutReminderMs   = 10u * 1000u;
+constexpr uint32_t kFailingAlertEveryMs = 5u * 60u * 1000u;
+
 // Evolution boundary — a per-stage time-in-stage gate, plus the care budget out of Dying
 // (5/5 routes to Critical System Failure, not evolution). The clock counts real elapsed
 // time, screen-sleep included, so a short pocket nap must NOT tip a stage over. Each stage

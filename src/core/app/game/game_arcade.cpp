@@ -301,6 +301,7 @@ void Game::finishArcadeRun(bool won, int score, int scoreMax) {
     cursor_ = carouselSlotOf(SubmenuId::Games);
     nav_ = Nav::ArcadeResult;
     dirty_ = true;
+    playSound(won ? Sound::GameWin : Sound::GameLose);
 }
 
 void Game::onArcadeResult(const ButtonEvent& ev) {
