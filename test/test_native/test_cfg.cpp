@@ -362,6 +362,9 @@ void test_cfg_screens_grayscale() {
         const CfgRow* sub = nullptr;
         const int m = cfgGroupRows(rows[r].target, sub);
         for (int s = 0; s < m; ++s) {
+            // CARE ALERTS is a switch, not a screen: it flips in place and stays on
+            // the group (test_cfg_care_alerts_switch drives it).
+            if (sub[s].target == CfgScreen::CareAlerts) continue;
             Game gs{StartMode::Hatched};
             enterCfgTarget(gs, sub[s].target);
             CHECK(gs.nav() == Game::Nav::Detail);
@@ -370,6 +373,66 @@ void test_cfg_screens_grayscale() {
             CHECK(hasDarkInk(fb, 0, 0, W, H));
         }
     }
+}
+
+// CFG > DEVICE > CARE ALERTS turns the carousel's "!" marks off and on in place, and
+// both it and UI MODE beside it are DEVICE preferences: they survive a reboot (the save),
+// and the save's own tail carries them, so an update that reads the blob keeps them too.
+// A blob from before they were stored reads as what every device drew: ICONS+LABEL, ON.
+void test_cfg_care_alerts_switch() {
+    MemSaveStore store;
+    const int W = kActiveW, H = kActiveH;
+    int maint = 0;
+    while (carouselSlots()[maint].id != SubmenuId::Maint) ++maint;
+    const int x0 = (maint % kSlotCols) * kSlotW + kSlotW - 9;
+    const int y0 = maint < kSlotCols ? 0 : kLivingBottom;
+    {
+        Game g{StartMode::Hatched, "paypup", &store};
+        CHECK(g.careAlerts());                               // on out of the box
+        g.model().setFragmentation(kFragCautionMin);         // MAINT wants a "!"
+        Framebuffer on(W, H), off(W, H);
+        g.render(on);
+
+        enterCfgTarget(g, CfgScreen::Device);
+        CHECK(g.cfgScreen() == CfgScreen::Device);
+        const CfgRow* rows = nullptr;
+        const int n = cfgGroupRows(CfgScreen::Device, rows);
+        int row = -1;
+        for (int i = 0; i < n; ++i) if (rows[i].target == CfgScreen::CareAlerts) row = i;
+        CHECK(row >= 0);
+        for (int i = 0; i < row; ++i) g.onButton(press(Button::A));
+        g.onButton(press(Button::B));                        // flip it
+        CHECK(!g.careAlerts());
+        CHECK(g.cfgScreen() == CfgScreen::Device);           // ...in place
+        Framebuffer dev(W, H);
+        g.render(dev);                                       // the scrolled list draws
+        CHECK(hasDarkInk(dev, 0, 0, W, H));
+
+        while (g.nav() != Game::Nav::Idle && g.nav() != Game::Nav::Cursor) tapC(g);
+        g.tick(kAutoDefocusMs + 1);
+        CHECK(g.nav() == Game::Nav::Idle);
+        g.render(off);
+        bool lit = false;                                    // nothing in MAINT's gutter
+        const float track = luminance(palColor(Pal::TRACK));
+        for (int y = y0; y < y0 + kTrackH; ++y)
+            for (int x = x0; x < x0 + 9; ++x)
+                if (luminance(off.get(x, y)) > track + 0.15f) lit = true;
+        CHECK(!lit);
+
+        g.setUiMode(UiMode::TextOnly);
+        g.tick(kAutoDefocusMs + 1 + kSaveAutosaveMs + kHeartbeatMs);   // autosave
+    }
+    Game again{StartMode::Hatched, "paypup", &store};        // a reboot onto the save
+    CHECK(!again.careAlerts());
+    CHECK(again.uiMode() == UiMode::TextOnly);
+
+    SaveData d;                                              // the codec, both ways
+    d.uiMode = static_cast<uint8_t>(UiMode::IconsOnly);
+    d.careAlerts = 0;
+    SaveData back;
+    CHECK(deserializeSave(serializeSave(d), back));
+    CHECK(back.uiMode == static_cast<uint8_t>(UiMode::IconsOnly) && back.careAlerts == 0);
+    CHECK(SaveData{}.careAlerts == 1 && SaveData{}.uiMode == 0);   // the pre-v67 reading
 }
 
 // SD RECHECK is the A press on System Info, not a list row — it acts on the SD

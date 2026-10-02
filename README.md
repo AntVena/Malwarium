@@ -399,7 +399,9 @@ holds the fix:
 
 **You don't have to remember any of that.** When a need slips out of the comfortable
 range, the menu slot that fixes it lights up with a **!** beside it, even while the menu
-is tucked away. A blinking red **!** means it's urgent.
+is tucked away. A blinking red **!** means it's urgent. Rather go without? **CFG → DEVICE →
+CARE ALERTS** switches the marks off (and back on). Like UI MODE beside it, the choice is
+remembered through restarts and updates.
 
 Out of food? The bag says so, and the **!** for a hungry pet moves to **EXPL**, because
 the walk is where food comes from. Keep a meal or two in reserve.

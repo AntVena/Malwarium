@@ -140,6 +140,9 @@ int cfgGroupRows(CfgScreen group, const CfgRow*& out) {
     // under it.
     static const CfgRow kDevice[] = {
         {"UI MODE", &ASSET_ICON_CFG_UIMODE, CfgScreen::UiMode},
+        // CARE ALERTS beside it: the "!" marks are drawn on the same shelf UI MODE
+        // styles. It is a switch rather than a screen — B flips it in place (onCfgGroup).
+        {"CARE ALERTS", &ASSET_ICON_CFG_UIMODE, CfgScreen::CareAlerts},
         {"BRIGHTNESS", &ASSET_ICON_CFG_UIMODE, CfgScreen::Brightness},
         // THEME sits with them for the same reason BACKGROUND does — it is what the
         // device LOOKS like — and above it, because it is the wider of the two: the
@@ -156,7 +159,7 @@ int cfgGroupRows(CfgScreen group, const CfgRow*& out) {
         // here that destroys something. It lives with the device rather than beside
         // the SD line on System Info because a second action on that screen would be
         // a second meaning for a button press there, and this one cannot be taken back.
-        // Six rows is exactly kVisibleRows, so the group still never scrolls.
+        // Seven rows is one past kVisibleRows, so the group scrolls (drawCfgDevice).
         {"FORMAT SD", &ASSET_ICON_CFG_UIMODE, CfgScreen::FormatSd},
     };
     // The three radio TOGGLES, listed in the arbiter's own priority order, highest
@@ -191,6 +194,7 @@ int cfgGroupRows(CfgScreen group, const CfgRow*& out) {
 CfgScreen cfgParentGroup(CfgScreen s) {
     switch (s) {
         case CfgScreen::UiMode:
+        case CfgScreen::CareAlerts:
         case CfgScreen::Brightness:
         case CfgScreen::Theme:
         case CfgScreen::Background:
@@ -244,23 +248,28 @@ void drawCfgList(Framebuffer& fb, int cursor, const char* hackerTag,
 }
 
 void drawCfgDevice(Framebuffer& fb, int cursor, UiMode uiMode, int brightness,
-                   const char* theme, const char* background) {
+                   const char* theme, const char* background, bool careAlerts) {
     drawHeaderBand(fb, "DEVICE");
     const CfgRow* rows = nullptr;
     const int n = cfgGroupRows(CfgScreen::Device, rows);
 
     char brightBuf[8];
     std::snprintf(brightBuf, sizeof(brightBuf), "%d%%", brightnessPercent(brightness));
-    for (int i = 0; i < n; ++i) {
+    const int scrollTop = listScrollTop(cursor, n, kVisibleRows);
+    for (int v = 0; v < kVisibleRows && scrollTop + v < n; ++v) {
+        const int i = scrollTop + v;
         const char* val = nullptr;   // the two actions have no value to preview
         if (rows[i].target == CfgScreen::UiMode) val = uiModeName(uiMode);
+        else if (rows[i].target == CfgScreen::CareAlerts) val = careAlerts ? "ON" : "OFF";
         else if (rows[i].target == CfgScreen::Brightness) val = brightBuf;
         else if (rows[i].target == CfgScreen::Theme) val = theme;
         else if (rows[i].target == CfgScreen::Background) val = background;
-        settingsRow(fb, kRowTop + i * kRowH, rows[i], i == cursor, val,
+        settingsRow(fb, kRowTop + v * kRowH, rows[i], i == cursor, val,
                     palColor(Pal::INK_DIM));
     }
-    drawHintBand(fb, "A NEXT  B OPEN  C BACK");
+    // The switch row flips where it stands, so its verb is not OPEN.
+    const bool onSwitch = cursor >= 0 && cursor < n && rows[cursor].target == CfgScreen::CareAlerts;
+    drawHintBand(fb, onSwitch ? "A NEXT  B SWITCH  C BACK" : "A NEXT  B OPEN  C BACK");
 }
 
 void drawThemePicker(Framebuffer& fb, int pick, int equipped, uint32_t unlockedMask) {

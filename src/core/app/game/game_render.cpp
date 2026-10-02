@@ -481,8 +481,9 @@ void Game::drawHabitat(Framebuffer& fb, int cursor) const {
     }
     // The slots the pet needs visited (game_onboard.cpp) stay lit with a "!" beside
     // them: the shelf is always up at idle, so it is where a need is seen first.
+    // CFG's CARE ALERTS switch turns the marks off; the needs behind them stand.
     unsigned attention = 0, urgent = 0;
-    careAttention(attention, urgent);
+    if (careAlerts_) careAttention(attention, urgent);
     drawCarousel(fb, cursor, uiMode_, beat_, lockMask, spinMask, attention, urgent);
 }
 

@@ -701,7 +701,13 @@ void loop() {
     // "RESTARTING..." frame time to reach the panel first — the operator should
     // see why the device went dark, not just watch it vanish mid-install.
     static uint32_t restartAtMs = 0;
-    if (netUpdate.restartPending() && restartAtMs == 0) restartAtMs = millis() + 2000;
+    if (netUpdate.restartPending() && restartAtMs == 0) {
+        // The restart is a reset, so land anything still inside the save debounce first
+        // — a setting changed just before the install is the operator's, and the save
+        // partition is what the new image boots onto (partitions_malwarium.csv).
+        game->saveNow();
+        restartAtMs = millis() + 2000;
+    }
     if (restartAtMs != 0 && millis() >= restartAtMs) ESP.restart();
 #endif
 

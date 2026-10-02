@@ -106,6 +106,8 @@ ITEMS for Hunger, MAINT for Fragmentation (or a Replication Ghost), GAMES for Ha
 stays undimmed with a **"!"** in its gutter, blinking in the Critical band
 (`Game::careAttention`, `src/core/app/game/game_onboard.cpp`). It points at the remedy
 rather than the readout, so a player who has never opened STAT still knows where to go.
+**CFG → DEVICE → CARE ALERTS** switches the marks off; it and UI MODE are device-level
+preferences in the save (v67), kept through a reboot, a pet's death and an update.
 
 ```
 [TOP TRACK]     [1 STAT] [2 ITEMS] [3 GAMES] [4 EXPL]

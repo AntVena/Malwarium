@@ -94,8 +94,11 @@ void Game::onCfgGroup(const ButtonEvent& ev) {
     if (n <= 0) { leaveCfgScreen(); return; }
     if (cfgGroupRow_ >= n) cfgGroupRow_ = 0;
     if (ev.button == Button::A) cfgGroupRow_ = (cfgGroupRow_ + 1) % n;
-    else if (ev.button == Button::B) enterCfgScreen(rows[cfgGroupRow_].target);
-    else if (ev.button == Button::C) leaveCfgScreen();
+    else if (ev.button == Button::B) {
+        // A switch flips where it stands; every other row opens its own screen.
+        if (rows[cfgGroupRow_].target == CfgScreen::CareAlerts) setCareAlerts(!careAlerts_);
+        else enterCfgScreen(rows[cfgGroupRow_].target);
+    } else if (ev.button == Button::C) leaveCfgScreen();
 }
 
 void Game::onCfgDetail(const ButtonEvent& ev) {
@@ -356,9 +359,22 @@ void Game::executeFactoryReset() {
     resetToHatch();
 }
 
-void Game::cycleUiMode() {
-    uiMode_ = static_cast<UiMode>((static_cast<int>(uiMode_) + 1) % 3);
+void Game::setUiMode(UiMode m) {
+    if (m == uiMode_) return;
+    uiMode_ = m;
     dirty_ = true;
+    markSaveDirty();   // a persisted CFG pref (save v67) — survives a reboot and an update
+}
+
+void Game::cycleUiMode() {
+    setUiMode(static_cast<UiMode>((static_cast<int>(uiMode_) + 1) % 3));
+}
+
+void Game::setCareAlerts(bool on) {
+    if (on == careAlerts_) return;
+    careAlerts_ = on;
+    dirty_ = true;
+    markSaveDirty();   // a persisted CFG pref (save v67), like UI MODE beside it
 }
 
 const char* Game::themeName() const { return kPalThemeNames[themePick_]; }
@@ -447,7 +463,8 @@ void Game::drawCfg(Framebuffer& fb) const {
             drawCfgDevice(fb, cfgGroupRow_, uiMode_, brightness_, themeName(),
                           backgroundPick_ == SceneId::None
                               ? "AUTO"
-                              : backgroundFor(backgroundPick_)->name);
+                              : backgroundFor(backgroundPick_)->name,
+                          careAlerts_);
             break;
         case CfgScreen::Travel:
             // Two faces, like the UPDATES screen: the question, then the notice that

@@ -148,6 +148,9 @@ SaveData Game::captureSave() const {
     // v14: the CFG screen-brightness level — device-level, persists
     // across pets like the other CFG prefs.
     d.brightness = brightness_;
+    // v67: UI MODE and CARE ALERTS — device-level, beside brightness and for its reason.
+    d.uiMode = static_cast<uint8_t>(uiMode_);
+    d.careAlerts = careAlerts_ ? 1 : 0;
 
     // v64: the chosen PAL_CORE theme, stored by NAME (see save.h's version note) and
     // device-level for the same reason brightness is — it is what the device looks
@@ -574,6 +577,11 @@ void Game::applySave(const SaveData& d) {
     // (brightest). Clamp defensively so a corrupt value can't drive the backlight
     // out of range.
     brightness_ = d.brightness;
+    // v67: UI MODE and CARE ALERTS. A mode number this build has no mode for reads as
+    // the default rather than as a cast past the enum's end.
+    uiMode_ = d.uiMode <= static_cast<uint8_t>(UiMode::TextOnly) ? static_cast<UiMode>(d.uiMode)
+                                                                 : UiMode::IconsLabel;
+    careAlerts_ = d.careAlerts != 0;
     if (brightness_ < 0) brightness_ = 0;
     if (brightness_ >= kBrightnessLevels) brightness_ = kBrightnessLevels - 1;
 

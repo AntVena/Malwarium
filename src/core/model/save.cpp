@@ -580,6 +580,10 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     // Game::Tip. Its own tail after v65's.
     w.u16(static_cast<uint16_t>(d.tipsSeen.size()));
     for (uint8_t b : d.tipsSeen) w.u8(b);
+
+    // v67: UI MODE and CARE ALERTS, a byte each. Their own tail after v66's.
+    w.u8(d.uiMode);
+    w.u8(d.careAlerts);
 }
 
 std::vector<uint8_t> serializeSave(const SaveData& d) {
@@ -1226,6 +1230,13 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
     if (version >= 66) {
         const uint16_t n = r.u16();
         for (uint16_t i = 0; i < n && r.ok; ++i) d.tipsSeen.push_back(r.u8());
+    }
+
+    // v67 tail: UI MODE and CARE ALERTS. Absent in an older blob -> the SaveData
+    // defaults, ICONS+LABEL and ON — what every device drew before they were stored.
+    if (version >= 67) {
+        d.uiMode = r.u8();
+        d.careAlerts = r.u8();
     }
 
     if (!r.ok) { out = SaveData{}; return false; }  // truncated -> empty

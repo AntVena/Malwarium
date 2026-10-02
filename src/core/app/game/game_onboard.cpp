@@ -168,8 +168,9 @@ std::vector<ProseRow> Game::tipCardRows() const {
 
 void Game::openTipCard(Tip t, Nav returnTo) {
     const bool care = t == Tip::CareFed || t == Tip::CareFrag || t == Tip::CareHappy;
-    tipCardMarkRow_ = care && !tipSeen(Tip::CareFed) && !tipSeen(Tip::CareFrag) &&
-                      !tipSeen(Tip::CareHappy);
+    // The "!" explainer only where there is a "!" to explain: CARE ALERTS off draws none.
+    tipCardMarkRow_ = care && careAlerts_ && !tipSeen(Tip::CareFed) &&
+                      !tipSeen(Tip::CareFrag) && !tipSeen(Tip::CareHappy);
     markTipSeen(t);
     tipCard_ = t;
     tipCardScroll_ = 0;

@@ -310,7 +310,12 @@ constexpr int kSaveTextCap = 28;     // matches EventLog's LogEntry.text
 //     being taught the buttons again. Pre-v66 -> empty, which Game::applySave reads as a
 //     device already in use: the menu nudge, the Ransomware briefing, the care cards and
 //     the walk card count as seen, and a line it has never laid still gets its own.
-constexpr uint16_t kSaveVersion = 66;
+// v67 APPEND `uiMode` (UiMode's wire number) and `careAlerts` (1 = the carousel's "!"
+//     marks are drawn), two CFG > DEVICE preferences, one byte each, as their own tail
+//     after v66's. DEVICE-level like brightness: what the operator likes the hardware to
+//     look like, kept through a pet's death, a reboot and a firmware update. Pre-v67 ->
+//     ICONS+LABEL and ON, which is what every device drew before either was stored.
+constexpr uint16_t kSaveVersion = 67;
 
 // The oldest blob deserialize will read, and the ONLY thing that retires a rename row
 // (see `renamedIds`). Raising it is how a device stops carrying migration weight for saves
@@ -890,6 +895,12 @@ struct SaveData {
     // --- v66: the one-time onboarding tips already shown ----------------------
     // One bit per Game::Tip, length-prefixed like storyRead. Player-level.
     std::vector<uint8_t> tipsSeen;
+
+    // --- v67: two CFG > DEVICE preferences --------------------------------------
+    // `uiMode` is UiMode's wire number (0 ICONS+LABEL, 1 ICONS, 2 TEXT); an unknown one
+    // reads back as the default. `careAlerts` is 1 when the "!" marks are drawn.
+    uint8_t uiMode = 0;
+    uint8_t careAlerts = 1;
 };
 
 // Read/write one mod's spare count in the v45 packed pool (SaveData::ownedModCounts) by

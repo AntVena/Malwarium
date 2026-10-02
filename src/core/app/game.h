@@ -1641,8 +1641,15 @@ public:
 
     int cursor() const { return cursor_; }      // focused carousel slot 0..7
     UiMode uiMode() const { return uiMode_; }
-    void setUiMode(UiMode m) { uiMode_ = m; dirty_ = true; }
+    // How the carousel draws its slots (icons + label / icons / text). Persisted (save
+    // v67), so it survives a reboot and an update; setUiMode persists on change.
+    void setUiMode(UiMode m);
     void cycleUiMode();
+    // CFG > DEVICE > CARE ALERTS: whether the carousel draws its "!" needs-attention
+    // marks (Game::careAttention). Persisted beside UI MODE (save v67). Off hides the
+    // marks only — the vitals, the lockout and the care cards are unchanged.
+    bool careAlerts() const { return careAlerts_; }
+    void setCareAlerts(bool on);
     // Screen-brightness level: a 0-based backlight index (0..kBrightnessLevels-1),
     // persisted (save v14). The device tier reads this to drive the backlight PWM; the
     // host tier ignores it. setBrightness clamps + persists.
@@ -3239,6 +3246,7 @@ private:
     Nav nav_ = Nav::Idle;
     int cursor_ = 0;            // focused carousel slot (also the entered slot)
     UiMode uiMode_ = UiMode::IconsLabel;
+    bool careAlerts_ = true;    // the "!" marks on the carousel (save v67)
     int brightness_ = kBrightnessDefault;  // backlight level (persisted, v14)
     int themePick_ = 0;                    // PAL_CORE theme index (persisted, v64)
 
