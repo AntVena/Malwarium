@@ -53,8 +53,13 @@ void Game::onButton(const ButtonEvent& ev) {
         }
         return;
     }
+    const uint32_t quietMs = nowMs_ - lastInputMs_;
     lastInputMs_ = nowMs_;
     dirty_ = true;
+    // The first press after a long quiet reports what happened meanwhile, and is spent
+    // on it — the pet's state may be nothing like what the player last saw, and the
+    // press they meant was decided against that older picture.
+    if (nav_ != Nav::AwayDigest && openAwayDigestIfDue(quietMs)) return;
     // A HELD announcement eats the first press, whatever it was. Only the NEW EGG LINE
     // banner holds (Game::achBannerHeld), and only on the home screen, where it is
     // telling the player about something they can now go and do — so the press that
@@ -212,6 +217,7 @@ void Game::onButton(const ButtonEvent& ev) {
         case Nav::Tourney: onTourney(ev); break;
         case Nav::Story: onStory(ev); break;
         case Nav::TipCard: onTipCard(ev); break;
+        case Nav::AwayDigest: onAwayDigest(ev); break;
         case Nav::StoryArchive: onStoryArchive(ev); break;
         case Nav::Encounter: onEncounter(ev); break;
         case Nav::Wifi: onWifi(ev); break;

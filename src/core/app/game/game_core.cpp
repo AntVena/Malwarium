@@ -50,6 +50,7 @@ Game::Game(StartMode mode, const char* hatchedCreature, ISaveStore* store)
         // Test/dev seam: skip the egg, start on a raised pet.
         // Creature is a parameter so the start pet is flexible (dev_config.h).
         installPet(registry_.creature(hatchedCreature));
+        awayDigestOn_ = false;   // see debugSetAwayDigest
         // A raised pet's operator has found the menu; set directly rather than through
         // markTipSeen, so starting on the seam does not itself dirty the save.
         // The same for every other first-run tip: a raised pet's operator has met all

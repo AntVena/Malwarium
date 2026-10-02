@@ -255,7 +255,10 @@ save v66, `src/core/app/game/game_onboard.cpp`), so a new egg does not re-teach 
 `Hatched` start seam counts them as seen, as a pre-v66 save does. Errors get cards too —
 the first one, and the fourth (one short of failing, when STAT also takes an urgent "!")
 — and the first cache held gets one that teaches the A+C way to the VAULT. Every card a
-device has shown can be read again from **CFG → DEVICE → TIPS**.
+device has shown can be read again from **CFG → DEVICE → TIPS**. And because most of
+what goes wrong happens while nobody is holding it, the first press after `kAwayDigestMs`
+of quiet opens **WHILE YOU WERE AWAY** — Lockouts fired and missed, errors charged, fights,
+caches, a hatch or an evolution — when, and only when, any of it happened.
 
 Rosters, evolution routing and per-stage flavour are data on `CreatureDef` rows, one folder per
 evolution line under `src/core/content/creatures/` — not a table in a doc.

@@ -414,6 +414,10 @@ the walk is where food comes from. Keep a meal or two in reserve.
 in the **VAULT** on your side of the device (**A+C**; stop any walk first, since mid-walk
 the chord opens the walk's controls). They're a good source of food and rare items.
 
+Been away a while? The first button you press after an hour or more of quiet shows
+**WHILE YOU WERE AWAY**: lockouts it went through, errors it took, fights won and lost,
+caches found, and whether it hatched or evolved. Nothing happened, nothing shown.
+
 Let **FED** hit zero and the device locks into a **SYSTEM LOCKOUT**: you get 30 seconds
 to **FEED IT** (or pay Bits instead).
 

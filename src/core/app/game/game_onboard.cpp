@@ -10,6 +10,7 @@
 #include "core/app/game.h"
 
 #include <cstdio>
+#include <cstring>
 
 #include "core/ui/carousel.h"
 #include "core/ui/items_screen.h"
@@ -374,6 +375,80 @@ int32_t Game::failingLeftMs() const {
 
 bool Game::yubiReady() const {
     return !yubiConsumed_ && inventory_.count("yubi_cookie") > 0;
+}
+
+// --- WHILE YOU WERE AWAY ----------------------------------------------------------
+//
+// Lockouts expire, errors land, fights are won and lost, caches turn up — mostly while
+// nobody is holding the device. The log records all of it, but a log is somewhere a
+// player has to think to go. So the first press after a long quiet is spent on a short
+// summary of exactly what changed, and only when something did.
+
+void Game::resetAwayTally() { away_ = AwayTally{}; }
+
+std::vector<Game::AwayRow> Game::awayRows() const {
+    std::vector<AwayRow> out;
+    const auto add = [&](const char* label, const char* fmt, auto... v) {
+        AwayRow r;
+        r.label = label;
+        std::snprintf(r.value, sizeof r.value, fmt, v...);
+        out.push_back(r);
+    };
+    if (away_.hatched) add("HATCHED INTO", "%s", away_.hatched->displayName);
+    if (away_.evolved) add("EVOLVED INTO", "%s", away_.evolved->displayName);
+    if (away_.hungry) add("WENT HUNGRY", "%dX", away_.hungry);
+    if (away_.missed) add("LOCKOUTS MISSED", "%d", away_.missed);
+    if (away_.errors) add("ERRORS", "+%d, NOW %d", away_.errors, model_.careMistakes());
+    if (away_.won) add("FIGHTS WON", "%d", away_.won);
+    if (away_.lost) add("FIGHTS LOST", "%d", away_.lost);
+    if (away_.caches) add("CACHES FOUND", "%d", away_.caches);
+    return out;
+}
+
+bool Game::openAwayDigestIfDue(uint32_t quietMs) {
+    // Only over the habitat: a press on any other screen is the player already looking
+    // at something, and a summary would take it out from under them.
+    const bool due = awayDigestOn_ && quietMs >= kAwayDigestMs && pet_ &&
+                     face_ == Face::Pet && nav_ == Nav::Idle && !awayRows().empty();
+    if (!due) {
+        resetAwayTally();   // the player is here: what they missed starts again from now
+        return false;
+    }
+    awayQuietMs_ = quietMs;
+    nav_ = Nav::AwayDigest;
+    dirty_ = true;
+    return true;
+}
+
+void Game::onAwayDigest(const ButtonEvent& ev) {
+    if (ev.button == Button::B || ev.button == Button::C) {
+        resetAwayTally();
+        nav_ = Nav::Idle;
+        dirty_ = true;
+    }
+}
+
+void Game::drawAwayDigest(Framebuffer& fb) const {
+    fb.clear(palColor(Pal::PAPER));
+    drawHeaderBand(fb, "WHILE YOU WERE AWAY");
+    char quiet[28];
+    std::snprintf(quiet, sizeof quiet, "%u:%02u AWAY (DEVICE ON)",
+                  static_cast<unsigned>(awayQuietMs_ / 3600000u),
+                  static_cast<unsigned>((awayQuietMs_ / 60000u) % 60u));
+    drawText(fb, kMargin, 32, quiet, palColor(Pal::INK_DIM));
+    const std::vector<AwayRow> rows = awayRows();
+    int y = 52;
+    for (const AwayRow& r : rows) {
+        // The rows that cost the pet something take the warning ink; the word carries
+        // it in grayscale, the colour only grades it.
+        const bool bad = std::strcmp(r.label, "LOCKOUTS MISSED") == 0 ||
+                         std::strcmp(r.label, "ERRORS") == 0 ||
+                         std::strcmp(r.label, "WENT HUNGRY") == 0;
+        drawLabelValue(fb, kMargin, y, r.label, palColor(Pal::INK), r.value,
+                       bad ? palColor(Pal::WARN) : palColor(Pal::INK_DIM), 0, false);
+        y += 18;
+    }
+    drawHintBand(fb, "B OK");
 }
 
 bool Game::lockoutFoodHeld() const {

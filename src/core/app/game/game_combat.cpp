@@ -659,6 +659,8 @@ void Game::finishCombat() {
         // Explore win-streak: a win advances the streak (10 in a row →
         // unlock the sector's boss, unless already cleared); a loss cancels the mode
         // and resets the streak. That's the whole risk model.
+        if (combat_.outcome() == Combat::Outcome::Win) ++away_.won;
+        else if (combat_.lostOrDrawn()) ++away_.lost;
         if (combat_.outcome() == Combat::Outcome::Win) {
             // 'Pedia malbeast "defeated": a WON live wild fight
             // (never a boss round — those return via finishBossRound() above before

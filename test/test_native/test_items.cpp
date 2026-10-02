@@ -1192,6 +1192,61 @@ void test_lockout_tells_the_truth_when_failing() {
     CHECK(ok.failingLeftMs() == -1);                  // not failing: no clock
 }
 
+// WHILE YOU WERE AWAY: a Lockout that fired and expired with nobody there is reported
+// on the first press after a long quiet — that press is spent on the summary — and only
+// then. A short quiet, or a long one in which nothing happened, opens nothing.
+void test_away_summary_reports_what_was_missed() {
+    const auto hasRow = [](const std::vector<Game::AwayRow>& rows, const char* label) {
+        for (const Game::AwayRow& r : rows)
+            if (std::strcmp(r.label, label) == 0) return true;
+        return false;
+    };
+    uint32_t t = 0;
+    Game g{StartMode::Hatched};
+    g.debugSetAwayDigest(true);
+    g.model().setHunger(0);
+    g.tick(t += kHeartbeatMs);                          // Lockout fires, nobody there
+    CHECK(g.nav() == Game::Nav::ModalLockout);
+    g.tick(t += kLockoutDurationMs + kHeartbeatMs);     // ...and expires
+    CHECK(g.nav() == Game::Nav::Idle);
+    g.tick(t += kAwayDigestMs);                         // a long, quiet absence
+    g.onButton(press(Button::A));
+    CHECK(g.nav() == Game::Nav::AwayDigest);            // the press went to the summary
+    const std::vector<Game::AwayRow> rows = g.awayRows();
+    CHECK(hasRow(rows, "WENT HUNGRY") && hasRow(rows, "LOCKOUTS MISSED") &&
+          hasRow(rows, "ERRORS"));
+    for (const Game::AwayRow& r : rows)
+        CHECK(textWidth(r.label) + textWidth(r.value) + 8 <= kActiveW - 2 * kMargin);
+    Framebuffer fb(kActiveW, kActiveH);
+    g.render(fb);
+    CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));
+    g.onButton(press(Button::B));
+    CHECK(g.nav() == Game::Nav::Idle);
+    g.onButton(press(Button::A));
+    CHECK(g.nav() == Game::Nav::Cursor);                // spent: the next press is a press
+
+    // Something happened, but the player was here a moment ago: no summary.
+    Game h{StartMode::Hatched};
+    h.debugSetAwayDigest(true);
+    h.onButton(press(Button::A));                       // present at t = 0
+    h.onButton(press(Button::C));
+    h.model().setHunger(0);
+    uint32_t u = 0;
+    h.tick(u += kHeartbeatMs);
+    h.tick(u += kLockoutDurationMs + kHeartbeatMs);
+    h.tick(u += kAutoDefocusMs);
+    h.onButton(press(Button::A));
+    CHECK(h.nav() != Game::Nav::AwayDigest);
+
+    // A long quiet in which nothing happened: no summary either.
+    Game q{StartMode::Hatched};
+    q.debugSetAwayDigest(true);
+    q.model().setHunger(100);
+    q.tick(kAwayDigestMs + kHeartbeatMs);
+    q.onButton(press(Button::A));
+    CHECK(q.nav() == Game::Nav::Cursor);
+}
+
 // An empty larder says where food comes from. The ITEMS list opens on a notice, the
 // hungry pet's "!" moves from ITEMS (which cannot help) to EXPL (where food is found),
 // and a Lockout with nothing to feed opens on its Bits row with the feed row naming

@@ -236,6 +236,12 @@ constexpr int kBranchBadFragPct = 160;     // Bad: takes MORE loss-Frag (fragile
 // reached inside it: long enough to notice the habitat's FAILING countdown and act
 // (or open a cache for a cookie), short enough that failing is still a crisis. ------
 constexpr uint32_t kCsfDyingGraceMs = 30u * 60u * 1000u;  // 5/5 recovery window
+
+// WHILE YOU WERE AWAY: the powered-on quiet (no button pressed) after which the first
+// press opens a summary of what happened meanwhile — if anything did. An hour: long
+// enough that checking in on the pet through the day isn't interrupted every time, short
+// enough that a missed Lockout is reported the same session it happened in.
+constexpr uint32_t kAwayDigestMs = 60u * 60u * 1000u;
 constexpr int kCsfHoldBeats = 3;   // FX_CRITICAL_FAIL crash hold before B acknowledges
 
 // CFG / Factory Reset. The hidden Factory Reset is reached only by a

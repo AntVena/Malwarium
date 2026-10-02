@@ -97,7 +97,7 @@ public:
     //   Detail      — L3 (item detail · MAINT action).
     //   Process     — a running MAINT process (non-interruptible).
     //   ModalFeeding / ModalLockout — event overlays.
-    enum class Nav { Idle, Cursor, Submenu, Detail, Process, ModalFeeding, ModalLockout, ModalLineSelect, ModalEggPick, ModalHatchReveal, ModalEvolve, ModalCSF, Combat, ExploreControl, Encounter, Wifi, Shop, ModShop, WarpPicker, RollbackPicker, RepartitionPicker, CacheYield, BulkYield, PostEncounter, Stacker, Isolation, Chroma, Decryption, Cryptogram, ArcadeResult, Tourney, ShiboleetHail, Shiboleet, ShiboleetVerdict, Story, StoryArchive, TipCard };
+    enum class Nav { Idle, Cursor, Submenu, Detail, Process, ModalFeeding, ModalLockout, ModalLineSelect, ModalEggPick, ModalHatchReveal, ModalEvolve, ModalCSF, Combat, ExploreControl, Encounter, Wifi, Shop, ModShop, WarpPicker, RollbackPicker, RepartitionPicker, CacheYield, BulkYield, PostEncounter, Stacker, Isolation, Chroma, Decryption, Cryptogram, ArcadeResult, Tourney, ShiboleetHail, Shiboleet, ShiboleetVerdict, Story, StoryArchive, TipCard, AwayDigest };
 
     // Which L2 screen the ITEMS submenu is showing. Picker (the category tile
     // screen) only ever appears when itemPickerUnlocked(); every other path — no
@@ -611,6 +611,26 @@ public:
     // repeat, and listing it would spoil the moment it is written for.
     std::vector<Tip> replayableTips() const;
     static const char* tipTitle(Tip t);
+    // WHILE YOU WERE AWAY (game_onboard.cpp): what happened since the last button press,
+    // shown on the first press after kAwayDigestMs of powered-on quiet — but only when
+    // something did. The tally is runtime-only: a reboot starts a fresh one.
+    struct AwayTally {
+        int hungry = 0;          // Lockouts fired (FED hit zero)
+        int missed = 0;          // ...of them expired unanswered
+        int errors = 0;          // care errors charged (addCareMistakeShielded)
+        int won = 0, lost = 0;   // wild fights on the walk
+        int caches = 0;          // sealed caches found
+        const CreatureDef* hatched = nullptr;   // the egg hatched into this
+        const CreatureDef* evolved = nullptr;   // the pet evolved into this
+    };
+    const AwayTally& awayTally() const { return away_; }
+    // The tally's rows as label/value pairs, the order they are drawn in. Public so a
+    // gate can assert what the summary SAYS.
+    struct AwayRow { const char* label; char value[20]; };
+    std::vector<AwayRow> awayRows() const;
+    // Dev/test seam: the summary is off on the Hatched seam (a gate that ticks hours and
+    // then presses a button means the press), and a gate about it turns it back on.
+    void debugSetAwayDigest(bool on) { awayDigestOn_ = on; }
     // Dev/test seam: forget every tip, so a gate can meet one on a seam pet.
     void debugClearTips() { for (uint8_t& b : tipsSeen_) b = 0; }
     // The chance, 0..100, that a QUICK defrag or an AV scan fails at the current
@@ -2590,6 +2610,16 @@ private:
     void onTipCard(const ButtonEvent& ev);
     void drawTipCard(Framebuffer& fb) const;
     int cfgTipsRow_ = 0;                     // CFG > TIPS cursor
+    AwayTally away_;
+    bool awayDigestOn_ = true;
+    uint32_t awayQuietMs_ = 0;               // the absence the open summary covers
+    void resetAwayTally();
+    // On a press: open the summary if the quiet before it was long enough and the tally
+    // holds anything; otherwise start a fresh tally. True when it opened (the press is
+    // spent on it).
+    bool openAwayDigestIfDue(uint32_t quietMs);
+    void onAwayDigest(const ButtonEvent& ev);
+    void drawAwayDigest(Framebuffer& fb) const;
     void onTipsList(const ButtonEvent& ev);
     void drawTipsList(Framebuffer& fb) const;
     // Is the engine on screen being played for an egg's hatch bonus (rather than at a

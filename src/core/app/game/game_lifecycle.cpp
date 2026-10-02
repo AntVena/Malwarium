@@ -20,6 +20,7 @@ void Game::addCareMistakeShielded(int n) {
         markSaveDirty();
         return;
     }
+    if (n > 0) away_.errors += n;
     model_.addCareMistake(n);
 }
 
@@ -31,6 +32,7 @@ void Game::fireLockout() {
     // Shielded like every Game-level positive mistake.
     addCareMistakeShielded(kWentHungryMistakes);
     log_.push(LogEventType::CareMistake, "went hungry");
+    ++away_.hungry;
     // A crisis modal preempts AND cancels explore-mode — the streak resets.
     exploreActive_ = false;
     exploreStreak_ = 0;
@@ -45,6 +47,7 @@ void Game::fireLockout() {
 }
 
 void Game::expireLockout() {
+    ++away_.missed;
     addCareMistakeShielded(kLockoutExpiryMistakes);
     model_.setHappiness(model_.happiness() - kLockoutHappyPenalty);
     model_.setHunger(kLockoutRecoveryHunger);
@@ -277,6 +280,7 @@ void Game::completeHatch() {
     }
     lastModelMs_ = nowMs_;        // post-hatch decay starts now (no jump)
     stageEnteredMs_ = nowMs_;     // Process in-stage clock starts at hatch
+    away_.hatched = pet_;
     nav_ = Nav::Idle;
     dirty_ = true;
     persistSave();                // a freshly hatched pet survives an immediate reboot
@@ -458,6 +462,7 @@ void Game::fireEvolution() {
 }
 
 void Game::completeEvolution() {
+    if (evolveTo_) away_.evolved = evolveTo_;
     if (evolveTo_) {
         // 'Pedia achievements, evaluated BEFORE the swap: model_ still holds the care
         // budget that decided which branch fired. The branch NOT taken is deliberately
