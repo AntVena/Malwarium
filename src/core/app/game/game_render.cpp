@@ -101,7 +101,7 @@ void Game::render(Framebuffer& fb) const {
                                  : 0.0f;
             drawLockoutModal(fb, pet, model_, sl, rf, lockoutPayOption_,
                              bits_ >= kLockoutBitsCost, kLockoutBitsCost, beat_,
-                             lockoutFoodHeld());
+                             lockoutFoodHeld(), failingLeftMs(), yubiReady());
             break;
         }
     }
@@ -331,15 +331,14 @@ void Game::drawHabitat(Framebuffer& fb, int cursor) const {
     // device is owed. It sits below the hunger alert's 20px slot on a plate of paper,
     // so it reads over whatever the habitat has behind it.
     if (pet_ && !inEggPhase() && model_.careBranch() == CareBranch::Dying) {
-        const uint32_t left =
-            dyingElapsedMs_ < kCsfDyingGraceMs ? kCsfDyingGraceMs - dyingElapsedMs_ : 0;
+        const uint32_t left = static_cast<uint32_t>(failingLeftMs());
         char head[24];
         std::snprintf(head, sizeof head, "FAILING - %u:%02u LEFT",
                       static_cast<unsigned>(left / 60000u),
                       static_cast<unsigned>((left / 1000u) % 60u));
         const char* rescue = yubiConsumed_ ? "NOTHING CAN SAVE IT NOW"
-                           : inventory_.count("yubi_cookie") > 0 ? "FEED IT THE YUBI-COOKIE"
-                                                                  : "ONLY A YUBI-COOKIE SAVES IT";
+                           : yubiReady()  ? "FEED IT THE YUBI-COOKIE"
+                                          : "ONLY A YUBI-COOKIE SAVES IT";
         const int by = kLivingTop + 26;
         fb.fillRect(0, by - 3, kActiveW, 2 * (kFontH + 3) + 3, palColor(Pal::PAPER));
         drawText(fb, (kActiveW - textWidth(head)) / 2, by, head, palColor(Pal::HOT));

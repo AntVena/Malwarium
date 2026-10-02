@@ -124,6 +124,7 @@ int g_failures = 0;
     RUN(test_loot_pools_resolve_and_carry_weight) \
     RUN(test_lockout_resolve_pay)           \
     RUN(test_lockout_resolve_feed)          \
+    RUN(test_lockout_tells_the_truth_when_failing) \
     RUN(test_food_signpost_when_the_bag_has_no_meal) \
     RUN(test_caches_listed_and_first_cache_card) \
     RUN(test_items_grayscale)               \

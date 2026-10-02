@@ -1163,6 +1163,35 @@ void test_lockout_resolve_feed() {
     CHECK(g.model().hunger() > 0);
 }
 
+// A fifth error that lands as the Lockout fires leaves a pet the Lockout cannot save:
+// feeding clears the crisis, not the failing. The screen leads with the failing clock
+// instead of FEED IT NOW, and its feed row says which feeding would help — the
+// Yubi-Cookie — or that none will.
+void test_lockout_tells_the_truth_when_failing() {
+    Game g{StartMode::Hatched};
+    g.model().setCareMistakes(kCareDying - 1);
+    g.model().setHunger(0);
+    uint32_t t = 0;
+    g.tick(t += kHeartbeatMs);                        // Lockout fires: "went hungry" is #5
+    CHECK(g.nav() == Game::Nav::ModalLockout);
+    g.tick(t += kHeartbeatMs);                        // ...and the failing window arms
+    CHECK(g.model().careBranch() == CareBranch::Dying);
+    CHECK(g.failingLeftMs() > 0 && g.failingLeftMs() <= static_cast<int32_t>(kCsfDyingGraceMs));
+    CHECK(!g.yubiReady());
+    Framebuffer plain(kActiveW, kActiveH), failing(kActiveW, kActiveH);
+    drawLockoutModal(plain, nullptr, g.model(), 20, 0.5f, false, true, kLockoutBitsCost, 0,
+                     true);
+    g.render(failing);
+    CHECK(regionDiffers(plain, failing, 0, 130, kActiveW, 160));   // headline + feed row
+    g.inventory().add("yubi_cookie", 1);
+    CHECK(g.yubiReady());
+    CHECK(textWidth("FAILING - 29:59 LEFT") <= kActiveW - 2 * kMargin);
+    CHECK(textWidth("FEED THE YUBI-COOKIE") <= kActiveW - kMargin - 10);
+
+    Game ok{StartMode::Hatched};
+    CHECK(ok.failingLeftMs() == -1);                  // not failing: no clock
+}
+
 // An empty larder says where food comes from. The ITEMS list opens on a notice, the
 // hungry pet's "!" moves from ITEMS (which cannot help) to EXPL (where food is found),
 // and a Lockout with nothing to feed opens on its Bits row with the feed row naming

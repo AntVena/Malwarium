@@ -365,6 +365,17 @@ void Game::drawTipsList(Framebuffer& fb) const {
     drawHintBand(fb, "A NEXT  B READ  C BACK");
 }
 
+int32_t Game::failingLeftMs() const {
+    if (!pet_ || inEggPhase() || model_.careBranch() != CareBranch::Dying) return -1;
+    return dyingElapsedMs_ < kCsfDyingGraceMs
+               ? static_cast<int32_t>(kCsfDyingGraceMs - dyingElapsedMs_)
+               : 0;
+}
+
+bool Game::yubiReady() const {
+    return !yubiConsumed_ && inventory_.count("yubi_cookie") > 0;
+}
+
 bool Game::lockoutFoodHeld() const {
     for (const ItemDef* d : registry_.allItems())
         if (itemResolvesLockout(*d) && inventory_.count(d->id) > 0) return true;

@@ -596,6 +596,12 @@ public:
     // Does the bag hold anything that resolves a Lockout (itemResolvesLockout)? The
     // Lockout opens on its Bits row without, and says where food comes from.
     bool lockoutFoodHeld() const;
+    // A pet at 5/5 errors: how much of its kCsfDyingGraceMs window is left, or -1 when it
+    // is not failing. The habitat banner and the Lockout both count it down.
+    int32_t failingLeftMs() const;
+    // Is there a Yubi-Cookie in the bag this pet can still eat (once per pet)? The one
+    // item that brings a failing pet back below 5/5.
+    bool yubiReady() const;
     // The one-time TIP CARD (Nav::TipCard): which tip it is showing, and the page it
     // shows as prose rows. Public so a gate can assert what a card SAYS.
     Tip tipCard() const { return tipCard_; }

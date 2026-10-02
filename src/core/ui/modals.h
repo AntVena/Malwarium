@@ -53,8 +53,14 @@ void drawFeedingModal(Framebuffer& fb, const SpriteData* pet, const SpriteData* 
 // drains the countdown bar; `secondsLeft` is the numeric readout. `hasFood` false (the
 // bag holds nothing that resolves a Lockout) turns the feed row into the place food
 // comes from, dimmed, so the crisis says why that path is shut.
+// `failingLeftMs` >= 0 means the pet is already FAILING (5/5 errors) with that much of
+// its window left: feeding still clears the Lockout but no longer saves the pet, so the
+// headline becomes the countdown and the feed row says what feeding will and will not
+// do — `yubiReady` (a Yubi-Cookie this pet can still eat is in the bag) turns it into
+// the one rescue there is.
 void drawLockoutModal(Framebuffer& fb, const SpriteData* pet, const PetModel& m,
                       int secondsLeft, float remainFrac, bool payOption,
-                      bool canPay, int bitsCost, int beat, bool hasFood = true);
+                      bool canPay, int bitsCost, int beat, bool hasFood = true,
+                      int32_t failingLeftMs = -1, bool yubiReady = false);
 
 } // namespace mal

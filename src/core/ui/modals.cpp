@@ -186,7 +186,8 @@ void drawFeedingModal(Framebuffer& fb, const SpriteData* pet, const SpriteData* 
 
 void drawLockoutModal(Framebuffer& fb, const SpriteData* pet, const PetModel& m,
                       int secondsLeft, float remainFrac, bool payOption,
-                      bool canPay, int bitsCost, int beat, bool hasFood) {
+                      bool canPay, int bitsCost, int beat, bool hasFood,
+                      int32_t failingLeftMs, bool yubiReady) {
     (void)m;
     fb.clear(palColor(Pal::PAPER));
 
@@ -207,8 +208,20 @@ void drawLockoutModal(Framebuffer& fb, const SpriteData* pet, const PetModel& m,
 
     // Lockout only ever fires on an empty stomach (Game::tickLifecycle), so the screen
     // says that, and names the fix, rather than leaving a crisis to be decoded.
-    drawText(fb, kMargin, 132, hasFood ? "STARVING! FEED IT NOW:" : "STARVING AND NO FOOD:",
-             palColor(Pal::INK));
+    // A pet already failing is the one case where "feed it" is not the answer: the
+    // Lockout clears, the pet does not. Say so, with the clock that matters.
+    const bool failing = failingLeftMs >= 0;
+    if (failing) {
+        char head[28];
+        std::snprintf(head, sizeof head, "FAILING - %d:%02d LEFT",
+                      static_cast<int>(failingLeftMs / 60000),
+                      static_cast<int>((failingLeftMs / 1000) % 60));
+        drawText(fb, kMargin, 132, head, palColor(Pal::HOT));
+    } else {
+        drawText(fb, kMargin, 132,
+                 hasFood ? "STARVING! FEED IT NOW:" : "STARVING AND NO FOOD:",
+                 palColor(Pal::INK));
+    }
 
     // Two-path choice — the focused one carries the row cursor.
     const int yItems = 150, yPay = 166;
@@ -218,7 +231,10 @@ void drawLockoutModal(Framebuffer& fb, const SpriteData* pet, const PetModel& m,
     // With nothing to feed, the row still opens ITEMS (whose notice says the same), but
     // it reads as shut and names where food comes from — this is the moment a player
     // learns that the walk, not a menu, is where the next meal is.
-    const char* feedLine = hasFood ? "FEED IT" : "NO FOOD - FIND IN EXPL";
+    const char* feedLine = !hasFood              ? "NO FOOD - FIND IN EXPL"
+                         : !failing              ? "FEED IT"
+                         : yubiReady             ? "FEED THE YUBI-COOKIE"
+                                                 : "FEED - WON'T SAVE IT";
     const Rgb565 feedCol = hasFood ? palColor(Pal::INK) : palColor(Pal::INK_DIM);
     if (!payOption) {
         drawRowCursor(fb, kMargin, yItems, palColor(Pal::ACCENT));
