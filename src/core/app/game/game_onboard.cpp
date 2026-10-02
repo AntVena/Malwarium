@@ -128,7 +128,7 @@ constexpr TipRowText kCareFragRows[] = {
 constexpr TipRowText kCareHappyRows[] = {
     {"BORED",
      "Its mood drifts down over time. Play anything in GAMES to cheer it up - every "
-     "game pays Bits as well."},
+     "game pays Bits as well. Answering a guardian on the walk helps, as do some foods."},
 };
 // Errors happen while nobody is looking — a Lockout expires on an empty room — so these
 // two wait for the next time the menu is opened, like every other card.
@@ -151,6 +151,17 @@ constexpr TipRowText kNearTheLineRows[] = {
      "Arm a Restore Point from ITEMS now: it stops the next error, once per pet. And "
      "keep FED up - an empty stomach is the usual fifth."},
 };
+// The second row of that card when the Restore Point is not the advice to give: one is
+// already armed, or this pet has had its one. Chosen when the card is drawn
+// (tipCardRows), so it is true of the pet the player is looking at.
+constexpr TipRowText kShieldArmedRow = {
+    "YOUR SHIELD IS UP",
+    "A Restore Point is armed and will block the next error. Keep FED up - an empty "
+    "stomach is the usual fifth."};
+constexpr TipRowText kShieldSpentRow = {
+    "NO SHIELD LEFT",
+    "This pet has used its one Restore Point, so nothing blocks the next error. Keep FED "
+    "up above all - an empty stomach is the usual fifth."};
 // The first sealed cache (or Decryptogram) is the first thing in the bag that only the
 // Hacker face can use — and that face is reached by a chord nothing else teaches.
 constexpr TipRowText kFirstCacheRows[] = {
@@ -201,7 +212,15 @@ std::vector<ProseRow> Game::tipCardRows() const {
         case Tip::CareHappy: appendTipRows(out, kCareHappyRows); break;
         case Tip::FirstWalk: appendTipRows(out, kFirstWalkRows); break;
         case Tip::FirstError: appendTipRows(out, kFirstErrorRows); break;
-        case Tip::NearTheLine: appendTipRows(out, kNearTheLineRows); break;
+        case Tip::NearTheLine: {
+            const TipRowText first[] = {kNearTheLineRows[0]};
+            appendTipRows(out, first);
+            const TipRowText second[] = {mistakeShieldActive_ ? kShieldArmedRow
+                                         : shieldItemConsumed_ ? kShieldSpentRow
+                                                               : kNearTheLineRows[1]};
+            appendTipRows(out, second);
+            break;
+        }
         case Tip::FirstCache: appendTipRows(out, kFirstCacheRows); break;
         default: break;
     }

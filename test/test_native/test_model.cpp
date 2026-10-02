@@ -375,7 +375,28 @@ void test_error_warnings_before_failing() {
     h.model().setCareMistakes(kCareDying - 1);
     h.onButton(press(Button::A));
     CHECK(h.tipCard() == Game::Tip::NearTheLine);
-    CHECK(h.tipSeen(Game::Tip::FirstError));
+    CHECK(h.tipSeen(Game::Tip::FirstError));    CHECK(h.tipCardRows().size() == 2 &&
+          std::strcmp(h.tipCardRows()[1].label, "BLOCK THE NEXT ONE") == 0);
+
+    // The card's advice follows the shield: armed, it says so rather than asking for it.
+    Game armed{StartMode::Hatched};
+    armed.debugClearTips();
+    for (Game::Tip k : {Game::Tip::CareFed, Game::Tip::CareFrag, Game::Tip::CareHappy})
+        armed.markTipSeen(k);
+    armed.model().setFragmentation(10);
+    armed.debugUseItem("restore_point");
+    // The use lands on the ITEMS list: back out to the carousel and let it tuck away.
+    for (int i = 0; i < 4 && armed.nav() != Game::Nav::Cursor &&
+                    armed.nav() != Game::Nav::Idle; ++i)
+        tapC(armed);
+    armed.tick(kAutoDefocusMs + 1);
+    CHECK(armed.nav() == Game::Nav::Idle);
+    armed.model().setCareMistakes(kCareDying - 1);
+    armed.onButton(press(Button::A));
+    CHECK(armed.tipCard() == Game::Tip::NearTheLine);
+    CHECK(armed.tipCardRows().size() == 2 &&
+          std::strcmp(armed.tipCardRows()[1].label, "YOUR SHIELD IS UP") == 0);
+    for (const ProseRow& r : armed.tipCardRows()) CHECK(!r.body.atCap());
 }
 
 // Arming the first walk from EXPL explains the walk before it runs hands-off — and the
