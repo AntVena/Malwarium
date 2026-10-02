@@ -211,6 +211,7 @@ static Game wormEgg() {
     g.resetToHatch();
     g.onButton(press(Button::A));                // Ransomware -> Worm
     g.onButton(press(Button::B));                // lay it
+    skipHatchBrief(g);                           // straight onto the board
     return g;
 }
 

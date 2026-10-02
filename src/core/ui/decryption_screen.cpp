@@ -189,7 +189,7 @@ void drawDiskDecryption(Framebuffer& fb, const DiskDecryption& d, bool showExact
     // puzzle that never tells you the answer teaches nothing about the next one, and
     // the last row's own feedback is unreadable without it.
     const bool cracked = d.cracked();
-    const char* verdict = cracked ? "KEY RECOVERED" : "PAYLOAD HELD";
+    const char* verdict = cracked ? "KEY RECOVERED" : "KEY NOT FOUND";
     if (cracked) {
         drawText(fb, (kActiveW - textWidth(verdict)) / 2, kStatusY, verdict,
                  palColor(Pal::ACCENT));
@@ -202,10 +202,12 @@ void drawDiskDecryption(Framebuffer& fb, const DiskDecryption& d, bool showExact
     if (arcade)
         std::snprintf(effect, sizeof(effect), "SCORE %d / %d", d.score(),
                       DiskDecryption::maxScore());
+    // Said as what happens to the EGG, in words a first-time player already has: this
+    // is the first verdict the device ever shows, and "incubation" is not one of them.
     else if (cracked)
-        std::snprintf(effect, sizeof(effect), "INCUBATION HALVED");
+        std::snprintf(effect, sizeof(effect), "HATCHES TWICE AS FAST");
     else
-        std::snprintf(effect, sizeof(effect), "FULL INCUBATION");
+        std::snprintf(effect, sizeof(effect), "HATCHES ON ITS OWN CLOCK");
     drawText(fb, (kActiveW - textWidth(effect)) / 2, kEffectY, effect,
              cracked ? palColor(Pal::ACCENT) : palColor(Pal::INK_DIM));
 

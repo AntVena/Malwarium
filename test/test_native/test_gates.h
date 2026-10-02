@@ -243,7 +243,15 @@ inline void enterSlot(Game& g, SubmenuId id) {
 // egg keeps its full clock and the run costs nothing. Deterministic by construction:
 // B alone never cycles a colour, so every row is locked in as GGG, and the hatch board
 // bars duplicate colours in the key, so GGG is a code it cannot have drawn.
+// The first egg of a line lays onto its board paused under the one-time hatch
+// briefing (game_onboard.cpp). C skips it, which is what every helper that plays a
+// hatch board does first, so a gate about the board is not a gate about the briefing.
+inline void skipHatchBrief(Game& g) {
+    if (g.gameBriefIntro()) g.onButton(press(Button::C));
+}
+
 inline void settleDecryption(Game& g) {
+    skipHatchBrief(g);
     if (!g.inDecryption()) return;
     for (int i = 0; i < kDecryptionAttempts * kDecryptionSlots; ++i)
         g.onButton(press(Button::B));
@@ -254,6 +262,7 @@ inline void settleDecryption(Game& g) {
 // the model — the one thing a player can't do, and the only way a test gets a
 // deterministic crack out of a seeded code.
 inline void crackDecryption(Game& g) {
+    skipHatchBrief(g);
     if (!g.inDecryption()) return;
     for (int s = 0; s < kDecryptionSlots; ++s) {
         const int want = g.decryption().codeAt(s);

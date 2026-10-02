@@ -204,6 +204,18 @@ void Game::startHatchGame(const EggLineDef* line) {
             startChroma(kChromaRounds, kChromaWindowMs, /*switching=*/false);
             break;
     }
+    // The first egg of each line lays straight onto a board the player has never
+    // seen, so that once the board opens paused under its own RULES page, led by
+    // what the egg stakes (game_onboard.cpp). Every later egg of the line skips it.
+    const Tip tip = line->hatchGame == HatchGame::Clutch    ? Tip::HatchClutch
+                  : line->hatchGame == HatchGame::Isolation ? Tip::HatchIsolation
+                  : line->hatchGame == HatchGame::Chroma    ? Tip::HatchChroma
+                                                            : Tip::HatchDecrypt;
+    if (!tipSeen(tip)) {
+        markTipSeen(tip);
+        openGameBrief();
+        gameBriefIntro_ = gameBriefOpen_;
+    }
 }
 
 void Game::accelerateEggHatch(uint32_t ms) {
@@ -605,6 +617,7 @@ void Game::wipeDeviceProgress() {
     bossWins_ = 0;
     stackerWins_ = 0;
     for (uint8_t& b : quoteStates_) b = 0;   // every quote back to never played
+    for (uint8_t& b : tipsSeen_) b = 0;      // a device with no history is taught again
     hackerRank_ = 0;
     networksSeen_ = 0;
     handshakesSeen_ = 0;

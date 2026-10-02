@@ -575,6 +575,11 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     // StoryChapterDef::wire. Its own tail after v64's.
     w.u16(static_cast<uint16_t>(d.storyRead.size()));
     for (uint8_t b : d.storyRead) w.u8(b);
+
+    // v66: the onboarding tips already shown, as a length-prefixed bitset over
+    // Game::Tip. Its own tail after v65's.
+    w.u16(static_cast<uint16_t>(d.tipsSeen.size()));
+    for (uint8_t b : d.tipsSeen) w.u8(b);
 }
 
 std::vector<uint8_t> serializeSave(const SaveData& d) {
@@ -1214,6 +1219,13 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
     if (version >= 65) {
         const uint16_t n = r.u16();
         for (uint16_t i = 0; i < n && r.ok; ++i) d.storyRead.push_back(r.u8());
+    }
+
+    // v66 tail: which onboarding tips this device has shown. Absent in an older blob
+    // -> empty, so each tip is offered once more after an upgrade.
+    if (version >= 66) {
+        const uint16_t n = r.u16();
+        for (uint16_t i = 0; i < n && r.ok; ++i) d.tipsSeen.push_back(r.u8());
     }
 
     if (!r.ok) { out = SaveData{}; return false; }  // truncated -> empty

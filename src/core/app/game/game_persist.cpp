@@ -233,6 +233,7 @@ SaveData Game::captureSave() const {
     // v65: the STORY read-set, the same shape and for the same reason — a bitset over
     // wire numbers, written at its full in-memory width.
     d.storyRead.assign(storyRead_, storyRead_ + sizeof(storyRead_));
+    d.tipsSeen.assign(tipsSeen_, tipsSeen_ + sizeof(tipsSeen_));   // v66, same shape
     d.bossWins = bossWins_;
     d.stackerWins = stackerWins_;   // v44
     d.tourneyWins = tourneyWins_;   // v56
@@ -644,6 +645,10 @@ void Game::applySave(const SaveData& d) {
     for (uint8_t& b : storyRead_) b = 0;
     for (size_t i = 0; i < d.storyRead.size() && i < sizeof(storyRead_); ++i)
         storyRead_[i] = d.storyRead[i];
+    // v66: the onboarding tips, the same way.
+    for (uint8_t& b : tipsSeen_) b = 0;
+    for (size_t i = 0; i < d.tipsSeen.size() && i < sizeof(tipsSeen_); ++i)
+        tipsSeen_[i] = d.tipsSeen[i];
     if (d.achievementEarned.empty() && d.achievementsMask != 0) {
         // Pre-v40: the legacy u32 mask, whose bit i IS wire number i (the original 14
         // rows kept their enum order as their wire numbers, precisely so this is a copy

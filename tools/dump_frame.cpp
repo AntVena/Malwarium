@@ -35,6 +35,8 @@
 //             part-solved quote, "take" leaves a letter in hand for the cell-cursor
 //             control state, "win" plays it out to the attribution + prize and "lose"
 //             misplaces one to hold the verdict)
+//        intro (keep the one-time hatch briefing every egg-laying scene otherwise skips,
+//             e.g. "hatch intro" for the first screen a fresh device shows)
 //        decryption [rows|lost] (the Ransomware egg's DISK DECRYPTION board; "rows"
 //             plays three attempts so the history and its corruption overlay are on
 //             screen, "lost" plays all five and holds the verdict + revealed key)
@@ -269,6 +271,12 @@ int main(int argc, char** argv) {
     Game game{hasFlag(argc, argv, "hatch") ? StartMode::FreshHatch
                                            : StartMode::Hatched,
               startCreature};
+    // The one-time hatch briefing (game_onboard.cpp) would otherwise stand in front of
+    // every hatch-game scene below; "intro" keeps it, to draw the briefing itself.
+    if (!hasFlag(argc, argv, "intro"))
+        for (Game::Tip t : {Game::Tip::HatchDecrypt, Game::Tip::HatchClutch,
+                            Game::Tip::HatchIsolation, Game::Tip::HatchChroma})
+            game.markTipSeen(t);
     if (hasFlag(argc, argv, "hungry")) game.model().setHunger(10);  // Critical band
     if (hasFlag(argc, argv, "lockout")) game.model().setHunger(0);  // fires Lockout
     // A stat preset exercising Caution/Critical zones for the grayscale gate.

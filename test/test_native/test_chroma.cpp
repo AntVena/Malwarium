@@ -181,6 +181,7 @@ static Game metaEgg() {
         g.onButton(press(Button::A));           // cycle the highlighted line
     }
     g.onButton(press(Button::B));               // lay it
+    skipHatchBrief(g);                           // straight onto the board
     return g;
 }
 

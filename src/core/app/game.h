@@ -557,6 +557,30 @@ public:
     int tourneyCursor() const { return tourneyCursor_; }
     // Is a game engine's mid-play RULES overlay open right now? (game_arcade.cpp)
     bool gameBriefOpen() const { return gameBriefOpen_; }
+    // Was it opened BY the hatch rather than by the chord — the first time a line's egg
+    // is laid on this device? That reading leads with what the egg stakes, B walks it
+    // forward and off its last page into play, and C skips straight to the board.
+    bool gameBriefIntro() const { return gameBriefIntro_; }
+    // The overlay's row model (core/ui/prose_page.h), built on demand. Public so a gate
+    // can assert what the page SAYS instead of reading it out of pixels.
+    std::vector<ProseRow> gameBriefRows() const;
+
+    // --- One-time onboarding tips (game_onboard.cpp) ---------------------------
+    // The things the device teaches exactly once and then never again: the briefing in
+    // front of each egg line's hatch game, and the idle nudge that says which button
+    // opens the menu. PLAYER-LEVEL and persisted (save v66) like the STORY read-set,
+    // and for its reason — a new egg is not grounds for being taught the buttons again.
+    // A Tip's value is its bit in that set: append, never renumber or reuse.
+    enum class Tip : uint8_t {
+        HatchDecrypt = 0,     // the Ransomware egg's DISK DECRYPTION
+        HatchClutch = 1,      // the Phishing egg's Clutch Pick
+        HatchIsolation = 2,   // the Worm egg's Isolation Protocol
+        HatchChroma = 3,      // the Metamorphic egg's CHROMATOPHORE
+        MenuOpened = 4,       // the carousel has been summoned at least once
+    };
+    static constexpr int kTipWireCap = 32;   // bits in the persisted set
+    bool tipSeen(Tip t) const;
+    void markTipSeen(Tip t);
     // The two readers' row models (core/ui/prose_page.h), built on demand — both walk
     // the content tables, so they are called on a press or a repaint, never held.
     // Public so a gate can assert what a sheet SAYS instead of reading it out of pixels.
@@ -2507,9 +2531,15 @@ private:
     // variant, or a hatch.
     bool gameBriefOpen_ = false;
     int gameBriefScroll_ = 0;
+    bool gameBriefIntro_ = false;            // opened by the hatch, not the chord
+    uint8_t tipsSeen_[kTipWireCap / 8] = {}; // one bit per Tip (save v66)
+    // Is the engine on screen being played for an egg's hatch bonus (rather than at a
+    // cabinet, or for MAINT)? That is what the briefing's lead panel is about.
+    bool hatchGameLive() const;
+    // The briefing's hatch-only lead panel: what the egg stakes on this board.
+    ProseRow hatchBriefLeadRow() const;
     bool gameBriefAvailable() const;         // is nav_ one of the five?
     ArcadeGameKind gameBriefKind() const;    // which one, as the content row's key
-    std::vector<ProseRow> gameBriefRows() const;
     void openGameBrief();
     void closeGameBrief();
     void toggleGameBrief();   // the chord's job when it isn't Cryptogram's drop-letter

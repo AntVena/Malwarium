@@ -63,7 +63,11 @@ std::vector<ProseRow> Game::gameBriefRows() const {
     std::vector<ProseRow> out;
     const ArcadeGameDef* def = arcadeGameByKind(gameBriefKind());
     if (!def) return out;
-    out.reserve(static_cast<size_t>(def->briefCount));
+    out.reserve(static_cast<size_t>(def->briefCount) + 1);
+    // The engine's own rows say nothing about what a run pays (content_arcade.cpp), so
+    // a hatch adds the one thing a first-time player most needs before the mechanics:
+    // what the egg stakes on this board, which is less than the board makes it look.
+    if (hatchGameLive()) out.push_back(hatchBriefLeadRow());
     for (int i = 0; i < def->briefCount; ++i) {
         ProseRow r;
         r.label = def->brief[i].heading;
@@ -82,6 +86,7 @@ void Game::openGameBrief() {
 
 void Game::closeGameBrief() {
     gameBriefOpen_ = false;
+    gameBriefIntro_ = false;
     gameBriefScroll_ = 0;
     dirty_ = true;
 }
@@ -103,7 +108,12 @@ bool Game::onGameBriefInput(const ButtonEvent& ev) {
     if (ev.button == Button::B && total > 0) {
         const int shown = proseRowsFitting(rows, gameBriefScroll_, kGameBriefReaderTop);
         gameBriefScroll_ += shown;
-        if (gameBriefScroll_ >= total) gameBriefScroll_ = 0;
+        // The chord's reader wraps, since it is something to re-read; the hatch's
+        // briefing is something to get through, so B off its last page starts play.
+        if (gameBriefScroll_ >= total) {
+            if (gameBriefIntro_) closeGameBrief();
+            else gameBriefScroll_ = 0;
+        }
         dirty_ = true;
     } else if (ev.button == Button::C || ev.chordAC) {
         closeGameBrief();
@@ -114,8 +124,15 @@ bool Game::onGameBriefInput(const ButtonEvent& ev) {
 void Game::drawGameBrief(Framebuffer& fb) const {
     const ArcadeGameDef* def = arcadeGameByKind(gameBriefKind());
     drawHeaderBand(fb, def ? def->displayName : "RULES", "RULES");
-    drawProseRows(fb, gameBriefRows(), gameBriefScroll_, kGameBriefReaderTop, beat_,
-                  "B MORE   C BACK");
+    const std::vector<ProseRow> rows = gameBriefRows();
+    const char* hint = "B MORE   C BACK";
+    if (gameBriefIntro_) {
+        const bool last = gameBriefScroll_ +
+            proseRowsFitting(rows, gameBriefScroll_, kGameBriefReaderTop) >=
+            static_cast<int>(rows.size());
+        hint = last ? "B PLAY" : "B NEXT   C SKIP";
+    }
+    drawProseRows(fb, rows, gameBriefScroll_, kGameBriefReaderTop, beat_, hint);
 }
 
 // --- The cabinet list (L2) -------------------------------------------------

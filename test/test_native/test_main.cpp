@@ -123,6 +123,8 @@ int g_failures = 0;
     /* The egg's hatch */                   \
     RUN(test_hatch_lays_egg_at_idle)        \
     RUN(test_hatch_opens_the_decryption_board) \
+    RUN(test_hatch_briefing_opens_once_per_line) \
+    RUN(test_hatch_briefing_skips_and_stays_off_the_arcade) \
     /* DISK DECRYPTION — the Ransomware line's board */ \
     RUN(test_decryption_three_locks_play_a_row) \
     RUN(test_decryption_counts_exact_and_elsewhere) \

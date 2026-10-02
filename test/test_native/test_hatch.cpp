@@ -39,6 +39,76 @@ void test_hatch_opens_the_decryption_board() {
     CHECK(!g.hasAchievement(ach::kFirstBruteForce));   // a key that was never broken
 }
 
+// The first egg of a line lays onto its board PAUSED under that board's RULES page, led
+// by what the egg stakes — the device's first screen has nobody beside it to explain
+// it. B walks the briefing forward and off its last page into play; it is spent once per
+// DEVICE, persisted, so the next egg of the line lays straight onto the board.
+void test_hatch_briefing_opens_once_per_line() {
+    MemSaveStore store;
+    {
+        Game g{StartMode::FreshHatch, "paypup", &store};
+        if (g.inLineSelect()) g.onButton(press(Button::B));   // lay the Ransomware egg
+        CHECK(g.nav() == Game::Nav::Decryption);
+        CHECK(g.gameBriefOpen() && g.gameBriefIntro());
+        CHECK(g.tipSeen(Game::Tip::HatchDecrypt));
+        CHECK(!g.tipSeen(Game::Tip::HatchClutch));          // per LINE, not per hatch
+        const std::vector<ProseRow> rows = g.gameBriefRows();
+        CHECK(rows.size() > 1 && std::strcmp(rows[0].label, "A NEW EGG") == 0);
+
+        // The board is paused underneath: A drives the reader, not the slot colour.
+        const int colour0 = g.decryption().guess(0);
+        g.onButton(press(Button::A));
+        CHECK(g.decryption().guess(0) == colour0);
+
+        for (int i = 0; i < 10 && g.gameBriefOpen(); ++i) g.onButton(press(Button::B));
+        CHECK(!g.gameBriefOpen() && !g.gameBriefIntro());
+        CHECK(g.nav() == Game::Nav::Decryption && g.decryption().running());
+
+        // The chord reopens it as the ordinary reader: still led by the egg's stakes,
+        // because the egg is still riding on the board, but B wraps rather than leaving.
+        g.onButton(chordAC());
+        CHECK(g.gameBriefOpen() && !g.gameBriefIntro());
+        CHECK(std::strcmp(g.gameBriefRows()[0].label, "A NEW EGG") == 0);
+        for (int i = 0; i < 10; ++i) g.onButton(press(Button::B));
+        CHECK(g.gameBriefOpen());
+        g.onButton(chordAC());
+        CHECK(!g.gameBriefOpen());
+
+        settleDecryption(g);
+        CHECK(g.nav() == Game::Nav::Idle);
+        g.tick(kSaveAutosaveMs + kHeartbeatMs);              // autosave the tip set
+    }
+    Game g2{StartMode::FreshHatch, "paypup", &store};        // boots the saved egg
+    CHECK(g2.tipSeen(Game::Tip::HatchDecrypt));
+    g2.resetToHatch();                                        // a second Ransomware egg
+    if (g2.inLineSelect()) g2.onButton(press(Button::B));
+    CHECK(g2.nav() == Game::Nav::Decryption);
+    CHECK(!g2.gameBriefOpen());                               // straight onto the board
+}
+
+// C skips the briefing outright, and the same engine at a cabinet never leads with an
+// egg: nothing incubates behind an arcade board, so its RULES page is the mechanic alone.
+void test_hatch_briefing_skips_and_stays_off_the_arcade() {
+    {
+        Game g;
+        if (g.inLineSelect()) g.onButton(press(Button::B));
+        CHECK(g.gameBriefIntro());
+        g.onButton(press(Button::C));
+        CHECK(!g.gameBriefOpen());
+        CHECK(g.nav() == Game::Nav::Decryption && g.decryption().running());
+    }
+    {
+        Game g{StartMode::Hatched};
+        enterArcadeCabinet(g, arcadeGameIndexById("decryption"), ArcadeDifficulty::Medium);
+        g.onButton(press(Button::B));                         // start the cabinet
+        CHECK(g.inDecryption());
+        CHECK(!g.gameBriefOpen());                            // no intro at a cabinet
+        g.onButton(chordAC());
+        CHECK(g.gameBriefOpen());
+        CHECK(std::strcmp(g.gameBriefRows()[0].label, "A NEW EGG") != 0);
+    }
+}
+
 // Waiting out the full incubation (never opening the minigame) auto-hatches on its
 // own — straight to Process, no soft-lock.
 void test_hatch_waits_out() {

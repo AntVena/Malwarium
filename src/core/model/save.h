@@ -303,7 +303,14 @@ constexpr int kSaveTextCap = 28;     // matches EventLog's LogEntry.text
 //     new egg is not grounds for being told the game's premise again. Pre-v65 -> empty,
 //     which reads as a device that has been shown nothing — true of every save written
 //     before there was anything to show, and self-correcting after one walk.
-constexpr uint16_t kSaveVersion = 65;
+// v66 APPEND `tipsSeen`, the one-time onboarding tips this device has already shown
+//     (Game::Tip, game_onboard.cpp), as a length-prefixed BITSET indexed by the Tip's
+//     value — storyRead's shape and for its reason, so a tip added later needs no
+//     migration. Its own tail after v65's. PLAYER-LEVEL: a new egg is not grounds for
+//     being taught the buttons again. Pre-v66 -> empty, which reads as a device that has
+//     been taught nothing; the tips are cheap enough that an upgraded device showing
+//     each one once more is the honest default.
+constexpr uint16_t kSaveVersion = 66;
 
 // The oldest blob deserialize will read, and the ONLY thing that retires a rename row
 // (see `renamedIds`). Raising it is how a device stops carrying migration weight for saves
@@ -879,6 +886,10 @@ struct SaveData {
     // catalogue can outgrow any fixed width: a longer set loads into a shorter build
     // harmlessly, and a shorter one reads back as "not shown yet". Player-level.
     std::vector<uint8_t> storyRead;
+
+    // --- v66: the one-time onboarding tips already shown ----------------------
+    // One bit per Game::Tip, length-prefixed like storyRead. Player-level.
+    std::vector<uint8_t> tipsSeen;
 };
 
 // Read/write one mod's spare count in the v45 packed pool (SaveData::ownedModCounts) by

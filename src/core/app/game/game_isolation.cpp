@@ -162,7 +162,9 @@ void Game::drawIsolation(Framebuffer& fb) const {
             std::snprintf(effect, sizeof(effect), "%d / %d BYTES", isolation_.dots(),
                           isolation_.goal());
         else if (clean) std::snprintf(effect, sizeof(effect), "HATCHING NOW");
-        else std::snprintf(effect, sizeof(effect), "-%d MIN INCUBATION",
+        else if (isolation_.dots() == 0)
+            std::snprintf(effect, sizeof(effect), "HATCHES ON ITS OWN CLOCK");
+        else std::snprintf(effect, sizeof(effect), "HATCHES %d MIN SOONER",
                            isolation_.dots());
         drawText(fb, (kActiveW - textWidth(effect)) / 2, kEffectY, effect,
                  isolation_.dots() > 0 ? palColor(Pal::ACCENT) : palColor(Pal::INK_DIM));

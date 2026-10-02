@@ -320,6 +320,7 @@ static Game phishingEgg() {
     g.resetToHatch();
     g.onButton(press(Button::A));               // cycle to Phishing
     g.onButton(press(Button::B));               // lay it
+    skipHatchBrief(g);                           // straight onto the board
     return g;
 }
 

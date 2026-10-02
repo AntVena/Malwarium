@@ -306,8 +306,10 @@ void Game::drawChroma(Framebuffer& fb) const {
         else if (bootHatchRemainMs_ <=
                  static_cast<uint32_t>(chroma_.passes()) * kChromaPassMs)
             std::snprintf(effect, sizeof(effect), "HATCHING NOW");
+        else if (chroma_.passes() == 0)
+            std::snprintf(effect, sizeof(effect), "HATCHES ON ITS OWN CLOCK");
         else
-            std::snprintf(effect, sizeof(effect), "-%u MIN INCUBATION",
+            std::snprintf(effect, sizeof(effect), "HATCHES %u MIN SOONER",
                           static_cast<unsigned>(static_cast<uint32_t>(chroma_.passes()) *
                                                 kChromaPassMs / (60u * 1000u)));
         drawText(fb, (kActiveW - textWidth(effect)) / 2, kEffectY, effect,

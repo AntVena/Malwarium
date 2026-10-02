@@ -292,7 +292,8 @@ void Game::drawEggPick(Framebuffer& fb) const {
         // egg behind it, so it names the payout screen that comes next instead of a
         // clock it didn't touch.
         const char* effect = arcadeRun_ ? (eggPickWon_ ? "CABINET CLEARED" : "NO PRIZE")
-                             : eggPickWon_ ? "INCUBATION HALVED" : "FULL INCUBATION";
+                             : eggPickWon_ ? "HATCHES TWICE AS FAST"
+                                           : "HATCHES ON ITS OWN CLOCK";
         drawText(fb, (kActiveW - textWidth(verdict)) / 2, 30, verdict,
                  palColor(Pal::INK));
         drawText(fb, (kActiveW - textWidth(effect)) / 2, 186, effect,
