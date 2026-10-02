@@ -413,6 +413,11 @@ Starving, a lockout that runs out, or a botched defrag each count as an **error*
 - **BAD** (3–4): it grows into a stronger fighter that corrupts faster.
 - **DYING** (5): it is failing, and needs your full attention to pull back.
 
+**Its time only runs while the device is on.** There's no clock inside, so switched off
+your pet simply waits: it doesn't get hungry, bored or older, and it doesn't grow either.
+The EVOLVE countdown on STAT counts powered-on time, so a pet carried around all day grows
+up faster than one switched on for an hour each evening.
+
 Explore the 'net (**EXPL**) for battles, loot, and Bits to spend.
 
 ### Your half of the device 

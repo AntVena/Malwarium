@@ -555,6 +555,10 @@ void drawStatScreen(Framebuffer& fb, const PetModel& m, const char* name,
         std::snprintf(evo, sizeof(evo), "MAX");
     }
     drawText(fb, kActiveW - kMargin - textWidth(evo), 168, evo, palColor(Pal::INK));
+    // The board has no real-time clock, so every timer and every drain on this page
+    // runs only while the device is on. A player expecting a pet that lives through the
+    // night needs telling that switched off, it waits — in both directions.
+    drawText(fb, kLabelX, 186, "TIME RUNS ONLY WHILE ON", palColor(Pal::INK_DIM));
 
     statHintBand(fb, 1, 1);
 }
