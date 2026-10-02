@@ -338,7 +338,7 @@ void Game::drawHabitat(Framebuffer& fb, int cursor) const {
                       static_cast<unsigned>(left / 60000u),
                       static_cast<unsigned>((left / 1000u) % 60u));
         const char* rescue = yubiConsumed_ ? "NOTHING CAN SAVE IT NOW"
-                           : yubiReady()  ? "FEED IT THE YUBI-COOKIE"
+                           : yubiReady()  ? "B: FEED THE YUBI-COOKIE"
                                           : "ONLY A YUBI-COOKIE SAVES IT";
         const int by = kLivingTop + 26;
         fb.fillRect(0, by - 3, kActiveW, 2 * (kFontH + 3) + 3, palColor(Pal::PAPER));

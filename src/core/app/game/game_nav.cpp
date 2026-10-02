@@ -149,6 +149,9 @@ void Game::onButton(const ButtonEvent& ev) {
             // for an egg, and the same thing the A+C chord does. A/C still summon the
             // carousel (an egg can still be carried around / walked to hatch faster).
             if (ev.button == Button::B && hatchRevealReady()) openHatchReveal();
+            // A failing pet with a cookie that would save it: B feeds it, as the
+            // habitat's FAILING banner says. Nothing else at idle is on B.
+            else if (ev.button == Button::B && yubiWouldSave()) feedYubiToSave();
             else if (ev.button == Button::A) summonCursor(0);
             else if (ev.button == Button::C) summonCursor(kCarouselSlots - 1);
             break;
@@ -301,6 +304,8 @@ void Game::onButton(const ButtonEvent& ev) {
             else if (ev.button == Button::B) {
                 if (lockoutPayOption_) {
                     if (bits_ >= kLockoutBitsCost) { bits_ -= kLockoutBitsCost; resolveLockout(); }
+                } else if (yubiWouldSave()) {         // the one meal that saves it
+                    feedYubiToSave();
                 } else {                              // Open Items (Lockout context)
                     lockoutItemsContext_ = true;
                     itemFilter_ = ItemFilter::All;    // d: reset on every entry

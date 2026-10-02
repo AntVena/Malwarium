@@ -602,6 +602,14 @@ public:
     // Is there a Yubi-Cookie in the bag this pet can still eat (once per pet)? The one
     // item that brings a failing pet back below 5/5.
     bool yubiReady() const;
+    // Would eating the Yubi-Cookie SAVE this pet right now? Only while it is failing
+    // (5/5 — errors cap there, so the cookie's -1 always brings it back under) and only
+    // with one this pet can still eat. Anywhere else the once-per-pet cookie would be
+    // spent on an error the pet can live with, so nothing offers it.
+    bool yubiWouldSave() const { return failingLeftMs() >= 0 && yubiReady(); }
+    bool feedYubiToSave();
+    // Feed it, through the real Use path (gate, effects, the feeding modal), from the
+    // FAILING banner's B or the Lockout's feed row. False if it would not save the pet.
     // The one-time TIP CARD (Nav::TipCard): which tip it is showing, and the page it
     // shows as prose rows. Public so a gate can assert what a card SAYS.
     Tip tipCard() const { return tipCard_; }

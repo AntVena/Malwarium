@@ -1184,12 +1184,42 @@ void test_lockout_tells_the_truth_when_failing() {
     g.render(failing);
     CHECK(regionDiffers(plain, failing, 0, 130, kActiveW, 160));   // headline + feed row
     g.inventory().add("yubi_cookie", 1);
-    CHECK(g.yubiReady());
+    CHECK(g.yubiReady() && g.yubiWouldSave());
     CHECK(textWidth("FAILING - 29:59 LEFT") <= kActiveW - 2 * kMargin);
     CHECK(textWidth("FEED THE YUBI-COOKIE") <= kActiveW - kMargin - 10);
+    CHECK(textWidth("B: FEED THE YUBI-COOKIE") <= kActiveW);
 
+    // With a cookie that would save it, the feed row feeds THAT, straight away: the
+    // Lockout clears, the pet drops back under the line, and the failing clock stops.
+    g.onButton(press(Button::B));
+    CHECK(g.nav() == Game::Nav::ModalFeeding);
+    CHECK(!g.lockoutActive());
+    CHECK(g.model().careMistakes() == kCareDying - 1);
+    CHECK(g.inventory().count("yubi_cookie") == 0);
+    g.onButton(press(Button::B));                     // dismiss the feeding modal
+    g.tick(t += kHeartbeatMs);
+    CHECK(g.nav() == Game::Nav::Idle && g.failingLeftMs() == -1);
+
+    // The habitat offers it too: a failing pet at idle, B feeds the cookie.
+    Game h{StartMode::Hatched};
+    h.model().setCareMistakes(kCareDying);
+    h.inventory().add("yubi_cookie", 1);
+    uint32_t u = 0;
+    h.tick(u += kHeartbeatMs);
+    CHECK(h.nav() == Game::Nav::Idle && h.yubiWouldSave());
+    h.onButton(press(Button::B));
+    CHECK(h.nav() == Game::Nav::ModalFeeding);
+    CHECK(h.model().careMistakes() == kCareDying - 1);
+
+    // ...and only when it saves the pet: one short of failing, B does nothing to the bag.
     Game ok{StartMode::Hatched};
     CHECK(ok.failingLeftMs() == -1);                  // not failing: no clock
+    ok.model().setCareMistakes(kCareDying - 1);
+    ok.inventory().add("yubi_cookie", 1);
+    CHECK(!ok.yubiWouldSave());
+    ok.onButton(press(Button::B));
+    CHECK(ok.nav() == Game::Nav::Idle);
+    CHECK(ok.inventory().count("yubi_cookie") == 1);
 }
 
 // WHILE YOU WERE AWAY: a Lockout that fired and expired with nobody there is reported

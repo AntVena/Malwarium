@@ -427,6 +427,9 @@ std::vector<Game::AwayRow> Game::awayRows() const {
 bool Game::openAwayDigestIfDue(uint32_t quietMs) {
     // Only over the habitat: a press on any other screen is the player already looking
     // at something, and a summary would take it out from under them.
+    // A failing pet comes first: the press may be the one that feeds it the cookie, and
+    // the summary keeps until the next press after the crisis.
+    if (failingLeftMs() >= 0) return false;
     const bool due = awayDigestOn_ && quietMs >= kAwayDigestMs && pet_ &&
                      face_ == Face::Pet && nav_ == Nav::Idle && !awayRows().empty();
     if (!due) {
@@ -468,6 +471,17 @@ void Game::drawAwayDigest(Framebuffer& fb) const {
         y += 18;
     }
     drawHintBand(fb, "B OK");
+}
+
+bool Game::feedYubiToSave() {
+    if (!yubiWouldSave()) return false;
+    const ItemDef* cookie = registry_.item("yubi_cookie");
+    if (!cookie) return false;
+    detailItem_ = cookie;
+    // From the Lockout it is also the meal that clears the Lockout (startFeeding).
+    lockoutItemsContext_ = lockoutActive_;
+    useItem();
+    return nav_ == Nav::ModalFeeding;
 }
 
 bool Game::lockoutFoodHeld() const {
