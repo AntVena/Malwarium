@@ -308,8 +308,8 @@ constexpr int kSaveTextCap = 28;     // matches EventLog's LogEntry.text
 //     value — storyRead's shape and for its reason, so a tip added later needs no
 //     migration. Its own tail after v65's. PLAYER-LEVEL: a new egg is not grounds for
 //     being taught the buttons again. Pre-v66 -> empty, which Game::applySave reads as a
-//     device already in use: the menu nudge and the Ransomware briefing count as seen,
-//     and a line it has never laid still gets its own.
+//     device already in use: the menu nudge, the Ransomware briefing, the care cards and
+//     the walk card count as seen, and a line it has never laid still gets its own.
 constexpr uint16_t kSaveVersion = 66;
 
 // The oldest blob deserialize will read, and the ONLY thing that retires a rename row

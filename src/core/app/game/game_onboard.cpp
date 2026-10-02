@@ -1,11 +1,12 @@
 // game_onboard.cpp — what the device teaches a first-time player, and how it knows it
 // already has.
 //
-// Nobody is standing beside a new operator, so the device has to say the three things
-// the hint bands cannot: what an egg's first minigame is staking, which button opens
-// the menu, and which part of the menu the pet needs right now. The first two are
-// one-time TIPS, a player-level persisted set (save v66) so a new egg does not re-teach
-// the buttons; the third is a standing readout and is never "seen".
+// Nobody is standing beside a new operator, so the device has to say the things the
+// hint bands cannot: what an egg's first minigame is staking, which button opens the
+// menu, which part of the menu the pet needs right now — and, the first time each need
+// comes up and the first time a walk is armed, WHY. Everything but the "!" marks is a
+// one-time TIP, a player-level persisted set (save v66) so a new egg does not re-teach
+// the buttons; the marks are a standing readout and are never "seen".
 #include "core/app/game.h"
 
 #include <cstdio>
@@ -13,6 +14,7 @@
 #include "core/ui/carousel.h"
 #include "core/ui/items_screen.h"
 #include "core/ui/prose_page.h"
+#include "core/ui/widgets.h"
 
 namespace mal {
 
@@ -81,6 +83,143 @@ void Game::careAttention(unsigned& attention, unsigned& urgent) const {
          model_.hungerZone(), false);
     mark(SubmenuId::Maint, model_.fragZone(), model_.hasGhost());
     mark(SubmenuId::Games, model_.happyZone(), false);
+}
+
+// --- The tip cards -------------------------------------------------------------
+//
+// A card is a short page of prose shown once, at a moment the player is certainly
+// looking: a CARE card when they reach for the menu while that need's "!" is up, and the
+// WALK card when they arm their first walk (which then runs hands-off, so this is the
+// last moment anyone is guaranteed to be there). Nothing runs on under a card: the walk
+// only steps from the idle habitat (Game::tickHeartbeat), and a card is not that.
+
+namespace {
+
+struct TipRowText {
+    const char* label;
+    const char* text;
+};
+
+// The "!" explainer, which leads the first CARE card a device shows.
+constexpr TipRowText kMarkRow = {
+    "THE ! MARK",
+    "A ! beside a menu means something there needs doing. A blinking red one is urgent. "
+    "Cards like this one show once each."};
+
+constexpr TipRowText kCareFedRows[] = {
+    {"HUNGRY",
+     "FED drops a little every few minutes the device is on. Open ITEMS and FEED it a "
+     "meal. At zero it locks up and costs an error. More food turns up on the walk."},
+};
+constexpr TipRowText kCareFragRows[] = {
+    {"GLITCHY",
+     "Fights and the walk fragment it. Run a DEFRAG from MAINT - the TOOL option never "
+     "fails, and a first pet comes with one tool. An AV scan clears a ghost."},
+};
+constexpr TipRowText kCareHappyRows[] = {
+    {"BORED",
+     "Its mood drifts down over time. Play anything in GAMES to cheer it up - every "
+     "game pays Bits as well."},
+};
+constexpr TipRowText kFirstWalkRows[] = {
+    {"IT WALKS ITSELF",
+     "Your pet now roams this area on its own, menu open or not. Wild malbeasts pick "
+     "fights along the way, and the fights play out by themselves."},
+    {"WINS AND LOSSES",
+     "A win pays Bits and XP. A loss adds FRAG and ends the walk. Win 10 in a row and "
+     "the area's boss opens up."},
+    {"IN A FIGHT",
+     "A skips ahead, B shows both sides, C runs. A+C opens your Exploit command."},
+    {"ALONG THE WAY",
+     "Food, items and Bits turn up as it walks. A+C at home opens the walk's controls - "
+     "stop it from there."},
+};
+
+template <size_t N>
+void appendTipRows(std::vector<ProseRow>& out, const TipRowText (&rows)[N]) {
+    for (const TipRowText& t : rows) {
+        ProseRow r;
+        r.label = t.label;
+        std::snprintf(r.body.buf, sizeof(r.body.buf), "%s", t.text);
+        out.push_back(r);
+    }
+}
+
+// Where the card's prose starts: under drawHeaderBand, as the RULES page's does.
+constexpr int kTipCardTop = 46;
+
+}  // namespace
+
+std::vector<ProseRow> Game::tipCardRows() const {
+    std::vector<ProseRow> out;
+    switch (tipCard_) {
+        case Tip::CareFed:   appendTipRows(out, kCareFedRows); break;
+        case Tip::CareFrag:  appendTipRows(out, kCareFragRows); break;
+        case Tip::CareHappy: appendTipRows(out, kCareHappyRows); break;
+        case Tip::FirstWalk: appendTipRows(out, kFirstWalkRows); break;
+        default: break;
+    }
+    if (tipCardMarkRow_) {
+        const TipRowText mark[] = {kMarkRow};
+        appendTipRows(out, mark);
+    }
+    return out;
+}
+
+void Game::openTipCard(Tip t, Nav returnTo) {
+    const bool care = t == Tip::CareFed || t == Tip::CareFrag || t == Tip::CareHappy;
+    tipCardMarkRow_ = care && !tipSeen(Tip::CareFed) && !tipSeen(Tip::CareFrag) &&
+                      !tipSeen(Tip::CareHappy);
+    markTipSeen(t);
+    tipCard_ = t;
+    tipCardScroll_ = 0;
+    tipCardReturn_ = returnTo;
+    nav_ = Nav::TipCard;
+    dirty_ = true;
+}
+
+bool Game::openCareTipIfDue() {
+    if (!pet_ || inEggPhase()) return false;
+    // In the "!" marks' own order (ITEMS/EXPL, MAINT, GAMES), one card per summon: a
+    // second need waits for the next time the menu is opened rather than stacking.
+    if (model_.hungerZone() != Zone::Ok && !tipSeen(Tip::CareFed)) {
+        openTipCard(Tip::CareFed, Nav::Cursor);
+        return true;
+    }
+    if ((model_.fragZone() != Zone::Ok || model_.hasGhost()) && !tipSeen(Tip::CareFrag)) {
+        openTipCard(Tip::CareFrag, Nav::Cursor);
+        return true;
+    }
+    if (model_.happyZone() != Zone::Ok && !tipSeen(Tip::CareHappy)) {
+        openTipCard(Tip::CareHappy, Nav::Cursor);
+        return true;
+    }
+    return false;
+}
+
+void Game::onTipCard(const ButtonEvent& ev) {
+    const std::vector<ProseRow> rows = tipCardRows();
+    const int total = static_cast<int>(rows.size());
+    if (ev.button == Button::B) {
+        tipCardScroll_ += proseRowsFitting(rows, tipCardScroll_, kTipCardTop);
+        if (tipCardScroll_ >= total) nav_ = tipCardReturn_;   // off the end: done
+    } else if (ev.button == Button::C) {
+        nav_ = tipCardReturn_;
+    }
+    dirty_ = true;
+}
+
+void Game::drawTipCard(Framebuffer& fb) const {
+    fb.clear(palColor(Pal::PAPER));
+    drawHeaderBand(fb, tipCard_ == Tip::FirstWalk ? "THE WALK" : "YOUR PET", "TIP");
+    const std::vector<ProseRow> rows = tipCardRows();
+    const bool last = tipCardScroll_ + proseRowsFitting(rows, tipCardScroll_, kTipCardTop) >=
+                      static_cast<int>(rows.size());
+    const char* hint = last ? "B GOT IT" : "B NEXT   C SKIP";
+    drawProseRows(fb, rows, tipCardScroll_, kTipCardTop, beat_, hint);
+    // The reader draws its band only for a page that overflows; a card that fits in one
+    // window still has to say how it is closed.
+    drawHintBand(fb, hint);
 }
 
 bool Game::lockoutFoodHeld() const {

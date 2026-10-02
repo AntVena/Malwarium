@@ -29,6 +29,7 @@
 //             reader, and the CHAPTERS list it lands in afterwards. "beat" is StoryBeat
 //             order — 0 arrival, 1 gauntlet, 2 cleared, 3 departure; "scroll" takes B n
 //             times, which is how to see a later window clear the countdown rule)
+//        tipcard (the one-time CARE card the first menu summon opens; pairs with crit)
 //        nofood (empty the bag of anything edible; pairs with items, lockout, hungry)
 //        maint [detail] [stacker [slide|drop|stop ...]] · lockout · evolve
 //        cryptogram [open:<n>] [take] [win|lose] (THE DECRYPTOGRAM's quote board, cashed
@@ -293,6 +294,12 @@ int main(int argc, char** argv) {
         game.model().setFragmentation(82);   // Critical frag (ramp + hot numeric)
         game.model().setHappiness(24);       // Caution (warn)
         game.model().setCareMistakes(4);     // Bad branch
+    }
+    // "tipcard" forgets every first-run tip and reaches for the menu, which opens the CARE
+    // card for the first need the vitals above put out of their OK zone (pair with crit).
+    if (hasFlag(argc, argv, "tipcard")) {
+        game.debugClearTips();
+        game.onButton({Button::A, true, false});
     }
     if (hasFlag(argc, argv, "sinkhole")) game.inventory().add("sinkhole_trap", 1);
     // Creature levels: grind XP to ~level 8 so STAT's LVL n + the stat points

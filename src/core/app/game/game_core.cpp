@@ -52,7 +52,14 @@ Game::Game(StartMode mode, const char* hatchedCreature, ISaveStore* store)
         installPet(registry_.creature(hatchedCreature));
         // A raised pet's operator has found the menu; set directly rather than through
         // markTipSeen, so starting on the seam does not itself dirty the save.
-        tipsSeen_[0] |= static_cast<uint8_t>(1u << static_cast<int>(Tip::MenuOpened));
+        // The same for every other first-run tip: a raised pet's operator has met all
+        // of them, and a seam pet that stopped to explain itself would be a different
+        // pet from the one every gate written against it expects.
+        for (Tip t : {Tip::MenuOpened, Tip::CareFed, Tip::CareFrag,
+                      Tip::CareHappy, Tip::FirstWalk}) {
+            const int w = static_cast<int>(t);
+            tipsSeen_[w / 8] |= static_cast<uint8_t>(1u << (w % 8));
+        }
         generation_ = 1;       // the seam pet is the first generation
         petsRaised_ = 1;
         moveLoadout_ = MoveLoadout::startingForLine(registry_, pet_ ? pet_->line : nullptr);

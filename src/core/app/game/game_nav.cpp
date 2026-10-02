@@ -211,6 +211,7 @@ void Game::onButton(const ButtonEvent& ev) {
         case Nav::ExploreControl: onExploreControl(ev); break;
         case Nav::Tourney: onTourney(ev); break;
         case Nav::Story: onStory(ev); break;
+        case Nav::TipCard: onTipCard(ev); break;
         case Nav::StoryArchive: onStoryArchive(ev); break;
         case Nav::Encounter: onEncounter(ev); break;
         case Nav::Wifi: onWifi(ev); break;
@@ -321,6 +322,10 @@ void Game::summonCursor(int slot) {
     cursor_ = slot;
     nav_ = Nav::Cursor;
     markTipSeen(Tip::MenuOpened);   // the idle menu nudge has done its job
+    // The player has just reached for the menu, so they are looking: the moment to say
+    // WHY a slot is marked, once per need (game_onboard.cpp). Dismissing the card lands
+    // back here on the carousel.
+    if (face_ == Face::Pet) openCareTipIfDue();
 }
 
 void Game::enterSubmenu() {

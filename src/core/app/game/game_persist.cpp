@@ -647,14 +647,18 @@ void Game::applySave(const SaveData& d) {
         storyRead_[i] = d.storyRead[i];
     // v66: the onboarding tips, the same way. A v66 blob always writes the set at its
     // full width, so an EMPTY one is a pre-v66 save: a device already in use, whose
-    // operator has opened the menu and played the Ransomware hatch every device starts
-    // on. Those two are taken as seen; a line it has never laid still gets its briefing.
+    // operator has opened the menu, played the Ransomware hatch every device starts on,
+    // cared for a pet and walked it. Those are taken as seen; a line it has never laid
+    // still gets its briefing.
     for (uint8_t& b : tipsSeen_) b = 0;
     for (size_t i = 0; i < d.tipsSeen.size() && i < sizeof(tipsSeen_); ++i)
         tipsSeen_[i] = d.tipsSeen[i];
     if (d.tipsSeen.empty())
-        tipsSeen_[0] |= static_cast<uint8_t>((1u << static_cast<int>(Tip::MenuOpened)) |
-                                             (1u << static_cast<int>(Tip::HatchDecrypt)));
+        for (Tip t : {Tip::MenuOpened, Tip::HatchDecrypt, Tip::CareFed, Tip::CareFrag,
+                      Tip::CareHappy, Tip::FirstWalk}) {
+            const int w = static_cast<int>(t);
+            tipsSeen_[w / 8] |= static_cast<uint8_t>(1u << (w % 8));
+        }
     if (d.achievementEarned.empty() && d.achievementsMask != 0) {
         // Pre-v40: the legacy u32 mask, whose bit i IS wire number i (the original 14
         // rows kept their enum order as their wire numbers, precisely so this is a copy

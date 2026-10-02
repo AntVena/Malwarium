@@ -215,7 +215,11 @@ void Game::onExplList(const ButtonEvent& ev) {
             case ExplRowState::DeepWebDiving: startDeepWebDive(); break;
             case ExplRowState::DarkWebOpen:                     // the terminal zone
             case ExplRowState::DarkWebCrawling: startDarkWebCrawl(); break;
-            default:                          startExplore(area, sub); break;  // arm/re-arm
+            default:                          startExplore(area, sub);  // arm/re-arm
+                // The first walk a player arms is the one moment they are certainly
+                // watching before it runs hands-off, so it is when the walk is explained.
+                if (!tipSeen(Tip::FirstWalk)) openTipCard(Tip::FirstWalk, Nav::Idle);
+                break;
         }
     } else if (ev.button == Button::C) {
         // One level out, every time: inside an area → that category's own rows, parked

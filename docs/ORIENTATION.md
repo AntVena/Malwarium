@@ -245,9 +245,12 @@ hatches off-screen. Every one of them is replayable, off its stakes, in the GAME
 
 **Nobody is beside a new player, so the device teaches.** The first egg of each line lays
 onto its board paused under that engine's RULES page, led by what the egg stakes; the idle
-habitat says PRESS A FOR MENU until the carousel has been summoned once. Both are one-time
-**tips**, a player-level persisted set (`Game::Tip`, save v66,
-`src/core/app/game/game_onboard.cpp`), so a new egg does not re-teach the buttons.
+habitat says PRESS A FOR MENU until the carousel has been summoned once; the first summon
+while a need's "!" is up opens a **care card** saying why and what fixes it (one per need);
+and the first walk armed from EXPL opens a card on how the walk and its fights work, before
+it runs hands-off. All are one-time **tips**, a player-level persisted set (`Game::Tip`,
+save v66, `src/core/app/game/game_onboard.cpp`), so a new egg does not re-teach them. The
+`Hatched` start seam counts them as seen, as a pre-v66 save does.
 
 Rosters, evolution routing and per-stage flavour are data on `CreatureDef` rows, one folder per
 evolution line under `src/core/content/creatures/` — not a table in a doc.

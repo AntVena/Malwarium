@@ -261,6 +261,87 @@ void test_idle_menu_nudge_until_first_summon() {
     CHECK(!upgraded.tipSeen(Game::Tip::HatchClutch));  // ...but not a line it never laid
 }
 
+// The first time the player reaches for the menu while a need's "!" is up, a card says
+// WHY and what fixes it — once per need, one per summon, and dismissing it lands on the
+// carousel the player asked for. The very first care card also explains the "!".
+void test_care_cards_show_once_each() {
+    const auto hasRow = [](const std::vector<ProseRow>& rows, const char* label) {
+        for (const ProseRow& r : rows)
+            if (std::strcmp(r.label, label) == 0) return true;
+        return false;
+    };
+    const auto toIdle = [](Game& g, uint32_t& t) {
+        g.tick(t += kAutoDefocusMs + 1);               // let the carousel tuck away
+        CHECK(g.nav() == Game::Nav::Idle);
+    };
+    uint32_t t = 0;
+    Game g{StartMode::Hatched};
+    g.debugClearTips();
+    g.model().setHunger(80);
+    g.model().setFragmentation(kFragCautionMin);       // MAINT's "!" only
+    g.model().setHappiness(70);
+
+    g.onButton(press(Button::A));
+    CHECK(g.nav() == Game::Nav::TipCard);
+    CHECK(g.tipCard() == Game::Tip::CareFrag);
+    CHECK(g.tipSeen(Game::Tip::CareFrag));
+    std::vector<ProseRow> rows = g.tipCardRows();
+    CHECK(hasRow(rows, "GLITCHY") && hasRow(rows, "THE ! MARK"));
+    for (const ProseRow& r : rows) CHECK(!r.body.atCap());   // no sentence cut short
+    for (int i = 0; i < 6 && g.nav() == Game::Nav::TipCard; ++i)
+        g.onButton(press(Button::B));
+    CHECK(g.nav() == Game::Nav::Cursor);               // back where the A was going
+
+    toIdle(g, t);
+    g.onButton(press(Button::A));
+    CHECK(g.nav() == Game::Nav::Cursor);               // spent: no second FRAG card
+
+    toIdle(g, t);
+    g.model().setHappiness(kHappyCautionMin - 1);
+    g.onButton(press(Button::A));
+    CHECK(g.nav() == Game::Nav::TipCard && g.tipCard() == Game::Tip::CareHappy);
+    CHECK(!hasRow(g.tipCardRows(), "THE ! MARK"));     // the "!" was explained already
+    g.onButton(press(Button::C));                      // C skips straight to the menu
+    CHECK(g.nav() == Game::Nav::Cursor);
+
+    toIdle(g, t);
+    g.model().setHunger(kHungerCautionMax);
+    g.onButton(press(Button::A));
+    CHECK(g.nav() == Game::Nav::TipCard && g.tipCard() == Game::Tip::CareFed);
+    for (const ProseRow& r : g.tipCardRows()) CHECK(!r.body.atCap());
+
+    Game seam{StartMode::Hatched};                     // a raised pet's operator: no cards
+    seam.model().setFragmentation(kFragCriticalMin);
+    seam.onButton(press(Button::A));
+    CHECK(seam.nav() == Game::Nav::Cursor);
+}
+
+// Arming the first walk from EXPL explains the walk before it runs hands-off — and the
+// walk does not step while the card is up, so a player reading it misses nothing.
+void test_first_walk_card() {
+    Game g{StartMode::Hatched};
+    g.debugClearTips();
+    g.markTipSeen(Game::Tip::CareFrag);                // keep the menu summon card-free
+    g.markTipSeen(Game::Tip::CareFed);
+    g.markTipSeen(Game::Tip::CareHappy);
+    enterSubmenuId(g, SubmenuId::Expl);
+    g.onButton(press(Button::B));                      // STORY -> the area list
+    g.onButton(press(Button::B));                      // drill into the area
+    g.onButton(press(Button::B));                      // arm its first sub-area
+    CHECK(g.exploreActive());
+    CHECK(g.nav() == Game::Nav::TipCard && g.tipCard() == Game::Tip::FirstWalk);
+    const std::vector<ProseRow> rows = g.tipCardRows();
+    CHECK(rows.size() >= 3);
+    for (const ProseRow& r : rows) CHECK(!r.body.atCap());
+    uint32_t t = 0;
+    for (int i = 0; i < 40; ++i) g.tick(t += kHeartbeatMs);
+    CHECK(g.exploreSteps() == 0);                      // held while the card is read
+    for (int i = 0; i < 8 && g.nav() == Game::Nav::TipCard; ++i)
+        g.onButton(press(Button::B));
+    CHECK(g.nav() == Game::Nav::Idle);                 // ...and the walk is home's again
+    CHECK(g.tipSeen(Game::Tip::FirstWalk));
+}
+
 void test_carousel_marks_what_the_pet_needs() {
     const auto bitOf = [](SubmenuId id) {
         for (int i = 0; i < kCarouselSlots; ++i)

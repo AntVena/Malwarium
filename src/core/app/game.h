@@ -97,7 +97,7 @@ public:
     //   Detail      — L3 (item detail · MAINT action).
     //   Process     — a running MAINT process (non-interruptible).
     //   ModalFeeding / ModalLockout — event overlays.
-    enum class Nav { Idle, Cursor, Submenu, Detail, Process, ModalFeeding, ModalLockout, ModalLineSelect, ModalEggPick, ModalHatchReveal, ModalEvolve, ModalCSF, Combat, ExploreControl, Encounter, Wifi, Shop, ModShop, WarpPicker, RollbackPicker, RepartitionPicker, CacheYield, BulkYield, PostEncounter, Stacker, Isolation, Chroma, Decryption, Cryptogram, ArcadeResult, Tourney, ShiboleetHail, Shiboleet, ShiboleetVerdict, Story, StoryArchive };
+    enum class Nav { Idle, Cursor, Submenu, Detail, Process, ModalFeeding, ModalLockout, ModalLineSelect, ModalEggPick, ModalHatchReveal, ModalEvolve, ModalCSF, Combat, ExploreControl, Encounter, Wifi, Shop, ModShop, WarpPicker, RollbackPicker, RepartitionPicker, CacheYield, BulkYield, PostEncounter, Stacker, Isolation, Chroma, Decryption, Cryptogram, ArcadeResult, Tourney, ShiboleetHail, Shiboleet, ShiboleetVerdict, Story, StoryArchive, TipCard };
 
     // Which L2 screen the ITEMS submenu is showing. Picker (the category tile
     // screen) only ever appears when itemPickerUnlocked(); every other path — no
@@ -577,6 +577,10 @@ public:
         HatchIsolation = 2,   // the Worm egg's Isolation Protocol
         HatchChroma = 3,      // the Metamorphic egg's CHROMATOPHORE
         MenuOpened = 4,       // the carousel has been summoned at least once
+        CareFed = 5,          // the first time FED's "!" is up when the menu opens
+        CareFrag = 6,         // ...FRAG's (or a ghost's)
+        CareHappy = 7,        // ...HAPPY's
+        FirstWalk = 8,        // the first walk the player arms from EXPL
     };
     static constexpr int kTipWireCap = 32;   // bits in the persisted set
     bool tipSeen(Tip t) const;
@@ -589,6 +593,12 @@ public:
     // Does the bag hold anything that resolves a Lockout (itemResolvesLockout)? The
     // Lockout opens on its Bits row without, and says where food comes from.
     bool lockoutFoodHeld() const;
+    // The one-time TIP CARD (Nav::TipCard): which tip it is showing, and the page it
+    // shows as prose rows. Public so a gate can assert what a card SAYS.
+    Tip tipCard() const { return tipCard_; }
+    std::vector<ProseRow> tipCardRows() const;
+    // Dev/test seam: forget every tip, so a gate can meet one on a seam pet.
+    void debugClearTips() { for (uint8_t& b : tipsSeen_) b = 0; }
     // The chance, 0..100, that a QUICK defrag or an AV scan fails at the current
     // Fragmentation — what rollMaintSuccess rolls against and MAINT prints.
     int maintFailPct() const;
@@ -2544,6 +2554,19 @@ private:
     int gameBriefScroll_ = 0;
     bool gameBriefIntro_ = false;            // opened by the hatch, not the chord
     uint8_t tipsSeen_[kTipWireCap / 8] = {}; // one bit per Tip (save v66)
+    // The tip card on screen (game_onboard.cpp): which tip, the window it is scrolled
+    // to, where dismissing it returns, and whether it leads with the "!" explainer
+    // (the first CARE card a device ever shows).
+    Tip tipCard_ = Tip::MenuOpened;
+    int tipCardScroll_ = 0;
+    Nav tipCardReturn_ = Nav::Idle;
+    bool tipCardMarkRow_ = false;
+    void openTipCard(Tip t, Nav returnTo);
+    // On a carousel summon: open the CARE card for the first need now marked whose
+    // card has never been shown. Returns whether it opened one.
+    bool openCareTipIfDue();
+    void onTipCard(const ButtonEvent& ev);
+    void drawTipCard(Framebuffer& fb) const;
     // Is the engine on screen being played for an egg's hatch bonus (rather than at a
     // cabinet, or for MAINT)? That is what the briefing's lead panel is about.
     bool hatchGameLive() const;
