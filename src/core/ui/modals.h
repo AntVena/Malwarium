@@ -46,9 +46,11 @@ void drawFeedingModal(Framebuffer& fb, const SpriteData* pet, const SpriteData* 
 // Lockout Timer: flashing countdown, a two-path resolve choice
 // (Open Items <-> Pay Bits), C disabled. `payOption` selects which path is
 // focused; `canPay` greys the Pay path when Bits are short. `remainFrac` (1..0)
-// drains the countdown bar; `secondsLeft` is the numeric readout.
+// drains the countdown bar; `secondsLeft` is the numeric readout. `hasFood` false (the
+// bag holds nothing that resolves a Lockout) turns the feed row into the place food
+// comes from, dimmed, so the crisis says why that path is shut.
 void drawLockoutModal(Framebuffer& fb, const SpriteData* pet, const PetModel& m,
                       int secondsLeft, float remainFrac, bool payOption,
-                      bool canPay, int bitsCost, int beat);
+                      bool canPay, int bitsCost, int beat, bool hasFood = true);
 
 } // namespace mal

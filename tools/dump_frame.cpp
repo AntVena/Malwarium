@@ -29,6 +29,7 @@
 //             reader, and the CHAPTERS list it lands in afterwards. "beat" is StoryBeat
 //             order — 0 arrival, 1 gauntlet, 2 cleared, 3 departure; "scroll" takes B n
 //             times, which is how to see a later window clear the countdown rule)
+//        nofood (empty the bag of anything edible; pairs with items, lockout, hungry)
 //        maint [detail] [stacker [slide|drop|stop ...]] · lockout · evolve
 //        cryptogram [open:<n>] [take] [win|lose] (THE DECRYPTOGRAM's quote board, cashed
 //             at the VAULT; "open:<n>" places n letters correctly so the frame shows a
@@ -172,6 +173,7 @@
 #include "core/ui/cfg_screen.h"
 #include "core/content/story.h"
 #include "core/ui/expl_screen.h"
+#include "core/ui/items_screen.h"     // itemResolvesLockout — the "nofood" bag
 
 using namespace mal;
 
@@ -278,6 +280,12 @@ int main(int argc, char** argv) {
                             Game::Tip::HatchIsolation, Game::Tip::HatchChroma})
             game.markTipSeen(t);
     if (hasFlag(argc, argv, "hungry")) game.model().setHunger(10);  // Critical band
+    // "nofood" empties the bag of everything a Lockout could be fed — the state the
+    // ITEMS no-meal notice, the EXPL "!" and the Lockout's shut feed row are about.
+    if (hasFlag(argc, argv, "nofood"))
+        for (const ItemDef* d : ContentRegistry::embedded().allItems())
+            if (itemResolvesLockout(*d))
+                game.inventory().remove(d->id, game.inventory().count(d->id));
     if (hasFlag(argc, argv, "lockout")) game.model().setHunger(0);  // fires Lockout
     // A stat preset exercising Caution/Critical zones for the grayscale gate.
     if (hasFlag(argc, argv, "crit")) {

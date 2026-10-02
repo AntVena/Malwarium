@@ -37,7 +37,9 @@ void Game::fireLockout() {
     deepWebDepthMultiplier_ = 1;
     lockoutActive_ = true;
     lockoutDeadlineMs_ = nowMs_ + kLockoutDurationMs;
-    lockoutPayOption_ = false;
+    // Open on whichever path can actually resolve it: feeding, unless the bag has
+    // nothing to feed and the wallet can cover the Bits instead.
+    lockoutPayOption_ = !lockoutFoodHeld() && bits_ >= kLockoutBitsCost;
     lockoutItemsContext_ = false;
     nav_ = Nav::ModalLockout;
 }

@@ -586,6 +586,9 @@ public:
     // while Fragmentation is (or a Replication Ghost needs scanning out), GAMES while
     // Happiness is. `urgent` is the subset in the Critical band. An egg needs nothing.
     void careAttention(unsigned& attention, unsigned& urgent) const;
+    // Does the bag hold anything that resolves a Lockout (itemResolvesLockout)? The
+    // Lockout opens on its Bits row without, and says where food comes from.
+    bool lockoutFoodHeld() const;
     // The two readers' row models (core/ui/prose_page.h), built on demand — both walk
     // the content tables, so they are called on a press or a repaint, never held.
     // Public so a gate can assert what a sheet SAYS instead of reading it out of pixels.

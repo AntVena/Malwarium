@@ -11,6 +11,7 @@
 #include <cstdio>
 
 #include "core/ui/carousel.h"
+#include "core/ui/items_screen.h"
 #include "core/ui/prose_page.h"
 
 namespace mal {
@@ -66,7 +67,8 @@ void Game::careAttention(unsigned& attention, unsigned& urgent) const {
     if (!pet_ || inEggPhase()) return;
     // Each vital names the ONE slot that fixes it, so the shelf points at the remedy
     // rather than at a readout: food is in ITEMS, a defrag or AV scan in MAINT, and the
-    // arcade is the one place Happiness can be bought back on demand.
+    // arcade is the one place Happiness can be bought back on demand. With no meal in
+    // the bag, ITEMS cannot fix hunger, so the mark goes to EXPL, where food is found.
     const auto mark = [&](SubmenuId id, Zone zone, bool force) {
         if (zone == Zone::Ok && !force) return;
         for (int i = 0; i < kCarouselSlots; ++i) {
@@ -75,9 +77,16 @@ void Game::careAttention(unsigned& attention, unsigned& urgent) const {
             if (zone == Zone::Critical) urgent |= 1u << i;
         }
     };
-    mark(SubmenuId::Items, model_.hungerZone(), false);
+    mark(inventoryHoldsMeal(registry_, inventory_) ? SubmenuId::Items : SubmenuId::Expl,
+         model_.hungerZone(), false);
     mark(SubmenuId::Maint, model_.fragZone(), model_.hasGhost());
     mark(SubmenuId::Games, model_.happyZone(), false);
+}
+
+bool Game::lockoutFoodHeld() const {
+    for (const ItemDef* d : registry_.allItems())
+        if (itemResolvesLockout(*d) && inventory_.count(d->id) > 0) return true;
+    return false;
 }
 
 }  // namespace mal

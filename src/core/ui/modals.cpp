@@ -183,7 +183,7 @@ void drawFeedingModal(Framebuffer& fb, const SpriteData* pet, const SpriteData* 
 
 void drawLockoutModal(Framebuffer& fb, const SpriteData* pet, const PetModel& m,
                       int secondsLeft, float remainFrac, bool payOption,
-                      bool canPay, int bitsCost, int beat) {
+                      bool canPay, int bitsCost, int beat, bool hasFood) {
     (void)m;
     fb.clear(palColor(Pal::PAPER));
 
@@ -204,19 +204,26 @@ void drawLockoutModal(Framebuffer& fb, const SpriteData* pet, const PetModel& m,
 
     // Lockout only ever fires on an empty stomach (Game::tickLifecycle), so the screen
     // says that, and names the fix, rather than leaving a crisis to be decoded.
-    drawText(fb, kMargin, 132, "STARVING! FEED IT NOW:", palColor(Pal::INK));
+    drawText(fb, kMargin, 132, hasFood ? "STARVING! FEED IT NOW:" : "STARVING AND NO FOOD:",
+             palColor(Pal::INK));
 
     // Two-path choice — the focused one carries the row cursor.
     const int yItems = 150, yPay = 166;
     char payLine[20];
     std::snprintf(payLine, sizeof(payLine), "PAY %d BITS", bitsCost);
     Rgb565 payCol = canPay ? palColor(Pal::INK) : palColor(Pal::INK_DIM);
+    // With nothing to feed, the row still opens ITEMS (whose notice says the same), but
+    // it reads as shut and names where food comes from — this is the moment a player
+    // learns that the walk, not a menu, is where the next meal is.
+    const char* feedLine = hasFood ? "FEED IT" : "NO FOOD - FIND IN EXPL";
+    const Rgb565 feedCol = hasFood ? palColor(Pal::INK) : palColor(Pal::INK_DIM);
     if (!payOption) {
         drawRowCursor(fb, kMargin, yItems, palColor(Pal::ACCENT));
-        drawText(fb, kMargin + 10, yItems, "FEED IT", palColor(Pal::ACCENT));
+        drawText(fb, kMargin + 10, yItems, feedLine,
+                 hasFood ? palColor(Pal::ACCENT) : feedCol);
         drawText(fb, kMargin + 10, yPay, payLine, payCol);
     } else {
-        drawText(fb, kMargin + 10, yItems, "FEED IT", palColor(Pal::INK));
+        drawText(fb, kMargin + 10, yItems, feedLine, feedCol);
         drawRowCursor(fb, kMargin, yPay, palColor(Pal::ACCENT));
         drawText(fb, kMargin + 10, yPay, payLine,
                  canPay ? palColor(Pal::ACCENT) : palColor(Pal::INK_DIM));

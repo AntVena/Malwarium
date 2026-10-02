@@ -393,13 +393,16 @@ holds the fix:
 
 | Gauge | What it means | How to fix it |
 |---|---|---|
-| **FED** | How full it is. Drops slowly over the day; more is better. | Feed it: **ITEMS**, pick a food, **FEED**. |
+| **FED** | How full it is. Drops slowly over the day; more is better. | Feed it: **ITEMS**, pick a food, **FEED**. You start with a few meals; more turn up while exploring (**EXPL**), in loot and in area shops. |
 | **FRAG** | Fragmentation, i.e. how glitchy it is. Fights and exploring raise it; less is better. A new pet starts half-fragmented. | Run a **Defrag** (or an AV scan for a ghost) from **MAINT**. Costs a few Bits. |
 | **HAPPY** | Its mood. Drops slowly; more is better. | Play something in **GAMES**. Some foods help too. |
 
 **You don't have to remember any of that.** When a need slips out of the comfortable
 range, the menu slot that fixes it lights up with a **!** beside it, even while the menu
 is tucked away. A blinking red **!** means it's urgent.
+
+Out of food? The bag says so, and the **!** for a hungry pet moves to **EXPL**, because
+the walk is where food comes from. Keep a meal or two in reserve.
 
 Let **FED** hit zero and the device locks into a **SYSTEM LOCKOUT**: you get 30 seconds
 to **FEED IT** (or pay Bits instead).
@@ -414,8 +417,8 @@ Explore the 'net (**EXPL**) for battles, loot, and Bits to spend.
 
 ### Your half of the device 
 **A+C on the main screen flips to the Hacker face** — the parallel menu where *you* live
-rather than the pet. It holds your operator profile and HackerTag, a **shop** for mods and
-food, a **vault** where you cash things in, a **merge hub** for cooking ingredients into better
+rather than the pet. It holds your operator profile and HackerTag, a **shop** of upgrades
+for your rig, a **vault** where you cash things in, a **merge hub** for cooking ingredients into better
 items, and the two social slots below.
 
 You also collect **achievements** (they survive your pet's death — they're yours, not its),

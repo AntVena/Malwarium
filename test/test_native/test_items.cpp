@@ -5,6 +5,8 @@
 // feature whose field it migrates, not in a migrations pile of its own.
 #include "test_gates.h"
 
+#include "core/content/content_recipes.h"   // itemIsRecipeIngredient
+
 void test_inventory() {
     Inventory inv;
     CHECK(inv.count("dyno_nuggets") == 0 && !inv.has("dyno_nuggets"));
@@ -1159,6 +1161,64 @@ void test_lockout_resolve_feed() {
     g.onButton(press(Button::B));                    // dismiss -> resolves lockout
     CHECK(!g.lockoutActive() && g.nav() == Game::Nav::Idle);
     CHECK(g.model().hunger() > 0);
+}
+
+// An empty larder says where food comes from. The ITEMS list opens on a notice, the
+// hungry pet's "!" moves from ITEMS (which cannot help) to EXPL (where food is found),
+// and a Lockout with nothing to feed opens on its Bits row with the feed row naming
+// the walk. A bag of nothing but ingredients counts as empty: they feed a token amount.
+void test_food_signpost_when_the_bag_has_no_meal() {
+    const ContentRegistry& reg = ContentRegistry::embedded();
+    const auto bitOf = [](SubmenuId id) {
+        for (int i = 0; i < kCarouselSlots; ++i)
+            if (carouselSlots()[i].id == id) return 1u << i;
+        return 0u;
+    };
+    const auto stripMeals = [&](Game& g) {
+        for (const ItemDef* d : reg.allItems())
+            if (d->type == ItemDef::Type::Food && !itemIsRecipeIngredient(d->id))
+                g.inventory().remove(d->id, g.inventory().count(d->id));
+    };
+    unsigned att = 0, urg = 0;
+
+    Game g{StartMode::Hatched};
+    g.model().setHunger(kHungerCautionMax);
+    g.model().setFragmentation(10);
+    g.careAttention(att, urg);
+    CHECK(att == bitOf(SubmenuId::Items));             // meals in the bag: feed it
+    CHECK(!buildInventoryRows(reg, g.inventory())[0].notice);
+
+    stripMeals(g);
+    CHECK(!inventoryHoldsMeal(reg, g.inventory()));
+    g.careAttention(att, urg);
+    CHECK(att == bitOf(SubmenuId::Expl));              // nothing to feed: go find some
+    const std::vector<InvRow> rows = buildInventoryRows(reg, g.inventory());
+    CHECK(rows[0].header && rows[0].notice &&
+          std::strcmp(rows[0].label, kNoMealNotice) == 0);
+    CHECK(textWidth(kNoMealNotice) <= kActiveW - 2 * kMargin);
+
+    // A Lockout still opens on FEED while anything at all can resolve it (the starting
+    // ingredients can), and on PAY once nothing can.
+    {
+        Game h{StartMode::Hatched};
+        stripMeals(h);
+        h.model().setHunger(0);
+        h.tick(kHeartbeatMs);
+        CHECK(h.lockoutFoodHeld());
+        h.onButton(press(Button::B));                  // FEED IT -> the lockout list
+        CHECK(h.nav() == Game::Nav::Submenu);
+    }
+    {
+        Game h{StartMode::Hatched};
+        for (const ItemDef* d : reg.allItems())
+            if (itemResolvesLockout(*d)) h.inventory().remove(d->id, h.inventory().count(d->id));
+        h.model().setHunger(0);
+        h.tick(kHeartbeatMs);
+        CHECK(h.nav() == Game::Nav::ModalLockout);
+        CHECK(!h.lockoutFoodHeld());
+        h.onButton(press(Button::B));                  // B on the focused row: PAY
+        CHECK(!h.lockoutActive() && h.nav() == Game::Nav::Idle);
+    }
 }
 
 // Grayscale gate: the focused ITEMS row's cursor marker reads without colour.

@@ -23,6 +23,9 @@ struct InvRow {
     const ItemDef* def;       // null on a header row
     int qty;
     const SpriteData* icon;   // ICON_ITEM_* (null on a header row)
+    // A header that is a NOTICE rather than a group name: drawn in full INK, since it is
+    // the one header on the list that tells the player something they must act on.
+    bool notice = false;
 };
 
 // Two Rig Shop rows read ItemFilter (ui_state.h) on two different axes:
@@ -55,6 +58,16 @@ const SpriteData* itemIcon(const ContentRegistry& reg, const char* id);
 // items). Shared by the list sort and the engine's Use handler.
 bool itemResolvesLockout(const ItemDef& d);
 
+// Does the bag hold a MEAL — a Food row that is not a recipe ingredient, i.e. anything
+// the list files under FOOD rather than INGREDIENTS? An ingredient feeds a token
+// amount, so a bag of them is, for the purpose of keeping a pet fed, an empty one.
+// Game::careAttention reads this to send a hungry pet's "!" to EXPL instead.
+bool inventoryHoldsMeal(const ContentRegistry& reg, const Inventory& inv);
+
+// The notice the list opens with when the bag holds no meal (kNoMealNotice): where
+// food comes from, since the menu that fixes hunger cannot fix it with nothing in it.
+extern const char* const kNoMealNotice;
+
 // Build the grouped, sorted inventory: only stacks with qty>0, ordered
 // FOOD -> INGREDIENTS -> BUFFS -> QUEST with a header row per group, and RAREST
 // FIRST inside each group (Epic -> Common, alphabetical between items of equal
@@ -62,6 +75,7 @@ bool itemResolvesLockout(const ItemDef& d);
 // cooked dishes first, then the recipe ingredients a player rarely eats directly.
 // `lockoutSort` floats Lockout-resolving items to the very top.
 // `filter` (d) narrows the set to one type first; All = no narrowing.
+// With no meal held, an ALL or FOOD list opens on a kNoMealNotice header row.
 std::vector<InvRow> buildInventoryRows(const ContentRegistry& reg,
                                        const Inventory& inv,
                                        bool lockoutSort = false,

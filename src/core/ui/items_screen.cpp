@@ -204,6 +204,16 @@ ItemFilter nextItemFilter(ItemFilter f, bool categoryAxis) {
     }
 }
 
+const char* const kNoMealNotice = "FOOD: NONE - FIND IN EXPL";
+
+bool inventoryHoldsMeal(const ContentRegistry& reg, const Inventory& inv) {
+    for (const ItemDef* d : reg.allItems())
+        if (d->type == ItemDef::Type::Food && !itemIsRecipeIngredient(d->id) &&
+            inv.count(d->id) > 0)
+            return true;
+    return false;
+}
+
 std::vector<InvRow> buildInventoryRows(const ContentRegistry& reg,
                                        const Inventory& inv, bool lockoutSort,
                                        ItemFilter filter) {
@@ -234,6 +244,12 @@ std::vector<InvRow> buildInventoryRows(const ContentRegistry& reg,
             ? itemFilterLabel(filter) : nullptr;
 
     std::vector<InvRow> rows;
+    // Nothing under FOOD: say where food comes from before anything else, on the two
+    // lists that would have shown it — food is found or bought on the walk, never in a
+    // menu, and an empty bag is otherwise silent about that.
+    if ((filter == ItemFilter::All || filter == ItemFilter::Food) &&
+        !inventoryHoldsMeal(reg, inv))
+        rows.push_back({true, kNoMealNotice, nullptr, 0, nullptr, true});
     int curKey = 0x7fffffff;
     for (const Owned& o : owned) {
         if (o.key != curKey) {  // section header at each group boundary
@@ -361,7 +377,8 @@ void drawItemsList(Framebuffer& fb, const std::vector<InvRow>& rows, int cursor,
         const InvRow& r = rows[i];
         const int y = kRowTop + v * kRowH;
         if (r.header) {
-            drawText(fb, kMargin, y + 8, r.label, palColor(Pal::INK_DIM));
+            drawText(fb, kMargin, y + 8, r.label,
+                     r.notice ? palColor(Pal::INK) : palColor(Pal::INK_DIM));
             fb.fillRect(kMargin, y + 18, kActiveW - 2 * kMargin - 4, 1,
                         palColor(Pal::TRACK));
             continue;

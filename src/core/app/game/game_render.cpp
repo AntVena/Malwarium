@@ -99,7 +99,8 @@ void Game::render(Framebuffer& fb) const {
                                  ? static_cast<float>(lockoutDeadlineMs_ - nowMs_) / kLockoutDurationMs
                                  : 0.0f;
             drawLockoutModal(fb, pet, model_, sl, rf, lockoutPayOption_,
-                             bits_ >= kLockoutBitsCost, kLockoutBitsCost, beat_);
+                             bits_ >= kLockoutBitsCost, kLockoutBitsCost, beat_,
+                             lockoutFoodHeld());
             break;
         }
     }
