@@ -29,7 +29,11 @@ namespace {
 // rare, and interleaved by rarity among the actual meals it was the thing a player
 // had to scroll past to find dinner. Derived off content_recipes' own inputs
 // (itemIsRecipeIngredient), not a second hand-authored flag on the item row.
+// The CACHES group sorts after every type group, wherever the type order goes.
+constexpr int kCacheGroupKey = 1000;
+
 int groupKey(const ItemDef& d, bool lockout) {
+    if (d.use == ItemDef::Use::OpenContainer) return kCacheGroupKey;
     if (lockout && itemResolvesLockout(d)) return -1;
     if (d.type == ItemDef::Type::Food)
         return itemIsRecipeIngredient(d.id) ? 1 : 0;
@@ -40,6 +44,7 @@ const char* groupLabel(int key) {
         case -1: return "RESOLVE";
         case 0: return "FOOD";
         case 1: return "INGREDIENTS";
+        case kCacheGroupKey: return "CACHES - OPEN IN VAULT";
         default: return itemTypeName(static_cast<ItemDef::Type>(key - 1));
     }
 }
@@ -220,9 +225,11 @@ std::vector<InvRow> buildInventoryRows(const ContentRegistry& reg,
     struct Owned { const ItemDef* def; int qty; int key; };
     std::vector<Owned> owned;
     for (const ItemDef* d : reg.allItems()) {
-        // Sealed caches decrypt in the Hacker VAULT only (see itemUsable's
-        // "DECRYPT IN VAULT" gate) — never list them here at all.
-        if (d->use == ItemDef::Use::OpenContainer) continue;
+        // Sealed caches open in the Hacker VAULT only (itemUsable's "OPEN IN VAULT
+        // (A+C)" gate), but the ALL list still shows them, in a group of their own that
+        // says where they go: a reward the bag hides is a reward the player never learns
+        // they have. Every narrower filter leaves them out, so no tile holds them.
+        if (d->use == ItemDef::Use::OpenContainer && filter != ItemFilter::All) continue;
         if (!filterMatches(filter, *d)) continue;
         int q = inv.count(d->id);
         if (q > 0) owned.push_back({d, q, groupKey(*d, lockoutSort)});

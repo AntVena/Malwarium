@@ -150,6 +150,19 @@ constexpr TipRowText kNearTheLineRows[] = {
      "Arm a Restore Point from ITEMS now: it stops the next error, once per pet. And "
      "keep FED up - an empty stomach is the usual fifth."},
 };
+// The first sealed cache (or Decryptogram) is the first thing in the bag that only the
+// Hacker face can use — and that face is reached by a chord nothing else teaches.
+constexpr TipRowText kFirstCacheRows[] = {
+    {"YOUR SIDE",
+     "A+C on the home screen flips to your side of the device: your profile, the "
+     "SHOP's rig upgrades, the VAULT and more. A+C again flips back."},
+    {"THE VAULT",
+     "Sealed caches found on the walk open in the VAULT - food, Bits and rare finds "
+     "come out. A Decryptogram is cashed in there too."},
+    {"MID-WALK",
+     "While a walk is running, A+C opens the walk's controls instead. Stop the walk "
+     "there first, then A+C reaches your side."},
+};
 constexpr TipRowText kFirstWalkRows[] = {
     {"IT WALKS ITSELF",
      "Your pet now roams this area on its own, menu open or not. Wild malbeasts pick "
@@ -188,6 +201,7 @@ std::vector<ProseRow> Game::tipCardRows() const {
         case Tip::FirstWalk: appendTipRows(out, kFirstWalkRows); break;
         case Tip::FirstError: appendTipRows(out, kFirstErrorRows); break;
         case Tip::NearTheLine: appendTipRows(out, kNearTheLineRows); break;
+        case Tip::FirstCache: appendTipRows(out, kFirstCacheRows); break;
         default: break;
     }
     if (tipCardMarkRow_) {
@@ -239,6 +253,16 @@ bool Game::openCareTipIfDue() {
         openTipCard(Tip::CareHappy, Nav::Cursor);
         return true;
     }
+    if (!tipSeen(Tip::FirstCache)) {
+        for (const ItemDef* d : registry_.allItems()) {
+            const bool vaultOnly = d->use == ItemDef::Use::OpenContainer ||
+                                   d->use == ItemDef::Use::PlayCryptogram;
+            if (vaultOnly && inventory_.count(d->id) > 0) {
+                openTipCard(Tip::FirstCache, Nav::Cursor);
+                return true;
+            }
+        }
+    }
     return false;
 }
 
@@ -256,7 +280,10 @@ void Game::onTipCard(const ButtonEvent& ev) {
 
 void Game::drawTipCard(Framebuffer& fb) const {
     fb.clear(palColor(Pal::PAPER));
-    drawHeaderBand(fb, tipCard_ == Tip::FirstWalk ? "THE WALK" : "YOUR PET", "TIP");
+    drawHeaderBand(fb, tipCard_ == Tip::FirstWalk    ? "THE WALK"
+                       : tipCard_ == Tip::FirstCache ? "A CACHE"
+                                                     : "YOUR PET",
+                   "TIP");
     const std::vector<ProseRow> rows = tipCardRows();
     const bool last = tipCardScroll_ + proseRowsFitting(rows, tipCardScroll_, kTipCardTop) >=
                       static_cast<int>(rows.size());

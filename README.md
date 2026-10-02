@@ -406,6 +406,10 @@ remembered through restarts and updates.
 Out of food? The bag says so, and the **!** for a hungry pet moves to **EXPL**, because
 the walk is where food comes from. Keep a meal or two in reserve.
 
+**Sealed caches** you find on the walk are listed in ITEMS under **CACHES**, but they open
+in the **VAULT** on your side of the device (**A+C**; stop any walk first, since mid-walk
+the chord opens the walk's controls). They're a good source of food and rare items.
+
 Let **FED** hit zero and the device locks into a **SYSTEM LOCKOUT**: you get 30 seconds
 to **FEED IT** (or pay Bits instead).
 

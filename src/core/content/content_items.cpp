@@ -250,7 +250,7 @@ const ItemDef kItems[] = {
     // Decryptogram: a found ticket to one DECRYPTOGRAM board (content_quotes.h). Cashed
     // in at the Hacker VAULT, never from ITEMS — the prize is a player-level account
     // unlock, so it is spent where the other things you cash in are, and itemUsable
-    // gates the pet path with "CASH IN AT VAULT" the way it does a sealed cache.
+    // gates the pet path with "CASH IN AT VAULT (A+C)" the way it does a sealed cache.
     // Priceless on purpose: no storefront sells one, so the pool only drains as fast as
     // the walk hands them over.
     {"decryptogram", "Decryptogram", ItemDef::Type::Quest,

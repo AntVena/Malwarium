@@ -984,9 +984,12 @@ void test_item_picker_tiles_count_units() {
     CHECK(tiles[4].filter == ItemFilter::Keys        && tiles[4].units == 2);
     CHECK(tiles[5].filter == ItemFilter::Tools       && tiles[5].units == 0);
 
-    inv.add("sealed_cache_epic", 4);            // a cache moves no tile at all
+    // A cache is listed under ALL only (its CACHES group points at the VAULT), so ALL
+    // counts it — a tile never disagrees with its list — and no narrower tile moves.
+    inv.add("sealed_cache_epic", 4);
     auto withCache = buildItemPickerRows(r, inv);
-    for (size_t i = 0; i < tiles.size(); ++i) CHECK(withCache[i].units == tiles[i].units);
+    CHECK(withCache[0].units == tiles[0].units + 4);
+    for (size_t i = 1; i < tiles.size(); ++i) CHECK(withCache[i].units == tiles[i].units);
 }
 
 // Grayscale gate: on the type-picker, BOTH the focused tile's cursor marker and an
@@ -1203,7 +1206,7 @@ void test_vault_hold_b_bulk_opens_tap_opens_one() {
 }
 
 // re-home: sealed caches decrypt from the Hacker VAULT, not pet-side ITEMS. Using
-// an openable from ITEMS is inert (gated "DECRYPT IN VAULT") and does NOT consume it or
+// an openable from ITEMS is inert (gated "OPEN IN VAULT (A+C)") and does NOT consume it or
 // pay out; the VAULT path (debugOpenCache) is the one that decrypts.
 void test_cache_not_openable_from_items() {
     Game g{StartMode::Hatched};

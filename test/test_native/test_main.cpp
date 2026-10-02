@@ -125,6 +125,7 @@ int g_failures = 0;
     RUN(test_lockout_resolve_pay)           \
     RUN(test_lockout_resolve_feed)          \
     RUN(test_food_signpost_when_the_bag_has_no_meal) \
+    RUN(test_caches_listed_and_first_cache_card) \
     RUN(test_items_grayscale)               \
     /* The egg's hatch */                   \
     RUN(test_hatch_lays_egg_at_idle)        \

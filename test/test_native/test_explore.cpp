@@ -1917,7 +1917,7 @@ void test_explore_flavor_lines_fit() {
     // by adding the row rather than by remembering to come back here.
     for (const ItemDef* d : reg.allItems()) {
         if (d->use == ItemDef::Use::OpenContainer && d->cache.findWeight > 0) {
-            std::snprintf(line, sizeof(line), "%s - DECRYPT IN VAULT", d->displayName);
+            std::snprintf(line, sizeof(line), "%s - OPEN IN VAULT (A+C)", d->displayName);
             CHECK(fits());
         }
         if (d->walkWarp != ItemDef::WalkWarp::None) {

@@ -1221,6 +1221,43 @@ void test_food_signpost_when_the_bag_has_no_meal() {
     }
 }
 
+// A sealed cache opens only in the Hacker VAULT, but the bag no longer hides it: ALL
+// lists it in a CACHES group that names where it goes, every narrower filter leaves it
+// out, and the first one held earns a card on the next summon that teaches the chord to
+// the Hacker face — the one screen that can use it — and the walk's catch on that chord.
+void test_caches_listed_and_first_cache_card() {
+    const ContentRegistry& reg = ContentRegistry::embedded();
+    const ItemDef* cache = nullptr;
+    for (const ItemDef* d : reg.allItems())
+        if (d->use == ItemDef::Use::OpenContainer) { cache = d; break; }
+    CHECK(cache != nullptr);
+    if (!cache) return;
+
+    Game g{StartMode::Hatched};
+    g.inventory().add(cache->id, 2);
+    bool header = false, row = false;
+    for (const InvRow& r : buildInventoryRows(reg, g.inventory())) {
+        if (r.header && std::strcmp(r.label, "CACHES - OPEN IN VAULT") == 0) header = true;
+        if (!r.header && r.def == cache) row = true;
+    }
+    CHECK(header && row);
+    for (ItemFilter f : {ItemFilter::Food, ItemFilter::Quest, ItemFilter::Keys,
+                         ItemFilter::Tools, ItemFilter::Buffs})
+        for (const InvRow& r : buildInventoryRows(reg, g.inventory(), false, f))
+            CHECK(r.def != cache);
+    g.debugUseItem(cache->id);                         // pet-side: still refused
+    CHECK(g.inventory().count(cache->id) == 2);
+
+    g.debugClearTips();
+    for (Game::Tip k : {Game::Tip::CareFed, Game::Tip::CareFrag, Game::Tip::CareHappy,
+                        Game::Tip::FirstError, Game::Tip::NearTheLine})
+        g.markTipSeen(k);
+    g.onButton(press(Button::A));
+    CHECK(g.nav() == Game::Nav::TipCard && g.tipCard() == Game::Tip::FirstCache);
+    for (const ProseRow& r : g.tipCardRows()) CHECK(!r.body.atCap());
+    CHECK(textWidth("CACHES - OPEN IN VAULT") <= kActiveW - 2 * kMargin);
+}
+
 // Grayscale gate: the focused ITEMS row's cursor marker reads without colour.
 void test_items_grayscale() {
     ContentRegistry r = ContentRegistry::embedded();

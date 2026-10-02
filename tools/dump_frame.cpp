@@ -1279,7 +1279,7 @@ int main(int argc, char** argv) {
             }
             if (widest) {
                 char flavor[48];
-                std::snprintf(flavor, sizeof(flavor), "%s - DECRYPT IN VAULT",
+                std::snprintf(flavor, sizeof(flavor), "%s - OPEN IN VAULT (A+C)",
                               widest->displayName);
                 game.debugSetExploreFlavor(flavor);
             }

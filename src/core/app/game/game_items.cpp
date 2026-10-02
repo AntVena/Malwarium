@@ -126,14 +126,14 @@ bool Game::itemUsable(const ItemDef& d, const char*& gateMsg) const {
         gateMsg = "USE IN MAINT DEFRAG"; return false;
     }
     // Sealed caches are now decrypted from the Hacker VAULT, never
-    // pet-side ITEMS. Gate here so the detail action reads DECRYPT IN VAULT and B is inert.
+    // pet-side ITEMS. Gate here so the detail action reads OPEN IN VAULT (A+C) and B is inert.
     if (d.use == ItemDef::Use::OpenContainer) {
-        gateMsg = "DECRYPT IN VAULT"; return false;
+        gateMsg = "OPEN IN VAULT (A+C)"; return false;
     }
     // The Decryptogram is cashed in at the same VAULT, for the same reason: what it buys
     // is a player-level unlock, not anything done to the pet.
     if (d.use == ItemDef::Use::PlayCryptogram) {
-        gateMsg = "CASH IN AT VAULT"; return false;
+        gateMsg = "CASH IN AT VAULT (A+C)"; return false;
     }
     // A LOCKING device (a soak, a hold) owns the boundary while it is in, so nothing else
     // in the family goes in beside it — not a divert, not a branch override, not a second
@@ -333,7 +333,7 @@ void Game::useItem() {
     const ItemDef& d = *detailItem_;
 
     // Openable containers (sealed caches) are now decrypted from the Hacker VAULT
-    // not here — itemUsable gates them ("DECRYPT IN VAULT"), so useItem never
+    // not here — itemUsable gates them ("OPEN IN VAULT (A+C)"), so useItem never
     // reaches this point for one. openSealedCache lives on and is called from onHackerVault.
 
     // Rollback: Use opens the stat picker instead of feeding/buffing. The

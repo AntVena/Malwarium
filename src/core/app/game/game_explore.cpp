@@ -613,10 +613,10 @@ void Game::resolveCacheEvent() {
     std::snprintf(buf, sizeof(buf), "FOUND %s", d->displayName);
     log_.push(LogEventType::ItemGained, buf);
     // The VAULT, not ITEMS: a sealed cache is opened from the Hacker face, and pet-side
-    // ITEMS refuses one with this exact sentence (itemUsable's "DECRYPT IN VAULT").
+    // ITEMS refuses one with this exact sentence (itemUsable's "OPEN IN VAULT (A+C)").
     // The two say the same words so the walk never sends a player to a screen that
     // will turn them away.
-    std::snprintf(exploreFlavor_, sizeof(exploreFlavor_), "%s - DECRYPT IN VAULT",
+    std::snprintf(exploreFlavor_, sizeof(exploreFlavor_), "%s - OPEN IN VAULT (A+C)",
                  d->displayName);
     markSaveDirty();
 }

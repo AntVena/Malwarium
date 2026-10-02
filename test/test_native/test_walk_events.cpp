@@ -524,7 +524,7 @@ void test_sealed_cache_walk_find() {
 }
 
 // Decrypting a Sealed Cache now happens in the Hacker VAULT, NOT pet-side
-// ITEMS. (a) pet-side Use is inert (gated "DECRYPT IN VAULT" — nothing consumed);
+// ITEMS. (a) pet-side Use is inert (gated "OPEN IN VAULT (A+C)" — nothing consumed);
 // (b) VAULT B decrypts: consumes one container, draws the reward pool (>= flat Bits),
 // logs it, reveals the yield (Nav::CacheYield).
 void test_sealed_cache_open_grants_reward() {

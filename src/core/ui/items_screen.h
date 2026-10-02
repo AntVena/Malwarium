@@ -100,8 +100,9 @@ struct ItemPickRow {
 };
 
 // The picker's fixed tile order: ALL, FOOD, INGREDIENTS, BUFFS, KEYS, TOOLS. There
-// is no CACHES tile by construction — buildInventoryRows never lists a Sealed
-// Cache (they decrypt in the Hacker VAULT), so no tile could hold one. Counts come
+// is no CACHES tile: buildInventoryRows lists a Sealed Cache only under ALL (in its
+// own CACHES group, since they open in the Hacker VAULT), so ALL counts them and no
+// narrower tile does. Counts come
 // from buildInventoryRows itself, so a tile can never disagree with the list
 // behind it.
 std::vector<ItemPickRow> buildItemPickerRows(const ContentRegistry& reg,
