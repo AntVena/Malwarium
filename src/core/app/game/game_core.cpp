@@ -528,15 +528,17 @@ bool Game::tickLifecycle(uint32_t nowMs) {
     // switched off neither kills the pet nor buys it a reprieve.
     if (pet_ && nav_ != Nav::ModalCSF) {
         if (model_.careBranch() == CareBranch::Dying) {
-            if (!dyingArmed_) { dyingArmed_ = true; dyingEnteredMs_ = nowMs_; }
+            if (!dyingArmed_) {
+                dyingArmed_ = true;
+                dyingEnteredMs_ = nowMs_;
+                markSaveDirty();   // the moment it starts is worth writing at once
+            }
             dyingElapsedMs_ += nowMs_ - dyingEnteredMs_;
             dyingEnteredMs_ = nowMs_;
-            // Keep the written figure close to the live one. The autosave's slow
-            // periodic write (kSaveAutosaveMs) is a quarter of this whole window, so
-            // without this a reboot still refunds everything since the last write —
-            // most of the cheese, back. The kSaveDebounceMs floor caps the churn, and
-            // the window is short enough that the extra writes are bounded by it.
-            markSaveDirty();
+            // Between the transitions the periodic autosave (kSaveAutosaveMs) keeps the
+            // written figure close enough: it is a sixtieth of the window, so a reboot
+            // refunds at most that much. Marking the save dirty every tick instead would
+            // write flash every kSaveDebounceMs for the whole half hour.
             if (dyingElapsedMs_ >= kCsfDyingGraceMs) {
                 fireCSF();
                 changed = true;
@@ -547,6 +549,7 @@ bool Game::tickLifecycle(uint32_t nowMs) {
             // shortening one — the grace is per-brush-with-death, not per-lifetime.
             dyingArmed_ = false;
             dyingElapsedMs_ = 0;
+            markSaveDirty();       // ...and so is the rescue, which zeroes the window
         }
     }
 

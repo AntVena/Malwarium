@@ -228,11 +228,14 @@ constexpr int kBranchBadHealthPct = 100;   // ...on a stage-standard body, so th
 constexpr int kBranchBadFragPct = 160;     // Bad: takes MORE loss-Frag (fragile after)
 
 // Critical System Failure (the ONLY death path). The 5/5 dying state
-//     (care budget maxed) is recoverable by dropping below 5 — Backup Drive
-// (-1 mistake) / Yubi-Cookie (protects 1) — within a grace/ageing window;
-//     once it expires the pet is permanently lost -> a [CORRUPTED] ARCH record +
-// a new-egg Hatch. Combat loss NEVER kills (Health is transient). ------
-constexpr uint32_t kCsfDyingGraceMs = 2u * 60u * 1000u;  // 5/5 recovery window (TBD)
+//     (care budget maxed) is recoverable by dropping below 5 — which only a
+// Yubi-Cookie does (-1 mistake, once per pet) — within a grace window of powered-on
+//     time; once it expires the pet is permanently lost -> a [CORRUPTED] ARCH record +
+// a new-egg Hatch. Combat loss NEVER kills (Health is transient).
+//     The window is half an hour so that a pet checked on a few times a day can be
+// reached inside it: long enough to notice the habitat's FAILING countdown and act
+// (or open a cache for a cookie), short enough that failing is still a crisis. ------
+constexpr uint32_t kCsfDyingGraceMs = 30u * 60u * 1000u;  // 5/5 recovery window
 constexpr int kCsfHoldBeats = 3;   // FX_CRITICAL_FAIL crash hold before B acknowledges
 
 // CFG / Factory Reset. The hidden Factory Reset is reached only by a

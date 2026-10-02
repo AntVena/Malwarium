@@ -1574,9 +1574,11 @@ void test_csf_window_survives_reboot() {
     uint32_t t = 0;
     g2.tick(t += kHeartbeatMs);                          // re-anchor against the fresh clock
     CHECK(g2.nav() == Game::Nav::Idle);                  // a beat is not the whole remainder
-    // Only the few seconds that were actually left. Had the reboot refunded the window,
-    // this would be ~6s into a fresh 120s and the pet would still be idle.
-    g2.tick(t += 3 * kSaveDebounceMs);
+    // At most one autosave interval comes back: the window is written on the periodic
+    // autosave rather than every tick (flash wear over a half-hour window), so a reboot
+    // can refund up to kSaveAutosaveMs of it — and no more. Had the reboot refunded the
+    // whole window, this would be well inside a fresh half hour and the pet still idle.
+    g2.tick(t += kSaveAutosaveMs + 3 * kSaveDebounceMs);
     CHECK(g2.nav() == Game::Nav::ModalCSF);              // the burned time was NOT refunded
 }
 

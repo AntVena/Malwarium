@@ -137,14 +137,14 @@ constexpr TipRowText kFirstErrorRows[] = {
      "for this pet's whole life; STAT's ERRORS row shows where they lead."},
     {"THE PATH",
      "0-2 errors keep it on the GOOD path, 3-4 the BAD one: stronger, but it glitches "
-     "faster. At 5 it starts failing and is lost within minutes."},
+     "faster. At 5 it starts failing, and is lost in half an hour."},
     {"HEADING IT OFF",
      "Keep it fed - starving is the usual cause. A Restore Point from ITEMS blocks the "
      "next error, once per pet."},
 };
 constexpr TipRowText kNearTheLineRows[] = {
     {"ONE MORE ERROR",
-     "This pet has 4 errors. One more and it starts failing, with only minutes of "
+     "This pet has 4 errors. One more and it starts failing, with half an hour of "
      "powered-on time to save it."},
     {"BLOCK THE NEXT ONE",
      "Arm a Restore Point from ITEMS now: it stops the next error, once per pet. And "

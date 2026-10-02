@@ -421,7 +421,8 @@ Starving, a lockout that runs out, or a botched defrag each count as an **error*
 **ERRORS** row shows them as pips, with the path they put your pet on beside them:
 - **GOOD** (0–2 errors): it grows into a stable, helpful form.
 - **BAD** (3–4): it grows into a stronger fighter that corrupts faster.
-- **DYING** (5): it is failing, and needs your full attention to pull back.
+- **DYING** (5): it is failing. The home screen counts down half an hour of powered-on
+  time, and only a **Yubi-Cookie** (a rare find) can pull it back.
 
 **Its time only runs while the device is on.** There's no clock inside, so switched off
 your pet simply waits: it doesn't get hungry, bored or older, and it doesn't grow either.
