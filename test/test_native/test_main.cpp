@@ -879,6 +879,7 @@ int g_failures = 0;
     /* Achievements: the catalogue's own invariants, the data-driven ladder sweep, \
        the kGoalAll sentinel, the home-screen banner queue, and v40 save migration */ \
     RUN(test_mod_table_wires_are_unique_and_in_range) \
+    RUN(test_display_names_are_unique_across_kinds) \
     RUN(test_achievement_table_is_well_formed) \
     RUN(test_achievement_ladder_unlocks_and_pays) \
     RUN(test_recipes_known_counts_methods_not_dishes) \
