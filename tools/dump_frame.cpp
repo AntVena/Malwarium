@@ -955,6 +955,7 @@ int main(int argc, char** argv) {
         const bool rerun = hasFlag(argc, argv, "rerun");
         const bool bossReady = rerun || hasFlag(argc, argv, "bossready");
         if (hasFlag(argc, argv, "endgame")) {
+            game.debugMarkStoryRead();       // CHAPTERS opens on what the walk has told
             for (int a = 0; a < kExplSectors; ++a) {
                 game.debugSetSectorCleared(a, true);
                 for (int s = 0; s < kExplSubAreas; ++s) game.debugSetSubCleared(a, s, true);

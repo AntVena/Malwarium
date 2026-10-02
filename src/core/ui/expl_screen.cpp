@@ -368,8 +368,7 @@ namespace {
 // The glyph a category row carries. STORY shows the DEEPEST OPEN area, which is a
 // picture of where the operator is on the ladder rather than of the ladder's first
 // rung — it moves as they do, and it says the same thing the "n/N CLEARED" beside it
-// says in numbers. ENDLESS borrows the Dive's, ARENA its water's. CHAPTERS has no art
-// yet and draws the empty frame, which on this screen means exactly that.
+// says in numbers. ENDLESS borrows the Dive's, ARENA its water's, CHAPTERS is a book.
 const SpriteData* catIcon(const ContentRegistry& reg, ExplCat c, const ExplListView& v) {
     switch (c) {
         case ExplCat::Story: {
@@ -380,6 +379,7 @@ const SpriteData* catIcon(const ContentRegistry& reg, ExplCat c, const ExplListV
         }
         case ExplCat::Endless:  return reg.sprite(kDeepWebIcon);
         case ExplCat::Arena:    return sectorIcon(reg, kTourneyAreaIndex);
+        case ExplCat::Chapters: return reg.sprite("ICON_EXPL_CHAPTERS");
         default:                return nullptr;
     }
 }

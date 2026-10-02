@@ -384,6 +384,7 @@ int g_failures = 0;
     /* The STORY — what the walk stops to say */  \
     RUN(test_story_chapters_fit_their_page)       \
     RUN(test_story_arrival_fires_once_and_hands_back) \
+    RUN(test_story_read_set_outlives_the_pet_not_the_wipe) \
     RUN(test_story_panel_turns_on_its_own_clock)  \
     RUN(test_story_skip_still_runs_what_it_interrupted) \
     RUN(test_story_brackets_the_area_gauntlet)    \

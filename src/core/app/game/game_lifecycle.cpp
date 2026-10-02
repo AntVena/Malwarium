@@ -633,6 +633,7 @@ void Game::wipeDeviceProgress() {
     stackerWins_ = 0;
     for (uint8_t& b : quoteStates_) b = 0;   // every quote back to never played
     for (uint8_t& b : tipsSeen_) b = 0;      // a device with no history is taught again
+    for (uint8_t& b : storyRead_) b = 0;     // ...and told the story again, from DAY ZERO
     hackerRank_ = 0;
     networksSeen_ = 0;
     handshakesSeen_ = 0;

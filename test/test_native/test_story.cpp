@@ -130,6 +130,27 @@ void test_story_arrival_fires_once_and_hands_back() {
     CHECK(g.nav() != Game::Nav::Story);
 }
 
+// ONCE means once per DEVICE, the way a tip is: a reboot or a new egg finds the chapter
+// already read (the CHAPTERS archive is the way back to it), and only a full progress
+// wipe — which also re-locks the ladder the chapters narrate — tells it again.
+void test_story_read_set_outlives_the_pet_not_the_wipe() {
+    MemSaveStore store;
+    const StoryChapterDef* ch = storyChapter(0, StoryBeat::AreaIntro);
+    {
+        Game g{StartMode::FreshHatch, "paypup", &store};
+        pickFirstEggLine(g);
+        CHECK(ch && !g.storyRead(ch));
+        g.debugMarkStoryRead();
+        g.tick(kSaveAutosaveMs + kHeartbeatMs);        // autosave the read-set
+    }
+    Game again{StartMode::FreshHatch, "paypup", &store};
+    CHECK(again.storyRead(ch));                        // a reboot does not retell it
+    again.resetToHatch();                              // nor does a new egg
+    CHECK(again.storyRead(ch));
+    again.wipeDeviceProgress();                        // a device with no history...
+    CHECK(!again.storyRead(ch));                       // ...hears it from DAY ZERO
+}
+
 // A panel TURNS ITSELF OVER after kStoryPanelMs, which is what lets a chapter fire on a
 // walk nobody is watching. A press re-arms the clock, so a reader who is reading is
 // never overtaken by it.
