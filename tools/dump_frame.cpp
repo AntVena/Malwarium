@@ -29,6 +29,7 @@
 //             reader, and the CHAPTERS list it lands in afterwards. "beat" is StoryBeat
 //             order — 0 arrival, 1 gauntlet, 2 cleared, 3 departure; "scroll" takes B n
 //             times, which is how to see a later window clear the countdown rule)
+//        dying (5/5 errors: the habitat's FAILING countdown and its rescue line)
 //        tipcard (the one-time CARE card the first menu summon opens; pairs with crit)
 //        nofood (empty the bag of anything edible; pairs with items, lockout, hungry)
 //        maint [detail] [stacker [slide|drop|stop ...]] · lockout · evolve
@@ -301,6 +302,8 @@ int main(int argc, char** argv) {
         game.debugClearTips();
         game.onButton({Button::A, true, false});
     }
+    // "dying" puts the pet at 5/5 errors, so the habitat shows its FAILING countdown.
+    if (hasFlag(argc, argv, "dying")) game.model().setCareMistakes(kCareDying);
     if (hasFlag(argc, argv, "sinkhole")) game.inventory().add("sinkhole_trap", 1);
     // Creature levels: grind XP to ~level 8 so STAT's LVL n + the stat points
     // (and the Rollback picker) render populated.

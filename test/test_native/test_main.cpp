@@ -63,6 +63,7 @@ int g_failures = 0;
     RUN(test_idle_menu_nudge_until_first_summon) \
     RUN(test_care_cards_show_once_each) \
     RUN(test_first_walk_card) \
+    RUN(test_error_warnings_before_failing) \
     /* The raising loop */                  \
     RUN(test_inventory)                     \
     RUN(test_event_log)                     \

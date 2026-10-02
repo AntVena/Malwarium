@@ -316,6 +316,68 @@ void test_care_cards_show_once_each() {
     CHECK(seam.nav() == Game::Nav::Cursor);
 }
 
+// Errors land while nobody is looking, so they are explained at the next menu summon:
+// the first one says what an error is and where the path goes, and the fourth — one
+// short of failing — says so, lights STAT, and names the Restore Point. Failing itself
+// counts down on the habitat and names the one rescue there is.
+void test_error_warnings_before_failing() {
+    const auto bitOf = [](SubmenuId id) {
+        for (int i = 0; i < kCarouselSlots; ++i)
+            if (carouselSlots()[i].id == id) return 1u << i;
+        return 0u;
+    };
+    uint32_t t = 0;
+    Game g{StartMode::Hatched};
+    g.debugClearTips();
+    for (Game::Tip k : {Game::Tip::CareFed, Game::Tip::CareFrag, Game::Tip::CareHappy})
+        g.markTipSeen(k);
+    g.model().setFragmentation(10);
+
+    g.model().setCareMistakes(1);
+    g.onButton(press(Button::A));
+    CHECK(g.nav() == Game::Nav::TipCard && g.tipCard() == Game::Tip::FirstError);
+    for (const ProseRow& r : g.tipCardRows()) CHECK(!r.body.atCap());
+    g.onButton(press(Button::C));
+    g.tick(t += kAutoDefocusMs + 1);
+    CHECK(g.nav() == Game::Nav::Idle);
+
+    unsigned att = 0, urg = 0;
+    g.model().setCareMistakes(kCareDying - 2);
+    g.careAttention(att, urg);
+    CHECK(!(att & bitOf(SubmenuId::Stat)));            // the BAD path alone is not a "!"
+    g.model().setCareMistakes(kCareDying - 1);
+    g.careAttention(att, urg);
+    CHECK((urg & bitOf(SubmenuId::Stat)) != 0);        // one short: STAT, urgent
+    g.onButton(press(Button::A));
+    CHECK(g.nav() == Game::Nav::TipCard && g.tipCard() == Game::Tip::NearTheLine);
+    for (const ProseRow& r : g.tipCardRows()) CHECK(!r.body.atCap());
+    g.onButton(press(Button::C));
+    g.tick(t += kAutoDefocusMs + 1);
+    g.onButton(press(Button::A));
+    CHECK(g.nav() == Game::Nav::Cursor);               // both spent
+    g.tick(t += kAutoDefocusMs + 1);
+
+    // Failing: the habitat carries a countdown the moment it starts.
+    Framebuffer before(kActiveW, kActiveH), after(kActiveW, kActiveH);
+    g.render(before);
+    g.model().setCareMistakes(kCareDying);
+    g.tick(t += kHeartbeatMs);
+    CHECK(g.nav() == Game::Nav::Idle);
+    g.render(after);
+    CHECK(regionDiffers(before, after, 0, kLivingTop + 23, kActiveW, kLivingTop + 48));
+
+    // A pet seeded straight to 4 errors gets the one card that covers both.
+    Game h{StartMode::Hatched};
+    h.debugClearTips();
+    for (Game::Tip k : {Game::Tip::CareFed, Game::Tip::CareFrag, Game::Tip::CareHappy})
+        h.markTipSeen(k);
+    h.model().setFragmentation(10);
+    h.model().setCareMistakes(kCareDying - 1);
+    h.onButton(press(Button::A));
+    CHECK(h.tipCard() == Game::Tip::NearTheLine);
+    CHECK(h.tipSeen(Game::Tip::FirstError));
+}
+
 // Arming the first walk from EXPL explains the walk before it runs hands-off — and the
 // walk does not step while the card is up, so a player reading it misses nothing.
 void test_first_walk_card() {

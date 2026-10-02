@@ -56,7 +56,8 @@ Game::Game(StartMode mode, const char* hatchedCreature, ISaveStore* store)
         // of them, and a seam pet that stopped to explain itself would be a different
         // pet from the one every gate written against it expects.
         for (Tip t : {Tip::MenuOpened, Tip::CareFed, Tip::CareFrag,
-                      Tip::CareHappy, Tip::FirstWalk}) {
+                      Tip::CareHappy, Tip::FirstWalk, Tip::FirstError,
+                      Tip::NearTheLine, Tip::FirstCache}) {
             const int w = static_cast<int>(t);
             tipsSeen_[w / 8] |= static_cast<uint8_t>(1u << (w % 8));
         }
@@ -515,9 +516,10 @@ bool Game::tickLifecycle(uint32_t nowMs) {
 
     // Critical System Failure — the ONLY death path, and the HIGHEST modal
     // priority (CSF > Lockout > Evolution). The 5/5 dying state is
-    // recoverable by dropping below 5 (Backup Drive / Yubi-Cookie) within the
-    // ageing/recovery window; once the window expires the pet is permanently
-    // lost. Never during the Hatch (no pet) or once already in the modal.
+    // recoverable by dropping below 5 within the recovery window — which only a
+    // Yubi-Cookie does (RemoveCareMistakeOnce; the Backup Drive is a combat shield and
+    // touches no error) — and once the window expires the pet is permanently
+    // lost. The habitat counts the window down (game_render.cpp's FAILING banner). Never during the Hatch (no pet) or once already in the modal.
     // The window ACCUMULATES rather than anchoring, and the total persists (save v42),
     // so a power cycle cannot refund seconds already spent at 5/5 — this is the one
     // window that survives a reboot, because it is the last step before permanent loss

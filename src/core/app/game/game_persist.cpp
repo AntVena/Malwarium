@@ -663,7 +663,8 @@ void Game::applySave(const SaveData& d) {
         tipsSeen_[i] = d.tipsSeen[i];
     if (d.tipsSeen.empty())
         for (Tip t : {Tip::MenuOpened, Tip::HatchDecrypt, Tip::CareFed, Tip::CareFrag,
-                      Tip::CareHappy, Tip::FirstWalk}) {
+                      Tip::CareHappy, Tip::FirstWalk, Tip::FirstError,
+                      Tip::NearTheLine, Tip::FirstCache}) {
             const int w = static_cast<int>(t);
             tipsSeen_[w / 8] |= static_cast<uint8_t>(1u << (w % 8));
         }

@@ -581,6 +581,9 @@ public:
         CareFrag = 6,         // ...FRAG's (or a ghost's)
         CareHappy = 7,        // ...HAPPY's
         FirstWalk = 8,        // the first walk the player arms from EXPL
+        FirstError = 9,       // the first care error a pet has taken
+        NearTheLine = 10,     // a pet one error short of failing (kCareDying - 1)
+        FirstCache = 11,      // the first sealed cache or Decryptogram in the bag
     };
     static constexpr int kTipWireCap = 32;   // bits in the persisted set
     bool tipSeen(Tip t) const;
@@ -2569,8 +2572,9 @@ private:
     Nav tipCardReturn_ = Nav::Idle;
     bool tipCardMarkRow_ = false;
     void openTipCard(Tip t, Nav returnTo);
-    // On a carousel summon: open the CARE card for the first need now marked whose
-    // card has never been shown. Returns whether it opened one.
+    // On a carousel summon: open the one-time card that is due, most urgent first — one
+    // error short of failing, then the first error, then each need's CARE card, then
+    // the first cache. Returns whether it opened one.
     bool openCareTipIfDue();
     void onTipCard(const ButtonEvent& ev);
     void drawTipCard(Framebuffer& fb) const;

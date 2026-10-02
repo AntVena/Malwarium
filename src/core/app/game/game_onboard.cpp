@@ -83,6 +83,14 @@ void Game::careAttention(unsigned& attention, unsigned& urgent) const {
          model_.hungerZone(), false);
     mark(SubmenuId::Maint, model_.fragZone(), model_.hasGhost());
     mark(SubmenuId::Games, model_.happyZone(), false);
+    // One error short of failing, or failing: STAT is where the errors are read, and
+    // this is the one state where waiting is how the pet is lost. Always urgent.
+    if (model_.careMistakes() >= kCareDying - 1)
+        for (int i = 0; i < kCarouselSlots; ++i)
+            if (carouselSlots()[i].id == SubmenuId::Stat) {
+                attention |= 1u << i;
+                urgent |= 1u << i;
+            }
 }
 
 // --- The tip cards -------------------------------------------------------------
@@ -121,6 +129,27 @@ constexpr TipRowText kCareHappyRows[] = {
      "Its mood drifts down over time. Play anything in GAMES to cheer it up - every "
      "game pays Bits as well."},
 };
+// Errors happen while nobody is looking — a Lockout expires on an empty room — so these
+// two wait for the next time the menu is opened, like every other card.
+constexpr TipRowText kFirstErrorRows[] = {
+    {"AN ERROR",
+     "Your pet has taken a care error - STAT's AUDIT LOG page says what. Errors stay "
+     "for this pet's whole life; STAT's ERRORS row shows where they lead."},
+    {"THE PATH",
+     "0-2 errors keep it on the GOOD path, 3-4 the BAD one: stronger, but it glitches "
+     "faster. At 5 it starts failing and is lost within minutes."},
+    {"HEADING IT OFF",
+     "Keep it fed - starving is the usual cause. A Restore Point from ITEMS blocks the "
+     "next error, once per pet."},
+};
+constexpr TipRowText kNearTheLineRows[] = {
+    {"ONE MORE ERROR",
+     "This pet has 4 errors. One more and it starts failing, with only minutes of "
+     "powered-on time to save it."},
+    {"BLOCK THE NEXT ONE",
+     "Arm a Restore Point from ITEMS now: it stops the next error, once per pet. And "
+     "keep FED up - an empty stomach is the usual fifth."},
+};
 constexpr TipRowText kFirstWalkRows[] = {
     {"IT WALKS ITSELF",
      "Your pet now roams this area on its own, menu open or not. Wild malbeasts pick "
@@ -157,6 +186,8 @@ std::vector<ProseRow> Game::tipCardRows() const {
         case Tip::CareFrag:  appendTipRows(out, kCareFragRows); break;
         case Tip::CareHappy: appendTipRows(out, kCareHappyRows); break;
         case Tip::FirstWalk: appendTipRows(out, kFirstWalkRows); break;
+        case Tip::FirstError: appendTipRows(out, kFirstErrorRows); break;
+        case Tip::NearTheLine: appendTipRows(out, kNearTheLineRows); break;
         default: break;
     }
     if (tipCardMarkRow_) {
@@ -181,6 +212,19 @@ void Game::openTipCard(Tip t, Nav returnTo) {
 
 bool Game::openCareTipIfDue() {
     if (!pet_ || inEggPhase()) return false;
+    // The errors first, nearest the line first: a pet one short of failing is the one
+    // thing on this list that cannot wait for the next summon. That card covers what an
+    // error is as well, so the first-error card is spent along with it.
+    const int errors = model_.careMistakes();
+    if (errors >= kCareDying - 1 && errors < kCareDying && !tipSeen(Tip::NearTheLine)) {
+        markTipSeen(Tip::FirstError);
+        openTipCard(Tip::NearTheLine, Nav::Cursor);
+        return true;
+    }
+    if (errors >= 1 && !tipSeen(Tip::FirstError)) {
+        openTipCard(Tip::FirstError, Nav::Cursor);
+        return true;
+    }
     // In the "!" marks' own order (ITEMS/EXPL, MAINT, GAMES), one card per summon: a
     // second need waits for the next time the menu is opened rather than stacking.
     if (model_.hungerZone() != Zone::Ok && !tipSeen(Tip::CareFed)) {
