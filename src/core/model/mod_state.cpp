@@ -36,7 +36,7 @@ constexpr ModRule kModRules[] = {
     {ModEffect::FirstStrikeRankMult,  ModCombine::Arm,         0,   true},
     {ModEffect::FirstHitCutPct,       ModCombine::HighestMag,  0,   true},
     {ModEffect::LowHealthPowerPct,    ModCombine::HighestMag,  0,   false},
-    // Zero-Day is a gamble, not a guarantee — there is no "better" chance/payout pair
+    // Race Condition is a gamble, not a guarantee — there is no "better" chance/payout pair
     // to pick between (a higher chance may pay less), so the last slot walked defines
     // it rather than a comparison inventing a preference.
     {ModEffect::GambleBattlePowerPct, ModCombine::Replace,     0,   false},

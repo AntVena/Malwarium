@@ -532,7 +532,7 @@ void test_inert_use_keeps_the_item() {
 
 // The diving bells arm ONE start depth for the next dive, and the deeper arming always
 // wins — a shallower bell over it would be a downgrade paid for with an item, which is
-// what the inert gate refuses. The Zero-Day Bell is the case that has to be read
+// what the inert gate refuses. The Checkpoint Bell is the case that has to be read
 // carefully: it arms "wherever this pet's record is" as a SENTINEL rather than a number,
 // so every comparison goes through the depth a dive would actually start at
 // (Game::armedDeepWebStartDepth) instead of the raw field.
@@ -569,7 +569,7 @@ void test_diving_bells_refuse_a_shallower_start() {
     h.debugUseItem("kernel_bell");
     CHECK(h.inventory().count("kernel_bell") == 0);   // spent — 64 beats a record of 8
     CHECK(h.debugArmedStartDepth() == 64);
-    // ...and now the Zero-Day is the shallower of the two, so it is the one refused.
+    // ...and now the Checkpoint is the shallower of the two, so it is the one refused.
     h.inventory().add("zeroday_bell", 1);
     h.debugUseItem("zeroday_bell");
     CHECK(h.inventory().count("zeroday_bell") == 1);

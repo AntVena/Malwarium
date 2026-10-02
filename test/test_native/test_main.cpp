@@ -661,7 +661,7 @@ int g_failures = 0;
     RUN(test_mod_prowlware_combat_effect)         \
     RUN(test_mod_canary_trap)                     \
     RUN(test_mod_meltdown_core)                   \
-    RUN(test_mod_zero_day_exploit)                \
+    RUN(test_mod_race_condition)                \
     RUN(test_mod_tripwire)                        \
     RUN(test_phishing_bubble_steal)               \
     RUN(test_phishing_perfect_bite)               \

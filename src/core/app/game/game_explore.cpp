@@ -273,9 +273,9 @@ void Game::startDeepWebDive() {
     // Module/Core is armed BEFORE the dive (ItemDef::Context::Anytime) precisely so it
     // applies to this dive — clearing it on the way in would consume the buff in the
     // one mode it exists for. It is cleared where a dive ENDS instead.
-    // A Backdoor/Rootkit/Kernel/Zero-Day Bell arms a start depth ahead of time
+    // A Backdoor/Rootkit/Kernel/Checkpoint Bell arms a start depth ahead of time
     // (Game::applyItemEffects); consume it here so a fresh dive begins there instead
-    // of at 0. Zero-Day's sentinel resolves to this pet's own best depth NOW (not at
+    // of at 0. Checkpoint's sentinel resolves to this pet's own best depth NOW (not at
     // Use-time), so it never targets a stale, since-improved record.
     if (pendingDeepWebStartDepth_ != -1) {
         exploreStreak_ = pendingDeepWebStartDepth_ == kDeepWebStartDepthUseBest

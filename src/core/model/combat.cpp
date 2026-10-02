@@ -36,7 +36,7 @@ void Combat::begin(const Combatant& player, const Combatant& enemy, Stakes stake
     stakes_ = stakes;
     outcome_ = Outcome::Ongoing;
     rng_ = seed ? seed : 1u;
-    // Zero-Day Exploit (mod): rolled here rather than in makePlayerCombatant because it
+    // Race Condition (mod): rolled here rather than in makePlayerCombatant because it
     // needs the fight's seeded RNG. Both sides, player first — in PVE the enemy's
     // magnitude is 0 and its branch draws nothing, but a linked duel
     // (core/model/pvp_battle.h) has a real pet in the enemy_ slot.

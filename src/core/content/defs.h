@@ -379,7 +379,7 @@ struct ItemEffect {
                               // Dive to start at depth = magnitude instead of 0
                               // (Game::pendingDeepWebStartDepth_), consumed the moment
                               // that dive starts.
-        SetDeepWebStartDepthToBest, // Zero-Day Bell: arms the next DeepWeb Dive to
+        SetDeepWebStartDepthToBest, // Checkpoint Bell: arms the next DeepWeb Dive to
                               // start at THIS PET's own best-ever depth
                               // (Game::bestDeepWebDepth_) rather than a fixed number.
         BandwidthRegenBonusMin,// Tiramisudo: shave magnitude MINUTES off THIS PET's
@@ -765,7 +765,7 @@ enum class ModEffect : uint8_t {
                           // an extra magnitude% (a decoy absorbs the opening probe).
     LowHealthPowerPct,    // Meltdown Core — while own Health <= magnitude% of max, attack
                           // power rises magnitude2% (a comeback surge, checked live).
-    GambleBattlePowerPct, // Zero-Day Exploit — a magnitude% chance, rolled once at fight
+    GambleBattlePowerPct, // Race Condition — a magnitude% chance, rolled once at fight
                           // start, to raise attack power magnitude2% for the whole fight.
     ConditionalThorns,    // Tripwire — like Thorns, but only reflects magnitude damage
                           // while own Health <= magnitude2% of max (a last-ditch snare;

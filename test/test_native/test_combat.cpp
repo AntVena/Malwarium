@@ -2021,9 +2021,9 @@ void test_mod_meltdown_core() {
     CHECK(c2.enemy().health == 100 - 6);                          // no bonus
 }
 
-// Zero-Day Exploit: a one-time gamble rolled in Combat::begin(). Tested at its two
+// Race Condition: a one-time gamble rolled in Combat::begin(). Tested at its two
 // deterministic boundaries (0% and 100% chance) rather than reverse-engineering a seed.
-void test_mod_zero_day_exploit() {
+void test_mod_race_condition() {
     ContentRegistry r = ContentRegistry::embedded();
     Combatant always = mkCombatant(r, "P", 100, 12, {"quick_jab"});
     always.mods.arm(ModEffect::GambleBattlePowerPct, 100, 60);

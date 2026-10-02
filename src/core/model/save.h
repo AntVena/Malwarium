@@ -124,7 +124,7 @@ constexpr int kSaveTextCap = 28;     // matches EventLog's LogEntry.text
 // v34 PARALLEL TAIL of per-stored-pet evolution elapsed-in-stage, so a rack pet's progress
 //     survives an ARCH Store/Deploy instead of resetting on Deploy.
 // v35 PARALLEL TAIL of bestDeepWebDepth, this pet's own highest dive depth. Read by the
-//     Zero-Day Bell (SetDeepWebStartDepthToBest) to warp a fresh dive to THIS pet's
+//     Checkpoint Bell (SetDeepWebStartDepthToBest) to warp a fresh dive to THIS pet's
 //     frontier, never a device-wide max. Per-pet, reset on a new egg. Pre-v35 → 0.
 // v36 APPEND the Hacker-face CREW state: `crewId` ("" = unaffiliated) plus the home network
 //     the membership hangs off — `homeNetworkKey` (packed 48-bit BSSID, 0 = none) and
@@ -766,7 +766,7 @@ struct SaveData {
     std::vector<SaveId> collectedItems;
     // The deepest DeepWeb Dive reached by each SPECIES: parallel id/depth lists, so a
     // record outlives the individual pet that set it. Distinct from bestDeepWebDepth
-    // (v35), which is one pet's own and is what the Zero-Day Bell warps to. Pre-v40 →
+    // (v35), which is one pet's own and is what the Checkpoint Bell warps to. Pre-v40 →
     // seeded from the active pet's own record.
     std::vector<SaveId> speciesDiveIds;
     std::vector<int32_t> speciesDiveDepths;

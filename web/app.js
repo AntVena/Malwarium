@@ -325,7 +325,7 @@
   function honeytokenCell(lineId) {
     if (lineId !== 'ransomware') return '';
     return '<!-- entry 0x7F: nothing to see here. definitely not a hidden file. -->' +
-      '<div class="cell locked" id="honeytoken" data-entry="zero_day" style="display:none">' +
+      '<div class="cell locked" id="honeytoken" data-entry="0x7f" style="display:none">' +
       '<div style="width:56px;height:48px;display:flex;align-items:center;justify-content:center">' +
       '<img src="' + D.meta.lockIcon + '" alt="" style="width:24px;height:24px;image-rendering:pixelated;opacity:.4"></div>' +
       '<span class="nm masked">0X7F</span>' +
