@@ -26,8 +26,8 @@ Real screens, straight off the 240×240 display:
 
 <table>
 <tr>
-<td align="center"><img src="docs/media/screens/carousel.png" width="200" alt="Idle pet with the menu"><br><sub><b>Meet your pet.</b> Eight menus ring the canvas.</sub></td>
-<td align="center"><img src="docs/media/screens/vitals.png" width="200" alt="Vitals gauges"><br><sub><b>Keep it alive.</b> Hunger · Frag · Happy.</sub></td>
+<td align="center"><img src="docs/media/screens/carousel.png" width="200" alt="Idle pet with the menu"><br><sub><b>Meet your pet.</b> Eight menus ring the canvas; a <b>!</b> marks the one it needs.</sub></td>
+<td align="center"><img src="docs/media/screens/vitals.png" width="200" alt="Vitals gauges"><br><sub><b>Keep it alive.</b> Fed · Frag · Happy.</sub></td>
 <td align="center"><img src="docs/media/screens/combat.png" width="200" alt="Combat"><br><sub><b>Pick fights.</b> Battles resolve a round at a time.</sub></td>
 </tr>
 <tr>
@@ -358,25 +358,59 @@ The device has **three buttons: A, B, C.**
   (back out).
 - **A and C together** is the "Exploit" chord — a hacker override used in a few special places. There's a symbol for when it's relevant.
 
-### Hatching your egg 
-The egg incubates for a while on its own. Once it's halfway there, a flashing ⚡ symbol appears — press **B** (or the A+C chord) to start a hatch minigame. Your first one is Ransomware, so the game is a short button sequence you repeat to "brute-force the lock." Nail it and the Cryptoshell cracks open into your first creature. In a hurry? 
-A **Boot Accelerator** item in your bag can skip part of the wait.
+### Hatching your egg
+Your first egg is laid the moment the device boots, and it drops you straight into a
+short **hatch minigame**. The first time you meet each one, a rules page comes up first
+and walks you through it: **B** to read on, **C** to skip straight to the board. You
+can't lose your pet here. Playing well makes the egg hatch sooner; playing badly just
+means it hatches on its own clock. **A+C** brings the rules back mid-game.
 
-Not every line hatches the same way. A Phishing egg plays the **Clutch Pick** instead — a
-one-shot game of nerve the moment the egg is laid, where only the live egg twitches among
-identical decoys. A Metamorphic egg plays the **Chromatophore**: three buttons wear three
-colours, and the egg has to be wearing the same colour as the water when the sweep comes
-past. Changing takes a moment, so being right is not the same as being early enough.
+Your first egg is Ransomware, and its game is **Disk Decryption**: guess a hidden key of
+three colours in five tries. After each guess you're told how many colours are in the
+right slot and how many are right but in the wrong slot. Crack it and the egg hatches
+twice as fast.
 
-### Keeping it alive 
-Your creature has three needs: 
-- Hunger
-- Fragmentation
-- and Happiness 
+After that the egg sits on screen with a **HATCHES IN** countdown (about 30 minutes for
+a fresh egg). Near the end a flashing ⚡ appears: press **B** to crack it open and watch
+it hatch, or leave it and it hatches by itself. In a hurry? Use the **Boot Accelerator**
+in your bag (ITEMS) to take time off the wait.
 
-Feed it from the ITEMS menu, run a **Defrag** from MAINT when it gets glitchy, and keep it happy. Slip up too often and it evolves down the "bad" path (stronger in a
-fight, but it corrupts faster); look after it well and it grows into a stable, helpful form.
-Explore the 'net for battles, loot, and Bits to spend.
+Not every line hatches the same way. A Phishing egg plays the **Clutch Pick**, a game of
+nerve where only the live egg twitches among identical decoys. A Worm egg plays the
+**Isolation Protocol**, a snake-style run where every byte eaten is a minute off the
+clock. A Metamorphic egg plays the **Chromatophore**: three buttons wear three colours,
+and the egg has to be wearing the same colour as the water when the sweep comes past.
+
+### Opening the menu
+Press **A** (or **C**) on the main screen and the menu ring lights up. A and C walk
+around it, **B** opens the focused slot, and **C** backs out. Leave it alone for a few
+seconds and it tucks itself away again. A brand-new device reminds you with
+**PRESS A FOR MENU** until you've done it once.
+
+### Keeping it alive
+Your creature has three needs, all shown on **STAT**. For each one, a different menu
+holds the fix:
+
+| Gauge | What it means | How to fix it |
+|---|---|---|
+| **FED** | How full it is. Drops slowly over the day; more is better. | Feed it: **ITEMS**, pick a food, **FEED**. |
+| **FRAG** | Fragmentation, i.e. how glitchy it is. Fights and exploring raise it; less is better. A new pet starts half-fragmented. | Run a **Defrag** (or an AV scan for a ghost) from **MAINT**. Costs a few Bits. |
+| **HAPPY** | Its mood. Drops slowly; more is better. | Play something in **GAMES**. Some foods help too. |
+
+**You don't have to remember any of that.** When a need slips out of the comfortable
+range, the menu slot that fixes it lights up with a **!** beside it, even while the menu
+is tucked away. A blinking red **!** means it's urgent.
+
+Let **FED** hit zero and the device locks into a **SYSTEM LOCKOUT**: you get 30 seconds
+to **FEED IT** (or pay Bits instead).
+
+Starving, a lockout that runs out, or a botched defrag each count as an **error**. STAT's
+**ERRORS** row shows them as pips, with the path they put your pet on beside them:
+- **GOOD** (0–2 errors): it grows into a stable, helpful form.
+- **BAD** (3–4): it grows into a stronger fighter that corrupts faster.
+- **DYING** (5): it is failing, and needs your full attention to pull back.
+
+Explore the 'net (**EXPL**) for battles, loot, and Bits to spend.
 
 ### Your half of the device 
 **A+C on the main screen flips to the Hacker face** — the parallel menu where *you* live

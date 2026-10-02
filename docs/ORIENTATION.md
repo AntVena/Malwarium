@@ -207,7 +207,7 @@ brace, a ransom bill, traps, a rot and a stun all live reports every one of them
 
 ## The care model
 
-Four stats per pet: **Hunger** (depletes; critical triggers Lockout), **Fragmentation** (corruption;
+Four stats per pet: **Hunger** (depletes; reaching zero triggers Lockout — the player-facing gauge is labelled **FED**, since the number counts fullness), **Fragmentation** (corruption;
 drives the glitch passes), **Happiness**, and **Stage**. Balance numbers are named constants in
 `include/tunables.h` — test against the constants, never a hard-coded number.
 
@@ -219,7 +219,7 @@ drives the glitch passes), **Happiness**, and **Stage**. Balance numbers are nam
 | 3–4 | **Bad branch** — aggressive Daemons. A risk/reward trade, *not* a penalty: higher combat strength, higher Fragmentation-gain multiplier. A glass cannon. |
 | 5 | **Dying** — accelerated ageing toward Critical System Failure unless recovered |
 
-**Lockout.** A critical stat takes over the UI with a flashing countdown; the player resolves it by
+**Lockout.** Hunger reaching zero takes over the UI with a flashing countdown; the player resolves it by
 feeding or by spending Bits. Failing costs 2 mistakes instead of 1 — which lands a clean pet exactly
 at the Good ceiling, one slip from Bad.
 
@@ -243,6 +243,12 @@ when the sweep arrives. None of them can lose you the pet — a bad run costs on
 last stretch of any incubation the Exploit chord then cracks the shell on demand, so an egg never
 hatches off-screen. Every one of them is replayable, off its stakes, in the GAMES arcade.
 
+**Nobody is beside a new player, so the device teaches.** The first egg of each line lays
+onto its board paused under that engine's RULES page, led by what the egg stakes; the idle
+habitat says PRESS A FOR MENU until the carousel has been summoned once. Both are one-time
+**tips**, a player-level persisted set (`Game::Tip`, save v66,
+`src/core/app/game/game_onboard.cpp`), so a new egg does not re-teach the buttons.
+
 Rosters, evolution routing and per-stage flavour are data on `CreatureDef` rows, one folder per
 evolution line under `src/core/content/creatures/` — not a table in a doc.
 
@@ -250,7 +256,7 @@ evolution line under `src/core/content/creatures/` — not a table in a doc.
 
 ## Currency
 
-**Bits.** Starting balance 30. Sinks: satisfying a Lockout's currency demand, and area shops.
+**Bits.** Starting balance 100 (`kStartBits`). Sinks: satisfying a Lockout's currency demand, and area shops.
 Earned from combat, loot caches, network events and Sim-Battle upkeep.
 
 The combat payout scales to the opponent's stage-rank **R** (Process 2, Script 3, Daemon 4 — a Boot
