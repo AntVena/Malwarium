@@ -379,8 +379,8 @@ void test_arch_picker_groups_the_rack_by_line() {
     CHECK(g.archScreen() == Game::ArchScreen::Picker);
     const auto tiles = buildArchPickerRows(ContentRegistry::embedded(), g.pet(),
                                            g.rack(), g.records());
-    // NEW EGG leads, ACTIVE follows, RECORDS trails — the families sit between them.
-    CHECK(tiles.size() == static_cast<size_t>(3 + kCreatureLineCount));
+    // NEW EGG leads, ACTIVE follows, SELL and RECORDS trail — the families sit between.
+    CHECK(tiles.size() == static_cast<size_t>(4 + kCreatureLineCount));
     CHECK(tiles.front().group.kind == ArchGroup::Kind::NewEgg);
     CHECK(tiles[1].group.kind == ArchGroup::Kind::Active && tiles[1].count == 1);
     CHECK(tiles.back().group.kind == ArchGroup::Kind::Records);
@@ -428,6 +428,134 @@ void test_arch_new_egg_row_stores_then_hatches() {
     pickFirstEggLine(g);
     CHECK(g.rackCount() == 1 && g.inEggPhase());
     CHECK(std::strcmp(g.rack()[0].id, "paypup") == 0);   // set aside, not lost
+}
+
+// A Daemon's sale price: flat to par, so no level gates a sale, then the Rig Shop's
+// kLogStep shape over the levels past it — and never lower for a higher level.
+void test_daemon_sale_bits_flat_to_par_then_log_steps() {
+    CHECK(daemonSaleBits(0) == kDaemonSaleBits);
+    CHECK(daemonSaleBits(kDaemonSaleParLevel) == kDaemonSaleBits);
+    CHECK(daemonSaleBits(kDaemonSaleParLevel + 1) == kDaemonSaleBits);
+    CHECK(daemonSaleBits(kDaemonSaleParLevel + 2) == 2 * kDaemonSaleBits);
+    CHECK(daemonSaleBits(kDaemonSaleParLevel + 8) == 8 * kDaemonSaleBits);
+    CHECK(daemonSaleBits(kDaemonSaleParLevel + 40) == 32 * kDaemonSaleBits);
+    for (int l = 1; l <= kModEquipLevelMax; ++l)
+        CHECK(daemonSaleBits(l) >= daemonSaleBits(l - 1));
+}
+
+// SELL is its own row on the picker, just above the RECORDS it feeds, and it lists every
+// STORED Daemon whatever its family — not the earlier stages, and not the active pet.
+void test_arch_sell_counter_lists_only_stored_daemons() {
+    Game g{StartMode::Hatched, "extorgi"};
+    g.debugSeedRack("paypup");
+    g.debugSeedRack("goliauth");
+    g.debugSeedRack("coaxeel");
+    const auto tiles = buildArchPickerRows(ContentRegistry::embedded(), g.pet(), g.rack(),
+                                           g.records());
+    CHECK(tiles.size() == static_cast<size_t>(4 + kCreatureLineCount));
+    CHECK(tiles[tiles.size() - 2].group.kind == ArchGroup::Kind::Sell);
+    CHECK(tiles[tiles.size() - 2].count == 2);
+
+    enterArchSellList(g);
+    CHECK(g.archScreen() == Game::ArchScreen::List && g.archRowCount() == 2);
+    Framebuffer fb(kActiveW, kActiveH);
+    g.render(fb);
+    CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));
+}
+
+// The Bits sale: priced on the stored pet's level, and the Daemon leaves a RETIRED
+// record behind. With no twin active and nothing to fix, the patches are shown closed.
+void test_arch_sell_for_bits_leaves_a_retired_record() {
+    Game g{StartMode::Hatched, "paypup"};
+    g.debugSeedRack("goliauth", kDaemonSaleParLevel + 8);
+    const int before = g.bits();
+    enterArchSale(g, "goliauth");
+    CHECK(g.nav() == Game::Nav::Detail);
+    const ArchSaleSheet sh = g.archSaleSheet();
+    CHECK(sh.daemon && std::strcmp(sh.daemon->id, "goliauth") == 0);
+    CHECK(sh.focus == SaleOffer::Bits && sh.offers[0].available);
+    CHECK(!sh.offers[static_cast<int>(SaleOffer::Reimage)].available);
+    CHECK(!sh.offers[static_cast<int>(SaleOffer::Hotfix)].available);
+    Framebuffer fb(kActiveW, kActiveH);
+    g.render(fb);
+    CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));
+
+    archConfirmAction(g);
+    CHECK(g.bits() == before + 8 * kDaemonSaleBits);
+    CHECK(g.rackCount() == 0);
+    CHECK(g.records().size() == 1);
+    CHECK(std::strcmp(g.records()[0].id, "goliauth") == 0);
+    CHECK(g.records()[0].status == static_cast<uint8_t>(RecordStatus::Retired));
+    CHECK(g.nav() == Game::Nav::Submenu);         // back at the (now empty) counter
+}
+
+// A closed offer is on the A cycle, so its row can say what it wants, but B on it opens
+// no confirm and sells nothing.
+void test_arch_sell_closed_offer_cannot_be_taken() {
+    Game g{StartMode::Hatched, "paypup"};
+    g.debugSeedRack("goliauth");
+    enterArchSale(g, "goliauth");
+    for (int i = 0; i < 2; ++i) {
+        g.onButton(press(Button::A));             // -> Reimage, then Hotfix
+        g.onButton(press(Button::B));
+        CHECK(!g.archSaleSheet().confirmOpen);
+    }
+    g.onButton(press(Button::A));                 // wraps to Bits
+    CHECK(g.archSaleSheet().focus == SaleOffer::Bits);
+    CHECK(g.rackCount() == 1 && g.records().empty());
+}
+
+// HOTFIX spends the Daemon on the active pet's care errors, whatever species it is.
+void test_arch_sell_hotfix_clears_the_active_pets_errors() {
+    Game g{StartMode::Hatched, "paypup"};
+    g.model().setCareMistakes(4);
+    g.debugSeedRack("goliauth");
+    const int bits = g.bits();
+    enterArchSale(g, "goliauth");
+    g.onButton(press(Button::A));
+    g.onButton(press(Button::A));
+    CHECK(g.archSaleSheet().focus == SaleOffer::Hotfix);
+    archConfirmAction(g);
+    CHECK(g.model().careMistakes() == 0);
+    CHECK(g.bits() == bits);                      // one payout per sale
+    CHECK(g.rackCount() == 0 && g.records().size() == 1);
+}
+
+// REIMAGE: a second Extorgi sends the active one back to Barkmail with a clean error
+// log and everything else it earned, so the Script->Daemon branch can be raised again.
+void test_arch_sell_reimages_an_active_twin_back_to_its_script() {
+    Game g{StartMode::Hatched, "extorgi"};
+    g.debugAddCombatXp(1200);
+    const int lvl = g.combatLevel();
+    CHECK(lvl >= 1);
+    g.model().setCareMistakes(3);
+    g.debugSeedRack("extorgi");
+    enterArchSale(g, "extorgi");
+    g.onButton(press(Button::A));
+    CHECK(g.archSaleSheet().focus == SaleOffer::Reimage);
+    CHECK(g.archSaleSheet().offers[static_cast<int>(SaleOffer::Reimage)].available);
+    archConfirmAction(g);
+
+    CHECK(g.pet() && std::strcmp(g.pet()->id, "barkmail") == 0);
+    CHECK(g.model().careMistakes() == 0);
+    CHECK(g.combatLevel() == lvl);
+    CHECK(g.moveLoadout().equipped(MoveLoadout::slotsForStage(Stage::Script)) == nullptr);
+    CHECK(g.slotKind(MoveLoadout::slotsForStage(Stage::Script)) == Game::SlotKind::Unset);
+    CHECK(g.hasNextEvolution());
+    CHECK(g.rackCount() == 0 && g.records().size() == 1);
+    CHECK(g.nav() == Game::Nav::Idle);
+}
+
+// A Daemon reached by a Trojan divert reimages to the Script it was diverted OFF, which
+// hands it back its old family as well as its branch.
+void test_arch_reimage_sends_a_diverted_daemon_home() {
+    Game g{StartMode::Hatched, "coaxeel"};
+    g.debugSeedRack("coaxeel");
+    enterArchSale(g, "coaxeel");
+    g.onButton(press(Button::A));
+    archConfirmAction(g);
+    CHECK(g.pet() && std::strcmp(g.pet()->id, "rootgrub") == 0);
+    CHECK(std::strcmp(g.pet()->line, "worm") == 0);
 }
 
 // Laying an egg used to LOCK YOU IN: line-select disabled C because "an empty save has no

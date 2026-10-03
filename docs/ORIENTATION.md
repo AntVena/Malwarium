@@ -130,7 +130,7 @@ vocabulary is `src/core/audio/sound.h`; a care alert also wakes the panel on the
 | 4 EXPL | 3 fwd | Explore | the area ladder, walk mode, events |
 | 5 MAINT | 4 either | Maintenance | Defrag, AV scan |
 | 6 MODS | 3 back | Loadout | the MODS/MOVES/PRACTISE hub — hardware equips, move slots, Sim-Battle |
-| 7 ARCH | 2 back | Archive | the pet rack + records, Deploy |
+| 7 ARCH | 2 back | Archive | the pet rack + records, Deploy, the SELL counter |
 | 8 CFG | 1 back | Config | system info, HackerTag, title, device, radio, updates |
 
 **A+C on the top-level carousel flips to the parallel Hacker face** (PROFILE / CREW / SHOP / VAULT /

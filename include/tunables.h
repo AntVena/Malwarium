@@ -750,6 +750,20 @@ inline int rigUpgradeCost(int start, int n, RigCostCurve curve, int step = 0) {
     return start;
 }
 
+// What a Daemon fetches when ARCH's SELL counter cashes it for Bits (game_arch_sale.cpp).
+// Flat up to the par level, so any Daemon is worth the sticker however it got there and
+// no level is a gate on selling one; past par it climbs on the Rig Shop's own kLogStep
+// shape, measured in levels over par — x2 at par+2, x4 at par+4, x32 at par+32. A level
+// past par costs ~10% more XP than the last (kLevelXpGrowthPct), so the price outruns
+// the levels without outrunning the work in them. Par is a Daemon fresh off its Script:
+// a little above kEndlessParLevel, which is where a Script stands at the Dive.
+constexpr int kDaemonSaleBits = 512;
+constexpr int kDaemonSaleParLevel = 20;
+inline int daemonSaleBits(int level) {
+    return rigUpgradeCost(kDaemonSaleBits, level - kDaemonSaleParLevel,
+                          RigCostCurve::kLogStep);
+}
+
 // Guaranteed-event weights (balance). Every step is a real event —
 // wild encounters DOMINATE (the streak needs wins), the rest are the breather +
 // reward beats. Ordered thresholds summing to <100; the remainder types a wild

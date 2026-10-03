@@ -527,9 +527,10 @@ bool Game::tickLifecycle(uint32_t nowMs) {
 
     // Critical System Failure — the ONLY death path, and the HIGHEST modal
     // priority (CSF > Lockout > Evolution). The 5/5 dying state is
-    // recoverable by dropping below 5 within the recovery window — which only a
-    // Yubi-Cookie does (RemoveCareMistakeOnce; the Backup Drive is a combat shield and
-    // touches no error) — and once the window expires the pet is permanently
+    // recoverable by dropping below 5 within the recovery window — which a Yubi-Cookie
+    // does (RemoveCareMistakeOnce), and so does a Daemon sold for a HOTFIX
+    // (game_arch_sale.cpp); the Backup Drive is a combat shield and touches no error —
+    // and once the window expires the pet is permanently
     // lost. The habitat counts the window down (game_render.cpp's FAILING banner). Never during the Hatch (no pet) or once already in the modal.
     // The window ACCUMULATES rather than anchoring, and the total persists (save v42),
     // so a power cycle cannot refund seconds already spent at 5/5 — this is the one

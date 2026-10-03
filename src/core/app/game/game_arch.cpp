@@ -84,10 +84,12 @@ void Game::onArchList(const ButtonEvent& ev) {
     } else if (ev.button == Button::B) {
         if (n <= 0) return;                       // an empty group has nothing to open
         const ArchRow& r = rows[listRow_ % n];
-        // Records open a read-only detail; live pets open the action set.
+        // Records open a read-only detail; live pets open the action set, or the SELL
+        // sheet when it was the SELL counter that listed them.
         if (r.kind != ArchRow::Kind::Record)
             archAction_ = r.kind == ArchRow::Kind::Active ? ArchAction::Store
                                                           : ArchAction::Deploy;
+        archSaleOffer_ = SaleOffer::Bits;
         archConfirm_ = false;
         nav_ = Nav::Detail;
     } else if (ev.button == Button::C) {
@@ -140,6 +142,8 @@ void Game::onArchRecord(const ButtonEvent& ev) {
         return;
     }
 
+    if (archGroup_.kind == ArchGroup::Kind::Sell) { onArchSale(ev); return; }
+
     const ArchRow row = archFocusedRow();
     // A RETIRED/CORRUPTED record is read-only: no actions, C backs. So is an empty
     // group, which has no row to act on at all.
@@ -168,18 +172,12 @@ void Game::onArchRecord(const ButtonEvent& ev) {
 
     const bool active = row.kind == ArchRow::Kind::Active;
     if (ev.button == Button::A) {
-        // Cycle within the pet's action set. Active: Store → Sell → Store. Stored adds a
-        // no-reward Release valve: Deploy → Sell → Release → Deploy.
-        if (active) {
-            archAction_ = (archAction_ == ArchAction::Store) ? ArchAction::Sell
-                                                             : ArchAction::Store;
-        } else {
-            archAction_ = (archAction_ == ArchAction::Deploy)  ? ArchAction::Sell
-                        : (archAction_ == ArchAction::Sell)    ? ArchAction::Release
-                                                               : ArchAction::Deploy;
-        }
+        // Cycle within the pet's action set. Active has Store alone; a stored pet adds
+        // the no-reward Release valve beside Deploy.
+        if (!active)
+            archAction_ = archAction_ == ArchAction::Deploy ? ArchAction::Release
+                                                            : ArchAction::Deploy;
     } else if (ev.button == Button::B) {
-        if (archAction_ == ArchAction::Sell) return;   // Daemon-only gate (no Daemon yet)
         if (archAction_ == ArchAction::Store &&
             static_cast<int>(rack_.size()) >= rackSlots())
             return;                                     // rack full -> blocked (gate shown)
@@ -380,7 +378,7 @@ void Game::archDeployStored(int storedIdx) {
 void Game::archReleaseStored(int storedIdx) {
     // A no-reward Release valve: drop a stored pet from the rack entirely to
     // free a slot (e.g. a full rack of non-Daemon pets that can't be Sold). Leaves no
-    // record (a plain release, not a CSF/retire) — the pet is simply gone.
+    // record (a plain release, not a CSF/sale) — the pet is simply gone.
     if (storedIdx < 0 || storedIdx >= static_cast<int>(rack_.size())) return;
     rack_.erase(rack_.begin() + storedIdx);
     archConfirm_ = false;
@@ -389,13 +387,15 @@ void Game::archReleaseStored(int storedIdx) {
     persistSave();
 }
 
-void Game::debugSeedRack(const char* creatureId) {
+void Game::debugSeedRack(const char* creatureId, int combatLevel) {
     const CreatureDef* c = registry_.creature(creatureId);
     if (!c || static_cast<int>(rack_.size()) >= rackSlots()) return;
     SaveStoredPet p;
     std::strncpy(p.id, c->id, kSaveIdCap - 1);
     p.hunger = 60; p.frag = 10; p.happy = 70; p.mistakes = 1;
     p.debuffs = 0; p.ghost = 0; p.generation = 1;
+    p.combatLevel = combatLevel;
+    p.statPoints[0] = combatLevel;
     rack_.push_back(p);
 }
 

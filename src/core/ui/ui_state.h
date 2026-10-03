@@ -90,10 +90,18 @@ enum class ItemFilter { All, Food, Buffs, Quest, Keys, Tools, Ingredients };
 // The two MAINT actions.
 enum class MaintKind { Defrag, Av };
 
-// The ARCH record actions, cycled by A in the L3 record. Availability depends on the
-// pet: active → Store + Sell; stored → Deploy + Sell. Sell stays Daemon-only
-// (deferred until the Daemon stage exists).
-enum class ArchAction { Store, Deploy, Sell, Release };
+// The ARCH record actions, cycled by A in the L3 record: active → Store; stored →
+// Deploy + Release. Selling is not one of them — it is the SELL group's own counter
+// (ArchGroup::Kind::Sell), because what a sale pays depends on the pet you are raising
+// as much as on the one being sold, and a pet's own record only knows about itself.
+enum class ArchAction { Store, Deploy, Release };
+
+// What a Daemon sold at ARCH's SELL counter pays, one per sale (game_arch_sale.cpp).
+// Bits always; the two patches spend the Daemon on the ACTIVE pet instead — Reimage
+// rolls an active twin of the same species back to its Script with a clean error log,
+// so the ending can be raised again; Hotfix clears the active pet's care errors.
+enum class SaleOffer : uint8_t { Bits, Reimage, Hotfix };
+constexpr int kSaleOfferCount = 3;
 
 // Which GROUP of ARCH rows the rack list is showing. The archive outgrew one flat list
 // the moment its ceiling went to 64 slots: walking to the last shelf past a record tail
@@ -103,8 +111,10 @@ enum class ArchAction { Store, Deploy, Sell, Release };
 //
 // NewEgg is a row on that picker rather than an action buried in the active pet's
 // record: laying an egg is the thing people came to ARCH to do and could not find.
+// Sell is the same kind of row: every stored Daemon across the families, behind one
+// counter, sitting just above the RECORDS a sale leaves behind.
 struct ArchGroup {
-    enum class Kind : uint8_t { NewEgg, Active, Line, Records };
+    enum class Kind : uint8_t { NewEgg, Active, Line, Sell, Records };
     Kind kind = Kind::Active;
     // Kind::Line only — an index into kCreatureLines (creatures/creature_lines.h).
     // -1 everywhere else. An INDEX rather than the line id, because the picker's rows

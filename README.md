@@ -426,8 +426,17 @@ Starving, a lockout that runs out, or a botched defrag each count as an **error*
 - **GOOD** (0–2 errors): it grows into a stable, helpful form.
 - **BAD** (3–4): it grows into a stronger fighter that corrupts faster.
 - **DYING** (5): it is failing. The home screen counts down half an hour of powered-on
-  time, and only a **Yubi-Cookie** (a rare find) can pull it back. Have one? Press **B** on the
-  home screen, or on the lockout's feed row, and it's eaten on the spot.
+  time, and only a **Yubi-Cookie** (a rare find) or a **HOTFIX** (below) can pull it back.
+  Have a cookie? Press **B** on the home screen, or on the lockout's feed row, and it's
+  eaten on the spot.
+
+**Finished raising one?** A Daemon is as far as a creature grows. Once it's stored in
+**ARCH**, the **SELL** row there trades it in for good, for one of three things:
+- **BITS**: a fixed price for any Daemon, climbing the further past level 20 it got.
+- **REIMAGE**: if the pet you're raising is the *same* Daemon, it goes back to its Script
+  with no errors and keeps its level, so you get another try at the ending you wanted
+  without starting a third from an egg.
+- **HOTFIX**: the pet you're raising loses all its errors.
 
 **Its time only runs while the device is on.** There's no clock inside, so switched off
 your pet simply waits: it doesn't get hungry, bored or older, and it doesn't grow either.

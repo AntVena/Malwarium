@@ -446,7 +446,7 @@ struct SaveStoredPet {
 
 // The permanent status of an ARCH record: a greyed, read-only entry that
 // does NOT consume a rack slot. Corrupted = lost to Critical System Failure;
-// Retired = a Daemon retired/sold (deferred — the enum reserves the value).
+// Retired = a Daemon sold at ARCH's SELL counter (game_arch_sale.cpp).
 enum class RecordStatus : uint8_t { Retired = 0, Corrupted = 1 };
 
 // An ARCH [RETIRED]/[CORRUPTED] record: the lasting trace of a pet that

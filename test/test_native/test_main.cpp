@@ -262,6 +262,14 @@ int g_failures = 0;
     /* ARCH's group picker, its NEW EGG row, and the cancellable hatch */ \
     RUN(test_arch_picker_groups_the_rack_by_line) \
     RUN(test_arch_new_egg_row_stores_then_hatches) \
+    /* ARCH's SELL counter: Bits, Reimage, Hotfix */ \
+    RUN(test_daemon_sale_bits_flat_to_par_then_log_steps) \
+    RUN(test_arch_sell_counter_lists_only_stored_daemons) \
+    RUN(test_arch_sell_for_bits_leaves_a_retired_record) \
+    RUN(test_arch_sell_closed_offer_cannot_be_taken) \
+    RUN(test_arch_sell_hotfix_clears_the_active_pets_errors) \
+    RUN(test_arch_sell_reimages_an_active_twin_back_to_its_script) \
+    RUN(test_arch_reimage_sends_a_diverted_daemon_home) \
     RUN(test_line_select_backs_out_to_arch_when_the_rack_has_a_pet) \
     RUN(test_line_select_cannot_be_cancelled_with_an_empty_rack) \
     RUN(test_stat_footer_and_generation)    \

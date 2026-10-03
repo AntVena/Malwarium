@@ -330,19 +330,20 @@ void Game::drawHabitat(Framebuffer& fb, int cursor) const {
     }
 
     // FAILING: a pet at 5/5 errors is lost when kCsfDyingGraceMs of powered-on time
-    // runs out (tickLifecycle), and the only way back is a Yubi-Cookie. A banner that
-    // counts it down and names the rescue is the least a player walking up to the
-    // device is owed. It sits below the hunger alert's 20px slot on a plate of paper,
-    // so it reads over whatever the habitat has behind it.
+    // runs out (tickLifecycle), and the ways back are a Yubi-Cookie or a stored Daemon
+    // sold for a HOTFIX. A banner that counts it down and names the rescue is the least
+    // a player walking up to the device is owed. It sits below the hunger alert's 20px
+    // slot on a plate of paper, so it reads over whatever the habitat has behind it.
     if (pet_ && !inEggPhase() && model_.careBranch() == CareBranch::Dying) {
         const uint32_t left = static_cast<uint32_t>(failingLeftMs());
         char head[24];
         std::snprintf(head, sizeof head, "FAILING - %u:%02u LEFT",
                       static_cast<unsigned>(left / 60000u),
                       static_cast<unsigned>((left / 1000u) % 60u));
-        const char* rescue = yubiConsumed_ ? "NOTHING CAN SAVE IT NOW"
-                           : yubiReady()  ? "B: FEED THE YUBI-COOKIE"
-                                          : "ONLY A YUBI-COOKIE SAVES IT";
+        const char* rescue = yubiReady()      ? "B: FEED THE YUBI-COOKIE"
+                           : daemonOnRack()   ? "ARCH: SELL FOR A HOTFIX"
+                           : yubiConsumed_    ? "NOTHING CAN SAVE IT NOW"
+                                              : "ONLY A YUBI-COOKIE SAVES IT";
         const int by = kLivingTop + 26;
         fb.fillRect(0, by - 3, kActiveW, 2 * (kFontH + 3) + 3, palColor(Pal::PAPER));
         drawText(fb, (kActiveW - textWidth(head)) / 2, by, head, palColor(Pal::HOT));
@@ -714,7 +715,8 @@ void Game::drawSubmenu(Framebuffer& fb) const {
                 for (const ArchPickRow& t : tiles)
                     if (t.group == archGroup_) { title = t.label; break; }
                 drawArchList(fb, archRows(), title, listRow_,
-                             static_cast<int>(rack_.size()), rackSlots());
+                             static_cast<int>(rack_.size()), rackSlots(),
+                             archGroup_.kind == ArchGroup::Kind::Sell);
             }
             break;
         case SubmenuId::Mods: {
@@ -812,16 +814,18 @@ void Game::drawDetail(Framebuffer& fb) const {
                                archConfirmChoice_);
                 break;
             }
+            if (archGroup_.kind == ArchGroup::Kind::Sell) {
+                drawArchSale(fb, archSaleSheet());
+                break;
+            }
             const ArchRow row = archFocusedRow();
             if (row.kind == ArchRow::Kind::Record) {
                 if (row.index >= 0 && row.index < static_cast<int>(records_.size()))
                     drawArchRecordDetail(fb, registry_, records_[row.index]);
                 break;
             }
-            const bool sellEnabled = row.def && row.def->stage == Stage::Daemon;
             drawArchRecord(fb, row.def, row.kind == ArchRow::Kind::Active, row.generation,
-                           archAction_, sellEnabled, rackFull, archConfirm_,
-                           archConfirmChoice_);
+                           archAction_, rackFull, archConfirm_, archConfirmChoice_);
             break;
         }
         case SubmenuId::Mods:

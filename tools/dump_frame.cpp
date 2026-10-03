@@ -82,12 +82,14 @@
 //             group screens, and radio is seeded with a live arbiter owner —
 //             "idle" seeds nothing on air, "all" seeds every toggle on under a
 //             running update job)
-//        arch [stored] [rackfull] [group:<n>] [row:<n>] [detail] [confirm] (ARCH opens
-//             on its GROUP PICKER — NEW EGG · ACTIVE · one row per creature family ·
-//             RECORDS — so "group:<n>" is what opens a shelf and "row:<n>" then walks
-//             it; rackfull buys slots
+//        arch [stored] [rackfull] [daemons] [group:<n>] [row:<n>] [detail] [offer:<n>]
+//             [confirm] (ARCH opens on its GROUP PICKER — NEW EGG · ACTIVE · one row per
+//             creature family · SELL · RECORDS — so "group:<n>" is what opens a shelf
+//             and "row:<n>" then walks it; rackfull buys slots
 //             and fills them, so the list overflows kVisibleRows and scrolls;
-//             row:<n> walks the cursor down it)
+//             row:<n> walks the cursor down it; daemons stocks the SELL counter, and
+//             offer:<n> cycles a sale sheet to its nth offer — pet:wire_heir makes the
+//             second one a twin, so REIMAGE reads open)
 //        train [trainpicker] · combat [override [band:<n>]] [stats] [kit] (the raw dev hook;
 //             stats opens the panel's STATE page, kit its second) ·
 //        simbattle [fight [stats]] (the REAL entry — buffs carried in from outside,
@@ -344,6 +346,11 @@ int main(int argc, char** argv) {
     }
     // ARCH rack: seed a frozen stored pet so the rack list / Deploy record render.
     if (hasFlag(argc, argv, "stored")) game.debugSeedRack("cryptoshell");
+    // ...and two Daemons for the SELL counter, one either side of the sale's par level.
+    if (hasFlag(argc, argv, "daemons")) {
+        game.debugSeedRack("goliauth", kDaemonSaleParLevel + 8);
+        game.debugSeedRack("wire_heir", kDaemonSaleParLevel);
+    }
     // ...and the overflowing rack: buy past kRackSlots and fill every slot, which is
     // the state the list has to WINDOW rather than draw straight down the screen.
     if (hasFlag(argc, argv, "rackfull")) {
@@ -779,7 +786,11 @@ int main(int argc, char** argv) {
                 for (int k = std::atoi(argv[i] + 4); k > 0; --k)
                     game.onButton({Button::A, true, false});
         if (hasFlag(argc, argv, "detail")) game.onButton({Button::B, true, false});
-        if (hasFlag(argc, argv, "confirm")) {        // open the Store/Deploy confirm
+        for (int i = 3; i < argc; ++i)
+            if (std::strncmp(argv[i], "offer:", 6) == 0)
+                for (int k = std::atoi(argv[i] + 6); k > 0; --k)
+                    game.onButton({Button::A, true, false});
+        if (hasFlag(argc, argv, "confirm")) {        // open the Store/Deploy/sale confirm
             game.onButton({Button::B, true, false}); // record -> confirm
         }
     } else if (hasFlag(argc, argv, "mods")) {

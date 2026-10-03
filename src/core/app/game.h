@@ -1799,6 +1799,9 @@ public:
         const ArchRow r = archFocusedRow();
         return r.def ? r.def->id : nullptr;
     }
+    // The SELL sheet for the focused row, in one piece — what the L3 draws, and what a
+    // gate reads to see which offers are open without driving the screen.
+    ArchSaleSheet archSaleSheet() const;
 
     // Zone-completion Titles --------------------------------
     // Player-level, persisted (survive a pet reset, like the sector-clear flags).
@@ -2001,8 +2004,9 @@ public:
     void debugSeedRng(uint32_t seed) { rng_ = seed; }
     // Inject a frozen pet into the ARCH rack (tests / headless screenshots of a
     // populated rack — the real path is the Store action). No-op if the rack is
-    // full or the id is unknown.
-    void debugSeedRack(const char* creatureId);
+    // full or the id is unknown. `combatLevel` lands as that many Power points, which
+    // keeps the level == earned-points invariant a thawed pet is held to.
+    void debugSeedRack(const char* creatureId, int combatLevel = 0);
     // Launch a combat directly (tests / headless screenshots / dev). `live` picks
     // the stakes; the Sim-Battle path is the in-game one (startSimBattle, safe).
     // `lethal` builds an unbeatable enemy so a loss is deterministic (stakes test).
@@ -2585,6 +2589,15 @@ private:
     void archStoreActive();                        // active pet → rack → new egg
     void archDeployStored(int storedIdx);          // stored pet → active (slot-neutral)
     void archReleaseStored(int storedIdx);         // stored pet → gone (frees a slot, no reward)
+    // The SELL counter (game_arch_sale.cpp). A stored Daemon is traded for ONE offer and
+    // leaves a RETIRED record. archSaleBlocker is the single answer to "can this offer be
+    // taken for this pet" — nullptr when it can, else the short reason its row shows —
+    // so the sheet and the commit can never disagree about it.
+    void onArchSale(const ButtonEvent& ev);
+    const char* archSaleBlocker(SaleOffer offer, const SaveStoredPet& sold) const;
+    void archSellStored(int storedIdx, SaleOffer offer);
+    void reimageActivePet();                       // Reimage's effect on the active twin
+    bool daemonOnRack() const;                     // anything for the SELL counter to take
     void noteRackDuplicates();                     // two of one species on the shelf → SECOND_INSTANCE
     void onArchPicker(const ButtonEvent& ev);       // L2 group picker
     // The rows behind the open group, and the focused one. Rebuilt on demand rather
@@ -2602,6 +2615,9 @@ private:
     bool archOnNewEgg() const { return archGroup_.kind == ArchGroup::Kind::NewEgg; }
     // Commit the NEW EGG row: set the active pet aside (if there is one) and hatch.
     void archHatchNewEgg();
+    // The Script a Daemon is reimaged back to: whichever Script's evolution reaches it,
+    // by its care branch, its Daemon pool or a Trojan divert. Null for anything else.
+    const CreatureDef* reimageScript(const CreatureDef* daemon) const;
     // Leave the line-select modal for the ARCH picker, without laying an egg. Only ever
     // reachable with something on the rack to go back TO — see the modal's own comment.
     void archReturnFromLineSelect();
@@ -3640,6 +3656,7 @@ private:
     // ARCH submenu: the focused record action + the rack of frozen stored
     // pets (persisted). archConfirm_ is the inline confirm for Store/Deploy.
     ArchAction archAction_ = ArchAction::Store;
+    SaleOffer archSaleOffer_ = SaleOffer::Bits;    // the SELL sheet's focused offer
     std::vector<SaveStoredPet> rack_;
     bool archConfirm_ = false;
     int archConfirmChoice_ = 0;          // 0 Cancel · 1 Confirm

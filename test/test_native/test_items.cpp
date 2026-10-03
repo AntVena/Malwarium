@@ -364,14 +364,13 @@ void test_defrag_count_freeze_thaw() {
 }
 
 // ARCH Release valve: a stored pet can be RELEASED — no reward, frees a rack
-// slot. Cycle a stored record's actions Deploy -> Sell -> Release, then confirm.
+// slot. Cycle a stored record's actions Deploy -> Release, then confirm.
 void test_arch_release_stored_frees_slot() {
     Game g{StartMode::Hatched};
     g.debugSeedRack("cryptoshell");                    // a stored pet at rack row 1
     CHECK(g.rackCount() == 1);
     enterArchStoredPet(g, "cryptoshell");              // its record, Deploy focused
-    g.onButton(press(Button::A));                      // Deploy -> Sell
-    g.onButton(press(Button::A));                      // Sell   -> Release
+    g.onButton(press(Button::A));                      // Deploy -> Release
     archConfirmAction(g);                              // Release -> confirm -> commit
     CHECK(g.rackCount() == 0);                          // slot freed, no record left
     CHECK(g.nav() == Game::Nav::Submenu);              // back to the (empty) rack list

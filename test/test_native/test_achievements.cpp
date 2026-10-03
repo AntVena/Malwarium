@@ -310,10 +310,9 @@ void test_achievement_rack_wing_holds_a_whole_line_at_once() {
     CHECK(g.hasAchievement("WING_TROJAN"));
     CHECK(g.achValue(*wing) == line->count);
 
-    // Release one — Deploy -> Sell -> Release on the stored pet's record — and the count
-    // drops back while the row stays earned.
+    // Release one — Deploy -> Release on the stored pet's record — and the count drops
+    // back while the row stays earned.
     enterArchStoredPet(g, "coaxeel");
-    g.onButton(press(Button::A));
     g.onButton(press(Button::A));
     archConfirmAction(g);
     CHECK(g.rackCount() == line->count - 1);

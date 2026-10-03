@@ -5,8 +5,8 @@
 // feature whose field it migrates, not in a migrations pile of its own.
 #include "test_gates.h"
 
-// ARCH: the rack list shows the active pet; the record opens, cycles its
-// actions (Store/Sell), and backs out. Both actions are inert shells.
+// ARCH: the rack list shows the active pet; the record opens, holds on A (Store is the
+// active pet's only action), and backs out.
 void test_arch_list_and_record() {
     Game g{StartMode::Hatched};
     enterSubmenuId(g, SubmenuId::Arch);
@@ -20,7 +20,7 @@ void test_arch_list_and_record() {
     CHECK(g.nav() == Game::Nav::Detail);
     g.render(fb);
     CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));    // record reads in grayscale
-    g.onButton(press(Button::A));                       // cycle Store -> Sell (inert)
+    g.onButton(press(Button::A));                       // nothing to cycle to
     CHECK(g.nav() == Game::Nav::Detail);                // still on the record
     tapC(g);                       // back to the group's list
     CHECK(g.nav() == Game::Nav::Submenu);

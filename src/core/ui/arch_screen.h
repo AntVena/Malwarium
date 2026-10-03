@@ -1,16 +1,19 @@
 // arch_screen.h — ARCH submenu: the server rack. Cold storage for the device's pets, the
-// per-pet actions (Deploy / Store / Sell / Release), and the NEW EGG row that lays one.
+// per-pet actions (Deploy / Store / Release), the NEW EGG row that lays one, and the SELL
+// counter that trades a finished Daemon in.
 //
 // THREE SCREENS, not one list. The shelf reaches 64 slots (game_rig_shop.h's
 // kRackSlotUpgradeMax) — one of every species on the roster with room over — and the
 // RETIRED/CORRUPTED record tail only ever grows, so a single flat list is a walk rather
 // than a menu. So: an L2 GROUP PICKER (NEW EGG · ACTIVE · one row per creature family ·
-// RECORDS), the rows behind whichever group it opened, and the L3 that acts on one of
-// them. Grouping by FAMILY is the axis because it is the one a player keeping a set
+// SELL · RECORDS), the rows behind whichever group it opened, and the L3 that acts on one
+// of them. Grouping by FAMILY is the axis because it is the one a player keeping a set
 // thinks in, and because it is the only grouping the content already declares
 // (CreatureDef::line).
 //
-// Sell stays Daemon-only and stubbed until its system lands.
+// SELL is a group rather than a pet action because its L3 is a different screen: what a
+// sale can pay depends on the ACTIVE pet (the two patches spend the Daemon on it), so the
+// sheet is read across two pets where a record only ever describes one.
 #pragma once
 
 #include <vector>
@@ -26,7 +29,7 @@ class ContentRegistry;
 
 // One row of the ARCH picker (L2): a group, its label, and how many rows are behind it.
 // A fixed set, built fresh each draw — NEW EGG, ACTIVE, one row per creature line, then
-// RECORDS — so a family added to kCreatureLines shows up here without an edit.
+// SELL and RECORDS — so a family added to kCreatureLines shows up here without an edit.
 struct ArchPickRow {
     ArchGroup group;
     // Held BY VALUE, not as a pointer: a family's label is derived from its id rather
@@ -49,6 +52,23 @@ struct ArchRow {
     const CreatureDef* def = nullptr;   // resolved species, or null for an unknown id
     int generation = 0;
     uint8_t status = 0;                 // Kind::Record only — RecordStatus
+    int level = 0;                      // Kind::Stored only — what the SELL list prices on
+};
+
+// The SELL counter's L3, read off the Game in one piece (Game::archSaleSheet). Each offer
+// carries whether it can be taken and the value its row shows — a payout when it can, the
+// reason in a word or two when it cannot, so a dimmed row still says why in grayscale.
+struct ArchSaleSheet {
+    const CreatureDef* daemon = nullptr;
+    int level = 0;
+    int generation = 0;
+    struct Offer {
+        bool available = false;
+        char value[20] = {0};
+    } offers[kSaleOfferCount];
+    SaleOffer focus = SaleOffer::Bits;
+    bool confirmOpen = false;
+    int confirmChoice = 0;              // 0 Cancel · 1 Confirm
 };
 
 // The picker's rows. `active` may be null (the two-room state between a Store and the
@@ -60,7 +80,8 @@ std::vector<ArchPickRow> buildArchPickerRows(const ContentRegistry& reg,
                                              const std::vector<SaveRecord>& records);
 
 // The rows behind one group. Empty for Kind::NewEgg, which is an action rather than a
-// list, and for a group whose shelf happens to be empty.
+// list, and for a group whose shelf happens to be empty. Kind::Sell holds every STORED
+// Daemon whatever its family — never the active pet, which has to be set aside first.
 std::vector<ArchRow> buildArchRows(const ContentRegistry& reg, ArchGroup group,
                                    const CreatureDef* active, int generation,
                                    const std::vector<SaveStoredPet>& rack,
@@ -75,8 +96,10 @@ void drawArchPicker(Framebuffer& fb, const std::vector<ArchPickRow>& tiles, int 
 // L2b rack list, showing one group's rows. `cursor` is the focused row; `title` names
 // the group. A group can outgrow the screen on its own now that the shelf holds 64, so
 // the list still draws a kVisibleRows window with the slim scrollbar items/mods/cfg use.
+// `showLevels` puts each stored pet's level where FROZEN would go — the SELL list's
+// status column, since level is what a sale is priced on.
 void drawArchList(Framebuffer& fb, const std::vector<ArchRow>& rows, const char* title,
-                  int cursor, int used, int maxSlots);
+                  int cursor, int used, int maxSlots, bool showLevels = false);
 
 // L3 NEW EGG confirm. The one screen that says what laying an egg COSTS: the pet you
 // are raising goes to the rack first, so a full rack is what blocks it. `active` null
@@ -91,10 +114,13 @@ void drawArchRecordDetail(Framebuffer& fb, const ContentRegistry& reg,
 
 // L3 pet record: details + the available action + a light inline
 // confirm. `isActive` picks the Store-vs-Deploy action set; `generation`
-// is shown in the record; `rackFull` gates Store; `sellEnabled` is Daemon-only.
+// is shown in the record; `rackFull` gates Store.
 // When `confirmOpen`, the confirm prompt is drawn (`confirmChoice` 0=Cancel/1=OK).
 void drawArchRecord(Framebuffer& fb, const CreatureDef* pet, bool isActive,
-                    int generation, ArchAction action, bool sellEnabled,
-                    bool rackFull, bool confirmOpen, int confirmChoice);
+                    int generation, ArchAction action, bool rackFull, bool confirmOpen,
+                    int confirmChoice);
+
+// L3 SELL sheet: one stored Daemon and the three things it can be traded for.
+void drawArchSale(Framebuffer& fb, const ArchSaleSheet& sheet);
 
 } // namespace mal

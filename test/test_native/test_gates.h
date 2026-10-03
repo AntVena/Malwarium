@@ -352,7 +352,7 @@ inline void enterArchStoredPet(Game& g, const char* creatureId) {
     archOpenStoredPet(g, creatureId);
 }
 
-// Walk ARCH to the ACTIVE pet's record — the Store/Sell action set.
+// Walk ARCH to the ACTIVE pet's record — the Store action.
 inline void enterArchActivePet(Game& g) {
     archBackToIdle(g);
     enterSubmenuId(g, SubmenuId::Arch);
@@ -361,6 +361,36 @@ inline void enterArchActivePet(Game& g) {
     CHECK(g.archPickRow() == 1);
     g.onButton(press(Button::B));                                // open the group
     g.onButton(press(Button::B));                                // open the pet's record
+}
+
+// Walk ARCH to the SELL counter's list. The row is found by its group rather than
+// counted, since the families above it are content that grows.
+inline void enterArchSellList(Game& g) {
+    archBackToIdle(g);
+    enterSubmenuId(g, SubmenuId::Arch);
+    const auto tiles = buildArchPickerRows(ContentRegistry::embedded(), g.pet(), g.rack(),
+                                           g.records());
+    int row = -1;
+    for (int i = 0; i < static_cast<int>(tiles.size()); ++i)
+        if (tiles[i].group.kind == ArchGroup::Kind::Sell) row = i;
+    CHECK(row >= 0);
+    for (int k = 0; k < g.archPickRowCount() && g.archPickRow() != row; ++k)
+        g.onButton(press(Button::A));
+    CHECK(g.archPickRow() == row);
+    g.onButton(press(Button::B));                 // open the counter
+}
+
+// ...and on to one Daemon's sale sheet, Bits focused.
+inline void enterArchSale(Game& g, const char* creatureId) {
+    enterArchSellList(g);
+    for (int j = 0; j < g.archRowCount(); ++j) {
+        if (g.archFocusedPetId() && std::strcmp(g.archFocusedPetId(), creatureId) == 0) {
+            g.onButton(press(Button::B));
+            return;
+        }
+        g.onButton(press(Button::A));
+    }
+    CHECK(false);                                 // not on the counter
 }
 
 // Commit ARCH's NEW EGG row: the top row of the picker, its confirm, and Confirm.
