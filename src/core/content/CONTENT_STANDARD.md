@@ -38,7 +38,8 @@ thing and every lever it pulls**. Hold all content to it.
    - *You don't have to cite every number.* Each screen also draws a `statLine()` derived
      straight from the row's structured effects (`ItemEffect` kinds / `ModEffect` /
      a move's riders), which reports every magnitude whether or not the prose mentions
-     it. A description's job is what the thing is FOR; the arithmetic is generated.
+     it. So a description doesn't explain the item at all: it is flavour (see
+     *Description voice* below), and the arithmetic is generated.
    - *Adding a token:* extend the per-type table in `effect_text.cpp` — and for an item,
      give the new `ItemEffect::Kind` a name in `itemEffectToken()` beside its applier
      case, so a new mechanic reaches the prose the same way it reaches the pet.
@@ -110,24 +111,65 @@ None outstanding.
   how common (dropWeight), how common HERE (the pool row) — so don't overload rarity to
   express scarcity.
 - Writing the row's description → put `{token}`s where the numbers go, never digits
-  (rule 3), and write it in the description VOICE below.
+  (rule 3) — though a description in the voice below rarely wants one.
 
 ## Description voice
 
-An item's description is somebody handing you the thing and telling you what it is for,
-in plain words. Write it that way:
+The readout grid under a description already says what the item does, in numbers. The
+description is for what the grid can't carry: the joke, the feel, a little character.
+It is flavour, and it should read like something a friend says about the food, not a
+narrator hinting at a secret.
 
-- **Second person, direct.** "Use it on your egg and it hatches {eggCutMins} minutes
-  sooner." Not "The wait, shortened." Say "your pet", not "the creature".
-- **Say what to do with it.** Eat it, cook with it, use it before a dive, take it to the
-  VAULT, save it. A staple that is barely food raw says so ("Cook it into something").
-- **The pun is stated, not hinted.** One clause that names the joke outright ("Pasta,
-  every strand linked to the next"), then the use. No riddles, no trailing ellipses, no
-  line that only lands if the reader already knows what the item does.
-- **Name the catch.** If it adds Fragmentation, costs FED, is used up either way, or only
-  works once per pet, the sentence says so. The stat line has the numbers; the prose has
-  the consequence.
-- **FED, not Hunger.** The player-facing gauge is FED (STAT, the readout grid), so the
-  prose uses that word.
-- **Short.** The panel is 26 characters wide; a shop listing gets three lines.
-  `test_effect_text_fits_its_screen_budget` is the gate.
+**The pattern.** One warm, everyday sentence (two at most) that makes complete sense as
+a remark about the object itself, with the tech meaning of the name sitting underneath.
+
+> Tiramisudo: "Guaranteed to put lasting pep in your step but whether or not it's on the
+> menu depends who's asking."
+> Hackshuka: "Sometimes it's fun to just grab some reg-eggs, whatever's in the fridge,
+> and make it work."
+> Cod Review: "Quality control on this dish is rigorous. If the fish is too fishy, the
+> shipment gets cancelled."
+> Null Noodles: "It tastes like nothing."
+
+### The rules
+
+1. **No mechanics.** No numbers, no stat names, no instructions ("use it before a
+   dive", "cook it into something"), no "once per pet". A `{token}` is still how a
+   number gets in if one is ever truly needed (rule 3), but the grid has it already.
+2. **It must make sense as food (or as the object) on its own.** A tech catchphrase
+   with no food reading fails: "Looks good to me. Ship it." does; Cod Review's line
+   passes because a fish supplier really would cancel a fishy shipment.
+3. **Play the name's tech half in a fresh sense; never say it.** Hackshuka evokes
+   hacking as making-do; Tiramisudo never says "sudo". The tech word, its expansion
+   ("secure shell" for SSH) and its obvious synonyms stay out of the line. Repeating
+   the FOOD half of the name ("salt", "beans") is fine.
+4. **A pun of its own, or none.** Every line carries its own wordplay ("veggie patch",
+   "secret ingredient") or is simply, plainly true of the food ("It tastes like
+   nothing."). Simple beats forced.
+5. **Ingredients only when they are the pun.** "reg-eggs" earns its place; a recipe
+   list or a hint about what to cook does not.
+6. **No fake mystery.** No "nobody…", "somebody…", "no one knows…", no trailing
+   ellipsis, no setup the line never pays off, no riddle that only lands if you already
+   know what the item does.
+7. **Every reference is anchored.** "The" and "it" point at something the line itself
+   or the object supplies — the dish's own jar, tin or tray. "The long trip", "the
+   table", "the bakery" assume a scene the reader was never given.
+8. **No comma the sentence doesn't need.** The habit to break is "X, and Y" on every
+   line. Keep a comma only where grammar or an idiom needs it: a list, "First come,
+   first served", Given/When/Then.
+9. **Vary the shape across the table.** Don't open half the shelf with "Every…" or
+   "Comes with…", and never give two rows the same line.
+10. **Warm, not knowing.** Kitchen talk, second person welcome, kind rather than
+    cynical. Short is fine — one line is fine.
+11. **If no line can work, fix the name.** A tech half too obscure to land (Crostini,
+    ChromeOS's container) is a naming problem (ITEM_NAMING.md), not a prose problem:
+    it became BruSSHetta.
+
+### What a gate can and can't check
+
+`test_effect_text_fits_its_screen_budget` measures every line against the panel (26
+characters a line; a shop listing gets three). A script can also catch commas, the
+"nobody" family, a trailing ellipsis, a digit, and a line repeating a word of its own
+name. Rules 2, 3 (synonyms and expansions), 4, 7 and 10 need a reader. So write a batch,
+run the mechanical checks, then read every line against this list before it ships, and
+try two or three lines on someone before writing two hundred.

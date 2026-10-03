@@ -15,7 +15,8 @@ namespace mal {
 // `{depth}` and effect_text.h substitutes the value from this same row, so retuning a
 // number retunes the prose with it. The screens also draw a derived stat line under
 // the prose (statLine()), which reports every magnitude here whether or not the
-// sentence mentions it — so a description's job is what the item is FOR, not arithmetic.
+// sentence mentions it — so a description is flavour, not explanation. Its voice and
+// rules are CONTENT_STANDARD.md's *Description voice*.
 // Reward pools ---------------------------------------------------------------
 // The item sets a container draws from, and the one the walk's own loot-cache event
 // pays out of (kLootPool, declared in content_tables.h for game_explore). Pools live
