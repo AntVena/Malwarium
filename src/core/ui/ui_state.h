@@ -35,13 +35,13 @@ enum class SubmenuId { Stat, Items, Games, Expl, Maint, Mods, Arch, Cfg };
 // activity stays two presses from EXPL however many areas the ladder gains.
 //
 // None is the picker ITSELF — the level where no category is open yet.
-enum class ExplCat : uint8_t { None, Story, Endless, Arena, Chapters };
+enum class ExplCat : uint8_t { None, Story, Endless, Arena, Chapters, Sound };
 // The picker's rows, in order. None is not one of them, which is why the mapping is an
 // offset rather than a cast: the enum's first value is a state, not a row.
-constexpr int kExplCatRows = 4;
+constexpr int kExplCatRows = 5;
 inline ExplCat explCatAt(int row) { return static_cast<ExplCat>(row + 1); }
 inline int explCatRow(ExplCat c) { return static_cast<int>(c) - 1; }
-// ARENA and CHAPTERS act on B rather than opening a level of rows — there is exactly
+// ARENA, CHAPTERS and SOUND act on B rather than opening a level of rows — there is exactly
 // one thing behind each, so a list of one would be a press spent saying nothing. STORY
 // and ENDLESS have levels; this is what says which.
 inline bool explCatHasRows(ExplCat c) {

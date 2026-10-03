@@ -424,6 +424,7 @@ void Game::startPvpBattle(uint32_t seed) {
     // ...and, on the same rule, the mirror — recorded at the START because the meeting is
     // the whole event, exactly as it is for the reveal and the duel above.
     noteMirrorMatch(pvpRemoteFighter_.creatureId);
+    combatCaller_ = CombatCaller::Duel;   // see startSimBattle: never inherit a wild caller
     combatBeat_ = 0;
     fxBeat_ = 0;
     combatTurnBeat_ = 0;

@@ -321,7 +321,9 @@ constexpr int kSaveTextCap = 28;     // matches EventLog's LogEntry.text
 //     v61's OFF mask, and read only where that mask is clear. Pre-v69 -> 0, YES.
 // v70 NO BYTES. Renames one ITEM id (`crostini` -> `brusshetta`, see `renamedIds`); the
 //     version exists so the rename row has a `sinceVersion` to retire against.
-constexpr uint16_t kSaveVersion = 70;
+// v71 APPEND `exploreSound`, one byte (1 = EXPL > SOUND on). Device-level, beside v68's
+//     SOUND. Pre-v71 -> 1, which is how every device sounded before it was stored.
+constexpr uint16_t kSaveVersion = 71;
 
 // The oldest blob deserialize will read, and the ONLY thing that retires a rename row
 // (see `renamedIds`). Raising it is how a device stops carrying migration weight for saves
@@ -914,6 +916,9 @@ struct SaveData {
 
     // --- v69: which askable SERVICES sit at ASK (Game::rigServiceMode) ---
     uint32_t rigServicesAsk = 0;
+
+    // --- v71 ---
+    uint8_t exploreSound = 1;
 };
 
 // Read/write one mod's spare count in the v45 packed pool (SaveData::ownedModCounts) by

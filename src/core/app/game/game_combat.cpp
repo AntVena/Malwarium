@@ -294,6 +294,9 @@ void Game::startSimBattle() {
     rng_ = rng_ * 1664525u + 1013904223u;     // advance for a fresh deterministic seed
     combat_.begin(p, e, Combat::Stakes::Safe, rng_, /*forceEnemyFirst=*/false,
                   /*carryPlayerHealth=*/-1, exploitUsesPerBattle());
+    // Set every time: a practice fight opened mid-walk would otherwise inherit the last
+    // wild fight's caller and be paid, streaked and auto-dismissed as one.
+    combatCaller_ = CombatCaller::Sim;
     combatBeat_ = 0;
     fxBeat_ = 0;
     combatTurnBeat_ = 0;
@@ -393,12 +396,20 @@ void Game::advanceCombatTurn() {
     // does not touch them at all.
 }
 
+bool Game::exploreFightLive() const {
+    return exploreActive_ && nav_ == Nav::Combat &&
+           (combatCaller_ == CombatCaller::Wild || combatCaller_ == CombatCaller::Boss);
+}
+
 void Game::playCombatTurnSound() {
     switch (combat_.outcome()) {
         case Combat::Outcome::Ongoing: break;
         case Combat::Outcome::Fled: playSound(Sound::Fled); return;
         default: playSound(Sound::Knockout); return;
     }
+    // Nobody is watching an auto-explore fight swing by swing; a cue every turn would
+    // only be noise from a device sitting in a pocket. The start and the KO still sound.
+    if (exploreFightLive()) return;
     if (combat_.lastWasStunned()) playSound(Sound::Stunned);
     // Only a swing gets a hit cue: the passive ticks and wind-ups would make every turn
     // beep, and a shielded or ransomed swing that moved no Health reads as a block.

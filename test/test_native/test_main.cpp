@@ -181,6 +181,9 @@ int g_failures = 0;
     RUN(test_sound_combat_cues) \
     RUN(test_sound_arcade_stacker_cues) \
     RUN(test_sound_isolation_crash_once) \
+    RUN(test_sound_explore_fights_are_quiet) \
+    RUN(test_expl_sound_row_toggles_and_persists) \
+    RUN(test_sound_practice_during_walk_is_not_an_explore_fight) \
     RUN(test_cfg_tips_replay) \
     RUN(test_cfg_travel_confirm_asks_twice) \
     RUN(test_cfg_format_sd_confirm)         \

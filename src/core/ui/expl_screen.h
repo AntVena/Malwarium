@@ -176,6 +176,10 @@ struct ExplListView {
     // How many STORY chapters the walk has written so far — the CHAPTERS row's own
     // readout, and what locks it: an archive with nothing in it is not a place to go.
     int storyChapters = 0;
+    // The SOUND row's readout: the explore-cue switch, and whether CFG's SOUND would
+    // let an explore cue through at all — a row reading ON under a silenced device lies.
+    bool exploreSound = true;
+    bool soundAudible = true;
     // The armed sub-area's win streak and the count that unlocks its boss, so the
     // frontier row answers "how close am I" where the choice is made, instead of only
     // on the habitat badge (drawExploreBadge).

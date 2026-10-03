@@ -305,3 +305,97 @@ void test_sound_isolation_crash_once() {
     CHECK(out.count(Sound::Crash) == 1);
     CHECK(out.count(Sound::Clear) == 0);
 }
+
+namespace {
+int swingCues(const RecordingSound& out) {
+    return out.count(Sound::HitDealt) + out.count(Sound::HitTaken) +
+           out.count(Sound::Blocked) + out.count(Sound::Stunned);
+}
+}  // namespace
+
+// A hands-off explore fight keeps its start and its knockout but plays no per-swing
+// cues; with EXPL > SOUND off it plays no Event cue at all.
+void test_sound_explore_fights_are_quiet() {
+    RecordingSound out;
+    Game g{StartMode::Hatched, "paypup"};
+    g.setSoundOut(&out);
+    g.setSoundMode(SoundMode::All);
+    walkToEncounter(g);
+    CHECK(g.nav() == Game::Nav::Combat && g.exploreActive());
+    CHECK(out.count(Sound::CombatStart) == 1);
+    while (g.combat().outcome() == Combat::Outcome::Ongoing) g.onButton(press(Button::A));
+    CHECK(swingCues(out) == 0);
+    CHECK(out.count(Sound::Knockout) == 1);
+
+    RecordingSound muted;
+    Game m{StartMode::Hatched, "paypup"};
+    m.setSoundOut(&muted);
+    m.setSoundMode(SoundMode::All);
+    m.setExploreSound(false);
+    walkToEncounter(m);
+    CHECK(m.nav() == Game::Nav::Combat && m.exploreActive());
+    muted.cues.clear();
+    while (m.combat().outcome() == Combat::Outcome::Ongoing) m.onButton(press(Button::A));
+    m.onButton(press(Button::B));                 // dismiss: the jingle is muted too
+    for (const RecordingSound::Cue& c : muted.cues)
+        CHECK(soundTier(c.sound) != SoundTier::Event);
+
+    // The switch is about the walk alone: a practice fight still sounds every swing.
+    muted.cues.clear();
+    m.debugStartCombat(/*live=*/false);
+    while (m.combat().outcome() == Combat::Outcome::Ongoing) m.onButton(press(Button::A));
+    CHECK(swingCues(muted) > 0 && muted.count(Sound::Knockout) == 1);
+}
+
+// EXPL's picker carries the switch: B on SOUND flips it in place, the row says which
+// way it is set, and the choice survives a reboot.
+void test_expl_sound_row_toggles_and_persists() {
+    Game g{StartMode::Hatched, "paypup"};
+    g.setSoundMode(SoundMode::All);
+    enterSubmenuId(g, SubmenuId::Expl);
+    explPickCategory(g, ExplCat::Sound);
+    CHECK(g.listRow() == explCatRow(ExplCat::Sound));
+    CHECK(g.exploreSound());
+    g.onButton(press(Button::B));
+    CHECK(!g.exploreSound());
+    CHECK(g.listRow() == explCatRow(ExplCat::Sound));   // a switch, not a door
+    Framebuffer fb(kActiveW, kActiveH);
+    g.render(fb);
+    CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));
+    g.onButton(press(Button::B));
+    CHECK(g.exploreSound());
+
+    SaveData d;
+    CHECK(d.exploreSound == 1);                   // pre-v71 blobs read as ON
+    d.exploreSound = 0;
+    SaveData back;
+    CHECK(deserializeSave(serializeSave(d), back) && back.exploreSound == 0);
+    MemSaveStore store;
+    store.save(serializeSave(d));
+    Game again{StartMode::Hatched, "paypup", &store};
+    CHECK(!again.exploreSound());
+}
+
+// A practice fight started mid-walk is still a practice fight: it is not one of the walk's
+// hands-off fights, so it sounds every swing and does not count toward the walk.
+void test_sound_practice_during_walk_is_not_an_explore_fight() {
+    RecordingSound out;
+    Game g{StartMode::Hatched, "paypup"};
+    g.setSoundOut(&out);
+    g.setSoundMode(SoundMode::All);
+    walkToEncounter(g);
+    while (g.combat().outcome() == Combat::Outcome::Ongoing) g.onButton(press(Button::A));
+    g.onButton(press(Button::B));
+    for (int i = 0; i < 8 && g.nav() != Game::Nav::Idle; ++i) g.onButton(press(Button::B));
+    CHECK(g.exploreActive());
+    const int streak = g.exploreStreak();
+    tapC(g);
+    enterSimBattle(g);
+    CHECK(g.nav() == Game::Nav::Combat);
+    out.cues.clear();
+    while (g.combat().outcome() == Combat::Outcome::Ongoing) g.onButton(press(Button::A));
+    CHECK(swingCues(out) > 0);
+    g.onButton(press(Button::B));
+    CHECK(g.exploreStreak() == streak);
+    CHECK(g.nav() != Game::Nav::Idle);            // back to the LOADOUT hub, not the walk
+}

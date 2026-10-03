@@ -22,9 +22,18 @@ void Game::setVolume(int level) {
     markSaveDirty();
 }
 
+void Game::setExploreSound(bool on) {
+    if (on == exploreSound_) return;
+    exploreSound_ = on;
+    dirty_ = true;
+    markSaveDirty();
+}
+
 void Game::playSound(Sound s) {
     if (!soundOut_ || s == Sound::None) return;
     if (!soundModeAllows(soundMode_, soundTier(s))) return;
+    // Alerts are about the pet, not the walk, so muting the walk never silences them.
+    if (!exploreSound_ && soundTier(s) == SoundTier::Event && exploreFightLive()) return;
     soundOut_->play(s, volumePercent(volume_));
 }
 

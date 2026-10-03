@@ -312,6 +312,7 @@ const char* explCatName(ExplCat c) {
         case ExplCat::Endless:  return "ENDLESS";
         case ExplCat::Arena:    return kTourneyName;
         case ExplCat::Chapters: return "CHAPTERS";
+        case ExplCat::Sound:    return "SOUND";
         case ExplCat::None:     break;
     }
     return "";
@@ -327,6 +328,7 @@ const char* explCatBlurb(ExplCat c) {
         case ExplCat::Endless:  return "NO END - JUST DEPTH";
         case ExplCat::Arena:    return "ONE EIGHT-SLOT BRACKET";
         case ExplCat::Chapters: return "THE JOURNEY SO FAR";
+        case ExplCat::Sound:    return "CUES WHILE EXPLORING";
         case ExplCat::None:     break;
     }
     return "";
@@ -358,6 +360,8 @@ bool explCatOpen(ExplCat c, const ExplListView& v) {
         // An archive with nothing in it is not a place to go. It opens itself the first
         // time the walk writes a chapter, which is the first encounter of the first area.
         case ExplCat::Chapters: return v.storyChapters > 0;
+        // A switch, not a place: there is always something behind it.
+        case ExplCat::Sound: return true;
         case ExplCat::None: break;
     }
     return false;
@@ -368,8 +372,8 @@ namespace {
 // The glyph a category row carries. STORY shows the DEEPEST OPEN area, which is a
 // picture of where the operator is on the ladder rather than of the ladder's first
 // rung — it moves as they do, and it says the same thing the "n/N CLEARED" beside it
-// says in numbers. ENDLESS borrows the Dive's, ARENA its water's. CHAPTERS has no art
-// yet and draws the empty frame, which on this screen means exactly that.
+// says in numbers. ENDLESS borrows the Dive's, ARENA its water's. CHAPTERS and SOUND
+// have no art yet and draw the empty frame, which on this screen means exactly that.
 const SpriteData* catIcon(const ContentRegistry& reg, ExplCat c, const ExplListView& v) {
     switch (c) {
         case ExplCat::Story: {
@@ -412,18 +416,25 @@ void catDetail(char* out, size_t n, ExplCat c, const ExplListView& v) {
         case ExplCat::Chapters:
             std::snprintf(out, n, "%d UNLOCKED", v.storyChapters);
             break;
+        case ExplCat::Sound:
+            if (!v.soundAudible) std::snprintf(out, n, "SOUND IS OFF IN CFG");
+            else std::snprintf(out, n, "%s", v.exploreSound ? "ON" : "MUTED");
+            break;
         case ExplCat::None: break;
     }
 }
 
-// The ACTIVITY PICKER — EXPL's own top level. Four fixed rows at the two-line pitch the
-// zone list uses, so a category reads like the zones behind it rather than like a
-// different screen. Nothing scrolls: the list is four rows by construction and the
-// whole point of it is that every activity is one press from here.
+// The ACTIVITY PICKER — EXPL's own top level. kExplCatRows fixed rows at the two-line
+// pitch the zone list uses, so a category reads like the zones behind it rather than
+// like a different screen. Nothing scrolls: the list is a handful of rows by
+// construction and the whole point of it is that every activity is one press from here.
 void drawExplCategories(Framebuffer& fb, const ContentRegistry& reg,
                         const ExplListView& v) {
     drawHeaderBand(fb, "EXPL");
     const int pitch = (kListBottom - kListTop) / kExplCatRows;
+    // The focused row's two lines under the name need 18 + 2 * (kFontH + 2) px; when the
+    // pitch falls short, the stack moves up rather than dropping the blurb.
+    const int lift = std::max(0, 18 + 2 * (kFontH + 2) - pitch);
     for (int row = 0; row < kExplCatRows; ++row) {
         const ExplCat c = explCatAt(row);
         const bool open = explCatOpen(c, v);
@@ -432,7 +443,7 @@ void drawExplCategories(Framebuffer& fb, const ContentRegistry& reg,
         // An OPEN row has lines under its name and hangs them off the top; a LOCKED one
         // has nothing to say and centres, so the picker never reads as a list of
         // top-aligned names with holes under them.
-        const int titleY = open ? y + 5 : y + (pitch - kFontH) / 2;
+        const int titleY = open ? y + 5 - lift / 2 : y + (pitch - kFontH) / 2;
         if (focused) {
             fb.fillRect(2, y, kActiveW - 4, pitch - 2, palColor(Pal::TRACK));
             drawRowCursor(fb, 3, y + (pitch - 7) / 2, palColor(Pal::ACCENT));
@@ -460,7 +471,7 @@ void drawExplCategories(Framebuffer& fb, const ContentRegistry& reg,
         // the picker is comparing.
         char detail[40];
         catDetail(detail, sizeof(detail), c, v);
-        int dy = y + 18;
+        int dy = y + 18 - lift;
         if (focused && dy + 2 * (kFontH + 2) <= y + pitch) {
             drawTextMarquee(fb, kTextX, dy, kActiveW - kMargin - kTextX, explCatBlurb(c),
                             palColor(Pal::INK_DIM), v.beat, true);
@@ -469,14 +480,16 @@ void drawExplCategories(Framebuffer& fb, const ContentRegistry& reg,
         if (detail[0] && dy + kFontH <= y + pitch)
             drawText(fb, kTextX, dy, detail, palColor(Pal::INK_DIM));
     }
-    drawHintBand(fb, "A NEXT  B OPEN  C BACK");
+    // SOUND is a switch, and says so the way CFG's switches do.
+    const bool onSwitch = explCatAt(v.cursor) == ExplCat::Sound;
+    drawHintBand(fb, onSwitch ? "A NEXT  B SWITCH  C BACK" : "A NEXT  B OPEN  C BACK");
 }
 
 }  // namespace
 
 void drawExplList(Framebuffer& fb, const ContentRegistry& reg, const ExplListView& v) {
     // No category open -> EXPL's own top level is the ACTIVITY PICKER, and `v.cursor`
-    // indexes its four rows rather than the ladder's row space.
+    // indexes its kExplCatRows rows rather than the ladder's row space.
     if (v.cat == ExplCat::None) { drawExplCategories(fb, reg, v); return; }
 
     // Breadcrumb header — the nav level, spelled out on the band's title. ONE crumb,

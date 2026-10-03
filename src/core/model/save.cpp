@@ -594,6 +594,9 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
 
     // v69: the askable services set to ASK. Its own tail after v68's.
     w.u32(d.rigServicesAsk);
+
+    // v71
+    w.u8(d.exploreSound);
 }
 
 std::vector<uint8_t> serializeSave(const SaveData& d) {
@@ -1257,6 +1260,9 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
 
     // v69 tail: askable services at ASK. Absent in an older blob -> 0, every one at YES.
     if (version >= 69) d.rigServicesAsk = r.u32();
+
+    // v71
+    if (version >= 71) d.exploreSound = r.u8();
 
     if (!r.ok) { out = SaveData{}; return false; }  // truncated -> empty
     if (version < newestRenameVersion()) renameRetiredIds(d, version);

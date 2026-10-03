@@ -110,7 +110,9 @@ rather than the readout, so a player who has never opened STAT still knows where
 preferences in the save (v67), kept through a reboot, a pet's death and an update.
 **SOUND** and **VOLUME** beside them (v68) are the same kind: SOUND is OFF until the
 operator picks ALL (key clicks, jingles, combat hits, arcade scoring cues, care alerts) or
-ALERTS ONLY (the Lockout and FAILING beeps alone). The vocabulary is `src/core/audio/sound.h`; a care alert also wakes
+ALERTS ONLY (the Lockout and FAILING beeps alone). A hands-off explore fight plays its
+start and knockout but never a per-swing cue, and **EXPL → SOUND** mutes even those for
+the walk alone (v71), leaving alerts and everything off the walk untouched. The vocabulary is `src/core/audio/sound.h`; a care alert also wakes
 the panel on the board (`src/platform/esp32/audio_esp32.h`).
 
 ```

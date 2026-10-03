@@ -1720,6 +1720,9 @@ public:
     void setSoundMode(SoundMode m);
     int volume() const { return volume_; }
     void setVolume(int level);
+    // EXPL > SOUND: false mutes every Event cue a hands-off explore fight would play.
+    bool exploreSound() const { return exploreSound_; }
+    void setExploreSound(bool on);
     void setSoundOut(ISoundOut* out) { soundOut_ = out; }
     void playSound(Sound s);
     // Ignores the SOUND mode on purpose: the VOLUME picker's sample.
@@ -2712,6 +2715,9 @@ private:
     // The cue for whatever the last step/flee/commit resolved; shared by every path
     // that can move a fight, so a skipped beat sounds the same as an auto-paced one.
     void playCombatTurnSound();
+    // An explore-mode wild or boss fight is on screen: the hands-off fights EXPL > SOUND
+    // governs, and the ones whose per-swing cues never play.
+    bool exploreFightLive() const;
     int combatBeatsForTurn() const;                 // heartbeats to wait before the next step()
     void applyCombatResult();                       // rewards (win) / +Frag (live loss)
     // Post-fight bookkeeping for a spent Backup Drive: burn its remaining window and
@@ -3359,6 +3365,7 @@ private:
     int brightness_ = kBrightnessDefault;  // backlight level (persisted, v14)
     SoundMode soundMode_ = SoundMode::Off;
     int volume_ = kVolumeDefault;
+    bool exploreSound_ = true;             // EXPL > SOUND (save v71)
     int themePick_ = 0;                    // PAL_CORE theme index (persisted, v64)
 
     // L2/L3 state.
@@ -3792,7 +3799,7 @@ private:
     CombatEnemy encounterEnemy_;
     int encounterChoice_ = 0;
     bool encounterSinkhole_ = false;
-    enum class CombatCaller { Sim, Wild, Boss, Tourney };
+    enum class CombatCaller { Sim, Wild, Boss, Tourney, Duel };
     CombatCaller combatCaller_ = CombatCaller::Sim;
 
     // Post-encounter status readout (Nav::PostEncounter). Captured

@@ -154,6 +154,7 @@ SaveData Game::captureSave() const {
     // v68
     d.soundMode = static_cast<uint8_t>(soundMode_);
     d.volume = static_cast<uint8_t>(volume_);
+    d.exploreSound = exploreSound_ ? 1 : 0;   // v71
 
     // v64: the chosen PAL_CORE theme, stored by NAME (see save.h's version note) and
     // device-level for the same reason brightness is — it is what the device looks
@@ -590,6 +591,7 @@ void Game::applySave(const SaveData& d) {
     soundMode_ = d.soundMode < kSoundModeCount ? static_cast<SoundMode>(d.soundMode)
                                                : SoundMode::Off;
     volume_ = d.volume < kVolumeLevels ? d.volume : kVolumeLevels - 1;
+    exploreSound_ = d.exploreSound != 0;   // v71
     if (brightness_ < 0) brightness_ = 0;
     if (brightness_ >= kBrightnessLevels) brightness_ = kBrightnessLevels - 1;
 
