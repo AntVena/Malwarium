@@ -109,6 +109,9 @@ ArchSaleSheet Game::archSaleSheet() const {
             std::snprintf(out.value, sizeof(out.value), "FOR %s", pet_->displayName);
         }
     }
+    if (sh.offers[static_cast<int>(SaleOffer::Reimage)].available)
+        std::snprintf(sh.reimageTo, sizeof(sh.reimageTo), "%s",
+                      reimageScript(pet_)->displayName);
     sh.focus = archSaleOffer_;
     sh.confirmOpen = archConfirm_;
     sh.confirmChoice = archConfirmChoice_;

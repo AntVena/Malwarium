@@ -66,6 +66,8 @@ struct ArchSaleSheet {
         bool available = false;
         char value[20] = {0};
     } offers[kSaleOfferCount];
+    // The Script an active twin goes back to; empty when Reimage is closed.
+    char reimageTo[20] = {0};
     SaleOffer focus = SaleOffer::Bits;
     bool confirmOpen = false;
     int confirmChoice = 0;              // 0 Cancel · 1 Confirm

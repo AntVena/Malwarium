@@ -382,14 +382,19 @@ void drawArchSale(Framebuffer& fb, const ArchSaleSheet& sheet) {
     static const char* const kLabel[kSaleOfferCount] = {"BITS", "REIMAGE", "HOTFIX"};
     static const char* const kWhat[kSaleOfferCount][2] = {
         {"BITS FOR ITS LEVEL,", nullptr},   // the par level is a tunable, so built below
-        {"YOUR ACTIVE TWIN GOES BACK", "TO SCRIPT WITH 0 ERRORS."},
+        {"YOUR ACTIVE TWIN GOES BACK", nullptr},   // names its Script, built below
         {"YOUR ACTIVE PET HAS ALL", "ITS ERRORS CLEARED."},
     };
     const int f = static_cast<int>(sheet.focus);
     drawText(fb, kMargin, 82, kWhat[f][0], palColor(Pal::INK));
-    char climb[28];
-    std::snprintf(climb, sizeof(climb), "CLIMBING PAST LV %d.", kDaemonSaleParLevel);
-    drawText(fb, kMargin, 96, kWhat[f][1] ? kWhat[f][1] : climb, palColor(Pal::INK));
+    char second[28];
+    if (sheet.focus == SaleOffer::Bits)
+        std::snprintf(second, sizeof(second), "CLIMBING PAST LV %d.", kDaemonSaleParLevel);
+    else if (sheet.reimageTo[0])
+        std::snprintf(second, sizeof(second), "TO %s, 0 ERRORS", sheet.reimageTo);
+    else
+        std::snprintf(second, sizeof(second), "TO ITS SCRIPT, 0 ERRORS");
+    drawText(fb, kMargin, 96, kWhat[f][1] ? kWhat[f][1] : second, palColor(Pal::INK));
 
     for (int i = 0; i < kSaleOfferCount; ++i) {
         const int y = 148 + i * 20;          // clear of the confirm box below 136
