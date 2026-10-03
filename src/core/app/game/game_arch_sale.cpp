@@ -64,12 +64,12 @@ const char* Game::archSaleBlocker(SaleOffer offer, const SaveStoredPet& sold) co
         case SaleOffer::Bits:
             return nullptr;
         case SaleOffer::Reimage:
-            if (!pet_ || inEggPhase() || !sameId(pet_->id, sold.id)) return "NO ACTIVE TWIN";
+            if (!pet_ || inEggPhase() || !sameId(pet_->id, sold.id)) return "NEED TWIN ACTIVE";
             if (!reimageScript(pet_)) return "NO SCRIPT FORM";
             return nullptr;
         case SaleOffer::Hotfix:
             if (!pet_ || inEggPhase()) return "NO ACTIVE PET";
-            if (model_.careMistakes() <= 0) return "NO ERRORS";
+            if (model_.careMistakes() <= 0) return "ACTIVE HAS NONE";
             return nullptr;
     }
     return "";
@@ -103,12 +103,10 @@ ArchSaleSheet Game::archSaleSheet() const {
         } else if (o == SaleOffer::Bits) {
             std::snprintf(out.value, sizeof(out.value), "+%d B",
                           daemonSaleBits(sold.combatLevel));
-        } else if (o == SaleOffer::Reimage) {
-            std::snprintf(out.value, sizeof(out.value), "TO %s",
-                          reimageScript(pet_)->displayName);
         } else {
-            std::snprintf(out.value, sizeof(out.value), "ERRORS %d > 0",
-                          model_.careMistakes());
+            // A patch's value names the pet that RECEIVES it — the active one, never the
+            // Daemon this sheet is selling.
+            std::snprintf(out.value, sizeof(out.value), "FOR %s", pet_->displayName);
         }
     }
     sh.focus = archSaleOffer_;

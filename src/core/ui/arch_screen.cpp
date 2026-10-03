@@ -367,21 +367,23 @@ void drawArchSale(Framebuffer& fb, const ArchSaleSheet& sheet) {
     if (!d) { drawHeaderBand(fb, "SELL"); return; }
     char lv[12];
     std::snprintf(lv, sizeof(lv), "LV %d", sheet.level);
-    drawHeaderBand(fb, d->displayName, lv);
+    // The page is a TRADE, not this pet's record, so its title says so and the Daemon is
+    // named as the thing given up. Under its own name as a title, "REIMAGE" read as
+    // something done TO the Daemon rather than bought WITH it.
+    drawHeaderBand(fb, "TRADE IN", lv);
 
-    char sub[28];
-    std::snprintf(sub, sizeof(sub), "%s  GEN %d", stageName(d->stage), sheet.generation);
-    drawText(fb, kMargin, 34, sub, palColor(Pal::INK));
-    drawText(fb, kMargin, 52, "GONE FOR GOOD. PICK ONE:", palColor(Pal::INK_DIM));
+    char give[28];
+    std::snprintf(give, sizeof(give), "GIVE UP %s", d->displayName);
+    drawText(fb, kMargin, 34, give, palColor(Pal::INK));
+    drawText(fb, kMargin, 52, "GONE FOR GOOD. GET ONE:", palColor(Pal::INK_DIM));
 
-    // The focused offer's whole trade, spelled out above the rows — the rows only have
-    // room for a figure, and the two patches act on a DIFFERENT pet from the one whose
-    // sheet this is, which is the thing a player most needs told before committing.
+    // The focused offer's whole trade, spelled out above the rows. The two patches land
+    // on the ACTIVE pet, never the Daemon being sold, so the copy names who gets them.
     static const char* const kLabel[kSaleOfferCount] = {"BITS", "REIMAGE", "HOTFIX"};
     static const char* const kWhat[kSaleOfferCount][2] = {
         {"BITS FOR ITS LEVEL,", nullptr},   // the par level is a tunable, so built below
-        {"ACTIVE TWIN BACK TO SCRIPT", "WITH A CLEAN ERROR LOG."},
-        {"ACTIVE PET'S ERRORS GONE,", "NO RESTART NEEDED."},
+        {"YOUR ACTIVE TWIN GOES BACK", "TO SCRIPT WITH 0 ERRORS."},
+        {"YOUR ACTIVE PET HAS ALL", "ITS ERRORS CLEARED."},
     };
     const int f = static_cast<int>(sheet.focus);
     drawText(fb, kMargin, 82, kWhat[f][0], palColor(Pal::INK));
@@ -401,10 +403,11 @@ void drawArchSale(Framebuffer& fb, const ArchSaleSheet& sheet) {
     if (sheet.confirmOpen) {
         const int by = 80, bh = 56;
         fb.fillRect(4, by, kActiveW - 8, bh, palColor(Pal::TRACK));
-        static const char* const kPrompt[kSaleOfferCount] = {
-            "SELL FOR BITS?", "SELL TO REIMAGE TWIN?", "SELL TO HOTFIX PET?"};
-        drawText(fb, kMargin, by + 8, kPrompt[f], palColor(Pal::INK));
-        const int cy = by + 32;
+        static const char* const kFor[kSaleOfferCount] = {
+            "FOR BITS?", "FOR A REIMAGE?", "FOR A HOTFIX?"};
+        drawText(fb, kMargin, by + 6, give, palColor(Pal::INK));
+        drawText(fb, kMargin, by + 18, kFor[f], palColor(Pal::INK));
+        const int cy = by + 38;
         if (sheet.confirmChoice == 0) drawRowCursor(fb, kMargin, cy, palColor(Pal::ACCENT));
         drawText(fb, kMargin + 12, cy, "CANCEL", palColor(Pal::INK));
         const char* ok = "CONFIRM";
@@ -413,7 +416,7 @@ void drawArchSale(Framebuffer& fb, const ArchSaleSheet& sheet) {
         drawText(fb, okX, cy, ok, palColor(Pal::INK));
     }
     drawHintBand(fb, sheet.confirmOpen ? "A TOGGLE  B COMMIT  C CANCEL"
-                                       : "A CYCLE  B SELL  C BACK");
+                                       : "A CYCLE  B TRADE  C BACK");
 }
 
 } // namespace mal
