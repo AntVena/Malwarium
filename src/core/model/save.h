@@ -321,7 +321,7 @@ constexpr int kSaveTextCap = 28;     // matches EventLog's LogEntry.text
 //     v61's OFF mask, and read only where that mask is clear. Pre-v69 -> 0, YES.
 // v70 NO BYTES. Renames one ITEM id (`crostini` -> `brusshetta`, see `renamedIds`); the
 //     version exists so the rename row has a `sinceVersion` to retire against.
-// v71 APPEND `exploreSound`, one byte (1 = EXPL > SOUND on). Device-level, beside v68's
+// v71 APPEND `exploreSound`, one byte (1 = the walk's A+C SOUND row on). Device-level, beside v68's
 //     SOUND. Pre-v71 -> 1, which is how every device sounded before it was stored.
 constexpr uint16_t kSaveVersion = 71;
 

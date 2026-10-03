@@ -65,10 +65,10 @@ bool Game::areaBossReady(int area) const {
 }
 
 // THREE-level EXPL navigation. explCat_ == None is the ACTIVITY PICKER (ui_state.h's
-// ExplCat) and `listRow_` indexes its kExplCatRows rows; inside a category `listRow_`
-// indexes the ladder's row space and explNavArea_ picks the level — -1 for the
-// category's own rows, N for inside area N. `explRowLandable` centralises which LADDER
-// rows a level stops on, and explCatLandable does the same job for the picker.
+// ExplCat) and `listRow_` indexes its four rows; inside a category `listRow_` indexes
+// the ladder's row space and explNavArea_ picks the level — -1 for the category's own
+// rows, N for inside area N. `explRowLandable` centralises which LADDER rows a level
+// stops on, and explCatLandable does the same job for the picker.
 bool Game::explRowLandable(int row) const {
     if (!explRowInLevel(row, explCat_, explNavArea_)) return false;
     bool cleared[kSubFlags], boss[kSubFlags];
@@ -106,8 +106,6 @@ ExplListView Game::explView() const {
     v.tourneyAlive = tourneyAliveCount(tourneyAlive_);
     v.tourneyRound = tourneyRound_;
     v.storyChapters = storyChapterCount();
-    v.exploreSound = exploreSound_;
-    v.soundAudible = soundModeAllows(soundMode_, SoundTier::Event);
     return v;
 }
 
@@ -150,9 +148,9 @@ void Game::openExplList() {
 void Game::onExplCategories(const ButtonEvent& ev) {
     // EXPL's own top level. A cycles the open categories, B opens the focused one, C
     // leaves EXPL for the carousel. The two categories with rows behind them
-    // (explCatHasRows) drop into their level; the rest ARE their action, so B on them
-    // goes straight to the bracket or the archive, or flips the explore-sound switch,
-    // rather than through a list of one.
+    // (explCatHasRows) drop into their level; the other two ARE their action, so B on
+    // them goes straight to the bracket or the archive rather than through a list of
+    // one.
     if (ev.button == Button::A) {
         for (int i = 1; i <= kExplCatRows; ++i) {
             const int r = (listRow_ + i) % kExplCatRows;
@@ -164,7 +162,6 @@ void Game::onExplCategories(const ButtonEvent& ev) {
         if (!explCatHasRows(c)) {
             if (c == ExplCat::Arena) openTourney();
             else if (c == ExplCat::Chapters) openStoryArchive();
-            else if (c == ExplCat::Sound) setExploreSound(!exploreSound_);
             return;
         }
         explCat_ = c;
@@ -179,7 +176,7 @@ void Game::onExplCategories(const ButtonEvent& ev) {
 
 void Game::onExplList(const ButtonEvent& ev) {
     // No category open -> the press belongs to the ACTIVITY PICKER, which walks its own
-    // kExplCatRows rows and not the ladder's row space.
+    // four rows and not the ladder's row space.
     if (explCat_ == ExplCat::None) { onExplCategories(ev); return; }
     bool cleared[kSubFlags], boss[kSubFlags];
     flattenSubFlags(cleared, boss);
@@ -516,6 +513,9 @@ void Game::onExploreControl(const ButtonEvent& ev) {
             // A MODE, not an action: toggling it leaves the overlay open so the ON/OFF
             // it just changed is the thing the player is looking at.
             autoProgress_ = !autoProgress_;
+            break;
+        case ExploreControlRow::Sound:
+            setExploreSound(!exploreSound_);      // a mode too — the overlay stays open
             break;
         case ExploreControlRow::Stop:
             // Read the dive flag BEFORE clearing exploreActive_ — inDeepWebDive() is

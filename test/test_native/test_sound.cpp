@@ -314,7 +314,7 @@ int swingCues(const RecordingSound& out) {
 }  // namespace
 
 // A hands-off explore fight keeps its start and its knockout but plays no per-swing
-// cues; with EXPL > SOUND off it plays no Event cue at all.
+// cues; with the walk's SOUND row off it plays no Event cue at all.
 void test_sound_explore_fights_are_quiet() {
     RecordingSound out;
     Game g{StartMode::Hatched, "paypup"};
@@ -347,23 +347,29 @@ void test_sound_explore_fights_are_quiet() {
     CHECK(swingCues(muted) > 0 && muted.count(Sound::Knockout) == 1);
 }
 
-// EXPL's picker carries the switch: B on SOUND flips it in place, the row says which
-// way it is set, and the choice survives a reboot.
-void test_expl_sound_row_toggles_and_persists() {
+// The walk's A+C overlay carries the switch: B on SOUND flips it and leaves the overlay
+// up showing the new state, and the choice survives a reboot.
+void test_explore_control_sound_row_toggles_and_persists() {
     Game g{StartMode::Hatched, "paypup"};
     g.setSoundMode(SoundMode::All);
-    enterSubmenuId(g, SubmenuId::Expl);
-    explPickCategory(g, ExplCat::Sound);
-    CHECK(g.listRow() == explCatRow(ExplCat::Sound));
+    enterWalk(g);
+    CHECK(g.exploreActive());
+    g.onButton(chordAC());
+    CHECK(g.nav() == Game::Nav::ExploreControl);
+    for (int i = 0; i < static_cast<int>(ExploreControlRow::Sound); ++i)
+        g.onButton(press(Button::A));
     CHECK(g.exploreSound());
     g.onButton(press(Button::B));
     CHECK(!g.exploreSound());
-    CHECK(g.listRow() == explCatRow(ExplCat::Sound));   // a switch, not a door
+    CHECK(g.nav() == Game::Nav::ExploreControl);   // a mode, so the overlay stays up
+    CHECK(g.exploreActive());
     Framebuffer fb(kActiveW, kActiveH);
     g.render(fb);
     CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));
     g.onButton(press(Button::B));
     CHECK(g.exploreSound());
+    tapC(g);
+    CHECK(g.nav() == Game::Nav::Idle && g.exploreActive());
 
     SaveData d;
     CHECK(d.exploreSound == 1);                   // pre-v71 blobs read as ON

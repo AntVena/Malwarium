@@ -294,8 +294,8 @@ void test_story_brackets_the_area_gauntlet() {
     CHECK(!g.storyRead(storyChapter(0, StoryBeat::AreaIntro)));
 }
 
-// EXPL's ACTIVITY PICKER: one row per kind of thing to do plus the explore SOUND
-// switch, with STORY the one activity that can never be locked. The cursor skips what is locked, B opens a category with
+// EXPL's ACTIVITY PICKER: four rows, one per kind of thing to do, with STORY the one
+// that can never be locked. The cursor skips what is locked, B opens a category with
 // rows onto its own level and acts outright on one without, and C walks back out a
 // level at a time.
 void test_expl_categories_are_the_top_level() {
@@ -311,26 +311,23 @@ void test_expl_categories_are_the_top_level() {
     Game g{StartMode::Hatched, "bruinforce"};
     g.debugMarkStoryRead();                          // the archive's own gate covers that
     enterSubmenuId(g, SubmenuId::Expl);
-    // Fresh device: STORY, the read CHAPTERS and the always-open SOUND switch are the
-    // only stops, so three A presses round-trip back to STORY past the locked rows.
+    // Fresh device: only STORY is open, so A round-trips back to it.
     CHECK(g.listRow() == explCatRow(ExplCat::Story));
-    for (int i = 0; i < 3; ++i) {
+    for (int i = 0; i < kExplCatRows; ++i) {
         g.onButton(press(Button::A));
         g.onButton(lift(Button::A));     // A arms a repeat on a list; let go of it
-        CHECK(g.listRow() != explCatRow(ExplCat::Endless) &&
-              g.listRow() != explCatRow(ExplCat::Arena));
     }
     CHECK(g.listRow() == explCatRow(ExplCat::Story));
     // ...and so does the device-wide backward walk, which is a HOLD on C: the picker is
     // a list like any other, so it joins the shared cursor rather than ignoring the
     // gesture (game_listnav.cpp). Stepping back from the first row wraps to the LAST
-    // open one, which is SOUND.
+    // open one, which with the chapters read is CHAPTERS.
     uint32_t t = 0;
     g.onButton(press(Button::C));
     g.tick(t += kListRepeatDelayMs + kHeartbeatMs);
     g.onButton(lift(Button::C));
     CHECK(g.nav() == Game::Nav::Submenu);            // a HOLD walks, it does not cancel
-    CHECK(g.listRow() == explCatRow(ExplCat::Sound));
+    CHECK(g.listRow() == explCatRow(ExplCat::Chapters));
     explPickCategory(g, ExplCat::Story);
 
     // B opens STORY onto the AREA list — area 0's header, not its sub-areas.

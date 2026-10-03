@@ -1720,7 +1720,7 @@ public:
     void setSoundMode(SoundMode m);
     int volume() const { return volume_; }
     void setVolume(int level);
-    // EXPL > SOUND: false mutes every Event cue a hands-off explore fight would play.
+    // The walk's A+C SOUND row: false mutes every Event cue an explore fight would play.
     bool exploreSound() const { return exploreSound_; }
     void setExploreSound(bool on);
     void setSoundOut(ISoundOut* out) { soundOut_ = out; }
@@ -2715,8 +2715,8 @@ private:
     // The cue for whatever the last step/flee/commit resolved; shared by every path
     // that can move a fight, so a skipped beat sounds the same as an auto-paced one.
     void playCombatTurnSound();
-    // An explore-mode wild or boss fight is on screen: the hands-off fights EXPL > SOUND
-    // governs, and the ones whose per-swing cues never play.
+    // An explore-mode wild or boss fight is on screen: the hands-off fights the walk's
+    // SOUND row governs, and the ones whose per-swing cues never play.
     bool exploreFightLive() const;
     int combatBeatsForTurn() const;                 // heartbeats to wait before the next step()
     void applyCombatResult();                       // rewards (win) / +Frag (live loss)
@@ -3365,7 +3365,7 @@ private:
     int brightness_ = kBrightnessDefault;  // backlight level (persisted, v14)
     SoundMode soundMode_ = SoundMode::Off;
     int volume_ = kVolumeDefault;
-    bool exploreSound_ = true;             // EXPL > SOUND (save v71)
+    bool exploreSound_ = true;             // the walk's A+C SOUND row (save v71)
     int themePick_ = 0;                    // PAL_CORE theme index (persisted, v64)
 
     // L2/L3 state.

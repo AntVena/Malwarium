@@ -176,10 +176,6 @@ struct ExplListView {
     // How many STORY chapters the walk has written so far — the CHAPTERS row's own
     // readout, and what locks it: an archive with nothing in it is not a place to go.
     int storyChapters = 0;
-    // The SOUND row's readout: the explore-cue switch, and whether CFG's SOUND would
-    // let an explore cue through at all — a row reading ON under a silenced device lies.
-    bool exploreSound = true;
-    bool soundAudible = true;
     // The armed sub-area's win streak and the count that unlocks its boss, so the
     // frontier row answers "how close am I" where the choice is made, instead of only
     // on the habitat badge (drawExploreBadge).
@@ -266,17 +262,21 @@ void drawExploreBadge(Framebuffer& fb, const char* label, int count, int countMa
 // then plain A/B/C drive it (A next row, B do it, C back out). The chord itself is never
 // a navigation key inside a screen it opened: that is not what the Exploit chord is for,
 // and A+C is awkward to hit besides, since A registers on its own first.
-enum class ExploreControlRow { Ping, Warp, AutoProgress, Stop };
-constexpr int kExploreControlRows = 4;
+// STOP stays last, where a thumb parked on the bottom row expects the way out.
+enum class ExploreControlRow { Ping, Warp, AutoProgress, Sound, Stop };
+constexpr int kExploreControlRows = 5;
 
 // `hasWarpKey` dims the WARP row (B on it is inert with no key held); `autoProgress` is
-// the mode row's ON/OFF state, dual-coded by the word. `xpEfficiencyPct` is a FOOTER
+// the mode row's ON/OFF state, dual-coded by the word. `exploreSound` is the SOUND row's
+// ON/MUTED, and `soundAudible` false (CFG's SOUND letting no Event cue through) makes
+// that row read OFF IN CFG instead, since a switch reading ON under a silent device lies. `xpEfficiencyPct` is a FOOTER
 // stat under the rows, not a row — what a wild win on the armed rung actually pays as a
 // percentage of the flat base (Game::exploreXpEfficiencyPct). It belongs on this screen
 // because this is where the two decisions it informs are made: whether to leave a rung
 // the pet has outgrown, and whether to let auto-progress keep walking it.
 void drawExploreControl(Framebuffer& fb, int cursor, bool hasWarpKey,
-                        bool autoProgress, int xpEfficiencyPct);
+                        bool autoProgress, bool exploreSound, bool soundAudible,
+                        int xpEfficiencyPct);
 
 // Sector accessors ("difficulty-scaled by sector tier") — sector identity
 // is data owned by this file; Game reads it through these rather than duplicating
