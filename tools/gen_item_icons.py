@@ -742,7 +742,7 @@ RECIPES = {
     "hot_swapped_buns":        (bun,    dict(cross=1)),
     "current_buns":            (bun,    dict(cross=0)),
     "config_rolls":            (links,  dict(n=2)),
-    "crostini":                (wafer,  dict(layers=2)),
+    "brusshetta":              (wafer,  dict(layers=2)),
     "payloaf":                 (dome,   dict(top=4, wide=8, scores=3)),
     "firewaffle":              (waffle, dict(cells=3)),
 

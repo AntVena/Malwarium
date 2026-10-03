@@ -319,7 +319,9 @@ constexpr int kSaveTextCap = 28;     // matches EventLog's LogEntry.text
 // v69 APPEND `rigServicesAsk`, one bit per Rig Shop row marking an ASK-able service
 //     (RigUpgradeDef::askable) that is set to ASK rather than YES. Player-level, like
 //     v61's OFF mask, and read only where that mask is clear. Pre-v69 -> 0, YES.
-constexpr uint16_t kSaveVersion = 69;
+// v70 NO BYTES. Renames one ITEM id (`crostini` -> `brusshetta`, see `renamedIds`); the
+//     version exists so the rename row has a `sinceVersion` to retire against.
+constexpr uint16_t kSaveVersion = 70;
 
 // The oldest blob deserialize will read, and the ONLY thing that retires a rename row
 // (see `renamedIds`). Raising it is how a device stops carrying migration weight for saves

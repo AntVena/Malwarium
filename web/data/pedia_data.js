@@ -707,8 +707,8 @@ window.PEDIA_DATA = {
       "name": "Decryption Key",
       "type": "QUEST",
       "rarity": "COMMON",
-      "effect": "Locked out? Hand this over and the Lockout's Bits demand is paid. Only works during a Lockout.",
-      "stats": "",
+      "effect": "Turns a ransom note into a polite suggestion.",
+      "stats": "PAYS A LOCKOUT",
       "icon": "assets/icons/ICON_ITEM_DECRYPT_KEY.png",
       "use": "LOCKOUT ONLY"
     },
@@ -717,8 +717,8 @@ window.PEDIA_DATA = {
       "name": "Defrag Tool",
       "type": "QUEST",
       "rarity": "COMMON",
-      "effect": "Use it on a MAINT defrag and the defrag can't fail.",
-      "stats": "",
+      "effect": "Puts scattered pieces back right next to their neighbours.",
+      "stats": "MAINT: SURE DEFRAG",
       "icon": "assets/icons/ICON_ITEM_DISK_SCRUBBER.png",
       "bits": 14
     },
@@ -727,7 +727,7 @@ window.PEDIA_DATA = {
       "name": "Null Noodles",
       "type": "FOOD",
       "rarity": "COMMON",
-      "effect": "Tastes of nothing. Sheds 15 Fragmentation, but costs 15 FED.",
+      "effect": "It tastes like nothing.",
       "stats": "FED -15 / FRAG -15 / HAPPY>50 20",
       "icon": "assets/icons/ICON_ITEM_NULL_NOODLES.png",
       "bits": 5
@@ -737,7 +737,7 @@ window.PEDIA_DATA = {
       "name": "Boot Accelerator",
       "type": "QUEST",
       "rarity": "COMMON",
-      "effect": "Use it on your egg and it hatches 10 minutes sooner.",
+      "effect": "Skips the slow start-up so you can say hello sooner.",
       "stats": "INCUBATION -10MIN",
       "icon": "assets/icons/ICON_ITEM_BOOT_ACCELERATOR.png",
       "use": "EGG PHASE"
@@ -747,8 +747,8 @@ window.PEDIA_DATA = {
       "name": "Decryptogram",
       "type": "QUEST",
       "rarity": "UNCOMMON",
-      "effect": "Take this to the VAULT. Crack the quote and you win Bits and an upgrade.",
-      "stats": "",
+      "effect": "Each letter is standing in for a different one. Work out which.",
+      "stats": "CRACK A QUOTE IN VAULT",
       "icon": "assets/icons/ICON_ITEM_DECRYPTOGRAM.png"
     },
     {
@@ -756,8 +756,8 @@ window.PEDIA_DATA = {
       "name": "Common Cache",
       "type": "QUEST",
       "rarity": "COMMON",
-      "effect": "A common cache. Open it in the VAULT for a random reward.",
-      "stats": "",
+      "effect": "Kept close at hand in case it's needed again.",
+      "stats": "OPEN IN VAULT",
       "icon": "assets/icons/ICON_ITEM_SEALED_CACHE_COMMON.png"
     },
     {
@@ -765,7 +765,7 @@ window.PEDIA_DATA = {
       "name": "Backdoor Bell",
       "type": "TOOLS",
       "rarity": "COMMON",
-      "effect": "Use before a DeepWeb Dive to start at depth 16. Every win that dive pays 25% more.",
+      "effect": "A hidden way in that never bothers with the usual checks.",
       "stats": "DIVE FROM 16 / DIVE PAY +25%",
       "icon": "assets/icons/ICON_ITEM_BACKDOOR_BELL.png"
     },
@@ -774,7 +774,7 @@ window.PEDIA_DATA = {
       "name": "Dyno Nuggets",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Your everyday ration. Fills your pet up, and heals 30 HP mid-fight.",
+      "effect": "Spun up fresh for dinner and gone again in seconds.",
       "stats": "FED +40 / HEAL 30",
       "icon": "assets/icons/ICON_ITEM_DYNO_NUGGETS.png"
     },
@@ -783,7 +783,7 @@ window.PEDIA_DATA = {
       "name": "Unlinkguine",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Fills your pet up and heals 20 HP mid-fight. Also clears a Replication Ghost.",
+      "effect": "Cuts the strands loose so they stop clinging to each other.",
       "stats": "FED +30 / GHOST CURE / HEAL 20",
       "icon": "assets/icons/ICON_ITEM_UNLINKGUINE.png"
     },
@@ -792,7 +792,7 @@ window.PEDIA_DATA = {
       "name": "Pwnzu Sauce",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Too strong on its own. Pour it on Null Noodles in the MERGE HUB.",
+      "effect": "One drop takes over the whole dish.",
       "stats": "FED +5 / HAPPY +15",
       "icon": "assets/icons/ICON_ITEM_PWNZU_SAUCE.png"
     },
@@ -801,7 +801,7 @@ window.PEDIA_DATA = {
       "name": "Tor-Tilla Chip",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "A crunchy onion-routed chip. Dip it in OSI Dip in the MERGE HUB.",
+      "effect": "Crunchy and very hard to trace back to the bag it came from.",
       "stats": "HAPPY +10",
       "icon": "assets/icons/ICON_ITEM_TORTILLA_CHIP.png"
     },
@@ -810,7 +810,7 @@ window.PEDIA_DATA = {
       "name": "OSI Dip",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Seven layers of dip. Put a Tor-Tilla Chip on it in the MERGE HUB for the eighth.",
+      "effect": "Seven layers deep and still missing a chip to scoop it with.",
       "stats": "HAPPY +10",
       "icon": "assets/icons/ICON_ITEM_OSI_DIP.png"
     },
@@ -819,8 +819,8 @@ window.PEDIA_DATA = {
       "name": "Sinkhole Trap",
       "type": "QUEST",
       "rarity": "UNCOMMON",
-      "effect": "In your bag, it eats the next wild fight on a walk. You get 40 XP.",
-      "stats": "XP 40",
+      "effect": "Trouble headed your way gets quietly sent nowhere.",
+      "stats": "SKIPS NEXT WILD FIGHT / XP 40",
       "icon": "assets/icons/ICON_ITEM_SINKHOLE_TRAP.png",
       "use": "PRE-ENCOUNTER"
     },
@@ -829,7 +829,7 @@ window.PEDIA_DATA = {
       "name": "R007_B33R",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Junk food. Cheers your pet up, but adds some Fragmentation.",
+      "effect": "Fizzy and sugary. A favourite of the up-past-midnight crowd.",
       "stats": "FED +15 / HAPPY +25 / FRAG +5",
       "icon": "assets/icons/ICON_ITEM_R007_B33R.png",
       "bits": 5
@@ -839,8 +839,8 @@ window.PEDIA_DATA = {
       "name": "Sealed Cache",
       "type": "QUEST",
       "rarity": "UNCOMMON",
-      "effect": "An old locked cache. Open it in the VAULT for a random reward.",
-      "stats": "",
+      "effect": "Stashed away so long ago it's probably gone stale.",
+      "stats": "OPEN IN VAULT",
       "icon": "assets/icons/ICON_ITEM_SEALED_CACHE.png"
     },
     {
@@ -848,8 +848,8 @@ window.PEDIA_DATA = {
       "name": "Uncommon Cache",
       "type": "QUEST",
       "rarity": "UNCOMMON",
-      "effect": "An uncommon cache. Open it in the VAULT for a better reward.",
-      "stats": "",
+      "effect": "Still fresh. A good one to find.",
+      "stats": "OPEN IN VAULT",
       "icon": "assets/icons/ICON_ITEM_SEALED_CACHE_UNCOMMON.png"
     },
     {
@@ -857,7 +857,7 @@ window.PEDIA_DATA = {
       "name": "Rootkit Bell",
       "type": "TOOLS",
       "rarity": "UNCOMMON",
-      "effect": "Use before a DeepWeb Dive to start at depth 32. Every win that dive pays 50% more.",
+      "effect": "Gets in below the level a normal check reaches.",
       "stats": "DIVE FROM 32 / DIVE PAY +50%",
       "icon": "assets/icons/ICON_ITEM_ROOTKIT_BELL.png"
     },
@@ -866,7 +866,7 @@ window.PEDIA_DATA = {
       "name": "Spam",
       "type": "FOOD",
       "rarity": "COMMON",
-      "effect": "You'll find tons of this. Barely food raw. Cook it into something.",
+      "effect": "Delivered in bulk whether you subscribed or not.",
       "stats": "FED +2",
       "icon": "assets/icons/ICON_ITEM_SPAM.png"
     },
@@ -875,7 +875,7 @@ window.PEDIA_DATA = {
       "name": "Breadcrumbs",
       "type": "FOOD",
       "rarity": "COMMON",
-      "effect": "A trail's worth of crumbs. Next to useless raw. Good for cooking.",
+      "effect": "Drop a few as you go and you'll always find your way back.",
       "stats": "FED +1",
       "icon": "assets/icons/ICON_ITEM_BREADCRUMBS.png"
     },
@@ -884,7 +884,7 @@ window.PEDIA_DATA = {
       "name": "C-Salt",
       "type": "FOOD",
       "rarity": "COMMON",
-      "effect": "Plain salt. Your pet hates eating it straight. Cook with it.",
+      "effect": "Old as the hills and still in most of what you eat.",
       "stats": "HAPPY -2",
       "icon": "assets/icons/ICON_ITEM_C_SALT.png"
     },
@@ -893,7 +893,7 @@ window.PEDIA_DATA = {
       "name": "Grep-sed Oil",
       "type": "FOOD",
       "rarity": "COMMON",
-      "effect": "Cooking oil. Lots of recipes want it. Don't feed it to your pet straight.",
+      "effect": "One quick swipe through the pan finds the dry spots.",
       "stats": "HAPPY -5 / FRAG -5",
       "icon": "assets/icons/ICON_ITEM_GREPSED_OIL.png"
     },
@@ -902,7 +902,7 @@ window.PEDIA_DATA = {
       "name": "Spoiled Macrol",
       "type": "FOOD",
       "rarity": "COMMON",
-      "effect": "Gone off. Don't eat it. The trader at the pier will swap salt for it.",
+      "effect": "Smells a bit phishy. Best not to open it.",
       "stats": "HAPPY -15",
       "icon": "assets/icons/ICON_ITEM_SPOILED_MACROL.png"
     },
@@ -911,7 +911,7 @@ window.PEDIA_DATA = {
       "name": "Cronstarch",
       "type": "FOOD",
       "rarity": "COMMON",
-      "effect": "A thickener. Use it in cooking. Raw, it's a sad snack.",
+      "effect": "Thickens right on schedule.",
       "stats": "FED +1 / HAPPY -1",
       "icon": "assets/icons/ICON_ITEM_CRONSTARCH.png"
     },
@@ -920,7 +920,7 @@ window.PEDIA_DATA = {
       "name": "Boolean Cubes",
       "type": "FOOD",
       "rarity": "COMMON",
-      "effect": "Stock cubes. True or false, your pet won't like them raw. Cook with them.",
+      "effect": "Either it's in the stock or it isn't.",
       "stats": "HAPPY -5",
       "icon": "assets/icons/ICON_ITEM_BOOLEAN_CUBES.png"
     },
@@ -929,7 +929,7 @@ window.PEDIA_DATA = {
       "name": "Vanilla Extract",
       "type": "FOOD",
       "rarity": "COMMON",
-      "effect": "The default flavour. Does a tiny bit of everything raw. Better in baking.",
+      "effect": "The flavour you start with before getting fancy.",
       "stats": "FED +1 / HAPPY +1 / FRAG +1",
       "icon": "assets/icons/ICON_ITEM_VANILLA_EXTRACT.png"
     },
@@ -938,7 +938,7 @@ window.PEDIA_DATA = {
       "name": "Polltatoes",
       "type": "FOOD",
       "rarity": "COMMON",
-      "effect": "Bland alone, but they stack: each one eaten since FED last dropped adds 1 to the next.",
+      "effect": "Keep checking the pot. They'll be done eventually.",
       "stats": "FED +1 EA",
       "icon": "assets/icons/ICON_ITEM_POLLTATOES.png"
     },
@@ -947,7 +947,7 @@ window.PEDIA_DATA = {
       "name": "RegEggs",
       "type": "FOOD",
       "rarity": "COMMON",
-      "effect": "Eggs. Decent raw, better cooked. They match whatever pattern you crack them into.",
+      "effect": "Whip them into the pattern you want.",
       "stats": "FED +8",
       "icon": "assets/icons/ICON_ITEM_REGEGGS.png"
     },
@@ -956,7 +956,7 @@ window.PEDIA_DATA = {
       "name": "Data Leek",
       "type": "FOOD",
       "rarity": "COMMON",
-      "effect": "Leaked everywhere, so they're cheap. A little filling, a little cleaning.",
+      "effect": "Your neighbours seem to have a bunch of these lately.",
       "stats": "FED +3 / HAPPY +3 / FRAG -3",
       "icon": "assets/icons/ICON_ITEM_DATA_LEEK.png"
     },
@@ -965,7 +965,7 @@ window.PEDIA_DATA = {
       "name": "Universal Cereal Box",
       "type": "FOOD",
       "rarity": "COMMON",
-      "effect": "Cereal for any system. Cheers your pet up. Cooks into a cereal bar.",
+      "effect": "Fits the bowls in your house and your nan's too.",
       "stats": "FED +5 / HAPPY +10",
       "icon": "assets/icons/ICON_ITEM_UNIVERSAL_CEREAL_BOX.png"
     },
@@ -974,7 +974,7 @@ window.PEDIA_DATA = {
       "name": "Java",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Coffee. Perks your pet up and tidies a little Fragmentation.",
+      "effect": "Takes a while to get going in the morning but then it runs all day.",
       "stats": "HAPPY +5 / FRAG -2",
       "icon": "assets/icons/ICON_ITEM_JAVA.png"
     },
@@ -983,7 +983,7 @@ window.PEDIA_DATA = {
       "name": "Kernel Oil",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Low-level oil for cooking. Don't let your pet drink it neat.",
+      "effect": "Works its way right down to the bottom of the pan.",
       "stats": "HAPPY -5 / FRAG -5",
       "icon": "assets/icons/ICON_ITEM_KERNEL_OIL.png"
     },
@@ -992,7 +992,7 @@ window.PEDIA_DATA = {
       "name": "Syntactic Sugar",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Sugar. Makes your pet happy, does nothing else useful. Great in desserts.",
+      "effect": "Makes the medicine easier to swallow without changing it.",
       "stats": "FED +1 / HAPPY +15 / FRAG +3",
       "icon": "assets/icons/ICON_ITEM_SYNTACTIC_SUGAR.png"
     },
@@ -1001,7 +1001,7 @@ window.PEDIA_DATA = {
       "name": "Applets",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Little apples. Good for cleaning up Fragmentation. Bake them into something.",
+      "effect": "They used to be in school lunchboxes. You hardly see them now.",
       "stats": "FED +3 / HAPPY +3 / FRAG -5",
       "icon": "assets/icons/ICON_ITEM_APPLETS.png"
     },
@@ -1010,7 +1010,7 @@ window.PEDIA_DATA = {
       "name": "Root Veg",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Hard to come by. Filling, and good for Fragmentation.",
+      "effect": "You need special access before you're allowed to dig these up.",
       "stats": "FED +6 / FRAG -6",
       "icon": "assets/icons/ICON_ITEM_ROOT_VEG.png"
     },
@@ -1019,7 +1019,7 @@ window.PEDIA_DATA = {
       "name": "Fresh Macrol",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Tasty fish, but it spoils: each feeding, a 5% chance one goes off.",
+      "effect": "Lovely straight off the boat. Just don't leave it lying around.",
       "stats": "FED +5 / HAPPY +5 / FRAG -3",
       "icon": "assets/icons/ICON_ITEM_FRESH_MACROL.png"
     },
@@ -1028,7 +1028,7 @@ window.PEDIA_DATA = {
       "name": "Desalinated C-Salt",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Salt with nothing in it. Settles your pet's mood toward the middle.",
+      "effect": "The same old seasoning with all the risky bits taken out.",
       "stats": "FED -2 / FRAG -1 / HAPPY>50 2",
       "icon": "assets/icons/ICON_ITEM_DESALINATED_C_SALT.png"
     },
@@ -1037,7 +1037,7 @@ window.PEDIA_DATA = {
       "name": "Self-Signed Flour",
       "type": "FOOD",
       "rarity": "COMMON",
-      "effect": "Flour nobody vouched for. Your pet won't eat it raw. Bake with it.",
+      "effect": "Its only reference is its own say-so. Trust it if you like.",
       "stats": "FED +2 / HAPPY -3",
       "icon": "assets/icons/ICON_ITEM_SELF_SIGNED_FLOUR.png"
     },
@@ -1046,7 +1046,7 @@ window.PEDIA_DATA = {
       "name": "Shellots",
       "type": "FOOD",
       "rarity": "COMMON",
-      "effect": "Peel one layer, there's another prompt under it. Cooking onion.",
+      "effect": "Peel back one layer and there's always another underneath.",
       "stats": "FED +2 / HAPPY -4",
       "icon": "assets/icons/ICON_ITEM_SHELLOTS.png"
     },
@@ -1055,7 +1055,7 @@ window.PEDIA_DATA = {
       "name": "Linkguine",
       "type": "FOOD",
       "rarity": "COMMON",
-      "effect": "Pasta, every strand linked to the next. Fills a little. Cook it.",
+      "effect": "Best shared. Send it to a friend.",
       "stats": "FED +4",
       "icon": "assets/icons/ICON_ITEM_LINKGUINE.png"
     },
@@ -1064,7 +1064,7 @@ window.PEDIA_DATA = {
       "name": "Jailapeno",
       "type": "FOOD",
       "rarity": "COMMON",
-      "effect": "A hot pepper that keeps processes locked up. Cook it with Linkguine.",
+      "effect": "Hot enough to keep you locked in your seat.",
       "stats": "FED +3 / HAPPY +4",
       "icon": "assets/icons/ICON_ITEM_JAILAPENO.png"
     },
@@ -1073,7 +1073,7 @@ window.PEDIA_DATA = {
       "name": "Churned Butter",
       "type": "FOOD",
       "rarity": "COMMON",
-      "effect": "Butter, rewritten twelve thousand times. Cooking fat.",
+      "effect": "Worked over and over until it comes out exactly the same.",
       "stats": "FED +3 / FRAG +2",
       "icon": "assets/icons/ICON_ITEM_CHURNED_BUTTER.png"
     },
@@ -1082,7 +1082,7 @@ window.PEDIA_DATA = {
       "name": "Bytesteak Tomatoes",
       "type": "FOOD",
       "rarity": "COMMON",
-      "effect": "They always come in eights. Good for cooking.",
+      "effect": "They come in bunches of eight. Always eight.",
       "stats": "FED +3 / HAPPY +2",
       "icon": "assets/icons/ICON_ITEM_BYTESTEAK_TOMATOES.png"
     },
@@ -1091,7 +1091,7 @@ window.PEDIA_DATA = {
       "name": "Gherkins",
       "type": "FOOD",
       "rarity": "COMMON",
-      "effect": "Given a jar, when you open it, then pickles. Mostly a cooking item.",
+      "effect": "Given a jar, when you open it, then you get pickles.",
       "stats": "HAPPY -3 / FRAG -2",
       "icon": "assets/icons/ICON_ITEM_GHERKINS.png"
     },
@@ -1100,7 +1100,7 @@ window.PEDIA_DATA = {
       "name": "CRUDs",
       "type": "FOOD",
       "rarity": "COMMON",
-      "effect": "Curds you create, read, update and mostly delete. A cooking cheese.",
+      "effect": "Make them, check on them, tweak them and then mostly throw them out.",
       "stats": "FED +4 / HAPPY -2",
       "icon": "assets/icons/ICON_ITEM_CRUDS.png"
     },
@@ -1109,7 +1109,7 @@ window.PEDIA_DATA = {
       "name": "Bootmeal",
       "type": "FOOD",
       "rarity": "COMMON",
-      "effect": "Breakfast oats. Nothing else starts till this has. Filling, but bland.",
+      "effect": "Breakfast comes first. The rest of the day can wait till it's done.",
       "stats": "FED +10 / HAPPY -5",
       "icon": "assets/icons/ICON_ITEM_BOOTMEAL.png"
     },
@@ -1118,7 +1118,7 @@ window.PEDIA_DATA = {
       "name": "Garlic Escapes",
       "type": "FOOD",
       "rarity": "COMMON",
-      "effect": "Escape them right or the whole recipe breaks. Strong; cook with it.",
+      "effect": "Handle them carefully or the whole dish falls apart.",
       "stats": "HAPPY -6 / FRAG -4",
       "icon": "assets/icons/ICON_ITEM_GARLIC_ESCAPES.png"
     },
@@ -1127,7 +1127,7 @@ window.PEDIA_DATA = {
       "name": "Grepefruit",
       "type": "FOOD",
       "rarity": "COMMON",
-      "effect": "Bitter. Only the matching segments are worth eating. Helps Fragmentation.",
+      "effect": "Only the segments that match are worth eating.",
       "stats": "FED +3 / HAPPY -4 / FRAG -4",
       "icon": "assets/icons/ICON_ITEM_GREPEFRUIT.png"
     },
@@ -1136,7 +1136,7 @@ window.PEDIA_DATA = {
       "name": "Red Herring",
       "type": "FOOD",
       "rarity": "COMMON",
-      "effect": "A decoy fish. It fills your pet up, but it won't enjoy it.",
+      "effect": "Looks important. Isn't.",
       "stats": "FED +5 / HAPPY -5",
       "icon": "assets/icons/ICON_ITEM_RED_HERRING.png"
     },
@@ -1145,7 +1145,7 @@ window.PEDIA_DATA = {
       "name": "PAPaya",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "PAPaya hands over everything the moment you ask. Sweet and filling.",
+      "effect": "Hands over its secrets the moment you ask.",
       "stats": "FED +4 / HAPPY +6",
       "icon": "assets/icons/ICON_ITEM_PAPAYA.png"
     },
@@ -1154,7 +1154,7 @@ window.PEDIA_DATA = {
       "name": "Mozillarella",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Open-source cheese. Free to copy, stretches far. Filling.",
+      "effect": "Stretches as far as you need and you're free to make your own.",
       "stats": "FED +6 / HAPPY +4",
       "icon": "assets/icons/ICON_ITEM_MOZILLARELLA.png"
     },
@@ -1163,7 +1163,7 @@ window.PEDIA_DATA = {
       "name": "IMAPle Syrup",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Sweet syrup. Take as much as you want, it stays on the server. Cheers your pet up.",
+      "effect": "Pour as much as you like and there's still plenty left in the bottle.",
       "stats": "FED +2 / HAPPY +12 / FRAG +2",
       "icon": "assets/icons/ICON_ITEM_IMAPLE_SYRUP.png"
     },
@@ -1172,7 +1172,7 @@ window.PEDIA_DATA = {
       "name": "Double-Precision Cream",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Twice the storage of single cream. Pours the same. Filling.",
+      "effect": "Twice as thick and accurate to the last drop.",
       "stats": "FED +7 / FRAG +3",
       "icon": "assets/icons/ICON_ITEM_DOUBLE_PRECISION_CREAM.png"
     },
@@ -1181,7 +1181,7 @@ window.PEDIA_DATA = {
       "name": "Cocoa",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Deprecated for years, still in everything. Cheers your pet up.",
+      "effect": "A rich old favourite that only really grows in one company's orchard.",
       "stats": "HAPPY +10 / FRAG -3",
       "icon": "assets/icons/ICON_ITEM_COCOA.png"
     },
@@ -1190,7 +1190,7 @@ window.PEDIA_DATA = {
       "name": "Rubber Ducks",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Explain your recipe to one first. It listens. Filling, and your pet likes them.",
+      "effect": "Explain your recipe to one before you start. They're great listeners.",
       "stats": "FED +8 / HAPPY +5",
       "icon": "assets/icons/ICON_ITEM_RUBBER_DUCKS.png"
     },
@@ -1199,7 +1199,7 @@ window.PEDIA_DATA = {
       "name": "Honeypot Yogurt",
       "type": "FOOD",
       "rarity": "RARE",
-      "effect": "Left out on purpose to catch whoever takes it. Rare. Save it for cooking.",
+      "effect": "Left out on purpose to see who helps themselves.",
       "stats": "FED +5 / HAPPY +8 / FRAG -4",
       "icon": "assets/icons/ICON_ITEM_HONEYPOT_YOGURT.png"
     },
@@ -1208,7 +1208,7 @@ window.PEDIA_DATA = {
       "name": "Parsenips",
       "type": "FOOD",
       "rarity": "COMMON",
-      "effect": "You have to parse them before they're any use. Cooking veg.",
+      "effect": "You have to work through them bit by bit before they make sense.",
       "stats": "FED +4 / HAPPY -3",
       "icon": "assets/icons/ICON_ITEM_PARSENIPS.png"
     },
@@ -1217,7 +1217,7 @@ window.PEDIA_DATA = {
       "name": "ROMaine",
       "type": "FOOD",
       "rarity": "COMMON",
-      "effect": "Read-only lettuce. Nothing you do to it sticks. Light, and cleans a bit.",
+      "effect": "Look all you like but you can't change a thing about it.",
       "stats": "FED +2 / FRAG -3",
       "icon": "assets/icons/ICON_ITEM_ROMAINE.png"
     },
@@ -1226,7 +1226,7 @@ window.PEDIA_DATA = {
       "name": "Bitroot",
       "type": "FOOD",
       "rarity": "COMMON",
-      "effect": "Left in storage too long and the bits rotted. Better cooked.",
+      "effect": "Leave it in storage too long and it slowly goes bad on its own.",
       "stats": "FED +5 / HAPPY -4",
       "icon": "assets/icons/ICON_ITEM_BITROOT.png"
     },
@@ -1235,7 +1235,7 @@ window.PEDIA_DATA = {
       "name": "Swiss Chard",
       "type": "FOOD",
       "rarity": "COMMON",
-      "effect": "Fixed-width leaves. Cleans up a bit of Fragmentation.",
+      "effect": "Split it into pieces and spread them around the plate.",
       "stats": "FED +3 / FRAG -3",
       "icon": "assets/icons/ICON_ITEM_SWISS_CHARD.png"
     },
@@ -1244,7 +1244,7 @@ window.PEDIA_DATA = {
       "name": "String Beans",
       "type": "FOOD",
       "rarity": "COMMON",
-      "effect": "A row of beans, and the last one's always empty. Mildly filling.",
+      "effect": "A long line of them where the last one is always empty.",
       "stats": "FED +4 / HAPPY +2",
       "icon": "assets/icons/ICON_ITEM_STRING_BEANS.png"
     },
@@ -1253,7 +1253,7 @@ window.PEDIA_DATA = {
       "name": "Snap Peas",
       "type": "FOOD",
       "rarity": "COMMON",
-      "effect": "Each pod packs everything it needs. A decent little snack.",
+      "effect": "A pod packs its own seeds and grows wherever you plant it.",
       "stats": "FED +3 / HAPPY +3",
       "icon": "assets/icons/ICON_ITEM_SNAP_PEAS.png"
     },
@@ -1262,7 +1262,7 @@ window.PEDIA_DATA = {
       "name": "Squash",
       "type": "FOOD",
       "rarity": "COMMON",
-      "effect": "Seven went in, one came out. Squashed and filling.",
+      "effect": "A whole day's serve of vegetables in a single veggie patch.",
       "stats": "FED +7 / HAPPY -2",
       "icon": "assets/icons/ICON_ITEM_SQUASH.png"
     },
@@ -1271,7 +1271,7 @@ window.PEDIA_DATA = {
       "name": "RAIDicchio",
       "type": "FOOD",
       "rarity": "COMMON",
-      "effect": "There's a spare of every leaf. Bitter, but good for Fragmentation.",
+      "effect": "Lose a leaf and there's a spare ready to take its place.",
       "stats": "FED +3 / HAPPY -5 / FRAG -3",
       "icon": "assets/icons/ICON_ITEM_RAIDICCHIO.png"
     },
@@ -1280,7 +1280,7 @@ window.PEDIA_DATA = {
       "name": "AWKra",
       "type": "FOOD",
       "rarity": "COMMON",
-      "effect": "Splits into fields when you cut it. Better cooked.",
+      "effect": "Slices neatly into columns.",
       "stats": "FED +4 / HAPPY -4",
       "icon": "assets/icons/ICON_ITEM_AWKRA.png"
     },
@@ -1289,7 +1289,7 @@ window.PEDIA_DATA = {
       "name": "Kaliflower",
       "type": "FOOD",
       "rarity": "COMMON",
-      "effect": "Comes with every tool already installed, mostly sharp ones. Filling.",
+      "effect": "Comes with a full kit of tools already in the box. Mostly sharp ones.",
       "stats": "FED +5 / FRAG -2",
       "icon": "assets/icons/ICON_ITEM_KALIFLOWER.png"
     },
@@ -1298,7 +1298,7 @@ window.PEDIA_DATA = {
       "name": "Archichoke",
       "type": "FOOD",
       "rarity": "COMMON",
-      "effect": "Takes ages to reach the bit you can eat. Your pet won't bother raw.",
+      "effect": "Takes forever to get to the good bit but people swear it's worth it.",
       "stats": "FED +2 / HAPPY -6",
       "icon": "assets/icons/ICON_ITEM_ARCHICHOKE.png"
     },
@@ -1307,7 +1307,7 @@ window.PEDIA_DATA = {
       "name": "Flatpak Choi",
       "type": "FOOD",
       "rarity": "COMMON",
-      "effect": "Bundles its own everything, so you get twice the leaf. Filling.",
+      "effect": "Brings its own seasoning so it works in your kitchen or mine.",
       "stats": "FED +5 / HAPPY +2",
       "icon": "assets/icons/ICON_ITEM_FLATPAK_CHOI.png"
     },
@@ -1316,7 +1316,7 @@ window.PEDIA_DATA = {
       "name": "CAPsicum",
       "type": "FOOD",
       "rarity": "COMMON",
-      "effect": "Sweet, crisp, cheap: pick two. A nice snack.",
+      "effect": "Sweet, crunchy, cheap. Pick two.",
       "stats": "FED +3 / HAPPY +4",
       "icon": "assets/icons/ICON_ITEM_CAPSICUM.png"
     },
@@ -1325,7 +1325,7 @@ window.PEDIA_DATA = {
       "name": "Peppermint",
       "type": "FOOD",
       "rarity": "COMMON",
-      "effect": "The one seasoning you're meant to see. Cheers your pet up.",
+      "effect": "Light and fresh. Runs well even on an old stomach.",
       "stats": "HAPPY +6 / FRAG -2",
       "icon": "assets/icons/ICON_ITEM_PEPPERMINT.png"
     },
@@ -1334,7 +1334,7 @@ window.PEDIA_DATA = {
       "name": "Nixtamal",
       "type": "FOOD",
       "rarity": "COMMON",
-      "effect": "The same corn every single time. Filling, plain.",
+      "effect": "Made exactly the same way each time down to the last kernel.",
       "stats": "FED +6 / HAPPY -3",
       "icon": "assets/icons/ICON_ITEM_NIXTAMAL.png"
     },
@@ -1343,7 +1343,7 @@ window.PEDIA_DATA = {
       "name": "Pingapple",
       "type": "FOOD",
       "rarity": "COMMON",
-      "effect": "Sweet, and it always comes back. Your pet likes it.",
+      "effect": "Toss one over and it always comes back.",
       "stats": "FED +4 / HAPPY +6",
       "icon": "assets/icons/ICON_ITEM_PINGAPPLE.png"
     },
@@ -1352,7 +1352,7 @@ window.PEDIA_DATA = {
       "name": "Plaintain",
       "type": "FOOD",
       "rarity": "COMMON",
-      "effect": "Unencrypted, sitting right there in the bowl. Filling.",
+      "effect": "Sitting right out in the open for the whole street to see.",
       "stats": "FED +7",
       "icon": "assets/icons/ICON_ITEM_PLAINTAIN.png"
     },
@@ -1361,7 +1361,7 @@ window.PEDIA_DATA = {
       "name": "Cloudberries",
       "type": "FOOD",
       "rarity": "COMMON",
-      "effect": "Someone else's berries on someone else's bush. Your pet loves them.",
+      "effect": "Grown on another farm and shipped in when you need them.",
       "stats": "FED +2 / HAPPY +7",
       "icon": "assets/icons/ICON_ITEM_CLOUDBERRIES.png"
     },
@@ -1370,7 +1370,7 @@ window.PEDIA_DATA = {
       "name": "Lintils",
       "type": "FOOD",
       "rarity": "COMMON",
-      "effect": "Thousands of tiny complaints, all fair. Filling, but your pet won't enjoy them.",
+      "effect": "A handful of small reminders that you could be doing better.",
       "stats": "FED +6 / HAPPY -4",
       "icon": "assets/icons/ICON_ITEM_LINTILS.png"
     },
@@ -1379,7 +1379,7 @@ window.PEDIA_DATA = {
       "name": "Perl Barley",
       "type": "FOOD",
       "rarity": "COMMON",
-      "effect": "Write the pot once, nobody reads it again. Filling grain.",
+      "effect": "Easy to cook up. Impossible to read the recipe afterwards.",
       "stats": "FED +6 / FRAG +2",
       "icon": "assets/icons/ICON_ITEM_PERL_BARLEY.png"
     },
@@ -1388,7 +1388,7 @@ window.PEDIA_DATA = {
       "name": "BASICmati Rice",
       "type": "FOOD",
       "rarity": "COMMON",
-      "effect": "Rice where the last line goes back to the first. Very filling.",
+      "effect": "Simple enough for a beginner who follows it line by line.",
       "stats": "FED +8 / HAPPY -2",
       "icon": "assets/icons/ICON_ITEM_BASICMATI_RICE.png"
     },
@@ -1397,7 +1397,7 @@ window.PEDIA_DATA = {
       "name": "VPenne",
       "type": "FOOD",
       "rarity": "COMMON",
-      "effect": "Pasta tubes nobody can see down. Filling.",
+      "effect": "Little tunnels that keep their filling private.",
       "stats": "FED +5 / FRAG -2",
       "icon": "assets/icons/ICON_ITEM_VPENNE.png"
     },
@@ -1406,7 +1406,7 @@ window.PEDIA_DATA = {
       "name": "Unmonitored Oats",
       "type": "FOOD",
       "rarity": "COMMON",
-      "effect": "Left overnight with nobody watching. Filling, but grim.",
+      "effect": "Leave them overnight and hope it goes well.",
       "stats": "FED +6 / HAPPY -6",
       "icon": "assets/icons/ICON_ITEM_UNMONITORED_OATS.png"
     },
@@ -1415,7 +1415,7 @@ window.PEDIA_DATA = {
       "name": "YAMLs",
       "type": "FOOD",
       "rarity": "COMMON",
-      "effect": "How deep you cut them changes what they mean. Filling, fussy.",
+      "effect": "Cut them at the wrong depth and the dish turns into a different meal.",
       "stats": "FED +7 / HAPPY -5",
       "icon": "assets/icons/ICON_ITEM_YAMLS.png"
     },
@@ -1424,7 +1424,7 @@ window.PEDIA_DATA = {
       "name": "Epoch Dates",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "All picked on 1 Jan 1970. Sweet. Your pet likes them.",
+      "effect": "All dated from the same day back in 1970.",
       "stats": "FED +5 / HAPPY +8",
       "icon": "assets/icons/ICON_ITEM_EPOCH_DATES.png"
     },
@@ -1433,7 +1433,7 @@ window.PEDIA_DATA = {
       "name": "Dotfigs",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Everybody's are different and everybody's are right. Sweet.",
+      "effect": "Your friends arrange theirs a little differently and swear theirs is best.",
       "stats": "FED +4 / HAPPY +9",
       "icon": "assets/icons/ICON_ITEM_DOTFIGS.png"
     },
@@ -1442,7 +1442,7 @@ window.PEDIA_DATA = {
       "name": "APIricot",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Documented, versioned, rate-limited to two. Sweet.",
+      "effect": "Ask nicely and you'll get some. Ask too often and you'll have to wait.",
       "stats": "FED +4 / HAPPY +7",
       "icon": "assets/icons/ICON_ITEM_APIRICOT.png"
     },
@@ -1451,7 +1451,7 @@ window.PEDIA_DATA = {
       "name": "Raspberry Pis",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Forty in the drawer, three doing anything. Sweet.",
+      "effect": "You'll buy a punnet for a project and forget about most of them.",
       "stats": "FED +3 / HAPPY +8",
       "icon": "assets/icons/ICON_ITEM_RASPBERRY_PIS.png"
     },
@@ -1460,7 +1460,7 @@ window.PEDIA_DATA = {
       "name": "Table Grapes",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Indexed, one row per bunch. Sweet.",
+      "effect": "Neatly arranged in rows. Easy to look up the one you want.",
       "stats": "FED +4 / HAPPY +6",
       "icon": "assets/icons/ICON_ITEM_TABLE_GRAPES.png"
     },
@@ -1469,7 +1469,7 @@ window.PEDIA_DATA = {
       "name": "Lambda Chops",
       "type": "FOOD",
       "rarity": "RARE",
-      "effect": "Anonymous lamb. Rare. Save it for cooking.",
+      "effect": "Small cuts that do one job and then they're gone.",
       "stats": "FED +10 / HAPPY +3",
       "icon": "assets/icons/ICON_ITEM_LAMBDA_CHOPS.png"
     },
@@ -1478,7 +1478,7 @@ window.PEDIA_DATA = {
       "name": "File Mignon",
       "type": "FOOD",
       "rarity": "RARE",
-      "effect": "Small, tender, and somebody deleted the backup. Rare. Save it for cooking.",
+      "effect": "Small and precious. Make a copy before you cook it.",
       "stats": "FED +9 / HAPPY +6",
       "icon": "assets/icons/ICON_ITEM_FILE_MIGNON.png"
     },
@@ -1487,7 +1487,7 @@ window.PEDIA_DATA = {
       "name": "Minified Beef",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Beef with every scrap of whitespace stripped out. Very filling.",
+      "effect": "Trimmed of fat until it's barely recognisable.",
       "stats": "FED +9 / FRAG +2",
       "icon": "assets/icons/ICON_ITEM_MINIFIED_BEEF.png"
     },
@@ -1496,7 +1496,7 @@ window.PEDIA_DATA = {
       "name": "SaaSage",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "You never own one, you just keep paying for it. Filling.",
+      "effect": "You don't buy it outright. You pay a little every month forever.",
       "stats": "FED +8 / HAPPY +4 / FRAG +3",
       "icon": "assets/icons/ICON_ITEM_SAASAGE.png"
     },
@@ -1505,7 +1505,7 @@ window.PEDIA_DATA = {
       "name": "Packed Sardines",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "No padding between them anywhere. Filling, salty.",
+      "effect": "Squeezed in with no room to spare between them.",
       "stats": "FED +9 / HAPPY -3",
       "icon": "assets/icons/ICON_ITEM_PACKED_SARDINES.png"
     },
@@ -1514,7 +1514,7 @@ window.PEDIA_DATA = {
       "name": "NATto",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Gets through anything in its way. Filling, smelly, cleans Fragmentation.",
+      "effect": "Sticky enough to cling to the bowl and still slip through the gaps.",
       "stats": "FED +7 / HAPPY -8 / FRAG -5",
       "icon": "assets/icons/ICON_ITEM_NATTO.png"
     },
@@ -1523,7 +1523,7 @@ window.PEDIA_DATA = {
       "name": "Paramesan",
       "type": "FOOD",
       "rarity": "RARE",
-      "effect": "Optional, with a sensible default. Rare. Save it for cooking.",
+      "effect": "Sprinkle on as much as you like. Leave it off and it's still fine.",
       "stats": "FED +4 / HAPPY +7",
       "icon": "assets/icons/ICON_ITEM_PARAMESAN.png"
     },
@@ -1532,7 +1532,7 @@ window.PEDIA_DATA = {
       "name": "MACadamia",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Hard shell, unique address, easy to spoof. Your pet likes them.",
+      "effect": "A unique mark on each shell. Easy enough to fake though.",
       "stats": "FED +5 / HAPPY +7",
       "icon": "assets/icons/ICON_ITEM_MACADAMIA.png"
     },
@@ -1541,7 +1541,7 @@ window.PEDIA_DATA = {
       "name": "Cache-ews",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Keep them close, fetching more is slow. A good snack.",
+      "effect": "Keep a bowl close by and you'll never have to go to the shop.",
       "stats": "FED +5 / HAPPY +6",
       "icon": "assets/icons/ICON_ITEM_CACHE_EWS.png"
     },
@@ -1550,7 +1550,7 @@ window.PEDIA_DATA = {
       "name": "Chia Seeds",
       "type": "FOOD",
       "rarity": "COMMON",
-      "effect": "They farm all night and give you almost nothing. Cleans a little.",
+      "effect": "Takes up a lot of room in the cupboard and gives you very little back.",
       "stats": "FED +2 / FRAG -2",
       "icon": "assets/icons/ICON_ITEM_CHIA_SEEDS.png"
     },
@@ -1559,7 +1559,7 @@ window.PEDIA_DATA = {
       "name": "Cinnamon",
       "type": "FOOD",
       "rarity": "COMMON",
-      "effect": "Warm, brown, and it themes everything. Cheers your pet up.",
+      "effect": "Warm and friendly. Makes your kitchen look nicer just by being there.",
       "stats": "HAPPY +7",
       "icon": "assets/icons/ICON_ITEM_CINNAMON.png"
     },
@@ -1568,7 +1568,7 @@ window.PEDIA_DATA = {
       "name": "Squid Ink",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Everything passes through it and it logs the lot. Your pet hates it raw.",
+      "effect": "Stains the pasta it passes through.",
       "stats": "FED +3 / HAPPY -6",
       "icon": "assets/icons/ICON_ITEM_SQUID_INK.png"
     },
@@ -1577,7 +1577,7 @@ window.PEDIA_DATA = {
       "name": "Leaf-Node Tea",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Nothing hangs below it: bottom of the tree. Calming, and cleans Fragmentation.",
+      "effect": "Picked from the very tips of the branches.",
       "stats": "HAPPY +9 / FRAG -6",
       "icon": "assets/icons/ICON_ITEM_LEAF_NODE_TEA.png"
     },
@@ -1586,7 +1586,7 @@ window.PEDIA_DATA = {
       "name": "Mixins",
       "type": "FOOD",
       "rarity": "COMMON",
-      "effect": "Whatever you pour it into inherits the fizz. Cheers your pet up.",
+      "effect": "Stir a little into your drink and it picks up the flavour.",
       "stats": "FED +1 / HAPPY +5",
       "icon": "assets/icons/ICON_ITEM_MIXINS.png"
     },
@@ -1595,7 +1595,7 @@ window.PEDIA_DATA = {
       "name": "Silicon Wafers",
       "type": "FOOD",
       "rarity": "RARE",
-      "effect": "Thin, flat, valuable. Rare. Save them for cooking.",
+      "effect": "Thin and crisp and worth more than they look.",
       "stats": "FED +3 / HAPPY +8",
       "icon": "assets/icons/ICON_ITEM_SILICON_WAFERS.png"
     },
@@ -1604,7 +1604,7 @@ window.PEDIA_DATA = {
       "name": "Nibbles",
       "type": "FOOD",
       "rarity": "COMMON",
-      "effect": "Four bits a bite. Two bites make a byte. A small snack.",
+      "effect": "Half a bite each. Two make a byte.",
       "stats": "FED +4 / HAPPY +4",
       "icon": "assets/icons/ICON_ITEM_NIBBLES.png"
     },
@@ -1613,7 +1613,7 @@ window.PEDIA_DATA = {
       "name": "Marshalled Mallows",
       "type": "FOOD",
       "rarity": "RARE",
-      "effect": "Flattened so they travel well. Rare. Save them for cooking.",
+      "effect": "Flattened down so they travel well. Puff them back up when they arrive.",
       "stats": "FED +2 / HAPPY +11 / FRAG +3",
       "icon": "assets/icons/ICON_ITEM_MARSHALLED_MALLOWS.png"
     },
@@ -1622,7 +1622,7 @@ window.PEDIA_DATA = {
       "name": "Humbugs",
       "type": "FOOD",
       "rarity": "COMMON",
-      "effect": "There's one in every batch, always striped. Sweet.",
+      "effect": "There's always one more in the bag than you thought.",
       "stats": "FED +1 / HAPPY +8 / FRAG +2",
       "icon": "assets/icons/ICON_ITEM_HUMBUGS.png"
     },
@@ -1631,7 +1631,7 @@ window.PEDIA_DATA = {
       "name": "Burp Sweets",
       "type": "FOOD",
       "rarity": "COMMON",
-      "effect": "Catches everything on the way down and lets you edit it. Sweet.",
+      "effect": "Catches your food on the way down so you can take a look.",
       "stats": "FED +1 / HAPPY +9 / FRAG +2",
       "icon": "assets/icons/ICON_ITEM_BURP_SWEETS.png"
     },
@@ -1640,7 +1640,7 @@ window.PEDIA_DATA = {
       "name": "Peer Drops",
       "type": "FOOD",
       "rarity": "COMMON",
-      "effect": "Everyone has a bag. Not every drop arrives. Sweet.",
+      "effect": "Pass the bag round and your friends hand them on to theirs.",
       "stats": "FED +1 / HAPPY +10",
       "icon": "assets/icons/ICON_ITEM_PEER_DROPS.png"
     },
@@ -1649,7 +1649,7 @@ window.PEDIA_DATA = {
       "name": "Pwnzu-Patched Noodles",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Tastes like Grandma Yubi made it. Maxes out FED and Happiness and wipes Fragmentation.",
+      "effect": "Fixed all the problems in one go. Grandma Yubi would be proud.",
       "stats": "FED +100 / FRAG -100 / HAPPY +100",
       "icon": "assets/icons/ICON_ITEM_PWNZU_PATCHED_NOODLES.png"
     },
@@ -1658,7 +1658,7 @@ window.PEDIA_DATA = {
       "name": "Fully-Stacked Nachos",
       "type": "FOOD",
       "rarity": "RARE",
-      "effect": "All eight layers at last. Maxes out FED and Happiness and wipes Fragmentation.",
+      "effect": "Chip to topping and you made each layer yourself.",
       "stats": "FED +100 / FRAG -100 / HAPPY +100",
       "icon": "assets/icons/ICON_ITEM_FULLY_STACKED_NACHOS.png"
     },
@@ -1667,7 +1667,7 @@ window.PEDIA_DATA = {
       "name": "Hashed Browns",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Crispy shredded potato. A solid meal that cheers your pet up.",
+      "effect": "Shredded so fine you could never put the potato back together.",
       "stats": "FED +20 / HAPPY +10 / FRAG -5",
       "icon": "assets/icons/ICON_ITEM_HASHED_BROWNS.png",
       "bits": 512
@@ -1677,7 +1677,7 @@ window.PEDIA_DATA = {
       "name": "Salted&Hashed Browns",
       "type": "FOOD",
       "rarity": "RARE",
-      "effect": "Hashed Browns with extra salt. Your pet loves these.",
+      "effect": "A pinch of salt makes them much harder to crack.",
       "stats": "FED +20 / HAPPY +20 / FRAG -5",
       "icon": "assets/icons/ICON_ITEM_SALTED_HASHED_BROWNS.png",
       "bits": 512
@@ -1687,7 +1687,7 @@ window.PEDIA_DATA = {
       "name": "Cracquettes",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Everything the spam filter caught, fried into patties. Very filling.",
+      "effect": "Keep trying and eventually you'll get the outside just right.",
       "stats": "FED +60 / HAPPY +5 / FRAG +5",
       "icon": "assets/icons/ICON_ITEM_CRACQUETTES.png"
     },
@@ -1696,7 +1696,7 @@ window.PEDIA_DATA = {
       "name": "Hackshuka",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Every egg and leak in one pan. Filling, and heals 40 HP mid-fight.",
+      "effect": "Sometimes it's fun to just grab some reg-eggs, whatever's in the fridge, and make it work.",
       "stats": "FED +35 / HAPPY +15 / HEAL 40",
       "icon": "assets/icons/ICON_ITEM_HACKSHUKA.png"
     },
@@ -1705,7 +1705,7 @@ window.PEDIA_DATA = {
       "name": "Applet Turnover",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Apples sandboxed in pastry. Your pet loves it, and it cleans Fragmentation.",
+      "effect": "A little pastry that runs happily inside a bigger meal.",
       "stats": "FED +20 / HAPPY +35 / FRAG -10",
       "icon": "assets/icons/ICON_ITEM_APPLET_TURNOVER.png"
     },
@@ -1714,7 +1714,7 @@ window.PEDIA_DATA = {
       "name": "Serial Bar",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "A cereal bar you can carry. Filling, and a little cleaning.",
+      "effect": "Eat it one bite at a time in order. That's the only way it goes.",
       "stats": "FED +30 / HAPPY +10 / FRAG -5",
       "icon": "assets/icons/ICON_ITEM_SERIAL_BAR.png"
     },
@@ -1723,7 +1723,7 @@ window.PEDIA_DATA = {
       "name": "Macrol Fry-Up",
       "type": "FOOD",
       "rarity": "RARE",
-      "effect": "Fresh Macrol, cooked before it spoils. Filling; heals 30 HP mid-fight.",
+      "effect": "Make it once while you're watching and you can repeat it forever.",
       "stats": "FED +45 / HAPPY +20 / HEAL 30",
       "icon": "assets/icons/ICON_ITEM_MACROL_FRY_UP.png"
     },
@@ -1732,7 +1732,7 @@ window.PEDIA_DATA = {
       "name": "Vanilla Java Roast",
       "type": "FOOD",
       "rarity": "RARE",
-      "effect": "Dark roast, no framework. Your pet loves it, and it clears a lot of Fragmentation.",
+      "effect": "Plain with no extras. Take it to work or the beach and it runs the same.",
       "stats": "FED +5 / HAPPY +45 / FRAG -30",
       "icon": "assets/icons/ICON_ITEM_VANILLA_JAVA_ROAST.png"
     },
@@ -1741,7 +1741,7 @@ window.PEDIA_DATA = {
       "name": "RISCotto",
       "type": "FOOD",
       "rarity": "RARE",
-      "effect": "Risotto cooked down to only what it needs. Filling, and clears Fragmentation.",
+      "effect": "Fewer ingredients done well. It even cooks faster.",
       "stats": "FED +50 / FRAG -40",
       "icon": "assets/icons/ICON_ITEM_RISCOTTO.png"
     },
@@ -1750,7 +1750,7 @@ window.PEDIA_DATA = {
       "name": "LANsagne",
       "type": "FOOD",
       "rarity": "RARE",
-      "effect": "Seven layers, each only talks to the one above. Filling; heals 40 HP mid-fight.",
+      "effect": "Best shared with the people closest to you.",
       "stats": "FED +60 / HAPPY +20 / HEAL 40",
       "icon": "assets/icons/ICON_ITEM_LANSAGNE.png"
     },
@@ -1759,7 +1759,7 @@ window.PEDIA_DATA = {
       "name": "RAMen",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Hot, fast, gone when the power is. Filling.",
+      "effect": "Fills you up fast but it's gone the moment you switch off.",
       "stats": "FED +45 / HAPPY +15 / FRAG -10",
       "icon": "assets/icons/ICON_ITEM_RAMEN.png"
     },
@@ -1768,7 +1768,7 @@ window.PEDIA_DATA = {
       "name": "Tiramisudo",
       "type": "FOOD",
       "rarity": "EPIC",
-      "effect": "Pudding with root access. Once per pet: Bandwidth regens 1 min faster for life.",
+      "effect": "Guaranteed lasting pep in your step. Whether it's on the menu depends who's asking.",
       "stats": "BW REGEN -1MIN / BANDWIDTH +1 / HAPPY +50 / FRAG -15",
       "icon": "assets/icons/ICON_ITEM_TIRAMISUDO.png"
     },
@@ -1777,7 +1777,7 @@ window.PEDIA_DATA = {
       "name": "Core Dumplings",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Whatever was in memory when it crashed, steamed. Very filling.",
+      "effect": "Leftovers from a crash wrapped up neatly so you can look through them later.",
       "stats": "FED +55 / HAPPY +5",
       "icon": "assets/icons/ICON_ITEM_CORE_DUMPLINGS.png"
     },
@@ -1786,7 +1786,7 @@ window.PEDIA_DATA = {
       "name": "Forkaccia",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Tear a piece off and it keeps rising on its own. Filling.",
+      "effect": "Tear off a piece and it keeps growing on its own.",
       "stats": "FED +40 / HAPPY +10",
       "icon": "assets/icons/ICON_ITEM_FORKACCIA.png"
     },
@@ -1795,7 +1795,7 @@ window.PEDIA_DATA = {
       "name": "Cacherole",
       "type": "FOOD",
       "rarity": "RARE",
-      "effect": "Last cook's leftovers, served fast. Filling; heals 25 HP mid-fight.",
+      "effect": "Made ahead and kept close so it's ready the second you want it.",
       "stats": "FED +65 / HAPPY +15 / FRAG -10 / HEAL 25",
       "icon": "assets/icons/ICON_ITEM_CACHEROLE.png"
     },
@@ -1804,7 +1804,7 @@ window.PEDIA_DATA = {
       "name": "GNUlash",
       "type": "FOOD",
       "rarity": "RARE",
-      "effect": "Free to copy, everything in one pot. Filling; heals 60 HP mid-fight.",
+      "effect": "Free to share and each cook adds their own spin to the recipe.",
       "stats": "FED +70 / FRAG -25 / HEAL 60",
       "icon": "assets/icons/ICON_ITEM_GNULASH.png"
     },
@@ -1813,7 +1813,7 @@ window.PEDIA_DATA = {
       "name": "Portridge",
       "type": "FOOD",
       "rarity": "COMMON",
-      "effect": "Bootmeal, ported. Exactly the same, it just runs anywhere.",
+      "effect": "Same breakfast. Now it runs on gas or electric.",
       "stats": "FED +10 / HAPPY -5",
       "icon": "assets/icons/ICON_ITEM_PORTRIDGE.png"
     },
@@ -1822,7 +1822,7 @@ window.PEDIA_DATA = {
       "name": "Halloumi, World",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "The first thing anyone cooks. It squeaks and it works.",
+      "effect": "The first dish you ever learn to cook.",
       "stats": "FED +25 / HAPPY +15",
       "icon": "assets/icons/ICON_ITEM_HALLOUMI_WORLD.png"
     },
@@ -1831,7 +1831,7 @@ window.PEDIA_DATA = {
       "name": "NaN Bread",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Not even equal to itself. Filling.",
+      "effect": "Delicious. Just don't try comparing it to itself.",
       "stats": "FED +35 / FRAG -5",
       "icon": "assets/icons/ICON_ITEM_NAN_BREAD.png"
     },
@@ -1840,7 +1840,7 @@ window.PEDIA_DATA = {
       "name": "Chrootons",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Croutons locked out of the rest of the bowl. A good side.",
+      "effect": "Toss them through the salad to share or keep a bowl to yourself.",
       "stats": "FED +20 / HAPPY +15 / FRAG -10",
       "icon": "assets/icons/ICON_ITEM_CHROOTONS.png"
     },
@@ -1849,7 +1849,7 @@ window.PEDIA_DATA = {
       "name": "Gzipacho",
       "type": "FOOD",
       "rarity": "RARE",
-      "effect": "Cold soup, packed to a quarter the size. Filling; heals 30 HP mid-fight.",
+      "effect": "All the summer vegetables squeezed into a much smaller bowl.",
       "stats": "FED +55 / FRAG -20 / HEAL 30",
       "icon": "assets/icons/ICON_ITEM_GZIPACHO.png"
     },
@@ -1858,7 +1858,7 @@ window.PEDIA_DATA = {
       "name": "Lossy Lassi",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Papaya, sugar, salt. Something got lost on the way. Your pet loves it anyway.",
+      "effect": "A little goes missing on the way to the glass. Still delicious.",
       "stats": "FED +20 / HAPPY +30 / FRAG -5",
       "icon": "assets/icons/ICON_ITEM_LOSSY_LASSI.png"
     },
@@ -1867,7 +1867,7 @@ window.PEDIA_DATA = {
       "name": "Cod Review",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Somebody checked it before it shipped. Filling; heals 25 HP mid-fight.",
+      "effect": "Quality control on this dish is rigorous. If the fish is too fishy, the shipment gets cancelled.",
       "stats": "FED +40 / HAPPY +10 / HEAL 25",
       "icon": "assets/icons/ICON_ITEM_COD_REVIEW.png"
     },
@@ -1876,7 +1876,7 @@ window.PEDIA_DATA = {
       "name": "Recursive Turducken",
       "type": "FOOD",
       "rarity": "RARE",
-      "effect": "A duck in a duck in a duck. Huge; heals 40 HP mid-fight.",
+      "effect": "It's ducks all the way down.",
       "stats": "FED +70 / HAPPY +10 / HEAL 40",
       "icon": "assets/icons/ICON_ITEM_RECURSIVE_TURDUCKEN.png"
     },
@@ -1885,7 +1885,7 @@ window.PEDIA_DATA = {
       "name": "Peking Duck Typing",
       "type": "FOOD",
       "rarity": "RARE",
-      "effect": "Looks like dinner, quacks like dinner. Filling, and your pet loves it.",
+      "effect": "If it looks like dinner and smells like dinner, it's dinner.",
       "stats": "FED +60 / HAPPY +25 / FRAG -10",
       "icon": "assets/icons/ICON_ITEM_PEKING_DUCK_TYPING.png"
     },
@@ -1894,7 +1894,7 @@ window.PEDIA_DATA = {
       "name": "Semaphreddo",
       "type": "FOOD",
       "rarity": "RARE",
-      "effect": "One spoon at a time, everyone waits their turn. Your pet loves it.",
+      "effect": "One spoon in the dish at a time. Wait your turn.",
       "stats": "FED +25 / HAPPY +45 / FRAG -20",
       "icon": "assets/icons/ICON_ITEM_SEMAPHREDDO.png"
     },
@@ -1903,7 +1903,7 @@ window.PEDIA_DATA = {
       "name": "Spaghetti Code",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "One tangled lump. Fills your pet up but adds Fragmentation.",
+      "effect": "Usually delicious but the recipe is notoriously hard to modify.",
       "stats": "FED +55 / FRAG +15",
       "icon": "assets/icons/ICON_ITEM_SPAGHETTI_CODE.png"
     },
@@ -1912,7 +1912,7 @@ window.PEDIA_DATA = {
       "name": "Emacsaroni",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Mac and cheese with a mail client. Filling.",
+      "effect": "Mac and cheese with so many extras it could replace the whole kitchen.",
       "stats": "FED +45 / HAPPY +20",
       "icon": "assets/icons/ICON_ITEM_EMACSARONI.png"
     },
@@ -1921,7 +1921,7 @@ window.PEDIA_DATA = {
       "name": "Bisectuits",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Halve the tin until you find the bad one. A nice treat.",
+      "effect": "Can't find the burnt one? Split the tin in half and check again.",
       "stats": "FED +25 / HAPPY +20",
       "icon": "assets/icons/ICON_ITEM_BISECTUITS.png"
     },
@@ -1930,7 +1930,7 @@ window.PEDIA_DATA = {
       "name": "Quicksortbet",
       "type": "FOOD",
       "rarity": "RARE",
-      "effect": "Pick one, split the rest, repeat. Your pet loves it, and it cleans up.",
+      "effect": "Dished up fast and it always comes out in order.",
       "stats": "FED +20 / HAPPY +40 / FRAG -15",
       "icon": "assets/icons/ICON_ITEM_QUICKSORTBET.png"
     },
@@ -1939,7 +1939,7 @@ window.PEDIA_DATA = {
       "name": "Buguette",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "A baguette riddled with bugs. Filling, but your pet won't enjoy it.",
+      "effect": "Crusty and fresh. Give it a good look over before you take a bite.",
       "stats": "FED +35 / HAPPY -5",
       "icon": "assets/icons/ICON_ITEM_BUGUETTE.png"
     },
@@ -1948,7 +1948,7 @@ window.PEDIA_DATA = {
       "name": "CHAPati",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Asks you a question before you get any. Filling.",
+      "effect": "Comes with a secret handshake. Get it right and you can have seconds.",
       "stats": "FED +30 / HAPPY +10",
       "icon": "assets/icons/ICON_ITEM_CHAPATI.png"
     },
@@ -1957,7 +1957,7 @@ window.PEDIA_DATA = {
       "name": "Corrumpets",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Holes all the way through. Filling, adds a little Fragmentation.",
+      "effect": "Toast them a little too long and they're never quite the same again.",
       "stats": "FED +30 / HAPPY +10 / FRAG +5",
       "icon": "assets/icons/ICON_ITEM_CORRUMPETS.png"
     },
@@ -1966,7 +1966,7 @@ window.PEDIA_DATA = {
       "name": "Packettone",
       "type": "FOOD",
       "rarity": "RARE",
-      "effect": "Huge, sweet, arrives in any order. Very filling.",
+      "effect": "Shipped over in pieces that never arrive in quite the right order.",
       "stats": "FED +60 / HAPPY +25",
       "icon": "assets/icons/ICON_ITEM_PACKETTONE.png"
     },
@@ -1975,7 +1975,7 @@ window.PEDIA_DATA = {
       "name": "Hot-Swapped Buns",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Swapped out mid-meal and nobody noticed. Filling.",
+      "effect": "Out with the old bun and in with the new without pausing dinner.",
       "stats": "FED +35 / HAPPY +15",
       "icon": "assets/icons/ICON_ITEM_HOT_SWAPPED_BUNS.png"
     },
@@ -1984,7 +1984,7 @@ window.PEDIA_DATA = {
       "name": "Current Buns",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Draws more than the recipe said. Filling, cheerful.",
+      "effect": "Fresh from the oven and positively buzzing.",
       "stats": "FED +30 / HAPPY +18",
       "icon": "assets/icons/ICON_ITEM_CURRENT_BUNS.png"
     },
@@ -1993,25 +1993,25 @@ window.PEDIA_DATA = {
       "name": "Config Rolls",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Two on the plate and they disagree. A nice treat.",
+      "effect": "Your gran rolls them tight and your uncle rolls them loose. Both swear by it.",
       "stats": "FED +25 / HAPPY +20",
       "icon": "assets/icons/ICON_ITEM_CONFIG_ROLLS.png"
     },
     {
-      "id": "crostini",
-      "name": "Crostini",
+      "id": "brusshetta",
+      "name": "BruSSHetta",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "A whole little system on someone else's bread. A treat.",
+      "effect": "A crisp crust that keeps the toppings safe and sound.",
       "stats": "FED +20 / HAPPY +20 / FRAG -5",
-      "icon": "assets/icons/ICON_ITEM_CROSTINI.png"
+      "icon": "assets/icons/ICON_ITEM_BRUSSHETTA.png"
     },
     {
       "id": "payloaf",
       "name": "Payloaf",
       "type": "FOOD",
       "rarity": "RARE",
-      "effect": "Something's baked in the middle, and it's not raisins. Heals 35 HP mid-fight, adds Fragmentation.",
+      "effect": "Looks like an ordinary loaf. The good stuff is all in the middle.",
       "stats": "FED +65 / FRAG +10 / HEAL 35",
       "icon": "assets/icons/ICON_ITEM_PAYLOAF.png"
     },
@@ -2020,7 +2020,7 @@ window.PEDIA_DATA = {
       "name": "Firewaffle",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "A grid of closed squares. Syrup gets through anyway. Filling.",
+      "effect": "A grid of tidy squares. The syrup still sneaks through.",
       "stats": "FED +35 / HAPPY +20 / FRAG -8",
       "icon": "assets/icons/ICON_ITEM_FIREWAFFLE.png"
     },
@@ -2029,7 +2029,7 @@ window.PEDIA_DATA = {
       "name": "Chownder",
       "type": "FOOD",
       "rarity": "RARE",
-      "effect": "Thick soup. Whoever holds the bowl owns it. Heals 35 HP mid-fight.",
+      "effect": "Hold the bowl and it's yours.",
       "stats": "FED +60 / HAPPY +15 / HEAL 35",
       "icon": "assets/icons/ICON_ITEM_CHOWNDER.png"
     },
@@ -2038,7 +2038,7 @@ window.PEDIA_DATA = {
       "name": "Cronsomme",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Clear soup, served every quarter hour. Clears Fragmentation.",
+      "effect": "Served on the dot every quarter hour whether you're hungry or not.",
       "stats": "FED +30 / FRAG -18",
       "icon": "assets/icons/ICON_ITEM_CRONSOMME.png"
     },
@@ -2047,7 +2047,7 @@ window.PEDIA_DATA = {
       "name": "WANton Soup",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Dumplings wrapped for a long trip. Heals 20 HP mid-fight.",
+      "effect": "Wrapped up tight so they travel well over long distances.",
       "stats": "FED +40 / HAPPY +12 / HEAL 20",
       "icon": "assets/icons/ICON_ITEM_WANTON_SOUP.png"
     },
@@ -2056,7 +2056,7 @@ window.PEDIA_DATA = {
       "name": "Piperogi",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Each one feeds straight into the next. Filling.",
+      "effect": "Line them up and pass each one straight along to the next person.",
       "stats": "FED +45 / HAPPY +8",
       "icon": "assets/icons/ICON_ITEM_PIPEROGI.png"
     },
@@ -2065,7 +2065,7 @@ window.PEDIA_DATA = {
       "name": "Queuesadilla",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "First in, first out, and it's gone cold waiting. Filling.",
+      "effect": "First come, first served. That's the rule here.",
       "stats": "FED +40 / HAPPY +15",
       "icon": "assets/icons/ICON_ITEM_QUEUESADILLA.png"
     },
@@ -2074,7 +2074,7 @@ window.PEDIA_DATA = {
       "name": "Ravioli Code",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Every piece sealed and self-contained. Filling, cleans Fragmentation.",
+      "effect": "Each little parcel keeps its filling to itself.",
       "stats": "FED +50 / FRAG -12",
       "icon": "assets/icons/ICON_ITEM_RAVIOLI_CODE.png"
     },
@@ -2083,7 +2083,7 @@ window.PEDIA_DATA = {
       "name": "Idleys",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Doing nothing, using nothing. Filling, cleans Fragmentation.",
+      "effect": "Light and plain. Perfect for a lazy afternoon on the couch.",
       "stats": "FED +30 / FRAG -15",
       "icon": "assets/icons/ICON_ITEM_IDLEYS.png"
     },
@@ -2092,7 +2092,7 @@ window.PEDIA_DATA = {
       "name": "MS-Dosa",
       "type": "FOOD",
       "rarity": "RARE",
-      "effect": "Thin, crisp, older than everyone at the table. Very filling.",
+      "effect": "An old family recipe that still works. Just don't ask it to multitask.",
       "stats": "FED +55 / HAPPY +15",
       "icon": "assets/icons/ICON_ITEM_MS_DOSA.png"
     },
@@ -2101,7 +2101,7 @@ window.PEDIA_DATA = {
       "name": "ARPas",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Goes round the table asking who's got what. Filling.",
+      "effect": "Goes round the table asking who's got the salt.",
       "stats": "FED +35 / HAPPY +10",
       "icon": "assets/icons/ICON_ITEM_ARPAS.png"
     },
@@ -2110,7 +2110,7 @@ window.PEDIA_DATA = {
       "name": "Kafkofta",
       "type": "FOOD",
       "rarity": "RARE",
-      "effect": "They arrive in order, and you can replay the lot. Heals 30 HP mid-fight.",
+      "effect": "Your order gets written down so you can have the same plate again later.",
       "stats": "FED +60 / HAPPY +10 / HEAL 30",
       "icon": "assets/icons/ICON_ITEM_KAFKOFTA.png"
     },
@@ -2119,7 +2119,7 @@ window.PEDIA_DATA = {
       "name": "Kernel Panini",
       "type": "FOOD",
       "rarity": "RARE",
-      "effect": "Everything froze the moment it was pressed. Heals 30 HP mid-fight.",
+      "effect": "Press it too hard and the whole kitchen grinds to a halt.",
       "stats": "FED +55 / HAPPY +20 / HEAL 30",
       "icon": "assets/icons/ICON_ITEM_KERNEL_PANINI.png"
     },
@@ -2128,7 +2128,7 @@ window.PEDIA_DATA = {
       "name": "Racelette",
       "type": "FOOD",
       "rarity": "EPIC",
-      "effect": "First one to the pan wins. Once per pet: +1 SPEED for life.",
+      "effect": "First to the pan wins. Ties get messy.",
       "stats": "SPEED +1 / FED +50 / HAPPY +25",
       "icon": "assets/icons/ICON_ITEM_RACELETTE.png"
     },
@@ -2137,7 +2137,7 @@ window.PEDIA_DATA = {
       "name": "Scrambled RegEggs",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Scrambled beyond unscrambling. Filling.",
+      "effect": "They look like a mess but match exactly what you were craving.",
       "stats": "FED +35 / HAPPY +10",
       "icon": "assets/icons/ICON_ITEM_SCRAMBLED_REGEGGS.png"
     },
@@ -2146,7 +2146,7 @@ window.PEDIA_DATA = {
       "name": "Char-Grilled Array",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Fixed-width skewer, last slot always empty. Filling.",
+      "effect": "Lined up on one skewer with each piece in its own spot.",
       "stats": "FED +45 / HAPPY +8",
       "icon": "assets/icons/ICON_ITEM_CHAR_GRILLED_ARRAY.png"
     },
@@ -2155,7 +2155,7 @@ window.PEDIA_DATA = {
       "name": "Tarballs",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Everything on the counter, packed into balls. Very filling.",
+      "effect": "The whole counter bundled into one tidy ball.",
       "stats": "FED +50 / HAPPY +5",
       "icon": "assets/icons/ICON_ITEM_TARBALLS.png"
     },
@@ -2164,7 +2164,7 @@ window.PEDIA_DATA = {
       "name": "Bashed Potatoes",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Hit until they did as they were told. Filling.",
+      "effect": "A few good whacks with the masher and they do exactly what you tell them.",
       "stats": "FED +45 / HAPPY +10",
       "icon": "assets/icons/ICON_ITEM_BASHED_POTATOES.png"
     },
@@ -2173,7 +2173,7 @@ window.PEDIA_DATA = {
       "name": "Onion Rings",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Three layers, none knows who ordered. A treat.",
+      "effect": "Golden layers wrapped around layers. Good luck tracing it back to the onion.",
       "stats": "FED +30 / HAPPY +20",
       "icon": "assets/icons/ICON_ITEM_ONION_RINGS.png"
     },
@@ -2182,7 +2182,7 @@ window.PEDIA_DATA = {
       "name": "Flash-Fried Chips",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "In and out of the oil so fast the pan missed it. A treat.",
+      "effect": "In and out of the oil so fast the pan barely noticed.",
       "stats": "FED +35 / HAPPY +18",
       "icon": "assets/icons/ICON_ITEM_FLASH_FRIED_CHIPS.png"
     },
@@ -2191,7 +2191,7 @@ window.PEDIA_DATA = {
       "name": "Twisted Pairetzels",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Twisted so tight neither picks up the other's noise. A treat.",
+      "effect": "Two strands wound together keep each other steady.",
       "stats": "FED +25 / HAPPY +18",
       "icon": "assets/icons/ICON_ITEM_TWISTED_PAIRETZELS.png"
     },
@@ -2200,7 +2200,7 @@ window.PEDIA_DATA = {
       "name": "Jitter Fritters",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "They show up, just never quite when you expect. Filling.",
+      "effect": "They come out of the pan whenever they feel like it.",
       "stats": "FED +35 / HAPPY +12",
       "icon": "assets/icons/ICON_ITEM_JITTER_FRITTERS.png"
     },
@@ -2209,7 +2209,7 @@ window.PEDIA_DATA = {
       "name": "SHAshimi",
       "type": "FOOD",
       "rarity": "RARE",
-      "effect": "Sliced one way only, no going back. Your pet loves it; cleans Fragmentation.",
+      "effect": "Cut the same way each time so a fake slice stands out a mile.",
       "stats": "FED +45 / HAPPY +25 / FRAG -15",
       "icon": "assets/icons/ICON_ITEM_SHASHIMI.png"
     },
@@ -2218,7 +2218,7 @@ window.PEDIA_DATA = {
       "name": "Spare RIBs",
       "type": "FOOD",
       "rarity": "EPIC",
-      "effect": "Keep a spare. Once per pet: +1 DEFENSE for life.",
+      "effect": "Always cook a few more than you need. You'll be glad you did.",
       "stats": "DEFENSE +1 / FED +65 / HAPPY +15 / HEAL 30",
       "icon": "assets/icons/ICON_ITEM_SPARE_RIBS.png"
     },
@@ -2227,7 +2227,7 @@ window.PEDIA_DATA = {
       "name": "RESTed Steak",
       "type": "FOOD",
       "rarity": "RARE",
-      "effect": "Stateless. Every bite stands alone. Heals 35 HP mid-fight.",
+      "effect": "Let it sit and each bite stands on its own.",
       "stats": "FED +60 / HAPPY +20 / HEAL 35",
       "icon": "assets/icons/ICON_ITEM_RESTED_STEAK.png"
     },
@@ -2236,7 +2236,7 @@ window.PEDIA_DATA = {
       "name": "Privilege Escalope",
       "type": "FOOD",
       "rarity": "EPIC",
-      "effect": "Ordered the veal, got the run of the kitchen. Once per pet: +1 POWER for life.",
+      "effect": "Start with a humble cutlet and work your way up to the head of the table.",
       "stats": "POWER +1 / FED +55 / HAPPY +30",
       "icon": "assets/icons/ICON_ITEM_PRIVILEGE_ESCALOPE.png"
     },
@@ -2245,7 +2245,7 @@ window.PEDIA_DATA = {
       "name": "Force-Pulled Pork",
       "type": "FOOD",
       "rarity": "RARE",
-      "effect": "Wasn't ready, pulled anyway. Huge; heals 40 HP mid-fight, adds Fragmentation.",
+      "effect": "Yanked off the bone before it was ready. Turns out it was fine.",
       "stats": "FED +70 / FRAG +10 / HEAL 40",
       "icon": "assets/icons/ICON_ITEM_FORCE_PULLED_PORK.png"
     },
@@ -2254,7 +2254,7 @@ window.PEDIA_DATA = {
       "name": "Rubber Duck Confit",
       "type": "FOOD",
       "rarity": "RARE",
-      "effect": "You explained it all and it said nothing. Your pet loves it; cleans Fragmentation.",
+      "effect": "A bit chewy but that's the point. Chew it over long enough and the answer comes to you.",
       "stats": "FED +55 / HAPPY +30 / FRAG -20",
       "icon": "assets/icons/ICON_ITEM_RUBBER_DUCK_CONFIT.png"
     },
@@ -2263,7 +2263,7 @@ window.PEDIA_DATA = {
       "name": "Vacuum-Sealed Leftovers",
       "type": "FOOD",
       "rarity": "RARE",
-      "effect": "Sealed tight, wasted space handed back. Filling, clears Fragmentation.",
+      "effect": "Shrink-wrapped tight. Suddenly there's room in the fridge again.",
       "stats": "FED +60 / FRAG -25",
       "icon": "assets/icons/ICON_ITEM_VACUUM_SEALED_LEFTOVERS.png"
     },
@@ -2272,7 +2272,7 @@ window.PEDIA_DATA = {
       "name": "Disk Platter",
       "type": "FOOD",
       "rarity": "RARE",
-      "effect": "It spins and it's always your turn. Very filling.",
+      "effect": "A big spinning platter. Your favourite comes round again soon.",
       "stats": "FED +65 / HAPPY +20",
       "icon": "assets/icons/ICON_ITEM_DISK_PLATTER.png"
     },
@@ -2281,7 +2281,7 @@ window.PEDIA_DATA = {
       "name": "Serverless Platter",
       "type": "FOOD",
       "rarity": "RARE",
-      "effect": "Nobody brought it out, it's just there. Heals 25 HP mid-fight.",
+      "effect": "Just appears when you're hungry. No waiter required.",
       "stats": "FED +55 / HAPPY +25 / HEAL 25",
       "icon": "assets/icons/ICON_ITEM_SERVERLESS_PLATTER.png"
     },
@@ -2290,7 +2290,7 @@ window.PEDIA_DATA = {
       "name": "Pickle Jar",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "What comes out is what you packed. Cleans Fragmentation; a bit sour.",
+      "effect": "Pack it away today and open it up exactly the same next year.",
       "stats": "FED +20 / HAPPY -5 / FRAG -12",
       "icon": "assets/icons/ICON_ITEM_PICKLE_JAR.png"
     },
@@ -2299,7 +2299,7 @@ window.PEDIA_DATA = {
       "name": "AI-oli",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "It wrote the recipe itself. Mostly garlic. Very confident.",
+      "effect": "Whipped up with total confidence. Taste it before you trust it.",
       "stats": "FED +10 / HAPPY +15",
       "icon": "assets/icons/ICON_ITEM_AI_OLI.png"
     },
@@ -2308,7 +2308,7 @@ window.PEDIA_DATA = {
       "name": "Vi-naigrette",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Nobody here knows how to put the lid back on. Cleans a little.",
+      "effect": "Easy to open. Good luck ever getting the lid back on.",
       "stats": "FED +5 / HAPPY +12 / FRAG -8",
       "icon": "assets/icons/ICON_ITEM_VINAIGRETTE.png"
     },
@@ -2317,7 +2317,7 @@ window.PEDIA_DATA = {
       "name": "Malwarmalade",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "It spreads. Keep it away from the other jars. Adds Fragmentation.",
+      "effect": "Spreads from slice to slice so keep the lid on.",
       "stats": "FED +12 / HAPPY +18 / FRAG +5",
       "icon": "assets/icons/ICON_ITEM_MALWARMALADE.png"
     },
@@ -2326,7 +2326,7 @@ window.PEDIA_DATA = {
       "name": "Signal Jam",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Thick enough to block anything. Sweet.",
+      "effect": "Spread it thick and it blocks out the toast completely.",
       "stats": "FED +12 / HAPPY +16",
       "icon": "assets/icons/ICON_ITEM_SIGNAL_JAM.png"
     },
@@ -2335,7 +2335,7 @@ window.PEDIA_DATA = {
       "name": "POP3sicle",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "You get it once, then it's off the tray. Your pet loves it.",
+      "effect": "Take it out of the freezer and it's gone from there for good.",
       "stats": "FED +15 / HAPPY +30",
       "icon": "assets/icons/ICON_ITEM_POP3SICLE.png"
     },
@@ -2344,7 +2344,7 @@ window.PEDIA_DATA = {
       "name": "Mergingue",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Two folded together with no seam. Your pet loves it.",
+      "effect": "Fold two batches together carefully and there's no conflict at all.",
       "stats": "FED +15 / HAPPY +32",
       "icon": "assets/icons/ICON_ITEM_MERGINGUE.png"
     },
@@ -2353,7 +2353,7 @@ window.PEDIA_DATA = {
       "name": "Declair",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Has to be declared before anyone can use it. Your pet loves it.",
+      "effect": "Bringing a box back from holiday? Customs will want to hear about it first.",
       "stats": "FED +20 / HAPPY +30",
       "icon": "assets/icons/ICON_ITEM_DECLAIR.png"
     },
@@ -2362,7 +2362,7 @@ window.PEDIA_DATA = {
       "name": "Profilerole",
       "type": "FOOD",
       "rarity": "EPIC",
-      "effect": "Shows exactly where the time went. Once per pet: +25% XP for life.",
+      "effect": "One bite and you know exactly where your afternoon went.",
       "stats": "XP RATE +25% / FED +25 / HAPPY +38 / FRAG -10",
       "icon": "assets/icons/ICON_ITEM_PROFILEROLE.png"
     },
@@ -2371,7 +2371,7 @@ window.PEDIA_DATA = {
       "name": "COBOLer",
       "type": "FOOD",
       "rarity": "RARE",
-      "effect": "Nobody's touched the recipe in fifty years. Still works. Filling.",
+      "effect": "An ancient recipe that still runs half the bakeries in town.",
       "stats": "FED +50 / HAPPY +25",
       "icon": "assets/icons/ICON_ITEM_COBOLER.png"
     },
@@ -2380,7 +2380,7 @@ window.PEDIA_DATA = {
       "name": "Clustard",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Three jugs. One spills, nobody notices. A treat.",
+      "effect": "Poured from several jugs at once so one spill never ruins dessert.",
       "stats": "FED +25 / HAPPY +22",
       "icon": "assets/icons/ICON_ITEM_CLUSTARD.png"
     },
@@ -2389,7 +2389,7 @@ window.PEDIA_DATA = {
       "name": "Bashlava",
       "type": "FOOD",
       "rarity": "RARE",
-      "effect": "Layer calls layer all the way down. Adds Fragmentation.",
+      "effect": "Layer after layer after layer. Once you've made one the rest just loop.",
       "stats": "FED +40 / HAPPY +40 / FRAG +8",
       "icon": "assets/icons/ICON_ITEM_BASHLAVA.png"
     },
@@ -2398,7 +2398,7 @@ window.PEDIA_DATA = {
       "name": "Deflated Souffle",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Twice this size before the air came out. Filling.",
+      "effect": "All the air squeezed out and it's still the same pudding.",
       "stats": "FED +30 / HAPPY +12",
       "icon": "assets/icons/ICON_ITEM_DEFLATED_SOUFFLE.png"
     },
@@ -2407,7 +2407,7 @@ window.PEDIA_DATA = {
       "name": "Fork Bombe",
       "type": "FOOD",
       "rarity": "RARE",
-      "effect": "Cut it, two. Cut those, four. Adds Fragmentation.",
+      "effect": "Cut it in half and you get two. Cut those and you get four. Don't keep cutting.",
       "stats": "FED +45 / HAPPY +35 / FRAG +12",
       "icon": "assets/icons/ICON_ITEM_FORK_BOMBE.png"
     },
@@ -2416,7 +2416,7 @@ window.PEDIA_DATA = {
       "name": "Optical Mousse",
       "type": "FOOD",
       "rarity": "RARE",
-      "effect": "No wires in it at all. Your pet loves it; cleans Fragmentation.",
+      "effect": "Light as air. It glides right across the plate.",
       "stats": "FED +25 / HAPPY +40 / FRAG -12",
       "icon": "assets/icons/ICON_ITEM_OPTICAL_MOUSSE.png"
     },
@@ -2425,7 +2425,7 @@ window.PEDIA_DATA = {
       "name": "Cherry-Picked Tart",
       "type": "FOOD",
       "rarity": "RARE",
-      "effect": "You took the one you wanted off the branch. Your pet loves it.",
+      "effect": "Only the best fruit off the branch makes it in.",
       "stats": "FED +30 / HAPPY +42",
       "icon": "assets/icons/ICON_ITEM_CHERRY_PICKED_TART.png"
     },
@@ -2434,7 +2434,7 @@ window.PEDIA_DATA = {
       "name": "Raspberry Pie",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Cheap, small, useful, four more in the drawer. A treat.",
+      "effect": "Cheap and small and surprisingly handy.",
       "stats": "FED +35 / HAPPY +25",
       "icon": "assets/icons/ICON_ITEM_RASPBERRY_PIE.png"
     },
@@ -2443,7 +2443,7 @@ window.PEDIA_DATA = {
       "name": "Rainbow Tablet",
       "type": "FOOD",
       "rarity": "RARE",
-      "effect": "Every answer worked out in advance. Your pet loves it; adds Fragmentation.",
+      "effect": "All the flavours worked out in advance so cracking one open is easy.",
       "stats": "FED +20 / HAPPY +45 / FRAG +10",
       "icon": "assets/icons/ICON_ITEM_RAINBOW_TABLET.png"
     },
@@ -2452,7 +2452,7 @@ window.PEDIA_DATA = {
       "name": "Mint Choc Chip",
       "type": "FOOD",
       "rarity": "RARE",
-      "effect": "A good distro with silicon in it. Your pet loves it.",
+      "effect": "A fresh and friendly flavour that's easy to switch to.",
       "stats": "FED +25 / HAPPY +38 / FRAG -8",
       "icon": "assets/icons/ICON_ITEM_MINT_CHOC_CHIP.png"
     },
@@ -2461,7 +2461,7 @@ window.PEDIA_DATA = {
       "name": "Candied YAMLs",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "One wrong space ruins the tray. Filling.",
+      "effect": "Arrange them carefully. One out of line and the whole tray is wrong.",
       "stats": "FED +40 / HAPPY +20",
       "icon": "assets/icons/ICON_ITEM_CANDIED_YAMLS.png"
     },
@@ -2470,7 +2470,7 @@ window.PEDIA_DATA = {
       "name": "Flat White",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "No schema, one long pour. Cheers your pet up, cleans Fragmentation.",
+      "effect": "No layers and no structure. Just one smooth pour.",
       "stats": "FED +5 / HAPPY +28 / FRAG -12",
       "icon": "assets/icons/ICON_ITEM_FLAT_WHITE.png"
     },
@@ -2479,7 +2479,7 @@ window.PEDIA_DATA = {
       "name": "Mockachino",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Only pretends to be coffee. Cheers your pet up.",
+      "effect": "Not really coffee but it stands in for one while you're testing.",
       "stats": "FED +8 / HAPPY +26 / FRAG -8",
       "icon": "assets/icons/ICON_ITEM_MOCKACHINO.png"
     },
@@ -2488,7 +2488,7 @@ window.PEDIA_DATA = {
       "name": "Blockchai",
       "type": "FOOD",
       "rarity": "RARE",
-      "effect": "Every cup depends on the last. Cheers your pet up, clears Fragmentation.",
+      "effect": "Brewed from the last cup and you can't take a sip back.",
       "stats": "FED +10 / HAPPY +35 / FRAG -18",
       "icon": "assets/icons/ICON_ITEM_BLOCKCHAI.png"
     },
@@ -2497,7 +2497,7 @@ window.PEDIA_DATA = {
       "name": "SYN-ACK Shake",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "You offer, it offers back, you agree, you drink.",
+      "effect": "You offer. They accept. Then you both drink.",
       "stats": "FED +25 / HAPPY +25",
       "icon": "assets/icons/ICON_ITEM_SYN_ACK_SHAKE.png"
     },
@@ -2506,7 +2506,7 @@ window.PEDIA_DATA = {
       "name": "Buffer Overfloat",
       "type": "FOOD",
       "rarity": "EPIC",
-      "effect": "Kept pouring past full. Once per pet: +1 MAX-HP for life.",
+      "effect": "Pour until it spills into the next glass over.",
       "stats": "MAX-HP +1 / FED +30 / HAPPY +40 / FRAG +15",
       "icon": "assets/icons/ICON_ITEM_BUFFER_OVERFLOAT.png"
     },
@@ -2515,7 +2515,7 @@ window.PEDIA_DATA = {
       "name": "Hard CIDR",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Comes by the block; you don't choose the size. Adds Fragmentation.",
+      "effect": "Sold by the block in sizes that never quite match what you wanted.",
       "stats": "FED +10 / HAPPY +28 / FRAG +8",
       "icon": "assets/icons/ICON_ITEM_HARD_CIDR.png"
     },
@@ -2524,7 +2524,7 @@ window.PEDIA_DATA = {
       "name": "Port 80",
       "type": "FOOD",
       "rarity": "RARE",
-      "effect": "Fortified wine, open to anyone. Your pet loves it; adds Fragmentation.",
+      "effect": "A fortified wine that's open to all comers.",
       "stats": "FED +12 / HAPPY +42 / FRAG +10",
       "icon": "assets/icons/ICON_ITEM_PORT_80.png"
     },
@@ -2533,7 +2533,7 @@ window.PEDIA_DATA = {
       "name": "FizzBuzz",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Every third sip fizzes, every fifth buzzes. Cheers your pet up.",
+      "effect": "Every third sip fizzes and every fifth one buzzes. Easy to make but hard to get right.",
       "stats": "FED +8 / HAPPY +24",
       "icon": "assets/icons/ICON_ITEM_FIZZBUZZ.png"
     },
@@ -2542,7 +2542,7 @@ window.PEDIA_DATA = {
       "name": "Punchcard Punch",
       "type": "FOOD",
       "rarity": "UNCOMMON",
-      "effect": "Drop the tray and you're starting over. Cheers your pet up.",
+      "effect": "The steps go in a strict order. Don't drop the recipe cards.",
       "stats": "FED +15 / HAPPY +26",
       "icon": "assets/icons/ICON_ITEM_PUNCHCARD_PUNCH.png"
     },
@@ -2551,7 +2551,7 @@ window.PEDIA_DATA = {
       "name": "Backup Drive",
       "type": "BUFFS",
       "rarity": "RARE",
-      "effect": "For 60 min, if your pet gets knocked out in a fight, it gets half its max HP back. Once.",
+      "effect": "For the days you need a friend in your corner.",
       "stats": "DEATH SAVE 60MIN",
       "icon": "assets/icons/ICON_ITEM_BACKUP_DRIVE.png"
     },
@@ -2560,8 +2560,8 @@ window.PEDIA_DATA = {
       "name": "Rare Cache",
       "type": "QUEST",
       "rarity": "RARE",
-      "effect": "A rare cache. Open it in the VAULT for a good reward.",
-      "stats": "",
+      "effect": "A hit worth getting excited about.",
+      "stats": "OPEN IN VAULT",
       "icon": "assets/icons/ICON_ITEM_SEALED_CACHE_RARE.png"
     },
     {
@@ -2569,7 +2569,7 @@ window.PEDIA_DATA = {
       "name": "Kernel Bell",
       "type": "TOOLS",
       "rarity": "RARE",
-      "effect": "Use before a DeepWeb Dive to start at depth 64. Every win that dive pays 100% more.",
+      "effect": "Pops you straight down to the core.",
       "stats": "DIVE FROM 64 / DIVE PAY +100%",
       "icon": "assets/icons/ICON_ITEM_KERNEL_BELL.png"
     },
@@ -2578,7 +2578,7 @@ window.PEDIA_DATA = {
       "name": "Deep-Learning Module",
       "type": "TOOLS",
       "rarity": "RARE",
-      "effect": "Next DeepWeb Dive, each win drops you 2 depths instead of 1, and pays 50% more.",
+      "effect": "It's seen enough dives to know which bits to skip.",
       "stats": "DIVE STEP x2 / DIVE PAY +50%",
       "icon": "assets/icons/ICON_ITEM_DEEP_LEARNING_MODULE.png"
     },
@@ -2587,7 +2587,7 @@ window.PEDIA_DATA = {
       "name": "Yubi-Cookie",
       "type": "FOOD",
       "rarity": "EPIC",
-      "effect": "So good your pet forgets 1 care mistake. Only works once per pet.",
+      "effect": "It's impossible to hold a grudge when the secret ingredient is love.",
       "stats": "MISTAKE -1 / FED +20 / HAPPY +40",
       "icon": "assets/icons/ICON_ITEM_YUBI_COOKIE.png"
     },
@@ -2596,7 +2596,7 @@ window.PEDIA_DATA = {
       "name": "Restore Point",
       "type": "BUFFS",
       "rarity": "EPIC",
-      "effect": "Your pet's next care mistake doesn't count. Only works once per pet.",
+      "effect": "For the day you wish you could undo yesterday.",
       "stats": "MISTAKE SHIELD",
       "icon": "assets/icons/ICON_ITEM_RESTORE_POINT.png"
     },
@@ -2605,8 +2605,8 @@ window.PEDIA_DATA = {
       "name": "Epic Cache",
       "type": "QUEST",
       "rarity": "EPIC",
-      "effect": "An epic cache. Open it in the VAULT for the best rewards a walk turns up, and a shot at a MOD.",
-      "stats": "",
+      "effect": "Warm and full and ready to go.",
+      "stats": "OPEN IN VAULT / REWARDS 2 / MOD CHANCE 50%",
       "icon": "assets/icons/ICON_ITEM_SEALED_CACHE_EPIC.png"
     },
     {
@@ -2614,8 +2614,8 @@ window.PEDIA_DATA = {
       "name": "Commendation Cache",
       "type": "QUEST",
       "rarity": "EPIC",
-      "effect": "You earned this one. Open it in the VAULT for top rewards and a good shot at a MOD.",
-      "stats": "",
+      "effect": "A thank-you for sticking with it. You earned this.",
+      "stats": "OPEN IN VAULT / REWARDS 2 / MOD CHANCE 60%",
       "icon": "assets/icons/ICON_ITEM_COMMEND_CACHE.png"
     },
     {
@@ -2623,8 +2623,8 @@ window.PEDIA_DATA = {
       "name": "Sunset ROM",
       "type": "QUEST",
       "rarity": "EPIC",
-      "effect": "A palette chip from an arcade cabinet. Holding it unlocks the SYNTHWAVE theme in CFG.",
-      "stats": "",
+      "effect": "Neon skies and chrome burned in for good.",
+      "stats": "THEME SYNTHWAVE",
       "icon": "assets/icons/ICON_ITEM_SUNSET_ROM.png"
     },
     {
@@ -2632,8 +2632,8 @@ window.PEDIA_DATA = {
       "name": "Pocket LCD",
       "type": "QUEST",
       "rarity": "EPIC",
-      "effect": "A palette chip from a handheld. Holding it unlocks the DOT MATRIX theme in CFG.",
-      "stats": "",
+      "effect": "Four shades of green and a whole childhood.",
+      "stats": "THEME DOT MATRIX",
       "icon": "assets/icons/ICON_ITEM_POCKET_LCD.png"
     },
     {
@@ -2641,8 +2641,8 @@ window.PEDIA_DATA = {
       "name": "Phosphor Tube",
       "type": "QUEST",
       "rarity": "RARE",
-      "effect": "A palette chip from a green screen. Holding it unlocks the TERMINAL theme in CFG.",
-      "stats": "",
+      "effect": "Green glow on black glass and a quiet hum.",
+      "stats": "THEME TERMINAL",
       "icon": "assets/icons/ICON_ITEM_PHOSPHOR_TUBE.png"
     },
     {
@@ -2650,8 +2650,8 @@ window.PEDIA_DATA = {
       "name": "Amber Tube",
       "type": "QUEST",
       "rarity": "RARE",
-      "effect": "A palette chip from an amber screen. Holding it unlocks the AMBER theme in CFG.",
-      "stats": "",
+      "effect": "Warm orange glow on black glass. Easy on tired eyes.",
+      "stats": "THEME AMBER",
       "icon": "assets/icons/ICON_ITEM_AMBER_TUBE.png"
     },
     {
@@ -2659,8 +2659,8 @@ window.PEDIA_DATA = {
       "name": "Daylight Filter",
       "type": "QUEST",
       "rarity": "RARE",
-      "effect": "A palette chip for reading outdoors. Holding it unlocks the DAYLIGHT theme in CFG.",
-      "stats": "",
+      "effect": "Crisp and clear even out in the midday sun.",
+      "stats": "THEME DAYLIGHT",
       "icon": "assets/icons/ICON_ITEM_DAYLIGHT_FILTER.png"
     },
     {
@@ -2668,8 +2668,8 @@ window.PEDIA_DATA = {
       "name": "Redshift Lens",
       "type": "QUEST",
       "rarity": "RARE",
-      "effect": "A palette chip for the dark. Holding it unlocks the NIGHT VISION theme in CFG.",
-      "stats": "",
+      "effect": "Warms the colours as the sun goes down so your eyes can rest.",
+      "stats": "THEME NIGHT VISION",
       "icon": "assets/icons/ICON_ITEM_REDSHIFT_LENS.png"
     },
     {
@@ -2677,8 +2677,8 @@ window.PEDIA_DATA = {
       "name": "Access Token",
       "type": "QUEST",
       "rarity": "UNCOMMON",
-      "effect": "Use it on a walk to jump straight to this area's shop.",
-      "stats": "",
+      "effect": "Proves you're allowed in. No questions asked.",
+      "stats": "WALK: WARP TO SHOP",
       "icon": "assets/icons/ICON_ITEM_ACCESS_TOKEN.png"
     },
     {
@@ -2686,8 +2686,8 @@ window.PEDIA_DATA = {
       "name": "Safe-Mode Key",
       "type": "QUEST",
       "rarity": "UNCOMMON",
-      "effect": "Use it on a walk to jump to a safe rest. Your pet sheds 20 Fragmentation there.",
-      "stats": "FRAG -20",
+      "effect": "Boots you somewhere quiet with only the essentials running.",
+      "stats": "FRAG -20 / WALK: SAFE REST",
       "icon": "assets/icons/ICON_ITEM_SAFE_MODE_KEY.png"
     },
     {
@@ -2695,8 +2695,8 @@ window.PEDIA_DATA = {
       "name": "Rollback",
       "type": "TOOLS",
       "rarity": "RARE",
-      "effect": "Pick a stat. Your pet loses one point there and a level, then earns the level back and rolls a new point.",
-      "stats": "",
+      "effect": "Undo the last thing you were sure about.",
+      "stats": "RE-ROLL A STAT POINT",
       "icon": "assets/icons/ICON_ITEM_ROLLBACK.png"
     },
     {
@@ -2704,8 +2704,8 @@ window.PEDIA_DATA = {
       "name": "Repartition",
       "type": "TOOLS",
       "rarity": "EPIC",
-      "effect": "Move one of your pet's earned stat points to any other stat. Keeps its level.",
-      "stats": "",
+      "effect": "Same space. Just divided up the way you wanted it.",
+      "stats": "MOVE A STAT POINT",
       "icon": "assets/icons/ICON_ITEM_REPARTITION.png"
     },
     {
@@ -2713,8 +2713,8 @@ window.PEDIA_DATA = {
       "name": "Ambig-USB",
       "type": "TOOLS",
       "rarity": "EPIC",
-      "effect": "Your pet's next evolution turns Trojan if it can. Used up either way.",
-      "stats": "TROJAN DIVERT",
+      "effect": "Found it in the car park. Surely it's fine to plug in.",
+      "stats": "NEXT EVOLVE: TROJAN",
       "icon": "assets/icons/ICON_ITEM_AMBIG_USB.png",
       "bits": 1024
     },
@@ -2723,8 +2723,8 @@ window.PEDIA_DATA = {
       "name": "Bad-USB",
       "type": "TOOLS",
       "rarity": "EPIC",
-      "effect": "Forces your pet's next branching evolution onto the BAD line, however well you raised it.",
-      "stats": "FORCE BAD",
+      "effect": "Looks like an ordinary stick but it types faster than you do.",
+      "stats": "FORCE BAD BRANCH",
       "icon": "assets/icons/ICON_ITEM_BAD_USB.png"
     },
     {
@@ -2732,8 +2732,8 @@ window.PEDIA_DATA = {
       "name": "Signed-USB",
       "type": "TOOLS",
       "rarity": "EPIC",
-      "effect": "Forces your pet's next branching evolution onto the GOOD line, however badly it went.",
-      "stats": "FORCE GOOD",
+      "effect": "Comes with a manufacturer's seal and a clean conscience.",
+      "stats": "FORCE GOOD BRANCH",
       "icon": "assets/icons/ICON_ITEM_SIGNED_USB.png"
     },
     {
@@ -2741,8 +2741,8 @@ window.PEDIA_DATA = {
       "name": "Sandbox-USB",
       "type": "TOOLS",
       "rarity": "RARE",
-      "effect": "Process only. Your pet takes x2 as long to evolve and earns x2 XP meanwhile.",
-      "stats": "SOAK x2",
+      "effect": "Lets it play somewhere safe for a while before it grows up.",
+      "stats": "XP x2 / EVOLVE TIME x2 / PROCESS ONLY",
       "icon": "assets/icons/ICON_ITEM_SANDBOX_USB.png"
     },
     {
@@ -2750,8 +2750,8 @@ window.PEDIA_DATA = {
       "name": "Hypervisor-USB",
       "type": "TOOLS",
       "rarity": "EPIC",
-      "effect": "Process or Script. x8 XP, x8 as long to evolve (x2 that on a Script).",
-      "stats": "SOAK x8",
+      "effect": "Runs a whole world inside the one it's plugged into.",
+      "stats": "XP x8 / EVOLVE TIME x8 / ON A SCRIPT x16 / PROCESS OR SCRIPT",
       "icon": "assets/icons/ICON_ITEM_HYPERVISOR_USB.png",
       "bits": 2048
     },
@@ -2760,8 +2760,8 @@ window.PEDIA_DATA = {
       "name": "Halt-USB",
       "type": "TOOLS",
       "rarity": "RARE",
-      "effect": "Your pet stops evolving until you pull this with an Eject-USB.",
-      "stats": "EVOLVE HELD",
+      "effect": "Freezes the moment right where it is.",
+      "stats": "STOPS EVOLVING",
       "icon": "assets/icons/ICON_ITEM_HALT_USB.png"
     },
     {
@@ -2769,8 +2769,8 @@ window.PEDIA_DATA = {
       "name": "Eject-USB",
       "type": "TOOLS",
       "rarity": "RARE",
-      "effect": "Pulls whatever USB is in your pet and cancels what it was doing.",
-      "stats": "CLEARS USB",
+      "effect": "Pull it out safely and life goes back to normal.",
+      "stats": "REMOVES ARMED USB",
       "icon": "assets/icons/ICON_ITEM_EJECT_USB.png"
     },
     {
@@ -2778,7 +2778,7 @@ window.PEDIA_DATA = {
       "name": "Checkpoint Bell",
       "type": "TOOLS",
       "rarity": "EPIC",
-      "effect": "Use before a DeepWeb Dive to start at your pet's deepest depth so far. Every win pays 100% more.",
+      "effect": "Saved at your finest moment and ready to load.",
       "stats": "DIVE FROM BEST / DIVE PAY +100%",
       "icon": "assets/icons/ICON_ITEM_ZERODAY_BELL.png"
     },
@@ -2787,7 +2787,7 @@ window.PEDIA_DATA = {
       "name": "Deep-Learning Core",
       "type": "TOOLS",
       "rarity": "EPIC",
-      "effect": "Next DeepWeb Dive, each win drops you 4 depths instead of 1, and pays 100% more.",
+      "effect": "Trained on more dives than you'll ever take.",
       "stats": "DIVE STEP x4 / DIVE PAY +100%",
       "icon": "assets/icons/ICON_ITEM_DEEP_LEARNING_CORE.png"
     }
@@ -3628,8 +3628,8 @@ window.PEDIA_DATA = {
       "requires": []
     },
     {
-      "name": "Crostini",
-      "output": "crostini",
+      "name": "BruSSHetta",
+      "output": "brusshetta",
       "outputQty": 1,
       "inputs": [
         {
@@ -4273,7 +4273,7 @@ window.PEDIA_DATA = {
       "outputQty": 1,
       "inputs": [
         {
-          "id": "crostini",
+          "id": "brusshetta",
           "qty": 1
         },
         {

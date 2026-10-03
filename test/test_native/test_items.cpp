@@ -1830,3 +1830,31 @@ void test_save_v54_renames_the_snack_item_id() {
     CHECK(back.items.size() == 1);
     CHECK(std::strcmp(back.items[0].id, "dyno_nuggets") == 0);
 }
+
+// v70 — the second item rename, the same sweep as v54's: a v69 blob's stack and its
+// ever-collected set both come back under the new id, and a current blob is untouched.
+void test_save_v70_renames_crostini() {
+    SaveData a;
+    std::strcpy(a.activeId, "paypup");
+    a.items.push_back(SaveStack{"crostini", 2});
+    SaveId collected;
+    std::strcpy(collected.id, "crostini");
+    a.collectedItems.push_back(collected);
+    auto blob = serializeSave(a);
+    const uint16_t before = 69;
+    blob[4] = static_cast<uint8_t>(before);
+    blob[5] = static_cast<uint8_t>(before >> 8);
+    SaveData out;
+    CHECK(deserializeSave(blob, out));
+    CHECK(out.items.size() == 1);
+    CHECK(std::strcmp(out.items[0].id, "brusshetta") == 0);
+    CHECK(out.items[0].qty == 2);
+    CHECK(out.collectedItems.size() == 1);
+    CHECK(std::strcmp(out.collectedItems[0].id, "brusshetta") == 0);
+
+    SaveData b;
+    b.items.push_back(SaveStack{"brusshetta", 1});
+    SaveData back;
+    CHECK(deserializeSave(serializeSave(b), back));
+    CHECK(std::strcmp(back.items[0].id, "brusshetta") == 0);
+}

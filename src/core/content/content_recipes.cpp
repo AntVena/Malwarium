@@ -102,8 +102,8 @@ const MergeRecipe kMergeRecipes[] = {
      {{"bytesteak_tomatoes", 2}, {"gherkins", 1}, {"breadcrumbs", 2},
       {"grepsed_oil", 1}},
      "gzipacho", 1, /*wire=*/22, "MERGED GZIPACHO"},
-    // Honeypot Yogurt is deliberately absent — a lassi's one missing ingredient, and
-    // the dish's own description names everything here and nothing else.
+    // Honeypot Yogurt is deliberately absent — a lassi's one missing ingredient, which
+    // is the whole of what "lossy" means here.
     {"Lossy Lassi",
      {{"papaya", 2}, {"syntactic_sugar", 1}, {"c_salt", 1}},
      "lossy_lassi", 1, /*wire=*/23, "MERGED LOSSY LASSI"},
@@ -135,8 +135,8 @@ const MergeRecipe kMergeRecipes[] = {
     // The fourth service — the rest of the kitchen, grouped the way the item table
     // groups it. Every staple on the pantry's three shelves is named by at least one
     // row here, so nothing is only ever eaten raw. Four rows are second-order (their
-    // lead ingredient is another dish): Crostini and Kernel Panini want a Buguette,
-    // Payloaf wants a NaN Bread, and Disk Platter wants a Crostini.
+    // lead ingredient is another dish): BruSSHetta and Kernel Panini want a Buguette,
+    // Payloaf wants a NaN Bread, and Disk Platter wants a BruSSHetta.
     {"Buguette", {{"self_signed_flour", 3}, {"c_salt", 1}},
      "buguette", 1, /*wire=*/32, "MERGED BUGUETTE"},
     {"CHAPati",
@@ -159,10 +159,10 @@ const MergeRecipe kMergeRecipes[] = {
     {"Config Rolls",
      {{"dotfigs", 2}, {"self_signed_flour", 2}, {"syntactic_sugar", 1}},
      "config_rolls", 1, /*wire=*/38, "MERGED CONFIG ROLLS"},
-    {"Crostini",
+    {"BruSSHetta",
      {{"buguette", 1}, {"grepsed_oil", 1}, {"garlic_escapes", 1},
       {"bytesteak_tomatoes", 1}},
-     "crostini", 1, /*wire=*/39, "MERGED CROSTINI"},
+     "brusshetta", 1, /*wire=*/39, "MERGED BRUSSHETTA"},
     {"Payloaf", {{"nan_bread", 1}, {"spam", 2}, {"c_salt", 1}},
      "payloaf", 1, /*wire=*/40, "MERGED PAYLOAF"},
     {"Firewaffle",
@@ -259,7 +259,7 @@ const MergeRecipe kMergeRecipes[] = {
      {{"tarballs", 1}, {"spam", 2}, {"gherkins", 1}},
      "vacuum_sealed_leftovers", 1, /*wire=*/68, "MERGED VACUUM-SEALED LEFTOVERS"},
     {"Disk Platter",
-     {{"crostini", 1}, {"packed_sardines", 1}, {"archichoke", 1},
+     {{"brusshetta", 1}, {"packed_sardines", 1}, {"archichoke", 1},
       {"paramesan", 1}},
      "disk_platter", 1, /*wire=*/69, "MERGED DISK PLATTER"},
     {"Serverless Platter",

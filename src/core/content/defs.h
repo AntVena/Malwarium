@@ -542,6 +542,8 @@ struct ItemDef {
         Repartition,    // open the two-step stat picker to MOVE an earned point
         DecryptEgg,     // cut a flat bite off a Boot-Sector egg's incubation (Boot Accelerator)
         PlayCryptogram, // cash in for a DECRYPTOGRAM board (VAULT, game_cryptogram.cpp)
+        GuaranteeDefrag,// Defrag Tool: spent by a TOOL DEFRAG in MAINT for a clean run,
+                        // never from ITEMS (game_care.cpp's resolveMaint)
     };
     // The ITEMS type-picker's axis (items_screen.h) — one notch finer than `type`,
     // which only knows Food/Buff/Quest. `Derive` (the default, and what every row

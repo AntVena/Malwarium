@@ -70,6 +70,7 @@ int g_failures = 0;
     RUN(test_inventory_rows_grouped)        \
     RUN(test_buff_band_acts_on_the_pet)     \
     RUN(test_save_v54_renames_the_snack_item_id) \
+    RUN(test_save_v70_renames_crostini)           \
     RUN(test_inventory_rows_rarity_desc)    \
     RUN(test_inventory_scrollbar)           \
     RUN(test_feed_and_maint_model)          \

@@ -123,8 +123,8 @@ narrator hinting at a secret.
 **The pattern.** One warm, everyday sentence (two at most) that makes complete sense as
 a remark about the object itself, with the tech meaning of the name sitting underneath.
 
-> Tiramisudo: "Guaranteed to put lasting pep in your step but whether or not it's on the
-> menu depends who's asking."
+> Tiramisudo: "Guaranteed lasting pep in your step. Whether it's on the menu depends
+> who's asking."
 > Hackshuka: "Sometimes it's fun to just grab some reg-eggs, whatever's in the fridge,
 > and make it work."
 > Cod Review: "Quality control on this dish is rigorous. If the fish is too fishy, the
@@ -136,21 +136,33 @@ a remark about the object itself, with the tech meaning of the name sitting unde
 1. **No mechanics.** No numbers, no stat names, no instructions ("use it before a
    dive", "cook it into something"), no "once per pet". A `{token}` is still how a
    number gets in if one is ever truly needed (rule 3), but the grid has it already.
+   That includes the rows with no pet lever: a cache, a warp key, a picker, a palette
+   chip states its job as a readout flag read off its own fields (`specRows`, e.g.
+   OPEN IN VAULT, WALK: WARP TO SHOP, THEME SYNTHWAVE). If a mechanic can't be said
+   concisely and clearly in a flag, that row is the exception that gets a functional
+   clause — decided case by case, never by default.
 2. **It must make sense as food (or as the object) on its own.** A tech catchphrase
    with no food reading fails: "Looks good to me. Ship it." does; Cod Review's line
    passes because a fish supplier really would cancel a fishy shipment.
-3. **Play the name's tech half in a fresh sense; never say it.** Hackshuka evokes
-   hacking as making-do; Tiramisudo never says "sudo". The tech word, its expansion
-   ("secure shell" for SSH) and its obvious synonyms stay out of the line. Repeating
-   the FOOD half of the name ("salt", "beans") is fine.
+3. **Play the name's tech half in a fresh sense; never say it; get it right.**
+   Hackshuka evokes hacking as making-do; Tiramisudo never says "sudo". The tech
+   word, its expansion ("secure shell" for SSH) and its obvious synonyms stay out of
+   the line. Repeating the FOOD half of the name ("salt", "beans") is fine. And check
+   the joke against what the term really means: a backdoor bypasses authentication
+   (not a queue), a sinkhole redirects traffic (it doesn't hide it), a cryptogram
+   substitutes letters (it doesn't scramble them).
 4. **A pun of its own, or none.** Every line carries its own wordplay ("veggie patch",
    "secret ingredient") or is simply, plainly true of the food ("It tastes like
    nothing."). Simple beats forced.
 5. **Ingredients only when they are the pun.** "reg-eggs" earns its place; a recipe
    list or a hint about what to cook does not.
-6. **No fake mystery.** No "nobody…", "somebody…", "no one knows…", no trailing
-   ellipsis, no setup the line never pays off, no riddle that only lands if you already
-   know what the item does.
+6. **No fake mystery, and no sweeping words.** No "nobody", "someone", "anyone",
+   "everyone", "everything", "anything", "whatever", "whoever", "somehow" — they make a
+   line vague where it should be concrete. Name a real subject instead: you, your pet,
+   your gran, the bowl. Keep "every" only where a concrete schedule IS the joke
+   (FizzBuzz's every third sip, SaaSage's every month). Swapping in a synonym ("each"
+   for "every") is the same habit. Also no trailing ellipsis, no setup the line never
+   pays off, no riddle that only lands if you already know what the item does.
 7. **Every reference is anchored.** "The" and "it" point at something the line itself
    or the object supplies — the dish's own jar, tin or tray. "The long trip", "the
    table", "the bakery" assume a scene the reader was never given.
@@ -168,8 +180,10 @@ a remark about the object itself, with the tech meaning of the name sitting unde
 ### What a gate can and can't check
 
 `test_effect_text_fits_its_screen_budget` measures every line against the panel (26
-characters a line; a shop listing gets three). A script can also catch commas, the
-"nobody" family, a trailing ellipsis, a digit, and a line repeating a word of its own
-name. Rules 2, 3 (synonyms and expansions), 4, 7 and 10 need a reader. So write a batch,
+characters a line; a shop listing gets three) with the game's own wrap, which is the
+only measure to trust — an estimate wraps differently. A script can also catch
+commas, the sweeping-word family, a trailing ellipsis, a digit, a line repeating a
+word of its own name, a line shared by two rows, and an opener half the table starts
+with. Rules 2, 3 (synonyms, expansions, accuracy), 4, 7 and 10 need a reader. So write a batch,
 run the mechanical checks, then read every line against this list before it ships, and
 try two or three lines on someone before writing two hundred.

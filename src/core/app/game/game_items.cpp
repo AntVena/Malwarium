@@ -122,7 +122,7 @@ bool Game::itemUsable(const ItemDef& d, const char*& gateMsg) const {
     if (themeForChip(d.id)) { gateMsg = "SET IN CFG > THEME"; return false; }
     // the Defrag Tool is spent only by a TOOL DEFRAG in MAINT (a guaranteed
     // clean), never from the ITEMS use path — a stray Use would burn it for nothing.
-    if (std::strcmp(d.id, kDefragToolId) == 0) {
+    if (d.use == ItemDef::Use::GuaranteeDefrag) {
         gateMsg = "USE IN MAINT DEFRAG"; return false;
     }
     // Sealed caches are now decrypted from the Hacker VAULT, never

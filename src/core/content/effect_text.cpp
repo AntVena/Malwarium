@@ -1,6 +1,8 @@
 // effect_text.cpp — {token} expansion + the derived stat line (see effect_text.h).
 #include "core/content/effect_text.h"
 
+#include "core/content/content_themes.h"
+
 #include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
@@ -284,23 +286,28 @@ SpecRows specRows(const ItemDef& d) {
             case ItemEffect::Kind::ClearMistakeShieldOnce:
                 s.flag("MISTAKE SHIELD");
                 break;
-            case ItemEffect::Kind::ForceTrojanDivert: s.flag("TROJAN DIVERT"); break;
-            // A direction, not a magnitude — the grid says which way the branch is
-            // forced and leaves the "whatever the care record says" half to the row.
-            case ItemEffect::Kind::ForceEvolveBranchGood: s.flag("FORCE GOOD"); break;
-            case ItemEffect::Kind::ForceEvolveBranchBad: s.flag("FORCE BAD"); break;
+            case ItemEffect::Kind::ForceTrojanDivert: s.flag("NEXT EVOLVE: TROJAN"); break;
+            // A direction, not a magnitude, and the grid is the only place it is said:
+            // a description is flavour (CONTENT_STANDARD.md), so the flag names the
+            // branch outright.
+            case ItemEffect::Kind::ForceEvolveBranchGood: s.flag("FORCE GOOD BRANCH"); break;
+            case ItemEffect::Kind::ForceEvolveBranchBad: s.flag("FORCE BAD BRANCH"); break;
+            // The soak's one factor is both halves of the trade, so the grid prints it
+            // twice under the names a player decides by, then says where it goes in.
+            // The late soak's Script clock runs at double the factor (Game::evolveDwellMs).
             case ItemEffect::Kind::ArmEvolveSoak:
-                s.add("SOAK", "x%d", e.magnitude);
+                s.add("XP", "x%d", e.magnitude);
+                s.add("EVOLVE TIME", "x%d", e.magnitude);
+                s.flag("PROCESS ONLY");
                 break;
-            // The late soak reports the same factor, because that IS what it pays and
-            // what it costs at Process. The doubled Script clock is a property of WHERE
-            // it is used rather than of the row, so the row's prose carries it and the
-            // grid keeps the number that is true wherever it goes in.
             case ItemEffect::Kind::ArmEvolveSoakLate:
-                s.add("SOAK", "x%d", e.magnitude);
+                s.add("XP", "x%d", e.magnitude);
+                s.add("EVOLVE TIME", "x%d", e.magnitude);
+                s.add("ON A SCRIPT", "x%d", e.magnitude * 2);
+                s.flag("PROCESS OR SCRIPT");
                 break;
-            case ItemEffect::Kind::ArmEvolveHold: s.flag("EVOLVE HELD"); break;
-            case ItemEffect::Kind::ClearUsbPort: s.flag("CLEARS USB"); break;
+            case ItemEffect::Kind::ArmEvolveHold: s.flag("STOPS EVOLVING"); break;
+            case ItemEffect::Kind::ClearUsbPort: s.flag("REMOVES ARMED USB"); break;
             case ItemEffect::Kind::ArmCombatShieldBuff:
                 s.add("DEATH SAVE", "%dMIN", e.magnitude);
                 break;
@@ -349,7 +356,33 @@ SpecRows specRows(const ItemDef& d) {
         }
     }
     if (d.combatHeal) s.add("HEAL", "%d", d.combatHeal);
-    if (d.preEncounterXp) s.add("XP", "%d", d.preEncounterXp);
+    if (d.preEncounterXp) {
+        s.flag("SKIPS NEXT WILD FIGHT");
+        s.add("XP", "%d", d.preEncounterXp);
+    }
+    // What an item with no pet lever is FOR. A description is flavour, so a row whose
+    // whole job is a hand-off (a container, a warp, a picker, a theme) states it here,
+    // read off the row's own fields rather than its id.
+    if (d.context == ItemDef::Context::LockoutOnly) s.flag("PAYS A LOCKOUT");
+    switch (d.walkWarp) {
+        case ItemDef::WalkWarp::None: break;
+        case ItemDef::WalkWarp::Shop: s.flag("WALK: WARP TO SHOP"); break;
+        case ItemDef::WalkWarp::SafeRest: s.flag("WALK: SAFE REST"); break;
+    }
+    switch (d.use) {
+        case ItemDef::Use::Consume:
+        case ItemDef::Use::DecryptEgg: break;
+        case ItemDef::Use::OpenContainer:
+            s.flag("OPEN IN VAULT");
+            if (d.cache.draws > 1) s.add("REWARDS", "%d", d.cache.draws);
+            if (d.cache.modChancePct > 0) s.add("MOD CHANCE", "%d%%", d.cache.modChancePct);
+            break;
+        case ItemDef::Use::Rollback: s.flag("RE-ROLL A STAT POINT"); break;
+        case ItemDef::Use::Repartition: s.flag("MOVE A STAT POINT"); break;
+        case ItemDef::Use::PlayCryptogram: s.flag("CRACK A QUOTE IN VAULT"); break;
+        case ItemDef::Use::GuaranteeDefrag: s.flag("MAINT: SURE DEFRAG"); break;
+    }
+    if (const ThemeDef* t = themeForChip(d.id)) s.add("THEME", "%s", t->name);
     return s.out;
 }
 

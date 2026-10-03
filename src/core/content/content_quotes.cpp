@@ -488,7 +488,7 @@ const char* const kQuotePrizeLadder[] = {
     // on a dish most operators cannot yet raise the condition for.
     "unlinkguine",
     // The second-order tail: each of these wants a dish out of the list above it.
-    "crostini",
+    "brusshetta",
     "kernel_panini",
     "payloaf",
     "vacuum_sealed_leftovers",
