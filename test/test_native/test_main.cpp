@@ -178,6 +178,9 @@ int g_failures = 0;
     RUN(test_sound_lockout_alert_and_reminder) \
     RUN(test_sound_failing_alert_repeats_then_pet_lost) \
     RUN(test_sound_evolution_jingle) \
+    RUN(test_sound_combat_cues) \
+    RUN(test_sound_arcade_stacker_cues) \
+    RUN(test_sound_isolation_crash_once) \
     RUN(test_cfg_tips_replay) \
     RUN(test_cfg_travel_confirm_asks_twice) \
     RUN(test_cfg_format_sd_confirm)         \

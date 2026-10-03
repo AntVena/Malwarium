@@ -299,6 +299,7 @@ void Game::startSimBattle() {
     combatTurnBeat_ = 0;
     nav_ = Nav::Combat;
     dirty_ = true;
+    playSound(Sound::CombatStart);
 }
 
 void Game::onCombat(const ButtonEvent& ev) {
@@ -334,6 +335,7 @@ void Game::onCombat(const ButtonEvent& ev) {
             // band never has a level to descend, so B commits there as it always did.
             if (combat_.enterOverrideBand()) return;
             combat_.commitOverride();
+            playSound(Sound::ExploitFire);
             // If a USE-ITEM was committed, Combat has already patched Health; the
             // Game now consumes the stack + applies the item's out-of-combat effect.
             if (const char* id = combat_.takeCommittedItem()) consumeCombatItem(id);
@@ -358,8 +360,12 @@ void Game::onCombat(const ButtonEvent& ev) {
     // mid-match would let a losing draw be replayed, which is the whole stake gone.
     // The way out of the arena is the bracket screen, before a match starts.
     const bool noExit = duel || combatCaller_ == CombatCaller::Tourney;
-    if (ev.button == Button::A) advanceCombatTurn();
-    else if (ev.button == Button::C && !noExit) combat_.flee();
+    if (ev.button == Button::A) {
+        advanceCombatTurn();
+    } else if (ev.button == Button::C && !noExit) {
+        combat_.flee();
+        playCombatTurnSound();   // a failed flee hands the rival a free swing
+    }
 }
 
 int Game::combatBeatsForTurn() const {
@@ -380,10 +386,25 @@ void Game::advanceCombatTurn() {
     combat_.step();
     combatTurnBeat_ = 0;
     combatHitBeat_ = 0;   // restart the impact-punch decay for drawCombat
+    playCombatTurnSound();
     // FX_CAMO deliberately takes nothing from here. The colours the pet is wearing are a
     // reading of its LIVE cast, eased every anim tick (tick(), camoAdvance) — so this
     // step changes them only by changing what the pet is holding, and the rival's turn
     // does not touch them at all.
+}
+
+void Game::playCombatTurnSound() {
+    switch (combat_.outcome()) {
+        case Combat::Outcome::Ongoing: break;
+        case Combat::Outcome::Fled: playSound(Sound::Fled); return;
+        default: playSound(Sound::Knockout); return;
+    }
+    if (combat_.lastWasStunned()) playSound(Sound::Stunned);
+    // Only a swing gets a hit cue: the passive ticks and wind-ups would make every turn
+    // beep, and a shielded or ransomed swing that moved no Health reads as a block.
+    else if (!combat_.lastWasStrike()) return;
+    else if (combat_.lastDamage() == 0 || combat_.lastRansomed()) playSound(Sound::Blocked);
+    else playSound(combat_.lastByPlayer() ? Sound::HitDealt : Sound::HitTaken);
 }
 
 int Game::xpForLevel(int level) const {
@@ -924,6 +945,7 @@ void Game::resolveFlee() {
     const bool escaped = static_cast<int>((rng_ >> 16) % 100) < kFleeChancePct;
     if (escaped) {
         std::snprintf(exploreFlavor_, sizeof(exploreFlavor_), "GOT AWAY");
+        playSound(Sound::Fled);
         returnToExplore();
     } else {
         // A failed flee forces the fight, enemy first (retreat isn't free).
@@ -961,6 +983,7 @@ void Game::startWildCombat(bool forceEnemyFirst) {
     combatTurnBeat_ = 0;
     nav_ = Nav::Combat;
     dirty_ = true;
+    playSound(Sound::CombatStart);
 }
 
 }  // namespace mal

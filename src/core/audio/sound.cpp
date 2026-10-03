@@ -4,9 +4,10 @@ namespace mal {
 
 namespace {
 
+constexpr uint16_t A3 = 220;
 constexpr uint16_t C4 = 262, D4 = 294, E4 = 330, F4 = 349, G4 = 392, A4 = 440;
-constexpr uint16_t C5 = 523, E5 = 659, G5 = 784;
-constexpr uint16_t C6 = 1047, E6 = 1319, G6 = 1568;
+constexpr uint16_t C5 = 523, D5 = 587, E5 = 659, F5 = 698, G5 = 784, A5 = 880;
+constexpr uint16_t C6 = 1047, D6 = 1175, E6 = 1319, G6 = 1568;
 constexpr uint16_t A6 = 1760, C7 = 2093, E7 = 2637;
 constexpr uint16_t REST = 0;
 
@@ -32,6 +33,29 @@ constexpr SoundNote kPetLost[] = {{C5, 200}, {A4, 200}, {F4, 200}, {D4, 500}};
 
 constexpr SoundNote kPreview[] = {{C6, 90}, {G6, 120}};
 
+// A combat turn lands every kHeartbeatMs at the fastest frenzy pace, so the per-turn
+// cues stay well under that or the next turn's cue cuts them off mid-note.
+constexpr SoundNote kCombatStart[] = {{E5, 40}, {REST, 20}, {E5, 40}, {A5, 110}};
+constexpr SoundNote kBossStart[]   = {{A3, 90}, {REST, 30}, {A3, 90}, {REST, 30},
+                                      {E4, 90}, {A4, 200}};
+constexpr SoundNote kHitDealt[]    = {{G6, 25}, {C6, 40}};
+constexpr SoundNote kHitTaken[]    = {{D4, 30}, {A3, 60}};
+constexpr SoundNote kBlocked[]     = {{E7, 15}, {REST, 15}, {E7, 15}};
+constexpr SoundNote kStunned[]     = {{A5, 30}, {F5, 30}, {A5, 30}, {F5, 30}};
+constexpr SoundNote kExploitFire[] = {{C6, 25}, {E6, 25}, {G6, 25}, {C7, 70}};
+constexpr SoundNote kKnockout[]    = {{G5, 40}, {D5, 40}, {A4, 40}, {D4, 120}};
+constexpr SoundNote kFled[]        = {{G5, 35}, {E5, 35}, {C5, 35}, {G4, 60}};
+
+constexpr SoundNote kArcadeStart[] = {{G5, 40}, {REST, 20}, {G5, 40}, {D6, 100}};
+constexpr SoundNote kPoint[]       = {{C6, 20}, {G6, 35}};
+constexpr SoundNote kMiss[]        = {{E5, 30}, {C5, 50}};
+constexpr SoundNote kProbe[]       = {{D6, 30}, {REST, 20}, {D6, 30}};
+constexpr SoundNote kCrash[]       = {{C5, 40}, {G4, 40}, {D4, 40}, {A3, 140}};
+constexpr SoundNote kClear[]       = {{C6, 50}, {E6, 50}, {G6, 50}, {C7, 50},
+                                      {G6, 50}, {C7, 160}};
+constexpr SoundNote kNewBest[]     = {{G5, 60}, {C6, 60}, {E6, 60}, {G6, 60},
+                                      {REST, 40}, {E6, 60}, {G6, 220}};
+
 #define MAL_SOUND_ROW(id, tier, notes) \
     {Sound::id, SoundTier::tier, #id, notes, static_cast<int>(sizeof(notes) / sizeof(notes[0]))}
 
@@ -53,6 +77,22 @@ constexpr SoundDef kSounds[] = {
     MAL_SOUND_ROW(Failing, Alert, kFailing),
     MAL_SOUND_ROW(PetLost, Alert, kPetLost),
     MAL_SOUND_ROW(Preview, Ui, kPreview),
+    MAL_SOUND_ROW(CombatStart, Event, kCombatStart),
+    MAL_SOUND_ROW(BossStart, Event, kBossStart),
+    MAL_SOUND_ROW(HitDealt, Event, kHitDealt),
+    MAL_SOUND_ROW(HitTaken, Event, kHitTaken),
+    MAL_SOUND_ROW(Blocked, Event, kBlocked),
+    MAL_SOUND_ROW(Stunned, Event, kStunned),
+    MAL_SOUND_ROW(ExploitFire, Event, kExploitFire),
+    MAL_SOUND_ROW(Knockout, Event, kKnockout),
+    MAL_SOUND_ROW(Fled, Event, kFled),
+    MAL_SOUND_ROW(ArcadeStart, Event, kArcadeStart),
+    MAL_SOUND_ROW(Point, Event, kPoint),
+    MAL_SOUND_ROW(Miss, Event, kMiss),
+    MAL_SOUND_ROW(Probe, Event, kProbe),
+    MAL_SOUND_ROW(Crash, Event, kCrash),
+    MAL_SOUND_ROW(Clear, Event, kClear),
+    MAL_SOUND_ROW(NewBest, Event, kNewBest),
 };
 
 #undef MAL_SOUND_ROW

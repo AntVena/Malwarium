@@ -2709,6 +2709,9 @@ private:
     // heartbeat auto-pace (game_core.cpp) and the A fast-forward (onCombat) so
     // skipping a beat doesn't desync the streak read.
     void advanceCombatTurn();
+    // The cue for whatever the last step/flee/commit resolved; shared by every path
+    // that can move a fight, so a skipped beat sounds the same as an auto-paced one.
+    void playCombatTurnSound();
     int combatBeatsForTurn() const;                 // heartbeats to wait before the next step()
     void applyCombatResult();                       // rewards (win) / +Frag (live loss)
     // Post-fight bookkeeping for a spent Backup Drive: burn its remaining window and

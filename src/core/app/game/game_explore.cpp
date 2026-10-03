@@ -860,6 +860,7 @@ void Game::startBossRound(int carryHealth) {
     combatTurnBeat_ = 0;
     nav_ = Nav::Combat;
     dirty_ = true;
+    playSound(Sound::BossStart);
 }
 
 void Game::finishBossRound() {

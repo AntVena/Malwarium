@@ -747,6 +747,8 @@ public:
     // this rather than lastDamage(): a shielded swing deals 0 and is still an attack, and a
     // ransom bill deals plenty and is not one.
     bool lastWasStrike() const { return lastWasStrike_; }
+    // The last resolved turn was a stunned fighter's skipped one (lockTurns).
+    bool lastWasStunned() const { return lastWasStunned_; }
 
     // How many strikes this fight has resolved, either side. The combat screen walks its
     // strike mark's pair off this (ui/combat_screen.cpp) so no two swings in a row draw the
@@ -957,6 +959,7 @@ private:
     bool lastWasCharge_ = false;
     bool lastRansomed_ = false;
     bool lastWasStrike_ = false;
+    bool lastWasStunned_ = false;
     int strikeCount_ = 0;
     WormKill lastWormKill_;
     Seizure lastSeizure_;

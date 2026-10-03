@@ -176,6 +176,7 @@ void Game::eggPickCommit() {
         eggPickResolved_ = true;
         eggPickWon_ = true;   // still in span at the last round = the live egg survived
     }
+    playSound(!eggPickResolved_ ? Sound::Point : eggPickWon_ ? Sound::Clear : Sound::Crash);
     dirty_ = true;
 }
 

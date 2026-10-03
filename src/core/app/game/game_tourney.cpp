@@ -147,6 +147,7 @@ void Game::startTourneyMatch() {
     combatStatsPage_ = 0;
     nav_ = Nav::Combat;
     dirty_ = true;
+    playSound(Sound::CombatStart);
 }
 
 void Game::finishTourneyMatch() {

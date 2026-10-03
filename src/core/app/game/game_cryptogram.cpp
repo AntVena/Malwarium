@@ -170,7 +170,11 @@ void Game::onCryptogram(const ButtonEvent& ev) {
         cHeld_ = true;
         cDownMs_ = nowMs_;
     } else if (ev.button == Button::B) {
+        const int opened = cryptogram_.score();
         cryptogram_.accept();
+        if (cryptogram_.solved()) playSound(Sound::Clear);
+        else if (!cryptogram_.running()) playSound(Sound::Crash);
+        else if (cryptogram_.score() > opened) playSound(Sound::Point);
     }
     if (!cryptogram_.running()) settleCryptogram();
     dirty_ = true;

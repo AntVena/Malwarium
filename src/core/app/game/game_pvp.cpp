@@ -435,6 +435,7 @@ void Game::startPvpBattle(uint32_t seed) {
     nav_ = Nav::Combat;
     sendPvpPending();      // host: the START; guest-that-answered: its fighter, again
     dirty_ = true;
+    playSound(Sound::CombatStart);
 }
 
 void Game::finishPvpBattle() {

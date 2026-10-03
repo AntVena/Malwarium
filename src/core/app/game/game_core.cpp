@@ -464,7 +464,13 @@ bool Game::tickAnimClocks(uint32_t nowMs) {
         if (nowMs - lastIsolationStepMs_ >=
             static_cast<uint32_t>(arcadeStepMs(kIsolationStepMs))) {
             lastIsolationStepMs_ = nowMs;
-            isolation_.step();
+            if (isolation_.running()) {   // a parked board must not replay its verdict
+                const int ate = isolation_.dots();
+                isolation_.step();
+                if (isolation_.clean()) playSound(Sound::Clear);
+                else if (!isolation_.running()) playSound(Sound::Crash);
+                else if (isolation_.dots() > ate) playSound(Sound::Point);
+            }
             changed = true;
         }
     } else {
@@ -479,7 +485,11 @@ bool Game::tickAnimClocks(uint32_t nowMs) {
     // so the model always sees the time that actually passed.
     if (nav_ == Nav::Chroma && !gameBriefOpen_ && chroma_.running()) {
         if (nowMs - lastChromaMs_ >= static_cast<uint32_t>(kFxAnimMs)) {
+            const int passed = chroma_.passes();
             chroma_.tick(nowMs - lastChromaMs_);
+            if (chroma_.clean()) playSound(Sound::Clear);
+            else if (!chroma_.running()) playSound(Sound::Crash);
+            else if (chroma_.passes() > passed) playSound(Sound::Point);
             lastChromaMs_ = nowMs;
             changed = true;
         }

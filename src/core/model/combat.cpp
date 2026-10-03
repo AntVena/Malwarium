@@ -89,6 +89,7 @@ void Combat::begin(const Combatant& player, const Combatant& enemy, Stakes stake
     lastWasCharge_ = false;
     lastRansomed_ = false;
     lastWasStrike_ = false;
+    lastWasStunned_ = false;
     strikeCount_ = 0;
     lastWormKill_ = {};
     lastSeizure_ = {};
@@ -102,6 +103,7 @@ void Combat::setLast(const char* name, int dmg, bool byPlayer, bool charge,
     lastWasCharge_ = charge;
     lastRansomed_ = ransomed;
     lastWasStrike_ = strike;
+    lastWasStunned_ = false;
     // Every resolved turn funnels through here, so the strike count lives here rather
     // than at each call site that can swing.
     if (strike) strikeCount_++;
@@ -1260,6 +1262,7 @@ void Combat::resolveTurn(Combatant& actor, Combatant& target, bool byPlayer) {
     if (actor.lockedTurnsLeft > 0) {
         actor.lockedTurnsLeft--;
         setLast("STUN LOCK", 0, byPlayer, /*charge=*/true);
+        lastWasStunned_ = true;
         return;
     }
     // The scramble is measured in the victim's OWN turns, like the stun above — but it

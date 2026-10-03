@@ -39,7 +39,13 @@ void Game::onDecryption(const ButtonEvent& ev) {
     // row), C steps back and re-opens the slot it lands on. C is not "cancel" here,
     // which is the deviation the hint band spells out.
     if (ev.button == Button::A) decryption_.cycleColour();
-    else if (ev.button == Button::B) decryption_.lockIn();
+    else if (ev.button == Button::B) {
+        const int rows = decryption_.played();
+        decryption_.lockIn();
+        if (decryption_.cracked()) playSound(Sound::Clear);
+        else if (!decryption_.running()) playSound(Sound::Crash);
+        else if (decryption_.played() > rows) playSound(Sound::Probe);
+    }
     else if (ev.button == Button::C) decryption_.stepBack();
     dirty_ = true;
 }

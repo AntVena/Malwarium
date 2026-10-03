@@ -213,3 +213,95 @@ void test_cfg_sound_and_volume_persist() {
     CHECK(clamped.soundMode() == SoundMode::Off);
     CHECK(clamped.volume() == kVolumeLevels - 1);
 }
+
+// Every fight opens on a cue, each swing sounds by who it hurt, and the turn that ends
+// it is the knockout alone — the jingle waits for the result to be dismissed.
+void test_sound_combat_cues() {
+    RecordingSound out;
+    Game g{StartMode::Hatched, "paypup"};
+    g.setSoundOut(&out);
+    g.setSoundMode(SoundMode::All);
+    enterSimBattle(g);
+    CHECK(g.nav() == Game::Nav::Combat);
+    CHECK(out.count(Sound::CombatStart) == 1);
+
+    int swings = 0;
+    for (int i = 0; i < 400 && g.combat().outcome() == Combat::Outcome::Ongoing; ++i) {
+        g.onButton(press(Button::A));
+        g.onButton(lift(Button::A));
+        if (g.combat().outcome() == Combat::Outcome::Ongoing && g.combat().lastWasStrike())
+            ++swings;
+    }
+    CHECK(g.combat().outcome() != Combat::Outcome::Ongoing);
+    CHECK(swings > 0);
+    CHECK(out.count(Sound::HitDealt) + out.count(Sound::HitTaken) +
+          out.count(Sound::Blocked) >= swings);
+    CHECK(out.count(Sound::Knockout) == 1);
+    CHECK(out.cues.back().sound == Sound::Knockout);
+    CHECK(out.count(Sound::BattleWin) + out.count(Sound::BattleLose) == 0);
+    g.onButton(press(Button::B));
+    CHECK(out.count(Sound::BattleWin) + out.count(Sound::BattleLose) == 1);
+
+    // A practice fight's C quits outright, and that sounds as a retreat, not a KO.
+    out.cues.clear();
+    g.debugStartCombat(/*live=*/false);
+    g.onButton(press(Button::C));
+    CHECK(g.combat().outcome() == Combat::Outcome::Fled);
+    CHECK(out.count(Sound::Fled) == 1 && out.count(Sound::Knockout) == 0);
+
+    // The per-hit cues are Event tier: ALERTS ONLY keeps a fight silent.
+    RecordingSound quiet;
+    Game h{StartMode::Hatched, "paypup"};
+    h.setSoundOut(&quiet);
+    h.setSoundMode(SoundMode::AlertsOnly);
+    h.debugStartCombat(/*live=*/false);
+    while (h.combat().outcome() == Combat::Outcome::Ongoing) h.onButton(press(Button::A));
+    CHECK(quiet.cues.empty());
+}
+
+// The cabinet sounds the start, every clean lock, and the cleared board; the till plays
+// the high-score fanfare in place of the win jingle when the run set a record.
+void test_sound_arcade_stacker_cues() {
+    RecordingSound out;
+    Game g{StartMode::Hatched};
+    g.setSoundOut(&out);
+    g.setSoundMode(SoundMode::All);
+    const int row = arcadeGameIndexById("stacker");
+    enterArcadeCabinet(g, row, ArcadeDifficulty::Medium);
+    out.cues.clear();
+    g.onButton(press(Button::B));                 // START
+    CHECK(out.count(Sound::ArcadeStart) == 1);
+    CHECK(playStackerBoard(g, [](int) { return 0; }));
+    CHECK(g.stacker().won());
+    CHECK(out.count(Sound::Point) == kStackerRows - 1);
+    CHECK(out.count(Sound::Miss) == 0);
+    CHECK(out.count(Sound::Clear) == 1);
+    g.onButton(press(Button::B));                 // park -> till
+    CHECK(g.nav() == Game::Nav::ArcadeResult);
+    CHECK(out.cues.back().sound == Sound::NewBest);
+    CHECK(out.count(Sound::GameWin) == 0);
+
+    // An overhang shaves the hand: such a lock is a miss, not a point.
+    enterArcadeCabinet(g, row, ArcadeDifficulty::Medium);
+    g.onButton(press(Button::B));
+    out.cues.clear();
+    CHECK(playStackerBoard(g, [](int r) { return r == 1 ? 1 : 0; }));
+    CHECK(out.count(Sound::Miss) >= 1);
+}
+
+// The worm's run ends on exactly one crash cue, however long the board then sits parked.
+void test_sound_isolation_crash_once() {
+    RecordingSound out;
+    Game g{StartMode::Hatched};
+    g.setSoundOut(&out);
+    g.setSoundMode(SoundMode::All);
+    enterArcadeCabinet(g, arcadeGameIndexById("isolation"), ArcadeDifficulty::Medium);
+    g.onButton(press(Button::B));
+    CHECK(g.nav() == Game::Nav::Isolation);
+    uint32_t t = 0;
+    for (int i = 0; i < 400 && g.isolation().running(); ++i) g.tick(t += 400);
+    CHECK(!g.isolation().running());
+    for (int i = 0; i < 10; ++i) g.tick(t += 400);
+    CHECK(out.count(Sound::Crash) == 1);
+    CHECK(out.count(Sound::Clear) == 0);
+}

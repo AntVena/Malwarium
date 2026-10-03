@@ -92,7 +92,11 @@ void Game::onStacker(const ButtonEvent& ev) {
         return;
     }
     if (ev.button == Button::B) {
+        const int hand = stacker_.width();
         stacker_.drop();
+        if (stacker_.won()) playSound(Sound::Clear);
+        else if (!stacker_.running()) playSound(Sound::Crash);
+        else playSound(stacker_.width() < hand ? Sound::Miss : Sound::Point);
     } else if (ev.button == Button::C) {
         // Stop early and bank the board. Since a run that ends in mid-air keeps whatever
         // it locked, quitting has to keep it too — otherwise C would be a button that

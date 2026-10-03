@@ -109,8 +109,8 @@ rather than the readout, so a player who has never opened STAT still knows where
 **CFG → DEVICE → CARE ALERTS** switches the marks off; it and UI MODE are device-level
 preferences in the save (v67), kept through a reboot, a pet's death and an update.
 **SOUND** and **VOLUME** beside them (v68) are the same kind: SOUND is OFF until the
-operator picks ALL (key clicks, jingles, care alerts) or ALERTS ONLY (the Lockout and
-FAILING beeps alone). The vocabulary is `src/core/audio/sound.h`; a care alert also wakes
+operator picks ALL (key clicks, jingles, combat hits, arcade scoring cues, care alerts) or
+ALERTS ONLY (the Lockout and FAILING beeps alone). The vocabulary is `src/core/audio/sound.h`; a care alert also wakes
 the panel on the board (`src/platform/esp32/audio_esp32.h`).
 
 ```
