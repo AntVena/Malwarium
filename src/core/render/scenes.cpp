@@ -21,6 +21,7 @@ constexpr SceneRow kScenes[] = {
     {"", nullptr},                                          // None
     {"citrus_circuit", &drawCitrusCircuitScene},
     {"pirate_bayou", &drawPirateBayouScene},
+    {"net_sea_crossing", &drawNetSeaCrossingScene},
     {"castle_rapidscare", &drawCastleRapidscareScene},
     {"silk_lode", &drawSilkLodeScene},
     {"grid_horizon", &drawGridHorizonScene},

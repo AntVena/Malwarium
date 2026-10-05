@@ -141,7 +141,7 @@ const AreaDef kAreaNetSeaCrossing = {
     /*badge=*/"NET-SEA",
     "BUNDLE BREAKER",
     "ICON_SECTOR_NET_SEA_CROSSING",
-    SceneId::None,   // the crossing's backdrop is not authored yet
+    SceneId::NetSeaCrossing,
     {"UNINSTALL UNDERTOW", "POPUP WHIRLPOOL", "TRACKER TRENCH", "CODEC REEF",
      "SANDBOX BEACH"},
     // Null Route — "reroutes the next hit to nowhere" — rides with the pop-up boss, which

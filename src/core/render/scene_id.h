@@ -27,6 +27,7 @@ enum class SceneId : uint8_t {
     // The explore ladder, in ladder order. Named by AreaDef::scene.
     CitrusCircuit,
     PirateBayou,
+    NetSeaCrossing,
     CastleRapidscare,
     SilkLode,
     // Prize backdrops, which no area names — the half of the roster that is the reason
