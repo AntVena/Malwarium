@@ -8309,6 +8309,202 @@ window.PEDIA_DATA = {
       "trigger": "Clear 100 disks by hand in the DEFRAG minigame.",
       "icon": "assets/icons/ICON_ACH_STACK_100.png",
       "goal": 100
+    },
+    {
+      "key": "ARCADE_500",
+      "name": "Burn-In",
+      "trigger": "Finish 500 runs in the GAMES arcade.",
+      "icon": "assets/icons/ICON_ACH_ARCADE_500.png",
+      "goal": 500
+    },
+    {
+      "key": "ARCADE_1000",
+      "name": "Uptime",
+      "trigger": "Finish 1000 runs in the GAMES arcade.",
+      "icon": "assets/icons/ICON_ACH_ARCADE_1000.png",
+      "goal": 1000
+    },
+    {
+      "key": "ARCADE_WINS_50",
+      "name": "Leaderboard",
+      "trigger": "Win 50 arcade runs.",
+      "icon": "assets/icons/ICON_ACH_ARCADE_WINS_50.png",
+      "goal": 50
+    },
+    {
+      "key": "ARCADE_WINS_250",
+      "name": "Hall of Fame",
+      "trigger": "Win 250 arcade runs.",
+      "icon": "assets/icons/ICON_ACH_ARCADE_WINS_250.png",
+      "goal": 250
+    },
+    {
+      "key": "ARCADE_WINS_1000",
+      "name": "Kill Screen",
+      "trigger": "Win 1000 arcade runs.",
+      "icon": "assets/icons/ICON_ACH_ARCADE_WINS_1000.png",
+      "goal": 1000
+    },
+    {
+      "key": "SUNK_COST_100",
+      "name": "Sunk Cost Fallacy",
+      "trigger": "Come away from 100 arcade runs without a win.",
+      "icon": "assets/icons/ICON_ACH_SUNK_COST_100.png",
+      "goal": 100
+    },
+    {
+      "key": "SUNK_COST_500",
+      "name": "Double Down",
+      "trigger": "Come away from 500 arcade runs without a win.",
+      "icon": "assets/icons/ICON_ACH_SUNK_COST_500.png",
+      "goal": 500
+    },
+    {
+      "key": "CAB_CLUTCH_10",
+      "name": "Catch and Release",
+      "trigger": "Clear the SPOT THE PHISH cabinet 10 times in the GAMES arcade.",
+      "icon": "assets/icons/ICON_ACH_CAB_CLUTCH_10.png",
+      "goal": 10
+    },
+    {
+      "key": "CAB_CLUTCH_50",
+      "name": "Deep Sea Angler",
+      "trigger": "Clear the SPOT THE PHISH cabinet 50 times in the GAMES arcade.",
+      "icon": "assets/icons/ICON_ACH_CAB_CLUTCH_50.png",
+      "goal": 50
+    },
+    {
+      "key": "CAB_CLUTCH_250",
+      "name": "Phish Whisperer",
+      "trigger": "Clear the SPOT THE PHISH cabinet 250 times in the GAMES arcade.",
+      "icon": "assets/icons/ICON_ACH_CAB_CLUTCH_250.png",
+      "goal": 250
+    },
+    {
+      "key": "CAB_ISOLATION_10",
+      "name": "Quarantine",
+      "trigger": "Clear the ISOLATION PROTOCOL cabinet 10 times in the GAMES arcade.",
+      "icon": "assets/icons/ICON_ACH_CAB_ISOLATION_10.png",
+      "goal": 10
+    },
+    {
+      "key": "CAB_ISOLATION_50",
+      "name": "Hermetic Seal",
+      "trigger": "Clear the ISOLATION PROTOCOL cabinet 50 times in the GAMES arcade.",
+      "icon": "assets/icons/ICON_ACH_CAB_ISOLATION_50.png",
+      "goal": 50
+    },
+    {
+      "key": "CAB_ISOLATION_250",
+      "name": "Zero Escapes",
+      "trigger": "Clear the ISOLATION PROTOCOL cabinet 250 times in the GAMES arcade.",
+      "icon": "assets/icons/ICON_ACH_CAB_ISOLATION_250.png",
+      "goal": 250
+    },
+    {
+      "key": "CAB_DECRYPTION_10",
+      "name": "Codebreaker",
+      "trigger": "Clear the DISK DECRYPTION cabinet 10 times in the GAMES arcade.",
+      "icon": "assets/icons/ICON_ACH_CAB_DECRYPTION_10.png",
+      "goal": 10
+    },
+    {
+      "key": "CAB_DECRYPTION_50",
+      "name": "Brute Forcer",
+      "trigger": "Clear the DISK DECRYPTION cabinet 50 times in the GAMES arcade.",
+      "icon": "assets/icons/ICON_ACH_CAB_DECRYPTION_50.png",
+      "goal": 50
+    },
+    {
+      "key": "CAB_DECRYPTION_250",
+      "name": "Rainbow Table",
+      "trigger": "Clear the DISK DECRYPTION cabinet 250 times in the GAMES arcade.",
+      "icon": "assets/icons/ICON_ACH_CAB_DECRYPTION_250.png",
+      "goal": 250
+    },
+    {
+      "key": "CAB_CRYPTOGRAM_10",
+      "name": "Substitution",
+      "trigger": "Clear the DECRYPTOGRAM cabinet 10 times in the GAMES arcade.",
+      "icon": "assets/icons/ICON_ACH_CAB_CRYPTOGRAM_10.png",
+      "goal": 10
+    },
+    {
+      "key": "CAB_CRYPTOGRAM_50",
+      "name": "Frequency Analysis",
+      "trigger": "Clear the DECRYPTOGRAM cabinet 50 times in the GAMES arcade.",
+      "icon": "assets/icons/ICON_ACH_CAB_CRYPTOGRAM_50.png",
+      "goal": 50
+    },
+    {
+      "key": "CAB_CRYPTOGRAM_250",
+      "name": "The Bombe",
+      "trigger": "Clear the DECRYPTOGRAM cabinet 250 times in the GAMES arcade.",
+      "icon": "assets/icons/ICON_ACH_CAB_CRYPTOGRAM_250.png",
+      "goal": 250
+    },
+    {
+      "key": "CAB_CHROMA_10",
+      "name": "Colour Theory",
+      "trigger": "Clear the CHROMATOPHORE cabinet 10 times in the GAMES arcade.",
+      "icon": "assets/icons/ICON_ACH_CAB_CHROMA_10.png",
+      "goal": 10
+    },
+    {
+      "key": "CAB_CHROMA_50",
+      "name": "Full Spectrum",
+      "trigger": "Clear the CHROMATOPHORE cabinet 50 times in the GAMES arcade.",
+      "icon": "assets/icons/ICON_ACH_CAB_CHROMA_50.png",
+      "goal": 50
+    },
+    {
+      "key": "CAB_CHROMA_250",
+      "name": "True Colours",
+      "trigger": "Clear the CHROMATOPHORE cabinet 250 times in the GAMES arcade.",
+      "icon": "assets/icons/ICON_ACH_CAB_CHROMA_250.png",
+      "goal": 250
+    },
+    {
+      "key": "CAB_STACKER_10",
+      "name": "Block Party",
+      "trigger": "Clear the DEFRAG STACKER cabinet 10 times in the GAMES arcade.",
+      "icon": "assets/icons/ICON_ACH_CAB_STACKER_10.png",
+      "goal": 10
+    },
+    {
+      "key": "CAB_STACKER_50",
+      "name": "Clean Sweep",
+      "trigger": "Clear the DEFRAG STACKER cabinet 50 times in the GAMES arcade.",
+      "icon": "assets/icons/ICON_ACH_CAB_STACKER_50.png",
+      "goal": 50
+    },
+    {
+      "key": "CAB_STACKER_250",
+      "name": "Tower Architect",
+      "trigger": "Clear the DEFRAG STACKER cabinet 250 times in the GAMES arcade.",
+      "icon": "assets/icons/ICON_ACH_CAB_STACKER_250.png",
+      "goal": 250
+    },
+    {
+      "key": "SERVICE_500",
+      "name": "Executive Chef",
+      "trigger": "Cook 500 dishes at the MERGE HUB.",
+      "icon": "assets/icons/ICON_ACH_SERVICE_500.png",
+      "goal": 500
+    },
+    {
+      "key": "STACK_250",
+      "name": "Solid Gold",
+      "trigger": "Clear 250 disks by hand in the DEFRAG minigame.",
+      "icon": "assets/icons/ICON_ACH_STACK_250.png",
+      "goal": 250
+    },
+    {
+      "key": "DOCK_100",
+      "name": "Dock Admiral",
+      "trigger": "Take 100 ROCK THE DOCK brackets.",
+      "icon": "assets/icons/ICON_ACH_DOCK_100.png",
+      "goal": 100
     }
   ]
 };

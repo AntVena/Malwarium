@@ -801,11 +801,13 @@ GLYPHS = [
     ("ICON_ACH_TITLES_ALL", "title", bar()),
 
     # --- The five cabinets that had no row of their own ----------------------
-    ("ICON_ACH_CAB_CLUTCH", "cab_clutch", plain()),
-    ("ICON_ACH_CAB_ISOLATION", "cab_isolation", plain()),
-    ("ICON_ACH_CAB_DECRYPTION", "cab_decryption", plain()),
-    ("ICON_ACH_CAB_CRYPTOGRAM", "cab_cryptogram", plain()),
-    ("ICON_ACH_CAB_CHROMA", "cab_chroma", plain()),
+    # Each is now the first rung of its cabinet's own ladder (the long tail, below), so
+    # it wears the one mark the rungs above it count up from.
+    ("ICON_ACH_CAB_CLUTCH", "cab_clutch", tally(1)),
+    ("ICON_ACH_CAB_ISOLATION", "cab_isolation", tally(1)),
+    ("ICON_ACH_CAB_DECRYPTION", "cab_decryption", tally(1)),
+    ("ICON_ACH_CAB_CRYPTOGRAM", "cab_cryptogram", tally(1)),
+    ("ICON_ACH_CAB_CHROMA", "cab_chroma", tally(1)),
 
     # --- Rungs added to ladders that already shipped -------------------------
     # These INHERIT rather than redraw: the motif belongs to the ladder, so a new rung
@@ -886,6 +888,43 @@ GLYPHS = [
 
     ("ICON_ACH_TWINS_3", "clones", tally(1)),
     ("ICON_ACH_TWINS_8", "clones", tally(2)),
+    # --- The arcade's long tail ----------------------------------------------
+    # Rungs above ladders that stopped where a casual player stops. Every one INHERITS
+    # its ladder's motif. The three single rows that became the foot of a ladder —
+    # ARCADE_WINS_10, SUNK_COST, TOWER_OF_FRAGGLE — take their own motif back with the
+    # one mark a first rung wears, so the rungs above them count up from it.
+    ("ICON_ACH_ARCADE_500", inherit("ICON_ACH_ARCADE_100"), tally(4)),
+    ("ICON_ACH_ARCADE_1000", inherit("ICON_ACH_ARCADE_100"), tally(5)),
+    ("ICON_ACH_ARCADE_WINS_10", inherit("ICON_ACH_ARCADE_WINS_10"), tally(1)),
+    ("ICON_ACH_ARCADE_WINS_50", inherit("ICON_ACH_ARCADE_WINS_10"), tally(2)),
+    ("ICON_ACH_ARCADE_WINS_250", inherit("ICON_ACH_ARCADE_WINS_10"), tally(3)),
+    ("ICON_ACH_ARCADE_WINS_1000", inherit("ICON_ACH_ARCADE_WINS_10"), tally(4)),
+    ("ICON_ACH_SUNK_COST", inherit("ICON_ACH_SUNK_COST"), tally(1)),
+    ("ICON_ACH_SUNK_COST_100", inherit("ICON_ACH_SUNK_COST"), tally(2)),
+    ("ICON_ACH_SUNK_COST_500", inherit("ICON_ACH_SUNK_COST"), tally(3)),
+    ("ICON_ACH_TOWER_OF_FRAGGLE", inherit("ICON_ACH_TOWER_OF_FRAGGLE"), tally(1)),
+    ("ICON_ACH_CAB_CLUTCH_10", "cab_clutch", tally(2)),
+    ("ICON_ACH_CAB_CLUTCH_50", "cab_clutch", tally(3)),
+    ("ICON_ACH_CAB_CLUTCH_250", "cab_clutch", tally(4)),
+    ("ICON_ACH_CAB_ISOLATION_10", "cab_isolation", tally(2)),
+    ("ICON_ACH_CAB_ISOLATION_50", "cab_isolation", tally(3)),
+    ("ICON_ACH_CAB_ISOLATION_250", "cab_isolation", tally(4)),
+    ("ICON_ACH_CAB_DECRYPTION_10", "cab_decryption", tally(2)),
+    ("ICON_ACH_CAB_DECRYPTION_50", "cab_decryption", tally(3)),
+    ("ICON_ACH_CAB_DECRYPTION_250", "cab_decryption", tally(4)),
+    ("ICON_ACH_CAB_CRYPTOGRAM_10", "cab_cryptogram", tally(2)),
+    ("ICON_ACH_CAB_CRYPTOGRAM_50", "cab_cryptogram", tally(3)),
+    ("ICON_ACH_CAB_CRYPTOGRAM_250", "cab_cryptogram", tally(4)),
+    ("ICON_ACH_CAB_CHROMA_10", "cab_chroma", tally(2)),
+    ("ICON_ACH_CAB_CHROMA_50", "cab_chroma", tally(3)),
+    ("ICON_ACH_CAB_CHROMA_250", "cab_chroma", tally(4)),
+    ("ICON_ACH_CAB_STACKER_10", inherit("ICON_ACH_TOWER_OF_FRAGGLE"), tally(2)),
+    ("ICON_ACH_CAB_STACKER_50", inherit("ICON_ACH_TOWER_OF_FRAGGLE"), tally(3)),
+    ("ICON_ACH_CAB_STACKER_250", inherit("ICON_ACH_TOWER_OF_FRAGGLE"), tally(4)),
+    # ...and the other ladders a habit walks off the top of.
+    ("ICON_ACH_SERVICE_500", "stove", tally(4)),
+    ("ICON_ACH_STACK_250", inherit("ICON_ACH_STACK_50"), tally(5)),
+    ("ICON_ACH_DOCK_100", "dock", tally(4)),
 ]
 
 
