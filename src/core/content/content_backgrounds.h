@@ -63,7 +63,7 @@ struct BackgroundDef {
 
 // Listed in the order an operator is likely to meet them: the two they start with, the
 // four a raised creature brings, the six an area pays out, the arena's two, then the
-// seven an achievement does.
+// eight an achievement does.
 inline constexpr BackgroundDef kBackgrounds[] = {
     {SceneId::ServerYard, 1, "THE YARD", "YOURS FROM THE START",
      BackgroundSource::Start},
@@ -128,6 +128,11 @@ inline constexpr BackgroundDef kBackgrounds[] = {
     // this draws is where the crawl's portal stands, and getting to it means the map.
     {SceneId::ZeroDayShrine, 19, "ZERO DAY SHRINE", "RUN THE WHOLE NET",
      BackgroundSource::Achieve, /*rung=*/0, "AREAS_ALL"},
+    // The dive's own shaft, paid by the depth ladder's second rung: the first already
+    // opens an egg line, and this one is the depth at which the dive stops being a
+    // farm and starts being somewhere you have been.
+    {SceneId::DeepWebDive, 22, "THE DEEPWEB DIVE", "DIVE DEEP INTO THE DEEPWEB",
+     BackgroundSource::Achieve, /*rung=*/0, "DEEPWEB_DEPTH_64"},
 };
 inline constexpr int kBackgroundCount =
     sizeof(kBackgrounds) / sizeof(kBackgrounds[0]);

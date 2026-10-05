@@ -31,6 +31,9 @@ enum class SceneId : uint8_t {
     NapstorrentMoors,
     CastleRapidscare,
     SilkLode,
+    // The endless dive, which is not an AreaDef and so names its place from the stage
+    // itself (Game::stageScene).
+    DeepWebDive,
     // Prize backdrops, which no area names — the half of the roster that is the reason
     // an id cannot hang off AreaDef.
     GridHorizon,

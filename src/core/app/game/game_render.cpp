@@ -160,9 +160,12 @@ SceneId Game::stageScene() const {
         const SceneId s = area(exploreSector_).scene;
         if (s != SceneId::None) return s;
     }
-    // Everything else — a duel, an arcade bout, the endless dive, an area whose place
-    // is not authored yet — is fought where the pet lives, chosen background and all. A
-    // fight always has a floor and it may as well have a horizon.
+    // The dive is not an area and has no AreaDef to name its place on, but it is still
+    // somewhere — the shaft — and the walk is as much a fact there as anywhere.
+    if (inDeepWebDive()) return SceneId::DeepWebDive;
+    // Everything else — a duel, an arcade bout, the crawl, an area whose place is not
+    // authored yet — is fought where the pet lives, chosen background and all. A fight
+    // always has a floor and it may as well have a horizon.
     //
     // The area WINS over the operator's pick on purpose. A background is an opinion
     // about home; an area is a fact about where the walk is, and a screen that let a

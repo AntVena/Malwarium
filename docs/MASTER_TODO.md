@@ -303,21 +303,27 @@ which is why the id could never hang off `AreaDef` alone. The whole contract is 
 `core/render/RENDER_PIPELINE.md`, and `tools/dump_frame.cpp`'s `scene:<name> floor:<row>` is how
 you look at one.
 
-- **The two places still unauthored.** One for the walk — DeepWeb Dive (no horizon, no floor,
-  no silhouette — relay rings receding to a vanishing point, which is the scene that proves the
-  primitives are optional) — and one prize, Sunset Colonnade, which has no earner picked out yet
-  and should not be authored until it does. Each is ~60 lines against the primitives that
+- **The one place still unauthored** is a prize, Sunset Colonnade, which has no earner picked
+  out yet and should not be authored until it does. ~60 lines against the primitives that
   already exist. Built so far: Citrus Circuit, The Pirate Bayou, Net-Sea Crossing, Napstorrent
-  Moors, Castle Rapidscare, The Silk Lode, Grid Horizon, Mainframe Row, The Line, The CRT Bench,
-  Ground Station, Trace City, Neon Subnet, Paywall Ridge, Zero Day Shrine — beside the six a
-  CREATURE is at home in (`content/content_homes.h`), which are not on the authoring list
-  because they belong to a line or a locomotion rather than to the ladder.
-  Every one of the twenty-one is an ownable background (`content/content_backgrounds.h`), so a new
-  place arrives with a row there and something that earns it. Diff **S** each.
+  Moors, Castle Rapidscare, The Silk Lode, The DeepWeb Dive, Grid Horizon, Mainframe Row, The
+  Line, The CRT Bench, Ground Station, Trace City, Neon Subnet, Paywall Ridge, Zero Day Shrine —
+  beside the six a CREATURE is at home in (`content/content_homes.h`), which are not on the
+  authoring list because they belong to a line or a locomotion rather than to the ladder.
+  Every one of the twenty-two is an ownable background (`content/content_backgrounds.h`), so a
+  new place arrives with a row there and something that earns it. Diff **S**.
+- **Backdrop brightness, and one colour for lights — once the screens are locked.** Every scene
+  is held well under `ink` (`test_scene.cpp`), so on the value ramp a scene's brightest "light"
+  is a mid grey: a lit window, a buoy lamp or a worm copy reads by contrast and shape (a dark
+  housing, a halo, rays) rather than by glowing. Once the screens a backdrop sits under stop
+  moving, judge on a board whether the ladder's scenes want their tones lifting, and whether a
+  single sanctioned accent hue for small lights (a few pixels a scene, inside the accent budget,
+  never a hue that already means a state) is worth adding to the rail. Decide on the device,
+  not the contact sheet: the panel's x1.75 changes what reads. Diff **S** (taste first).
 - **More achievement-paid places.** `BackgroundSource::Achieve` makes a prize backdrop one content
-  row over an achievement id, and seven families pay one out (recipes, the rig, the spectrum, the
-  steps, the arcade, the boss tally, the whole map). The ones still paying only Bits and a cache
-  are the DeepWeb depth ladder, the Decryptograms, the bestiary and the LINK peers — each an
+  row over an achievement id, and eight families pay one out (recipes, the rig, the spectrum, the
+  steps, the arcade, the boss tally, the whole map, the DeepWeb depth ladder). The ones still
+  paying only Bits and a cache are the Decryptograms, the bestiary and the LINK peers — each an
   obvious room. The cost is the scene, not the plumbing; the picker's mask is 32 rows wide.
   Diff **S** each.
 - **A glyph for the BACKGROUND row.** It borrows `ICON_CFG`, the generic gear, because the CFG
@@ -380,7 +386,5 @@ point a reviewer can hold it in their head. What is left is a note rather than a
 
 ## If picking up cold
 
-1. **DeepWeb Dive backdrop (§2c)** — the one place on the walk still standing on the plain
-   `paper` field, and the scene that proves the primitives are optional.
-2. **The template pet sheet (§2a-i)** — an authoring aid with no ingestion change behind it:
+1. **The template pet sheet (§2a-i)** — an authoring aid with no ingestion change behind it:
    one labeled row per default animation, so a new creature sheet starts from a plan.
