@@ -89,9 +89,22 @@ constexpr int kPulseW = 5, kPulseTail = 12;
 // A school of fish crossing the mid-water, dark against the light coming down: what
 // says "under the sea" before anything else on the canvas does. Each is (x, row as a
 // 256th of the way down to the horizon), and the school drifts right a column a beat
-// and wraps. A fish is a 4x2 body and a forked tail.
-constexpr uint8_t kFish[][2] = {{20, 74}, {32, 66}, {30, 84}, {46, 76},
-                                {44, 92}, {58, 82}, {140, 70}, {152, 64}};
+// and wraps. Spaced wide because each one is a shape, not a speck: at a few pixels a
+// fish was a dash of noise, and at this size it is the thing a glance names first.
+constexpr uint8_t kFish[][2] = {{8, 66}, {28, 82}, {22, 100}, {46, 92},
+                                {150, 72}, {170, 88}};
+
+// One fish, head to the right, as rows of an 11x5 mask. The tail's fork is the open
+// notch on the left; the dorsal and belly lines taper into the snout.
+constexpr int kFishW = 11, kFishH = 5;
+constexpr const char* kFishMask[kFishH] = {
+    "X....XXXX..",
+    "XX.XXXXXXX.",
+    ".XXXXXXXXXX",
+    "XX.XXXXXXX.",
+    "X....XXXX..",
+};
+constexpr int kFishEyeX = 8, kFishEyeY = 1;   // a pixel of the water showing through
 
 // Pebbles on the seabed, (x, rows below the floor line).
 constexpr uint8_t kPebbles[][2] = {{20, 6},  {58, 12}, {96, 4},  {134, 9}, {172, 15},
@@ -165,12 +178,12 @@ void drawDeepWebDiveScene(Framebuffer& fb, int beat, const SceneGround& g) {
     // The school, drifting across the light.
     const Rgb565 fish = sceneTone(kToneFish);
     for (const auto& f : kFish) {
-        const int x = (f[0] + beat) % (kActiveW + 8) - 8;
+        const int x = (f[0] + beat) % (kActiveW + kFishW) - kFishW;
         const int y = g.horizonY * f[1] / 256;
-        fb.fillRect(x + 1, y, 4, 2, fish);   // the body, head to the right
-        fb.fillRect(x, y - 1, 1, 1, fish);   // the tail's fork
-        fb.fillRect(x, y + 2, 1, 1, fish);
-        fb.fillRect(x + 5, y, 1, 1, fish);   // the snout
+        for (int r = 0; r < kFishH; ++r)
+            for (int c = 0; c < kFishW; ++c)
+                if (kFishMask[r][c] == 'X' && !(c == kFishEyeX && r == kFishEyeY))
+                    fb.fillRect(x + c, y + r, 1, 1, fish);
     }
 
     // Marine snow, sinking the whole height.
