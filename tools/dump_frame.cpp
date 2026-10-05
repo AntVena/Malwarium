@@ -76,7 +76,7 @@
 //             assets/PAL_CORE.json's `themes` block, e.g. theme:terminal. Not a screen
 //             of its own: it composes with every flag here, which is the point, since
 //             a theme is judged on the screens it has to carry and not on a swatch)
-//        cfg [sysinfo|tag|titles|device|uimode|brightness|theme|background [earned]|travel [sleeping]|
+//        cfg [sysinfo|tag|titles|device|uimode|brightness|theme|background [earned [areas]]|travel [sleeping]|
 //             formatsd [yes|busy|done|failed|blocked]|radio [idle|all]|audit|
 //             link|pediaap|qr|factory] (the settings tree; device/radio are the two
 //             group screens, and radio is seeded with a live arbiter owner —
@@ -99,10 +99,12 @@
 //        LEVEL per frame: the top-level zone picker, "inside" for area 0's own block,
 //        "bossready" for that block with its gauntlet unlocked, "rerun" for it already
 //        beaten, "endgame" for the every-area-cleared picker) ·
-//        explore [cachefind|refarm] (armed → the idle explore badge; "cachefind" states the
+//        explore [cachefind|refarm] [sector:<n>] (armed → the idle explore badge; "cachefind" states the
 //             longest flavor line the walk composes, so the wrap under the BW readout is
 //             visible; "refarm" arms an already-cleared sub-area, whose badge counts down
-//             to the rung auto-progress steps to next)
+//             to the rung auto-progress steps to next; "sector:<n>" clears every area
+//             below n and arms area n instead of 0, so a fight there stands on that
+//             area's own backdrop — e.g. wildcombat sector:3)
 // dock [fight|deep|scout|brief] (ROCK THE DOCK's arena screen — the eight-operator
 //        bracket; "fight" plays the operator's own first bout out so the frame shows a
 //        settled round, "deep" plays the bracket as far forward as the pet can carry it
@@ -671,6 +673,10 @@ int main(int argc, char** argv) {
                 game.unlockAchievement("RIG_ALL");       //    four achievement families
                 game.unlockAchievement("NETS_100");      //    that pay out a place
                 game.unlockAchievement("STEPS_100K");
+                // "areas" clears the whole ladder too, so every area's own place is
+                // on the list to be picked — the one way to see one in the habitat.
+                if (hasFlag(argc, argv, "areas"))
+                    for (int a = 0; a < kAreaCount; ++a) game.debugClearSector(a);
             }
             openTarget(CfgScreen::Background);
             // "row:<n>" walks the focus down, which is how to see that the line under
@@ -1258,19 +1264,21 @@ int main(int argc, char** argv) {
         // "deep" opens the later sectors and arms one of them: sector 0's wild roster
         // fields nothing but the innate Quick Jab, so anything that depends on the
         // rival's KIT (the combat outro's two dissolves) has nothing to show there.
-        const bool deepSector = hasFlag(argc, argv, "deep");
-        if (deepSector)
-            for (int a = 0; a < 2; ++a) {
-                game.debugSetSectorCleared(a, true);
-                for (int s = 0; s < kExplSubAreas; ++s) game.debugSetSubCleared(a, s, true);
-            }
+        // "sector:<n>" is the same move aimed at any rung.
+        int deepSector = hasFlag(argc, argv, "deep") ? 2 : 0;
+        for (int i = 3; i < argc; ++i)
+            if (std::strncmp(argv[i], "sector:", 7) == 0) deepSector = std::atoi(argv[i] + 7);
+        if (deepSector >= kAreaCount) deepSector = kAreaCount - 1;
+        for (int a = 0; a < deepSector; ++a) {
+            game.debugSetSectorCleared(a, true);
+            for (int s = 0; s < kExplSubAreas; ++s) game.debugSetSubCleared(a, s, true);
+        }
         enterExplCat(ExplCat::Story);
         // The ladder is nested: the first B expands the focused sector, the second arms
         // the sub-area the cursor lands on — and arming is what drops the game back to
         // the IDLE habitat with the explore badge live.
-        if (deepSector)
-            for (int i = 0; i < 2; ++i)
-                game.onButton({Button::A, true, false});   // walk to sector[2]
+        for (int i = 0; i < deepSector; ++i)
+            game.onButton({Button::A, true, false});   // walk to sector[n]
         game.onButton({Button::B, true, false});     // expand the focused sector
         game.onButton({Button::B, true, false});     // arm sub-area[0] -> idle explore-mode
         if (hasFlag(argc, argv, "refarm"))

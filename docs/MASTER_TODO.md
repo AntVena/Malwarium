@@ -303,16 +303,16 @@ which is why the id could never hang off `AreaDef` alone. The whole contract is 
 `core/render/RENDER_PIPELINE.md`, and `tools/dump_frame.cpp`'s `scene:<name> floor:<row>` is how
 you look at one.
 
-- **The three places still unauthored.** Two for the ladder — Napstorrent Moors (marsh into
-  castle country) and DeepWeb Dive (no horizon, no floor, no silhouette — relay rings receding to a vanishing point,
-  which is the scene that proves the primitives are optional) — and one prize, Sunset Colonnade,
-  which has no earner picked out yet and should not be authored until it does. Each is ~60 lines
-  against the primitives that already exist. Built so far: Citrus Circuit, The Pirate Bayou,
-  Net-Sea Crossing, Castle Rapidscare, The Silk Lode, Grid Horizon, Mainframe Row, The Line, The CRT Bench, Ground
-  Station, Trace City, Neon Subnet, Paywall Ridge, Zero Day Shrine — beside the six a CREATURE is
-  at home in (`content/content_homes.h`), which are not on the authoring list because they belong
-  to a line or a locomotion rather than to the ladder.
-  Every one of the twenty is an ownable background (`content/content_backgrounds.h`), so a new
+- **The two places still unauthored.** One for the walk — DeepWeb Dive (no horizon, no floor,
+  no silhouette — relay rings receding to a vanishing point, which is the scene that proves the
+  primitives are optional) — and one prize, Sunset Colonnade, which has no earner picked out yet
+  and should not be authored until it does. Each is ~60 lines against the primitives that
+  already exist. Built so far: Citrus Circuit, The Pirate Bayou, Net-Sea Crossing, Napstorrent
+  Moors, Castle Rapidscare, The Silk Lode, Grid Horizon, Mainframe Row, The Line, The CRT Bench,
+  Ground Station, Trace City, Neon Subnet, Paywall Ridge, Zero Day Shrine — beside the six a
+  CREATURE is at home in (`content/content_homes.h`), which are not on the authoring list
+  because they belong to a line or a locomotion rather than to the ladder.
+  Every one of the twenty-one is an ownable background (`content/content_backgrounds.h`), so a new
   place arrives with a row there and something that earns it. Diff **S** each.
 - **More achievement-paid places.** `BackgroundSource::Achieve` makes a prize backdrop one content
   row over an achievement id, and seven families pay one out (recipes, the rig, the spectrum, the
@@ -380,7 +380,7 @@ point a reviewer can hold it in their head. What is left is a note rather than a
 
 ## If picking up cold
 
-1. **Napstorrent Moors backdrop (§2c)** — the last rung on the ladder still standing on the
-   plain `paper` field.
+1. **DeepWeb Dive backdrop (§2c)** — the one place on the walk still standing on the plain
+   `paper` field, and the scene that proves the primitives are optional.
 2. **The template pet sheet (§2a-i)** — an authoring aid with no ingestion change behind it:
    one labeled row per default animation, so a new creature sheet starts from a plan.

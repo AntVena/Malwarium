@@ -140,7 +140,7 @@ const AreaDef kAreaNapstorrentMoors = {
     /*badge=*/"MOORS",
     "MOOR MARAUDER",
     "ICON_SECTOR_NAPSTORRENT_MOORS",
-    SceneId::None,   // the moors' backdrop is not authored yet
+    SceneId::NapstorrentMoors,
     {"SEEDER SHALLOWS", "LEECHER FEN", "THE SHARED BOG", "SPECTRE SWAMP",
      "CASTLE CAUSEWAY"},
     {{"NIMDA OF THE SHALLOWS", {"admin_reversal"}},

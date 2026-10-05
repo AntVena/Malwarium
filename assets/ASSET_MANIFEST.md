@@ -761,8 +761,7 @@ blank — that is the prompt to draw one, and `check_orphan_assets.py` catches t
 > can't. Each area names its glyph on its own row (`AreaDef::icon`), which is also what
 > keeps it out of `check_orphan_assets.py`'s KEEP list. Its backdrop is named the same way
 > on `AreaDef::scene`, and being code rather than a file it needs no orphan check at all —
-> an id with no drawing is a build failure. Areas still owing a scene:
-> Napstorrent Moors.
+> an id with no drawing is a build failure. Every area on the ladder has its scene.
 > Only the first area is open at start; rest progression-gated. Packet Capture minigame + wild-
 > encounter combat art are deferred. Walk reuses pet idle frames — no walk frame.
 

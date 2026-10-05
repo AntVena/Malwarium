@@ -22,6 +22,7 @@ class Framebuffer;
 void drawCitrusCircuitScene(Framebuffer& fb, int beat, const SceneGround& g);
 void drawPirateBayouScene(Framebuffer& fb, int beat, const SceneGround& g);
 void drawNetSeaCrossingScene(Framebuffer& fb, int beat, const SceneGround& g);
+void drawNapstorrentMoorsScene(Framebuffer& fb, int beat, const SceneGround& g);
 void drawCastleRapidscareScene(Framebuffer& fb, int beat, const SceneGround& g);
 void drawSilkLodeScene(Framebuffer& fb, int beat, const SceneGround& g);
 void drawGridHorizonScene(Framebuffer& fb, int beat, const SceneGround& g);

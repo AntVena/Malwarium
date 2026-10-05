@@ -62,7 +62,7 @@ struct BackgroundDef {
 };
 
 // Listed in the order an operator is likely to meet them: the two they start with, the
-// four a raised creature brings, the five an area pays out, the arena's two, then the
+// four a raised creature brings, the six an area pays out, the arena's two, then the
 // seven an achievement does.
 inline constexpr BackgroundDef kBackgrounds[] = {
     {SceneId::ServerYard, 1, "THE YARD", "YOURS FROM THE START",
@@ -85,6 +85,8 @@ inline constexpr BackgroundDef kBackgrounds[] = {
     {SceneId::PirateBayou, 8, "THE PIRATE BAYOU", "CLEAR THE PIRATE BAYOU",
      BackgroundSource::Clear},
     {SceneId::NetSeaCrossing, 20, "NET-SEA CROSSING", "CLEAR THE NET-SEA CROSSING",
+     BackgroundSource::Clear},
+    {SceneId::NapstorrentMoors, 21, "NAPSTORRENT MOORS", "CLEAR NAPSTORRENT MOORS",
      BackgroundSource::Clear},
     {SceneId::CastleRapidscare, 9, "CASTLE RAPIDSCARE", "CLEAR CASTLE RAPIDSCARE",
      BackgroundSource::Clear},
