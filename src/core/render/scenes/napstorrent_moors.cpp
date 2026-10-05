@@ -13,21 +13,26 @@ namespace {
 // is overcast, and the mist is what the sky is made of here.
 //
 // THE THREADS ARE THE AREA. Peer to peer means the traffic hangs between the houses
-// themselves, so the one figure worth authoring is the run of threads strung farm to
-// farm, and the one motion is a worm going down it: a copy crosses each thread in turn,
-// and every window it reaches lights and stays lit until the whole moor has it. Then
-// the moor goes dark and it starts again, which is the headcount Morris never stopped
-// taking.
+// themselves, so the one figure worth authoring is the run of threads strung from a
+// pole beside the causeway out to the farms and on from farm to farm, and the one
+// motion is a worm going down it: a copy crosses each thread in turn, and every window
+// it reaches lights and stays lit until the whole moor has it. Then the moor goes dark
+// and it starts again, which is the headcount Morris never stopped taking.
 //
-// The keep is on the skyline too, small and on a hill of its own, because the causeway
-// leads to it and the next area is standing under its gate.
+// WHERE THINGS STAND IS DECIDED BY WHO COVERS THEM. A fighter stands on each side of
+// the middle and a resting pet in the middle itself, so the only columns no sprite ever
+// covers are the two margins, and the only rows are the sky above their heads. The
+// scene's two landmarks go there: the near pole on the left, tall enough that its
+// thread crosses open sky, and the keep on the right at the edge of the canvas.
 constexpr uint8_t kToneGlow = 14;
 constexpr uint8_t kToneMoor = 36;
 constexpr uint8_t kToneHouse = 44;
 constexpr uint8_t kToneWindowDark = 26;
-constexpr uint8_t kToneWindowLit = 196;
-constexpr uint8_t kToneThread = 72;
-constexpr uint8_t kTonePacket = 210;
+constexpr uint8_t kToneWindowLit = 220;
+constexpr uint8_t kToneThread = 76;
+constexpr uint8_t kTonePole = 70;
+constexpr uint8_t kTonePacket = 220;
+constexpr uint8_t kToneTrail = 110;
 constexpr uint8_t kToneMist = 50;
 constexpr uint8_t kToneBog = 24;
 constexpr uint8_t kTonePool = 62;
@@ -46,25 +51,39 @@ constexpr uint8_t kGlowUp = 40;
 constexpr uint8_t kMoorline[] = {2, 3, 3, 4, 3, 2, 2, 3, 4, 4, 3, 2, 3, 3,
                                  2, 2, 3, 4, 3, 3, 2, 3, 4, 3, 2, 2, 3, 3};
 
-// The keep on its hill, two pixels a column: the hill rising out of the moor, the
-// crenellated tower on its crown, and the hill falling away again.
-constexpr uint8_t kKeepHill[] = {3, 4, 5, 6, 7, 8, 9, 16, 18, 16, 18, 16,
-                                 18, 9, 8, 7, 6, 5, 4, 3};
-constexpr SceneSpan kKeepAt = {176, 40};
-constexpr int kKeepWindowX = 192, kKeepWindowDrop = 13;   // one slit, always lit
+// The keep on its hill, three pixels a column: the hill climbing out of the moor from
+// the left, and the crenellated tower on its crown hard against the right edge — the
+// columns past where a right-hand fighter stops, so the keep is seen in a fight as
+// well as behind a resting pet.
+constexpr uint8_t kKeepHill[] = {3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14,
+                                 15, 30, 34, 30, 34, 30, 15, 13};
+constexpr SceneSpan kKeepAt = {164, 60};
+constexpr int kKeepSlitX = 211, kKeepSlitDrop = 24;   // one slit, always lit
+
+// The near pole, standing on the causeway's far edge: where the moor's traffic comes
+// in off the cable, and so where every count starts. `kPoleH` is how far it rises over
+// the floor — enough to clear any sprite's head on either screen.
+constexpr int kPoleX = 14;
+constexpr int kPoleH = 66;
+constexpr int kArmW = 9;
 
 // The farms, left to right in the order the worm reaches them. `x` is the house's
 // left wall; every house is the same small gabled box, and the thread hangs off its
-// ridge. The first is the seeder, so it is lit from the start of every count.
+// ridge.
 struct Farm { int x, h; };
-constexpr Farm kFarms[] = {{18, 6}, {62, 8}, {104, 6}, {146, 7}};
+constexpr Farm kFarms[] = {{40, 7}, {80, 8}, {118, 6}, {152, 7}};
 constexpr int kFarmCount = static_cast<int>(sizeof(kFarms) / sizeof(kFarms[0]));
 constexpr int kHouseW = 9;
 constexpr int kStandRows = 2;   // how far up the moor a house's foot is set
 
-// Each thread sags a little between ridges, deepest at the middle, by this many rows.
-// A slack line is a line strung by hand, which is the whole of what peer to peer looks
-// like from outside; a taut one would be infrastructure, and the moor has none.
+// The chain is the pole and then every farm: one more node than there are farms.
+constexpr int kNodeCount = kFarmCount + 1;
+
+// How far each thread sags at its middle. A slack line is a line strung by hand, which
+// is the whole of what peer to peer looks like from outside; a taut one would be
+// infrastructure, and the moor has none. The pole's thread is the long one, falling
+// from high over the causeway to the first roof, and sags the most.
+constexpr int kPoleSag = 12;
 constexpr int kThreadSag = 4;
 
 // The worm's count: `kHopSteps` beats to cross a thread, then `kHoldBeats` with the
@@ -84,9 +103,9 @@ constexpr int kMistSpan = 16;
 // is, and reed clumps standing out of the water. A reed clump is (x, rows down from the
 // horizon to its foot, how tall its tallest blade is).
 struct Pool { int x, y, w; };
-constexpr Pool kPools[] = {{14, 5, 18}, {84, 7, 14}, {158, 4, 22}, {196, 8, 12}};
+constexpr Pool kPools[] = {{24, 5, 18}, {84, 7, 14}, {158, 4, 22}, {196, 8, 12}};
 struct Reed { int x, y, h; };
-constexpr Reed kReeds[] = {{4, 9, 7}, {50, 6, 4}, {72, 9, 5}, {124, 5, 3},
+constexpr Reed kReeds[] = {{30, 9, 7}, {58, 6, 4}, {72, 9, 5}, {124, 5, 3},
                            {186, 9, 6}, {214, 9, 8}};
 
 // The causeway's stones: courses `kCourseH` rows deep, joints every `kStoneW` columns,
@@ -98,11 +117,11 @@ constexpr int kStoneW = 24;
 // The cable runs the length of the causeway just inside its far edge.
 constexpr int kCableDrop = 3;
 
-// Where a thread hangs at column x between two ridges, or -1 off its span.
-int threadY(int x, int x0, int y0, int x1, int y1) {
+// Where a thread hangs at column x between two points, or -1 off its span.
+int threadY(int x, int x0, int y0, int x1, int y1, int sag) {
     if (x < x0 || x > x1 || x1 <= x0) return -1;
     const int span = x1 - x0, t = x - x0;
-    return y0 + (y1 - y0) * t / span + 4 * kThreadSag * t * (span - t) / (span * span);
+    return y0 + (y1 - y0) * t / span + 4 * sag * t * (span - t) / (span * span);
 }
 
 }  // namespace
@@ -117,43 +136,33 @@ void drawNapstorrentMoorsScene(Framebuffer& fb, int beat, const SceneGround& g) 
                     g.horizonY, kToneMoor);
     sceneSilhouette(fb, kKeepHill, static_cast<int>(sizeof(kKeepHill)), g.horizonY,
                     kToneMoor, kKeepAt);
-    fb.fillRect(kKeepWindowX, g.horizonY - kKeepWindowDrop, 1, 2,
-                sceneTone(kToneWindowLit));
+    fb.fillRect(kKeepSlitX, g.horizonY - kKeepSlitDrop, 1, 3, sceneTone(kToneWindowLit));
 
     // Where the count has got to: which thread the worm is crossing and how far along
     // it, or past the last one and holding with every window lit.
-    const int cycle = (kFarmCount - 1) * kHopSteps + kHoldBeats;
+    const int threads = kNodeCount - 1;
+    const int cycle = threads * kHopSteps + kHoldBeats;
     const int phase = beat % cycle;
-    const int thread = phase / kHopSteps;   // >= kFarmCount - 1 means holding
-    const int reached = thread < kFarmCount - 1 ? thread : kFarmCount - 1;
+    const int thread = phase / kHopSteps;   // >= threads means holding
+    const int reached = thread < threads ? thread : threads;   // nodes lit, past the pole
+
+    // The chain's anchor points: the pole's crossarm, then each farm's ridge.
+    int nodeX[kNodeCount], nodeY[kNodeCount];
+    nodeX[0] = kPoleX + 1;
+    nodeY[0] = g.floorY - kPoleH;
 
     // The farms, each a gabled box with one window that lights when the worm arrives.
     const Rgb565 house = sceneTone(kToneHouse);
-    int ridgeX[kFarmCount], ridgeY[kFarmCount];
     for (int i = 0; i < kFarmCount; ++i) {
         const Farm& f = kFarms[i];
         const int foot = g.horizonY - kStandRows;
         fb.fillRect(f.x, foot - f.h, kHouseW, f.h, house);
         for (int r = 1; r <= kHouseW / 2; ++r)   // the gable, stepped a row per column
             fb.fillRect(f.x + r, foot - f.h - r, kHouseW - 2 * r, 1, house);
-        ridgeX[i] = f.x + kHouseW / 2;
-        ridgeY[i] = foot - f.h - kHouseW / 2;
-        fb.fillRect(f.x + 3, foot - f.h + 2, 2, 2,
-                    sceneTone(i <= reached ? kToneWindowLit : kToneWindowDark));
-    }
-
-    // The threads, ridge to ridge, dotted: traffic, not a cable. Then the copy in
-    // transit on the one it is crossing.
-    const Rgb565 threadC = sceneTone(kToneThread);
-    for (int i = 0; i + 1 < kFarmCount; ++i)
-        for (int x = ridgeX[i] + 1; x < ridgeX[i + 1]; x += 2)
-            fb.fillRect(x, threadY(x, ridgeX[i], ridgeY[i], ridgeX[i + 1], ridgeY[i + 1]),
-                        1, 1, threadC);
-    if (thread < kFarmCount - 1) {
-        const int x0 = ridgeX[thread], x1 = ridgeX[thread + 1];
-        const int px = x0 + (x1 - x0) * (phase % kHopSteps + 1) / (kHopSteps + 1);
-        fb.fillRect(px, threadY(px, x0, ridgeY[thread], x1, ridgeY[thread + 1]) - 1, 2, 2,
-                    sceneTone(kTonePacket));
+        nodeX[i + 1] = f.x + kHouseW / 2;
+        nodeY[i + 1] = foot - f.h - kHouseW / 2;
+        fb.fillRect(f.x + 3, foot - f.h + 2, 3, 2,
+                    sceneTone(i < reached ? kToneWindowLit : kToneWindowDark));
     }
 
     // The bog: dark water, still pools, reeds.
@@ -184,6 +193,31 @@ void drawNapstorrentMoorsScene(Framebuffer& fb, int beat, const SceneGround& g) 
             fb.fillRect(x, y + 1, 1, h - 1, joint);
     }
     fb.fillRect(0, g.floorY + kCableDrop, kActiveW, 1, sceneTone(kToneCable));
+
+    // The near pole, over the causeway: shaft and crossarm, standing in front of
+    // everything behind it.
+    const Rgb565 pole = sceneTone(kTonePole);
+    fb.fillRect(kPoleX, nodeY[0], 2, g.floorY + kCableDrop - nodeY[0], pole);
+    fb.fillRect(kPoleX - kArmW / 2, nodeY[0], kArmW + 1, 2, pole);
+
+    // The threads, node to node, dotted: traffic, not a cable. Then the copy in transit
+    // on the one it is crossing, with a dimmer pixel either side so it reads as moving
+    // along the line rather than sitting on it.
+    const Rgb565 threadC = sceneTone(kToneThread);
+    for (int i = 0; i + 1 < kNodeCount; ++i) {
+        const int sag = i == 0 ? kPoleSag : kThreadSag;
+        for (int x = nodeX[i] + 1; x < nodeX[i + 1]; x += 2)
+            fb.fillRect(x, threadY(x, nodeX[i], nodeY[i], nodeX[i + 1], nodeY[i + 1], sag),
+                        1, 1, threadC);
+    }
+    if (thread < threads) {
+        const int x0 = nodeX[thread], x1 = nodeX[thread + 1];
+        const int sag = thread == 0 ? kPoleSag : kThreadSag;
+        const int px = x0 + (x1 - x0) * (phase % kHopSteps + 1) / (kHopSteps + 1);
+        const int py = threadY(px, x0, nodeY[thread], x1, nodeY[thread + 1], sag);
+        fb.fillRect(px - 2, py - 1, 6, 2, sceneTone(kToneTrail));
+        fb.fillRect(px, py - 1, 2, 2, sceneTone(kTonePacket));
+    }
 }
 
 }  // namespace mal

@@ -24,8 +24,12 @@ constexpr uint8_t kToneWater = 30;
 constexpr uint8_t kToneSwell = 66;
 constexpr uint8_t kToneBuoy = 92;
 constexpr uint8_t kToneLampOff = 64;
-constexpr uint8_t kToneHalo = 120;
-constexpr uint8_t kToneLampOn = 210;
+constexpr uint8_t kToneHalo = 140;
+constexpr uint8_t kToneBeam = 96;
+constexpr uint8_t kToneLampOn = 220;
+constexpr uint8_t kToneTower = 84;
+constexpr uint8_t kToneHousing = 24;
+constexpr uint8_t kToneBridge = 104;
 constexpr uint8_t kToneSand = 62;
 constexpr uint8_t kToneRipple = 48;
 constexpr uint8_t kToneSurf = 128;
@@ -46,21 +50,47 @@ constexpr uint8_t kGlowUp = 64;
 // sea-net arrives alone, and the tall block at the stern is the bridge. The gaps
 // between stacks drop all the way to the deck — a shallower notch reads as a
 // battlement, and the Castle is two rungs further on.
-constexpr uint8_t kShipBig[] = {5, 4, 3, 7, 7, 7, 3, 7, 7, 7, 3, 7,
-                                7, 7, 3, 3, 11, 11, 10, 3, 2, 2};
-constexpr uint8_t kShipSmall[] = {4, 3, 2, 5, 5, 2, 5, 5, 2, 8, 8, 2, 1};
-constexpr SceneSpan kShipBigAt = {22, 48};
-constexpr SceneSpan kShipSmallAt = {126, 26};
+//
+// The big one sits hard left, in the columns no fighter and no resting pet ever stands
+// in, and it is big on purpose: at this panel's scale a ship has to be a shape before
+// it can be a ship, and a dozen rows of profile is what that costs.
+constexpr uint8_t kShipBig[] = {9, 8, 7, 6, 13, 13, 13, 6, 13, 13, 13, 6,
+                                13, 13, 13, 6, 6, 20, 20, 20, 17, 6, 5, 4};
+constexpr uint8_t kShipSmall[] = {5, 4, 3, 7, 7, 3, 7, 7, 3, 11, 11, 3, 2};
+constexpr SceneSpan kShipBigAt = {0, 72};
+constexpr SceneSpan kShipSmallAt = {94, 30};
+
+// The bridge windows, lit: one strip across each ship's bridge, `up` rows above the
+// horizon (the bridges are 20 and 11 tall). A row of lit windows high at one end of a
+// dark hull is what makes the shape a ship under way and not a block of warehouses.
+struct Bridge { int x, w, up; };
+constexpr Bridge kBridges[] = {{52, 10, 16}, {115, 4, 8}};
 
 // The sea-net, far to near and left to right: each buoy sits `dy` rows below the
 // horizon on the water and carries its lamp `h` rows above that. The near ones are
 // wider and taller, which is the whole of the perspective — the middle band is ten
-// rows deep and has no room for anything cleverer. The last stands in the surf.
+// rows deep and has no room for anything cleverer.
 struct Buoy { int x, dy, w, h; };
-constexpr Buoy kBuoys[] = {{86, 1, 1, 3}, {118, 3, 2, 5}, {160, 5, 2, 7},
-                           {198, 8, 3, 10}};
+constexpr Buoy kBuoys[] = {{84, 1, 1, 4}, {124, 3, 2, 6}, {164, 6, 2, 9}};
 constexpr int kBuoyCount = static_cast<int>(sizeof(kBuoys) / sizeof(kBuoys[0]));
 constexpr int kHopBeats = 2;   // how long the packet rests on each lamp
+
+// The last buoy in the chain, standing in the surf: the station the packet is
+// arriving at. It is the scene's landmark, so it stands in the right-hand margin —
+// the one strip a fighter and a resting pet both leave clear — and it is tall enough
+// to reach well above any sprite's head, which is where it is seen on every screen.
+// A lattice tower: two legs closing from `kTowerBase` wide at the float to
+// `kTowerTop` at the lamp, braced every `kBracePitch` rows.
+constexpr int kTowerX = 212;          // its centre column
+constexpr int kTowerH = 52;           // floor to lamp housing
+constexpr int kTowerBase = 9, kTowerTop = 3;
+constexpr int kBracePitch = 7;
+constexpr int kFloatW = 15, kFloatH = 4;
+constexpr int kLampW = 3;
+// The flash, when the packet lands: rays either side of the lamp. A backdrop's
+// brightest step is still far under `ink`, so a lamp cannot announce itself by being
+// bright — it does it by shape, which is what the rays are for.
+constexpr int kBeamW = 12;
 
 // The swell: strokes drifting on the heartbeat, `y` rows down from the horizon.
 struct Swell { int x, y, w; };
@@ -82,10 +112,10 @@ constexpr int kSurfPitch = 28;
 constexpr int kSurfW = 14;
 constexpr int kSurfSpan = 6;
 
-// The cable comes out of the water under the nearest buoy and runs down the beach,
-// one column across for every `kCableRun` rows down, toward a relay station somewhere
-// past the right edge of the canvas.
-constexpr int kCableX = 168;
+// The cable comes ashore at the tower's foot and runs inland down the beach, one
+// column left for every `kCableRun` rows down — toward the relay station the story
+// sends the walk to next, somewhere off the bottom of the canvas.
+constexpr int kCableX = kTowerX - 6;
 constexpr int kCableRun = 2;
 
 }  // namespace
@@ -102,6 +132,8 @@ void drawNetSeaCrossingScene(Framebuffer& fb, int beat, const SceneGround& g) {
                     kToneShip, kShipBigAt);
     sceneSilhouette(fb, kShipSmall, static_cast<int>(sizeof(kShipSmall)), g.horizonY,
                     kToneShip, kShipSmallAt);
+    for (const Bridge& b : kBridges)
+        fb.fillRect(b.x, g.horizonY - b.up, b.w, 1, sceneTone(kToneBridge));
 
     // Open water, and the swell running across it.
     sceneMiddle(fb, g, kToneWater);
@@ -111,9 +143,10 @@ void drawNetSeaCrossingScene(Framebuffer& fb, int beat, const SceneGround& g) {
                     g.horizonY + kSwells[i].y, kSwells[i].w, 1, swell);
 
     // The sea-net. The packet rests on one lamp at a time and walks the chain toward
-    // the shore, so the relaying reads as a direction rather than as a blink.
+    // the shore, so the relaying reads as a direction rather than as a blink. The
+    // tower in the surf is the chain's last stop, so it counts as one more lamp.
     const Rgb565 buoy = sceneTone(kToneBuoy);
-    const int lit = (beat / kHopBeats) % kBuoyCount;
+    const int lit = (beat / kHopBeats) % (kBuoyCount + 1);
     for (int i = 0; i < kBuoyCount; ++i) {
         const Buoy& b = kBuoys[i];
         const int water = g.horizonY + b.dy;
@@ -140,12 +173,35 @@ void drawNetSeaCrossingScene(Framebuffer& fb, int beat, const SceneGround& g) {
     for (int i = 0, x = 4; x < kActiveW; ++i, x += kSurfPitch)
         fb.fillRect(x + sceneDrift(beat, i, kSurfSpan), g.floorY - 1, kSurfW, 1, surf);
 
-    // The cable, last, because it lies across everything on the beach. It surfaces in
-    // the shallows under the nearest buoy and does not stop at the edge of the canvas.
+    // The tower in the surf, over the beach's edge: float, legs, braces, then the lamp
+    // and — when the packet is home — its halo.
+    const Rgb565 tower = sceneTone(kToneTower);
+    const int foot = g.floorY + 1, top = g.floorY - kTowerH;
+    fb.fillRect(kTowerX - kFloatW / 2, foot - kFloatH, kFloatW, kFloatH, tower);
+    for (int y = top; y < foot - kFloatH; ++y) {
+        const int half = (kTowerTop + (kTowerBase - kTowerTop) * (y - top) / kTowerH) / 2;
+        fb.fillRect(kTowerX - half, y, 1, 1, tower);
+        fb.fillRect(kTowerX + half, y, 1, 1, tower);
+        if ((y - top) % kBracePitch == 0) fb.fillRect(kTowerX - half, y, half * 2 + 1, 1, tower);
+    }
+    const bool home = lit == kBuoyCount;
+    const int lampY = top - kLampW - 1;
+    if (home) {
+        const Rgb565 beam = sceneTone(kToneBeam);
+        fb.fillRect(kTowerX - 4 - kBeamW, lampY + 1, kBeamW, 1, beam);
+        fb.fillRect(kTowerX + 5, lampY + 1, kBeamW, 1, beam);
+    }
+    fb.fillRect(kTowerX - 3, lampY - 1, 7, kLampW + 2, sceneTone(home ? kToneHalo
+                                                                   : kToneHousing));
+    fb.fillRect(kTowerX - 1, lampY, kLampW, kLampW,
+                sceneTone(home ? kToneLampOn : kToneLampOff));
+
+    // The cable, last, because it lies across everything on the beach. It comes out
+    // from under the tower's float and does not stop at the edge of the canvas.
     const Rgb565 cable = sceneTone(kToneCable);
     for (int y = g.floorY - 2; y < kActiveH; ++y) {
-        const int x = kCableX + (y - g.floorY) / kCableRun;
-        if (x >= kActiveW) break;
+        const int x = kCableX - (y - g.floorY) / kCableRun;
+        if (x < 0) break;
         fb.fillRect(x, y, 2, 1, cable);
     }
 }
