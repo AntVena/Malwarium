@@ -128,7 +128,7 @@ inline constexpr BackgroundDef kBackgrounds[] = {
     // this draws is where the crawl's portal stands, and getting to it means the map.
     {SceneId::ZeroDayShrine, 19, "ZERO DAY SHRINE", "RUN THE WHOLE NET",
      BackgroundSource::Achieve, /*rung=*/0, "AREAS_ALL"},
-    // The dive's own shaft, paid by the depth ladder's second rung: the first already
+    // The dive's own seabed, paid by the depth ladder's second rung: the first already
     // opens an egg line, and this one is the depth at which the dive stops being a
     // farm and starts being somewhere you have been.
     {SceneId::DeepWebDive, 22, "THE DEEPWEB DIVE", "DIVE DEEP INTO THE DEEPWEB",

@@ -8,126 +8,186 @@ namespace mal {
 
 namespace {
 
-// THE DIVE, LOOKING DOWN THE SHAFT. The one place on the walk with no horizon to stand
-// a skyline on, no floor and no silhouette: the dive is a descent, so the picture is
-// the shaft itself — relay rings receding to a point, streaming past toward the viewer
-// on the heartbeat, which is what going down looks like from inside. A fighter here
-// stands on nothing, and that is correct.
+// THE DEEP WEB, TAKEN AT ITS WORD. The dive goes down under the Net-Sea to where the
+// cable the walk has followed since the Bayou lies on the bottom, carrying everything
+// nobody indexed — so this is the seabed, with the cable across it and the data
+// running along it as light. The sea is inverted from every sky on the ladder: what
+// light there is comes from ABOVE and fades going down, so the top of the canvas is
+// the lightest water and the bottom is dark.
 //
-// It is the scene that proves the primitives are optional. Nothing below calls
-// sceneSilhouette, sceneMiddle or sceneFloor; the ground is used for one thing only,
-// the vanishing point. That is NOT on the horizon, where sceneConverge would put it: a
-// shaft has no horizon, and a point down at the sprites' feet leaves them standing on
-// the bottom of it. It sits level with the middle of a standing sprite instead, so a
-// fighter or a resting pet is IN the shaft — between the two fighters on a fight, and
-// behind the pet in the habitat, with the rings opening out around it.
-constexpr uint8_t kToneRail = 26;
-constexpr uint8_t kToneRingFar = 18;     // the ring at the bottom of the shaft
-constexpr uint8_t kToneRingNear = 112;   // ...at its brightest, on its way up
-constexpr uint8_t kToneRingGone = 30;    // ...and passing the viewer, fading out
-constexpr uint8_t kToneNode = 150;
-constexpr uint8_t kToneNodeLit = 210;
+// WHERE THINGS STAND IS DECIDED BY WHO COVERS THEM. A fighter stands on each side of
+// the middle and a resting pet in the middle itself, and the habitat's bottom bar hides
+// the floor; so the cable runs through the MIDDLE band, where it is seen either side
+// of any sprite, and the two landmarks are in the margins — a rock spire carrying a
+// repeater on the left, a vent breathing bubbles up the whole height on the right.
+constexpr uint8_t kToneSurface = 40;   // the water just under the surface
+constexpr uint8_t kToneShaft = 10;     // how much a light shaft adds to the water
+constexpr uint8_t kToneSnow = 54;
+constexpr uint8_t kToneBubble = 96;
+constexpr uint8_t kToneRidge = 20;
+constexpr uint8_t kToneSilt = 34;
+constexpr uint8_t kToneBed = 38;
+constexpr uint8_t kTonePebble = 50;
+constexpr uint8_t kToneBedLip = 70;
+constexpr uint8_t kToneSpire = 46;
+constexpr uint8_t kToneSpireLit = 72;   // its up-facing ledges, catching what light comes down
+constexpr uint8_t kToneFish = 0;    // the page's own dark: a fish is a hole in the light
+constexpr uint8_t kToneCable = 6;
+constexpr uint8_t kToneCableSheen = 64;
+constexpr uint8_t kToneRepeater = 84;
+constexpr uint8_t kTonePulse = 220;
+constexpr uint8_t kTonePulseTail = 120;
 
-// The shaft's rings, as half-heights in rows, smallest first: each a fifth again the
-// last, so the table reads as depth. A ring is drawn at every kStepsPerRing-th entry
-// and slides one entry outward per beat, so the whole shaft streams toward the viewer
-// without any ring ever jumping. Two steps apart is about 1.4x ring to ring, which is
-// close enough to read as a shaft rather than a target.
-constexpr uint8_t kRingH[] = {2,  2,  3,  3,  4,  5,  6,  7,  8,  10, 12, 14, 16,
-                              19, 23, 27, 32, 38, 45, 54, 64, 76, 91, 108, 128, 152};
-constexpr int kRingSteps = static_cast<int>(sizeof(kRingH) / sizeof(kRingH[0]));
-constexpr int kStepsPerRing = 2;
-// The step a ring is brightest at. Past it a ring is mostly off the canvas — its sides
-// gone, only its top and bottom crossing the screen — and a full-tone line across the
-// rows a screen writes its header in is a rule, not a ring; so from here it fades.
-constexpr int kPeakStep = 18;
+// The water column: four bands from the top of the canvas down, each a step darker,
+// ending at this share of the way down to the horizon. Below that the water is the
+// page's own dark — the depth the dive is at.
+constexpr int kBands = 4;
+constexpr uint8_t kBandsReach = 224;   // in 256ths of the way from the top to the horizon
 
-// A ring is an octagon: wider than it is tall by this ratio (in eighths), with its
-// corners cut at 45 degrees by this share of its half-height (in eighths). A flat
-// rectangle reads as a frame and a true ellipse at these sizes is a staircase; a
-// chamfered box is the shape a pixel grid draws cleanly at every size in the table.
-constexpr int kRingAspect8 = 13;
-constexpr int kRingChamfer8 = 3;
+// The light shafts: slanting down from the surface, each `w` wide, leaning one column
+// right for every `kShaftLean` rows down, and gone by the bottom of the banded water.
+struct Shaft { int x, w; };
+constexpr Shaft kShafts[] = {{30, 10}, {92, 6}, {150, 12}};
+constexpr int kShaftLean = 3;
 
-// The relay nodes on each ring, at the middle of every side. One node in the whole
-// shaft carries the packet on any beat, walking round the ring nearest the viewer, so
-// the shaft is a network and not only a tunnel.
-constexpr int kNodeSize = 2;
+// Marine snow: specks sinking a row every other beat and wrapping, (x, start row).
+// Rows rather than sky fractions because they fall the whole height of the canvas.
+constexpr uint8_t kSnow[][2] = {{12, 14},  {41, 90},  {67, 40},  {88, 132}, {103, 8},
+                                {131, 70}, {158, 112}, {176, 30}, {197, 150}, {60, 170},
+                                {120, 190}, {170, 60}};
+constexpr int kSnowSink = 2;   // beats per row
 
-// Where the vanishing point sits, as a row: this far above the floor, which is the
-// middle of a standing sprite on either screen.
-constexpr int kVanishAboveFloor = 30;
-int vanishY(const SceneGround& g) { return g.floorY - kVanishAboveFloor; }
+// The vent's bubbles, rising up the right margin from the seabed: each starts `phase`
+// rows up its climb and wobbles a column either side as it goes.
+constexpr int kVentX = 210;
+constexpr int kBubbleRise = 2;   // rows per beat
+constexpr uint8_t kBubbles[] = {0, 23, 41, 68, 90, 117, 139, 161};
 
-// A ring's tone at a step: up from the bottom of the shaft to the peak, then back down
-// as it passes.
-uint8_t ringTone(int step) {
-    if (step <= kPeakStep)
-        return static_cast<uint8_t>(kToneRingFar +
-                                    (kToneRingNear - kToneRingFar) * step / kPeakStep);
-    const int past = kRingSteps - 1 - kPeakStep;
-    return static_cast<uint8_t>(kToneRingNear -
-                                (kToneRingNear - kToneRingGone) * (step - kPeakStep) / past);
-}
+// The far seabed: a low ragged slope on the horizon, which is the only silhouette —
+// down here there is no distance, only a little further down.
+constexpr uint8_t kRidge[] = {3, 5, 4, 6, 7, 5, 4, 3, 4, 6, 8, 6, 5, 4,
+                              3, 4, 5, 7, 6, 4, 3, 5, 6, 4, 3, 4, 5, 3};
 
-// One ring's outline, centred on (cx, cy) with half-height h.
-void drawRing(Framebuffer& fb, int cx, int cy, int h, Rgb565 c) {
-    const int w = h * kRingAspect8 / 8;
-    const int k = h * kRingChamfer8 / 8;   // how far a corner is cut back
-    fb.fillRect(cx - w + k, cy - h, 2 * (w - k) + 1, 1, c);   // top
-    fb.fillRect(cx - w + k, cy + h, 2 * (w - k) + 1, 1, c);   // bottom
-    fb.fillRect(cx - w, cy - h + k, 1, 2 * (h - k) + 1, c);   // left
-    fb.fillRect(cx + w, cy - h + k, 1, 2 * (h - k) + 1, c);   // right
-    for (int i = 1; i < k; ++i) {                             // the four corners
-        fb.fillRect(cx - w + k - i, cy - h + i, 1, 1, c);
-        fb.fillRect(cx + w - k + i, cy - h + i, 1, 1, c);
-        fb.fillRect(cx - w + k - i, cy + h - i, 1, 1, c);
-        fb.fillRect(cx + w - k + i, cy + h - i, 1, 1, c);
-    }
+// The rock spire in the left margin, two columns a step, and the repeater bolted to
+// it where the cable comes past.
+constexpr uint8_t kSpire[] = {10, 26, 40, 48, 44, 30, 14, 6};
+constexpr SceneSpan kSpireAt = {0, 32};
+
+// The cable: lying across the middle band, `kCableUp` rows above the floor at the
+// edges and sagging `kCableSag` lower in the middle, three rows thick. A repeater sits
+// every kRepeaterPitch columns, and the data runs left to right as pulses, `kPulseGap`
+// apart, moving `kPulseSpeed` columns a beat.
+constexpr int kCableUp = 9;
+constexpr int kCableSag = 4;
+constexpr int kCableH = 4;
+constexpr int kRepeaterPitch = 74;
+constexpr int kRepeaterW = 11, kRepeaterH = 7;
+constexpr int kPulseGap = 56;
+constexpr int kPulseSpeed = 5;
+constexpr int kPulseW = 5, kPulseTail = 12;
+
+// A school of fish crossing the mid-water, dark against the light coming down: what
+// says "under the sea" before anything else on the canvas does. Each is (x, row as a
+// 256th of the way down to the horizon), and the school drifts right a column a beat
+// and wraps. A fish is a 4x2 body and a forked tail.
+constexpr uint8_t kFish[][2] = {{20, 74}, {32, 66}, {30, 84}, {46, 76},
+                                {44, 92}, {58, 82}, {140, 70}, {152, 64}};
+
+// Pebbles on the seabed, (x, rows below the floor line).
+constexpr uint8_t kPebbles[][2] = {{20, 6},  {58, 12}, {96, 4},  {134, 9}, {172, 15},
+                                   {206, 5}, {40, 22}, {116, 26}, {190, 30}, {76, 38},
+                                   {150, 44}, {10, 52}};
+
+// The cable's top row at column x.
+int cableY(const SceneGround& g, int x) {
+    const int t = x * 2 - kActiveW;   // -W..W across the canvas
+    return g.floorY - kCableUp + kCableSag - kCableSag * t * t / (kActiveW * kActiveW);
 }
 
 }  // namespace
 
 void drawDeepWebDiveScene(Framebuffer& fb, int beat, const SceneGround& g) {
     fb.clear(palColor(Pal::PAPER));
-    const int cx = kActiveW / 2, cy = vanishY(g);
 
-    // The rails: the shaft's four corners, running in from the canvas corners to the
-    // point. Dotted and faint — they are what tells the rings apart from a target.
-    const Rgb565 rail = sceneTone(kToneRail);
-    const int corners[4][2] = {{0, 0}, {kActiveW - 1, 0}, {0, kActiveH - 1},
-                               {kActiveW - 1, kActiveH - 1}};
-    for (const auto& c : corners) {
-        const int dx = c[0] - cx, dy = c[1] - cy;
-        const int n = (dx < 0 ? -dx : dx) > (dy < 0 ? -dy : dy) ? (dx < 0 ? -dx : dx)
-                                                                : (dy < 0 ? -dy : dy);
-        for (int i = 6; i <= n; i += 3) fb.fillRect(cx + dx * i / n, cy + dy * i / n, 1, 1, rail);
+    // The water column, lightest at the top, and the shafts coming down through it.
+    const int bandsEnd = g.horizonY * kBandsReach / 256;
+    const int bandH = bandsEnd / kBands;
+    for (int i = 0; i < kBands; ++i)
+        fb.fillRect(0, i * bandH, kActiveW, bandH,
+                    sceneTone(static_cast<uint8_t>(kToneSurface * (kBands - i) / kBands)));
+    for (const Shaft& s : kShafts)
+        for (int y = 0; y < bandsEnd; ++y) {
+            const int band = y / bandH < kBands ? y / bandH : kBands - 1;
+            const uint8_t water = static_cast<uint8_t>(kToneSurface * (kBands - band) / kBands);
+            fb.fillRect(s.x + y / kShaftLean, y, s.w, 1, sceneTone(water + kToneShaft));
+        }
+
+    // The far seabed, and the silt haze between it and the bed.
+    sceneSilhouette(fb, kRidge, static_cast<int>(sizeof(kRidge)), g.horizonY, kToneRidge);
+    sceneMiddle(fb, g, kToneSilt);
+
+    // The bed itself: no seams, a lit lip where the silt settles, pebbles.
+    sceneFloor(fb, g, /*seamPitch=*/0, kToneBed, kToneBed, kToneBedLip);
+    const Rgb565 pebble = sceneTone(kTonePebble);
+    for (const auto& p : kPebbles) {
+        const int y = g.floorY + 2 + p[1];
+        if (y < kActiveH) fb.fillRect(p[0], y, 3, 1, pebble);
     }
 
-    // The rings, far to near so a near one is drawn over whatever it passes. `shift` is
-    // how far through one ring-spacing the shaft has streamed on this beat.
-    const int shift = beat % kStepsPerRing;
-    const int nearest = (kRingSteps - 1 - shift) / kStepsPerRing;   // ring count - 1
-    // The packet rides the brightest ring, a node further round every time the shaft
-    // moves a whole ring.
-    const int packetRing = (kPeakStep - shift) / kStepsPerRing;
-    const int packetNode = (beat / kStepsPerRing) % 4;
-    for (int r = 0; r <= nearest; ++r) {
-        const int step = r * kStepsPerRing + shift;
-        const int h = kRingH[step];
-        const uint8_t tone = ringTone(step);
-        drawRing(fb, cx, cy, h, sceneTone(tone));
+    // The spire in the left margin, standing on the bed and rising well into the water.
+    sceneSilhouette(fb, kSpire, static_cast<int>(sizeof(kSpire)), g.floorY + 2, kToneSpire,
+                    kSpireAt);
+    const Rgb565 ledge = sceneTone(kToneSpireLit);
+    for (int i = 0, n = static_cast<int>(sizeof(kSpire)); i < n; ++i) {
+        const int x0 = kSpireAt.x + i * kSpireAt.w / n, x1 = kSpireAt.x + (i + 1) * kSpireAt.w / n;
+        fb.fillRect(x0, g.floorY + 2 - kSpire[i], x1 - x0, 1, ledge);
+    }
 
-        // The nodes, from the fourth ring out: any nearer the point they are a smudge.
-        if (r < 3) continue;
-        const int w = h * kRingAspect8 / 8;
-        const int nodes[4][2] = {{cx, cy - h}, {cx + w, cy}, {cx, cy + h}, {cx - w, cy}};
-        for (int i = 0; i < 4; ++i) {
-            const bool lit = r == packetRing && i == packetNode;
-            const uint8_t node = tone + 30 > kToneNode ? kToneNode : tone + 30;
-            fb.fillRect(nodes[i][0] - kNodeSize / 2, nodes[i][1] - kNodeSize / 2, kNodeSize,
-                        kNodeSize, sceneTone(lit ? kToneNodeLit : node));
-        }
+    // The cable, repeaters and all, then the data running along it.
+    const Rgb565 cable = sceneTone(kToneCable);
+    const Rgb565 sheen = sceneTone(kToneCableSheen);
+    for (int x = 0; x < kActiveW; ++x) {
+        fb.fillRect(x, cableY(g, x), 1, kCableH, cable);
+        fb.fillRect(x, cableY(g, x) - 1, 1, 1, sheen);   // its armour, catching the light
+    }
+    const Rgb565 repeater = sceneTone(kToneRepeater);
+    for (int x = kRepeaterPitch / 3; x < kActiveW; x += kRepeaterPitch)
+        fb.fillRect(x - kRepeaterW / 2, cableY(g, x) - 1, kRepeaterW, kRepeaterH, repeater);
+    const Rgb565 pulse = sceneTone(kTonePulse), tail = sceneTone(kTonePulseTail);
+    for (int head = (beat * kPulseSpeed) % kPulseGap; head < kActiveW + kPulseTail;
+         head += kPulseGap) {
+        for (int x = head - kPulseTail; x < head; ++x)
+            if (x >= 0 && x < kActiveW) fb.fillRect(x, cableY(g, x) + 1, 1, 2, tail);
+        for (int x = head; x < head + kPulseW && x < kActiveW; ++x)
+            fb.fillRect(x, cableY(g, x) + 1, 1, 2, pulse);
+    }
+
+    // The school, drifting across the light.
+    const Rgb565 fish = sceneTone(kToneFish);
+    for (const auto& f : kFish) {
+        const int x = (f[0] + beat) % (kActiveW + 8) - 8;
+        const int y = g.horizonY * f[1] / 256;
+        fb.fillRect(x + 1, y, 4, 2, fish);   // the body, head to the right
+        fb.fillRect(x, y - 1, 1, 1, fish);   // the tail's fork
+        fb.fillRect(x, y + 2, 1, 1, fish);
+        fb.fillRect(x + 5, y, 1, 1, fish);   // the snout
+    }
+
+    // Marine snow, sinking the whole height.
+    const Rgb565 snow = sceneTone(kToneSnow);
+    for (const auto& s : kSnow)
+        fb.fillRect(s[0], (s[1] + beat / kSnowSink) % g.floorY, 1, 1, snow);
+
+    // The vent's bubbles, climbing the right margin from the bed to the surface: a
+    // two-pixel ring each, so a bubble is a bubble and not another speck of snow.
+    const Rgb565 bubble = sceneTone(kToneBubble);
+    for (int i = 0; i < static_cast<int>(sizeof(kBubbles)); ++i) {
+        const int y = g.floorY - (kBubbles[i] + beat * kBubbleRise) % g.floorY;
+        const int x = kVentX + ((y / 6 + i) % 3) - 1;
+        fb.fillRect(x, y - 1, 2, 1, bubble);
+        fb.fillRect(x - 1, y, 1, 2, bubble);
+        fb.fillRect(x + 2, y, 1, 2, bubble);
+        fb.fillRect(x, y + 2, 2, 1, bubble);
     }
 }
 
