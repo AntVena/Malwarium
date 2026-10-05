@@ -63,7 +63,7 @@ struct BackgroundDef {
 
 // Listed in the order an operator is likely to meet them: the two they start with, the
 // four a raised creature brings, the six an area pays out, the arena's two, then the
-// eight an achievement does.
+// eleven an achievement does.
 inline constexpr BackgroundDef kBackgrounds[] = {
     {SceneId::ServerYard, 1, "THE YARD", "YOURS FROM THE START",
      BackgroundSource::Start},
@@ -133,6 +133,16 @@ inline constexpr BackgroundDef kBackgrounds[] = {
     // farm and starts being somewhere you have been.
     {SceneId::DeepWebDive, 22, "THE DEEPWEB DIVE", "DIVE DEEP INTO THE DEEPWEB",
      BackgroundSource::Achieve, /*rung=*/0, "DEEPWEB_DEPTH_64"},
+    // Three ladders that paid Bits and a cache and nothing you could stand in, each
+    // given the room it is about. The peers row asks for TEN met rather than the
+    // ladder's top: meeting operators needs other operators in range, and a household
+    // with two devices should not find the room the radio pays for out of reach.
+    {SceneId::CipherHut, 23, "THE CIPHER HUT", "CRACK THE DECRYPTOGRAMS",
+     BackgroundSource::Achieve, /*rung=*/0, "QUOTES_50"},
+    {SceneId::SpecimenHall, 24, "THE SPECIMEN HALL", "DEFEAT EVERY MALBEAST",
+     BackgroundSource::Achieve, /*rung=*/0, "MALBEAST_ALL"},
+    {SceneId::LanParty, 25, "THE LAN PARTY", "MEET THE OTHER OPERATORS",
+     BackgroundSource::Achieve, /*rung=*/0, "PEERS_10"},
 };
 inline constexpr int kBackgroundCount =
     sizeof(kBackgrounds) / sizeof(kBackgrounds[0]);

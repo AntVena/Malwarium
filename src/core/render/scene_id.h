@@ -49,6 +49,12 @@ enum class SceneId : uint8_t {
     CrtBench,
     GroundStation,
     TraceCity,
+    // ...and the three that followed them, on ladders that had paid only Bits and a
+    // cache: the hut the board's ciphers are cracked in, the hall the bestiary is kept
+    // in, the party the other operators are met at.
+    CipherHut,
+    SpecimenHall,
+    LanParty,
     // Where a CREATURE is at home, derived from its line and how it gets around
     // (content/content_homes.h). What the habitat stands its pet on, and what a fight
     // with no place of its own falls back to.

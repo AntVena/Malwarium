@@ -77,6 +77,18 @@ prize to unlock. Wants a discovery axis on `CrewDef` first, then one `Kind` and 
 `content_crews.h`; `game_crew.cpp`'s roster filter; `QuoteReward::Kind`. | M | The gating axis is
 the real work; the prize is three lines once it exists. |
 
+**Achievement ladders still stop where a casual player stops.** A player a thousand rounds into
+SPOT THE PHISH had walked off the top of every arcade ladder, which is what the arcade's long tail
+(wires 164-188) answered; the same reading has not been taken everywhere else. Still shallow at
+the top for somebody who has made the thing a habit: BOSS wins (100), steps (100K), pets raised
+(25), LINK duel wins (50), handshakes (50), Bits held (50K), and the two endless cabinets' BEST
+scores, whose goals (CHROMATOPHORE 20, ISOLATION 60) should be set off real high scores rather
+than guessed. Two constraints shape it: `gen_ach_icons.py`'s `tally()` footer stops at FIVE marks,
+so a ladder already five deep (BOSS) needs a sixth-rung footer convention before it can grow; and
+the bitset holds 256 wires, of which 192 are spent. |
+`content_achievements.cpp`; `tools/gen_ach_icons.py`. | S per ladder, M for the footer rule | The
+evidence is the best guide to which ladders matter — ask the people playing it. |
+
 ### 1b. A separation pass over every screen
 
 **There are only three levers for making one thing read apart from another**: put it in a
@@ -307,10 +319,11 @@ you look at one.
   out yet and should not be authored until it does. ~60 lines against the primitives that
   already exist. Built so far: Citrus Circuit, The Pirate Bayou, Net-Sea Crossing, Napstorrent
   Moors, Castle Rapidscare, The Silk Lode, The DeepWeb Dive, Grid Horizon, Mainframe Row, The
-  Line, The CRT Bench, Ground Station, Trace City, Neon Subnet, Paywall Ridge, Zero Day Shrine —
+  Line, The CRT Bench, Ground Station, Trace City, The Cipher Hut, The Specimen Hall, The LAN
+  Party, Neon Subnet, Paywall Ridge, Zero Day Shrine —
   beside the six a CREATURE is at home in (`content/content_homes.h`), which are not on the
   authoring list because they belong to a line or a locomotion rather than to the ladder.
-  Every one of the twenty-two is an ownable background (`content/content_backgrounds.h`), so a
+  Every one of the twenty-five is an ownable background (`content/content_backgrounds.h`), so a
   new place arrives with a row there and something that earns it. Diff **S**.
 - **Backdrop brightness, and one colour for lights — once the screens are locked.** Every scene
   is held well under `ink` (`test_scene.cpp`), so on the value ramp a scene's brightest "light"
@@ -320,12 +333,6 @@ you look at one.
   single sanctioned accent hue for small lights (a few pixels a scene, inside the accent budget,
   never a hue that already means a state) is worth adding to the rail. Decide on the device,
   not the contact sheet: the panel's x1.75 changes what reads. Diff **S** (taste first).
-- **More achievement-paid places.** `BackgroundSource::Achieve` makes a prize backdrop one content
-  row over an achievement id, and eight families pay one out (recipes, the rig, the spectrum, the
-  steps, the arcade, the boss tally, the whole map, the DeepWeb depth ladder). The ones still
-  paying only Bits and a cache are the Decryptograms, the bestiary and the LINK peers — each an
-  obvious room. The cost is the scene, not the plumbing; the picker's mask is 32 rows wide.
-  Diff **S** each.
 - **A glyph for the BACKGROUND row.** It borrows `ICON_CFG`, the generic gear, because the CFG
   family has no picture for "the place your pet stands". One 20x20 beside the other
   `ICON_CFG_*`. Cosmetic; the row reads by its label today. Diff **S**.
