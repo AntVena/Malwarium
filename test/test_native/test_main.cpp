@@ -48,6 +48,8 @@ int g_failures = 0;
     RUN(test_stat_index_jumps_to_a_page_and_a_section) \
     RUN(test_prose_windows_break_on_sections) \
     RUN(test_palate_is_per_pet_and_counts_meals) \
+    RUN(test_favourite_food_is_found_by_feeding_it) \
+    RUN(test_rack_keeps_the_palate_and_the_favourite) \
     RUN(test_move_dex_lists_only_what_this_pet_could_learn) \
     RUN(test_stat_prose_windows_tile_the_list) \
     /* Carousel */                          \
@@ -117,6 +119,7 @@ int g_failures = 0;
     RUN(test_epic_dish_grants_a_permanent_xp_rate) \
     RUN(test_granted_upgrades_survive_the_rack_and_reset_on_a_new_egg) \
     RUN(test_save_v57_permanent_grants) \
+    RUN(test_save_v72_rack_palates_and_favourites) \
     RUN(test_every_permanent_grant_is_one_epic_dish) \
     RUN(test_lifetime_mark_says_whether_this_pet_has_had_it) \
     RUN(test_buffs_page_lists_the_permanent_upgrades) \

@@ -331,6 +331,11 @@ const AchievementDef kAchievements[] = {
      "Feed one pet every one of the {n} dishes.", "ICON_ACH_PALATE_ALL",
      AchSeries::PetFoodsEaten, kGoalAll, nullptr, 0,
      {bits(600), item("commend_cache")}},
+    // Not a rung: every pet has one favourite among the Rare and Epic dishes, kept
+    // secret until it is fed (core/model/pet_upgrades.h). Fired by Game::markFoodEaten.
+    {/*wire=*/192, "FAVOURITE_FOOD", "Comfort Food",
+     "Feed a pet its secret favourite dish.", "ICON_ACH_FAVOURITE_FOOD",
+     AchSeries::Event, /*goal=*/0, nullptr, 0, {bits(150), item("sealed_cache_rare")}},
 
     // The move roster's own half. Fixed rungs rather than kGoalAll for the reason its
     // series states (content_achievements.h): a pet can only ever learn its own line's

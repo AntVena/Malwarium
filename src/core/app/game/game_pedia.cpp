@@ -21,6 +21,7 @@
 #include "core/content/content_homes.h"   // sceneForCreature — a raised creature brings its place
 #include "core/app/game.h"
 
+#include <cstdio>
 #include <cstring>
 
 #include "core/app/game_achievements.h"
@@ -86,8 +87,39 @@ void Game::markFoodEaten(const ItemDef& d) {
     // kitchen — a Backup Drive is used, not tasted, and would read as a gap that can
     // never be filled by cooking.
     if (itemCategory(d) != ItemDef::Category::Food) return;
+    ensureFavouriteFood();
+    if (!upgrades_.favouriteFound && upgrades_.favouriteFood == &d) {
+        upgrades_.favouriteFound = true;
+        char buf[28];
+        std::snprintf(buf, sizeof(buf), "FAVOURITE: %s", d.displayName);
+        log_.push(LogEventType::ItemUsed, buf);
+        unlockAchievement(ach::kFavouriteFood);
+        markSaveDirty();
+    }
     if (petAteFood(d.id)) return;
     petFoodsEaten_.push_back(&d);
+    markSaveDirty();
+}
+
+void Game::ensureFavouriteFood() {
+    if (upgrades_.favouriteFood || upgrades_.favouriteFound) return;
+    // An Epic dish this pet has already taken the once-per-life grant of can never be
+    // fed to it again, so it would be a favourite nobody could find.
+    const PetLifetimeGates gates = petLifetimeGates();
+    std::vector<const ItemDef*> pool;
+    for (const ItemDef* d : registry_.allItems())
+        if (d && favouriteFoodEligible(*d) && !lifetimeGrantSpent(*d, gates))
+            pool.push_back(d);
+    if (pool.empty()) return;
+    // FNV-1a over the species, folded with the generation, the clock and the shared
+    // sequence's current value, then a murmur finaliser so neighbouring inputs land far
+    // apart. Two pets of one species still get their own roll.
+    uint32_t h = 2166136261u;
+    for (const char* c = pet_ ? pet_->id : ""; *c; ++c) h = (h ^ static_cast<uint8_t>(*c)) * 16777619u;
+    h ^= static_cast<uint32_t>(generation_) * 0x9e3779b9u;
+    h ^= nowMs_ ^ rng_;
+    h ^= h >> 16; h *= 0x85ebca6bu; h ^= h >> 13; h *= 0xc2b2ae35u; h ^= h >> 16;
+    upgrades_.favouriteFood = pool[h % pool.size()];
     markSaveDirty();
 }
 

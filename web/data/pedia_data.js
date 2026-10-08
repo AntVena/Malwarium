@@ -7617,6 +7617,12 @@ window.PEDIA_DATA = {
       "goal": 195
     },
     {
+      "key": "FAVOURITE_FOOD",
+      "name": "Comfort Food",
+      "trigger": "Feed a pet its secret favourite dish.",
+      "icon": "assets/icons/ICON_ACH_FAVOURITE_FOOD.png"
+    },
+    {
       "key": "REPERTOIRE_10",
       "name": "Quick Study",
       "trigger": "Teach one pet 10 different moves.",

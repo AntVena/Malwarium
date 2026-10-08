@@ -248,11 +248,18 @@ public:
     PetLifetimeGates petLifetimeGates() const {
         return {upgrades_, yubiConsumed_, shieldItemConsumed_};
     }
-    // OFF-LEVEL points in combat stat `i`, granted by an Epic dish rather than earned.
-    // Sibling to levelStatPoint(): that one is sheddable and counts toward the level,
-    // this one is neither. Out-of-range → 0.
+    // OFF-LEVEL points in combat stat `i`, granted by an Epic dish or a found favourite
+    // dish rather than earned. Sibling to levelStatPoint(): that one is sheddable and
+    // counts toward the level, this one is neither. Out-of-range → 0.
     int statBonusPoint(int i) const {
-        return (i >= 0 && i < kLevelStatCount) ? upgrades_.statBonus[i] : 0;
+        if (i < 0 || i >= kLevelStatCount) return 0;
+        return upgrades_.statBonus[i] +
+               (upgrades_.favouriteFound ? kFavouriteFoodStatBonus : 0);
+    }
+    // The active pet's favourite dish, or nullptr while it is still a secret — the
+    // FOODS grid and the 'Pedia must not be able to give it away.
+    const ItemDef* foundFavouriteFood() const {
+        return upgrades_.favouriteFound ? upgrades_.favouriteFood : nullptr;
     }
     // What combat actually fights with: earned + granted. The single answer to "how many
     // points does this pet have in stat `i`", so no fighter is built from half of it.
@@ -2072,6 +2079,12 @@ public:
     // real useItem() path so its full effect + consume + log fire. No-op if the
     // id is unknown. Add the item to inventory() first.
     void debugUseItem(const char* id);
+    // Pin the active pet's (unfound) favourite dish, so a gate can feed it on purpose
+    // rather than hunting through the roll.
+    void debugSetFavouriteFood(const char* id) {
+        upgrades_.favouriteFood = registry_.item(id);
+        upgrades_.favouriteFound = false;
+    }
     // Decrypt a sealed cache directly via the real openSealedCache reward path (tests):
     // caches now decrypt from the Hacker VAULT, not pet-side ITEMS. No-op on unknown id.
     void debugOpenCache(const char* id);
@@ -3930,8 +3943,14 @@ private:
     // holding a dish is not tasting it and the whole point of the set is the difference.
     std::vector<const ItemDef*> petFoodsEaten_;
     // Record a dish on the active pet's palate. Idempotent, and a no-op for anything
-    // that is not a Food — a Buff drunk from the bag is not a meal.
+    // that is not a Food — a Buff drunk from the bag is not a meal. Also where a
+    // favourite dish is found.
     void markFoodEaten(const ItemDef& d);
+    // Roll the active pet's favourite dish if it has none yet. Lazy, at the first meal
+    // that needs it, so a pet from an older save or a rack slot that never had one gets
+    // one the same way a new egg does. Draws off a hash rather than advancing rng_, so
+    // feeding never shifts the shared sequence the spoilage and combat rolls read.
+    void ensureFavouriteFood();
     // Fold the live inventory into collectedItems_. Called from the sweep rather than
     // wired into each grant site: every path that adds an item necessarily leaves it in
     // the bag for a tick, so one pass over the stacks catches all of them — including

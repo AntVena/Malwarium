@@ -938,7 +938,6 @@ void Game::startFeeding(const ItemDef& d, bool fromLockout) {
     // a stat that was already capped has none to show.
     feedBefore_ = {model_.hunger(), model_.fragmentation(), model_.happiness()};
     applyItemEffects(d);                        // Hunger/Happy fill + any frag/happy-pull
-    markFoodEaten(d);                          // this pet's palate (STAT's FOODS grid)
     noteCareSignal(DominantSignal::Feeding);   // dominant-signal tally
     // Feeding from the crisis resolves it immediately — disarm the deadline so it
     // can't penalise the pet mid-eat (endFeeding finalises the return to idle).
@@ -946,6 +945,8 @@ void Game::startFeeding(const ItemDef& d, bool fromLockout) {
     char buf[28];
     std::snprintf(buf, sizeof(buf), "FED %s", d.displayName);
     log_.push(LogEventType::ItemUsed, buf);
+    // After the FED line, so a favourite found by this bite logs as its consequence.
+    markFoodEaten(d);                          // this pet's palate (STAT's FOODS grid)
     feedItem_ = &d;
     feedBeat_ = 0;
     fxBeat_ = 0;              // the bite's own dissolve clock

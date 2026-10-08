@@ -49,7 +49,8 @@ int foodRowHeight(const FoodRow& r, bool firstInWindow) {
 }  // namespace
 
 std::vector<FoodRow> buildFoodRows(const ContentRegistry& reg,
-                                   const std::vector<const ItemDef*>& eatenSet) {
+                                   const std::vector<const ItemDef*>& eatenSet,
+                                   const ItemDef* favourite) {
     auto tasted = [&](const ItemDef* d) {
         for (const ItemDef* e : eatenSet)
             if (e && d && std::strcmp(e->id, d->id) == 0) return true;
@@ -81,6 +82,8 @@ std::vector<FoodRow> buildFoodRows(const ContentRegistry& reg,
             for (std::size_t c = 0; c < kFoodCols && i + c < group.size(); ++c) {
                 row.cells[c] = group[i + c];
                 row.eaten[c] = tasted(group[i + c]);
+                row.favourite[c] =
+                    favourite && std::strcmp(favourite->id, group[i + c]->id) == 0;
                 ++row.count;
             }
             out.push_back(row);
@@ -172,6 +175,19 @@ void drawFoodsScreen(Framebuffer& fb, const ContentRegistry& reg,
                 else
                     drawSpriteTinted(fb, *icon, 0, cx, y, palColor(Pal::INK_DIM), 0,
                                      false, /*alpha=*/90);
+                // The favourite is a SHAPE, four corner brackets in the cell's air, so it
+                // reads in grayscale and never competes with the eaten/uneaten value.
+                if (r.favourite[c]) {
+                    const Rgb565 ink = palColor(Pal::INK);
+                    const int x0 = cx - 2, y0 = y - 2, x1 = cx + kRowIcon + 1,
+                              y1 = y + kRowIcon + 1;
+                    for (int k = 0; k < 4; ++k) {
+                        fb.set(x0 + k, y0, ink); fb.set(x0, y0 + k, ink);
+                        fb.set(x1 - k, y0, ink); fb.set(x1, y0 + k, ink);
+                        fb.set(x0 + k, y1, ink); fb.set(x0, y1 - k, ink);
+                        fb.set(x1 - k, y1, ink); fb.set(x1, y1 - k, ink);
+                    }
+                }
             }
         }
         y += foodRowHeight(r, v == 0);

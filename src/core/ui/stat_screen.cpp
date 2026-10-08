@@ -373,6 +373,17 @@ std::vector<BuffRow> buildBuffRows(const ContentRegistry& reg,
         if (upgrades.statBonus[i] > 0) addByEffect(kStatGrants[i], 0, true, "PERMANENT");
     if (upgrades.xpRatePct > 0)
         addByEffect(ItemEffect::Kind::XpRateBonusPct, 0, true, "PERMANENT");
+    if (upgrades.favouriteFound) {
+        section("PERMANENT");
+        BuffRow row{};
+        row.label = "FAVOURITE DISH";
+        std::snprintf(row.effect.buf, sizeof(row.effect.buf),
+                      "Loves %s. +%d to every combat stat.",
+                      upgrades.favouriteFood ? upgrades.favouriteFood->displayName
+                                             : "its favourite",
+                      kFavouriteFoodStatBonus);
+        out.push_back(row);
+    }
     return out;
 }
 

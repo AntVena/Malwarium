@@ -597,6 +597,37 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
 
     // v71
     w.u8(d.exploreSound);
+
+    // v72: the favourite dish — the active pet's, then the rack's in rack order — and
+    // the rack's palates as a food-id dictionary plus a bitset per pet over it.
+    w.bytes(d.favouriteFood, kSaveIdCap);
+    w.u8(d.favouriteFound);
+    w.u16(static_cast<uint16_t>(d.rack.size()));
+    for (const SaveStoredPet& p : d.rack) {
+        w.bytes(p.favouriteFood, kSaveIdCap);
+        w.u8(p.favouriteFound);
+    }
+    std::vector<const SaveId*> dict;
+    auto dictIndex = [&](const SaveId& s) -> int {
+        for (size_t i = 0; i < dict.size(); ++i)
+            if (std::strncmp(dict[i]->id, s.id, kSaveIdCap) == 0) return static_cast<int>(i);
+        return -1;
+    };
+    for (const SaveStoredPet& p : d.rack)
+        for (const SaveId& s : p.foodsEaten)
+            if (dictIndex(s) < 0) dict.push_back(&s);
+    w.u16(static_cast<uint16_t>(dict.size()));
+    for (const SaveId* s : dict) writeId(w, *s);
+    w.u16(static_cast<uint16_t>(d.rack.size()));
+    for (const SaveStoredPet& p : d.rack) {
+        std::vector<uint8_t> bits((dict.size() + 7) / 8, 0);
+        for (const SaveId& s : p.foodsEaten) {
+            const int i = dictIndex(s);
+            bits[static_cast<size_t>(i) / 8] |= static_cast<uint8_t>(1u << (i % 8));
+        }
+        w.u16(static_cast<uint16_t>(bits.size()));
+        for (uint8_t b : bits) w.u8(b);
+    }
 }
 
 std::vector<uint8_t> serializeSave(const SaveData& d) {
@@ -1263,6 +1294,43 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
 
     // v71
     if (version >= 71) d.exploreSound = r.u8();
+
+    // v72 tail: the favourite dishes and the rack's palates. Absent in an older blob ->
+    // no favourite anywhere (each pet rolls one at its next meal) and empty rack plates.
+    if (version >= 72) {
+        r.bytes(d.favouriteFood, kSaveIdCap);
+        d.favouriteFood[kSaveIdCap - 1] = '\0';
+        d.favouriteFound = r.u8();
+        const uint16_t nFav = r.u16();
+        for (uint16_t i = 0; i < nFav && r.ok; ++i) {
+            char id[kSaveIdCap];
+            r.bytes(id, kSaveIdCap);
+            id[kSaveIdCap - 1] = '\0';
+            const uint8_t found = r.u8();
+            if (i < d.rack.size()) {
+                std::memcpy(d.rack[i].favouriteFood, id, kSaveIdCap);
+                d.rack[i].favouriteFound = found;
+            }
+        }
+        std::vector<SaveId> dict;
+        const uint16_t nDict = r.u16();
+        for (uint16_t i = 0; i < nDict && r.ok; ++i) {
+            SaveId s; r.bytes(s.id, kSaveIdCap); s.id[kSaveIdCap - 1] = '\0';
+            dict.push_back(s);
+        }
+        const uint16_t nPal = r.u16();
+        for (uint16_t i = 0; i < nPal && r.ok; ++i) {
+            const uint16_t nBytes = r.u16();
+            for (uint16_t b = 0; b < nBytes && r.ok; ++b) {
+                const uint8_t byte = r.u8();
+                for (int bit = 0; bit < 8; ++bit) {
+                    const size_t k = static_cast<size_t>(b) * 8 + bit;
+                    if (((byte >> bit) & 1) && k < dict.size() && i < d.rack.size())
+                        d.rack[i].foodsEaten.push_back(dict[k]);
+                }
+            }
+        }
+    }
 
     if (!r.ok) { out = SaveData{}; return false; }  // truncated -> empty
     if (version < newestRenameVersion()) renameRetiredIds(d, version);

@@ -41,33 +41,6 @@ wants deciding before the middle areas are written rather than after. |
 `test_story_chapters_fit_their_page` is the gate. | M each | The two endless zones only ever
 reach the ARRIVAL beat — there is no gauntlet down there to open or close. |
 
-**A pet has no FAVOURITE FOOD, and the collection pages now make room for one.** STAT's FOODS
-grid gives every pet a plate to fill in and the PALATE achievements pay for filling it, which
-turns the pantry into something a player reads rather than uses — and the obvious thing missing
-from a plate is a dish this particular creature *likes*. Undiscovered but findable: rolled per
-pet (seeded off the creature + its generation, so it survives a reboot without a save field of
-its own), revealed only by feeding it, and worth something once found — a Happiness bonus above
-the dish's own, a care-mistake forgiven, or a lean on the branch. The grid is where the reveal
-belongs: one cell marked, and nothing on the page saying which until it is. Wants a decision on
-whether the roll is per-INSTANCE (a second Paypup has its own) or per-SPECIES (every Paypup
-shares one, so the answer is worth trading between players over the radio), which is the design
-half and should be settled first. |
-`core/ui/collect_screen.h`'s FOODS grid; `Game::markFoodEaten`; `content_items.cpp` for what a
-favourite is worth. | L | The per-species reading is the more interesting one — it makes a
-discovery a thing to TELL somebody, which the LINK screen already has a channel for. |
-
-**The palate does not survive the rack.** A stored pet's record (`SaveStoredPet`) carries its
-level, kit, dive record and upgrades, but not what it has eaten — so deploying a pet back off the
-shelf hands it an empty plate, and the FOODS grid it comes back to is a lie about a creature that
-did eat those dishes. Not frozen because the obvious shape does not fit: a list of up to every
-food, per slot, against 64 slots and a 256KB save partition. A per-slot BITMASK over the food
-roster is 25 bytes and would fit ten times over, but it is a POSITIONAL field over a content table
-that grows, which is the thing `save.h`'s ladder-insert machinery exists to deal with and the
-reason this wants a deliberate pass rather than a quick field. |
-`save.h`'s `SaveStoredPet` + `freezePet`/`archDeployStored` in `game_arch.cpp`. | L | The
-achievements are unaffected either way — an earned bit never falls — so this is about the page
-telling the truth, not about losing progress. |
-
 **Capture arming costs ~70KB and the AP ~58KB**, against ~126KB free with the radio idle. The device works, and the save no longer needs a big contiguous block, but that was the only thing standing on this — anything else that grows will hit the same wall. Worth a pass at what the capture path actually needs. | `net_capture.h`'s `powerUp` (`esp_wifi_init` + promiscuous + the pcap SD buffers). | M | Measured on device, not estimated: `[ap] down free=126408` → `[cap] armed free=56188`. |
 
 **A crew cannot be DISCOVERED.** `QuoteReward::Kind` has room for it and it is one of the prizes
@@ -85,7 +58,7 @@ the top for somebody who has made the thing a habit: BOSS wins (100), steps (100
 scores, whose goals (CHROMATOPHORE 20, ISOLATION 60) should be set off real high scores rather
 than guessed. Two constraints shape it: `gen_ach_icons.py`'s `tally()` footer stops at FIVE marks,
 so a ladder already five deep (BOSS) needs a sixth-rung footer convention before it can grow; and
-the bitset holds 256 wires, of which 192 are spent. |
+the bitset holds 256 wires, of which 193 are spent. |
 `content_achievements.cpp`; `tools/gen_ach_icons.py`. | S per ladder, M for the footer rule | The
 evidence is the best guide to which ladders matter — ask the people playing it. |
 

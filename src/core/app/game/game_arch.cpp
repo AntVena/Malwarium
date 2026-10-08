@@ -200,7 +200,8 @@ static SaveStoredPet freezePet(const CreatureDef* pet, const PetModel& m, int ge
                                const Game::SlotKind (&slotKinds)[kMaxMoveSlots],
                                const MoveLoadout& moveLoadout, const Loadout& loadout,
                                uint32_t timeInStageMs, int bestDeepWebDepth,
-                               uint32_t dyingElapsedMs, const PetUpgrades& upgrades) {
+                               uint32_t dyingElapsedMs, const PetUpgrades& upgrades,
+                               const std::vector<const ItemDef*>& foodsEaten) {
     SaveStoredPet p;
     std::strncpy(p.id, pet->id, kSaveIdCap - 1);
     p.hunger = m.hunger();
@@ -232,6 +233,15 @@ static SaveStoredPet freezePet(const CreatureDef* pet, const PetModel& m, int ge
     p.bandwidthRegenBonusMin = upgrades.bandwidthRegenMin;
     for (int i = 0; i < kLevelStatCount; ++i) p.statBonus[i] = upgrades.statBonus[i];
     p.xpRateBonusPct = upgrades.xpRatePct;
+    // The palate and the favourite are the creature's too: a pet that went onto the shelf
+    // having eaten something comes back having eaten it, and still loving the same dish.
+    for (const ItemDef* d : foodsEaten) {
+        SaveId id; std::strncpy(id.id, d->id, kSaveIdCap - 1);
+        p.foodsEaten.push_back(id);
+    }
+    if (upgrades.favouriteFood)
+        std::strncpy(p.favouriteFood, upgrades.favouriteFood->id, kSaveIdCap - 1);
+    p.favouriteFound = upgrades.favouriteFound ? 1 : 0;
     return p;
 }
 
@@ -262,7 +272,7 @@ void Game::archStoreActive() {
     rack_.push_back(freezePet(pet_, model_, generation_, defragCount_, combatLevel_,
                                combatXp_, statPoints_, slotKinds_, moveLoadout_, loadout_,
                                nowMs_ - stageEnteredMs_, bestDeepWebDepth_,
-                               dyingElapsedMs_, upgrades_));
+                               dyingElapsedMs_, upgrades_, petFoodsEaten_));
     noteRackDuplicates();   // before startHatch: a line earned HERE belongs on THIS menu
     // ...and the shelf with nothing free left on it. Fired at the freeze rather than
     // swept off a count, because "full" is a comparison against rackSlots() — a ceiling
@@ -291,7 +301,7 @@ void Game::archDeployStored(int storedIdx) {
         rack_[storedIdx] = freezePet(pet_, model_, generation_, defragCount_, combatLevel_,
                                       combatXp_, statPoints_, slotKinds_, moveLoadout_,
                                       loadout_, nowMs_ - stageEnteredMs_, bestDeepWebDepth_,
-                                      dyingElapsedMs_, upgrades_);
+                                      dyingElapsedMs_, upgrades_, petFoodsEaten_);
     } else {
         rack_.erase(rack_.begin() + storedIdx);
     }
@@ -314,12 +324,11 @@ void Game::archDeployStored(int storedIdx) {
     // just gone into the rack — the hold included, which is also the way out of a pet
     // parked at a stage by a player who has no Eject-USB to hand.
     clearUsbPort();
-    // The palate empties with the port, and for a plainer reason: the rack record has no
-    // room for one. A stored pet's tasted set would be a list of up to every food on the
-    // shelf, per slot, against a 256KB save — so what a frozen pet carries is everything
-    // BUT that, and a thawed pet's plate reads as unrecorded rather than as its
-    // predecessor's.
+    // The incoming pet's own palate. A food the build no longer has is dropped, the way
+    // applySave drops one.
     petFoodsEaten_.clear();
+    for (const SaveId& s : incoming.foodsEaten)
+        if (const ItemDef* d = registry_.item(s.id)) petFoodsEaten_.push_back(d);
     bestDeepWebDepth_ = incoming.bestDeepWebDepth;  // thaw this pet's own DeepWeb record
     // Thaw the incoming pet's dying window mid-flight. dyingArmed_ is deliberately NOT
     // restored: it anchors against nowMs_, so the next tick re-arms it against the
@@ -333,6 +342,8 @@ void Game::archDeployStored(int storedIdx) {
     for (int i = 0; i < kLevelStatCount; ++i)
         upgrades_.statBonus[i] = incoming.statBonus[i];
     upgrades_.xpRatePct = incoming.xpRateBonusPct;
+    upgrades_.favouriteFood = registry_.item(incoming.favouriteFood);
+    upgrades_.favouriteFound = incoming.favouriteFound != 0;
     // v26: thaw the incoming pet's creature-level state. Without it the deployed pet
     // silently inherits the outgoing pet's level.
     combatLevel_ = incoming.combatLevel;

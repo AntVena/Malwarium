@@ -323,7 +323,18 @@ constexpr int kSaveTextCap = 28;     // matches EventLog's LogEntry.text
 //     version exists so the rename row has a `sinceVersion` to retire against.
 // v71 APPEND `exploreSound`, one byte (1 = the walk's A+C SOUND row on). Device-level, beside v68's
 //     SOUND. Pre-v71 -> 1, which is how every device sounded before it was stored.
-constexpr uint16_t kSaveVersion = 71;
+// v72 APPEND the per-pet FAVOURITE FOOD and the RACK'S PALATES, one tail after v71's.
+//     The favourite is an item id cell plus a found byte — the active pet's, then a
+//     parallel list onto d.rack (v50's shape). The palates are each stored pet's
+//     `foodsEaten`, written as a DICTIONARY of every food id any rack pet has tasted,
+//     then one length-prefixed bitset per rack pet over that dictionary's order. The
+//     dictionary is what keeps a bitset from being positional over the food table: the
+//     blob names its own columns, so a food added, removed or reordered in
+//     content_items.cpp moves nothing, and the cost is bounded by the roster (one id
+//     cell per distinct food plus a bit per pet per food) rather than by slots x foods
+//     x id cells. Pre-v72 -> no favourite (rolled at the pet's next meal) and empty rack
+//     palates — nothing recorded them, so nothing is recovered.
+constexpr uint16_t kSaveVersion = 72;
 
 // The oldest blob deserialize will read, and the ONLY thing that retires a rename row
 // (see `renamedIds`). Raising it is how a device stops carrying migration weight for saves
@@ -442,6 +453,12 @@ struct SaveStoredPet {
     // pet's level, and a granted point is not a level.
     int32_t statBonus[kLevelStatCount] = {0};
     int32_t xpRateBonusPct = 0;
+    // v72: what this pet has tasted, and its favourite dish (empty = not rolled yet) with
+    // whether it has been found — frozen so the rack never hands a pet back with an
+    // empty plate or a different favourite.
+    std::vector<SaveId> foodsEaten;
+    char favouriteFood[kSaveIdCap] = {0};
+    uint8_t favouriteFound = 0;
 };
 
 // The permanent status of an ARCH record: a greyed, read-only entry that
@@ -919,6 +936,12 @@ struct SaveData {
 
     // --- v71 ---
     uint8_t exploreSound = 1;
+
+    // --- v72: the ACTIVE pet's favourite dish --------------------------------
+    // Per-pet, reset on a new egg and frozen with the pet (SaveStoredPet). Empty means
+    // not rolled yet, which Game rolls at the next meal (core/model/pet_upgrades.h).
+    char favouriteFood[kSaveIdCap] = {0};
+    uint8_t favouriteFound = 0;
 };
 
 // Read/write one mod's spare count in the v45 packed pool (SaveData::ownedModCounts) by

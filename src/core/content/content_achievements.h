@@ -256,6 +256,10 @@ inline constexpr const char* kDockPunchingUp   = "DOCK_PUNCHING_UP";
 // belongs to at most one crew at a time and may switch freely — there is no count here
 // that could mean anything, only the moment of first taking a side.
 inline constexpr const char* kCrewEnlisted     = "CREW_ENLISTED";
+// A pet fed its secret favourite dish for the first time (Game::markFoodEaten). An Event
+// because the moment is the find: the favourite is rolled per pet and leaves no count
+// that a sweep could test.
+inline constexpr const char* kFavouriteFood    = "FAVOURITE_FOOD";
 // The ARCH rack left with no free slot, fired from Game::archStoreActive. The one rack
 // row that cannot be a counted rung: "full" is a comparison against a ceiling the player
 // bought themself (Game::rackSlots), so there is no fixed number to hold it to.

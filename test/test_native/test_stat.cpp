@@ -868,6 +868,121 @@ void test_palate_is_per_pet_and_counts_meals() {
     CHECK(g.itemCollected(dish->id));
 }
 
+// The favourite dish: rolled per pet from the Rare-or-better foods, secret until the pet
+// is fed it, and then a standing +kFavouriteFoodStatBonus on every combat stat, the
+// Comfort Food row, a bracket on the FOODS grid and a PERMANENT row on BUFFS.
+void test_favourite_food_is_found_by_feeding_it() {
+    Game g{StartMode::Hatched};
+    CHECK(g.foundFavouriteFood() == nullptr);
+
+    // A meal of anything rolls a favourite, and it is always an eligible dish — checked
+    // over many pets so a roll that strays outside the pool has room to show up.
+    const ItemDef* snack = nullptr;
+    for (const ItemDef* d : g.content().allItems())
+        if (d && d->type == ItemDef::Type::Food && !favouriteFoodEligible(*d)) { snack = d; break; }
+    CHECK(snack != nullptr);
+    if (!snack) return;
+    for (uint32_t i = 0; i < 20; ++i) {
+        Game h{StartMode::Hatched};
+        h.debugSeedRng(i * 7919u + 1u);
+        h.inventory().add(snack->id, 1);
+        h.debugUseItem(snack->id);
+        const ItemDef* fav = h.petUpgrades().favouriteFood;
+        CHECK(fav != nullptr && favouriteFoodEligible(*fav));
+        CHECK(h.foundFavouriteFood() == nullptr);   // eating a snack finds nothing
+    }
+
+    // Feed the favourite: the first eligible dish the ITEMS flow will actually serve.
+    int before[kLevelStatCount];
+    for (int i = 0; i < kLevelStatCount; ++i) before[i] = g.totalStatPoint(i);
+    const ItemDef* fav = nullptr;
+    for (const ItemDef* d : g.content().allItems()) {
+        if (!d || !favouriteFoodEligible(*d)) continue;
+        g.debugSetFavouriteFood(d->id);
+        g.inventory().add(d->id, 1);
+        g.debugUseItem(d->id);
+        if (g.petAteFood(d->id)) { fav = d; break; }
+    }
+    CHECK(fav != nullptr);
+    if (!fav) return;
+    CHECK(g.foundFavouriteFood() == fav);
+    CHECK(g.hasAchievement(ach::kFavouriteFood));
+    for (int i = 0; i < kLevelStatCount; ++i)
+        CHECK(g.totalStatPoint(i) == before[i] + kFavouriteFoodStatBonus);
+    // Not an Epic-dish grant: the once-per-life gates still read the dishes alone.
+    for (int i = 0; i < kLevelStatCount; ++i) CHECK(g.petUpgrades().statBonus[i] == 0);
+
+    int marked = 0;
+    for (const FoodRow& r : buildFoodRows(g.content(), {fav}, g.foundFavouriteFood()))
+        for (int c = 0; c < r.count; ++c)
+            if (r.favourite[c]) { ++marked; CHECK(r.cells[c] == fav); }
+    CHECK(marked == 1);
+    bool listed = false;
+    for (const BuffRow& b : buildBuffRows(g.content(), false, false, false, 0, 1, false,
+                                          false, 0, BranchOverride::None, 1, false,
+                                          g.petUpgrades()))
+        if (!b.header && std::strcmp(b.label, "FAVOURITE DISH") == 0) listed = true;
+    CHECK(listed);
+
+    // A new egg is a new pet with its own secret.
+    g.resetToHatch();
+    CHECK(g.foundFavouriteFood() == nullptr);
+    for (int i = 0; i < kLevelStatCount; ++i) CHECK(g.statBonusPoint(i) == 0);
+}
+
+// The rack keeps what a pet has eaten and which dish it loves — through the freeze, the
+// thaw and the save blob between them.
+void test_rack_keeps_the_palate_and_the_favourite() {
+    // Close the feeding modal and clear any held achievement banner, so the ARCH walk
+    // below starts from the home screen, where its presses land.
+    auto settle = [](Game& g) {
+        for (int i = 0; i < 20; ++i) {
+            if (g.nav() == Game::Nav::ModalFeeding) g.onButton(press(Button::B));
+            else if (g.achBannerHeld()) g.dismissAchievementBanner();
+            else if (g.nav() == Game::Nav::Submenu || g.nav() == Game::Nav::Detail) tapC(g);
+            else break;
+        }
+        CHECK(!g.achBannerHeld() &&
+              (g.nav() == Game::Nav::Idle || g.nav() == Game::Nav::Cursor));
+    };
+    MemSaveStore store;
+    const ItemDef* dish = nullptr;
+    const ItemDef* fav = nullptr;
+    {
+        Game g(StartMode::Hatched, "paypup", &store);
+        for (const ItemDef* d : g.content().allItems())
+            if (d && d->type == ItemDef::Type::Food && !favouriteFoodEligible(*d)) { dish = d; break; }
+        for (const ItemDef* d : g.content().allItems())
+            if (d && favouriteFoodEligible(*d)) { fav = d; break; }
+        CHECK(dish && fav);
+        if (!dish || !fav) return;
+        g.debugSetFavouriteFood(fav->id);
+        g.inventory().add(dish->id, 1);
+        g.debugUseItem(dish->id);
+        CHECK(g.petAteFood(dish->id));
+        settle(g);
+
+        enterArchNewEgg(g);                          // Paypup to the rack, a new egg
+        pickFirstEggLine(g);
+        CHECK(g.rack().size() == 1);
+        CHECK(g.petFoodsEaten() == 0);              // the egg behind it has a clean plate
+        g.tick(kSaveAutosaveMs + kHeartbeatMs);
+    }
+    if (!dish || !fav) return;
+    {
+        Game g(StartMode::Hatched, "paypup", &store);  // reboot over the same store
+        CHECK(g.rack().size() == 1);
+        settle(g);
+        enterArchStoredPet(g, "paypup");
+        archConfirmAction(g);                        // Deploy
+        CHECK(g.pet() && std::strcmp(g.pet()->id, "paypup") == 0);
+        CHECK(g.petAteFood(dish->id));
+        CHECK(g.petFoodsEaten() == 1);
+        CHECK(g.petUpgrades().favouriteFood == fav);
+        CHECK(!g.petUpgrades().favouriteFound);
+    }
+}
+
 // The MOVES page's row model: every move this pet could ever learn, its own line first
 // and the common pool after, and NOTHING it could not. A page that listed another line's
 // moves would be inviting the player to chase something the equip gate will never let

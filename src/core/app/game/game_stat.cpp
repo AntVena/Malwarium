@@ -91,7 +91,7 @@ std::vector<StatIndexRow> Game::statIndexRows() const {
 }
 
 std::vector<FoodRow> Game::statFoodRows() const {
-    return buildFoodRows(registry_, petFoodsEaten_);
+    return buildFoodRows(registry_, petFoodsEaten_, foundFavouriteFood());
 }
 
 std::vector<ProseRow> Game::statMoveDexRows() const {

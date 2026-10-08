@@ -46,6 +46,7 @@ struct FoodRow {
     int total = 0;
     const ItemDef* cells[kFoodCols] = {};
     bool eaten[kFoodCols] = {};
+    bool favourite[kFoodCols] = {};  // the pet's found favourite dish, drawn bracketed
     int count = 0;                   // cells used in this row
 };
 
@@ -56,8 +57,11 @@ struct FoodRow {
 // Rarity order rather than roster order because rarity is what tells a player whether a
 // gap is a shopping trip or a campaign: the commons are a kitchen you can fill
 // deliberately, and the epics are the ones a dive or a boss has to hand you.
+// `favourite` is the pet's favourite dish once FOUND (Game::foundFavouriteFood) and
+// nullptr before, so the page can never give the secret away.
 std::vector<FoodRow> buildFoodRows(const ContentRegistry& reg,
-                                   const std::vector<const ItemDef*>& eatenSet);
+                                   const std::vector<const ItemDef*>& eatenSet,
+                                   const ItemDef* favourite = nullptr);
 
 // How many rows starting at `top` fit one screen, stopping at the next section for the
 // reason the prose flow does (prose_page.h).

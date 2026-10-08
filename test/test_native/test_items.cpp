@@ -1673,6 +1673,43 @@ void test_granted_upgrades_survive_the_rack_and_reset_on_a_new_egg() {
 
 // v57 — the off-level points and the XP rate round-trip for the active pet AND for a
 // pet on the shelf, positionally matched the way the v50 tail beside them is.
+// v72: the favourite dishes and the rack's palates round-trip, and two stored pets that
+// ate the same dish share one dictionary entry rather than each writing the id.
+void test_save_v72_rack_palates_and_favourites() {
+    SaveData a;
+    std::strcpy(a.activeId, "paypup");
+    std::strcpy(a.favouriteFood, "racelette");
+    a.favouriteFound = 1;
+    SaveStoredPet p1; std::strcpy(p1.id, "cryptoshell");
+    p1.foodsEaten = {SaveId{"dyno_nuggets"}, SaveId{"brusshetta"}};
+    std::strcpy(p1.favouriteFood, "profilerole");
+    SaveStoredPet p2; std::strcpy(p2.id, "malbear");
+    p2.foodsEaten = {SaveId{"brusshetta"}};
+    p2.favouriteFound = 1;
+    SaveStoredPet p3; std::strcpy(p3.id, "paypup");   // nothing eaten, nothing rolled
+    a.rack = {p1, p2, p3};
+
+    SaveData b;
+    const std::vector<uint8_t> blob = serializeSave(a);
+    CHECK(deserializeSave(blob, b));
+    CHECK(std::strcmp(b.favouriteFood, "racelette") == 0 && b.favouriteFound == 1);
+    CHECK(b.rack.size() == 3);
+    if (b.rack.size() != 3) return;
+    CHECK(b.rack[0].foodsEaten.size() == 2);
+    CHECK(std::strcmp(b.rack[0].favouriteFood, "profilerole") == 0);
+    CHECK(b.rack[0].favouriteFound == 0);
+    CHECK(b.rack[1].foodsEaten.size() == 1 &&
+          std::strcmp(b.rack[1].foodsEaten[0].id, "brusshetta") == 0);
+    CHECK(b.rack[1].favouriteFood[0] == '\0' && b.rack[1].favouriteFound == 1);
+    CHECK(b.rack[2].foodsEaten.empty());
+
+    // The shared dish is written once: one more meal on the second pet of a dish the
+    // first already ate costs a bit, not another id cell.
+    SaveData c = a;
+    c.rack[1].foodsEaten.push_back(SaveId{"dyno_nuggets"});
+    CHECK(serializeSave(c).size() == blob.size());
+}
+
 void test_save_v57_permanent_grants() {
     SaveData a;
     std::strcpy(a.activeId, "paypup");

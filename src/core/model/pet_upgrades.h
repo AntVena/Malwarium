@@ -12,6 +12,11 @@
 //
 // Adding one: a field here, its ItemEffect::Kind + applier case (defs.h /
 // Game::applyItemEffects), its line in the save codec's tail, and a BUFFS row.
+//
+// The FAVOURITE DISH rides here too, though no item grants it: it is rolled once per
+// pet from every Rare-or-better food (Game::ensureFavouriteFood), hidden until the pet
+// is fed it, and from then on is a standing stat grant like the dishes' — so it travels
+// through the rack, the save and the BUFFS page on exactly the same path.
 #pragma once
 
 #include "tunables.h"   // kLevelStatCount — the combat-stat axis statBonus is indexed on
@@ -34,7 +39,25 @@ struct PetUpgrades {
     // the player-level Passive XP Farming rig row rather than replacing it: that one pays
     // XP for hunger decay, this one raises what every source pays.
     int xpRatePct = 0;
+    // This pet's favourite dish (nullptr = not rolled yet) and whether it has been fed
+    // it. Once found it adds kFavouriteFoodStatBonus to every combat stat, counted with
+    // statBonus in combat but kept apart from it, so it never closes an Epic dish's
+    // once-per-life gate (lifetimeGrantSpent below reads statBonus alone).
+    const ItemDef* favouriteFood = nullptr;
+    bool favouriteFound = false;
 };
+
+// Points the favourite dish adds to each combat stat once the pet has been fed it.
+inline constexpr int kFavouriteFoodStatBonus = 3;
+
+// Can `d` be rolled as a pet's favourite? Every Food of Rare rarity or better, so a
+// favourite is something worth finding rather than the first snack in the bag — and
+// only one the ITEMS flow actually feeds (Game::useItem's Food branch), so it can be
+// found at all.
+inline bool favouriteFoodEligible(const ItemDef& d) {
+    return d.type == ItemDef::Type::Food && d.use == ItemDef::Use::Consume &&
+           itemCategory(d) == ItemDef::Category::Food && d.rarity >= ItemDef::Rarity::Rare;
+}
 
 // Every ONCE-PER-PET gate a content row can be held to, in one value: the permanent
 // grants above, plus the two that arm rather than upgrade (a Yubi-Cookie's care-mistake

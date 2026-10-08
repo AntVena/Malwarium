@@ -323,6 +323,10 @@ SaveData Game::captureSave() const {
     d.bandwidthRegenBonusMin = upgrades_.bandwidthRegenMin;
     for (int i = 0; i < kLevelStatCount; ++i) d.statBonus[i] = upgrades_.statBonus[i];
     d.xpRateBonusPct = upgrades_.xpRatePct;
+    // v72: the favourite dish, frozen alongside them on the rack records.
+    if (upgrades_.favouriteFood)
+        std::strncpy(d.favouriteFood, upgrades_.favouriteFood->id, kSaveIdCap - 1);
+    d.favouriteFound = upgrades_.favouriteFound ? 1 : 0;
 
     d.mergeHubUnlocked = rigLevel_[kRigRowMergeHub] ? 1 : 0;
     // The whole set goes out as the v51 bitset; its first four bytes ALSO go out as the
@@ -824,6 +828,10 @@ void Game::applySave(const SaveData& d) {
     upgrades_.bandwidthRegenMin = d.bandwidthRegenBonusMin;
     for (int i = 0; i < kLevelStatCount; ++i) upgrades_.statBonus[i] = d.statBonus[i];
     upgrades_.xpRatePct = d.xpRateBonusPct;
+    // v72: the favourite. An id this build has no item for leaves it unrolled, and the
+    // next meal rolls a fresh one; a found flag stands either way, being a grant.
+    upgrades_.favouriteFood = registry_.item(d.favouriteFood);
+    upgrades_.favouriteFound = d.favouriteFound != 0;
 
     // v32: every rig row from kRigRowExtBase up (a pre-v32 blob carries an empty vector
     // → every such row defaults to 0 — a migrated save has bought none of them).
