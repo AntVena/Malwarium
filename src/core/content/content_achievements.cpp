@@ -58,10 +58,9 @@ const AchievementDef kAchievements[] = {
     {/*wire=*/3, "GONE_ROGUE", "Gone Rogue",
      "Raise a pet all the way to a Bad-branch Daemon.", "ICON_ACH_GONE_ROGUE",
      AchSeries::Event, /*goal=*/0, nullptr, 0, {bits(150), item("sealed_cache_rare")}},
-    // WORM_WHISPERER still has no firing site, and the reason is not a missing unlock
-    // call: the Worm line has no content rows at all, so there is nothing to hatch. It
-    // needs a creature line before it needs code. The row exists so the 'Pedia's map is
-    // complete — wire the unlock where the line's hatch lands.
+    // Fired from the Isolation Protocol (game_isolation.cpp) when a Vermicell's run
+    // finishes CLEAN, which hatches the egg out of the minigame itself — the only
+    // place a clean protocol exists.
     {/*wire=*/4, "WORM_WHISPERER", "Worm Whisperer",
      "Hatch the Worm line through a clean Isolation Protocol.", "ICON_ACH_WORM_WHISPERER",
      AchSeries::Event, /*goal=*/0, nullptr, 0, {bits(150), item("sealed_cache_rare")}},
