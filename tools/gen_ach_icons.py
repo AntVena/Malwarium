@@ -961,9 +961,10 @@ GLYPHS = [
 
     # --- The line glyphs -----------------------------------------------------
     # Not achievements: each creature line's own row glyph, lifted off the mark its
-    # FULL_LINE row already wears (see line_mark). Worm and Ransomware predate this and
-    # are hand-drawn; these are the three that had no glyph at all.
-    ("ICON_LINE_PHISHING", inherit("ICON_ACH_FULL_LINE_PHISHING"), line_mark()),
+    # FULL_LINE row already wears (see line_mark). Worm, Ransomware and Phishing are
+    # hand-drawn instead, because each is also its line's hatch cabinet glyph, and the
+    # cabinet is where the device names the line. Phishing's FULL_LINE mark in
+    # particular is a hook with no eye, which on its own reads as the letter J.
     ("ICON_LINE_TROJAN", inherit("ICON_ACH_FULL_LINE_TROJAN"), line_mark()),
     ("ICON_LINE_METAMORPHIC", "bell", line_mark()),
 ]

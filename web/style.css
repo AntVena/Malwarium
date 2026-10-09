@@ -136,7 +136,9 @@ h2.sect {
 }
 h2.sect:first-child { margin-top: 4px; }
 h2.sect .count { color: var(--ink-dim); font-weight: 400; letter-spacing: 0; margin-left: auto; }
-h2.sect img { width: 16px; height: 16px; image-rendering: pixelated; }
+/* A line glyph is 20x20 art: drawn at 1:1, never scaled by a non-integer factor,
+   which drops every fifth row and column and breaks its 2px strokes. */
+h2.sect img { width: 20px; height: 20px; image-rendering: pixelated; }
 
 /* ---- sprites -------------------------------------------------------- */
 .spr { image-rendering: pixelated; background-repeat: no-repeat; flex: none; }

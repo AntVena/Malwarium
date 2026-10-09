@@ -93,7 +93,7 @@ const ArcadeGameDef kArcadeGames[] = {
     // earlier rather than watched for longer.
     {"clutch", "SPOT THE PHISH",
      "ONE EGG MOVES. HALVE THE RAFT ONTO IT.",
-     "ICON_ARCADE_CLUTCH", "HOW MANY TIMES THE RAFT HALVES.",
+     "ICON_LINE_PHISHING", "HOW MANY TIMES THE RAFT HALVES.",
      ArcadeGameKind::Clutch, ArcadeScoring::WinLose, ArcadeUnlock::Always,
      kClutchBrief, static_cast<int>(sizeof(kClutchBrief) / sizeof(kClutchBrief[0]))},
 

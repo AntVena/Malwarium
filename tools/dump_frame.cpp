@@ -79,7 +79,7 @@
 //        cfg [sysinfo|tag|titles|device|uimode|brightness|theme|background [earned [all]]|travel [sleeping]|
 //             formatsd [yes|busy|done|failed|blocked]|radio [idle|all]|audit|
 //             link|pediaap|qr|factory] (the settings tree; device/radio are the two
-//             group screens, and radio is seeded with a live arbiter owner —
+//             group screens — "device row:<n>" walks its cursor down — and radio is seeded with a live arbiter owner —
 //             "idle" seeds nothing on air, "all" seeds every toggle on under a
 //             running update job)
 //        arch [stored] [rackfull] [daemons] [group:<n>] [row:<n>] [detail] [offer:<n>]
@@ -607,7 +607,15 @@ int main(int argc, char** argv) {
             game.debugUnlockTitle(0);                // Citrus Circuit -> auto-equipped
             openTarget(CfgScreen::Titles);
         }
-        else if (hasFlag(argc, argv, "device")) openTarget(CfgScreen::Device);
+        else if (hasFlag(argc, argv, "device")) {
+            openTarget(CfgScreen::Device);
+            // "row:<n>" walks the group's cursor down, so a row below the fold — and
+            // the glyph it carries — can be looked at in its list.
+            for (int i = 3; i < argc; ++i)
+                if (std::strncmp(argv[i], "row:", 4) == 0)
+                    for (int k = std::atoi(argv[i] + 4); k > 0; --k)
+                        game.onButton({Button::A, true, false});
+        }
         else if (hasFlag(argc, argv, "travel")) {
             openTarget(CfgScreen::Travel);
             // "sleeping" dumps the notice the confirm becomes; the bare flag dumps

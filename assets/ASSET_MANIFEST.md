@@ -871,8 +871,8 @@ below are new art.
 | `ICON_BTN_C` | Button glyph `C` | 16×16 | | ⌫ | `/assets/_attic/ICON_BTN_C.png` |
 | `ICON_LINE_RANSOMWARE` | Line-select row glyph — Ransomware | 20×20 | one per creature line | ☑ | `/assets/icons/ICON_LINE_RANSOMWARE.png` |
 | `ICON_LINE_WORM` | Line-select row glyph — Worm | 20×20 | add `ICON_LINE_*` per line as unlocked | ☑ | `/assets/icons/ICON_LINE_WORM.png` |
-| `ICON_LINE_PHISHING` | Line glyph — Phishing | 20×20 | the hook its FULL_LINE achievement wears, lifted and re-centred by `tools/gen_ach_icons.py` (`line_mark`) | ☑ | `/assets/icons/ICON_LINE_PHISHING.png` |
-| `ICON_LINE_TROJAN` | Line glyph — Trojan | 20×20 | the knight's head, same source | ☑ | `/assets/icons/ICON_LINE_TROJAN.png` |
+| `ICON_LINE_PHISHING` | Line glyph — Phishing | 20×20 | a fish hook with its eye and a 2px shank. Also the SPOT THE PHISH cabinet glyph, the way Worm's and Ransomware's are their cabinets'. Not the FULL_LINE achievement's eyeless hook, which reads as a J outside the achievement grid | ☑ | `/assets/icons/ICON_LINE_PHISHING.png` |
+| `ICON_LINE_TROJAN` | Line glyph — Trojan | 20×20 | the knight's head its FULL_LINE achievement wears, lifted and re-centred by `tools/gen_ach_icons.py` (`line_mark`) | ☑ | `/assets/icons/ICON_LINE_TROJAN.png` |
 | `ICON_LINE_METAMORPHIC` | Line glyph — Metamorphic | 20×20 | the solid bell, same source | ☑ | `/assets/icons/ICON_LINE_METAMORPHIC.png` |
 | `UI_COUNTDOWN` | Lockout countdown digits/style | ~64×24 | `FONT_UI`-based; pairs w/ `FX_LOCKOUT_BAND`. `modals.cpp`'s `drawLockoutModal` sets `00:SS` in the header band, flashing on the beat, over a `UI_PROGRESS_BAR` of the time left — a style over the shared font, never its own glyph set | ☑ | engine-drawn |
 
@@ -894,13 +894,12 @@ Most chrome is reused — only the rows below are new, and most are optional pol
 `content_arcade.cpp`) and nothing else: it draws the menu round a minigame and never the
 game, so every screen inside a cabinet is that game's own. Most cabinets reuse a glyph
 that already names their subject — `ICON_MAINT_DEFRAG` (§K) for the Stacker,
-`ICON_LINE_WORM` for the Isolation Protocol, `ICON_LINE_RANSOMWARE` for Disk Decypher
-and `ICON_ITEM_DECRYPTOGRAM` for the quote board — and only a cabinet whose subject has
+`ICON_LINE_WORM` for the Isolation Protocol, `ICON_LINE_RANSOMWARE` for Disk Decypher,
+`ICON_LINE_PHISHING` for Spot the Phish and `ICON_ITEM_DECRYPTOGRAM` for the quote board — and only a cabinet whose subject has
 no glyph anywhere else needs one drawn.
 
 | Asset ID | Element | Logical size | Notes | Status | File |
 |---|---|---|---|---|---|
-| `ICON_ARCADE_CLUTCH` | SPOT THE PHISH cabinet row glyph | 20×20 | fish hook | ☑ | `/assets/icons/ICON_ARCADE_CLUTCH.png` |
 | `ICON_ARCADE_CHROMA` | CHROMATOPHORE cabinet row glyph | 20×20 | one bell parted down the middle — the same creature wearing two skins at once, which is the board's whole idea. At this size one deliberate cut reads where a stripe pattern only reads as damage | ☑ | `/assets/icons/ICON_ARCADE_CHROMA.png` |
 | `UI_HEALTH_BAR` | Combat-Health row | ~208×24 | `UI_GAUGE` variant — transient Health | ☑ | engine-drawn |
 | `UI_OVERRIDE_PIP` | Once-per-battle Exploit-override indicator | 16×16 | ready (bolt) / spent (×) | ☑ | `/assets/icons/ICON_OVERRIDE_PIP{,_SPENT}.png` |
