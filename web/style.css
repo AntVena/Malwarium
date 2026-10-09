@@ -304,7 +304,9 @@ a.card:hover { background: var(--paper); border-color: var(--accent); color: inh
   display: flex; align-items: center; justify-content: center; background: var(--paper-sunk);
 }
 .ach.complete .frame { border-color: var(--calm); background: var(--calm-wash); }
-.ach .frame img { width: 28px; height: 28px; image-rendering: pixelated; }
+/* 20x20 art at exactly 2x: a non-integer scale (this was 28px, 1.4x) drops and doubles
+   rows unevenly and breaks the 2px strokes and tally marks the grid is read by. */
+.ach .frame img { width: 40px; height: 40px; image-rendering: pixelated; }
 .ach.incomplete .frame img { opacity: .35; }
 .ach .nm { font-family: var(--font-display); font-size: 14px; letter-spacing: 1px; }
 .ach.incomplete .nm { color: var(--ink-dim); }
