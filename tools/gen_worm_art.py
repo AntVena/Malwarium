@@ -483,6 +483,24 @@ def wave(pts, amp, phase, period=3.2, taper=0.0):
     return out
 
 
+def peristalsis(rungs, phase, squeeze):
+    """Slide a body's rungs along its spine in a wave travelling tail -> head.
+
+    The crawl of a creature that never leaves the floor. A Ground mover is not allowed
+    the arch an inchworm walks with (Locomotion::Ground; the habitat gives it no bob
+    either), so the only thing left to move it is the body itself: the segments bunch
+    up behind a contraction and the contraction runs forward. At this scale that wave is
+    carried almost entirely by rule 3's rungs — where they crowd the body reads as
+    squeezed, where they spread it reads as stretched — so a crawl is the same chords
+    with their spine parameters pushed back and forth, and the outline barely moves.
+
+    `squeeze` is the displacement at the crest, in spine parameter. Keep it under half
+    the gap between neighbouring rungs or two of them meet and the segment between
+    them vanishes for a frame.
+    """
+    return tuple(t + squeeze * math.sin(2 * math.pi * t - phase) for t in rungs)
+
+
 def tangent(path, t, eps=1e-3):
     """The unit direction the path is heading at t — where a head faces."""
     t0, t1 = max(0.0, t - eps), min(1.0, t + eps)
@@ -758,14 +776,15 @@ CW, CH = 56, 48       # the pet cell (gen_assets.py PET_FRAME_W / PET_ROW_H)
 GROUND = 46.0         # the shelf line inside the cell; a crawler never leaves it
 
 
-def _nodeatode_cell(head, c0, c1, mouth=0.0):
+def _nodeatode_cell(head, c0, c1, mouth=0.0, tail_x=19.0,
+                    rungs=(0.26, 0.44, 0.62, 0.79)):
     """One Nodeatode frame: a planted tail, a tapered spine, a hollow head, one eye.
 
     The worm occupies roughly 30x24 of its 56x48 cell — the line's draw-small rule
     (assets/CREATURE_VISUAL_RULES.md §4) kept literally, because the replicas beside it
     need the room. All four poses share this body; only the spine and the jaw move.
     """
-    tail = (19.0, GROUND)
+    tail = (tail_x, GROUND)
     # Thick enough that the outline's two walls stay a clear 3px apart along the whole
     # body. A thinner tube collapses into a single line as it tapers, and a worm drawn
     # as one line is a piece of string — the gap between the walls IS the body.
@@ -782,7 +801,7 @@ def _nodeatode_cell(head, c0, c1, mouth=0.0):
     disc(cell.body, head[0], head[1], head_r)
 
     # Four rungs. This is the pass that makes it a worm rather than a tube.
-    cell.chords(spine, (0.26, 0.44, 0.62, 0.79),
+    cell.chords(spine, rungs,
                 lambda t: r_tail + (r_neck - r_tail) * t, overhang=0.35)
 
     facing = tangent(spine, 1.0)
@@ -802,7 +821,7 @@ def _nodeatode_cell(head, c0, c1, mouth=0.0):
 def nodeatode():
     """SPR_PET_NODEATODE — the Worm line's Process pet.
 
-    Four rows of four 56x48 frames, matching the clips declared on its content row in
+    Five rows of four 56x48 frames, matching the clips declared on its content row in
     src/core/content/creatures/worm/line.h:
 
       0  idle    4 frames — a travelling S-wave; the head holds station and the SPINE
@@ -810,8 +829,9 @@ def nodeatode():
       1  attack  4 frames — coil, open, strike, snap. The head carries ~15px forward.
       2  droop   2 frames — head down, spine slack. The unhappy pose.
       3  weak    2 frames — collapsed onto the shelf, barely a curve left in it.
+      4  walk    4 frames — carried low and long, a contraction running tail to head.
     """
-    sheet = Sheet(4, 4, CW, CH)
+    sheet = Sheet(4, 5, CW, CH)
 
     # Idle. The head holds station and the two control points move in QUADRATURE — c0
     # on the sine, c1 on the cosine — so the bulge travels from the head end down to
@@ -853,10 +873,24 @@ def nodeatode():
     ]):
         sheet.place(i, 3, _nodeatode_cell(hd, c0, c1))
 
+    # Walk. The head comes down out of its rear and is carried ahead of the body, so the
+    # creature travels along its own length instead of sliding a standing pose across the
+    # shelf. Head and tail breathe a quarter-cycle apart — the head reaches, then the tail
+    # is drawn up after it — and the rungs carry the contraction between them.
+    for i in range(4):
+        a = 2 * math.pi * i / 4
+        hd = (41.0 + 1.5 * math.sin(a), 38.0)
+        tail_x = 17.0 + 1.5 * math.sin(a - math.pi / 2)
+        sheet.place(i, 4, _nodeatode_cell(
+            hd, (tail_x + 8.0, 45.0), (32.0 + 0.8 * math.sin(a), 41.0),
+            tail_x=tail_x,
+            rungs=peristalsis((0.26, 0.44, 0.62, 0.79), a, 0.06)))
+
     return sheet
 
 
-def _rootgrub_cell(head, c0, c1, mouth, teeth=8, phase=0.0):
+def _rootgrub_cell(head, c0, c1, mouth, teeth=8, phase=0.0, tail_x=24.0,
+                   rungs=(0.22, 0.46, 0.70)):
     """One Rootgrub frame: a thick short body reared off the shelf under a big maw.
 
     The Script row, and the same vocabulary saying the opposite thing to Nodeatode's.
@@ -878,7 +912,7 @@ def _rootgrub_cell(head, c0, c1, mouth, teeth=8, phase=0.0):
     whole face is the hole, and a creature whose one filled shape sits at the back of
     an open mouth reads as something that eats — which is the branch this row is on.
     """
-    tail = (24.0, GROUND + 1)
+    tail = (tail_x, GROUND + 1)
     # The taper RUNS OUT before the head, so the maw sits on the body as a distinct
     # bulb. Nodeatode's head is barely wider than its neck and reads as a continuation;
     # here the neck has to give ground for the mouth to be a thing the body carries.
@@ -919,7 +953,7 @@ def _rootgrub_cell(head, c0, c1, mouth, teeth=8, phase=0.0):
         (head[0] + facing[0] * back - px * back_r, head[1] + facing[1] * back - py * back_r),
     ])
 
-    cell.chords(spine, (0.22, 0.46, 0.70),
+    cell.chords(spine, rungs,
                 lambda t: r_tail + (r_neck - r_tail) * t, overhang=0.3)
 
     # Seen down its own axis, because on this creature the mouth IS the front. Teeth
@@ -955,7 +989,7 @@ def _rootgrub_cell(head, c0, c1, mouth, teeth=8, phase=0.0):
 def rootgrub():
     """SPR_PET_ROOTGRUB — the Worm line's Script pet, and its fork in the road.
 
-    Four rows of four 56x48 frames, same clip set as the Process row above:
+    Five rows of four 56x48 frames, same clip set as the Process row above:
 
       0  idle    4 frames — reared off the shelf, maw working. It never fully shuts:
                             the mouth is the silhouette, so closing it would cost the
@@ -963,8 +997,10 @@ def rootgrub():
       1  attack  4 frames — rear back, gape wide, drive down, close.
       2  droop   2 frames — settled onto the shelf, maw slack.
       3  weak    2 frames — collapsed, barely reared at all.
+      4  walk    4 frames — maw carried forward at chest height, the body hauled up
+                            behind it in one contraction.
     """
-    sheet = Sheet(4, 4, CW, CH)
+    sheet = Sheet(4, 5, CW, CH)
 
     # Idle. A short body has little spine to run a wave down, so the motion is in the
     # MAW instead — it opens and closes on the loop while the body sways a pixel or two
@@ -1001,6 +1037,20 @@ def rootgrub():
         ((40.0, 39.0), (26.0, 46.5), (33.0, 42.0)),
     ]):
         sheet.place(i, 3, _rootgrub_cell(hd, c0, c1, 0.14, teeth=6))
+
+    # Walk. Nodeatode's crawl on a body too short to show a wave travelling along it, so
+    # the contraction is spent on LENGTH instead: three rungs cannot carry much of a
+    # crest, and a stump that visibly shortens and lengthens is what a peristaltic crawl
+    # looks like with the spine taken away. The maw keeps working, a beat behind the
+    # body, because the mouth is the silhouette and must never stop being one.
+    for i in range(4):
+        a = 2 * math.pi * i / 4
+        hd = (37.0 + 2.0 * math.sin(a), 31.0)
+        tail_x = 22.0 + 2.0 * math.sin(a - math.pi / 2)
+        sheet.place(i, 4, _rootgrub_cell(
+            hd, (tail_x + 3.0, 42.0), (30.0 + math.sin(a), 34.0),
+            0.40 + 0.15 * math.sin(a - math.pi / 2), phase=a * 0.25,
+            tail_x=tail_x, rungs=peristalsis((0.22, 0.46, 0.70), a, 0.07)))
 
     return sheet
 
@@ -1183,7 +1233,7 @@ def _shenloop_cell(pts, whisker=1.0, level=0.75):
 def shenloop():
     """SPR_PET_SHENLOOP — the Worm line's good Daemon, and the branch that grew UP.
 
-    Four rows of four 56x48 frames, the same clip set as the two rows below it:
+    Five rows of four 56x48 frames, the same clip set as the two rows below it:
 
       0  idle    4 frames — the loop breathing under a head that holds station. What
                             moves is how tightly the body is gathered, not where it is.
@@ -1191,15 +1241,16 @@ def shenloop():
                             mouth to strike with, so the body is the strike.
       2  droop   2 frames — the loop sags wide and the head comes down onto it.
       3  weak    2 frames — barely a loop left, head sunk almost onto the coil.
+      4  walk    4 frames — a swim: laid out along a flatter axis, the wave run harder
+                            and the head carried along its own neck.
 
-    Every pose in all four rows is the same four numbers — where the loop is centred, how
+    Every pose in all five rows is the same four numbers — where the loop is centred, how
     big it is, how much of it is missing, and where the head is carried — so there are no
     hand-placed spines here at all. That is not tidiness: a body of thirteen points placed
     by hand four times stops being the same animal by the fourth frame, and this
     creature's whole read is that there is a great deal of ONE continuous thing in the
     cell.
     """
-    sheet = Sheet(4, 4, CW, CH)
 
     # There is nothing hand-placed on this sheet. The whole body is `wave` run along a
     # straight tail-to-head axis, and the number that decides what the creature IS is the
@@ -1223,9 +1274,10 @@ def shenloop():
     # That is the real reason `wave` grew a taper: the amplitude a W wants at the whip end
     # is more than the shoulder end can survive, so it has to be two numbers.
     TAIL, HEAD = (4.0, 44.0), (38.0, 13.0)
+    sheet = Sheet(4, 5, CW, CH)
 
     def serpent(amp, phase, period=5.0, gather=1.0, drop=0.0, straight=0.0,
-                taper=0.55, n=12):
+                taper=0.55, n=12, axis=(TAIL, HEAD)):
         """The W, breathed by `amp`/`phase` and reshaped by the other three.
 
         `gather` scales the axis toward the HEAD, so a pose that pulls in keeps its head
@@ -1234,9 +1286,9 @@ def shenloop():
         `straight` is spent by raising `period` and dropping `amp` at the call site, since
         on a wave-built body those two ARE how much shape is left in it.
         """
-        hx, hy = HEAD
-        axis = [(hx + (TAIL[0] + (hx - TAIL[0]) * i / (n - 1.0) - hx) * gather,
-                 hy + (TAIL[1] + (hy - TAIL[1]) * i / (n - 1.0) - hy) * gather + drop)
+        (tx, ty), (hx, hy) = axis
+        axis = [(hx + (tx + (hx - tx) * i / (n - 1.0) - hx) * gather,
+                 hy + (ty + (hy - ty) * i / (n - 1.0) - hy) * gather + drop)
                 for i in range(n)]
         if straight > 0:
             t0, t1 = axis[0], axis[-1]
@@ -1286,6 +1338,17 @@ def shenloop():
             serpent(2.6 - 0.4 * i, 0.4 + i * 0.8, period=6.4, gather=0.90,
                     drop=5.0 + i),
             whisker=0.55, level=0.45))
+
+    # Walk — a swim, since the habitat drifts this creature on both axes (Locomotion::
+    # Swim). The axis lies down toward the horizontal so the body is going somewhere
+    # rather than standing in a column, the wave runs at full amplitude down its whole
+    # length, and the head gives up the level it holds at rest: a head carried along its
+    # own neck is a body travelling, which is the one thing the idle pose must not say.
+    for i in range(4):
+        sheet.place(i, 4, _shenloop_cell(
+            serpent(5.0, 2 * math.pi * i / 4, period=6.2, taper=0.35,
+                    axis=((7.0, 37.0), (40.0, 19.0))),
+            level=0.30))
 
     return sheet
 
@@ -1409,7 +1472,7 @@ def _threadbore_cell(head, c0, c1, mouth, flap, teeth=8, phase=0.0):
 def threadbore():
     """SPR_PET_THREADBORE — the Worm line's bad Daemon, and the branch that grew OUT.
 
-    Four rows of four 56x48 frames, the same clip set as every drawn row of the line:
+    Five rows of four 56x48 frames, the same clip set as every drawn row of the line:
 
       0  idle    4 frames — a hover. The wings beat through the loop and the body hangs
                             under them barely moving, which is what too little wing
@@ -1417,8 +1480,10 @@ def threadbore():
       1  attack  4 frames — a downbeat, a gape, and it arrives on top of the target.
       2  droop   2 frames — sagging between beats, maw slack, wings half folded.
       3  weak    2 frames — barely airborne, wings almost shut, mouth nearly closed.
+      4  walk    4 frames — flying somewhere: pitched nose-down into the travel, a full
+                            beat with the body lifting on the downstroke.
     """
-    sheet = Sheet(4, 4, CW, CH)
+    sheet = Sheet(4, 5, CW, CH)
 
     # Idle. The wings run a full beat over the four frames while the body moves about a
     # pixel — deliberately the wrong way round for a flier this heavy, because the reason
@@ -1456,6 +1521,19 @@ def threadbore():
         sheet.place(i, 3, _threadbore_cell(
             (36.0, 32.5 + 0.5 * i), (19.0, 36.0), (27.0, 35.0 + i),
             0.12, flap=1.7, teeth=6))
+
+    # Walk. The wingbeat this creature owes as a Fly mover. The hover above beats in
+    # place; this one has to cover ground, so the stroke is wider and the body PAYS for
+    # it — up two pixels on the downstroke, back down on the recovery, pitched so the maw
+    # leads. A hover that slides across the box reads as being carried, and the whole
+    # joke of Threadbore is that nothing is carrying it.
+    for i in range(4):
+        a = 2 * math.pi * i / 4
+        lift = 1.2 * math.sin(a)
+        head = (39.0, 33.0 - lift)
+        sheet.place(i, 4, _threadbore_cell(
+            head, (18.0, 30.5 - lift), (26.0, 31.5 - lift),
+            0.40, flap=1.4 * math.sin(a + math.pi / 2), phase=a * 0.25))
 
     return sheet
 
@@ -1574,7 +1652,7 @@ def _usbasilisk_cell(pts, hood=1.0, lift=6.0):
 def usbasilisk():
     """SPR_PET_USBASILISK — the Trojan a Rootgrub raised BADLY becomes.
 
-    Four rows of four 56x48 frames, the clip set every drawn row of this vocabulary uses:
+    Five rows of four 56x48 frames, the clip set every drawn row of this vocabulary uses:
 
       0  idle    4 frames — reared, hood spread, the glyph holding dead still while the
                             body sways under it. The stillness is the whole idle.
@@ -1582,8 +1660,10 @@ def usbasilisk():
                             DRIVES it forward, because a plug's attack is being inserted.
       2  droop   2 frames — down off the rear, hood half folded.
       3  weak    2 frames — barely off the shelf, hood shut, the glyph carried low.
+      4  walk    4 frames — the column lowered and pitched forward, plug leading, the
+                            rear and the lean pumping a quarter-cycle apart.
     """
-    sheet = Sheet(4, 4, CW, CH)
+    sheet = Sheet(4, 5, CW, CH)
 
     # Idle. `rear` and `lean` hold, `sway` carries the whole motion — so the head keeps
     # station to within a pixel and only the column under it works, which is the contract
@@ -1613,6 +1693,18 @@ def usbasilisk():
     for i in range(2):
         sheet.place(i, 3, _usbasilisk_cell(
             _usb_spine(13.0 - i, 9.0 + i, 0.3), hood=0.30, lift=3.6))
+
+    # Walk. A reared column cannot travel as one, so it comes down to about where the
+    # droop is and pitches the plug out in front — a connector looking for a port. The
+    # crawl is the same peristalsis the Worm rows above use, spent on the column's two
+    # numbers instead of on rungs: the rear drops as the lean reaches, then the rear
+    # recovers and draws the lean back in behind it. The hood stays OPEN, which is the
+    # difference between this and the droop it borrows a height from.
+    for i in range(4):
+        a = 2 * math.pi * i / 4
+        sheet.place(i, 4, _usbasilisk_cell(
+            _usb_spine(18.0 + 1.5 * math.sin(a - math.pi / 2), 10.0 + 1.5 * math.sin(a),
+                       0.9 * math.sin(a)), lift=5.0))
 
     return sheet
 
@@ -1728,7 +1820,7 @@ def _coaxeel_cell(pts, gape=0.4, strip=1.0):
 def coaxeel():
     """SPR_PET_COAXEEL — the Trojan a Rootgrub raised WELL becomes.
 
-    Four rows of four 56x48 frames, the same clip set as every drawn row of the line:
+    Five rows of four 56x48 frames, the same clip set as every drawn row of the line:
 
       0  idle    4 frames — the coil breathing: winding a little tighter and letting go.
                             The head holds station on the shelf while the loop works, so
@@ -1739,13 +1831,15 @@ def coaxeel():
                             arriving at the far end of it.
       2  droop   2 frames — the loop sags open and flattens.
       3  weak    2 frames — barely wound at all, mouth shut, the cut end dragging.
+      4  walk    4 frames — loosened into a lower, wider turn that winds and pays out
+                            as it goes, the cut end trailing.
 
     Every pose is the same four numbers — where the coil is centred, how big it is, how
     far round it goes and where it starts — so there are no hand-placed spines here. On a
     shape whose whole read is that it is ONE continuous run wound up, a body placed point
     by point four times stops being the same length by the fourth frame.
     """
-    sheet = Sheet(4, 4, CW, CH)
+    sheet = Sheet(4, 5, CW, CH)
 
     def coil(cx, cy, r_out, r_in, a0, span, n=11, lead=5.5):
         """Points along an opening spiral: head at the last point, cut end at the first.
@@ -1800,6 +1894,19 @@ def coaxeel():
     for i in range(2):
         sheet.place(i, 3, _coaxeel_cell(
             coil(23.5, 33.5 + i, 11.4, 10.4, -1.00, -3.1), gape=0.10, strip=0.85))
+
+    # Walk. A cable has no stride, so it travels by doing slowly what the attack does in
+    # one throw: the turn pays out a little and winds back in, over and over, and each
+    # pass drags the whole loop along the shelf. Lower and looser than the idle — closer
+    # to the droop's height with the idle's mouth — so the coil reads as moving rather
+    # than coiled to strike, and `span` and the radius breathe a quarter-cycle apart so
+    # the loop rolls instead of pulsing in place.
+    for i in range(4):
+        a = 2 * math.pi * i / 4
+        sheet.place(i, 4, _coaxeel_cell(
+            coil(24.0, 29.5, 13.0 + 0.8 * math.sin(a), 8.8,
+                 -0.80 + 0.12 * math.sin(a - math.pi / 2), -4.4 + 0.45 * math.sin(a)),
+            gape=0.30))
 
     return sheet
 

@@ -49,12 +49,15 @@ inline constexpr CreatureDef kWormCreatures[] = {
      // one-shot walks, at half that heuristic's cadence (holdBeats 1 -> 2).
      /*clips=*/{{"idle", /*row=*/0, /*frames=*/2, /*holdBeats=*/2}}},
     // Nodeatode is the family's Process pet, and the only row with real character so
-    // far. Its own 1-bit sheet is four rows of four 56x48 frames, and the worm occupies
+    // far. Its own 1-bit sheet is five rows of four 56x48 frames, and the worm occupies
     // barely 30x24 of each cell — the draw-small rule kept literally. The idle row is
     // an S-wave travelling down the spine rather than a rocking of the whole body,
     // which is what stops a crawler's squiggle reading as a bob it no longer takes.
-    // Only "idle" has a consumer today; "attack" is declared and waiting, and
-    // droop/weak become reachable the moment a mood pose is wired.
+    // "idle" and "walk" split the habitat on whether the wander is moving it, and
+    // "attack" plays in combat; droop/weak become reachable the moment a mood pose is
+    // wired. The walk is a peristaltic crawl — rungs bunching and spreading down a body
+    // carried low — because a Ground mover is the one thing that may not arch off the
+    // floor to get anywhere.
     //
     // Its slot typing alternates Attack/Defend from the first slot, unlike the other
     // lines' attack-leaning Process rows. A worm whose kit is all attacks spawns only
@@ -70,7 +73,8 @@ inline constexpr CreatureDef kWormCreatures[] = {
      /*clips=*/{{"idle", /*row=*/0, /*frames=*/4, /*holdBeats=*/2},
                 {"attack", /*row=*/1, /*frames=*/4},
                 {"droop", /*row=*/2, /*frames=*/2, /*holdBeats=*/3},
-                {"weak", /*row=*/3, /*frames=*/2, /*holdBeats=*/3}}},
+                {"weak", /*row=*/3, /*frames=*/2, /*holdBeats=*/3},
+                {"walk", /*row=*/4, /*frames=*/4, /*holdBeats=*/2}}},
     // Rootgrub is the fork in the road, which is why the line has ONE Script row: the
     // care branch resolves a stage later, at the Daemon, the way every other line's
     // does — and this row is what the branch is about: a
@@ -103,7 +107,8 @@ inline constexpr CreatureDef kWormCreatures[] = {
      /*clips=*/{{"idle", /*row=*/0, /*frames=*/4, /*holdBeats=*/2},
                 {"attack", /*row=*/1, /*frames=*/4},
                 {"droop", /*row=*/2, /*frames=*/2, /*holdBeats=*/3},
-                {"weak", /*row=*/3, /*frames=*/2, /*holdBeats=*/3}}},
+                {"weak", /*row=*/3, /*frames=*/2, /*holdBeats=*/3},
+                {"walk", /*row=*/4, /*frames=*/4, /*holdBeats=*/2}}},
     // The two Daemons are the answer to Rootgrub's question, and they are the first
     // rows of the line to leave the floor — which is why the family's Crawl stops
     // here. Both are drawn, in the same tool and the same vocabulary as the two rows
@@ -131,7 +136,8 @@ inline constexpr CreatureDef kWormCreatures[] = {
      /*clips=*/{{"idle", /*row=*/0, /*frames=*/4, /*holdBeats=*/2},
                 {"attack", /*row=*/1, /*frames=*/4},
                 {"droop", /*row=*/2, /*frames=*/2, /*holdBeats=*/3},
-                {"weak", /*row=*/3, /*frames=*/2, /*holdBeats=*/3}}},
+                {"weak", /*row=*/3, /*frames=*/2, /*holdBeats=*/3},
+                {"walk", /*row=*/4, /*frames=*/4, /*holdBeats=*/1}}},
     // Threadbore grew OUT. Rootgrub again with everything that was not mouth spent on
     // more mouth, and a pair of wings far too small for what they are lifting. Fly, not
     // Swim: it holds an altitude by working at it, and the difference between the two
@@ -152,7 +158,8 @@ inline constexpr CreatureDef kWormCreatures[] = {
      /*clips=*/{{"idle", /*row=*/0, /*frames=*/4, /*holdBeats=*/2},
                 {"attack", /*row=*/1, /*frames=*/4},
                 {"droop", /*row=*/2, /*frames=*/2, /*holdBeats=*/3},
-                {"weak", /*row=*/3, /*frames=*/2, /*holdBeats=*/3}}},
+                {"weak", /*row=*/3, /*frames=*/2, /*holdBeats=*/3},
+                {"walk", /*row=*/4, /*frames=*/4, /*holdBeats=*/1}}},
 };
 inline constexpr int kWormCreatureCount =
     sizeof(kWormCreatures) / sizeof(kWormCreatures[0]);

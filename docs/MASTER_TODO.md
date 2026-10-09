@@ -330,12 +330,12 @@ you look at one.
   shelf, a swimmer drifts through the box, a flier holds an altitude, and a `Static` row (every egg
   but the jellyfish one) sits exactly where it was put (`core/model/idle_wander.h`).
   The clip the habitat swaps in for as long as the wander is travelling is named `walk` whatever
-  the locomotion is, and six creatures own one: the four drawn Metamorphic rows, plus Conkittenate
-  and Kalico. Every other mover poses its breathe/blink idle while it travels, so a drifting
-  tadpole is a standing tadpole that slides. Wants an extra clip row per mover on the existing
-  sheets (swim cycle, wingbeat, step cycle), keyed off the same field — sheet rows, not new
-  sprites. Threadbore is the roster's only `Fly` and the wingbeat is the row it owes.
-  Diff **M**.
+  the locomotion is, and twelve creatures own one: the four drawn Metamorphic rows, Conkittenate
+  and Kalico, and every row `tools/gen_worm_art.py` draws (the Worm line's four movers and the two
+  Trojans diverted out of it). Every other mover poses its breathe/blink idle while it travels, so
+  a drifting tadpole is a standing tadpole that slides. Wants an extra clip row per mover on the
+  existing sheets (swim cycle, step cycle), keyed off the same field — sheet rows, not new
+  sprites. Diff **M**.
 - **Per-line move-fx assets / silhouette + eye-anchor data** — eye-pixel metadata
   per sprite + the layered gamma-pulse treatment. Largely procedural + data, not flat icons.
 - **Branching-roster sprites** — full `SPR_PET_*` sheets for the named alternates once the roster

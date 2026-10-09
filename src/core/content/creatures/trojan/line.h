@@ -70,7 +70,8 @@ inline constexpr CreatureDef kTrojanCreatures[] = {
      /*clips=*/{{"idle", /*row=*/0, /*frames=*/4, /*holdBeats=*/2},
                 {"attack", /*row=*/1, /*frames=*/4},
                 {"droop", /*row=*/2, /*frames=*/2, /*holdBeats=*/3},
-                {"weak", /*row=*/3, /*frames=*/2, /*holdBeats=*/3}}},
+                {"weak", /*row=*/3, /*frames=*/2, /*holdBeats=*/3},
+                {"walk", /*row=*/4, /*frames=*/4, /*holdBeats=*/2}}},
     {"usbasilisk", "USBasilisk", Stage::Daemon, "SPR_PET_USBASILISK",
      nullptr, nullptr, nullptr, kBranchBadPowerPct, kBranchBadFragPct, "trojan",
      "It rears up, raises a crown it has no business having, and holds perfectly still - because the front of it is a plug, and a plug only has to be picked up once.",
@@ -80,7 +81,8 @@ inline constexpr CreatureDef kTrojanCreatures[] = {
      /*clips=*/{{"idle", /*row=*/0, /*frames=*/4, /*holdBeats=*/2},
                 {"attack", /*row=*/1, /*frames=*/4},
                 {"droop", /*row=*/2, /*frames=*/2, /*holdBeats=*/3},
-                {"weak", /*row=*/3, /*frames=*/2, /*holdBeats=*/3}}},
+                {"weak", /*row=*/3, /*frames=*/2, /*holdBeats=*/3},
+                {"walk", /*row=*/4, /*frames=*/4, /*holdBeats=*/2}}},
 };
 inline constexpr int kTrojanCreatureCount =
     sizeof(kTrojanCreatures) / sizeof(kTrojanCreatures[0]);

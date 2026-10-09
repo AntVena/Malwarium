@@ -75,7 +75,7 @@ inline const char* dominantSignalName(DominantSignal s) {
 // How many named animation loops one creature may declare. A structural bound on
 // CreatureDef::clips, not a balance number — raise it when a creature genuinely
 // needs a fifth loop, which costs every row the slot whether it fills it or not.
-constexpr int kMaxAnimClips = 4;
+constexpr int kMaxAnimClips = 5;
 
 // One named animation loop over a single row of a creature's sprite sheet. A sheet
 // can stack several rows of equal-width frames (sprite.h); a clip says which row
