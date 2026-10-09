@@ -269,10 +269,6 @@ high→low value:
   `SPR_PET_RINGWYRM`.
 - **Optional polish:** `UI_RANK_BADGE`, `ICON_EVENT_WIFI`, `UI_DIFFICULTY_PIPS`, a boss-tell marker
   on the charge bar, a `UI_TITLE_TAG` badge, a `SPR_PET_*` attack-pose frame.
-- **Three of the five lines have no `ICON_LINE_*`.** Ransomware and Worm are drawn; Phishing,
-  Trojan and Metamorphic are not, so their 'Pedia sections render text-only where the other two
-  carry a glyph (`gen_pedia_data.py` warns per missing line). One 20×20 each, same slot as the
-  two that exist.
 - **Six archetype icons** (`ICON_ARCHETYPE_*`) — cosmetic accompaniment to §1i; parked in `_attic/`.
 
 ### 2c. New art implied by unbuilt features
@@ -306,9 +302,6 @@ you look at one.
   single sanctioned accent hue for small lights (a few pixels a scene, inside the accent budget,
   never a hue that already means a state) is worth adding to the rail. Decide on the device,
   not the contact sheet: the panel's x1.75 changes what reads. Diff **S** (taste first).
-- **A glyph for the BACKGROUND row.** It borrows `ICON_CFG`, the generic gear, because the CFG
-  family has no picture for "the place your pet stands". One 20x20 beside the other
-  `ICON_CFG_*`. Cosmetic; the row reads by its label today. Diff **S**.
 - **Net-Sea Crossing area art** (shipped mechanically, art pending): the `FLOATING POINT` / `THE
   HARDENED SHELL` storefront motifs. Its twelve mods are drawn — the whole `ICON_MOD_*` family is,
   so no area owes one. Like the keep, it fights with the shared tier roster and has no malbeasts of

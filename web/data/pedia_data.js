@@ -12,7 +12,10 @@ window.PEDIA_DATA = {
     },
     "lineIcons": {
       "ransomware": "assets/icons/ICON_LINE_RANSOMWARE.png",
-      "worm": "assets/icons/ICON_LINE_WORM.png"
+      "phishing": "assets/icons/ICON_LINE_PHISHING.png",
+      "worm": "assets/icons/ICON_LINE_WORM.png",
+      "metamorphic": "assets/icons/ICON_LINE_METAMORPHIC.png",
+      "trojan": "assets/icons/ICON_LINE_TROJAN.png"
     },
     "lockIcon": "assets/icons/ICON_LOCK.png"
   },
@@ -409,7 +412,7 @@ window.PEDIA_DATA = {
       "cellW": 56,
       "cellH": 48,
       "sheetW": 224,
-      "sheetH": 192
+      "sheetH": 240
     },
     {
       "id": "usbasilisk",
@@ -424,7 +427,7 @@ window.PEDIA_DATA = {
       "cellW": 56,
       "cellH": 48,
       "sheetW": 224,
-      "sheetH": 192
+      "sheetH": 240
     },
     {
       "id": "vermicell",
@@ -458,7 +461,7 @@ window.PEDIA_DATA = {
       "cellW": 56,
       "cellH": 48,
       "sheetW": 224,
-      "sheetH": 192
+      "sheetH": 240
     },
     {
       "id": "rootgrub",
@@ -476,7 +479,7 @@ window.PEDIA_DATA = {
       "cellW": 56,
       "cellH": 48,
       "sheetW": 224,
-      "sheetH": 192,
+      "sheetH": 240,
       "branchSplit": true
     },
     {
@@ -492,7 +495,7 @@ window.PEDIA_DATA = {
       "cellW": 56,
       "cellH": 48,
       "sheetW": 224,
-      "sheetH": 192
+      "sheetH": 240
     },
     {
       "id": "threadbore",
@@ -507,7 +510,7 @@ window.PEDIA_DATA = {
       "cellW": 56,
       "cellH": 48,
       "sheetW": 224,
-      "sheetH": 192
+      "sheetH": 240
     },
     {
       "id": "polystaria",

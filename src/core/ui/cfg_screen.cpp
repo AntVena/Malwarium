@@ -153,9 +153,8 @@ int cfgGroupRows(CfgScreen group, const CfgRow*& out) {
         // BACKGROUND belongs beside them and not on the top-level list: the release list
         // is exactly six rows so it never scrolls, and this is a presentation setting
         // like the two above it — what the device shows, not what it does. Its glyph
-        // is theirs too until it gets its own: a row glyph is the 20px tier, and the
-        // 28px carousel ICON_CFG it once borrowed overprinted the label beside it.
-        {"BACKGROUND", &ASSET_ICON_CFG_UIMODE, CfgScreen::Background},
+        // is a framed scene, the place the pet stands rather than the panel it stands in.
+        {"BACKGROUND", &ASSET_ICON_CFG_BACKGROUND, CfgScreen::Background},
         // TIPS: every one-time card the device has shown, to read again. Not a device
         // setting, but the top-level list is held at six rows, and this is the group
         // about how the device presents itself — which includes how it explains itself.

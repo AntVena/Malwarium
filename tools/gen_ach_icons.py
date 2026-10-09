@@ -114,6 +114,19 @@ def plain():
     return {}
 
 
+def line_mark():
+    """No footer AND no footer band: the motif's ink re-centred in the whole cell.
+
+    Not an achievement at all. A creature line's own row glyph (ICON_LINE_*, on the
+    'Pedia's line sections and the arcade cabinets) is the same mark that line's
+    FULL_LINE/DEEP_LINE/WING rows wear, and it is drawn from them here so that a
+    retouch to the mark is a retouch to every place the line is named. With nothing
+    under it, keeping it pinned to rows 0..13 would leave it sitting high in its cell
+    beside the hand-drawn line glyphs, which are centred.
+    """
+    return None
+
+
 # --- Inheriting a motif ------------------------------------------------------
 
 def inherit(icon_name):
@@ -945,6 +958,14 @@ GLYPHS = [
     ("ICON_ACH_SERVICE_500", "stove", tally(4)),
     ("ICON_ACH_STACK_250", inherit("ICON_ACH_STACK_50"), tally(5)),
     ("ICON_ACH_DOCK_100", "dock", tally(4)),
+
+    # --- The line glyphs -----------------------------------------------------
+    # Not achievements: each creature line's own row glyph, lifted off the mark its
+    # FULL_LINE row already wears (see line_mark). Worm and Ransomware predate this and
+    # are hand-drawn; these are the three that had no glyph at all.
+    ("ICON_LINE_PHISHING", inherit("ICON_ACH_FULL_LINE_PHISHING"), line_mark()),
+    ("ICON_LINE_TROJAN", inherit("ICON_ACH_FULL_LINE_TROJAN"), line_mark()),
+    ("ICON_LINE_METAMORPHIC", "bell", line_mark()),
 ]
 
 
@@ -986,7 +1007,13 @@ def motif_rows(motif_name):
 def build(motif_name, footer):
     """Compose a motif and a footer into a 20x20 bitmap of bools."""
     raw = motif_rows(motif_name)
-    if len(raw) != MOTIF_ROWS:
+    if footer is None:                      # line_mark(): centre the ink, no footer
+        ink = [y for y, r in enumerate(raw) if "#" in r]
+        body = raw[ink[0]:ink[-1] + 1]
+        top = (SIZE - len(body)) // 2
+        raw = ["." * SIZE] * top + body + ["." * SIZE] * (SIZE - top - len(body))
+        footer = {}
+    elif len(raw) != MOTIF_ROWS:
         raise ValueError("motif '%s' is %d rows, want %d — rows 14+ belong to the "
                          "footer" % (motif_name, len(raw), MOTIF_ROWS))
     grid = [[False] * SIZE for _ in range(SIZE)]

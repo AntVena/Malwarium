@@ -816,7 +816,8 @@ own rows from the same `CfgRow` shape and reuses the glyphs below, so grouping n
 |---|---|---|---|---|---|
 | `ICON_CFG_SYSINFO` | System Info row glyph | 20×20 | the RADIO group's AUDIT row names it in `cfgGroupRows`, but nothing draws it — see the note under this table | ☑ | `/assets/icons/ICON_CFG_SYSINFO.png` |
 | `ICON_CFG_TAG` | HackerTag row glyph | 20×20 | | ☑ | `/assets/icons/ICON_CFG_TAG.png` |
-| `ICON_CFG_UIMODE` | UI Mode row glyph | 20×20 | also the DEVICE group row, BRIGHTNESS, THEME, BACKGROUND + FORMAT SD (BACKGROUND and FORMAT SD each want a glyph of their own) | ☑ | `/assets/icons/ICON_CFG_UIMODE.png` |
+| `ICON_CFG_UIMODE` | UI Mode row glyph | 20×20 | also the DEVICE group row, BRIGHTNESS, THEME + FORMAT SD (FORMAT SD wants a glyph of its own) | ☑ | `/assets/icons/ICON_CFG_UIMODE.png` |
+| `ICON_CFG_BACKGROUND` | BACKGROUND row glyph (DEVICE group) | 20×20 | a framed scene — a hill and a sun inside a 2px frame. The place the pet stands, not the panel: `ICON_CFG_UIMODE` beside it already means the device's look | ☑ | `/assets/icons/ICON_CFG_BACKGROUND.png` |
 | `ICON_CFG_TITLE` | TITLE row glyph (zone-Title picker) | 20×20 | v1 stopgap home for zone Titles; moves to Hacker HUD later | ☑ | `/assets/icons/ICON_CFG_TITLE.png` |
 | `ICON_CFG_RADIO` | RADIO group row glyph | 20×20 | the four radio consents under one row. A transmitter mast, not the square-wave alternate parked at `/assets/_attic/ICON_SYS_WIFI_ALT.png`: the split it has to carry is "the radio, as hardware" against "a Wi-Fi service", and a squared-off fan is still the fan `ICON_SYS_WIFI` draws on PEDIA AP + INTERNET. A mast also covers both consent axes at once — it is the thing that listens and the thing that transmits | ☑ | `/assets/icons/ICON_CFG_RADIO.png` |
 | `ICON_CFG_UPDATE` | UPDATES row glyph | 20×20 | a refresh cycle — a ring opened at the top and fed an arrowhead. NOT a download arrow, which reads as the row's obvious motif right up until you set it beside `ICON_SECTOR_NAPSTORRENT_MOORS`: the Moors are the torrent area and the arrow-into-a-tray is theirs | ☑ | `/assets/icons/ICON_CFG_UPDATE.png` |
@@ -870,6 +871,9 @@ below are new art.
 | `ICON_BTN_C` | Button glyph `C` | 16×16 | | ⌫ | `/assets/_attic/ICON_BTN_C.png` |
 | `ICON_LINE_RANSOMWARE` | Line-select row glyph — Ransomware | 20×20 | one per creature line | ☑ | `/assets/icons/ICON_LINE_RANSOMWARE.png` |
 | `ICON_LINE_WORM` | Line-select row glyph — Worm | 20×20 | add `ICON_LINE_*` per line as unlocked | ☑ | `/assets/icons/ICON_LINE_WORM.png` |
+| `ICON_LINE_PHISHING` | Line glyph — Phishing | 20×20 | the hook its FULL_LINE achievement wears, lifted and re-centred by `tools/gen_ach_icons.py` (`line_mark`) | ☑ | `/assets/icons/ICON_LINE_PHISHING.png` |
+| `ICON_LINE_TROJAN` | Line glyph — Trojan | 20×20 | the knight's head, same source | ☑ | `/assets/icons/ICON_LINE_TROJAN.png` |
+| `ICON_LINE_METAMORPHIC` | Line glyph — Metamorphic | 20×20 | the solid bell, same source | ☑ | `/assets/icons/ICON_LINE_METAMORPHIC.png` |
 | `UI_COUNTDOWN` | Lockout countdown digits/style | ~64×24 | `FONT_UI`-based; pairs w/ `FX_LOCKOUT_BAND`. `modals.cpp`'s `drawLockoutModal` sets `00:SS` in the header band, flashing on the beat, over a `UI_PROGRESS_BAR` of the time left — a style over the shared font, never its own glyph set | ☑ | engine-drawn |
 
 > Reused, no new art: `FX_LOCKOUT_BAND` / `FX_EVO_FLASH` / `FX_CRITICAL_FAIL` / `FX_GHOST` /
