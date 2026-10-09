@@ -91,3 +91,8 @@ make pages BASE=http://localhost:8000
 The landing page and the flasher both work off `dist/`, so this serves the real thing. Web
 Serial needs a secure context, which `localhost` counts as — so the flash button works here too,
 against a board on the end of a real cable.
+
+It needs a real Chrome or Edge window, though. An embedded or automation-driven browser pane can
+present `navigator.serial` without the OS device picker behind it, and there `requestPort()` simply
+hangs: no error to catch, so the flasher cannot say what went wrong. Hold **A** (GPIO0, the download
+strap) while connecting and the board enumerates as `USB JTAG/serial debug unit` for the picker.

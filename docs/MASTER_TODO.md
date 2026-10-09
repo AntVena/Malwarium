@@ -107,8 +107,7 @@ Diff **M**.
 
 - **No serial test-hook / no automated on-device gameplay verification.** Every device check to date
   is "flash, read the boot line, confirm no crash loop" — nobody has walked the buttons through
-  EXPL/combat/Wi-Fi/rank-up on the real panel in a long time. Diff **M** (harness design). A
-  human bench pass is also owed.
+  EXPL/combat/Wi-Fi/rank-up on the real panel in a long time. Diff **M** (harness design).
 
 ### 1h. Web 'Pedia
 
@@ -124,8 +123,6 @@ roster, and the wild half keeps its own roster-keyed masks).
 - **A solo operator's "seen" tier is empty until they duel.** If the Daemon branch-sibling reveal is
   worth persisting it wants its own tier ("teased") rather than sharing this bit — two meanings on
   one flag is what was deliberately removed. Diff **S** (design, not storage).
-- **Unverified:** on-device serving of the SD-hosted bundle + the live endpoints
-  (`GET /pedia_state.json`, `POST /api/tag`) on a real board.
 
 ### 1i. Hacker-face CREW — enlistment shipped, Red/Blue archetype layer open
 
@@ -142,39 +139,6 @@ roster, and the wild half keeps its own roster-keyed masks).
   *earn* model — every crew is joinable the moment a home network exists. Diff **M**.
 - **What "defender of that network" buys you.** The home network is recorded and shown but has no
   mechanical consequence beyond gating enlistment. Diff **M**.
-
-### 1j. Over-the-air updates — shipping; the failure paths are what's left
-
-The device-side path is built and has installed on hardware over the air, both artifacts, with no
-USB involved: a firmware install boots on trial and rolls itself back unless it reaches the main
-loop, paints a frame and stays up for `OTA_PROVE_MS`. Publishing is CI-driven off a `v*` tag —
-ORIENTATION's *Releasing* is the whole story, and the security trade (SHA-256 per artifact, no code
-signing, `setInsecure()`) is written down in `update_manifest.h`.
-
-**Open:**
-
-- **Bench the failure paths.** Every one is handled in code and none has been exercised on a board;
-  the laptop-publish flow makes each a one-line edit to `dist/`. Truncate an artifact (expect
-  `Truncated`, slot never made bootable) · flip a byte after publishing (expect `Corrupt` at the
-  digest check) · stop the server mid-download (expect `Truncated` via the stall timeout) · pull the
-  card during a web install (expect `WriteFailed`, and the version marker still reading the OLD
-  version, since it's written last). **And the rollback gate itself**, which is the one with no
-  native stand-in: publish a build that panics in `setup()`, confirm the device installs it, boots
-  it once, and comes back on the previous firmware. Diff **M** (needs a board + a publish
-  host). Fold in the **re-provisioning self-present** while a board is on the bench: a device whose
-  last CONNECT failed should pop the captive portal onto `/setup` for a phone joining its AP. It
-  compiles and the logic is one condition in `handleProbe`, but no phone has met it.
-
-- **Bench the browser flasher, ERASE path.** The normal (ERASE off) run is now proven on a board:
-  holding **A** (GPIO0, the download strap) while connecting enumerated as `USB JTAG/serial debug
-  unit` (Espressif VID `0x303a`) for Chrome's picker, `default_reset` synced on the S3's native USB,
-  all four images wrote, and the board came back up with its save intact and passing its own update
-  check. Still open: the same run with ERASE on — a full-chip wipe hasn't been exercised. One
-  platform note from the run: the flasher needs a real Chrome/Edge window with actual Web Serial
-  support; an embedded/automation-driven browser pane can present `navigator.serial` without
-  implementing the OS device-picker UI behind it, in which case `requestPort()` just hangs with no
-  error to catch. Diff **S** (needs a board). The device-side half — CFG →
-  UPDATES → FLASH OVER USB drawing the code — is native-gated and rendered, not yet scanned.
 
 ---
 
