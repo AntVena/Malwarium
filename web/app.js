@@ -314,9 +314,6 @@
       '/' + D.malbeasts.length + '</span></h2>';
     h += '<div class="note">seen on encounter \u00b7 full record on first win</div>';
     h += '<div class="grid">' + D.malbeasts.map(beastCell).join('') + '</div>';
-
-    h += '<h2 class="sect">// WORM LINE<span class="count">0/?</span></h2>';
-    h += '<div class="note">line not yet detected on this device \u00b7 keep exploring the \u2019net</div>';
     return h;
   }
 
