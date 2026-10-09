@@ -165,7 +165,7 @@ int cfgGroupRows(CfgScreen group, const CfgRow*& out) {
         // the SD line on System Info because a second action on that screen would be
         // a second meaning for a button press there, and this one cannot be taken back.
         // Ten rows, four past kVisibleRows, so the group scrolls (drawCfgDevice).
-        {"FORMAT SD", &ASSET_ICON_CFG_UIMODE, CfgScreen::FormatSd},
+        {"FORMAT SD", &ASSET_ICON_CFG_FORMATSD, CfgScreen::FormatSd},
     };
     // The three radio TOGGLES, listed in the arbiter's own priority order, highest
     // first — so "the one nearest the top wins" is a rule the reader can check
