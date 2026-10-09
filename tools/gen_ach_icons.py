@@ -26,7 +26,8 @@ So the grammar lives here as code rather than as a convention people remember:
   * the MOTIF occupies rows 0..13. Rows 14..19 belong to the footer, and a motif that
     reaches into them is what makes a tally stop reading as a count.
   * the FOOTER is one of four, and it is what the row's own kind decides:
-      tally(n)  a ladder rung — n marks, 2px wide, pitch 4, centred (start x = 11-2n)
+      tally(n)  a ladder rung — n marks, 2px wide, pitch 4, centred (start x = 11-2n);
+                past five it wraps onto a second line (see tally)
       bar()     "all of them" — a full-width rule under the motif
       chevron() "took one deep" — a narrowing wedge
       shelf()   "all of them, alive, AT ONCE" — the bar with two uprights
@@ -66,7 +67,27 @@ ICONS = os.path.join(REPO, "assets", "icons")
 # same grid as the ones beside it. Each returns rows keyed by y.
 
 def tally(n):
-    """A ladder rung: `n` marks, 2px wide, pitch 4, centred. Rows 15..17."""
+    """A ladder rung: `n` marks, 2px wide, pitch 4, centred. Rows 15..17.
+
+    Five marks fill the cell (start x = 1), so a sixth rung WRAPS rather than packing
+    the pitch tighter: five marks on a first line and the remainder centred on a
+    second, each line two rows tall (14..15 and 17..18). Counting stays "five, and
+    one more" — the way a hand keeps a tally — instead of six marks too close to
+    tell apart at x1.75. That also caps a ladder at ten rungs, which is more than
+    any has.
+    """
+    if n > 5:
+        if n > 10:
+            raise ValueError("tally(%d) is past the two lines a footer holds" % n)
+        rows = {}
+        for ys, k in (((14, 15), 5), ((17, 18), n - 5)):
+            line = [" "] * SIZE
+            for i in range(k):
+                x = 11 - 2 * k + 4 * i
+                line[x] = line[x + 1] = "#"
+            for y in ys:
+                rows[y] = "".join(line)
+        return rows
     rows = {}
     start = 11 - 2 * n           # BOSS_FIRST..BOSS_100 solve to exactly this
     if start < 0:
@@ -958,6 +979,16 @@ GLYPHS = [
     ("ICON_ACH_SERVICE_500", "stove", tally(4)),
     ("ICON_ACH_STACK_250", inherit("ICON_ACH_STACK_50"), tally(5)),
     ("ICON_ACH_DOCK_100", "dock", tally(4)),
+
+    # --- The second long tail: the non-arcade ladders a habit walks off ----------
+    # Same treatment the arcade got: one rung above each top, inheriting the ladder's
+    # motif. BOSS was already five deep, so its rung is the first to wrap the tally.
+    ("ICON_ACH_BOSS_250", inherit("ICON_ACH_BOSS_FIRST"), tally(6)),
+    ("ICON_ACH_STEPS_500K", "steps", tally(4)),
+    ("ICON_ACH_GENERATION_50", inherit("ICON_ACH_GENERATION_X"), tally(3)),
+    ("ICON_ACH_DUEL_WIN_250", "duel_won", tally(4)),
+    ("ICON_ACH_SHAKE_250", inherit("ICON_ACH_SHAKE_1"), tally(4)),
+    ("ICON_ACH_BITS_250K", inherit("ICON_ACH_BIT_BARON"), tally(3)),
 
     # --- The line glyphs -----------------------------------------------------
     # Not achievements: each creature line's own row glyph, lifted off the mark its

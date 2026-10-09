@@ -50,17 +50,14 @@ prize to unlock. Wants a discovery axis on `CrewDef` first, then one `Kind` and 
 `content_crews.h`; `game_crew.cpp`'s roster filter; `QuoteReward::Kind`. | M | The gating axis is
 the real work; the prize is three lines once it exists. |
 
-**Achievement ladders still stop where a casual player stops.** A player a thousand rounds into
-SPOT THE PHISH had walked off the top of every arcade ladder, which is what the arcade's long tail
-(wires 164-188) answered; the same reading has not been taken everywhere else. Still shallow at
-the top for somebody who has made the thing a habit: BOSS wins (100), steps (100K), pets raised
-(25), LINK duel wins (50), handshakes (50), Bits held (50K), and the two endless cabinets' BEST
-scores, whose goals (CHROMATOPHORE 20, ISOLATION 60) should be set off real high scores rather
-than guessed. Two constraints shape it: `gen_ach_icons.py`'s `tally()` footer stops at FIVE marks,
-so a ladder already five deep (BOSS) needs a sixth-rung footer convention before it can grow; and
-the bitset holds 256 wires, of which 193 are spent. |
-`content_achievements.cpp`; `tools/gen_ach_icons.py`. | S per ladder, M for the footer rule | The
-evidence is the best guide to which ladders matter — ask the people playing it. |
+**The two endless cabinets' BEST rows are guesses.** CHROMATOPHORE's DEEP_COVER (20 passes) and
+ISOLATION PROTOCOL's BUFFER_GLUTTON (60 bytes) were set before anyone had played either cabinet
+seriously, and they are the only ladders here that cannot be deepened by adding a rung: a BEST is
+one run, so the right goal is a number off real high scores, not a step up from the last one.
+Collect those, then retune the two rows and decide whether either wants a rung above. |
+`content_achievements.cpp`'s `ArcadeCabinetBest` rows. | S | A ladder past five rungs wraps its
+tally (`tools/gen_ach_icons.py`'s `tally`), and the bitset holds 256 wires, of which 199 are
+spent. |
 
 ### 1b. A separation pass over every screen
 

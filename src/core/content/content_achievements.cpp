@@ -137,6 +137,10 @@ const AchievementDef kAchievements[] = {
      "Raise {n} pets across lifecycles.", "ICON_ACH_GENERATION_25",
      AchSeries::PetsRaised, /*goal=*/25, nullptr, 0,
      {bits(400), item("commend_cache")}},
+    {/*wire=*/195, "GENERATION_50", "Generation L",
+     "Raise {n} pets across lifecycles.", "ICON_ACH_GENERATION_50",
+     AchSeries::PetsRaised, /*goal=*/50, nullptr, 0,
+     {bits(600), item("commend_cache")}},
     {/*wire=*/16, "SPECIES_3", "Menagerie",
      "Raise {n} different species.", "ICON_ACH_SPECIES_3",
      AchSeries::SpeciesRaised, /*goal=*/3, nullptr, 0, {bits(25)}},
@@ -238,6 +242,12 @@ const AchievementDef kAchievements[] = {
      "Defeat {n} bosses.", "ICON_ACH_BOSS_100",
      AchSeries::BossWins, /*goal=*/100, nullptr, 0,
      {bits(400), item("commend_cache")}},
+    // The first rung past five on any ladder, which is why its glyph's tally WRAPS
+    // (tools/gen_ach_icons.py's tally) rather than squeezing a sixth mark in.
+    {/*wire=*/193, "BOSS_250", "Domain Admin",
+     "Defeat {n} bosses.", "ICON_ACH_BOSS_250",
+     AchSeries::BossWins, /*goal=*/250, nullptr, 0,
+     {bits(600), item("commend_cache")}},
     {/*wire=*/33, "SUBS_5", "Sector Sweeper",
      "Clear {n} sub-areas of the 'net.", "ICON_ACH_SUBS_5",
      AchSeries::SubAreasCleared, /*goal=*/5, nullptr, 0, {bits(25)}},
@@ -475,6 +485,10 @@ const AchievementDef kAchievements[] = {
      "Capture {n} unique WPA handshakes in Audit mode.", "ICON_ACH_SHAKE_50",
      AchSeries::Handshakes, /*goal=*/50, nullptr, 0,
      {bits(400), item("commend_cache")}},
+    {/*wire=*/197, "SHAKE_250", "EAPOL Archivist",
+     "Capture {n} unique WPA handshakes in Audit mode.", "ICON_ACH_SHAKE_250",
+     AchSeries::Handshakes, /*goal=*/250, nullptr, 0,
+     {bits(600), item("commend_cache")}},
 
     // --- The DEFRAG minigame --------------------------------------------------------
     // The Stacker variant is the one maintenance path that pays with SKILL rather than
@@ -561,6 +575,10 @@ const AchievementDef kAchievements[] = {
      "Hold {n} Bits at once.", "ICON_ACH_BITS_50K",
      AchSeries::BitsHeld, /*goal=*/50000, nullptr, 0,
      {bits(400), item("commend_cache")}},
+    {/*wire=*/198, "BITS_250K", "Bit Magnate",
+     "Hold {n} Bits at once.", "ICON_ACH_BITS_250K",
+     AchSeries::BitsHeld, /*goal=*/250000, nullptr, 0,
+     {bits(600), item("commend_cache")}},
 
     // --- ROCK THE DOCK ------------------------------------------------------------
     // The arena in The Pirate Bayou (content_tournament.h), and the only place the pet
@@ -620,6 +638,10 @@ const AchievementDef kAchievements[] = {
      "Win {n} duels over the LINK.", "ICON_ACH_DUEL_WIN_50",
      AchSeries::PvpWins, /*goal=*/50, nullptr, 0,
      {bits(400), item("commend_cache")}},
+    {/*wire=*/196, "DUEL_WIN_250", "Backbone",
+     "Win {n} duels over the LINK.", "ICON_ACH_DUEL_WIN_250",
+     AchSeries::PvpWins, /*goal=*/250, nullptr, 0,
+     {bits(600), item("commend_cache")}},
 
     // --- The MERGE HUB's stove ----------------------------------------------------
     // The third axis on the kitchen, beside dishes HELD (CUISINE) and methods KNOWN
@@ -737,6 +759,10 @@ const AchievementDef kAchievements[] = {
      "Take {n} steps on the 'net.", "ICON_ACH_STEPS_100K",
      AchSeries::StepsWalked, /*goal=*/100000, nullptr, 0,
      {bits(250), item("sealed_cache_rare")}},
+    {/*wire=*/194, "STEPS_500K", "Sneakernet",
+     "Take {n} steps on the 'net.", "ICON_ACH_STEPS_500K",
+     AchSeries::StepsWalked, /*goal=*/500000, nullptr, 0,
+     {bits(400), item("commend_cache")}},
 
     // --- The arcade's remaining cabinets ------------------------------------------
     // ArcadeCabinetWins already existed and already had a tally being written for every

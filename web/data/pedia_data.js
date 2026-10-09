@@ -7333,6 +7333,13 @@ window.PEDIA_DATA = {
       "goal": 25
     },
     {
+      "key": "GENERATION_50",
+      "name": "Generation L",
+      "trigger": "Raise 50 pets across lifecycles.",
+      "icon": "assets/icons/ICON_ACH_GENERATION_50.png",
+      "goal": 50
+    },
+    {
       "key": "SPECIES_3",
       "name": "Menagerie",
       "trigger": "Raise 3 different species.",
@@ -7485,6 +7492,13 @@ window.PEDIA_DATA = {
       "trigger": "Defeat 100 bosses.",
       "icon": "assets/icons/ICON_ACH_BOSS_100.png",
       "goal": 100
+    },
+    {
+      "key": "BOSS_250",
+      "name": "Domain Admin",
+      "trigger": "Defeat 250 bosses.",
+      "icon": "assets/icons/ICON_ACH_BOSS_250.png",
+      "goal": 250
     },
     {
       "key": "SUBS_5",
@@ -7836,6 +7850,13 @@ window.PEDIA_DATA = {
       "goal": 50
     },
     {
+      "key": "SHAKE_250",
+      "name": "EAPOL Archivist",
+      "trigger": "Capture 250 unique WPA handshakes in Audit mode.",
+      "icon": "assets/icons/ICON_ACH_SHAKE_250.png",
+      "goal": 250
+    },
+    {
       "key": "DEFRAG_BY_HAND",
       "name": "Defragged by Hand",
       "trigger": "Clear 1 disk by hand in the DEFRAG minigame.",
@@ -7946,6 +7967,13 @@ window.PEDIA_DATA = {
       "goal": 50000
     },
     {
+      "key": "BITS_250K",
+      "name": "Bit Magnate",
+      "trigger": "Hold 250000 Bits at once.",
+      "icon": "assets/icons/ICON_ACH_BITS_250K.png",
+      "goal": 250000
+    },
+    {
       "key": "DOCK_FIRST",
       "name": "Took the Dock",
       "trigger": "Take 1 ROCK THE DOCK bracket.",
@@ -7998,6 +8026,13 @@ window.PEDIA_DATA = {
       "trigger": "Win 50 duels over the LINK.",
       "icon": "assets/icons/ICON_ACH_DUEL_WIN_50.png",
       "goal": 50
+    },
+    {
+      "key": "DUEL_WIN_250",
+      "name": "Backbone",
+      "trigger": "Win 250 duels over the LINK.",
+      "icon": "assets/icons/ICON_ACH_DUEL_WIN_250.png",
+      "goal": 250
     },
     {
       "key": "SERVICE_1",
@@ -8144,6 +8179,13 @@ window.PEDIA_DATA = {
       "trigger": "Take 100000 steps on the 'net.",
       "icon": "assets/icons/ICON_ACH_STEPS_100K.png",
       "goal": 100000
+    },
+    {
+      "key": "STEPS_500K",
+      "name": "Sneakernet",
+      "trigger": "Take 500000 steps on the 'net.",
+      "icon": "assets/icons/ICON_ACH_STEPS_500K.png",
+      "goal": 500000
     },
     {
       "key": "CAB_CLUTCH",
