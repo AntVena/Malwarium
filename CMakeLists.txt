@@ -90,6 +90,12 @@ target_link_libraries(dump_frame PRIVATE malcore)
 add_executable(check_manifest tools/check_manifest.cpp)
 target_link_libraries(check_manifest PRIVATE malcore)
 
+# Style check for the wild-malbeast art spike: renders one malbeast's silhouette plus the
+# FX_GLITCH shader's states to a PPM (tools/preview_malbeast.py wraps it to PNG). A
+# look-at-it tool, not a gate — the sibling of dump_frame for a sprite with no screen yet.
+add_executable(preview_malbeast tools/preview_malbeast.cpp)
+target_link_libraries(preview_malbeast PRIVATE malcore)
+
 # --- Web demo seed ----------------------------------------------------------
 # Bakes the wasm demo's starting save by running the engine's own serializer (see
 # the file banner). A HOST tool even when the demo it feeds is a wasm build, which
