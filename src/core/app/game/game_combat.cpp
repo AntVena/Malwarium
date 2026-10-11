@@ -827,6 +827,16 @@ void Game::debugStartCombat(bool live, bool lethal) {
         // Give the lethal enemy a one-shot kill regardless of move power.
         p.maxHealth = 1;
     }
+    beginDebugCombat(p, spec, live);
+}
+
+void Game::debugStartCombatVs(const CombatEnemy& spec, bool live) {
+    if (!pet_) return;
+    Combatant p = makePlayerCombatant(registry_, *pet_, moveLoadout_, loadout_);
+    beginDebugCombat(p, spec, live);
+}
+
+void Game::beginDebugCombat(const Combatant& p, const CombatEnemy& spec, bool live) {
     Combatant e = makeEnemyCombatant(registry_, spec);
     rng_ = rng_ * 1664525u + 1013904223u;
     combat_.begin(p, e, live ? Combat::Stakes::Live : Combat::Stakes::Safe, rng_,

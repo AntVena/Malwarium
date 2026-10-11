@@ -13,6 +13,7 @@
 #include "core/render/shred.h"
 #include "core/render/font.h"
 #include "core/render/framebuffer.h"
+#include "core/render/glitch.h"
 #include "core/render/palette.h"
 #include "core/render/scenes.h"
 #include "core/render/sprite.h"
@@ -97,7 +98,8 @@ constexpr int scaleUp(int x, int num, int den) {
 void drawFighter(Framebuffer& fb, const SpriteData* s, int contentX, int animBeat,
                  uint8_t flashAmt, Rgb565 flashColor, int xNudge, bool faceRight,
                  const AnimClip* pose, int num, int den, const CamoRamp* camo = nullptr,
-                 uint8_t camoAmt = 0, const CamoRamp* camoFrom = nullptr) {
+                 uint8_t camoAmt = 0, const CamoRamp* camoFrom = nullptr,
+                 bool glitch = false) {
     if (!s) return;
     const bool mirror = spriteMirrorToFace(*s, faceRight);
     const int x = contentX - scaleUp(spriteContentX0(*s, mirror), num, den) + xNudge;
@@ -117,8 +119,23 @@ void drawFighter(Framebuffer& fb, const SpriteData* s, int contentX, int animBea
     else if (flashAmt > 0)
         drawSpriteFlash(fb, *s, frame, x, y, num, den, flashColor,
                         flashAmt, row, mirror);
+    // A wild malbeast is corrupted on every beat it is not being flashed: the hit flash
+    // wins so an impact still reads, and the glitch re-rolls on the heartbeat (one of its
+    // eight clock states per beat) so it flickers rather than freezing in one tear.
+    else if (glitch)
+        drawSpriteGlitch(fb, *s, frame, x, y, num, den, palColor(Pal::INK),
+                         palColor(Pal::HOT), static_cast<uint8_t>(animBeat * 32), row,
+                         mirror);
     else
         drawSpriteUpscaled(fb, *s, frame, x, y, num, den, row, mirror);
+}
+
+// Does this fighter wear FX_GLITCH? Wild malbeasts only: a sprite-named enemy spec (no
+// creature row) whose sheet is one of the SPR_MALBEAST_ family. Bosses and the Sim dummy
+// borrow other sheets and stay clean.
+bool wearsGlitch(const Combatant& c) {
+    return !c.creature && c.spriteName &&
+           std::strncmp(c.spriteName, "SPR_MALBEAST_", 13) == 0;
 }
 
 // The seat a fighter with no sprite holds: one standard pet cell (the 56x48 logical
@@ -288,8 +305,16 @@ bool hurtPoseEarned(const Combatant& target, int damage) {
 }
 
 // Pose precedence and its reasoning are on the declaration (combat_screen.h).
-const AnimClip* fightPose(const Combatant& c, bool takingHit, bool swinging) {
-    if (!c.creature) return nullptr;
+const AnimClip* fightPose(const Combatant& c, bool takingHit, bool swinging,
+                          const SpriteData* sprite) {
+    if (!c.creature) {
+        // A wild's two poses, read off its sheet's rows. One frame each and held: a wild
+        // stands still and lunges, it does not breathe through its attack frame.
+        static constexpr AnimClip kWildIdle{"idle", 0, 1, 1};
+        static constexpr AnimClip kWildAttack{"attack", 1, 1, 1};
+        if (!sprite || sprite->rows < 2) return nullptr;
+        return swinging ? &kWildAttack : &kWildIdle;
+    }
     if (takingHit)
         if (const AnimClip* hurt = c.creature->clip("hurt")) return hurt;
     if (swinging)
@@ -998,8 +1023,8 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
                     fightPose(en,
                               rivalFlinches && rivalHitBeat >= 0 &&
                                   rivalHitBeat < kImpactPeriod,
-                              swinging && !lastByLocal),
-                    shotN, shotD);
+                              swinging && !lastByLocal, rivalSprite),
+                    shotN, shotD, nullptr, 0, nullptr, wearsGlitch(en));
     } else if (rivalSprite) {
         // Same turn the live draw above takes: a rival that spun round on the beat it
         // died would read as the outro doing it, not as the fight ending.
@@ -1038,8 +1063,9 @@ void drawCombat(Framebuffer& fb, const Combat& combat,
                     fightPose(pl,
                               localFlinches && localHitBeat >= 0 &&
                                   localHitBeat < kImpactPeriod,
-                              swinging && lastByLocal),
-                    shotN, shotD, &localCamo, localCamoAmt, localCamoFrom);
+                              swinging && lastByLocal, localSprite),
+                    shotN, shotD, &localCamo, localCamoAmt, localCamoFrom,
+                    wearsGlitch(pl));
     }
 
     // Worm replicas, on the same shelf, standing BETWEEN their parent and its opponent —

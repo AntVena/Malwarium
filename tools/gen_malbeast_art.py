@@ -15,10 +15,10 @@ Why a second tool, and not the Worm one
 ----------------------------------------
 The Worm line spends a mother STYLE instead of a mother colour (CREATURE_VISUAL_RULES §4),
 and gen_worm_art.py holds that style mechanically so a dozen sprites still read as one hand.
-The wild malbeasts want a style of their OWN — and the opposite one. A malbeast is not a
-creature-line member (it is a bare sprite-named spec in combat_factory.cpp, no creature row,
-no mother colour), so nothing ties the roster together today, which is exactly how a style
-drifts. This file is that tie.
+The wild malbeasts want a style of their OWN. A malbeast is not a creature-line member (it
+is a bare sprite-named spec in combat_factory.cpp, no creature row, no mother colour), so
+nothing ties the roster together today, which is exactly how a style drifts. This file is
+that tie.
 
 The malbeast style, as the only things a recipe can say
 -------------------------------------------------------
@@ -31,24 +31,29 @@ The malbeast style, as the only things a recipe can say
     store: a field of identical 4×4 blocks is what gen_assets.py's tile-dedup form is for,
     and a one-ink field is a 1-bit mask regardless.)
 
-2.  FILLED SILHOUETTE, not outline. This is the one axis where the malbeast is the Worm's
-    opposite: a worm is an outline with one solid mass, a malbeast is ALL solid mass. At
-    this scale a filled blocky body reads as a squat, heavy, dumb-strong thing — the beast
-    — where an outline reads as an organism. Recipes union forms into one silhouette; there
-    is no "interior" to draw into.
+2.  LINE ART, the original V-pet way. A closed one-cell outline with the detail drawn
+    INSIDE it as more ink: a solid eye, a jaw or jowl line, a curl or two of hide, toes
+    as broken cells along the floor. At one nibble a line is 4px thick, which is what
+    keeps it reading as a deliberate stroke on the ×1.75 panel. Draw the filled shape
+    first and trace its boundary, so the outline is always closed; an open outline reads
+    as a broken sprite, not as a style.
 
 3.  ONE INK, on transparent. INK below, nothing emits another value — same reason the Worm
     file has the rule (a stray second colour costs real flash silently, and the mask store
     depends on it). The CORRUPTION — the glitch tear, the stray lit pixels, the colour — is
     NOT in the pixels: it is a render-time pass (core/render/glitch.h, drawSpriteGlitch)
-    over this silhouette, so the sheet stays a cheap still and the glitch animates for free.
-    A malbeast on the shelf is a blocky black cut-out; the shader is what corrupts it.
+    over this drawing, so the sheet stays a cheap still and the glitch animates for free.
+    A malbeast on the shelf is a plain blocky line drawing; the shader is what corrupts it.
 
 That division is the point of the whole approach: the EXPENSIVE, animated, scary half lives
-in ~one engine function shared by every malbeast, and the per-creature half is a cheap,
-static, one-ink blob a recipe can draw in a dozen lines. Adding the seventh malbeast is a
-recipe here plus a stat row in combat_factory.cpp — no new frames, no new FX, no new art
-commission for the glitch.
+in ~one engine function shared by every malbeast, and the per-creature half is two cheap
+one-ink frames a recipe draws on graph paper. Adding the seventh malbeast is a recipe here
+plus a stat row in combat_factory.cpp — no new FX, no new art commission for the glitch.
+
+The sheet: two ROWS of one frame each, row 0 the idle and row 1 the attack. That is the
+whole animation budget — a wild never breathes or walks, it stands, and it lunges when it
+swings (fightPose picks the row). Everything else a fight has to say (stunned, poisoned,
+what kind of blow) belongs to the combat FX, not to more frames here.
 
 Facing: declared on the SHEET in gen_assets.py's FACING table (a wild has no creature row to
 carry it), and the drawing is authored to match. GlitchHog is Facing::Left — snout to the
@@ -79,8 +84,8 @@ NIB = 4
 #  The nibble canvas — a coarse boolean field a recipe paints, expanded ×NIB at bake().
 # --------------------------------------------------------------------------------------
 class Nib:
-    """A w×h field of 4×4-pixel cells. Every primitive operates in THIS space, so a recipe
-    cannot express anything finer than a nibble — the grid is the style."""
+    """A w×h field of 4×4-pixel cells. A recipe draws in THIS space, so it cannot express
+    anything finer than a nibble — the grid is the style."""
 
     def __init__(self, w, h):
         self.w, self.h = w, h
@@ -93,47 +98,6 @@ class Nib:
 
     def get(self, x, y):
         return 0 <= x < self.w and 0 <= y < self.h and self.on[y][x]
-
-    # --- forms (all inclusive of their bounds, all unioned in) ------------------------
-    def box(self, x0, y0, x1, y1):
-        """A solid nibble rectangle — the body, a limb segment, a blunt snout."""
-        for y in range(min(y0, y1), max(y0, y1) + 1):
-            for x in range(min(x0, x1), max(x0, x1) + 1):
-                self.set(x, y)
-        return self
-
-    def disc(self, cx, cy, r):
-        """A blocky filled disc — rounds a corner of the mass without leaving the grid. A
-        true circle is a smoothness 4px blocks cannot deliver, so the test is coarse
-        (nibble-centre inside r + a half-cell) and the result is deliberately chunky."""
-        for y in range(cy - r, cy + r + 1):
-            for x in range(cx - r, cx + r + 1):
-                if (x - cx) ** 2 + (y - cy) ** 2 <= (r + 0.5) ** 2:
-                    self.set(x, y)
-        return self
-
-    def legs(self, xs, y0, y1):
-        """Thick stubby limbs: a 1-nibble-wide (=4px) column at each x, dropped y0→y1. The
-        malbeast's limbs are always one nibble — the 'squares of 4 pixels' the brief asks
-        for — so a leg is a column here and nothing thinner can be said."""
-        for x in xs:
-            self.box(x, y0, x, y1)
-        return self
-
-    def studs(self, cells):
-        """Loose single nibbles — back bristles, a tusk, an ear, a tail nub. The jagged
-        read that says 'aggressive / corrupted' rather than 'pet', spent one block at a
-        time so it stays on the grid."""
-        for (x, y) in cells:
-            self.set(x, y)
-        return self
-
-    def carve(self, x0, y0, x1, y1):
-        """Clear a nibble rect — a mouth gap, the notch between two legs."""
-        for y in range(min(y0, y1), max(y0, y1) + 1):
-            for x in range(min(x0, x1), max(x0, x1) + 1):
-                self.set(x, y, False)
-        return self
 
     # --- bake: nibbles -> a pixel mask, each set nibble a solid NIB×NIB block ----------
     def bake(self):
@@ -178,42 +142,77 @@ def to_png(px, w, h):
 
 # ======================================================================================
 #  RECIPES — one function per sheet, returning a baked (px, w, h). Everything above is the
-#  vocabulary; from here down is which blocks each creature is.
+#  vocabulary; from here down is which cells each creature is.
+#
+#  A recipe is graph paper: one ASCII grid per frame, '#' an inked nibble and '.' an empty
+#  one, exactly how a V-pet sprite is drawn on squared paper. Frames stack as ROWS of the
+#  sheet — row 0 the idle, row 1 the attack — because an AnimClip selects a row, and a
+#  wild malbeast's two poses are picked by row (fightPose, ui/combat_screen.cpp).
 # ======================================================================================
 
+def grid(*rows):
+    """One frame from graph-paper rows. Every row must be the same width — a ragged grid
+    is a typo, and a typo here is a pixel nobody meant."""
+    w = len(rows[0])
+    for r in rows:
+        if len(r) != w:
+            raise SystemExit(f"ragged grid row {r!r}: {len(r)} cells, expected {w}")
+    n = Nib(w, len(rows))
+    for y, r in enumerate(rows):
+        for x, c in enumerate(r):
+            if c == "#":
+                n.set(x, y)
+            elif c != ".":
+                raise SystemExit(f"grid cell {c!r} is neither '#' nor '.'")
+    return n
+
+
+def stack(*frames):
+    """Bake frames into one sheet, one frame per ROW (idle on top, attack below)."""
+    w, h = frames[0].w * NIB, frames[0].h * NIB
+    px = []
+    for f in frames:
+        if (f.w, f.h) != (frames[0].w, frames[0].h):
+            raise SystemExit("every frame of a sheet must be the same size")
+        fpx, _, _ = f.bake()
+        px.extend(fpx)
+    return px, w, h * len(frames)
+
+
 def glitchhog():
-    """GlitchHog — the tier-1 'net boar. Squat and front-heavy: a heavy body block, a blunt
-    snout shoved out to the LEFT (Facing::Left) with a tusk jutting up off it, a low ear,
-    four one-nibble legs, a run of back bristles and a tail nub. 14×12 nibbles = 56×48 px.
-    The read is 'dumb-strong and angry', all mass, no interior — the glitch shader does the
-    menace, this just has to be an unmistakable blocky beast."""
-    n = Nib(14, 12)
-
-    # Body — one heavy rounded block, the thing the eye lands on. Floored at the bottom
-    # row (y=11); the bottom edge is the FLOOR and is the one edge a creature may sit on.
-    n.box(4, 4, 11, 9)
-    n.disc(5, 6, 2)        # round the front-lower corner so the snout grows out of it
-    n.disc(10, 5, 2)       # round the haunch
-
-    # Head / snout, shoved left and low. A blunt rectangular muzzle is the hog tell.
-    n.box(1, 6, 5, 9)
-    n.box(0, 7, 1, 8)      # the flat snout tip poking off the left edge's inside
-    n.studs([(1, 5)])      # a short tusk jutting up off the muzzle
-    n.studs([(5, 3), (6, 3)])   # a low pricked ear on top of the head
-
-    # Back bristles — the jagged top line that reads as hackles / corruption.
-    n.studs([(7, 3), (9, 3), (11, 3)])
-
-    # Tail nub, back-right.
-    n.studs([(12, 5), (12, 6)])
-
-    # Four thick legs (one nibble each), dropped to the floor. Front pair under the chest,
-    # back pair under the haunch, with a carved gap between so they read as four not a slab.
-    n.legs([3, 5], 9, 11)        # front pair
-    n.legs([9, 11], 9, 11)       # back pair
-    n.carve(6, 10, 8, 11)        # belly gap between the pairs
-
-    return n.bake()
+    """GlitchHog — the tier-1 'net boar, facing LEFT. A closed one-cell outline with the
+    detail drawn inside it: hackles along the back, a solid eye, a jowl line splitting head
+    from body, one hide curl, a belly line, stubby legs. The attack lunges the whole body
+    forward a cell with the head dropped and the jaw open."""
+    idle = grid(
+        "......#.#.#...",
+        ".....#.#.#.#..",
+        "...##.......#.",
+        "..#.........#.",
+        ".#.##.......#.",
+        "#..##.#.....#.",
+        "#.....#..##.#.",
+        ".##...#...#.#.",
+        "..##.....##.#.",
+        "...#.####..##.",
+        "...##.##.##.##",
+        "..###.##.##.##",
+    )
+    attack = grid(
+        "..............",
+        ".......#.#.#..",
+        "......#.#.#.#.",
+        "....##.......#",
+        "...#.##......#",
+        "..#..##.#....#",
+        "##......#..###",
+        "#.......#...#.",
+        "..##......##..",
+        "##.##.####.#..",
+        "..##.##.##.##.",
+        ".###.##.##.##.",
+    )
+    return stack(idle, attack)
 
 
 RECIPES = {
@@ -246,16 +245,15 @@ def main():
 
     if args.preview is not None:
         name = resolve(args.preview) if args.preview else sorted(RECIPES)[0]
-        n = Nib(14, 12)
-        # Re-run the recipe against a canvas we can ASCII: recipes bake and return pixels,
-        # so for preview we just rebuild on a throwaway Nib via the same body. Simplest is
-        # to re-derive from the baked pixels at nibble resolution.
         px, w, h = RECIPES[name]()
-        for ny in range(h // NIB):
-            for nx in range(w // NIB):
+        # Back down to nibble resolution: every set nibble is a solid NIB block, so its
+        # top-left pixel stands for the whole cell.
+        n = Nib(w // NIB, h // NIB)
+        for ny in range(n.h):
+            for nx in range(n.w):
                 if px[ny * NIB][nx * NIB]:
                     n.set(nx, ny)
-        print(f"{name}  ({w}×{h}px, {w // NIB}×{h // NIB} nibbles)\n")
+        print(f"{name}  ({w}×{h}px, {n.w}×{n.h} nibbles)\n")
         print(n.ascii())
         return
 

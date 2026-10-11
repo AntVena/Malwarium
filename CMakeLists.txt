@@ -146,6 +146,12 @@ if(Python3_Interpreter_FOUND)
     add_test(NAME worm_art_recipes
              COMMAND ${Python3_EXECUTABLE}
                      ${CMAKE_SOURCE_DIR}/tools/gen_worm_art.py --check)
+    # The wild malbeasts are generated the same way and for the same reason: the
+    # recipe in gen_malbeast_art.py is the art, and a hand edit to a committed sheet is
+    # one the next run reverts. Names the regenerating command when it fails.
+    add_test(NAME malbeast_art_recipes
+             COMMAND ${Python3_EXECUTABLE}
+                     ${CMAKE_SOURCE_DIR}/tools/gen_malbeast_art.py --check)
     # The achievement glyphs are generated for the same reason the worm sheets are,
     # plus one of its own: the board's whole readability claim is that a row's RUNG is
     # visible before its name is (one motif, a countable tally), and that is a property

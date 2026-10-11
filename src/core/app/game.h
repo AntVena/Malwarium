@@ -2018,6 +2018,9 @@ public:
     // the stakes; the Sim-Battle path is the in-game one (startSimBattle, safe).
     // `lethal` builds an unbeatable enemy so a loss is deterministic (stakes test).
     void debugStartCombat(bool live, bool lethal = false);
+    // The same, against a chosen enemy spec (e.g. wildMalbeast(tier, variant)) — what a
+    // headless preview of one particular wild needs, since a walk rolls whichever one.
+    void debugStartCombatVs(const CombatEnemy& spec, bool live = false);
     // Preset the lifetime networks-seen counter + its v1 dedup pool (tests /
     // dump_frame): marks the first `n` pool slots seen and recomputes Hacker
     // Rank silently — scaffolding to reach a rank/sector-unlock state without
@@ -2863,6 +2866,9 @@ private:
     void resolveFlee();                             // pre-fight escape roll
     void resolveSinkhole();                         // consume Sinkhole Trap -> XP lump
     void startWildCombat(bool forceEnemyFirst);     // live-stakes combat from an encounter
+    // The tail both debug combat hooks share once the player is built: roll the fight
+    // open against `spec` and hand the screen to it (debugStartCombat / ...Vs).
+    void beginDebugCombat(const Combatant& p, const CombatEnemy& spec, bool live);
     Combatant buildPlayerCombatant();               // + the ally-buff, if active
 
     // Boss ladder. Two confrontations share the carried-Health round plumbing

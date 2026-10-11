@@ -201,6 +201,9 @@ ROW_H_OVERRIDES = {
     "SPR_PET_MORPHOPUS": 64,
     # 576x256 = four rows of 72x64 cells: the idle, the step cycle, the strike, the flinch.
     "SPR_PET_TENTACLONE": 64,
+    # 56x96 = two rows of one 56x48 frame: the idle, then the attack (tools/
+    # gen_malbeast_art.py). Not a SPR_PET_ sheet, so the stack has to be declared here.
+    "SPR_MALBEAST_GLITCHHOG": 48,
 }
 
 

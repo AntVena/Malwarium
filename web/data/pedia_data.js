@@ -612,7 +612,7 @@ window.PEDIA_DATA = {
       "cellW": 56,
       "cellH": 48,
       "sheetW": 56,
-      "sheetH": 48
+      "sheetH": 96
     },
     {
       "id": "segfault_pup",

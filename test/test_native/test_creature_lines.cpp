@@ -737,4 +737,16 @@ void test_fight_pose_precedence() {
     // the draw falls through to its breathe heuristic.
     Combatant bare;
     CHECK(fightPose(bare, true, true) == nullptr);
+
+    // ...unless its SHEET carries the two-row wild layout, where the rows are the poses:
+    // idle on row 0, attack on row 1 only while it swings. A hit has no pose of its own
+    // there and holds whatever the swing says. A one-row sheet (the Sim dummy, and any
+    // wild still on its placeholder) still gets nullptr, so it draws exactly as it did.
+    CHECK(ASSET_SPR_MALBEAST_GLITCHHOG.rows == 2);
+    const SpriteData* hog = &ASSET_SPR_MALBEAST_GLITCHHOG;
+    CHECK(row(fightPose(bare, false, false, hog)) == 0);
+    CHECK(row(fightPose(bare, true, false, hog)) == 0);
+    CHECK(row(fightPose(bare, false, true, hog)) == 1);
+    CHECK(ASSET_SPR_DUMMY.rows == 1);
+    CHECK(fightPose(bare, false, true, &ASSET_SPR_DUMMY) == nullptr);
 }

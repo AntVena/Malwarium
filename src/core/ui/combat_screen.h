@@ -31,13 +31,18 @@ struct SpriteData;
 struct Combatant;
 struct AnimClip;
 
-// Which authored clip a fighter shows this tick, or nullptr for a combatant with no
-// creature behind it (a sprite-named enemy spec), which the draw reads as the row-0
-// breathe loop. TAKING a hit outranks throwing one, so a trade reads as the recoil. A
-// creature missing the pose it is asked for falls back to its idle, so a sheet may author
-// any subset. `takingHit` means "flinches NOW", not "was damaged" — hurtPoseEarned splits
-// the two.
-const AnimClip* fightPose(const Combatant& c, bool takingHit, bool swinging);
+// Which authored clip a fighter shows this tick. TAKING a hit outranks throwing one, so a
+// trade reads as the recoil. A creature missing the pose it is asked for falls back to its
+// idle, so a sheet may author any subset. `takingHit` means "flinches NOW", not "was
+// damaged" — hurtPoseEarned splits the two.
+//
+// A combatant with no creature behind it (a sprite-named enemy spec, i.e. a wild malbeast)
+// has no clips to name, so its poses come from the SHEET: one with a second row is idle on
+// row 0 and attack on row 1 (tools/gen_malbeast_art.py), and shows row 1 only while it
+// swings. Pass that fighter's `sprite` for this; without one, or with a one-row sheet, the
+// answer is nullptr and the draw reads the row-0 breathe loop as before.
+const AnimClip* fightPose(const Combatant& c, bool takingHit, bool swinging,
+                          const SpriteData* sprite = nullptr);
 
 // How big a single hit has to be, as a percentage of the TARGET's own maxHealth, before it
 // answers with its BODY — the authored `hurt` pose and the knock-back that carries it.
