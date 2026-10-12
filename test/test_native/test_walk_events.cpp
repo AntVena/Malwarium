@@ -124,6 +124,48 @@ void test_wifi_awakened_guardian_enters_combat() {
     CHECK(g.combat().stakes() == Combat::Stakes::Live);
 }
 
+// In an endless zone the guardian is one of the ZONE's wilds, scaled the way the zone
+// scales a walk's own fights. explSectorTier reads any sector past the ladder as tier 1,
+// so a guardian keyed on it would be the ladder's first pair.
+void test_wifi_awakened_guardian_in_the_crawl_is_a_crawl_wild() {
+    Game g{StartMode::Hatched};
+    for (int a = 0; a < kExplSectors; ++a) g.debugSetSectorCleared(a, true);
+    g.debugStartDarkWebCrawl();
+    CHECK(g.inDarkWebCrawl());
+    g.debugSetAutoProgress(false);
+    g.inventory().add("sinkhole_trap", 200);
+    makeHot(g);
+    bool met = false;
+    uint32_t t = 0;
+    for (int i = 0; i < 4000 && !met && g.inDarkWebCrawl(); ++i) {
+        if (g.nav() == Game::Nav::Wifi &&
+            g.wifiOutcome() == Game::WifiOutcome::AwakenedGuardian) {
+            g.onButton(press(Button::B));
+            CHECK(g.nav() == Game::Nav::Combat);
+            const char* name = g.combat().enemy().name;
+            CHECK(std::strcmp(name, wildMalbeastOf(kDarkWebWilds, 3, 0).name) == 0 ||
+                  std::strcmp(name, wildMalbeastOf(kDarkWebWilds, 3, 1).name) == 0);
+            CHECK(g.combat().enemy().maxHealth > wildMalbeastAt(0).maxHealth);
+            met = true;
+        } else if (g.nav() == Game::Nav::Encounter) {
+            g.onButton(press(Button::A));   // Fight -> Flee
+            g.onButton(press(Button::A));   // Flee -> Sinkhole
+            g.onButton(press(Button::B));
+        } else if (g.nav() == Game::Nav::Idle) {
+            pingExplore(g);
+        } else if (g.nav() == Game::Nav::Shop || g.nav() == Game::Nav::ModShop) {
+            tapC(g);
+        } else if (g.nav() == Game::Nav::Combat) {   // a Shiboleet guardian's fight
+            for (int j = 0; j < 800 && g.combat().outcome() == Combat::Outcome::Ongoing; ++j)
+                g.tick(t += kHeartbeatMs);
+            g.onButton(press(Button::B));
+        } else {
+            g.onButton(press(Button::B));   // any other walk screen: step past it
+        }
+    }
+    CHECK(met);
+}
+
 // The gate: merely DISCOVERING networks never flags the player hot, so a
 // non-hot player is never auto-attacked by a Wi-Fi event — over a large sample of
 // Wi-Fi events, none awaken a guardian and none route into combat. (Wild-step

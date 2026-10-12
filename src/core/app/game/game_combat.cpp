@@ -898,15 +898,10 @@ void Game::debugFillLoadout() {
 }
 
 
-void Game::startEncounter() {
-    // THE FIRST ENCOUNTER IN A ZONE IS WHERE ITS CHAPTER FIRES (game_story.cpp). Before
-    // the roll, not after, because the chapter is about ARRIVING somewhere — it has to
-    // land in front of the first malbeast rather than behind it. fireStory answers false
-    // for a zone with nothing authored or a chapter already read, in which case this is
-    // an ordinary encounter and nothing here knows a story exists; when it answers true
-    // the reader has the screen and calls back into this function once it is done, by
-    // which time the chapter is marked read and the gate falls straight through.
-    if (fireStory(exploreSector_, StoryBeat::AreaIntro, StoryThen::Encounter)) return;
+// The wild a walk meets here, at full strength for where it was met: the zone's own pair
+// and its scaling. The Wi-Fi guardian (game_net.cpp) rolls through this too, so it is the
+// same creature a walk in the same place would meet.
+void Game::rollWild() {
     rng_ = rng_ * 1664525u + 1013904223u;                    // roster variant roll
     if (inEndlessZone()) {
         // Both endless zones field a tier-3 pair (the crawl its own, kDarkWebWilds) and
@@ -933,6 +928,18 @@ void Game::startEncounter() {
         malbeastSeenMask_ |= static_cast<uint16_t>(1u << idx);
         markSaveDirty();
     }
+}
+
+void Game::startEncounter() {
+    // THE FIRST ENCOUNTER IN A ZONE IS WHERE ITS CHAPTER FIRES (game_story.cpp). Before
+    // the roll, not after, because the chapter is about ARRIVING somewhere — it has to
+    // land in front of the first malbeast rather than behind it. fireStory answers false
+    // for a zone with nothing authored or a chapter already read, in which case this is
+    // an ordinary encounter and nothing here knows a story exists; when it answers true
+    // the reader has the screen and calls back into this function once it is done, by
+    // which time the chapter is marked read and the gate falls straight through.
+    if (fireStory(exploreSector_, StoryBeat::AreaIntro, StoryThen::Encounter)) return;
+    rollWild();
     encounterChoice_ = 0;
     encounterSinkhole_ = inventory_.count("sinkhole_trap") > 0;
     // Auto-explore is a hands-off background mode: a wild encounter resolves

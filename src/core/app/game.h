@@ -2862,6 +2862,7 @@ private:
     // adds "and won") and by the mask the KIT page marks its prizes from.
     bool combatCanTeach() const;
     void startEncounter();                          // roll the malbeast, open the intro
+    void rollWild();                                // encounterEnemy_ for this zone, scaled
     void onEncounter(const ButtonEvent& ev);        // Fight / Flee / Sinkhole
     void resolveFlee();                             // pre-fight escape roll
     void resolveSinkhole();                         // consume Sinkhole Trap -> XP lump

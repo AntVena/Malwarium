@@ -429,6 +429,7 @@ int g_failures = 0;
     RUN(test_wifi_sleeping_guardian_grants_loot)  \
     RUN(test_wifi_open_cache_grants_loot)         \
     RUN(test_wifi_awakened_guardian_enters_combat) \
+    RUN(test_wifi_awakened_guardian_in_the_crawl_is_a_crawl_wild) \
     RUN(test_wifi_never_awakens_when_not_hot)     \
     RUN(test_wifi_friendly_visit_grants_ally_buff) \
     RUN(test_wifi_auto_plays_out_after_hold)      \
