@@ -148,12 +148,13 @@ const AreaDef kAreaNetSeaCrossing = {
     // is the joke working twice: null-routing the ad domains is how that era actually
     // killed them. It is the second of the two generic braces the roster places by hand,
     // the other being Checksum Guard on Citrus Circuit's fake-file boss.
-    {{"THE CANDY SIREN", {"bundle_wrap"}},
-     {"VUNDO THE UNENDING", {"popup_storm", "null_route"}},
-     {"THE SUPERFISH", {"cert_spoof"}},
-     {"ZLOB CONGER", {"fake_codec"}},
-     {"THE GREEN BUTTON", {"mirror_click"}}},
+    {{"THE CANDY SIREN", nullptr, {"bundle_wrap"}},
+     {"VUNDO THE UNENDING", nullptr, {"popup_storm", "null_route"}},
+     {"THE SUPERFISH", nullptr, {"cert_spoof"}},
+     {"ZLOB CONGER", nullptr, {"fake_codec"}},
+     {"THE GREEN BUTTON", nullptr, {"mirror_click"}}},
     "ADMIRAL CONDUIT",
+    /*areaBossSprite=*/nullptr,
     /*areaBossMoveId=*/"toolbar_convoy",
     /*apexThreatMoveId=*/"decoy_download",  // the signature boss's long-STUN rider
     // Everything in the crossing costs you a turn rather than Health, all the way down to

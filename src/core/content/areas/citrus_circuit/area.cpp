@@ -136,12 +136,13 @@ const AreaDef kAreaCitrusCircuit = {
     // The fake-file boss teaches the fake AND the checksum that catches it — which is why
     // Checksum Guard, one of the two generic braces the roster places by hand, is here
     // rather than on whichever boss has a free slot.
-    {{"BENJAMIN THE FALSE", {"fake_seed", "checksum_guard"}},
-     {"MORPHEUS THE MIRAGE", {"stall_loop"}},
-     {"TURING THE UNHALTED", {"infinite_loop"}},
-     {"SHARMAN OF THE FOLD", {"shared_folder"}},
-     {"TONELOC THE TOLLTAKER", {"toll_charge"}}},
+    {{"BENJAMIN THE FALSE", "SPR_BOSS_BENJAMIN", {"fake_seed", "checksum_guard"}},
+     {"MORPHEUS THE MIRAGE", "SPR_BOSS_MORPHEUS", {"stall_loop"}},
+     {"TURING THE UNHALTED", "SPR_BOSS_TURING", {"infinite_loop"}},
+     {"SHARMAN OF THE FOLD", "SPR_BOSS_SHARMAN", {"shared_folder"}},
+     {"TONELOC THE TOLLTAKER", "SPR_BOSS_TONELOC", {"toll_charge"}}},
     "BARON BONZI",
+    /*areaBossSprite=*/"SPR_BOSS_BARON_BONZI",
     /*areaBossMoveId=*/"helper_monkey",
     /*apexThreatMoveId=*/nullptr,  // the entry-level area carries no signature rider
     // Nothing in the Circuit ever finishes: the wilds hand out the rot the boss pool's

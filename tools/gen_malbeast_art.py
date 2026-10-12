@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-gen_malbeast_art.py — the wild-malbeast drawing vocabulary, and the sheets built from it.
+gen_malbeast_art.py — the malbeast drawing vocabulary, and the sheets built from it: the wild
+roster and the bosses.
 
 Sibling to tools/gen_worm_art.py. Same contract: an AUTHORING step that OWNS the PNGs it
 emits under assets/sprites/, run by hand when a recipe changes, `--check`ed in the gates so
@@ -58,8 +59,14 @@ The malbeast style, as the only things a recipe can say
     cheap still and the glitch animates for free.
 
 So the animated part is one engine function shared by every malbeast, and a creature is
-two two-tone frames drawn on graph paper. Adding one is a recipe here, a ROW_H_OVERRIDES row
-in gen_assets.py, a roster row in combat_factory.cpp and an area's AreaDef::wilds entry.
+two two-tone frames drawn on graph paper. Adding a wild is a recipe here, a ROW_H_OVERRIDES
+row in gen_assets.py, a roster row in combat_factory.cpp and an area's AreaDef::wilds entry.
+
+The BOSSES are malbeasts too, drawn to the same rules on bigger cells: 64x56 (16x14
+nibbles) for a sub-area boss and a Daemon-wide 96x64 (24x16) for an area boss, so the one
+the gang answers to stands taller than they do. A boss sheet is SPR_BOSS_*, which
+gen_assets.py reads as two rows by family, and its area's row names it (SubBossDef::sprite,
+AreaDef::areaBossSprite).
 
 The sheet: two ROWS of one frame each, row 0 the idle and row 1 the attack. That is the
 whole animation budget — a wild never breathes or walks, it stands, and it lunges when it
@@ -827,6 +834,245 @@ def vulnture():
     return stack(idle, attack)
 
 
+def boss_benjamin():
+    """Benjamin the False — Citrus Circuit's Fake File Flats, front-on. A mimic: a file icon
+    with a folded corner and lines of text, its seam a row of teeth. The attack splits it
+    open along the seam into a mouth (sealed air between the jaws)."""
+    idle = grid(
+        "................",
+        "..#########.....",
+        "..#.......##....",
+        "..#.......###...",
+        "..#.......####..",
+        "..#.#####....#..",
+        "..#..........#..",
+        "..#.######...#..",
+        "..############..",
+        "..##.#.#.#.#.#..",
+        "..#..........#..",
+        "..##.######.##..",
+        "...#.#....#.#...",
+        "..####...####...",
+    )
+    attack = grid(
+        "..#########.....",
+        "..#.......##....",
+        "..#.......###...",
+        "..#.......####..",
+        "..#.#####....#..",
+        "..#..........#..",
+        "..############..",
+        "..##:#:#:#:#:#..",
+        "..#::::::::::#..",
+        "..#:#:#:#:#:##..",
+        "..############..",
+        "..##.######.##..",
+        "...#.#....#.#...",
+        "..####...####...",
+    )
+    return stack(idle, attack)
+
+
+def boss_morpheus():
+    """Morpheus the Mirage — the Buffering Bluffs, front-on. A moth, for the god of
+    dreams: feelers, a narrow body, and an eye-spot ringed on each wing. The attack fills the
+    eye-spots in, so the wings stare, and spreads the feelers."""
+    idle = grid(
+        "......#..#......",
+        "###...#..#...###",
+        "#.##..####..##.#",
+        "#..####..####..#",
+        "#.###.#..#.###.#",
+        "#.#.#.#..#.#.#.#",
+        "#.###.#..#.###.#",
+        "#.....#..#.....#",
+        "##....#..#....##",
+        ".##...#..#...##.",
+        "..#####..#####..",
+        "......#..#......",
+        "......####......",
+        "................",
+    )
+    attack = grid(
+        ".....##..##.....",
+        "###...#..#...###",
+        "#.##..####..##.#",
+        "#..####..####..#",
+        "#.###.#..#.###.#",
+        "#.###.#..#.###.#",
+        "#.###.#..#.###.#",
+        "#.....#..#.....#",
+        "##....#..#....##",
+        ".##...#..#...##.",
+        "..#####..#####..",
+        "......#..#......",
+        "......####......",
+        "................",
+    )
+    return stack(idle, attack)
+
+
+def boss_turing():
+    """Turing the Unhalted — the 99% Cache, facing LEFT. A snail whose shell is a
+    square spiral, the loading spinner that never finishes, on a long foot with its head
+    raised and two eye stalks. The attack stretches the stalks and opens the mouth."""
+    idle = grid(
+        "................",
+        "........######..",
+        ".......##....##.",
+        ".#..#.##########",
+        ".#..#.#......#.#",
+        ".#..#.#.####.#.#",
+        "#####.#.#..#.#.#",
+        "#...#.#.#....#.#",
+        "##..#.##########",
+        "#...#..#......#.",
+        "#...####......##",
+        "#..............#",
+        "################",
+        "................",
+    )
+    attack = grid(
+        "................",
+        ".#..#...######..",
+        ".#..#..##....##.",
+        ".#..#.##########",
+        ".#..#.#......#.#",
+        ".#..#.#.####.#.#",
+        "#####.#.#..#.#.#",
+        "###.#.#.#....#.#",
+        "::#.#.##########",
+        "###.#..#......#.",
+        "#...####......##",
+        "#..............#",
+        "################",
+        "................",
+    )
+    return stack(idle, attack)
+
+
+def boss_sharman():
+    """Sharman of the Fold — the Shared Folder, facing LEFT. A hermit crab living in a
+    manila folder: the tab on top, the front flap's fold line, a big claw out of the open
+    edge and legs underneath. The attack lifts the claw and opens the flap."""
+    idle = grid(
+        "................",
+        ".....####.......",
+        ".....#..#######.",
+        "....###.......#.",
+        ".####.#.......#.",
+        "##..###.......#.",
+        "#...###########.",
+        "##..#.#.......#.",
+        ".####.#.......#.",
+        "......#.......#.",
+        "......#########.",
+        "......#..#..#...",
+        ".....##.##.##...",
+        "................",
+    )
+    attack = grid(
+        ".####...........",
+        "##..#.####......",
+        "#...###..######.",
+        "##..#.#.......#.",
+        ".####.#.......#.",
+        "......#########.",
+        "......#.......#.",
+        "......#.......#.",
+        "......#.......#.",
+        "......#.......#.",
+        "......#########.",
+        "......#..#..#...",
+        ".....##.##.##...",
+        "................",
+    )
+    return stack(idle, attack)
+
+
+def boss_toneloc():
+    """Toneloc the Tolltaker — Dial-Up Draw, facing LEFT. A toad, for the war dialer:
+    squat and wide, one bulging eye on top, a grin across the front, a folded back leg with
+    long toes. The attack opens the mouth and balloons the throat sac — the call."""
+    idle = grid(
+        "................",
+        "................",
+        "................",
+        "...###..........",
+        "...#.#..........",
+        "..##.######.....",
+        ".##.......####..",
+        "##....#..#####..",
+        "#######..#...##.",
+        "#........#....#.",
+        "##.......#....#.",
+        ".##############.",
+        "...##.......#.##",
+        ".#####...#######",
+    )
+    attack = grid(
+        "................",
+        "................",
+        "................",
+        "...###..........",
+        "...#.#..........",
+        "..##.######.....",
+        ".##.......####..",
+        "######...#####..",
+        ":::::#...#...##.",
+        "######...#....#.",
+        "#........#....#.",
+        "#.....#########.",
+        "##...##.....#.##",
+        ".#####...#######",
+    )
+    return stack(idle, attack)
+
+
+def boss_baron():
+    """Baron Bonzi — Citrus Circuit's area boss, facing LEFT, on the Daemon-wide 96x64
+    cell (24x16 nibbles). A knuckle-walking gorilla in a top hat: brow ridge and jutting
+    muzzle, a hump of shoulder, a front arm planted on its knuckles. The attack drops the jaw
+    in a roar and swings the arm forward."""
+    idle = grid(
+        "....#####...............",
+        "....#...#...............",
+        "....#####....######.....",
+        "..###...######....###...",
+        "...#................###.",
+        "...#####..............#.",
+        "####.#.....##########.#.",
+        "##....................#.",
+        "#.....................#.",
+        "####..................#.",
+        "...#.....#............#.",
+        "...#.....#............#.",
+        "...#....#########....##.",
+        "...#....#.......#....#..",
+        "...#....#.......#....#..",
+        "..#######......########.",
+    )
+    attack = grid(
+        "....#####...............",
+        "....#...#...............",
+        "....#####....######.....",
+        "..###...######....###...",
+        "...#................###.",
+        "...#####..............#.",
+        "####.#.....##########.#.",
+        "##....................#.",
+        "####..................#.",
+        ":::#..................#.",
+        "#####.................#.",
+        "....#.................#.",
+        "....#....########....##.",
+        "#####....#......#....#..",
+        "#..#.....#......#....#..",
+        "##########.....########.",
+    )
+    return stack(idle, attack)
+
+
 RECIPES = {
     "SPR_MALBEAST_GLITCHHOG": glitchhog,
     "SPR_MALBEAST_SEGFAULT_PUP": segfault_pup,
@@ -844,10 +1090,17 @@ RECIPES = {
     "SPR_MALBEAST_TERMINITE": terminite,
     "SPR_MALBEAST_ANONYMOUSE": anonymouse,
     "SPR_MALBEAST_VULNTURE": vulnture,
+    "SPR_BOSS_BENJAMIN": boss_benjamin,
+    "SPR_BOSS_MORPHEUS": boss_morpheus,
+    "SPR_BOSS_TURING": boss_turing,
+    "SPR_BOSS_SHARMAN": boss_sharman,
+    "SPR_BOSS_TONELOC": boss_toneloc,
+    "SPR_BOSS_BARON_BONZI": boss_baron,
 }
 
 # Short aliases for --preview / --only, so the CLI takes `glitchhog` not the full symbol.
-ALIASES = {name.replace("SPR_MALBEAST_", "").lower(): name for name in RECIPES}
+ALIASES = {name.replace("SPR_MALBEAST_", "").replace("SPR_", "").lower(): name
+           for name in RECIPES}
 
 
 def path_for(sym):
@@ -855,7 +1108,7 @@ def path_for(sym):
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Generate wild-malbeast sprite sheets.")
+    ap = argparse.ArgumentParser(description="Generate wild-malbeast and boss sprite sheets.")
     ap.add_argument("--check", action="store_true",
                     help="fail if any committed PNG differs from its recipe (gate)")
     ap.add_argument("--preview", metavar="NAME", nargs="?", const="",

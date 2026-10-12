@@ -13,6 +13,9 @@
 // <dir>/log.txt records each frame's strike count, striker, last move and the pet's
 // Health, for picking poses out and for checking a signature actually lands.
 //
+// `boss <dir> <beats> <area> <round>` runs the same recording against round `round` of
+// area `area`'s gauntlet (areaBoss, combat_factory.cpp) — round 4 is the area boss itself.
+//
 // Not a shipping path and not a gate — a look-at-it tool, the sibling of dump_frame for a
 // sprite that has no screen to sit in yet. Build: the CMake `preview_malbeast` target.
 
@@ -50,11 +53,26 @@ static bool writePpm(const Framebuffer& fb, const char* path) {
 // A fight against roster row `rosterIdx`, one frame per combat animation beat
 // (kCombatAnimMs — the stage repaints at ~8fps, twice the idle heartbeat). The pet is the
 // default Paypup the frame dumper also boots; the stakes are Safe, so nothing persists.
-static int play(const char* dir, int beats, int rosterIdx) {
-    Game game{StartMode::Hatched, "paypup"};
+static int record(Game& game, const char* dir, int beats);
+
+static void skipHatchTips(Game& game) {
     for (Game::Tip t : {Game::Tip::HatchDecrypt, Game::Tip::HatchClutch,
                         Game::Tip::HatchIsolation, Game::Tip::HatchChroma})
         game.markTipSeen(t);
+}
+
+static int playBoss(const char* dir, int beats, int areaIdx, int round) {
+    Game game{StartMode::Hatched, "paypup"};
+    skipHatchTips(game);
+    const BossGauntlet g = areaBoss(areaIdx);
+    if (round < 0 || round >= static_cast<int>(g.rounds.size())) round = 0;
+    game.debugStartCombatVs(g.rounds[round]);
+    return record(game, dir, beats);
+}
+
+static int play(const char* dir, int beats, int rosterIdx) {
+    Game game{StartMode::Hatched, "paypup"};
+    skipHatchTips(game);
     // Built the way a real encounter is: in the wild's HOME area (the first that fields
     // it) at that area's first stretch, through the same depth ramp — which is also what
     // adds the area's pair and the creature's own signature to its kit.
@@ -65,6 +83,10 @@ static int play(const char* dir, int beats, int rosterIdx) {
             if (wildMalbeastIndex(wildMalbeastIn(a, v).name) == rosterIdx) home = a;
     applyWildSubAreaRamp(wild, home, 0);
     game.debugStartCombatVs(wild);
+    return record(game, dir, beats);
+}
+
+static int record(Game& game, const char* dir, int beats) {
     uint32_t t = 0;
     char path[512];
     // Beside the frames, one line per frame of what the fight had just done — the strike
@@ -91,6 +113,9 @@ static int play(const char* dir, int beats, int rosterIdx) {
 }
 
 int main(int argc, char** argv) {
+    if (argc > 1 && std::strcmp(argv[1], "boss") == 0)
+        return playBoss(argc > 2 ? argv[2] : ".", argc > 3 ? std::atoi(argv[3]) : 60,
+                        argc > 4 ? std::atoi(argv[4]) : 0, argc > 5 ? std::atoi(argv[5]) : 4);
     if (argc > 1 && std::strcmp(argv[1], "play") == 0)
         return play(argc > 2 ? argv[2] : ".", argc > 3 ? std::atoi(argv[3]) : 60,
                     argc > 4 ? std::atoi(argv[4]) : 0);

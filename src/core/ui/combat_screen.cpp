@@ -131,12 +131,13 @@ void drawFighter(Framebuffer& fb, const SpriteData* s, int contentX, int animBea
         drawSpriteUpscaled(fb, *s, frame, x, y, num, den, row, mirror);
 }
 
-// Does this fighter wear FX_GLITCH? Wild malbeasts only: a sprite-named enemy spec (no
-// creature row) whose sheet is one of the SPR_MALBEAST_ family. Bosses and the Sim dummy
-// borrow other sheets and stay clean.
+// Does this fighter wear FX_GLITCH? The malbeasts do — the wilds (SPR_MALBEAST_) and the
+// bosses drawn in their style (SPR_BOSS_): a sprite-named enemy spec with no creature row.
+// The Sim dummy and an undrawn boss borrow other sheets and stay clean.
 bool wearsGlitch(const Combatant& c) {
     return !c.creature && c.spriteName &&
-           std::strncmp(c.spriteName, "SPR_MALBEAST_", 13) == 0;
+           (std::strncmp(c.spriteName, "SPR_MALBEAST_", 13) == 0 ||
+            std::strncmp(c.spriteName, "SPR_BOSS_", 9) == 0);
 }
 
 // The seat a fighter with no sprite holds: one standard pet cell (the 56x48 logical

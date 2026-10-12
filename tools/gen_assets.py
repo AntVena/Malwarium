@@ -76,6 +76,7 @@ def asset_paths(repo=None):
 PET_FRAME_W = 56          # spec: pet sprite cell is 56x48 logical
 PET_ROW_H = 48            # a pet sheet's height, if a clean multiple of this, is that many rows
 PET_PREFIX = "SPR_PET_"
+BOSS_PREFIX = "SPR_BOSS_"
 
 # Which way the DRAWING in a sheet is turned (SpriteData::facing, core/render/sprite.h).
 # An authorial fact about the art, so it is declared here rather than measured: no pass
@@ -140,6 +141,11 @@ FACING = {
     "SPR_MALBEAST_FUZZARD": "Left",
     "SPR_MALBEAST_GATORWAY": "Left",
     "SPR_MALBEAST_TERMINITE": "Left",
+    # The bosses drawn side-on, for the same reason: a boss holds the right-hand seat too.
+    "SPR_BOSS_TURING": "Left",
+    "SPR_BOSS_SHARMAN": "Left",
+    "SPR_BOSS_TONELOC": "Left",
+    "SPR_BOSS_BARON_BONZI": "Left",
 }
 
 # Non-pet sheets that are horizontal frame strips rather than one wide image,
@@ -369,6 +375,13 @@ def frame_rows(name, img_h):
                 f"{name}: height {img_h} is not whole rows of "
                 f"{row_h} (ROW_H_OVERRIDES)")
         return img_h // row_h
+    # A boss sheet is always the idle over the attack (tools/gen_malbeast_art.py), on a
+    # cell that differs between a sub-area boss and an area boss, so it is read here by
+    # family rather than listed sheet by sheet.
+    if name.startswith(BOSS_PREFIX):
+        if img_h % 2:
+            raise SystemExit(f"{name}: height {img_h} is not two rows (idle, attack)")
+        return 2
     # A pet sheet's height that's a clean multiple of PET_ROW_H is a vertical
     # stack of that many rows; which row plays which named loop is declared on the
     # creature's own content row (CreatureDef::clips, core/content/defs.h);

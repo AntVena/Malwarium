@@ -143,12 +143,13 @@ const AreaDef kAreaNapstorrentMoors = {
     SceneId::NapstorrentMoors,
     {"SEEDER SHALLOWS", "LEECHER FEN", "THE SHARED BOG", "SPECTRE SWAMP",
      "CASTLE CAUSEWAY"},
-    {{"NIMDA OF THE SHALLOWS", {"admin_reversal"}},
-     {"MYDOOM LICH", {"mail_storm"}},
-     {"BOG NEUMANN", {"self_reference"}},
-     {"CASTELLAN CREEPER", {"evade_trace"}},
-     {"HERALD ANNA KOVA", {"attachment_bait"}}},
+    {{"NIMDA OF THE SHALLOWS", nullptr, {"admin_reversal"}},
+     {"MYDOOM LICH", nullptr, {"mail_storm"}},
+     {"BOG NEUMANN", nullptr, {"self_reference"}},
+     {"CASTELLAN CREEPER", nullptr, {"evade_trace"}},
+     {"HERALD ANNA KOVA", nullptr, {"attachment_bait"}}},
     "MORRIS THE WYRM",
+    /*areaBossSprite=*/nullptr,
     /*areaBossMoveId=*/"runaway_fork",
     /*apexThreatMoveId=*/"data_rot",  // the signature boss's DoT rider
     // The moors is the mail area, and its wilds carry mail's plainest form: Reply All

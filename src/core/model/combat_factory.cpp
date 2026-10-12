@@ -602,7 +602,7 @@ void applySimDummyLevelScale(CombatEnemy& e, int petLevel) {
 namespace {
 // One boss malbeast at a given DEPTH. Health climbs with the area's ladder depth
 // (areaTier) + the sub index, so sub 1 opens easy and the signature sub 5 is the wall;
-// moves thicken as the sub climbs. Generic frame (no new art).
+// moves thicken as the sub climbs.
 //
 // `sub` is the depth to build AT, which is not always the sub-area being fought: an escort
 // round (SubBossRound::rung) is the same fight drawn a rung shallower, and expressing that
@@ -620,8 +620,13 @@ BossSpine bossSpine(int tier, int sub) {
             kSubBossSpeedBase + tier + (sub >= kSubAreasPerArea - 1 ? 2 : 0)};
 }
 
+// What a boss wears while its own sheet is not drawn yet (SubBossDef::sprite,
+// AreaDef::areaBossSprite left nullptr).
+constexpr const char* kUndrawnBossSprite = "SPR_PET_CACHEMUTT";
+
 CombatEnemy subBossEnemy(const AreaDef& a, int tier, int sub, const char* name,
-                         const SubBossDef* teacher, const char* extraMoveId = nullptr) {
+                         const char* sprite, const SubBossDef* teacher,
+                         const char* extraMoveId = nullptr) {
     const BossSpine spine = bossSpine(tier, sub);
     const int health = spine.health;
     const int speed = spine.speed;
@@ -644,7 +649,8 @@ CombatEnemy subBossEnemy(const AreaDef& a, int tier, int sub, const char* name,
         for (const char* id : teacher->teaches)
             if (id) moves.push_back(id);
     if (extraMoveId) moves.push_back(extraMoveId);
-    CombatEnemy e{name, "SPR_PET_CACHEMUTT", tier + 1, health, speed, std::move(moves)};
+    CombatEnemy e{name, sprite ? sprite : kUndrawnBossSprite, tier + 1, health, speed,
+                  std::move(moves)};
     e.lockResist = kBossLockResist;
     return e;
 }
@@ -675,15 +681,16 @@ BossGauntlet subAreaBoss(int areaIdx, int sub) {
         int depth = sub + rd.rung;
         if (depth < -(kSubAreasPerArea - 1)) depth = -(kSubAreasPerArea - 1);
         if (depth >= kSubAreasPerArea) depth = kSubAreasPerArea - 1;
-        g.rounds.push_back(subBossEnemy(a, tier, depth, rd.name, &b));
+        g.rounds.push_back(subBossEnemy(a, tier, depth, rd.name, b.sprite, &b));
     }
     return g;
 }
 
 BossGauntlet areaBoss(int areaIdx) {
-    // The five sub-area bosses fought back-to-back. Health carries across
-    // the rounds (no heal), so this is the real finale. The apex (round 5) is the
-    // signature sub-area boss — the piece curation upgrades first.
+    // Five rounds back-to-back. Health carries across them (no heal), so this is the real
+    // finale. The first four are the area's sub-area bosses; the fifth is the AREA BOSS
+    // itself, on the signature rung's stats and kit plus its own move — the one the gang
+    // answers to, wearing its own Daemon-wide sheet.
     //
     // Each sub-area contributes its boss PROPER — that banner, at its own rung — and none
     // of the escorts around it. So the finale stays exactly five rounds however many
@@ -703,7 +710,9 @@ BossGauntlet areaBoss(int areaIdx) {
         // that sub-boss's own fight never carries it (a drop is rolled per round, off the
         // round's own kit, so where the move sits IS what it costs to learn).
         const bool finale = (s == kSubAreasPerArea - 1);
-        g.rounds.push_back(subBossEnemy(a, tier, s, a.subBosses[s].name, &a.subBosses[s],
+        const SubBossDef& b = a.subBosses[s];
+        g.rounds.push_back(subBossEnemy(a, tier, s, finale ? a.areaBossName : b.name,
+                                        finale ? a.areaBossSprite : b.sprite, &b,
                                         finale ? a.areaBossMoveId : nullptr));
     }
     return g;

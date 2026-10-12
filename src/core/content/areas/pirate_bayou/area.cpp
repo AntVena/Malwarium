@@ -143,12 +143,13 @@ const AreaDef kAreaPirateBayou = {
     // The cracking area, so ARMOR PIERCE is the family its bosses teach — 25%, 50%, and
     // both of the generic pool's two full-pierce moves. A player who wants to stop caring
     // about walls farms this water.
-    {{"NETBUS NIPPER", {"remote_handle"}},
-     {"SUPRNOVA SERPENT", {"seed_leech"}},
-     {"RAZOR KRAKEN", {"keygen_cut"}},
-     {"WIGHT OF DRINKORDIE", {"nuked_release"}},
-     {"THE SUNKEN SEVENTH", {"backdoor_knock"}}},
+    {{"NETBUS NIPPER", nullptr, {"remote_handle"}},
+     {"SUPRNOVA SERPENT", nullptr, {"seed_leech"}},
+     {"RAZOR KRAKEN", nullptr, {"keygen_cut"}},
+     {"WIGHT OF DRINKORDIE", nullptr, {"nuked_release"}},
+     {"THE SUNKEN SEVENTH", nullptr, {"backdoor_knock"}}},
     "CAP'N CRACKER",
+    /*areaBossSprite=*/nullptr,
     /*areaBossMoveId=*/"crack_the_keys",
     /*apexThreatMoveId=*/"system_hang",  // the signature boss's STUN rider
     // The wilds pierce too, just less: Keygen Hum is the quarter-strength version of the

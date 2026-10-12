@@ -120,6 +120,11 @@ constexpr int kMaxBossTeaches = 2;
 
 struct SubBossDef {
     const char* name;
+    // The boss's own sheet: two rows, idle then attack, drawn by tools/gen_malbeast_art.py
+    // on the 64x56 boss cell. Every round of its fight wears it, escorts included — an
+    // escort is this boss a rung shallower. nullptr = not drawn yet, and the fight borrows
+    // kUndrawnBossSprite (combat_factory.cpp).
+    const char* sprite;
     // What beating this boss can TEACH — the moves it carries on top of the depth spine
     // subBossEnemy builds. Drops are drawn from the defeated enemy's kit
     // (Game::rollEnemyMoveDrop), so this list is the ONLY thing that makes a move findable:
@@ -244,6 +249,11 @@ struct AreaDef {
     const char* subAreas[kSubAreasPerArea];      // 5 named stretches
     SubBossDef subBosses[kSubAreasPerArea];      // 5 sub-area bosses (sub 4 = signature)
     const char* areaBossName;                    // the area gauntlet's overall banner
+    // The area boss's own sheet, on a Daemon-wide cell so the one the gang answers to
+    // stands bigger than they do. The gauntlet's last round IS the area boss (areaBoss,
+    // combat_factory.cpp), so this is what that round wears; nullptr borrows
+    // kUndrawnBossSprite, as an undrawn sub-boss does.
+    const char* areaBossSprite;
     // The area boss's OWN move — carried by the final round of its gauntlet and nowhere
     // else, so it is a reward for clearing all five stages rather than for beating whichever
     // sub-area happens to sit last. nullptr = the banner teaches nothing of its own.

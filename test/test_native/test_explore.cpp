@@ -405,6 +405,8 @@ void test_expl_names_stay_scrollable() {
             // ship unchecked.
             const SubBossDef& b = area(s).subBosses[i];
             CHECK(textWidth("BOSS: ") + textWidth(b.name) <= 2 * detailW);
+            if (i == 0)   // ...and the area boss, which the gauntlet's last round announces
+                CHECK(textWidth("BOSS: ") + textWidth(area(s).areaBossName) <= 2 * detailW);
             for (int r = 0; r < b.roundCount(); ++r)
                 CHECK(textWidth("BOSS: ") + textWidth(b.round(r).name) <= 2 * detailW);
         }
@@ -943,17 +945,25 @@ void test_expl_nested_row_helpers() {
     CHECK(explRowSelectable(ExplRowState::DeepWebDiving));
 }
 
-// The AREA boss is a 5-stage gauntlet of the area's sub-area bosses, in
-// order, with Health climbing to the signature apex (round 5). Five stages whatever
-// escorts a sub-area has grown: the finale fights each BOSS, under its banner, not that
-// boss's own supporting cast.
+// The AREA boss is a 5-stage gauntlet: the area's first four sub-area bosses in order,
+// then the area boss itself on the signature rung, with Health climbing to it. Five stages
+// whatever escorts a sub-area has grown: the gauntlet fights each BOSS, under its banner,
+// not that boss's own supporting cast.
 void test_area_boss_gauntlet_composition() {
     for (int a = 0; a < kExplSectors; ++a) {
         BossGauntlet gg = areaBoss(a);
         CHECK(static_cast<int>(gg.rounds.size()) == kExplSubAreas);   // 5 stages
         CHECK(gg.stageRank >= 2);
-        for (int s = 0; s < kExplSubAreas; ++s)
+        for (int s = 0; s < kExplSubAreas - 1; ++s)
             CHECK(std::strcmp(gg.rounds[s].name, area(a).subBosses[s].name) == 0);
+        CHECK(std::strcmp(gg.rounds[kExplSubAreas - 1].name, area(a).areaBossName) == 0);
+        // The finale is the signature rung's fight with the area boss's own move on top:
+        // same Health, the same kit plus one.
+        const BossGauntlet apex = subAreaBoss(a, kExplSubAreas - 1);
+        const CombatEnemy& last = gg.rounds[kExplSubAreas - 1];
+        CHECK(last.maxHealth == apex.rounds.back().maxHealth);
+        CHECK(last.moveIds.size() ==
+              apex.rounds.back().moveIds.size() + (area(a).areaBossMoveId ? 1u : 0u));
         CHECK(gg.rounds[kExplSubAreas - 1].maxHealth > gg.rounds[0].maxHealth);  // apex
     }
 }

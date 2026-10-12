@@ -172,6 +172,39 @@ void test_every_combatant_sprite_resolves() {
         CHECK(r.sprite(d.spriteName) != nullptr);
     }
 
+    // The bosses: every sheet an area names resolves, is two rows (idle, attack), and is
+    // that boss's alone — and an area boss stands taller than the gang it leads. A boss
+    // with no sheet named yet wears kUndrawnBossSprite, which has to resolve too.
+    std::vector<const char*> bossSprites;
+    for (int a = 0; a < kAreaCount; ++a) {
+        const AreaDef& def = area(a);
+        for (int s = 0; s < kSubAreasPerArea; ++s) {
+            for (const CombatEnemy& e : subAreaBoss(a, s).rounds)
+                CHECK(r.sprite(e.spriteName) != nullptr);
+            if (const char* spr = def.subBosses[s].sprite) {
+                const SpriteData* sd = r.sprite(spr);
+                CHECK(sd != nullptr && sd->rows == 2);
+                bossSprites.push_back(spr);
+            }
+        }
+        const BossGauntlet g = areaBoss(a);
+        for (const CombatEnemy& e : g.rounds) CHECK(r.sprite(e.spriteName) != nullptr);
+        if (const char* spr = def.areaBossSprite) {
+            const SpriteData* sd = r.sprite(spr);
+            CHECK(sd != nullptr && sd->rows == 2);
+            bossSprites.push_back(spr);
+            for (int s = 0; s < kSubAreasPerArea; ++s)
+                if (const char* sub = def.subBosses[s].sprite)
+                    CHECK(sd && r.sprite(sub) && sd->h > r.sprite(sub)->h);
+        }
+    }
+    for (size_t i = 0; i < bossSprites.size(); ++i) {
+        for (const char* w : wildSprites) CHECK(std::strcmp(bossSprites[i], w) != 0);
+        for (size_t j = i + 1; j < bossSprites.size(); ++j)
+            CHECK(std::strcmp(bossSprites[i], bossSprites[j]) != 0);
+    }
+    CHECK(!bossSprites.empty());                     // guard against a vacuous pass
+
     // Same contract for the raisable roster: every creature row's art exists.
     for (const CreatureDef* c : r.allCreatures()) {
         CHECK(c->spriteName != nullptr);
