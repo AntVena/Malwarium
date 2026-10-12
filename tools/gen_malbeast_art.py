@@ -545,6 +545,76 @@ def trialobite():
     return stack(idle, attack)
 
 
+def hoaxolotl():
+    """Hoaxolotl — Napstorrent Moors, facing LEFT. An axolotl named for the hoax: the broad
+    smiling head, the gill stalks fanning up behind it, a long low body, stubby legs and a
+    finned tail. The attack flares the gills and opens the mouth (sealed air, rule 3)."""
+    idle = grid(
+        "..............",
+        "...##.#.##....",
+        "....#.#.#.....",
+        "...#######....",
+        ".###.....#....",
+        "##.#.....##...",
+        "#.........####",
+        "#####......###",
+        ".###########..",
+        "..##....##....",
+        ".###...###....",
+        "..............",
+    )
+    attack = grid(
+        "...#...#...#..",
+        "...###.#..##..",
+        ".....#.#.##...",
+        "...#######....",
+        ".###.....#....",
+        "##.#.....#....",
+        ":###.....#####",
+        "##.........###",
+        ".###########..",
+        "..##....##....",
+        ".###...###....",
+        "..............",
+    )
+    return stack(idle, attack)
+
+
+def fuzzard():
+    """Fuzzard — Napstorrent Moors, facing LEFT. A buzzard named for fuzzing, the moorland's
+    own raptor: perched, hook beak forward, folded wing marked on the body, tail feathers
+    and talons on the floor. The attack throws both wings up into a V."""
+    idle = grid(
+        "..............",
+        "...####.......",
+        "..##..##......",
+        ".####..#......",
+        "##..#..##.....",
+        "....#...##....",
+        "....#.#####...",
+        "...####..###..",
+        "...##.#######.",
+        "....#######.##",
+        ".....#..#.....",
+        "....##.##.....",
+    )
+    attack = grid(
+        "#..........#..",
+        "##........##..",
+        "###.####.###..",
+        ".####..#####..",
+        "..###....##...",
+        "####.....#....",
+        "...#..####....",
+        "...#.....##...",
+        "...##.....###.",
+        "....#######.##",
+        "....#..#......",
+        "...##.##......",
+    )
+    return stack(idle, attack)
+
+
 RECIPES = {
     "SPR_MALBEAST_GLITCHHOG": glitchhog,
     "SPR_MALBEAST_SEGFAULT_PUP": segfault_pup,
@@ -554,6 +624,8 @@ RECIPES = {
     "SPR_MALBEAST_KERNEL_LEVIATHAN": kernel_leviathan,
     "SPR_MALBEAST_BLOATFISH": bloatfish,
     "SPR_MALBEAST_TRIALOBITE": trialobite,
+    "SPR_MALBEAST_HOAXOLOTL": hoaxolotl,
+    "SPR_MALBEAST_FUZZARD": fuzzard,
 }
 
 # Short aliases for --preview / --only, so the CLI takes `glitchhog` not the full symbol.

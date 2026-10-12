@@ -115,6 +115,22 @@ const MoveDef kMoves[] = {
      Stage::Script, nullptr, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
      /*shieldPool=*/0, /*trapArm=*/0, 0, 0, 0, 0, /*replicaSpawnPct=*/0, 0, 0,
      /*chainNextId=*/"trial_expired"},
+    // Napstorrent Moors' pair. The Moors already spends the plain verbs — its wild attack
+    // (chain_letter) carries no rider at all and its signature boss bleeds (data_rot) —
+    // and the single riders a wild can land are all taken, so these two are PAIRS of
+    // riders, each pair one no other signature carries (the rider-set gate in
+    // test_progression.cpp). Hoaxolotl's grows in the telling and gets past people who
+    // should know better; Fuzzard's takes a long time and then finds the crash.
+    {"urban_legend", "Urban Legend", MoveDef::Kind::Attack, 8, 1,
+     "Grows every time it's told - +{stackPower}% Power a hit up to {stackPowerCap}%, "
+     "and ignores {pierce}% armor.",
+     Stage::Script, nullptr, /*stackPowerPct=*/6, /*stackPowerCap=*/18, 0, 0,
+     /*armorPiercePct=*/25},
+    {"fuzz_test", "Fuzz Test", MoveDef::Kind::Attack, 20, 2,
+     "Throws junk for {turns} turns until something breaks - takes {stealDef}% of the "
+     "target's armor.",
+     Stage::Script, nullptr, 0, 0, 0, 0, 0, 0, 0, 0, /*stealPowerPct=*/0,
+     /*stealDefensePct=*/10},
 
     // --- Metamorphic LINE moves -------------------------------------------------
     // line = "metamorphic". None of these casts itself: each rolls a move out of the

@@ -283,6 +283,12 @@ const CombatEnemy kWildRoster[kWildMalbeastCount] = {
      "bundled_extras"},
     {"Trialobite", "SPR_MALBEAST_TRIALOBITE", 3, 80, 14, {"packet_storm", "fork_bomb"},
      true, "free_trial"},
+    // Napstorrent Moors' own pair, on the same tier-3 band as the deep pair it replaces
+    // there.
+    {"Hoaxolotl", "SPR_MALBEAST_HOAXOLOTL", 3, 85, 13, {"packet_storm", "fork_bomb"}, true,
+     "urban_legend"},
+    {"Fuzzard", "SPR_MALBEAST_FUZZARD", 3, 80, 14, {"packet_storm", "fork_bomb"}, true,
+     "fuzz_test"},
 };
 
 CombatEnemy wildMalbeastAt(int rosterIdx) {
@@ -321,6 +327,7 @@ CombatEnemy wildMalbeastIn(int areaIdx, uint32_t variantRoll) {
 const char* const kWildMalbeastIds[kWildMalbeastCount] = {
     "glitchhog",   "segfault_pup",     "packet_wraith", "cache_ghoul",
     "buffer_wyrm", "kernel_leviathan", "bloatfish",     "trialobite",
+    "hoaxolotl",   "fuzzard",
 };
 
 namespace {

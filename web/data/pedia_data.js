@@ -671,7 +671,7 @@ window.PEDIA_DATA = {
       "id": "buffer_wyrm",
       "name": "Buffer Wyrm",
       "tier": 3,
-      "sector": "NAPSTORRENT MOORS and deeper",
+      "sector": "CASTLE RAPIDSCARE and deeper",
       "hp": 80,
       "pow": 14,
       "moves": [
@@ -689,7 +689,7 @@ window.PEDIA_DATA = {
       "id": "kernel_leviathan",
       "name": "Kernel Leviathan",
       "tier": 3,
-      "sector": "NAPSTORRENT MOORS and deeper",
+      "sector": "CASTLE RAPIDSCARE and deeper",
       "hp": 85,
       "pow": 13,
       "moves": [
@@ -734,6 +734,42 @@ window.PEDIA_DATA = {
         "free_trial"
       ],
       "sprite": "assets/sprites/SPR_MALBEAST_TRIALOBITE.png",
+      "cellW": 56,
+      "cellH": 48,
+      "sheetW": 56,
+      "sheetH": 96
+    },
+    {
+      "id": "hoaxolotl",
+      "name": "Hoaxolotl",
+      "tier": 3,
+      "sector": "NAPSTORRENT MOORS",
+      "hp": 85,
+      "pow": 13,
+      "moves": [
+        "packet_storm",
+        "fork_bomb",
+        "urban_legend"
+      ],
+      "sprite": "assets/sprites/SPR_MALBEAST_HOAXOLOTL.png",
+      "cellW": 56,
+      "cellH": 48,
+      "sheetW": 56,
+      "sheetH": 96
+    },
+    {
+      "id": "fuzzard",
+      "name": "Fuzzard",
+      "tier": 3,
+      "sector": "NAPSTORRENT MOORS",
+      "hp": 80,
+      "pow": 14,
+      "moves": [
+        "packet_storm",
+        "fork_bomb",
+        "fuzz_test"
+      ],
+      "sprite": "assets/sprites/SPR_MALBEAST_FUZZARD.png",
       "cellW": 56,
       "cellH": 48,
       "sheetW": 56,
@@ -6104,6 +6140,30 @@ window.PEDIA_DATA = {
       "icon": "assets/icons/ICON_MOVE_SLOT.png"
     },
     {
+      "id": "urban_legend",
+      "name": "Urban Legend",
+      "kind": "ATK",
+      "power": 8,
+      "turns": 1,
+      "minStage": "Script",
+      "desc": "Grows every time it's told - +6% Power a hit up to 18%, and ignores 25% armor.",
+      "stats": "ATK 8 / PIERCE 25% / POWER +6% / UP TO +18%",
+      "group": "core",
+      "icon": "assets/icons/ICON_MOVE_SLOT.png"
+    },
+    {
+      "id": "fuzz_test",
+      "name": "Fuzz Test",
+      "kind": "ATK",
+      "power": 20,
+      "turns": 2,
+      "minStage": "Script",
+      "desc": "Throws junk for 2 turns until something breaks - takes 10% of the target's armor.",
+      "stats": "ATK 20 / CHANNEL 2 / SIPHON DEF 10%",
+      "group": "core",
+      "icon": "assets/icons/ICON_MOVE_SLOT.png"
+    },
+    {
       "id": "instruction_swap",
       "name": "Instruction Swap",
       "kind": "ATK",
@@ -7605,9 +7665,9 @@ window.PEDIA_DATA = {
     {
       "key": "MALBEAST_ALL",
       "name": "Full Bestiary",
-      "trigger": "Defeat all 8 wild malbeasts.",
+      "trigger": "Defeat all 10 wild malbeasts.",
       "icon": "assets/icons/ICON_ACH_MALBEAST_ALL.png",
-      "goal": 8
+      "goal": 10
     },
     {
       "key": "CUISINE_3",

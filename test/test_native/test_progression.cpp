@@ -605,6 +605,29 @@ void test_wild_signature_is_the_creatures_own() {
         sigs.push_back(e.signatureMoveId);
     }
 
+    // ...AND NO TWO DO THE SAME THING. Different ids are not different fights: what a
+    // player meets is the signature's set of riders, so that set is what has to be unique
+    // across the roster. Once the single riders a wild can land ran out, signatures
+    // became PAIRS of them — and a pair is only new if no other signature carries the
+    // same combination. Power and magnitudes do not count; the verbs do.
+    std::vector<unsigned> riderSets;
+    for (const char* id : sigs) {
+        const MoveDef* m = r.move(id);
+        if (!m) continue;
+        const unsigned set = (m->dotDamage > 0 ? 1u : 0u) |
+                             (m->armorPiercePct > 0 ? 2u : 0u) |
+                             (m->stealPowerPct > 0 ? 4u : 0u) |
+                             (m->stealDefensePct > 0 ? 8u : 0u) |
+                             (m->stealMaxHpPct > 0 ? 16u : 0u) |
+                             (m->stackPowerPct > 0 ? 32u : 0u) |
+                             (m->chainNextId != nullptr ? 64u : 0u) |
+                             (m->channelTurns > 1 ? 128u : 0u) |
+                             (m->scrambleTurns > 0 ? 256u : 0u);
+        CHECK(set != 0);                             // a signature with no verb is no identity
+        for (unsigned prev : riderSets) CHECK(prev != set);
+        riderSets.push_back(set);
+    }
+
     // IT SURVIVES THE DEPTH LADDER, which replaces moveIds outright — the whole reason it
     // is carried beside that list rather than in it. Every creature, every area, every
     // rung: a signature that died at sub 1 would leave the identity where it started.
