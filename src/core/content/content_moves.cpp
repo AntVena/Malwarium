@@ -131,6 +131,21 @@ const MoveDef kMoves[] = {
      "target's armor.",
      Stage::Script, nullptr, 0, 0, 0, 0, 0, 0, 0, 0, /*stealPowerPct=*/0,
      /*stealDefensePct=*/10},
+    // Castle Rapidscare's pair. The keep's own wild attack already takes the ceiling
+    // (bandwidth_cap) and its signature boss freezes and bleeds (nag_screen), so neither
+    // verb is spent again here. Garbagoyle reclaims what you were not using; Gatorway
+    // takes you at the gate, through the armour, and spends its next turn dragging you
+    // under (drag_under, content_chain_steps.cpp).
+    {"deallocate", "Deallocate", MoveDef::Kind::Attack, 8, 1,
+     "Reclaims whatever you weren't using - takes {stealPower}% of the target's Power "
+     "and {stealDef}% of its armor.",
+     Stage::Script, nullptr, 0, 0, 0, 0, 0, 0, 0, 0, /*stealPowerPct=*/8,
+     /*stealDefensePct=*/8},
+    {"ambush", "Ambush", MoveDef::Kind::Attack, 6, 1,
+     "Comes up from the moat - ignores {pierce}% armor, and next turn drags you under.",
+     Stage::Script, nullptr, 0, 0, 0, 0, /*armorPiercePct=*/30, 0, 0, 0, 0, 0, 0, 0, 0,
+     /*shieldPool=*/0, /*trapArm=*/0, 0, 0, 0, 0, /*replicaSpawnPct=*/0, 0, 0,
+     /*chainNextId=*/"drag_under"},
 
     // --- Metamorphic LINE moves -------------------------------------------------
     // line = "metamorphic". None of these casts itself: each rolls a move out of the

@@ -44,6 +44,9 @@ const MoveDef kChainSteps[] = {
     // its entry, since a wild's signature is what a win can teach.
     {"trial_expired", "Trial Expired", MoveDef::Kind::Attack, 14, 1,
      "The free period is over.", Stage::Script},
+    // Gatorway's follow-through (ambush, content_moves.cpp's wild signatures).
+    {"drag_under", "Drag Under", MoveDef::Kind::Attack, 14, 1,
+     "Whatever it caught at the gate, it takes down with it.", Stage::Script},
 
     // --- Generic: the two forks, neither of which winds up ----------------------
     // A fork bomb does not detonate, it EXHAUSTS — so the pair is the fork (which hangs

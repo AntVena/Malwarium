@@ -1091,9 +1091,9 @@ constexpr uint32_t kWildMalbeastVariants = 2;
 // (lowercase, non-alnum -> '_') form of each CombatEnemy::name, matching the 'Pedia catalog
 // (tools/gen_pedia_data.py). The masks are uint16 (save.h), which is the ceiling: a 17th
 // wild needs the save format widened first.
-constexpr int kWildMalbeastCount = 10;
+constexpr int kWildMalbeastCount = 12;
 static_assert(kWildMalbeastCount <= 16, "the seen/defeated masks are uint16");
-extern const char* const kWildMalbeastIds[kWildMalbeastCount];  // "glitchhog" .. "fuzzard"
+extern const char* const kWildMalbeastIds[kWildMalbeastCount];  // "glitchhog" .. "gatorway"
 
 // Roster row `rosterIdx` (clamped) — what a walk over EVERY wild reads, rather than the
 // pairs an area or a tier fields.

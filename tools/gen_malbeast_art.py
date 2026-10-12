@@ -615,6 +615,77 @@ def fuzzard():
     return stack(idle, attack)
 
 
+def garbagoyle():
+    """Garbagoyle — Castle Rapidscare, front-on (no facing: carved to be seen straight on). A
+    gargoyle named for garbage collection: horns, folded stone wings narrow enough to be all
+    line, glaring eyes, a fanged mouth, crouched on the ledge. The attack spreads the wings
+    high and opens the mouth (sealed air, rule 3)."""
+    idle = grid(
+        "..#........#..",
+        "..##......##..",
+        "...########...",
+        "#..#......#..#",
+        "##.#.#..#.#.##",
+        "######..######",
+        "###.######.###",
+        ".#####..#####.",
+        "...#....###...",
+        "...########...",
+        "..###....###..",
+        ".####....####.",
+    )
+    attack = grid(
+        "##..#....#..##",
+        ".##.##..##.##.",
+        ".############.",
+        "..##.#..#.##..",
+        "..####..####..",
+        "...#......#...",
+        "...#.::::.#...",
+        "...#......#...",
+        "...##....##...",
+        "....######....",
+        "...###..###...",
+        "..####..####..",
+    )
+    return stack(idle, attack)
+
+
+def gatorway():
+    """Gatorway — Castle Rapidscare, facing LEFT. A gator named for the gateway it keeps,
+    out of the castle moat: low and long, eye bump, ridged back, a toothed jaw line, stubby
+    legs, a tapering tail. The attack gapes the jaws (sealed air between them)."""
+    idle = grid(
+        "..............",
+        "..............",
+        "..............",
+        "..............",
+        "..##..#.#.#...",
+        ".############.",
+        "##..........##",
+        "#####......###",
+        ".###########..",
+        "..##...##.....",
+        ".###..###.....",
+        "..............",
+    )
+    attack = grid(
+        "..............",
+        "..............",
+        "#.............",
+        "###...........",
+        ".####.#.#.#...",
+        "..###########.",
+        "...#........##",
+        "..##........##",
+        "#############.",
+        "#####...##....",
+        "..##..###.....",
+        "..............",
+    )
+    return stack(idle, attack)
+
+
 RECIPES = {
     "SPR_MALBEAST_GLITCHHOG": glitchhog,
     "SPR_MALBEAST_SEGFAULT_PUP": segfault_pup,
@@ -626,6 +697,8 @@ RECIPES = {
     "SPR_MALBEAST_TRIALOBITE": trialobite,
     "SPR_MALBEAST_HOAXOLOTL": hoaxolotl,
     "SPR_MALBEAST_FUZZARD": fuzzard,
+    "SPR_MALBEAST_GARBAGOYLE": garbagoyle,
+    "SPR_MALBEAST_GATORWAY": gatorway,
 }
 
 # Short aliases for --preview / --only, so the CLI takes `glitchhog` not the full symbol.

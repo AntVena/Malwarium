@@ -289,6 +289,11 @@ const CombatEnemy kWildRoster[kWildMalbeastCount] = {
      "urban_legend"},
     {"Fuzzard", "SPR_MALBEAST_FUZZARD", 3, 80, 14, {"packet_storm", "fork_bomb"}, true,
      "fuzz_test"},
+    // Castle Rapidscare's own pair, on the band of the deep pair it replaces there.
+    {"Garbagoyle", "SPR_MALBEAST_GARBAGOYLE", 3, 85, 13, {"packet_storm", "fork_bomb"},
+     true, "deallocate"},
+    {"Gatorway", "SPR_MALBEAST_GATORWAY", 3, 80, 14, {"packet_storm", "fork_bomb"}, true,
+     "ambush"},
 };
 
 CombatEnemy wildMalbeastAt(int rosterIdx) {
@@ -327,7 +332,7 @@ CombatEnemy wildMalbeastIn(int areaIdx, uint32_t variantRoll) {
 const char* const kWildMalbeastIds[kWildMalbeastCount] = {
     "glitchhog",   "segfault_pup",     "packet_wraith", "cache_ghoul",
     "buffer_wyrm", "kernel_leviathan", "bloatfish",     "trialobite",
-    "hoaxolotl",   "fuzzard",
+    "hoaxolotl",   "fuzzard",          "garbagoyle",    "gatorway",
 };
 
 namespace {

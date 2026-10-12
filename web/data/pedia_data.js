@@ -671,7 +671,7 @@ window.PEDIA_DATA = {
       "id": "buffer_wyrm",
       "name": "Buffer Wyrm",
       "tier": 3,
-      "sector": "CASTLE RAPIDSCARE and deeper",
+      "sector": "THE SILK LODE and deeper",
       "hp": 80,
       "pow": 14,
       "moves": [
@@ -689,7 +689,7 @@ window.PEDIA_DATA = {
       "id": "kernel_leviathan",
       "name": "Kernel Leviathan",
       "tier": 3,
-      "sector": "CASTLE RAPIDSCARE and deeper",
+      "sector": "THE SILK LODE and deeper",
       "hp": 85,
       "pow": 13,
       "moves": [
@@ -770,6 +770,42 @@ window.PEDIA_DATA = {
         "fuzz_test"
       ],
       "sprite": "assets/sprites/SPR_MALBEAST_FUZZARD.png",
+      "cellW": 56,
+      "cellH": 48,
+      "sheetW": 56,
+      "sheetH": 96
+    },
+    {
+      "id": "garbagoyle",
+      "name": "Garbagoyle",
+      "tier": 3,
+      "sector": "CASTLE RAPIDSCARE",
+      "hp": 85,
+      "pow": 13,
+      "moves": [
+        "packet_storm",
+        "fork_bomb",
+        "deallocate"
+      ],
+      "sprite": "assets/sprites/SPR_MALBEAST_GARBAGOYLE.png",
+      "cellW": 56,
+      "cellH": 48,
+      "sheetW": 56,
+      "sheetH": 96
+    },
+    {
+      "id": "gatorway",
+      "name": "Gatorway",
+      "tier": 3,
+      "sector": "CASTLE RAPIDSCARE",
+      "hp": 80,
+      "pow": 14,
+      "moves": [
+        "packet_storm",
+        "fork_bomb",
+        "ambush"
+      ],
+      "sprite": "assets/sprites/SPR_MALBEAST_GATORWAY.png",
       "cellW": 56,
       "cellH": 48,
       "sheetW": 56,
@@ -6164,6 +6200,30 @@ window.PEDIA_DATA = {
       "icon": "assets/icons/ICON_MOVE_SLOT.png"
     },
     {
+      "id": "deallocate",
+      "name": "Deallocate",
+      "kind": "ATK",
+      "power": 8,
+      "turns": 1,
+      "minStage": "Script",
+      "desc": "Reclaims whatever you weren't using - takes 8% of the target's Power and 8% of its armor.",
+      "stats": "ATK 8 / SIPHON PWR 8% / SIPHON DEF 8%",
+      "group": "core",
+      "icon": "assets/icons/ICON_MOVE_SLOT.png"
+    },
+    {
+      "id": "ambush",
+      "name": "Ambush",
+      "kind": "ATK",
+      "power": 6,
+      "turns": 1,
+      "minStage": "Script",
+      "desc": "Comes up from the moat - ignores 30% armor, and next turn drags you under.",
+      "stats": "ATK 6 / PIERCE 30%",
+      "group": "core",
+      "icon": "assets/icons/ICON_MOVE_SLOT.png"
+    },
+    {
       "id": "instruction_swap",
       "name": "Instruction Swap",
       "kind": "ATK",
@@ -7665,9 +7725,9 @@ window.PEDIA_DATA = {
     {
       "key": "MALBEAST_ALL",
       "name": "Full Bestiary",
-      "trigger": "Defeat all 10 wild malbeasts.",
+      "trigger": "Defeat all 12 wild malbeasts.",
       "icon": "assets/icons/ICON_ACH_MALBEAST_ALL.png",
-      "goal": 10
+      "goal": 12
     },
     {
       "key": "CUISINE_3",
