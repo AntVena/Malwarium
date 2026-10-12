@@ -6,9 +6,11 @@
 // side by side without a device. Writes a PPM (P6); tools/preview_malbeast.py wraps it into
 // a PNG.
 //
-// `play <dir> <beats>` instead runs a real fight against GlitchHog through the actual combat
+// `play <dir> <beats> [tier] [variant]` instead runs a real fight against one wild (default
+// GlitchHog: tier 1, variant 0 — see wildMalbeast() for the roster) through the actual combat
 // screen and writes one active-canvas frame per combat beat (~8fps) as <dir>/frame_NNN.ppm — the
 // sequence tools/preview_malbeast.py assembles into a GIF, so a wild can be watched in motion.
+// <dir>/log.txt records each frame's strike count and striker, for picking poses out.
 //
 // Not a shipping path and not a gate — a look-at-it tool, the sibling of dump_frame for a
 // sprite that has no screen to sit in yet. Build: the CMake `preview_malbeast` target.
@@ -43,32 +45,42 @@ static bool writePpm(const Framebuffer& fb, const char* path) {
     return true;
 }
 
-// A fight against GlitchHog (tier 1, variant 0), one frame per combat animation beat
+// A fight against the wild at (tier, variant), one frame per combat animation beat
 // (kCombatAnimMs — the stage repaints at ~8fps, twice the idle heartbeat). The pet is the
 // default Paypup the frame dumper also boots; the stakes are Safe, so nothing persists.
-static int play(const char* dir, int beats) {
+static int play(const char* dir, int beats, int tier, int variant) {
     Game game{StartMode::Hatched, "paypup"};
     for (Game::Tip t : {Game::Tip::HatchDecrypt, Game::Tip::HatchClutch,
                         Game::Tip::HatchIsolation, Game::Tip::HatchChroma})
         game.markTipSeen(t);
-    game.debugStartCombatVs(wildMalbeast(1, 0));
+    game.debugStartCombatVs(wildMalbeast(tier, static_cast<uint32_t>(variant)));
     uint32_t t = 0;
     char path[512];
+    // Beside the frames, one line per frame of what the fight had just done — the strike
+    // count and whether the pet threw the last one — so a caller can pick the frames where
+    // the wild is mid-swing (its attack row) or standing (its idle row) without guessing.
+    std::snprintf(path, sizeof(path), "%s/log.txt", dir);
+    FILE* log = std::fopen(path, "w");
     for (int k = 0; k < beats; ++k) {
         game.tick(t += kCombatAnimMs);
         Framebuffer fb(kActiveW, kActiveH);
         game.render(fb);
         std::snprintf(path, sizeof(path), "%s/frame_%03d.ppm", dir, k);
         if (!writePpm(fb, path)) return 1;
+        if (log)
+            std::fprintf(log, "%d strikes=%d byPlayer=%d\n", k, game.combat().strikeCount(),
+                         game.combat().lastByPlayer() ? 1 : 0);
         if (game.nav() != Game::Nav::Combat) { ++k; std::fprintf(stderr, "fight over at beat %d\n", k); break; }
     }
+    if (log) std::fclose(log);
     std::fprintf(stderr, "wrote frames to %s\n", dir);
     return 0;
 }
 
 int main(int argc, char** argv) {
     if (argc > 1 && std::strcmp(argv[1], "play") == 0)
-        return play(argc > 2 ? argv[2] : ".", argc > 3 ? std::atoi(argv[3]) : 60);
+        return play(argc > 2 ? argv[2] : ".", argc > 3 ? std::atoi(argv[3]) : 60,
+                    argc > 4 ? std::atoi(argv[4]) : 1, argc > 5 ? std::atoi(argv[5]) : 0);
     const char* out = argc > 1 ? argv[1] : "malbeast.ppm";
 
     const SpriteData& s = ASSET_SPR_MALBEAST_GLITCHHOG;

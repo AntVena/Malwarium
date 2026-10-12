@@ -119,10 +119,11 @@ void drawFighter(Framebuffer& fb, const SpriteData* s, int contentX, int animBea
     else if (flashAmt > 0)
         drawSpriteFlash(fb, *s, frame, x, y, num, den, flashColor,
                         flashAmt, row, mirror);
-    // A wild malbeast is corrupted on every beat it is not being flashed: the hit flash
-    // wins so an impact still reads, and the glitch re-rolls on the heartbeat (one of its
-    // eight clock states per beat) so it flickers rather than freezing in one tear.
-    else if (glitch)
+    // A wild malbeast tears in short bursts (glitchBurst) and draws clean between them; the
+    // hit flash wins over both so an impact still reads. Inside a burst the tear re-rolls on
+    // every beat (one of the shader's eight clock states each), so it flickers rather than
+    // freezing in one shape.
+    else if (glitch && glitchBurst(animBeat))
         drawSpriteGlitch(fb, *s, frame, x, y, num, den, palColor(Pal::INK),
                          palColor(Pal::HOT), static_cast<uint8_t>(animBeat * 32), row,
                          mirror);

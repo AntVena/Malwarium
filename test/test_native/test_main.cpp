@@ -494,6 +494,8 @@ int g_failures = 0;
     RUN(test_idle_camo_drifts_rarely_and_whole) \
     RUN(test_idle_camo_reaches_for_another_family) \
     RUN(test_absorb_sweep_endpoints)              \
+    RUN(test_glitch_bursts_once_per_window)       \
+    RUN(test_glitch_keeps_a_two_tone_sheet_s_colours) \
     RUN(test_absorb_phase_clock)                  \
     RUN(test_combat_outro_kind)                   \
     RUN(test_rival_prize_mask_matches_the_drop_filter) \

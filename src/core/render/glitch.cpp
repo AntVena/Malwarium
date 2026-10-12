@@ -77,7 +77,9 @@ void drawSpriteGlitch(Framebuffer& fb, const SpriteData& s, int frame,
             if ((bh & 0xFFu) < kDropChance) continue;
 
             const bool corrupt = ((bh >> 8) & 0xFFu) < kHotChance;
-            const Rgb565 col = corrupt ? hot : base;
+            const Rgb565 col = corrupt ? hot
+                             : spriteIsMask(s) ? base
+                                               : spriteColorAt(s, sx, row * cellH + py);
 
             const int dx = destX + px * num / den + tear;
             const int dy = destY + py * num / den;
@@ -96,6 +98,15 @@ void drawSpriteGlitch(Framebuffer& fb, const SpriteData& s, int frame,
                     fb.blendPixel(dx + bx2, dy + by2, col, 255);
         }
     }
+}
+
+bool glitchBurst(int beat) {
+    if (beat < 0) return false;
+    const int window = beat / kGlitchBurstPeriod;
+    const int at = beat % kGlitchBurstPeriod;
+    const int start = static_cast<int>(dissolveHash(window, 0x6117) %
+                                       (kGlitchBurstPeriod - kGlitchBurstLen + 1));
+    return at >= start && at < start + kGlitchBurstLen;
 }
 
 }  // namespace mal

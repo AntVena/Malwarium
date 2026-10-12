@@ -629,7 +629,7 @@ window.PEDIA_DATA = {
       "cellW": 56,
       "cellH": 48,
       "sheetW": 56,
-      "sheetH": 48
+      "sheetH": 96
     },
     {
       "id": "packet_wraith",
@@ -647,7 +647,7 @@ window.PEDIA_DATA = {
       "cellW": 56,
       "cellH": 48,
       "sheetW": 56,
-      "sheetH": 48
+      "sheetH": 96
     },
     {
       "id": "cache_ghoul",
@@ -665,7 +665,7 @@ window.PEDIA_DATA = {
       "cellW": 56,
       "cellH": 48,
       "sheetW": 56,
-      "sheetH": 48
+      "sheetH": 96
     },
     {
       "id": "buffer_wyrm",
@@ -683,7 +683,7 @@ window.PEDIA_DATA = {
       "cellW": 56,
       "cellH": 48,
       "sheetW": 56,
-      "sheetH": 48
+      "sheetH": 96
     },
     {
       "id": "kernel_leviathan",
@@ -701,7 +701,7 @@ window.PEDIA_DATA = {
       "cellW": 64,
       "cellH": 56,
       "sheetW": 64,
-      "sheetH": 56
+      "sheetH": 112
     }
   ],
   "items": [

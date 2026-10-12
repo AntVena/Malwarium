@@ -440,9 +440,14 @@ which is why gameplay ships first and the drawing follows.
 
 ### C.2 Wild malbeasts (`SPR_MALBEAST_*`)
 
-Wild creatures for encounters/exploration (the 'net). Cell **56×48**, apex tier **64×56**; single
-idle frame each, so a wild reads as a still until final sheets follow the §C frame template.
-**Every one is currently `▨`** — sized and named correctly, drawn to placeholder quality.
+Wild creatures for encounters/exploration (the 'net). Cell **56×48**, apex tier **64×56**. Every
+sheet is **generated** by `tools/gen_malbeast_art.py` (graph-paper recipes; the
+`malbeast_art_recipes` gate fails on a hand edit) as **two rows of one frame**: the idle, then the
+attack, which combat shows only while the wild swings (`fightPose`). Two tones on transparent —
+light line work, a dark body the generator fills in from the closed outline (`:` cells seal an open
+mouth) — stored as a small tiled indexed sheet, about 0.5 KB a wild. The corruption is the
+render-time FX_GLITCH pass (`core/render/glitch.h`), drawn in short bursts, not pixels. A new wild
+is a recipe there plus a `ROW_H_OVERRIDES` row in `tools/gen_assets.py`.
 
 The roster is not listed here either: each wild is a row in `wildMalbeast()`
 (`src/core/model/combat.cpp`), which is the only place a wild's sprite is chosen and whose display

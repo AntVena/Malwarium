@@ -1,11 +1,11 @@
 // glitch.h — FX_GLITCH: the wild-malbeast corruption shader.
 //
-// A malbeast's sprite is a cheap one-ink blocky silhouette (tools/gen_malbeast_art.py):
-// no colour, no eyes, no animation of its own. ALL of the menace — the thing that makes a
-// wild read as hostile corrupted software rather than as a pet — is this pass, applied over
-// that silhouette at draw time. Keeping it here rather than in the pixels is what lets every
-// malbeast share one scary, animated treatment while each costs about what a still costs:
-// the per-creature half is a dozen lines of recipe, the expensive half is this one function.
+// A malbeast's sprite is a cheap two-tone blocky drawing (tools/gen_malbeast_art.py): light
+// line work on a dark body, two poses, no motion of its own. ALL of the menace — the thing
+// that makes a wild read as hostile corrupted software rather than as a pet — is this pass,
+// applied over that drawing at draw time. Keeping it here rather than in the pixels is what
+// lets every malbeast share one scary, animated treatment while each costs about what a
+// still costs: the per-creature half is a recipe, the expensive half is this one function.
 //
 // The corruption, in three tells, all quantised to the sprite's own 4px nibble so the glitch
 // is as low-def as the body (a smooth tear would read as a different, cleaner renderer):
@@ -23,10 +23,15 @@
 // it. `phase` is the animation clock (typically an anim-beat scaled into 0..255); step it and
 // the corruption re-rolls, hold it and the frame is frozen.
 //
-// Shape only comes from the sprite's alpha, exactly as drawSpriteTinted/drawShred read it, so
-// FX_GLITCH works on any sprite form but is MEANT for the one-ink malbeast masks: `base` is
-// the colour a set bit takes (the body), `hot` the corruption accent. On a full-colour sprite
-// it would flatten the body to `base`, which is not what it is for.
+// Shape comes from the sprite's alpha, exactly as drawSpriteTinted/drawShred read it, and
+// colour from the sprite itself — the malbeasts' two tones, line and body — with the same
+// split drawShred makes: a one-ink MASK has no colour of its own and takes `base`. `hot` is
+// the corruption accent either way.
+//
+// It is not meant to run every beat. A body that tears on every frame never reads as a body
+// at all, so the combat screen calls it only inside the BURSTS glitchBurst() schedules and
+// draws the wild clean between them: mostly whole, breaking up for a moment now and then,
+// which is what makes the break read as a fault rather than as the art.
 #pragma once
 
 #include <cstdint>
@@ -39,12 +44,24 @@ class Framebuffer;
 struct SpriteData;
 
 // `s`/`frame`/`row` is the subject, seated top-left at (destX, destY) and scaled num/den the
-// way drawSpriteUpscaled would seat it. `base` fills the silhouette, `hot` is the corruption
-// accent. `phase` (0..255) is the glitch clock. `mirror` turns the drawing in its cell
-// (spriteSrcX) for a malbeast seated facing the other way.
+// way drawSpriteUpscaled would seat it. `base` colours a one-ink mask (a sheet with colours
+// of its own keeps them), `hot` is the corruption accent. `phase` (0..255) is the glitch
+// clock. `mirror` turns the drawing in its cell (spriteSrcX) for a malbeast seated facing
+// the other way.
 void drawSpriteGlitch(Framebuffer& fb, const SpriteData& s, int frame,
                       int destX, int destY, int num, int den,
                       Rgb565 base, Rgb565 hot, uint8_t phase,
                       int row = 0, bool mirror = false);
+
+// The burst schedule: one window every kGlitchBurstPeriod beats, torn for kGlitchBurstLen
+// of them. Where in its window a burst falls is rolled per window off the shared scatter,
+// so the faults land irregularly rather than on a metronome — and, like the shader, it is a
+// pure function of the beat, so a repaint or a frame gate sees the same schedule.
+//
+// In beats of whatever clock the caller passes; on the combat stage (~8fps, kCombatAnimMs)
+// that is a quarter-second tear in each second and a half.
+constexpr int kGlitchBurstPeriod = 12;
+constexpr int kGlitchBurstLen = 2;
+bool glitchBurst(int beat);
 
 } // namespace mal
