@@ -47,6 +47,10 @@ milestone). `git log` is the changelog.
   lives on", "replaces the old", "superseded by", "[retired]". Describe the **current** state
   instead; if the *why* still matters, state it as a present fact ("opened lazily to avoid a
   file-count blowup"), not as a change story ("we used to open eagerly, which…").
+- **Opinion and unenforced rules** — taste, persuasion, or a "rule" the code does not
+  enforce ("held to the same ceiling every other fighter is"). A reader takes a stated rule as
+  binding, then designs around a limit that does not exist. If it is a rule, enforce it in code or
+  a gate and let the comment point there; if it is a fact the code doesn't show, state the fact.
 
 ## Do write
 
