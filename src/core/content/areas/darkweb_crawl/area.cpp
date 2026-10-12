@@ -32,6 +32,8 @@ const char* const kDarkWebBadge = "DARKWEB";
 // (deepweb_dive/area.cpp).
 const AreaStoryDef kStoryDarkWeb = {};
 
+const char* const kDarkWebWilds[2] = {"anonymouse", "vulnture"};
+
 // The terminal zone's shelf: the Lode's own rank-6 set, plus the Dive's hard-gated line
 // build-arounds. Reaching it opens the deep end of every line at once, which is what the
 // last zone on the map owes a player who got here without being able to read the menu.

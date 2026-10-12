@@ -756,6 +756,77 @@ def terminite():
     return stack(idle, attack)
 
 
+def anonymouse():
+    """Anonymouse — the Darkweb Crawl, front-on (no facing: it looks straight at you,
+    and you still can't say who it is). A mouse named for anonymity: two big round ears, a
+    narrow head with a nose, a small body, the tail run out along the floor. The attack bares
+    the teeth — two incisors over sealed air."""
+    idle = grid(
+        ".####....####.",
+        "##..##..##..##",
+        "#....####....#",
+        "##..##..##..##",
+        ".#####..#####.",
+        "....#....#....",
+        "...##.##.##...",
+        "...#......#...",
+        "...##....##...",
+        "....######....",
+        "...##....##..#",
+        "...###########",
+    )
+    attack = grid(
+        ".####....####.",
+        "##..##..##..##",
+        "#....####....#",
+        "##..##..##..##",
+        ".#####..#####.",
+        "....#....#....",
+        "...########...",
+        "...#.#::#.#...",
+        "...########...",
+        "....######....",
+        "...##....##..#",
+        "...###########",
+    )
+    return stack(idle, attack)
+
+
+def vulnture():
+    """Vulnture — the Darkweb Crawl, front-on. A vulture named for the vulnerability
+    it waits on: a small bald head on its collar, wings held open the way a vulture suns
+    itself, feathered tips stepping down, talons under. The attack lifts both wings into a V."""
+    idle = grid(
+        "..............",
+        ".....####.....",
+        ".....#..#.....",
+        "###..#..#..###",
+        "#.##########.#",
+        "#....#..#....#",
+        "##...#..#...##",
+        ".###.#..#.###.",
+        "...###..###...",
+        ".....#..#.....",
+        ".....####.....",
+        ".....#..#.....",
+    )
+    attack = grid(
+        "##..........##",
+        "###..####..###",
+        "#.##.#..#.##.#",
+        "#..###..###..#",
+        "#...######...#",
+        "#....#..#....#",
+        "##...#..#...##",
+        ".###.#..#.###.",
+        "...###..###...",
+        ".....#..#.....",
+        ".....####.....",
+        "....##..##....",
+    )
+    return stack(idle, attack)
+
+
 RECIPES = {
     "SPR_MALBEAST_GLITCHHOG": glitchhog,
     "SPR_MALBEAST_SEGFAULT_PUP": segfault_pup,
@@ -771,6 +842,8 @@ RECIPES = {
     "SPR_MALBEAST_GATORWAY": gatorway,
     "SPR_MALBEAST_BLACK_WINDOW": black_window,
     "SPR_MALBEAST_TERMINITE": terminite,
+    "SPR_MALBEAST_ANONYMOUSE": anonymouse,
+    "SPR_MALBEAST_VULNTURE": vulnture,
 }
 
 # Short aliases for --preview / --only, so the CLI takes `glitchhog` not the full symbol.

@@ -101,8 +101,8 @@ void test_move_loadout() {
 // So the ids are checked against the roster here rather than trusted to the fallback, a
 // pair is both slots or neither, and no wild is claimed by two areas (an area's wilds are
 // its own). The reverse holds too: every row of the roster is fielded by some zone — an
-// area's pair, or the tier-3 pair the endless zones draw — so nothing on the roster is a
-// 'Pedia entry no walk can ever meet.
+// area's pair, the tier-3 pair the dive draws, or the crawl's own (kDarkWebWilds) — so
+// nothing on the roster is a 'Pedia entry no walk can ever meet.
 void test_every_area_fields_a_resolving_pair() {
     std::vector<bool> fielded(kWildMalbeastCount, false);
     std::vector<const char*> claimed;
@@ -123,12 +123,16 @@ void test_every_area_fields_a_resolving_pair() {
         }
         CHECK(idx[0] != idx[1]);                       // a pair is two creatures
     }
-    for (uint32_t v = 0; v < kWildMalbeastVariants; ++v)   // the endless zones' pair
+    for (uint32_t v = 0; v < kWildMalbeastVariants; ++v) {
         if (const int i = wildMalbeastIndex(wildMalbeast(3, v).name); i >= 0) fielded[i] = true;
+        const int c = wildMalbeastIndex(wildMalbeastOf(kDarkWebWilds, 3, v).name);
+        CHECK(c >= 0 && std::strcmp(kWildMalbeastIds[c], kDarkWebWilds[v]) == 0);
+        if (c >= 0) fielded[c] = true;
+        for (const char* prev : claimed) CHECK(std::strcmp(prev, kDarkWebWilds[v]) != 0);
+    }
     for (int i = 0; i < kWildMalbeastCount; ++i) CHECK(fielded[i]);
 
-    // The pilot pair, by name: the Net-Sea Crossing is the first area past the Bayou to
-    // field wilds of its own rather than the deep pair every later area still borrows.
+    // One pair by name, so a resolving-but-wrong id (another area's) cannot pass.
     int netSea = -1;
     for (int a = 0; a < kAreaCount; ++a)
         if (std::strcmp(area(a).id, "net_sea_crossing") == 0) netSea = a;

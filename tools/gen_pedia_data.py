@@ -362,7 +362,8 @@ def main():
     # WHERE each wild is met, read off the same rules the firmware walks (wildMalbeastIn,
     # wildMalbeast): an area that names a pair (AreaDef::wilds, in the content dump) fields
     # exactly that pair; one that names none fields its TIER's pair, which is two adjacent
-    # roster rows; and both endless zones field the tier-3 pair. A wild met in more than
+    # roster rows; the dive fields the tier-3 pair and the crawl its own (kDarkWebWilds,
+    # which has no AreaDef to dump, so it is read from its source). A wild met in more than
     # one zone is labelled with the first of them "and deeper".
     VARIANTS = 2
     def tier_pair(tier):
@@ -376,8 +377,18 @@ def main():
                 sys.exit(f"error: area '{a['id']}' names wild '{bid}', which the roster in "
                          f"{src_path} does not have.")
             met_in[bid].append(a["name"])
-    for bid in tier_pair(3):                # the two endless zones, deepest last
-        met_in[bid] += ["DEEPWEB DIVE", "DARKWEB CRAWL"]
+    for bid in tier_pair(3):
+        met_in[bid].append("DEEPWEB DIVE")
+    crawl_path = repo / "src/core/content/areas/darkweb_crawl/area.cpp"
+    crawl = re.search(r'kDarkWebWilds\[2\]\s*=\s*\{([^}]*)\}',
+                      strip_comments(crawl_path.read_text(encoding="utf-8")))
+    if not crawl:
+        sys.exit(f"error: kDarkWebWilds not found in {crawl_path} — point this at its home.")
+    for bid in re.findall(r'"([^"]+)"', crawl.group(1)):
+        if bid not in met_in:
+            sys.exit(f"error: kDarkWebWilds names wild '{bid}', which the roster in "
+                     f"{src_path} does not have.")
+        met_in[bid].append("DARKWEB CRAWL")
     beasts = []
     for m, bid in zip(rows, ids):
         name, _sprite, tier, hp, pow_ = m.group(1), m.group(2), int(m.group(3)), int(m.group(4)), int(m.group(5))

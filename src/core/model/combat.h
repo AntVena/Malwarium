@@ -1091,9 +1091,9 @@ constexpr uint32_t kWildMalbeastVariants = 2;
 // (lowercase, non-alnum -> '_') form of each CombatEnemy::name, matching the 'Pedia catalog
 // (tools/gen_pedia_data.py). The masks are uint16 (save.h), which is the ceiling: a 17th
 // wild needs the save format widened first.
-constexpr int kWildMalbeastCount = 14;
+constexpr int kWildMalbeastCount = 16;
 static_assert(kWildMalbeastCount <= 16, "the seen/defeated masks are uint16");
-extern const char* const kWildMalbeastIds[kWildMalbeastCount];  // "glitchhog" .. "terminite"
+extern const char* const kWildMalbeastIds[kWildMalbeastCount];  // "glitchhog" .. "vulnture"
 
 // Roster row `rosterIdx` (clamped) — what a walk over EVERY wild reads, rather than the
 // pairs an area or a tier fields.
@@ -1101,13 +1101,18 @@ CombatEnemy wildMalbeastAt(int rosterIdx);
 
 // A TIER's pair (1..3, deeper clamps to 3), rolled among kWildMalbeastVariants.
 // `variantRoll` is caller-owned (the shared Game LCG) so the pick is deterministic under a
-// fixed seed; 0 picks the first variant. What the endless zones field, and what an area
-// that names no pair of its own falls back to.
+// fixed seed; 0 picks the first variant. What the Deepweb Dive fields, and what a named
+// pair falls back to when it names none.
 CombatEnemy wildMalbeast(int sectorTier, uint32_t variantRoll = 0);
 
 // An AREA's pair: the two wilds its row names (AreaDef::wilds), or its tier's pair when it
 // names none. This is what a walk in ladder area `areaIdx` meets.
 CombatEnemy wildMalbeastIn(int areaIdx, uint32_t variantRoll = 0);
+
+// A named PAIR's wild: `pair` holds roster ids (AreaDef::wilds, or kDarkWebWilds for the
+// crawl, which has no AreaDef), with `fallbackTier`'s pair standing in when it names none.
+CombatEnemy wildMalbeastOf(const char* const (&pair)[kWildMalbeastVariants], int fallbackTier,
+                           uint32_t variantRoll = 0);
 
 // Resolve a CombatEnemy::name (e.g. "GlitchHog", "Segfault Pup") to its roster index
 // by slugging (lowercase, non-alnum -> '_') and matching against kWildMalbeastIds.

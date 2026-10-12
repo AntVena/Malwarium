@@ -108,6 +108,9 @@ extern const char* const kDarkWebBadge;
 // Dive it reaches only the AreaIntro beat: the end of the map has no gauntlet to close.
 extern const AreaStoryDef kStoryDarkWeb;
 
+// Its wild pair, AreaDef::wilds' stand-in: roster ids (kWildMalbeastIds, combat.h).
+extern const char* const kDarkWebWilds[2];
+
 // Its two pools, the stand-ins for AreaDef::modPoolIds and ::wildLootPool.
 extern const char* const kAreaModsDarkWeb[];
 extern const int kAreaModsDarkWebCount;

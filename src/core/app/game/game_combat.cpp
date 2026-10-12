@@ -909,12 +909,13 @@ void Game::startEncounter() {
     if (fireStory(exploreSector_, StoryBeat::AreaIntro, StoryThen::Encounter)) return;
     rng_ = rng_ * 1664525u + 1013904223u;                    // roster variant roll
     if (inEndlessZone()) {
-        // Both endless zones draw the endgame (tier-3) roster and scale it to the PET's
-        // level, ramped by the run's current win-streak (exploreStreak_) so pushing deeper
-        // gradually punches the pet up instead of sitting at flat parity forever. Which
-        // curve they ramp on is the difference between the two: the dive has a foothold
-        // and spends a fraction of a level's stat points, the crawl has neither.
-        encounterEnemy_ = wildMalbeast(3, rng_ >> 16);
+        // Both endless zones field a tier-3 pair (the crawl its own, kDarkWebWilds) and
+        // scale it to the PET's level, ramped by the run's current win-streak
+        // (exploreStreak_) so pushing deeper gradually punches the pet up instead of
+        // sitting at flat parity forever. The dive's curve has a foothold and spends a
+        // fraction of a level's stat points; the crawl's has neither.
+        encounterEnemy_ = inDarkWebCrawl() ? wildMalbeastOf(kDarkWebWilds, 3, rng_ >> 16)
+                                           : wildMalbeast(3, rng_ >> 16);
         rng_ = rng_ * 1664525u + 1013904223u;                // the zone's stat/kit roll
         if (inDarkWebCrawl())
             applyDarkWebScale(encounterEnemy_, combatLevel_, exploreStreak_, rng_);

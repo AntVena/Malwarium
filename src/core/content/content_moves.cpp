@@ -147,6 +147,17 @@ const MoveDef kMoves[] = {
      Stage::Script, nullptr, 0, 0, 0, 0, 0, 0, 0, 0, /*stealPowerPct=*/0,
      /*stealDefensePct=*/0, /*stealSpeedPct=*/0, /*stealCurrentHpPct=*/0,
      /*stealMaxHpPct=*/8},
+    // The Darkweb Crawl's pair. Leaves out its boss rider's scramble (c2_hijack), which the
+    // zone already lays over every fight.
+    {"untraceable", "Untraceable", MoveDef::Kind::Attack, 6, 1,
+     "Nobody saw who did it - ignores {pierce}% armor and bleeds {dot} a turn for "
+     "{dotTurns} turns.",
+     Stage::Script, nullptr, 0, 0, 0, 0, /*armorPiercePct=*/25, 0, /*dotDamage=*/2,
+     /*dotTurns=*/3},
+    {"weaponized", "Weaponized", MoveDef::Kind::Attack, 20, 2,
+     "Circles for {turns} turns while the bug goes public, then strikes - ignores "
+     "{pierce}% armor.",
+     Stage::Script, nullptr, 0, 0, 0, 0, /*armorPiercePct=*/30},
 
     // --- Metamorphic LINE moves -------------------------------------------------
     // line = "metamorphic". None of these casts itself: each rolls a move out of the

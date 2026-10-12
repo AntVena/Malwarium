@@ -270,9 +270,9 @@ const CombatEnemy kWildRoster[kWildMalbeastCount] = {
      {"quick_jab", "packet_storm"}, true, "dropped_packet"},
     {"Cache Ghoul", "SPR_MALBEAST_CACHE_GHOUL", 2, 50, 13, {"quick_jab", "packet_storm"},
      true, "stale_read"},
-    // Tier 3 — every area past the Bayou that names no pair of its own, and both endless
-    // zones. The apex gets a bigger 64x56 cell than the 56x48 the rest of the roster uses
-    // — drawn from its own frame size, so nothing else has to know.
+    // Tier 3 — the Deepweb Dive, and any area past the Bayou that names no pair of its own.
+    // The apex gets a bigger 64x56 cell than the 56x48 the rest of the roster uses — drawn
+    // from its own frame size, so nothing else has to know.
     {"Buffer Wyrm", "SPR_MALBEAST_BUFFER_WYRM", 3, 80, 14, {"packet_storm", "fork_bomb"},
      true, "coil_overrun"},
     {"Kernel Leviathan", "SPR_MALBEAST_KERNEL_LEVIATHAN", 3, 85, 13,
@@ -299,6 +299,12 @@ const CombatEnemy kWildRoster[kWildMalbeastCount] = {
      true, "unclosable"},
     {"Terminite", "SPR_MALBEAST_TERMINITE", 3, 80, 14, {"packet_storm", "fork_bomb"}, true,
      "hollow_out"},
+    // The Darkweb Crawl's own pair (kDarkWebWilds), on the band of the deep pair the Dive
+    // fields.
+    {"Anonymouse", "SPR_MALBEAST_ANONYMOUSE", 3, 85, 13, {"packet_storm", "fork_bomb"}, true,
+     "untraceable"},
+    {"Vulnture", "SPR_MALBEAST_VULNTURE", 3, 80, 14, {"packet_storm", "fork_bomb"}, true,
+     "weaponized"},
 };
 
 CombatEnemy wildMalbeastAt(int rosterIdx) {
@@ -320,16 +326,20 @@ CombatEnemy wildMalbeast(int sectorTier, uint32_t variantRoll) {
 static_assert(sizeof(AreaDef::wilds) / sizeof(AreaDef::wilds[0]) == kWildMalbeastVariants,
               "AreaDef::wilds must hold one id per wild variant");
 
+CombatEnemy wildMalbeastOf(const char* const (&pair)[kWildMalbeastVariants], int fallbackTier,
+                          uint32_t variantRoll) {
+    if (const char* id = pair[variantRoll % kWildMalbeastVariants])
+        for (int i = 0; i < kWildMalbeastCount; ++i)
+            if (std::strcmp(kWildMalbeastIds[i], id) == 0) return kWildRoster[i];
+    // No pair named (or an id the roster does not have, which the area-pair gate in
+    // test_combat.cpp catches): the tier's pair.
+    return wildMalbeast(fallbackTier, variantRoll);
+}
+
 CombatEnemy wildMalbeastIn(int areaIdx, uint32_t variantRoll) {
     if (areaIdx < 0) areaIdx = 0;
     if (areaIdx >= kAreaCount) areaIdx = kAreaCount - 1;
-    const char* id = area(areaIdx).wilds[variantRoll % kWildMalbeastVariants];
-    if (id)
-        for (int i = 0; i < kWildMalbeastCount; ++i)
-            if (std::strcmp(kWildMalbeastIds[i], id) == 0) return kWildRoster[i];
-    // No pair of its own (or an id the roster does not have, which the area-pair gate in
-    // test_combat.cpp catches): the area fields its tier's pair.
-    return wildMalbeast(areaTier(areaIdx), variantRoll);
+    return wildMalbeastOf(area(areaIdx).wilds, areaTier(areaIdx), variantRoll);
 }
 
 // The fixed wild-malbeast roster (combat.h) — slugged ids matching kWildRoster's display
@@ -338,7 +348,7 @@ const char* const kWildMalbeastIds[kWildMalbeastCount] = {
     "glitchhog",   "segfault_pup",     "packet_wraith", "cache_ghoul",
     "buffer_wyrm", "kernel_leviathan", "bloatfish",     "trialobite",
     "hoaxolotl",   "fuzzard",          "garbagoyle",    "gatorway",
-    "black_window", "terminite",
+    "black_window", "terminite",       "anonymouse",    "vulnture",
 };
 
 namespace {

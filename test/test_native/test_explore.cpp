@@ -1061,6 +1061,12 @@ void test_every_generic_move_is_carried() {
             applyDeepWebScale(d, /*petLevel=*/10, depth, /*roll=*/v * 7919u + 1u);
             sweepWild(d);
         }
+    // ...and the DARKWEB CRAWL, which fields its own pair (kDarkWebWilds) on its own kit.
+    for (uint32_t v = 0; v < kWildMalbeastVariants; ++v) {
+        CombatEnemy c = wildMalbeastOf(kDarkWebWilds, 3, v);
+        applyDarkWebScale(c, /*petLevel=*/10, /*depth=*/0, /*roll=*/v * 7919u + 1u);
+        sweepWild(c);
+    }
     auto carried = [&](const char* id) {
         for (const char* m : kits)
             if (std::strcmp(m, id) == 0) return true;

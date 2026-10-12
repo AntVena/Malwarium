@@ -671,7 +671,7 @@ window.PEDIA_DATA = {
       "id": "buffer_wyrm",
       "name": "Buffer Wyrm",
       "tier": 3,
-      "sector": "DEEPWEB DIVE and deeper",
+      "sector": "DEEPWEB DIVE",
       "hp": 80,
       "pow": 14,
       "moves": [
@@ -689,7 +689,7 @@ window.PEDIA_DATA = {
       "id": "kernel_leviathan",
       "name": "Kernel Leviathan",
       "tier": 3,
-      "sector": "DEEPWEB DIVE and deeper",
+      "sector": "DEEPWEB DIVE",
       "hp": 85,
       "pow": 13,
       "moves": [
@@ -842,6 +842,42 @@ window.PEDIA_DATA = {
         "hollow_out"
       ],
       "sprite": "assets/sprites/SPR_MALBEAST_TERMINITE.png",
+      "cellW": 56,
+      "cellH": 48,
+      "sheetW": 56,
+      "sheetH": 96
+    },
+    {
+      "id": "anonymouse",
+      "name": "Anonymouse",
+      "tier": 3,
+      "sector": "DARKWEB CRAWL",
+      "hp": 85,
+      "pow": 13,
+      "moves": [
+        "packet_storm",
+        "fork_bomb",
+        "untraceable"
+      ],
+      "sprite": "assets/sprites/SPR_MALBEAST_ANONYMOUSE.png",
+      "cellW": 56,
+      "cellH": 48,
+      "sheetW": 56,
+      "sheetH": 96
+    },
+    {
+      "id": "vulnture",
+      "name": "Vulnture",
+      "tier": 3,
+      "sector": "DARKWEB CRAWL",
+      "hp": 80,
+      "pow": 14,
+      "moves": [
+        "packet_storm",
+        "fork_bomb",
+        "weaponized"
+      ],
+      "sprite": "assets/sprites/SPR_MALBEAST_VULNTURE.png",
       "cellW": 56,
       "cellH": 48,
       "sheetW": 56,
@@ -6284,6 +6320,30 @@ window.PEDIA_DATA = {
       "icon": "assets/icons/ICON_MOVE_SLOT.png"
     },
     {
+      "id": "untraceable",
+      "name": "Untraceable",
+      "kind": "ATK",
+      "power": 6,
+      "turns": 1,
+      "minStage": "Script",
+      "desc": "Nobody saw who did it - ignores 25% armor and bleeds 2 a turn for 3 turns.",
+      "stats": "ATK 6 / PIERCE 25% / DOT 2x3",
+      "group": "core",
+      "icon": "assets/icons/ICON_MOVE_SLOT.png"
+    },
+    {
+      "id": "weaponized",
+      "name": "Weaponized",
+      "kind": "ATK",
+      "power": 20,
+      "turns": 2,
+      "minStage": "Script",
+      "desc": "Circles for 2 turns while the bug goes public, then strikes - ignores 30% armor.",
+      "stats": "ATK 20 / CHANNEL 2 / PIERCE 30%",
+      "group": "core",
+      "icon": "assets/icons/ICON_MOVE_SLOT.png"
+    },
+    {
       "id": "instruction_swap",
       "name": "Instruction Swap",
       "kind": "ATK",
@@ -7785,9 +7845,9 @@ window.PEDIA_DATA = {
     {
       "key": "MALBEAST_ALL",
       "name": "Full Bestiary",
-      "trigger": "Defeat all 14 wild malbeasts.",
+      "trigger": "Defeat all 16 wild malbeasts.",
       "icon": "assets/icons/ICON_ACH_MALBEAST_ALL.png",
-      "goal": 14
+      "goal": 16
     },
     {
       "key": "CUISINE_3",
