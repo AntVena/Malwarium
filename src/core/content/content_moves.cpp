@@ -59,12 +59,9 @@ const MoveDef kMoves[] = {
     // creature carries which is the roster itself (CombatEnemy::signatureMoveId,
     // wildMalbeast in combat_factory.cpp); this file only says what each one DOES.
     //
-    // One creature, one RIDER, and no two the same, which is the whole design: two
-    // malbeasts that differ only in power are still one fight, so each signature is a
-    // distinct verb — a bleed, a way through armour, two drains, a wind-up, a ramp, a
-    // ceiling taken and a two-beat chain. The verbs are also limited to ones a WILD can
-    // land: the speed and current-Health steals are gated on an Obfuscation bubble no
-    // wild ever raises, so a signature built on them would print and never fire.
+    // Each signature's SET of riders is unique across the roster (the rider-set gate in
+    // test_progression.cpp). Only riders a wild can land are used: the speed and
+    // current-Health steals fire only through an Obfuscation bubble, which no wild raises.
     //
     // POWER is small deliberately. A wild's kit is the depth rung it was met at plus its
     // area's pair plus this, and the rungs are ordered by EFFECTIVE per-turn damage
@@ -96,31 +93,24 @@ const MoveDef kMoves[] = {
      "Surfaces in ring zero and settles in - +{stackPower}% Power a hit, "
      "up to {stackPowerCap}%.",
      Stage::Script, nullptr, /*stackPowerPct=*/8, /*stackPowerCap=*/24},
-    // The Net-Sea Crossing's own pair, the first area to field wilds of its own rather
-    // than its tier's. Bloatfish takes CEILING: the one steal that fires without a bubble,
-    // and the one that stays taken, the way a bundled extra is still installed long after
-    // the download finished.
+    // Net-Sea Crossing's pair. Bloatfish's steal is max Health, which fires without a
+    // bubble and lasts the rest of the fight.
     {"bundled_extras", "Bundled Extras", MoveDef::Kind::Attack, 8, 1,
      "Installs a few extras you didn't ask for - takes {stealMaxHp}% of the target's "
      "max Health for the fight.",
      Stage::Script, nullptr, 0, 0, 0, 0, 0, 0, 0, 0, /*stealPowerPct=*/0,
      /*stealDefensePct=*/0, /*stealSpeedPct=*/0, /*stealCurrentHpPct=*/0,
      /*stealMaxHpPct=*/8},
-    // Trialobite bills LATER: a light bite now that commits its next turn to the real hit
-    // (trial_expired, content_chain_steps.cpp). The pair is read together — 6 then 14 is
-    // ring_zero's 10 a turn, so the chain is a rhythm the player can see coming, not a
-    // bigger number than the rung it was met on.
+    // Trialobite's chains into trial_expired (content_chain_steps.cpp): 6 then 14 averages
+    // 10 a turn, ring_zero's rate, so the chain does not out-hit the depth ramp.
     {"free_trial", "Free Trial", MoveDef::Kind::Attack, 6, 1,
      "Free for now - and next turn the trial expires.",
      Stage::Script, nullptr, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
      /*shieldPool=*/0, /*trapArm=*/0, 0, 0, 0, 0, /*replicaSpawnPct=*/0, 0, 0,
      /*chainNextId=*/"trial_expired"},
-    // Napstorrent Moors' pair. The Moors already spends the plain verbs — its wild attack
-    // (chain_letter) carries no rider at all and its signature boss bleeds (data_rot) —
-    // and the single riders a wild can land are all taken, so these two are PAIRS of
-    // riders, each pair one no other signature carries (the rider-set gate in
-    // test_progression.cpp). Hoaxolotl's grows in the telling and gets past people who
-    // should know better; Fuzzard's takes a long time and then finds the crash.
+    // Napstorrent Moors' pair. Every single rider a wild can land is already some other
+    // signature's, so from here on a signature is a PAIR of riders, and the Moors' boss
+    // rider (data_rot's bleed) is left out.
     {"urban_legend", "Urban Legend", MoveDef::Kind::Attack, 8, 1,
      "Grows every time it's told - +{stackPower}% Power a hit up to {stackPowerCap}%, "
      "and ignores {pierce}% armor.",
@@ -131,11 +121,9 @@ const MoveDef kMoves[] = {
      "target's armor.",
      Stage::Script, nullptr, 0, 0, 0, 0, 0, 0, 0, 0, /*stealPowerPct=*/0,
      /*stealDefensePct=*/10},
-    // Castle Rapidscare's pair. The keep's own wild attack already takes the ceiling
-    // (bandwidth_cap) and its signature boss freezes and bleeds (nag_screen), so neither
-    // verb is spent again here. Garbagoyle reclaims what you were not using; Gatorway
-    // takes you at the gate, through the armour, and spends its next turn dragging you
-    // under (drag_under, content_chain_steps.cpp).
+    // Castle Rapidscare's pair. Leaves out the max-Health steal the Castle's wild attack
+    // already carries (bandwidth_cap) and its boss rider's freeze and bleed (nag_screen).
+    // Ambush chains into drag_under (content_chain_steps.cpp).
     {"deallocate", "Deallocate", MoveDef::Kind::Attack, 8, 1,
      "Reclaims whatever you weren't using - takes {stealPower}% of the target's Power "
      "and {stealDef}% of its armor.",
@@ -146,6 +134,19 @@ const MoveDef kMoves[] = {
      Stage::Script, nullptr, 0, 0, 0, 0, /*armorPiercePct=*/30, 0, 0, 0, 0, 0, 0, 0, 0,
      /*shieldPool=*/0, /*trapArm=*/0, 0, 0, 0, 0, /*replicaSpawnPct=*/0, 0, 0,
      /*chainNextId=*/"drag_under"},
+    // The Silk Lode's pair. Leaves out the armour strip the Lode's wild attack already
+    // carries (snag_line) and its boss rider's scramble (c2_hijack).
+    {"unclosable", "Unclosable", MoveDef::Kind::Attack, 6, 1,
+     "The X does nothing - venom bleeds {dot} a turn for {dotTurns} turns and saps "
+     "{stealPower}% of the target's Power.",
+     Stage::Script, nullptr, 0, 0, 0, 0, 0, 0, /*dotDamage=*/2, /*dotTurns=*/3,
+     /*stealPowerPct=*/8},
+    {"hollow_out", "Hollow Out", MoveDef::Kind::Attack, 20, 2,
+     "Chews for {turns} turns, then the floor gives - takes {stealMaxHp}% of the "
+     "target's max Health for the fight.",
+     Stage::Script, nullptr, 0, 0, 0, 0, 0, 0, 0, 0, /*stealPowerPct=*/0,
+     /*stealDefensePct=*/0, /*stealSpeedPct=*/0, /*stealCurrentHpPct=*/0,
+     /*stealMaxHpPct=*/8},
 
     // --- Metamorphic LINE moves -------------------------------------------------
     // line = "metamorphic". None of these casts itself: each rolls a move out of the

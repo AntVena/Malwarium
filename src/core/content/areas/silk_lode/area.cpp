@@ -158,7 +158,7 @@ const AreaDef kAreaSilkLode = {
     // the flattest brace anywhere. Nothing down here chases.
     /*wildAttackMoveId=*/"snag_line",
     /*wildDefendMoveId=*/"sheet_web",
-    /*wilds=*/{},  // its tier's pair, until this area names its own
+    /*wilds=*/{"black_window", "terminite"},
     // Who watches this network: the thing that has never chased anything in its life. It
     // put out a line, and everything arrives eventually, and it is in no hurry about you.
     {"THE PATIENT WEAVER",

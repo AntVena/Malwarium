@@ -294,6 +294,11 @@ const CombatEnemy kWildRoster[kWildMalbeastCount] = {
      true, "deallocate"},
     {"Gatorway", "SPR_MALBEAST_GATORWAY", 3, 80, 14, {"packet_storm", "fork_bomb"}, true,
      "ambush"},
+    // The Silk Lode's own pair, on the band of the deep pair it replaces there.
+    {"Black Window", "SPR_MALBEAST_BLACK_WINDOW", 3, 85, 13, {"packet_storm", "fork_bomb"},
+     true, "unclosable"},
+    {"Terminite", "SPR_MALBEAST_TERMINITE", 3, 80, 14, {"packet_storm", "fork_bomb"}, true,
+     "hollow_out"},
 };
 
 CombatEnemy wildMalbeastAt(int rosterIdx) {
@@ -323,7 +328,7 @@ CombatEnemy wildMalbeastIn(int areaIdx, uint32_t variantRoll) {
         for (int i = 0; i < kWildMalbeastCount; ++i)
             if (std::strcmp(kWildMalbeastIds[i], id) == 0) return kWildRoster[i];
     // No pair of its own (or an id the roster does not have, which the area-pair gate in
-    // test_combat.cpp catches): the area fields its tier's pair, as every area once did.
+    // test_combat.cpp catches): the area fields its tier's pair.
     return wildMalbeast(areaTier(areaIdx), variantRoll);
 }
 
@@ -333,6 +338,7 @@ const char* const kWildMalbeastIds[kWildMalbeastCount] = {
     "glitchhog",   "segfault_pup",     "packet_wraith", "cache_ghoul",
     "buffer_wyrm", "kernel_leviathan", "bloatfish",     "trialobite",
     "hoaxolotl",   "fuzzard",          "garbagoyle",    "gatorway",
+    "black_window", "terminite",
 };
 
 namespace {
@@ -486,14 +492,13 @@ void applyDarkWebScale(CombatEnemy& e, int petLevel, int depth, uint32_t roll) {
         ++points[(roll >> 16) % kLevelStatCount];
     }
     spendStatBudget(e, points);
-    // The kit is the dive's deep pool, drawn the way the deep dive draws it: TWO picks,
-    // plus the pair, which is kMaxMoveSlots and the same ceiling every other fighter on
-    // the device is built to. There is no rung ladder because there is no shallow end —
-    // the crawl's difficulty axis is what the player can READ, not what the enemy knows,
-    // and an enemy holding the whole pool would be answering that with move count.
+    // Kit: the dive's deep pool at its deepest rung (no depth ladder here), the dive's
+    // own wild pair, and the creature's signature — the move a win against it can teach,
+    // which no other kit in the crawl carries.
     e.moveIds = deepWebMoveIds(kDeepWebBossMoveDepth, roll);
     e.moveIds.push_back(kDeepWebWildAttackMoveId);
     e.moveIds.push_back(kDeepWebWildDefendMoveId);
+    if (e.signatureMoveId) e.moveIds.push_back(e.signatureMoveId);
 }
 
 void applyDeepWebScale(CombatEnemy& e, int petLevel, int depth, uint32_t roll) {
@@ -510,9 +515,8 @@ void applyDeepWebScale(CombatEnemy& e, int petLevel, int depth, uint32_t roll) {
     // ramp past the foothold is the same shape it always was, just started later.
     const int rampDepth = depth > kDeepWebRampFreeDepth ? depth - kDeepWebRampFreeDepth : 0;
     const int effLevel = petLevel + kDeepWebDepthLevelPerLog2 * floorLog2(rampDepth + 1);
-    // Moves stay the tier-3 endgame kit (set by wildMalbeast(3)); the isWild challenge
-    // buff still applies in makeEnemyCombatant. Bits payout (diffPips-keyed, not
-    // level-keyed) doesn't ride this scale — see deepWebDepthBitsPct below.
+    // The isWild challenge buff still applies in makeEnemyCombatant. Bits payout
+    // (diffPips-keyed, not level-keyed) doesn't ride this scale — see deepWebDepthBitsPct.
     e.level = effLevel + kDeepWebEnemyLevelOffset;
     e.hasLevel = true;
 
@@ -551,6 +555,10 @@ void applyDeepWebScale(CombatEnemy& e, int petLevel, int depth, uint32_t roll) {
     // pool replaces the rung and would otherwise take them with it.
     e.moveIds.push_back(kDeepWebWildAttackMoveId);
     if (depth >= kDeepWebWildDefendDepth) e.moveIds.push_back(kDeepWebWildDefendMoveId);
+    // ...and the creature's signature, as on the ladder (applyWildSubAreaRamp): a wild met
+    // only down here is the only enemy that carries it, so without it the move could
+    // never be taught.
+    if (e.signatureMoveId) e.moveIds.push_back(e.signatureMoveId);
 
     spendStatBudget(e, points);
 }

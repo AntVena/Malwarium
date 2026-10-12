@@ -1,11 +1,9 @@
 // glitch.h — FX_GLITCH: the wild-malbeast corruption shader.
 //
 // A malbeast's sprite is a cheap two-tone blocky drawing (tools/gen_malbeast_art.py): light
-// line work on a dark body, two poses, no motion of its own. ALL of the menace — the thing
-// that makes a wild read as hostile corrupted software rather than as a pet — is this pass,
-// applied over that drawing at draw time. Keeping it here rather than in the pixels is what
-// lets every malbeast share one scary, animated treatment while each costs about what a
-// still costs: the per-creature half is a recipe, the expensive half is this one function.
+// line work on a dark body, two poses, no motion of its own. The corruption is this pass,
+// applied at draw time rather than stored in the pixels, so every malbeast shares one
+// animated treatment and each sheet stays a cheap still.
 //
 // The corruption, in three tells, all quantised to the sprite's own 4px nibble so the glitch
 // is as low-def as the body (a smooth tear would read as a different, cleaner renderer):
@@ -28,10 +26,8 @@
 // split drawShred makes: a one-ink MASK has no colour of its own and takes `base`. `hot` is
 // the corruption accent either way.
 //
-// It is not meant to run every beat. A body that tears on every frame never reads as a body
-// at all, so the combat screen calls it only inside the BURSTS glitchBurst() schedules and
-// draws the wild clean between them: mostly whole, breaking up for a moment now and then,
-// which is what makes the break read as a fault rather than as the art.
+// The combat screen runs it only inside the bursts glitchBurst() schedules and draws the
+// wild clean between them; torn on every beat, the drawing underneath does not read.
 #pragma once
 
 #include <cstdint>

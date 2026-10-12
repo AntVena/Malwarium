@@ -671,7 +671,7 @@ window.PEDIA_DATA = {
       "id": "buffer_wyrm",
       "name": "Buffer Wyrm",
       "tier": 3,
-      "sector": "THE SILK LODE and deeper",
+      "sector": "DEEPWEB DIVE and deeper",
       "hp": 80,
       "pow": 14,
       "moves": [
@@ -689,7 +689,7 @@ window.PEDIA_DATA = {
       "id": "kernel_leviathan",
       "name": "Kernel Leviathan",
       "tier": 3,
-      "sector": "THE SILK LODE and deeper",
+      "sector": "DEEPWEB DIVE and deeper",
       "hp": 85,
       "pow": 13,
       "moves": [
@@ -806,6 +806,42 @@ window.PEDIA_DATA = {
         "ambush"
       ],
       "sprite": "assets/sprites/SPR_MALBEAST_GATORWAY.png",
+      "cellW": 56,
+      "cellH": 48,
+      "sheetW": 56,
+      "sheetH": 96
+    },
+    {
+      "id": "black_window",
+      "name": "Black Window",
+      "tier": 3,
+      "sector": "THE SILK LODE",
+      "hp": 85,
+      "pow": 13,
+      "moves": [
+        "packet_storm",
+        "fork_bomb",
+        "unclosable"
+      ],
+      "sprite": "assets/sprites/SPR_MALBEAST_BLACK_WINDOW.png",
+      "cellW": 56,
+      "cellH": 48,
+      "sheetW": 56,
+      "sheetH": 96
+    },
+    {
+      "id": "terminite",
+      "name": "Terminite",
+      "tier": 3,
+      "sector": "THE SILK LODE",
+      "hp": 80,
+      "pow": 14,
+      "moves": [
+        "packet_storm",
+        "fork_bomb",
+        "hollow_out"
+      ],
+      "sprite": "assets/sprites/SPR_MALBEAST_TERMINITE.png",
       "cellW": 56,
       "cellH": 48,
       "sheetW": 56,
@@ -6224,6 +6260,30 @@ window.PEDIA_DATA = {
       "icon": "assets/icons/ICON_MOVE_SLOT.png"
     },
     {
+      "id": "unclosable",
+      "name": "Unclosable",
+      "kind": "ATK",
+      "power": 6,
+      "turns": 1,
+      "minStage": "Script",
+      "desc": "The X does nothing - venom bleeds 2 a turn for 3 turns and saps 8% of the target's Power.",
+      "stats": "ATK 6 / DOT 2x3 / SIPHON PWR 8%",
+      "group": "core",
+      "icon": "assets/icons/ICON_MOVE_SLOT.png"
+    },
+    {
+      "id": "hollow_out",
+      "name": "Hollow Out",
+      "kind": "ATK",
+      "power": 20,
+      "turns": 2,
+      "minStage": "Script",
+      "desc": "Chews for 2 turns, then the floor gives - takes 8% of the target's max Health for the fight.",
+      "stats": "ATK 20 / CHANNEL 2 / MAX HP 8%",
+      "group": "core",
+      "icon": "assets/icons/ICON_MOVE_SLOT.png"
+    },
+    {
       "id": "instruction_swap",
       "name": "Instruction Swap",
       "kind": "ATK",
@@ -7725,9 +7785,9 @@ window.PEDIA_DATA = {
     {
       "key": "MALBEAST_ALL",
       "name": "Full Bestiary",
-      "trigger": "Defeat all 12 wild malbeasts.",
+      "trigger": "Defeat all 14 wild malbeasts.",
       "icon": "assets/icons/ICON_ACH_MALBEAST_ALL.png",
-      "goal": 12
+      "goal": 14
     },
     {
       "key": "CUISINE_3",

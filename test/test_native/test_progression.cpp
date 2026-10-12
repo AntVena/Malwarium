@@ -605,11 +605,9 @@ void test_wild_signature_is_the_creatures_own() {
         sigs.push_back(e.signatureMoveId);
     }
 
-    // ...AND NO TWO DO THE SAME THING. Different ids are not different fights: what a
-    // player meets is the signature's set of riders, so that set is what has to be unique
-    // across the roster. Once the single riders a wild can land ran out, signatures
-    // became PAIRS of them — and a pair is only new if no other signature carries the
-    // same combination. Power and magnitudes do not count; the verbs do.
+    // ...AND NO TWO CARRY THE SAME SET OF RIDERS. The set — which riders, not their
+    // magnitudes — is what distinguishes one wild's signature from another's in a fight,
+    // so it is unique across the roster; a signature may combine riders to get there.
     std::vector<unsigned> riderSets;
     for (const char* id : sigs) {
         const MoveDef* m = r.move(id);

@@ -1432,10 +1432,12 @@ void test_darkweb_crawl() {
         CHECK(d.level == 20);                       // still inside the dive's foothold...
         CHECK(c.level > 20);                        // ...and the crawl never had one
         CHECK(wildWinXp(kWildWinXpReward, c.level, 20) > kWildWinXpReward);
-        // ...and its kit is held to the same ceiling every other fighter is: two picks
-        // from the dive's deep pool plus the zone's own pair. An enemy carrying the whole
-        // pool would be answering the Cant with move count, which is not what it costs.
-        CHECK(static_cast<int>(c.moveIds.size()) == kMaxMoveSlots);
+        // ...and its kit is two picks from the dive's deep pool, the zone's own pair and
+        // the creature's signature — a handful drawn from the pool, not the pool itself,
+        // and inside the cap every wild kit is held to.
+        CHECK(static_cast<int>(c.moveIds.size()) == 2 + 2 + 1);
+        CHECK(static_cast<int>(c.moveIds.size()) <= kWildKitMax);
+        CHECK(std::strcmp(c.moveIds.back(), c.signatureMoveId) == 0);
     }
     // (2) Unlock: CLEARING the area whose shrine holds the portal, and not one rung less.
     //     Keyed by id, so a spliced area cannot slide the gate onto its neighbour.

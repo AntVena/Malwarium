@@ -15,10 +15,10 @@ Why a second tool, and not the Worm one
 ----------------------------------------
 The Worm line spends a mother STYLE instead of a mother colour (CREATURE_VISUAL_RULES §4),
 and gen_worm_art.py holds that style mechanically so a dozen sprites still read as one hand.
-The wild malbeasts want a style of their OWN. A malbeast is not a creature-line member (it
+The wild malbeasts have a style of their OWN. A malbeast is not a creature-line member (it
 is a bare sprite-named spec in combat_factory.cpp, no creature row, no mother colour), so
-nothing ties the roster together today, which is exactly how a style drifts. This file is
-that tie.
+nothing else holds the roster to one style; the recipe rules below and the --check gate
+do.
 
 The malbeast style, as the only things a recipe can say
 -------------------------------------------------------
@@ -57,10 +57,9 @@ The malbeast style, as the only things a recipe can say
     (core/render/glitch.h, drawSpriteGlitch) over this drawing, so the sheet stays a
     cheap still and the glitch animates for free.
 
-That division is the point of the whole approach: the EXPENSIVE, animated, scary half lives
-in ~one engine function shared by every malbeast, and the per-creature half is two cheap
-two-tone frames a recipe draws on graph paper. Adding the seventh malbeast is a recipe here
-plus a stat row in combat_factory.cpp — no new FX, no new art commission for the glitch.
+So the animated part is one engine function shared by every malbeast, and a creature is
+two two-tone frames drawn on graph paper. Adding one is a recipe here, a ROW_H_OVERRIDES row
+in gen_assets.py, a roster row in combat_factory.cpp and an area's AreaDef::wilds entry.
 
 The sheet: two ROWS of one frame each, row 0 the idle and row 1 the attack. That is the
 whole animation budget — a wild never breathes or walks, it stands, and it lunges when it
@@ -686,6 +685,77 @@ def gatorway():
     return stack(idle, attack)
 
 
+def black_window():
+    """Black Window — the Silk Lode, front-on (drawn from above, the way a spider is read; no
+    facing). A black widow named for the pop-up window: legs radiating off a small head,
+    and on the abdomen not the hourglass but a WINDOW — a cross of mullions splitting it
+    into four panes. The attack lifts and spreads the legs and bares the fangs."""
+    idle = grid(
+        "..............",
+        "..#...##...#..",
+        "..##.####.##..",
+        "#..####.###..#",
+        "#####.########",
+        "....###.##....",
+        "#..##.#..##..#",
+        "####..#...##..",
+        "...########...",
+        "..##..#..##...",
+        "...#######....",
+        ".....###......",
+    )
+    attack = grid(
+        "##..........##",
+        ".#...####...#.",
+        ".##.##..##.##.",
+        "..####::####..",
+        "...##....##...",
+        "....#....#....",
+        "...##....##...",
+        "..##..##..##..",
+        "##############",
+        "#.##..##..##.#",
+        "...########...",
+        ".....####.....",
+    )
+    return stack(idle, attack)
+
+
+def terminite():
+    """Terminite — the Silk Lode, facing LEFT. A soldier termite named for the terminal: the
+    big armoured head with its mandibles forward, a narrow waist, a plump striped abdomen,
+    three straight legs. The attack opens the mandibles (sealed air between them)."""
+    idle = grid(
+        "..............",
+        "..............",
+        "..............",
+        "........#####.",
+        "#####..##...##",
+        ".#.###.##.#..#",
+        ".#...####.#..#",
+        ".#..##.##.#.##",
+        "#####..######.",
+        "...#..##.#....",
+        "...#..#..#....",
+        "..##.##.##....",
+    )
+    attack = grid(
+        "..............",
+        "..............",
+        "#.............",
+        "###.....#####.",
+        "..###..##...##",
+        ".#####.##.#..#",
+        "..#..####.#..#",
+        ".##.##.##.#.##",
+        "..###..######.",
+        "...#..##.#....",
+        "...#..#..#....",
+        "..##.##.##....",
+    )
+    return stack(idle, attack)
+
+
 RECIPES = {
     "SPR_MALBEAST_GLITCHHOG": glitchhog,
     "SPR_MALBEAST_SEGFAULT_PUP": segfault_pup,
@@ -699,6 +769,8 @@ RECIPES = {
     "SPR_MALBEAST_FUZZARD": fuzzard,
     "SPR_MALBEAST_GARBAGOYLE": garbagoyle,
     "SPR_MALBEAST_GATORWAY": gatorway,
+    "SPR_MALBEAST_BLACK_WINDOW": black_window,
+    "SPR_MALBEAST_TERMINITE": terminite,
 }
 
 # Short aliases for --preview / --only, so the CLI takes `glitchhog` not the full symbol.
