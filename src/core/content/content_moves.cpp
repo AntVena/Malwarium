@@ -59,9 +59,12 @@ const MoveDef kMoves[] = {
     // creature carries which is the roster itself (CombatEnemy::signatureMoveId,
     // wildMalbeast in combat_factory.cpp); this file only says what each one DOES.
     //
-    // Six creatures, six different RIDERS, and that is the whole design: two malbeasts
-    // that differ only in power are still one fight, so each signature is a distinct
-    // verb — a bleed, a way through armour, two drains, a wind-up and a ramp.
+    // One creature, one RIDER, and no two the same, which is the whole design: two
+    // malbeasts that differ only in power are still one fight, so each signature is a
+    // distinct verb — a bleed, a way through armour, two drains, a wind-up, a ramp, a
+    // ceiling taken and a two-beat chain. The verbs are also limited to ones a WILD can
+    // land: the speed and current-Health steals are gated on an Obfuscation bubble no
+    // wild ever raises, so a signature built on them would print and never fire.
     //
     // POWER is small deliberately. A wild's kit is the depth rung it was met at plus its
     // area's pair plus this, and the rungs are ordered by EFFECTIVE per-turn damage
@@ -93,6 +96,25 @@ const MoveDef kMoves[] = {
      "Surfaces in ring zero and settles in - +{stackPower}% Power a hit, "
      "up to {stackPowerCap}%.",
      Stage::Script, nullptr, /*stackPowerPct=*/8, /*stackPowerCap=*/24},
+    // The Net-Sea Crossing's own pair, the first area to field wilds of its own rather
+    // than its tier's. Bloatfish takes CEILING: the one steal that fires without a bubble,
+    // and the one that stays taken, the way a bundled extra is still installed long after
+    // the download finished.
+    {"bundled_extras", "Bundled Extras", MoveDef::Kind::Attack, 8, 1,
+     "Installs a few extras you didn't ask for - takes {stealMaxHp}% of the target's "
+     "max Health for the fight.",
+     Stage::Script, nullptr, 0, 0, 0, 0, 0, 0, 0, 0, /*stealPowerPct=*/0,
+     /*stealDefensePct=*/0, /*stealSpeedPct=*/0, /*stealCurrentHpPct=*/0,
+     /*stealMaxHpPct=*/8},
+    // Trialobite bills LATER: a light bite now that commits its next turn to the real hit
+    // (trial_expired, content_chain_steps.cpp). The pair is read together — 6 then 14 is
+    // ring_zero's 10 a turn, so the chain is a rhythm the player can see coming, not a
+    // bigger number than the rung it was met on.
+    {"free_trial", "Free Trial", MoveDef::Kind::Attack, 6, 1,
+     "Free for now - and next turn the trial expires.",
+     Stage::Script, nullptr, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+     /*shieldPool=*/0, /*trapArm=*/0, 0, 0, 0, 0, /*replicaSpawnPct=*/0, 0, 0,
+     /*chainNextId=*/"trial_expired"},
 
     // --- Metamorphic LINE moves -------------------------------------------------
     // line = "metamorphic". None of these casts itself: each rolls a move out of the

@@ -921,12 +921,12 @@ void Game::startEncounter() {
         else
             applyDeepWebScale(encounterEnemy_, combatLevel_, exploreStreak_, rng_);
     } else {
-        encounterEnemy_ = wildMalbeast(explSectorTier(exploreSector_), rng_ >> 16);
+        encounterEnemy_ = wildMalbeastIn(exploreSector_, rng_ >> 16);   // the area's pair
         applyWildSubAreaRamp(encounterEnemy_, exploreSector_, exploreSub_);  // depth ramp
     }
     // 'Pedia malbeast "seen": the wild roll itself is the
     // glimpse, regardless of what happens next (fight/flee/sinkhole/auto-resolve).
-    // wildMalbeastIndex returns -1 for anything outside the fixed 6-entry roster.
+    // wildMalbeastIndex returns -1 for anything outside the wild roster.
     if (const int idx = wildMalbeastIndex(encounterEnemy_.name);
         idx >= 0 && !(malbeastSeenMask_ & (1u << idx))) {
         malbeastSeenMask_ |= static_cast<uint16_t>(1u << idx);

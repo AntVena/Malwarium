@@ -588,31 +588,33 @@ void test_wild_signature_is_the_creatures_own() {
     // half the roster could never field (moveIsTeachable), and a stun in an enemy kit
     // spends the PLAYER's turns doing nothing (fork_bomb's row says why).
     std::vector<const char*> sigs;
-    for (int tier = 1; tier <= 3; ++tier)
-        for (uint32_t v = 0; v < 2; ++v) {
-            const CombatEnemy e = wildMalbeast(tier, v);
-            CHECK(e.signatureMoveId != nullptr);
-            const MoveDef* m = r.move(e.signatureMoveId);
-            CHECK(m != nullptr);
-            CHECK(m->line == nullptr);
-            CHECK(m->lockTurns == 0);
-            for (const char* prev : sigs)
-                CHECK(std::strcmp(prev, e.signatureMoveId) != 0);
-            sigs.push_back(e.signatureMoveId);
-        }
-    CHECK(static_cast<int>(sigs.size()) == kWildMalbeastCount);
+    for (int i = 0; i < kWildMalbeastCount; ++i) {
+        const CombatEnemy e = wildMalbeastAt(i);
+        CHECK(e.signatureMoveId != nullptr);
+        const MoveDef* m = r.move(e.signatureMoveId);
+        CHECK(m != nullptr);
+        CHECK(m->line == nullptr);
+        CHECK(m->lockTurns == 0);
+        // ...and it has to be a rider a WILD can actually land. The speed and
+        // current-Health steals fire only through an Obfuscation bubble, which no wild
+        // raises: a signature built on them would print and never happen.
+        CHECK(m->stealSpeedPct == 0);
+        CHECK(m->stealCurrentHpPct == 0);
+        for (const char* prev : sigs)
+            CHECK(std::strcmp(prev, e.signatureMoveId) != 0);
+        sigs.push_back(e.signatureMoveId);
+    }
 
     // IT SURVIVES THE DEPTH LADDER, which replaces moveIds outright — the whole reason it
     // is carried beside that list rather than in it. Every creature, every area, every
     // rung: a signature that died at sub 1 would leave the identity where it started.
-    for (int tier = 1; tier <= 3; ++tier)
-        for (uint32_t v = 0; v < 2; ++v)
-            for (int a = 0; a < kExplSectors; ++a)
-                for (int sub = 0; sub < kSubAreasPerArea; ++sub) {
-                    CombatEnemy w = wildMalbeast(tier, v);
-                    applyWildSubAreaRamp(w, a, sub);
-                    CHECK(holdsMove(w, w.signatureMoveId));
-                }
+    for (int i = 0; i < kWildMalbeastCount; ++i)
+        for (int a = 0; a < kExplSectors; ++a)
+            for (int sub = 0; sub < kSubAreasPerArea; ++sub) {
+                CombatEnemy w = wildMalbeastAt(i);
+                applyWildSubAreaRamp(w, a, sub);
+                CHECK(holdsMove(w, w.signatureMoveId));
+            }
 
     // ...AND THE RUNG ORDER IS INTACT. The ladder is sorted by EFFECTIVE per-turn damage,
     // and a rider appended to every rung alike cannot reorder them — this is what says so
@@ -629,18 +631,17 @@ void test_wild_signature_is_the_creatures_own() {
                 }
         return n > 0 ? total * 100 / n : 0;
     };
-    for (int tier = 1; tier <= 3; ++tier)
-        for (uint32_t v = 0; v < 2; ++v)
-            for (int a = 0; a < kExplSectors; ++a) {
-                int prev = -1;
-                for (int sub = 1; sub < kSubAreasPerArea; ++sub) {
-                    CombatEnemy w = wildMalbeast(tier, v);
-                    applyWildSubAreaRamp(w, a, sub);
-                    const int avg = swing(w);
-                    CHECK(avg > prev);                  // each rung swings harder
-                    prev = avg;
-                }
+    for (int i = 0; i < kWildMalbeastCount; ++i)
+        for (int a = 0; a < kExplSectors; ++a) {
+            int prev = -1;
+            for (int sub = 1; sub < kSubAreasPerArea; ++sub) {
+                CombatEnemy w = wildMalbeastAt(i);
+                applyWildSubAreaRamp(w, a, sub);
+                const int avg = swing(w);
+                CHECK(avg > prev);                      // each rung swings harder
+                prev = avg;
             }
+        }
 }
 
 void test_explore_subarea_ramp() {

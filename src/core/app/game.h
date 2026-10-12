@@ -2018,7 +2018,7 @@ public:
     // the stakes; the Sim-Battle path is the in-game one (startSimBattle, safe).
     // `lethal` builds an unbeatable enemy so a loss is deterministic (stakes test).
     void debugStartCombat(bool live, bool lethal = false);
-    // The same, against a chosen enemy spec (e.g. wildMalbeast(tier, variant)) — what a
+    // The same, against a chosen enemy spec (e.g. wildMalbeastAt(i)) — what a
     // headless preview of one particular wild needs, since a walk rolls whichever one.
     void debugStartCombatVs(const CombatEnemy& spec, bool live = false);
     // Preset the lifetime networks-seen counter + its v1 dedup pool (tests /

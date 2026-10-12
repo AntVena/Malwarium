@@ -3,7 +3,7 @@
 
 Sources:
   tools/dump_content.cpp (compiled)       -> creatures, egg lines, items, mods, moves
-  src/core/model/combat.cpp               -> wildMalbeast() roster (plain regex)
+  src/core/model/combat_factory.cpp       -> kWildRoster (plain regex)
 
 The content tables arrive as JSON from the firmware's OWN code rather than being
 re-parsed here, because a regex over an initializer list has to index each row's fields
@@ -335,18 +335,18 @@ def main():
                         "requires": r["requires"]})
 
     # ---- wild malbeasts (combat_factory.cpp) ----
-    # The roster lives with the encounter FACTORIES, not the turn engine. Fail loudly
-    # naming the function if it moves again: the alternative is a KeyError deep in the
-    # parse, or worse an empty roster that generates a 'Pedia quietly missing its
-    # malbeasts.
+    # The roster lives with the encounter FACTORIES, not the turn engine, as one table in
+    # save-bit order (kWildRoster). Fail loudly naming it if it moves again: the
+    # alternative is a KeyError deep in the parse, or worse an empty roster that generates
+    # a 'Pedia quietly missing its malbeasts.
     src_path = repo / "src/core/model/combat_factory.cpp"
     combat = strip_comments(src_path.read_text(encoding="utf-8", errors="replace"))
-    marker = "CombatEnemy wildMalbeast"
+    marker = "kWildRoster[kWildMalbeastCount] = {"
     if marker not in combat:
         sys.exit(f"error: '{marker}' not found in {src_path} — the wild roster moved; "
                  f"point this at its new home.")
     fn = combat[combat.index(marker):]
-    fn = fn[: fn.index("\n}") + 2]
+    fn = fn[: fn.index("\n};") + 3]
     # The trailing pair is the isWild flag and the creature's SIGNATURE
     # (CombatEnemy::signatureMoveId) — the one move it carries at every depth, where the
     # baseline kit before it survives only the shallowest rung. Optional in the pattern so
@@ -356,20 +356,39 @@ def main():
     rows = list(re.finditer(
         r'\{"([^"]+)",\s*"([^"]+)",\s*(\d+),\s*(\d+),\s*(\d+),\s*\{([^}]*)\}'
         r'(?:\s*,\s*(?:true|false)\s*,\s*"([^"]+)")?', fn))
-    # The wild roster is TIER-keyed and stops SHORT of the ladder's depth — wildMalbeast
-    # clamps, so its top tier is what every deeper area fights too. Naming only the rung
-    # that tier's number happens to match would read as though the castle had wilds of its
-    # own. Derived from the roster's own top tier, so extending it re-labels by itself.
-    deepest_wild = max(int(m.group(3)) for m in rows) if rows else 0
+    slug = lambda name: re.sub(r"[^a-z0-9]+", "_", name.lower()).strip("_")
+    ids = [slug(m.group(1)) for m in rows]
+
+    # WHERE each wild is met, read off the same rules the firmware walks (wildMalbeastIn,
+    # wildMalbeast): an area that names a pair (AreaDef::wilds, in the content dump) fields
+    # exactly that pair; one that names none fields its TIER's pair, which is two adjacent
+    # roster rows; and both endless zones field the tier-3 pair. A wild met in more than
+    # one zone is labelled with the first of them "and deeper".
+    VARIANTS = 2
+    def tier_pair(tier):
+        t = min(max(tier, 1), 3)
+        return ids[(t - 1) * VARIANTS:(t - 1) * VARIANTS + VARIANTS]
+    met_in = {bid: [] for bid in ids}
+    for a in content["areas"]:
+        named = [w for w in (a.get("wild0"), a.get("wild1")) if w]
+        for bid in (named or tier_pair(a["tier"])):
+            if bid not in met_in:
+                sys.exit(f"error: area '{a['id']}' names wild '{bid}', which the roster in "
+                         f"{src_path} does not have.")
+            met_in[bid].append(a["name"])
+    for bid in tier_pair(3):                # the two endless zones, deepest last
+        met_in[bid] += ["DEEPWEB DIVE", "DARKWEB CRAWL"]
     beasts = []
-    for m in rows:
+    for m, bid in zip(rows, ids):
         name, _sprite, tier, hp, pow_ = m.group(1), m.group(2), int(m.group(3)), int(m.group(4)), int(m.group(5))
         mv = [x.strip().strip('"') for x in m.group(6).split(",") if x.strip()]
         if m.group(7) and m.group(7) not in mv:
             mv.append(m.group(7))
-        bid = re.sub(r"[^a-z0-9]+", "_", name.lower()).strip("_")
-        sector = ladder_names.get(tier, "?")
-        if tier == deepest_wild and deepest_wild < max(ladder_names, default=0):
+        zones = met_in[bid]
+        if not zones:
+            warnings.append(f"wild '{bid}' is on the roster but no zone fields it")
+        sector = zones[0] if zones else "?"
+        if len(zones) > 1:
             sector += " and deeper"
         beast = {"id": bid, "name": name, "tier": tier, "sector": sector,
                  "hp": hp, "pow": pow_, "moves": mv}

@@ -135,6 +135,7 @@ FACING = {
     "SPR_MALBEAST_CACHE_GHOUL": "Left",
     "SPR_MALBEAST_GLITCHHOG": "Left",
     "SPR_MALBEAST_KERNEL_LEVIATHAN": "Left",
+    "SPR_MALBEAST_BLOATFISH": "Left",
 }
 
 # Non-pet sheets that are horizontal frame strips rather than one wide image,
@@ -210,6 +211,8 @@ ROW_H_OVERRIDES = {
     "SPR_MALBEAST_CACHE_GHOUL": 48,
     "SPR_MALBEAST_BUFFER_WYRM": 48,
     "SPR_MALBEAST_KERNEL_LEVIATHAN": 56,
+    "SPR_MALBEAST_BLOATFISH": 48,
+    "SPR_MALBEAST_TRIALOBITE": 48,
 }
 
 

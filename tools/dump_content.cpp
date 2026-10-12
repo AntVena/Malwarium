@@ -216,6 +216,10 @@ void dumpAreas() {
         field("id", a.id);
         field("name", a.name);
         fieldInt("tier", areaTier(i));
+        // The wild pair this area names by roster id (AreaDef::wilds), or null where it
+        // fields its tier's — the 'Pedia labels each malbeast with where it is met from this.
+        fieldIdOrNull("wild0", a.wilds[0]);
+        fieldIdOrNull("wild1", a.wilds[1]);
         field("title", a.title, /*comma=*/false);
         std::fputs(i + 1 < kAreaCount ? "},\n" : "}\n", stdout);
     }

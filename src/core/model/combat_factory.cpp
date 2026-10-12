@@ -243,56 +243,84 @@ CombatEnemy simDummy(int tier) {
             {"quick_jab", "packet_storm"}};
 }
 
-CombatEnemy wildMalbeast(int sectorTier, uint32_t variantRoll) {
-    // A seed roster keyed by sector tier, 2 variants per tier rolled uniformly.
-    // Each wild carries its OWN SPR_MALBEAST_* frame, so a player can tell one
-    // encounter from another at a glance rather than meeting six recolours of the
-    // same dog. The names here are the source of truth for kWildMalbeastIds below,
-    // which the 'Pedia's seen/defeated masks are keyed on.
-    // Base stats are the design values; the wild challenge buff (kWildEnemy*Pct)
-    // is applied uniformly in makeEnemyCombatant off the isWild flag, so the
-    // tables stay readable and bosses/Sim (which reuse the shape) are unaffected.
-    //
-    // The last field is the creature's own SIGNATURE (CombatEnemy::signatureMoveId): the
-    // one move that is ITS, carried past the depth ladder that overwrites everything else
-    // in the row. The moveIds beside it are the tier's baseline and survive only at the
-    // shallowest sub-area; the signature is what a body says about itself at every depth,
-    // and what makes beating this one worth more than beating the other one at the same
-    // rung. The rows are in content_moves.cpp under "Wild SIGNATURES".
-    if (sectorTier <= 1) {
-        static const CombatEnemy kTier1[] = {
-            {"GlitchHog", "SPR_MALBEAST_GLITCHHOG", 1, 35, 9, {"quick_jab"}, true,
-             "screen_tear"},
-            {"Segfault Pup", "SPR_MALBEAST_SEGFAULT_PUP", 1, 30, 10,
-             {"quick_jab"}, true, "wild_pointer"},
-        };
-        return kTier1[variantRoll % kWildMalbeastVariants];
-    }
-    if (sectorTier == 2) {
-        static const CombatEnemy kTier2[] = {
-            {"Packet Wraith", "SPR_MALBEAST_PACKET_WRAITH", 2, 55, 12,
-             {"quick_jab", "packet_storm"}, true, "dropped_packet"},
-            {"Cache Ghoul", "SPR_MALBEAST_CACHE_GHOUL", 2, 50, 13,
-             {"quick_jab", "packet_storm"}, true, "stale_read"},
-        };
-        return kTier2[variantRoll % kWildMalbeastVariants];
-    }
-    static const CombatEnemy kTier3[] = {
-        {"Buffer Wyrm", "SPR_MALBEAST_BUFFER_WYRM", 3, 80, 14,
-         {"packet_storm", "fork_bomb"}, true, "coil_overrun"},
-        // The apex gets a bigger 64x56 cell than the 56x48 the rest of the roster
-        // uses — drawn from its own frame size, so nothing else has to know.
-        {"Kernel Leviathan", "SPR_MALBEAST_KERNEL_LEVIATHAN", 3, 85, 13,
-         {"packet_storm", "fork_bomb"}, true, "ring_zero"},
-    };
-    return kTier3[variantRoll % kWildMalbeastVariants];
+// The whole wild-malbeast roster, in BIT order: row i is bit i of Game's malbeastSeen /
+// malbeastDefeated masks, so a row is only ever APPENDED — inserting one would hand a
+// save's bits to the wrong creatures. Each wild carries its OWN SPR_MALBEAST_* sheet
+// (tools/gen_malbeast_art.py), so a player can tell one encounter from another at a
+// glance rather than meeting recolours of the same dog. The names here are the source of
+// truth for kWildMalbeastIds below and for the 'Pedia (tools/gen_pedia_data.py reads this
+// table).
+// Base stats are the design values; the wild challenge buff (kWildEnemy*Pct) is applied
+// uniformly in makeEnemyCombatant off the isWild flag, so the rows stay readable and
+// bosses/Sim (which reuse the shape) are unaffected.
+//
+// The last field is the creature's own SIGNATURE (CombatEnemy::signatureMoveId): the one
+// move that is ITS, carried past the depth ladder that overwrites everything else in the
+// row. The moveIds beside it are the baseline and survive only at the shallowest sub-area;
+// the signature is what a body says about itself at every depth, and what makes beating
+// this one worth more than beating the other one at the same rung. The rows are in
+// content_moves.cpp under "Wild SIGNATURES".
+const CombatEnemy kWildRoster[kWildMalbeastCount] = {
+    // Tier 1 — Citrus Circuit.
+    {"GlitchHog", "SPR_MALBEAST_GLITCHHOG", 1, 35, 9, {"quick_jab"}, true, "screen_tear"},
+    {"Segfault Pup", "SPR_MALBEAST_SEGFAULT_PUP", 1, 30, 10, {"quick_jab"}, true,
+     "wild_pointer"},
+    // Tier 2 — Pirate Bayou.
+    {"Packet Wraith", "SPR_MALBEAST_PACKET_WRAITH", 2, 55, 12,
+     {"quick_jab", "packet_storm"}, true, "dropped_packet"},
+    {"Cache Ghoul", "SPR_MALBEAST_CACHE_GHOUL", 2, 50, 13, {"quick_jab", "packet_storm"},
+     true, "stale_read"},
+    // Tier 3 — every area past the Bayou that names no pair of its own, and both endless
+    // zones. The apex gets a bigger 64x56 cell than the 56x48 the rest of the roster uses
+    // — drawn from its own frame size, so nothing else has to know.
+    {"Buffer Wyrm", "SPR_MALBEAST_BUFFER_WYRM", 3, 80, 14, {"packet_storm", "fork_bomb"},
+     true, "coil_overrun"},
+    {"Kernel Leviathan", "SPR_MALBEAST_KERNEL_LEVIATHAN", 3, 85, 13,
+     {"packet_storm", "fork_bomb"}, true, "ring_zero"},
+    // Net-Sea Crossing's own pair (AreaDef::wilds). Tier 3, on the band of the pair they
+    // replace there, so naming them moved nothing on the difficulty curve.
+    {"Bloatfish", "SPR_MALBEAST_BLOATFISH", 3, 85, 13, {"packet_storm", "fork_bomb"}, true,
+     "bundled_extras"},
+    {"Trialobite", "SPR_MALBEAST_TRIALOBITE", 3, 80, 14, {"packet_storm", "fork_bomb"},
+     true, "free_trial"},
+};
+
+CombatEnemy wildMalbeastAt(int rosterIdx) {
+    if (rosterIdx < 0) rosterIdx = 0;
+    if (rosterIdx >= kWildMalbeastCount) rosterIdx = kWildMalbeastCount - 1;
+    return kWildRoster[rosterIdx];
 }
 
-// The fixed wild-malbeast roster (combat.h) — slugged ids matching the wildMalbeast()
-// display names above, in bit-position order for Game's seen/defeated masks.
+CombatEnemy wildMalbeast(int sectorTier, uint32_t variantRoll) {
+    // A tier's pair is two adjacent rows of the roster: tier 1 at 0-1, tier 2 at 2-3,
+    // tier 3 (and anything deeper — the clamp) at 4-5.
+    if (sectorTier < 1) sectorTier = 1;
+    if (sectorTier > 3) sectorTier = 3;
+    const int base = (sectorTier - 1) * static_cast<int>(kWildMalbeastVariants);
+    return kWildRoster[base + static_cast<int>(variantRoll % kWildMalbeastVariants)];
+}
+
+// An area's `wilds` holds roster ids, and a pair is exactly kWildMalbeastVariants of them.
+static_assert(sizeof(AreaDef::wilds) / sizeof(AreaDef::wilds[0]) == kWildMalbeastVariants,
+              "AreaDef::wilds must hold one id per wild variant");
+
+CombatEnemy wildMalbeastIn(int areaIdx, uint32_t variantRoll) {
+    if (areaIdx < 0) areaIdx = 0;
+    if (areaIdx >= kAreaCount) areaIdx = kAreaCount - 1;
+    const char* id = area(areaIdx).wilds[variantRoll % kWildMalbeastVariants];
+    if (id)
+        for (int i = 0; i < kWildMalbeastCount; ++i)
+            if (std::strcmp(kWildMalbeastIds[i], id) == 0) return kWildRoster[i];
+    // No pair of its own (or an id the roster does not have, which the area-pair gate in
+    // test_combat.cpp catches): the area fields its tier's pair, as every area once did.
+    return wildMalbeast(areaTier(areaIdx), variantRoll);
+}
+
+// The fixed wild-malbeast roster (combat.h) — slugged ids matching kWildRoster's display
+// names above, in bit-position order for Game's seen/defeated masks.
 const char* const kWildMalbeastIds[kWildMalbeastCount] = {
-    "glitchhog", "segfault_pup", "packet_wraith", "cache_ghoul", "buffer_wyrm",
-    "kernel_leviathan",
+    "glitchhog",   "segfault_pup",     "packet_wraith", "cache_ghoul",
+    "buffer_wyrm", "kernel_leviathan", "bloatfish",     "trialobite",
 };
 
 namespace {
@@ -727,10 +755,10 @@ void poolAdd(std::vector<const char*>& out, const BossGauntlet& g) {
 
 std::vector<const char*> buildSubAreaMovePool(int areaIdx, int sub) {
     std::vector<const char*> out;
-    // The WILDS, both variants of the tier roster: which of the two a walk rolls is a
-    // coin the player does not call, so a rung teaches the union of them.
+    // The WILDS, both of the area's pair: which of the two a walk rolls is a coin the
+    // player does not call, so a rung teaches the union of them.
     for (uint32_t variant = 0; variant < kWildMalbeastVariants; ++variant) {
-        CombatEnemy e = wildMalbeast(areaTier(areaIdx), variant);
+        CombatEnemy e = wildMalbeastIn(areaIdx, variant);
         applyWildSubAreaRamp(e, areaIdx, sub);        // the rung, the area pair, the signature
         poolAdd(out, e.moveIds);
     }

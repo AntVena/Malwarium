@@ -601,7 +601,7 @@ window.PEDIA_DATA = {
       "id": "glitchhog",
       "name": "GlitchHog",
       "tier": 1,
-      "sector": "Citrus Circuit",
+      "sector": "CITRUS CIRCUIT",
       "hp": 35,
       "pow": 9,
       "moves": [
@@ -618,7 +618,7 @@ window.PEDIA_DATA = {
       "id": "segfault_pup",
       "name": "Segfault Pup",
       "tier": 1,
-      "sector": "Citrus Circuit",
+      "sector": "CITRUS CIRCUIT",
       "hp": 30,
       "pow": 10,
       "moves": [
@@ -635,7 +635,7 @@ window.PEDIA_DATA = {
       "id": "packet_wraith",
       "name": "Packet Wraith",
       "tier": 2,
-      "sector": "The Pirate Bayou",
+      "sector": "THE PIRATE BAYOU",
       "hp": 55,
       "pow": 12,
       "moves": [
@@ -653,7 +653,7 @@ window.PEDIA_DATA = {
       "id": "cache_ghoul",
       "name": "Cache Ghoul",
       "tier": 2,
-      "sector": "The Pirate Bayou",
+      "sector": "THE PIRATE BAYOU",
       "hp": 50,
       "pow": 13,
       "moves": [
@@ -671,7 +671,7 @@ window.PEDIA_DATA = {
       "id": "buffer_wyrm",
       "name": "Buffer Wyrm",
       "tier": 3,
-      "sector": "Net-Sea Crossing and deeper",
+      "sector": "NAPSTORRENT MOORS and deeper",
       "hp": 80,
       "pow": 14,
       "moves": [
@@ -689,7 +689,7 @@ window.PEDIA_DATA = {
       "id": "kernel_leviathan",
       "name": "Kernel Leviathan",
       "tier": 3,
-      "sector": "Net-Sea Crossing and deeper",
+      "sector": "NAPSTORRENT MOORS and deeper",
       "hp": 85,
       "pow": 13,
       "moves": [
@@ -702,6 +702,42 @@ window.PEDIA_DATA = {
       "cellH": 56,
       "sheetW": 64,
       "sheetH": 112
+    },
+    {
+      "id": "bloatfish",
+      "name": "Bloatfish",
+      "tier": 3,
+      "sector": "NET-SEA CROSSING",
+      "hp": 85,
+      "pow": 13,
+      "moves": [
+        "packet_storm",
+        "fork_bomb",
+        "bundled_extras"
+      ],
+      "sprite": "assets/sprites/SPR_MALBEAST_BLOATFISH.png",
+      "cellW": 56,
+      "cellH": 48,
+      "sheetW": 56,
+      "sheetH": 96
+    },
+    {
+      "id": "trialobite",
+      "name": "Trialobite",
+      "tier": 3,
+      "sector": "NET-SEA CROSSING",
+      "hp": 80,
+      "pow": 14,
+      "moves": [
+        "packet_storm",
+        "fork_bomb",
+        "free_trial"
+      ],
+      "sprite": "assets/sprites/SPR_MALBEAST_TRIALOBITE.png",
+      "cellW": 56,
+      "cellH": 48,
+      "sheetW": 56,
+      "sheetH": 96
     }
   ],
   "items": [
@@ -6044,6 +6080,30 @@ window.PEDIA_DATA = {
       "icon": "assets/icons/ICON_MOVE_SLOT.png"
     },
     {
+      "id": "bundled_extras",
+      "name": "Bundled Extras",
+      "kind": "ATK",
+      "power": 8,
+      "turns": 1,
+      "minStage": "Script",
+      "desc": "Installs a few extras you didn't ask for - takes 8% of the target's max Health for the fight.",
+      "stats": "ATK 8 / MAX HP 8%",
+      "group": "core",
+      "icon": "assets/icons/ICON_MOVE_SLOT.png"
+    },
+    {
+      "id": "free_trial",
+      "name": "Free Trial",
+      "kind": "ATK",
+      "power": 6,
+      "turns": 1,
+      "minStage": "Script",
+      "desc": "Free for now - and next turn the trial expires.",
+      "stats": "ATK 6",
+      "group": "core",
+      "icon": "assets/icons/ICON_MOVE_SLOT.png"
+    },
+    {
       "id": "instruction_swap",
       "name": "Instruction Swap",
       "kind": "ATK",
@@ -7545,9 +7605,9 @@ window.PEDIA_DATA = {
     {
       "key": "MALBEAST_ALL",
       "name": "Full Bestiary",
-      "trigger": "Defeat all 6 wild malbeasts.",
+      "trigger": "Defeat all 8 wild malbeasts.",
       "icon": "assets/icons/ICON_ACH_MALBEAST_ALL.png",
-      "goal": 6
+      "goal": 8
     },
     {
       "key": "CUISINE_3",

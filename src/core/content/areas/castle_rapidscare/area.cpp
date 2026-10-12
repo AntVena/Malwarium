@@ -157,6 +157,7 @@ const AreaDef kAreaCastleRapidscare = {
     // less, and the brace is the gate every free download in this castle sits behind.
     /*wildAttackMoveId=*/"bandwidth_cap",
     /*wildDefendMoveId=*/"captcha_gate",
+    /*wilds=*/{},  // its tier's pair, until this area names its own
     // Who watches the Castle: the last thing asked before a name becomes an address.
     // It can answer that a thing does not exist, and be believed.
     {"THE LAST RESOLVER",

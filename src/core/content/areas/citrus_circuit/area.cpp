@@ -149,6 +149,7 @@ const AreaDef kAreaCitrusCircuit = {
     // itself — a hit that finds nothing where the file was supposed to be.
     /*wildAttackMoveId=*/"partial_download",
     /*wildDefendMoveId=*/"cache_miss",
+    /*wilds=*/{"glitchhog", "segfault_pup"},
     // Who watches the Circuit: a seeder that never went offline, still serving a
     // swarm that dispersed years ago. It asks before it acts, which nothing else here
     // does.

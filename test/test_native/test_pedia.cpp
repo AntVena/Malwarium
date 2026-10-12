@@ -123,12 +123,11 @@ void test_wild_and_roster_names_disjoint() {
     ContentRegistry r = ContentRegistry::embedded();
     const auto roster = r.allCreatures();
     CHECK(!roster.empty());                       // guard against a vacuous pass
-    for (int tier = 1; tier <= 3; ++tier)         // whole wild pool: 2 variants x 3 tiers
-        for (uint32_t v = 0; v < 2; ++v) {
-            const char* wild = wildMalbeast(tier, v).name;
-            for (const CreatureDef* c : roster)
-                CHECK(std::strcmp(wild, c->displayName) != 0);
-        }
+    for (int i = 0; i < kWildMalbeastCount; ++i) {   // the whole wild roster
+        const char* wild = wildMalbeastAt(i).name;
+        for (const CreatureDef* c : roster)
+            CHECK(std::strcmp(wild, c->displayName) != 0);
+    }
     // Boss enemy names are a third pool — hold the same invariant so a sub-area
     // boss (and the area gauntlet built from them) never reads as a roster creature the
     // player might raise. Cover every sub-area boss across both areas.
@@ -392,7 +391,7 @@ void test_pedia_state_kitchen_axes() {
 // Save v25: web-'Pedia reveal-state bookkeeping -----
 
 // wildMalbeastIndex: name -> roster index via slugging; anything outside the
-// fixed 6-entry roster (a boss/Sim-dummy/unknown name) misses.
+// wild roster (a boss/Sim-dummy/unknown name) misses.
 void test_wild_malbeast_index_mapping() {
     CHECK(wildMalbeastIndex("GlitchHog") == 0);
     CHECK(wildMalbeastIndex("Segfault Pup") == 1);

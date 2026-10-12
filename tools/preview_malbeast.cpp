@@ -6,11 +6,12 @@
 // side by side without a device. Writes a PPM (P6); tools/preview_malbeast.py wraps it into
 // a PNG.
 //
-// `play <dir> <beats> [tier] [variant]` instead runs a real fight against one wild (default
-// GlitchHog: tier 1, variant 0 — see wildMalbeast() for the roster) through the actual combat
-// screen and writes one active-canvas frame per combat beat (~8fps) as <dir>/frame_NNN.ppm — the
+// `play <dir> <beats> [roster]` instead runs a real fight against one wild — row `roster` of
+// the wild roster (combat_factory.cpp's kWildRoster; default 0, GlitchHog) — through the
+// actual combat screen and writes one active-canvas frame per combat beat (~8fps) as <dir>/frame_NNN.ppm — the
 // sequence tools/preview_malbeast.py assembles into a GIF, so a wild can be watched in motion.
-// <dir>/log.txt records each frame's strike count and striker, for picking poses out.
+// <dir>/log.txt records each frame's strike count, striker, last move and the pet's
+// Health, for picking poses out and for checking a signature actually lands.
 //
 // Not a shipping path and not a gate — a look-at-it tool, the sibling of dump_frame for a
 // sprite that has no screen to sit in yet. Build: the CMake `preview_malbeast` target.
@@ -21,6 +22,7 @@
 
 #include "tunables.h"
 #include "core/app/game.h"
+#include "core/content/areas/area_defs.h"
 #include "core/model/combat.h"
 #include "core/render/canvas.h"
 #include "core/render/color.h"
@@ -45,15 +47,24 @@ static bool writePpm(const Framebuffer& fb, const char* path) {
     return true;
 }
 
-// A fight against the wild at (tier, variant), one frame per combat animation beat
+// A fight against roster row `rosterIdx`, one frame per combat animation beat
 // (kCombatAnimMs — the stage repaints at ~8fps, twice the idle heartbeat). The pet is the
 // default Paypup the frame dumper also boots; the stakes are Safe, so nothing persists.
-static int play(const char* dir, int beats, int tier, int variant) {
+static int play(const char* dir, int beats, int rosterIdx) {
     Game game{StartMode::Hatched, "paypup"};
     for (Game::Tip t : {Game::Tip::HatchDecrypt, Game::Tip::HatchClutch,
                         Game::Tip::HatchIsolation, Game::Tip::HatchChroma})
         game.markTipSeen(t);
-    game.debugStartCombatVs(wildMalbeast(tier, static_cast<uint32_t>(variant)));
+    // Built the way a real encounter is: in the wild's HOME area (the first that fields
+    // it) at that area's first stretch, through the same depth ramp — which is also what
+    // adds the area's pair and the creature's own signature to its kit.
+    CombatEnemy wild = wildMalbeastAt(rosterIdx);
+    int home = kAreaCount - 1;
+    for (int a = kAreaCount - 1; a >= 0; --a)
+        for (uint32_t v = 0; v < kWildMalbeastVariants; ++v)
+            if (wildMalbeastIndex(wildMalbeastIn(a, v).name) == rosterIdx) home = a;
+    applyWildSubAreaRamp(wild, home, 0);
+    game.debugStartCombatVs(wild);
     uint32_t t = 0;
     char path[512];
     // Beside the frames, one line per frame of what the fight had just done — the strike
@@ -68,8 +79,10 @@ static int play(const char* dir, int beats, int tier, int variant) {
         std::snprintf(path, sizeof(path), "%s/frame_%03d.ppm", dir, k);
         if (!writePpm(fb, path)) return 1;
         if (log)
-            std::fprintf(log, "%d strikes=%d byPlayer=%d\n", k, game.combat().strikeCount(),
-                         game.combat().lastByPlayer() ? 1 : 0);
+            std::fprintf(log, "%d strikes=%d byPlayer=%d move=%s hp=%d/%d\n", k,
+                         game.combat().strikeCount(), game.combat().lastByPlayer() ? 1 : 0,
+                         game.combat().lastMoveName() ? game.combat().lastMoveName() : "-",
+                         game.combat().player().health, game.combat().player().maxHealth);
         if (game.nav() != Game::Nav::Combat) { ++k; std::fprintf(stderr, "fight over at beat %d\n", k); break; }
     }
     if (log) std::fclose(log);
@@ -80,7 +93,7 @@ static int play(const char* dir, int beats, int tier, int variant) {
 int main(int argc, char** argv) {
     if (argc > 1 && std::strcmp(argv[1], "play") == 0)
         return play(argc > 2 ? argv[2] : ".", argc > 3 ? std::atoi(argv[3]) : 60,
-                    argc > 4 ? std::atoi(argv[4]) : 1, argc > 5 ? std::atoi(argv[5]) : 0);
+                    argc > 4 ? std::atoi(argv[4]) : 0);
     const char* out = argc > 1 ? argv[1] : "malbeast.ppm";
 
     const SpriteData& s = ASSET_SPR_MALBEAST_GLITCHHOG;

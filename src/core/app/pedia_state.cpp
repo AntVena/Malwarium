@@ -191,7 +191,7 @@ std::string buildPediaStateJson(const Game& g) {
     out += "},";
 
     // --- malbeasts{} ---------------------------------------------------------
-    // The fixed 6-entry wild-malbeast roster (combat.h kWildMalbeastIds, save v25):
+    // The append-only wild-malbeast roster (combat.h kWildMalbeastIds, save v25):
     // "defeated" (a won live wild fight) wins over "seen" (the wild roll itself),
     // which wins over "locked". Sub/area bosses and Sim dummies never set either bit.
     appendJsonString(out, "malbeasts");

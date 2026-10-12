@@ -40,6 +40,10 @@ const MoveDef kChainSteps[] = {
      "One mark, chosen, and no second guess.", Stage::Script, "phishing"},
     {"harpoon_haul", "Harpoon-Haul", MoveDef::Kind::Attack, 38, 1,
      "What the harpoon set, the line brings in.", Stage::Daemon, "phishing"},
+    // Trialobite's bill (free_trial, content_moves.cpp's wild signatures). Generic like
+    // its entry, since a wild's signature is what a win can teach.
+    {"trial_expired", "Trial Expired", MoveDef::Kind::Attack, 14, 1,
+     "The free period is over.", Stage::Script},
 
     // --- Generic: the two forks, neither of which winds up ----------------------
     // A fork bomb does not detonate, it EXHAUSTS — so the pair is the fork (which hangs

@@ -156,6 +156,7 @@ const AreaDef kAreaPirateBayou = {
     // before THE SUNKEN SEVENTH shows them the whole of it.
     /*wildAttackMoveId=*/"keygen_hum",
     /*wildDefendMoveId=*/"rar_password",
+    /*wilds=*/{"packet_wraith", "cache_ghoul"},
     // Who watches the Bayou: the thing that decides which door opens, and has never
     // once explained the sequence.
     {"THE PORT WARDEN",

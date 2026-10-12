@@ -928,6 +928,7 @@ int g_failures = 0;
     RUN(test_pedia_state_json_rack_and_record_hatched) \
     RUN(test_pedia_first_brute_force_achievement)      \
     RUN(test_pedia_evolution_achievements_leave_the_sibling_locked) \
+    RUN(test_every_area_fields_a_resolving_pair) \
     RUN(test_every_combatant_sprite_resolves)
 
 // Every gate's declaration, derived from the roster itself — so a listed gate can

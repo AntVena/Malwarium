@@ -228,13 +228,17 @@ def grid(*rows):
     return n
 
 
-def stack(*frames):
+def stack(*frames, swells=False):
     """Bake frames into one sheet, one frame per ROW (idle on top, attack below).
 
     The poses are one body, so their FILLS should be about the same size. A frame whose
     body is less than half the biggest pose's has had its fill drain out through a gap —
     nearly always an open mouth with no ':' seal (rule 3) — and is refused, naming the
-    row, rather than shipping as a wireframe on the one beat it matters most."""
+    row, rather than shipping as a wireframe on the one beat it matters most.
+
+    `swells=True` is the one way past that, for a creature whose pose change IS a change
+    of size (Bloatfish inflates to strike). The recipe has to say so, so the check still
+    holds for every sheet that does not."""
     w, h = frames[0].w * NIB, frames[0].h * NIB
     px, bodies = [], []
     for f in frames:
@@ -244,7 +248,7 @@ def stack(*frames):
         px.extend(fpx)
         bodies.append(sum(row.count(BODY) for row in fpx))
     for i, b in enumerate(bodies):
-        if b * 2 < max(bodies):
+        if not swells and b * 2 < max(bodies):
             raise SystemExit(
                 f"sheet row {i} has a body of {b // (NIB * NIB)} cells against "
                 f"{max(bodies) // (NIB * NIB)} in another pose: its outline is open "
@@ -468,6 +472,79 @@ def kernel_leviathan():
     return stack(idle, attack)
 
 
+def bloatfish():
+    """Bloatfish — Net-Sea Crossing, facing LEFT. A pufferfish named for bloatware: at rest a
+    small fish, eye forward, gill line, forked tail, a few spines; when it swings it
+    INFLATES into a round ball spined all the way round, which is the whole pose — the
+    attack is the swell, not a lunge."""
+    idle = grid(
+        "..............",
+        "..............",
+        "..............",
+        "....#..#......",
+        "....####....#.",
+        "..###..###.##.",
+        ".###..##.####.",
+        ".##...#..####.",
+        "..###.####..#.",
+        "....####......",
+        ".....#.#......",
+        "..............",
+    )
+    attack = grid(
+        "......#.......",
+        "...#.###.#....",
+        "...###.###....",
+        "..###....##...",
+        "#.###.....#.##",
+        "###.......###.",
+        ".#....#.#..###",
+        "###.......##.#",
+        "..#...#.#.#...",
+        "..###...###...",
+        "....#####.....",
+        "....#...#.....",
+    )
+    # The inflated pose is around four times the body of the calm one, on purpose.
+    return stack(idle, attack, swells=True)
+
+
+def trialobite():
+    """Trialobite — Net-Sea Crossing, front-on (no facing: it is drawn from above, the way
+    a fossil is read). A trilobite named for trialware: a horned head shield with two eyes,
+    swept-back spines, a body split into the three lobes the animal is named for, ribs
+    either side. The attack rears it up, spines flared and legs out."""
+    idle = grid(
+        "...#......#...",
+        "...##....##...",
+        "..##########..",
+        ".##........##.",
+        "###.#....#.###",
+        "#.#........#.#",
+        "#.##########.#",
+        "..#..#..#..#..",
+        "..####..####..",
+        "...###..###...",
+        "....##..##....",
+        ".....####.....",
+    )
+    attack = grid(
+        "..#........#..",
+        "..##......##..",
+        "..##########..",
+        ".####....####.",
+        "##..........##",
+        "###:......:###",
+        "#.#..#..#..#.#",
+        "#.##########.#",
+        "...#.#..#.#...",
+        "..####..####..",
+        "..#.#....#.#..",
+        "....######....",
+    )
+    return stack(idle, attack)
+
+
 RECIPES = {
     "SPR_MALBEAST_GLITCHHOG": glitchhog,
     "SPR_MALBEAST_SEGFAULT_PUP": segfault_pup,
@@ -475,6 +552,8 @@ RECIPES = {
     "SPR_MALBEAST_CACHE_GHOUL": cache_ghoul,
     "SPR_MALBEAST_BUFFER_WYRM": buffer_wyrm,
     "SPR_MALBEAST_KERNEL_LEVIATHAN": kernel_leviathan,
+    "SPR_MALBEAST_BLOATFISH": bloatfish,
+    "SPR_MALBEAST_TRIALOBITE": trialobite,
 }
 
 # Short aliases for --preview / --only, so the CLI takes `glitchhog` not the full symbol.

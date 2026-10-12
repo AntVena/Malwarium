@@ -124,7 +124,11 @@ void Game::resolveWifiOutcome() {
             // intro; the guardian is already awake. Any rank-up celebration
             // waits for finishCombat to return here.
             rng_ = rng_ * 1664525u + 1013904223u;             // roster variant roll
-            encounterEnemy_ = wildMalbeast(explSectorTier(exploreSector_), rng_ >> 16);
+            // A ladder area fields its own pair. Outside the ladder (an endless zone)
+            // the sector keeps the tier it always mapped to (explSectorTier).
+            encounterEnemy_ = exploreSector_ < kExplSectors
+                ? wildMalbeastIn(exploreSector_, rng_ >> 16)
+                : wildMalbeast(explSectorTier(exploreSector_), rng_ >> 16);
             applyWildSubAreaRamp(encounterEnemy_, exploreSector_, exploreSub_);  // depth ramp
             startWildCombat(/*forceEnemyFirst=*/false);
             break;

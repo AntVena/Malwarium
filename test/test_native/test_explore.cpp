@@ -1042,14 +1042,15 @@ void test_every_generic_move_is_carried() {
         CHECK(braces <= 1);
         CHECK(static_cast<int>(e.moveIds.size()) <= kWildKitMax);
     };
-    for (int tier = 1; tier <= 3; ++tier)
-        for (uint32_t v = 0; v < 2; ++v)
-            for (int a = 0; a < kExplSectors; ++a)
-                for (int s = 0; s < kExplSubAreas; ++s) {
-                    CombatEnemy w = wildMalbeast(tier, v);
-                    applyWildSubAreaRamp(w, a, s);
-                    sweepWild(w);
-                }
+    // Each area's OWN pair (wildMalbeastIn), at every rung of it — what a walk there
+    // actually meets, now that areas name pairs rather than all reading their tier's.
+    for (uint32_t v = 0; v < kWildMalbeastVariants; ++v)
+        for (int a = 0; a < kExplSectors; ++a)
+            for (int s = 0; s < kExplSubAreas; ++s) {
+                CombatEnemy w = wildMalbeastIn(a, v);
+                applyWildSubAreaRamp(w, a, s);
+                sweepWild(w);
+            }
     // ...and the DEEPWEB DIVE, whose kit comes from a different path entirely
     // (applyDeepWebScale, not the sub-area ramp). Its own pair rides ALONGSIDE the drawn
     // rung and the Defend is depth-gated, so a spread of depths either side of

@@ -94,26 +94,70 @@ void test_move_loadout() {
     CHECK(static_cast<int>(r.allMoves().size()) >= 4);
 }
 
+// --- Gate: every area's wild pair resolves, and every wild lives somewhere ---
+//
+// An area names its pair by roster id (AreaDef::wilds), and wildMalbeastIn falls back to
+// the TIER's pair when an id is missing — which is also what a TYPO would do, silently.
+// So the ids are checked against the roster here rather than trusted to the fallback, a
+// pair is both slots or neither, and no wild is claimed by two areas (an area's wilds are
+// its own). The reverse holds too: every row of the roster is fielded by some zone — an
+// area's pair, or the tier-3 pair the endless zones draw — so nothing on the roster is a
+// 'Pedia entry no walk can ever meet.
+void test_every_area_fields_a_resolving_pair() {
+    std::vector<bool> fielded(kWildMalbeastCount, false);
+    std::vector<const char*> claimed;
+    for (int a = 0; a < kAreaCount; ++a) {
+        const AreaDef& def = area(a);
+        CHECK((def.wilds[0] == nullptr) == (def.wilds[1] == nullptr));
+        int idx[2] = {-1, -1};
+        for (uint32_t v = 0; v < kWildMalbeastVariants; ++v) {
+            const CombatEnemy e = wildMalbeastIn(a, v);
+            idx[v] = wildMalbeastIndex(e.name);
+            CHECK(idx[v] >= 0);
+            if (idx[v] >= 0) fielded[idx[v]] = true;
+            if (const char* id = def.wilds[v]) {
+                CHECK(idx[v] >= 0 && std::strcmp(kWildMalbeastIds[idx[v]], id) == 0);
+                for (const char* prev : claimed) CHECK(std::strcmp(prev, id) != 0);
+                claimed.push_back(id);
+            }
+        }
+        CHECK(idx[0] != idx[1]);                       // a pair is two creatures
+    }
+    for (uint32_t v = 0; v < kWildMalbeastVariants; ++v)   // the endless zones' pair
+        if (const int i = wildMalbeastIndex(wildMalbeast(3, v).name); i >= 0) fielded[i] = true;
+    for (int i = 0; i < kWildMalbeastCount; ++i) CHECK(fielded[i]);
+
+    // The pilot pair, by name: the Net-Sea Crossing is the first area past the Bayou to
+    // field wilds of its own rather than the deep pair every later area still borrows.
+    int netSea = -1;
+    for (int a = 0; a < kAreaCount; ++a)
+        if (std::strcmp(area(a).id, "net_sea_crossing") == 0) netSea = a;
+    CHECK(netSea >= 0);
+    CHECK(std::strcmp(wildMalbeastIn(netSea, 0).name, "Bloatfish") == 0);
+    CHECK(std::strcmp(wildMalbeastIn(netSea, 1).name, "Trialobite") == 0);
+}
+
 // Every combatant the game can put on screen must name a sprite the atlas actually
 // carries. Sprites resolve by STRING at draw time, so a name with no PNG behind it
 // is not a compile error and not a crash — it silently draws nothing, which is how
 // the wild roster spent its life wearing the pet dog's frame. Distinctness is half
-// the point: six wilds sharing one sprite is the bug this locks out.
+// the point: wilds sharing one sprite is the bug this locks out.
 void test_every_combatant_sprite_resolves() {
     ContentRegistry r = ContentRegistry::embedded();
     std::vector<const char*> wildSprites;
 
-    for (int tier = 1; tier <= 3; ++tier) {
-        for (uint32_t variant = 0; variant < 2; ++variant) {
-            const CombatEnemy e = wildMalbeast(tier, variant);
-            CHECK(e.spriteName != nullptr);
-            CHECK(r.sprite(e.spriteName) != nullptr);
-            wildSprites.push_back(e.spriteName);
-            // The name is also what the 'Pedia's seen/defeated masks key on.
-            CHECK(wildMalbeastIndex(e.name) >= 0);
-        }
+    // The whole roster, row by row — not the tier pairs, which no longer reach every wild
+    // now that areas name pairs of their own.
+    for (int i = 0; i < kWildMalbeastCount; ++i) {
+        const CombatEnemy e = wildMalbeastAt(i);
+        CHECK(e.spriteName != nullptr);
+        CHECK(r.sprite(e.spriteName) != nullptr);
+        wildSprites.push_back(e.spriteName);
+        // The name is also what the 'Pedia's seen/defeated masks key on, and it has to
+        // land on THIS row's bit — a name resolving to a neighbour's would credit the
+        // wrong creature in every save.
+        CHECK(wildMalbeastIndex(e.name) == i);
     }
-    CHECK(static_cast<int>(wildSprites.size()) == kWildMalbeastCount);
     for (size_t i = 0; i < wildSprites.size(); ++i)
         for (size_t j = i + 1; j < wildSprites.size(); ++j)
             CHECK(std::strcmp(wildSprites[i], wildSprites[j]) != 0);

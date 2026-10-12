@@ -266,6 +266,12 @@ struct AreaDef {
     // area's wilds add nothing of their own to the ramp's kit.
     const char* wildAttackMoveId;
     const char* wildDefendMoveId;
+    // The two wild malbeasts that live here, by roster id (combat_factory.cpp's
+    // kWildRoster, combat.h's kWildMalbeastIds) — one per wild variant, rolled between
+    // like any other pair (wildMalbeastIn). Both nullptr ({}) = this area fields its
+    // TIER's pair instead, which is what every area did before areas had wilds of their
+    // own; an area names its pair once its two creatures are drawn and wired.
+    const char* wilds[2];
     // Who watches this network. Met on the walk rather than on the ladder — see
     // GuardianDef above.
     GuardianDef guardian;

@@ -88,7 +88,7 @@ constexpr int kSaveTextCap = 28;     // matches EventLog's LogEntry.text
 //     Game::stampSlotKinds re-derives them from CreatureDef::slotKinds.
 // v25 APPEND the web-'Pedia reveal state, all player-level: `seenCreatures` (species faced
 //     in combat but never raised — "hatched" still wins over "seen"), and the
-//     `malbeastSeen`/`malbeastDefeated` bitmasks over the fixed 6-entry wild roster
+//     `malbeastSeen`/`malbeastDefeated` bitmasks over the append-only wild roster
 //     (combat.h kWildMalbeastIds). Bosses and Sim dummies never touch those bits. Also
 //     `achievementsMask`, superseded by v40.
 // v26 PARALLEL TAIL of per-stored-pet combatLevel/combatXp/statPoints/slotKinds. Before
@@ -694,7 +694,7 @@ struct SaveData {
     // --- v25: web-'Pedia reveal-state bookkeeping ---------------------------
     // Creature ids glimpsed-but-not-hatched (Game::markCreatureSeen). Pre-v25 → empty.
     std::vector<SaveId> seenCreatures;
-    // Bitmasks over the fixed 6-entry wild-malbeast roster (combat.h::kWildMalbeastIds).
+    // Bitmasks over the append-only wild-malbeast roster (combat.h::kWildMalbeastIds).
     // Pre-v25 → both 0 (nothing seen/defeated).
     uint16_t malbeastSeen = 0;
     uint16_t malbeastDefeated = 0;

@@ -1086,20 +1086,32 @@ void applySimDummyLevelScale(CombatEnemy& e, int petLevel);
 // all (subAreaMovePool), and a bare 2 in that loop is a number nobody can check.
 constexpr uint32_t kWildMalbeastVariants = 2;
 
-// Wild-encounter malbeasts, difficulty-scaled by sector tier (1..3); each tier rolls among
-// kWildMalbeastVariants variants. `variantRoll` is caller-owned (the shared Game LCG) so
-// the pick is deterministic under a fixed seed; 0 picks the first variant.
+// The fixed wild-malbeast roster — index = bit position in Game's
+// malbeastSeen/malbeastDefeated masks, so rows are only ever appended. Ids are the slugged
+// (lowercase, non-alnum -> '_') form of each CombatEnemy::name, matching the 'Pedia catalog
+// (tools/gen_pedia_data.py). The masks are uint16 (save.h), which is the ceiling: a 17th
+// wild needs the save format widened first.
+constexpr int kWildMalbeastCount = 8;
+static_assert(kWildMalbeastCount <= 16, "the seen/defeated masks are uint16");
+extern const char* const kWildMalbeastIds[kWildMalbeastCount];  // "glitchhog" .. "trialobite"
+
+// Roster row `rosterIdx` (clamped) — what a walk over EVERY wild reads, rather than the
+// pairs an area or a tier fields.
+CombatEnemy wildMalbeastAt(int rosterIdx);
+
+// A TIER's pair (1..3, deeper clamps to 3), rolled among kWildMalbeastVariants.
+// `variantRoll` is caller-owned (the shared Game LCG) so the pick is deterministic under a
+// fixed seed; 0 picks the first variant. What the endless zones field, and what an area
+// that names no pair of its own falls back to.
 CombatEnemy wildMalbeast(int sectorTier, uint32_t variantRoll = 0);
 
-// The fixed wild-malbeast roster — index = bit position in Game's
-// malbeastSeen/malbeastDefeated masks. Ids are the slugged (lowercase, non-alnum -> '_')
-// form of each CombatEnemy::name, matching the 'Pedia catalog (tools/gen_pedia_data.py).
-constexpr int kWildMalbeastCount = 6;
-extern const char* const kWildMalbeastIds[kWildMalbeastCount];  // "glitchhog" .. "kernel_leviathan"
+// An AREA's pair: the two wilds its row names (AreaDef::wilds), or its tier's pair when it
+// names none. This is what a walk in ladder area `areaIdx` meets.
+CombatEnemy wildMalbeastIn(int areaIdx, uint32_t variantRoll = 0);
 
 // Resolve a CombatEnemy::name (e.g. "GlitchHog", "Segfault Pup") to its roster index
 // by slugging (lowercase, non-alnum -> '_') and matching against kWildMalbeastIds.
-// Returns -1 for anything not in the 6 (sub-area/area bosses, Sim dummies, the debug
+// Returns -1 for anything not on the roster (sub-area/area bosses, Sim dummies, the debug
 // "Lethal" enemy) — so only the WILD malbeast path ever sets a seen/defeated bit.
 int wildMalbeastIndex(const char* enemyName);
 
