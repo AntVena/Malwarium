@@ -225,8 +225,8 @@ one sheet. What is left is the DECISION and then the sweep across the roster. Di
 These read fine by name + pips today; final art is polish, dropped in where it lands. Roughly
 high→low value:
 
-- **Boss sheets** (`SPR_BOSS_*`) for every area past Citrus Circuit — five sub-area bosses and an
-  area boss each; until then they borrow `SPR_PET_CACHEMUTT` (ASSET_MANIFEST §C.2b).
+- **Boss sheets** (`SPR_BOSS_*`) for the areas whose rows still name none — five sub-area bosses
+  and an area boss each, borrowing `SPR_PET_CACHEMUTT` until drawn (ASSET_MANIFEST §C.2b).
 - **`SPR_DUMMY`**.
 - **Process alternates:** `SPR_PET_PHISHLET`, `SPR_PET_CIPHADPOLE`, `SPR_PET_PINGCUB`; **Boot L2:**
   `SPR_PET_RINGWYRM`.

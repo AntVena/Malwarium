@@ -1073,6 +1073,243 @@ def boss_baron():
     return stack(idle, attack)
 
 
+def boss_netbus_nipper():
+    """Netbus Nipper — the Pirate Bayou's Leech Landing, front-on. A bayou crab, for the trojan
+    that reached in and took the handle: a ridged shell, eyes on stalks, both claws up and
+    shut. The attack springs the pincers open."""
+    idle = grid(
+        "................",
+        "####........####",
+        "####.##..##.####",
+        "#..#..#..#..#..#",
+        "####..#..#..####",
+        "..############..",
+        "..#..........#..",
+        "..##.######.##..",
+        "...#........#...",
+        "...#..####..#...",
+        "...##......##...",
+        "....########....",
+        "..#.#......#.#..",
+        ".##.#......#.##.",
+    )
+    attack = grid(
+        "####........####",
+        "####........####",
+        "##...##..##...##",
+        ".###..#..#..###.",
+        ".###..#..#..###.",
+        "..############..",
+        "..#..........#..",
+        "..##.######.##..",
+        "...#........#...",
+        "...#..####..#...",
+        "...##......##...",
+        "....########....",
+        "..#.#......#.#..",
+        ".##.#......#.##.",
+    )
+    return stack(idle, attack)
+
+
+def boss_suprnova_serpent():
+    """Suprnova Serpent — Torrent Swamp, facing LEFT. A sea serpent with a star-burst crest:
+    the head reared on its neck, coils breaking the water behind. The attack drops the head
+    and opens the jaw on two fangs."""
+    idle = grid(
+        "...###..........",
+        "....###.........",
+        ".####.##........",
+        "##..#..#........",
+        "#......#........",
+        "#####..#........",
+        "....#..#........",
+        "....#..#.....###",
+        "....#..#.###.#.#",
+        "....#..#.#.#.#.#",
+        "....#..###.#####",
+        "....##..#..#..##",
+        "....############",
+        "................",
+    )
+    attack = grid(
+        "...###..........",
+        "....###.........",
+        "................",
+        ".#######........",
+        "#####..#........",
+        "#:::#..#........",
+        "#####..#........",
+        "....#..#.....###",
+        "....#..#.###.#.#",
+        "....#..#.#.#.#.#",
+        "....#..###.#####",
+        "....##..#..#..##",
+        "....############",
+        "................",
+    )
+    return stack(idle, attack)
+
+
+def boss_razor_kraken():
+    """Razor Kraken — the Cracked Keys, front-on. A kraken: a domed mantle with two eyes, its
+    arms hanging below. The attack rears the outer arms up and opens the beak."""
+    idle = grid(
+        "......####......",
+        ".....##..##.....",
+        "....##....##....",
+        "....#......#....",
+        "....#......#....",
+        "....###..###....",
+        "....#......#....",
+        "...##......##...",
+        "..############..",
+        ".##.##.##.##.##.",
+        ".##.##.##.##.##.",
+        ".##.##.##.##.##.",
+        "###.##.##.##.###",
+        "##..##....##..##",
+    )
+    attack = grid(
+        "......####......",
+        ".....##..##.....",
+        "##..##....##..##",
+        "##..#......#..##",
+        "###.#......#.###",
+        "#.#.###..###.#.#",
+        "#.#.#......#.#.#",
+        "#.###.####.###.#",
+        "#######::#######",
+        "....########....",
+        "....##.##.##....",
+        "....##.##.##....",
+        "...###.##.###...",
+        "...##......##...",
+    )
+    return stack(idle, attack)
+
+
+def boss_wight_of_drinkordie():
+    """Wight of Drinkordie — Warez Marsh, front-on. A hooded wight: two lights in a dark face
+    (sealed air), a robe falling to a ragged hem, a bottle held up in one hand. The attack
+    flings both arms up and opens a howl."""
+    idle = grid(
+        "......####......",
+        ".....##..##.....",
+        "....########....",
+        "....##::::##..##",
+        "....###::###..##",
+        "....##::::##..##",
+        "....########.##.",
+        "...##..##..####.",
+        "...#...##.....#.",
+        "...#...##...###.",
+        "...#...##...#...",
+        "...#...##...#...",
+        "...##########...",
+        "...#.#.#.#.#....",
+    )
+    attack = grid(
+        "......####......",
+        "##...##..##...##",
+        "################",
+        ".#...#::::#...#.",
+        ".#...##::##...#.",
+        ".#....#::#....#.",
+        ".###..####..###.",
+        "...#...##...#...",
+        "...#...##...#...",
+        "...#...##...#...",
+        "...#...##...#...",
+        "...#...##...#...",
+        "...##########...",
+        "...#.#.#.#.#....",
+    )
+    return stack(idle, attack)
+
+
+def boss_sunken_seventh():
+    """The Sunken Seventh — the Booty Cache, facing LEFT. An anglerfish, for the Sub7
+    backdoor: a lure on a stalk over a round body, an underbite with teeth along the seam.
+    The attack drops the jaw open."""
+    idle = grid(
+        ".###............",
+        ".#####..........",
+        "....#########...",
+        "...##.......##..",
+        "...#.........###",
+        "...#..#......#.#",
+        "...#.........#.#",
+        "####.#.......#.#",
+        "#######......#.#",
+        "#............#.#",
+        "####.........###",
+        "...##.......##..",
+        "....#########...",
+        "................",
+    )
+    attack = grid(
+        ".###............",
+        ".#####..........",
+        "....#########...",
+        "...##.......##..",
+        "...#.........###",
+        "...#..#......#.#",
+        "########.....#.#",
+        ":#:#:#:#.....#.#",
+        ":::::::#.....#.#",
+        "::#:#:##.....#.#",
+        "#######......###",
+        "...##.......##..",
+        "....#########...",
+        "................",
+    )
+    return stack(idle, attack)
+
+
+def boss_capn_cracker():
+    """Cap'n Cracker — the Pirate Bayou's area boss, facing LEFT, on the 96x64 cell. A pirate
+    parrot (Polly wants a cracker): a tricorn, an eyepatch on its strap, a hooked beak, a
+    long tail, on a perch. The attack throws a wing up and opens the beak in a squawk."""
+    idle = grid(
+        "........#####...........",
+        ".....#..#...#..#........",
+        ".....####...####........",
+        "......#......#..........",
+        "...####.######..........",
+        "..##..#..##..#..........",
+        "..#...#......#..........",
+        "..#####......#..........",
+        "...##.##.....#####......",
+        "....#..#.........#......",
+        ".......#...#####.##.....",
+        ".......#.......#..#.....",
+        ".......#.......#..###...",
+        ".......#.......########.",
+        ".......#.......##..#####",
+        "..##################....",
+    )
+    attack = grid(
+        "........#####...########",
+        ".....#..#...#.###.....#.",
+        ".....####...####......#.",
+        "......#........########.",
+        "...##########.........#.",
+        "..######.##...........#.",
+        "..#::::#.......########.",
+        "..######..............#.",
+        "...##.##.........######.",
+        "....#..#.........#......",
+        ".......#.........##.....",
+        ".......#..........#.....",
+        ".......#........#####...",
+        ".......#........#.#####.",
+        ".......#........#..#####",
+        "..##################....",
+    )
+    return stack(idle, attack)
+
+
 RECIPES = {
     "SPR_MALBEAST_GLITCHHOG": glitchhog,
     "SPR_MALBEAST_SEGFAULT_PUP": segfault_pup,
@@ -1096,6 +1333,12 @@ RECIPES = {
     "SPR_BOSS_SHARMAN": boss_sharman,
     "SPR_BOSS_TONELOC": boss_toneloc,
     "SPR_BOSS_BARON_BONZI": boss_baron,
+    "SPR_BOSS_NETBUS_NIPPER": boss_netbus_nipper,
+    "SPR_BOSS_SUPRNOVA_SERPENT": boss_suprnova_serpent,
+    "SPR_BOSS_RAZOR_KRAKEN": boss_razor_kraken,
+    "SPR_BOSS_WIGHT_OF_DRINKORDIE": boss_wight_of_drinkordie,
+    "SPR_BOSS_SUNKEN_SEVENTH": boss_sunken_seventh,
+    "SPR_BOSS_CAPN_CRACKER": boss_capn_cracker,
 }
 
 # Short aliases for --preview / --only, so the CLI takes `glitchhog` not the full symbol.

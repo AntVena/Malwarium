@@ -146,6 +146,9 @@ FACING = {
     "SPR_BOSS_SHARMAN": "Left",
     "SPR_BOSS_TONELOC": "Left",
     "SPR_BOSS_BARON_BONZI": "Left",
+    "SPR_BOSS_SUPRNOVA_SERPENT": "Left",
+    "SPR_BOSS_SUNKEN_SEVENTH": "Left",
+    "SPR_BOSS_CAPN_CRACKER": "Left",
 }
 
 # Non-pet sheets that are horizontal frame strips rather than one wide image,
