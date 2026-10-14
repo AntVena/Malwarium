@@ -2,7 +2,7 @@
 //
 // The arcade does not own a single rule of a single game. Every cabinet here points at
 // a minigame that already exists for its own reason — the Worm's hatch, the Phishing
-// line's hatch, the played Defrag and AV scan — and the arcade's whole job is to start one with no
+// line's hatch, a played MAINT run — and the arcade's whole job is to start one with no
 // stakes attached and pay for the attempt. So changing a game changes its cabinet, and
 // a game can never drift from its arcade copy, because there is no copy.
 //
@@ -33,7 +33,7 @@ namespace mal {
 // the RUN rather than of the row: the same models finish normally at a hatch, and what
 // the cabinet does is start them with no goal (Game::startArcadeRun). What a row still
 // owes such a run is a WIN LINE, which lives in tunables.h beside the other magnitudes
-// (kArcadeIsolationWinBytes, kArcadeChromaWinPasses, kArcadeFraggerWinHits) — the score a run is paid in full
+// (kArcadeIsolationWinBytes, kArcadeChromaWinPasses, kFraggerWinHits) — the score a run is paid in full
 // for and counted as a win at, never a wall the board stops at. The score itself is
 // kept per cabinet (Game::arcadeBest, save v55), because on a run with no finish line
 // the number IS the game.
@@ -42,8 +42,8 @@ namespace mal {
 // Game::startArcadeRun (game_arcade.cpp), which is the map of every route into a
 // no-stakes run — never an `if (id == "...")` at a call site.
 enum class ArcadeGameKind : uint8_t {
-    Stacker,     // the played AV scan's firewall (core/model/stacker.h)
-    Fragger,     // the played Defrag (core/model/fragger.h)
+    Stacker,     // the slide-and-lock board (core/model/stacker.h)
+    Fragger,     // the falling-lanes shooter (core/model/fragger.h)
     Clutch,      // the Phishing line's Spot the Phish (game_eggpick.cpp)
     Isolation,   // the Worm line's quarantine buffer (core/model/isolation.h)
     Decryption,    // the Ransomware line's code board (core/model/disk_decryption.h)
@@ -71,11 +71,24 @@ enum class ArcadeUnlock : uint8_t {
 // bonus; a WinLose run has no partial credit and takes all of it or none.
 enum class ArcadeScoring : uint8_t { Incremental, WinLose };
 
-// The difficulty dial, shared by every cabinet. Medium is the game exactly as its own
-// (hatch or Defrag) context plays it, so the arcade never quietly rebalances the
-// original — Easy and Hard are the only settings that change anything.
+// The difficulty dial. Every cabinet has one, and so does a played MAINT run (its own
+// setting, Game::maintDifficulty). Medium is the game exactly as its own context plays it, so the arcade never quietly
+// rebalances the original — Easy and Hard are the only settings that change anything.
 enum class ArcadeDifficulty : uint8_t { Easy, Medium, Hard };
 inline constexpr int kArcadeDifficulties = 3;
+
+// What a played MAINT run's payout is multiplied by on each setting: it DOUBLES per step
+// up the dial, so the harder board is always worth playing for rather than only harder.
+inline constexpr int arcadeRewardMult(ArcadeDifficulty d) {
+    return 1 << static_cast<int>(d);
+}
+
+// Which minigame each MAINT process's PLAYED variant runs. Any engine can stand on either
+// side: every played game reports the same PlayOutcome (core/app/game.h), and what it
+// buys is decided by the process, never by the game — so swapping these two is the whole
+// change. An engine joins the pool by reporting one (Game::beginPlayedGame lists them).
+inline constexpr ArcadeGameKind kDefragPlayedGame = ArcadeGameKind::Fragger;
+inline constexpr ArcadeGameKind kAvPlayedGame = ArcadeGameKind::Stacker;
 
 // EASY / MEDIUM / HARD. The word is the grayscale-safe channel for the setting.
 const char* arcadeDifficultyName(ArcadeDifficulty d);
@@ -105,6 +118,9 @@ struct ArcadeGameDef {
     ArcadeUnlock unlock = ArcadeUnlock::Always;   // what has to be true to see the row
     const GameBriefDef* brief = nullptr;   // this engine's RULES page, in reading order
     int briefCount = 0;
+    // What one UNIT of a played MAINT run is, as the action screen names it ("PER HIT").
+    // Only an engine that can back a MAINT process needs one.
+    const char* unitName = nullptr;
 };
 
 // Compile-time ceiling on the roster, so the per-cabinet save tallies can be a plain

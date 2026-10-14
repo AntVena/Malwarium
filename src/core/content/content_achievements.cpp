@@ -489,31 +489,32 @@ const AchievementDef kAchievements[] = {
      AchSeries::Handshakes, /*goal=*/250, nullptr, 0,
      {bits(600), item("commend_cache")}},
 
-    // --- The AV firewall -----------------------------------------------------------
-    // The Stacker is AV's played scan — a maintenance path that pays with SKILL rather
-    // than luck (core/model/stacker.h) — and it is deterministic, so these are the only
-    // rows on the board that a player can practise their way to rather than grind.
+    // --- The STACKER, played in MAINT -----------------------------------------------
+    // A played MAINT run pays with SKILL rather than luck (core/model/stacker.h), and the
+    // Stacker is deterministic, so these are the only rows on the board that a player can
+    // practise their way to rather than grind. Keyed on the board, never on the process it
+    // was played for, since which process plays it is content (content_arcade.h).
     // The ladder counts cleared boards; the two below it read the width the run reached
     // the top with, which is the whole difficulty curve in one number.
-    {/*wire=*/63, "DEFRAG_BY_HAND", "Firewalled by Hand",
-     "Build {n} firewall by hand in an AV scan.", "ICON_ACH_DEFRAG_BY_HAND",
+    {/*wire=*/63, "DEFRAG_BY_HAND", "Stacked by Hand",
+     "Clear {n} STACKER board by hand in MAINT.", "ICON_ACH_DEFRAG_BY_HAND",
      AchSeries::StackerWins, /*goal=*/1, nullptr, 0, {bits(25)}},
     {/*wire=*/64, "STACK_10", "Sector Stacker",
-     "Build {n} firewalls by hand in an AV scan.", "ICON_ACH_STACK_10",
+     "Clear {n} STACKER boards by hand in MAINT.", "ICON_ACH_STACK_10",
      AchSeries::StackerWins, /*goal=*/10, nullptr, 0,
      {bits(60), item("sealed_cache_common")}},
     {/*wire=*/65, "STACK_50", "Contiguous",
-     "Build {n} firewalls by hand in an AV scan.", "ICON_ACH_STACK_50",
+     "Clear {n} STACKER boards by hand in MAINT.", "ICON_ACH_STACK_50",
      AchSeries::StackerWins, /*goal=*/50, nullptr, 0,
      {bits(250), item("sealed_cache_rare")}},
     // Reaching the top having never once overhung the row below — nine perfect locks,
     // the last four of them at the doubled step. Priced as a capstone because it is one:
     // no amount of playing makes it likelier, only getting better at it does.
     {/*wire=*/66, "PERFECT_DEFRAG", "Airtight",
-     "Build a firewall without shaving off a single block.", "ICON_ACH_PERFECT_DEFRAG",
+     "Clear a STACKER board without shaving off a single block.", "ICON_ACH_PERFECT_DEFRAG",
      AchSeries::Event, /*goal=*/0, nullptr, 0, {bits(400), item("commend_cache")}},
     {/*wire=*/67, "HANGING_BY_A_BIT", "Hanging by a Bit",
-     "Build a firewall with a single block left standing.", "ICON_ACH_HANGING_BY_A_BIT",
+     "Clear a STACKER board with a single block left standing.", "ICON_ACH_HANGING_BY_A_BIT",
      AchSeries::Event, /*goal=*/0, nullptr, 0, {bits(150), item("sealed_cache_rare")}},
 
     // --- The GAMES arcade ----------------------------------------------------------
@@ -543,9 +544,9 @@ const AchievementDef kAchievements[] = {
      AchSeries::ArcadeLosses, /*goal=*/25, nullptr, 0,
      {bits(60), item("sealed_cache_common")}},
     // Cabinet-specific, keyed on the row's own id — the arcade Stacker, not the AV
-    // scan's, which has its own rows above.
+    // board played in MAINT, which has its own rows above.
     {/*wire=*/80, "TOWER_OF_FRAGGLE", "Tower of Fraggle",
-     "Clear the FIREWALL STACKER cabinet in the GAMES arcade.", "ICON_ACH_TOWER_OF_FRAGGLE",
+     "Clear the STACKER cabinet in the GAMES arcade.", "ICON_ACH_TOWER_OF_FRAGGLE",
      AchSeries::ArcadeCabinetWins, /*goal=*/1, "stacker", 0,
      {bits(60), item("sealed_cache_common")}},
     // Hidden: the joke only lands if the player wasn't aiming for it.
@@ -765,7 +766,7 @@ const AchievementDef kAchievements[] = {
 
     // --- The arcade's remaining cabinets ------------------------------------------
     // ArcadeCabinetWins already existed and already had a tally being written for every
-    // cabinet; only FIREWALL STACKER had claimed a row off it (TOWER_OF_FRAGGLE). These
+    // cabinet; only STACKER had claimed a row off it (TOWER_OF_FRAGGLE). These
     // are the other five, priced identically to it, each drawn as its own GAME's mark —
     // the shape TOWER_OF_FRAGGLE already set for a cabinet row, and the reason none of
     // them is a cabinet silhouette: at 20px the screen would be eight pixels across.
@@ -920,7 +921,7 @@ const AchievementDef kAchievements[] = {
 
     // The DEFRAG ladder's capstone, which STACK_50 stopped one rung short of.
     {/*wire=*/135, "STACK_100", "Solid State",
-     "Build {n} firewalls by hand in an AV scan.", "ICON_ACH_STACK_100",
+     "Clear {n} STACKER boards by hand in MAINT.", "ICON_ACH_STACK_100",
      AchSeries::StackerWins, /*goal=*/100, nullptr, 0,
      {bits(400), item("commend_cache")}},
     // --- The arcade's long tail ---------------------------------------------------
@@ -1022,15 +1023,15 @@ const AchievementDef kAchievements[] = {
      AchSeries::ArcadeCabinetWins, /*goal=*/250, "chroma", 0,
      {bits(400), item("commend_cache")}},
     {/*wire=*/186, "CAB_STACKER_10", "Block Party",
-     "Clear the FIREWALL STACKER cabinet {n} times in the GAMES arcade.", "ICON_ACH_CAB_STACKER_10",
+     "Clear the STACKER cabinet {n} times in the GAMES arcade.", "ICON_ACH_CAB_STACKER_10",
      AchSeries::ArcadeCabinetWins, /*goal=*/10, "stacker", 0,
      {bits(100), item("sealed_cache_common")}},
     {/*wire=*/187, "CAB_STACKER_50", "Clean Sweep",
-     "Clear the FIREWALL STACKER cabinet {n} times in the GAMES arcade.", "ICON_ACH_CAB_STACKER_50",
+     "Clear the STACKER cabinet {n} times in the GAMES arcade.", "ICON_ACH_CAB_STACKER_50",
      AchSeries::ArcadeCabinetWins, /*goal=*/50, "stacker", 0,
      {bits(250), item("sealed_cache_rare")}},
     {/*wire=*/188, "CAB_STACKER_250", "Tower Architect",
-     "Clear the FIREWALL STACKER cabinet {n} times in the GAMES arcade.", "ICON_ACH_CAB_STACKER_250",
+     "Clear the STACKER cabinet {n} times in the GAMES arcade.", "ICON_ACH_CAB_STACKER_250",
      AchSeries::ArcadeCabinetWins, /*goal=*/250, "stacker", 0,
      {bits(400), item("commend_cache")}},
 
@@ -1042,7 +1043,7 @@ const AchievementDef kAchievements[] = {
      AchSeries::MergesCooked, /*goal=*/500, nullptr, 0,
      {bits(400), item("commend_cache")}},
     {/*wire=*/190, "STACK_250", "Solid Gold",
-     "Build {n} firewalls by hand in an AV scan.", "ICON_ACH_STACK_250",
+     "Clear {n} STACKER boards by hand in MAINT.", "ICON_ACH_STACK_250",
      AchSeries::StackerWins, /*goal=*/250, nullptr, 0,
      {bits(600), item("commend_cache")}},
     {/*wire=*/191, "DOCK_100", "Dock Admiral",

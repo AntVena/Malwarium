@@ -3,21 +3,20 @@
 #include "tunables.h"
 #include "core/ui/maint_screen.h"
 
-// game_fragger.cpp — FRAGGER, the played Defrag (and its GAMES cabinet).
+// game_fragger.cpp — FRAGGER, a played MAINT run and a GAMES cabinet.
 //
 // The rules are core/model/fragger.h, with no framebuffer and no Game in them; the
 // board is maint_screen's drawFraggerBoard. This file is the buttons, the cadence's
-// sound and the settlement: a run off MAINT pays per fragment shot in Fragmentation AND
-// Bits (kFraggerFragPerHit / kFraggerBitsPerHit), and a cabinet run hands its score to
-// the arcade till.
+// sound and the run's PlayOutcome — what that buys is game_played.cpp's business.
 
 namespace mal {
 
 void Game::beginFraggerRun() {
     // The run, with no opinion about who is paying for it — MAINT has already charged
     // its Bits, the arcade charges nothing.
+    // The dial is the LANE count, one more per step up from EASY's minimum.
     rng_ = rng_ * 1664525u + 1013904223u;   // the shared LCG seeds the fall
-    fragger_.reset(rng_);
+    fragger_.reset(rng_, kFraggerMinLanes + static_cast<int>(runDifficulty()));
     lastFraggerStepMs_ = nowMs_;
     fraggerShotLane_ = -1;
     fraggerShotRow_ = -1;
@@ -60,40 +59,19 @@ void Game::stepFragger() {
 }
 
 void Game::finishFragger() {
-    if (arcadeRun_) {
-        finishArcadeRun(fragger_.hits() >= kArcadeFraggerWinHits, fragger_.hits(),
-                        kArcadeFraggerWinHits);
-        return;
-    }
-    // A played defrag cannot FAIL; it can only be worth less. Every fragment shot takes
-    // its frag off the disk while there is any left and pays its Bits either way, so a
-    // run past a clean disk is still worth playing on. Like the firewall, this path does
-    // NOT run resolveMaint(): no fail roll, no +kMaintFailPenalty, no care mistake and no
-    // Replication Ghost, because the outcome was played rather than gambled.
-    maintKind_ = MaintKind::Defrag;
-    maintPlayed_ = true;
-    playedFragRemoved_ = fraggerFragWorth(fragger_, model_.fragmentation());
-    playedBitsEarned_ = fragger_.hits() * kFraggerBitsPerHit;
-    model_.applyPlayedDefrag(playedFragRemoved_);
-    bits_ += playedBitsEarned_;
-    maintSuccess_ = playedFragRemoved_ > 0 && model_.fragmentation() == 0;
-    // The tally counts disks that got cleaner, so a run that shot nothing doesn't score one.
-    if (playedFragRemoved_ > 0) ++defragCount_;
-    noteCareSignal(DominantSignal::Maintenance);
-    markSaveDirty();
-    processBeat_ = kProcessBeats;                // the work is done; show the outcome
-    processResolved_ = true;
-    nav_ = Nav::Process;
+    PlayOutcome o;
+    o.units = fragger_.hits();
+    o.won = fragger_.hits() >= kFraggerWinHits;
+    o.score = fragger_.hits();
+    o.scoreMax = kFraggerWinHits;
+    settlePlayedRun(o);
 }
 
 void Game::drawFragger(Framebuffer& fb) const {
     if (gameBriefOpen_) { drawGameBrief(fb); return; }
-    FraggerView v;
-    v.arcade = arcadeRun_;
-    v.frag = model_.fragmentation();
-    v.shotLane = fraggerShotLane_;
-    v.shotRow = fraggerShotRow_;
-    drawFraggerBoard(fb, fragger_, v);
+    drawFraggerBoard(fb, fragger_,
+                     playHud(fragger_.hits(), fragger_.hits(), kFraggerWinHits),
+                     fraggerShotLane_, fraggerShotRow_);
 }
 
 }  // namespace mal

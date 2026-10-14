@@ -1,12 +1,12 @@
-// stacker.h — the rules of the AV firewall minigame, with no rendering and no Game.
+// stacker.h — the rules of the STACKER, with no rendering and no Game.
 //
 // A run of blocks slides across the row, you lock it, and anything not resting on the
-// run below is shaved off. Reach the top with at least one block and the firewall is
-// built; run out of width and it isn't. That is the whole game — AV's played scan, and
-// the arcade's FIREWALL STACKER cabinet.
+// run below is shaved off. Reach the top with at least one block and the board clears;
+// run out of width and it doesn't. That is the whole game, and what a cleared board buys
+// is the caller's business (Game::settlePlayedRun: a MAINT process or the arcade till).
 //
-// DETERMINISTIC BY DESIGN. There is no RNG anywhere in here, which is the point of the
-// variant it backs: the Quick scan pays with luck, and this one pays with skill. A run that ends badly ended badly because of when
+// DETERMINISTIC BY DESIGN. There is no RNG anywhere in here, which is the point of a
+// played MAINT variant: the Quick run pays with luck, and this one pays with skill. A run that ends badly ended badly because of when
 // the player pressed, and can be replayed identically.
 //
 // Kept a plain model (core/model, like pet_model/combat) so the rules can be tested a
@@ -116,6 +116,14 @@ class Stacker {
     int score() const {
         int total = 0;
         for (int r = 0; r < kStackerRows; ++r) total += popcount(locked_[r]) * (r + 1);
+        return total;
+    }
+
+    // Every block locked so far, at any height. The unit a MAINT run is paid in: one per
+    // block that landed, so a board that stalled still earns what it stacked.
+    int blocks() const {
+        int total = 0;
+        for (int r = 0; r < kStackerRows; ++r) total += popcount(locked_[r]);
         return total;
     }
 

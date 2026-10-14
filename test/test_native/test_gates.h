@@ -482,6 +482,14 @@ bool playStackerBoard(Game& g, ColFn col) {
     return true;
 }
 
+// Start a played MAINT run of `engine` as process `k`'s, paying nothing. The pairing is
+// set explicitly rather than read off content_arcade.h, so a gate tests the pairing it
+// names however the table happens to be wired.
+inline void startPlayedMaint(Game& g, MaintKind k, ArcadeGameKind engine) {
+    g.debugSetMaintPlayedGame(k, engine);
+    g.debugStartPlayedMaint(k);
+}
+
 // Open the GAMES cabinet on roster `row` and cycle its dial to `difficulty`. Leaves the
 // player on the cabinet page (L3), one B away from starting the run.
 inline void enterArcadeCabinet(Game& g, int row, ArcadeDifficulty difficulty) {

@@ -447,7 +447,7 @@ bool Game::tickAnimClocks(uint32_t nowMs) {
     // still live — a finished board holds still.
     if (nav_ == Nav::Stacker && !gameBriefOpen_) {
         if (nowMs - lastStackerStepMs_ >=
-            static_cast<uint32_t>(arcadeStepMs(kStackerStepMs))) {
+            static_cast<uint32_t>(playStepMs(kStackerStepMs))) {
             lastStackerStepMs_ = nowMs;
             stacker_.step();
             changed = true;
@@ -457,10 +457,10 @@ bool Game::tickAnimClocks(uint32_t nowMs) {
     }
 
     // FRAGGER's fall, likewise — and the one cadence that is not fixed: the model sets
-    // it from the run's own score, so the game speeds up as it is played.
+    // it from the run's own score, so the game speeds up as it is played. The dial is
+    // not read here: FRAGGER's difficulty is its lane count (beginFraggerRun).
     if (nav_ == Nav::Fragger && !gameBriefOpen_) {
-        if (nowMs - lastFraggerStepMs_ >=
-            static_cast<uint32_t>(arcadeStepMs(fragger_.stepMs()))) {
+        if (nowMs - lastFraggerStepMs_ >= static_cast<uint32_t>(fragger_.stepMs())) {
             lastFraggerStepMs_ = nowMs;
             if (fragger_.running()) {
                 stepFragger();
@@ -477,7 +477,7 @@ bool Game::tickAnimClocks(uint32_t nowMs) {
     // board holds still under the verdict.
     if (nav_ == Nav::Isolation && !gameBriefOpen_) {
         if (nowMs - lastIsolationStepMs_ >=
-            static_cast<uint32_t>(arcadeStepMs(kIsolationStepMs))) {
+            static_cast<uint32_t>(playStepMs(kIsolationStepMs))) {
             lastIsolationStepMs_ = nowMs;
             if (isolation_.running()) {   // a parked board must not replay its verdict
                 const int ate = isolation_.dots();

@@ -18,23 +18,36 @@ void Game::onMaintList(const ButtonEvent& ev) {
     else if (ev.button == Button::B) {
         maintKind_ = (listRow_ == 0) ? MaintKind::Defrag : MaintKind::Av;
         maintVariant_ = 0;                               // default to QUICK
+        maintDifficulty_ = ArcadeDifficulty::Easy;
         nav_ = Nav::Detail;
     } else if (ev.button == Button::C) nav_ = Nav::Cursor;
 }
 
 void Game::onMaintAction(const ButtonEvent& ev) {
-    // A cycles the payment VARIANT — DEFRAG: Quick / Tool / Fragger; AV: Quick /
-    // Stacker — and B runs the focused one.
+    // A cycles the payment VARIANT — DEFRAG: Quick / Tool / Played; AV: Quick / Played —
+    // and on the PLAYED row it walks MAINT's difficulty dial first, EASY up to HARD,
+    // before wrapping back to Quick (and the dial back to EASY). One button for both, the way the arcade cabinet page
+    // cycles its dial, so the screen never needs a second gesture to set the stakes.
+    // B runs the focused one.
     if (ev.button == Button::A) {
         const int n = maintKind_ == MaintKind::Defrag ? kDefragVariants : kAvVariants;
-        maintVariant_ = (maintVariant_ + 1) % n;
+        const bool played = maintVariant_ == n - 1;
+        if (played && maintDifficulty_ != ArcadeDifficulty::Hard) {
+            maintDifficulty_ =
+                static_cast<ArcadeDifficulty>(static_cast<int>(maintDifficulty_) + 1);
+        } else {
+            if (played) maintDifficulty_ = ArcadeDifficulty::Easy;
+            maintVariant_ = (maintVariant_ + 1) % n;
+        }
     } else if (ev.button == Button::B) startMaint();
     else if (ev.button == Button::C) nav_ = Nav::Submenu;
 }
 
 void Game::startMaint() {
     maintPlayed_ = false;
-    if (maintKind_ == MaintKind::Defrag) {
+    const bool defrag = maintKind_ == MaintKind::Defrag;
+    const bool played = maintVariant_ == (defrag ? kDefragVariants : kAvVariants) - 1;
+    if (defrag) {
         if (defragGated(model_)) return;                 // nothing to defragment
         // a Defrag costs stage-scaled Bits — inert if the wallet can't
         // cover it. Charged here on RUN (before the roll), so it's the spend, not
@@ -47,29 +60,24 @@ void Game::startMaint() {
         const bool tool = maintVariant_ == 1;
         if (tool && inventory_.count(kDefragToolId) <= 0) return;   // no tool — inert
         bits_ -= cost;
-        // the FRAGGER variant buys nothing but the attempt: the Bits are spent here like
-        // every other run, and the outcome is then PLAYED rather than rolled or bought.
-        // It hands off to its own screen instead of the process bar, and rejoins at
-        // finishFragger().
-        if (maintVariant_ == kDefragVariantFragger) {
-            beginFraggerRun();
-            return;
-        }
-        if (tool) {
-            inventory_.remove(kDefragToolId, 1);
-            maintSuccess_ = true;                        // a Tool defrag never fails
-        } else {
-            maintSuccess_ = rollMaintSuccess();
+        if (!played) {
+            if (tool) {
+                inventory_.remove(kDefragToolId, 1);
+                maintSuccess_ = true;                    // a Tool defrag never fails
+            } else {
+                maintSuccess_ = rollMaintSuccess();
+            }
         }
     } else {
         if (avGated(model_)) return;                     // inert
-        // AV is free, so the played scan costs nothing to start: the Stacker board is
-        // the whole price, and it rejoins at finishStacker().
-        if (maintVariant_ == kAvVariantStacker) {
-            beginStackerBoard();
-            return;
-        }
-        maintSuccess_ = rollMaintSuccess();
+        if (!played) maintSuccess_ = rollMaintSuccess();
+    }
+    // The PLAYED variant buys nothing but the attempt (a Defrag's Bits are already
+    // spent; AV is free). It hands off to the process's game instead of the process bar,
+    // and rejoins at settlePlayedRun.
+    if (played) {
+        maintPlayLive_ = beginPlayedGame(maintPlayedGame(maintKind_));
+        return;
     }
     processBeat_ = 0;
     processResolved_ = false;
@@ -78,7 +86,7 @@ void Game::startMaint() {
 
 void Game::beginStackerBoard() {
     // The board itself, with no opinion about who is paying for it — MAINT takes the
-    // scan, the arcade charges nothing and takes the score.
+    // units, the arcade charges nothing and takes the score.
     stacker_.reset();
     lastStackerStepMs_ = nowMs_;
     closeGameBrief();   // a stale flag from a previous board must not open paused
@@ -100,54 +108,32 @@ void Game::onStacker(const ButtonEvent& ev) {
     } else if (ev.button == Button::C) {
         // Stop early and bank the board. Since a run that ends in mid-air keeps whatever
         // it locked, quitting has to keep it too — otherwise C would be a button that
-        // throws away frag the player has already earned, which is a trap, not a choice.
+        // throws away blocks the player has already earned, which is a trap, not a choice.
         finishStacker();
     }
 }
 
 void Game::finishStacker() {
-    // The board's own joke, and it belongs to the BOARD rather than to either context:
-    // the run that lost its whole hand on the second lock, in the arcade or on a scan.
+    // The board's own joke, and it belongs to the BOARD rather than to any context:
+    // the run that lost its whole hand on the second lock.
     if (!stacker_.running() && !stacker_.won() && stacker_.row() == 1)
         unlockAchievement(ach::kStackOverflow);
-    // An arcade board is off the disk entirely: no scan, no tally, no care signal
-    // from this path — the till applies its own. Taken before any of the scan
-    // bookkeeping so a cabinet run can never touch the pet.
-    if (arcadeRun_) {
-        finishArcadeRun(stacker_.won(), stacker_.score(), kStackerMaxScore);
-        return;
-    }
-    // A played scan cannot FAIL; it can only be worth less. A built firewall is a full
-    // AV scan, and a wall that stopped short still takes off what its blocks earned, at
-    // kStackerScorePerFrag points to the point, capped at what the full scan takes. So
-    // this path deliberately does NOT run resolveMaint(): there is no fail roll to
-    // honour, no +kMaintFailPenalty and no care mistake, because the outcome was played
-    // rather than gambled. What it does share is the care signal and the dirty save.
-    maintKind_ = MaintKind::Av;
-    maintPlayed_ = true;
-    const bool cleared = stacker_.won();
-    maintSuccess_ = cleared;
-    playedBitsEarned_ = 0;
-    playedFragRemoved_ = stackerScanWorth(stacker_, model_.fragmentation());
-    if (cleared) {
-        model_.applyAntivirus(true);
-        ++stackerWins_;                          // the played ladder, player-level
-        // The two rows a board's SHAPE earns. The top row's surviving width is the whole
-        // record of how the run went: the full starting width means nothing was ever
-        // shaved, and one block means the last lock had a single column to land on.
-        // Read here rather than inside Stacker because the model has no idea achievements
-        // exist — it answers "how wide", and this is what that width is worth.
+    // The played-by-hand ladder and the two rows a board's SHAPE earns, for a board
+    // cleared in MAINT — whichever process it was played for. The top row's surviving
+    // width is the whole record of how the run went: the full starting width means
+    // nothing was ever shaved, and one block means the last lock had a single column.
+    if (!arcadeRun_ && stacker_.won()) {
+        ++stackerWins_;
         const int kept = stacker_.rowWidth(kStackerRows - 1);
         if (kept >= kStackerStartWidth) unlockAchievement(ach::kPerfectDefrag);
         if (kept == 1) unlockAchievement(ach::kHangingByABit);
-    } else {
-        model_.applyPlayedDefrag(playedFragRemoved_);
     }
-    noteCareSignal(DominantSignal::Maintenance);
-    markSaveDirty();
-    processBeat_ = kProcessBeats;                // the work is done; show the outcome
-    processResolved_ = true;
-    nav_ = Nav::Process;
+    PlayOutcome o;
+    o.units = stacker_.blocks();
+    o.won = stacker_.won();
+    o.score = stacker_.score();
+    o.scoreMax = kStackerMaxScore;
+    settlePlayedRun(o);
 }
 
 void Game::resolveMaint() {
@@ -166,7 +152,7 @@ void Game::resolveMaint() {
             // deliberately not a dice roll on top of a dice roll — the state the player
             // is in is what decides it, so the way to never see a ghost is to not let
             // Fragmentation reach Critical before defragmenting (or to stop rolling for
-            // it: the Tool and Fragger variants never reach this path — one is bought and
+            // it: the Tool and Played variants never reach this path — one is bought and
             // the other is played, and neither has a roll to lose). Worm-line only: a
             // self-replicating phantom copy is that line's own failure mode, the way
             // Lockout is Ransomware's — a Phishing or Trojan pet's disk just stays

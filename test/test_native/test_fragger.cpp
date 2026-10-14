@@ -1,4 +1,4 @@
-// test_fragger.cpp — native gates for FRAGGER, the played Defrag and its cabinet.
+// test_fragger.cpp — native gates for FRAGGER, as a played MAINT run and a cabinet.
 //
 // One slice of the native suite; see test_gates.h for the shared fixtures and
 // test_main.cpp for the roster that runs these.
@@ -6,13 +6,16 @@
 
 namespace {
 
-// A run with nothing on the disk, the head in the middle lane. The board starts empty,
-// so a test stages exactly the blocks it needs with Fragger::place.
+// A run with nothing on the disk, the head in the middle lane, on the widest board. The
+// board starts empty, so a test stages exactly the blocks it needs with Fragger::place.
 Fragger emptyRun() {
     Fragger f;
-    f.reset(7);
+    f.reset(7, kFraggerMaxLanes);
     return f;
 }
+
+// A played DEFRAG run of FRAGGER, whatever the content table pairs with DEFRAG.
+void startDefragRun(Game& g) { startPlayedMaint(g, MaintKind::Defrag, ArcadeGameKind::Fragger); }
 
 // Shoot `n` fragments through the REAL button path: stage one over the head, fire.
 void shootFragments(Game& g, int n) {
@@ -66,10 +69,10 @@ void test_fragger_landing_fragment_ends_the_run() {
     CHECK(f.running());
     CHECK(f.written() == 1);
 
-    f.place(kFraggerRows - 1, 5, Fragger::Cell::Fragment);
+    f.place(kFraggerRows - 1, kFraggerMaxLanes - 1, Fragger::Cell::Fragment);
     f.step();
     CHECK(!f.running());
-    CHECK(f.crashLane() == 5);
+    CHECK(f.crashLane() == kFraggerMaxLanes - 1);
     // A crashed run is frozen: nothing moves, and nothing more can be scored.
     f.place(kFraggerRows - 1, f.lane(), Fragger::Cell::Fragment);
     CHECK(f.fire() == Fragger::Shot::Nothing);
@@ -79,10 +82,10 @@ void test_fragger_landing_fragment_ends_the_run() {
 // The head stops at the walls rather than wrapping.
 void test_fragger_head_stops_at_the_walls() {
     Fragger f = emptyRun();
-    for (int i = 0; i < 2 * kFraggerLanes; ++i) f.moveLeft();
+    for (int i = 0; i < 2 * kFraggerMaxLanes; ++i) f.moveLeft();
     CHECK(f.lane() == 0);
-    for (int i = 0; i < 2 * kFraggerLanes; ++i) f.moveRight();
-    CHECK(f.lane() == kFraggerLanes - 1);
+    for (int i = 0; i < 2 * kFraggerMaxLanes; ++i) f.moveRight();
+    CHECK(f.lane() == kFraggerMaxLanes - 1);
 }
 
 // The fall quickens with every fragment shot, and stops quickening at its floor — which
@@ -91,7 +94,7 @@ void test_fragger_pace_ramps_to_a_floor() {
     Fragger f = emptyRun();
     CHECK(f.stepMs() == kFraggerStartStepMs);
     int last = f.stepMs();
-    for (int i = 0; i < kArcadeFraggerWinHits; ++i) {
+    for (int i = 0; i < kFraggerWinHits; ++i) {
         f.place(0, f.lane(), Fragger::Cell::Fragment);
         CHECK(f.fire() == Fragger::Shot::Hit);
         CHECK(f.stepMs() <= last);
@@ -101,8 +104,8 @@ void test_fragger_pace_ramps_to_a_floor() {
     f.place(0, f.lane(), Fragger::Cell::Fragment);
     f.fire();
     CHECK(f.stepMs() == kFraggerMinStepMs);
-    // ...and the floor stays clear of the panel's fastest repaint even on HARD.
-    CHECK(kFraggerMinStepMs * kArcadeSpeedPctHard / 100 >= kStackerStepMs);
+    // ...and the floor stays clear of the panel's fastest repaint.
+    CHECK(kFraggerMinStepMs >= kStackerStepMs);
 }
 
 // The spawner never stacks two blocks in adjacent rows of a lane. That gap is what keeps
@@ -111,19 +114,19 @@ void test_fragger_pace_ramps_to_a_floor() {
 // seed replays exactly.
 void test_fragger_spawns_keep_a_gap_and_replay() {
     Fragger a, b;
-    a.reset(12345);
-    b.reset(12345);
+    a.reset(12345, kFraggerMaxLanes);
+    b.reset(12345, kFraggerMaxLanes);
     int spawned = 0;
     for (int s = 0; s < 2000; ++s) {
         // Clear the bottom row first so nothing ever crashes: the spawn is under test,
         // not the player.
-        for (int l = 0; l < kFraggerLanes; ++l) {
+        for (int l = 0; l < kFraggerMaxLanes; ++l) {
             a.place(kFraggerRows - 1, l, Fragger::Cell::Empty);
             b.place(kFraggerRows - 1, l, Fragger::Cell::Empty);
         }
         a.step();
         b.step();
-        for (int l = 0; l < kFraggerLanes; ++l) {
+        for (int l = 0; l < kFraggerMaxLanes; ++l) {
             if (a.cell(0, l) != Fragger::Cell::Empty) ++spawned;
             for (int r = 0; r + 1 < kFraggerRows; ++r)
                 CHECK(!(a.cell(r, l) != Fragger::Cell::Empty &&
@@ -135,8 +138,8 @@ void test_fragger_spawns_keep_a_gap_and_replay() {
     CHECK(spawned > 500);                               // the disk is actually busy
 }
 
-// The MAINT payout: every fragment shot is kFraggerFragPerHit off the disk while it has
-// any and kFraggerBitsPerHit into the wallet regardless, so a run that outlasts a clean
+// The DEFRAG payout: every fragment shot is kPlayFragPerUnit off the disk while it has
+// any and kPlayBitsPerUnit into the wallet regardless (both on EASY's x1), so a run that outlasts a clean
 // disk is still worth playing. A landed fragment ends it with no penalty and no mistake.
 void test_fragger_defrag_pays_per_fragment() {
     Game g{StartMode::Hatched};
@@ -144,7 +147,8 @@ void test_fragger_defrag_pays_per_fragment() {
     const int bits = g.bits();
     const int mistakes = g.model().careMistakes();
     const int defrags = g.defragCount();
-    g.debugStartFraggerDefrag();
+    g.debugSetMaintDifficulty(ArcadeDifficulty::Easy);
+    startDefragRun(g);
     CHECK(g.nav() == Game::Nav::Fragger);
     shootFragments(g, 8);                               // three past a clean disk
     CHECK(g.fragger().hits() == 8);
@@ -154,7 +158,7 @@ void test_fragger_defrag_pays_per_fragment() {
 
     CHECK(g.nav() == Game::Nav::Process);
     CHECK(g.model().fragmentation() == 0);
-    CHECK(g.bits() == bits + 8 * kFraggerBitsPerHit);
+    CHECK(g.bits() == bits + 8 * kPlayBitsPerUnit);
     CHECK(g.model().careMistakes() == mistakes);
     CHECK(!g.model().hasGhost());
     CHECK(g.defragCount() == defrags + 1);
@@ -162,7 +166,7 @@ void test_fragger_defrag_pays_per_fragment() {
     // A run that shot nothing changes nothing, and does not count as a defrag.
     Game z{StartMode::Hatched};
     z.model().setFragmentation(kFragCriticalMin + 5);
-    z.debugStartFraggerDefrag();
+    startDefragRun(z);
     const int zBits = z.bits();
     crashRun(z);
     z.onButton(press(Button::B));
@@ -183,7 +187,7 @@ void test_fragger_cabinet_leaves_the_disk_alone() {
     const int bits = g.bits();
     g.onButton(press(Button::B));                       // START — costs nothing
     CHECK(g.nav() == Game::Nav::Fragger);
-    shootFragments(g, kArcadeFraggerWinHits + 5);
+    shootFragments(g, kFraggerWinHits + 5);
     crashRun(g);
     g.onButton(press(Button::B));
 
@@ -191,7 +195,7 @@ void test_fragger_cabinet_leaves_the_disk_alone() {
     CHECK(g.model().fragmentation() == 60);
     CHECK(g.bits() == bits + kArcadePlayBits + kArcadeScoreBits);   // past the line: full
     CHECK(g.arcadeWins(row) == 1);
-    CHECK(g.arcadeBest(row) == kArcadeFraggerWinHits + 5);   // the best is unclamped
+    CHECK(g.arcadeBest(row) == kFraggerWinHits + 5);   // the best is unclamped
 }
 
 // The fall runs on its own real-ms clock, and that clock reads the run's score: the same
@@ -201,7 +205,7 @@ void test_fragger_cadence_follows_the_score() {
     auto rowsInOneSecond = [](int hits) {
         Game g{StartMode::Hatched};
         g.model().setFragmentation(50);
-        g.debugStartFraggerDefrag();
+        startDefragRun(g);
         shootFragments(g, hits);
         const int lane = g.fragger().lane();
         g.fragger().place(0, lane, Fragger::Cell::File);
@@ -212,7 +216,44 @@ void test_fragger_cadence_follows_the_score() {
         return -1;
     };
     const int slow = rowsInOneSecond(0);
-    const int fast = rowsInOneSecond(kArcadeFraggerWinHits);
+    const int fast = rowsInOneSecond(kFraggerWinHits);
     CHECK(slow >= 1);
     CHECK(fast > slow);
+}
+
+// The dial is FRAGGER's lane count — EASY's minimum, and one more per step — in a cabinet
+// and a MAINT run alike, since both start it through the same door.
+void test_fragger_lanes_follow_the_dial() {
+    for (int d = 0; d < kArcadeDifficulties; ++d) {
+        Game g{StartMode::Hatched};
+        g.model().setFragmentation(50);
+        g.debugSetMaintDifficulty(static_cast<ArcadeDifficulty>(d));
+        startDefragRun(g);
+        CHECK(g.fragger().lanes() == kFraggerMinLanes + d);
+        CHECK(g.fragger().lane() == g.fragger().lanes() / 2);
+    }
+    Game c{StartMode::Hatched};
+    enterArcadeCabinet(c, arcadeGameIndexById("fragger"), ArcadeDifficulty::Hard);
+    c.onButton(press(Button::B));
+    CHECK(c.fragger().lanes() == kFraggerMaxLanes);
+}
+
+// A played run's payout DOUBLES per step up the dial: the same five hits pay x1, x2, x4.
+void test_played_rewards_double_per_step() {
+    int paid[kArcadeDifficulties] = {0};
+    for (int d = 0; d < kArcadeDifficulties; ++d) {
+        Game g{StartMode::Hatched};
+        g.model().setFragmentation(100);
+        g.debugSetMaintDifficulty(static_cast<ArcadeDifficulty>(d));
+        const int bits = g.bits();
+        startDefragRun(g);
+        shootFragments(g, 5);
+        crashRun(g);
+        g.onButton(press(Button::B));
+        paid[d] = g.bits() - bits;
+        CHECK(g.model().fragmentation() == 100 - 5 * kPlayFragPerUnit * (1 << d));
+    }
+    CHECK(paid[0] == 5 * kPlayBitsPerUnit);
+    CHECK(paid[1] == 2 * paid[0]);
+    CHECK(paid[2] == 2 * paid[1]);
 }

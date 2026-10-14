@@ -800,12 +800,20 @@ void Game::drawDetail(Framebuffer& fb) const {
                                beat_, lifetimeMark(*detailItem_, petLifetimeGates()));
             }
             break;
-        case SubmenuId::Maint:
+        case SubmenuId::Maint: {
+            PlayedRow played;
+            if (const ArcadeGameDef* g = arcadeGameByKind(maintPlayedGame(maintKind_))) {
+                played.name = g->displayName;
+                played.unit = g->unitName ? g->unitName : "RUN";
+            }
+            played.difficulty = maintDifficulty_;
             drawMaintAction(fb, maintKind_, model_,
                             maintKind_ == MaintKind::Defrag ? defragCost() : 0,
                             bits_, maintVariant_,
-                            inventory_.count(kDefragToolId), defragCount_, maintFailPct());
+                            inventory_.count(kDefragToolId), defragCount_, maintFailPct(),
+                            played);
             break;
+        }
         case SubmenuId::Cfg:
             drawCfg(fb);
             break;
@@ -1189,7 +1197,8 @@ void Game::drawBulkYieldScreen(Framebuffer& fb) const {
 
 void Game::drawStacker(Framebuffer& fb) const {
     if (gameBriefOpen_) { drawGameBrief(fb); return; }
-    drawStackerBoard(fb, stacker_, model_.fragmentation(), arcadeRun_);
+    drawStackerBoard(fb, stacker_,
+                     playHud(stacker_.blocks(), stacker_.score(), kStackerMaxScore));
 }
 
 void Game::drawProcess(Framebuffer& fb) const {

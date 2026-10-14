@@ -196,11 +196,11 @@ int Game::arcadeBestById(const char* id) const {
     return row < 0 ? 0 : arcadeBest(row);
 }
 
-int Game::arcadeStepMs(int baseMs) const {
-    if (!arcadeRun_) return baseMs;
+int Game::playStepMs(int baseMs) const {
+    if (!arcadeRun_ && !maintPlayLive_) return baseMs;
     int pct = kArcadeSpeedPctMedium;
-    if (arcadeDifficulty_ == ArcadeDifficulty::Easy) pct = kArcadeSpeedPctEasy;
-    else if (arcadeDifficulty_ == ArcadeDifficulty::Hard) pct = kArcadeSpeedPctHard;
+    if (runDifficulty() == ArcadeDifficulty::Easy) pct = kArcadeSpeedPctEasy;
+    else if (runDifficulty() == ArcadeDifficulty::Hard) pct = kArcadeSpeedPctHard;
     const int ms = baseMs * pct / 100;
     return ms < 1 ? 1 : ms;
 }
@@ -211,12 +211,11 @@ void Game::startArcadeRun() {
     arcadeRun_ = true;
     switch (arcadeGames()[arcadeGame_].kind) {
         case ArcadeGameKind::Stacker:
-            beginStackerBoard();
-            break;
         case ArcadeGameKind::Fragger:
-            // ENDLESS, like the buffer below: the run goes until a fragment lands.
-            // kArcadeFraggerWinHits is the line the till pays and scores against.
-            beginFraggerRun();
+            // The two engines a MAINT process can also play, so they start the way MAINT
+            // starts them. FRAGGER is ENDLESS, like the buffer below: kFraggerWinHits is
+            // the line the till pays and scores against.
+            beginPlayedGame(arcadeGames()[arcadeGame_].kind);
             break;
         case ArcadeGameKind::Clutch: {
             int rounds = kArcadeClutchRoundsMedium;
@@ -240,10 +239,10 @@ void Game::startArcadeRun() {
             break;
         case ArcadeGameKind::Chroma:
             // ENDLESS, like the buffer above: the board runs until the sweep finds it.
-            // The dial is the WINDOW, which is the paced games' knob (arcadeStepMs) —
+            // The dial is the WINDOW, which is the paced games' knob (playStepMs) —
             // and hard alone turns switching on, which is the only rule any cabinet
             // adds to a game rather than re-times.
-            startChroma(/*rounds=*/0, arcadeStepMs(kChromaWindowMs),
+            startChroma(/*rounds=*/0, playStepMs(kChromaWindowMs),
                         /*switching=*/arcadeDifficulty_ == ArcadeDifficulty::Hard);
             break;
         case ArcadeGameKind::Cryptogram: {

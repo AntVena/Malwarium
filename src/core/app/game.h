@@ -75,6 +75,7 @@ struct BuffRow;
 struct ExplListView;
 struct StatIndexRow;
 struct FoodRow;
+struct PlayHud;
 
 // How a Game starts. FreshHatch = empty save -> Decryption Hatch (the real
 // first boot). Hatched = skip straight to a raised pet (the test/dev
@@ -1673,6 +1674,13 @@ public:
     // to be asked by id rather than by index.
     int arcadeBestById(const char* id) const;
     ArcadeDifficulty arcadeDifficulty() const { return arcadeDifficulty_; }
+    // The MAINT action screen's own dial for its played row — reset to EASY each time the
+    // screen opens, and separate from the cabinets' so neither moves the other.
+    ArcadeDifficulty maintDifficulty() const { return maintDifficulty_; }
+    // Which minigame a MAINT process's played variant runs (content_arcade.h's defaults).
+    ArcadeGameKind maintPlayedGame(MaintKind k) const {
+        return k == MaintKind::Defrag ? defragPlayedGame_ : avPlayedGame_;
+    }
     // The cabinet list's cursor, as a ROSTER index (content_arcade.h's order) rather
     // than a row position — the two differ whenever a cabinet is locked out of the list.
     int arcadeRow() const { return arcadeRow_; }
@@ -1962,8 +1970,8 @@ public:
     // Lifetime boss rounds won (save v40). Each round of a gauntlet counts — beating a
     // three-boss gauntlet is three bosses defeated, which is what it felt like.
     int bossWins() const { return bossWins_; }
-    // Lifetime firewalls built by hand (save v44): Stacker boards cleared as an AV
-    // scan. Only the played variant counts — a Quick scan is rolled, not played.
+    // Lifetime Stacker boards cleared by hand in MAINT (save v44), whichever process
+    // they were played for — a Quick or Tool run is rolled or bought, not played.
     int stackerWins() const { return stackerWins_; }
     // The three v56 lifetime tallies, on the same footing as the two above.
     int tourneyWins() const { return tourneyWins_; }   // ROCK THE DOCK brackets taken
@@ -2229,14 +2237,19 @@ public:
     void debugStartCryptogram(int quote, int extraReveals) {
         startCryptogram(quote, extraReveals);
     }
-    // Enter a fresh Stacker board as an AV scan without the scan being due (tests /
-    // dump_frame). From here onButton drives the REAL board and a finished run lands in
-    // the real finishStacker, which is where the firewall tally and its two
-    // shape-of-the-board achievements are decided.
-    void debugStartStackerScan() { maintKind_ = MaintKind::Av; beginStackerBoard(); }
-    // Enter a fresh FRAGGER run as a defrag without paying for it (tests / dump_frame).
-    // Skips only the purchase; a finished run lands in the real finishFragger.
-    void debugStartFraggerDefrag() { maintKind_ = MaintKind::Defrag; beginFraggerRun(); }
+    // Enter `k`'s played run without paying for it or the run being due (tests /
+    // dump_frame). From here onButton drives the REAL board, and a finished run lands in
+    // the real settlePlayedRun, which is where the process takes its payout.
+    void debugStartPlayedMaint(MaintKind k) {
+        maintKind_ = k;
+        beginPlayedGame(maintPlayedGame(k));
+    }
+    // Point a process's played variant at a different engine — the seam that proves the
+    // two are interchangeable without a rebuild of the content table.
+    void debugSetMaintPlayedGame(MaintKind k, ArcadeGameKind g) {
+        (k == MaintKind::Defrag ? defragPlayedGame_ : avPlayedGame_) = g;
+    }
+    void debugSetMaintDifficulty(ArcadeDifficulty d) { maintDifficulty_ = d; }
     // Set the Bits wallet directly (tests / economy-gated flows like the shop's
     // "not enough Bits" gate). Clamped at 0.
     void debugSetBits(int n);
@@ -2658,9 +2671,13 @@ private:
     // Bank a finished run and open the payout screen. `scoreMax` 0 means the cabinet
     // scores win-or-lose, which is what decides how the bonus half is worked out.
     void finishArcadeRun(bool won, int score, int scoreMax);
-    // A paced minigame's step cadence under the current difficulty — `baseMs` scaled
-    // by the dial, or `baseMs` untouched outside a cabinet run.
-    int arcadeStepMs(int baseMs) const;
+    // A paced minigame's step cadence under the dial — in a cabinet or a played MAINT
+    // run alike. A hatch game runs at `baseMs` untouched: it has no dial to read.
+    int playStepMs(int baseMs) const;
+    // The dial the run on screen was started under: the cabinet's, or MAINT's.
+    ArcadeDifficulty runDifficulty() const {
+        return arcadeRun_ ? arcadeDifficulty_ : maintDifficulty_;
+    }
     void drawArcade(Framebuffer& fb) const;         // L2 cabinet list
     void drawArcadeDetail(Framebuffer& fb) const;   // L3 the focused cabinet
     void drawArcadeOutcome(Framebuffer& fb) const;  // the payout screen
@@ -3229,6 +3246,28 @@ private:
     int nextRepartitionTarget(int cur) const;
     void drawRepartitionPickerScreen(Framebuffer& fb) const;
     void startMaint();
+    // What every played game reports when it ends, whoever was paying for it. `units`
+    // is what a MAINT process prices (ArcadeGameDef::unitName); `score` / `scoreMax`
+    // are what the arcade till prices. One shape for every engine is what lets any of
+    // them stand behind either MAINT process.
+    struct PlayOutcome {
+        int units = 0;
+        bool won = false;
+        int score = 0;
+        int scoreMax = 0;
+    };
+    // Open `g`'s board for whichever context is armed (arcadeRun_ or maintKind_). False
+    // for an engine that cannot be played outside its own context (a hatch game).
+    bool beginPlayedGame(ArcadeGameKind g);
+    // Route a finished run to its context: the arcade till, or the MAINT process.
+    void settlePlayedRun(const PlayOutcome& o);
+    void settleMaintPlay(const PlayOutcome& o);
+    // What `units` are worth on the current process and dial, for the HUD and the payout.
+    int playedFragWorth(int units) const;
+    int playedBitsWorth(int units) const;
+    // The footer a played board shows for a run worth `units` / `score` so far, in
+    // whichever context is armed — the one place a board learns what it is for.
+    PlayHud playHud(int units, int score, int scoreMax) const;
     void beginStackerBoard();   // reset the board + enter it, whoever is paying for it
     void finishStacker();
     void beginFraggerRun();     // the same, for FRAGGER
@@ -3468,10 +3507,14 @@ private:
     int bulkYieldRow_ = 0;   // A-scroll cursor into bulkYieldTally_
     MaintKind maintKind_ = MaintKind::Defrag;
     // The focused payment VARIANT on the open MAINT action. DEFRAG: 0 = Quick (Bits,
-    // may fail) · 1 = Tool (an item, guaranteed) · 2 = Fragger (the minigame, worth what
-    // the run shoots). AV: 0 = Quick · 1 = Stacker (the firewall). Luck, an item, or
-    // skill — the played one is the only one that can come up short without failing.
+    // may fail) · 1 = Tool (an item, guaranteed) · 2 = Played. AV: 0 = Quick · 1 = Played.
+    // The played one is the only one that can come up short without failing.
     int maintVariant_ = 0;
+    // Which engine each process's played variant runs (debugSetMaintPlayedGame).
+    ArcadeGameKind defragPlayedGame_ = kDefragPlayedGame;
+    ArcadeGameKind avPlayedGame_ = kAvPlayedGame;
+    bool maintPlayLive_ = false;           // a played MAINT run is on screen right now
+    ArcadeDifficulty maintDifficulty_ = ArcadeDifficulty::Easy;
     bool maintPlayed_ = false;             // the last run was played, not rolled/bought
     // Neither played run is saved: one interrupted by a power cycle forfeits its entry,
     // board and all.
@@ -3482,8 +3525,7 @@ private:
     // The last shot, for the beam the screen draws up its lane until the next row falls.
     int fraggerShotLane_ = -1;
     int fraggerShotRow_ = -1;
-    // What the last played run took off the disk and paid (finishStacker /
-    // finishFragger). Held only so the outcome toast can print what the run earned,
+    // What the last played run took off the disk and paid (settleMaintPlay). Held only so the outcome toast can print what the run earned,
     // which — unlike the fixed reduction a rolled or bought run reports — isn't
     // knowable from the variant.
     int playedFragRemoved_ = 0;
@@ -3985,8 +4027,8 @@ private:
     void sweepCollectedItems();
     // Lifetime boss rounds won (save v40) — counted in Game::finishBossRound.
     int bossWins_ = 0;
-    // Lifetime firewalls BUILT (save v44) — Stacker boards cleared as an AV scan,
-    // counted in Game::finishStacker. Player-level, unlike the active pet's own
+    // Lifetime Stacker boards cleared in MAINT (save v44), counted in
+    // Game::finishStacker. Player-level, unlike the active pet's own
     // defragCount_: this one is a record of skill and so belongs to the operator, not
     // to whichever pet happened to be on the shelf.
     int stackerWins_ = 0;

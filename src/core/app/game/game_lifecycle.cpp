@@ -707,6 +707,7 @@ void Game::resetToHatch() {
     cryptogramPrizeBits_ = 0;
     cryptogramPrize_ = {};
     arcadeDifficulty_ = ArcadeDifficulty::Medium;
+    maintDifficulty_ = ArcadeDifficulty::Easy;
     for (int i = 0; i < kArcadeMaxCabinets; ++i) {
         arcadePlays_[i] = 0;
         arcadeWins_[i] = 0;

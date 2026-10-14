@@ -807,7 +807,7 @@ struct SaveData {
     uint32_t dyingElapsedMs = 0;
 
     // --- v44: the played-maintenance tally -----------------------------------
-    // Stacker boards cleared by hand, lifetime — firewalls built in an AV scan.
+    // Stacker boards cleared by hand in MAINT, lifetime.
     // Player-level (survives a pet reset, like bossWins above). Pre-v44 → 0; nothing in an older blob can be honestly read as this.
     int32_t stackerWins = 0;
 

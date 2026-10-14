@@ -910,7 +910,7 @@ Most chrome is reused — only the rows below are new, and most are optional pol
 `content_arcade.cpp`) and nothing else: it draws the menu round a minigame and never the
 game, so every screen inside a cabinet is that game's own. Most cabinets reuse a glyph
 that already names their subject — `ICON_MAINT_DEFRAG` (§K) for FRAGGER, `ICON_MAINT_AV`
-for the firewall Stacker,
+for the Stacker,
 `ICON_LINE_WORM` for the Isolation Protocol, `ICON_LINE_RANSOMWARE` for Disk Decypher,
 `ICON_LINE_PHISHING` for Spot the Phish and `ICON_ITEM_DECRYPTOGRAM` for the quote board — and only a cabinet whose subject has
 no glyph anywhere else needs one drawn.

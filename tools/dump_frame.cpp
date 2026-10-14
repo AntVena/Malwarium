@@ -33,9 +33,9 @@
 //        tipcard (the one-time CARE card the first menu summon opens; pairs with crit)
 //        nofood (empty the bag of anything edible; pairs with items, lockout, hungry)
 //        maint [detail] [stacker [slide|drop|stop ...]] [run [step:<n>]]
-//             [fragger [fall:<n>|left|right|fire|crash ...]] · lockout · evolve
-//             ("stacker" builds AV's firewall, "fragger" plays DEFRAG's run; each word
-//             after one acts on its board in the order given)
+//             [fragger [fall:<n>|left|right|fire|crash ...]] [medium|hard] · lockout ·
+//             evolve ("stacker"/"fragger" open whichever process plays that game, on
+//             the dial setting named; each word after one acts on its board in order)
 //             ("run" starts the focused process — QUICK defrag, or AV with row:1 — and
 //             "step:<n>" holds it n heartbeats in, to land on a frame of its disk map)
 //        cryptogram [open:<n>] [take] [win|lose] (THE DECRYPTOGRAM's quote board, cashed
@@ -581,15 +581,26 @@ int main(int argc, char** argv) {
             for (int i = 1; i <= steps; ++i)
                 game.tick(static_cast<uint32_t>(beats + i) * kHeartbeatMs);
         }
-        // "stacker" opens the AV action, cycles A onto the minigame variant and runs it;
-        // each following "drop" locks the run where it currently stands, so a board
-        // mid-climb (or a lost one) is renderable by repeating the word.
-        if (hasFlag(argc, argv, "stacker")) {
-            game.onButton({Button::A, true, false});          // the ANTIVIRUS row
+        // Open whichever process plays `g` as its PLAYED variant, walk A onto that row and
+        // up the dial ("medium"/"hard"; EASY otherwise), and run it. Asked by engine
+        // rather than by process, because which process plays which is content.
+        auto runPlayed = [&](ArcadeGameKind g) {
+            game.debugSetBits(99999);
+            const bool av = game.maintPlayedGame(MaintKind::Av) == g;
+            if (av) game.onButton({Button::A, true, false});  // the ANTIVIRUS row
             game.onButton({Button::B, true, false});          // open it
-            for (int i = 0; i < kAvVariantStacker; ++i)
-                game.onButton({Button::A, true, false});      // cycle onto STACKER
+            const int n = av ? kAvVariants : kDefragVariants;
+            int presses = n - 1;
+            if (hasFlag(argc, argv, "medium")) presses += 1;
+            if (hasFlag(argc, argv, "hard")) presses += 2;
+            for (int i = 0; i < presses; ++i) game.onButton({Button::A, true, false});
             game.onButton({Button::B, true, false});          // run it
+        };
+        // "stacker" runs the Stacker's process; each following "drop" locks the run where
+        // it currently stands, so a board mid-climb (or a lost one) is renderable by
+        // repeating the word.
+        if (hasFlag(argc, argv, "stacker")) {
+            runPlayed(ArcadeGameKind::Stacker);
             // "drop" locks the run where it stands; "slide" advances it one beat first,
             // so interleaving the two walks the run off the stack and renders a loss.
             // "stop" ends the run there and banks it, which is also the only way to reach
@@ -603,16 +614,12 @@ int main(int argc, char** argv) {
                     game.onButton({Button::C, true, false});
             }
         }
-        // "fragger" opens the DEFRAG action and runs its minigame variant. "fall:<n>" drops
-        // the disk n rows (a block takes kFraggerRows to land, so up to that is a busy
-        // board with nothing lost), "left"/"right"/"fire" are the buttons, and "crash"
-        // lands a fragment beside the head to hold the run's verdict.
+        // "fragger" runs FRAGGER's process. "fall:<n>" drops the disk n rows (a block takes
+        // kFraggerRows to land, so up to that is a busy board with nothing lost),
+        // "left"/"right"/"fire" are the buttons, and "crash" lands a fragment beside the
+        // head to hold the run's verdict.
         if (hasFlag(argc, argv, "fragger")) {
-            game.debugSetBits(99999);
-            game.onButton({Button::B, true, false});          // open DEFRAGMENTATION
-            for (int i = 0; i < kDefragVariantFragger; ++i)
-                game.onButton({Button::A, true, false});      // cycle onto FRAGGER
-            game.onButton({Button::B, true, false});          // run it
+            runPlayed(ArcadeGameKind::Fragger);
             for (int i = 1; i < argc; ++i) {
                 if (std::strncmp(argv[i], "fall:", 5) == 0) {
                     for (int k = std::atoi(argv[i] + 5); k > 0; --k) game.debugStepFragger();

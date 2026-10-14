@@ -1219,42 +1219,27 @@ constexpr int kAbsorbLeadBeats = 4;
 // dissolve waits on one number, not on a sum re-derived at each site.
 constexpr int kAbsorbTotalBeats = kAbsorbLeadBeats + kAbsorbBeats;
 constexpr int kProcessBeats = 8;  // MAINT process run length before the outcome
-// The three ways to pay for the same clean: 0 Quick (Bits, may fail) · 1 Tool (an item,
-// guaranteed) · 2 Fragger (the minigame, worth what the run shoots). Luck, an item, or
-// skill — so a player with no Defrag Tool and no appetite for the roll still has a way
-// through, and it is the one that costs only attention.
+// The ways to pay for the same clean. DEFRAG: 0 Quick (Bits, may fail) · 1 Tool (an
+// item, guaranteed) · 2 Played. AV: 0 Quick (the roll) · 1 Played — AV is free, so it has
+// no Tool row. Luck, an item, or skill: a player with no Defrag Tool and no appetite for
+// the roll still has a way through, and it is the one that costs only attention. The
+// PLAYED row is always the last, and which minigame it plays is content
+// (content_arcade.h's kDefragPlayedGame / kAvPlayedGame), not a rule of either process.
 constexpr int kDefragVariants = 3;
-constexpr int kDefragVariantFragger = 2;
-// A played defrag is priced per FRAGMENT SHOT rather than by kDefragReduction, and it
-// is paid twice: the disk loses this much Fragmentation for each one (until it is clean),
-// and the wallet gains this many Bits for each one whether or not it still is. The Bits
-// half is what keeps a run worth playing on past a clean disk — the run is endless, so a
-// high score has to buy something, and once there is no frag left Bits are the only
-// thing it can. There is no fail penalty and no care mistake down this path: a landed
-// fragment ends the run, and the run keeps everything it shot before that.
-constexpr int kFraggerFragPerHit = 1;
-constexpr int kFraggerBitsPerHit = 2;
-// AV's two: 0 Quick (the roll) · 1 Stacker (build the firewall). AV is free, so there
-// is no Tool row — the played one is the only way past the fail roll.
 constexpr int kAvVariants = 2;
-constexpr int kAvVariantStacker = 1;
+// A played run is priced per UNIT its game reports (a STACKER block landed, a FRAGGER
+// fragment shot), the same for either process and either game, times the difficulty's
+// reward multiplier (arcadeRewardMult — doubling per step of the dial). Each unit takes
+// this much Fragmentation off the disk while it has any, and pays this many Bits either
+// way; a WON run on an AV scan also clears the processes a Quick scan would. There is
+// no fail penalty and no care mistake down this path: a played run can come up short,
+// never fail, because its outcome was played rather than gambled.
+constexpr int kPlayFragPerUnit = 1;
+constexpr int kPlayBitsPerUnit = 2;
 // The Stacker's run slides on its own faster cadence rather than the shared 4fps
 // heartbeat (the kCombatAnimMs precedent) — at 250ms a step the timing is trivial, and
 // the whole variant is a timing test. Only ticks while the board is on screen.
 constexpr int kStackerStepMs = 110;
-// A played scan is priced by the BOARD. Building the whole firewall is a full AV scan
-// that cannot fail — debuffs, the Replication Ghost and kAvReduction of Fragmentation,
-// all gone. A wall that stalls short of the top cleans no process, but its blocks still
-// pay off the disk: Stacker::score, at this many points to one point of Fragmentation,
-// never more than a full scan would have taken.
-//
-// The rate is set so that a wall which stalls past halfway is already worth the full
-// scan's Fragmentation (kStackerMaxScore is 135; five full rows score 45, so 9 off, and
-// anything higher reaches the kAvReduction cap) — the climb's last rows are paid in
-// the processes they clean, not in more frag. A run therefore cannot
-// be worse than not playing — there is no fail penalty and no care mistake down this
-// path — because the outcome was played rather than gambled.
-constexpr int kStackerScorePerFrag = 5;
 
 // The arcade (GAMES) --------------------------------------------
 // The same minigames, off their stakes. A cabinet run touches no egg and no disk, so
@@ -1269,8 +1254,9 @@ constexpr int kArcadePlayHappy = 10;   // ...and the pet enjoyed itself either w
 // to be worth playing well, not enough to make losing feel wasted.
 constexpr int kArcadeScoreBits = 32;
 // What the difficulty dial does to a PACED game (the Stacker's slide, the worm's step),
-// as a percentage of its shipped cadence. Medium is the game exactly as its own context
-// plays it — 100 here is load-bearing, not a placeholder.
+// as a percentage of its shipped cadence — in a cabinet and in a played MAINT run alike.
+// Medium is the game exactly as its own context plays it — 100 here is load-bearing, not
+// a placeholder.
 constexpr int kArcadeSpeedPctEasy = 160;
 constexpr int kArcadeSpeedPctMedium = 100;
 constexpr int kArcadeSpeedPctHard = 65;
@@ -1279,7 +1265,7 @@ constexpr int kArcadeSpeedPctHard = 65;
 constexpr int kArcadeClutchRoundsEasy = 2;
 constexpr int kArcadeClutchRoundsMedium = 3;
 constexpr int kArcadeClutchRoundsHard = 4;
-// The ENDLESS cabinets' win lines. Neither run has a finish any more — the worm
+// The ENDLESS cabinets' win lines (FRAGGER's is its own model's, kFraggerWinHits). Neither run has a finish any more — the worm
 // eats until it crashes and the bell wears skins until it is spotted — so these are not
 // goals the game stops at but the score a run is PAID in full for, and the line its win
 // tally is drawn at. A player can and should go past them; the payout simply stops
@@ -1291,10 +1277,6 @@ constexpr int kArcadeClutchRoundsHard = 4;
 // 10 passes are each a board's worth of play — and not a number read off a distribution.
 constexpr int kArcadeIsolationWinBytes = 30;
 constexpr int kArcadeChromaWinPasses = kChromaRounds;
-// FRAGGER's win line: the fragments a run has shot by the time the fall reaches its
-// floor pace (core/model/fragger.h), which is where the game stops getting harder and
-// starts being a test of how long you can hold it.
-constexpr int kArcadeFraggerWinHits = 40;
 
 // Menu navigation ------------------------------------------------
 // One global idle timer governs the whole menu tree: silence collapses every

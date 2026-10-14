@@ -1,4 +1,5 @@
-// test_stacker.cpp — native gates for the AV firewall Stacker minigame and the Replication Ghost.
+// test_stacker.cpp — native gates for the Stacker minigame, played MAINT runs and the
+// Replication Ghost.
 //
 // One slice of the native suite; see test_gates.h for the shared fixtures and
 // test_main.cpp for the roster that runs these. A save-vNN gate sits with the
@@ -168,7 +169,7 @@ void test_stacker_win_credits_the_tally_and_the_shape_rows() {
     Game g{StartMode::Hatched};
     g.model().setFragmentation(60);
     CHECK(g.stackerWins() == 0);
-    g.debugStartStackerScan();
+    startPlayedMaint(g, MaintKind::Av, ArcadeGameKind::Stacker);
     CHECK(playStackerBoard(g, [](int) { return 0; }));
     CHECK(g.stacker().won());
     CHECK(g.stacker().rowWidth(kStackerRows - 1) == kStackerStartWidth);
@@ -178,10 +179,11 @@ void test_stacker_win_credits_the_tally_and_the_shape_rows() {
     CHECK(!g.hasAchievement(ach::kHangingByABit));
 
     // Step one column right per row until the run is down to a single block, then hold
-    // that column to the top: a win, but the narrowest one there is.
+    // that column to the top: a win, but the narrowest one there is. The tally belongs to
+    // the BOARD, so the same win counts on the other process too.
     Game n{StartMode::Hatched};
     n.model().setFragmentation(60);
-    n.debugStartStackerScan();
+    startPlayedMaint(n, MaintKind::Defrag, ArcadeGameKind::Stacker);
     CHECK(playStackerBoard(n, [](int r) { return r < 2 ? r : 2; }));
     CHECK(n.stacker().won());
     CHECK(n.stacker().rowWidth(kStackerRows - 1) == 1);
@@ -191,9 +193,17 @@ void test_stacker_win_credits_the_tally_and_the_shape_rows() {
     CHECK(!n.hasAchievement(ach::kPerfectDefrag));
 }
 
-// A wall that stalls in mid-air is NOT a failed scan: it pays for the blocks it landed in
-// Fragmentation and costs nothing extra — but it cleans no process, because only a built
-// wall is a full scan. The halves are asserted together because taking only one of them
+// What `blocks` are worth off an AV scan at the dial's current setting: per block, up to
+// what a full scan takes.
+int scanWorth(const Game& g, int blocks, int frag) {
+    int worth = blocks * kPlayFragPerUnit * arcadeRewardMult(g.maintDifficulty());
+    if (worth > kAvReduction) worth = kAvReduction;
+    return worth > frag ? frag : worth;
+}
+
+// A scan that stalls in mid-air is NOT a failed scan: it pays for the blocks it landed in
+// Fragmentation and costs nothing extra — but it cleans no process, because only a won
+// run is a full scan. The halves are asserted together because taking only one of them
 // is the mistake.
 void test_stacker_short_board_pays_what_it_stacked_and_costs_nothing() {
     Game g{StartMode::Hatched};
@@ -201,30 +211,30 @@ void test_stacker_short_board_pays_what_it_stacked_and_costs_nothing() {
     g.model().setGhost(true);
     g.model().setDebuffs(2);
     const int mistakes = g.model().careMistakes();
-    g.debugStartStackerScan();
+    startPlayedMaint(g, MaintKind::Av, ArcadeGameKind::Stacker);
     // Base row at 0..2, then a drop with no column in common with it — the run keeps
     // nothing and the board ends there, well short of the top.
     CHECK(playStackerBoard(g, [](int r) { return r == 0 ? 0 : 4; }));
     CHECK(!g.stacker().running() && !g.stacker().won());
-    CHECK(g.stacker().row() < kStackerRows - 1);
-    const int worth = stackerScanWorth(g.stacker(), 60);
+    const int worth = scanWorth(g, g.stacker().blocks(), 60);
+    CHECK(worth > 0);
     g.onButton(press(Button::B));
     CHECK(g.model().fragmentation() == 60 - worth);     // paid for, just not much
     CHECK(g.model().careMistakes() == mistakes);        // no failure, so no mistake
     CHECK(g.model().hasGhost() && g.model().debuffs() == 2);   // no process cleaned
-    CHECK(g.stackerWins() == 0);                        // the tally counts BUILT walls
-    CHECK(!g.hasAchievement(ach::kPerfectDefrag));
-    CHECK(!g.hasAchievement(ach::kHangingByABit));
+    CHECK(g.stackerWins() == 0);                        // the tally counts CLEARED boards
 
-    // The rate is what makes height worth climbing for: the same run stopped higher has
-    // to be worth strictly more, up to the cap a full scan takes.
+    // Height is worth climbing for: the same run stopped higher is worth strictly more,
+    // up to the cap a full scan takes. On EASY, so the cap is not reached first.
     Game low{StartMode::Hatched};
     low.model().setFragmentation(90);
-    low.debugStartStackerScan();
+    low.debugSetMaintDifficulty(ArcadeDifficulty::Easy);
+    startPlayedMaint(low, MaintKind::Av, ArcadeGameKind::Stacker);
     CHECK(playStackerBoard(low, [](int r) { return r < 2 ? 0 : 4; }));
     Game high{StartMode::Hatched};
     high.model().setFragmentation(90);
-    high.debugStartStackerScan();
+    high.debugSetMaintDifficulty(ArcadeDifficulty::Easy);
+    startPlayedMaint(high, MaintKind::Av, ArcadeGameKind::Stacker);
     CHECK(playStackerBoard(high, [](int r) { return r < 6 ? 0 : 4; }));
     low.onButton(press(Button::B));
     high.onButton(press(Button::B));
@@ -233,14 +243,14 @@ void test_stacker_short_board_pays_what_it_stacked_and_costs_nothing() {
     CHECK(high.model().fragmentation() >= 90 - kAvReduction);   // never past a full scan
 }
 
-// A built wall is a FULL scan that cannot fail: debuffs, the ghost and a Quick scan's
-// worth of Fragmentation, all gone — however narrow the wall reached the top.
+// A won scan is a FULL one that cannot fail: debuffs, the ghost and a Quick scan's worth
+// of Fragmentation, all gone — however narrow the board reached the top.
 void test_stacker_cleared_board_is_a_full_scan() {
     Game g{StartMode::Hatched};
     g.model().setFragmentation(95);
     g.model().setGhost(true);
     g.model().setDebuffs(3);
-    g.debugStartStackerScan();
+    startPlayedMaint(g, MaintKind::Av, ArcadeGameKind::Stacker);
     CHECK(playStackerBoard(g, [](int) { return 0; }));
     CHECK(g.stacker().won());
     g.onButton(press(Button::B));
@@ -251,7 +261,7 @@ void test_stacker_cleared_board_is_a_full_scan() {
     Game n{StartMode::Hatched};
     n.model().setFragmentation(95);
     n.model().setGhost(true);
-    n.debugStartStackerScan();
+    startPlayedMaint(n, MaintKind::Av, ArcadeGameKind::Stacker);
     CHECK(playStackerBoard(n, [](int r) { return r < 2 ? r : 2; }));
     CHECK(n.stacker().won() && n.stacker().rowWidth(kStackerRows - 1) == 1);
     n.onButton(press(Button::B));
@@ -265,7 +275,7 @@ void test_stacker_cleared_board_is_a_full_scan() {
 void test_stacker_stopping_early_banks_the_board() {
     Game g{StartMode::Hatched};
     g.model().setFragmentation(70);
-    g.debugStartStackerScan();
+    startPlayedMaint(g, MaintKind::Av, ArcadeGameKind::Stacker);
     for (int r = 0; r < 4; ++r) {
         for (int guard = 0; guard < 4 * kStackerCols; ++guard) {
             if (g.stacker().left() == 0) break;
@@ -274,7 +284,7 @@ void test_stacker_stopping_early_banks_the_board() {
         g.onButton(press(Button::B));
     }
     CHECK(g.stacker().running());
-    const int worth = stackerScanWorth(g.stacker(), 70);
+    const int worth = scanWorth(g, g.stacker().blocks(), 70);
     CHECK(worth > 0);
     tapC(g);
     CHECK(g.model().fragmentation() == 70 - worth);
@@ -282,30 +292,73 @@ void test_stacker_stopping_early_banks_the_board() {
     CHECK(g.stackerWins() == 0);
 }
 
-// The MAINT route in: AV's action screen offers the Stacker as its second variant, and B
-// on it opens the board rather than rolling — while DEFRAG's third variant is FRAGGER.
-void test_maint_played_variants_open_their_boards() {
-    Game g{StartMode::Hatched};
-    g.model().setGhost(true);
-    g.debugSetBits(1000);
-    g.model().setFragmentation(40);
-    enterSubmenuId(g, SubmenuId::Maint);
-    g.onButton(press(Button::A));                       // AV row
-    g.onButton(press(Button::B));                       // open AV
-    for (int i = 0; i < kAvVariantStacker; ++i) g.onButton(press(Button::A));
-    g.onButton(press(Button::B));
-    CHECK(g.nav() == Game::Nav::Stacker);
-
+// The action screen's A cycle: past the fixed variants onto the PLAYED row at EASY, up
+// the dial to HARD, then back to QUICK. B on the played row opens the game wired to that
+// process, and a Defrag charges its Bits to do it.
+void test_maint_played_variant_walks_the_dial() {
     Game d{StartMode::Hatched};
     d.debugSetBits(1000);
     d.model().setFragmentation(40);
     enterSubmenuId(d, SubmenuId::Maint);
     d.onButton(press(Button::B));                       // open DEFRAG
-    for (int i = 0; i < kDefragVariantFragger; ++i) d.onButton(press(Button::A));
+    for (int i = 0; i < kDefragVariants - 1; ++i) d.onButton(press(Button::A));
+    CHECK(d.maintDifficulty() == ArcadeDifficulty::Easy);
+    d.onButton(press(Button::A));
+    CHECK(d.maintDifficulty() == ArcadeDifficulty::Medium);
+    d.onButton(press(Button::A));
+    CHECK(d.maintDifficulty() == ArcadeDifficulty::Hard);
     const int before = d.bits();
     d.onButton(press(Button::B));
-    CHECK(d.nav() == Game::Nav::Fragger);
+    CHECK(d.nav() == (kDefragPlayedGame == ArcadeGameKind::Stacker ? Game::Nav::Stacker
+                                                                   : Game::Nav::Fragger));
     CHECK(d.bits() < before);                           // the entry was charged
+
+    // One more A from HARD wraps to QUICK, which rolls rather than plays.
+    Game q{StartMode::Hatched};
+    q.model().setGhost(true);
+    enterSubmenuId(q, SubmenuId::Maint);
+    q.onButton(press(Button::A));                       // AV row
+    q.onButton(press(Button::B));                       // open AV
+    for (int i = 0; i < kAvVariants - 1 + 2 + 1; ++i) q.onButton(press(Button::A));
+    q.onButton(press(Button::B));
+    CHECK(q.nav() == Game::Nav::Process);
+}
+
+// The wiring is content, not a rule of either process: point each process at the OTHER
+// engine and both still settle on their own terms. A won FRAGGER run as an AV scan is a
+// full scan; a Stacker board as a DEFRAG pays its blocks in frag and Bits.
+void test_played_maint_engines_are_interchangeable() {
+    Game a{StartMode::Hatched};
+    a.model().setFragmentation(50);
+    a.model().setGhost(true);
+    startPlayedMaint(a, MaintKind::Av, ArcadeGameKind::Fragger);
+    CHECK(a.nav() == Game::Nav::Fragger);
+    for (int i = 0; i < kFraggerWinHits; ++i) {
+        a.fragger().place(kFraggerRows - 1, a.fragger().lane(), Fragger::Cell::Fragment);
+        a.onButton(press(Button::B));
+    }
+    a.fragger().place(kFraggerRows - 1, a.fragger().lane() == 0 ? 1 : 0,
+                      Fragger::Cell::Fragment);
+    a.debugStepFragger();                               // the run ends; it was won first
+    a.onButton(press(Button::B));
+    CHECK(a.nav() == Game::Nav::Process);
+    CHECK(!a.model().hasGhost());
+    CHECK(a.model().fragmentation() == 50 - kAvReduction);
+
+    Game d{StartMode::Hatched};
+    d.model().setFragmentation(100);
+    d.debugSetMaintDifficulty(ArcadeDifficulty::Easy);
+    const int bits = d.bits();
+    startPlayedMaint(d, MaintKind::Defrag, ArcadeGameKind::Stacker);
+    CHECK(d.nav() == Game::Nav::Stacker);
+    // Three rows then a miss: a board short of the top, so no achievement pays Bits of
+    // its own into the wallet being measured.
+    CHECK(playStackerBoard(d, [](int r) { return r < 3 ? 0 : 4; }));
+    CHECK(!d.stacker().won());
+    const int blocks = d.stacker().blocks();
+    d.onButton(press(Button::B));
+    CHECK(d.model().fragmentation() == 100 - blocks * kPlayFragPerUnit);
+    CHECK(d.bits() == bits + blocks * kPlayBitsPerUnit);
 }
 
 // The counting ladder rides the ordinary sweep, like every other counted series, and the

@@ -21,14 +21,15 @@ const GameBriefDef kStackerBrief[] = {
     {"THE SHAVE", "Locking shaves off anything not resting on a locked block below. "
                   "What survives becomes the next run, narrower, re-entering from the "
                   "left wall."},
-    {"THE STAKES", "Lock the top row with at least one block and the wall is built. "
+    {"THE STAKES", "Lock the top row with at least one block and the board clears. "
                    "Lose every block on a lock and the run is over. C stops early and "
                    "banks whatever is already locked."},
 };
 
 const GameBriefDef kFraggerBrief[] = {
-    {"HOLD THE LANES", "Blocks fall down seven lanes toward your scan head. A moves it "
-                       "left, C moves it right, B fires straight up its lane."},
+    {"HOLD THE LANES", "Blocks fall down the lanes toward your scan head - one more lane "
+                       "for every step up in difficulty. A moves it left, C moves it "
+                       "right, B fires straight up its lane."},
     {"FRAGMENTS, FILES", "Shoot every crossed-out fragment. A solid file is a good "
                          "block: your shot stops on it, so wait for it to land and "
                          "catch whatever was behind it."},
@@ -90,22 +91,24 @@ const GameBriefDef kChromaBrief[] = {
 };
 
 const ArcadeGameDef kArcadeGames[] = {
-    // The played AV scan, off its pet. Nothing about the board changes here — it is
+    // A played MAINT board, off its pet. Nothing about the board changes here — it is
     // the same deterministic slide, so a run that went well in MAINT goes exactly the
-    // same way in the arcade. The id predates the firewall and stays: it is the save key.
-    {"stacker", "FIREWALL STACKER",
+    // same way in the arcade.
+    {"stacker", "STACKER",
      "LAND THE RUN. THE OVERHANG IS SHAVED OFF.",
      "ICON_MAINT_AV", "HOW FAST THE RUN SLIDES.",
      ArcadeGameKind::Stacker, ArcadeScoring::Incremental, ArcadeUnlock::Always,
-     kStackerBrief, static_cast<int>(sizeof(kStackerBrief) / sizeof(kStackerBrief[0]))},
+     kStackerBrief, static_cast<int>(sizeof(kStackerBrief) / sizeof(kStackerBrief[0])),
+     "BLOCK"},
 
-    // The played Defrag, off its disk: the same fall and the same quickening, priced by
-    // the till instead of in Fragmentation and Bits. Its dial scales the whole curve.
+    // A played MAINT run, off its disk: the same fall and the same quickening, priced by
+    // the till. Its dial is the one that adds LANES rather than pace.
     {"fragger", "FRAGGER",
      "SHOOT THE FRAGMENTS. LET THE FILES LAND.",
-     "ICON_MAINT_DEFRAG", "HOW FAST THE BLOCKS FALL.",
+     "ICON_MAINT_DEFRAG", "HOW MANY LANES TO HOLD.",
      ArcadeGameKind::Fragger, ArcadeScoring::Incremental, ArcadeUnlock::Always,
-     kFraggerBrief, static_cast<int>(sizeof(kFraggerBrief) / sizeof(kFraggerBrief[0]))},
+     kFraggerBrief, static_cast<int>(sizeof(kFraggerBrief) / sizeof(kFraggerBrief[0])),
+     "HIT"},
 
     // The Phishing hatch, with no egg riding on it. Its dial is the only one that
     // isn't speed: more halvings is a narrower survivor, so the tell has to be found
