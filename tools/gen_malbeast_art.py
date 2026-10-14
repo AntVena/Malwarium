@@ -2020,6 +2020,243 @@ def boss_count_conficker():
     return stack(idle, attack)
 
 
+def boss_cult_of_the_dead_code():
+    """Cult of the Dead Code — the Silk Lode's Deadlink Stair, front-on. A robed cultist in
+    a horned cow-skull mask, the cult's own emblem. The attack raises the arms and holds up a
+    broken link. Its escort round, the First Rite, wears this sheet too."""
+    idle = grid(
+        ".##..........##.",
+        "..############..",
+        "..####....####..",
+        ".....##..##.....",
+        ".....#....#.....",
+        ".....##..##.....",
+        "......####......",
+        "....########....",
+        "...##..##..##...",
+        "..##...##...##..",
+        "..#....##....#..",
+        "..#....##....#..",
+        "..###..##..###..",
+        "....########....",
+    )
+    attack = grid(
+        ".##..........##.",
+        "..############..",
+        "..####....####..",
+        "###::##..##.....",
+        "###::#....#.....",
+        ".##::##..##..##.",
+        ".##:::####...##.",
+        ".##############.",
+        ".##.#..##..#.##.",
+        ".##.#..##..#.##.",
+        "....#..##..#....",
+        "....#..##..#....",
+        "....#..##..#....",
+        "....########....",
+    )
+    return stack(idle, attack)
+
+
+def boss_mariposa():
+    """Mariposa of the Weave — the Botnet Funnel, front-on. A butterfly (mariposa), for the
+    botnet: clubbed antennae, upper and lower wings, a web strung across each upper wing. The
+    attack flares the wings up and out."""
+    idle = grid(
+        ".....##..##.....",
+        ".....######.....",
+        "..####:##:####..",
+        ".###.######.###.",
+        ".#.#...##...#.#.",
+        ".#####.##.#####.",
+        ".#.#...##...#.#.",
+        ".###...##...###.",
+        "..#....##....#..",
+        "..#....##....#..",
+        "..#....##....#..",
+        "..##.######.##..",
+        "...###.##.###...",
+        "................",
+    )
+    attack = grid(
+        ".#####....#####.",
+        "##.#.##..##.#.##",
+        "#..#.######.#..#",
+        "#.####.##.####.#",
+        "#..#...##...#..#",
+        "####...##...####",
+        "..#....##....#..",
+        "..#....##....#..",
+        "..#....##....#..",
+        "..##.######.##..",
+        "...###.##.###...",
+        ".......##.......",
+        ".......##.......",
+        "................",
+    )
+    return stack(idle, attack)
+
+
+def boss_cih_the_unwriter():
+    """CIH the Unwriter — the Bitrot Fissure, front-on. A BIOS chip walking on its pins, for
+    the virus that wiped them: a crack across its face. The attack splits the crack open."""
+    idle = grid(
+        "....#.#..#.#....",
+        "....#.#..#.#....",
+        "..############..",
+        "..#..........#..",
+        "###..#....#..###",
+        "..#..........#..",
+        "..#....#.....#..",
+        "###..######..###",
+        "..#..........#..",
+        "..#..........#..",
+        "..############..",
+        "....#.#..#.#....",
+        "....#.#..#.#....",
+        "....#.#..#.#....",
+    )
+    attack = grid(
+        "....#.#..#.#....",
+        "....#.#..#.#....",
+        "..############..",
+        "..#..........#..",
+        "###..#....#..###",
+        "..#..........#..",
+        "..#..######..#..",
+        "###..#::::#..###",
+        "..#..######..#..",
+        "..#..........#..",
+        "..############..",
+        "....#.#..#.#....",
+        "....#.#..#.#....",
+        "....#.#..#.#....",
+    )
+    return stack(idle, attack)
+
+
+def boss_necurs_the_raiser():
+    """Necurs the Raiser — the Zombie Gullet, front-on. A zombie clawing up out of heaped
+    earth, arms reaching. The attack heaves it higher, mouth open. Its escort round, the
+    First Host, wears this sheet too."""
+    idle = grid(
+        "................",
+        "................",
+        ".#...........#..",
+        ".#...######..#..",
+        ".##..#....#..##.",
+        ".##..##..##..##.",
+        ".##..#....#..##.",
+        ".##..######..##.",
+        ".##....##....##.",
+        ".##############.",
+        "....#......#....",
+        "....#......#....",
+        ".####......####.",
+        "################",
+    )
+    attack = grid(
+        ".#...........#..",
+        ".#...######..#..",
+        ".##..#....#..##.",
+        ".##..##..##..##.",
+        ".##..######..##.",
+        ".##..##::##..##.",
+        ".##...####...##.",
+        ".##############.",
+        "....#......#....",
+        "....#......#....",
+        "....#......#....",
+        "....#......#....",
+        ".####......####.",
+        "################",
+    )
+    return stack(idle, attack)
+
+
+def boss_29a_hierophant():
+    """The 29A Hierophant — the Zero Day Shrine, front-on. A priest in a stacked triple tiara,
+    a staff with the triple cross, a hand raised in blessing. The attack raises the staff
+    and the other hand."""
+    idle = grid(
+        ".......##.......",
+        "......####......",
+        ".#....####......",
+        "###..##..##.....",
+        ".#...######.....",
+        "###...#..#......",
+        ".#....#..#...##.",
+        ".#....####...##.",
+        ".#..########.#..",
+        ".#..#..##..###..",
+        ".####..##..##...",
+        ".#.#...##...#...",
+        ".#.#...##...#...",
+        ".#.##########...",
+    )
+    attack = grid(
+        ".#.....##.......",
+        "###...####......",
+        ".#....####......",
+        "###..##..##.....",
+        ".#...######...##",
+        ".#....#..#....##",
+        ".#....####...##.",
+        ".#....#::#...##.",
+        ".#..########.##.",
+        ".####..##..####.",
+        "...#...##..##...",
+        "...#...##...#...",
+        "...#...##...#...",
+        "...##########...",
+    )
+    return stack(idle, attack)
+
+
+def boss_mirai():
+    """Mirai the Many-Legged — the Silk Lode's area boss, facing LEFT, on the 96x64 cell. A
+    centipede of cheap devices, a lens on every segment, arching across the cell on many
+    legs. The attack rears the head with the mandibles open."""
+    idle = grid(
+        "........................",
+        "........................",
+        "........................",
+        "........................",
+        ".#..#...................",
+        ".#..#.....#######.......",
+        "######..###..#..###.....",
+        "#.#..######.###.#####...",
+        "#.........###.###...##..",
+        "#.......###.#.#.###.###.",
+        "###..####.#.#.#.#.#...#.",
+        "######..#.#.....#.##..##",
+        "...................#####",
+        "...................#.###",
+        ".....................#.#",
+        ".....................#.#",
+    )
+    attack = grid(
+        ".#..#...................",
+        "######..................",
+        "####.#..................",
+        ":::#.#..................",
+        ":::#.#..................",
+        "####.#....#######.......",
+        "#######.###..#..###.....",
+        "...##.#####.###.#####...",
+        "....#.....###.###...##..",
+        "....##..###.#.#.###.###.",
+        ".....####.#.#.#.#.#...#.",
+        "........#.#.....#.##..##",
+        "...................#####",
+        "...................#.###",
+        ".....................#.#",
+        ".....................#.#",
+    )
+    return stack(idle, attack)
+
+
 RECIPES = {
     "SPR_MALBEAST_GLITCHHOG": glitchhog,
     "SPR_MALBEAST_SEGFAULT_PUP": segfault_pup,
@@ -2067,6 +2304,12 @@ RECIPES = {
     "SPR_BOSS_JOKER_VIRUS": boss_joker_virus,
     "SPR_BOSS_KING_KIMBLE": boss_king_kimble,
     "SPR_BOSS_COUNT_CONFICKER": boss_count_conficker,
+    "SPR_BOSS_CULT_OF_THE_DEAD_CODE": boss_cult_of_the_dead_code,
+    "SPR_BOSS_MARIPOSA": boss_mariposa,
+    "SPR_BOSS_CIH_THE_UNWRITER": boss_cih_the_unwriter,
+    "SPR_BOSS_NECURS_THE_RAISER": boss_necurs_the_raiser,
+    "SPR_BOSS_29A_HIEROPHANT": boss_29a_hierophant,
+    "SPR_BOSS_MIRAI": boss_mirai,
 }
 
 # Short aliases for --preview / --only, so the CLI takes `glitchhog` not the full symbol.

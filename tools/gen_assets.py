@@ -146,6 +146,7 @@ FACING = {
     "SPR_BOSS_SHARMAN": "Left",
     "SPR_BOSS_TONELOC": "Left",
     "SPR_BOSS_BARON_BONZI": "Left",
+    "SPR_BOSS_MIRAI": "Left",
     "SPR_BOSS_NIMDA": "Left",
     "SPR_BOSS_MORRIS_THE_WYRM": "Left",
     "SPR_BOSS_SUPERFISH": "Left",

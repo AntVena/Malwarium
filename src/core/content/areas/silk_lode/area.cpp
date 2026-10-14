@@ -138,21 +138,21 @@ const AreaDef kAreaSilkLode = {
     // Two of them arrive as more than one malbeast: a cult is a congregation, and a
     // coven is three. Both are drawn a rung shallower on the way in, so the escorts are
     // the same curve evaluated a step back rather than a second stat block.
-    {{"CULT OF THE DEAD CODE", nullptr,
+    {{"CULT OF THE DEAD CODE", "SPR_BOSS_CULT_OF_THE_DEAD_CODE",
       {"dead_link"},
       {{"THE FIRST RITE", -1}, {"CULT OF THE DEAD CODE"}}},
-     {"MARIPOSA OF THE WEAVE", nullptr, {"funnel_web"}},
-     {"CIH THE UNWRITER", nullptr, {"unwrite"}},
-     {"NECURS THE RAISER", nullptr,
+     {"MARIPOSA OF THE WEAVE", "SPR_BOSS_MARIPOSA", {"funnel_web"}},
+     {"CIH THE UNWRITER", "SPR_BOSS_CIH_THE_UNWRITER", {"unwrite"}},
+     {"NECURS THE RAISER", "SPR_BOSS_NECURS_THE_RAISER",
       {"raise_host"},
       {{"THE FIRST HOST", -1}, {"NECURS THE RAISER"}}},
      // The signature is a SINGLE round on purpose: subBossEnemy hands the apex rider to
      // sub 4 only, and an escort is that boss drawn a rung shallower — so a gauntlet here
      // would put the area's tell on a doorway instead of on the wall. A hierophant is the
      // one who shows the sacred, and is singular, which a coven is not.
-     {"THE 29A HIEROPHANT", nullptr, {"polymorph"}}},
+     {"THE 29A HIEROPHANT", "SPR_BOSS_29A_HIEROPHANT", {"polymorph"}}},
     "MIRAI THE MANY-LEGGED",
-    /*areaBossSprite=*/nullptr,
+    /*areaBossSprite=*/"SPR_BOSS_MIRAI",
     /*areaBossMoveId=*/"legion",
     /*apexThreatMoveId=*/"c2_hijack",  // the signature boss's SCRAMBLE rider
     // The wilds bill in the same currency the court does: a thread you walked into, and
