@@ -1783,6 +1783,243 @@ def boss_morris_the_wyrm():
     return stack(idle, attack)
 
 
+def boss_eight_pwns():
+    """The Eight Pwns — Castle Rapidscare's 404 Drawbridge, front-on. A rank of chess pawns:
+    one with a face stepping out in front, two of the rank behind it. The attack advances
+    the front pawn a step — the rank advance."""
+    idle = grid(
+        "................",
+        "................",
+        "......####......",
+        ".....##..##.....",
+        ".....##..##.....",
+        ".#...#....#...#.",
+        ".#..###..###..#.",
+        "###...#..#...###",
+        ".#....#..#....#.",
+        ".#....#..#....#.",
+        ".#....#..#....#.",
+        "###..##..##..###",
+        "###.##....##.###",
+        "....########....",
+    )
+    attack = grid(
+        "......####......",
+        ".....##..##.....",
+        ".....##..##.....",
+        ".....#....#.....",
+        "....###..###....",
+        ".#....#..#....#.",
+        ".#....#..#....#.",
+        "###...#..#...###",
+        ".#....#..#....#.",
+        ".#...##..##...#.",
+        ".#..##....##..#.",
+        "###.########.###",
+        "###..........###",
+        "................",
+    )
+    return stack(idle, attack)
+
+
+def boss_red_queen_melissa():
+    """Red Queen Melissa — the Mirror Maze, front-on. A card queen: a crown, a ruff under a
+    narrow neck, a heart on a spreading gown, a sceptre held at her side. The attack raises
+    both arms and opens the mouth."""
+    idle = grid(
+        ".....######..###",
+        ".....#....#..###",
+        ".....#....#...#.",
+        ".....##..##...#.",
+        ".....#....#...#.",
+        ".....######...#.",
+        ".......##.....#.",
+        "...############.",
+        ".....#....#..##.",
+        ".....#....#...#.",
+        "....##.##.##..#.",
+        "....#..##..#..#.",
+        "...##......##...",
+        "...##########...",
+    )
+    attack = grid(
+        ".....######.....",
+        ".....#....#.....",
+        "..#..#....#..#..",
+        "..#..##..##..#..",
+        "..#..######..#..",
+        "..#..##::##..#..",
+        "..##..####..##..",
+        "...##########...",
+        ".....#....#.....",
+        ".....#....#.....",
+        "....##.##.##....",
+        "....#..##..#....",
+        "...##......##...",
+        "...##########...",
+    )
+    return stack(idle, attack)
+
+
+def boss_knave_winfixer():
+    """Knave Winfixer — Opt-Out Obscura, front-on. A helmeted knave behind a kite shield with
+    a cross on it, for the fake fixer: the shield that fixes nothing. The attack raises the
+    sword."""
+    idle = grid(
+        ".........####...",
+        "........##..##..",
+        "........######..",
+        "........#....#..",
+        "######..######..",
+        "#.##.#....##....",
+        "#.##.#.#########",
+        "########.......#",
+        "#.##.#.#.......#",
+        "######.#.......#",
+        ".####..#########",
+        ".####...##..##.#",
+        "..##....##..##.#",
+        "........##..##.#",
+    )
+    attack = grid(
+        ".........####..#",
+        "........##..##.#",
+        "........######.#",
+        "........#....#.#",
+        "######..######.#",
+        "#.##.#....##...#",
+        "#.##.#.#########",
+        "########......#.",
+        "#.##.#.#......#.",
+        "######.#......#.",
+        ".####..########.",
+        ".####...##..##..",
+        "..##....##..##..",
+        "........##..##..",
+    )
+    return stack(idle, attack)
+
+
+def boss_joker_virus():
+    """Joker Virus — the Decoy Dungeon, front-on. A jester: a three-pointed cap with bells, a
+    wide grin, motley. The attack cracks the grin open and flings the arms out."""
+    idle = grid(
+        ".###..####..###.",
+        ".###...##...###.",
+        "..###..##..###..",
+        "...##########...",
+        "...###....###...",
+        ".....#....#.....",
+        ".....##..##.....",
+        ".....#....#.....",
+        ".....######.....",
+        "....##.##.##....",
+        "...##..##..##...",
+        "...#...##...#...",
+        "...##########...",
+        ".....##..##.....",
+    )
+    attack = grid(
+        ".###..####..###.",
+        ".###...##...###.",
+        "..###..##..###..",
+        "...##########...",
+        "...###....###...",
+        ".....#....#.....",
+        ".....######.....",
+        "#....#::::#....#",
+        "#....######....#",
+        "######.##.######",
+        "....#..##..#....",
+        "....#..##..#....",
+        "....########....",
+        ".....##..##.....",
+    )
+    return stack(idle, attack)
+
+
+def boss_king_kimble():
+    """King Kimble — the Comment Catacombs, front-on. A stout king seated on his throne, crown
+    above its finials, holding an hourglass for the premium wait. The attack thrusts the
+    hourglass up."""
+    idle = grid(
+        ".....######.....",
+        ".....#....#.....",
+        ".##..#....#..##.",
+        ".##..##..##..##.",
+        ".#####....#####.",
+        ".#.....##.....#.",
+        ".#..########..#.",
+        ".#..#......#..##",
+        ".#..########...#",
+        ".#..#......#...#",
+        ".#..#......#..##",
+        ".#..########..#.",
+        ".#............#.",
+        ".##############.",
+    )
+    attack = grid(
+        ".....######.....",
+        ".....#....#....#",
+        ".##..#....#..###",
+        ".##..##..##..#.#",
+        ".###############",
+        ".#....#::#....#.",
+        ".#..########..#.",
+        ".#..#......#..#.",
+        ".#..########..#.",
+        ".#..#......#..#.",
+        ".#..#......#..#.",
+        ".#..########..#.",
+        ".#............#.",
+        ".##############.",
+    )
+    return stack(idle, attack)
+
+
+def boss_count_conficker():
+    """Count Conficker — Castle Rapidscare's area boss, front-on, on the 96x64 cell. A vampire
+    count: slicked hair to a widow's peak, a high collar flaring, wrapped in his cape, bats
+    about him. The attack throws the cape open into bat wings the width of the cell."""
+    idle = grid(
+        "........................",
+        "......#..######.##..#.#.",
+        ".#.#..##.######.#...###.",
+        ".###...####..##.#.......",
+        "........###...###.......",
+        "........#.######........",
+        ".......##..##..##.......",
+        ".......#...##...#.......",
+        ".......#...##...#.......",
+        ".#.#...#...##...#.......",
+        ".###...#...##...#...#.#.",
+        ".......#...##...#...###.",
+        ".......#...##...#.......",
+        ".......#...##...#.......",
+        ".......#...##...#.......",
+        "......############......",
+    )
+    attack = grid(
+        "........................",
+        "......#..######.##......",
+        "......##.######.#.......",
+        ".......####..##.#.......",
+        "........#########.......",
+        "........#.#::###........",
+        "#########.####.#########",
+        "#...#...#......#...#...#",
+        "#......................#",
+        "####................####",
+        "#..######......######..#",
+        "#...#...##....##...#...#",
+        ".........#....#.........",
+        ".........#....#.........",
+        ".........#....#.........",
+        "........########........",
+    )
+    return stack(idle, attack)
+
+
 RECIPES = {
     "SPR_MALBEAST_GLITCHHOG": glitchhog,
     "SPR_MALBEAST_SEGFAULT_PUP": segfault_pup,
@@ -1824,6 +2061,12 @@ RECIPES = {
     "SPR_BOSS_CASTELLAN_CREEPER": boss_castellan_creeper,
     "SPR_BOSS_HERALD_ANNA_KOVA": boss_herald_anna_kova,
     "SPR_BOSS_MORRIS_THE_WYRM": boss_morris_the_wyrm,
+    "SPR_BOSS_EIGHT_PWNS": boss_eight_pwns,
+    "SPR_BOSS_RED_QUEEN_MELISSA": boss_red_queen_melissa,
+    "SPR_BOSS_KNAVE_WINFIXER": boss_knave_winfixer,
+    "SPR_BOSS_JOKER_VIRUS": boss_joker_virus,
+    "SPR_BOSS_KING_KIMBLE": boss_king_kimble,
+    "SPR_BOSS_COUNT_CONFICKER": boss_count_conficker,
 }
 
 # Short aliases for --preview / --only, so the CLI takes `glitchhog` not the full symbol.

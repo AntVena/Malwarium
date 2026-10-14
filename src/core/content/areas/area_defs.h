@@ -106,6 +106,9 @@ constexpr int kMaxSubBossRounds = 3;
 struct SubBossRound {
     const char* name;
     int rung = 0;
+    // A round that is a DIFFERENT malbeast from its boss (the Joker's pawns, let back in)
+    // names that one's sheet; nullptr wears the boss's own (SubBossDef::sprite).
+    const char* sprite = nullptr;
 };
 
 // One sub-area boss. `name` is the BANNER — what the EXPL row calls it and what the
@@ -145,7 +148,7 @@ struct SubBossDef {
         return n > 0 ? n : 1;
     }
     SubBossRound round(int i) const {
-        if (i < 0 || i >= kMaxSubBossRounds || !rounds[i].name) return {name, 0};
+        if (i < 0 || i >= kMaxSubBossRounds || !rounds[i].name) return {name, 0, nullptr};
         return rounds[i];
     }
 };

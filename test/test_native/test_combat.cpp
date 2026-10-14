@@ -179,8 +179,12 @@ void test_every_combatant_sprite_resolves() {
     for (int a = 0; a < kAreaCount; ++a) {
         const AreaDef& def = area(a);
         for (int s = 0; s < kSubAreasPerArea; ++s) {
-            for (const CombatEnemy& e : subAreaBoss(a, s).rounds)
-                CHECK(r.sprite(e.spriteName) != nullptr);
+            const BossGauntlet sg = subAreaBoss(a, s);
+            for (const CombatEnemy& e : sg.rounds) CHECK(r.sprite(e.spriteName) != nullptr);
+            // A round naming its own sheet wears it; any other wears its boss's.
+            for (int k = 0; k < def.subBosses[s].roundCount(); ++k)
+                if (const char* own = def.subBosses[s].round(k).sprite)
+                    CHECK(std::strcmp(sg.rounds[k].spriteName, own) == 0);
             if (const char* spr = def.subBosses[s].sprite) {
                 const SpriteData* sd = r.sprite(spr);
                 CHECK(sd != nullptr && sd->rows == 2);

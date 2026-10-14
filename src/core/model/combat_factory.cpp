@@ -681,7 +681,8 @@ BossGauntlet subAreaBoss(int areaIdx, int sub) {
         int depth = sub + rd.rung;
         if (depth < -(kSubAreasPerArea - 1)) depth = -(kSubAreasPerArea - 1);
         if (depth >= kSubAreasPerArea) depth = kSubAreasPerArea - 1;
-        g.rounds.push_back(subBossEnemy(a, tier, depth, rd.name, b.sprite, &b));
+        g.rounds.push_back(
+            subBossEnemy(a, tier, depth, rd.name, rd.sprite ? rd.sprite : b.sprite, &b));
     }
     return g;
 }
