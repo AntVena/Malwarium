@@ -614,11 +614,17 @@ void test_firmware_version_ordering() {
 
     // Fields don't overlap: a maxed patch never outranks a minor bump, and a
     // maxed minor never outranks a major one.
-    constexpr uint32_t kV0_1_0  = 0 * 10000u + 1 * 100u + 0;
-    constexpr uint32_t kV0_1_99 = 0 * 10000u + 1 * 100u + 99;
-    constexpr uint32_t kV0_99_0 = 0 * 10000u + 99 * 100u + 0;
-    constexpr uint32_t kV1_0_0  = 1 * 10000u + 0 * 100u + 0;
-    CHECK(kV0_1_0 < kV0_1_99 && kV0_1_99 < kV0_99_0 && kV0_99_0 < kV1_0_0);
+    CHECK(packVersion(0, 1, 999) < packVersion(0, 2, 0));
+    CHECK(packVersion(0, 999, 999) < packVersion(1, 0, 0));
+    CHECK(packVersion(0, 99, 999) < packVersion(0, 100, 0));   // past the old ceiling
+
+    // MINOR was two digits (MAJOR * 100000) before it filled. For every 0.x version the
+    // two packings agree, so a device already in the field compares its own code
+    // against a widened manifest and still sees every later build as newer.
+    for (uint32_t minor = 0; minor < 100; minor += 7)
+        for (uint32_t patch : {0u, 1u, 999u})
+            CHECK(packVersion(0, minor, patch) == 0 * 100000u + minor * 1000u + patch);
+    CHECK(packVersion(0, 100, 0) > 0 * 100000u + 99 * 1000u + 999);
 }
 
 // A clip names a row and a column count on the creature's OWN sheet, and nothing at

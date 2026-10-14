@@ -24,11 +24,10 @@
 #      That is correct behaviour and the single most common way an OTA test looks
 #      broken when it isn't. Bump, or expect no offer.
 #
-#      The three parts, and which one to reach for: `major` is a release. `feature`
-#      is a new feature or a small save bump. `fix` is everything else, and it is
-#      the one you want nearly every time — it has three digits, so a stretch
-#      between two features holds a thousand publishes without borrowing from the
-#      number above it.
+#      Which part a release moves is decided in include/version.h (WHICH NUMBER A
+#      RELEASE MOVES). In short: `fix` nearly every time; `feature` only when a
+#      player can do something new or the save format changed; `major` by a
+#      deliberate call.
 #
 #   3. `make pages BASE=<this laptop>` — builds the firmware image
 #      (include/version.h names it), the web bundle tar (web/VERSION names it),
@@ -68,7 +67,7 @@
 #
 # Usage:
 #   ./tools/serve_updates.sh --bump fix             # the everyday one: bump, build, serve
-#   ./tools/serve_updates.sh --bump feature         # a feature or a small save bump
+#   ./tools/serve_updates.sh --bump feature         # something new to do, or a save bump
 #   ./tools/serve_updates.sh --bump major
 #   ./tools/serve_updates.sh --bump web             # the 'Pedia bundle instead of firmware
 #   ./tools/serve_updates.sh --bump both            # firmware fix + web
@@ -151,14 +150,14 @@ fi
 # the version its own build reports — a bump passed only to the publisher would
 # describe an image that disagrees with itself.
 #
-# Both artifacts pack their version the same way — MAJOR * 100000 + MINOR * 1000 +
-# PATCH, mirroring include/version.h — so `fix` has three digits to spend and a
-# stretch between features holds a thousand publishes. Roll either field over and
-# the code would carry into the one above it, which is why this refuses instead.
-pack_code() { echo $(( $1 * 100000 + $2 * 1000 + $3 )); }
+# Both artifacts pack their version with include/version.h's packVersion —
+# MAJOR * 1000000 + MINOR * 1000 + PATCH — so MINOR and PATCH each have three digits.
+# Roll either over and the code would carry into the one above it, which is why this
+# refuses instead.
+pack_code() { echo $(( $1 * 1000000 + $2 * 1000 + $3 )); }
 
 check_range() {  # $1=maj $2=min $3=pat, named for the error
-    [ "$2" -lt 100 ] || die "MINOR $2 is out of range (0..99) — bump major"
+    [ "$2" -lt 1000 ] || die "MINOR $2 is out of range (0..999) — bump major"
     [ "$3" -lt 1000 ] || die "PATCH $3 is out of range (0..999) — bump feature"
 }
 

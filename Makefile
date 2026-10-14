@@ -160,8 +160,8 @@ firmware-artifact:
 # with the DEVICE's parser — a manifest the device would reject looks exactly like
 # a dead network from the operator's side, so the publish fails here instead.
 #
-# The firmware `code` below repacks MAJOR/MINOR/PATCH the way include/version.h
-# does (MINOR two digits, PATCH three). The two must agree: the published code is
+# The firmware `code` below repacks MAJOR/MINOR/PATCH the way include/version.h's
+# packVersion does. The two must agree: the published code is
 # what a device compares its OWN compiled code against, so a mismatch either
 # offers an update the device already has or hides one it doesn't.
 manifest: firmware-artifact
@@ -175,7 +175,7 @@ manifest: firmware-artifact
 	{ \
 	  printf '{"artifacts":[\n'; \
 	  printf '  {"id":"firmware","version":"%s.%s.%s","code":%s,\n' "$$maj" "$$min" "$$pat" \
-	    "$$((maj * 100000 + min * 1000 + pat))"; \
+	    "$$((maj * 1000000 + min * 1000 + pat))"; \
 	  printf '   "url":"%s/%s","size":%s,\n' "$$base" "$$fw" "$$(wc -c < "$(DIST)/$$fw" | tr -d ' ')"; \
 	  printf '   "sha256":"%s"},\n' "$$(shasum -a 256 "$(DIST)/$$fw" | cut -d' ' -f1)"; \
 	  printf '  {"id":"web","version":"%s","code":%s,\n' \

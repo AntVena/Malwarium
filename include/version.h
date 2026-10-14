@@ -11,12 +11,20 @@
 //                          strictly greater than this one, so this — not the
 //                          string — is what actually gates an OTA.
 //
-// WHAT EACH NUMBER MEANS. MAJOR is a release. MINOR is a new feature or a small
-// save bump — the thing you'd write a note about. PATCH is everything else, and
-// there are a LOT of those: every publish to a test device needs its own number,
-// because a device only takes an artifact whose code is strictly higher than what
-// it runs. So PATCH gets three digits and MINOR two, and a feature-to-feature
-// stretch has a thousand publishes of room in it.
+// WHICH NUMBER A RELEASE MOVES. This is the one place the rule is written; the bump
+// tooling (tools/serve_updates.sh) and the web bundle (web/VERSION) defer to it.
+//
+//   MAJOR — a release of the device itself. Moved by a deliberate call, never as the
+//           next step of a run of features.
+//   MINOR — the player can do something they could not before: a new screen, mode,
+//           activity or system. Or the SAVE FORMAT changed (save.h kSaveVersion),
+//           because that is the one change a rollback cannot simply undo.
+//   PATCH — everything else, which is nearly everything: new content inside a system
+//           that already exists (wilds, bosses, art, items, moves, chapters),
+//           balance and tuning, wording and UI polish, and bug fixes.
+//
+// Every release gets a note, so "worth a note" is not the test — the test is whether
+// a player has something new to DO.
 //
 // A release build overrides the numbers from the build system instead of
 // editing this file, so a published binary is stamped from the tag that
@@ -29,10 +37,11 @@
 // Day to day nobody edits this by hand: `tools/serve_updates.sh --bump fix`
 // (or `feature` / `major`) rewrites the three numbers and publishes in one go.
 //
-// MINOR occupies two digits of the code and PATCH three, so MINOR stays in 0..99
-// and PATCH in 0..999. Over-running either is a compile error rather than a silent
-// carry into the field above it (a PATCH of 1000 would otherwise read as the next
-// MINOR, and a device would decline the update it was just handed).
+// THE CODE is MAJOR * 1000000 + MINOR * 1000 + PATCH (packVersion), so MINOR and PATCH
+// each get three digits (0..999). Over-running either is a compile error rather than a
+// silent carry into the field above it — a device would decline the update it was just
+// handed. MINOR was two digits until it filled at 0.99; for every 0.x version the two
+// packings give the same code, so widening it changed no number already in the field.
 #pragma once
 
 #include <cstdint>
@@ -58,14 +67,19 @@ constexpr const char* kFirmwareVersion = "v" MAL_VERSION_STR(FW_VERSION_MAJOR)
                                          "." MAL_VERSION_STR(FW_VERSION_MINOR)
                                          "." MAL_VERSION_STR(FW_VERSION_PATCH);
 
-static_assert(FW_VERSION_MINOR >= 0 && FW_VERSION_MINOR < 100,
-              "FW_VERSION_MINOR must fit two digits (0..99)");
+static_assert(FW_VERSION_MINOR >= 0 && FW_VERSION_MINOR < 1000,
+              "FW_VERSION_MINOR must fit three digits (0..999)");
 static_assert(FW_VERSION_PATCH >= 0 && FW_VERSION_PATCH < 1000,
               "FW_VERSION_PATCH must fit three digits (0..999) — bump MINOR instead");
 
-constexpr uint32_t kFirmwareVersionCode = FW_VERSION_MAJOR * 100000u +
-                                          FW_VERSION_MINOR * 1000u +
-                                          FW_VERSION_PATCH;
+// The packing every version code uses — this firmware's, a manifest's, the web bundle's
+// (the Makefile's `manifest` and tools/serve_updates.sh repeat it in shell).
+constexpr uint32_t packVersion(uint32_t major, uint32_t minor, uint32_t patch) {
+    return major * 1000000u + minor * 1000u + patch;
+}
+
+constexpr uint32_t kFirmwareVersionCode =
+    packVersion(FW_VERSION_MAJOR, FW_VERSION_MINOR, FW_VERSION_PATCH);
 
 // True when a published build advertising `code` is newer than this firmware.
 // The one place the comparison lives, so the update check and any test agree.
