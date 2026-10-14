@@ -25,10 +25,12 @@ void shootFragments(Game& g, int n) {
     }
 }
 
-// Land `n` files straight onto the head — one row of fall each. Kept well under
-// kFraggerRows steps in a test, so nothing the spawner drops can land meanwhile.
+// Land `n` files straight onto the head — one row of fall each. The rest of the bottom
+// row is cleared first, so nothing the spawner dropped meanwhile can land and end the run.
 void catchFiles(Game& g, int n) {
     for (int i = 0; i < n; ++i) {
+        for (int l = 0; l < g.fragger().lanes(); ++l)
+            g.fragger().place(kFraggerRows - 1, l, Fragger::Cell::Empty);
         g.fragger().place(kFraggerRows - 1, g.fragger().lane(), Fragger::Cell::File);
         g.debugStepFragger();
     }
@@ -288,4 +290,27 @@ void test_fragger_catch_needs_the_head_under_it() {
     CHECK(f.running());
     CHECK(f.written() == 2);
     CHECK(f.caught() == 1);
+}
+
+// SAFE_HANDS: a run that caught more files than it shot fragments, once it has shot
+// kSafeHandsMinHits. A run that caught plenty but shot too little does not earn it, and
+// it fires whichever context the run was played in.
+void test_fragger_safe_hands() {
+    Game g{StartMode::Hatched};
+    g.model().setFragmentation(80);
+    startDefragRun(g);
+    shootFragments(g, ach::kSafeHandsMinHits);
+    catchFiles(g, ach::kSafeHandsMinHits + 1);
+    crashRun(g);
+    g.onButton(press(Button::B));
+    CHECK(g.hasAchievement(ach::kSafeHands));
+
+    Game few{StartMode::Hatched};
+    few.model().setFragmentation(80);
+    startDefragRun(few);
+    shootFragments(few, ach::kSafeHandsMinHits - 1);
+    catchFiles(few, ach::kSafeHandsMinHits);
+    crashRun(few);
+    few.onButton(press(Button::B));
+    CHECK(!few.hasAchievement(ach::kSafeHands));
 }

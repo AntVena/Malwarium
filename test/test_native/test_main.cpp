@@ -830,6 +830,7 @@ int g_failures = 0;
     RUN(test_played_maint_engines_are_interchangeable) \
     RUN(test_fragger_lanes_follow_the_dial) \
     RUN(test_fragger_catch_needs_the_head_under_it) \
+    RUN(test_fragger_safe_hands) \
     RUN(test_played_rewards_double_per_step) \
     RUN(test_fragger_shot_meets_the_lowest_block) \
     RUN(test_fragger_landing_fragment_ends_the_run) \

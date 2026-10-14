@@ -232,6 +232,10 @@ inline constexpr const char* kHangingByABit    = "HANGING_BY_A_BIT";
 // arcade's counted rows: losing on the second row is a shape, not a tally, so it fires
 // wherever the board is played.
 inline constexpr const char* kStackOverflow    = "STACK_OVERFLOW";
+// FRAGGER's shape row: a run that caught more files than it shot fragments, once it has
+// shot kSafeHandsMinHits — fired from Game::finishFragger wherever the run was played.
+inline constexpr const char* kSafeHands        = "SAFE_HANDS";
+inline constexpr int kSafeHandsMinHits = 10;
 // The three endings a spent Backup Drive can buy, all fired from Game::settleBackupDrive
 // off Combatant::BackupUse and the fight's outcome.
 inline constexpr const char* kBackUpAndDriven  = "BACK_UP_AND_DRIVEN";

@@ -1050,6 +1050,33 @@ const AchievementDef kAchievements[] = {
      "Take {n} ROCK THE DOCK brackets.", "ICON_ACH_DOCK_100",
      AchSeries::TourneyWins, /*goal=*/100, nullptr, 0,
      {bits(600), item("commend_cache")}},
+
+    // --- FRAGGER ------------------------------------------------------------------
+    // The cabinet's ladder, priced and drawn like every other cabinet's: one mark, a
+    // tally per rung. Its BEST row reads the cabinet's score — fragments shot plus files
+    // caught — and sits well past the till's win line, the endless cabinets' rule.
+    {/*wire=*/199, "CAB_FRAGGER", "Defragger",
+     "Clear the FRAGGER cabinet in the GAMES arcade.", "ICON_ACH_CAB_FRAGGER",
+     AchSeries::ArcadeCabinetWins, /*goal=*/1, "fragger", 0,
+     {bits(60), item("sealed_cache_common")}},
+    {/*wire=*/200, "CAB_FRAGGER_10", "Lane Keeper",
+     "Clear the FRAGGER cabinet {n} times in the GAMES arcade.", "ICON_ACH_CAB_FRAGGER_10",
+     AchSeries::ArcadeCabinetWins, /*goal=*/10, "fragger", 0,
+     {bits(100), item("sealed_cache_common")}},
+    {/*wire=*/201, "CAB_FRAGGER_50", "Contiguous Space",
+     "Clear the FRAGGER cabinet {n} times in the GAMES arcade.", "ICON_ACH_CAB_FRAGGER_50",
+     AchSeries::ArcadeCabinetWins, /*goal=*/50, "fragger", 0,
+     {bits(250), item("sealed_cache_rare")}},
+    {/*wire=*/202, "FRAG_STORM", "Frag Storm",
+     "Score {n} in one FRAGGER cabinet run.", "ICON_ACH_FRAG_STORM",
+     AchSeries::ArcadeCabinetBest, /*goal=*/80, "fragger", 0,
+     {bits(150), item("sealed_cache_rare")}},
+    // The one thing this game has that no other does: a run can be won on the files
+    // rather than the fragments. Played anywhere — a MAINT run or the cabinet.
+    {/*wire=*/203, "SAFE_HANDS", "Safe Hands",
+     "Catch more files than you shoot fragments in a FRAGGER run of 10 shots or more.",
+     "ICON_ACH_SAFE_HANDS",
+     AchSeries::Event, /*goal=*/0, nullptr, 0, {bits(150), item("sealed_cache_rare")}},
 };
 
 const int kAchievementCount =

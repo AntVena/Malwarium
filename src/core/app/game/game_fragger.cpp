@@ -63,6 +63,8 @@ void Game::stepFragger() {
 }
 
 void Game::finishFragger() {
+    if (fragger_.hits() >= ach::kSafeHandsMinHits && fragger_.caught() > fragger_.hits())
+        unlockAchievement(ach::kSafeHands);
     PlayOutcome o;
     o.units = fragger_.hits();
     o.bitsUnits = fragger_.caught();

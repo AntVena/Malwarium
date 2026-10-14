@@ -8856,6 +8856,40 @@ window.PEDIA_DATA = {
       "trigger": "Take 100 ROCK THE DOCK brackets.",
       "icon": "assets/icons/ICON_ACH_DOCK_100.png",
       "goal": 100
+    },
+    {
+      "key": "CAB_FRAGGER",
+      "name": "Defragger",
+      "trigger": "Clear the FRAGGER cabinet in the GAMES arcade.",
+      "icon": "assets/icons/ICON_ACH_CAB_FRAGGER.png",
+      "goal": 1
+    },
+    {
+      "key": "CAB_FRAGGER_10",
+      "name": "Lane Keeper",
+      "trigger": "Clear the FRAGGER cabinet 10 times in the GAMES arcade.",
+      "icon": "assets/icons/ICON_ACH_CAB_FRAGGER_10.png",
+      "goal": 10
+    },
+    {
+      "key": "CAB_FRAGGER_50",
+      "name": "Contiguous Space",
+      "trigger": "Clear the FRAGGER cabinet 50 times in the GAMES arcade.",
+      "icon": "assets/icons/ICON_ACH_CAB_FRAGGER_50.png",
+      "goal": 50
+    },
+    {
+      "key": "FRAG_STORM",
+      "name": "Frag Storm",
+      "trigger": "Score 80 in one FRAGGER cabinet run.",
+      "icon": "assets/icons/ICON_ACH_FRAG_STORM.png",
+      "goal": 80
+    },
+    {
+      "key": "SAFE_HANDS",
+      "name": "Safe Hands",
+      "trigger": "Catch more files than you shoot fragments in a FRAGGER run of 10 shots or more.",
+      "icon": "assets/icons/ICON_ACH_SAFE_HANDS.png"
     }
   ]
 };

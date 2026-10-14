@@ -56,27 +56,8 @@ seriously, and they are the only ladders here that cannot be deepened by adding 
 one run, so the right goal is a number off real high scores, not a step up from the last one.
 Collect those, then retune the two rows and decide whether either wants a rung above. |
 `content_achievements.cpp`'s `ArcadeCabinetBest` rows. | S | A ladder past five rungs wraps its
-tally (`tools/gen_ach_icons.py`'s `tally`), and the bitset holds 256 wires, of which 199 are
+tally (`tools/gen_ach_icons.py`'s `tally`), and the bitset holds 256 wires, of which 204 are
 spent. |
-
-**FRAGGER is tuned on paper.** The fall's pace (500ms a row, 8ms faster per hit, floored at
-180ms), the spawn density (a block every other row, a third of them files), the 40-hit win line
-and the reward doubling per dial step were all set by reasoning rather than play. HARD is the one
-to watch: at x4 a catch is 8 Bits, which makes a long DEFRAG run the biggest repeatable Bits
-source on the device, limited only by needing some Fragmentation to start one. Play all three
-settings on the panel, then retune. One decision rides on it: whether the arcade till should
-double per dial step too — today only a played MAINT run does, and changing the till changes
-every cabinet. | `core/model/fragger.h`'s constants; `tunables.h`'s `kPlayFragPerUnit` /
-`kPlayBitsPerUnit`; `content_arcade.h`'s `arcadeRewardMult`. | S | `dump_frame maint fragger
-[medium|hard] fall:<n> fire` renders any moment of a run without the panel. |
-
-**FRAGGER has no achievements.** Every other cabinet has a clears row and a 10/50/250 ladder
-off `ArcadeCabinetWins`, and the endless ones a BEST row; FRAGGER's cabinet tallies (plays, wins,
-best) are already kept, so its rows are content alone — a ladder keyed on `"fragger"`, and a BEST
-row once the item above has real high scores to set it from. A catch-shaped row (a run that
-caught more files than it shot fragments, say) is the one thing this game has that no other
-does. | `content_achievements.cpp`; `tools/gen_ach_icons.py` for the glyphs. | S | Wires 199+
-are free. |
 
 ### 1b. A separation pass over every screen
 
