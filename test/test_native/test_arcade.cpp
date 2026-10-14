@@ -65,12 +65,12 @@ void test_arcade_perfect_board_pays_the_bonus() {
 }
 
 // The contract that makes the arcade safe to reuse a real minigame: a cabinet run is
-// off the disk entirely. No Bits charged to enter, no Fragmentation cleaned, no defrag
-// tally, and none of the Defrag's achievements — a played board in MAINT does all four.
+// off the pet entirely. No Fragmentation cleaned, no process cleaned, no firewall tally,
+// and none of the scan's achievements — a played board in MAINT does all four.
 void test_arcade_stacker_leaves_the_disk_alone() {
     Game g{StartMode::Hatched};
     g.model().setFragmentation(60);
-    const int defrags = g.defragCount();
+    g.model().setGhost(true);
     const int wins = g.stackerWins();
 
     enterArcadeCabinet(g, arcadeRowOf("stacker"), ArcadeDifficulty::Medium);
@@ -81,8 +81,8 @@ void test_arcade_stacker_leaves_the_disk_alone() {
     g.onButton(press(Button::B));
 
     CHECK(g.model().fragmentation() == 60);       // the disk is untouched
-    CHECK(g.defragCount() == defrags);
-    CHECK(g.stackerWins() == wins);               // the played-defrag ladder isn't this one
+    CHECK(g.model().hasGhost());                  // ...and so is the process table
+    CHECK(g.stackerWins() == wins);               // the firewall ladder isn't this one
     CHECK(!g.hasAchievement(ach::kPerfectDefrag));
 }
 
@@ -201,11 +201,11 @@ void test_arcade_ladders_split_plays_wins_losses() {
 
 // The board's own joke, and the one arcade row that is a SHAPE rather than a tally:
 // losing the whole hand on the second lock. Fires wherever the board is played, so it
-// is asserted through the DEFRAG variant — the context the arcade borrowed it from.
+// is asserted through the AV variant — the context the arcade borrowed it from.
 void test_stack_overflow_fires_on_the_second_row() {
     Game g{StartMode::Hatched};
     g.model().setFragmentation(60);
-    g.debugStartStackerDefrag();
+    g.debugStartStackerScan();
     // Base row at 0..2, then a lock with no column in common with it: nothing survives,
     // and the run ends on row 1.
     CHECK(playStackerBoard(g, [](int r) { return r == 0 ? 0 : 4; }));
@@ -216,7 +216,7 @@ void test_stack_overflow_fires_on_the_second_row() {
     // A board that gets further does not earn it — the row is the second one, exactly.
     Game n{StartMode::Hatched};
     n.model().setFragmentation(60);
-    n.debugStartStackerDefrag();
+    n.debugStartStackerScan();
     CHECK(playStackerBoard(n, [](int r) { return r < 2 ? 0 : 4; }));
     CHECK(!n.stacker().won() && n.stacker().row() == 2);
     n.onButton(press(Button::B));

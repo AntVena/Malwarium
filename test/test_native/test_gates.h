@@ -466,7 +466,7 @@ inline Combatant mkCombatant(const ContentRegistry& r, const char* name, int hp,
 // Play a whole Stacker board through the REAL button path, locking each row at
 // `col(row)`. Leaves the run parked on its result; the caller presses once more to
 // finish it. False if a column turned out unreachable, which would make the test a
-// no-op rather than a failure. Shared by the Defrag gates and the arcade's.
+// no-op rather than a failure. Shared by the AV gates and the arcade's.
 template <typename ColFn>
 bool playStackerBoard(Game& g, ColFn col) {
     for (int r = 0; r < kStackerRows && g.stacker().running(); ++r) {

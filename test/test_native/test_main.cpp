@@ -824,7 +824,16 @@ int g_failures = 0;
     RUN(test_stacker_score_pays_for_height_twice) \
     RUN(test_stacker_win_credits_the_tally_and_the_shape_rows) \
     RUN(test_stacker_short_board_pays_what_it_stacked_and_costs_nothing) \
-    RUN(test_stacker_cleared_board_wipes_the_disk) \
+    RUN(test_stacker_cleared_board_is_a_full_scan) \
+    RUN(test_maint_played_variants_open_their_boards) \
+    RUN(test_fragger_shot_meets_the_lowest_block) \
+    RUN(test_fragger_landing_fragment_ends_the_run) \
+    RUN(test_fragger_head_stops_at_the_walls) \
+    RUN(test_fragger_pace_ramps_to_a_floor) \
+    RUN(test_fragger_spawns_keep_a_gap_and_replay) \
+    RUN(test_fragger_defrag_pays_per_fragment) \
+    RUN(test_fragger_cabinet_leaves_the_disk_alone) \
+    RUN(test_fragger_cadence_follows_the_score) \
     RUN(test_stacker_stopping_early_banks_the_board) \
     RUN(test_stacker_wins_ladder_sweeps_and_persists) \
     /* GAMES — the arcade: the till, the dial, and the stakes it must not touch */ \

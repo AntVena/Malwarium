@@ -1101,7 +1101,7 @@ void test_area_icons_are_keyed_by_area_id() {
     }
 }
 
-// The DEFRAG minigame's rules (core/model/stacker.h), driven a press at a time. The model
+// The Stacker's rules (core/model/stacker.h), driven a press at a time. The model
 // is deterministic on purpose — no RNG anywhere — which is what lets a run be replayed
 // exactly here, and what makes the variant it backs a test of skill rather than luck.
 namespace {

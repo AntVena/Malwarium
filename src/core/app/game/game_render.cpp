@@ -53,6 +53,7 @@ void Game::render(Framebuffer& fb) const {
         case Nav::Detail:  drawDetail(fb); break;
         case Nav::Process: drawProcess(fb); break;
         case Nav::Stacker: drawStacker(fb); break;
+        case Nav::Fragger: drawFragger(fb); break;
         case Nav::ArcadeResult: drawArcadeOutcome(fb); break;
         case Nav::Combat: drawCombatScreen(fb); break;
         case Nav::Tourney: drawTourney(fb); break;
@@ -802,7 +803,7 @@ void Game::drawDetail(Framebuffer& fb) const {
         case SubmenuId::Maint:
             drawMaintAction(fb, maintKind_, model_,
                             maintKind_ == MaintKind::Defrag ? defragCost() : 0,
-                            bits_, defragVariant_,
+                            bits_, maintVariant_,
                             inventory_.count(kDefragToolId), defragCount_, maintFailPct());
             break;
         case SubmenuId::Cfg:
@@ -1197,12 +1198,12 @@ void Game::drawProcess(Framebuffer& fb) const {
                          static_cast<float>(processBeat_) / kProcessBeats);
         return;
     }
-    // A PLAYED defrag reports what its own board was worth and can come up short without
+    // A PLAYED run reports what its own board was worth and can come up short without
     // failing; a rolled or bought one reports the fixed reduction it either got or missed.
-    if (maintKind_ == MaintKind::Defrag && defragVariant_ == kDefragVariantStacker)
+    if (maintPlayed_)
         drawMaintOutcome(fb, maintKind_,
                          maintSuccess_ ? MaintOutcome::Cleaned : MaintOutcome::Partial,
-                         stackerFragRemoved_);
+                         playedFragRemoved_, playedBitsEarned_);
     else
         drawMaintOutcome(fb, maintKind_,
                          maintSuccess_ ? MaintOutcome::Cleaned : MaintOutcome::Failed,

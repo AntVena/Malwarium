@@ -1,15 +1,12 @@
-// stacker.h — the rules of the DEFRAG minigame, with no rendering and no Game.
+// stacker.h — the rules of the AV firewall minigame, with no rendering and no Game.
 //
 // A run of blocks slides across the row, you lock it, and anything not resting on the
-// run below is shaved off. Reach the top with at least one block and the disk is
-// defragmented; run out of width and it isn't. That is the whole game — the arcade
-// Stacker cabinet, which is also what defragmenting a disk looks like when you draw it:
-// scattered blocks pulled into one contiguous run, narrowing as the fragments that
-// wouldn't align are discarded.
+// run below is shaved off. Reach the top with at least one block and the firewall is
+// built; run out of width and it isn't. That is the whole game — AV's played scan, and
+// the arcade's FIREWALL STACKER cabinet.
 //
 // DETERMINISTIC BY DESIGN. There is no RNG anywhere in here, which is the point of the
-// variant it backs: the Bits-only defrag pays with luck, the Tool defrag pays with an
-// item, and this one pays with skill. A run that ends badly ended badly because of when
+// variant it backs: the Quick scan pays with luck, and this one pays with skill. A run that ends badly ended badly because of when
 // the player pressed, and can be replayed identically.
 //
 // Kept a plain model (core/model, like pet_model/combat) so the rules can be tested a

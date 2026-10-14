@@ -2,7 +2,7 @@
 //
 // The arcade does not own a single rule of a single game. Every cabinet here points at
 // a minigame that already exists for its own reason — the Worm's hatch, the Phishing
-// line's hatch, the played Defrag — and the arcade's whole job is to start one with no
+// line's hatch, the played Defrag and AV scan — and the arcade's whole job is to start one with no
 // stakes attached and pay for the attempt. So changing a game changes its cabinet, and
 // a game can never drift from its arcade copy, because there is no copy.
 //
@@ -27,12 +27,13 @@
 
 namespace mal {
 
-// ENDLESS CABINETS. Two of these games have no ending off a cabinet — the worm eats
-// until it crashes and the bell wears skins until it is spotted. That is a property of
+// ENDLESS CABINETS. Three of these games have no ending off a cabinet — the worm eats
+// until it crashes, the bell wears skins until it is spotted, and FRAGGER shoots until a
+// fragment lands (that one is endless everywhere). That is a property of
 // the RUN rather than of the row: the same models finish normally at a hatch, and what
 // the cabinet does is start them with no goal (Game::startArcadeRun). What a row still
 // owes such a run is a WIN LINE, which lives in tunables.h beside the other magnitudes
-// (kArcadeIsolationWinBytes, kArcadeChromaWinPasses) — the score a run is paid in full
+// (kArcadeIsolationWinBytes, kArcadeChromaWinPasses, kArcadeFraggerWinHits) — the score a run is paid in full
 // for and counted as a win at, never a wall the board stops at. The score itself is
 // kept per cabinet (Game::arcadeBest, save v55), because on a run with no finish line
 // the number IS the game.
@@ -41,7 +42,8 @@ namespace mal {
 // Game::startArcadeRun (game_arcade.cpp), which is the map of every route into a
 // no-stakes run — never an `if (id == "...")` at a call site.
 enum class ArcadeGameKind : uint8_t {
-    Stacker,     // the played Defrag board (core/model/stacker.h)
+    Stacker,     // the played AV scan's firewall (core/model/stacker.h)
+    Fragger,     // the played Defrag (core/model/fragger.h)
     Clutch,      // the Phishing line's Spot the Phish (game_eggpick.cpp)
     Isolation,   // the Worm line's quarantine buffer (core/model/isolation.h)
     Decryption,    // the Ransomware line's code board (core/model/disk_decryption.h)
@@ -116,7 +118,7 @@ int arcadeGameCount();
 // the rows have been reordered.
 int arcadeGameIndexById(const char* id);
 // The row for `kind`, or nullptr. Keyed by the ENGINE rather than by cabinet row,
-// because Stacker and Isolation are also reached from MAINT and an egg's hatch with no
+// because Stacker, Fragger and Isolation are also reached from MAINT and an egg's hatch with no
 // arcade row in play at all — a RULES page opened from either still needs a row.
 const ArcadeGameDef* arcadeGameByKind(ArcadeGameKind kind);
 

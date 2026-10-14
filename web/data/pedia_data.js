@@ -8158,35 +8158,35 @@ window.PEDIA_DATA = {
     },
     {
       "key": "DEFRAG_BY_HAND",
-      "name": "Defragged by Hand",
-      "trigger": "Clear 1 disk by hand in the DEFRAG minigame.",
+      "name": "Firewalled by Hand",
+      "trigger": "Build 1 firewall by hand in an AV scan.",
       "icon": "assets/icons/ICON_ACH_DEFRAG_BY_HAND.png",
       "goal": 1
     },
     {
       "key": "STACK_10",
       "name": "Sector Stacker",
-      "trigger": "Clear 10 disks by hand in the DEFRAG minigame.",
+      "trigger": "Build 10 firewalls by hand in an AV scan.",
       "icon": "assets/icons/ICON_ACH_STACK_10.png",
       "goal": 10
     },
     {
       "key": "STACK_50",
       "name": "Contiguous",
-      "trigger": "Clear 50 disks by hand in the DEFRAG minigame.",
+      "trigger": "Build 50 firewalls by hand in an AV scan.",
       "icon": "assets/icons/ICON_ACH_STACK_50.png",
       "goal": 50
     },
     {
       "key": "PERFECT_DEFRAG",
-      "name": "Zero Fragmentation",
-      "trigger": "Clear a DEFRAG board without shaving off a single block.",
+      "name": "Airtight",
+      "trigger": "Build a firewall without shaving off a single block.",
       "icon": "assets/icons/ICON_ACH_PERFECT_DEFRAG.png"
     },
     {
       "key": "HANGING_BY_A_BIT",
       "name": "Hanging by a Bit",
-      "trigger": "Clear a DEFRAG board with a single block left standing.",
+      "trigger": "Build a firewall with a single block left standing.",
       "icon": "assets/icons/ICON_ACH_HANGING_BY_A_BIT.png"
     },
     {
@@ -8227,7 +8227,7 @@ window.PEDIA_DATA = {
     {
       "key": "TOWER_OF_FRAGGLE",
       "name": "Tower of Fraggle",
-      "trigger": "Clear the DEFRAG STACKER cabinet in the GAMES arcade.",
+      "trigger": "Clear the FIREWALL STACKER cabinet in the GAMES arcade.",
       "icon": "assets/icons/ICON_ACH_TOWER_OF_FRAGGLE.png",
       "goal": 1
     },
@@ -8657,7 +8657,7 @@ window.PEDIA_DATA = {
     {
       "key": "STACK_100",
       "name": "Solid State",
-      "trigger": "Clear 100 disks by hand in the DEFRAG minigame.",
+      "trigger": "Build 100 firewalls by hand in an AV scan.",
       "icon": "assets/icons/ICON_ACH_STACK_100.png",
       "goal": 100
     },
@@ -8818,21 +8818,21 @@ window.PEDIA_DATA = {
     {
       "key": "CAB_STACKER_10",
       "name": "Block Party",
-      "trigger": "Clear the DEFRAG STACKER cabinet 10 times in the GAMES arcade.",
+      "trigger": "Clear the FIREWALL STACKER cabinet 10 times in the GAMES arcade.",
       "icon": "assets/icons/ICON_ACH_CAB_STACKER_10.png",
       "goal": 10
     },
     {
       "key": "CAB_STACKER_50",
       "name": "Clean Sweep",
-      "trigger": "Clear the DEFRAG STACKER cabinet 50 times in the GAMES arcade.",
+      "trigger": "Clear the FIREWALL STACKER cabinet 50 times in the GAMES arcade.",
       "icon": "assets/icons/ICON_ACH_CAB_STACKER_50.png",
       "goal": 50
     },
     {
       "key": "CAB_STACKER_250",
       "name": "Tower Architect",
-      "trigger": "Clear the DEFRAG STACKER cabinet 250 times in the GAMES arcade.",
+      "trigger": "Clear the FIREWALL STACKER cabinet 250 times in the GAMES arcade.",
       "icon": "assets/icons/ICON_ACH_CAB_STACKER_250.png",
       "goal": 250
     },
@@ -8846,7 +8846,7 @@ window.PEDIA_DATA = {
     {
       "key": "STACK_250",
       "name": "Solid Gold",
-      "trigger": "Clear 250 disks by hand in the DEFRAG minigame.",
+      "trigger": "Build 250 firewalls by hand in an AV scan.",
       "icon": "assets/icons/ICON_ACH_STACK_250.png",
       "goal": 250
     },

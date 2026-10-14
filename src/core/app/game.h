@@ -44,6 +44,7 @@
 #include "core/model/save.h"
 #include "core/model/chromatophore.h"
 #include "core/model/isolation.h"
+#include "core/model/fragger.h"
 #include "core/model/stacker.h"
 #include "core/model/tournament.h"
 #include "core/net/audit_capture.h"
@@ -97,7 +98,7 @@ public:
     //   Detail      — L3 (item detail · MAINT action).
     //   Process     — a running MAINT process (non-interruptible).
     //   ModalFeeding / ModalLockout — event overlays.
-    enum class Nav { Idle, Cursor, Submenu, Detail, Process, ModalFeeding, ModalLockout, ModalLineSelect, ModalEggPick, ModalHatchReveal, ModalEvolve, ModalCSF, Combat, ExploreControl, Encounter, Wifi, Shop, ModShop, WarpPicker, RollbackPicker, RepartitionPicker, CacheYield, BulkYield, PostEncounter, Stacker, Isolation, Chroma, Decryption, Cryptogram, ArcadeResult, Tourney, ShiboleetHail, Shiboleet, ShiboleetVerdict, Story, StoryArchive, TipCard, AwayDigest, ItemOffer };
+    enum class Nav { Idle, Cursor, Submenu, Detail, Process, ModalFeeding, ModalLockout, ModalLineSelect, ModalEggPick, ModalHatchReveal, ModalEvolve, ModalCSF, Combat, ExploreControl, Encounter, Wifi, Shop, ModShop, WarpPicker, RollbackPicker, RepartitionPicker, CacheYield, BulkYield, PostEncounter, Stacker, Fragger, Isolation, Chroma, Decryption, Cryptogram, ArcadeResult, Tourney, ShiboleetHail, Shiboleet, ShiboleetVerdict, Story, StoryArchive, TipCard, AwayDigest, ItemOffer };
 
     // Which L2 screen the ITEMS submenu is showing. Picker (the category tile
     // screen) only ever appears when itemPickerUnlocked(); every other path — no
@@ -1961,8 +1962,8 @@ public:
     // Lifetime boss rounds won (save v40). Each round of a gauntlet counts — beating a
     // three-boss gauntlet is three bosses defeated, which is what it felt like.
     int bossWins() const { return bossWins_; }
-    // Lifetime DEFRAG minigame boards cleared (save v44). Only the Stacker variant
-    // counts — a Quick or Tool defrag is bought, not played.
+    // Lifetime firewalls built by hand (save v44): Stacker boards cleared as an AV
+    // scan. Only the played variant counts — a Quick scan is rolled, not played.
     int stackerWins() const { return stackerWins_; }
     // The three v56 lifetime tallies, on the same footing as the two above.
     int tourneyWins() const { return tourneyWins_; }   // ROCK THE DOCK brackets taken
@@ -2213,6 +2214,11 @@ public:
     // tests and dump_frame use to place the run deliberately instead of by stopwatch.
     void debugStepStacker() { stacker_.step(); }
     const Stacker& stacker() const { return stacker_; }
+    // The same seam for FRAGGER: one row of fall, on demand. `fragger()` is mutable so a
+    // test can stage a lane (Fragger::place) before driving the real buttons at it.
+    void debugStepFragger() { stepFragger(); }
+    Fragger& fragger() { return fragger_; }
+    const Fragger& fragger() const { return fragger_; }
     // Set a quote's standing directly (tests / dump_frame): reach the eight-solve
     // arcade unlock, or a mid-ladder tier, without playing eight boards by hand. The
     // real paths are Game::settleCryptogram's win and its loss ratchet.
@@ -2223,11 +2229,14 @@ public:
     void debugStartCryptogram(int quote, int extraReveals) {
         startCryptogram(quote, extraReveals);
     }
-    // Enter a fresh Stacker board without paying for it (tests / dump_frame). Skips only
-    // the purchase — from here onButton drives the REAL board and a finished run lands in
-    // the real finishStacker, which is where the played-defrag tally and its two
+    // Enter a fresh Stacker board as an AV scan without the scan being due (tests /
+    // dump_frame). From here onButton drives the REAL board and a finished run lands in
+    // the real finishStacker, which is where the firewall tally and its two
     // shape-of-the-board achievements are decided.
-    void debugStartStackerDefrag() { startStackerDefrag(); }
+    void debugStartStackerScan() { maintKind_ = MaintKind::Av; beginStackerBoard(); }
+    // Enter a fresh FRAGGER run as a defrag without paying for it (tests / dump_frame).
+    // Skips only the purchase; a finished run lands in the real finishFragger.
+    void debugStartFraggerDefrag() { maintKind_ = MaintKind::Defrag; beginFraggerRun(); }
     // Set the Bits wallet directly (tests / economy-gated flows like the shop's
     // "not enough Bits" gate). Clamped at 0.
     void debugSetBits(int n);
@@ -2484,6 +2493,7 @@ private:
     void drawDetail(Framebuffer& fb) const;
     void drawProcess(Framebuffer& fb) const;
     void drawStacker(Framebuffer& fb) const;
+    void drawFragger(Framebuffer& fb) const;
     void drawEvolve(Framebuffer& fb) const;
     void drawCSF(Framebuffer& fb) const;          // Critical System Failure
     void drawTrain(Framebuffer& fb) const;        // MOVES L3 (move picker / detail)
@@ -2593,6 +2603,7 @@ private:
     void onMaintList(const ButtonEvent& ev);
     void onMaintAction(const ButtonEvent& ev);
     void onStacker(const ButtonEvent& ev);
+    void onFragger(const ButtonEvent& ev);
     void onCfgList(const ButtonEvent& ev);
     void onCfgGroup(const ButtonEvent& ev);        // DISPLAY / RADIO row lists
     void onCfgDetail(const ButtonEvent& ev);
@@ -2655,14 +2666,14 @@ private:
     void drawArcadeOutcome(Framebuffer& fb) const;  // the payout screen
 
     // --- Mid-play RULES overlay (ROCK THE DOCK's BRIEFING, generalised) ----------
-    // A+C on any of the five game engines (Stacker/Isolation/Decryption/Cryptogram/
-    // Clutch) opens a paged explainer of THAT engine's own rules and pauses it
+    // A+C on any of the game engines (Stacker/Fragger/Isolation/Decryption/Cryptogram/
+    // Clutch/Chroma) opens a paged explainer of THAT engine's own rules and pauses it
     // underneath — the only route to one for the three that launch straight out of an
     // egg with no menu stop along the way at all (startHatchGame: Decrypt/Clutch/
     // Isolation land on their Nav directly). One flag rather than five: nav_ can only
     // be one of the five at a time, so nothing can ever have two open together, and
     // the content it reads is keyed by ArcadeGameKind rather than by cabinet row so it
-    // reads the same whether the engine was reached from its cabinet, MAINT's Stacker
+    // reads the same whether the engine was reached from its cabinet, a MAINT played
     // variant, or a hatch.
     bool gameBriefOpen_ = false;
     int gameBriefScroll_ = 0;
@@ -3218,9 +3229,11 @@ private:
     int nextRepartitionTarget(int cur) const;
     void drawRepartitionPickerScreen(Framebuffer& fb) const;
     void startMaint();
-    void startStackerDefrag();
     void beginStackerBoard();   // reset the board + enter it, whoever is paying for it
     void finishStacker();
+    void beginFraggerRun();     // the same, for FRAGGER
+    void stepFragger();         // one row of fall, with its sound
+    void finishFragger();
     void resolveMaint();
     bool rollMaintSuccess();
 
@@ -3454,20 +3467,27 @@ private:
     std::vector<BulkTallyEntry> bulkYieldTally_;
     int bulkYieldRow_ = 0;   // A-scroll cursor into bulkYieldTally_
     MaintKind maintKind_ = MaintKind::Defrag;
-    // 0 = Quick (Bits, may fail) · 1 = Tool (an item, guaranteed) · 2 = Stacker (the
-    // minigame, worth exactly what the board earns). Three ways to pay for the same
-    // clean — luck, an item, or skill — which is why the third one needs no new
-    // currency: it is the only one that can wipe a disk outright, and the only one that
-    // can come up short without failing.
-    int defragVariant_ = 0;
-    Stacker stacker_;                      // the variant-2 run in flight (never saved:
-                                           // a run interrupted by a power cycle forfeits
-                                           // its Bits, board and all)
+    // The focused payment VARIANT on the open MAINT action. DEFRAG: 0 = Quick (Bits,
+    // may fail) · 1 = Tool (an item, guaranteed) · 2 = Fragger (the minigame, worth what
+    // the run shoots). AV: 0 = Quick · 1 = Stacker (the firewall). Luck, an item, or
+    // skill — the played one is the only one that can come up short without failing.
+    int maintVariant_ = 0;
+    bool maintPlayed_ = false;             // the last run was played, not rolled/bought
+    // Neither played run is saved: one interrupted by a power cycle forfeits its entry,
+    // board and all.
+    Stacker stacker_;
     uint32_t lastStackerStepMs_ = 0;
-    // What the last played board took off the disk (finishStacker). Held only so the
-    // outcome toast can print the number the board earned, which — unlike the fixed
-    // kDefragReduction a rolled or bought run reports — isn't knowable from the variant.
-    int stackerFragRemoved_ = 0;
+    Fragger fragger_;
+    uint32_t lastFraggerStepMs_ = 0;
+    // The last shot, for the beam the screen draws up its lane until the next row falls.
+    int fraggerShotLane_ = -1;
+    int fraggerShotRow_ = -1;
+    // What the last played run took off the disk and paid (finishStacker /
+    // finishFragger). Held only so the outcome toast can print what the run earned,
+    // which — unlike the fixed reduction a rolled or bought run reports — isn't
+    // knowable from the variant.
+    int playedFragRemoved_ = 0;
+    int playedBitsEarned_ = 0;
     int defragCount_ = 0;                  // this pet's successful defrags —
                                            // persists through ARCH freeze/thaw (save v16)
     // Care-mistake SHIELD (save v21) — per-pet, reset on a new egg (startHatch). A
@@ -3965,10 +3985,10 @@ private:
     void sweepCollectedItems();
     // Lifetime boss rounds won (save v40) — counted in Game::finishBossRound.
     int bossWins_ = 0;
-    // Lifetime DEFRAG minigame boards CLEARED (save v44) — counted in
-    // Game::finishStacker. Player-level, unlike defragCount_ beside it, which is the
-    // active pet's own tally of defrags of every variant: this one is a record of skill
-    // and so belongs to the operator, not to whichever pet happened to be on the shelf.
+    // Lifetime firewalls BUILT (save v44) — Stacker boards cleared as an AV scan,
+    // counted in Game::finishStacker. Player-level, unlike the active pet's own
+    // defragCount_: this one is a record of skill and so belongs to the operator, not
+    // to whichever pet happened to be on the shelf.
     int stackerWins_ = 0;
     // --- v56: three more lifetime tallies, all player-level like the two above ------
     // ROCK THE DOCK brackets TAKEN (Game::awardTourneyPurse). Brackets, not matches:

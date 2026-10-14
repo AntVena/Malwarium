@@ -1,4 +1,4 @@
-// test_stacker.cpp — native gates for the defrag Stacker minigame and the Replication Ghost.
+// test_stacker.cpp — native gates for the AV firewall Stacker minigame and the Replication Ghost.
 //
 // One slice of the native suite; see test_gates.h for the shared fixtures and
 // test_main.cpp for the roster that runs these. A save-vNN gate sits with the
@@ -168,7 +168,7 @@ void test_stacker_win_credits_the_tally_and_the_shape_rows() {
     Game g{StartMode::Hatched};
     g.model().setFragmentation(60);
     CHECK(g.stackerWins() == 0);
-    g.debugStartStackerDefrag();
+    g.debugStartStackerScan();
     CHECK(playStackerBoard(g, [](int) { return 0; }));
     CHECK(g.stacker().won());
     CHECK(g.stacker().rowWidth(kStackerRows - 1) == kStackerStartWidth);
@@ -181,7 +181,7 @@ void test_stacker_win_credits_the_tally_and_the_shape_rows() {
     // that column to the top: a win, but the narrowest one there is.
     Game n{StartMode::Hatched};
     n.model().setFragmentation(60);
-    n.debugStartStackerDefrag();
+    n.debugStartStackerScan();
     CHECK(playStackerBoard(n, [](int r) { return r < 2 ? r : 2; }));
     CHECK(n.stacker().won());
     CHECK(n.stacker().rowWidth(kStackerRows - 1) == 1);
@@ -191,75 +191,72 @@ void test_stacker_win_credits_the_tally_and_the_shape_rows() {
     CHECK(!n.hasAchievement(ach::kPerfectDefrag));
 }
 
-// A board that ends in mid-air is NOT a failed defrag: it pays for the blocks it landed
-// and costs nothing extra. The two halves of that are asserted together because taking
-// only one of them is the mistake — a partial payout that still charged the care mistake
-// would be worse than the old all-or-nothing rule.
+// A wall that stalls in mid-air is NOT a failed scan: it pays for the blocks it landed in
+// Fragmentation and costs nothing extra — but it cleans no process, because only a built
+// wall is a full scan. The halves are asserted together because taking only one of them
+// is the mistake.
 void test_stacker_short_board_pays_what_it_stacked_and_costs_nothing() {
     Game g{StartMode::Hatched};
     g.model().setFragmentation(60);
+    g.model().setGhost(true);
+    g.model().setDebuffs(2);
     const int mistakes = g.model().careMistakes();
-    g.debugStartStackerDefrag();
+    g.debugStartStackerScan();
     // Base row at 0..2, then a drop with no column in common with it — the run keeps
     // nothing and the board ends there, well short of the top.
     CHECK(playStackerBoard(g, [](int r) { return r == 0 ? 0 : 4; }));
     CHECK(!g.stacker().running() && !g.stacker().won());
     CHECK(g.stacker().row() < kStackerRows - 1);
-    const int worth = g.stacker().score() / kStackerScorePerFrag;
+    const int worth = stackerScanWorth(g.stacker(), 60);
     g.onButton(press(Button::B));
-    CHECK(g.model().fragmentation() == 60 - worth);     // cleaned, just not much
+    CHECK(g.model().fragmentation() == 60 - worth);     // paid for, just not much
     CHECK(g.model().careMistakes() == mistakes);        // no failure, so no mistake
-    CHECK(!g.model().hasGhost());                       // and no fork, however bad the disk
-    CHECK(g.stackerWins() == 0);                        // the tally counts CLEARED boards
+    CHECK(g.model().hasGhost() && g.model().debuffs() == 2);   // no process cleaned
+    CHECK(g.stackerWins() == 0);                        // the tally counts BUILT walls
     CHECK(!g.hasAchievement(ach::kPerfectDefrag));
     CHECK(!g.hasAchievement(ach::kHangingByABit));
 
-    // The rate is what makes height worth climbing for: the same run stopped one row
-    // higher has to be worth strictly more.
+    // The rate is what makes height worth climbing for: the same run stopped higher has
+    // to be worth strictly more, up to the cap a full scan takes.
     Game low{StartMode::Hatched};
     low.model().setFragmentation(90);
-    low.debugStartStackerDefrag();
+    low.debugStartStackerScan();
     CHECK(playStackerBoard(low, [](int r) { return r < 2 ? 0 : 4; }));
     Game high{StartMode::Hatched};
     high.model().setFragmentation(90);
-    high.debugStartStackerDefrag();
+    high.debugStartStackerScan();
     CHECK(playStackerBoard(high, [](int r) { return r < 6 ? 0 : 4; }));
     low.onButton(press(Button::B));
     high.onButton(press(Button::B));
     CHECK(high.model().fragmentation() < low.model().fragmentation());
     CHECK(low.model().fragmentation() < 90);            // both still cleaned something
-
-    // A board with a critical disk under it stays a partial clean, not a ghost fork:
-    // the played path never reaches the failed-defrag branch that raises one.
-    Game crit{StartMode::Hatched};
-    crit.model().setFragmentation(kFragCriticalMin + 10);
-    crit.debugStartStackerDefrag();
-    CHECK(playStackerBoard(crit, [](int r) { return r == 0 ? 0 : 4; }));
-    crit.onButton(press(Button::B));
-    CHECK(!crit.model().hasGhost());
+    CHECK(high.model().fragmentation() >= 90 - kAvReduction);   // never past a full scan
 }
 
-// A cleared board is a FULL defrag — the only thing in the game that takes a disk to
-// zero, and the reason the variant is worth its difficulty.
-void test_stacker_cleared_board_wipes_the_disk() {
+// A built wall is a FULL scan that cannot fail: debuffs, the ghost and a Quick scan's
+// worth of Fragmentation, all gone — however narrow the wall reached the top.
+void test_stacker_cleared_board_is_a_full_scan() {
     Game g{StartMode::Hatched};
-    g.model().setFragmentation(95);                     // far past what one defrag fixes
-    g.debugStartStackerDefrag();
+    g.model().setFragmentation(95);
+    g.model().setGhost(true);
+    g.model().setDebuffs(3);
+    g.debugStartStackerScan();
     CHECK(playStackerBoard(g, [](int) { return 0; }));
     CHECK(g.stacker().won());
     g.onButton(press(Button::B));
-    CHECK(g.model().fragmentation() == 0);
+    CHECK(g.model().fragmentation() == 95 - kAvReduction);
+    CHECK(!g.model().hasGhost() && g.model().debuffs() == 0);
     CHECK(g.model().careMistakes() == 0);
 
-    // The narrowest possible win is still a win, so it wipes the disk exactly the same:
-    // the top row's width buys achievement rows, never a bigger or smaller clean.
     Game n{StartMode::Hatched};
     n.model().setFragmentation(95);
-    n.debugStartStackerDefrag();
+    n.model().setGhost(true);
+    n.debugStartStackerScan();
     CHECK(playStackerBoard(n, [](int r) { return r < 2 ? r : 2; }));
     CHECK(n.stacker().won() && n.stacker().rowWidth(kStackerRows - 1) == 1);
     n.onButton(press(Button::B));
-    CHECK(n.model().fragmentation() == 0);
+    CHECK(n.model().fragmentation() == 95 - kAvReduction);
+    CHECK(!n.model().hasGhost());
 }
 
 // C stops the run early, and banking is the point: since a board that runs out of blocks
@@ -268,7 +265,7 @@ void test_stacker_cleared_board_wipes_the_disk() {
 void test_stacker_stopping_early_banks_the_board() {
     Game g{StartMode::Hatched};
     g.model().setFragmentation(70);
-    g.debugStartStackerDefrag();
+    g.debugStartStackerScan();
     for (int r = 0; r < 4; ++r) {
         for (int guard = 0; guard < 4 * kStackerCols; ++guard) {
             if (g.stacker().left() == 0) break;
@@ -277,12 +274,38 @@ void test_stacker_stopping_early_banks_the_board() {
         g.onButton(press(Button::B));
     }
     CHECK(g.stacker().running());
-    const int worth = g.stacker().score() / kStackerScorePerFrag;
+    const int worth = stackerScanWorth(g.stacker(), 70);
     CHECK(worth > 0);
     tapC(g);
     CHECK(g.model().fragmentation() == 70 - worth);
     CHECK(g.model().careMistakes() == 0);
     CHECK(g.stackerWins() == 0);
+}
+
+// The MAINT route in: AV's action screen offers the Stacker as its second variant, and B
+// on it opens the board rather than rolling — while DEFRAG's third variant is FRAGGER.
+void test_maint_played_variants_open_their_boards() {
+    Game g{StartMode::Hatched};
+    g.model().setGhost(true);
+    g.debugSetBits(1000);
+    g.model().setFragmentation(40);
+    enterSubmenuId(g, SubmenuId::Maint);
+    g.onButton(press(Button::A));                       // AV row
+    g.onButton(press(Button::B));                       // open AV
+    for (int i = 0; i < kAvVariantStacker; ++i) g.onButton(press(Button::A));
+    g.onButton(press(Button::B));
+    CHECK(g.nav() == Game::Nav::Stacker);
+
+    Game d{StartMode::Hatched};
+    d.debugSetBits(1000);
+    d.model().setFragmentation(40);
+    enterSubmenuId(d, SubmenuId::Maint);
+    d.onButton(press(Button::B));                       // open DEFRAG
+    for (int i = 0; i < kDefragVariantFragger; ++i) d.onButton(press(Button::A));
+    const int before = d.bits();
+    d.onButton(press(Button::B));
+    CHECK(d.nav() == Game::Nav::Fragger);
+    CHECK(d.bits() < before);                           // the entry was charged
 }
 
 // The counting ladder rides the ordinary sweep, like every other counted series, and the

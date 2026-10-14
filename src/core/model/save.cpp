@@ -470,7 +470,7 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     w.u16(static_cast<uint16_t>(d.rack.size()));
     for (const auto& p : d.rack) w.u32(p.dyingElapsedMs);
 
-    // v44: DEFRAG minigame boards cleared, lifetime.
+    // v44: Stacker boards cleared by hand, lifetime.
     w.i32(d.stackerWins);
 
     // v45: the owned-mod spare pool, a nibble of COUNT per ModDef::wire. Length-prefixed

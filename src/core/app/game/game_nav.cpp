@@ -97,7 +97,7 @@ void Game::onButton(const ButtonEvent& ev) {
         // out of layEgg with no menu stop) have no other route to this at all, and the
         // CHROMATOPHORE needs it most: it is the one board whose three buttons are all
         // spoken for, so the chord is the only press left that can explain them.
-        else if (nav_ == Nav::Stacker || nav_ == Nav::Isolation ||
+        else if (nav_ == Nav::Stacker || nav_ == Nav::Fragger || nav_ == Nav::Isolation ||
                  nav_ == Nav::Decryption || nav_ == Nav::ModalEggPick ||
                  nav_ == Nav::Chroma)
             toggleGameBrief();
@@ -243,6 +243,7 @@ void Game::onButton(const ButtonEvent& ev) {
         // button (A/B/C) dismisses it, unlike the standard A/B/C contract.
         case Nav::PostEncounter: dismissPostEncounter(); break;
         case Nav::Stacker: onStacker(ev); break;
+        case Nav::Fragger: onFragger(ev); break;
         case Nav::Isolation: onIsolation(ev); break;
         case Nav::Chroma: onChroma(ev); break;
         // The arcade payout: informational, so ANY button dismisses it (the

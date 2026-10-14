@@ -261,8 +261,8 @@ full panel lands where it always did. A short description would otherwise leave 
 open between the block and its own verdict, which reads as two islands rather than one
 page. The pair's y therefore varies by row; the gap above it does not. **Stated exception:**
 `maint_detail` has a second
-action zone above it, the QUICK/TOOL/STACKER picker, because it is the one detail page
-whose action takes a parameter. The picker is fenced off by pitch (22px above its first row
+action zone above it, the payment picker (QUICK/TOOL/FRAGGER for a defrag, QUICK/STACKER
+for a scan), because it is the one detail page whose action takes a parameter. The picker is fenced off by pitch (22px above its first row
 and 28px below its last, against the 18px its rows keep between themselves); the bottom
 line still holds the verdict.
 

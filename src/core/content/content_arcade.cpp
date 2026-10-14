@@ -10,8 +10,8 @@ namespace mal {
 namespace {
 
 // Each engine's RULES page (GameBriefDef, content_arcade.h) — what A+C opens mid-play,
-// on top of the run, whichever door the player came in through (cabinet, MAINT's
-// Stacker variant, or an egg's hatch). Kept to the mechanic itself: none of these
+// on top of the run, whichever door the player came in through (cabinet, a MAINT
+// played variant, or an egg's hatch). Kept to the mechanic itself: none of these
 // mentions Bits, an incubation clock, or a clean streak, because what a run PAYS is the
 // caller's business (arcade till vs. hatch clock vs. Fragmentation) and would be wrong
 // copy in two of the three doors it can be read through.
@@ -21,9 +21,20 @@ const GameBriefDef kStackerBrief[] = {
     {"THE SHAVE", "Locking shaves off anything not resting on a locked block below. "
                   "What survives becomes the next run, narrower, re-entering from the "
                   "left wall."},
-    {"THE STAKES", "Lock the top row with at least one block and the board clears. "
+    {"THE STAKES", "Lock the top row with at least one block and the wall is built. "
                    "Lose every block on a lock and the run is over. C stops early and "
                    "banks whatever is already locked."},
+};
+
+const GameBriefDef kFraggerBrief[] = {
+    {"HOLD THE LANES", "Blocks fall down seven lanes toward your scan head. A moves it "
+                       "left, C moves it right, B fires straight up its lane."},
+    {"FRAGMENTS, FILES", "Shoot every crossed-out fragment. A solid file is a good "
+                         "block: your shot stops on it, so wait for it to land and "
+                         "catch whatever was behind it."},
+    {"ONE LANDS, IT'S OVER", "A fragment that reaches the disk ends the run. Every one "
+                             "you shoot speeds the fall up a little - there is no top, "
+                             "only how long you hold it."},
 };
 
 const GameBriefDef kClutchBrief[] = {
@@ -79,14 +90,22 @@ const GameBriefDef kChromaBrief[] = {
 };
 
 const ArcadeGameDef kArcadeGames[] = {
-    // The played Defrag, off its disk. Nothing about the board changes here — it is
+    // The played AV scan, off its pet. Nothing about the board changes here — it is
     // the same deterministic slide, so a run that went well in MAINT goes exactly the
-    // same way in the arcade.
-    {"stacker", "DEFRAG STACKER",
+    // same way in the arcade. The id predates the firewall and stays: it is the save key.
+    {"stacker", "FIREWALL STACKER",
      "LAND THE RUN. THE OVERHANG IS SHAVED OFF.",
-     "ICON_MAINT_DEFRAG", "HOW FAST THE RUN SLIDES.",
+     "ICON_MAINT_AV", "HOW FAST THE RUN SLIDES.",
      ArcadeGameKind::Stacker, ArcadeScoring::Incremental, ArcadeUnlock::Always,
      kStackerBrief, static_cast<int>(sizeof(kStackerBrief) / sizeof(kStackerBrief[0]))},
+
+    // The played Defrag, off its disk: the same fall and the same quickening, priced by
+    // the till instead of in Fragmentation and Bits. Its dial scales the whole curve.
+    {"fragger", "FRAGGER",
+     "SHOOT THE FRAGMENTS. LET THE FILES LAND.",
+     "ICON_MAINT_DEFRAG", "HOW FAST THE BLOCKS FALL.",
+     ArcadeGameKind::Fragger, ArcadeScoring::Incremental, ArcadeUnlock::Always,
+     kFraggerBrief, static_cast<int>(sizeof(kFraggerBrief) / sizeof(kFraggerBrief[0]))},
 
     // The Phishing hatch, with no egg riding on it. Its dial is the only one that
     // isn't speed: more halvings is a narrower survivor, so the tell has to be found

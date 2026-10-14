@@ -161,11 +161,13 @@ void drawMaintAction(Framebuffer& fb, MaintKind kind, const PetModel& m,
     if (kind == MaintKind::Defrag) {
         drawHeaderBand(fb, "DEFRAGMENTATION");
         // The headline effect is the FOCUSED variant's, because the three don't pay the
-        // same: two take a fixed bite, and the played one is the only route to a clean
-        // disk. Naming the fixed number on a screen where it can be wrong would be worse
-        // than naming nothing.
-        if (variant == kDefragVariantStacker) {
-            drawText(fb, kMargin, 34, "CLEAR THE BOARD: FRAG TO 0.", palColor(Pal::INK));
+        // same: two take a fixed bite, and the played one is paid per fragment shot.
+        // Naming the fixed number on a screen where it can be wrong would be worse than
+        // naming nothing.
+        if (variant == kDefragVariantFragger) {
+            std::snprintf(line, sizeof(line), "PER FRAGMENT: -%d FRAG +%d B.",
+                          kFraggerFragPerHit, kFraggerBitsPerHit);
+            drawText(fb, kMargin, 34, line, palColor(Pal::INK));
         } else {
             std::snprintf(line, sizeof(line), "REDUCES FRAGMENTATION BY %d.",
                           kDefragReduction);
@@ -201,9 +203,9 @@ void drawMaintAction(Framebuffer& fb, MaintKind kind, const PetModel& m,
 
         // the three payment VARIANTS as a 3-row pick (A switches, B runs the
         // focused one). QUICK = Bits-only, may fail; TOOL = spend a Defrag Tool for a
-        // guaranteed clean; STACKER = the same Bits, then play for it. Grayscale-safe:
-        // the cursor marks the focus, and each row spells its terms in words (MAY FAIL /
-        // GUARANTEED / NO TOOL / YOUR AIM). The 22px above the first row and the 28px
+        // guaranteed clean; FRAGGER = the same Bits, then play for it. Grayscale-safe:
+        // the cursor marks the focus, and each row spells its terms in words (n% FAIL /
+        // GUARANTEED / NO TOOL / HITS PAY). The 22px above the first row and the 28px
         // below the last are what fence the pick off from the readouts and the action
         // line — both wider than the 18px the rows keep between themselves.
         const int rowY[3] = {112, 130, 148};
@@ -223,8 +225,8 @@ void drawMaintAction(Framebuffer& fb, MaintKind kind, const PetModel& m,
                 tag = toolCount > 0 ? "GUARANTEED" : "NO TOOL";
                 tagCol = toolCount > 0 ? palColor(Pal::CALM) : palColor(Pal::WARN);
             } else {
-                std::snprintf(line, sizeof(line), "STACKER  -%d B", cost);
-                tag = "ROWS PAY";       // never fails; the board sets the size of the clean
+                std::snprintf(line, sizeof(line), "FRAGGER  -%d B", cost);
+                tag = "HITS PAY";       // never fails; the run sets the size of the clean
             }
             drawLabelValue(fb, kMargin + 12, rowY[i], line, col, tag, tagCol, 0, false);
         }
@@ -252,30 +254,47 @@ void drawMaintAction(Framebuffer& fb, MaintKind kind, const PetModel& m,
         drawHintBand(fb, runnable ? "A SWITCH  B RUN  C BACK" : "A SWITCH  C BACK");
     } else {
         drawHeaderBand(fb, "ANTIVIRUS");
-        drawText(fb, kMargin, 36, "SCANS + REMOVES ROGUE PROCS.", palColor(Pal::INK));
-        drawText(fb, kMargin, 52, "-10 FRAG. CLEARS DEBUFFS +", palColor(Pal::INK));
-        drawText(fb, kMargin, 64, "REPLICATION GHOST.", palColor(Pal::INK));
+        drawText(fb, kMargin, 34, "SCANS + REMOVES ROGUE PROCS.", palColor(Pal::INK));
+        std::snprintf(line, sizeof(line), "-%d FRAG. CLEARS DEBUFFS +", kAvReduction);
+        drawText(fb, kMargin, 50, line, palColor(Pal::INK));
+        drawText(fb, kMargin, 62, "REPLICATION GHOST.", palColor(Pal::INK));
         char status[16];
         avStatus(m, status, sizeof(status));
         std::snprintf(line, sizeof(line), "STATUS: %s", status);
-        drawText(fb, kMargin, 84, line, palColor(Pal::INK_DIM));
-        if (!avGated(m)) {
-            std::snprintf(line, sizeof(line), "CHANCE TO FAIL: %d%%", failPct);
-            drawText(fb, kMargin, 100, line, palColor(Pal::INK_DIM));
-            drawText(fb, kMargin, 112, failCost, palColor(Pal::INK_DIM));
+        drawText(fb, kMargin, 78, line, palColor(Pal::INK_DIM));
+
+        // The two ways to run the same scan, picked the way DEFRAG's three are. Both
+        // free: QUICK rolls for it, STACKER builds the firewall and cannot fail —
+        // a wall that stalls short still pays its blocks off the disk.
+        const int rowY[2] = {112, 130};
+        for (int i = 0; i < kAvVariants; ++i) {
+            const bool focus = variant == i;
+            if (focus) drawRowCursor(fb, kMargin, rowY[i], palColor(Pal::ACCENT));
+            const Rgb565 col = focus ? palColor(Pal::ACCENT) : palColor(Pal::INK);
+            char quickTag[16];
+            const char* tag = "WALL PAYS";
+            if (i == 0) {
+                std::snprintf(quickTag, sizeof(quickTag), "%d%% FAIL", failPct);
+                tag = quickTag;
+            }
+            drawLabelValue(fb, kMargin + 12, rowY[i], i == 0 ? "QUICK" : "STACKER", col,
+                           tag, palColor(Pal::INK_DIM), 0, false);
         }
+
         if (avGated(m)) {
-            drawText(fb, kMargin, 170, "- SYSTEM CLEAN -", palColor(Pal::INK_DIM));
+            drawText(fb, kMargin, 176, "- SYSTEM CLEAN -", palColor(Pal::INK_DIM));
         } else {
-            drawRowCursor(fb, kMargin, 170, palColor(Pal::ACCENT));
-            drawText(fb, kMargin + 10, 170, "SCAN", palColor(Pal::ACCENT));
+            drawRowCursor(fb, kMargin, 176, palColor(Pal::ACCENT));
+            drawText(fb, kMargin + 12, 176, "SCAN", palColor(Pal::ACCENT));
+            if (variant == 0)
+                drawText(fb, kMargin + 12, 190, failCost, palColor(Pal::INK_DIM));
         }
-        drawHintBand(fb, avGated(m) ? "C BACK" : "B SCAN  C BACK");
+        drawHintBand(fb, avGated(m) ? "A SWITCH  C BACK" : "A SWITCH  B SCAN  C BACK");
     }
 }
 
 void drawStackerBoard(Framebuffer& fb, const Stacker& s, int frag, bool arcade) {
-    drawHeaderBand(fb, arcade ? "DEFRAG STACKER" : "DEFRAGMENTING");
+    drawHeaderBand(fb, arcade ? "FIREWALL STACKER" : "BUILDING FIREWALL");
 
     // Drawn bottom-up: row 0 is the base, so it sits at the FOOT of the well and the run
     // climbs toward the header. Cells are WIDE and short — a disk block, not a tile — and
@@ -334,7 +353,7 @@ void drawStackerBoard(Framebuffer& fb, const Stacker& s, int frag, bool arcade) 
         drawText(fb, kMargin, 182, line, palColor(Pal::INK_DIM));
         drawText(fb, kMargin, 196, "B DROP    C STOP", palColor(Pal::ACCENT));
     } else if (s.won()) {
-        drawText(fb, kMargin, 182, "DISK ALIGNED.", palColor(Pal::CALM));
+        drawText(fb, kMargin, 182, "FIREWALL UP.", palColor(Pal::CALM));
         drawText(fb, kMargin, 196, "ANY BUTTON", palColor(Pal::ACCENT));
     } else {
         std::snprintf(line, sizeof(line), "STALLED AT ROW %d.", s.row() + 1);
@@ -342,7 +361,7 @@ void drawStackerBoard(Framebuffer& fb, const Stacker& s, int frag, bool arcade) 
         drawText(fb, kMargin, 196, "ANY BUTTON", palColor(Pal::ACCENT));
     }
     // The right column is what the run is FOR, which is the one thing the two contexts
-    // don't share: a Defrag is buying Fragmentation off a disk, and a cabinet run is
+    // don't share: a scan is buying Fragmentation off a disk, and a cabinet run is
     // banking a score. Either way it climbs live rather than arriving afterwards —
     // that is the whole reason to keep locking rows.
     if (arcade) {
@@ -358,17 +377,121 @@ void drawStackerBoard(Framebuffer& fb, const Stacker& s, int frag, bool arcade) 
     drawText(fb, kActiveW - kMargin - textWidth(line), 182, line, palColor(Pal::INK_DIM));
     // The banked clean stays a number of FRAG rather than a score, because a score
     // would be a second currency the player would have to learn the exchange rate for.
-    const int worth = stackerFragWorth(s, frag);
+    const int worth = stackerScanWorth(s, frag);
     std::snprintf(line, sizeof(line), "-%d FRAG", worth);
     drawText(fb, kActiveW - kMargin - textWidth(line), 196, line,
              worth > 0 ? palColor(Pal::CALM) : palColor(Pal::INK_DIM));
 }
 
-int stackerFragWorth(const Stacker& s, int frag) {
-    // A cleared board is a FULL defrag, so it is worth the whole disk however bad it
-    // was; short of that, the blocks pay for themselves at the tunable rate.
-    if (s.won()) return frag;
-    return s.score() / kStackerScorePerFrag;
+int stackerScanWorth(const Stacker& s, int frag) {
+    // A built wall is a FULL scan, so it is worth exactly what a passed Quick scan takes;
+    // short of that, the blocks pay for themselves at the tunable rate, up to the same.
+    int worth = s.won() ? kAvReduction : s.score() / kStackerScorePerFrag;
+    if (worth > kAvReduction) worth = kAvReduction;
+    return worth > frag ? frag : worth;
+}
+
+void drawFraggerBoard(Framebuffer& fb, const Fragger& f, const FraggerView& v) {
+    drawHeaderBand(fb, v.arcade ? "FRAGGER" : "DEFRAGMENTING");
+
+    // Seven lanes of wide, short disk blocks over a scan head, the Stacker well's cell
+    // shape turned into a fall. Every state differs by SHAPE so the board reads in
+    // grayscale: an empty slot is plain track, a file a solid block, a fragment a hollow
+    // frame crossed out — the AV map's quarantine mark, here as the thing to shoot.
+    constexpr int kLaneW = 28;
+    constexpr int kRowH = 13;
+    constexpr int kInset = 2;
+    constexpr int kX0 = (kActiveW - kFraggerLanes * kLaneW) / 2;
+    constexpr int kTop = 28;
+    constexpr int kHeadY = kTop + kFraggerRows * kRowH + 2;
+    constexpr int kHeadH = 8;
+    constexpr int kBlockW = kLaneW - 2 * kInset;
+    constexpr int kBlockH = kRowH - 2 * kInset;
+    constexpr int kCross = kBlockH - 2;
+
+    auto blockX = [&](int lane) { return kX0 + lane * kLaneW + kInset; };
+    auto blockY = [&](int row) { return kTop + row * kRowH + kInset; };
+
+    for (int r = 0; r < kFraggerRows; ++r)
+        for (int l = 0; l < kFraggerLanes; ++l) {
+            const int x = blockX(l), y = blockY(r);
+            switch (f.cell(r, l)) {
+                case Fragger::Cell::Empty:
+                    fb.fillRect(x, y, kBlockW, kBlockH, palColor(Pal::TRACK));
+                    break;
+                case Fragger::Cell::File:
+                    fb.fillRect(x, y, kBlockW, kBlockH, palColor(Pal::CALM));
+                    break;
+                case Fragger::Cell::Fragment: {
+                    const Rgb565 hot = palColor(Pal::HOT);
+                    fb.fillRect(x, y, kBlockW, kBlockH, palColor(Pal::PAPER));
+                    strokeRect(fb, x, y, kBlockW, kBlockH, hot);
+                    // A square cross in the middle of the frame, two pixels wide so it
+                    // holds its shape at x1.75 — a cross stretched corner to corner of
+                    // a block this flat reads as an envelope.
+                    const int cx = x + (kBlockW - kCross) / 2, cy = y + (kBlockH - kCross) / 2;
+                    for (int d = 0; d < kCross; ++d) {
+                        fb.fillRect(cx + d, cy + d, 2, 1, hot);
+                        fb.fillRect(cx + kCross - 1 - d, cy + d, 2, 1, hot);
+                    }
+                    break;
+                }
+            }
+        }
+
+    // The beam, from the head up to whatever stopped it — the top of the disk for a shot
+    // that met nothing. It stays until the next row falls, which at this cadence is the
+    // difference between seeing the shot and having to take it on trust.
+    if (v.shotLane >= 0) {
+        const int bx = kX0 + v.shotLane * kLaneW + kLaneW / 2 - 1;
+        const int top = v.shotRow >= 0 ? blockY(v.shotRow) + kBlockH : kTop;
+        fb.fillRect(bx, top, 2, kHeadY - top, palColor(Pal::ACCENT));
+    }
+
+    // The scan head: a wide base with a muzzle, solid ACCENT — the one thing on the
+    // board that moves on a press. A run that crashed marks the lane it crashed in.
+    if (f.running()) {
+        const int hx = kX0 + f.lane() * kLaneW + kInset;
+        fb.fillRect(hx, kHeadY + 3, kBlockW, kHeadH - 3, palColor(Pal::ACCENT));
+        fb.fillRect(hx + kBlockW / 2 - 3, kHeadY, 6, 3, palColor(Pal::ACCENT));
+    } else if (f.crashLane() >= 0) {
+        fb.fillRect(kX0 + f.crashLane() * kLaneW + kInset, kHeadY, kBlockW, kHeadH,
+                    palColor(Pal::HOT));
+    }
+
+    // The live HUD on the footer band, the Stacker's layout: the run on the left, what
+    // it is worth on the right.
+    fb.fillRect(0, 178, kActiveW, kActiveH - 178, palColor(Pal::TRACK));
+    char line[40];
+    if (f.running()) {
+        std::snprintf(line, sizeof(line), "HITS %d", f.hits());
+        drawText(fb, kMargin, 182, line, palColor(Pal::INK_DIM));
+        drawText(fb, kMargin, 196, "A<  B FIRE  >C", palColor(Pal::ACCENT));
+    } else {
+        drawText(fb, kMargin, 182, "FRAGMENT LANDED.", palColor(Pal::HOT));
+        drawText(fb, kMargin, 196, "ANY BUTTON", palColor(Pal::ACCENT));
+    }
+    if (v.arcade) {
+        std::snprintf(line, sizeof(line), "LINE %d", kArcadeFraggerWinHits);
+        drawText(fb, kActiveW - kMargin - textWidth(line), 182, line, palColor(Pal::INK_DIM));
+        std::snprintf(line, sizeof(line), "SCORE %d", f.hits());
+        drawText(fb, kActiveW - kMargin - textWidth(line), 196, line,
+                 f.hits() > 0 ? palColor(Pal::CALM) : palColor(Pal::INK_DIM));
+        return;
+    }
+    // Both halves of the payout climb live: the disk counting down, the Bits up.
+    const int off = fraggerFragWorth(f, v.frag);
+    std::snprintf(line, sizeof(line), "FRAG %d", v.frag - off);
+    drawText(fb, kActiveW - kMargin - textWidth(line), 182, line,
+             off > 0 ? palColor(Pal::CALM) : palColor(Pal::INK_DIM));
+    std::snprintf(line, sizeof(line), "+%d B", f.hits() * kFraggerBitsPerHit);
+    drawText(fb, kActiveW - kMargin - textWidth(line), 196, line,
+             f.hits() > 0 ? palColor(Pal::CALM) : palColor(Pal::INK_DIM));
+}
+
+int fraggerFragWorth(const Fragger& f, int frag) {
+    const int worth = f.hits() * kFraggerFragPerHit;
+    return worth > frag ? frag : worth;
 }
 
 void drawMaintProcess(Framebuffer& fb, MaintKind kind, float t) {
@@ -383,31 +506,37 @@ void drawMaintProcess(Framebuffer& fb, MaintKind kind, float t) {
 }
 
 void drawMaintOutcome(Framebuffer& fb, MaintKind kind, MaintOutcome outcome,
-                      int fragRemoved) {
-    drawHeaderBand(fb, kind == MaintKind::Defrag ? "DEFRAGMENTATION" : "ANTIVIRUS");
+                      int fragRemoved, int bitsEarned) {
+    const bool defrag = kind == MaintKind::Defrag;
+    drawHeaderBand(fb, defrag ? "DEFRAGMENTATION" : "ANTIVIRUS");
     char line[40];
     const char* msg = line;
     Rgb565 col = palColor(Pal::CALM);
     if (outcome == MaintOutcome::Failed) {
-        std::snprintf(line, sizeof(line), "%s FAILED  +%d FRAG",
-                      kind == MaintKind::Defrag ? "DEFRAG" : "AV", kMaintFailPenalty);
+        std::snprintf(line, sizeof(line), "%s FAILED  +%d FRAG", defrag ? "DEFRAG" : "AV",
+                      kMaintFailPenalty);
         col = palColor(Pal::HOT);
-    } else if (kind == MaintKind::Av) {
-        msg = "AV COMPLETE  SYSTEM CLEAN";
     } else if (outcome == MaintOutcome::Partial) {
-        // A board that stopped short still cleaned something, and says so in the same
-        // words a full run does — the difference is the adjective and the number, not a
-        // failure notice, because nothing failed.
+        // A played run that came up short still cleaned something, and says so in the
+        // same words a full run does — the difference is the adjective and the number,
+        // not a failure notice, because nothing failed.
         if (fragRemoved > 0) {
-            std::snprintf(line, sizeof(line), "PARTIAL DEFRAG  -%d FRAG", fragRemoved);
+            std::snprintf(line, sizeof(line), "PARTIAL %s  -%d FRAG",
+                          defrag ? "DEFRAG" : "SCAN", fragRemoved);
         } else {
-            msg = "NO BLOCKS PLACED.  NO CHANGE.";
+            msg = defrag ? "NO FRAGMENTS SHOT.  NO CHANGE." : "NO BLOCKS PLACED.  NO CHANGE.";
             col = palColor(Pal::INK_DIM);
         }
+    } else if (!defrag) {
+        msg = "AV COMPLETE  SYSTEM CLEAN";
     } else {
         std::snprintf(line, sizeof(line), "DEFRAG COMPLETE  -%d FRAG", fragRemoved);
     }
     drawText(fb, kMargin, 100, msg, col);
+    if (bitsEarned > 0) {
+        std::snprintf(line, sizeof(line), "+%d BITS", bitsEarned);
+        drawText(fb, kMargin, 116, line, palColor(Pal::ACCENT));
+    }
 }
 
 }  // namespace mal

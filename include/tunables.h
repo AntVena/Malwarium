@@ -1220,26 +1220,40 @@ constexpr int kAbsorbLeadBeats = 4;
 constexpr int kAbsorbTotalBeats = kAbsorbLeadBeats + kAbsorbBeats;
 constexpr int kProcessBeats = 8;  // MAINT process run length before the outcome
 // The three ways to pay for the same clean: 0 Quick (Bits, may fail) · 1 Tool (an item,
-// guaranteed) · 2 Stacker (the minigame, guaranteed if you clear it). Luck, an item, or
+// guaranteed) · 2 Fragger (the minigame, worth what the run shoots). Luck, an item, or
 // skill — so a player with no Defrag Tool and no appetite for the roll still has a way
 // through, and it is the one that costs only attention.
 constexpr int kDefragVariants = 3;
-constexpr int kDefragVariantStacker = 2;
+constexpr int kDefragVariantFragger = 2;
+// A played defrag is priced per FRAGMENT SHOT rather than by kDefragReduction, and it
+// is paid twice: the disk loses this much Fragmentation for each one (until it is clean),
+// and the wallet gains this many Bits for each one whether or not it still is. The Bits
+// half is what keeps a run worth playing on past a clean disk — the run is endless, so a
+// high score has to buy something, and once there is no frag left Bits are the only
+// thing it can. There is no fail penalty and no care mistake down this path: a landed
+// fragment ends the run, and the run keeps everything it shot before that.
+constexpr int kFraggerFragPerHit = 1;
+constexpr int kFraggerBitsPerHit = 2;
+// AV's two: 0 Quick (the roll) · 1 Stacker (build the firewall). AV is free, so there
+// is no Tool row — the played one is the only way past the fail roll.
+constexpr int kAvVariants = 2;
+constexpr int kAvVariantStacker = 1;
 // The Stacker's run slides on its own faster cadence rather than the shared 4fps
 // heartbeat (the kCombatAnimMs precedent) — at 250ms a step the timing is trivial, and
 // the whole variant is a timing test. Only ticks while the board is on screen.
 constexpr int kStackerStepMs = 110;
-// A played clean is priced by the BOARD, not by kDefragReduction. Clearing it is a full
-// defrag — Fragmentation straight to zero, which is the only thing in the game that
-// wipes a disk outright, and the reason the variant is worth the difficulty. Anything
-// short of that still pays for the blocks it landed: Stacker::score, at this many points
-// to one point of Fragmentation.
+// A played scan is priced by the BOARD. Building the whole firewall is a full AV scan
+// that cannot fail — debuffs, the Replication Ghost and kAvReduction of Fragmentation,
+// all gone. A wall that stalls short of the top cleans no process, but its blocks still
+// pay off the disk: Stacker::score, at this many points to one point of Fragmentation,
+// never more than a full scan would have taken.
 //
-// The rate is set so that a board which stalls on the LAST row is worth roughly one
-// ordinary defrag (kStackerMaxScore is 135; a near miss scores ~108, so ~21 off) and a
-// board that stalls halfway is worth a third of that. A run therefore cannot be worse
-// than not playing — there is no fail penalty and no care mistake down this path, only
-// a smaller clean — because the player already paid the entry in Bits and in attention.
+// The rate is set so that a wall which stalls past halfway is already worth the full
+// scan's Fragmentation (kStackerMaxScore is 135; five full rows score 45, so 9 off, and
+// anything higher reaches the kAvReduction cap) — the climb's last rows are paid in
+// the processes they clean, not in more frag. A run therefore cannot
+// be worse than not playing — there is no fail penalty and no care mistake down this
+// path — because the outcome was played rather than gambled.
 constexpr int kStackerScorePerFrag = 5;
 
 // The arcade (GAMES) --------------------------------------------
@@ -1265,7 +1279,7 @@ constexpr int kArcadeSpeedPctHard = 65;
 constexpr int kArcadeClutchRoundsEasy = 2;
 constexpr int kArcadeClutchRoundsMedium = 3;
 constexpr int kArcadeClutchRoundsHard = 4;
-// The two ENDLESS cabinets' win lines. Neither run has a finish any more — the worm
+// The ENDLESS cabinets' win lines. Neither run has a finish any more — the worm
 // eats until it crashes and the bell wears skins until it is spotted — so these are not
 // goals the game stops at but the score a run is PAID in full for, and the line its win
 // tally is drawn at. A player can and should go past them; the payout simply stops
@@ -1277,6 +1291,10 @@ constexpr int kArcadeClutchRoundsHard = 4;
 // 10 passes are each a board's worth of play — and not a number read off a distribution.
 constexpr int kArcadeIsolationWinBytes = 30;
 constexpr int kArcadeChromaWinPasses = kChromaRounds;
+// FRAGGER's win line: the fragments a run has shot by the time the fall reaches its
+// floor pace (core/model/fragger.h), which is where the game stops getting harder and
+// starts being a test of how long you can hold it.
+constexpr int kArcadeFraggerWinHits = 40;
 
 // Menu navigation ------------------------------------------------
 // One global idle timer governs the whole menu tree: silence collapses every

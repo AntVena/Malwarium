@@ -37,6 +37,7 @@ constexpr int kGameBriefReaderTop = 46;
 bool Game::gameBriefAvailable() const {
     switch (nav_) {
         case Nav::Stacker:
+        case Nav::Fragger:
         case Nav::Isolation:
         case Nav::Decryption:
         case Nav::Cryptogram:
@@ -50,6 +51,7 @@ bool Game::gameBriefAvailable() const {
 
 ArcadeGameKind Game::gameBriefKind() const {
     switch (nav_) {
+        case Nav::Fragger:      return ArcadeGameKind::Fragger;
         case Nav::Isolation:    return ArcadeGameKind::Isolation;
         case Nav::Decryption:   return ArcadeGameKind::Decryption;
         case Nav::Cryptogram:   return ArcadeGameKind::Cryptogram;
@@ -96,7 +98,7 @@ void Game::toggleGameBrief() {
     else openGameBrief();
 }
 
-// Called first by every one of the five engines' input handlers. Consumes B (scroll)
+// Called first by every game engine's input handler. Consumes B (scroll)
 // and C (close) while the overlay is up and reports so via the return, so the caller
 // returns immediately instead of also feeding the same press to the paused game
 // underneath; reports false the moment the overlay isn't open, so a normal press falls
@@ -210,6 +212,11 @@ void Game::startArcadeRun() {
     switch (arcadeGames()[arcadeGame_].kind) {
         case ArcadeGameKind::Stacker:
             beginStackerBoard();
+            break;
+        case ArcadeGameKind::Fragger:
+            // ENDLESS, like the buffer below: the run goes until a fragment lands.
+            // kArcadeFraggerWinHits is the line the till pays and scores against.
+            beginFraggerRun();
             break;
         case ArcadeGameKind::Clutch: {
             int rounds = kArcadeClutchRoundsMedium;

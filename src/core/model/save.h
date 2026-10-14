@@ -806,10 +806,9 @@ struct SaveData {
     // starts clean. Pre-v42 → 0.
     uint32_t dyingElapsedMs = 0;
 
-    // --- v44: the played-defrag tally ----------------------------------------
-    // DEFRAG minigame boards cleared, lifetime. Player-level (survives a pet reset, like
-    // bossWins above); distinct from the per-pet `defragCount`, which counts defrags of
-    // every variant. Pre-v44 → 0; nothing in an older blob can be honestly read as this.
+    // --- v44: the played-maintenance tally -----------------------------------
+    // Stacker boards cleared by hand, lifetime — firewalls built in an AV scan.
+    // Player-level (survives a pet reset, like bossWins above). Pre-v44 → 0; nothing in an older blob can be honestly read as this.
     int32_t stackerWins = 0;
 
     // --- v47: the arcade's per-cabinet tallies -------------------------------

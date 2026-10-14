@@ -677,6 +677,8 @@ void Game::resetToHatch() {
     detailItem_ = nullptr;
     resetStatReader();
     maintKind_ = MaintKind::Defrag;
+    maintVariant_ = 0;
+    maintPlayed_ = false;
     processResolved_ = false;
     feedItem_ = nullptr;
     feedFromLockout_ = false;

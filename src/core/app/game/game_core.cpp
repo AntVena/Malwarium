@@ -456,6 +456,21 @@ bool Game::tickAnimClocks(uint32_t nowMs) {
         lastStackerStepMs_ = nowMs;   // primed, so entering the game doesn't burst-catch-up
     }
 
+    // FRAGGER's fall, likewise — and the one cadence that is not fixed: the model sets
+    // it from the run's own score, so the game speeds up as it is played.
+    if (nav_ == Nav::Fragger && !gameBriefOpen_) {
+        if (nowMs - lastFraggerStepMs_ >=
+            static_cast<uint32_t>(arcadeStepMs(fragger_.stepMs()))) {
+            lastFraggerStepMs_ = nowMs;
+            if (fragger_.running()) {
+                stepFragger();
+                changed = true;
+            }
+        }
+    } else {
+        lastFraggerStepMs_ = nowMs;
+    }
+
     // The Isolation Protocol's worm moves on its own cadence for the same reason, and
     // more so: it is the one screen where standing still is never an option, so the beat
     // it walks to IS the difficulty. Only while the run is live — a crashed or finished
@@ -779,8 +794,8 @@ bool Game::tickHeldGestures(uint32_t nowMs) {
 bool Game::tickIdleDefocus(uint32_t nowMs) {
     bool changed = false;
     // The global idle timer collapses the menu tree — suspended inside modals,
-    // a running process / an active Lockout, the CFG screens and the Stacker
-    // defrag board, and while an ITEMS-filter / VAULT-bulk hold gesture is
+    // a running process / an active Lockout, the CFG screens and the played MAINT
+    // boards, and while an ITEMS-filter / VAULT-bulk hold gesture is
     // mid-flight (no new presses during the hold). UPDATES is carved back out of
     // the CFG exemption: it already gets the long hands-off radio budget below
     // (it holds a live association) but must still eventually collapse an
@@ -801,7 +816,8 @@ bool Game::tickIdleDefocus(uint32_t nowMs) {
                            nav_ == Nav::Shop || nav_ == Nav::ModShop ||
                            nav_ == Nav::CacheYield ||
                            nav_ == Nav::BulkYield || nav_ == Nav::PostEncounter ||
-                           nav_ == Nav::Stacker || nav_ == Nav::ArcadeResult ||
+                           nav_ == Nav::Stacker || nav_ == Nav::Fragger ||
+                           nav_ == Nav::ArcadeResult ||
                            // ROCK THE DOCK's bracket is a READING screen: eight entrants,
                            // their levels, and the next opponent's species and Exploit
                            // are what a loadout is chosen against, and five seconds is

@@ -32,7 +32,10 @@
 //        dying (5/5 errors: the habitat's FAILING countdown and its rescue line)
 //        tipcard (the one-time CARE card the first menu summon opens; pairs with crit)
 //        nofood (empty the bag of anything edible; pairs with items, lockout, hungry)
-//        maint [detail] [stacker [slide|drop|stop ...]] [run [step:<n>]] · lockout · evolve
+//        maint [detail] [stacker [slide|drop|stop ...]] [run [step:<n>]]
+//             [fragger [fall:<n>|left|right|fire|crash ...]] · lockout · evolve
+//             ("stacker" builds AV's firewall, "fragger" plays DEFRAG's run; each word
+//             after one acts on its board in the order given)
 //             ("run" starts the focused process — QUICK defrag, or AV with row:1 — and
 //             "step:<n>" holds it n heartbeats in, to land on a frame of its disk map)
 //        cryptogram [open:<n>] [take] [win|lose] (THE DECRYPTOGRAM's quote board, cashed
@@ -45,7 +48,7 @@
 //        decryption [rows|lost] (the Ransomware egg's DISK DECRYPTION board; "rows"
 //             plays three attempts so the history and its corruption overlay are on
 //             screen, "lost" plays all five and holds the verdict + revealed key)
-//        arcade [solved] [clutch|worm|decryption|quote|chroma] [cabinet [hard]
+//        arcade [solved] [clutch|worm|decryption|quote|chroma|fragger] [cabinet [hard]
 //             [play [result]]]
 //             (the GAMES list, one cabinet's page, its running board, and the payout;
 //             "solved" banks the eight quote wins that reveal the DECRYPTOGRAM cabinet,
@@ -578,12 +581,13 @@ int main(int argc, char** argv) {
             for (int i = 1; i <= steps; ++i)
                 game.tick(static_cast<uint32_t>(beats + i) * kHeartbeatMs);
         }
-        // "stacker" opens the DEFRAG action, cycles A onto the minigame variant and runs
-        // it; each following "drop" locks the run where it currently stands, so a board
+        // "stacker" opens the AV action, cycles A onto the minigame variant and runs it;
+        // each following "drop" locks the run where it currently stands, so a board
         // mid-climb (or a lost one) is renderable by repeating the word.
         if (hasFlag(argc, argv, "stacker")) {
-            game.onButton({Button::B, true, false});          // open DEFRAGMENTATION
-            for (int i = 0; i < kDefragVariantStacker; ++i)
+            game.onButton({Button::A, true, false});          // the ANTIVIRUS row
+            game.onButton({Button::B, true, false});          // open it
+            for (int i = 0; i < kAvVariantStacker; ++i)
                 game.onButton({Button::A, true, false});      // cycle onto STACKER
             game.onButton({Button::B, true, false});          // run it
             // "drop" locks the run where it stands; "slide" advances it one beat first,
@@ -597,6 +601,32 @@ int main(int argc, char** argv) {
                     game.debugStepStacker();
                 else if (std::strcmp(argv[i], "stop") == 0)
                     game.onButton({Button::C, true, false});
+            }
+        }
+        // "fragger" opens the DEFRAG action and runs its minigame variant. "fall:<n>" drops
+        // the disk n rows (a block takes kFraggerRows to land, so up to that is a busy
+        // board with nothing lost), "left"/"right"/"fire" are the buttons, and "crash"
+        // lands a fragment beside the head to hold the run's verdict.
+        if (hasFlag(argc, argv, "fragger")) {
+            game.debugSetBits(99999);
+            game.onButton({Button::B, true, false});          // open DEFRAGMENTATION
+            for (int i = 0; i < kDefragVariantFragger; ++i)
+                game.onButton({Button::A, true, false});      // cycle onto FRAGGER
+            game.onButton({Button::B, true, false});          // run it
+            for (int i = 1; i < argc; ++i) {
+                if (std::strncmp(argv[i], "fall:", 5) == 0) {
+                    for (int k = std::atoi(argv[i] + 5); k > 0; --k) game.debugStepFragger();
+                } else if (std::strcmp(argv[i], "left") == 0) {
+                    game.onButton({Button::A, true, false});
+                } else if (std::strcmp(argv[i], "right") == 0) {
+                    game.onButton({Button::C, true, false});
+                } else if (std::strcmp(argv[i], "fire") == 0) {
+                    game.onButton({Button::B, true, false});
+                } else if (std::strcmp(argv[i], "crash") == 0) {
+                    const int lane = game.fragger().lane() == 0 ? 1 : 0;
+                    game.fragger().place(kFraggerRows - 1, lane, Fragger::Cell::Fragment);
+                    game.debugStepFragger();
+                }
             }
         }
     } else if (hasFlag(argc, argv, "cfg")) {
@@ -866,6 +896,7 @@ int main(int argc, char** argv) {
                            : hasFlag(argc, argv, "decryption") ? "decryption"
                            : hasFlag(argc, argv, "quote")      ? "cryptogram"
                            : hasFlag(argc, argv, "chroma")     ? "chroma"
+                           : hasFlag(argc, argv, "fragger")    ? "fragger"
                                                                : nullptr;
         for (int i = 0; want && i < arcadeGameCount(); ++i) {
             if (std::strcmp(arcadeGames()[game.arcadeRow()].id, want) == 0) break;
