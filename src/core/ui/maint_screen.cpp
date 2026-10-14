@@ -34,6 +34,91 @@ void avStatus(const PetModel& m, char* out, int n) {
     else std::snprintf(out, n, "CLEAN");
 }
 
+// The disk map both processes animate (ANIM_DEFRAG / ANIM_AV_SWEEP). Its three cell
+// states differ in SHAPE — plain track, hollow frame, solid block — so the map reads in
+// grayscale without leaning on the hues laid over it.
+constexpr int kMapCols = 17;
+constexpr int kMapRows = 5;
+constexpr int kMapCells = kMapCols * kMapRows;
+constexpr int kCellW = 10;
+constexpr int kCellH = 8;
+constexpr int kCellGap = 2;
+constexpr int kMapX = (kActiveW - (kMapCols * (kCellW + kCellGap) - kCellGap)) / 2;
+constexpr int kMapY = 64;
+
+// A fixed scatter rather than one off the pet's state: the map is a picture of the
+// process, and the numbers that matter are the bar's and the outcome toast's.
+uint32_t cellHash(int i) {
+    uint32_t h = static_cast<uint32_t>(i) * 2654435761u;
+    h ^= h >> 15;
+    h *= 2246822519u;
+    return h ^ (h >> 13);
+}
+bool cellUsed(int i) { return cellHash(i) % 100 < 45; }
+bool cellInfected(int i) { return cellUsed(i) && (cellHash(i) >> 8) % 7 == 0; }
+
+int cellX(int i) { return kMapX + (i % kMapCols) * (kCellW + kCellGap); }
+int cellY(int i) { return kMapY + (i / kMapCols) * (kCellH + kCellGap); }
+
+void drawFreeCell(Framebuffer& fb, int i) {
+    fb.fillRect(cellX(i), cellY(i), kCellW, kCellH, palColor(Pal::TRACK));
+}
+void drawHollowCell(Framebuffer& fb, int i, Rgb565 c) {
+    drawFreeCell(fb, i);
+    strokeRect(fb, cellX(i), cellY(i), kCellW, kCellH, c);
+}
+void drawSolidCell(Framebuffer& fb, int i, Rgb565 c) {
+    fb.fillRect(cellX(i), cellY(i), kCellW, kCellH, c);
+}
+
+// Block-shuffle: the used blocks furthest out are lifted to the front of the disk, so
+// at progress `t` the first k cells are one contiguous run and the stragglers are what
+// the rest of the bar still has to move. The cell the next block lands in is lit.
+void drawDefragMap(Framebuffer& fb, float t) {
+    int used[kMapCells];
+    int n = 0;
+    for (int i = 0; i < kMapCells; ++i)
+        if (cellUsed(i)) used[n++] = i;
+    const int k = static_cast<int>(t * n);
+    const int stillScattered = n - k;
+    for (int i = 0; i < kMapCells; ++i) drawFreeCell(fb, i);
+    for (int j = 0; j < stillScattered; ++j)
+        if (used[j] >= k) drawHollowCell(fb, used[j], palColor(Pal::FRAG_HI));
+    for (int i = 0; i < k; ++i) drawSolidCell(fb, i, palColor(Pal::CALM));
+    if (k < n) drawSolidCell(fb, k, palColor(Pal::ACCENT));
+}
+
+// Scan-sweep: a beam walks the columns left to right. Files ahead of it are unchecked
+// (hollow); behind it they are clean (solid), and an infected one is quarantined — its
+// cell emptied and crossed out, which is the one mark the scan leaves that a solid or
+// hollow cell cannot be mistaken for.
+void drawAvMap(Framebuffer& fb, float t) {
+    const int beamCol = static_cast<int>(t * kMapCols);
+    for (int i = 0; i < kMapCells; ++i) {
+        const bool scanned = i % kMapCols < beamCol;
+        if (!cellUsed(i)) {
+            drawFreeCell(fb, i);
+        } else if (!scanned) {
+            drawHollowCell(fb, i, palColor(Pal::INK_DIM));
+        } else if (cellInfected(i)) {
+            drawFreeCell(fb, i);
+            const Rgb565 hot = palColor(Pal::HOT);
+            for (int d = 0; d < kCellH; ++d) {
+                const int x = cellX(i) + 1 + d;
+                fb.fillRect(x, cellY(i) + d, 1, 1, hot);
+                fb.fillRect(x, cellY(i) + kCellH - 1 - d, 1, 1, hot);
+            }
+        } else {
+            drawSolidCell(fb, i, palColor(Pal::CALM));
+        }
+    }
+    if (beamCol < kMapCols) {
+        const int x = kMapX + beamCol * (kCellW + kCellGap) - kCellGap;
+        fb.fillRect(x, kMapY - 2, 2,
+                    kMapRows * (kCellH + kCellGap) - kCellGap + 4, palColor(Pal::ACCENT));
+    }
+}
+
 }  // namespace
 
 void drawMaintList(Framebuffer& fb, const PetModel& m, int cursor, int beat) {
@@ -288,10 +373,12 @@ int stackerFragWorth(const Stacker& s, int frag) {
 
 void drawMaintProcess(Framebuffer& fb, MaintKind kind, float t) {
     drawHeaderBand(fb, kind == MaintKind::Defrag ? "DEFRAGMENTATION" : "ANTIVIRUS");
-    drawText(fb, kMargin, 90,
+    if (kind == MaintKind::Defrag) drawDefragMap(fb, t);
+    else drawAvMap(fb, t);
+    drawText(fb, kMargin, 126,
              kind == MaintKind::Defrag ? "DEFRAGMENTING..." : "SCANNING...",
              palColor(Pal::INK));
-    drawProgressBar(fb, kMargin, 108, kActiveW - 2 * kMargin, 12, t,
+    drawProgressBar(fb, kMargin, 144, kActiveW - 2 * kMargin, 12, t,
                     palColor(Pal::ACCENT));
 }
 

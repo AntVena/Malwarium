@@ -32,7 +32,9 @@
 //        dying (5/5 errors: the habitat's FAILING countdown and its rescue line)
 //        tipcard (the one-time CARE card the first menu summon opens; pairs with crit)
 //        nofood (empty the bag of anything edible; pairs with items, lockout, hungry)
-//        maint [detail] [stacker [slide|drop|stop ...]] · lockout · evolve
+//        maint [detail] [stacker [slide|drop|stop ...]] [run [step:<n>]] · lockout · evolve
+//             ("run" starts the focused process — QUICK defrag, or AV with row:1 — and
+//             "step:<n>" holds it n heartbeats in, to land on a frame of its disk map)
 //        cryptogram [open:<n>] [take] [win|lose] (THE DECRYPTOGRAM's quote board, cashed
 //             at the VAULT; "open:<n>" places n letters correctly so the frame shows a
 //             part-solved quote, "take" leaves a letter in hand for the cell-cursor
@@ -562,7 +564,20 @@ int main(int argc, char** argv) {
         }
     } else if (hasFlag(argc, argv, "maint")) {
         enterSlot(SubmenuId::Maint);
+        for (int i = 1; i < argc; ++i)
+            if (std::strncmp(argv[i], "row:", 4) == 0)
+                for (int k = std::atoi(argv[i] + 4); k > 0; --k)
+                    game.onButton({Button::A, true, false});
         if (hasFlag(argc, argv, "detail")) game.onButton({Button::B, true, false});
+        if (hasFlag(argc, argv, "run")) {
+            game.debugSetBits(99999);
+            game.onButton({Button::B, true, false});
+            int steps = 0;
+            for (int i = 1; i < argc; ++i)
+                if (std::strncmp(argv[i], "step:", 5) == 0) steps = std::atoi(argv[i] + 5);
+            for (int i = 1; i <= steps; ++i)
+                game.tick(static_cast<uint32_t>(beats + i) * kHeartbeatMs);
+        }
         // "stacker" opens the DEFRAG action, cycles A onto the minigame variant and runs
         // it; each following "drop" locks the run where it currently stands, so a board
         // mid-climb (or a lost one) is renderable by repeating the word.

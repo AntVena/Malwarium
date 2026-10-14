@@ -46,7 +46,8 @@ void drawStackerBoard(Framebuffer& fb, const Stacker& s, int frag, bool arcade);
 // so the number the player watched climb is the number they end up with.
 int stackerFragWorth(const Stacker& s, int frag);
 
-// Running process: a progress bar (C ignored until it resolves). `t` 0..1.
+// Running process: the disk map for that process animating over a progress bar (C
+// ignored until it resolves). `t` 0..1.
 void drawMaintProcess(Framebuffer& fb, MaintKind kind, float t);
 
 // What a finished run did to the disk. Failed and Cleaned are the only two a ROLLED or

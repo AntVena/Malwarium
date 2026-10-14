@@ -60,6 +60,8 @@ SCENES=(
   "move_picker|train trainpicker focus"
   "move_detail|train movedetail"    "maint|maint"
   "maint_detail|maint detail"       "arch|arch"
+  "maint_defrag|maint detail run step:4"
+  "maint_av|maint row:1 detail run step:4"
   "arch_detail|arch detail"
   "arch_scroll|arch rackfull row:8" "cfg|cfg"
   "arch_sell|arch daemons group:7"
