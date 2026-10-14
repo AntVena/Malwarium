@@ -1546,6 +1546,243 @@ def boss_admiral_conduit():
     return stack(idle, attack)
 
 
+def boss_nimda():
+    """Nimda of the Shallows — Napstorrent Moors' Seeder Shallows, facing LEFT. A heron, for
+    the worm whose name is admin backwards: wading, neck curved up, its legs reflected under
+    a line of ripples — the reversal. The attack thrusts the neck out with the beak open."""
+    idle = grid(
+        "....####........",
+        ".########.......",
+        ".......##.......",
+        ".......##.......",
+        ".......########.",
+        ".......#.....#..",
+        ".......#########",
+        ".......#.......#",
+        ".......#########",
+        "........#::#....",
+        "........#::#....",
+        "........#::##...",
+        "#..#..####::#..#",
+        ".......######...",
+    )
+    attack = grid(
+        "................",
+        "................",
+        "####............",
+        "::####..........",
+        "###.###########.",
+        ".......#.....#..",
+        ".......#########",
+        ".......#.......#",
+        ".......#########",
+        "........#::#....",
+        "........#::#....",
+        "........#::##...",
+        "#..#..####::#..#",
+        ".......######...",
+    )
+    return stack(idle, attack)
+
+
+def boss_mydoom_lich():
+    """Mydoom Lich — Leecher Fen, front-on. A crowned skull with sockets and teeth, a robe with
+    the ribs showing, arms down from the shoulders and a letter in one hand. The attack
+    flings the arms wide and sends envelopes flying — the mail storm."""
+    idle = grid(
+        "......#.##......",
+        ".....######.....",
+        ".....#....#.....",
+        ".....##..##.....",
+        ".....#....#.....",
+        ".....######.....",
+        ".#####....#####.",
+        ".##:#..##..#.##.",
+        ".##:########.##.",
+        ".##:#..##..#.##.",
+        ".##:#..##..#.##.",
+        "#####......#.##.",
+        "############....",
+        "....#.#..#.#....",
+    )
+    attack = grid(
+        "......#.##......",
+        "###..######..###",
+        "###..#....#..###",
+        ".....##..##.....",
+        ".##..#....#..##.",
+        ".##..######..##.",
+        ".#####....#####.",
+        ".##.#..##..#.##.",
+        ".##.########.##.",
+        "....#..##..#....",
+        "....#..##..#....",
+        "....#......#....",
+        "....########....",
+        "....#.#..#.#....",
+    )
+    return stack(idle, attack)
+
+
+def boss_bog_neumann():
+    """Bog Neumann — the Shared Bog, front-on. A self-replicating slime on the bog, for von
+    Neumann's machine: one blob with a face and a pinch down its middle. The attack has it
+    split into two copies of itself."""
+    idle = grid(
+        "................",
+        "................",
+        "................",
+        "....###::###....",
+        "..###.#::#.###..",
+        ".##...#::#...##.",
+        ".#....####....#.",
+        ".#..#......#..#.",
+        ".#............#.",
+        ".#............#.",
+        ".#...######...#.",
+        ".#............#.",
+        "###############.",
+        "#.#.#.#.#.#.#.#.",
+    )
+    attack = grid(
+        "................",
+        "................",
+        "................",
+        "................",
+        "..####....####..",
+        ".##..##..##..##.",
+        ".#....#..#....#.",
+        ".##..##..##..##.",
+        ".#....#..#....#.",
+        ".#....#..#....#.",
+        ".#.##.#..#.##.#.",
+        ".#....#..#....#.",
+        "#######.#######.",
+        "#.#.#.#.#.#.#.#.",
+    )
+    return stack(idle, attack)
+
+
+def boss_castellan_creeper():
+    """Castellan Creeper — Spectre Swamp, front-on. A castle turret with eyes in its window
+    (sealed air) and creeper climbing both walls. The attack lashes the vines out."""
+    idle = grid(
+        "................",
+        "...#.#....#.#...",
+        "...#.#....#.#...",
+        "...##########...",
+        "...#.######.#...",
+        "...#.#::::#.##..",
+        "..##.#:##:#..#..",
+        "..#..#::::#..##.",
+        ".##..######...#.",
+        ".#...........##.",
+        ".##.##########..",
+        "..#.........##..",
+        "..##........#...",
+        "...##########...",
+    )
+    attack = grid(
+        "................",
+        "...#.#....#.#...",
+        "...#.#....#.#...",
+        "...##########...",
+        "#..#.######.#...",
+        "#..#.#::::#.#...",
+        "####.#:##:#.#...",
+        "...#.#::::#.#...",
+        "...#.######.#...",
+        "#..#........####",
+        "#..##########..#",
+        "####........#..#",
+        "...#........#..#",
+        "...##########...",
+    )
+    return stack(idle, attack)
+
+
+def boss_herald_anna_kova():
+    """Herald Anna Kova — Castle Causeway, front-on. A herald in a quartered coat and a
+    feathered cap, a trumpet at the lips with a banner hanging from it — the attachment bait.
+    The attack raises the trumpet and streams the banner."""
+    idle = grid(
+        ".......########.",
+        "......##...##...",
+        ".......#...#....",
+        "#......##.##....",
+        "########...#....",
+        "#:#....#...#.#..",
+        "#####.##.#.####.",
+        "#...#.#..#....#.",
+        "#.#.#.#######.#.",
+        "#...#.#..#..###.",
+        "#...#.#..#..#...",
+        "#####.#######...",
+        "#...#..##.##....",
+        ".......##.##....",
+    )
+    attack = grid(
+        ".####..########.",
+        ".##.####...##...",
+        "....##:#...#....",
+        "#########.##....",
+        "#...#..#...#....",
+        "#.#.#..#...#.#..",
+        "#...#.##.#.####.",
+        "#...#.#..#....#.",
+        "#####.#######.#.",
+        "#...#.#..#..###.",
+        "......#..#..#...",
+        "......#######...",
+        ".......##.##....",
+        ".......##.##....",
+    )
+    return stack(idle, attack)
+
+
+def boss_morris_the_wyrm():
+    """Morris the Wyrm — Napstorrent Moors' area boss, facing LEFT, on the 96x64 cell. The
+    oldest worm: a horned head on a long segmented body that arches across the whole cell,
+    stubby legs under it. The attack rears the head and opens the jaws."""
+    idle = grid(
+        "........................",
+        "........................",
+        ".....##.................",
+        ".#########..............",
+        ".#..#..#................",
+        "##.....#.....###........",
+        "#......#....#####.......",
+        "#####..#...###.###.####.",
+        ".#####.#..######.###.###",
+        ".....#########.#.......#",
+        ".....##....##..##..###.#",
+        "......######....####.###",
+        "........###.....###...##",
+        "........##......##......",
+        "........................",
+        "........................",
+    )
+    attack = grid(
+        ".....##.................",
+        ".#########..............",
+        ".#..#..#................",
+        "######.#................",
+        "#::::#.#................",
+        "#::::#.#.....###........",
+        "######.#....#####.......",
+        ".....#.#...###.###.####.",
+        ".....#.#..######.###.###",
+        ".....#########.#.......#",
+        ".....##....##..##..###.#",
+        "......######....####.###",
+        "........###.....###...##",
+        "........##......##......",
+        "........................",
+        "........................",
+    )
+    return stack(idle, attack)
+
+
 RECIPES = {
     "SPR_MALBEAST_GLITCHHOG": glitchhog,
     "SPR_MALBEAST_SEGFAULT_PUP": segfault_pup,
@@ -1581,6 +1818,12 @@ RECIPES = {
     "SPR_BOSS_ZLOB_CONGER": boss_zlob_conger,
     "SPR_BOSS_GREEN_BUTTON": boss_green_button,
     "SPR_BOSS_ADMIRAL_CONDUIT": boss_admiral_conduit,
+    "SPR_BOSS_NIMDA": boss_nimda,
+    "SPR_BOSS_MYDOOM_LICH": boss_mydoom_lich,
+    "SPR_BOSS_BOG_NEUMANN": boss_bog_neumann,
+    "SPR_BOSS_CASTELLAN_CREEPER": boss_castellan_creeper,
+    "SPR_BOSS_HERALD_ANNA_KOVA": boss_herald_anna_kova,
+    "SPR_BOSS_MORRIS_THE_WYRM": boss_morris_the_wyrm,
 }
 
 # Short aliases for --preview / --only, so the CLI takes `glitchhog` not the full symbol.
