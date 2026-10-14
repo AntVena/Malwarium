@@ -6,7 +6,7 @@ namespace {
 
 constexpr uint16_t A3 = 220;
 constexpr uint16_t C4 = 262, D4 = 294, E4 = 330, F4 = 349, G4 = 392, A4 = 440;
-constexpr uint16_t C5 = 523, D5 = 587, E5 = 659, F5 = 698, G5 = 784, A5 = 880;
+constexpr uint16_t C5 = 523, D5 = 587, E5 = 659, F5 = 698, G5 = 784, A5 = 880, B5 = 988;
 constexpr uint16_t C6 = 1047, D6 = 1175, E6 = 1319, G6 = 1568;
 constexpr uint16_t A6 = 1760, C7 = 2093, E7 = 2637;
 constexpr uint16_t REST = 0;
@@ -53,6 +53,9 @@ constexpr SoundNote kProbe[]       = {{D6, 30}, {REST, 20}, {D6, 30}};
 constexpr SoundNote kCrash[]       = {{C5, 40}, {G4, 40}, {D4, 40}, {A3, 140}};
 constexpr SoundNote kClear[]       = {{C6, 50}, {E6, 50}, {G6, 50}, {C7, 50},
                                       {G6, 50}, {C7, 160}};
+// Bits landing in the wallet: the arcade coin's rising fourth, bright and short. Under
+// FRAGGER's fastest row of fall, so a catch never runs into the next one's cue.
+constexpr SoundNote kCoin[]        = {{B5, 40}, {E6, 110}};
 constexpr SoundNote kNewBest[]     = {{G5, 60}, {C6, 60}, {E6, 60}, {G6, 60},
                                       {REST, 40}, {E6, 60}, {G6, 220}};
 
@@ -93,6 +96,7 @@ constexpr SoundDef kSounds[] = {
     MAL_SOUND_ROW(Crash, Event, kCrash),
     MAL_SOUND_ROW(Clear, Event, kClear),
     MAL_SOUND_ROW(NewBest, Event, kNewBest),
+    MAL_SOUND_ROW(Coin, Event, kCoin),
 };
 
 #undef MAL_SOUND_ROW

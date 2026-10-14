@@ -184,6 +184,7 @@ int g_failures = 0;
     RUN(test_sound_combat_cues) \
     RUN(test_sound_arcade_stacker_cues) \
     RUN(test_sound_isolation_crash_once) \
+    RUN(test_sound_fragger_catch_is_a_coin) \
     RUN(test_sound_explore_fights_are_quiet) \
     RUN(test_explore_control_sound_row_toggles_and_persists) \
     RUN(test_sound_practice_during_walk_is_not_an_explore_fight) \

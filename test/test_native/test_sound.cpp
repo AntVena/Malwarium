@@ -289,6 +289,31 @@ void test_sound_arcade_stacker_cues() {
     CHECK(out.count(Sound::Miss) >= 1);
 }
 
+// FRAGGER sounds each of its three outcomes apart: a fragment shot, a shot stopped by a
+// file, and a file caught — the coin, because a catch is Bits arriving. A file landing
+// away from the head is silent: nothing was earned.
+void test_sound_fragger_catch_is_a_coin() {
+    RecordingSound out;
+    Game g{StartMode::Hatched};
+    g.setSoundOut(&out);
+    g.setSoundMode(SoundMode::All);
+    g.model().setFragmentation(50);
+    startPlayedMaint(g, MaintKind::Defrag, ArcadeGameKind::Fragger);
+    out.cues.clear();
+    const int lane = g.fragger().lane();
+    g.fragger().place(kFraggerRows - 1, lane, Fragger::Cell::Fragment);
+    g.onButton(press(Button::B));
+    CHECK(out.count(Sound::Point) == 1);
+    g.fragger().place(kFraggerRows - 1, lane, Fragger::Cell::File);
+    g.onButton(press(Button::B));
+    CHECK(out.count(Sound::Miss) == 1);
+    g.debugStepFragger();                         // the file lands on the head
+    CHECK(out.count(Sound::Coin) == 1);
+    g.fragger().place(kFraggerRows - 1, lane == 0 ? 1 : 0, Fragger::Cell::File);
+    g.debugStepFragger();                         // ...and one lands elsewhere
+    CHECK(out.count(Sound::Coin) == 1);
+}
+
 // The worm's run ends on exactly one crash cue, however long the board then sits parked.
 void test_sound_isolation_crash_once() {
     RecordingSound out;

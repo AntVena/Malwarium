@@ -53,6 +53,7 @@ enum class Sound : uint8_t {
     Crash,
     Clear,
     NewBest,
+    Coin,
     Count,
 };
 

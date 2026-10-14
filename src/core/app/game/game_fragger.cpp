@@ -52,9 +52,13 @@ void Game::onFragger(const ButtonEvent& ev) {
 
 void Game::stepFragger() {
     if (!fragger_.running()) return;
+    const int caught = fragger_.caught();
     fragger_.step();
     fraggerShotLane_ = -1;                      // the beam lasts one row of fall
+    // A catch is money arriving, so it sounds like it — unless the same row ended the
+    // run, which is the news that matters.
     if (!fragger_.running()) playSound(Sound::Crash);
+    else if (fragger_.caught() > caught) playSound(Sound::Coin);
     dirty_ = true;
 }
 
