@@ -171,8 +171,13 @@ void drawMaintAction(Framebuffer& fb, MaintKind kind, const PetModel& m,
         // reports. Naming the fixed number on a screen where it can be wrong would be
         // worse than naming nothing.
         if (variant == kDefragVariants - 1) {
-            std::snprintf(line, sizeof(line), "PER %s: -%d FRAG +%d B.", played.unit,
-                          kPlayFragPerUnit * mult, kPlayBitsPerUnit * mult);
+            if (played.bitsUnit)
+                std::snprintf(line, sizeof(line), "%s -%d FRAG, %s +%d B", played.unit,
+                              kPlayFragPerUnit * mult, played.bitsUnit,
+                              kPlayBitsPerUnit * mult);
+            else
+                std::snprintf(line, sizeof(line), "PER %s: -%d FRAG.", played.unit,
+                              kPlayFragPerUnit * mult);
             drawText(fb, kMargin, 34, line, palColor(Pal::INK));
         } else {
             std::snprintf(line, sizeof(line), "REDUCES FRAGMENTATION BY %d.",
@@ -328,10 +333,11 @@ void drawPlayHudWorth(Framebuffer& fb, const PlayHud& hud) {
     }
     std::snprintf(line, sizeof(line), "FRAG %d", hud.fragNow);
     right(182, hud.fragOff > 0 ? palColor(Pal::CALM) : palColor(Pal::INK_DIM));
-    if (hud.bits > 0 || hud.paysBits) std::snprintf(line, sizeof(line), "+%d B", hud.bits);
+    const bool bitsLine = hud.bits > 0 || hud.paysBits;
+    if (bitsLine) std::snprintf(line, sizeof(line), "+%d B", hud.bits);
     else std::snprintf(line, sizeof(line), "-%d FRAG", hud.fragOff);
-    right(196, (hud.bits > 0 || hud.fragOff > 0) ? palColor(Pal::CALM)
-                                                 : palColor(Pal::INK_DIM));
+    right(196, (bitsLine ? hud.bits : hud.fragOff) > 0 ? palColor(Pal::CALM)
+                                                       : palColor(Pal::INK_DIM));
 }
 
 void drawStackerBoard(Framebuffer& fb, const Stacker& s, const PlayHud& hud) {
@@ -482,7 +488,7 @@ void drawFraggerBoard(Framebuffer& fb, const Fragger& f, const PlayHud& hud, int
     fb.fillRect(0, 178, kActiveW, kActiveH - 178, palColor(Pal::TRACK));
     char line[40];
     if (f.running()) {
-        std::snprintf(line, sizeof(line), "HITS %d", f.hits());
+        std::snprintf(line, sizeof(line), "HITS %d  CATCH %d", f.hits(), f.caught());
         drawText(fb, kMargin, 182, line, palColor(Pal::INK_DIM));
         drawText(fb, kMargin, 196, "A<  B FIRE  >C", palColor(Pal::ACCENT));
     } else {

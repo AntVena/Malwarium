@@ -805,6 +805,7 @@ void Game::drawDetail(Framebuffer& fb) const {
             if (const ArcadeGameDef* g = arcadeGameByKind(maintPlayedGame(maintKind_))) {
                 played.name = g->displayName;
                 played.unit = g->unitName ? g->unitName : "RUN";
+                played.bitsUnit = g->bitsUnitName;
             }
             played.difficulty = maintDifficulty_;
             drawMaintAction(fb, maintKind_, model_,
@@ -1197,8 +1198,11 @@ void Game::drawBulkYieldScreen(Framebuffer& fb) const {
 
 void Game::drawStacker(Framebuffer& fb) const {
     if (gameBriefOpen_) { drawGameBrief(fb); return; }
-    drawStackerBoard(fb, stacker_,
-                     playHud(stacker_.blocks(), stacker_.score(), kStackerMaxScore));
+    PlayOutcome sofar;
+    sofar.units = stacker_.blocks();
+    sofar.score = stacker_.score();
+    sofar.scoreMax = kStackerMaxScore;
+    drawStackerBoard(fb, stacker_, playHud(sofar));
 }
 
 void Game::drawProcess(Framebuffer& fb) const {

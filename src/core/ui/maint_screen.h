@@ -28,6 +28,7 @@ void drawMaintList(Framebuffer& fb, const PetModel& m, int cursor, int beat);
 struct PlayedRow {
     const char* name = "";
     const char* unit = "";
+    const char* bitsUnit = nullptr;   // the game's Bits unit, if it has one
     ArcadeDifficulty difficulty = ArcadeDifficulty::Medium;
 };
 

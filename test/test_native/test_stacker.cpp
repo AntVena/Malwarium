@@ -326,7 +326,8 @@ void test_maint_played_variant_walks_the_dial() {
 
 // The wiring is content, not a rule of either process: point each process at the OTHER
 // engine and both still settle on their own terms. A won FRAGGER run as an AV scan is a
-// full scan; a Stacker board as a DEFRAG pays its blocks in frag and Bits.
+// full scan; a Stacker board as a DEFRAG pays its blocks in frag, and — having no Bits
+// unit — nothing in Bits.
 void test_played_maint_engines_are_interchangeable() {
     Game a{StartMode::Hatched};
     a.model().setFragmentation(50);
@@ -358,7 +359,7 @@ void test_played_maint_engines_are_interchangeable() {
     const int blocks = d.stacker().blocks();
     d.onButton(press(Button::B));
     CHECK(d.model().fragmentation() == 100 - blocks * kPlayFragPerUnit);
-    CHECK(d.bits() == bits + blocks * kPlayBitsPerUnit);
+    CHECK(d.bits() == bits);                            // no Bits unit, so no Bits
 }
 
 // The counting ladder rides the ordinary sweep, like every other counted series, and the

@@ -61,17 +61,21 @@ void Game::stepFragger() {
 void Game::finishFragger() {
     PlayOutcome o;
     o.units = fragger_.hits();
+    o.bitsUnits = fragger_.caught();
     o.won = fragger_.hits() >= kFraggerWinHits;
-    o.score = fragger_.hits();
+    o.score = fragger_.hits() + fragger_.caught();
     o.scoreMax = kFraggerWinHits;
     settlePlayedRun(o);
 }
 
 void Game::drawFragger(Framebuffer& fb) const {
     if (gameBriefOpen_) { drawGameBrief(fb); return; }
-    drawFraggerBoard(fb, fragger_,
-                     playHud(fragger_.hits(), fragger_.hits(), kFraggerWinHits),
-                     fraggerShotLane_, fraggerShotRow_);
+    PlayOutcome sofar;
+    sofar.units = fragger_.hits();
+    sofar.bitsUnits = fragger_.caught();
+    sofar.score = fragger_.hits() + fragger_.caught();
+    sofar.scoreMax = kFraggerWinHits;
+    drawFraggerBoard(fb, fragger_, playHud(sofar), fraggerShotLane_, fraggerShotRow_);
 }
 
 }  // namespace mal

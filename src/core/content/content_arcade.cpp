@@ -31,8 +31,8 @@ const GameBriefDef kFraggerBrief[] = {
                        "for every step up in difficulty. A moves it left, C moves it "
                        "right, B fires straight up its lane."},
     {"FRAGMENTS, FILES", "Shoot every crossed-out fragment. A solid file is a good "
-                         "block: your shot stops on it, so wait for it to land and "
-                         "catch whatever was behind it."},
+                         "block your shot stops on - be under it when it lands to "
+                         "catch it, then deal with whatever was behind it."},
     {"ONE LANDS, IT'S OVER", "A fragment that reaches the disk ends the run. Every one "
                              "you shoot speeds the fall up a little - there is no top, "
                              "only how long you hold it."},
@@ -104,11 +104,11 @@ const ArcadeGameDef kArcadeGames[] = {
     // A played MAINT run, off its disk: the same fall and the same quickening, priced by
     // the till. Its dial is the one that adds LANES rather than pace.
     {"fragger", "FRAGGER",
-     "SHOOT THE FRAGMENTS. LET THE FILES LAND.",
+     "SHOOT THE FRAGMENTS. CATCH THE FILES.",
      "ICON_MAINT_DEFRAG", "HOW MANY LANES TO HOLD.",
      ArcadeGameKind::Fragger, ArcadeScoring::Incremental, ArcadeUnlock::Always,
      kFraggerBrief, static_cast<int>(sizeof(kFraggerBrief) / sizeof(kFraggerBrief[0])),
-     "HIT"},
+     "HIT", "CATCH"},
 
     // The Phishing hatch, with no egg riding on it. Its dial is the only one that
     // isn't speed: more halvings is a narrower survivor, so the tell has to be found

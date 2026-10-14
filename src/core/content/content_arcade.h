@@ -118,9 +118,11 @@ struct ArcadeGameDef {
     ArcadeUnlock unlock = ArcadeUnlock::Always;   // what has to be true to see the row
     const GameBriefDef* brief = nullptr;   // this engine's RULES page, in reading order
     int briefCount = 0;
-    // What one UNIT of a played MAINT run is, as the action screen names it ("PER HIT").
-    // Only an engine that can back a MAINT process needs one.
+    // What one UNIT of a played MAINT run is, as the action screen names it ("HIT"): the
+    // cleaning unit, and the Bits unit if the game has one (tunables.h, kPlayFragPerUnit /
+    // kPlayBitsPerUnit). Only an engine that can back a MAINT process needs the first.
     const char* unitName = nullptr;
+    const char* bitsUnitName = nullptr;
 };
 
 // Compile-time ceiling on the roster, so the per-cabinet save tallies can be a plain

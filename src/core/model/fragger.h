@@ -1,15 +1,16 @@
 // fragger.h — the rules of FRAGGER, with no rendering and no Game.
 //
-// Blocks fall down three to five lanes toward the scan head at the foot of the disk. A FRAGMENT
-// (drawn crossed out) has to be shot before it lands — one that reaches the disk ends
-// the run. A FILE is a good block, and the shot cannot get past it: it lands harmlessly,
-// and whatever was queued behind it in that lane can only be shot once it has. That one
-// rule is what turns a reflex test into a read of the lanes, since a fragment shielded
-// by a file has to be met where it will be, not where it is.
+// Blocks fall down three to five lanes toward the scan head at the foot of the disk. A
+// FRAGMENT (drawn crossed out) has to be shot before it lands — one that reaches the disk
+// ends the run. A FILE is a good block, and the shot cannot get past it: it lands
+// harmlessly, and whatever was queued behind it in that lane can only be shot once it
+// has. A file that lands in the head's own lane is CAUGHT, which is the run's second
+// score: so every moment asks whether to stand under a file or go and shoot a fragment,
+// and a fragment shielded by a file has to be met where it will be, not where it is.
 //
-// ENDLESS. There is no board to clear: every fragment shot is worth the same, the fall
-// quickens a little with each one, and the run goes until a fragment lands. So the
-// score IS the game, and what it buys is the caller's business (Game::settlePlayedRun:
+// ENDLESS. There is no board to clear: every fragment shot and every file caught is worth
+// the same, the fall quickens a little with each shot, and the run goes until a fragment
+// lands. So the score IS the game, and what it buys is the caller's business (Game::settlePlayedRun:
 // a MAINT process or the arcade till).
 //
 // Kept a plain model (core/model, like stacker/isolation) so the rules can be tested a
@@ -64,17 +65,22 @@ class Fragger {
         lane_ = lanes_ / 2;
         hits_ = 0;
         written_ = 0;
+        caught_ = 0;
         crashLane_ = -1;
         state_ = State::Running;
     }
 
-    // One row of fall. The bottom row leaves first — a file is written, a fragment
+    // One row of fall. The bottom row leaves first — a file is written (and CAUGHT if
+    // it lands in the head's lane), a fragment
     // crashes the run — then everything moves down and a block may enter at the top.
     void step() {
         if (state_ != State::Running) return;
         for (int l = 0; l < lanes_; ++l) {
             const Cell landing = cells_[kFraggerRows - 1][l];
-            if (landing == Cell::File) ++written_;
+            if (landing == Cell::File) {
+                ++written_;
+                if (l == lane_) ++caught_;
+            }
             else if (landing == Cell::Fragment && crashLane_ < 0) crashLane_ = l;
         }
         if (crashLane_ >= 0) {
@@ -131,7 +137,8 @@ class Fragger {
     int lanes() const { return lanes_; }
     int lane() const { return lane_; }
     int hits() const { return hits_; }           // fragments shot: the score
-    int written() const { return written_; }     // files that landed
+    int written() const { return written_; }     // files that landed anywhere
+    int caught() const { return caught_; }       // ...of them, under the head
     int crashLane() const { return crashLane_; } // where the run ended, -1 while running
     Cell cell(int row, int lane) const {
         if (row < 0 || row >= kFraggerRows || lane < 0 || lane >= lanes_)
@@ -163,6 +170,7 @@ class Fragger {
     int8_t lane_ = 0;
     int16_t hits_ = 0;
     int16_t written_ = 0;
+    int16_t caught_ = 0;
     int8_t crashLane_ = -1;
     State state_ = State::Running;
 };

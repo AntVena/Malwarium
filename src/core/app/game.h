@@ -3247,11 +3247,13 @@ private:
     void drawRepartitionPickerScreen(Framebuffer& fb) const;
     void startMaint();
     // What every played game reports when it ends, whoever was paying for it. `units`
-    // is what a MAINT process prices (ArcadeGameDef::unitName); `score` / `scoreMax`
-    // are what the arcade till prices. One shape for every engine is what lets any of
+    // and `bitsUnits` are what a MAINT process prices (ArcadeGameDef::unitName /
+    // bitsUnitName — cleaning, and Bits); `score` / `scoreMax` are what the arcade till
+    // prices. One shape for every engine is what lets any of
     // them stand behind either MAINT process.
     struct PlayOutcome {
         int units = 0;
+        int bitsUnits = 0;
         bool won = false;
         int score = 0;
         int scoreMax = 0;
@@ -3262,12 +3264,13 @@ private:
     // Route a finished run to its context: the arcade till, or the MAINT process.
     void settlePlayedRun(const PlayOutcome& o);
     void settleMaintPlay(const PlayOutcome& o);
-    // What `units` are worth on the current process and dial, for the HUD and the payout.
+    // What cleaning `units` / `bitsUnits` are worth on the current process and dial, for
+    // the HUD and the payout.
     int playedFragWorth(int units) const;
-    int playedBitsWorth(int units) const;
-    // The footer a played board shows for a run worth `units` / `score` so far, in
-    // whichever context is armed — the one place a board learns what it is for.
-    PlayHud playHud(int units, int score, int scoreMax) const;
+    int playedBitsWorth(int bitsUnits) const;
+    // The footer a played board shows for a run worth this much so far, in whichever
+    // context is armed — the one place a board learns what it is for.
+    PlayHud playHud(const PlayOutcome& sofar) const;
     void beginStackerBoard();   // reset the board + enter it, whoever is paying for it
     void finishStacker();
     void beginFraggerRun();     // the same, for FRAGGER

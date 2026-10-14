@@ -25,6 +25,15 @@ void shootFragments(Game& g, int n) {
     }
 }
 
+// Land `n` files straight onto the head — one row of fall each. Kept well under
+// kFraggerRows steps in a test, so nothing the spawner drops can land meanwhile.
+void catchFiles(Game& g, int n) {
+    for (int i = 0; i < n; ++i) {
+        g.fragger().place(kFraggerRows - 1, g.fragger().lane(), Fragger::Cell::File);
+        g.debugStepFragger();
+    }
+}
+
 // End the run the only way it ends: a fragment reaching the disk, in a lane the head
 // is not covering. Leaves it parked on the result.
 void crashRun(Game& g) {
@@ -138,9 +147,11 @@ void test_fragger_spawns_keep_a_gap_and_replay() {
     CHECK(spawned > 500);                               // the disk is actually busy
 }
 
-// The DEFRAG payout: every fragment shot is kPlayFragPerUnit off the disk while it has
-// any and kPlayBitsPerUnit into the wallet regardless (both on EASY's x1), so a run that outlasts a clean
-// disk is still worth playing. A landed fragment ends it with no penalty and no mistake.
+// The DEFRAG payout splits by what was done: every fragment SHOT is kPlayFragPerUnit off
+// the disk while it has any, and every file CAUGHT is kPlayBitsPerUnit into the wallet
+// whether or not it does (both on EASY's x1), so a run that outlasts a clean disk is still
+// worth playing. A file that lands away from the head pays nothing. A landed fragment
+// ends the run with no penalty and no mistake.
 void test_fragger_defrag_pays_per_fragment() {
     Game g{StartMode::Hatched};
     g.model().setFragmentation(5);
@@ -152,13 +163,19 @@ void test_fragger_defrag_pays_per_fragment() {
     CHECK(g.nav() == Game::Nav::Fragger);
     shootFragments(g, 8);                               // three past a clean disk
     CHECK(g.fragger().hits() == 8);
+    catchFiles(g, 3);
+    CHECK(g.fragger().caught() == 3);
+    // A file landing in another lane is written, not caught.
+    g.fragger().place(kFraggerRows - 1, g.fragger().lane() == 0 ? 1 : 0, Fragger::Cell::File);
+    g.debugStepFragger();
+    CHECK(g.fragger().caught() == 3 && g.fragger().written() == 4);
     crashRun(g);
     CHECK(!g.fragger().running());
     g.onButton(press(Button::A));                       // any press settles the run
 
     CHECK(g.nav() == Game::Nav::Process);
     CHECK(g.model().fragmentation() == 0);
-    CHECK(g.bits() == bits + 8 * kPlayBitsPerUnit);
+    CHECK(g.bits() == bits + 3 * kPlayBitsPerUnit);
     CHECK(g.model().careMistakes() == mistakes);
     CHECK(!g.model().hasGhost());
     CHECK(g.defragCount() == defrags + 1);
@@ -238,7 +255,8 @@ void test_fragger_lanes_follow_the_dial() {
     CHECK(c.fragger().lanes() == kFraggerMaxLanes);
 }
 
-// A played run's payout DOUBLES per step up the dial: the same five hits pay x1, x2, x4.
+// A played run's payout DOUBLES per step up the dial: the same five hits and three
+// catches pay x1, x2, x4 — in frag and in Bits alike.
 void test_played_rewards_double_per_step() {
     int paid[kArcadeDifficulties] = {0};
     for (int d = 0; d < kArcadeDifficulties; ++d) {
@@ -248,12 +266,26 @@ void test_played_rewards_double_per_step() {
         const int bits = g.bits();
         startDefragRun(g);
         shootFragments(g, 5);
+        catchFiles(g, 3);
         crashRun(g);
         g.onButton(press(Button::B));
         paid[d] = g.bits() - bits;
         CHECK(g.model().fragmentation() == 100 - 5 * kPlayFragPerUnit * (1 << d));
     }
-    CHECK(paid[0] == 5 * kPlayBitsPerUnit);
+    CHECK(paid[0] == 3 * kPlayBitsPerUnit);
     CHECK(paid[1] == 2 * paid[0]);
     CHECK(paid[2] == 2 * paid[1]);
+}
+
+// Only a file that lands in the head's OWN lane is caught; one landing anywhere else is
+// still written to the disk, and either way a file never ends the run.
+void test_fragger_catch_needs_the_head_under_it() {
+    Fragger f = emptyRun();
+    const int under = f.lane();
+    f.place(kFraggerRows - 1, under, Fragger::Cell::File);
+    f.place(kFraggerRows - 1, under == 0 ? 1 : 0, Fragger::Cell::File);
+    f.step();
+    CHECK(f.running());
+    CHECK(f.written() == 2);
+    CHECK(f.caught() == 1);
 }

@@ -1227,11 +1227,13 @@ constexpr int kProcessBeats = 8;  // MAINT process run length before the outcome
 // (content_arcade.h's kDefragPlayedGame / kAvPlayedGame), not a rule of either process.
 constexpr int kDefragVariants = 3;
 constexpr int kAvVariants = 2;
-// A played run is priced per UNIT its game reports (a STACKER block landed, a FRAGGER
-// fragment shot), the same for either process and either game, times the difficulty's
-// reward multiplier (arcadeRewardMult — doubling per step of the dial). Each unit takes
-// this much Fragmentation off the disk while it has any, and pays this many Bits either
-// way; a WON run on an AV scan also clears the processes a Quick scan would. There is
+// A played run is priced per UNIT its game reports, of two kinds, the same for either
+// process and either game, times the difficulty's reward multiplier (arcadeRewardMult —
+// doubling per step of the dial). A CLEANING unit (a STACKER block landed, a FRAGGER
+// fragment shot) takes this much Fragmentation off the disk while it has any; a BITS unit
+// (a FRAGGER file caught) pays this many Bits, on a DEFRAG only — AV is free and pays
+// none. A game with no Bits unit simply earns none. A WON run on an AV scan also clears
+// the processes a Quick scan would. There is
 // no fail penalty and no care mistake down this path: a played run can come up short,
 // never fail, because its outcome was played rather than gambled.
 constexpr int kPlayFragPerUnit = 1;
