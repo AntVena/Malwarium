@@ -823,6 +823,9 @@ int g_failures = 0;
     RUN(test_stacker_an_intruder_takes_the_block_it_hits) \
     RUN(test_stacker_stopping_every_intruder_holds_the_line) \
     RUN(test_stacker_one_wall_is_a_breach) \
+    RUN(test_stacker_a_costly_hold_scores_less) \
+    RUN(test_stacker_called_intruders_land_after_the_opening_ones) \
+    RUN(test_stacker_fast_run_reaches_every_column) \
     RUN(test_stacker_seed_spreads_the_intruders) \
     RUN(test_stacker_run_stays_on_board_and_columns_stay_solid) \
     RUN(test_stacker_row_width_reports_the_row) \

@@ -87,7 +87,7 @@ void test_stacker_the_ground_calls_an_intruder() {
     CHECK(s.threatCount() == kStackerDealtThreats + 1);
     const int i = kStackerDealtThreats;
     CHECK(s.threatCol(i) >= 0 && s.threatCol(i) < kStackerStartWidth);
-    CHECK(s.threatRow(i) >= kStackerRows);        // queued above the open row
+    CHECK(s.threatRow(i) == kStackerRows + kStackerCallDelay);   // waits above the well
     CHECK(stackerDropAt(s, 0));                   // on the wall: nothing called
     CHECK(s.threatCount() == kStackerDealtThreats + 1);
     CHECK(stackerDropAt(s, 2));                   // two blocks fall past to the ground
@@ -144,7 +144,63 @@ void test_stacker_one_wall_is_a_breach() {
     for (int i = 0; i < 5; ++i) CHECK(stackerDropAt(s, 0));
     for (int i = 0; i < 4 * kStackerThreatBeats * kStackerRows && s.running(); ++i) s.step();
     CHECK(s.breached() && !s.won());
-    CHECK(s.score() > 0 && s.score() < kStackerMaxScore);   // what was built still counts
+    CHECK(s.score() > 0 && s.score() < kStackerHeldFloor);  // built, and still under any hold
+}
+
+// A held line is scored on what holding it cost: the losses every board takes are free,
+// each one past them costs kStackerLossCost, and the floor keeps any hold above any
+// breach.
+void test_stacker_a_costly_hold_scores_less() {
+    // One extra ground lock between the walls calls a fifth intruder, which takes a
+    // fifth block — and the line still holds, for less.
+    Stacker s(kStackerGateSeed);
+    const int cols[] = {0, 4, 3, 0, 4, 0, 4, 0, 4};
+    for (int c : cols) CHECK(stackerDropAt(s, c));
+    CHECK(s.width() == 2);                        // the lock at 3 dropped one past a wall
+    for (int i = 0; i < 4 * kStackerThreatBeats * kStackerRows && s.running(); ++i) s.step();
+    CHECK(s.won());
+    CHECK(s.destroyed() == kStackerFreeLosses + 1);
+    CHECK(s.score() == kStackerMaxScore - kStackerLossCost);
+    CHECK(s.score() > kStackerHeldFloor);
+}
+
+// The opening intruders land a full call delay ahead of the ones the opening locks call,
+// so the impacts come one after another instead of all on one drop.
+void test_stacker_called_intruders_land_after_the_opening_ones() {
+    Stacker s(kStackerGateSeed);
+    CHECK(stackerDropAt(s, 0));
+    CHECK(stackerDropAt(s, 4));
+    CHECK(s.threatCount() == 4);
+    int firstLoss = -1, lastLoss = -1;
+    for (int beat = 0; beat < 4 * kStackerThreatBeats * kStackerRows && s.running(); ++beat) {
+        const int before = s.destroyed();
+        s.step();
+        if (s.destroyed() > before) {
+            if (firstLoss < 0) firstLoss = beat;
+            lastLoss = beat;
+        }
+    }
+    CHECK(firstLoss >= 0);
+    CHECK(lastLoss - firstLoss >= kStackerCallDelay * kStackerThreatBeats);
+}
+
+// The fast step moves two columns a beat; the bounce spends one of them, so a run
+// reaches every column across a lap instead of only those of its starting parity.
+void test_stacker_fast_run_reaches_every_column() {
+    for (int narrow = 0; narrow < 2; ++narrow) {
+        Stacker s(kStackerGateSeed);
+        for (int i = 0; i < kStackerFastFromRow - 1; ++i) CHECK(stackerDropAt(s, 0));
+        CHECK(stackerDropAt(s, narrow ? 1 : 0));  // offset by one: a hand of two
+        CHECK(s.row() >= kStackerFastFromRow);
+        CHECK(s.width() == (narrow ? 2 : kStackerStartWidth));
+        const int span = kStackerCols - s.width();
+        bool seen[kStackerCols] = {};
+        for (int i = 0; i < 4 * kStackerCols; ++i) {
+            s.step();
+            seen[s.left()] = true;
+        }
+        for (int c = 0; c <= span; ++c) CHECK(seen[c]);
+    }
 }
 
 // The seed picks the pair, across every column, and never two a single hand covers.

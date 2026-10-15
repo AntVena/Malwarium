@@ -377,11 +377,17 @@ void drawStackerBoard(Framebuffer& fb, const Stacker& s, const PlayHud& hud) {
 
     // Each intruder's drop line: a dotted guide down its column to the top of the wall
     // there, so where it will hit is read off the board rather than worked out. Dotted
-    // rather than solid so it never reads as a block in grayscale. Queued intruders
-    // above the open row aren't drawn; the footer counts them.
+    // rather than solid so it never reads as a block in grayscale. An intruder still
+    // queued above the open row is a small down-pointing wedge over its column, in the
+    // gap under the header: where the next one comes from, not yet when.
     for (int i = 0; i < s.threatCount(); ++i) {
         const int col = s.threatCol(i), row = s.threatRow(i);
-        if (row > kStackerRows) continue;
+        if (row > kStackerRows) {
+            const int mx = kX0 + col * kCellW + kCellW / 2;
+            for (int k = 0; k < 3; ++k)
+                fb.fillRect(mx - 3 + k, y0 - 6 + k, 6 - 2 * k, 1, palColor(Pal::HOT));
+            continue;
+        }
         int ix, iy;
         cellAt(row, col, ix, iy);
         if (row > s.height(col)) {

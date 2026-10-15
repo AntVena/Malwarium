@@ -38,7 +38,13 @@ constexpr int kStackerFastStep = 2;
 
 // The intruders start in the open row above the well and drop one row every this many
 // beats of the slide, so the difficulty dial (which paces the beat) paces them too.
-constexpr int kStackerThreatBeats = 12;
+// Slow enough that a board is a few seconds of building between impacts, not a sprint.
+constexpr int kStackerThreatBeats = 16;
+
+// How many drops a called intruder waits above the open row before entering it, so the
+// ones a board's opening locks call land after the opening intruders rather than with
+// them.
+constexpr int kStackerCallDelay = 2;
 
 // How many intruders a board opens with, and how far apart their columns always are: at
 // least a full hand apart, so no single lock covers both and each needs a wall of its
@@ -48,10 +54,17 @@ constexpr int kStackerDealtThreats = 2;
 constexpr int kStackerThreatSpread = kStackerStartWidth;
 constexpr int kStackerMaxThreats = 8;
 
-// The best a board can be worth (see score()): what a held line scores, and the cap on
-// a breached one — a full hand's wall under each opening intruder, all the way up.
+// The best a board can be worth (see score()): a full hand's wall under each opening
+// intruder, all the way up.
 constexpr int kStackerMaxScore =
     kStackerDealtThreats * kStackerStartWidth * kStackerRows * (kStackerRows + 1) / 2;
+// A held line scores the maximum less kStackerLossCost per block lost past the ones
+// every board loses — each opening intruder's, and one for the intruder each of their
+// walls' first lock calls — but never below kStackerHeldFloor. A breached board scores
+// what it built, kept under that floor, so holding the line always outscores losing it.
+constexpr int kStackerFreeLosses = 2 * kStackerDealtThreats;
+constexpr int kStackerLossCost = kStackerMaxScore / 18;
+constexpr int kStackerHeldFloor = kStackerMaxScore / 2;
 
 class Stacker {
   public:
@@ -80,20 +93,22 @@ class Stacker {
         int pick = static_cast<int>(seed % static_cast<uint32_t>(pairs));
         for (int a = 0; a < kStackerCols; ++a)
             for (int b = a + kStackerThreatSpread; b < kStackerCols; ++b)
-                if (pick-- == 0) { spawn(a); spawn(b); }
+                if (pick-- == 0) { spawn(a, 0); spawn(b, 0); }
         state_ = State::Running;
     }
 
     // One beat: the run slides, and every kStackerThreatBeats-th beat the intruders
-    // drop a row. The run bounces off both walls; a run as wide as the board can't move
-    // at all, a legal (if generous) state.
+    // drop a row. The run bounces off both walls, and the bounce spends a column of the
+    // stride: at the fast step a run that only ever moved two at a time would keep one
+    // parity forever, and a single block could never stop on half the columns. A run as
+    // wide as the board can't move at all, a legal (if generous) state.
     void step() {
         if (state_ != State::Running) return;
         const int span = kStackerCols - width_;
         const int stride = row() >= kStackerFastFromRow ? kStackerFastStep : kStackerSlowStep;
         for (int i = 0; i < stride && span > 0; ++i) {
             if (left_ + dir_ < 0 || left_ + dir_ > span) dir_ = -dir_;
-            left_ += dir_;
+            else left_ += dir_;
         }
         if (++threatBeat_ < kStackerThreatBeats) return;
         threatBeat_ = 0;
@@ -121,7 +136,8 @@ class Stacker {
             if (h == 0) grounded[nGrounded++] = c;
         }
         if (kept > 0) width_ = static_cast<int8_t>(kept);
-        if (nGrounded > 0) spawn(grounded[next() % static_cast<uint32_t>(nGrounded)]);
+        if (nGrounded > 0)
+            spawn(grounded[next() % static_cast<uint32_t>(nGrounded)], kStackerCallDelay);
         left_ = 0;
         dir_ = +1;
     }
@@ -169,13 +185,17 @@ class Stacker {
     // What the board is WORTH so far: every block is worth its level, level 1 being the
     // floor. So height is paid for twice over — once by reaching a row at all, and again
     // by how many blocks reached it — without the model knowing what the number buys.
-    // A held line is worth the whole board: holding it is the goal, and height is only
-    // what a breached board is paid for.
+    // A held line is scored on what holding it cost instead (kStackerLossCost).
     int score() const {
-        if (state_ == State::Won) return kStackerMaxScore;
+        if (state_ == State::Won) {
+            const int lost = destroyed_ > kStackerFreeLosses ? destroyed_ - kStackerFreeLosses
+                                                              : 0;
+            const int held = kStackerMaxScore - lost * kStackerLossCost;
+            return held > kStackerHeldFloor ? held : kStackerHeldFloor;
+        }
         int total = 0;
         for (int r = 0; r < kStackerRows; ++r) total += popcount(locked_[r]) * (r + 1);
-        return total < kStackerMaxScore ? total : kStackerMaxScore;
+        return total < kStackerHeldFloor ? total : kStackerHeldFloor - 1;
     }
 
     // Every block still standing, at any height. The unit a MAINT run is paid in, so a
@@ -194,10 +214,11 @@ class Stacker {
     }
 
   private:
-    // Queue an intruder over column c, behind any already waiting there.
-    void spawn(int c) {
+    // Queue an intruder over column c, `delay` drops above the open row and behind any
+    // already waiting there.
+    void spawn(int c, int delay) {
         if (threats_ >= kStackerMaxThreats) return;
-        int r = kStackerRows;
+        int r = kStackerRows + delay;
         for (int i = 0; i < threats_; ++i)
             if (threatCol_[i] == c && threatRow_[i] >= r) r = threatRow_[i] + 1;
         threatCol_[threats_] = static_cast<int8_t>(c);
