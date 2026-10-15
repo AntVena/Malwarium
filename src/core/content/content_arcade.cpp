@@ -18,13 +18,13 @@ namespace {
 const GameBriefDef kStackerBrief[] = {
     {"THE INTRUDERS", "Intruders drop down the well over their columns. Raise walls under "
                       "them: B locks the sliding run, and every block falls until it "
-                      "lands on a block or the floor."},
+                      "lands on a block or the floor. You get ten locks in all."},
     {"THE HAND", "The run lands on the tallest column under it. Blocks over lower "
-                 "columns fall past and leave your hand. A run over flat ground, the "
-                 "floor included, keeps every block."},
+                 "columns fall past and leave your hand - fewer blocks in every lock "
+                 "after. A run over flat ground, the floor included, keeps them all."},
     {"THE GROUND", "An intruder that hits a wall stops there and takes that block. One "
                    "that hits the floor is a BREACH. Every lock that touches the ground "
-                   "calls another. Stop them all to hold the line."},
+                   "calls more. Stop them all to hold the line."},
 };
 
 const GameBriefDef kFraggerBrief[] = {
@@ -96,7 +96,7 @@ const ArcadeGameDef kArcadeGames[] = {
     // the same board MAINT plays, so practice here carries over.
     {"stacker", "FIREWALL",
      "WALL OFF BOTH INTRUDERS BEFORE THEY LAND.",
-     "ICON_MAINT_AV", "HOW FAST THE RUN AND INTRUDERS MOVE.",
+     "ICON_MAINT_AV", "PACE, AND HOW MANY THE GROUND CALLS.",
      ArcadeGameKind::Stacker, ArcadeScoring::Incremental, ArcadeUnlock::Always,
      kStackerBrief, static_cast<int>(sizeof(kStackerBrief) / sizeof(kStackerBrief[0])),
      "BLOCK"},

@@ -123,7 +123,7 @@ void test_stacker_stopping_every_intruder_holds_the_line() {
     CHECK(s.won() && !s.running());
     CHECK(s.width() == kStackerStartWidth);
     CHECK(s.threatCount() == 0);
-    CHECK(s.destroyed() == kStackerDealtThreats + 2);    // the two called by the ground
+    CHECK(s.destroyed() == s.freeLosses());       // the opening two, and the two called
     CHECK(s.blocks() == kStackerHoldLocks * kStackerStartWidth - s.destroyed());
     CHECK(s.score() == kStackerMaxScore);
 
@@ -159,9 +159,40 @@ void test_stacker_a_costly_hold_scores_less() {
     CHECK(s.width() == 2);                        // the lock at 3 dropped one past a wall
     for (int i = 0; i < 4 * kStackerThreatBeats * kStackerRows && s.running(); ++i) s.step();
     CHECK(s.won());
-    CHECK(s.destroyed() == kStackerFreeLosses + 1);
+    CHECK(s.destroyed() == s.freeLosses() + 1);
     CHECK(s.score() == kStackerMaxScore - kStackerLossCost);
     CHECK(s.score() > kStackerHeldFloor);
+}
+
+// A board gets kStackerDrops locks and no more; the board plays on without them, so
+// what the walls hold when the locks run out is what they have to hold with.
+void test_stacker_locks_run_out() {
+    Stacker s(kStackerGateSeed);
+    CHECK(s.dropsLeft() == kStackerDrops);
+    for (int i = 0; i < kStackerDrops; ++i) {
+        CHECK(stackerDropAt(s, i % 2 ? 4 : 0));   // two walls, so neither tops out
+        CHECK(s.dropsLeft() == kStackerDrops - 1 - i);
+    }
+    const int blocks = s.blocks();
+    CHECK(stackerDropAt(s, 0));                   // aligned, pressed, and nothing locks
+    CHECK(s.blocks() == blocks && s.dropsLeft() == 0);
+    CHECK(s.running());
+}
+
+// What one lock on the ground calls is the board's setting, and the losses a held line
+// gets free scale with it.
+void test_stacker_ground_calls_follow_the_setting() {
+    for (int calls = 1; calls <= 3; ++calls) {
+        Stacker s(kStackerGateSeed, calls);
+        CHECK(stackerDropAt(s, 0));
+        CHECK(s.threatCount() == kStackerDealtThreats + calls);
+        CHECK(s.freeLosses() == kStackerDealtThreats * (1 + calls));
+    }
+    // The dial is what picks it: a HARD cabinet calls the most.
+    Game g{StartMode::Hatched};
+    enterArcadeCabinet(g, arcadeGameIndexById("stacker"), ArcadeDifficulty::Hard);
+    g.onButton(press(Button::B));
+    CHECK(g.stacker().calls() == kStackerGroundCalls[2]);
 }
 
 // The opening intruders land a full call delay ahead of the ones the opening locks call,

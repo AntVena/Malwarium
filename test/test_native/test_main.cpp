@@ -825,6 +825,8 @@ int g_failures = 0;
     RUN(test_stacker_one_wall_is_a_breach) \
     RUN(test_stacker_a_costly_hold_scores_less) \
     RUN(test_stacker_called_intruders_land_after_the_opening_ones) \
+    RUN(test_stacker_locks_run_out) \
+    RUN(test_stacker_ground_calls_follow_the_setting) \
     RUN(test_stacker_fast_run_reaches_every_column) \
     RUN(test_stacker_seed_spreads_the_intruders) \
     RUN(test_stacker_run_stays_on_board_and_columns_stay_solid) \

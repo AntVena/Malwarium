@@ -412,11 +412,33 @@ void drawStackerBoard(Framebuffer& fb, const Stacker& s, const PlayHud& hud) {
         }
     }
 
+    // The two budgets, as pip bars in the gutters either side of the well, filled from
+    // the floor up: locks left on the LEFT, one solid pip each (a spent one is an empty
+    // slot, so the bar reads as a supply running down), and intruders still to stop on
+    // the RIGHT, one hollow pip each — the shape, not the side's colour, is what says
+    // which bar is the threat. Drops share the cells' row pitch; intruders run at half
+    // of it, since a ground lock can call several.
+    {
+        constexpr int kPipW = 6;
+        const int lx = (kX0 - kPipW) / 2;
+        const int rx = kX0 + kStackerCols * kCellW + (kX0 - kPipW) / 2;
+        for (int i = 0; i < kStackerDrops; ++i) {
+            const int py = kWellBottom - (i + 1) * kCellH + kGap;
+            fb.fillRect(lx, py, kPipW, kCellH - 2 * kGap,
+                        palColor(i < s.dropsLeft() ? Pal::ACCENT : Pal::TRACK));
+        }
+        constexpr int kThreatPitch = kCellH / 2;
+        for (int i = 0; i < s.threatCount(); ++i) {
+            const int py = kWellBottom - (i + 1) * kThreatPitch + 1;
+            strokeRect(fb, rx, py, kPipW, kThreatPitch - 2, palColor(Pal::HOT));
+        }
+    }
+
     // The run in hand: an OUTLINE, not a fill. Filled means committed everywhere else on
     // this board, so the distinction survives grayscale without needing a second colour,
     // and its own motion is what says the run is live — no blink, which at this cadence
     // would only read as flicker.
-    if (s.running())
+    if (s.running() && s.dropsLeft() > 0)
         for (int c = s.left(); c < s.left() + s.width(); ++c) {
             int x, y;
             cellAt(s.row(), c, x, y);
@@ -433,12 +455,14 @@ void drawStackerBoard(Framebuffer& fb, const Stacker& s, const PlayHud& hud) {
 
     char line[40];
     if (s.running()) {
-        // The intruders still to stop, queued ones included: the board's whole bill,
-        // which a lock on the ground adds to. The hand needs no number — the run's
-        // outline is it — and the right column needs the room.
-        std::snprintf(line, sizeof(line), "INTRUDERS %d", s.threatCount());
+        // The two gutter bars in numbers: locks left, and the intruders still to stop
+        // (queued ones included). FOES rather than INTRUDERS so both fit beside the
+        // right column; the hand needs no number, the run's outline is it.
+        std::snprintf(line, sizeof(line), "DROPS %d  FOES %d", s.dropsLeft(),
+                      s.threatCount());
         drawText(fb, kMargin, 182, line, palColor(Pal::INK_DIM));
-        drawText(fb, kMargin, 196, "B DROP    C STOP", palColor(Pal::ACCENT));
+        drawText(fb, kMargin, 196, s.dropsLeft() > 0 ? "B DROP    C STOP" : "HOLD ON   C STOP",
+                 palColor(Pal::ACCENT));
     } else if (s.won()) {
         drawText(fb, kMargin, 182, "LINE HELD.", palColor(Pal::CALM));
         drawText(fb, kMargin, 196, "ANY BUTTON", palColor(Pal::ACCENT));

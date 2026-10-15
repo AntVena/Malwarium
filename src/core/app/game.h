@@ -2221,9 +2221,9 @@ public:
     // Advance the Stacker's run one beat without waiting out its real cadence — the seam
     // tests and dump_frame use to place the run deliberately instead of by stopwatch.
     void debugStepStacker() { stepStacker(); }
-    // Re-deal the board from `seed` (Stacker::reset), so a gate can aim its column
-    // functions at known intruders.
-    void debugSeedStacker(uint32_t seed) { stacker_.reset(seed); }
+    // Re-deal the board from `seed` (Stacker::reset) at the dial's ground calls, so a
+    // gate can aim its column functions at known intruders.
+    void debugSeedStacker(uint32_t seed) { stacker_.reset(seed, stacker_.calls()); }
     const Stacker& stacker() const { return stacker_; }
     // The same seam for FRAGGER: one row of fall, on demand. `fragger()` is mutable so a
     // test can stage a lane (Fragger::place) before driving the real buttons at it.

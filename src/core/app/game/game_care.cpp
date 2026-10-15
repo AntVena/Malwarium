@@ -87,8 +87,9 @@ void Game::startMaint() {
 void Game::beginStackerBoard() {
     // The board itself, with no opinion about who is paying for it — MAINT takes the
     // units, the arcade charges nothing and takes the score.
-    rng_ = rng_ * 1664525u + 1013904223u;   // the shared LCG seeds the intruder's column
-    stacker_.reset(rng_ >> 8);
+    // The shared LCG seeds the intruders' columns; the dial sets what the ground costs.
+    rng_ = rng_ * 1664525u + 1013904223u;
+    stacker_.reset(rng_ >> 8, kStackerGroundCalls[static_cast<int>(runDifficulty())]);
     lastStackerStepMs_ = nowMs_;
     closeGameBrief();   // a stale flag from a previous board must not open paused
     nav_ = Nav::Stacker;
