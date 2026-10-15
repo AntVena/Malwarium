@@ -92,8 +92,7 @@ const GameBriefDef kChromaBrief[] = {
 
 const ArcadeGameDef kArcadeGames[] = {
     // A played MAINT board, off its pet. Nothing about the board changes here — it is
-    // the same deterministic slide, so a run that went well in MAINT goes exactly the
-    // same way in the arcade.
+    // the same board MAINT plays, so practice here carries over.
     {"stacker", "STACKER",
      "LAND THE RUN. THE OVERHANG IS SHAVED OFF.",
      "ICON_MAINT_AV", "HOW FAST THE RUN SLIDES.",

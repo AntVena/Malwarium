@@ -5,10 +5,6 @@
 // run out of width and it doesn't. That is the whole game, and what a cleared board buys
 // is the caller's business (Game::settlePlayedRun: a MAINT process or the arcade till).
 //
-// DETERMINISTIC BY DESIGN. There is no RNG anywhere in here, which is the point of a
-// played MAINT variant: the Quick run pays with luck, and this one pays with skill. A run that ends badly ended badly because of when
-// the player pressed, and can be replayed identically.
-//
 // Kept a plain model (core/model, like pet_model/combat) so the rules can be tested a
 // press at a time without a framebuffer or a Game. The screen reads it; it reads
 // nothing.
