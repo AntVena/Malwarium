@@ -449,7 +449,9 @@ bool Game::tickAnimClocks(uint32_t nowMs) {
         if (nowMs - lastStackerStepMs_ >=
             static_cast<uint32_t>(playStepMs(kStackerStepMs))) {
             lastStackerStepMs_ = nowMs;
+            const bool live = stacker_.running();
             stacker_.step();
+            if (live && !stacker_.running()) playStackerContact();   // the intruder landed
             changed = true;
         }
     } else {

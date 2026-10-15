@@ -114,6 +114,45 @@ void test_stacker_run_stays_on_board_and_contiguous() {
     }
 }
 
+// The intruder is the board's goal: a wall built up to it HOLDS only if its top course
+// covers the intruder's column, whichever of the two closes the gap.
+void test_stacker_intruder_blocks_or_breaches() {
+    // Built all the way up under it: the wall rises into the open row and meets it there.
+    Stacker held(/*seed=*/1);
+    CHECK(held.threatCol() == 1 && held.threatRow() == kStackerRows);
+    for (int r = 0; r < kStackerRows; ++r) CHECK(stackerDropAt(held, 0));
+    CHECK(held.won() && held.row() == kStackerRows);
+    CHECK(held.topWidth() == kStackerStartWidth);
+
+    // The same wall beside it is a breach, not a win — height alone is not the goal.
+    Stacker beside(/*seed=*/5);
+    for (int r = 0; r < kStackerRows; ++r) CHECK(stackerDropAt(beside, 0));
+    CHECK(beside.breached() && !beside.won() && !beside.running());
+    CHECK(beside.score() == kStackerMaxScore);   // what was built still counts
+
+    // Left alone, the intruder drops a row every kStackerThreatBeats beats and meets
+    // whatever is there. One course under it holds...
+    Stacker low(/*seed=*/0);
+    CHECK(stackerDropAt(low, 0));
+    for (int i = 0; i < kStackerThreatBeats * kStackerRows && low.running(); ++i) {
+        CHECK(low.threatRow() > low.row());       // never inside the wall while live
+        low.step();
+    }
+    CHECK(low.won() && low.threatRow() == 1 && low.topWidth() == kStackerStartWidth);
+
+    // ...and no wall at all is a breach at the floor.
+    Stacker none(/*seed=*/3);
+    for (int i = 0; i < kStackerThreatBeats * (kStackerRows + 1); ++i) none.step();
+    CHECK(none.breached() && none.threatRow() == 0 && none.blocks() == 0);
+}
+
+// The seed picks the column, across all of them, so no single aim solves every board.
+void test_stacker_seed_spreads_the_intruder() {
+    bool seen[kStackerCols] = {};
+    for (uint32_t seed = 0; seed < 64; ++seed) seen[Stacker(seed).threatCol()] = true;
+    for (int c = 0; c < kStackerCols; ++c) CHECK(seen[c]);
+}
+
 // `rowWidth` is what the achievement rows read, and it has to answer for the TOP row of a
 // won board — the one case `width()` can't cover, since a win stops the run before the
 // survivors become the next hand.
@@ -172,7 +211,7 @@ void test_stacker_win_credits_the_tally_and_the_shape_rows() {
     startPlayedMaint(g, MaintKind::Av, ArcadeGameKind::Stacker);
     CHECK(playStackerBoard(g, [](int) { return 0; }));
     CHECK(g.stacker().won());
-    CHECK(g.stacker().rowWidth(kStackerRows - 1) == kStackerStartWidth);
+    CHECK(g.stacker().topWidth() == kStackerStartWidth);
     g.onButton(press(Button::B));                   // park -> finish
     CHECK(g.stackerWins() == 1);
     CHECK(g.hasAchievement(ach::kPerfectDefrag));
@@ -184,9 +223,9 @@ void test_stacker_win_credits_the_tally_and_the_shape_rows() {
     Game n{StartMode::Hatched};
     n.model().setFragmentation(60);
     startPlayedMaint(n, MaintKind::Defrag, ArcadeGameKind::Stacker);
-    CHECK(playStackerBoard(n, [](int r) { return r < 2 ? r : 2; }));
+    CHECK(playStackerBoard(n, [](int r) { return r < 2 ? r : 2; }, /*threatCol=*/2));
     CHECK(n.stacker().won());
-    CHECK(n.stacker().rowWidth(kStackerRows - 1) == 1);
+    CHECK(n.stacker().topWidth() == 1);
     n.onButton(press(Button::B));
     CHECK(n.stackerWins() == 1);
     CHECK(n.hasAchievement(ach::kHangingByABit));
@@ -262,8 +301,8 @@ void test_stacker_cleared_board_is_a_full_scan() {
     n.model().setFragmentation(95);
     n.model().setGhost(true);
     startPlayedMaint(n, MaintKind::Av, ArcadeGameKind::Stacker);
-    CHECK(playStackerBoard(n, [](int r) { return r < 2 ? r : 2; }));
-    CHECK(n.stacker().won() && n.stacker().rowWidth(kStackerRows - 1) == 1);
+    CHECK(playStackerBoard(n, [](int r) { return r < 2 ? r : 2; }, /*threatCol=*/2));
+    CHECK(n.stacker().won() && n.stacker().topWidth() == 1);
     n.onButton(press(Button::B));
     CHECK(n.model().fragmentation() == 95 - kAvReduction);
     CHECK(!n.model().hasGhost());

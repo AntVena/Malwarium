@@ -87,7 +87,8 @@ void Game::startMaint() {
 void Game::beginStackerBoard() {
     // The board itself, with no opinion about who is paying for it — MAINT takes the
     // units, the arcade charges nothing and takes the score.
-    stacker_.reset();
+    rng_ = rng_ * 1664525u + 1013904223u;   // the shared LCG seeds the intruder's column
+    stacker_.reset(rng_ >> 8);
     lastStackerStepMs_ = nowMs_;
     closeGameBrief();   // a stale flag from a previous board must not open paused
     nav_ = Nav::Stacker;
@@ -102,8 +103,7 @@ void Game::onStacker(const ButtonEvent& ev) {
     if (ev.button == Button::B) {
         const int hand = stacker_.width();
         stacker_.drop();
-        if (stacker_.won()) playSound(Sound::Clear);
-        else if (!stacker_.running()) playSound(Sound::Crash);
+        if (!stacker_.running()) playStackerContact();
         else playSound(stacker_.width() < hand ? Sound::Miss : Sound::Point);
     } else if (ev.button == Button::C) {
         // Stop early and bank the board. Since a run that ends in mid-air keeps whatever
@@ -113,18 +113,23 @@ void Game::onStacker(const ButtonEvent& ev) {
     }
 }
 
+// How a board's end sounds, whether a lock or the intruder's drop got it there.
+void Game::playStackerContact() {
+    playSound(stacker_.won() ? Sound::Clear : Sound::Crash);
+}
+
 void Game::finishStacker() {
     // The board's own joke, and it belongs to the BOARD rather than to any context:
     // the run that lost its whole hand on the second lock.
-    if (!stacker_.running() && !stacker_.won() && stacker_.row() == 1)
+    if (stacker_.state() == Stacker::State::Lost && stacker_.row() == 1)
         unlockAchievement(ach::kStackOverflow);
     // The played-by-hand ladder and the two rows a board's SHAPE earns, for a board
-    // cleared in MAINT — whichever process it was played for. The top row's surviving
-    // width is the whole record of how the run went: the full starting width means
-    // nothing was ever shaved, and one block means the last lock had a single column.
+    // held in MAINT — whichever process it was played for. The top course's width is
+    // the whole record of how the run went: the full starting width means nothing was
+    // ever shaved, and one block means the intruder was stopped by a single column.
     if (!arcadeRun_ && stacker_.won()) {
         ++stackerWins_;
-        const int kept = stacker_.rowWidth(kStackerRows - 1);
+        const int kept = stacker_.topWidth();
         if (kept >= kStackerStartWidth) unlockAchievement(ach::kPerfectDefrag);
         if (kept == 1) unlockAchievement(ach::kHangingByABit);
     }

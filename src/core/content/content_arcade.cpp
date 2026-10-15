@@ -16,14 +16,15 @@ namespace {
 // caller's business (arcade till vs. hatch clock vs. Fragmentation) and would be wrong
 // copy in two of the three doors it can be read through.
 const GameBriefDef kStackerBrief[] = {
-    {"THE RUN", "A run of blocks slides back and forth on its own. B locks it where it "
-                "stands - there's no clock, but the row above is waiting."},
-    {"THE SHAVE", "Locking shaves off anything not resting on a locked block below. "
-                  "What survives becomes the next run, narrower, re-entering from the "
-                  "left wall."},
-    {"THE STAKES", "Lock the top row with at least one block and the board clears. "
-                   "Lose every block on a lock and the run is over. C stops early and "
-                   "banks whatever is already locked."},
+    {"THE INTRUDER", "An intruder drops down the well over one column. Build the wall "
+                     "under it: B locks the sliding run where it stands. The first course "
+                     "decides which columns the wall can ever cover."},
+    {"THE SHAVE", "Locking shaves off anything not resting on the course below. What "
+                  "survives becomes the next run, narrower, re-entering from the left "
+                  "wall."},
+    {"THE STAKES", "When the intruder meets the wall, a top course under its column "
+                   "BLOCKS it. Miss the column and it's a BREACH. Lose every block and "
+                   "the wall collapses. C stops early and banks what's locked."},
 };
 
 const GameBriefDef kFraggerBrief[] = {
@@ -93,9 +94,9 @@ const GameBriefDef kChromaBrief[] = {
 const ArcadeGameDef kArcadeGames[] = {
     // A played MAINT board, off its pet. Nothing about the board changes here — it is
     // the same board MAINT plays, so practice here carries over.
-    {"stacker", "STACKER",
-     "LAND THE RUN. THE OVERHANG IS SHAVED OFF.",
-     "ICON_MAINT_AV", "HOW FAST THE RUN SLIDES.",
+    {"stacker", "FIREWALL",
+     "WALL OFF THE INTRUDER BEFORE IT LANDS.",
+     "ICON_MAINT_AV", "HOW FAST THE RUN AND INTRUDER MOVE.",
      ArcadeGameKind::Stacker, ArcadeScoring::Incremental, ArcadeUnlock::Always,
      kStackerBrief, static_cast<int>(sizeof(kStackerBrief) / sizeof(kStackerBrief[0])),
      "BLOCK"},

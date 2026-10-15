@@ -2221,6 +2221,9 @@ public:
     // Advance the Stacker's run one beat without waiting out its real cadence — the seam
     // tests and dump_frame use to place the run deliberately instead of by stopwatch.
     void debugStepStacker() { stacker_.step(); }
+    // Re-deal the board with the intruder over `seed % kStackerCols`, so a gate can aim
+    // its column functions at a known target.
+    void debugSeedStacker(uint32_t seed) { stacker_.reset(seed); }
     const Stacker& stacker() const { return stacker_; }
     // The same seam for FRAGGER: one row of fall, on demand. `fragger()` is mutable so a
     // test can stage a lane (Fragger::place) before driving the real buttons at it.
@@ -3273,6 +3276,7 @@ private:
     PlayHud playHud(const PlayOutcome& sofar) const;
     void beginStackerBoard();   // reset the board + enter it, whoever is paying for it
     void finishStacker();
+    void playStackerContact();
     void beginFraggerRun();     // the same, for FRAGGER
     void stepFragger();         // one row of fall, with its sound
     void finishFragger();

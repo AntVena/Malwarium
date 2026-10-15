@@ -32,7 +32,7 @@
 //        dying (5/5 errors: the habitat's FAILING countdown and its rescue line)
 //        tipcard (the one-time CARE card the first menu summon opens; pairs with crit)
 //        nofood (empty the bag of anything edible; pairs with items, lockout, hungry)
-//        maint [detail] [stacker [slide|drop|stop ...]] [run [step:<n>]]
+//        maint [detail] [stacker [seed:<n>|slide|drop|stop ...]] [run [step:<n>]]
 //             [fragger [fall:<n>|left|right|fire|crash ...]] [medium|hard] · lockout ·
 //             evolve ("stacker"/"fragger" open whichever process plays that game, on
 //             the dial setting named; each word after one acts on its board in order)
@@ -605,8 +605,12 @@ int main(int argc, char** argv) {
             // so interleaving the two walks the run off the stack and renders a loss.
             // "stop" ends the run there and banks it, which is also the only way to reach
             // the outcome toast for a board that was neither cleared nor stalled.
+            // "seed:<n>" re-deals the board with the intruder over column n % kStackerCols,
+            // so a scene names its target instead of inheriting the shared LCG's.
             for (int i = 1; i < argc; ++i) {
-                if (std::strcmp(argv[i], "drop") == 0)
+                if (std::strncmp(argv[i], "seed:", 5) == 0)
+                    game.debugSeedStacker(static_cast<uint32_t>(std::atoi(argv[i] + 5)));
+                else if (std::strcmp(argv[i], "drop") == 0)
                     game.onButton({Button::B, true, false});
                 else if (std::strcmp(argv[i], "slide") == 0)
                     game.debugStepStacker();

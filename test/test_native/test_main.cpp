@@ -821,6 +821,8 @@ int g_failures = 0;
     RUN(test_stacker_missing_entirely_loses)  \
     RUN(test_stacker_clearing_every_row_wins) \
     RUN(test_stacker_run_stays_on_board_and_contiguous) \
+    RUN(test_stacker_intruder_blocks_or_breaches) \
+    RUN(test_stacker_seed_spreads_the_intruder) \
     RUN(test_stacker_row_width_reports_the_survivors) \
     RUN(test_stacker_score_pays_for_height_twice) \
     RUN(test_stacker_win_credits_the_tally_and_the_shape_rows) \

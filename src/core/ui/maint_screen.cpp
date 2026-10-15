@@ -346,20 +346,21 @@ void drawStackerBoard(Framebuffer& fb, const Stacker& s, const PlayHud& hud) {
     // Drawn bottom-up: row 0 is the base, so it sits at the FOOT of the well and the run
     // climbs toward the header. Cells are WIDE and short — a disk block, not a tile — and
     // their size is derived from the grid rather than typed twice, so changing
-    // kStackerCols/kStackerRows can't desync the drawing from the rules.
+    // kStackerCols/kStackerRows can't desync the drawing from the rules. One row more
+    // than the grid is laid out: the open row above the well the intruder starts in.
     constexpr int kWellTop = 30;
     constexpr int kWellBottom = 176;
-    constexpr int kCellH = (kWellBottom - kWellTop) / kStackerRows;
+    constexpr int kCellH = (kWellBottom - kWellTop) / (kStackerRows + 1);
     constexpr int kCellW = 28;
     constexpr int kGap = 2;
     constexpr int kX0 = (kActiveW - kStackerCols * kCellW) / 2;
     // Bottom-align the grid in the well, so any rounding in kCellH is slack at the TOP
     // (against the header) rather than a floating stack with a gap under its base row.
-    const int y0 = kWellBottom - kStackerRows * kCellH;
+    const int y0 = kWellBottom - (kStackerRows + 1) * kCellH;
 
     auto cellAt = [&](int r, int c, int& x, int& y) {
         x = kX0 + c * kCellW;
-        y = y0 + (kStackerRows - 1 - r) * kCellH;   // row 0 at the bottom
+        y = y0 + (kStackerRows - r) * kCellH;   // row 0 at the bottom
     };
 
     for (int r = 0; r < kStackerRows; ++r)
@@ -373,6 +374,39 @@ void drawStackerBoard(Framebuffer& fb, const Stacker& s, const PlayHud& hud) {
             fb.fillRect(x + kGap, y + kGap, kCellW - 2 * kGap, kCellH - 2 * kGap,
                         palColor(Pal::ACCENT));
         }
+
+    // The intruder's drop line: a dotted guide down its column to whatever it will meet,
+    // so the aim is read off the board rather than worked out. Dotted rather than solid
+    // so it never reads as a block in grayscale. On a breach it runs on through the gap
+    // in HOT — the hole the intruder went through.
+    {
+        int ix, iy;
+        cellAt(s.threatRow(), s.threatCol(), ix, iy);
+        const int lx = ix + kCellW / 2 - 1;
+        if (s.running()) {
+            int fx, fy;
+            cellAt(s.row(), s.threatCol(), fx, fy);
+            for (int y = iy + kCellH; y < fy + kCellH; y += 3)
+                fb.fillRect(lx, y, 2, 1, palColor(Pal::INK_DIM));
+        } else if (s.breached()) {
+            for (int y = iy + kCellH; y < kWellBottom; y += 3)
+                fb.fillRect(lx, y, 2, 1, palColor(Pal::HOT));
+        }
+
+        // The intruder itself: a hollow frame crossed out, FRAGGER's fragment mark and
+        // the AV map's quarantine mark — the one shape on this board that is a threat.
+        const Rgb565 hot = palColor(Pal::HOT);
+        const int bw = kCellW - 2 * kGap, bh = kCellH - 2 * kGap;
+        const int bx = ix + kGap, by = iy + kGap;
+        fb.fillRect(bx, by, bw, bh, palColor(Pal::PAPER));
+        strokeRect(fb, bx, by, bw, bh, hot);
+        const int cross = bh - 2;
+        const int cx = bx + (bw - cross) / 2, cy = by + 1;
+        for (int d = 0; d < cross; ++d) {
+            fb.fillRect(cx + d, cy + d, 2, 1, hot);
+            fb.fillRect(cx + cross - 1 - d, cy + d, 2, 1, hot);
+        }
+    }
 
     // The run in hand: an OUTLINE, not a fill. Filled means committed everywhere else on
     // this board, so the distinction survives grayscale without needing a second colour,
@@ -395,16 +429,18 @@ void drawStackerBoard(Framebuffer& fb, const Stacker& s, const PlayHud& hud) {
 
     char line[40];
     if (s.running()) {
-        std::snprintf(line, sizeof(line), "ROW %d/%d  BLOCKS %d",
-                      s.row() + 1, kStackerRows, s.width());
+        // GAP is the rows of open air between the run and the intruder: the clock this
+        // board runs on, counted rather than drawn as a bar because the board shows it.
+        std::snprintf(line, sizeof(line), "GAP %d  BLOCKS %d",
+                      s.threatRow() - s.row(), s.width());
         drawText(fb, kMargin, 182, line, palColor(Pal::INK_DIM));
         drawText(fb, kMargin, 196, "B DROP    C STOP", palColor(Pal::ACCENT));
     } else if (s.won()) {
-        drawText(fb, kMargin, 182, "BOARD CLEARED.", palColor(Pal::CALM));
+        drawText(fb, kMargin, 182, "INTRUDER BLOCKED.", palColor(Pal::CALM));
         drawText(fb, kMargin, 196, "ANY BUTTON", palColor(Pal::ACCENT));
     } else {
-        std::snprintf(line, sizeof(line), "STALLED AT ROW %d.", s.row() + 1);
-        drawText(fb, kMargin, 182, line, palColor(Pal::HOT));
+        drawText(fb, kMargin, 182, s.breached() ? "BREACH!" : "WALL COLLAPSED.",
+                 palColor(Pal::HOT));
         drawText(fb, kMargin, 196, "ANY BUTTON", palColor(Pal::ACCENT));
     }
     drawPlayHudWorth(fb, hud);

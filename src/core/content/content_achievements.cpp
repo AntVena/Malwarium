@@ -489,32 +489,31 @@ const AchievementDef kAchievements[] = {
      AchSeries::Handshakes, /*goal=*/250, nullptr, 0,
      {bits(600), item("commend_cache")}},
 
-    // --- The STACKER, played in MAINT -----------------------------------------------
-    // A played MAINT run pays with SKILL rather than luck (core/model/stacker.h), and the
-    // Stacker is deterministic, so these are the only rows on the board that a player can
-    // practise their way to rather than grind. Keyed on the board, never on the process it
-    // was played for, since which process plays it is content (content_arcade.h).
-    // The ladder counts cleared boards; the two below it read the width the run reached
-    // the top with, which is the whole difficulty curve in one number.
+    // --- The FIREWALL, played in MAINT ----------------------------------------------
+    // Rows a player practises their way to rather than grinds (core/model/stacker.h).
+    // Keyed on the board, never on the process it was played for, since which process
+    // plays it is content (content_arcade.h). The ladder counts held walls; the two
+    // below it read the width the wall met the intruder with, which is the whole
+    // difficulty curve in one number.
     {/*wire=*/63, "DEFRAG_BY_HAND", "Stacked by Hand",
-     "Clear {n} STACKER board by hand in MAINT.", "ICON_ACH_DEFRAG_BY_HAND",
+     "Stop {n} FIREWALL intruder by hand in MAINT.", "ICON_ACH_DEFRAG_BY_HAND",
      AchSeries::StackerWins, /*goal=*/1, nullptr, 0, {bits(25)}},
     {/*wire=*/64, "STACK_10", "Sector Stacker",
-     "Clear {n} STACKER boards by hand in MAINT.", "ICON_ACH_STACK_10",
+     "Stop {n} FIREWALL intruders by hand in MAINT.", "ICON_ACH_STACK_10",
      AchSeries::StackerWins, /*goal=*/10, nullptr, 0,
      {bits(60), item("sealed_cache_common")}},
     {/*wire=*/65, "STACK_50", "Contiguous",
-     "Clear {n} STACKER boards by hand in MAINT.", "ICON_ACH_STACK_50",
+     "Stop {n} FIREWALL intruders by hand in MAINT.", "ICON_ACH_STACK_50",
      AchSeries::StackerWins, /*goal=*/50, nullptr, 0,
      {bits(250), item("sealed_cache_rare")}},
-    // Reaching the top having never once overhung the row below — nine perfect locks,
-    // the last four of them at the doubled step. Priced as a capstone because it is one:
+    // Meeting the intruder having never once overhung the course below, every lock
+    // perfect against the drop. Priced as a capstone because it is one:
     // no amount of playing makes it likelier, only getting better at it does.
     {/*wire=*/66, "PERFECT_DEFRAG", "Airtight",
-     "Clear a STACKER board without shaving off a single block.", "ICON_ACH_PERFECT_DEFRAG",
+     "Stop a FIREWALL intruder without shaving off a block.", "ICON_ACH_PERFECT_DEFRAG",
      AchSeries::Event, /*goal=*/0, nullptr, 0, {bits(400), item("commend_cache")}},
     {/*wire=*/67, "HANGING_BY_A_BIT", "Hanging by a Bit",
-     "Clear a STACKER board with a single block left standing.", "ICON_ACH_HANGING_BY_A_BIT",
+     "Stop a FIREWALL intruder with a single block left standing.", "ICON_ACH_HANGING_BY_A_BIT",
      AchSeries::Event, /*goal=*/0, nullptr, 0, {bits(150), item("sealed_cache_rare")}},
 
     // --- The GAMES arcade ----------------------------------------------------------
@@ -921,7 +920,7 @@ const AchievementDef kAchievements[] = {
 
     // The DEFRAG ladder's capstone, which STACK_50 stopped one rung short of.
     {/*wire=*/135, "STACK_100", "Solid State",
-     "Clear {n} STACKER boards by hand in MAINT.", "ICON_ACH_STACK_100",
+     "Stop {n} FIREWALL intruders by hand in MAINT.", "ICON_ACH_STACK_100",
      AchSeries::StackerWins, /*goal=*/100, nullptr, 0,
      {bits(400), item("commend_cache")}},
     // --- The arcade's long tail ---------------------------------------------------
@@ -1043,7 +1042,7 @@ const AchievementDef kAchievements[] = {
      AchSeries::MergesCooked, /*goal=*/500, nullptr, 0,
      {bits(400), item("commend_cache")}},
     {/*wire=*/190, "STACK_250", "Solid Gold",
-     "Clear {n} STACKER boards by hand in MAINT.", "ICON_ACH_STACK_250",
+     "Stop {n} FIREWALL intruders by hand in MAINT.", "ICON_ACH_STACK_250",
      AchSeries::StackerWins, /*goal=*/250, nullptr, 0,
      {bits(600), item("commend_cache")}},
     {/*wire=*/191, "DOCK_100", "Dock Admiral",
