@@ -69,13 +69,18 @@ void test_stacker_complete_miss_starts_a_second_wall() {
     CHECK(s.width() == kStackerStartWidth);
     CHECK(s.locked(0, 4) && s.locked(0, 5) && s.locked(0, 6));
     CHECK(s.height(0) == 2 && s.height(4) == 1);
-    CHECK(s.row() == 2);                          // the run still slides over the tallest
+    CHECK(s.row() == 2);                          // the run still slides over the top
 
-    // A run over UNEVEN ground lands on the tallest column under it, and the rest fall
-    // to their own columns' tops and leave the hand.
+    // Over UNEVEN ground every block lands on its own column's top. Landing on a wall
+    // at any height keeps a block; only the one that fell past to the floor leaves.
     CHECK(stackerDropAt(s, 2));                   // over heights 2, 0 and 1
-    CHECK(s.width() == 1);                        // only column 2 landed level
+    CHECK(s.width() == 2);                        // columns 2 and 4 landed on walls
     CHECK(s.height(2) == 3 && s.height(3) == 1 && s.height(4) == 2);
+
+    // Wholly on walls of different heights: nothing reached the floor, nothing leaves.
+    CHECK(stackerDropAt(s, 2));                   // over heights 3, 1 (wall now) and 2
+    CHECK(s.width() == 2);
+    CHECK(s.height(2) == 4 && s.height(3) == 2);
 }
 
 // The price of the ground: a lock that lands any block on it calls one more intruder,

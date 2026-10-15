@@ -2,10 +2,11 @@
 //
 // The FIREWALL. Intruders drop down the well over their columns while you raise walls
 // under them: a run of blocks slides across the well and B locks it, every block falling
-// straight down its column onto whatever is there — a block, or the floor. The run lands
-// on the tallest column beneath it; blocks over lower columns fall past and leave the
-// hand, which is what narrows it. A run over a flat stretch (open floor included) keeps
-// every block, so a second wall can be started anywhere without overlapping the first.
+// straight down its column onto whatever is there — a block, or the floor. A block that
+// lands on a wall, at whatever height, stays in the hand. One that falls past the walls
+// to the floor while the rest of its run lands on them leaves the hand, which is what
+// narrows it. A run that lands wholly on the floor keeps every block, so a second wall
+// can be started anywhere without overlapping the first.
 //
 // An intruder that reaches a wall is stopped, and takes the block it hit with it. One
 // that reaches the floor is a BREACH, and ends the run. Stop every intruder and the line
@@ -128,30 +129,28 @@ class Stacker {
         dropThreats();
     }
 
-    // Lock the run where it stands. Each block falls down its column; the run lands on
-    // the tallest column beneath it, and blocks over lower ones fall past and leave the
-    // hand. A cell an intruder occupies takes no block, and neither does a full column:
-    // those blocks leave the hand too, and a run with nowhere at all to land isn't
-    // locked. Any block that lands on the ground calls intruders, each over one of the
-    // columns it touched. A board with no locks left takes no more.
+    // Lock the run where it stands. Each block falls down its column. Blocks landing on
+    // walls stay in the hand; if any did, blocks that fell to the floor beside them leave
+    // it, and if none did, the run is a new wall and keeps them all. A cell an intruder
+    // occupies takes no block, and neither does a full column: those blocks leave the
+    // hand too, and a run with nowhere at all to land isn't locked. Any block that lands
+    // on the ground calls intruders, each over one of the columns it touched. A board
+    // with no locks left takes no more.
     void drop() {
         if (state_ != State::Running || dropsLeft_ == 0) return;
-        int land = -1;
-        for (int c = left_; c < left_ + width_; ++c)
-            if (open(c) && height(c) > land) land = height(c);
-        int kept = 0;
+        int onWalls = 0;
         int grounded[kStackerCols];
         int nGrounded = 0;
         for (int c = left_; c < left_ + width_; ++c) {
             if (!open(c)) continue;
             const int h = height(c);
             locked_[h] |= colBit(c);
-            if (h == land) ++kept;
             if (h == 0) grounded[nGrounded++] = c;
+            else ++onWalls;
         }
-        if (land < 0) return;
+        if (onWalls + nGrounded == 0) return;
         --dropsLeft_;
-        if (kept > 0) width_ = static_cast<int8_t>(kept);
+        width_ = static_cast<int8_t>(onWalls > 0 ? onWalls : nGrounded);
         for (int i = 0; nGrounded > 0 && i < calls_; ++i)
             spawn(grounded[next() % static_cast<uint32_t>(nGrounded)], kStackerCallDelay);
         left_ = 0;

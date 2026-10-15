@@ -19,9 +19,9 @@ const GameBriefDef kStackerBrief[] = {
     {"THE INTRUDERS", "Intruders drop down the well over their columns. Raise walls under "
                       "them: B locks the sliding run, and every block falls until it "
                       "lands on a block or the floor. You get ten locks in all."},
-    {"THE HAND", "The run lands on the tallest column under it. Blocks over lower "
-                 "columns fall past and leave your hand - fewer blocks in every lock "
-                 "after. A run over flat ground, the floor included, keeps them all."},
+    {"THE HAND", "Blocks that land on a wall stay in your hand. Any that fall past it "
+                 "to the floor leave it - fewer blocks in every lock after. A run that "
+                 "lands wholly on the floor keeps them all."},
     {"THE GROUND", "An intruder that hits a wall stops there and takes that block. One "
                    "that hits the floor is a BREACH. Every lock that touches the ground "
                    "calls more. Stop them all to hold the line."},
