@@ -2,6 +2,12 @@
 
 **Raise malware as a pet.**
 
+<p align="center">
+  <a href="https://antvena.github.io/Malwarium/play/"><img src="docs/media/screens/combat.png" width="320" alt="A Malwarium battle, linking to the browser demo"></a>
+</p>
+<h3 align="center"><a href="https://antvena.github.io/Malwarium/play/">▶ Play the demo in your browser</a></h3>
+<p align="center"><sub>The real firmware running in a tab, with a pet already raised. No hardware needed.</sub></p>
+
 Malwarium is a handheld virtual pet for a little ESP32 gadget — think Tamagotchi, but
 you're a hacker and the "pet" is a computer virus you've caught and tamed. You hatch a
 sealed egg, then raise the creature inside through four life stages by **feeding it,
@@ -22,7 +28,8 @@ found this sweet project"* to *"there's an egg-like-thing wobbling on my screen"
 
 ## What it looks like
 
-Real screens, straight off the 240×240 display:
+Real screens, straight off the 240×240 display — or skip the pictures and
+**[play it in your browser](https://antvena.github.io/Malwarium/play/)**:
 
 <table>
 <tr>
@@ -42,14 +49,19 @@ Real screens, straight off the 240×240 display:
 </tr>
 </table>
 
-**Minigames**, replayable for Bits from the GAMES arcade once you've beaten them once:
+**Minigames** — hatch games, maintenance games and a quote board, all replayable for Bits
+from the GAMES arcade:
 
 <table>
 <tr>
-<td align="center"><img src="docs/media/screens/decryptogram.png" width="150" alt="The Decryptogram quote board"><br><sub><b>Crack a quote.</b> The Decryptogram, one letter at a time.</sub></td>
-<td align="center"><img src="docs/media/screens/disk-decryption.png" width="150" alt="The Disk Decryption minigame"><br><sub><b>Brute-force the key.</b> Disk Decryption — a Ransomware egg's hatch game.</sub></td>
-<td align="center"><img src="docs/media/screens/clutch-pick.png" width="150" alt="The Clutch Pick minigame, Spot the Phish"><br><sub><b>Spot the phish.</b> Clutch Pick — only the live egg twitches.</sub></td>
-<td align="center"><img src="docs/media/screens/isolation.png" width="150" alt="The Isolation Protocol minigame"><br><sub><b>Stay uncaught.</b> Isolation Protocol — a Worm egg's hatch game.</sub></td>
+<td align="center"><img src="docs/media/screens/firewall.png" width="200" alt="The FIREWALL minigame"><br><sub><b>Wall them off.</b> FIREWALL — an AV scan you play, against intruders you call by building.</sub></td>
+<td align="center"><img src="docs/media/screens/fragger.png" width="200" alt="The FRAGGER minigame"><br><sub><b>Shoot the fragments.</b> FRAGGER — a defrag you play, catching the files.</sub></td>
+<td align="center"><img src="docs/media/screens/decryptogram.png" width="200" alt="The Decryptogram quote board"><br><sub><b>Crack a quote.</b> The Decryptogram, one letter at a time.</sub></td>
+</tr>
+<tr>
+<td align="center"><img src="docs/media/screens/disk-decryption.png" width="200" alt="The Disk Decryption minigame"><br><sub><b>Brute-force the key.</b> Disk Decryption — a Ransomware egg's hatch game.</sub></td>
+<td align="center"><img src="docs/media/screens/clutch-pick.png" width="200" alt="The Clutch Pick minigame, Spot the Phish"><br><sub><b>Spot the phish.</b> Clutch Pick — only the live egg twitches.</sub></td>
+<td align="center"><img src="docs/media/screens/isolation.png" width="200" alt="The Isolation Protocol minigame"><br><sub><b>Stay uncaught.</b> Isolation Protocol — a Worm egg's hatch game.</sub></td>
 </tr>
 </table>
 
@@ -394,7 +406,7 @@ holds the fix:
 | Gauge | What it means | How to fix it |
 |---|---|---|
 | **FED** | How full it is. Drops slowly over the day; more is better. | Feed it: **ITEMS**, pick a food, **FEED**. You start with a few meals; more turn up while exploring (**EXPL**), in loot and in area shops. |
-| **FRAG** | Fragmentation, i.e. how glitchy it is. Fights and exploring raise it; less is better. A new pet starts half-fragmented. | Run a **Defrag** (or an AV scan for a ghost) from **MAINT**. Costs a few Bits. A QUICK defrag can fail, and the screen tells you the odds; your first pet comes with a **Defrag Tool** for a guaranteed one. Or play **FRAGGER** for it: every fragment you shoot is 1 frag off and every file you catch is 2 Bits on EASY, both doubling with each step up in difficulty (which also adds a lane). |
+| **FRAG** | Fragmentation, i.e. how glitchy it is. Fights and exploring raise it; less is better. A new pet starts half-fragmented. | Run a **Defrag** (or an AV scan for a ghost — or play it as **FIREWALL**) from **MAINT**. Costs a few Bits. A QUICK defrag can fail, and the screen tells you the odds; your first pet comes with a **Defrag Tool** for a guaranteed one. Or play **FRAGGER** for it: every fragment you shoot is 1 frag off and every file you catch is 2 Bits on EASY, both doubling with each step up in difficulty (which also adds a lane). |
 | **HAPPY** | Its mood. Drops slowly; more is better. | Play something in **GAMES**. Some foods help too. |
 
 **You don't have to remember any of that.** When a need slips out of the comfortable
