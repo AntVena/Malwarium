@@ -8159,34 +8159,34 @@ window.PEDIA_DATA = {
     {
       "key": "DEFRAG_BY_HAND",
       "name": "Stacked by Hand",
-      "trigger": "Clear 1 STACKER board by hand in MAINT.",
+      "trigger": "Hold 1 FIREWALL line by hand in MAINT.",
       "icon": "assets/icons/ICON_ACH_DEFRAG_BY_HAND.png",
       "goal": 1
     },
     {
       "key": "STACK_10",
       "name": "Sector Stacker",
-      "trigger": "Clear 10 STACKER boards by hand in MAINT.",
+      "trigger": "Hold 10 FIREWALL lines by hand in MAINT.",
       "icon": "assets/icons/ICON_ACH_STACK_10.png",
       "goal": 10
     },
     {
       "key": "STACK_50",
       "name": "Contiguous",
-      "trigger": "Clear 50 STACKER boards by hand in MAINT.",
+      "trigger": "Hold 50 FIREWALL lines by hand in MAINT.",
       "icon": "assets/icons/ICON_ACH_STACK_50.png",
       "goal": 50
     },
     {
       "key": "PERFECT_DEFRAG",
       "name": "Airtight",
-      "trigger": "Clear a STACKER board without shaving off a single block.",
+      "trigger": "Hold a FIREWALL line without losing a block from hand.",
       "icon": "assets/icons/ICON_ACH_PERFECT_DEFRAG.png"
     },
     {
       "key": "HANGING_BY_A_BIT",
       "name": "Hanging by a Bit",
-      "trigger": "Clear a STACKER board with a single block left standing.",
+      "trigger": "Hold a FIREWALL line with a single block left in hand.",
       "icon": "assets/icons/ICON_ACH_HANGING_BY_A_BIT.png"
     },
     {
@@ -8227,14 +8227,14 @@ window.PEDIA_DATA = {
     {
       "key": "TOWER_OF_FRAGGLE",
       "name": "Tower of Fraggle",
-      "trigger": "Clear the STACKER cabinet in the GAMES arcade.",
+      "trigger": "Hold the line at the FIREWALL cabinet in the GAMES arcade.",
       "icon": "assets/icons/ICON_ACH_TOWER_OF_FRAGGLE.png",
       "goal": 1
     },
     {
       "key": "STACK_OVERFLOW",
       "name": "Stack Overflow",
-      "trigger": "Lose a Stacker board on the second row.",
+      "trigger": "Let a FIREWALL breach over a single course.",
       "icon": "assets/icons/ICON_ACH_STACK_OVERFLOW.png",
       "hidden": true
     },
@@ -8657,7 +8657,7 @@ window.PEDIA_DATA = {
     {
       "key": "STACK_100",
       "name": "Solid State",
-      "trigger": "Clear 100 STACKER boards by hand in MAINT.",
+      "trigger": "Hold 100 FIREWALL lines by hand in MAINT.",
       "icon": "assets/icons/ICON_ACH_STACK_100.png",
       "goal": 100
     },
@@ -8846,7 +8846,7 @@ window.PEDIA_DATA = {
     {
       "key": "STACK_250",
       "name": "Solid Gold",
-      "trigger": "Clear 250 STACKER boards by hand in MAINT.",
+      "trigger": "Hold 250 FIREWALL lines by hand in MAINT.",
       "icon": "assets/icons/ICON_ACH_STACK_250.png",
       "goal": 250
     },
