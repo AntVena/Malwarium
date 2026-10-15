@@ -375,22 +375,20 @@ void drawStackerBoard(Framebuffer& fb, const Stacker& s, const PlayHud& hud) {
                         palColor(Pal::ACCENT));
         }
 
-    // The intruder's drop line: a dotted guide down its column to whatever it will meet,
-    // so the aim is read off the board rather than worked out. Dotted rather than solid
-    // so it never reads as a block in grayscale. On a breach it runs on through the gap
-    // in HOT — the hole the intruder went through.
-    {
+    // Each intruder's drop line: a dotted guide down its column to the top of the wall
+    // there, so the gap still to close is read off the board rather than worked out. It
+    // goes once the wall reaches the intruder. Dotted rather than solid so it never reads
+    // as a block in grayscale; on a breach it is HOT, the hole the intruder went through.
+    for (int i = 0; i < kStackerThreats; ++i) {
+        const int col = s.threatCol(i);
         int ix, iy;
-        cellAt(s.threatRow(), s.threatCol(), ix, iy);
-        const int lx = ix + kCellW / 2 - 1;
-        if (s.running()) {
+        cellAt(s.threatRow(), col, ix, iy);
+        if (!s.held(i) && (s.running() || s.breached())) {
             int fx, fy;
-            cellAt(s.row(), s.threatCol(), fx, fy);
+            cellAt(s.height(col), col, fx, fy);
+            const Rgb565 dot = s.running() ? palColor(Pal::INK_DIM) : palColor(Pal::HOT);
             for (int y = iy + kCellH; y < fy + kCellH; y += 3)
-                fb.fillRect(lx, y, 2, 1, palColor(Pal::INK_DIM));
-        } else if (s.breached()) {
-            for (int y = iy + kCellH; y < kWellBottom; y += 3)
-                fb.fillRect(lx, y, 2, 1, palColor(Pal::HOT));
+                fb.fillRect(ix + kCellW / 2 - 1, y, 2, 1, dot);
         }
 
         // The intruder itself: a hollow frame crossed out, FRAGGER's fragment mark and
@@ -429,18 +427,22 @@ void drawStackerBoard(Framebuffer& fb, const Stacker& s, const PlayHud& hud) {
 
     char line[40];
     if (s.running()) {
-        // GAP is the rows of open air between the run and the intruder: the clock this
-        // board runs on, counted rather than drawn as a bar because the board shows it.
-        std::snprintf(line, sizeof(line), "GAP %d  BLOCKS %d",
-                      s.threatRow() - s.row(), s.width());
+        // GAPS are the rows of open air under each intruder, left to right: the clock
+        // this board runs on, counted because the drop lines only show it.
+        static_assert(kStackerThreats == 2, "the GAPS readout names two intruders");
+        auto gap = [&](int i) {
+            const int g = s.threatRow() - s.height(s.threatCol(i));
+            return g > 0 ? g : 0;
+        };
+        std::snprintf(line, sizeof(line), "GAPS %d %d  HAND %d", gap(0), gap(1),
+                      s.width());
         drawText(fb, kMargin, 182, line, palColor(Pal::INK_DIM));
         drawText(fb, kMargin, 196, "B DROP    C STOP", palColor(Pal::ACCENT));
     } else if (s.won()) {
-        drawText(fb, kMargin, 182, "INTRUDER BLOCKED.", palColor(Pal::CALM));
+        drawText(fb, kMargin, 182, "LINE HELD.", palColor(Pal::CALM));
         drawText(fb, kMargin, 196, "ANY BUTTON", palColor(Pal::ACCENT));
     } else {
-        drawText(fb, kMargin, 182, s.breached() ? "BREACH!" : "WALL COLLAPSED.",
-                 palColor(Pal::HOT));
+        drawText(fb, kMargin, 182, "BREACH!", palColor(Pal::HOT));
         drawText(fb, kMargin, 196, "ANY BUTTON", palColor(Pal::ACCENT));
     }
     drawPlayHudWorth(fb, hud);

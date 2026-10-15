@@ -93,7 +93,7 @@ enum class AchSeries : uint8_t {
     Handshakes,         // lifetime unique WPA handshakes captured
     BitsHeld,           // Bits held at once (a high-water check, never spent back down)
     PetsRaised,         // pets raised across lifecycles
-    StackerWins,        // lifetime Stacker boards cleared in MAINT (core/model/stacker.h)
+    StackerWins,        // lifetime FIREWALL lines held in MAINT (core/model/stacker.h)
     // The GAMES arcade (content_arcade.h). Runs and wins are summed across every
     // cabinet; losses are the difference, counted in its own series so "kept playing
     // and kept losing" is a row rather than arithmetic a reader has to do.
@@ -224,12 +224,12 @@ inline constexpr const char* kSecondInstance   = "SECOND_INSTANCE";
 // real species can be faced call — the LINK duel and the arena — because what earns it
 // is the meeting, not which screen arranged it.
 inline constexpr const char* kHashCollision    = "HASH_COLLISION";
-// The two rows that a Stacker board's SHAPE decides rather than a tally: how
-// wide the run was when it reached the top. Both fire from Game::finishStacker.
+// The two rows that a FIREWALL board's SHAPE decides rather than a tally: how
+// wide the hand was when the line held. Both fire from Game::finishStacker.
 inline constexpr const char* kPerfectDefrag    = "PERFECT_DEFRAG";
 inline constexpr const char* kHangingByABit    = "HANGING_BY_A_BIT";
 // The other end of the same board, and the reason it is here rather than beside the
-// arcade's counted rows: losing on the second row is a shape, not a tally, so it fires
+// arcade's counted rows: a breach over one course is a shape, not a tally, so it fires
 // wherever the board is played.
 inline constexpr const char* kStackOverflow    = "STACK_OVERFLOW";
 // FRAGGER's shape row: a run that caught more files than it shot fragments, once it has

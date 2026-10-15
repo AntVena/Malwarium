@@ -271,9 +271,9 @@ void test_sound_arcade_stacker_cues() {
     out.cues.clear();
     g.onButton(press(Button::B));                 // START
     CHECK(out.count(Sound::ArcadeStart) == 1);
-    CHECK(playStackerBoard(g, [](int) { return 0; }));
+    CHECK(playStackerBoard(g, [&](int) { return stackerHoldLine(g.stacker()); }));
     CHECK(g.stacker().won());
-    CHECK(out.count(Sound::Point) == kStackerRows - 1);
+    CHECK(out.count(Sound::Point) == g.stacker().blocks() / kStackerStartWidth);
     CHECK(out.count(Sound::Miss) == 0);
     CHECK(out.count(Sound::Clear) == 1);
     g.onButton(press(Button::B));                 // park -> till
@@ -285,7 +285,7 @@ void test_sound_arcade_stacker_cues() {
     enterArcadeCabinet(g, row, ArcadeDifficulty::Medium);
     g.onButton(press(Button::B));
     out.cues.clear();
-    CHECK(playStackerBoard(g, [](int r) { return r == 1 ? 1 : 0; }));
+    CHECK(playStackerBoard(g, [](int k) { return k == 0 ? 0 : k == 1 ? 1 : -1; }));
     CHECK(out.count(Sound::Miss) >= 1);
 }
 

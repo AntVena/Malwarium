@@ -817,13 +817,14 @@ int g_failures = 0;
     RUN(test_renamed_ids_table_invariants)  \
     RUN(test_ladder_inserts_table_invariants) \
     RUN(test_area_icons_are_keyed_by_area_id) \
-    RUN(test_stacker_shaves_the_overhang)     \
-    RUN(test_stacker_missing_entirely_loses)  \
-    RUN(test_stacker_clearing_every_row_wins) \
-    RUN(test_stacker_run_stays_on_board_and_contiguous) \
-    RUN(test_stacker_intruder_blocks_or_breaches) \
-    RUN(test_stacker_seed_spreads_the_intruder) \
-    RUN(test_stacker_row_width_reports_the_survivors) \
+    RUN(test_stacker_overhang_falls_and_leaves_the_hand) \
+    RUN(test_stacker_complete_miss_starts_a_second_wall) \
+    RUN(test_stacker_holding_both_intruders_wins) \
+    RUN(test_stacker_one_wall_is_a_breach) \
+    RUN(test_stacker_a_held_intruder_waits_for_the_drop) \
+    RUN(test_stacker_seed_spreads_the_intruders) \
+    RUN(test_stacker_run_stays_on_board_and_columns_stay_solid) \
+    RUN(test_stacker_row_width_reports_the_row) \
     RUN(test_stacker_score_pays_for_height_twice) \
     RUN(test_stacker_win_credits_the_tally_and_the_shape_rows) \
     RUN(test_stacker_short_board_pays_what_it_stacked_and_costs_nothing) \

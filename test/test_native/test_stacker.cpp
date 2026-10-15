@@ -23,179 +23,168 @@ bool stackerDropAt(Stacker& s, int col) {
     return false;
 }
 
-void test_stacker_shaves_the_overhang() {
-    Stacker s;
+// Play a bare model the way the Game gates do (playStackerBoard, test_gates.h): lock
+// where `stackerHoldLine` says until both intruders are held, then let them drop.
+void stackerHoldTheLine(Stacker& s) {
+    for (int k = 0; k < 8 * kStackerRows && s.running(); ++k) {
+        const int want = stackerHoldLine(s);
+        if (want < 0) break;
+        CHECK(stackerDropAt(s, want));
+    }
+    for (int i = 0; i < 4 * kStackerThreatBeats * kStackerRows && s.running(); ++i) s.step();
+}
+
+void test_stacker_overhang_falls_and_leaves_the_hand() {
+    Stacker s(kStackerGateSeed);
     CHECK(s.running());
     CHECK(s.width() == kStackerStartWidth);
     CHECK(s.row() == 0);
 
-    // The BASE row rests on the floor, so it keeps everything wherever it lands.
+    // The first lock lands on open floor, so it keeps everything wherever it lands.
     CHECK(stackerDropAt(s, 1));
     CHECK(stackerRowCount(s, 0) == kStackerStartWidth);
     CHECK(s.locked(0, 1) && s.locked(0, 2) && s.locked(0, 3));
-    CHECK(!s.locked(0, 0) && !s.locked(0, 4));
     CHECK(s.row() == 1);
-    CHECK(s.width() == kStackerStartWidth);   // nothing shaved yet
+    CHECK(s.width() == kStackerStartWidth);
 
-    // Row 1 offset by one: only the two columns over the row below survive, and the run
-    // in hand narrows by exactly the overhang rather than by a fixed step.
+    // Offset by one: the run lands on the wall, and the block over open floor falls to
+    // it — still on the board, but out of the hand, which narrows by exactly that block.
     CHECK(stackerDropAt(s, 2));
     CHECK(stackerRowCount(s, 1) == 2);
     CHECK(s.locked(1, 2) && s.locked(1, 3));
-    CHECK(!s.locked(1, 4));                   // the overhanging block is gone, not moved
+    CHECK(!s.locked(1, 4) && s.locked(0, 4));     // fell to the floor, not shaved away
     CHECK(s.width() == 2);
     CHECK(s.row() == 2);
     CHECK(s.running());
 }
 
-void test_stacker_missing_entirely_loses() {
-    Stacker s;
-    CHECK(stackerDropAt(s, 0));               // base row at columns 0..2
+// The move a second intruder needs: a lock that misses the wall completely lands on the
+// floor whole, keeps the full hand, and leaves the first wall where it was.
+void test_stacker_complete_miss_starts_a_second_wall() {
+    Stacker s(kStackerGateSeed);
+    CHECK(stackerDropAt(s, 0));                   // first wall at columns 0..2
+    CHECK(stackerDropAt(s, 0));                   // ...two high
+    CHECK(stackerDropAt(s, 4));                   // nothing in common with it
     CHECK(s.running());
-    // A drop with no column in common with the row below keeps nothing, and a run with
-    // no blocks left is the end of it — the only losing condition there is.
-    CHECK(stackerDropAt(s, 4));
-    CHECK(!s.running());
-    CHECK(!s.won());
-    CHECK(s.state() == Stacker::State::Lost);
-    CHECK(stackerRowCount(s, 1) == 0);
+    CHECK(s.width() == kStackerStartWidth);
+    CHECK(s.locked(0, 4) && s.locked(0, 5) && s.locked(0, 6));
+    CHECK(s.height(0) == 2 && s.height(4) == 1);
+    CHECK(s.row() == 2);                          // the run still slides over the tallest
+
+    // A run over UNEVEN ground lands on the tallest column under it, and the rest fall
+    // to their own columns' tops and leave the hand.
+    CHECK(stackerDropAt(s, 2));                   // over heights 2, 0 and 1
+    CHECK(s.width() == 1);                        // only column 2 landed level
+    CHECK(s.height(2) == 3 && s.height(3) == 1 && s.height(4) == 2);
+}
+
+// The goal: both intruders held when they drop is a held line, at full width here.
+void test_stacker_holding_both_intruders_wins() {
+    Stacker s(kStackerGateSeed);
+    CHECK(s.threatCol(0) == 0 && s.threatCol(1) == 4);
+    stackerHoldTheLine(s);
+    CHECK(s.won() && !s.running());
+    CHECK(s.width() == kStackerStartWidth);
+    CHECK(s.height(0) == s.threatRow() && s.height(4) == s.threatRow());
+    CHECK(s.threatRow() > 0 && s.threatRow() < kStackerRows);   // met mid-well
+    CHECK(s.score() == kStackerMaxScore);
+
     // A finished run ignores further input rather than resuming somewhere odd.
-    const int endRow = s.row();
+    const int blocks = s.blocks();
     s.step();
     s.drop();
-    CHECK(s.row() == endRow);
-    CHECK(s.state() == Stacker::State::Lost);
-}
+    CHECK(s.blocks() == blocks && s.won());
 
-void test_stacker_clearing_every_row_wins() {
-    Stacker s;
-    // Drop every row at the same column: nothing ever overhangs, so the run keeps its
-    // full width to the top. That is the ceiling on how well a run can go — reaching the
-    // last row is the win, and it is reachable without ever narrowing.
-    for (int r = 0; r < kStackerRows; ++r) {
-        CHECK(s.running());
-        CHECK(s.row() == r);
-        CHECK(stackerDropAt(s, 0));
-    }
-    CHECK(!s.running());
-    CHECK(s.won());
-    CHECK(s.width() == kStackerStartWidth);
-    for (int r = 0; r < kStackerRows; ++r) CHECK(stackerRowCount(s, r) == kStackerStartWidth);
-
-    s.reset();                                 // a fresh run starts over cleanly
+    s.reset(kStackerGateSeed);                    // a fresh run starts over cleanly
     CHECK(s.running() && s.row() == 0 && s.width() == kStackerStartWidth);
-    for (int r = 0; r < kStackerRows; ++r) CHECK(stackerRowCount(s, r) == 0);
+    CHECK(s.blocks() == 0 && s.threatRow() == kStackerRows);
 }
 
-// The run stays ON the board and stays CONTIGUOUS, which the drawing and the shave both
-// assume — a run that walked off an edge or split in two would corrupt the board rather
-// than fail visibly. Walked over a long slide and a deliberately narrowing game.
-void test_stacker_run_stays_on_board_and_contiguous() {
-    Stacker s;
-    for (int i = 0; i < 200; ++i) {            // several full bounces
+// Height alone is not the goal: one wall as tall as you like is still a breach, because
+// the other intruder had nothing under it when they dropped.
+void test_stacker_one_wall_is_a_breach() {
+    Stacker s(kStackerGateSeed);
+    for (int i = 0; i < kStackerRows && s.running(); ++i) CHECK(stackerDropAt(s, 0));
+    for (int i = 0; i < kStackerThreatBeats * (kStackerRows + 1) && s.running(); ++i)
         s.step();
-        CHECK(s.left() >= 0);
-        CHECK(s.left() + s.width() <= kStackerCols);
-    }
-    // Narrow it by shifting one column each row, and confirm every locked row is one
-    // unbroken run — the property that lets a row be described by a left edge and a width.
-    Stacker n;
-    int col = 0;
-    while (n.running() && col + 1 < kStackerCols) {
-        if (!stackerDropAt(n, col)) break;
-        ++col;
-    }
-    for (int r = 0; r < kStackerRows; ++r) {
-        int first = -1, last = -1, count = 0;
-        for (int c = 0; c < kStackerCols; ++c)
-            if (n.locked(r, c)) { if (first < 0) first = c; last = c; ++count; }
-        if (count == 0) continue;
-        CHECK(last - first + 1 == count);      // no gaps
-    }
-}
+    CHECK(s.breached() && !s.won());
+    CHECK(s.held(0) && !s.held(1));
+    CHECK(s.score() > 0 && s.score() < kStackerMaxScore);   // what was built still counts
 
-// The intruder is the board's goal: a wall built up to it HOLDS only if its top course
-// covers the intruder's column, whichever of the two closes the gap.
-void test_stacker_intruder_blocks_or_breaches() {
-    // Built all the way up under it: the wall rises into the open row and meets it there.
-    Stacker held(/*seed=*/1);
-    CHECK(held.threatCol() == 1 && held.threatRow() == kStackerRows);
-    for (int r = 0; r < kStackerRows; ++r) CHECK(stackerDropAt(held, 0));
-    CHECK(held.won() && held.row() == kStackerRows);
-    CHECK(held.topWidth() == kStackerStartWidth);
-
-    // The same wall beside it is a breach, not a win — height alone is not the goal.
-    Stacker beside(/*seed=*/5);
-    for (int r = 0; r < kStackerRows; ++r) CHECK(stackerDropAt(beside, 0));
-    CHECK(beside.breached() && !beside.won() && !beside.running());
-    CHECK(beside.score() == kStackerMaxScore);   // what was built still counts
-
-    // Left alone, the intruder drops a row every kStackerThreatBeats beats and meets
-    // whatever is there. One course under it holds...
-    Stacker low(/*seed=*/0);
-    CHECK(stackerDropAt(low, 0));
-    for (int i = 0; i < kStackerThreatBeats * kStackerRows && low.running(); ++i) {
-        CHECK(low.threatRow() > low.row());       // never inside the wall while live
-        low.step();
-    }
-    CHECK(low.won() && low.threatRow() == 1 && low.topWidth() == kStackerStartWidth);
-
-    // ...and no wall at all is a breach at the floor.
-    Stacker none(/*seed=*/3);
+    // Nothing built at all: the intruders reach the floor and that is a breach too.
+    Stacker none(kStackerGateSeed);
     for (int i = 0; i < kStackerThreatBeats * (kStackerRows + 1); ++i) none.step();
     CHECK(none.breached() && none.threatRow() == 0 && none.blocks() == 0);
 }
 
-// The seed picks the column, across all of them, so no single aim solves every board.
-void test_stacker_seed_spreads_the_intruder() {
+// Held is decided at the drop, not the moment a wall touches: the first wall reaching
+// its intruder leaves until the next drop to bring the second one up.
+void test_stacker_a_held_intruder_waits_for_the_drop() {
+    Stacker s(kStackerGateSeed);
+    // Drop the intruders to row 2 with nothing built, then build both walls to them.
+    for (int i = 0; i < kStackerThreatBeats * (kStackerRows - 2); ++i) s.step();
+    CHECK(s.running() && s.threatRow() == 2);
+    CHECK(stackerDropAt(s, 4));
+    CHECK(stackerDropAt(s, 0));
+    CHECK(stackerDropAt(s, 4));
+    CHECK(s.held(1) && !s.held(0) && s.running());   // touching, not yet decided
+    CHECK(stackerDropAt(s, 0));
+    CHECK(s.held(0) && s.held(1) && s.running());
+    for (int i = 0; i < kStackerThreatBeats && s.running(); ++i) s.step();
+    CHECK(s.won() && s.threatRow() == 2);
+}
+
+// The seed picks the pair, across every column, and never two a single hand covers.
+void test_stacker_seed_spreads_the_intruders() {
     bool seen[kStackerCols] = {};
-    for (uint32_t seed = 0; seed < 64; ++seed) seen[Stacker(seed).threatCol()] = true;
+    for (uint32_t seed = 0; seed < 64; ++seed) {
+        const Stacker s(seed);
+        CHECK(s.threatCol(1) - s.threatCol(0) >= kStackerThreatSpread);
+        seen[s.threatCol(0)] = seen[s.threatCol(1)] = true;
+    }
     for (int c = 0; c < kStackerCols; ++c) CHECK(seen[c]);
 }
 
-// `rowWidth` is what the achievement rows read, and it has to answer for the TOP row of a
-// won board — the one case `width()` can't cover, since a win stops the run before the
-// survivors become the next hand.
-void test_stacker_row_width_reports_the_survivors() {
-    Stacker s;
-    CHECK(s.rowWidth(0) == 0);                 // nothing locked yet
+// The run stays ON the board, and every column stays SOLID from the floor — the
+// property that lets height() count a column and a falling block land on its top.
+void test_stacker_run_stays_on_board_and_columns_stay_solid() {
+    Stacker s(kStackerGateSeed);
+    for (int i = 0; i < 200; ++i) {
+        s.step();
+        CHECK(s.left() >= 0);
+        CHECK(s.left() + s.width() <= kStackerCols);
+    }
+    Stacker n(kStackerGateSeed);
+    const int cols[] = {0, 2, 4, 1, 3, 0, 4, 2};
+    for (int col : cols) if (n.running() && col + n.width() <= kStackerCols) stackerDropAt(n, col);
+    for (int c = 0; c < kStackerCols; ++c)
+        for (int r = 0; r < kStackerRows; ++r)
+            CHECK(n.locked(r, c) == (r < n.height(c)));
+}
+
+void test_stacker_row_width_reports_the_row() {
+    Stacker s(kStackerGateSeed);
+    CHECK(s.rowWidth(0) == 0);
     CHECK(stackerDropAt(s, 1));
     CHECK(s.rowWidth(0) == kStackerStartWidth);
-    CHECK(stackerDropAt(s, 2));                // one column of overhang, shaved
-    CHECK(s.rowWidth(1) == 2);
+    CHECK(stackerDropAt(s, 2));
+    CHECK(s.rowWidth(1) == 2 && s.rowWidth(0) == kStackerStartWidth + 1);
     CHECK(s.rowWidth(-1) == 0 && s.rowWidth(kStackerRows) == 0);   // out of range
 }
 
-// score() is the whole reward curve, so the thing worth pinning is that HEIGHT is paid
-// for twice — a block on a high row is worth more than the same block low down, which is
-// what makes stalling two rows short beat stalling halfway.
+// score() is a breached board's whole reward curve, so the thing worth pinning is that
+// HEIGHT is paid for twice — a block on a high row is worth more than the same block
+// low down.
 void test_stacker_score_pays_for_height_twice() {
-    Stacker s;
-    CHECK(s.score() == 0);                        // nothing locked, nothing earned
-
-    // Base row (level 1) at full width.
+    Stacker s(kStackerGateSeed);
+    CHECK(s.score() == 0);
     CHECK(stackerDropAt(s, 0));
     CHECK(s.score() == kStackerStartWidth);
-
-    // Row 1 (level 2) at full width again: three more blocks, each worth two.
     CHECK(stackerDropAt(s, 0));
     CHECK(s.score() == kStackerStartWidth * 3);
-
-    // A clean board all the way up is the ceiling, and the ceiling is the constant the
-    // payout rate is calibrated against.
-    Stacker best;
-    for (int r = 0; r < kStackerRows; ++r) CHECK(stackerDropAt(best, 0));
-    CHECK(best.won());
-    CHECK(best.score() == kStackerMaxScore);
-
-    // Two boards that reached the same height with different survivors: the wider one is
-    // worth more, and a board is scored on what LOCKED, never on the run still in hand.
-    Stacker narrow;
-    CHECK(stackerDropAt(narrow, 0));
-    CHECK(stackerDropAt(narrow, 2));              // shaved to one block
-    CHECK(narrow.rowWidth(1) == 1);
-    CHECK(narrow.score() == kStackerStartWidth + 2);
-    CHECK(narrow.running() && narrow.row() == 2);  // the hand on level 3 counts for nothing
+    // The same three blocks on the floor elsewhere are worth only their level.
+    CHECK(stackerDropAt(s, 4));
+    CHECK(s.score() == kStackerStartWidth * 4);
 }
 
 // The two rows a board's SHAPE earns, and the tally underneath them. A perfect board and
@@ -203,29 +192,29 @@ void test_stacker_score_pays_for_height_twice() {
 // against each other rather than one at a time — reading the wrong end of it is the
 // mistake worth catching.
 void test_stacker_win_credits_the_tally_and_the_shape_rows() {
-    // Column 0 every row: nothing ever overhangs, so the run reaches the top at full
-    // width. That is the perfect board, and NOT the narrow one.
+    // Every lock on flat ground: nothing ever falls past a wall, so the line is held at
+    // full width. That is the perfect board, and NOT the narrow one.
     Game g{StartMode::Hatched};
     g.model().setFragmentation(60);
     CHECK(g.stackerWins() == 0);
     startPlayedMaint(g, MaintKind::Av, ArcadeGameKind::Stacker);
-    CHECK(playStackerBoard(g, [](int) { return 0; }));
+    CHECK(playStackerBoard(g, [&](int) { return stackerHoldLine(g.stacker()); }));
     CHECK(g.stacker().won());
-    CHECK(g.stacker().topWidth() == kStackerStartWidth);
+    CHECK(g.stacker().width() == kStackerStartWidth);
     g.onButton(press(Button::B));                   // park -> finish
     CHECK(g.stackerWins() == 1);
     CHECK(g.hasAchievement(ach::kPerfectDefrag));
     CHECK(!g.hasAchievement(ach::kHangingByABit));
 
-    // Step one column right per row until the run is down to a single block, then hold
-    // that column to the top: a win, but the narrowest one there is. The tally belongs to
-    // the BOARD, so the same win counts on the other process too.
+    // Down to a single block early, then held a column at a time: a win, but the
+    // narrowest one there is. The tally belongs to the BOARD, so the same win counts on
+    // the other process too.
     Game n{StartMode::Hatched};
     n.model().setFragmentation(60);
     startPlayedMaint(n, MaintKind::Defrag, ArcadeGameKind::Stacker);
-    CHECK(playStackerBoard(n, [](int r) { return r < 2 ? r : 2; }, /*threatCol=*/2));
+    CHECK(playStackerBoard(n, [&](int k) { return stackerHoldNarrow(n.stacker(), k); }));
     CHECK(n.stacker().won());
-    CHECK(n.stacker().topWidth() == 1);
+    CHECK(n.stacker().width() == 1);
     n.onButton(press(Button::B));
     CHECK(n.stackerWins() == 1);
     CHECK(n.hasAchievement(ach::kHangingByABit));
@@ -240,7 +229,7 @@ int scanWorth(const Game& g, int blocks, int frag) {
     return worth > frag ? frag : worth;
 }
 
-// A scan that stalls in mid-air is NOT a failed scan: it pays for the blocks it landed in
+// A breached scan is NOT a failed scan: it pays for the blocks it landed in
 // Fragmentation and costs nothing extra — but it cleans no process, because only a won
 // run is a full scan. The halves are asserted together because taking only one of them
 // is the mistake.
@@ -251,9 +240,8 @@ void test_stacker_short_board_pays_what_it_stacked_and_costs_nothing() {
     g.model().setDebuffs(2);
     const int mistakes = g.model().careMistakes();
     startPlayedMaint(g, MaintKind::Av, ArcadeGameKind::Stacker);
-    // Base row at 0..2, then a drop with no column in common with it — the run keeps
-    // nothing and the board ends there, well short of the top.
-    CHECK(playStackerBoard(g, [](int r) { return r == 0 ? 0 : 4; }));
+    // One wall, one course high, and the intruders left to drop: a breach.
+    CHECK(playStackerBoard(g, [](int k) { return k == 0 ? 0 : -1; }));
     CHECK(!g.stacker().running() && !g.stacker().won());
     const int worth = scanWorth(g, g.stacker().blocks(), 60);
     CHECK(worth > 0);
@@ -263,18 +251,18 @@ void test_stacker_short_board_pays_what_it_stacked_and_costs_nothing() {
     CHECK(g.model().hasGhost() && g.model().debuffs() == 2);   // no process cleaned
     CHECK(g.stackerWins() == 0);                        // the tally counts CLEARED boards
 
-    // Height is worth climbing for: the same run stopped higher is worth strictly more,
+    // Building is worth it even breached: the same wall built higher is worth more,
     // up to the cap a full scan takes. On EASY, so the cap is not reached first.
     Game low{StartMode::Hatched};
     low.model().setFragmentation(90);
     low.debugSetMaintDifficulty(ArcadeDifficulty::Easy);
     startPlayedMaint(low, MaintKind::Av, ArcadeGameKind::Stacker);
-    CHECK(playStackerBoard(low, [](int r) { return r < 2 ? 0 : 4; }));
+    CHECK(playStackerBoard(low, [](int k) { return k < 2 ? 0 : -1; }));
     Game high{StartMode::Hatched};
     high.model().setFragmentation(90);
     high.debugSetMaintDifficulty(ArcadeDifficulty::Easy);
     startPlayedMaint(high, MaintKind::Av, ArcadeGameKind::Stacker);
-    CHECK(playStackerBoard(high, [](int r) { return r < 6 ? 0 : 4; }));
+    CHECK(playStackerBoard(high, [](int k) { return k < 6 ? 0 : -1; }));
     low.onButton(press(Button::B));
     high.onButton(press(Button::B));
     CHECK(high.model().fragmentation() < low.model().fragmentation());
@@ -283,14 +271,14 @@ void test_stacker_short_board_pays_what_it_stacked_and_costs_nothing() {
 }
 
 // A won scan is a FULL one that cannot fail: debuffs, the ghost and a Quick scan's worth
-// of Fragmentation, all gone — however narrow the board reached the top.
+// of Fragmentation, all gone — however narrow the hand it was held with.
 void test_stacker_cleared_board_is_a_full_scan() {
     Game g{StartMode::Hatched};
     g.model().setFragmentation(95);
     g.model().setGhost(true);
     g.model().setDebuffs(3);
     startPlayedMaint(g, MaintKind::Av, ArcadeGameKind::Stacker);
-    CHECK(playStackerBoard(g, [](int) { return 0; }));
+    CHECK(playStackerBoard(g, [&](int) { return stackerHoldLine(g.stacker()); }));
     CHECK(g.stacker().won());
     g.onButton(press(Button::B));
     CHECK(g.model().fragmentation() == 95 - kAvReduction);
@@ -301,8 +289,8 @@ void test_stacker_cleared_board_is_a_full_scan() {
     n.model().setFragmentation(95);
     n.model().setGhost(true);
     startPlayedMaint(n, MaintKind::Av, ArcadeGameKind::Stacker);
-    CHECK(playStackerBoard(n, [](int r) { return r < 2 ? r : 2; }, /*threatCol=*/2));
-    CHECK(n.stacker().won() && n.stacker().topWidth() == 1);
+    CHECK(playStackerBoard(n, [&](int k) { return stackerHoldNarrow(n.stacker(), k); }));
+    CHECK(n.stacker().won() && n.stacker().width() == 1);
     n.onButton(press(Button::B));
     CHECK(n.model().fragmentation() == 95 - kAvReduction);
     CHECK(!n.model().hasGhost());
@@ -393,7 +381,7 @@ void test_played_maint_engines_are_interchangeable() {
     CHECK(d.nav() == Game::Nav::Stacker);
     // Three rows then a miss: a board short of the top, so no achievement pays Bits of
     // its own into the wallet being measured.
-    CHECK(playStackerBoard(d, [](int r) { return r < 3 ? 0 : 4; }));
+    CHECK(playStackerBoard(d, [](int k) { return k < 3 ? 0 : -1; }));
     CHECK(!d.stacker().won());
     const int blocks = d.stacker().blocks();
     d.onButton(press(Button::B));

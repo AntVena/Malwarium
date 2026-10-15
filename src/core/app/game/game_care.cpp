@@ -103,8 +103,7 @@ void Game::onStacker(const ButtonEvent& ev) {
     if (ev.button == Button::B) {
         const int hand = stacker_.width();
         stacker_.drop();
-        if (!stacker_.running()) playStackerContact();
-        else playSound(stacker_.width() < hand ? Sound::Miss : Sound::Point);
+        playSound(stacker_.width() < hand ? Sound::Miss : Sound::Point);
     } else if (ev.button == Button::C) {
         // Stop early and bank the board. Since a run that ends in mid-air keeps whatever
         // it locked, quitting has to keep it too — otherwise C would be a button that
@@ -113,23 +112,26 @@ void Game::onStacker(const ButtonEvent& ev) {
     }
 }
 
-// How a board's end sounds, whether a lock or the intruder's drop got it there.
-void Game::playStackerContact() {
-    playSound(stacker_.won() ? Sound::Clear : Sound::Crash);
+// One beat of the board. Only the intruders' drop ends one, so the ending sounds here
+// rather than on a press.
+void Game::stepStacker() {
+    const bool live = stacker_.running();
+    stacker_.step();
+    if (live && !stacker_.running()) playSound(stacker_.won() ? Sound::Clear : Sound::Crash);
 }
 
 void Game::finishStacker() {
     // The board's own joke, and it belongs to the BOARD rather than to any context:
-    // the run that lost its whole hand on the second lock.
-    if (stacker_.state() == Stacker::State::Lost && stacker_.row() == 1)
+    // the line that was breached with a single course built.
+    if (stacker_.breached() && stacker_.row() == 1)
         unlockAchievement(ach::kStackOverflow);
-    // The played-by-hand ladder and the two rows a board's SHAPE earns, for a board
-    // held in MAINT — whichever process it was played for. The top course's width is
-    // the whole record of how the run went: the full starting width means nothing was
-    // ever shaved, and one block means the intruder was stopped by a single column.
+    // The played-by-hand ladder and the two rows a board's SHAPE earns, for a line
+    // held in MAINT — whichever process it was played for. The hand it was held with is
+    // the whole record of how the run went: the full starting width means no block ever
+    // fell past a wall, and one block means the line was finished a column at a time.
     if (!arcadeRun_ && stacker_.won()) {
         ++stackerWins_;
-        const int kept = stacker_.topWidth();
+        const int kept = stacker_.width();
         if (kept >= kStackerStartWidth) unlockAchievement(ach::kPerfectDefrag);
         if (kept == 1) unlockAchievement(ach::kHangingByABit);
     }

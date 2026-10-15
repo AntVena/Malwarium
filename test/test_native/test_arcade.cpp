@@ -52,9 +52,8 @@ void test_arcade_perfect_board_pays_the_bonus() {
     const int row = arcadeRowOf("stacker");
     enterArcadeCabinet(g, row, ArcadeDifficulty::Medium);
     g.onButton(press(Button::B));                 // START
-    // Column 0 every row: nothing overhangs, so the run reaches the top at full width —
-    // the maximum score the cabinet advertises.
-    CHECK(playStackerBoard(g, [](int) { return 0; }));
+    // A held line is the maximum score the cabinet advertises.
+    CHECK(playStackerBoard(g, [&](int) { return stackerHoldLine(g.stacker()); }));
     CHECK(g.stacker().won());
     CHECK(g.stacker().score() == kStackerMaxScore);
     g.onButton(press(Button::B));                 // park -> finish
@@ -77,7 +76,7 @@ void test_arcade_stacker_leaves_the_disk_alone() {
     const int bitsAtStart = g.bits();
     g.onButton(press(Button::B));                 // START — costs nothing
     CHECK(g.bits() == bitsAtStart);
-    CHECK(playStackerBoard(g, [](int) { return 0; }));
+    CHECK(playStackerBoard(g, [&](int) { return stackerHoldLine(g.stacker()); }));
     g.onButton(press(Button::B));
 
     CHECK(g.model().fragmentation() == 60);       // the disk is untouched
@@ -193,32 +192,31 @@ void test_arcade_ladders_split_plays_wins_losses() {
     // A cleared board on the same cabinet is the win that row is waiting for.
     enterArcadeCabinet(g, row, ArcadeDifficulty::Medium);
     g.onButton(press(Button::B));
-    CHECK(playStackerBoard(g, [](int) { return 0; }));
+    CHECK(playStackerBoard(g, [&](int) { return stackerHoldLine(g.stacker()); }));
     g.onButton(press(Button::B));
     g.tick(2 * kAchSweepIntervalMs + 2);
     CHECK(g.hasAchievement("TOWER_OF_FRAGGLE"));
 }
 
 // The board's own joke, and the one arcade row that is a SHAPE rather than a tally:
-// losing the whole hand on the second lock. Fires wherever the board is played, so it
+// a breach over a single course. Fires wherever the board is played, so it
 // is asserted through a MAINT run — the context the arcade borrowed it from.
 void test_stack_overflow_fires_on_the_second_row() {
     Game g{StartMode::Hatched};
     g.model().setFragmentation(60);
     startPlayedMaint(g, MaintKind::Av, ArcadeGameKind::Stacker);
-    // Base row at 0..2, then a lock with no column in common with it: nothing survives,
-    // and the run ends on row 1.
-    CHECK(playStackerBoard(g, [](int r) { return r == 0 ? 0 : 4; }));
-    CHECK(!g.stacker().won() && g.stacker().row() == 1);
+    // One course, then the intruders left to drop onto it.
+    CHECK(playStackerBoard(g, [](int k) { return k == 0 ? 0 : -1; }));
+    CHECK(g.stacker().breached() && g.stacker().row() == 1);
     g.onButton(press(Button::B));
     CHECK(g.hasAchievement(ach::kStackOverflow));
 
-    // A board that gets further does not earn it — the row is the second one, exactly.
+    // A board built higher does not earn it — the course is the first one, exactly.
     Game n{StartMode::Hatched};
     n.model().setFragmentation(60);
     startPlayedMaint(n, MaintKind::Av, ArcadeGameKind::Stacker);
-    CHECK(playStackerBoard(n, [](int r) { return r < 2 ? 0 : 4; }));
-    CHECK(!n.stacker().won() && n.stacker().row() == 2);
+    CHECK(playStackerBoard(n, [](int k) { return k < 2 ? 0 : -1; }));
+    CHECK(n.stacker().breached() && n.stacker().row() == 2);
     n.onButton(press(Button::B));
     CHECK(!n.hasAchievement(ach::kStackOverflow));
 }
@@ -232,7 +230,7 @@ void test_arcade_tallies_persist() {
         Game g(StartMode::Hatched, "malbear", &store);
         enterArcadeCabinet(g, row, ArcadeDifficulty::Medium);
         g.onButton(press(Button::B));
-        CHECK(playStackerBoard(g, [](int) { return 0; }));
+        CHECK(playStackerBoard(g, [&](int) { return stackerHoldLine(g.stacker()); }));
         g.onButton(press(Button::B));             // finish -> banked
         CHECK(g.arcadePlays(row) == 1 && g.arcadeWins(row) == 1);
         g.tick(kSaveAutosaveMs + kHeartbeatMs);   // autosave

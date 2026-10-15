@@ -463,25 +463,50 @@ inline Combatant mkCombatant(const ContentRegistry& r, const char* name, int hp,
     return c;
 }
 
-// Play a whole Stacker board through the REAL button path, locking each row at
-// `col(row)`. Leaves the run parked on its result; the caller presses once more to
-// finish it. False if a column turned out unreachable, which would make the test a
-// no-op rather than a failure. Shared by the AV gates and the arcade's. The board is
-// re-dealt first with the intruder over `threatCol`, so `col` aims at a known target.
+// The seed every Stacker gate deals from: intruders over columns 0 and 4, so a full
+// hand at left 0 and at left 4 each covers one, on flat ground of its own.
+inline constexpr uint32_t kStackerGateSeed = 1;
+
+// A line-holding hand for that deal: raise whichever intruder's wall is lower, the far
+// one on a tie (it takes the slide longer to reach), and stop once both are held — so
+// the second wall always reaches its intruder in the same breath as the first.
+inline int stackerHoldLine(const Stacker& s) {
+    if (s.held(0) && s.held(1)) return -1;
+    return s.height(4) <= s.height(0) ? 4 : 0;
+}
+
+// The same line held with a single block in hand: a full hand on the floor, then one
+// lock offset onto it that drops two blocks past the wall, then one column at a time.
+inline int stackerHoldNarrow(const Stacker& s, int k) {
+    if (k == 0) return 0;
+    if (k == 1) return 2;
+    return stackerHoldLine(s);
+}
+
+// Play a whole Stacker board through the REAL button path, locking the k-th run at
+// `col(k)` until it returns -1, then letting the intruders drop until the board ends.
+// Leaves the run parked on its result; the caller presses once more to finish it.
+// False if a column turned out unreachable, which would make the test a no-op rather
+// than a failure. The board is re-dealt first from `seed`, so `col` aims at known
+// intruders. Shared by the AV gates and the arcade's.
 template <typename ColFn>
-bool playStackerBoard(Game& g, ColFn col, int threatCol = 0) {
-    g.debugSeedStacker(static_cast<uint32_t>(threatCol));
-    for (int r = 0; r < kStackerRows && g.stacker().running(); ++r) {
-        const int want = col(r);
+bool playStackerBoard(Game& g, ColFn col, uint32_t seed = kStackerGateSeed) {
+    g.debugSeedStacker(seed);
+    for (int k = 0; k < 8 * kStackerRows && g.stacker().running(); ++k) {
+        const int want = col(k);
+        if (want < 0) break;
         bool aligned = false;
-        for (int guard = 0; guard < 4 * kStackerCols; ++guard) {
+        for (int guard = 0; guard < 4 * kStackerCols && g.stacker().running(); ++guard) {
             if (g.stacker().left() == want) { aligned = true; break; }
             g.debugStepStacker();
         }
+        if (!g.stacker().running()) return true;   // the intruders' drop got there first
         if (!aligned) return false;
         g.onButton(press(Button::B));
     }
-    return true;
+    for (int i = 0; i < 4 * kStackerThreatBeats * kStackerRows && g.stacker().running(); ++i)
+        g.debugStepStacker();
+    return !g.stacker().running();
 }
 
 // Start a played MAINT run of `engine` as process `k`'s, paying nothing. The pairing is
