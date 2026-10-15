@@ -819,9 +819,10 @@ int g_failures = 0;
     RUN(test_area_icons_are_keyed_by_area_id) \
     RUN(test_stacker_overhang_falls_and_leaves_the_hand) \
     RUN(test_stacker_complete_miss_starts_a_second_wall) \
-    RUN(test_stacker_holding_both_intruders_wins) \
+    RUN(test_stacker_the_ground_calls_an_intruder) \
+    RUN(test_stacker_an_intruder_takes_the_block_it_hits) \
+    RUN(test_stacker_stopping_every_intruder_holds_the_line) \
     RUN(test_stacker_one_wall_is_a_breach) \
-    RUN(test_stacker_a_held_intruder_waits_for_the_drop) \
     RUN(test_stacker_seed_spreads_the_intruders) \
     RUN(test_stacker_run_stays_on_board_and_columns_stay_solid) \
     RUN(test_stacker_row_width_reports_the_row) \

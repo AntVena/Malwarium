@@ -376,19 +376,19 @@ void drawStackerBoard(Framebuffer& fb, const Stacker& s, const PlayHud& hud) {
         }
 
     // Each intruder's drop line: a dotted guide down its column to the top of the wall
-    // there, so the gap still to close is read off the board rather than worked out. It
-    // goes once the wall reaches the intruder. Dotted rather than solid so it never reads
-    // as a block in grayscale; on a breach it is HOT, the hole the intruder went through.
-    for (int i = 0; i < kStackerThreats; ++i) {
-        const int col = s.threatCol(i);
+    // there, so where it will hit is read off the board rather than worked out. Dotted
+    // rather than solid so it never reads as a block in grayscale. Queued intruders
+    // above the open row aren't drawn; the footer counts them.
+    for (int i = 0; i < s.threatCount(); ++i) {
+        const int col = s.threatCol(i), row = s.threatRow(i);
+        if (row > kStackerRows) continue;
         int ix, iy;
-        cellAt(s.threatRow(), col, ix, iy);
-        if (!s.held(i) && (s.running() || s.breached())) {
+        cellAt(row, col, ix, iy);
+        if (row > s.height(col)) {
             int fx, fy;
             cellAt(s.height(col), col, fx, fy);
-            const Rgb565 dot = s.running() ? palColor(Pal::INK_DIM) : palColor(Pal::HOT);
             for (int y = iy + kCellH; y < fy + kCellH; y += 3)
-                fb.fillRect(ix + kCellW / 2 - 1, y, 2, 1, dot);
+                fb.fillRect(ix + kCellW / 2 - 1, y, 2, 1, palColor(Pal::INK_DIM));
         }
 
         // The intruder itself: a hollow frame crossed out, FRAGGER's fragment mark and
@@ -427,15 +427,10 @@ void drawStackerBoard(Framebuffer& fb, const Stacker& s, const PlayHud& hud) {
 
     char line[40];
     if (s.running()) {
-        // GAPS are the rows of open air under each intruder, left to right: the clock
-        // this board runs on, counted because the drop lines only show it.
-        static_assert(kStackerThreats == 2, "the GAPS readout names two intruders");
-        auto gap = [&](int i) {
-            const int g = s.threatRow() - s.height(s.threatCol(i));
-            return g > 0 ? g : 0;
-        };
-        std::snprintf(line, sizeof(line), "GAPS %d %d  HAND %d", gap(0), gap(1),
-                      s.width());
+        // The intruders still to stop, queued ones included: the board's whole bill,
+        // which a lock on the ground adds to. The hand needs no number — the run's
+        // outline is it — and the right column needs the room.
+        std::snprintf(line, sizeof(line), "INTRUDERS %d", s.threatCount());
         drawText(fb, kMargin, 182, line, palColor(Pal::INK_DIM));
         drawText(fb, kMargin, 196, "B DROP    C STOP", palColor(Pal::ACCENT));
     } else if (s.won()) {

@@ -53,7 +53,7 @@ void test_arcade_perfect_board_pays_the_bonus() {
     enterArcadeCabinet(g, row, ArcadeDifficulty::Medium);
     g.onButton(press(Button::B));                 // START
     // A held line is the maximum score the cabinet advertises.
-    CHECK(playStackerBoard(g, [&](int) { return stackerHoldLine(g.stacker()); }));
+    CHECK(playStackerBoard(g, [&](int k) { return stackerHoldLine(g.stacker(), k); }));
     CHECK(g.stacker().won());
     CHECK(g.stacker().score() == kStackerMaxScore);
     g.onButton(press(Button::B));                 // park -> finish
@@ -76,7 +76,7 @@ void test_arcade_stacker_leaves_the_disk_alone() {
     const int bitsAtStart = g.bits();
     g.onButton(press(Button::B));                 // START — costs nothing
     CHECK(g.bits() == bitsAtStart);
-    CHECK(playStackerBoard(g, [&](int) { return stackerHoldLine(g.stacker()); }));
+    CHECK(playStackerBoard(g, [&](int k) { return stackerHoldLine(g.stacker(), k); }));
     g.onButton(press(Button::B));
 
     CHECK(g.model().fragmentation() == 60);       // the disk is untouched
@@ -192,7 +192,7 @@ void test_arcade_ladders_split_plays_wins_losses() {
     // A cleared board on the same cabinet is the win that row is waiting for.
     enterArcadeCabinet(g, row, ArcadeDifficulty::Medium);
     g.onButton(press(Button::B));
-    CHECK(playStackerBoard(g, [&](int) { return stackerHoldLine(g.stacker()); }));
+    CHECK(playStackerBoard(g, [&](int k) { return stackerHoldLine(g.stacker(), k); }));
     g.onButton(press(Button::B));
     g.tick(2 * kAchSweepIntervalMs + 2);
     CHECK(g.hasAchievement("TOWER_OF_FRAGGLE"));
@@ -230,7 +230,7 @@ void test_arcade_tallies_persist() {
         Game g(StartMode::Hatched, "malbear", &store);
         enterArcadeCabinet(g, row, ArcadeDifficulty::Medium);
         g.onButton(press(Button::B));
-        CHECK(playStackerBoard(g, [&](int) { return stackerHoldLine(g.stacker()); }));
+        CHECK(playStackerBoard(g, [&](int k) { return stackerHoldLine(g.stacker(), k); }));
         g.onButton(press(Button::B));             // finish -> banked
         CHECK(g.arcadePlays(row) == 1 && g.arcadeWins(row) == 1);
         g.tick(kSaveAutosaveMs + kHeartbeatMs);   // autosave

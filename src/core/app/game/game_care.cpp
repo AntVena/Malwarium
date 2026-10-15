@@ -102,8 +102,13 @@ void Game::onStacker(const ButtonEvent& ev) {
     }
     if (ev.button == Button::B) {
         const int hand = stacker_.width();
+        const int threats = stacker_.threatCount();
         stacker_.drop();
-        playSound(stacker_.width() < hand ? Sound::Miss : Sound::Point);
+        // A shrunk hand is the louder news; a clean lock that touched the ground still
+        // has to say it called an intruder.
+        if (stacker_.width() < hand) playSound(Sound::Miss);
+        else if (stacker_.threatCount() > threats) playSound(Sound::Probe);
+        else playSound(Sound::Point);
     } else if (ev.button == Button::C) {
         // Stop early and bank the board. Since a run that ends in mid-air keeps whatever
         // it locked, quitting has to keep it too — otherwise C would be a button that
@@ -112,12 +117,14 @@ void Game::onStacker(const ButtonEvent& ev) {
     }
 }
 
-// One beat of the board. Only the intruders' drop ends one, so the ending sounds here
-// rather than on a press.
+// One beat of the board. Only the intruders' drop takes a block or ends a run, so those
+// sound here rather than on a press.
 void Game::stepStacker() {
     const bool live = stacker_.running();
+    const int destroyed = stacker_.destroyed();
     stacker_.step();
     if (live && !stacker_.running()) playSound(stacker_.won() ? Sound::Clear : Sound::Crash);
+    else if (stacker_.destroyed() > destroyed) playSound(Sound::Blocked);
 }
 
 void Game::finishStacker() {

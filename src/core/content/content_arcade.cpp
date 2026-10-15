@@ -16,15 +16,15 @@ namespace {
 // caller's business (arcade till vs. hatch clock vs. Fragmentation) and would be wrong
 // copy in two of the three doors it can be read through.
 const GameBriefDef kStackerBrief[] = {
-    {"THE INTRUDERS", "Two intruders drop down the well, each over its own column. Raise "
-                      "a wall under each one: B locks the sliding run, and every block "
-                      "falls until it lands on a block or the floor."},
+    {"THE INTRUDERS", "Intruders drop down the well over their columns. Raise walls under "
+                      "them: B locks the sliding run, and every block falls until it "
+                      "lands on a block or the floor."},
     {"THE HAND", "The run lands on the tallest column under it. Blocks over lower "
                  "columns fall past and leave your hand. A run over flat ground, the "
                  "floor included, keeps every block."},
-    {"THE STAKES", "A wall that reaches its intruder holds it. On the next drop, every "
-                   "intruder held is BLOCKED and any other is a BREACH. C stops early and "
-                   "banks what's locked."},
+    {"THE GROUND", "An intruder that hits a wall stops there and takes that block. One "
+                   "that hits the floor is a BREACH. Every lock that touches the ground "
+                   "calls another. Stop them all to hold the line."},
 };
 
 const GameBriefDef kFraggerBrief[] = {

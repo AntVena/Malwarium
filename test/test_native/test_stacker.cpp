@@ -24,10 +24,10 @@ bool stackerDropAt(Stacker& s, int col) {
 }
 
 // Play a bare model the way the Game gates do (playStackerBoard, test_gates.h): lock
-// where `stackerHoldLine` says until both intruders are held, then let them drop.
+// where `stackerHoldLine` says, then let the intruders come.
 void stackerHoldTheLine(Stacker& s) {
-    for (int k = 0; k < 8 * kStackerRows && s.running(); ++k) {
-        const int want = stackerHoldLine(s);
+    for (int k = 0; s.running(); ++k) {
+        const int want = stackerHoldLine(s, k);
         if (want < 0) break;
         CHECK(stackerDropAt(s, want));
     }
@@ -58,7 +58,7 @@ void test_stacker_overhang_falls_and_leaves_the_hand() {
     CHECK(s.running());
 }
 
-// The move a second intruder needs: a lock that misses the wall completely lands on the
+// The move a second wall needs: a lock that misses the wall completely lands on the
 // floor whole, keeps the full hand, and leaves the first wall where it was.
 void test_stacker_complete_miss_starts_a_second_wall() {
     Stacker s(kStackerGateSeed);
@@ -78,15 +78,53 @@ void test_stacker_complete_miss_starts_a_second_wall() {
     CHECK(s.height(2) == 3 && s.height(3) == 1 && s.height(4) == 2);
 }
 
-// The goal: both intruders held when they drop is a held line, at full width here.
-void test_stacker_holding_both_intruders_wins() {
+// The price of the ground: a lock that lands any block on it calls one more intruder,
+// over one of the columns it touched; a lock that lands only on walls calls none.
+void test_stacker_the_ground_calls_an_intruder() {
+    Stacker s(kStackerGateSeed);
+    CHECK(s.threatCount() == kStackerDealtThreats);
+    CHECK(stackerDropAt(s, 0));
+    CHECK(s.threatCount() == kStackerDealtThreats + 1);
+    const int i = kStackerDealtThreats;
+    CHECK(s.threatCol(i) >= 0 && s.threatCol(i) < kStackerStartWidth);
+    CHECK(s.threatRow(i) >= kStackerRows);        // queued above the open row
+    CHECK(stackerDropAt(s, 0));                   // on the wall: nothing called
+    CHECK(s.threatCount() == kStackerDealtThreats + 1);
+    CHECK(stackerDropAt(s, 2));                   // two blocks fall past to the ground
+    CHECK(s.threatCount() == kStackerDealtThreats + 2);
+    CHECK(s.threatCol(i + 1) == 3 || s.threatCol(i + 1) == 4);
+}
+
+// An intruder that reaches a wall is stopped and takes the block it hit; one that
+// reaches the floor is the breach.
+void test_stacker_an_intruder_takes_the_block_it_hits() {
+    Stacker s(kStackerGateSeed);
+    CHECK(stackerDropAt(s, 0));                   // one course under the column-0 intruder
+    while (s.running() && s.destroyed() == 0) s.step();
+    CHECK(s.running());
+    CHECK(s.height(0) == 0);                      // its block is gone
+    CHECK(s.blocks() == kStackerStartWidth - s.destroyed());
+    // The column-4 intruder had nothing under it, and the next drop puts it through.
+    for (int i = 0; i < kStackerThreatBeats && s.running(); ++i) s.step();
+    CHECK(s.breached());
+
+    // Nothing built at all: the opening intruders reach the floor and that's a breach.
+    Stacker none(kStackerGateSeed);
+    for (int i = 0; i < kStackerThreatBeats * (kStackerRows + 2) && none.running(); ++i)
+        none.step();
+    CHECK(none.breached() && none.blocks() == 0);
+}
+
+// The goal: every intruder stopped, the called ones included, is a held line.
+void test_stacker_stopping_every_intruder_holds_the_line() {
     Stacker s(kStackerGateSeed);
     CHECK(s.threatCol(0) == 0 && s.threatCol(1) == 4);
     stackerHoldTheLine(s);
     CHECK(s.won() && !s.running());
     CHECK(s.width() == kStackerStartWidth);
-    CHECK(s.height(0) == s.threatRow() && s.height(4) == s.threatRow());
-    CHECK(s.threatRow() > 0 && s.threatRow() < kStackerRows);   // met mid-well
+    CHECK(s.threatCount() == 0);
+    CHECK(s.destroyed() == kStackerDealtThreats + 2);    // the two called by the ground
+    CHECK(s.blocks() == kStackerHoldLocks * kStackerStartWidth - s.destroyed());
     CHECK(s.score() == kStackerMaxScore);
 
     // A finished run ignores further input rather than resuming somewhere odd.
@@ -97,41 +135,16 @@ void test_stacker_holding_both_intruders_wins() {
 
     s.reset(kStackerGateSeed);                    // a fresh run starts over cleanly
     CHECK(s.running() && s.row() == 0 && s.width() == kStackerStartWidth);
-    CHECK(s.blocks() == 0 && s.threatRow() == kStackerRows);
+    CHECK(s.blocks() == 0 && s.threatCount() == kStackerDealtThreats && s.destroyed() == 0);
 }
 
-// Height alone is not the goal: one wall as tall as you like is still a breach, because
-// the other intruder had nothing under it when they dropped.
+// One wall, however tall, is a breach: the other opening intruder had nothing under it.
 void test_stacker_one_wall_is_a_breach() {
     Stacker s(kStackerGateSeed);
-    for (int i = 0; i < kStackerRows && s.running(); ++i) CHECK(stackerDropAt(s, 0));
-    for (int i = 0; i < kStackerThreatBeats * (kStackerRows + 1) && s.running(); ++i)
-        s.step();
+    for (int i = 0; i < 5; ++i) CHECK(stackerDropAt(s, 0));
+    for (int i = 0; i < 4 * kStackerThreatBeats * kStackerRows && s.running(); ++i) s.step();
     CHECK(s.breached() && !s.won());
-    CHECK(s.held(0) && !s.held(1));
     CHECK(s.score() > 0 && s.score() < kStackerMaxScore);   // what was built still counts
-
-    // Nothing built at all: the intruders reach the floor and that is a breach too.
-    Stacker none(kStackerGateSeed);
-    for (int i = 0; i < kStackerThreatBeats * (kStackerRows + 1); ++i) none.step();
-    CHECK(none.breached() && none.threatRow() == 0 && none.blocks() == 0);
-}
-
-// Held is decided at the drop, not the moment a wall touches: the first wall reaching
-// its intruder leaves until the next drop to bring the second one up.
-void test_stacker_a_held_intruder_waits_for_the_drop() {
-    Stacker s(kStackerGateSeed);
-    // Drop the intruders to row 2 with nothing built, then build both walls to them.
-    for (int i = 0; i < kStackerThreatBeats * (kStackerRows - 2); ++i) s.step();
-    CHECK(s.running() && s.threatRow() == 2);
-    CHECK(stackerDropAt(s, 4));
-    CHECK(stackerDropAt(s, 0));
-    CHECK(stackerDropAt(s, 4));
-    CHECK(s.held(1) && !s.held(0) && s.running());   // touching, not yet decided
-    CHECK(stackerDropAt(s, 0));
-    CHECK(s.held(0) && s.held(1) && s.running());
-    for (int i = 0; i < kStackerThreatBeats && s.running(); ++i) s.step();
-    CHECK(s.won() && s.threatRow() == 2);
 }
 
 // The seed picks the pair, across every column, and never two a single hand covers.
@@ -198,7 +211,7 @@ void test_stacker_win_credits_the_tally_and_the_shape_rows() {
     g.model().setFragmentation(60);
     CHECK(g.stackerWins() == 0);
     startPlayedMaint(g, MaintKind::Av, ArcadeGameKind::Stacker);
-    CHECK(playStackerBoard(g, [&](int) { return stackerHoldLine(g.stacker()); }));
+    CHECK(playStackerBoard(g, [&](int k) { return stackerHoldLine(g.stacker(), k); }));
     CHECK(g.stacker().won());
     CHECK(g.stacker().width() == kStackerStartWidth);
     g.onButton(press(Button::B));                   // park -> finish
@@ -278,7 +291,7 @@ void test_stacker_cleared_board_is_a_full_scan() {
     g.model().setGhost(true);
     g.model().setDebuffs(3);
     startPlayedMaint(g, MaintKind::Av, ArcadeGameKind::Stacker);
-    CHECK(playStackerBoard(g, [&](int) { return stackerHoldLine(g.stacker()); }));
+    CHECK(playStackerBoard(g, [&](int k) { return stackerHoldLine(g.stacker(), k); }));
     CHECK(g.stacker().won());
     g.onButton(press(Button::B));
     CHECK(g.model().fragmentation() == 95 - kAvReduction);

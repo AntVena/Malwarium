@@ -467,20 +467,23 @@ inline Combatant mkCombatant(const ContentRegistry& r, const char* name, int hp,
 // hand at left 0 and at left 4 each covers one, on flat ground of its own.
 inline constexpr uint32_t kStackerGateSeed = 1;
 
-// A line-holding hand for that deal: raise whichever intruder's wall is lower, the far
-// one on a tie (it takes the slide longer to reach), and stop once both are held — so
-// the second wall always reaches its intruder in the same breath as the first.
-inline int stackerHoldLine(const Stacker& s) {
-    if (s.held(0) && s.held(1)) return -1;
-    return s.height(4) <= s.height(0) ? 4 : 0;
+// Locks a line-holding hand makes before standing back, and the walls they build: one
+// course each on the ground (calling one intruder apiece), then three more each on top,
+// four high — two more blocks under every column than its intruders can take.
+inline constexpr int kStackerHoldLocks = 8;
+
+// That hand for the gate seed: the first two locks on the ground, the rest alternating
+// onto the walls, then -1 to let the intruders come.
+inline int stackerHoldLine(const Stacker&, int k) {
+    if (k >= kStackerHoldLocks) return -1;
+    return k % 2 ? 4 : 0;
 }
 
 // The same line held with a single block in hand: a full hand on the floor, then one
 // lock offset onto it that drops two blocks past the wall, then one column at a time.
 inline int stackerHoldNarrow(const Stacker& s, int k) {
-    if (k == 0) return 0;
     if (k == 1) return 2;
-    return stackerHoldLine(s);
+    return stackerHoldLine(s, k);
 }
 
 // Play a whole Stacker board through the REAL button path, locking the k-th run at

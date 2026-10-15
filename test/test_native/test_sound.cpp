@@ -271,9 +271,10 @@ void test_sound_arcade_stacker_cues() {
     out.cues.clear();
     g.onButton(press(Button::B));                 // START
     CHECK(out.count(Sound::ArcadeStart) == 1);
-    CHECK(playStackerBoard(g, [&](int) { return stackerHoldLine(g.stacker()); }));
+    CHECK(playStackerBoard(g, [&](int k) { return stackerHoldLine(g.stacker(), k); }));
     CHECK(g.stacker().won());
-    CHECK(out.count(Sound::Point) == g.stacker().blocks() / kStackerStartWidth);
+    CHECK(out.count(Sound::Probe) == 2);                      // the two ground locks
+    CHECK(out.count(Sound::Point) == kStackerHoldLocks - 2);  // the rest, onto the walls
     CHECK(out.count(Sound::Miss) == 0);
     CHECK(out.count(Sound::Clear) == 1);
     g.onButton(press(Button::B));                 // park -> till
@@ -287,6 +288,10 @@ void test_sound_arcade_stacker_cues() {
     out.cues.clear();
     CHECK(playStackerBoard(g, [](int k) { return k == 0 ? 0 : k == 1 ? 1 : -1; }));
     CHECK(out.count(Sound::Miss) >= 1);
+    // An intruder taking a block sounds apart from the run ending: column 0's goes a
+    // drop before column 4's reaches the floor.
+    CHECK(out.count(Sound::Blocked) >= 1);
+    CHECK(out.count(Sound::Crash) == 1);
 }
 
 // FRAGGER sounds each of its three outcomes apart: a fragment shot, a shot stopped by a
