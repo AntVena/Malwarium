@@ -991,10 +991,9 @@ void Game::resolveSinkhole() {
     addCombatXp(xp);
     log_.push(LogEventType::ItemUsed, "USED SINKHOLE TRAP");
     std::snprintf(exploreFlavor_, sizeof(exploreFlavor_), "SINKHOLE +%d XP", xp);
-    // Every other XP grant (finishCombat/finishBossRound) persists immediately rather
-    // than leaving it to the debounced autosave — a level-up is exactly the kind of
-    // progress that must survive a reboot moments later, not just eventually. This is
-    // the one XP source that bypasses combat entirely, so it needs its own persist.
+    // Persist now: the debounced autosave can lose a level-up to a reboot. Every other XP
+    // grant (finishCombat, finishBossRound) does the same, and this source skips combat,
+    // so it needs its own call.
     persistSave();
     returnToExplore();
 }

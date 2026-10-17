@@ -37,30 +37,39 @@ screenshot of any screen must stay fully readable.** The pipeline all of this de
 growth, by concern, not ahead of it. Helpers shared by two or more units go in
 `game_internal.h` (private), never `game.h`.
 
-## Structure: the best shape, not the nearest one
+## Structure
 
-Code here grows by copying the closest sibling, so a pattern can be everywhere just because
-it was there first. "It matches the rest of the file" is not a reason. Write the shape you
-would choose from scratch, and when the existing one is worse, fix it or put it on the board.
+Write the shape you would choose for the job from scratch. New code tends to copy its nearest
+sibling, so check the sibling against these rules before copying it. When existing code falls
+short of them, fix it or add a row to the board.
 
-- **One home per shared thing, reachable by everyone who needs it.** Drawing goes in
-  `core/ui/widgets.h` and screen geometry in `core/ui/layout.h` (`listScrollTop`, the row
-  grid). `game_internal.h` is for what only `game/` uses. Look for a helper before writing
-  one. If the helper exists but sits in a header you can't include, move it up rather than
-  copy it: a helper nobody can reach gets reimplemented at every site.
-- **A dispatcher dispatches.** A `switch` over the vocabulary, where each case calls the code
-  that owns it. Headers, layout constants and per-screen state belong to the screen, not the
-  switch that picks it.
-- **Route by state; don't guess it.** Behaviour that differs per screen reaches the screen
-  through the same dispatch its taps do, rather than through guards that each re-derive which
-  screen is up from `face_`/`nav_`/a sub-view. Button holds are the known exception, and a row
-  on the board.
-- **A copy is either a real variant or a bug.** When two sites draw or compute the same
-  thing, share it. When one must differ, say why at that site. A comment saying "same as X" is
-  a sign the sameness is held together only by copying.
+- **One home per shared thing.** Drawing goes in `core/ui/widgets.h` and screen geometry in
+  `core/ui/layout.h` (`listScrollTop`, the row grid). `game_internal.h` holds what only `game/`
+  uses. Look for a helper before writing one. If it sits in a header your code can't include,
+  move it to one every caller can reach, then call it.
+- **One reason to change per type.** A feature owns its state and its input handlers in its own
+  type, and `Game` composes features and routes input to the active one. `Game` itself breaks
+  this rule today; board section 1j extracts its features one slice at a time.
+- **Dependencies point down the layers:** `app`, `ui`, `model`, `content`, then `render`, `net`
+  and `audio`. A header includes from its own layer or a lower one. An interface belongs to
+  the layer that calls it, and the platform implements it.
+- **A dispatcher only dispatches.** It is a `switch` over the vocabulary whose cases call the
+  code that owns each case. Headers, layout constants and per-screen state live in that code.
+- **Route input by state.** Behaviour that differs per screen reaches the screen through the
+  same dispatch as its taps. Guards that each work out which screen is up from
+  `face_`/`nav_`/a sub-view drift apart. Button holds still work that way; board section 1j
+  covers it.
+- **Share what is the same, and explain what differs.** When two sites draw or compute the
+  same thing, they call one function. When one site must differ, its comment says why. A
+  comment reading "same as X" means the two are kept equal by hand.
+- **Few arguments, and no flags.** A draw function with more than four inputs takes a view
+  struct (`ExplListView`, `StoryPageView`). A `bool` parameter becomes a named field or an
+  enum, so the call site says what it asks for.
+- **Small functions.** A long `switch` over a vocabulary is fine. Any other function that
+  needs a scroll to read is several steps, and each step gets a name.
 - **Name a number once, where its reader is.** This is the `tunables.h` rule applied to
-  layout: a magnitude only one screen reads lives on that screen, and one that two screens
-  share is one named constant, not two literals that happen to agree.
+  layout. A magnitude one screen reads lives on that screen. One that two screens share is a
+  single named constant.
 
 ## Comments and doc prose
 
@@ -80,6 +89,15 @@ symbols — freely. Docs are forward-facing for the same reason: cite how and wh
 Full rules and the keep-anyway exceptions (EAPOL `M1–M4`, board and pin names, world
 `Area 0–3`, living how-to standards): [`docs/COMMENT_STANDARD.md`](docs/COMMENT_STANDARD.md).
 `python3 tools/check_comment_standard.py` is the mechanical check, and it runs in the gates.
+
+**Write plainly.** Comments and docs are technical instructions. State the fact, the reason
+and the place, in the fewest plain words that carry them. No em dashes: use a period, colon,
+comma or parentheses (the comment gate ratchets their count down). No contrast framing ("X,
+not Y", "not just X but Y"): state X, and name an alternative only when a reader would
+otherwise choose it, with the reason it fails. No sentences that sound like insight but
+carry no fact ("which is the whole point", "and that is the trade"). If a sentence can be
+deleted without losing information, delete it. Details and examples:
+[`docs/COMMENT_STANDARD.md`](docs/COMMENT_STANDARD.md) under *Write plainly*.
 
 Transient state gets no file. A session summary or handoff is not a document; anything durable
 becomes a row on the board.

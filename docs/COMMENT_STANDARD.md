@@ -60,6 +60,41 @@ milestone). `git log` is the changelog.
   collaborator or consumer lives elsewhere. `resolveMaint() → addCareMistakeShielded`,
   `game_hacker.cpp`, `dev_config.h`, `Nav::PostEncounter` all orient you *in the codebase* and stay.
 
+## Write plainly
+
+Comments and docs are technical instructions for the next developer. Write them the way you
+would explain the code to a colleague at the desk: the fact, the reason, the place.
+
+- **No em dashes.** Use a period, a colon, a comma or parentheses. `check_comment_standard.py`
+  counts the em dashes in comments under `src/`, `include/` and `test/` and fails if the count
+  rises above its ceiling. When a cleanup lowers the count, lower the ceiling to match.
+- **No contrast framing.** "X, not Y", "not just X but Y", "rather than Y" and "the point isn't
+  Y, it's X" make a reader hold an idea only to drop it. State X. Name an alternative only
+  when a reader would otherwise choose it, and give the reason it fails.
+- **No filler that sounds like insight.** "Which is the whole point", "exactly the kind of",
+  "the one thing", "quietly", "and that is the trade". Each of these adds emphasis and no
+  information. If a sentence can be deleted without losing a fact, delete it.
+- **Plain words.** Prefer the common word. Use capitals for emphasis rarely, and only on the
+  word that decides the reader's next action.
+
+Before:
+
+```cpp
+// Every other XP grant persists immediately rather than leaving it to the debounced
+// autosave — a level-up is exactly the kind of progress that must survive a reboot
+// moments later, not just eventually.
+```
+
+After:
+
+```cpp
+// Persist now: the debounced autosave can lose a level-up to a reboot. Every other XP
+// grant (finishCombat, finishBossRound) does the same.
+```
+
+The existing tree predates this section. Fix a comment you are already editing; the
+maintenance run's docs cleanup sweeps the rest.
+
 ## Legit exceptions (they look like refs, but keep them)
 
 - **Living "how to add X" standards** — `src/core/content/CONTENT_STANDARD.md`, `src/core/content/LINE_MOVE_IDENTITIES.md`,

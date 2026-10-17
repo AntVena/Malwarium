@@ -59,22 +59,9 @@ Collect those, then retune the two rows and decide whether either wants a rung a
 tally (`tools/gen_ach_icons.py`'s `tally`), and the bitset holds 256 wires, of which 204 are
 spent. |
 
-**Button HOLDS are routed by guessing which screen is up.** A tap reaches the screen through
-one dispatch (`onButton` switches on `nav_`), but a hold does not. `tickHeldGestures` is a
-ladder of guarded `if`s, one per hold screen, each re-deriving "am I on screen" from
-`face_`/`nav_`/`enteredId()`/a sub-view enum. The release edge is worse: `game_nav.cpp`
-calls all seven `*ReleaseB()` functions in a row and each one returns early unless its own
-four-way condition holds. Every new hold adds one more guard to both lists, and two guards
-that overlap fire on the same press. The fix is a per-screen hold/release hook dispatched
-from the same place taps are, so a hold screen joins by gaining a case, the way a list joins
-`game_listnav.cpp`. The `nav_` enum and its `switch`es stay. |
-`game_core.cpp`'s `tickHeldGestures`; `game_nav.cpp`'s release edge; the seven `*ReleaseB`. |
-L | Check the native suite, and diff a `tools/screens.sh` render taken before the change
-against one after (deterministic, so byte-for-byte). |
-
 **Every release ships the DEV start overrides.** `include/dev_config.h` defines
 `DEV_CFG_RESET_ROW` (a one-press RESET TO HATCH row in CFG) and `DEV_EGG_TIMER_MS` (a first
-hatch of 5 minutes, not `kBootHatchMs`), and says to comment both out for a release build.
+hatch of 5 minutes in place of `kBootHatchMs`), and says to comment both out for a release build.
 Nothing on the release path does: `publish.yml` builds `main` as it stands. Decide whether
 they ship, and if not, make the release build drop them rather than relying on a hand
 edit. | `include/dev_config.h`; `publish.yml`'s build; `platformio.ini`'s
@@ -161,6 +148,52 @@ roster, and the wild half keeps its own roster-keyed masks).
   *earn* model — every crew is joinable the moment a home network exists. Diff **M**.
 - **What "defender of that network" buys you.** The home network is recorded and shown but has no
   mechanical consequence beyond gating enlistment. Diff **M**.
+
+### 1j. Architecture: SOLID and the Dependency Rule
+
+Found by auditing the tree against Robert C. Martin's rules (single responsibility,
+interface segregation, the Dependency Rule, small functions with few arguments). The
+CONTRIBUTING *Structure* section states the rules these rows bring the code up to.
+
+**`Game` holds every feature's state, so every unit can touch every field.** `game.h` is
+about 4,700 lines declaring roughly 1,000 member functions and 640 data members, and 38
+`game_*.cpp` units implement them. The split into files is physical only. Three problems
+follow from it. Holds are routed by guessing which screen is up, because there is no screen
+object to ask: `tickHeldGestures` is a ladder of guarded `if`s, and on release `game_nav.cpp`
+calls all seven `*ReleaseB()` functions in turn, each returning early unless its own
+four-way condition holds. Tests reach state through 100 `debug*` hooks on the production
+class. The `nav_` vocabulary is tested in 129 places and switched on in 5. The fix is to
+extract feature objects that own their state and handlers, one slice at a time, with
+`Game` composing them and dispatching tap, hold and release to the active one. Order:
+
+1. SHOP (`game_rigshop.cpp`): `shopView_`, the row and service cursors, and the three views.
+2. Hold and release routing through the extracted object, then the remaining hold screens.
+3. CREW, the tourney, and the other Hacker slots, each already in its own unit.
+
+Each slice deletes the `debug*` hooks its tests no longer need. |
+`core/app/game.h`; `game_core.cpp`'s `tickHeldGestures`; `game_nav.cpp`'s release edge. |
+XL overall, M per slice | Verify each slice with the native suite and a `tools/screens.sh`
+render diffed byte-for-byte against one taken before it. |
+
+**Draw functions take long argument lists and flag arguments.** `drawCombat` takes 18
+parameters, at least 15 other `draw*` functions take 7 or more, and `core/ui` headers carry
+14 `bool` parameters. Three screens already take one view struct instead (`ExplListView`,
+`ShopRowView`, `StoryPageView`). Convert the rest to that shape, worst first, and replace
+each `bool` with a field or an enum the call site names. | `core/ui/*_screen.h`;
+`widgets.h`'s `drawTextMarquee`, `drawLabelValue`, `drawProgressBar`. | M | Pixel-identical
+by construction; the screen diff proves it. |
+
+**Three includes point up the layers.** The order is `app`, `ui`, `model`, `content`, then
+`render`, `net` and `audio` at the bottom. `content_recipes.h` includes
+`core/app/game_rig_shop.h` for one constant. `cfg_screen.h` includes five
+`core/app/*_status.h` headers, which are plain data that `ui` and `app` both read.
+`platform.h` is the interface core calls into, and it lives under `src/platform/`; it
+belongs in `core`, beside the code that uses it. | the three headers named | S | |
+
+**`applySave` is 544 lines.** It restores every save section in one function. Split it into
+one named function per section (inventory, mod loadout, rack and records, moves and levels,
+crew and home network, radio toggles), called in the current order. | `game_persist.cpp` |
+S | The save-migration tests in `test_persistence.cpp` cover every section. |
 
 ---
 
@@ -334,7 +367,7 @@ where a whole cluster lifts out without touching the rest:
   `onTrainList` to `onSimTier`, which is screen handling rather than the fight. Split →
   `game_train.cpp`. | `game_combat.cpp` | S |
 - **`game_items.cpp` (972) carries the cache economy and the stat pickers.** `rollLootEntry`
-  through `onBulkYield` (~150) is the VAULT's payout path, not the ITEMS screen, and the
+  through `onBulkYield` (~150) is the VAULT's payout path, and the
   Rollback/Repartition pickers (~130) are their own modal. Split → `game_caches.cpp`, and the
   pickers either beside it or in their own unit. | `game_items.cpp` | S |
 - **`game_explore.cpp` (973) carries boss rounds and the move-learn queries.** From

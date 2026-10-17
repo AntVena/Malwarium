@@ -19,7 +19,7 @@ overdue cleanup.
 ## The pile
 
 ### Docs cleanup / decision-history sweep — Last run: 2026-10-17
-Two surfaces, two rules.
+Two surfaces, two rules, and one prose style across both.
 
 **Docs (`docs/`, and the standards beside the code):** cull dated historical narration (session logs, "shipped on <date>",
 "supersedes the section above"), session-provenance framing ("this session found…"), and migration
@@ -34,6 +34,13 @@ its keep-anyway exceptions (other-code refs, living how-to standards, `vNN` save
 tests, and the domain terms that only look like refs: EAPOL `M1`–`M4`, `S3`/`C5`, `D0`–`D3`, world
 `Area 0`–`3`). Cross-check any claim against the actual code before trusting it.
 
+**Prose style (docs and comments):** hold both to COMMENT_STANDARD's *Write plainly*. Rewrite
+the em dashes in the files you visit and lower `EM_DASH_CEILING` in
+`tools/check_comment_standard.py` to the new count (the gate fails until you do). Rewrite
+contrast framing ("X, not Y", "rather than", "not just") into a plain statement where the
+contrast carries no decision, and delete sentences that add emphasis without a fact. Docs
+first: they are read more often than any one comment.
+
 ### Self-architecture review — Last run: 2026-10-17
 Check the `game_*.cpp` module split for size creep past ~600 lines. Look for cross-file duplication, dead code, and orphaned helpers
 that should have moved to `game_internal.h` or been deleted. Verify actual file sizes, don't trust
@@ -42,17 +49,25 @@ unit needs no build-file edit — the cost of a split is the reading, not the pl
 unit is big but genuinely one concern (a dispatcher, a flat save mapping, a screen-per-function
 render file), leave it and say so: length that follows from the number of cases is not creep.
 
-**Audit against CONTRIBUTING's *Structure* section, not against the neighbours.** Its rules
-are how code here should be written. This run looks for where it isn't: the same widget or
-calculation at more than one site (grep its SHAPE, since copies go by different names), a
-helper too private for its would-be callers to include, a dispatcher doing its cases' work,
-and copies that have drifted apart.
+**Audit against CONTRIBUTING's *Structure* section.** Its rules say how code here is
+written; this run finds where the code falls short. Look for:
+
+- the same widget or calculation at more than one site (grep its SHAPE, since copies go by
+  different names);
+- a helper in a header its would-be callers can't include;
+- a dispatcher that does its cases' work;
+- copies that have drifted apart;
+- an include that points up the layers (`app`, `ui`, `model`, `content`, then `render`,
+  `net`, `audio`): `git grep '#include "core/<higher layer>/' -- src/core/<lower layer>`;
+- a draw function with more than four inputs, or a `bool` parameter;
+- a type with more than one reason to change. `Game` is the standing case, tracked on the
+  board; a new feature added straight into `Game` is a finding.
 
 Verify a refactor that touches drawing against `./tools/screens.sh` rendered BEFORE the
 change. The frames are deterministic, so `diff -rq` of the two directories is a
-byte-for-byte proof, not a looking exercise.
+byte-for-byte proof.
 
-**Measure FUNCTIONS too, not just files.** Mass collects inside individual functions, where a
+**Measure functions as well as files.** Mass collects inside individual functions, where a
 file-size check cannot see it: a unit can sit near 600 while one function in it runs past 400.
 Get the shape from the gap between definitions
 (`grep -nE '^[A-Za-z_].*::.*\(' <unit>`), then apply the same one-concern test. The dispatcher
@@ -135,7 +150,7 @@ Run the gates. Confirm native gates and the S3 build are actually green, not ass
 a doc. Look for test debt — tests asserting behaviour that no longer occurs in
 real play.
 
-**Check that each gate actually RUNS, not just that it exists.** Every harness or command
+**Check that each gate RUNS.** Every harness or command
 `docs/TEST_STRATEGY.md` names has to appear in `tools/gates.sh` or `.github/workflows/gates.yml`,
 and the workflow's branch filter has to match the branch a session pushes to. If either is
 missing, the gate is green only because it never ran.
