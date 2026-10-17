@@ -37,6 +37,31 @@ screenshot of any screen must stay fully readable.** The pipeline all of this de
 growth, by concern, not ahead of it. Helpers shared by two or more units go in
 `game_internal.h` (private), never `game.h`.
 
+## Structure: the best shape, not the nearest one
+
+Code here grows by copying the closest sibling, so a pattern can be everywhere just because
+it was there first. "It matches the rest of the file" is not a reason. Write the shape you
+would choose from scratch, and when the existing one is worse, fix it or put it on the board.
+
+- **One home per shared thing, reachable by everyone who needs it.** Drawing goes in
+  `core/ui/widgets.h` and screen geometry in `core/ui/layout.h` (`listScrollTop`, the row
+  grid). `game_internal.h` is for what only `game/` uses. Look for a helper before writing
+  one. If the helper exists but sits in a header you can't include, move it up rather than
+  copy it: a helper nobody can reach gets reimplemented at every site.
+- **A dispatcher dispatches.** A `switch` over the vocabulary, where each case calls the code
+  that owns it. Headers, layout constants and per-screen state belong to the screen, not the
+  switch that picks it.
+- **Route by state; don't guess it.** Behaviour that differs per screen reaches the screen
+  through the same dispatch its taps do, rather than through guards that each re-derive which
+  screen is up from `face_`/`nav_`/a sub-view. Button holds are the known exception, and a row
+  on the board.
+- **A copy is either a real variant or a bug.** When two sites draw or compute the same
+  thing, share it. When one must differ, say why at that site. A comment saying "same as X" is
+  a sign the sameness is held together only by copying.
+- **Name a number once, where its reader is.** This is the `tunables.h` rule applied to
+  layout: a magnitude only one screen reads lives on that screen, and one that two screens
+  share is one named constant, not two literals that happen to agree.
+
 ## Comments and doc prose
 
 **A comment says only what the code cannot: *why* it is this way, and *where else* it is

@@ -42,31 +42,19 @@ unit needs no build-file edit — the cost of a split is the reading, not the pl
 unit is big but genuinely one concern (a dispatcher, a flat save mapping, a screen-per-function
 render file), leave it and say so: length that follows from the number of cases is not creep.
 
-**Judge the shape against the BEST one for the job, not against its neighbours.** Code here
-grows by copying the closest sibling, so a convention can be everywhere simply because it
-was there first, and "matches the rest of the file" proves nothing. For anything you touch,
-ask what the best structure would be from scratch, then whether the gap is worth closing.
-This is the same sweep as a single-entity magnitude sitting in `tunables.h`. What to look for:
-
-- **A widget or calculation written out at more than one site.** Grep its shape, not its
-  name: copies of the same thing go by different names, and a "same as X" comment is a sign
-  the sameness is held together only by copying.
-- **A shared helper that exists but is too private to reach.** If a helper lives in a
-  narrow header (`game_internal.h` is private to `game/`), every caller outside that header
-  writes its own copy. Before adding a helper, look for one; before trusting one, check who
-  CAN include it.
-- **A dispatcher that also does its cases' work.** A dispatcher picks a case and calls it.
-  Header bands, layout constants and per-screen state belong to the screen it calls.
-- **Copies that have quietly drifted apart.** A variant may be a real decision or just
-  drift. If its own comment says it "matches" the others, it is drift: fold it in.
+**Audit against CONTRIBUTING's *Structure* section, not against the neighbours.** Its rules
+are how code here should be written. This run looks for where it isn't: the same widget or
+calculation at more than one site (grep its SHAPE, since copies go by different names), a
+helper too private for its would-be callers to include, a dispatcher doing its cases' work,
+and copies that have drifted apart.
 
 Verify a refactor that touches drawing against `./tools/screens.sh` rendered BEFORE the
 change. The frames are deterministic, so `diff -rq` of the two directories is a
 byte-for-byte proof, not a looking exercise.
 
-**Measure FUNCTIONS too, not just files.** The unit rule has been holding while the mass moved
-inside individual functions, where a file-size check cannot see it — the units sit near 600 while
-single functions run past 400. Get the shape from the gap between definitions
+**Measure FUNCTIONS too, not just files.** Mass collects inside individual functions, where a
+file-size check cannot see it: a unit can sit near 600 while one function in it runs past 400.
+Get the shape from the gap between definitions
 (`grep -nE '^[A-Za-z_].*::.*\(' <unit>`), then apply the same one-concern test. The dispatcher
 exception is the one to apply honestly: **count the `case` labels before granting it.** A long
 `switch` over a vocabulary is fine; a long if-chain is accumulated special cases wearing the same
