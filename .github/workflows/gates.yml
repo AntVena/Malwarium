@@ -81,7 +81,7 @@ jobs:
         run: python3 tools/gen_assets.py
       - name: Build
         run: pio run -e waveshare_s3_154
-      - name: Native suite under Unity
+      - name: Native suite via pio test
         # test_main.cpp's roster compiles into two harnesses, and the native job above
         # runs only the ctest one. This is the other (PIO_UNIT_TESTING), here because
         # this job already has PlatformIO: a harness nothing runs can stop building

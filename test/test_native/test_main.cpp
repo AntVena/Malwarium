@@ -3,10 +3,11 @@
 // The gate bodies live in test_<subject>.cpp beside this file; this one holds the
 // single list of what runs. MAL_RUN_ALL_GATES is expanded three times: once to
 // declare every gate, and once by each harness to call them —
-//   * ctest (CMake `mal_tests`)      — the counting CHECK + the hand-rolled main().
-//   * `pio test -e native` (Unity)   — CHECK maps to a Unity assertion and each gate
-//                                      is a RUN_TEST (PlatformIO defines
-//                                      PIO_UNIT_TESTING for test builds).
+//   * ctest (CMake `mal_tests`)  — the counting CHECK + the hand-rolled main().
+//   * `pio test -e native`       — PlatformIO's runner, on the Unity C test framework
+//                                  it bundles (not the game engine): CHECK maps to a
+//                                  Unity assertion and each gate is a RUN_TEST
+//                                  (PlatformIO defines PIO_UNIT_TESTING for test builds).
 // So the roster cannot drift from either harness, and a gate defined but never
 // listed here is caught by tools/check_test_roster.py rather than by the linker.
 #include "test_gates.h"
@@ -17,7 +18,7 @@ int g_failures = 0;
 
 // The gate roster — listed once, expanded by whichever harness compiles the
 // file. RUN(fn) is supplied per harness (a plain call for ctest, RUN_TEST for
-// Unity). Keep this in milestone order; add new gates here, not in main().
+// pio test). Keep this in milestone order; add new gates here, not in main().
 #define MAL_RUN_ALL_GATES(RUN)              \
     /* T0–T2 — pipeline + idle + STAT */    \
     RUN(test_sprite_roundtrip)              \

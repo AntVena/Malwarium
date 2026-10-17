@@ -146,10 +146,11 @@ inline int achBitsReward(const char* id) {
 // Dual-mode gate runner. The gate bodies in the units beside this header are the
 // single source of truth; they run under two harnesses depending on how the file is
 // compiled:
-//   * ctest (CMake `mal_tests`)      — the counting CHECK + hand-rolled main().
-//   * `pio test -e native` (Unity)   — CHECK maps to a Unity assertion and each
-//                                       gate is a RUN_TEST (PlatformIO defines
-//                                       PIO_UNIT_TESTING for test builds).
+//   * ctest (CMake `mal_tests`)  — the counting CHECK + hand-rolled main().
+//   * `pio test -e native`       — PlatformIO's runner, on the Unity C test framework
+//                                  it bundles (not the game engine): CHECK maps to a
+//                                  Unity assertion and each gate is a RUN_TEST
+//                                  (PlatformIO defines PIO_UNIT_TESTING for test builds).
 // The gate roster lives once in test_main.cpp's MAL_RUN_ALL_GATES so the two
 // harnesses can never drift out of sync.
 #ifdef PIO_UNIT_TESTING
