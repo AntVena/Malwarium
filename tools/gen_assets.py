@@ -164,7 +164,7 @@ FRAME_W_OVERRIDES = {
     "ICON_EXPL": 28,             # 168x28 = the globe's 6-frame rotation
     # 80x16 = the battery shell at five fill levels, frame index == level (empty
     # shell .. four bars). Not an animation: the engine picks the frame from the
-    # reading (core/app/power_status.h), so the strip is a lookup, not a loop.
+    # reading (core/device/power_status.h), so the strip is a lookup, not a loop.
     "ICON_SYS_BATTERY": 16,
     # 96x8 = the Worm replicas' six 16x8 frames, in idle/attack/death pairs. Not
     # SPR_PET_ sheets: a replica is one glyph shared by the whole line rather than a

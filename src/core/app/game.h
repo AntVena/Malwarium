@@ -14,11 +14,11 @@
 #include "tunables.h"
 #include "core/app/game_achievements.h"
 #include "core/app/game_rig_shop.h"
-#include "core/app/net_status.h"
-#include "core/app/update_status.h"
-#include "core/app/power_status.h"
-#include "core/app/radio_status.h"
-#include "core/app/sd_status.h"
+#include "core/device/net_status.h"
+#include "core/device/update_status.h"
+#include "core/device/power_status.h"
+#include "core/device/radio_status.h"
+#include "core/device/sd_status.h"
 #include "core/content/areas/area_defs.h"
 #include "core/content/content_arcade.h"    // kArcadeMaxCabinets sizes the arcade tallies
 #include "core/content/content_passives.h"  // kWormReplicaSlots sizes companionWander_
@@ -59,7 +59,7 @@
 // A screen header belongs in the game_*.cpp unit that calls its draw functions.
 #include "core/ui/arch_screen.h"   // ArchRow — the ARCH list's row model
 #include "core/ui/ui_state.h"
-#include "platform/platform.h"
+#include "core/device/platform.h"
 
 namespace mal {
 

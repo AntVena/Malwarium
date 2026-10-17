@@ -50,9 +50,10 @@ short of them, fix it or add a row to the board.
 - **One reason to change per type.** A feature owns its state and its input handlers in its own
   type, and `Game` composes features and routes input to the active one. `Game` itself breaks
   this rule today; board section 1j extracts its features one slice at a time.
-- **Dependencies point down the layers:** `app`, `ui`, `model`, `content`, then `render`, `net`
-  and `audio`. A header includes from its own layer or a lower one. An interface belongs to
-  the layer that calls it, and the platform implements it.
+- **Dependencies point down the layers:** `app`, `ui`, `model`, `content`, then `render`, `net`,
+  `audio` and `device`. A header includes from its own layer or a lower one. An interface
+  belongs to the layer that calls it, and the platform implements it: `core/device/platform.h`
+  is the interface, and `src/platform/<target>/` holds the implementations.
 - **A dispatcher only dispatches.** It is a `switch` over the vocabulary whose cases call the
   code that owns each case. Headers, layout constants and per-screen state live in that code.
 - **Route input by state.** Behaviour that differs per screen reaches the screen through the

@@ -61,6 +61,7 @@ malwarium/
 ├── src/core/app/        ← the engine spine: Game, split across game/game_*.cpp
 ├── src/core/content/    ← content tables, one file per type + their standards & naming docs
 │   └── areas/              one folder per EXPL area
+├── src/core/device/     ← platform.h (the interface each target implements) + the status it reports
 ├── src/core/model/      ← save codec, combat model
 ├── src/core/net/        ← audit capture, peer ledger, update manifest, tar reader
 ├── src/core/render/     ← framebuffer, sprites, upscaler, FONT_UI + RENDER_PIPELINE.md

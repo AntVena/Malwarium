@@ -25,7 +25,7 @@
 
 #include "core/app/game.h"
 #include "core/model/cryptogram.h"
-#include "platform/platform.h"
+#include "core/device/platform.h"
 
 using namespace mal;
 

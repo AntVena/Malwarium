@@ -10,7 +10,7 @@
 #include "core/render/color.h"
 #include "core/render/palette.h"
 #include "platform/esp32/lgfx_config.h"
-#include "platform/platform.h"
+#include "core/device/platform.h"
 
 namespace mal {
 

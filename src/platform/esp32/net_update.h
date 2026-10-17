@@ -54,7 +54,7 @@
 
 #include "config.h"
 #include "core/app/game.h"
-#include "core/app/update_status.h"
+#include "core/device/update_status.h"
 #include "core/net/tar_reader.h"
 #include "core/net/update_manifest.h"
 #include "platform/esp32/update_source.h"

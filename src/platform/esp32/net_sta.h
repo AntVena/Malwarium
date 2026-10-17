@@ -32,7 +32,7 @@
 
 #include "config.h"
 #include "core/app/game.h"
-#include "core/app/net_status.h"
+#include "core/device/net_status.h"
 #include "platform/esp32/net_credentials.h"
 
 #if STA_ENABLED

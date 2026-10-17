@@ -3,7 +3,7 @@
 // Reads the pack voltage off BAT_ADC (PIN_BATTERY_ADC = GPIO1, behind the
 // board's 3:1 divider) and the ETA6098 charge-status pin (PIN_CHARGE_STAT =
 // GPIO3, open-drain: LOW = actively charging). Produces a portable PowerStatus
-// the engine renders. All the SoC math lives in core/app/power_status.h so it's
+// the engine renders. All the SoC math lives in core/device/power_status.h so it's
 // unit-tested on the host; this file is just the GPIO glue.
 //
 // Compiles to an absent reading (present=false → "-") when the battery monitor
@@ -13,7 +13,7 @@
 #include <Arduino.h>
 
 #include "config.h"
-#include "core/app/power_status.h"
+#include "core/device/power_status.h"
 
 namespace mal {
 

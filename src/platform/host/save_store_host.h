@@ -6,7 +6,7 @@
 #include <cstdio>
 #include <vector>
 
-#include "platform/platform.h"
+#include "core/device/platform.h"
 
 namespace mal {
 

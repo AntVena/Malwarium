@@ -58,7 +58,7 @@ written; this run finds where the code falls short. Look for:
 - a dispatcher that does its cases' work;
 - copies that have drifted apart;
 - an include that points up the layers (`app`, `ui`, `model`, `content`, then `render`,
-  `net`, `audio`): `git grep '#include "core/<higher layer>/' -- src/core/<lower layer>`;
+  `net`, `audio`, `device`): `git grep '#include "core/<higher layer>/' -- src/core/<lower layer>`;
 - a draw function with more than four inputs, or a `bool` parameter;
 - a type with more than one reason to change. `Game` is the standing case, tracked on the
   board; a new feature added straight into `Game` is a finding.

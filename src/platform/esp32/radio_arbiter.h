@@ -161,7 +161,7 @@ public:
     }
 
 private:
-    // The engine-facing name for an owner (core/app/radio_status.h) — a straight
+    // The engine-facing name for an owner (core/device/radio_status.h) — a straight
     // relabelling, since both enums name the association after the update job that
     // is the only thing which ever raises it.
     static RadioOwner reported(Owner o) {

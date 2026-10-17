@@ -26,11 +26,11 @@
 #include <cstddef>
 #include <cstdint>
 
-#include "core/app/net_status.h"
-#include "core/app/power_status.h"
-#include "core/app/radio_status.h"
-#include "core/app/sd_status.h"
-#include "core/app/update_status.h"
+#include "core/device/net_status.h"
+#include "core/device/power_status.h"
+#include "core/device/radio_status.h"
+#include "core/device/sd_status.h"
+#include "core/device/update_status.h"
 #include "core/audio/sound.h"
 #include "core/ui/ui_state.h"  // CfgScreen, UiMode
 

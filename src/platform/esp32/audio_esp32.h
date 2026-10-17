@@ -4,7 +4,7 @@
 #include <Arduino.h>
 
 #include "config.h"
-#include "platform/platform.h"
+#include "core/device/platform.h"
 
 #if AUDIO_ENABLED && AUDIO_USE_I2S
 #include <Wire.h>

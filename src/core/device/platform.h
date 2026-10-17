@@ -1,5 +1,5 @@
-// platform.h — the hardware boundary. Core never touches a pin or a driver;
-// each target (host SDL now, ESP32/LovyanGFX later) implements these.
+// platform.h: the hardware boundary. Core never touches a pin or a driver;
+// each target (host SDL, web, ESP32/LovyanGFX) implements these.
 #pragma once
 
 #include <cstdint>

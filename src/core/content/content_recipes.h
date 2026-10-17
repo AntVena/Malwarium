@@ -14,7 +14,7 @@
 
 #include <cstring>
 
-#include "core/app/game_rig_shop.h"  // kMergeRecipeWireCap — the save bit a row claims
+#include "core/content/recipe_wire.h"   // kMergeRecipeWireCap: the save bit a row claims
 
 namespace mal {
 

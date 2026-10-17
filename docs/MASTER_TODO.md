@@ -183,13 +183,6 @@ each `bool` with a field or an enum the call site names. | `core/ui/*_screen.h`;
 `widgets.h`'s `drawTextMarquee`, `drawLabelValue`, `drawProgressBar`. | M | Pixel-identical
 by construction; the screen diff proves it. |
 
-**Three includes point up the layers.** The order is `app`, `ui`, `model`, `content`, then
-`render`, `net` and `audio` at the bottom. `content_recipes.h` includes
-`core/app/game_rig_shop.h` for one constant. `cfg_screen.h` includes five
-`core/app/*_status.h` headers, which are plain data that `ui` and `app` both read.
-`platform.h` is the interface core calls into, and it lives under `src/platform/`; it
-belongs in `core`, beside the code that uses it. | the three headers named | S | |
-
 **`applySave` is 544 lines.** It restores every save section in one function. Split it into
 one named function per section (inventory, mod loadout, rack and records, moves and levels,
 crew and home network, radio toggles), called in the current order. | `game_persist.cpp` |
