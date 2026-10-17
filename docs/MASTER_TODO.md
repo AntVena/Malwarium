@@ -164,11 +164,19 @@ calls all seven `*ReleaseB()` functions in turn, each returning early unless its
 four-way condition holds. Tests reach state through 100 `debug*` hooks on the production
 class. The `nav_` vocabulary is tested in 129 places and switched on in 5. The fix is to
 extract feature objects that own their state and handlers, one slice at a time, with
-`Game` composing them and dispatching tap, hold and release to the active one. Order:
+`Game` composing them and dispatching tap, hold and release to the active one.
 
-1. SHOP (`game_rigshop.cpp`): `shopView_`, the row and service cursors, and the three views.
-2. Hold and release routing through the extracted object, then the remaining hold screens.
-3. CREW, the tourney, and the other Hacker slots, each already in its own unit.
+SHOP is done and is the pattern to copy: `RigShopScreen` (`game/rig_shop_screen.h`) owns its
+view and cursors, and reaches the game only through `RigShopHost`, which `Game` implements
+privately. Next, in order:
+
+1. The Rig Shop ACCOUNT: `rigLevel_`, `rigServicesOff_` and `rigServicesAsk_` and the pure
+   queries over them (`rigFeatureActive`, `rigServiceMode` and the rest in `game.h`) become a
+   `RigAccount` value type. That shrinks `RigShopHost` and takes those queries out of `game.h`.
+2. Hold and release routing. `RigShopScreen` already takes `releaseB` and `openServiceInfo`;
+   give the active feature a hold and a release entry point and route to it, then move the
+   other hold screens (VAULT, ITEMS, MOVES, MODS, the bracket, STAT index) to the same shape.
+3. VAULT, CREW, the tourney and the other Hacker slots, each already in its own unit.
 
 Each slice deletes the `debug*` hooks its tests no longer need. |
 `core/app/game.h`; `game_core.cpp`'s `tickHeldGestures`; `game_nav.cpp`'s release edge. |

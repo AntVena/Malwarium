@@ -756,10 +756,10 @@ bool Game::tickHeldGestures(uint32_t nowMs) {
     // switching it. Clearing bHeld_ here is what makes the release resolve as the
     // ordinary tap (rigServiceReleaseB, the flip) only when the hold never landed.
     if (bHeld_ && face_ == Face::Hacker && nav_ == Nav::Submenu &&
-        enteredHackerId() == HackerSlotId::Shop && shopView_ == ShopView::Services &&
+        enteredHackerId() == HackerSlotId::Shop && rigShop_.view() == ShopView::Services &&
         nowMs_ - bDownMs_ >= kServiceInfoHoldMs) {
         bHeld_ = false;
-        openRigServiceInfo();
+        rigShop_.openServiceInfo(*this);
         lastInputMs_ = nowMs_;
         changed = true;
     }

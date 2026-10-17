@@ -50,6 +50,10 @@ inline constexpr int kRigLevelUnlimited = 1 << 20;
 // no levels and no place in a storefront list. The hub itself is the last rig row
 // cooking needs.
 
+// Where an owned service's switch sits. A two-way service is only ever On or Off; an
+// askable one can also be Ask. Not owned reads Off.
+enum class ServiceMode : uint8_t { On, Ask, Off };
+
 enum RigRow {
     kRigRowBandwidth = 0,
     kRigRowFragReduce = 1,
@@ -75,7 +79,7 @@ enum RigRow {
 
 // The SHOP list's head slot. SERVICES is not a purchase and so has no row in the
 // table, but it IS the first thing in the list — negative so it shares the list's
-// cursor space (Game::hackerShopRow_) with a row index without colliding with one.
+// cursor space (RigShopScreen::slot) with a row index without colliding with one.
 inline constexpr int kRigSlotServices = -1;
 
 // The first row that persists positionally in SaveData::rigLevelsExt rather than

@@ -14,6 +14,7 @@
 #include "tunables.h"
 #include "core/app/game_achievements.h"
 #include "core/app/game_rig_shop.h"
+#include "core/app/game/rig_shop_screen.h"
 #include "core/device/net_status.h"
 #include "core/device/update_status.h"
 #include "core/device/power_status.h"
@@ -82,7 +83,7 @@ struct PlayHud;
 // seam that keeps the tests green without going through the egg).
 enum class StartMode { FreshHatch, Hatched };
 
-class Game {
+class Game : private RigShopHost {
 public:
     // `hatchedCreature` is the pet installed when mode == Hatched (the dev/test
     // seam); ignored for FreshHatch, which installs the egg-line creature.
@@ -198,7 +199,7 @@ public:
     // "which stat grew" tell (the inline combat-overlay flourish is deferred
     // polish; STAT's LVL n is the shipped feedback). Used by tests to confirm a level-up.
     int lastLevelUpStat() const { return lastLevelUpStat_; }
-    int bits() const { return bits_; }
+    int bits() const override { return bits_; }
     int bandwidth() const { return bandwidth_; }   // farming resource — see below
     // The farming-pool CAP: the base plus every "Increase Bandwidth" upgrade bought on
     // the Rig Shop (a). Replaces the raw kBandwidthMax everywhere the cap is
@@ -305,7 +306,7 @@ public:
     // i (Rig Shop): Disk Maintenance tier (0 = not bought). Level N's threshold/cost
     // multiplier live on kDiskMaintenanceThreshold/kDiskMaintenanceCostMult
     // (game_rig_shop.h), read by Game::maybeAutoDefrag.
-    int diskMaintenanceLevel() const { return rigLevel_[kRigRowDiskMaintenance]; }
+    int diskMaintenanceLevel() const override { return rigLevel_[kRigRowDiskMaintenance]; }
 
     // --- SERVICES: the owned rows that run on their own, and their switches ---------
     // A SERVICE is a row that acts between events without being asked (the two backup
@@ -323,22 +324,20 @@ public:
     // the whole answer.
     // An ASK-able service (RigUpgradeDef::askable) set to ASK counts as live here — it
     // is running, it just hands the decision back; rigServiceMode says which.
-    bool rigFeatureActive(int row) const {
+    bool rigFeatureActive(int row) const override {
         if (row < 0 || row >= kRigUpgradeCount || rigLevel_[row] <= 0) return false;
         if (!kRigUpgrades[row].service) return true;
         return (rigServicesOff_ & (1u << row)) == 0;
     }
-    // Where an owned service's switch sits. A two-way service is only ever On or Off;
-    // an askable one can also be Ask. Not owned reads Off.
-    enum class ServiceMode : uint8_t { On, Ask, Off };
+    using ServiceMode = mal::ServiceMode;   // game_rig_shop.h
     // The word the SERVICES board prints for a row's switch: ON/OFF for a two-way
     // service, YES/ASK/NO for an askable one, whose question is "use them for me?".
-    const char* rigServiceWord(int row) const {
+    const char* rigServiceWord(int row) const override {
         const ServiceMode m = rigServiceMode(row);
         if (!kRigUpgrades[row].askable) return m == ServiceMode::Off ? "OFF" : "ON";
         return m == ServiceMode::On ? "YES" : m == ServiceMode::Ask ? "ASK" : "NO";
     }
-    ServiceMode rigServiceMode(int row) const {
+    ServiceMode rigServiceMode(int row) const override {
         if (!rigFeatureActive(row)) return ServiceMode::Off;
         if (kRigUpgrades[row].askable && (rigServicesAsk_ & (1u << row)) != 0)
             return ServiceMode::Ask;
@@ -346,7 +345,7 @@ public:
     }
     // The owned services in table order — what the SERVICES screen lists. Returns how
     // many were written.
-    int rigServiceRows(int* out, int max) const {
+    int rigServiceRows(int* out, int max) const override {
         int n = 0;
         for (int i = 0; i < kRigUpgradeCount && n < max; ++i)
             if (rigServiceOwned(i)) out[n++] = i;
@@ -354,14 +353,14 @@ public:
     }
     // Does the SHOP list carry its SERVICES head slot? Only once there is a service to
     // switch — a storefront shouldn't advertise a door onto an empty room.
-    bool rigServicesOffered() const {
+    bool rigServicesOffered() const override {
         for (int i = 0; i < kRigUpgradeCount; ++i)
             if (rigServiceOwned(i)) return true;
         return false;
     }
     // How many owned services are running, of how many owned — the SHOP head slot's
     // readout ("2/3 ON").
-    int rigServicesRunning() const {
+    int rigServicesRunning() const override {
         int n = 0;
         for (int i = 0; i < kRigUpgradeCount; ++i)
             if (rigServiceOwned(i) && rigFeatureActive(i)) ++n;
@@ -370,18 +369,18 @@ public:
     // Flip one owned service — or, on an askable one, step it YES -> ASK -> NO -> YES.
     // A row that isn't an owned service has no switch to throw, so this is inert on it
     // rather than storing a bit nothing reads.
-    void toggleRigService(int row);
+    void toggleRigService(int row) override;
     // The SHOP is three screens behind one slot, the shape CREW's views take: the
     // storefront list, the SERVICES switchboard the head slot opens, and one service's
     // info page — what it does and what a run of it costs — which a HELD B opens from
     // the board, since a switch thrown months after the purchase is the one a player
     // no longer remembers the terms of.
-    enum class ShopView : uint8_t { Rows, Services, ServiceInfo };
-    ShopView shopView() const { return shopView_; }
+    using ShopView = mal::ShopView;
+    ShopView shopView() const { return rigShop_.view(); }
     // The SHOP list's cursor: a RigRow, or kRigSlotServices on the head slot. A slot,
     // not a row POSITION — the two differ by every row the list is filtering out.
-    int shopSlot() const { return hackerShopRow_; }
-    int rigServiceRow() const { return rigServiceRow_; }   // cursor within SERVICES
+    int shopSlot() const { return rigShop_.slot(); }
+    int rigServiceRow() const { return rigShop_.serviceRow(); }   // cursor within SERVICES
     // Mod Storage tier -> how many spare copies of ONE mod the pool will hold
     // (modCopyCap, tunables). Every grant runs through it, so a player who wants a
     // bench of a favourite mod buys the room for it rather than accumulating copies
@@ -390,11 +389,12 @@ public:
     // Is `row` on sale right now — anything left to buy on it? The single answer the
     // SHOP's A-cycle, its render loop and buyRigUpgrade all defer to, so the list can't
     // show a row the cursor skips.
-    bool shopRowOffered(int row) const;
+    bool shopRowOffered(int row) const override;
     // Price of the NEXT purchase at a Rig Shop row (game_rig_shop.h) — every row
     // resolves its own cost from its own costStart/curve/costStep, so this is the one
     // place that math happens; every named *Cost() below is a thin wrapper over it.
-    int rigUpgradeCostFor(int row) const {
+    int rigLevel(int row) const override { return rigLevel_[row]; }
+    int rigUpgradeCostFor(int row) const override {
         const RigUpgradeDef& d = kRigUpgrades[row];
         return rigUpgradeCost(d.costStart, rigLevel_[row], d.curve, d.costStep);
     }
@@ -1539,7 +1539,7 @@ public:
     int cacheYieldItemCount() const { return cacheYieldItemCount_; }
     int cacheYieldBits() const { return cacheYieldBits_; }
     // Bits cost of a Defrag at the pet's current stage (0 on the egg).
-    int defragCost() const {
+    int defragCost() const override {
         // An egg has nothing to defragment, so it is never charged for one.
         if (!pet_ || pet_->stage == Stage::BootSector) return 0;
         return rigUpgradeCost(kDefragCostStart, defragCount_, RigCostCurve::kLogStep);
@@ -2499,6 +2499,10 @@ public:
     int backgroundBracketsTaken() const { return tourneyWins_; }
 
 private:
+    // RigShopHost: the SHOP screen's way back into the game (game_rigshop.cpp).
+    void leaveToCarousel() override;
+    void armHoldB() override;
+    void markDirty() override;
     // Rendering.
     void drawHabitat(Framebuffer& fb, int cursor) const;
     // Say that a background has just been come into. The three moments that can grant
@@ -3066,36 +3070,15 @@ private:
     bool hackerSlotAccessible(int slot) const;     // false = inaccessible (B inert)
     void enterHackerSubmenu();                      // Cursor B → the focused hacker slot's L2
     void onHackerSubmenu(const ButtonEvent& ev);   // L2 dispatch (PROFILE viewer / SHOP / VAULT)
-    void onHackerShop(const ButtonEvent& ev);      // SHOP list: A cycle · B buy · C back
-    // SHOP > SERVICES: A cycles the owned services, C returns to the storefront list,
-    // and B is a tap/hold pair — a tap flips the focused service (resolved on the
-    // RELEASE edge, rigServiceReleaseB), a hold past kServiceInfoHoldMs opens its info
-    // page instead (tick()). Reached from the list's head slot (kRigSlotServices).
-    void onRigServices(const ButtonEvent& ev);
-    // SHOP > SERVICES > info: A pages the prose when it overflows, B and C both go back
-    // to the board. A reader, not a list — nothing here is selected.
-    void onRigServiceInfo(const ButtonEvent& ev);
     // B's TAP on the SERVICES board, resolved on the release edge: flip the focused
-    // service. No-op unless bHeld_ is still armed (the hold already opened the info
-    // page and cleared it) and the board is still what's on screen.
+    // service. No-op unless the SHOP is what's on screen (RigShopScreen::releaseB).
     void rigServiceReleaseB();
-    // The info page's readout: the row's own rigSpec, plus the live per-run price only
-    // the game can state. Shared by the renderer and by A's paging, which has to know
-    // how tall the readout is to know how much room the description has left.
-    SpecRows rigServiceSpec(int row) const;
-    int rigServiceProseLines(int row) const;   // description lines that fit under it
-    // Open the focused service's info page (the hold half of that gesture).
-    void openRigServiceInfo();
-    // Step the SHOP list's cursor `dir` slots, wrapping over the head SERVICES slot and
-    // every offered row. The one walk the A-cycle, the hold-repeat and the post-buy
-    // re-aim all share, so no two of them can disagree about what is on the list.
-    int nextShopSlot(int cur, int dir) const;
     void onHackerVault(const ButtonEvent& ev);     // VAULT list: A cycle · B decrypt · C back
     // Generic Rig Shop buy: looks up `row`'s RigUpgradeDef (game_rig_shop.h), checks
     // offered/afford, deducts Bits, bumps rigLevel_[row], applies the row's
     // RigEffectKind (only Bandwidth has one — the live-pool grant), logs, persists. One
     // function for every row — adding a row is a table entry, not a new buyX().
-    void buyRigUpgrade(int row);
+    void buyRigUpgrade(int row) override;
     // The OWNING half of that, with no till in it: bump the row `levels` times, apply
     // its RigEffectKind each time, log and persist. Split out because a rig level can
     // now also be WON (a solved Decryptogram's prize, game_cryptogram.cpp) — a granted
@@ -3155,11 +3138,6 @@ private:
     void drawHackerSubmenu(Framebuffer& fb) const;  // L2 dispatch, one case per HackerSlotId
     void drawHackerVault(Framebuffer& fb) const;
     void drawHackerProfile(Framebuffer& fb) const;
-    // The SHOP slot (game_rigshop.cpp): drawRigShop picks the view shopView_ names.
-    void drawRigShop(Framebuffer& fb) const;
-    void drawRigShopRows(Framebuffer& fb) const;
-    void drawRigServices(Framebuffer& fb) const;
-    void drawRigServiceInfo(Framebuffer& fb) const;
     // VAULT's owned-openable row list (shared by input + render + the bulk-open
     // trigger), capped at `max`. Returns the count written into `rows`.
     int vaultOwnedRows(const ItemDef** rows, int max) const;
@@ -4439,13 +4417,9 @@ private:
     // Hacker face (07). face_ is the top-level PET/HACKER mode (transient — a
     // reboot always boots PET; not persisted). It gates the carousel + submenu dispatch
     // and the render path. cursor_/nav_ are SHARED with the pet face (a flip drops to
-    // Idle), so the hacker carousel reuses the same cursor cycling. hackerShopRow_ is the
-    // SHOP list cursor.
+    // Idle), so the hacker carousel reuses the same cursor cycling.
     Face face_ = Face::Pet;
-    int hackerShopRow_ = 0;   // SHOP list cursor: a RigRow, or kRigSlotServices
-    ShopView shopView_ = ShopView::Rows;   // which of the SHOP's three screens is up
-    int rigServiceRow_ = 0;                // cursor within the SERVICES list
-    int rigServiceScroll_ = 0;             // first prose line the info page draws
+    RigShopScreen rigShop_;   // the SHOP slot's views and cursors (game/rig_shop_screen.h)
     int hackerVaultRow_ = 0;  // VAULT list cursor — owned sealed-cache row
     int hackerMergeRow_ = 0;  // MERGE HUB list cursor — recipe row
     // CREW screen state. The screen is four views and `crewView_` IS the navigation:

@@ -51,7 +51,7 @@ void Game::toggleFace() {
         for (int i = 0; i < kCarouselSlots; ++i)
             if (slots[i].accessible) { cursor_ = i; break; }
     }
-    hackerShopRow_ = 0;
+    rigShop_.enter();
     listRow_ = 0;
     detailItem_ = nullptr;
     dirty_ = true;
@@ -83,10 +83,7 @@ void Game::enterHackerSubmenu() {
     // B on an inaccessible slot is inert (the slot exists but isn't usable yet).
     if (!hackerSlotAccessible(cursor_)) return;
     nav_ = Nav::Submenu;
-    hackerShopRow_ = 0;      // the first PURCHASABLE row; SERVICES sits above it
-    shopView_ = ShopView::Rows;
-    rigServiceRow_ = 0;
-    rigServiceScroll_ = 0;
+    rigShop_.enter();
     hackerVaultRow_ = 0;
     hackerMergeRow_ = 0;
     crewView_ = CrewView::Hub;   // every entry opens at the top of the CREW screen
@@ -105,7 +102,7 @@ void Game::onHackerSubmenu(const ButtonEvent& ev) {
             onHackerCrew(ev);
             break;
         case HackerSlotId::Shop:
-            onHackerShop(ev);
+            rigShop_.onButton(*this, ev);
             break;
         case HackerSlotId::Vault:
             onHackerVault(ev);
@@ -327,7 +324,7 @@ void Game::drawHackerSubmenu(Framebuffer& fb) const {
     switch (enteredHackerId()) {
         // Each slot's screen lives in its own unit and draws its own header band, since
         // only the screen knows its title, tint and position note.
-        case HackerSlotId::Shop: drawRigShop(fb); break;          // game_rigshop.cpp
+        case HackerSlotId::Shop: rigShop_.draw(fb, *this, beat_); break;   // rig_shop_screen.cpp
         case HackerSlotId::Vault: drawHackerVault(fb); break;
         case HackerSlotId::Crew: drawHackerCrew(fb); break;       // game_crew.cpp
         case HackerSlotId::Peers: drawHackerPeers(fb); break;     // game_peers.cpp

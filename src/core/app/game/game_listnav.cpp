@@ -56,9 +56,9 @@ Game::ListFocus Game::listFocus() const {
                 // storefront list, and the SERVICES switchboard its head slot opens.
                 // The info page is a READER — nothing on it is selected, so it takes
                 // no row contract and C stays the instant tap-to-back it is elsewhere.
-                if (shopView_ == ShopView::ServiceInfo) return ListFocus::None;
-                return shopView_ == ShopView::Services ? ListFocus::HackerServices
-                                                       : ListFocus::HackerShop;
+                if (rigShop_.view() == ShopView::ServiceInfo) return ListFocus::None;
+                return rigShop_.view() == ShopView::Services ? ListFocus::HackerServices
+                                                             : ListFocus::HackerShop;
             case HackerSlotId::Vault: return ListFocus::HackerVault;
             case HackerSlotId::Peers: return ListFocus::HackerPeers;
             case HackerSlotId::Crew:
@@ -234,14 +234,11 @@ void Game::stepFocusedList(int dir) {
         case ListFocus::HackerShop:
             // Not stepWrapping: the SHOP's cursor space carries a head slot that is not
             // a row, so the walk over it lives with the list that owns it.
-            hackerShopRow_ = nextShopSlot(hackerShopRow_, dir);
+            rigShop_.stepSlot(*this, dir);
             break;
-        case ListFocus::HackerServices: {
-            int rows[kRigUpgradeCount];
-            const int n = rigServiceRows(rows, kRigUpgradeCount);
-            if (n > 0) rigServiceRow_ = ((rigServiceRow_ + dir) % n + n) % n;
+        case ListFocus::HackerServices:
+            rigShop_.stepService(*this, dir);
             break;
-        }
         case ListFocus::HackerVault: {
             const ItemDef* rows[16];
             const int n = vaultOwnedRows(rows, 16);
@@ -353,7 +350,7 @@ void Game::leaveFocusedList() {
         case ListFocus::Maint: onMaintList(back); break;
         case ListFocus::Arcade: onArcadeList(back); break;
         case ListFocus::HackerShop:
-        case ListFocus::HackerServices: onHackerShop(back); break;
+        case ListFocus::HackerServices: rigShop_.onButton(*this, back); break;
         case ListFocus::HackerVault: onHackerVault(back); break;
         case ListFocus::HackerPeers: onHackerPeers(back); break;
         case ListFocus::CrewHub:
