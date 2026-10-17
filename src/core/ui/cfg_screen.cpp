@@ -33,7 +33,7 @@ void infoLine(Framebuffer& fb, int y, const char* key, const char* val,
               Rgb565 valColor) {
     constexpr int kValX = kMargin + 48;
     drawText(fb, kMargin, y, key, palColor(Pal::INK_DIM));
-    drawTextMarquee(fb, kValX, y, kActiveW - kMargin - kValX, val, valColor, 0, false);
+    drawTextMarquee(fb, kValX, y, kActiveW - kMargin - kValX, val, valColor, 0, Overflow::Clip);
 }
 
 // One settings row — icon, label, and an optional right-aligned value preview.
@@ -367,7 +367,7 @@ void drawBackgrounds(Framebuffer& fb, int pick, uint32_t ownedMask, int equipped
         const char* tag = locked ? "LOCKED" : isOn ? "ACTIVE" : "";
         drawLabelValue(fb, 24, y + 4, name, c, tag,
                        locked ? palColor(Pal::INK_DIM) : palColor(Pal::ACCENT), beat,
-                       isPick);
+                       scrollWhen(isPick));
     }
 
     drawScrollbar(fb, 44, kVisibleRows * 22, rows, scrollTop, kVisibleRows);
@@ -777,7 +777,7 @@ void drawTitles(Framebuffer& fb, int focusSector, uint32_t unlockedMask,
         const char* tag = locked ? "LOCKED" : equipped ? "ACTIVE" : "";
         drawLabelValue(fb, 24, y + 4, name, c, tag,
                        locked ? palColor(Pal::INK_DIM) : palColor(Pal::ACCENT),
-                       beat, focusSector == sector);
+                       beat, scrollWhen(focusSector == sector));
     }
     drawHintBand(fb, "A NEXT  B EQUIP  C BACK");
 }

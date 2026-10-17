@@ -212,7 +212,7 @@ void drawCryptogramBoard(Framebuffer& fb, const Cryptogram& c, const char* attri
     }
     if (line2[0])
         drawTextMarquee(fb, kMargin, kPrizeY2, kActiveW - 2 * kMargin, line2, line2Col,
-                        beat, /*scroll=*/true);
+                        beat, Overflow::Scroll);
 
     drawPool(fb, c, running);
 

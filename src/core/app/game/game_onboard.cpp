@@ -467,7 +467,7 @@ void Game::drawAwayDigest(Framebuffer& fb) const {
                          std::strcmp(r.label, "ERRORS") == 0 ||
                          std::strcmp(r.label, "WENT HUNGRY") == 0;
         drawLabelValue(fb, kMargin, y, r.label, palColor(Pal::INK), r.value,
-                       bad ? palColor(Pal::WARN) : palColor(Pal::INK_DIM), 0, false);
+                       bad ? palColor(Pal::WARN) : palColor(Pal::INK_DIM), 0, Overflow::Clip);
         y += 18;
     }
     drawHintBand(fb, "B OK");

@@ -32,12 +32,12 @@ void drawHeaderBandOver(Framebuffer& fb, const char* title, const char* right,
 }
 
 void drawTextMarquee(Framebuffer& fb, int x, int y, int w, const char* s,
-                     Rgb565 color, int beat, bool scroll, FontFace face) {
+                     Rgb565 color, int beat, Overflow mode, FontFace face) {
     const int overflow = textWidth(s) - w;
     if (overflow <= 0) { drawText(fb, x, y, s, color, 1, face); return; }
 
     int offset = 0;
-    if (scroll) {
+    if (mode == Overflow::Scroll) {
         // Beats, not milliseconds: this rides the same heartbeat as the pet's
         // wander and the carousel's spin, so the whole screen moves on one clock.
         // The two rates are in widgets.h, because a caller that must hold a line on
@@ -61,15 +61,22 @@ int marqueeCycleBeats(const char* s, int w) {
     return 2 * kMarqueeHoldBeats + travel;
 }
 
-void drawLabelValue(Framebuffer& fb, int x, int y, const char* label, Rgb565 labelCol,
-                    const char* value, Rgb565 valueCol, int beat, bool scroll) {
-    int room = kActiveW - kMargin - x;
+void drawLabelValueIn(Framebuffer& fb, int x, int y, int right, const char* label,
+                      Rgb565 labelCol, const char* value, Rgb565 valueCol, int beat,
+                      Overflow overflow, FontFace face) {
+    int room = right - x;
     if (value && value[0]) {
-        const int vx = kActiveW - kMargin - textWidth(value);
+        const int vx = right - textWidth(value);
         drawText(fb, vx, y, value, valueCol);
         room = vx - kMargin - x;          // a margin's gap between the two
     }
-    if (room > 0) drawTextMarquee(fb, x, y, room, label, labelCol, beat, scroll);
+    if (room > 0) drawTextMarquee(fb, x, y, room, label, labelCol, beat, overflow, face);
+}
+
+void drawLabelValue(Framebuffer& fb, int x, int y, const char* label, Rgb565 labelCol,
+                    const char* value, Rgb565 valueCol, int beat, Overflow overflow) {
+    drawLabelValueIn(fb, x, y, kActiveW - kMargin, label, labelCol, value, valueCol, beat,
+                     overflow);
 }
 
 namespace {

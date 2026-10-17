@@ -421,7 +421,7 @@ void drawItemsList(Framebuffer& fb, const std::vector<InvRow>& rows, int cursor,
         // Only the focused row travels — a list of names all sliding at once is
         // unreadable, and the cursor already says which one the player is asking about.
         drawTextMarquee(fb, 40, textY, std::max(0, nameEnd - 40), r.label,
-                        palColor(Pal::INK), beat, i == cursor);
+                        palColor(Pal::INK), beat, scrollWhen(i == cursor));
     }
 
     drawScrollbar(fb, kRowTop, kVisibleRows * kRowH, n, scrollTop, kVisibleRows);
@@ -443,7 +443,7 @@ void drawItemDetail(Framebuffer& fb, const ItemDef& def, const SpriteData* icon,
     // Rarity tag (the font has no brackets — colour + word carry it). It owns the
     // right end; the name yields and scrolls, since the tier is the shorter fact.
     drawLabelValue(fb, nameX, 36, def.displayName, palColor(Pal::INK),
-                   rarityName(def.rarity), rarityColor(def.rarity), beat, true);
+                   rarityName(def.rarity), rarityColor(def.rarity), beat, Overflow::Scroll);
 
     // The readout as an aligned grid, then the prose under it (spec_sheet.h): the grid
     // reports every magnitude the row hands the engine whether or not the prose
@@ -539,7 +539,7 @@ void drawCacheYield(Framebuffer& fb, const ItemDef& cache, int bits,
                            items[i] ? rarityName(items[i]->rarity) : nullptr,
                            items[i] ? rarityColor(items[i]->rarity)
                                     : palColor(Pal::INK_DIM),
-                           /*beat=*/0, /*scroll=*/false);
+                           /*beat=*/0, Overflow::Clip);
             y += 24;
         }
     }
@@ -583,7 +583,7 @@ void drawBulkYield(Framebuffer& fb, const ItemDef& cache, int cachesOpened, int 
             char cnt[8];
             std::snprintf(cnt, sizeof(cnt), "x%d", r.count);
             drawLabelValue(fb, 46, y, r.def ? r.def->displayName : "?",
-                           palColor(Pal::INK), cnt, palColor(Pal::INK), beat, i == cur);
+                           palColor(Pal::INK), cnt, palColor(Pal::INK), beat, scrollWhen(i == cur));
         }
         drawScrollbar(fb, rowTop, kBulkVisibleRows * rowH, count, scrollTop, kBulkVisibleRows);
     }

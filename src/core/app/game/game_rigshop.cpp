@@ -317,7 +317,7 @@ void Game::drawRigServices(Framebuffer& fb) const {
                        cur ? palColor(Pal::INK) : palColor(Pal::INK_DIM),
                        rigServiceWord(row),
                        on ? palColor(Pal::ACCENT) : palColor(Pal::INK_DIM),
-                       beat_, true);
+                       beat_, Overflow::Scroll);
     }
     drawScrollbar(fb, kHackerListTop, kHackerListRows * kHackerListRowH, n, scrollTop,
                   kHackerListRows);
@@ -386,7 +386,7 @@ void Game::drawRigShopRows(Framebuffer& fb) const {
             std::snprintf(svc, sizeof(svc), "%d/%d ON", rigServicesRunning(), svcN);
             drawLabelValue(fb, kMargin, rowY, "SERVICES",
                            sel ? palColor(Pal::INK) : palColor(Pal::INK_DIM), svc,
-                           palColor(Pal::INK), beat_, true);
+                           palColor(Pal::INK), beat_, Overflow::Scroll);
             SpecBuilder head;
             head.flag("SWITCH AUTOMATION");
             drawSpecGrid(fb, kMargin, rowY + kFontH + 5, kActiveW - 2 * kMargin,
@@ -414,7 +414,7 @@ void Game::drawRigShopRows(Framebuffer& fb) const {
         drawLabelValue(fb, kMargin, rowY, def.displayName,
                        sel ? palColor(Pal::INK) : palColor(Pal::INK_DIM), rhs,
                        afford ? palColor(Pal::INK) : palColor(Pal::INK_DIM),
-                       beat_, true);
+                       beat_, Overflow::Scroll);
 
         const SpecRows spec = rigSpec(def, level);
         drawSpecGrid(fb, kMargin, rowY + kFontH + 5, kActiveW - 2 * kMargin,

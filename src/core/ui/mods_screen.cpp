@@ -135,7 +135,7 @@ void drawLoadoutHub(Framebuffer& fb, const Loadout& load, const MoveLoadout& mov
         const int statusX = kActiveW - kMargin - textWidth(status[i]);
         drawText(fb, statusX, textY, status[i], palColor(Pal::INK_DIM));
         drawTextMarquee(fb, 40, textY, statusX - kMargin - 40, labels[i],
-                        palColor(Pal::INK), beat, i == cursor);
+                        palColor(Pal::INK), beat, scrollWhen(i == cursor));
     }
 }
 
@@ -160,7 +160,7 @@ void drawModsList(Framebuffer& fb, const ContentRegistry& reg,
             drawLabelValue(fb, 40, y + (kRowH - kFontH) / 2,
                            m ? m->displayName : id, palColor(Pal::INK),
                            m ? m->effectTag : nullptr, palColor(Pal::ACCENT), beat,
-                           i == cursor);
+                           scrollWhen(i == cursor));
         } else {
             drawSprite(fb, ASSET_ICON_MODS_SLOT_EMPTY, 0, 16,
                        y + (kRowH - kRowIcon) / 2);
@@ -244,7 +244,7 @@ void drawModPicker(Framebuffer& fb, const ContentRegistry& reg,
         }
         drawLabelValue(fb, 22, y + 4, name,
                        locked ? palColor(Pal::INK_DIM) : palColor(Pal::INK),
-                       tag, tagCol, beat, i == pick);
+                       tag, tagCol, beat, scrollWhen(i == pick));
     }
     drawScrollbar(fb, kRowTop, kModPickerMaxRows * rowH, rows, scrollTop, kModPickerMaxRows);
 
@@ -334,7 +334,7 @@ void drawModDetail(Framebuffer& fb, const ContentRegistry& reg, const Loadout& l
     if (icon) drawSprite(fb, *icon, 0, kMargin, 30);
     const int nameX = icon ? kMargin + kRowIcon + 6 : kMargin;
     drawLabelValue(fb, nameX, 36, mod.displayName, palColor(Pal::INK), mod.effectTag,
-                   palColor(Pal::ACCENT), beat, true);
+                   palColor(Pal::ACCENT), beat, Overflow::Scroll);
 
     // The readout as an aligned grid, then the prose under it (spec_sheet.h): every
     // magnitude the row hands combat is reserved room and drawn, and the prose takes

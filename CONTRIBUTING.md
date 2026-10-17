@@ -63,9 +63,10 @@ short of them, fix it or add a row to the board.
 - **Share what is the same, and explain what differs.** When two sites draw or compute the
   same thing, they call one function. When one site must differ, its comment says why. A
   comment reading "same as X" means the two are kept equal by hand.
-- **Few arguments, and no flags.** A draw function with more than four inputs takes a view
-  struct (`ExplListView`, `StoryPageView`). A `bool` parameter becomes a named field or an
-  enum, so the call site says what it asks for.
+- **Few arguments, and no flags.** A screen's draw function takes the framebuffer and, once it
+  needs more than four other inputs, one view struct (`CombatView`, `StoryPageView`). A widget
+  primitive takes its geometry and colours as plain arguments. Neither takes a `bool`: use an
+  enum the call site names (`Overflow::Scroll`), or a named field in the view struct.
 - **Small functions.** A long `switch` over a vocabulary is fine. Any other function that
   needs a scroll to read is several steps, and each step gets a name.
 - **Name a number once, where its reader is.** This is the `tunables.h` rule applied to

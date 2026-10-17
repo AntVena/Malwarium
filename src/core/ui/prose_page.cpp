@@ -100,7 +100,7 @@ void drawProseRows(Framebuffer& fb, const std::vector<ProseRow>& rows, int scrol
             const int hy = y + headerLead(top + v, top);
             if (r.tag[0])
                 drawLabelValue(fb, kMargin, hy, r.label, palColor(Pal::INK_DIM), r.tag,
-                               palColor(Pal::INK_DIM), beat, /*scroll=*/false);
+                               palColor(Pal::INK_DIM), beat, Overflow::Clip);
             else
                 drawText(fb, kMargin, hy, r.label, palColor(Pal::INK_DIM));
         } else {
@@ -108,7 +108,7 @@ void drawProseRows(Framebuffer& fb, const std::vector<ProseRow>& rows, int scrol
             // instead of running underneath it — the failure two independent drawText
             // calls produce every time the copy grows.
             drawLabelValue(fb, kMargin, y, r.label, palColor(Pal::INK), r.tag,
-                           palColor(Pal::INK_DIM), beat, /*scroll=*/false);
+                           palColor(Pal::INK_DIM), beat, Overflow::Clip);
             if (!r.body.empty())
                 drawTextWrapped(fb, kMargin, y + kFontH + kProseNameGap, kProseW,
                                 r.body.c_str(), palColor(Pal::INK_DIM), kProseLineH,

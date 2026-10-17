@@ -159,7 +159,7 @@ void drawFoodsScreen(Framebuffer& fb, const ContentRegistry& reg,
             // Dim, like every other section heading on the status pages: a fence, not a
             // row — and its tally is the reason a reader stops here at all.
             drawLabelValue(fb, kMargin, hy, r.section, palColor(Pal::INK_DIM), tag,
-                           palColor(Pal::INK_DIM), beat, /*scroll=*/false);
+                           palColor(Pal::INK_DIM), beat, Overflow::Clip);
         } else {
             for (int c = 0; c < r.count; ++c) {
                 const SpriteData* icon = foodIcon(reg, r.cells[c]->id);

@@ -318,10 +318,10 @@ void drawArchRecord(Framebuffer& fb, const CreatureDef* pet, bool isActive,
     if (isActive) {
         drawLabelValue(fb, kMargin + 12, primY, "STORE", palColor(Pal::INK),
                        rackFull ? "RACK FULL" : "SET ASIDE", palColor(Pal::INK_DIM),
-                       0, false);
+                       0, Overflow::Clip);
     } else {
         drawLabelValue(fb, kMargin + 12, primY, "DEPLOY", palColor(Pal::INK),
-                       "MAKE ACTIVE", palColor(Pal::INK_DIM), 0, false);
+                       "MAKE ACTIVE", palColor(Pal::INK_DIM), 0, Overflow::Clip);
     }
 
     // Release: stored pets only — a no-reward drop that frees a rack slot.
@@ -329,7 +329,7 @@ void drawArchRecord(Framebuffer& fb, const CreatureDef* pet, bool isActive,
         if (action == ArchAction::Release)
             drawRowCursor(fb, kMargin, releaseY, palColor(Pal::ACCENT));
         drawLabelValue(fb, kMargin + 12, releaseY, "RELEASE", palColor(Pal::INK),
-                       "NO REWARD", palColor(Pal::INK_DIM), 0, false);
+                       "NO REWARD", palColor(Pal::INK_DIM), 0, Overflow::Clip);
     }
 
     // Inline confirm: a light prompt with Cancel/Confirm (default Cancel).
@@ -395,7 +395,7 @@ void drawArchSale(Framebuffer& fb, const ArchSaleSheet& sheet) {
         if (i == f) drawRowCursor(fb, kMargin, y, palColor(Pal::ACCENT));
         drawLabelValue(fb, kMargin + 12, y, kLabel[i],
                        palColor(o.available ? Pal::INK : Pal::INK_DIM), o.value,
-                       palColor(Pal::INK_DIM), 0, false);
+                       palColor(Pal::INK_DIM), 0, Overflow::Clip);
     }
 
     if (sheet.confirmOpen) {

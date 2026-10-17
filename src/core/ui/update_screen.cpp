@@ -144,7 +144,7 @@ void drawUpdateCheck(Framebuffer& fb, bool ready, bool provisioned,
         const int w = textWidth(host) < hostRoom ? textWidth(host) : hostRoom;
         drawTextMarquee(fb, kActiveW - kMargin - w, 40, w, host,
                         sourceKnown ? palColor(Pal::INK) : palColor(Pal::INK_DIM), 0,
-                        false);
+                        Overflow::Clip);
     }
 
     // Row 0 is always the check, the last is always the flasher, and between them

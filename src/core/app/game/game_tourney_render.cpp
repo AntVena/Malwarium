@@ -206,7 +206,7 @@ void Game::drawTourneyFoot(Framebuffer& fb) const {
         if (!line[i][0]) continue;
         drawTextMarquee(fb, kMargin, top + i * kDockCardLineH, w, line[i],
                         palColor(i == 0 ? Pal::INK : Pal::INK_DIM), beat_,
-                        /*scroll=*/true);
+                        Overflow::Scroll);
     }
 }
 
@@ -238,7 +238,7 @@ void Game::drawTourneyScout(Framebuffer& fb) const {
     const int w = dockCardW(s, mirror);
     const int top = s ? kDockCardTop : kDockTextCardTop;
     drawTextMarquee(fb, kMargin, kDockSubY, w, c ? c->displayName : "UNKNOWN",
-                    palColor(Pal::INK), beat_, /*scroll=*/true);
+                    palColor(Pal::INK), beat_, Overflow::Scroll);
     char lvl[16];
     std::snprintf(lvl, sizeof(lvl), "LEVEL %d",
                   static_cast<int>(tourneyScouted_.spec.level));
@@ -248,7 +248,7 @@ void Game::drawTourneyScout(Framebuffer& fb) const {
                         : self                          ? "THIS IS YOURS"
                                                         : "STILL IN";
     drawTextMarquee(fb, kMargin, kDockSubY + 2 * kLineH, w, state,
-                    palColor(Pal::INK_DIM), beat_, /*scroll=*/true);
+                    palColor(Pal::INK_DIM), beat_, Overflow::Scroll);
     fb.fillRect(0, kDockScoutTop - 6, kActiveW, 1, palColor(Pal::TRACK));
     drawProseRows(fb, tourneyScoutRows(), tourneyScroll_, kDockScoutTop, beat_,
                   "B MORE   C BACK");

@@ -175,13 +175,19 @@ Each slice deletes the `debug*` hooks its tests no longer need. |
 XL overall, M per slice | Verify each slice with the native suite and a `tools/screens.sh`
 render diffed byte-for-byte against one taken before it. |
 
-**Draw functions take long argument lists and flag arguments.** `drawCombat` takes 18
-parameters, at least 15 other `draw*` functions take 7 or more, and `core/ui` headers carry
-14 `bool` parameters. Three screens already take one view struct instead (`ExplListView`,
-`ShopRowView`, `StoryPageView`). Convert the rest to that shape, worst first, and replace
-each `bool` with a field or an enum the call site names. | `core/ui/*_screen.h`;
-`widgets.h`'s `drawTextMarquee`, `drawLabelValue`, `drawProgressBar`. | M | Pixel-identical
-by construction; the screen diff proves it. |
+**Screen draw functions take long argument lists and flag arguments.** `drawCombat` takes a
+`CombatView`, and `drawTextMarquee`/`drawLabelValue` take an `Overflow`; the rest still take
+positional lists. Worst first: `drawMovePicker` and `drawSysInfo` (13), `drawLockoutModal` (12,
+four `bool`s), `drawStatScreen`, `drawModPicker` and `drawModDetail` (11), `drawGauge` (11, two
+`bool`s), then the twenty-odd screens at 7 to 10. Convert each screen to a view struct and each
+widget `bool` to an enum, per CONTRIBUTING's *Structure*. List the rest with the scan in
+MAINTENANCE's self-architecture entry. | `core/ui/*_screen.h`, `widgets.h` | M | Pixel-identical
+by construction; diff `tools/screens.sh` before and after. |
+
+**`drawCombat`'s body is 763 lines.** It draws the header, both gauges, the stage, the panel
+pages and the outro in one function. Split it into one named function per region, called in
+the current order; each reads the same `CombatView`. | `combat_screen.cpp` | M | The camo and
+PvP pixel tests and the combat frames in `tools/screens.sh` cover it. |
 
 **`captureSave` is 332 lines.** It is the mirror of `applySave`, which is already one
 named function per save section (`restoreOperator` through `restoreBackgroundAndCant`). Split

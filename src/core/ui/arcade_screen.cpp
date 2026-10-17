@@ -57,7 +57,7 @@ void drawArcadeList(Framebuffer& fb, const ContentRegistry& reg, const int* play
         const int tallyX = kActiveW - kMargin - textWidth(tally);
         drawText(fb, tallyX, textY, tally, palColor(Pal::INK_DIM));
         drawTextMarquee(fb, 40, textY, tallyX - kMargin - 40, d.displayName,
-                        palColor(Pal::INK), beat, i == cursor);
+                        palColor(Pal::INK), beat, scrollWhen(i == cursor));
     }
 }
 

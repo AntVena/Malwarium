@@ -45,10 +45,16 @@ void drawHeaderBandOver(Framebuffer& fb, const char* title,
                         Rgb565 rightColor = palColor(Pal::INK_DIM),
                         Rgb565 titleColor = palColor(Pal::INK));
 
+// What a line does when it is wider than its column. Only the FOCUSED row of a list
+// scrolls; every other row clips. scrollWhen(focused) states that choice at a call site
+// that computes it.
+enum class Overflow : uint8_t { Scroll, Clip };
+constexpr Overflow scrollWhen(bool focused) { return focused ? Overflow::Scroll : Overflow::Clip; }
+
 // Text in a column narrower than it needs. Draws `s` at (x,y) clipped to `w`; if
 // it fits, this is exactly drawText and costs nothing extra.
 //
-// When it doesn't fit and `scroll` is set, the line travels: it holds at the head
+// When it doesn't fit and `mode` is Scroll, the line travels: it holds at the head
 // long enough to read, walks to the tail, holds again, and snaps back — driven by
 // `beat`, so it advances on the ~4fps heartbeat like every other motion on the
 // device rather than on a timer of its own.
@@ -63,7 +69,7 @@ void drawHeaderBandOver(Framebuffer& fb, const char* title,
 // thing too long for it — a title-weight label that overflows still has to travel, and
 // dropping to Regular to get that is a weight change nobody asked for.
 void drawTextMarquee(Framebuffer& fb, int x, int y, int w, const char* s,
-                     Rgb565 color, int beat, bool scroll,
+                     Rgb565 color, int beat, Overflow mode,
                      FontFace face = FontFace::Regular);
 
 // The marquee's own clock, in heartbeats. Public because anything that has to stay on
@@ -80,14 +86,19 @@ constexpr int kMarqueePxPerBeat = 2;    // ~8px/s, about a character a second
 int marqueeCycleBeats(const char* s, int w);
 
 // A one-line label/value pair: `value` right-aligned against the right margin, `label`
-// running from `x` and yielding to it — scrolling when `scroll`, clipped otherwise.
+// running from `x` and yielding to it, scrolling or clipping as `overflow` says.
 //
 // Nearly every readout and list row on the device is this shape, and drawn as two
 // independent drawText calls it fails the same way every time: the label grows, the
 // two overlap, and the row still "renders". Going through here makes the gap a
 // property of the pair instead of an assumption about the copy.
 void drawLabelValue(Framebuffer& fb, int x, int y, const char* label, Rgb565 labelCol,
-                    const char* value, Rgb565 valueCol, int beat, bool scroll);
+                    const char* value, Rgb565 valueCol, int beat, Overflow overflow);
+// The same pair against a right edge the caller passes, for a row inside a panel whose
+// content stops short of the canvas margin (the CREW allegiance card).
+void drawLabelValueIn(Framebuffer& fb, int x, int y, int right, const char* label,
+                      Rgb565 labelCol, const char* value, Rgb565 valueCol, int beat,
+                      Overflow overflow, FontFace face = FontFace::Regular);
 
 // --- The fragmentation dither -----------------------------------------------
 //

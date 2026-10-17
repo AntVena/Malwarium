@@ -402,13 +402,13 @@ void Game::drawHackerProfile(Framebuffer& fb) const {
     const CrewDef* c = activeCrew();
     drawTextMarquee(fb, kMargin, 44, kActiveW - 2 * kMargin,
                     c ? c->displayName : "NO CREW",
-                    c ? palColor(Pal::INK) : palColor(Pal::INK_DIM), beat_, true);
+                    c ? palColor(Pal::INK) : palColor(Pal::INK_DIM), beat_, Overflow::Scroll);
     char titleTag[24];
     std::snprintf(titleTag, sizeof(titleTag), "* %s",
                   equippedTitle_ >= 0 ? equippedTitleName() : "NO TITLE");
     drawTextMarquee(fb, kMargin, 58, kActiveW - 2 * kMargin, titleTag,
                     palColor(equippedTitle_ >= 0 ? Pal::ACCENT : Pal::INK_DIM), beat_,
-                    true);
+                    Overflow::Scroll);
     fb.fillRect(0, 68, kActiveW, 1, palColor(Pal::TRACK));
 
     // The operator's own standing, on one 16px row pitch: rank · nets · shakes ·
@@ -423,7 +423,7 @@ void Game::drawHackerProfile(Framebuffer& fb) const {
     // tenth row needs the pitch or the identity block above to give something up first.
     auto statRow = [&](int ry, const char* label, const char* value, Rgb565 vc) {
         drawLabelValue(fb, kMargin, ry, label, palColor(Pal::INK_DIM), value, vc,
-                       beat_, true);
+                       beat_, Overflow::Scroll);
     };
     // "RANK", not "HACKER RANK": the label shares its line with a title of up to 16
     // characters, and the short form is what leaves room for the longest of them. It

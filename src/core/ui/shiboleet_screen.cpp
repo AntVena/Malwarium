@@ -115,7 +115,7 @@ void drawShiboleet(Framebuffer& fb, const char* guardian, const char* demeanour,
     // what it is saying. Clipped rather than wrapped: the gate holds it to one line.
     if (demeanour && demeanour[0])
         drawTextMarquee(fb, kMargin, kDemeanourY, kRiddleBodyW, demeanour,
-                        palColor(Pal::INK_DIM), /*beat=*/0, /*scroll=*/false);
+                        palColor(Pal::INK_DIM), /*beat=*/0, Overflow::Clip);
 
     // What it SAYS, then what it ASKS. Both in the Cant and both in INK, because to the
     // pet they are one utterance — the greeting is not a friendlier register it could
@@ -141,7 +141,7 @@ void drawShiboleet(Framebuffer& fb, const char* guardian, const char* demeanour,
         drawTextMarquee(fb, kMargin + kRiddleReplyIndent, y, kRiddleReplyW,
                         replies && replies[i] ? replies[i] : "",
                         on ? palColor(Pal::ACCENT) : palColor(Pal::INK),
-                        /*beat=*/0, /*scroll=*/false);
+                        /*beat=*/0, Overflow::Clip);
     }
 
     // The patience bar. It empties rather than fills — what is draining is the time the

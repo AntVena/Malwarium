@@ -449,7 +449,7 @@ void drawExplCategories(Framebuffer& fb, const ContentRegistry& reg,
         const char* tagText = open ? "" : "LOCKED";
         const int tagW = tagText[0] ? textWidth(tagText) + kMargin : 0;
         drawTextMarquee(fb, kTextX, titleY, kActiveW - kMargin - tagW - kTextX,
-                        open ? explCatName(c) : "??????", ink, v.beat, focused);
+                        open ? explCatName(c) : "??????", ink, v.beat, scrollWhen(focused));
         if (tagText[0])
             drawText(fb, kActiveW - kMargin - textWidth(tagText), titleY, tagText,
                      palColor(Pal::INK_DIM));
@@ -463,7 +463,7 @@ void drawExplCategories(Framebuffer& fb, const ContentRegistry& reg,
         int dy = y + 18;
         if (focused && dy + 2 * (kFontH + 2) <= y + pitch) {
             drawTextMarquee(fb, kTextX, dy, kActiveW - kMargin - kTextX, explCatBlurb(c),
-                            palColor(Pal::INK_DIM), v.beat, true);
+                            palColor(Pal::INK_DIM), v.beat, Overflow::Scroll);
             dy += kFontH + 2;
         }
         if (detail[0] && dy + kFontH <= y + pitch)
@@ -674,7 +674,7 @@ void drawExplList(Framebuffer& fb, const ContentRegistry& reg, const ExplListVie
         const int tagW = tag.text[0] ? textWidth(tag.text) + kMargin : 0;
         const int leadW = lead[0] ? textWidth(lead) + kMargin : 0;
         drawTextMarquee(fb, kTextX, titleY, kActiveW - kMargin - tagW - leadW - kTextX,
-                        title, titleInk, v.beat, focused);
+                        title, titleInk, v.beat, scrollWhen(focused));
         if (lead[0])
             drawText(fb, kActiveW - kMargin - tagW - textWidth(lead), titleY, lead,
                      palColor(Pal::CALM));
@@ -683,7 +683,7 @@ void drawExplList(Framebuffer& fb, const ContentRegistry& reg, const ExplListVie
                      tag.col);
         if (twoLine && detail[0])
             drawTextMarquee(fb, kTextX, detailY, kActiveW - kMargin - kTextX, detail,
-                            palColor(Pal::INK_DIM), v.beat, focused);
+                            palColor(Pal::INK_DIM), v.beat, scrollWhen(focused));
     }
 
     // The non-colour "there's more" channel. Only a ladder long enough to outgrow even
@@ -919,7 +919,7 @@ void drawWifiEvent(Framebuffer& fb, const char* sectorName, const char* banner,
     // canvas — it scrolls inside the margins rather than being centred off both edges.
     if (discoveryLine && discoveryLine[0])
         drawTextMarquee(fb, kMargin, 32, kActiveW - 2 * kMargin, discoveryLine,
-                        palColor(Pal::INK_DIM), beat, true);
+                        palColor(Pal::INK_DIM), beat, Overflow::Scroll);
 
     if (banner && banner[0])
         drawText(fb, (kActiveW - textWidth(banner)) / 2, 50, banner,
@@ -992,7 +992,7 @@ void drawShopRow(Framebuffer& fb, int rowY, const ShopRowView& row, bool selecte
     if (row.heldCap > 0)
         std::snprintf(haveStr, sizeof(haveStr), "HAVE %d/%d", row.held, row.heldCap);
     drawLabelValue(fb, 24, rowY + 2, row.name, palColor(Pal::INK), haveStr,
-                   full ? palColor(Pal::WARN) : palColor(Pal::INK_DIM), beat, selected);
+                   full ? palColor(Pal::WARN) : palColor(Pal::INK_DIM), beat, scrollWhen(selected));
 
     // The price line carries the item costs too, so it is the half that grows; STOCK
     // is the fact a shopper cannot lose, so the price yields to it.
@@ -1002,7 +1002,7 @@ void drawShopRow(Framebuffer& fb, int rowY, const ShopRowView& row, bool selecte
     std::snprintf(stockStr, sizeof(stockStr), "STOCK %d", row.stock);
     drawLabelValue(fb, 24, rowY + 16, priceStr, palColor(Pal::INK_DIM), stockStr,
                    row.stock > 0 ? palColor(Pal::CALM) : palColor(Pal::WARN),
-                   beat, selected);
+                   beat, scrollWhen(selected));
 }
 } // namespace
 
@@ -1017,7 +1017,7 @@ void drawShop(Framebuffer& fb, const char* storeName, int walletBits,
     drawHeaderBand(fb, "", wallet, palColor(Pal::ACCENT));
     drawTextMarquee(fb, kMargin, kTitleY,
                     kActiveW - 2 * kMargin - textWidth(wallet) - kMargin, storeName,
-                    palColor(Pal::INK), beat, true);
+                    palColor(Pal::INK), beat, Overflow::Scroll);
 
     // Windowed list — an arbitrary listing count scrolls past kShopMaxRows instead of
     // growing the screen.

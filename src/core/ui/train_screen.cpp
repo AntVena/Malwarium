@@ -52,7 +52,7 @@ void moveRowText(Framebuffer& fb, const ContentRegistry& reg, const char* id,
         nameW = tagX - kMargin - (x + 22);
     }
     drawTextMarquee(fb, x + 22, y, nameW, m ? m->displayName : id, nameCol, beat,
-                    focused);
+                    scrollWhen(focused));
 }
 
 } // namespace
@@ -228,7 +228,7 @@ void drawMovePicker(Framebuffer& fb, const ContentRegistry& reg,
         }
         drawLabelValue(fb, 22, y + 4, m->displayName,
                        locked ? palColor(Pal::INK_DIM) : palColor(Pal::INK),
-                       tag, tagCol, beat, i == pick);
+                       tag, tagCol, beat, scrollWhen(i == pick));
     }
     drawScrollbar(fb, rowTop, kMovePickerMaxRows * rowH, rows, scrollTop, kMovePickerMaxRows);
 
@@ -330,7 +330,7 @@ void drawMoveDetail(Framebuffer& fb, const ContentRegistry& reg, const MoveDef& 
     if (ic) drawSprite(fb, *ic, 0, kMargin, 30);
     drawLabelValue(fb, ic ? kMargin + 26 : kMargin, 36, m.displayName,
                    palColor(Pal::INK), moveKindTag(m.kind), palColor(Pal::ACCENT),
-                   beat, true);
+                   beat, Overflow::Scroll);
     const bool locked = !moveUnlockedAtStage(m, petStage);
 
     const SpecRows spec = specRows(m);

@@ -159,7 +159,7 @@ void Game::drawHackerMerge(Framebuffer& fb) const {
         // row cannot lose — the dish name yields to it and scrolls when focused.
         drawLabelValue(fb, kMargin, rowY, r.displayName,
                        sel ? palColor(Pal::INK) : palColor(Pal::INK_DIM),
-                       owned ? "" : "LOCKED", palColor(Pal::INK_DIM), beat_, sel);
+                       owned ? "" : "LOCKED", palColor(Pal::INK_DIM), beat_, scrollWhen(sel));
         rowY += kLineH;
 
         if (sel) {
@@ -174,7 +174,7 @@ void Game::drawHackerMerge(Framebuffer& fb) const {
                 drawLabelValue(fb, kIndent, rowY, def ? def->displayName : in.id,
                                palColor(Pal::INK_DIM), qty,
                                have >= in.qty ? palColor(Pal::INK) : palColor(Pal::WARN),
-                               beat_, false);
+                               beat_, Overflow::Clip);
                 rowY += kLineH;
             }
         } else if (owned) {

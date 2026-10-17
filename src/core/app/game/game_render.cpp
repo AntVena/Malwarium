@@ -648,7 +648,7 @@ void Game::drawAchievementBanner(Framebuffer& fb) const {
     auto plateLine = [&](int ly, const char* s, Rgb565 col) {
         const int w = textWidth(s);
         if (w <= kActiveW) { drawText(fb, (kActiveW - w) / 2, ly, s, col); return; }
-        drawTextMarquee(fb, kMargin, ly, kActiveW - 2 * kMargin, s, col, age0, true);
+        drawTextMarquee(fb, kMargin, ly, kActiveW - 2 * kMargin, s, col, age0, Overflow::Scroll);
     };
 
     // The kicker pulses between its two inks for the first beats it is up — the one

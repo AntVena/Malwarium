@@ -144,7 +144,7 @@ void drawMaintList(Framebuffer& fb, const PetModel& m, int cursor, int beat) {
         // when focused (widgets.h) — DEFRAGMENTATION spelled out is the whole point of
         // the row, so it is not the half that gets cut.
         drawTextMarquee(fb, 40, textY, statusX - kMargin - 40, labels[i],
-                        palColor(Pal::INK), beat, i == cursor);
+                        palColor(Pal::INK), beat, scrollWhen(i == cursor));
     }
     drawHintBand(fb, "A CYCLE  B OPEN  C BACK");
 }
@@ -239,7 +239,7 @@ void drawMaintAction(Framebuffer& fb, MaintKind kind, const PetModel& m,
                 std::snprintf(line, sizeof(line), "%s  -%d B", played.name, cost);
                 tag = playTag;          // never fails; the run sets the size of the clean
             }
-            drawLabelValue(fb, kMargin + 12, rowY[i], line, col, tag, tagCol, 0, false);
+            drawLabelValue(fb, kMargin + 12, rowY[i], line, col, tag, tagCol, 0, Overflow::Clip);
         }
 
         // Bottom action line: the gated reason, or the armed action. It names the
@@ -299,7 +299,7 @@ void drawMaintAction(Framebuffer& fb, MaintKind kind, const PetModel& m,
                 tag = quickTag;
             }
             drawLabelValue(fb, kMargin + 12, rowY[i], i == 0 ? "QUICK" : played.name, col,
-                           tag, palColor(Pal::INK_DIM), 0, false);
+                           tag, palColor(Pal::INK_DIM), 0, Overflow::Clip);
         }
 
         if (avGated(m)) {

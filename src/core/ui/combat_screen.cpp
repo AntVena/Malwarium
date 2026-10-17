@@ -873,7 +873,7 @@ void drawCombat(Framebuffer& fb, const Combat& combat, const CombatView& v) {
     // The name takes what the level leaves, and travels when it cannot fit — a boss's
     // name is the longest thing this row ever carries and the level behind it is fixed.
     drawTextMarquee(fb, kMargin, kTitleY, lvX - 6 - kMargin, en.name,
-                    palColor(Pal::INK), v.beat, /*scroll=*/true);
+                    palColor(Pal::INK), v.beat, Overflow::Scroll);
 
     // --- Enemy Health (neutral — emptying is good) + channel wind-up ----------
     // Reuses the y-band the encounter-intro header gives its difficulty pips.
@@ -1286,7 +1286,7 @@ void drawCombat(Framebuffer& fb, const Combat& combat, const CombatView& v) {
             const int tagX = kActiveW - 24 - textWidth(tag);
             drawText(fb, tagX, y, tag, palColor(Pal::INK_DIM));
             const int room = tagX - kMargin - 24;
-            if (room > 0) drawTextMarquee(fb, 24, y, room, name, nameCol, v.beat, sel);
+            if (room > 0) drawTextMarquee(fb, 24, y, room, name, nameCol, v.beat, scrollWhen(sel));
         };
         for (int v = 0; v < visible && scrollTop + v < n; ++v) {
             const int row = scrollTop + v;                // index within what is listed
@@ -1406,7 +1406,7 @@ void drawCombat(Framebuffer& fb, const Combat& combat, const CombatView& v) {
             const int room = vx - (textX + indent) - 4;
             if (room > 0)
                 drawTextMarquee(fb, textX + indent, y, room, label, palColor(lc), v.beat,
-                                false);
+                                Overflow::Clip);
             y += pitch;
         };
         // The hairline between the two fighters' blocks — the same inset rule the header

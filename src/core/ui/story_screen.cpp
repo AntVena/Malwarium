@@ -42,7 +42,7 @@ void drawStoryPage(Framebuffer& fb, const std::vector<ProseRow>& rows,
     // Marqueed on the same clock everything else on the device travels on, so a long
     // title costs legibility rather than costing the layout.
     drawTextMarquee(fb, kMargin, kStoryTitleY, kActiveW - 2 * kMargin, v.title,
-                    palColor(Pal::ACCENT), v.beat, /*scroll=*/true);
+                    palColor(Pal::ACCENT), v.beat, Overflow::Scroll);
 
     // The flow itself. Its own hint is suppressed (prose_page only draws one when the
     // page overflows, and this screen names both keys on every window whether it does
@@ -91,7 +91,7 @@ void drawStoryArchive(Framebuffer& fb, const StoryArchiveRow* rows, int rowCount
         // Title over a dim line naming where and when — the two-line row EXPL's own
         // list uses, so a chapter reads like the zone row it came from.
         drawTextMarquee(fb, kMargin, y, kActiveW - 2 * kMargin, r.title,
-                        palColor(Pal::INK), beat, focused);
+                        palColor(Pal::INK), beat, scrollWhen(focused));
         char sub[40];
         std::snprintf(sub, sizeof(sub), "%s - %s", r.zone, r.beat);
         drawText(fb, kMargin, y + kFontH + 2, sub, palColor(Pal::INK_DIM));

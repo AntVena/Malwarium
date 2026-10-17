@@ -446,7 +446,7 @@ void drawSpeciesScreen(Framebuffer& fb, const char* name, const char* line,
             *p = static_cast<char>(std::toupper(static_cast<unsigned char>(*p)));
     }
     drawLabelValue(fb, kMargin, 30, name ? name : "", palColor(Pal::INK), tag,
-                   palColor(Pal::INK_DIM), beat, true);
+                   palColor(Pal::INK_DIM), beat, Overflow::Scroll);
 
     // Tighter than the grid's kLineH: SPECIES stacks two wrapped prose blocks in one
     // screen, and the leading is what has to give.
@@ -502,7 +502,7 @@ void drawStatScreen(Framebuffer& fb, const PetModel& m, const char* name,
     const int genX = kActiveW - kMargin - textWidth(gen);
     drawText(fb, genX, kRowTop, gen, palColor(Pal::INK_DIM));
     drawTextMarquee(fb, kMargin, kRowTop, genX - kMargin - kMargin, name,
-                    palColor(Pal::INK), beat, true);
+                    palColor(Pal::INK), beat, Overflow::Scroll);
 
     drawStageIndicator(fb, kMargin, 40, 130, stage);
     // Creature level: LVL n beside the stage bar — text-only, grayscale-safe.
@@ -733,7 +733,7 @@ void drawStatIndex(Framebuffer& fb, const std::vector<StatIndexRow>& rows, int c
         const Rgb565 ink = r.sub ? palColor(Pal::INK_DIM) : palColor(Pal::INK);
         const int x = r.sub ? kIndexSubX : kIndexLabelX;
         drawLabelValue(fb, x, y, r.label, ink, r.value, palColor(Pal::INK_DIM), beat,
-                       i == cursor);
+                       scrollWhen(i == cursor));
     }
 
     drawScrollbar(fb, kIndexRowTop, kIndexVisible * kIndexRowH, n, top, kIndexVisible);

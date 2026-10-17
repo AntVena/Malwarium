@@ -114,21 +114,6 @@ void drawPanel(Framebuffer& fb, int x, int y, int w, int h) {
     fb.fillRect(x, y, w, h, palColor(Pal::TRACK));
 }
 
-// drawLabelValue's shape, but with the right edge PASSED rather than assumed to be the
-// canvas margin. Inside the allegiance card the content stops at the panel's own
-// padding, and the shared widget — which measures against kMargin, correctly, for a
-// full-width row — hangs the value six pixels off the end of the panel it sits in.
-void drawPairIn(Framebuffer& fb, int x, int y, int right, const char* label,
-                Rgb565 labelCol, const char* value, Rgb565 valueCol, int beat,
-                bool scroll, FontFace face = FontFace::Regular) {
-    int room = right - x;
-    if (value && value[0]) {
-        const int vx = right - textWidth(value);
-        drawText(fb, vx, y, value, valueCol);
-        room = vx - 8 - x;                 // a glyph's gap between the two
-    }
-    if (room > 0) drawTextMarquee(fb, x, y, room, label, labelCol, beat, scroll, face);
-}
 }  // namespace
 
 // --- Membership + home network --------------------------------------------
@@ -331,7 +316,7 @@ void Game::drawCrewHub(Framebuffer& fb) const {
     drawLabelValue(fb, kMargin + 10, kContextY, "HOME NET",
                    homeSel ? palColor(Pal::INK) : palColor(Pal::INK_DIM), homeVal,
                    hasHomeNetwork() ? palColor(Pal::INK) : palColor(Pal::WARN), beat_,
-                   homeSel);
+                   scrollWhen(homeSel));
     fb.fillRect(0, kContextRule, kActiveW, 1, palColor(Pal::TRACK));
 
     // The allegiance card — the screen's answer to "who am I", stated before it offers
@@ -353,17 +338,17 @@ void Game::drawCrewHub(Framebuffer& fb) const {
         // on this screen that is purely who you are. Regular weight: colour and the
         // card's top line already carry it, and Bold here only outranked the header.
         drawTextMarquee(fb, tx, kCardTextTop, cRight - tx, mine->displayName, side,
-                        beat_, /*scroll=*/true);
+                        beat_, Overflow::Scroll);
         // The side spelled out beside its glyph (never the tint alone), against what
         // the Exploit meters.
         char tag[16];
         crewExploitLabel(tag, sizeof(tag), mine->exploit.kind, mine->exploit.magnitude);
-        drawPairIn(fb, tx, kCardTextTop + kLineH, cRight, crewTeamName(mine->team), side,
-                   tag, palColor(Pal::ACCENT), beat_, /*scroll=*/false);
+        drawLabelValueIn(fb, tx, kCardTextTop + kLineH, cRight, crewTeamName(mine->team),
+                         side, tag, palColor(Pal::ACCENT), beat_, Overflow::Clip);
         // ...and the Exploit you actually carry into a fight, which is what makes the
         // card worth its space rather than a restatement of the header.
         drawTextMarquee(fb, cx, kCardTextTop + kLineH * 2, cRight - cx,
-                        mine->exploit.name, palColor(Pal::INK), beat_, /*scroll=*/false);
+                        mine->exploit.name, palColor(Pal::INK), beat_, Overflow::Clip);
     } else {
         // The same three lines, so the two side rows never move under the cursor when
         // membership changes — and the empty state says what to do about it, in the
@@ -463,7 +448,7 @@ void Game::drawCrewNetPicker(Framebuffer& fb) const {
                                static_cast<unsigned>(row.count));
             drawLabelValue(fb, kMargin + 10, rowY, row.name,
                            s ? palColor(Pal::INK) : palColor(Pal::INK_DIM), seen,
-                           palColor(Pal::INK_DIM), beat_, s);
+                           palColor(Pal::INK_DIM), beat_, scrollWhen(s));
             // No LIVE tag: every row on this screen is in range by construction, so
             // the tag would mark nothing. HOME still needs saying — it's the one
             // row whose meaning differs. Word, never colour alone.
@@ -518,7 +503,7 @@ void Game::drawCrewTeam(Framebuffer& fb) const {
         // grayscale that colour sits at the motto's dim level — weight is what keeps it
         // the row's heading.
         drawTextMarquee(fb, tx, y, w, c.displayName, s ? side : palColor(Pal::INK),
-                        beat_, s, FontFace::Bold);
+                        beat_, scrollWhen(s), FontFace::Bold);
         // 2 — the motto, which is the crew's whole character and the reason to read
         // on. WRAPPED, not marqueed: a marquee only ever ran for the focused row, so
         // an unselected crew with a long motto (e.g. "fail to plan; plan to fail")
@@ -575,11 +560,11 @@ void Game::drawCrewDetail(Framebuffer& fb) const {
     char tag[16];
     crewExploitLabel(tag, sizeof(tag), c->exploit.kind, c->exploit.magnitude);
     drawLabelValue(fb, kMargin, kDetailExploitY, "EXPLOIT", palColor(Pal::INK_DIM), tag,
-                   palColor(Pal::INK), beat_, /*scroll=*/false);
+                   palColor(Pal::INK), beat_, Overflow::Clip);
     // Bold earned (VISUAL_LANGUAGE §2.3): the name heads the prose under it, and in
     // grayscale its accent lands between that prose and the dim readout above.
     drawTextMarquee(fb, kMargin, kDetailExploitY + kLineH, kActiveW - 2 * kMargin,
-                    c->exploit.name, palColor(Pal::ACCENT), beat_, /*scroll=*/true,
+                    c->exploit.name, palColor(Pal::ACCENT), beat_, Overflow::Scroll,
                     FontFace::Bold);
     const EffectText prose = effectText(c->exploit);
     const int lines = textWrapLines(prose.c_str(), kActiveW - 2 * kMargin);
