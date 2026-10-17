@@ -213,6 +213,7 @@ int g_failures = 0;
     RUN(test_theme_chips_drop_then_leave_the_pool) \
     RUN(test_theme_persists_by_name)        \
     RUN(test_theme_load_falls_back_when_locked) \
+    RUN(test_theme_chip_set_survives_a_reboot) \
     RUN(test_theme_picker_previews_each_set) \
     /* ARCH submenu */                      \
     RUN(test_arch_list_and_record)          \

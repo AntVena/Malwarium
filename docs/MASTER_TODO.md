@@ -183,10 +183,11 @@ each `bool` with a field or an enum the call site names. | `core/ui/*_screen.h`;
 `widgets.h`'s `drawTextMarquee`, `drawLabelValue`, `drawProgressBar`. | M | Pixel-identical
 by construction; the screen diff proves it. |
 
-**`applySave` is 544 lines.** It restores every save section in one function. Split it into
-one named function per section (inventory, mod loadout, rack and records, moves and levels,
-crew and home network, radio toggles), called in the current order. | `game_persist.cpp` |
-S | The save-migration tests in `test_persistence.cpp` cover every section. |
+**`captureSave` is 332 lines.** It is the mirror of `applySave`, which is already one
+named function per save section (`restoreOperator` through `restoreBackgroundAndCant`). Split
+`captureSave` along the same sections so each pair reads side by side. Every line is a read,
+so the order inside it is free. | `game_persist.cpp` | S | The save round-trip and migration
+tests in `test_persistence.cpp` cover every field. |
 
 ---
 

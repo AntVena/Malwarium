@@ -372,6 +372,31 @@ void test_theme_load_falls_back_when_locked() {
     setPalTheme(0);
 }
 
+// An earned set survives a reboot. The unlock is the collected-items shelf, so the
+// load has to restore that shelf before it applies the saved theme.
+void test_theme_chip_set_survives_a_reboot() {
+    MemSaveStore store;
+    int chipRow = -1;
+    for (int i = 0; i < kThemeCount && chipRow < 0; ++i)
+        if (kThemes[i].source == ThemeSource::Chip) chipRow = i;
+    CHECK(chipRow >= 0);
+    const ThemeDef& t = kThemes[chipRow];
+    const int palette = palThemeByName(t.palette);
+    {
+        Game g(StartMode::Hatched, "paypup", &store);
+        g.inventory().add(t.earnedById, 1);
+        g.tick(kHeartbeatMs);                      // the sweep folds the bag into the shelf
+        CHECK(g.setThemePick(palette));
+        g.tick(kSaveAutosaveMs + kHeartbeatMs);    // persist the pick
+    }
+    setPalTheme(0);                                // a cold boot starts in the base set
+    Game g(StartMode::Hatched, "paypup", &store);
+    CHECK(g.hasCollectedItem(t.earnedById));
+    CHECK(g.themePick() == palette);
+    CHECK(palThemeIndex() == palette);
+    setPalTheme(0);
+}
+
 // The picker draws each set in ITSELF — the swatch strips are the only thing on the
 // screen that isn't in the live theme — and still reads with the colour taken away.
 void test_theme_picker_previews_each_set() {

@@ -351,9 +351,9 @@ SaveData Game::captureSave() const {
     return d;
 }
 
-void Game::applySave(const SaveData& d) {
-    // Lifetime / identity / economy restore regardless of whether an active pet
-    // is present (a Store-vacated save still carries the rack + counters).
+// Player-level identity and standing. A Store-vacated save (no active pet) still carries
+// all of it.
+void Game::restoreOperator(const SaveData& d) {
     generation_ = d.generation;
     petsRaised_ = d.petsRaised;
     uptimeBase_ = d.lifetimeUptimeMs;
@@ -362,6 +362,27 @@ void Game::applySave(const SaveData& d) {
     std::strncpy(hackerTag_, d.hackerTag, sizeof(hackerTag_) - 1);
     hackerTag_[sizeof(hackerTag_) - 1] = '\0';
 
+    // Crew + home network (v36). The crew resolves from its stored ID, so a save
+    // written against a crew that no longer exists loads as unaffiliated rather than
+    // pointing at whatever now occupies that row. A pre-v36 blob carries neither.
+    crewIndex_ = crewIndexById(d.crewId);
+    homeNetworkKey_ = d.homeNetworkKey;
+    std::strncpy(homeNetworkName_, d.homeNetworkName, sizeof(homeNetworkName_) - 1);
+    homeNetworkName_[sizeof(homeNetworkName_) - 1] = '\0';
+    // Membership can't outlive the network it defends — the same invariant
+    // setHomeNetwork enforces, re-applied here so no blob can load into a crew
+    // without a home network.
+    if (homeNetworkKey_ == 0) crewIndex_ = -1;
+
+    // Hacker Rank (v4): the counter restores verbatim; rank is stored rather than
+    // re-derived so a future threshold retune doesn't retroactively demote a save.
+    // Real-network dedup/history lives in networkLedger_ now (loaded separately
+    // from SD, Game::loadNetworkLedger), not this save blob.
+    networksSeen_ = d.networksSeen;
+    hackerRank_ = d.hackerRank;
+}
+
+void Game::restoreBag(const SaveData& d) {
     // Inventory: resolve each saved id to the registry's stable pointer (the
     // borrowed-id contract); drop ids no longer present in content.
     inventory_ = Inventory{};
@@ -409,6 +430,9 @@ void Game::applySave(const SaveData& d) {
     for (int i = 0; i < static_cast<int>(d.equipped.size()) && i < kModSlots; ++i)
         if (const ModDef* def = registry_.mod(d.equipped[i].id))
             loadout_.setEquipped(i, def->id);
+}
+
+void Game::restoreHistory(const SaveData& d) {
     // Event log: replay oldest-first into a fresh ring.
     log_ = EventLog{};
     for (const auto& e : d.log)
@@ -421,7 +445,10 @@ void Game::applySave(const SaveData& d) {
     // creature id is gone from content (a record is a name + status, not a live
     // pet); the UI resolves an unknown id to "?".
     records_ = d.records;
+}
 
+// The active pet's own state: moves, level, slot typing, tallies, flags and upgrades.
+void Game::restorePetProgress(const SaveData& d) {
     // Move loadout (v2). A v1 blob carried no move data (hasMoveData == false), so
     // the pet is seeded with its line's starting kit — a graceful forward-compat
     // migration rather than stripping it to only the innate default move.
@@ -480,25 +507,47 @@ void Game::applySave(const SaveData& d) {
     // and the first tick at 5/5 re-anchors it against the current clock.
     dyingElapsedMs_ = d.dyingElapsedMs;
 
-    // Crew + home network (v36). The crew resolves from its stored ID, so a save
-    // written against a crew that no longer exists loads as unaffiliated rather than
-    // pointing at whatever now occupies that row. A pre-v36 blob carries neither.
-    crewIndex_ = crewIndexById(d.crewId);
-    homeNetworkKey_ = d.homeNetworkKey;
-    std::strncpy(homeNetworkName_, d.homeNetworkName, sizeof(homeNetworkName_) - 1);
-    homeNetworkName_[sizeof(homeNetworkName_) - 1] = '\0';
-    // Membership can't outlive the network it defends — the same invariant
-    // setHomeNetwork enforces, re-applied here so no blob can load into a crew
-    // without a home network.
-    if (homeNetworkKey_ == 0) crewIndex_ = -1;
+    // Boot-Sector incubation clock (v9). A pre-v9 blob carries 0 → the loaded pet
+    // is treated as fully hatched (inEggPhase() is false for a 0 clock), so a
+    // migrated save is never re-frozen as an egg.
+    bootHatchRemainMs_ = d.bootHatchRemainMs;
 
-    // Hacker Rank (v4): the counter restores verbatim; rank is stored rather than
-    // re-derived so a future threshold retune doesn't retroactively demote a save.
-    // Real-network dedup/history lives in networkLedger_ now (loaded separately
-    // from SD, Game::loadNetworkLedger), not this save blob.
-    networksSeen_ = d.networksSeen;
-    hackerRank_ = d.hackerRank;
+    // v21: the per-pet care-mistake shield + once-per-lifetime item gates (reset on a
+    // new egg; a pre-v21 blob defaults them to 0: no shield, neither item consumed).
+    mistakeShieldActive_ = d.mistakeShieldActive != 0;
+    shieldItemConsumed_ = d.shieldItemConsumed != 0;
+    yubiConsumed_ = d.yubiConsumed != 0;
 
+    // v28: the Ambig-USB armed Trojan-divert flag (per-pet; a pre-v28 blob defaults
+    // it to false — no divert armed).
+    forceTrojanDivert_ = d.forceTrojanDivert != 0;
+
+    // v60: the branch override and the soak (per-pet; a pre-v60 blob defaults to an empty
+    // port). Both are clamped rather than trusted: an unknown override number reads as no
+    // override, and the factor is floored at 1 the way the codec floors it, so nothing a
+    // blob can say makes the pet un-evolvable or its XP worthless.
+    evolveBranchOverride_ = d.evolveBranchOverride == 1   ? BranchOverride::Good
+                            : d.evolveBranchOverride == 2 ? BranchOverride::Bad
+                                                          : BranchOverride::None;
+    evolveSoakFactor_ = d.evolveSoakFactor < 1 ? 1 : d.evolveSoakFactor;
+    evolveHold_ = d.evolveHold != 0;
+
+    // v30: the Backup Drive combat-shield buff's armed-until deadline (per-pet; a
+    // pre-v30 blob defaults it to 0 — no shield armed).
+    backupShieldUntilMs_ = d.backupShieldUntilMs;
+
+    // v50/v57: the active pet's permanent Epic-dish upgrades (an older blob → 0: no dish
+    // granted one). The rack's own values come back with the stored records themselves.
+    upgrades_.bandwidthRegenMin = d.bandwidthRegenBonusMin;
+    for (int i = 0; i < kLevelStatCount; ++i) upgrades_.statBonus[i] = d.statBonus[i];
+    upgrades_.xpRatePct = d.xpRateBonusPct;
+    // v72: the favourite. An id this build has no item for leaves it unrolled, and the
+    // next meal rolls a fresh one; a found flag stands either way, being a grant.
+    upgrades_.favouriteFood = registry_.item(d.favouriteFood);
+    upgrades_.favouriteFound = d.favouriteFound != 0;
+}
+
+void Game::restoreRadio(const SaveData& d) {
     // Audit-mode passive-scan toggle (v5). A pre-v5 blob defaults it OFF (never
     // silently arm the radio on a migrated save).
     netScanEnabled_ = d.netScanEnabled != 0;
@@ -538,7 +587,10 @@ void Game::applySave(const SaveData& d) {
     // was removed as of v33 — see save.h.)
     seenHandshakeBssids_ = d.seenHandshakeBssids;
     handshakesSeen_ = d.handshakesSeen;
+}
 
+// Areas, sub-areas, re-farm counts and the zone Titles they award.
+void Game::restoreWorldProgress(const SaveData& d) {
     // Area-clear flags (v8). A pre-v8 blob carries an empty vector → nothing cleared
     // (only area 0 open — the correct default for a save that predates linear gating).
     // Extra saved entries (a future area shrink) are ignored.
@@ -569,11 +621,6 @@ void Game::applySave(const SaveData& d) {
         }
     }
 
-    // Boot-Sector incubation clock (v9). A pre-v9 blob carries 0 → the loaded pet
-    // is treated as fully hatched (inEggPhase() is false for a 0 clock), so a
-    // migrated save is never re-frozen as an egg.
-    bootHatchRemainMs_ = d.bootHatchRemainMs;
-
     // Zone-completion Titles (v10). A pre-v10 blob carries 0 unlocked / -1 equipped
     // (nothing earned — the correct default for a save that predates Titles). Mask
     // off bits above the live sector count, and drop a stale equip whose Title isn't
@@ -581,29 +628,6 @@ void Game::applySave(const SaveData& d) {
     titlesUnlocked_ = d.titlesUnlocked & ((1u << kAreaCount) - 1u);
     equippedTitle_ = d.equippedTitle;
     if (!titleUnlocked(equippedTitle_)) equippedTitle_ = -1;
-
-    // Screen-brightness level (v14). A pre-v14 blob carries kBrightnessDefault
-    // (brightest). Clamp defensively so a corrupt value can't drive the backlight
-    // out of range.
-    brightness_ = d.brightness;
-    // v67: UI MODE and CARE ALERTS. A mode number this build has no mode for reads as
-    // the default rather than as a cast past the enum's end.
-    uiMode_ = d.uiMode <= static_cast<uint8_t>(UiMode::TextOnly) ? static_cast<UiMode>(d.uiMode)
-                                                                 : UiMode::IconsLabel;
-    careAlerts_ = d.careAlerts != 0;
-    // v68
-    soundMode_ = d.soundMode < kSoundModeCount ? static_cast<SoundMode>(d.soundMode)
-                                               : SoundMode::Off;
-    volume_ = d.volume < kVolumeLevels ? d.volume : kVolumeLevels - 1;
-    exploreSound_ = d.exploreSound != 0;   // v71
-    if (brightness_ < 0) brightness_ = 0;
-    if (brightness_ >= kBrightnessLevels) brightness_ = kBrightnessLevels - 1;
-
-    // The chosen theme (v64), by name. An empty name — every pre-v64 blob — and a name
-    // this build ships no set for both resolve to base, and going through setThemePick
-    // is what APPLIES it: the palette index and this member move together, so the
-    // interface that repaints after a load is drawn in the set the save named.
-    setThemePick(palThemeByName(d.theme));
 
     // Per-sub-area re-farm counts (v15). A v15+ blob restores the flat
     // row-major list; a pre-v15 blob carries an empty vector → every count defaults to
@@ -613,19 +637,13 @@ void Game::applySave(const SaveData& d) {
             const size_t idx = static_cast<size_t>(a) * kSubAreasPerArea + s;
             subRefarmCount_[a][s] = idx < d.subRefarm.size() ? d.subRefarm[idx] : 0;
         }
+}
 
-    // Rig Shop account upgrades (v19). A pre-v19 blob carries 0 (bought
-    // none). Bandwidth isn't persisted (it refills on reboot), so re-seed the live pool
-    // to the (possibly upgraded) cap here so a loaded save boots with a full farm pool.
+// Every Rig Shop row, the Merge Hub's recipes, and the service switches.
+void Game::restoreRig(const SaveData& d) {
+    // Rig Shop account upgrades (v19). A pre-v19 blob carries 0 (bought none).
     rigLevel_[kRigRowBandwidth] = d.bwUpgradeCount < 0 ? 0 : d.bwUpgradeCount;
-    bandwidth_ = bandwidthMax();
-
-    // v21: the per-pet care-mistake shield + once-per-lifetime item gates (reset on a
-    // new egg; a pre-v21 blob defaults them to 0 — no shield, neither item consumed),
-    // and the player-level b Reduce-Explore-Frag tier.
-    mistakeShieldActive_ = d.mistakeShieldActive != 0;
-    shieldItemConsumed_ = d.shieldItemConsumed != 0;
-    yubiConsumed_ = d.yubiConsumed != 0;
+    // v21-v23: the frag tiers and the two one-time unlocks (older blobs default to 0).
     rigLevel_[kRigRowFragReduce] = d.fragAmountTier;
     // v22: the c Reduce-Explore-Frag-TRIGGER tier (a pre-v22 blob defaults it to 0).
     rigLevel_[kRigRowFragTrigger] = d.fragTriggerTier;
@@ -633,6 +651,43 @@ void Game::applySave(const SaveData& d) {
     rigLevel_[kRigRowItemTabs] = d.itemTabsUnlocked ? 1 : 0;
     rigLevel_[kRigRowBulkOpen] = d.bulkOpenUnlocked ? 1 : 0;
 
+    // v27: the Rig Shop rig-upgrade levels. A pre-v27 blob defaults all 0
+    // (a migrated save has bought none).
+    rigLevel_[kRigRowRackSlot] = d.rackSlotUpgradeCount < 0 ? 0 : d.rackSlotUpgradeCount;
+    rigLevel_[kRigRowScraping] = d.scrapingClusterLevel < 0 ? 0 : d.scrapingClusterLevel;
+    rigLevel_[kRigRowDataMining] = d.dataMiningLevel < 0 ? 0 : d.dataMiningLevel;
+
+    // v31: the Merge Hub unlock and the owned-recipe mask (a pre-v31 blob defaults both
+    // to 0 — no Hub, no recipes). The mask arrives already in v49's layout: a pre-v49
+    // blob had two of its recipes riding rig rows instead, and save.cpp's reader folds
+    // those into the bits before handing the struct over.
+    rigLevel_[kRigRowMergeHub] = d.mergeHubUnlocked ? 1 : 0;
+    // The bitset is authoritative — save.cpp has already seeded it from the u32 for any
+    // blob that predates v51, so this reads one field however old the save is. A set
+    // longer than this build understands is truncated, which is what "a shorter view"
+    // means: those recipes exist in the blob and come back on the build that has them.
+    for (uint8_t& b : recipesOwned_) b = 0;
+    for (size_t i = 0; i < d.recipeOwned.size() && i < kMergeRecipeWireBytes; ++i)
+        recipesOwned_[i] = d.recipeOwned[i];
+
+    // v32: every rig row from kRigRowExtBase up (a pre-v32 blob carries an empty vector
+    // → every such row defaults to 0 — a migrated save has bought none of them).
+    for (int i = kRigRowExtBase; i < kRigUpgradeCount; ++i) {
+        const size_t idx = static_cast<size_t>(i - kRigRowExtBase);
+        rigLevel_[i] = idx < d.rigLevelsExt.size() ? d.rigLevelsExt[idx] : 0;
+    }
+
+    // v61: the stopped-service mask (pre-v61 → 0, everything the save bought running).
+    rigServicesOff_ = d.rigServicesOff;
+    rigServicesAsk_ = d.rigServicesAsk;   // v69: pre-v69 -> 0, every askable row at YES
+
+    // Bandwidth isn't persisted (it refills on reboot), so re-seed the live pool to the
+    // restored cap and a loaded save boots with a full farm pool.
+    bandwidth_ = bandwidthMax();
+}
+
+// What the 'Pedia, the achievements, the story and the tips have revealed.
+void Game::restoreReveals(const SaveData& d) {
     // web-'Pedia reveal state (v25). seenCreatures resolves each saved id to the
     // registry's stable pointer, dropping unknown ids (mirrors rack_/records_); the
     // masks restore verbatim.
@@ -693,7 +748,12 @@ void Game::applySave(const SaveData& d) {
     }
     achBannerWire_ = -1;
     achBannerCount_ = 0;
+}
 
+// The tallies the countable achievements measure, the arena run, and the arcade and
+// quote records. bossWins seeds from world progress, so this runs after
+// restoreWorldProgress.
+void Game::restoreRecords(const SaveData& d) {
     // v40: the counters the countable rows are measured against.
     bossWins_ = d.bossWins;
     if (bossWins_ == 0) {
@@ -750,6 +810,10 @@ void Game::applySave(const SaveData& d) {
     for (uint8_t& b : quoteStates_) b = 0;
     for (size_t i = 0; i < d.quoteStates.size() && i < kQuoteStateBytes; ++i)
         quoteStates_[i] = d.quoteStates[i];
+}
+
+// The collected-items shelf, the palate, the dive records and the raised-species tally.
+void Game::restoreShelves(const SaveData& d) {
     collectedItems_.clear();
     for (const auto& s : d.collectedItems)
         if (const ItemDef* it = registry_.item(s.id)) collectedItems_.push_back(it);
@@ -785,65 +849,9 @@ void Game::applySave(const SaveData& d) {
             if (!creatureRaised(c->id)) raisedCreatures_.push_back(c);
     for (const auto& p : d.rack) markCreatureRaised(p.id);
     for (const auto& r : d.records) markCreatureRaised(r.id);
+}
 
-    // v27: the Rig Shop rig-upgrade levels. A pre-v27 blob defaults all 0
-    // (a migrated save has bought none).
-    rigLevel_[kRigRowRackSlot] = d.rackSlotUpgradeCount < 0 ? 0 : d.rackSlotUpgradeCount;
-    rigLevel_[kRigRowScraping] = d.scrapingClusterLevel < 0 ? 0 : d.scrapingClusterLevel;
-    rigLevel_[kRigRowDataMining] = d.dataMiningLevel < 0 ? 0 : d.dataMiningLevel;
-
-    // v28: the Ambig-USB armed Trojan-divert flag (per-pet; a pre-v28 blob defaults
-    // it to false — no divert armed).
-    forceTrojanDivert_ = d.forceTrojanDivert != 0;
-
-    // v60: the branch override and the soak (per-pet; a pre-v60 blob defaults to an empty
-    // port). Both are clamped rather than trusted: an unknown override number reads as no
-    // override, and the factor is floored at 1 the way the codec floors it, so nothing a
-    // blob can say makes the pet un-evolvable or its XP worthless.
-    evolveBranchOverride_ = d.evolveBranchOverride == 1   ? BranchOverride::Good
-                            : d.evolveBranchOverride == 2 ? BranchOverride::Bad
-                                                          : BranchOverride::None;
-    evolveSoakFactor_ = d.evolveSoakFactor < 1 ? 1 : d.evolveSoakFactor;
-    evolveHold_ = d.evolveHold != 0;
-
-    // v30: the Backup Drive combat-shield buff's armed-until deadline (per-pet; a
-    // pre-v30 blob defaults it to 0 — no shield armed).
-    backupShieldUntilMs_ = d.backupShieldUntilMs;
-
-    // v31: the Merge Hub unlock and the owned-recipe mask (a pre-v31 blob defaults both
-    // to 0 — no Hub, no recipes). The mask arrives already in v49's layout: a pre-v49
-    // blob had two of its recipes riding rig rows instead, and save.cpp's reader folds
-    // those into the bits before handing the struct over.
-    rigLevel_[kRigRowMergeHub] = d.mergeHubUnlocked ? 1 : 0;
-    // The bitset is authoritative — save.cpp has already seeded it from the u32 for any
-    // blob that predates v51, so this reads one field however old the save is. A set
-    // longer than this build understands is truncated, which is what "a shorter view"
-    // means: those recipes exist in the blob and come back on the build that has them.
-    for (uint8_t& b : recipesOwned_) b = 0;
-    for (size_t i = 0; i < d.recipeOwned.size() && i < kMergeRecipeWireBytes; ++i)
-        recipesOwned_[i] = d.recipeOwned[i];
-
-    // v50/v57: the active pet's permanent Epic-dish upgrades (an older blob → 0: no dish
-    // granted one). The rack's own values come back with the stored records themselves.
-    upgrades_.bandwidthRegenMin = d.bandwidthRegenBonusMin;
-    for (int i = 0; i < kLevelStatCount; ++i) upgrades_.statBonus[i] = d.statBonus[i];
-    upgrades_.xpRatePct = d.xpRateBonusPct;
-    // v72: the favourite. An id this build has no item for leaves it unrolled, and the
-    // next meal rolls a fresh one; a found flag stands either way, being a grant.
-    upgrades_.favouriteFood = registry_.item(d.favouriteFood);
-    upgrades_.favouriteFound = d.favouriteFound != 0;
-
-    // v32: every rig row from kRigRowExtBase up (a pre-v32 blob carries an empty vector
-    // → every such row defaults to 0 — a migrated save has bought none of them).
-    for (int i = kRigRowExtBase; i < kRigUpgradeCount; ++i) {
-        const size_t idx = static_cast<size_t>(i - kRigRowExtBase);
-        rigLevel_[i] = idx < d.rigLevelsExt.size() ? d.rigLevelsExt[idx] : 0;
-    }
-
-    // v61: the stopped-service mask (pre-v61 → 0, everything the save bought running).
-    rigServicesOff_ = d.rigServicesOff;
-    rigServicesAsk_ = d.rigServicesAsk;   // v69: pre-v69 -> 0, every askable row at YES
-
+void Game::restoreActivePet(const SaveData& d) {
     // Active pet (may be empty for a Store-vacated save).
     installPet(registry_.creature(d.activeId));
     // hatchLine_ isn't independently persisted; re-derive it from the restored pet
@@ -870,6 +878,37 @@ void Game::applySave(const SaveData& d) {
         stampSlotKinds();
         enforceSlotKindInvariant();
     }
+}
+
+// CFG preferences. Runs after restoreShelves because setThemePick validates the
+// theme against the collected-items shelf: applied any earlier, an earned set reads
+// as locked and the load falls back to base.
+void Game::restoreSettings(const SaveData& d) {
+    // Screen-brightness level (v14). A pre-v14 blob carries kBrightnessDefault
+    // (brightest). Clamp defensively so a corrupt value can't drive the backlight
+    // out of range.
+    brightness_ = d.brightness;
+    // v67: UI MODE and CARE ALERTS. A mode number this build has no mode for reads as
+    // the default rather than as a cast past the enum's end.
+    uiMode_ = d.uiMode <= static_cast<uint8_t>(UiMode::TextOnly) ? static_cast<UiMode>(d.uiMode)
+                                                                 : UiMode::IconsLabel;
+    careAlerts_ = d.careAlerts != 0;
+    // v68
+    soundMode_ = d.soundMode < kSoundModeCount ? static_cast<SoundMode>(d.soundMode)
+                                               : SoundMode::Off;
+    volume_ = d.volume < kVolumeLevels ? d.volume : kVolumeLevels - 1;
+    exploreSound_ = d.exploreSound != 0;   // v71
+    if (brightness_ < 0) brightness_ = 0;
+    if (brightness_ >= kBrightnessLevels) brightness_ = kBrightnessLevels - 1;
+
+    // The chosen theme (v64), by name. An empty name — every pre-v64 blob — and a name
+    // this build ships no set for both resolve to base, and going through setThemePick
+    // is what APPLIES it: the palette index and this member move together, so the
+    // interface that repaints after a load is drawn in the set the save named.
+    setThemePick(palThemeByName(d.theme));
+}
+
+void Game::restoreBackgroundAndCant(const SaveData& d) {
     // v58 — the chosen background, validated rather than trusted: a background the
     // operator does not own is not a state this game should be able to boot into, and a
     // wire from a NEWER build has no row here at all. Both land on AUTO.
@@ -891,7 +930,25 @@ void Game::applySave(const SaveData& d) {
     cantSigils_ = d.cantSigils;
     shakesSpent_ = d.shakesSpent < 0 ? 0
                  : (d.shakesSpent > handshakesSeen_ ? handshakesSeen_ : d.shakesSpent);
+}
 
+void Game::applySave(const SaveData& d) {
+    // Order matters where a step validates against an earlier one: the boss tally seeds
+    // from world progress, installPet tallies into the raised species, and the settings
+    // and background validate against what everything above restored.
+    restoreOperator(d);
+    restoreBag(d);
+    restoreHistory(d);
+    restorePetProgress(d);
+    restoreRadio(d);
+    restoreWorldProgress(d);
+    restoreRig(d);
+    restoreReveals(d);
+    restoreRecords(d);
+    restoreShelves(d);
+    restoreActivePet(d);
+    restoreSettings(d);
+    restoreBackgroundAndCant(d);
     lastSaveMs_ = nowMs_;
     saveDirty_ = false;
 }

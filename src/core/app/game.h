@@ -3176,6 +3176,20 @@ private:
     // Persistence ------------------------------------
     SaveData captureSave() const;                  // snapshot all persisted state
     void applySave(const SaveData& d);             // restore from a loaded snapshot
+    // applySave's sections, called in order (game_persist.cpp).
+    void restoreOperator(const SaveData& d);
+    void restoreBag(const SaveData& d);
+    void restoreHistory(const SaveData& d);
+    void restorePetProgress(const SaveData& d);
+    void restoreRadio(const SaveData& d);
+    void restoreWorldProgress(const SaveData& d);
+    void restoreRig(const SaveData& d);
+    void restoreReveals(const SaveData& d);
+    void restoreRecords(const SaveData& d);
+    void restoreShelves(const SaveData& d);
+    void restoreActivePet(const SaveData& d);
+    void restoreSettings(const SaveData& d);
+    void restoreBackgroundAndCant(const SaveData& d);
     void persistSave();                            // serialize + write via store_
     void markSaveDirty() { saveDirty_ = true; }    // schedule a debounced write
 
