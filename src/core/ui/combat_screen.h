@@ -381,16 +381,26 @@ struct RivalPrizes {
     }
 };
 
-// `scene` is WHERE the fight is happening — the area being walked, or wherever the pet
-// lives when the fight belongs to no area (core/render/scenes.h). It is this screen's
-// BACKGROUND pass, so it goes down before anything else composes onto it, and
-// SceneId::None is a real answer: the stage falls back to the plain `paper` field.
-void drawCombat(Framebuffer& fb, const Combat& combat,
-                const SpriteData* playerSprite, const SpriteData* enemySprite,
-                int beat, int animBeat, int hitBeat, int statPage = 0,
-                const CombatSides& sides = {}, const CombatOutro& outro = {},
-                const RivalPrizes& prizes = {}, const CombatCamo& camo = {},
-                SceneId scene = SceneId::None,
-                const SwarmView* rivalSwarm = nullptr);
+// Everything drawCombat reads besides the fight itself. Fields left at their defaults are
+// the plain case: page 0, the local pet in Combat's player slot, no outro, no camo.
+struct CombatView {
+    const SpriteData* playerSprite = nullptr;
+    const SpriteData* enemySprite = nullptr;
+    int beat = 0;
+    int animBeat = 0;
+    int hitBeat = 0;
+    int statPage = 0;
+    CombatSides sides{};
+    CombatOutro outro{};
+    RivalPrizes prizes{};
+    CombatCamo camo{};
+    // Where the fight is happening: the area being walked, or wherever the pet lives when
+    // the fight belongs to no area (core/render/scenes.h). It is this screen's BACKGROUND
+    // pass, drawn first. SceneId::None draws the plain `paper` field.
+    SceneId scene = SceneId::None;
+    const SwarmView* rivalSwarm = nullptr;
+};
+
+void drawCombat(Framebuffer& fb, const Combat& combat, const CombatView& v);
 
 } // namespace mal

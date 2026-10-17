@@ -1011,9 +1011,20 @@ void Game::drawCombatScreen(Framebuffer& fb) const {
     SwarmView rivalSwarm;
     const bool swarmRival = combat_.enemy().isSwarm && !sides.localIsEnemySide;
     if (swarmRival) rivalSwarm = swarmViewOf(guardianFlock_);
-    drawCombat(fb, combat_, ps, es, beat_, combatAnimBeat_, combatHitBeat_,
-               combatStatsPage_, sides, outro, prizes, camo, stageScene(),
-               swarmRival ? &rivalSwarm : nullptr);
+    CombatView v;
+    v.playerSprite = ps;
+    v.enemySprite = es;
+    v.beat = beat_;
+    v.animBeat = combatAnimBeat_;
+    v.hitBeat = combatHitBeat_;
+    v.statPage = combatStatsPage_;
+    v.sides = sides;
+    v.outro = outro;
+    v.prizes = prizes;
+    v.camo = camo;
+    v.scene = stageScene();
+    v.rivalSwarm = swarmRival ? &rivalSwarm : nullptr;
+    drawCombat(fb, combat_, v);
 }
 
 void Game::drawEncounterScreen(Framebuffer& fb) const {

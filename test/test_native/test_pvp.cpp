@@ -522,8 +522,8 @@ void test_pvp_guest_sees_its_own_pet_on_the_bottom_gauge() {
     guestSides.localIsEnemySide = true;      // guest: roles swapped for display
 
     Framebuffer hostView(kActiveW, kActiveH), guestView(kActiveW, kActiveH);
-    drawCombat(hostView, c, ps, es, 0, 0, 0, false, hostSides);
-    drawCombat(guestView, c, ps, es, 0, 0, 0, false, guestSides);
+    drawCombat(hostView, c, fightView(ps, es, hostSides));
+    drawCombat(guestView, c, fightView(ps, es, guestSides));
 
     int diff = 0;
     for (int y = 0; y < kActiveH; ++y)
@@ -575,7 +575,7 @@ void test_combat_seats_local_pet_on_the_left() {
         const CombatStage st = combatStage(localIsEnemySide ? e : p,
                                            localIsEnemySide ? p : e);
         Framebuffer fb(kActiveW, kActiveH);
-        drawCombat(fb, c, p, e, 0, 0, 0, false, sides);
+        drawCombat(fb, c, fightView(p, e, sides));
         const bool left = anyLitGray(fb, st.localX, kBandY0,
                                      st.localX + st.localW, kBandY1);
         const bool right = anyLitGray(fb, st.rivalX, kBandY0,
@@ -752,7 +752,9 @@ void test_combat_strike_mark_travels_toward_its_target() {
             if (c.lastWasStrike() && c.lastByPlayer() == byPlayer) break;
         }
         CHECK(c.lastWasStrike() && c.lastByPlayer() == byPlayer);
-        drawCombat(fb, c, ps, es, 0, 0, beat, false, CombatSides{});
+        CombatView v = fightView(ps, es);
+        v.hitBeat = beat;
+        drawCombat(fb, c, v);
     };
 
     int litFirst = 0, litLast = 0, litAfter = 0;
@@ -815,7 +817,10 @@ void test_combat_windup_reads_apart_from_impact() {
             }
             CHECK(c.lastWasStrike() && !c.lastByPlayer());  // the pet really was hit
         }
-        drawCombat(fb, c, ps, es, 0, animBeat, hitBeat, false, CombatSides{});
+        CombatView v = fightView(ps, es);
+        v.animBeat = animBeat;
+        v.hitBeat = hitBeat;
+        drawCombat(fb, c, v);
     };
 
     // The ramp DIRECTION, read off the pet's own seat across the cue's early frames.
@@ -877,7 +882,7 @@ void test_combat_ransom_pool_grayscale() {
         p.ransomTurnsLeft = turnsLeft;
         Combatant e = mkCombatant(r, "E", 100, 10, {"quick_jab"});
         Combat c; c.begin(p, e, Combat::Stakes::Safe, 1);   // Ongoing: no result banner
-        drawCombat(fb, c, nullptr, nullptr, 0, 0, 0, false, CombatSides{});
+        drawCombat(fb, c, fightView(nullptr, nullptr));
     };
 
     Framebuffer none(kActiveW, kActiveH), small(kActiveW, kActiveH), big(kActiveW, kActiveH);

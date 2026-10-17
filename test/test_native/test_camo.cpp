@@ -231,11 +231,12 @@ void test_camo_holds_through_a_counter_strike() {
     }
 
     auto shot = [&](uint8_t level, Framebuffer& fb) {
-        CombatCamo camo;
-        camo.level = level;
-        camo.ramp = camoRampFrom(*es);   // the caller resolves the palette (camoTarget)
-        drawCombat(fb, c, ps, es, 0, /*animBeat=*/4, /*hitBeat=*/1, 0, CombatSides{},
-                   CombatOutro{}, RivalPrizes{}, camo);
+        CombatView v = fightView(ps, es);
+        v.animBeat = 4;
+        v.hitBeat = 1;
+        v.camo.level = level;
+        v.camo.ramp = camoRampFrom(*es);   // the caller resolves the palette (camoTarget)
+        drawCombat(fb, c, v);
     };
     Framebuffer bare(kActiveW, kActiveH), held(kActiveW, kActiveH);
     shot(/*level=*/0, bare);

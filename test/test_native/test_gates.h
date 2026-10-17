@@ -76,6 +76,16 @@ constexpr int kItemsRowTop = 26;
 
 // Button press edge (the common case in these gates).
 inline mal::ButtonEvent press(mal::Button b) { return {b, true, false}; }
+// A CombatView seating these two sprites from these sides; a test sets any other field
+// it is about by name.
+inline mal::CombatView fightView(const mal::SpriteData* player, const mal::SpriteData* enemy,
+                                 const mal::CombatSides& sides = {}) {
+    mal::CombatView v;
+    v.playerSprite = player;
+    v.enemySprite = enemy;
+    v.sides = sides;
+    return v;
+}
 inline mal::ButtonEvent lift(mal::Button b) { return {b, false, false}; }
 
 // A COMPLETE C press — down and up. On a list C is a tap/hold pair (a tap cancels, a

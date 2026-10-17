@@ -113,7 +113,7 @@ MIGRATION_UNITS = {
 EXEMPT_VERSION_NOTE = re.compile(r"\bv\d{1,3}\b")
 
 # The comment em dashes in the tree. Lower it when a cleanup removes some; never raise it.
-EM_DASH_CEILING = 6084
+EM_DASH_CEILING = 6083
 EM_DASH = "\u2014"
 
 # // to end of line, and /* ... */ across lines. Close enough on real source: the
