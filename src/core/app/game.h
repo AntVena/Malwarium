@@ -1772,8 +1772,9 @@ public:
     // false and evolveRemainMs() is 0 (STAT shows MAX). Counts real elapsed time.
     bool hasNextEvolution() const;
     uint32_t evolveRemainMs() const;
-    // The care signal dominating this stage — the key into the evolution routing
-    // tables. Balanced on a tie / no interactions yet.
+    // The care signal dominating this stage. Balanced on a tie / no interactions yet.
+    // Nothing routes on it: evolutionTargetId keys on the care branch, and this is the
+    // input a signal-dependent route would read.
     DominantSignal dominantSignal() const;
     bool inCSF() const { return nav_ == Nav::ModalCSF; }
     const std::vector<SaveRecord>& records() const { return records_; }

@@ -4,15 +4,15 @@
 # green native run says nothing about whether the firmware still links.
 name: gates
 
-# claude/** rides alongside main because a Claude Code on the web session works on
-# one of those branches and opens no pull request, so without it a remote session
+# claude/** and ccr-* ride alongside main because a Claude Code on the web session
+# works on a branch named one of those ways and opens no pull request, so without it a remote session
 # pushes into silence — and it is the tier it cannot run itself that goes unchecked:
 # the sandbox network policy refuses the PlatformIO registry, so the S3 build exists
 # nowhere but here. workflow_dispatch stays for running either tier against any ref
 # on demand.
 on:
   push:
-    branches: [main, 'claude/**']
+    branches: [main, 'claude/**', 'ccr-*']
   pull_request:
   workflow_dispatch:
 
@@ -81,3 +81,9 @@ jobs:
         run: python3 tools/gen_assets.py
       - name: Build
         run: pio run -e waveshare_s3_154
+      - name: Native suite under Unity
+        # test_main.cpp's roster compiles into two harnesses, and the native job above
+        # runs only the ctest one. This is the other (PIO_UNIT_TESTING), here because
+        # this job already has PlatformIO: a harness nothing runs can stop building
+        # without anyone seeing it.
+        run: pio test -e native

@@ -130,10 +130,24 @@ Also check that a doc which ROUTES to another for a process actually finds it th
 line and the section it points at are two places one process is described, and only one of them
 gets updated.
 
-### Test/gate health check — Last run: 2026-08-29
+### Test/gate health check — Last run: 2026-10-17
 Run the gates. Confirm native gates and the S3 build are actually green, not assumed green from
 a doc. Look for test debt — tests asserting behaviour that no longer occurs in
 real play.
+
+**Check that each gate actually RUNS, not just that it exists.** Every harness or command
+`docs/TEST_STRATEGY.md` names has to appear in `tools/gates.sh` or `.github/workflows/gates.yml`,
+and the workflow's branch filter has to match the branch a session pushes to. If either is
+missing, the gate is green only because it never ran.
+
+**A test that returns before its first `CHECK` passes vacuously** whenever its precondition is
+false. Scan for early `return`s ahead of any `CHECK`, and make a compile-time precondition
+checked both ways rather than skipped.
+
+**For behaviour no longer in real play, look for production code that only tests call**: a
+non-debug `Game` method with no caller under `src/`. Most are read-only accessors over state play
+really produces, and those are fine. The ones that matter carry LOGIC nothing in play runs,
+which the tests then hold in place.
 
 ### Content/tunables standard drift — Last run: 2026-09-23
 Check new content against `src/core/content/CONTENT_STANDARD.md`: structured effect vocabulary (no new

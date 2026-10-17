@@ -134,7 +134,7 @@ looks broken" to read past.
 `tools/` imports and runs the codegen, so a fresh container can build and test on arrival.
 Run `./tools/gates.sh --native` there: the sandbox network policy refuses the PlatformIO
 registry, so the S3 tier cannot fetch its toolchain and cannot run at all. CI covers it —
-gates runs both tiers on pushes to `claude/**` as well as `main`, so a remote session's
+gates runs both tiers on pushes to `claude/**` and `ccr-*` as well as `main`, so a remote session's
 push is checked without opening a pull request. A session has no write on `refs/tags/*`,
 which costs nothing: releases here are cut by dispatching `publish.yml`, not by tagging
 (see *Releasing*). Pages deploys are held to `main`, so **publish only runs once the work

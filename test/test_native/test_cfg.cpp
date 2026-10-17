@@ -5,6 +5,8 @@
 // feature whose field it migrates, not in a migrations pile of its own.
 #include "test_gates.h"
 
+#include "dev_config.h"   // DEV_CFG_RESET_ROW
+
 #include "core/ui/layout.h"  // listScrollTop — the shared list-window offset
 
 // CFG UI Mode toggle is wired to the live Game::setUiMode: cycle the
@@ -245,7 +247,14 @@ void test_cfg_dev_reset_row() {
     const int n = cfgRows(rows);
     int resetRow = -1;
     for (int i = 0; i < n; ++i) if (rows[i].target == CfgScreen::ResetHatch) resetRow = i;
-    if (resetRow < 0) return;                     // row compiled out (release build)
+    // The row's presence is the macro's, both ways: a build without it is checked for
+    // its absence rather than passing on nothing.
+#ifndef DEV_CFG_RESET_ROW
+    CHECK(resetRow < 0);
+    return;
+#endif
+    CHECK(resetRow >= 0);
+    if (resetRow < 0) return;
     Game g{StartMode::Hatched};
     enterSubmenuId(g, SubmenuId::Cfg);
     for (int i = 0; i < resetRow; ++i) g.onButton(press(Button::A));

@@ -72,6 +72,15 @@ from the same place taps are, so a hold screen joins by gaining a case, the way 
 L | Check the native suite, and diff a `tools/screens.sh` render taken before the change
 against one after (deterministic, so byte-for-byte). |
 
+**Every release ships the DEV start overrides.** `include/dev_config.h` defines
+`DEV_CFG_RESET_ROW` (a one-press RESET TO HATCH row in CFG) and `DEV_EGG_TIMER_MS` (a first
+hatch of 5 minutes, not `kBootHatchMs`), and says to comment both out for a release build.
+Nothing on the release path does: `publish.yml` builds `main` as it stands. Decide whether
+they ship, and if not, make the release build drop them rather than relying on a hand
+edit. | `include/dev_config.h`; `publish.yml`'s build; `platformio.ini`'s
+`waveshare_s3_154` flags. | S | `test_cfg_dev_reset_row` checks the row against the macro
+both ways, so either answer stays gated. |
+
 ### 1b. A separation pass over every screen
 
 **There are only three levers for making one thing read apart from another**: put it in a
