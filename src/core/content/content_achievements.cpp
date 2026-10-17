@@ -18,8 +18,8 @@
 //   Rare Cache · capstone ~400 Bits + a Commendation Cache (the earned-only container,
 //   content_items.cpp). A one-off Event row pays like the rung it feels like.
 //
-// ICONS: one bespoke ICON_ACH_* per row, never a borrowed one (assets/ASSET_MANIFEST.md
-// §875). The 'Pedia draws these as a GRID, and a grid only reads if a row's rung is
+// ICONS: one bespoke ICON_ACH_* per row, never a borrowed one (assets/ASSET_MANIFEST.md,
+// the Achievement icons row). The 'Pedia draws these as a GRID, and a grid only reads if a row's rung is
 // visible before its name is — so a ladder is one motif plus a countable tally, and two
 // rows under one picture would cost exactly that. tools/gen_ach_icons.py owns the
 // grammar and emits the PNGs; `--check` is what catches art drifting from this table.

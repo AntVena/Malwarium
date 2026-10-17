@@ -3,9 +3,9 @@
 // Every list on the device walks its rows the same way, and this unit is why: A steps
 // forward, C steps backward, and holding either one keeps going. The per-screen
 // handlers (game_items, game_care, game_config, game_hacker, ...) still own what their
-// B does and what their rows MEAN; what they no longer each own is a private idea of
-// how a cursor moves, which is what let ITEMS wrap while a mis-stepped SHOP row cost a
-// full lap of the table.
+// B does and what their rows MEAN, but not how a cursor moves: a private idea of that
+// per screen is how one list wraps while a mis-stepped row on its sibling costs a full
+// lap of the table.
 //
 // The gate is Game::listFocus(): it names the list under the cursor right now, or None.
 // None is the important half — an inline confirm, a detail page, a modal or a minigame

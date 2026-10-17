@@ -240,7 +240,7 @@ which is why gameplay ships first and the drawing follows.
   five deleted. The art is true 1:1 pixel work, so that lands on roughly a fifth of its
   single-pixel features — the outline survives, the finer interior detail does not, and it wants a
   hand pass or a re-source at cell scale. It also carries over a hundred colours where the line's
-  other sheets carry seven or eight, and under indexed storage that is no longer free: it is what
+  other sheets carry seven or eight, and under indexed storage that is not free: it is what
   holds the sheet at seven bits per pixel where its cousins sit at three or four,
   but it is why the cat does not yet sit next to Paypup as obviously one family.
 - **Generated art reaches cell scale by FRAMING, not by asking for a size.** A generator's width and
@@ -632,16 +632,15 @@ on placeholder palette.
 | `UI_LIST_HEADER` | Grouped-list section header row | 224×16 | non-selectable; cursor skips (e.g. `FOOD`/`BUFFS`) | ☑ | engine-drawn |
 | `UI_PROGRESS_BAR` | Reusable horizontal progress/fill bar | ~180×12 | EXPL walk, MAINT defrag/AV, hold-to-commit. **= `UI_GAUGE` variant** (neutral, no zone colour). `widgets.h`'s `drawProgressBar`; a sprite could not carry it — the fill is a runtime fraction, and `churn` dithers its leading edge per beat | ☑ | engine-drawn |
 
-> **On `UI_HINT_BAND`'s rule.** It was originally specced exception-only — a band ONLY
-> where a screen broke the standard A/B/C contract. What shipped is broader and better:
-> every self-contained context draws one (EXPL's zone and sub-area lists, the storefronts,
+> **On `UI_HINT_BAND`'s rule.** A band is not reserved for screens that break the
+> standard A/B/C contract: every self-contained context draws one (EXPL's zone and sub-area lists, the storefronts,
 > the Warp picker, the post-encounter and combat screens, the duel screens, the Clutch
 > Pick, the MOVE reader, CFG's TITLE picker), naming what's live even when the mapping is
 > ordinary — because a player who just arrived somewhere shouldn't have to infer the
 > controls from the layout. The carousel's own submenu spine (STAT/ITEMS/MODS/ARCH/CFG
 > **lists**) still goes without, since A/B/C never changes there; an L3 picker hanging off
-> one is a self-contained context and does draw a band. A band is still REQUIRED wherever
-> the mapping is non-standard; it is no longer limited to those cases.
+> one is a self-contained context and does draw a band. Wherever the mapping is
+> non-standard, a band is REQUIRED.
 >
 > Drawn by `widgets.h`'s `drawHintBand` — one filled strip pinned to the canvas foot. The
 > fill is the load-bearing part, not the dimming: a hint set as bare text a row-pitch under

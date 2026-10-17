@@ -134,7 +134,7 @@ void Game::onButton(const ButtonEvent& ev) {
     // The list contract (game_listnav.cpp). Both arms are scoped to there actually
     // being a list under the cursor, and deliberately so for A: arming aHeld_ on a
     // screen whose A can never repeat leaves a flag nothing will ever clear if the
-    // release edge is lost, which is why tick()'s auto-defocus no longer consults it
+    // release edge is lost, which is why tick()'s auto-defocus does not consult it
     // and why this does not set it in the first place. C's press is
     // claimed outright — it settles on the release, as a tap (cancel) or a hold (the
     // backward walk) — and the screen's own C case is reached through leaveFocusedList.
@@ -261,12 +261,12 @@ void Game::onButton(const ButtonEvent& ev) {
             // Line-select: A cycles the highlighted line, B lays that line's egg
             // (-> idle). The A+C chord is the reserved no-op stub, already filtered above.
             //
-            // C BACKS OUT TO ARCH — but only with something on the rack. The rule was
-            // never "the hatch can't be cancelled", it was "an empty save has no pet to
+            // C BACKS OUT TO ARCH — but only with something on the rack. The rule is
+            // not "the hatch can't be cancelled", it is "an empty save has no pet to
             // return to", and reaching this modal from an ARCH Store makes that false:
             // the pet is right there on the shelf, frozen, one Deploy away. Cancelling
-            // into a habitat with nothing living in it is still not offered, so a device
-            // with an empty rack keeps the old no-cancel behaviour exactly.
+            // into a habitat with nothing living in it is not offered, so a device with
+            // an empty rack cannot back out at all.
             const auto lines = availableEggLines();   // only UNLOCKED lines (matches the modal)
             if (lines.empty()) break;
             const int n = static_cast<int>(lines.size());

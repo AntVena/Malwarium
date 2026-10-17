@@ -340,9 +340,8 @@ const ItemDef kItems[] = {
      {{IE::Kind::Hunger, 15}, {IE::Kind::Happy, 25}, {IE::Kind::Frag, 5}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/5},
     
-    // Sealed Cache: a locked container picked up non-interrupting on
-    // the walk Cache drop tables are in game.cpp.
-    // The untiered original cache: no findWeight, so nothing drops it any more — it
+    // The untiered Sealed Cache: no findWeight, so the walk's cache roll
+    // (game_explore.cpp) never picks it — it
     // exists so a save written before the rarity tiers still has an openable container,
     // and it pays out of the shared walk-loot pool at that event's own rate.
     {"sealed_cache", "Sealed Cache", ItemDef::Type::Quest,

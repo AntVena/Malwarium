@@ -767,7 +767,7 @@ inline int daemonSaleBits(int level) {
 // Guaranteed-event weights (balance). Every step is a real event —
 // wild encounters DOMINATE (the streak needs wins), the rest are the breather +
 // reward beats. Ordered thresholds summing to <100; the remainder types a wild
-// encounter (the majority slot). No "quiet" any more.
+// encounter (the majority slot).
 constexpr int kExploreLootPct  = 12;   // guaranteed-event roll: loot cache (in place)
 constexpr int kExploreWifiPct  = 8;    // guaranteed-event roll: Wi-Fi network (kept low so the
                                         // real-network sighting queue, kPendingNetworkQueueCap,
@@ -1267,8 +1267,8 @@ constexpr int kArcadeSpeedPctHard = 65;
 constexpr int kArcadeClutchRoundsEasy = 2;
 constexpr int kArcadeClutchRoundsMedium = 3;
 constexpr int kArcadeClutchRoundsHard = 4;
-// The ENDLESS cabinets' win lines (FRAGGER's is its own model's, kFraggerWinHits). Neither run has a finish any more — the worm
-// eats until it crashes and the bell wears skins until it is spotted — so these are not
+// The ENDLESS cabinets' win lines (FRAGGER's is its own model's, kFraggerWinHits). Neither
+// run has a finish — the worm eats until it crashes and the bell wears skins until it is spotted — so these are not
 // goals the game stops at but the score a run is PAID in full for, and the line its win
 // tally is drawn at. A player can and should go past them; the payout simply stops
 // growing (finishArcadeRun clamps), because past this point the reward is the high score

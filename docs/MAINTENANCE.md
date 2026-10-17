@@ -18,7 +18,7 @@ overdue cleanup.
 
 ## The pile
 
-### Docs cleanup / decision-history sweep — Last run: 2026-08-29
+### Docs cleanup / decision-history sweep — Last run: 2026-10-17
 Two surfaces, two rules.
 
 **Docs (`docs/`, and the standards beside the code):** cull dated historical narration (session logs, "shipped on <date>",

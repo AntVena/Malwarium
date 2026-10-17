@@ -2138,7 +2138,7 @@ public:
     void debugReturnToExplore() { returnToExplore(); }
     // `i` indexes kMergeRecipes; the row it GRANTS is that recipe's own rigRow, so this
     // keeps working when either table grows. A grant, not a purchase — no Bits path
-    // reaches a recipe any more; the Decryptogram's prize ladder is the only one.
+    // reaches a recipe; the Decryptogram's prize ladder is the only one.
     // Out-of-line (game_merge.cpp) because the recipe table is engine-private.
     void debugWinRecipe(int i);
     // The MERGE HUB craft, driven without the screen (tests / dump_frame). Same two
@@ -4209,7 +4209,7 @@ private:
     // The one buffer every save is serialized into. Owning it is what keeps a write off
     // the allocator: it is sized once, behind the higher floor, and reused for good — so
     // a save landing while the radio holds the heap has nothing large left to ask for,
-    // which is the whole reason a capture session no longer blocks persistence.
+    // which is why a capture session does not block persistence.
     std::vector<uint8_t> saveBlob_;
     size_t lastBlobSize_ = 0;            // what the last write measured; sizes the buffer
     // How big that buffer has to be for the next save to fit without resizing: the last
