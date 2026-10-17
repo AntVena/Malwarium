@@ -7,7 +7,6 @@
 #include "core/content/content_themes.h"        // ...and the rows the THEME picker does
 #include "core/ui/cfg_screen.h"
 
-#include <algorithm>
 #include <cstdio>
 
 #include "tunables.h"
@@ -244,14 +243,7 @@ void drawCfgList(Framebuffer& fb, int cursor, const char* hackerTag,
                     palColor(Pal::INK_DIM));
     }
 
-    if (n > kVisibleRows) {  // slim scrollbar (UI_SCROLLBAR), matching items_screen
-        const int barX = kActiveW - 3;
-        const int trackH = kVisibleRows * kRowH;
-        fb.fillRect(barX, kRowTop, 2, trackH, palColor(Pal::TRACK));
-        const int thumbH = std::max(8, trackH * kVisibleRows / n);
-        const int thumbY = kRowTop + trackH * scrollTop / n;
-        fb.fillRect(barX, thumbY, 2, thumbH, palColor(Pal::INK_DIM));
-    }
+    drawScrollbar(fb, kRowTop, kVisibleRows * kRowH, n, scrollTop, kVisibleRows);
     drawHintBand(fb, "A CYCLE  B OPEN  C BACK");
 }
 
@@ -340,14 +332,7 @@ void drawThemePicker(Framebuffer& fb, int pick, int equipped, uint32_t unlockedM
                 fb.fillRect(x, py + 4, 1, 2, palColor(Pal::INK_DIM));
     }
 
-    if (kThemeCount > kThemeVisible) {   // the slim scrollbar every long list uses
-        const int barX = kActiveW - 3;
-        const int trackH = kThemeVisible * kThemeRowH;
-        fb.fillRect(barX, kThemeTop, 2, trackH, palColor(Pal::TRACK));
-        const int thumbH = std::max(8, trackH * kThemeVisible / kThemeCount);
-        const int thumbY = kThemeTop + trackH * scrollTop / kThemeCount;
-        fb.fillRect(barX, thumbY, 2, thumbH, palColor(Pal::INK_DIM));
-    }
+    drawScrollbar(fb, kThemeTop, kThemeVisible * kThemeRowH, kThemeCount, scrollTop, kThemeVisible);
     drawHintBand(fb, "A NEXT  B APPLY  C BACK");
 }
 
@@ -385,14 +370,7 @@ void drawBackgrounds(Framebuffer& fb, int pick, uint32_t ownedMask, int equipped
                        isPick);
     }
 
-    if (rows > kVisibleRows) {   // the slim scrollbar every long list here carries
-        const int barX = kActiveW - 3;
-        const int trackH = kVisibleRows * 22;
-        fb.fillRect(barX, 44, 2, trackH, palColor(Pal::TRACK));
-        const int thumbH = trackH * kVisibleRows / rows;
-        fb.fillRect(barX, 44 + trackH * scrollTop / rows, 2,
-                    thumbH < 8 ? 8 : thumbH, palColor(Pal::INK_DIM));
-    }
+    drawScrollbar(fb, 44, kVisibleRows * 22, rows, scrollTop, kVisibleRows);
     drawHintBand(fb, "A NEXT  B USE  C BACK");
 }
 

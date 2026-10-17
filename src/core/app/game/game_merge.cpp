@@ -107,6 +107,15 @@ void Game::craftRecipe(int recipeIndex) {
 }
 
 void Game::drawHackerMerge(Framebuffer& fb) const {
+    // The roster outgrew the panel, so the body windows it and the band carries the n/N
+    // the scroll would otherwise hide (the note drawItemsList's header prints, and only
+    // when it scrolls).
+    char pos[12];
+    pos[0] = '\0';
+    if (kMergeRecipeCount > kMergeVisibleRows)
+        std::snprintf(pos, sizeof(pos), "%d/%d", hackerMergeRow_ + 1, kMergeRecipeCount);
+    drawHeaderBand(fb, "MERGE HUB", pos);
+
     constexpr int kIndent = kMargin + 6;         // ingredient lines nest under the title
     constexpr int kRowGap = 6;                   // breathing room between recipes
 

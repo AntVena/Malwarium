@@ -686,17 +686,9 @@ void drawExplList(Framebuffer& fb, const ContentRegistry& reg, const ExplListVie
                             palColor(Pal::INK_DIM), v.beat, focused);
     }
 
-    // Slim scrollbar (UI_SCROLLBAR), matching items/cfg — the non-colour "there's more"
-    // channel: a TRACK rail with an ACCENT thumb sized/placed by the window position.
-    // Only a ladder long enough to outgrow even the packed pitch ever draws it.
-    if (rows > visible) {
-        const int barX = kActiveW - 3;
-        const int trackH = visible * pitch;
-        fb.fillRect(barX, kListTop, 2, trackH, palColor(Pal::TRACK));
-        const int thumbH = std::max(8, trackH * visible / rows);
-        const int thumbY = kListTop + trackH * top / rows;
-        fb.fillRect(barX, thumbY, 2, thumbH, palColor(Pal::ACCENT));
-    }
+    // The non-colour "there's more" channel. Only a ladder long enough to outgrow even
+    // the packed pitch ever draws it.
+    drawScrollbar(fb, kListTop, visible * pitch, rows, top, visible);
 
     // Footer hint — context-sensitive B on the focused row (grayscale-safe).
     const ExplRowState focus =
@@ -1027,31 +1019,18 @@ void drawShop(Framebuffer& fb, const char* storeName, int walletBits,
                     kActiveW - 2 * kMargin - textWidth(wallet) - kMargin, storeName,
                     palColor(Pal::INK), beat, true);
 
-    // Windowed list (mirrors the Rig Shop, game_hacker.cpp's drawHackerSubmenu) —
-    // an arbitrary listing count scrolls past kShopMaxRows instead of growing
-    // the screen.
+    // Windowed list — an arbitrary listing count scrolls past kShopMaxRows instead of
+    // growing the screen.
     // ADAPTIVE window: a storefront stocks one or two listings, so drawing only the
     // rows it has hands 40-80px back to the description below instead of reserving the
     // cap empty. Past the cap it scrolls as before.
     const int visibleRows = std::max(1, std::min(rowCount, kShopMaxRows));
-    int scrollTop = 0;
-    if (rowCount > kShopMaxRows) {
-        if (cursor < scrollTop) scrollTop = cursor;
-        if (cursor >= scrollTop + kShopMaxRows) scrollTop = cursor - kShopMaxRows + 1;
-        scrollTop = std::max(0, std::min(scrollTop, rowCount - kShopMaxRows));
-    }
+    const int scrollTop = listScrollTop(cursor, rowCount, kShopMaxRows);
     for (int v = 0; v < visibleRows && scrollTop + v < rowCount; ++v) {
         const int row = scrollTop + v;
         drawShopRow(fb, kShopRowTop + v * kShopRowPitch, rows[row], row == cursor, beat);
     }
-    if (rowCount > kShopMaxRows) {   // UI_SCROLLBAR
-        const int barX = kActiveW - 3;
-        const int trackH = kShopMaxRows * kShopRowPitch;
-        fb.fillRect(barX, kShopRowTop, 2, trackH, palColor(Pal::TRACK));
-        const int thumbH = std::max(8, trackH * kShopMaxRows / rowCount);
-        const int thumbY = kShopRowTop + trackH * scrollTop / rowCount;
-        fb.fillRect(barX, thumbY, 2, thumbH, palColor(Pal::INK_DIM));
-    }
+    drawScrollbar(fb, kShopRowTop, kShopMaxRows * kShopRowPitch, rowCount, scrollTop, kShopMaxRows);
 
     // Selected row's description + the buy-availability reason, spelled out so
     // both survive grayscale — "SOLD OUT" / "NOT ENOUGH BITS" / "NOT ENOUGH ITEMS" /

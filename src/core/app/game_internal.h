@@ -34,22 +34,6 @@ constexpr int kNetMaxRows = kNetVisibleCap;
 // game_combat.cpp, which is also its only caller (Game::settleBackupDrive).
 const char* backupDriveAchievement(Combatant::BackupUse used, Combat::Outcome outcome);
 
-// The slim right-edge scroll bar (UI_SCROLLBAR) --------------------
-// Drawn only when a list is longer than its window, so a list that fits shows no
-// chrome at all. `trackTop`/`trackH` are the window it runs beside; `total` and
-// `visible` are row counts and `scrollTop` the first visible row. Every scrolling
-// list on the Hacker face shares this one thumb calculation — two lists drifting
-// apart on where the thumb sits is exactly the kind of difference nobody reports
-// but everybody feels.
-inline void drawScrollbar(Framebuffer& fb, int trackTop, int trackH, int total,
-                          int scrollTop, int visible) {
-    if (total <= visible) return;
-    const int barX = kActiveW - 3;
-    fb.fillRect(barX, trackTop, 2, trackH, palColor(Pal::TRACK));
-    const int thumbH = std::max(8, trackH * visible / total);
-    const int thumbY = trackTop + trackH * scrollTop / total;
-    fb.fillRect(barX, thumbY, 2, thumbH, palColor(Pal::INK_DIM));
-}
 
 // Combat-stat labels ---------------------------------------------
 // Indexed to statPoints_/lastLevelUpStat_: 0 power · 1 defense · 2 speed · 3
@@ -63,11 +47,18 @@ inline const char* levelStatName(int i) {
 }
 
 // Rig Shop list layout ---------------------------------------
-// Row indices/data live in game_rig_shop.h (RigRow/kRigUpgrades) — these two are
-// pure render-layout constants for game_hacker.cpp's SHOP list (kept here, not there,
-// since they're presentation, not rig data).
+// Row indices/data live in game_rig_shop.h (RigRow/kRigUpgrades) — these are pure
+// render-layout constants for game_rigshop.cpp's SHOP list (kept here, not there,
+// since they're presentation, not rig data; test_stat.cpp sizes a row's grid by them).
+constexpr int kRigRowTop = 34;       // first row, under the header band
 constexpr int kRigVisibleRows = 3;   // rows on screen at once
 constexpr int kRigRowPitch = 54;
+
+// The Hacker face's one-line-per-row list, shared by the VAULT (game_hacker.cpp) and
+// SHOP > SERVICES (game_rigshop.cpp) so the two read as the same kind of list.
+constexpr int kHackerListTop = 34;
+constexpr int kHackerListRowH = 22;
+constexpr int kHackerListRows = 7;
 
 // Merge Hub list layout (Hacker MRG) -----------------------------
 // The recipe TABLE is content and lives with the other content tables

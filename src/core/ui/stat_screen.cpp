@@ -143,15 +143,6 @@ int buffWindowIndex(const std::vector<BuffRow>& rows, int scrollTop) {
     return n;
 }
 
-void drawBuffScrollbar(Framebuffer& fb, int top, int shown, int total) {
-    const int barX = kActiveW - 3;
-    const int trackH = kProseBottom - kBuffRowTop;
-    fb.fillRect(barX, kBuffRowTop, 2, trackH, palColor(Pal::TRACK));
-    const int thumbH = std::max(8, trackH * shown / total);
-    fb.fillRect(barX, kBuffRowTop + trackH * top / total, 2, thumbH,
-                palColor(Pal::INK_DIM));
-}
-
 // The band every STAT page ends with. Two things belong on it and they are not the
 // same kind of fact: what the key under the reader's thumb does right now, and that
 // the INDEX exists at all. The second is the whole reason the band is drawn even on a
@@ -432,7 +423,7 @@ void drawBuffsScreen(Framebuffer& fb, const std::vector<BuffRow>& rows, int scro
         y += heights[top + v];
     }
 
-    if (overflow) drawBuffScrollbar(fb, top, shown, total);
+    if (overflow) drawScrollbar(fb, kBuffRowTop, kProseBottom - kBuffRowTop, total, top, shown);
     statHintBand(fb, buffWindowIndex(rows, top) + 1, buffWindowCount(rows));
 }
 
@@ -745,14 +736,7 @@ void drawStatIndex(Framebuffer& fb, const std::vector<StatIndexRow>& rows, int c
                        i == cursor);
     }
 
-    if (n > kIndexVisible) {
-        const int barX = kActiveW - 3;
-        const int trackH = kIndexVisible * kIndexRowH;
-        fb.fillRect(barX, kIndexRowTop, 2, trackH, palColor(Pal::TRACK));
-        const int thumbH = std::max(8, trackH * kIndexVisible / n);
-        fb.fillRect(barX, kIndexRowTop + trackH * top / n, 2, thumbH,
-                    palColor(Pal::INK_DIM));
-    }
+    drawScrollbar(fb, kIndexRowTop, kIndexVisible * kIndexRowH, n, top, kIndexVisible);
 
     drawHintBand(fb, "A NEXT  B OPEN  C BACK");
 }

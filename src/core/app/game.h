@@ -3109,7 +3109,7 @@ private:
     // whether it can be cooked — knowing the recipe is necessary but not sufficient,
     // the raw ingredients still have to be in the bag.
     void onHackerMerge(const ButtonEvent& ev);     // MERGE HUB list: A cycle · B craft · C back
-    void drawHackerMerge(Framebuffer& fb) const;   // MERGE HUB screen body (below the shared header)
+    void drawHackerMerge(Framebuffer& fb) const;   // MERGE HUB screen, header band included
 
     // CREW (game_crew.cpp) — enlist in a crew (content_crews.h) and designate the
     // HOME NETWORK membership hangs off. Four views (CrewView, above); this pair is
@@ -3119,7 +3119,7 @@ private:
     void onHackerCrew(const ButtonEvent& ev);      // A cycle · B enter/act · C up a view
     void drawHackerCrew(Framebuffer& fb) const;    // CREW screen, header band included
     void onHackerPeers(const ButtonEvent& ev);     // PEERS list: A cycle · C back (B unbound)
-    void drawHackerPeers(Framebuffer& fb) const;   // PEERS screen body (below the shared header)
+    void drawHackerPeers(Framebuffer& fb) const;   // PEERS screen, header band included
     // Per-view helpers, one pair each, so no single function carries all four layouts.
     void drawCrewHub(Framebuffer& fb) const;
     void drawCrewNetPicker(Framebuffer& fb) const;
@@ -3151,7 +3151,14 @@ private:
         return value + bonus;
     }
     void drawHackerHome(Framebuffer& fb, int cursor) const;  // terminal centre + identity + carousel
-    void drawHackerSubmenu(Framebuffer& fb) const;  // L2 dispatch (PROFILE / SHOP / VAULT)
+    void drawHackerSubmenu(Framebuffer& fb) const;  // L2 dispatch, one case per HackerSlotId
+    void drawHackerVault(Framebuffer& fb) const;
+    void drawHackerProfile(Framebuffer& fb) const;
+    // The SHOP slot (game_rigshop.cpp): drawRigShop picks the view shopView_ names.
+    void drawRigShop(Framebuffer& fb) const;
+    void drawRigShopRows(Framebuffer& fb) const;
+    void drawRigServices(Framebuffer& fb) const;
+    void drawRigServiceInfo(Framebuffer& fb) const;
     // VAULT's owned-openable row list (shared by input + render + the bulk-open
     // trigger), capped at `max`. Returns the count written into `rows`.
     int vaultOwnedRows(const ItemDef** rows, int max) const;
@@ -4387,7 +4394,7 @@ private:
     void finishPvpBattle();
 
     void onHackerLink(const ButtonEvent& ev);      // LINK list: A cycle · B act · C back
-    void drawHackerLink(Framebuffer& fb) const;    // LINK screen body (game_pvp.cpp)
+    void drawHackerLink(Framebuffer& fb) const;    // LINK screen + header (game_pvp.cpp)
 
     // Crew allegiance + the HOME NETWORK it hangs off (game_crew.cpp). Both are
     // player-level — they survive a pet reset, like the HackerTag and the Titles — and

@@ -230,14 +230,7 @@ void drawMovePicker(Framebuffer& fb, const ContentRegistry& reg,
                        locked ? palColor(Pal::INK_DIM) : palColor(Pal::INK),
                        tag, tagCol, beat, i == pick);
     }
-    if (rows > kMovePickerMaxRows) {   // UI_SCROLLBAR (mirrors drawItemsList)
-        const int barX = kActiveW - 3;
-        const int trackH = kMovePickerMaxRows * rowH;
-        fb.fillRect(barX, rowTop, 2, trackH, palColor(Pal::TRACK));
-        const int thumbH = std::max(8, trackH * kMovePickerMaxRows / rows);
-        const int thumbY = rowTop + trackH * scrollTop / rows;
-        fb.fillRect(barX, thumbY, 2, thumbH, palColor(Pal::INK_DIM));
-    }
+    drawScrollbar(fb, rowTop, kMovePickerMaxRows * rowH, rows, scrollTop, kMovePickerMaxRows);
 
     // Focused move's readout + prose, below a divider that follows the list rather
     // than sitting at a fixed y. Reserve the bottom band for the hold-B hint.

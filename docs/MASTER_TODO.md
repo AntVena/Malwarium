@@ -59,6 +59,19 @@ Collect those, then retune the two rows and decide whether either wants a rung a
 tally (`tools/gen_ach_icons.py`'s `tally`), and the bitset holds 256 wires, of which 204 are
 spent. |
 
+**Button HOLDS are routed by guessing which screen is up.** A tap reaches the screen through
+one dispatch (`onButton` switches on `nav_`), but a hold does not. `tickHeldGestures` is a
+ladder of guarded `if`s, one per hold screen, each re-deriving "am I on screen" from
+`face_`/`nav_`/`enteredId()`/a sub-view enum. The release edge is worse: `game_nav.cpp`
+calls all seven `*ReleaseB()` functions in a row and each one returns early unless its own
+four-way condition holds. Every new hold adds one more guard to both lists, and two guards
+that overlap fire on the same press. The fix is a per-screen hold/release hook dispatched
+from the same place taps are, so a hold screen joins by gaining a case, the way a list joins
+`game_listnav.cpp`. The `nav_` enum and its `switch`es stay. |
+`game_core.cpp`'s `tickHeldGestures`; `game_nav.cpp`'s release edge; the seven `*ReleaseB`. |
+L | Check the native suite, and diff a `tools/screens.sh` render taken before the change
+against one after (deterministic, so byte-for-byte). |
+
 ### 1b. A separation pass over every screen
 
 **There are only three levers for making one thing read apart from another**: put it in a
@@ -305,8 +318,25 @@ rather than by line count. `save.cpp` (1215), `combat.cpp` (1888), `combat_facto
 ONE concern at UNIT level — save.cpp is long because the format is flat, which is not a second
 responsibility, and combat.cpp is the turn engine alone.
 
-**The unit rule is holding, and so does the function rule.** Nothing in the tree is past the
-point a reviewer can hold it in their head. What is left is a note rather than a task:
+**Three `game_*.cpp` units are past 600 and hold more than one concern.** Each has a seam
+where a whole cluster lifts out without touching the rest:
+
+- **`game_combat.cpp` (1018) carries the MOVES/TRAIN screens' input**, ~200 lines from
+  `onTrainList` to `onSimTier`, which is screen handling rather than the fight. Split →
+  `game_train.cpp`. | `game_combat.cpp` | S |
+- **`game_items.cpp` (972) carries the cache economy and the stat pickers.** `rollLootEntry`
+  through `onBulkYield` (~150) is the VAULT's payout path, not the ITEMS screen, and the
+  Rollback/Repartition pickers (~130) are their own modal. Split → `game_caches.cpp`, and the
+  pickers either beside it or in their own unit. | `game_items.cpp` | S |
+- **`game_explore.cpp` (973) carries boss rounds and the move-learn queries.** From
+  `moveIsTeachable` to the end (~230) is the bosses and what each zone can teach, which the
+  walk only calls into. Split → `game_bosses.cpp`. | `game_explore.cpp` | S |
+
+The rest past 600 are one concern each and stay: `game_render` (one function per screen),
+`game_persist` (the flat save mapping), `game_core` (the tick clocks), and `game_config`,
+`game_pvp`, `game_crew` (one screen each, just over).
+
+**The function rule.** What is left is a note rather than a task:
 
 - **`Combat::mitigate` (80 lines) keeps its locals, and should.** The pierce ladder, the brace
   and the min-1 floor are one negotiation over a single value; splitting them further means

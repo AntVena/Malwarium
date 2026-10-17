@@ -202,6 +202,7 @@ void Game::onHackerPeers(const ButtonEvent& ev) {
 // --- Rendering ---------------------------------------------------------------
 
 void Game::drawHackerPeers(Framebuffer& fb) const {
+    drawHeaderBand(fb, "PEERS");
     PeerRow rows[kPeerMaxRows];
     const int n = peerRows(rows, kPeerMaxRows);
 

@@ -97,16 +97,8 @@ void drawStoryArchive(Framebuffer& fb, const StoryArchiveRow* rows, int rowCount
         drawText(fb, kMargin, y + kFontH + 2, sub, palColor(Pal::INK_DIM));
     }
 
-    if (rowCount > visible) {
-        // The same right-edge thumb every other windowed list draws, measured in rows.
-        const int barX = kActiveW - 3;
-        const int trackTop = kRowTop - 2;
-        const int trackH = kActiveH - kHintBandH - trackTop;
-        fb.fillRect(barX, trackTop, 2, trackH, palColor(Pal::TRACK));
-        const int thumbH = std::max(8, trackH * visible / rowCount);
-        fb.fillRect(barX, trackTop + trackH * top / rowCount, 2, thumbH,
-                    palColor(Pal::INK_DIM));
-    }
+    drawScrollbar(fb, kRowTop - 2, kActiveH - kHintBandH - (kRowTop - 2), rowCount, top,
+                  visible);
     drawHintBand(fb, "A NEXT   B READ   C BACK");
 }
 

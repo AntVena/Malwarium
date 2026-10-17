@@ -6,7 +6,7 @@
 // *explore-event* shops
 //
 // Private, engine-internal, sibling to game_internal.h — inline const (C++17 inline
-// variable, header-only), shared by game_hacker.cpp (buy dispatch + row rendering) and
+// variable, header-only), shared by game_rigshop.cpp (buy dispatch + row rendering) and
 // game_merge.cpp (which reads the Merge Hub row). Every row is data: adding an upgrade
 // is a new `kRigUpgrades[]` entry, never new buy/render logic.
 //

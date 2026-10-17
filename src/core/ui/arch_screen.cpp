@@ -236,14 +236,7 @@ void drawArchList(Framebuffer& fb, const std::vector<ArchRow>& rows, const char*
         }
     }
 
-    if (n > kVisibleRows) {  // slim scrollbar (UI_SCROLLBAR)
-        const int barX = kActiveW - 3;
-        const int trackH = kVisibleRows * kRowH;
-        fb.fillRect(barX, kRowTop, 2, trackH, palColor(Pal::TRACK));
-        const int thumbH = std::max(8, trackH * kVisibleRows / n);
-        const int thumbY = kRowTop + trackH * scrollTop / n;
-        fb.fillRect(barX, thumbY, 2, thumbH, palColor(Pal::INK_DIM));
-    }
+    drawScrollbar(fb, kRowTop, kVisibleRows * kRowH, n, scrollTop, kVisibleRows);
     drawHintBand(fb, "A NEXT  B OPEN  C BACK");
 }
 

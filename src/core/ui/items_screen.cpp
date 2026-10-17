@@ -424,14 +424,7 @@ void drawItemsList(Framebuffer& fb, const std::vector<InvRow>& rows, int cursor,
                         palColor(Pal::INK), beat, i == cursor);
     }
 
-    if (n > kVisibleRows) {  // slim scrollbar (UI_SCROLLBAR)
-        const int barX = kActiveW - 3;
-        const int trackH = kVisibleRows * kRowH;
-        fb.fillRect(barX, kRowTop, 2, trackH, palColor(Pal::TRACK));
-        const int thumbH = std::max(8, trackH * kVisibleRows / n);
-        const int thumbY = kRowTop + trackH * scrollTop / n;
-        fb.fillRect(barX, thumbY, 2, thumbH, palColor(Pal::INK_DIM));
-    }
+    drawScrollbar(fb, kRowTop, kVisibleRows * kRowH, n, scrollTop, kVisibleRows);
 }
 
 int itemDetailPanelLines() {
@@ -592,14 +585,7 @@ void drawBulkYield(Framebuffer& fb, const ItemDef& cache, int cachesOpened, int 
             drawLabelValue(fb, 46, y, r.def ? r.def->displayName : "?",
                            palColor(Pal::INK), cnt, palColor(Pal::INK), beat, i == cur);
         }
-        if (count > kBulkVisibleRows) {   // UI_SCROLLBAR
-            const int barX = kActiveW - 3;
-            const int trackH = kBulkVisibleRows * rowH;
-            fb.fillRect(barX, rowTop, 2, trackH, palColor(Pal::TRACK));
-            const int thumbH = std::max(8, trackH * kBulkVisibleRows / count);
-            const int thumbY = rowTop + trackH * scrollTop / count;
-            fb.fillRect(barX, thumbY, 2, thumbH, palColor(Pal::INK_DIM));
-        }
+        drawScrollbar(fb, rowTop, kBulkVisibleRows * rowH, count, scrollTop, kBulkVisibleRows);
     }
 
     const char* hint = count > kBulkVisibleRows ? "A SCROLL  B/C OK" : "B/C  OK";

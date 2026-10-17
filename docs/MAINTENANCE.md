@@ -34,13 +34,35 @@ its keep-anyway exceptions (other-code refs, living how-to standards, `vNN` save
 tests, and the domain terms that only look like refs: EAPOL `M1`–`M4`, `S3`/`C5`, `D0`–`D3`, world
 `Area 0`–`3`). Cross-check any claim against the actual code before trusting it.
 
-### Self-architecture review — Last run: 2026-08-29
+### Self-architecture review — Last run: 2026-10-17
 Check the `game_*.cpp` module split for size creep past ~600 lines. Look for cross-file duplication, dead code, and orphaned helpers
 that should have moved to `game_internal.h` or been deleted. Verify actual file sizes, don't trust
 what a doc says they are. Sources are globbed (`CMakeLists.txt`, `build_src_filter`), so a new
 unit needs no build-file edit — the cost of a split is the reading, not the plumbing. When a
 unit is big but genuinely one concern (a dispatcher, a flat save mapping, a screen-per-function
 render file), leave it and say so: length that follows from the number of cases is not creep.
+
+**Judge the shape against the BEST one for the job, not against its neighbours.** Code here
+grows by copying the closest sibling, so a convention can be everywhere simply because it
+was there first, and "matches the rest of the file" proves nothing. For anything you touch,
+ask what the best structure would be from scratch, then whether the gap is worth closing.
+This is the same sweep as a single-entity magnitude sitting in `tunables.h`. What to look for:
+
+- **A widget or calculation written out at more than one site.** Grep its shape, not its
+  name: copies of the same thing go by different names, and a "same as X" comment is a sign
+  the sameness is held together only by copying.
+- **A shared helper that exists but is too private to reach.** If a helper lives in a
+  narrow header (`game_internal.h` is private to `game/`), every caller outside that header
+  writes its own copy. Before adding a helper, look for one; before trusting one, check who
+  CAN include it.
+- **A dispatcher that also does its cases' work.** A dispatcher picks a case and calls it.
+  Header bands, layout constants and per-screen state belong to the screen it calls.
+- **Copies that have quietly drifted apart.** A variant may be a real decision or just
+  drift. If its own comment says it "matches" the others, it is drift: fold it in.
+
+Verify a refactor that touches drawing against `./tools/screens.sh` rendered BEFORE the
+change. The frames are deterministic, so `diff -rq` of the two directories is a
+byte-for-byte proof, not a looking exercise.
 
 **Measure FUNCTIONS too, not just files.** The unit rule has been holding while the mass moved
 inside individual functions, where a file-size check cannot see it — the units sit near 600 while

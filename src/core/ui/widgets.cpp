@@ -1,5 +1,6 @@
 #include "core/ui/widgets.h"
 
+#include <algorithm>
 #include <cctype>
 #include <cstdio>
 
@@ -248,6 +249,16 @@ void drawProgressBar(Framebuffer& fb, int x, int y, int w, int h, float t,
             }
         }
     }
+}
+
+void drawScrollbar(Framebuffer& fb, int trackTop, int trackH, int total, int scrollTop,
+                   int visible) {
+    if (total <= visible) return;
+    const int barX = kActiveW - 3;
+    fb.fillRect(barX, trackTop, 2, trackH, palColor(Pal::TRACK));
+    const int thumbH = std::max(8, trackH * visible / total);
+    const int thumbY = trackTop + trackH * scrollTop / total;
+    fb.fillRect(barX, thumbY, 2, thumbH, palColor(Pal::INK_DIM));
 }
 
 void drawRowCursor(Framebuffer& fb, int x, int y, Rgb565 c) {

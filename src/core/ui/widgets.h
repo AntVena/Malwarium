@@ -155,6 +155,16 @@ void drawStageIndicator(Framebuffer& fb, int x, int y, int w, Stage current);
 void drawProgressBar(Framebuffer& fb, int x, int y, int w, int h, float t,
                      Rgb565 c, bool churn = false, int beat = 0);
 
+// UI_SCROLLBAR: the slim right-edge rail beside a scrolling list or page. Drawn only
+// when the list is longer than its window, so a list that fits shows no chrome and a
+// caller needs no overflow test of its own. `trackTop`/`trackH` are the window it runs
+// beside; `total` and `visible` are row counts and `scrollTop` the first visible row
+// (listScrollTop). The thumb is measured in ROWS, not pixels, because the list position
+// is what the reader is tracking. Every scrolling surface draws through this one, so no
+// two lists can disagree on where their thumb sits.
+void drawScrollbar(Framebuffer& fb, int trackTop, int trackH, int total, int scrollTop,
+                   int visible);
+
 // UI_CURSOR_ROW: a 5x7 right-pointing triangle marker for a focused list row
 // (the 5x7 font has no '>'). Left-anchored, tapering to a point at the right.
 void drawRowCursor(Framebuffer& fb, int x, int y, Rgb565 c);

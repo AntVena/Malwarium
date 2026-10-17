@@ -22,19 +22,6 @@ int proseBodyH(const char* body) {
 // heights are measured per window rather than once for the page.
 int headerLead(int index, int top) { return index == top ? 0 : kProseGroupLead; }
 
-// UI_SCROLLBAR for a flowed page. Measured in ROWS, not pixels — the thumb reports
-// position in the LIST, which is what the reader is tracking; a pixel-proportional
-// thumb on rows of wildly different heights jumps unevenly for no reason the reader
-// can see.
-void drawScrollThumb(Framebuffer& fb, int rowTop, int top, int shown, int total) {
-    const int barX = kActiveW - 3;
-    const int trackH = kProseBottom - rowTop;
-    fb.fillRect(barX, rowTop, 2, trackH, palColor(Pal::TRACK));
-    const int thumbH = std::max(8, trackH * shown / total);
-    const int thumbY = rowTop + trackH * top / total;
-    fb.fillRect(barX, thumbY, 2, thumbH, palColor(Pal::INK_DIM));
-}
-
 }  // namespace
 
 std::vector<int> proseRowHeights(const std::vector<ProseRow>& rows, int top) {
@@ -131,7 +118,9 @@ void drawProseRows(Framebuffer& fb, const std::vector<ProseRow>& rows, int scrol
     }
 
     if (overflow) {
-        drawScrollThumb(fb, rowTop, top, shown, total);
+        // In rows, not pixels: a pixel-proportional thumb over rows of wildly different
+        // heights would jump unevenly for no reason the reader can see.
+        drawScrollbar(fb, rowTop, kProseBottom - rowTop, total, top, shown);
         if (hint && hint[0]) drawHintBand(fb, hint);
     }
 }

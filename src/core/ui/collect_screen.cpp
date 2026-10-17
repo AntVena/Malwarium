@@ -195,14 +195,8 @@ void drawFoodsScreen(Framebuffer& fb, const ContentRegistry& reg,
 
     drawStatHintBand(fb, foodWindowIndex(rows, top) + 1, foodWindowCount(rows));
 
-    if (foodRowsFitting(rows, 0) < count) {
-        const int barX = kActiveW - 3;
-        const int trackH = kProseBottom - kGridTop;
-        fb.fillRect(barX, kGridTop, 2, trackH, palColor(Pal::TRACK));
-        const int thumbH = std::max(8, trackH * shown / count);
-        fb.fillRect(barX, kGridTop + trackH * top / count, 2, thumbH,
-                    palColor(Pal::INK_DIM));
-    }
+    if (foodRowsFitting(rows, 0) < count)
+        drawScrollbar(fb, kGridTop, kProseBottom - kGridTop, count, top, shown);
 }
 
 // --- The MOVES roster -------------------------------------------------------

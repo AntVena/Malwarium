@@ -519,6 +519,7 @@ int Game::pvpChallengeableKeys(uint64_t* out, int max) const {
 // --- Rendering ---------------------------------------------------------------
 
 void Game::drawHackerLink(Framebuffer& fb) const {
+    drawHeaderBand(fb, "LINK");
     drawText(fb, kMargin, kContextY, "LINK", palColor(Pal::INK));
 
     // Name whoever actually holds the radio rather than implying LINK has it. An empty

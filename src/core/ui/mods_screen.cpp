@@ -246,14 +246,7 @@ void drawModPicker(Framebuffer& fb, const ContentRegistry& reg,
                        locked ? palColor(Pal::INK_DIM) : palColor(Pal::INK),
                        tag, tagCol, beat, i == pick);
     }
-    if (rows > kModPickerMaxRows) {   // UI_SCROLLBAR (mirrors drawMovePicker)
-        const int barX = kActiveW - 3;
-        const int trackH = kModPickerMaxRows * rowH;
-        fb.fillRect(barX, kRowTop, 2, trackH, palColor(Pal::TRACK));
-        const int thumbH = std::max(8, trackH * kModPickerMaxRows / rows);
-        const int thumbY = kRowTop + trackH * scrollTop / rows;
-        fb.fillRect(barX, thumbY, 2, thumbH, palColor(Pal::INK_DIM));
-    }
+    drawScrollbar(fb, kRowTop, kModPickerMaxRows * rowH, rows, scrollTop, kModPickerMaxRows);
 
     // Focused mod's spec panel, below a divider that follows the list rather than
     // sitting at a fixed y, plus its equip-level gate underneath.
