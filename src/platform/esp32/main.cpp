@@ -579,9 +579,9 @@ void loop() {
 #endif
     if (wasAsleep && !screenAsleep) dirty = true;  // just woke -> repaint fresh state
 
-    // NOTE: there is deliberately no dev A+B "reset to Decryption Hatch" chord here
-    // (— too easy to mis-press). The CFG "RESET TO HATCH" row
-    // (DEV_CFG_RESET_ROW, dev_config.h) is the single dev reset path.
+    // There is no dev A+B "reset to Decryption Hatch" chord here: it is too easy to
+    // mis-press. The dev reset is CFG's "RESET TO HATCH" row (DEV_CFG_RESET_ROW,
+    // dev_config.h), present only in a -DMALWARIUM_DEV build.
 
 #ifndef BRINGUP_PINSCAN
     // Idle screen sleep: blank the panel after SCREEN_SLEEP_MS of no input. The engine

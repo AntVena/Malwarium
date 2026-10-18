@@ -48,7 +48,7 @@ struct CfgRow {
 };
 
 // The CFG row table (static). Includes the DEV "Reset to Hatch" row only when
-// DEV_CFG_RESET_ROW is defined (dev_config.h) — release builds omit it. Returns
+// DEV_CFG_RESET_ROW is defined (dev_config.h, which needs -DMALWARIUM_DEV). Returns
 // the row count and points `out` at the static array.
 int cfgRows(const CfgRow*& out);
 

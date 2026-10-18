@@ -59,15 +59,6 @@ Collect those, then retune the two rows and decide whether either wants a rung a
 tally (`tools/gen_ach_icons.py`'s `tally`), and the bitset holds 256 wires, of which 204 are
 spent. |
 
-**Every release ships the DEV start overrides.** `include/dev_config.h` defines
-`DEV_CFG_RESET_ROW` (a one-press RESET TO HATCH row in CFG) and `DEV_EGG_TIMER_MS` (a first
-hatch of 5 minutes in place of `kBootHatchMs`), and says to comment both out for a release build.
-Nothing on the release path does: `publish.yml` builds `main` as it stands. Decide whether
-they ship, and if not, make the release build drop them rather than relying on a hand
-edit. | `include/dev_config.h`; `publish.yml`'s build; `platformio.ini`'s
-`waveshare_s3_154` flags. | S | `test_cfg_dev_reset_row` checks the row against the macro
-both ways, so either answer stays gated. |
-
 ### 1b. A separation pass over every screen
 
 **There are only three levers for making one thing read apart from another**: put it in a
