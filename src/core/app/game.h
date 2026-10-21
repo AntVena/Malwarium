@@ -1516,12 +1516,13 @@ public:
     }
     // True while the current screen runs an animation cadence FASTER than the shared
     // ~4fps heartbeat (combat sprite motion, the dissolve/swarm sweep, the arcade boards,
-    // the Decryptogram cursor repeat): the screens tickAnimClocks services. Every
-    // other screen changes at most once per heartbeat. The device tier reads this to scale
-    // the CPU clock: a heavy screen gets the full clock, an idle/menu one a lower one,
-    // since composing a 4fps frame leaves generous headroom (platform/esp32/main.cpp). Kept
-    // in sync with tickAnimClocks by hand; a new fast-cadence screen joins both.
-    bool highFrameRate() const;
+    // the held Decryptogram cursor). Every other screen changes at most once per heartbeat.
+    // The device tier reads this to scale the CPU clock: a high-frame-rate screen gets the
+    // full clock, an idle/menu one a lower one, since composing a 4fps frame leaves generous
+    // headroom (platform/esp32/main.cpp). The flag is set by tickAnimClocks from the very
+    // gates that drive those cadences, so a screen that animates faster than the heartbeat
+    // is covered by construction, with no separate list to keep in sync.
+    bool highFrameRate() const { return fastCadenceActive_; }
     // True while the UPDATES screen is showing — its row list, the install confirm,
     // or a job's progress. The screen is a WAIT: a check associates and fetches on
     // the network's clock, and the verdict it leaves behind is the whole reason the
@@ -3906,6 +3907,10 @@ private:
     // on A would be a second helping that never happened.
     int fxBeat_ = 0;
     uint32_t lastFxMs_ = 0;
+    // Set by tickAnimClocks each tick: true while any cadence it services is live. Read by
+    // highFrameRate() (device-tier CPU-clock scaling). Derived from the same gates that run
+    // the fast frames, not a parallel list, so the two cannot drift.
+    bool fastCadenceActive_ = false;
     // Wide enough for the longest line any resolver composes — "<item> - DECRYPT IN
     // VAULT" with the widest cache name in it. Transient (never saved), so the size is
     // a rendering question only. Wrapped to two lines on screen (exploreStatusLines).

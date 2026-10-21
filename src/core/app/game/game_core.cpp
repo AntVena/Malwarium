@@ -334,11 +334,16 @@ bool Game::tickHeartbeat(uint32_t nowMs) {
 // own clock. Zero cost off those screens.
 bool Game::tickAnimClocks(uint32_t nowMs) {
     bool changed = false;
+    // Set true by whichever cadence below is live this tick, then latched into
+    // fastCadenceActive_ for Game::highFrameRate() (device CPU-clock scaling). Marked at
+    // each cadence's own gate, so it tracks the real fast-frame set with no parallel list.
+    bool fast = false;
     // Combat sprite motion ticks on its own faster cadence (kCombatAnimMs) instead of
     // the shared heartbeat above, so a feeding-frenzy streak's accelerated turn pacing
     // still shows real sprite motion between repaints rather than a stuck pose. Only
     // runs while a fight is actually on screen — zero cost otherwise.
     if (nav_ == Nav::Combat) {
+        fast = true;
         if (nowMs - lastCombatAnimMs_ >= static_cast<uint32_t>(kCombatAnimMs)) {
             lastCombatAnimMs_ = nowMs;
             combatAnimBeat_++;
@@ -412,6 +417,7 @@ bool Game::tickAnimClocks(uint32_t nowMs) {
         nav_ == Nav::ModalFeeding || nav_ == Nav::Wifi || swarmLive ||
         (nav_ == Nav::Combat && combat_.outcome() != Combat::Outcome::Ongoing);
     if (fxSweeping) {
+        fast = true;
         if (nowMs - lastFxMs_ >= static_cast<uint32_t>(kFxAnimMs)) {
             lastFxMs_ = nowMs;
             fxBeat_++;
@@ -429,6 +435,7 @@ bool Game::tickAnimClocks(uint32_t nowMs) {
     // also scrub the cursor out from under it.
     if (nav_ == Nav::Cryptogram && cryptogram_.running() && (aHeld_ != cHeld_) &&
         !gameBriefOpen_) {
+        fast = true;
         const uint32_t downMs = aHeld_ ? aDownMs_ : cDownMs_;
         if (nowMs - downMs >= kCryptogramRepeatDelayMs &&
             nowMs - cryptoRepeatLastMs_ >= kCryptogramRepeatMs) {
@@ -446,6 +453,7 @@ bool Game::tickAnimClocks(uint32_t nowMs) {
     // slow for a timing test. Only runs while the board is up, and only while the run is
     // still live — a finished board holds still.
     if (nav_ == Nav::Stacker && !gameBriefOpen_) {
+        fast = true;
         if (nowMs - lastStackerStepMs_ >=
             static_cast<uint32_t>(playStepMs(kStackerStepMs))) {
             lastStackerStepMs_ = nowMs;
@@ -460,6 +468,7 @@ bool Game::tickAnimClocks(uint32_t nowMs) {
     // it from the run's own score, so the game speeds up as it is played. The dial is
     // not read here: FRAGGER's difficulty is its lane count (beginFraggerRun).
     if (nav_ == Nav::Fragger && !gameBriefOpen_) {
+        fast = true;
         if (nowMs - lastFraggerStepMs_ >= static_cast<uint32_t>(fragger_.stepMs())) {
             lastFraggerStepMs_ = nowMs;
             if (fragger_.running()) {
@@ -476,6 +485,7 @@ bool Game::tickAnimClocks(uint32_t nowMs) {
     // it walks to IS the difficulty. Only while the run is live — a crashed or finished
     // board holds still under the verdict.
     if (nav_ == Nav::Isolation && !gameBriefOpen_) {
+        fast = true;
         if (nowMs - lastIsolationStepMs_ >=
             static_cast<uint32_t>(playStepMs(kIsolationStepMs))) {
             lastIsolationStepMs_ = nowMs;
@@ -499,6 +509,7 @@ bool Game::tickAnimClocks(uint32_t nowMs) {
     // kChromaSettleMs change would land on four frames total. Deltas, not a fixed step,
     // so the model always sees the time that actually passed.
     if (nav_ == Nav::Chroma && !gameBriefOpen_ && chroma_.running()) {
+        fast = true;
         if (nowMs - lastChromaMs_ >= static_cast<uint32_t>(kFxAnimMs)) {
             const int passed = chroma_.passes();
             chroma_.tick(nowMs - lastChromaMs_);
@@ -511,29 +522,8 @@ bool Game::tickAnimClocks(uint32_t nowMs) {
     } else {
         lastChromaMs_ = nowMs;
     }
+    fastCadenceActive_ = fast;
     return changed;
-}
-
-// The screen set tickAnimClocks services: those running a cadence faster than the shared
-// heartbeat. Device-tier CPU-clock scaling reads it (Game::highFrameRate, game.h). Kept in
-// sync with tickAnimClocks by hand; nav-based rather than replaying each board's "is it
-// actively stepping" gate, because the clock wants the screen's ceiling, not its instant.
-bool Game::highFrameRate() const {
-    switch (nav_) {
-        case Nav::Combat:          // combat sprite motion + the FX_CAMO it drives
-        case Nav::ModalFeeding:    // the dissolve sweep (FX_ABSORB/SHRED) hosts
-        case Nav::Wifi:
-        case Nav::ShiboleetHail:   // the guardian SWARM
-        case Nav::ShiboleetVerdict:
-        case Nav::Cryptogram:      // the held-cursor repeat
-        case Nav::Stacker:
-        case Nav::Fragger:
-        case Nav::Isolation:
-        case Nav::Chroma:
-            return true;
-        default:
-            return false;
-    }
 }
 
 // The deadlines that end things: the post-encounter readout timing out, the Critical
