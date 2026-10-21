@@ -17,6 +17,17 @@
 //
 // The scan is ASYNC (WiFi.scanNetworks(async)) so a 2–3s scan never stalls the
 // ~4fps render loop; poll() just harvests a completed scan.
+//
+// DUTY-CYCLED RADIO. A sweep needs the radio for ~2 to 3s but recurs only every
+// NET_SNIFF_SCAN_INTERVAL_MS (30s). So wants() is schedule-aware: it claims the
+// radio only while a sweep is in flight or the next one is due, and releases it the
+// instant a sweep harvests. Between sweeps the arbiter sees no owner and powers the
+// radio fully down. That is the point: the main loop can then light-sleep the SoC
+// through the gap (platform/esp32/main.cpp) instead of holding a ~90mA radio hot for
+// a ~2.5s/30s duty. msUntilNextSweep() hands the loop the gap length so it wakes on
+// the normal cadence rather than at the far longer idle-sleep fallback. Ambient LINK,
+// which borrowed the between-sweeps hot window, now gets one piggyback per sweep
+// (radio_arbiter.h) rather than a continuously-open receiver.
 #pragma once
 
 #include <cstdint>
@@ -38,16 +49,35 @@ public:
     // device with Audit off (or capture owning the radio) never radiates here.
     void begin(Game* game) { game_ = game; }
 
-    // Whether the scan should run right now. That is Game::radioScanWanted(), not the
-    // bare CFG toggle: the engine also raises the scan for the stretch where a screen
-    // genuinely needs live results (the CREW home-network picker) and drops it again on
-    // its own. The arbiter reads this to decide the radio owner; keeps the read in one
-    // place rather than duplicated at the call site.
-    bool wants() const {
+    // Whether the scan should OWN the radio this instant. Two gates, both required:
+    // the engine wants scanning at all (Game::radioScanWanted(): the CFG "AUDIT SCAN"
+    // toggle plus the transient raise for a screen that needs live results, the CREW
+    // home-network picker), AND there is work to do right now, i.e. a sweep is in
+    // flight or the rescan interval has elapsed. Between sweeps the second gate is
+    // false, so the arbiter stands this owner down and powers the radio off for the
+    // gap (see the banner). The arbiter reads this to decide the radio owner; keeps the
+    // read in one place rather than duplicated at the call site.
+    bool wants(uint32_t nowMs) const {
 #if NET_SNIFF_ENABLED
-        return game_ && game_->radioScanWanted();
+        return game_ && game_->radioScanWanted() && (scanning_ || dueForSweep(nowMs));
 #else
+        (void)nowMs;
         return false;
+#endif
+    }
+
+    // ms until the scan next needs the radio: 0 when it wants it now (mid-sweep or the
+    // interval has elapsed), the remaining gap when dormant, and UINT32_MAX ("no bound")
+    // when scanning isn't wanted at all. The main loop clamps its idle light-sleep to
+    // this so a powered-down gap still ends on the rescan cadence (platform/esp32/main.cpp).
+    uint32_t msUntilNextSweep(uint32_t nowMs) const {
+#if NET_SNIFF_ENABLED
+        if (!game_ || !game_->radioScanWanted()) return UINT32_MAX;
+        if (scanning_ || dueForSweep(nowMs)) return 0;
+        return NET_SNIFF_SCAN_INTERVAL_MS - (nowMs - lastScanMs_);
+#else
+        (void)nowMs;
+        return UINT32_MAX;
 #endif
     }
 
@@ -107,7 +137,7 @@ public:
             return;
         }
 
-        if (nowMs - lastScanMs_ >= NET_SNIFF_SCAN_INTERVAL_MS) {
+        if (dueForSweep(nowMs)) {
             // async = true (non-blocking), show_hidden = false (passive discovery).
             WiFi.scanNetworks(true, false);
             scanStartMs_ = nowMs;
@@ -152,6 +182,15 @@ public:
     }
 
 private:
+#if NET_SNIFF_ENABLED
+    // A fresh sweep is due: the interval has elapsed since the last one harvested. The
+    // single definition wants() and service() both read, so the "when to sweep" line
+    // can't drift between the arbiter's claim and the actual sweep.
+    bool dueForSweep(uint32_t nowMs) const {
+        return nowMs - lastScanMs_ >= NET_SNIFF_SCAN_INTERVAL_MS;
+    }
+#endif
+
     Game* game_ = nullptr;
 #if NET_SNIFF_ENABLED
     bool radioOn_ = false;

@@ -221,13 +221,17 @@ void applyCpuFreq(int mhz) {
     Serial.printf("[cpu] %dMHz\n", mhz);
 }
 
-void enterIdleLightSleep() {
+// maxSleepMs bounds the timer wake. It is normally IDLE_SLEEP_FALLBACK_MS, but a
+// consumer that powers its radio down between bursts (the audit scan) needs the SoC
+// back in time for its next burst, so the caller clamps this to whichever comes
+// first. The GPIO button wake is independent of it; a press wakes instantly.
+void enterIdleLightSleep(uint32_t maxSleepMs) {
     for (auto& b : buttons) {
         if (b.pin < 0) continue;
         gpio_wakeup_enable(static_cast<gpio_num_t>(b.pin), GPIO_INTR_LOW_LEVEL);
     }
     esp_sleep_enable_gpio_wakeup();
-    esp_sleep_enable_timer_wakeup(static_cast<uint64_t>(IDLE_SLEEP_FALLBACK_MS) * 1000ULL);
+    esp_sleep_enable_timer_wakeup(static_cast<uint64_t>(maxSleepMs) * 1000ULL);
     esp_light_sleep_start();
     lastSleepWakeMs = millis();
     for (auto& b : buttons) {
@@ -823,6 +827,12 @@ void loop() {
     // light-sleeps rather than spinning the loop. Any other state keeps the responsive
     // cadence, and bring-up pin scanning wants continuous polling instead.
     //
+    // "Unowned" now includes the gaps between audit-scan sweeps: the scan powers its radio
+    // down between sweeps (net_sniff.h), so that quiet stretch is a genuine no-owner window
+    // the SoC can sleep through, the main win over holding the radio hot for the whole
+    // ~30s interval. The timer wake is clamped to the scan's next-sweep time
+    // (radio.msUntilRadioWake) so the rescan cadence survives the power-down.
+    //
     // A USB host blocks the light sleep outright: it gates the clocks the USB-Serial-JTAG
     // link runs on, so sleeping mid-session drops the device out of a serial monitor.
     //
@@ -842,7 +852,16 @@ void loop() {
 #ifdef BRINGUP_PINSCAN
     delay(5);
 #else
-    if (idleAndQuiet) enterIdleLightSleep();
-    else delay(5);
+    if (idleAndQuiet) {
+        // Wake for whichever comes first: the next scan sweep (so a radio powered down
+        // between sweeps still rescans on cadence) or the USB-detect fallback. owner is
+        // None here, so the scan is dormant and the hint is a real gap, never 0.
+        uint32_t maxSleepMs = static_cast<uint32_t>(IDLE_SLEEP_FALLBACK_MS);
+        const uint32_t wakeHint = radio.msUntilRadioWake(millis());
+        if (wakeHint < maxSleepMs) maxSleepMs = wakeHint;
+        enterIdleLightSleep(maxSleepMs);
+    } else {
+        delay(5);
+    }
 #endif
 }

@@ -37,8 +37,11 @@
 // AMBIENT LINK IS NOT AN OWNER. Leaving the LINK toggle on never claims the radio:
 // an unassociated ESP-NOW listener cannot use modem sleep, so an always-on ambient
 // mode would simply hold the receiver open. Instead the arbiter lends it the SCAN
-// owner's already-hot window between sweeps (piggyback below), which costs the
-// window rather than a whole power cycle.
+// owner's hot window the instant a sweep harvests (piggyback below), which costs that
+// window rather than a whole power cycle. Since the scan now powers the radio down
+// between sweeps (net_sniff.h duty-cycling), that window is one announce per sweep
+// (~once per NET_SNIFF_SCAN_INTERVAL_MS) rather than a continuously-open receiver. That
+// is the deliberate trade for letting the SoC sleep through the gap.
 //
 // A low-battery guard sits in front of capture: below kAuditMinBatteryPct SoC on
 // battery, capture is refused and any live session is sealed (SM sealActive keeps
@@ -100,7 +103,7 @@ public:
 #endif
         }
 
-        const Owner want = desired();
+        const Owner want = desired(nowMs);
         if (want != owner_) {
 #if MAL_NET_CAPTURE
             Serial.printf("[radio] owner %s -> %s free=%u largest=%u\n",
@@ -142,6 +145,16 @@ public:
 
     Owner owner() const { return owner_; }
 
+    // ms until a dormant consumer next needs the radio, for sizing the main loop's idle
+    // light-sleep (platform/esp32/main.cpp). Only the passive scan keeps a schedule: it
+    // powers the radio down between sweeps (net_sniff.h), so this forwards its gap. Every
+    // other consumer either wants the radio continuously (and is then the owner, so the
+    // loop never light-sleeps) or not at all. UINT32_MAX means "nothing scheduled, use the
+    // default fallback".
+    uint32_t msUntilRadioWake(uint32_t nowMs) const {
+        return sniff_ ? sniff_->msUntilNextSweep(nowMs) : UINT32_MAX;
+    }
+
     // Take the radio off the air regardless of what any consumer wants, sealing a
     // live capture so its .pcap sink is flushed and closed rather than truncated.
     // poll() would put straight back whatever the persisted opt-ins ask for, so this
@@ -176,7 +189,7 @@ private:
         return RadioOwner::None;
     }
 
-    Owner desired() const {
+    Owner desired(uint32_t nowMs) const {
         // The association is the TOP owner — see the file banner. It can only want
         // the radio while an update job is actually running, so this never becomes a
         // standing claim that starves everything below.
@@ -191,7 +204,7 @@ private:
         // the sealed capture re-arms on its own the moment the screen closes.
         if (link_->wants()) return Owner::Link;
         if (capture_->wants() && batteryOkForCapture()) return Owner::Capture;
-        if (sniff_->wants()) return Owner::Scan;
+        if (sniff_->wants(nowMs)) return Owner::Scan;
         return Owner::None;
     }
 
