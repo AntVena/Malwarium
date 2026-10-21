@@ -83,7 +83,6 @@ public:
     // pending clients each call. Non-blocking.
     void service(uint32_t nowMs) {
 #if AP_ENABLED
-        (void)nowMs;
         if (!game_) return;
         if (!up_) {
             WiFi.mode(WIFI_AP);
@@ -158,6 +157,19 @@ public:
             Serial.printf("[ap] up ssid=%s ip=%s %s free=%u largest=%u\n", AP_SSID,
                           ip.toString().c_str(), pw ? "wpa2" : "open",
                           (unsigned)ESP.getFreeHeap(), (unsigned)ESP.getMaxAllocHeap());
+            lastClientMs_ = nowMs;   // grace window: never time out before anyone can join
+        }
+        // Idle auto-off: an AP with no associated station is a continuously-powered radio
+        // burning battery for no one (config.h AP_IDLE_TIMEOUT_MS). A connected station
+        // keeps resetting the clock; after the window with none, clear the CFG opt-in so
+        // the arbiter drops us on its next poll and the CFG line honestly reads OFF. A
+        // station that was present but has left is caught here on the next call after it
+        // goes, not on its own event, which is enough for a battery guard.
+        if (WiFi.softAPgetStationNum() > 0) lastClientMs_ = nowMs;
+        else if (AP_IDLE_TIMEOUT_MS > 0 &&
+                 nowMs - lastClientMs_ >= static_cast<uint32_t>(AP_IDLE_TIMEOUT_MS)) {
+            Serial.println("[ap] idle timeout (no station) -> AP off");
+            game_->setApEnabled(false);
         }
 #if STA_ENABLED
         dns_.processNextRequest();
@@ -183,6 +195,7 @@ public:
             WiFi.softAPdisconnect(true);
             WiFi.mode(WIFI_OFF);
             up_ = false;
+            lastClientMs_ = 0;   // a re-raise starts its grace window fresh
             Serial.printf("[ap] down free=%u largest=%u\n",
                           (unsigned)ESP.getFreeHeap(), (unsigned)ESP.getMaxAllocHeap());
         }
@@ -634,6 +647,7 @@ private:
 
     bool up_ = false;
     bool routesRegistered_ = false;   // see service() — the handler list is never freed
+    uint32_t lastClientMs_ = 0;       // last time a station was associated (idle auto-off)
     WebServer server_{80};
 #if STA_ENABLED
     DNSServer dns_;             // captive-portal catch-all, only while the AP is up

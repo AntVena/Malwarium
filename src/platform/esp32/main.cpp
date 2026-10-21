@@ -75,12 +75,22 @@ bool aDown = false, cDown = false;
 
 // --- Idle screen sleep (device tier; engine unaware) -----------------------
 bool screenAsleep = false;
+bool screenDimmed = false;   // backlight stepped down ahead of the full blank (dim ramp)
 uint32_t lastActivityMs = 0;
+
+void applyBrightness();  // defined below; noteActivity re-applies it when un-dimming
 
 // Any input wakes the panel. The waking press is *swallowed* (returns true) so
 // it doesn't also trigger a game action — a press to wake shouldn't navigate.
 bool noteActivity() {
     lastActivityMs = millis();
+    // Any input ends the dim ramp instantly, restoring the stored CFG level. This runs
+    // for a press on an awake-but-dimmed panel too (which is NOT swallowed below), so the
+    // same press both un-dims and does its game action.
+    if (screenDimmed) {
+        screenDimmed = false;
+        applyBrightness();
+    }
     if (!screenAsleep) return false;
     display.wake();
     screenAsleep = false;
@@ -190,7 +200,11 @@ bool pollSerialFormatAsk() {
 // 0-based level to a 0..255 PWM duty via the shared percent helper; the display
 // degrades to on/off when HAS_BACKLIGHT_PWM is 0 (config.h). Cheap enough to poll.
 void applyBrightness() {
-    const int duty = mal::brightnessPercent(game->brightness()) * 255 / 100;
+    int pct = mal::brightnessPercent(game->brightness());
+    // While the dim ramp is active, cap to the dim level rather than the stored CFG one.
+    // A cap (not a fixed set) so a user level already below it isn't brightened.
+    if (screenDimmed && pct > SCREEN_DIM_PERCENT) pct = SCREEN_DIM_PERCENT;
+    const int duty = pct * 255 / 100;
     display.setBacklight(static_cast<uint8_t>(duty < 0 ? 0 : duty > 255 ? 255 : duty));
 }
 
@@ -605,10 +619,22 @@ void loop() {
     if (game->exploreActive() || game->qrScreenActive() || game->radioScreenOpen() ||
         usbHostAttached())
         lastActivityMs = millis();
+    const uint32_t idleMs = millis() - lastActivityMs;
+    // Dim ramp: step the backlight down SCREEN_DIM_MS before the full blank (config.h).
+    // Reads the same lastActivityMs the sleep uses, so the keep-awake states above hold it
+    // off too (the QR must stay bright to scan). Un-dims instantly on input (noteActivity).
+    if (SCREEN_DIM_MS > 0 && !screenAsleep) {
+        const bool wantDim = idleMs >= static_cast<uint32_t>(SCREEN_DIM_MS);
+        if (wantDim != screenDimmed) {
+            screenDimmed = wantDim;
+            applyBrightness();
+        }
+    }
     if (SCREEN_SLEEP_MS > 0 && !screenAsleep &&
-        millis() - lastActivityMs >= static_cast<uint32_t>(SCREEN_SLEEP_MS)) {
+        idleMs >= static_cast<uint32_t>(SCREEN_SLEEP_MS)) {
         display.sleep();
         screenAsleep = true;
+        screenDimmed = false;   // the blank supersedes the dim; wake() restores full
         Serial.println("[screen] sleep");
     }
     // The clock follows the panel. A dark screen is drawing no frames, so the only thing

@@ -161,6 +161,14 @@
 //  (not delivered to the game). The engine keeps ticking while the screen is
 //  off. Set 0 to disable.
 #define SCREEN_SLEEP_MS         30000   // 30s
+//  Dim ramp: step the backlight down to SCREEN_DIM_PERCENT once the panel has been idle
+//  this long, ahead of the full blank at SCREEN_SLEEP_MS. The backlight is the largest
+//  single draw on a lit panel and its current is roughly linear in duty, so dimming the
+//  walk-away window shaves it, and the step doubles as a visible "about to sleep" cue.
+//  Any input restores the stored CFG level instantly. Device-tier only (the CFG level is
+//  untouched). Set SCREEN_DIM_MS 0 to disable the ramp; it must be < SCREEN_SLEEP_MS.
+#define SCREEN_DIM_MS           20000   // 20s (10s of dim before the 30s blank)
+#define SCREEN_DIM_PERCENT      20      // cap the backlight here while dimmed (matches the lowest CFG notch)
 //  Once the screen is asleep AND the radio has no owner (no Audit Scan/
 //  Capture, no 'Pedia AP) — i.e. nothing external can change game state — the
 //  loop light-sleeps the SoC instead of spinning. A button press wakes it
@@ -321,6 +329,13 @@
 #define AP_SSID                     "Malwarium"
 #define AP_PASSWORD                 ""     // "" = open AP; >=8 chars = WPA2
 #define AP_CHANNEL                  1      // 2.4GHz channel for the SoftAP
+//  Idle auto-off: an AP nobody is connected to is a continuously-powered radio (plus the
+//  HTTP server) burning battery for no one. After this long with zero associated stations
+//  the device clears the CFG opt-in (ap_server.h -> Game::setApEnabled(false)), so the
+//  arbiter drops the radio and the CFG line honestly reads OFF. A connected station keeps
+//  resetting the clock, and bring-up starts a fresh grace window so a just-raised AP is
+//  never timed out before anyone can scan the QR and join. Set 0 to disable.
+#define AP_IDLE_TIMEOUT_MS          180000 // 3 min with no station associated
 
 // Home-network association (STA) ---------------------
 //  A BOARD-CAPABILITY gate — "is there a radio that can join someone else's
@@ -469,6 +484,15 @@
 #  ifndef AP_CHANNEL
 #    define AP_CHANNEL           1
 #  endif
+#  ifndef AP_IDLE_TIMEOUT_MS
+#    define AP_IDLE_TIMEOUT_MS   0    // default: no idle auto-off unless a board opts in
+#  endif
+#endif
+#ifndef SCREEN_DIM_MS
+#  define SCREEN_DIM_MS          0    // default: no dim ramp (blank straight from full)
+#endif
+#ifndef SCREEN_DIM_PERCENT
+#  define SCREEN_DIM_PERCENT     20
 #endif
 
 
