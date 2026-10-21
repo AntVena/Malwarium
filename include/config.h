@@ -196,6 +196,15 @@
 //  same bench pass: measure armed-idle draw at both clocks before moving either.
 #define CPU_ACTIVE_FREQ_MHZ     240
 #define CPU_IDLE_FREQ_MHZ       80
+//  A third clock, for the panel AWAKE but on a screen that only repaints at the ~4fps
+//  heartbeat (idle pet, menus, stat pages, anything Game::highFrameRate() says no to).
+//  The full clock exists for the heavy screens (combat, the dissolve/swarm sweeps, the
+//  arcade boards); an idle screen composes its 4fps frame with cycles to spare, so it can
+//  run slower and still never miss a frame. Only the high-frame-rate screens take
+//  CPU_ACTIVE_FREQ_MHZ now. Held at 160 as a conservative first cut (a third off the draw
+//  while leaving ample render + input-feel headroom); the same bench pass that sizes the
+//  two above can push it toward 80. Set equal to CPU_ACTIVE_FREQ_MHZ to disable.
+#define CPU_SCREEN_IDLE_FREQ_MHZ 160
 //  Travel mode (CFG -> DEVICE -> TRAVEL MODE): a deliberate indefinite pause, and
 //  a DEEP sleep rather than the idle light sleep above — the digital core goes down
 //  and comes back through a reset, which is what makes the pause a real one. The
@@ -459,6 +468,9 @@
 #endif
 #ifndef CPU_IDLE_FREQ_MHZ
 #  define CPU_IDLE_FREQ_MHZ      CPU_ACTIVE_FREQ_MHZ   // default: no throttle
+#endif
+#ifndef CPU_SCREEN_IDLE_FREQ_MHZ
+#  define CPU_SCREEN_IDLE_FREQ_MHZ CPU_ACTIVE_FREQ_MHZ // default: no screen-on throttle
 #endif
 #ifndef USB_SETTLE_MS
 #  define USB_SETTLE_MS          400

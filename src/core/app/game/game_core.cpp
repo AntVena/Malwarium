@@ -514,6 +514,28 @@ bool Game::tickAnimClocks(uint32_t nowMs) {
     return changed;
 }
 
+// The screen set tickAnimClocks services: those running a cadence faster than the shared
+// heartbeat. Device-tier CPU-clock scaling reads it (Game::highFrameRate, game.h). Kept in
+// sync with tickAnimClocks by hand; nav-based rather than replaying each board's "is it
+// actively stepping" gate, because the clock wants the screen's ceiling, not its instant.
+bool Game::highFrameRate() const {
+    switch (nav_) {
+        case Nav::Combat:          // combat sprite motion + the FX_CAMO it drives
+        case Nav::ModalFeeding:    // the dissolve sweep (FX_ABSORB/SHRED) hosts
+        case Nav::Wifi:
+        case Nav::ShiboleetHail:   // the guardian SWARM
+        case Nav::ShiboleetVerdict:
+        case Nav::Cryptogram:      // the held-cursor repeat
+        case Nav::Stacker:
+        case Nav::Fragger:
+        case Nav::Isolation:
+        case Nav::Chroma:
+            return true;
+        default:
+            return false;
+    }
+}
+
 // The deadlines that end things: the post-encounter readout timing out, the Critical
 // System Failure window, the evolution boundary, the Lockout crisis firing and expiring,
 // and the autosave. Ordered by modal priority — CSF > Lockout > Evolution — and each

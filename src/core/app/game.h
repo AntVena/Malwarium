@@ -1514,6 +1514,14 @@ public:
         return nav_ == Nav::Detail && (cfgScreen_ == CfgScreen::PediaQr ||
                                        cfgScreen_ == CfgScreen::UpdateQr);
     }
+    // True while the current screen runs an animation cadence FASTER than the shared
+    // ~4fps heartbeat (combat sprite motion, the dissolve/swarm sweep, the arcade boards,
+    // the Decryptogram cursor repeat): the screens tickAnimClocks services. Every
+    // other screen changes at most once per heartbeat. The device tier reads this to scale
+    // the CPU clock: a heavy screen gets the full clock, an idle/menu one a lower one,
+    // since composing a 4fps frame leaves generous headroom (platform/esp32/main.cpp). Kept
+    // in sync with tickAnimClocks by hand; a new fast-cadence screen joins both.
+    bool highFrameRate() const;
     // True while the UPDATES screen is showing — its row list, the install confirm,
     // or a job's progress. The screen is a WAIT: a check associates and fetches on
     // the network's clock, and the verdict it leaves behind is the whole reason the

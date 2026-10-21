@@ -637,11 +637,17 @@ void loop() {
         screenDimmed = false;   // the blank supersedes the dim; wake() restores full
         Serial.println("[screen] sleep");
     }
-    // The clock follows the panel. A dark screen is drawing no frames, so the only thing
-    // still asking for cycles is whatever radio consumer is keeping the loop out of light
-    // sleep — which needs 80MHz, not 240 (config.h). Asked here rather than at the two
-    // transitions so a wake that never went through display.sleep() still restores it.
-    applyCpuFreq(screenAsleep ? CPU_IDLE_FREQ_MHZ : CPU_ACTIVE_FREQ_MHZ);
+    // The clock follows the panel and, while lit, the screen's render load. A dark screen
+    // draws no frames, so the only thing still asking for cycles is whatever radio consumer
+    // keeps the loop out of light sleep, at CPU_IDLE_FREQ_MHZ. A lit screen takes the full
+    // clock only when it is high-frame-rate (combat, the sweeps, the arcade boards); an
+    // idle pet or a menu repaints at the 4fps heartbeat and composes that with cycles to
+    // spare, so it runs at CPU_SCREEN_IDLE_FREQ_MHZ (config.h). Asked here rather than at
+    // the transitions so a wake that never went through display.sleep() still restores it.
+    const int targetMhz = screenAsleep           ? CPU_IDLE_FREQ_MHZ
+                          : game->highFrameRate() ? CPU_ACTIVE_FREQ_MHZ
+                                                  : CPU_SCREEN_IDLE_FREQ_MHZ;
+    applyCpuFreq(targetMhz);
 #endif
 
     // Runtime microSD re-check (CFG "SD RECHECK" -> Game::requestSdRecheck). The
