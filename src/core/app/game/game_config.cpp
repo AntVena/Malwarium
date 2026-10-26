@@ -463,18 +463,26 @@ void Game::setBrightness(int level) {
 void Game::drawCfg(Framebuffer& fb) const {
     switch (cfgScreen_) {
         case CfgScreen::SysInfo: {
-            const float hf = bHeld_
-                ? static_cast<float>(nowMs_ - bDownMs_) / kFactoryRevealMs
-                : 0.0f;
             // RANK reads "R{n} {title}" so the endless NUMERIC rank shows alongside the
-            // (threshold-unlocked, growable) title — same "R%d %s" form as STAT.
+            // (threshold-unlocked, growable) title, the same "R%d %s" form as STAT.
             char rankLine[28];
             std::snprintf(rankLine, sizeof(rankLine), "R%d %s", hackerRank_,
                           hackerRankTitle(hackerRank_));
-            drawSysInfo(fb, nowMs_, uiMode_, kFirmwareVersion,
-                       rankLine, networksSeen_, power_,
-                       sdStatus_, auditCapture_.enabled(), handshakesSeen_,
-                       equippedTitleName(), radioOwner_, hf);
+            SysInfoView v;
+            v.owner = radioOwner_;
+            v.sd = sdStatus_;
+            v.power = power_;
+            v.uptimeMs = nowMs_;
+            v.fwVersion = kFirmwareVersion;
+            v.uiMode = uiMode_;
+            v.rankTitle = rankLine;
+            v.networksSeen = networksSeen_;
+            v.equippedTitle = equippedTitleName();
+            v.captureEnabled = auditCapture_.enabled();
+            v.handshakesSeen = handshakesSeen_;
+            if (bHeld_)
+                v.holdFrac = static_cast<float>(nowMs_ - bDownMs_) / kFactoryRevealMs;
+            drawSysInfo(fb, v);
             break;
         }
         case CfgScreen::Device:

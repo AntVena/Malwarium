@@ -891,11 +891,18 @@ void Game::drawTrain(Framebuffer& fb) const {
             return;
         }
     }
-    drawMovePicker(fb, registry_, moveLoadout_, moveSlot_, movePick_,
-                   moveConfirm_, moveConfirmChoice_, movePendingId_,
-                   pet_ ? pet_->stage : Stage::BootSector,
-                   pet_ ? pet_->line : nullptr,
-                   slotRequiredKind(moveSlot_), moveShowAll_, beat_);
+    MovePickerView v;
+    v.slot = moveSlot_;
+    v.requiredKind = slotRequiredKind(moveSlot_);
+    v.petStage = pet_ ? pet_->stage : Stage::BootSector;
+    v.petLine = pet_ ? pet_->line : nullptr;
+    v.pick = movePick_;
+    v.showAll = moveShowAll_;
+    v.confirmActive = moveConfirm_;
+    v.confirmChoice = moveConfirmChoice_;
+    v.pendingId = movePendingId_;
+    v.beat = beat_;
+    drawMovePicker(fb, registry_, moveLoadout_, v);
 }
 
 // Which art a CamoTarget names — the contract is on the declaration (game.h).

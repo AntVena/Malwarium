@@ -151,151 +151,167 @@ void drawLoadout(Framebuffer& fb, const ContentRegistry& reg,
     drawHintBand(fb, "A NEXT  B PICK  HOLD B READ");
 }
 
-void drawMovePicker(Framebuffer& fb, const ContentRegistry& reg,
-                    const MoveLoadout& load, int slot, int pick, bool confirmActive,
-                    int confirmChoice, const char* pendingId, Stage petStage,
-                    const char* petLine, MoveDef::Kind requiredKind, bool showAll,
-                    int beat) {
-    // The slot's type-lock is right in the header — "SLOT 2 - DEF" — so the
-    // player knows why the list only shows one kind before they even scroll it.
-    // showAll (hold B) appends " ALL" — the word is the channel, grayscale-safe.
+namespace {
+
+// Why a picker row cannot be equipped from here. Only reachable when showAll reveals a
+// row the filtered default view would have dropped: above the pet's stage, or already
+// equipped in a different slot (a mod-style SLOT n tag, mirroring drawModPicker's IN
+// SLOT n gate).
+struct MoveRowLock {
+    int elsewhere;     // the other slot holding it, or -1
+    bool inOtherSlot;
+    bool aboveStage;
+    bool any() const { return inOtherSlot || aboveStage; }
+};
+
+MoveRowLock moveRowLock(const MoveDef& m, const MoveLoadout& load, const MovePickerView& v) {
+    const int elsewhere = load.slotOf(m.id);
+    return {elsewhere, elsewhere >= 0 && elsewhere != v.slot,
+            !moveUnlockedAtStage(m, v.petStage)};
+}
+
+void drawMovePickerRow(Framebuffer& fb, const MoveDef& m, const MoveLoadout& load,
+                       const MovePickerView& v, int y, bool focused) {
+    const MoveRowLock lock = moveRowLock(m, load, v);
+    const char* equippedHere = load.equipped(v.slot);
+    // Whatever the row's right column is (the reason it is locked, or the kind tag with
+    // an ON marker when it is the move already in this slot) is what the row cannot
+    // lose. The name yields to it and scrolls (drawLabelValue): a move name drawn at full
+    // width runs straight under a tag as wide as "EVO SCRIPT". A locked row dims its name
+    // and swaps the ATK/DEF tag for the reason (non-colour channel).
+    char lk[20];
+    Rgb565 tagCol = palColor(Pal::INK_DIM);
+    const char* tag = lk;
+    if (lock.inOtherSlot) {
+        std::snprintf(lk, sizeof(lk), "SLOT %d", lock.elsewhere + 1);
+    } else if (lock.aboveStage) {
+        std::snprintf(lk, sizeof(lk), "EVO %s", stageName(m.minStage));
+    } else {
+        tagCol = palColor(Pal::ACCENT);
+        tag = moveKindTag(m.kind);
+        if (equippedHere && std::strcmp(equippedHere, m.id) == 0) {
+            // ON rides in front of the kind tag rather than beside it, so the pair is
+            // one right-hand column the name can measure against.
+            std::snprintf(lk, sizeof(lk), "ON %s", moveKindTag(m.kind));
+            tag = lk;
+            tagCol = palColor(Pal::CALM);
+        }
+    }
+    drawLabelValue(fb, 22, y + 4, m.displayName,
+                   lock.any() ? palColor(Pal::INK_DIM) : palColor(Pal::INK),
+                   tag, tagCol, v.beat, scrollWhen(focused));
+}
+
+// The focused move's readout + prose, from `y` down to `bottom`.
+void drawMovePickerPanel(Framebuffer& fb, const ContentRegistry& reg, const MoveDef& m,
+                         const MoveLoadout& load, const MovePickerView& v, int y,
+                         int bottom) {
+    const MoveRowLock lock = moveRowLock(m, load, v);
+    // A locked focus leads with WHY, then still shows the spec: knowing what a move
+    // does is exactly what makes an evolution gate worth waiting for.
+    if (lock.any()) {
+        char buf[36];
+        if (lock.inOtherSlot)
+            std::snprintf(buf, sizeof(buf), "LOCKED - IN SLOT %d", lock.elsewhere + 1);
+        else
+            std::snprintf(buf, sizeof(buf), "LOCKED - EVOLVE TO %s", stageName(m.minStage));
+        drawText(fb, kMargin, y, buf, palColor(Pal::ACCENT));
+        y += 12;
+    }
+    // A move that would replace a different one reads as the SWAP: what it takes out,
+    // and every number that changes as NOW -> NEXT against the move in the slot.
+    const char* equippedHere = load.equipped(v.slot);
+    const MoveDef* current = equippedHere ? reg.move(equippedHere) : nullptr;
+    const bool swap = current && current != &m && !lock.any();
+    if (swap) {
+        char vs[40];
+        std::snprintf(vs, sizeof(vs), "SWAPS OUT %s", current->displayName);
+        drawText(fb, kMargin, y, vs, palColor(Pal::INK_DIM));
+        y += 12;
+    }
+    const SpecRows spec =
+        swap ? specRowsVersus(specRows(*current), specRows(m)) : specRows(m);
+    const EffectText prose = effectText(m);   // outlives the draw below
+    SpecSheet sheet;
+    sheet.rows = spec.rows;
+    sheet.rowCount = spec.count;
+    sheet.prose = prose.c_str();
+    drawSpecSheet(fb, kMargin, y, kActiveW - 2 * kMargin, bottom, sheet);
+}
+
+void drawMoveReplaceConfirm(Framebuffer& fb, const ContentRegistry& reg,
+                            const MovePickerView& v) {
+    fb.fillRect(4, 96, kActiveW - 8, 44, palColor(Pal::TRACK));
+    const MoveDef* pend = v.pendingId ? reg.move(v.pendingId) : nullptr;
+    char q[34];
+    std::snprintf(q, sizeof(q), "REPLACE WITH %s?", pend ? pend->displayName : "MOVE");
+    drawText(fb, kMargin, 104, q, palColor(Pal::INK));
+    const int cancelX = 24, confirmX = 120, cy = 122;
+    if (v.confirmChoice == 0) drawRowCursor(fb, cancelX - 12, cy, palColor(Pal::ACCENT));
+    else drawRowCursor(fb, confirmX - 12, cy, palColor(Pal::ACCENT));
+    drawText(fb, cancelX, cy, "CANCEL",
+             v.confirmChoice == 0 ? palColor(Pal::ACCENT) : palColor(Pal::INK));
+    drawText(fb, confirmX, cy, "CONFIRM",
+             v.confirmChoice == 1 ? palColor(Pal::ACCENT) : palColor(Pal::INK));
+}
+
+}  // namespace
+
+void drawMovePicker(Framebuffer& fb, const ContentRegistry& reg, const MoveLoadout& load,
+                    const MovePickerView& v) {
+    // The slot's type-lock is right in the header ("SLOT 2 - DEF"), so the player knows
+    // why the list only shows one kind before they even scroll it. showAll (hold B)
+    // appends " ALL": the word is the channel, grayscale-safe.
     char title[20];
-    std::snprintf(title, sizeof(title), "SLOT %d - %s%s", slot + 1,
-                  moveKindTag(requiredKind), showAll ? " ALL" : "");
+    std::snprintf(title, sizeof(title), "SLOT %d - %s%s", v.slot + 1,
+                  moveKindTag(v.requiredKind), v.showAll ? " ALL" : "");
     drawHeaderBand(fb, title);
 
-    const std::vector<const MoveDef*> owned =
-        ownedMoveList(reg, load, requiredKind, petStage, petLine, slot, showAll);
+    const std::vector<const MoveDef*> owned = ownedMoveList(
+        reg, load, v.requiredKind, v.petStage, v.petLine, v.slot, v.showAll);
     const int rows = 1 + static_cast<int>(owned.size());   // [0] = unequip
-    const char* equippedHere = load.equipped(slot);
 
-    // Position indicator (mirrors items_screen's header) once the list
-    // scrolls — lets the player see how far into the roster they are.
+    // Position indicator (mirrors items_screen's header) once the list scrolls: lets
+    // the player see how far into the roster they are.
     if (rows > kMovePickerMaxRows) {
-        char nt[12];
-        std::snprintf(nt, sizeof(nt), "%d/%d", pick + 1, rows);
+        char nt[24];
+        std::snprintf(nt, sizeof(nt), "%d/%d", v.pick + 1, rows);
         drawText(fb, kActiveW - kMargin - textWidth(nt), 6, nt, palColor(Pal::INK_DIM));
     }
 
     // ADAPTIVE window: the list takes only the height it actually needs, capped at
     // kMovePickerMaxRows and scrolled past that. A pet owns 2 rows at Process and 4 at
-    // Daemon, so reserving the cap unconditionally left 36-72px of dead screen sitting
+    // Daemon, so reserving the cap unconditionally would leave 36-72px of dead screen
     // directly above a description that had nowhere to go.
     const int rowH = 18, rowTop = 26;
     const int visibleRows = std::min(rows, kMovePickerMaxRows);
-    const int scrollTop = listScrollTop(pick, rows, kMovePickerMaxRows);
-    for (int v = 0; v < visibleRows && scrollTop + v < rows; ++v) {
-        const int i = scrollTop + v;
-        const int y = rowTop + v * rowH;
-        if (i == pick) {
+    const int scrollTop = listScrollTop(v.pick, rows, kMovePickerMaxRows);
+    for (int slot = 0; slot < visibleRows && scrollTop + slot < rows; ++slot) {
+        const int i = scrollTop + slot;
+        const int y = rowTop + slot * rowH;
+        if (i == v.pick) {
             fb.fillRect(4, y - 1, kActiveW - 8, rowH - 2, palColor(Pal::TRACK));
             drawRowCursor(fb, 8, y + 4, palColor(Pal::ACCENT));
         }
-        if (i == 0) {
-            drawText(fb, 22, y + 4, "- EMPTY (UNEQUIP) -", palColor(Pal::INK_DIM));
-            continue;
-        }
-        const MoveDef* m = owned[i - 1];
-        // Only reachable when showAll reveals a row the filtered default view would
-        // have dropped: above the pet's stage, or already equipped in a different
-        // slot (a mod-style SLOT n tag, mirroring drawModPicker's IN SLOT n gate).
-        // Dim the name and swap the ATK/DEF tag for the reason (non-colour channel).
-        const int elsewhere = load.slotOf(m->id);
-        const bool inOtherSlot = elsewhere >= 0 && elsewhere != slot;
-        const bool aboveStage = !moveUnlockedAtStage(*m, petStage);
-        const bool locked = aboveStage || inOtherSlot;
-        // Whatever the row's right column is — the reason it is locked, or the kind tag
-        // (with an ON marker when it is the move already in this slot) — is what the row
-        // cannot lose. The name yields to it and scrolls (drawLabelValue): a move name
-        // drawn at full width runs straight under a tag as wide as "EVO SCRIPT".
-        char lk[20];
-        Rgb565 tagCol = palColor(Pal::INK_DIM);
-        const char* tag = lk;
-        if (inOtherSlot) {
-            std::snprintf(lk, sizeof(lk), "SLOT %d", elsewhere + 1);
-        } else if (aboveStage) {
-            std::snprintf(lk, sizeof(lk), "EVO %s", stageName(m->minStage));
-        } else {
-            tagCol = palColor(Pal::ACCENT);
-            tag = moveKindTag(m->kind);
-            if (equippedHere && std::strcmp(equippedHere, m->id) == 0) {
-                // ON rides in front of the kind tag rather than beside it, so the pair
-                // is one right-hand column the name can measure against.
-                std::snprintf(lk, sizeof(lk), "ON %s", moveKindTag(m->kind));
-                tag = lk;
-                tagCol = palColor(Pal::CALM);
-            }
-        }
-        drawLabelValue(fb, 22, y + 4, m->displayName,
-                       locked ? palColor(Pal::INK_DIM) : palColor(Pal::INK),
-                       tag, tagCol, beat, scrollWhen(i == pick));
+        if (i == 0) drawText(fb, 22, y + 4, "- EMPTY (UNEQUIP) -", palColor(Pal::INK_DIM));
+        else drawMovePickerRow(fb, *owned[i - 1], load, v, y, i == v.pick);
     }
     drawScrollbar(fb, rowTop, kMovePickerMaxRows * rowH, rows, scrollTop, kMovePickerMaxRows);
 
-    // Focused move's readout + prose, below a divider that follows the list rather
-    // than sitting at a fixed y. Reserve the bottom band for the hold-B hint.
+    // The panel sits below a divider that follows the list rather than a fixed y, and
+    // leaves the bottom band for the hold-B hint.
     const int listEnd = rowTop + visibleRows * rowH;
     fb.fillRect(kMargin, listEnd + 4, kActiveW - 2 * kMargin, 1, palColor(Pal::TRACK));
     const int panelY = listEnd + 10;
-    const int panelBottom = kActiveH - kHintBandH - 2;
-    if (pick > 0 && pick - 1 < static_cast<int>(owned.size())) {
-        const MoveDef* m = owned[pick - 1];
-        const int elsewhere = load.slotOf(m->id);
-        const bool inOtherSlot = elsewhere >= 0 && elsewhere != slot;
-        const bool aboveStage = !moveUnlockedAtStage(*m, petStage);
-        int y = panelY;
-        // A locked focus leads with WHY, then still shows the spec — knowing what a
-        // move does is exactly what makes an evolution gate worth waiting for.
-        if (inOtherSlot || aboveStage) {
-            char buf[36];
-            if (inOtherSlot)
-                std::snprintf(buf, sizeof(buf), "LOCKED - IN SLOT %d", elsewhere + 1);
-            else
-                std::snprintf(buf, sizeof(buf), "LOCKED - EVOLVE TO %s",
-                              stageName(m->minStage));
-            drawText(fb, kMargin, y, buf, palColor(Pal::ACCENT));
-            y += 12;
-        }
-        // A move that would replace a different one reads as the SWAP: what it takes out,
-        // and every number that changes as NOW -> NEXT against the move in the slot.
-        const MoveDef* current = equippedHere ? reg.move(equippedHere) : nullptr;
-        const bool swap = current && current != m && !inOtherSlot && !aboveStage;
-        if (swap) {
-            char vs[40];
-            std::snprintf(vs, sizeof(vs), "SWAPS OUT %s", current->displayName);
-            drawText(fb, kMargin, y, vs, palColor(Pal::INK_DIM));
-            y += 12;
-        }
-        const SpecRows spec =
-            swap ? specRowsVersus(specRows(*current), specRows(*m)) : specRows(*m);
-        const EffectText prose = effectText(*m);   // outlives the draw below
-        SpecSheet sheet;
-        sheet.rows = spec.rows;
-        sheet.rowCount = spec.count;
-        sheet.prose = prose.c_str();
-        drawSpecSheet(fb, kMargin, y, kActiveW - 2 * kMargin, panelBottom, sheet);
-    } else {
+    if (v.pick > 0 && v.pick - 1 < static_cast<int>(owned.size()))
+        drawMovePickerPanel(fb, reg, *owned[v.pick - 1], load, v, panelY,
+                            kActiveH - kHintBandH - 2);
+    else
         drawText(fb, kMargin, panelY, "REMOVE THE EQUIPPED MOVE.", palColor(Pal::INK));
-    }
 
-    // Inline overwrite confirm: only when replacing a DIFFERENT move.
-    if (confirmActive) {
-        fb.fillRect(4, 96, kActiveW - 8, 44, palColor(Pal::TRACK));
-        const MoveDef* pend = pendingId ? reg.move(pendingId) : nullptr;
-        char q[34];
-        std::snprintf(q, sizeof(q), "REPLACE WITH %s?",
-                      pend ? pend->displayName : "MOVE");
-        drawText(fb, kMargin, 104, q, palColor(Pal::INK));
-        const int cancelX = 24, confirmX = 120, cy = 122;
-        if (confirmChoice == 0) drawRowCursor(fb, cancelX - 12, cy, palColor(Pal::ACCENT));
-        else drawRowCursor(fb, confirmX - 12, cy, palColor(Pal::ACCENT));
-        drawText(fb, cancelX, cy, "CANCEL",
-                 confirmChoice == 0 ? palColor(Pal::ACCENT) : palColor(Pal::INK));
-        drawText(fb, confirmX, cy, "CONFIRM",
-                 confirmChoice == 1 ? palColor(Pal::ACCENT) : palColor(Pal::INK));
-    }
-    drawHintBand(fb, confirmActive ? "A TOGGLE  B COMMIT  C CANCEL"
-                                   : "A CYCLE  B VIEW  C BACK");
+    if (v.confirmActive) drawMoveReplaceConfirm(fb, reg, v);
+    drawHintBand(fb, v.confirmActive ? "A TOGGLE  B COMMIT  C CANCEL"
+                                     : "A CYCLE  B VIEW  C BACK");
 }
 
 namespace {

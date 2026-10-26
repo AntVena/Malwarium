@@ -55,11 +55,21 @@ void drawLoadout(Framebuffer& fb, const ContentRegistry& reg,
 // panel rather than reserving it empty. A tap of B on a move row drills into
 // drawMoveDetail below rather than equipping from the list. `beat` scrolls the focused
 // row's name inside the room its right-hand tag leaves it.
-void drawMovePicker(Framebuffer& fb, const ContentRegistry& reg,
-                    const MoveLoadout& load, int slot, int pick, bool confirmActive,
-                    int confirmChoice, const char* pendingId, Stage petStage,
-                    const char* petLine, MoveDef::Kind requiredKind, bool showAll,
-                    int beat);
+struct MovePickerView {
+    int slot = 0;
+    MoveDef::Kind requiredKind = MoveDef::Kind::Attack;   // the slot's stamped type-lock
+    Stage petStage = Stage::BootSector;
+    const char* petLine = nullptr;
+    int pick = 0;                    // row 0 is the unequip row
+    bool showAll = false;
+    // The inline overwrite confirm, up only when replacing a DIFFERENT move.
+    bool confirmActive = false;
+    int confirmChoice = 0;           // 0 CANCEL, 1 CONFIRM
+    const char* pendingId = nullptr; // the move the confirm would equip
+    int beat = 0;
+};
+void drawMovePicker(Framebuffer& fb, const ContentRegistry& reg, const MoveLoadout& load,
+                    const MovePickerView& v);
 
 // L4 move detail — the whole screen for one move, drilled into with B from the picker
 // (the same list -> detail -> act shape as ITEMS). The full readout plus prose that

@@ -537,94 +537,93 @@ void drawCfgRadio(Framebuffer& fb, int cursor, RadioOwner owner, int auditLevel,
     drawHintBand(fb, "A NEXT  B OPEN  C BACK");
 }
 
-void drawSysInfo(Framebuffer& fb, uint32_t uptimeMs, UiMode uiMode,
-                 const char* fwVersion, const char* rankTitle, int networksSeen,
-                 const PowerStatus& power, const SdStatus& sd, bool captureEnabled,
-                 int handshakesSeen, const char* equippedTitle, RadioOwner owner,
-                 float holdFrac) {
+namespace {
+
+// SD is live: the device tier feeds a real mount reading. Present -> capacity ("nnMB",
+// the number is the non-colour channel), or "OK" if size is unknown; absent (host / no
+// card / bad card) -> dual-coded "ABSENT".
+void drawSdLine(Framebuffer& fb, int y, const SdStatus& sd) {
+    if (!sd.present) {
+        infoLine(fb, y, "SD", "ABSENT", palColor(Pal::INK_DIM));
+        return;
+    }
+    char buf[16];
+    const char* val = "OK";
+    if (sd.sizeMB > 0) {
+        std::snprintf(buf, sizeof(buf), "%uMB", static_cast<unsigned>(sd.sizeMB));
+        val = buf;
+    }
+    infoLine(fb, y, "SD", val, palColor(Pal::INK));
+}
+
+// BATT: live once the device tier feeds a reading. "CHG nn%" while charging (external
+// power in), "nn%" on battery, "-" when absent (host / no monitor). The number is the
+// non-colour channel; a low pack just adds HOT emphasis.
+void drawBattLine(Framebuffer& fb, int y, const PowerStatus& power) {
+    if (!power.present || power.percent < 0) {
+        infoLine(fb, y, "BATT", "-", palColor(Pal::INK_DIM));
+        return;
+    }
+    char batt[16];
+    Rgb565 col = palColor(Pal::INK);
+    if (power.charging) {
+        std::snprintf(batt, sizeof(batt), "CHG %d%%", power.percent);
+    } else {
+        std::snprintf(batt, sizeof(batt), "%d%%", power.percent);
+        if (power.percent <= kBatteryLowPct) col = palColor(Pal::HOT);
+    }
+    infoLine(fb, y, "BATT", batt, col);
+}
+
+}  // namespace
+
+void drawSysInfo(Framebuffer& fb, const SysInfoView& v) {
     drawHeaderBand(fb, "SYSTEM INFO");
 
-    // RADIO: which contender the arbiter has actually granted, named in
-    // words. Four toggles resolve to one owner, and this is the only screen that
-    // reports the resolution rather than an intent.
-    infoLine(fb, 34, "RADIO", radioOwnerName(owner),
-             owner == RadioOwner::None ? palColor(Pal::INK_DIM) : palColor(Pal::INK));
-
-    // SD is live: the device tier feeds a real mount reading. Present -> capacity
-    // ("nnMB", the number is the non-colour channel), or "OK" if size is unknown;
-    // absent (host / no card / bad card) -> dual-coded "ABSENT".
-    char sdBuf[16];
-    const char* sdVal = "ABSENT";
-    Rgb565 sdColor = palColor(Pal::INK_DIM);
-    if (sd.present) {
-        if (sd.sizeMB > 0) {
-            std::snprintf(sdBuf, sizeof(sdBuf), "%uMB",
-                          static_cast<unsigned>(sd.sizeMB));
-            sdVal = sdBuf;
-        } else {
-            sdVal = "OK";
-        }
-        sdColor = palColor(Pal::INK);
-    }
-    infoLine(fb, 50, "SD", sdVal, sdColor);
-
-    // BATT: live once the device tier feeds a reading. "CHG nn%" while charging
-    // (external power in), "nn%" on battery, "-" when absent (host / no monitor).
-    // The number is the non-colour channel; a low pack just adds HOT emphasis.
-    char batt[16];
-    const char* battVal = "-";
-    Rgb565 battColor = palColor(Pal::INK_DIM);
-    if (power.present && power.percent >= 0) {
-        if (power.charging) {
-            std::snprintf(batt, sizeof(batt), "CHG %d%%", power.percent);
-            battColor = palColor(Pal::INK);
-        } else {
-            std::snprintf(batt, sizeof(batt), "%d%%", power.percent);
-            battColor = power.percent <= kBatteryLowPct ? palColor(Pal::HOT)
-                                                          : palColor(Pal::INK);
-        }
-        battVal = batt;
-    }
-    infoLine(fb, 66, "BATT", battVal, battColor);
+    // RADIO: which contender the arbiter has actually granted, named in words. Four
+    // toggles resolve to one owner, and this is the only screen that reports the
+    // resolution rather than an intent.
+    infoLine(fb, 34, "RADIO", radioOwnerName(v.owner),
+             v.owner == RadioOwner::None ? palColor(Pal::INK_DIM) : palColor(Pal::INK));
+    drawSdLine(fb, 50, v.sd);
+    drawBattLine(fb, 66, v.power);
 
     char up[12];
-    const uint32_t secs = uptimeMs / 1000u;
+    const uint32_t secs = v.uptimeMs / 1000u;
     std::snprintf(up, sizeof(up), "%u:%02u", secs / 60u,
                   static_cast<unsigned>(secs % 60u));
     infoLine(fb, 82, "UP", up, palColor(Pal::INK));
-    infoLine(fb, 98, "FW", fwVersion, palColor(Pal::INK));
-    infoLine(fb, 114, "UI", uiModeName(uiMode), palColor(Pal::INK));
+    infoLine(fb, 98, "FW", v.fwVersion, palColor(Pal::INK));
+    infoLine(fb, 114, "UI", uiModeName(v.uiMode), palColor(Pal::INK));
 
-    // Hacker Rank: the "User Registry" progression tier, beside the
-    // HackerTag list row.
-    infoLine(fb, 130, "RANK", rankTitle, palColor(Pal::INK));
+    // Hacker Rank: the "User Registry" progression tier, beside the HackerTag list row.
+    infoLine(fb, 130, "RANK", v.rankTitle, palColor(Pal::INK));
     char nets[16];
-    std::snprintf(nets, sizeof(nets), "%d", networksSeen);
+    std::snprintf(nets, sizeof(nets), "%d", v.networksSeen);
     infoLine(fb, 146, "NETS", nets, palColor(Pal::INK));
 
-    // TITLE: the equipped zone-completion Title, part of the User Registry
-    // beside RANK. "NONE" when nothing is equipped — dual-coded (text), grayscale-safe.
-    infoLine(fb, 162, "TITLE", equippedTitle, palColor(Pal::INK));
+    // TITLE: the equipped zone-completion Title, part of the User Registry beside RANK.
+    // "NONE" when nothing is equipped: dual-coded (text), grayscale-safe.
+    infoLine(fb, 162, "TITLE", v.equippedTitle, palColor(Pal::INK));
 
-    // SHAKES: lifetime unique WPA handshakes captured. Only meaningful
-    // when the pcap capture toggle is on, so it's drawn beneath TITLE only then.
-    // Deduped by BSSID engine-side, so revisiting a known network never re-credits.
-    if (captureEnabled) {
+    // SHAKES: lifetime unique WPA handshakes captured, deduped by BSSID engine-side so
+    // revisiting a known network never re-credits.
+    if (v.captureEnabled) {
         char shakes[16];
-        std::snprintf(shakes, sizeof(shakes), "%d", handshakesSeen);
+        std::snprintf(shakes, sizeof(shakes), "%d", v.handshakesSeen);
         infoLine(fb, 178, "SHAKES", shakes, palColor(Pal::INK));
     }
 
-    // The hidden Factory-Reset reveal: holding B fills a bar. Drawn only
-    // while held so the gesture stays undocumented on a resting screen.
-    if (holdFrac > 0.0f) {
+    // The hidden Factory-Reset reveal: holding B fills a bar. Drawn only while held so
+    // the gesture stays undocumented on a resting screen.
+    if (v.holdFrac > 0.0f) {
         drawText(fb, kMargin, 168, "...", palColor(Pal::HOT));
-        drawProgressBar(fb, kMargin, 180, kActiveW - 2 * kMargin, 10, holdFrac,
+        drawProgressBar(fb, kMargin, 180, kActiveW - 2 * kMargin, 10, v.holdFrac,
                         palColor(Pal::HOT));
     }
 
     // A re-checks the card (it lives here rather than on a list row because the SD
-    // line above IS its result — insert a card, press A, watch the line change) and
+    // line above IS its result: insert a card, press A, watch the line change) and
     // C backs out. B is deliberately unnamed: it arms the hidden reveal above, and
     // naming it in the band would be the same as writing it on the screen.
     drawHintBand(fb, "A RECHECKS SD  C BACK");

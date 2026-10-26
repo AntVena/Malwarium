@@ -165,22 +165,28 @@ void drawSdFormatStatus(Framebuffer& fb, SdFormatState state, const SdStatus& sd
 void drawCfgRadio(Framebuffer& fb, int cursor, RadioOwner owner, int auditLevel,
                   bool linkOn, bool apOn, bool updateLive);
 
-// L3 System Info viewer, and the device's one status readout. RADIO names the
-// arbiter's live owner (`owner`); SD is live from `sd` (device tier feeds a mount
-// reading — size in MB when present, else "ABSENT") and A re-checks it in place,
-// which is why this screen owns that action rather than a list row the player
-// would have to find; the BATT line is live when `power.present` (device tier feeds
-// it), else "-". `rankTitle`/`networksSeen` surface Hacker Rank here too (the
-// spec's "User Registry," beside the HackerTag). NETS is the lifetime
-// unique-network count; SHAKES (the lifetime unique-handshake count,
-// `handshakesSeen`) is drawn beneath it ONLY when `captureEnabled` — the pcap
-// capture toggle is on. `holdFrac` (0..1) draws the hidden Factory-Reset reveal
-// bar while B is held (0 = not holding, no bar).
-void drawSysInfo(Framebuffer& fb, uint32_t uptimeMs, UiMode uiMode,
-                 const char* fwVersion, const char* rankTitle, int networksSeen,
-                 const PowerStatus& power, const SdStatus& sd, bool captureEnabled,
-                 int handshakesSeen, const char* equippedTitle, RadioOwner owner,
-                 float holdFrac);
+// L3 System Info viewer, and the device's one status readout. SD is live, and A
+// re-checks it in place, which is why this screen owns that action rather than a list
+// row the player would have to find. Hacker Rank surfaces here too (the spec's "User
+// Registry," beside the HackerTag).
+struct SysInfoView {
+    RadioOwner owner = RadioOwner::None;   // the arbiter's live owner
+    SdStatus sd;                           // the device tier's mount reading
+    PowerStatus power;                     // BATT reads "-" unless power.present
+    uint32_t uptimeMs = 0;
+    const char* fwVersion = "";
+    UiMode uiMode = UiMode::IconsLabel;
+    const char* rankTitle = "";
+    int networksSeen = 0;                  // NETS: the lifetime unique-network count
+    const char* equippedTitle = "";
+    // SHAKES (the lifetime unique-handshake count) is drawn only while the pcap
+    // capture toggle is on.
+    bool captureEnabled = false;
+    int handshakesSeen = 0;
+    // 0..1, the hidden Factory-Reset reveal bar while B is held (0 = no bar).
+    float holdFrac = 0.0f;
+};
+void drawSysInfo(Framebuffer& fb, const SysInfoView& v);
 
 // L3 HackerTag arcade editor. `tag` is the working buffer (fixed
 // kHackerTagMax cells); `caret` is the focused cell (0..kHackerTagMax — the last
