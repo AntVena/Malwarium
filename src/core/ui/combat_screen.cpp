@@ -807,49 +807,71 @@ CombatVsGrid combatVsGrid(const Combatant& local, const Combatant& rival,
     return g;
 }
 
-void drawCombat(Framebuffer& fb, const Combat& combat, const CombatView& v) {
-    // The BACKGROUND pass. The stage's floor is kSpriteShelf — the row the fighters
-    // actually stand on — so the place is composed against that rather than against the
-    // canvas, and the same place drawn on the habitat sits 44 rows lower.
-    if (!drawScene(fb, v.scene, v.beat, sceneGround(kSpriteShelf)))
-        fb.clear(palColor(Pal::PAPER));
-    // LOCAL and RIVAL are ROLES, not Combat's player/enemy slots. Everything the screen
-    // says and seats is bound to the role: the local pet gets the bottom, zoned Health
-    // gauge with its Critical pulse (the "my pet is in trouble" read) and the left-hand
-    // stage seat, in every fight. In a duel the guest holds Combat's enemy_ slot
-    // (core/model/pvp_battle.h), so the two are swapped for DISPLAY only. Resolution is
-    // untouched: mirroring the fight itself would desync the two devices, which is
-    // exactly why this is a render-side rebinding.
+namespace {
+
+// One frame of the fight, read from the LOCAL operator's seat. LOCAL and RIVAL are ROLES,
+// not Combat's player/enemy slots. Everything the screen says and seats is bound to the
+// role: the local pet gets the bottom, zoned Health gauge with its Critical pulse (the "my
+// pet is in trouble" read) and the left-hand stage seat, in every fight. In a duel the
+// guest holds Combat's enemy_ slot (core/model/pvp_battle.h), so the two are swapped for
+// DISPLAY only. Resolution is untouched: mirroring the fight itself would desync the two
+// devices, which is exactly why this is a render-side rebinding.
+struct CombatFrame {
+    const Combat& combat;
+    const CombatView& v;
+    bool flip;
+    const Combatant& en;   // the rival
+    const Combatant& pl;   // the local pet
+    const SpriteData* rivalSprite;
+    const SpriteData* localSprite;
+    // "did the LOCAL combatant land the last hit": the local frame of reference for the
+    // damage popup and the impact nudge, both of which follow the target.
+    bool lastByLocal;
+    // Who acts next, rebound the same way. Only meaningful while the fight is running: a
+    // settled fight has no next turn, and a tick still pointing at somebody would read as
+    // one more exchange coming.
+    bool ongoing;
+    bool localTurnNext;
+    // Bands and lane come from combatStage(); combat_screen.h has why the lane is
+    // reserved first. Everything seated on the stage reads its num/den rather than
+    // kScaleNum/kScaleDen, so the wide shot pulls the whole picture back together
+    // instead of shrinking the creatures inside chrome that stayed where it was.
+    CombatStage stage;
+};
+
+CombatFrame combatFrame(const Combat& combat, const CombatView& v) {
     const bool flip = v.sides.localIsEnemySide;
-    const Combatant& en = flip ? combat.player() : combat.enemy();   // the rival
-    const Combatant& pl = flip ? combat.enemy() : combat.player();   // the local pet
     const SpriteData* rivalSprite = flip ? v.playerSprite : v.enemySprite;
     const SpriteData* localSprite = flip ? v.enemySprite : v.playerSprite;
-    // "did the LOCAL combatant land the last hit" — the local frame of reference for
-    // the damage popup and the impact nudge, both of which follow the target.
-    const bool lastByLocal = combat.lastByPlayer() != flip;
-    // ...and who acts next, rebound the same way. Only meaningful while the fight is
-    // running: a settled fight has no next turn, and a tick still pointing at somebody
-    // would read as one more exchange coming.
-    const bool ongoing = combat.outcome() == Combat::Outcome::Ongoing;
-    const bool localTurnNext = combat.playerTurnNext() != flip;
+    return CombatFrame{combat,
+                       v,
+                       flip,
+                       flip ? combat.player() : combat.enemy(),
+                       flip ? combat.enemy() : combat.player(),
+                       rivalSprite,
+                       localSprite,
+                       combat.lastByPlayer() != flip,
+                       combat.outcome() == Combat::Outcome::Ongoing,
+                       combat.playerTurnNext() != flip,
+                       combatStage(localSprite, rivalSprite)};
+}
 
-    // --- Enemy header: name + level + override pip ----------------------------
-    // Difficulty pips already showed once, on the pre-fight encounter intro
-    // (drawEncounterIntro, expl_screen.cpp) — repeating them here just ate a
-    // full header row for no new information, so this HUD skips them.
-    //
-    // Override pip (UI_OVERRIDE_PIP): bright ready / greyed spent. With more
-    // than one Exploit use a small "xN" count of the remaining uses rides
-    // alongside so the extra allowance reads without colour.
-    const SpriteData& pip = combat.overrideReady() ? ASSET_ICON_OVERRIDE_PIP
-                                                    : ASSET_ICON_OVERRIDE_PIP_SPENT;
+// Enemy header: name + level + override pip.
+//
+// Difficulty pips already showed once, on the pre-fight encounter intro
+// (drawEncounterIntro, expl_screen.cpp), so this HUD skips them.
+void drawCombatHeader(Framebuffer& fb, const CombatFrame& f) {
+    // Override pip (UI_OVERRIDE_PIP): bright ready / greyed spent. With more than one
+    // Exploit use a small "xN" count of the remaining uses rides alongside so the extra
+    // allowance reads without colour.
+    const SpriteData& pip = f.combat.overrideReady() ? ASSET_ICON_OVERRIDE_PIP
+                                                      : ASSET_ICON_OVERRIDE_PIP_SPENT;
     const int pipX = kActiveW - kMargin - pip.frameW;
     drawSprite(fb, pip, 0, pipX, 6);
     int hintX = pipX;
-    if (combat.overrideUsesTotal() > 1) {
+    if (f.combat.overrideUsesTotal() > 1) {
         char cnt[8];
-        std::snprintf(cnt, sizeof(cnt), "x%d", combat.overrideUsesLeft());
+        std::snprintf(cnt, sizeof(cnt), "x%d", f.combat.overrideUsesLeft());
         hintX -= 3 + textWidth(cnt);
         drawText(fb, hintX, 6, cnt, palColor(Pal::INK));
     }
@@ -859,41 +881,44 @@ void drawCombat(Framebuffer& fb, const Combat& combat, const CombatView& v) {
     // Level readout: "???" for Sim dummies/bosses (never level-tagged) so the gap reads
     // as "unranked", never as a misleading "Lv 0".
     //
-    // It rides the NAME's row because that is the row it belongs to — what a rival IS,
-    // as against what it currently has left — and because the row below it is now two
-    // gauges wide. The pip hangs a full 16px cell into that lower row, so a readout
-    // parked at the end of it was drawn straight through by the pip's disc.
+    // It rides the NAME's row because that is the row it belongs to (what a rival IS, as
+    // against what it currently has left) and because the row below it is two gauges
+    // wide. The pip hangs a full 16px cell into that lower row, so a readout parked at
+    // the end of it would be drawn straight through by the pip's disc.
     char lvBuf[8];
-    if (en.hasLevel) std::snprintf(lvBuf, sizeof(lvBuf), "Lv %d", en.level);
+    if (f.en.hasLevel) std::snprintf(lvBuf, sizeof(lvBuf), "Lv %d", f.en.level);
     else std::snprintf(lvBuf, sizeof(lvBuf), "Lv ???");
-    // A full cell of air off the chord hint: both are dim, so a tighter gap ran the two
+    // A full cell of air off the chord hint: both are dim, so a tighter gap runs the two
     // together into one unreadable "LV ??? A+C".
     const int lvX = chordX - kFontAdvance - textWidth(lvBuf);
     drawText(fb, lvX, kTitleY, lvBuf, palColor(Pal::INK_DIM));
-    // The name takes what the level leaves, and travels when it cannot fit — a boss's
+    // The name takes what the level leaves, and travels when it cannot fit: a boss's
     // name is the longest thing this row ever carries and the level behind it is fixed.
-    drawTextMarquee(fb, kMargin, kTitleY, lvX - 6 - kMargin, en.name,
-                    palColor(Pal::INK), v.beat, Overflow::Scroll);
+    drawTextMarquee(fb, kMargin, kTitleY, lvX - 6 - kMargin, f.en.name,
+                    palColor(Pal::INK), f.v.beat, Overflow::Scroll);
+}
 
-    // --- Enemy Health (neutral — emptying is good) + channel wind-up ----------
-    // Reuses the y-band the encounter-intro header gives its difficulty pips.
-    //
-    // THE SAME WIDGET AS THE PET'S OWN, at the same x and width, so the two read as one
-    // comparison rather than two unrelated instruments — position says whose a gauge is,
-    // and the shared shape is what makes them comparable.
-    //
-    // What stays different is the one thing that IS different: the pet's carries the danger
-    // ramp and its Critical pulse, and the rival's is a neutral ink, because the same
-    // amount of rival Health is good or bad news depending on which side you read it from.
-    // That also keeps ACCENT off a status quantity (VISUAL_LANGUAGE 1.3) — the picker's
-    // cursor is ACCENT, and a rival Health bar wearing it would read as the selection.
-    drawText(fb, kMargin, kCombatRivalGaugeY + 1, v.sides.rivalLabel,
+// Enemy Health (neutral: emptying is good) + channel wind-up. Reuses the y-band the
+// encounter-intro header gives its difficulty pips.
+//
+// THE SAME WIDGET AS THE PET'S OWN, at the same x and width, so the two read as one
+// comparison rather than two unrelated instruments: position says whose a gauge is, and
+// the shared shape is what makes them comparable.
+//
+// What stays different is the one thing that IS different: the pet's carries the danger
+// ramp and its Critical pulse, and the rival's is a neutral ink, because the same amount
+// of rival Health is good or bad news depending on which side you read it from. That also
+// keeps ACCENT off a status quantity (VISUAL_LANGUAGE 1.3): the picker's cursor is ACCENT,
+// and a rival Health bar wearing it would read as the selection.
+void drawRivalGauge(Framebuffer& fb, const CombatFrame& f) {
+    const Combatant& en = f.en;
+    drawText(fb, kMargin, kCombatRivalGaugeY + 1, f.v.sides.rivalLabel,
              palColor(Pal::INK_DIM));
     const Rgb565 neutral = palColor(Pal::INK);
     const int ehPct = en.maxHealth > 0 ? en.health * 100 / en.maxHealth : 0;
     drawGauge(fb, kGaugeX, kCombatRivalGaugeY, kGaugeW, kCombatGaugeH, ehPct, Zone::Ok,
-              false, false, v.beat, &neutral);
-    if (ongoing && !localTurnNext)
+              false, false, f.v.beat, &neutral);
+    if (f.ongoing && !f.localTurnNext)
         drawTurnTick(fb, kCombatRivalGaugeY, kCombatGaugeH);
     // Its numeric, on the same right edge as the pet's: a bar alone cannot tell 3 left from
     // 30, and the panel's VS and KIT pages print it anyway.
@@ -901,16 +926,13 @@ void drawCombat(Framebuffer& fb, const Combat& combat, const CombatView& v) {
     std::snprintf(ehp, sizeof(ehp), "%d", en.health > 0 ? en.health : 0);
     drawText(fb, kGaugeX + kGaugeW + 6, kCombatRivalGaugeY + 1, ehp,
              palColor(Pal::INK));
-    const int ehX = kGaugeX, ehW = kGaugeW;   // the passive strip rides the same band
-    // The rival's passive strip, shrunk, tucked under its Health bar — the same visual
+    // The rival's passive strip, shrunk, tucked under its Health bar: the same visual
     // language as the pet's own, at less weight. Its line passive decides the fight just
-    // as much as yours does, and until now it only ever showed on the device of whoever
-    // owned it, which in a duel is the opponent's screen.
-    drawPassiveStrip(fb, en, ehX, kCombatRivalGaugeY + kCombatGaugeH + 2, ehW, 3,
-                     /*pipW=*/4, /*pipH=*/3, v.beat);
-    // UI_MOVE_CHANNEL cue — read off the RIVAL rather than Combat's enemy accessor, so
-    // the wind-up warning still describes the pet you're looking at when the roles are
-    // swapped.
+    // as much as yours does, and in a duel the rival's owner is on the other device.
+    drawPassiveStrip(fb, en, kGaugeX, kCombatRivalGaugeY + kCombatGaugeH + 2, kGaugeW, 3,
+                     /*pipW=*/4, /*pipH=*/3, f.v.beat);
+    // UI_MOVE_CHANNEL cue, read off the RIVAL rather than Combat's enemy accessor, so the
+    // wind-up warning still describes the pet you're looking at when the roles are swapped.
     const MoveDef* topChannel =
         (en.channelMoveIdx >= 0 && en.channelMoveIdx < static_cast<int>(en.moves.size()))
             ? en.moves[en.channelMoveIdx] : nullptr;
@@ -920,108 +942,114 @@ void drawCombat(Framebuffer& fb, const Combat& combat, const CombatView& v) {
                       en.channelLeft);
         drawText(fb, kMargin, 33, buf, palColor(Pal::WARN));
     }
+}
 
-    // --- Both combatant sprites (reused SPR_PET_* idle frames) --------------
-    // The LOCAL pet holds the LEFT seat and its rival the RIGHT, so a fight reads
-    // left-to-right as "mine, then theirs". A seat also states which way its occupant
-    // LOOKS, and a sheet drawn the other way is mirrored into it (drawFighter). The seat
-    // follows the local/rival ROLE (`flip`), never Combat's player_/enemy_ slot, so a duel
-    // guest sees its own pet on the left like the host does. Bottom-anchored on the shelf;
-    // a taller sprite extends upward rather than clipping. Bands and lane come from
-    // combatStage() — combat_screen.h has why the lane is reserved first.
-    const CombatStage stage = combatStage(localSprite, rivalSprite);
-    // The shot this pairing earned. Everything seated on the stage below reads it rather
-    // than kScaleNum/kScaleDen, so the wide shot pulls the whole picture back together
-    // instead of shrinking the creatures inside chrome that stayed where it was.
-    const int shotN = stage.num, shotD = stage.den;
+// What the last exchange does to the two bodies on the stage this beat.
+struct StageCues {
+    bool hitLanded;
+    int rivalHitBeat, localHitBeat;
+    // Whether the hit that just landed is one the TARGET answers with its body: the
+    // authored pose (hurtPoseEarned), held for the impact's period.
+    bool rivalHurt, localHurt;
+    uint8_t rivalWindup, localWindup;
+    uint8_t rivalImpact, localImpact;
+    bool struck;
+    int hopDir;
+    int rivalMotion, localMotion;
+    bool swinging;
+    AbsorbPhase outroPhase;
+    bool absorbing;
+    int rivalWorkedUp, localWorkedUp;
+};
+
+StageCues stageCues(const CombatFrame& f) {
+    const Combat& combat = f.combat;
+    const CombatView& v = f.v;
+    StageCues c{};
     // A landed, non-charge hit shoves its TARGET (not the actor) away from whoever just
     // hit it, so the recoil direction is fixed by the seat the target is in, not by who
     // attacked.
-    const bool hitLanded = combat.lastDamage() > 0 && !combat.lastWasCharge();
-    const int rivalHitBeat = (hitLanded && lastByLocal) ? v.hitBeat : -1;
-    const int localHitBeat = (hitLanded && !lastByLocal) ? v.hitBeat : -1;
-    // Whether the hit that just landed is one the TARGET answers with its body — the
-    // authored pose (hurtPoseEarned) and the knock-back that carries it (heavyHit). The
-    // flash and the damage popup ask neither and fire for every landed hit.
-    const bool rivalFlinches = hurtPoseEarned(en, combat.lastDamage());
-    const bool localFlinches = hurtPoseEarned(pl, combat.lastDamage());
-    const int rivalShoveBeat = heavyHit(en, combat.lastDamage()) ? rivalHitBeat : -1;
-    const int localShoveBeat = heavyHit(pl, combat.lastDamage()) ? localHitBeat : -1;
+    c.hitLanded = combat.lastDamage() > 0 && !combat.lastWasCharge();
+    c.rivalHitBeat = (c.hitLanded && f.lastByLocal) ? v.hitBeat : -1;
+    c.localHitBeat = (c.hitLanded && !f.lastByLocal) ? v.hitBeat : -1;
+    // The flash and the damage popup ask neither of these and fire for every landed hit;
+    // the pose and the knock-back that carries it (heavyHit) are earned.
+    c.rivalHurt = hurtPoseEarned(f.en, combat.lastDamage()) && c.rivalHitBeat >= 0 &&
+                  c.rivalHitBeat < kImpactPeriod;
+    c.localHurt = hurtPoseEarned(f.pl, combat.lastDamage()) && c.localHitBeat >= 0 &&
+                  c.localHitBeat < kImpactPeriod;
+    const int rivalShoveBeat = heavyHit(f.en, combat.lastDamage()) ? c.rivalHitBeat : -1;
+    const int localShoveBeat = heavyHit(f.pl, combat.lastDamage()) ? c.localHitBeat : -1;
     // Wind-up charges toward WARN and impact snaps toward INK: the two cues differ in
     // ramp direction AND in hue, and the pair that is live wins on magnitude alone.
-    const uint8_t rivalWindup = windupFlashAmt(en.channelMoveIdx >= 0, v.animBeat);
-    const uint8_t localWindup = windupFlashAmt(pl.channelMoveIdx >= 0, v.animBeat);
-    const uint8_t rivalImpact = impactFlashAmt(rivalHitBeat);
-    const uint8_t localImpact = impactFlashAmt(localHitBeat);
+    c.rivalWindup = windupFlashAmt(f.en.channelMoveIdx >= 0, v.animBeat);
+    c.localWindup = windupFlashAmt(f.pl.channelMoveIdx >= 0, v.animBeat);
+    c.rivalImpact = impactFlashAmt(c.rivalHitBeat);
+    c.localImpact = impactFlashAmt(c.localHitBeat);
     // Attacker-forward / target-back hop: any resolved STRIKE, landed or fully absorbed
     // (see attackHopPx above for why one dir/beat pair covers both sprites).
-    const bool struck = combat.lastWasStrike();
-    const int hopBeat = struck ? v.hitBeat : -1;
-    const int hopDir = lastByLocal ? +1 : -1;
-    const int hop = attackHopPx(hopBeat, hopDir);
+    c.struck = combat.lastWasStrike();
+    c.hopDir = f.lastByLocal ? +1 : -1;
+    const int hop = attackHopPx(c.struck ? v.hitBeat : -1, c.hopDir);
     // Each fighter's whole offset from its seat this beat, held on canvas: the lunge and
     // the recoil push the same way, and outward is the direction the stage has the least
     // of (heldOnStage, combat_screen.h).
-    const int rivalMotion = heldOnStage(impactNudgePx(rivalShoveBeat, +1) + hop,
-                                        stage.rivalX, stage.rivalW, /*outward=*/+1);
-    const int localMotion = heldOnStage(impactNudgePx(localShoveBeat, -1) + hop,
-                                        stage.localX, stage.localW, /*outward=*/-1);
+    c.rivalMotion = heldOnStage(impactNudgePx(rivalShoveBeat, +1) + hop,
+                                f.stage.rivalX, f.stage.rivalW, /*outward=*/+1);
+    c.localMotion = heldOnStage(impactNudgePx(localShoveBeat, -1) + hop,
+                                f.stage.localX, f.stage.localW, /*outward=*/-1);
     // The swing window is the hop's own, so an authored attack clip runs exactly as long
-    // as the lunge that carries it — one motion, not a pose that outlives its nudge.
-    const bool swinging = struck && v.hitBeat >= 0 && v.hitBeat < kAttackHopPeriod;
-    // FX_CAMO. A pet holding a move borrowed from another line wears the colours of
-    // whoever that move belongs to for as long as it holds it. Both halves are the
-    // caller's (CombatCamo) and read straight: the level rather than derived from any
-    // beat on this screen, so nothing between the pet's own casts can move it, and the
-    // palette rather than sampled here, because which sprite to sample is a question
-    // about the fight (camoTarget) that only the caller can answer.
-    const uint8_t localCamoAmt = v.camo.ramp.empty() ? 0 : v.camo.level;
-    const CamoRamp& localCamo = v.camo.ramp;
-    const CamoRamp* localCamoFrom = v.camo.leaving.empty() ? nullptr : &v.camo.leaving;
-    // The beaten rival's outro takes its seat when one is running — it IS the rival for
-    // those beats, so nothing else has to know the fight ended. See CombatOutro
+    // as the lunge that carries it: one motion, not a pose that outlives its nudge.
+    c.swinging = c.struck && v.hitBeat >= 0 && v.hitBeat < kAttackHopPeriod;
+    // The beaten rival's outro takes its seat when one is running. See CombatOutro
     // (combat_screen.h) for why the two dissolves mean different things.
-    const AbsorbPhase outroPhase =
-        absorbPhase(v.outro.beat, kAbsorbLeadBeats, kAbsorbBeats);
-    const bool absorbing = v.outro.kind == CombatOutro::Kind::Absorb;
+    c.outroPhase = absorbPhase(v.outro.beat, kAbsorbLeadBeats, kAbsorbBeats);
+    c.absorbing = v.outro.kind == CombatOutro::Kind::Absorb;
     const Seizure& seizure = combat.lastSeizure();
-    const bool seizedByLocal = seizure.happened && seizure.onPlayer != flip;
-    const int rivalWorkedUp = seizure.happened && !seizedByLocal ? v.hitBeat : -1;
-    const int localWorkedUp = seizedByLocal ? v.hitBeat : -1;
+    const bool seizedByLocal = seizure.happened && seizure.onPlayer != f.flip;
+    c.rivalWorkedUp = seizure.happened && !seizedByLocal ? v.hitBeat : -1;
+    c.localWorkedUp = seizedByLocal ? v.hitBeat : -1;
+    return c;
+}
 
-    // Rival first: where two Daemon cells run right to their band edges, the local pet
-    // reads on top of its opponent — and an absorbed rival must pass BEHIND the pet
-    // eating it, which is the same ordering.
+// The flash colour for whichever cue is live: impact snaps to INK, a wind-up charges WARN.
+Rgb565 cueColor(uint8_t impact, uint8_t windup) {
+    return palColor(impact >= windup ? Pal::INK : Pal::WARN);
+}
+
+// The rival's seat: its live sprite, its flock, or its outro dissolve, which IS the
+// rival for those beats so nothing else has to know the fight ended.
+void drawRivalSeat(Framebuffer& fb, const CombatFrame& f, const StageCues& c) {
+    const CombatView& v = f.v;
+    const CombatStage& stage = f.stage;
+    const SpriteData* rivalSprite = f.rivalSprite;
+    const int shotN = stage.num, shotD = stage.den;
     if (v.rivalSwarm && !rivalSprite) {
         // A rival with NO SHEET that is nonetheless a creature: an area guardian, drawn as
         // its flock into the seat the stage already reserved for it (FX_SWARM,
         // core/render/swarm.h). It takes the same outward nudge every struck fighter does,
-        // so a blow moves the whole body — a creature that cannot be knocked back reads as
+        // so a blow moves the whole body: a creature that cannot be knocked back reads as
         // scenery rather than as the thing you are fighting.
         //
         // No sprite branch below can run for it, and none has to: the flock's own MOOD is
         // what a hit and a defeat look like here (Game::guardianFlockMood), which is why
         // there is nothing for the outro's dissolve to take apart.
-        const uint8_t flash = std::max(rivalWindup, rivalImpact);
-        drawSwarm(fb, *v.rivalSwarm, stage.rivalX + rivalMotion,
+        const uint8_t flash = std::max(c.rivalWindup, c.rivalImpact);
+        drawSwarm(fb, *v.rivalSwarm, stage.rivalX + c.rivalMotion,
                   kSpriteShelf - kSwarmSeatH, kSwarmSeatW, kSwarmSeatH,
-                  flash > 0 ? palColor(rivalImpact >= rivalWindup ? Pal::INK : Pal::WARN)
-                            : palColor(Pal::ACCENT),
+                  flash > 0 ? cueColor(c.rivalImpact, c.rivalWindup) : palColor(Pal::ACCENT),
                   palColor(Pal::INK_DIM));
     } else if (v.outro.kind == CombatOutro::Kind::None && rivalSprite &&
-               workedUp(rivalWorkedUp)) {
-        drawWorkedUp(fb, *rivalSprite, stage.rivalX, stage.rivalW, rivalWorkedUp,
+               workedUp(c.rivalWorkedUp)) {
+        drawWorkedUp(fb, *rivalSprite, stage.rivalX, stage.rivalW, c.rivalWorkedUp,
                      /*faceRight=*/false, shotN, shotD);
     } else if (v.outro.kind == CombatOutro::Kind::None) {
         drawFighter(fb, rivalSprite, stage.rivalX, v.animBeat,
-                    std::max(rivalWindup, rivalImpact),
-                    palColor(rivalImpact >= rivalWindup ? Pal::INK : Pal::WARN),
-                    rivalMotion, /*faceRight=*/false,
-                    fightPose(en,
-                              rivalFlinches && rivalHitBeat >= 0 &&
-                                  rivalHitBeat < kImpactPeriod,
-                              swinging && !lastByLocal, rivalSprite),
-                    shotN, shotD, nullptr, 0, nullptr, wearsGlitch(en));
+                    std::max(c.rivalWindup, c.rivalImpact),
+                    cueColor(c.rivalImpact, c.rivalWindup),
+                    c.rivalMotion, /*faceRight=*/false,
+                    fightPose(f.en, c.rivalHurt, c.swinging && !f.lastByLocal, rivalSprite),
+                    shotN, shotD, nullptr, 0, nullptr, wearsGlitch(f.en));
     } else if (rivalSprite) {
         // Same turn the live draw above takes: a rival that spun round on the beat it
         // died would read as the outro doing it, not as the fight ending.
@@ -1029,195 +1057,231 @@ void drawCombat(Framebuffer& fb, const Combat& combat, const CombatView& v) {
         const int rx = stage.rivalX -
                        scaleUp(spriteContentX0(*rivalSprite, rivalMirror), shotN, shotD);
         const int ry = kSpriteShelf - rivalSprite->h * shotN / shotD;
-        if (absorbing) {
+        if (c.absorbing) {
             // Into the middle of the local pet's DRAWING, so it is eaten by the body
             // rather than by a corner of an empty cell.
-            const int px0 = stage.localX;
-            const int py0 =
-                kSpriteShelf - (localSprite ? localSprite->h : 0) * shotN / shotD;
+            const int localH = (f.localSprite ? f.localSprite->h : 0) * shotN / shotD;
             drawAbsorb(fb, *rivalSprite, 0, rx, ry, shotN, shotD,
-                       px0 + stage.localW / 2,
-                       py0 + (localSprite ? localSprite->h : 0) * shotN / shotD / 2,
-                       palColor(Pal::ACCENT), outroPhase.progress, /*bite=*/255,
+                       stage.localX + stage.localW / 2, kSpriteShelf - localH + localH / 2,
+                       palColor(Pal::ACCENT), c.outroPhase.progress, /*bite=*/255,
                        /*row=*/0, rivalMirror);
         } else {
             drawShred(fb, *rivalSprite, 0, rx, ry, shotN, shotD,
-                      palColor(Pal::INK), outroPhase.progress, /*row=*/0, rivalMirror);
+                      palColor(Pal::INK), c.outroPhase.progress, /*row=*/0, rivalMirror);
         }
     }
-    if (localSprite && !absorbing && workedUp(localWorkedUp)) {
-        drawWorkedUp(fb, *localSprite, stage.localX, stage.localW, localWorkedUp,
-                     /*faceRight=*/true, shotN, shotD);
-    } else {
-        drawFighter(fb, localSprite, stage.localX, v.animBeat,
-                    absorbing ? std::max(outroPhase.flash,
-                                         std::max(localWindup, localImpact))
-                              : std::max(localWindup, localImpact),
-                    absorbing && outroPhase.flash >= std::max(localWindup, localImpact)
-                        ? palColor(Pal::ACCENT)
-                        : palColor(localImpact >= localWindup ? Pal::INK : Pal::WARN),
-                    localMotion, /*faceRight=*/true,
-                    fightPose(pl,
-                              localFlinches && localHitBeat >= 0 &&
-                                  localHitBeat < kImpactPeriod,
-                              swinging && lastByLocal, localSprite),
-                    shotN, shotD, &localCamo, localCamoAmt, localCamoFrom,
-                    wearsGlitch(pl));
-    }
+}
 
-    // Worm replicas, on the same shelf, standing BETWEEN their parent and its opponent —
-    // each row starts at the parent's own drawn edge facing the other fighter and falls
-    // back from there, so a copy is always in the way of the thing it is there to catch.
-    // Drawn AFTER both fighters so they read in front of the worm that made them. Nothing
-    // is drawn for any other line — wormReplicaCount is 0 and the row returns.
-    //
-    // WormKill names its side in Combat's player_/enemy_ terms, so it is rebound to the
-    // local/rival roles the same way everything else on this screen is.
-    const WormKill& kill = combat.lastWormKill();
-    const bool killOnLocal = kill.onPlayer != flip;
-    // The slot pitch is cut from the PARENT'S OWN WIDTH, so a full board occupies the
-    // ground its parent stands on instead of sprawling off the back of it. A fixed pitch
-    // cannot do this at any camera — the ratio is invariant under the shot, so three copies
-    // at kReplicaSlotW step 90px back from a worm whose drawing is 56.
-    //
-    // Derived from the seat rather than the sprite, the seat being what the fighter visibly
-    // occupies. Floored so a very small parent still spreads its copies far enough to be
-    // counted; the back-to-front draw order below covers two ranks touching at that floor.
-    auto replicaSpan = [&](int bandW) {
-        const int fitted = bandW / (kWormReplicaSlots + 1);
-        const int floorPx = kReplicaSlotW * shotN / shotD / 2;
-        return fitted > floorPx ? fitted : floorPx;
-    };
-    drawReplicaRow(fb, en, swinging && !lastByLocal, kill, killOnLocal ? -1 : v.hitBeat,
-                   /*frontX=*/stage.rivalX, /*stride=*/replicaSpan(stage.rivalW),
-                   kSpriteShelf, v.animBeat, shotN, shotD);
-    drawReplicaRow(fb, pl, swinging && lastByLocal, kill, killOnLocal ? v.hitBeat : -1,
+void drawLocalSeat(Framebuffer& fb, const CombatFrame& f, const StageCues& c) {
+    const CombatView& v = f.v;
+    const CombatStage& stage = f.stage;
+    if (f.localSprite && !c.absorbing && workedUp(c.localWorkedUp)) {
+        drawWorkedUp(fb, *f.localSprite, stage.localX, stage.localW, c.localWorkedUp,
+                     /*faceRight=*/true, stage.num, stage.den);
+        return;
+    }
+    // FX_CAMO. A pet holding a move borrowed from another line wears the colours of
+    // whoever that move belongs to for as long as it holds it. Both halves are the
+    // caller's (CombatCamo) and read straight: the level rather than derived from any
+    // beat on this screen, so nothing between the pet's own casts can move it, and the
+    // palette rather than sampled here, because which sprite to sample is a question
+    // about the fight (camoTarget) that only the caller can answer.
+    const uint8_t camoAmt = v.camo.ramp.empty() ? 0 : v.camo.level;
+    const CamoRamp* camoFrom = v.camo.leaving.empty() ? nullptr : &v.camo.leaving;
+    const uint8_t cue = std::max(c.localWindup, c.localImpact);
+    const bool eating = c.absorbing && c.outroPhase.flash >= cue;
+    drawFighter(fb, f.localSprite, stage.localX, v.animBeat,
+                c.absorbing ? std::max(c.outroPhase.flash, cue) : cue,
+                eating ? palColor(Pal::ACCENT) : cueColor(c.localImpact, c.localWindup),
+                c.localMotion, /*faceRight=*/true,
+                fightPose(f.pl, c.localHurt, c.swinging && f.lastByLocal, f.localSprite),
+                stage.num, stage.den, &v.camo.ramp, camoAmt, camoFrom, wearsGlitch(f.pl));
+}
+
+// The slot pitch is cut from the PARENT'S OWN WIDTH, so a full board occupies the ground
+// its parent stands on instead of sprawling off the back of it. A fixed pitch cannot do
+// this at any camera: the ratio is invariant under the shot, so three copies at
+// kReplicaSlotW step 90px back from a worm whose drawing is 56.
+//
+// Derived from the seat rather than the sprite, the seat being what the fighter visibly
+// occupies. Floored so a very small parent still spreads its copies far enough to be
+// counted; drawReplicaRow's back-to-front order covers two ranks touching at that floor.
+int replicaSpan(int bandW, const CombatStage& stage) {
+    const int fitted = bandW / (kWormReplicaSlots + 1);
+    const int floorPx = kReplicaSlotW * stage.num / stage.den / 2;
+    return fitted > floorPx ? fitted : floorPx;
+}
+
+// Worm replicas, on the same shelf, standing BETWEEN their parent and its opponent: each
+// row starts at the parent's own drawn edge facing the other fighter and falls back from
+// there, so a copy is always in the way of the thing it is there to catch. Drawn AFTER
+// both fighters so they read in front of the worm that made them. Nothing is drawn for
+// any other line: wormReplicaCount is 0 and the row returns.
+//
+// WormKill names its side in Combat's player_/enemy_ terms, so it is rebound to the
+// local/rival roles the same way everything else on this screen is.
+void drawReplicas(Framebuffer& fb, const CombatFrame& f, const StageCues& c) {
+    const CombatStage& stage = f.stage;
+    const WormKill& kill = f.combat.lastWormKill();
+    const bool killOnLocal = kill.onPlayer != f.flip;
+    drawReplicaRow(fb, f.en, c.swinging && !f.lastByLocal, kill,
+                   killOnLocal ? -1 : f.v.hitBeat,
+                   /*frontX=*/stage.rivalX, /*stride=*/replicaSpan(stage.rivalW, stage),
+                   kSpriteShelf, f.v.animBeat, stage.num, stage.den);
+    drawReplicaRow(fb, f.pl, c.swinging && f.lastByLocal, kill,
+                   killOnLocal ? f.v.hitBeat : -1,
                    /*frontX=*/stage.localX + stage.localW,
-                   /*stride=*/-replicaSpan(stage.localW), kSpriteShelf, v.animBeat, shotN,
-                   shotD);
+                   /*stride=*/-replicaSpan(stage.localW, stage), kSpriteShelf,
+                   f.v.animBeat, stage.num, stage.den);
+}
 
-    // Each fighter's STATUS STRIP, on the shelf under its feet: every condition it is
-    // under, as the same glyph the panel's VS grid names that row with, so the two say
-    // one thing in one vocabulary. This is what lets the panel stop carrying a drive, a
-    // trap pile or the worm copies — none of them was ever hidden, and a row spelling out
-    // what the screen is already showing is a row spent twice.
-    //
-    // Seated at the fighter's own band and clipped to it: a strip that ran past its
-    // owner's width would read as belonging to whoever it reached.
-    auto statusStrip = [&](const Combatant& c, bool withGuard, int bandX, int bandW) {
-        const CombatStatusStrip st = combatStatusStrip(c, withGuard);
-        const int cell = kFontAdvance;
-        int x = bandX < 0 ? 0 : bandX;                     // an oversized cell may crop
-        const int right = bandX + bandW;
-        for (int i = 0; i < st.n && x + cell <= right && x + cell <= kActiveW; ++i) {
-            if (const SpriteData* g = combatVsGlyph(st.k[i]))
-                drawSpriteTinted(fb, *g, glyphFrame(*g, v.animBeat), x, kSpriteShelf + 1,
-                                 combatVsColor(st.k[i]));
-            x += cell;
-        }
-    };
-    statusStrip(pl, /*withGuard=*/true, stage.localX, stage.localW);
-    statusStrip(en, /*withGuard=*/false, stage.rivalX, stage.rivalW);
+// A fighter's STATUS STRIP, on the shelf under its feet: every condition it is under, as
+// the same glyph the panel's VS grid names that row with, so the two say one thing in one
+// vocabulary. This is what lets the panel leave out a drive, a trap pile or the worm
+// copies: none of them is hidden, and a row spelling out what the screen is already
+// showing is a row spent twice.
+//
+// Seated at the fighter's own band and clipped to it: a strip that ran past its owner's
+// width would read as belonging to whoever it reached.
+void drawStatusStrip(Framebuffer& fb, const CombatStatusStrip& st, int bandX, int bandW,
+                     int animBeat) {
+    const int cell = kFontAdvance;
+    int x = bandX < 0 ? 0 : bandX;                     // an oversized cell may crop
+    const int right = bandX + bandW;
+    for (int i = 0; i < st.n && x + cell <= right && x + cell <= kActiveW; ++i) {
+        if (const SpriteData* g = combatVsGlyph(st.k[i]))
+            drawSpriteTinted(fb, *g, glyphFrame(*g, animBeat), x, kSpriteShelf + 1,
+                             combatVsColor(st.k[i]));
+        x += cell;
+    }
+}
 
+// Seated off each sprite's own height, so a mark rides the head it belongs to rather than
+// floating on a shared row a short creature never reaches.
+int fighterHeadY(const SpriteData* s, const CombatStage& stage) {
+    return s ? kSpriteShelf - s->h * stage.num / stage.den : kSpriteShelf;
+}
+
+// The move being charged is what says how LONG the wind-up is; a combatant mid-channel
+// always has one, and a meter with no total falls back to the turns still to run.
+int channelTurns(const Combatant& c) {
+    const int i = c.channelMoveIdx;
+    return (i >= 0 && i < static_cast<int>(c.moves.size()) && c.moves[i])
+               ? c.moves[i]->channelTurns : 0;
+}
+
+void drawStageMarks(Framebuffer& fb, const CombatFrame& f, const StageCues& c) {
+    const CombatStage& stage = f.stage;
     // The strike mark, in the lane the seating reserved for it: who is hitting whom, in
     // the direction the blow travels. Drawn over the replicas, since a copy taking the
     // hit is still that hit landing.
-    if (swinging) {
+    if (c.swinging) {
         // The ACTOR decides WHICH mark (what was swung); the fight's swing count decides
         // which half of its pair, so this blow never repeats the one before it.
         const StrikeMark mark =
-            strikeMark(lastByLocal ? pl : en, combat.strikeCount());
-        drawStrikeMark(fb, stage.laneX, stage.laneW, hopDir, v.hitBeat, kAttackHopPeriod,
-                       *mark.sheet, mark.variant, shotN, shotD);
+            strikeMark(f.lastByLocal ? f.pl : f.en, f.combat.strikeCount());
+        drawStrikeMark(fb, stage.laneX, stage.laneW, c.hopDir, f.v.hitBeat,
+                       kAttackHopPeriod, *mark.sheet, mark.variant, stage.num, stage.den);
     }
-    // The wind-up countdown, over whichever fighter is charging — the same marker on both
+    // The wind-up countdown, over whichever fighter is charging: the same marker on both
     // sides, so "a hit is being wound up, by that one, N turns out" reads without colour.
-    // Seated off each sprite's own height, so it rides the head it belongs to rather than
-    // floating on a shared row a short creature never reaches.
-    auto headY = [&](const SpriteData* s) {
-        return s ? kSpriteShelf - s->h * shotN / shotD : kSpriteShelf;
-    };
-    // The move being charged is what says how LONG the wind-up is; a combatant mid-channel
-    // always has one, and a meter with no total falls back to the turns still to run.
-    auto channelTurns = [](const Combatant& c) {
-        const int i = c.channelMoveIdx;
-        return (i >= 0 && i < static_cast<int>(c.moves.size()) && c.moves[i])
-                   ? c.moves[i]->channelTurns : 0;
-    };
-    if (en.channelMoveIdx >= 0)
-        drawWindupMark(fb, stage.rivalX + stage.rivalW / 2, headY(rivalSprite),
-                       en.channelLeft, channelTurns(en));
-    if (pl.channelMoveIdx >= 0)
-        drawWindupMark(fb, stage.localX + stage.localW / 2, headY(localSprite),
-                       pl.channelLeft, channelTurns(pl));
+    if (f.en.channelMoveIdx >= 0)
+        drawWindupMark(fb, stage.rivalX + stage.rivalW / 2,
+                       fighterHeadY(f.rivalSprite, stage), f.en.channelLeft,
+                       channelTurns(f.en));
+    if (f.pl.channelMoveIdx >= 0)
+        drawWindupMark(fb, stage.localX + stage.localW / 2,
+                       fighterHeadY(f.localSprite, stage), f.pl.channelLeft,
+                       channelTurns(f.pl));
+}
 
-    // --- The damage popup, over whoever just took it -----------------------
-    // Floated off the TARGET's own head, on the same hit beat as the flash and the
-    // knock-back, so the three cues are one event and a glance answers which side is
-    // losing. A number right-aligned on the last-move line sits in the same corner whoever
-    // was hit, and carries no answer to that.
-    //
-    // A ransomed hit landed in full but moved no Health (combat.h ransomPool), so it gets
-    // the word HELD and the pool's green rather than damage red — the tag, not the colour,
-    // is what makes the two readable apart in grayscale.
-    const int popRise = damagePopRise(hitLanded ? v.hitBeat : -1);
-    if (popRise >= 0) {
-        const bool onRival = lastByLocal;         // the target is whoever did NOT swing
-        const SpriteData* hitSprite = onRival ? rivalSprite : localSprite;
-        const int bandX = onRival ? stage.rivalX : stage.localX;
-        const int bandW = onRival ? stage.rivalW : stage.localW;
-        const bool held = combat.lastRansomed();
-        char dmg[16];
-        std::snprintf(dmg, sizeof(dmg), held ? "HELD %d" : "-%d", combat.lastDamage());
-        const int w = textWidth(dmg);
-        // Held inside the canvas, and clear of the chrome above: a cropping fighter's
-        // midpoint can sit past a screen edge, and a tall one's head reaches the header.
-        const int x = std::max(kMargin,
-                               std::min(kActiveW - kMargin - w, bandX + bandW / 2 - w / 2));
-        const int y = std::max(kCombatPanelTop + 2, headY(hitSprite) - 6 - popRise);
-        drawText(fb, x, y, dmg, palColor(held ? Pal::CALM : Pal::HOT));
-    }
+// The damage popup, over whoever just took it. Floated off the TARGET's own head, on the
+// same hit beat as the flash and the knock-back, so the three cues are one event and a
+// glance answers which side is losing. A number right-aligned on the last-move line would
+// sit in the same corner whoever was hit, and carry no answer to that.
+//
+// A ransomed hit landed in full but moved no Health (combat.h ransomPool), so it gets
+// the word HELD and the pool's green rather than damage red: the tag, not the colour,
+// is what makes the two readable apart in grayscale.
+void drawDamagePopup(Framebuffer& fb, const CombatFrame& f, const StageCues& c) {
+    const int popRise = damagePopRise(c.hitLanded ? f.v.hitBeat : -1);
+    if (popRise < 0) return;
+    const bool onRival = f.lastByLocal;         // the target is whoever did NOT swing
+    const SpriteData* hitSprite = onRival ? f.rivalSprite : f.localSprite;
+    const int bandX = onRival ? f.stage.rivalX : f.stage.localX;
+    const int bandW = onRival ? f.stage.rivalW : f.stage.localW;
+    const bool held = f.combat.lastRansomed();
+    char dmg[16];
+    std::snprintf(dmg, sizeof(dmg), held ? "HELD %d" : "-%d", f.combat.lastDamage());
+    const int w = textWidth(dmg);
+    // Held inside the canvas, and clear of the chrome above: a cropping fighter's
+    // midpoint can sit past a screen edge, and a tall one's head reaches the header.
+    const int x = std::max(kMargin,
+                           std::min(kActiveW - kMargin - w, bandX + bandW / 2 - w / 2));
+    const int y = std::max(kCombatPanelTop + 2, fighterHeadY(hitSprite, f.stage) - 6 - popRise);
+    drawText(fb, x, y, dmg, palColor(held ? Pal::CALM : Pal::HOT));
+}
 
-    // --- Player Health: zoned gauge + numeric ------------------------------
+// Both combatants (reused SPR_PET_* idle frames) and everything seated around them. The
+// LOCAL pet holds the LEFT seat and its rival the RIGHT, so a fight reads left-to-right as
+// "mine, then theirs". A seat also states which way its occupant LOOKS, and a sheet drawn
+// the other way is mirrored into it (drawFighter). Bottom-anchored on the shelf; a taller
+// sprite extends upward rather than clipping.
+void drawStage(Framebuffer& fb, const CombatFrame& f) {
+    const StageCues cues = stageCues(f);
+    // Rival first: where two Daemon cells run right to their band edges, the local pet
+    // reads on top of its opponent, and an absorbed rival must pass BEHIND the pet
+    // eating it, which is the same ordering.
+    drawRivalSeat(fb, f, cues);
+    drawLocalSeat(fb, f, cues);
+    drawReplicas(fb, f, cues);
+    drawStatusStrip(fb, combatStatusStrip(f.pl, /*withGuard=*/true), f.stage.localX,
+                    f.stage.localW, f.v.animBeat);
+    drawStatusStrip(fb, combatStatusStrip(f.en, /*withGuard=*/false), f.stage.rivalX,
+                    f.stage.rivalW, f.v.animBeat);
+    drawStageMarks(fb, f, cues);
+    drawDamagePopup(fb, f, cues);
+}
+
+// Player Health: zoned gauge + numeric, with the full-size passive strip directly above.
+void drawLocalGauge(Framebuffer& fb, const CombatFrame& f) {
+    const Combatant& pl = f.pl;
     const int phY = kCombatLocalGaugeY;
-    drawText(fb, kMargin, phY, v.sides.localLabel, palColor(Pal::INK));
-    const int phX = kGaugeX, phW = kGaugeW;   // the rival's column, shared
-
-    // The local pet's passive strip, full size, riding directly above its Health gauge.
-    drawPassiveStrip(fb, pl, phX, phY - 7, phW, 5, /*pipW=*/5, /*pipH=*/5, v.beat);
-
+    drawText(fb, kMargin, phY, f.v.sides.localLabel, palColor(Pal::INK));
+    drawPassiveStrip(fb, pl, kGaugeX, phY - 7, kGaugeW, 5, /*pipW=*/5, /*pipH=*/5, f.v.beat);
     const int phPct = pl.maxHealth > 0 ? pl.health * 100 / pl.maxHealth : 0;
     const Zone hz = healthZone(pl.health, pl.maxHealth);
-    const bool pulseOn = (v.beat & 1) == 0;
-    drawGauge(fb, phX, phY, phW, kCombatGaugeH, phPct, hz, false, pulseOn);
-    if (ongoing && localTurnNext) drawTurnTick(fb, phY, kCombatGaugeH);
+    const bool pulseOn = (f.v.beat & 1) == 0;
+    drawGauge(fb, kGaugeX, phY, kGaugeW, kCombatGaugeH, phPct, hz, false, pulseOn);
+    if (f.ongoing && f.localTurnNext) drawTurnTick(fb, phY, kCombatGaugeH);
     char hp[16];
     std::snprintf(hp, sizeof(hp), "%d", pl.health);
-    drawText(fb, phX + phW + 6, phY, hp, palColor(Pal::INK));
+    drawText(fb, kGaugeX + kGaugeW + 6, phY, hp, palColor(Pal::INK));
+}
 
-    // --- Last move + damage popup ------------------------------------------
-    const int logY = phY + 15;
-    if (combat.lastMoveName()[0]) {
-        char line[32];
-        const char* who = lastByLocal ? "YOU" : en.name;
-        if (combat.lastWasCharge())
-            std::snprintf(line, sizeof(line), "%s: %s...", who, combat.lastMoveName());
-        else
-            std::snprintf(line, sizeof(line), "%s: %s", who, combat.lastMoveName());
-        drawText(fb, kMargin, logY, line, palColor(Pal::INK_DIM));
-    }
+void drawLastMove(Framebuffer& fb, const CombatFrame& f) {
+    const Combat& combat = f.combat;
+    if (!combat.lastMoveName()[0]) return;
+    char line[32];
+    const char* who = f.lastByLocal ? "YOU" : f.en.name;
+    if (combat.lastWasCharge())
+        std::snprintf(line, sizeof(line), "%s: %s...", who, combat.lastMoveName());
+    else
+        std::snprintf(line, sizeof(line), "%s: %s", who, combat.lastMoveName());
+    drawText(fb, kMargin, kCombatLocalGaugeY + 15, line, palColor(Pal::INK_DIM));
+}
 
-
-    // --- Result beat (win/lose/flee) ---------------------------------------
-    // Win/Lose are stated from the LOCAL operator's side. In a duel the guest holds the
-    // enemy_ slot, so Combat's own verdict reads inverted there — same fight, same
-    // winner, opposite pronoun.
-    const char* result = nullptr;
+// Result beat (win/lose/flee). Win/Lose are stated from the LOCAL operator's side. In a
+// duel the guest holds the enemy_ slot, so Combat's own verdict reads inverted there:
+// same fight, same winner, opposite pronoun.
+void drawResultBanner(Framebuffer& fb, const CombatFrame& f) {
+    const Combat::Outcome outcome = f.combat.outcome();
     // A Draw is a loss from BOTH seats (Combat::lostOrDrawn), so it never inverts.
-    const bool localLost = combat.outcome() == Combat::Outcome::Draw ||
-                           (v.sides.localIsEnemySide ? combat.outcome() == Combat::Outcome::Win
-                                                   : combat.outcome() == Combat::Outcome::Lose);
-    switch (combat.outcome()) {
+    const bool localLost = outcome == Combat::Outcome::Draw ||
+                           (f.flip ? outcome == Combat::Outcome::Win
+                                   : outcome == Combat::Outcome::Lose);
+    const char* result = nullptr;
+    switch (outcome) {
         case Combat::Outcome::Win:
         case Combat::Outcome::Lose:
         case Combat::Outcome::Draw: result = localLost ? "PET OVERWHELMED" : "TARGET CLEARED"; break;
@@ -1225,351 +1289,365 @@ void drawCombat(Framebuffer& fb, const Combat& combat, const CombatView& v) {
         case Combat::Outcome::Ongoing: break;
     }
     // The banner sits across the sprite region, which is exactly where a beaten rival
-    // comes apart — so while a dissolve is running it waits. The verdict is not being
+    // comes apart, so while a dissolve is running it waits. The verdict is not being
     // withheld: the rival visibly losing IS the verdict, and the words land the moment
     // there is nothing left of it to cover. A fight with no outro (a loss, a duel, the
-    // Sim) is unaffected and banners immediately, as it always has.
+    // Sim) banners immediately.
     const bool dissolving =
-        v.outro.kind != CombatOutro::Kind::None && v.outro.beat < kAbsorbTotalBeats;
-    if (result && !dissolving) {
-        const int bannerY = kSpriteShelf - 53;   // centered over the sprite region
-        fb.fillRect(0, bannerY, kActiveW, 22, palColor(Pal::TRACK));
-        drawText(fb, (kActiveW - textWidth(result)) / 2, bannerY + 7, result,
-                 palColor(Pal::INK));
-    }
+        f.v.outro.kind != CombatOutro::Kind::None && f.v.outro.beat < kAbsorbTotalBeats;
+    if (!result || dissolving) return;
+    const int bannerY = kSpriteShelf - 53;   // centered over the sprite region
+    fb.fillRect(0, bannerY, kActiveW, 22, palColor(Pal::TRACK));
+    drawText(fb, (kActiveW - textWidth(result)) / 2, bannerY + 7, result,
+             palColor(Pal::INK));
+}
 
-    // Override picker overlay ----------------------------
-    // TWO LEVELS (Combat::overrideAtBands). Level 1 lists the bands this fight has —
-    // moves, combat-usable items, the metamorphic LOCK rows, the crew Exploit — and is
-    // never more than four rows. Level 2 lists one band's rows, windowed to
-    // kOverridePickerRows so the box cannot reach the hint band however deep the bag is.
-    // The cursor is `overridePick` (a flat row index) inside a band and
-    // `overrideBandPick` on the band list.
-    if (combat.overrideOpen()) {
-        const int moveN = combat.overrideMoveCount();
-        const auto& items = combat.overrideItems();
-        const int itemN = static_cast<int>(items.size());
-        const int lockN = combat.overrideLockCount();
-        const bool bands = combat.overrideAtBands();
-        // What the box is listing right now, and where in it the cursor sits. At level 2
-        // the rows are one band's contiguous run, so `first` shifts every index below
-        // into the flat list the commit path reads.
-        const OverrideBand band = combat.overrideBandOf(combat.overridePick());
-        const int first = bands ? 0 : combat.overrideBandFirst(band);
-        const int n = bands ? combat.overrideBandCount() : combat.overrideBandRows(band);
-        const int pick = bands ? combat.overrideBandPick() : combat.overridePick() - first;
-        const int visible = n < kOverridePickerRows ? n : kOverridePickerRows;
-        const int scrollTop = listScrollTop(pick, n, kOverridePickerRows);
-        const int boxH = 22 + visible * 14;
-        const int boxY = 40;
-        fb.fillRect(8, boxY, kActiveW - 16, boxH, palColor(Pal::TRACK));
-        // The title names the LEVEL: the picker itself over the band list, the band
-        // itself over its rows. A band whose rows outrun the window carries the cursor's
-        // place in it, the same readout the MODS and MOVE pickers put there — without it
-        // a windowed list gives no sign there is more of it.
-        drawText(fb, 16, boxY + 4, bands ? "EXPLOIT" : overrideBandName(band),
-                 palColor(Pal::INK));
-        if (n > visible) {
-            char nt[12];
-            std::snprintf(nt, sizeof(nt), "%d/%d", pick + 1, n);
-            drawText(fb, kActiveW - 16 - textWidth(nt), boxY + 4, nt,
-                     palColor(Pal::INK_DIM));
-        }
-        // Every row here is the same shape: a NAME from content, and a short fixed TAG
-        // right-aligned inside the box. So the name yields to the tag — travelling
-        // inside what's left of the row while it's the focused one, clipped when it
-        // isn't. Drawn as two independent drawText calls it didn't yield at all, and a
-        // long label (a crew Exploit's name is the longest thing this list ever shows)
-        // simply ran underneath its own tag.
-        auto pickerRow = [&](int y, const char* name, Rgb565 nameCol, const char* tag,
-                             bool sel) {
-            const int tagX = kActiveW - 24 - textWidth(tag);
-            drawText(fb, tagX, y, tag, palColor(Pal::INK_DIM));
-            const int room = tagX - kMargin - 24;
-            if (room > 0) drawTextMarquee(fb, 24, y, room, name, nameCol, v.beat, scrollWhen(sel));
-        };
-        for (int v = 0; v < visible && scrollTop + v < n; ++v) {
-            const int row = scrollTop + v;                // index within what is listed
-            const int y = boxY + 18 + v * 14;
-            const bool sel = row == pick;
-            if (sel) drawRowCursor(fb, 14, y, palColor(Pal::ACCENT));
-            const Rgb565 nameC = sel ? palColor(Pal::ACCENT) : palColor(Pal::INK);
-            if (bands) {                                  // level 1: a band row
-                // The tag is the band's DEPTH, uniformly. Giving the crew band its
-                // Exploit's tag instead would put two kinds of fact in one column.
-                const OverrideBand b = combat.overrideBandAt(row);
-                char tag[8];
-                std::snprintf(tag, sizeof(tag), "x%d", combat.overrideBandRows(b));
-                pickerRow(y, overrideBandName(b), nameC, tag, sel);
-                continue;
-            }
-            // DISPLAY row -> the real flat row. Identity unless a scramble holds, in
-            // which case the list the operator is looking at is not the list Combat
-            // commits against (Combat::overrideRealRow).
-            const int disp = first + row;
-            const int i = combat.overrideRealRow(disp);
-            // A row the pet cannot read is drawn dim and tagged, not hidden: the shape of
-            // the list is not the secret, which of its rows is which is. Dual-coded, so
-            // the tag says HELD and the colour is only emphasis.
-            const bool held = !combat.overrideRowLegible(disp);
-            char scrambled[32];
-            const char* label = combat.overrideRowLabel(disp, scrambled, sizeof(scrambled));
-            const Rgb565 rowC = held ? palColor(Pal::INK_DIM) : nameC;
-            if (i < moveN) {                              // a move row
-                const MoveDef* m = combat.player().moves[i];
-                // The kind AND the power. What an operator is deciding here is which
-                // move to spend the turn on, and the two questions that answers are what
-                // KIND of thing it is and how hard it hits — the second of which the row
-                // did not carry, so the choice was made blind on the only axis that
-                // separates one attack from another. A wildcard becomes whatever it
-                // rolls and so has no power to print; it takes the same dash the KIT page
-                // uses for a quantity not in play.
-                char tag[12];
-                if (moveIsWildcard(*m))
-                    std::snprintf(tag, sizeof(tag), "%s -", moveKindTag(m->kind));
-                else
-                    std::snprintf(tag, sizeof(tag), "%s %d", moveKindTag(m->kind),
-                                  m->power);
-                pickerRow(y, label, rowC, held ? "HELD" : tag, sel);
-            } else if (i < moveN + itemN) {               // a USE-ITEM row
-                const OverrideItem& it = items[i - moveN];
-                char tag[10];
-                std::snprintf(tag, sizeof(tag), "+%d HP", it.heal);
-                pickerRow(y, label, rowC, held ? "HELD" : tag, sel);
-            } else if (i < moveN + itemN + lockN) {       // a LOCK row
-                // The move this slot last rolled, tagged as what committing does rather
-                // than as what the move is — the kind tag is already on its own row above,
-                // and what an operator is deciding here is whether to stop rolling.
-                const MoveDef* lm = combat.overrideLockMove(i - moveN - itemN);
-                pickerRow(y, label, rowC, held ? "HELD" : "LOCK", sel);
-            } else {                                      // the crew Exploit row
-                const CrewExploit& ce = combat.overrideCrew();
-                char tag[16];
-                crewExploitLabel(tag, sizeof(tag), ce.kind, ce.magnitude);
-                pickerRow(y, label, rowC, held ? "HELD" : tag, sel);
-            }
-        }
+// A level-2 picker row's right-hand TAG, written into `buf`. `i` is the real flat row.
+const char* overrideRowTag(const Combat& combat, int i, char* buf, size_t cap) {
+    const int moveN = combat.overrideMoveCount();
+    const auto& items = combat.overrideItems();
+    const int itemN = static_cast<int>(items.size());
+    const int lockN = combat.overrideLockCount();
+    if (i < moveN) {                              // a move row
+        const MoveDef* m = combat.player().moves[i];
+        // The kind AND the power. What an operator is deciding here is which move to
+        // spend the turn on, and the two questions that answers are what KIND of thing
+        // it is and how hard it hits. A wildcard becomes whatever it rolls and so has no
+        // power to print; it takes the same dash the KIT page uses for a quantity not in
+        // play.
+        if (moveIsWildcard(*m))
+            std::snprintf(buf, cap, "%s -", moveKindTag(m->kind));
+        else
+            std::snprintf(buf, cap, "%s %d", moveKindTag(m->kind), m->power);
+        return buf;
     }
+    if (i < moveN + itemN) {                      // a USE-ITEM row
+        std::snprintf(buf, cap, "+%d HP", items[i - moveN].heal);
+        return buf;
+    }
+    // A LOCK row is tagged as what committing does rather than as what the move is: the
+    // kind tag is already on its own row above, and what an operator is deciding here is
+    // whether to stop rolling.
+    if (i < moveN + itemN + lockN) return "LOCK";
+    const CrewExploit& ce = combat.overrideCrew();   // the crew Exploit row
+    crewExploitLabel(buf, cap, ce.kind, ce.magnitude);
+    return buf;
+}
 
-    // --- Stat panel (B cycles: closed -> VS -> KIT -> closed) ------------
-    // A live readout, boxed over the sprites so the always-on chrome stays clean. Hidden
-    // while the override picker owns the same space. What each page is FOR is on
-    // kCombatStatPages in the header.
-    //
-    // THE PANEL IS 24 CHARACTERS WIDE, and everything below is laid out against that number
-    // rather than a generous snprintf buffer. A row that outgrows it does not fail loudly —
-    // the marquee scrolls it — so the budget is held by gates over the content that reaches
-    // these rows. The token half WRAPS; the rest is columns.
-    //
-    // The box is a FIXED rectangle (kCombatPanelRows), sized to the worst case either page
-    // can reach — the deepest boss kit the ladder fields, held by
-    // test_combat_kit_page_holds_the_widest_boss. Chrome that resized every turn would move
-    // under the reader.
-    if (v.statPage > 0 && !combat.overrideOpen()) {
-        // The box hangs from a FIXED TOP and its floor is cut to what the page has to say,
-        // capped at kCombatPanelBottom. Anchoring the top stops the box moving under a
-        // reader — the heading, the rule and every row already drawn stay put, and a status
-        // arriving mid-fight extends the FLOOR downward, where the new row was going
-        // anyway. The cap is the capacity a gate holds
-        // (test_combat_kit_page_holds_the_widest_boss); a shorter page stops there rather
-        // than drawing air over the stage.
-        const int boxY = kCombatPanelTop, pitch = kCombatPanelPitch;
-        const int textX = 16, textR = kActiveW - 16;
-        const int rows = v.statPage == 1 ? vsPageRows(pl, en) : kitPageRows(en, v.prizes);
-        const int wanted = kCombatPanelFirstRow + rows * pitch - (pitch - kFontH) + 3;
-        const int boxBottom = std::min(kCombatPanelBottom, wanted);
-        fb.fillRect(8, boxY, kActiveW - 16, boxBottom - boxY, palColor(Pal::TRACK));
-        char head[16];
-        std::snprintf(head, sizeof(head), "%s %d/%d",
-                      v.statPage == 1 ? "VS" : "KIT", v.statPage, kCombatStatPages);
-        drawText(fb, textX, boxY + 4, head, palColor(Pal::INK));
-        drawText(fb, textR - textWidth("B NEXT"), boxY + 4, "B NEXT",
+// Override picker overlay. TWO LEVELS (Combat::overrideAtBands). Level 1 lists the bands
+// this fight has (moves, combat-usable items, the metamorphic LOCK rows, the crew
+// Exploit) and is never more than four rows. Level 2 lists one band's rows, windowed to
+// kOverridePickerRows so the box cannot reach the hint band however deep the bag is. The
+// cursor is `overridePick` (a flat row index) inside a band and `overrideBandPick` on the
+// band list.
+void drawOverridePicker(Framebuffer& fb, const Combat& combat, int beat) {
+    const bool bands = combat.overrideAtBands();
+    // What the box is listing right now, and where in it the cursor sits. At level 2
+    // the rows are one band's contiguous run, so `first` shifts every index below
+    // into the flat list the commit path reads.
+    const OverrideBand band = combat.overrideBandOf(combat.overridePick());
+    const int first = bands ? 0 : combat.overrideBandFirst(band);
+    const int n = bands ? combat.overrideBandCount() : combat.overrideBandRows(band);
+    const int pick = bands ? combat.overrideBandPick() : combat.overridePick() - first;
+    const int visible = n < kOverridePickerRows ? n : kOverridePickerRows;
+    const int scrollTop = listScrollTop(pick, n, kOverridePickerRows);
+    const int boxH = 22 + visible * 14;
+    const int boxY = 40;
+    fb.fillRect(8, boxY, kActiveW - 16, boxH, palColor(Pal::TRACK));
+    // The title names the LEVEL: the picker itself over the band list, the band
+    // itself over its rows. A band whose rows outrun the window carries the cursor's
+    // place in it, the same readout the MODS and MOVE pickers put there: without it
+    // a windowed list gives no sign there is more of it.
+    drawText(fb, 16, boxY + 4, bands ? "EXPLOIT" : overrideBandName(band),
+             palColor(Pal::INK));
+    if (n > visible) {
+        char nt[24];
+        std::snprintf(nt, sizeof(nt), "%d/%d", pick + 1, n);
+        drawText(fb, kActiveW - 16 - textWidth(nt), boxY + 4, nt,
                  palColor(Pal::INK_DIM));
-        fb.fillRect(textX, boxY + 14, textR - textX, 1, palColor(Pal::PAPER));
-        int y = kCombatPanelFirstRow;
-
-        // Every row goes through here, and every row can DECLINE to draw: a fight with
-        // enough going on to overflow the box must lose its last line rather than
-        // overprint the fight underneath it.
-        auto row = [&](int indent, const char* s, Pal col) {
-            if (y + kFontH > boxBottom) return;
-            drawText(fb, textX + indent, y, s, palColor(col));
-            y += pitch;
-        };
-        // A name/value pair inside the PANEL's own margins — drawLabelValue anchors to
-        // the screen's, which would hang the value outside this box.
-        auto pairRow = [&](int indent, const char* label, Pal lc, const char* value,
-                           Pal vc) {
-            if (y + kFontH > boxBottom) return;
-            const int vx = textR - textWidth(value);
-            drawText(fb, vx, y, value, palColor(vc));
-            const int room = vx - (textX + indent) - 4;
-            if (room > 0)
-                drawTextMarquee(fb, textX + indent, y, room, label, palColor(lc), v.beat,
-                                Overflow::Clip);
-            y += pitch;
-        };
-        // The hairline between the two fighters' blocks — the same inset rule the header
-        // draws, so "these rows belong to that name" is stated by the same mark on both
-        // pages rather than by a gap the eye has to measure.
-        auto sepRow = [&] {
-            if (y + 4 > boxBottom) return;
-            y += 2;
-            fb.fillRect(textX, y, textR - textX, 1, palColor(Pal::PAPER));
-            y += 4;
-        };
-        // Who a block belongs to, as the operator's own caption for the seat.
-        auto whoRow = [&](const char* who, const Combatant& c) {
-            char hp[20];
-            std::snprintf(hp, sizeof(hp), "HP %d/%d", c.health > 0 ? c.health : 0,
-                          c.maxHealth);
-            const bool crit = healthZone(c.health, c.maxHealth) == Zone::Critical;
-            pairRow(0, who, Pal::INK, hp, crit ? Pal::HOT : Pal::INK);
-        };
-
-        if (v.statPage == 1) {
-            // === VS — the head-to-head =====================================
-            //
-            // One grid, built by combatVsGrid: a tag, then each fighter's value for it.
-            // The rows it emits are already in decision order, so a box that runs out
-            // loses the least of it — and says so, rather than going quiet.
-            const int col2R = textR;                  // the rival's column, hard right
-            const int col1R = textR - 9 * kFontAdvance;   // ...and the local pet's
-            int dropped = 0;
-            auto vsRow = [&](const SpriteData* glyph, Rgb565 glyphCol, const char* label,
-                             const char* a, Pal ac, const char* b, Pal bc) {
-                if (y + kFontH > boxBottom) { ++dropped; return; }
-                // The glyph names the row; the WORD is what draws when there is no art
-                // for it, so a missing master leaves a readable panel rather than a
-                // column of gaps.
-                if (glyph) drawSpriteTinted(fb, *glyph, 0, textX, y, glyphCol);
-                else drawText(fb, textX, y, label, palColor(Pal::INK_DIM));
-                // A dash, never a blank: a fighter that is not stunned and a stun the
-                // panel failed to report must not look the same.
-                const char* av = a[0] ? a : "-";
-                const char* bv = b[0] ? b : "-";
-                drawText(fb, col1R - textWidth(av), y, av,
-                         palColor(a[0] ? ac : Pal::INK_DIM));
-                drawText(fb, col2R - textWidth(bv), y, bv,
-                         palColor(b[0] ? bc : Pal::INK_DIM));
-                y += pitch;
-            };
-            // Whose column is whose, in the operator's own captions for the two seats.
-            vsRow(nullptr, 0, "", v.sides.localLabel, Pal::INK, v.sides.rivalLabel, Pal::INK);
-            const CombatVsGrid g = combatVsGrid(pl, en, /*localGuard=*/true);
-            for (int i = 0; i < g.n; ++i) {
-                // Health is the only row carrying a zone: a fighter in the Critical band
-                // is the one fact here that changes what you do next.
-                const bool hp = std::strcmp(g.r[i].tag, "HP") == 0;
-                const bool lCrit =
-                    hp && healthZone(pl.health, pl.maxHealth) == Zone::Critical;
-                const bool rCrit =
-                    hp && healthZone(en.health, en.maxHealth) == Zone::Critical;
-                vsRow(combatVsGlyph(g.r[i].kind), combatVsColor(g.r[i].kind), g.r[i].tag,
-                      g.r[i].local, lCrit ? Pal::HOT : Pal::INK,
-                      g.r[i].rival, rCrit ? Pal::HOT : Pal::INK);
-            }
-            // The armed crew Exploit is the one thing that cannot be a shared row: each
-            // side carries a DIFFERENT one, so the tag is per-fighter and there is no
-            // column for it to live in. It gets a line of its own, under the grid.
-            auto exploitRow = [&](const char* who, const Combatant& c) {
-                if (!c.crewExploit.live()) return;
-                if (y + kFontH > boxBottom) { ++dropped; return; }
-                char ce[16];
-                crewExploitLabel(ce, sizeof(ce), c.crewExploit.kind,
-                                 c.crewExploit.count());
-                char line[40];
-                std::snprintf(line, sizeof(line), "%s  %s", who, ce);
-                drawText(fb, textX, y, line, palColor(Pal::ACCENT));
-                y += pitch;
-            };
-            if (pl.crewExploit.live() || en.crewExploit.live()) {
-                sepRow();
-                exploitRow(v.sides.localLabel, pl);
-                exploitRow(v.sides.rivalLabel, en);
-            }
-            // Nothing may vanish without saying so. A row that could not be drawn is a
-            // fact the operator cannot see, and a panel that simply stopped would look
-            // exactly like a fighter with nothing left to report.
-            if (dropped > 0) {
-                char more[24];
-                std::snprintf(more, sizeof(more), "+%d MORE", dropped);
-                drawText(fb, textX, boxBottom - kFontH, more, palColor(Pal::WARN));
-            }
-        } else {
-            // === KIT — what the RIVAL can do, and what it is worth ===========
-            //
-            // The rival's list ONLY. The pet's own moves are on the A+C command picker,
-            // which is where they are chosen from and where their powers are already
-            // read; repeating them here bought nothing and cost half the box — and a
-            // boss fields up to seven moves, so the two lists together overran the panel
-            // and the rival's last rows, the ones a player opened this page for, were
-            // the ones silently dropped.
-            whoRow(v.sides.rivalLabel, en);
-            for (size_t i = 0; i < en.moves.size(); ++i) {
-                const MoveDef* m = en.moves[i];
-                if (!m) continue;
-                // Every row opens with a two-character GUTTER, marked or not, so the kind
-                // tags and the names beneath them stay in columns instead of stepping in
-                // and out by whether a row happens to be a prize. A marker that moved the
-                // text it marks would cost more legibility than it bought.
-                //
-                // The mark is a glyph rather than a word for width: the row already
-                // carries a kind tag, a name and a number inside 24 characters. The
-                // legend below is where the word goes, once, instead of on every row.
-                const bool learnable = v.prizes.marked(i);
-                char name[44];
-                std::snprintf(name, sizeof(name), "%s%s %s", learnable ? "+ " : "  ",
-                              moveKindTag(m->kind), m->displayName);
-                char pw[8];
-                // A wildcard row becomes whatever it rolls, so it HAS no power to print —
-                // and a number here would be the one readout on this page that lies. The
-                // dash is the same mark the VS page uses for a quantity not in play.
-                if (moveIsWildcard(*m)) std::snprintf(pw, sizeof(pw), "-");
-                else std::snprintf(pw, sizeof(pw), "%d", m->power);
-                // The move it is CHANNELLING is the one thing here that is not a standing
-                // fact, and the most urgent — a wind-up is a hit already on its way. It
-                // takes the colour when a row is both, which costs the prize nothing: the
-                // gutter mark is a separate channel and is still there to be read.
-                const bool winding = static_cast<int>(i) == en.channelMoveIdx;
-                const Pal nameCol = winding     ? Pal::WARN
-                                    : learnable ? Pal::CALM
-                                                : Pal::INK_DIM;
-                // No row indent: the gutter IS the indent setting these under the name
-                // above, and paying for both would spend two characters of a
-                // 24-character line saying one thing.
-                pairRow(0, name, nameCol, pw, Pal::INK_DIM);
-            }
-            // The Exploit the rival is CARRYING but has not fired (an arena rival arms
-            // its own). The trigger it waits for is deliberately NOT stated: which moment
-            // a rival commits to is the read the arena exists to teach.
-            if (en.autoExploit.label && !en.autoExploitFired)
-                pairRow(16, en.autoExploit.label, Pal::ACCENT,
-                        crewExploitTag(en.autoExploit.kind), Pal::ACCENT);
-            // What the gutter mark means, spelt out once under the list that uses it —
-            // and only when something is marked, so the line answers a question the page
-            // has just raised rather than standing as chrome.
-            if (v.prizes.mask) {
-                y += 3;                          // a footer of the list, not a row in it
-                row(0, "+ WIN TO LEARN", Pal::CALM);
-            }
-        }
     }
+    // Every row here is the same shape: a NAME from content, and a short fixed TAG
+    // right-aligned inside the box. So the name yields to the tag, travelling inside
+    // what's left of the row while it's the focused one and clipped when it isn't. A
+    // crew Exploit's name is the longest thing this list ever shows.
+    auto pickerRow = [&](int y, const char* name, Rgb565 nameCol, const char* tag,
+                         bool sel) {
+        const int tagX = kActiveW - 24 - textWidth(tag);
+        drawText(fb, tagX, y, tag, palColor(Pal::INK_DIM));
+        const int room = tagX - kMargin - 24;
+        if (room > 0) drawTextMarquee(fb, 24, y, room, name, nameCol, beat, scrollWhen(sel));
+    };
+    for (int slot = 0; slot < visible && scrollTop + slot < n; ++slot) {
+        const int row = scrollTop + slot;              // index within what is listed
+        const int y = boxY + 18 + slot * 14;
+        const bool sel = row == pick;
+        if (sel) drawRowCursor(fb, 14, y, palColor(Pal::ACCENT));
+        const Rgb565 nameC = sel ? palColor(Pal::ACCENT) : palColor(Pal::INK);
+        if (bands) {                                  // level 1: a band row
+            // The tag is the band's DEPTH, uniformly. Giving the crew band its
+            // Exploit's tag instead would put two kinds of fact in one column.
+            const OverrideBand b = combat.overrideBandAt(row);
+            char tag[8];
+            std::snprintf(tag, sizeof(tag), "x%d", combat.overrideBandRows(b));
+            pickerRow(y, overrideBandName(b), nameC, tag, sel);
+            continue;
+        }
+        // DISPLAY row -> the real flat row. Identity unless a scramble holds, in
+        // which case the list the operator is looking at is not the list Combat
+        // commits against (Combat::overrideRealRow).
+        const int disp = first + row;
+        // A row the pet cannot read is drawn dim and tagged, not hidden: the shape of
+        // the list is not the secret, which of its rows is which is. Dual-coded, so
+        // the tag says HELD and the colour is only emphasis.
+        const bool held = !combat.overrideRowLegible(disp);
+        char scrambled[32];
+        const char* label = combat.overrideRowLabel(disp, scrambled, sizeof(scrambled));
+        char tag[16];
+        pickerRow(y, label, held ? palColor(Pal::INK_DIM) : nameC,
+                  held ? "HELD"
+                       : overrideRowTag(combat, combat.overrideRealRow(disp), tag,
+                                        sizeof(tag)),
+                  sel);
+    }
+}
 
-    // Mandatory hint band: A+C live, C reassigned -----------------
-    // The picker's three states are three different keyboards, and the band level's B
-    // OPENS rather than commits — a hint that said COMMIT there would be offering a key
-    // that does nothing, which is the one thing this band must never do.
+// The stat panel's write head. Every row goes through it, and every row can DECLINE to
+// draw: a fight with enough going on to overflow the box must lose its last line rather
+// than overprint the fight underneath it.
+struct PanelCursor {
+    Framebuffer& fb;
+    int textX, textR, boxBottom, pitch, beat;
+    int y;
+    int dropped = 0;
+
+    bool full() const { return y + kFontH > boxBottom; }
+    void row(int indent, const char* s, Pal col) {
+        if (full()) return;
+        drawText(fb, textX + indent, y, s, palColor(col));
+        y += pitch;
+    }
+    // A name/value pair inside the PANEL's own margins: drawLabelValue anchors to the
+    // screen's, which would hang the value outside this box.
+    void pair(int indent, const char* label, Pal lc, const char* value, Pal vc) {
+        if (full()) return;
+        const int vx = textR - textWidth(value);
+        drawText(fb, vx, y, value, palColor(vc));
+        const int room = vx - (textX + indent) - 4;
+        if (room > 0)
+            drawTextMarquee(fb, textX + indent, y, room, label, palColor(lc), beat,
+                            Overflow::Clip);
+        y += pitch;
+    }
+    // The hairline between the two fighters' blocks: the same inset rule the header
+    // draws, so "these rows belong to that name" is stated by the same mark on both
+    // pages rather than by a gap the eye has to measure.
+    void sep() {
+        if (y + 4 > boxBottom) return;
+        y += 2;
+        fb.fillRect(textX, y, textR - textX, 1, palColor(Pal::PAPER));
+        y += 4;
+    }
+};
+
+// One VS row: a tag, then each fighter's value for it.
+void drawVsRow(PanelCursor& p, const SpriteData* glyph, Rgb565 glyphCol, const char* label,
+               const char* a, Pal ac, const char* b, Pal bc) {
+    if (p.full()) { ++p.dropped; return; }
+    const int col2R = p.textR;                    // the rival's column, hard right
+    const int col1R = p.textR - 9 * kFontAdvance; // ...and the local pet's
+    // The glyph names the row; the WORD is what draws when there is no art for it, so a
+    // missing master leaves a readable panel rather than a column of gaps.
+    if (glyph) drawSpriteTinted(p.fb, *glyph, 0, p.textX, p.y, glyphCol);
+    else drawText(p.fb, p.textX, p.y, label, palColor(Pal::INK_DIM));
+    // A dash, never a blank: a fighter that is not stunned and a stun the panel failed
+    // to report must not look the same.
+    const char* av = a[0] ? a : "-";
+    const char* bv = b[0] ? b : "-";
+    drawText(p.fb, col1R - textWidth(av), p.y, av, palColor(a[0] ? ac : Pal::INK_DIM));
+    drawText(p.fb, col2R - textWidth(bv), p.y, bv, palColor(b[0] ? bc : Pal::INK_DIM));
+    p.y += p.pitch;
+}
+
+// The armed crew Exploit is the one thing that cannot be a shared VS row: each side
+// carries a DIFFERENT one, so the tag is per-fighter and there is no column for it to
+// live in. It gets a line of its own, under the grid.
+void drawExploitRow(PanelCursor& p, const char* who, const Combatant& c) {
+    if (!c.crewExploit.live()) return;
+    if (p.full()) { ++p.dropped; return; }
+    char ce[16];
+    crewExploitLabel(ce, sizeof(ce), c.crewExploit.kind, c.crewExploit.count());
+    char line[40];
+    std::snprintf(line, sizeof(line), "%s  %s", who, ce);
+    drawText(p.fb, p.textX, p.y, line, palColor(Pal::ACCENT));
+    p.y += p.pitch;
+}
+
+// VS, the head-to-head. One grid, built by combatVsGrid. The rows it emits are already in
+// decision order, so a box that runs out loses the least of it, and says so rather than
+// going quiet.
+void drawVsPage(PanelCursor& p, const CombatFrame& f) {
+    const Combatant& pl = f.pl;
+    const Combatant& en = f.en;
+    // Whose column is whose, in the operator's own captions for the two seats.
+    drawVsRow(p, nullptr, 0, "", f.v.sides.localLabel, Pal::INK, f.v.sides.rivalLabel,
+              Pal::INK);
+    const CombatVsGrid g = combatVsGrid(pl, en, /*localGuard=*/true);
+    for (int i = 0; i < g.n; ++i) {
+        // Health is the only row carrying a zone: a fighter in the Critical band is the
+        // one fact here that changes what you do next.
+        const bool hp = std::strcmp(g.r[i].tag, "HP") == 0;
+        const bool lCrit = hp && healthZone(pl.health, pl.maxHealth) == Zone::Critical;
+        const bool rCrit = hp && healthZone(en.health, en.maxHealth) == Zone::Critical;
+        drawVsRow(p, combatVsGlyph(g.r[i].kind), combatVsColor(g.r[i].kind), g.r[i].tag,
+                  g.r[i].local, lCrit ? Pal::HOT : Pal::INK,
+                  g.r[i].rival, rCrit ? Pal::HOT : Pal::INK);
+    }
+    if (pl.crewExploit.live() || en.crewExploit.live()) {
+        p.sep();
+        drawExploitRow(p, f.v.sides.localLabel, pl);
+        drawExploitRow(p, f.v.sides.rivalLabel, en);
+    }
+    // Nothing may vanish without saying so. A row that could not be drawn is a fact the
+    // operator cannot see, and a panel that simply stopped would look exactly like a
+    // fighter with nothing left to report.
+    if (p.dropped > 0) {
+        char more[24];
+        std::snprintf(more, sizeof(more), "+%d MORE", p.dropped);
+        drawText(p.fb, p.textX, p.boxBottom - kFontH, more, palColor(Pal::WARN));
+    }
+}
+
+// KIT, what the RIVAL can do and what it is worth. The rival's list ONLY: the pet's own
+// moves are on the A+C command picker, which is where they are chosen from and where
+// their powers are already read. A boss fields up to seven moves, so both lists together
+// would overrun the panel and drop the rival's last rows, the ones a player opened this
+// page for.
+void drawKitPage(PanelCursor& p, const CombatFrame& f) {
+    const Combatant& en = f.en;
+    // Who the block belongs to, as the operator's own caption for the seat.
+    char hp[20];
+    std::snprintf(hp, sizeof(hp), "HP %d/%d", en.health > 0 ? en.health : 0, en.maxHealth);
+    const bool crit = healthZone(en.health, en.maxHealth) == Zone::Critical;
+    p.pair(0, f.v.sides.rivalLabel, Pal::INK, hp, crit ? Pal::HOT : Pal::INK);
+    for (size_t i = 0; i < en.moves.size(); ++i) {
+        const MoveDef* m = en.moves[i];
+        if (!m) continue;
+        // Every row opens with a two-character GUTTER, marked or not, so the kind tags
+        // and the names beneath them stay in columns instead of stepping in and out by
+        // whether a row happens to be a prize. A marker that moved the text it marks
+        // would cost more legibility than it bought.
+        //
+        // The mark is a glyph rather than a word for width: the row already carries a
+        // kind tag, a name and a number inside 24 characters. The legend below is where
+        // the word goes, once, instead of on every row.
+        const bool learnable = f.v.prizes.marked(i);
+        char name[44];
+        std::snprintf(name, sizeof(name), "%s%s %s", learnable ? "+ " : "  ",
+                      moveKindTag(m->kind), m->displayName);
+        char pw[8];
+        // A wildcard row becomes whatever it rolls, so it HAS no power to print, and a
+        // number here would be the one readout on this page that lies. The dash is the
+        // same mark the VS page uses for a quantity not in play.
+        if (moveIsWildcard(*m)) std::snprintf(pw, sizeof(pw), "-");
+        else std::snprintf(pw, sizeof(pw), "%d", m->power);
+        // The move it is CHANNELLING is the one thing here that is not a standing fact,
+        // and the most urgent: a wind-up is a hit already on its way. It takes the colour
+        // when a row is both, which costs the prize nothing: the gutter mark is a
+        // separate channel and is still there to be read.
+        const bool winding = static_cast<int>(i) == en.channelMoveIdx;
+        const Pal nameCol = winding     ? Pal::WARN
+                            : learnable ? Pal::CALM
+                                        : Pal::INK_DIM;
+        // No row indent: the gutter IS the indent setting these under the name above,
+        // and paying for both would spend two characters of a 24-character line saying
+        // one thing.
+        p.pair(0, name, nameCol, pw, Pal::INK_DIM);
+    }
+    // The Exploit the rival is CARRYING but has not fired (an arena rival arms its own).
+    // The trigger it waits for is deliberately NOT stated: which moment a rival commits
+    // to is the read the arena exists to teach.
+    if (en.autoExploit.label && !en.autoExploitFired)
+        p.pair(16, en.autoExploit.label, Pal::ACCENT, crewExploitTag(en.autoExploit.kind),
+               Pal::ACCENT);
+    // What the gutter mark means, spelt out once under the list that uses it, and only
+    // when something is marked, so the line answers a question the page has just raised
+    // rather than standing as chrome.
+    if (f.v.prizes.mask) {
+        p.y += 3;                          // a footer of the list, not a row in it
+        p.row(0, "+ WIN TO LEARN", Pal::CALM);
+    }
+}
+
+// Stat panel (B cycles: closed -> VS -> KIT -> closed). A live readout, boxed over the
+// sprites so the always-on chrome stays clean. What each page is FOR is on
+// kCombatStatPages in the header.
+//
+// THE PANEL IS 24 CHARACTERS WIDE, and everything is laid out against that number rather
+// than a generous snprintf buffer. A row that outgrows it does not fail loudly (the
+// marquee scrolls it), so the budget is held by gates over the content that reaches these
+// rows. The token half WRAPS; the rest is columns.
+//
+// The box hangs from a FIXED TOP and its floor is cut to what the page has to say, capped
+// at kCombatPanelBottom. Anchoring the top stops the box moving under a reader: the
+// heading, the rule and every row already drawn stay put, and a status arriving mid-fight
+// extends the FLOOR downward, where the new row was going anyway. The cap is sized to the
+// deepest boss kit the ladder fields, held by test_combat_kit_page_holds_the_widest_boss;
+// a shorter page stops there rather than drawing air over the stage.
+void drawStatPanel(Framebuffer& fb, const CombatFrame& f) {
+    const CombatView& v = f.v;
+    const int boxY = kCombatPanelTop, pitch = kCombatPanelPitch;
+    const int textX = 16, textR = kActiveW - 16;
+    const int rows = v.statPage == 1 ? vsPageRows(f.pl, f.en) : kitPageRows(f.en, v.prizes);
+    const int wanted = kCombatPanelFirstRow + rows * pitch - (pitch - kFontH) + 3;
+    const int boxBottom = std::min(kCombatPanelBottom, wanted);
+    fb.fillRect(8, boxY, kActiveW - 16, boxBottom - boxY, palColor(Pal::TRACK));
+    char head[16];
+    std::snprintf(head, sizeof(head), "%s %d/%d",
+                  v.statPage == 1 ? "VS" : "KIT", v.statPage, kCombatStatPages);
+    drawText(fb, textX, boxY + 4, head, palColor(Pal::INK));
+    drawText(fb, textR - textWidth("B NEXT"), boxY + 4, "B NEXT", palColor(Pal::INK_DIM));
+    fb.fillRect(textX, boxY + 14, textR - textX, 1, palColor(Pal::PAPER));
+    PanelCursor p{fb, textX, textR, boxBottom, pitch, v.beat, kCombatPanelFirstRow};
+    if (v.statPage == 1) drawVsPage(p, f);
+    else drawKitPage(p, f);
+}
+
+// Mandatory hint band: A+C live, C reassigned. The picker's three states are three
+// different keyboards, and the band level's B OPENS rather than commits: a hint that said
+// COMMIT there would be offering a key that does nothing, which is the one thing this
+// band must never do.
+void drawCombatHints(Framebuffer& fb, const CombatFrame& f) {
+    const Combat& combat = f.combat;
     const char* pickerHint = combat.overrideAtBands()  ? "A CYCLE B OPEN C CANCEL"
                              : combat.overrideBandCount() > 1
                                  ? "A CYCLE B COMMIT C BACK"
                                  : "A CYCLE B COMMIT C CANCEL";
-    const char* hint = combat.outcome() != Combat::Outcome::Ongoing
-                           ? "B CONTINUE"
+    const char* hint = !f.ongoing             ? "B CONTINUE"
                        : combat.overrideOpen() ? pickerHint
-                       : v.sides.canRun          ? "A+C CMD B STAT C RUN A SKIP"
+                       : f.v.sides.canRun      ? "A+C CMD B STAT C RUN A SKIP"
                                                : "A+C CMD  B STAT  A SKIP";
     drawHintBand(fb, hint);
+}
+
+} // namespace
+
+void drawCombat(Framebuffer& fb, const Combat& combat, const CombatView& v) {
+    // The BACKGROUND pass. The stage's floor is kSpriteShelf, the row the fighters
+    // actually stand on, so the place is composed against that rather than against the
+    // canvas, and the same place drawn on the habitat sits 44 rows lower.
+    if (!drawScene(fb, v.scene, v.beat, sceneGround(kSpriteShelf)))
+        fb.clear(palColor(Pal::PAPER));
+    const CombatFrame f = combatFrame(combat, v);
+    drawCombatHeader(fb, f);
+    drawRivalGauge(fb, f);
+    drawStage(fb, f);
+    drawLocalGauge(fb, f);
+    drawLastMove(fb, f);
+    drawResultBanner(fb, f);
+    // The picker and the stat panel share the box over the sprites; the picker wins.
+    if (combat.overrideOpen()) drawOverridePicker(fb, combat, v.beat);
+    else if (v.statPage > 0) drawStatPanel(fb, f);
+    drawCombatHints(fb, f);
 }
 
 } // namespace mal

@@ -183,11 +183,6 @@ widget `bool` to an enum, per CONTRIBUTING's *Structure*. List the rest with the
 MAINTENANCE's self-architecture entry. | `core/ui/*_screen.h`, `widgets.h` | M | Pixel-identical
 by construction; diff `tools/screens.sh` before and after. |
 
-**`drawCombat`'s body is 763 lines.** It draws the header, both gauges, the stage, the panel
-pages and the outro in one function. Split it into one named function per region, called in
-the current order; each reads the same `CombatView`. | `combat_screen.cpp` | M | The camo and
-PvP pixel tests and the combat frames in `tools/screens.sh` cover it. |
-
 ---
 
 ## 2. Art
