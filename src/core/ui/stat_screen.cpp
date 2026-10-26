@@ -486,53 +486,14 @@ void drawSpeciesScreen(Framebuffer& fb, const char* name, const char* line,
     statHintBand(fb, 1, 1);
 }
 
-void drawStatScreen(Framebuffer& fb, const PetModel& m, const char* name,
-                    Stage stage, int generation, int level, int combatXp,
-                    int xpToNext, int beat, bool hasNextEvo, uint32_t evoRemainMs) {
-    const bool pulseOn = ((beat / 2) & 1) == 0;   // ~1Hz
-    statHeader(fb, "STAT", 0);
+namespace {
 
-    // Name · generation. The stage is NOT here: it is spelled out under its own node on
-    // the indicator below, which is where the reader is already looking to see how far
-    // along the pet is. Naming it twice cost the header 94px, and a pet's name is
-    // eleven or twelve characters often enough that the row was cutting it — the first
-    // Ransomware egg hatches as CryptoShell, into exactly that.
-    char gen[12];
-    std::snprintf(gen, sizeof(gen), "GEN %d", generation);
-    const int genX = kActiveW - kMargin - textWidth(gen);
-    drawText(fb, genX, kRowTop, gen, palColor(Pal::INK_DIM));
-    drawTextMarquee(fb, kMargin, kRowTop, genX - kMargin - kMargin, name,
-                    palColor(Pal::INK), beat, Overflow::Scroll);
-
-    drawStageIndicator(fb, kMargin, 40, 130, stage);
-    // Creature level: LVL n beside the stage bar — text-only, grayscale-safe.
-    char lvl[12];
-    std::snprintf(lvl, sizeof(lvl), "LVL %d", level);
-    drawText(fb, kActiveW - kMargin - textWidth(lvl), 44, lvl, palColor(Pal::ACCENT));
-
-    // XP toward the next level: a slim progress bar under the stage row,
-    // banked-XP / next-level-cost. Fill level is the grayscale channel; the numeric
-    // readout spells out the exact threshold.
-    const float xt = xpToNext > 0 ? static_cast<float>(combatXp) / xpToNext : 0.f;
-    drawText(fb, kLabelX, 60, "XP", palColor(Pal::INK_DIM));
-    drawProgressBar(fb, 30, 59, 118, 7, xt, palColor(Pal::ACCENT));
-    char xp[16];
-    std::snprintf(xp, sizeof(xp), "%d/%d", combatXp, xpToNext);
-    drawText(fb, kActiveW - kMargin - textWidth(xp), 60, xp, palColor(Pal::INK_DIM));
-
-    // Three vitals gauges. The first is the Hunger stat, labelled FED because the
-    // number counts how full the pet is — "HUNGER 80" reads as starving to anyone who
-    // has not been told otherwise, and FED and HAPPY now both read more-is-better.
-    vitalsRow(fb, 74, "FED", m.hunger(), m.hungerZone(), false, pulseOn, beat);
-    vitalsRow(fb, 96, "FRAG", m.fragmentation(), m.fragZone(), true, pulseOn, beat);
-    vitalsRow(fb, 118, "HAPPY", m.happiness(), m.happyZone(), false, pulseOn, beat);
-
-    // Care mistakes, labelled ERRORS, with the path they currently lead to spelled
-    // out where the count used to sit: the pips already show how many, and what a
-    // first-time player cannot read off them is what the divider means. The word is
-    // the channel; its colour only grades it.
-    drawText(fb, kLabelX, 146, "ERRORS", palColor(Pal::INK));
-    drawCarePips(fb, kGaugeX, 144, m.careMistakes(), pulseOn);
+// Care mistakes, labelled ERRORS, with the path they currently lead to spelled out
+// beside the pips: the pips show how many, and what a first-time player cannot read off
+// them is what the divider means. The word is the channel; its colour only grades it.
+void drawCareRow(Framebuffer& fb, int y, const PetModel& m, bool pulseOn) {
+    drawText(fb, kLabelX, y, "ERRORS", palColor(Pal::INK));
+    drawCarePips(fb, kGaugeX, y - 2, m.careMistakes(), pulseOn);
     const CareBranch branch = m.careBranch();
     const char* path = branch == CareBranch::Dying ? "DYING"
                      : branch == CareBranch::Bad   ? "BAD"
@@ -540,26 +501,73 @@ void drawStatScreen(Framebuffer& fb, const PetModel& m, const char* name,
     const Rgb565 pc = branch == CareBranch::Dying ? palColor(Pal::HOT)
                     : branch == CareBranch::Bad   ? palColor(Pal::WARN)
                                                   : palColor(Pal::CALM);
-    drawText(fb, kActiveW - kMargin - textWidth(path), 146, path, pc);
+    drawText(fb, kActiveW - kMargin - textWidth(path), y, path, pc);
+}
 
-    // Time-to-next-evolution (all stages). An egg counts down to its HATCH; a
-    // mid-chain pet to its next EVOLVE; a Daemon terminus reads MAX (no successor).
-    // Ink text readout — grayscale-safe, no colour channel needed.
-    const char* evoLabel = (stage == Stage::BootSector) ? "HATCH" : "EVOLVE";
-    drawText(fb, kLabelX, 168, evoLabel, palColor(Pal::INK));
+// Time-to-next-evolution (all stages). An egg counts down to its HATCH; a mid-chain pet
+// to its next EVOLVE; a Daemon terminus reads MAX (no successor). Ink text readout,
+// grayscale-safe with no colour channel needed.
+void drawEvolveRow(Framebuffer& fb, int y, const StatScreenView& v) {
+    const char* evoLabel = (v.stage == Stage::BootSector) ? "HATCH" : "EVOLVE";
+    drawText(fb, kLabelX, y, evoLabel, palColor(Pal::INK));
     char evo[12];
-    if (hasNextEvo) {
-        const uint32_t s = evoRemainMs / 1000u;
+    if (v.hasNextEvo) {
+        const uint32_t s = v.evoRemainMs / 1000u;
         std::snprintf(evo, sizeof(evo), "%u:%02u:%02u", s / 3600u,
                       static_cast<unsigned>((s / 60u) % 60u),
                       static_cast<unsigned>(s % 60u));
     } else {
         std::snprintf(evo, sizeof(evo), "MAX");
     }
-    drawText(fb, kActiveW - kMargin - textWidth(evo), 168, evo, palColor(Pal::INK));
+    drawText(fb, kActiveW - kMargin - textWidth(evo), y, evo, palColor(Pal::INK));
+}
+
+}  // namespace
+
+void drawStatScreen(Framebuffer& fb, const PetModel& m, const StatScreenView& v) {
+    const bool pulseOn = ((v.beat / 2) & 1) == 0;   // ~1Hz
+    statHeader(fb, "STAT", 0);
+
+    // Name · generation. The stage is NOT here: it is spelled out under its own node on
+    // the indicator below, which is where the reader is already looking to see how far
+    // along the pet is. Naming it twice cost the header 94px, and a pet's name is
+    // eleven or twelve characters often enough that the row would cut it (the first
+    // Ransomware egg hatches as CryptoShell, into exactly that).
+    char gen[12];
+    std::snprintf(gen, sizeof(gen), "GEN %d", v.generation);
+    const int genX = kActiveW - kMargin - textWidth(gen);
+    drawText(fb, genX, kRowTop, gen, palColor(Pal::INK_DIM));
+    drawTextMarquee(fb, kMargin, kRowTop, genX - kMargin - kMargin, v.name,
+                    palColor(Pal::INK), v.beat, Overflow::Scroll);
+
+    drawStageIndicator(fb, kMargin, 40, 130, v.stage);
+    // Creature level: LVL n beside the stage bar, text-only, grayscale-safe.
+    char lvl[12];
+    std::snprintf(lvl, sizeof(lvl), "LVL %d", v.level);
+    drawText(fb, kActiveW - kMargin - textWidth(lvl), 44, lvl, palColor(Pal::ACCENT));
+
+    // XP toward the next level: a slim progress bar under the stage row,
+    // banked-XP / next-level-cost. Fill level is the grayscale channel; the numeric
+    // readout spells out the exact threshold.
+    const float xt = v.xpToNext > 0 ? static_cast<float>(v.combatXp) / v.xpToNext : 0.f;
+    drawText(fb, kLabelX, 60, "XP", palColor(Pal::INK_DIM));
+    drawProgressBar(fb, 30, 59, 118, 7, xt, palColor(Pal::ACCENT));
+    char xp[16];
+    std::snprintf(xp, sizeof(xp), "%d/%d", v.combatXp, v.xpToNext);
+    drawText(fb, kActiveW - kMargin - textWidth(xp), 60, xp, palColor(Pal::INK_DIM));
+
+    // Three vitals gauges. The first is the Hunger stat, labelled FED because the
+    // number counts how full the pet is: "HUNGER 80" reads as starving to anyone who
+    // has not been told otherwise, and FED and HAPPY both read more-is-better.
+    vitalsRow(fb, 74, "FED", m.hunger(), m.hungerZone(), false, pulseOn, v.beat);
+    vitalsRow(fb, 96, "FRAG", m.fragmentation(), m.fragZone(), true, pulseOn, v.beat);
+    vitalsRow(fb, 118, "HAPPY", m.happiness(), m.happyZone(), false, pulseOn, v.beat);
+
+    drawCareRow(fb, 146, m, pulseOn);
+    drawEvolveRow(fb, 168, v);
     // The board has no real-time clock, so every timer and every drain on this page
     // runs only while the device is on. A player expecting a pet that lives through the
-    // night needs telling that switched off, it waits — in both directions.
+    // night needs telling that switched off, it waits, in both directions.
     drawText(fb, kLabelX, 186, "TIME RUNS ONLY WHILE ON", palColor(Pal::INK_DIM));
 
     statHintBand(fb, 1, 1);

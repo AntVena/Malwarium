@@ -153,9 +153,16 @@ void test_carousel_enter_back() {
     // The vitals page == the standalone STAT render (same viewer, now reached via nav).
     Framebuffer got(kActiveW, kActiveH), ref(kActiveW, kActiveH);
     g.render(got);
-    drawStatScreen(ref, g.model(), "Paypup", Stage::Process, g.generation(),
-                   g.combatLevel(), g.combatXp(), g.xpToNextLevel(), 0,
-                   g.hasNextEvolution(), g.evolveRemainMs());
+    StatScreenView sv;
+    sv.name = "Paypup";
+    sv.stage = Stage::Process;
+    sv.generation = g.generation();
+    sv.level = g.combatLevel();
+    sv.combatXp = g.combatXp();
+    sv.xpToNext = g.xpToNextLevel();
+    sv.hasNextEvo = g.hasNextEvolution();
+    sv.evoRemainMs = g.evolveRemainMs();
+    drawStatScreen(ref, g.model(), sv);
     bool same = true;
     for (int y = 0; y < kActiveH && same; ++y)
         for (int x = 0; x < kActiveW; ++x)

@@ -107,14 +107,21 @@ void drawLoadoutScreen(Framebuffer& fb, const std::vector<ProseRow>& rows,
 // STAT page 0 — VITALS: name + generation + stage indicator, the three vitals
 // gauges (Hunger / Fragmentation / Happiness) with tabular numerics, the creature
 // level + an XP bar toward the next level, the care-pip budget, and the
-// time-to-next-evolution readout. `generation` reads in the name row.
-// `beat` supplies the Critical-pulse phase. `level` is the per-pet creature level
-// `combatXp`/`xpToNext` fill the XP bar (banked XP / next-level cost).
-// `hasNextEvo` false = a terminus (shows MAX); `evoRemainMs` = ms to the next
-// boundary (the hatch clock for an egg — labelled HATCH there, EVOLVE otherwise).
-void drawStatScreen(Framebuffer& fb, const PetModel& m, const char* name,
-                    Stage stage, int generation, int level, int combatXp,
-                    int xpToNext, int beat, bool hasNextEvo, uint32_t evoRemainMs);
+// time-to-next-evolution readout. The vitals and care pips read from the PetModel.
+struct StatScreenView {
+    const char* name = "";
+    Stage stage = Stage::BootSector;
+    int generation = 0;
+    int level = 0;                // the per-pet creature level
+    int combatXp = 0;             // banked XP, filling the bar toward...
+    int xpToNext = 0;             // ...the next level's cost
+    // False at a terminus (reads MAX). Otherwise `evoRemainMs` is the time to the next
+    // boundary: the hatch clock for an egg (labelled HATCH there, EVOLVE otherwise).
+    bool hasNextEvo = false;
+    uint32_t evoRemainMs = 0;
+    int beat = 0;                 // the Critical-pulse phase
+};
+void drawStatScreen(Framebuffer& fb, const PetModel& m, const StatScreenView& v);
 
 // STAT page 3 — BUFFS row model: one armed item buff, its effect text (rendered
 // from the item's own ItemDef row — single source of truth, no duplicated

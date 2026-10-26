@@ -216,11 +216,20 @@ void Game::drawStat(Framebuffer& fb) const {
     // could eat · 5 currently-armed item buffs · 6 the pet's own species lore · 7 audit
     // log. A cycles; C backs out.
     switch (statPage_) {
-        case 0:
-            drawStatScreen(fb, model_, pet_->displayName, pet_->stage, generation_,
-                           combatLevel_, combatXp_, xpToNextLevel(), beat_,
-                           hasNextEvolution(), evolveRemainMs());
+        case 0: {
+            StatScreenView v;
+            v.name = pet_->displayName;
+            v.stage = pet_->stage;
+            v.generation = generation_;
+            v.level = combatLevel_;
+            v.combatXp = combatXp_;
+            v.xpToNext = xpToNextLevel();
+            v.hasNextEvo = hasNextEvolution();
+            v.evoRemainMs = evolveRemainMs();
+            v.beat = beat_;
+            drawStatScreen(fb, model_, v);
             break;
+        }
         case 1: drawTiersScreen(fb, statTierRows(), statScroll_, beat_); break;
         case 2: drawLoadoutScreen(fb, statLoadoutRows(), statScroll_, beat_); break;
         case 3: {
