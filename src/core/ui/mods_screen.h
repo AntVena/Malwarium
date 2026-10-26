@@ -58,51 +58,58 @@ bool modLockedFor(const ModDef& m, int petLevel, const char* petLine,
 void drawModsList(Framebuffer& fb, const ContentRegistry& reg,
                   const Loadout& load, int cursor, int beat);
 
-// L3 mod picker for `slot`: the available (un-equipped) mods, the focused mod's
-// effect text below, and an inline overwrite confirm when the slot
-// already holds a different mod — the "discards {current} — permanent" warning,
-// since mods are permanent (no unequip; equipping consumes the mod). `pick` is the
-// focused picker row (0-based into the available mods). The list is windowed —
-// capped to a fixed visible-row count and scrolled to follow `pick` (mirrors
-// drawMovePicker, train_screen.cpp) — so a large held-mod pool never overruns the
-// description zone below. `confirmActive` overlays the Cancel/Confirm prompt;
-// `confirmChoice` (0 Cancel, 1 Confirm) is the focused choice; `pendingId` is the
-// mod being equipped. `petLevel` gates the rolled equip-LEVEL requirement
-// a mod under the pet's level shows LOCKED — NEEDS LVL n (a number
-// channel, grayscale-safe), and equip is blocked in the Game. `petLine` is the active
-// pet's CreatureDef::line (or nullptr) — gates a mod carrying ModDef::requiresLine
-// (niche-flavour pass), shown as LOCKED — WRONG LINE. Rows are ordered fittable-first
-// (ownedModList), so the mods that can go in this slot are the ones the cursor reaches
-// first. `beat` drives the focused row's name marquee — a mod name too long to sit
-// beside its right-hand tag scrolls within the room it has instead of printing through
-// it, and only the focused row travels.
-void drawModPicker(Framebuffer& fb, const ContentRegistry& reg,
-                   const Loadout& load, int slot, int pick, bool confirmActive,
-                   int confirmChoice, const char* pendingId, int petLevel,
-                   const char* petLine, int beat);
+// L3 mod picker for a slot: the available (un-equipped) mods, the focused mod's
+// effect text below, and an inline overwrite confirm when the slot already holds a
+// different mod: the "discards {current}, permanent" warning, since mods are permanent
+// (no unequip; equipping consumes the mod). The list is windowed, capped to a fixed
+// visible-row count and scrolled to follow the pick (mirrors drawMovePicker,
+// train_screen.cpp), so a large held-mod pool never overruns the description zone
+// below. Rows are ordered fittable-first (ownedModList), so the mods that can go in
+// this slot are the ones the cursor reaches first. A mod name too long to sit beside its
+// right-hand tag scrolls within the room it has, and only the focused row travels.
+struct ModPickerView {
+    int slot = 0;
+    int pick = 0;                    // 0-based into the available mods
+    // The pet's level gates each mod's rolled equip LEVEL: one above it shows LOCKED,
+    // NEEDS LVL n (a number channel, grayscale-safe), and equip is blocked in the Game.
+    int petLevel = 0;
+    // The active pet's CreatureDef::line (or nullptr): gates a mod carrying
+    // ModDef::requiresLine, shown as LOCKED, WRONG LINE.
+    const char* petLine = nullptr;
+    bool confirmActive = false;      // the Cancel/Confirm prompt is up
+    int confirmChoice = 0;           // 0 CANCEL, 1 CONFIRM
+    const char* pendingId = nullptr; // the mod being equipped
+    int beat = 0;
+};
+void drawModPicker(Framebuffer& fb, const ContentRegistry& reg, const Loadout& load,
+                   const ModPickerView& v);
 
-// L4 mod detail: the read-then-act inspector reached by selecting a mod
-// in the picker — mirrors drawItemDetail. Shows the icon + name, the held spare
-// count against its storage cap ("HAVE 2/2"), the effect TAG (the stat-delta shorthand,
-// in ACCENT), the full wrapped effect text, a ONE-SHOT flag when the mod is consumed on
-// trigger, the REQUIRES LVL n gate, and the EQUIP action (EQUIPPED if it's already in
-// this `slot`; LOCKED if under-level, wrong-line, or already installed in a
-// different slot on this pet — a mod holds one slot per pet). `equippedHere`
-// drives the action label; `reqLevel` is the mod's own gate (modEquipLevel — every copy
-// shares it) and `petLevel` the pet's current level. `petLine` gates a mod carrying
-// ModDef::requiresLine the same way (niche-flavour pass). `load` supplies the held
-// count and the elsewhere-equipped check; `storageCap` is what that count is measured
-// against (Game::modStorageCap), so a full pool reads as full rather than as a number
-// with no ceiling.
 // Prose lines the MODS detail panel actually holds. Its floor grows with the readout,
 // so this is a constant whatever the grid costs — but it is the reserve MINUS the gap
 // the grid leaves behind it, which is not the reserve. Published so the content tests
 // hold a mod's description to what the screen will really draw.
 int modDetailProseLines();
 
+// L4 mod detail: the read-then-act inspector reached by selecting a mod in the picker
+// (mirrors drawItemDetail). Shows the icon + name, the held spare count against its
+// storage cap ("HAVE 2/2"), the effect TAG (the stat-delta shorthand, in ACCENT), the
+// full wrapped effect text, a ONE-SHOT flag when the mod is consumed on trigger, the
+// REQUIRES LVL n gate, and the EQUIP action (EQUIPPED if it's already in this slot;
+// LOCKED if under-level, wrong-line, or already installed in a different slot on this
+// pet: a mod holds one slot per pet). `load` supplies the held count and the
+// elsewhere-equipped check.
+struct ModDetailView {
+    int slot = 0;
+    bool equippedHere = false;       // drives the action label
+    int reqLevel = 0;                // the mod's own gate (modEquipLevel; every copy shares it)
+    int petLevel = 0;
+    const char* petLine = nullptr;   // gates ModDef::requiresLine the same way
+    // What the held count is measured against (Game::modStorageCap), so a full pool
+    // reads as full rather than as a number with no ceiling.
+    int storageCap = 0;
+    int beat = 0;
+};
 void drawModDetail(Framebuffer& fb, const ContentRegistry& reg, const Loadout& load,
-                   const ModDef& mod, bool equippedHere, int slot,
-                   int reqLevel, int petLevel, const char* petLine, int storageCap,
-                   int beat);
+                   const ModDef& mod, const ModDetailView& v);
 
 } // namespace mal

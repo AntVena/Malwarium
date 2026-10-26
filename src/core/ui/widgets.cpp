@@ -275,6 +275,15 @@ void drawRowCursor(Framebuffer& fb, int x, int y, Rgb565 c) {
     }
 }
 
+void drawCancelConfirm(Framebuffer& fb, int y, int choice) {
+    const int cancelX = 24, confirmX = 120;
+    drawRowCursor(fb, (choice == 0 ? cancelX : confirmX) - 12, y, palColor(Pal::ACCENT));
+    drawText(fb, cancelX, y, "CANCEL",
+             choice == 0 ? palColor(Pal::ACCENT) : palColor(Pal::INK));
+    drawText(fb, confirmX, y, "CONFIRM",
+             choice == 1 ? palColor(Pal::ACCENT) : palColor(Pal::INK));
+}
+
 void drawHintBand(Framebuffer& fb, const char* hint) {
     fb.fillRect(0, kActiveH - kHintBandH, kActiveW, kHintBandH, palColor(Pal::TRACK));
     // Centred, but never started left of the canvas: a hint wider than 224px would

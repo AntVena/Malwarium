@@ -180,6 +180,11 @@ void drawScrollbar(Framebuffer& fb, int trackTop, int trackH, int total, int scr
 // (the 5x7 font has no '>'). Left-anchored, tapering to a point at the right.
 void drawRowCursor(Framebuffer& fb, int x, int y, Rgb565 c);
 
+// The CANCEL / CONFIRM pair under an inline overwrite confirm (the MOVES and MODS
+// pickers). `choice` 0 focuses CANCEL, 1 CONFIRM; the cursor carries the focus without
+// colour.
+void drawCancelConfirm(Framebuffer& fb, int y, int choice);
+
 // UI_HINT_BAND: the control hint, centred in a filled strip pinned to the foot of
 // the canvas. The fill is what makes it a BAND rather than one more row — a hint
 // set as bare text a row-pitch under a list reads as another entry in the list, and

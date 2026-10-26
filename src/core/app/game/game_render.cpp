@@ -860,17 +860,30 @@ void Game::drawDetail(Framebuffer& fb) const {
                 const ModDef* md = registry_.mod(modDetailId_);
                 if (md) {
                     const char* cur = loadout_.equipped(modSlot_);
-                    drawModDetail(fb, registry_, loadout_, *md,
-                                  cur && std::strcmp(cur, modDetailId_) == 0,
-                                  modSlot_, modEquipLevel(*md),
-                                  combatLevel_, pet_ ? pet_->line : nullptr,
-                                  modStorageCap(), beat_);
+                    ModDetailView dv;
+                    dv.slot = modSlot_;
+                    dv.equippedHere = cur && std::strcmp(cur, modDetailId_) == 0;
+                    dv.reqLevel = modEquipLevel(*md);
+                    dv.petLevel = combatLevel_;
+                    dv.petLine = pet_ ? pet_->line : nullptr;
+                    dv.storageCap = modStorageCap();
+                    dv.beat = beat_;
+                    drawModDetail(fb, registry_, loadout_, *md, dv);
                     break;
                 }
             }
-            drawModPicker(fb, registry_, loadout_, modSlot_, modPick_,
-                          modConfirm_, modConfirmChoice_, modPendingId_, combatLevel_,
-                          pet_ ? pet_->line : nullptr, beat_);
+            {
+                ModPickerView pv;
+                pv.slot = modSlot_;
+                pv.pick = modPick_;
+                pv.petLevel = combatLevel_;
+                pv.petLine = pet_ ? pet_->line : nullptr;
+                pv.confirmActive = modConfirm_;
+                pv.confirmChoice = modConfirmChoice_;
+                pv.pendingId = modPendingId_;
+                pv.beat = beat_;
+                drawModPicker(fb, registry_, loadout_, pv);
+            }
             break;
         case SubmenuId::Games:
             drawArcadeDetail(fb);

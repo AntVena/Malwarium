@@ -173,31 +173,116 @@ void drawModsList(Framebuffer& fb, const ContentRegistry& reg,
     drawHintBand(fb, "A CYCLE  B OPEN  C BACK");
 }
 
-void drawModPicker(Framebuffer& fb, const ContentRegistry& reg,
-                   const Loadout& load, int slot, int pick, bool confirmActive,
-                   int confirmChoice, const char* pendingId, int petLevel,
-                   const char* petLine, int beat) {
+namespace {
+
+// A picker row. The right column is whichever fact the row cannot lose: why it is
+// locked, or what it does. The name yields to it and scrolls within what is left
+// (drawLabelValue), because a long mod name drawn at full width runs straight under that
+// column and the two print on top of each other. A mod the pet is too low-level to field
+// shows its required level ("L n") in place of the effect tag and dims: a number channel
+// that reads without colour.
+void drawModPickerRow(Framebuffer& fb, const ModDef& m, const Loadout& load,
+                      const ModPickerView& v, int y, bool focused) {
+    const int elsewhere = load.slotOf(m.id);
+    const bool inOtherSlot = elsewhere >= 0 && elsewhere != v.slot;
+    const bool locked = modLockedFor(m, v.petLevel, v.petLine, load, v.slot);
+    char name[40];
+    const int qty = load.countOf(m.id);
+    if (qty > 1) std::snprintf(name, sizeof(name), "%s x%d", m.displayName, qty);
+    else std::snprintf(name, sizeof(name), "%s", m.displayName);
+    char rl[12];
+    Rgb565 tagCol = palColor(Pal::ACCENT);
+    const char* tag = m.effectTag;
+    if (inOtherSlot) {
+        std::snprintf(rl, sizeof(rl), "SLOT %d", elsewhere + 1);
+        tag = rl;
+        tagCol = palColor(Pal::HOT);
+    } else if (locked) {
+        if (lineLocked(&m, v.petLine)) std::snprintf(rl, sizeof(rl), "LINE");
+        else std::snprintf(rl, sizeof(rl), "L%d", modEquipLevel(m));
+        tag = rl;
+        tagCol = palColor(Pal::HOT);
+    }
+    drawLabelValue(fb, 22, y + 4, name,
+                   locked ? palColor(Pal::INK_DIM) : palColor(Pal::INK),
+                   tag, tagCol, v.beat, scrollWhen(focused));
+}
+
+// The focused mod's spec panel from `y`, plus its equip gate on its own row at the
+// bottom of the panel band, above the hint band rather than into it.
+void drawModPickerPanel(Framebuffer& fb, const ModDef& fm, const Loadout& load,
+                        const ModPickerView& v, int y) {
+    const SpecRows spec = specRows(fm);
+    const EffectText prose = effectText(fm);   // must outlive the draw
+    SpecSheet sheet;
+    sheet.rows = spec.rows;
+    sheet.rowCount = spec.count;
+    sheet.prose = prose.c_str();
+    const int afterProse =
+        drawSpecSheet(fb, kMargin, y, kActiveW - 2 * kMargin,
+                      kActiveH - kHintBandH - 2, sheet).endY;
+    const int req = modEquipLevel(fm);
+    const bool wrongLine = lineLocked(&fm, v.petLine);
+    const int elsewhere = load.slotOf(fm.id);
+    const bool inOtherSlot = elsewhere >= 0 && elsewhere != v.slot;
+    char rl[40];
+    if (inOtherSlot) {
+        std::snprintf(rl, sizeof(rl), "LOCKED - IN SLOT %d", elsewhere + 1);
+    } else if (wrongLine) {
+        char up[16];
+        upperLine(up, sizeof(up), fm.requiresLine);
+        std::snprintf(rl, sizeof(rl), "LOCKED - REQUIRES %s LINE", up);
+    } else if (req > v.petLevel) {
+        std::snprintf(rl, sizeof(rl), "LOCKED - NEEDS LVL %d", req);
+    } else {
+        std::snprintf(rl, sizeof(rl), "EQUIP LVL %d - OK", req);
+    }
+    drawText(fb, kMargin, std::min(afterProse + 2, kActiveH - kHintBandH - 8), rl,
+             (req > v.petLevel || wrongLine || inOtherSlot) ? palColor(Pal::HOT)
+                                                             : palColor(Pal::INK_DIM));
+}
+
+// Inline overwrite confirm: shown only when the slot already holds a DIFFERENT mod. The
+// overwrite is IRREVERSIBLE (it discards the current mod for good), so the warning names
+// it and stamps PERMANENT (a grayscale-safe word, not a colour). Default focus is Cancel.
+void drawModReplaceConfirm(Framebuffer& fb, const ContentRegistry& reg, const Loadout& load,
+                           const ModPickerView& v) {
+    fb.fillRect(4, 88, kActiveW - 8, 64, palColor(Pal::TRACK));
+    const ModDef* pend = v.pendingId ? reg.mod(v.pendingId) : nullptr;
+    const ModDef* curMod = reg.mod(load.equipped(v.slot));
+    char q[40];
+    std::snprintf(q, sizeof(q), "EQUIP %s", pend ? pend->displayName : "MOD");
+    drawText(fb, kMargin, 94, q, palColor(Pal::INK));
+    char w[40];
+    std::snprintf(w, sizeof(w), "DISCARDS %s", curMod ? curMod->displayName : "CURRENT");
+    drawText(fb, kMargin, 108, w, palColor(Pal::HOT));
+    drawText(fb, kMargin, 120, "- PERMANENT -", palColor(Pal::HOT));
+    drawCancelConfirm(fb, 136, v.confirmChoice);
+}
+
+}  // namespace
+
+void drawModPicker(Framebuffer& fb, const ContentRegistry& reg, const Loadout& load,
+                   const ModPickerView& v) {
     char title[12];
-    std::snprintf(title, sizeof(title), "SLOT %d", slot + 1);
+    std::snprintf(title, sizeof(title), "SLOT %d", v.slot + 1);
     drawHeaderBand(fb, title);
 
     const std::vector<const ModDef*> owned =
-        ownedModList(reg, load, petLevel, petLine, slot);
+        ownedModList(reg, load, v.petLevel, v.petLine, v.slot);
     const int rows = static_cast<int>(owned.size());       // available spares to install
 
-    // Position indicator (mirrors drawMovePicker's header) once the list
-    // scrolls — lets the player see how far into the held-mod pool they are.
+    // Position indicator (mirrors drawMovePicker's header) once the list scrolls: lets
+    // the player see how far into the held-mod pool they are.
     if (rows > kModPickerMaxRows) {
-        char nt[12];
-        std::snprintf(nt, sizeof(nt), "%d/%d", pick + 1, rows);
+        char nt[24];
+        std::snprintf(nt, sizeof(nt), "%d/%d", v.pick + 1, rows);
         drawText(fb, kActiveW - kMargin - textWidth(nt), 6, nt, palColor(Pal::INK_DIM));
     }
 
-    // List the available (un-equipped) mods — mods are permanent, so there is
-    // no unequip option; equipping consumes the mod into the slot. Compact rows so
-    // the effect text fits. A mod the pet is too low-level to field shows
-    // its required level ("L n") in place of the effect tag and dims — a number channel
-    // that reads without colour.
+    // List the available (un-equipped) mods. Mods are permanent, so there is no unequip
+    // option; equipping consumes the mod into the slot. Compact rows so the effect text
+    // fits.
     //
     // ADAPTIVE window (mirrors drawMovePicker, train_screen.cpp): the list takes only
     // the height it needs, capped at kModPickerMaxRows and scrolled past that, so an
@@ -207,112 +292,27 @@ void drawModPicker(Framebuffer& fb, const ContentRegistry& reg,
     if (rows == 0)
         drawText(fb, 22, kRowTop + 4, "- NO MODS HELD -", palColor(Pal::INK_DIM));
     const int visibleRows = std::max(1, std::min(rows, kModPickerMaxRows));
-    const int scrollTop = listScrollTop(pick, rows, kModPickerMaxRows);
-    for (int v = 0; v < visibleRows && scrollTop + v < rows; ++v) {
-        const int i = scrollTop + v;
-        const int y = kRowTop + v * rowH;
-        if (i == pick) {
+    const int scrollTop = listScrollTop(v.pick, rows, kModPickerMaxRows);
+    for (int slot = 0; slot < visibleRows && scrollTop + slot < rows; ++slot) {
+        const int i = scrollTop + slot;
+        const int y = kRowTop + slot * rowH;
+        if (i == v.pick) {
             fb.fillRect(4, y - 1, kActiveW - 8, rowH - 2, palColor(Pal::TRACK));
             drawRowCursor(fb, 8, y + 4, palColor(Pal::ACCENT));
         }
-        const ModDef* m = owned[i];
-        const int req = modEquipLevel(*m);
-        const bool wrongLine = lineLocked(m, petLine);
-        const int elsewhere = load.slotOf(m->id);
-        const bool inOtherSlot = elsewhere >= 0 && elsewhere != slot;
-        const bool locked = modLockedFor(*m, petLevel, petLine, load, slot);
-        char name[40];
-        const int qty = load.countOf(m->id);
-        if (qty > 1) std::snprintf(name, sizeof(name), "%s x%d", m->displayName, qty);
-        else std::snprintf(name, sizeof(name), "%s", m->displayName);
-        // The right column is whichever fact the row cannot lose — why it is locked, or
-        // what it does. The name yields to it and scrolls within what is left
-        // (drawLabelValue), because a long mod name drawn at full width runs straight
-        // under that column and the two print on top of each other.
-        char rl[12];
-        Rgb565 tagCol = palColor(Pal::ACCENT);
-        const char* tag = m->effectTag;
-        if (inOtherSlot) {
-            std::snprintf(rl, sizeof(rl), "SLOT %d", elsewhere + 1);
-            tag = rl;
-            tagCol = palColor(Pal::HOT);
-        } else if (locked) {
-            if (wrongLine) std::snprintf(rl, sizeof(rl), "LINE");
-            else std::snprintf(rl, sizeof(rl), "L%d", req);
-            tag = rl;
-            tagCol = palColor(Pal::HOT);
-        }
-        drawLabelValue(fb, 22, y + 4, name,
-                       locked ? palColor(Pal::INK_DIM) : palColor(Pal::INK),
-                       tag, tagCol, beat, scrollWhen(i == pick));
+        drawModPickerRow(fb, *owned[i], load, v, y, i == v.pick);
     }
     drawScrollbar(fb, kRowTop, kModPickerMaxRows * rowH, rows, scrollTop, kModPickerMaxRows);
 
-    // Focused mod's spec panel, below a divider that follows the list rather than
-    // sitting at a fixed y, plus its equip-level gate underneath.
+    // The spec panel sits below a divider that follows the list rather than a fixed y.
     const int listEnd = kRowTop + visibleRows * rowH;
     fb.fillRect(kMargin, listEnd + 4, kActiveW - 2 * kMargin, 1, palColor(Pal::TRACK));
-    if (rows > 0 && pick >= 0 && pick < rows) {
-        const ModDef* fm = owned[pick];
-        const SpecRows spec = specRows(*fm);
-        const EffectText prose = effectText(*fm);   // must outlive the draw
-        SpecSheet sheet;
-        sheet.rows = spec.rows;
-        sheet.rowCount = spec.count;
-        sheet.prose = prose.c_str();
-        // Leave the gate line its own row at the bottom of the panel band, above
-        // the hint band rather than into it.
-        const int afterProse =
-            drawSpecSheet(fb, kMargin, listEnd + 10, kActiveW - 2 * kMargin,
-                          kActiveH - kHintBandH - 2, sheet).endY;
-        const int req = modEquipLevel(*fm);
-        const bool wrongLine = lineLocked(fm, petLine);
-        const int elsewhere = load.slotOf(fm->id);
-        const bool inOtherSlot = elsewhere >= 0 && elsewhere != slot;
-        char rl[40];
-        if (inOtherSlot) {
-            std::snprintf(rl, sizeof(rl), "LOCKED - IN SLOT %d", elsewhere + 1);
-        } else if (wrongLine) {
-            char up[16];
-            upperLine(up, sizeof(up), fm->requiresLine);
-            std::snprintf(rl, sizeof(rl), "LOCKED - REQUIRES %s LINE", up);
-        } else if (req > petLevel) {
-            std::snprintf(rl, sizeof(rl), "LOCKED - NEEDS LVL %d", req);
-        } else {
-            std::snprintf(rl, sizeof(rl), "EQUIP LVL %d - OK", req);
-        }
-        drawText(fb, kMargin, std::min(afterProse + 2, kActiveH - kHintBandH - 8), rl,
-                 (req > petLevel || wrongLine || inOtherSlot) ? palColor(Pal::HOT)
-                                                               : palColor(Pal::INK_DIM));
-    }
+    if (rows > 0 && v.pick >= 0 && v.pick < rows)
+        drawModPickerPanel(fb, *owned[v.pick], load, v, listEnd + 10);
 
-    // Inline overwrite confirm: shown only when the slot already holds a
-    // DIFFERENT mod. The overwrite is IRREVERSIBLE — it discards the current mod for
-    // good — so the warning names it and stamps PERMANENT (a grayscale-safe word,
-    // not a colour). Default focus is Cancel.
-    if (confirmActive) {
-        fb.fillRect(4, 88, kActiveW - 8, 64, palColor(Pal::TRACK));
-        const ModDef* pend = pendingId ? reg.mod(pendingId) : nullptr;
-        const ModDef* curMod = reg.mod(load.equipped(slot));
-        char q[40];
-        std::snprintf(q, sizeof(q), "EQUIP %s",
-                      pend ? pend->displayName : "MOD");
-        drawText(fb, kMargin, 94, q, palColor(Pal::INK));
-        char w[40];
-        std::snprintf(w, sizeof(w), "DISCARDS %s",
-                      curMod ? curMod->displayName : "CURRENT");
-        drawText(fb, kMargin, 108, w, palColor(Pal::HOT));
-        drawText(fb, kMargin, 120, "- PERMANENT -", palColor(Pal::HOT));
-        const int cancelX = 24, confirmX = 120, cy = 136;
-        if (confirmChoice == 0) drawRowCursor(fb, cancelX - 12, cy, palColor(Pal::ACCENT));
-        else drawRowCursor(fb, confirmX - 12, cy, palColor(Pal::ACCENT));
-        drawText(fb, cancelX, cy, "CANCEL",
-                 confirmChoice == 0 ? palColor(Pal::ACCENT) : palColor(Pal::INK));
-        drawText(fb, confirmX, cy, "CONFIRM",
-                 confirmChoice == 1 ? palColor(Pal::ACCENT) : palColor(Pal::INK));
-    }
-    drawHintBand(fb, confirmActive ? "A TOGGLE  B COMMIT  C CANCEL"
-                                   : "A CYCLE  B VIEW  C BACK");
+    if (v.confirmActive) drawModReplaceConfirm(fb, reg, load, v);
+    drawHintBand(fb, v.confirmActive ? "A TOGGLE  B COMMIT  C CANCEL"
+                                     : "A CYCLE  B VIEW  C BACK");
 }
 
 int modDetailProseLines() {
@@ -322,9 +322,7 @@ int modDetailProseLines() {
 }
 
 void drawModDetail(Framebuffer& fb, const ContentRegistry& reg, const Loadout& load,
-                   const ModDef& mod, bool equippedHere, int slot,
-                   int reqLevel, int petLevel, const char* petLine, int storageCap,
-                   int beat) {
+                   const ModDef& mod, const ModDetailView& v) {
     drawHeaderBand(fb, "MODS");
 
     // Icon + name + the effect TAG (the stat-delta shorthand, e.g. "+DEF"). The tag owns
@@ -334,7 +332,7 @@ void drawModDetail(Framebuffer& fb, const ContentRegistry& reg, const Loadout& l
     if (icon) drawSprite(fb, *icon, 0, kMargin, 30);
     const int nameX = icon ? kMargin + kRowIcon + 6 : kMargin;
     drawLabelValue(fb, nameX, 36, mod.displayName, palColor(Pal::INK), mod.effectTag,
-                   palColor(Pal::ACCENT), beat, Overflow::Scroll);
+                   palColor(Pal::ACCENT), v.beat, Overflow::Scroll);
 
     // The readout as an aligned grid, then the prose under it (spec_sheet.h): every
     // magnitude the row hands combat is reserved room and drawn, and the prose takes
@@ -370,12 +368,12 @@ void drawModDetail(Framebuffer& fb, const ContentRegistry& reg, const Loadout& l
     // adds a second REQUIRES <LINE> LINE row. Any gate failing turns the action
     // line LOCKED instead of EQUIP (word channel, grayscale-safe).
     const int elsewhere = load.slotOf(mod.id);
-    const bool inOtherSlot = !equippedHere && elsewhere >= 0;
-    const bool levelLocked = !equippedHere && reqLevel > petLevel;
-    const bool wrongLine = !equippedHere && lineLocked(&mod, petLine);
+    const bool inOtherSlot = !v.equippedHere && elsewhere >= 0;
+    const bool levelLocked = !v.equippedHere && v.reqLevel > v.petLevel;
+    const bool wrongLine = !v.equippedHere && lineLocked(&mod, v.petLine);
     const bool locked = levelLocked || wrongLine || inOtherSlot;
     char slotLbl[16];
-    std::snprintf(slotLbl, sizeof(slotLbl), "SLOT %d", slot + 1);
+    std::snprintf(slotLbl, sizeof(slotLbl), "SLOT %d", v.slot + 1);
     drawText(fb, kMargin, slotY, slotLbl, palColor(Pal::INK_DIM));
     // Held spares against the cap that bounds them. ITEMS says "HAVE xN" because an
     // inventory stack has no ceiling; a mod pool does, and a player at it needs to see
@@ -383,11 +381,11 @@ void drawModDetail(Framebuffer& fb, const ContentRegistry& reg, const Loadout& l
     // pitch, and the only place it gets made.
     char have[16];
     const int held = load.countOf(mod.id);
-    std::snprintf(have, sizeof(have), "HAVE %d/%d", held, storageCap);
+    std::snprintf(have, sizeof(have), "HAVE %d/%d", held, v.storageCap);
     drawText(fb, kActiveW - kMargin - textWidth(have), slotY, have,
-             held >= storageCap ? palColor(Pal::WARN) : palColor(Pal::INK_DIM));
+             held >= v.storageCap ? palColor(Pal::WARN) : palColor(Pal::INK_DIM));
     char req[24];
-    std::snprintf(req, sizeof(req), "REQUIRES LVL %d", reqLevel);
+    std::snprintf(req, sizeof(req), "REQUIRES LVL %d", v.reqLevel);
     int y = slotY + kDetailFooterPitch;
     drawText(fb, kMargin, y, req, levelLocked ? palColor(Pal::HOT) : palColor(Pal::INK_DIM));
     y += kDetailFooterPitch;
@@ -405,7 +403,7 @@ void drawModDetail(Framebuffer& fb, const ContentRegistry& reg, const Loadout& l
     // only LOCKED: the gate row directly above has already turned HOT and named the
     // number, and restating it stacked the same fact twice in red. Only the
     // other-slot lock has no row of its own, so only it carries its reason here.
-    if (equippedHere) {
+    if (v.equippedHere) {
         drawText(fb, kMargin, y, "EQUIPPED HERE", palColor(Pal::INK_DIM));
     } else if (locked) {
         char lk[28];
@@ -416,7 +414,7 @@ void drawModDetail(Framebuffer& fb, const ContentRegistry& reg, const Loadout& l
         drawRowCursor(fb, kMargin, y, palColor(Pal::ACCENT));
         drawText(fb, kMargin + 10, y, "EQUIP", palColor(Pal::ACCENT));
     }
-    drawHintBand(fb, equippedHere || locked ? "C BACK" : "B EQUIP  C BACK");
+    drawHintBand(fb, v.equippedHere || locked ? "C BACK" : "B EQUIP  C BACK");
 }
 
 } // namespace mal

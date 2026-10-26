@@ -824,12 +824,11 @@ void test_mod_detail_oneshot() {
 
     Framebuffer os(kActiveW, kActiveH), ru(kActiveW, kActiveH);
     Loadout load;
-    drawModDetail(os, r, load, *oneShot, /*equippedHere=*/false, /*slot=*/2,
-                  /*reqLevel=*/0, /*petLevel=*/0, /*petLine=*/nullptr,
-                  /*storageCap=*/kModCopyCapBase, /*beat=*/0);
-    drawModDetail(ru, r, load, *reuse, /*equippedHere=*/false, /*slot=*/2,
-                  /*reqLevel=*/0, /*petLevel=*/0, /*petLine=*/nullptr,
-                  /*storageCap=*/kModCopyCapBase, /*beat=*/0);
+    ModDetailView dv;
+    dv.slot = 2;
+    dv.storageCap = kModCopyCapBase;
+    drawModDetail(os, r, load, *oneShot, dv);
+    drawModDetail(ru, r, load, *reuse, dv);
     CHECK(anyNonPaper(os, 0, 0, kActiveW, kActiveH));     // renders
     // Below the icon/name row, so a sprite's own colours can't stand in for the text.
     const auto anyHot = [](const Framebuffer& fb) {
@@ -2621,9 +2620,11 @@ void test_mod_picker_windows_large_pool() {
     // the windowed list band (y in [22,150)) — the pre-fix math (`kRowTop +
     // pick*rowH`) would place it at 26 + 15*18 = 296, off the 224-tall panel and
     // nowhere near the visible list.
+    ModPickerView pv;
+    pv.petLevel = 99;
+    pv.pick = lastPick;
     Framebuffer last(kActiveW, kActiveH);
-    drawModPicker(last, r, load, /*slot=*/0, lastPick, /*confirmActive=*/false,
-                  0, nullptr, /*petLevel=*/99, /*petLine=*/nullptr, /*beat=*/0);
+    drawModPicker(last, r, load, pv);
     bool cursorInWindow = false;
     for (int y = 22; y < 150 && !cursorInWindow; ++y)
         for (int x = 6; x < 20; ++x)
@@ -2634,14 +2635,16 @@ void test_mod_picker_windows_large_pool() {
     // picker focused on the first mod renders differently from the one focused
     // on the last mod (different rows are on screen).
     Framebuffer first(kActiveW, kActiveH);
-    drawModPicker(first, r, load, 0, 0, false, 0, nullptr, 99, nullptr, 0);
+    pv.pick = 0;
+    drawModPicker(first, r, load, pv);
     CHECK(!fbEqual(first, last));
 
     // (c) The invariant holds across the whole pool, not just at the last index:
     // for every pick value the row-cursor triangle stays inside the window.
     for (int pick = 0; pick <= lastPick; pick += 3) {
         Framebuffer fb(kActiveW, kActiveH);
-        drawModPicker(fb, r, load, 0, pick, false, 0, nullptr, 99, nullptr, 0);
+        pv.pick = pick;
+        drawModPicker(fb, r, load, pv);
         bool inWindow = false;
         for (int y = 22; y < 150 && !inWindow; ++y)
             for (int x = 6; x < 20; ++x)

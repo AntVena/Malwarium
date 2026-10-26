@@ -246,13 +246,7 @@ void drawMoveReplaceConfirm(Framebuffer& fb, const ContentRegistry& reg,
     char q[34];
     std::snprintf(q, sizeof(q), "REPLACE WITH %s?", pend ? pend->displayName : "MOVE");
     drawText(fb, kMargin, 104, q, palColor(Pal::INK));
-    const int cancelX = 24, confirmX = 120, cy = 122;
-    if (v.confirmChoice == 0) drawRowCursor(fb, cancelX - 12, cy, palColor(Pal::ACCENT));
-    else drawRowCursor(fb, confirmX - 12, cy, palColor(Pal::ACCENT));
-    drawText(fb, cancelX, cy, "CANCEL",
-             v.confirmChoice == 0 ? palColor(Pal::ACCENT) : palColor(Pal::INK));
-    drawText(fb, confirmX, cy, "CONFIRM",
-             v.confirmChoice == 1 ? palColor(Pal::ACCENT) : palColor(Pal::INK));
+    drawCancelConfirm(fb, 122, v.confirmChoice);
 }
 
 }  // namespace
