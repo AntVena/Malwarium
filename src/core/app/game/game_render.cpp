@@ -98,15 +98,21 @@ void Game::render(Framebuffer& fb) const {
         case Nav::ModalEvolve: drawEvolve(fb); break;
         case Nav::ModalCSF: drawCSF(fb); break;
         case Nav::ModalLockout: {
-            const int sl = lockoutDeadlineMs_ > nowMs_
-                               ? static_cast<int>((lockoutDeadlineMs_ - nowMs_ + 999) / 1000)
-                               : 0;
-            const float rf = lockoutDeadlineMs_ > nowMs_
-                                 ? static_cast<float>(lockoutDeadlineMs_ - nowMs_) / kLockoutDurationMs
-                                 : 0.0f;
-            drawLockoutModal(fb, pet, model_, sl, rf, lockoutPayOption_,
-                             bits_ >= kLockoutBitsCost, kLockoutBitsCost, beat_,
-                             lockoutFoodHeld(), failingLeftMs(), yubiReady());
+            LockoutView v;
+            v.pet = pet;
+            if (lockoutDeadlineMs_ > nowMs_) {
+                v.secondsLeft = static_cast<int>((lockoutDeadlineMs_ - nowMs_ + 999) / 1000);
+                v.remainFrac =
+                    static_cast<float>(lockoutDeadlineMs_ - nowMs_) / kLockoutDurationMs;
+            }
+            v.focus = lockoutPayOption_ ? LockoutPath::Pay : LockoutPath::Feed;
+            v.bitsCost = kLockoutBitsCost;
+            v.canPay = bits_ >= kLockoutBitsCost;
+            v.hasFood = lockoutFoodHeld();
+            v.failingLeftMs = failingLeftMs();
+            v.yubiReady = yubiReady();
+            v.beat = beat_;
+            drawLockoutModal(fb, v);
             break;
         }
     }

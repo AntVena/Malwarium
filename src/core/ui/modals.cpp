@@ -184,68 +184,64 @@ void drawFeedingModal(Framebuffer& fb, const SpriteData* pet, const SpriteData* 
     }
 }
 
-void drawLockoutModal(Framebuffer& fb, const SpriteData* pet, const PetModel& m,
-                      int secondsLeft, float remainFrac, bool payOption,
-                      bool canPay, int bitsCost, int beat, bool hasFood,
-                      int32_t failingLeftMs, bool yubiReady) {
-    (void)m;
+void drawLockoutModal(Framebuffer& fb, const LockoutView& v) {
     fb.clear(palColor(Pal::PAPER));
 
     // FX_LOCKOUT_BAND: a flashing red banner (shape + text survive grayscale).
-    const bool on = ((beat / 2) & 1) == 0;
+    const bool on = ((v.beat / 2) & 1) == 0;
     const Rgb565 band = on ? palColor(Pal::HOT) : palColor(Pal::INK_DIM);
     fb.fillRect(0, 0, kActiveW, 22, band);
     drawText(fb, kMargin, 8, "SYSTEM LOCKOUT", palColor(Pal::PAPER));
     char cd[8];
-    std::snprintf(cd, sizeof(cd), "00:%02d", secondsLeft < 0 ? 0 : secondsLeft);
+    std::snprintf(cd, sizeof(cd), "00:%02d", v.secondsLeft < 0 ? 0 : v.secondsLeft);
     drawText(fb, kActiveW - kMargin - textWidth(cd), 8, cd, palColor(Pal::PAPER));
 
     // Draining countdown bar.
-    drawProgressBar(fb, kMargin, 28, kActiveW - 2 * kMargin, 8, remainFrac,
+    drawProgressBar(fb, kMargin, 28, kActiveW - 2 * kMargin, 8, v.remainFrac,
                     palColor(Pal::HOT));
 
-    drawPetCentered(fb, pet, beat, 90);
+    drawPetCentered(fb, v.pet, v.beat, 90);
 
     // Lockout only ever fires on an empty stomach (Game::tickLifecycle), so the screen
     // says that, and names the fix, rather than leaving a crisis to be decoded.
     // A pet already failing is the one case where "feed it" is not the answer: the
     // Lockout clears, the pet does not. Say so, with the clock that matters.
-    const bool failing = failingLeftMs >= 0;
+    const bool failing = v.failingLeftMs >= 0;
     if (failing) {
         char head[28];
         std::snprintf(head, sizeof head, "FAILING - %d:%02d LEFT",
-                      static_cast<int>(failingLeftMs / 60000),
-                      static_cast<int>((failingLeftMs / 1000) % 60));
+                      static_cast<int>(v.failingLeftMs / 60000),
+                      static_cast<int>((v.failingLeftMs / 1000) % 60));
         drawText(fb, kMargin, 132, head, palColor(Pal::HOT));
     } else {
         drawText(fb, kMargin, 132,
-                 hasFood ? "STARVING! FEED IT NOW:" : "STARVING AND NO FOOD:",
+                 v.hasFood ? "STARVING! FEED IT NOW:" : "STARVING AND NO FOOD:",
                  palColor(Pal::INK));
     }
 
     // Two-path choice — the focused one carries the row cursor.
     const int yItems = 150, yPay = 166;
     char payLine[20];
-    std::snprintf(payLine, sizeof(payLine), "PAY %d BITS", bitsCost);
-    Rgb565 payCol = canPay ? palColor(Pal::INK) : palColor(Pal::INK_DIM);
+    std::snprintf(payLine, sizeof(payLine), "PAY %d BITS", v.bitsCost);
+    Rgb565 payCol = v.canPay ? palColor(Pal::INK) : palColor(Pal::INK_DIM);
     // With nothing to feed, the row still opens ITEMS (whose notice says the same), but
     // it reads as shut and names where food comes from — this is the moment a player
     // learns that the walk, not a menu, is where the next meal is.
-    const char* feedLine = !hasFood              ? "NO FOOD - FIND IN EXPL"
-                         : !failing              ? "FEED IT"
-                         : yubiReady             ? "FEED THE YUBI-COOKIE"
-                                                 : "FEED - WON'T SAVE IT";
-    const Rgb565 feedCol = hasFood ? palColor(Pal::INK) : palColor(Pal::INK_DIM);
-    if (!payOption) {
+    const char* feedLine = !v.hasFood    ? "NO FOOD - FIND IN EXPL"
+                         : !failing     ? "FEED IT"
+                         : v.yubiReady  ? "FEED THE YUBI-COOKIE"
+                                        : "FEED - WON'T SAVE IT";
+    const Rgb565 feedCol = v.hasFood ? palColor(Pal::INK) : palColor(Pal::INK_DIM);
+    if (v.focus == LockoutPath::Feed) {
         drawRowCursor(fb, kMargin, yItems, palColor(Pal::ACCENT));
         drawText(fb, kMargin + 10, yItems, feedLine,
-                 hasFood ? palColor(Pal::ACCENT) : feedCol);
+                 v.hasFood ? palColor(Pal::ACCENT) : feedCol);
         drawText(fb, kMargin + 10, yPay, payLine, payCol);
     } else {
         drawText(fb, kMargin + 10, yItems, feedLine, feedCol);
         drawRowCursor(fb, kMargin, yPay, palColor(Pal::ACCENT));
         drawText(fb, kMargin + 10, yPay, payLine,
-                 canPay ? palColor(Pal::ACCENT) : palColor(Pal::INK_DIM));
+                 v.canPay ? palColor(Pal::ACCENT) : palColor(Pal::INK_DIM));
     }
 
     // UI_HINT_BAND — C is disabled, so the deviation must be surfaced; and A is the

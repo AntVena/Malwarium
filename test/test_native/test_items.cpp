@@ -1178,8 +1178,11 @@ void test_lockout_tells_the_truth_when_failing() {
     CHECK(g.failingLeftMs() > 0 && g.failingLeftMs() <= static_cast<int32_t>(kCsfDyingGraceMs));
     CHECK(!g.yubiReady());
     Framebuffer plain(kActiveW, kActiveH), failing(kActiveW, kActiveH);
-    drawLockoutModal(plain, nullptr, g.model(), 20, 0.5f, false, true, kLockoutBitsCost, 0,
-                     true);
+    LockoutView lv;
+    lv.secondsLeft = 20;
+    lv.remainFrac = 0.5f;
+    lv.bitsCost = kLockoutBitsCost;
+    drawLockoutModal(plain, lv);
     g.render(failing);
     CHECK(regionDiffers(plain, failing, 0, 130, kActiveW, 160));   // headline + feed row
     g.inventory().add("yubi_cookie", 1);

@@ -175,13 +175,13 @@ XL overall, M per slice | Verify each slice with the native suite and a `tools/s
 render diffed byte-for-byte against one taken before it. |
 
 **Screen draw functions take long argument lists and flag arguments.** `drawCombat` takes a
-`CombatView`, and `drawTextMarquee`/`drawLabelValue` take an `Overflow`; the rest still take
-positional lists. Worst first: `drawMovePicker` and `drawSysInfo` (13), `drawLockoutModal` (12,
-four `bool`s), `drawStatScreen`, `drawModPicker` and `drawModDetail` (11), `drawGauge` (11, two
-`bool`s), then the twenty-odd screens at 7 to 10. Convert each screen to a view struct and each
-widget `bool` to an enum, per CONTRIBUTING's *Structure*. List the rest with the scan in
-MAINTENANCE's self-architecture entry. | `core/ui/*_screen.h`, `widgets.h` | M | Pixel-identical
-by construction; diff `tools/screens.sh` before and after. |
+`CombatView`, `drawLockoutModal` a `LockoutView`, and `drawTextMarquee`/`drawLabelValue` take an
+`Overflow`; the rest still take positional lists. Worst first: `drawMovePicker` and `drawSysInfo`
+(13), `drawStatScreen`, `drawModPicker` and `drawModDetail` (11), `drawGauge` (11, two `bool`s),
+then the twenty-odd screens at 7 to 10. Convert each screen to a view struct and each widget `bool`
+to an enum, per CONTRIBUTING's *Structure*. List the rest with the scan in MAINTENANCE's
+self-architecture entry. | `core/ui/*_screen.h`, `widgets.h` | M | Pixel-identical by construction;
+diff `tools/screens.sh` before and after. |
 
 ---
 
