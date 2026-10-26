@@ -128,27 +128,34 @@ int fragDitherPattern(bool lit[9], int draws, uint32_t seed);
 void drawSubGrid(Framebuffer& fb, int x, int y, int w, int h, const bool lit[9],
                  Rgb565 c);
 
+// How a gauge colours its lit cells. The SHAPE channel is the same for all three,
+// which is what keeps every gauge readable in grayscale.
+enum class GaugeInk : uint8_t {
+    Zone,       // the zone's danger colour
+    // Purple->pink by position. The frontier cell (the leftover value % 10) breaks into a
+    // 3x3 sub-grid seeded from `beat`, and a collision "debt" from that roll can bleed
+    // backward into the previous solid cell as a few dark holes: Fragmentation's
+    // glitchy, garbled edge instead of a hard stop.
+    FragRamp,
+    // INK, for a quantity with no danger meaning of its own. The combat screen's rival
+    // Health is the case: the same amount of it is good news or bad depending on which
+    // side of the fight you are reading it from, so it is drawn neutral while the pet's
+    // own gauge beneath keeps the danger ramp.
+    Neutral,
+};
+
+// Where the ~1Hz Critical pulse is in its cycle (the caller supplies the phase). Only
+// a Critical reading dims on Dim.
+enum class PulsePhase : uint8_t { Bright, Dim };
+
 // Segmented 10-cell gauge in the box (x,y,w,h). `value` 0..100 sets lit cells
 // (floor(value/10)). Vitality/Hazard polarity is already baked into `zone`.
-// fragRamp=true tints lit cells purple->pink by position instead of by zone.
-// pulseOn drives the ~1Hz Critical pulse (caller supplies the phase).
-// When fragRamp is set, the frontier cell (the leftover value % 10) breaks
-// into a 3x3 sub-grid seeded from `beat`, and a collision "debt" from that
-// roll can bleed backward into the previous solid cell as a few dark holes —
-// Fragmentation's glitchy, garbled edge instead of a hard stop. Ignored when
-// fragRamp is false.
-// `fill`, when given, replaces the zone's colour for the lit cells — for a gauge whose
-// quantity carries no danger meaning of its own and so has no zone to take one from.
-// The combat screen's rival Health is the case: the same amount of it is good news or
-// bad depending on which side of the fight you are reading it from, so it is drawn in a
-// neutral ink while the pet's own gauge beneath keeps the danger ramp. The SHAPE channel
-// is untouched either way, which is what keeps both readable in grayscale.
-void drawGauge(Framebuffer& fb, int x, int y, int w, int h, int value,
-               Zone zone, bool fragRamp, bool pulseOn, int beat = 0,
-               const Rgb565* fill = nullptr);
+void drawGauge(Framebuffer& fb, int x, int y, int w, int h, int value, Zone zone,
+               GaugeInk ink, PulsePhase pulse, int beat = 0);
 
-// Care-mistake budget: 2 Good pips, a gate divider, 3 Bad pips. `mistakes` 0..5.
-void drawCarePips(Framebuffer& fb, int x, int y, int mistakes, bool pulseOn);
+// Care-mistake budget: 2 Good pips, a gate divider, 3 Bad pips. `mistakes` 0..5. At
+// the dying count the lit pips pulse with `pulse`.
+void drawCarePips(Framebuffer& fb, int x, int y, int mistakes, PulsePhase pulse);
 
 // 4 lifecycle nodes; `current` is bright + named, past lit, future dim.
 void drawStageIndicator(Framebuffer& fb, int x, int y, int w, Stage current);

@@ -133,13 +133,13 @@ void drawSubGrid(Framebuffer& fb, int x, int y, int w, int h, const bool lit[9],
     }
 }
 
-void drawGauge(Framebuffer& fb, int x, int y, int w, int h, int value,
-               Zone zone, bool fragRamp, bool pulseOn, int beat, const Rgb565* fill) {
+void drawGauge(Framebuffer& fb, int x, int y, int w, int h, int value, Zone zone,
+               GaugeInk ink, PulsePhase pulse, int beat) {
     const int cells = 10;
     const int full = value / 10;           // floor: 10 solid cells = 10% each
     const int cellW = w / cells;
     const Rgb565 dimCol = palColor(Pal::INK_DIM);
-    const bool pulseDown = (zone == Zone::Critical) && !pulseOn;
+    const bool pulseDown = (zone == Zone::Critical) && pulse == PulsePhase::Dim;
 
     // Fragmentation's glitchy frontier (note in widgets.h): the leftover
     // value%10 breaks the next cell into a 3x3 roll instead of just dropping
@@ -149,7 +149,7 @@ void drawGauge(Framebuffer& fb, int x, int y, int w, int h, int value,
     bool bleedHoles[9] = {};
     bool hasFrontier = false;
     bool hasBleed = false;
-    if (fragRamp) {
+    if (ink == GaugeInk::FragRamp) {
         const int frac10 = value - full * 10;   // 0..9 leftover within the frontier cell
         if (frac10 > 0 && full < cells) {
             hasFrontier = true;
@@ -170,9 +170,9 @@ void drawGauge(Framebuffer& fb, int x, int y, int w, int h, int value,
     for (int i = 0; i < cells; ++i) {
         const int cx = x + i * cellW;
         const int iw = cellW - 1;          // 1px gap keeps cells crisp upscaled
-        Rgb565 c = fragRamp ? mal::fragRamp(static_cast<float>(i) / (cells - 1))
-                   : fill ? *fill
-                          : zoneColor(zone);
+        Rgb565 c = ink == GaugeInk::FragRamp ? fragRamp(static_cast<float>(i) / (cells - 1))
+                   : ink == GaugeInk::Neutral ? palColor(Pal::INK)
+                                              : zoneColor(zone);
         if (pulseDown) c = dim(c, 45);
 
         if (hasBleed && i == full - 1) {
@@ -193,7 +193,7 @@ void drawGauge(Framebuffer& fb, int x, int y, int w, int h, int value,
     }
 }
 
-void drawCarePips(Framebuffer& fb, int x, int y, int mistakes, bool pulseOn) {
+void drawCarePips(Framebuffer& fb, int x, int y, int mistakes, PulsePhase pulse) {
     const int pip = 9, gap = 3;
     const Rgb565 calm = palColor(Pal::CALM);
     const Rgb565 hot = palColor(Pal::HOT);
@@ -210,7 +210,7 @@ void drawCarePips(Framebuffer& fb, int x, int y, int mistakes, bool pulseOn) {
         Rgb565 c = dimCol;
         if (filled) {
             c = (i < kCareGoodMax) ? calm : hot;
-            if (dying && !pulseOn) c = rgb565(r8(c) / 2, g8(c) / 2, b8(c) / 2);
+            if (dying && pulse == PulsePhase::Dim) c = rgb565(r8(c) / 2, g8(c) / 2, b8(c) / 2);
         }
         if (filled) {
             fb.fillRect(cx, y, pip, pip, c);

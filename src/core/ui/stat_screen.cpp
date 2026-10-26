@@ -44,9 +44,9 @@ void statHeader(Framebuffer& fb, const char* title, int page) {
 }
 
 void vitalsRow(Framebuffer& fb, int y, const char* label, int value, Zone zone,
-               bool fragRamp, bool pulseOn, int beat) {
+               GaugeInk ink, PulsePhase pulse, int beat) {
     drawText(fb, kLabelX, y + 2, label, palColor(Pal::INK));
-    drawGauge(fb, kGaugeX, y, kGaugeW, kGaugeH, value, zone, fragRamp, pulseOn, beat);
+    drawGauge(fb, kGaugeX, y, kGaugeW, kGaugeH, value, zone, ink, pulse, beat);
     char num[8];
     std::snprintf(num, sizeof(num), "%3d", value);
     // Critical numerics tint hot too (dual-coded with the gauge).
@@ -491,9 +491,9 @@ namespace {
 // Care mistakes, labelled ERRORS, with the path they currently lead to spelled out
 // beside the pips: the pips show how many, and what a first-time player cannot read off
 // them is what the divider means. The word is the channel; its colour only grades it.
-void drawCareRow(Framebuffer& fb, int y, const PetModel& m, bool pulseOn) {
+void drawCareRow(Framebuffer& fb, int y, const PetModel& m, PulsePhase pulse) {
     drawText(fb, kLabelX, y, "ERRORS", palColor(Pal::INK));
-    drawCarePips(fb, kGaugeX, y - 2, m.careMistakes(), pulseOn);
+    drawCarePips(fb, kGaugeX, y - 2, m.careMistakes(), pulse);
     const CareBranch branch = m.careBranch();
     const char* path = branch == CareBranch::Dying ? "DYING"
                      : branch == CareBranch::Bad   ? "BAD"
@@ -525,7 +525,8 @@ void drawEvolveRow(Framebuffer& fb, int y, const StatScreenView& v) {
 }  // namespace
 
 void drawStatScreen(Framebuffer& fb, const PetModel& m, const StatScreenView& v) {
-    const bool pulseOn = ((v.beat / 2) & 1) == 0;   // ~1Hz
+    const PulsePhase pulse = ((v.beat / 2) & 1) == 0 ? PulsePhase::Bright   // ~1Hz
+                                                      : PulsePhase::Dim;
     statHeader(fb, "STAT", 0);
 
     // Name · generation. The stage is NOT here: it is spelled out under its own node on
@@ -559,11 +560,12 @@ void drawStatScreen(Framebuffer& fb, const PetModel& m, const StatScreenView& v)
     // Three vitals gauges. The first is the Hunger stat, labelled FED because the
     // number counts how full the pet is: "HUNGER 80" reads as starving to anyone who
     // has not been told otherwise, and FED and HAPPY both read more-is-better.
-    vitalsRow(fb, 74, "FED", m.hunger(), m.hungerZone(), false, pulseOn, v.beat);
-    vitalsRow(fb, 96, "FRAG", m.fragmentation(), m.fragZone(), true, pulseOn, v.beat);
-    vitalsRow(fb, 118, "HAPPY", m.happiness(), m.happyZone(), false, pulseOn, v.beat);
+    vitalsRow(fb, 74, "FED", m.hunger(), m.hungerZone(), GaugeInk::Zone, pulse, v.beat);
+    vitalsRow(fb, 96, "FRAG", m.fragmentation(), m.fragZone(), GaugeInk::FragRamp, pulse,
+              v.beat);
+    vitalsRow(fb, 118, "HAPPY", m.happiness(), m.happyZone(), GaugeInk::Zone, pulse, v.beat);
 
-    drawCareRow(fb, 146, m, pulseOn);
+    drawCareRow(fb, 146, m, pulse);
     drawEvolveRow(fb, 168, v);
     // The board has no real-time clock, so every timer and every drain on this page
     // runs only while the device is on. A player expecting a pet that lives through the

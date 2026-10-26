@@ -39,7 +39,7 @@ struct FeedGaugeRow {
     const char* label;
     int value;
     Zone zone;
-    bool fragRamp;
+    GaugeInk ink;
     int dir;
     bool good;
 };
@@ -62,18 +62,18 @@ int buildFeedGaugeRows(const ItemDef& d, const PetModel& m, const FeedVitals& b,
     int n = 0;
     if (feedTargets(d, ItemEffect::Kind::Hunger)) {
         const int dv = dir(b.hunger, m.hunger());
-        out[n++] = {"FED", m.hunger(), m.hungerZone(), false, dv, dv > 0};   // STAT's label
+        out[n++] = {"FED", m.hunger(), m.hungerZone(), GaugeInk::Zone, dv, dv > 0};   // STAT's label
     }
     if (feedTargets(d, ItemEffect::Kind::Frag)) {
         const int dv = dir(b.frag, m.fragmentation());
-        out[n++] = {"FRAG", m.fragmentation(), m.fragZone(), true, dv, dv < 0};
+        out[n++] = {"FRAG", m.fragmentation(), m.fragZone(), GaugeInk::FragRamp, dv, dv < 0};
     }
     // Happiness has two movers — a flat add, and Null Noodles' pull TOWARD 50%,
     // which numbs or lifts depending purely on the mood it found.
     if (feedTargets(d, ItemEffect::Kind::Happy) ||
         feedTargets(d, ItemEffect::Kind::HappyToward50)) {
         const int dv = dir(b.happy, m.happiness());
-        out[n++] = {"HAPPY", m.happiness(), m.happyZone(), false, dv, dv > 0};
+        out[n++] = {"HAPPY", m.happiness(), m.happyZone(), GaugeInk::Zone, dv, dv > 0};
     }
     return n;
 }
@@ -171,7 +171,7 @@ void drawFeedingModal(Framebuffer& fb, const SpriteData* pet, const SpriteData* 
         const FeedGaugeRow& r = rows[i];
         const int y = top + i * kVitalsRowH;
         drawText(fb, kMargin, y, r.label, palColor(Pal::INK));
-        drawGauge(fb, 70, y - 2, 110, 10, r.value, r.zone, r.fragRamp, true);
+        drawGauge(fb, 70, y - 2, 110, 10, r.value, r.zone, r.ink, PulsePhase::Bright);
         char num[8];
         std::snprintf(num, sizeof(num), "%3d", r.value);
         drawText(fb, 188, y, num, palColor(Pal::INK));

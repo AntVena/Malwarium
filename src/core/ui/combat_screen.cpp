@@ -914,10 +914,9 @@ void drawRivalGauge(Framebuffer& fb, const CombatFrame& f) {
     const Combatant& en = f.en;
     drawText(fb, kMargin, kCombatRivalGaugeY + 1, f.v.sides.rivalLabel,
              palColor(Pal::INK_DIM));
-    const Rgb565 neutral = palColor(Pal::INK);
     const int ehPct = en.maxHealth > 0 ? en.health * 100 / en.maxHealth : 0;
     drawGauge(fb, kGaugeX, kCombatRivalGaugeY, kGaugeW, kCombatGaugeH, ehPct, Zone::Ok,
-              false, false, f.v.beat, &neutral);
+              GaugeInk::Neutral, PulsePhase::Bright, f.v.beat);
     if (f.ongoing && !f.localTurnNext)
         drawTurnTick(fb, kCombatRivalGaugeY, kCombatGaugeH);
     // Its numeric, on the same right edge as the pet's: a bar alone cannot tell 3 left from
@@ -1251,8 +1250,8 @@ void drawLocalGauge(Framebuffer& fb, const CombatFrame& f) {
     drawPassiveStrip(fb, pl, kGaugeX, phY - 7, kGaugeW, 5, /*pipW=*/5, /*pipH=*/5, f.v.beat);
     const int phPct = pl.maxHealth > 0 ? pl.health * 100 / pl.maxHealth : 0;
     const Zone hz = healthZone(pl.health, pl.maxHealth);
-    const bool pulseOn = (f.v.beat & 1) == 0;
-    drawGauge(fb, kGaugeX, phY, kGaugeW, kCombatGaugeH, phPct, hz, false, pulseOn);
+    const PulsePhase pulse = (f.v.beat & 1) == 0 ? PulsePhase::Bright : PulsePhase::Dim;
+    drawGauge(fb, kGaugeX, phY, kGaugeW, kCombatGaugeH, phPct, hz, GaugeInk::Zone, pulse);
     if (f.ongoing && f.localTurnNext) drawTurnTick(fb, phY, kCombatGaugeH);
     char hp[16];
     std::snprintf(hp, sizeof(hp), "%d", pl.health);
