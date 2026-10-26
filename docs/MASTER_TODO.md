@@ -188,12 +188,6 @@ pages and the outro in one function. Split it into one named function per region
 the current order; each reads the same `CombatView`. | `combat_screen.cpp` | M | The camo and
 PvP pixel tests and the combat frames in `tools/screens.sh` cover it. |
 
-**`captureSave` is 332 lines.** It is the mirror of `applySave`, which is already one
-named function per save section (`restoreOperator` through `restoreBackgroundAndCant`). Split
-`captureSave` along the same sections so each pair reads side by side. Every line is a read,
-so the order inside it is free. | `game_persist.cpp` | S | The save round-trip and migration
-tests in `test_persistence.cpp` cover every field. |
-
 ---
 
 ## 2. Art

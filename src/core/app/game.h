@@ -3163,6 +3163,20 @@ private:
     // Persistence ------------------------------------
     SaveData captureSave() const;                  // snapshot all persisted state
     void applySave(const SaveData& d);             // restore from a loaded snapshot
+    // captureSave's sections, each the mirror of the restore* of the same name.
+    void captureOperator(SaveData& d) const;
+    void captureBag(SaveData& d) const;
+    void captureHistory(SaveData& d) const;
+    void capturePetProgress(SaveData& d) const;
+    void captureRadio(SaveData& d) const;
+    void captureWorldProgress(SaveData& d) const;
+    void captureRig(SaveData& d) const;
+    void captureReveals(SaveData& d) const;
+    void captureRecords(SaveData& d) const;
+    void captureShelves(SaveData& d) const;
+    void captureActivePet(SaveData& d) const;
+    void captureSettings(SaveData& d) const;
+    void captureBackgroundAndCant(SaveData& d) const;
     // applySave's sections, called in order (game_persist.cpp).
     void restoreOperator(const SaveData& d);
     void restoreBag(const SaveData& d);

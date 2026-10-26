@@ -12,30 +12,70 @@ namespace mal {
 
 // Persistence ----------------------------------------
 
+namespace {
+
+SaveId saveId(const char* id) {
+    SaveId s;
+    if (id) std::strncpy(s.id, id, kSaveIdCap - 1);
+    return s;
+}
+
+template <typename Def>
+void captureIds(std::vector<SaveId>& out, const std::vector<const Def*>& defs) {
+    out.reserve(defs.size());
+    for (const Def* def : defs) out.push_back(saveId(def->id));
+}
+
+}  // namespace
+
 // Every collection below is reserved to the exact count before it is filled. The
 // count is always known from the live container, and a vector that grows into place
-// instead allocates a whole doubling ladder — which costs nothing in total but leaves
+// instead allocates a whole doubling ladder, which costs nothing in total but leaves
 // the free heap in pieces, and the size of the largest PIECE is what persistSave's
 // guard reads. Reserving is what keeps building a save from being the thing that
 // makes the save look unaffordable.
+//
+// One section per restore* below, in the same order, so each pair reads side by side.
+// Every capture is a read, so unlike applySave the order carries no dependency.
 SaveData Game::captureSave() const {
     SaveData d;
-    if (pet_) std::strncpy(d.activeId, pet_->id, kSaveIdCap - 1);
-    d.hunger = model_.hunger();
-    d.frag = model_.fragmentation();
-    d.happy = model_.happiness();
-    d.mistakes = model_.careMistakes();
-    d.debuffs = model_.debuffs();
-    d.ghost = model_.hasGhost() ? 1 : 0;
-    d.timeInStageMs = nowMs_ - stageEnteredMs_;   // elapsed in stage (reboot-safe)
-    d.generation = generation_;
+    captureOperator(d);
+    captureBag(d);
+    captureHistory(d);
+    capturePetProgress(d);
+    captureRadio(d);
+    captureWorldProgress(d);
+    captureRig(d);
+    captureReveals(d);
+    captureRecords(d);
+    captureShelves(d);
+    captureActivePet(d);
+    captureSettings(d);
+    captureBackgroundAndCant(d);
+    return d;
+}
 
-    d.bits = bits_;
-    std::strncpy(d.hackerTag, hackerTag_, kHackerTagMax);
+void Game::captureOperator(SaveData& d) const {
+    d.generation = generation_;
+    d.petsRaised = petsRaised_;
     d.lifetimeUptimeMs = uptimeBase_ + nowMs_;
     d.lifetimeSteps = lifetimeSteps_;
-    d.petsRaised = petsRaised_;
+    d.bits = bits_;
+    std::strncpy(d.hackerTag, hackerTag_, kHackerTagMax);
 
+    // v36: the crew rides as its content ID (content_crews.h), so the table can be
+    // reordered.
+    if (const CrewDef* c = activeCrew())
+        std::strncpy(d.crewId, c->id, kSaveIdCap - 1);
+    d.homeNetworkKey = homeNetworkKey_;
+    std::strncpy(d.homeNetworkName, homeNetworkName_, kSaveNetNameCap - 1);
+
+    // v4: Hacker Rank. Real-network history lives in the SD-backed networkLedger_.
+    d.networksSeen = networksSeen_;
+    d.hackerRank = hackerRank_;
+}
+
+void Game::captureBag(SaveData& d) const {
     d.items.reserve(inventory_.stacks().size());
     for (const auto& s : inventory_.stacks()) {
         SaveStack ss;
@@ -44,18 +84,17 @@ SaveData Game::captureSave() const {
         d.items.push_back(ss);
     }
     // v45: the spare pool as a count per mod WIRE. A mod the running content no longer
-    // defines has no wire to write to and is dropped here rather than at load — the pool
+    // defines has no wire to write to and is dropped here rather than at load. The pool
     // in RAM was built from the registry, so this can only miss a row retired underneath
     // a live game, which is a developer state, not a player one.
     for (const OwnedMod& m : loadout_.owned())
         if (const ModDef* def = registry_.mod(m.id))
             saveSetModCount(d.ownedModCounts, def->wire, m.count);
     d.equipped.reserve(kModSlots);
-    for (int i = 0; i < kModSlots; ++i) {
-        SaveId id;
-        if (const char* e = loadout_.equipped(i)) std::strncpy(id.id, e, kSaveIdCap - 1);
-        d.equipped.push_back(id);
-    }
+    for (int i = 0; i < kModSlots; ++i) d.equipped.push_back(saveId(loadout_.equipped(i)));
+}
+
+void Game::captureHistory(SaveData& d) const {
     // Log, chronological oldest-first (at(0) is newest), so a restore replays it.
     d.log.reserve(static_cast<size_t>(log_.size()));
     for (int i = log_.size() - 1; i >= 0; --i) {
@@ -66,65 +105,97 @@ SaveData Game::captureSave() const {
         d.log.push_back(se);
     }
     d.rack = rack_;
+    d.records = records_;                             // v3: ARCH RETIRED/CORRUPTED records
+}
 
+// The rack pets' own copies of the per-pet fields here ride on d.rack, stamped by
+// game_arch.cpp's freezePet.
+void Game::capturePetProgress(SaveData& d) const {
     // v2: the move loadout (owned + per-slot equipped) + combat XP/level. Health is
     // transient (resets each fight) and is deliberately NOT captured.
     d.ownedMoves.reserve(moveLoadout_.owned().size());
-    for (const char* m : moveLoadout_.owned()) {
-        SaveId id;
-        std::strncpy(id.id, m, kSaveIdCap - 1);
-        d.ownedMoves.push_back(id);
-    }
+    for (const char* m : moveLoadout_.owned()) d.ownedMoves.push_back(saveId(m));
     d.equippedMoves.reserve(kMaxMoveSlots);
-    for (int i = 0; i < kMaxMoveSlots; ++i) {
-        SaveId id;
-        if (const char* e = moveLoadout_.equipped(i)) std::strncpy(id.id, e, kSaveIdCap - 1);
-        d.equippedMoves.push_back(id);
-    }
+    for (int i = 0; i < kMaxMoveSlots; ++i)
+        d.equippedMoves.push_back(saveId(moveLoadout_.equipped(i)));
     d.combatXp = combatXp_;
     d.combatLevel = combatLevel_;
     // v11: the creature-level stat points. Sum == combatLevel (the invariant).
     d.statPoints.assign(statPoints_, statPoints_ + kLevelStatCount);
-    d.records = records_;                             // v3: ARCH RETIRED/CORRUPTED records
 
-    // v4: Hacker Rank — the counter and the rank (the dedup-pool byte this used
-    // to also carry was removed as of v33 — real-network history now lives in the
-    // SD-backed networkLedger_, not the save blob).
-    d.networksSeen = networksSeen_;
-    d.hackerRank = hackerRank_;
+    // v24: the per-pet Attack/Defend slot typing.
+    d.slotKinds.reserve(kMaxMoveSlots);
+    for (int i = 0; i < kMaxMoveSlots; ++i)
+        d.slotKinds.push_back(static_cast<uint8_t>(slotKinds_[i]));
 
-    // v5: the Audit-mode passive-scan runtime toggle.
-    d.netScanEnabled = netScanEnabled_ ? 1 : 0;
+    d.defragCount = defragCount_;                     // v16
+    d.bestDeepWebDepth = bestDeepWebDepth_;           // v35
+    d.bestDarkWebDepth = bestDarkWebDepth_;
 
-    // v20: the 'Pedia local-AP runtime toggle.
-    d.apEnabled = apEnabled_ ? 1 : 0;
+    // v42: the 5/5 recovery window already burned. The one timed window that persists:
+    // every other one (Lockout, the audit hot/cooldown) resets on reboot by the rule in
+    // core/net/audit_capture.h, but refunding THIS one makes the only death path
+    // optional.
+    d.dyingElapsedMs = dyingElapsedMs_;
 
-    // v37: the pet-to-pet LINK runtime toggle. Only the consent bit — the met
-    // operators live in the SD-backed PeerLedger (core/net/peer_ledger.h).
+    // v9: the Boot-Sector incubation clock so an unhatched egg resumes after a
+    // reboot instead of restarting (or hatching early).
+    d.bootHatchRemainMs = bootHatchRemainMs_;
+
+    // v21: the care-mistake shield + once-per-lifetime item gates (reset on a new egg).
+    d.mistakeShieldActive = mistakeShieldActive_ ? 1 : 0;
+    d.shieldItemConsumed = shieldItemConsumed_ ? 1 : 0;
+    d.yubiConsumed = yubiConsumed_ ? 1 : 0;
+
+    // v28 and v60: the USB port. The Ambig-USB Trojan divert, the Bad-USB/Signed-USB
+    // branch override, the Sandbox/Hypervisor-USB soak factor and the Halt-USB's hold,
+    // all reset on a new egg.
+    d.forceTrojanDivert = forceTrojanDivert_ ? 1 : 0;
+    d.evolveBranchOverride = static_cast<uint8_t>(evolveBranchOverride_);
+    d.evolveSoakFactor = static_cast<uint8_t>(evolveSoakFactor_);
+    d.evolveHold = evolveHold_ ? 1 : 0;
+
+    // v30: the Backup Drive combat-shield buff's armed-until deadline.
+    d.backupShieldUntilMs = backupShieldUntilMs_;
+
+    // v50/v57: this pet's permanent Epic-dish upgrades (core/model/pet_upgrades.h), and
+    // (v72) the favourite dish.
+    d.bandwidthRegenBonusMin = upgrades_.bandwidthRegenMin;
+    for (int i = 0; i < kLevelStatCount; ++i) d.statBonus[i] = upgrades_.statBonus[i];
+    d.xpRateBonusPct = upgrades_.xpRatePct;
+    if (upgrades_.favouriteFood)
+        std::strncpy(d.favouriteFood, upgrades_.favouriteFood->id, kSaveIdCap - 1);
+    d.favouriteFound = upgrades_.favouriteFound ? 1 : 0;
+}
+
+// The radio toggles persist as intent only: hot/cooldown timers are runtime-only (no RTC).
+void Game::captureRadio(SaveData& d) const {
+    d.netScanEnabled = netScanEnabled_ ? 1 : 0;       // v5
+    d.apEnabled = apEnabled_ ? 1 : 0;                 // v20
+    // v37: only the LINK consent bit. The met operators live in the SD-backed
+    // PeerLedger (core/net/peer_ledger.h).
     d.linkEnabled = linkEnabled_;
-
-    // v6: the Audit-mode handshake-capture toggle. Only the
-    // toggle intent persists — hot/cooldown timers are runtime-only (no RTC).
-    d.auditCaptureEnabled = auditCapture_.enabled() ? 1 : 0;
+    d.auditCaptureEnabled = auditCapture_.enabled() ? 1 : 0;   // v6
 
     // v7: the real-radio SHAKES dedup ledger + the lifetime handshake count, so
-    // unique-credit survives a reboot (never re-count on return). (The sibling
-    // NETS/seenBssids vector this used to also carry was removed as of v33.)
+    // unique-credit survives a reboot (never re-count on return).
     d.seenHandshakeBssids = seenHandshakeBssids_;
     d.handshakesSeen = handshakesSeen_;
+}
 
-    // v8: the EXPL AREA-clear flags — one byte per area so the linear
+void Game::captureWorldProgress(SaveData& d) const {
+    // v8: the EXPL AREA-clear flags, one byte per area so the linear
     // complete-to-advance ladder survives a reboot.
     d.sectorCleared.assign(kAreaCount, 0);
     for (int i = 0; i < kAreaCount; ++i)
         d.sectorCleared[i] = sectorCleared_[i] ? 1 : 0;
 
     // v12: the legacy per-sector boss-unlock byte. Superseded at runtime by the v13
-    // per-sub flags, but still written (the stream is version-layered) — derived as
+    // per-sub flags, but still written (the stream is version-layered), derived as
     // "any sub-area boss unlocked in this area" so it stays self-consistent.
     d.bossUnlocked.assign(kAreaCount, 0);
-    // v13: the EXPL per-sub-area clear + boss-unlock bitmasks — one byte per
-    // area, bit s = sub-area s. Player-level, like the area-clear flags.
+    // v13: the EXPL per-sub-area clear + boss-unlock bitmasks, one byte per
+    // area, bit s = sub-area s.
     d.subCleared.assign(kAreaCount, 0);
     d.subBossUnlocked.assign(kAreaCount, 0);
     for (int a = 0; a < kAreaCount; ++a)
@@ -136,198 +207,34 @@ SaveData Game::captureSave() const {
             }
         }
 
-    // v9: the Boot-Sector incubation clock so an unhatched egg resumes after a
-    // reboot instead of restarting (or hatching early).
-    d.bootHatchRemainMs = bootHatchRemainMs_;
-
-    // v10: the zone-completion Titles — the unlocked bitmask + the
-    // equipped index, player-level so they persist across pets.
+    // v10: the zone-completion Titles, the unlocked bitmask + the equipped index.
     d.titlesUnlocked = titlesUnlocked_;
     d.equippedTitle = equippedTitle_;
 
-    // v14: the CFG screen-brightness level — device-level, persists
-    // across pets like the other CFG prefs.
-    d.brightness = brightness_;
-    // v67: UI MODE and CARE ALERTS — device-level, beside brightness and for its reason.
-    d.uiMode = static_cast<uint8_t>(uiMode_);
-    d.careAlerts = careAlerts_ ? 1 : 0;
-    // v68
-    d.soundMode = static_cast<uint8_t>(soundMode_);
-    d.volume = static_cast<uint8_t>(volume_);
-    d.exploreSound = exploreSound_ ? 1 : 0;   // v71
-
-    // v64: the chosen PAL_CORE theme, stored by NAME (see save.h's version note) and
-    // device-level for the same reason brightness is — it is what the device looks
-    // like, not something a pet owns.
-    std::snprintf(d.theme, sizeof(d.theme), "%s", themeName());
-
-    // v15: the EXPL per-sub-area re-farm win counts — flat row-major
+    // v15: the EXPL per-sub-area re-farm win counts, flat row-major
     // (area*kSubAreasPerArea + sub), so a depleted area stays depleted for future pets.
     d.subRefarm.assign(static_cast<size_t>(kAreaCount) * kSubAreasPerArea, 0);
     for (int a = 0; a < kAreaCount; ++a)
         for (int s = 0; s < kSubAreasPerArea; ++s)
             d.subRefarm[a * kSubAreasPerArea + s] = subRefarmCount_[a][s];
+}
 
-    // v16: the active pet's defrag tally. The rack pets' tallies already
-    // ride on d.rack (= rack_, whose SaveStoredPet::defragCount freezePet stamped).
-    d.defragCount = defragCount_;
-
-    // v35: the active pet's own best-ever DeepWeb Dive depth. The rack pets'
-    // values already ride on d.rack, like defragCount above.
-    d.bestDeepWebDepth = bestDeepWebDepth_;
-    d.bestDarkWebDepth = bestDarkWebDepth_;
-
-    // v42: the 5/5 recovery window already burned. The one timed window that persists —
-    // every other one (Lockout, the audit hot/cooldown) resets on reboot by the rule in
-    // core/net/audit_capture.h, but refunding THIS one makes the only death path
-    // optional. The rack pets' values ride on SaveStoredPet::dyingElapsedMs.
-    d.dyingElapsedMs = dyingElapsedMs_;
-
-    // v36: the crew allegiance + home network — player-level, like the HackerTag. The
-    // crew rides as its content ID (content_crews.h), so the table can be reordered.
-    if (const CrewDef* c = activeCrew())
-        std::strncpy(d.crewId, c->id, kSaveIdCap - 1);
-    d.homeNetworkKey = homeNetworkKey_;
-    std::strncpy(d.homeNetworkName, homeNetworkName_, kSaveNetNameCap - 1);
-
-    // v19: the Rig Shop account upgrades — player-level, persists across
-    // pets like the HackerTag. (Bandwidth itself isn't saved; only the purchased cap.)
-    // Rows 0-10 map positionally onto these legacy per-row fields (unchanged wire
-    // format); rigLevel_ is the in-memory source of truth (game_rig_shop.h).
-    d.bwUpgradeCount = rigLevel_[kRigRowBandwidth];
-
-    // v21: the per-pet care-mistake shield + once-per-lifetime item gates (reset on a
-    // new egg), and the player-level b Reduce-Explore-Frag tier.
-    d.mistakeShieldActive = mistakeShieldActive_ ? 1 : 0;
-    d.shieldItemConsumed = shieldItemConsumed_ ? 1 : 0;
-    d.yubiConsumed = yubiConsumed_ ? 1 : 0;
-    d.fragAmountTier = static_cast<uint8_t>(rigLevel_[kRigRowFragReduce]);
-    // v22: the c Reduce-Explore-Frag-TRIGGER tier (player-level, like fragAmountTier).
-    d.fragTriggerTier = static_cast<uint8_t>(rigLevel_[kRigRowFragTrigger]);
-    // v23: the d/e one-time Rig Shop unlocks (player-level, like fragTriggerTier).
-    d.itemTabsUnlocked = rigLevel_[kRigRowItemTabs] ? 1 : 0;
+// Rows below kRigRowExtBase map positionally onto legacy per-row save fields;
+// rigLevel_ is the in-memory source of truth (game_rig_shop.h). Bandwidth itself isn't
+// saved, only the purchased cap.
+void Game::captureRig(SaveData& d) const {
+    d.bwUpgradeCount = rigLevel_[kRigRowBandwidth];                          // v19
+    d.fragAmountTier = static_cast<uint8_t>(rigLevel_[kRigRowFragReduce]);   // v21
+    d.fragTriggerTier = static_cast<uint8_t>(rigLevel_[kRigRowFragTrigger]); // v22
+    d.itemTabsUnlocked = rigLevel_[kRigRowItemTabs] ? 1 : 0;                 // v23
     d.bulkOpenUnlocked = rigLevel_[kRigRowBulkOpen] ? 1 : 0;
-
-    // v24: the move-slot rework's per-pet Attack/Defend slot typing.
-    d.slotKinds.reserve(kMaxMoveSlots);
-    for (int i = 0; i < kMaxMoveSlots; ++i)
-        d.slotKinds.push_back(static_cast<uint8_t>(slotKinds_[i]));
-
-    // v25: web-'Pedia reveal state — glimpsed-but-not-hatched
-    // creature ids and the malbeast seen/defeated masks.
-    d.seenCreatures.reserve(seenCreatures_.size());
-    for (const CreatureDef* c : seenCreatures_) {
-        SaveId id;
-        std::strncpy(id.id, c->id, kSaveIdCap - 1);
-        d.seenCreatures.push_back(id);
-    }
-    d.malbeastSeen = malbeastSeenMask_;
-    d.malbeastDefeated = malbeastDefeatedMask_;
-
-    // v39: the device's raised-species tally.
-    d.raisedCreatures.reserve(raisedCreatures_.size());
-    for (const CreatureDef* c : raisedCreatures_) {
-        SaveId id;
-        std::strncpy(id.id, c->id, kSaveIdCap - 1);
-        d.raisedCreatures.push_back(id);
-    }
-
-    // v40: the achievement bitsets (by wire number) + the counters behind the countable
-    // rows. The bitsets go out at their full in-memory width, so a catalogue that grows
-    // into spare capacity needs no save change at all.
-    d.achievementEarned.assign(achEarned_, achEarned_ + kAchBytes);
-    d.achievementNotified.assign(achNotified_, achNotified_ + kAchBytes);
-    // v65: the STORY read-set, the same shape and for the same reason — a bitset over
-    // wire numbers, written at its full in-memory width.
-    d.storyRead.assign(storyRead_, storyRead_ + sizeof(storyRead_));
-    d.tipsSeen.assign(tipsSeen_, tipsSeen_ + sizeof(tipsSeen_));   // v66, same shape
-    d.bossWins = bossWins_;
-    d.stackerWins = stackerWins_;   // v44
-    d.tourneyWins = tourneyWins_;   // v56
-    d.pvpWins = pvpWins_;           // v56
-    d.mergesCooked = mergesCooked_; // v56
-    // v59 — the CANT. The learned mask and what was paid for it; how many shakes are
-    // still SPENDABLE is derived from this and the v7 lifetime count, never stored.
-    d.cantSigils = cantSigils_;
-    d.shakesSpent = shakesSpent_;
-    // v58 — the chosen background, by wire. AUTO writes 0, which is also what a pick
-    // this build somehow has no row for writes, since AUTO is the safe reading.
-    if (const BackgroundDef* b = backgroundFor(backgroundPick_)) d.backgroundPick = b->wire;
-    // v53: ROCK THE DOCK's run in play. Four bytes plus a bitmask, because every entrant is
-    // derived from the seed (core/model/tournament.h) rather than written down.
-    d.tourneySeed = tourneySeed_;
-    d.tourneyAlive = tourneyAlive_;
-    d.tourneyRound = tourneyRound_;
-    d.tourneyPhase = static_cast<uint8_t>(tourneyPhase_);
-    // v47: one row per cabinet that has actually been played, id-keyed. A cabinet with
-    // no runs writes nothing — the save carries history, not the roster.
-    for (int i = 0; i < arcadeGameCount() && i < kArcadeMaxCabinets; ++i) {
-        if (arcadePlays_[i] == 0) continue;
-        SaveId id;
-        std::strncpy(id.id, arcadeGames()[i].id, kSaveIdCap - 1);
-        d.arcadeIds.push_back(id);
-        d.arcadePlays.push_back(arcadePlays_[i]);
-        d.arcadeWins.push_back(arcadeWins_[i]);
-        d.arcadeBest.push_back(arcadeBest_[i]);
-    }
-    // v48: the DECRYPTOGRAM per-quote states, at their full in-memory width — a pool
-    // that grows into spare capacity needs no save change at all.
-    d.quoteStates.assign(quoteStates_, quoteStates_ + kQuoteStateBytes);
-    d.collectedItems.reserve(collectedItems_.size());
-    for (const ItemDef* it : collectedItems_) {
-        SaveId id;
-        std::strncpy(id.id, it->id, kSaveIdCap - 1);
-        d.collectedItems.push_back(id);
-    }
-    d.petFoodsEaten.reserve(petFoodsEaten_.size());
-    for (const ItemDef* it : petFoodsEaten_) {
-        SaveId id;
-        std::strncpy(id.id, it->id, kSaveIdCap - 1);
-        d.petFoodsEaten.push_back(id);
-    }
-    d.speciesDiveIds.reserve(speciesDives_.size());
-    d.speciesDiveDepths.reserve(speciesDives_.size());
-    for (const SpeciesDive& s : speciesDives_) {
-        if (!s.def) continue;
-        SaveId id;
-        std::strncpy(id.id, s.def->id, kSaveIdCap - 1);
-        d.speciesDiveIds.push_back(id);
-        d.speciesDiveDepths.push_back(s.depth);
-    }
-
-    // v27: the Rig Shop rig-upgrade levels (player-level, like bwUpgradeCount).
-    d.rackSlotUpgradeCount = rigLevel_[kRigRowRackSlot];
+    d.rackSlotUpgradeCount = rigLevel_[kRigRowRackSlot];                     // v27
     d.scrapingClusterLevel = rigLevel_[kRigRowScraping];
     d.dataMiningLevel = rigLevel_[kRigRowDataMining];
 
-    // v28: the Ambig-USB armed Trojan-divert flag (per-pet, reset on a new egg).
-    d.forceTrojanDivert = forceTrojanDivert_ ? 1 : 0;
-
-    // v60: the rest of the USB port — the Bad-USB/Signed-USB branch override, the
-    // Sandbox/Hypervisor-USB soak factor and the Halt-USB's hold (all per-pet, all reset
-    // on a new egg).
-    d.evolveBranchOverride = static_cast<uint8_t>(evolveBranchOverride_);
-    d.evolveSoakFactor = static_cast<uint8_t>(evolveSoakFactor_);
-    d.evolveHold = evolveHold_ ? 1 : 0;
-
-    // v30: the Backup Drive combat-shield buff's armed-until deadline (per-pet,
-    // reset on a new egg).
-    d.backupShieldUntilMs = backupShieldUntilMs_;
-
-    // v31: the f Rig Shop Merge Hub unlock, and (v49) the whole owned-recipe mask —
-    // both player-level, like itemTabsUnlocked. Recipes own their state outright rather
-    // than mirroring rig rows, so the mask is written straight through.
-    // v50/v57: this pet's permanent Epic-dish upgrades (core/model/pet_upgrades.h). The
-    // rack pets' own values ride along on their SaveStoredPet records, frozen at store
-    // time (game_arch.cpp's freezePet).
-    d.bandwidthRegenBonusMin = upgrades_.bandwidthRegenMin;
-    for (int i = 0; i < kLevelStatCount; ++i) d.statBonus[i] = upgrades_.statBonus[i];
-    d.xpRateBonusPct = upgrades_.xpRatePct;
-    // v72: the favourite dish, frozen alongside them on the rack records.
-    if (upgrades_.favouriteFood)
-        std::strncpy(d.favouriteFood, upgrades_.favouriteFood->id, kSaveIdCap - 1);
-    d.favouriteFound = upgrades_.favouriteFound ? 1 : 0;
-
+    // v31: the Merge Hub unlock, and (v49) the whole owned-recipe mask. Recipes own
+    // their state outright rather than mirroring rig rows, so the mask is written
+    // straight through.
     d.mergeHubUnlocked = rigLevel_[kRigRowMergeHub] ? 1 : 0;
     // The whole set goes out as the v51 bitset; its first four bytes ALSO go out as the
     // v31 u32, which is all a reader that predates the bitset can hold.
@@ -336,19 +243,108 @@ SaveData Game::captureSave() const {
     for (int i = 0; i < 4; ++i)
         d.recipesUnlocked |= static_cast<uint32_t>(recipesOwned_[i]) << (i * 8);
 
-    // v32: every rig row from kRigRowExtBase up — a forward-compatible tail so a new
+    // v32: every rig row from kRigRowExtBase up, a forward-compatible tail so a new
     // Rig Shop row never needs a save.h edit. Mirrors the subRefarm vector pattern:
     // length-prefixed, bounds-checked on read, short/missing defaults every level to 0.
-    d.rigLevelsExt.clear();
     d.rigLevelsExt.reserve(kRigUpgradeCount - kRigRowExtBase);
     for (int i = kRigRowExtBase; i < kRigUpgradeCount; ++i)
         d.rigLevelsExt.push_back(static_cast<uint16_t>(rigLevel_[i]));
 
     // v61: which owned services are stopped. Its own field rather than a level, because
-    // a switch is not a purchase — the level says what was bought, this says what runs.
+    // a switch is not a purchase: the level says what was bought, this says what runs.
     d.rigServicesOff = rigServicesOff_;
     d.rigServicesAsk = rigServicesAsk_;   // v69
-    return d;
+}
+
+void Game::captureReveals(SaveData& d) const {
+    // v25: web-'Pedia reveal state, glimpsed-but-not-hatched creature ids and the
+    // malbeast seen/defeated masks.
+    captureIds(d.seenCreatures, seenCreatures_);
+    d.malbeastSeen = malbeastSeenMask_;
+    d.malbeastDefeated = malbeastDefeatedMask_;
+
+    // v40: the achievement bitsets (by wire number). They go out at their full
+    // in-memory width, so a catalogue that grows into spare capacity needs no save
+    // change at all.
+    d.achievementEarned.assign(achEarned_, achEarned_ + kAchBytes);
+    d.achievementNotified.assign(achNotified_, achNotified_ + kAchBytes);
+    // v65: the STORY read-set, the same shape and for the same reason: a bitset over
+    // wire numbers, written at its full in-memory width.
+    d.storyRead.assign(storyRead_, storyRead_ + sizeof(storyRead_));
+    d.tipsSeen.assign(tipsSeen_, tipsSeen_ + sizeof(tipsSeen_));   // v66, same shape
+}
+
+void Game::captureRecords(SaveData& d) const {
+    // v40 onward: the counters behind the countable achievement rows.
+    d.bossWins = bossWins_;
+    d.stackerWins = stackerWins_;   // v44
+    d.tourneyWins = tourneyWins_;   // v56
+    d.pvpWins = pvpWins_;           // v56
+    d.mergesCooked = mergesCooked_; // v56
+    // v53: ROCK THE DOCK's run in play. Four bytes plus a bitmask, because every entrant is
+    // derived from the seed (core/model/tournament.h) rather than written down.
+    d.tourneySeed = tourneySeed_;
+    d.tourneyAlive = tourneyAlive_;
+    d.tourneyRound = tourneyRound_;
+    d.tourneyPhase = static_cast<uint8_t>(tourneyPhase_);
+    // v47: one row per cabinet that has actually been played, id-keyed. A cabinet with
+    // no runs writes nothing: the save carries history, not the roster.
+    for (int i = 0; i < arcadeGameCount() && i < kArcadeMaxCabinets; ++i) {
+        if (arcadePlays_[i] == 0) continue;
+        d.arcadeIds.push_back(saveId(arcadeGames()[i].id));
+        d.arcadePlays.push_back(arcadePlays_[i]);
+        d.arcadeWins.push_back(arcadeWins_[i]);
+        d.arcadeBest.push_back(arcadeBest_[i]);
+    }
+    // v48: the DECRYPTOGRAM per-quote states, at their full in-memory width, so a pool
+    // that grows into spare capacity needs no save change at all.
+    d.quoteStates.assign(quoteStates_, quoteStates_ + kQuoteStateBytes);
+}
+
+void Game::captureShelves(SaveData& d) const {
+    captureIds(d.collectedItems, collectedItems_);
+    captureIds(d.petFoodsEaten, petFoodsEaten_);
+    d.speciesDiveIds.reserve(speciesDives_.size());
+    d.speciesDiveDepths.reserve(speciesDives_.size());
+    for (const SpeciesDive& s : speciesDives_) {
+        if (!s.def) continue;
+        d.speciesDiveIds.push_back(saveId(s.def->id));
+        d.speciesDiveDepths.push_back(s.depth);
+    }
+    captureIds(d.raisedCreatures, raisedCreatures_);   // v39
+}
+
+void Game::captureActivePet(SaveData& d) const {
+    if (pet_) std::strncpy(d.activeId, pet_->id, kSaveIdCap - 1);
+    d.hunger = model_.hunger();
+    d.frag = model_.fragmentation();
+    d.happy = model_.happiness();
+    d.mistakes = model_.careMistakes();
+    d.debuffs = model_.debuffs();
+    d.ghost = model_.hasGhost() ? 1 : 0;
+    d.timeInStageMs = nowMs_ - stageEnteredMs_;   // elapsed in stage (reboot-safe)
+}
+
+// Device-level CFG preferences: what the device looks and sounds like, which no pet owns.
+void Game::captureSettings(SaveData& d) const {
+    d.brightness = brightness_;                       // v14
+    d.uiMode = static_cast<uint8_t>(uiMode_);         // v67
+    d.careAlerts = careAlerts_ ? 1 : 0;
+    d.soundMode = static_cast<uint8_t>(soundMode_);   // v68
+    d.volume = static_cast<uint8_t>(volume_);
+    d.exploreSound = exploreSound_ ? 1 : 0;           // v71
+    // v64: the chosen PAL_CORE theme, stored by NAME (see save.h's version note).
+    std::snprintf(d.theme, sizeof(d.theme), "%s", themeName());
+}
+
+void Game::captureBackgroundAndCant(SaveData& d) const {
+    // v58: the chosen background, by wire. AUTO writes 0, which is also what a pick
+    // this build somehow has no row for writes, since AUTO is the safe reading.
+    if (const BackgroundDef* b = backgroundFor(backgroundPick_)) d.backgroundPick = b->wire;
+    // v59: the CANT. The learned mask and what was paid for it; how many shakes are
+    // still SPENDABLE is derived from this and the v7 lifetime count, never stored.
+    d.cantSigils = cantSigils_;
+    d.shakesSpent = shakesSpent_;
 }
 
 // Player-level identity and standing. A Store-vacated save (no active pet) still carries
