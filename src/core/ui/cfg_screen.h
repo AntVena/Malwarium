@@ -78,11 +78,20 @@ void drawCfgList(Framebuffer& fb, int cursor, const char* hackerTag,
 // actions draw no value preview — the others are settings that are always at some
 // level, and an action has no state to report, which the empty value column says
 // without a word of copy.
-// `careAlerts` is the CARE ALERTS switch's state (Game::careAlerts), previewed ON/OFF;
-// that row flips in place on B rather than opening a screen. Ten rows, so it scrolls.
-void drawCfgDevice(Framebuffer& fb, int cursor, UiMode uiMode, int brightness,
-                   SoundMode soundMode, int volume, const char* theme,
-                   const char* background, bool careAlerts);
+// Ten rows, so it scrolls.
+struct CfgDeviceView {
+    int cursor = 0;
+    UiMode uiMode = UiMode::IconsLabel;
+    int brightness = 0;              // a level, previewed as a percentage
+    SoundMode soundMode = SoundMode::Off;
+    int volume = 0;                  // a level, previewed as a percentage
+    const char* theme = "";
+    const char* background = "";
+    // The CARE ALERTS switch (Game::careAlerts), previewed ON/OFF. That row flips in
+    // place on B rather than opening a screen.
+    bool careAlerts = false;
+};
+void drawCfgDevice(Framebuffer& fb, const CfgDeviceView& v);
 
 // L3 THEME picker: which PAL_CORE colour set the whole interface is drawn in. Rows are
 // content_themes.h's table in its own order; `pick` is the focused row, `equipped` the

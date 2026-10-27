@@ -487,16 +487,23 @@ void Game::drawCfg(Framebuffer& fb) const {
             drawSysInfo(fb, v);
             break;
         }
-        case CfgScreen::Device:
+        case CfgScreen::Device: {
+            CfgDeviceView v;
+            v.cursor = cfgGroupRow_;
+            v.uiMode = uiMode_;
+            v.brightness = brightness_;
+            v.soundMode = soundMode_;
+            v.volume = volume_;
+            v.theme = themeName();
             // The row previews the CHOICE, not the place being drawn: AUTO stays AUTO
             // however the pet moves, which is the whole difference between the two.
-            drawCfgDevice(fb, cfgGroupRow_, uiMode_, brightness_, soundMode_, volume_,
-                          themeName(),
-                          backgroundPick_ == SceneId::None
-                              ? "AUTO"
-                              : backgroundFor(backgroundPick_)->name,
-                          careAlerts_);
+            v.background = backgroundPick_ == SceneId::None
+                               ? "AUTO"
+                               : backgroundFor(backgroundPick_)->name;
+            v.careAlerts = careAlerts_;
+            drawCfgDevice(fb, v);
             break;
+        }
         case CfgScreen::Travel:
             // Two faces, like the UPDATES screen: the question, then the notice that
             // replaces it for as long as the device is still on its way down.

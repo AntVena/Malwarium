@@ -255,33 +255,45 @@ void drawCfgList(Framebuffer& fb, int cursor, const char* hackerTag,
     drawHintBand(fb, "A CYCLE  B OPEN  C BACK");
 }
 
-void drawCfgDevice(Framebuffer& fb, int cursor, UiMode uiMode, int brightness,
-                   SoundMode soundMode, int volume, const char* theme,
-                   const char* background, bool careAlerts) {
+namespace {
+
+// What a DEVICE row previews. The two actions (TRAVEL MODE, FORMAT SD) have no value.
+// `brightBuf`/`volumeBuf` hold the formatted percentages the row can point at.
+const char* deviceRowValue(CfgScreen target, const CfgDeviceView& v, const char* brightBuf,
+                           const char* volumeBuf) {
+    switch (target) {
+        case CfgScreen::UiMode: return uiModeName(v.uiMode);
+        case CfgScreen::CareAlerts: return v.careAlerts ? "ON" : "OFF";
+        case CfgScreen::Brightness: return brightBuf;
+        case CfgScreen::Sound: return soundModeName(v.soundMode);
+        case CfgScreen::Volume: return volumeBuf;
+        case CfgScreen::Theme: return v.theme;
+        case CfgScreen::Background: return v.background;
+        default: return nullptr;
+    }
+}
+
+}  // namespace
+
+void drawCfgDevice(Framebuffer& fb, const CfgDeviceView& v) {
     drawHeaderBand(fb, "DEVICE");
     const CfgRow* rows = nullptr;
     const int n = cfgGroupRows(CfgScreen::Device, rows);
 
     char brightBuf[8];
-    std::snprintf(brightBuf, sizeof(brightBuf), "%d%%", brightnessPercent(brightness));
+    std::snprintf(brightBuf, sizeof(brightBuf), "%d%%", brightnessPercent(v.brightness));
     char volumeBuf[8];
-    std::snprintf(volumeBuf, sizeof(volumeBuf), "%d%%", volumePercent(volume));
-    const int scrollTop = listScrollTop(cursor, n, kVisibleRows);
-    for (int v = 0; v < kVisibleRows && scrollTop + v < n; ++v) {
-        const int i = scrollTop + v;
-        const char* val = nullptr;   // the two actions have no value to preview
-        if (rows[i].target == CfgScreen::UiMode) val = uiModeName(uiMode);
-        else if (rows[i].target == CfgScreen::CareAlerts) val = careAlerts ? "ON" : "OFF";
-        else if (rows[i].target == CfgScreen::Brightness) val = brightBuf;
-        else if (rows[i].target == CfgScreen::Sound) val = soundModeName(soundMode);
-        else if (rows[i].target == CfgScreen::Volume) val = volumeBuf;
-        else if (rows[i].target == CfgScreen::Theme) val = theme;
-        else if (rows[i].target == CfgScreen::Background) val = background;
-        settingsRow(fb, kRowTop + v * kRowH, rows[i], i == cursor, val,
+    std::snprintf(volumeBuf, sizeof(volumeBuf), "%d%%", volumePercent(v.volume));
+    const int scrollTop = listScrollTop(v.cursor, n, kVisibleRows);
+    for (int slot = 0; slot < kVisibleRows && scrollTop + slot < n; ++slot) {
+        const int i = scrollTop + slot;
+        settingsRow(fb, kRowTop + slot * kRowH, rows[i], i == v.cursor,
+                    deviceRowValue(rows[i].target, v, brightBuf, volumeBuf),
                     palColor(Pal::INK_DIM));
     }
     // The switch row flips where it stands, so its verb is not OPEN.
-    const bool onSwitch = cursor >= 0 && cursor < n && rows[cursor].target == CfgScreen::CareAlerts;
+    const bool onSwitch =
+        v.cursor >= 0 && v.cursor < n && rows[v.cursor].target == CfgScreen::CareAlerts;
     drawHintBand(fb, onSwitch ? "A NEXT  B SWITCH  C BACK" : "A NEXT  B OPEN  C BACK");
 }
 
