@@ -841,9 +841,13 @@ void Game::drawDetail(Framebuffer& fb) const {
             const bool rackFull = static_cast<int>(rack_.size()) >= rackSlots();
             // NEW EGG is an action rather than a row, so its L3 is its own screen: the
             // one place that says what laying an egg costs before it is laid.
+            ArchConfirmView v;
+            v.confirmOpen = archConfirm_;
+            v.confirmChoice = archConfirmChoice_;
             if (archOnNewEgg()) {
-                drawArchNewEgg(fb, pet_, pet_ && rackFull, archConfirm_,
-                               archConfirmChoice_);
+                v.pet = pet_;
+                v.rackFull = pet_ && rackFull;
+                drawArchNewEgg(fb, v);
                 break;
             }
             if (archGroup_.kind == ArchGroup::Kind::Sell) {
@@ -856,8 +860,11 @@ void Game::drawDetail(Framebuffer& fb) const {
                     drawArchRecordDetail(fb, registry_, records_[row.index]);
                 break;
             }
-            drawArchRecord(fb, row.def, row.kind == ArchRow::Kind::Active, row.generation,
-                           archAction_, rackFull, archConfirm_, archConfirmChoice_);
+            v.pet = row.def;
+            v.isActive = row.kind == ArchRow::Kind::Active;
+            v.generation = row.generation;
+            v.rackFull = rackFull;
+            drawArchRecord(fb, archAction_, v);
             break;
         }
         case SubmenuId::Mods:

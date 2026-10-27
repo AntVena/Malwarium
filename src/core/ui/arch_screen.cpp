@@ -63,6 +63,21 @@ ArchPickRow pickRow(ArchGroup group, const char* label, int count) {
     return r;
 }
 
+// Every ARCH confirm opens on this box and closes on this pair: CANCEL at the left
+// margin, CONFIRM against the right one. `choice` 0 focuses CANCEL, 1 CONFIRM.
+constexpr int kConfirmBoxY = 80, kConfirmBoxH = 56;
+void drawConfirmBox(Framebuffer& fb) {
+    fb.fillRect(4, kConfirmBoxY, kActiveW - 8, kConfirmBoxH, palColor(Pal::TRACK));
+}
+void drawConfirmChoices(Framebuffer& fb, int y, int choice) {
+    if (choice == 0) drawRowCursor(fb, kMargin, y, palColor(Pal::ACCENT));
+    drawText(fb, kMargin + 12, y, "CANCEL", palColor(Pal::INK));
+    const char* ok = "CONFIRM";
+    const int okX = kActiveW - kMargin - textWidth(ok);
+    if (choice == 1) drawRowCursor(fb, okX - 12, y, palColor(Pal::ACCENT));
+    drawText(fb, okX, y, ok, palColor(Pal::INK));
+}
+
 } // namespace
 
 std::vector<ArchPickRow> buildArchPickerRows(const ContentRegistry& reg,
@@ -240,9 +255,9 @@ void drawArchList(Framebuffer& fb, const std::vector<ArchRow>& rows, const char*
     drawHintBand(fb, "A NEXT  B OPEN  C BACK");
 }
 
-void drawArchNewEgg(Framebuffer& fb, const CreatureDef* active, bool rackFull,
-                    bool confirmOpen, int confirmChoice) {
-    drawHeaderBand(fb, "NEW EGG", rackFull ? "RACK FULL" : "READY");
+void drawArchNewEgg(Framebuffer& fb, const ArchConfirmView& v) {
+    const CreatureDef* active = v.pet;
+    drawHeaderBand(fb, "NEW EGG", v.rackFull ? "RACK FULL" : "READY");
 
     // The whole point of this screen is that laying an egg has a COST, and the cost is
     // the pet you are raising: it goes to the rack first, which is why a full rack is
@@ -258,22 +273,15 @@ void drawArchNewEgg(Framebuffer& fb, const CreatureDef* active, bool rackFull,
         drawText(fb, kMargin, 52, "THE EGG IS LAID OUTRIGHT.", palColor(Pal::INK_DIM));
     }
     drawText(fb, kMargin, 150,
-             rackFull ? "- NO FREE RACK SLOT -" : "HATCH A FRESH EGG.",
-             rackFull ? palColor(Pal::INK_DIM) : palColor(Pal::INK));
+             v.rackFull ? "- NO FREE RACK SLOT -" : "HATCH A FRESH EGG.",
+             v.rackFull ? palColor(Pal::INK_DIM) : palColor(Pal::INK));
 
-    if (confirmOpen) {
-        const int by = 80, bh = 56;
-        fb.fillRect(4, by, kActiveW - 8, bh, palColor(Pal::TRACK));
-        drawText(fb, kMargin, by + 8, "HATCH A NEW EGG?", palColor(Pal::INK));
-        const int cy = by + 32;
-        if (confirmChoice == 0) drawRowCursor(fb, kMargin, cy, palColor(Pal::ACCENT));
-        drawText(fb, kMargin + 12, cy, "CANCEL", palColor(Pal::INK));
-        const char* ok = "CONFIRM";
-        const int okX = kActiveW - kMargin - textWidth(ok);
-        if (confirmChoice == 1) drawRowCursor(fb, okX - 12, cy, palColor(Pal::ACCENT));
-        drawText(fb, okX, cy, ok, palColor(Pal::INK));
+    if (v.confirmOpen) {
+        drawConfirmBox(fb);
+        drawText(fb, kMargin, kConfirmBoxY + 8, "HATCH A NEW EGG?", palColor(Pal::INK));
+        drawConfirmChoices(fb, kConfirmBoxY + 32, v.confirmChoice);
     }
-    drawHintBand(fb, confirmOpen ? "A TOGGLE  B COMMIT  C CANCEL" : "B HATCH  C BACK");
+    drawHintBand(fb, v.confirmOpen ? "A TOGGLE  B COMMIT  C CANCEL" : "B HATCH  C BACK");
 }
 
 void drawArchRecordDetail(Framebuffer& fb, const ContentRegistry& reg,
@@ -295,16 +303,16 @@ void drawArchRecordDetail(Framebuffer& fb, const ContentRegistry& reg,
     drawHintBand(fb, "C BACK");
 }
 
-void drawArchRecord(Framebuffer& fb, const CreatureDef* pet, bool isActive,
-                    int generation, ArchAction action, bool rackFull, bool confirmOpen,
-                    int confirmChoice) {
+void drawArchRecord(Framebuffer& fb, ArchAction action, const ArchConfirmView& v) {
+    const CreatureDef* pet = v.pet;
+    const bool isActive = v.isActive;
     if (!pet) { drawHeaderBand(fb, "ARCH"); return; }
     char title[28];
     std::snprintf(title, sizeof(title), "%s", pet->displayName);
     drawHeaderBand(fb, title, isActive ? "ACTIVE" : "STORED");
 
     char sub[28];
-    std::snprintf(sub, sizeof(sub), "%s  GEN %d", stageName(pet->stage), generation);
+    std::snprintf(sub, sizeof(sub), "%s  GEN %d", stageName(pet->stage), v.generation);
     drawText(fb, kMargin, 34, sub, palColor(Pal::INK));
     drawText(fb, kMargin, 52,
              isActive ? "THE PET YOU'RE RAISING." : "FROZEN - NO DECAY IN STORAGE.",
@@ -317,7 +325,7 @@ void drawArchRecord(Framebuffer& fb, const CreatureDef* pet, bool isActive,
     if (action == primary) drawRowCursor(fb, kMargin, primY, palColor(Pal::ACCENT));
     if (isActive) {
         drawLabelValue(fb, kMargin + 12, primY, "STORE", palColor(Pal::INK),
-                       rackFull ? "RACK FULL" : "SET ASIDE", palColor(Pal::INK_DIM),
+                       v.rackFull ? "RACK FULL" : "SET ASIDE", palColor(Pal::INK_DIM),
                        0, Overflow::Clip);
     } else {
         drawLabelValue(fb, kMargin + 12, primY, "DEPLOY", palColor(Pal::INK),
@@ -333,25 +341,17 @@ void drawArchRecord(Framebuffer& fb, const CreatureDef* pet, bool isActive,
     }
 
     // Inline confirm: a light prompt with Cancel/Confirm (default Cancel).
-    if (confirmOpen) {
-        const int by = 80, bh = 56;
-        fb.fillRect(4, by, kActiveW - 8, bh, palColor(Pal::TRACK));
+    if (v.confirmOpen) {
+        drawConfirmBox(fb);
         const char* prompt = (action == ArchAction::Store)
                                  ? "STORE & HATCH A NEW EGG?"
                              : (action == ArchAction::Release)
                                  ? "RELEASE? NO REWARD."
                                  : "DEPLOY THIS PET?";
-        drawText(fb, kMargin, by + 8, prompt, palColor(Pal::INK));
-        const char* cancel = "CANCEL";
-        const char* ok = "CONFIRM";
-        const int cy = by + 32;
-        if (confirmChoice == 0) drawRowCursor(fb, kMargin, cy, palColor(Pal::ACCENT));
-        drawText(fb, kMargin + 12, cy, cancel, palColor(Pal::INK));
-        const int okX = kActiveW - kMargin - textWidth(ok);
-        if (confirmChoice == 1) drawRowCursor(fb, okX - 12, cy, palColor(Pal::ACCENT));
-        drawText(fb, okX, cy, ok, palColor(Pal::INK));
+        drawText(fb, kMargin, kConfirmBoxY + 8, prompt, palColor(Pal::INK));
+        drawConfirmChoices(fb, kConfirmBoxY + 32, v.confirmChoice);
     }
-    drawHintBand(fb, confirmOpen ? "A TOGGLE  B COMMIT  C CANCEL"
+    drawHintBand(fb, v.confirmOpen ? "A TOGGLE  B COMMIT  C CANCEL"
                                  : "A CYCLE  B SELECT  C BACK");
 }
 
@@ -399,19 +399,12 @@ void drawArchSale(Framebuffer& fb, const ArchSaleSheet& sheet) {
     }
 
     if (sheet.confirmOpen) {
-        const int by = 80, bh = 56;
-        fb.fillRect(4, by, kActiveW - 8, bh, palColor(Pal::TRACK));
+        drawConfirmBox(fb);
         static const char* const kFor[kSaleOfferCount] = {
             "FOR BITS?", "FOR A REIMAGE?", "FOR A HOTFIX?"};
-        drawText(fb, kMargin, by + 6, give, palColor(Pal::INK));
-        drawText(fb, kMargin, by + 18, kFor[f], palColor(Pal::INK));
-        const int cy = by + 38;
-        if (sheet.confirmChoice == 0) drawRowCursor(fb, kMargin, cy, palColor(Pal::ACCENT));
-        drawText(fb, kMargin + 12, cy, "CANCEL", palColor(Pal::INK));
-        const char* ok = "CONFIRM";
-        const int okX = kActiveW - kMargin - textWidth(ok);
-        if (sheet.confirmChoice == 1) drawRowCursor(fb, okX - 12, cy, palColor(Pal::ACCENT));
-        drawText(fb, okX, cy, ok, palColor(Pal::INK));
+        drawText(fb, kMargin, kConfirmBoxY + 6, give, palColor(Pal::INK));
+        drawText(fb, kMargin, kConfirmBoxY + 18, kFor[f], palColor(Pal::INK));
+        drawConfirmChoices(fb, kConfirmBoxY + 38, sheet.confirmChoice);
     }
     drawHintBand(fb, sheet.confirmOpen ? "A TOGGLE  B COMMIT  C CANCEL"
                                        : "A CYCLE  B TRADE  C BACK");

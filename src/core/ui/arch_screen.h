@@ -103,24 +103,29 @@ void drawArchPicker(Framebuffer& fb, const std::vector<ArchPickRow>& tiles, int 
 void drawArchList(Framebuffer& fb, const std::vector<ArchRow>& rows, const char* title,
                   int cursor, int used, int maxSlots, bool showLevels = false);
 
+// What an ARCH pet screen shows about one pet and its inline confirm.
+struct ArchConfirmView {
+    const CreatureDef* pet = nullptr;
+    bool isActive = false;           // the pet being raised (Store), or a stored one
+    int generation = 0;
+    bool rackFull = false;           // gates Store, and so laying an egg
+    bool confirmOpen = false;
+    int confirmChoice = 0;           // 0 CANCEL, 1 CONFIRM (default CANCEL)
+};
+
 // L3 NEW EGG confirm. The one screen that says what laying an egg COSTS: the pet you
-// are raising goes to the rack first, so a full rack is what blocks it. `active` null
-// means there is no pet to set aside and the egg is laid outright.
-void drawArchNewEgg(Framebuffer& fb, const CreatureDef* active, bool rackFull,
-                    bool confirmOpen, int confirmChoice);
+// are raising (`v.pet`) goes to the rack first, so a full rack is what blocks it. A
+// null pet means there is none to set aside and the egg is laid outright.
+void drawArchNewEgg(Framebuffer& fb, const ArchConfirmView& v);
 
 // L3 record view for a RETIRED/CORRUPTED entry: read-only — final /
 // last-known identity, no actions (the pet is gone). Greyed to match the list.
 void drawArchRecordDetail(Framebuffer& fb, const ContentRegistry& reg,
                           const SaveRecord& rec);
 
-// L3 pet record: details + the available action + a light inline
-// confirm. `isActive` picks the Store-vs-Deploy action set; `generation`
-// is shown in the record; `rackFull` gates Store.
-// When `confirmOpen`, the confirm prompt is drawn (`confirmChoice` 0=Cancel/1=OK).
-void drawArchRecord(Framebuffer& fb, const CreatureDef* pet, bool isActive,
-                    int generation, ArchAction action, bool rackFull, bool confirmOpen,
-                    int confirmChoice);
+// L3 pet record: details + the available action + a light inline confirm.
+// `v.isActive` picks the Store-vs-Deploy action set; `action` is the focused one.
+void drawArchRecord(Framebuffer& fb, ArchAction action, const ArchConfirmView& v);
 
 // L3 SELL sheet: one stored Daemon and the three things it can be traded for.
 void drawArchSale(Framebuffer& fb, const ArchSaleSheet& sheet);
