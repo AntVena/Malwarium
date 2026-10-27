@@ -514,8 +514,7 @@ void drawItemDetail(Framebuffer& fb, const ItemDef& def, const ItemDetailView& v
     }
 }
 
-void drawCacheYield(Framebuffer& fb, const ItemDef& cache, int bits,
-                    const ItemDef* const* items, const SpriteData* const* icons,
+void drawCacheYield(Framebuffer& fb, const ItemDef& cache, int bits, const YieldItem* items,
                     int count) {
     // Header: the decoded container + its rarity word (colour is emphasis only).
     drawHeaderBand(fb, "CACHE DECODED", rarityName(cache.rarity),
@@ -537,19 +536,17 @@ void drawCacheYield(Framebuffer& fb, const ItemDef& cache, int bits,
         drawText(fb, kMargin + 4, y, "- NO ITEMS -", palColor(Pal::INK_DIM));
     } else {
         for (int i = 0; i < count; ++i) {
-            if (icons && icons[i])
-                drawSprite(fb, *icons[i], 0, kMargin + 4, y - 6);
-            const int nx = (icons && icons[i]) ? kMargin + 4 + kRowIcon + 6
-                                               : kMargin + 4;
+            const ItemDef* def = items[i].def;
+            const SpriteData* icon = items[i].icon;
+            if (icon) drawSprite(fb, *icon, 0, kMargin + 4, y - 6);
+            const int nx = icon ? kMargin + 4 + kRowIcon + 6 : kMargin + 4;
             // The rarity word owns the right end and the name yields to it. Nothing on
             // this page is focused — it is a reveal, not a list — so no row scrolls;
             // a name too long for the room is clipped rather than drawn through the
             // word that says what came out.
-            drawLabelValue(fb, nx, y, items[i] ? items[i]->displayName : "?",
-                           palColor(Pal::INK),
-                           items[i] ? rarityName(items[i]->rarity) : nullptr,
-                           items[i] ? rarityColor(items[i]->rarity)
-                                    : palColor(Pal::INK_DIM),
+            drawLabelValue(fb, nx, y, def ? def->displayName : "?", palColor(Pal::INK),
+                           def ? rarityName(def->rarity) : nullptr,
+                           def ? rarityColor(def->rarity) : palColor(Pal::INK_DIM),
                            /*beat=*/0, Overflow::Clip);
             y += 24;
         }
@@ -559,30 +556,30 @@ void drawCacheYield(Framebuffer& fb, const ItemDef& cache, int bits,
     drawHintBand(fb, hint);
 }
 
-void drawBulkYield(Framebuffer& fb, const ItemDef& cache, int cachesOpened, int bits,
-                   const BulkYieldRow* rows, int count, int cursor, int beat) {
+void drawBulkYield(Framebuffer& fb, const ItemDef& cache, const BulkYieldView& v) {
     // Header: how many of the rarity group were opened + the rarity word.
     char hdr[36];
-    std::snprintf(hdr, sizeof(hdr), "OPENED %d %s", cachesOpened, rarityName(cache.rarity));
+    std::snprintf(hdr, sizeof(hdr), "OPENED %d %s", v.cachesOpened,
+                  rarityName(cache.rarity));
     drawHeaderBand(fb, hdr, "CACHES", rarityColor(cache.rarity));
 
     char bitsStr[20];
-    std::snprintf(bitsStr, sizeof(bitsStr), "+%d BITS", bits);
+    std::snprintf(bitsStr, sizeof(bitsStr), "+%d BITS", v.bits);
     drawText(fb, kMargin, 30, bitsStr, palColor(Pal::ACCENT));
 
     // Windowed tally list (mirrors drawItemsList/drawMovePicker): capped
     // + scrolled so an arbitrarily long tally never overruns the screen.
     constexpr int kBulkVisibleRows = 6;
     const int rowTop = 50, rowH = 22;
-    if (count <= 0) {
+    if (v.count <= 0) {
         drawText(fb, kMargin, rowTop, "- NO ITEMS -", palColor(Pal::INK_DIM));
     } else {
-        const int cur = (cursor >= 0 && cursor < count) ? cursor : 0;
-        const int scrollTop = listScrollTop(cur, count, kBulkVisibleRows);
-        for (int v = 0; v < kBulkVisibleRows && scrollTop + v < count; ++v) {
-            const int i = scrollTop + v;
-            const int y = rowTop + v * rowH;
-            const BulkYieldRow& r = rows[i];
+        const int cur = (v.cursor >= 0 && v.cursor < v.count) ? v.cursor : 0;
+        const int scrollTop = listScrollTop(cur, v.count, kBulkVisibleRows);
+        for (int slot = 0; slot < kBulkVisibleRows && scrollTop + slot < v.count; ++slot) {
+            const int i = scrollTop + slot;
+            const int y = rowTop + slot * rowH;
+            const BulkYieldRow& r = v.rows[i];
             if (i == cur) {
                 fb.fillRect(4, y - 2, kActiveW - 8, rowH - 2, palColor(Pal::TRACK));
                 drawRowCursor(fb, 8, y + 3, palColor(Pal::ACCENT));
@@ -594,12 +591,13 @@ void drawBulkYield(Framebuffer& fb, const ItemDef& cache, int cachesOpened, int 
             char cnt[8];
             std::snprintf(cnt, sizeof(cnt), "x%d", r.count);
             drawLabelValue(fb, 46, y, r.def ? r.def->displayName : "?",
-                           palColor(Pal::INK), cnt, palColor(Pal::INK), beat, scrollWhen(i == cur));
+                           palColor(Pal::INK), cnt, palColor(Pal::INK), v.beat,
+                           scrollWhen(i == cur));
         }
-        drawScrollbar(fb, rowTop, kBulkVisibleRows * rowH, count, scrollTop, kBulkVisibleRows);
+        drawScrollbar(fb, rowTop, kBulkVisibleRows * rowH, v.count, scrollTop, kBulkVisibleRows);
     }
 
-    const char* hint = count > kBulkVisibleRows ? "A SCROLL  B/C OK" : "B/C  OK";
+    const char* hint = v.count > kBulkVisibleRows ? "A SCROLL  B/C OK" : "B/C  OK";
     drawHintBand(fb, hint);
 }
 

@@ -166,12 +166,17 @@ struct ItemDetailView {
 };
 void drawItemDetail(Framebuffer& fb, const ItemDef& def, const ItemDetailView& v);
 
-// Cache-yield reveal: what a just-opened Sealed Cache produced. `cache`
-// names the container (+ its rarity, for the tag colour); `bits` is the Bits paid;
-// `items`/`count` are the 0–2 item defs drawn (with their icons for the row). All
-// dual-coded (names + counts + rarity word), so it reads in grayscale.
-void drawCacheYield(Framebuffer& fb, const ItemDef& cache, int bits,
-                    const ItemDef* const* items, const SpriteData* const* icons,
+// One item a cache produced, with its icon for the row.
+struct YieldItem {
+    const ItemDef* def = nullptr;
+    const SpriteData* icon = nullptr;
+};
+
+// Cache-yield reveal: what a just-opened Sealed Cache produced. `cache` names the
+// container (+ its rarity, for the tag colour); `bits` is the Bits paid; `items` are the
+// 0-2 items drawn. All dual-coded (names + counts + rarity word), so it reads in
+// grayscale.
+void drawCacheYield(Framebuffer& fb, const ItemDef& cache, int bits, const YieldItem* items,
                     int count);
 
 // Bulk cache-open aggregate tally row (e): one distinct item id + how many
@@ -182,15 +187,20 @@ struct BulkYieldRow {
     int count;
 };
 
-// Bulk cache-open reveal (e, the Hacker VAULT hold-B "open all"): `cache`
-// names the rarity group that was opened (its rarity tag colours the header),
-// `cachesOpened`/`bits` are the totals, and `rows`/`count` are the aggregated
-// per-item tally. `cursor` is windowed exactly like drawItemsList/drawMovePicker
-// (kVisibleRows-style, scrollbar past the window) so an arbitrarily long tally
-// never overruns the screen. `beat` scrolls the focused row's name inside the room its
-// count leaves it. Dual-coded, grayscale-safe.
-void drawBulkYield(Framebuffer& fb, const ItemDef& cache, int cachesOpened, int bits,
-                   const BulkYieldRow* rows, int count, int cursor, int beat);
+// Bulk cache-open reveal (e, the Hacker VAULT hold-B "open all"): `cache` names the
+// rarity group that was opened (its rarity tag colours the header). Dual-coded,
+// grayscale-safe.
+struct BulkYieldView {
+    int cachesOpened = 0;            // the totals...
+    int bits = 0;
+    const BulkYieldRow* rows = nullptr;   // ...and the aggregated per-item tally
+    int count = 0;
+    // Windowed exactly like drawItemsList/drawMovePicker (scrollbar past the window) so
+    // an arbitrarily long tally never overruns the screen.
+    int cursor = 0;
+    int beat = 0;                    // scrolls the focused row's name beside its count
+};
+void drawBulkYield(Framebuffer& fb, const ItemDef& cache, const BulkYieldView& v);
 
 // Rollback stat picker: shed one earned combat-stat point (−1 level) to
 // re-roll it. `points` are the 4 earned counts (power/defense/speed/max-Health);

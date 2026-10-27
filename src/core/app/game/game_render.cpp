@@ -1289,13 +1289,12 @@ void Game::drawRepartitionPickerScreen(Framebuffer& fb) const {
 
 void Game::drawCacheYieldScreen(Framebuffer& fb) const {
     if (!cacheYieldCache_) return;
-    const SpriteData* icons[2] = {nullptr, nullptr};
-    for (int i = 0; i < cacheYieldItemCount_ && i < 2; ++i)
-        icons[i] = cacheYieldItems_[i]
-                       ? itemIcon(registry_, cacheYieldItems_[i]->id)
-                       : nullptr;
-    drawCacheYield(fb, *cacheYieldCache_, cacheYieldBits_, cacheYieldItems_,
-                   icons, cacheYieldItemCount_);
+    YieldItem items[2];
+    for (int i = 0; i < cacheYieldItemCount_ && i < 2; ++i) {
+        items[i].def = cacheYieldItems_[i];
+        items[i].icon = items[i].def ? itemIcon(registry_, items[i].def->id) : nullptr;
+    }
+    drawCacheYield(fb, *cacheYieldCache_, cacheYieldBits_, items, cacheYieldItemCount_);
 }
 
 void Game::drawBulkYieldScreen(Framebuffer& fb) const {
@@ -1310,8 +1309,14 @@ void Game::drawBulkYieldScreen(Framebuffer& fb) const {
                            : nullptr;
         rows[i].count = bulkYieldTally_[i].count;
     }
-    drawBulkYield(fb, *bulkYieldCache_, bulkYieldCachesOpened_, bulkYieldBits_, rows, n,
-                  bulkYieldRow_, beat_);
+    BulkYieldView v;
+    v.cachesOpened = bulkYieldCachesOpened_;
+    v.bits = bulkYieldBits_;
+    v.rows = rows;
+    v.count = n;
+    v.cursor = bulkYieldRow_;
+    v.beat = beat_;
+    drawBulkYield(fb, *bulkYieldCache_, v);
 }
 
 void Game::drawStacker(Framebuffer& fb) const {
