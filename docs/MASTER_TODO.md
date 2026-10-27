@@ -108,6 +108,11 @@ Diff **M**.
 - **No serial test-hook / no automated on-device gameplay verification.** Every device check to date
   is "flash, read the boot line, confirm no crash loop" — nobody has walked the buttons through
   EXPL/combat/Wi-Fi/rank-up on the real panel in a long time. Diff **M** (harness design).
+- **`tools/screens.sh` misses four screens, so a refactor of them has no pixel check.** The
+  cache-yield reveal (`dump_frame`'s `cache` scene renders the idle habitat instead), the VAULT
+  bulk-open reveal and the ARCH new-egg confirm have no `dump_frame` scene; the Wi-Fi event has
+  one (`wifi new|fond|hometurf`) but no catalogue line. Add the scenes and list all four in
+  `screens.sh`. Diff **S**.
 
 ### 1h. Web 'Pedia
 
@@ -173,17 +178,6 @@ Each slice deletes the `debug*` hooks its tests no longer need. |
 `core/app/game.h`; `game_core.cpp`'s `tickHeldGestures`; `game_nav.cpp`'s release edge. |
 XL overall, M per slice | Verify each slice with the native suite and a `tools/screens.sh`
 render diffed byte-for-byte against one taken before it. |
-
-**Screen draw functions take long argument lists and flag arguments.** The worst are converted
-(`CombatView`, `LockoutView`, `MovePickerView`, `SysInfoView`, `StatScreenView`, `ModPickerView`,
-`ModDetailView`, and `GaugeInk`/`PulsePhase` on `drawGauge`); about forty screens remain. Worst
-first, by `bool` count: `drawExploreControl` (4), `drawUpdateCheck`, `drawItemsList`,
-`drawArchRecord` and `drawCfgRadio` (3 each), `drawArcadeResult` (2); then by length,
-`drawShiboleetVerdict` and `drawMaintAction` (9), and the screens at 6 to 8. Two widgets still take
-a `bool`: `drawProgressBar` and `drawSubGrid`. Convert each screen to a view struct and each widget
-`bool` to an enum, per CONTRIBUTING's *Structure*. List the rest with the scan in MAINTENANCE's
-self-architecture entry. | `core/ui/*_screen.h`, `widgets.h` | M | Pixel-identical by construction;
-diff `tools/screens.sh` before and after. |
 
 ---
 
