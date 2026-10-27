@@ -57,21 +57,26 @@ const HackerCarouselSlot* hackerCarouselSlots();
 // that slot (box + dimmed neighbours); in IconsLabel mode the focused slot's icon
 // is swapped for its text label in place, so the label never floats over the
 // living area where the pet/overlays draw. TextOnly renders every slot as text.
-// `lockedMask` disables slots by index (bit i set = slot i inert): the icon/text
-// stays dimmed even when focused and the focus box reads muted — the Boot-Sector
-// egg greys out the care/combat slots (nothing to do to an egg).
-// `spinMask` animates slots by index (bit i set = slot i's icon runs its frames off
-// `beat` instead of resting on frame 0), so a running background mode is legible from
-// the shelf itself: EXPL's globe turns while auto-progress is armed. A slot whose icon
-// is single-frame ignores its bit.
-// `attentionMask` marks the slots the pet needs visited (bit i set = slot i is where a
-// vital that has left its OK zone gets fixed — Game::careAttention): the slot stays
-// undimmed at rest and carries a "!" beside it, so the shelf itself says where to go.
-// `urgentMask` is the subset in the Critical band, whose mark is HOT and blinks off
-// `beat`. The "!" is the shape channel; the colour only grades it.
+//
+// The per-slot marks, each a mask by slot index (bit i set = slot i).
+struct CarouselMarks {
+    // Inert slots: the icon/text stays dimmed even when focused and the focus box reads
+    // muted. The Boot-Sector egg greys out the care/combat slots (nothing to do to an egg).
+    unsigned locked = 0;
+    // Slots whose icon runs its frames off `beat` instead of resting on frame 0, so a
+    // running background mode is legible from the shelf itself: EXPL's globe turns while
+    // auto-progress is armed. A slot whose icon is single-frame ignores its bit.
+    unsigned spin = 0;
+    // The slots the pet needs visited (where a vital that has left its OK zone gets
+    // fixed, Game::careAttention): the slot stays undimmed at rest and carries a "!"
+    // beside it, so the shelf itself says where to go.
+    unsigned attention = 0;
+    // The subset in the Critical band, whose mark is HOT and blinks off `beat`. The "!"
+    // is the shape channel; the colour only grades it.
+    unsigned urgent = 0;
+};
 void drawCarousel(Framebuffer& fb, int cursor, UiMode mode, int beat,
-                  unsigned lockedMask = 0, unsigned spinMask = 0,
-                  unsigned attentionMask = 0, unsigned urgentMask = 0);
+                  const CarouselMarks& marks = {});
 
 // Draw the Hacker-face carousel: the same track/geometry as drawCarousel, but the hacker
 // slot roster + the inaccessible marker over any slot not in `accessibleMask` (bit i set

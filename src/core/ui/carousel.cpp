@@ -174,8 +174,7 @@ void drawHackerCarousel(Framebuffer& fb, int cursor, UiMode mode, unsigned acces
 }
 
 void drawCarousel(Framebuffer& fb, int cursor, UiMode mode, int beat,
-                  unsigned lockedMask, unsigned spinMask,
-                  unsigned attentionMask, unsigned urgentMask) {
+                  const CarouselMarks& marks) {
     const CarouselSlot* slots = carouselSlots();
     const Rgb565 paper = palColor(Pal::PAPER);
 
@@ -187,9 +186,9 @@ void drawCarousel(Framebuffer& fb, int cursor, UiMode mode, int beat,
     // *unless* it's the focused one, or one the pet needs visited. cursor < 0
     // (resting) focuses nothing, so a shelf with nothing to fix reads quiet.
     for (int i = 0; i < kCarouselSlots; ++i) {
-        const bool locked = (lockedMask >> i) & 1u;   // inert slot (egg-phase grey)
+        const bool locked = (marks.locked >> i) & 1u;   // inert slot (egg-phase grey)
         const bool focused = (i == cursor) && !locked; // a locked slot can't read active
-        const bool needed = ((attentionMask >> i) & 1u) && !locked;
+        const bool needed = ((marks.attention >> i) & 1u) && !locked;
 
         const int ix = slotIconX(i);
         const int iy = slotIconY(i);
@@ -214,7 +213,7 @@ void drawCarousel(Framebuffer& fb, int cursor, UiMode mode, int beat,
             // slot that hasn't been given more than one just ignores its bit.
             const SpriteData& s = *slots[i].icon;
             const int frame =
-                ((spinMask >> i) & 1u) && s.frames > 1 ? beat % s.frames : 0;
+                ((marks.spin >> i) & 1u) && s.frames > 1 ? beat % s.frames : 0;
             drawSprite(fb, s, frame, ix, iy);
             // Wash the icon toward paper: unfocused = one pass (~50%); a locked slot
             // gets two passes so it reads distinctly greyed-out (disabled) even at
@@ -230,8 +229,8 @@ void drawCarousel(Framebuffer& fb, int cursor, UiMode mode, int beat,
         // right gutter, clear of the icon and of the focus box around it (and of a
         // label up to five characters, which every care slot's is). An urgent one
         // blinks, so the slot asking loudest is the one that moves.
-        if (needed && (!((urgentMask >> i) & 1u) || (beat & 1) == 0)) {
-            const Rgb565 mc = ((urgentMask >> i) & 1u) ? palColor(Pal::HOT)
+        if (needed && (!((marks.urgent >> i) & 1u) || (beat & 1) == 0)) {
+            const Rgb565 mc = ((marks.urgent >> i) & 1u) ? palColor(Pal::HOT)
                                                        : palColor(Pal::WARN);
             const int mx = slotCol(i) * kSlotW + kSlotW - kAttnMarkInset;
             const int my = slotTrackTop(i) + (kTrackH - kAttnMarkH) / 2;

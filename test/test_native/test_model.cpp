@@ -484,8 +484,11 @@ void test_carousel_marks_what_the_pet_needs() {
     const int y0 = slot < kSlotCols ? 0 : kLivingBottom, y1 = y0 + kTrackH;
     Framebuffer calm(kActiveW, kActiveH), on(kActiveW, kActiveH), off(kActiveW, kActiveH);
     drawCarousel(calm, -1, UiMode::IconsLabel, 0);
-    drawCarousel(on, -1, UiMode::IconsLabel, 0, 0, 0, maint, maint);
-    drawCarousel(off, -1, UiMode::IconsLabel, 1, 0, 0, maint, maint);
+    CarouselMarks need;
+    need.attention = maint;
+    need.urgent = maint;
+    drawCarousel(on, -1, UiMode::IconsLabel, 0, need);
+    drawCarousel(off, -1, UiMode::IconsLabel, 1, need);
     CHECK(regionDiffers(calm, on, x0, y0, x1, y1));
     bool clears = false;
     const float track = luminance(palColor(Pal::TRACK));

@@ -520,19 +520,18 @@ void Game::drawHabitat(Framebuffer& fb, int cursor) const {
     // Grey out the care/combat slots while the pet is still an egg. EXPL's globe turns
     // while AUTO-PROGRESS is armed — the walk is running itself in the background, and
     // the shelf is the only screen that's always up to say so.
-    unsigned lockMask = 0, spinMask = 0;
+    CarouselMarks marks;
     for (int i = 0; i < kCarouselSlots; ++i) {
         const SubmenuId id = carouselSlots()[i].id;
-        if (slotLocked(id)) lockMask |= (1u << i);
+        if (slotLocked(id)) marks.locked |= (1u << i);
         if (id == SubmenuId::Expl && autoProgress_ && exploreActive_)
-            spinMask |= (1u << i);
+            marks.spin |= (1u << i);
     }
     // The slots the pet needs visited (game_onboard.cpp) stay lit with a "!" beside
     // them: the shelf is always up at idle, so it is where a need is seen first.
     // CFG's CARE ALERTS switch turns the marks off; the needs behind them stand.
-    unsigned attention = 0, urgent = 0;
-    if (careAlerts_) careAttention(attention, urgent);
-    drawCarousel(fb, cursor, uiMode_, beat_, lockMask, spinMask, attention, urgent);
+    if (careAlerts_) careAttention(marks.attention, marks.urgent);
+    drawCarousel(fb, cursor, uiMode_, beat_, marks);
 }
 
 Game::AchBannerCopy Game::achBannerCopy() const {
