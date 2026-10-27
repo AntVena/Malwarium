@@ -160,10 +160,17 @@ void drawSdFormatStatus(Framebuffer& fb, SdFormatState state, const SdStatus& sd
 // words in the header line, the mark's fill, the indent — none of them colour, so a
 // grayscale screenshot still says who has the radio.
 //
-// `auditLevel` is 0 OFF / 1 SCAN / 2 SCAN+CAP, and its row reads as on-air under
-// EITHER arbiter owner the ladder resolves to (Scan or Capture).
-void drawCfgRadio(Framebuffer& fb, int cursor, RadioOwner owner, int auditLevel,
-                  bool linkOn, bool apOn, bool updateLive);
+struct CfgRadioView {
+    int cursor = 0;
+    RadioOwner owner = RadioOwner::None;
+    // 0 OFF / 1 SCAN / 2 SCAN+CAP. Its row reads as on-air under EITHER arbiter owner
+    // the ladder resolves to (Scan or Capture).
+    int auditLevel = 0;
+    bool linkOn = false;
+    bool apOn = false;
+    bool updateLive = false;         // an update job holds the radio
+};
+void drawCfgRadio(Framebuffer& fb, const CfgRadioView& v);
 
 // L3 System Info viewer, and the device's one status readout. SD is live, and A
 // re-checks it in place, which is why this screen owns that action rather than a list

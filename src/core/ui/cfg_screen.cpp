@@ -54,11 +54,16 @@ void settingsRow(Framebuffer& fb, int y, const CfgRow& row, bool focused,
                  y + (kRowH - kFontH) / 2, val, valColor);
 }
 
+// A radio row's standing: OFF sits outside the group, and a row switched on is either on
+// the air or waiting behind a row above it.
+enum class RadioRowState : uint8_t { Off, Waiting, OnAir };
+
 // A 7x7 radio button. Filled = this one is on the air; hollow = switched on and
 // waiting behind something above it. Two shapes, not two colours — the pair has to
 // read apart in a grayscale screenshot, which a filled/unfilled disc does and an
 // accent/ink disc would not.
-void drawRadioMark(Framebuffer& fb, int x, int y, bool filled, Rgb565 c) {
+void drawRadioMark(Framebuffer& fb, int x, int y, RadioRowState state, Rgb565 c) {
+    const bool filled = state == RadioRowState::OnAir;
     static const int kInset[7] = {2, 1, 0, 0, 0, 1, 2};
     for (int row = 0; row < 7; ++row) {
         const int x0 = x + kInset[row];
@@ -84,14 +89,17 @@ void drawRadioMark(Framebuffer& fb, int x, int y, bool filled, Rgb565 c) {
 // glyph and one 28px carousel sprite in a 20px slot that overruns its own label,
 // and the labels say more than either. A 20px radio-family set would earn the
 // column back.
-void radioRow(Framebuffer& fb, int y, const CfgRow& row, bool focused, bool on,
-              bool live, const char* val) {
+void radioRow(Framebuffer& fb, int y, const CfgRow& row, bool focused, RadioRowState state,
+              const char* val) {
+    const bool on = state != RadioRowState::Off;
     const int textY = y + (kRowH - kFontH) / 2;
     if (focused) {
         fb.fillRect(4, y + 2, kActiveW - 8, kRowH - 4, palColor(Pal::TRACK));
         drawRowCursor(fb, 8, textY, palColor(Pal::ACCENT));
     }
-    if (on) drawRadioMark(fb, 18, textY, live, palColor(live ? Pal::ACCENT : Pal::INK));
+    if (on)
+        drawRadioMark(fb, 18, textY, state,
+                      palColor(state == RadioRowState::OnAir ? Pal::ACCENT : Pal::INK));
     drawText(fb, on ? 32 : 18, textY, row.label, palColor(Pal::INK));
     drawText(fb, kActiveW - kMargin - textWidth(val), textY, val,
              palColor(on ? Pal::INK : Pal::INK_DIM));
@@ -470,8 +478,13 @@ void drawSdFormatStatus(Framebuffer& fb, SdFormatState state, const SdStatus& sd
     drawHintBand(fb, "ANY BUTTON  BACK");
 }
 
-void drawCfgRadio(Framebuffer& fb, int cursor, RadioOwner owner, int auditLevel,
-                  bool linkOn, bool apOn, bool updateLive) {
+// Switched on (`on`), and whether the arbiter granted it (`live`).
+RadioRowState radioRowState(bool on, bool live) {
+    return !on ? RadioRowState::Off : live ? RadioRowState::OnAir : RadioRowState::Waiting;
+}
+
+void drawCfgRadio(Framebuffer& fb, const CfgRadioView& v) {
+    const RadioOwner owner = v.owner;
     drawHeaderBand(fb, "RADIO");
     const CfgRow* rows = nullptr;
     const int n = cfgGroupRows(CfgScreen::Radio, rows);
@@ -492,9 +505,10 @@ void drawCfgRadio(Framebuffer& fb, int cursor, RadioOwner owner, int auditLevel,
     // nothing to open, because nothing about it was set in advance. Without it the
     // screen would show three rows waiting on a winner it never named.
     int top = 44;
-    if (updateLive) {
+    if (v.updateLive) {
         static const CfgRow kJob = {"UPDATE", nullptr, CfgScreen::Update};
-        radioRow(fb, top, kJob, false, true, owner == RadioOwner::Update, "RUNNING");
+        radioRow(fb, top, kJob, false, radioRowState(true, owner == RadioOwner::Update),
+                 "RUNNING");
         top += kRowH;
     }
 
@@ -504,34 +518,34 @@ void drawCfgRadio(Framebuffer& fb, int cursor, RadioOwner owner, int auditLevel,
         bool live = false;
         switch (rows[i].target) {
             case CfgScreen::PediaAp:
-                val = apOn ? "ON" : "OFF";
-                on = apOn;
+                val = v.apOn ? "ON" : "OFF";
+                on = v.apOn;
                 live = owner == RadioOwner::Ap;
                 break;
             case CfgScreen::Link:
-                val = linkOn ? "ON" : "OFF";
-                on = linkOn;
+                val = v.linkOn ? "ON" : "OFF";
+                on = v.linkOn;
                 live = owner == RadioOwner::Link;
                 break;
             // One row, two arbiter owners: the ladder's top rung runs as Capture and
             // its lower one as Scan, and either of them means this row is the one
             // holding the radio.
             case CfgScreen::Audit:
-                val = auditLevel >= 2 ? "SCAN+CAP" : auditLevel == 1 ? "SCAN" : "OFF";
-                on = auditLevel > 0;
+                val = v.auditLevel >= 2 ? "SCAN+CAP" : v.auditLevel == 1 ? "SCAN" : "OFF";
+                on = v.auditLevel > 0;
                 live = owner == RadioOwner::Scan || owner == RadioOwner::Capture;
                 break;
             default: break;
         }
-        radioRow(fb, top + i * kRowH, rows[i], i == cursor, on, live, val);
+        radioRow(fb, top + i * kRowH, rows[i], i == v.cursor, radioRowState(on, live), val);
     }
 
     // What the indent and the two marks mean. An operator who switched two rows on
     // is not looking at a bug, and this is where the screen says so — once, rather
     // than on each of the three screens the rows open.
-    drawRadioMark(fb, kMargin, 158, true, palColor(Pal::ACCENT));
+    drawRadioMark(fb, kMargin, 158, RadioRowState::OnAir, palColor(Pal::ACCENT));
     drawText(fb, kMargin + 11, 158, "ON AIR", palColor(Pal::INK_DIM));
-    drawRadioMark(fb, 76, 158, false, palColor(Pal::INK));
+    drawRadioMark(fb, 76, 158, RadioRowState::Waiting, palColor(Pal::INK));
     drawText(fb, 87, 158, "WAITING", palColor(Pal::INK_DIM));
     drawText(fb, kMargin, 172, "NEAREST THE TOP WINS", palColor(Pal::INK_DIM));
     drawHintBand(fb, "A NEXT  B OPEN  C BACK");

@@ -506,11 +506,17 @@ void Game::drawCfg(Framebuffer& fb) const {
                 drawSdFormatConfirm(fb, cfgSdFormatPick_, sdStatus_, updateJobLive());
             else drawSdFormatStatus(fb, sdFormatState_, sdStatus_);
             break;
-        case CfgScreen::Radio:
-            drawCfgRadio(fb, cfgGroupRow_, radioOwner_,
-                         static_cast<int>(auditMode()), linkEnabled_, apEnabled_,
-                         updateJobLive());
+        case CfgScreen::Radio: {
+            CfgRadioView v;
+            v.cursor = cfgGroupRow_;
+            v.owner = radioOwner_;
+            v.auditLevel = static_cast<int>(auditMode());
+            v.linkOn = linkEnabled_;
+            v.apOn = apEnabled_;
+            v.updateLive = updateJobLive();
+            drawCfgRadio(fb, v);
             break;
+        }
         case CfgScreen::HackerTag: drawHackerTag(fb, editTag_, editCaret_); break;
         case CfgScreen::Titles:
             drawTitles(fb, cfgTitlePick_, titlesUnlocked_, equippedTitle_, beat_); break;
