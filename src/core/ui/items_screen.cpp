@@ -442,9 +442,9 @@ int itemDetailPanelLines() {
     return (kDetailPanelBottom - kDetailPanelTop) / kLineH;
 }
 
-void drawItemDetail(Framebuffer& fb, const ItemDef& def, const SpriteData* icon,
-                    int qty, bool usable, const char* gateMsg, int beat,
-                    LifetimeMark lifetime) {
+void drawItemDetail(Framebuffer& fb, const ItemDef& def, const ItemDetailView& v) {
+    const SpriteData* icon = v.icon;
+    const LifetimeMark lifetime = v.lifetime;
     drawHeaderBand(fb, "ITEMS");
 
     // Icon + name + rarity tag. The icon takes the rarity's colour, which is pure
@@ -454,7 +454,7 @@ void drawItemDetail(Framebuffer& fb, const ItemDef& def, const SpriteData* icon,
     // Rarity tag (the font has no brackets — colour + word carry it). It owns the
     // right end; the name yields and scrolls, since the tier is the shorter fact.
     drawLabelValue(fb, nameX, 36, def.displayName, palColor(Pal::INK),
-                   rarityName(def.rarity), rarityColor(def.rarity), beat, Overflow::Scroll);
+                   rarityName(def.rarity), rarityColor(def.rarity), v.beat, Overflow::Scroll);
 
     // The readout as an aligned grid, then the prose under it (spec_sheet.h): the grid
     // reports every magnitude the row hands the engine whether or not the prose
@@ -480,7 +480,7 @@ void drawItemDetail(Framebuffer& fb, const ItemDef& def, const SpriteData* icon,
 
     // Quantity.
     char have[16];
-    std::snprintf(have, sizeof(have), "HAVE x%d", qty);
+    std::snprintf(have, sizeof(have), "HAVE x%d", v.qty);
     drawText(fb, kMargin, haveY, have, palColor(Pal::INK_DIM));
 
     // Whether the pet currently in the rig has already taken this row's grant. Both
@@ -496,7 +496,7 @@ void drawItemDetail(Framebuffer& fb, const ItemDef& def, const SpriteData* icon,
     }
 
     // Action / gate line.
-    if (usable) {
+    if (v.usable) {
         drawRowCursor(fb, kMargin, actionY, palColor(Pal::ACCENT));
         // A re-roll reads ROLLBACK and a point move reads MOVE POINT; the egg
         // accelerator reads DECRYPT; food reads FEED, the word for what caring for a
@@ -509,7 +509,7 @@ void drawItemDetail(Framebuffer& fb, const ItemDef& def, const SpriteData* icon,
                                                                  : "USE";
         drawText(fb, kMargin + 10, actionY, verb, palColor(Pal::ACCENT));
     } else {
-        drawText(fb, kMargin, actionY, gateMsg ? gateMsg : "- UNUSABLE HERE -",
+        drawText(fb, kMargin, actionY, v.gateMsg ? v.gateMsg : "- UNUSABLE HERE -",
                  palColor(Pal::INK_DIM));
     }
 }

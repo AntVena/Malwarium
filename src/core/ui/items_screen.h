@@ -145,21 +145,26 @@ struct ItemsListView {
 };
 void drawItemsList(Framebuffer& fb, const std::vector<InvRow>& rows, const ItemsListView& v);
 
-// L3 item detail. `usable` gates the Use action; when false `gateMsg` states
-// where the item applies instead.
 // Lines the ITEMS detail panel holds — the name, the readout grid and the prose all
 // share this band. Published because the content tests hold every item's readout +
 // description to it, and a copy of the number in the test is a copy that goes stale
 // the first time the band or the line height moves.
 int itemDetailPanelLines();
 
-// `lifetime` adds the once-per-pet line under HAVE, stating in words whether THIS pet
-// has already taken what the row grants — the detail page is where a player goes to ask
-// before spending one, and nothing else on it says so (the row is still perfectly usable
-// once spent: an Epic dish that has paid out is still a very good meal).
-void drawItemDetail(Framebuffer& fb, const ItemDef& def, const SpriteData* icon,
-                    int qty, bool usable, const char* gateMsg, int beat,
-                    LifetimeMark lifetime = LifetimeMark::None);
+// L3 item detail.
+struct ItemDetailView {
+    const SpriteData* icon = nullptr;
+    int qty = 0;
+    bool usable = false;             // gates the Use action...
+    const char* gateMsg = "";        // ...and when it is shut, says where the item applies
+    // Adds the once-per-pet line under HAVE, stating in words whether THIS pet has
+    // already taken what the row grants. The detail page is where a player goes to ask
+    // before spending one, and nothing else on it says so (the row is still perfectly
+    // usable once spent: an Epic dish that has paid out is still a very good meal).
+    LifetimeMark lifetime = LifetimeMark::None;
+    int beat = 0;
+};
+void drawItemDetail(Framebuffer& fb, const ItemDef& def, const ItemDetailView& v);
 
 // Cache-yield reveal: what a just-opened Sealed Cache produced. `cache`
 // names the container (+ its rarity, for the tag colour); `bits` is the Bits paid;

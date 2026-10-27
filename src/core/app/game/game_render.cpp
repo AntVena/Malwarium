@@ -811,12 +811,13 @@ void Game::drawDetail(Framebuffer& fb) const {
     switch (enteredId()) {
         case SubmenuId::Items:
             if (detailItem_) {
-                const char* gate = "";
-                const bool usable = itemUsable(*detailItem_, gate);
-                const SpriteData* icon = itemIcon(registry_, detailItem_->id);
-                drawItemDetail(fb, *detailItem_, icon,
-                               inventory_.count(detailItem_->id), usable, gate,
-                               beat_, lifetimeMark(*detailItem_, petLifetimeGates()));
+                ItemDetailView v;
+                v.usable = itemUsable(*detailItem_, v.gateMsg);
+                v.icon = itemIcon(registry_, detailItem_->id);
+                v.qty = inventory_.count(detailItem_->id);
+                v.lifetime = lifetimeMark(*detailItem_, petLifetimeGates());
+                v.beat = beat_;
+                drawItemDetail(fb, *detailItem_, v);
             }
             break;
         case SubmenuId::Maint: {
