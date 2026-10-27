@@ -234,21 +234,25 @@ void Game::drawStat(Framebuffer& fb) const {
         case 2: drawLoadoutScreen(fb, statLoadoutRows(), statScroll_, beat_); break;
         case 3: {
             const std::vector<ProseRow> rows = statMoveDexRows();
-            int known = 0, total = 0;
+            CollectionPage page;
+            page.scrollTop = statScroll_;
+            page.beat = beat_;
             for (const ProseRow& r : rows) {
                 if (r.header) continue;
-                ++total;
-                if (r.tag[0]) ++known;   // a gap carries no tag (buildMoveDexRows)
+                ++page.total;
+                if (r.tag[0]) ++page.have;   // a gap carries no tag (buildMoveDexRows)
             }
-            drawMoveDexScreen(fb, rows, statScroll_, known, total, beat_);
+            drawMoveDexScreen(fb, rows, page);
             break;
         }
         case 4: {
             const std::vector<FoodRow> rows = statFoodRows();
-            int total = 0;
-            for (const FoodRow& r : rows) total += r.section ? r.total : 0;
-            drawFoodsScreen(fb, registry_, rows, statScroll_, petFoodsEaten(), total,
-                            beat_);
+            CollectionPage page;
+            page.scrollTop = statScroll_;
+            page.have = petFoodsEaten();
+            page.beat = beat_;
+            for (const FoodRow& r : rows) page.total += r.section ? r.total : 0;
+            drawFoodsScreen(fb, registry_, rows, page);
             break;
         }
         case 5: drawBuffsScreen(fb, statBuffRows(), statScroll_, beat_); break;

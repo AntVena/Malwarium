@@ -131,12 +131,11 @@ int foodWindowIndex(const std::vector<FoodRow>& rows, int scrollTop) {
 }
 
 void drawFoodsScreen(Framebuffer& fb, const ContentRegistry& reg,
-                     const std::vector<FoodRow>& rows, int scrollTop, int eaten,
-                     int total, int beat) {
+                     const std::vector<FoodRow>& rows, const CollectionPage& page) {
     // The score rides the header band, because it is the one number the page is for and
     // the reader should not have to add the sections up to get it.
     char score[16];
-    std::snprintf(score, sizeof(score), "%d/%d", eaten, total);
+    std::snprintf(score, sizeof(score), "%d/%d", page.have, page.total);
     drawHeaderBand(fb, "FOODS", score);
 
     if (rows.empty()) {
@@ -146,7 +145,7 @@ void drawFoodsScreen(Framebuffer& fb, const ContentRegistry& reg,
     }
 
     const int count = static_cast<int>(rows.size());
-    const int top = std::max(0, std::min(scrollTop, count - 1));
+    const int top = std::max(0, std::min(page.scrollTop, count - 1));
     const int shown = foodRowsFitting(rows, top);
 
     int y = kGridTop;
@@ -159,7 +158,7 @@ void drawFoodsScreen(Framebuffer& fb, const ContentRegistry& reg,
             // Dim, like every other section heading on the status pages: a fence, not a
             // row — and its tally is the reason a reader stops here at all.
             drawLabelValue(fb, kMargin, hy, r.section, palColor(Pal::INK_DIM), tag,
-                           palColor(Pal::INK_DIM), beat, Overflow::Clip);
+                           palColor(Pal::INK_DIM), page.beat, Overflow::Clip);
         } else {
             for (int c = 0; c < r.count; ++c) {
                 const SpriteData* icon = foodIcon(reg, r.cells[c]->id);
@@ -260,13 +259,13 @@ int moveDexRowsFitting(const std::vector<ProseRow>& rows, int top) {
     return proseRowsFitting(rows, top, kGridTop);
 }
 
-void drawMoveDexScreen(Framebuffer& fb, const std::vector<ProseRow>& rows, int scrollTop,
-                       int known, int total, int beat) {
+void drawMoveDexScreen(Framebuffer& fb, const std::vector<ProseRow>& rows,
+                       const CollectionPage& page) {
     char score[16];
-    std::snprintf(score, sizeof(score), "%d/%d", known, total);
+    std::snprintf(score, sizeof(score), "%d/%d", page.have, page.total);
     drawHeaderBand(fb, "MOVES", score);
-    drawProseRows(fb, rows, scrollTop, kGridTop, beat, nullptr);
-    drawStatHintBand(fb, proseWindowIndex(rows, scrollTop, kGridTop) + 1,
+    drawProseRows(fb, rows, page.scrollTop, kGridTop, page.beat, nullptr);
+    drawStatHintBand(fb, proseWindowIndex(rows, page.scrollTop, kGridTop) + 1,
                      proseWindowCount(rows, kGridTop));
 }
 

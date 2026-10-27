@@ -71,11 +71,18 @@ int foodRowsFitting(const std::vector<FoodRow>& rows, int top);
 int foodWindowCount(const std::vector<FoodRow>& rows);
 int foodWindowIndex(const std::vector<FoodRow>& rows, int scrollTop);
 
+// Where a collection page stands: its scroll, and the score heading it.
+struct CollectionPage {
+    int scrollTop = 0;
+    int have = 0;                    // dishes eaten, or moves known...
+    int total = 0;                   // ...of how many
+    int beat = 0;
+};
+
 // STAT's FOODS page: the windowed grid from buildFoodRows, tasted cells at full ink and
-// the rest dimmed. `eaten`/`total` head the page with the score.
+// the rest dimmed.
 void drawFoodsScreen(Framebuffer& fb, const ContentRegistry& reg,
-                     const std::vector<FoodRow>& rows, int scrollTop, int eaten,
-                     int total, int beat);
+                     const std::vector<FoodRow>& rows, const CollectionPage& page);
 
 // STAT's MOVES page row model: every move `petLine` can hold, its own line's section
 // first and the generic pool second, tagged KNOWN where `owned` says the pet has it.
@@ -89,9 +96,9 @@ std::vector<ProseRow> buildMoveDexRows(const ContentRegistry& reg,
 // The MOVES page's window, the shared flow's own count at this page's row top.
 int moveDexRowsFitting(const std::vector<ProseRow>& rows, int top);
 
-// STAT's MOVES page: the windowed roster from buildMoveDexRows. `known`/`total` head the
-// page with the score, the way FOODS does.
-void drawMoveDexScreen(Framebuffer& fb, const std::vector<ProseRow>& rows, int scrollTop,
-                       int known, int total, int beat);
+// STAT's MOVES page: the windowed roster from buildMoveDexRows, headed by its score the
+// way FOODS is.
+void drawMoveDexScreen(Framebuffer& fb, const std::vector<ProseRow>& rows,
+                       const CollectionPage& page);
 
 } // namespace mal
