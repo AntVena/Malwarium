@@ -120,23 +120,30 @@ void drawItemTypePicker(Framebuffer& fb, const std::vector<ItemPickRow>& tiles,
 enum class LifetimeMark : uint8_t { None, Unspent, Spent };
 LifetimeMark lifetimeMark(const ItemDef& d, const PetLifetimeGates& gates);
 
-// L2 inventory list. `cursor` is a row index into `rows` (must be selectable).
-// Each item row carries its rarity twice: the icon takes the rarity tint, and a
-// four-cell ladder beside the count lights one cell per tier — so the ordering's
-// "best first" claim is checkable on the row, in grayscale.
-// `tabsOwned`/`pickerOwned` are the two Rig Shop filter rows: EITHER puts the
-// active-tab chip in the header (you always know which category you're looking at),
-// and each contributes its own word to the bottom hint band — "HOLD B FILTER" for
-// the gesture, "C TYPES" for the walk back to the tiles. With neither owned the
-// list is pixel-identical to a rig that has bought no filter upgrade at all.
-// `gates` (Game::petLifetimeGates) marks the rows carrying a once-per-pet grant with a
-// solid pip for one this pet can still take and a hollow one for a grant already spent —
-// so "which of these still upgrades my pet" is answerable while scrolling, not only after
-// opening each. Null leaves every row unmarked, which is what a caller with no pet wants.
-void drawItemsList(Framebuffer& fb, const std::vector<InvRow>& rows, int cursor,
-                   bool lockout, int beat, ItemFilter filter = ItemFilter::All,
-                   bool tabsOwned = false, bool pickerOwned = false,
-                   const PetLifetimeGates* gates = nullptr);
+// L2 inventory list. Each item row carries its rarity twice: the icon takes the rarity
+// tint, and a four-cell ladder beside the count lights one cell per tier, so the
+// ordering's "best first" claim is checkable on the row, in grayscale.
+struct ItemsListView {
+    int cursor = 0;                  // a row index into the rows (must be selectable)
+    // The Lockout context: the header says so, and the list never offers "C TYPES"
+    // because that context never routes through the picker.
+    bool lockout = false;
+    ItemFilter filter = ItemFilter::All;
+    // The two Rig Shop filter rows. EITHER puts the active-tab chip in the header (you
+    // always know which category you're looking at), and each contributes its own word
+    // to the bottom hint band: "HOLD B FILTER" for the gesture, "C TYPES" for the walk
+    // back to the tiles. With neither owned the list is pixel-identical to a rig that
+    // has bought no filter upgrade at all.
+    bool tabsOwned = false;
+    bool pickerOwned = false;
+    // Game::petLifetimeGates: marks the rows carrying a once-per-pet grant with a solid
+    // pip for one this pet can still take and a hollow one for a grant already spent, so
+    // "which of these still upgrades my pet" is answerable while scrolling. Null leaves
+    // every row unmarked, which is what a caller with no pet wants.
+    const PetLifetimeGates* gates = nullptr;
+    int beat = 0;
+};
+void drawItemsList(Framebuffer& fb, const std::vector<InvRow>& rows, const ItemsListView& v);
 
 // L3 item detail. `usable` gates the Use action; when false `gateMsg` states
 // where the item applies instead.

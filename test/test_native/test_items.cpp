@@ -159,7 +159,9 @@ void test_inventory_scrollbar() {
     auto rows = buildInventoryRows(r, inv, false);
     CHECK(static_cast<int>(rows.size()) > 6);        // 6 items + 3 headers = 9
     Framebuffer fb(kActiveW, kActiveH);
-    drawItemsList(fb, rows, firstSelectableRow(rows), false, 0);
+    ItemsListView v;
+    v.cursor = firstSelectableRow(rows);
+    drawItemsList(fb, rows, v);
     CHECK(anyNonPaper(fb, kActiveW - 3, kItemsRowTop, kActiveW, kActiveH));
 }
 
@@ -1381,7 +1383,9 @@ void test_items_grayscale() {
     auto rows = buildInventoryRows(r, inv, false);
     const int cur = firstSelectableRow(rows);        // first FOOD row (v=1)
     Framebuffer fb(kActiveW, kActiveH);
-    drawItemsList(fb, rows, cur, false, 0);
+    ItemsListView v;
+    v.cursor = cur;
+    drawItemsList(fb, rows, v);
     // The claim is that the MARKER reads against the selection band it sits on, with
     // no colour: probe the cursor triangle at x=9 against the bare band two columns
     // left of it, on the same row. Comparing against a different ROW is what a probe

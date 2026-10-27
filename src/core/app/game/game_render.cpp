@@ -709,8 +709,15 @@ void Game::drawSubmenu(Framebuffer& fb) const {
             auto rows = buildInventoryRows(registry_, inventory_, lockoutItemsContext_,
                                            itemFilter_);
             const PetLifetimeGates gates = petLifetimeGates();
-            drawItemsList(fb, rows, listRow_, lockoutItemsContext_, beat_, itemFilter_,
-                         itemTabsUnlocked(), itemPickerUnlocked(), &gates);
+            ItemsListView v;
+            v.cursor = listRow_;
+            v.lockout = lockoutItemsContext_;
+            v.filter = itemFilter_;
+            v.tabsOwned = itemTabsUnlocked();
+            v.pickerOwned = itemPickerUnlocked();
+            v.gates = &gates;
+            v.beat = beat_;
+            drawItemsList(fb, rows, v);
             break;
         }
         case SubmenuId::Maint:

@@ -333,26 +333,25 @@ void drawItemTypePicker(Framebuffer& fb, const std::vector<ItemPickRow>& tiles,
     drawHintBand(fb, "A NEXT  B OPEN  C BACK");
 }
 
-void drawItemsList(Framebuffer& fb, const std::vector<InvRow>& rows, int cursor,
-                   bool lockout, int beat, ItemFilter filter,
-                   bool tabsOwned, bool pickerOwned,
-                   const PetLifetimeGates* gates) {
-    const bool filterHintVisible = tabsOwned || pickerOwned;
-    fb.clear(palColor(Pal::PAPER));
+namespace {
 
+// The header with its position and filter chip, and the hint band each owned filter
+// upgrade adds a word to.
+void drawItemsChrome(Framebuffer& fb, const std::vector<InvRow>& rows, const ItemsListView& v) {
+    const bool filterHintVisible = v.tabsOwned || v.pickerOwned;
     // Position indicator counts selectable rows.
     int total = 0, sel = 0;
     for (int i = 0; i < static_cast<int>(rows.size()); ++i) {
         if (rows[i].header) continue;
         ++total;
-        if (i == cursor) sel = total;
+        if (i == v.cursor) sel = total;
     }
     // With either filter upgrade owned the header carries the active-tab chip
     // (ALL/FOOD/BUFFS/QUEST/KEYS/TOOLS), so the narrowing is never invisible.
-    const char* base = lockout ? "ITEMS LOCKOUT" : "ITEMS";
+    const char* base = v.lockout ? "ITEMS LOCKOUT" : "ITEMS";
     if (filterHintVisible) {
         char title[32];
-        std::snprintf(title, sizeof(title), "%s - %s", base, itemFilterLabel(filter));
+        std::snprintf(title, sizeof(title), "%s - %s", base, itemFilterLabel(v.filter));
         listHeader(fb, title, sel, total);
     } else {
         listHeader(fb, base, sel, total);
@@ -362,27 +361,66 @@ void drawItemsList(Framebuffer& fb, const std::vector<InvRow>& rows, int cursor,
     // word, so an unowned player's ITEMS list carries no band at all. The Lockout
     // context never routes through the picker, so it never offers "C TYPES".
     char hint[32] = "";
-    if (tabsOwned) std::snprintf(hint, sizeof(hint), "HOLD B FILTER");
-    if (pickerOwned && !lockout)
+    if (v.tabsOwned) std::snprintf(hint, sizeof(hint), "HOLD B FILTER");
+    if (v.pickerOwned && !v.lockout)
         std::snprintf(hint + std::strlen(hint), sizeof(hint) - std::strlen(hint),
-                      "%sC TYPES", tabsOwned ? "  " : "");
+                      "%sC TYPES", v.tabsOwned ? "  " : "");
     if (hint[0]) drawHintBand(fb, hint);
+}
+
+void drawItemRow(Framebuffer& fb, const InvRow& r, int y, bool focused,
+                 const ItemsListView& v) {
+    const int textY = y + (kRowH - kFontH) / 2;
+    // Icon takes the rarity colour, exactly as the detail page does; the ladder
+    // opposite it is the same fact without colour, so the row survives grayscale.
+    if (r.icon)
+        drawSpriteTinted(fb, *r.icon, 0, 16, y + (kRowH - kRowIcon) / 2,
+                         rarityColor(r.def->rarity));
+    char qty[8];
+    std::snprintf(qty, sizeof(qty), "x%d", r.qty);
+    const int qtyX = kActiveW - kMargin - textWidth(qty);
+    const int pipsX = qtyX - 8 - kPipStripW;
+    drawText(fb, qtyX, textY, qty, palColor(Pal::INK));
+    drawRarityPips(fb, pipsX, textY, r.def->rarity);
+    // The once-per-life pip, left of the ladder and only on the handful of rows that
+    // carry a grant at all. It takes its column out of the NAME rather than moving
+    // the ladder or the count, so the right end of every row still lines up.
+    const LifetimeMark mark =
+        v.gates ? lifetimeMark(*r.def, *v.gates) : LifetimeMark::None;
+    int nameEnd = pipsX - 8;
+    if (mark != LifetimeMark::None) {
+        nameEnd -= kLifeMarkW + 6;
+        drawLifetimeMark(fb, nameEnd + 6, textY, mark);
+    }
+    // The ladder and the count own the right end of the row, so the name yields:
+    // it scrolls within what is left rather than drawing through them (widgets.h).
+    // Only the focused row travels — a list of names all sliding at once is
+    // unreadable, and the cursor already says which one the player is asking about.
+    drawTextMarquee(fb, 40, textY, std::max(0, nameEnd - 40), r.label,
+                    palColor(Pal::INK), v.beat, scrollWhen(focused));
+}
+
+}  // namespace
+
+void drawItemsList(Framebuffer& fb, const std::vector<InvRow>& rows, const ItemsListView& v) {
+    fb.clear(palColor(Pal::PAPER));
+    drawItemsChrome(fb, rows, v);
 
     if (rows.empty()) {
-        const char* msg = filter != ItemFilter::All ? "- NO MATCHING ITEMS -"
-                                                     : "- NO ITEMS -";
+        const char* msg = v.filter != ItemFilter::All ? "- NO MATCHING ITEMS -"
+                                                       : "- NO ITEMS -";
         drawText(fb, (kActiveW - textWidth(msg)) / 2, kActiveH / 2, msg,
                  palColor(Pal::INK_DIM));
         return;
     }
 
     const int n = static_cast<int>(rows.size());
-    const int scrollTop = listScrollTop(cursor, n, kVisibleRows);
+    const int scrollTop = listScrollTop(v.cursor, n, kVisibleRows);
 
-    for (int v = 0; v < kVisibleRows && scrollTop + v < n; ++v) {
-        const int i = scrollTop + v;
+    for (int slot = 0; slot < kVisibleRows && scrollTop + slot < n; ++slot) {
+        const int i = scrollTop + slot;
         const InvRow& r = rows[i];
-        const int y = kRowTop + v * kRowH;
+        const int y = kRowTop + slot * kRowH;
         if (r.header) {
             drawText(fb, kMargin, y + 8, r.label,
                      r.notice ? palColor(Pal::INK) : palColor(Pal::INK_DIM));
@@ -390,38 +428,11 @@ void drawItemsList(Framebuffer& fb, const std::vector<InvRow>& rows, int cursor,
                         palColor(Pal::TRACK));
             continue;
         }
-        if (i == cursor) {  // UI_ROW_SEL band (grayscale-separable from paper)
+        if (i == v.cursor) {  // UI_ROW_SEL band (grayscale-separable from paper)
             fb.fillRect(4, y + 2, kActiveW - 8, kRowH - 4, palColor(Pal::TRACK));
             drawRowCursor(fb, 8, y + (kRowH - 7) / 2, palColor(Pal::ACCENT));
         }
-        const int textY = y + (kRowH - kFontH) / 2;
-        // Icon takes the rarity colour, exactly as the detail page does; the ladder
-        // opposite it is the same fact without colour, so the row survives grayscale.
-        if (r.icon)
-            drawSpriteTinted(fb, *r.icon, 0, 16, y + (kRowH - kRowIcon) / 2,
-                             rarityColor(r.def->rarity));
-        char qty[8];
-        std::snprintf(qty, sizeof(qty), "x%d", r.qty);
-        const int qtyX = kActiveW - kMargin - textWidth(qty);
-        const int pipsX = qtyX - 8 - kPipStripW;
-        drawText(fb, qtyX, textY, qty, palColor(Pal::INK));
-        drawRarityPips(fb, pipsX, textY, r.def->rarity);
-        // The once-per-life pip, left of the ladder and only on the handful of rows that
-        // carry a grant at all. It takes its column out of the NAME rather than moving
-        // the ladder or the count, so the right end of every row still lines up.
-        const LifetimeMark mark =
-            gates ? lifetimeMark(*r.def, *gates) : LifetimeMark::None;
-        int nameEnd = pipsX - 8;
-        if (mark != LifetimeMark::None) {
-            nameEnd -= kLifeMarkW + 6;
-            drawLifetimeMark(fb, nameEnd + 6, textY, mark);
-        }
-        // The ladder and the count own the right end of the row, so the name yields:
-        // it scrolls within what is left rather than drawing through them (widgets.h).
-        // Only the focused row travels — a list of names all sliding at once is
-        // unreadable, and the cursor already says which one the player is asking about.
-        drawTextMarquee(fb, 40, textY, std::max(0, nameEnd - 40), r.label,
-                        palColor(Pal::INK), beat, scrollWhen(i == cursor));
+        drawItemRow(fb, r, y, i == v.cursor, v);
     }
 
     drawScrollbar(fb, kRowTop, kVisibleRows * kRowH, n, scrollTop, kVisibleRows);
