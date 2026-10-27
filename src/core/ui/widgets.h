@@ -165,13 +165,13 @@ void drawStageIndicator(Framebuffer& fb, int x, int y, int w, Stage current);
 // frame + remaining track read in grayscale (shape channel), so a partial bar
 // is legible without colour. Reused by feeding, MAINT processes, the Lockout
 // countdown, etc.
-// churn=true dithers a few ink-white flecks into the fill's leading edge,
-// reseeded per `beat` so they shimmer in place — the same "can't show past its
-// own cap" cue as the Fragmentation frontier glitch (drawGauge above), for a
-// bar whose backing value can exceed 100% of what it can render (e.g. a
-// shield pool bigger than max health).
+// Churn dithers a few ink-white flecks into the fill's leading edge, reseeded per `beat`
+// so they shimmer in place: the same "can't show past its own cap" cue as the
+// Fragmentation frontier glitch (drawGauge above), for a bar whose backing value can
+// exceed 100% of what it can render (e.g. a shield pool bigger than max health).
+enum class BarEdge : uint8_t { Plain, Churn };
 void drawProgressBar(Framebuffer& fb, int x, int y, int w, int h, float t,
-                     Rgb565 c, bool churn = false, int beat = 0);
+                     Rgb565 c, BarEdge edge = BarEdge::Plain, int beat = 0);
 
 // UI_SCROLLBAR: the slim right-edge rail beside a scrolling list or page. Drawn only
 // when the list is longer than its window, so a list that fits shows no chrome and a

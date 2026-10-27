@@ -225,7 +225,7 @@ void drawCarePips(Framebuffer& fb, int x, int y, int mistakes, PulsePhase pulse)
 }
 
 void drawProgressBar(Framebuffer& fb, int x, int y, int w, int h, float t,
-                     Rgb565 c, bool churn, int beat) {
+                     Rgb565 c, BarEdge edge, int beat) {
     if (t < 0) t = 0;
     if (t > 1) t = 1;
     const Rgb565 frame = palColor(Pal::INK_DIM);
@@ -242,7 +242,7 @@ void drawProgressBar(Framebuffer& fb, int x, int y, int w, int h, float t,
     // Fragmentation frontier glitch (drawGauge above) — a seeded dither of ink
     // flecks at the fill's leading edge, reseeded per `beat` so it shimmers in
     // place rather than animating a fill level the bar has no room to show.
-    if (churn && fillW > 0) {
+    if (edge == BarEdge::Churn && fillW > 0) {
         const int innerH = h - 2;
         const int churnW = fillW < 6 ? fillW : 6;
         const Rgb565 fleck = palColor(Pal::INK);

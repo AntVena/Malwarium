@@ -561,7 +561,7 @@ void drawPassiveStrip(Framebuffer& fb, const Combatant& c, int x, int y, int w, 
         const float ratio = c.maxHealth > 0
             ? static_cast<float>(c.shieldHp) / c.maxHealth : 0.f;
         drawProgressBar(fb, x, y, w, barH, 1.0f - std::exp(-ratio), palColor(Pal::TEAM_BLUE),
-                        c.shieldHp > c.maxHealth, beat);
+                        c.shieldHp > c.maxHealth ? BarEdge::Churn : BarEdge::Plain, beat);
         // Frenzy ribs. The churn above says "this pool is bigger than the bar can draw"
         // — a statement about SIZE, live every frame the pool is over max Health. The
         // frenzy is a different claim (the pet has committed to spending the wall) and
