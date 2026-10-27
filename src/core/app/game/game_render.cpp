@@ -1117,16 +1117,29 @@ void Game::drawShiboleetScreen(Framebuffer& fb) const {
     }
     char greeting[kRiddleBodyCols * 2 + 8];
     shiboleetGreeting(greeting, sizeof(greeting));
-    const float held = static_cast<float>(exploreEventBeat_) / kShiboleetReplyHoldBeats;
-    drawShiboleet(fb, guardianName(), guardianDemeanour(), greeting, riddle, rows,
-                   shibRow_, cantSigils_, held);
+    RiddleView r;
+    r.greeting = greeting;
+    r.riddle = riddle;
+    r.replies = rows;
+    r.cursor = shibRow_;
+    r.holdFrac = static_cast<float>(exploreEventBeat_) / kShiboleetReplyHoldBeats;
+    GuardianView g;
+    g.name = guardianName();
+    g.demeanour = guardianDemeanour();
+    g.sigils = cantSigils_;
+    drawShiboleet(fb, g, r);
 }
 
 void Game::drawShiboleetHailScreen(Framebuffer& fb) const {
     char greeting[kRiddleBodyCols * 2 + 8];
     shiboleetGreeting(greeting, sizeof(greeting));
-    drawShiboleetHail(fb, guardianName(), guardianDemeanour(), greeting,
-                       swarmViewOf(guardianFlock_), cantSigils_, shakesUnspent());
+    const SwarmView swarm = swarmViewOf(guardianFlock_);
+    GuardianView g;
+    g.name = guardianName();
+    g.demeanour = guardianDemeanour();
+    g.sigils = cantSigils_;
+    g.swarm = &swarm;
+    drawShiboleetHail(fb, g, greeting, shakesUnspent());
 }
 
 void Game::drawShiboleetVerdictScreen(Framebuffer& fb) const {
@@ -1142,9 +1155,20 @@ void Game::drawShiboleetVerdictScreen(Framebuffer& fb) const {
     }
     char speech[kRiddleBodyCols * 2 + 8];
     shiboleetOutcomeSpeech(speech, sizeof(speech));
-    drawShiboleetVerdict(fb, guardianName(), kind, shiboleetOutcomeSeen(), speech,
-                          swarmViewOf(guardianFlock_), shiboleetVerdictLine(),
-                          shiboleetFlavor(), cantSigils_, shiboleetVerdictFights());
+    VerdictView v;
+    v.kind = kind;
+    v.speech = speech;
+    v.ledger = shiboleetVerdictLine();
+    v.flavor = shiboleetFlavor();
+    v.next = shiboleetVerdictFights() ? VerdictNext::Fight : VerdictNext::Continue;
+    // The verdict shows what the guardian made of the answer, not its standing demeanour.
+    const SwarmView swarm = swarmViewOf(guardianFlock_);
+    GuardianView g;
+    g.name = guardianName();
+    g.demeanour = shiboleetOutcomeSeen();
+    g.sigils = cantSigils_;
+    g.swarm = &swarm;
+    drawShiboleetVerdict(fb, g, v);
 }
 
 void Game::drawShopScreen(Framebuffer& fb) const {

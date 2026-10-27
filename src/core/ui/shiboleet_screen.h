@@ -50,48 +50,53 @@ constexpr int kGuardianCellH = 58;
 // still has a middle, and a bigger flock in the same box is a blob.
 constexpr int kGuardianSwarmMarks = 26;
 
-// The SHIBOLEET board.
-//
-// `guardian` names who is asking (the header). `demeanour` is what the pet can SEE the
-// guardian doing — always plain words, drawn dim above everything else as the stage
-// direction it is. `greeting` is what the guardian SAYS, and `riddle` is what it then
-// asks; both arrive already enciphered, so both are gibberish to a pet with no sigils
-// and plain speech to a fluent one.
+// Who is talking, on all three screens.
+struct GuardianView {
+    const char* name = "";           // the header
+    // What the pet can SEE the guardian doing: always plain words, drawn dim as the
+    // stage direction it is.
+    const char* demeanour = "";
+    // The learned-letter bitmask (bit i = 'A'+i reads plain) that the foot strip draws.
+    uint32_t sigils = 0;
+    // The guardian itself, drawn in the cell above the text on the hail and the verdict.
+    const SwarmView* swarm = nullptr;
+};
+
+// The SHIBOLEET board's question. `greeting` is what the guardian SAYS, and `riddle` is
+// what it then asks; both arrive already enciphered, so both are gibberish to a pet with
+// no sigils and plain speech to a fluent one.
 //
 // That split is the screen's whole argument. A player who cannot read a word of the Cant
 // is not staring at nothing: they can see the thing is waiting, or blocking the way, or
-// listening — and as sigils come in the words arrive underneath a gesture they already
+// listening, and as sigils come in the words arrive underneath a gesture they already
 // understood, which is how anyone picks up a language nobody sat them down to teach.
-//
-// `replies` are the kRiddleReplies enciphered choices in the order they are shown,
-// `cursor` is the focused row. `sigils` is the learned-letter bitmask (bit i = 'A'+i
-// reads plain) that the foot strip draws.
-//
-// `holdFrac` is how much of the answer clock has run, 0..1 — drawn as a bar, because a
-// guardian that will take silence for an answer has to SHOW that it is running out of
-// patience. It is the only thing on this screen that moves.
-void drawShiboleet(Framebuffer& fb, const char* guardian, const char* demeanour,
-                    const char* greeting, const char* riddle,
-                    const char* const replies[kRiddleReplies], int cursor,
-                    uint32_t sigils, float holdFrac);
+struct RiddleView {
+    const char* greeting = "";
+    const char* riddle = "";
+    // The kRiddleReplies enciphered choices in the order they are shown.
+    const char* const* replies = nullptr;
+    int cursor = 0;
+    // How much of the answer clock has run, 0..1, drawn as a bar: a guardian that will
+    // take silence for an answer has to SHOW that it is running out of patience. It is
+    // the only thing on this screen that moves.
+    float holdFrac = 0.0f;
+};
+void drawShiboleet(Framebuffer& fb, const GuardianView& g, const RiddleView& r);
 
-// The HAIL — the beat before the question.
+// The HAIL, the beat before the question.
 //
-// Same `guardian` header, same `demeanour`/`greeting` pair the riddle board carries, but
-// alone on the screen: a player meeting this for the first time gets one beat to look at
-// the thing that stopped the walk before being asked anything by it. What the riddle
-// board has no room to say, this does — `shakes` is the unspent purse, and the foot
-// states in plain words that a captured handshake is what buys a sigil, which is the one
-// rule of this system nothing else on the device explains.
+// Same header and the same demeanour/greeting pair the riddle board carries, but alone on
+// the screen with the guardian's body: a player meeting this for the first time gets one
+// beat to look at the thing that stopped the walk before being asked anything by it.
+// What the riddle board has no room to say, this does: `shakes` is the unspent purse, and
+// the foot states in plain words that a captured handshake is what buys a sigil, which is
+// the one rule of this system nothing else on the device explains.
 //
 // The Cant strip is drawn here too, and that is deliberate: the first thing a new player
 // should learn is that the nonsense is FINITE and that the lit cells are the way out of
 // it.
-// `swarm` is the guardian itself, drawn in the cell above the text — the one thing on
-// either of these screens that moves, and the whole reason the hail is worth stopping on.
-void drawShiboleetHail(Framebuffer& fb, const char* guardian, const char* demeanour,
-                        const char* greeting, const SwarmView& swarm, uint32_t sigils,
-                        int shakes);
+void drawShiboleetHail(Framebuffer& fb, const GuardianView& g, const char* greeting,
+                       int shakes);
 
 // How a meeting came out, as the verdict screen announces it. The engine folds the
 // fluency band and the reply onto this (Game::shiboleetOutcome); the screen needs only
@@ -99,27 +104,25 @@ void drawShiboleetHail(Framebuffer& fb, const char* guardian, const char* demean
 // than reaching into the content layer's area rows for them.
 enum class ShiboleetVerdictKind { Pleased, Displeased, Refused, Boon };
 
-// The VERDICT — what the guardian made of it.
-//
-// `kind` picks the banner word (the dual-coding channel: a distinct WORD per outcome, so
-// a grayscale shot still separates being believed from being refused) and its colour.
-// `demeanour` is what the pet SEES the guardian do about it and `speech` is what it SAYS,
-// the same plain/enciphered pair every screen here draws.
-//
-// `ledger` is the engine's plain stat line ("+6 HAPPY  -4 FRAG") and `flavor` the
-// consequence in words ("LEARNED A SIGIL - 3/26", "YOU ANSWERED WRONG"); either may be
-// empty. `sigils` draws the strip once more, which is where a sigil just earned lights
-// its own cell — the payout and the picture of it on the same screen.
-//
-// `swarm` is the guardian reacting: the same body from the hail, still on screen, now
-// flying under the mood the answer put it in — which is what turns "it was displeased"
-// from a line of text into something the player watched happen.
-//
-// `nextIsFight` names the button honestly: a displeased guardian answers for itself, and
-// a player is never told "B CONTINUE" and handed a boss.
-void drawShiboleetVerdict(Framebuffer& fb, const char* guardian,
-                           ShiboleetVerdictKind kind, const char* demeanour,
-                           const char* speech, const SwarmView& swarm, const char* ledger,
-                           const char* flavor, uint32_t sigils, bool nextIsFight);
+// Where B leads from the verdict. A displeased guardian answers for itself, and a player
+// is never told "B CONTINUE" and handed a boss.
+enum class VerdictNext : uint8_t { Continue, Fight };
+
+// The VERDICT: what the guardian made of it. The guardian's body stays on screen, now
+// flying under the mood the answer put it in, which is what turns "it was displeased"
+// from a line of text into something the player watched happen. The strip is drawn once
+// more, which is where a sigil just earned lights its own cell.
+struct VerdictView {
+    // Picks the banner word (the dual-coding channel: a distinct WORD per outcome, so a
+    // grayscale shot still separates being believed from being refused) and its colour.
+    ShiboleetVerdictKind kind = ShiboleetVerdictKind::Pleased;
+    const char* speech = "";         // what it SAYS, enciphered like every screen here
+    // The engine's plain stat line ("+6 HAPPY  -4 FRAG") and the consequence in words
+    // ("LEARNED A SIGIL - 3/26", "YOU ANSWERED WRONG"); either may be empty.
+    const char* ledger = "";
+    const char* flavor = "";
+    VerdictNext next = VerdictNext::Continue;
+};
+void drawShiboleetVerdict(Framebuffer& fb, const GuardianView& g, const VerdictView& v);
 
 }  // namespace mal

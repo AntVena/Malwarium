@@ -99,58 +99,56 @@ void drawCantStrip(Framebuffer& fb, uint32_t sigils) {
 
 }  // namespace
 
-void drawShiboleet(Framebuffer& fb, const char* guardian, const char* demeanour,
-                    const char* greeting, const char* riddle,
-                    const char* const replies[kRiddleReplies], int cursor,
-                    uint32_t sigils, float holdFrac) {
+void drawShiboleet(Framebuffer& fb, const GuardianView& g, const RiddleView& r) {
     // The guardian's own name is the title, and it is ACCENT rather than the wild
     // encounter's WARN: this is not an alarm. Something is talking to the pet.
     char count[12];
-    std::snprintf(count, sizeof(count), "%d/%d", sigilCount(sigils), kCantSigils);
-    drawHeaderBand(fb, guardian ? guardian : "", count, palColor(Pal::INK_DIM),
+    std::snprintf(count, sizeof(count), "%d/%d", sigilCount(g.sigils), kCantSigils);
+    drawHeaderBand(fb, g.name ? g.name : "", count, palColor(Pal::INK_DIM),
                    palColor(Pal::ACCENT));
 
     // What the pet can SEE. The only plain-language thing on the screen, and drawn dim
     // and unquoted so it never reads as speech — it is what the guardian is doing, not
     // what it is saying. Clipped rather than wrapped: the gate holds it to one line.
-    if (demeanour && demeanour[0])
-        drawTextMarquee(fb, kMargin, kDemeanourY, kRiddleBodyW, demeanour,
+    if (g.demeanour && g.demeanour[0])
+        drawTextMarquee(fb, kMargin, kDemeanourY, kRiddleBodyW, g.demeanour,
                         palColor(Pal::INK_DIM), /*beat=*/0, Overflow::Clip);
 
     // What it SAYS, then what it ASKS. Both in the Cant and both in INK, because to the
     // pet they are one utterance — the greeting is not a friendlier register it could
     // have chosen, it is the same language doing the same thing.
-    if (greeting && greeting[0])
-        drawTextWrapped(fb, kMargin, kGreetingY, kRiddleBodyW, greeting,
+    if (r.greeting && r.greeting[0])
+        drawTextWrapped(fb, kMargin, kGreetingY, kRiddleBodyW, r.greeting,
                         palColor(Pal::INK), kRiddleLineH, kGreetingLines);
 
     // The question, flowed. Enciphered upstream, so a letter the pet can read arrives
     // here already reading — nothing on this screen distinguishes the two, which is
     // exactly right: to the pet they are one sentence with holes in it.
-    if (riddle && riddle[0])
-        drawTextWrapped(fb, kMargin, kRiddleTop, kRiddleBodyW, riddle,
+    if (r.riddle && r.riddle[0])
+        drawTextWrapped(fb, kMargin, kRiddleTop, kRiddleBodyW, r.riddle,
                         palColor(Pal::INK), kRiddleLineH, kRiddleBodyLines);
 
     for (int i = 0; i < kRiddleReplies; ++i) {
         const int y = kReplyTop + i * kReplyPitch;
-        const bool on = (i == cursor);
+        const bool on = (i == r.cursor);
         if (on) drawRowCursor(fb, kMargin, y, palColor(Pal::ACCENT));
         // Never scrolls: the content gate holds every reply to kRiddleReplyW on one
         // line, so a travelling row here would only ever mean a row that should have
         // failed the gate.
         drawTextMarquee(fb, kMargin + kRiddleReplyIndent, y, kRiddleReplyW,
-                        replies && replies[i] ? replies[i] : "",
+                        r.replies && r.replies[i] ? r.replies[i] : "",
                         on ? palColor(Pal::ACCENT) : palColor(Pal::INK),
                         /*beat=*/0, Overflow::Clip);
     }
 
     // The patience bar. It empties rather than fills — what is draining is the time the
     // guardian is willing to wait, and a bar that grew would read as progress.
-    const float left = 1.0f - (holdFrac < 0.0f ? 0.0f : (holdFrac > 1.0f ? 1.0f : holdFrac));
+    const float held = r.holdFrac < 0.0f ? 0.0f : (r.holdFrac > 1.0f ? 1.0f : r.holdFrac);
+    const float left = 1.0f - held;
     drawProgressBar(fb, kMargin, kClockY, kActiveW - 2 * kMargin, 3, left,
                     palColor(left < 0.25f ? Pal::WARN : Pal::INK_DIM));
 
-    drawCantStrip(fb, sigils);
+    drawCantStrip(fb, g.sigils);
 
     // C is spelled out because its meaning bends here: backing away from something that
     // asked you a question is an answer, and the wrong one. Saying "BACK" would be a lie
@@ -164,27 +162,30 @@ namespace {
 // banner, the gesture, the speech, and the rule under them. Drawn once here so the hail
 // and the verdict cannot drift apart — they are the two halves of one conversation, and
 // a player reading the second should recognise the first.
-void drawMeetingChrome(Framebuffer& fb, const char* guardian, const char* banner,
-                       Rgb565 bannerColor, const char* demeanour, const char* speech,
-                       const SwarmView& swarm, Rgb565 swarmCore, uint32_t sigils) {
+//
+// `tone` colours the banner and the guardian's body alike: the body takes the verdict's
+// colour too, so a guardian that did not like the answer is flying apart in WARN.
+void drawMeetingChrome(Framebuffer& fb, const GuardianView& g, const char* banner,
+                       Rgb565 tone, const char* speech) {
     char count[12];
-    std::snprintf(count, sizeof(count), "%d/%d", sigilCount(sigils), kCantSigils);
-    drawHeaderBand(fb, guardian ? guardian : "", count, palColor(Pal::INK_DIM),
+    std::snprintf(count, sizeof(count), "%d/%d", sigilCount(g.sigils), kCantSigils);
+    drawHeaderBand(fb, g.name ? g.name : "", count, palColor(Pal::INK_DIM),
                    palColor(Pal::ACCENT));
 
-    drawCentered(fb, kMeetBannerY, banner, bannerColor);
+    drawCentered(fb, kMeetBannerY, banner, tone);
 
     // THE GUARDIAN. Not a sprite and never going to be one — a flock of marks steering by
     // boids rules (core/render/swarm.h), so the thing across from the pet is visibly not
     // the same kind of thing the pet is. It is drawn before the words because it is what
     // the words are coming out of.
-    drawSwarm(fb, swarm, kMeetCellX, kMeetCellY, kGuardianCellW, kGuardianCellH,
-              swarmCore, palColor(Pal::INK_DIM));
+    if (g.swarm)
+        drawSwarm(fb, *g.swarm, kMeetCellX, kMeetCellY, kGuardianCellW, kGuardianCellH,
+                  tone, palColor(Pal::INK_DIM));
 
     // What the pet can SEE, and the only plain-language thing above the rule. Dim and
     // unquoted, so it never reads as speech — it is what the guardian is doing.
-    if (demeanour && demeanour[0])
-        drawTextWrapped(fb, kMargin, kMeetSeenY, kRiddleBodyW, demeanour,
+    if (g.demeanour && g.demeanour[0])
+        drawTextWrapped(fb, kMargin, kMeetSeenY, kRiddleBodyW, g.demeanour,
                         palColor(Pal::INK_DIM), kRiddleLineH, kMeetLines);
 
     // What it SAYS, in the Cant. Gibberish at no sigils and plain speech at a full set,
@@ -211,14 +212,13 @@ const char* verdictBanner(ShiboleetVerdictKind kind) {
 
 }  // namespace
 
-void drawShiboleetHail(Framebuffer& fb, const char* guardian, const char* demeanour,
-                        const char* greeting, const SwarmView& swarm, uint32_t sigils,
-                        int shakes) {
+void drawShiboleetHail(Framebuffer& fb, const GuardianView& g, const char* greeting,
+                       int shakes) {
+    const uint32_t sigils = g.sigils;
     // The banner states the one fact the whole system rests on and nothing else on the
     // device says out loud: this thing is talking, and it is not talking the 'net's
     // alphabet. Everything the player is about to fail to read follows from that.
-    drawMeetingChrome(fb, guardian, "IT SPEAKS THE CANT", palColor(Pal::ACCENT),
-                      demeanour, greeting, swarm, palColor(Pal::ACCENT), sigils);
+    drawMeetingChrome(fb, g, "IT SPEAKS THE CANT", palColor(Pal::ACCENT), greeting);
 
     // Below the rule: how much of that the pet can read, and what buying more costs. The
     // count is the strip in words — the same fact in the screen's other channel — and the
@@ -246,32 +246,27 @@ void drawShiboleetHail(Framebuffer& fb, const char* guardian, const char* demean
     drawHintBand(fb, "B LISTEN");
 }
 
-void drawShiboleetVerdict(Framebuffer& fb, const char* guardian,
-                           ShiboleetVerdictKind kind, const char* demeanour,
-                           const char* speech, const SwarmView& swarm, const char* ledger,
-                           const char* flavor, uint32_t sigils, bool nextIsFight) {
-    const bool bad = kind == ShiboleetVerdictKind::Displeased ||
-                     kind == ShiboleetVerdictKind::Refused;
-    // The body takes the verdict's colour too. A guardian that did not like the answer is
-    // flying apart in WARN, which is honest rather than decorative — it IS an alarm now,
-    // and the fight is one button away. The scatter says it in grayscale either way.
-    drawMeetingChrome(fb, guardian, verdictBanner(kind),
-                      palColor(bad ? Pal::WARN : Pal::ACCENT), demeanour, speech, swarm,
-                      palColor(bad ? Pal::WARN : Pal::ACCENT), sigils);
+void drawShiboleetVerdict(Framebuffer& fb, const GuardianView& g, const VerdictView& v) {
+    const bool bad = v.kind == ShiboleetVerdictKind::Displeased ||
+                     v.kind == ShiboleetVerdictKind::Refused;
+    // WARN on a bad answer is honest rather than decorative: it IS an alarm now, and the
+    // fight is one button away. The scatter says it in grayscale either way.
+    drawMeetingChrome(fb, g, verdictBanner(v.kind), palColor(bad ? Pal::WARN : Pal::ACCENT),
+                      v.speech);
 
     // Below the rule: what it cost or paid, then what that leaves the pet with. The
     // ledger is the numbers and the flavor is the sentence — kept apart because a player
     // who only reads one of the two should still come away with the outcome.
-    drawCentered(fb, kMeetNoteY, ledger, palColor(bad ? Pal::WARN : Pal::ACCENT));
-    drawCentered(fb, kMeetNote2Y, flavor, palColor(Pal::INK));
+    drawCentered(fb, kMeetNoteY, v.ledger, palColor(bad ? Pal::WARN : Pal::ACCENT));
+    drawCentered(fb, kMeetNote2Y, v.flavor, palColor(Pal::INK));
 
     // The strip last, because a sigil bought by this answer is lit in it — the payout and
     // the picture of the payout on the same screen.
-    drawCantStrip(fb, sigils);
+    drawCantStrip(fb, g.sigils);
 
     // Named for what the button actually does. A displeased guardian answers for itself,
     // and "B CONTINUE" over a boss would be a lie about where the press leads.
-    drawHintBand(fb, nextIsFight ? "B FACE IT" : "B CONTINUE");
+    drawHintBand(fb, v.next == VerdictNext::Fight ? "B FACE IT" : "B CONTINUE");
 }
 
 }  // namespace mal
