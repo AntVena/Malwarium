@@ -427,8 +427,11 @@ void drawBuffsScreen(Framebuffer& fb, const std::vector<BuffRow>& rows, int scro
     statHintBand(fb, buffWindowIndex(rows, top) + 1, buffWindowCount(rows));
 }
 
-void drawSpeciesScreen(Framebuffer& fb, const char* name, const char* line,
-                       const char* hint, const char* context, int beat) {
+void drawSpeciesScreen(Framebuffer& fb, const CreatureDef& c, int beat) {
+    const char* name = c.displayName;
+    const char* line = c.line;
+    const char* hint = c.hint;
+    const char* context = c.context;
     statHeader(fb, "SPECIES", 6);
 
     // Name and line tag are both content, and the widest pair of them wants more than

@@ -197,8 +197,7 @@ void drawBuffsScreen(Framebuffer& fb, const std::vector<BuffRow>& rows, int scro
 // `context` is measured first and held back, and `hint` takes the room that
 // leaves, so a Daemon's long read is shown whole instead of stopping mid-sentence
 // with the foot of the screen still empty.
-void drawSpeciesScreen(Framebuffer& fb, const char* name, const char* line,
-                       const char* hint, const char* context, int beat);
+void drawSpeciesScreen(Framebuffer& fb, const CreatureDef& c, int beat);
 
 // STAT page 5 — AUDIT LOG: the rolling event history newest-first, each
 // a type glyph + terse text. The lifetime/uptime footer lives on the Hacker

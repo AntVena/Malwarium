@@ -256,10 +256,7 @@ void Game::drawStat(Framebuffer& fb) const {
             break;
         }
         case 5: drawBuffsScreen(fb, statBuffRows(), statScroll_, beat_); break;
-        case 6:
-            drawSpeciesScreen(fb, pet_->displayName, pet_->line, pet_->hint,
-                              pet_->context, beat_);
-            break;
+        case 6: drawSpeciesScreen(fb, *pet_, beat_); break;
         default: drawAuditLog(fb, log_, beat_); break;
     }
 }
