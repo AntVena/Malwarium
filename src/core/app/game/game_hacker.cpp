@@ -64,9 +64,8 @@ HackerSlotId Game::enteredHackerId() const {
 bool Game::hackerSlotAccessible(int slot) const {
     if (slot < 0 || slot >= kCarouselSlots) return false;
     const HackerCarouselSlot& s = hackerCarouselSlots()[slot];
-    // MERGE is the one slot whose accessibility isn't fixed at compile time — it
-    // flips live the moment the f Merge Hub purchase lands (mirrors
-    // drawHackerCarousel's `mergeUnlocked` override).
+    // MERGE is the one slot whose accessibility isn't fixed at compile time: it flips
+    // live the moment the f Merge Hub purchase lands.
     if (s.id == HackerSlotId::Merge) return mergeHubUnlocked();
 #ifdef MALWARIUM_DEMO
     // SCAN/LINK/PEERS are the radio: a Wi-Fi sniff and a peer link, neither of which
@@ -312,12 +311,12 @@ void Game::drawHackerHome(Framebuffer& fb, int cursor) const {
     const bool on = ((beat_ / 2) & 1) == 0;
     drawText(fb, kMargin, y, on ? "> _" : ">", palColor(Pal::ACCENT));
 
-    // Build the inaccessible mask from the same predicate B-dispatch asks, so a slot
-    // can never look live and refuse to open (or the reverse).
-    unsigned lockedMask = 0;
+    // Build the mask from the same predicate B-dispatch asks, so a slot can never look
+    // live and refuse to open (or the reverse).
+    unsigned accessibleMask = 0;
     for (int i = 0; i < kCarouselSlots; ++i)
-        if (!hackerSlotAccessible(i)) lockedMask |= (1u << i);
-    drawHackerCarousel(fb, cursor, uiMode_, beat_, mergeHubUnlocked(), lockedMask);
+        if (hackerSlotAccessible(i)) accessibleMask |= (1u << i);
+    drawHackerCarousel(fb, cursor, uiMode_, accessibleMask);
 }
 
 void Game::drawHackerSubmenu(Framebuffer& fb) const {

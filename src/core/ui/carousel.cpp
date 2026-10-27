@@ -105,8 +105,8 @@ const HackerCarouselSlot* hackerCarouselSlots() {
     // (sealed-cache decrypt, off pet ITEMS), PEERS (met operators) and LINK (1v1
     // duels) are statically live; SCAN is statically
     // inaccessible (marker + inert B); MERGE (item-combining) starts statically
-    // inaccessible too, but drawHackerCarousel's `mergeUnlocked` override flips it
-    // live once bought in SHOP — so the face reads as a real, partly-locked console
+    // inaccessible too, but Game::hackerSlotAccessible flips it live in the
+    // accessible mask once bought in SHOP, so the face reads as a real, partly-locked console
     // rather than an empty grid, and a purchase visibly unlocks a slot instead of a
     // new one appearing from nowhere.
     static const HackerCarouselSlot kSlots[kCarouselSlots] = {
@@ -122,8 +122,7 @@ const HackerCarouselSlot* hackerCarouselSlots() {
     return kSlots;
 }
 
-void drawHackerCarousel(Framebuffer& fb, int cursor, UiMode mode, int /*beat*/,
-                        bool mergeUnlocked, unsigned lockedMask) {
+void drawHackerCarousel(Framebuffer& fb, int cursor, UiMode mode, unsigned accessibleMask) {
     const HackerCarouselSlot* slots = hackerCarouselSlots();
     const Rgb565 paper = palColor(Pal::PAPER);
 
@@ -131,9 +130,7 @@ void drawHackerCarousel(Framebuffer& fb, int cursor, UiMode mode, int /*beat*/,
     fb.fillRect(0, kLivingBottom, kActiveW, kTrackH, palColor(Pal::TRACK));
 
     for (int i = 0; i < kCarouselSlots; ++i) {
-        const bool accessible = (slots[i].accessible ||
-            (slots[i].id == HackerSlotId::Merge && mergeUnlocked)) &&
-            ((lockedMask >> i) & 1u) == 0;
+        const bool accessible = ((accessibleMask >> i) & 1u) != 0;
         const bool focused = (i == cursor);
         const int ix = slotIconX(i);
         const int iy = slotIconY(i);

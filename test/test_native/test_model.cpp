@@ -520,8 +520,12 @@ void test_carousel_labels_fit_their_box() {
             } else {
                 const HackerCarouselSlot& hs = hackerCarouselSlots()[slot];
                 live = hs.accessible || hs.id == HackerSlotId::Merge;
-                drawHackerCarousel(fb, slot, UiMode::IconsLabel, 0,
-                                   /*mergeUnlocked=*/true);
+                unsigned live = 0;   // every slot the roster marks live, plus MERGE
+                for (int i = 0; i < kCarouselSlots; ++i)
+                    if (hackerCarouselSlots()[i].accessible ||
+                        hackerCarouselSlots()[i].id == HackerSlotId::Merge)
+                        live |= 1u << i;
+                drawHackerCarousel(fb, slot, UiMode::IconsLabel, live);
             }
             const Rgb565 ink = live ? accent : palColor(Pal::INK_DIM);
             const int col = (slot % kSlotCols) * kSlotW;

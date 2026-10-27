@@ -65,7 +65,7 @@ enum class StatScreen { Page, Index };
 // SCAN/LINK render the inaccessible marker until designed. PROFILE, CREW, SHOP,
 // VAULT, and PEERS are live from the static table; MERGE starts statically
 // inaccessible but flips accessible at runtime once mergeHubUnlocked() is bought in
-// SHOP (Game::hackerSlotAccessible + drawHackerCarousel's `mergeUnlocked` override —
+// SHOP (Game::hackerSlotAccessible, which builds drawHackerCarousel's accessible mask:
 // the static table alone can't express "locked until purchased").
 enum class HackerSlotId { Crew, Profile, Shop, Vault, Merge, Scan, Link, Peers };
 

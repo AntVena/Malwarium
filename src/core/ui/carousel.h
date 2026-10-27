@@ -73,18 +73,13 @@ void drawCarousel(Framebuffer& fb, int cursor, UiMode mode, int beat,
                   unsigned lockedMask = 0, unsigned spinMask = 0,
                   unsigned attentionMask = 0, unsigned urgentMask = 0);
 
-// Draw the Hacker-face carousel: the same track/geometry as drawCarousel,
-// but the hacker slot roster + the inaccessible marker over any slot whose
-// HackerCarouselSlot::accessible is false. `cursor` < 0 rests (no focus box).
-// `mergeUnlocked` overrides the MERGE slot's static (false) accessible bit once
-// the Hacker-SHOP Merge Hub purchase is owned — the one slot whose accessibility is
-// gated at runtime rather than fixed at compile time.
-// `lockedMask` marks slots inaccessible by index (bit i set = slot i inert), the
-// hacker-face twin of drawCarousel's mask: the demo build locks the radio slots
-// through it (Game::hackerSlotAccessible, include/demo_config.h), so the shelf and
-// the B-dispatch always agree about which slots are live.
-void drawHackerCarousel(Framebuffer& fb, int cursor, UiMode mode, int beat,
-                        bool mergeUnlocked = false, unsigned lockedMask = 0);
+// Draw the Hacker-face carousel: the same track/geometry as drawCarousel, but the hacker
+// slot roster + the inaccessible marker over any slot not in `accessibleMask` (bit i set
+// = slot i live). `cursor` < 0 rests (no focus box). The caller builds the mask from
+// Game::hackerSlotAccessible, the predicate the B-dispatch asks, so the shelf and the
+// dispatch always agree about which slots are live: MERGE once the Merge Hub is owned,
+// and none of the radio slots in the demo build (include/demo_config.h).
+void drawHackerCarousel(Framebuffer& fb, int cursor, UiMode mode, unsigned accessibleMask);
 
 // A header-band placeholder for any slot whose real submenu isn't built yet.
 // Title + centered tag.

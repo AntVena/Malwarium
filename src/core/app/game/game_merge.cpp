@@ -13,7 +13,7 @@
 // game_merge.cpp — the Hacker-face MERGE HUB (MRG) slot: combines owned ingredient
 // items into a rarer one. The HUB is a one-time Rig Shop purchase (kRigRowMergeHub,
 // game_rig_shop.h) that flips the MRG carousel slot accessible
-// (Game::hackerSlotAccessible / drawHackerCarousel's `mergeUnlocked`).
+// (Game::hackerSlotAccessible, which drawHackerCarousel's accessible mask is built from).
 //
 // The RECIPES cooked in it are not for sale at any price: each is won off a first
 // solve on the DECRYPTOGRAM (game_cryptogram.cpp's prize ladder), and owning one is
