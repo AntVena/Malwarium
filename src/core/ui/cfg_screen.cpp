@@ -418,7 +418,8 @@ void drawTravelSleeping(Framebuffer& fb) {
     drawText(fb, kMargin, 116, "TO WAKE ME UP.", palColor(Pal::ACCENT));
 }
 
-void drawSdFormatConfirm(Framebuffer& fb, int pick, const SdStatus& sd, bool blocked) {
+void drawSdFormatConfirm(Framebuffer& fb, int pick, const SdStatus& sd, SdCardUse use) {
+    const bool blocked = use == SdCardUse::Busy;
     drawHeaderBand(fb, "FORMAT SD?");
 
     // What is lost leads, then what is gained, then what to do next — the reason

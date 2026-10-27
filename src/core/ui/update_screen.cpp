@@ -428,9 +428,9 @@ static bool blitQr(Framebuffer& fb, const char* text, int oy) {
     return true;
 }
 
-int pediaQrPages(bool provisioned) { return provisioned ? 2 : 3; }
+int pediaQrPages(HomeNetwork home) { return home == HomeNetwork::Saved ? 2 : 3; }
 
-void drawPediaQr(Framebuffer& fb, int page, bool provisioned) {
+void drawPediaQr(Framebuffer& fb, int page, HomeNetwork home) {
     // Static QR pages, in the order the steps actually happen (the AP address is
     // fixed at 192.168.4.1): join the AP, then — only while no home network is
     // stored — set one up, then open the 'Pedia. A cycles, C exits (game_config).
@@ -442,11 +442,11 @@ void drawPediaQr(Framebuffer& fb, int page, bool provisioned) {
     // It DISAPPEARS once a network is stored rather than sitting there forever as a
     // step nobody needs twice — and A always walks past it either way, so it never
     // stands between the operator and the 'Pedia.
-    const int pages = pediaQrPages(provisioned);
+    const int pages = pediaQrPages(home);
     // With setup gone, the 'Pedia is page 1; with it present, page 2. Naming the
     // step rather than the index keeps the two layouts from drifting apart.
     const bool join = (page == 0);
-    const bool setup = !provisioned && page == 1;
+    const bool setup = home == HomeNetwork::Unsaved && page == 1;
 
     drawHeaderBand(fb, join ? "QR: JOIN WI-FI" : setup ? "QR: SET UP WI-FI" : "QR: OPEN PEDIA");
 
@@ -473,7 +473,7 @@ void drawPediaQr(Framebuffer& fb, int page, bool provisioned) {
 
     // Page indicator + controls hint (dual-coded: the active page is the bright
     // dot AND named in the header). "1/3 · A NEXT · C EXIT".
-    char hint[24];
+    char hint[40];
     std::snprintf(hint, sizeof(hint), "%d/%d  A NEXT  C EXIT", page + 1, pages);
     drawText(fb, (kActiveW - textWidth(hint)) / 2, oy + dim + 32, hint,
              palColor(Pal::ACCENT));

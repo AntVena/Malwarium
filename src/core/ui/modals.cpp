@@ -108,7 +108,7 @@ void drawEvolveModal(Framebuffer& fb, const SpriteData* from, const SpriteData* 
     drawCenteredText(fb, 200, "B CONTINUE   C DISABLED", palColor(Pal::INK_DIM));
 }
 
-void drawCSFModal(Framebuffer& fb, const SpriteData* pet, bool revealed, int beat) {
+void drawCSFModal(Framebuffer& fb, const SpriteData* pet, CsfPhase phase, int beat) {
     fb.clear(palColor(Pal::PAPER));
 
     // Heaviest visual in the game: dark title ink over a HOT rule.
@@ -130,7 +130,7 @@ void drawCSFModal(Framebuffer& fb, const SpriteData* pet, bool revealed, int bea
     drawCenteredText(fb, 164, "ARCHIVED AS CORRUPTED.", palColor(Pal::INK_DIM));
 
     // UI_HINT_BAND — B acknowledges (once the crash has held); C is disabled.
-    drawCenteredText(fb, 200, revealed ? "B ACKNOWLEDGE   C DISABLED" : "SYSTEM HALTING",
+    drawCenteredText(fb, 200, phase == CsfPhase::Held ? "B ACKNOWLEDGE   C DISABLED" : "SYSTEM HALTING",
                      palColor(Pal::INK_DIM));
 }
 
@@ -192,7 +192,7 @@ void drawLockoutModal(Framebuffer& fb, const LockoutView& v) {
     const Rgb565 band = on ? palColor(Pal::HOT) : palColor(Pal::INK_DIM);
     fb.fillRect(0, 0, kActiveW, 22, band);
     drawText(fb, kMargin, 8, "SYSTEM LOCKOUT", palColor(Pal::PAPER));
-    char cd[8];
+    char cd[16];
     std::snprintf(cd, sizeof(cd), "00:%02d", v.secondsLeft < 0 ? 0 : v.secondsLeft);
     drawText(fb, kActiveW - kMargin - textWidth(cd), 8, cd, palColor(Pal::PAPER));
 

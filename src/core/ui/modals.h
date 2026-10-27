@@ -25,9 +25,10 @@ void drawEvolveModal(Framebuffer& fb, const SpriteData* from, const SpriteData* 
 
 // Critical System Failure: the terminal death modal. The dying `pet`
 // corrupts out under a FX_CRITICAL_FAIL crash overlay (glitch bands = the
-// grayscale-safe channel). `revealed` gates the B-acknowledge hint until the crash
-// has held; C is disabled (death is not cancellable). Grayscale-safe.
-void drawCSFModal(Framebuffer& fb, const SpriteData* pet, bool revealed, int beat);
+// grayscale-safe channel). The B-acknowledge hint waits for Held, once the crash has
+// held; C is disabled (death is not cancellable). Grayscale-safe.
+enum class CsfPhase : uint8_t { Crashing, Held };
+void drawCSFModal(Framebuffer& fb, const SpriteData* pet, CsfPhase phase, int beat);
 
 // Feeding beat: the pet eats, and a gauge reads back each stat the food
 // touched. The rows are derived from `food`'s own ItemEffect list

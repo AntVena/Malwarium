@@ -135,9 +135,10 @@ void drawTravelSleeping(Framebuffer& fb);
 // L3 FORMAT SD confirm. Leads with what is lost (everything on the card), names the
 // card it would act on (`sd`: its size, or that it can't be read yet — the usual reason
 // to be here is a card the boot mount refused), and says what to do once it is ready.
-// Starts on NO like every screen that asks a second time. `blocked` is an update job
-// holding the card: the YES row is struck through and the screen says why.
-void drawSdFormatConfirm(Framebuffer& fb, int pick, const SdStatus& sd, bool blocked);
+// Starts on NO like every screen that asks a second time. Busy is an update job holding
+// the card: the YES row is struck through and the screen says why.
+enum class SdCardUse : uint8_t { Free, Busy };
+void drawSdFormatConfirm(Framebuffer& fb, int pick, const SdStatus& sd, SdCardUse use);
 
 // The FORMAT SD faces after the yes: FORMATTING while the device tier works (no hint
 // band — every button is inert), then OK with the new size and the next step, or
@@ -325,11 +326,13 @@ void drawUpdateQr(Framebuffer& fb, const char* manifestUrl);
 // page 0 = join the local AP (WIFI: payload), then the home-network setup page
 // while none is stored, then the 'Pedia URL. Reached by turning the AP on
 // (PEDIA AP → ON). The AP address is fixed (192.168.4.1), so every code is static.
-void drawPediaQr(Framebuffer& fb, int page, bool provisioned);
+// Whether a home network is stored, which is what drops the setup page.
+enum class HomeNetwork : uint8_t { Unsaved, Saved };
+void drawPediaQr(Framebuffer& fb, int page, HomeNetwork home);
 
 // How many QR pages the carousel offers, so the input handler and the renderer
 // agree on what A wraps at. The setup step drops out once a network is stored.
-int pediaQrPages(bool provisioned);
+int pediaQrPages(HomeNetwork home);
 
 // L3 Factory Reset (hidden). `scope` 0 = Reset Pet, 1 = Wipe Everything
 // (A cycles). `holdFrac` (0..1) is the hold-B-to-commit fill (releasing aborts).

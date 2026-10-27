@@ -354,7 +354,9 @@ void Game::onCfgDetail(const ButtonEvent& ev) {
             // (qrScreenActive), and resume once C exits — scanning/connecting takes
             // longer than the usual idle window.
             if (ev.button == Button::A) {
-                pediaQrPage_ = (pediaQrPage_ + 1) % pediaQrPages(netProvisioned_);
+                const HomeNetwork home =
+                    netProvisioned_ ? HomeNetwork::Saved : HomeNetwork::Unsaved;
+                pediaQrPage_ = (pediaQrPage_ + 1) % pediaQrPages(home);
                 dirty_ = true;
             } else if (ev.button == Button::C) leaveCfgScreen();
             break;
@@ -503,7 +505,8 @@ void Game::drawCfg(Framebuffer& fb) const {
             break;
         case CfgScreen::FormatSd:
             if (sdFormatState_ == SdFormatState::Idle)
-                drawSdFormatConfirm(fb, cfgSdFormatPick_, sdStatus_, updateJobLive());
+                drawSdFormatConfirm(fb, cfgSdFormatPick_, sdStatus_,
+                                    updateJobLive() ? SdCardUse::Busy : SdCardUse::Free);
             else drawSdFormatStatus(fb, sdFormatState_, sdStatus_);
             break;
         case CfgScreen::Radio: {
@@ -579,7 +582,10 @@ void Game::drawCfg(Framebuffer& fb) const {
             break;
         }
         case CfgScreen::UpdateQr: drawUpdateQr(fb, updateManifestUrl_); break;
-        case CfgScreen::PediaQr: drawPediaQr(fb, pediaQrPage_, netProvisioned_); break;
+        case CfgScreen::PediaQr:
+            drawPediaQr(fb, pediaQrPage_,
+                        netProvisioned_ ? HomeNetwork::Saved : HomeNetwork::Unsaved);
+            break;
         case CfgScreen::FactoryReset: {
             const float hf = bHeld_
                 ? static_cast<float>(nowMs_ - bDownMs_) / kFactoryCommitMs

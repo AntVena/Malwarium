@@ -1028,8 +1028,8 @@ void test_version_marker_absent_reads_as_unknown() {
 // always walks past it — it must never stand between the operator and the 'Pedia.
 void test_qr_setup_step_appears_only_until_provisioned() {
     Game g{StartMode::Hatched};
-    CHECK(pediaQrPages(/*provisioned=*/false) == 3);   // join, set up, 'Pedia
-    CHECK(pediaQrPages(/*provisioned=*/true) == 2);    // join, 'Pedia
+    CHECK(pediaQrPages(HomeNetwork::Unsaved) == 3);   // join, set up, 'Pedia
+    CHECK(pediaQrPages(HomeNetwork::Saved) == 2);     // join, 'Pedia
 
     enterCfgTarget(g, CfgScreen::PediaAp);             // CFG -> RADIO -> PEDIA AP (OFF)
     g.onButton(press(Button::A));                      // OFF -> ON

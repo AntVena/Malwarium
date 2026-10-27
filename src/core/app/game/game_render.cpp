@@ -1313,7 +1313,7 @@ void Game::drawCSF(Framebuffer& fb) const {
     // The heaviest modal in the game: the dying pet corrupts out under a
     // FX_CRITICAL_FAIL crash overlay. B is gated behind the crash hold (csfRevealed).
     const SpriteData* pet = pet_ ? registry_.creatureSprite(*pet_) : nullptr;
-    drawCSFModal(fb, pet, csfRevealed(), beat_);
+    drawCSFModal(fb, pet, csfRevealed() ? CsfPhase::Held : CsfPhase::Crashing, beat_);
 }
 
 }  // namespace mal
