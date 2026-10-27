@@ -140,9 +140,7 @@ void drawPool(Framebuffer& fb, const Cryptogram& c, bool running) {
 
 }  // namespace
 
-void drawCryptogramBoard(Framebuffer& fb, const Cryptogram& c, const char* attribution,
-                         CryptogramTier tier, int prizeBits, const char* prizeLabel,
-                         bool arcade, int beat) {
+void drawCryptogramBoard(Framebuffer& fb, const Cryptogram& c, const CryptogramView& v) {
     const bool running = c.running();
     const bool solved = c.solved();
     const bool failed = !running && !solved;
@@ -150,18 +148,18 @@ void drawCryptogramBoard(Framebuffer& fb, const Cryptogram& c, const char* attri
     // The header states the difficulty because it is also the promise: a board lost at
     // HARD comes back at MEDIUM. On a cabinet the dial set the opening instead, and the
     // quote's own standing is not what is being played.
-    drawHeaderBand(fb, "DECRYPTOGRAM", arcade ? "ARCADE" : cryptogramTierName(tier),
+    drawHeaderBand(fb, "DECRYPTOGRAM", v.arcade ? "ARCADE" : cryptogramTierName(v.tier),
                    palColor(Pal::INK_DIM));
 
     drawGrid(fb, c, failed);
-    if (running && c.stage() == Cryptogram::Stage::PickCell) drawCellCursor(fb, c, beat);
+    if (running && c.stage() == Cryptogram::Stage::PickCell) drawCellCursor(fb, c, v.beat);
 
     // The attribution, under the quote's own last row rather than the grid's — a short
     // quote should not float above a hole. Solved boards only: never guessed, and never
     // given away by a loss either.
-    if (solved && attribution && attribution[0]) {
+    if (solved && v.attribution && v.attribution[0]) {
         char line[40];
-        std::snprintf(line, sizeof(line), "- %s", attribution);
+        std::snprintf(line, sizeof(line), "- %s", v.attribution);
         const int w = textWidth(line);
         const int x = kActiveW - kMargin - w;
         drawText(fb, x < kMargin ? kMargin : x, cellY(c.rowCount()) + 2, line,
@@ -192,27 +190,27 @@ void drawCryptogramBoard(Framebuffer& fb, const Cryptogram& c, const char* attri
     // quote just dropped to, which is the only reason losing is survivable.
     char line1[36];
     Rgb565 lineCol = palColor(Pal::INK_DIM);
-    if (arcade) std::snprintf(line1, sizeof(line1), "CABINET PAYS ON EXIT");
+    if (v.arcade) std::snprintf(line1, sizeof(line1), "CABINET PAYS ON EXIT");
     else if (failed) std::snprintf(line1, sizeof(line1), "NOTHING BANKED");
     else if (solved) {
-        std::snprintf(line1, sizeof(line1), "WON %d BITS", prizeBits);
+        std::snprintf(line1, sizeof(line1), "WON %d BITS", v.prizeBits);
         lineCol = palColor(Pal::CALM);
     } else {
-        std::snprintf(line1, sizeof(line1), "PRIZE %d BITS", prizeBits);
+        std::snprintf(line1, sizeof(line1), "PRIZE %d BITS", v.prizeBits);
     }
     drawText(fb, kMargin, kPrizeY, line1, lineCol);
 
     char line2[36] = {0};
     Rgb565 line2Col = lineCol;
-    if (failed && !arcade && tier != CryptogramTier::Solved) {
-        std::snprintf(line2, sizeof(line2), "COMES BACK %s", cryptogramTierName(tier));
+    if (failed && !v.arcade && v.tier != CryptogramTier::Solved) {
+        std::snprintf(line2, sizeof(line2), "COMES BACK %s", cryptogramTierName(v.tier));
         line2Col = palColor(Pal::ACCENT);
-    } else if (!failed && !arcade && prizeLabel && prizeLabel[0]) {
-        std::snprintf(line2, sizeof(line2), "+ %s", prizeLabel);
+    } else if (!failed && !v.arcade && v.prizeLabel && v.prizeLabel[0]) {
+        std::snprintf(line2, sizeof(line2), "+ %s", v.prizeLabel);
     }
     if (line2[0])
         drawTextMarquee(fb, kMargin, kPrizeY2, kActiveW - 2 * kMargin, line2, line2Col,
-                        beat, Overflow::Scroll);
+                        v.beat, Overflow::Scroll);
 
     drawPool(fb, c, running);
 

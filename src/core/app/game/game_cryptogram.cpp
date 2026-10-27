@@ -270,9 +270,14 @@ void Game::drawCryptogram(Framebuffer& fb) const {
     if (gameBriefOpen_) { drawGameBrief(fb); return; }
     const QuoteDef* q = (cryptogramQuote_ >= 0 && cryptogramQuote_ < quoteCount())
                             ? &quotes()[cryptogramQuote_] : nullptr;
-    drawCryptogramBoard(fb, cryptogram_, q ? q->attribution : "",
-                        quoteTier(cryptogramQuote_), cryptogramPrizeBits_,
-                        cryptogramPrizeLabel(), arcadeRun_, beat_);
+    CryptogramView v;
+    v.attribution = q ? q->attribution : "";
+    v.tier = quoteTier(cryptogramQuote_);
+    v.prizeBits = cryptogramPrizeBits_;
+    v.prizeLabel = cryptogramPrizeLabel();
+    v.arcade = arcadeRun_;
+    v.beat = beat_;
+    drawCryptogramBoard(fb, cryptogram_, v);
 }
 
 }  // namespace mal
