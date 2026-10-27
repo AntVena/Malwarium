@@ -105,12 +105,10 @@ bool updateFlasherUrl(const char* manifestUrl, char* out, size_t cap) {
     return true;
 }
 
-void drawUpdateCheck(Framebuffer& fb, bool ready, bool provisioned,
-                     bool sourceKnown, const UpdateStatus& status,
-                     const NetStatus& net, const char* firmwareVersion,
-                     const char* manifestUrl, int row) {
-    drawHeaderBand(fb, "UPDATES");
+namespace {
 
+// What is installed, and where this device looks for what would replace it.
+void drawInstalledLine(Framebuffer& fb, const UpdateCheckView& v) {
     // What is on this device right now, so the verdict below has something to be
     // newer THAN. The web bundle's own version is only known once a check has read
     // the card's marker, so it appears with the result rather than here.
@@ -132,9 +130,9 @@ void drawUpdateCheck(Framebuffer& fb, bool ready, bool provisioned,
     // part that says which server. drawLabelValue has the opposite priority (its
     // value is whole, its label gives way), which is why this row doesn't use it.
     char host[24];
-    urlHost(manifestUrl, host, sizeof(host));
-    drawText(fb, kMargin, 40, firmwareVersion, palColor(Pal::INK));
-    const int hostX = kMargin + textWidth(firmwareVersion) + kMargin;
+    urlHost(v.manifestUrl, host, sizeof(host));
+    drawText(fb, kMargin, 40, v.firmwareVersion, palColor(Pal::INK));
+    const int hostX = kMargin + textWidth(v.firmwareVersion) + kMargin;
     const int hostRoom = kActiveW - kMargin - hostX;
     if (hostRoom > 0) {
         // A port loses whole or not at all: cut mid-way, ":8000" reads as ":80", a
@@ -143,10 +141,14 @@ void drawUpdateCheck(Framebuffer& fb, bool ready, bool provisioned,
             if (char* colon = std::strchr(host, ':')) *colon = '\0';
         const int w = textWidth(host) < hostRoom ? textWidth(host) : hostRoom;
         drawTextMarquee(fb, kActiveW - kMargin - w, 40, w, host,
-                        sourceKnown ? palColor(Pal::INK) : palColor(Pal::INK_DIM), 0,
+                        v.sourceKnown ? palColor(Pal::INK) : palColor(Pal::INK_DIM), 0,
                         Overflow::Clip);
     }
+}
 
+// The check row, an install row per newer artifact, and the flasher row. Returns how
+// many rows were drawn.
+int drawUpdateRows(Framebuffer& fb, const UpdateStatus& status, const UpdateCheckView& v) {
     // Row 0 is always the check, the last is always the flasher, and between them
     // sit what the check found. An install row names the artifact AND the version
     // it would bring, so the confirm that follows is never the first time the
@@ -154,21 +156,21 @@ void drawUpdateCheck(Framebuffer& fb, bool ready, bool provisioned,
     //
     // The flasher row is the one that does not depend on a network — it is the
     // answer to "the check can't run" and to "an update needs the cable", so it is
-    // live whenever this device knows a host at all. That makes `sourceKnown`
-    // rather than `ready` what lights it.
+    // live whenever this device knows a host at all. That makes `v.sourceKnown`
+    // rather than `v.ready` what lights it.
     const bool busy = status.state == UpdateState::Checking;
     const int rows = updateCheckRows(status);
     for (int i = 0; i < rows; ++i) {
         const int y = 56 + i * 18;
         const UpdateRowKind kind = updateCheckRowKind(status, i);
-        const bool live = (kind == UpdateRowKind::FlashQr) ? sourceKnown : ready;
-        if (i == row) {
+        const bool live = (kind == UpdateRowKind::FlashQr) ? v.sourceKnown : v.ready;
+        if (i == v.row) {
             fb.fillRect(4, y - 2, kActiveW - 8, 18, palColor(Pal::TRACK));
             drawRowCursor(fb, 8, y + 3, palColor(live ? Pal::ACCENT : Pal::INK_DIM));
         }
         if (kind == UpdateRowKind::Check) {
             drawText(fb, 24, y + 3, busy ? "CHECKING..." : "CHECK NOW",
-                     palColor(ready && !busy ? Pal::INK : Pal::INK_DIM));
+                     palColor(v.ready && !busy ? Pal::INK : Pal::INK_DIM));
         } else if (kind == UpdateRowKind::FlashQr) {
             drawText(fb, 24, y + 3, "FLASH OVER USB",
                      palColor(live ? Pal::INK : Pal::INK_DIM));
@@ -184,21 +186,20 @@ void drawUpdateCheck(Framebuffer& fb, bool ready, bool provisioned,
                      palColor(Pal::ACCENT));
         }
     }
+    return rows;
+}
 
-    // The verdict sits under the rows, not at a fixed line: only the Available
-    // state grows the list past three, and it is also the only state whose verdict
-    // is a single line, so the block below never runs into the standing promise.
-    const int verdictY = std::max(118, 56 + rows * 18 + 8);
-
+void drawUpdateVerdict(Framebuffer& fb, const UpdateStatus& status, const NetStatus& net,
+                       const UpdateCheckView& v, int verdictY) {
     // Why a check can't run, most-blocking first — each names the screen that
     // fixes it, since none of them is fixable from here. Both are SETUP: there is
     // no "turn the internet on" step to forget, because pressing CHECK NOW is what
     // grants the connection and finishing the job is what gives it back.
-    if (!ready) {
-        if (!provisioned) {
+    if (!v.ready) {
+        if (!v.provisioned) {
             drawText(fb, kMargin, verdictY, "NO NETWORK SAVED:", palColor(Pal::WARN));
             drawText(fb, kMargin, verdictY + 12, "SET ONE UP FROM PEDIA AP", palColor(Pal::WARN));
-        } else if (!sourceKnown) {
+        } else if (!v.sourceKnown) {
             drawText(fb, kMargin, verdictY, "NO UPDATE SOURCE SET:", palColor(Pal::WARN));
             drawText(fb, kMargin, verdictY + 12, "THIS BUILD HAS NOWHERE", palColor(Pal::WARN));
             drawText(fb, kMargin, verdictY + 24, "TO LOOK.", palColor(Pal::WARN));
@@ -255,6 +256,20 @@ void drawUpdateCheck(Framebuffer& fb, bool ready, bool provisioned,
             }
         }
     }
+}
+
+}  // namespace
+
+void drawUpdateCheck(Framebuffer& fb, const UpdateStatus& status, const NetStatus& net,
+                     const UpdateCheckView& v) {
+    drawHeaderBand(fb, "UPDATES");
+    drawInstalledLine(fb, v);
+    const int rows = drawUpdateRows(fb, status, v);
+    // The verdict sits under the rows, not at a fixed line: only the Available
+    // state grows the list past three, and it is also the only state whose verdict
+    // is a single line, so the block below never runs into the standing promise.
+    const int verdictY = std::max(118, 56 + rows * 18 + 8);
+    drawUpdateVerdict(fb, status, net, v, verdictY);
 
     // The standing promise, on the screen where it matters: looking is not
     // installing, and the operator gets asked again before anything is written.

@@ -244,15 +244,21 @@ void drawLinkToggle(Framebuffer& fb, int pick, bool current, bool ambientStarved
 // reported HERE, as the first step of a job — `net` drives the CONNECTING → FETCHING
 // split and a failed join names the setup portal that fixes it.
 //
-// `ready` says whether a check is even possible — a stored network and a manifest
-// source, both of which are SETUP rather than permission; when it isn't, the screen
-// names the missing piece instead of offering a button that would no-op.
-// `manifestUrl` is shown host-only beside the installed version — where this device
-// looks, which a card-less one can read nowhere else.
-void drawUpdateCheck(Framebuffer& fb, bool ready, bool provisioned,
-                     bool sourceKnown, const UpdateStatus& status,
-                     const NetStatus& net, const char* firmwareVersion,
-                     const char* manifestUrl, int row);
+struct UpdateCheckView {
+    // Whether a check is even possible: a stored network and a manifest source, both of
+    // which are SETUP rather than permission. When it isn't, the screen names the
+    // missing piece instead of offering a button that would no-op.
+    bool ready = false;
+    bool provisioned = false;        // a network is stored
+    bool sourceKnown = false;        // a manifest source is set; lights the flasher row
+    const char* firmwareVersion = "";
+    // Shown host-only beside the installed version: where this device looks, which a
+    // card-less one can read nowhere else.
+    const char* manifestUrl = "";
+    int row = 0;                     // the focused row
+};
+void drawUpdateCheck(Framebuffer& fb, const UpdateStatus& status, const NetStatus& net,
+                     const UpdateCheckView& v);
 
 // How many rows drawUpdateCheck offers, so the input handler and the renderer
 // agree on what A cycles through: CHECK NOW, then one install row per artifact

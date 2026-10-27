@@ -542,15 +542,20 @@ void Game::drawCfg(Framebuffer& fb) const {
         case CfgScreen::Link:
             drawLinkToggle(fb, cfgLinkPick_, linkEnabled_, linkAmbientStarved());
             break;
-        case CfgScreen::Update:
-            // Same three faces as the input handler, in the same order — a live or
+        case CfgScreen::Update: {
+            UpdateCheckView checkView;
+            checkView.ready = updateCheckReady();
+            checkView.provisioned = netProvisioned_;
+            checkView.sourceKnown = updateSourceKnown_;
+            checkView.firmwareVersion = kFirmwareVersion;
+            checkView.manifestUrl = updateManifestUrl_;
+            checkView.row = updateRow_;
+            // Same three faces as the input handler, in the same order: a live or
             // just-finished job outranks the confirm, which outranks the list.
             if (updateJobLive() || installStatus_.state != InstallState::Idle) {
                 if (updateJobTarget() == UpdateTarget::None &&
                     installStatus_.state == InstallState::Idle) {
-                    drawUpdateCheck(fb, updateCheckReady(), netProvisioned_,
-                                    updateSourceKnown_, updateStatus_, netStatus_,
-                                    kFirmwareVersion, updateManifestUrl_, updateRow_);
+                    drawUpdateCheck(fb, updateStatus_, netStatus_, checkView);
                 } else {
                     drawUpdateProgress(fb, installStatus_, netStatus_);
                 }
@@ -562,11 +567,10 @@ void Game::drawCfg(Framebuffer& fb) const {
                                      : updateStatus_.webVersion,
                                   updateConfirmPick_);
             } else {
-                drawUpdateCheck(fb, updateCheckReady(), netProvisioned_,
-                                updateSourceKnown_, updateStatus_, netStatus_,
-                                kFirmwareVersion, updateManifestUrl_, updateRow_);
+                drawUpdateCheck(fb, updateStatus_, netStatus_, checkView);
             }
             break;
+        }
         case CfgScreen::UpdateQr: drawUpdateQr(fb, updateManifestUrl_); break;
         case CfgScreen::PediaQr: drawPediaQr(fb, pediaQrPage_, netProvisioned_); break;
         case CfgScreen::FactoryReset: {
