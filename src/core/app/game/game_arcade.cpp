@@ -332,16 +332,24 @@ void Game::drawArcade(Framebuffer& fb) const {
 
 void Game::drawArcadeDetail(Framebuffer& fb) const {
     if (arcadeRow_ < 0 || arcadeRow_ >= arcadeGameCount()) return;
-    drawArcadeCabinet(fb, registry_, arcadeGames()[arcadeRow_], arcadeDifficulty_,
-                      arcadePlays(arcadeRow_), arcadeWins(arcadeRow_),
-                      arcadeBest(arcadeRow_));
+    ArcadeTally tally;
+    tally.plays = arcadePlays(arcadeRow_);
+    tally.wins = arcadeWins(arcadeRow_);
+    tally.best = arcadeBest(arcadeRow_);
+    drawArcadeCabinet(fb, registry_, arcadeGames()[arcadeRow_], arcadeDifficulty_, tally);
 }
 
 void Game::drawArcadeOutcome(Framebuffer& fb) const {
     if (arcadeGame_ < 0 || arcadeGame_ >= arcadeGameCount()) return;
-    drawArcadeResult(fb, arcadeGames()[arcadeGame_], arcadeWon_, arcadeScore_,
-                     arcadeScoreMax_, arcadeBest(arcadeGame_), arcadeNewBest_,
-                     arcadeBits_, kArcadePlayHappy);
+    ArcadeResultView v;
+    v.won = arcadeWon_;
+    v.score = arcadeScore_;
+    v.scoreMax = arcadeScoreMax_;
+    v.best = arcadeBest(arcadeGame_);
+    v.newBest = arcadeNewBest_;
+    v.bits = arcadeBits_;
+    v.happy = kArcadePlayHappy;
+    drawArcadeResult(fb, arcadeGames()[arcadeGame_], v);
 }
 
 }  // namespace mal

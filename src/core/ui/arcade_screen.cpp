@@ -63,7 +63,8 @@ void drawArcadeList(Framebuffer& fb, const ContentRegistry& reg, const int* play
 
 void drawArcadeCabinet(Framebuffer& fb, const ContentRegistry& reg,
                        const ArcadeGameDef& def, ArcadeDifficulty difficulty,
-                       int plays, int wins, int best) {
+                       const ArcadeTally& tally) {
+    const int plays = tally.plays, wins = tally.wins, best = tally.best;
     drawHeaderBand(fb, def.displayName);
 
     // The record sits up in the header's own row, right-aligned — it belongs to the
@@ -121,9 +122,9 @@ void drawArcadeCabinet(Framebuffer& fb, const ContentRegistry& reg,
     drawHintBand(fb, "A DIFF  B START  C BACK");
 }
 
-void drawArcadeResult(Framebuffer& fb, const ArcadeGameDef& def, bool won,
-                      int score, int scoreMax, int best, bool newBest, int bits,
-                      int happy) {
+void drawArcadeResult(Framebuffer& fb, const ArcadeGameDef& def, const ArcadeResultView& v) {
+    const bool won = v.won;
+    const int score = v.score, scoreMax = v.scoreMax;
     fb.clear(palColor(Pal::PAPER));
     drawHeaderBand(fb, def.displayName);
 
@@ -139,21 +140,21 @@ void drawArcadeResult(Framebuffer& fb, const ArcadeGameDef& def, bool won,
         // a cabinet is endless and "24 / 10" would read as a bug, so what replaces it
         // is the thing that is actually still in play: the score to beat.
         char line[32];
-        if (score >= scoreMax && newBest)
+        if (score >= scoreMax && v.newBest)
             std::snprintf(line, sizeof(line), "SCORE %d - NEW BEST", score);
-        else if (score >= scoreMax && best > 0)
-            std::snprintf(line, sizeof(line), "SCORE %d   BEST %d", score, best);
+        else if (score >= scoreMax && v.best > 0)
+            std::snprintf(line, sizeof(line), "SCORE %d   BEST %d", score, v.best);
         else
             std::snprintf(line, sizeof(line), "SCORE %d / %d", score, scoreMax);
         drawText(fb, (kActiveW - textWidth(line)) / 2, 84, line, palColor(Pal::INK_DIM));
     }
 
     char bitsLine[24];
-    std::snprintf(bitsLine, sizeof(bitsLine), "+%d BITS", bits);
+    std::snprintf(bitsLine, sizeof(bitsLine), "+%d BITS", v.bits);
     drawText(fb, (kActiveW - textWidth(bitsLine, 2)) / 2, 116, bitsLine,
              palColor(Pal::ACCENT), 2);
     char happyLine[24];
-    std::snprintf(happyLine, sizeof(happyLine), "+%d HAPPINESS", happy);
+    std::snprintf(happyLine, sizeof(happyLine), "+%d HAPPINESS", v.happy);
     drawText(fb, (kActiveW - textWidth(happyLine)) / 2, 148, happyLine,
              palColor(Pal::INK));
 

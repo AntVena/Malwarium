@@ -22,21 +22,33 @@ class ContentRegistry;
 void drawArcadeList(Framebuffer& fb, const ContentRegistry& reg, const int* plays,
                     const int* rows, int n, int cursor, int beat);
 
+// One cabinet's lifetime record.
+struct ArcadeTally {
+    int plays = 0;
+    int wins = 0;
+    int best = 0;                    // high score; 0 for a cabinet that keeps none
+};
+
 // L3 cabinet page: what the game asks, what the dial moves, what a run pays, and the
-// START row. `plays`/`wins` are this cabinet's own lifetime tallies, and `best` its
-// high score — drawn only where a run HAS a score to keep, which is what makes the two
-// endless cabinets legible as endless: their page shows a number to beat rather than a
-// finish to reach.
+// START row. The tally's `best` is drawn only where a run HAS a score to keep, which is
+// what makes the two endless cabinets legible as endless: their page shows a number to
+// beat rather than a finish to reach.
 void drawArcadeCabinet(Framebuffer& fb, const ContentRegistry& reg,
                        const ArcadeGameDef& def, ArcadeDifficulty difficulty,
-                       int plays, int wins, int best);
+                       const ArcadeTally& tally);
 
-// The payout screen a finished run lands on. `score`/`scoreMax` are the run's own
-// numbers (both 0 for a win-or-lose cabinet, which has nothing to show but the
-// verdict); `best`/`newBest` are the cabinet's high score after this run and whether
-// this run is what set it; `bits`/`happy` are what was actually banked.
-void drawArcadeResult(Framebuffer& fb, const ArcadeGameDef& def, bool won,
-                      int score, int scoreMax, int best, bool newBest, int bits,
-                      int happy);
+// The payout screen a finished run lands on.
+struct ArcadeResultView {
+    bool won = false;
+    // The run's own numbers, both 0 for a win-or-lose cabinet, which has nothing to show
+    // but the verdict.
+    int score = 0;
+    int scoreMax = 0;
+    int best = 0;                    // the cabinet's high score after this run
+    bool newBest = false;            // this run is what set it
+    int bits = 0;                    // what was actually banked
+    int happy = 0;
+};
+void drawArcadeResult(Framebuffer& fb, const ArcadeGameDef& def, const ArcadeResultView& v);
 
 }  // namespace mal
