@@ -266,17 +266,23 @@ void drawExploreBadge(Framebuffer& fb, const char* label, int count, int countMa
 enum class ExploreControlRow { Ping, Warp, AutoProgress, Sound, Stop };
 constexpr int kExploreControlRows = 5;
 
-// `hasWarpKey` dims the WARP row (B on it is inert with no key held); `autoProgress` is
-// the mode row's ON/OFF state, dual-coded by the word. `exploreSound` is the SOUND row's
-// ON/MUTED, and `soundAudible` false (CFG's SOUND letting no Event cue through) makes
-// that row read OFF IN CFG instead, since a switch reading ON under a silent device lies. `xpEfficiencyPct` is a FOOTER
-// stat under the rows, not a row — what a wild win on the armed rung actually pays as a
-// percentage of the flat base (Game::exploreXpEfficiencyPct). It belongs on this screen
-// because this is where the two decisions it informs are made: whether to leave a rung
-// the pet has outgrown, and whether to let auto-progress keep walking it.
-void drawExploreControl(Framebuffer& fb, int cursor, bool hasWarpKey,
-                        bool autoProgress, bool exploreSound, bool soundAudible,
-                        int xpEfficiencyPct);
+// What the SOUND row reads. OffInCfg is CFG's SOUND letting no Event cue through: the
+// row says so, since a switch reading ON under a silent device lies.
+enum class ExploreSound : uint8_t { On, Muted, OffInCfg };
+
+struct ExploreControlView {
+    int cursor = 0;
+    bool hasWarpKey = false;          // false dims the WARP row: B on it is inert
+    bool autoProgress = false;        // the mode row's ON/OFF, dual-coded by the word
+    ExploreSound sound = ExploreSound::On;
+    // A FOOTER stat under the rows, not a row: what a wild win on the armed rung
+    // actually pays as a percentage of the flat base (Game::exploreXpEfficiencyPct). It
+    // belongs on this screen because this is where the two decisions it informs are
+    // made: whether to leave a rung the pet has outgrown, and whether to let
+    // auto-progress keep walking it.
+    int xpEfficiencyPct = 100;
+};
+void drawExploreControl(Framebuffer& fb, const ExploreControlView& v);
 
 // Sector accessors ("difficulty-scaled by sector tier") — sector identity
 // is data owned by this file; Game reads it through these rather than duplicating

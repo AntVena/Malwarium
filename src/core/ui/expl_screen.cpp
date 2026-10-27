@@ -776,9 +776,7 @@ void drawExploreBadge(Framebuffer& fb, const char* label, int count, int countMa
 // Network Ping (force the next step) · Warp (if a key is held) · the AUTO-PROGRESS and
 // SOUND switches · Stop. Standard A/B/C returns, spelled out (grayscale-safe). A bordered
 // PAPER panel (TRACK outline via a 2px inset) centered over the living area.
-void drawExploreControl(Framebuffer& fb, int cursor, bool hasWarpKey,
-                        bool autoProgress, bool exploreSound, bool soundAudible,
-                        int xpEfficiencyPct) {
+void drawExploreControl(Framebuffer& fb, const ExploreControlView& v) {
     const int boxW = 184, boxH = 160;
     const int bx = (kActiveW - boxW) / 2, by = (kActiveH - boxH) / 2;
     fb.fillRect(bx - 2, by - 2, boxW + 4, boxH + 4, palColor(Pal::TRACK));
@@ -795,8 +793,8 @@ void drawExploreControl(Framebuffer& fb, int cursor, bool hasWarpKey,
     const int rowTop = by + 28, rowH = 18;
     for (int i = 0; i < kExploreControlRows; ++i) {
         const int y = rowTop + i * rowH;
-        const bool focused = (i == cursor);
-        const bool inert = (i == static_cast<int>(ExploreControlRow::Warp)) && !hasWarpKey;
+        const bool focused = (i == v.cursor);
+        const bool inert = (i == static_cast<int>(ExploreControlRow::Warp)) && !v.hasWarpKey;
         if (focused) {
             fb.fillRect(bx + 6, y - 3, boxW - 12, rowH - 2, palColor(Pal::TRACK));
             drawRowCursor(fb, bx + 8, y, palColor(Pal::ACCENT));
@@ -808,11 +806,13 @@ void drawExploreControl(Framebuffer& fb, int cursor, bool hasWarpKey,
         const char* right = nullptr;
         Rgb565 rc = palColor(Pal::INK_DIM);
         if (i == static_cast<int>(ExploreControlRow::AutoProgress)) {
-            right = autoProgress ? "ON" : "OFF";
-            if (autoProgress) rc = palColor(Pal::ACCENT);
+            right = v.autoProgress ? "ON" : "OFF";
+            if (v.autoProgress) rc = palColor(Pal::ACCENT);
         } else if (i == static_cast<int>(ExploreControlRow::Sound)) {
-            right = !soundAudible ? "OFF IN CFG" : exploreSound ? "ON" : "MUTED";
-            if (soundAudible && exploreSound) rc = palColor(Pal::ACCENT);
+            right = v.sound == ExploreSound::OffInCfg ? "OFF IN CFG"
+                    : v.sound == ExploreSound::On     ? "ON"
+                                                      : "MUTED";
+            if (v.sound == ExploreSound::On) rc = palColor(Pal::ACCENT);
         } else if (inert) {
             right = "NO KEY";
         }
@@ -830,9 +830,9 @@ void drawExploreControl(Framebuffer& fb, int cursor, bool hasWarpKey,
     fb.fillRect(bx + 8, footY - 8, boxW - 16, 1, palColor(Pal::TRACK));
     drawText(fb, bx + 10, footY, "XP / WIN", palColor(Pal::INK_DIM));
     char eff[12];
-    std::snprintf(eff, sizeof(eff), "%d%%", xpEfficiencyPct);
-    const Rgb565 ec = xpEfficiencyPct < 100 ? palColor(Pal::WARN)
-                    : xpEfficiencyPct > 100 ? palColor(Pal::CALM)
+    std::snprintf(eff, sizeof(eff), "%d%%", v.xpEfficiencyPct);
+    const Rgb565 ec = v.xpEfficiencyPct < 100 ? palColor(Pal::WARN)
+                    : v.xpEfficiencyPct > 100 ? palColor(Pal::CALM)
                                             : palColor(Pal::INK);
     drawText(fb, bx + boxW - 10 - textWidth(eff), footY, eff, ec);
 
