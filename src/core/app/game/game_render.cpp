@@ -1074,10 +1074,15 @@ void Game::drawCombatScreen(Framebuffer& fb) const {
 }
 
 void Game::drawEncounterScreen(Framebuffer& fb) const {
-    const SpriteData* es = registry_.sprite(encounterEnemy_.spriteName);
-    drawEncounterIntro(fb, encounterEnemy_.name, encounterEnemy_.diffPips,
-                       encounterEnemy_.level, es, encounterSinkhole_,
-                       encounterChoice_, beat_);
+    EncounterIntroView v;
+    v.enemyName = encounterEnemy_.name;
+    v.enemySprite = registry_.sprite(encounterEnemy_.spriteName);
+    v.level = encounterEnemy_.level;
+    v.diffPips = encounterEnemy_.diffPips;
+    v.sinkholeAvailable = encounterSinkhole_;
+    v.choice = encounterChoice_;
+    v.beat = beat_;
+    drawEncounterIntro(fb, v);
 }
 
 void Game::drawWifiScreen(Framebuffer& fb) const {

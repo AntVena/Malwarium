@@ -305,12 +305,18 @@ const char* explSubAreaName(int sector, int idx);
 const char* sectorTitle(int idx);
 
 // Encounter intro: a wild malbeast + the Fight/Flee/Sinkhole choice.
-// `sinkholeAvailable` shows the Sinkhole row only when a Sinkhole Trap is held.
-// `level` is the depth level — always set for a wild encounter (this
-// screen never fires for Sim dummies/bosses), so it's shown as a plain number.
-void drawEncounterIntro(Framebuffer& fb, const char* enemyName, int diffPips,
-                        int level, const SpriteData* enemySprite,
-                        bool sinkholeAvailable, int choice, int beat);
+struct EncounterIntroView {
+    const char* enemyName = "";
+    const SpriteData* enemySprite = nullptr;
+    // The depth level: always set for a wild encounter (this screen never fires for Sim
+    // dummies/bosses), so it's shown as a plain number.
+    int level = 0;
+    int diffPips = 0;
+    bool sinkholeAvailable = false;  // a Sinkhole Trap is held: the third row shows
+    int choice = 0;
+    int beat = 0;
+};
+void drawEncounterIntro(Framebuffer& fb, const EncounterIntroView& v);
 
 // How much of the network glyph the pet gets through on a Wi-Fi event — the picture of
 // the discovery beat's reward, matched to Game::NetDiscovery. Eaten whole for a network

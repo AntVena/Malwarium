@@ -841,14 +841,14 @@ void drawExploreControl(Framebuffer& fb, const ExploreControlView& v) {
              palColor(Pal::INK_DIM));
 }
 
-void drawEncounterIntro(Framebuffer& fb, const char* enemyName, int diffPips,
-                        int level, const SpriteData* enemySprite,
-                        bool sinkholeAvailable, int choice, int beat) {
+void drawEncounterIntro(Framebuffer& fb, const EncounterIntroView& v) {
+    const SpriteData* enemySprite = v.enemySprite;
+    const int choice = v.choice;
     drawHeaderBand(fb, "WILD MALBEAST", nullptr, palColor(Pal::INK_DIM),
                    palColor(Pal::WARN));
 
     if (enemySprite) {
-        const int frame = idleFrame(*enemySprite, beat);
+        const int frame = idleFrame(*enemySprite, v.beat);
         const int w = enemySprite->frameW * kScaleNum / kScaleDen;
         const int h = enemySprite->h * kScaleNum / kScaleDen;
         const int x = (kActiveW - w) / 2;
@@ -860,15 +860,15 @@ void drawEncounterIntro(Framebuffer& fb, const char* enemyName, int diffPips,
         drawSpriteUpscaled(fb, *enemySprite, frame, x, y, kScaleNum, kScaleDen, /*row=*/0,
                            spriteMirrorToFace(*enemySprite, /*faceRight=*/false));
     }
-    drawText(fb, kMargin, 100, enemyName, palColor(Pal::INK));
+    drawText(fb, kMargin, 100, v.enemyName, palColor(Pal::INK));
     char lvBuf[8];
-    std::snprintf(lvBuf, sizeof(lvBuf), "Lv %d", level);
+    std::snprintf(lvBuf, sizeof(lvBuf), "Lv %d", v.level);
     drawText(fb, kActiveW - kMargin - textWidth(lvBuf), 100, lvBuf,
              palColor(Pal::INK_DIM));
-    drawDifficulty(fb, kMargin, 114, diffPips);
+    drawDifficulty(fb, kMargin, 114, v.diffPips);
 
     static const char* kOptions[3] = {"FIGHT", "FLEE", "SINKHOLE"};
-    const int n = sinkholeAvailable ? 3 : 2;
+    const int n = v.sinkholeAvailable ? 3 : 2;
     const int top = 140, rowH = 18;
     for (int i = 0; i < n; ++i) {
         const int y = top + i * rowH;
@@ -877,7 +877,7 @@ void drawEncounterIntro(Framebuffer& fb, const char* enemyName, int diffPips,
                  i == choice ? palColor(Pal::ACCENT) : palColor(Pal::INK));
     }
 
-    // Mandatory-in-spirit hint band (the wireframe,, shows it) — C's
+    // Mandatory-in-spirit hint band (the wireframe shows it): C's
     // "flee" meaning here isn't the standard back-contract, so it's spelled out.
     const char* hint = "A SWITCH  B CONFIRM  C FLEE";
     drawHintBand(fb, hint);
