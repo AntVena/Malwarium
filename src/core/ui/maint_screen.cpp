@@ -149,169 +149,189 @@ void drawMaintList(Framebuffer& fb, const PetModel& m, int cursor, int beat) {
     drawHintBand(fb, "A CYCLE  B OPEN  C BACK");
 }
 
-void drawMaintAction(Framebuffer& fb, MaintKind kind, const PetModel& m,
-                     int cost, int walletBits, int variant, int toolCount,
-                     int defragCount, int failPct, const PlayedRow& played) {
+namespace {
+
+// The played row's tag: the dial setting and what it multiplies the payout by, so the
+// stakes and the reward read together before B commits to either.
+void formatPlayTag(char* out, size_t cap, ArcadeDifficulty d) {
+    std::snprintf(out, cap, "%s x%d", arcadeDifficultyName(d), arcadeRewardMult(d));
+}
+
+// What a failed QUICK defrag or AV scan costs, said where the gamble is taken: the price
+// is a care ERROR as well as the Fragmentation, which is the half a new player would
+// never guess.
+void formatFailCost(char* out, size_t cap) {
+    std::snprintf(out, cap, "FAIL: +%d FRAG, +1 ERROR", kMaintFailPenalty);
+}
+
+void drawDefragAction(Framebuffer& fb, const PetModel& m, const MaintActionView& v) {
     char line[40];
-    // The played row's tag: the dial setting and what it multiplies the payout by, so
-    // the stakes and the reward read together before B commits to either.
-    const int mult = arcadeRewardMult(played.difficulty);
+    const int mult = arcadeRewardMult(v.played.difficulty);
     char playTag[16];
-    std::snprintf(playTag, sizeof(playTag), "%s x%d", arcadeDifficultyName(played.difficulty),
-                  mult);
-    // What a failed QUICK defrag or AV scan costs, said where the gamble is taken: the
-    // screen used to say only MAY FAIL, and the price is a care ERROR as well as the
-    // Fragmentation, which is the half a new player would never guess.
+    formatPlayTag(playTag, sizeof(playTag), v.played.difficulty);
     char failCost[40];
-    std::snprintf(failCost, sizeof(failCost), "FAIL: +%d FRAG, +1 ERROR", kMaintFailPenalty);
-    if (kind == MaintKind::Defrag) {
-        drawHeaderBand(fb, "DEFRAGMENTATION");
-        // The headline effect is the FOCUSED variant's, because the three don't pay the
-        // same: two take a fixed bite, and the played one is paid per unit its game
-        // reports. Naming the fixed number on a screen where it can be wrong would be
-        // worse than naming nothing.
-        if (variant == kDefragVariants - 1) {
-            if (played.bitsUnit)
-                std::snprintf(line, sizeof(line), "%s -%d FRAG, %s +%d B", played.unit,
-                              kPlayFragPerUnit * mult, played.bitsUnit,
-                              kPlayBitsPerUnit * mult);
-            else
-                std::snprintf(line, sizeof(line), "PER %s: -%d FRAG.", played.unit,
-                              kPlayFragPerUnit * mult);
-            drawText(fb, kMargin, 34, line, palColor(Pal::INK));
-        } else {
-            std::snprintf(line, sizeof(line), "REDUCES FRAGMENTATION BY %d.",
-                          kDefragReduction);
-            drawText(fb, kMargin, 34, line, palColor(Pal::INK));
-        }
-        // Everything under the headline is a READOUT, and dim is what says so — the
-        // same job it does on ITEMS and MODS, where the magnitude grid under the name is
-        // dim and the prose above it is INK. Colouring these by row instead made dim
-        // alternate down the page and mark no group at all, which spent the one
-        // separation channel that survives grayscale on texture. The two pairs are
-        // fenced by pitch instead: frag facts, then what you have to spend, 16px apart
-        // where each pair keeps 12.
-        std::snprintf(line, sizeof(line), "CURRENT FRAG: %d", m.fragmentation());
-        drawText(fb, kMargin, 50, line, palColor(Pal::INK_DIM));
-        // this pet's running defrag tally (persists through freeze/thaw),
-        // surfaced here and nowhere else.
-        std::snprintf(line, sizeof(line), "DEFRAGS DONE: %d", defragCount);
-        drawText(fb, kMargin, 62, line, palColor(Pal::INK_DIM));
-        // stage-scaled Bits cost + the wallet, both spelled out so the affordability
-        // reads in grayscale (COST N B / HAVE N B). It goes WARN when the wallet is
-        // short, which is how a FAILING gate reads on MODS too — dim while it passes,
-        // lit the moment it is the thing stopping you.
-        std::snprintf(line, sizeof(line), "COST %d B   HAVE %d B", cost, walletBits);
-        const bool afford = walletBits >= cost;
-        drawText(fb, kMargin, 78, line,
-                 afford ? palColor(Pal::INK_DIM) : palColor(Pal::WARN));
-        // The tool count is a WALLET line, not a pick: it belongs beside HAVE %d B at
-        // the readout pitch, above the list, rather than trailing the list at the list's
-        // own pitch — where a dim unindented row still reads as a fourth thing to land
-        // the cursor on.
-        std::snprintf(line, sizeof(line), "HELD DEFRAG TOOLS: %d", toolCount);
-        drawText(fb, kMargin, 90, line, palColor(Pal::INK_DIM));
-
-        // the three payment VARIANTS as a 3-row pick (A switches, B runs the
-        // focused one). QUICK = Bits-only, may fail; TOOL = spend a Defrag Tool for a
-        // guaranteed clean; the played game = the same Bits, then play for it.
-        // Grayscale-safe: the cursor marks the focus, and each row spells its terms in
-        // words (n% FAIL / GUARANTEED / NO TOOL / the dial). The 22px above the first row and the 28px
-        // below the last are what fence the pick off from the readouts and the action
-        // line — both wider than the 18px the rows keep between themselves.
-        const int rowY[3] = {112, 130, 148};
-        for (int i = 0; i < 3; ++i) {
-            const bool focus = variant == i;
-            if (focus) drawRowCursor(fb, kMargin, rowY[i], palColor(Pal::ACCENT));
-            const Rgb565 col = focus ? palColor(Pal::ACCENT) : palColor(Pal::INK);
-            const char* tag;
-            Rgb565 tagCol = palColor(Pal::INK_DIM);
-            char quickTag[16];
-            if (i == 0) {
-                std::snprintf(line, sizeof(line), "QUICK  -%d B", cost);
-                std::snprintf(quickTag, sizeof(quickTag), "%d%% FAIL", failPct);
-                tag = quickTag;
-            } else if (i == 1) {
-                std::snprintf(line, sizeof(line), "TOOL  -%d B -1", cost);
-                tag = toolCount > 0 ? "GUARANTEED" : "NO TOOL";
-                tagCol = toolCount > 0 ? palColor(Pal::CALM) : palColor(Pal::WARN);
-            } else {
-                std::snprintf(line, sizeof(line), "%s  -%d B", played.name, cost);
-                tag = playTag;          // never fails; the run sets the size of the clean
-            }
-            drawLabelValue(fb, kMargin + 12, rowY[i], line, col, tag, tagCol, 0, Overflow::Clip);
-        }
-
-        // Bottom action line: the gated reason, or the armed action. It names the
-        // ACTION, not the buttons — the band below does those, and the AV branch's
-        // "SCAN" cursor is the same shape.
-        const bool toolReady = toolCount > 0;
-        const bool runnable = afford && (variant != 1 || toolReady);
-        if (defragGated(m)) {
-            drawText(fb, kMargin, 176, "- NOTHING TO DEFRAGMENT -",
-                     palColor(Pal::INK_DIM));
-        } else if (!afford) {
-            drawText(fb, kMargin, 176, "- NOT ENOUGH BITS -", palColor(Pal::WARN));
-        } else if (variant == 1 && !toolReady) {
-            drawText(fb, kMargin, 176, "- NO DEFRAG TOOL -", palColor(Pal::WARN));
-        } else if (runnable) {
-            drawRowCursor(fb, kMargin, 176, palColor(Pal::ACCENT));
-            drawText(fb, kMargin + 12, 176, "RUN", palColor(Pal::ACCENT));
-            // The price of the gamble, as a footnote to the action that takes it — only
-            // while QUICK is the armed variant, the one of the three that can fail.
-            if (variant == 0)
-                drawText(fb, kMargin + 12, 190, failCost, palColor(Pal::INK_DIM));
-        }
-        drawHintBand(fb, runnable ? "A SWITCH  B RUN  C BACK" : "A SWITCH  C BACK");
+    formatFailCost(failCost, sizeof(failCost));
+    drawHeaderBand(fb, "DEFRAGMENTATION");
+    // The headline effect is the FOCUSED variant's, because the three don't pay the
+    // same: two take a fixed bite, and the played one is paid per unit its game
+    // reports. Naming the fixed number on a screen where it can be wrong would be
+    // worse than naming nothing.
+    if (v.variant == kDefragVariants - 1) {
+        if (v.played.bitsUnit)
+            std::snprintf(line, sizeof(line), "%s -%d FRAG, %s +%d B", v.played.unit,
+                          kPlayFragPerUnit * mult, v.played.bitsUnit,
+                          kPlayBitsPerUnit * mult);
+        else
+            std::snprintf(line, sizeof(line), "PER %s: -%d FRAG.", v.played.unit,
+                          kPlayFragPerUnit * mult);
+        drawText(fb, kMargin, 34, line, palColor(Pal::INK));
     } else {
-        drawHeaderBand(fb, "ANTIVIRUS");
-        // The prose follows the focused variant, as DEFRAG's headline does: a Quick scan
-        // is all-or-nothing, and a played one pays per unit until it is won.
-        if (variant == kAvVariants - 1) {
-            std::snprintf(line, sizeof(line), "PER %s: -%d FRAG UP TO %d", played.unit,
-                          kPlayFragPerUnit * mult, kAvReduction);
-            drawText(fb, kMargin, 34, line, palColor(Pal::INK));
-            drawText(fb, kMargin, 50, "WIN IT FOR A FULL SCAN:", palColor(Pal::INK));
-            drawText(fb, kMargin, 62, "DEBUFFS + GHOST CLEARED.", palColor(Pal::INK));
-        } else {
-            drawText(fb, kMargin, 34, "SCANS + REMOVES ROGUE PROCS.", palColor(Pal::INK));
-            std::snprintf(line, sizeof(line), "-%d FRAG. CLEARS DEBUFFS +", kAvReduction);
-            drawText(fb, kMargin, 50, line, palColor(Pal::INK));
-            drawText(fb, kMargin, 62, "REPLICATION GHOST.", palColor(Pal::INK));
-        }
-        char status[16];
-        avStatus(m, status, sizeof(status));
-        std::snprintf(line, sizeof(line), "STATUS: %s", status);
-        drawText(fb, kMargin, 78, line, palColor(Pal::INK_DIM));
-
-        // The two ways to run the same scan, picked the way DEFRAG's three are. Both
-        // free: QUICK rolls for it, the played game cannot fail — a run that stops
-        // short still pays its units off the disk.
-        const int rowY[2] = {112, 130};
-        for (int i = 0; i < kAvVariants; ++i) {
-            const bool focus = variant == i;
-            if (focus) drawRowCursor(fb, kMargin, rowY[i], palColor(Pal::ACCENT));
-            const Rgb565 col = focus ? palColor(Pal::ACCENT) : palColor(Pal::INK);
-            char quickTag[16];
-            const char* tag = playTag;
-            if (i == 0) {
-                std::snprintf(quickTag, sizeof(quickTag), "%d%% FAIL", failPct);
-                tag = quickTag;
-            }
-            drawLabelValue(fb, kMargin + 12, rowY[i], i == 0 ? "QUICK" : played.name, col,
-                           tag, palColor(Pal::INK_DIM), 0, Overflow::Clip);
-        }
-
-        if (avGated(m)) {
-            drawText(fb, kMargin, 176, "- SYSTEM CLEAN -", palColor(Pal::INK_DIM));
-        } else {
-            drawRowCursor(fb, kMargin, 176, palColor(Pal::ACCENT));
-            drawText(fb, kMargin + 12, 176, "SCAN", palColor(Pal::ACCENT));
-            if (variant == 0)
-                drawText(fb, kMargin + 12, 190, failCost, palColor(Pal::INK_DIM));
-        }
-        drawHintBand(fb, avGated(m) ? "A SWITCH  C BACK" : "A SWITCH  B SCAN  C BACK");
+        std::snprintf(line, sizeof(line), "REDUCES FRAGMENTATION BY %d.",
+                      kDefragReduction);
+        drawText(fb, kMargin, 34, line, palColor(Pal::INK));
     }
+    // Everything under the headline is a READOUT, and dim is what says so — the
+    // same job it does on ITEMS and MODS, where the magnitude grid under the name is
+    // dim and the prose above it is INK. Colouring these by row instead made dim
+    // alternate down the page and mark no group at all, which spent the one
+    // separation channel that survives grayscale on texture. The two pairs are
+    // fenced by pitch instead: frag facts, then what you have to spend, 16px apart
+    // where each pair keeps 12.
+    std::snprintf(line, sizeof(line), "CURRENT FRAG: %d", m.fragmentation());
+    drawText(fb, kMargin, 50, line, palColor(Pal::INK_DIM));
+    // this pet's running defrag tally (persists through freeze/thaw),
+    // surfaced here and nowhere else.
+    std::snprintf(line, sizeof(line), "DEFRAGS DONE: %d", v.defragCount);
+    drawText(fb, kMargin, 62, line, palColor(Pal::INK_DIM));
+    // stage-scaled Bits cost + the wallet, both spelled out so the affordability
+    // reads in grayscale (COST N B / HAVE N B). It goes WARN when the wallet is
+    // short, which is how a FAILING gate reads on MODS too — dim while it passes,
+    // lit the moment it is the thing stopping you.
+    std::snprintf(line, sizeof(line), "COST %d B   HAVE %d B", v.cost, v.walletBits);
+    const bool afford = v.walletBits >= v.cost;
+    drawText(fb, kMargin, 78, line,
+             afford ? palColor(Pal::INK_DIM) : palColor(Pal::WARN));
+    // The tool count is a WALLET line, not a pick: it belongs beside HAVE %d B at
+    // the readout pitch, above the list, rather than trailing the list at the list's
+    // own pitch — where a dim unindented row still reads as a fourth thing to land
+    // the cursor on.
+    std::snprintf(line, sizeof(line), "HELD DEFRAG TOOLS: %d", v.toolCount);
+    drawText(fb, kMargin, 90, line, palColor(Pal::INK_DIM));
+
+    // the three payment VARIANTS as a 3-row pick (A switches, B runs the
+    // focused one). QUICK = Bits-only, may fail; TOOL = spend a Defrag Tool for a
+    // guaranteed clean; the played game = the same Bits, then play for it.
+    // Grayscale-safe: the cursor marks the focus, and each row spells its terms in
+    // words (n% FAIL / GUARANTEED / NO TOOL / the dial). The 22px above the first row and the 28px
+    // below the last are what fence the pick off from the readouts and the action
+    // line — both wider than the 18px the rows keep between themselves.
+    const int rowY[3] = {112, 130, 148};
+    for (int i = 0; i < 3; ++i) {
+        const bool focus = v.variant == i;
+        if (focus) drawRowCursor(fb, kMargin, rowY[i], palColor(Pal::ACCENT));
+        const Rgb565 col = focus ? palColor(Pal::ACCENT) : palColor(Pal::INK);
+        const char* tag;
+        Rgb565 tagCol = palColor(Pal::INK_DIM);
+        char quickTag[16];
+        if (i == 0) {
+            std::snprintf(line, sizeof(line), "QUICK  -%d B", v.cost);
+            std::snprintf(quickTag, sizeof(quickTag), "%d%% FAIL", v.failPct);
+            tag = quickTag;
+        } else if (i == 1) {
+            std::snprintf(line, sizeof(line), "TOOL  -%d B -1", v.cost);
+            tag = v.toolCount > 0 ? "GUARANTEED" : "NO TOOL";
+            tagCol = v.toolCount > 0 ? palColor(Pal::CALM) : palColor(Pal::WARN);
+        } else {
+            std::snprintf(line, sizeof(line), "%s  -%d B", v.played.name, v.cost);
+            tag = playTag;          // never fails; the run sets the size of the clean
+        }
+        drawLabelValue(fb, kMargin + 12, rowY[i], line, col, tag, tagCol, 0, Overflow::Clip);
+    }
+
+    // Bottom action line: the gated reason, or the armed action. It names the
+    // ACTION, not the buttons — the band below does those, and the AV branch's
+    // "SCAN" cursor is the same shape.
+    const bool toolReady = v.toolCount > 0;
+    const bool runnable = afford && (v.variant != 1 || toolReady);
+    if (defragGated(m)) {
+        drawText(fb, kMargin, 176, "- NOTHING TO DEFRAGMENT -",
+                 palColor(Pal::INK_DIM));
+    } else if (!afford) {
+        drawText(fb, kMargin, 176, "- NOT ENOUGH BITS -", palColor(Pal::WARN));
+    } else if (v.variant == 1 && !toolReady) {
+        drawText(fb, kMargin, 176, "- NO DEFRAG TOOL -", palColor(Pal::WARN));
+    } else if (runnable) {
+        drawRowCursor(fb, kMargin, 176, palColor(Pal::ACCENT));
+        drawText(fb, kMargin + 12, 176, "RUN", palColor(Pal::ACCENT));
+        // The price of the gamble, as a footnote to the action that takes it — only
+        // while QUICK is the armed variant, the one of the three that can fail.
+        if (v.variant == 0)
+            drawText(fb, kMargin + 12, 190, failCost, palColor(Pal::INK_DIM));
+    }
+    drawHintBand(fb, runnable ? "A SWITCH  B RUN  C BACK" : "A SWITCH  C BACK");
+}
+
+void drawAvAction(Framebuffer& fb, const PetModel& m, const MaintActionView& v) {
+    char line[40];
+    const int mult = arcadeRewardMult(v.played.difficulty);
+    char playTag[16];
+    formatPlayTag(playTag, sizeof(playTag), v.played.difficulty);
+    char failCost[40];
+    formatFailCost(failCost, sizeof(failCost));
+    drawHeaderBand(fb, "ANTIVIRUS");
+    // The prose follows the focused variant, as DEFRAG's headline does: a Quick scan
+    // is all-or-nothing, and a played one pays per unit until it is won.
+    if (v.variant == kAvVariants - 1) {
+        std::snprintf(line, sizeof(line), "PER %s: -%d FRAG UP TO %d", v.played.unit,
+                      kPlayFragPerUnit * mult, kAvReduction);
+        drawText(fb, kMargin, 34, line, palColor(Pal::INK));
+        drawText(fb, kMargin, 50, "WIN IT FOR A FULL SCAN:", palColor(Pal::INK));
+        drawText(fb, kMargin, 62, "DEBUFFS + GHOST CLEARED.", palColor(Pal::INK));
+    } else {
+        drawText(fb, kMargin, 34, "SCANS + REMOVES ROGUE PROCS.", palColor(Pal::INK));
+        std::snprintf(line, sizeof(line), "-%d FRAG. CLEARS DEBUFFS +", kAvReduction);
+        drawText(fb, kMargin, 50, line, palColor(Pal::INK));
+        drawText(fb, kMargin, 62, "REPLICATION GHOST.", palColor(Pal::INK));
+    }
+    char status[16];
+    avStatus(m, status, sizeof(status));
+    std::snprintf(line, sizeof(line), "STATUS: %s", status);
+    drawText(fb, kMargin, 78, line, palColor(Pal::INK_DIM));
+
+    // The two ways to run the same scan, picked the way DEFRAG's three are. Both
+    // free: QUICK rolls for it, the played game cannot fail — a run that stops
+    // short still pays its units off the disk.
+    const int rowY[2] = {112, 130};
+    for (int i = 0; i < kAvVariants; ++i) {
+        const bool focus = v.variant == i;
+        if (focus) drawRowCursor(fb, kMargin, rowY[i], palColor(Pal::ACCENT));
+        const Rgb565 col = focus ? palColor(Pal::ACCENT) : palColor(Pal::INK);
+        char quickTag[16];
+        const char* tag = playTag;
+        if (i == 0) {
+            std::snprintf(quickTag, sizeof(quickTag), "%d%% FAIL", v.failPct);
+            tag = quickTag;
+        }
+        drawLabelValue(fb, kMargin + 12, rowY[i], i == 0 ? "QUICK" : v.played.name, col,
+                       tag, palColor(Pal::INK_DIM), 0, Overflow::Clip);
+    }
+
+    if (avGated(m)) {
+        drawText(fb, kMargin, 176, "- SYSTEM CLEAN -", palColor(Pal::INK_DIM));
+    } else {
+        drawRowCursor(fb, kMargin, 176, palColor(Pal::ACCENT));
+        drawText(fb, kMargin + 12, 176, "SCAN", palColor(Pal::ACCENT));
+        if (v.variant == 0)
+            drawText(fb, kMargin + 12, 190, failCost, palColor(Pal::INK_DIM));
+    }
+    drawHintBand(fb, avGated(m) ? "A SWITCH  C BACK" : "A SWITCH  B SCAN  C BACK");
+}
+
+}  // namespace
+
+void drawMaintAction(Framebuffer& fb, const PetModel& m, const MaintActionView& v) {
+    if (v.kind == MaintKind::Defrag) drawDefragAction(fb, m, v);
+    else drawAvAction(fb, m, v);
 }
 
 // The right column of a played board's footer: what the run is FOR, the one thing its

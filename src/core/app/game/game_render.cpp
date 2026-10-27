@@ -823,18 +823,21 @@ void Game::drawDetail(Framebuffer& fb) const {
             }
             break;
         case SubmenuId::Maint: {
-            PlayedRow played;
+            MaintActionView v;
             if (const ArcadeGameDef* g = arcadeGameByKind(maintPlayedGame(maintKind_))) {
-                played.name = g->displayName;
-                played.unit = g->unitName ? g->unitName : "RUN";
-                played.bitsUnit = g->bitsUnitName;
+                v.played.name = g->displayName;
+                v.played.unit = g->unitName ? g->unitName : "RUN";
+                v.played.bitsUnit = g->bitsUnitName;
             }
-            played.difficulty = maintDifficulty_;
-            drawMaintAction(fb, maintKind_, model_,
-                            maintKind_ == MaintKind::Defrag ? defragCost() : 0,
-                            bits_, maintVariant_,
-                            inventory_.count(kDefragToolId), defragCount_, maintFailPct(),
-                            played);
+            v.played.difficulty = maintDifficulty_;
+            v.kind = maintKind_;
+            v.variant = maintVariant_;
+            v.cost = maintKind_ == MaintKind::Defrag ? defragCost() : 0;
+            v.walletBits = bits_;
+            v.toolCount = inventory_.count(kDefragToolId);
+            v.defragCount = defragCount_;
+            v.failPct = maintFailPct();
+            drawMaintAction(fb, model_, v);
             break;
         }
         case SubmenuId::Cfg:

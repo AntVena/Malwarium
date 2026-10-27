@@ -33,15 +33,22 @@ struct PlayedRow {
 };
 
 // L3 action screen: effect summary, the payment VARIANTS as a pick, and Run/Scan (or the
-// gated line). `variant` is the focused one — DEFRAG: 0 = QUICK (Bits, may fail),
-// 1 = TOOL (a Defrag Tool item for a guaranteed clean), 2 = PLAYED; AV: 0 = QUICK,
-// 1 = PLAYED. A Defrag shows its stage-scaled Bits `cost` against `walletBits` (AV is
-// free); `toolCount` is how many tools are held; `defragCount` is this pet's running
-// tally. `failPct` is the chance a QUICK run fails right now (Game::maintFailPct), drawn
-// beside it with what a failure costs.
-void drawMaintAction(Framebuffer& fb, MaintKind kind, const PetModel& m,
-                     int cost, int walletBits, int variant, int toolCount,
-                     int defragCount, int failPct, const PlayedRow& played);
+// gated line).
+struct MaintActionView {
+    MaintKind kind = MaintKind::Defrag;
+    // The focused variant. DEFRAG: 0 = QUICK (Bits, may fail), 1 = TOOL (a Defrag Tool
+    // item for a guaranteed clean), 2 = PLAYED; AV: 0 = QUICK, 1 = PLAYED.
+    int variant = 0;
+    int cost = 0;                    // a Defrag's stage-scaled Bits (AV is free)...
+    int walletBits = 0;              // ...shown against this
+    int toolCount = 0;               // Defrag Tools held
+    int defragCount = 0;             // this pet's running tally
+    // The chance a QUICK run fails right now (Game::maintFailPct), drawn beside it with
+    // what a failure costs.
+    int failPct = 0;
+    PlayedRow played;
+};
+void drawMaintAction(Framebuffer& fb, const PetModel& m, const MaintActionView& v);
 
 // The live readout a played board's footer shows, filled in by Game so neither board
 // knows which context it is being played in. `title` heads the board (the cabinet's
