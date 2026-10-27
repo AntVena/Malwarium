@@ -207,11 +207,12 @@ void drawArchPicker(Framebuffer& fb, const std::vector<ArchPickRow>& tiles, int 
     drawHintBand(fb, "A NEXT  B OPEN  C BACK");
 }
 
-void drawArchList(Framebuffer& fb, const std::vector<ArchRow>& rows, const char* title,
-                  int cursor, int used, int maxSlots, bool showLevels) {
+void drawArchList(Framebuffer& fb, const std::vector<ArchRow>& rows, const ArchListView& v) {
+    const int cursor = v.cursor;
+    const bool showLevels = v.status == ArchStatusColumn::Level;
     char slots[16];
-    std::snprintf(slots, sizeof(slots), "SLOTS %d/%d", used, maxSlots);
-    drawHeaderBand(fb, title ? title : "ARCH", slots);
+    std::snprintf(slots, sizeof(slots), "SLOTS %d/%d", v.used, v.maxSlots);
+    drawHeaderBand(fb, v.title ? v.title : "ARCH", slots);
 
     const int n = static_cast<int>(rows.size());
     if (n == 0) {
@@ -221,9 +222,9 @@ void drawArchList(Framebuffer& fb, const std::vector<ArchRow>& rows, const char*
     }
 
     const int scrollTop = listScrollTop(cursor, n, kVisibleRows);
-    for (int v = 0; v < kVisibleRows && scrollTop + v < n; ++v) {
-        const int i = scrollTop + v;
-        const int y = kRowTop + v * kRowH;
+    for (int slot = 0; slot < kVisibleRows && scrollTop + slot < n; ++slot) {
+        const int i = scrollTop + slot;
+        const int y = kRowTop + slot * kRowH;
         const ArchRow& r = rows[i];
         const char* name = r.def ? r.def->displayName : "?";
         const char* stage = r.def ? stageName(r.def->stage) : "-";

@@ -329,7 +329,8 @@ int moveProseLines(const MoveDef& m) {
 }
 
 void drawMoveDetail(Framebuffer& fb, const ContentRegistry& reg, const MoveDef& m,
-                    Stage petStage, bool equippedHere, int proseScroll, int beat) {
+                    const MoveDetailView& v) {
+    const bool equippedHere = v.equippedHere;
     drawHeaderBand(fb, "MOVE");
 
     // Icon + name + kind tag. Most moves have no glyph yet, so the name only indents
@@ -340,8 +341,8 @@ void drawMoveDetail(Framebuffer& fb, const ContentRegistry& reg, const MoveDef& 
     if (ic) drawSprite(fb, *ic, 0, kMargin, 30);
     drawLabelValue(fb, ic ? kMargin + 26 : kMargin, 36, m.displayName,
                    palColor(Pal::INK), moveKindTag(m.kind), palColor(Pal::ACCENT),
-                   beat, Overflow::Scroll);
-    const bool locked = !moveUnlockedAtStage(m, petStage);
+                   v.beat, Overflow::Scroll);
+    const bool locked = !moveUnlockedAtStage(m, v.petStage);
 
     const SpecRows spec = specRows(m);
     const EffectText prose = effectText(m);   // must outlive drawSpecSheet
@@ -349,7 +350,7 @@ void drawMoveDetail(Framebuffer& fb, const ContentRegistry& reg, const MoveDef& 
     sheet.rows = spec.rows;
     sheet.rowCount = spec.count;
     sheet.prose = prose.c_str();
-    sheet.proseScroll = proseScroll;
+    sheet.proseScroll = v.proseScroll;
     const SpecSheetLayout laid =
         drawSpecSheet(fb, kMargin, kDetailPanelTop, kActiveW - 2 * kMargin,
                       kDetailPanelBottom, sheet);

@@ -74,11 +74,17 @@ void drawMovePicker(Framebuffer& fb, const ContentRegistry& reg, const MoveLoado
 // L4 move detail — the whole screen for one move, drilled into with B from the picker
 // (the same list -> detail -> act shape as ITEMS). The full readout plus prose that
 // pages on A instead of being truncated, and the EQUIP action itself — so the picker
-// never has to be both a chooser and a reader. `proseScroll` is the first prose line
-// to show; the caller advances it (Game::moveProseScroll_) and wraps at
-// moveProseLines() below.
+// never has to be both a chooser and a reader.
+struct MoveDetailView {
+    Stage petStage = Stage::BootSector;
+    bool equippedHere = false;       // the move already in the slot: no EQUIP action
+    // The first prose line to show; the caller advances it (Game::moveProseScroll_) and
+    // wraps at moveProseLines() below.
+    int proseScroll = 0;
+    int beat = 0;
+};
 void drawMoveDetail(Framebuffer& fb, const ContentRegistry& reg, const MoveDef& m,
-                    Stage petStage, bool equippedHere, int proseScroll, int beat);
+                    const MoveDetailView& v);
 
 // How many prose lines the detail page shows at once, and how many the move needs —
 // the caller's scroll bounds. Returns 0 extra when it all fits (no scroll offered).

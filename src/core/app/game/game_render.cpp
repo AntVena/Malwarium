@@ -734,12 +734,14 @@ void Game::drawSubmenu(Framebuffer& fb) const {
                 // The group's own name is the list's title, which is the whole reason
                 // the picker exists: the header says which shelf this is.
                 const auto tiles = buildArchPickerRows(registry_, pet_, rack_, records_);
-                const char* title = "ARCH";
+                ArchListView v;
                 for (const ArchPickRow& t : tiles)
-                    if (t.group == archGroup_) { title = t.label; break; }
-                drawArchList(fb, archRows(), title, listRow_,
-                             static_cast<int>(rack_.size()), rackSlots(),
-                             archGroup_.kind == ArchGroup::Kind::Sell);
+                    if (t.group == archGroup_) { v.title = t.label; break; }
+                v.cursor = listRow_;
+                v.used = static_cast<int>(rack_.size());
+                v.maxSlots = rackSlots();
+                if (archGroup_.kind == ArchGroup::Kind::Sell) v.status = ArchStatusColumn::Level;
+                drawArchList(fb, archRows(), v);
             }
             break;
         case SubmenuId::Mods: {
@@ -919,9 +921,12 @@ void Game::drawTrain(Framebuffer& fb) const {
         // move falls back to the picker rather than drawing an empty page.
         if (const MoveDef* m = focusedPickerMove()) {
             const char* eq = moveLoadout_.equipped(moveSlot_);
-            drawMoveDetail(fb, registry_, *m,
-                           pet_ ? pet_->stage : Stage::BootSector,
-                           eq && std::strcmp(eq, m->id) == 0, moveProseScroll_, beat_);
+            MoveDetailView dv;
+            dv.petStage = pet_ ? pet_->stage : Stage::BootSector;
+            dv.equippedHere = eq && std::strcmp(eq, m->id) == 0;
+            dv.proseScroll = moveProseScroll_;
+            dv.beat = beat_;
+            drawMoveDetail(fb, registry_, *m, dv);
             return;
         }
     }

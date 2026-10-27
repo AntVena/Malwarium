@@ -95,13 +95,21 @@ std::vector<ArchRow> buildArchRows(const ContentRegistry& reg, ArchGroup group,
 void drawArchPicker(Framebuffer& fb, const std::vector<ArchPickRow>& tiles, int cursor,
                     int used, int maxSlots);
 
-// L2b rack list, showing one group's rows. `cursor` is the focused row; `title` names
-// the group. A group can outgrow the screen on its own now that the shelf holds 64, so
-// the list still draws a kVisibleRows window with the slim scrollbar items/mods/cfg use.
-// `showLevels` puts each stored pet's level where FROZEN would go — the SELL list's
-// status column, since level is what a sale is priced on.
-void drawArchList(Framebuffer& fb, const std::vector<ArchRow>& rows, const char* title,
-                  int cursor, int used, int maxSlots, bool showLevels = false);
+// What a stored pet's row says in its status column. Level is the SELL list's, since
+// level is what a sale is priced on; every other list says FROZEN.
+enum class ArchStatusColumn : uint8_t { Frozen, Level };
+
+// L2b rack list, showing one group's rows. A group can outgrow the screen on its own now
+// that the shelf holds 64, so the list draws a kVisibleRows window with the slim
+// scrollbar items/mods/cfg use.
+struct ArchListView {
+    const char* title = "ARCH";      // names the group
+    int cursor = 0;
+    int used = 0;                    // rack slots in use...
+    int maxSlots = 0;                // ...of how many
+    ArchStatusColumn status = ArchStatusColumn::Frozen;
+};
+void drawArchList(Framebuffer& fb, const std::vector<ArchRow>& rows, const ArchListView& v);
 
 // What an ARCH pet screen shows about one pet and its inline confirm.
 struct ArchConfirmView {
