@@ -326,8 +326,13 @@ void Game::drawArcade(Framebuffer& fb) const {
     for (int i = 0; i < arcadeGameCount() && i < kArcadeMaxCabinets; ++i)
         plays[i] = arcadePlays_[i];
     int rows[kArcadeMaxCabinets] = {0};
-    const int n = arcadeOfferedRows(rows, kArcadeMaxCabinets);
-    drawArcadeList(fb, registry_, plays, rows, n, arcadeRow_, beat_);
+    ArcadeListView v;
+    v.rows = rows;
+    v.n = arcadeOfferedRows(rows, kArcadeMaxCabinets);
+    v.plays = plays;
+    v.cursor = arcadeRow_;
+    v.beat = beat_;
+    drawArcadeList(fb, registry_, v);
 }
 
 void Game::drawArcadeDetail(Framebuffer& fb) const {

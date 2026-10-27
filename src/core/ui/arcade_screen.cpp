@@ -34,14 +34,13 @@ constexpr int kCabStartY = 176;
 
 }  // namespace
 
-void drawArcadeList(Framebuffer& fb, const ContentRegistry& reg, const int* plays,
-                    const int* rows, int n, int cursor, int beat) {
+void drawArcadeList(Framebuffer& fb, const ContentRegistry& reg, const ArcadeListView& v) {
     drawHeaderBand(fb, "GAMES");
-    for (int v = 0; v < n; ++v) {
-        const int i = rows[v];
+    for (int slot = 0; slot < v.n; ++slot) {
+        const int i = v.rows[slot];
         const ArcadeGameDef& d = arcadeGames()[i];
-        const int y = kRowTop + v * kRowH;
-        if (i == cursor) {
+        const int y = kRowTop + slot * kRowH;
+        if (i == v.cursor) {
             fb.fillRect(4, y + 2, kActiveW - 8, kRowH - 4, palColor(Pal::TRACK));
             drawRowCursor(fb, 8, y + (kRowH - 7) / 2, palColor(Pal::ACCENT));
         }
@@ -51,13 +50,13 @@ void drawArcadeList(Framebuffer& fb, const ContentRegistry& reg, const int* play
         // to three glyphs because the NAME is what the row is for, and an untouched
         // cabinet says so in a word rather than with a zero the eye slides off.
         char tally[16];
-        if (plays[i] > 0) std::snprintf(tally, sizeof(tally), "x%d", plays[i]);
+        if (v.plays[i] > 0) std::snprintf(tally, sizeof(tally), "x%d", v.plays[i]);
         else std::snprintf(tally, sizeof(tally), "NEW");
         const int textY = y + (kRowH - kFontH) / 2;
         const int tallyX = kActiveW - kMargin - textWidth(tally);
         drawText(fb, tallyX, textY, tally, palColor(Pal::INK_DIM));
         drawTextMarquee(fb, 40, textY, tallyX - kMargin - 40, d.displayName,
-                        palColor(Pal::INK), beat, scrollWhen(i == cursor));
+                        palColor(Pal::INK), v.beat, scrollWhen(i == v.cursor));
     }
 }
 

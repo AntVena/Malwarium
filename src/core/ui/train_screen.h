@@ -34,14 +34,18 @@ std::vector<const MoveDef*> ownedMoveList(const ContentRegistry& reg,
 // there are for the pet at `stage` — 0 for an egg, which has none.
 int loadoutSelectableCount(Stage stage);
 
-// MOVES slot list. `cursor` is the selectable-row index — an unlocked slot.
-// `stage` gates which slots are unlocked.
-// `slotKinds` is a kMaxMoveSlots array of each slot's stamped required kind
-// (only entries < the unlocked count are drawn) — each unlocked slot row shows its
-// ATK/DEF tag alongside the slot number.
-void drawLoadout(Framebuffer& fb, const ContentRegistry& reg,
-                 const MoveLoadout& load, Stage stage, int cursor,
-                 const MoveDef::Kind* slotKinds, int beat);
+// MOVES slot list.
+struct LoadoutView {
+    Stage stage = Stage::BootSector; // gates which slots are unlocked
+    int cursor = 0;                  // the selectable-row index: an unlocked slot
+    // A kMaxMoveSlots array of each slot's stamped required kind (only entries below the
+    // unlocked count are drawn): each unlocked slot row shows its ATK/DEF tag alongside
+    // the slot number.
+    const MoveDef::Kind* slotKinds = nullptr;
+    int beat = 0;
+};
+void drawLoadout(Framebuffer& fb, const ContentRegistry& reg, const MoveLoadout& load,
+                 const LoadoutView& v);
 
 // L3 move picker for `slot` (mirrors drawModPicker): "— empty (unequip) —" + the
 // moves the pet can equip here right now (ownedMoveList), the focused move's

@@ -15,12 +15,18 @@ namespace mal {
 class Framebuffer;
 class ContentRegistry;
 
-// L2 cabinet list. `rows`/`n` are the roster indices actually OFFERED right now
-// (ArcadeUnlock — a locked cabinet is absent, never greyed) in the order they draw;
-// `plays` is the lifetime tally array, parallel to the full roster and indexed through
-// `rows`. `cursor` is a roster index, not a row position.
-void drawArcadeList(Framebuffer& fb, const ContentRegistry& reg, const int* plays,
-                    const int* rows, int n, int cursor, int beat);
+// L2 cabinet list.
+struct ArcadeListView {
+    // The roster indices actually OFFERED right now (ArcadeUnlock: a locked cabinet is
+    // absent, never greyed), in the order they draw.
+    const int* rows = nullptr;
+    int n = 0;
+    // The lifetime tally array, parallel to the full roster and indexed through `rows`.
+    const int* plays = nullptr;
+    int cursor = 0;                  // a roster index, not a row position
+    int beat = 0;
+};
+void drawArcadeList(Framebuffer& fb, const ContentRegistry& reg, const ArcadeListView& v);
 
 // One cabinet's lifetime record.
 struct ArcadeTally {

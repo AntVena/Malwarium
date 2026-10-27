@@ -24,11 +24,15 @@ class MoveLoadout;
 inline constexpr int kLoadoutHubRows = 3;
 
 // L2 LOADOUT hub: MODS / MOVES / PRACTISE, one row each with its own filled-vs-total
-// readout (PRACTISE has nothing to count and states its stakes instead). `cursor` is
-// the focused row in that order; `stage` is what decides how many move slots the
-// MOVES row is counting against.
+// readout (PRACTISE has nothing to count and states its stakes instead).
+struct LoadoutHubView {
+    // What decides how many move slots the MOVES row is counting against.
+    Stage stage = Stage::BootSector;
+    int cursor = 0;                  // the focused row, in hub order
+    int beat = 0;
+};
 void drawLoadoutHub(Framebuffer& fb, const Loadout& load, const MoveLoadout& moves,
-                    Stage stage, int cursor, int beat);
+                    const LoadoutHubView& v);
 
 // Owned mods in picker order: the ones that can go in `slot` RIGHT NOW first, then the
 // ones that can't, each half in registry order. Nothing is hidden — a mod the pet has

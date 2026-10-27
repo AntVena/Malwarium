@@ -83,11 +83,10 @@ int loadoutSelectableCount(Stage stage) {
     return MoveLoadout::slotsForStage(stage);
 }
 
-void drawLoadout(Framebuffer& fb, const ContentRegistry& reg,
-                 const MoveLoadout& load, Stage stage, int cursor,
-                 const MoveDef::Kind* slotKinds, int beat) {
+void drawLoadout(Framebuffer& fb, const ContentRegistry& reg, const MoveLoadout& load,
+                 const LoadoutView& v) {
     drawHeaderBand(fb, "MOVES");
-    const int unlocked = MoveLoadout::slotsForStage(stage);
+    const int unlocked = MoveLoadout::slotsForStage(v.stage);
 
     // No standalone "default" row: Quick Jab is a per-slot FALLBACK, not a
     // fixture — it's shown inside an empty slot below, never as a slot of its own.
@@ -104,7 +103,7 @@ void drawLoadout(Framebuffer& fb, const ContentRegistry& reg,
     for (int i = 0; i < kMaxMoveSlots; ++i) {
         const int y = top + i * rowH;
         const bool unlockedSlot = i < unlocked;
-        if (unlockedSlot && i == cursor) {
+        if (unlockedSlot && i == v.cursor) {
             fb.fillRect(4, y - 7, kActiveW - 8, rowH - 4, palColor(Pal::TRACK));
             drawRowCursor(fb, 8, y - 3, palColor(Pal::ACCENT));
         }
@@ -129,8 +128,8 @@ void drawLoadout(Framebuffer& fb, const ContentRegistry& reg,
         } else if (const char* id = load.equipped(i)) {
             // The equipped move's own kind tag (moveRowText, right edge) already
             // reads as this slot's type — it's enforced to match.
-            moveRowText(fb, reg, id, kSlotGlyphX, y, palColor(Pal::INK), beat,
-                        i == cursor);
+            moveRowText(fb, reg, id, kSlotGlyphX, y, palColor(Pal::INK), v.beat,
+                        i == v.cursor);
         } else {
             // An EMPTY unlocked slot falls back to the innate default (Quick Jab) in
             // combat (per-slot fallback), so show it here IN the slot. Two non-colour
@@ -143,7 +142,7 @@ void drawLoadout(Framebuffer& fb, const ContentRegistry& reg,
                      palColor(Pal::INK_DIM));
             // Keep the slot's accepted-kind tag at the right edge — tells the
             // player what they can equip to replace the fallback.
-            const char* tag = moveKindTag(slotKinds[i]);
+            const char* tag = moveKindTag(v.slotKinds[i]);
             drawText(fb, kActiveW - kMargin - textWidth(tag), y, tag,
                      palColor(Pal::ACCENT));
         }

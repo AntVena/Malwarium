@@ -100,7 +100,7 @@ std::vector<const ModDef*> ownedModList(const ContentRegistry& reg, const Loadou
 }
 
 void drawLoadoutHub(Framebuffer& fb, const Loadout& load, const MoveLoadout& moves,
-                    Stage stage, int cursor, int beat) {
+                    const LoadoutHubView& v) {
     drawHeaderBand(fb, "LOADOUT");
 
     const SpriteData* icons[kLoadoutHubRows] = {
@@ -110,7 +110,7 @@ void drawLoadoutHub(Framebuffer& fb, const Loadout& load, const MoveLoadout& mov
     int modsOn = 0;
     for (int i = 0; i < kModSlots; ++i)
         if (load.equipped(i)) ++modsOn;
-    const int moveSlots = MoveLoadout::slotsForStage(stage);
+    const int moveSlots = MoveLoadout::slotsForStage(v.stage);
     int movesOn = 0;
     for (int i = 0; i < moveSlots; ++i)
         if (moves.equipped(i)) ++movesOn;
@@ -126,7 +126,7 @@ void drawLoadoutHub(Framebuffer& fb, const Loadout& load, const MoveLoadout& mov
 
     for (int i = 0; i < kLoadoutHubRows; ++i) {
         const int y = kRowTop + i * kRowH;
-        if (i == cursor) {
+        if (i == v.cursor) {
             fb.fillRect(4, y + 2, kActiveW - 8, kRowH - 4, palColor(Pal::TRACK));
             drawRowCursor(fb, 8, y + (kRowH - 7) / 2, palColor(Pal::ACCENT));
         }
@@ -135,7 +135,7 @@ void drawLoadoutHub(Framebuffer& fb, const Loadout& load, const MoveLoadout& mov
         const int statusX = kActiveW - kMargin - textWidth(status[i]);
         drawText(fb, statusX, textY, status[i], palColor(Pal::INK_DIM));
         drawTextMarquee(fb, 40, textY, statusX - kMargin - 40, labels[i],
-                        palColor(Pal::INK), beat, scrollWhen(i == cursor));
+                        palColor(Pal::INK), v.beat, scrollWhen(i == v.cursor));
     }
 }
 
@@ -190,7 +190,7 @@ void drawModPickerRow(Framebuffer& fb, const ModDef& m, const Loadout& load,
     const int qty = load.countOf(m.id);
     if (qty > 1) std::snprintf(name, sizeof(name), "%s x%d", m.displayName, qty);
     else std::snprintf(name, sizeof(name), "%s", m.displayName);
-    char rl[12];
+    char rl[20];
     Rgb565 tagCol = palColor(Pal::ACCENT);
     const char* tag = m.effectTag;
     if (inOtherSlot) {
@@ -264,7 +264,7 @@ void drawModReplaceConfirm(Framebuffer& fb, const ContentRegistry& reg, const Lo
 
 void drawModPicker(Framebuffer& fb, const ContentRegistry& reg, const Loadout& load,
                    const ModPickerView& v) {
-    char title[12];
+    char title[20];
     std::snprintf(title, sizeof(title), "SLOT %d", v.slot + 1);
     drawHeaderBand(fb, title);
 
@@ -372,7 +372,7 @@ void drawModDetail(Framebuffer& fb, const ContentRegistry& reg, const Loadout& l
     const bool levelLocked = !v.equippedHere && v.reqLevel > v.petLevel;
     const bool wrongLine = !v.equippedHere && lineLocked(&mod, v.petLine);
     const bool locked = levelLocked || wrongLine || inOtherSlot;
-    char slotLbl[16];
+    char slotLbl[24];
     std::snprintf(slotLbl, sizeof(slotLbl), "SLOT %d", v.slot + 1);
     drawText(fb, kMargin, slotY, slotLbl, palColor(Pal::INK_DIM));
     // Held spares against the cap that bounds them. ITEMS says "HAVE xN" because an
@@ -406,7 +406,7 @@ void drawModDetail(Framebuffer& fb, const ContentRegistry& reg, const Loadout& l
     if (v.equippedHere) {
         drawText(fb, kMargin, y, "EQUIPPED HERE", palColor(Pal::INK_DIM));
     } else if (locked) {
-        char lk[28];
+        char lk[40];
         if (inOtherSlot) std::snprintf(lk, sizeof(lk), "LOCKED - IN SLOT %d", elsewhere + 1);
         else std::snprintf(lk, sizeof(lk), "LOCKED");
         drawText(fb, kMargin, y, lk, palColor(Pal::HOT));

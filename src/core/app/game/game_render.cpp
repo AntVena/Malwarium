@@ -757,9 +757,18 @@ void Game::drawSubmenu(Framebuffer& fb) const {
                 // Each slot's stamped required kind, for the row tags.
                 MoveDef::Kind sk[kMaxMoveSlots];
                 for (int i = 0; i < kMaxMoveSlots; ++i) sk[i] = slotRequiredKind(i);
-                drawLoadout(fb, registry_, moveLoadout_, st, trainRow_, sk, beat_);
+                LoadoutView v;
+                v.stage = st;
+                v.cursor = trainRow_;
+                v.slotKinds = sk;
+                v.beat = beat_;
+                drawLoadout(fb, registry_, moveLoadout_, v);
             } else {
-                drawLoadoutHub(fb, loadout_, moveLoadout_, st, loadoutHubRow_, beat_);
+                LoadoutHubView v;
+                v.stage = st;
+                v.cursor = loadoutHubRow_;
+                v.beat = beat_;
+                drawLoadoutHub(fb, loadout_, moveLoadout_, v);
             }
             break;
         }
