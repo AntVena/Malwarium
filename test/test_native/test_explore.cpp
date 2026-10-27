@@ -275,10 +275,13 @@ void test_post_encounter_never_for_sim_battle() {
 // fight to an organic level-up. The frag state is None so nothing else occupies that band.
 void test_post_encounter_level_line_renders() {
     Framebuffer withLine(kActiveW, kActiveH), noLine(kActiveW, kActiveH);
-    drawPostEncounter(withLine, kBandwidthMax, kBandwidthMax - 1, kBandwidthMax,
-                      PostEncounterFragState::None, 0, "LVL 3  POWER +1");
-    drawPostEncounter(noLine, kBandwidthMax, kBandwidthMax - 1, kBandwidthMax,
-                      PostEncounterFragState::None, 0, nullptr);
+    PostEncounterView pv;
+    pv.bwBefore = kBandwidthMax;
+    pv.bwAfter = kBandwidthMax - 1;
+    pv.bwMax = kBandwidthMax;
+    drawPostEncounter(noLine, pv);
+    pv.levelLine = "LVL 3  POWER +1";
+    drawPostEncounter(withLine, pv);
     // The two frames are identical except for the level band (y~100): the line paints
     // there only when present, and nothing above it changes. (regionDiffers is theme-
     // agnostic — hasDarkInk can't be used since PAPER itself is a dark fill.)

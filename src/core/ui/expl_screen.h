@@ -324,25 +324,34 @@ void drawEncounterIntro(Framebuffer& fb, const EncounterIntroView& v);
 // home turf, and absent entirely when the radio queued nothing to find.
 enum class WifiAbsorb { None, Whole, Nibble, Untouched };
 
-// Wi-Fi network event: a self-contained typed event that resolves in
-// place — the "NEW WI-FI NETWORK" banner + the rolled sub-outcome's flavor line +
-// a B-continue hint band. `discoveryLine` (may be empty) is the independent
-// real-network-discovery beat (Game::resolveNetworkDiscovery) drawn above the
-// banner — a second, unrelated flavor line on the same screen.
+// Wi-Fi network event: a self-contained typed event that resolves in place: the banner +
+// the rolled sub-outcome's flavor line + a B-continue hint band.
 //
-// The pet stands on this screen the way it does on the walk it was interrupted from,
-// and takes the network in: `absorb` picks how far the ICON_SYS_WIFI glyph dissolves
-// (FX_ABSORB, core/render/absorb.h) over kAbsorbBeats of `beat`. The sweep is a second
-// channel for what `discoveryLine` already says in words, so a grayscale screen still
-// reads — and an untouched glyph is as much a statement as an eaten one.
-// `beat` is the heartbeat (the marquee's own pace); `fxBeat` is the faster dissolve
-// clock (Game::fxBeat_) the absorb is paced on.
-// `banner` is what the radio actually FOUND, in words — the caller derives it from the
-// same discovery state `absorb` is derived from (Game::drawWifiScreen), so the headline,
-// the sweep and the two lines below can never disagree about whether anything was found.
-void drawWifiEvent(Framebuffer& fb, const char* sectorName, const char* banner,
-                   const char* outcomeLine, const char* discoveryLine,
-                   const SpriteData* pet, WifiAbsorb absorb, int beat, int fxBeat);
+// The pet stands on this screen the way it does on the walk it was interrupted from, and
+// takes the network in.
+struct WifiEventView {
+    const char* sectorName = "";
+    // What the radio actually FOUND, in words. The caller derives it from the same
+    // discovery state `absorb` is derived from (Game::drawWifiScreen), so the headline,
+    // the sweep and the two lines below can never disagree about whether anything was
+    // found.
+    const char* banner = "";
+    const char* outcomeLine = "";
+    // The independent real-network-discovery beat (Game::resolveNetworkDiscovery), drawn
+    // above the banner: a second, unrelated flavor line on the same screen. May be empty.
+    const char* discoveryLine = "";
+    const SpriteData* pet = nullptr;
+    // How far the ICON_SYS_WIFI glyph dissolves (FX_ABSORB, core/render/absorb.h) over
+    // kAbsorbBeats. The sweep is a second channel for what `discoveryLine` already says
+    // in words, so a grayscale screen still reads, and an untouched glyph is as much a
+    // statement as an eaten one.
+    WifiAbsorb absorb = WifiAbsorb::None;
+    // The heartbeat (the marquee's own pace), and the faster dissolve clock
+    // (Game::fxBeat_) the absorb is paced on.
+    int beat = 0;
+    int fxBeat = 0;
+};
+void drawWifiEvent(Framebuffer& fb, const WifiEventView& v);
 
 // Storefront name accessors: each sector has an item shop AND a mod shop.
 // `shopName` is the item storefront's banner ("BYTE TO EAT" / "PIER-TO-PEER" /
@@ -383,16 +392,22 @@ struct ShopRowView {
 // silently truncated when a shop happens to be full.
 constexpr int kShopDescLines = 3;
 
-// Shop event: a storefront explore event (item shop OR mod shop — same chrome) —
-// the storefront banner, an arbitrary-length list of `rows` (windowed + scrollable
-// past kShopVisibleRows, mirroring the Rig Shop's list, game_rig_shop.h), the
-// player's wallet, the selected row's description, and a hint band. Dual-coded
-// (counts + text) — grayscale-safe. `statusLine` states why a buy is (un)available
-// for the SELECTED (`cursor`) row — A NEXT / B BUY / C LEAVE. No new art; reuses the
-// event chrome.
-void drawShop(Framebuffer& fb, const char* storeName, int walletBits,
-              const ShopRowView* rows, int rowCount, int cursor,
-              const char* selectedDescription, const char* statusLine, int beat);
+// Shop event: a storefront explore event (item shop OR mod shop, same chrome): the
+// storefront banner, an arbitrary-length list of rows (windowed + scrollable past
+// kShopVisibleRows, mirroring the Rig Shop's list, game_rig_shop.h), the player's
+// wallet, the selected row's description, and a hint band (A NEXT / B BUY / C LEAVE).
+// Dual-coded (counts + text), grayscale-safe. No new art; reuses the event chrome.
+struct StorefrontView {
+    const char* storeName = "";
+    int walletBits = 0;
+    const ShopRowView* rows = nullptr;
+    int rowCount = 0;
+    int cursor = 0;                  // the SELECTED row
+    const char* selectedDescription = "";
+    const char* statusLine = "";     // why a buy is (un)available for the selected row
+    int beat = 0;
+};
+void drawShop(Framebuffer& fb, const StorefrontView& v);
 
 // Warp-key picker: the walk's B overlay listing the held warp keys
 // (Access Token / Safe-Mode Key), one row each, cursor-highlighted, with an
@@ -410,14 +425,20 @@ void drawWarpPicker(Framebuffer& fb, const char* const* keyNames, int keyCount,
 // Shielded — 's Bandwidth shield covered the tax ("FRAG SHIELDED").
 //   Rose     — the tax landed ("FRAG +n", `fragDelta` is that positive n).
 enum class PostEncounterFragState { None, Shielded, Rose };
-// `bwBefore`/`bwAfter` are this fight's Bandwidth before/after (bwMax = the cap);
-// bwBefore==0 reads as "BANDWIDTH x/max  LOW" (nothing was left to spend) instead
-// of a numeric delta, since 0 -> 0 would otherwise look like "nothing happened".
-// `levelLine` (nullptr = no level-up this fight) names the stat gained from a
-// level-up (e.g. "LVL 5  POWER +1") — the caller pre-formats it (it owns the stat
-// labels); a gain is drawn in the CALM zone, dual-coded by the WORD + signed number.
-void drawPostEncounter(Framebuffer& fb, int bwBefore, int bwAfter, int bwMax,
-                       PostEncounterFragState fragState, int fragDelta,
-                       const char* levelLine = nullptr);
+struct PostEncounterView {
+    // This fight's Bandwidth before/after, against the cap. bwBefore==0 reads as
+    // "BANDWIDTH x/max  LOW" (nothing was left to spend) instead of a numeric delta,
+    // since 0 -> 0 would otherwise look like "nothing happened".
+    int bwBefore = 0;
+    int bwAfter = 0;
+    int bwMax = 0;
+    PostEncounterFragState fragState = PostEncounterFragState::None;
+    int fragDelta = 0;               // the positive rise, read when fragState is Rose
+    // The stat gained from a level-up (e.g. "LVL 5  POWER +1"), or nullptr for no
+    // level-up this fight. The caller pre-formats it (it owns the stat labels); a gain is
+    // drawn in the CALM zone, dual-coded by the WORD + signed number.
+    const char* levelLine = nullptr;
+};
+void drawPostEncounter(Framebuffer& fb, const PostEncounterView& v);
 
 } // namespace mal

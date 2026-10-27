@@ -1109,21 +1109,24 @@ void Game::drawWifiScreen(Framebuffer& fb) const {
     // netDiscovery_ rather than being a constant in the screen: a fixed "NEW WI-FI
     // NETWORK" over a repeat sighting — or over a dry queue with nothing found at all —
     // is the screen contradicting its own two flavor lines.
-    WifiAbsorb absorb = WifiAbsorb::None;
-    const char* banner = "QUIET AIR";
+    WifiEventView v;
+    v.banner = "QUIET AIR";
     switch (netDiscovery_) {
         case NetDiscovery::New:
-            absorb = WifiAbsorb::Whole; banner = "NEW WI-FI NETWORK"; break;
+            v.absorb = WifiAbsorb::Whole; v.banner = "NEW WI-FI NETWORK"; break;
         case NetDiscovery::Fond:
-            absorb = WifiAbsorb::Nibble; banner = "A KNOWN NETWORK"; break;
+            v.absorb = WifiAbsorb::Nibble; v.banner = "A KNOWN NETWORK"; break;
         case NetDiscovery::HomeTurf:
-            absorb = WifiAbsorb::Untouched; banner = "HOME TURF"; break;
+            v.absorb = WifiAbsorb::Untouched; v.banner = "HOME TURF"; break;
         case NetDiscovery::None: break;
     }
-    drawWifiEvent(fb, explSectorName(exploreSector_), banner, wifiFlavor_,
-                  netDiscoveryFlavor_,
-                  pet_ ? registry_.creatureSprite(*pet_) : nullptr, absorb,
-                  beat_, fxBeat_);
+    v.sectorName = explSectorName(exploreSector_);
+    v.outcomeLine = wifiFlavor_;
+    v.discoveryLine = netDiscoveryFlavor_;
+    v.pet = pet_ ? registry_.creatureSprite(*pet_) : nullptr;
+    v.beat = beat_;
+    v.fxBeat = fxBeat_;
+    drawWifiEvent(fb, v);
 }
 
 void Game::drawShiboleetScreen(Framebuffer& fb) const {
@@ -1210,8 +1213,17 @@ void Game::drawShopScreen(Framebuffer& fb) const {
         rows[i].held = shopListingHeld(i);
         rows[i].heldCap = shopListingHeldCap(i);
     }
-    drawShop(fb, shopStoreName(), bits_, rows, n, shopCursor_,
-             shopListingDescription(shopCursor_).c_str(), shopStatusLine(), beat_);
+    const EffectText description = shopListingDescription(shopCursor_);   // outlives the draw
+    StorefrontView v;
+    v.storeName = shopStoreName();
+    v.walletBits = bits_;
+    v.rows = rows;
+    v.rowCount = n;
+    v.cursor = shopCursor_;
+    v.selectedDescription = description.c_str();
+    v.statusLine = shopStatusLine();
+    v.beat = beat_;
+    drawShop(fb, v);
 }
 
 void Game::drawPostEncounterScreen(Framebuffer& fb) const {
@@ -1239,8 +1251,14 @@ void Game::drawPostEncounterScreen(Framebuffer& fb) const {
                                      levelStatName(i), postEncStatGain_[i]);
         lvlLine = lvlBuf;
     }
-    drawPostEncounter(fb, postEncBwBefore_, postEncBwAfter_, bandwidthMax(), st,
-                      postEncFragAfter_ - postEncFragBefore_, lvlLine);
+    PostEncounterView v;
+    v.bwBefore = postEncBwBefore_;
+    v.bwAfter = postEncBwAfter_;
+    v.bwMax = bandwidthMax();
+    v.fragState = st;
+    v.fragDelta = postEncFragAfter_ - postEncFragBefore_;
+    v.levelLine = lvlLine;
+    drawPostEncounter(fb, v);
 }
 
 void Game::drawWarpPickerScreen(Framebuffer& fb) const {

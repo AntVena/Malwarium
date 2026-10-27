@@ -905,10 +905,8 @@ uint8_t wifiAbsorbBite(WifiAbsorb a) {
 }
 }  // namespace
 
-void drawWifiEvent(Framebuffer& fb, const char* sectorName, const char* banner,
-                   const char* outcomeLine, const char* discoveryLine,
-                   const SpriteData* pet, WifiAbsorb absorb, int beat, int fxBeat) {
-    drawHeaderBand(fb, sectorName);
+void drawWifiEvent(Framebuffer& fb, const WifiEventView& v) {
+    drawHeaderBand(fb, v.sectorName);
 
     // The three lines stack immediately under the header rule so the whole lower half
     // of the canvas belongs to the pet and the glyph it is working on. The
@@ -917,25 +915,25 @@ void drawWifiEvent(Framebuffer& fb, const char* sectorName, const char* banner,
     // resolveNetworkDiscovery() actually set it.
     // The discovery line carries a real SSID, so it is the one that can outrun the
     // canvas — it scrolls inside the margins rather than being centred off both edges.
-    if (discoveryLine && discoveryLine[0])
-        drawTextMarquee(fb, kMargin, 32, kActiveW - 2 * kMargin, discoveryLine,
-                        palColor(Pal::INK_DIM), beat, Overflow::Scroll);
+    if (v.discoveryLine && v.discoveryLine[0])
+        drawTextMarquee(fb, kMargin, 32, kActiveW - 2 * kMargin, v.discoveryLine,
+                        palColor(Pal::INK_DIM), v.beat, Overflow::Scroll);
 
-    if (banner && banner[0])
-        drawText(fb, (kActiveW - textWidth(banner)) / 2, 50, banner,
+    if (v.banner && v.banner[0])
+        drawText(fb, (kActiveW - textWidth(v.banner)) / 2, 50, v.banner,
                  palColor(Pal::ACCENT));
-    if (outcomeLine && outcomeLine[0])
-        drawText(fb, (kActiveW - textWidth(outcomeLine)) / 2, 68, outcomeLine,
+    if (v.outcomeLine && v.outcomeLine[0])
+        drawText(fb, (kActiveW - textWidth(v.outcomeLine)) / 2, 68, v.outcomeLine,
                  palColor(Pal::INK_DIM));
 
     // The pet, and the network going into it. WifiAbsorb::None had nothing queued to
     // find, so there is no glyph to draw at all — the pet just stands there, which is
     // exactly what "WANTS NEW NETWORKS..." means.
-    const AbsorbPhase phase = absorbPhase(fxBeat, kAbsorbLeadBeats, kAbsorbBeats,
-                                          wifiAbsorbBite(absorb));
-    drawPetAbsorbing(fb, pet, kActiveW / 2, kWifiStageCy,
-                     absorb == WifiAbsorb::None ? nullptr : &ASSET_ICON_SYS_WIFI,
-                     palColor(Pal::ACCENT), phase, beat);
+    const AbsorbPhase phase = absorbPhase(v.fxBeat, kAbsorbLeadBeats, kAbsorbBeats,
+                                          wifiAbsorbBite(v.absorb));
+    drawPetAbsorbing(fb, v.pet, kActiveW / 2, kWifiStageCy,
+                     v.absorb == WifiAbsorb::None ? nullptr : &ASSET_ICON_SYS_WIFI,
+                     palColor(Pal::ACCENT), phase, v.beat);
 
     const char* hint = "B CONTINUE";
     drawHintBand(fb, hint);
@@ -1006,31 +1004,30 @@ void drawShopRow(Framebuffer& fb, int rowY, const ShopRowView& row, bool selecte
 }
 } // namespace
 
-void drawShop(Framebuffer& fb, const char* storeName, int walletBits,
-              const ShopRowView* rows, int rowCount, int cursor,
-              const char* selectedDescription, const char* statusLine, int beat) {
+void drawShop(Framebuffer& fb, const StorefrontView& v) {
     // Storefront banner + wallet header (dual-coded: the numbers carry meaning,
     // colour is only emphasis). The banner scrolls when the wallet crowds it —
     // a store name is the screen's whole identity, so it is not the half that gives.
     char wallet[16];
-    std::snprintf(wallet, sizeof(wallet), "%dB", walletBits);
+    std::snprintf(wallet, sizeof(wallet), "%dB", v.walletBits);
     drawHeaderBand(fb, "", wallet, palColor(Pal::ACCENT));
     drawTextMarquee(fb, kMargin, kTitleY,
-                    kActiveW - 2 * kMargin - textWidth(wallet) - kMargin, storeName,
-                    palColor(Pal::INK), beat, Overflow::Scroll);
+                    kActiveW - 2 * kMargin - textWidth(wallet) - kMargin, v.storeName,
+                    palColor(Pal::INK), v.beat, Overflow::Scroll);
 
     // Windowed list — an arbitrary listing count scrolls past kShopMaxRows instead of
     // growing the screen.
     // ADAPTIVE window: a storefront stocks one or two listings, so drawing only the
     // rows it has hands 40-80px back to the description below instead of reserving the
     // cap empty. Past the cap it scrolls as before.
-    const int visibleRows = std::max(1, std::min(rowCount, kShopMaxRows));
-    const int scrollTop = listScrollTop(cursor, rowCount, kShopMaxRows);
-    for (int v = 0; v < visibleRows && scrollTop + v < rowCount; ++v) {
-        const int row = scrollTop + v;
-        drawShopRow(fb, kShopRowTop + v * kShopRowPitch, rows[row], row == cursor, beat);
+    const int visibleRows = std::max(1, std::min(v.rowCount, kShopMaxRows));
+    const int scrollTop = listScrollTop(v.cursor, v.rowCount, kShopMaxRows);
+    for (int slot = 0; slot < visibleRows && scrollTop + slot < v.rowCount; ++slot) {
+        const int row = scrollTop + slot;
+        drawShopRow(fb, kShopRowTop + slot * kShopRowPitch, v.rows[row], row == v.cursor,
+                    v.beat);
     }
-    drawScrollbar(fb, kShopRowTop, kShopMaxRows * kShopRowPitch, rowCount, scrollTop, kShopMaxRows);
+    drawScrollbar(fb, kShopRowTop, kShopMaxRows * kShopRowPitch, v.rowCount, scrollTop, kShopMaxRows);
 
     // Selected row's description + the buy-availability reason, spelled out so
     // both survive grayscale — "SOLD OUT" / "NOT ENOUGH BITS" / "NOT ENOUGH ITEMS" /
@@ -1039,15 +1036,15 @@ void drawShop(Framebuffer& fb, const char* storeName, int walletBits,
     // wider than the 208px here, so it wraps into the band above kShopStatusY; the buy
     // reason takes that line whatever the prose ran to.
     const int descY = kShopRowTop + visibleRows * kShopRowPitch + 2;
-    if (selectedDescription && selectedDescription[0])
+    if (v.selectedDescription && v.selectedDescription[0])
         drawTextWrapped(fb, kMargin, descY, kActiveW - 2 * kMargin,
-                        selectedDescription, palColor(Pal::INK_DIM),
+                        v.selectedDescription, palColor(Pal::INK_DIM),
                         kFontH + 3, shopDescLines(visibleRows));
-    if (statusLine && statusLine[0])
-        drawText(fb, (kActiveW - textWidth(statusLine)) / 2, kShopStatusY, statusLine,
+    if (v.statusLine && v.statusLine[0])
+        drawText(fb, (kActiveW - textWidth(v.statusLine)) / 2, kShopStatusY, v.statusLine,
                  palColor(Pal::INK_DIM));
 
-    const char* hint = rowCount > 1 ? "A NEXT  B BUY  C LEAVE" : "B BUY   C LEAVE";
+    const char* hint = v.rowCount > 1 ? "A NEXT  B BUY  C LEAVE" : "B BUY   C LEAVE";
     drawHintBand(fb, hint);
 }
 
@@ -1076,9 +1073,7 @@ void drawWarpPicker(Framebuffer& fb, const char* const* keyNames, int keyCount,
 // Post-encounter status readout: a brief, informational-only
 // overlay — no decision, so the hint band spells out the one break from the
 // standard A/B/C contract (ANY button dismisses, not just B/C).
-void drawPostEncounter(Framebuffer& fb, int bwBefore, int bwAfter, int bwMax,
-                       PostEncounterFragState fragState, int fragDelta,
-                       const char* levelLine) {
+void drawPostEncounter(Framebuffer& fb, const PostEncounterView& v) {
     drawHeaderBand(fb, "STATUS");
 
     // Bandwidth line: current/max + this encounter's delta, dual-coded by the
@@ -1086,25 +1081,25 @@ void drawPostEncounter(Framebuffer& fb, int bwBefore, int bwAfter, int bwMax,
     // (bwBefore == 0), where a "+0"/"-0" delta would misleadingly read as "no
     // change happened" instead of "nothing to spend" (feedback intent).
     char bwLine[32];
-    if (bwBefore <= 0) {
-        std::snprintf(bwLine, sizeof(bwLine), "BANDWIDTH %d/%d  LOW", bwAfter, bwMax);
+    if (v.bwBefore <= 0) {
+        std::snprintf(bwLine, sizeof(bwLine), "BANDWIDTH %d/%d  LOW", v.bwAfter, v.bwMax);
         drawText(fb, kMargin, 60, bwLine, palColor(Pal::WARN));
     } else {
-        std::snprintf(bwLine, sizeof(bwLine), "BANDWIDTH %d/%d  %+d", bwAfter, bwMax,
-                     bwAfter - bwBefore);
+        std::snprintf(bwLine, sizeof(bwLine), "BANDWIDTH %d/%d  %+d", v.bwAfter, v.bwMax,
+                     v.bwAfter - v.bwBefore);
         drawText(fb, kMargin, 60, bwLine, palColor(Pal::INK));
     }
 
     // Fragmentation line: omitted entirely when frag wasn't in play this
     // encounter (None) — a distinct WORD (not colour alone) carries SHIELDED vs
     // the rise amount.
-    if (fragState != PostEncounterFragState::None) {
+    if (v.fragState != PostEncounterFragState::None) {
         char fragLine[24];
-        if (fragState == PostEncounterFragState::Shielded) {
+        if (v.fragState == PostEncounterFragState::Shielded) {
             std::snprintf(fragLine, sizeof(fragLine), "FRAG SHIELDED");
             drawText(fb, kMargin, 80, fragLine, palColor(Pal::CALM));
         } else {
-            std::snprintf(fragLine, sizeof(fragLine), "FRAG +%d", fragDelta);
+            std::snprintf(fragLine, sizeof(fragLine), "FRAG +%d", v.fragDelta);
             drawText(fb, kMargin, 80, fragLine, palColor(Pal::HOT));
         }
     }
@@ -1112,8 +1107,8 @@ void drawPostEncounter(Framebuffer& fb, int bwBefore, int bwAfter, int bwMax,
     // Level-up line: naming the stat a fight's XP raised so growth isn't
     // silent. A gain is good news → the CALM zone; the stat WORD + "+n" carry the
     // read without colour. Sits below the frag row (which tops out at y=80).
-    if (levelLine && levelLine[0])
-        drawText(fb, kMargin, 100, levelLine, palColor(Pal::CALM));
+    if (v.levelLine && v.levelLine[0])
+        drawText(fb, kMargin, 100, v.levelLine, palColor(Pal::CALM));
 
     const char* hint = "ANY BUTTON";
     drawHintBand(fb, hint);
