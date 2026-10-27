@@ -826,7 +826,29 @@ void drawAuditMode(Framebuffer& fb, int pick, int current) {
     drawHintBand(fb, "A CYCLE  B APPLY  C BACK");
 }
 
-void drawApToggle(Framebuffer& fb, int pick, bool current) {
+namespace {
+
+// The OFF and ON rows the AP and LINK toggles share, the live one tagged ACTIVE.
+void drawOnOffRows(Framebuffer& fb, int pick, OnOff current) {
+    static const char* kOpts[2] = {"OFF", "ON"};
+    for (int i = 0; i < 2; ++i) {
+        const int y = 80 + i * 24;
+        if (i == pick) {
+            fb.fillRect(4, y - 2, kActiveW - 8, 20, palColor(Pal::TRACK));
+            drawRowCursor(fb, 8, y + 4, palColor(Pal::ACCENT));
+        }
+        const bool isCurrent = i == static_cast<int>(current);
+        drawText(fb, 24, y + 4, kOpts[i],
+                 isCurrent ? palColor(Pal::ACCENT) : palColor(Pal::INK));
+        if (isCurrent)
+            drawText(fb, kActiveW - kMargin - textWidth("ACTIVE"), y + 4,
+                     "ACTIVE", palColor(Pal::ACCENT));
+    }
+}
+
+}  // namespace
+
+void drawApToggle(Framebuffer& fb, int pick, OnOff current) {
     drawHeaderBand(fb, "PEDIA AP");
 
     // The 'Pedia local Access Point: hosts a small Wi-Fi network + web page (no
@@ -836,24 +858,11 @@ void drawApToggle(Framebuffer& fb, int pick, bool current) {
     drawText(fb, kMargin, 42, "JOIN 'MALWARIUM' NETWORK.", palColor(Pal::INK_DIM));
     drawText(fb, kMargin, 54, "ON SHOWS A QR TO CONNECT.", palColor(Pal::ACCENT));
 
-    static const char* kOpts[2] = {"OFF", "ON"};
-    for (int i = 0; i < 2; ++i) {
-        const int y = 80 + i * 24;
-        if (i == pick) {
-            fb.fillRect(4, y - 2, kActiveW - 8, 20, palColor(Pal::TRACK));
-            drawRowCursor(fb, 8, y + 4, palColor(Pal::ACCENT));
-        }
-        const bool isCurrent = (i == 1) == current;
-        drawText(fb, 24, y + 4, kOpts[i],
-                 isCurrent ? palColor(Pal::ACCENT) : palColor(Pal::INK));
-        if (isCurrent)
-            drawText(fb, kActiveW - kMargin - textWidth("ACTIVE"), y + 4,
-                     "ACTIVE", palColor(Pal::ACCENT));
-    }
+    drawOnOffRows(fb, pick, current);
     drawHintBand(fb, "A TOGGLE  B APPLY  C BACK");
 }
 
-void drawLinkToggle(Framebuffer& fb, int pick, bool current, bool ambientStarved) {
+void drawLinkToggle(Framebuffer& fb, int pick, OnOff current, LinkReach reach) {
     drawHeaderBand(fb, "PASSIVE LINK");
 
     // The consent this row asks for is the whole affordance, so it is spelled out
@@ -864,20 +873,7 @@ void drawLinkToggle(Framebuffer& fb, int pick, bool current, bool ambientStarved
     drawText(fb, kMargin, 42, "BROADCASTS YOUR TAG,", palColor(Pal::WARN));
     drawText(fb, kMargin, 54, "PET AND CREW TO ANYONE.", palColor(Pal::WARN));
 
-    static const char* kOpts[2] = {"OFF", "ON"};
-    for (int i = 0; i < 2; ++i) {
-        const int y = 80 + i * 24;
-        if (i == pick) {
-            fb.fillRect(4, y - 2, kActiveW - 8, 20, palColor(Pal::TRACK));
-            drawRowCursor(fb, 8, y + 4, palColor(Pal::ACCENT));
-        }
-        const bool isCurrent = (i == 1) == current;
-        drawText(fb, 24, y + 4, kOpts[i],
-                 isCurrent ? palColor(Pal::ACCENT) : palColor(Pal::INK));
-        if (isCurrent)
-            drawText(fb, kActiveW - kMargin - textWidth("ACTIVE"), y + 4,
-                     "ACTIVE", palColor(Pal::ACCENT));
-    }
+    drawOnOffRows(fb, pick, current);
     // Naming the cost keeps the choice honest: an unassociated listener can't use
     // Wi-Fi modem sleep, so this is a real draw whenever the radio window is open.
     drawText(fb, kMargin, 134, "ON COSTS BATTERY.", palColor(Pal::INK_DIM));
@@ -885,7 +881,7 @@ void drawLinkToggle(Framebuffer& fb, int pick, bool current, bool ambientStarved
     // this toggle only does anything while PEERS is open. Say so rather than let the
     // setting look dead — and rather than arming the scan on the player's behalf,
     // which would take a listening consent they didn't give.
-    if (ambientStarved) {
+    if (reach == LinkReach::PeersOnly) {
         drawText(fb, kMargin, 146, "AUDIT SCAN IS OFF:", palColor(Pal::WARN));
         drawText(fb, kMargin, 158, "ONLY MEETS ON PEERS SCREEN", palColor(Pal::WARN));
     }

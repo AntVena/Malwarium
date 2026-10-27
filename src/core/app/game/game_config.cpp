@@ -544,9 +544,10 @@ void Game::drawCfg(Framebuffer& fb) const {
             break;
         case CfgScreen::Audit:
             drawAuditMode(fb, cfgAuditPick_, static_cast<int>(auditMode())); break;
-        case CfgScreen::PediaAp: drawApToggle(fb, cfgApPick_, apEnabled_); break;
+        case CfgScreen::PediaAp: drawApToggle(fb, cfgApPick_, apEnabled_ ? OnOff::On : OnOff::Off); break;
         case CfgScreen::Link:
-            drawLinkToggle(fb, cfgLinkPick_, linkEnabled_, linkAmbientStarved());
+            drawLinkToggle(fb, cfgLinkPick_, linkEnabled_ ? OnOff::On : OnOff::Off,
+                           linkAmbientStarved() ? LinkReach::PeersOnly : LinkReach::Ambient);
             break;
         case CfgScreen::Update: {
             UpdateCheckView checkView;

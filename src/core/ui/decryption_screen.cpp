@@ -101,8 +101,8 @@ int drawRevealedKey(Framebuffer& fb, const DiskDecryption& d) {
 
 }  // namespace
 
-void drawDiskDecryption(Framebuffer& fb, const DiskDecryption& d, bool showExactHints,
-                        bool arcade, int beat) {
+void drawDiskDecryption(Framebuffer& fb, const DiskDecryption& d, DecryptHints hints,
+                        DecryptStakes stakes, int beat) {
     fb.clear(palColor(Pal::PAPER));
 
     const char* title = "DISK DECRYPTION";
@@ -131,7 +131,7 @@ void drawDiskDecryption(Framebuffer& fb, const DiskDecryption& d, bool showExact
                 // being ambient damage and starts being an answer. Every other setting
                 // spreads the same total across the whole row and tells you nothing
                 // about where it came from.
-                if (showExactHints)
+                if (hints == DecryptHints::Exact)
                     punchCorruption(fb, cellX(s), y, d.exactAt(r, s) ? 0 : 3, seed);
                 else
                     punchCorruption(fb, cellX(s), y, corruption, seed);
@@ -199,7 +199,7 @@ void drawDiskDecryption(Framebuffer& fb, const DiskDecryption& d, bool showExact
     }
 
     char effect[32];
-    if (arcade)
+    if (stakes == DecryptStakes::Arcade)
         std::snprintf(effect, sizeof(effect), "SCORE %d / %d", d.score(),
                       DiskDecryption::maxScore());
     // Said as what happens to the EGG, in words a first-time player already has: this

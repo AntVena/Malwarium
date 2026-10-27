@@ -232,15 +232,22 @@ void drawTitles(Framebuffer& fb, int focusSector, uint32_t unlockedMask,
 // disclaimer since the top level writes captured frames to SD.
 void drawAuditMode(Framebuffer& fb, int pick, int current);
 
+// A two-way setting's live value, for the OFF/ON pickers below.
+enum class OnOff : uint8_t { Off, On };
+
 // L3 'Pedia local-AP toggle. OFF/ON like the audit toggles;
 // names the SSID + landing URL so the player knows what to connect to.
-void drawApToggle(Framebuffer& fb, int pick, bool current);
+void drawApToggle(Framebuffer& fb, int pick, OnOff current);
 
 // L3 pet-to-pet LINK toggle. OFF/ON like the AP toggle above, but its copy leads
 // with what turning it ON transmits — announcing identity is a different consent
 // from the AUDIT ladder's listening, so the screen has to say so rather than let
 // the player infer it from the row name.
-void drawLinkToggle(Framebuffer& fb, int pick, bool current, bool ambientStarved);
+//
+// Ambient discovery borrows the audit scan's radio window, so with the scan off LINK only
+// meets anyone while PEERS is open, and the screen says so (PeersOnly).
+enum class LinkReach : uint8_t { Ambient, PeersOnly };
+void drawLinkToggle(Framebuffer& fb, int pick, OnOff current, LinkReach reach);
 
 // L3 update check, and the ONLY screen that ever puts this device on a network.
 // CHECK NOW, plus an install row per artifact the last check found to be newer.

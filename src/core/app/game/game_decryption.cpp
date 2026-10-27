@@ -73,7 +73,9 @@ void Game::finishDecryption() {
 
 void Game::drawDecryption(Framebuffer& fb) const {
     if (gameBriefOpen_) { drawGameBrief(fb); return; }
-    drawDiskDecryption(fb, decryption_, decryptionEasy_, arcadeRun_, beat_);
+    drawDiskDecryption(fb, decryption_,
+                       decryptionEasy_ ? DecryptHints::Exact : DecryptHints::Anonymous,
+                       arcadeRun_ ? DecryptStakes::Arcade : DecryptStakes::Hatch, beat_);
 }
 
 }  // namespace mal
