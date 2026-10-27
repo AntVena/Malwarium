@@ -96,11 +96,17 @@ void Game::render(Framebuffer& fb) const {
         case Nav::Isolation: drawIsolation(fb); break;
         case Nav::Chroma: drawChroma(fb); break;
         case Nav::ModalHatchReveal: drawHatchReveal(fb); break;
-        case Nav::ModalFeeding:
-            drawFeedingModal(fb, pet,
-                             feedItem_ ? itemIcon(registry_, feedItem_->id) : nullptr,
-                             feedItem_, model_, feedBefore_, feedBeat_, fxBeat_);
+        case Nav::ModalFeeding: {
+            FeedingView v;
+            v.pet = pet;
+            v.food = feedItem_;
+            v.foodIcon = feedItem_ ? itemIcon(registry_, feedItem_->id) : nullptr;
+            v.before = feedBefore_;
+            v.beat = feedBeat_;
+            v.fxBeat = fxBeat_;
+            drawFeedingModal(fb, model_, v);
             break;
+        }
         case Nav::ModalEvolve: drawEvolve(fb); break;
         case Nav::ModalCSF: drawCSF(fb); break;
         case Nav::ModalLockout: {
@@ -1319,11 +1325,13 @@ void Game::drawProcess(Framebuffer& fb) const {
 }
 
 void Game::drawEvolve(Framebuffer& fb) const {
-    // Cinematic phase from the beat counter: 0 hold (old) · 1 flash · 2 reveal.
-    const int phase = evolveBeat_ < kEvoHoldBeats ? 0
-                    : evolveBeat_ < kEvoHoldBeats + kEvoFlashBeats ? 1 : 2;
-    const SpriteData* from = pet_ ? registry_.creatureSprite(*pet_) : nullptr;
-    const SpriteData* to = evolveTo_ ? registry_.creatureSprite(*evolveTo_) : nullptr;
+    EvolveView v;
+    // The cinematic phase from the beat counter.
+    v.phase = evolveBeat_ < kEvoHoldBeats                    ? EvolvePhase::Hold
+              : evolveBeat_ < kEvoHoldBeats + kEvoFlashBeats ? EvolvePhase::Flash
+                                                             : EvolvePhase::Reveal;
+    v.from = pet_ ? registry_.creatureSprite(*pet_) : nullptr;
+    v.to = evolveTo_ ? registry_.creatureSprite(*evolveTo_) : nullptr;
     // What changed, in words: the path the errors so far put it on (the thing that
     // decides a Daemon's form), and any move slot the new stage opens.
     char path[28];
@@ -1331,20 +1339,21 @@ void Game::drawEvolve(Framebuffer& fb) const {
     std::snprintf(path, sizeof path, "%s PATH - %d ERROR%s",
                   effectiveCareBranch() == CareBranch::Bad ? "BAD" : "GOOD", errors,
                   errors == 1 ? "" : "S");
-    char slot[28];
-    const char* slotLine = nullptr;
+    char slot[40];
     if (pet_ && evolveTo_) {
         const int gained = MoveLoadout::slotsForStage(evolveTo_->stage) -
                            MoveLoadout::slotsForStage(pet_->stage);
         if (gained > 0) {
             std::snprintf(slot, sizeof slot, "+%d MOVE SLOT%s - SEE MODS", gained,
                           gained == 1 ? "" : "S");
-            slotLine = slot;
+            v.slotLine = slot;
         }
     }
-    drawEvolveModal(fb, from, to, evolveTo_ ? evolveTo_->displayName : "",
-                    evolveTo_ ? evolveTo_->stage : Stage::Process, phase, beat_, path,
-                    slotLine);
+    v.toName = evolveTo_ ? evolveTo_->displayName : "";
+    v.toStage = evolveTo_ ? evolveTo_->stage : Stage::Process;
+    v.pathLine = path;
+    v.beat = beat_;
+    drawEvolveModal(fb, v);
 }
 
 void Game::drawCSF(Framebuffer& fb) const {

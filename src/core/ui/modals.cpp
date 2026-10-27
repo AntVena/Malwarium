@@ -80,29 +80,27 @@ int buildFeedGaugeRows(const ItemDef& d, const PetModel& m, const FeedVitals& b,
 
 }  // namespace
 
-void drawEvolveModal(Framebuffer& fb, const SpriteData* from, const SpriteData* to,
-                     const char* toName, Stage toStage, int phase, int beat,
-                     const char* pathLine, const char* slotLine) {
+void drawEvolveModal(Framebuffer& fb, const EvolveView& v) {
     fb.clear(palColor(Pal::PAPER));
 
-    if (phase < 2) {  // hold + flash: title over the current (old) sprite
+    if (v.phase != EvolvePhase::Reveal) {  // title over the current (old) sprite
         drawCenteredText(fb, 16, "EVOLVING", palColor(Pal::INK));
-        if (phase == 1) {
+        if (v.phase == EvolvePhase::Flash) {
             // FX_EVO_FLASH white-out: a solid accent block masks the morph. Bright
             // against the paper field, so the moment still reads in grayscale.
             fb.fillRect(kMargin, 40, kActiveW - 2 * kMargin, 110, palColor(Pal::ACCENT));
         } else {
-            drawPetCentered(fb, from, beat, 96);
+            drawPetCentered(fb, v.from, v.beat, 96);
         }
         return;
     }
 
     // Reveal: the new sprite, its name, and the stage indicator advanced.
-    drawPetCentered(fb, to, beat, 78);
-    drawCenteredText(fb, 126, toName, palColor(Pal::INK));
-    drawStageIndicator(fb, (kActiveW - 130) / 2, 146, 130, toStage);
-    if (pathLine) drawCenteredText(fb, 166, pathLine, palColor(Pal::INK_DIM));
-    if (slotLine) drawCenteredText(fb, 180, slotLine, palColor(Pal::ACCENT));
+    drawPetCentered(fb, v.to, v.beat, 78);
+    drawCenteredText(fb, 126, v.toName, palColor(Pal::INK));
+    drawStageIndicator(fb, (kActiveW - 130) / 2, 146, 130, v.toStage);
+    if (v.pathLine) drawCenteredText(fb, 166, v.pathLine, palColor(Pal::INK_DIM));
+    if (v.slotLine) drawCenteredText(fb, 180, v.slotLine, palColor(Pal::ACCENT));
 
     // UI_HINT_BAND — C is disabled here, so the deviation is surfaced.
     drawCenteredText(fb, 200, "B CONTINUE   C DISABLED", palColor(Pal::INK_DIM));
@@ -134,9 +132,8 @@ void drawCSFModal(Framebuffer& fb, const SpriteData* pet, CsfPhase phase, int be
                      palColor(Pal::INK_DIM));
 }
 
-void drawFeedingModal(Framebuffer& fb, const SpriteData* pet, const SpriteData* foodIcon,
-                      const ItemDef* food, const PetModel& m, const FeedVitals& before,
-                      int beat, int fxBeat) {
+void drawFeedingModal(Framebuffer& fb, const PetModel& m, const FeedingView& v) {
+    const ItemDef* food = v.food;
     fb.clear(palColor(Pal::PAPER));
 
     // The bite itself: the food comes apart into the pet over the first kAbsorbBeats,
@@ -150,17 +147,17 @@ void drawFeedingModal(Framebuffer& fb, const SpriteData* pet, const SpriteData* 
     // rather than a fact, and the bite still reads.
     // The lead-in leaves the food standing whole long enough to be identified before it
     // stops being a thing; the swallow then lands near the modal's last beat.
-    const AbsorbPhase phase = absorbPhase(fxBeat, kAbsorbLeadBeats, kAbsorbBeats);
-    if (foodIcon)
-        drawPetAbsorbing(fb, pet, kActiveW / 2, 80, foodIcon,
+    const AbsorbPhase phase = absorbPhase(v.fxBeat, kAbsorbLeadBeats, kAbsorbBeats);
+    if (v.foodIcon)
+        drawPetAbsorbing(fb, v.pet, kActiveW / 2, 80, v.foodIcon,
                          rarityColor(food ? food->rarity : ItemDef::Rarity::Common),
-                         phase, beat);
+                         phase, v.beat);
     else
-        drawPetCentered(fb, pet, beat, 80);
+        drawPetCentered(fb, v.pet, v.beat, 80);
     drawCenteredText(fb, 132, food ? food->displayName : "", palColor(Pal::INK));
 
     FeedGaugeRow rows[3];
-    const int n = food ? buildFeedGaugeRows(*food, m, before, rows) : 0;
+    const int n = food ? buildFeedGaugeRows(*food, m, v.before, rows) : 0;
 
     // Centred on the y=168 line whatever the row count, so a one-stat morsel sits on
     // that line and a three-stat feast grows symmetrically around it, rather than the

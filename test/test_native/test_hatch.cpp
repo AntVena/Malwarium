@@ -159,9 +159,14 @@ void test_evolution_reveal_says_what_changed() {
     Game g{StartMode::Hatched};                       // Paypup, a Process
     CHECK(MoveLoadout::slotsForStage(Stage::Script) > MoveLoadout::slotsForStage(Stage::Process));
     Framebuffer bare(kActiveW, kActiveH), told(kActiveW, kActiveH);
-    drawEvolveModal(bare, nullptr, nullptr, "X", Stage::Script, 2, 0);
-    drawEvolveModal(told, nullptr, nullptr, "X", Stage::Script, 2, 0,
-                    "GOOD PATH - 0 ERRORS", "+1 MOVE SLOT - SEE MODS");
+    EvolveView ev;
+    ev.phase = EvolvePhase::Reveal;
+    ev.toName = "X";
+    ev.toStage = Stage::Script;
+    drawEvolveModal(bare, ev);
+    ev.pathLine = "GOOD PATH - 0 ERRORS";
+    ev.slotLine = "+1 MOVE SLOT - SEE MODS";
+    drawEvolveModal(told, ev);
     CHECK(regionDiffers(bare, told, 0, 164, kActiveW, 190));
     CHECK(textWidth("+1 MOVE SLOT - SEE MODS") <= kActiveW - 2 * kMargin);
     CHECK(textWidth("GOOD PATH - 4 ERRORS") <= kActiveW - 2 * kMargin);
