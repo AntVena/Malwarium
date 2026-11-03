@@ -116,8 +116,9 @@ void renameId(char* id, uint16_t version) {
 // holding, and `collectedItems` is the ever-held set the earn-path achievements read,
 // so missing it would quietly un-collect an item the player had already met.
 //
-// Mod and move ids ride their own fields and stay untouched: nothing has renamed one.
-// The table is flattened (no `to` is ever a `from`), so one pass over each is enough.
+// Mod and move ids have their own fields and are untouched, since none has been
+// renamed. The table is flattened (no `to` is ever a `from`), so one pass over each
+// is enough.
 void renameRetiredIds(SaveData& d, uint16_t version) {
     renameId(d.activeId, version);
     for (SaveStoredPet& p : d.rack) renameId(p.id, version);
@@ -364,12 +365,12 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     w.u16(d.malbeastSeen);
     w.u16(d.malbeastDefeated);
     // The v25 achievements u32, SUPERSEDED as of v40 by the wire-indexed bitset in the
-    // v40 tail. The four bytes stay on the wire deliberately: this field sits
-    // MID-STREAM, and dropping it would shift every later field, so a blob could no
-    // longer be read as any earlier version. Nothing mid-stream is ever removed. The
-    // codec still round-trips whatever it is handed (a faithful codec is the easier
-    // thing to reason about); it is Game::captureSave that stopped filling it in, and
-    // Game::applySave that only consults it when the v40 bitset is absent.
+    // v40 tail. The four bytes stay on the wire because the field is mid-stream:
+    // dropping it would shift every later field and break reading as an earlier
+    // version. Nothing mid-stream is ever removed. The codec still round-trips
+    // whatever it is handed (a faithful codec is the easier thing to reason about); it
+    // is Game::captureSave that stopped filling it in, and Game::applySave that only
+    // consults it when the v40 bitset is absent.
     w.u32(d.achievementsMask);
 
     // v26: per-stored-pet creature-level state, parallel to d.rack (mirrors
@@ -434,8 +435,8 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     w.u64(d.homeNetworkKey);
     w.bytes(d.homeNetworkName, kSaveNetNameCap);
 
-    // v37: the pet-to-pet LINK opt-in. The met operators ride the SD-backed
-    // PeerLedger, not this blob, only the consent bit belongs here.
+    // v37: the pet-to-pet LINK opt-in. The met operators live in the SD-backed
+    // PeerLedger; only the consent bit is here.
     w.u8(d.linkEnabled ? 1 : 0);
 
     // v38: reserved. Always 0: the standing internet opt-in it held is gone, and
@@ -463,9 +464,9 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     for (int32_t v : d.speciesDiveDepths) w.i32(v);
 
     // v42: time already burned in the 5/5 recovery window, so neither a power cycle
-    // nor an ARCH freeze can refund it. Awake-ms only: see the version note in save.h
-    // for why that is the honest measure on a board with no RTC. The active pet's
-    // value, then a parallel list mapped onto d.rack by index.
+    // nor an ARCH freeze can refund it. Awake-ms only; save.h's version note explains
+    // why for a board with no RTC. The active pet's value, then a parallel list
+    // mapped onto d.rack by index.
     w.u32(d.dyingElapsedMs);
     w.u16(static_cast<uint16_t>(d.rack.size()));
     for (const auto& p : d.rack) w.u32(p.dyingElapsedMs);
@@ -747,8 +748,8 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
         }
     }
 
-    // v4 tail: Hacker Rank. Absent in a v1/v2/v3 blob (starts at rank 0, no
-    // networks seen: the honest default for a save that predates the system).
+    // v4 tail: Hacker Rank. Absent in a v1/v2/v3 blob (starts at rank 0 with no
+    // networks seen).
     if (version >= 4) {
         d.networksSeen = r.i32();
         d.hackerRank = r.i32();
@@ -812,9 +813,9 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
         d.hasLevelData = r.ok;
     }
 
-    // v12 tail: the EXPL per-sector boss-unlock flags. Absent in a
-    // v1..v11 blob: bossUnlocked stays empty, so the loader migrates each flag from
-    // sectorCleared[] (a cleared sector's boss was obviously already beaten).
+    // v12 tail: the EXPL per-sector boss-unlock flags. Absent in a v1..v11 blob:
+    // bossUnlocked stays empty, so the loader migrates each flag from
+    // sectorCleared[] (a cleared sector's boss was already beaten).
     if (version >= 12) {
         const uint16_t nBoss = r.u16();
         for (uint16_t i = 0; i < nBoss && r.ok; ++i)
@@ -915,8 +916,8 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
     }
 
     // v25 tail: the web-'Pedia reveal-state bookkeeping. Absent in a v1..v24 blob:
-    // seenCreatures stays empty and both masks stay 0 (nothing glimpsed/achieved yet,
-    // the honest default for a save that predates this system).
+    // seenCreatures stays empty and both masks stay 0 (nothing glimpsed or achieved
+    // yet).
     if (version >= 25) {
         const uint16_t nSeen = r.u16();
         for (uint16_t i = 0; i < nSeen && r.ok; ++i) {
@@ -1046,9 +1047,8 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
         r.bytes(d.homeNetworkName, kSaveNetNameCap);
     }
 
-    // v37 tail: the LINK opt-in. Absent in a v1..v36 blob → off, which is both the
-    // default and the only honest reading of a save that predates the choice: a
-    // migrated device must never start announcing itself because it was upgraded.
+    // v37 tail: the LINK opt-in. Absent in a v1..v36 blob → off, so an upgraded
+    // device never starts announcing itself.
     if (version >= 37) d.linkEnabled = r.u8() != 0;
 
     // v38 tail: reserved. Read to advance the cursor, never acted on: a save that
@@ -1138,8 +1138,8 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
     }
 
     // v48 tail: the per-quote board state. Absent in a v1..v47 blob → empty, and every
-    // quote reads as never played. There is nothing older to seed it from: the board
-    // did not exist, so no quote can honestly be called solved.
+    // quote reads as never played. There is nothing older to seed it from, so no quote
+    // starts solved.
     if (version >= 48) {
         const uint16_t nQuote = r.u16();
         for (uint16_t i = 0; i < nQuote && r.ok; ++i) d.quoteStates.push_back(r.u8());
@@ -1163,9 +1163,8 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
         for (uint16_t i = 0; i < nRecipe && r.ok; ++i) d.recipeOwned.push_back(r.u8());
     }
 
-    // v53 tail: ROCK THE DOCK's run. Absent in a v1..v52 blob → a zero seed, which is
-    // exactly "no bracket in play": no migration, because a run that never existed
-    // cannot be reconstructed from anything else in the save.
+    // v53 tail: ROCK THE DOCK's run. Absent in a v1..v52 blob → a zero seed, meaning
+    // no bracket in play. No migration is needed.
     if (version >= 53) {
         d.tourneySeed = r.u32();
         d.tourneyAlive = r.u8();
@@ -1211,13 +1210,12 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
         }
     }
 
-    // v58 tail: the chosen background. Absent in a v1..v57 blob → 0, which is AUTO:
-    // the pet decides, which is what every device did before there was a choice to make.
+    // v58 tail: the chosen background. Absent in a v1..v57 blob → 0, which is AUTO: the
+    // pet decides.
     if (version >= 58) d.backgroundPick = r.u8();
 
     // v59 tail: the CANT. Absent in a v1..v58 blob → no sigils learned and nothing
-    // spent, which is the truth and not a compromise: every shake such a save
-    // captured is still in the purse, waiting for the first guardian.
+    // spent, so every SHAKE such a save captured is still unspent.
     if (version >= 59) {
         d.cantSigils = r.u32();
         d.shakesSpent = r.i32();
@@ -1234,13 +1232,12 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
         d.evolveHold = r.u8();
     }
 
-    // v61 tail: the stopped SERVICES mask. Absent in a v1..v60 blob → 0, which is every
-    // service the save has bought running: what a device did before the switchboard.
+    // v61 tail: the stopped SERVICES mask. Absent in a v1..v60 blob → 0, so every
+    // service the save has bought is running.
     if (version >= 61) d.rigServicesOff = r.u32();
 
     // v62 tail: what this pet has tasted. Absent in an older blob -> empty, a pet with
-    // nothing recorded rather than one that ate nothing: the grid says so honestly and
-    // the next few meals fill it in.
+    // nothing recorded yet; the next few meals fill the grid.
     if (version >= 62) {
         const uint16_t n = r.u16();
         for (uint16_t i = 0; i < n && r.ok; ++i) {
@@ -1262,8 +1259,7 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
     }
 
     // v65 tail: which STORY chapters this device has been shown. Absent in an older blob
-    // -> empty, a device that has seen none: true of every save written before there
-    // was anything to see, and corrected by the first walk.
+    // -> empty, a device that has seen none, corrected by the first walk.
     if (version >= 65) {
         const uint16_t n = r.u16();
         for (uint16_t i = 0; i < n && r.ok; ++i) d.storyRead.push_back(r.u8());
@@ -1277,7 +1273,7 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
     }
 
     // v67 tail: UI MODE and CARE ALERTS. Absent in an older blob -> the SaveData
-    // defaults, ICONS+LABEL and ON: what every device drew before they were stored.
+    // defaults. ICONS+LABEL and ON.
     if (version >= 67) {
         d.uiMode = r.u8();
         d.careAlerts = r.u8();

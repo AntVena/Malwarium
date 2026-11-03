@@ -18,7 +18,7 @@ void Combat::begin(const Combatant& player, const Combatant& enemy, Stakes stake
                    int exploitUses) {
     player_ = player;
     enemy_ = enemy;
-    // Full Health unless a gauntlet carries a wounded one in: no heal between rounds.
+    // Full Health unless a gauntlet carries a wounded fighter in, since rounds do not heal.
     if (carryPlayerHealth >= 0) {
         player_.health = carryPlayerHealth < player_.maxHealth ? carryPlayerHealth
                                                                : player_.maxHealth;
@@ -158,7 +158,7 @@ void Combat::releaseRansomSeizure(Combatant& c) {
 }
 
 bool braceOnlyDefend(const MoveDef& m) {
-    // A WILDCARD declares none of the fields below and still isn't a pure brace: what it
+    // A wildcard declares none of the fields below but is not a pure brace: what it
     // rolls may be a pool, a trap or a spawn.
     if (moveIsWildcard(m)) return false;
     return m.kind == MoveDef::Kind::Defend && m.stackDefensePct == 0 && m.shieldPool == 0 &&
@@ -180,8 +180,8 @@ int phishPoolSiphonBonusPct(const Combatant& c) {
     // pet would get worse at its own line's mechanic.
     const int base = kMaxHealthByStage[stageIndex(c.stage)];
     if (base <= 0) return 0;
-    // Phishing Rod (mod) scales the siphon itself, not its ceiling: the cap is almost
-    // never reached, so scaling it would pay nothing.
+    // Phishing Rod (mod) scales the siphon itself, because the cap is almost never
+    // reached.
     int pct = c.shieldHp * kPhishPoolSiphonFullPct / base;
     pct = pct * (100 + c.mods.mag(ModEffect::StealAmplifyPct)) / 100;
     return pct > kPhishPoolSiphonMaxPct ? kPhishPoolSiphonMaxPct : pct;
@@ -210,11 +210,11 @@ void polymorphPay(Combatant& c, MoveKind kind, int points) {
     // One stat point's worth each, in applyLevelStatPoints' vocabulary. The KIND picks
     // which pair is paid, so a varied kit shapes what the pet becomes.
     //
-    // MAGNITUDES ONLY: this never advances the investment LADDER, and that is deliberate
-    // rather than an omission. A rung is bought with points a pet earned or was granted
-    // and carries between fights; this is a transient payment for a move absorbed mid-
-    // fight, and a Metamorphic that could climb to BACKSCATTER by eating enough Defend
-    // rows would be buying a permanent-feeling mechanic with something nobody invested.
+    // Magnitudes only: this never advances the investment ladder, on purpose. A rung is
+    // bought with points a pet earned or was granted and carries between fights; this is
+    // a transient payment for a move absorbed mid- fight, and a Metamorphic that could
+    // climb to BACKSCATTER by eating enough Defend rows would be buying a
+    // permanent-feeling mechanic with something nobody invested.
     if (kind == MoveKind::Attack) {
         c.powerMultPct += kLevelPowerPctPerPoint * points;
         c.speed += static_cast<float>(kLevelSpeedPerPoint * points);
@@ -233,7 +233,7 @@ void polymorphPay(Combatant& c, MoveKind kind, int points) {
                                       kLevelDefenseBracePctPerPoint, body);
             c.defenseMultPct = braceCeilPct;
         }
-        // Ceiling and current together: raising max under a fighter must hand it the room.
+        // Ceiling and current together, so raising the max gives the fighter that room.
         c.maxHealth += gain;
         c.health += gain;
     }
@@ -277,8 +277,8 @@ const MoveDef* wildPick(const WildPool& pool, uint32_t roll) {
     const int genericN = pool.genericEnd;
     const int lineAN = pool.lineAEnd - pool.genericEnd;
     const int lineBN = total - pool.lineAEnd;
-    // An empty band hands its weight back to generic rather than being rolled into and
-    // found empty: a pool naming an unknown line, or a line with no rows of this kind.
+    // An empty band gives its weight back to generic so a roll never lands in it: a
+    // pool naming an unknown line, or a line with no rows of this kind.
     int wGeneric = genericN > 0 ? kWildSourceGenericPct : 0;
     const int wA = lineAN > 0 ? kWildSourceLineAPct : 0;
     const int wB = lineBN > 0 ? kWildSourceLineBPct : 0;
@@ -355,7 +355,7 @@ static void stackDot(Combatant& c, int per, int turns) {
 
 // Net Neutrality's floor (crew Exploit): whether `c`'s stat LEANS are locked against being
 // lowered. Every site that would reduce power / defence / speed / maxHealth asks this
-// first. Health is not covered: it is the resource the fight is fought over, not a lean.
+// first. Health is not covered, because it is what the fight is over.
 static bool statsFloored(const Combatant& c) {
     return c.crewExploit.holds(CrewExploitKind::ResetStatsAndFloor);
 }
@@ -411,7 +411,7 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
                                 moveIdx == actor.ransomSeizure.slot;
 
     int dmg = swingDamage(actor, *mv, byPlayer, swingingSeized);
-    // A replica eats the hit WHOLE and the turn ends there: no mitigation, no riders on
+    // A replica takes the whole hit and the turn ends there: no mitigation, no riders on
     // the worm. The caster's own payout still stands: it dealt damage, just not to Health.
     if (replicaAte(actor, target, *mv, dmg, byPlayer)) {
         payCaster(actor, target, mirror, *mv, mitmCopy, dmg, /*reachedHealth=*/false);
@@ -419,8 +419,9 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
     }
 
     // Health T2: the pool, spent. A share of this fighter's own max Health rides every
-    // damaging hit into the mitigation chain like the rest of the swing: the heavy body's
-    // way through another heavy body's sustain. A pure rider (power 0) carries none.
+    // damaging hit into the mitigation chain like the rest of the swing, which lets a
+    // heavy body get through another heavy body's sustain. A pure rider (power 0) carries
+    // none.
     if (actor.ownHealthDamagePct > 0 && mv->power > 0)
         dmg += actor.maxHealth * actor.ownHealthDamagePct / 100;
     const int baseDmg = dmg;          // pre-mitigation: the trap rebound and the floor read it
@@ -432,8 +433,8 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
     dmg = springTrojanTrap(actor, target, dmg, baseDmg);
     // The Ransomware pair, last in the chain so the pool holds exactly what would have
     // reached Health: the armed window banks the damage instead of taking it, and a
-    // full Cipher wall seizes the move that hit it. `ransomed` is what was banked: owed
-    // back to Health below, and nothing else about the hit.
+    // full Cipher wall seizes the move that hit it. `ransomed` is what was banked, owed
+    // back to Health below.
     const int ransomed = bankRansomAndSeize(target, *mv, dmg);
     // Health is left UNCLAMPED here and at every site below that spends it:
     // Combat::checkOutcome owns the floor, because how far past 0 a hit buried the pet
@@ -468,10 +469,10 @@ bool Combat::siphonPower(Combatant& actor, Combatant& target, int pct) {
 }
 
 // SELF-BUFFS PAY ON DAMAGE IN ANY FORM. A status rider has to reach Health to land
-// (applyOnHitRiders), but what the swing pays its own caster only asks that it dealt
-// damage to something: Health, a bubble, a worm copy, a trap that bounced it back. So a
-// ramping kit keeps ramping into a defence that is eating its hits, and eventually out-hits
-// it. `dealt` is 0 only for a pure rider or a hit a mirror deleted outright.
+// (applyOnHitRiders), but the swing's payout to its caster only needs damage dealt to
+// something: Health, a bubble, a worm copy, a trap that bounced it back. So a ramping kit
+// keeps ramping into a defence that is eating its hits, and eventually out-hits it. `dealt`
+// is 0 only for a pure rider or a hit a mirror deleted outright.
 void Combat::payCaster(Combatant& actor, Combatant& target, Combatant& mirror,
                        const MoveDef& mv, bool mitmCopy, int dealt, bool reachedHealth) {
     if (dealt <= 0) return;
@@ -489,11 +490,11 @@ void Combat::payCaster(Combatant& actor, Combatant& target, Combatant& mirror,
 // A continuing run permanently banks (run length - 1) flat damage into phishComboBonus,
 // paid on every later steal-attack hit this fight; it never decays.
 //
-// Advancing keys on the FIELD (stealPowerPct), not the line, which is why the generic
-// boss pool leaves stealPowerPct at zero and shreds Defense instead. Breaking keys on
-// ANY attack swung while exposed, so a mixed kit cannot swing generics through the
-// exposed stretch with its run intact. A Defend cast leaves the run standing, which is
-// why this is only reached on the attack branch.
+// Advancing keys on the field (stealPowerPct), which is why the generic boss pool
+// leaves stealPowerPct at zero and shreds Defense instead. Breaking keys on ANY attack
+// swung while exposed, so a mixed kit cannot swing generics through the exposed
+// stretch with its run intact. A Defend cast leaves the run standing, which is why
+// this is only reached on the attack branch.
 void Combat::trackFrenzyStreak(Combatant& actor, const MoveDef& mv) {
     if (actor.shieldHp <= 0) {
         actor.phishStreak = 0;    // caught out with the bubble down
@@ -511,9 +512,9 @@ int Combat::swingDamage(Combatant& actor, const MoveDef& mv, bool byPlayer,
     // Base damage scaled by the actor's branch attack-power lean plus any Lockout-track
     // Power stacked this fight. Meltdown Core (mod) adds a comeback bonus while low.
     int mult = actor.powerMultPct + actor.stackPowerBonus;
-    // Extortion Ledger (mod), the POWER half: keyed on an unpaid ransom pool rather
-    // than on a seizure, which most fights never reach. Scaled by what is owed, so the
-    // pool is worth carrying rather than merely worth opening.
+    // Extortion Ledger (mod), the POWER half: keyed on an unpaid ransom pool, because
+    // most fights never reach a seizure. Scaled by what is owed, so the pool is worth
+    // carrying rather than merely worth opening.
     if (actor.ransomPool > 0) {
         const int owed = actor.mods.mag2(ModEffect::ExtortionLedger);
         mult += owed * (100 + ledgerGrudgePct(actor)) / 100;
@@ -542,10 +543,10 @@ int Combat::swingDamage(Combatant& actor, const MoveDef& mv, bool byPlayer,
     // and Sim dummies, so this is a no-op off the wild path.
     if (!byPlayer) dmg = dmg * actor.enemyDamageMultPct / 100;
     // Speed T1 (first strike): the fight's opening blow, multiplied for whoever lands
-    // it. Claimed here (before mitigation, before the replica branch), so it is the
-    // ATTACK that is doubled and not the remainder some wall left of it, and so a hit
-    // a replica eats still counts as the fight's first. `firstHitLanded_` is set
-    // whether or not this side had the tier: the opening is spent by happening.
+    // it. Claimed here (before mitigation, before the replica branch), so the full
+    // attack is doubled before any wall, and a hit a replica takes still counts as
+    // the fight's first. `firstHitLanded_` is set whether or not this side had the
+    // tier: the opening is spent by happening.
     if (dmg > 0 && !firstHitLanded_) {
         firstHitLanded_ = true;
         dmg *= actor.firstStrikeMult;
@@ -554,9 +555,9 @@ return dmg;
 }
 
 // Worm replication (target side): the hit picks a victim among the parent and every live
-// replica, weighted so a defender draws hardest (wormTargetPick). A replica eats it WHOLE
-// (no mitigation, no riders, no overflow), and dies if overrun. Replication makes the
-// worm harder to BE the one hit, not tougher. True when a replica took it and the turn is
+// replica, weighted so a defender draws hardest (wormTargetPick). A replica takes all of
+// it (no mitigation, riders or overflow) and dies if overrun. Replication makes the worm
+// harder to BE the one hit, not tougher. True when a replica took it and the turn is
 // over.
 bool Combat::replicaAte(Combatant& actor, Combatant& target, const MoveDef& mv, int dmg,
                         bool byPlayer) {
@@ -579,8 +580,8 @@ bool Combat::replicaAte(Combatant& actor, Combatant& target, const MoveDef& mv, 
             actor.defense);
     }
     if (r.health <= 0) {   // packed: the last replica fills the freed slot
-        // Recorded before the pack erases it: the copy is about to stop existing, and
-        // the screen needs to know it ever did (WormKill).
+        // Recorded before the pack erases it, so the screen can show the kill
+        // (WormKill).
         lastWormKill_ = {/*happened=*/true, /*onPlayer=*/!byPlayer, r.defender};
         target.wormReplicas[victim] = target.wormReplicas[target.wormReplicaCount - 1];
         target.wormReplicas[--target.wormReplicaCount] = WormReplica{};
@@ -614,12 +615,11 @@ int Combat::mitigate(Combatant& actor, Combatant& target, const MoveDef& mv, int
     } else {
         // Effective rating = passive Defense + stacked Cipher-track Defense, put through
         // the Defence curve (defendedDamage), which never reaches immunity. Pierce (the
-        // move's own, then the mod's) is applied multiplicatively rather than summed, so
-        // however many stack the defender keeps a defence: two 50% pierces are 75%,
-        // never 100. It only ever shaves a POSITIVE rating toward zero: shredded armour
-        // is already below what pierce would ignore. Defence T1 cuts each pierce back
-        // before it lands, so the rating already earned stops being routed around
-        // (levelDefensePierceResistPct).
+        // move's own, then the mod's) is applied multiplicatively, so any stack leaves
+        // the defender some defence: two 50% pierces are 75%. It only ever shaves a
+        // POSITIVE rating toward zero: shredded armour is already below what pierce
+        // would ignore. Defence T1 cuts each pierce back before it lands, so the rating
+        // already earned stops being routed around (levelDefensePierceResistPct).
         const auto pierced = [&](int value, int piercePct) {
             if (piercePct <= 0 || value <= 0) return value;
             const int p = piercePct * (100 - target.pierceResistPct) / 100;
@@ -651,19 +651,18 @@ int Combat::mitigate(Combatant& actor, Combatant& target, const MoveDef& mv, int
             int brace = pierced(target.guard, mv.armorPiercePct);
             brace = pierced(brace, modPierce);
             brace = pierced(brace, actor.piercePct);
-            // Power T3 (guard smash): the brace's own rung. Pierce resist does NOT
-            // blunt this one: it is not pierce, it is the hit arriving too heavy for
-            // the guard to spend itself on, and Defence answers it by bracing again
-            // rather than by having hardened. Applied after the pierces so a fighter
+            // Power T3 (guard smash): the brace's own rung. Pierce resist does not
+            // blunt this, because it is a hit too heavy for the guard. Defence
+            // answers it by bracing again. Applied after the pierces so a fighter
             // holding both does not get the same reduction charged twice.
             if (actor.guardSmashPct > 0)
                 brace = brace * (100 - actor.guardSmashPct) / 100;
             const int unspent = brace > dmg ? brace - dmg : 0;
             dmg = dmg > brace ? dmg - brace : 0;
-            // Defence T2: an over-sized brace's remainder carries instead of being
-            // binned (levelDefenseBraceRetainPct). The wall buys efficiency, not a
-            // bigger number. Measured against the pre-pierce remainder, so pierce-resist
-            // and retention pay once, not twice.
+            // Defence T2: an over-sized brace's remainder carries over
+            // (levelDefenseBraceRetainPct). The wall buys efficiency, not a bigger
+            // number. Measured against the pre-pierce remainder, so pierce-resist and
+            // retention pay once, not twice.
             target.guard = unspent * target.braceRetainPct / 100;
         }
         // Minimum penetration: an attack always lands at least 1 through pure
@@ -749,9 +748,9 @@ void Combat::applyDeathBlast(Combatant& actor, Combatant& target) {
 // Protection Racket rakes part of it back as Health.
 void Combat::applyCrewOnHit(Combatant& actor, int dmg) {
     if (dmg <= 0) return;
-    // Escalation: charge-metered, so it spends on hits that connected rather than turns
-    // that happened, and uncapped unlike the Lockout track. Each charge pays for the
-    // bigger swing the next one banks.
+    // Escalation is charge-metered, so it spends on hits that connected, and unlike the
+    // Lockout track it has no cap. Each charge pays for the bigger swing the next one
+    // banks.
     if (actor.crewExploit.armed(CrewExploitKind::PowerByDamageDealt)) {
         actor.stackPowerBonus += dmg;
         --actor.crewExploit.charges;
@@ -780,16 +779,15 @@ void Combat::stackLockoutPower(Combatant& actor, Combatant& mirror, const MoveDe
     if (mitmCopy) mirror.stackPowerBonus += gain;
 }
 
-// The three riders a landed hit plants on its TARGET. None reads the damage (they ask
-// only what the move carries and what the target can refuse), which is what lets them sit
-// at the end of the pipeline rather than inside it. A fully mirrored hit carries none.
+// The three riders a landed hit plants on its TARGET. None reads the damage (only what
+// the move carries and what the target can refuse), so they sit at the end of the
+// pipeline. A fully mirrored hit carries none.
 void Combat::applyOnHitRiders(Combatant& target, const MoveDef& mv) {
     if (target.mirrorFired) return;          // the hit did not happen at all
     // ECONOMY, not keyword: a rider rides on DAMAGE, so a defence that ate the damage ate
     // the rider with it. A hit an Obfuscation pool swallowed whole lands none of the three.
-    // The way through is to spend the whole turn on the effect and deal no damage at all:
-    // see the PURE RIDER rule on combat.h, which such a cast never reaches this guard to
-    // fail, because nothing on the far side ever had damage to absorb.
+    // The way through is a turn spent wholly on the effect with no damage (the pure rider
+    // rule, combat.h). Such a cast never reaches this guard.
     const bool landed = !target.poolAbsorbedHit;
     if (landed && mv.lockTurns > 0 && target.lockedTurnsLeft == 0) {
         int k = mv.lockTurns;
@@ -800,12 +798,10 @@ void Combat::applyOnHitRiders(Combatant& target, const MoveDef& mv) {
             target.lockResist += k;
         }
     }
-    // SCRAMBLE rider: a landed hit reorders and enciphers the target's A+C picker for
-    // its next scrambleTurns turns. Refreshes rather than stacks, and never shortens one
-    // already running. Crib Sheet (ModEffect::ScrambleWard) is a flat refusal rather than a
-    // clamp: there is no "half a scrambled list", so the counter either holds or it
-    // does not, and a mod that shortened it would be selling a worse version of the
-    // one thing it is for.
+    // SCRAMBLE rider: a landed hit reorders and enciphers the target's A+C picker for its
+    // next scrambleTurns turns. Refreshes rather than stacks, and never shortens one
+    // already running. Crib Sheet (ModEffect::ScrambleWard) refuses the scramble outright,
+    // because a list cannot be half scrambled.
     if (landed && mv.scrambleTurns > 0 &&
         target.mods.mag(ModEffect::ScrambleWard) <= 0 &&
         mv.scrambleTurns > target.scrambleTurns) {
@@ -874,11 +870,10 @@ void Combat::applyDefend(Combatant& actor, Combatant& mirror, const MoveDef& mv,
         if (mitmCopy) mirror.stackDefenseBonus += gain;
     }
     // Once that wall is FULL, the next thing to hit it is seized rather than absorbed
-    // (RansomSeizure). The full wall is the whole condition: the seizure starts the
-    // ransom clock itself rather than requiring one to already be running, which would
-    // need two independent things to coincide. Asked after the stack above so the cast
-    // that fills the cap is the one that arms. `moveIdx < 0` is a hijacked cast
-    // (Execution-Override), which owns no slot to seize into.
+    // (RansomSeizure). The full wall is the only condition. The seizure starts the
+    // ransom clock itself, so no second event has to coincide. Asked after the stack
+    // above so the cast that fills the cap is the one that arms. `moveIdx < 0` is a
+    // hijacked cast (Execution-Override), which owns no slot to seize into.
     if (mv.stackDefensePct > 0 && moveIdx >= 0 &&
         actor.stackDefenseBonus >= mv.stackDefenseCap && !actor.ransomSeizure.holding()) {
         actor.ransomSeizure.armed = true;
@@ -898,12 +893,12 @@ void Combat::applyDefend(Combatant& actor, Combatant& mirror, const MoveDef& mv,
     setLast(mv.displayName, 0, byPlayer, false);
 }
 
-// Everything the TARGET deals back for having been hit, in the order a fighter holding all
-// of it is answered: the wall's backscatter first, then the two thorns mods. Called once the
-// hit has been spent on Health: `dmg` is what landed and `wallAbsorbed` what the mitigation
-// chain's wall ate, the two being different questions that a fighter carrying both is
-// answered for twice on purpose. Every payout chips `actor.health` and nothing else; the
-// Deadman Switch is not here because it fires on the KO rather than on the hit. Uses no rng().
+// Everything the TARGET deals back for having been hit, in the order a fighter holding all of
+// it is answered: the wall's backscatter first, then the two thorns mods. Called once the hit
+// has been spent on Health: `dmg` is what landed and `wallAbsorbed` what the mitigation
+// chain's wall ate, and a fighter carrying both is paid for each. Every payout chips
+// `actor.health` and nothing else; the Deadman Switch is not here because it fires on the KO
+// rather than on the hit. Uses no rng().
 void Combat::applyRetaliation(Combatant& actor, Combatant& target, int dmg, int wallAbsorbed) {
     // Defence T3 (backscatter): a share of what the wall just ate is dealt back to whoever
     // swung. Out of `wallAbsorbed` rather than out of the attack, so the rung pays for
@@ -950,8 +945,8 @@ int Combat::springTrojanTrap(Combatant& actor, Combatant& target, int dmg, int b
             actor.health -= rebound;
         }
     }
-    // Rot armor for next time. FLAT and unfloored, so it is the one thing that drives a
-    // rating below zero: the counter a deep wall cannot out-invest (tunables.h).
+    // Rot armor for next time. Flat and unfloored, so it is the only thing that can
+    // push a rating below zero, which a deep wall cannot out-invest (tunables.h).
     if (trap->trapArmorRot > 0 && !statsFloored(actor))
         actor.defense -= trap->trapArmorRot;
     return dmg;
@@ -961,14 +956,14 @@ int Combat::springTrojanTrap(Combatant& actor, Combatant& target, int dmg, int b
 //
 // Ransom Note (the passive): with the window armed, `dmg` is banked into ransomPool instead
 // of taken and the countdown resets to kRansomHoldTurns. The returned number is what was
-// banked, which the caller owes Health back, only the NUMBER is deferred, so every rider
+// banked, which the caller pays back to Health. Only the number is deferred, so every rider
 // still fires on impact and the KO check sees Health that hasn't moved.
 //
 // The SEIZURE: a full Cipher wall with a live ransom takes the attack that hit it and swings
 // it from the brace's own slot until the ransom settles. Only a landed attack, and never an
-// unresolved WILDCARD row: the ransomer has no pool to resolve one with, so it would swing
-// an empty slot. The slot written is the TARGET's (the one its own brace armed), and has
-// nothing to do with the caster's index for `mv`. Uses no rng().
+// unresolved wildcard row: the ransomer has no pool to resolve one with, so it would swing
+// an empty slot. The slot written is the target's (the one its own brace armed), independent
+// of the caster's index for `mv`. Uses no rng().
 int Combat::bankRansomAndSeize(Combatant& target, const MoveDef& mv, int dmg) {
     if (dmg <= 0) return 0;
     int ransomed = 0;
@@ -1039,12 +1034,12 @@ void Combat::applyStealTrack(Combatant& actor, Combatant& target, const MoveDef&
             biteHitsSpeed = (rng() % 2 == 0);
     }
     // The pool bonus applies to whichever gated steal fires, on top of the base and
-    // any Perfect-Bite doubling: the bubble both permits these two and sizes them.
+    // any Perfect-Bite doubling: the bubble enables these two and sets their size.
     const int poolBonus = phishPoolSiphonBonusPct(actor);
     if (bubbleUp && mv.stealSpeedPct > 0 && !floored) {
         int pct = mv.stealSpeedPct;
-        // The Phishing Rod only ever scales the BITE half: it amplifies the
-        // bonus, not the move's own base siphon.
+        // The Phishing Rod scales only the bite half, the bonus on top of the
+        // move's base siphon.
         if (bite && biteHitsSpeed)
             pct += mv.stealSpeedPct *
                    (100 + actor.mods.mag(ModEffect::StealAmplifyPct)) / 100;
@@ -1058,8 +1053,8 @@ void Combat::applyStealTrack(Combatant& actor, Combatant& target, const MoveDef&
             if (target.speed < kStealSpeedFloor) target.speed = kStealSpeedFloor;
         }
     }
-    // The drain is the one steal that takes the target's HEALTH, so like a status rider it
-    // needs the hit to have reached Health: a bubble it could drain through is no bubble.
+    // The drain is the only steal that takes the target's Health, so like a status rider
+    // it needs the hit to reach Health. Otherwise it would drain through a bubble.
     if (bubbleUp && mv.stealCurrentHpPct > 0 && reachedHealth) {
         int pct = mv.stealCurrentHpPct;
         if (bite && !biteHitsSpeed)
@@ -1126,8 +1121,8 @@ int stunLandPct(const Combatant& c) {
 }
 
 bool Combat::stunLands(const Combatant& target) {
-    // Nothing to beat, no draw: a target with no resistance of either kind (banked or
-    // standing from max-Health points) is always frozen, and never draws here.
+    // No roll needed: a target with no resistance of either kind (banked or standing
+    // from max-Health points) is always frozen, and never draws here.
     const int pct = stunLandPct(target);
     if (pct >= 100) return true;
     return static_cast<int>(rng() % 100) < pct;
@@ -1135,8 +1130,8 @@ bool Combat::stunLands(const Combatant& target) {
 
 void Combat::syncWormSpeed() {
     // Shared Resources: the worm's speed IS the opponent's, so pickNextActor always deals
-    // actions 1:1 and nothing out-actions a worm. Exactly one worm, or nothing happens:
-    // two are already in lockstep, and matching each to the other would swap forever.
+    // actions 1:1 and nothing out-actions a worm. Only with exactly one worm. Two are
+    // already in lockstep, and matching each to the other would swap forever.
     const bool pw = replicates(player_), ew = replicates(enemy_);
     if (pw == ew) return;
     if (pw) player_.speed = enemy_.speed;
@@ -1146,8 +1141,8 @@ void Combat::syncWormSpeed() {
 void Combat::rollWormSpawn(Combatant& actor, const MoveDef* mv) {
     // Slots are the hard cap; a full board doesn't roll, so it draws no rng.
     if (actor.wormReplicaCount >= kWormReplicaSlots) return;
-    // Replication Bus (mod) raises the RATE, never the cap: the slot check above still
-    // runs first, so an equipped mod never changes the rng draw count.
+    // Replication Bus (mod) raises the rate and leaves the cap: the slot check above
+    // still runs first, so an equipped mod never changes the rng draw count.
     const int spawnPct = mv->replicaSpawnPct + actor.mods.mag(ModEffect::ReplicaSpawnPct);
     if (static_cast<int>(rng() % 100) >= spawnPct) return;
     WormReplica& r = actor.wormReplicas[actor.wormReplicaCount];
@@ -1210,10 +1205,10 @@ void Combat::resolveTurn(Combatant& actor, Combatant& target, bool byPlayer) {
     }
 
     // Regen (mod): last of the three turn-start ticks, and only on a fighter that survived
-    // the other two. A heal running first would cancel the rot before it bit, which is
-    // Faraday Cage's job alone: coming last, regen recovers from the fight and never from
-    // the tick currently killing you. No popup of its own; the climbing Health bar is the
-    // feedback, and this turn's move would overwrite the slot anyway.
+    // the other two. A heal running first would cancel the rot before it bites, which only
+    // Faraday Cage may do. Coming last, regen cannot undo the tick currently killing the
+    // fighter. No popup of its own; the climbing Health bar is the feedback, and this
+    // turn's move would overwrite the slot anyway.
     if (const int regen = actor.mods.mag(ModEffect::RegenPerTurn); regen > 0 && actor.health > 0) {
         actor.health += regen;
         if (actor.health > actor.maxHealth) actor.health = actor.maxHealth;
@@ -1224,8 +1219,8 @@ void Combat::resolveTurn(Combatant& actor, Combatant& target, bool byPlayer) {
     // survived the other two, so it recovers from the fight and never from the tick
     // currently killing you. A share of BASE Health (healthBody) rather than max: a heal
     // that grew with every Health point bought it compounded into a pet nothing could
-    // out-damage. Always at least 1 on a fighter that earned it: a rung that rounds to
-    // nothing on a small pet reads as a rung that does not work.
+    // out-damage. Always at least 1 on a fighter that earned it, so a rung never looks
+    // broken on a small pet.
     if (actor.scrubPct > 0 && actor.health > 0) {
         const int heal = healthBody(actor) * actor.scrubPct / 100;
         actor.health += heal > 0 ? heal : 1;
@@ -1235,8 +1230,8 @@ void Combat::resolveTurn(Combatant& actor, Combatant& target, bool byPlayer) {
     // Ransom Note, the WINDOW half. Rolled per TURN rather than per incoming hit, so a
     // linked duel stays in step: the window is fixed by the seed before the turn plays out
     // and can't depend on how the opponent's speed deals actions inside it. An armed window
-    // stays open until a hit lands in it (applyEffect closes it) rather than lapsing, so
-    // the chance sets how often a HIT is ransomed, not how often a turn is.
+    // stays open until a hit lands in it (applyEffect closes it), so the chance sets how
+    // often a hit is ransomed.
     if (!actor.ransomArmed) actor.ransomArmed = ransomArmRolls(actor);
 
     // ...and the BILL half. The countdown burns one of the RANSOMER's own turns per tick,
@@ -1266,10 +1261,10 @@ void Combat::resolveTurn(Combatant& actor, Combatant& target, bool byPlayer) {
         return;
     }
     // The scramble is measured in the victim's OWN turns, like the stun above, but it
-    // never skips one, so it is shed here where a turn is actually being taken rather
-    // than in the freeze branch that returns early.
+    // never skips one, so it is shed here, where a turn is taken, and not in the
+    // freeze branch that returns early.
     if (actor.scrambleTurns > 0) actor.scrambleTurns--;   // the sentinel never counts down
-    // Only a turn spent FIGHTING sheds a resist point (one burned to the lock or a ransom
+    // Only a turn spent fighting sheds a resist point (one burned to the lock or a ransom
     // bill returned above), so resistance grows through a chain and drains once it breaks.
     if (actor.lockResist > actor.lockResistFloor) actor.lockResist--;
 
@@ -1289,9 +1284,9 @@ void Combat::resolveTurn(Combatant& actor, Combatant& target, bool byPlayer) {
         moveIdx = chooseMove(actor);
     }
     // A chained move's follow-up step, committed by last turn's entry cast. Overrides the
-    // roll so the step lands on the very next turn: the entry already spent its turn doing
-    // something real, which is what separates a chain from a wind-up. `moveIdx` stays the
-    // ENTRY's slot, so everything keying off the cast slot still points at what was equipped.
+    // roll so the step lands on the very next turn: the entry already spent its turn on a
+    // real move, which separates a chain from a wind-up. `moveIdx` stays the ENTRY's slot, so
+    // everything keying off the cast slot still points at what was equipped.
     const MoveDef* chained = nullptr;
     if (actor.chainSlot >= 0 && actor.chainSlot < static_cast<int>(actor.chainFollow.size())) {
         chained = actor.chainFollow[actor.chainSlot];
@@ -1310,8 +1305,8 @@ void Combat::resolveTurn(Combatant& actor, Combatant& target, bool byPlayer) {
         wild = &actor.wildPools[moveIdx];
         if (const MoveDef* drawn = wildPick(*wild, rng())) {
             mv = drawn;
-            // What the picker's LOCK band offers. Written on the roll, not on a resolved
-            // hit: an operator locks the move they watched come up.
+            // What the picker's LOCK band offers. Written on the roll, because an
+            // operator locks the move they saw come up.
             actor.wildPools[moveIdx].lastRolled = drawn;
         }
     }
@@ -1369,9 +1364,9 @@ void Combat::resolveTurn(Combatant& actor, Combatant& target, bool byPlayer) {
 
     applyEffect(actor, target, mv, byPlayer, moveIdx);
     // Tempo refund (MoveDef::speedRefundPct): part of an action's gauge back to whoever
-    // just spent a turn bracing. Here rather than inside applyEffect because what is
-    // refunded is the TURN, which belongs to `actor`: an Execution-Override hijack calls
-    // applyEffect directly and must not pay tempo to a fighter that spent nothing.
+    // just spent a turn bracing. Here and not in applyEffect, because the refund is the
+    // turn, which belongs to `actor`: an Execution-Override hijack calls applyEffect
+    // directly and must not pay tempo to a fighter that spent nothing.
     if (mv->kind == MoveDef::Kind::Defend && mv->speedRefundPct > 0) {
         float& gauge = byPlayer ? plGauge_ : enGauge_;
         gauge += kSpeedActionThreshold * mv->speedRefundPct / 100.0f;
@@ -1392,10 +1387,10 @@ void Combat::resolveTurn(Combatant& actor, Combatant& target, bool byPlayer) {
     actor.lastMoveIdx = moveIdx;
 
     // FAILOVER (crew Exploit): one charge runs THIS cast a second time against the same
-    // target, on the spot. The CAST and not the turn: sitting here rather than around
-    // resolveTurn's caller means the turn-start ticks, the tempo refund and the chain
-    // hand-off stay bought once, so holding a spare never costs a second DoT tick. What
-    // repeats is the swing and the roll hanging off it, rollWormSpawn included.
+    // target, on the spot. This wraps the cast, not the turn, so the turn-start ticks,
+    // the tempo refund and the chain hand-off run once and holding a spare never costs
+    // a second DoT tick. What repeats is the swing and the roll hanging off it,
+    // rollWormSpawn included.
     //
     // Every early return above (stunned, mid-channel, hijacked) leaves the charge unspent,
     // there having been no cast to stand in for. One extra pass, never a loop.
@@ -1412,9 +1407,9 @@ void Combat::checkOutcome() {
     // Everything that spends Health leaves it unclamped and lands here, so a save reads the
     // pet's STATE rather than the thing that got it there.
     //
-    // Backup Plan B (crew Exploit) looks at the hole FIRST: the player spent an Exploit
-    // use on it, so a granted one-shot stays held for a later hole. It restores TO half of
-    // max (the Backup Drive below ADDS half to wherever the pet ended up) and pays the
+    // Backup Plan B (crew Exploit) checks the hole first: the player spent an Exploit use
+    // on it, so a granted one-shot stays held for a later hole. It restores TO half of max
+    // (the Backup Drive below ADDS half to wherever the pet ended up) and pays the
     // overkill back as Power, multiplied by the turns still on its clock: a bigger blow
     // rallies harder. One shot. Asked of both sides, since a tournament opponent arms its
     // own Exploits.
@@ -1451,10 +1446,10 @@ bool Combat::pickNextActor() {
     // Fill both gauges by live speed (min 1, so a fully-siphoned pet still acts and the
     // loop terminates) until one reaches the threshold; that side acts and spends one
     // threshold's worth, leaving the other's carry to build. Ties go to the player.
-    // Actions are therefore dealt in proportion to relative speed.
-    // effectiveSpeed, not `speed`: Speed T3 pays on Health already lost, so the bonus has
-    // to be re-asked at every scheduling tick rather than banked once, which is the same
-    // reason this whole function re-matches instead of dealing a fixed order at the bell.
+    // Actions are therefore dealt in proportion to relative speed. effectiveSpeed, not
+    // `speed`: Speed T3 pays on Health already lost, so the bonus is re-read at every
+    // scheduling tick, which is also why this function re-matches instead of fixing the
+    // order at the start.
     const float pls = effectiveSpeed(player_);
     const float ens = effectiveSpeed(enemy_);
     const float ps = pls < 1 ? 1 : pls;
@@ -1710,8 +1705,8 @@ int Combat::overrideRowsHeld() const {
 }
 
 // The first READABLE display row of a band, or its first row when the pet can read none
-// of them: the cursor has to sit somewhere, and a picker that opens on nothing at all
-// would read as a bug rather than as a lockout. B still refuses it.
+// of them: the cursor has to sit somewhere, and a picker that opened on nothing would
+// look like a bug. B still refuses it.
 int Combat::firstLegibleIn(OverrideBand band) const {
     const int first = overrideBandFirst(band), rows = overrideBandRows(band);
     for (int i = 0; i < rows; ++i)
@@ -1730,10 +1725,10 @@ void Combat::cycleOverride() {
         overridePick_ = overrideBandFirst(overrideBandAt(overrideBandPick_));
         return;
     }
-    // Inside a band the walk wraps WITHIN it: crossing into the neighbour is what the
-    // band level is for. The step is taken in DISPLAY order, which is the order the
-    // operator can see: under a scramble that is not the flat order, and a cursor that
-    // walked the flat one would appear to jump about at random.
+    // Inside a band the walk wraps within it; the band level moves between bands. The
+    // step is taken in DISPLAY order, which is the order the operator can see: under a
+    // scramble that is not the flat order, and a cursor that walked the flat one would
+    // appear to jump about at random.
     const OverrideBand band = overrideBandOf(overridePick_);
     const int first = overrideBandFirst(band);
     const int rows = overrideBandRows(band);
@@ -1786,9 +1781,9 @@ void Combat::armCrewExploit(Combatant& self, const CrewExploit& x, bool byPlayer
             self.crewExploit.turns += x.magnitude;
             break;
         case CrewExploitKind::ResetStatsAndFloor:
-            // Snap the three live stat LEANS back to the walk-in values, in BOTH
-            // directions (fire it drained and it restores, fire it buffed and it costs),
-            // then statsFloored holds them there. The earned line-stack tracks (Lockout
+            // Snap the three live stat LEANS back to the walk-in values, in both
+            // directions (a drained stat is restored, a buffed one is reduced), then
+            // statsFloored holds them there. The earned line-stack tracks (Lockout
             // Power, Cipher Defense) are progress, not leans, and nothing erodes them;
             // maxHealth already drunk from by a steal is not given back either.
             self.powerMultPct = self.basePowerMultPct;

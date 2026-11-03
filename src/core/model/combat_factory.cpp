@@ -115,12 +115,12 @@ Combatant makePlayerCombatant(const ContentRegistry& reg, const CreatureDef& pet
             c.moves.push_back(d);
         }
     }
-    // Mod passives read at fight start, DATA-DRIVEN off ModDef: one
-    // loop over the equipped slots instead of a hardcoded `if` per mod. A `line`
-    // affinity ADDS its bonus when the pet's line matches (never locks). Fight-
-    // start effects land on the base stats here; ones that stay live for the fight go
-    // into c.mods for applyEffect/resolveTurn to read; post-battle ones (Bits/Frag) are
-    // read by the Game (game_combat) off the same ModDef.
+    // Mod passives read at fight start, driven by ModDef data: one loop over the
+    // equipped slots. A `line` affinity ADDS its bonus when the pet's line matches
+    // (never locks). Fight- start effects land on the base stats here; ones that stay
+    // live for the fight go into c.mods for applyEffect/resolveTurn to read;
+    // post-battle ones (Bits/Frag) are read by the Game (game_combat) off the same
+    // ModDef.
     for (int i = 0; i < kModSlots; ++i) {
         const char* id = mods.equipped(i);
         if (!id) continue;
@@ -138,10 +138,10 @@ Combatant makePlayerCombatant(const ContentRegistry& reg, const CreatureDef& pet
             // scale 100, so nothing early moves; only the late decay goes away.
             //
             // The CONDITIONAL power rows (Meltdown Core, Race Condition, the Ledger's owed half)
-            // still add into `mult` at the damage calc and are left that way on purpose:
-            // they measure healthy, their magnitudes were picked against that base, and
-            // they are read at a different point in the pipeline. Move them only with a
-            // sweep in hand: the units are not interchangeable.
+            // still add into `mult` at the damage calc and are left that way on purpose: they
+            // measure healthy, their magnitudes were picked against that base, and they are read
+            // at a different point in the pipeline. Change them only with a balance sweep,
+            // because the units differ.
             case ModEffect::PowerPct:
                 c.powerMultPct = c.powerMultPct * (100 + mag) / 100;
                 break;
@@ -235,8 +235,8 @@ const char* simDummyName(int tier) {
 }
 
 CombatEnemy simDummy(int tier) {
-    // Safe practice targets. Both tiers share the one dummy sprite: they are the
-    // same prop, and the tier reads off the level/stats rows. Stats/tiers are balance.
+    // Safe practice targets. Both tiers share one dummy sprite; the tier shows in the
+    // level and stats rows. Stats/tiers are balance.
     if (tier <= 0)
         return {"Basic Dummy", "SPR_DUMMY", 1, 30, 8, {"quick_jab"}};
     return {"Hardened Dummy", "SPR_DUMMY", 2, 55, 11,
@@ -244,15 +244,14 @@ CombatEnemy simDummy(int tier) {
 }
 
 // The whole wild-malbeast roster, in BIT order: row i is bit i of Game's malbeastSeen /
-// malbeastDefeated masks, so a row is only ever APPENDED. Inserting one would hand a
-// save's bits to the wrong creatures. Each wild carries its OWN SPR_MALBEAST_* sheet
+// malbeastDefeated masks, so rows are only appended. Inserting one would hand a save's
+// bits to the wrong creatures. Each wild carries its OWN SPR_MALBEAST_* sheet
 // (tools/gen_malbeast_art.py), so a player can tell one encounter from another at a
 // glance rather than meeting recolours of the same dog. The names here are the source of
 // truth for kWildMalbeastIds below and for the 'Pedia (tools/gen_pedia_data.py reads this
-// table).
-// Base stats are the design values; the wild challenge buff (kWildEnemy*Pct) is applied
-// uniformly in makeEnemyCombatant off the isWild flag, so the rows stay readable and
-// bosses/Sim (which reuse the shape) are unaffected.
+// table). Base stats are the design values; the wild challenge buff (kWildEnemy*Pct) is
+// applied uniformly in makeEnemyCombatant off the isWild flag, so the rows stay readable
+// and bosses/Sim (which reuse the shape) are unaffected.
 //
 // The last field is the creature's own SIGNATURE (CombatEnemy::signatureMoveId): the one
 // move that is ITS, carried past the depth ladder that overwrites everything else in the
@@ -272,7 +271,7 @@ const CombatEnemy kWildRoster[kWildMalbeastCount] = {
      true, "stale_read"},
     // Tier 3: the Deepweb Dive, and any area past the Bayou that names no pair of its own.
     // The apex gets a bigger 64x56 cell than the 56x48 the rest of the roster uses: drawn
-    // from its own frame size, so nothing else has to know.
+    // from its own frame size, so nothing else needs to handle it.
     {"Buffer Wyrm", "SPR_MALBEAST_BUFFER_WYRM", 3, 80, 14, {"packet_storm", "fork_bomb"},
      true, "coil_overrun"},
     {"Kernel Leviathan", "SPR_MALBEAST_KERNEL_LEVIATHAN", 3, 85, 13,
@@ -352,7 +351,7 @@ const char* const kWildMalbeastIds[kWildMalbeastCount] = {
 };
 
 namespace {
-// Lowercase + non-alnum -> '_', one-for-one (no collapsing): matches exactly how
+// Lowercase + non-alnum -> '_', one-for-one (no collapsing): matching how
 // kWildMalbeastIds above was derived from each CombatEnemy::name.
 void slugify(const char* s, char* out, size_t outSize) {
     size_t i = 0;
@@ -380,14 +379,14 @@ void applyWildSubAreaRamp(CombatEnemy& e, int areaIdx, int sub) {
     if (sub < 0) sub = 0;
     if (sub >= kSubAreasPerArea) sub = kSubAreasPerArea - 1;
 
-    // the explicit LEVEL + its stat half. Level is a GLOBAL depth rung:
-    // +1 per sub-area AND +kSubAreasPerArea across areas, so it climbs monotonically
-    // as the player pushes deeper. It's what wildWinXp() compares against the pet's
-    // level to reward punching up / tax farming shallow. The STAT bump is the "rolled
-    // level-up stats" half: the between-AREA jump already rides the tier roster in
-    // wildMalbeast() (tier-2 wilds carry far more Health), so here we only thicken
-    // WITHIN the sector. Health per sub (soaks longer) + speed at the deepest rungs
-    // (swings sooner). Applied for every sub (including 0, a no-op stat-wise).
+    // the explicit LEVEL + its stat half. Level is a GLOBAL depth rung: +1 per
+    // sub-area AND +kSubAreasPerArea across areas, so it climbs monotonically as the
+    // player pushes deeper. It's what wildWinXp() compares against the pet's level to
+    // reward punching up / tax farming shallow. The STAT bump is the "rolled level-up
+    // stats" half: the between-AREA jump already rides the tier roster in
+    // wildMalbeast() (tier-2 wilds carry far more Health), so this only scales within
+    // the sector. Health per sub (soaks longer) + speed at the deepest rungs (swings
+    // sooner). Applied for every sub (including 0, a no-op stat-wise).
     e.level = areaIdx * kSubAreasPerArea + sub;
     e.hasLevel = true;
     e.maxHealth += sub * kWildSubAreaHealthStep;
@@ -399,9 +398,9 @@ void applyWildSubAreaRamp(CombatEnemy& e, int areaIdx, int sub) {
     // + speed, so they soak longer and swing more often), so moves only need to make
     // each sub-area meaner than the last. Rungs are ordered by EFFECTIVE per-turn
     // damage, since the enemy rotates its kit and gets only a few turns before it
-    // dies: what bites is the AVERAGE swing, not the theoretical top move. That last
-    // point matters: fork_bomb's 26 is spread over a 2-turn windup (~13 eff/turn), so
-    // adding it to a set of single-turn hitters LOWERS the average and makes the fight
+    // dies: so the average swing matters more than the strongest move. That last point
+    // matters: fork_bomb's 26 is spread over a 2-turn windup (~13 eff/turn), so adding
+    // it to a set of single-turn hitters LOWERS the average and makes the fight
     // EASIER. So the apex is the two hardest single-turn hitters (buffer_overflow 20 +
     // rootkit_strike 24); fork_bomb stays a boss/late-tier flavor move, not the wild
     // ceiling. quick_jab(6) < packet_storm(12) < buffer_overflow(20) < rootkit_strike
@@ -417,16 +416,16 @@ void applyWildSubAreaRamp(CombatEnemy& e, int areaIdx, int sub) {
 
     // ...and this AREA's own pair, on top of whatever rung the ladder just set. The two
     // levers answer different questions and so compose rather than replace: the ladder is
-    // HOW HARD this rung swings, the pair is WHERE the player is. Without it a wild reads
-    // only as its tier: the same three moves everywhere, so an encounter in the Bayou and
-    // one in the Moors are distinguishable by nothing a fight can show.
+    // HOW HARD this rung swings, the pair is WHERE the player is. Without it a wild has
+    // only its tier's three moves, so a fight in the Bayou looks the same as one in the
+    // Moors.
     //
     // Depth picks how much of the pair rides. The Attack comes from the first rung, so a
-    // zone announces itself immediately; the Defend joins deeper, which is the weighting
-    // and also the honest cost: a braced wild is a LONGER fight, not a harder one, and
-    // the rung that has already earned more Health and speed is the one that can afford
-    // to spend a turn holding. One brace, never two: chooseMove is uniform, and the same
-    // reason kMaxBossTeaches caps a boss at one applies to anything that takes turns.
+    // zone announces itself immediately; the Defend joins deeper, because a braced wild
+    // makes a longer fight without making it harder, and the rung that has already
+    // earned more Health and speed is the one that can afford to spend a turn holding.
+    // One brace, never two: chooseMove is uniform, and the same reason kMaxBossTeaches
+    // caps a boss at one applies to anything that takes turns.
     const AreaDef& a = area(areaIdx);
     if (a.wildAttackMoveId) e.moveIds.push_back(a.wildAttackMoveId);
     if (a.wildDefendMoveId && sub >= kWildAreaDefendSub)
@@ -439,16 +438,16 @@ void applyWildSubAreaRamp(CombatEnemy& e, int areaIdx, int sub) {
     // with the rung rather than replacing it, so the depth ramp the ladder builds is
     // still there underneath.
     //
-    // Signatures are authored small (content_moves.cpp) precisely so that adding one
-    // cannot reorder the rungs: the ladder is sorted by EFFECTIVE per-turn damage, and a
-    // constant appended to every rung alike moves them all the same way.
+    // Signatures are authored small (content_moves.cpp) so adding one cannot reorder the
+    // rungs: the ladder is sorted by EFFECTIVE per-turn damage, and a constant appended
+    // to every rung alike moves them all the same way.
     if (e.signatureMoveId) e.moveIds.push_back(e.signatureMoveId);
 }
 
 std::vector<const char*> deepWebMoveIds(int depth, uint32_t roll) {
     if (depth < 0) depth = 0;
-    // Past the gate the deep pool REPLACES the rung: a boss move is the whole point of
-    // being this far down, not a rare garnish on the same kit.
+    // Past the gate the deep pool replaces the rung, so deep fights reliably field
+    // boss moves.
     const bool deep = depth >= kDeepWebBossMoveDepth;
     int rung = 0;                                // the deepest rung this depth has opened
     while (rung + 1 < kDeepWebMoveRungTotal && depth >= kDeepWebMoveRungDepths[rung + 1])
@@ -478,8 +477,8 @@ std::vector<const char*> deepWebMoveIds(int depth, uint32_t roll) {
 // places for an enemy to stop answering to the player's own curves.
 static void spendStatBudget(CombatEnemy& e, const int (&points)[kLevelStatCount]) {
     e.powerMultPct += points[0] * kLevelPowerPctPerPoint;
-    // Same rating per point the pet's Defence earns: an enemy is not allowed a wall the
-    // player could not have built.
+    // Same rating per point as the pet's Defence, so an enemy never gets a wall the
+    // player could not build.
     e.defense += levelDefenseRating(points[1]);
     e.speed += points[2] * kLevelSpeedPerPoint;
     e.maxHealth += points[3] * kDeepWebHealthPerLevel;
@@ -525,17 +524,16 @@ void applyDeepWebScale(CombatEnemy& e, int petLevel, int depth, uint32_t roll) {
     // ramp past the foothold is the same shape it always was, just started later.
     const int rampDepth = depth > kDeepWebRampFreeDepth ? depth - kDeepWebRampFreeDepth : 0;
     const int effLevel = petLevel + kDeepWebDepthLevelPerLog2 * floorLog2(rampDepth + 1);
-    // The isWild challenge buff still applies in makeEnemyCombatant. Bits payout
-    // (diffPips-keyed, not level-keyed) doesn't ride this scale: see deepWebDepthBitsPct.
+    // The isWild challenge buff still applies in makeEnemyCombatant. The Bits payout is
+    // keyed on diffPips and ignores this scale; see deepWebDepthBitsPct.
     e.level = effLevel + kDeepWebEnemyLevelOffset;
     e.hasLevel = true;
 
-    // A BUDGET OF POINTS, SPENT AT RANDOM: the same shape a pet's own growth takes (one
+    // A budget of points, spent at random: the same shape a pet's own growth takes (one
     // point per level into one of four stats, game_combat.cpp's addCombatXp), so a dive
-    // enemy is a peer built the way the player was built rather than a second curve to
-    // reason about. Per-point rather than a fixed split, so a shallow dive throws real
-    // variety (a glass cannon, a wall, a blur), and a deep one evens out as the count
-    // grows.
+    // enemy is built the way the player was, instead of a second curve to reason about.
+    // Rolled per point, so a shallow dive throws real variety (a glass cannon, a wall,
+    // a blur), and a deep one evens out as the count grows.
     //
     // The LEVEL half answers only the pet's surplus over the level the zone is framed at.
     // Spending against the whole level made the arriving pet fight an endgame body with a
@@ -545,8 +543,8 @@ void applyDeepWebScale(CombatEnemy& e, int petLevel, int depth, uint32_t roll) {
     const int surplus = effLevel > kEndlessParLevel ? effLevel - kEndlessParLevel : 0;
     // The DEPTH half is what makes the zone endless in the honest sense: effLevel's own
     // depth term is logarithmic and flattens into a fair fight a good build wins forever,
-    // and this one does not. It rides rampDepth rather than raw depth so the foothold
-    // covers the whole ramp: inside it a dive is the same fight at every depth.
+    // and this one does not. It uses rampDepth so the foothold covers the whole ramp,
+    // where a dive is the same fight at every depth.
     const int budget = surplus * kDeepWebBudgetPct / 100 +
                        rampDepth / kDeepWebDepthPointsPerN;
     int points[kLevelStatCount] = {0, 0, 0, 0};
@@ -634,17 +632,17 @@ CombatEnemy subBossEnemy(const AreaDef& a, int tier, int sub, const char* name,
     if (sub >= 2) moves.push_back("packet_storm");
     if (sub >= kSubAreasPerArea - 1) {
         moves.push_back("fork_bomb");
-        // The signature (sub 4) boss debuts its area's THREAT rider: the telegraphed
-        // apex where you'd bring the matching counter-mod, earned in that same area's
-        // own loot table (AreaDef::modPoolIds). An escort drops to a shallower `sub` and
-        // so never carries it: the rider is the wall's tell, not the doorway's.
+        // The signature (sub 4) boss introduces its area's THREAT rider, where the
+        // player brings the matching counter-mod earned in that same area's own loot
+        // table (AreaDef::modPoolIds). An escort drops to a shallower `sub` and so never
+        // carries it: the rider is the wall's tell, not the doorway's.
         if (a.apexThreatMoveId) moves.push_back(a.apexThreatMoveId);
     }
     // ...and what this boss TEACHES, on top of the depth spine. This is the only reason
     // most of the move roster is reachable at all: a drop is drawn from the defeated
     // enemy's kit, so a move reaches a player exactly when some boss row names it. An
-    // escort carries its boss's list too: it is that boss a rung shallower, and the drop
-    // filter (not-yet-owned) already stops the extra rounds from paying twice.
+    // escort carries its boss's list too: it is that boss a rung shallower, and the
+    // not-yet-owned drop filter stops the extra rounds from paying twice.
     if (teacher)
         for (const char* id : teacher->teaches)
             if (id) moves.push_back(id);
@@ -673,11 +671,11 @@ BossGauntlet subAreaBoss(int areaIdx, int sub) {
     for (int r = 0; r < b.roundCount(); ++r) {
         const SubBossRound rd = b.round(r);
         // An escort's rung is a DELTA, so the depth it lands on may sit BELOW the area's
-        // first sub-area, which is the point: a doorway boss (sub 0) has nowhere shallower
-        // to draw from, and flooring at 0 would silently hand it an escort identical to
-        // itself. The formula stays sound below zero (Health is base + tier*8 + depth*step,
-        // and the move rungs are all `depth >= n` tests), so the floor only has to keep
-        // Health positive: a full ladder-span below is as far as any escort can reach.
+        // first sub-area, on purpose: a doorway boss (sub 0) has nowhere shallower to draw
+        // from, and flooring at 0 would silently hand it an escort identical to itself. The
+        // formula stays sound below zero (Health is base + tier*8 + depth*step, and the
+        // move rungs are all `depth >= n` tests), so the floor only has to keep Health
+        // positive: a full ladder-span below is as far as any escort can reach.
         int depth = sub + rd.rung;
         if (depth < -(kSubAreasPerArea - 1)) depth = -(kSubAreasPerArea - 1);
         if (depth >= kSubAreasPerArea) depth = kSubAreasPerArea - 1;
@@ -690,26 +688,26 @@ BossGauntlet subAreaBoss(int areaIdx, int sub) {
 BossGauntlet areaBoss(int areaIdx) {
     // Five rounds back-to-back. Health carries across them (no heal), so this is the real
     // finale. The first four are the area's sub-area bosses; the fifth is the AREA BOSS
-    // itself, on the signature rung's stats and kit plus its own move: the one the gang
-    // answers to, wearing its own Daemon-wide sheet.
+    // itself, on the signature rung's stats and kit plus its own move, drawn on its own
+    // Daemon-wide sheet.
     //
-    // Each sub-area contributes its boss PROPER (that banner, at its own rung), and none
-    // of the escorts around it. So the finale stays exactly five rounds however many
-    // escorts a sub-area grows: composing whole sub-gauntlets would balloon the area boss
-    // every time one rung gained a round, a cost nobody authoring that rung intends. It is
-    // also why this builds the enemy directly instead of picking a round out of
-    // subAreaBoss: a round is named for the shape it takes IN ITS OWN fight (THE BACK
-    // RANK), and the finale is announcing the boss (THE EIGHT PWNS).
+    // Each sub-area contributes its boss (that banner, at its own rung) without the
+    // escorts. So the finale stays exactly five rounds however many escorts a sub-area
+    // grows: composing whole sub-gauntlets would balloon the area boss every time one rung
+    // gained a round, a cost nobody authoring that rung intends. It is also why this
+    // builds the enemy directly instead of picking a round out of subAreaBoss: a round is
+    // named for the shape it takes IN ITS OWN fight (THE BACK RANK), and the finale is
+    // announcing the boss (THE EIGHT PWNS).
     if (areaIdx < 0) areaIdx = 0;
     if (areaIdx >= kAreaCount) areaIdx = kAreaCount - 1;
     const AreaDef& a = area(areaIdx);
     const int tier = areaTier(areaIdx);
     BossGauntlet g{a.areaBossName, tier + 1, {}};
     for (int s = 0; s < kSubAreasPerArea; ++s) {
-        // The area boss's OWN move rides on the LAST round only, so it is a reward for
-        // clearing all five stages rather than for beating whichever sub-area sits last:
-        // that sub-boss's own fight never carries it (a drop is rolled per round, off the
-        // round's own kit, so where the move sits IS what it costs to learn).
+        // The area boss's own move rides only on the last round, so it rewards clearing
+        // all five stages: that sub-boss's own fight never carries it (a drop is rolled
+        // per round, off the round's own kit, so where the move sits IS what it costs to
+        // learn).
         const bool finale = (s == kSubAreasPerArea - 1);
         const SubBossDef& b = a.subBosses[s];
         g.rounds.push_back(subBossEnemy(a, tier, s, finale ? a.areaBossName : b.name,
@@ -720,22 +718,21 @@ BossGauntlet areaBoss(int areaIdx) {
 }
 
 CombatEnemy guardianEnemy(int areaIdx, int sub) {
-    // The area's guardian, as a fight. It is drawn on the SAME spine every boss is, at
-    // the rung the pet is actually standing on, and then stepped up by the shared
-    // kGuardian* margin, so it is always a step above the stretch it was met in.
+    // The area's guardian, as a fight. It is drawn on the same spine as every boss, at
+    // the rung the pet is on, and then stepped up by the shared kGuardian* margin, so
+    // it is always a step above the stretch it was met in.
     //
-    // `sub` and not the area's deepest rung, which is the obvious reading and the wrong
-    // one: a guardian is met on the WALK and the walk can be armed anywhere, so pinning
-    // it to the gauntlet's last stage would put a wall in front of a pet on its first
-    // sub-area that it cannot have built for yet, and losing here ends the run, the
-    // same as any wild. Meeting the pet where it stands is also the truer reading of
-    // what the thing is: it watches this stretch, and it is above whatever the stretch
-    // is fielding.
+    // `sub`, and not the area's deepest rung: a guardian is met on the WALK and the
+    // walk can be armed anywhere, so pinning it to the gauntlet's last stage would put
+    // a wall in front of a pet on its first sub-area that it cannot have built for yet,
+    // and losing here ends the run, the same as any wild. Meeting the pet where it
+    // stands is also the truer reading of what the thing is: it watches this stretch,
+    // and it is above whatever the stretch is fielding.
     //
     // Two deliberate omissions. It does NOT carry the area's apexThreatMoveId: that
     // rider is the signature boss's tell and the only way to earn it, and a second
-    // carrier would quietly hand it out on the walk. And it does NOT set isWild, so the
-    // wild challenge buff never applies: a guardian is not something you stumbled onto.
+    // carrier would quietly hand it out on the walk. It does not set isWild, so the
+    // wild challenge buff never applies.
     //
     // Its "stronger mods" are the stat leans, because an enemy fields leans rather than a
     // mod rack (CombatEnemy has no loadout): powerMultPct and defense are the same
@@ -770,11 +767,11 @@ CombatEnemy guardianEnemy(int areaIdx, int sub) {
 
 // Zone move pools ------------------------------------------------
 //
-// What a PLACE can teach, as opposed to what a fight can. Built out of the very enemy
-// builders above rather than out of a second table, so a kit that changes shape (a rung
-// of the wild ladder, an escort round, a guardian's list) changes what its zone is
-// advertised as teaching in the same edit. A parallel table would be the one thing this
-// must never be: a promise the drop roll does not keep.
+// What a PLACE can teach, as opposed to what a fight can. Built from the enemy builders
+// above, so a kit that changes shape (a rung of the wild ladder, an escort round, a
+// guardian's list) changes what its zone is advertised as teaching in the same edit. A
+// parallel table would be the one thing this must never be: a promise the drop roll
+// does not keep.
 
 namespace {
 void poolAdd(std::vector<const char*>& out, const char* id) {
@@ -833,7 +830,7 @@ std::vector<const char*> buildDeepWebMovePool() {
 
 std::vector<const char*> buildDarkWebMovePool() {
     // applyDarkWebScale draws the DEEP pool at every depth (there is no shallow end to
-    // the crawl), plus the dive's own pair, which it borrows rather than owning.
+    // the crawl), plus the dive's own pair, which it borrows.
     std::vector<const char*> out;
     poolAdd(out, kDeepWebMovesBoss, kDeepWebMovesBossCount);
     poolAdd(out, kDeepWebWildAttackMoveId);
@@ -989,15 +986,15 @@ int levelSpeedAdrenalinePerStep(int points) {
 
 // Speed T2, as the extra initiative it actually hands over. The rung is earned at
 // kStatTier2Points but only PAYS while this fighter's Speed points trail the opponent's:
-// strictly, so two pets that invested identically are matched and neither gets a catch-up.
+// strictly, so two pets with identical investment get no catch-up.
 //
 // CLAMPED AT PARITY, which is the whole difference between a catch-up rung and a broken
 // stat. At the raw doubled rate a pet with 16 points out-runs one with 20, and investing
-// FURTHER in Speed would have made a pet slower against that rival: the stat inverting on
-// exactly the axis it is sold on. So the bonus stops the moment the two are level: the
-// rung is worth up to double, and never worth passing them. Against an opponent far
-// ahead it still falls short (16 points close to 32, not to 100), so committing to Speed
-// is not made pointless by the rung that exists to forgive not committing to it.
+// more in Speed would make a pet slower against that rival. So the bonus stops the moment
+// the two are level: the rung is worth up to double, and never worth passing them.
+// Against an opponent far ahead it still falls short (16 points close to 32, not to 100),
+// so committing to Speed is not made pointless by the rung that exists to forgive not
+// committing to it.
 int levelSpeedUnderdogBonus(int points, int enemyPoints) {
     if (points < kStatTier2Points || points >= enemyPoints) return 0;
     const int doubled = points * (kLevelSpeedUnderdogPerPoint - kLevelSpeedPerPoint);
@@ -1007,11 +1004,11 @@ int levelSpeedUnderdogBonus(int points, int enemyPoints) {
 
 void applySpeedRivalry(Combatant& a, Combatant& b) {
     // Both sides asked, and each judged against the OTHER'S un-adjusted point count: the
-    // rung is about what was invested, not about what this function is in the middle of
-    // paying out, so the two answers cannot depend on which side is handled first. Adding
-    // a bonus on top of what applyLevelStatPoints already banked, rather than deferring
-    // the whole contribution, keeps a Combatant built alone (a Sim dummy, an arena scout
-    // sheet) carrying its real speed and makes this exactly a no-op for everyone else.
+    // rung measures investment, so the two answers cannot depend on which side is handled
+    // first. Adding a bonus on top of what applyLevelStatPoints already banked, rather
+    // than deferring the whole contribution, keeps a Combatant built alone (a Sim dummy,
+    // an arena scout sheet) carrying its real speed and makes this exactly a no-op for
+    // everyone else.
     const int aBonus = levelSpeedUnderdogBonus(a.speedPoints, b.speedPoints);
     const int bBonus = levelSpeedUnderdogBonus(b.speedPoints, a.speedPoints);
     a.speed += static_cast<float>(aBonus);
@@ -1066,22 +1063,20 @@ int capOverflowHealth(int overflowPct, int perPointPct, int body) {
 
 void applyLevelStatPoints(Combatant& c, const int statPoints[4]) {
     if (!statPoints) return;
-    // power → +% attack lean, ACCELERATING past its specialisation point (levelPowerPct);
-    // defense → +DEF rating (linear and uncapped: the curve itself keeps a hit from ever
-    // being nulled) AND +% defend-move brace magnitude AND, past their thresholds, the
-    // three investment TIERS (pierce resist, brace retain, backscatter); speed → +initiative, plus the
-    // three tempo tiers (first strike, the underdog rate, adrenaline); max-Health → +HP,
-    // accelerating like power, plus its turn-start scrub and its one free death-save.
-    // The per-point half and the tier half of every stat are applied HERE together: they
-    // are one investment and reading them apart is what let the thresholds drift.
-    // MULTIPLICATIVE, not additive, and this is not stage scaling by the back door. A
-    // level bonus added into powerMultPct lands on a base the stage multiplier has already
-    // inflated (kStagePowerScalePct runs 100 -> 230), so the same earned point was worth
-    // 32% more damage on a Process pet and 14% on a Daemon: the stat quietly decayed
-    // across exactly the stretch a player spends earning it. As a percentage OF the pet's
-    // own output it is worth the same everywhere, which is what the row always said it
-    // was. It scales whatever that output happens to be, mods included: a power bonus
-    // applying to your power is the reading every one of those rows already invites.
+    // power → +% attack lean, ACCELERATING past its specialisation point (levelPowerPct); defense →
+    // +DEF rating (linear and uncapped: the curve itself keeps a hit from ever being nulled) AND +%
+    // defend-move brace magnitude AND, past their thresholds, the three investment TIERS (pierce
+    // resist, brace retain, backscatter); speed → +initiative, plus the three tempo tiers (first
+    // strike, the underdog rate, adrenaline); max-Health → +HP, accelerating like power, plus its
+    // turn-start scrub and its one free death-save. The per-point half and the tier half of every
+    // stat are applied HERE together: they are one investment and reading them apart is what let
+    // the thresholds drift. Multiplicative, so it does not act as hidden stage scaling. A level
+    // bonus added into powerMultPct lands on a base the stage multiplier has already inflated
+    // (kStagePowerScalePct runs 100 -> 230), so the same earned point was worth 32% more damage on
+    // a Process pet and 14% on a Daemon: the stat quietly decayed across exactly the stretch a
+    // player spends earning it. As a percentage OF the pet's own output it is worth the same
+    // everywhere, which is what the row always said it was. It scales the whole output, mods
+    // included, as those rows describe.
     c.powerMultPct = c.powerMultPct * (100 + levelPowerPct(statPoints[0])) / 100;
     c.defense += levelDefenseRating(statPoints[1]);
     c.pierceResistPct = levelDefensePierceResistPct(statPoints[1]);

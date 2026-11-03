@@ -1,17 +1,17 @@
 // combat.h: the shared autonomous combat engine.
 //
 // Battles run themselves: on its turn each combatant ROLLS one of its moves off
-// its attack/defend lean (the lean IS the slot mix) and never repeats the
-// same move twice in a row. The human's agency is the META layer: the
-// loadout, the evolution-unlocked slots, the MODS passives, and ONE Exploit
-// override per battle (A+C) that commands the next move and may break the
-// no-consecutive rule. Health is transient (resets each fight, never
-// persisted; max scales with Stage). Resolution is deterministic from a
-// seed so tests + replays are reproducible.
+// its attack/defend lean (the lean IS the slot mix) and never repeats the same
+// move twice in a row. The player acts through the meta layer: the loadout, the
+// evolution-unlocked slots, the MODS passives, and ONE Exploit override per
+// battle (A+C) that commands the next move and may break the no-consecutive
+// rule. Health is transient (resets each fight, never persisted; max scales
+// with Stage). Resolution is deterministic from a seed so tests + replays are
+// reproducible.
 //
-// The engine is shared: Sim-Battle (PRACTISE, safe stakes) drives it now; EXPL
-// wild encounters (live stakes) reuse it later. The only difference is the
-// `stakes` flag (whether a loss touches Fragmentation).
+// The engine is shared: Sim-Battle (PRACTISE, safe stakes) and EXPL wild
+// encounters (live stakes) both drive it. The only difference is the `stakes`
+// flag (whether a loss touches Fragmentation).
 #pragma once
 
 #include <cstdint>
@@ -33,10 +33,10 @@ class ContentRegistry;
 class Loadout;        // MODS: combat passives
 class MoveLoadout;    // equipped moves
 
-// The per-fight state of an ARMED crew Exploit: one block on the Combatant rather than a
-// field per ability, so the crew roster (content_crews.h) can grow without widening
-// Combatant. One Exploit at a time; re-arming the same kind stacks onto its counter.
-// Transient, wiped with the Combatant each fight.
+// The per-fight state of an ARMED crew Exploit: one block on the Combatant, so the crew
+// roster (content_crews.h) can grow without widening Combatant. One Exploit at a time;
+// re-arming the same kind stacks onto its counter. Transient, wiped with the Combatant
+// each fight.
 struct CrewExploitState {
     CrewExploitKind kind = CrewExploitKind::None;
     int charges = 0;    // charge-metered kinds (NegateNextHits, PowerByDamageDealt)
@@ -46,8 +46,8 @@ struct CrewExploitState {
     bool armed(CrewExploitKind k) const { return kind == k && charges > 0; }
     bool ticking(CrewExploitKind k) const { return kind == k && turns > 0; }
     bool holds(CrewExploitKind k) const { return kind == k; }
-    // Whether the armed Exploit still has anything left to do: what the combat screen's
-    // readout asks, so a spent Exploit stops reporting without anything clearing `kind`.
+    // Whether the armed Exploit still has anything left to do: the combat screen's
+    // readout asks this, so a spent Exploit stops showing without clearing `kind`.
     bool live() const {
         return kind != CrewExploitKind::None &&
                (charges > 0 || turns > 0 || crewExploitIsSticky(kind));
@@ -86,7 +86,7 @@ struct RansomSeizure {
 };
 
 // One live copy a Worm has replicated into a replication slot (Combatant::wormReplicas).
-// NOT a Combatant: a replica never takes a turn, rolls a move or enters the speed
+// Not a Combatant: a replica never takes a turn, rolls a move or enters the speed
 // scheduler. It is a piece of its parent's state that happens to be drawn separately. A
 // third actor with its own initiative would be a third thing for a linked duel's two RNG
 // streams to disagree about (core/model/pvp_battle.h).
@@ -106,7 +106,7 @@ struct WormReplica {
 // One wildcard slot's draw pool (MoveDef::drawLineA/B), resolved when the Combatant is
 // built so the turn engine never needs a registry.
 //
-// THREE BANDS IN ONE VECTOR: `rows` holds the generic entries first, then line A's, then
+// Three bands in one vector: `rows` holds the generic entries first, then line A's, then
 // line B's, cut by the two indices below. Two integers per slot instead of three
 // allocations. The roll picks a band by weight, then an index inside it
 // (content_passives.h). Each line's passive flags ride along from the same registry read,
@@ -140,7 +140,7 @@ struct Combatant {
     int maxHealth = 0;
     int health = 0;
     // The pet's own base Health (the stage body, leaned by the care branch), before mods
-    // and levels: what a max-Health point is a percentage OF (healthBody). 0 on a fighter
+    // and levels: max-Health points are a percentage of this (healthBody). 0 on a fighter
     // not built from a pet, whose whole Health stands in.
     int bodyHealth = 0;
     // Initiative (Clock-Speed Boost raises it). FLOAT because a Phishing siphon steals a %
@@ -179,7 +179,7 @@ struct Combatant {
     const CreatureDef* creature = nullptr;
 
     // Equipped MOD passives, keyed by the ModEffect that declares them (mod_state.h).
-    // Effects that simply move a base stat (PowerPct, MaxHealth, …) are already folded
+    // Effects that only move a base stat (PowerPct, MaxHealth, …) are already folded
     // into the fields above by makePlayerCombatant; this holds the ones that stay live
     // for the fight: caps, thresholds, one-shots.
     ModStateSet mods;
@@ -192,23 +192,23 @@ struct Combatant {
     int braceRetainPct = kBraceRetainBasePct;
     int backscatterPct = 0;     // Defence T3: % of what this wall absorbs, dealt back
 
-    // --- The other three stats' investment tiers -------------------------------
-    // Same shape and the same single applier (applyLevelStatPoints): every one of these
-    // is 0/false on a fighter that has not reached the rung, so the fight code reads them
+    // --- The other three stats' investment tiers ------------------------------- Same
+    // shape and the same single applier (applyLevelStatPoints): every one of these is
+    // 0/false on a fighter that has not reached the rung, so the fight code reads them
     // unconditionally and a pet with nothing invested pays nothing to check. Resolved off
-    // TOTAL points (the earned ones plus an Epic dish's off-level grant), because a
-    // point is a point (core/model/stat_tiers.h).
+    // TOTAL points (the earned ones plus an Epic dish's off-level grant), because both
+    // count the same (core/model/stat_tiers.h).
     int piercePct = 0;          // Power T2: innate armour pierce, in the mods' currency
     int guardSmashPct = 0;      // Power T3: % of a target's brace this fighter's hits skip
     // Speed T1. Armed at build and spent on the FIRST landed hit of the whole fight, by
-    // whoever lands it: Combat owns that "first" (there is exactly one per fight, not one
-    // per fighter), so the flag here only says this side is holding the multiplier.
+    // whoever lands it: Combat tracks that first hit (one per fight), so this flag only
+    // says this side holds the multiplier.
     int firstStrikeMult = 1;
     // Speed T2, the catch-up rung, banked as its INPUT rather than its answer: whether it
     // pays depends on the OPPONENT's Speed points, so it cannot be resolved while a
     // Combatant is being built alone. applySpeedRivalry reads this off both sides once
-    // they stand together. The rung's own threshold is not mirrored here: that check
-    // lives in levelSpeedUnderdogBonus, and a second copy of it is a second answer.
+    // they stand together. The rung's threshold lives only in levelSpeedUnderdogBonus, so
+    // it is not copied here.
     int speedPoints = 0;
     // Speed T3, read live rather than folded into `speed`: it is a function of CURRENT
     // Health and has to be re-asked every time the scheduler deals an action
@@ -225,11 +225,10 @@ struct Combatant {
     bool poolAbsorbedHit = false;  // set the turn an Obfuscation pool swallowed a hit WHOLE.
                                  // Suppresses the CONCUSSIVE riders (stun, scramble) (the
                                  // bubble stopped the impact), but never the DoT, which is
-                                 // corruption rather than impact and is the answer to a
-                                 // bubble nobody can break (its ticks bypass the pool too,
-                                 // resolveTurn). Distinct from mirrorFired: that one means
-                                 // the hit did not happen, this one means it did and the
-                                 // pool paid for it.
+                                 // corruption and the counter to an unbreakable bubble
+                                 // (its ticks bypass the pool too, resolveTurn). Distinct
+                                 // from mirrorFired: that one means the hit did not
+                                 // happen, this one means it did and the pool paid for it.
     bool itemShield = false;    // Backup Drive's timed buff: a DEATH-SAVE, not a hit
                                  // negator: every hit lands in full and the drive is read
                                  // only once the pet is down (restoreFromBackup). Armed by
@@ -250,20 +249,19 @@ struct Combatant {
     // both paths converge on one applier.
     CrewExploitState crewExploit;
 
-    // --- The Exploit this side fires on its OWN initiative ------------------------
-    // What a fighter with nobody at the buttons carries: a rolled Exploit plus the moment
-    // it commits. The TOURNAMENT arena is what has these; every other PVE enemy leaves
-    // `autoExploit.label` null and never draws for it. Firing COSTS the turn, exactly as a
-    // human's one Exploit use costs the move they'd have forced, which is also what gives
-    // it a beat on the combat screen.
+    // --- The Exploit this side fires on its OWN initiative ------------------------ What
+    // a fighter with nobody at the buttons carries: a rolled Exploit plus the moment it
+    // commits. The TOURNAMENT arena is what has these; every other PVE enemy leaves
+    // `autoExploit.label` null and never draws for it. Firing costs the turn, as a
+    // player's Exploit use costs the move they forced, which also gives it a beat on the
+    // combat screen.
     CrewExploit autoExploit;
     // The Health it waits for, as a % of its own max: 100 fires on its first turn, 30 waits
     // for real trouble. Checked on this side's own turn, so a fighter killed first never
     // gets to spend it.
     int autoExploitAtHealthPct = 100;
     // When set, the OPPONENT reaching that Health fraction fires it too, "when anyone is at
-    // half", for an Exploit whose moment is the middle of the fight rather than this side's
-    // own trouble.
+    // half", for an Exploit meant for the middle of the fight.
     bool autoExploitEitherSide = false;
     bool autoExploitFired = false;
     int guard = 0;              // pending mitigation from a defend move (one-shot)
@@ -286,9 +284,8 @@ struct Combatant {
     // Feeding-frenzy combo (Combat::applyEffect): phishStreak counts this combatant's run
     // of steal-attack casts made with the bubble up; phishComboBonus is the flat damage
     // those casts have permanently banked this fight. Unlike stackPowerBonus it is flat,
-    // uncapped, and grows by the run length itself. Casting the bubble HOLDS the run (the
-    // whole line answers to one question, "is the bubble up?"), and swinging while exposed
-    // breaks it.
+    // uncapped, and grows by the run length itself. Casting the bubble holds the run (the
+    // line turns on whether the bubble is up), and swinging while exposed breaks it.
     int phishStreak = 0;
     int phishComboBonus = 0;
 
@@ -305,7 +302,7 @@ struct Combatant {
     // the pile (Combat::stunLands), so being chain-stunned buys the way out of it.
     int lockResist = 0;
     // The resistance this fighter never sheds below: a BOSS stands on it (kBossLockResist),
-    // so a stun on one is a roll from the first cast rather than a free turn to chain.
+    // so a stun on one is a roll from the first cast and cannot be chained for free.
     int lockResistFloor = 0;
     // Standing stun-resist RATING, on the same curve the banked points roll against
     // (stunLandPct). Paid by max-Health investment (kLevelHealthStunResistPerPoint); never
@@ -316,17 +313,17 @@ struct Combatant {
     // rider that costs the PLAYER rather than the pet: while it holds, the A+C picker's
     // rows are reordered and drawn in the Cant, so a row this pet cannot read is a row it
     // cannot pick (Combat::overrideRowLabel / overrideRowLegible). The fight itself is
-    // untouched (the auto-battle keeps choosing and swinging), so what a scramble takes
-    // is the hand on the wheel, not the turn. Counter is ModEffect::ScrambleWard.
+    // untouched (the auto-battle keeps choosing and swinging), so a scramble takes
+    // control of the move choice and leaves the turn. Counter is ModEffect::ScrambleWard.
     int scrambleTurns = 0;
 
-    // Ransom Note (Ransomware passive): all three live on the RANSOMER (the pet that
-    // owns the passive), never the attacker. `ransomArmed` is re-rolled at the start of
-    // every one of this side's turns (Combat::ransomArmRolls) and holds for the window
-    // until its next turn; while it's up, incoming hits divert their damage into
-    // `ransomPool` and reset `ransomTurnsLeft` to kRansomHoldTurns. The countdown ticks
-    // one per turn of THIS side (not per incoming action), and the pool lands whole when
-    // it hits 0. Transient (per-fight), like every other combat field here.
+    // Ransom Note (Ransomware passive): all three live on the ransomer (the pet that
+    // owns the passive). `ransomArmed` is re-rolled at the start of every one of this
+    // side's turns (Combat::ransomArmRolls) and holds for the window until its next
+    // turn; while it's up, incoming hits divert their damage into `ransomPool` and reset
+    // `ransomTurnsLeft` to kRansomHoldTurns. The countdown ticks one per turn of THIS
+    // side (not per incoming action), and the pool lands whole when it hits 0. Transient
+    // (per-fight), like every other combat field here.
     int ransomPool = 0;
     int ransomTurnsLeft = 0;
     bool ransomArmed = false;
@@ -394,8 +391,8 @@ struct Combatant {
 
 // Prowlware's multiplier for `moves[moveIdx]`: the rank of that move's Attack power among
 // the DISTINCT Attack powers in `moves`, ascending, ties sharing a rank. 0 for a Defend
-// move or an out-of-range slot, so a kit with one attack tier pays nothing: the mod
-// rewards a genuine power spread.
+// move or an out-of-range slot, so a kit with one attack tier pays nothing; the mod
+// rewards a power spread.
 int attackPowerRank(const std::vector<const MoveDef*>& moves, int moveIdx);
 
 // --- Worm replication, the pure half ------------------------------------------------
@@ -405,10 +402,10 @@ int attackPowerRank(const std::vector<const MoveDef*>& moves, int moveIdx);
 // How many of `c`'s live replicas are of the given kind.
 int wormReplicaCount(const Combatant& c, bool defenders);
 
-// Whether `m`'s ENTIRE contribution is the one-shot `guard` brace: a Defend row that
-// pools a shield, arms a trap, spawns a defender or stacks the Cipher cut is worth a turn
-// whatever the brace situation. `guard` is one-shot and discards overkill, so re-casting a
-// pure brace onto a live one buys nothing, and Combat::chooseMove re-rolls off it.
+// Whether `m`'s only contribution is the one-shot `guard` brace: a Defend row that pools a
+// shield, arms a trap, spawns a defender or stacks the Cipher cut is worth a turn whatever
+// the brace situation. `guard` is one-shot and discards overkill, so re-casting a pure
+// brace onto a live one buys nothing, and Combat::chooseMove re-rolls off it.
 bool braceOnlyDefend(const MoveDef& m);
 
 // The odds a stun rider aimed at `c` right now would freeze it: 100 while it holds no lock
@@ -430,18 +427,18 @@ int phishFrenzyLeanPct(const Combatant& c);
 
 // What one ATTACKER is worth at the moment it spawns: its share of the move that made it,
 // times the parent's attack lean, times the defenders already standing (floored at
-// kWormReplicaMultFloor). The cross-multiplier is read here and never again, which is what
-// makes spawn ORDER the decision the line is played on: cover first and the teeth that
-// follow are worth more, teeth first and they are worth their base forever.
+// kWormReplicaMultFloor). The cross-multiplier is read only here, so spawn order matters:
+// defenders first makes later attackers stronger, and attackers first keep their base
+// value.
 int wormAttackerDamage(const Combatant& parent, int movePower, int pct);
 
 // The damage `c`'s ATTACKER replicas add to one of its parent's swings: the sum of what
-// each banked when it spawned, and nothing more.
+// each banked when it spawned.
 int wormReplicaDamage(const Combatant& c);
 
 // A DEFENDER's Health at spawn: `pct` of the parent's maxHealth times the live ATTACKER
-// count (same floor). Banked rather than recomputed: a defender's Health is a pool being
-// chipped and cannot be restated once a hit has come out of it.
+// count (same floor). Banked, because a defender's Health is chipped down and cannot be
+// recomputed after a hit.
 int wormDefenderHealth(const Combatant& parent, int pct);
 
 // The per-target draw weights an incoming attack picks its victim from: index 0 is the
@@ -565,9 +562,9 @@ struct OverrideItem {
 
 // The BANDS of the Exploit picker, in the order their rows sit in the flat list, so a
 // band's rows are one contiguous run and every flat index Combat::commitOverride reads
-// falls inside exactly one of them. They exist as a NAVIGATION level because the item and
-// lock bands are unbounded: walked as one flat list they bury the short bands behind a lap
-// of the long one, on a screen with room for ten rows.
+// falls inside exactly one of them. Bands are a navigation level because the item and lock
+// bands are unbounded. One flat list on a ten-row screen would bury the short bands behind
+// the long one.
 enum class OverrideBand : uint8_t { Move, Item, Lock, Crew };
 constexpr int kOverrideBands = 4;
 
@@ -579,9 +576,9 @@ constexpr int kOverrideBands = 4;
 constexpr int kOverridePickerMaxRows = 32;
 
 // Combatant::scrambleTurns' "for the whole fight" sentinel: what the DARKWEB CRAWL sets,
-// where the scramble is the weather rather than a rider somebody landed. A sentinel and
-// not a large count, because a large count is a guess about how long a fight runs and
-// this is not a guess.
+// where the scramble is part of the zone instead of a landed rider. A sentinel and not a
+// large count, because a large count is a guess about how long a fight runs and this is
+// not a guess.
 constexpr int kScrambleWholeFight = -1;
 
 // The band's own name: the level-1 row, and the header over its rows at level 2.
@@ -633,17 +630,17 @@ public:
     // pick inside the item band uses that item; a lock row freezes its slot; the last
     // row fires the crew Exploit. Committing any of them spends one Exploit use.
     //
-    // The flat index is what a commit reads, but it is NOT how the cursor walks: the
-    // picker is two levels (overrideAtBands below), and `overridePick` names the row
-    // under the cursor at both of them.
+    // A commit reads the flat index, but the cursor walks differently: the picker is
+    // two levels (overrideAtBands below), and `overridePick` names the row under the
+    // cursor at both of them.
     bool overrideReady() const { return overrideUsesLeft_ > 0; }
     int overrideUsesLeft() const { return overrideUsesLeft_; }
     int overrideUsesTotal() const { return overrideUsesTotal_; }
     bool overrideOpen() const { return overrideOpen_; }
-    // open: does NOT spend. `crew` defaults to "no crew" (no extra row).
-    // `sigils` is what the pet can READ of the Cant (core/model/cant.h), only consulted
-    // while a scramble holds, and 0 is the honest default for every caller that has no
-    // opinion (tests, the arena's own fighters).
+    // open: does NOT spend. `crew` defaults to "no crew" (no extra row). `sigils` is
+    // what the pet can READ of the Cant (core/model/cant.h), only consulted while a
+    // scramble holds, and 0 is the default for callers with no Cant (tests, the arena's
+    // fighters).
     void openOverride(std::vector<OverrideItem> items = {}, CrewExploit crew = {},
                       SigilSet sigils = 0);
     // Is the picker currently scrambled: i.e. is the player wearing the rider?
@@ -659,8 +656,8 @@ public:
     // know what to encipher.
     const char* overrideRowLabel(int displayRow, char* buf, size_t n) const;
     // Can the pet READ that row? Always true unscrambled. While scrambled, true only if
-    // every letter of its label is a sigil this device knows: a row it cannot read is a
-    // row the cursor skips and B refuses.
+    // every letter of its label is a sigil this device knows: the cursor skips a row it
+    // cannot read and B refuses it.
     bool overrideRowLegible(int displayRow) const;
     // How many display rows the picker's illegible ones amount to, for the header count.
     int overrideRowsHeld() const;
@@ -686,10 +683,10 @@ public:
     int overrideLockSlot(int i) const;
     // The move that row would commit to (its slot's last roll), or nullptr.
     const MoveDef* overrideLockMove(int i) const;
-    // --- The picker's two levels ---------------------------------------------
-    // LEVEL 1 is the bands this fight actually has, never more than four rows,
-    // whatever the bag holds. LEVEL 2 is the rows inside the chosen band, and the only
-    // level whose length is unbounded, which is why the screen windows it.
+    // --- The picker's two levels --------------------------------------------- Level
+    // 1 lists the bands this fight has, at most four rows. LEVEL 2 is the rows inside
+    // the chosen band, and the only level whose length is unbounded, which is why the
+    // screen windows it.
     //
     // A picker with ONE band opens straight at level 2. leaveOverrideBand answers false
     // there, which is how the caller knows C means cancel rather than back.
@@ -741,11 +738,11 @@ public:
     // screen captions the popup differently for it, so a still Health bar under a
     // damage number reads as the passive working rather than as a stuck gauge.
     bool lastRansomed() const { return lastRansomed_; }
-    // Whether the last resolved turn was one fighter SWINGING AT THE OTHER: an attack
-    // reaching its target, landed or fully absorbed. False for a defend, an item, a crew
-    // Exploit, a wind-up, and the passive ticks. The combat screen's directional cues read
-    // this rather than lastDamage(): a shielded swing deals 0 and is still an attack, and a
-    // ransom bill deals plenty and is not one.
+    // Whether the last resolved turn was one fighter SWINGING AT THE OTHER: an attack that
+    // reached its target, whether it landed or was absorbed. False for a defend, an item, a
+    // crew Exploit, a wind-up, and the passive ticks. The combat screen's directional cues
+    // read this rather than lastDamage(): a shielded swing deals 0 and is still an attack,
+    // and a ransom bill deals plenty and is not one.
     bool lastWasStrike() const { return lastWasStrike_; }
     // The last resolved turn was a stunned fighter's skipped one (lockTurns).
     bool lastWasStunned() const { return lastWasStunned_; }
@@ -774,9 +771,9 @@ private:
     int pickSlot(const Combatant& self, bool attacksOnly, bool allowRepeat);  // -1 = none
     void resolveTurn(Combatant& actor, Combatant& target, bool byPlayer);
     // The single applier for every CrewExploitKind: a new crew ability is one enum
-    // entry (content_crews.h) plus one case here, never a per-crew branch elsewhere.
-    // `self` is the side arming it, so the human's commit and an AI firing its own run
-    // the identical code; `byPlayer` only captions the popup.
+    // entry (content_crews.h) plus one case here. `self` is the side arming it, so the
+    // human's commit and an AI firing its own run the identical code; `byPlayer` only
+    // captions the popup.
     void armCrewExploit(Combatant& self, const CrewExploit& x, bool byPlayer);
     // The commit-path wrapper: arm the picker's crew row onto the player.
     void applyCrewExploit();
@@ -793,22 +790,20 @@ private:
     // Prowlware to rank that move's Attack power (attackPowerRank).
     void applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
                      bool byPlayer, int moveIdx);
-    // THE PURE RIDER RULE: a promise the LOADOUT screen has to be able to make.
+    // The pure rider rule, which the LOADOUT screen relies on.
     //
     //   A cast that deals no damage lands its effect on the enemy pet directly, whatever
     //   that pet is standing behind.
     //
     // Every defence in this file absorbs DAMAGE. A pool eats it, a brace spends itself on
     // it, a mirror deletes it, a worm replica stands in front of it, a Trojan trap springs
-    // on it. None of them is a defence against a turn spent entirely on an effect, so none
-    // of them stops one: the trade a caster makes is the whole of their turn for the whole
-    // of the effect, and the pet pays it however well defended it is.
+    // on it. None of them stops a turn spent entirely on an effect: the caster gives up
+    // the whole turn for the whole effect, however well the target is defended.
     //
     // The rule needs no flag and no keyword: every interception in the pipeline is already
     // guarded on damage (`dmg > 0`, or `baseDmg > 0` for a trap), so a zero-damage cast
-    // reaches the rider phase having met none of them. Keep it that way: a new interceptor
-    // added without a damage guard silently takes this promise back, and the loadout screen
-    // has no way to say so.
+    // reaches the rider phase having met none of them. A new interceptor must keep a damage
+    // guard, or it breaks this rule and the loadout screen shows wrong text.
     //
     // The corollary the same rule states from the other side: a status rider RIDES on
     // damage, so a defence that ate the damage ate the rider too (applyOnHitRiders). The pool
@@ -855,11 +850,10 @@ private:
                      int moveIdx, bool byPlayer);
 
     // The steal track's whole family, called by payCaster once a swing dealt damage to
-    // anything. One effect family per helper is the shape applyEffect is being taken apart
-    // in: the mitigation chain above the call is a different question from the payout
-    // below it, and only the chain needs the locals it accumulates.
-    // `reachedHealth` gates only the current-Health drain; every other steal is paid on
-    // damage dealt to anything (payCaster).
+    // anything. Each helper handles one effect family. The mitigation chain above the call
+    // and the payout below it are separate, and only the chain needs the locals it
+    // accumulates. `reachedHealth` gates only the current-Health drain; every other steal
+    // is paid on damage dealt to anything (payCaster).
     void applyStealTrack(Combatant& actor, Combatant& target, const MoveDef& mv,
                          bool reachedHealth);
     // What a damaging swing pays its caster (steals, crew on-hit, the Lockout stack) on
@@ -923,9 +917,8 @@ private:
     uint32_t rng_ = 1;
     float plGauge_ = 0;         // speed-accumulator scheduler (see pickNextActor):
     float enGauge_ = 0;         // each side's gauge, filled by its speed, spent per action
-    // Speed T1's "first". There is exactly ONE opening hit per fight, not one per
-    // fighter, so the flag belongs to the fight rather than to either side: a defender
-    // who eats the first blow must not then be holding an unspent first strike of its own.
+    // Speed T1's "first". There is one opening hit per fight, so the flag belongs to the
+    // fight: a defender who takes the first blow must not keep its own first strike.
     bool firstHitLanded_ = false;
     int streakCount_ = 0;       // see streakCount() above
     bool streakIsPlayer_ = true;
@@ -967,8 +960,8 @@ private:
 
 // Fill `c.chainFollow` from each equipped move's MoveDef::chainNextId, resolved against
 // the chain-step table. Called by every Combatant builder (the player's pet, a PVE
-// enemy and a duel/arena fighter), because a chain is a property of the MOVE and so
-// belongs to whoever is holding it. Idempotent; safe to call after `moves` is final.
+// enemy and a duel/arena fighter), because a chain belongs to the move and so to
+// whoever holds it. Idempotent; safe to call after `moves` is final.
 void resolveChains(const ContentRegistry& reg, Combatant& c);
 
 // Build the wildcard draw pools for every slot of `c` holding a metamorphic row, resolved
@@ -1003,10 +996,10 @@ int healthBody(const Combatant& c);
 // Defence's investment tiers, each a total function of the earned Defence points: what
 // the stat buys past a rung besides more rating (tunables.h explains which and why).
 //
-// pierce resist: the % an attack's own armorPiercePct is cut by before it is applied.
-// brace retain: what Defence investment ADDS to the baseline share of an unspent one-shot
-// brace that carries to the next hit (kBraceRetainBasePct). 0 below the threshold, which is
-// every pet that has not committed: such a pet still keeps the baseline.
+// pierce resist: the % an attack's own armorPiercePct is cut by before it is applied. brace
+// retain: what Defence investment ADDS to the baseline share of an unspent one-shot brace
+// that carries to the next hit (kBraceRetainBasePct). 0 below the threshold, so an
+// uncommitted pet keeps only the baseline.
 int levelDefensePierceResistPct(int points);
 int levelDefenseBraceRetainPct(int points);
 int levelDefenseBackscatterPct(int points);
@@ -1019,11 +1012,11 @@ int levelPowerGuardSmashPct(int points);
 int levelHealthScrubPct(int points);
 int levelHealthOwnDamagePct(int points);
 
-// Speed's three. T1 and T3 are totals like the rest; T2 is the exception the type says
-// out loud: the underdog bonus can only be judged against an OPPONENT, so it takes both
-// sides' point counts and applySpeedRivalry is what calls it once both exist. It returns
-// the EXTRA initiative, already clamped so the catch-up can reach parity and never pass
-// it (a rung that let 16 points out-run 20 would invert the stat it is attached to).
+// Speed's three. T1 and T3 are totals like the rest; T2 is the exception: the underdog
+// bonus needs an opponent, so it takes both sides' point counts and applySpeedRivalry is
+// what calls it once both exist. It returns the EXTRA initiative, already clamped so the
+// catch-up can reach parity and never pass it (a rung that let 16 points out-run 20
+// would invert the stat it is attached to).
 int levelSpeedFirstStrikeMult(int points);
 int levelSpeedAdrenalinePerStep(int points);
 int levelSpeedUnderdogBonus(int points, int enemyPoints);
@@ -1031,7 +1024,7 @@ int levelSpeedUnderdogBonus(int points, int enemyPoints);
 // Speed T2, applied. Re-derives BOTH sides' initiative from their Speed points now that
 // each can see the other, and is a no-op unless one of them has earned the rung and is
 // behind. Called once per fight, at the point the two combatants first stand together
-// (Combat::begin): a Combatant built alone cannot answer "am I the slower one".
+// (Combat::begin): a Combatant built alone cannot know whether it is slower.
 void applySpeedRivalry(Combatant& a, Combatant& b);
 
 // Speed T3, read live: this fighter's initiative INCLUDING what its missing Health is
@@ -1061,11 +1054,10 @@ int defenseCutPct(int defense);
 // pool nothing caps. `body` is healthBody of the fighter being paid. A pet already at the brace cap earns nothing from the next Defence
 // point or absorbed move otherwise, and no screen says so.
 //
-// Paid at the level table's own exchange rate: `perPointPct` is what one stat point bought
-// of the clamped stat, so what arrives is that investment spent the other way. One
-// max-Health point's % of `body` per point refused. Nothing new
-// to tune, and overflowing is never worth MORE than not overflowing. Pays a pet's EARNED
-// bonuses only, never a spec-built enemy.
+// Paid at the level table's rate: `perPointPct` is what one point bought of the clamped
+// stat, converted into max-Health. One max-Health point's % of `body` per point refused.
+// Nothing new to tune, and overflowing is never worth MORE than not overflowing. Pays a
+// pet's EARNED bonuses only, never a spec-built enemy.
 int capOverflowHealth(int overflowPct, int perPointPct, int body);
 // Build an enemy Combatant from a spec.
 Combatant makeEnemyCombatant(const ContentRegistry& reg, const CombatEnemy& spec);
@@ -1081,13 +1073,13 @@ CombatEnemy simDummy(int tier);
 // `e`; stamps `level`/`hasLevel` so the combat screen shows a number instead of "???".
 void applySimDummyLevelScale(CombatEnemy& e, int petLevel);
 
-// How many variants each tier of the wild roster rolls among. Named because anything
-// asking what a RUNG can field (rather than what one encounter rolled) has to walk them
-// all (subAreaMovePool), and a bare 2 in that loop is a number nobody can check.
+// How many variants each tier of the wild roster rolls among. Named because code that
+// asks what a rung can field walks them all (subAreaMovePool), and a bare 2 there would
+// be unexplained.
 constexpr uint32_t kWildMalbeastVariants = 2;
 
 // The fixed wild-malbeast roster: index = bit position in Game's
-// malbeastSeen/malbeastDefeated masks, so rows are only ever appended. Ids are the slugged
+// malbeastSeen/malbeastDefeated masks, so rows are only appended. Ids are the slugged
 // (lowercase, non-alnum -> '_') form of each CombatEnemy::name, matching the 'Pedia catalog
 // (tools/gen_pedia_data.py). The masks are uint16 (save.h), which is the ceiling: a 17th
 // wild needs the save format widened first.
@@ -1095,8 +1087,8 @@ constexpr int kWildMalbeastCount = 16;
 static_assert(kWildMalbeastCount <= 16, "the seen/defeated masks are uint16");
 extern const char* const kWildMalbeastIds[kWildMalbeastCount];  // "glitchhog" .. "vulnture"
 
-// Roster row `rosterIdx` (clamped): what a walk over EVERY wild reads, rather than the
-// pairs an area or a tier fields.
+// Roster row `rosterIdx` (clamped): for a walk over every wild, as opposed to the
+// pairs an area or tier fields.
 CombatEnemy wildMalbeastAt(int rosterIdx);
 
 // A TIER's pair (1..3, deeper clamps to 3), rolled among kWildMalbeastVariants.
@@ -1170,9 +1162,9 @@ std::vector<const char*> deepWebMoveIds(int depth, uint32_t roll);
 int deepWebDepthBitsPct(int depth);
 
 // The CRAWL's half of the same job, on its own constants (darkweb_crawl/area.h): the same
-// curve shape, steeper per rung and with a higher ceiling. Its own entry point rather than
-// a flag on the dive's, for the reason applyDarkWebScale is its own function: the two
-// zones are tuned against different players. `depth` clamps at 0.
+// curve shape, steeper per rung and with a higher ceiling. Its own entry point, like
+// applyDarkWebScale, because the two zones are tuned for different players. `depth` clamps
+// at 0.
 int darkWebDepthBitsPct(int depth);
 
 // A boss run. `rounds` is the ordered gauntlet: a single boss is a gauntlet of length 1;
@@ -1194,9 +1186,8 @@ BossGauntlet subAreaBoss(int area, int sub);
 
 // The AREA boss: a gauntlet of the area's five sub-area bosses fought back-to-back with
 // carried Health. Unlocked once all five sub-areas are cleared; beating it clears the area
-// and grants the Title.
-// Always exactly kSubAreasPerArea rounds: each sub-area's boss PROPER, never the escorts
-// that boss may have in its own fight.
+// and grants the Title. Always exactly kSubAreasPerArea rounds: each sub-area's boss
+// itself, without the escorts from its own fight.
 BossGauntlet areaBoss(int area);
 
 // The area's GUARDIAN, as a single enemy. Met on the WALK rather than the ladder. An
