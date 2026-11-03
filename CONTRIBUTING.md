@@ -43,6 +43,12 @@ Write the shape you would choose for the job from scratch. New code tends to cop
 sibling, so check the sibling against these rules before copying it. When existing code falls
 short of them, fix it or add a row to the board.
 
+A bug fix or speed-up rewrites the code it touches, so it meets the same bar. Before landing
+one, ask of each function and type you changed whether it is how you would write it today.
+If it is not, bring it there in the same change. Then look one layer up and one layer down for
+the same smell (a copied loop, a rebuild per call, a flag argument): fix what is small, and add
+a board row for what is not. The smallest patch that makes the symptom go away is not done.
+
 - **One home per shared thing.** Drawing goes in `core/ui/widgets.h` and screen geometry in
   `core/ui/layout.h` (`listScrollTop`, the row grid). `game_internal.h` holds what only `game/`
   uses. Look for a helper before writing one. If it sits in a header your code can't include,
