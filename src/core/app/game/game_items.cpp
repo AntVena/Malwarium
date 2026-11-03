@@ -17,72 +17,20 @@ namespace mal {
 
 // --- ITEMS -----------------------------------------------------------------
 
-void Game::onItemsPicker(const ButtonEvent& ev) {
-    const int n = kItemPickerTileCount;
-    if (itemPickRow_ < 0 || itemPickRow_ >= n) itemPickRow_ = 0;
-
-    if (ev.button == Button::A) {
-        itemPickRow_ = (itemPickRow_ + 1) % n;
-    } else if (ev.button == Button::B) {
-        // Commit the tile and drill in. An EMPTY category still opens — the list
-        // says "- NO MATCHING ITEMS -" and C walks back, which reads better than a
-        // dead button on a row the screen just drew.
-        itemFilter_ = kItemPickerTiles[itemPickRow_];
-        itemsScreen_ = ItemsScreen::List;
-        auto rows = buildInventoryRows(registry_, inventory_, ItemOrder::ByGroup, itemFilter_);
-        listRow_ = firstSelectableRow(rows);
-        if (listRow_ < 0) listRow_ = 0;
-    } else if (ev.button == Button::C) {
-        nav_ = Nav::Cursor;
-    }
-}
-
-void Game::onItemsList(const ButtonEvent& ev) {
-    auto rows = buildInventoryRows(registry_, inventory_, itemsOrder(), itemFilter_);
-    if (ev.button == Button::A) {
-        // A is the plain step here and holding it repeats (Game::tickListNav) — the
-        // filter gesture lives on B below, so nothing has to share this button.
-        if (!rows.empty()) listRow_ = stepSelectableRow(rows, listRow_, +1);
-    } else if (ev.button == Button::B) {
-        // Once the type-tabs upgrade is owned, B becomes a tap/hold gesture — arm here
-        // and resolve on the button-RELEASE edge (a short tap -> itemFilterReleaseB
-        // opens the focused item, same as always) or on the hold crossing
-        // kItemFilterHoldMs (tick() cycles the filter instead). Unowned players see
-        // zero change: B still opens the detail immediately on press.
-        if (itemTabsUnlocked()) {
-            bHeld_ = true;
-            bDownMs_ = nowMs_;
-        } else {
-            openFocusedItem();
-        }
-    } else if (ev.button == Button::C) {
-        // Back one layer: the Lockout modal, else the type-picker that opened this
-        // list, else out to the carousel.
-        if (lockoutItemsContext_) nav_ = Nav::ModalLockout;
-        else if (itemPickerUnlocked()) itemsScreen_ = ItemsScreen::Picker;
-        else nav_ = Nav::Cursor;
-    }
-}
-
-// Open the focused row's detail. A header row has no item behind it, so it is inert —
-// the cursor never rests on one, but a list rebuilt under a held button can move.
-void Game::openFocusedItem() {
-    const auto rows =
-        buildInventoryRows(registry_, inventory_, itemsOrder(), itemFilter_);
-    if (listRow_ < 0 || listRow_ >= static_cast<int>(rows.size())) return;
-    if (rows[listRow_].header) return;
-    detailItem_ = rows[listRow_].def;
+void Game::openItemDetail(const ItemDef& d) {
+    detailItem_ = &d;
     nav_ = Nav::Detail;
 }
 
+void Game::returnToLockout() { nav_ = Nav::ModalLockout; }
+
 void Game::itemFilterReleaseB() {
-    // Only the screen check here — onButton owns bHeld_, and clears it once after
+    // Only the screen check here: onButton owns bHeld_, and clears it once after
     // offering the release to all four B gestures. Clearing it in here would disarm
     // the three that had not been asked yet.
-    if (!(nav_ == Nav::Submenu && face_ == Face::Pet && enteredId() == SubmenuId::Items &&
-          itemsScreen_ == ItemsScreen::List && itemTabsUnlocked()))
-        return;   // bHeld_ was armed elsewhere (the VAULT / CFG / MOVES holds) — no-op
-    openFocusedItem();
+    if (!(nav_ == Nav::Submenu && face_ == Face::Pet && enteredId() == SubmenuId::Items))
+        return;   // bHeld_ was armed elsewhere (the VAULT / CFG / MOVES holds)
+    items_.releaseB(*this);
     dirty_ = true;
     lastInputMs_ = nowMs_;
 }

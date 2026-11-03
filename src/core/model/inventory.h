@@ -7,6 +7,7 @@
 // holds borrowed `const char*` pointers and never copies the id text.
 #pragma once
 
+#include <cstdint>
 #include <vector>
 
 namespace mal {
@@ -27,13 +28,20 @@ public:
 
     const std::vector<Stack>& stacks() const { return stacks_; }
 
+    // Changes on every add or remove, and no two bags built separately share one, so a
+    // view built from a bag can tell it is stale by comparing stamps. A copy keeps its
+    // source's stamp, which is right: it holds the same stacks.
+    uint32_t stamp() const { return stamp_; }
+
     // Starting inventory (matches the sample shelf).
     static Inventory starting();
 
 private:
+    static uint32_t freshStamp();
     Stack* find(const char* id);
     const Stack* find(const char* id) const;
     std::vector<Stack> stacks_;
+    uint32_t stamp_ = freshStamp();
 };
 
 } // namespace mal

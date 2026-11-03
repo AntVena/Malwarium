@@ -162,9 +162,12 @@ class. The `nav_` vocabulary is tested in 129 places and switched on in 5. The f
 extract feature objects that own their state and handlers, one slice at a time, with
 `Game` composing them and dispatching tap, hold and release to the active one.
 
-SHOP is done and is the pattern to copy: `RigShopScreen` (`game/rig_shop_screen.h`) owns its
-view and cursors, and reaches the game only through `RigShopHost`, which `Game` implements
-privately. Next, in order:
+SHOP and the ITEMS lists are done and are the pattern to copy: `RigShopScreen`
+(`game/rig_shop_screen.h`) and `ItemsMenu` (`game/items_menu.h`) own their views and
+cursors, and reach the game only through `RigShopHost` and `ItemsHost`, which `Game`
+implements privately. `ItemsMenu` also shows how a screen keeps derived rows without a
+stale-cache bug: it keys them on `Inventory::stamp`. The ITEMS detail page and its Use path
+are still `Game`'s (`onItemsDetail`, `useItem`, `detailItem_`). Next, in order:
 
 1. The Rig Shop ACCOUNT: `rigLevel_`, `rigServicesOff_` and `rigServicesAsk_` and the pure
    queries over them (`rigFeatureActive`, `rigServiceMode` and the rest in `game.h`) become a

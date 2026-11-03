@@ -84,8 +84,8 @@ Game::ListFocus Game::listFocus() const {
                 return statScreen_ == StatScreen::Index ? ListFocus::StatIndex
                                                         : ListFocus::None;
             case SubmenuId::Items:
-                return itemsScreen_ == ItemsScreen::Picker ? ListFocus::ItemsPicker
-                                                           : ListFocus::ItemsList;
+                return items_.view() == ItemsView::Picker ? ListFocus::ItemsPicker
+                                                          : ListFocus::ItemsList;
             // ARCH is two L2 screens now, the same shape ITEMS is above: the group
             // picker and the rows behind one group. Both are row lists and both want
             // the hold-repeat, so both take the contract — separately, because C's tap
@@ -148,19 +148,10 @@ void Game::stepFocusedList(int dir) {
             break;
         }
 
-        case ListFocus::ItemsPicker: {
-            constexpr int n = kItemPickerTileCount;
-            itemPickRow_ = ((itemPickRow_ + dir) % n + n) % n;
+        case ListFocus::ItemsPicker:
+        case ListFocus::ItemsList:
+            items_.step(*this, dir);
             break;
-        }
-        case ListFocus::ItemsList: {
-            // Section headers are drawn but never landed on, which is exactly what
-            // stepSelectableRow walks past — in either direction.
-            const auto rows =
-                buildInventoryRows(registry_, inventory_, itemsOrder(), itemFilter_);
-            if (!rows.empty()) listRow_ = stepSelectableRow(rows, listRow_, dir);
-            break;
-        }
         case ListFocus::ArchPicker: {
             const int n = archPickRowCount();
             if (n > 0) archPickRow_ = ((archPickRow_ + dir) % n + n) % n;
@@ -335,8 +326,8 @@ void Game::leaveFocusedList() {
     const ButtonEvent back{Button::C, true, false};
     switch (focus) {
         case ListFocus::StatIndex: onStatIndex(back); break;
-        case ListFocus::ItemsPicker: onItemsPicker(back); break;
-        case ListFocus::ItemsList: onItemsList(back); break;
+        case ListFocus::ItemsPicker:
+        case ListFocus::ItemsList: items_.onButton(*this, back); break;
         case ListFocus::ArchPicker: onArchPicker(back); break;
         case ListFocus::ArchList: onArchList(back); break;
         case ListFocus::CfgList: onCfgList(back); break;

@@ -986,7 +986,7 @@ void test_item_picker_nav_drills_in_and_back() {
     {   // (a) Unowned — no picker layer anywhere.
         Game g{StartMode::Hatched};
         enterSubmenuId(g, SubmenuId::Items);
-        CHECK(g.itemsScreen() == Game::ItemsScreen::List);
+        CHECK(g.itemsView() == ItemsView::List);
         tapC(g);                       // straight back out
         CHECK(g.nav() == Game::Nav::Cursor);
     }
@@ -995,7 +995,7 @@ void test_item_picker_nav_drills_in_and_back() {
     g.debugSetBits(kShopItemPickerCost);
     g.debugBuyItemPicker();
     enterSubmenuId(g, SubmenuId::Items);
-    CHECK(g.itemsScreen() == Game::ItemsScreen::Picker && g.itemPickRow() == 0);
+    CHECK(g.itemsView() == ItemsView::Picker && g.itemPickRow() == 0);
 
     g.onButton(press(Button::A));                           // ALL -> FOOD
     g.onButton(press(Button::A));                           // FOOD -> INGREDIENTS
@@ -1003,12 +1003,12 @@ void test_item_picker_nav_drills_in_and_back() {
     g.onButton(press(Button::A));                           // BUFFS -> KEYS
     CHECK(g.itemPickRow() == 4);
     g.onButton(press(Button::B));                           // drill into KEYS
-    CHECK(g.itemsScreen() == Game::ItemsScreen::List);
+    CHECK(g.itemsView() == ItemsView::List);
     CHECK(g.itemFilter() == ItemFilter::Keys);
     CHECK(g.nav() == Game::Nav::Submenu);                   // still L2, new screen
 
     tapC(g);                           // back to the tiles
-    CHECK(g.itemsScreen() == Game::ItemsScreen::Picker && g.nav() == Game::Nav::Submenu);
+    CHECK(g.itemsView() == ItemsView::Picker && g.nav() == Game::Nav::Submenu);
     CHECK(g.itemPickRow() == 4);                            // the tile is where we left it
     tapC(g);                           // out of ITEMS
     CHECK(g.nav() == Game::Nav::Cursor);
@@ -1023,13 +1023,13 @@ void test_item_picker_nav_drills_in_and_back() {
     g.onButton(press(Button::A)); g.onButton(press(Button::A));
     g.onButton(press(Button::A));                                // -> TOOLS (x0)
     g.onButton(press(Button::B));
-    CHECK(g.itemsScreen() == Game::ItemsScreen::List && g.itemFilter() == ItemFilter::Tools);
+    CHECK(g.itemsView() == ItemsView::List && g.itemFilter() == ItemFilter::Tools);
     CHECK(buildInventoryRows(ContentRegistry::embedded(), g.inventory(), ItemOrder::ByGroup,
                              g.itemFilter()).empty());
     g.onButton(press(Button::B));                           // B on an empty list is inert
     CHECK(g.nav() == Game::Nav::Submenu);
     tapC(g);
-    CHECK(g.itemsScreen() == Game::ItemsScreen::Picker);
+    CHECK(g.itemsView() == ItemsView::Picker);
 }
 
 // The Lockout Open-Items escape hatch never routes through the picker, even when
@@ -1044,7 +1044,7 @@ void test_item_picker_skipped_in_lockout() {
     CHECK(g.nav() == Game::Nav::ModalLockout);
     g.onButton(press(Button::B));                    // "Open Items" (lockout ctx)
     CHECK(g.nav() == Game::Nav::Submenu);
-    CHECK(g.itemsScreen() == Game::ItemsScreen::List);   // straight onto the list
+    CHECK(g.itemsView() == ItemsView::List);   // straight onto the list
     tapC(g);                    // C goes back to the crisis
     CHECK(g.nav() == Game::Nav::ModalLockout);
 }
@@ -1087,7 +1087,7 @@ void test_item_hold_b_follows_picker_axis() {
         // there, so holding it drills in exactly as a tap would.
         holdB(g, t);
         CHECK(g.itemFilter() == ItemFilter::All);
-        CHECK(g.itemsScreen() == Game::ItemsScreen::List);
+        CHECK(g.itemsView() == ItemsView::List);
         holdB(g, t); holdB(g, t); holdB(g, t); holdB(g, t);
         CHECK(g.itemFilter() == ItemFilter::Keys);
         holdB(g, t);

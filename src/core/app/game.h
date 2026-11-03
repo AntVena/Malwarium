@@ -14,6 +14,7 @@
 #include "tunables.h"
 #include "core/app/game_achievements.h"
 #include "core/app/game_rig_shop.h"
+#include "core/app/game/items_menu.h"
 #include "core/app/game/rig_shop_screen.h"
 #include "core/device/net_status.h"
 #include "core/device/update_status.h"
@@ -83,7 +84,7 @@ struct PlayHud;
 // seam that keeps the tests green without going through the egg).
 enum class StartMode { FreshHatch, Hatched };
 
-class Game : private RigShopHost {
+class Game : private RigShopHost, private ItemsHost {
 public:
     // `hatchedCreature` is the pet installed when mode == Hatched (the dev/test
     // seam); ignored for FreshHatch, which installs the egg-line creature.
@@ -102,10 +103,6 @@ public:
     //   ModalFeeding / ModalLockout — event overlays.
     enum class Nav { Idle, Cursor, Submenu, Detail, Process, ModalFeeding, ModalLockout, ModalLineSelect, ModalEggPick, ModalHatchReveal, ModalEvolve, ModalCSF, Combat, ExploreControl, Encounter, Wifi, Shop, ModShop, WarpPicker, RollbackPicker, RepartitionPicker, CacheYield, BulkYield, PostEncounter, Stacker, Fragger, Isolation, Chroma, Decryption, Cryptogram, ArcadeResult, Tourney, ShiboleetHail, Shiboleet, ShiboleetVerdict, Story, StoryArchive, TipCard, AwayDigest, ItemOffer };
 
-    // Which L2 screen the ITEMS submenu is showing. Picker (the category tile
-    // screen) only ever appears when itemPickerUnlocked(); every other path — no
-    // upgrade, and the Lockout Open-Items entry — lands straight on List.
-    enum class ItemsScreen : uint8_t { Picker, List };
     // ARCH's two L2 screens, the same shape ITEMS uses: the group picker, then the rows
     // behind whichever group was opened. Unlike ITEMS' the picker is not a purchasable
     // upgrade — a 64-slot shelf is not navigable without it.
@@ -157,7 +154,7 @@ public:
     PetModel& model() { return model_; }
     const PetModel& model() const { return model_; }
     Inventory& inventory() { return inventory_; }
-    const Inventory& inventory() const { return inventory_; }
+    const Inventory& inventory() const override { return inventory_; }
     const EventLog& log() const { return log_; }
     // Which page of the mid-combat panel is showing (0 = closed). B cycles it.
     int combatStatsPage() const { return combatStatsPage_; }
@@ -178,7 +175,7 @@ public:
     }
     // Content lookup (creatures/items/mods/moves) — read-only, for anything that
     // needs to enumerate the catalog (e.g. the 'Pedia state export).
-    const ContentRegistry& content() const { return registry_; }
+    const ContentRegistry& content() const override { return registry_; }
     const Combat& combat() const { return combat_; }
     int combatXp() const { return combatXp_; }        // XP banked toward the next level
     int combatLevel() const { return combatLevel_; }  // 0-based creature level
@@ -248,7 +245,7 @@ public:
     // pet already taken that row's once-per-life grant" needs (lifetimeGrantSpent,
     // core/model/pet_upgrades.h). The ITEMS list and detail page read it to draw the
     // once-per-life note beside a row that carries one.
-    PetLifetimeGates petLifetimeGates() const {
+    PetLifetimeGates petLifetimeGates() const override {
         return {upgrades_, yubiConsumed_, shieldItemConsumed_};
     }
     // OFF-LEVEL points in combat stat `i`, granted by an Epic dish or a found favourite
@@ -285,12 +282,12 @@ public:
     // d/e (Rig Shop, save v23): one-time, permanent account unlocks — no
     // tiers, just owned or not. itemTabsUnlocked arms the ITEMS hold-B filter cycle;
     // bulkOpenUnlocked arms the VAULT hold-B bulk-open.
-    bool itemTabsUnlocked() const { return rigLevel_[kRigRowItemTabs] > 0; }
+    bool itemTabsUnlocked() const override { return rigLevel_[kRigRowItemTabs] > 0; }
     bool bulkOpenUnlocked() const { return rigLevel_[kRigRowBulkOpen] > 0; }
     // ITEMS Type-Picker (Rig Shop): another one-time unlock — the ITEMS submenu
-    // opens on the category tile screen (ItemsScreen::Picker) instead of straight
+    // opens on the category tile screen (ItemsView::Picker) instead of straight
     // onto the list, and hold-B's cycle steps up to the finer category axis.
-    bool itemPickerUnlocked() const { return rigLevel_[kRigRowItemPicker] > 0; }
+    bool itemPickerUnlocked() const override { return rigLevel_[kRigRowItemPicker] > 0; }
     // f (Rig Shop, save v31): the Merge Hub one-time unlock — makes the MRG
     // carousel slot accessible (game_merge.cpp). Doesn't grant any recipe by
     // itself; each recipe is its own one-time Rig Shop row (rigUpgradeOwned).
@@ -2160,8 +2157,8 @@ public:
     // Set the ITEMS type filter directly (tests): the real path is the ITEMS hold-B
     // gesture (nextItemFilter); this exercises buildInventoryRows/drawItemsList
     // filtering without driving the tap/hold timing.
-    void debugSetItemFilter(ItemFilter f) { itemFilter_ = f; dirty_ = true; }
-    ItemFilter itemFilter() const { return itemFilter_; }
+    void debugSetItemFilter(ItemFilter f) { items_.setFilter(f); dirty_ = true; }
+    ItemFilter itemFilter() const { return items_.filter(); }
     // Where the STAT reader stands: which of the six pages, which row of it the window
     // opens on, whether the INDEX is up, and its cursor. Read by the gates — the page a
     // jump landed on and the row it anchored to are assertions about state, which a
@@ -2175,9 +2172,11 @@ public:
     // are one answer, not two. Public because the gates read the roster to find the row
     // a jump should land on, the same way they read the pages' own row models.
     std::vector<StatIndexRow> statIndexRows() const;
-    // Which ITEMS L2 screen is showing, and the picker's tile cursor (tests / render).
-    ItemsScreen itemsScreen() const { return itemsScreen_; }
-    int itemPickRow() const { return itemPickRow_; }
+    // Which ITEMS L2 screen is showing, the picker's tile cursor and the list's row
+    // cursor (tests / render).
+    ItemsView itemsView() const { return items_.view(); }
+    int itemPickRow() const { return items_.pickRow(); }
+    int itemsRow() const { return items_.row(); }
     // The shared list cursor and the MOD picker's own, for the list-navigation gates:
     // A's repeat and C's backward walk are assertions about where a cursor ENDED UP,
     // which is the one thing a rendered frame states least directly.
@@ -2508,10 +2507,15 @@ public:
     int backgroundBracketsTaken() const { return tourneyWins_; }
 
 private:
-    // RigShopHost: the SHOP screen's way back into the game (game_rigshop.cpp).
+    // RigShopHost: the SHOP screen's way back into the game (game_rigshop.cpp). The
+    // first two also serve ItemsHost.
     void leaveToCarousel() override;
     void armHoldB() override;
     void markDirty() override;
+    // ItemsHost: the ITEMS screen's way back into the game (game_items.cpp).
+    bool itemsFromLockout() const override { return lockoutItemsContext_; }
+    void openItemDetail(const ItemDef& d) override;
+    void returnToLockout() override;
     // Rendering.
     void drawHabitat(Framebuffer& fb, int cursor) const;
     // Say that a background has just been come into. The three moments that can grant
@@ -2614,27 +2618,11 @@ private:
     // Resolves STAT's hold-B gesture's SHORT-press half, the twin of itemFilterReleaseB:
     // a B that never reached kStatIndexHoldMs is the ordinary window advance.
     void statIndexReleaseB();
-    // The ITEMS type-picker (ItemsScreen::Picker): A steps the tile, B commits that
-    // tile's filter and drills into the list, C leaves ITEMS entirely.
-    void onItemsPicker(const ButtonEvent& ev);
-    void onItemsList(const ButtonEvent& ev);
     void onItemsDetail(const ButtonEvent& ev);
-    // Resolves the ITEMS hold-B gesture's SHORT-press half — called from onButton on
-    // every B release. No-op unless bHeld_ is still armed (i.e. the hold never crossed
-    // kItemFilterHoldMs, which fires the filter cycle itself via tick() and clears
-    // bHeld_ first) AND we're still resting on an owned ITEMS list.
+    // Resolves the ITEMS hold-B gesture's SHORT-press half, called from onButton on
+    // every B release. Hands the release to ItemsMenu only while ITEMS is the screen
+    // up, since bHeld_ may have been armed by another screen's hold.
     void itemFilterReleaseB();
-    // Drill into the focused row's item detail. Shared by B's immediate press (no
-    // type-tabs upgrade) and by the tap half of the hold gesture above, so the two
-    // paths can't drift on what "open this row" means. Builds the list itself rather
-    // than taking it: an InvRow is items_screen.h's, and game.h names no renderer type
-    // (the split ui_state.h's header comment describes).
-    void openFocusedItem();
-    // The ITEMS list order for the current context: LockoutFirst while ITEMS was
-    // opened from the Lockout modal.
-    ItemOrder itemsOrder() const {
-        return lockoutItemsContext_ ? ItemOrder::LockoutFirst : ItemOrder::ByGroup;
-    }
     void onMaintList(const ButtonEvent& ev);
     void onMaintAction(const ButtonEvent& ev);
     void onStacker(const ButtonEvent& ev);
@@ -3515,15 +3503,6 @@ private:
     // at whatever was last pressed.
     int exploreCtlRow_ = 0;
     const ItemDef* detailItem_ = nullptr;  // ITEMS detail subject
-    // d: the active ITEMS type-tab filter. Runtime-only (never persisted) —
-    // enterSubmenu() (and the Lockout Open-Items path) reset it to All every time
-    // ITEMS is (re-)entered, so it never "sticks" across a visit.
-    ItemFilter itemFilter_ = ItemFilter::All;
-    // Which of the ITEMS submenu's two L2 screens is showing (ItemsScreen, public).
-    // Runtime-only, reset on every entry alongside itemFilter_; itemPickRow_ is the
-    // picker's tile cursor.
-    ItemsScreen itemsScreen_ = ItemsScreen::List;
-    int itemPickRow_ = 0;
     // Cache-yield reveal: what the just-opened cache produced, held for
     // the Nav::CacheYield overlay. The ItemDef* point into the static registry (stable
     // after the container leaves the bag). cacheYieldCache_ = the opened container.
@@ -4452,6 +4431,7 @@ private:
     // Idle), so the hacker carousel reuses the same cursor cycling.
     Face face_ = Face::Pet;
     RigShopScreen rigShop_;   // the SHOP slot's views and cursors (game/rig_shop_screen.h)
+    ItemsMenu items_;         // the ITEMS slot's views, cursors, filter and rows (game/items_menu.h)
     int hackerVaultRow_ = 0;  // VAULT list cursor — owned sealed-cache row
     int hackerMergeRow_ = 0;  // MERGE HUB list cursor — recipe row
     // CREW screen state. The screen is four views and `crewView_` IS the navigation:

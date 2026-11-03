@@ -705,25 +705,7 @@ void Game::drawSubmenu(Framebuffer& fb) const {
     switch (enteredId()) {
         // STAT's own two screens and the six pages behind them are game_stat.cpp's.
         case SubmenuId::Stat: drawStat(fb); break;
-        case SubmenuId::Items: {
-            if (itemsScreen_ == ItemsScreen::Picker) {
-                drawItemTypePicker(fb, itemPickRow_);
-                break;
-            }
-            auto rows = buildInventoryRows(registry_, inventory_, itemsOrder(),
-                                           itemFilter_);
-            const PetLifetimeGates gates = petLifetimeGates();
-            ItemsListView v;
-            v.cursor = listRow_;
-            v.lockout = lockoutItemsContext_;
-            v.filter = itemFilter_;
-            v.tabsOwned = itemTabsUnlocked();
-            v.pickerOwned = itemPickerUnlocked();
-            v.gates = &gates;
-            v.beat = beat_;
-            drawItemsList(fb, rows, v);
-            break;
-        }
+        case SubmenuId::Items: items_.draw(fb, *this, beat_); break;
         case SubmenuId::Maint:
             drawMaintList(fb, model_, listRow_, beat_);
             break;

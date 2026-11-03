@@ -180,10 +180,7 @@ void Game::onButton(const ButtonEvent& ev) {
                     if (statScreen_ == StatScreen::Index) onStatIndex(ev);
                     else onStatPage(ev);
                     break;
-                case SubmenuId::Items:
-                    if (itemsScreen_ == ItemsScreen::Picker) onItemsPicker(ev);
-                    else onItemsList(ev);
-                    break;
+                case SubmenuId::Items: items_.onButton(*this, ev); break;
                 case SubmenuId::Maint: onMaintList(ev); break;
                 case SubmenuId::Cfg: onCfgList(ev); break;
                 case SubmenuId::Arch:
@@ -314,13 +311,8 @@ void Game::onButton(const ButtonEvent& ev) {
                     feedYubiToSave();
                 } else {                              // Open Items (Lockout context)
                     lockoutItemsContext_ = true;
-                    itemFilter_ = ItemFilter::All;    // d: reset on every entry
-                    // A crisis skips the type-picker even when it's owned — the
-                    // Lockout list already floats the resolving items to the top.
-                    itemsScreen_ = ItemsScreen::List;
                     cursor_ = carouselSlotOf(SubmenuId::Items);
-                    auto rows = buildInventoryRows(registry_, inventory_, ItemOrder::LockoutFirst, itemFilter_);
-                    listRow_ = firstSelectableRow(rows);
+                    items_.enter(*this);
                     nav_ = Nav::Submenu;
                 }
             }
@@ -350,12 +342,7 @@ void Game::enterSubmenu() {
     switch (enteredId()) {
         case SubmenuId::Items: {
             lockoutItemsContext_ = false;
-            itemFilter_ = ItemFilter::All;    // d: reset on every entry
-            // Owned, ITEMS opens on the category tiles; otherwise straight on the list.
-            itemsScreen_ = itemPickerUnlocked() ? ItemsScreen::Picker : ItemsScreen::List;
-            itemPickRow_ = 0;
-            auto rows = buildInventoryRows(registry_, inventory_, ItemOrder::ByGroup, itemFilter_);
-            listRow_ = firstSelectableRow(rows);
+            items_.enter(*this);
             break;
         }
         case SubmenuId::Maint: listRow_ = 0; break;

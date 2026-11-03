@@ -687,16 +687,13 @@ bool Game::tickHeldGestures(uint32_t nowMs) {
     // the cursor on the new list's first row; clearing bHeld_ here means a release
     // before this fires resolves as the ordinary tap instead, opening the focused item
     // (onButton's release edge, itemFilterReleaseB). Unowned players never arm bHeld_
-    // (onItemsList opens immediately on press), so this block never fires for them —
+    // (ItemsMenu opens immediately on press), so this block never fires for them —
     // nor does the picker screen, which arms nothing.
     if (bHeld_ && nav_ == Nav::Submenu && face_ == Face::Pet &&
-        enteredId() == SubmenuId::Items && itemsScreen_ == ItemsScreen::List &&
+        enteredId() == SubmenuId::Items && items_.view() == ItemsView::List &&
         itemTabsUnlocked() && nowMs_ - bDownMs_ >= kItemFilterHoldMs) {
         bHeld_ = false;
-        itemFilter_ = nextItemFilter(itemFilter_, itemPickerUnlocked());
-        auto rows = buildInventoryRows(registry_, inventory_, itemsOrder(), itemFilter_);
-        listRow_ = firstSelectableRow(rows);
-        if (listRow_ < 0) listRow_ = 0;
+        items_.cycleFilter(*this);
         lastInputMs_ = nowMs_;   // the cycle counts as activity (no defocus race)
         changed = true;
     }

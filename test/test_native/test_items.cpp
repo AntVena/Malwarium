@@ -1901,3 +1901,45 @@ void test_save_v70_renames_crostini() {
     CHECK(deserializeSave(serializeSave(b), back));
     CHECK(std::strcmp(back.items[0].id, "brusshetta") == 0);
 }
+
+// A bag's stamp moves on every change and nowhere else, and two bags built apart never
+// share one. ItemsMenu keys its cached rows on it, so a stamp that failed to move would
+// leave the ITEMS list showing a bag that no longer exists.
+void test_inventory_stamp_tracks_changes() {
+    Inventory a;
+    Inventory b;
+    CHECK(a.stamp() != b.stamp());
+    const uint32_t s0 = a.stamp();
+    a.add("tortilla_chip", 1);
+    const uint32_t s1 = a.stamp();
+    CHECK(s1 != s0);
+    a.add("tortilla_chip", 0);                  // no change, no new stamp
+    CHECK(a.stamp() == s1);
+    CHECK(!a.remove("tortilla_chip", 5));       // refused, so nothing changed
+    CHECK(a.stamp() == s1);
+    CHECK(a.remove("tortilla_chip", 1));
+    CHECK(a.stamp() != s1);
+    const Inventory copy = a;                   // same stacks, same stamp
+    CHECK(copy.stamp() == a.stamp());
+}
+
+// The ITEMS list reuses its rows between presses, and still sees a bag that changed
+// while it was open: one more stack is one more step before the cursor wraps.
+void test_items_list_sees_bag_change_while_open() {
+    Game g{StartMode::Hatched};
+    enterSubmenuId(g, SubmenuId::Items);
+    auto stepsToWrap = [&] {
+        const int start = g.itemsRow();
+        int steps = 0;
+        do {
+            g.onButton(press(Button::A));
+            g.onButton(lift(Button::A));
+            ++steps;
+        } while (g.itemsRow() != start && steps < 100);
+        return steps;
+    };
+    const int before = stepsToWrap();
+    CHECK(g.inventory().count("polltatoes") == 0);
+    g.inventory().add("polltatoes", 1);
+    CHECK(stepsToWrap() == before + 1);
+}

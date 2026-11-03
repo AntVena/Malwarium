@@ -4,6 +4,11 @@
 
 namespace mal {
 
+uint32_t Inventory::freshStamp() {
+    static uint32_t last = 0;
+    return ++last;
+}
+
 Inventory::Stack* Inventory::find(const char* id) {
     for (auto& s : stacks_)
         if (std::strcmp(s.id, id) == 0) return &s;
@@ -24,12 +29,14 @@ void Inventory::add(const char* id, int n) {
     if (n <= 0) return;
     if (Stack* s = find(id)) s->qty += n;
     else stacks_.push_back({id, n});
+    stamp_ = freshStamp();
 }
 
 bool Inventory::remove(const char* id, int n) {
     Stack* s = find(id);
     if (!s || s->qty < n) return false;
     s->qty -= n;
+    stamp_ = freshStamp();
     return true;
 }
 

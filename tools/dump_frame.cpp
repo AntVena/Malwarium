@@ -550,7 +550,7 @@ int main(int argc, char** argv) {
         const int tile = hasFlag(argc, argv, "ingredients") ? 2
                        : hasFlag(argc, argv, "keys") ? 4
                        : hasFlag(argc, argv, "tools") ? 5 : -1;
-        if (tile >= 0 && game.itemsScreen() == Game::ItemsScreen::Picker) {
+        if (tile >= 0 && game.itemsView() == ItemsView::Picker) {
             for (int i = 0; i < tile; ++i) game.onButton({Button::A, true, false});
             game.onButton({Button::B, true, false});
         }
