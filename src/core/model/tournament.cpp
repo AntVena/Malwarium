@@ -63,8 +63,8 @@ const T* reservoirPick(const std::vector<const T*>& all, uint32_t& s, Pred keep)
 }
 
 // The handle permutation for a run: Fisher-Yates over the whole pool, seeded by the
-// run seed alone. Drawing WITHOUT replacement is the point: eight entrants must be
-// eight names, and a per-slot roll would collide often enough to be noticed.
+// run seed alone. Drawn without replacement so eight entrants get eight names; a
+// per-slot roll would collide often.
 int handleIndexFor(uint32_t seed, int slot) {
     if (slot < 0 || slot >= kTourneySlots || kTourneyHandleCount <= 0) return -1;
     uint8_t order[64];
@@ -134,20 +134,20 @@ TourneyFighter tourneyEntrant(const ContentRegistry& reg, uint32_t seed, int slo
     if (!pet) return f;                       // an empty creatureId reads as "unbuildable"
     std::strncpy(f.spec.creatureId, pet->id, sizeof(f.spec.creatureId) - 1);
 
-    // Stat points, one per level into a random stat: the SAME grant the player's own
-    // level-ups make (Game::addCombatXp), so an entrant's stat line is one a raised pet
-    // could actually have. Clamped per stat to the wire cell, which only bites at a
-    // level far above kTourneyMaxLevel.
+    // Stat points, one per level into a random stat: the same grant the player's
+    // level-ups make (Game::addCombatXp), so an entrant's stats are ones a raised pet
+    // could have. Clamped per stat to the wire cell, which only bites at a level far
+    // above kTourneyMaxLevel.
     int points[kLevelStatCount] = {0, 0, 0, 0};
     for (int i = 0; i < level; ++i) ++points[lcg(s) % kLevelStatCount];
     for (int i = 0; i < kLevelStatCount && i < 4; ++i)
         f.spec.statPoints[i] = static_cast<uint8_t>(points[i] > 255 ? 255 : points[i]);
 
     // Moves: one per slot this stage has unlocked, each matching that slot's stamped
-    // Attack/Defend kind on THIS creature. LINE-exclusive moves stay inside the line
-    // for free: moveAllowedForLine is the same predicate the player's own picker
-    // filters on, so a Worm entrant can no more field a Phishing move than a raised
-    // Worm could.
+    // Attack/Defend kind on THIS creature. Line-exclusive moves stay inside their
+    // line automatically: moveAllowedForLine is the same predicate the player's own
+    // picker filters on, so a Worm entrant can no more field a Phishing move than a
+    // raised Worm could.
     const auto moves = reg.allMoves();
     const int slots = MoveLoadout::slotsForStage(stage);
     for (int i = 0; i < slots && i < kMaxMoveSlots; ++i) {

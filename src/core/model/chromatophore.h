@@ -10,13 +10,13 @@
 // the same one the Isolation buffer and the Defrag board offer: a bad run costs the
 // bonus, never the pet.
 //
-// A CHANGE TAKES TIME, and that is the whole game. Pressing the right button is not the
-// skill: kChromaSettleMs later is when the pet is actually wearing it, so the question
-// each round asks is whether you committed early enough, and a late press is caught
-// visibly mid-repaint rather than by an invisible rule. The settle is therefore a rule
-// of the board and lives here, not a render magnitude: the screen draws the same number
-// as FX_CAMO's level (core/render/camo.h), so what the player sees scattering across
-// the creature IS what the sweep is about to score.
+// A change of skin takes time, and the game is about timing: the pet wears a skin only
+// kChromaSettleMs after the press, so the question each round asks is whether you
+// committed early enough, and a late press is caught visibly mid-repaint rather than by
+// an invisible rule. The settle is therefore a rule of the board and lives here, not a
+// render magnitude: the screen draws the same number as FX_CAMO's level
+// (core/render/camo.h), so what the player sees scattering across the creature IS what
+// the sweep is about to score.
 //
 // The plate never repeats what the pet is already wearing, so no round is free.
 //
@@ -73,10 +73,10 @@ class Chromatophore {
     // mid-window, which is the HARD setting and off everywhere else.
     //
     // `rounds` of 0 or less is ENDLESS: there is no round the run finishes on, so it
-    // ends the only other way it can, by being spotted. That is the arcade's shape and
-    // not the hatch's: an egg is buying a fixed number of minutes and wants a finish
-    // line, while a cabinet is a high score and a finish line would be a ceiling on it.
-    // An endless run has no clean(), which is the honest answer: nothing was completed.
+    // ends the only other way it can, by being spotted. That is for the arcade. A hatch
+    // buys a fixed number of minutes and needs a finish line, while a cabinet plays for
+    // a high score with no ceiling. An endless run has no clean(), which is the honest
+    // answer: nothing was completed.
     void reset(uint32_t seed, int rounds, uint32_t windowMs, uint32_t windowStepMs,
                bool switching) {
         rng_ = seed ? seed : 1u;
@@ -87,17 +87,17 @@ class Chromatophore {
         passes_ = 0;
         round_ = 0;
         state_ = State::Running;
-        // The pet opens already wearing skin 0, settled. A run has to start from a
-        // KNOWN skin: that is what lets the first plate be something else, so the
-        // opening round is a real change like every other one.
+        // The pet opens already wearing skin 0, settled. A run starts from a known
+        // skin, so the first plate can differ and the opening round is a real
+        // change.
         worn_ = 0;
         leaving_ = 0;
         wearMs_ = kChromaSettleMs;   // settled in what it already is
         beginRound();
     }
 
-    // A button press: wear skin `s`. Pressing what the pet already wears is inert
-    // rather than a re-start: a nervous double-press must not undo a settled disguise.
+    // A button press: wear skin `s`. Pressing the skin the pet already wears does
+    // nothing, so a double-press cannot undo a settled disguise.
     void wear(int s) {
         if (state_ != State::Running) return;
         if (s < 0 || s >= kChromaSkins || s == worn_) return;
@@ -135,7 +135,7 @@ class Chromatophore {
     // dissolve between two skins rather than through the creature's own colours.
     int leaving() const { return leaving_; }
     // How far the repaint has settled, 0..100: the screen's FX_CAMO level, and the
-    // half of `hidden` the player can actually watch.
+    // half of `hidden` the player can see.
     int wearPct() const {
         return static_cast<int>(wearMs_ * 100u / kChromaSettleMs);
     }
@@ -163,8 +163,8 @@ class Chromatophore {
         // Every round is a real change: the water never takes the colour the pet is
         // already standing in, so there is no round that plays itself.
         plate_ = pickSkin(worn_);
-        // The ramp keeps shedding on an endless run too: it just runs out of window to
-        // shed and settles at the floor, which is where a high score is actually played.
+        // The ramp keeps shedding on an endless run too: it settles at the floor once
+        // the window runs out, which is where high scores are played.
         const uint32_t shed = windowStep_ * static_cast<uint32_t>(round_);
         window_ = window0_ > shed + kChromaWindowFloorMs ? window0_ - shed
                                                          : kChromaWindowFloorMs;

@@ -10,15 +10,15 @@
 //
 // WHAT A SIGIL IS. One letter of the Cant the pet has learned to read. A learned
 // letter is drawn AS ITSELF; every letter still unlearned is drawn as some other. So
-// fluency is literally legibility: the same riddle clarifies in place as the sigils
-// come in, and the last one is the difference between a guess and a reading.
+// fluency means legibility: the same riddle becomes readable in place as sigils are
+// learned.
 //
 // WHY A SUBSTITUTION AND NOT A SCRIPT. The cipher is one-letter-for-one-letter, which
 // makes it WIDTH-PRESERVING: a riddle that fits the panel at zero sigils fits it at
 // twenty-six, so the layout gate has one text to check and never a worst case that
-// only appears late in a save. It also needs no glyph the face does not already
-// have: FONT_UI is ASCII 32..126 (tools/gen_font.py), so a runic or dingbat script
-// would have to ship a second face to say the same thing.
+// only appears late in a save. It also needs no glyph the face does not already have:
+// FONT_UI is ASCII 32..126 (tools/gen_font.py), so a runic or dingbat script would
+// need a second face.
 //
 // The cipher is REROLLED for every encounter, so a mapping cannot be memorised in
 // place of learning the Cant, and it is a DERANGEMENT of the unlearned letters, so a
@@ -30,8 +30,8 @@
 namespace mal {
 
 // The Cant is the 26 letters of the alphabet. Digits, spaces and punctuation are
-// shared with the 'net and are never enciphered: they carry word shape, which is what
-// makes a half-learned riddle worth reading instead of a wall of noise.
+// shared with the 'net and are never enciphered: they keep the word shape, so a
+// half-learned riddle is still worth reading.
 constexpr int kCantSigils = 26;
 
 // A set of learned sigils: bit i = the letter 'A'+i reads plain. One uint32_t, which
@@ -61,8 +61,7 @@ int sigilCount(SigilSet learned);
 int cantFluencyPct(SigilSet learned);
 
 // One encounter's cipher. Built once when a guardian speaks and thrown away when it
-// stops, so nothing about it is persisted: the SIGILS are the durable half, and the
-// mapping is deliberately not.
+// stops, so it is never persisted. Only the sigils are saved.
 struct CantCipher {
     // What each letter is DRAWN as: map[i] is the glyph standing in for 'A'+i. A
     // learned letter maps to itself; every other maps to some other letter.

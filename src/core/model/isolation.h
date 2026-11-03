@@ -4,20 +4,19 @@
 // quarantine buffer with one byte of free memory in it, and it never stops moving: one
 // button turns it left, the other turns it right, and swallowing a byte grows it by
 // kIsolationGrowth cells and puts another byte somewhere else in the buffer. Run into a
-// wall or into its own body and the protocol is over. Swallow `goalDots` of them and it
-// finished CLEAN: the whole reason the run is worth playing, since the caller spends
-// each byte against the incubation clock (Game::finishIsolation).
+// wall or into its own body and the protocol is over. Swallow `goalDots` of them and
+// the run is clean. The caller spends each byte against the incubation clock
+// (Game::finishIsolation).
 //
 // It is snake, and it is the one shape this line could have had: a worm whose entire
 // identity is that it grows by copying itself into whatever space is left, playing a
 // game it loses by running out of space it hasn't already filled with itself.
 //
-// SEEDED, not deterministic: the one place this parts from Stacker beside it. The
-// Stacker has no RNG on purpose, because its whole variant is "the same board, played
-// better". Here the board IS the worm's own body, which the player builds; only the byte
-// placement is drawn, and a fixed sequence of those would be memorised into a route.
-// Callers pass a seed (Game hands it one off the shared LCG), so a test can pin a run
-// exactly while a real one stays fresh.
+// Seeded, unlike the Stacker beside it. The Stacker has no RNG on purpose, because its
+// whole variant is "the same board, played better". Here the board IS the worm's own
+// body, which the player builds; only the byte placement is drawn, and a fixed sequence
+// of those would be memorised into a route. Callers pass a seed (Game hands it one off
+// the shared LCG), so a test can pin a run exactly while a real one stays fresh.
 //
 // Kept a plain model (core/model, like pet_model/combat/stacker) so the rules can be
 // tested a step at a time without a framebuffer or a Game. The screen reads it; it reads
@@ -36,9 +35,9 @@ constexpr int kIsolationCols = 16;
 constexpr int kIsolationRows = 11;
 constexpr int kIsolationCells = kIsolationCols * kIsolationRows;
 constexpr int kIsolationStartLength = 3;
-// Cells the worm gains per byte. A rule of the board rather than a balance dial, the
-// same way kStackerStartWidth is: what it costs the PLAYER (a minute of incubation per
-// byte, and how many bytes make a clean run) is the caller's arithmetic, in tunables.h.
+// Cells the worm gains per byte. A board rule like kStackerStartWidth, not a balance
+// dial: what it costs the PLAYER (a minute of incubation per byte, and how many bytes
+// make a clean run) is the caller's arithmetic, in tunables.h.
 constexpr int kIsolationGrowth = 2;
 
 class Isolation {
@@ -83,11 +82,10 @@ class Isolation {
         placeDot();
     }
 
-    // A quarter-turn, banked until the next step. Two of the same in one interval is ONE
-    // turn, not a U-turn into its own neck: an accumulator clamped to a single quarter
-    // is what makes a mistimed double-press a lost input rather than an instant death.
-    // A left and a right in the same interval cancel, which is the same rule read the
-    // other way round.
+    // A quarter-turn, banked until the next step. Two of the same in one interval is one
+    // turn. The accumulator is clamped to a quarter turn, so a mistimed double-press is
+    // a lost input and never a U-turn into the worm's own neck. A left and a right in
+    // the same interval cancel, which is the same rule read the other way round.
     void turnLeft() { if (pendingTurn_ > -1) --pendingTurn_; }
     void turnRight() { if (pendingTurn_ < 1) ++pendingTurn_; }
 
@@ -113,8 +111,7 @@ class Isolation {
         const uint8_t next = static_cast<uint8_t>(row * kIsolationCols + col);
         const bool eating = next == dot_;
         // The tail cell vacates on this very step unless the worm is mid-growth, so
-        // following your own tail is legal: the classic rule, and the one that keeps a
-        // tight coil playable.
+        // following your own tail is legal, which keeps a tight coil playable.
         const bool tailFrees = grow_ == 0 && !eating;
         if (body_[next] && !(tailFrees && next == ring_[len_ - 1])) {
             state_ = State::Crashed;    // its own body

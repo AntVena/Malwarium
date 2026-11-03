@@ -1,22 +1,22 @@
 // loadout.h. The player's equipped mods (MODS). A mod is PERMANENT: CONSUMED from the
 // available inventory when equipped, and never unequipped, only OVERWRITTEN by another
-// mod, with the overwritten one DISCARDED rather than returned to inventory.
-// Runtime state: which mod id sits in each of the kModSlots slots, plus the pool of
-// still-available (un-equipped) mods. `owned_` is a multiset: a rare earn source
-// may hand you a duplicate spare of a mod you've already installed. Ids are stable
-// content ids (borrowed from the content source, never copied).
+// mod, and the overwritten one is discarded. Runtime state: which mod id sits in each
+// of the kModSlots slots, plus the pool of still-available (un-equipped) mods.
+// `owned_` is a multiset: a rare earn source may hand you a duplicate spare of a mod
+// you've already installed. Ids are stable content ids (borrowed from the content
+// source, never copied).
 #pragma once
 
 #include <vector>
 
 namespace mal {
 
-// Un-equipped spares of one mod. A COUNT, not a list of instances: copies of a mod are
-// interchangeable, because the equip-level gate belongs to the mod
-// (ModDef::equipLevel) and not to the copy. The picker lists mods by type
-// and never had a way to offer one copy over another. Ids are stable content-ids
-// (borrowed), so the pool costs one pointer and one int per mod OWNED rather than per
-// copy held. `count` is >= 1; a mod that reaches zero leaves the pool entirely.
+// Un-equipped spares of one mod. A count per mod, because copies are interchangeable:
+// the equip-level gate belongs to the mod (ModDef::equipLevel). The picker lists mods
+// by type and never had a way to offer one copy over another. Ids are stable
+// content-ids (borrowed), so the pool costs one pointer and one int per mod OWNED
+// rather than per copy held. `count` is >= 1; a mod that reaches zero leaves the pool
+// entirely.
 struct OwnedMod {
     const char* id;
     int count;
@@ -39,17 +39,17 @@ public:
 
     // Add one copy of `id` to the available pool (save restore / earn source), up to
     // `cap` copies of that one mod. Returns FALSE when the pool was already at the cap
-    // and nothing was added: the caller decides what a drop with nowhere to go is
-    // worth, because Loadout has no idea Bits exist. `cap` is the player's current MOD
-    // STORAGE allowance (modCopyCap, tunables); a cap below 1 grants nothing.
+    // and nothing was added: the caller decides what to do with the drop, because
+    // Loadout knows nothing of Bits. `cap` is the player's current MOD STORAGE
+    // allowance (modCopyCap, tunables); a cap below 1 grants nothing.
     bool grant(const char* id, int cap);
 
-    // CONSUME one available copy of `id` and install it permanently into `slot`.
-    // Copies are interchangeable, so which one goes is not a question. Whatever was in
-    // `slot` is DISCARDED, not returned to the pool. Inert if no copy is available, or if
-    // `id` already occupies a DIFFERENT slot (a mod holds one slot per pet: no
-    // stacking the same passive twice). No unequip. The equip-LEVEL gate is
-    // enforced by the caller (Game, which knows the pet level).
+    // CONSUME one available copy of `id` and install it permanently into `slot`. Copies
+    // are interchangeable, so which one goes is not a question. Whatever was in `slot` is
+    // DISCARDED, not returned to the pool. Inert if no copy is available, or if `id`
+    // already occupies a DIFFERENT slot (a mod holds one slot per pet, so a passive never
+    // stacks). No unequip. The equip-LEVEL gate is enforced by the caller (Game, which
+    // knows the pet level).
     void equip(int slot, const char* id);
 
     // Restore-only: place `id` into `slot` WITHOUT consuming a copy from the pool

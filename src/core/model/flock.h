@@ -10,10 +10,10 @@
 // WHY A MODEL AND NOT A PROCEDURAL PASS. Every other effect on the device is derived from
 // its own inputs and stores nothing (core/render/absorb.h says why: a 4fps event-driven
 // repaint has to be able to draw the same frame twice). A flock cannot be: each frame is
-// the last one steered, and that INTEGRATION is the whole of why it looks alive rather
-// than like a field of sine waves. So it lives here beside IdleWander, which is the same
-// shape of thing: state advanced one step at a time, no framebuffer, testable without
-// one, and reproducible from a seed and a step count.
+// the last one steered, and that integration is what makes it look alive. So it lives
+// here beside IdleWander, which is the same shape of thing: state advanced one step at a
+// time, no framebuffer, testable without one, and reproducible from a seed and a step
+// count.
 //
 // INTEGER FIXED POINT throughout, at kFlockShift. The S3 has an FPU but nothing else in
 // the engine's model layer spends one, and a flock's arithmetic is sums and clamps:
@@ -22,8 +22,8 @@
 //
 // COST. The three rules are O(n^2) in the flock's own size, which is the reason kFlockMax
 // is small: at 28 boids one step is ~780 pair tests of a few integer ops, on a clock that
-// ticks 16 times a second. That is the budget the swarm is designed against: a real
-// particle system is not available here and this is not one.
+// ticks 16 times a second. The swarm is designed for that budget; it is not a particle
+// system.
 //
 // The stream is its own, never Game::rng_. The same rule IdleWander keeps, and for the
 // same reason: a swarm advances on a clock the player controls by standing still, and
@@ -51,8 +51,8 @@ constexpr int kFlockMax = 28;
 // the thing it describes changes (RENDER_PIPELINE.md's moment-vs-state rule), and the
 // motion it produces is the model integrating under it.
 //
-// The rows are in core/model/flock.cpp beside the weights they select, because the whole
-// content of a mood IS its weights: there is nothing else to a disposition here.
+// The rows are in core/model/flock.cpp beside the weights they select, because a mood
+// consists only of its weights.
 enum class FlockMood : uint8_t {
     Watching,    // met, and deciding: a loose body holding station, turning over
     Attending,   // it has been answered and is considering the answer: drawn in tight
@@ -77,8 +77,7 @@ public:
     void reset(int n, int w, int h);
 
     // Advance one step under `mood`. The cell is whatever reset() was given: the mood
-    // moves the LURE inside it (see the .cpp), so a swarm never has to be told where to
-    // go by its caller.
+    // moves the LURE inside it (see the .cpp), so the caller never steers the swarm.
     void step(FlockMood mood);
 
     int count() const { return n_; }
@@ -95,9 +94,9 @@ public:
     int vx(int i) const { return vx_[idx(i)]; }
     int vy(int i) const { return vy_[idx(i)]; }
 
-    // The flock's centre of mass, in cell px, where the BODY is, as distinct from where
-    // any of it is. The draw ranks boids against it so the middle of a swarm is denser
-    // than its edge, which is the only thing that makes a scatter read as one creature.
+    // The flock's centre of mass, in cell px, where the body as a whole is. The draw
+    // ranks boids against it so the middle of a swarm is denser than its edge, which is
+    // the only thing that makes a scatter read as one creature.
     int centreX() const;
     int centreY() const;
 

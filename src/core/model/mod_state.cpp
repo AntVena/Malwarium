@@ -13,7 +13,7 @@ namespace {
 // Watchdog Timer can never loosen the ceiling the first one bought, and the STRONGEST
 // cut wins (HighestMag) so a weaker Faraday Cage or Canary Trap can never dilute a
 // better one. `mag2` rides along with whichever copy won, because a threshold and its
-// payload are one setting: pairing Meltdown Core's 30% threshold with another copy's
+// payload belong together: pairing Meltdown Core's 30% threshold with another copy's
 // 40% power bonus would invent a mod neither row declares.
 constexpr ModRule kModRules[] = {
     {ModEffect::RaidMirror,           ModCombine::Arm,         0,   true},
@@ -36,9 +36,9 @@ constexpr ModRule kModRules[] = {
     {ModEffect::FirstStrikeRankMult,  ModCombine::Arm,         0,   true},
     {ModEffect::FirstHitCutPct,       ModCombine::HighestMag,  0,   true},
     {ModEffect::LowHealthPowerPct,    ModCombine::HighestMag,  0,   false},
-    // Race Condition is a gamble, not a guarantee: there is no "better" chance/payout pair
-    // to pick between (a higher chance may pay less), so the last slot walked defines
-    // it rather than a comparison inventing a preference.
+    // Race Condition has no better chance/payout pair to choose (a higher chance may pay
+    // less), so the last slot walked defines it instead of a comparison inventing a
+    // preference.
     {ModEffect::GambleBattlePowerPct, ModCombine::Replace,     0,   false},
     // Tripwire's threshold is its mag2, so the widest window wins and brings its own
     // reflect magnitude with it.
@@ -58,7 +58,7 @@ constexpr ModRule kModRules[] = {
     // that is already bounded by the vocabulary moveEffectMask can report.
     {ModEffect::PolymorphEffectPct,   ModCombine::Sum,         0,   false},
     // Both scale a quantity rather than feeding a percent roll, so neither takes the 100
-    // cap its two neighbours above do: there is no certainty for them to push past.
+    // cap that the two above do.
     //
     // The ledger carries TWO magnitudes (standing, and again while holding a seizure), and
     // Sum only ever accumulates the first, so it takes HighestMag, which is what every

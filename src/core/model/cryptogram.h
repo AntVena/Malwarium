@@ -3,18 +3,18 @@
 // A quote is on screen with its letters struck out: punctuation, digits and spaces show
 // as themselves, and every A-Z sits on an empty rule. The player picks a LETTER from the
 // pool and then a CELL to put it in. Right, and every instance of that letter in the
-// quote opens at once: the letter is the unit, not the cell, which is what makes one
-// good deduction worth a whole column of the puzzle. Wrong, and the run is over: there
-// is no second chance inside a board, only an easier board next time (the per-quote
-// difficulty ratchet, which lives on Game rather than here).
+// quote opens at once: the letter is the unit, so one good deduction opens many cells.
+// Wrong, and the run is over: there is no second chance inside a board, only an easier
+// board next time (the per-quote difficulty ratchet, which lives on Game rather than
+// here).
 //
 // Some letters start open, because a wall of empty rules is a guess and not a puzzle.
 // See openingReveals() for how many and which.
 //
-// DETERMINISTIC, not seeded: the Stacker precedent rather than Disk Decryption's. The
-// secret is the QUOTE, and which quote gets played is the caller's roll; once it is
-// chosen there is nothing left to randomise, and a fixed opening is what lets the
-// difficulty ratchet mean "the same board, one more letter open".
+// Deterministic, like the Stacker (Disk Decryption is seeded). The secret is the
+// QUOTE, and which quote gets played is the caller's roll; once it is chosen there is
+// nothing left to randomise, and a fixed opening is what lets the difficulty ratchet
+// mean "the same board, one more letter open".
 //
 // Kept a plain model (core/model, like stacker/isolation/disk_decryption) so the rules
 // can be tested a press at a time without a framebuffer or a Game. The screen
@@ -36,9 +36,9 @@ namespace mal {
 constexpr int kCryptogramCols = 26;
 constexpr int kCryptogramRows = 5;
 
-// The longest text the board will hold, terminator excluded: a buffer bound, not the
-// rule content is written to. The rule is "does it WRAP into kCryptogramRows", which a
-// punctuation-heavy 96 can fail and a well-broken 100 can pass; this is simply larger
+// The longest text the board will hold, terminator excluded. It bounds the buffer;
+// content follows its own rule. The rule is "does it WRAP into kCryptogramRows", which
+// a punctuation-heavy 96 can fail and a well-broken 100 can pass; this is simply larger
 // than any text that can pass it, so reset() never rejects a quote the gate allowed.
 // (The +kCryptogramRows is the spaces a wrap swallows: they occupy no column, so a text
 // that fits the grid can still be that many characters longer than the grid is wide.)
@@ -62,9 +62,8 @@ constexpr uint8_t kCryptogramHiddenCol = 0xFF;
 // board is how a quote gets easier, so "how many times have I lost this" and "have I
 // beaten it" are the same question asked twice.
 //
-// Hard is where every quote starts. There is no rung below Easy: a quote that has
-// beaten you twice stops getting easier, because the next rung down opens the whole
-// board.
+// Hard is where every quote starts. There is no rung below Easy, because the next
+// rung down would open the whole board.
 enum class CryptogramTier : uint8_t { Hard = 0, Medium = 1, Easy = 2, Solved = 3 };
 
 // The tier's gift, as the `extraReveals` reset() takes. A Solved quote replayed for
@@ -80,7 +79,7 @@ constexpr int cryptogramExtraReveals(CryptogramTier t) {
     return 0;
 }
 
-// The word for the tier: the grayscale-safe channel for the setting, the way
+// The tier's word, the grayscale-safe channel for the setting, the way
 // arcadeDifficultyName is for the cabinets.
 constexpr const char* cryptogramTierName(CryptogramTier t) {
     switch (t) {
@@ -137,9 +136,8 @@ class Cryptogram {
     int rowCount() const { return rowCount_; }
 
     static bool isLetter(char c) { return c >= 'A' && c <= 'Z'; }
-    // Everything that isn't A-Z (punctuation, digits, spaces) is never hidden: it is
-    // the SHAPE the player reads the quote's rhythm off, and hiding it would turn a
-    // cryptogram into a word count.
+    // Everything that isn't A-Z (punctuation, digits, spaces) is never hidden: it
+    // gives the quote its shape, which the player reads first.
     bool isOpen(int i) const {
         const char c = at(i);
         return !isLetter(c) || letterOpen_[c - 'A'];

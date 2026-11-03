@@ -40,8 +40,8 @@ void MoveLoadout::grant(const char* id) {
 
 void MoveLoadout::equip(int slot, const char* id) {
     ensureSlots();
-    // The innate is owned but never occupies a slot: it is what an EMPTY slot falls
-    // back to, so slotting it would spend a slot on what that slot already does.
+    // The innate is owned but never occupies a slot: an empty slot already falls
+    // back to it, so slotting it would waste the slot.
     if (slot < 0 || slot >= kMaxMoveSlots || !id || !owns(id) || isInnate(id)) return;
     const int prev = slotOf(id);            // a move lives in only one slot: move it
     if (prev >= 0) slots_[prev] = nullptr;

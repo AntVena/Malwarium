@@ -4,18 +4,18 @@
 // round a ransomware payload: there is a key, you don't have it, and the only way in is
 // to guess and read what the guess tells you. Five colours, three slots, five attempts.
 // Lock a row and it answers with two numbers (how many cells are the right colour in
-// the right place, and how many are the right colour somewhere else), and nothing about
-// WHICH. The board keeps every row you have played, because the deduction is the game
+// the right place, and how many are the right colour somewhere else), without saying
+// which. The board keeps every row you have played, because the deduction is the game
 // and it has to be done off what is on screen.
 //
 // It is a code-breaking board at a size that fits a 224px panel: 5^3 = 125 codes, or 60
 // with duplicates barred. Cracked comfortably inside five attempts by anyone reading
 // the feedback, and essentially never by anyone guessing.
 //
-// SEEDED, not deterministic: the Isolation precedent rather than the Stacker's. The
-// code is the whole secret, so a fixed one would be memorised on the second egg; the
-// caller passes a seed (Game hands it one off the shared LCG) so a test can pin a run
-// exactly while a real one stays fresh.
+// Seeded, like Isolation (the Stacker is deterministic). The code is the whole
+// secret, so a fixed one would be memorised on the second egg; the caller passes a
+// seed (Game hands it one off the shared LCG) so a test can pin a run exactly while a
+// real one stays fresh.
 //
 // Kept a plain model (core/model, like stacker/isolation) so the rules can be tested a
 // press at a time without a framebuffer or a Game. The screen reads it; it reads nothing.
@@ -92,9 +92,9 @@ class DiskDecryption {
         locked_[cursor_] = false;
     }
 
-    // B: settle the focused slot and move to the next unsettled one. Locking the LAST
-    // one is what plays the row: there is no separate submit, because three locks and a
-    // submit is four presses for a decision the third one already made.
+    // B: settle the focused slot and move to the next unsettled one. Locking the last
+    // cell plays the row. There is no separate submit, which would add a fourth press
+    // to a decision already made.
     void lockIn() {
         if (state_ != State::Running) return;
         locked_[cursor_] = true;
@@ -134,12 +134,12 @@ class DiskDecryption {
     // board while it is running.
     int codeAt(int slot) const { return inSlot(slot) ? code_[slot] : 0; }
 
-    // What the run is WORTH: a crack is worth the attempts it did NOT need, counting the
-    // one it landed on, and a locked-out board is worth nothing. The first
+    // The run's value: a crack is worth the attempts it did not need, counting the one
+    // it landed on, and a locked-out board is worth nothing. The first
     // kDecryptionFreeAttempts rows are floored out of that, so cracking on the opening
     // guess scores exactly the same as cracking on the third: both are the ceiling, and
-    // only the rows past the probes cost anything. Same shape as the Stacker's score:
-    // a number out of a ceiling the caller can price against.
+    // only the rows past the probes cost anything. Same shape as the Stacker's score: a
+    // number out of a ceiling the caller can price against.
     int score() const {
         if (state_ != State::Cracked) return 0;
         const int on = played_ > kDecryptionFreeAttempts ? played_

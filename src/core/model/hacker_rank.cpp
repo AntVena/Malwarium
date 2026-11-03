@@ -26,13 +26,12 @@ namespace {
 // {0,3,7,12,…}) to gate the higher titles behind more exploration without touching
 // any logic. Nothing outside this table assumes a fixed length.
 //
-// The ladder is a genuine SKILL/POWER progression,
-// not a set of horizontal "hat" roles: grey/white/black hats describe the
-// *stance* a hacker takes, not their level, so they no longer appear here as tiers.
-// SCRIPT KIDDIE also left the ladder (it becomes an achievement). PACKET RAT anchors
-// rank 0; DEEPWEB DEITY caps the climb (ties to the endless DeepWeb Dive endgame).
-// Kept to a few-dozen escalating puns for now; a dedicated session grows the pool to
-// ~100. Titles are ≤16 chars to match the on-screen ceiling ("R{n} {title}").
+// The ladder is a skill progression. Grey/white/black hats describe a hacker's
+// stance, so they do not appear here as tiers. SCRIPT KIDDIE also left the ladder
+// (it becomes an achievement). PACKET RAT anchors rank 0; DEEPWEB DEITY caps the
+// climb (ties to the endless DeepWeb Dive endgame). Kept to a few-dozen escalating
+// puns for now; a dedicated session grows the pool to ~100. Titles are ≤16 chars to
+// match the on-screen ceiling ("R{n} {title}").
 struct RankTier { int unlockRank; const char* title; };
 constexpr RankTier kRankTiers[] = {
     {0,  "PACKET RAT"},

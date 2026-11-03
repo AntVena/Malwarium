@@ -18,8 +18,8 @@
 namespace mal {
 
 // One live passive. `mag`/`mag2` are the aggregated ModDef::magnitude/magnitude2: the
-// same arity content declares, so a kind can never need a number it has no way to
-// author. `pending` is the entry's own mutable counter for the kinds that have one.
+// same arity content declares, so a kind never needs a number content cannot author.
+// `pending` is the entry's own mutable counter for the kinds that have one.
 struct ModState {
     ModEffect kind = ModEffect::None;
     int mag = 0;
@@ -60,8 +60,8 @@ public:
     ModState* find(ModEffect kind);
     const ModState* find(ModEffect kind) const;
 
-    // Aggregated magnitudes, 0 when the kind isn't live, so a hook's own `> 0` guard
-    // is the whole "is this mod equipped?" check.
+    // Aggregated magnitudes, 0 when the kind isn't live, so a hook's `> 0` guard is
+    // the equipped check.
     int mag(ModEffect kind) const;
     int mag2(ModEffect kind) const;
 

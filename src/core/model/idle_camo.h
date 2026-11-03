@@ -9,13 +9,13 @@
 // palette, holds it a few seconds, and comes back.
 //
 // A CADENCE, not a reaction. Nothing on the idle screen sets this off and nothing
-// interrupts it: it is the animal doing what the animal does, on a clock long enough
-// that catching it reads as having caught it AT something rather than as the panel
-// glitching. Idle for the rest of the time it costs one counter.
+// interrupts it: it runs on its own clock, long enough that seeing it feels like
+// catching the pet in the act rather than as the panel glitching. Idle for the rest
+// of the time it costs one counter.
 //
 // This half only decides WHEN, and which slot of the rotation is up; whose colours a
 // slot names is content, resolved by the habitat (Game::idleCamoSprite) into the art
-// being sampled. Combat splits the same way and for the same reason: a level plus a
+// being sampled. Combat splits the same way, for the same reason: a level plus a
 // sprite is standing state, and turning a sprite into tones is a scan the draw already
 // makes once per repaint.
 //
@@ -32,7 +32,7 @@ namespace mal {
 
 // The two halves of one cycle, in heartbeats (kHeartbeatMs, ~4 per second): how long the
 // pet holds its own colours, then how long a drift lasts. ~40s apart and ~6s long: rare
-// enough that the borrowed palette never reads as the creature's own, and long enough
+// enough that the borrowed palette never looks like the creature's own, and long enough
 // that the scatter arriving (four ticks of kCamoFadeStep) is the edge of the thing seen
 // rather than the whole of it.
 constexpr int kIdleCamoRestBeats = 160;

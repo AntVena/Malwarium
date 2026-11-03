@@ -32,7 +32,7 @@ constexpr int kFraggerRows = 10;   // row 0 enters at the top; the last row is o
 
 // One row in two of fall drops a block at all, and of those roughly one in three is a
 // file: the same density on any lane count, so a wider disk is harder only because the
-// head has further to go.
+// head travels further.
 constexpr int kFraggerSpawnPct = 50;
 constexpr int kFraggerFilePct = 35;
 

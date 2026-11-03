@@ -22,12 +22,12 @@ class MoveLoadout {
 public:
     // The always-available innate move id. A pet OWNS it: it can use it, it is part of
     // what this pet has, and anything reading ownership (the 'Pedia, the move-drop
-    // filter) should say so. What it is not is SLOTTABLE: it lives outside the equip
-    // slots as every empty slot's fallback, which is `isInnate` below rather than a
-    // hole in owns().
+    // filter) treats it as owned. What it is not is SLOTTABLE: it lives outside the
+    // equip slots as every empty slot's fallback, which is `isInnate` below rather
+    // than a hole in owns().
     const char* defaultMove() const { return defaultId_; }
-    // Is `id` this pet's innate move? The one place the "never occupies a slot" rule
-    // lives: the equip picker (ownedMoveList) and equip() both ask here, so ownership
+    // Is `id` this pet's innate move? The "never occupies a slot" rule lives only
+    // here: the equip picker (ownedMoveList) and equip() both ask here, so ownership
     // and slottability can be different questions without either being special-cased
     // twice.
     bool isInnate(const char* id) const;
@@ -54,19 +54,19 @@ public:
     // The Stage at which `slot` first becomes available (the "unlocks at" label).
     static Stage stageUnlockingSlot(int slot);
 
-    // Seed (sample): owns the 3 generic roster moves, default =
-    // Quick Jab, two equipped (one attack + one defend → an even lean). Generic
-    // fixture for tests exercising loadout/combat mechanics that don't care which
-    // line is involved: real gameplay uses startingForLine() instead (below).
+    // Seed (sample): owns the 3 generic roster moves, default = Quick Jab, two
+    // equipped (one attack + one defend → an even lean). Generic fixture for
+    // tests exercising loadout/combat mechanics that do not depend on the line.
+    // Gameplay uses startingForLine() (below).
     static MoveLoadout starting();
 
     // A pet's moves are its line's nature, not a lucky drop: a freshly hatched or
     // reset pet owns every move belonging to its own `line` (nullptr grants none).
     // Moves gated to a higher stage than the pet has reached stay owned-but-locked,
-    // same as any other stage-gated move. The GENERIC pool (quick_jab aside) is no
-    // longer part of anyone's starter kit: it's earned exclusively via the rare
-    // wild-encounter move-drop roll, so a player who wants Buffer Overflow etc. has
-    // to go tame a malbeast for it.
+    // same as any other stage-gated move. The generic pool (except quick_jab) is in
+    // no starter kit: it is earned only through the rare wild-encounter move-drop
+    // roll, so a player who wants Buffer Overflow etc. has to go tame a malbeast
+    // for it.
     static MoveLoadout startingForLine(const ContentRegistry& registry, const char* line);
 
 private:

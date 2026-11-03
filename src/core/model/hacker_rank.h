@@ -1,8 +1,7 @@
-// hacker_rank.h: the player/device-level Hacker Rank progression (
-// resolves). Driven purely by lifetime unique networks seen.
-// "breadth, not grind": revisiting a known network never advances rank. Rank is
-// orthogonal to the doc-07 hacker classes (Red/Blue identity): this is purely
-// an exploration-progression tier, not a playstyle/allegiance choice.
+// hacker_rank.h: the player/device-level Hacker Rank progression. Driven purely
+// by lifetime unique networks seen. "breadth, not grind": revisiting a known
+// network never advances rank. Rank is separate from the Red/Blue crew
+// identity: it measures exploration progress only.
 //
 // XP MODEL:
 // every newly-discovered distinct network grants kHackerRankXpPerNetwork XP;
@@ -12,12 +11,12 @@
 
 namespace mal {
 
-// The rank TITLES are a growable, threshold-keyed ladder: every
-// tier unlocks at a specific numeric rank, and the DISPLAYED title is the nearest
-// tier at or beneath the current rank. New titles are just APPENDED to the end of
-// the table (higher unlock ranks): nothing assumes a fixed count, so the list can
-// grow indefinitely while the numeric rank keeps climbing past the top title. rank 0
-// ("Script Kiddie") is the start, held at zero networks seen.
+// The rank TITLES are a growable, threshold-keyed ladder: every tier unlocks at a
+// specific numeric rank, and the DISPLAYED title is the nearest tier at or beneath
+// the current rank. New titles are appended to the end of the table (higher unlock
+// ranks), and nothing assumes a fixed count, so the list can grow indefinitely while
+// the numeric rank keeps climbing past the top title. rank 0 ("Script Kiddie") is
+// the start, held at zero networks seen.
 
 // Total lifetime XP for `networksSeen` networks (= networksSeen * XP-per-network).
 int hackerRankXp(int networksSeen);
@@ -30,9 +29,9 @@ int hackerRankForNetworksSeen(int networksSeen);
 // toward the next rank, for a badge/progress readout.
 int hackerRankXpIntoRank(int networksSeen);
 
-// The number of named rank tiers currently defined: DERIVED from the title table,
-// so appending a title grows it with no other edits. Callers must never hardcode
-// the ladder length.
+// The number of named rank tiers currently defined: derived from the title table,
+// so appending a title needs no other edit. Callers must never hardcode the
+// ladder length.
 int hackerRankTierCount();
 
 // The numeric rank at which tier `i` (0-based) unlocks, or -1 if out of range:

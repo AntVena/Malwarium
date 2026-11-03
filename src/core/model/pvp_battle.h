@@ -33,10 +33,10 @@ class MoveLoadout;
 // Rebuild a Combatant from a wire spec: resolve the species, moves and mods against
 // the local registry, then fold in the level stat points (applyLevelStatPoints).
 //
-// Deliberately the SAME path for the local and the remote fighter. A device does not
-// shortcut its own side from live state: it encodes its pet to a spec, and builds from
-// that. Anything the spec cannot carry therefore cannot silently apply to one side
-// only, which is what would otherwise desync the two screens.
+// Deliberately the SAME path for the local and the remote fighter. A device builds its
+// own side from its encoded spec, the same path the other device uses. Anything the
+// spec cannot carry therefore cannot silently apply to one side only, which is what
+// would otherwise desync the two screens.
 //
 // An unresolvable species yields a combatant with no moves and zero Health; callers
 // check `canBuildPvpCombatant` first rather than fighting a hollow pet.
@@ -49,14 +49,14 @@ Combatant makePvpCombatant(const ContentRegistry& reg, const PvpFighter& f);
 // through (core/ui/stat_screen.h), and a second rehydrator for that would be a second
 // answer to "which slot is this move in".
 //
-// An id this build doesn't know leaves its slot empty: the same shape as an
-// unequipped slot, which is exactly how the fight treats it too.
+// An id this build doesn't know leaves its slot empty: and the fight treats it
+// as an unequipped slot.
 void buildPvpLoadouts(const ContentRegistry& reg, const PvpFighter& f,
                       MoveLoadout& moves, Loadout& mods);
 
 // Whether `f` names a species this build knows. False means the two devices are
-// carrying different content and the duel must be refused, not attempted: the fights
-// would diverge. (The rules-version check in the handshake catches the common case of
+// carrying different content and the duel is refused because the fights would
+// diverge. (The rules-version check in the handshake catches the common case of
 // mismatched builds; this catches the rest.)
 bool canBuildPvpCombatant(const ContentRegistry& reg, const PvpFighter& f);
 

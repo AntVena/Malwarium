@@ -30,10 +30,10 @@ struct PetUpgrades {
     int bandwidthRegenMin = 0;
     // OFF-LEVEL combat-stat points: 0 power · 1 defense · 2 speed · 3 max-Health, the same
     // axis Game::statPoints_ uses (game_internal.h's levelStatName). Added to the earned
-    // points wherever the pet is built into a fighter, so a point is a point in combat,
-    // but counted in NEITHER the level (which stays == the sum of EARNED points) nor the
-    // Rollback picker, which is what makes them unsheddable. A Rollback can therefore never
-    // take a pet below what it was fed.
+    // points wherever the pet is built into a fighter, so it counts fully in combat but in
+    // neither the level (which stays == the sum of EARNED points) nor the Rollback picker,
+    // which is what makes them unsheddable. A Rollback can therefore never take a pet below
+    // what it was fed.
     int statBonus[kLevelStatCount] = {0};
     // PERCENT added to every XP award this pet takes (Game::addCombatXp). Compounds with
     // the player-level Passive XP Farming rig row rather than replacing it: that one pays
@@ -51,9 +51,8 @@ struct PetUpgrades {
 inline constexpr int kFavouriteFoodStatBonus = 3;
 
 // Can `d` be rolled as a pet's favourite? Every Food of Rare rarity or better, so a
-// favourite is something worth finding rather than the first snack in the bag, and
-// only one the ITEMS flow actually feeds (Game::useItem's Food branch), so it can be
-// found at all.
+// favourite is worth finding, and only one the ITEMS flow actually feeds
+// (Game::useItem's Food branch), so it can be found at all.
 inline bool favouriteFoodEligible(const ItemDef& d) {
     return d.type == ItemDef::Type::Food && d.use == ItemDef::Use::Consume &&
            itemCategory(d) == ItemDef::Category::Food && d.rarity >= ItemDef::Rarity::Rare;

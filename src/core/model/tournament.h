@@ -9,9 +9,9 @@
 //
 // It also decides the matches the operator never watches. The other first-round
 // pairings are resolved by STEPPING THE REAL ENGINE headlessly (tourneyResolveMatch)
-// (not by comparing stat totals), so the bracket the operator climbs was genuinely won
-// by the fighters in it, Exploits and all. Determinism is what makes that safe to do
-// lazily: re-resolving the same round from the same seed always names the same winner.
+// instead of comparing stat totals, so the bracket the operator climbs was won by the
+// fighters in it, Exploits and all. Determinism is what makes that safe to do lazily:
+// re-resolving the same round from the same seed always names the same winner.
 //
 // PURE + HOST-TESTABLE: no Game, no screen, no radio. Feed it a registry and a seed.
 #pragma once
@@ -28,8 +28,8 @@ class ContentRegistry;
 
 // What the bracket list can show without touching the registry: an entrant's handle
 // and the level it was rolled at. Derived from the same stream the full fighter is, so
-// the two can never disagree about who slot 3 is: the builder below calls this for
-// its own first two fields rather than re-rolling them.
+// they always agree on who each slot is: the builder below calls this for its first
+// two fields.
 struct TourneyCard {
     const char* handle = "";
     int level = 0;
@@ -50,7 +50,7 @@ struct TourneyFighter {
 // --- Deriving the bracket ----------------------------------------------------
 
 // Which slot the OPERATOR occupies, derived from the seed like everything else, so
-// the draw is a fact about the bracket rather than a separate thing to persist.
+// the draw needs no separate storage.
 int tourneyPlayerSlot(uint32_t seed);
 
 // Entrant `slot`'s handle + level. Cheap (no registry, no allocation): this is what
@@ -76,8 +76,8 @@ Combatant makeTourneyCombatant(const ContentRegistry& reg, const TourneyFighter&
 //
 // A match that has not resolved by kTourneyMatchTurnCap is CALLED on the Health
 // fraction, and a dead tie goes to `a`. Two brace-heavy kits can genuinely stalemate
-// and the bracket owes the operator an opponent either way, so this terminates by
-// construction rather than by trusting every kit pairing to be decisive.
+// and the bracket owes the operator an opponent either way, so this always
+// terminates, whatever the kits.
 bool tourneyResolveMatch(const ContentRegistry& reg, const TourneyFighter& a,
                          const TourneyFighter& b, uint32_t seed);
 

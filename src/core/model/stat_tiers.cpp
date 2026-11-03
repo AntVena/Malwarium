@@ -93,7 +93,7 @@ const StatTierDef& statTier(LevelStat stat, int tier) {
 int statTierPoints(int tier) {
     // The ladder itself, and the only place its three rungs are enumerated. Read off
     // POWER's column because every column carries the same thresholds: a gate asserts
-    // that, so which one is asked is arbitrary rather than a hidden assumption.
+    // that, so the column chosen does not matter.
     return kTiers[0][clampTier(tier)].points;
 }
 

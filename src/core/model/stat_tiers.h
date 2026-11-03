@@ -51,8 +51,8 @@ int statTierPoints(int tier);
 // "unlocked" cannot mean one thing in a fight and another on the screen.
 int statTiersReached(int points);
 
-// Points still owed on the next rung, or 0 once the last one is reached: what the STAT
-// page's "N TO GO" reads, and the reason the ladder is worth drawing at all.
+// Points still owed on the next rung, or 0 once the last one is reached: which the
+// STAT page's "N TO GO" shows.
 int statTierPointsToNext(int points);
 
 // A rung's prose with its own magnitudes substituted in.

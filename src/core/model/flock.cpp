@@ -16,9 +16,9 @@ namespace {
 //   ali   how far it turns toward what its neighbours are doing. High is a shoal moving
 //         as one sheet; low is a cloud of individuals.
 //   coh   how hard it pulls toward the local centre. What makes a BODY out of marks.
-//   lure  how hard the whole flock is pulled at the point it is trying to occupy: the
-//         rule that is not Reynolds', and the one that keeps a swarm inside a cell that
-//         has text either side of it.
+//   lure  how hard the whole flock is pulled at the point it is trying to occupy: a
+//         rule added to Reynolds' three that keeps a swarm inside a cell with text on
+//         either side.
 //   speed the cap, in 1/16 px per step. THE mood tell: a flock that is upset is fast
 //         before it is anything else.
 //   sway  how far the lure itself wanders off the cell's centre, as 1/256ths of the cell.
@@ -26,8 +26,8 @@ namespace {
 //         is something drifting around looking at you.
 //   sepR  the room each mark insists on, in whole px, and so the SIZE of the body: the
 //         flock settles where separation balances cohesion, which is roughly this
-//         spacing. It is on the row rather than shared because how much space a thing
-//         takes up IS a disposition: something withdrawn draws into a knot and something
+//         spacing. It is per row because the space a swarm takes up is part of its mood:
+//         something withdrawn draws into a knot and something
 //         at ease spreads out, and that is the same creature both times.
 // SCATTERING is the row with no cohesion and no lure at all, and it is the exception the
 // others prove: with nothing pulling it together the flock stops being a body and leaves,
@@ -35,8 +35,8 @@ namespace {
 // so it belongs to a screen that is about to end (a beaten guardian's outro) and to no
 // other.
 //
-//   churn a random shove on every mark every step, in 1/16 px. THE reason the swarm looks
-//         alive rather than manufactured: separation and alignment together have a stable
+//   churn a random shove on every mark every step, in 1/16 px. This is what keeps the
+//         swarm looking alive: separation and alignment together have a stable
 //         solution (an evenly spaced lattice all pointing one way), and a flock that
 //         reaches it stops being a creature and becomes a dot grid. Churn is what it
 //         never quite settles out of, so no row may set it to zero.
@@ -134,8 +134,7 @@ void Flock::step(FlockMood mood) {
     // that sat still makes a swarm that hovers, and a swarm that hovers reads as a
     // particle emitter rather than as something with somewhere to be.
     //
-    // Integer sine by way of a triangle wave: the shape is a drift, and nothing about it
-    // is improved by being round.
+    // Integer sine via a triangle wave, which is enough for a drift.
     auto tri = [](int t, int period) {
         const int p = period > 0 ? period : 1;
         const int u = ((t % p) + p) % p;                 // 0..p-1
@@ -188,15 +187,14 @@ void Flock::step(FlockMood mood) {
             ay += ((cohY / neighbours) - py_[i]) * m.coh / kW / 8;
         }
         // The lure. Divided down hard because it acts over the whole cell rather than
-        // over a neighbourhood: undivided it out-pulls the three rules and the flock
-        // becomes a ball on a string.
+        // over a neighbourhood: undivided it overpowers the three rules and the flock
+        // clumps into a ball.
         ax += (lureX_ - px_[i]) * m.lure / kW / 32;
         ay += (lureY_ - py_[i]) * m.lure / kW / 32;
 
-        // The churn (see the table). Sized per mood rather than fixed, because how
-        // UNSETTLED a thing is is most of what a mood looks like from outside, and
-        // because without it the three rules have a stable solution and the swarm walks
-        // straight into it and stops being a creature.
+        // The churn (see the table). Sized per mood, because restlessness is most of
+        // what a mood looks like, and because without it the three rules have a stable
+        // solution and the swarm walks straight into it and stops being a creature.
         const int churn = 2 * m.churn + 1;
         ax += static_cast<int>(roll(static_cast<uint32_t>(churn))) - m.churn;
         ay += static_cast<int>(roll(static_cast<uint32_t>(churn))) - m.churn;

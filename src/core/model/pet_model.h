@@ -18,8 +18,8 @@ enum class CareBranch { Good, Bad, Dying };
 // (Game::effectiveCareBranch). ONE slot: arming either replaces whatever was in it, so the
 // most recently plugged in is the one that fires. `None` is the ordinary state and the
 // value a save written before the pair existed comes back as, so the wire numbers are
-// pinned rather than positional. It lives beside CareBranch because it is an OVERRIDE OF
-// CareBranch and nothing else, not a fourth branch, which is why it is not one of them.
+// pinned rather than positional. It lives beside CareBranch because it only overrides
+// CareBranch; it is not a fourth branch.
 enum class BranchOverride : uint8_t { None = 0, Good = 1, Bad = 2 };
 
 class PetModel {
@@ -58,8 +58,8 @@ public:
     void feed(int hungerPts, int happyPts);
     // Defrag: success -kDefragReduction frag; failure +kMaintFailPenalty. Returns TRUE
     // on a FAILURE so the Game-level caller can apply the +1 care mistake through the
-    // SHIELDED path (v21 Restore Point covers maint fails too): PetModel no longer
-    // touches the mistake counter itself.
+    // SHIELDED path (v21 Restore Point covers maint fails too): PetModel never touches
+    // the mistake counter itself.
     bool applyDefrag(bool success);
     // Defrag by an EXPLICIT amount, with no outcome to report: the Stacker variant's
     // clean is PLAYED, so the board decides how much comes off (Game-side, from
