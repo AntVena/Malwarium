@@ -23,8 +23,8 @@ const char* rollHandshakeCaptureCacheId(int roll) {
         return "sealed_cache_rare";
     return "sealed_cache_epic";
 }
-// Packs a 6-byte BSSID into the same 48-bit key used by every other dedup
-// ledger in this unit (seenHandshakeBssids_).
+// Packs a 6-byte BSSID into the same 48-bit key every dedup ledger in this unit
+// uses (networkLedger_, handshakeLedger_).
 uint64_t packBssid(const uint8_t* bssid) {
     uint64_t key = 0;
     for (int i = 0; i < 6; ++i) key = (key << 8) | bssid[i];
@@ -286,6 +286,10 @@ void Game::loadNetworkLedger(const char* path) {
     networkLedger_.load(path);
 }
 
+void Game::loadHandshakeLedger(const char* path) {
+    handshakeLedger_.load(path);
+}
+
 void Game::resolveNetworkDiscovery() {
     if (pendingNetworkCount_ == 0) {
         ++emptyQueueStreak_;
@@ -360,26 +364,18 @@ void Game::resolveNetworkDiscovery() {
 }
 
 bool Game::handshakeAlreadyCaptured(const uint8_t* bssid) const {
-    uint64_t key = 0;
-    for (int i = 0; i < 6; ++i) key = (key << 8) | bssid[i];
-    for (uint64_t k : seenHandshakeBssids_)
-        if (k == key) return true;
-    return false;
+    return handshakeLedger_.contains(packBssid(bssid));
 }
 
 bool Game::registerHandshake(const uint8_t* bssid) {
     // A capture DID occur, so drive the policy SM hot/broadcast regardless of
     // whether it's a new network (noteHandshake self-guards on phase). Then dedup
     // the *credit* by BSSID: SHAKES counts distinct handshakes, so re-capturing a
-    // known network (walking home past the same AP) never re-credits.
+    // known network (walking home past the same AP) never re-credits. At the ledger
+    // cap the oldest BSSID rotates out (handshake_ledger.h), so a long walk keeps
+    // crediting fresh captures instead of going dead.
     auditCapture_.noteHandshake(nowMs_);
-    uint64_t key = 0;
-    for (int i = 0; i < 6; ++i) key = (key << 8) | bssid[i];
-    for (uint64_t k : seenHandshakeBssids_)
-        if (k == key) return false;                 // already credited this AP
-    if (static_cast<int>(seenHandshakeBssids_.size()) >= kBssidDedupCap)
-        return false;                               // dedup set full — don't overcount
-    seenHandshakeBssids_.push_back(key);
+    if (!handshakeLedger_.insert(packBssid(bssid))) return false;  // already credited this AP
     ++handshakesSeen_;
     // A genuinely new captured handshake is the rarer, harder-earned event — a
     // richer Sealed Cache than the plain-discovery reward above (no Common tier).

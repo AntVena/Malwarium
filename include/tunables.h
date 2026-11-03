@@ -1082,11 +1082,9 @@ constexpr int kNetDiscoveryEmptyGuardianStrikes = 3;  // an empty queue summons 
                                               // sub-outcome, so the walk's event density
                                               // is unchanged either way
 
-// Audit-mode handshake capture's SHAKES dedup set (seenHandshakeBssids_,
-// game_net.cpp registerHandshake) — a real-radio, session-scoped RAM cap sized so a
-// normal walk never overflows it. Unrelated to network discovery above (that ledger
-// moved to the SD-backed NetworkLedger); this one stays a small in-save vector.
-constexpr int kBssidDedupCap = 256;
+// The SHAKES handshake-dedup cap and its save-blob fallback are a property of that
+// one ledger, so they live with it: kHandshakeDedupCap / kHandshakeDedupSaveCap in
+// core/net/handshake_ledger.h (registerHandshake reads them).
 
 //     Hacker Rank: player/device-level progression tier driven by lifetime unique networks
 //     seen.

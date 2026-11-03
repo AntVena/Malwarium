@@ -187,6 +187,49 @@ void test_network_ledger_new_and_repeat() {
     CHECK(std::strcmp(e.name, "NowKnown") == 0);
 }
 
+// HandshakeLedger (core/net/handshake_ledger.h) — pure logic, no file I/O here
+// (native tests don't touch real SD, matching the NetworkLedger tests above).
+// Dedups SHAKES credit by BSSID, and at the cap ROTATES (evicts the oldest) rather
+// than refusing new captures, so a long-lived device keeps crediting.
+void test_handshake_ledger_dedup_and_rotation() {
+    HandshakeLedger led;
+    CHECK(led.insert(0xAA) == true);     // new key credited
+    CHECK(led.contains(0xAA));
+    CHECK(led.insert(0xAA) == false);    // repeat not re-credited
+    CHECK(led.size() == 1);
+
+    // Fill exactly to the cap with distinct keys (0xAA was the first).
+    for (int i = 1; i < kHandshakeDedupCap; ++i)
+        CHECK(led.insert(0x1000 + i) == true);
+    CHECK(static_cast<int>(led.size()) == kHandshakeDedupCap);
+    CHECK(led.contains(0xAA));           // oldest still present, set is exactly full
+
+    // One more past the cap evicts the oldest (0xAA) and credits the new key.
+    CHECK(led.insert(0xBBBB) == true);
+    CHECK(static_cast<int>(led.size()) == kHandshakeDedupCap);
+    CHECK(!led.contains(0xAA));          // oldest rotated out
+    CHECK(led.contains(0xBBBB));         // newest kept
+
+    // A rotated-out AP can be credited again (that is the point of rotating).
+    CHECK(led.insert(0xAA) == true);
+
+    led.clear();
+    CHECK(led.size() == 0);
+    CHECK(!led.contains(0xBBBB));
+}
+
+// seed() primes the set from the save-blob fallback and clamps to the cap, keeping
+// the most-recent keys (newest at the back). Backs Game::fromSave.
+void test_handshake_ledger_seed_clamps_to_cap() {
+    HandshakeLedger led;
+    std::vector<uint64_t> over;
+    for (int i = 0; i < kHandshakeDedupCap + 5; ++i) over.push_back(0x2000 + i);
+    led.seed(over);
+    CHECK(static_cast<int>(led.size()) == kHandshakeDedupCap);
+    CHECK(!led.contains(0x2000));                        // oldest 5 dropped
+    CHECK(led.contains(0x2000 + kHandshakeDedupCap + 4));   // newest kept
+}
+
 // PeerHello codec (core/net/peer_link.h) — the pet-to-pet beacon's wire format.
 // A round-trip must preserve every field, and the encoded frame must be exactly
 // one fixed size so the device tier can send it as a single ESP-NOW payload.
@@ -863,6 +906,43 @@ void test_register_handshake_dedup() {
     CHECK(g.networksSeen() == 0);
 }
 
+// At the dedup cap, registerHandshake ROTATES (evicts the oldest BSSID) instead of
+// refusing the new one, so SHAKES keeps climbing on a long run. The first AP
+// captured ages out and can be credited again once it has rotated off the set.
+void test_register_handshake_rotates_at_cap() {
+    Game g{StartMode::Hatched};
+    auto bssidFor = [](int i, uint8_t* out) {
+        out[0] = 0x40;
+        out[1] = static_cast<uint8_t>(i >> 16);
+        out[2] = static_cast<uint8_t>(i >> 8);
+        out[3] = static_cast<uint8_t>(i);
+        out[4] = 0;
+        out[5] = 0;
+    };
+    uint8_t first[6];
+    bssidFor(0, first);
+    CHECK(g.registerHandshake(first));
+    CHECK(g.handshakeAlreadyCaptured(first));
+
+    // Capture distinct APs right up to the cap: no refusals, so SHAKES == cap.
+    for (int i = 1; i < kHandshakeDedupCap; ++i) {
+        uint8_t b[6];
+        bssidFor(i, b);
+        CHECK(g.registerHandshake(b));
+    }
+    CHECK(g.handshakesSeen() == kHandshakeDedupCap);
+    CHECK(g.handshakeAlreadyCaptured(first));   // still on the set, exactly full
+
+    // One more distinct AP rotates the first one out and still credits.
+    uint8_t beyond[6];
+    bssidFor(kHandshakeDedupCap, beyond);
+    CHECK(g.registerHandshake(beyond));
+    CHECK(g.handshakesSeen() == kHandshakeDedupCap + 1);
+    CHECK(!g.handshakeAlreadyCaptured(first));  // rotated out
+    CHECK(g.registerHandshake(first));          // and so creditable afresh
+    CHECK(g.handshakesSeen() == kHandshakeDedupCap + 2);
+}
+
 // The core "leave the house and come home" requirement, for SHAKES: the
 // handshake dedup ledger PERSISTS (save v7), so a reboot never re-credits a
 // handshake already captured. (NETS/registerNetwork no longer has an equivalent
@@ -1093,8 +1173,8 @@ void test_handshake_capture_reward_fires_once_per_handshake() {
 // (kHandshakeCaptureCacheUncommonPct/…RarePct/…EpicPct).
 void test_handshake_capture_reward_rarity_ratio() {
     Game g{StartMode::Hatched};
-    // Stays comfortably under kBssidDedupCap (256), same reasoning as the
-    // network-discovery ratio test above.
+    // Stays comfortably under kHandshakeDedupCap (handshake_ledger.h), same
+    // reasoning as the network-discovery ratio test above.
     const int kSamples = 240;
     for (int i = 0; i < kSamples; ++i) {
         uint8_t bssid[6] = {0x70, static_cast<uint8_t>(i >> 16),

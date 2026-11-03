@@ -178,8 +178,14 @@ void Game::captureRadio(SaveData& d) const {
     d.auditCaptureEnabled = auditCapture_.enabled() ? 1 : 0;   // v6
 
     // v7: the real-radio SHAKES dedup ledger + the lifetime handshake count, so
-    // unique-credit survives a reboot (never re-count on return).
-    d.seenHandshakeBssids = seenHandshakeBssids_;
+    // unique-credit survives a reboot (never re-count on return). The card holds the
+    // full rotating history; the save stores only the most-recent
+    // kHandshakeDedupSaveCap keys as the card-less fallback (newest at the back).
+    const std::vector<uint64_t>& shakeKeys = handshakeLedger_.keys();
+    const size_t keep = shakeKeys.size() < static_cast<size_t>(kHandshakeDedupSaveCap)
+                            ? shakeKeys.size()
+                            : static_cast<size_t>(kHandshakeDedupSaveCap);
+    d.seenHandshakeBssids.assign(shakeKeys.end() - keep, shakeKeys.end());
     d.handshakesSeen = handshakesSeen_;
 }
 
@@ -581,7 +587,7 @@ void Game::restoreRadio(const SaveData& d) {
     // counted. A pre-v7 blob carries an empty ledger (dedup rebuilds from scratch
     // that session). (The sibling NETS/seenBssids set this used to also restore
     // was removed as of v33 — see save.h.)
-    seenHandshakeBssids_ = d.seenHandshakeBssids;
+    handshakeLedger_.seed(d.seenHandshakeBssids);
     handshakesSeen_ = d.handshakesSeen;
 }
 

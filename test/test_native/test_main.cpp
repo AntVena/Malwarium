@@ -626,6 +626,8 @@ int g_failures = 0;
     RUN(test_peer_hello_sanitizes_hostile_fields) \
     RUN(test_peer_ledger_new_and_refresh)         \
     RUN(test_network_ledger_new_and_repeat)       \
+    RUN(test_handshake_ledger_dedup_and_rotation) \
+    RUN(test_handshake_ledger_seed_clamps_to_cap) \
     RUN(test_network_ledger_in_top_n)             \
     RUN(test_network_discovery_repeat_familiar_vs_home_turf) \
     RUN(test_network_discovery_empty_queue_costs_nothing_and_summons_a_guardian) \
@@ -645,6 +647,7 @@ int g_failures = 0;
     RUN(test_audit_capture_arm_window_self_seals) \
     RUN(test_audit_capture_seal_active_from_armed) \
     RUN(test_register_handshake_dedup)            \
+    RUN(test_register_handshake_rotates_at_cap)   \
     RUN(test_audit_ledgers_persist_no_recredit)   \
     RUN(test_save_v7_ledger_roundtrip)            \
     /*pcap-blowup fix — filename-by-network + discovery rewards */ \

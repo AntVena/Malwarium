@@ -50,6 +50,7 @@
 #include "core/model/stacker.h"
 #include "core/model/tournament.h"
 #include "core/net/audit_capture.h"
+#include "core/net/handshake_ledger.h"
 #include "core/net/network_ledger.h"
 #include "core/net/peer_ledger.h"
 #include "core/net/pvp_link.h"
@@ -1417,8 +1418,13 @@ public:
     // mounts; a missing/unavailable path just leaves the ledger empty (works as a
     // session-only RAM tracker for that boot — see NetworkLedger's own comment).
     void loadNetworkLedger(const char* path);
+    // Load the SD-backed SHAKES handshake-dedup ledger from `path`. Called once at
+    // boot by the platform tier after the SD card mounts, the same shape as
+    // loadNetworkLedger; a missing path leaves the save-blob fallback in place.
+    void loadHandshakeLedger(const char* path);
     // Lifetime count of distinct WPA handshakes captured (SHAKES on CFG). Deduped
-    // by BSSID so a repeat capture of a known network never re-credits.
+    // by BSSID so a repeat capture of a known network never re-credits, until the
+    // dedup set rotates that BSSID out at its cap (core/net/handshake_ledger.h).
     int handshakesSeen() const { return handshakesSeen_; }
     // SHAKES not yet spent on a sigil of the CANT. A captured handshake is what buys
     // a guardian's answer (game_shiboleet.cpp), so the lifetime tally above is the
@@ -4507,12 +4513,14 @@ private:
     // (hot-broadcast window + re-arm cooldown); only its enabled() toggle intent is
     // persisted (save v6). Ticked each beat; the device tier feeds it handshakes.
     AuditCapture auditCapture_;
-    // SHAKES: the lifetime count of distinct captured handshakes + its per-BSSID
-    // dedup set, both PERSISTED (save v7) so unique-credit survives a reboot.
-    // registerHandshake() bumps these once per new BSSID. Unrelated to (and
-    // unaffected by) the network-discovery rework above — a different ledger.
+    // SHAKES: the lifetime count of distinct captured handshakes. registerHandshake()
+    // bumps it once per new BSSID (save v7). A separate tally from the network
+    // discovery NETS above.
     int handshakesSeen_ = 0;
-    std::vector<uint64_t> seenHandshakeBssids_;
+    // Per-BSSID dedup for that credit. SD-backed (loadHandshakeLedger at boot) so the
+    // full rotating history lives on the card, with a smaller save-blob fallback
+    // (Game::toSave) for a card-less reboot. See core/net/handshake_ledger.h.
+    HandshakeLedger handshakeLedger_;
 
     SdStatus sdStatus_;  // last microSD reading from the platform tier (CFG "SD")
     // Idle SD-present reveal: game-ms the card last became present + a guard so the

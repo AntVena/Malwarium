@@ -512,6 +512,10 @@ void setup() {
         // Real-network discovery history (core/net/network_ledger.h) — a missing
         // file (first boot) just starts the ledger empty, not an error.
         game->loadNetworkLedger("/sdcard/network_ledger.bin");
+        // The SHAKES handshake-dedup history (core/net/handshake_ledger.h). The
+        // card holds the full rotating set; a missing file just leaves the
+        // save-blob fallback in place (card-less dedup still works, smaller).
+        game->loadHandshakeLedger("/sdcard/handshake_ledger.bin");
         // The met-operators roster (core/net/peer_ledger.h) — same deal: a
         // missing file just starts it empty. Without a card the roster still
         // works, it just lasts only as long as this boot.

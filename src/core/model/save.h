@@ -541,12 +541,14 @@ struct SaveData {
     uint8_t auditCaptureEnabled = 0;
 
     // v7: Audit dedup ledgers -------------------
-    // SHAKES (seenHandshakeBssids + handshakesSeen) never re-credits a handshake
-    // already captured — so leaving and returning to a known place grants nothing
-    // new. Each entry is a 48-bit packed BSSID (6 bytes). Empty on a pre-v7 blob.
-    // (The sibling NETS/seenBssids dedup set was REMOVED as of v33 — see the v33
-    // note above; SHAKES is unrelated and unaffected.)
-    std::vector<uint64_t> seenHandshakeBssids;  // SHAKES dedup (per-network handshake)
+    // SHAKES (seenHandshakeBssids + handshakesSeen) does not re-credit a handshake
+    // already captured, so leaving and returning to a known place grants nothing new,
+    // until that BSSID rotates off the capped set (core/net/handshake_ledger.h). This
+    // field is the card-less FALLBACK mirror: the full rotating set lives on the SD
+    // card, and only the most-recent kHandshakeDedupSaveCap keys land here. Each entry
+    // is a 48-bit packed BSSID (6 bytes). Empty on a pre-v7 blob. (The sibling
+    // NETS/seenBssids dedup set was REMOVED as of v33 — see the v33 note above.)
+    std::vector<uint64_t> seenHandshakeBssids;  // SHAKES dedup fallback (per-network handshake)
     int32_t handshakesSeen = 0;                 // lifetime unique handshakes captured
 
     // v8: EXPL sector-clear flags -----------------------

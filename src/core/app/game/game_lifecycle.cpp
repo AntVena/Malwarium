@@ -623,9 +623,11 @@ void Game::wipeDeviceProgress() {
     // (out of the box, all three are off). resetToHatch() clears the per-pet half;
     // together they are a device with no history. Deliberately NOT cleared: the
     // device preferences (brightness, UI mode, sound), which are how the operator likes
-    // their hardware rather than anything they earned, and the SD-backed ledgers
-    // (core/net/network_ledger.h, peer_ledger.h), which are files on a card the
-    // operator can remove — a save wipe has no business deleting them.
+    // their hardware rather than anything they earned, and the device-level
+    // SD-backed ledgers (core/net/network_ledger.h, peer_ledger.h), which are files on
+    // a card the operator can remove — a save wipe has no business deleting them. The
+    // SHAKES handshake ledger is SD-backed too but pet-level (it follows handshakesSeen_
+    // below), so it IS cleared here, which truncates its card file.
     seenCreatures_.clear();
     raisedCreatures_.clear();
     malbeastSeenMask_ = 0;
@@ -643,7 +645,7 @@ void Game::wipeDeviceProgress() {
     hackerRank_ = 0;
     networksSeen_ = 0;
     handshakesSeen_ = 0;
-    seenHandshakeBssids_.clear();
+    handshakeLedger_.clear();
     cantSigils_ = 0;      // the Cant is unlearned again, and the purse it was bought
     shakesSpent_ = 0;     // with is empty — both follow the handshakes they came from
     titlesUnlocked_ = 0;
